@@ -66,6 +66,13 @@ function send(conn: WebSocket, message: Uint8Array): void {
   conn.send(message, error => error && conn.close())
 }
 
+/** The room of a request: its URL path, e.g. `/<room>?…`; undefined when that is no room name. */
+function roomName(url = '/'): string | undefined {
+  // Room names need no percent-encoding, so the path is not decoded.
+  const name = url.slice(1).split('?')[0]!
+  return ROOM.test(name) ? name : undefined
+}
+
 function handle(room: Room, conn: WebSocket, data: Uint8Array): void {
   const decoder = decoding.createDecoder(data)
   const type = decoding.readVarUint(decoder)
@@ -103,8 +110,10 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
   const wss = new WebSocketServer({ noServer: true })
 
   function connect(conn: WebSocket, request: IncomingMessage): void {
-    const name = decodeURIComponent((request.url ?? '/').slice(1).split('?')[0]!)
-    if (!ROOM.test(name)) {
+    // Invalid frames from a client end its connection; without a listener they would end the process.
+    conn.on('error', error => console.error('[classroom] connection error:', error.message))
+    const name = roomName(request.url)
+    if (!name) {
       conn.close(1008, 'invalid room name')
       return
     }
@@ -136,6 +145,10 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
       const controlled = current.conns.get(conn)
       current.conns.delete(conn)
       if (controlled?.size) awarenessProtocol.removeAwarenessStates(current.awareness, [...controlled], null)
+      if (current.conns.size === 0 && current.store.clients.size === 0 && rooms.get(name) === current) {
+        rooms.delete(name)
+        current.destroy()
+      }
     })
     // Sync step 1 and the current awareness, as y-websocket servers greet a client.
     const encoder = encoding.createEncoder()
@@ -146,7 +159,14 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
     if (states.length > 0) send(conn, awarenessMessage(current.awareness, states))
   }
 
-  wss.on('connection', connect)
+  wss.on('connection', (conn: WebSocket, request: IncomingMessage) => {
+    try {
+      connect(conn, request)
+    } catch (error) {
+      console.error('[classroom] connection failed', error)
+      conn.terminate()
+    }
+  })
   http.on('upgrade', (request, socket, head) => {
     wss.handleUpgrade(request, socket, head, conn => wss.emit('connection', conn, request))
   })

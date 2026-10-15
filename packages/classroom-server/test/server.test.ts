@@ -1,5 +1,6 @@
 // `presmium-classroom-server --port 0` as a real process, with y-websocket clients (as the session plugin uses) in rooms.
 import { spawn } from 'node:child_process'
+import { connect } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import WebSocket from 'ws'
@@ -56,4 +57,26 @@ it('syncs the documents of a room, keeps them for late joiners, and keeps rooms 
   await expect.poll(() => [...b.provider.awareness.getStates().values()].map(s => s.participant?.name)).toContain('主讲')
   a.provider.destroy()
   await expect.poll(() => [...b.provider.awareness.getStates().values()].map(s => s.participant?.name)).not.toContain('主讲')
+})
+
+it('closes a connection with a bad room path or an invalid frame and keeps serving the rooms', async () => {
+  const before = await join('room-c')
+  before.doc.getMap('session').set('status', 'active')
+
+  const badPath = new WebSocket(`${url}/%E0%A4%A`)
+  badPath.on('error', () => {})
+  expect(await new Promise(resolve => badPath.once('close', resolve))).toBe(1008)
+
+  // A client frame without a mask breaks the protocol.
+  const { hostname, port } = new URL(url)
+  const raw = connect(Number(port), hostname)
+  raw.on('error', () => {})
+  raw.write('GET /room-c HTTP/1.1\r\nHost: classroom\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n')
+  await new Promise(resolve => raw.once('data', resolve))
+  raw.write(Buffer.from([0x82, 0x01, 0x00]))
+  await new Promise(resolve => raw.once('close', resolve))
+
+  expect(server.exitCode).toBeNull()
+  const after = await join('room-c')
+  expect(after.doc.getMap('session').get('status')).toBe('active')
 })

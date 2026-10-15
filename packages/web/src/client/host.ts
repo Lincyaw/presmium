@@ -1,6 +1,6 @@
 /// <reference types="vitepress/client" />
 import { presmiumReport, presmiumService } from '@presmium/host'
-import type { HostAdapter, Navigation, ViewRole } from '@presmium/host'
+import type { HostAdapter, Navigation, SyncTransports, ViewRole } from '@presmium/host'
 import type { PresentationMode } from '@presmium/kernel'
 import { FINAL_STEP, getView, useSectionContext } from '@presmium/viewer'
 import type { Viewer } from '@presmium/viewer'
@@ -57,4 +57,14 @@ export function createViewerNavigation(viewer: Viewer): Navigation {
       if (section) viewer.show({ section: section.id, step })
     },
   }
+}
+
+/**
+ * The `syncTransports` service of the web form. The IR runtime has no
+ * synchronized state channels (the slides form's are Slidev's), so a
+ * transport added here is never connected; a plugin that shares them starts
+ * in both forms alike.
+ */
+export const viewerSyncTransports: SyncTransports = {
+  add: () => () => {},
 }

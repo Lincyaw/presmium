@@ -1,4 +1,4 @@
-import { NAVIGATION, TOOLBAR } from '@presmium/host'
+import { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from '@presmium/host'
 import { CLASSROOM_STORE, PRESENTER_PANELS, SESSION } from '@presmium/kernel'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { SESSION_ID, sessionConfig } from '../domain/index.ts'
@@ -21,9 +21,11 @@ function tabStorage(): Storage | undefined {
  * slides form and by the web renderer in the web form. Provides the `session`
  * and `classroomStore` services and shows the classroom in the hosts' toolbar
  * and presenter panels; learners follow the presenter through the hosts'
- * `navigation` service. (The slides form also shares Slidev's state: see
- * `./sync.ts`.) Without `presmium.session.server` the deck works as before
- * and the session shows that it is not connected.
+ * `navigation` service. The hosts' synchronized state (in the slides form,
+ * Slidev's navigation, drawings and the stage's screen) reaches the learners
+ * through the `syncTransports` service (K-06). Without
+ * `presmium.session.server` the deck works as before and the session shows
+ * that it is not connected.
  */
 export const sessionPlugin: PluginDefinition = {
   manifest: {
@@ -31,7 +33,7 @@ export const sessionPlugin: PluginDefinition = {
     version: '0.1.0',
     kernel: '^0.1.0',
     provides: [SESSION, CLASSROOM_STORE],
-    requires: [NAVIGATION, TOOLBAR, PRESENTER_PANELS].map(token => ({ token, optional: true })),
+    requires: [NAVIGATION, TOOLBAR, PRESENTER_PANELS, SYNC_TRANSPORTS].map(token => ({ token, optional: true })),
     capabilities: ['network'],
   },
   setup(ctx) {
@@ -45,6 +47,7 @@ export const sessionPlugin: PluginDefinition = {
     ctx.provide(CLASSROOM_STORE, classroom.store)
     cleanup = [
       classroom.dispose,
+      ctx.tryGet(SYNC_TRANSPORTS)?.add(classroom.transport),
       ctx.tryGet(TOOLBAR)?.register({ id: SESSION_ID, title: '课堂', component: SessionToolbar }),
       ctx.tryGet(PRESENTER_PANELS)?.register({ id: SESSION_ID, title: '课堂', component: SessionPanel, order: 10 }),
     ].filter(stop => stop !== undefined)

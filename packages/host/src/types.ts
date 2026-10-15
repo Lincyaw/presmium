@@ -28,7 +28,9 @@ export interface HostAdapter {
 
 // ---------------------------------------------------------------------------
 // Sync transport port (K-06): how a network transport joins the host's
-// synchronized state. The slides host maps it onto Slidev's `addSyncMethod`.
+// synchronized state. The slides host maps it onto Slidev's `addSyncMethod`;
+// the web host has no synchronized state channels, so a transport added
+// there is never connected.
 // ---------------------------------------------------------------------------
 
 /** Publishes local state; `fromRemote` is true when the change itself came from a transport. */
@@ -53,7 +55,7 @@ export interface SyncTransports {
   add(transport: SyncTransport): Unsubscribe
 }
 
-/** Host service of the slides form; absent in the document form. */
+/** Host service of both forms; only the slides form has channels (see above). */
 export const SYNC_TRANSPORTS = defineService<SyncTransports>('presmium.syncTransports')
 
 // ---------------------------------------------------------------------------

@@ -13,10 +13,10 @@ slides: { routeAlias: session }
 - **结束课堂**：主讲结束后，学习者看到课堂已结束
 :::
 
-课堂服务由 `presmium-classroom-server` 提供，地址写在文稿 frontmatter 的 `presmium.session.server` 中，例如 `ws://localhost:1234`。没有配置课堂服务时，文稿照常放映与阅读，课堂按钮显示“未连接”。
+课堂服务由 `@presmium/classroom-server` 包的命令 `presmium-classroom-server` 提供，地址写在文稿 frontmatter 的 `presmium.session.server` 中，例如 `ws://localhost:1234`。没有配置课堂服务时，文稿照常放映与阅读，课堂按钮显示“未连接”。在本仓库中这样启动课堂服务：
 
 ```sh
-pnpm exec presmium-classroom-server --port 1234
+pnpm --filter @presmium/classroom-server start --port 1234
 ```
 
 (session-follow)=

@@ -1,12 +1,9 @@
 /**
- * The classroom document: one Yjs document per room, shared through the
- * classroom server. It holds the classroom record (`session`), the
- * collections of the `classroomStore` service (`store:<name>`) and, in the
- * slides form, the presenter's synchronized Slidev state (`sync:<channel>`).
- * Who is connected is not in the document but in the clients' awareness.
+ * The classroom record and its rules, as plain data. The classroom document
+ * that holds it (one Yjs document per room) is in `../client/document.ts`.
+ * Who is connected is not in the record but in the clients' awareness.
  */
 import type { Participant, SessionStatus } from '@presmium/kernel'
-import type * as Y from 'yjs'
 
 /** A place in the deck, as the hosts' navigation service gives it: section (slide) number, step, view. */
 export interface Position {
@@ -29,49 +26,28 @@ export interface SessionRecord {
   endedAt?: number
 }
 
-const SESSION = 'session'
-
-/** The classroom record; observe it for changes. */
-export function sessionMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap(SESSION)
-}
-
-export function readSession(doc: Y.Doc): SessionRecord {
-  return doc.getMap(SESSION).toJSON() as SessionRecord
-}
-
 /** A room the presenter has not started yet counts as active, so learners who come early stay in. */
 export function sessionStatus(record: SessionRecord): Exclude<SessionStatus, 'idle'> {
   return record.status === 'ended' ? 'ended' : 'active'
 }
 
-export function startSession(doc: Y.Doc, presenter: Participant, now: number): void {
-  const session = doc.getMap(SESSION)
-  doc.transact(() => {
-    session.set('status', 'active')
-    session.set('presenter', presenter.id)
-    session.set('presenterName', presenter.name)
-    session.set('startedAt', now)
-  })
+/** The entries a presenter writes when starting a classroom. */
+export function started(presenter: Participant, now: number): SessionRecord {
+  return { status: 'active', presenter: presenter.id, presenterName: presenter.name, startedAt: now }
 }
 
-export function endSession(doc: Y.Doc, now: number): void {
-  const session = doc.getMap(SESSION)
-  doc.transact(() => {
-    session.set('status', 'ended')
-    session.set('endedAt', now)
-  })
+/** The entries written when the classroom ends. */
+export function ended(now: number): SessionRecord {
+  return { status: 'ended', endedAt: now }
 }
 
 export function samePosition(a: Position | undefined, b: Position | undefined): boolean {
   return a?.slide === b?.slide && a?.step === b?.step && a?.view === b?.view
 }
 
-/** Records the presenter's position when it changed. */
-export function publishCursor(doc: Y.Doc, position: Position): void {
-  const session = doc.getMap(SESSION)
-  const cursor: Position = { slide: position.slide, step: position.step, ...position.view ? { view: position.view } : {} }
-  if (!samePosition(session.get('cursor') as Position | undefined, cursor)) session.set('cursor', cursor)
+/** A position as the record keeps it: no other fields, no empty view. */
+export function cursorOf(position: Position): Position {
+  return { slide: position.slide, step: position.step, ...position.view ? { view: position.view } : {} }
 }
 
 /** Where a learner should be now: the presenter's position while following an active classroom. */
@@ -80,31 +56,14 @@ export function followTarget(me: Participant | undefined, follow: FollowMode, re
   return record.cursor
 }
 
-/** A collection of the `classroomStore` service. */
-export function collection(doc: Y.Doc, name: string): Y.Map<unknown> {
-  return doc.getMap(`store:${name}`)
-}
-
-/** The state of a synchronized channel of the slides form (Slidev's navigation, drawings, ...). */
-export function channel(doc: Y.Doc, name: string): Y.Map<unknown> {
-  return doc.getMap(`sync:${name}`)
-}
-
 /** JSON copy of a value, e.g. of a reactive state, as the document stores it. */
 export function plain<T>(value: T): T {
   return value === undefined ? value : JSON.parse(JSON.stringify(value)) as T
 }
 
-/** Writes the entries of a channel state that changed, in one transaction. */
-export function writeChannel(doc: Y.Doc, name: string, state: Readonly<Record<string, unknown>>): void {
-  const map = channel(doc, name)
-  const next = plain(state)
-  doc.transact(() => {
-    for (const [key, value] of Object.entries(next)) {
-      if (value === undefined) continue
-      if (JSON.stringify(map.get(key)) !== JSON.stringify(value)) map.set(key, value)
-    }
-  })
+/** The entries of `next` that differ from what `current` gives for their key (undefined values left out). */
+export function changedEntries(current: (key: string) => unknown, next: Readonly<Record<string, unknown>>): [string, unknown][] {
+  return Object.entries(plain(next)).filter(([key, value]) => value !== undefined && JSON.stringify(current(key)) !== JSON.stringify(value))
 }
 
 function isParticipant(value: unknown): value is Participant {

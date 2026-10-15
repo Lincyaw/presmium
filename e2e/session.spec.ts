@@ -30,9 +30,20 @@ test('without a classroom server the deck shows and reads as before, and the ses
   await page.keyboard.press('ArrowRight')
   await expect(present(page)).toHaveAttribute('data-step', '1')
 
+  // Both forms register the same session plugin, and it starts in both.
+  const sessionPlugins = async () => {
+    await page.locator('.pm-presenter-panels summary').click()
+    const plugins = page.locator('.pm-start-report [data-plugin^="presmium.session"]')
+    await expect(plugins).toHaveCount(1)
+    await expect(plugins).toHaveAttribute('data-plugin', 'presmium.session')
+    await expect(plugins).toHaveAttribute('data-status', 'started')
+  }
+  await page.goto(`${WEB}/session.html?view=presenter&section=session`)
+  await sessionPlugins()
+
   // The slides: the presenter view's panel says the same; the slides still step.
   await page.goto(`${SLIDES}/presenter/session`)
-  await page.locator('.pm-presenter-panels summary').click()
+  await sessionPlugins()
   await expect(page.locator('[data-panel="presmium.session"]').getByRole('status')).toHaveText(/^未连接/)
   await page.goto(`${SLIDES}/session`)
   await expect(page.locator('.slidev-page').getByRole('heading', { name: '课堂会话' })).toBeVisible()

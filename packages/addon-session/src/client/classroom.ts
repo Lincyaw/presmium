@@ -4,32 +4,17 @@
  * y-websocket provider. The presenter publishes the position of their window
  * (the hosts' `navigation` service); learners who follow are moved there. In
  * the slides form the presenter's Slidev state (navigation, drawings, ...)
- * also reaches the learners, as a `SyncTransport`.
+ * also reaches the learners, as a `SyncTransport`. The document's layout is
+ * in `./document.ts`.
  */
 import type { Navigation, SyncTransport } from '@presmium/host'
 import type { ClassroomStore, Participant, Role, Unsubscribe } from '@presmium/kernel'
 import { watch } from 'vue'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
-import {
-  channel,
-  collection,
-  endSession,
-  followTarget,
-  joinRequest,
-  joinUrl,
-  participantsOf,
-  plain,
-  publishCursor,
-  readSession,
-  roomId,
-  samePosition,
-  sessionMap,
-  sessionStatus,
-  startSession,
-  writeChannel,
-} from '../domain/index.ts'
+import { followTarget, joinRequest, joinUrl, participantsOf, plain, roomId, samePosition, sessionStatus } from '../domain/index.ts'
 import type { ClassroomSession, ClassroomSnapshot, FollowMode, Position } from '../domain/index.ts'
+import { channel, collection, endSession, publishCursor, readSession, sessionMap, startSession, writeChannel } from './document.ts'
 
 export interface ClassroomOptions {
   /** WebSocket URL of the classroom server; none: creating and joining fail. */
@@ -47,7 +32,7 @@ export interface ClassroomOptions {
 export interface Classroom {
   session: ClassroomSession
   store: ClassroomStore
-  /** Joins the slides form's synchronized state to the classroom (the `syncTransports` service). */
+  /** Joins the host's synchronized state to the classroom (the `syncTransports` service). */
   transport: SyncTransport
   /** Joins the classroom of a join link (`?room=&name=`), or the one this tab was in before a reload. */
   resume(search: string): Promise<void>
@@ -68,13 +53,6 @@ interface Link {
 }
 
 const STORAGE_KEY = 'presmium.session'
-
-const transports = new WeakMap<object, SyncTransport>()
-
-/** The synchronized-state transport of a session service created by `createClassroom`. */
-export function classroomTransport(session: unknown): SyncTransport | undefined {
-  return typeof session === 'object' && session !== null ? transports.get(session) : undefined
-}
 
 function randomId(bytes: number): string {
   return roomId(crypto.getRandomValues(new Uint8Array(bytes)))
@@ -345,7 +323,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   }
 
   const stopPublishing: Unsubscribe = navigation ? watch(navigation.position, publish) : () => {}
-  transports.set(session, transport)
 
   return {
     session,

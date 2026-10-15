@@ -1,4 +1,4 @@
-import { createPresenterPanels, createToolbar, installHost, NAVIGATION, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, startPresmium, TOOLBAR } from '@presmium/host'
+import { createPresenterPanels, createToolbar, installHost, NAVIGATION, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, startPresmium, SYNC_TRANSPORTS, TOOLBAR } from '@presmium/host'
 import { PRESENTER_PANELS } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
@@ -10,7 +10,7 @@ import type { Component } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
 import { offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
-import { createViewerHost, createViewerNavigation } from './host.ts'
+import { createViewerHost, createViewerNavigation, viewerSyncTransports } from './host.ts'
 import { PresmiumPage, ViewMenu } from './page.ts'
 import './style.css'
 
@@ -37,6 +37,7 @@ async function startKernel(loaders: ThemeInput['plugins'], config: Record<string
     config,
     beforeStart(kernel) {
       kernel.provide(PRESENTER_PANELS, createPresenterPanels())
+      kernel.provide(SYNC_TRANSPORTS, viewerSyncTransports)
       kernel.provide(NAVIGATION, createViewerNavigation(viewer))
       kernel.provide(TOOLBAR, createToolbar())
     },
