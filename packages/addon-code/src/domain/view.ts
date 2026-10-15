@@ -1,34 +1,19 @@
+import type { CodeOrigin, CodeVariant } from '@presmium/kernel'
 import type { Snippet } from './regions.ts'
 
 /**
- * Props of `<PmCodeRef>`, the bar the slides show above a code reference:
- * where the code comes from, its link and whether the pinned code drifted.
- * The web and notebook renderers show the code node's `origin` instead.
+ * What a code reference records in its code node besides the IR's own
+ * fields: whether pinned code still matches the working tree, and the
+ * permalink of each version. The renderers show them with the origin.
  */
-export interface CodeRefView {
-  anchor: string
-  /** Workspace-relative path. */
-  file?: string
-  /** Line range in the file, e.g. `12-20`. */
-  lines?: string
-  /** Full hash of the commit the code was read from. */
-  commit?: string
-  pinned?: boolean
-  /** Permalink; absent when no remote repository is known. */
-  href?: string
-  /** For pinned code: whether the working tree still has the same code. */
+export interface CodeRefOrigin extends CodeOrigin {
+  /** For pinned code: `drifted` when the working tree has other code (P-14). */
   drift?: 'synced' | 'drifted'
-  error?: string
-  /** Versions shown one per step. */
-  variants?: VariantView[]
-  /** Step of the section at which the code appears; version k shows at `at + k`. */
-  at?: number
 }
 
-export interface VariantView {
-  commit: string
-  lines: string
-  href?: string
+export interface CodeRefVariant extends CodeVariant {
+  /** Link to the version's lines at its commit (P-13). */
+  permalink?: string
 }
 
 /** Step names that highlight no unit in particular. */
@@ -51,8 +36,4 @@ export function highlightSteps(steps: string[], units: Snippet['units']): number
 /** The units of a snippet as IR `CodeOrigin.units`. */
 export function unitRecord(units: Snippet['units']): Record<string, { startLine: number, endLine: number }> {
   return Object.fromEntries([...units].map(([name, { from, to }]) => [name, { startLine: from, endLine: to }]))
-}
-
-export function lineRange(start: number, end: number): string {
-  return end > start ? `${start}-${end}` : `${start}`
 }

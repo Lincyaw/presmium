@@ -18,6 +18,25 @@ export function registerPresmiumPlugin(plugin: PluginDefinition): void {
   else registered.push(plugin)
 }
 
+function isPluginDefinition(value: unknown): value is PluginDefinition {
+  const plugin = value as Partial<PluginDefinition> | null
+  return typeof plugin === 'object' && plugin !== null && typeof plugin.setup === 'function' && typeof plugin.manifest?.id === 'string'
+}
+
+/**
+ * The kernel plugins of a plugin package's browser entry, `src/client/plugin.ts`,
+ * from which both hosts register them: plugin definitions exported by default
+ * or by name, single or in arrays, and the definitions returned by an exported
+ * `presmiumPlugins(config)` for the deck's `presmium` configuration (plugins
+ * that only start when the deck asks for them).
+ */
+export function pluginsOf(module: unknown, config: Record<string, unknown> = {}): PluginDefinition[] {
+  const exports = (module ?? {}) as Record<string, unknown>
+  const declared = typeof exports.presmiumPlugins === 'function' ? [(exports.presmiumPlugins as (config: Record<string, unknown>) => unknown)(config)] : []
+  const values = [...Object.values(exports), ...declared].flatMap(v => (Array.isArray(v) ? v : [v]))
+  return [...new Set(values.filter(isPluginDefinition))]
+}
+
 export interface StartOptions {
   mode: PresentationMode
   /** The headmatter `presmium` object. */

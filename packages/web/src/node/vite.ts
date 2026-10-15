@@ -1,6 +1,7 @@
 /**
  * Vite plugin of the generated VitePress project. It runs inside the
- * VitePress process, so it imports Node built-ins and the pure domain only.
+ * VitePress process, so it imports Node built-ins, MiniSearch and the pure
+ * domain only.
  *
  * - `virtual:presmium/ir` is the IR document, read from the file the renderer writes.
  * - In the dev server, live updates arrive from the `presmium dev` process over
@@ -9,10 +10,27 @@
  *   invalidated, so a page loaded later gets the new IR, but no reload is sent.
  * - `GET /__presmium/source?file=&line=` asks the `presmium dev` process to
  *   open a source file in the author's editor (K-11).
+ * - In the dev server the local search index follows the edits too. VitePress
+ *   1.6 indexes a page only at startup there (its update of a changed page
+ *   reads the wrong path and keeps the old entries), so the dev server serves
+ *   its own index of the same shape: MiniSearch over the documents the
+ *   renderer writes (a section each), with the deck's tokenizer, in the two
+ *   modules the search box imports. The loader of the index module imports
+ *   the index under a new URL at each call, so a search box opened after an
+ *   update loads the current index (the browser keeps a module per URL), and
+ *   each live update hot updates the index module for a search box that is
+ *   open (it accepts that module). Builds index with VitePress (`_render`).
+ *
+ *   Known risk: the two module ids and the search box's hot update are
+ *   VitePress 1.6 internals, not its documented API. The dev search case of
+ *   e2e/viewer.spec.ts fails when they change; drop the override once
+ *   VitePress re-indexes changed pages in dev.
  */
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
+import MiniSearch from 'minisearch'
 import { SOURCE_ENDPOINT } from '../domain/links.ts'
+import { tokenize } from '../domain/search.ts'
 
 export const IR_MODULE = 'virtual:presmium/ir'
 export const UPDATE_EVENT = 'presmium:update'
@@ -28,29 +46,68 @@ export type DevMessage =
 interface Request { url?: string }
 interface Response { statusCode: number, end(): void }
 
+interface Module { id: string | null }
+
 /** The part of Vite's dev server the plugin uses. */
 interface DevServer {
   httpServer: { once(event: 'listening' | 'close', listener: () => void): unknown, address(): AddressInfo | string | null } | null
   middlewares: { use(path: string, handler: (req: Request, res: Response) => void): unknown }
-  moduleGraph: { getModuleById(id: string): unknown, invalidateModule(module: never): void }
+  moduleGraph: {
+    getModuleById(id: string): Module | undefined
+    invalidateModule(module: Module, seen?: Set<Module>, timestamp?: number, isHmr?: boolean): void
+  }
   ws: { send(event: string, data: unknown): void }
+  reloadModule(module: Module): Promise<void>
 }
 
-export function presmiumIR(irFile: string) {
+/**
+ * The search box's index module (the index of each locale, lazily) and the
+ * index of the site's only locale; VitePress resolves `@localSearchIndex…` to `/@localSearchIndex…`.
+ */
+const SEARCH_INDEX = '/@localSearchIndex'
+const SEARCH_INDEX_ROOT = `${SEARCH_INDEX}root`
+
+/** The local search index of the documents, as VitePress builds it: title, headings and text of each section. */
+function searchIndex(documentsFile: string): string {
+  const index = new MiniSearch({ fields: ['title', 'titles', 'text'], storeFields: ['title', 'titles'], tokenize })
+  index.addAll(JSON.parse(readFileSync(documentsFile, 'utf8')))
+  return JSON.stringify(index)
+}
+
+export function presmiumIR(irFile: string, searchDocuments: string) {
+  let dev = false
   return {
     name: 'presmium:ir',
+    // Its search index modules come before VitePress's.
+    enforce: 'pre' as const,
     resolveId(id: string) {
       return id === IR_MODULE ? RESOLVED : undefined
     },
     load(id: string) {
-      return id === RESOLVED ? `export default JSON.parse(${JSON.stringify(readFileSync(irFile, 'utf8'))})` : undefined
+      if (id === RESOLVED) return `export default JSON.parse(${JSON.stringify(readFileSync(irFile, 'utf8'))})`
+      // Hot updates add a timestamp to the module ids.
+      const module = dev ? id.split('?')[0] : undefined
+      // Relative to the index module, so under the site's base; Vite drops the `t` query.
+      if (module === SEARCH_INDEX) return `export default { root: () => import(/* @vite-ignore */ ${JSON.stringify(`.${SEARCH_INDEX_ROOT}?t=`)} + Date.now()) }`
+      if (module === SEARCH_INDEX_ROOT) return `export default ${JSON.stringify(searchIndex(searchDocuments))}`
+      return undefined
     },
     configureServer(server: DevServer) {
+      dev = true
+      const refreshSearch = () => {
+        const index = server.moduleGraph.getModuleById(SEARCH_INDEX)
+        // Not loaded before a page opens the search box.
+        if (!index) return
+        const root = server.moduleGraph.getModuleById(SEARCH_INDEX_ROOT)
+        if (root) server.moduleGraph.invalidateModule(root, new Set(), Date.now(), true)
+        void server.reloadModule(index)
+      }
       const receive = (message: DevMessage) => {
         if (message?.type !== 'presmium:update') return
         const module = server.moduleGraph.getModuleById(RESOLVED)
-        if (module) server.moduleGraph.invalidateModule(module as never)
+        if (module) server.moduleGraph.invalidateModule(module)
         server.ws.send(UPDATE_EVENT, message.update)
+        refreshSearch()
       }
       process.on('message', receive)
       server.httpServer?.once('close', () => process.off('message', receive))

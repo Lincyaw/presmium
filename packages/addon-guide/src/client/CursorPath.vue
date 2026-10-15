@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePrefersReducedMotion, useStepState } from '@presmium/host'
+import { usePrefersReducedMotion, useStepScope, useStepState } from '@presmium/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { PlannedWaypoint } from '../domain/index.ts'
 import { centerIn } from './geometry.ts'
@@ -10,8 +10,10 @@ import { resolveTarget, useTargetMark } from './targets.ts'
 const props = defineProps<{ plan: PlannedWaypoint[] }>()
 
 const plan = props.plan
-// Step 0 needs no registration: the host always has it.
-const steps = [...new Set(plan.map(point => point.at))].filter(step => step > 0)
+// Waypoint steps count from the cue's block. Step 0 needs no registration: it is the block's own
+// step; the others are registered with the host at their steps of the slide.
+const scope = useStepScope()
+const steps = computed(() => [...new Set(plan.map(point => point.at))].filter(step => step > 0).map(scope.step))
 // The cursor is at the last waypoint whose step has been reached; -1 before the first.
 const reached = plan.map(point => useStepState({ from: point.at }))
 const index = computed(() => reached.filter(state => state.value.reached).length - 1)

@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path'
 import type { IRBlock, IRDocument, RenderContext, Renderer } from '@presmium/kernel'
 import { diffDocuments } from '@presmium/viewer/domain'
 import launchEditor from 'launch-editor'
-import { rendererConfig } from '../domain/index.ts'
+import { offlineEnabled, rendererConfig } from '../domain/index.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument } from './publish.ts'
 import { siteFiles, write, writeSite } from './site.ts'
@@ -45,7 +45,7 @@ export const renderer: Renderer = {
     write(join(files.publicDir, 'ir.json'), JSON.stringify(published))
     const code = await vitepressBuild(files.root, ctx.outDir)
     if (code !== 0) throw new Error(`vitepress build exited with code ${code}`)
-    writeServiceWorker(ctx.outDir, options.base)
+    if (offlineEnabled(doc.config.presmium)) writeServiceWorker(ctx.outDir, options.base)
     return { outDir: ctx.outDir, skipped: [] }
   },
 
@@ -70,7 +70,8 @@ export const renderer: Renderer = {
         const update = diffDocuments(current, published)
         if (!update) return
         // Only changed files are written. The config never changes with the IR, so the server never restarts;
-        // the content goes to the pages over the WebSocket (a page's Markdown changes only with its title, hot updated).
+        // the content goes to the pages over the WebSocket (a page's Markdown changes only with its title or
+        // search text: hot updated, and indexed for search again).
         writeSite(workDir, { doc: published, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
         current = published
         server.send({ type: 'presmium:update', update })

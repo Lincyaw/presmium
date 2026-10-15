@@ -45,3 +45,8 @@
 .pm-presenter {
   z-index: calc(var(--vp-z-index-local-nav, 32) + 100);
 }
+
+/* The presenter panels (@presmium/host) lie over the presenter window. */
+:root {
+  --pm-presenter-panels-z: calc(var(--vp-z-index-local-nav, 32) + 110);
+}

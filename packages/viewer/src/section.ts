@@ -26,6 +26,12 @@ export interface PageTracker {
   add(section: Tracked): () => void
   /** Scrolls to a position; false when its section is not on this page. */
   scrollTo(position: Position): boolean
+  /**
+   * Remembers what is at the reading line: the step marker of a scrolly
+   * section, else the block or the section there. The returned function
+   * scrolls it back to the same place, e.g. after content above it changed.
+   */
+  hold(): () => void
   dispose(): void
 }
 
@@ -84,6 +90,29 @@ export function createPageTracker(report: (section: string, step?: number) => vo
       return () => {
         tracked.delete(section)
         if (tracked.size === 0) dispose()
+      }
+    },
+    hold() {
+      const line = window.innerHeight * STEP_LINE
+      let reading: { section: Tracked, top: number } | undefined
+      for (const section of tracked) {
+        const top = section.el.getBoundingClientRect().top
+        if (top <= line && (!reading || top > reading.top)) reading = { section, top }
+      }
+      if (!reading) return () => {}
+      const { el } = reading.section
+      const above = (candidates: HTMLElement[]) => candidates.filter(c => c.getBoundingClientRect().top <= line).at(-1)
+      const anchor = reading.section.layout() === 'scrolly'
+        ? above(markers(el)) ?? el
+        : [...el.querySelectorAll<HTMLElement>('.pm-block')].find(b => b.getBoundingClientRect().top <= line && b.getBoundingClientRect().bottom > line) ?? el
+      const top = anchor.getBoundingClientRect().top
+      return () => {
+        const moved = anchor.isConnected ? anchor.getBoundingClientRect().top - top : 0
+        if (Math.abs(moved) < 1) return
+        window.scrollBy({ top: moved, behavior: 'instant' })
+        // The reading position has not changed: nothing to report.
+        restoredY = window.scrollY
+        schedule()
       }
     },
     scrollTo(position) {

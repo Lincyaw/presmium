@@ -114,3 +114,15 @@ test('output recorded at compile time is shown with its code in the web form', a
   await expect(page.getByText('合计： 55').first()).toBeVisible()
   await expect(page.getByText('print("合计：", sum(squares))').first()).toBeVisible()
 })
+
+test('in the web form, code that also runs live runs again in the browser, with the Pyodide runtime the site serves', async ({ page }) => {
+  test.skip(!HAS_WEB, 'needs the web build (examples/demo/dist/web)')
+  await page.goto(`${WEB}/exec.html`)
+  const block = page.locator('.pm-section[data-section="exec-compile"] .pm-code-block[data-run="both"]')
+  const outputs = block.locator('.pm-outputs')
+  await expect(outputs).toHaveAttribute('data-source', 'recorded')
+  await block.getByRole('button', { name: '运行' }).click()
+  await expect(outputs).toHaveAttribute('data-source', 'live', RUNTIME)
+  await expect(outputs.locator('.pm-output__stdout')).toHaveText(`${COMPILED}\n`)
+  await expect(outputs.locator('.pm-output')).toHaveAttribute('data-executor', 'pyodide')
+})

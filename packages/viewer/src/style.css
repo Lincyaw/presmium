@@ -168,7 +168,8 @@
   margin: 1rem 0;
 }
 
-.pm-code-block__header {
+/* Where the code comes from; no faded text, so it keeps its contrast in every theme. */
+.pm-code-origin {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -177,19 +178,49 @@
   color: var(--pm-c-text-2);
 }
 
-.pm-code-block__title {
+.pm-code-origin__file,
+.pm-code-origin__commit,
+.pm-code-origin__variant {
   font-family: var(--vp-font-family-mono, monospace);
+  overflow-wrap: anywhere;
 }
 
-.pm-code-block__status {
+.pm-code-origin__variant[data-active] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.pm-code-origin__badge {
   padding: 0 0.4em;
   border-radius: 0.25rem;
-  color: var(--pm-c-warning);
   border: 1px solid currentColor;
+  color: var(--pm-c-warning);
 }
 
-.pm-code-block__permalink {
-  margin-left: auto;
+.pm-code-origin__badge[data-drift='synced'] {
+  color: var(--pm-c-text-2);
+}
+
+.pm-code-block__run {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.pm-code-block__run button {
+  padding: 0.125rem 0.75rem;
+  border: 1px solid var(--pm-c-brand);
+  border-radius: 0.25rem;
+  color: var(--pm-c-brand);
+}
+
+.pm-code-block__run button:disabled {
+  opacity: 0.6;
+}
+
+.pm-code-block__hint {
+  color: var(--pm-c-danger);
 }
 
 .pm-code-block__label {
@@ -294,6 +325,15 @@
 .pm-footnote {
   font-size: 0.875em;
   color: var(--pm-c-text-2);
+}
+
+/* Footnote marks show their label without adding it to the text of the page. */
+.pm-footnote-ref a::before {
+  content: '[' attr(data-label) ']';
+}
+
+.pm-footnote > sup::before {
+  content: attr(data-label);
 }
 
 .pm-component-missing {

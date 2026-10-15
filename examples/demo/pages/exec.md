@@ -50,10 +50,12 @@ print("x =", x)
 ## 编译时执行
 
 ```{code} python
-:run:
+:run: both
 squares = [n * n for n in range(1, 6)]
 print("平方：", squares)
 print("合计：", sum(squares))
 ```
 
 带 `:run:` 的代码在编译时由本机的 Python 执行，输出写入中间表示，随代码出现在网页、幻灯片与 notebook 中。结果按内容缓存在 `.presmium/freeze/`，代码不变就不再执行；缓存随文稿提交后，没有 Python 的机器也能构建出相同的输出。
+
+`:run: both` 还让网页中的代码块带上“运行”按钮：读者在浏览器中用 Pyodide 重新运行它，输出替换录制的结果。

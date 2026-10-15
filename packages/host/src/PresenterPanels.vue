@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { componentErrors, useService, useStartReport } from '@presmium/host'
+// The presenter panels (the `presenterPanels` service); each host shows them in its presenter view only.
 import { PRESENTER_PANELS } from '@presmium/kernel'
 import type { PresenterPanel } from '@presmium/kernel'
 import { computed, shallowRef, watchEffect } from 'vue'
+import { componentErrors } from './boundary.ts'
+import { useService, useStartReport } from './host.ts'
 
 const service = useService(PRESENTER_PANELS)
 const report = useStartReport()
@@ -43,14 +45,14 @@ const problems = computed(() => {
   position: fixed;
   left: 0.5rem;
   bottom: 5.5rem;
-  z-index: 100;
+  z-index: var(--pm-presenter-panels-z, 100);
   max-width: min(32rem, 45vw);
   max-height: 60vh;
   overflow: auto;
   padding: 0.25rem 0.75rem;
   border: 1px solid rgba(125, 125, 125, 0.4);
   border-radius: 0.375rem;
-  background: var(--slidev-theme-background, #fff);
+  background: var(--slidev-theme-background, var(--vp-c-bg, #fff));
   color: inherit;
   font-size: 0.8rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);

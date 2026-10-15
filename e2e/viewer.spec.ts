@@ -246,6 +246,56 @@ test.describe('presmium dev', () => {
     await expect(scrolly).toHaveAttribute('data-step', '2')
     expect(await page.evaluate(() => window.scrollY)).toBe(before)
   })
+
+  test('in the scrolly view, content added above the reading position keeps it in place', async ({ page }) => {
+    await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
+    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+    const marker = scrolly.locator('.pm-step[data-step="2"]')
+    await selectView(page, 'scrolly')
+    await scrollToStep(page, 'scrolly', 2)
+    const top = () => marker.evaluate(el => Math.round(el.getBoundingClientRect().top))
+    const before = await top()
+    await mark(page)
+
+    // Paragraphs added to the section above push the reading position down the page.
+    const added = Array.from({ length: 4 }, (_, i) => `上方新增的第 ${i + 1} 段讲解，让前一节变长。`).join('\n\n')
+    edit('搜索框支持中文分词', `${added}\n\n搜索框支持中文分词`)
+    await expect(page.locator('.pm-section[data-section="web"]')).toContainText('上方新增的第 4 段讲解')
+    await expect.poll(top).toBe(before)
+    await expect(scrolly).toHaveAttribute('data-step', '2')
+    expect(await marked(page)).toBe(true)
+  })
+
+  test('a keyword written while the server runs can be searched, with the search box closed or open', async ({ page }) => {
+    await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
+    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+    const input = page.getByRole('searchbox')
+    const result = page.getByRole('listbox').getByRole('option').first()
+    // The search index is updated in the page too: typing again finds the new keyword.
+    const find = (word: string) => expect(async () => {
+      await input.fill('')
+      await input.fill(word)
+      await expect(result).toBeVisible({ timeout: 1000 })
+    }).toPass({ timeout: 15_000 })
+    // The author has searched before editing.
+    await page.keyboard.press('Control+k')
+    await find('编译源码')
+    await page.keyboard.press('Escape')
+    await mark(page)
+
+    edit('第一步，编译源码。', '第一步，编译源码，也就是 Quokka 步骤。')
+    await expect(scrolly).toContainText('Quokka')
+    await page.keyboard.press('Control+k')
+    await find('quokka')
+    // An edit while the search box is open.
+    edit('第三步，发布站点。', '第三步，发布站点，也就是 Numbat 步骤。')
+    await expect(scrolly).toContainText('Numbat')
+    await find('numbat')
+
+    expect(await marked(page)).toBe(true)
+    await result.click()
+    await expect(page).toHaveURL(/\/web\.html#scrolly$/)
+  })
 })
 
 test.describe('a plugin that extends the IR runtime', () => {

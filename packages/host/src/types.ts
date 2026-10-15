@@ -5,7 +5,7 @@
  */
 import type { Ref } from 'vue'
 import { defineService } from '@presmium/kernel/contracts'
-import type { Cursor, PresentationMode, ServiceToken, StartReport, StepRange, StepState, Unsubscribe } from '@presmium/kernel/contracts'
+import type { Cursor, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@presmium/kernel/contracts'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
 
@@ -13,8 +13,12 @@ export interface HostAdapter {
   readonly mode: PresentationMode
   /** Must be called inside a component setup. */
   useCursor(): Readonly<Ref<Cursor>>
-  /** Must be called inside a component setup. */
-  useStepState(range: StepRange): Readonly<Ref<StepState>>
+  /**
+   * The current step of the slide or section that renders the calling
+   * component; `Infinity` where every step is shown (the document view).
+   * Must be called inside a component setup.
+   */
+  useStep(): Readonly<Ref<number>>
   /** Must be called inside a component setup. */
   useViewRole(): Readonly<Ref<ViewRole>>
   getService<T>(token: ServiceToken<T>): T | undefined

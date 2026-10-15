@@ -1,14 +1,14 @@
-import { usePrefersReducedMotion, useStepState } from '@presmium/host'
+import { usePrefersReducedMotion, useStepScope, useStepState } from '@presmium/host'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { cueRange, cueSteps } from '../domain/index.ts'
 import { useIsLive } from './live.ts'
 import { resolveTarget, useTargetMark } from './targets.ts'
 
-/** Props shared by `PmSpotlight` and `PmHint`. */
+/** Props shared by `PmSpotlight` and `PmHint`. Steps count from the cue's block (its step scope). */
 export interface CueProps {
   /** CSS selector of the target, looked up in the cue's slide. */
   target: string
-  /** First step (default 0). */
+  /** First step (default 0, the step its block appears at). */
   at?: number | string
   /** Step at which the cue ends (exclusive); open-ended when absent. */
   until?: number | string
@@ -43,6 +43,7 @@ export type CueLook = 'live' | 'inline'
 export function useCue(props: CueProps, attribute: string, show: ShowCue) {
   const range = cueRange(props.at, props.until)
   const state = useStepState(range)
+  const scope = useStepScope()
   const live = useIsLive()
   const reduced = usePrefersReducedMotion()
   /** An element of the cue component, from which the target is looked up. */
@@ -77,7 +78,8 @@ export function useCue(props: CueProps, attribute: string, show: ShowCue) {
     show(owner, undefined)
   })
 
-  return { anchor, look, steps: cueSteps(range) }
+  // Registered with the host at their steps of the slide.
+  return { anchor, look, steps: computed(() => cueSteps(range).map(scope.step)) }
 }
 
 function boxOf(element: Element): string {

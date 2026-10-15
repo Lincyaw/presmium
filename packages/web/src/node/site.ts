@@ -3,9 +3,10 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { IRDocument } from '@presmium/kernel'
-import { formOptions, pageMarkdown, searchMarkdown, sidebar, toPages } from '../domain/index.ts'
+import { formOptions, pageMarkdown, searchDocuments, searchMarkdown, sidebar, toPages } from '../domain/index.ts'
 import type { FormOptions, WebRendererConfig } from '../domain/index.ts'
 import { clientModules } from './addons.ts'
+import type { ClientModules } from './addons.ts'
 
 const CLIENT_ENTRY = fileURLToPath(new URL('../client/index.ts', import.meta.url))
 const SEARCH = fileURLToPath(new URL('../domain/search.ts', import.meta.url))
@@ -23,6 +24,8 @@ export function siteFiles(workDir: string) {
     root: join(workDir, 'site'),
     ir: join(workDir, 'ir.json'),
     search: join(workDir, 'search.json'),
+    /** The search documents of the dev server's own index (see ./vite.ts). */
+    searchDocuments: join(workDir, 'search-documents.json'),
     site: join(workDir, 'site.json'),
     publicDir: join(workDir, 'site', 'public'),
   }
@@ -71,7 +74,7 @@ export function siteData(doc: IRDocument): SiteData {
   }
 }
 
-function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>): string {
+function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, vite: readonly string[]): string {
   const site = {
     lang: options.lang,
     base: options.base,
@@ -85,11 +88,12 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>)
       darkModeSwitchLabel: '外观',
     },
   }
+  const imports = vite.map((file, i) => `import vite${i} from ${JSON.stringify(file)}\n`).join('')
   return `${GENERATED}
 import { readFileSync } from 'node:fs'
 import { searchableHtml, tokenize } from ${JSON.stringify(SEARCH)}
 import { presmiumIR } from ${JSON.stringify(VITE_PLUGIN)}
-
+${imports}
 const SEARCH_TEXTS = ${JSON.stringify(files.search)}
 const site = ${JSON.stringify(site, null, 2)}
 
@@ -99,8 +103,9 @@ site.title = data.title
 site.themeConfig.sidebar = data.sidebar
 site.themeConfig.presmium = { form: data.form }
 
+// The Vite plugins of the deck's plugin packages (their \`vite.config.ts\`, as in the slides form).
 site.vite = {
-  plugins: [presmiumIR(${JSON.stringify(files.ir)})],
+  plugins: [presmiumIR(${JSON.stringify(files.ir)}, ${JSON.stringify(files.searchDocuments)}), ...[${vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])],
   resolve: { dedupe: ['vue'] },
 }
 
@@ -144,8 +149,7 @@ export default createPresmiumTheme({ doc, components, plugins, viewers })
 }
 
 /** Plugin components, kernel plugins and viewer plugins, loaded lazily so the server render never runs them. */
-function addons(deckDir: string, plugins: readonly string[]): string {
-  const modules = clientModules(deckDir, plugins)
+function addons(modules: ClientModules): string {
   const components = [...modules.components].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
   const loaders = (files: string[]) => files.map(file => `  () => import(${JSON.stringify(file)}),`).join('\n')
   return `${GENERATED}
@@ -163,6 +167,11 @@ ${loaders(modules.viewers)}
 `
 }
 
+/** What the search index gets of each page (by its Markdown file, e.g. `core.md`): the IR text of its sections. */
+export function searchTexts(doc: IRDocument): Record<string, string> {
+  return Object.fromEntries(toPages(doc).map(page => [`${page.path}.md`, searchMarkdown(doc, page)]))
+}
+
 export interface SiteInput {
   /** The document as published (see `publishedDocument`). */
   doc: IRDocument
@@ -175,22 +184,24 @@ export interface SiteInput {
  * Writes the IR, the search texts, the site data and the VitePress project
  * (config, theme, one Markdown page per page of the document). Only files
  * whose content changed are written: in a dev server, editing the source
- * rewrites the IR (pushed to the pages) and at most the pages' Markdown
- * (hot updated); the config changes only with the renderer options, the
- * theme only with the plugins' client modules.
+ * rewrites the IR and the search documents (both pushed to the pages) and at
+ * most the pages' Markdown (hot updated); the config changes only with the
+ * renderer options and plugins, the theme only with the plugins' client modules.
  */
 export function writeSite(workDir: string, input: SiteInput): void {
   const files = siteFiles(workDir)
   const { doc } = input
   const pages = toPages(doc)
+  const modules = clientModules(input.deckDir, input.plugins)
   write(files.ir, JSON.stringify(doc))
-  write(files.search, JSON.stringify(Object.fromEntries(pages.map(page => [`${page.path}.md`, searchMarkdown(doc, page)]))))
+  write(files.search, JSON.stringify(searchTexts(doc)))
+  write(files.searchDocuments, JSON.stringify(searchDocuments(doc, input.options.base)))
   write(files.site, JSON.stringify(siteData(doc)))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(files.root)
-  write(join(files.root, '.vitepress/config.mjs'), config(input.options, files))
+  write(join(files.root, '.vitepress/config.mjs'), config(input.options, files, modules.vite))
   write(join(files.root, '.vitepress/theme/index.ts'), theme())
-  write(join(files.root, '.vitepress/theme/addons.ts'), addons(input.deckDir, input.plugins))
+  write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))
   const names = new Set(pages.map(page => `${page.path}.md`))
   for (const file of readdirSync(files.root).filter(f => f.endsWith('.md') && !names.has(f))) rmSync(join(files.root, file))
   for (const page of pages) write(join(files.root, `${page.path}.md`), pageMarkdown(page))

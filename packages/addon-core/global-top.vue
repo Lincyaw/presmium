@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { PmPresenterPanels } from '@presmium/host'
 import { useNav } from '@slidev/client'
-import PresenterPanels from './src/client/PresenterPanels.vue'
 
 const { isPresenter } = useNav()
 </script>
 
 <template>
-  <PresenterPanels v-if="isPresenter" />
+  <PmPresenterPanels v-if="isPresenter" />
 </template>

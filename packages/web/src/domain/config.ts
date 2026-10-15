@@ -52,6 +52,15 @@ export function formOptions(presmium: unknown, renderers?: unknown): FormOptions
   }
 }
 
+/** Plugin id of the publishing context; its `offline: false` turns offline support off in every form. */
+const PUBLISH_ID = 'presmium.publish'
+
+/** Whether the site works offline (a service worker); `presmium: { presmium.publish: { offline: false } }` turns it off. */
+export function offlineEnabled(presmium: unknown): boolean {
+  const publish = isRecord(presmium) ? presmium[PUBLISH_ID] : undefined
+  return !(isRecord(publish) && publish.offline === false)
+}
+
 /** The web renderer's options from `renderers.web`. */
 export function rendererConfig(config: Record<string, unknown>): WebRendererConfig {
   const base = typeof config.base === 'string' ? `/${config.base.replace(/^\/+|\/+$/g, '')}/`.replace('//', '/') : '/'

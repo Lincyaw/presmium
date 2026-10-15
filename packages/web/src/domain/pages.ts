@@ -84,3 +84,26 @@ function sectionSearchText(section: IRSection): string {
 export function searchMarkdown(doc: IRDocument, page: WebPage): string {
   return page.sections.flatMap(id => doc.sections.filter(s => s.id === id)).map(sectionSearchText).join('\n\n')
 }
+
+/** A document of the local search index: one per section, as VitePress indexes a page per heading. */
+export interface SearchDocument {
+  /** Link of the section: its page and its anchor. */
+  id: string
+  title: string
+  /** Headings above the section; none, sections are the top headings of a page. */
+  titles: string[]
+  text: string
+}
+
+/** The search documents of a document: each section's title and text, linked under the site `base`. */
+export function searchDocuments(doc: IRDocument, base: string): SearchDocument[] {
+  return toPages(doc).flatMap((page) => {
+    const path = page.path === 'index' ? '' : `${page.path}.html`
+    return page.sections.flatMap(id => doc.sections.filter(s => s.id === id)).map(section => ({
+      id: `${base}${path}#${section.id}`,
+      title: section.title,
+      titles: [],
+      text: section.blocks.map(blockText).filter(Boolean).join('\n'),
+    }))
+  })
+}

@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { PmBoundary, useStepState } from '@presmium/host'
+import { PmBoundary, useStepScope, useStepState } from '@presmium/host'
 import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{ steps?: string[] }>(), {
   steps: () => ['解析文稿', '启动插件', '渲染页面'],
 })
 
-// Step i (1-based) is revealed by its v-click and highlighted while it is the current step.
-const states = props.steps.map((_, i) => useStepState({ from: i + 1, to: i + 2 }))
+// N labels take N internal steps after the initial state (`:span: N`): internal step k
+// reveals label k and highlights it until the next one; the last stays highlighted.
+// Steps count from the block (`useStepState`); each is registered with the host at its
+// step of the slide (`scope.step`).
+const scope = useStepScope()
+const states = props.steps.map((_, i) => useStepState({ from: i + 1, to: i + 1 < props.steps.length ? i + 2 : undefined }))
 const reached = computed(() => states.filter(state => state.value.reached).length)
 
 function status(i: number): string {
@@ -19,7 +23,7 @@ function status(i: number): string {
 <template>
   <PmBoundary name="PmDemoStepper">
     <ol class="pm-demo-stepper" :data-step="reached">
-      <li v-for="(label, i) in steps" :key="label" v-click="i + 1" :data-status="status(i)">
+      <li v-for="(label, i) in steps" :key="label" v-click="scope.step(i + 1)" :data-status="status(i)">
         {{ label }}
       </li>
     </ol>

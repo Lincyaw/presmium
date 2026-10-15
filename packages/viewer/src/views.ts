@@ -62,6 +62,17 @@ export const ViewHost = defineComponent({
       viewer.go({ section: props.sections.includes(hash) ? hash : props.sections[0]!, step: 0 })
     })
 
+    // A live update keeps what the reader is reading where it is, even when content above it changed (K-11).
+    watch(viewer.doc, async () => {
+      if (!isPage() || viewer.restoring.value) return
+      const restore = tracker.hold()
+      await nextTick()
+      restore()
+      // Content that lays out later (fonts, highlighted code) may move it again.
+      await frame()
+      restore()
+    }, { flush: 'pre' })
+
     watch([viewer.restoring, viewer.view], async () => {
       if (!viewer.restoring.value || !isPage()) return
       await nextTick()

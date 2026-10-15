@@ -76,9 +76,3 @@ export function cueRange(at?: number | string, until?: number | string): StepRan
 export function cueSteps(range: StepRange): number[] {
   return range.from > 0 ? [range.from] : []
 }
-
-/** Shifts the steps of a cue by `offset`: from its block's own steps to the steps of its section. */
-export function shiftCue<T extends { at?: number | string, until?: number | string }>(cue: T, offset: number): T {
-  const shift = (value: number | string | undefined) => (step(value) === undefined ? value : step(value)! + offset)
-  return { ...cue, at: shift(cue.at ?? 0), ...cue.until === undefined ? {} : { until: shift(cue.until) } }
-}

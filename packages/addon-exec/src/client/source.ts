@@ -14,7 +14,7 @@ export function markLine(container: HTMLElement | undefined, line: number | unde
   container?.querySelectorAll('code .line').forEach((el, i) => el.classList.toggle(className, i + 1 === line))
 }
 
-/** Lets step marks report the state of their click to the component that renders them. */
-export type RegisterStepMark = (click: number, state: Readonly<Ref<StepState>>) => () => void
+/** Lets step marks report the state of their internal step to the component that renders them. */
+export type RegisterStepMark = (step: number, state: Readonly<Ref<StepState>>) => () => void
 
 export const STEP_MARKS: InjectionKey<RegisterStepMark> = Symbol('presmium.exec.stepMarks')

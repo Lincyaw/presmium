@@ -1,11 +1,16 @@
 import type { PresenterPanel, PresenterPanels } from '@presmium/kernel'
+import StartReportPanel from './StartReportPanel.vue'
 
-/** The `presenterPanels` service: panels ordered by `order`, then by registration. */
+/**
+ * The `presenterPanels` service of a host: panels ordered by `order`, then by
+ * registration, the kernel start report first. Each host provides it and shows
+ * the panels (`PmPresenterPanels`) in its presenter view only.
+ */
 export function createPresenterPanels(): PresenterPanels {
   const panels = new Map<string, PresenterPanel>()
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach(listener => listener())
-  return {
+  const service: PresenterPanels = {
     register(panel) {
       if (panels.has(panel.id)) throw new Error(`presenter panel ${panel.id} is already registered`)
       panels.set(panel.id, panel)
@@ -26,4 +31,6 @@ export function createPresenterPanels(): PresenterPanels {
       }
     },
   }
+  service.register({ id: 'presmium.core.start-report', title: '启动报告', component: StartReportPanel, order: -1 })
+  return service
 }

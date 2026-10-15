@@ -63,10 +63,10 @@ test('the link points to the remote repository at the pinned commit and line ran
   const start = source.indexOf('// #region checkout') + 2
   const end = source.indexOf('// #endregion checkout')
 
-  const ref = (await openSlide(page, 'code-steps', '分步高亮')).locator('.pm-coderef[data-anchor$="#checkout"]')
-  await expect(ref.locator('a.pm-coderef__file')).toHaveAttribute('href', `${option('repo')}/blob/${commit}/${FILE}#L${start}-L${end}`)
-  await expect(ref.locator('.pm-coderef__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
-  await expect(ref.locator('.pm-coderef__badge')).toHaveText('已锁定')
+  const ref = (await openSlide(page, 'code-steps', '分步高亮')).locator('.pm-code-origin[data-anchor$="#checkout"]')
+  await expect(ref.locator('a.pm-code-origin__file')).toHaveAttribute('href', `${option('repo')}/blob/${commit}/${FILE}#L${start}-L${end}`)
+  await expect(ref.locator('.pm-code-origin__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
+  await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
 })
 
 test('the multi-version code block switches versions with the steps', async ({ page }) => {
@@ -74,11 +74,11 @@ test('the multi-version code block switches versions with the steps', async ({ p
   const versions = ['for (let i = 0; i < prices.length; i++)', 'for (const price of prices)', 'prices.reduce((sum, price) => sum + price, 0)']
 
   const slide = await openSlide(page, 'code-variants', '多版本切换')
-  const ref = slide.locator('.pm-coderef[data-anchor$="#total"]')
+  const ref = slide.locator('.pm-code-origin[data-anchor$="#total"]')
   const code = slide.locator('.slidev-code')
-  const active = ref.locator('.pm-coderef__variant[data-active]')
+  const active = ref.locator('.pm-code-origin__variant[data-active]')
   for (const [i, commit] of commits.entries()) {
-    await expect(ref.locator('.pm-coderef__variant').nth(i)).toHaveAttribute('href', new RegExp(`/blob/${commit}/${FILE}#L\\d+-L\\d+$`))
+    await expect(ref.locator('.pm-code-origin__variant').nth(i)).toHaveAttribute('href', new RegExp(`/blob/${commit}/${FILE}#L\\d+-L\\d+$`))
   }
 
   for (const step of [0, 1, 2]) {
@@ -99,4 +99,8 @@ test('the web form links the code to the remote repository at the pinned commit'
   const link = page.locator(`a[href^="${option('repo')}/blob/${commit}/${FILE}#L"]`)
   await expect(link.first()).toBeVisible()
   await expect(page.getByText('const discount = coupon').first()).toBeVisible()
+  // The same origin bar as in the slides: the pinned commit and whether the code drifted.
+  const ref = page.locator('.pm-section[data-section="code-steps"] .pm-code-origin[data-anchor$="#checkout"]')
+  await expect(ref.locator('.pm-code-origin__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
+  await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
 })

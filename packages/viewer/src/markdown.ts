@@ -43,6 +43,7 @@ function handlers(footnoteHref: (identifier: string) => string = identifier => `
     element(tagName, className ? { className: [className] } : {}, state.all(node))
   const value = (node: { value?: unknown }) => (typeof node.value === 'string' ? node.value : '')
   const identifier = (node: { identifier?: unknown, label?: unknown }) => String(node.identifier ?? node.label)
+  const label = (node: { identifier?: unknown, label?: unknown }) => String(node.label ?? node.identifier)
   const custom: Record<string, Handler> = {
     math: (_, node) => element('pm-math', { pmTex: value(node), pmDisplay: true }),
     inlineMath: (_, node) => element('pm-math', { pmTex: value(node), pmDisplay: false }),
@@ -56,11 +57,13 @@ function handlers(footnoteHref: (identifier: string) => string = identifier => `
       return element('aside', { className: ['pm-admonition', `pm-admonition--${kind}`] }, [...title, ...children])
     },
     admonitionTitle: wrap('p', 'pm-admonition__title'),
+    // Footnote marks are not text of the document (the IR has none, nor has the search index):
+    // the label shows through CSS, from `data-label`, and names the link for assistive technology.
     footnoteReference: (_, node) => element('sup', { className: ['pm-footnote-ref'] }, [
-      element('a', { href: footnoteHref(identifier(node)) }, [text(`[${String(node.label ?? node.identifier)}]`)]),
+      element('a', { href: footnoteHref(identifier(node)), dataLabel: label(node), ariaLabel: `脚注 ${label(node)}` }, []),
     ]),
     footnoteDefinition: (state, node) => element('div', { id: footnoteId(identifier(node)), className: ['pm-footnote'] }, [
-      element('sup', {}, [text(String(node.label ?? node.identifier))]),
+      element('sup', { dataLabel: label(node) }, []),
       ...state.all(node),
     ]),
     container: wrap('figure', 'pm-figure'),
