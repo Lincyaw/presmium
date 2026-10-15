@@ -1,0 +1,16 @@
+{
+  "name": "@presmium/viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "IR runtime: dynamic rendering of the IR in the browser, runtime views, live updates",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "vue": "^3.5.42"
+  }
+}

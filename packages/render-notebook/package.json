@@ -1,0 +1,14 @@
+{
+  "name": "@presmium/render-notebook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Notebook renderer: IR to Jupyter .ipynb (nbformat 4)",
+  "exports": {
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@presmium/kernel": "workspace:*"
+  }
+}

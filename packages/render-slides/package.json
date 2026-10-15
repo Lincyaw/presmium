@@ -1,0 +1,17 @@
+{
+  "name": "@presmium/render-slides",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Slides renderer: IR to a Slidev project (optional high-fidelity renderer)",
+  "exports": {
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "@slidev/cli": "53.0.0",
+    "@slidev/theme-default": "^0.25.0",
+    "yaml": "^2.9.1"
+  }
+}

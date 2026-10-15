@@ -25,7 +25,10 @@
     "@presmium/slidev-addon-content": "workspace:*",
     "@presmium/slidev-addon-publish": "workspace:*",
     "@presmium/slidev-addon-session": "workspace:*",
-    "@presmium/slidev-addon-classroom": "workspace:*"
+    "@presmium/slidev-addon-classroom": "workspace:*",
+    "@presmium/render-slides": "workspace:*",
+    "@presmium/render-notebook": "workspace:*",
+    "@presmium/viewer": "workspace:*"
   },
   "devDependencies": {
     "playwright-chromium": "1.64.1"
