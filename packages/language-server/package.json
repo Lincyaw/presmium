@@ -1,0 +1,27 @@
+{
+  "name": "@presmium/language-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Language server for Presmium decks (P-80, P-81): diagnostics, anchor definitions and hovers, completion, preview sync",
+  "bin": {
+    "presmium-language-server": "./bin/presmium-language-server.mjs"
+  },
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./protocol": "./src/domain/protocol.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/compiler": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/web": "workspace:*",
+    "jiti": "^2.7.0",
+    "vscode-languageserver": "10.1.2",
+    "vscode-languageserver-textdocument": "1.0.15"
+  }
+}

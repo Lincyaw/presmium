@@ -1,0 +1,65 @@
+{
+  "name": "presmium-vscode",
+  "displayName": "Presmium",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "publisher": "presmium",
+  "description": "Presmium decks in VS Code: diagnostics, anchor navigation and completion from the Presmium language server, and a presmium dev preview that follows the cursor",
+  "categories": [
+    "Programming Languages"
+  ],
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "presmium.openPreview",
+        "title": "Open Preview to the Side",
+        "category": "Presmium",
+        "icon": "$(open-preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "presmium.openPreview",
+          "when": "editorLangId == markdown",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Presmium",
+      "properties": {
+        "presmium.server.runtime": {
+          "type": "string",
+          "default": "node",
+          "description": "Node.js executable that runs the language server (Node.js 22.18 or later)."
+        },
+        "presmium.server.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to presmium-language-server.mjs. By default the one of @presmium/language-server installed in the workspace, else the extension's own."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@presmium/language-server": "workspace:*",
+    "vscode-languageclient": "10.1.2"
+  },
+  "devDependencies": {
+    "@types/vscode": "1.91.0",
+    "esbuild": "0.21.5"
+  }
+}
