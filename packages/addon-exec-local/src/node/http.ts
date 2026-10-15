@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { workspacePath } from '../domain/index.ts'
+import { text } from './messages.ts'
 
 export class HttpError extends Error {
   readonly status: number
@@ -18,12 +19,12 @@ const MAX_BODY = 1 << 20
  * does not allow foreign origins.
  */
 export async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
-  if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError(415, '请求体必须是 JSON')
+  if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError(415, text().notJson)
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of req as AsyncIterable<Buffer>) {
     size += chunk.length
-    if (size > MAX_BODY) throw new HttpError(413, '请求体过大')
+    if (size > MAX_BODY) throw new HttpError(413, text().tooLarge)
     chunks.push(chunk)
   }
   let body: unknown
@@ -31,9 +32,9 @@ export async function readJson(req: IncomingMessage): Promise<Record<string, unk
     body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
   }
   catch {
-    throw new HttpError(400, '请求体不是有效的 JSON')
+    throw new HttpError(400, text().invalidJson)
   }
-  if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new HttpError(400, '请求体必须是 JSON 对象')
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new HttpError(400, text().notObject)
   return body as Record<string, unknown>
 }
 
@@ -45,13 +46,13 @@ export function sendJson(res: ServerResponse, status: number, body: unknown): vo
 
 export function requireString(body: Record<string, unknown>, key: string): string {
   const value = body[key]
-  if (typeof value !== 'string') throw new HttpError(400, `缺少字段 ${key}`)
+  if (typeof value !== 'string') throw new HttpError(400, text().missingField(key))
   return value
 }
 
 export function optionalString(body: Record<string, unknown>, key: string): string | undefined {
   const value = body[key]
-  if (value !== undefined && typeof value !== 'string') throw new HttpError(400, `字段 ${key} 必须是字符串`)
+  if (value !== undefined && typeof value !== 'string') throw new HttpError(400, text().notString(key))
   return value
 }
 
@@ -60,7 +61,7 @@ export function requirePath(file: string): string {
   try {
     return workspacePath(file)
   }
-  catch (error) {
-    throw new HttpError(400, (error as Error).message)
+  catch {
+    throw new HttpError(400, text().outsideWorkspace(file))
   }
 }

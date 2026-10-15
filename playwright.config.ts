@@ -28,7 +28,11 @@ export default defineConfig({
   reporter: [['list']],
   use: { trace: 'retain-on-failure' },
   projects: [
-    { name: 'chromium', use: devices['Desktop Chrome'] },
+    { name: 'chromium', use: devices['Desktop Chrome'], testIgnore: 'perf.spec.ts' },
+    // The timing assertions of N-01 and N-02 run once the other specs are done, so neither
+    // their measurements nor the timing assertions of other specs share the machine
+    // (`playwright test e2e/perf.spec.ts --no-deps` runs them alone).
+    { name: 'perf', use: devices['Desktop Chrome'], testMatch: 'perf.spec.ts', dependencies: ['chromium'] },
     ...others.map(name => ({ name, use: OTHER_BROWSERS[name], testMatch: 'smoke.spec.ts' })),
   ],
   webServer: servers.map(s => ({

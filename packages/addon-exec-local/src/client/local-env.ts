@@ -1,7 +1,7 @@
 import type { Executor, RunRequest, RunResult } from '@presmium/kernel/contracts'
 import { CONTAINER_EXECUTOR_ID, disconnected, ENDPOINT, failedRun, languageId } from '../domain/index.ts'
 import type { CommitRequest, CommitResult, LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domain/index.ts'
-import { messages } from './messages.ts'
+import { language, messages } from './messages.ts'
 
 export interface LocalEnv extends LocalEnvService {
   /** The container executor (P-22) for the `executor` router. */
@@ -11,7 +11,7 @@ export interface LocalEnv extends LocalEnvService {
 async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
   const res = await fetch(`${ENDPOINT}/${path}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', 'accept-language': language() },
     body: JSON.stringify(body),
     signal,
   })

@@ -249,7 +249,7 @@ N-07 要求界面文本有中文与英文：
 
 - 文稿的语言由头部的 `lang` 声明，例如 `lang: en-US`。两种形态都据此设置 `<html lang>`：幻灯片渲染端写入 Slidev 头部的 `htmlAttrs`，网页渲染端设置站点语言（`renderers.web.lang` 可以单独覆盖）。
 - `@presmium/host` 的 `useLocale()` 给出 `'zh-CN'` 或 `'en'`：先取 `<html lang>`，没有时取 `navigator.language`；`zh` 开头为中文，其余为英文。
-- 每个包在 `src/client/messages.ts` 中维护 zh-CN 与 en 两份文本，按同一规则选择，并跟随 `<html lang>` 的变化（Slidev 在应用启动之后才写入 `htmlAttrs`）。服务端渲染时没有页面，取中文；插件组件只在浏览器中渲染。
+- 每个包在 `src/client/messages.ts` 中维护 zh-CN 与 en 两份文本，按同一规则选择，并跟随 `<html lang>` 的变化（Slidev 在应用启动之后才写入 `htmlAttrs`）。服务端渲染时没有页面，取中文；插件组件只在浏览器中渲染。开发服务器的端点（如本地环境插件的端点）按请求的 `Accept-Language` 回答，浏览器端在请求中带上页面的语言。
 - 编译时产生的内容（IR 中的录制输出、notebook 中的降级内容）不随界面语言变化。
 
 ### 5.8 静态导出
@@ -292,6 +292,7 @@ presmium: { ...各插件全局配置 }
 
 - 示例文稿的幻灯片产物（`dist/slides`）与网页产物（`dist/web`）服务在 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT`（默认 4173、4174）。并行的检出各用一对端口；端口被占用时报错，不复用别处的服务。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
 - 需要专用文稿的用例（另一种界面语言、性能、课堂服务）在 `beforeAll` 中把测试文稿写到 `examples/demo/.presmium/e2e-*`（不入库，插件从示例文稿的依赖中解析），用真实的 `presmium build` 构建，再在空闲端口上服务产物。测试文稿放在 `e2e/fixtures/<组>/`。
+- 性能用例（`e2e/perf.spec.ts`，N-01、N-02）是单独的 Playwright 项目，在其他用例结束后运行，计时不与其他用例争用机器；`--no-deps` 可以只运行它。
 - 其他浏览器：`PRESMIUM_E2E_BROWSERS` 列出冒烟用例另外运行的浏览器，默认 `firefox`；主机装有 WebKit 所需的系统库时可以加上 `webkit`。浏览器用 `pnpm exec playwright install firefox webkit` 安装。Safari 与 Edge 在发布前按 `browsers.md` 手工检查并记录。
 
 ## 8. 需求覆盖

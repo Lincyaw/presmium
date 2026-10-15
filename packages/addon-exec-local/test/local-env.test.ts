@@ -134,6 +134,18 @@ describe('workspace (K-13)', () => {
   })
 })
 
+describe('dev server (N-07)', () => {
+  it('answers in the language the page asks for', async () => {
+    const ask = (language: string) => fetch(`${base}/__presmium/exec-local/replicate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'accept-language': language },
+      body: JSON.stringify({ file: '../outside.py', content: '' }),
+    }).then(res => res.json())
+    expect(await ask('en')).toEqual({ error: 'The path must be inside the workspace: ../outside.py' })
+    expect(await ask('zh-CN')).toEqual({ error: '路径必须位于工作区内：../outside.py' })
+  })
+})
+
 describe('environment replicate (P-26)', () => {
   it('exports the snippet and the devcontainer definition, archived at compile time and from the dev server', async () => {
     const env = blocks().map(block => block.node).find((node): node is ComponentNode => node.type === 'component' && node.name === 'PmLocalEnv')!

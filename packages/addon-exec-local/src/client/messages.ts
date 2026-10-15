@@ -68,6 +68,11 @@ if (typeof MutationObserver !== 'undefined') {
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] })
 }
 
+/** The page's language, in which the client asks the dev-server endpoints to answer. */
+export function language(): 'zh-CN' | 'en' {
+  return locale.value
+}
+
 /** The strings of the page's language, read when a string is needed. */
 export function messages(): LocalEnvMessages {
   return locale.value === 'en' ? en : zhCN
