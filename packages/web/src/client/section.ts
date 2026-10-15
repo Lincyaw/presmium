@@ -65,7 +65,8 @@ function untrack(section: Tracked): void {
 /**
  * One web section, i.e. one slide. Provides the section's steps to the
  * components inside (all reached in a document section, the scrolled-to step in
- * a scrolly one) and links to the same slide in the slides form.
+ * a scrolly one), passes the slide number and step to its content as `$page`
+ * and `$clicks`, and links to the same slide in the slides form.
  */
 export const PmSection = defineComponent({
   name: 'PmSection',
@@ -87,7 +88,9 @@ export const PmSection = defineComponent({
     let tracked: Tracked | undefined
     let stopClicks: (() => void) | undefined
     onMounted(() => {
-      tracked = { el: el.value!, context, step }
+      // A content error can leave the section unrendered.
+      if (!el.value) return
+      tracked = { el: el.value, context, step }
       stopClicks = trackClicks(tracked.el, props.layout, context.step)
       track(tracked)
     })
@@ -103,7 +106,8 @@ export const PmSection = defineComponent({
       'data-anchor': props.anchor,
       'data-step': props.layout === 'scrolly' ? step.value : undefined,
     }, [
-      slots.default?.(),
+      // `$page` and `$clicks` of Slidev's global context.
+      slots.default?.({ $page: props.slide, $clicks: step.value }),
       slidesHref.value
         ? h('p', { class: 'pm-section__links' }, [h('a', { class: 'pm-open-slides', href: slidesHref.value }, '在幻灯片中打开')])
         : null,

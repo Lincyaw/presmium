@@ -8,5 +8,5 @@ export { requestedSection, SERVICE_WORKER, SLIDE_PARAM, slideUrl, webUrl } from 
 export type { FormLink } from './links.ts'
 export { downgrade, splitNotes } from './markdown.ts'
 export type { NoteSegment } from './markdown.ts'
-export { tokenize } from './search.ts'
+export { searchableHtml, tokenize } from './search.ts'
 export { FINAL_STEP, STEP_LINE, stepAtLine } from './steps.ts'

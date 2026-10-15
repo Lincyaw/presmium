@@ -123,6 +123,8 @@ export function sidebar(doc: WebDocument): { text: string, link: string }[] {
 function renderSection(section: WebSection): string {
   const attrs = [`:slide="${section.slide}"`, `anchor="${escapeAttr(section.anchor)}"`, `layout="${section.layout}"`]
   if (section.classes) attrs.push(`class="${escapeAttr(section.classes)}"`)
+  // Slidev's per-slide globals, given to the content by the section.
+  attrs.push('v-slot="{ $page, $clicks }"')
   const notes = section.notes.length === 0
     ? []
     : ['<div class="pm-notes">', ...section.notes.flatMap(n => [`<div class="pm-step" data-step="${n.step}">`, '', n.markdown, '', '</div>']), '</div>']

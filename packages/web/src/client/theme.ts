@@ -8,6 +8,7 @@ import { defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
 import { requestedSection, SERVICE_WORKER } from '../domain/index.ts'
 import type { FormLink } from '../domain/index.ts'
 import { installClicks } from './clicks.ts'
+import { installSlideContext } from './context.ts'
 import { createVitePressHost } from './host.ts'
 import { PmSection } from './section.ts'
 import './style.css'
@@ -93,13 +94,15 @@ export function createPresmiumTheme(addons: AddonModules): Theme {
   return {
     extends: DefaultTheme,
     Layout,
-    enhanceApp({ app, siteData }) {
+    enhanceApp({ app, router, siteData }) {
+      const presmium = siteData.value.themeConfig.presmium ?? {}
       installHost(app, createVitePressHost())
       installClicks(app)
+      installSlideContext(app, router, presmium.deck ?? {}, presmium.links ?? [])
       app.component('PmSection', PmSection)
       for (const [name, load] of Object.entries(addons.components)) app.component(name, clientOnly(name, load))
       if (!inBrowser) return
-      void startKernel(addons.plugins, siteData.value.themeConfig.presmium?.config ?? {})
+      void startKernel(addons.plugins, presmium.config ?? {})
       if (import.meta.env.PROD) registerServiceWorker()
     },
   }

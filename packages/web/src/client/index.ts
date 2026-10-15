@@ -1,4 +1,5 @@
 export { installClicks, trackClicks } from './clicks.ts'
+export { installSlideContext } from './context.ts'
 export { createVitePressHost } from './host.ts'
 export { activeSlide, PmSection, SECTION } from './section.ts'
 export type { SectionContext } from './section.ts'

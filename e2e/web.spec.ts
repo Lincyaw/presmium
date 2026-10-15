@@ -8,18 +8,22 @@ import { SLIDES, WEB } from './urls.ts'
 /** Slidev shows this in the overview for a slide without notes. */
 const NO_NOTES = 'No notes for this slide'
 
-const compact = (text: string) => text.replace(/[\s​]+/g, '')
+/** Letters and digits only: the two forms render the same Markdown with different spacing and punctuation. */
+const words = (text: string) => text.replace(/[^\p{L}\p{N}]+/gu, '')
 
-/** Every slide of the slides form with its first heading and notes, from the documented overview page. */
+/**
+ * Every slide of the slides form with its headings and notes, from the documented
+ * overview page. Reads text without waiting for elements, since a slide may have no heading.
+ */
 async function slidesOverview(page: Page) {
   await page.goto(`${SLIDES}/overview`)
   await expect(page.locator('.slidev-page').first()).toBeVisible()
   const count = await page.locator('.slidev-page').count()
-  const notes = await page.locator('.slidev-note').allInnerTexts()
+  const notes = (await page.locator('.slidev-note').allTextContents()).map(words)
   const slides = []
   for (let no = 1; no <= count; no++) {
-    const heading = await page.locator(`.slidev-page-${no}`).locator('h1, h2, h3').first().innerText()
-    slides.push({ no, heading, notes: notes[no - 1] === NO_NOTES ? '' : notes[no - 1]! })
+    const headings = await page.locator(`.slidev-page-${no}`).locator('h1, h2, h3, h4, h5, h6').allTextContents()
+    slides.push({ no, headings: headings.map(words), notes: notes[no - 1] === words(NO_NOTES) ? '' : notes[no - 1]! })
   }
   return slides
 }
@@ -36,13 +40,16 @@ async function webSections(page: Page) {
   const sections = []
   for (const path of await webPages(page)) {
     await page.goto(`${WEB}${path}`)
-    sections.push(...await page.locator('.pm-section').evaluateAll(els => els.map(el => ({
-      slide: Number((el as HTMLElement).dataset.slide),
-      heading: (el.querySelector('h2') as HTMLElement).innerText,
-      notes: (el.querySelector('.pm-notes') as HTMLElement | null)?.innerText ?? '',
-    }))))
+    sections.push(...await page.locator('.pm-section').evaluateAll(els => els.map((el) => {
+      const section = el as HTMLElement
+      const heading = [...section.querySelectorAll('h2')].find(h => h.id === section.dataset.anchor)
+      // Leave out what VitePress adds around code blocks: the language label and the copy button.
+      const notes = section.querySelector('.pm-notes')?.cloneNode(true) as HTMLElement | undefined
+      notes?.querySelectorAll('.lang, button').forEach(chrome => chrome.remove())
+      return { slide: Number(section.dataset.slide), heading: heading?.textContent ?? '', notes: notes?.textContent ?? '' }
+    })))
   }
-  return sections
+  return sections.map(s => ({ ...s, heading: words(s.heading), notes: words(s.notes) }))
 }
 
 async function openSearch(page: Page) {
@@ -69,15 +76,16 @@ test('every slide becomes one web section with its content and notes', async ({ 
   const sections = await webSections(page)
   expect(sections.map(s => s.slide)).toEqual(slides.map(s => s.no))
   for (const [i, slide] of slides.entries()) {
-    expect(compact(sections[i]!.heading), `slide ${slide.no}`).toBe(compact(slide.heading))
-    expect(compact(sections[i]!.notes), `notes of slide ${slide.no}`).toBe(compact(slide.notes))
+    // A slide without a heading gets a generated one; components may render headings of their own.
+    if (slide.headings.length > 0) expect(slide.headings, `heading of slide ${slide.no}`).toContain(sections[i]!.heading)
+    expect(sections[i]!.notes, `notes of slide ${slide.no}`).toBe(slide.notes)
   }
 
   // The web page shows both layout slots, code and doc-only content, but no slide-only content.
   await page.goto(`${WEB}/web.html`)
   const section = page.locator('.pm-section', { has: page.locator('h2#网页形态') })
   await expect(section.locator('li', { hasText: '幻灯片与网页一键互跳' })).toBeVisible()
-  await expect(section.locator('pre code')).toContainText('toWebDocument(deck)')
+  await expect(section.locator('.pm-slide pre code')).toContainText('toWebDocument(deck)')
   await expect(section.locator('[doc-only]')).toBeVisible()
   await expect(section.locator('[slide-only]')).toBeHidden()
 })
@@ -85,7 +93,7 @@ test('every slide becomes one web section with its content and notes', async ({ 
 test('a Chinese keyword is found within 300 ms and opens its section', async ({ page }) => {
   await page.goto(WEB)
   const input = await openSearch(page)
-  // The first query loads the index; time a later one.
+  // The first query loads the index; time a later one. The time includes VitePress's 200 ms input debounce.
   await input.fill('网页')
   await expect(page.getByRole('option').first()).toBeVisible()
   await input.fill('')
@@ -147,9 +155,12 @@ test('the two forms open each other at the same slide', async ({ page }) => {
   await page.goto(`${WEB}/web.html`)
   const section = page.locator('.pm-section', { has: page.locator('h2#网页形态') })
   const slide = Number(await section.getAttribute('data-slide'))
+  // `$page` of Slidev's global context gives the same number in both forms.
+  await expect(section).toContainText(`本页是第 ${slide} 页`)
   await section.getByRole('link', { name: '在幻灯片中打开' }).click()
   await expect(page).toHaveURL(`${SLIDES}/${slide}`)
   await expect(page.locator(`.slidev-page-${slide} h1`)).toHaveText('网页形态')
+  await expect(page.locator(`.slidev-page-${slide}`)).toContainText(`本页是第 ${slide} 页`)
 
   await page.goto(`${SLIDES}/${slide + 1}`)
   await page.getByRole('link', { name: '在网页中阅读' }).click()
