@@ -1,7 +1,7 @@
-# Fine
+## Fine
 
----
+This section is complete.
 
-# Unfinished
+## Unfinished
 
-TODO: write this slide
+TODO: write this section

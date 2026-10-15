@@ -105,6 +105,11 @@ export type IRNode = MarkdownNode | CodeNode | ComponentNode
 export interface MarkdownNode {
   type: 'markdown'
   mdast: MdastNode
+  /**
+   * 'items': the top-level list items appear one per step, item k (0-based, in
+   * document order) at `at + 1 + k`; the block's `span` equals the item count.
+   */
+  reveal?: 'items'
 }
 
 export interface CodeOrigin {

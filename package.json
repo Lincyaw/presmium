@@ -11,8 +11,9 @@
     "demo:build": "pnpm --filter presmium-demo build",
     "demo:web": "pnpm --filter presmium-demo web:build",
     "demo:check": "pnpm --filter presmium-demo check",
+    "demo:ir": "pnpm --filter presmium-demo ir",
     "e2e": "playwright test",
-    "verify": "pnpm test && pnpm demo:check && pnpm demo:build && pnpm demo:web && pnpm e2e",
+    "verify": "pnpm test && pnpm demo:check && pnpm demo:build && pnpm e2e",
     "docs:fetch": "./scripts/fetch-docs.sh"
   },
   "devDependencies": {

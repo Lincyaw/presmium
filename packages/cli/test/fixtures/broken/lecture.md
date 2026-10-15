@@ -1,6 +1,6 @@
 ---
 title: Broken deck
-addons:
+plugins:
   - ../addons/sample
   - presmium-fixture-addon-not-installed
   - ../addons/throws
@@ -11,6 +11,5 @@ presmium:
 
 # Broken deck
 
----
-src: ./pages/todo.md
----
+```{include} pages/todo.md
+```

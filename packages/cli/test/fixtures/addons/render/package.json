@@ -1,0 +1,8 @@
+{
+  "name": "presmium-fixture-plugin-render",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts"
+  }
+}

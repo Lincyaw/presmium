@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "slidev slides.md",
-    "build": "slidev build slides.md --out dist",
-    "export": "slidev export slides.md",
-    "check": "presmium check .",
-    "web:dev": "presmium-web dev .",
-    "web:build": "presmium-web build . --out dist-web"
+    "dev": "presmium dev",
+    "build": "presmium build",
+    "ir": "presmium ir",
+    "check": "presmium check",
+    "web:dev": "presmium dev --to web",
+    "web:build": "presmium build --to web"
   },
   "dependencies": {
     "@slidev/cli": "53.0.0",

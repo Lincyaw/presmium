@@ -1,41 +1,48 @@
----
-class: pm-core
-presmium:
-  presmium.core:
-    demo: true
----
+(core)=
+## 宿主适配
 
-# 宿主适配
+:::{hints}
+slides: { class: pm-core }
+:::
 
-<div class="grid grid-cols-2 gap-x-10 gap-y-4 mt-6">
-<div>
+本章演示宿主适配：插件之间通过服务协作，组件的状态由步骤推导，动画尊重减少动态效果的设置，出错的组件只影响自身。三个演示插件由文稿 frontmatter 中的 `presmium.core.demo` 启用。
 
+:::{slide}
 **服务依赖**：消费方插件拿到提供方的实现
+:::
 
-<PmDemoGreeting />
+:::{component} PmDemoGreeting
+:::
 
+presmium.demo.provider 提供问候服务，presmium.demo.consumer 依赖它，presmium.demo.orphan 缺少必需服务而被禁用。启动报告显示在演讲者视图的 Presmium 面板中。
+
+:::{slide}
 **步骤驱动**：状态由步骤推导，跳转与逐步前进一致
+:::
 
-<PmDemoStepper />
+:::{component} PmDemoStepper
+:span: 3
+steps: [解析文稿, 启动插件, 渲染页面]
+:::
 
-</div>
-<div>
+步进组件占用三步，每一步突出一项；直接跳到第三步与从第零步逐步前进到第三步，页面完全一致。
 
+:::{slide}
 **动画**：减少动态效果时直接显示终态
+:::
 
-<PmDemoAnimated />
+:::{component} PmDemoAnimated
+:::
 
+:::{slide}
 **错误边界**：出错的组件只影响自身
+:::
 
-<PmDemoBroken />
+:::{component} PmDemoBroken
+:::
 
-</div>
-</div>
+故意抛错的组件显示错误占位，本页其他内容照常渲染，错误同时列在演讲者面板中。
 
-<div doc-only>网页形态中才出现的补充说明：本页的演示插件由 <code>presmium.core.demo</code> 配置启用。</div>
-
-<!--
-本页的三个演示插件由页 frontmatter 的 `presmium.core.demo` 启用：presmium.demo.provider 提供问候服务，presmium.demo.consumer 依赖它，presmium.demo.orphan 缺少必需服务而被禁用。
-
-启动报告与组件错误显示在演讲者视图左下角的 Presmium 面板中。
--->
+:::{only} web
+网页形态中才出现的补充说明：本章的演示插件由 `presmium.core.demo` 配置启用。
+:::

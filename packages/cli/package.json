@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "presmium check",
+  "description": "presmium build | dev | ir | check",
   "dependencies": {
+    "@presmium/compiler": "workspace:*",
     "@presmium/kernel": "workspace:*",
-    "@slidev/parser": "53.0.0",
     "jiti": "^2.7.0"
   },
   "bin": {

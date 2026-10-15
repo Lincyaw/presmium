@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
 
-// Slides form is served on 4173 (examples/demo/dist), web form on 4174 (examples/demo/dist-web).
-// Build first: `pnpm demo:build && pnpm demo:web`. A form whose build output is missing is not served.
+// `presmium build` writes each renderer's output to examples/demo/dist/<renderer id>:
+// the slides form is served on 4173, the web form on 4174. Build first (`pnpm demo:build`);
+// a form whose output is missing is not served.
 const servers = [
-  { dir: 'examples/demo/dist', port: 4173, single: true },
-  { dir: 'examples/demo/dist-web', port: 4174, single: false },
+  { dir: 'examples/demo/dist/slides', port: 4173, single: true },
+  { dir: 'examples/demo/dist/web', port: 4174, single: false },
 ].filter(s => existsSync(s.dir))
 
 export default defineConfig({
