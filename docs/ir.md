@@ -9,7 +9,7 @@
         │  解析：myst-parser → mdast；插件注册的指令把指令节点转为 IR 节点
         ▼
    编译步骤（按顺序执行的 IR 变换）
-        │  切分章节 → 划分讲解与上屏内容 → 编排步骤 → 解析代码锚点 → 执行代码并缓存 → 插件步骤
+        │  切分章节 → 划分讲解与上屏内容 → 编排步骤 → 插件步骤（如解析代码锚点）→ 执行代码并缓存 → 校验
         ▼
    IR（JSON，版本化）
         │
@@ -34,18 +34,19 @@
 ```yaml
 ---
 title: BPE 分词
+lang: zh-CN                    # 文稿的语言：两种形态的 <html lang> 与界面语言
 plugins:                       # 插件包名
   - '@presmium/slidev-addon-code'
   - '@presmium/slidev-addon-exec'
 presmium:                      # 各插件的全局配置，键为插件 ID
-  presmium.code: { remote: https://github.com/org/repo }
-renderers:                     # 各渲染端的配置
+  presmium.code: { repo: https://github.com/org/repo }
+renderers:                     # 要构建的渲染端及其配置
+  web: {}
   slides: { theme: default }
-  web: { search: true }
 ---
 ```
 
-多文件文稿用 MyST 的 `{include}` 指令引入。
+多文件文稿用 MyST 的 `{include}` 指令引入。`renderers` 列出的渲染端就是 `presmium build` 默认构建的渲染端（第 7 节）；网页渲染端的选项见 `packages/web/src/domain/config.ts`，其中 `lang` 可以覆盖文稿的语言。
 
 ### 2.2 章节
 
@@ -99,6 +100,14 @@ web: { layout: scrolly }
 
 `{hints}` 放在章节内，为各渲染端提供排版提示；渲染端不认识的提示直接忽略。
 
+```md
+:::{config}
+presmium.exec: { timeoutMs: 30000 }
+:::
+```
+
+`{config}` 放在章节内，为插件提供只在本章节生效的配置：正文为 YAML，键为插件 ID，存为章节的 `config`。在该章节中，它合并在文稿头部的全局配置之上，交给指令与编译步骤；浏览器端用 `useSectionConfig(<插件 ID>)` 读取（`architecture.md` 5.2 节）。
+
 ### 2.6 示例
 
 ````md
@@ -133,7 +142,7 @@ IR 是一个 JSON 文档。顶层结构：
 | `sections` | 章节列表 |
 | `diagnostics` | 编译中产生的诊断（`Finding`） |
 
-每个章节包含 `id`、`index`（从 1 开始）、`title`、`source`（源码位置）、`steps`（步骤数）、`hints`（按渲染端分组的提示）、`blocks`。
+每个章节包含 `id`、`index`（从 1 开始）、`title`、`source`（源码位置）、`steps`（步骤数）、`hints`（按渲染端分组的提示）、`blocks`，以及可选的 `config`（`{config}` 给出的插件配置，键为插件 ID）。
 
 每个块包含：
 
@@ -205,6 +214,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | `{slide}` | 正文为 MyST | `:reveal:`、`:reveal: items` | 正文中的块都是上屏内容 |
 | `{only}` | 参数为渲染端 ID 列表；正文为 MyST | `:reveal:`、`:reveal: items` | 正文中的块限定于这些渲染端（`only`） |
 | `{hints}` | 正文为 YAML，键为渲染端 ID | — | 章节的 `hints` |
+| `{config}` | 正文为 YAML，键为插件 ID | — | 章节的 `config`，在本章节合并在全局插件配置之上 |
 | `{component}` | 参数为组件名；正文为 YAML 属性 | `:span:`（步数）、`:plugin:`（插件 ID，默认为注册该组件的插件）；其余选项作为属性，值按 YAML 读取 | `component` 节点 |
 | `{include}` | 参数为文件路径 | — | 引入文件的内容；被引入文件的 frontmatter 被忽略 |
 | `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}` | 参数为语言；正文为代码 | `:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（强调的行，如 `2, 4-5`，各步都高亮这些行）、`:run:`、`:executor:`、`:timeout:` | `code` 节点 |
@@ -216,16 +226,23 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | 插件 | 指令 | 参数与正文 | 选项 | 生成与步数 |
 |---|---|---|---|---|
 | 代码引用 `presmium.code` | `{code-ref}` | 参数为锚点，如 `region:src/bpe.py#merge` | `:pin:`（提交，默认工作区）、`:steps:`（逻辑单元名列表，即嵌套的 `#region`，每步高亮一个；`all` 或 `none` 表示这一步不突出任何单元）、`:variants:`（至少两个提交，逐步切换版本，不能与 `:pin:`、`:steps:` 同用）、`:lang:`（默认取文件扩展名）、`:repo:`（永久链接的仓库网址）、`:run:`、`:executor:`、`:timeout:` | `code` 节点，带 `origin`、`highlight` 或 `variants`；步数为单元数或版本数减一 |
-| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言（默认 `python`）；正文为代码 | `:params:`（YAML 映射，注入程序的变量）、`:timeout:`（毫秒）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行） | `PmRunPanel`，子块为代码块 |
-| | `{step-run}` | 同上 | `:steps:`（执行的行数，每行一步）、`:params:`、`:timeout:` | `PmStepRun`；步数为 `:steps:` |
+| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言：`python`（默认）、`javascript`、`typescript`；正文为代码 | `:params:`（YAML 映射，注入程序的变量；JavaScript 中为常量）、`:timeout:`（毫秒）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行） | `PmRunPanel`，子块为代码块；`fallback` 为代码加 `:recorded:` 的输出；notebook 中 Python 为代码单元格，附构建时的输出或 `:recorded:` 的输出，带超时而构建时没有正常结束的单元格标记 `skip-execution` |
+| | `{step-run}` | 参数为语言（默认 `python`）；正文为代码 | `:steps:`（执行的行数，每行一步）、`:params:`、`:timeout:` | `PmStepRun`；步数为 `:steps:` |
 | 本地环境 `presmium.execLocal` | `{local-env}` | 参数为语言（默认 `python`）；正文为代码 | `:file:`（代码在工作区中的路径，必填）、`:workspace:`（devcontainer 所在目录，相对于本文件） | `PmLocalEnv`，子块为代码块；执行器 `presmium.container` 供代码块的 `:executor:` 使用 |
 | 引导 `presmium.guide` | `{cursor}` | 正文每行一个路径点：`[move\|hover\|click] <CSS 选择器>`，动作默认为 `move` | — | `PmCursor`；第 k 个路径点在块的第 k 步，步数为路径点数减一 |
 | | `{spotlight}`、`{hint}` | 参数为目标的 CSS 选择器；正文为弹出说明 | `:title:`（说明标题）、`:span:`（持续的步数，默认 0） | `PmSpotlight`、`PmHint` |
 | 富内容 `presmium.content` | `{markmap}` | 正文为标题与列表；开头的 YAML 块可写 `markmap` 选项 | — | `PmMarkmap`，降级为嵌套列表 |
 | | `{video}`、`{audio}`、`{animation}` | 参数为媒体文件路径（相对于本文件，或包路径）；正文为说明文字 | `:controls:`、`:autoplay:`、`:loop:`、`:muted:`、`:width:`、`:height:`、`:alt:`；`{animation}` 另有 `:still:`（减少动态效果时的静止图片） | `PmMedia`，降级为文件链接 |
 | | ` ```plantuml ` 代码块（编译步骤） | — | 全局配置 `plantUmlServer` | 图片节点 |
-| 发布 `presmium.publish` | 无指令；`{component} PmContrastToggle` 放置高对比度开关 | — | 全局配置 `offline: false` 关闭离线 | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets` |
+| 发布 `presmium.publish` | 无指令；高对比度开关在两种形态的工具栏中，`{component} PmContrastToggle` 可以在正文中另放一个 | — | 全局配置 `offline: false` 关闭离线 | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets`（随文稿提交） |
 | 讲台 `presmium.stage` | 无指令；内容由渲染端直接呈现 | — | — | 编译步骤 `footnotes` 把脚注定义移到引用它的块所在步骤与角色 |
+| 课堂 `presmium.classroom` | `{quiz}` | 正文为题干（MyST），之后是任务列表形式的选项：`- [ ] 错误项`、`- [x] 正确项` | — | `PmQuiz`，属性为选项与答案；notebook 中为题干与选项，答案折叠 |
+| | `{exercise}` | 参数为语言（默认 `python`，只有 Python 能校验）；正文为题面，之后两个代码块：起始代码、校验代码（每条顶层语句一项校验） | `:timeout:`（毫秒） | `PmExercise`；notebook 中为题面与两个代码单元格（起始代码、校验） |
+| | `{question-box}` | 正文为提示语 | `:target:`（本章节中一个带标签的块，问题挂在它上面） | `PmQuestionBox`；notebook 中不生成单元格 |
+| | `{pulse}` | 参数为问题（默认“这一节理解了吗？”）；正文为说明 | `:levels:`（至少两个选项，逗号分隔；默认“懂了、有点模糊、没懂”） | `PmPulse`；notebook 中不生成单元格 |
+| 会话 `presmium.session` | 无指令 | — | 全局配置 `server`（课堂服务的地址，`ws://` 或 `http://` 均可）；没有时文稿照常放映，会话显示未连接 | 浏览器端提供 `session` 与 `classroomStore` 服务 |
+
+课堂插件另有编译步骤 `classroom-places`：给每个课堂组件加上属性 `place`（所在章节与块的 ID、章节标题与序号，块 ID 在编排步骤之后才确定），并检查 `{question-box}` 的 `:target:` 是否是本章节的块。
 
 脚注定义留在书写它的章节（以及 `{slide}`、`{only}`）中；引用与定义须在同一文件。
 
@@ -244,6 +261,8 @@ interface Renderer {
 
 `RenderContext` 提供文稿目录、输出目录 `outDir`、工作目录 `workDir`、本渲染端的配置、各插件的扩展与插件列表。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。
 
+notebook 渲染端把 Markdown 写成 Jupyter 能显示的 CommonMark、GFM 表格、内联 HTML 与 `$` 公式，不写 MyST 语法：提示框（`{note}` 等）与旁注写成带粗体标题的引用块，`{list-table}` 等表格写成 GFM 表格，`{dropdown}` 写成 `<details>`，图写成图片加斜体标题，公式写成 `$$`，`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等角色写成内联 HTML，交叉引用写成它的文字。没有对应写法的节点（如 `{embed}`、`{iframe}`）保留其中的文字，并作为降级在构建报告中逐块列出（警告，带源码位置）。
+
 notebook 渲染端把它显示的图片与链接所指向的本地文件（如本地化的 PlantUML 图、媒体的降级链接）复制到 notebook 旁边的 `media/` 并改写路径，notebook 目录可以整体移动。只复制实际写入 notebook 的地址所指的文件：组件由插件扩展或降级内容显示时，其子块中的文件不复制。地址按 URL 解码后查找文件（文件名中的 `#`、`?` 写作 `%23`、`%3F`），转义不完整的地址原样保留。
 
 降级规则：
@@ -258,7 +277,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 | 命令 | 作用 |
 |---|---|
-| `presmium build [--to web,slides,notebook] [--out dir]` | 编译并生成指定媒介，默认生成全部已安装的渲染端 |
+| `presmium build [--to web,slides,notebook] [--out dir]` | 编译并生成指定媒介；不写 `--to` 时生成文稿头部 `renderers` 中配置的渲染端，没有配置时生成全部已安装的渲染端 |
 | `presmium dev [--to web]` | 监听源码与编译读取过的文件（第 5 节），增量编译，启动对应渲染端的开发服务器 |
 | `presmium ir [--out file]` | 输出 IR JSON，用于调试 |
 | `presmium check` | 编译到第 8 步，只输出诊断 |
