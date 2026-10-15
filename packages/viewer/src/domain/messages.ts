@@ -30,9 +30,6 @@ const zh = {
     anchor: (title: string) => `链接到“${title}”`,
     openSource: '在编辑器中打开源码',
     sourceTitle: (where: string) => `${where}（Alt+单击任一块，打开该块的源码）`,
-    nav: '章节导航',
-    prev: '上一节',
-    next: '下一节',
   },
   code: {
     status: { moved: '已移动', fuzzy: '待确认', lost: '已失效' } as Record<string, string>,
@@ -98,9 +95,6 @@ const en: Messages = {
     anchor: title => `Link to "${title}"`,
     openSource: 'Open the source in the editor',
     sourceTitle: where => `${where} (Alt+click a block to open its source)`,
-    nav: 'Section navigation',
-    prev: 'Previous section',
-    next: 'Next section',
   },
   code: {
     status: { moved: 'Moved', fuzzy: 'Unconfirmed', lost: 'Lost' },

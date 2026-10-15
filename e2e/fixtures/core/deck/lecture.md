@@ -7,6 +7,8 @@ plugins:
   - ./plugin
 presmium:
   fixture.core: { label: global }
+  # The demo plugins of @presmium/slidev-addon-core: a provider, its consumer and an orphan.
+  presmium.core: { demo: true }
   # The learner's badge shows for an invitation (`?room=`) before anything connects.
   presmium.session: { server: 'ws://127.0.0.1:9' }
 renderers:
@@ -55,5 +57,12 @@ fixture.core: { label: section }
 ```{component} FixtureBroken
 ```
 
+:::{slide}
+The rest of the slide renders.
+:::
+
 ```{include} pages/motion.md
+```
+
+```{include} pages/host.md
 ```

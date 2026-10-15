@@ -71,7 +71,7 @@ export const renderer: Renderer = {
         if (!update) return
         // Only changed files are written. The config never changes with the IR, so the server never restarts;
         // the content goes to the pages over the WebSocket, the search documents to the search index (a page's
-        // Markdown changes only with its title: hot updated).
+        // Markdown changes only with its chapter's title and those of the chapters around it: hot updated).
         writeSite(workDir, { doc: published, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
         current = published
         server.send({ type: 'presmium:update', update })

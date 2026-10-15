@@ -4,7 +4,7 @@ import type { CodeNode, CodeOrigin, CodeVariant, IRBlock, RunResult } from '@pre
 import type { PropType, VNode, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onMounted, ref, shallowRef, watch } from 'vue'
 import { IN_COMPONENT } from './context.ts'
-import { blockState } from './domain/index.ts'
+import { blockState, codeColumns } from './domain/index.ts'
 import { highlighterFor, THEMES } from './highlight.ts'
 import { messages } from './i18n.ts'
 
@@ -45,8 +45,14 @@ export const CodeView = defineComponent({
         }],
       })
     })
+    // Where code shrinks to fit (the stage of a scrolly section), the width of its widest line sets the size.
+    const columns = computed(() => codeColumns(code.value))
     return () => {
-      const attrs = { 'class': ['pm-code', { 'pm-code--highlight': lines.value.size > 0 }], 'data-lang': props.lang || undefined }
+      const attrs = {
+        'class': ['pm-code', { 'pm-code--highlight': lines.value.size > 0 }],
+        'style': { '--pm-code-columns': columns.value },
+        'data-lang': props.lang || undefined,
+      }
       if (html.value) return h('div', { ...attrs, key: 'shiki', innerHTML: html.value })
       const rows = code.value.split('\n').flatMap((text, i) => [h('span', { class: ['line', { highlighted: lines.value.has(i + 1) }] }, text), '\n'])
       return h('div', { ...attrs, key: 'plain' }, [h('pre', { class: 'shiki' }, [h('code', rows.slice(0, -1))])])

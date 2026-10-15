@@ -134,7 +134,8 @@
 | 光标 | `Cursor { slide, step }` | `useNav()` 的当前页与 `$clicks` | 当前章节与步骤：文档视图全部展开，滚动叙事视图由滚动推导，放映视图由键盘推进 |
 | 步骤状态 | `useStep()`（绝对步骤），组件用 `useStepState(range)`（相对于块的步骤作用域） | 由 `$clicks` 推导 | 文档视图恒为已到达（`Infinity`）；其他视图由当前步骤推导 |
 | 视图角色 | `ViewRole` | 听众、演讲者 | 读者；放映视图的演讲者窗口为演讲者 |
-| 同步传输 | `SyncTransport` | 映射到 `addSyncMethod` 的同步通道 | 服务存在但没有通道；跟随主讲通过导航服务实现 |
+| 共享状态 | 组件用 `useSharedState(key, initial, { scope })`，作用域 `SharedStateScope` | `createSharedStates`：`view` 只在本视图，`local` 与 `remote` 经 BroadcastChannel 在本机的窗口之间传递（通道按文稿标题与基础路径区分），`remote` 另是同步通道 | 同左 |
+| 同步传输 | `SyncTransport` | `syncTransports` 服务把每个传输接入全部 `remote` 共享状态；另经 `addSyncMethod` 接入 Slidev 同步的导航与圈画 | `syncTransports` 服务把每个传输接入全部 `remote` 共享状态；跟随主讲通过导航服务实现 |
 | 导航 | `Navigation` | 当前页与步骤，`go()` 跳转 | IR 运行时的章节、步骤与视图，`go()` 跳转 |
 | 错误边界 | `PmBoundary` | Vue `onErrorCaptured` | 同左 |
 | 演讲者面板 | `PresenterPanel` | 只在演讲者视图中显示的全局图层 | 放映视图的演讲者窗口中显示 |

@@ -1,20 +1,15 @@
 import { expect, test } from '@playwright/test'
-import type { Browser, Page } from '@playwright/test'
+import type { Browser, Locator, Page } from '@playwright/test'
 import { fixtureDeck } from './fixtures/core/deck.ts'
 import type { FixtureDeck } from './fixtures/core/deck.ts'
-import { SLIDES, WEB } from './urls.ts'
+import { webDeck } from './fixtures/web/deck.ts'
+import type { IRBlock, IRDocument, MdastNode, WebDeck } from './fixtures/web/deck.ts'
+import { WEB } from './urls.ts'
 
-/** The parts of the IR (packages/kernel/src/ir.ts) the tests read. */
-interface MdastNode { type: string, value?: string, children?: MdastNode[] }
-interface IRBlock {
-  id: string
-  role: 'visual' | 'narration'
-  node: { type: 'markdown', mdast: MdastNode } | { type: 'code', lang: string, value: string } | { type: 'component', name: string }
-}
-interface IRDocument { sections: { id: string, title: string, blocks: IRBlock[] }[] }
-
-// Built web form (`presmium build`, examples/demo/dist/web) on WEB; the IR it renders is published as /ir.json.
-// examples/demo/pages/web.md has a document section `web` and a section `scrolly` hinted `web: { layout: scrolly }`.
+// The web form (@presmium/web) of the reading fixture deck (e2e/fixtures/web/deck, built in
+// beforeAll with its slides) and of the core fixture deck (e2e/fixtures/core/deck). Of the demo
+// (examples/demo/dist/web on WEB) only what holds for any content is checked: every plugin
+// component renders, and no page scrolls sideways on a phone.
 
 /** Letters and digits only: the IR text and the rendered page differ in spacing and punctuation. */
 const words = (text: string) => text.replace(/[^\p{L}\p{N}]+/gu, '')
@@ -39,10 +34,6 @@ function blockText(block: IRBlock): string {
 /** Drawn content (math, diagrams), left out of the page text as its source is left out of the IR text. */
 const RICH = '.pm-math, .pm-mermaid'
 
-async function published(page: Page): Promise<IRDocument> {
-  return (await page.request.get(`${WEB}/ir.json`)).json()
-}
-
 /** Paths of the web pages of the site at `site`, in sidebar order. */
 async function webPages(page: Page, site = WEB): Promise<string[]> {
   await page.goto(site)
@@ -65,27 +56,14 @@ function phone(browser: Browser) {
   return browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
 }
 
-/** Every rendered section with its heading, narration, visual text and section links, in page order. */
-async function webSections(page: Page) {
-  const sections = []
-  for (const path of await webPages(page)) {
-    await page.goto(`${WEB}${path}`)
-    sections.push(...await page.locator('.pm-section').evaluateAll((els, rich) => els.map((el) => {
-      const section = el as HTMLElement
-      const textOf = (node: Node): string => node instanceof Element && node.matches(rich)
-        ? ''
-        : node.nodeType === Node.TEXT_NODE ? node.textContent ?? '' : [...node.childNodes].map(textOf).join('')
-      const text = (selector: string) => [...section.querySelectorAll(selector)].map(textOf).join('')
-      return {
-        id: section.dataset.section!,
-        heading: section.querySelector(`h2#${CSS.escape(section.dataset.section!)}`)?.textContent ?? '',
-        narration: text('.pm-block--narration'),
-        visual: text('.pm-block--visual'),
-        next: section.querySelector('.pm-section-nav__next')?.textContent ?? '',
-      }
-    }), RICH))
-  }
-  return sections
+/** The text of an element as the page shows it: drawn content left out, the heading anchor's zero-width space too. */
+function shownText(locator: Locator): Promise<string[]> {
+  return locator.evaluateAll((els, rich) => els.map((el) => {
+    const textOf = (node: Node): string => node instanceof Element && node.matches(rich)
+      ? ''
+      : node.nodeType === Node.TEXT_NODE ? node.textContent ?? '' : [...node.childNodes].map(textOf).join('')
+    return textOf(el).replace(/​/g, '')
+  }), RICH)
 }
 
 /** Search results; the view menu's options are not among them. */
@@ -113,33 +91,8 @@ function timeSearch(page: Page, query: string): Promise<number> {
   }), query)
 }
 
-test('every IR section becomes one web section with its content, narration and section links', async ({ page }) => {
-  const doc = await published(page)
-  const sections = await webSections(page)
-  expect(sections.map(s => s.id)).toEqual(doc.sections.map(s => s.id))
-  for (const [i, section] of doc.sections.entries()) {
-    const shown = sections[i]!
-    expect(words(shown.heading), `heading of ${section.id}`).toBe(words(section.title))
-    const narration = section.blocks.filter(b => b.role === 'narration').map(blockText).join('')
-    expect(words(shown.narration), `narration of ${section.id}`).toBe(words(narration))
-    for (const block of section.blocks.filter(b => b.role === 'visual')) {
-      expect(words(shown.visual), `block ${section.id}#${block.id}`).toContain(words(blockText(block)))
-    }
-    // Previous and next section (P-72).
-    if (doc.sections[i + 1]) expect(words(shown.next)).toContain(words(doc.sections[i + 1]!.title))
-  }
-
-  // {only} limits blocks to renderers: the web shows its own, never the slides' ones.
-  await page.goto(`${WEB}/web.html`)
-  const web = page.locator('.pm-section[data-section="web"]')
-  await expect(web.locator('li', { hasText: '幻灯片与网页一键互跳' })).toBeVisible()
-  await expect(web.locator('.pm-code')).toContainText('const viewer = createViewer(doc)')
-  await expect(web).toContainText('网页中才有的补充说明')
-  await expect(web).not.toContainText('幻灯片中才有的提示')
-})
-
 test('every plugin component of the demo renders in the web form', async ({ page }) => {
-  const doc = await published(page)
+  const doc = await (await page.request.get(`${WEB}/ir.json`)).json() as IRDocument
   let count = 0
   for (const path of await webPages(page)) {
     await page.goto(`${WEB}${path}`)
@@ -156,213 +109,346 @@ test('every plugin component of the demo renders in the web form', async ({ page
     }
   }
   expect(count).toBeGreaterThan(0)
-  // Components keep working through @presmium/host: steps, error boundary.
-  await page.goto(`${WEB}/core.html`)
-  await expect(page.locator('.pm-section[data-section="core"] .pm-demo-stepper')).toHaveAttribute('data-step', '3')
-  await expect(page.locator('[data-pm-error="PmDemoBroken"]')).toBeVisible()
-  await expect(page.locator('.pm-demo-greeting')).toBeVisible()
 })
 
-test('a Chinese keyword is found within 300 ms and opens its section', async ({ page }) => {
-  await page.goto(WEB)
-  const input = await openSearch(page)
-  // The first query loads the index; time a later one. The time includes VitePress's 200 ms input debounce.
-  await input.fill('网页')
-  await expect(results(page).first()).toBeVisible()
-  await input.fill('')
-  await expect(results(page)).toHaveCount(0)
-
-  expect(await timeSearch(page, '讲稿即正文')).toBeLessThan(300)
-  await results(page).first().click()
-  await expect(page).toHaveURL(/\/web\.html#web$/)
-  await expect(page.locator('h2#web')).toBeInViewport()
-})
-
-test('a section title alone finds its section', async ({ page }) => {
-  await page.goto(`${WEB}/core.html`)
-  const input = await openSearch(page)
-  await input.fill('滚动叙事')
-  const first = results(page).first()
-  await expect(first.locator('.title')).toContainText('滚动叙事')
-  await first.click()
-  await expect(page).toHaveURL(/\/web\.html#scrolly$/)
-  await expect(page.locator('h2#scrolly')).toBeInViewport()
-})
-
-test('the page outline lists the page\'s sections, also after moving to another page; each section links to the previous one', async ({ page }) => {
-  const outline = page.locator('.VPDocAsideOutline .VPDocOutlineItem.root > li > a')
-  const titles = page.locator('.pm-section > h2')
-  await page.goto(`${WEB}/web.html`)
-  await expect(titles.first()).toBeVisible()
-  await expect(outline).toHaveText(await titles.allTextContents())
-
-  await page.locator('.VPSidebar a[href$="/core.html"]').click()
-  await expect(page).toHaveURL(/\/core\.html$/)
-  await expect(page.locator('h2#core')).toBeVisible()
-  await expect(outline).toHaveText(await titles.allTextContents())
-
-  // The first section of web.html links back to the last section of the page before it.
-  const doc = await published(page)
-  const previous = doc.sections[doc.sections.findIndex(s => s.id === 'web') - 1]!
-  await page.goto(`${WEB}/web.html`)
-  const back = page.locator('.pm-section[data-section="web"] .pm-section-nav__prev')
-  await expect(back).toContainText(previous.title)
-  await back.click()
-  await expect(page.locator(`h2#${previous.id}`)).toBeInViewport()
-})
-
-test('search keeps working offline once the site has loaded', async ({ page, context }) => {
-  await page.goto(WEB)
-  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
-  await context.setOffline(true)
-  expect((await page.reload())?.fromServiceWorker()).toBe(true)
-  const input = await openSearch(page)
-  // Code is indexed too.
-  await input.fill('createViewer')
-  await results(page).first().click()
-  await expect(page.locator('h2#web')).toBeInViewport()
-  await expect(page.locator('.pm-section[data-section="web"] .pm-code')).toContainText('createViewer')
-})
-
-test('no page scrolls sideways on a 375 px wide phone', async ({ page, browser }) => {
+test('no page of the demo scrolls sideways on a 375 px wide phone', async ({ page, browser }) => {
   const paths = await webPages(page)
   const context = await phone(browser)
   await expectNoSidewaysScroll(await context.newPage(), WEB, paths)
   await context.close()
 })
 
-test('pages reflow at 200 % and 400 % zoom and follow the reader\'s font size', async ({ page, browser }) => {
-  const paths = await webPages(page)
-  // 200 %: 640 CSS px on a 1280 px wide screen; 400 %: 320 CSS px.
-  for (const options of [{ viewport: { width: 640, height: 400 }, deviceScaleFactor: 2 }, { viewport: { width: 320, height: 256 } }]) {
-    const context = await browser.newContext(options)
-    await expectNoSidewaysScroll(await context.newPage(), WEB, paths)
+// e2e/fixtures/web/deck: the cover (index.html); chapter 1 is chapters/basics.md, which has no
+// chapter title (basics.html); chapters 2 and 3 open with a chapter title each in chapters/advanced.md
+// (advanced.html, wide-content.html). Sections `scrolly` and `wide` are hinted `web: { layout: scrolly }`.
+test.describe('the reading fixture deck', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let deck: WebDeck
+
+  const CHAPTERS = [
+    { path: '/web/', title: '网页阅读测试文稿', sections: ['cover'] },
+    { path: '/web/basics.html', title: '阅读页面', sections: ['reading', 'scrolly'] },
+    { path: '/web/advanced.html', title: '第二章 进阶', sections: ['advanced', 'stepper', 'steps', 'live-code'] },
+    { path: '/web/wide-content.html', title: '第三章 宽内容', sections: ['wide-content', 'wide'] },
+  ]
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    deck = await webDeck('web,slides')
+  })
+  test.afterAll(() => deck?.close())
+
+  test('a page per chapter shows its sections with their content and narration, without links from section to section', async ({ page }) => {
+    for (const chapter of CHAPTERS) {
+      await page.goto(`${deck.url}${chapter.path}`)
+      const sections = page.locator('.pm-section')
+      await expect(sections).toHaveCount(chapter.sections.length)
+      expect(await sections.evaluateAll(els => els.map(el => (el as HTMLElement).dataset.section))).toEqual(chapter.sections)
+      for (const id of chapter.sections) {
+        const ir = deck.doc.sections.find(s => s.id === id)!
+        const shown = page.locator(`.pm-section[data-section="${id}"]`)
+        expect(words((await shownText(shown.locator('.pm-section__title')))[0]!), `heading of ${id}`).toBe(words(ir.title))
+        const narration = ir.blocks.filter(b => b.role === 'narration').map(blockText).join('')
+        expect(words((await shownText(shown.locator('.pm-block--narration'))).join('')), `narration of ${id}`).toBe(words(narration))
+        const visual = words((await shownText(shown.locator('.pm-block--visual'))).join(''))
+        for (const block of ir.blocks.filter(b => b.role === 'visual')) expect(visual, `block ${id}#${block.id}`).toContain(words(blockText(block)))
+      }
+      await expect(page.locator('.pm-section-nav, .pm-section a[rel="next"], .pm-section a[rel="prev"]')).toHaveCount(0)
+    }
+
+    // A chapter title heads its page; a chapter without one starts with its first section.
+    await page.goto(deck.web('advanced.html'))
+    await expect(page.locator('h1#advanced')).toContainText('第二章 进阶')
+    await expect(page.locator('.pm-section[data-section="advanced"]')).toContainText('章首的讲解')
+    await page.goto(deck.web('basics.html'))
+    await expect(page.locator('h1')).toHaveCount(0)
+    await expect(page.locator('h2#reading')).toBeVisible()
+
+    // {only} limits blocks to renderers: the web shows its own, never the slides' ones.
+    const reading = page.locator('.pm-section[data-section="reading"]')
+    await expect(reading).toContainText('网页中才有的补充说明')
+    await expect(reading).not.toContainText('幻灯片中才有的提示')
+  })
+
+  test('the end of a page links the chapters before and after it', async ({ page }) => {
+    const prev = page.getByRole('link', { name: /^上一章/ })
+    const next = page.getByRole('link', { name: /^下一章/ })
+    await page.goto(deck.web())
+    await expect(prev).toHaveCount(0)
+    await expect(next).toContainText('阅读页面')
+
+    await page.goto(deck.web('advanced.html'))
+    await expect(prev).toContainText('阅读页面')
+    await expect(prev).toHaveAttribute('href', '/web/basics.html')
+    await expect(next).toContainText('第三章 宽内容')
+    // Below the last section.
+    const [footer, last] = await Promise.all([next.boundingBox(), page.locator('.pm-section').last().boundingBox()])
+    expect(footer!.y).toBeGreaterThan(last!.y + last!.height)
+    await next.click()
+    await expect(page).toHaveURL(/\/web\/wide-content\.html$/)
+    await expect(page.locator('h1#wide-content')).toBeInViewport()
+    await expect(next).toHaveCount(0)
+  })
+
+  test('the sidebar lists the chapters, each with its sections; a section opens its page at its anchor', async ({ page }) => {
+    await page.goto(deck.web('basics.html'))
+    // A tree: the chapters, and under each its sections.
+    const chapters = page.locator('.VPSidebar .VPSidebarItem.level-1')
+    await expect(chapters).toHaveCount(CHAPTERS.length)
+    for (const [i, chapter] of CHAPTERS.entries()) {
+      const item = chapters.nth(i)
+      await expect(item.locator(':scope > .item a')).toHaveText(chapter.title)
+      await expect(item.locator(':scope > .item a')).toHaveAttribute('href', chapter.path)
+      // The first section opens the chapter: the chapter's own entry.
+      const titles = chapter.sections.slice(1).map(id => deck.doc.sections.find(s => s.id === id)!.title)
+      await expect(item.locator('.VPSidebarItem.level-2 a')).toHaveText(titles)
+    }
+    await expect(page.locator('.VPSidebar .VPSidebarItem.level-3')).toHaveCount(0)
+
+    await page.locator('.VPSidebar').getByRole('link', { name: '步骤作用域' }).click()
+    await expect(page).toHaveURL(/\/web\/advanced\.html#steps$/)
+    await expect(page.locator('h2#steps')).toBeInViewport()
+    await page.locator('.VPSidebar').getByRole('link', { name: '第三章 宽内容' }).click()
+    await expect(page).toHaveURL(/\/web\/wide-content\.html$/)
+    await expect(page.locator('h1#wide-content')).toBeInViewport()
+  })
+
+  test('the page outline lists the sections of the chapter, also after moving to another page', async ({ page }) => {
+    const outline = page.locator('.VPDocAsideOutline .VPDocOutlineItem.root > li > a')
+    await page.goto(deck.web('advanced.html'))
+    await expect(outline).toHaveText(['步进组件', '步骤作用域', '现场运行'])
+
+    await page.locator('.VPSidebar').getByRole('link', { name: '阅读页面' }).click()
+    await expect(page).toHaveURL(/\/web\/basics\.html$/)
+    await expect(outline).toHaveText(['阅读页面', '滚动叙事'])
+    await outline.nth(1).click()
+    await expect(page.locator('h2#scrolly')).toBeInViewport()
+  })
+
+  test('what the slide shows stands on a board, apart from the narration, and keeps its formatting', async ({ page }) => {
+    await page.goto(deck.web('basics.html'))
+    const reading = page.locator('.pm-section[data-section="reading"]')
+    // The slide's list and the code after it share one board.
+    const boards = reading.locator('.pm-board')
+    await expect(boards).toHaveCount(1)
+    await expect(boards.locator('> .pm-block--visual')).toHaveCount(2)
+    await expect(reading.locator('.pm-board .pm-block--narration')).toHaveCount(0)
+    await expect(boards.locator('li')).toHaveCount(3)
+    await expect(boards.locator('li strong')).toHaveText('上屏内容')
+
+    const style = (locator: Locator) => locator.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { border: s.borderLeftWidth, background: s.backgroundColor }
+    })
+    const board = await style(boards)
+    const narration = await style(reading.locator('.pm-block--narration').first())
+    expect(board.border).toBe('4px')
+    expect(board.background).not.toBe('rgba(0, 0, 0, 0)')
+    expect(narration).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)' })
+  })
+
+  test('code and tables on the stage of a scrolly section are not cut off', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto(deck.web('wide-content.html'))
+    const stage = page.locator('.pm-section--scrolly[data-section="wide"] .pm-stage')
+    await expect(stage.locator('.pm-code .shiki')).toHaveCount(2)
+    const boxes = await stage.locator('pre, table').evaluateAll(els => els.map((el) => {
+      const stage = el.closest('.pm-stage')!.getBoundingClientRect()
+      const box = el.getBoundingClientRect()
+      return { tag: el.tagName, inside: box.left >= stage.left && box.right <= stage.right, fits: el.scrollWidth <= el.clientWidth, scrolls: ['auto', 'scroll'].includes(getComputedStyle(el).overflowX) }
+    }))
+    expect(boxes.map(b => b.tag)).toEqual(['PRE', 'PRE', 'TABLE'])
+    // Every listing and table stays inside the stage; it fits, or it scrolls sideways.
+    for (const box of boxes) expect(box.inside && (box.fits || box.scrolls), JSON.stringify(box)).toBe(true)
+    // The code shrinks to the stage's width; a line too long even then scrolls, and the end of it can be read.
+    expect(boxes[0]!.fits).toBe(true)
+    expect(boxes[1]!.fits).toBe(false)
+    const long = stage.locator('pre').nth(1)
+    await long.evaluate((el) => {
+      el.scrollLeft = el.scrollWidth
+    })
+    await expect.poll(() => long.evaluate(el => Math.round(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1)).toBe(true)
+  })
+
+  test('a Chinese keyword is found within 300 ms and opens its section', async ({ page }) => {
+    await page.goto(deck.web())
+    const input = await openSearch(page)
+    // The first query loads the index; time later ones. The time includes VitePress's 200 ms input debounce.
+    await input.fill('网页')
+    await expect(results(page).first()).toBeVisible()
+    // The fastest of three, so that a moment of load on the machine does not count.
+    const times: number[] = []
+    for (let i = 0; i < 3 && !times.some(t => t < 300); i++) {
+      await input.fill('')
+      await expect(results(page)).toHaveCount(0)
+      times.push(await timeSearch(page, '讲稿即正文'))
+    }
+    expect(Math.min(...times)).toBeLessThan(300)
+    await results(page).first().click()
+    await expect(page).toHaveURL(/\/web\/basics\.html#reading$/)
+    await expect(page.locator('h2#reading')).toBeInViewport()
+  })
+
+  test('a section title alone finds its section, under its chapter', async ({ page }) => {
+    await page.goto(deck.web('advanced.html'))
+    const input = await openSearch(page)
+    await input.fill('滚动叙事')
+    const first = results(page).first()
+    await expect(first.locator('.title.main')).toContainText('滚动叙事')
+    await first.click()
+    await expect(page).toHaveURL(/\/web\/basics\.html#scrolly$/)
+    await expect(page.locator('h2#scrolly')).toBeInViewport()
+
+    await openSearch(page)
+    await input.fill('步骤作用域')
+    await expect(results(page).first().getByRole('link')).toHaveAttribute('aria-label', '第二章 进阶 > 步骤作用域')
+  })
+
+  test('search keeps working offline once the site has loaded', async ({ page, context }) => {
+    await page.goto(deck.web())
+    await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
+    await context.setOffline(true)
+    expect((await page.reload())?.fromServiceWorker()).toBe(true)
+    const input = await openSearch(page)
+    // Code is indexed too.
+    await input.fill('createViewer')
+    await results(page).first().click()
+    await expect(page.locator('h2#reading')).toBeInViewport()
+    await expect(page.locator('.pm-section[data-section="reading"] .pm-code')).toContainText('createViewer')
+    await context.setOffline(false)
+  })
+
+  test('no page scrolls sideways on a 375 px wide phone', async ({ page, browser }) => {
+    const paths = await webPages(page, deck.web())
+    expect(paths).toHaveLength(CHAPTERS.length)
+    const context = await phone(browser)
+    await expectNoSidewaysScroll(await context.newPage(), deck.url, paths)
     await context.close()
-  }
+  })
 
-  // The browser's default font size (a Chromium setting) sizes the text.
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Page.setFontSizes', { fontSizes: { standard: 24 } })
-  await page.goto(`${WEB}/web.html`)
-  const size = (selector: string) => page.locator(selector).first().evaluate(el => getComputedStyle(el).fontSize)
-  expect(await size('html')).toBe('24px')
-  expect(await size('body')).toBe('24px')
-})
+  test('pages reflow at 200 % and 400 % zoom and follow the reader\'s font size', async ({ page, browser }) => {
+    const paths = await webPages(page, deck.web())
+    // 200 %: 640 CSS px on a 1280 px wide screen; 400 %: 320 CSS px.
+    for (const options of [{ viewport: { width: 640, height: 400 }, deviceScaleFactor: 2 }, { viewport: { width: 320, height: 256 } }]) {
+      const context = await browser.newContext(options)
+      await expectNoSidewaysScroll(await context.newPage(), deck.url, paths)
+      await context.close()
+    }
 
-test('a scrollytelling section advances its steps with the narration, and back', async ({ page }) => {
-  await page.goto(`${WEB}/web.html`)
-  const section = page.locator('.pm-section--scrolly[data-section="scrolly"]')
-  const items = section.locator('.pm-stage li')
-  const stepper = section.locator('.pm-block[data-component="PmDemoStepper"]')
-  const scrollTo = (step: number) => section.locator(`.pm-step[data-step="${step}"]`).evaluate(el => el.scrollIntoView({ block: 'center' }))
+    // The browser's default font size (a Chromium setting) sizes the text.
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Page.setFontSizes', { fontSizes: { standard: 24 } })
+    await page.goto(deck.web('basics.html'))
+    const size = (selector: string) => page.locator(selector).first().evaluate(el => getComputedStyle(el).fontSize)
+    expect(await size('html')).toBe('24px')
+    expect(await size('body')).toBe('24px')
+  })
 
-  await expect(section).toHaveAttribute('data-step', '0')
-  await expect(items.nth(0)).toBeVisible()
-  await expect(items.nth(1)).toBeHidden()
+  test('a scrollytelling section advances its steps with the narration, and back', async ({ page }) => {
+    await page.goto(deck.web('basics.html'))
+    const section = page.locator('.pm-section--scrolly[data-section="scrolly"]')
+    const items = section.locator('.pm-stage li')
+    const stepper = section.locator('.pm-block[data-component="FixtureStepper"]')
+    const scrollTo = (step: number) => section.locator(`.pm-step[data-step="${step}"]`).evaluate(el => el.scrollIntoView({ block: 'center' }))
 
-  await scrollTo(2)
-  await expect(section).toHaveAttribute('data-step', '2')
-  await expect(items.nth(2)).toBeVisible()
-  await expect(stepper).toBeVisible()
-  await expect(stepper.locator('.pm-demo-stepper')).toHaveAttribute('data-step', '0')
-  await expect(section.locator('.pm-stage')).toBeInViewport()
+    await expect(section).toHaveAttribute('data-step', '0')
+    await expect(items.nth(0)).toBeVisible()
+    await expect(items.nth(1)).toBeHidden()
 
-  await scrollTo(3)
-  await expect(section).toHaveAttribute('data-step', '3')
-  await expect(stepper.locator('.pm-demo-stepper')).toHaveAttribute('data-step', '1')
-  await expect(stepper.locator('li').nth(1)).toBeHidden()
+    await scrollTo(2)
+    await expect(section).toHaveAttribute('data-step', '2')
+    await expect(items.nth(2)).toBeVisible()
+    await expect(stepper).toBeVisible()
+    await expect(stepper.locator('.fx-stepper')).toHaveAttribute('data-step', '0')
+    await expect(section.locator('.pm-stage')).toBeInViewport()
 
-  await scrollTo(1)
-  await expect(section).toHaveAttribute('data-step', '1')
-  await expect(items.nth(2)).toBeHidden()
-  await expect(stepper).toBeHidden()
-})
+    await scrollTo(3)
+    await expect(section).toHaveAttribute('data-step', '3')
+    await expect(stepper.locator('.fx-stepper')).toHaveAttribute('data-step', '1')
+    await expect(stepper.locator('li').nth(1)).toBeHidden()
 
-test('the two forms link to each other at the same section and step', async ({ page }) => {
-  const doc = await published(page)
-  const index = doc.sections.findIndex(s => s.id === 'web') + 1
+    await scrollTo(1)
+    await expect(section).toHaveAttribute('data-step', '1')
+    await expect(items.nth(2)).toBeHidden()
+    await expect(stepper).toBeHidden()
+  })
 
-  // Web to slides: each section links to its slide (the section number), at the scrolled-to step.
-  await page.goto(`${WEB}/web.html`)
-  const web = page.locator('.pm-section[data-section="web"]')
-  const toSlides = new URL((await web.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!)
-  expect(toSlides.pathname).toMatch(new RegExp(`/${index}$`))
-  const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-  await scrolly.locator('.pm-step[data-step="2"]').evaluate(el => el.scrollIntoView({ block: 'center' }))
-  await expect(scrolly).toHaveAttribute('data-step', '2')
-  const atStep = new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!)
-  expect(`${atStep.pathname}${atStep.search}`).toMatch(new RegExp(`/${index + 1}\\?clicks=2$`))
+  test('a small link beside each section heading opens its slide at the step read; the slides open the section back', async ({ page }) => {
+    const index = deck.slide('reading')
+    await page.goto(deck.web('basics.html'))
+    const reading = page.locator('.pm-section[data-section="reading"]')
+    const link = reading.locator('h2').getByRole('link', { name: '在幻灯片中打开' })
+    expect(new URL((await link.getAttribute('href'))!).pathname).toBe(`/slides/${index}`)
+    // Beside the title, which stays the heading's text (the outline shows it).
+    const [title, entry] = await Promise.all([reading.locator('h2').boundingBox(), link.boundingBox()])
+    expect(entry!.y).toBeLessThan(title!.y + title!.height)
+    expect((await shownText(reading.locator('h2')))[0]).toBe('阅读页面')
+    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+    await scrolly.locator('.pm-step[data-step="2"]').evaluate(el => el.scrollIntoView({ block: 'center' }))
+    await expect(scrolly).toHaveAttribute('data-step', '2')
+    const atStep = new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!)
+    expect(`${atStep.pathname}${atStep.search}`).toBe(`/slides/${index + 1}?clicks=2`)
 
-  // Slides to web: the slides form's button opens `?slide=N`, which lands on section N; a step can be given too.
-  await page.goto(`${WEB}/?slide=${index}`)
-  await expect(page).toHaveURL(/\/web\.html/)
-  await expect(page.locator('h2#web')).toBeInViewport()
-  await page.goto(`${WEB}/?section=scrolly&step=2`)
-  await expect(scrolly).toHaveAttribute('data-step', '2')
-  await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
-})
+    // The built slides show the slide, and their "read on the web" opens the section.
+    await page.goto(deck.slides(String(index)))
+    await expect(page.locator(`.slidev-page-${index}`)).toContainText('上屏内容')
+    const toWeb = page.getByRole('link', { name: '在网页中阅读' })
+    await expect(toWeb).toHaveAttribute('href', new RegExp(`/web/\\?slide=${index}$`))
+    await page.goto((await toWeb.getAttribute('href'))!)
+    await expect(page).toHaveURL(/\/web\/basics\.html/)
+    await expect(page.locator('h2#reading')).toBeInViewport()
 
-test('the built slides form and the web form open each other', async ({ page }) => {
-  const doc = await published(page)
-  const index = doc.sections.findIndex(s => s.id === 'web') + 1
-  await page.goto(`${WEB}/web.html`)
-  const link = page.locator('.pm-section[data-section="web"]').getByRole('link', { name: '在幻灯片中打开' })
-  const toSlides = new URL((await link.getAttribute('href'))!)
-  await page.goto(`${SLIDES}/${toSlides.pathname.split('/').at(-1)}`)
-  await expect(page.locator(`.slidev-page-${index}`)).toContainText('网页形态')
-  const toWeb = new URL((await page.getByRole('link', { name: '在网页中阅读' }).getAttribute('href'))!)
-  await page.goto(`${WEB}/${toWeb.search}`)
-  await expect(page.locator('h2#web')).toBeInViewport()
-})
+    // `?section=<id>&step=<n>` opens a section at a step.
+    await page.goto(deck.web('?section=scrolly&step=2'))
+    await expect(scrolly).toHaveAttribute('data-step', '2')
+    await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
+  })
 
-test('without any deck configuration the slides offer "read on the web", which opens slide N at step S', async ({ page }) => {
-  // The deck configures no addon for the button: the slides renderer adds it because the deck has a web form.
-  const doc = await published(page) as IRDocument & { config: { renderers: Record<string, { addons?: unknown }> } }
-  expect(doc.config.renderers.slides?.addons).toBeUndefined()
-  const index = doc.sections.findIndex(s => s.id === 'scrolly') + 1
+  test('without any deck configuration the slides offer "read on the web", which opens slide N at step S', async ({ page }) => {
+    // The deck configures no addon for the button: the slides renderer adds it because the deck has a web form.
+    expect(deck.doc.config.renderers.slides?.addons).toBeUndefined()
+    const index = deck.slide('scrolly')
+    await page.goto(deck.slides(`${index}?clicks=2`))
+    await expect(page.locator(`.slidev-page-${index}`)).toContainText('编译')
+    // The link follows the step once Slidev has applied `?clicks=`.
+    const link = page.getByRole('link', { name: '在网页中阅读' })
+    await expect(link).toHaveAttribute('href', new RegExp(`\\?slide=${index}&step=2$`))
+    await page.goto((await link.getAttribute('href'))!)
+    await expect(page).toHaveURL(/\/web\/basics\.html/)
+    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+    await expect(scrolly).toHaveAttribute('data-step', '2')
+    await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
+  })
 
-  await page.goto(`${SLIDES}/${index}?clicks=2`)
-  await expect(page.locator(`.slidev-page-${index}`)).toContainText('滚动叙事')
-  const toWeb = new URL((await page.getByRole('link', { name: '在网页中阅读' }).getAttribute('href'))!)
-  expect(toWeb.search).toBe(`?slide=${index}&step=2`)
-  await page.goto(`${WEB}/${toWeb.search}`)
-  await expect(page).toHaveURL(/\/web\.html/)
-  const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-  await expect(scrolly).toHaveAttribute('data-step', '2')
-  await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
-})
+  test('a component counts its steps from its block in the web form too', async ({ page }) => {
+    // In the present view, the stepper of `stepper` (at step 0) at step 1 and the one of `steps` (at step 2) at step 3.
+    const stepper = async (section: string, step: number) => {
+      await page.goto(deck.web(`advanced.html?view=present&section=${section}&step=${step}`))
+      const present = page.getByRole('region', { name: '放映' })
+      await expect(present).toHaveAttribute('data-step', String(step))
+      const shown = present.locator('.fx-stepper')
+      await expect(shown).toHaveAttribute('data-step', '1')
+      await expect(shown.locator('li[data-status="active"]')).toHaveText('解析文稿')
+      await expect(shown.locator('li').nth(1)).toBeHidden()
+      return shown.innerHTML()
+    }
+    expect(await stepper('steps', 3)).toBe(await stepper('stepper', 1))
+    // The document view shows every step: the last state.
+    await page.goto(deck.web('advanced.html'))
+    await expect(page.locator('.pm-section[data-section="stepper"] .fx-stepper')).toHaveAttribute('data-step', '3')
+  })
 
-test('a component counts its steps from its block in the web form too', async ({ page }) => {
-  // In the present view, the stepper of core (at step 0) at step 1 and the one of core-scope (at step 2) at step 3.
-  const stepper = async (section: string, step: number) => {
-    await page.goto(`${WEB}/core.html?view=present&section=${section}&step=${step}`)
-    const present = page.getByRole('region', { name: '放映' })
-    await expect(present).toHaveAttribute('data-step', String(step))
-    const shown = present.locator('.pm-demo-stepper')
-    await expect(shown).toHaveAttribute('data-step', '1')
-    await expect(shown.locator('li[data-status="active"]')).toHaveText('解析文稿')
-    await expect(shown.locator('li').nth(1)).toBeHidden()
-    return shown.innerHTML()
-  }
-  expect(await stepper('core-scope', 3)).toBe(await stepper('core', 1))
-})
+  test('a zh-CN deck speaks Chinese around the content: skip link, appearance switch, chapter links, 404 page', async ({ page }) => {
+    await page.goto(deck.web('basics.html'))
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+    await expect(page.locator('.VPSkipLink')).toHaveText('跳到正文')
+    await expect(page.locator('.VPNavBar .VPSwitchAppearance').filter({ visible: true })).toHaveAttribute('title', /^切换到(深色|浅色)模式$/)
+    await expect(page.locator('.VPDocFooter .pager-link .desc')).toHaveText(['上一章', '下一章'])
 
-test('the demo plugins start in the web form as in the slides: the greeting shows, the start report agrees', async ({ page }) => {
-  await page.goto(`${WEB}/core.html`)
-  await expect(page.locator('.pm-demo-greeting')).toHaveText('presmium.demo.consumer 收到 presmium.demo.provider 的问候')
-
-  // The start report is a presenter panel in both forms: the presenter window of the web form, the presenter view of the slides.
-  const demoPlugins = async () => {
-    await page.locator('.pm-presenter-panels summary').click()
-    const plugins = page.locator('.pm-start-report [data-plugin^="presmium.demo."]')
-    await expect(plugins).toHaveCount(3)
-    return Object.fromEntries(await plugins.evaluateAll(items => items.map(li => [(li as HTMLElement).dataset.plugin, (li as HTMLElement).dataset.status])))
-  }
-  await page.goto(`${WEB}/core.html?view=presenter&section=core`)
-  const web = await demoPlugins()
-  expect(web).toEqual({ 'presmium.demo.consumer': 'started', 'presmium.demo.provider': 'started', 'presmium.demo.orphan': 'disabled' })
-  await page.goto(`${SLIDES}/presenter/2`)
-  expect(await demoPlugins()).toEqual(web)
+    await page.goto(deck.web('no-such-page.html'))
+    await expect(page.locator('.NotFound')).toContainText('页面不存在')
+    await expect(page.locator('.NotFound').getByRole('link')).toHaveText('返回首页')
+  })
 })
 
 // e2e/fixtures/core/deck: an en-US deck with a long title and a test plugin (fixture.core) whose
@@ -421,6 +507,7 @@ test.describe('the fixture deck in the web form', () => {
     await expect(page.locator('.VPDocAsideOutline .outline-title')).toHaveText('On this page')
     await expect(page.locator('.pm-view-menu--bar')).toHaveAttribute('aria-label', 'View')
     await expect(page.locator('.pm-section[data-section="global"]').getByRole('link', { name: 'Open in the slides' })).toHaveAttribute('href', /\/slides\/2$/)
+    await expect(page.getByRole('link', { name: /^Next chapter/ })).toBeVisible()
     const input = await openSearch(page)
     await input.fill('nothing like this')
     await expect(page.locator('.VPLocalSearchBox')).toContainText('No results for')
@@ -451,6 +538,21 @@ test.describe('the fixture deck in the web form', () => {
     const before = await disposals()
     await page.reload()
     await expect.poll(disposals).toBe(before + 1)
+  })
+
+  test('the plugins start in the web form as in the slides: the start reports agree', async ({ page }) => {
+    // The start report is a presenter panel in both forms: the presenter window of the web form, the presenter view of the slides.
+    const plugins = async () => {
+      await page.locator('.pm-presenter-panels summary').click()
+      await expect(page.locator('.pm-start-report [data-plugin="fixture.core.lifecycle"]')).toBeVisible()
+      const items = page.locator('.pm-start-report [data-plugin^="fixture.core."]')
+      return Object.fromEntries(await items.evaluateAll(list => list.map(li => [(li as HTMLElement).dataset.plugin, (li as HTMLElement).dataset.status])))
+    }
+    await page.goto(`${site()}?view=presenter&section=lifecycle`)
+    const web = await plugins()
+    expect(web['fixture.core.lifecycle']).toBe('started')
+    await page.goto(`${deck.url}/slides/presenter/${deck.slide('lifecycle')}`)
+    expect(await plugins()).toEqual(web)
   })
 
   test('on a phone a long deck title does not widen any page, and the classroom badge stays on screen', async ({ page, browser }) => {

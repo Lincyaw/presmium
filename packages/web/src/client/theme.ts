@@ -97,6 +97,14 @@ function serviceWorker(offline: boolean): void {
   else window.addEventListener('load', register, { once: true })
 }
 
+/** A screen on a stand: the icon of the link to the slides. Its label is the link's, so the heading's text stays the title. */
+function slidesIcon() {
+  return h('svg', { 'viewBox': '0 0 24 24', 'width': '1em', 'height': '1em', 'aria-hidden': 'true', 'fill': 'none', 'stroke': 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('rect', { x: 2, y: 3, width: 20, height: 14, rx: 2 }),
+    h('path', { d: 'M8 21h8M12 17v4' }),
+  ])
+}
+
 /** Base URL of the slides form: configured, else the `slides` directory next to the site; none without a slides form. Browser only. */
 const slidesBase = ref<string>()
 /** Settles when the viewer plugins are installed, so their views can be opened by `?view=`. */
@@ -151,11 +159,17 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       const current = createViewer(input.doc, {
         renderer: 'web',
         sectionHref: id => withBase(links.value[id] ?? `/#${id}`),
-        sectionFooter(section, step) {
+        // A small link beside each section heading opens the section's slide at the step read (P-74).
+        sectionHeading(section, step) {
           if (!slidesBase.value) return null
-          return h('p', { class: 'pm-section__links' }, [
-            h('a', { class: 'pm-open-slides', href: slideUrl(slidesBase.value, form, section.index, step) }, WEB_MESSAGES[currentLocale()].openInSlides),
-          ])
+          const t = WEB_MESSAGES[currentLocale()]
+          return h('a', {
+            'class': 'pm-open-slides',
+            'href': slideUrl(slidesBase.value, form, section.index, step),
+            'title': t.openInSlides,
+            'aria-label': t.openInSlides,
+            'data-label': t.slides,
+          }, [slidesIcon()])
         },
         diagnostics: import.meta.env.DEV,
         // The dev server opens the file in the author's editor (K-11).
