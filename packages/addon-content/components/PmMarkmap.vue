@@ -2,7 +2,7 @@
 import { PmBoundary } from '@presmium/host'
 import MarkmapView from '../src/client/MarkmapView.vue'
 
-/** Mindmap of a `markmap` code block (P-41); `data` is produced by the Markdown transform. */
+/** Mindmap of a `{markmap}` directive (P-41); `data` is produced by the directive. */
 defineProps<{ data: string }>()
 </script>
 

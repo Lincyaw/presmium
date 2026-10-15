@@ -1,33 +1,76 @@
 /**
- * Hyperlinks a slide declares, which an export must keep (P-50). Read from the
- * slide Markdown after the addons' `transformMarkdown`, so generated links such
- * as code permalinks are included.
+ * Hyperlinks the slides show, which an export must keep (P-50). Read from the
+ * IR as the slides renderer sees it, so generated links such as code
+ * permalinks are included and narration (the speaker notes) is not.
  */
+import type { IRBlock, IRDocument, MdastNode, SourcePos } from '@presmium/kernel'
 
-const MARKDOWN_LINK = /(?<!!)\[(?:[^\]\\]|\\.)*\]\(\s*<?(https?:\/\/[^\s<>)]+)/g
-const REFERENCE = /^ {0,3}\[[^\]]+\]:\s*<?(https?:\/\/[^\s<>]+)/gm
-const AUTOLINK = /<(https?:\/\/[^\s<>]+)>/g
-/** `href`, `to` and attributes named like `permalink`, `repo-url`. */
+export interface DeclaredLink {
+  url: string
+  /** First slide (section index) that shows the link. */
+  slide: number
+  /** The block that shows it. */
+  source: SourcePos
+}
+
+/** `href`, `to` and attributes named like `permalink`, `repo-url` in raw HTML. */
 const ATTRIBUTE = /\s(?:href|to|[\w-]*link|[\w-]*url)\s*=\s*(["'])(https?:\/\/[^"']+)\1/gi
-/** The same names as keys of JSON passed to a component, e.g. `variants="[{&quot;href&quot;:&quot;https://…&quot;}]"`. */
+/** The same names as keys of JSON in an attribute, e.g. `data-ref='{"href": "https://…"}'`. */
 const JSON_KEY = /"(?:href|to|[\w-]*link|[\w-]*url)"\s*:\s*"(https?:\/\/[^"\\\s]+)"/gi
+const LINK_KEY = /^(?:href|to|.*link|.*url)$/i
 
-/** Absolute http(s) links of a slide, normalized and deduplicated, in source order. */
-export function declaredLinks(markdown: string): string[] {
-  const text = withoutDocOnly(withoutCode(markdown).replace(/<!--[\s\S]*?-->/g, ''))
-  const found = [
-    ...[MARKDOWN_LINK, REFERENCE, AUTOLINK].flatMap(re => [...text.matchAll(re)].map(m => ({ at: m.index, url: m[1]! }))),
-    ...[...text.matchAll(ATTRIBUTE)].map(m => ({ at: m.index, url: m[2]! })),
-    // Positions in the unescaped text are close enough to order the links.
-    ...[...text.replaceAll('&quot;', '"').matchAll(JSON_KEY)].map(m => ({ at: m.index, url: m[1]! })),
-  ].sort((a, b) => a.at - b.at)
-  return [...new Set(found.map(f => normalizeUrl(f.url.replaceAll('&amp;', '&'))).filter((url): url is string => url !== undefined))]
+function mdastLinks(node: MdastNode, found: string[]): void {
+  if ((node.type === 'link' || node.type === 'definition') && typeof node.url === 'string') found.push(node.url)
+  if (node.type === 'html' && typeof node.value === 'string') {
+    const html = node.value.replaceAll('&quot;', '"')
+    found.push(...[...html.matchAll(ATTRIBUTE)].map(m => m[2]!), ...[...html.matchAll(JSON_KEY)].map(m => m[1]!))
+  }
+  node.children?.forEach(child => mdastLinks(child, found))
+}
+
+function propLinks(value: unknown, found: string[], key = ''): void {
+  if (typeof value === 'string' && LINK_KEY.test(key)) found.push(value)
+  else if (Array.isArray(value)) value.forEach(item => propLinks(item, found, key))
+  else if (typeof value === 'object' && value !== null) Object.entries(value).forEach(([k, v]) => propLinks(v, found, k))
+}
+
+/** Links of a visual block, in document order. */
+function blockLinks(block: IRBlock): string[] {
+  const found: string[] = []
+  const { node } = block
+  if (node.type === 'markdown') mdastLinks(node.mdast, found)
+  else if (node.type === 'code' && node.origin?.permalink) found.push(node.origin.permalink)
+  else if (node.type === 'component') {
+    propLinks(node.props, found)
+    for (const child of node.children ?? []) found.push(...blockLinks(child))
+  }
+  return found
+}
+
+/**
+ * Absolute http(s) links of the slides, normalized and deduplicated, each
+ * with the first slide that shows it; slides hidden from the slides form
+ * (`hints.slides.hide`) and slides outside `range` are left out.
+ */
+export function slideLinks(doc: IRDocument, range?: Set<number>): DeclaredLink[] {
+  const links = new Map<string, DeclaredLink>()
+  for (const section of doc.sections) {
+    const hints = section.hints.slides ?? {}
+    if (hints.hide || hints.disabled || (range && !range.has(section.index))) continue
+    for (const block of section.blocks.filter(b => b.role === 'visual')) {
+      for (const raw of blockLinks(block)) {
+        const url = /^https?:\/\//i.test(raw) ? normalizeUrl(raw.replaceAll('&amp;', '&')) : undefined
+        if (url && !links.has(url)) links.set(url, { url, slide: section.index, source: block.source })
+      }
+    }
+  }
+  return [...links.values()]
 }
 
 /**
  * 1-based line, from line `from` up to before line `to`, where the source
- * writes `url` (normalized as `declaredLinks` returns it); undefined when no
- * line does, e.g. for a permalink that an addon generates.
+ * writes `url` (normalized as `slideLinks` returns it); undefined when no
+ * line does, e.g. for a permalink that a plugin generates.
  */
 export function linkLine(lines: string[], url: string, from: number, to = lines.length + 1): number | undefined {
   const forms = [url, url.replace(/\/$/, ''), url.replaceAll('&', '&amp;')].map(form => form.replace(/[.*+?^$()|[\]{}\\]/g, '\\$&'))
@@ -46,45 +89,6 @@ export function normalizeUrl(url: string): string | undefined {
   } catch {
     return undefined
   }
-}
-
-/** Removes fenced code blocks and inline code: URLs there are text, not links. */
-function withoutCode(markdown: string): string {
-  const lines: string[] = []
-  let fence: string | undefined
-  for (const line of markdown.split('\n')) {
-    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1]
-    if (fence === undefined && marker) fence = marker
-    else if (fence !== undefined && marker && marker[0] === fence[0] && marker.length >= fence.length) fence = undefined
-    else if (fence === undefined) lines.push(line)
-  }
-  return lines.join('\n').replace(/(`+)[\s\S]*?\1/g, '')
-}
-
-/** Removes elements marked `doc-only` (architecture §5.6): the slides form never shows them. */
-function withoutDocOnly(text: string): string {
-  const open = /<([a-zA-Z][\w-]*)\b[^>]*\sdoc-only\b[^>]*>/g
-  let result = text
-  for (let match = open.exec(result); match; match = open.exec(result)) {
-    const afterTag = match.index + match[0].length
-    const end = match[0].endsWith('/>') ? afterTag : closingEnd(result, match[1]!, afterTag)
-    result = result.slice(0, match.index) + result.slice(end)
-    open.lastIndex = match.index
-  }
-  return result
-}
-
-/** Index after the tag that closes `name` opened before `from`, or the end of the text. */
-function closingEnd(text: string, name: string, from: number): number {
-  const tags = new RegExp(`<(/?)${name}\\b[^>]*?(/?)>`, 'g')
-  tags.lastIndex = from
-  let depth = 1
-  for (let tag = tags.exec(text); tag; tag = tags.exec(text)) {
-    if (tag[1]) depth--
-    else if (!tag[2]) depth++
-    if (depth === 0) return tag.index + tag[0].length
-  }
-  return text.length
 }
 
 /** Slide numbers of a Slidev `--range` such as `1,4-5,6`; undefined means every slide. */

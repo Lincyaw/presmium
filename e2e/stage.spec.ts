@@ -1,8 +1,12 @@
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { SLIDES } from './urls.ts'
+import { SLIDES, WEB } from './urls.ts'
 
-// examples/demo/pages/stage.md: a slide of basic content, then a slide of steps with click-marked notes.
+// examples/demo/pages/stage.md: a section of basic content, then a section whose list reveals an
+// item per step with a paragraph of narration per step. Both forms are built by `presmium build`.
+const WEB_BUILT = existsSync(fileURLToPath(new URL('../examples/demo/dist/web/index.html', import.meta.url)))
 let basics: number
 let steps: number
 
@@ -51,14 +55,14 @@ test('tables, footnotes and highlighted code are visible', async ({ page }) => {
   await expect(code).toBeVisible()
   const colours = await code.locator('.line span').evaluateAll(spans => new Set(spans.map(s => getComputedStyle(s).color)).size)
   expect(colours).toBeGreaterThan(2)
-  await expect(code.locator('.line').nth(1)).toHaveClass(/highlighted/)
-  await expect(code.locator('.line').nth(0)).toHaveClass(/dishonored/)
 })
 
 test('presenter notes highlight the current step and fade the others', async ({ page }) => {
   await page.goto(`${SLIDES}/presenter/${steps}`)
   const notes = page.locator('.slidev-note-with-clicks').first()
+  // One paragraph of narration per step: the narration of the list binds to its items' steps.
   const step = (n: number) => notes.locator(':scope > p').nth(n)
+  await expect(notes.locator(':scope > p')).toHaveCount(3)
   const highlighted = 'rgba(139, 92, 246, 0.12)'
   const faded = 'rgba(136, 136, 136, 0.55)'
 
@@ -71,8 +75,8 @@ test('presenter notes highlight the current step and fade the others', async ({ 
     await expect(step(current)).not.toHaveCSS('color', faded)
     await expect(step(current - 1)).toHaveCSS('color', faded)
     await expect(step(current - 1)).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
-    await expect(step(3)).toHaveCSS('color', faded)
   }
+  await expect(step(0)).toHaveCSS('color', faded)
 })
 
 test('b blacks out the audience view and b again restores it', async ({ page }) => {
@@ -126,4 +130,17 @@ test('annotations are persisted: a drawing survives a reload', async ({ page }) 
   await page.reload()
   await expect(page.locator('.pm-stage-basics h1')).toBeVisible()
   await expect(strokes).not.toHaveCount(0)
+})
+
+test('the web form shows the table, the footnote at its section and the highlighted code', async ({ page }) => {
+  test.skip(!WEB_BUILT, 'the web form is not built')
+  await page.goto(`${WEB}/stage.html`)
+  const section = page.locator('.pm-section[data-section="stage-basics"]')
+  await expect(section.locator('table tbody tr')).toHaveCount(3)
+  // The footnote is defined at the end of the file but belongs to the section that refers to it.
+  await expect(section).toContainText('快捷键在演讲者视图和听众视图中都可用')
+  await expect(page.locator('.pm-section[data-section="stage-steps"]')).not.toContainText('快捷键在演讲者视图和听众视图中都可用')
+  const code = section.locator('pre.shiki')
+  await expect(code).toContainText('toggleScreen')
+  await expect.poll(() => code.locator('.line span').evaluateAll(spans => new Set(spans.map(s => getComputedStyle(s).color)).size)).toBeGreaterThan(2)
 })

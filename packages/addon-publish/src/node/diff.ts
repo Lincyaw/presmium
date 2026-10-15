@@ -1,12 +1,13 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
-import { DECK_ENTRY } from '@presmium/cli'
+import { DECK_ENTRY } from '@presmium/compiler'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { diffReport, pageStatus, pairPages, reportMarkdown } from '../domain/index.ts'
 import type { DiffSide, VisualDiff, VisualDiffReport } from '../domain/index.ts'
 import { git, run } from './process.ts'
+import { SLIDEV_ENTRY, slidesDeck } from './slides.ts'
 
 export interface DiffJob {
   refA: string
@@ -27,13 +28,14 @@ export interface DiffJob {
 }
 
 /**
- * Exports every page (slide and click step) of the deck at two commits as PNG
- * with `slidev export`, compares them with pixelmatch and writes `report.json`,
- * `report.md` and the images under `a/`, `b/` and `diff/` of the report directory.
+ * Renders the deck of two commits with the slides renderer, exports every
+ * page (slide and click step) of each Slidev deck as PNG with `slidev export`,
+ * compares them with pixelmatch and writes `report.json`, `report.md` and the
+ * images under `a/`, `b/` and `diff/` of the report directory.
  *
  * Each commit is checked out as a git worktree inside the deck directory, so
- * the deck's dependencies resolve from it by the usual Node lookup. Warnings
- * name what the comparison leaves out.
+ * the deck's plugins and renderers resolve from it by the usual Node lookup.
+ * Warnings name what the comparison leaves out.
  */
 export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffReport, out: string, warnings: string[] }> {
   const deckDir = resolve(job.deckDir)
@@ -63,8 +65,10 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
       const deck = join(checkout, relative(root, deckDir))
       if (!existsSync(join(deck, DECK_ENTRY))) throw new Error(`${side.ref} has no ${relative(root, join(deckDir, DECK_ENTRY))}`)
       if (job.install) await run(lockfileDir(deck, checkout), 'pnpm', ['install', '--frozen-lockfile', '--prefer-offline'])
+      const slides = await slidesDeck(deck)
+      warnings.push(...slides.warnings.map(w => `${side.ref}: ${w}`))
       // The variable reaches the page as import.meta.env (Vite exposes VITE_*); setup/root.ts then makes text rendering deterministic.
-      await run(deck, 'slidev', ['export', DECK_ENTRY, '--format', 'png', '--with-clicks', '--wait', String(job.wait ?? 500), '--output', join(out, label)], { VITE_PRESMIUM_VISUAL_DIFF: '1' })
+      await run(slides.dir, 'slidev', ['export', SLIDEV_ENTRY, '--format', 'png', '--with-clicks', '--wait', String(job.wait ?? 500), '--output', join(out, label)], { VITE_PRESMIUM_VISUAL_DIFF: '1' })
     } finally {
       await removeWorktree(root, checkout)
     }

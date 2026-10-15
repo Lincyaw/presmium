@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { DECK_ENTRY, findWorkspaceRoot, loadDeck, loadNodePlugins } from '@presmium/cli'
-import type { Deck } from '@presmium/cli'
-import { declaredLinks, linkLine, normalizeUrl, parseRange } from '../domain/index.ts'
+import { viewFor } from '@presmium/compiler'
+import { linkLine, normalizeUrl, parseRange, slideLinks } from '../domain/index.ts'
+import type { DeclaredLink } from '../domain/index.ts'
 import { pdfLinks } from './pdf.ts'
 import { run } from './process.ts'
+import { SLIDEV_ENTRY, slidesDeck } from './slides.ts'
 
 /**
  * Export job (P-50): the deck as PDF, the format whose links can be checked,
@@ -12,7 +13,7 @@ import { run } from './process.ts'
  */
 export interface ExportJob {
   deckDir: string
-  /** PDF path; defaults to `<exportFilename or slides-export>.pdf` in the deck directory. */
+  /** PDF path; defaults to `<renderers.slides.exportFilename or slides-export>.pdf` in the deck directory. */
   output?: string
   withClicks?: boolean
   /** Slidev range such as `1,4-6`. */
@@ -23,9 +24,9 @@ export interface ExportJob {
 
 export interface ExportedLink {
   url: string
-  /** First slide that declares the link. */
+  /** First slide that shows the link. */
   slide: number
-  /** Where that slide writes the link; the slide's first line when an addon generates it (e.g. a code permalink). */
+  /** Where the deck writes the link; the first line of its block when a plugin generates it (e.g. a code permalink). */
   source: { file: string, line: number }
   /** PDF pages that link to it; empty when the export lost the link. */
   pages: number[]
@@ -35,24 +36,28 @@ export interface ExportResult {
   output: string
   pages: number
   links: ExportedLink[]
-  /** Addons or transforms that could not be applied while collecting links. */
+  /** Compile and render findings, and plugins that could not be loaded. */
   warnings: string[]
 }
 
-/** Runs `slidev export` to PDF, then checks that every link the slides declare is a link in the PDF. */
+/**
+ * Renders the deck with the slides renderer, runs `slidev export` to PDF on
+ * the Slidev deck it writes, then checks that every link the slides show is a
+ * link in the PDF.
+ */
 export async function exportDeck(job: ExportJob): Promise<ExportResult> {
-  const deck = await loadDeck(job.deckDir)
-  const warnings = deck.findings.map(f => f.message)
-  const links = await expectedLinks(deck, parseRange(job.range), warnings)
+  const { compilation, dir, warnings } = await slidesDeck(job.deckDir)
+  const links = await located(slideLinks(viewFor(compilation.doc, 'slides'), parseRange(job.range)))
 
-  const name = job.output ?? resolve(deck.dir, String(deck.headmatter.exportFilename ?? 'slides-export'))
-  const output = resolve(name.endsWith('.pdf') ? name : `${name}.pdf`)
-  const args = ['export', DECK_ENTRY, '--format', 'pdf', '--output', output]
+  const filename = compilation.doc.config.renderers.slides?.exportFilename
+  const name = job.output ? resolve(job.output) : resolve(compilation.deckDir, String(filename ?? 'slides-export'))
+  const output = name.endsWith('.pdf') ? name : `${name}.pdf`
+  const args = ['export', SLIDEV_ENTRY, '--format', 'pdf', '--output', output]
   if (job.withClicks) args.push('--with-clicks')
   if (job.range) args.push('--range', job.range)
   if (job.dark) args.push('--dark')
   if (job.timeout) args.push('--timeout', String(job.timeout))
-  await run(deck.dir, 'slidev', args)
+  await run(dir, 'slidev', args)
 
   const pages = (await pdfLinks(output)).map(uris => new Set(uris.map(normalizeUrl)))
   return {
@@ -63,44 +68,15 @@ export async function exportDeck(job: ExportJob): Promise<ExportResult> {
   }
 }
 
-/** Links of the exported slides, after the addons' `transformMarkdown` (which generates e.g. code permalinks). */
-async function expectedLinks(deck: Deck, range: Set<number> | undefined, warnings: string[]): Promise<Omit<ExportedLink, 'pages'>[]> {
-  const { plugins, problems } = await loadNodePlugins(deck.dir, deck.headmatter.addons)
-  warnings.push(...problems.map(p => p.message))
-  const workspaceRoot = await findWorkspaceRoot(deck.dir)
-  const sources = new Map<string, string[]>()
-  const linesOf = async (file: string) => {
-    if (!sources.has(file)) sources.set(file, (await readFile(file, 'utf8')).split(/\r?\n/))
+/** Each link at the line of its block that writes it. */
+async function located(links: DeclaredLink[]): Promise<Omit<ExportedLink, 'pages'>[]> {
+  const sources = new Map<string, Promise<string[]>>()
+  const linesOf = (file: string) => {
+    if (!sources.has(file)) sources.set(file, readFile(file, 'utf8').then(text => text.split(/\r?\n/), () => []))
     return sources.get(file)!
   }
-  const links = new Map<string, Omit<ExportedLink, 'pages'>>()
-  for (const slide of deck.slides) {
-    if (slide.frontmatter.hide || slide.frontmatter.disabled || (range && !range.has(slide.index))) continue
-    let content = slide.content
-    for (const { plugin } of plugins) {
-      if (!plugin.transformMarkdown) continue
-      try {
-        content = await plugin.transformMarkdown({
-          content,
-          file: slide.file,
-          slide: slide.index,
-          mode: 'slides',
-          deckDir: deck.dir,
-          workspaceRoot,
-          headmatter: deck.headmatter,
-          frontmatter: slide.frontmatter,
-        })
-      } catch (error) {
-        warnings.push(`${plugin.id}: transformMarkdown failed on slide ${slide.index}: ${error instanceof Error ? error.message : String(error)}`)
-      }
-    }
-    // The slide's lines run up to the next slide of the same file.
-    const end = deck.slides.find(s => s.file === slide.file && s.line > slide.line)?.line
-    for (const url of declaredLinks(content)) {
-      if (links.has(url)) continue
-      const line = linkLine(await linesOf(slide.file), url, slide.line, end) ?? slide.line
-      links.set(url, { url, slide: slide.index, source: { file: slide.file, line } })
-    }
-  }
-  return [...links.values()]
+  return Promise.all(links.map(async ({ url, slide, source }) => {
+    const line = linkLine(await linesOf(source.file), url, source.line, (source.endLine ?? source.line) + 1) ?? source.line
+    return { url, slide, source: { file: source.file, line } }
+  }))
 }

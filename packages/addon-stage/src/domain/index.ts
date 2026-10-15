@@ -1,3 +1,5 @@
+export { placeFootnotes } from './footnotes.ts'
+
 /** Id under which this addon reads its own options from `presmium` config. */
 export const STAGE_ID = 'presmium.stage'
 

@@ -3,8 +3,10 @@
  * <html>. Like the forced colors of an operating system's high-contrast mode,
  * the content of slides (.slidev-layout) and of web pages (.vp-doc), plugin
  * components included, is then drawn in two colors: text in --pm-contrast-fg
- * (links in --pm-contrast-link) on --pm-contrast-bg, at full opacity. Both
- * pairs exceed WCAG AA (4.5:1) by far, in the light and the dark color scheme.
+ * (links in --pm-contrast-link) on --pm-contrast-bg. Both pairs exceed WCAG
+ * AA (4.5:1) by far, in the light and the dark color scheme. Diagrams, which
+ * draw their own colors (Mermaid, also in shadow roots), are redrawn in the
+ * same two colors by diagrams.ts.
  */
 :root[data-pm-contrast='high'] {
   --pm-contrast-bg: #ffffff;
@@ -60,11 +62,13 @@
 }
 
 /*
- * Content is opaque, wherever a theme or a component fades it. Click steps keep
- * their states (hidden until their click), transitions still fade, and lines
- * that a code step dims stay dimmed, at an opacity that still passes AA.
+ * Opacity is left alone: plugins show step states with it (hidden, done,
+ * pending), and a state must not change with the colors. With two colors,
+ * text faded down to 0.6 still passes AA. Only the host's own fades of
+ * content go further and are raised: the subtitle under a slide title, and
+ * the lines that a code step dims.
  */
-:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *:not(:empty, [class*='slidev-vclick'], [class*='-enter-'], [class*='-leave-']) {
+:root[data-pm-contrast='high'] .slidev-layout h1 + p {
   opacity: 1 !important;
 }
 

@@ -5,7 +5,7 @@ import { requestSpotlight, useCue } from '../src/client/index.ts'
 const props = defineProps<{
   /** CSS selector of the element to spotlight, looked up in this slide. */
   target: string
-  /** First step of the spotlight (default 1). */
+  /** First step of the spotlight (default 0, the step its block appears at). */
   at?: number | string
   /** Step at which it ends (exclusive); open-ended when absent. */
   until?: number | string

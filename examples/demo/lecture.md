@@ -31,3 +31,15 @@ renderers:
 
 ```{include} pages/core.md
 ```
+
+```{include} pages/stage.md
+```
+
+```{include} pages/guide.md
+```
+
+```{include} pages/content.md
+```
+
+```{include} pages/publish.md
+```

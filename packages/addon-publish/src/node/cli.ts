@@ -1,26 +1,27 @@
-import { existsSync } from 'node:fs'
 import { isAbsolute, join, relative } from 'node:path'
 import { parseArgs } from 'node:util'
 import type { ParseArgsConfig } from 'node:util'
-import { DECK_ENTRY } from '@presmium/cli'
+import { DECK_ENTRY } from '@presmium/compiler'
 import { visualDiff } from './diff.ts'
 import { exportDeck } from './export.ts'
+import { isDeck } from './slides.ts'
 
 // Exit codes as in `presmium check`: 0 ok, 1 problems found, 2 usage or runtime error.
 
 const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--output <file.pdf>] [--with-clicks] [--range <1,3-5>] [--dark] [--timeout <ms>] [--json]
 
-Exports the deck to PDF with \`slidev export\`, then checks that every link the
-slides declare (Markdown links, href and *link/*url attributes, code permalinks)
-is still a link in the PDF. Exits 1 when a link was lost.`
+Renders the deck with the slides renderer and exports the Slidev deck it
+writes to PDF with \`slidev export\`, then checks that every link the slides
+show (Markdown links, href and *link/*url attributes, code permalinks) is still
+a link in the PDF. Exits 1 when a link was lost.`
 
 const DIFF_USAGE = `Usage: presmium-diff <refA> <refB> [deckDir] [--out <dir>] [--threshold <ratio>] [--wait <ms>] [--install] [--json]
 
-Exports every slide and click step of the deck at two commits as PNG, compares
-them pixel by pixel and writes report.md and report.json (default directory
-<deckDir>/.presmium/diff). Exits 1 when a page differs by more than the
-threshold (a ratio of pixels, default 0). --wait lets each page settle before
-it is captured (default 500). Both commits render with the host and addons
+Renders the deck of two commits with the slides renderer, exports every slide
+and click step as PNG, compares them pixel by pixel and writes report.md and
+report.json (default directory <deckDir>/.presmium/diff). Exits 1 when a page
+differs by more than the threshold (a ratio of pixels, default 0). --wait lets
+each page settle before it is captured (default 500). Both commits render with the host and addons
 installed for the deck; --install renders each commit with the dependencies of
 its own pnpm lockfile instead, e.g. to check a host or addon upgrade.`
 
@@ -41,7 +42,7 @@ function parse<T extends ParseArgsConfig['options']>(argv: string[], options: T,
 }
 
 function deckOrError(dir: string, usage: string): string | undefined {
-  if (existsSync(join(dir, DECK_ENTRY))) return dir
+  if (isDeck(dir)) return dir
   console.error(`no ${DECK_ENTRY} in ${dir}\n\n${usage}`)
   return undefined
 }

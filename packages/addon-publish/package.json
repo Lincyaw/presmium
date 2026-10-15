@@ -17,9 +17,10 @@
   },
   "slidev": {},
   "dependencies": {
-    "@presmium/cli": "workspace:*",
+    "@presmium/compiler": "workspace:*",
     "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
+    "@presmium/render-slides": "workspace:*",
     "jiti": "^2.7.0",
     "pdf-lib": "^1.17.1",
     "pixelmatch": "^8.0.0",
@@ -30,6 +31,7 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
+    "@presmium/cli": "workspace:*",
     "@slidev/cli": "53.0.0",
     "@slidev/client": "53.0.0",
     "@slidev/theme-default": "^0.25.0",

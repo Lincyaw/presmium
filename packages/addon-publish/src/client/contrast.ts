@@ -1,5 +1,6 @@
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
+import { styleDiagrams } from './diagrams.ts'
 
 /**
  * High-contrast preference (P-52), shared by both forms. When on, `<html>`
@@ -26,6 +27,7 @@ function apply(on: boolean): void {
   enabled.value = on
   if (on) document.documentElement.setAttribute(CONTRAST_ATTRIBUTE, 'high')
   else document.documentElement.removeAttribute(CONTRAST_ATTRIBUTE)
+  styleDiagrams(on)
 }
 
 /** Applies the remembered or system preference once; later calls do nothing. */

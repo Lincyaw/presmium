@@ -1,3 +1,5 @@
 export { CONTENT_ID, DEMO_COUNTER_TAG, isCustomElementTag } from './elements.ts'
-export { decodeMarkmap, encodeMarkmap } from './markmap.ts'
+export { decodeMarkmap, encodeMarkmap, markmapOutline } from './markmap.ts'
 export type { MarkmapData, MarkmapNode } from './markmap.ts'
+export { MEDIA_KINDS, MEDIA_OPTIONS, mediaElements, mediaFallback, mediaHtml, mediaMdast } from './media.ts'
+export type { MediaElement, MediaKind, MediaOptions } from './media.ts'

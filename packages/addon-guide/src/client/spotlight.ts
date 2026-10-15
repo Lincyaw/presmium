@@ -8,6 +8,8 @@ import type { CueRequest } from './cue.ts'
 // The latest request is shown; when it ends, the previous one comes back.
 const requests = new Map<object, CueRequest>()
 let current: { driver: Driver; animate: boolean } | undefined
+/** The element shown in the spotlight, and whether we made it focusable. */
+let lit: { element: HTMLElement; tabindex: boolean } | undefined
 
 function config(animate: boolean): Config {
   return {
@@ -28,6 +30,29 @@ function config(animate: boolean): Config {
   }
 }
 
+const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex], [contenteditable]'
+
+/** The spotlit element takes the focus by Tab even when it holds no control (N-06). */
+function light(element: HTMLElement | undefined): void {
+  if (lit?.element === element) return
+  if (lit?.tabindex) lit.element.removeAttribute('tabindex')
+  lit = element && { element, tabindex: !element.matches(FOCUSABLE) }
+  if (lit?.tabindex) element!.setAttribute('tabindex', '-1')
+}
+
+/**
+ * driver.js keeps the focus on the spotlight with Tab, but only on the links
+ * and form controls of the popover and the element: on any other element it
+ * swallowed the key. Tab from outside the spotlit element now focuses it;
+ * inside it, driver.js moves the focus among its controls.
+ */
+function focusLit(event: KeyboardEvent): void {
+  if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey || !lit || lit.element.contains(document.activeElement)) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  lit.element.focus({ preventScroll: true })
+}
+
 /** Dims the page around the element; asking again for the same spotlight lays it out again. */
 export function requestSpotlight(owner: object, request: CueRequest | undefined): void {
   if (sameCue(requests.get(owner), request)) {
@@ -37,12 +62,18 @@ export function requestSpotlight(owner: object, request: CueRequest | undefined)
   requests.delete(owner)
   if (request) requests.set(owner, request)
   const shown = [...requests.values()].at(-1)
+  light(shown?.element)
   if (current && current.animate !== shown?.animate) {
     current.driver.destroy()
     current = undefined
+    window.removeEventListener('keydown', focusLit, true)
   }
   if (!shown) return
-  current ??= { driver: driver(config(shown.animate)), animate: shown.animate }
+  if (!current) {
+    current = { driver: driver(config(shown.animate)), animate: shown.animate }
+    // Before driver.js's own listener on the window, which listens without capture.
+    window.addEventListener('keydown', focusLit, true)
+  }
   const { element, title, text } = shown
   current.driver.highlight({ element, popover: title || text ? { title, description: text } : undefined })
 }
