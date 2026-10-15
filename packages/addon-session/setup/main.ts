@@ -1,0 +1,10 @@
+import { registerPresmiumPlugin } from '@presmium/host'
+import { defineAppSetup } from '@slidev/types'
+import sessionPlugin from '../src/client/plugin.ts'
+import { sessionSyncPlugin } from '../src/client/sync.ts'
+
+// The kernel starts in addon-core's setup/root.ts, after every addon has registered.
+export default defineAppSetup(() => {
+  registerPresmiumPlugin(sessionPlugin)
+  registerPresmiumPlugin(sessionSyncPlugin)
+})

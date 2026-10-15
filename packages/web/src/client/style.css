@@ -41,6 +41,23 @@
   font-size: 0.8125rem;
 }
 
+/* Plugins' toolbar items (@presmium/host): in the navigation bar, on phones in the navigation screen. */
+.pm-toolbar--screen {
+  margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
+  .pm-toolbar--bar {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .pm-toolbar--screen {
+    display: none !important;
+  }
+}
+
 .pm-present,
 .pm-presenter {
   z-index: calc(var(--vp-z-index-local-nav, 32) + 100);

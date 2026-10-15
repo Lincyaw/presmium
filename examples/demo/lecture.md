@@ -55,3 +55,6 @@ renderers:
 
 ```{include} pages/web.md
 ```
+
+```{include} pages/session.md
+```

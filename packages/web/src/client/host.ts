@@ -1,6 +1,6 @@
 /// <reference types="vitepress/client" />
 import { presmiumReport, presmiumService } from '@presmium/host'
-import type { HostAdapter, ViewRole } from '@presmium/host'
+import type { HostAdapter, Navigation, ViewRole } from '@presmium/host'
 import type { PresentationMode } from '@presmium/kernel'
 import { FINAL_STEP, getView, useSectionContext } from '@presmium/viewer'
 import type { Viewer } from '@presmium/viewer'
@@ -35,5 +35,26 @@ export function createViewerHost(viewer: Viewer): HostAdapter {
     useViewRole: () => role,
     getService: presmiumService,
     startReport: presmiumReport,
+  }
+}
+
+/**
+ * The `navigation` service of the web form: the IR runtime's section (by its
+ * number, as the slides form counts slides), step and view. Moving switches
+ * the view first, unless it is hidden (the presenter window), then shows the
+ * position, going to its page if needed.
+ */
+export function createViewerNavigation(viewer: Viewer): Navigation {
+  return {
+    position: computed(() => {
+      const { section, step } = viewer.position.value
+      return { slide: viewer.section(section)?.index ?? 1, step, view: viewer.view.value }
+    }),
+    go({ slide, step, view }) {
+      const target = view === undefined ? undefined : getView(view)
+      if (target && !target.hidden) viewer.setView(target.id)
+      const section = viewer.doc.value.sections.find(s => s.index === slide)
+      if (section) viewer.show({ section: section.id, step })
+    },
   }
 }

@@ -1,0 +1,5 @@
+export { classroomTransport, createClassroom } from './classroom.ts'
+export type { Classroom, ClassroomOptions } from './classroom.ts'
+export { sessionPlugin } from './plugin.ts'
+export { sessionSyncPlugin } from './sync.ts'
+export { useClassroom } from './use.ts'

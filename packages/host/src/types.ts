@@ -55,3 +55,51 @@ export interface SyncTransports {
 
 /** Host service of the slides form; absent in the document form. */
 export const SYNC_TRANSPORTS = defineService<SyncTransports>('presmium.syncTransports')
+
+// ---------------------------------------------------------------------------
+// Navigation: where this window is, and moving it, outside any component.
+// ---------------------------------------------------------------------------
+
+/** A place in the deck, the same in both forms (one slide per section). */
+export interface NavigationPosition extends Cursor {
+  /** Runtime view showing it (the web form: 'document', 'scrolly', 'present', ...); absent in the slides form. */
+  view?: string
+}
+
+export interface Navigation {
+  /** This window's position. */
+  readonly position: Readonly<Ref<NavigationPosition>>
+  /**
+   * Moves this window to a position. The web form also switches to `view`
+   * unless the view is unknown or hidden (the presenter window); the slides
+   * form has no views.
+   */
+  go(position: NavigationPosition): void
+}
+
+/** Host service of both forms, e.g. for a classroom whose learners follow the presenter. */
+export const NAVIGATION = defineService<Navigation>('presmium.navigation')
+
+// ---------------------------------------------------------------------------
+// Toolbar: controls plugins add to the host's toolbar.
+// ---------------------------------------------------------------------------
+
+export interface ToolbarItem {
+  id: string
+  title: string
+  /** A Vue component, rendered inline in the toolbar. */
+  component: unknown
+  order?: number
+}
+
+export interface Toolbar {
+  register(item: ToolbarItem): Unsubscribe
+  list(): ToolbarItem[]
+  subscribe(listener: () => void): Unsubscribe
+}
+
+/**
+ * Host service of both forms (`PmToolbar` shows it): the navigation bar of
+ * the web form, the navigation controls of the slides form.
+ */
+export const TOOLBAR = defineService<Toolbar>('presmium.toolbar')

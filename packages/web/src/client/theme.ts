@@ -1,8 +1,8 @@
-import { createPresenterPanels, installHost, pluginsOf, PmPresenterPanels, registerPresmiumPlugin, startPresmium } from '@presmium/host'
+import { createPresenterPanels, createToolbar, installHost, NAVIGATION, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, startPresmium, TOOLBAR } from '@presmium/host'
 import { PRESENTER_PANELS } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
-import type { LiveUpdate, Position } from '@presmium/viewer'
+import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
@@ -10,7 +10,7 @@ import type { Component } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
 import { offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
-import { createViewerHost } from './host.ts'
+import { createViewerHost, createViewerNavigation } from './host.ts'
 import { PresmiumPage, ViewMenu } from './page.ts'
 import './style.css'
 
@@ -26,7 +26,7 @@ export interface ThemeInput {
 }
 
 /** Registers the kernel plugins of every plugin package, as the slides form does, and starts the kernel. */
-async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>): Promise<void> {
+async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer): Promise<void> {
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
@@ -37,6 +37,8 @@ async function startKernel(loaders: ThemeInput['plugins'], config: Record<string
     config,
     beforeStart(kernel) {
       kernel.provide(PRESENTER_PANELS, createPresenterPanels())
+      kernel.provide(NAVIGATION, createViewerNavigation(viewer))
+      kernel.provide(TOOLBAR, createToolbar())
     },
   })
 }
@@ -92,8 +94,9 @@ const slidesBase = ref<string>()
 let viewersReady: Promise<void> = Promise.resolve()
 
 /**
- * Default layout plus the view menu in the navigation bar, the overlay views
- * and, in the presenter window, the presenter panels. `?slide=N&step=<n>`
+ * Default layout plus the view menu and the plugins' toolbar items in the
+ * navigation bar, the overlay views and, in the presenter window, the
+ * presenter panels. `?slide=N&step=<n>`
  * (from the slides form), `?section=<id>&step=<n>` and `?view=<id>` open a
  * position and a view.
  */
@@ -114,7 +117,9 @@ const Layout = defineComponent({
       if (getView(ask.view)) viewer.setView(ask.view)
     })
     return () => h(DefaultTheme.Layout, null, {
-      'nav-bar-content-after': () => h(ViewMenu),
+      // On phones the toolbar items move to the navigation screen (the menu), as VitePress does with its links.
+      'nav-bar-content-after': () => [h(ViewMenu), h(PmToolbar, { class: 'pm-toolbar--bar' })],
+      'nav-screen-content-after': () => h(PmToolbar, { class: 'pm-toolbar--screen' }),
       // Overlay views get the typography of the page body.
       'layout-bottom': () => [
         h('div', { class: 'vp-doc pm-overlay' }, [h(OverlayHost)]),
@@ -161,7 +166,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
       viewersReady = loadViewerPlugins(input.viewers ?? [])
-      void startKernel(input.plugins, input.doc.config.presmium)
+      void startKernel(input.plugins, input.doc.config.presmium, current)
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
       // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket. The site
       // title and the sidebar follow the document here, so the config never changes and the page never reloads.
