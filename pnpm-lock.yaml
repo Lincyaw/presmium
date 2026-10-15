@@ -145,12 +145,18 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@presmium/render-slides':
+        specifier: workspace:*
+        version: link:../render-slides
       markmap-lib:
         specifier: ^0.18.12
         version: 0.18.12(markmap-common@0.18.9)
       markmap-view:
         specifier: ^0.18.12
         version: 0.18.12(markmap-common@0.18.9)
+      plantuml-encoder:
+        specifier: ^1.4.0
+        version: 1.4.0
       vue:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
@@ -264,15 +270,18 @@ importers:
 
   packages/addon-publish:
     dependencies:
-      '@presmium/cli':
+      '@presmium/compiler':
         specifier: workspace:*
-        version: link:../cli
+        version: link:../compiler
       '@presmium/host':
         specifier: workspace:*
         version: link:../host
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@presmium/render-slides':
+        specifier: workspace:*
+        version: link:../render-slides
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -298,6 +307,9 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@slidev/cli':
         specifier: 53.0.0
         version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vitejs/devtools-kit@0.7.6(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(lightningcss@1.33.0)(markdown-it@14.3.2)(oxc-parser@0.153.0)(playwright-chromium@1.64.1)(postcss@8.5.30)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(terser@5.51.2)(vite-plugin-pwa@1.3.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(workbox-build@7.4.1(supports-color@9.4.0))(workbox-window@7.4.1))

@@ -1,31 +1,44 @@
-// Runs the real `slidev build` on a copy of ./fixtures/offline, which uses this
-// addon, and checks the service worker's precache manifest.
+// Runs the real `presmium build --to slides` on a copy of ./fixtures/offline, which
+// uses this addon: the compile pass downloads a remote image whose URL has no
+// extension (as PlantUML's have), and the service worker precaches the build.
+import { randomBytes } from 'node:crypto'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { PNG } from 'pngjs'
 import { afterAll, expect, it } from 'vitest'
-import { copyFixture, removeCopies, slidev } from './helpers.ts'
+import { bin, copyFixture, removeCopies } from './helpers.ts'
 
 afterAll(removeCopies)
 
-it('precaches the deck, its remote assets and the Pyodide runtime', async () => {
-  // A "remote" image on another origin, downloaded into the build.
-  const image = PNG.sync.write(new PNG({ width: 2, height: 2 }))
+it('downloads the remote images of the deck and precaches them with the deck and the Pyodide runtime', async () => {
+  // A "remote" image on another origin, served without a file extension; noise keeps it
+  // above the size Vite inlines, so the build has it as a file.
+  const png = new PNG({ width: 64, height: 64 })
+  randomBytes(png.data.length).copy(png.data)
+  const image = PNG.sync.write(png)
   const server = createServer((_, res) => res.writeHead(200, { 'content-type': 'image/png' }).end(image))
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
-  const remote = `http://127.0.0.1:${(server.address() as AddressInfo).port}/remote-image.png`
+  const remote = `http://127.0.0.1:${(server.address() as AddressInfo).port}/diagram/svg/SoWkIImgAStDuN`
 
   const dir = copyFixture('offline')
-  writeFileSync(join(dir, 'slides.md'), readFileSync(join(dir, 'slides.md'), 'utf8').replace('REMOTE_IMAGE', remote))
+  writeFileSync(join(dir, 'lecture.md'), readFileSync(join(dir, 'lecture.md'), 'utf8').replace('REMOTE_IMAGE', remote))
+  let result
   try {
-    await slidev(dir, 'build', 'slides.md', '--out', 'dist')
+    result = await bin('presmium', dir, 'build', '--to', 'slides', '--out', 'dist')
   } finally {
     server.close()
   }
+  expect(result.code, result.stdout + result.stderr).toBe(0)
 
-  const dist = join(dir, 'dist')
+  // The image is kept in the deck, so later builds have it without network.
+  const assets = readdirSync(join(dir, '.presmium/assets'))
+  expect(assets).toHaveLength(1)
+  expect(assets[0]).toMatch(/\.png$/)
+  expect(readFileSync(join(dir, '.presmium/assets', assets[0]!)).equals(image)).toBe(true)
+
+  const dist = join(dir, 'dist/slides')
   const files = readdirSync(dist, { recursive: true, encoding: 'utf8' })
   const precached = [...readFileSync(join(dist, 'sw.js'), 'utf8').matchAll(/url:"([^"]+)"/g)].map(m => m[1])
   const localImage = files.find(f => f.endsWith('.png') && readFileSync(join(dist, f)).equals(image))
@@ -33,4 +46,4 @@ it('precaches the deck, its remote assets and the Pyodide runtime', async () => 
   expect(readFileSync(join(dist, 'index.html'), 'utf8')).toContain('registerSW.js')
   expect(precached).toEqual(expect.arrayContaining(['index.html', 'favicon.svg', 'pyodide/pyodide.asm.wasm', localImage]))
   expect(files.filter(f => /\.(js|html)$/.test(f) && readFileSync(join(dist, f), 'utf8').includes(remote))).toEqual([])
-}, 120_000)
+}, 180_000)

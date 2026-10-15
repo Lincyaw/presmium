@@ -6,22 +6,23 @@ import { fileURLToPath } from 'node:url'
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const ADDON_DIR = fileURLToPath(new URL('..', import.meta.url))
 
-// Scratch copies live inside the package so that the decks resolve @slidev/cli,
-// the theme and playwright-chromium from its node_modules. Each fixture has its
-// own package.json, so each copy gets its own Vite cache and tests can run in parallel.
+// Scratch copies live inside the package so that the decks resolve the slides
+// renderer, @slidev/cli, the theme and playwright-chromium from its node_modules.
+// Each fixture has its own package.json, so each copy gets its own Vite cache and
+// tests can run in parallel.
 const SCRATCH = fileURLToPath(new URL('./.tmp', import.meta.url))
 const copies: string[] = []
 
 /**
- * A fresh copy of `fixtures/<name>`, with `ADDON_DIR` in its slides.md replaced
+ * A fresh copy of `fixtures/<name>`, with `ADDON_DIR` in its lecture.md replaced
  * by this addon's directory; call `removeCopies` in `afterAll`.
  */
 export function copyFixture(name: string): string {
   mkdirSync(SCRATCH, { recursive: true })
   const dir = mkdtempSync(join(SCRATCH, `${name}-`))
   cpSync(join(FIXTURES, name), dir, { recursive: true, filter: src => !src.includes('node_modules') })
-  const slides = join(dir, 'slides.md')
-  writeFileSync(slides, readFileSync(slides, 'utf8').replace('ADDON_DIR', ADDON_DIR))
+  const lecture = join(dir, 'lecture.md')
+  writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('ADDON_DIR', ADDON_DIR))
   copies.push(dir)
   return dir
 }
@@ -39,20 +40,18 @@ export interface Run {
   stderr: string
 }
 
-/** Runs one of this package's bins as a real process. */
-export function bin(name: 'presmium-export' | 'presmium-diff', cwd: string, ...args: string[]): Promise<Run> {
-  const file = join(ADDON_DIR, 'bin', `${name}.mjs`)
-  return new Promise((resolve) => {
-    execFile(process.execPath, [file, ...args], { cwd, env: SHELL_ENV, maxBuffer: 16 << 20 }, (error, stdout, stderr) => {
-      resolve({ code: error ? Number(error.code) : 0, stdout, stderr })
-    })
-  })
+const BINS = {
+  'presmium-export': join(ADDON_DIR, 'bin/presmium-export.mjs'),
+  'presmium-diff': join(ADDON_DIR, 'bin/presmium-diff.mjs'),
+  'presmium': join(ADDON_DIR, 'node_modules/@presmium/cli/bin/presmium.mjs'),
 }
 
-/** Runs this package's own `slidev`. */
-export function slidev(cwd: string, ...args: string[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    execFile(join(ADDON_DIR, 'node_modules/.bin/slidev'), args, { cwd, env: SHELL_ENV }, error => (error ? reject(error) : resolve()))
+/** Runs one of this package's bins, or the `presmium` CLI, as a real process. */
+export function bin(name: keyof typeof BINS, cwd: string, ...args: string[]): Promise<Run> {
+  return new Promise((resolve) => {
+    execFile(process.execPath, [BINS[name], ...args], { cwd, env: SHELL_ENV, maxBuffer: 16 << 20 }, (error, stdout, stderr) => {
+      resolve({ code: error ? Number(error.code) : 0, stdout, stderr })
+    })
   })
 }
 

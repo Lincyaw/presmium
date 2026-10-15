@@ -8,7 +8,7 @@ import { resolveTarget, useTargetMark } from './targets.ts'
 export interface CueProps {
   /** CSS selector of the target, looked up in the cue's slide. */
   target: string
-  /** First step (default 1). */
+  /** First step (default 0). */
   at?: number | string
   /** Step at which the cue ends (exclusive); open-ended when absent. */
   until?: number | string

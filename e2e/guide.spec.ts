@@ -1,9 +1,12 @@
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { SLIDES } from './urls.ts'
+import { SLIDES, WEB } from './urls.ts'
 
-// examples/demo/pages/guide.md: the cursor moves to the query (1), hovers (2) and clicks (3) the
-// search button; the results are spotlighted (4); the help button gets a hint (5).
+// examples/demo/pages/guide.md: a {cursor} moves to the query (1), hovers (2) and clicks (3) the
+// search button; a {spotlight} lights the results (4); a {hint} points at the help button (5).
+const WEB_BUILT = existsSync(fileURLToPath(new URL('../examples/demo/dist/web/index.html', import.meta.url)))
 const STEPS = [
   { cursor: '-1:none', mark: '', spotlight: '', hint: '', overlay: '', beacons: 0 },
   { cursor: '0:move', mark: '', spotlight: '', hint: '', overlay: '', beacons: 0 },
@@ -202,4 +205,58 @@ test('the presenter view shows the cues in its slides instead of covering the pa
   await expect(page.locator('[data-pm-hint]')).toHaveAttribute('data-pm-hint', 'inline')
   await expect(page.locator('.driver-overlay')).toHaveCount(0)
   await expect(page.locator('.driver-hint')).toHaveCount(0)
+})
+
+test('under the spotlight, Tab moves the focus to the spotlit element and the keys still page (N-06)', async ({ page }) => {
+  await openGuide(page, 4)
+  await expect.poll(() => cues(page)).toEqual(STEPS[4])
+  const output = page.locator('.pm-guide #guide-output')
+  await page.keyboard.press('Tab')
+  await expect(output).toBeFocused()
+  // Tab keeps the focus there while the spotlight lasts; Shift+Tab as well.
+  await page.keyboard.press('Tab')
+  await expect(output).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(output).toBeFocused()
+
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(() => cues(page)).toEqual(STEPS[5])
+  // The spotlight is over: its element is no longer made focusable.
+  await expect(output).not.toHaveAttribute('tabindex')
+  await page.keyboard.press('ArrowLeft')
+  await expect.poll(() => cues(page)).toEqual(STEPS[4])
+})
+
+test('in the web form the cues follow the steps of the present view and show in place', async ({ page }) => {
+  test.skip(!WEB_BUILT, 'the web form is not built')
+  await page.goto(`${WEB}/guide.html`)
+  // The document view shows every step done: the cursor has clicked, no spotlight or hint is left.
+  const section = page.locator('.pm-section[data-section="guide"]')
+  await expect(section.locator('#guide-run')).toHaveAttribute('data-pm-cursor', 'click')
+  await expect(section.locator('[data-pm-spotlight], [data-pm-hint]')).toHaveCount(0)
+
+  await page.getByRole('combobox', { name: '视图' }).selectOption('present')
+  const present = page.getByRole('region', { name: '放映' })
+  await expect(present).toHaveAttribute('data-section', 'guide')
+  const marks = () => present.evaluate((el) => {
+    const marked = (attribute: string) => [...el.querySelectorAll(`[${attribute}]`)].map(e => `${e.id}=${e.getAttribute(attribute)}`).join(' ')
+    return { cursor: marked('data-pm-cursor'), spotlight: marked('data-pm-spotlight'), hint: marked('data-pm-hint') }
+  })
+  const expected = [
+    { cursor: '', spotlight: '', hint: '' },
+    { cursor: '', spotlight: '', hint: '' },
+    { cursor: 'guide-run=hover', spotlight: '', hint: '' },
+    { cursor: 'guide-run=click', spotlight: '', hint: '' },
+    { cursor: 'guide-run=click', spotlight: 'guide-output=inline', hint: '' },
+    { cursor: 'guide-run=click', spotlight: '', hint: 'guide-help=inline' },
+  ]
+  for (const [step, marked] of expected.entries()) {
+    if (step > 0) await page.keyboard.press('ArrowRight')
+    await expect(present).toHaveAttribute('data-step', String(step))
+    await expect.poll(marks).toEqual(marked)
+  }
+  for (let step = expected.length - 2; step >= 0; step--) {
+    await page.keyboard.press('ArrowLeft')
+    await expect.poll(marks).toEqual(expected[step])
+  }
 })

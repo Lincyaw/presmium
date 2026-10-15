@@ -10,7 +10,8 @@ import { resolveTarget, useTargetMark } from './targets.ts'
 const props = defineProps<{ plan: PlannedWaypoint[] }>()
 
 const plan = props.plan
-const steps = [...new Set(plan.map(point => point.at))]
+// Step 0 needs no registration: the host always has it.
+const steps = [...new Set(plan.map(point => point.at))].filter(step => step > 0)
 // The cursor is at the last waypoint whose step has been reached; -1 before the first.
 const reached = plan.map(point => useStepState({ from: point.at }))
 const index = computed(() => reached.filter(state => state.value.reached).length - 1)

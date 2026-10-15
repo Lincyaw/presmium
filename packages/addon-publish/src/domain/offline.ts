@@ -10,7 +10,7 @@ export interface OfflineManifest {
   maxFileBytes: number
   /** Requests cached the first time they are made (cache first). */
   runtime: { cacheName: string, urlPattern: RegExp }[]
-  /** Remote media URLs in the deck source that the build downloads and serves itself. */
+  /** Remote media URLs in the Slidev deck that the slides build downloads and serves itself. */
   remoteAssets: RegExp
 }
 
@@ -32,4 +32,40 @@ export const OFFLINE_MANIFEST: OfflineManifest = {
   ],
   // Like vite-plugin-remote-assets' default rule, plus hosts with a port, GIF, AVIF, video, audio and fonts.
   remoteAssets: /\b(https?:\/\/[\w#&?./:%=+~-]*?\.(?:png|jpe?g|gif|svg|ico|webp|avif|mp4|webm|ogg|mp3|wav|woff2?|ttf|otf))(?=[`'")\]])/gi,
+}
+
+/**
+ * Directory, relative to the deck, of the remote images of the IR downloaded
+ * at compile time. Committed with the deck, it lets builds without network
+ * show them too.
+ */
+export const ASSETS_DIR = '.presmium/assets'
+
+const TYPES: Record<string, string> = {
+  'image/svg+xml': 'svg',
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+  'image/x-icon': 'ico',
+  'image/vnd.microsoft.icon': 'ico',
+}
+
+/**
+ * File extension of a downloaded asset: from the URL path when it names a
+ * media file, else from the response's content type (a PlantUML URL has no
+ * extension); undefined when neither tells.
+ */
+export function assetExtension(url: string, contentType: string | null): string | undefined {
+  const path = (() => {
+    try {
+      return new URL(url).pathname
+    } catch {
+      return ''
+    }
+  })()
+  const ext = /\.([a-z\d]+)$/i.exec(path)?.[1]?.toLowerCase()
+  if (ext && MEDIA.includes(ext)) return ext
+  return TYPES[(contentType ?? '').split(';')[0]!.trim().toLowerCase()]
 }

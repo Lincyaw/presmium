@@ -1,37 +1,39 @@
 ---
-theme: default
 title: Publish fixture
-addons:
+plugins:
   - ADDON_DIR
-fonts:
-  provider: none
+renderers:
+  slides:
+    theme: default
+    fonts:
+      provider: none
 ---
 
-# Code with a permalink
+## Code with a permalink
 
+:::{slide}
 [math.py#L1-L2 @ 3f2a9c1](https://github.com/presmium/sample-repo/blob/3f2a9c1/src/math.py#L1-L2)
+:::
 
 ```py
 def add(a, b):
     return a + b
 ```
 
----
+## Steps
 
-# Steps
-
+:::{slide}
 Always visible.
+:::
 
-<v-click>
-
+:::{slide}
+:reveal:
 Shown after one click.
+:::
 
-</v-click>
+## Hidden link
 
----
-
-# Hidden link
-
+:::{slide}
 <div style="display: none">
 
 [a link that never renders](https://example.com/hidden)
@@ -39,3 +41,4 @@ Shown after one click.
 <span data-ref='{"href": "https://example.com/json-prop"}'>nor does a link passed to a component as JSON</span>
 
 </div>
+:::

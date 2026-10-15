@@ -1,18 +1,33 @@
+import type { DirectiveSpec } from '@presmium/kernel'
 import { Transformer } from 'markmap-lib'
-import { encodeMarkmap } from '../domain/index.ts'
+import { CONTENT_ID, encodeMarkmap, markmapOutline } from '../domain/index.ts'
 
 const transformer = new Transformer()
 
-/** Renders the Markdown of a `markmap` code block as a `PmMarkmap` tag (P-41). */
-export function renderMarkmap(code: string): string {
-  const { root, frontmatter } = transformer.transform(code)
-  return `<PmMarkmap data="${encodeMarkmap({ root, options: frontmatter?.markmap })}" />`
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-// A ```markmap or ~~~markmap fence at the start of a line, up to its closing fence.
-const FENCE = /^(`{3,}|~{3,})markmap\b[^\n]*\n([\s\S]*?)^\1[ \t]*$/gm
-
-/** Replaces every `markmap` code block of a slide's Markdown with its `PmMarkmap` tag. */
-export function replaceMarkmapBlocks(markdown: string): string {
-  return markdown.replace(FENCE, (_block, _fence, code: string) => `\n${renderMarkmap(code)}\n`)
+/**
+ * `{markmap}` (P-41): headings and lists drawn as a mindmap by `PmMarkmap`;
+ * renderers that cannot draw it show the outline as a nested list. The
+ * `markmap` option holds markmap's JSON options; a YAML block at the start of
+ * the body sets it, as markmap's own frontmatter does.
+ */
+export const markmapDirective: DirectiveSpec = {
+  name: 'markmap',
+  body: true,
+  toIR(input) {
+    const { root, frontmatter } = transformer.transform(input.body)
+    const options = isRecord(input.options.markmap) ? input.options.markmap : frontmatter?.markmap
+    return {
+      node: {
+        type: 'component',
+        plugin: CONTENT_ID,
+        name: 'PmMarkmap',
+        props: { data: encodeMarkmap({ root, ...options ? { options } : {} }) },
+        fallback: markmapOutline(root),
+      },
+    }
+  },
 }

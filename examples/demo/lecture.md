@@ -34,6 +34,9 @@ renderers:
 ```{include} pages/core.md
 ```
 
+```{include} pages/stage.md
+```
+
 ```{include} pages/code.md
 ```
 
@@ -41,6 +44,15 @@ renderers:
 ```
 
 ```{include} pages/exec-local.md
+```
+
+```{include} pages/guide.md
+```
+
+```{include} pages/content.md
+```
+
+```{include} pages/publish.md
 ```
 
 ```{include} pages/web.md
