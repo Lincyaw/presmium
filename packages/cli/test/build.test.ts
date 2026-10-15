@@ -27,22 +27,26 @@ it('build writes the IR, runs the deck renderers and reports what they cannot re
   expect(existsSync(join(dir, 'ok/dist/ir.json'))).toBe(true)
 })
 
-it('dev recompiles when a source file is saved', async () => {
+it('dev recompiles when a source file is saved and pushes the IR to the renderer dev servers', async () => {
   const dir = fixtures()
   const ir = join(dir, 'dev/ir.json')
+  const server = join(dir, 'dev/fixture/dev.json')
   const child = spawn(process.execPath, [BIN, 'dev', 'lecture', '--out', 'dev'], { cwd: dir })
   const exited = new Promise<number | null>(resolve => child.on('exit', resolve))
   try {
     let output = ''
     child.stdout.on('data', (chunk: Buffer) => output += chunk)
     await expect.poll(() => output, { timeout: 15_000 }).toContain('watching')
+    expect(output).toContain('fixture  fixture://dev')
     expect(json(ir).sections[2].title).toBe('逐步演示')
 
     const chapter = join(dir, 'lecture/chapter.md')
     writeFileSync(chapter, readFileSync(chapter, 'utf8').replace('## 逐步演示', '## 逐步演示（修订）'))
     await expect.poll(() => json(ir).sections[2].title, { timeout: 10_000 }).toBe('逐步演示（修订）')
+    await expect.poll(() => json(server).at(-1)[2], { timeout: 10_000 }).toBe('逐步演示（修订）')
   } finally {
     child.kill('SIGTERM')
   }
   expect(await exited).toBe(0)
+  expect(json(server).at(-1)).toBe('closed')
 })

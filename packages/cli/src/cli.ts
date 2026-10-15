@@ -123,7 +123,7 @@ async function ir(command: Command): Promise<number> {
 }
 
 async function buildDeck(command: Command): Promise<number> {
-  const compilation = await new Compiler(command.entry).compile()
+  const compilation = await new Compiler(command.entry).compile({ pruneCache: true })
   const outDir = resolve(command.out ?? join(compilation.deckDir, 'dist'))
   const report = await build(compilation, { outDir, to: command.to })
   process.stdout.write(buildText(report, compilation.runs))

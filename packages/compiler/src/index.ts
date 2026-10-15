@@ -1,5 +1,5 @@
 export { Compiler, DECK_ENTRY, frontmatterLine, resolveEntry, sortFindings } from './compiler.ts'
-export type { Compilation } from './compiler.ts'
+export type { Compilation, CompileOptions } from './compiler.ts'
 export { FREEZE_DIR, FreezeCache } from './execute.ts'
 export type { RunStats } from './execute.ts'
 export { loadPlugin, loadPlugins, NODE_PLUGIN_EXPORT } from './plugins.ts'

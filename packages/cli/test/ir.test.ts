@@ -1,5 +1,5 @@
 // `presmium ir` on fixtures/lecture: the compiler passes of docs/ir.md sections 2 and 4.
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { IRBlock, IRDocument } from '@presmium/kernel'
 import { expect, it } from 'vitest'
@@ -16,17 +16,25 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
   expect(doc.sections.map(s => ({ id: s.id, depth: s.depth, steps: s.steps, blocks: s.blocks.map(step) }))).toEqual([
     // The cover: content before the first `##`, titled by the `#` heading.
     { id: 'bpe-分词', depth: 0, steps: 0, blocks: ['paragraph-1 visual 0', 'paragraph-2 narration 0'] },
-    // The id comes from the label; list items reveal one per step; narration binds to the step before it;
-    // visual content without :reveal: shows from step 0.
+    // The id comes from the label; list items reveal one per step; narration binds to the step at which
+    // the stepwise block before it appears; visual content without :reveal: shows from step 0.
     { id: 'bpe-merge', depth: 2, steps: 2, blocks: [
       'paragraph-1 narration 0',
       'list-1 visual 0+2',
-      'paragraph-2 narration 2',
+      'paragraph-2 narration 0',
       'code-1 visual 0',
-      'paragraph-3 narration 2 only web,notebook',
+      'paragraph-3 narration 0 only web,notebook',
     ] },
-    // A component spans its steps; a revealed block appears at the next one.
-    { id: '逐步演示', depth: 2, steps: 3, blocks: ['fixture-stepper-1 visual 0+2', 'paragraph-1 narration 2', 'code-1 visual 3', 'paragraph-2 narration 3'] },
+    // A component spans its steps; a revealed {slide} appears whole at the next step; so does a revealed block.
+    { id: '逐步演示', depth: 2, steps: 4, blocks: [
+      'fixture-stepper-1 visual 0+2',
+      'paragraph-1 narration 0',
+      'paragraph-2 visual 3',
+      'list-1 visual 3',
+      'paragraph-3 narration 3',
+      'code-1 visual 4',
+      'paragraph-4 narration 4',
+    ] },
   ])
 
   const [cover, merge, demo] = doc.sections
@@ -63,6 +71,14 @@ it('executes code once, answers from the cache after, and reruns only changed co
   edit('lecture/chapter.md', 'merge pair\n', 'merge pairs\n')
   expect(await outputs()).toEqual(['COUNT PAIRS\n', 'MERGE PAIRS\n'])
   expect(runs()).toEqual(['count pairs', 'merge pair', 'merge pairs'])
+
+  // `build` drops the recording of the code that changed.
+  const freeze = join(dir, 'lecture/.presmium/freeze')
+  const recorded = () => readdirSync(freeze).map(f => JSON.parse(readFileSync(join(freeze, f), 'utf8')).code).sort()
+  expect(recorded()).toEqual(['count pairs', 'merge pair', 'merge pairs'])
+  expect((await presmium(dir, ['build', 'lecture', '--out', join(dir, 'out')], { PRESMIUM_FIXTURE_RUNS: log })).code).toBe(0)
+  expect(recorded()).toEqual(['count pairs', 'merge pairs'])
+  expect(runs()).toHaveLength(3)
 
   // Without the executor installed, the committed cache still provides the same outputs.
   edit('lecture/lecture.md', '  - ../addons/echo\n', '')

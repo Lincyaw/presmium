@@ -228,7 +228,11 @@ export interface CheckContext {
   /** Absolute workspace root (git root, or deckDir when not in git). */
   workspaceRoot: string
   headmatter: Record<string, unknown>
-  /** One entry per IR section; `content` is the section's source text. */
+  /**
+   * One entry per IR section and source file (a section that continues in an
+   * included file has one entry per file, with the same `index`); `content` is
+   * the lines the section spans in `file`. MyST sections have no frontmatter.
+   */
   slides: DeckSlide[]
   src: SourceReader
   resolvers: AnchorResolverRegistry

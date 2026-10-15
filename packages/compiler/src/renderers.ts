@@ -136,6 +136,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
     const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), findings)
     try {
+      await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)
       servers.push({ renderer: renderer.id, url: server.url, server })
     } catch (error) {

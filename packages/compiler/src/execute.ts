@@ -4,10 +4,11 @@
  * in `outputs`. Results are cached in `.presmium/freeze/` under a hash of
  * language, code, arguments, executor id and environment, so unchanged code
  * never runs twice, and a deck with a committed cache builds without the
- * runtime installed.
+ * runtime installed. `presmium build` prunes the recordings of code that is
+ * no longer in the deck.
  */
 import { createHash } from 'node:crypto'
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CodeNode, Executor, Finding, IRBlock, IRDocument, RecordedRun, RunCache, RunRequest } from '@presmium/kernel'
 import { errorMessage, isRecord } from './workspace.ts'
@@ -18,6 +19,8 @@ export const FREEZE_DIR = '.presmium/freeze'
 interface FreezeRecord {
   /** Hash of the request without executor and environment; finds a recording when no executor is installed. */
   input?: string
+  /** Deck-relative entry file whose code the record answers; set on the records of the execution pass. */
+  entry?: string
   lang?: string
   code?: string
   run: RecordedRun
@@ -25,9 +28,15 @@ interface FreezeRecord {
 
 export class FreezeCache implements RunCache {
   readonly dir: string
+  readonly entry: string
+  /** Inputs of the requests made in this compilation. */
+  readonly used = new Set<string>()
+  /** File name -> record, read once when first needed (a lookup without an executor, or pruning). */
+  #records?: Map<string, FreezeRecord>
 
-  constructor(dir: string) {
+  constructor(dir: string, entry: string) {
     this.dir = dir
+    this.entry = entry
   }
 
   get(key: string): RecordedRun | undefined {
@@ -40,23 +49,48 @@ export class FreezeCache implements RunCache {
 
   /** Stores a run with the request it answers. */
   record(key: string, input: string, request: RunRequest, run: RecordedRun): void {
-    this.#write(key, { input, lang: request.lang, code: request.code, run })
+    this.#write(key, { input, entry: this.entry, lang: request.lang, code: request.code, run })
   }
 
   /** A recording of the same request by any executor, for builds without the runtime. */
   find(input: string): RecordedRun | undefined {
-    const files = (() => {
-      try {
-        return readdirSync(this.dir).filter(f => f.endsWith('.json')).sort()
-      } catch {
-        return []
-      }
-    })()
-    for (const file of files) {
-      const record = this.#read(file)
-      if (record?.input === input) return record.run
+    for (const record of this.#all().values()) {
+      if (record.input === input) return record.run
     }
     return undefined
+  }
+
+  /**
+   * Removes the records of this entry whose request was not made in this
+   * compilation: the outputs of code that was edited or deleted. Records of
+   * other entries and those stored by plugins through `set` are kept.
+   */
+  prune(): number {
+    let removed = 0
+    for (const [file, record] of this.#all()) {
+      if (record.entry !== this.entry || !record.input || this.used.has(record.input)) continue
+      rmSync(join(this.dir, file), { force: true })
+      this.#records?.delete(file)
+      removed++
+    }
+    return removed
+  }
+
+  #all(): Map<string, FreezeRecord> {
+    if (!this.#records) {
+      this.#records = new Map()
+      let files: string[] = []
+      try {
+        files = readdirSync(this.dir).filter(f => f.endsWith('.json')).sort()
+      } catch {
+        // No cache yet.
+      }
+      for (const file of files) {
+        const record = this.#read(file)
+        if (record) this.#records.set(file, record)
+      }
+    }
+    return this.#records
   }
 
   #read(file: string): FreezeRecord | undefined {
@@ -71,6 +105,7 @@ export class FreezeCache implements RunCache {
   #write(key: string, record: FreezeRecord): void {
     mkdirSync(this.dir, { recursive: true })
     writeFileSync(join(this.dir, `${key}.json`), `${JSON.stringify(record, null, 2)}\n`)
+    this.#records?.set(`${key}.json`, record)
   }
 }
 
@@ -107,6 +142,7 @@ async function runCode(
   if (run.stdin !== undefined) request.stdin = run.stdin
   if (run.timeoutMs !== undefined) request.timeoutMs = run.timeoutMs
   const input = hash({ lang: request.lang, code: request.code, args: request.args, stdin: request.stdin, executor: run.executor })
+  cache.used.add(input)
   const executor = run.executor ? executors.find(e => e.id === run.executor) : executors.find(e => e.supports(run.lang))
 
   if (!executor) {

@@ -3,7 +3,7 @@
  * section into blocks. Directives become IR nodes (built-in `{slide}`,
  * `{only}`, `{hints}`, `{component}`, and the directives of plugins); every
  * block gets its role, narration or visual. Step numbers are assigned later
- * (see steps.ts) from `reveal` and `span`.
+ * (see steps.ts) from `reveal`, `group` and `span`.
  */
 import type {
   BlockRole,
@@ -29,8 +29,10 @@ export interface BlockDraft {
   /** Prefix of the generated block id, e.g. 'paragraph', 'code', 'pm-demo-stepper'. */
   kind: string
   role: BlockRole
-  /** Appears at the step after the current one. */
+  /** `:reveal:` on the block itself: it appears at the step after the last one used. */
   reveal: boolean
+  /** Set on every block of a `{slide}` or `{only}` with `:reveal:`: the blocks of a group appear together. */
+  group?: number
   span: number
   only?: RendererId[]
   source: SourcePos
@@ -69,33 +71,37 @@ const DROPPED = new Set(['comment', 'mystTarget', BODY])
 interface Scope {
   visual: boolean
   only?: RendererId[]
-  /** Reveal of the enclosing `{slide}` or `{only}`: 'next' for its first visual block, 'items' for each of its lists. */
-  reveal?: 'next' | 'items'
+  /** `:reveal: items` on the enclosing `{slide}` or `{only}`: each of its lists reveals its items. */
+  items?: boolean
+  /** Group of the enclosing `{slide}` or `{only}` with `:reveal:`. */
+  group?: number
 }
 
-type Push = (draft: Omit<BlockDraft, 'only' | 'reveal' | 'label'> & { label?: string, reveal?: boolean }) => void
+/** The blocks and hints of the section being converted. */
+interface Output {
+  blocks: BlockDraft[]
+  hints: Hints
+  groups: number
+}
+
+type Push = (draft: Omit<BlockDraft, 'only' | 'reveal' | 'group' | 'label'> & { label?: string, reveal?: boolean }) => void
 
 export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Promise<{ blocks: BlockDraft[], hints: Hints }> {
-  const blocks: BlockDraft[] = []
-  const hints: Hints = {}
-  await convert(nodes, { visual: false }, ctx, blocks, hints)
-  return { blocks, hints }
+  const out: Output = { blocks: [], hints: {}, groups: 0 }
+  await convert(nodes, { visual: false }, ctx, out)
+  return { blocks: out.blocks, hints: out.hints }
 }
 
-async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out: BlockDraft[], hints: Hints): Promise<void> {
+async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out: Output): Promise<void> {
   let label: string | undefined
-  let reveal = scope.reveal
   const push: Push = (draft) => {
     const items = draft.node.type === 'markdown' ? listItems(draft.node.mdast) : 0
-    if (reveal === 'items' && items > 0 && draft.node.type === 'markdown') {
+    if (scope.items && items > 0 && draft.node.type === 'markdown') {
       draft.node.reveal = 'items'
       draft.span = items
     }
-    // The reveal of an enclosing {slide} or {only} goes to its first visual block.
-    const inherited = reveal === 'next' && draft.role === 'visual'
-    out.push({ ...draft, label: draft.label ?? label, reveal: draft.reveal === true || inherited, only: scope.only })
+    out.blocks.push({ ...draft, label: draft.label ?? label, reveal: draft.reveal === true, group: scope.group, only: scope.only })
     label = undefined
-    if (inherited) reveal = undefined
   }
 
   for (const node of nodes) {
@@ -106,10 +112,9 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
     }
     if (DROPPED.has(node.type)) continue
     if (node.type === 'mystDirective') {
-      const before = out.length
-      await directive(node, source, { ...scope, reveal }, label, ctx, push, hints, out)
-      if (out.length > before) label = undefined
-      if (reveal === 'next' && out.slice(before).some(b => b.role === 'visual')) reveal = undefined
+      const before = out.blocks.length
+      await directive(node, source, scope, label, ctx, push, out)
+      if (out.blocks.length > before) label = undefined
       continue
     }
     if (node.type === 'code') {
@@ -121,7 +126,7 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
   }
 }
 
-async function directive(node: MdastNode, source: SourcePos, scope: Scope, target: string | undefined, ctx: BlockContext, push: Push, hints: Hints, out: BlockDraft[]): Promise<void> {
+async function directive(node: MdastNode, source: SourcePos, scope: Scope, target: string | undefined, ctx: BlockContext, push: Push, out: Output): Promise<void> {
   const name = String(node.name)
   const options = isRecord(node.options) ? node.options as Record<string, string | true> : {}
   const arg = typeof node.args === 'string' ? node.args.trim() : ''
@@ -138,10 +143,16 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       if (ids.length === 0) fail('needs the renderer ids it is limited to, e.g. {only} web, notebook')
       only = scope.only ? scope.only.filter(id => ids.includes(id)) : ids
     }
-    const inner: Scope = { visual: scope.visual || name === 'slide', only, reveal: reveal ?? scope.reveal }
-    const start = out.length
-    await convert(bodyNodes(node), inner, ctx, out, hints)
-    const first = out[start]
+    // `:reveal:` makes the whole directive a group that appears at the next step.
+    const inner: Scope = {
+      visual: scope.visual || name === 'slide',
+      only,
+      items: reveal === undefined ? scope.items : reveal === 'items',
+      group: reveal === 'next' ? ++out.groups : scope.group,
+    }
+    const start = out.blocks.length
+    await convert(bodyNodes(node), inner, ctx, out)
+    const first = out.blocks[start]
     if (first) first.label ??= label ?? target
     return
   }
@@ -149,7 +160,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   if (name === 'hints') {
     const data = yamlBody(body, fail)
     for (const [renderer, value] of Object.entries(data ?? {})) {
-      if (isRecord(value)) hints[renderer] = { ...hints[renderer], ...value }
+      if (isRecord(value)) out.hints[renderer] = { ...out.hints[renderer], ...value }
       else fail(`hints for "${renderer}" must be a mapping`)
     }
     return
@@ -187,7 +198,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       workspaceRoot: ctx.workspaceRoot,
       config,
       source,
-      parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx) }),
+      parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx, source.file) }),
       report: finding => ctx.report({ ...finding, source: finding.source ?? { file: source.file, line: source.line } }),
     }
     try {
@@ -237,22 +248,34 @@ function markdown(nodes: MdastNode[], ctx: BlockContext): IRNode {
 
 /**
  * Standard mdast for the IR: positions, comments and labels are dropped and
- * MyST wrappers around processed directives and roles are unwrapped.
+ * MyST wrappers around processed directives and roles are unwrapped. MyST
+ * syntax that nothing processed does not reach the IR: an unknown role keeps
+ * its text, an unknown directive is dropped.
  */
-function clean(nodes: MdastNode[], ctx: BlockContext): MdastNode[] {
+function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNode[] {
   return nodes.flatMap((node): MdastNode[] => {
     if (DROPPED.has(node.type)) return []
     if (node.type === 'mystDirective' || node.type === 'mystRole') {
       const name = String(node.name)
-      if (node.type === 'mystDirective' && (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name))) {
-        const where = sourceOf(node, ctx.entry)
-        ctx.report({ checkId: 'presmium.directive', severity: 'warning', message: `{${name}} is only supported at the top level of a section or in {slide} and {only}; it is dropped`, source: { file: where.file, line: where.line } })
-        return []
+      if (node.children?.length && !(node.type === 'mystDirective' && (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name)))) {
+        return clean(node.children, ctx, file)
       }
-      if (node.children?.length) return clean(node.children, ctx)
+      const where = sourceOf(node, file)
+      const report = (severity: Finding['severity'], message: string) =>
+        ctx.report({ checkId: 'presmium.directive', severity, message, source: { file: where.file, line: where.line } })
+      if (node.type === 'mystRole') {
+        report('warning', `unknown role {${name}}; its text is kept as plain text`)
+        return typeof node.value === 'string' ? [{ type: 'text', value: node.value }] : []
+      }
+      if (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name)) {
+        report('warning', `{${name}} is only supported at the top level of a section or in {slide} and {only}; it is dropped`)
+      } else {
+        report('error', `{${name}}: unknown directive; is the plugin that provides it listed in \`plugins\`?`)
+      }
+      return []
     }
     const { position: _position, children, ...rest } = node
-    return [children ? { ...rest, children: clean(children, ctx) } as MdastNode : rest as MdastNode]
+    return [children ? { ...rest, children: clean(children, ctx, file) } as MdastNode : rest as MdastNode]
   })
 }
 

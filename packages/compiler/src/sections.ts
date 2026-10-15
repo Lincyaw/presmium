@@ -1,9 +1,10 @@
 /**
  * Pass 2 (docs/ir.md section 2.2): a heading at the section depth opens a
- * section; shallower headings are the document title before the first
- * section and chapter titles after it. Content before the first section is
- * the cover. Section ids come from the MyST label before the heading, or
- * from the title.
+ * section. Of the shallower headings, the first one before any section is the
+ * document title and titles the cover; every other one is a chapter title and
+ * opens a section of its own, before or after the first section alike.
+ * Content before the first section is the cover. Section ids come from the
+ * MyST label before the heading, or from the title.
  */
 import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
 import { fileOf, lineOf } from './source.ts'
@@ -37,7 +38,7 @@ export function splitSections(nodes: MdastNode[], options: SplitOptions, report:
   for (const node of nodes) {
     const current = drafts.at(-1)
     const depth = node.type === 'heading' && typeof node.depth === 'number' ? node.depth : undefined
-    if (depth !== undefined && depth <= options.sectionDepth && (depth === options.sectionDepth || opened)) {
+    if (depth !== undefined && depth <= options.sectionDepth && (depth === options.sectionDepth || opened || drafts[0]?.titled)) {
       opened = true
       const label = current ? takeLabel(current.nodes) : undefined
       drafts.push({ label, title: plainText(node), depth, source: sourceOf(node, options.entry), nodes: [] })

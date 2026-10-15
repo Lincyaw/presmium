@@ -2,16 +2,19 @@
  * Pass 8 (docs/ir.md section 4): checks the IR against its schema
  * (packages/kernel/src/ir.ts) and the invariants of the compilation context
  * (docs/domain-model.md section 3A). Plugin passes may have changed the IR;
- * every violation is an `error` finding located at its section or block.
+ * every violation is an `error` finding located at its section or block, or
+ * at the first line of the entry file when it concerns the whole document.
  */
 import { IR_VERSION } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRSection, SourcePos } from '@presmium/kernel'
 import { isRecord } from './workspace.ts'
 
-export function validateIR(doc: IRDocument): Finding[] {
+/** `entry` locates the document-level findings; it defaults to `meta.entry`. */
+export function validateIR(doc: IRDocument, entry?: string): Finding[] {
   const findings: Finding[] = []
-  const fail = (message: string, source?: SourcePos) =>
-    findings.push({ checkId: 'presmium.ir', severity: 'error', message, ...source ? { source: { file: source.file, line: source.line } } : {} })
+  const file = entry ?? (isRecord(doc.meta) && typeof doc.meta.entry === 'string' ? doc.meta.entry : 'ir.json')
+  const fail = (message: string, source: SourcePos = { file, line: 1 }) =>
+    findings.push({ checkId: 'presmium.ir', severity: 'error', message, source: { file: source.file, line: source.line } })
 
   if (doc.ir !== IR_VERSION) fail(`ir must be ${IR_VERSION}`)
   if (!isRecord(doc.meta) || typeof doc.meta.title !== 'string' || typeof doc.meta.entry !== 'string') fail('meta needs a title and an entry')
@@ -19,7 +22,10 @@ export function validateIR(doc: IRDocument): Finding[] {
   if (!isRecord(config) || !Array.isArray(config.plugins) || !isRecord(config.presmium) || !isRecord(config.renderers)) {
     fail('config needs plugins, presmium and renderers')
   }
-  if (!Array.isArray(doc.sections)) return [...findings, { checkId: 'presmium.ir', severity: 'error', message: 'sections must be a list' }]
+  if (!Array.isArray(doc.sections)) {
+    fail('sections must be a list')
+    return findings
+  }
 
   const ids = new Set<string>()
   doc.sections.forEach((section, i) => {

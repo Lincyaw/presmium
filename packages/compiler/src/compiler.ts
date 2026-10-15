@@ -6,7 +6,7 @@
  */
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, extname, join, resolve } from 'node:path'
+import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, IR_VERSION, createAnchorResolverRegistry } from '@presmium/kernel'
 import type { AnchorResolverRegistry, DeckSlide, Executor, Finding, IRDocument, IRSection, SourceReader } from '@presmium/kernel'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
@@ -16,7 +16,8 @@ import type { RunStats } from './execute.ts'
 import { loadPlugins, pluginComponents, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem } from './plugins.ts'
 import { splitSections } from './sections.ts'
-import { Parser, readFrontmatter } from './source.ts'
+import type { RawSection } from './sections.ts'
+import { fileOf, lineOf, Parser, readFrontmatter } from './source.ts'
 import { scheduleSteps } from './steps.ts'
 import { validateIR } from './validate.ts'
 import { createSourceReader, errorMessage, findWorkspaceRoot, isRecord } from './workspace.ts'
@@ -44,8 +45,17 @@ export interface Compilation {
   resolvers: AnchorResolverRegistry
   lock: AnchorLock
   plugins: LoadedPlugin[]
-  /** One entry per section, for checks written against `CheckContext.slides`. */
+  /**
+   * For checks written against `CheckContext.slides` until they read the IR
+   * (WP-44): one entry per section and source file, whose `content` is the
+   * lines the section spans in that file; MyST sections have no frontmatter.
+   */
   slides: DeckSlide[]
+}
+
+export interface CompileOptions {
+  /** Remove the recorded runs of code no longer in the deck when the compilation has no errors (`presmium build`). */
+  pruneCache?: boolean
 }
 
 /** Resolves a deck argument (a directory holding lecture.md, or an entry file) to its entry file. */
@@ -68,7 +78,7 @@ export class Compiler {
     this.deckDir = dirname(this.entry)
   }
 
-  async compile(): Promise<Compilation> {
+  async compile(options: CompileOptions = {}): Promise<Compilation> {
     const text = await readFile(this.entry, 'utf8').catch(() => {
       throw new Error(`${this.entry} not found`)
     })
@@ -150,7 +160,7 @@ export class Compiler {
     } catch (error) {
       report({ checkId: 'presmium.lock', severity: 'error', message: errorMessage(error), source: { file: lockFile, line: 1 } })
     }
-    const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR))
+    const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR), relative(this.deckDir, this.entry))
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
     for (const { pass, loaded } of passes) {
@@ -173,10 +183,11 @@ export class Compiler {
 
     // Pass 7: compile-time execution; pass 8: validation.
     const runs = await executePass(doc, executors, cache, report)
-    findings.push(...validateIR(doc))
+    findings.push(...validateIR(doc, this.entry))
     doc.diagnostics = sortFindings(findings)
+    if (options.pruneCache && !findings.some(f => f.severity === 'error')) cache.prune()
 
-    const slides = await sectionSlides(sections, parser)
+    const slides = await sectionSlides(raw, this.entry, parser)
     return { doc, files: source.files, runs, deckDir: this.deckDir, entry: this.entry, frontmatter: headmatter, workspaceRoot, src, resolvers, lock, plugins, slides }
   }
 
@@ -194,12 +205,24 @@ export class Compiler {
   }
 }
 
-async function sectionSlides(sections: IRSection[], parser: Parser): Promise<DeckSlide[]> {
+async function sectionSlides(sections: RawSection[], entry: string, parser: Parser): Promise<DeckSlide[]> {
   const slides: DeckSlide[] = []
-  for (const section of sections) {
-    const text = (await parser.read(section.source.file))?.text ?? ''
-    const lines = text.split('\n').slice(section.source.line - 1, section.source.endLine ?? section.source.line)
-    slides.push({ index: section.index, file: section.source.file, line: section.source.line, frontmatter: {}, content: lines.join('\n') })
+  for (const [i, section] of sections.entries()) {
+    // Line range of the section in each file, the heading's file first; included files have their own.
+    const ranges = new Map<string, { line: number, endLine: number }>()
+    const add = (file: string, line: number, endLine: number) => {
+      const range = ranges.get(file)
+      ranges.set(file, range ? { line: Math.min(range.line, line), endLine: Math.max(range.endLine, endLine) } : { line, endLine })
+    }
+    add(section.source.file, section.source.line, section.source.line)
+    for (const node of section.nodes) {
+      const lines = lineOf(node)
+      if (lines) add(fileOf(node, entry), lines.line, lines.endLine)
+    }
+    for (const [file, { line, endLine }] of ranges) {
+      const text = (await parser.read(file))?.text ?? ''
+      slides.push({ index: i + 1, file, line, frontmatter: {}, content: text.split('\n').slice(line - 1, endLine).join('\n') })
+    }
   }
   return slides
 }
