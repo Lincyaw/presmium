@@ -387,3 +387,21 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 **交付**：基于 `vscode-languageserver` 与 `@presmium/compiler` 的语言服务：诊断、锚点跳转、悬停显示引用代码与录制输出、补全；VS Code 扩展；编辑器光标所在章节与 `presmium dev` 预览同步。
 
 **验收**（集成测试，以 LSP 协议驱动语言服务进程）：失效锚点产生诊断；在锚点上请求定义返回代码区间；补全返回 region 名与指令名。
+
+## WP-60 验收缺口修补
+
+最终验收审计在 `main` f33198c 上发现 51 个缺口（12 个主要、39 个次要），完整清单、证据与修法见 `docs/acceptance-gaps.md`。缺口按代码归属分为四个可并行的工作包，文件归属互不重叠；组间需要配合的地方以 `acceptance-gaps.md`“组间约定”一节中的接口约定为准（语言、章节级配置、静态导出降级、交叉引用文字）。
+
+| 工作包 | 范围 | 对应清单中的组 |
+|---|---|---|
+| WP-60a | 内核、编译器、宿主接口、两个宿主适配、幻灯片渲染端、CLI | G1-kernel-host-pipeline |
+| WP-60b | IR 运行时与讲台插件、示例页面 | G2-ir-runtime-and-stage |
+| WP-60c | 课堂、会话、课堂服务、富内容、代码引用、引导、语言服务与 VS Code 扩展 | G3-classroom-content-code-editor |
+| WP-60d | 执行、本地环境、发布、notebook 渲染端、文档、根配置、性能与多浏览器测试 | G4-exec-publish-notebook-docs |
+
+**通用验收**：
+
+- 本组在 `acceptance-gaps.md` 中的每个缺口都按“修法与验收”完成，并有对应的集成或端到端测试；
+- 按组间约定实现本组承担的一侧，并用本组自己的测试文稿（`e2e/fixtures/<组>/`）验证，不依赖其他组的实现；
+- 合并前全量 `pnpm test` 与全量 Playwright 套件通过。
+
