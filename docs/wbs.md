@@ -195,7 +195,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 **验收**：导出的 PDF 中含有代码永久链接；离线模式下重新加载页面可放映；高对比度切换后对比度达到 WCAG AA；对同一提交运行差异报告结果为零差异，修改一页后该页被列出。
 
-## WP-30 会话与同步
+## WP-30 会话与同步（已完成）
 
 **拥有**：`packages/addon-session/`、`packages/classroom-server/`、`examples/demo/pages/session.md`、`e2e/session.spec.ts`；可以在 `packages/host/src/types.ts` 中以可选字段扩展宿主接口（例如导航到指定光标）。
 
@@ -235,6 +235,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 理解度汇聚（P-67）：主讲视图显示分布。
 - 课堂结束后拒绝写入。
 - 示例页 `pages/classroom.md`（MyST），并加入 `lecture.md`。
+- 接手 WP-30 遗留的 P-60 “归档”：`SessionService` 增加归档（导出课堂文档到文稿目录下的文件，并释放服务端内存），课堂服务与会话插件实现之；为此本包也拥有 `packages/addon-session/`、`packages/classroom-server/` 与 `packages/kernel/src/contracts.ts` 中 `SessionService` 的相关改动。
 
 **验收**（Playwright，三个浏览器上下文：主讲、两名学习者，网页形态为主，幻灯片形态至少覆盖测验）：
 

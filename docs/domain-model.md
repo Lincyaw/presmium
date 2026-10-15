@@ -133,7 +133,8 @@
 | 光标 | `Cursor { slide, step }` | `useNav()` 的当前页与 `$clicks` | 当前章节；滚动叙事式下为滚动到的步骤 |
 | 步骤状态 | `useStep()`，组件用 `useStepState(range)`（相对于块的步骤作用域） | 由 `$clicks` 推导 | 文档式下恒为已到达；滚动叙事式下由滚动推导 |
 | 视图角色 | `ViewRole` | 听众、演讲者 | 读者 |
-| 传输 | `SyncTransport` | `addSyncMethod` 注册的同步方式 | 不适用 |
+| 传输 | `SyncTransport` | `addSyncMethod` 注册的同步方式 | 服务存在但没有通道；跟随主讲通过导航服务实现 |
+| 导航 | `Navigation` | 当前页与步骤，`go()` 跳转 | IR 运行时的章节、步骤与视图，`go()` 跳转 |
 | 错误边界 | `PmBoundary` | Vue `onErrorCaptured` | 同左 |
 | 演讲者面板 | `PresenterPanel` | 仅在演讲者渲染上下文显示的全局图层 | 不显示 |
 

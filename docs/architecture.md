@@ -148,9 +148,12 @@ interface HostAdapter {
 | `presmium.executor` | 代码执行（浏览器、本地容器两个实现，经路由汇总） | 课堂（练习校验） |
 | `presmium.session` | 会话 | 测验、笔记、提问、理解度 |
 | `presmium.classroomStore` | 会话 | 测验、笔记、提问、理解度 |
-| `presmium.presenterPanels` | 宿主适配（Slidev） | 需要演讲者面板的插件 |
+| `presmium.presenterPanels` | 宿主适配（两种形态；网页形态在放映视图的演讲者窗口中显示） | 需要演讲者面板的插件 |
+| `presmium.syncTransports` | 宿主适配（两种形态；只有幻灯片形态有可同步的通道） | 会话（接入 Slidev 的状态同步） |
+| `presmium.navigation` | 宿主适配（两种形态） | 会话（读取与设置位置：章节、步骤、视图） |
+| `presmium.toolbar` | 宿主适配（两种形态，由 `PmToolbar` 显示） | 需要工具栏入口的插件（如会话状态） |
 
-令牌及其接口类型定义在内核中，服务替换时双方都不需要改动。
+内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`）定义在 `packages/kernel/src/contracts.ts`；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`）定义在 `packages/host/src/types.ts`。服务替换时，提供方与使用方都不需要改动。
 
 ## 5. 插件约定
 

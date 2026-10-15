@@ -267,7 +267,7 @@ Presmium 内核（`@presmium/core`，本身也是一个 Slidev 插件）只包�
 | @devcontainers/cli | MIT | 复用仓库的 devcontainer 定义作为执行环境（P-22） |
 | driver.js | MIT | 聚光与交互提示（P-31、P-32） |
 | markmap | MIT | 思维导图（P-41） |
-| Yjs + y-websocket | MIT | 跨设备实时同步，作为 Slidev 的同步方式接入（P-61） |
+| Yjs + y-protocols | MIT | 跨设备实时同步（P-61）。课堂服务基于 y-protocols 自行实现约 170 行：`@y/websocket-server` 0.1.5 依赖 yjs 14 预发布版，0.1.1 静态引入 y-leveldb，均不适合直接依赖 |
 | pixelmatch | ISC | 渲染结果的可视化差异（P-53） |
 | VitePress | MIT | 网页形态、本地全文搜索、目录与大纲（P-70 至 P-74） |
 
