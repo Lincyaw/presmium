@@ -1,17 +1,17 @@
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { useFixture } from './fixtures/deck.ts'
 import { build, serve, writeDeck } from './fixtures/plugins/decks.ts'
-import { SLIDES, WEB } from './urls.ts'
 
-// The sections of examples/demo/pages/content.md set a routeAlias for the slides form,
-// so the spec does not depend on how many slides come before them.
-const WEB_BUILT = existsSync(fileURLToPath(new URL('../examples/demo/dist/web/index.html', import.meta.url)))
+// e2e/fixtures/content: its sections set a routeAlias for the slides form, so the spec does not
+// depend on how many slides come before them.
+test.describe.configure({ mode: 'default' })
+const content = useFixture('content')
 
 async function open(page: Page, alias: string) {
-  await page.goto(`${SLIDES}/${alias}`)
+  await page.goto(`${content().slides}/${alias}`)
   const slide = page.locator(`.slidev-layout.pm-${alias}`)
   await expect(slide).toBeVisible()
   return slide
@@ -99,8 +99,7 @@ test('an embedded web component keeps its own interactive state', async ({ page 
 })
 
 test('the web form renders the same content: math, diagrams, mindmap, media and the web component', async ({ page }) => {
-  test.skip(!WEB_BUILT, 'the web form is not built')
-  await page.goto(`${WEB}/content.html`)
+  await page.goto(`${content().web}/content.html`)
   const section = (id: string) => page.locator(`.pm-section[data-section="${id}"]`)
   await expect(section('content-diagrams').locator('.katex').first()).toBeVisible()
   await expect(section('content-diagrams').locator('svg[aria-roledescription="flowchart-v2"]')).toContainText('VitePress')
@@ -121,8 +120,7 @@ test('the web form renders the same content: math, diagrams, mindmap, media and 
 })
 
 test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ page }) => {
-  test.skip(!WEB_BUILT, 'the web form is not built')
-  await page.goto(`${WEB}/content.html`)
+  await page.goto(`${content().web}/content.html`)
   const map = page.locator('.pm-section[data-section="content-mindmap"] svg.pm-markmap')
   await expect(map.locator('.markmap-node')).toHaveCount(13)
   // The fold toggle of a node with children is a button in the tab order.

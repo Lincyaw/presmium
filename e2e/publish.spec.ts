@@ -1,16 +1,16 @@
-import { existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Locator, Page } from '@playwright/test'
-import { SLIDES, WEB } from './urls.ts'
+import { useFixture } from './fixtures/deck.ts'
 
-// examples/demo/pages/publish.md sets `routeAlias: publish` for the slides form;
-// pages/content.md has a Mermaid flowchart (content-diagrams) and a PlantUML diagram (content-sequence).
-const PUBLISH = `${SLIDES}/publish`
-const WEB_BUILT = existsSync(fileURLToPath(new URL('../examples/demo/dist/web/index.html', import.meta.url)))
+// e2e/fixtures/publish: its publish.md sets `routeAlias: publish` for the slides form; the deck also
+// includes the pages of the other fixture decks, so it has every plugin's components, e.g. a
+// Mermaid flowchart (content-diagrams) and a PlantUML diagram (content-sequence) of content.md.
+test.describe.configure({ mode: 'default' })
+const deck = useFixture('publish', { with: ['host', 'stage', 'code', 'exec/panels', 'exec-local', 'guide', 'content', 'session', 'plugins/classroom.md'] })
+const slides = (path: string | number) => `${deck().slides}/${path}`
 
 async function openPublish(page: Page): Promise<Locator> {
-  await page.goto(PUBLISH)
+  await page.goto(slides('publish'))
   const slide = page.locator('.slidev-layout.pm-publish').first()
   await expect(slide.locator('h1')).toHaveText('发布')
   return slide
@@ -38,13 +38,13 @@ test('once loaded, the built deck reloads and plays offline, remote diagrams inc
   await expect(slide.locator('pre.shiki')).toContainText('def add(a, b):')
   // Other slides load from the cache too: the one before it, and the cover after another reload.
   await page.keyboard.press('ArrowLeft')
-  await expect(page).not.toHaveURL(PUBLISH)
+  await expect(page).not.toHaveURL(slides('publish'))
   await expect(slide).toBeHidden()
   await expect(page.locator('.slidev-layout:visible h1')).toBeVisible()
-  await page.goto(`${SLIDES}/1`)
-  await expect(page.locator('.slidev-page-1 .slidev-layout h1')).toHaveText('Presmium Demo')
+  await page.goto(slides(1))
+  await expect(page.locator('.slidev-page-1 .slidev-layout h1')).toHaveText('Presmium 功能测试文稿')
   // The PlantUML diagram, an image of a URL without extension, was downloaded into the deck.
-  await page.goto(`${SLIDES}/content-sequence`)
+  await page.goto(slides('content-sequence'))
   await expect.poll(() => loaded(page.locator('.slidev-layout.pm-content-sequence').getByRole('img', { name: 'PlantUML 图' }))).toBeGreaterThan(0)
 })
 
@@ -130,7 +130,7 @@ test('the high-contrast switch brings the text of the slide to WCAG AA and is re
 
 test('switched on in dark mode, high contrast brings the labels of a Mermaid diagram to AA', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
-  await page.goto(`${SLIDES}/content-diagrams`)
+  await page.goto(slides('content-diagrams'))
   const slide = page.locator('.slidev-layout.pm-content-diagrams')
   const label = slide.locator('.mermaid .edgeLabel p').first()
   await expect(label).toHaveText('幻灯片')
@@ -146,19 +146,15 @@ test('switched on in dark mode, high contrast brings the labels of a Mermaid dia
 test('high contrast keeps the opacity that other plugins give their step states', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
   // The cursor of the guide is not on screen before its first step.
-  await page.goto(`${SLIDES}/1`)
-  const guide = page.locator('.slidev-layout.pm-guide')
-  await guide.waitFor({ state: 'attached', timeout: 15_000 })
-  const no = await guide.evaluate(el => Number(/slidev-page-(\d+)/.exec(el.closest('.slidev-page')?.className ?? '')?.[1]))
-  await page.goto(`${SLIDES}/${no}?clicks=0`)
+  await page.goto(slides(`${deck().slide('guide')}?clicks=0`))
   await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
   await expect(page.locator('.slidev-layout.pm-guide .pm-cursor')).toHaveCSS('opacity', '0')
-  // The steps the stepper of the core page has done stay dimmed.
-  await page.goto(`${SLIDES}/2?clicks=3`)
+  // The steps the stepper of the host page has done stay dimmed.
+  await page.goto(slides(`${deck().slide('core')}?clicks=3`))
   await expect(page.locator('.pm-demo-stepper li[data-status="done"]').first()).toHaveCSS('opacity', '0.6')
 })
 
-// Every slide of the demo deck, with all its click steps shown, whatever plugin draws it.
+// Every slide of the deck, with all its click steps shown, whatever plugin draws it.
 test.describe('every slide', () => {
   test.use({ serviceWorkers: 'block' })
 
@@ -170,7 +166,7 @@ test.describe('every slide', () => {
       const failures: string[] = []
       let no = 1
       for (; ; no++) {
-        await page.goto(`${SLIDES}/${no}?clicks=99`, { waitUntil: 'networkidle' })
+        await page.goto(slides(`${no}?clicks=99`), { waitUntil: 'networkidle' })
         // Past the last slide, Slidev shows the first one.
         const layout = page.locator(`.slidev-page-${no} .slidev-layout`)
         await expect(layout.or(page.locator('.slidev-page-1 .slidev-layout')).filter({ visible: true }).first()).toBeVisible()
@@ -185,20 +181,18 @@ test.describe('every slide', () => {
 })
 
 test.describe('web form', () => {
-  test.skip(!WEB_BUILT, 'the web form is not built')
-
   test('once loaded, a web page reloads offline with its remote diagram', async ({ page, context }) => {
-    await page.goto(`${WEB}/content.html`)
+    await page.goto(`${deck().web}/content.html`)
     await goOffline(page, context)
     await page.reload()
     const diagram = page.locator('.pm-section[data-section="content-sequence"]').getByRole('img', { name: 'PlantUML 图' })
     await expect.poll(() => loaded(diagram)).toBeGreaterThan(0)
-    await page.goto(`${WEB}/publish.html`)
+    await page.goto(`${deck().web}/publish.html`)
     await expect(page.locator('.pm-section[data-section="publish"]')).toContainText('def add(a, b):')
   })
 
   test('a page that places no switch of its own has the high-contrast switch in the navigation bar', async ({ page }) => {
-    await page.goto(`${WEB}/code.html`)
+    await page.goto(`${deck().web}/code.html`)
     await expect(page.locator('.vp-doc .pm-contrast-toggle')).toHaveCount(0)
     const toggle = page.getByRole('switch', { name: '高对比度' }).filter({ visible: true })
     await expect(toggle).toHaveCount(1)
@@ -208,7 +202,7 @@ test.describe('web form', () => {
   })
 
   test('the high-contrast switch of the publish section brings its text to AA', async ({ page }) => {
-    await page.goto(`${WEB}/publish.html`)
+    await page.goto(`${deck().web}/publish.html`)
     const section = page.locator('.pm-section[data-section="publish"]')
     await section.getByRole('switch', { name: '高对比度' }).click()
     await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')

@@ -1,5 +1,5 @@
-// Sample business code for the code reference demo (examples/demo/pages/code.md).
-// Its history is part of the demo: the slides pin this file to commits and compare them.
+// Code of the code reference fixture deck (e2e/fixtures/code/code.md). Its history is part of
+// the fixture: the deck pins this file to commits and compares them.
 
 export interface Item {
   name: string

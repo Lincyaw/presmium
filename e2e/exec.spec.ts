@@ -1,26 +1,21 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { useFixture } from './fixtures/deck.ts'
 import { buildDeck, fixture, serve } from './fixtures/exec/deck.ts'
 import type { BuiltDeck } from './fixtures/exec/deck.ts'
-import { SLIDES, WEB } from './urls.ts'
 
-// examples/demo/pages/exec.md, built by `presmium build`. Slides are found by their
+// e2e/fixtures/exec/panels, built by `presmium build`. Slides are found by their
 // section id in the built IR and located by their headings, since Slidev keeps
 // preloaded slides in the DOM too. Loading the Python runtime takes a few seconds,
 // hence the longer waits for first results.
-const DIST = new URL('../examples/demo/dist/', import.meta.url)
-const HAS_WEB = existsSync(new URL('web', DIST))
+test.describe.configure({ mode: 'default' })
+const panels = useFixture('exec/panels')
 const RUNTIME = { timeout: 30_000 }
 
-function slideOf(id: string): number {
-  const ir = JSON.parse(readFileSync(new URL('ir.json', DIST), 'utf8')) as { sections: { id: string, index: number }[] }
-  return ir.sections.find(section => section.id === id)!.index
-}
-
 async function openSlide(page: Page, id: string, heading: string, query = '') {
-  await page.goto(`${SLIDES}/${slideOf(id)}${query}`)
+  await page.goto(`${panels().slides}/${panels().slide(id)}${query}`)
   const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
   await expect(slide).toBeVisible()
   return slide
@@ -112,15 +107,13 @@ test('output recorded at compile time is shown with its code in the slides', asy
 })
 
 test('output recorded at compile time is shown with its code in the web form', async ({ page }) => {
-  test.skip(!HAS_WEB, 'needs the web build (examples/demo/dist/web)')
-  await page.goto(`${WEB}/exec.html`)
+  await page.goto(`${panels().web}/exec.html`)
   await expect(page.getByText('合计： 55').first()).toBeVisible()
   await expect(page.getByText('print("合计：", sum(squares))').first()).toBeVisible()
 })
 
 test('in the web form, code that also runs live runs again in the browser, with the Pyodide runtime the site serves', async ({ page }) => {
-  test.skip(!HAS_WEB, 'needs the web build (examples/demo/dist/web)')
-  await page.goto(`${WEB}/exec.html`)
+  await page.goto(`${panels().web}/exec.html`)
   const block = page.locator('.pm-section[data-section="exec-compile"] .pm-code-block[data-run="both"]')
   const outputs = block.locator('.pm-outputs')
   await expect(outputs).toHaveAttribute('data-source', 'recorded')

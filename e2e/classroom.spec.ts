@@ -3,14 +3,13 @@ import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
 import { build, FIXTURES, serve, startClassroomServer, writeDeck, writePage } from './fixtures/plugins/decks.ts'
-import { WEB } from './urls.ts'
 
-// Classroom features (pages/classroom.md). Without a classroom the demo's quiz is a self-test and
-// notes stay in the browser. The classroom tests build a deck of the classroom page whose
-// frontmatter points to a real classroom server (`presmium-classroom-server` on a free port, with
-// that deck as its deck directory) and drive a presenter and two learners in browser contexts of
-// their own. The notebook form is checked in packages/addon-classroom/test. The test decks of
-// e2e/fixtures/plugins check the classroom in English, over another session implementation, and
+// Classroom features (e2e/fixtures/plugins/classroom.md). Without a classroom the quiz is a
+// self-test and notes stay in the browser. The classroom tests build a deck of the classroom page
+// whose frontmatter points to a real classroom server (`presmium-classroom-server` on a free port,
+// with that deck as its deck directory) and drive a presenter and two learners in browser contexts
+// of their own. The notebook form is checked in packages/addon-classroom/test. The other test decks
+// of e2e/fixtures/plugins check the classroom in English, over another session implementation, and
 // its notes across edits of the deck.
 
 /** Loading the Python runtime for the first check takes a few seconds. */
@@ -27,31 +26,11 @@ async function addNote(page: Page, spot: ReturnType<typeof noteSpot>, label: str
   await expect(spot.getByRole('list', { name: '我的笔记' })).toContainText(text)
 }
 
-test('without a classroom the quiz is a self-test and notes stay in this browser', async ({ page }) => {
-  await page.goto(`${WEB}/classroom.html`)
-  await quiz(page).getByRole('radio', { name: /最先出现/ }).check()
-  await quiz(page).getByRole('button', { name: '提交' }).click()
-  await expect(quiz(page).getByRole('status')).toHaveText('回答错误，正确答案是 B')
-  await quiz(page).getByRole('radio', { name: /次数最多/ }).check()
-  await quiz(page).getByRole('button', { name: '提交' }).click()
-  await expect(quiz(page).getByRole('status')).toHaveText('回答正确')
-
-  // Every section has a note spot, and so has the labelled block; a note survives a reload.
-  await expect(noteSpot(page, 'classroom-questions', 'merge-rule')).toHaveCount(1)
-  await addNote(page, noteSpot(page, 'classroom-quiz'), '课堂测验', '合并看的是频率')
-  await expect(noteSpot(page, 'classroom-quiz').locator('.pm-note-spot__where')).toHaveText('保存在这个浏览器中，只有你能看到')
-  await page.reload()
-  await expect(noteSpot(page, 'classroom-quiz')).toHaveAttribute('data-notes', '1')
-})
-
-// ---------------------------------------------------------------------------
-// A deck with a classroom server
-// ---------------------------------------------------------------------------
-
-/** The classroom page of the demo as a deck of its own, whose frontmatter names the classroom server. */
-function writeClassroomDeck(deck: string, server: string): void {
+/** The classroom page as a deck of its own; with `server`, its frontmatter names that classroom server. */
+function writeClassroomDeck(deck: string, server?: string): void {
   writeFileSync(join(deck, '.gitignore'), '*\n')
-  cpSync(resolve('examples/demo/pages/classroom.md'), join(deck, 'pages/classroom.md'))
+  cpSync(join(FIXTURES, 'classroom.md'), join(deck, 'pages/classroom.md'))
+  const session = server ? `presmium:\n  presmium.session:\n    server: ${server}\n` : ''
   writeFileSync(join(deck, 'lecture.md'), `---
 title: Presmium Classroom Features
 lang: zh-CN
@@ -60,10 +39,7 @@ plugins:
   - '@presmium/slidev-addon-exec'
   - '@presmium/slidev-addon-session'
   - '@presmium/slidev-addon-classroom'
-presmium:
-  presmium.session:
-    server: ${server}
-renderers:
+${session}renderers:
   web: {}
   slides:
     theme: default
@@ -71,12 +47,58 @@ renderers:
 
 # Presmium Classroom Features
 
-课堂互动演示文稿。
+课堂互动测试文稿。
 
 \`\`\`{include} pages/classroom.md
 \`\`\`
 `)
 }
+
+/** A new deck directory in the demo's working directory, where the deck's packages resolve. */
+function deckDir(name: string): string {
+  const work = resolve('examples/demo/.presmium')
+  mkdirSync(work, { recursive: true })
+  return mkdtempSync(join(work, `e2e-${name}-`))
+}
+
+test.describe('without a classroom', () => {
+  let deck: string
+  let web: Awaited<ReturnType<typeof serve>>
+
+  test.beforeAll(async () => {
+    test.setTimeout(600_000)
+    deck = deckDir('classroom-alone')
+    writeClassroomDeck(deck)
+    await build(deck, 'web')
+    web = await serve(join(deck, 'dist/web'))
+  })
+
+  test.afterAll(async () => {
+    await web?.close()
+    if (deck) rmSync(deck, { recursive: true, force: true })
+  })
+
+  test('the quiz is a self-test and notes stay in this browser', async ({ page }) => {
+    await page.goto(`${web.url}/classroom.html`)
+    await quiz(page).getByRole('radio', { name: /最先出现/ }).check()
+    await quiz(page).getByRole('button', { name: '提交' }).click()
+    await expect(quiz(page).getByRole('status')).toHaveText('回答错误，正确答案是 B')
+    await quiz(page).getByRole('radio', { name: /次数最多/ }).check()
+    await quiz(page).getByRole('button', { name: '提交' }).click()
+    await expect(quiz(page).getByRole('status')).toHaveText('回答正确')
+
+    // Every section has a note spot, and so has the labelled block; a note survives a reload.
+    await expect(noteSpot(page, 'classroom-questions', 'merge-rule')).toHaveCount(1)
+    await addNote(page, noteSpot(page, 'classroom-quiz'), '课堂测验', '合并看的是频率')
+    await expect(noteSpot(page, 'classroom-quiz').locator('.pm-note-spot__where')).toHaveText('保存在这个浏览器中，只有你能看到')
+    await page.reload()
+    await expect(noteSpot(page, 'classroom-quiz')).toHaveAttribute('data-notes', '1')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// A deck with a classroom server
+// ---------------------------------------------------------------------------
 
 const sessionButton = (page: Page) => page.getByRole('button', { name: /^课堂/ })
 const badge = (page: Page) => page.getByRole('region', { name: '课堂状态' })
@@ -169,10 +191,8 @@ test.describe('a classroom', () => {
   let sections: Record<string, number>
 
   test.beforeAll(async () => {
-    test.setTimeout(240_000)
-    const work = resolve('examples/demo/.presmium')
-    mkdirSync(work, { recursive: true })
-    deck = mkdtempSync(join(work, 'e2e-classroom-'))
+    test.setTimeout(600_000)
+    deck = deckDir('classroom')
     server = await startClassroomServer(deck)
     writeClassroomDeck(deck, server.url)
     await build(deck, 'web,slides')

@@ -1,11 +1,11 @@
 (exec-local)=
 ## 本地环境
 
-本页的代码片段属于 `examples/sample-repo`，那里的 `.devcontainer/devcontainer.json` 决定运行镜像。工作区由指令的 `:workspace:` 指定，相对于本文件。
+本页的代码片段属于旁边的 `workspace` 目录，那里的 `.devcontainer/devcontainer.json` 决定运行镜像。工作区由指令的 `:workspace:` 指定，相对于本文件。
 
 ```{local-env} python
 :file: src/greet.py
-:workspace: ../../sample-repo
+:workspace: workspace
 def greet(name):
     return f"你好，{name}"
 

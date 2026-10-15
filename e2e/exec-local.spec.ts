@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { SLIDES, WEB } from './urls.ts'
+import { useFixture } from './fixtures/deck.ts'
 
 // The zip library of the addon, which writes the archives.
 const { strFromU8, unzipSync } = createRequire(new URL('../packages/addon-exec-local/package.json', import.meta.url))('fflate') as {
@@ -10,17 +10,13 @@ const { strFromU8, unzipSync } = createRequire(new URL('../packages/addon-exec-l
   unzipSync: (data: Uint8Array) => Record<string, Uint8Array>
 }
 
-// examples/demo/pages/exec-local.md, built by `presmium build`. Running and committing
-// need a dev server behind the deck (covered by packages/addon-exec-local/test);
-// a built deck shows the snippet and exports the environment archived at compile time.
-const DIST = new URL('../examples/demo/dist/', import.meta.url)
-const HAS_WEB = existsSync(new URL('web', DIST))
-const DEFINITION = readFileSync(new URL('../examples/sample-repo/.devcontainer/devcontainer.json', import.meta.url), 'utf8')
-
-function slideOf(id: string): number {
-  const ir = JSON.parse(readFileSync(new URL('ir.json', DIST), 'utf8')) as { sections: { id: string, index: number }[] }
-  return ir.sections.find(section => section.id === id)!.index
-}
+// e2e/fixtures/exec-local, built by `presmium build`; its snippet belongs to the workspace next
+// to it. Running and committing need a dev server behind the deck (covered by
+// packages/addon-exec-local/test); a built deck shows the snippet and exports the environment
+// archived at compile time.
+test.describe.configure({ mode: 'default' })
+const deck = useFixture('exec-local')
+const DEFINITION = readFileSync(new URL('fixtures/exec-local/workspace/.devcontainer/devcontainer.json', import.meta.url), 'utf8')
 
 /** Clicks “导出环境” and checks the downloaded archive: the snippet, the devcontainer definition, a README. */
 async function expectExport(page: Page, env: Locator) {
@@ -34,7 +30,7 @@ async function expectExport(page: Page, env: Locator) {
 }
 
 test('a built deck shows the snippet, needs the dev server to run it, and exports the environment', async ({ page }) => {
-  await page.goto(`${SLIDES}/${slideOf('exec-local')}`)
+  await page.goto(`${deck().slides}/${deck().slide('exec-local')}`)
   const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: '本地环境' }) })
   const env = slide.locator('.pm-local-env')
   await expect(env).toHaveAttribute('data-state', 'disconnected')
@@ -47,8 +43,7 @@ test('a built deck shows the snippet, needs the dev server to run it, and export
 })
 
 test('the web form exports the environment of the snippet', async ({ page }) => {
-  test.skip(!HAS_WEB, 'needs the web build (examples/demo/dist/web)')
-  await page.goto(`${WEB}/exec-local.html`)
+  await page.goto(`${deck().web}/exec-local.html`)
   const env = page.locator('.pm-local-env').first()
   await expect(env.locator('pre')).toContainText('print(greet("Presmium"))')
   await expectExport(page, env)
