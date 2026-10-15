@@ -1,14 +1,17 @@
 /**
- * Container executor (P-22). The Dev Containers CLI reads the repository's
- * devcontainer definition and builds its image (image, Dockerfile, features);
- * each run then starts a fresh container from that image, with the workspace
- * mounted read-only where the CLI would mount it, and without network.
+ * Container executor (P-22), at compile time (`createContainerExecutor`) and
+ * behind the dev-server endpoints (./server.ts). The Dev Containers CLI reads
+ * the repository's devcontainer definition and builds its image (image,
+ * Dockerfile, features); each run then starts a fresh container from that
+ * image, with the workspace mounted read-only where the CLI would mount it,
+ * and without network.
  */
+import { spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
-import type { RunRequest, RunResult } from '@presmium/kernel/contracts'
+import type { Executor, RunRequest, RunResult } from '@presmium/kernel/contracts'
 import { parse } from 'jsonc-parser'
 import { CONTAINER_EXECUTOR_ID, failedRun, languageId, runnersFrom } from '../domain/index.ts'
 import type { Runners } from '../domain/index.ts'
@@ -127,6 +130,67 @@ export function devcontainerImage(workspace: string, devcontainer: Devcontainer)
     images.set(key, image)
   }
   return image
+}
+
+/** Changes whenever a file next to devcontainer.json changes content, unlike `definitionStamp`. */
+function definitionHash(configFile: string): string {
+  const dir = dirname(configFile)
+  const hash = createHash('sha256')
+  for (const name of readdirSync(dir).sort()) {
+    const path = join(dir, name)
+    if (statSync(path).isFile()) hash.update(`${name}\0`).update(readFileSync(path)).update('\0')
+  }
+  return hash.digest('hex')
+}
+
+let docker: boolean | undefined
+
+function dockerAvailableSync(): boolean {
+  docker ??= spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { stdio: 'ignore', timeout: 10_000 }).status === 0
+  return docker
+}
+
+/** The container executor for compile-time execution (K-19), bound to the deck's workspace by the plugin's pass. */
+export interface ContainerExecutor extends Executor {
+  bind(workspace: string): void
+}
+
+/**
+ * Runs code at compile time in the devcontainer image of the bound workspace
+ * (P-22). Its environment fingerprint is the definition's content, so recorded
+ * outputs stay valid until the definition changes; without Docker it supports
+ * nothing, and the compiler falls back to the recordings. A run that never
+ * reaches the program (no Docker, failed image build) throws instead of
+ * returning a result, so that the failure is not recorded.
+ */
+export function createContainerExecutor(): ContainerExecutor {
+  let workspace: string | undefined
+  const definition = () => (workspace === undefined ? undefined : findDefinition(workspace))
+  const runner = (configFile: string, lang: string) => definitionRunners(configFile)[languageId(lang)]
+  return {
+    id: CONTAINER_EXECUTOR_ID,
+    bind(dir) {
+      workspace = dir
+    },
+    supports(lang) {
+      const configFile = definition()
+      return configFile !== undefined && runner(configFile, lang) !== undefined && dockerAvailableSync()
+    },
+    fingerprint(lang) {
+      const configFile = definition()
+      return configFile ? `${definitionHash(configFile)}:${JSON.stringify(runner(configFile, lang) ?? null)}` : ''
+    },
+    async run(request, signal) {
+      const dir = workspace
+      if (dir === undefined || !definition()) throw new Error('the workspace has no devcontainer definition')
+      if (!await dockerAvailable()) throw new Error('Docker is not available')
+      const devcontainer = await readDevcontainer(dir)
+      if (!devcontainer) throw new Error('cannot read the devcontainer definition')
+      const result = await runInContainer(dir, devcontainer, request, signal)
+      if (result.exitCode === null && !result.timedOut) throw new Error(result.stderr)
+      return result
+    },
+  }
 }
 
 /** Runs the code in a fresh container: the runner command gets the code as its last argument. */

@@ -2,8 +2,8 @@
 import { PmBoundary, useService, useStartReport } from '@presmium/host'
 import { EXECUTOR } from '@presmium/kernel'
 import { computed, reactive, ref, shallowRef } from 'vue'
-import { slotSource, stringArgs } from '../src/client/index.ts'
-import { appendRun, compareRuns, defaultPair, fallbackReason, withRecordedFallback } from '../src/domain/index.ts'
+import { slotSource } from '../src/client/index.ts'
+import { appendRun, compareRuns, defaultPair, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'
 import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 
 // P-20 run panel: wraps a code block; runs it with the parameters in the form,

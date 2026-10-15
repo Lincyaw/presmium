@@ -14,11 +14,6 @@ export function markLine(container: HTMLElement | undefined, line: number | unde
   container?.querySelectorAll('code .line').forEach((el, i) => el.classList.toggle(className, i + 1 === line))
 }
 
-/** Arguments as strings, the form of `RunRequest.args`. */
-export function stringArgs(params: Record<string, unknown> | undefined): Record<string, string> {
-  return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, String(value)]))
-}
-
 /** Lets step marks report the state of their click to the component that renders them. */
 export type RegisterStepMark = (click: number, state: Readonly<Ref<StepState>>) => () => void
 

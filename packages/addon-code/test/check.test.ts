@@ -1,4 +1,5 @@
-// Runs the real `presmium check` CLI on a deck that references code in a throwaway git repository.
+// Runs the real `presmium check` CLI on a MyST deck that references code in a throwaway git
+// repository; the diagnostics come from the {code-ref} resolution pass of the compiler.
 import { execFile, execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -91,39 +92,32 @@ function createRepo(): { dir: string, deck: string, fenceLine: number, edit: (te
   git('add', '.')
   git('commit', '-qm', 'cart')
   const deck = `---
-addons:
+plugins:
   - ${ADDON}
 presmium:
   presmium.code:
     repo: https://github.com/acme/shop
 ---
 
-# Pinned
+## Pinned
 
-\`\`\`coderef
-anchor: region:src/cart.ts#checkout
-pin: ${git('rev-parse', '--short', 'HEAD')}
-steps: [validate, price]
+\`\`\`{code-ref} region:src/cart.ts#checkout
+:pin: ${git('rev-parse', '--short', 'HEAD')}
+:steps: validate, price
 \`\`\`
 
----
+## Live
 
-# Live
-
-\`\`\`coderef
-anchor: symbol:src/cart.ts#total
+\`\`\`{code-ref} symbol:src/cart.ts#total
 \`\`\`
 
----
+## Python
 
-# Python
-
-\`\`\`coderef
-anchor: symbol:src/parser.py#Parser.parse
+\`\`\`{code-ref} symbol:src/parser.py#Parser.parse
 \`\`\`
 `
-  writeFileSync(join(dir, 'deck/slides.md'), deck)
-  return { dir, deck: join(dir, 'deck/slides.md'), fenceLine: deck.split('\n').indexOf('```coderef') + 1, edit }
+  writeFileSync(join(dir, 'deck/lecture.md'), deck)
+  return { dir, deck: join(dir, 'deck/lecture.md'), fenceLine: deck.split('\n').indexOf('```{code-ref} region:src/cart.ts#checkout') + 1, edit }
 }
 
 function check(dir: string, ...args: string[]): Promise<{ code: number, findings: Finding[] }> {

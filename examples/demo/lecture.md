@@ -34,5 +34,14 @@ renderers:
 ```{include} pages/core.md
 ```
 
+```{include} pages/code.md
+```
+
+```{include} pages/exec.md
+```
+
+```{include} pages/exec-local.md
+```
+
 ```{include} pages/web.md
 ```

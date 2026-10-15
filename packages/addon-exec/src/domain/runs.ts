@@ -1,6 +1,11 @@
 import type { RunResult } from '@presmium/kernel'
 import { diffLines } from 'diff'
 
+/** Run parameters as strings, the form of `RunRequest.args`; runners read literals back (`5` is a number). */
+export function stringArgs(params: Record<string, unknown> | undefined): Record<string, string> {
+  return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, String(value)]))
+}
+
 /** Output recorded ahead of time, shown when a run fails or times out (P-24). */
 export type RecordedOutput = string
 

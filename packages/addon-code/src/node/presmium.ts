@@ -1,18 +1,20 @@
 import type { PresmiumNodePlugin } from '@presmium/kernel'
-import { regionResolver } from '../domain/index.ts'
-import { codeChecks, usages } from './checks.ts'
+import { CODE_ID, regionResolver } from '../domain/index.ts'
+import { codeRefDirective } from './directive.ts'
+import { codeRefAnchors, codeRefPass } from './resolve.ts'
 import { symbolResolver } from './symbol.ts'
-import { transformCodeRefs } from './transform.ts'
 
-/** Code references (P-10..P-16): `region` and `symbol` anchors, checks and the `coderef` block syntax. */
+/**
+ * Code references (P-10..P-16): the `region` and `symbol` anchors, the
+ * `{code-ref}` directive and the pass that resolves it into a code node.
+ * The pass reports the anchor, drift and link diagnostics of `presmium check`.
+ */
 const plugin: PresmiumNodePlugin = {
-  id: 'presmium.code',
+  id: CODE_ID,
   resolvers: [regionResolver, symbolResolver],
-  checks: codeChecks,
-  async anchors(ctx) {
-    return (await usages(ctx)).flatMap(u => (u.spec ? [u.spec.anchor] : []))
-  },
-  transformMarkdown: transformCodeRefs,
+  directives: [codeRefDirective],
+  passes: [codeRefPass],
+  anchors: ctx => codeRefAnchors(ctx.ir),
 }
 
 export default plugin

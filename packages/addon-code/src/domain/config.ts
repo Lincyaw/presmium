@@ -6,18 +6,7 @@ export interface CodeConfig {
   repo?: string
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-function own(matter: unknown): Record<string, unknown> {
-  const presmium = isRecord(matter) ? matter.presmium : undefined
-  const config = isRecord(presmium) ? presmium[CODE_ID] : undefined
-  return isRecord(config) ? config : {}
-}
-
-/** `presmium: { presmium.code: {...} }` of the headmatter, overridden by the slide frontmatter. */
-export function codeConfig(headmatter: unknown, frontmatter?: unknown): CodeConfig {
-  const merged = { ...own(headmatter), ...own(frontmatter) }
-  return typeof merged.repo === 'string' ? { repo: merged.repo } : {}
+/** `presmium: { presmium.code: {...} }` of the headmatter, as the compiler hands it to the plugin. */
+export function codeConfig(config: Record<string, unknown>): CodeConfig {
+  return typeof config.repo === 'string' && config.repo.trim() ? { repo: config.repo.trim() } : {}
 }

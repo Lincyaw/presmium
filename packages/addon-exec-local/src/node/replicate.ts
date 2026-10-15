@@ -25,5 +25,6 @@ export function replicateArchive(workspace: string, configFile: string, request:
   entries[file] = strToU8(request.content)
   const runner = request.lang ? definitionRunners(configFile)[languageId(request.lang)] : undefined
   entries[file === 'README.md' ? 'PRESMIUM.md' : 'README.md'] = strToU8(replicateReadme(file, runner))
-  return { name: archiveName(file), zip: zipSync(entries) }
+  // A fixed date keeps the archive the same for the same files, so builds are reproducible.
+  return { name: archiveName(file), zip: zipSync(entries, { mtime: '2000-01-01T00:00:00Z' }) }
 }
