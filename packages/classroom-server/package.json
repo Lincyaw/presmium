@@ -1,0 +1,17 @@
+{
+  "name": "@presmium/classroom-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "y-websocket room server",
+  "dependencies": {
+    "@y/websocket-server": "^0.1.5",
+    "yjs": "^13.6.33"
+  },
+  "bin": {
+    "presmium-classroom-server": "./bin/server.mjs"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

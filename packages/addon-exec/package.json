@@ -1,0 +1,28 @@
+{
+  "name": "@presmium/slidev-addon-exec",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser execution (P-20, P-21, P-23, P-24)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "pyodide": "^314.0.7"
+  },
+  "devDependencies": {
+    "@slidev/client": "53.0.0",
+    "@slidev/types": "53.0.0"
+  }
+}

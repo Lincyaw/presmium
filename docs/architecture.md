@@ -1,0 +1,240 @@
+# Presmium 架构
+
+本文档定义工程结构、分层规则、跨上下文契约、插件约定与测试策略。领域概念见 `domain-model.md`，任务拆分见 `wbs.md`。
+
+## 1. 双形态
+
+同一份文稿源码生成两种形态：
+
+```
+                    examples/demo/slides.md + pages/*.md
+                                  │
+              ┌───────────────────┴───────────────────┐
+              ▼                                       ▼
+      幻灯片形态：Slidev                       网页形态：VitePress
+      slidev build                             presmium web build
+      宿主适配：addon-core                      宿主适配：web
+              │                                       │
+              └──────────► 插件组件（共用） ◄───────────┘
+                         只依赖 @presmium/host
+```
+
+- 幻灯片形态由 Slidev 直接渲染文稿。
+- 网页形态由 `@presmium/web` 先把文稿转换为 VitePress 页面，再由 VitePress 构建。
+- 插件组件只通过 `@presmium/host` 获取步骤状态、服务与形态，因此在两种形态中共用。
+
+## 2. 仓库结构
+
+```
+presmium/
+├── packages/
+│   ├── kernel/              @presmium/kernel                    纯 TS 共享内核：契约、服务注册、锚点、检查
+│   ├── host/                @presmium/host                      形态无关的宿主接口与组合式函数（Vue）
+│   ├── cli/                 @presmium/cli                       presmium check
+│   ├── addon-core/          @presmium/slidev-addon-core         宿主适配：Slidev 实现
+│   ├── web/                 @presmium/web                       宿主适配：VitePress 实现；文稿转换；presmium-web 命令
+│   ├── addon-stage/         @presmium/slidev-addon-stage
+│   ├── addon-code/          @presmium/slidev-addon-code
+│   ├── addon-exec/          @presmium/slidev-addon-exec
+│   ├── addon-exec-local/    @presmium/slidev-addon-exec-local   容器执行、回写、环境复刻
+│   ├── addon-guide/         @presmium/slidev-addon-guide
+│   ├── addon-content/       @presmium/slidev-addon-content
+│   ├── addon-publish/       @presmium/slidev-addon-publish
+│   ├── addon-session/       @presmium/slidev-addon-session      会话与网络同步
+│   ├── addon-classroom/     @presmium/slidev-addon-classroom
+│   └── classroom-server/    @presmium/classroom-server          y-websocket 服务
+├── examples/
+│   ├── demo/                示例文稿，端到端测试的对象
+│   └── sample-repo/         被示例文稿引用的“业务代码”
+├── e2e/                     Playwright 测试，每个上下文一个 spec
+└── docs/
+```
+
+## 3. 包内分层
+
+每个插件包本身就是一个 Slidev 插件（addon），目录如下：
+
+```
+packages/addon-<ctx>/
+├── package.json          keywords 含 slidev-addon；exports 见下
+├── src/
+│   ├── domain/           领域层：纯 TS，不得引用 vue、@slidev/*、vitepress、node:*
+│   ├── node/             Node 适配器：Markdown 转换、Vite 插件、检查项
+│   └── client/           浏览器适配器：服务实现、组合式函数
+├── components/           Slidev 约定：自动注册的组件（网页形态由 web 包注册同一批组件）
+├── setup/                Slidev 约定：main.ts、transformers.ts、code-runners.ts 等
+└── global-top.vue 等     Slidev 约定：全局图层（仅幻灯片形态）
+```
+
+依赖规则：
+
+| 位置 | 可以依赖 | 不得依赖 |
+|---|---|---|
+| `src/domain/` | `@presmium/kernel`、纯计算库 | vue、`@slidev/*`、vitepress、`node:*` |
+| `components/`、`src/client/` | `src/domain/`、`@presmium/kernel`、`@presmium/host`、vue | `@slidev/*`、vitepress |
+| `setup/`、全局图层 | 以上全部，加 `@slidev/client` 公开导出 | vitepress |
+| `src/node/` | `src/domain/`、`@presmium/kernel`、Node 库 | vue |
+
+只有 `addon-core` 可以在组件中使用 `@slidev/client`，只有 `web` 可以使用 vitepress。
+
+`package.json` 的 `exports`：
+
+| 入口 | 指向 | 用途 |
+|---|---|---|
+| `./domain` | `src/domain/index.ts` | 领域层 |
+| `./client` | `src/client/index.ts` | 浏览器端 API |
+| `./presmium` | `src/node/presmium.ts` | Node 端插件入口，默认导出 `PresmiumNodePlugin` |
+
+源码直接以 `.ts`、`.vue` 发布，不预编译。Slidev、VitePress 与 Vitest 直接处理 TS；CLI 通过 jiti 加载 TS。
+
+## 4. 跨上下文契约
+
+契约的唯一来源是 `packages/kernel/src/contracts.ts`（内核）与 `packages/host/src/types.ts`（宿主）。以下为要点。
+
+### 4.1 插件与服务
+
+- `defineService<T>(id)` 创建服务令牌；`PluginDefinition = { manifest, setup(ctx), dispose? }`。
+- 清单声明 `provides`、`requires`（可选依赖标记 `optional`）、兼容的内核版本范围 `kernel`、所需能力 `capabilities`（只声明，不强制）。
+- `PluginContext` 提供 `config`、`provide`、`get`、`tryGet`、`events`、`log`、`mode`。
+
+### 4.2 Node 端插件
+
+```ts
+interface PresmiumNodePlugin {
+  id: string
+  resolvers?: AnchorResolver[]       // 锚点解析器
+  checks?: Check[]                    // presmium check 的检查项
+  transformMarkdown?(input: MarkdownTransformInput): string | Promise<string>
+}
+```
+
+`transformMarkdown` 是两种形态共用的 Markdown 预处理入口。插件在 `setup/transformers.ts` 中调用它服务幻灯片形态，`web` 包在转换文稿时调用它服务网页形态。代码引用就是这样在两种形态中展开 `coderef` 代码块的。
+
+### 4.3 锚点与检查
+
+- 锚点写作 `scheme:target`，例如 `region:src/a.py#add`、`symbol:src/a.py#Parser.parse`。
+- 解析结果为 `exact`、`moved`、`fuzzy`、`lost` 之一；只有前两种可直接渲染，后两种必须产生诊断。
+- 指纹记录保存在文稿目录的 `.presmium/anchors.lock.json`，由 `presmium check --update-lock` 生成，随文稿提交。
+- 检查项 `Check.run(ctx)` 返回 `Finding[]`，诊断带源码位置。
+
+### 4.4 宿主接口
+
+```ts
+type PresentationMode = 'slides' | 'document'
+type ViewRole = 'audience' | 'presenter' | 'reader'
+
+interface HostAdapter {
+  mode: PresentationMode
+  useCursor(): Readonly<Ref<{ slide: number; step: number }>>
+  useStepState(range: StepRange): Readonly<Ref<StepState>>
+  useViewRole(): Readonly<Ref<ViewRole>>
+  getService<T>(token: ServiceToken<T>): T | undefined
+}
+```
+
+组件使用 `@presmium/host` 导出的 `useStepState`、`useCursor`、`useViewRole`、`useService`、`usePresentationMode`、`usePrefersReducedMotion` 与 `PmBoundary`。两个宿主适配器在应用初始化时通过 `installHost(app, adapter)` 注入实现。
+
+### 4.5 公共服务令牌
+
+| 令牌 | 提供方 | 使用方 |
+|---|---|---|
+| `presmium.executor` | 代码执行（浏览器、本地容器两个实现，经路由汇总） | 课堂（练习校验） |
+| `presmium.session` | 会话 | 测验、笔记、提问、理解度 |
+| `presmium.classroomStore` | 会话 | 测验、笔记、提问、理解度 |
+| `presmium.presenterPanels` | 宿主适配（Slidev） | 需要演讲者面板的插件 |
+
+令牌及其接口类型定义在内核中，服务替换时双方都不需要改动。
+
+## 5. 插件约定
+
+### 5.1 注册
+
+插件包在 `setup/main.ts` 中调用 `registerPresmiumPlugin(definition)`（`@presmium/host` 导出）。宿主适配在应用初始化时启动内核：按依赖顺序初始化全部插件，启动报告在演讲者视图中显示。网页形态由 `web` 包导入各插件包的 `src/client/plugin.ts` 完成同样的注册。
+
+### 5.2 配置
+
+| 作用域 | 写法 |
+|---|---|
+| 全局 | 文稿 headmatter：`presmium: { <插件 ID>: {...} }` |
+| 单页 | 页 frontmatter：`presmium: { <插件 ID>: {...} }` |
+| 单个节点 | 组件属性 |
+
+### 5.3 步骤可逆
+
+插件组件的视觉状态必须是步骤的纯函数。组件在模板中用 `v-click` 标记向 Slidev 登记步骤，用 `useStepState` 读取状态。网页形态中 `v-click` 由兼容层处理：文档式直接显示，滚动叙事式随滚动显示。
+
+### 5.4 错误隔离
+
+插件组件的根元素包在 `PmBoundary` 中。组件出错时显示占位与错误信息，演讲者视图同时提示，页面其余内容照常渲染。
+
+### 5.5 减少动态效果
+
+所有动画读取 `usePrefersReducedMotion()`，开启时直接显示终态。
+
+### 5.6 形态标记
+
+```md
+<div doc-only>只在网页中出现的补充说明</div>
+<div slide-only>只在幻灯片中出现的提示</div>
+```
+
+幻灯片形态隐藏 `doc-only`，网页形态隐藏 `slide-only`。
+
+## 6. 示例文稿约定
+
+`examples/demo/slides.md` 只包含 headmatter 与各上下文页面的引入：
+
+```md
+---
+addons: [ ...全部插件包 ]
+presmium: { ...各插件全局配置 }
+---
+
+---
+src: ./pages/core.md
+---
+...
+```
+
+每个上下文独占 `examples/demo/pages/<ctx>.md` 与 `e2e/<ctx>.spec.ts`。
+
+## 7. 测试策略
+
+| 层级 | 工具 | 范围 | 命令 |
+|---|---|---|---|
+| 单元 | Vitest | 各包的 `src/domain`、`src/node`，以及 host 的组合式函数 | `pnpm test` |
+| 幻灯片构建 | `slidev build` | 示例文稿完整构建 | `pnpm demo:build` |
+| 网页构建 | `presmium-web build` | 示例文稿转换并构建为网页 | `pnpm demo:web` |
+| 检查 | `presmium check` | 示例文稿全部检查项通过 | `pnpm demo:check` |
+| 端到端 | Playwright（Chromium） | 两种构建产物上的行为 | `pnpm e2e` |
+| 全部 | | 以上依次执行 | `pnpm verify` |
+
+端到端测试中，幻灯片产物服务在 `http://localhost:4173`，网页产物服务在 `http://localhost:4174`。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
+
+## 8. 需求覆盖
+
+| 需求 | 包 | 验证方式 |
+|---|---|---|
+| K-01、K-02、K-03、K-11、K-12、K-13、K-14、K-15 | 宿主（Slidev） | 示例文稿构建与端到端冒烟测试 |
+| K-04 | host、addon-core | 端到端：跳转到第 N 步与顺序前进到第 N 步的 DOM 一致 |
+| K-05 | addon-core | 端到端：演讲者面板只在演讲者视图出现 |
+| K-06 | addon-core、addon-session | 单元：传输接口；端到端：双页面同步 |
+| K-07 | kernel、host、addon-core | 单元：生命周期与降级；端到端：出错的组件不影响同页其他内容 |
+| K-08 | kernel | 单元：依赖排序、缺失、环路、版本不兼容 |
+| K-09 | addon-code、addon-exec-local | 单元与集成 |
+| K-10 | kernel、addon-code | 单元：四种解析状态 |
+| K-16 | cli | 集成：失效锚点使退出码非零，诊断带源码位置 |
+| N-01、N-02 | e2e | 端到端计时断言 |
+| N-03 | addon-publish、web | 端到端：断网后放映与搜索 |
+| N-05 | web | 端到端：手机视口下网页无横向滚动 |
+| N-06 | host、addon-publish | 端到端：减少动态效果、键盘操作 |
+| P-01 至 P-04 | addon-stage | 端到端 |
+| P-10 至 P-16 | addon-code | 单元 + 检查集成 + 端到端（两种形态） |
+| P-20 至 P-26 | addon-exec、addon-exec-local | 单元 + 端到端（Pyodide）；容器后端为集成测试，无 Docker 时跳过 |
+| P-30 至 P-32 | addon-guide | 端到端 |
+| P-40 至 P-43 | addon-content | 端到端（两种形态） |
+| P-50 至 P-53 | addon-publish | 集成：导出产物中的链接、离线清单、视觉差异报告 |
+| P-60 至 P-67 | addon-session、classroom-server、addon-classroom | 单元（领域规则）+ 端到端（多个浏览器上下文接入同一课堂） |
+| P-70 至 P-74 | web | 单元：转换与降级规则；端到端：搜索、深链接、滚动叙事、形态切换 |
+
+N-04、N-07 在端到端测试中以 Chromium 覆盖，其他浏览器在发布前手工验证。

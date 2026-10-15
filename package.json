@@ -1,0 +1,28 @@
+{
+  "name": "presmium-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "demo:build": "pnpm --filter presmium-demo build",
+    "demo:web": "pnpm --filter presmium-demo web:build",
+    "demo:check": "pnpm --filter presmium-demo check",
+    "e2e": "playwright test",
+    "verify": "pnpm test && pnpm demo:check && pnpm demo:build && pnpm demo:web && pnpm e2e",
+    "docs:fetch": "./scripts/fetch-docs.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^22.19.0",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.0.0",
+    "sirv-cli": "^3.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.0",
+    "@vitejs/plugin-vue": "^6.0.9"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@presmium/slidev-addon-exec-local",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local environment: container executor, write-back, environment replicate (P-22, P-25, P-26)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "simple-git": "^4.0.2",
+    "jsonc-parser": "^3.3.1",
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "@slidev/client": "53.0.0",
+    "@slidev/types": "53.0.0"
+  }
+}

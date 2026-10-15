@@ -1,0 +1,14 @@
+{
+  "name": "@presmium/host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Form-neutral host interface and composables used by all plugin components",
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "vue": "^3.5.42"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@presmium/slidev-addon-guide",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Guidance cues (P-30..P-32)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "driver.js": "^1.9.0"
+  },
+  "devDependencies": {
+    "@slidev/client": "53.0.0",
+    "@slidev/types": "53.0.0"
+  }
+}

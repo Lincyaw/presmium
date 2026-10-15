@@ -1,0 +1,33 @@
+{
+  "name": "presmium-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "slidev slides.md",
+    "build": "slidev build slides.md --out dist",
+    "export": "slidev export slides.md",
+    "check": "presmium check .",
+    "web:dev": "presmium-web dev .",
+    "web:build": "presmium-web build . --out dist-web"
+  },
+  "dependencies": {
+    "@slidev/cli": "53.0.0",
+    "@slidev/theme-default": "^0.25.0",
+    "vue": "^3.5.42",
+    "@presmium/cli": "workspace:*",
+    "@presmium/web": "workspace:*",
+    "@presmium/slidev-addon-core": "workspace:*",
+    "@presmium/slidev-addon-stage": "workspace:*",
+    "@presmium/slidev-addon-code": "workspace:*",
+    "@presmium/slidev-addon-exec": "workspace:*",
+    "@presmium/slidev-addon-exec-local": "workspace:*",
+    "@presmium/slidev-addon-guide": "workspace:*",
+    "@presmium/slidev-addon-content": "workspace:*",
+    "@presmium/slidev-addon-publish": "workspace:*",
+    "@presmium/slidev-addon-session": "workspace:*",
+    "@presmium/slidev-addon-classroom": "workspace:*"
+  },
+  "devDependencies": {
+    "playwright-chromium": "1.64.1"
+  }
+}
