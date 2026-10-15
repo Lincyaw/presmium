@@ -146,8 +146,13 @@ test('under the spotlight the host navigation and overview stay on top and usabl
 
 test('stepping back undoes every cue and leaves the slide as a direct jump does', async ({ page }) => {
   // The cursor's place is checked with a tolerance (cursorOffset): its transform may differ by a
-  // fraction of a pixel when the page's fonts finish loading between the two visits.
-  const slide = () => page.locator('.slidev-layout.pm-guide').innerHTML().then(html => html.replace(/transform: translate\([^)]*\);/g, ''))
+  // fraction of a pixel when the page's fonts finish loading between the two visits. Only the
+  // cursor's own transform is left out of the comparison; any other leftover style still counts.
+  const slide = () => page.locator('.slidev-layout.pm-guide').evaluate((layout) => {
+    const copy = layout.cloneNode(true) as HTMLElement
+    for (const cursor of copy.querySelectorAll<HTMLElement>('.pm-cursor')) cursor.style.removeProperty('transform')
+    return copy.innerHTML
+  })
   await openGuide(page, 0)
   await expect.poll(() => cues(page)).toEqual(STEPS[0])
   await expect.poll(() => cursorOffset(page, CURSOR_AT[0]!)).toBeLessThan(1)
