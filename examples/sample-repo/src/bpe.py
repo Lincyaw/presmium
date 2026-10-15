@@ -8,8 +8,7 @@
 def get_stats(ids):
     """统计每一对相邻 id 出现的次数。"""
     counts = {}
-    for i in range(len(ids) - 1):
-        pair = (ids[i], ids[i + 1])
+    for pair in zip(ids, ids[1:]):
         counts[pair] = counts.get(pair, 0) + 1
     return counts
 # #endregion get_stats
