@@ -22,9 +22,10 @@ async function findGuide(page: Page): Promise<number> {
   if (guideNo) return guideNo
   await page.goto(`${SLIDES}/1`)
   for (let no = 1; no <= 50; no++) {
-    const layout = page.locator(`.slidev-page-${no} .slidev-layout`).first()
-    await expect(layout).toBeVisible()
-    if (await layout.evaluate(el => el.classList.contains('pm-guide'))) return (guideNo = no)
+    // Every slide is rendered in its own `.slidev-page-<no>`, whatever its layout.
+    const slide = page.locator(`.slidev-page-${no}`).first()
+    await expect(slide.locator(':scope > *').first()).toBeAttached()
+    if (await slide.locator('.pm-guide').count()) return (guideNo = no)
     await page.keyboard.press('ArrowDown')
   }
   throw new Error('the demo deck has no guide slide')
@@ -62,6 +63,27 @@ function cursorOffset(page: Page, selector: string) {
   }, selector)
 }
 
+/** Whether the spotlight's cutout lies on `#guide-output`: the box is lit, the page just outside it is dimmed. */
+function spotlightFits(page: Page) {
+  return page.evaluate(() => {
+    const path = document.querySelector<SVGPathElement>('.driver-overlay path')
+    const box = document.querySelector('.pm-guide #guide-output')!.getBoundingClientRect()
+    const dimmed = ([x, y]: number[]) => !!path?.isPointInFill(new DOMPoint(x, y))
+    const inside = [[box.left + 2, box.top + 2], [box.right - 2, box.bottom - 2]]
+    const outside = [[box.left - 20, box.top], [box.right + 20, box.bottom], [box.left, box.top - 20], [box.right, box.bottom + 20]]
+    return !inside.some(dimmed) && outside.every(dimmed)
+  })
+}
+
+/** Distance in pixels from the centre of the hint beacon to the top right corner of the help button. */
+function beaconOffset(page: Page) {
+  return page.evaluate(() => {
+    const dot = document.querySelector('.driver-hint.pm-hint-beacon')!.getBoundingClientRect()
+    const help = document.querySelector('.pm-guide #guide-help')!.getBoundingClientRect()
+    return Math.hypot(dot.x + dot.width / 2 - help.right, dot.y + dot.height / 2 - help.top)
+  })
+}
+
 const animations = (page: Page, selector: string) =>
   page.locator(selector).first().evaluate(el => el.getAnimations({ subtree: true }).length)
 
@@ -74,6 +96,7 @@ test('each step puts the cursor, spotlight and hint where the deck declares them
     if (step === 3) expect(await animations(page, '.pm-guide .pm-cursor__ring')).toBe(1)
     if (step === 4) {
       // The page is dimmed around the results, with the spotlight's popover.
+      await expect.poll(() => spotlightFits(page)).toBe(true)
       await expect(page.locator('.pm-spotlight-popover .driver-popover-title')).toHaveText('搜索结果')
       await expect(page.locator('body')).toHaveClass(/driver-fade/)
     }
@@ -81,13 +104,58 @@ test('each step puts the cursor, spotlight and hint where the deck declares them
 
   // Step 5: the beacon pulses on the help button's corner and opens its explanation.
   const beacon = page.locator('.driver-hint.pm-hint-beacon')
-  const help = (await page.locator('.pm-guide #guide-help').boundingBox())!
-  const dot = (await beacon.boundingBox())!
-  expect(Math.abs(dot.x + dot.width / 2 - (help.x + help.width))).toBeLessThan(2)
-  expect(Math.abs(dot.y + dot.height / 2 - help.y)).toBeLessThan(2)
+  const popover = page.locator('.pm-hint-popover .driver-popover-title')
+  await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
   expect(await animations(page, '.pm-hint-beacon')).toBeGreaterThan(0)
   await beacon.click()
-  await expect(page.locator('.driver-hint-popover .driver-popover-title')).toHaveText('帮助')
+  await expect(popover).toHaveText('帮助')
+
+  // Opening the hint leaves the arrow keys to the deck, with the popover open or closed with Escape.
+  await page.keyboard.press('ArrowLeft')
+  await expect.poll(() => cues(page)).toEqual(STEPS[4])
+  await expect(popover).toHaveCount(0)
+  await page.keyboard.press('ArrowRight')
+  await beacon.click()
+  await expect(popover).toHaveText('帮助')
+  await page.keyboard.press('Escape')
+  await expect(popover).toHaveCount(0)
+  await page.keyboard.press('ArrowLeft')
+  await expect.poll(() => cues(page)).toEqual(STEPS[4])
+})
+
+test('the spotlight and the beacon follow their targets when the window is resized', async ({ page }) => {
+  await openGuide(page, 4)
+  await expect.poll(() => spotlightFits(page)).toBe(true)
+  // Slidev rescales the slide with a CSS transform, as when entering fullscreen.
+  await page.setViewportSize({ width: 900, height: 900 })
+  await expect.poll(() => spotlightFits(page)).toBe(true)
+
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(() => cues(page)).toEqual(STEPS[5])
+  await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
+})
+
+test('under the spotlight the host navigation and overview stay on top and usable', async ({ page }) => {
+  await openGuide(page, 4)
+  await expect.poll(() => cues(page)).toEqual(STEPS[4])
+  const nav = (name: string) => page.getByRole('button', { name }).click()
+  await nav('Go to next slide')
+  await expect.poll(() => cues(page)).toEqual(STEPS[5])
+  await nav('Go to previous slide')
+  await expect.poll(() => cues(page)).toEqual(STEPS[4])
+
+  const popover = (await page.locator('.pm-spotlight-popover').boundingBox())!
+  await nav('Show slide overview')
+  // The overview covers the spotlight's popover, and a click on a thumbnail goes to that slide.
+  const first = page.locator('.slidev-page-1').last()
+  await expect(first).toBeVisible()
+  const covered = await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('.driver-popover'), { x: popover.x + popover.width / 2, y: popover.y + popover.height / 2 })
+  expect(covered).toBe(true)
+  const thumbnail = (await first.boundingBox())!
+  await page.mouse.click(thumbnail.x + thumbnail.width / 2, thumbnail.y + thumbnail.height / 2)
+  await expect(page).toHaveURL(/\/1(\?|$)/)
 })
 
 test('stepping back undoes every cue and leaves the slide as a direct jump does', async ({ page }) => {

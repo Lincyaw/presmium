@@ -27,6 +27,19 @@ const { anchor, look, steps } = useCue(props, 'data-pm-spotlight', requestSpotli
 </template>
 
 <style>
+/* The dimming lies just above the slide, under the host's own layers (the overview, dialogs),
+   and lets pointer events through. driver.js sets the overlay's z-index and the path's pointer
+   events inline. */
+.driver-overlay {
+  z-index: 1 !important;
+}
+.driver-overlay,
+.driver-overlay * {
+  pointer-events: none !important;
+}
+body .driver-popover.pm-spotlight-popover {
+  z-index: 2;
+}
 [data-pm-spotlight='inline'] {
   outline: 3px solid #f59e0b;
   outline-offset: 4px;

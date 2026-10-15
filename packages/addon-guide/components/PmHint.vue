@@ -30,6 +30,11 @@ const { anchor, look, steps } = useCue(props, 'data-pm-hint', requestHint)
 .pm-hint-beacon {
   --driver-hint-size: 32px;
 }
+/* Like the spotlight, beacons and their popover lie just above the slide, under the host's own layers. */
+body .driver-hint.pm-hint-beacon,
+body .driver-popover.pm-hint-popover {
+  z-index: 2;
+}
 [data-pm-hint='inline'] {
   outline: 2px solid #818cf8;
   outline-offset: 3px;

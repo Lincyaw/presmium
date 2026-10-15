@@ -51,24 +51,36 @@ export function useCue(props: CueProps, attribute: string, show: ShowCue) {
 
   useTargetMark(anchor, () => props.target, attribute, look)
 
-  // A slide can become live before it is laid out; drawing again once the target has a size places the effect.
+  // The host can move the target without resizing it: Slidev scales the slide with a CSS
+  // transform when the window changes, and a transition slides it in. While the effect is
+  // drawn, the target's box is read on every frame and the effect laid out again when it moves.
   const owner = {}
-  const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => draw())
-  let observed: HTMLElement | undefined
+  let frame = 0
   function draw() {
+    cancelAnimationFrame(frame)
     const element = look.value === 'live' ? resolveTarget(anchor.value, props.target) : undefined
-    if (element !== observed) {
-      if (observed) observer?.unobserve(observed)
-      if (element) observer?.observe(element)
-      observed = element
+    const request = element && { element, title: props.title, text: props.text, animate: !reduced.value }
+    show(owner, request)
+    if (!request) return
+    let box = boxOf(request.element)
+    const follow = () => {
+      const next = boxOf(request.element)
+      if (next !== box) show(owner, request)
+      box = next
+      frame = requestAnimationFrame(follow)
     }
-    show(owner, element && { element, title: props.title, text: props.text, animate: !reduced.value })
+    frame = requestAnimationFrame(follow)
   }
   watch([look, reduced, anchor], draw, { flush: 'post' })
   onBeforeUnmount(() => {
-    observer?.disconnect()
+    cancelAnimationFrame(frame)
     show(owner, undefined)
   })
 
   return { anchor, look, steps: cueSteps(range) }
+}
+
+function boxOf(element: Element): string {
+  const { x, y, width, height } = element.getBoundingClientRect()
+  return `${x} ${y} ${width} ${height}`
 }

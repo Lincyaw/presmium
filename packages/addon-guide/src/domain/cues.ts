@@ -46,11 +46,6 @@ export function planCursorPath(path: readonly Waypoint[]): PlannedWaypoint[] {
   return planned
 }
 
-/** Index of the waypoint the cursor is at on `current` step; -1 before the first one. */
-export function waypointAt(path: readonly PlannedWaypoint[], current: number): number {
-  return path.findLastIndex(point => point.at <= current)
-}
-
 /** Range of a spotlight or hint: from `at` (default 1) until `until` (exclusive; open-ended when absent). */
 export function cueRange(at?: number | string, until?: number | string): StepRange {
   const from = step(at) ?? 1

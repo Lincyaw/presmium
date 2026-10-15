@@ -17,6 +17,19 @@ function beacon({ element, title, text, animate }: CueRequest): DriverHint {
   }
 }
 
+// driver.js gives a beacon focus when it is clicked and when its popover closes, and focuses the
+// popover when it opens. The host ignores arrow keys while a button has focus, so the focus goes
+// back to the page: the deck keeps following the keyboard after a hint is opened.
+function release(event: FocusEvent) {
+  const target = event.target
+  if (target instanceof HTMLElement && target.closest('.pm-hint-beacon, .pm-hint-popover')) target.blur()
+}
+
+function create(): Hints {
+  document.addEventListener('focusin', release)
+  return hints({ popoverClass: 'pm-hint-popover' })
+}
+
 /** Puts a pulsing beacon on the element; asking again for the same hint lays the beacons out again. */
 export function requestHint(owner: object, request: CueRequest | undefined): void {
   if (sameCue(requests.get(owner), request)) {
@@ -25,7 +38,7 @@ export function requestHint(owner: object, request: CueRequest | undefined): voi
   }
   if (request) requests.set(owner, request)
   else requests.delete(owner)
-  beacons ??= hints()
+  beacons ??= create()
   beacons.hide()
   beacons.setHints([...requests.values()].map(beacon))
   if (requests.size) beacons.show()

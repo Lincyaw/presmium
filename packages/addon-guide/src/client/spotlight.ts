@@ -21,6 +21,10 @@ function config(animate: boolean): Config {
     stagePadding: 8,
     stageRadius: 8,
     popoverClass: 'pm-spotlight-popover',
+    // driver.js makes the rest of the page inert while it highlights (body.driver-active). On a
+    // slide the host's navigation and overview and the slide's own widgets stay usable; the
+    // overlay lets pointer events through (see PmSpotlight.vue).
+    onHighlightStarted: () => document.body.classList.remove('driver-active'),
   }
 }
 
