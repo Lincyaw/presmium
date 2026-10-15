@@ -9,3 +9,8 @@ playwright-report/
 vendor/
 .claude/
 dist-web/
+# Deck working directory: keep what belongs to the deck, ignore generated projects.
+**/.presmium/*
+!**/.presmium/freeze/
+!**/.presmium/anchors.lock.json
+!**/.presmium/drawings/
