@@ -15,8 +15,9 @@ const plugin: PresmiumNodePlugin = {
   rendererExtensions: {
     notebook: {
       components: {
-        FixtureQuiz: node => [
-          `**测验**：${String(node.props.question)}`,
+        // The renderer's context gives the extension the notebook's configuration.
+        FixtureQuiz: (node, _block, ctx) => [
+          `**测验**：${String(node.props.question)}（[网页版](${String(ctx.config.webUrl)})）`,
           { cell_type: 'code', source: 'answer = None  # 在这里作答' },
         ],
       },

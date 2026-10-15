@@ -59,10 +59,10 @@ packages/addon-<ctx>/
 ├── package.json          keywords 含 slidev-addon；exports 见下
 ├── src/
 │   ├── domain/           领域层：纯 TS，不得引用 vue、@slidev/*、vitepress、node:*
-│   ├── node/             Node 适配器：Markdown 转换、Vite 插件、检查项
-│   └── client/           浏览器适配器：服务实现、组合式函数
-├── components/           Slidev 约定：自动注册的组件（网页形态由 web 包注册同一批组件）
-├── setup/                Slidev 约定：main.ts、transformers.ts、code-runners.ts 等
+│   ├── node/             Node 适配器：指令、编译步骤、执行器、渲染端扩展、检查项、Vite 插件
+│   └── client/           浏览器适配器：plugin.ts（内核插件）、viewer.ts（IR 运行时扩展）、服务实现、组合式函数
+├── components/           自动注册的组件：Slidev 约定；网页形态由 web 包注册同一批组件
+├── setup/                Slidev 约定：main.ts、code-runners.ts、vite-plugins.ts 等
 └── global-top.vue 等     Slidev 约定：全局图层（仅幻灯片形态）
 ```
 
@@ -110,7 +110,9 @@ packages/addon-<ctx>/
 | `renderer` | 本插件提供的渲染端（网页、幻灯片、notebook 各是一个插件） |
 | `rendererExtensions` | 本插件为其他渲染端提供的组件转换，例如 notebook 中组件如何变成单元格 |
 
-`transformMarkdown` 是 v1 的钩子，已废弃，MR 波次中移除。
+- 指令与编译步骤的上下文提供 `watch(...files)`：声明 `ctx.src`、`ctx.resolvers` 之外读取的文件，`presmium dev` 在它们变化时重新编译（`ir.md` 第 5 节）。
+- 组件转换函数为 `(node, block, ctx)`，`ctx` 是所服务渲染端的 `RenderContext`；插件据此得到输出目录与工作目录（例如幻灯片渲染端生成的 Slidev 文稿所在目录），不为此依赖渲染端的包。
+- 检查项的 `CheckContext` 带有编译好的 IR（`ir`）。
 
 ### 4.3 锚点与检查
 
@@ -149,9 +151,31 @@ interface HostAdapter {
 
 ## 5. 插件约定
 
-### 5.1 注册
+### 5.1 浏览器端注册
 
-插件包在 `setup/main.ts` 中调用 `registerPresmiumPlugin(definition)`（`@presmium/host` 导出）。宿主适配在应用初始化时启动内核：按依赖顺序初始化全部插件，启动报告在演讲者视图中显示。网页形态由 `web` 包导入各插件包的 `src/client/plugin.ts` 完成同样的注册。
+插件包在浏览器端有三个约定入口。网页与幻灯片两个宿主都从这里注册，插件不必为两种形态各写一份：
+
+| 入口 | 内容 | 幻灯片形态 | 网页形态 |
+|---|---|---|---|
+| `src/client/plugin.ts` | 默认导出内核插件定义 `PluginDefinition`：提供的服务与启动时的初始化 | 插件包的 `setup/main.ts` 导入它，调用 `registerPresmiumPlugin`（`@presmium/host`） | `web` 渲染端导入 `plugins` 中每个包的这个文件并注册 |
+| `components/*.vue` | 组件，文件名即组件名，对应 `component` 节点的 `name` | Slidev 自动注册 | `web` 渲染端按文件名注册到 IR 运行时；文稿自己的 `components/` 覆盖同名组件 |
+| `src/client/viewer.ts` | 默认导出视图插件 `ViewerPlugin`（类型来自 `@presmium/viewer`） | 不使用 | `web` 渲染端在 IR 运行时启动前调用一次 |
+
+宿主适配在应用初始化时启动内核：按依赖顺序初始化全部已注册的插件，启动报告在演讲者视图中显示。两种形态注册的是同一批插件，启动报告一致。没有浏览器端服务的插件可以不提供 `plugin.ts`。
+
+视图插件是一个函数 `(ctx) => void`，`ctx` 提供：
+
+| 成员 | 作用 |
+|---|---|
+| `registerView({ id, label, kind, component, hidden? })` | 注册运行时视图（`ir.md` 8.2 节）。`kind: 'page'` 的视图在页面正文中渲染本页的章节，组件得到属性 `sections`；`'overlay'` 的视图覆盖全屏、贯穿全文；`hidden` 的视图不出现在视图菜单中。同一 ID 后注册的替换先注册的 |
+| `registerNodeRenderer(key, component)` | 为一类块注册渲染器。`key` 为节点类型（`markdown`、`code`、`component`）、`code:<语言>` 或组件名；渲染器得到属性 `block`、`section`、`step` |
+| `registerComponent(name, component)` | 注册渲染 `component` 节点的 Vue 组件，用于 `components/` 约定之外的组件 |
+| `useViewer()` | 在组件的 `setup` 中取得运行时状态：文档、当前视图与位置 |
+| `SectionView`、`BlockView` | 组成视图的构件：一个章节（含版式），一个块在某一步的状态 |
+
+视图插件抛错时只记录错误并跳过它，其余插件照常安装。视图与渲染器同插件组件一样，只依赖 `@presmium/host`、`@presmium/kernel` 与 vue；`@presmium/viewer` 只引用类型。
+
+幻灯片形态不运行视图插件；组件写进 Slidev 文稿的方式由 Node 端的 `rendererExtensions.slides` 决定（4.2 节），没有扩展时生成组件标签。
 
 ### 5.2 配置
 

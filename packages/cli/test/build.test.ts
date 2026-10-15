@@ -1,5 +1,5 @@
-// `presmium build` and `presmium dev`: renderer dispatch and incremental recompilation.
-import { spawn } from 'node:child_process'
+// `presmium build` and `presmium dev`: renderer dispatch, incremental recompilation and what dev watches.
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
@@ -49,4 +49,32 @@ it('dev recompiles when a source file is saved and pushes the IR to the renderer
   }
   expect(await exited).toBe(0)
   expect(json(server).at(-1)).toBe('closed')
+})
+
+it('dev recompiles when code that a pass read changes, and when a commit moves the revision it read (K-09)', async () => {
+  const deck = join(fixtures(), 'watch')
+  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: deck })
+  git('init', '-q')
+  git('add', '.')
+  git('commit', '-qm', 'first')
+  // The sample plugin's pass quotes the anchored line from the working tree and from HEAD.
+  const quote = () => json(join(deck, 'dev/ir.json')).sections[0].blocks[0].node.props
+  const child = spawn(process.execPath, [BIN, 'dev', '.', '--out', 'dev'], { cwd: deck })
+  const exited = new Promise<number | null>(resolve => child.on('exit', resolve))
+  try {
+    let output = ''
+    child.stdout.on('data', (chunk: Buffer) => output += chunk)
+    await expect.poll(() => output, { timeout: 15_000 }).toContain('watching')
+    expect(quote()).toMatchObject({ text: 'def greet(name):  # first', committed: 'def greet(name):  # first' })
+
+    const code = join(deck, 'greet.py')
+    writeFileSync(code, readFileSync(code, 'utf8').replace('# first', '# second'))
+    await expect.poll(quote, { timeout: 10_000 }).toMatchObject({ text: 'def greet(name):  # second', committed: 'def greet(name):  # first' })
+
+    git('commit', '-qam', 'second')
+    await expect.poll(quote, { timeout: 10_000 }).toMatchObject({ committed: 'def greet(name):  # second' })
+  } finally {
+    child.kill('SIGTERM')
+  }
+  expect(await exited).toBe(0)
 })

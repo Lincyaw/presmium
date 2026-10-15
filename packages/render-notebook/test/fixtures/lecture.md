@@ -69,11 +69,16 @@ echo 不是内核语言的代码
 | 年份 | 数量 |
 |---|---|
 | 2024 | 3 |
+
+[下载数据](figures/data.csv)
 :::
 
-图表在 notebook 中降级为表格。
+图表在 notebook 中降级为表格与数据的链接。
 
 :::{canvas}
 :::
 
 画布没有 notebook 形式，构建报告会列出它。
+
+```{include} pages/figure.md
+```

@@ -163,7 +163,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 
 | 顺序 | 步骤 | 作用 |
 |---|---|---|
-| 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，处理 `{include}` |
+| 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，把脚注定义放回书写处，处理 `{include}` |
 | 2 | 切分章节 | 按标题切分，生成章节 ID |
 | 3 | 指令转换 | 调用各插件注册的指令，把指令节点转为 IR 节点 |
 | 4 | 划分角色 | 按 2.3 节判定讲解与上屏内容 |
@@ -180,15 +180,54 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 
 ## 5. 插件
 
-插件在 Node 端的入口（`./presmium`）导出 `PresmiumNodePlugin`，在第 2 版契约中增加三项：
+插件在 Node 端的入口（`./presmium`）导出 `PresmiumNodePlugin`，与编译和渲染有关的字段：
 
 | 字段 | 作用 |
 |---|---|
 | `directives` | 指令规格：名称、参数、选项、正文，以及转换为 IR 节点的函数 |
 | `passes` | 编译步骤，声明在内置步骤 6 中的先后顺序 |
-| `renderers` | 按渲染端提供的扩展，例如 notebook 渲染端把某个组件转换为单元格 |
+| `executors` | 编译时执行用的执行器（第 4 节“执行”） |
+| `renderer` | 本插件提供的渲染端（第 6 节） |
+| `rendererExtensions` | 按渲染端 ID 提供的扩展，例如 notebook 渲染端把某个组件转换为单元格 |
 
-浏览器端（网页、幻灯片）按 `component` 节点的组件名，查找插件注册的 Vue 组件。组件仍只依赖 `@presmium/host`。
+- 指令与编译步骤通过 `ctx.src`、`ctx.resolvers` 读取文件，编译器记录读过的文件与读取时的 git 版本；其他方式读取的文件用 `ctx.watch(...files)` 声明。`presmium dev` 在这些文件或命名该版本的 git 引用（`HEAD`、所在分支、`packed-refs`）变化时重新编译（K-09）。
+- 渲染端扩展的组件转换函数为 `(node, block, ctx)`，`ctx` 是正在运行的渲染端的 `RenderContext`（输出目录、工作目录、渲染端配置），例如据此写出相对于渲染产物的路径。编译器把 `ctx` 绑定后交给渲染端，渲染端以 `(node, block)` 调用。
+- 浏览器端（网页、幻灯片）按 `component` 节点的组件名，查找插件注册的 Vue 组件。组件仍只依赖 `@presmium/host`。浏览器端的注册约定见 `architecture.md` 第 5 节。
+
+### 5.1 指令一览
+
+所有指令都接受 `:reveal:`（在下一步出现，`{slide}`、`{only}` 上还可写 `:reveal: items`）与 `:label:`（块 ID）。下表的“步数”是块的 `span`（2.4 节）。
+
+内置指令（编译器）：
+
+| 指令 | 参数与正文 | 选项 | 生成 |
+|---|---|---|---|
+| `{slide}` | 正文为 MyST | `:reveal:`、`:reveal: items` | 正文中的块都是上屏内容 |
+| `{only}` | 参数为渲染端 ID 列表；正文为 MyST | `:reveal:`、`:reveal: items` | 正文中的块限定于这些渲染端（`only`） |
+| `{hints}` | 正文为 YAML，键为渲染端 ID | — | 章节的 `hints` |
+| `{component}` | 参数为组件名；正文为 YAML 属性 | `:span:`（步数）、`:plugin:`（插件 ID，默认为注册该组件的插件）；其余选项作为属性，值按 YAML 读取 | `component` 节点 |
+| `{include}` | 参数为文件路径 | — | 引入文件的内容；被引入文件的 frontmatter 被忽略 |
+| `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}` | 参数为语言；正文为代码 | `:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（强调的行，如 `2, 4-5`，各步都高亮这些行）、`:run:`、`:executor:`、`:timeout:` | `code` 节点 |
+
+代码块的 `:run:` 取 `compile`（默认，构建时执行并录制输出）、`live`（只在浏览器中执行）或 `both`；`:executor:` 指定执行器 ID；`:timeout:` 为毫秒。
+
+插件指令：
+
+| 插件 | 指令 | 参数与正文 | 选项 | 生成与步数 |
+|---|---|---|---|---|
+| 代码引用 `presmium.code` | `{code-ref}` | 参数为锚点，如 `region:src/bpe.py#merge` | `:pin:`（提交，默认工作区）、`:steps:`（逻辑单元名列表，即嵌套的 `#region`，每步高亮一个；`all` 或 `none` 表示这一步不突出任何单元）、`:variants:`（至少两个提交，逐步切换版本，不能与 `:pin:`、`:steps:` 同用）、`:lang:`（默认取文件扩展名）、`:repo:`（永久链接的仓库网址）、`:run:`、`:executor:`、`:timeout:` | `code` 节点，带 `origin`、`highlight` 或 `variants`；步数为单元数或版本数减一 |
+| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言（默认 `python`）；正文为代码 | `:params:`（YAML 映射，注入程序的变量）、`:timeout:`（毫秒）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行） | `PmRunPanel`，子块为代码块 |
+| | `{step-run}` | 同上 | `:steps:`（执行的行数，每行一步）、`:params:`、`:timeout:` | `PmStepRun`；步数为 `:steps:` |
+| 本地环境 `presmium.execLocal` | `{local-env}` | 参数为语言（默认 `python`）；正文为代码 | `:file:`（代码在工作区中的路径，必填）、`:workspace:`（devcontainer 所在目录，相对于本文件） | `PmLocalEnv`，子块为代码块；执行器 `presmium.container` 供代码块的 `:executor:` 使用 |
+| 引导 `presmium.guide` | `{cursor}` | 正文每行一个路径点：`[move\|hover\|click] <CSS 选择器>`，动作默认为 `move` | — | `PmCursor`；第 k 个路径点在块的第 k 步，步数为路径点数减一 |
+| | `{spotlight}`、`{hint}` | 参数为目标的 CSS 选择器；正文为弹出说明 | `:title:`（说明标题）、`:span:`（持续的步数，默认 0） | `PmSpotlight`、`PmHint` |
+| 富内容 `presmium.content` | `{markmap}` | 正文为标题与列表；开头的 YAML 块可写 `markmap` 选项 | — | `PmMarkmap`，降级为嵌套列表 |
+| | `{video}`、`{audio}`、`{animation}` | 参数为媒体文件路径（相对于本文件，或包路径）；正文为说明文字 | `:controls:`、`:autoplay:`、`:loop:`、`:muted:`、`:width:`、`:height:`、`:alt:`；`{animation}` 另有 `:still:`（减少动态效果时的静止图片） | `PmMedia`，降级为文件链接 |
+| | ` ```plantuml ` 代码块（编译步骤） | — | 全局配置 `plantUmlServer` | 图片节点 |
+| 发布 `presmium.publish` | 无指令；`{component} PmContrastToggle` 放置高对比度开关 | — | 全局配置 `offline: false` 关闭离线 | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets` |
+| 讲台 `presmium.stage` | 无指令；内容由渲染端直接呈现 | — | — | 编译步骤 `footnotes` 把脚注定义移到引用它的块所在步骤与角色 |
+
+脚注定义留在书写它的章节（以及 `{slide}`、`{only}`）中；引用与定义须在同一文件。
 
 ## 6. 渲染端
 
@@ -197,11 +236,15 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 ```ts
 interface Renderer {
   id: string                                     // 'web' | 'slides' | 'notebook' | ...
-  support(node: IRNode): 'full' | 'degraded' | 'none'
+  support(node: IRNode, extensions: RendererExtension[]): 'full' | 'degraded' | 'none'
   build(doc: IRDocument, ctx: RenderContext): Promise<RenderOutput>
-  dev?(ctx: RenderContext): Promise<RenderDevServer>   // 接收增量 IR
+  dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>   // update() 接收新的 IR
 }
 ```
+
+`RenderContext` 提供文稿目录、输出目录 `outDir`、工作目录 `workDir`、本渲染端的配置、各插件的扩展与插件列表。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。
+
+notebook 渲染端把图片与链接指向的本地文件（如本地化的 PlantUML 图、媒体的降级链接）复制到 notebook 旁边的 `media/` 并改写路径，notebook 目录可以整体移动。
 
 降级规则：
 
@@ -216,7 +259,7 @@ interface Renderer {
 | 命令 | 作用 |
 |---|---|
 | `presmium build [--to web,slides,notebook] [--out dir]` | 编译并生成指定媒介，默认生成全部已安装的渲染端 |
-| `presmium dev [--to web]` | 监听源码，增量编译，启动对应渲染端的开发服务器 |
+| `presmium dev [--to web]` | 监听源码与编译读取过的文件（第 5 节），增量编译，启动对应渲染端的开发服务器 |
 | `presmium ir [--out file]` | 输出 IR JSON，用于调试 |
 | `presmium check` | 编译到第 8 步，只输出诊断 |
 
@@ -240,7 +283,7 @@ interface Renderer {
 | `scrolly` | 滚动叙事：上屏内容固定一侧，讲解滚动，步骤随滚动推进 |
 | `present` | 放映：全屏逐章节、逐步骤；另开窗口为演讲者视图（当前步骤的讲解、下一步预告、计时） |
 
-视图可插拔：插件通过 `registerView` 注册新视图，通过 `registerNodeRenderer` 为节点类型或组件名注册渲染器。
+视图可插拔：插件包的 `src/client/viewer.ts` 默认导出视图插件 `ViewerPlugin`，通过 `registerView` 注册新视图，通过 `registerNodeRenderer` 为节点类型、`code:<语言>` 或组件名注册渲染器。约定见 `architecture.md` 5.1 节。
 
 ### 8.3 实时更新
 

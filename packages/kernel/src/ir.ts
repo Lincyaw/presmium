@@ -210,6 +210,8 @@ export interface DirectiveContext {
   /** Parses MyST markdown (e.g. a directive body) into mdast. */
   parse(markdown: string): MdastNode
   report(finding: Finding): void
+  /** Declares files the result depends on, as `PassContext.watch` does. */
+  watch(...files: string[]): void
 }
 
 export interface DirectiveResult {
@@ -243,6 +245,13 @@ export interface PassContext {
   /** Configuration of the plugin that owns the pass. */
   config: Record<string, unknown>
   report(finding: Finding): void
+  /**
+   * Declares files outside the source that the output depends on (absolute,
+   * or relative to the workspace root), e.g. git files that name a commit;
+   * `presmium dev` recompiles when one changes. Files read through `src` or
+   * `resolvers` are recorded without it.
+   */
+  watch(...files: string[]): void
 }
 
 export interface IRPass {
@@ -261,6 +270,14 @@ export type Support = 'full' | 'degraded' | 'none'
 export interface RenderContext {
   deckDir: string
   outDir: string
+  /**
+   * Where the renderer keeps what it generates on the way to its output, from
+   * one run to the next: `<deck>/.presmium/<renderer id>` in `build`, the
+   * output directory in `dev`. A renderer that writes there creates it and
+   * keeps it out of git. The slides renderer writes its Slidev deck there
+   * (`slides.md`), so `slidev export` can work on it.
+   */
+  workDir: string
   /** This renderer's configuration from the frontmatter. */
   config: Record<string, unknown>
   /** Renderer extensions contributed by plugins for this renderer. */
@@ -289,7 +306,23 @@ export interface Renderer {
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>
 }
 
-/** What a plugin contributes to one renderer, e.g. how the notebook renders its components. */
+/**
+ * Renders a plugin's component for one renderer, e.g. as notebook cells or as
+ * Slidev Markdown. `ctx` is the context of the renderer being run, e.g. for
+ * paths relative to what it writes.
+ */
+export type ComponentRenderer = (node: ComponentNode, block: IRBlock, ctx: RenderContext) => unknown
+
+/** What a plugin contributes to one renderer (`PresmiumNodePlugin.rendererExtensions`). */
+export interface RendererContribution {
+  /** Component name -> its renderer. */
+  components?: Record<string, ComponentRenderer>
+}
+
+/**
+ * A plugin's contribution as a renderer receives it in `RenderContext.extensions`:
+ * the compiler binds each component renderer to that renderer's context.
+ */
 export interface RendererExtension {
   plugin: string
   /** Component name -> renderer-specific output (e.g. notebook cells). */

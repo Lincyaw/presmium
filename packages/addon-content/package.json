@@ -20,7 +20,6 @@
   "dependencies": {
     "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
-    "@presmium/render-slides": "workspace:*",
     "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
     "plantuml-encoder": "^1.4.0",

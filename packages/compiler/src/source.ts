@@ -107,7 +107,7 @@ export class Parser {
     const tree = this.parse(body)
     tagFile(tree, file)
     // `+++` block breaks nest content in `block` nodes; sections are found at the top level.
-    const children = (tree.children ?? []).flatMap(c => c.type === 'block' ? c.children ?? [] : [c])
+    const children = placeFootnotes((tree.children ?? []).flatMap(c => c.type === 'block' ? c.children ?? [] : [c]))
     return { file, text, frontmatter, findings, children }
   }
 
@@ -169,6 +169,47 @@ function splitFrontmatter(text: string): { yaml?: string, body: string } {
   if (!match) return { body: text }
   const lines = match[0].split('\n').length - 1
   return { yaml: match[1] ?? '', body: '\n'.repeat(lines) + text.slice(match[0].length) }
+}
+
+/**
+ * The parser moves every footnote definition of a file to its end, with the
+ * position of another one; only the definition's content keeps its true lines.
+ * Each definition goes back where it is written, at the top level or into the
+ * body of the `{slide}` or `{only}` that holds it, so it belongs to its section.
+ */
+function placeFootnotes(nodes: MdastNode[]): MdastNode[] {
+  const placed = nodes.filter(node => node.type !== 'footnoteDefinition')
+  for (const definition of nodes.filter(node => node.type === 'footnoteDefinition')) {
+    const lines = contentLines(definition)
+    if (!lines) {
+      placed.push(definition)
+      continue
+    }
+    definition.position = { start: { line: lines.line, column: 1 }, end: { line: lines.endLine, column: 1 } }
+    insertAt(placed, definition, lines.line)
+  }
+  return placed
+}
+
+function insertAt(nodes: MdastNode[], node: MdastNode, line: number): void {
+  const directive = nodes.find((n) => {
+    const lines = n.type === 'mystDirective' ? lineOf(n) : undefined
+    return lines && lines.line < line && line <= lines.endLine
+  })
+  const body = directive?.children?.find(c => c.type === BODY)
+  if (body?.children) return insertAt(body.children, node, line)
+  const after = nodes.findIndex(n => (lineOf(n)?.line ?? 0) > line)
+  nodes.splice(after < 0 ? nodes.length : after, 0, node)
+}
+
+/** First and last line of a node's positioned descendants. */
+function contentLines(node: MdastNode): { line: number, endLine: number } | undefined {
+  let found: { line: number, endLine: number } | undefined
+  for (const child of node.children ?? []) {
+    const lines = lineOf(child) ?? contentLines(child)
+    if (lines) found = { line: Math.min(found?.line ?? lines.line, lines.line), endLine: Math.max(found?.endLine ?? 0, lines.endLine) }
+  }
+  return found
 }
 
 function tagFile(node: MdastNode, file: string): void {

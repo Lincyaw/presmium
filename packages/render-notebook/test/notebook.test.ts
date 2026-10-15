@@ -97,8 +97,21 @@ it('puts the section titles and all narration text in Markdown cells', () => {
   expect(markdown()).not.toContain('只在网页中出现')
 })
 
+it('copies the local files that images and links point to next to the notebook and links the copies', () => {
+  // The image is written relative to an included page, the link in a component fallback relative to the entry.
+  const image = /!\[点图\]\((media\/[\w-]+\.svg)\)/.exec(markdown())?.[1]
+  const link = /\[下载数据\]\((media\/[\w-]+\.csv)\)/.exec(markdown())?.[1]
+  expect(image).toMatch(/^media\/[0-9a-f]{8}-dot\.svg$/)
+  expect(link).toMatch(/^media\/[0-9a-f]{8}-data\.csv$/)
+  const notebookDir = join(dir, 'out/notebook')
+  expect(readFileSync(join(notebookDir, image!), 'utf8')).toBe(readFileSync(join(dir, 'figures/dot.svg'), 'utf8'))
+  expect(readFileSync(join(notebookDir, link!), 'utf8')).toBe(readFileSync(join(dir, 'figures/data.csv'), 'utf8'))
+  // Remote URLs are kept.
+  expect(markdown()).toContain('(https://example.org/gauss)')
+})
+
 it('renders components through the plugin extension or the fallback, and reports the ones it cannot show', () => {
-  const quiz = cells.findIndex(c => c.source.join('') === '**测验**：1 加到 10 等于多少？')
+  const quiz = cells.findIndex(c => c.source.join('') === '**测验**：1 加到 10 等于多少？（[网页版](https://example.org/lecture/)）')
   expect(quiz).toBeGreaterThan(-1)
   expect(cells[quiz + 1]).toMatchObject({ cell_type: 'code', source: ['answer = None  # 在这里作答'] })
   expect(markdown()).toMatch(/\| 年份 +\| 数量 +\|\n.*\n\| 2024 \| 3 +\|/)
