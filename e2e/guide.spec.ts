@@ -145,9 +145,13 @@ test('under the spotlight the host navigation and overview stay on top and usabl
 })
 
 test('stepping back undoes every cue and leaves the slide as a direct jump does', async ({ page }) => {
+  // The cursor's place is checked with a tolerance (cursorOffset): its transform may differ by a
+  // fraction of a pixel when the page's fonts finish loading between the two visits.
+  const slide = () => page.locator('.slidev-layout.pm-guide').innerHTML().then(html => html.replace(/transform: translate\([^)]*\);/g, ''))
   await openGuide(page, 0)
   await expect.poll(() => cues(page)).toEqual(STEPS[0])
-  const fresh = await page.locator('.slidev-layout.pm-guide').innerHTML()
+  await expect.poll(() => cursorOffset(page, CURSOR_AT[0]!)).toBeLessThan(1)
+  const fresh = await slide()
 
   await openGuide(page, STEPS.length - 1)
   for (let step = STEPS.length - 1; step >= 0; step--) {
@@ -155,7 +159,7 @@ test('stepping back undoes every cue and leaves the slide as a direct jump does'
     await expect.poll(() => cursorOffset(page, CURSOR_AT[step]!)).toBeLessThan(1)
     if (step > 0) await page.keyboard.press('ArrowLeft')
   }
-  expect(await page.locator('.slidev-layout.pm-guide').innerHTML()).toBe(fresh)
+  expect(await slide()).toBe(fresh)
 })
 
 test('with reduced motion every cue shows its final state at once', async ({ page }) => {
