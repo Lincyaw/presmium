@@ -1,0 +1,101 @@
+/* Form markers (architecture §5.6): the web form hides slide-only content. */
+[slide-only] {
+  display: none !important;
+}
+
+.pm-section {
+  position: relative;
+  min-width: 0;
+}
+
+/* Wide slide content scrolls inside its section, never the page (N-05). */
+.pm-slide,
+.pm-notes {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.pm-slide :where(img, video, iframe, canvas, svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Code blocks bleed to the screen edges on phones; keep them inside the scroll box. */
+.pm-slide div[class*='language-'],
+.pm-notes div[class*='language-'] {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.pm-boundary-error {
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--vp-c-danger-1);
+  border-radius: 0.25rem;
+  color: var(--vp-c-danger-1);
+  font-size: 0.85em;
+}
+
+.pm-section__links {
+  font-size: 0.85em;
+  text-align: right;
+}
+
+/* Scrollytelling (P-73): the slide stays in view while the notes scroll past. */
+.pm-section--scrolly {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 1.5rem;
+  align-items: start;
+}
+
+.pm-section--scrolly > .pm-slide {
+  position: sticky;
+  top: calc(var(--vp-nav-height) + 1rem);
+}
+
+.pm-section--scrolly .pm-notes {
+  padding-bottom: 30vh;
+}
+
+.pm-section--scrolly .pm-step {
+  min-height: 45vh;
+}
+
+.pm-section--scrolly .pm-section__links {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 767px) {
+  .pm-section--scrolly {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pm-section--scrolly > .pm-slide {
+    top: var(--vp-nav-height);
+    z-index: 1;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: var(--vp-c-bg);
+  }
+}
+
+/* v-click in scrolly sections; document sections show every step. */
+.pm-v-click {
+  display: contents;
+}
+
+[data-pm-click] {
+  transition: opacity 0.3s;
+}
+
+[data-pm-click='hidden'] {
+  visibility: hidden;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pm-click] {
+    transition: none;
+  }
+}
