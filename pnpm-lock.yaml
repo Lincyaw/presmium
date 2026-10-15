@@ -181,9 +181,15 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
+      diff:
+        specifier: ^9.0.0
+        version: 9.0.0
       pyodide:
         specifier: ^314.0.7
         version: 314.0.7
+      vue:
+        specifier: ^3.5.42
+        version: 3.5.44(typescript@6.0.3)
     devDependencies:
       '@slidev/client':
         specifier: 53.0.0
