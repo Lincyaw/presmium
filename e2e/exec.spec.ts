@@ -1,36 +1,39 @@
+import { existsSync, readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { SLIDES } from './urls.ts'
+import { SLIDES, WEB } from './urls.ts'
 
-// The slides of examples/demo/pages/exec.md are reached by their route aliases and
-// located by their headings, since Slidev keeps preloaded slides in the DOM too.
-// Loading the Python runtime takes a few seconds, hence the longer waits for first results.
+// examples/demo/pages/exec.md, built by `presmium build`. Slides are found by their
+// section id in the built IR and located by their headings, since Slidev keeps
+// preloaded slides in the DOM too. Loading the Python runtime takes a few seconds,
+// hence the longer waits for first results.
+const DIST = new URL('../examples/demo/dist/', import.meta.url)
+const HAS_WEB = existsSync(new URL('web', DIST))
 const RUNTIME = { timeout: 30_000 }
 
-async function openSlide(page: Page, alias: string, heading: string) {
-  await page.goto(`${SLIDES}/${alias}`)
+function slideOf(id: string): number {
+  const ir = JSON.parse(readFileSync(new URL('ir.json', DIST), 'utf8')) as { sections: { id: string, index: number }[] }
+  return ir.sections.find(section => section.id === id)!.index
+}
+
+async function openSlide(page: Page, id: string, heading: string, query = '') {
+  await page.goto(`${SLIDES}/${slideOf(id)}${query}`)
   const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
   await expect(slide).toBeVisible()
   return slide
 }
 
-async function openPanel(page: Page, alias: string, heading: string) {
-  const panel = (await openSlide(page, alias, heading)).locator('.pm-run-panel')
+async function openPanel(page: Page, id: string, heading: string) {
+  const panel = (await openSlide(page, id, heading)).locator('.pm-run-panel')
   await expect(panel.locator('.pm-run-panel__run')).toBeEnabled()
   return panel
 }
 
-test('Python code runs in the browser and shows its output', async ({ page }) => {
-  const slide = await openSlide(page, 'exec-monaco', '浏览器内运行 Python')
-  const output = slide.locator('.slidev-runner-output')
-  await expect(output).toContainText('1 + 2 + … + 100 = 5050', RUNTIME)
-  await expect(output).toContainText('在浏览器中运行')
-})
-
-test('rerunning with a changed parameter shows the difference between the runs', async ({ page }) => {
+test('Python runs in the browser; rerunning with a changed parameter shows the difference between the runs', async ({ page }) => {
   const panel = await openPanel(page, 'exec-panel', '执行面板')
   await panel.locator('.pm-run-panel__run').click()
   await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('1 1\n2 1\n3 2\n4 3\n5 5\n', RUNTIME)
+  await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
   await expect(panel.locator('.pm-run-panel__compare')).toHaveCount(0)
 
   await panel.locator('input[name="n"]').fill('7')
@@ -66,7 +69,7 @@ test('stepping back returns the output to the previous step', async ({ page }) =
 })
 
 test('opening the stepwise slide at a step shows the same as stepping there', async ({ page }) => {
-  const jumped = (await openSlide(page, 'exec-steps?clicks=7', '分步执行')).locator('.pm-step-run')
+  const jumped = (await openSlide(page, 'exec-steps', '分步执行', '?clicks=7')).locator('.pm-step-run')
   await expect(jumped).toHaveAttribute('data-state', 'ready', RUNTIME)
   await expect(jumped).toHaveAttribute('data-step', '7')
   await expect(page).toHaveURL(/clicks=7/)
@@ -96,4 +99,18 @@ test('a run that times out shows the recorded output, marked as recorded', async
   await expect(output).toHaveAttribute('data-source', 'recorded', RUNTIME)
   await expect(output.locator('.pm-run-panel__badge')).toHaveText('预录输出 · 执行超时')
   await expect(output.locator('.pm-run-panel__stdout')).toHaveText('x = 1.4142135623730951（√2，预先录制）')
+})
+
+const COMPILED = '平方： [1, 4, 9, 16, 25]\n合计： 55'
+
+test('output recorded at compile time is shown with its code in the slides', async ({ page }) => {
+  const slide = await openSlide(page, 'exec-compile', '编译时执行')
+  await expect(slide.locator('.pm-output')).toContainText(COMPILED)
+})
+
+test('output recorded at compile time is shown with its code in the web form', async ({ page }) => {
+  test.skip(!HAS_WEB, 'needs the web build (examples/demo/dist/web)')
+  await page.goto(`${WEB}/exec.html`)
+  await expect(page.getByText('合计： 55').first()).toBeVisible()
+  await expect(page.getByText('print("合计：", sum(squares))').first()).toBeVisible()
 })

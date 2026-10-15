@@ -3,11 +3,6 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { SourceReader } from '@presmium/kernel'
 import { simpleGit } from 'simple-git'
 
-/** The enclosing git work tree root, or `dir` itself outside git. */
-export async function findWorkspaceRoot(dir: string): Promise<string> {
-  return simpleGit(dir).revparse(['--show-toplevel']).then(root => resolve(root.trim()), () => resolve(dir))
-}
-
 /**
  * A git repository holding referenced code (P-13): the workspace's own, or a
  * submodule inside it for code from another repository (P-12). Every lookup

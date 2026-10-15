@@ -3,9 +3,9 @@ import { PmBoundary, useService, useStartReport } from '@presmium/host'
 import type { StepState } from '@presmium/kernel'
 import type { Ref } from 'vue'
 import { computed, onMounted, provide, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
-import { markLine, slotSource, STEP_MARKS, stringArgs } from '../src/client/index.ts'
+import { markLine, slotSource, STEP_MARKS } from '../src/client/index.ts'
 import StepMark from '../src/client/StepMark.vue'
-import { frameAt, TRACER } from '../src/domain/index.ts'
+import { frameAt, stringArgs, TRACER } from '../src/domain/index.ts'
 import type { Trace } from '../src/domain/index.ts'
 
 // P-21 stepwise execution: the wrapped code is traced once; every executed line

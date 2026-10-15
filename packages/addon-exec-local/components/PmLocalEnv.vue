@@ -3,7 +3,8 @@
  * A code snippet backed by the local environment: run it in the devcontainer
  * image (P-22), commit the edited code to a new branch (P-25), or export it
  * with the devcontainer definition (P-26). The snippet is the code block in
- * the default slot; actions appear only while a dev server is behind the deck.
+ * the default slot. Running and committing need a dev server behind the deck;
+ * the export also works in any build, from the archive made at compile time.
  */
 import { PmBoundary, useService, useStartReport } from '@presmium/host'
 import type { RunResult } from '@presmium/kernel/contracts'
@@ -15,6 +16,10 @@ const props = withDefaults(defineProps<{
   /** File of the snippet, relative to the workspace; target of commits and exports. */
   file: string
   lang?: string
+  /** The snippet and the devcontainer definition as a base64 zip archive, made at compile time. */
+  archive?: string
+  /** The devcontainer definition, relative to the workspace. */
+  devcontainer?: string
 }>(), { lang: 'python' })
 
 const env = useService(LOCAL_ENV)
@@ -37,6 +42,8 @@ const error = ref<string>()
 const state = computed(() => !status.value ? 'pending' : status.value.connected ? 'connected' : 'disconnected')
 const canRun = computed(() => !!status.value?.languages.includes(languageId(props.lang)))
 const notice = computed(() => !status.value ? '正在连接本地环境……' : status.value.reason)
+const connected = computed(() => !!status.value?.connected)
+const canExport = computed(() => (connected.value ? !!status.value?.devcontainer : !!props.archive))
 
 /** The edited code, or the slot's code block until the presenter edits it. */
 function currentCode(): string {
@@ -73,8 +80,16 @@ async function commit() {
   committed.value = await act('commit', service => service.commit({ file: props.file, content: currentCode() })) ?? committed.value
 }
 
+/** The archive made at compile time, for builds without a dev server. */
+function builtArchive(): Blob {
+  const bytes = Uint8Array.from(atob(props.archive ?? ''), c => c.charCodeAt(0))
+  return new Blob([bytes], { type: 'application/zip' })
+}
+
 async function replicate() {
-  const archive = await act('replicate', service => service.replicate({ file: props.file, content: currentCode(), lang: props.lang }))
+  const archive = connected.value
+    ? await act('replicate', service => service.replicate({ file: props.file, content: currentCode(), lang: props.lang }))
+    : builtArchive()
   if (!archive) return
   const link = document.createElement('a')
   link.href = URL.createObjectURL(archive)
@@ -89,7 +104,7 @@ async function replicate() {
     <section class="pm-local-env" :data-state="state">
       <header class="pm-local-env__header">
         <code>{{ file }}</code>
-        <span v-if="status?.devcontainer" class="pm-local-env__badge">容器：{{ status.devcontainer }}</span>
+        <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge">容器：{{ status?.devcontainer ?? devcontainer }}</span>
       </header>
       <div v-show="!editing" ref="source" class="pm-local-env__source">
         <slot />
@@ -102,17 +117,19 @@ async function replicate() {
         :aria-label="`编辑 ${file}`"
         @keydown.stop
       />
-      <div v-if="status?.connected" class="pm-local-env__actions">
-        <button v-if="!editing" type="button" data-action="edit" @click="edit">
-          编辑
-        </button>
-        <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
-          {{ busy === 'run' ? '运行中……' : '在容器中运行' }}
-        </button>
-        <button type="button" data-action="commit" :disabled="!status.git || !!busy" @click="commit">
-          提交到新分支
-        </button>
-        <button type="button" data-action="replicate" :disabled="!status.devcontainer || !!busy" @click="replicate">
+      <div v-if="connected || archive" class="pm-local-env__actions">
+        <template v-if="connected">
+          <button v-if="!editing" type="button" data-action="edit" @click="edit">
+            编辑
+          </button>
+          <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
+            {{ busy === 'run' ? '运行中……' : '在容器中运行' }}
+          </button>
+          <button type="button" data-action="commit" :disabled="!status?.git || !!busy" @click="commit">
+            提交到新分支
+          </button>
+        </template>
+        <button type="button" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
           导出环境
         </button>
       </div>

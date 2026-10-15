@@ -4,7 +4,7 @@
  * stopped by terminating the worker. Requests are handled one at a time.
  */
 import type { loadPyodide as LoadPyodide, PyodideInterface } from 'pyodide'
-import runner from './runner.py?raw'
+import runner from '../runner.py?raw'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 declare const self: DedicatedWorkerGlobalScope

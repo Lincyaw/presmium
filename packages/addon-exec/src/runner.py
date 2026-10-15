@@ -1,5 +1,5 @@
-# Helpers loaded into Pyodide by pyodide.worker.ts. Every run gets fresh globals;
-# results are returned as JSON strings so no Python objects cross into JavaScript.
+# Helpers that run Python for Presmium: loaded into Pyodide by client/pyodide.worker.ts, and run
+# by the local python3 of node/python.ts. Every run gets fresh globals; results are JSON strings.
 import ast
 import contextlib
 import io
