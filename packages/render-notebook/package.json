@@ -9,6 +9,11 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@presmium/kernel": "workspace:*"
+    "@presmium/kernel": "workspace:*",
+    "myst-to-md": "^1.0.17",
+    "vfile": "^5.3.7"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*"
   }
 }

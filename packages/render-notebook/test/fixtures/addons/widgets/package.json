@@ -1,0 +1,8 @@
+{
+  "name": "presmium-fixture-plugin-widgets",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts"
+  }
+}
