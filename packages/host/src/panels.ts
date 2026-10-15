@@ -1,4 +1,6 @@
 import type { PresenterPanel, PresenterPanels, Unsubscribe } from '@presmium/kernel'
+import { currentLocale } from './locale.ts'
+import { HOST_MESSAGES } from './messages.ts'
 import StartReportPanel from './StartReportPanel.vue'
 import type { Toolbar, ToolbarItem } from './types.ts'
 
@@ -48,7 +50,7 @@ function createRegistry<T extends Item>(kind: string): Registry<T> {
  */
 export function createPresenterPanels(): PresenterPanels {
   const service = createRegistry<PresenterPanel>('presenter panel')
-  service.register({ id: 'presmium.core.start-report', title: '启动报告', component: StartReportPanel, order: -1 })
+  service.register({ id: 'presmium.core.start-report', title: HOST_MESSAGES[currentLocale()].startReport, component: StartReportPanel, order: -1 })
   return service
 }
 

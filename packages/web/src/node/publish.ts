@@ -13,9 +13,23 @@ function relativeTo(deckDir: string, file: string): string {
 }
 
 /**
- * The document as the web site publishes it: source paths relative to the
- * deck (no local paths in a public site), and local images copied to
- * `<publicDir>/media/` with their URLs rewritten under the site base.
+ * A configuration value whose paths of this machine (absolute paths that
+ * exist, e.g. a workspace a pass resolved) are made relative to the deck, so
+ * the site does not depend on where the deck was built. Site paths such as
+ * `/web` stay as they are.
+ */
+function portable(value: unknown, deckDir: string): unknown {
+  if (typeof value === 'string') return isAbsolute(value) && existsSync(value) ? relativeTo(deckDir, value) : value
+  if (Array.isArray(value)) return value.map(item => portable(item, deckDir))
+  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, deckDir)]))
+  return value
+}
+
+/**
+ * The document as the web site publishes it: source paths and paths in the
+ * plugin configuration relative to the deck (no local paths in a public
+ * site), and local images copied to `<publicDir>/media/` with their URLs
+ * rewritten under the site base.
  */
 export function publishedDocument(doc: IRDocument, deckDir: string, publicDir: string, base: string): IRDocument {
   const copy = structuredClone(doc)
@@ -48,8 +62,10 @@ export function publishedDocument(doc: IRDocument, deckDir: string, publicDir: s
     source(b.source)
   }
   copy.meta.entry = relativeTo(deckDir, copy.meta.entry)
+  copy.config.presmium = portable(copy.config.presmium, deckDir) as IRDocument['config']['presmium']
   for (const section of copy.sections) {
     source(section.source)
+    if (section.config) section.config = portable(section.config, deckDir) as typeof section.config
     section.blocks.forEach(block)
   }
   for (const finding of copy.diagnostics) {

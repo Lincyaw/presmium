@@ -1,3 +1,5 @@
+import { DEFAULT_LANG } from '@presmium/kernel/contracts'
+
 /** Plugin id of the web renderer; its configuration is `presmium: { presmium.web: {...} }`. */
 export const WEB_ID = 'presmium.web'
 
@@ -19,7 +21,7 @@ export interface WebRendererConfig {
   base: string
   /** Port of the dev server (default: VitePress's). */
   port?: number
-  /** Site language (default `zh-CN`). */
+  /** Site language: `renderers.web.lang`, else the deck's `lang`, else `zh-CN`. */
   lang: string
 }
 
@@ -61,13 +63,14 @@ export function offlineEnabled(presmium: unknown): boolean {
   return !(isRecord(publish) && publish.offline === false)
 }
 
-/** The web renderer's options from `renderers.web`. */
-export function rendererConfig(config: Record<string, unknown>): WebRendererConfig {
+/** The web renderer's options from `renderers.web`; `deckLang` is the deck's `lang`. */
+export function rendererConfig(config: Record<string, unknown>, deckLang?: unknown): WebRendererConfig {
   const base = typeof config.base === 'string' ? `/${config.base.replace(/^\/+|\/+$/g, '')}/`.replace('//', '/') : '/'
   const port = Number(config.port)
+  const lang = [config.lang, deckLang].find((value): value is string => typeof value === 'string' && value !== '')
   return {
     base,
     port: Number.isInteger(port) && port > 0 ? port : undefined,
-    lang: typeof config.lang === 'string' ? config.lang : 'zh-CN',
+    lang: lang ?? DEFAULT_LANG,
   }
 }

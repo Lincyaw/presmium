@@ -108,6 +108,11 @@ export class ServiceRegistry {
   }
 }
 
+/** Why a plugin's kernel range does not admit `version`; undefined when it does. */
+export function kernelIncompatibility(range: string, version: string = KERNEL_VERSION): string | undefined {
+  return incompatibility(range, version)
+}
+
 function incompatibility(range: string, version: string): string | undefined {
   if (validRange(range) === null) return `invalid kernel range "${range}"`
   if (!satisfies(version, range, { includePrerelease: true })) return `kernel ${version} does not satisfy "${range}"`

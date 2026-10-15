@@ -10,3 +10,18 @@
   color: #dc2626;
   font-size: 0.85em;
 }
+
+/*
+ * Reduced motion (N-06): slide transitions and the fades of clicks happen at
+ * once. Presmium's own animations show their final state already
+ * (usePrefersReducedMotion); this covers Slidev's CSS transitions, whatever
+ * the deck's `transition`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+}

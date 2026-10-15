@@ -1,7 +1,7 @@
 // `presmium ir` on fixtures/lecture: the compiler passes of docs/ir.md sections 2 and 4.
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import type { IRBlock, IRDocument } from '@presmium/kernel'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { delimiter, join } from 'node:path'
+import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
 import { expect, it } from 'vitest'
 import { fixtures, presmium } from './helpers.ts'
 
@@ -102,4 +102,83 @@ it('executes code once, answers from the cache after, and reruns only changed co
   edit('lecture/lecture.md', '  - ../addons/echo\n', '')
   expect(await outputs()).toEqual(['COUNT PAIRS\n', 'MERGE PAIRS\n'])
   expect(runs()).toHaveLength(3)
+})
+
+it('reuses output recorded with another interpreter version and warns, unless the deck asks to run it again', async () => {
+  const dir = fixtures()
+  const bin = join(dir, 'bin')
+  mkdirSync(bin)
+  // A fake interpreter on PATH: the executor fingerprints it with `fakeinterp --version`.
+  const install = (version: string) => writeFileSync(join(bin, 'fakeinterp'), [
+    '#!/bin/sh',
+    `if [ "$1" = --version ]; then echo "Interp ${version}"; exit 0; fi`,
+    `echo "${version}: $(cat)"`,
+    '',
+  ].join('\n'), { mode: 0o755 })
+  const freeze = join(dir, 'interp/.presmium/freeze')
+  const compile = async () => {
+    const { code, stdout, stderr } = await presmium(dir, ['ir', 'interp'], { PATH: `${bin}${delimiter}${process.env.PATH}` })
+    expect(code).toBe(0)
+    const node = (JSON.parse(stdout) as IRDocument).sections[1]!.blocks[0]!.node
+    return { output: node.type === 'code' ? node.outputs?.[0]?.stdout : undefined, stderr, files: readdirSync(freeze) }
+  }
+
+  install('1.0')
+  const recorded = await compile()
+  expect(recorded.output).toBe('1.0: print hello\n')
+
+  install('2.0')
+  const reused = await compile()
+  expect(reused.output).toBe(recorded.output)
+  expect(reused.files).toEqual(recorded.files)
+  expect(reused.stderr).toContain('its recorded output was made with "Interp 1.0", this build has "Interp 2.0"; the recording is reused')
+
+  const entry = join(dir, 'interp/lecture.md')
+  writeFileSync(entry, readFileSync(entry, 'utf8').replace('plugins:', 'execute: { rerun: environment }\nplugins:'))
+  const rerun = await compile()
+  expect(rerun.output).toBe('2.0: print hello\n')
+  expect(rerun.stderr).not.toContain('recorded output')
+  // The new recording replaces the old one.
+  expect(rerun.files).toHaveLength(1)
+  expect(rerun.files).not.toEqual(recorded.files)
+})
+
+it('gives {ref}, {eq} and {numref} without text the title or number of their target', async () => {
+  const dir = fixtures()
+  const { code, stdout, stderr } = await presmium(dir, ['ir', 'refs'])
+  expect(code).toBe(0)
+  const doc = JSON.parse(stdout) as IRDocument
+  const text = (node: MdastNode): string => node.value ?? (node.children ?? []).map(text).join('')
+  const references = (node: MdastNode): MdastNode[] => node.type === 'crossReference' ? [node] : (node.children ?? []).flatMap(references)
+  const reading = doc.sections.find(s => s.id === 'reading')!
+  const found = reading.blocks.flatMap(b => b.node.type === 'markdown' ? references(b.node.mdast) : [])
+  expect(found.map(r => [r.kind, r.identifier, text(r)])).toEqual([
+    ['ref', 'energy', 'Mass and energy'],
+    ['eq', 'eq-energy', '(1)'],
+    ['eq', 'eq-pythagoras', '(2)'],
+    // MyST keeps the number with its word: a no-break space.
+    ['numref', 'fig-dot', 'Figure 1'],
+    // Text written with the reference is kept.
+    ['ref', 'energy', 'the first section'],
+    ['ref', 'figures', 'Figures'],
+    ['ref', 'nowhere', ''],
+  ])
+  expect(stderr).toContain('{ref} target "nowhere" not found')
+})
+
+it('{config} overrides a plugin\'s global options in its section, for its directives and passes; a plugin for another kernel is not loaded', async () => {
+  const dir = fixtures()
+  const { code, stdout } = await presmium(dir, ['ir', 'scoped'])
+  expect(code).toBe(0)
+  const doc = JSON.parse(stdout) as IRDocument
+  const props = (id: string) => doc.sections.find(s => s.id === id)!.blocks.map(b => b.node.type === 'component' ? b.node.props : undefined)
+  expect(props('global')).toEqual([{ label: 'global', tone: 'plain' }])
+  // Wherever the directive is in the section: before {config}, or in a {slide}.
+  expect(props('overridden')).toEqual([{ label: 'section', tone: 'plain' }, { label: 'section', tone: 'plain' }])
+  expect(doc.sections.map(s => s.config)).toEqual([undefined, undefined, { 'fixture.scoped': { label: 'section' } }])
+  expect(doc.meta.labels).toEqual({ 'scoped-configuration': 'global', 'global': 'global', 'overridden': 'section' })
+
+  const future = await presmium(dir, ['ir', 'future'])
+  expect(future.code).toBe(1)
+  expect(future.stderr).toContain('plugin "../addons/future" (fixture.future 2.0.0) is not loaded: kernel 0.1.0 does not satisfy "^9.0.0"')
 })

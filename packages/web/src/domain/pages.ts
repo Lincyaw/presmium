@@ -1,4 +1,4 @@
-import type { IRDocument, IRSection } from '@presmium/kernel'
+import type { IRDocument } from '@presmium/kernel'
 import { blockText } from '@presmium/viewer/domain'
 
 /** A VitePress page: a run of consecutive sections from the same source file. */
@@ -60,29 +60,6 @@ export function pageOf(pages: readonly WebPage[], relativePath: string): WebPage
 export function pageMarkdown(page: WebPage): string {
   // The doc footer steps through pages; sections have their own previous and next links.
   return ['---', `title: ${JSON.stringify(page.title)}`, 'outline: [2, 3]', 'prev: false', 'next: false', '---', '', '<PresmiumPage />', ''].join('\n')
-}
-
-function escapeMarkdown(text: string): string {
-  return text.replace(/[\\`*_{}[\]()#+\-.!|<>~&]/g, '\\$&')
-}
-
-function sectionSearchText(section: IRSection): string {
-  const parts = section.blocks.map((block) => {
-    const text = blockText(block)
-    if (!text) return ''
-    if (block.node.type === 'code') return `\`\`\`${block.node.lang}\n${text.replace(/`{3,}/g, m => m.replace(/`/g, '\\`'))}\n\`\`\``
-    return text.split(/\n+/).map(escapeMarkdown).join('\n\n')
-  })
-  return [`## ${escapeMarkdown(section.title)} {#${section.id}}`, ...parts.filter(Boolean)].join('\n\n')
-}
-
-/**
- * The Markdown the search index sees for a page: each section as a heading
- * with its anchor, then the text of its blocks (narration, prose, code and
- * recorded output), from the IR rather than from the rendered page.
- */
-export function searchMarkdown(doc: IRDocument, page: WebPage): string {
-  return page.sections.flatMap(id => doc.sections.filter(s => s.id === id)).map(sectionSearchText).join('\n\n')
 }
 
 /** A document of the local search index: one per section, as VitePress indexes a page per heading. */

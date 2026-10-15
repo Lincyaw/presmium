@@ -15,11 +15,3 @@ export function tokenize(text: string): string[] {
   }
   return words
 }
-
-/** VitePress prints a code block's language before the code; indexed, it merges with the first word. */
-const CODE_LANGUAGE = /<span class="lang">[^<]*<\/span>/g
-
-/** Rendered search HTML without the code language labels. */
-export function searchableHtml(html: string): string {
-  return html.replace(CODE_LANGUAGE, '')
-}

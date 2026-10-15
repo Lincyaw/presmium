@@ -1,25 +1,38 @@
-/// <reference types="vitepress/client" />
 import { presmiumReport, presmiumService } from '@presmium/host'
-import type { HostAdapter, Navigation, SyncTransports, ViewRole } from '@presmium/host'
+import type { HostAdapter, Navigation, ViewRole } from '@presmium/host'
 import type { PresentationMode } from '@presmium/kernel'
 import { FINAL_STEP, getView, useSectionContext } from '@presmium/viewer'
 import type { Viewer } from '@presmium/viewer'
-import { computed } from 'vue'
+import { computed, readonly, ref } from 'vue'
+import type { SharedStates } from './shared.ts'
+
+function record(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+export interface ViewerHostOptions {
+  /** The site language, for the server render. */
+  lang: string
+  shared: SharedStates
+}
 
 /**
  * Host adapter of the web form, fed by the IR runtime: the step of a
  * component is its section's step (every step reached in the document view;
  * the IR runtime gives each block its step scope), the cursor is the
  * enclosing section and its step, and the role follows the view (reader,
- * audience of the present view, presenter window).
+ * audience of the present view, presenter window). A section's `{config}`
+ * comes with its IR section. The web form renders no static copies.
  */
-export function createViewerHost(viewer: Viewer): HostAdapter {
+export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): HostAdapter {
   const overlay = () => getView(viewer.view.value)?.kind === 'overlay'
   const role = computed((): ViewRole => (viewer.view.value === 'presenter' ? 'presenter' : overlay() ? 'audience' : 'reader'))
+  const staticRender = readonly(ref(false))
   return {
     get mode(): PresentationMode {
       return overlay() ? 'slides' : 'document'
     },
+    lang: options.lang,
     useCursor() {
       const section = useSectionContext()
       return computed(() => {
@@ -33,6 +46,15 @@ export function createViewerHost(viewer: Viewer): HostAdapter {
       return computed(() => section?.step.value ?? FINAL_STEP)
     },
     useViewRole: () => role,
+    useStaticRender: () => staticRender,
+    useSectionConfig(pluginId) {
+      const context = useSectionContext()
+      return computed(() => {
+        const section = context?.section.value ?? viewer.section(viewer.position.value.section)
+        return { ...record(viewer.doc.value.config.presmium[pluginId]), ...section?.config?.[pluginId] }
+      })
+    },
+    useSharedState: options.shared.sharedState,
     getService: presmiumService,
     startReport: presmiumReport,
   }
@@ -57,14 +79,4 @@ export function createViewerNavigation(viewer: Viewer): Navigation {
       if (section) viewer.show({ section: section.id, step })
     },
   }
-}
-
-/**
- * The `syncTransports` service of the web form. The IR runtime has no
- * synchronized state channels (the slides form's are Slidev's), so a
- * transport added here is never connected; a plugin that shares them starts
- * in both forms alike.
- */
-export const viewerSyncTransports: SyncTransports = {
-  add: () => () => {},
 }

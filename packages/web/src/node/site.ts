@@ -2,8 +2,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync,
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { localeOf } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
-import { formOptions, pageMarkdown, searchDocuments, searchMarkdown, sidebar, toPages } from '../domain/index.ts'
+import { formOptions, pageMarkdown, searchDocuments, sidebar, SITE_LABELS, toPages } from '../domain/index.ts'
 import type { FormOptions, WebRendererConfig } from '../domain/index.ts'
 import { clientModules } from './addons.ts'
 import type { ClientModules } from './addons.ts'
@@ -23,8 +24,7 @@ export function siteFiles(workDir: string) {
   return {
     root: join(workDir, 'site'),
     ir: join(workDir, 'ir.json'),
-    search: join(workDir, 'search.json'),
-    /** The search documents of the dev server's own index (see ./vite.ts). */
+    /** The documents of the site's search index (see ./vite.ts). */
     searchDocuments: join(workDir, 'search-documents.json'),
     site: join(workDir, 'site.json'),
     publicDir: join(workDir, 'site', 'public'),
@@ -75,26 +75,22 @@ export function siteData(doc: IRDocument): SiteData {
 }
 
 function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, vite: readonly string[]): string {
+  // The labels of the default theme and its search box are in the site's language.
+  const labels = SITE_LABELS[localeOf(options.lang) ?? 'en']
   const site = {
     lang: options.lang,
     base: options.base,
     cleanUrls: false,
     // Links in the prose may point to files that have no page in the web form.
     ignoreDeadLinks: true,
-    themeConfig: {
-      outline: { level: [2, 3], label: '本页大纲' },
-      sidebarMenuLabel: '目录',
-      returnToTopLabel: '回到顶部',
-      darkModeSwitchLabel: '外观',
-    },
+    themeConfig: labels.themeConfig,
   }
   const imports = vite.map((file, i) => `import vite${i} from ${JSON.stringify(file)}\n`).join('')
   return `${GENERATED}
 import { readFileSync } from 'node:fs'
-import { searchableHtml, tokenize } from ${JSON.stringify(SEARCH)}
+import { tokenize } from ${JSON.stringify(SEARCH)}
 import { presmiumIR } from ${JSON.stringify(VITE_PLUGIN)}
 ${imports}
-const SEARCH_TEXTS = ${JSON.stringify(files.search)}
 const site = ${JSON.stringify(site, null, 2)}
 
 // Read when the config loads, so this file stays the same while the IR changes.
@@ -109,28 +105,13 @@ site.vite = {
   resolve: { dedupe: ['vue'] },
 }
 
-// Local search over the IR text of each page: titles, narration, prose and code.
-// Chinese is split into words.
+// Local search over the IR text of each section: titles, narration, prose and code. The index is
+// the renderer's own (see presmiumIR); the search box tokenizes queries as it does, Chinese into words.
 site.themeConfig.search = {
   provider: 'local',
   options: {
-    miniSearch: { options: { tokenize } },
-    _render(src, env, md) {
-      md.render(src, env)
-      if (env.frontmatter?.search === false) return ''
-      const text = JSON.parse(readFileSync(SEARCH_TEXTS, 'utf8'))[env.relativePath]
-      return text ? searchableHtml(md.render(text, env)) : ''
-    },
-    translations: {
-      button: { buttonText: '搜索', buttonAriaLabel: '搜索' },
-      modal: {
-        displayDetails: '显示详细列表',
-        resetButtonTitle: '清除',
-        backButtonTitle: '关闭搜索',
-        noResultsText: '没有结果',
-        footer: { selectText: '选择', navigateText: '切换', closeText: '关闭' },
-      },
-    },
+    miniSearch: { options: { tokenize } },${labels.search ? `
+    translations: ${JSON.stringify(labels.search)},` : ''}
   },
 }
 
@@ -167,11 +148,6 @@ ${loaders(modules.viewers)}
 `
 }
 
-/** What the search index gets of each page (by its Markdown file, e.g. `core.md`): the IR text of its sections. */
-export function searchTexts(doc: IRDocument): Record<string, string> {
-  return Object.fromEntries(toPages(doc).map(page => [`${page.path}.md`, searchMarkdown(doc, page)]))
-}
-
 export interface SiteInput {
   /** The document as published (see `publishedDocument`). */
   doc: IRDocument
@@ -181,7 +157,7 @@ export interface SiteInput {
 }
 
 /**
- * Writes the IR, the search texts, the site data and the VitePress project
+ * Writes the IR, the search documents, the site data and the VitePress project
  * (config, theme, one Markdown page per page of the document). Only files
  * whose content changed are written: in a dev server, editing the source
  * rewrites the IR and the search documents (both pushed to the pages) and at
@@ -194,7 +170,6 @@ export function writeSite(workDir: string, input: SiteInput): void {
   const pages = toPages(doc)
   const modules = clientModules(input.deckDir, input.plugins)
   write(files.ir, JSON.stringify(doc))
-  write(files.search, JSON.stringify(searchTexts(doc)))
   write(files.searchDocuments, JSON.stringify(searchDocuments(doc, input.options.base)))
   write(files.site, JSON.stringify(siteData(doc)))
   write(join(workDir, '.gitignore'), '*\n')

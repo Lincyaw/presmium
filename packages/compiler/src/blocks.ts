@@ -1,9 +1,9 @@
 /**
  * Passes 3 and 4 (docs/ir.md sections 2.3 to 2.5): turns the nodes of a
  * section into blocks. Directives become IR nodes (built-in `{slide}`,
- * `{only}`, `{hints}`, `{component}`, and the directives of plugins); every
- * block gets its role, narration or visual. Step numbers are assigned later
- * (see steps.ts) from `reveal`, `group` and `span`.
+ * `{only}`, `{hints}`, `{config}`, `{component}`, and the directives of
+ * plugins); every block gets its role, narration or visual. Step numbers are
+ * assigned later (see steps.ts) from `reveal`, `group` and `span`.
  */
 import type {
   BlockRole,
@@ -59,8 +59,11 @@ export interface BlockContext {
 
 export type Hints = Record<RendererId, Record<string, unknown>>
 
+/** Plugin configuration of a section (`{config}`), keyed by plugin id. */
+export type SectionConfig = Record<string, Record<string, unknown>>
+
 /** Built-in directives; the value tells whether the body is MyST parsed in place. */
-export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hints', false], ['component', false]])
+export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hints', false], ['config', false], ['component', false]])
 
 /** Options every directive accepts; they are not passed to plugin directives. */
 const COMMON_OPTIONS = ['reveal', 'label']
@@ -78,19 +81,45 @@ interface Scope {
   group?: number
 }
 
-/** The blocks and hints of the section being converted. */
+/** The blocks, hints and configuration of the section being converted. */
 interface Output {
   blocks: BlockDraft[]
   hints: Hints
+  /** Read before the blocks, so a directive anywhere in the section sees it. */
+  config: SectionConfig
   groups: number
 }
 
 type Push = (draft: Omit<BlockDraft, 'only' | 'reveal' | 'group' | 'label'> & { label?: string, reveal?: boolean }) => void
 
-export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Promise<{ blocks: BlockDraft[], hints: Hints }> {
-  const out: Output = { blocks: [], hints: {}, groups: 0 }
+export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Promise<{ blocks: BlockDraft[], hints: Hints, config: SectionConfig }> {
+  const out: Output = { blocks: [], hints: {}, config: sectionConfig(nodes, ctx), groups: 0 }
   await convert(nodes, { visual: false }, ctx, out)
-  return { blocks: out.blocks, hints: out.hints }
+  return { blocks: out.blocks, hints: out.hints, config: out.config }
+}
+
+/**
+ * The `{config}` directives of a section, at its top level or in a `{slide}`
+ * or `{only}`: YAML mappings keyed by plugin id, merged in source order.
+ */
+function sectionConfig(nodes: MdastNode[], ctx: BlockContext): SectionConfig {
+  const config: SectionConfig = {}
+  for (const node of nodes) {
+    if (node.type !== 'mystDirective') continue
+    if (node.name === 'slide' || node.name === 'only') {
+      for (const [id, options] of Object.entries(sectionConfig(bodyNodes(node), ctx))) config[id] = { ...config[id], ...options }
+      continue
+    }
+    if (node.name !== 'config') continue
+    const source = sourceOf(node, ctx.entry)
+    const fail = (message: string) =>
+      ctx.report({ checkId: 'presmium.directive', severity: 'error', message: `{config}: ${message}`, source: { file: source.file, line: source.line } })
+    for (const [id, options] of Object.entries(yamlBody(typeof node.value === 'string' ? node.value : '', fail) ?? {})) {
+      if (isRecord(options)) config[id] = { ...config[id], ...options }
+      else fail(`the configuration of "${id}" must be a mapping`)
+    }
+  }
+  return config
 }
 
 async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out: Output): Promise<void> {
@@ -167,6 +196,9 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     return
   }
 
+  // Read with the section, before its blocks (see `sectionConfig`).
+  if (name === 'config') return
+
   if (name === 'component') {
     if (!arg) return fail('needs a component name, e.g. {component} PmQuiz')
     const props: Record<string, unknown> = {}
@@ -197,7 +229,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       file: source.file,
       deckDir: ctx.deckDir,
       workspaceRoot: ctx.workspaceRoot,
-      config,
+      config: { ...config, ...out.config[plugin] },
       source,
       parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx, source.file) }),
       report: finding => ctx.report({ ...finding, source: finding.source ?? { file: source.file, line: source.line } }),

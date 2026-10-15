@@ -17,6 +17,7 @@ import { executePass, FREEZE_DIR, FreezeCache } from './execute.ts'
 import type { RunStats } from './execute.ts'
 import { loadPlugins, pluginComponents, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem } from './plugins.ts'
+import { resolveReferences } from './references.ts'
 import { splitSections } from './sections.ts'
 import { Parser, readFrontmatter } from './source.ts'
 import { scheduleSteps } from './steps.ts'
@@ -121,7 +122,7 @@ export class Compiler {
     const parser = this.#parserFor(directives)
     const source = await parser.expand(this.entry)
     findings.push(...source.findings)
-    const { title: _title, plugins: _plugins, presmium: _presmium, renderers, sectionDepth: depth, ...rest } = headmatter
+    const { title: _title, plugins: _plugins, presmium: _presmium, renderers, sectionDepth: depth, execute, ...rest } = headmatter
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(this.entry, extname(this.entry))
     const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
 
@@ -130,9 +131,19 @@ export class Compiler {
     const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, parser, directives, components, report, watch }
     const sections: IRSection[] = []
     for (const [i, section] of raw.entries()) {
-      const { blocks: drafts, hints } = await sectionBlocks(section.nodes, ctx)
+      const { blocks: drafts, hints, config } = await sectionBlocks(section.nodes, ctx)
       const { blocks, steps } = scheduleSteps(drafts, report)
-      sections.push({ id: section.id, index: i + 1, title: section.title, depth: section.depth, source: section.source, steps, hints, blocks })
+      sections.push({
+        id: section.id,
+        index: i + 1,
+        title: section.title,
+        depth: section.depth,
+        source: section.source,
+        steps,
+        hints,
+        ...Object.keys(config).length > 0 ? { config } : {},
+        blocks,
+      })
     }
 
     const doc: IRDocument = {
@@ -159,6 +170,7 @@ export class Compiler {
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
     for (const { pass, loaded } of passes) {
+      const config = configOf(loaded)
       try {
         await pass.run(doc, {
           deckDir: this.deckDir,
@@ -168,7 +180,8 @@ export class Compiler {
           lock: lock.toJSON(),
           executors,
           cache,
-          config: configOf(loaded),
+          config,
+          configFor: section => ({ ...config, ...section.config?.[pluginId(loaded)] }),
           report: finding => report({ ...finding, source: finding.source ?? at(loaded.name) }),
           watch,
         })
@@ -177,8 +190,11 @@ export class Compiler {
       }
     }
 
+    // Cross-references take the text of their targets once every pass has shaped the IR.
+    resolveReferences(doc, report)
+
     // Pass 7: compile-time execution; pass 8: validation.
-    const runs = await executePass(doc, executors, cache, report)
+    const runs = await executePass(doc, executors, cache, report, { rerun: rerunOption(execute) })
     findings.push(...validateIR(doc, this.entry))
     doc.diagnostics = sortFindings(findings)
     if (options.pruneCache && !findings.some(f => f.severity === 'error')) cache.prune()
@@ -225,6 +241,15 @@ export function sortFindings(findings: Finding[]): Finding[] {
   const file = (f: Finding) => f.source?.file ?? ''
   const line = (f: Finding) => f.source?.line ?? 0
   return findings.toSorted((a, b) => file(a) < file(b) ? -1 : file(a) > file(b) ? 1 : line(a) - line(b))
+}
+
+/**
+ * `execute: { rerun: environment }` in the headmatter: code whose recording was
+ * made with another runtime (e.g. another interpreter version) runs again
+ * instead of reusing the recording.
+ */
+function rerunOption(execute: unknown): boolean {
+  return isRecord(execute) && execute.rerun === 'environment'
 }
 
 function stringList(value: unknown): string[] {

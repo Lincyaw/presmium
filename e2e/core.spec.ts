@@ -3,6 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { fixtureDeck } from './fixtures/core/deck.ts'
+import type { FixtureDeck } from './fixtures/core/deck.ts'
 import { SLIDES } from './urls.ts'
 
 // The slides form is generated from the IR (`presmium build`, renderer `slides`).
@@ -179,4 +181,90 @@ test('presmium dev serves the slides with Slidev and updates them when the sourc
     await new Promise(done => child.exitCode === null ? child.once('exit', done) : done(undefined))
     rmSync(deck, { recursive: true, force: true })
   }
+})
+
+// e2e/fixtures/core/deck: an en-US deck with a test plugin (fixture.core) whose components read
+// their section's configuration and share a state, and whose kernel plugins cannot all start.
+test.describe('the fixture deck in the slides form', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let deck: FixtureDeck
+  const slide = (id: string) => `${deck.url}/slides/${deck.slide(id)}`
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    deck = await fixtureDeck()
+  })
+  test.afterAll(() => deck?.close())
+
+  test('a section\'s {config} overrides a plugin option on its slide only', async ({ page }) => {
+    const label = async (id: string) => {
+      await page.goto(slide(id))
+      return page.locator(`.slidev-page-${deck.slide(id)} .fx-config`)
+    }
+    await expect(await label('global')).toHaveText('global')
+    await expect(await label('scoped')).toHaveText('section')
+    // The cover's frontmatter is the headmatter, which holds the global configuration too.
+    await expect(await label('presmium-fixture-deck-with-a-title-too-long-for-a-phone')).toHaveText('cover')
+  })
+
+  test('an en-US deck sets <html lang> and speaks English: the start report, the button to the web form', async ({ page }) => {
+    await page.goto(slide('global'))
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
+    await expect(page.getByRole('link', { name: 'Read on the web' })).toHaveAttribute('href', new RegExp(`/web/\\?slide=${deck.slide('global')}$`))
+
+    await page.goto(`${deck.url}/slides/presenter/${deck.slide('lifecycle')}`)
+    const panels = await openPanels(page)
+    await expect(panels.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
+    await expect(panels.locator('[data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
+  })
+
+  test('a plugin for another kernel, a throwing setup and a dependency cycle are reported; plugins are disposed when the page goes away', async ({ page }) => {
+    await page.goto(`${deck.url}/slides/presenter/${deck.slide('lifecycle')}`)
+    const report = (await openPanels(page)).locator('.pm-start-report')
+    const plugin = (id: string) => report.locator(`[data-plugin="${id}"]`)
+    await expect(plugin('fixture.core.future')).toHaveAttribute('data-status', 'disabled')
+    await expect(plugin('fixture.core.future')).toContainText('kernel 0.1.0 does not satisfy "^9.0.0"')
+    await expect(plugin('fixture.core.throws')).toHaveAttribute('data-status', 'failed')
+    await expect(plugin('fixture.core.throws')).toContainText('fixture setup failed on purpose')
+    for (const id of ['fixture.core.cycle-a', 'fixture.core.cycle-b']) {
+      await expect(plugin(id)).toHaveAttribute('data-status', 'disabled')
+      await expect(plugin(id)).toContainText('dependency cycle: fixture.core.cycle-a -> fixture.core.cycle-b -> fixture.core.cycle-a')
+    }
+    await expect(plugin('fixture.core.lifecycle')).toHaveAttribute('data-status', 'started')
+
+    // fixture.core.lifecycle counts its disposals in localStorage.
+    const disposals = () => page.evaluate(() => Number(localStorage.getItem('fixture.core.disposals') ?? 0))
+    const before = await disposals()
+    await page.reload()
+    await expect.poll(disposals).toBe(before + 1)
+  })
+
+  test('windows of the deck share a plugin state', async ({ context }) => {
+    const [a, b] = [await context.newPage(), await context.newPage()]
+    for (const page of [a, b]) await page.goto(slide('shared'))
+    const count = (page: Page) => page.locator(`.slidev-page-${deck.slide('shared')} .fx-shared__count`)
+    await expect(count(b)).toHaveText('0')
+    await a.getByRole('button', { name: 'Add one' }).click()
+    await a.getByRole('button', { name: 'Add one' }).click()
+    await expect(count(a)).toHaveText('2')
+    await expect(count(b)).toHaveText('2')
+  })
+
+  test('with reduced motion, turning a page and revealing an item animate nothing', async ({ page }) => {
+    // The deck's slides go `slide-left`; without reduced motion a page turn animates.
+    const running = () => page.evaluate(() => document.getAnimations().filter(animation => animation.playState === 'running').length)
+    await page.goto(slide('lifecycle'))
+    await page.keyboard.press('ArrowRight')
+    await expect(page).toHaveURL(new RegExp(`/slides/${deck.slide('motion')}$`))
+    expect(await running()).toBeGreaterThan(0)
+
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto(slide('lifecycle'))
+    await page.keyboard.press('ArrowRight')
+    await expect(page).toHaveURL(new RegExp(`/slides/${deck.slide('motion')}$`))
+    expect(await running()).toBe(0)
+    await page.keyboard.press('ArrowRight')
+    await expect(page.locator(`.slidev-page-${deck.slide('motion')} li`).nth(1)).not.toHaveClass(/slidev-vclick-hidden/)
+    expect(await running()).toBe(0)
+  })
 })

@@ -38,6 +38,7 @@ export function validateIR(doc: IRDocument, entry?: string): Finding[] {
     if (typeof section.title !== 'string') fail(`section ${section.id} has no title`, where)
     if (!isCount(section.steps)) fail(`section ${section.id}: steps must be a non-negative integer`, where)
     if (!isRecord(section.hints) || !Object.values(section.hints).every(isRecord)) fail(`section ${section.id}: hints must map renderer ids to objects`, where)
+    if (section.config !== undefined && !(isRecord(section.config) && Object.values(section.config).every(isRecord))) fail(`section ${section.id}: config must map plugin ids to objects`, where)
     if (!Array.isArray(section.blocks)) fail(`section ${section.id}: blocks must be a list`, where)
     else validateBlocks(section.blocks, section, fail)
   })
