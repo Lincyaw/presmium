@@ -13,9 +13,20 @@ export {
 } from './host.ts'
 export { pluginsOf, presmiumReport, presmiumService, registerPresmiumPlugin, startPresmium } from './kernel.ts'
 export type { StartOptions } from './kernel.ts'
-export { createPresenterPanels } from './panels.ts'
+export { createPresenterPanels, createToolbar } from './panels.ts'
 export { default as PmPresenterPanels } from './PresenterPanels.vue'
 export { PmStepScope, provideStepScope, useStepScope } from './scope.ts'
 export type { StepScope } from './scope.ts'
-export { SYNC_TRANSPORTS } from './types.ts'
-export type { HostAdapter, SyncPublish, SyncTransport, SyncTransports, ViewRole } from './types.ts'
+export { default as PmToolbar } from './Toolbar.vue'
+export { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
+export type {
+  HostAdapter,
+  Navigation,
+  NavigationPosition,
+  SyncPublish,
+  SyncTransport,
+  SyncTransports,
+  Toolbar,
+  ToolbarItem,
+  ViewRole,
+} from './types.ts'

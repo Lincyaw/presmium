@@ -375,12 +375,28 @@ importers:
 
   packages/classroom-server:
     dependencies:
-      '@y/websocket-server':
-        specifier: ^0.1.5
-        version: 0.1.5(@y/y@14.0.0-rc.7)
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+      lib0:
+        specifier: ^0.2.119
+        version: 0.2.119
+      ws:
+        specifier: ^8.22.0
+        version: 8.22.0
+      y-protocols:
+        specifier: ^1.0.7
+        version: 1.0.7(yjs@13.6.33)
       yjs:
         specifier: ^13.6.33
         version: 13.6.33
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.2
+        version: 8.18.2
+      y-websocket:
+        specifier: ^3.1.0
+        version: 3.1.0(yjs@13.6.33)
 
   packages/cli:
     dependencies:
@@ -2794,21 +2810,6 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@y/protocols@1.0.6-rc.1':
-    resolution: {integrity: sha512-e/qs7hXcLk/SeNitxMXv2ymozyWFTULwbJEi7cAf/K/iXw9nGwGXHrR5TNluQ/bMwOX1cwuUT0hjEojkfH0gsA==}
-    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
-    peerDependencies:
-      '@y/y': '*'
-
-  '@y/websocket-server@0.1.5':
-    resolution: {integrity: sha512-ue1zENKxwj66AV8QoTwk0MPEH6veUhgvw+Gn84iX6Tco4lN9DHuF9k8oEKObJSPWoKBsOjeUk/ZYJcSK7iGc1w==}
-    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
-    hasBin: true
-
-  '@y/y@14.0.0-rc.7':
-    resolution: {integrity: sha512-J2nZO3+fMnGpRgqVFnOUX+AgqbuRSmUROl+fuJSPJFfk0gR5/Tb6WRqJAzpYSMf37HM5NGpUMqgSXA8wN3VpyA==}
-    engines: {node: '>=22.0.0', npm: '>=8.0.0'}
-
   abbrev@5.0.0:
     resolution: {integrity: sha512-/XrFJgzQQQHpti1raDJC6m4ws6aNktmjBlhk8Fdlk7LwCEuDoieEJJY9OFHjfiFJFFRM2tK+Ky/IsfbbmlMu1w==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -2888,9 +2889,6 @@ packages:
   async-function@1.0.0:
     resolution: {integrity: sha512-hsU18Ae8CDTR6Kgu9DYf0EbCr/a5iGL0rytQDobUcdpYOKokk8LEjVphnXkDkgpi0wYVsqrXuP0bZxJaTqdgoA==}
     engines: {node: '>= 0.4'}
-
-  async-limiter@1.0.1:
-    resolution: {integrity: sha512-csOlWGAcRFJaI6m+F2WKdnMKr4HhdhFVBk0H/QbJFMCr+uO2kwohwXQPxw/9OCxp05r5ghVBFSyioixx3gfkNQ==}
 
   async@3.2.6:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
@@ -4303,11 +4301,6 @@ packages:
   lib0@0.2.119:
     resolution: {integrity: sha512-vh+TiejVy8Xm+hCdnRfn9BthGNvNUZdEXltNjVZL3TzRIKP3s1lnQh8pWd/Q0wCgY0FPAGVVjFF4ZiHUV3LFgA==}
     engines: {node: '>=16'}
-    hasBin: true
-
-  lib0@1.0.0-rc.36:
-    resolution: {integrity: sha512-7t/I+PCQqakal22rhXq5giOUtDP/RfecQtdeKvzCtnAvPkxSLAE+/Zvzi/kJDopg+hBAYKo46qmxmlkhX0tYlQ==}
-    engines: {node: '>=22'}
     hasBin: true
 
   lie@3.3.0:
@@ -6200,17 +6193,6 @@ packages:
     resolution: {integrity: sha512-42AtmgqjV+X1VpdOfyTGOYRi0/zsoLqtXQckTmqTeybT+BDIbM/Guxo7x3pE2vtpr1ok6xRqM9OpBe+Jyoqyww==}
     engines: {node: '>=18'}
 
-  ws@6.2.6:
-    resolution: {integrity: sha512-XTrf1gv7kXoVf1hbC3PAyAiPgR8Wz1blcrYIjEsUmr08BLksT41R8KbjmS9408C2ERx7v1JDLD/BkpLEttjfKA==}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: ^5.0.2
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.22.0:
     resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
     engines: {node: '>=10.0.0'}
@@ -6261,10 +6243,6 @@ packages:
 
   yjs@13.6.33:
     resolution: {integrity: sha512-q/UYvr1gOk4XII+Cu1CW2dINjYqJJFifTzogEaIARznrvX7uOlHsdTEXcnOBMuIsrCGEEKdNxi74kyMLZlKVfw==}
-    engines: {node: '>=16.0.0', npm: '>=8.0.0'}
-
-  yjs@14.0.0-16:
-    resolution: {integrity: sha512-n7jMrQz4pgU/NFnf4qY53K2adR/fu6ViQ79qVIw6Og+BtuDs1hx3DjOi3iREVnA6tsxQXXVG3gvG0I2kpmAwoQ==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   zigpty@0.2.1:
@@ -9479,26 +9457,6 @@ snapshots:
     dependencies:
       vue: 3.5.44(typescript@6.0.3)
 
-  '@y/protocols@1.0.6-rc.1(@y/y@14.0.0-rc.7)':
-    dependencies:
-      '@y/y': 14.0.0-rc.7
-      lib0: 1.0.0-rc.36
-
-  '@y/websocket-server@0.1.5(@y/y@14.0.0-rc.7)':
-    dependencies:
-      '@y/protocols': 1.0.6-rc.1(@y/y@14.0.0-rc.7)
-      lib0: 0.2.119
-      ws: 6.2.6
-      yjs: 14.0.0-16
-    transitivePeerDependencies:
-      - '@y/y'
-      - bufferutil
-      - utf-8-validate
-
-  '@y/y@14.0.0-rc.7':
-    dependencies:
-      lib0: 1.0.0-rc.36
-
   abbrev@5.0.0: {}
 
   acorn@8.19.0: {}
@@ -9591,8 +9549,6 @@ snapshots:
       ast-kit: 3.0.0
 
   async-function@1.0.0: {}
-
-  async-limiter@1.0.1: {}
 
   async@3.2.6: {}
 
@@ -11071,8 +11027,6 @@ snapshots:
   lib0@0.2.119:
     dependencies:
       isomorphic.js: 0.2.5
-
-  lib0@1.0.0-rc.36: {}
 
   lie@3.3.0:
     dependencies:
@@ -13571,10 +13525,6 @@ snapshots:
       string-width: 7.2.0
       strip-ansi: 7.2.0
 
-  ws@6.2.6:
-    dependencies:
-      async-limiter: 1.0.1
-
   ws@8.22.0: {}
 
   wsl-utils@1.0.1:
@@ -13611,10 +13561,6 @@ snapshots:
       yargs-parser: 22.0.0
 
   yjs@13.6.33:
-    dependencies:
-      lib0: 0.2.119
-
-  yjs@14.0.0-16:
     dependencies:
       lib0: 0.2.119
 
