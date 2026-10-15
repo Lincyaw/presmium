@@ -1,4 +1,4 @@
-import { PmBoundary } from '@presmium/host'
+import { PmBoundary, provideStepScope } from '@presmium/host'
 import type { ComponentNode, IRBlock, IRSection } from '@presmium/kernel'
 import type { PropType, VNode } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef, toRef } from 'vue'
@@ -8,6 +8,7 @@ import { BLOCK_CONTEXT } from './context.ts'
 import { blockVisible, FINAL_STEP } from './domain/index.ts'
 import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
 import { getComponent, getNodeRenderer } from './registry.ts'
+import { PmMermaid } from './rich.ts'
 import { VIEWER } from './viewer.ts'
 
 const blockProps = {
@@ -48,7 +49,10 @@ function content(props: { block: IRBlock, section: IRSection, step: number, expa
   if (custom) return h(custom, props)
   switch (node.type) {
     case 'markdown': return h(MarkdownView, { block: props.block, step: props.step, expanded: props.expanded, prefix: props.section.id })
-    case 'code': return h(CodeBlockView, { block: props.block, step: props.step, expanded: props.expanded })
+    // A ```mermaid block is a diagram, as in the slides (docs/ir.md section 8.1).
+    case 'code': return node.lang === 'mermaid'
+      ? h(PmMermaid, { code: node.value })
+      : h(CodeBlockView, { block: props.block, step: props.step, expanded: props.expanded })
     case 'component': return h(ComponentView, props)
   }
 }
@@ -67,9 +71,13 @@ export const BlockView = defineComponent({
     const step = toRef(props, 'step')
     const local = computed(() => (props.expanded ? FINAL_STEP : props.step - props.block.at))
     provide(BLOCK_CONTEXT, { section: toRef(props, 'section'), block: toRef(props, 'block'), step, local })
+    // The components of the block count their internal steps from its `at` (docs/ir.md 2.4);
+    // their clicks are steps of the section, as in a slide.
+    provideStepScope(() => props.block.at)
+    const clicks = computed(() => (props.expanded ? FINAL_STEP : props.step))
     let stop: (() => void) | undefined
     onMounted(() => {
-      if (el.value) stop = trackClicks(el.value, local)
+      if (el.value) stop = trackClicks(el.value, clicks)
     })
     onBeforeUnmount(() => stop?.())
     // Alt+click opens the block's source in the editor, where the dev server offers it.

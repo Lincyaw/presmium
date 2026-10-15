@@ -1,0 +1,42 @@
+/* Styles of the generated Slidev deck (written next to its slides.md). */
+
+/* Where a code block comes from: file and lines, commits, drift. No faded text, so it keeps its contrast in every theme. */
+.slidev-layout .pm-code-origin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.7em;
+}
+
+.slidev-layout .pm-code-origin__file,
+.slidev-layout .pm-code-origin__commit,
+.slidev-layout .pm-code-origin__variant {
+  font-family: var(--slidev-code-font-family, ui-monospace, monospace);
+  overflow-wrap: anywhere;
+}
+
+.slidev-layout .pm-code-origin__variant[data-active] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.slidev-layout .pm-code-origin__badge {
+  padding: 0 0.4em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: #15803d;
+}
+
+.slidev-layout .pm-code-origin__badge:is([data-drift='drifted'], [data-status]) {
+  color: #b45309;
+}
+
+.dark .slidev-layout .pm-code-origin__badge {
+  color: #4ade80;
+}
+
+.dark .slidev-layout .pm-code-origin__badge:is([data-drift='drifted'], [data-status]) {
+  color: #fbbf24;
+}

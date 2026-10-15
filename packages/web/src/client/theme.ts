@@ -1,5 +1,6 @@
-import { installHost, registerPresmiumPlugin, startPresmium } from '@presmium/host'
-import type { IRDocument, PluginDefinition } from '@presmium/kernel'
+import { createPresenterPanels, installHost, pluginsOf, PmPresenterPanels, registerPresmiumPlugin, startPresmium } from '@presmium/host'
+import { PRESENTER_PANELS } from '@presmium/kernel'
+import type { IRDocument } from '@presmium/kernel'
 import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
@@ -7,7 +8,7 @@ import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
-import { requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
+import { offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost } from './host.ts'
 import { PresmiumPage, ViewMenu } from './page.ts'
@@ -18,30 +19,26 @@ export interface ThemeInput {
   doc: IRDocument
   /** Component name to loader, from each plugin's `components/` directory. */
   components: Record<string, () => Promise<unknown>>
-  /** Loaders of each plugin's `src/client/plugin.ts`. */
+  /** Loaders of each plugin's `src/client/plugin.ts` (see `pluginsOf` of @presmium/host). */
   plugins: (() => Promise<unknown>)[]
   /** Loaders of each plugin's `src/client/viewer.ts`: views and renderers for the IR runtime. */
   viewers?: (() => Promise<unknown>)[]
 }
 
-function isPluginDefinition(value: unknown): value is PluginDefinition {
-  const plugin = value as Partial<PluginDefinition> | null
-  return typeof plugin === 'object' && plugin !== null && typeof plugin.setup === 'function' && typeof plugin.manifest?.id === 'string'
-}
-
-/** Kernel plugins exported by a `plugin.ts` module: default or named, single or in arrays. */
-function pluginsOf(module: unknown): PluginDefinition[] {
-  const values = Object.values(module as Record<string, unknown>).flatMap(v => (Array.isArray(v) ? v : [v]))
-  return [...new Set(values.filter(isPluginDefinition))]
-}
-
+/** Registers the kernel plugins of every plugin package, as the slides form does, and starts the kernel. */
 async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>): Promise<void> {
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
-  modules.flatMap(pluginsOf).forEach(registerPresmiumPlugin)
-  await startPresmium({ mode: 'document', config })
+  modules.flatMap(module => pluginsOf(module, config)).forEach(registerPresmiumPlugin)
+  await startPresmium({
+    mode: 'document',
+    config,
+    beforeStart(kernel) {
+      kernel.provide(PRESENTER_PANELS, createPresenterPanels())
+    },
+  })
 }
 
 /**
@@ -73,8 +70,15 @@ async function loadViewerPlugins(loaders: NonNullable<ThemeInput['viewers']>): P
   )))
 }
 
-function registerServiceWorker(): void {
+/** Registers the service worker of the build; without offline support, removes one an earlier build registered. */
+function serviceWorker(offline: boolean): void {
   if (!('serviceWorker' in navigator)) return
+  if (!offline) {
+    void navigator.serviceWorker.getRegistrations().then(registrations => registrations
+      .filter(registration => (registration.active ?? registration.waiting ?? registration.installing)?.scriptURL.endsWith(`/${SERVICE_WORKER}`))
+      .forEach(registration => void registration.unregister()))
+    return
+  }
   const register = () => navigator.serviceWorker.register(withBase(`/${SERVICE_WORKER}`)).catch((error) => {
     console.warn('[presmium] offline support unavailable', error)
   })
@@ -88,9 +92,10 @@ const slidesBase = ref<string>()
 let viewersReady: Promise<void> = Promise.resolve()
 
 /**
- * Default layout plus the view menu in the navigation bar and the overlay
- * views. `?slide=N` (from the slides form), `?section=<id>&step=<n>` and
- * `?view=<id>` open a position and a view.
+ * Default layout plus the view menu in the navigation bar, the overlay views
+ * and, in the presenter window, the presenter panels. `?slide=N&step=<n>`
+ * (from the slides form), `?section=<id>&step=<n>` and `?view=<id>` open a
+ * position and a view.
  */
 const Layout = defineComponent({
   name: 'PresmiumLayout',
@@ -111,7 +116,10 @@ const Layout = defineComponent({
     return () => h(DefaultTheme.Layout, null, {
       'nav-bar-content-after': () => h(ViewMenu),
       // Overlay views get the typography of the page body.
-      'layout-bottom': () => h('div', { class: 'vp-doc pm-overlay' }, [h(OverlayHost)]),
+      'layout-bottom': () => [
+        h('div', { class: 'vp-doc pm-overlay' }, [h(OverlayHost)]),
+        viewer.view.value === 'presenter' ? h(PmPresenterPanels) : null,
+      ],
     })
   },
 })
@@ -154,7 +162,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       if (!inBrowser) return
       viewersReady = loadViewerPlugins(input.viewers ?? [])
       void startKernel(input.plugins, input.doc.config.presmium)
-      if (import.meta.env.PROD) registerServiceWorker()
+      if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
       // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket. The site
       // title and the sidebar follow the document here, so the config never changes and the page never reloads.
       import.meta.hot?.on('presmium:update', (update: LiveUpdate) => {

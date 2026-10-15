@@ -19,12 +19,12 @@ export function slideUrl(slidesUrl: string, options: FormOptions, slide: number,
   return `${slidesUrl}${path}${step > 0 && Number.isFinite(step) ? `?clicks=${step}` : ''}`
 }
 
-/** URL that opens the section of a slide in the web form. */
-export function webUrl(webBase: string, slide: number): string {
-  return `${webBase}/?${SLIDE_PARAM}=${slide}`
+/** URL that opens the section of a slide in the web form, at a step of the section. */
+export function webUrl(webBase: string, slide: number, step = 0): string {
+  return `${webBase}/?${SLIDE_PARAM}=${slide}${step > 0 ? `&step=${step}` : ''}`
 }
 
-/** What a URL asks the web form to show: `?slide=N`, or `?section=<id>&step=<n>`, and `?view=<id>`. */
+/** What a URL asks the web form to show: `?slide=N` or `?section=<id>`, with `&step=<n>`, and `?view=<id>`. */
 export interface Requested {
   section?: string
   step?: number

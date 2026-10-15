@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { useStepState } from '@presmium/host'
+import { useStepScope, useStepState } from '@presmium/host'
 import { inject, onBeforeUnmount } from 'vue'
 import { STEP_MARKS } from './source.ts'
 
-// One click of the slide: the v-click registers it with the host (at its
-// absolute position), and the step state tells the parent whether it is reached.
-const props = defineProps<{ at: number }>()
-const unregister = inject(STEP_MARKS)?.(props.at, useStepState({ from: props.at }))
+// Internal step k of the block: the v-click registers it with the host at its
+// step of the slide, and the step state tells the parent whether it is reached.
+const props = defineProps<{ step: number }>()
+const scope = useStepScope()
+const unregister = inject(STEP_MARKS)?.(props.step, useStepState({ from: props.step }))
 onBeforeUnmount(() => unregister?.())
 </script>
 
 <template>
-  <span v-click="at" class="pm-step-mark" aria-hidden="true" />
+  <span v-click="scope.step(step)" class="pm-step-mark" aria-hidden="true" />
 </template>

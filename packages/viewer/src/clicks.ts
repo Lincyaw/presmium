@@ -1,12 +1,15 @@
 /**
  * `v-click` compatibility for plugin components written for Slidev: the
  * directives `v-click`, `v-after`, `v-click-hide` and the components
- * `<v-click>`, `<v-after>`, `<v-clicks>`. Click positions count in the
- * block's own steps; an element shows while the block's step is inside its
- * click range (`.hide`: outside it). Where every step is shown (the document
- * view) elements take their final state, as the component's step state does.
+ * `<v-click>`, `<v-after>`, `<v-clicks>`. As in a slide, click positions are
+ * steps of the section: absolute numbers are section steps (components give
+ * theirs with `useStepScope().step(k)`), relative ones count on from the
+ * previous relative click of the block. An element shows while the section's
+ * step is inside its click range (`.hide`: outside it). Where every step is
+ * shown (the document view) elements take their final state, as the
+ * component's step state does.
  */
-import type { App, Directive, Ref } from 'vue'
+import type { App, Directive, DirectiveBinding, Ref } from 'vue'
 import { defineComponent, h, onBeforeUnmount, onMounted, shallowRef, watchEffect, withDirectives } from 'vue'
 import { clickVisible, resolveClicks } from './domain/index.ts'
 import type { ClickRange, ClickSpec } from './domain/index.ts'
@@ -41,7 +44,7 @@ function unregister(el: HTMLElement): void {
 
 /**
  * Tracks the click elements of a block and marks each `data-pm-click="shown|hidden"`
- * for the block's step. Returns a function that stops tracking.
+ * for the section's step. Returns a function that stops tracking.
  */
 export function trackClicks(block: HTMLElement, step: Readonly<Ref<number>>): () => void {
   const specs = new Map<HTMLElement, ClickSpec>()
@@ -77,9 +80,16 @@ export function trackClicks(block: HTMLElement, step: Readonly<Ref<number>>): ()
 }
 
 function clickDirective(kind: ClickSpec['kind'], hide = false): Directive<HTMLElement, unknown> {
+  const spec = (binding: DirectiveBinding<unknown>): ClickSpec => ({ kind, at: binding.value, hide: hide || Boolean(binding.modifiers.hide) })
   return {
     mounted(el, binding) {
-      register(el, { kind, at: binding.value, hide: hide || Boolean(binding.modifiers.hide) })
+      register(el, spec(binding))
+    },
+    // A position given by the step scope moves when a live update moves the block.
+    updated(el, binding) {
+      if (JSON.stringify(binding.value) === JSON.stringify(binding.oldValue)) return
+      unregister(el)
+      register(el, spec(binding))
     },
     unmounted(el) {
       unregister(el)

@@ -14,13 +14,11 @@
  *   :::{hint} #help          the same for a pulsing hint
  *   :::
  *
- * Cue steps count from the block (docs/ir.md 2.4), as the web form's host
- * counts them; the slides extension shifts them to the steps of the slide.
+ * Cue steps count from the block (docs/ir.md 2.4): both renderers give the
+ * component its block's `at` as step scope.
  */
 import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@presmium/kernel'
-import { GUIDE_ID, parseCursorPath, planCursorPath, shiftCue } from '../domain/index.ts'
-import type { PlannedWaypoint } from '../domain/index.ts'
-import { componentTag } from './tag.ts'
+import { GUIDE_ID, parseCursorPath, planCursorPath } from '../domain/index.ts'
 
 function component(name: string, props: Record<string, unknown>, fallback: MdastNode): ComponentNode {
   const defined = Object.fromEntries(Object.entries(props).filter(([, value]) => value !== undefined))
@@ -64,19 +62,6 @@ function cue(name: string, tag: string): DirectiveSpec {
 const plugin: PresmiumNodePlugin = {
   id: GUIDE_ID,
   directives: [cursor, cue('spotlight', 'PmSpotlight'), cue('hint', 'PmHint')],
-  rendererExtensions: {
-    // Slidev counts the clicks of a whole slide.
-    slides: {
-      components: {
-        PmCursor: (node, block) => componentTag('PmCursor', {
-          ...node.props,
-          path: (node.props.path as PlannedWaypoint[]).map(point => ({ ...point, at: point.at + block.at })),
-        }),
-        PmSpotlight: (node, block) => componentTag('PmSpotlight', shiftCue(node.props, block.at)),
-        PmHint: (node, block) => componentTag('PmHint', shiftCue(node.props, block.at)),
-      },
-    },
-  },
 }
 
 export default plugin

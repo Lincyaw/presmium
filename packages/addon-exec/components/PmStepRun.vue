@@ -9,8 +9,9 @@ import { frameAt, stringArgs, TRACER } from '../src/domain/index.ts'
 import type { Trace } from '../src/domain/index.ts'
 
 // P-21 stepwise execution: the wrapped code is traced once; every executed line
-// becomes one step of the slide. The view is a function of the step: the line
-// of that step is highlighted and the output accumulated up to it is shown.
+// becomes one internal step of the block (`:span:` = `steps`): internal step k
+// highlights the line executed k-th and shows the output accumulated up to it;
+// step 0 is the state before the first line.
 const props = withDefaults(defineProps<{
   lang?: string
   /** Source to trace; defaults to the wrapped code block. */
@@ -24,9 +25,7 @@ const props = withDefaults(defineProps<{
    * Without it the steps appear only once the trace is ready.
    */
   steps?: number
-  /** Click of the first step, like `at` of Slidev code blocks; set it when other clicks on the slide come first. */
-  at?: number
-}>(), { lang: 'python', at: 1 })
+}>(), { lang: 'python' })
 
 const tracer = useService(TRACER)
 const report = useStartReport()
@@ -38,11 +37,11 @@ const count = computed(() => props.steps ?? trace.value?.events.length ?? 0)
 const traced = computed(() => (trace.value?.error === undefined ? trace.value?.events.length : undefined))
 const mismatch = computed(() => props.steps !== undefined && traced.value !== undefined && traced.value !== props.steps)
 
-// Each step mark reports whether its click has been reached; marks are consecutive, so the step is how many are.
+// Each step mark reports whether its step has been reached; marks are consecutive, so the step is how many are.
 const marks = shallowReactive(new Map<number, Readonly<Ref<StepState>>>())
-provide(STEP_MARKS, (click, state) => {
-  marks.set(click, state)
-  return () => marks.delete(click)
+provide(STEP_MARKS, (k, state) => {
+  marks.set(k, state)
+  return () => marks.delete(k)
 })
 const step = computed(() => [...marks.values()].filter(state => state.value.reached).length)
 const frame = computed(() => (trace.value ? frameAt(trace.value, step.value) : undefined))
@@ -107,7 +106,7 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
         </div>
         <pre class="pm-step-run__output">{{ trace?.error ?? frame?.output }}</pre>
       </div>
-      <StepMark v-for="i in count" :key="i" :at="at + i - 1" />
+      <StepMark v-for="k in count" :key="k" :step="k" />
     </div>
   </PmBoundary>
 </template>

@@ -1,14 +1,14 @@
 /**
  * How the slides and the notebook render the execution components.
  *
- * Slides: the component tag around its code block. Slidev counts a slide's
- * clicks from the start of the slide, while the IR counts a block's internal
- * steps from its `at`, so a stepwise run gets the click of its first line.
+ * Slides: the component tag around its code block (the code block is the
+ * component's slot, without its recorded output). The renderer gives the
+ * component its block's `at` as step scope.
  *
  * Notebook: a run panel or stepwise run becomes a code cell (P-75), with the
  * parameters assigned first and the output recorded at compile time.
  */
-import type { CodeNode, ComponentNode, IRBlock, RecordedRun, RendererExtension } from '@presmium/kernel'
+import type { CodeNode, ComponentNode, RecordedRun, RendererExtension } from '@presmium/kernel'
 import { isPython } from '../domain/index.ts'
 
 function code(node: ComponentNode): CodeNode | undefined {
@@ -26,8 +26,8 @@ function fence(lang: string, value: string): string {
 }
 
 /** `<Name prop="text" :prop='json'>` around the code block; Slidev compiles it as a Vue template. */
-function slidesTag(node: ComponentNode, extra: Record<string, unknown> = {}): string {
-  const attrs = Object.entries({ ...node.props, ...extra }).map(([name, value]) => typeof value === 'string'
+function slidesTag(node: ComponentNode): string {
+  const attrs = Object.entries(node.props).map(([name, value]) => typeof value === 'string'
     ? ` ${name}="${escapeHtml(value)}"`
     : ` :${name}='${JSON.stringify(value).replace(/'/g, '\\u0027').replace(/&/g, '\\u0026')}'`).join('')
   const source = code(node)
@@ -64,8 +64,8 @@ function notebookCell(node: ComponentNode) {
 export const rendererExtensions: Record<string, Omit<RendererExtension, 'plugin'>> = {
   slides: {
     components: {
-      PmRunPanel: node => slidesTag(node),
-      PmStepRun: (node, block: IRBlock) => slidesTag(node, { at: block.at + 1 }),
+      PmRunPanel: slidesTag,
+      PmStepRun: slidesTag,
     },
   },
   notebook: {

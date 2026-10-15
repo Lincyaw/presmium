@@ -1,6 +1,5 @@
 import { presmiumReport, presmiumService } from '@presmium/host'
 import type { HostAdapter, ViewRole } from '@presmium/host'
-import { stepStateAt } from '@presmium/kernel'
 import { useNav, useSlideContext } from '@slidev/client'
 import { computed } from 'vue'
 
@@ -12,10 +11,10 @@ export function createSlidevHost(): HostAdapter {
       const { currentSlideNo, clicks } = useNav()
       return computed(() => ({ slide: currentSlideNo.value, step: clicks.value }))
     },
-    useStepState(range) {
+    useStep() {
       // The slide's own clicks, so previews and print pages get their own state.
       const { $clicks } = useSlideContext()
-      return computed(() => stepStateAt(range, $clicks.value))
+      return $clicks
     },
     useViewRole() {
       const { isPresenter } = useNav()

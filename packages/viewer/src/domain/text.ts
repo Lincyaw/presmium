@@ -2,8 +2,14 @@ import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
 
 const BREAKS = new Set(['paragraph', 'heading', 'listItem', 'tableRow', 'tableCell', 'code', 'math', 'blockquote', 'break'])
 
+/** The text raw HTML shows: its tags, styles and scripts left out. */
+function htmlText(html: string): string {
+  return html.replace(/<(style|script)\b[\s\S]*?<\/\1\s*>/gi, ' ').replace(/<[^>]*>/g, ' ')
+}
+
 /** The text of an mdast tree; block-level nodes are separated by line breaks. */
 export function mdastText(node: MdastNode): string {
+  if (node.type === 'html' && typeof node.value === 'string') return htmlText(node.value)
   if (typeof node.value === 'string' && !node.children) return node.value
   const text = (node.children ?? []).map(mdastText).join('')
   return BREAKS.has(node.type) ? `${text}\n` : text

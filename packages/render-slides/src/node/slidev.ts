@@ -2,10 +2,13 @@
  * IR to the Markdown of a Slidev deck (docs/ir.md section 6): one slide per
  * section, the section title as its heading and `hints.slides` as its
  * frontmatter. Visual blocks appear at their step through absolute `v-click`
- * positions; narration becomes the slide notes, split by `[click]` markers.
+ * positions; a component block gets its `at` as step scope (`<PmStepScope>`
+ * of @presmium/host), from which the component counts its internal steps.
+ * Narration becomes the slide notes, split by `[click]` markers.
  */
-import { dirname, relative, resolve } from 'node:path'
-import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, RendererExtension } from '@presmium/kernel'
+import { existsSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import type { CodeNode, CodeOrigin, CodeVariant, ComponentNode, IRBlock, IRDocument, IRSection, RendererExtension } from '@presmium/kernel'
 import { stringify } from 'yaml'
 import { codeLang, escapeHtml, markdown } from './markdown.ts'
 
@@ -19,7 +22,10 @@ export interface SlidevOptions {
 }
 
 /** Keys of `renderers.slides` that configure the renderer rather than the Slidev headmatter. */
-const RENDERER_KEYS = new Set(['package', 'base'])
+const RENDERER_KEYS = new Set(['package', 'base', 'port'])
+
+/** Package of the web renderer, unless `renderers.web.package` names another. */
+const WEB_PACKAGE = '@presmium/web'
 
 export function slidevMarkdown(doc: IRDocument, options: SlidevOptions): string {
   return doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, options) : {}, options)).join('\n')
@@ -34,15 +40,37 @@ function headmatter(doc: IRDocument, options: SlidevOptions): Record<string, unk
   const { theme = 'default', addons = [], ...rest } = Object.fromEntries(Object.entries(options.config).filter(([key]) => !RENDERER_KEYS.has(key)))
   // Local paths are relative to the deck; Slidev gets them absolute.
   const local = (name: unknown) => typeof name === 'string' && name.startsWith('.') ? resolve(options.deckDir, name) : name
+  // Plugins are Slidev addons: their components, setups and layers load in the deck.
+  const listed = [...doc.config.plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, options.deckDir)]
   return {
     theme: local(theme),
     title: doc.meta.title,
     ...doc.meta.lang ? { htmlAttrs: { lang: doc.meta.lang } } : {},
     ...rest,
-    // Plugins are Slidev addons: their components, setups and layers load in the deck.
-    addons: [...doc.config.plugins, ...Array.isArray(addons) ? addons : []].map(local),
+    addons: [...new Set(listed.map(local))],
     presmium: doc.config.presmium,
   }
+}
+
+/** Whether a package (a name, or a path relative to the deck) can be found from the deck, as the compiler looks plugins up. */
+function installed(name: string, deckDir: string): boolean {
+  if (name.startsWith('.') || isAbsolute(name)) return existsSync(join(resolve(deckDir, name), 'package.json'))
+  for (let d = resolve(deckDir); ; d = dirname(d)) {
+    if (existsSync(join(d, 'node_modules', name, 'package.json'))) return true
+    if (dirname(d) === d) return false
+  }
+}
+
+/**
+ * The web renderer's package, when the deck has a web form (`renderers.web`,
+ * or no renderer configured, so all build): as a Slidev addon it puts the
+ * "read on the web" button in the navigation bar (P-74).
+ */
+function formAddons(doc: IRDocument, deckDir: string): string[] {
+  const { renderers } = doc.config
+  if (Object.keys(renderers).length > 0 && !renderers.web) return []
+  const name = typeof renderers.web?.package === 'string' ? renderers.web.package : WEB_PACKAGE
+  return installed(name, deckDir) ? [name] : []
 }
 
 function slide(section: IRSection, head: Record<string, unknown>, options: SlidevOptions): string {
@@ -74,12 +102,56 @@ function visual(block: IRBlock, options: SlidevOptions, notes: IRBlock[]): strin
   }
   const content = node.type === 'markdown' ? markdown(node.mdast, urls(block, options))
     : node.type === 'code' ? code(node, block.at)
-    : component(node, block, options, notes)
+    : scoped(component(node, block, options, notes), node, block.at)
   if (block.at === 0 && block.until === undefined) return content
   const click = block.until === undefined ? `v-click="${block.at}"`
     : block.at === 0 ? `v-click.hide="${block.until}"`
     : `v-click="[${block.at}, ${block.until}]"`
   return `<div ${click}>\n\n${content}\n\n</div>`
+}
+
+/** A plugin component counts its internal steps from its block's `at` (docs/ir.md 2.4). */
+function scoped(content: string, node: ComponentNode, at: number): string {
+  return node.plugin && at > 0 ? `<PmStepScope :at="${at}">\n\n${content}\n\n</PmStepScope>` : content
+}
+
+/** What the code reference plugin records besides the IR's own fields (see @presmium/slidev-addon-code). */
+type Origin = CodeOrigin & { drift?: 'synced' | 'drifted' }
+type Variant = CodeVariant & { permalink?: string }
+
+const STATUS: Record<string, string> = { moved: '已移动', fuzzy: '待确认', lost: '已失效' }
+
+function link(className: string, href: string | undefined, text: string, attrs = ''): string {
+  return href
+    ? `<a class="${className}" href="${escapeHtml(href)}" target="_blank" rel="noopener"${attrs}>${escapeHtml(text)}</a>`
+    : `<span class="${className}"${attrs}>${escapeHtml(text)}</span>`
+}
+
+/**
+ * Where the code comes from (`CodeNode.origin`), above the code: file and
+ * lines linked to the repository (the link stays in exported PDFs), the
+ * pinned commit or the commit of each version (the one on screen marked,
+ * from `$clicks`), and whether pinned code drifted or the anchor moved. The
+ * web form shows the same bar. One HTML block: no blank line inside.
+ */
+function originBar(node: CodeNode, at: number): string {
+  const origin = node.origin as Origin | undefined
+  if (!origin) return ''
+  const lines = origin.endLine > origin.startLine ? `${origin.startLine}-${origin.endLine}` : `${origin.startLine}`
+  const title = ` title="${escapeHtml(origin.permalink ? `在仓库中打开 ${origin.file}` : origin.anchor)}"`
+  const variants = (node.variants ?? []) as Variant[]
+  // Version k is on screen from step at + k (the first one from the start) until the next.
+  const shown = `Math.min(Math.max($clicks - ${at}, 0), ${variants.length - 1})`
+  const commits = variants.length
+    ? variants.map((variant, k) => link('pm-code-origin__variant', variant.permalink, variant.label, ` :data-active="${shown} === ${k} ? '' : undefined"`))
+    : [`<span class="pm-code-origin__commit"${origin.pin ? ` title="${origin.pin}"` : ''}>${origin.pin ? `@ ${origin.pin.slice(0, 7)}` : '工作区'}</span>`]
+  const badge = STATUS[origin.status]
+    ? `<span class="pm-code-origin__badge" data-status="${origin.status}">${STATUS[origin.status]}</span>`
+    : origin.pin && !variants.length && origin.drift
+      ? `<span class="pm-code-origin__badge" data-drift="${origin.drift}">${origin.drift === 'drifted' ? '已漂移' : '已锁定'}</span>`
+      : ''
+  const file = link('pm-code-origin__file', origin.permalink, `${node.title ?? origin.file}:${lines}`, title)
+  return `<div class="pm-code-origin" data-anchor="${escapeHtml(origin.anchor)}">\n${[file, ...commits, badge].filter(Boolean).join('\n')}\n</div>`
 }
 
 /** A code block; `highlight` steps through its line sets, `variants` morph with Shiki Magic Move. */
@@ -98,7 +170,7 @@ function code(node: CodeNode, at: number): string {
     out = fence(node.lang, node.value, `${title(node.title)}${node.highlight?.length ? ` ${stages(node.highlight)}` : ''}`)
   }
   const outputs = (node.outputs ?? []).map(run => [run.stdout, run.stderr].filter(Boolean).join('\n').replace(/\n$/, '')).filter(Boolean)
-  return [out, ...outputs.map(text => `<div class="pm-output">\n\n${fence('text', text, '')}\n\n</div>`)].join('\n\n')
+  return [originBar(node, at), out, ...outputs.map(text => `<div class="pm-output">\n\n${fence('text', text, '')}\n\n</div>`)].filter(Boolean).join('\n\n')
 }
 
 /**

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { componentErrors, useStartReport } from '@presmium/host'
+import { componentErrors } from './boundary.ts'
+import { useStartReport } from './host.ts'
 import type { PluginStatus } from '@presmium/kernel'
 import { computed } from 'vue'
 

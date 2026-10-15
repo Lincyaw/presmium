@@ -1,15 +1,18 @@
-import type { PresentationMode, ServiceToken, StartReport, StepRange } from '@presmium/kernel/contracts'
+import { stepStateAt } from '@presmium/kernel/contracts'
+import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState } from '@presmium/kernel/contracts'
 import type { App, ComputedRef, InjectionKey, Ref } from 'vue'
 import { computed, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
 import { PmBoundary } from './boundary.ts'
+import { PmStepScope, useStepScope } from './scope.ts'
 import type { HostAdapter } from './types.ts'
 
 const HOST: InjectionKey<HostAdapter> = Symbol('presmium.host')
 
-/** Called by a host adapter when the app is created. Also registers `PmBoundary` globally. */
+/** Called by a host adapter when the app is created. Also registers `PmBoundary` and `PmStepScope` globally. */
 export function installHost(app: App, adapter: HostAdapter): void {
   app.provide(HOST, adapter)
   app.component('PmBoundary', PmBoundary)
+  app.component('PmStepScope', PmStepScope)
 }
 
 /** The installed host adapter. Must be called inside a component setup. */
@@ -19,8 +22,16 @@ export function useHost(): HostAdapter {
   return host
 }
 
-export function useStepState(range: StepRange) {
-  return useHost().useStepState(range)
+/**
+ * The state of a range of the component's internal steps: steps count from
+ * the enclosing step scope, so step k of the range is the block's state k,
+ * shown at step `at + k` of the slide or section (docs/ir.md section 2.4).
+ * Must be called inside a component setup.
+ */
+export function useStepState(range: StepRange): Readonly<Ref<StepState>> {
+  const step = useHost().useStep()
+  const { at } = useStepScope()
+  return computed(() => stepStateAt(range, step.value - at.value))
 }
 
 export function useCursor() {

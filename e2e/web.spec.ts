@@ -7,7 +7,7 @@ interface MdastNode { type: string, value?: string, children?: MdastNode[] }
 interface IRBlock {
   id: string
   role: 'visual' | 'narration'
-  node: { type: 'markdown', mdast: MdastNode } | { type: 'code', value: string } | { type: 'component', name: string }
+  node: { type: 'markdown', mdast: MdastNode } | { type: 'code', lang: string, value: string } | { type: 'component', name: string }
 }
 interface IRDocument { sections: { id: string, title: string, blocks: IRBlock[] }[] }
 
@@ -17,14 +17,25 @@ interface IRDocument { sections: { id: string, title: string, blocks: IRBlock[] 
 /** Letters and digits only: the IR text and the rendered page differ in spacing and punctuation. */
 const words = (text: string) => text.replace(/[^\p{L}\p{N}]+/gu, '')
 
+/**
+ * The text of the IR that the page shows as text. Math and diagrams are drawn
+ * (their source does not show; see RICH), raw HTML shows its text without its
+ * tags or styles, and footnote references have no text.
+ */
 function mdastText(node: MdastNode): string {
+  if (node.type === 'math' || node.type === 'inlineMath') return ''
+  if (node.type === 'html') return (node.value ?? '').replace(/<(style|script)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<[^>]*>/g, '')
   return typeof node.value === 'string' ? node.value : (node.children ?? []).map(mdastText).join('')
 }
 
 function blockText(block: IRBlock): string {
   const { node } = block
-  return node.type === 'markdown' ? mdastText(node.mdast) : node.type === 'code' ? node.value : ''
+  if (node.type === 'code') return node.lang === 'mermaid' ? '' : node.value
+  return node.type === 'markdown' ? mdastText(node.mdast) : ''
 }
+
+/** Drawn content (math, diagrams), left out of the page text as its source is left out of the IR text. */
+const RICH = '.pm-math, .pm-mermaid'
 
 async function published(page: Page): Promise<IRDocument> {
   return (await page.request.get(`${WEB}/ir.json`)).json()
@@ -42,9 +53,12 @@ async function webSections(page: Page) {
   const sections = []
   for (const path of await webPages(page)) {
     await page.goto(`${WEB}${path}`)
-    sections.push(...await page.locator('.pm-section').evaluateAll(els => els.map((el) => {
+    sections.push(...await page.locator('.pm-section').evaluateAll((els, rich) => els.map((el) => {
       const section = el as HTMLElement
-      const text = (selector: string) => [...section.querySelectorAll(selector)].map(b => b.textContent).join('')
+      const textOf = (node: Node): string => node instanceof Element && node.matches(rich)
+        ? ''
+        : node.nodeType === Node.TEXT_NODE ? node.textContent ?? '' : [...node.childNodes].map(textOf).join('')
+      const text = (selector: string) => [...section.querySelectorAll(selector)].map(textOf).join('')
       return {
         id: section.dataset.section!,
         heading: section.querySelector(`h2#${CSS.escape(section.dataset.section!)}`)?.textContent ?? '',
@@ -52,7 +66,7 @@ async function webSections(page: Page) {
         visual: text('.pm-block--visual'),
         next: section.querySelector('.pm-section-nav__next')?.textContent ?? '',
       }
-    })))
+    }), RICH))
   }
   return sections
 }
@@ -124,7 +138,7 @@ test('every plugin component of the demo renders in the web form', async ({ page
   expect(count).toBeGreaterThan(0)
   // Components keep working through @presmium/host: steps, error boundary.
   await page.goto(`${WEB}/core.html`)
-  await expect(page.locator('.pm-demo-stepper')).toHaveAttribute('data-step', '3')
+  await expect(page.locator('.pm-section[data-section="core"] .pm-demo-stepper')).toHaveAttribute('data-step', '3')
   await expect(page.locator('[data-pm-error="PmDemoBroken"]')).toBeVisible()
   await expect(page.locator('.pm-demo-greeting')).toBeVisible()
 })
@@ -232,4 +246,54 @@ test('the built slides form and the web form open each other', async ({ page }) 
   const toWeb = new URL((await page.getByRole('link', { name: '在网页中阅读' }).getAttribute('href'))!)
   await page.goto(`${WEB}/${toWeb.search}`)
   await expect(page.locator('h2#web')).toBeInViewport()
+})
+
+test('without any deck configuration the slides offer "read on the web", which opens slide N at step S', async ({ page }) => {
+  // The deck configures no addon for the button: the slides renderer adds it because the deck has a web form.
+  const doc = await published(page) as IRDocument & { config: { renderers: Record<string, { addons?: unknown }> } }
+  expect(doc.config.renderers.slides?.addons).toBeUndefined()
+  const index = doc.sections.findIndex(s => s.id === 'scrolly') + 1
+
+  await page.goto(`${SLIDES}/${index}?clicks=2`)
+  await expect(page.locator(`.slidev-page-${index}`)).toContainText('滚动叙事')
+  const toWeb = new URL((await page.getByRole('link', { name: '在网页中阅读' }).getAttribute('href'))!)
+  expect(toWeb.search).toBe(`?slide=${index}&step=2`)
+  await page.goto(`${WEB}/${toWeb.search}`)
+  await expect(page).toHaveURL(/\/web\.html/)
+  const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+  await expect(scrolly).toHaveAttribute('data-step', '2')
+  await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
+})
+
+test('a component counts its steps from its block in the web form too', async ({ page }) => {
+  // In the present view, the stepper of core (at step 0) at step 1 and the one of core-scope (at step 2) at step 3.
+  const stepper = async (section: string, step: number) => {
+    await page.goto(`${WEB}/core.html?view=present&section=${section}&step=${step}`)
+    const present = page.getByRole('region', { name: '放映' })
+    await expect(present).toHaveAttribute('data-step', String(step))
+    const shown = present.locator('.pm-demo-stepper')
+    await expect(shown).toHaveAttribute('data-step', '1')
+    await expect(shown.locator('li[data-status="active"]')).toHaveText('解析文稿')
+    await expect(shown.locator('li').nth(1)).toBeHidden()
+    return shown.innerHTML()
+  }
+  expect(await stepper('core-scope', 3)).toBe(await stepper('core', 1))
+})
+
+test('the demo plugins start in the web form as in the slides: the greeting shows, the start report agrees', async ({ page }) => {
+  await page.goto(`${WEB}/core.html`)
+  await expect(page.locator('.pm-demo-greeting')).toHaveText('presmium.demo.consumer 收到 presmium.demo.provider 的问候')
+
+  // The start report is a presenter panel in both forms: the presenter window of the web form, the presenter view of the slides.
+  const demoPlugins = async () => {
+    await page.locator('.pm-presenter-panels summary').click()
+    const plugins = page.locator('.pm-start-report [data-plugin^="presmium.demo."]')
+    await expect(plugins).toHaveCount(3)
+    return Object.fromEntries(await plugins.evaluateAll(items => items.map(li => [(li as HTMLElement).dataset.plugin, (li as HTMLElement).dataset.status])))
+  }
+  await page.goto(`${WEB}/core.html?view=presenter&section=core`)
+  const web = await demoPlugins()
+  expect(web).toEqual({ 'presmium.demo.consumer': 'started', 'presmium.demo.provider': 'started', 'presmium.demo.orphan': 'disabled' })
+  await page.goto(`${SLIDES}/presenter/2`)
+  expect(await demoPlugins()).toEqual(web)
 })

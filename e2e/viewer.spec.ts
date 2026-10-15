@@ -246,6 +246,43 @@ test.describe('presmium dev', () => {
     await expect(scrolly).toHaveAttribute('data-step', '2')
     expect(await page.evaluate(() => window.scrollY)).toBe(before)
   })
+
+  test('in the scrolly view, content added above the reading position keeps it in place', async ({ page }) => {
+    await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
+    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+    const marker = scrolly.locator('.pm-step[data-step="2"]')
+    await selectView(page, 'scrolly')
+    await scrollToStep(page, 'scrolly', 2)
+    const top = () => marker.evaluate(el => Math.round(el.getBoundingClientRect().top))
+    const before = await top()
+    await mark(page)
+
+    // Paragraphs added to the section above push the reading position down the page.
+    const added = Array.from({ length: 4 }, (_, i) => `上方新增的第 ${i + 1} 段讲解，让前一节变长。`).join('\n\n')
+    edit('搜索框支持中文分词', `${added}\n\n搜索框支持中文分词`)
+    await expect(page.locator('.pm-section[data-section="web"]')).toContainText('上方新增的第 4 段讲解')
+    await expect.poll(top).toBe(before)
+    await expect(scrolly).toHaveAttribute('data-step', '2')
+    expect(await marked(page)).toBe(true)
+  })
+
+  test('a keyword written while the server runs can be searched', async ({ page }) => {
+    await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
+    edit('第一步，编译源码。', '第一步，编译源码，也就是 Quokka 步骤。')
+    await expect(page.locator('.pm-section[data-section="scrolly"]')).toContainText('Quokka')
+
+    await page.keyboard.press('Control+k')
+    const input = page.getByRole('searchbox')
+    const result = page.getByRole('listbox').getByRole('option').first()
+    // The search index is updated in the page too: typing again finds the new keyword.
+    await expect(async () => {
+      await input.fill('')
+      await input.fill('quokka')
+      await expect(result).toBeVisible({ timeout: 1000 })
+    }).toPass()
+    await result.click()
+    await expect(page).toHaveURL(/\/web\.html#scrolly$/)
+  })
 })
 
 test.describe('a plugin that extends the IR runtime', () => {
