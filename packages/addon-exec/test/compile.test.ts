@@ -124,3 +124,17 @@ it('reports where a TypeScript run fails, at the line of the source', async () =
   expect(exit, output).toBe(0)
   expect(markdown(cells)).toContain('```text\nReferenceError: k is not defined (line 2)\n```')
 })
+
+it('gives a run panel an IR fallback with its recorded output, for static renderers (contract c)', async () => {
+  writeFileSync(join(dir, 'lecture.md'), DECK.replace('x * k', 'x * 2'))
+  await new Promise<void>((resolve, reject) => {
+    execFile(process.execPath, [BIN, 'ir', '--out', 'ir.json'], { cwd: dir }, error => error ? reject(error) : resolve())
+  })
+  const doc = JSON.parse(readFileSync(join(dir, 'ir.json'), 'utf8')) as { sections: { blocks: { node: { type: string, name?: string, props?: Record<string, unknown>, fallback?: unknown } }[] }[] }
+  const panels = doc.sections.flatMap(s => s.blocks).map(b => b.node).filter(n => n.type === 'component' && n.name === 'PmRunPanel')
+  const live = panels.find(n => n.props?.recorded === '预先录制：6')
+  expect(live, 'the live-only run panel').toBeDefined()
+  const fallback = JSON.stringify(live!.fallback)
+  expect(fallback).toContain('console.log(n * 2)')
+  expect(fallback).toContain('预先录制：6')
+})

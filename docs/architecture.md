@@ -380,3 +380,12 @@ presmium: { ...各插件全局配置 }
 | 执行面板的降级内容没有编译时输出 | 插件的 IR 处理步骤都在编译时执行之前运行，指令生成组件时代码也还没有执行，所以执行面板的 `fallback` 只有代码与 `:recorded:`；没有 `:recorded:` 的面板在 PDF、PNG 导出中只显示代码。notebook 不受影响：执行面板的 notebook 扩展在渲染时从代码块取编译时的输出 | 编译器为插件的 IR 处理步骤增加“编译时执行之后”的阶段（例如 `IRPass` 的 `after: 'execute'`），执行插件在这一阶段把输出追加到 `fallback` |
 | 幻灯片形态中的现场执行代码块 | 带 `:run: live` 或 `:run: both` 的普通代码块在网页形态中有运行按钮；幻灯片渲染端把它写成普通代码块，没有运行按钮，只有执行面板能在幻灯片中运行代码。`setup/code-runners.ts` 已经通过 `executor` 服务支持 Slidev 的 Monaco Runner（Python、JavaScript、TypeScript），但 MyST 源码无法写出 `{monaco-run}` | 幻灯片渲染端把带 `run` 的代码块写成 `{monaco-run}`，或写成执行插件的运行组件 |
 | 课堂笔记依赖 IR 运行时的标记 | 课堂插件的笔记图层按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位章节与块。这两个属性因此是 IR 运行时对外的契约，修改时须同时修改笔记图层 | 在视图插件接口中提供块旁的挂载点 |
+
+### 9.x 代码执行的边界情况（WP-60d 验收遗留）
+
+| 情况 | 影响 | 后续 |
+|---|---|---|
+| 浏览器端运行器在运行末尾漏掉未处理的 Promise 拒绝与定时器中的异步异常 | 同一段代码，浏览器中退出码为 0，编译时为 1 | 在运行器中等待所有定时器与微任务结束后再判定结果 |
+| 用户代码直接调用 `console.dir`、`process.stdout.write` 或留下永不结束的顶层 `await` | Node 子进程的 JSON 结果被破坏，或录制的 stderr 含临时路径 | 子进程改用独立的结果通道（例如额外的文件描述符）返回结果 |
+| 运行面板的 `fallback` 只含代码与 `:recorded:` | 没有 `:recorded:` 的面板在静态导出中只显示代码；`:params:` 的取值不显示 | 编译器增加“执行之后”的插件步骤阶段，由执行插件把编译时输出与参数写入 `fallback` |
+
