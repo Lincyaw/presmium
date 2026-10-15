@@ -82,14 +82,14 @@ test('with reduced motion the animated component shows its final state at once',
 test('narration becomes the speaker notes, highlighted at the step it belongs to', async ({ page }) => {
   await openCore(page, PRESENTER)
   const notes = page.locator('.slidev-note')
-  // The first paragraphs belong to step 0; the one after the stepper's first state to step 1 (docs/ir.md 2.4).
+  // Narration after the stepper takes one paragraph per internal step (docs/ir.md 2.4).
   const intro = notes.locator('p', { hasText: '本章演示宿主适配' })
-  const broken = notes.locator('p', { hasText: '故意抛错的组件显示错误占位' })
+  const second = notes.locator('p', { hasText: '第二步突出' })
   await expect(intro).not.toHaveClass(/slidev-note-fade/)
-  await expect(broken).toHaveClass(/slidev-note-fade/)
+  await expect(second).toHaveClass(/slidev-note-fade/)
 
   await page.keyboard.press('ArrowRight')
-  await expect(broken).not.toHaveClass(/slidev-note-fade/)
+  await expect(second).not.toHaveClass(/slidev-note-fade/)
   await expect(intro).toHaveClass(/slidev-note-fade/)
 })
 
