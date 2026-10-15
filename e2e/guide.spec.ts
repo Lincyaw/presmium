@@ -1,12 +1,11 @@
-import { existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { SLIDES, WEB } from './urls.ts'
+import { useFixture } from './fixtures/deck.ts'
 
-// examples/demo/pages/guide.md: a {cursor} moves to the query (1), hovers (2) and clicks (3) the
+// e2e/fixtures/guide: a {cursor} moves to the query (1), hovers (2) and clicks (3) the
 // search button; a {spotlight} lights the results (4); a {hint} points at the help button (5).
-const WEB_BUILT = existsSync(fileURLToPath(new URL('../examples/demo/dist/web/index.html', import.meta.url)))
+test.describe.configure({ mode: 'default' })
+const deck = useFixture('guide')
 const STEPS = [
   { cursor: '-1:none', mark: '', spotlight: '', hint: '', overlay: '', beacons: 0 },
   { cursor: '0:move', mark: '', spotlight: '', hint: '', overlay: '', beacons: 0 },
@@ -18,24 +17,8 @@ const STEPS = [
 /** Where the cursor tip should be at each step. */
 const CURSOR_AT = ['#guide-query', '#guide-query', '#guide-run', '#guide-run', '#guide-run', '#guide-run']
 
-let guideNo: number | undefined
-
-/** Slide number of the guide page, found by walking the built deck slide by slide. */
-async function findGuide(page: Page): Promise<number> {
-  if (guideNo) return guideNo
-  await page.goto(`${SLIDES}/1`)
-  for (let no = 1; no <= 50; no++) {
-    // Every slide is rendered in its own `.slidev-page-<no>`, whatever its layout.
-    const slide = page.locator(`.slidev-page-${no}`).first()
-    await expect(slide.locator(':scope > *').first()).toBeAttached()
-    if (await slide.locator('.pm-guide').count()) return (guideNo = no)
-    await page.keyboard.press('ArrowDown')
-  }
-  throw new Error('the demo deck has no guide slide')
-}
-
 async function openGuide(page: Page, step: number, view = '') {
-  await page.goto(`${SLIDES}${view}/${await findGuide(page)}?clicks=${step}`)
+  await page.goto(`${deck().slides}${view}/${deck().slide('guide')}?clicks=${step}`)
   await expect(page.locator('.slidev-layout.pm-guide .pm-cursor').first()).toBeAttached()
 }
 
@@ -228,8 +211,7 @@ test('under the spotlight, Tab moves the focus to the spotlit element and the ke
 })
 
 test('in the web form the cues follow the steps of the present view and show in place', async ({ page }) => {
-  test.skip(!WEB_BUILT, 'the web form is not built')
-  await page.goto(`${WEB}/guide.html`)
+  await page.goto(`${deck().web}/guide.html`)
   // The document view shows every step done: the cursor has clicked, no spotlight or hint is left.
   const section = page.locator('.pm-section[data-section="guide"]')
   await expect(section.locator('#guide-run')).toHaveAttribute('data-pm-cursor', 'click')

@@ -1,15 +1,25 @@
 {
   "version": 1,
   "anchors": {
-    "region:examples/sample-repo/coderef/cart.ts#checkout": {
-      "fingerprint": "8668f5e1613ee618",
-      "file": "examples/sample-repo/coderef/cart.ts",
-      "startLine": 15
+    "region:examples/sample-repo/src/bpe.py#get_stats": {
+      "fingerprint": "6bf528d75033a42e",
+      "file": "examples/sample-repo/src/bpe.py",
+      "startLine": 8
     },
-    "symbol:examples/sample-repo/coderef/cart.ts#total": {
-      "fingerprint": "a4140865269a2955",
-      "file": "examples/sample-repo/coderef/cart.ts",
-      "startLine": 10
+    "symbol:examples/sample-repo/src/bpe.py#decode": {
+      "fingerprint": "f7ccb95ea5a95970",
+      "file": "examples/sample-repo/src/bpe.py",
+      "startLine": 65
+    },
+    "symbol:examples/sample-repo/src/bpe.py#encode": {
+      "fingerprint": "f9a7360bac7dcba3",
+      "file": "examples/sample-repo/src/bpe.py",
+      "startLine": 53
+    },
+    "symbol:examples/sample-repo/src/bpe.py#train": {
+      "fingerprint": "4b6065cc5045f59f",
+      "file": "examples/sample-repo/src/bpe.py",
+      "startLine": 31
     }
   }
 }

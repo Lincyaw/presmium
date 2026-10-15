@@ -1,10 +1,10 @@
 (code-steps)=
 ## 代码引用：分步高亮
 
-引用业务仓库中的代码，不把代码复制进文稿。代码来自 `examples/sample-repo/coderef/cart.ts` 的 checkout 区间，锁定在提交 669aa6b；幻灯片标题栏和网页代码块上的链接指向远端仓库中这个提交的对应行，徽标显示工作区中的代码是否已经改变。
+引用业务仓库中的代码，不把代码复制进文稿。代码来自 `e2e/fixtures/code/cart.ts` 的 checkout 区间，锁定在提交 6e4072a；幻灯片标题栏和网页代码块上的链接指向远端仓库中这个提交的对应行，徽标显示工作区中的代码是否已经改变。
 
-```{code-ref} region:examples/sample-repo/coderef/cart.ts#checkout
-:pin: 669aa6b
+```{code-ref} region:e2e/fixtures/code/cart.ts#checkout
+:pin: 6e4072a
 :steps: validate, price, receipt
 :repo: https://github.com/presmium/presmium
 ```
@@ -20,8 +20,8 @@
 
 同一个函数在三个提交中的写法，随步骤原地切换。锚点按语法树找到函数，被引用的代码不需要任何标记。
 
-```{code-ref} symbol:examples/sample-repo/coderef/cart.ts#total
-:variants: 669aa6b, 6a2119a, 5a20e7c
+```{code-ref} symbol:e2e/fixtures/code/cart.ts#total
+:variants: 6e4072a, c4c6310, f6960cc
 :repo: https://github.com/presmium/presmium
 ```
 
@@ -35,8 +35,8 @@ total 的第一个版本：下标循环。
 ## 代码引用：写法
 
 ````md
-```{code-ref} region:examples/sample-repo/coderef/cart.ts#checkout
-:pin: 669aa6b
+```{code-ref} region:e2e/fixtures/code/cart.ts#checkout
+:pin: 6e4072a
 :steps: validate, price, receipt
 ```
 ````

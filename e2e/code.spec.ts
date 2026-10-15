@@ -1,20 +1,15 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { SLIDES, WEB } from './urls.ts'
+import { useFixture } from './fixtures/deck.ts'
 
-// examples/demo/pages/code.md, built by `presmium build`. Slides are found by
-// their section id in the built IR, so sections added before them do not matter.
-const DIST = new URL('../examples/demo/dist/', import.meta.url)
-const PAGE = readFileSync(new URL('../examples/demo/pages/code.md', import.meta.url), 'utf8')
-const FILE = 'examples/sample-repo/coderef/cart.ts'
-const HAS_WEB = existsSync(new URL('web', DIST))
-
-function slideOf(id: string): number {
-  const ir = JSON.parse(readFileSync(new URL('ir.json', DIST), 'utf8')) as { sections: { id: string, index: number }[] }
-  return ir.sections.find(section => section.id === id)!.index
-}
+// e2e/fixtures/code: references to e2e/fixtures/code/cart.ts, pinned to commits of its history
+// and compared across them. Slides are found by their section id in the built IR.
+test.describe.configure({ mode: 'default' })
+const deck = useFixture('code')
+const PAGE = readFileSync(new URL('fixtures/code/code.md', import.meta.url), 'utf8')
+const FILE = 'e2e/fixtures/code/cart.ts'
 
 function git(...args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' }).trim()
@@ -27,7 +22,7 @@ function option(name: string): string {
 
 /** Slidev keeps neighbouring slides in the DOM; the one shown is found by its heading. */
 async function openSlide(page: Page, id: string, heading: string) {
-  await page.goto(`${SLIDES}/${slideOf(id)}`)
+  await page.goto(`${deck().slides}/${deck().slide(id)}`)
   const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
   await expect(slide).toBeVisible()
   return slide
@@ -93,9 +88,8 @@ test('the multi-version code block switches versions with the steps', async ({ p
 })
 
 test('the web form links the code to the remote repository at the pinned commit', async ({ page }) => {
-  test.skip(!HAS_WEB, 'needs the web build (examples/demo/dist/web)')
   const commit = git('rev-parse', `${option('pin')}^{commit}`)
-  await page.goto(`${WEB}/code.html`)
+  await page.goto(`${deck().web}/code.html`)
   const link = page.locator(`a[href^="${option('repo')}/blob/${commit}/${FILE}#L"]`)
   await expect(link.first()).toBeVisible()
   await expect(page.getByText('const discount = coupon').first()).toBeVisible()
