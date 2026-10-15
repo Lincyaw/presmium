@@ -1,0 +1,71 @@
+/*
+ * High-contrast theme (P-52). `useHighContrast` sets data-pm-contrast="high" on
+ * <html>; these variables then replace the theme colors of slides
+ * (.slidev-layout) and of the web form (VitePress variables, .vp-doc). Every
+ * text color reaches at least WCAG AA (4.5:1) on its background, in both the
+ * light and the dark color scheme. Plugin components can use the --pm-contrast-*
+ * variables for their own colors.
+ */
+:root[data-pm-contrast='high'] {
+  --pm-contrast-bg: #ffffff;
+  --pm-contrast-fg: #000000;
+  --pm-contrast-link: #0030b0;
+  --pm-contrast-border: #000000;
+
+  --slidev-theme-primary: var(--pm-contrast-link);
+  --vp-c-bg: var(--pm-contrast-bg);
+  --vp-c-bg-alt: var(--pm-contrast-bg);
+  --vp-c-bg-soft: var(--pm-contrast-bg);
+  --vp-c-bg-elv: var(--pm-contrast-bg);
+  --vp-c-text-1: var(--pm-contrast-fg);
+  --vp-c-text-2: var(--pm-contrast-fg);
+  --vp-c-text-3: var(--pm-contrast-fg);
+  --vp-c-brand-1: var(--pm-contrast-link);
+  --vp-c-brand-2: var(--pm-contrast-link);
+  --vp-c-brand-3: var(--pm-contrast-link);
+  --vp-c-divider: var(--pm-contrast-border);
+  --vp-code-color: var(--pm-contrast-fg);
+  --vp-code-bg: var(--pm-contrast-bg);
+  --vp-code-block-bg: var(--pm-contrast-bg);
+}
+
+:root.dark[data-pm-contrast='high'] {
+  --pm-contrast-bg: #000000;
+  --pm-contrast-fg: #ffffff;
+  --pm-contrast-link: #ffe14d;
+  --pm-contrast-border: #ffffff;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) {
+  background: var(--pm-contrast-bg) !important;
+  color: var(--pm-contrast-fg) !important;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(h1, h2, h3, h4, h5, h6, p, li, td, th, blockquote, strong, em) {
+  color: var(--pm-contrast-fg);
+}
+
+/* Text that themes dim with opacity (e.g. the cover subtitle) is drawn opaque; click-step states keep theirs. */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(h1, h2, h3, h4, h5, h6, p, li, blockquote):not([class*='slidev-vclick']) {
+  opacity: 1;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) a {
+  color: var(--pm-contrast-link) !important;
+  text-decoration: underline;
+}
+
+/* Code: syntax colors give way to the foreground color, blocks get a border. Dimmed lines of a step keep their opacity. */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(pre, code, .shiki, .shiki span) {
+  background: var(--pm-contrast-bg) !important;
+  color: var(--pm-contrast-fg) !important;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) pre {
+  outline: 1px solid var(--pm-contrast-border);
+}
+
+:root[data-pm-contrast='high'] :focus-visible {
+  outline: 3px solid var(--pm-contrast-link) !important;
+  outline-offset: 2px;
+}

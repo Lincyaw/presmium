@@ -1,0 +1,9 @@
+/* Slides form: printed pages (PDF, PNG) show the final state of every animation (setup/root.ts sets the class). */
+html.pm-print *,
+html.pm-print *::before,
+html.pm-print *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
