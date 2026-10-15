@@ -5,11 +5,13 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { COLLECTIONS } from '../domain/index.ts'
 import type { Question } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'
+import { useMessages } from './locale.ts'
 import NotesLayer from './NotesLayer.vue'
 import { claimNotesLayer, useClassroomStore, useCollection, useSession } from './use.ts'
 import './style.css'
 
 const { presenter } = useSession()
+const t = useMessages()
 const store = useClassroomStore()
 const questions = useCollection<Question>(() => store.value, COLLECTIONS.questions)
 const unanswered = computed(() => questions.value.filter(({ value }) => !value.answered).length)
@@ -20,13 +22,13 @@ onBeforeUnmount(layer.release)
 
 <template>
   <span class="pm-classroom-toolbar">
-    <button v-if="presenter" type="button" :aria-expanded="open" title="课堂互动：提问、理解度、测验与练习" @click="open = !open">
-      互动<span v-if="unanswered" class="pm-classroom-toolbar__badge" :aria-label="`${unanswered} 个未回答的提问`">{{ unanswered }}</span>
+    <button v-if="presenter" type="button" :aria-expanded="open" :title="t.toolbar.title" @click="open = !open">
+      {{ t.toolbar.button }}<span v-if="unanswered" class="pm-classroom-toolbar__badge" :aria-label="t.toolbar.unanswered(unanswered)">{{ unanswered }}</span>
     </button>
-    <div v-if="presenter && open" class="pm-classroom-popover" role="dialog" aria-label="课堂互动">
+    <div v-if="presenter && open" class="pm-classroom-popover" role="dialog" :aria-label="t.interaction">
       <ClassroomPanel />
       <button type="button" class="pm-classroom-popover__close" @click="open = false">
-        关闭
+        {{ t.close }}
       </button>
     </div>
     <NotesLayer v-if="layer.owns.value" />

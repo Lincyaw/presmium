@@ -1,18 +1,17 @@
-import { spawn } from 'node:child_process'
-import type { ChildProcess } from 'node:child_process'
-import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:http'
-import type { AddressInfo } from 'node:net'
-import { extname, join, resolve, sep } from 'node:path'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
+import { build, FIXTURES, serve, startClassroomServer, writeDeck, writePage } from './fixtures/plugins/decks.ts'
 import { WEB } from './urls.ts'
 
 // Classroom features (pages/classroom.md). Without a classroom the demo's quiz is a self-test and
 // notes stay in the browser. The classroom tests build a deck of the classroom page whose
 // frontmatter points to a real classroom server (`presmium-classroom-server` on a free port, with
 // that deck as its deck directory) and drive a presenter and two learners in browser contexts of
-// their own. The notebook form is checked in packages/addon-classroom/test.
+// their own. The notebook form is checked in packages/addon-classroom/test. The test decks of
+// e2e/fixtures/plugins check the classroom in English, over another session implementation, and
+// its notes across edits of the deck.
 
 /** Loading the Python runtime for the first check takes a few seconds. */
 const RUNTIME = { timeout: 30_000 }
@@ -49,57 +48,13 @@ test('without a classroom the quiz is a self-test and notes stay in this browser
 // A deck with a classroom server
 // ---------------------------------------------------------------------------
 
-const TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.mjs': 'text/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.svg': 'image/svg+xml',
-  '.wasm': 'application/wasm',
-  '.zip': 'application/zip',
-  '.woff2': 'font/woff2',
-}
-
-/** Serves a build directory on a free port; `single` answers unknown paths with index.html (the slides' routes). */
-async function serve(dir: string, single: boolean): Promise<{ url: string, close(): Promise<void> }> {
-  const server = createServer((request, response) => {
-    let file = join(dir, decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname))
-    if (!file.startsWith(dir + sep) && file !== dir) file = dir
-    if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
-    const found = existsSync(file)
-    if (!found) file = join(dir, single ? 'index.html' : '404.html')
-    response.writeHead(found || single ? 200 : 404, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' })
-    createReadStream(file).pipe(response)
-  })
-  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
-  return {
-    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-    close: () => new Promise(done => server.close(() => done())),
-  }
-}
-
-/** `presmium-classroom-server --port 0 --deck <deck>`, until it prints its URL. */
-async function startClassroomServer(deck: string): Promise<{ url: string, child: ChildProcess }> {
-  const child = spawn(process.execPath, [resolve('packages/classroom-server/bin/server.mjs'), '--port', '0', '--host', '127.0.0.1', '--deck', deck], { stdio: ['ignore', 'pipe', 'inherit'] })
-  const url = await new Promise<string>((done, fail) => {
-    let output = ''
-    child.stdout!.on('data', (chunk: Buffer) => {
-      output += chunk
-      const match = /^classroom server {2}(ws:\S+)$/m.exec(output)
-      if (match) done(match[1]!)
-    })
-    child.once('exit', code => fail(new Error(`classroom server exited (${code}): ${output}`)))
-  })
-  return { url, child }
-}
-
 /** The classroom page of the demo as a deck of its own, whose frontmatter names the classroom server. */
-function writeDeck(deck: string, server: string): void {
+function writeClassroomDeck(deck: string, server: string): void {
   writeFileSync(join(deck, '.gitignore'), '*\n')
   cpSync(resolve('examples/demo/pages/classroom.md'), join(deck, 'pages/classroom.md'))
   writeFileSync(join(deck, 'lecture.md'), `---
 title: Presmium Classroom Features
+lang: zh-CN
 plugins:
   - '@presmium/slidev-addon-core'
   - '@presmium/slidev-addon-exec'
@@ -121,15 +76,6 @@ renderers:
 \`\`\`{include} pages/classroom.md
 \`\`\`
 `)
-}
-
-async function build(deck: string): Promise<void> {
-  const child = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'build', '--to', 'web,slides'], { cwd: deck, stdio: ['ignore', 'pipe', 'pipe'] })
-  let output = ''
-  child.stdout!.on('data', (chunk: Buffer) => output += chunk)
-  child.stderr!.on('data', (chunk: Buffer) => output += chunk)
-  const code = await new Promise<number | null>(done => child.once('exit', done))
-  if (code !== 0) throw new Error(`presmium build exited (${code}):\n${output}`)
 }
 
 const sessionButton = (page: Page) => page.getByRole('button', { name: /^课堂/ })
@@ -228,8 +174,8 @@ test.describe('a classroom', () => {
     mkdirSync(work, { recursive: true })
     deck = mkdtempSync(join(work, 'e2e-classroom-'))
     server = await startClassroomServer(deck)
-    writeDeck(deck, server.url)
-    await build(deck)
+    writeClassroomDeck(deck, server.url)
+    await build(deck, 'web,slides')
     const ir = JSON.parse(readFileSync(join(deck, 'dist/ir.json'), 'utf8')) as { sections: { id: string, index: number }[] }
     sections = Object.fromEntries(ir.sections.map(s => [s.id, s.index]))
     web = await serve(join(deck, 'dist/web'), false)
@@ -387,11 +333,37 @@ test.describe('a classroom', () => {
     await close()
   })
 
+  test('a projector tab that the presenter opens by URL shows the presenter\'s quiz, not a self-test', async ({ browser }) => {
+    const { presenter, a, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
+    await browseAlone(a)
+    // Another tab of the presenter's browser, as a projector shows the present view.
+    const projector = await presenter.context().newPage()
+    await projector.goto(`${web.url}/classroom.html?view=present&section=classroom-quiz`)
+    const shown = projector.getByRole('region', { name: '放映' }).locator('.pm-quiz')
+    await expect(shown.getByRole('status')).toHaveText('尚未开放作答')
+    await expect(badge(projector)).toHaveCount(0)
+
+    await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
+    await expect(shown.getByRole('status')).toHaveText('作答中')
+    await quiz(a).getByRole('radio', { name: /次数最多/ }).check()
+    await quiz(a).getByRole('button', { name: '提交' }).click()
+    await expect(shown.locator('.pm-quiz__tally')).toHaveText('已作答 1 人，答对 1 人')
+    // The room sees the right answer only once the quiz is closed.
+    await expect(shown.locator('[data-correct]')).toHaveCount(0)
+    await quiz(presenter).getByRole('button', { name: '关闭作答' }).click()
+    await expect(shown.locator('[data-correct]')).toHaveAttribute('data-option', 'B')
+    await close()
+  })
+
   test('in the slides form a quiz round runs between the presenter view and the learners\' slides', async ({ browser }) => {
     const index = sections['classroom-quiz']!
     const { presenter, a, b, close } = await classroom(browser, `${slides.url}/presenter/${index}`, 'slides')
     for (const learner of [a, b]) await expect(learner).toHaveURL(new RegExp(`/${index}(\\?|$)`))
     await expect(quiz(a).getByRole('status')).toHaveText('等待主讲开放作答')
+    // The audience window of the presenter's browser, opened by URL as Slidev suggests for a projector.
+    const projector = await presenter.context().newPage()
+    await projector.goto(`${slides.url}/${index}`)
+    await expect(quiz(projector).getByRole('status')).toHaveText('尚未开放作答')
 
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
     await quiz(a).getByRole('radio', { name: /次数最多/ }).check()
@@ -399,6 +371,7 @@ test.describe('a classroom', () => {
     await quiz(b).getByRole('radio', { name: /最先出现/ }).check()
     await quiz(b).getByRole('button', { name: '提交' }).click()
     await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 2 人，答对 1 人')
+    await expect(quiz(projector).locator('.pm-quiz__tally')).toHaveText('已作答 2 人，答对 1 人')
     await quiz(presenter).getByRole('button', { name: '关闭作答' }).click()
     await expect(quiz(a).getByRole('status')).toHaveText('作答已关闭，你的答案正确')
     await expect(quiz(b).getByRole('button', { name: '提交' })).toBeDisabled()
@@ -407,4 +380,190 @@ test.describe('a classroom', () => {
     await expect(presenter.locator('[data-panel="presmium.classroom"]')).toContainText(`第 ${index} 节 · 课堂测验：已关闭，已作答 2 人，答对 1 人`)
     await close()
   })
+})
+
+// ---------------------------------------------------------------------------
+// Test decks of e2e/fixtures/plugins
+// ---------------------------------------------------------------------------
+
+test.describe('an English deck', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let server: Awaited<ReturnType<typeof startClassroomServer>>
+  let deck: string
+  let web: Awaited<ReturnType<typeof serve>>
+
+  // With the session and the classroom, but no executor.
+  test.beforeAll(async () => {
+    test.setTimeout(240_000)
+    server = await startClassroomServer()
+    deck = writeDeck('english', `
+title: Classroom in English
+lang: en-US
+plugins:
+  - '@presmium/slidev-addon-core'
+  - '@presmium/slidev-addon-session'
+  - '@presmium/slidev-addon-classroom'
+presmium:
+  presmium.session:
+    server: ${server.url}
+renderers:
+  web:
+    lang: en-US
+`, ['quiz.md'])
+    await build(deck)
+    web = await serve(join(deck, 'dist/web'))
+  })
+
+  test.afterAll(async () => {
+    await web?.close()
+    server?.child.kill('SIGTERM')
+    if (deck) rmSync(deck, { recursive: true, force: true })
+  })
+
+  test('the session panel, the join form and the quiz speak the deck\'s language, not the browser\'s (N-07)', async ({ browser }) => {
+    const contexts = await Promise.all([browser.newContext({ locale: 'zh-CN' }), browser.newContext({ locale: 'zh-CN' })])
+    const [presenter, learner] = await Promise.all(contexts.map(context => context.newPage())) as [Page, Page]
+    await presenter.goto(`${web.url}/quiz.html`)
+    await expect(presenter.locator('html')).toHaveAttribute('lang', 'en-US')
+    await presenter.getByRole('button', { name: /^Classroom/ }).click()
+    const panel = presenter.getByRole('dialog', { name: 'Classroom' })
+    await expect(panel.getByRole('status')).toHaveText('Not connected: not in a classroom')
+    await panel.getByLabel('Nickname').fill('Ms. Wang')
+    await panel.getByRole('button', { name: 'Create classroom' }).click()
+    await expect(panel.getByRole('status')).toHaveText('Classroom in progress, you are presenting')
+    await expect(panel.getByRole('img', { name: 'QR code to join the classroom' }).locator('svg')).toBeVisible()
+
+    const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
+    await learner.goto(link)
+    const status = learner.getByRole('region', { name: 'Classroom status' })
+    await status.getByLabel('Nickname').fill('Ming')
+    await status.getByRole('button', { name: 'Join classroom' }).click()
+    await expect(status).toContainText('Following the presenter')
+    await expect(panel.getByRole('list', { name: 'Participants' })).toContainText('Ming')
+    await panel.getByRole('button', { name: 'Close' }).click()
+
+    await expect(quiz(presenter).getByRole('status')).toHaveText('Not open for answers yet')
+    await expect(quiz(learner).getByRole('status')).toHaveText('Waiting for the presenter to open the quiz')
+    await quiz(presenter).getByRole('button', { name: 'Open answering' }).click()
+    await expect(quiz(learner).getByRole('status')).toHaveText('Answering: choose, then submit')
+    await quiz(learner).getByRole('radio', { name: /most frequent/ }).check()
+    await quiz(learner).getByRole('button', { name: 'Submit' }).click()
+    await expect(quiz(learner).getByRole('status')).toHaveText('Submitted B; you can change it until answering closes')
+    await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('1 answered, 1 right')
+    await quiz(presenter).getByRole('button', { name: 'Close answering' }).click()
+    await expect(quiz(learner).getByRole('status')).toHaveText('Answering closed, your answer is right')
+    await Promise.all(contexts.map(context => context.close()))
+  })
+
+  test('the classroom plugin starts degraded without an executor and says which service is missing', async ({ page }) => {
+    await page.goto(`${web.url}/quiz.html?view=presenter&section=quiz`)
+    await page.locator('.pm-presenter-panels summary').click()
+    const report = page.locator('.pm-start-report')
+    await expect(report.locator('[data-plugin="presmium.session"]')).toHaveAttribute('data-status', 'started')
+    const classroom = report.locator('[data-plugin="presmium.classroom"]')
+    await expect(classroom).toHaveAttribute('data-status', 'degraded')
+    await expect(classroom).toContainText('presmium.executor')
+    await expect(classroom).not.toContainText('presmium.session')
+  })
+})
+
+test.describe('another session implementation', () => {
+  test.describe.configure({ timeout: 120_000 })
+  let deck: string
+  let web: Awaited<ReturnType<typeof serve>>
+
+  // The fixture plugin provides `session` and `classroomStore` in place of addon-session.
+  test.beforeAll(async () => {
+    test.setTimeout(240_000)
+    deck = writeDeck('memory-session', `
+title: Memory classroom
+plugins:
+  - '@presmium/slidev-addon-core'
+  - '@presmium/slidev-addon-exec'
+  - '@presmium/slidev-addon-classroom'
+  - '${join(FIXTURES, 'memory-session')}'
+renderers:
+  web: {}
+`, ['quiz.md'])
+    await build(deck)
+    web = await serve(join(deck, 'dist/web'))
+  })
+
+  test.afterAll(async () => {
+    await web?.close()
+    if (deck) rmSync(deck, { recursive: true, force: true })
+  })
+
+  test('runs a quiz round with the quiz unchanged, and the start report shows the provider that replaced addon-session (K-08)', async ({ browser }) => {
+    // Tabs of one browser, where the in-memory classroom lives.
+    const context = await browser.newContext()
+    const presenter = await context.newPage()
+    await presenter.goto(`${web.url}/quiz.html?as=presenter`)
+    const learner = await context.newPage()
+    await learner.goto(`${web.url}/quiz.html?as=${encodeURIComponent('小明')}`)
+    await expect(quiz(learner).getByRole('status')).toHaveText('等待主讲开放作答')
+    await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
+    await expect(quiz(learner).getByRole('status')).toHaveText('作答中：选择后提交')
+    await quiz(learner).getByRole('radio', { name: /most frequent/ }).check()
+    await quiz(learner).getByRole('button', { name: '提交' }).click()
+    await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 1 人，答对 1 人')
+    await quiz(presenter).getByRole('button', { name: '关闭作答' }).click()
+    await expect(quiz(learner).getByRole('status')).toHaveText('作答已关闭，你的答案正确')
+
+    await presenter.goto(`${web.url}/quiz.html?view=presenter&section=quiz&as=presenter`)
+    await presenter.locator('.pm-presenter-panels summary').click()
+    const report = presenter.locator('.pm-start-report')
+    await expect(report.locator('[data-plugin="fixture.memory-session"]')).toHaveAttribute('data-status', 'started')
+    await expect(report.locator('[data-plugin="presmium.session"]')).toHaveCount(0)
+    // The classroom found every service it asks for.
+    await expect(report.locator('[data-plugin="presmium.classroom"]')).toHaveAttribute('data-status', 'started')
+    await context.close()
+  })
+})
+
+const CART = `// #region total
+export function total(prices: number[]): number {
+  return prices.reduce((sum, price) => sum + price, 0)
+}
+// #endregion total
+`
+
+test('notes stay attached to their section and to a labelled code block when the deck and the code change (P-63)', async ({ page }) => {
+  // Two builds.
+  test.setTimeout(480_000)
+  const deck = writeDeck('notes', `
+title: Notes
+plugins:
+  - '@presmium/slidev-addon-core'
+  - '@presmium/slidev-addon-code'
+  - '@presmium/slidev-addon-classroom'
+renderers:
+  web: {}
+`, ['notes.md'])
+  mkdirSync(join(deck, 'src'))
+  writeFileSync(join(deck, 'src/cart.ts'), CART)
+  await build(deck)
+  // The same address after the rebuild: notes are kept per site.
+  const web = await serve(join(deck, 'dist/web'))
+  try {
+    await page.goto(`${web.url}/notes.html`)
+    await addNote(page, noteSpot(page, 'cart'), 'Cart', 'The total is a sum')
+    await addNote(page, noteSpot(page, 'cart', 'cart-total'), 'cart-total', 'reduce starts at 0')
+
+    // A new section before it, a paragraph before the block, a comment above the code and a change in it.
+    writePage(deck, 'notes.md', text => `(intro)=\n## Introduction\n\nA new first section.\n\n${text.replace('The cart adds', 'A new paragraph.\n\nThe cart adds')}`)
+    writeFileSync(join(deck, 'src/cart.ts'), `// Prices are in cents.\n\n${CART.replace('sum + price', 'sum + Math.round(price)')}`)
+    await build(deck)
+    await page.reload()
+    await expect(page.locator('.pm-section[data-section="intro"]')).toBeVisible()
+    await expect(page.locator('.pm-section[data-section="cart"] .pm-block[data-block="cart-total"]')).toContainText('Math.round(price)')
+    await expect(noteSpot(page, 'cart')).toHaveAttribute('data-notes', '1')
+    const block = noteSpot(page, 'cart', 'cart-total')
+    await expect(block).toHaveAttribute('data-notes', '1')
+    await block.getByRole('button', { name: '笔记：cart-total' }).click()
+    await expect(block.getByRole('list', { name: '我的笔记' })).toHaveText('reduce starts at 0删除')
+  } finally {
+    await web.close()
+    rmSync(deck, { recursive: true, force: true })
+  }
 })

@@ -1,7 +1,9 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { build, serve, writeDeck } from './fixtures/plugins/decks.ts'
 import { SLIDES, WEB } from './urls.ts'
 
 // The sections of examples/demo/pages/content.md set a routeAlias for the slides form,
@@ -116,4 +118,78 @@ test('the web form renders the same content: math, diagrams, mindmap, media and 
   const counter = section('content-element').locator('presmium-demo-counter').first()
   await counter.locator('button').click()
   await expect(counter.locator('output')).toHaveText('1')
+})
+
+test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ page }) => {
+  test.skip(!WEB_BUILT, 'the web form is not built')
+  await page.goto(`${WEB}/content.html`)
+  const map = page.locator('.pm-section[data-section="content-mindmap"] svg.pm-markmap')
+  await expect(map.locator('.markmap-node')).toHaveCount(13)
+  // The fold toggle of a node with children is a button in the tab order.
+  const toggle = map.getByRole('button', { name: '折叠或展开：公式' })
+  await expect(toggle).toHaveAttribute('tabindex', '0')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await toggle.focus()
+  await page.keyboard.press('Enter')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(map.locator('.markmap-node')).toHaveCount(11)
+  await page.keyboard.press('Space')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(map.locator('.markmap-node')).toHaveCount(13)
+})
+
+test.describe('online media', () => {
+  test.describe.configure({ timeout: 120_000 })
+  let deck: string
+  let web: Awaited<ReturnType<typeof serve>>
+  let slides: Awaited<ReturnType<typeof serve>>
+
+  // e2e/fixtures/plugins/online.md: {youtube}, and {video} and {audio} with URLs.
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    deck = writeDeck('online', `
+title: Online media
+plugins:
+  - '@presmium/slidev-addon-core'
+  - '@presmium/slidev-addon-content'
+renderers:
+  web: {}
+  slides:
+    theme: default
+  notebook: {}
+`, ['online.md'])
+    await build(deck, 'web,slides,notebook')
+    web = await serve(join(deck, 'dist/web'))
+    slides = await serve(join(deck, 'dist/slides'), true)
+  })
+
+  test.afterAll(async () => {
+    await web?.close()
+    await slides?.close()
+    if (deck) rmSync(deck, { recursive: true, force: true })
+  })
+
+  test('a YouTube video and online video and audio show from their URLs in both forms, and the notebook links to them (P-42)', async ({ page }) => {
+    // Nothing is fetched from the network: the players point to their URLs.
+    await page.route(/youtube|example\.com/, route => route.abort())
+    const PLAYER = 'https://www.youtube-nocookie.com/embed/luoMHjh-XcQ?start=30'
+
+    await page.goto(`${web.url}/online.html`)
+    const section = page.locator('.pm-section[data-section="online"]')
+    await expect(section.locator('figure.pm-youtube iframe')).toHaveAttribute('src', PLAYER)
+    await expect(section.locator('figure.pm-youtube figcaption')).toHaveText('A talk on YouTube')
+    await expect(section.locator('figure.pm-media video')).toHaveAttribute('src', 'https://example.com/media/clip.mp4')
+    await expect(section.locator('figure.pm-media audio')).toHaveAttribute('src', 'https://example.com/media/tone.ogg')
+
+    await page.goto(`${slides.url}/online`)
+    const slide = page.locator('.slidev-layout.pm-online')
+    await expect(slide.locator('figure.pm-youtube iframe')).toHaveAttribute('src', PLAYER)
+    await expect(slide.locator('figure.pm-media video')).toHaveAttribute('src', 'https://example.com/media/clip.mp4')
+    await expect(slide.locator('figure.pm-media audio source')).toHaveAttribute('src', 'https://example.com/media/tone.ogg')
+
+    const notebook = readdirSync(join(deck, 'dist/notebook')).find(file => file.endsWith('.ipynb'))!
+    const cells = readFileSync(join(deck, 'dist/notebook', notebook), 'utf8')
+    expect(cells).toContain('[A talk on YouTube](https://www.youtube.com/watch?v=luoMHjh-XcQ)')
+    expect(cells).toContain('[An online video](https://example.com/media/clip.mp4)')
+  })
 })

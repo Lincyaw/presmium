@@ -4,6 +4,7 @@
 import { computed } from 'vue'
 import { COLLECTIONS, countedAnswers, distribution, placeText, questionsByPlace, summarize, tally } from '../domain/index.ts'
 import type { Answer, PulseVote, Question, QuizState, Submission } from '../domain/index.ts'
+import { useMessages } from './locale.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from './use.ts'
 import './style.css'
 
@@ -16,32 +17,40 @@ const quizzes = useCollection<QuizState>(from, COLLECTIONS.quizzes)
 const answers = useCollection<Answer>(from, COLLECTIONS.answers)
 const submissions = useCollection<Submission>(from, COLLECTIONS.submissions)
 const { failure, write } = useWrite()
+const t = useMessages()
 
 const byPlace = <T extends { index: number }>(items: T[]) => [...items].sort((a, b) => a.index - b.index)
 
-const questionGroups = computed(() => questionsByPlace(questions.value.map(({ id, value }) => ({ ...value, id }))))
+const questionGroups = computed(() => questionsByPlace(questions.value.map(({ id, value }) => ({ ...value, id })), t.value))
 const open = computed(() => questions.value.filter(({ value }) => !value.answered).length)
 
 const pulses = computed(() => {
   const latest = new Map<string, PulseVote>()
   for (const { value } of votes.value) latest.set(value.pulse, value)
-  return byPlace([...latest.values()]).map(vote => ({
-    id: vote.pulse,
-    place: placeText(vote),
-    levels: vote.levels,
-    counts: distribution(vote.pulse, vote.levels.length, votes.value.map(item => item.value)),
-  }))
+  return byPlace([...latest.values()]).map((vote) => {
+    const counts = distribution(vote.pulse, vote.levels.length, votes.value.map(item => item.value))
+    return {
+      id: vote.pulse,
+      place: placeText(vote, t.value),
+      levels: vote.levels.map((level, i) => `${level} ${t.value.people(counts[i]!)}`).join(t.value.panel.levels),
+    }
+  })
 })
 
-const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ ...value, id }))).map(quiz => ({
-  ...quiz,
-  result: tally(quiz.options.length, quiz.answer, countedAnswers(quiz.id, quiz, answers.value.map(item => item.value))),
-})))
+const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ ...value, id }))).map((quiz) => {
+  const result = tally(quiz.options.length, quiz.answer, countedAnswers(quiz.id, quiz, answers.value.map(item => item.value)))
+  return { id: quiz.id, text: t.value.panel.quiz(placeText(quiz, t.value), quiz.open, result.respondents, result.correct) }
+}))
 
 const exercises = computed(() => {
   const groups = new Map<string, Submission[]>()
   for (const { value } of submissions.value) groups.set(value.exercise, [...groups.get(value.exercise) ?? [], value])
-  return byPlace([...groups.values()].map(group => ({ ...group[0]!, summary: summarize(group) })))
+  const { exercise, list, people, panel } = t.value
+  return byPlace([...groups.values()].map(group => ({ ...group[0]!, summary: summarize(group) }))).map(({ summary, ...first }) => ({
+    id: first.exercise,
+    text: panel.exercise(placeText(first, t.value), exercise.summary(summary.submitted, summary.passed)
+      + (summary.kinds.length ? exercise.common(summary.kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)) : '')),
+  }))
 })
 
 function toggleAnswered(question: Question & { id: string }): void {
@@ -53,13 +62,13 @@ function toggleAnswered(question: Question & { id: string }): void {
 <template>
   <div class="pm-classroom-panel">
     <p v-if="!presenter" class="pm-classroom-status">
-      主讲创建课堂后，这里按位置汇总提问、理解度、测验与练习。
+      {{ t.panel.waiting }}
     </p>
     <template v-else>
-      <section aria-label="提问">
-        <h4>提问（未回答 {{ open }}）</h4>
+      <section :aria-label="t.panel.questions">
+        <h4>{{ t.panel.open(open) }}</h4>
         <p v-if="!questionGroups.length" class="pm-classroom-status">
-          还没有提问
+          {{ t.panel.none }}
         </p>
         <div v-for="group in questionGroups" :key="group.place" class="pm-classroom-panel__place" :data-section="group.section" :data-block="group.block">
           <p class="pm-classroom-panel__where">
@@ -67,35 +76,35 @@ function toggleAnswered(question: Question & { id: string }): void {
           </p>
           <ul>
             <li v-for="q in group.questions" :key="q.id" :data-answered="q.answered ? '' : undefined">
-              <strong>{{ q.name }}</strong>：{{ q.text }}
+              <strong>{{ q.name }}</strong>{{ t.colon }}{{ q.text }}
               <button v-if="status === 'active'" type="button" @click="toggleAnswered(q)">
-                {{ q.answered ? '标为未回答' : '标为已回答' }}
+                {{ q.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
               </button>
             </li>
           </ul>
         </div>
       </section>
-      <section v-if="pulses.length" aria-label="理解度">
-        <h4>理解度</h4>
+      <section v-if="pulses.length" :aria-label="t.panel.pulse">
+        <h4>{{ t.panel.pulse }}</h4>
         <div v-for="pulse in pulses" :key="pulse.id" class="pm-classroom-panel__place" :data-pulse="pulse.id">
           <p class="pm-classroom-panel__where">
             {{ pulse.place }}
           </p>
           <p class="pm-classroom-panel__levels">
-            {{ pulse.levels.map((level, i) => `${level} ${pulse.counts[i]} 人`).join(' · ') }}
+            {{ pulse.levels }}
           </p>
         </div>
       </section>
-      <section v-if="quizRows.length" aria-label="测验">
-        <h4>测验</h4>
+      <section v-if="quizRows.length" :aria-label="t.panel.quizzes">
+        <h4>{{ t.panel.quizzes }}</h4>
         <p v-for="quiz in quizRows" :key="quiz.id" class="pm-classroom-panel__place" :data-quiz="quiz.id">
-          {{ placeText(quiz) }}：{{ quiz.open ? '作答中' : '已关闭' }}，已作答 {{ quiz.result.respondents }} 人，答对 {{ quiz.result.correct }} 人
+          {{ quiz.text }}
         </p>
       </section>
-      <section v-if="exercises.length" aria-label="练习">
-        <h4>练习</h4>
-        <p v-for="exercise in exercises" :key="exercise.exercise" class="pm-classroom-panel__place" :data-exercise="exercise.exercise">
-          {{ placeText(exercise) }}：已提交 {{ exercise.summary.submitted }} 人，通过 {{ exercise.summary.passed }} 人<template v-if="exercise.summary.kinds.length">；常见错误：{{ exercise.summary.kinds.map(([kind, n]) => `${kind} ${n} 人`).join('，') }}</template>
+      <section v-if="exercises.length" :aria-label="t.panel.exercises">
+        <h4>{{ t.panel.exercises }}</h4>
+        <p v-for="exercise in exercises" :key="exercise.id" class="pm-classroom-panel__place" :data-exercise="exercise.id">
+          {{ exercise.text }}
         </p>
       </section>
     </template>

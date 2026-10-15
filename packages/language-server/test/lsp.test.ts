@@ -56,11 +56,38 @@ renderers:
 \`\`\`{code-ref} region:src/bpe.py#gone
 :colour: red
 \`\`\`
+
+(pinned)=
+## Pinned
+
+\`\`\`{code-ref} region:src/bpe.py#count
+:pin: HEAD
+\`\`\`
+
+(parser)=
+## Parser
+
+\`\`\`{code-ref} symbol:src/parser.py#Parser.parse
+\`\`\`
+`
+
+// Python code without region markers, referenced by symbol.
+const PARSER = `class Parser:
+    def __init__(self, text):
+        self.text = text
+
+    def parse(self):
+        return self.text.split()
+
+
+def helper():
+    return Parser('a b').parse()
 `
 
 const dir = mkdtempSync(join(tmpdir(), 'presmium-lsp-'))
 const deck = join(dir, 'deck/lecture.md')
 const code = join(dir, 'src/bpe.py')
+const parser = join(dir, 'src/parser.py')
 const uri = pathToFileURL(deck).href
 const lineOf = (text: string, line: string) => text.split('\n').indexOf(line)
 let server: Client
@@ -69,11 +96,14 @@ beforeAll(async () => {
   mkdirSync(join(dir, 'src'))
   mkdirSync(join(dir, 'deck'))
   writeFileSync(code, BPE)
+  writeFileSync(parser, PARSER)
   writeFileSync(deck, DECK)
   const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir })
   git('init', '-q')
   git('add', '.')
   git('commit', '-qm', 'bpe')
+  // The working tree moves on from the commit the `pinned` section pins; lines and output stay.
+  writeFileSync(code, BPE.replace('pairs = {}', 'pairs = dict()'))
   server = await startServer()
   server.open(uri, DECK)
 })
@@ -98,6 +128,27 @@ it('reports a lost anchor and an unknown option at their source positions', asyn
   expect(saying('unknown option :colour:')).toMatchObject({ severity: 2, range: { start: { line } } })
 })
 
+it('reports pinned code that drifted in the working tree at its anchor', async () => {
+  const diagnostics = await server.diagnostics(uri)
+  const drift = diagnostics.filter(d => d.code === 'presmium.code.drift')
+  expect(drift, JSON.stringify(diagnostics)).toMatchObject([{ severity: 2, range: { start: { line: lineOf(DECK, '```{code-ref} region:src/bpe.py#count') } } }])
+  expect(JSON.stringify(drift[0]!.message)).toContain('region:src/bpe.py#count drifted since pinned commit HEAD')
+})
+
+it('goes from a symbol anchor to the declaration, and shows its code on hover', async () => {
+  const line = lineOf(DECK, '```{code-ref} symbol:src/parser.py#Parser.parse')
+  const position = { line, character: '```{code-ref} symbol:src/parser.py#Par'.length }
+  const locations = await server.connection.sendRequest(DefinitionRequest.type, { textDocument: { uri }, position }) as Location[]
+  expect(locations).toEqual([{
+    uri: pathToFileURL(parser).href,
+    range: { start: { line: lineOf(PARSER, '    def parse(self):'), character: 0 }, end: { line: lineOf(PARSER, '        return self.text.split()'), character: '        return self.text.split()'.length } },
+  }])
+  const hover = await server.connection.sendRequest(HoverRequest.type, { textDocument: { uri }, position }) as Hover
+  const { value } = hover.contents as MarkupContent
+  expect(value).toContain('symbol:src/parser.py#Parser.parse')
+  expect(value).toContain('def parse(self):\n    return self.text.split()')
+})
+
 it('goes from an anchor to the code region it references', async () => {
   const position = { line: lineOf(DECK, '```{code-ref} region:src/bpe.py#merge'), character: 25 }
   const locations = await server.connection.sendRequest(DefinitionRequest.type, { textDocument: { uri }, position }) as Location[]
@@ -120,7 +171,7 @@ it('shows the referenced code and its recorded output on hover', async () => {
 })
 
 it('completes region names in an anchor, directive names and options', async () => {
-  const draft = `${DECK}\n\`\`\`{code-ref} region:src/bpe.py#\n:\n\`\`\`\n\n\`\`\`{\n`
+  const draft = `${DECK}\n\`\`\`{code-ref} region:src/bpe.py#\n:\n\`\`\`\n\n\`\`\`{code-ref} symbol:src/parser.py#\n\`\`\`\n\n\`\`\`{\n`
   server.change(uri, draft, 2)
   const complete = async (line: string) => {
     const position = { line: lineOf(draft, line), character: line.length }
@@ -130,6 +181,7 @@ it('completes region names in an anchor, directive names and options', async () 
   const regions = await complete('```{code-ref} region:src/bpe.py#')
   expect(regions).toEqual(expect.arrayContaining(['merge', 'count', 'pick']))
   expect(regions).not.toContain('gone')
+  expect(await complete('```{code-ref} symbol:src/parser.py#')).toEqual(expect.arrayContaining(['Parser', 'Parser.__init__', 'Parser.parse', 'helper']))
   expect(await complete('```{')).toEqual(expect.arrayContaining(['code-ref', 'run-panel', 'slide', 'component']))
   expect(await complete(':')).toEqual(expect.arrayContaining(['steps', 'pin', 'run', 'reveal']))
 })

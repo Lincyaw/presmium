@@ -1,6 +1,7 @@
 import type { IRPass } from '@presmium/kernel'
-import { CLASSROOM_ID, isLabel } from '../domain/index.ts'
+import { CLASSROOM_ID, isLabel, localeOf, MESSAGES } from '../domain/index.ts'
 import type { Place } from '../domain/index.ts'
+import { fallbackOf } from './fallbacks.ts'
 
 /**
  * Whether the author wrote the label `id` (`(id)=`, or `:label: id` among a
@@ -16,7 +17,9 @@ function labelled(lines: readonly string[], from: number, at: number, id: string
 /**
  * Gives every classroom component its place (section and block ids, section
  * title and number) as the prop `place`: block ids exist only after the
- * compiler has scheduled the steps. A question box's `:target:` must name a
+ * compiler has scheduled the steps. It also writes each component's static
+ * form (`fallback`) and a pulse's default question and levels in the deck's
+ * language (`lang` in the headmatter). A question box's `:target:` must name a
  * block of its section. A label in the form of a generated id (`step-2`)
  * counts as generated, so it takes no notes and is not named in the
  * presenter's lists; the pass warns about such labels.
@@ -24,6 +27,8 @@ function labelled(lines: readonly string[], from: number, at: number, id: string
 export const placesPass: IRPass = {
   name: 'classroom-places',
   async run(doc, ctx) {
+    // The deck's language; the web form's when the deck names none.
+    const t = MESSAGES[localeOf(doc.meta.lang, doc.config.renderers.web?.lang)]
     const sources = new Map<string, Promise<string[]>>()
     const linesOf = (file: string) => {
       let lines = sources.get(file)
@@ -45,6 +50,11 @@ export const placesPass: IRPass = {
         }
         if (node.type !== 'component' || node.plugin !== CLASSROOM_ID) continue
         node.props.place = { section: section.id, block: block.id, title: section.title, index: section.index } satisfies Place
+        if (node.name === 'PmPulse') {
+          node.props.question ??= t.pulse.question
+          node.props.levels ??= t.pulse.levels
+        }
+        node.fallback = fallbackOf(node, t)
         const { target } = node.props
         if (typeof target === 'string' && !section.blocks.some(b => b.id === target)) {
           ctx.report({

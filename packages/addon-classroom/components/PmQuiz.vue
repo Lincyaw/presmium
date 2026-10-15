@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PmBoundary } from '@presmium/host'
 import { computed, ref, useId, watch } from 'vue'
+import { useMessages } from '../src/client/locale.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
 import { acceptsAnswers, answerId, COLLECTIONS, countedAnswers, isCorrect, lateAnswers, optionLetter, placeKey, quizSwitched, tally } from '../src/domain/index.ts'
 import type { Answer, Place, QuizState } from '../src/domain/index.ts'
@@ -24,6 +25,7 @@ const store = useClassroomStore()
 const quizzes = useCollection<QuizState>(() => store.value, COLLECTIONS.quizzes)
 const answers = useCollection<Answer>(() => store.value, COLLECTIONS.answers)
 const { failure, write } = useWrite()
+const t = useMessages()
 const name = useId()
 
 const id = computed(() => (props.place ? placeKey(props.place) : ''))
@@ -50,21 +52,22 @@ const canAnswer = computed(() => (joined.value ? !presenter.value && open.value 
 const showTally = computed(() => joined.value && (presenter.value || closed.value))
 // Not before the quiz is closed, not even on the presenter's screen, which the room may see.
 const revealed = computed(() => (joined.value ? closed.value : tried.value !== undefined))
-const letters = (choice: number[]) => choice.map(optionLetter).join('、')
+const letters = (choice: number[]) => choice.map(optionLetter).join(t.value.quiz.letters)
 
 const statusText = computed(() => {
+  const { quiz } = t.value
   if (!joined.value) {
-    if (!tried.value) return '自测：选择后提交，立即看到对错'
-    return isCorrect(tried.value, props.answer) ? '回答正确' : `回答错误，正确答案是 ${letters(props.answer)}`
+    if (!tried.value) return quiz.selfTest
+    return isCorrect(tried.value, props.answer) ? quiz.right : quiz.wrong(letters(props.answer))
   }
-  if (presenter.value) return open.value ? '作答中' : closed.value ? '作答已关闭' : status.value === 'active' ? '尚未开放作答' : '课堂已结束'
+  if (presenter.value) return open.value ? quiz.answering : closed.value ? quiz.closed : status.value === 'active' ? quiz.notOpen : quiz.ended
   if (closed.value) {
-    const verdict = mine.value ? `，你的答案${isCorrect(mine.value.choice, props.answer) ? '正确' : '错误'}` : ''
-    return `作答已关闭${verdict}${late.value.some(a => a.participant === me.value?.id) ? '；关闭后送达的作答未计入' : ''}`
+    const verdict = mine.value ? quiz.yours(isCorrect(mine.value.choice, props.answer)) : ''
+    return `${quiz.closed}${verdict}${late.value.some(a => a.participant === me.value?.id) ? quiz.lateMine : ''}`
   }
-  if (status.value !== 'active') return '课堂已结束'
-  if (!open.value) return '等待主讲开放作答'
-  return submitted.value ? `已提交 ${letters(submitted.value.choice)}，作答关闭前可以修改` : '作答中：选择后提交'
+  if (status.value !== 'active') return quiz.ended
+  if (!open.value) return quiz.waiting
+  return submitted.value ? quiz.submitted(letters(submitted.value.choice)) : quiz.open
 })
 
 function toggle(i: number): void {
@@ -115,19 +118,19 @@ function setOpen(next: boolean): void {
               <span class="pm-quiz__letter">{{ optionLetter(i) }}</span>
               <span>{{ option }}</span>
             </label>
-            <span v-if="showTally" class="pm-quiz__count">{{ result.counts[i] }} 人</span>
+            <span v-if="showTally" class="pm-quiz__count">{{ t.people(result.counts[i]!) }}</span>
           </li>
         </ol>
         <p class="pm-classroom-actions">
           <button v-if="!presenter" type="submit" :disabled="!canAnswer || choice.length === 0">
-            提交
+            {{ t.quiz.submit }}
           </button>
           <template v-if="presenter && status === 'active'">
             <button v-if="!open" type="button" @click="setOpen(true)">
-              开放作答
+              {{ t.quiz.openButton }}
             </button>
             <button v-else type="button" @click="setOpen(false)">
-              关闭作答
+              {{ t.quiz.closeButton }}
             </button>
           </template>
         </p>
@@ -136,10 +139,10 @@ function setOpen(next: boolean): void {
         {{ statusText }}
       </p>
       <p v-if="showTally" class="pm-quiz__tally">
-        已作答 {{ result.respondents }} 人，答对 {{ result.correct }} 人
+        {{ t.quiz.tally(result.respondents, result.correct) }}
       </p>
       <p v-if="presenter && late.length" class="pm-quiz__late">
-        关闭后送达的作答 {{ late.length }} 份，未计入
+        {{ t.quiz.late(late.length) }}
       </p>
       <p v-if="failure" class="pm-classroom-error" role="alert">
         {{ failure }}

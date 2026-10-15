@@ -12,9 +12,10 @@ in their frontmatter: presmium: { presmium.session: { server: ws://<host>:<port>
                       <dir>/.presmium/classroom/<room>.json (default: the working directory)
   -h, --help          show this help
 
-The server does not authenticate participants: run it on the classroom's own
-network. Anyone with a join link can write to that classroom; only the window
-that created a classroom can archive it.`
+Run it on the classroom's own network: anyone with a join link can join. Only
+the window that created a classroom can end or archive it, open and close its
+quizzes or move its learners; the others write only their own answers,
+questions, votes and submissions.`
 
 /** Runs the server until it is stopped; returns the exit code on a usage error. */
 export async function main(argv: string[]): Promise<number | undefined> {

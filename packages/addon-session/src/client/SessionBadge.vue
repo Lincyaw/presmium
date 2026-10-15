@@ -2,9 +2,11 @@
 // A learner's classroom controls, over everything (also over the present view): join a classroom from
 // a link without a name, follow the presenter or browse alone, and see when the classroom has ended.
 import { computed, ref } from 'vue'
+import { useMessages } from './locale.ts'
 import { useClassroom } from './use.ts'
 
 const { session, snapshot } = useClassroom()
+const t = useMessages()
 const name = ref('')
 const busy = ref(false)
 
@@ -21,36 +23,36 @@ async function join(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="snapshot && shown" class="pm-session-badge" role="region" aria-label="课堂状态" :data-status="snapshot.status" :data-follow="snapshot.follow">
+  <div v-if="snapshot && shown" class="pm-session-badge" role="region" :aria-label="t.badge" :data-status="snapshot.status" :data-follow="snapshot.follow">
     <form v-if="snapshot.status === 'idle'" class="pm-session-badge__row" @submit.prevent="join">
-      <span>{{ snapshot.error ?? `加入课堂 ${snapshot.invitation}` }}</span>
-      <input v-model="name" aria-label="昵称" placeholder="昵称" maxlength="40" required>
+      <span>{{ snapshot.error ?? t.joinRoom(snapshot.invitation ?? '') }}</span>
+      <input v-model="name" :aria-label="t.nickname" :placeholder="t.nickname" maxlength="40" required>
       <button type="submit" :disabled="busy">
-        加入课堂
+        {{ t.join }}
       </button>
     </form>
     <div v-else-if="snapshot.status === 'ended'" class="pm-session-badge__row">
-      <strong>课堂已结束</strong>
+      <strong>{{ t.status.ended }}</strong>
       <button type="button" @click="session?.leave()">
-        离开
+        {{ t.leave }}
       </button>
     </div>
     <div v-else-if="snapshot.connection !== 'connected'" class="pm-session-badge__row">
-      正在连接课堂服务…
+      {{ t.status.connecting }}
     </div>
     <div v-else-if="snapshot.follow === 'follow'" class="pm-session-badge__row">
-      <span>正在跟随主讲</span>
+      <span>{{ t.followingPresenter }}</span>
       <button type="button" @click="session?.setFollow('free')">
-        自主浏览
+        {{ t.browseAlone }}
       </button>
     </div>
     <div v-else class="pm-session-badge__row">
-      <span>自主浏览中</span>
+      <span>{{ t.browsingAlone }}</span>
       <span v-if="snapshot.presenterCursor" class="pm-session-badge__presenter">
-        主讲在第 {{ snapshot.presenterCursor.slide }} 节第 {{ snapshot.presenterCursor.step }} 步
+        {{ t.presenterAt(snapshot.presenterCursor.slide, snapshot.presenterCursor.step) }}
       </span>
       <button type="button" @click="session?.setFollow('follow')">
-        回到主讲进度
+        {{ t.backToPresenter }}
       </button>
     </div>
   </div>

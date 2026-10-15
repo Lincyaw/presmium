@@ -90,10 +90,37 @@ export function mediaMdast(elements: MediaElement[], url: (file: MediaElement['f
   }
 }
 
-const LABELS: Record<MediaKind, string> = { video: '视频', audio: '音频', animation: '动图' }
-
-/** Static content for renderers without the media element (a notebook): a link to the file, named by the caption. */
-export function mediaFallback(kind: MediaKind, url: string, caption?: string): MdastNode {
-  const name = caption || `${LABELS[kind]}：${url.split('/').pop() ?? url}`
+/** Static content for renderers without the media element (a notebook, an export): a link to the file, named by the caption or the file name. */
+export function mediaFallback(url: string, caption?: string): MdastNode {
+  const name = caption || url.split(/[?#]/)[0]!.split('/').pop() || url
   return { type: 'root', children: [{ type: 'paragraph', children: [{ type: 'link', url, children: [{ type: 'text', value: name }] }] }] }
+}
+
+/** An online media file: an `http(s)://` URL, which the media directives use as it is. */
+export function isRemote(path: string): boolean {
+  return /^https?:\/\//i.test(path)
+}
+
+const YOUTUBE_ID = /^[\w-]{11}$/
+
+/**
+ * The id of a YouTube video, from the id itself or a link to the video
+ * (`youtube.com/watch?v=`, `youtu.be/`, `youtube.com/embed/`, `youtube.com/shorts/`).
+ */
+export function youtubeId(value: string): string | undefined {
+  const text = value.trim()
+  if (YOUTUBE_ID.test(text)) return text
+  let url: URL
+  try {
+    url = new URL(text)
+  } catch {
+    return undefined
+  }
+  const host = url.hostname.replace(/^(www\.|m\.)/, '')
+  const id = host === 'youtu.be'
+    ? url.pathname.slice(1)
+    : /^youtube(-nocookie)?\.com$/.test(host)
+      ? url.searchParams.get('v') ?? /^\/(?:embed|shorts|live)\/([^/]+)/.exec(url.pathname)?.[1]
+      : undefined
+  return id && YOUTUBE_ID.test(id) ? id : undefined
 }

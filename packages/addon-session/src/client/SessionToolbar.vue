@@ -3,11 +3,13 @@
 // It also places the learner's badge on the page.
 import { onBeforeUnmount, ref } from 'vue'
 import { shortStatus, statusText } from '../domain/index.ts'
+import { useMessages } from './locale.ts'
 import SessionBadge from './SessionBadge.vue'
 import SessionPanel from './SessionPanel.vue'
 import { claimBadge, useClassroom } from './use.ts'
 
 const { snapshot } = useClassroom()
+const t = useMessages()
 const open = ref(false)
 const badge = claimBadge()
 onBeforeUnmount(badge.release)
@@ -18,18 +20,18 @@ onBeforeUnmount(badge.release)
     <button
       type="button"
       class="pm-session-toolbar__button"
-      :title="statusText(snapshot)"
+      :title="statusText(snapshot, t)"
       :aria-expanded="open"
       :data-status="snapshot.status"
       @click="open = !open"
     >
       <span class="pm-session-toolbar__dot" :data-connection="snapshot.server ? snapshot.connection : 'none'" aria-hidden="true" />
-      课堂<span class="pm-session-toolbar__state">{{ shortStatus(snapshot) }}</span>
+      {{ t.classroom }}<span class="pm-session-toolbar__state">{{ shortStatus(snapshot, t) }}</span>
     </button>
-    <div v-if="open" class="pm-session-popover" role="dialog" aria-label="课堂">
+    <div v-if="open" class="pm-session-popover" role="dialog" :aria-label="t.classroom">
       <SessionPanel />
       <button type="button" class="pm-session-popover__close" @click="open = false">
-        关闭
+        {{ t.close }}
       </button>
     </div>
     <Teleport v-if="badge.owns.value" to="body">

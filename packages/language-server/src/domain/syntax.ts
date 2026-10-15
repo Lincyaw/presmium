@@ -61,12 +61,13 @@ export interface AnchorRef {
 }
 
 /**
- * The anchor on a fence line: the first word of the argument of an anchor
- * directive, or of any directive when it starts with one of `schemes`.
+ * The anchor on a fence line: the argument of an anchor directive (a
+ * `pattern:` anchor may hold spaces), or the first word of the argument of
+ * any directive when it starts with one of `schemes`.
  */
 export function anchorAt(lines: readonly string[], line: number, schemes: readonly string[] = []): AnchorRef | undefined {
   const fence = fenceAt(lines, line)
-  const word = fence?.arg.split(/\s/)[0] ?? ''
+  const word = (fence && ANCHOR_DIRECTIVES.has(fence.name) ? fence.arg : fence?.arg.split(/\s/)[0]) ?? ''
   const colon = word.indexOf(':')
   if (!fence || colon <= 0) return undefined
   const scheme = word.slice(0, colon)

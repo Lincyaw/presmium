@@ -1,5 +1,6 @@
 import { defineCustomElement, h, ref } from 'vue'
 import { DEMO_COUNTER_TAG } from '../domain/index.ts'
+import { messages } from './locale.ts'
 
 /**
  * Demo web component (P-43): a counter whose state lives in the element, so
@@ -7,13 +8,14 @@ import { DEMO_COUNTER_TAG } from '../domain/index.ts'
  */
 const DemoCounter = defineCustomElement({
   props: {
-    label: { type: String, default: '计数' },
+    /** Default: "count" in the page's language. */
+    label: { type: String },
     start: { type: Number, default: 0 },
   },
   setup(props) {
     const count = ref(props.start)
     return () => h('button', { type: 'button', part: 'button', onClick: () => count.value++ }, [
-      `${props.label}：`,
+      `${props.label ?? messages().counter}${messages().colon}`,
       h('output', count.value),
     ])
   },

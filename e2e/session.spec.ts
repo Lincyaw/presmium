@@ -41,10 +41,11 @@ test('without a classroom server the deck shows and reads as before, and the ses
   await page.goto(`${WEB}/session.html?view=presenter&section=session`)
   await sessionPlugins()
 
-  // The slides: the presenter view's panel says the same; the slides still step.
+  // The slides: the presenter view's panel says the same (in the slides' language); the slides still step.
   await page.goto(`${SLIDES}/presenter/session`)
   await sessionPlugins()
-  await expect(page.locator('[data-panel="presmium.session"]').getByRole('status')).toHaveText(/^未连接/)
+  await expect(page.locator('[data-panel="presmium.session"] .pm-session')).toHaveAttribute('data-connection', 'offline')
+  await expect(page.locator('[data-panel="presmium.session"] .pm-session')).toHaveAttribute('data-status', 'idle')
   await page.goto(`${SLIDES}/session`)
   await expect(page.locator('.slidev-page').getByRole('heading', { name: '课堂会话' })).toBeVisible()
   await page.keyboard.press('ArrowRight')
@@ -110,6 +111,7 @@ function writeDeck(server: string): string {
   for (const page of ['session.md', 'web.md']) cpSync(resolve('examples/demo/pages', page), join(deck, 'pages', page))
   writeFileSync(join(deck, 'lecture.md'), `---
 title: Presmium Classroom
+lang: zh-CN
 plugins:
   - '@presmium/slidev-addon-core'
   - '@presmium/slidev-addon-stage'
@@ -231,6 +233,27 @@ test.describe('a classroom', () => {
     await panel.getByRole('button', { name: '结束课堂' }).click()
     await expect(badge(learner)).toContainText('课堂已结束')
     await expect(panel.getByRole('status')).toHaveText('课堂已结束')
+    await close()
+  })
+
+  test('a learner who opens the bare join link of the QR code gives a nickname and joins', async ({ browser }) => {
+    const { presenter, learner, close } = await people(browser)
+    await presenter.goto(`${web.url}/session.html`)
+    await panelButton(presenter).click()
+    const panel = presenter.getByRole('dialog', { name: '课堂' })
+    await panel.getByLabel('昵称').fill('王老师')
+    await panel.getByRole('button', { name: '创建课堂' }).click()
+    await expect(panel.getByRole('img', { name: '加入课堂的二维码' }).locator('svg')).toBeVisible()
+    // The link the QR code holds, without a name.
+    const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
+    const room = new URL(link).searchParams.get('room')!
+
+    await learner.goto(link)
+    await expect(badge(learner)).toContainText(`加入课堂 ${room}`)
+    await badge(learner).getByLabel('昵称').fill('小刚')
+    await badge(learner).getByRole('button', { name: '加入课堂' }).click()
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+    await expect(panel.getByRole('list', { name: '参与者' })).toContainText('小刚')
     await close()
   })
 

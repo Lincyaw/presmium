@@ -4,6 +4,7 @@
  * (answers, questions, votes, notes) keep that place, so the presenter view
  * lists them by place in both forms.
  */
+import type { ClassroomMessages } from './messages.ts'
 
 /** The place of a component, set by the `classroom-places` pass as the prop `place`. */
 export interface Place {
@@ -22,8 +23,8 @@ export function placeKey(place: Pick<Place, 'section' | 'block'>): string {
 }
 
 /** `第 3 节 · 标题`, with the block when it has a label (a generated id means nothing to a reader). */
-export function placeText(place: { index: number, title: string, block?: string }): string {
-  return `第 ${place.index} 节 · ${place.title}${place.block && isLabel(place.block) ? ` · ${place.block}` : ''}`
+export function placeText(place: { index: number, title: string, block?: string }, t: ClassroomMessages): string {
+  return t.place(place.index, place.title, place.block && isLabel(place.block) ? place.block : undefined)
 }
 
 /**
