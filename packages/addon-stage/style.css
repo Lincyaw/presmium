@@ -1,0 +1,74 @@
+/* P-01 basic content: tables and footnotes inside slides. */
+.slidev-layout table {
+  border-collapse: collapse;
+}
+.slidev-layout :is(th, td) {
+  padding: 0.25em 0.75em;
+  border-bottom: 1px solid rgba(125, 125, 125, 0.3);
+}
+.slidev-layout th {
+  border-bottom-width: 2px;
+}
+.slidev-layout .footnotes-sep,
+.slidev-layout .footnote-backref {
+  display: none;
+}
+.slidev-layout .footnotes {
+  position: absolute;
+  left: 3.5rem;
+  right: 3.5rem;
+  bottom: 1rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(125, 125, 125, 0.3);
+  font-size: 0.7em;
+  opacity: 0.8;
+}
+.slidev-layout .footnotes :is(ol, p) {
+  margin: 0;
+}
+
+/* P-02 step notes: with [click] markers, the current step stands out and the others recede. */
+.slidev-note-with-clicks :is(p, li) {
+  padding: 0.15em 0.5em;
+  border-radius: 0.25rem;
+}
+.slidev-note-with-clicks :is(p, li):not(.slidev-note-fade, li p) {
+  background: rgba(139, 92, 246, 0.12);
+  box-shadow: inset 3px 0 0 #8b5cf6;
+}
+.slidev-note-with-clicks .slidev-note-fade {
+  color: rgba(136, 136, 136, 0.55);
+}
+.dark .slidev-note-with-clicks .slidev-note-fade {
+  color: rgba(161, 161, 161, 0.5);
+}
+
+/* P-03 audience screen: black screen, frozen frame, and the presenter's reminder. */
+.pm-stage-black {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #000;
+  cursor: none;
+}
+.pm-stage-frozen {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+}
+.pm-stage-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 50;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.pm-stage-badge[data-mode='frozen'] {
+  background: #2563eb;
+}
