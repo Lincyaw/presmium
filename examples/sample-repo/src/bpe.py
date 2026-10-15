@@ -5,12 +5,12 @@
 
 
 # #region get_stats
+from collections import Counter
+
+
 def get_stats(ids):
     """统计每一对相邻 id 出现的次数。"""
-    counts = {}
-    for pair in zip(ids, ids[1:]):
-        counts[pair] = counts.get(pair, 0) + 1
-    return counts
+    return Counter(zip(ids, ids[1:]))
 # #endregion get_stats
 
 
@@ -71,12 +71,12 @@ def decode(ids, merges):
 
 
 if __name__ == "__main__":
-    corpus = "low lower lowest newer newest widest"
+    corpus = " ".join(["low"] * 5 + ["lower"] * 2 + ["newest"] * 6 + ["widest"] * 3)
     merges = train(corpus, 256 + 10)
     vocab = {i: bytes([i]) for i in range(256)}
     for (a, b), new_id in merges.items():
         vocab[new_id] = vocab[a] + vocab[b]
         print(f"{new_id}: {vocab[new_id].decode('utf-8')!r}")
-    ids = encode("lowest", merges)
-    print("lowest ->", [vocab[i].decode("utf-8") for i in ids], ids)
-    assert decode(ids, merges) == "lowest"
+    ids = encode("slowest", merges)
+    print("slowest ->", [vocab[i].decode("utf-8") for i in ids], ids)
+    assert decode(ids, merges) == "slowest"
