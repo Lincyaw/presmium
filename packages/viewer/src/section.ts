@@ -3,7 +3,7 @@ import type { InjectionKey, PropType, Ref, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRef } from 'vue'
 import { BlockView } from './block.ts'
 import { SECTION_CONTEXT } from './context.ts'
-import { FINAL_STEP, narrationAt, sectionDiagnostics, stepAtLine } from './domain/index.ts'
+import { FINAL_STEP, isChapterTitle, narrationAt, sectionDiagnostics, stepAtLine } from './domain/index.ts'
 import type { Position } from './domain/index.ts'
 import { messages } from './i18n.ts'
 import { useViewer } from './viewer.ts'
@@ -142,9 +142,32 @@ function blockViews(blocks: IRBlock[], section: IRSection, step: number, expande
 }
 
 /**
- * One section in a page view: its heading (the anchor of deep links), its
- * blocks in the section's layout, compile diagnostics in a dev server, and
- * links to the previous and next section.
+ * The blocks of a section in the document layout: narration as body text,
+ * each run of visual blocks (what the slide shows) together on a board.
+ */
+function documentBlocks(section: IRSection, step: number): VNodeChild[] {
+  const children: VNodeChild[] = []
+  let board: IRBlock[] = []
+  const flush = () => {
+    if (board.length) children.push(h('div', { key: `board:${board[0]!.id}`, class: 'pm-board' }, blockViews(board, section, step, true)))
+    board = []
+  }
+  for (const block of section.blocks) {
+    if (block.role === 'visual') {
+      board.push(block)
+      continue
+    }
+    flush()
+    children.push(h(BlockView, { key: block.id, block, section, step, expanded: true }))
+  }
+  flush()
+  return children
+}
+
+/**
+ * One section in a page view: its heading (the anchor of deep links; a
+ * title for the cover and chapter titles, a section heading otherwise), its
+ * blocks in the section's layout and compile diagnostics in a dev server.
  */
 export const SectionView = defineComponent({
   name: 'PmSectionView',
@@ -167,26 +190,21 @@ export const SectionView = defineComponent({
     })
     onBeforeUnmount(() => untrack?.())
 
-    const neighbours = computed(() => {
-      const { sections } = viewer.doc.value
-      const i = sections.findIndex(s => s.id === props.section.id)
-      return { prev: sections[i - 1], next: sections[i + 1] }
-    })
-    const href = (id: string) => viewer.options.sectionHref?.(id) ?? `#${id}`
+    const heading = computed(() => (isChapterTitle(viewer.doc.value, props.section) ? 'h1' : 'h2'))
 
     return () => {
       const { section, layout } = props
       const t = messages().section
       const current = step.value
       const problems = viewer.options.diagnostics ? sectionDiagnostics(section, viewer.doc.value.diagnostics) : []
-      const body = layout === 'scrolly'
+      // A section with nothing to show on the stage (e.g. a chapter's opening words) reads as text.
+      const body = layout === 'scrolly' && section.blocks.some(b => b.role === 'visual')
         ? [
-            h('div', { class: 'pm-stage' }, blockViews(section.blocks.filter(b => b.role === 'visual'), section, current, false)),
+            h('div', { class: 'pm-stage pm-board' }, blockViews(section.blocks.filter(b => b.role === 'visual'), section, current, false)),
             h('div', { class: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) =>
               h('div', { 'key': k, 'class': ['pm-step', { 'pm-step--current': k === current }], 'data-step': k }, blockViews(narrationAt(section, k), section, current, false)))),
           ]
-        : [h('div', { class: 'pm-section__body' }, blockViews(section.blocks, section, current, true))]
-      const { prev, next } = neighbours.value
+        : [h('div', { class: 'pm-section__body' }, documentBlocks(section, current))]
       return h('section', {
         'ref': el,
         'class': ['pm-section', `pm-section--${layout}`, { 'pm-section--error': problems.some(p => p.severity === 'error') }],
@@ -194,8 +212,9 @@ export const SectionView = defineComponent({
         'data-index': section.index,
         'data-step': layout === 'scrolly' ? current : undefined,
       }, [
-        h('h2', { id: section.id, class: 'pm-section__title', tabindex: -1 }, [
+        h(heading.value, { id: section.id, class: 'pm-section__title', tabindex: -1 }, [
           section.title,
+          viewer.options.sectionHeading?.(section, current) ?? null,
           h('a', { 'class': 'header-anchor', 'href': `#${section.id}`, 'aria-label': t.anchor(section.title) }, '​'),
         ]),
         viewer.options.openSource
@@ -209,11 +228,6 @@ export const SectionView = defineComponent({
           ? h('ul', { class: 'pm-diagnostics', role: 'alert' }, problems.map((p, i) => h('li', { 'key': i, 'data-severity': p.severity }, `${p.severity}: ${p.message}`)))
           : null,
         ...body,
-        h('nav', { 'class': 'pm-section-nav', 'aria-label': t.nav }, [
-          prev ? h('a', { class: 'pm-section-nav__prev', href: href(prev.id), rel: 'prev' }, [h('span', t.prev), h('strong', prev.title)]) : h('span'),
-          next ? h('a', { class: 'pm-section-nav__next', href: href(next.id), rel: 'next' }, [h('span', t.next), h('strong', next.title)]) : h('span'),
-        ]),
-        viewer.options.sectionFooter?.(section, current) ?? null,
       ])
     }
   },

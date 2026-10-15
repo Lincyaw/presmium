@@ -1,0 +1,16 @@
+{
+  "name": "presmium-fixture-web",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/web.spec.ts and e2e/viewer.spec.ts: a component that steps",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

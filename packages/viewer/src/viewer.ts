@@ -11,8 +11,8 @@ export interface ViewerOptions {
   renderer?: string
   /** Link to a section, e.g. its page and anchor. Default `#<id>`. */
   sectionHref?(id: string): string
-  /** Extra content at the end of a section, e.g. a link to the same place in another form. */
-  sectionFooter?(section: IRSection, step: number): VNodeChild
+  /** Extra content in a section's heading, after its title: e.g. a small link to the same place in another form. */
+  sectionHeading?(section: IRSection, step: number): VNodeChild
   /** Shows compile diagnostics on the sections they concern (dev servers). */
   diagnostics?: boolean
   /** Called when a page view should show a position that is not on the current page. */
