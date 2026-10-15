@@ -42,7 +42,9 @@ presmium/
 │   ├── addon-publish/       @presmium/slidev-addon-publish
 │   ├── addon-session/       @presmium/slidev-addon-session      会话与网络同步
 │   ├── addon-classroom/     @presmium/slidev-addon-classroom
-│   └── classroom-server/    @presmium/classroom-server          y-websocket 服务
+│   ├── classroom-server/    @presmium/classroom-server          y-websocket 服务
+│   ├── language-server/     @presmium/language-server           语言服务（诊断、跳转、悬停、补全、预览同步）
+│   └── vscode/              presmium-vscode                     VS Code 扩展（唯一预打包的包）
 ├── examples/
 │   ├── demo/                示例文稿，端到端测试的对象
 │   └── sample-repo/         被示例文稿引用的“业务代码”
@@ -267,3 +269,10 @@ presmium: { ...各插件全局配置 }
 | P-70 至 P-74 | web | 端到端：章节与备注、搜索、深链接、滚动叙事、形态切换 |
 
 N-04、N-07 在端到端测试中以 Chromium 覆盖，其他浏览器在发布前手工验证。
+
+## 9. 已知风险
+
+| 风险 | 位置 | 缓解 |
+|---|---|---|
+| 开发模式的网页搜索拦截了 VitePress 1.6 的内部虚拟模块 `/@localSearchIndex`、`/@localSearchIndexroot`（非公开接口），以绕过 VitePress 在开发模式下按错误路径重建索引的问题 | `packages/web/src/node/vite.ts` | VitePress 版本固定为 1.6.4；端到端用例“a keyword written while the server runs can be searched”在升级后会暴露变化；上游修复后移除该拦截 |
+

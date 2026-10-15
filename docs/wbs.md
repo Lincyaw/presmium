@@ -377,7 +377,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 网页是主媒介，WP-30、WP-31 的课堂功能必须同时在网页与幻灯片中可用：会话与同步不只接入 Slidev 的 `addSyncMethod`，网页宿主中的“跟随主讲”按章节与步骤导航；测验、练习、提问等以指令声明（`{quiz}`、`{exercise}`、`{question}`），notebook 中降级为静态内容。
 
-## WP-50 语言服务与预览同步（M4）
+## WP-50 语言服务与预览同步（M4，已完成）
 
 **拥有**：`packages/language-server/`、`packages/vscode/`。
 
