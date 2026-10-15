@@ -428,6 +428,30 @@ importers:
         specifier: ^7.8.0
         version: 7.8.0
 
+  packages/language-server:
+    dependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@presmium/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@presmium/web':
+        specifier: workspace:*
+        version: link:../web
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+      vscode-languageserver:
+        specifier: 10.1.2
+        version: 10.1.2
+      vscode-languageserver-textdocument:
+        specifier: 1.0.15
+        version: 1.0.15
+
   packages/render-notebook:
     dependencies:
       '@presmium/kernel':
@@ -514,6 +538,22 @@ importers:
       '@types/mdast':
         specifier: 4.0.4
         version: 4.0.4
+
+  packages/vscode:
+    dependencies:
+      '@presmium/language-server':
+        specifier: workspace:*
+        version: link:../language-server
+      vscode-languageclient:
+        specifier: 10.1.2
+        version: 10.1.2
+    devDependencies:
+      '@types/vscode':
+        specifier: 1.91.0
+        version: 1.91.0
+      esbuild:
+        specifier: 0.21.5
+        version: 0.21.5
 
   packages/web:
     dependencies:
@@ -2360,6 +2400,9 @@ packages:
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
+
+  '@types/vscode@1.91.0':
+    resolution: {integrity: sha512-PgPr+bUODjG3y+ozWUCyzttqR9EHny9sPAfJagddQjDwdtf66y2sDKJMnFZRuzBA2YtBGASqJGPil8VDUPvO6A==}
 
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
@@ -6016,6 +6059,10 @@ packages:
     resolution: {integrity: sha512-qETYf9PCl1lVfwR+oBmMfc4vP2nqLNA35ABxorw3j06+xlKRgDVxbLgKm4Y/xPL0YWdeDjLoI4ImICIT3nB0zQ==}
     engines: {node: '>=14.0.0'}
 
+  vscode-languageclient@10.1.2:
+    resolution: {integrity: sha512-cOv5SMvtAhfVeo5m2r9L2rVHAD0J5CFOsmvH1WgNmPaI61VYjJNc3XUDLOKeFSDtWoAXIEoK6KetuBEL/3hErg==}
+    engines: {vscode: ^1.91.0}
+
   vscode-languageserver-protocol@3.18.4:
     resolution: {integrity: sha512-CCXbyr99dafRJzJH/0Ryk7ly5T8XPmSR0//OuF2w4m+9JiOin7zcAT5iET8GRE7Z9taFBejb3GbM0a0mbjdbrg==}
 
@@ -8829,6 +8876,8 @@ snapshots:
   '@types/unist@2.0.11': {}
 
   '@types/unist@3.0.3': {}
+
+  '@types/vscode@1.91.0': {}
 
   '@types/web-bluetooth@0.0.21': {}
 
@@ -13277,6 +13326,13 @@ snapshots:
       - msw
 
   vscode-jsonrpc@9.0.3: {}
+
+  vscode-languageclient@10.1.2:
+    dependencies:
+      minimatch: 10.2.6
+      semver: 7.8.5
+      vscode-languageserver-protocol: 3.18.4
+      vscode-languageserver-textdocument: 1.0.15
 
   vscode-languageserver-protocol@3.18.4:
     dependencies:
