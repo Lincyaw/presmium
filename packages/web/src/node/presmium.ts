@@ -1,6 +1,8 @@
 import type { PresmiumNodePlugin } from '@presmium/kernel'
+import { WEB_ID } from '../domain/index.ts'
+import { renderer } from './renderer.ts'
 
-/** The web form converts decks with its own command (`presmium-web`); it adds no checks or transforms. */
-const plugin: PresmiumNodePlugin = { id: 'presmium.web' }
+/** The web renderer plugin; the compiler loads it for the renderer id `web`. */
+const plugin: PresmiumNodePlugin = { id: WEB_ID, renderer }
 
 export default plugin

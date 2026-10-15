@@ -18,6 +18,8 @@ renderers:
   web: {}
   slides:
     theme: default
+    # The web form's addon: the "read on the web" button of the slides form (P-74).
+    addons: ['@presmium/web']
   notebook: {}
 ---
 
@@ -30,4 +32,7 @@ renderers:
 这是示例文稿的封面。每个上下文的演示章节在 pages/ 目录中，由下面的 `{include}` 引入。
 
 ```{include} pages/core.md
+```
+
+```{include} pages/web.md
 ```

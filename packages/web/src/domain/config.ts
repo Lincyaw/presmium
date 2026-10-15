@@ -1,32 +1,30 @@
-/** Id under which the web form reads its options from `presmium` config. */
+/** Plugin id of the web renderer; its configuration is `presmium: { presmium.web: {...} }`. */
 export const WEB_ID = 'presmium.web'
 
-/** `document` (default) shows every step; `scrolly` pins the slide and advances steps as the notes scroll. */
-export type SectionLayout = 'document' | 'scrolly'
-
-export interface WebOptions {
-  /** Base URL of the slides form, for "open in slides" links. */
+/** Links between the forms (P-74), shared with the slides form's "read on the web" button. */
+export interface FormOptions {
+  /** Whether the deck has a slides form to link to. */
+  slides?: boolean
+  /** Base URL of the slides form; default: the `slides` directory next to the web site. */
   slidesUrl?: string
-  /** Base URL of the web form, for the "read on the web" button of the slides form. */
+  /** Base URL of the web form; default: the `web` directory next to the slides. */
   webUrl?: string
-  /** Slidev `routerMode` of the deck; `hash` puts slide numbers after `#/`. */
+  /** Slidev `routerMode` of the slides form; `hash` puts slide numbers after `#/`. */
   routerMode?: 'history' | 'hash'
+}
+
+/** `renderers.web` of the frontmatter. */
+export interface WebRendererConfig {
+  /** Public base path of the site (default `/`). */
+  base: string
+  /** Port of the dev server (default: VitePress's). */
+  port?: number
+  /** Site language (default `zh-CN`). */
+  lang: string
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-/**
- * The web options of one head- or frontmatter: `presmium: { presmium.web: {...} }`,
- * also accepted under the short key `presmium: { web: {...} }`.
- */
-export function webConfig(matter: unknown): Record<string, unknown> {
-  const presmium = isRecord(matter) && isRecord(matter.presmium) ? matter.presmium : {}
-  return {
-    ...(isRecord(presmium.web) ? presmium.web : {}),
-    ...(isRecord(presmium[WEB_ID]) ? presmium[WEB_ID] : {}),
-  }
 }
 
 function url(value: unknown): string | undefined {
@@ -34,19 +32,33 @@ function url(value: unknown): string | undefined {
 }
 
 /**
- * Deck-wide web options. Each URL comes from the headmatter, or else from the
- * first page frontmatter that declares it.
+ * Form links from the deck's `presmium` configuration (`presmium.web`, also
+ * accepted under the short key `web`) and its `renderers`: there is a slides
+ * form when `slidesUrl` is set, `renderers.slides` is configured, or no
+ * renderer is (then every installed renderer builds). The slides renderer's
+ * `routerMode` shapes the slide URLs.
  */
-export function webOptions(matters: unknown[]): WebOptions {
-  const configs = matters.map(webConfig)
-  const first = (key: string) => configs.map(c => url(c[key])).find(Boolean)
-  const head = matters[0]
-  const routerMode = isRecord(head) && head.routerMode === 'hash' ? 'hash' : 'history'
-  return { slidesUrl: first('slidesUrl'), webUrl: first('webUrl'), routerMode }
+export function formOptions(presmium: unknown, renderers?: unknown): FormOptions {
+  const all = isRecord(presmium) ? presmium : {}
+  const config = { ...(isRecord(all.web) ? all.web : {}), ...(isRecord(all[WEB_ID]) ? all[WEB_ID] : {}) }
+  const configured = isRecord(renderers) ? renderers : {}
+  const slides = configured.slides
+  const slidesUrl = url(config.slidesUrl)
+  return {
+    slides: Boolean(slidesUrl) || slides !== undefined || Object.keys(configured).length === 0,
+    slidesUrl,
+    webUrl: url(config.webUrl),
+    routerMode: isRecord(slides) && slides.routerMode === 'hash' ? 'hash' : 'history',
+  }
 }
 
-/** A slide's layout in the web form: its frontmatter, else the headmatter, else `document`. */
-export function sectionLayout(frontmatter: unknown, headmatter: unknown): SectionLayout {
-  const layout = webConfig(frontmatter).layout ?? webConfig(headmatter).layout
-  return layout === 'scrolly' ? 'scrolly' : 'document'
+/** The web renderer's options from `renderers.web`. */
+export function rendererConfig(config: Record<string, unknown>): WebRendererConfig {
+  const base = typeof config.base === 'string' ? `/${config.base.replace(/^\/+|\/+$/g, '')}/`.replace('//', '/') : '/'
+  const port = Number(config.port)
+  return {
+    base,
+    port: Number.isInteger(port) && port > 0 ? port : undefined,
+    lang: typeof config.lang === 'string' ? config.lang : 'zh-CN',
+  }
 }

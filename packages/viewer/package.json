@@ -6,11 +6,22 @@
   "description": "IR runtime: dynamic rendering of the IR in the browser, runtime views, live updates",
   "exports": {
     ".": "./src/index.ts",
+    "./domain": "./src/domain/index.ts",
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
     "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "hast-util-to-html": "9.0.5",
+    "katex": "0.16.47",
+    "mdast-util-to-hast": "13.2.1",
+    "mermaid": "12.2.0",
+    "property-information": "7.2.0",
+    "shiki": "4.5.0",
     "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@types/hast": "3.0.5",
+    "@types/mdast": "4.0.4"
   }
 }

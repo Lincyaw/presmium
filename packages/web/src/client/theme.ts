@@ -1,24 +1,27 @@
-import { installHost, PmBoundary, registerPresmiumPlugin, startPresmium } from '@presmium/host'
-import type { PluginDefinition } from '@presmium/kernel'
+import { installHost, registerPresmiumPlugin, startPresmium } from '@presmium/host'
+import type { IRDocument, PluginDefinition } from '@presmium/kernel'
+import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
+import type { LiveUpdate, Position } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
-import { inBrowser, useData, useRouter, withBase } from 'vitepress'
+import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
-import { defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
-import { requestedSection, SERVICE_WORKER } from '../domain/index.ts'
-import type { FormLink } from '../domain/index.ts'
-import { installClicks } from './clicks.ts'
-import { installSlideContext } from './context.ts'
-import { createVitePressHost } from './host.ts'
-import { PmSection } from './section.ts'
+import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
+import { requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
+import type { FormOptions } from '../domain/index.ts'
+import { createViewerHost } from './host.ts'
+import { PresmiumPage, ViewMenu } from './page.ts'
 import './style.css'
 
-/** The deck's addon modules, imported lazily by the generated theme. */
-export interface AddonModules {
-  /** Component name to loader, from each addon's `components/` directory. */
+/** What the generated theme passes in: the IR and the deck's plugin modules, imported lazily. */
+export interface ThemeInput {
+  doc: IRDocument
+  /** Component name to loader, from each plugin's `components/` directory. */
   components: Record<string, () => Promise<unknown>>
-  /** Loaders of each addon's `src/client/plugin.ts`. */
+  /** Loaders of each plugin's `src/client/plugin.ts`. */
   plugins: (() => Promise<unknown>)[]
+  /** Loaders of each plugin's `src/client/viewer.ts`: views and renderers for the IR runtime. */
+  viewers?: (() => Promise<unknown>)[]
 }
 
 function isPluginDefinition(value: unknown): value is PluginDefinition {
@@ -32,7 +35,7 @@ function pluginsOf(module: unknown): PluginDefinition[] {
   return [...new Set(values.filter(isPluginDefinition))]
 }
 
-async function startKernel(loaders: AddonModules['plugins'], config: Record<string, unknown>): Promise<void> {
+async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>): Promise<void> {
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
@@ -42,12 +45,13 @@ async function startKernel(loaders: AddonModules['plugins'], config: Record<stri
 }
 
 /**
- * Addon components render in the browser only: they may use browser APIs that
- * the server render of VitePress does not have. Load and render errors stay
- * inside the component's error boundary.
+ * Plugin components render in the browser only: they may use browser APIs
+ * that the server render of VitePress does not have. They see Slidev's
+ * `$frontmatter` of their section rather than VitePress's of the page. The
+ * viewer puts them in an error boundary.
  */
 function clientOnly(name: string, load: () => Promise<unknown>): Component {
-  const loaded = defineAsyncComponent(() => load() as Promise<Component>)
+  const loaded = defineAsyncComponent(() => load().then(module => withSlideGlobals((module as { default: Component }).default)))
   return defineComponent({
     name,
     inheritAttrs: false,
@@ -56,11 +60,17 @@ function clientOnly(name: string, load: () => Promise<unknown>): Component {
       onMounted(() => {
         mounted.value = true
       })
-      return () => (mounted.value
-        ? h(PmBoundary, { name }, () => h(loaded, attrs, slots))
-        : h('span', { 'class': 'pm-client-only', 'data-component': name }))
+      return () => (mounted.value ? h(loaded, attrs, slots) : h('span', { 'class': 'pm-client-only', 'data-component': name }))
     },
   })
+}
+
+/** Installs the viewer plugins; one that fails to load is reported and left out. */
+async function loadViewerPlugins(loaders: NonNullable<ThemeInput['viewers']>): Promise<void> {
+  await Promise.all(loaders.map((load, i) => load().then(
+    module => void installViewerPlugin((module as { default?: unknown }).default, `viewer plugin ${i + 1}`),
+    error => console.error('[presmium] a viewer plugin failed to load', error),
+  )))
 }
 
 function registerServiceWorker(): void {
@@ -72,38 +82,89 @@ function registerServiceWorker(): void {
   else window.addEventListener('load', register, { once: true })
 }
 
-/** Default layout; `?slide=N` (from the slides form) opens the section of slide N. */
+/** Base URL of the slides form: configured, else the `slides` directory next to the site; none without a slides form. Browser only. */
+const slidesBase = ref<string>()
+/** Settles when the viewer plugins are installed, so their views can be opened by `?view=`. */
+let viewersReady: Promise<void> = Promise.resolve()
+
+/**
+ * Default layout plus the view menu in the navigation bar and the overlay
+ * views. `?slide=N` (from the slides form), `?section=<id>&step=<n>` and
+ * `?view=<id>` open a position and a view.
+ */
 const Layout = defineComponent({
   name: 'PresmiumLayout',
   setup() {
-    const router = useRouter()
+    const viewer = useViewer()
     const { theme } = useData()
-    onMounted(() => {
-      const links: FormLink[] = theme.value.presmium?.links ?? []
-      const link = requestedSection(location.search, links)
-      if (!link) return
-      history.replaceState(history.state, '', location.pathname)
-      void router.go(withBase(link))
+    onMounted(async () => {
+      const form: FormOptions = theme.value.presmium?.form ?? {}
+      if (form.slides) slidesBase.value = form.slidesUrl ?? new URL('../slides', new URL(withBase('/'), location.href)).href
+      const ask = requested(location.search, viewer.doc.value)
+      if (!ask.section && !ask.view) return
+      history.replaceState(history.state, '', location.pathname + location.hash)
+      if (ask.section) viewer.show({ section: ask.section, step: ask.step ?? 0 })
+      if (!ask.view) return
+      await viewersReady
+      if (getView(ask.view)) viewer.setView(ask.view)
     })
-    return () => h(DefaultTheme.Layout)
+    return () => h(DefaultTheme.Layout, null, {
+      'nav-bar-content-after': () => h(ViewMenu),
+      // Overlay views get the typography of the page body.
+      'layout-bottom': () => h('div', { class: 'vp-doc pm-overlay' }, [h(OverlayHost)]),
+    })
   },
 })
 
-/** The VitePress theme of the web form: default theme plus the document-form host. */
-export function createPresmiumTheme(addons: AddonModules): Theme {
+/** The VitePress theme of the web form: default theme, the IR runtime, the web host adapter. */
+export function createPresmiumTheme(input: ThemeInput): Theme {
   return {
     extends: DefaultTheme,
     Layout,
     enhanceApp({ app, router, siteData }) {
-      const presmium = siteData.value.themeConfig.presmium ?? {}
-      installHost(app, createVitePressHost())
-      installClicks(app)
-      installSlideContext(app, router, presmium.deck ?? {}, presmium.links ?? [])
-      app.component('PmSection', PmSection)
-      for (const [name, load] of Object.entries(addons.components)) app.component(name, clientOnly(name, load))
+      const form: FormOptions = siteData.value.themeConfig.presmium?.form ?? {}
+      const links = computed(() => sectionLinks(toPages(current.doc.value)))
+      const pageOf = (position: Position) => withBase((links.value[position.section] ?? '/').split('#')[0]!)
+      const current = createViewer(input.doc, {
+        renderer: 'web',
+        sectionHref: id => withBase(links.value[id] ?? `/#${id}`),
+        sectionFooter(section, step) {
+          if (!slidesBase.value) return null
+          return h('p', { class: 'pm-section__links' }, [
+            h('a', { class: 'pm-open-slides', href: slideUrl(slidesBase.value, form, section.index, step) }, '在幻灯片中打开'),
+          ])
+        },
+        diagnostics: import.meta.env.DEV,
+        // The dev server opens the file in the author's editor (K-11).
+        openSource: import.meta.env.DEV
+          ? source => void fetch(`${SOURCE_ENDPOINT}?file=${encodeURIComponent(source.file)}&line=${source.line}`)
+          : undefined,
+        navigate: position => void router.go(pageOf(position)),
+        openPresenter(position) {
+          const url = new URL(location.href)
+          url.hash = ''
+          url.search = `?view=presenter&section=${encodeURIComponent(position.section)}&step=${position.step}`
+          window.open(url.href, 'presmium-presenter', 'popup,width=1100,height=720')
+        },
+      })
+      installHost(app, createViewerHost(current))
+      installViewer(app, current)
+      app.component('PresmiumPage', PresmiumPage)
+      for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
-      void startKernel(addons.plugins, presmium.config ?? {})
+      viewersReady = loadViewerPlugins(input.viewers ?? [])
+      void startKernel(input.plugins, input.doc.config.presmium)
       if (import.meta.env.PROD) registerServiceWorker()
+      // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket. The site
+      // title and the sidebar follow the document here, so the config never changes and the page never reloads.
+      import.meta.hot?.on('presmium:update', (update: LiveUpdate) => {
+        current.update(update)
+        const doc = current.doc.value
+        const site = siteData.value
+        const nav = sidebar(doc, toPages(doc))
+        if (site.title === doc.meta.title && JSON.stringify(site.themeConfig.sidebar) === JSON.stringify(nav)) return
+        siteData.value = { ...site, title: doc.meta.title, themeConfig: { ...site.themeConfig, sidebar: nav } }
+      })
     },
   }
 }
