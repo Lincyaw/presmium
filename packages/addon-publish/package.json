@@ -21,7 +21,8 @@
     "@presmium/host": "workspace:*",
     "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "vue": "^3.5.42"
   },
   "devDependencies": {
     "@slidev/client": "53.0.0",
