@@ -256,6 +256,11 @@ export interface PresmiumNodePlugin {
   id: string
   resolvers?: AnchorResolver[]
   checks?: Check[]
+  /**
+   * Anchors the deck references through this plugin's syntax. `presmium check
+   * --update-lock` resolves them in the working tree and records them in the lock.
+   */
+  anchors?(ctx: CheckContext): AnchorString[] | Promise<AnchorString[]>
   transformMarkdown?(input: MarkdownTransformInput): string | Promise<string>
 }
 
