@@ -91,8 +91,8 @@ export interface IRBlock {
   role: BlockRole
   /**
    * Step at which a visual block appears, or to which a narration block
-   * belongs. After a revealed or spanning block B, the k-th narration block
-   * (0-based) belongs to `B.at + min(k, B.span)` (docs/ir.md 2.4).
+   * belongs. After a visual block B, the k-th narration block (0-based) up to
+   * the next visual block belongs to `B.at + min(k, B.span)` (docs/ir.md 2.4).
    */
   at: number
   /** Step at which the block disappears; undefined means it stays. */

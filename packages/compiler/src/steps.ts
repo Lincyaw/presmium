@@ -10,10 +10,10 @@
  *   at the last step used, unless it reveals, and takes the `span` steps after
  *   `at`: its internal steps always follow the steps before it, so it is not
  *   on screen at step 0 when earlier blocks reveal.
- * - Narration binds to the latest revealed or spanning block: the first
+ * - Narration binds to the nearest visual block before it: the first
  *   narration block after it to its `at`, the next one to `at + 1`, and so on
  *   up to `at + span`, so an author can write one paragraph per step. Before
- *   any such block, narration binds to step 0.
+ *   any visual block, narration binds to step 0.
  *
  * Also gives every block its id: its label, or `<kind>-<n>` numbered per kind
  * in source order. Generated ids are stable across recompiles of the same
@@ -44,7 +44,7 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
   })
 
   let last = 0
-  // The latest revealed or spanning block: where it appears, its span, and how many narration blocks followed it.
+  // The nearest visual block: where it appears, its span, and how many narration blocks followed it.
   let current = 0
   let currentSpan = 0
   let narrated = 0
@@ -65,7 +65,7 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
       : draft.span > 0 ? last
       : group !== undefined ? groups.get(group)!
       : 0
-    if (draft.role === 'visual' && (draft.reveal || draft.span > 0)) {
+    if (draft.role === 'visual') {
       current = at
       currentSpan = draft.span
       narrated = 0

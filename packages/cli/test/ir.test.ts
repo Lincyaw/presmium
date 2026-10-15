@@ -23,7 +23,7 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
       'list-1 visual 0+1',
       'paragraph-2 narration 0',
       'code-1 visual 0',
-      'paragraph-3 narration 1 only web,notebook',
+      'paragraph-3 narration 0 only web,notebook',
     ] },
     // A component spans its steps; a revealed {slide} appears whole at the next step; so does a revealed block.
     // One narration paragraph per internal step of the spanning block (ir.md 2.4).
