@@ -70,7 +70,6 @@ export function checkContext(compilation: Compilation): CheckContext {
     deckDir: compilation.deckDir,
     workspaceRoot: compilation.workspaceRoot,
     headmatter: compilation.frontmatter,
-    slides: compilation.slides,
     src: compilation.src,
     resolvers: compilation.resolvers,
     lock: compilation.lock.toJSON(),

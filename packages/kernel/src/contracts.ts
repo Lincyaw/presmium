@@ -5,7 +5,7 @@
  * changing or removing existing signatures requires updating docs/architecture.md.
  */
 
-import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererExtension } from './ir.ts'
+import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution } from './ir.ts'
 
 export const KERNEL_VERSION = '0.1.0'
 
@@ -210,54 +210,22 @@ export interface Finding {
   hint?: string
 }
 
-export interface DeckSlide {
-  /** 1-based slide number. */
-  index: number
-  /** Absolute path of the file that contains the slide. */
-  file: string
-  /** 1-based line where the slide starts in `file`. */
-  line: number
-  frontmatter: Record<string, unknown>
-  content: string
-  note?: string
-}
-
 export interface CheckContext {
   /** Absolute deck directory. */
   deckDir: string
   /** Absolute workspace root (git root, or deckDir when not in git). */
   workspaceRoot: string
   headmatter: Record<string, unknown>
-  /**
-   * One entry per IR section and source file (a section that continues in an
-   * included file has one entry per file, with the same `index`); `content` is
-   * the lines the section spans in `file`. MyST sections have no frontmatter.
-   */
-  slides: DeckSlide[]
   src: SourceReader
   resolvers: AnchorResolverRegistry
   lock: AnchorLockFile
-  /** The compiled deck, when the check runs on the compiler (docs/ir.md section 7). */
-  ir?: IRDocument
+  /** The compiled deck (docs/ir.md section 7). */
+  ir: IRDocument
 }
 
 export interface Check {
   id: string
   run(ctx: CheckContext): Promise<Finding[]>
-}
-
-export interface MarkdownTransformInput {
-  /** Markdown of one slide, without frontmatter. */
-  content: string
-  /** Absolute path of the source file. */
-  file: string
-  /** 1-based slide number. */
-  slide: number
-  mode: PresentationMode
-  deckDir: string
-  workspaceRoot: string
-  headmatter: Record<string, unknown>
-  frontmatter: Record<string, unknown>
 }
 
 /** Default export of each addon's `./presmium` entry. */
@@ -270,9 +238,6 @@ export interface PresmiumNodePlugin {
    * --update-lock` resolves them in the working tree and records them in the lock.
    */
   anchors?(ctx: CheckContext): AnchorString[] | Promise<AnchorString[]>
-  /** @deprecated v1 hook; replaced by `directives` and `passes` (docs/ir.md). */
-  transformMarkdown?(input: MarkdownTransformInput): string | Promise<string>
-  // --- v2: compiler and renderers (docs/ir.md) ---
   /** MyST directives this plugin adds to the source syntax. */
   directives?: DirectiveSpec[]
   /** IR passes run after the built-in passes, ordered by `order`. */
@@ -282,7 +247,7 @@ export interface PresmiumNodePlugin {
   /** A renderer this plugin provides (e.g. the web, slides or notebook renderer). */
   renderer?: Renderer
   /** Contributions to renderers provided by other plugins, keyed by renderer id. */
-  rendererExtensions?: Record<string, Omit<RendererExtension, 'plugin'>>
+  rendererExtensions?: Record<string, RendererContribution>
 }
 
 // ---------------------------------------------------------------------------

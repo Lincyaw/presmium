@@ -51,6 +51,22 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
   expect((await presmium(dir, ['ir', 'lecture'])).stdout).toBe(stdout)
 })
 
+it('keeps a footnote definition in the section and {slide} it is written in; :emphasize-lines: highlights code', async () => {
+  const dir = fixtures()
+  const { code, stdout } = await presmium(dir, ['ir', 'notes'])
+  expect(code).toBe(0)
+  const doc = JSON.parse(stdout) as IRDocument
+  // MyST moves definitions to the end of the file, which is the second section.
+  expect(doc.sections.map(s => s.blocks.map(step))).toEqual([
+    ['paragraph-1 narration 0', 'footnoteDefinition-1 narration 0', 'list-1 visual 0', 'footnoteDefinition-2 visual 0', 'code-1 visual 0'],
+    ['paragraph-1 narration 0'],
+  ])
+  const [prose, slide] = doc.sections[0]!.blocks.filter(b => b.id.startsWith('footnoteDefinition'))
+  expect(prose!.source.line).toBe(9)
+  expect(slide!.node).toMatchObject({ mdast: { children: [{ type: 'footnoteDefinition', identifier: 'slide' }] } })
+  expect(doc.sections[0]!.blocks.at(-1)!.node).toMatchObject({ type: 'code', lang: 'python', title: '求和', highlight: [[2, 3]] })
+})
+
 it('executes code once, answers from the cache after, and reruns only changed code', async () => {
   const dir = fixtures()
   const log = join(dir, 'runs.log')

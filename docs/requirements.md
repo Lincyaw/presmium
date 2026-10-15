@@ -101,7 +101,7 @@
 
 **实现**：
 
-- 插件的分发与加载：宿主。每个 Presmium 插件就是一个 Slidev 插件（addon），以 npm 包形式分发，在文稿头部 `addons:` 中声明。单页作用域通过页 frontmatter 配置，节点作用域通过组件属性配置。
+- 插件的分发与加载：宿主。每个 Presmium 插件就是一个 Slidev 插件（addon），以 npm 包形式分发，在文稿头部 `plugins:` 中声明（幻灯片渲染端把它们列为 Slidev 的 `addons`）。单页作用域通过页 frontmatter 配置，节点作用域通过组件属性配置。
 - 生命周期：宿主。`defineAppSetup`、`onSlideEnter`、`onSlideLeave`、`$clicks` 监听。
 - 清单中的服务声明：自研（K-08）。
 - 故障隔离：自研。内核提供错误边界组件，基于 Vue 的 `onErrorCaptured`。

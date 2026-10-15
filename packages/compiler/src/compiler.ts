@@ -8,16 +8,17 @@ import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, IR_VERSION, createAnchorResolverRegistry } from '@presmium/kernel'
-import type { AnchorResolverRegistry, DeckSlide, Executor, Finding, IRDocument, IRSection, SourceReader } from '@presmium/kernel'
+import type { AnchorResolverRegistry, Executor, Finding, IRDocument, IRSection, SourceReader } from '@presmium/kernel'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective } from './blocks.ts'
+import { Dependencies } from './dependencies.ts'
+import type { Revision } from './dependencies.ts'
 import { executePass, FREEZE_DIR, FreezeCache } from './execute.ts'
 import type { RunStats } from './execute.ts'
 import { loadPlugins, pluginComponents, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem } from './plugins.ts'
 import { splitSections } from './sections.ts'
-import type { RawSection } from './sections.ts'
-import { fileOf, lineOf, Parser, readFrontmatter } from './source.ts'
+import { Parser, readFrontmatter } from './source.ts'
 import { scheduleSteps } from './steps.ts'
 import { validateIR } from './validate.ts'
 import { createSourceReader, errorMessage, findWorkspaceRoot, isRecord } from './workspace.ts'
@@ -25,16 +26,16 @@ import { createSourceReader, errorMessage, findWorkspaceRoot, isRecord } from '.
 /** Entry file of a deck directory. */
 export const DECK_ENTRY = 'lecture.md'
 
-/**
- * Transition until every deck is MyST (wave MR): a directory without
- * lecture.md falls back to its Slidev entry, whose plugins are listed as `addons`.
- */
-const LEGACY_ENTRY = 'slides.md'
-
 export interface Compilation {
   doc: IRDocument
   /** Every source file read, entry first. */
   files: string[]
+  /**
+   * What the IR depends on besides the source (`presmium dev` watches it):
+   * files that directives and passes read in the working tree or declared
+   * with `watch`, and the git revisions they read files at.
+   */
+  dependencies: { files: string[], revisions: Revision[] }
   /** Code nodes executed or answered from the cache. */
   runs: RunStats
   deckDir: string
@@ -45,12 +46,6 @@ export interface Compilation {
   resolvers: AnchorResolverRegistry
   lock: AnchorLock
   plugins: LoadedPlugin[]
-  /**
-   * For checks written against `CheckContext.slides` until they read the IR
-   * (WP-44): one entry per section and source file, whose `content` is the
-   * lines the section spans in that file; MyST sections have no frontmatter.
-   */
-  slides: DeckSlide[]
 }
 
 export interface CompileOptions {
@@ -61,9 +56,7 @@ export interface CompileOptions {
 /** Resolves a deck argument (a directory holding lecture.md, or an entry file) to its entry file. */
 export function resolveEntry(deck: string): string {
   const path = resolve(deck)
-  if (!existsSync(path) || !statSync(path).isDirectory()) return path
-  const legacy = join(path, LEGACY_ENTRY)
-  return !existsSync(join(path, DECK_ENTRY)) && existsSync(legacy) ? legacy : join(path, DECK_ENTRY)
+  return existsSync(path) && statSync(path).isDirectory() ? join(path, DECK_ENTRY) : path
 }
 
 export class Compiler {
@@ -87,9 +80,11 @@ export class Compiler {
     const headmatter = readFrontmatter(text)
     const workspaceRoot = this.#workspaceRoot ??= await findWorkspaceRoot(this.deckDir)
     const src = createSourceReader(workspaceRoot)
+    const dependencies = new Dependencies(workspaceRoot)
+    const watch = (...files: string[]) => dependencies.watch(...files)
 
     // Plugins first: their directives are part of the syntax the parser accepts.
-    const names = stringList(headmatter.plugins ?? headmatter.addons)
+    const names = stringList(headmatter.plugins)
     const { plugins, problems } = await this.#loadPlugins(names)
     const at = (name: string) => ({ file: this.entry, line: frontmatterLine(text, name) })
     for (const p of problems) report({ checkId: 'presmium.plugins', severity: p.severity, message: p.message, source: at(p.name) })
@@ -126,13 +121,13 @@ export class Compiler {
     const parser = this.#parserFor(directives)
     const source = await parser.expand(this.entry)
     findings.push(...source.findings)
-    const { title: _title, plugins: _plugins, addons: _addons, presmium: _presmium, renderers, sectionDepth: depth, ...rest } = headmatter
+    const { title: _title, plugins: _plugins, presmium: _presmium, renderers, sectionDepth: depth, ...rest } = headmatter
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(this.entry, extname(this.entry))
     const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
 
     // Passes 2 to 5: sections, directives, roles, steps.
     const raw = splitSections(source.children, { entry: this.entry, title, sectionDepth }, report)
-    const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, parser, directives, components, report }
+    const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, parser, directives, components, report, watch }
     const sections: IRSection[] = []
     for (const [i, section] of raw.entries()) {
       const { blocks: drafts, hints } = await sectionBlocks(section.nodes, ctx)
@@ -168,13 +163,14 @@ export class Compiler {
         await pass.run(doc, {
           deckDir: this.deckDir,
           workspaceRoot,
-          src,
-          resolvers,
+          src: dependencies.reader(src),
+          resolvers: dependencies.resolvers(resolvers),
           lock: lock.toJSON(),
           executors,
           cache,
           config: configOf(loaded),
           report: finding => report({ ...finding, source: finding.source ?? at(loaded.name) }),
+          watch,
         })
       } catch (error) {
         report({ checkId: 'presmium.plugins', severity: 'error', message: `pass ${pass.name} of plugin ${pluginId(loaded)} failed: ${errorMessage(error)}`, source: at(loaded.name) })
@@ -187,8 +183,20 @@ export class Compiler {
     doc.diagnostics = sortFindings(findings)
     if (options.pruneCache && !findings.some(f => f.severity === 'error')) cache.prune()
 
-    const slides = await sectionSlides(raw, this.entry, parser)
-    return { doc, files: source.files, runs, deckDir: this.deckDir, entry: this.entry, frontmatter: headmatter, workspaceRoot, src, resolvers, lock, plugins, slides }
+    return {
+      doc,
+      files: source.files,
+      dependencies: { files: dependencies.files, revisions: dependencies.revisions },
+      runs,
+      deckDir: this.deckDir,
+      entry: this.entry,
+      frontmatter: headmatter,
+      workspaceRoot,
+      src,
+      resolvers,
+      lock,
+      plugins,
+    }
   }
 
   async #loadPlugins(names: string[]) {
@@ -203,28 +211,6 @@ export class Compiler {
     if (this.#parser?.key !== key) this.#parser = { key, parser: new Parser(syntax) }
     return this.#parser.parser
   }
-}
-
-async function sectionSlides(sections: RawSection[], entry: string, parser: Parser): Promise<DeckSlide[]> {
-  const slides: DeckSlide[] = []
-  for (const [i, section] of sections.entries()) {
-    // Line range of the section in each file, the heading's file first; included files have their own.
-    const ranges = new Map<string, { line: number, endLine: number }>()
-    const add = (file: string, line: number, endLine: number) => {
-      const range = ranges.get(file)
-      ranges.set(file, range ? { line: Math.min(range.line, line), endLine: Math.max(range.endLine, endLine) } : { line, endLine })
-    }
-    add(section.source.file, section.source.line, section.source.line)
-    for (const node of section.nodes) {
-      const lines = lineOf(node)
-      if (lines) add(fileOf(node, entry), lines.line, lines.endLine)
-    }
-    for (const [file, { line, endLine }] of ranges) {
-      const text = (await parser.read(file))?.text ?? ''
-      slides.push({ index: i + 1, file, line, frontmatter: {}, content: text.split('\n').slice(line - 1, endLine).join('\n') })
-    }
-  }
-  return slides
 }
 
 /** 1-based line of the first frontmatter line that mentions `text`; 1 when absent. */

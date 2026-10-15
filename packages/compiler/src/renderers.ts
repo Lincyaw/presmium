@@ -5,14 +5,18 @@
  * Each renderer gets a view of the IR without the blocks `only` excludes;
  * blocks it does not support at all are listed in the build report.
  */
-import { watch } from 'node:fs'
+import { statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
-import type { Finding, IRBlock, IRDocument, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension } from '@presmium/kernel'
+import type { ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension } from '@presmium/kernel'
 import type { Compilation, Compiler } from './compiler.ts'
+import { revisionFiles } from './dependencies.ts'
 import { loadPlugin, pluginId } from './plugins.ts'
 import { errorMessage, isRecord } from './workspace.ts'
+
+/** Parent of the renderers' work directories in `build`, relative to the deck. */
+export const WORK_DIR = '.presmium'
 
 /** Package that provides each built-in renderer id. */
 export const DEFAULT_RENDERER_PACKAGES: Record<string, string> = {
@@ -30,6 +34,8 @@ export interface InstalledRenderer {
 export interface RendererOutput {
   renderer: string
   outDir: string
+  /** The renderer's work directory (`RenderContext.workDir`), e.g. the Slidev deck of the slides renderer. */
+  workDir: string
   skipped: RenderOutput['skipped']
 }
 
@@ -90,14 +96,14 @@ export async function build(compilation: Compilation, options: { outDir: string,
   const outputs: RendererOutput[] = []
   if (selected.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer available; only the IR was written to ${ir}`))
   for (const { renderer } of selected) {
-    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), findings)
+    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), findings)
     const view = viewFor(doc, renderer.id)
     const unsupported = unsupportedBlocks(view, renderer, ctx.extensions)
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const output = await renderer.build(view, ctx)
       const listed = new Set(output.skipped.map(s => `${s.section}#${s.block}`))
-      outputs.push({ renderer: renderer.id, outDir: output.outDir, skipped: [...output.skipped, ...unsupported.filter(s => !listed.has(`${s.section}#${s.block}`))] })
+      outputs.push({ renderer: renderer.id, outDir: output.outDir, workDir: ctx.workDir, skipped: [...output.skipped, ...unsupported.filter(s => !listed.has(`${s.section}#${s.block}`))] })
     } catch (error) {
       findings.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`))
     }
@@ -122,9 +128,13 @@ export interface DevOptions {
 
 /**
  * Compiles, starts the dev server of each selected renderer, then recompiles
- * on every change of a source file and pushes the new IR to the servers.
+ * on every change of what the IR depends on, and pushes the new IR to the
+ * servers: the source files, the files that directives and passes read (e.g.
+ * referenced code, K-09), and the git files that name the revisions they read.
+ * Each compilation is reported once what it depends on is watched.
  */
 export async function dev(compiler: Compiler, options: DevOptions): Promise<DevSession> {
+  let started = Date.now()
   let compilation = await compiler.compile()
   const ir = await writeIR(compilation.doc, options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
@@ -134,7 +144,8 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       findings.push(renderFinding(compilation, 'warning', `renderer ${renderer.id} has no dev server`))
       continue
     }
-    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), findings)
+    const outDir = join(options.outDir, renderer.id)
+    const ctx = renderContext(compilation, renderer.id, outDir, outDir, findings)
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)
@@ -144,54 +155,82 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
   }
   if (servers.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer dev server; watching the source and writing the IR to ${ir}`))
-  options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...findings])
 
   const watchers = new Map<string, FSWatcher>()
+  let watched = new Set<string>()
   let timer: NodeJS.Timeout | undefined
   let running = Promise.resolve()
+  let closed = false
+  const schedule = () => {
+    if (closed) return
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      running = running.then(recompile)
+    }, 30)
+  }
+  // Directories are watched rather than files, so editors and git, which save by renaming, are seen too.
+  // A file changed after the compilation started, possibly before its directory was watched, is compiled again.
+  const watchFiles = async () => {
+    const { files, revisions } = compilation.dependencies
+    const revs = new Map<string, Set<string>>()
+    for (const { file, rev } of revisions) revs.set(dirname(file), (revs.get(dirname(file)) ?? new Set<string>()).add(rev))
+    const git = await Promise.all([...revs].map(([dir, names]) => revisionFiles(dir, names)))
+    if (closed) return
+    watched = new Set([...compilation.files, ...files, ...git.flat()])
+    for (const dir of new Set([...watched].map(f => dirname(f)))) {
+      if (watchers.has(dir)) continue
+      try {
+        watchers.set(dir, watch(dir, (_event, name) => {
+          if (name && watched.has(join(dir, basename(name)))) schedule()
+        }))
+      } catch {
+        // A directory that does not exist, e.g. that of a referenced file not written yet, is not watched.
+      }
+    }
+    if ([...watched].some(file => modifiedSince(file, started))) schedule()
+  }
   const recompile = async () => {
-    const renderFindings: Finding[] = []
+    started = Date.now()
+    const reported: Finding[] = []
     try {
       compilation = await compiler.compile()
       await writeIR(compilation.doc, options.outDir)
+      reported.push(...compilation.doc.diagnostics)
       for (const { renderer, server } of servers) {
         await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
-          renderFindings.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
+          reported.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
         })
       }
-      options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...renderFindings])
     } catch (error) {
-      options.onCompile?.(compilation, [renderFinding(compilation, 'error', errorMessage(error))])
+      reported.push(renderFinding(compilation, 'error', errorMessage(error)))
     }
-    watchFiles()
+    await watchFiles()
+    options.onCompile?.(compilation, reported)
   }
-  // Directories are watched rather than files, so editors that save by renaming are seen too.
-  let sources = new Set<string>()
-  const watchFiles = () => {
-    sources = new Set(compilation.files)
-    for (const dir of new Set(compilation.files.map(f => dirname(f)))) {
-      if (watchers.has(dir)) continue
-      watchers.set(dir, watch(dir, (_event, name) => {
-        if (!name || !sources.has(join(dir, basename(name)))) return
-        clearTimeout(timer)
-        timer = setTimeout(() => {
-          running = running.then(recompile)
-        }, 30)
-      }))
-    }
-  }
-  watchFiles()
+  await watchFiles()
+  options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...findings])
 
   return {
     servers: servers.map(({ renderer, url }) => ({ renderer, url })),
     ir,
     async close() {
+      closed = true
       clearTimeout(timer)
       for (const watcher of watchers.values()) watcher.close()
       await running
       await Promise.all(servers.map(s => s.server.close()))
     },
   }
+}
+
+/**
+ * Whether `file` was modified at or after `time`. File times can lag the
+ * clock by a few milliseconds; one in the future (e.g. an extracted archive)
+ * is not a modification, or every compilation would start another.
+ */
+function modifiedSince(file: string, time: number): boolean {
+  const modified = statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0
+  return modified >= time - 20 && modified <= Date.now()
 }
 
 /** The document a renderer sees: blocks limited by `only` to other renderers are left out. */
@@ -211,20 +250,26 @@ async function writeIR(doc: IRDocument, outDir: string): Promise<string> {
   return file
 }
 
-function renderContext(compilation: Compilation, id: string, outDir: string, findings: Finding[]): RenderContext {
-  const extensions: RendererExtension[] = compilation.plugins.flatMap((loaded) => {
-    const extension = loaded.plugin?.rendererExtensions?.[id]
-    return extension ? [{ ...extension, plugin: pluginId(loaded) }] : []
-  })
+/** The context of renderer `id`; the plugins' component renderers for it are bound to it. */
+function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, findings: Finding[]): RenderContext {
   const config = compilation.doc.config.renderers[id]
-  return {
+  const ctx: RenderContext = {
     deckDir: compilation.deckDir,
     outDir,
+    workDir,
     config: isRecord(config) ? config : {},
-    extensions,
+    extensions: [],
     plugins: compilation.doc.config.plugins,
     report: finding => findings.push({ ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } }),
   }
+  const bind = (render: ComponentRenderer) => (node: ComponentNode, block: IRBlock) => render(node, block, ctx)
+  ctx.extensions = compilation.plugins.flatMap((loaded): RendererExtension[] => {
+    const contribution = loaded.plugin?.rendererExtensions?.[id]
+    if (!contribution) return []
+    const components = contribution.components && Object.fromEntries(Object.entries(contribution.components).map(([name, render]) => [name, bind(render)]))
+    return [{ plugin: pluginId(loaded), ...components ? { components } : {} }]
+  })
+  return ctx
 }
 
 function unsupportedBlocks(doc: IRDocument, renderer: Renderer, extensions: RendererExtension[]): RenderOutput['skipped'] {

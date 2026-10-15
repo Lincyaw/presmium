@@ -1,8 +1,7 @@
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import type { ComponentNode, DirectiveContext, DirectiveSpec } from '@presmium/kernel'
-import { SLIDEV_DIR } from '@presmium/render-slides/presmium'
+import type { ComponentNode, ComponentRenderer, DirectiveContext, DirectiveSpec } from '@presmium/kernel'
 import { CONTENT_ID, MEDIA_OPTIONS, mediaElements, mediaFallback, mediaHtml, mediaMdast } from '../domain/index.ts'
 import type { MediaKind, MediaOptions } from '../domain/index.ts'
 
@@ -75,20 +74,20 @@ export function mediaDirective(kind: MediaKind): DirectiveSpec {
   }
 }
 
-/** From the Slidev deck that the slides renderer writes inside the deck back to the deck. */
-const DECK_FROM_SLIDES = posix(relative(join(sep, SLIDEV_DIR), sep))
-
 function attribute(name: string, value: unknown): string {
   return typeof value === 'string' && value ? ` ${name}="${value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}"` : ''
 }
 
 /**
  * `PmMedia` in a Slidev slide: the media elements are written in the slide
- * itself, where Vue turns their relative `src` into bundled assets.
+ * itself, where Vue turns their relative `src` into bundled assets. The slides
+ * renderer writes its Slidev deck to its work directory, so paths relative to
+ * the deck are rewritten relative to that directory.
  */
-export function slidesMedia(node: ComponentNode): string {
+export const slidesMedia: ComponentRenderer = (node, _block, ctx) => {
   const { kind, src, still, caption, ...options } = node.props as unknown as { kind: MediaKind, src: string, still?: string, caption?: string } & MediaOptions
   const elements = mediaElements(kind, options, still !== undefined)
-  const html = mediaHtml(elements, file => `${DECK_FROM_SLIDES}/${file === 'still' ? still : src}`)
+  const fromSlides = (file: string) => posix(relative(ctx.workDir, join(ctx.deckDir, file)))
+  const html = mediaHtml(elements, file => fromSlides(file === 'still' ? still ?? '' : src))
   return `<PmMedia${attribute('kind', kind)}${attribute('caption', caption)}>\n${html}\n</PmMedia>`
 }

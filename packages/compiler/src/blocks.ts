@@ -54,6 +54,7 @@ export interface BlockContext {
   /** Component name -> id of the plugin that registers it. */
   components: Map<string, string>
   report(finding: Finding): void
+  watch(...files: string[]): void
 }
 
 export type Hints = Record<RendererId, Record<string, unknown>>
@@ -200,6 +201,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       source,
       parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx, source.file) }),
       report: finding => ctx.report({ ...finding, source: finding.source ?? { file: source.file, line: source.line } }),
+      watch: ctx.watch,
     }
     try {
       const result = await spec.toIR({ name, arg: arg || undefined, options: typed, body }, dctx)
@@ -212,8 +214,9 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   }
 
   const children = (node.children ?? []).filter(c => c.type !== BODY)
-  if (CODE_DIRECTIVES.has(name) && children[0]?.type === 'code') {
-    push({ kind: 'code', label, reveal: reveal !== undefined, role: 'visual', span: 0, source, node: codeNode(children[0], options, source, ctx) })
+  const code = CODE_DIRECTIVES.has(name) ? codeOf(children[0]) : undefined
+  if (code) {
+    push({ kind: 'code', label, reveal: reveal !== undefined, role: 'visual', span: 0, source, node: codeNode(code, options, source, ctx) })
     return
   }
   if (children.length === 0) return fail('unknown directive; is the plugin that provides it listed in `plugins`?')
@@ -221,11 +224,25 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, node: markdown(children, ctx) })
 }
 
+/** The code of a code directive: its child, or the code in the container that `:caption:` makes. */
+function codeOf(node: MdastNode | undefined): MdastNode | undefined {
+  if (node?.type === 'code') return node
+  return node?.type === 'container' ? node.children?.find(c => c.type === 'code') : undefined
+}
+
 function codeNode(node: MdastNode, options: Record<string, string | true>, source: SourcePos, ctx: BlockContext): CodeNode {
   const lang = typeof node.lang === 'string' ? node.lang : ''
   const code: CodeNode = { type: 'code', lang, value: typeof node.value === 'string' ? node.value : '' }
   const title = options.caption ?? options.filename
   if (typeof title === 'string') code.title = title
+  // `:emphasize-lines:`, which myst-parser reads into `emphasizeLines`, highlights the same lines at every step.
+  const emphasized: unknown[] = Array.isArray(node.emphasizeLines) ? node.emphasizeLines : []
+  const count = code.value.split('\n').length
+  const lines = emphasized.filter((n): n is number => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= count)
+  if (lines.length < emphasized.length) {
+    ctx.report({ checkId: 'presmium.directive', severity: 'warning', message: `:emphasize-lines: lines outside the ${count} lines of the code are ignored`, source: { file: source.file, line: source.line } })
+  }
+  if (lines.length > 0) code.highlight = [lines]
   if (options.run !== undefined) code.run = runSpec(lang, options, source, ctx)
   return code
 }
