@@ -28,6 +28,11 @@ body {
   white-space: nowrap;
 }
 
+/* The sidebar is a tree of chapters with their sections indented below (see `sidebar`): chapters stand out. */
+.VPSidebarItem.level-1 > .item .text {
+  font-weight: 600;
+}
+
 /* Anchors and restored positions stay clear of the fixed navigation bar. */
 .pm-section {
   scroll-margin-top: calc(var(--vp-nav-height) + 1rem);
@@ -50,13 +55,33 @@ body {
   margin-right: 0;
 }
 
-.vp-doc .pm-section-nav a {
+/* Beside a section heading, a small link opens the section's slide (P-74): an icon and a short label. */
+.vp-doc .pm-open-slides {
+  display: inline-flex;
+  gap: 0.25em;
+  align-items: center;
+  margin-left: 0.5em;
+  padding: 0 0.5em;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+  color: var(--vp-c-text-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  line-height: 1.75;
   text-decoration: none;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
-.pm-section__links {
-  font-size: 0.85em;
-  text-align: right;
+/* The label is drawn, not written: the heading's text, which the outline shows, stays the title. */
+.vp-doc .pm-open-slides::after {
+  content: attr(data-label);
+}
+
+.vp-doc .pm-open-slides:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
 }
 
 .pm-view-menu {

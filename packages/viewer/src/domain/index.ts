@@ -1,3 +1,5 @@
+export { chapters, isChapterTitle } from './chapters.ts'
+export type { Chapter } from './chapters.ts'
 export { clickVisible, resolveClicks } from './clicks.ts'
 export type { ClickRange, ClickSpec } from './clicks.ts'
 export { applyUpdate, diffDocuments, sectionDiagnostics } from './live.ts'
@@ -16,4 +18,4 @@ export {
   stepAtLine,
 } from './steps.ts'
 export type { Position } from './steps.ts'
-export { blockText, footnoteSections, mdastText } from './text.ts'
+export { blockText, codeColumns, footnoteSections, mdastText } from './text.ts'

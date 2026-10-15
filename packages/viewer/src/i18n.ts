@@ -1,3 +1,4 @@
+import { currentLocale } from '@presmium/host'
 import type { IRDocument } from '@presmium/kernel'
 import { localeOf, messagesFor } from './domain/index.ts'
 import type { Messages } from './domain/index.ts'
@@ -13,10 +14,11 @@ export function setDocumentLanguage(doc: IRDocument, renderer: string): void {
 
 /**
  * The interface text in the page's language: `<html lang>`, else the
- * browser's language. The server render, which renders the `<html lang>`
- * the page will have, uses the document's language.
+ * browser's language (`currentLocale` of @presmium/host). It is reactive, so
+ * what renders it follows a host that sets `<html lang>` after the first
+ * render (VitePress's dev server). The server render, which renders the
+ * `<html lang>` the page will have, uses the document's language.
  */
 export function messages(): Messages {
-  const lang = typeof document === 'undefined' ? documentLang : document.documentElement.lang || navigator.language
-  return messagesFor(localeOf(lang))
+  return messagesFor(typeof document === 'undefined' ? localeOf(documentLang) : currentLocale())
 }

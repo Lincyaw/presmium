@@ -158,7 +158,7 @@ export interface SiteInput {
 
 /**
  * Writes the IR, the search documents, the site data and the VitePress project
- * (config, theme, one Markdown page per page of the document). Only files
+ * (config, theme, one Markdown page per chapter of the document). Only files
  * whose content changed are written: in a dev server, editing the source
  * rewrites the IR and the search documents (both pushed to the pages) and at
  * most the pages' Markdown (hot updated); the config changes only with the
@@ -179,7 +179,7 @@ export function writeSite(workDir: string, input: SiteInput): void {
   write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))
   const names = new Set(pages.map(page => `${page.path}.md`))
   for (const file of readdirSync(files.root).filter(f => f.endsWith('.md') && !names.has(f))) rmSync(join(files.root, file))
-  for (const page of pages) write(join(files.root, `${page.path}.md`), pageMarkdown(page))
+  pages.forEach((page, i) => write(join(files.root, `${page.path}.md`), pageMarkdown(page, pages[i - 1], pages[i + 1])))
   const deckPublic = join(input.deckDir, 'public')
   if (existsSync(deckPublic)) copyDir(deckPublic, files.publicDir)
 }
