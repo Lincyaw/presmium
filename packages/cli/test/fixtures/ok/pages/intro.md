@@ -1,15 +1,9 @@
-# Intro
+## Intro
 
-```anchor
-line:src/math.py#def add
+```{anchor} line:src/math.py#def add
 ```
 
----
-layout: center
----
+## Second
 
-# Second
-
-```anchor
-line:src/math.py#def mul
+```{anchor} line:src/math.py#def mul
 ```

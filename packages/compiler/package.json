@@ -1,0 +1,16 @@
+{
+  "name": "@presmium/compiler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MyST source to IR: parsing, passes, compile-time execution and cache, renderer dispatch",
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "jiti": "^2.7.0",
+    "myst-parser": "^1.7.4",
+    "yaml": "^2.9.1"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

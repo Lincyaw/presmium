@@ -1,12 +1,11 @@
 ---
 title: Clean deck
-addons:
+plugins:
   - ../addons/sample
   - ../addons/plain
 ---
 
 # Clean deck
 
----
-src: ./pages/intro.md
----
+```{include} pages/intro.md
+```

@@ -1,50 +1,27 @@
-// Runs the real `presmium` CLI process on the decks in ./fixtures.
-import { execFile } from 'node:child_process'
-import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+// `presmium check` on the compiler: the WP-03 acceptance kept on MyST decks.
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { afterAll, expect, it } from 'vitest'
+import { expect, it } from 'vitest'
+import { fixtures, presmium } from './helpers.ts'
 
-const BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
-const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
-
-// Each test works on a copy outside git, so the workspace root is the deck directory
-// and lock files are never written into the repository.
-const copies: string[] = []
-afterAll(() => copies.forEach(dir => rmSync(dir, { recursive: true, force: true })))
-
-function fixtures(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'presmium-cli-'))
-  cpSync(FIXTURES, dir, { recursive: true })
-  copies.push(dir)
-  return dir
-}
-
-function presmium(cwd: string, ...args: string[]): Promise<{ code: number, stdout: string, stderr: string }> {
-  return new Promise((resolve) => {
-    execFile(process.execPath, [BIN, ...args], { cwd }, (error, stdout, stderr) => {
-      resolve({ code: error ? Number(error.code) : 0, stdout, stderr })
-    })
-  })
-}
+const check = (cwd: string, ...args: string[]) => presmium(cwd, ['check', ...args])
 
 it('exits 0 without errors, 1 with error findings and 2 on bad arguments', async () => {
   const dir = fixtures()
-  expect((await presmium(dir, 'check', 'ok')).code).toBe(0)
-  expect((await presmium(dir, 'check', 'broken')).code).toBe(1)
-  expect((await presmium(dir, 'check', 'ok', '--bogus')).code).toBe(2)
-  expect((await presmium(dir, 'check', 'no-such-deck')).code).toBe(2)
+  expect((await check(dir, 'ok')).code).toBe(0)
+  expect((await check(dir, 'broken')).code).toBe(1)
+  expect((await check(dir, 'ok', '--bogus')).code).toBe(2)
+  expect((await check(dir, 'no-such-deck')).code).toBe(2)
 })
 
 it('locates findings as file:line in text output and prints parseable JSON', async () => {
   const dir = fixtures()
-  const text = await presmium(dir, 'check', 'broken')
-  expect(text.stdout).toContain('broken/pages/todo.md:4  error  slide 3 is unfinished')
-  // A crashing check is located at the entry file, on the headmatter line of its addon.
-  expect(text.stdout).toContain('broken/slides.md:4  error  check sample.crash crashed: boom')
+  const text = await check(dir, 'broken')
+  expect(text.stdout).toContain('broken/pages/todo.md:7  error  section 3 is unfinished')
+  // A crashing check is located at the entry file, on the frontmatter line of its plugin.
+  expect(text.stdout).toContain('broken/lecture.md:4  error  check sample.crash crashed: boom')
 
-  const json = JSON.parse((await presmium(dir, 'check', 'broken', '--json')).stdout)
+  const json = JSON.parse((await check(dir, 'broken', '--json')).stdout)
   expect(json.counts).toEqual({ error: 4, warning: 0, info: 0 })
   expect(json.findings.every((f: { source?: { file: string, line: number } }) => f.source?.file && f.source.line >= 1)).toBe(true)
 })
@@ -52,24 +29,24 @@ it('locates findings as file:line in text output and prints parseable JSON', asy
 it('--update-lock writes the anchor lock and a second run is stable', async () => {
   const dir = fixtures()
   const lockFile = join(dir, 'ok/.presmium/anchors.lock.json')
-  expect((await presmium(dir, 'check', 'ok')).stdout).toContain('anchor line:src/math.py#def add is not locked')
+  expect((await check(dir, 'ok')).stdout).toContain('ok/pages/intro.md:3  warning  anchor line:src/math.py#def add is not locked')
 
-  const first = await presmium(dir, 'check', 'ok', '--update-lock')
+  const first = await check(dir, 'ok', '--update-lock')
   expect(first.code).toBe(0)
   expect(first.stdout).toContain('anchors.lock.json updated (2 anchors)')
   const lock = readFileSync(lockFile, 'utf8')
   expect(JSON.parse(lock).anchors['line:src/math.py#def mul']).toEqual({ fingerprint: 'def mul(a, b):', file: 'src/math.py', startLine: 5 })
 
-  const second = await presmium(dir, 'check', 'ok', '--update-lock')
+  const second = await check(dir, 'ok', '--update-lock')
   expect(second.stdout).toBe('ok/.presmium/anchors.lock.json unchanged (2 anchors)\nno problems\n')
   expect(readFileSync(lockFile, 'utf8')).toBe(lock)
 })
 
-it('reports an error for a headmatter addon that cannot be loaded', async () => {
+it('reports an error for a frontmatter plugin that cannot be loaded', async () => {
   const dir = fixtures()
-  const { findings } = JSON.parse((await presmium(dir, 'check', 'broken', '--json')).stdout)
-  const addonErrors = findings.filter((f: { checkId: string }) => f.checkId === 'presmium.addons')
-  expect(addonErrors).toMatchObject([
+  const { findings } = JSON.parse((await check(dir, 'broken', '--json')).stdout)
+  const pluginErrors = findings.filter((f: { checkId: string }) => f.checkId === 'presmium.plugins')
+  expect(pluginErrors).toMatchObject([
     { severity: 'error', message: expect.stringContaining('presmium-fixture-addon-not-installed'), source: { line: 5 } },
     { severity: 'error', message: expect.stringContaining('fixture addon fails to load'), source: { line: 6 } },
   ])

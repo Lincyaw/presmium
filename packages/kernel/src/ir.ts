@@ -80,10 +80,19 @@ export interface IRSection {
 export type BlockRole = 'visual' | 'narration'
 
 export interface IRBlock {
-  /** Unique and stable within the section. */
+  /**
+   * Unique within the section: the block's MyST label, or `<kind>-<n>`
+   * numbered per kind in source order. A generated id is the same on every
+   * compilation of the same source but shifts when a block of its kind is
+   * inserted before it; references that must survive edits (notes, anchors)
+   * should use labelled blocks.
+   */
   id: string
   role: BlockRole
-  /** Step at which a visual block appears, or to which a narration block belongs. */
+  /**
+   * Step at which a visual block appears, or to which a narration block
+   * belongs (the `at` of the latest revealed or spanning block before it).
+   */
   at: number
   /** Step at which the block disappears; undefined means it stays. */
   until?: number
@@ -105,6 +114,11 @@ export type IRNode = MarkdownNode | CodeNode | ComponentNode
 export interface MarkdownNode {
   type: 'markdown'
   mdast: MdastNode
+  /**
+   * 'items': the top-level list items appear one per step, item k (0-based, in
+   * document order) at `at + 1 + k`; the block's `span` equals the item count.
+   */
+  reveal?: 'items'
 }
 
 export interface CodeOrigin {

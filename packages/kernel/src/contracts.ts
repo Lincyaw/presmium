@@ -5,7 +5,7 @@
  * changing or removing existing signatures requires updating docs/architecture.md.
  */
 
-import type { DirectiveSpec, IRPass, Renderer, RendererExtension } from './ir.ts'
+import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererExtension } from './ir.ts'
 
 export const KERNEL_VERSION = '0.1.0'
 
@@ -228,10 +228,17 @@ export interface CheckContext {
   /** Absolute workspace root (git root, or deckDir when not in git). */
   workspaceRoot: string
   headmatter: Record<string, unknown>
+  /**
+   * One entry per IR section and source file (a section that continues in an
+   * included file has one entry per file, with the same `index`); `content` is
+   * the lines the section spans in `file`. MyST sections have no frontmatter.
+   */
   slides: DeckSlide[]
   src: SourceReader
   resolvers: AnchorResolverRegistry
   lock: AnchorLockFile
+  /** The compiled deck, when the check runs on the compiler (docs/ir.md section 7). */
+  ir?: IRDocument
 }
 
 export interface Check {
@@ -311,6 +318,11 @@ export interface Executor {
   readonly id: string
   supports(lang: string): boolean
   run(request: RunRequest, signal?: AbortSignal): Promise<RunResult>
+  /**
+   * Identifies the runtime environment for `lang` (e.g. interpreter version or
+   * image digest). Part of the compile-time execution cache key; '' when omitted.
+   */
+  fingerprint?(lang: string): string | Promise<string>
 }
 
 /** Routes requests to registered executors; higher priority wins. */
