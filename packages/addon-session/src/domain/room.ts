@@ -24,6 +24,9 @@ export interface SessionRecord {
   cursor?: Position
   startedAt?: number
   endedAt?: number
+  /** Set by the classroom server when it archived the classroom (P-60): the file, relative to the deck directory. */
+  archive?: string
+  archivedAt?: number
 }
 
 /** A room the presenter has not started yet counts as active, so learners who come early stay in. */

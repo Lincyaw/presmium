@@ -1,0 +1,54 @@
+/* Shared by the classroom components, panels and notes in both forms. Text is never dimmed with
+   opacity, so it keeps the contrast the deck's theme (or its high-contrast mode) gives it. */
+.pm-classroom-card {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(125, 125, 125, 0.35);
+  border-radius: 0.375rem;
+  font-size: 0.9em;
+  text-align: left;
+}
+.pm-classroom-card p {
+  margin: 0.25rem 0;
+}
+.pm-classroom-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.pm-classroom-card button,
+.pm-classroom-card textarea,
+.pm-classroom-panel button,
+.pm-note-spot button,
+.pm-note-spot textarea,
+.pm-classroom-toolbar button {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid rgba(125, 125, 125, 0.5);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.pm-classroom-card button:not(:disabled),
+.pm-classroom-panel button,
+.pm-note-spot button,
+.pm-classroom-toolbar button {
+  cursor: pointer;
+}
+.pm-classroom-card button:disabled {
+  border-style: dashed;
+  cursor: not-allowed;
+}
+.pm-classroom-card textarea,
+.pm-note-spot textarea {
+  box-sizing: border-box;
+  width: 100%;
+  font-family: var(--vp-font-family-mono, var(--slidev-code-font-family, monospace));
+}
+.pm-classroom-status {
+  color: var(--vp-c-text-2, inherit);
+}
+.pm-classroom-error {
+  color: #dc2626;
+}

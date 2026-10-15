@@ -326,6 +326,20 @@ export interface SessionService {
   join(sessionId: string, name: string): Promise<void>
   end(): Promise<void>
   leave(): void
+  /**
+   * Presenter only (P-60): ends the classroom if it is still active, exports
+   * its document to a file in the deck directory and frees it on the server;
+   * nobody can write to or join it afterwards. Resolves with the file written.
+   * Optional: a session without a server to archive to leaves it out.
+   */
+  archive?(): Promise<string>
+  /**
+   * The participant's own collections in the classroom (e.g. notes, P-63):
+   * no other participant receives them. Empty outside a classroom; freed when
+   * the classroom is archived, so data that must outlast it needs a copy of
+   * its own. Optional: without it, such data stays in the browser.
+   */
+  readonly personal?: ClassroomStore
 }
 
 export const SESSION = defineService<SessionService>('presmium.session')

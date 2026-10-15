@@ -102,6 +102,12 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
+      myst-to-md:
+        specifier: ^1.0.17
+        version: 1.0.17(supports-color@9.4.0)
+      vfile:
+        specifier: ^5.3.7
+        version: 5.3.7
       vue:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)

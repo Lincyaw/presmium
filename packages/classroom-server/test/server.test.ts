@@ -1,14 +1,18 @@
 // `presmium-classroom-server --port 0` as a real process, with y-websocket clients (as the session plugin uses) in rooms.
 import { spawn } from 'node:child_process'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { connect } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join as joinPath } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterAll, beforeAll, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, expect, it } from 'vitest'
 import WebSocket from 'ws'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
 
 const BIN = fileURLToPath(new URL('../bin/server.mjs', import.meta.url))
-const server = spawn(process.execPath, [BIN, '--port', '0', '--host', '127.0.0.1'], { stdio: ['ignore', 'pipe', 'inherit'] })
+const deck = mkdtempSync(joinPath(tmpdir(), 'presmium-classroom-'))
+const server = spawn(process.execPath, [BIN, '--port', '0', '--host', '127.0.0.1', '--deck', deck], { stdio: ['ignore', 'pipe', 'inherit'] })
 let url = ''
 const providers: WebsocketProvider[] = []
 
@@ -24,16 +28,19 @@ beforeAll(async () => {
   })
 })
 
+// Each test's clients leave when it ends.
+afterEach(() => providers.splice(0).forEach(p => p.destroy()))
+
 afterAll(async () => {
-  providers.forEach(p => p.destroy())
   server.kill('SIGTERM')
   await new Promise(resolve => server.once('exit', resolve))
+  rmSync(deck, { recursive: true, force: true })
 })
 
-/** A client document in a room, once it has synced with the server. */
-async function join(room: string): Promise<{ doc: Y.Doc, provider: WebsocketProvider }> {
+/** A client document in a room, once it has synced with the server; `params` go in the URL (e.g. `claim`). */
+async function join(room: string, params: Record<string, string> = {}): Promise<{ doc: Y.Doc, provider: WebsocketProvider }> {
   const doc = new Y.Doc()
-  const provider = new WebsocketProvider(url, room, doc, { WebSocketPolyfill: WebSocket as never, disableBc: true })
+  const provider = new WebsocketProvider(url, room, doc, { WebSocketPolyfill: WebSocket as never, disableBc: true, params })
   providers.push(provider)
   await new Promise<void>(resolve => provider.once('sync', () => resolve()))
   return { doc, provider }
@@ -79,4 +86,56 @@ it('closes a connection with a bad room path or an invalid frame and keeps servi
   expect(server.exitCode).toBeNull()
   const after = await join('room-c')
   expect(after.doc.getMap('session').get('status')).toBe('active')
+})
+
+it('takes no more writes once the classroom has ended', async () => {
+  const presenter = await join('room-d')
+  const learner = await join('room-d')
+  const answers = (doc: Y.Doc) => doc.getMap('store:answers')
+  answers(learner.doc).set('before', 1)
+  presenter.doc.getMap('session').set('status', 'ended')
+  await expect.poll(() => learner.doc.getMap('session').get('status')).toBe('ended')
+
+  answers(learner.doc).set('after', 2)
+  // The server has not applied the late write: a client that joins now reads the classroom without it.
+  await new Promise(resolve => setTimeout(resolve, 200))
+  const late = await join('room-d')
+  expect(answers(late.doc).toJSON()).toEqual({ before: 1 })
+})
+
+it('archives a classroom with the key it was claimed with, frees it with its participants\' rooms, and refuses it afterwards', async () => {
+  const presenter = await join('room-e', { claim: 'presenter-key' })
+  // A later claim does not replace the first.
+  const learner = await join('room-e', { claim: 'learner-key' })
+  const own = await join('room-e.k7m2qx9a')
+  presenter.doc.getMap('session').set('status', 'active')
+  presenter.doc.getMap('store:questions').set('q1', { text: '为什么？' })
+  await expect.poll(() => learner.doc.getMap('store:questions').size).toBe(1)
+  const closed = (provider: WebsocketProvider) => new Promise<number>(resolve => provider.once('closed', ({ code }: { code: number }) => resolve(code)))
+  const learnerClosed = closed(learner.provider)
+  const ownClosed = closed(own.provider)
+
+  const http = url.replace(/^ws/, 'http')
+  for (const key of ['', 'learner-key']) expect((await fetch(`${http}/archive/room-e`, { method: 'POST', body: key })).status).toBe(403)
+  expect(learner.doc.getMap('session').get('status')).toBe('active')
+  const response = await fetch(`${http}/archive/room-e`, { method: 'POST', body: 'presenter-key' })
+  expect(response.status).toBe(200)
+  const { file } = await response.json() as { file: string }
+  expect(file).toBe('.presmium/classroom/room-e.json')
+  const archived = JSON.parse(readFileSync(joinPath(deck, file), 'utf8'))
+  expect(archived.room).toBe('room-e')
+  expect(archived.document.session).toMatchObject({ status: 'ended' })
+  expect(archived.document['store:questions']).toEqual({ q1: { text: '为什么？' } })
+
+  // Connected clients learn it and are closed for good, the participant's own room too.
+  expect(await learnerClosed).toBe(4410)
+  expect(await ownClosed).toBe(4410)
+  expect(learner.doc.getMap('session').get('archive')).toBe(file)
+
+  // The room is gone: joining it again is refused, and so is archiving it twice.
+  const again = new WebsocketProvider(url, 'room-e', new Y.Doc(), { WebSocketPolyfill: WebSocket as never, disableBc: true })
+  providers.push(again)
+  expect(await closed(again)).toBe(4410)
+  expect((await fetch(`${http}/archive/room-e`, { method: 'POST', body: 'presenter-key' })).status).toBe(410)
+  expect(existsSync(joinPath(deck, '.presmium/classroom/room-e.k7m2qx9a.json'))).toBe(false)
 })

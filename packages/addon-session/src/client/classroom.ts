@@ -4,15 +4,18 @@
  * y-websocket provider. The presenter publishes the position of their window
  * (the hosts' `navigation` service); learners who follow are moved there. In
  * the slides form the presenter's Slidev state (navigation, drawings, ...)
- * also reaches the learners, as a `SyncTransport`. The document's layout is
- * in `./document.ts`.
+ * also reaches the learners, as a `SyncTransport`. Each participant also has
+ * a document of their own (`personal`), in a room named by a key only their
+ * tab knows; archiving the classroom frees it. The presenter's window claims
+ * the room with a key of its own, which archiving the classroom takes. The
+ * document's layout is in `./document.ts`.
  */
 import type { Navigation, SyncTransport } from '@presmium/host'
 import type { ClassroomStore, Participant, Role, Unsubscribe } from '@presmium/kernel'
 import { watch } from 'vue'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
-import { followTarget, joinRequest, joinUrl, participantsOf, plain, roomId, samePosition, sessionStatus } from '../domain/index.ts'
+import { archiveUrl, followTarget, joinRequest, joinUrl, participantsOf, plain, roomId, samePosition, sessionStatus } from '../domain/index.ts'
 import type { ClassroomSession, ClassroomSnapshot, FollowMode, Position } from '../domain/index.ts'
 import { channel, collection, endSession, publishCursor, readSession, sessionMap, startSession, writeChannel } from './document.ts'
 
@@ -43,6 +46,10 @@ interface Membership {
   server: string
   room: string
   me: Participant
+  /** Names the participant's own room, `<room>.<key>`; never shared. */
+  key: string
+  /** The presenter's key to the room, which the classroom server asks for to archive it. */
+  claim?: string
 }
 
 /** A synchronized channel of the slides form. */
@@ -53,6 +60,8 @@ interface Link {
 }
 
 const STORAGE_KEY = 'presmium.session'
+/** The classroom server closes the connections of an archived classroom with this code. */
+const ARCHIVED_CLOSE_CODE = 4410
 
 function randomId(bytes: number): string {
   return roomId(crypto.getRandomValues(new Uint8Array(bytes)))
@@ -62,10 +71,58 @@ function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+function observe(map: Y.Map<unknown>, handler: (event: Y.YMapEvent<unknown>, transaction: Y.Transaction) => void): () => void {
+  map.observe(handler)
+  return () => map.unobserve(handler)
+}
+
+/**
+ * A `classroomStore` over the document that `doc` returns; `rebind` moves its
+ * subscribers to a new document. `checkWrite` throws when writing is refused.
+ */
+function documentStore(doc: () => Y.Doc, checkWrite: () => void): { store: ClassroomStore, rebind(): void } {
+  const listeners = new Map<string, Set<() => void>>()
+  let detach: (() => void)[] = []
+  const attach = (name: string) => detach.push(observe(collection(doc(), name), () => listeners.get(name)?.forEach(listener => listener())))
+  return {
+    store: {
+      list: <T>(name: string) => [...collection(doc(), name).entries()].map(([id, value]) => ({ id, value: value as T })),
+      get: <T>(name: string, id: string) => collection(doc(), name).get(id) as T | undefined,
+      put(name, id, value) {
+        checkWrite()
+        collection(doc(), name).set(id, plain(value))
+      },
+      remove(name, id) {
+        checkWrite()
+        collection(doc(), name).delete(id)
+      },
+      subscribe(name, listener) {
+        let set = listeners.get(name)
+        if (!set) {
+          listeners.set(name, set = new Set())
+          attach(name)
+        }
+        set.add(listener)
+        return () => {
+          set.delete(listener)
+        }
+      },
+    },
+    rebind() {
+      detach.forEach(stop => stop())
+      detach = []
+      for (const name of listeners.keys()) attach(name)
+      listeners.forEach(set => set.forEach(listener => listener()))
+    },
+  }
+}
+
 export function createClassroom(options: ClassroomOptions): Classroom {
   const { server, navigation } = options
   let doc = new Y.Doc()
+  let personalDoc = new Y.Doc()
   let provider: WebsocketProvider | undefined
+  let personalProvider: WebsocketProvider | undefined
   let membership: Membership | undefined
   let connection: ClassroomSnapshot['connection'] = 'offline'
   let follow: FollowMode = 'follow'
@@ -75,7 +132,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   let followed: Position | undefined
 
   const listeners = new Set<(snapshot: ClassroomSnapshot) => void>()
-  const storeListeners = new Map<string, Set<() => void>>()
   const links = new Map<string, Link>()
   /** Observers on the current document, removed when it is replaced. */
   let detach: (() => void)[] = []
@@ -95,6 +151,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       presenterCursor: record.cursor && { slide: record.cursor.slide, step: record.cursor.step },
       presenterPosition: record.cursor,
       joinUrl: membership && joinUrl(options.base, membership.room),
+      archive: membership ? record.archive : undefined,
     }
   }
 
@@ -107,6 +164,12 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   const active = () => membership !== undefined && sessionStatus(readSession(doc)) === 'active'
   const following = () => role() === 'learner' && follow === 'follow' && active()
 
+  // The shared collections take no writes once the classroom has ended (the server refuses them too).
+  const shared = documentStore(() => doc, () => {
+    if (membership && !active()) throw new Error('课堂已结束，不再接受写入')
+  })
+  const personal = documentStore(() => personalDoc, () => {})
+
   /** Moves a following learner to the presenter's position when it changed (or always, when `force`). */
   function followPresenter(force = false): void {
     const target = followTarget(membership?.me, follow, readSession(doc))
@@ -118,11 +181,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   /** The presenter's position goes to the room. */
   function publish(): void {
     if (navigation && role() === 'presenter' && active()) publishCursor(doc, navigation.position.value)
-  }
-
-  function observe(map: Y.Map<unknown>, handler: (event: Y.YMapEvent<unknown>, transaction: Y.Transaction) => void): () => void {
-    map.observe(handler)
-    return () => map.unobserve(handler)
   }
 
   function attachChannel(name: string, link: Link): void {
@@ -142,10 +200,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     }
   }
 
-  function attachCollection(name: string): void {
-    detach.push(observe(collection(doc, name), () => storeListeners.get(name)?.forEach(listener => listener())))
-  }
-
   /** Makes `next` the classroom document: observers move to it, store subscribers see its content. */
   function bind(next: Y.Doc): void {
     detach.forEach(stop => stop())
@@ -155,18 +209,25 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       notify()
       followPresenter()
     }))
-    for (const name of storeListeners.keys()) attachCollection(name)
     for (const [name, link] of links) attachChannel(name, link)
-    storeListeners.forEach(set => set.forEach(listener => listener()))
+    shared.rebind()
+  }
+
+  function bindPersonal(next: Y.Doc): void {
+    personalDoc = next
+    personal.rebind()
   }
 
   function disconnect(): void {
     provider?.destroy()
+    personalProvider?.destroy()
     provider = undefined
+    personalProvider = undefined
     membership = undefined
     connection = 'offline'
     followed = undefined
     bind(new Y.Doc())
+    bindPersonal(new Y.Doc())
   }
 
   function remember(value: Membership | undefined): void {
@@ -179,43 +240,55 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   function remembered(): Membership | undefined {
     try {
       const value = JSON.parse(options.storage?.getItem(STORAGE_KEY) ?? 'null') as Membership | null
-      return value && value.server === server && value.room && value.me?.id ? value : undefined
+      return value && value.server === server && value.room && value.me?.id && value.key ? value : undefined
     } catch {
       return undefined
     }
   }
 
-  /** Waits until the provider has synced with the server, at most `timeoutMs`. */
+  /** Waits until the provider has synced with the server, at most `timeoutMs`; fails at once for an archived classroom. */
   function synced(connecting: WebsocketProvider): Promise<void> {
     if (connecting.synced) return Promise.resolve()
     return new Promise((resolve, reject) => {
-      const done = (isSynced: boolean) => {
-        if (!isSynced) return
+      const stop = () => {
         clearTimeout(timer)
         connecting.off('sync', done)
+        connecting.off('closed', closed)
+      }
+      const done = (isSynced: boolean) => {
+        if (!isSynced) return
+        stop()
         resolve()
       }
+      const closed = ({ code }: { code: number }) => {
+        stop()
+        reject(new Error(code === ARCHIVED_CLOSE_CODE ? '课堂已归档' : `课堂服务关闭了连接（${code}）`))
+      }
       const timer = setTimeout(() => {
-        connecting.off('sync', done)
+        stop()
         reject(new Error(`无法连接课堂服务 ${server}`))
       }, options.timeoutMs ?? 10_000)
       connecting.on('sync', done)
+      connecting.on('closed', closed)
     })
   }
 
   /** Connects to a room as `me`; `start` makes it a new classroom with `me` as presenter. */
-  async function enter(room: string, me: Participant, start = false): Promise<void> {
+  async function enter({ room, me, key, claim }: Omit<Membership, 'server'>, start = false): Promise<void> {
     if (!server) throw new Error('文稿没有配置课堂服务')
     disconnect()
     const next = new Y.Doc()
-    const connecting = new WebsocketProvider(server, room, next)
+    const connecting = new WebsocketProvider(server, room, next, claim ? { params: { claim } } : {})
     provider = connecting
-    membership = { server, room, me }
+    membership = { server, room, me, key, ...claim ? { claim } : {} }
     connection = 'connecting'
     follow = 'follow'
     error = undefined
     invitation = undefined
     bind(next)
+    const own = new Y.Doc()
+    personalProvider = new WebsocketProvider(server, `${room}.${key}`, own)
+    bindPersonal(own)
     connecting.awareness.setLocalStateField('participant', me)
     connecting.awareness.on('change', () => provider === connecting && notify())
     connecting.on('status', ({ status }: { status: string }) => {
@@ -226,6 +299,13 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     connecting.on('sync', (isSynced: boolean) => {
       if (provider !== connecting) return
       connection = isSynced ? 'connected' : 'connecting'
+      notify()
+    })
+    // An archived classroom: the server is done with it, the document stays readable here.
+    connecting.on('closed', () => {
+      if (provider !== connecting) return
+      connection = 'offline'
+      remember(undefined)
       notify()
     })
     notify()
@@ -262,15 +342,23 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     },
     async create(name) {
       const room = randomId(8)
-      await enter(room, { id: randomId(16), name: name.trim() || '主讲', role: 'presenter' }, true)
+      await enter({ room, me: { id: randomId(16), name: name.trim() || '主讲', role: 'presenter' }, key: randomId(24), claim: randomId(24) }, true)
       return room
     },
     async join(room, name) {
-      await enter(room, { id: randomId(16), name: name.trim() || '学习者', role: 'learner' })
+      await enter({ room, me: { id: randomId(16), name: name.trim() || '学习者', role: 'learner' }, key: randomId(24) })
     },
     async end() {
       if (role() !== 'presenter') throw new Error('只有主讲可以结束课堂')
       endSession(doc, Date.now())
+    },
+    async archive() {
+      if (!membership || role() !== 'presenter') throw new Error('只有主讲可以归档课堂')
+      const response = await fetch(archiveUrl(membership.server, membership.room), { method: 'POST', body: membership.claim ?? '' })
+        .catch(() => { throw new Error(`无法连接课堂服务 ${membership?.server}`) })
+      const result = await response.json().catch(() => ({})) as { file?: string, error?: string }
+      if (!response.ok || !result.file) throw new Error(result.error ?? `归档失败（${response.status}）`)
+      return result.file
     },
     leave() {
       disconnect()
@@ -285,28 +373,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       }
       notify()
     },
-  }
-
-  const store: ClassroomStore = {
-    list: <T>(name: string) => [...collection(doc, name).entries()].map(([id, value]) => ({ id, value: value as T })),
-    get: <T>(name: string, id: string) => collection(doc, name).get(id) as T | undefined,
-    put(name, id, value) {
-      collection(doc, name).set(id, plain(value))
-    },
-    remove(name, id) {
-      collection(doc, name).delete(id)
-    },
-    subscribe(name, listener) {
-      let set = storeListeners.get(name)
-      if (!set) {
-        storeListeners.set(name, set = new Set())
-        attachCollection(name)
-      }
-      set.add(listener)
-      return () => {
-        set.delete(listener)
-      }
-    },
+    personal: personal.store,
   }
 
   const transport: SyncTransport = {
@@ -326,7 +393,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
 
   return {
     session,
-    store,
+    store: shared.store,
     transport,
     async resume(search) {
       const request = joinRequest(search)
@@ -334,7 +401,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       try {
         // A reload of the page keeps this tab's place in its classroom.
         if (before && (!request || (request.room === before.room && (!request.name || request.name === before.me.name)))) {
-          await enter(before.room, before.me)
+          await enter(before)
         } else if (request?.name) {
           await session.join(request.room, request.name)
         } else if (request) {

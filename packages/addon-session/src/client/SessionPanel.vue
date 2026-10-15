@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The classroom: its state, creating or joining it, the join link and QR code, the participants, ending it.
+// The classroom: its state, creating or joining it, the join link and QR code, the participants, ending and archiving it.
 // Shown in the presenter panels of both forms and from the toolbar.
 import { renderSVG } from 'uqr'
 import { computed, ref } from 'vue'
@@ -69,6 +69,9 @@ function submit(): void {
       <p class="pm-session__actions">
         <button v-if="presenter && snapshot.status === 'active'" type="button" :disabled="busy" @click="run(s => s.end())">
           结束课堂
+        </button>
+        <button v-if="presenter && snapshot.status === 'ended' && !snapshot.archive" type="button" :disabled="busy" title="把课堂记录写入文稿目录，并从课堂服务中释放" @click="run(s => s.archive())">
+          归档课堂
         </button>
         <button type="button" @click="session?.leave()">
           离开课堂

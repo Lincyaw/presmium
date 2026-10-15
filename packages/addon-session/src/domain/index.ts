@@ -1,6 +1,6 @@
 export { SESSION_ID, sessionConfig } from './config.ts'
 export type { SessionConfig } from './config.ts'
-export { joinRequest, joinUrl, roomId } from './links.ts'
+export { archiveUrl, joinRequest, joinUrl, roomId } from './links.ts'
 export type { JoinRequest } from './links.ts'
 export {
   changedEntries,
