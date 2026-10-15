@@ -4,6 +4,7 @@ import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { CLASSROOM_ID } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'
 import ClassroomToolbar from './ClassroomToolbar.vue'
+import { messages } from './locale.ts'
 
 let cleanup: Unsubscribe[] = []
 
@@ -25,8 +26,8 @@ export const classroomPlugin: PluginDefinition = {
   },
   setup(ctx) {
     cleanup = [
-      ctx.tryGet(TOOLBAR)?.register({ id: CLASSROOM_ID, title: '课堂互动', component: ClassroomToolbar, order: 20 }),
-      ctx.tryGet(PRESENTER_PANELS)?.register({ id: CLASSROOM_ID, title: '课堂互动', component: ClassroomPanel, order: 20 }),
+      ctx.tryGet(TOOLBAR)?.register({ id: CLASSROOM_ID, title: messages().interaction, component: ClassroomToolbar, order: 20 }),
+      ctx.tryGet(PRESENTER_PANELS)?.register({ id: CLASSROOM_ID, title: messages().interaction, component: ClassroomPanel, order: 20 }),
     ].filter(stop => stop !== undefined)
   },
   dispose() {

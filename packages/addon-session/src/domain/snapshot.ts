@@ -1,4 +1,5 @@
 import type { ClassroomStore, SessionService, SessionSnapshot, Unsubscribe } from '@presmium/kernel'
+import type { SessionMessages } from './messages.ts'
 import type { FollowMode, Position } from './room.ts'
 
 /** The `session` service's state, with what this plugin adds to the kernel's snapshot. */
@@ -41,24 +42,24 @@ export function isClassroomSession(service: SessionService | undefined): service
 }
 
 /** One line on the state of the classroom, for the session panel. */
-export function statusText(s: ClassroomSnapshot): string {
-  if (!s.server) return '未连接：文稿没有配置课堂服务'
+export function statusText(s: ClassroomSnapshot, t: SessionMessages): string {
+  if (!s.server) return t.status.noServer
   if (s.status === 'idle') {
-    if (s.error) return `未连接：${s.error}`
-    return s.invitation ? `未连接：受邀加入课堂 ${s.invitation}` : '未连接：尚未加入课堂'
+    if (s.error) return t.status.failed(s.error)
+    return s.invitation ? t.status.invited(s.invitation) : t.status.idle
   }
-  if (s.status === 'ended') return s.archive ? `课堂已结束并归档到 ${s.archive}` : '课堂已结束'
-  if (s.connection !== 'connected') return '正在连接课堂服务…'
-  if (s.me?.role === 'presenter') return '课堂进行中，你是主讲'
-  return s.follow === 'follow' ? '课堂进行中，正在跟随主讲' : '课堂进行中，自主浏览'
+  if (s.status === 'ended') return s.archive ? t.status.archived(s.archive) : t.status.ended
+  if (s.connection !== 'connected') return t.status.connecting
+  if (s.me?.role === 'presenter') return t.status.presenting
+  return s.follow === 'follow' ? t.status.following : t.status.browsing
 }
 
 /** A word or two for the toolbar button. */
-export function shortStatus(s: ClassroomSnapshot): string {
-  if (!s.server) return '未连接'
-  if (s.status === 'idle') return '未加入'
-  if (s.status === 'ended') return s.archive ? '已归档' : '已结束'
-  if (s.connection !== 'connected') return '连接中'
-  if (s.me?.role === 'presenter') return '主讲'
-  return s.follow === 'follow' ? '跟随' : '自主'
+export function shortStatus(s: ClassroomSnapshot, t: SessionMessages): string {
+  if (!s.server) return t.short.noServer
+  if (s.status === 'idle') return t.short.idle
+  if (s.status === 'ended') return s.archive ? t.short.archived : t.short.ended
+  if (s.connection !== 'connected') return t.short.connecting
+  if (s.me?.role === 'presenter') return t.short.presenter
+  return s.follow === 'follow' ? t.short.follow : t.short.free
 }

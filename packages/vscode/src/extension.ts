@@ -6,6 +6,7 @@
 import { randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
+import { previewUrl } from '@presmium/language-server/domain'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '@presmium/language-server/protocol'
 import type { Preview, SectionAt } from '@presmium/language-server/protocol'
 import * as vscode from 'vscode'
@@ -76,14 +77,8 @@ async function openPreview(client: LanguageClient): Promise<void> {
     return
   }
   const base = (await vscode.env.asExternalUri(vscode.Uri.parse(preview.url))).toString(true).replace(/\/?$/, '/')
-  const page = (link: string) => link.split('#')[0]!
   let shown: SectionAt | undefined
-  const urlOf = (section: SectionAt | null | undefined): string => {
-    if (!section) return base
-    const id = encodeURIComponent(section.id)
-    const target = shown && page(shown.link) === page(section.link) ? `${page(section.link)}#${id}` : `${page(section.link)}?section=${id}`
-    return new URL(target.replace(/^\//, ''), base).href
-  }
+  const urlOf = (section: SectionAt | null | undefined): string => previewUrl(base, section, shown)
 
   const first = await sectionAt(client, editor)
   const panel = vscode.window.createWebviewPanel('presmium.preview', `Preview ${vscode.workspace.asRelativePath(preview.entry)}`, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, retainContextWhenHidden: true })

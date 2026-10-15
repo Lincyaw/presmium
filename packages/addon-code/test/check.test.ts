@@ -67,6 +67,9 @@ const PARSER = `class Parser:
 // The same code with blank lines inserted and indented two spaces per level.
 const PARSER_REFORMATTED = `\n\n${PARSER.replace(/^(?: {4})+/gm, lead => ' '.repeat(lead.length / 2))}`
 
+// A fragment without markers or a name, found by its syntax: the guard of checkout.
+const GUARD = 'pattern:src/cart.ts#if ($COND) throw $ERR'
+
 const repos: string[] = []
 afterAll(() => repos.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
@@ -115,6 +118,11 @@ presmium:
 
 \`\`\`{code-ref} symbol:src/parser.py#Parser.parse
 \`\`\`
+
+## Pattern
+
+\`\`\`{code-ref} ${GUARD}
+\`\`\`
 `
   writeFileSync(join(dir, 'deck/lecture.md'), deck)
   return { dir, deck: join(dir, 'deck/lecture.md'), fenceLine: deck.split('\n').indexOf('```{code-ref} region:src/cart.ts#checkout') + 1, edit }
@@ -151,6 +159,7 @@ it('keeps passing after blank lines are inserted and the referenced code is re-i
     'anchor region:src/cart.ts#checkout moved to src/cart.ts:8',
     'anchor symbol:src/cart.ts#total moved to src/cart.ts:3',
     'anchor symbol:src/parser.py#Parser.parse moved to src/parser.py:7',
+    `anchor ${GUARD} moved to src/cart.ts:10`,
   ])
 })
 
@@ -190,4 +199,70 @@ it('reports drift with a diff when the pinned code changes in the working tree',
   expect(drift).toMatchObject({ checkId: 'presmium.code.drift', severity: 'warning', source: { file: repo.deck, line: repo.fenceLine } })
   expect(drift!.message).toMatch(/^code at region:src\/cart\.ts#checkout drifted since pinned commit [0-9a-f]{7}/)
   expect(drift!.hint).toContain('-  const discount = coupon ? 0.1 : 0\n+  const discount = coupon ? 0.2 : 0')
+})
+
+interface CodeNode { value: string, origin: { anchor: string, file: string, startLine: number, endLine: number, pin?: string, permalink?: string } }
+
+/** The code nodes of the deck at `deck` (relative to `dir`), compiled by `presmium ir`. */
+function codeNodes(dir: string, deck = 'deck'): Promise<CodeNode[]> {
+  return new Promise((resolve, reject) => {
+    execFile(process.execPath, [BIN, 'ir', deck], { cwd: dir }, (error, stdout, stderr) => {
+      if (error) return reject(new Error(`presmium ir failed: ${stderr}`))
+      const doc = JSON.parse(stdout) as { sections: { blocks: { node: { type: string } }[] }[] }
+      resolve(doc.sections.flatMap(s => s.blocks.map(b => b.node)).filter(node => node.type === 'code') as unknown as CodeNode[])
+    })
+  })
+}
+
+it('finds a fragment by its syntax with an ast-grep pattern, and reports it lost once nothing matches (P-11)', async () => {
+  const repo = createRepo()
+  const guard = (await codeNodes(repo.dir)).find(node => node.origin.anchor === GUARD)
+  expect(guard?.value).toBe('if (prices.length === 0)\n  throw new Error(\'empty\')')
+  expect(guard?.origin).toMatchObject({ file: 'src/cart.ts', startLine: 8, endLine: 9 })
+
+  repo.edit(CART.replace('throw new Error(\'empty\')', 'return \'empty\''))
+  const { code, findings } = await check(repo.dir)
+  expect(code).toBe(1)
+  expect(findings.filter(f => f.severity === 'error')).toMatchObject([{
+    checkId: 'presmium.code.anchors',
+    message: `anchor ${GUARD} is lost: pattern "if ($COND) throw $ERR" matches nothing in src/cart.ts`,
+  }])
+})
+
+it('reads pinned code from a git submodule and links it to the submodule\'s repository (P-12)', async () => {
+  const repo = createRepo()
+  const lib = mkdtempSync(join(tmpdir(), 'presmium-lib-'))
+  repos.push(lib)
+  const git = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'protocol.file.allow=always', ...args], { cwd, encoding: 'utf8' }).trim()
+  mkdirSync(join(lib, 'src'))
+  writeFileSync(join(lib, 'src/x.ts'), '// lib\n// #region part\nexport function part(a: number): number {\n  return a * 2\n}\n// #endregion part\n')
+  git(lib, 'init', '-q')
+  git(lib, 'add', '.')
+  git(lib, 'commit', '-qm', 'lib')
+  const pinned = git(lib, 'rev-parse', 'HEAD')
+  // The submodule's code changes after the pinned commit.
+  writeFileSync(join(lib, 'src/x.ts'), '// lib\n// #region part\nexport function part(a: number): number {\n  return a * 3\n}\n// #endregion part\n')
+  git(lib, 'commit', '-qam', 'triple')
+
+  git(repo.dir, 'submodule', 'add', '-q', lib, 'vendor/lib')
+  git(repo.dir, 'commit', '-qm', 'lib as a submodule')
+  git(join(repo.dir, 'vendor/lib'), 'remote', 'set-url', 'origin', 'git@github.com:acme/lib.git')
+  mkdirSync(join(repo.dir, 'sub'))
+  writeFileSync(join(repo.dir, 'sub/lecture.md'), `---
+plugins:
+  - ${ADDON}
+presmium:
+  presmium.code:
+    repo: https://github.com/acme/shop
+---
+
+## Library
+
+\`\`\`{code-ref} region:vendor/lib/src/x.ts#part
+:pin: ${pinned.slice(0, 7)}
+\`\`\`
+`)
+  const [part] = await codeNodes(repo.dir, 'sub')
+  expect(part?.value).toBe('export function part(a: number): number {\n  return a * 2\n}')
+  expect(part?.origin).toMatchObject({ file: 'vendor/lib/src/x.ts', pin: pinned, permalink: `https://github.com/acme/lib/blob/${pinned}/src/x.ts#L3-L5` })
 })

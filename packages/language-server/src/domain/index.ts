@@ -1,6 +1,7 @@
 export { BUILTIN_DIRECTIVES, COMMON_OPTIONS, directiveInfos, optionsOf } from './directives.ts'
 export type { DirectiveInfo, OptionInfo } from './directives.ts'
 export { declarationNames, regionNames } from './names.ts'
+export { previewUrl } from './preview.ts'
 export { PREVIEW_REQUEST, SECTION_REQUEST } from './protocol.ts'
 export type { DocumentParams, PositionParams, Preview, SectionAt } from './protocol.ts'
 export { blockAt, sectionAt } from './sections.ts'

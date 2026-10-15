@@ -2,10 +2,14 @@ import { fingerprint, parseAnchor } from '@presmium/kernel'
 import type { AnchorResolver, AnchorString, RecordedAnchor, Resolution, ResolvedLocation } from '@presmium/kernel'
 import { findRegions, toSnippet } from './regions.ts'
 
-/** `scheme:<file>#<name>`: the file is relative to the workspace root. */
+/**
+ * `scheme:<file>#<name>`: the file is relative to the workspace root. A
+ * `pattern` anchor's name is an ast-grep pattern, which may hold `#` itself,
+ * so its file ends at the first `#`.
+ */
 export function splitTarget(anchor: AnchorString): { scheme: string, file: string, name: string } | undefined {
   const parsed = parseAnchor(anchor)
-  const hash = parsed?.target.lastIndexOf('#') ?? -1
+  const hash = (parsed?.scheme === 'pattern' ? parsed.target.indexOf('#') : parsed?.target.lastIndexOf('#')) ?? -1
   if (!parsed || hash <= 0 || hash === parsed.target.length - 1) return undefined
   return { scheme: parsed.scheme, file: parsed.target.slice(0, hash), name: parsed.target.slice(hash + 1) }
 }

@@ -6,6 +6,7 @@
  * the typical error behind each failure.
  */
 import type { RunRequest, RunResult } from '@presmium/kernel'
+import type { ClassroomMessages } from './messages.ts'
 import type { Place } from './place.ts'
 
 const MARKER = '@@presmium-check@@'
@@ -86,26 +87,9 @@ export interface CheckReport {
   output: string
 }
 
-const TYPICAL: Record<string, [kind: string, hint: string]> = {
-  SyntaxError: ['语法错误', '检查括号、冒号与引号是否成对'],
-  IndentationError: ['缩进错误', '同一代码块的缩进要一致'],
-  TabError: ['缩进错误', '不要混用空格与制表符'],
-  NameError: ['名字未定义', '检查拼写，变量与函数要先定义再使用'],
-  NotImplementedError: ['尚未实现', '把占位代码换成实现'],
-  AssertionError: ['结果不对', '对照校验用例检查返回值'],
-  TypeError: ['类型不匹配', '检查参数个数与值的类型，例如是否返回了 None'],
-  ZeroDivisionError: ['除以零', '先处理除数为零的情况，例如空列表'],
-  IndexError: ['下标越界', '检查下标范围与空序列'],
-  KeyError: ['键不存在', '先检查字典中是否有这个键'],
-  AttributeError: ['属性不存在', '检查对象的类型与属性名'],
-  ValueError: ['取值不合法', '检查输入值的范围与格式'],
-  RecursionError: ['递归太深', '检查递归的结束条件'],
-  Timeout: ['运行超时', '可能有死循环，检查循环的结束条件'],
-}
-
-/** The typical error behind a Python exception type. */
-export function typicalError(type: string, message: string, line?: number): CheckError {
-  const [kind, hint] = TYPICAL[type] ?? [type, '查看错误信息']
+/** The typical error behind a Python exception type, named in the language of `t`. */
+export function typicalError(type: string, message: string, t: ClassroomMessages, line?: number): CheckError {
+  const [kind, hint] = t.exercise.typical[type] ?? [type, t.exercise.unknown]
   return { type, message, ...line ? { line } : {}, kind, hint }
 }
 
@@ -115,22 +99,20 @@ interface RawReport {
   cases: { line: number, code: string, ok: boolean, error?: RawError }[]
 }
 
-function checkError(raw: RawError): CheckError {
-  return typicalError(raw.type, raw.message, raw.line ?? undefined)
-}
-
-/** The report of a checking run. */
-export function checkReport(result: RunResult): CheckReport {
+/** The report of a checking run, its errors named in the language of `t`. */
+export function checkReport(result: RunResult, t: ClassroomMessages): CheckReport {
+  const checkError = (raw: RawError) => typicalError(raw.type, raw.message, t, raw.line ?? undefined)
   const at = result.stdout.lastIndexOf(`\n${MARKER}`)
   const output = at >= 0 ? result.stdout.slice(0, at) : result.stdout
   const failed = (error: CheckError): CheckReport => ({ status: 'error', passed: 0, total: 0, cases: [], error, output })
-  if (result.timedOut) return failed(typicalError('Timeout', result.stderr.trim()))
+  if (result.timedOut) return failed(typicalError('Timeout', result.stderr.trim(), t))
   let raw: RawReport | undefined
   try {
     if (at >= 0) raw = JSON.parse(result.stdout.slice(at + MARKER.length + 1)) as RawReport
   } catch {}
   if (!raw || !Array.isArray(raw.cases)) {
-    return failed({ type: 'Error', message: result.stderr.trim() || '校验程序没有给出结果', kind: '无法校验', hint: '校验没有运行完，查看错误信息' })
+    const [kind, hint] = t.exercise.unchecked
+    return failed({ type: 'Error', message: result.stderr.trim() || t.exercise.noResult, kind, hint })
   }
   if (raw.error) return failed(checkError(raw.error))
   const cases = raw.cases.map(c => ({ line: c.line, code: c.code, ok: c.ok, ...c.error ? { error: checkError(c.error) } : {} }))

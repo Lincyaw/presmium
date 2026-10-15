@@ -65,7 +65,7 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, workspace: Workspace, 
   const recorded = ctx.lock.anchors[anchor]
   const current = await ctx.resolvers.resolve(anchor, workspace.src, recorded)
   const where = current.location && `${current.location.file}:${current.location.startLine}`
-  if (current.status === 'lost') fail(`anchor ${anchor} is lost: ${current.message}`, 'restore the #region markers or the declaration, or fix the anchor')
+  if (current.status === 'lost') fail(`anchor ${anchor} is lost: ${current.message}`, 'restore the #region markers, the declaration or the code the pattern matches, or fix the anchor')
   if (current.status === 'fuzzy') {
     report('presmium.code.anchors', 'warning', `anchor ${anchor} needs confirmation: ${current.message}`, `point the anchor at the right candidate, then ${LOCK_HINT}`)
   }

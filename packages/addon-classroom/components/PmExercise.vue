@@ -2,6 +2,7 @@
 import { PmBoundary, useService } from '@presmium/host'
 import { EXECUTOR } from '@presmium/kernel'
 import { computed, ref, shallowRef } from 'vue'
+import { useMessages } from '../src/client/locale.ts'
 import { useClassroomStore, useCollection, useSession } from '../src/client/use.ts'
 import { checkReport, checkRequest, COLLECTIONS, placeKey, reportKinds, submissionId, summarize } from '../src/domain/index.ts'
 import type { CheckError, CheckReport, Place, Submission } from '../src/domain/index.ts'
@@ -21,6 +22,7 @@ const props = withDefaults(defineProps<{
 }>(), { lang: 'python', starter: '', checks: '' })
 
 const executor = useService(EXECUTOR)
+const t = useMessages()
 const { me, status, presenter } = useSession()
 const store = useClassroomStore()
 const submissions = useCollection<Submission>(() => store.value, COLLECTIONS.submissions)
@@ -33,19 +35,25 @@ const summary = computed(() => summarize(submissions.value.map(item => item.valu
 
 const verdict = computed(() => {
   const r = report.value
+  const { exercise } = t.value
   if (!r) return ''
-  if (r.status === 'passed') return `通过 ${r.passed}/${r.total}`
-  if (r.status === 'failed') return `未通过 ${r.total - r.passed}/${r.total}`
-  return `未能运行：${r.error?.kind}`
+  if (r.status === 'passed') return exercise.passed(r.passed, r.total)
+  if (r.status === 'failed') return exercise.failed(r.total - r.passed, r.total)
+  return exercise.notRun(r.error?.kind ?? '')
 })
 
-const describe = (error: CheckError) => `${error.hint}。${error.type}${error.message ? `: ${error.message}` : ''}${error.line ? `（第 ${error.line} 行）` : ''}`
+const describe = (error: CheckError) => t.value.exercise.error(error.hint, error.type, error.message, error.line)
+const summaryText = computed(() => {
+  const { exercise, list, people } = t.value
+  const { submitted, passed, kinds } = summary.value
+  return exercise.summary(submitted, passed) + (kinds.length ? exercise.common(kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)) : '')
+})
 
 async function submit(): Promise<void> {
   if (!executor.value || running.value) return
   running.value = true
   try {
-    const result = checkReport(await executor.value.run(checkRequest(code.value, props.checks, props.timeout)))
+    const result = checkReport(await executor.value.run(checkRequest(code.value, props.checks, props.timeout)), t.value)
     report.value = result
     const participant = me.value
     // The presenter sees the last submission of every learner of an active classroom.
@@ -78,21 +86,21 @@ async function submit(): Promise<void> {
         <textarea
           v-model="code"
           class="pm-exercise__code"
-          aria-label="练习代码"
+          :aria-label="t.exercise.code"
           spellcheck="false"
           autocomplete="off"
           :rows="Math.min(12, code.split('\n').length + 1)"
           @keydown.stop
         />
         <details class="pm-exercise__checks">
-          <summary>校验用例</summary>
+          <summary>{{ t.exercise.checks }}</summary>
           <pre>{{ checks }}</pre>
         </details>
         <p class="pm-classroom-actions">
           <button type="submit" :disabled="running || !executor">
-            {{ running ? '校验中…' : '提交' }}
+            {{ running ? t.exercise.checking : t.exercise.submit }}
           </button>
-          <span v-if="!executor" class="pm-classroom-error">执行服务不可用</span>
+          <span v-if="!executor" class="pm-classroom-error">{{ t.exercise.noExecutor }}</span>
         </p>
       </form>
       <div v-if="report" class="pm-exercise__report">
@@ -100,21 +108,21 @@ async function submit(): Promise<void> {
           {{ verdict }}
         </p>
         <p v-if="report.error" class="pm-exercise__error" :data-kind="report.error.kind">
-          <strong>{{ report.error.kind }}</strong>：{{ describe(report.error) }}
+          <strong>{{ report.error.kind }}</strong>{{ t.colon }}{{ describe(report.error) }}
         </p>
         <ol class="pm-exercise__cases">
           <li v-for="item in report.cases" :key="item.line" :data-ok="item.ok">
             <span aria-hidden="true">{{ item.ok ? '✓' : '✗' }}</span>
             <code>{{ item.code }}</code>
             <p v-if="item.error" class="pm-exercise__error" :data-kind="item.error.kind">
-              <strong>{{ item.error.kind }}</strong>：{{ describe(item.error) }}
+              <strong>{{ item.error.kind }}</strong>{{ t.colon }}{{ describe(item.error) }}
             </p>
           </li>
         </ol>
         <pre v-if="report.output.trim()" class="pm-exercise__output">{{ report.output }}</pre>
       </div>
       <p v-if="presenter" class="pm-exercise__summary">
-        已提交 {{ summary.submitted }} 人，通过 {{ summary.passed }} 人<template v-if="summary.kinds.length">；常见错误：{{ summary.kinds.map(([kind, n]) => `${kind} ${n} 人`).join('，') }}</template>
+        {{ summaryText }}
       </p>
     </div>
   </PmBoundary>

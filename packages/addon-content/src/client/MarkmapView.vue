@@ -3,6 +3,7 @@ import { usePrefersReducedMotion, usePresentationMode } from '@presmium/host'
 import { deriveOptions, Markmap } from 'markmap-view'
 import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import { decodeMarkmap } from '../domain/index.ts'
+import { messages } from './locale.ts'
 
 const props = defineProps<{ data: string }>()
 
@@ -46,6 +47,31 @@ function fit(map: Markmap, el: SVGSVGElement) {
   map.zoom.translateTo(map.svg, (x1 + x2) / 2, (y1 + y2) / 2)
 }
 
+// The fold toggles markmap draws (a circle on each node with children) are buttons for the
+// keyboard too: focusable, named after their node, saying whether it is expanded.
+const TOGGLE = 'g.markmap-node > circle'
+
+function describeToggles(el: SVGSVGElement) {
+  for (const circle of el.querySelectorAll(TOGGLE)) {
+    const node = circle.parentElement!
+    circle.setAttribute('tabindex', '0')
+    circle.setAttribute('role', 'button')
+    circle.setAttribute('aria-expanded', String(!node.classList.contains('markmap-fold')))
+    circle.setAttribute('aria-label', messages().toggle(node.querySelector('foreignObject')?.textContent?.trim() ?? ''))
+  }
+}
+
+// Enter and Space on a toggle click it, as markmap folds a node on a click; the deck does not see the key.
+function onKeydown(event: KeyboardEvent) {
+  const target = event.target as Element
+  if ((event.key !== 'Enter' && event.key !== ' ') || !target.matches(TOGGLE)) return
+  event.preventDefault()
+  event.stopPropagation()
+  target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+}
+
+let toggles: MutationObserver | undefined
+
 onMounted(() => {
   const el = svg.value!
   observer = new ResizeObserver(() => {
@@ -54,10 +80,14 @@ onMounted(() => {
     })
   })
   observer.observe(el)
+  // Markmap redraws nodes, and their fold class, whenever a node is folded or unfolded.
+  toggles = new MutationObserver(() => describeToggles(el))
+  toggles.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] })
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  toggles?.disconnect()
   markmap?.destroy()
 })
 
@@ -68,7 +98,7 @@ watch(failure, (error) => {
 </script>
 
 <template>
-  <svg ref="svg" class="pm-markmap" />
+  <svg ref="svg" class="pm-markmap" @keydown="onKeydown" />
 </template>
 
 <style scoped>
@@ -77,5 +107,9 @@ watch(failure, (error) => {
   width: 100%;
   height: var(--pm-markmap-height, 18rem);
   --markmap-text-color: currentColor;
+}
+.pm-markmap :deep(g.markmap-node > circle:focus-visible) {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 </style>

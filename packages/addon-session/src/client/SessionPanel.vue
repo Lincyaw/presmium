@@ -4,9 +4,11 @@
 import { renderSVG } from 'uqr'
 import { computed, ref } from 'vue'
 import { statusText } from '../domain/index.ts'
+import { useMessages } from './locale.ts'
 import { useClassroom } from './use.ts'
 
 const { session, snapshot } = useClassroom()
+const t = useMessages()
 const name = ref('')
 const busy = ref(false)
 const failure = ref('')
@@ -36,45 +38,45 @@ function submit(): void {
 <template>
   <div v-if="snapshot" class="pm-session" :data-status="snapshot.status" :data-connection="snapshot.connection">
     <p class="pm-session__status" role="status">
-      {{ statusText(snapshot) }}
+      {{ statusText(snapshot, t) }}
     </p>
     <p v-if="!snapshot.server" class="pm-session__hint">
-      文稿照常放映与阅读。要开课，启动 <code>presmium-classroom-server</code>，并在文稿 frontmatter 中设置 <code>presmium.session.server</code>。
+      {{ t.hint[0] }}<code>presmium-classroom-server</code>{{ t.hint[1] }}<code>presmium.session.server</code>{{ t.hint[2] }}
     </p>
     <form v-else-if="snapshot.status === 'idle'" class="pm-session__form" @submit.prevent="submit">
-      <input v-model="name" aria-label="昵称" placeholder="昵称" maxlength="40" required>
+      <input v-model="name" :aria-label="t.nickname" :placeholder="t.nickname" maxlength="40" required>
       <button type="submit" :disabled="busy">
-        {{ snapshot.invitation ? '加入课堂' : '创建课堂' }}
+        {{ snapshot.invitation ? t.join : t.create }}
       </button>
     </form>
     <template v-else>
       <p>
-        课堂 <code class="pm-session__room">{{ snapshot.sessionId }}</code> · {{ snapshot.me?.name }}（{{ presenter ? '主讲' : '学习者' }}）
+        {{ t.classroom }} <code class="pm-session__room">{{ snapshot.sessionId }}</code> · {{ snapshot.me?.name }}{{ presenter ? t.role.presenter : t.role.learner }}
       </p>
       <template v-if="presenter && snapshot.status === 'active' && snapshot.joinUrl">
         <p class="pm-session__join">
-          加入链接：<a class="pm-session__link" :href="snapshot.joinUrl" target="_blank" rel="noopener">{{ snapshot.joinUrl }}</a>
+          {{ t.joinLink }}<a class="pm-session__link" :href="snapshot.joinUrl" target="_blank" rel="noopener">{{ snapshot.joinUrl }}</a>
         </p>
         <!-- eslint-disable-next-line vue/no-v-html -- an SVG generated from the link -->
-        <div class="pm-session__qr" role="img" aria-label="加入课堂的二维码" v-html="qr" />
+        <div class="pm-session__qr" role="img" :aria-label="t.qr" v-html="qr" />
       </template>
       <p class="pm-session__label">
-        参与者（{{ snapshot.participants.length }}）
+        {{ t.participantCount(snapshot.participants.length) }}
       </p>
-      <ul class="pm-session__participants" aria-label="参与者">
+      <ul class="pm-session__participants" :aria-label="t.participants">
         <li v-for="p in snapshot.participants" :key="p.id" :data-role="p.role">
-          {{ p.name }}<span v-if="p.role === 'presenter'">（主讲）</span>
+          {{ p.name }}<span v-if="p.role === 'presenter'">{{ t.role.presenter }}</span>
         </li>
       </ul>
       <p class="pm-session__actions">
         <button v-if="presenter && snapshot.status === 'active'" type="button" :disabled="busy" @click="run(s => s.end())">
-          结束课堂
+          {{ t.end }}
         </button>
-        <button v-if="presenter && snapshot.status === 'ended' && !snapshot.archive" type="button" :disabled="busy" title="把课堂记录写入文稿目录，并从课堂服务中释放" @click="run(s => s.archive())">
-          归档课堂
+        <button v-if="presenter && snapshot.status === 'ended' && !snapshot.archive" type="button" :disabled="busy" :title="t.archiveTitle" @click="run(s => s.archive())">
+          {{ t.archive }}
         </button>
         <button type="button" @click="session?.leave()">
-          离开课堂
+          {{ t.leaveClassroom }}
         </button>
       </p>
     </template>

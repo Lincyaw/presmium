@@ -3,6 +3,7 @@
 import { computed, ref } from 'vue'
 import { COLLECTIONS, notesAt } from '../domain/index.ts'
 import type { Note } from '../domain/index.ts'
+import { useMessages } from './locale.ts'
 import { newId, useCollection, useNotes } from './use.ts'
 import './style.css'
 
@@ -14,6 +15,7 @@ const props = defineProps<{
 }>()
 
 const { store, inClassroom } = useNotes()
+const t = useMessages()
 const notes = useCollection<Note>(() => store.value, COLLECTIONS.notes)
 const here = computed(() => notesAt(notes.value, props.section, props.block))
 const open = ref(false)
@@ -29,25 +31,25 @@ function add(): void {
 
 <template>
   <div class="pm-note-spot" :data-section="section" :data-block="block" :data-notes="here.length">
-    <button type="button" class="pm-note-spot__toggle" :aria-expanded="open" :aria-label="`笔记：${label}`" :title="`笔记：${label}`" @click="open = !open">
-      笔记<span v-if="here.length" class="pm-note-spot__count">{{ here.length }}</span>
+    <button type="button" class="pm-note-spot__toggle" :aria-expanded="open" :aria-label="t.notes.label(label)" :title="t.notes.label(label)" @click="open = !open">
+      {{ t.notes.button }}<span v-if="here.length" class="pm-note-spot__count">{{ here.length }}</span>
     </button>
     <div v-if="open" class="pm-note-spot__panel">
-      <ul v-if="here.length" class="pm-note-spot__list" aria-label="我的笔记">
+      <ul v-if="here.length" class="pm-note-spot__list" :aria-label="t.notes.mine">
         <li v-for="note in here" :key="note.id">
           <span class="pm-note-spot__text">{{ note.value.text }}</span>
-          <button type="button" :aria-label="`删除笔记：${note.value.text}`" @click="store.remove(COLLECTIONS.notes, note.id)">
-            删除
+          <button type="button" :aria-label="t.notes.removeLabel(note.value.text)" @click="store.remove(COLLECTIONS.notes, note.id)">
+            {{ t.notes.remove }}
           </button>
         </li>
       </ul>
       <form @submit.prevent="add">
-        <textarea v-model="text" aria-label="新笔记" rows="2" maxlength="2000" @keydown.stop />
+        <textarea v-model="text" :aria-label="t.notes.new" rows="2" maxlength="2000" @keydown.stop />
         <p class="pm-note-spot__actions">
           <button type="submit" :disabled="!text.trim()">
-            保存笔记
+            {{ t.notes.save }}
           </button>
-          <span class="pm-note-spot__where">{{ inClassroom ? '保存在课堂与这个浏览器中，只有你能看到' : '保存在这个浏览器中，只有你能看到' }}</span>
+          <span class="pm-note-spot__where">{{ inClassroom ? t.notes.inClassroom : t.notes.inBrowser }}</span>
         </p>
       </form>
     </div>

@@ -1,0 +1,144 @@
+/**
+ * The plugin's words in the languages it speaks (N-07). A page shows the
+ * language of its `<html lang>`, else of the browser, else Chinese.
+ */
+export type Locale = 'zh-CN' | 'en'
+
+/** The first of the language tags the plugin speaks; Chinese when none is. */
+export function localeOf(...tags: (string | null | undefined)[]): Locale {
+  for (const tag of tags) {
+    const lang = tag?.trim().toLowerCase() ?? ''
+    if (lang.startsWith('zh')) return 'zh-CN'
+    if (lang.startsWith('en')) return 'en'
+  }
+  return 'zh-CN'
+}
+
+const zh = {
+  classroom: '课堂',
+  status: {
+    noServer: '未连接：文稿没有配置课堂服务',
+    failed: (error: string) => `未连接：${error}`,
+    invited: (room: string) => `未连接：受邀加入课堂 ${room}`,
+    idle: '未连接：尚未加入课堂',
+    archived: (file: string) => `课堂已结束并归档到 ${file}`,
+    ended: '课堂已结束',
+    connecting: '正在连接课堂服务…',
+    presenting: '课堂进行中，你是主讲',
+    following: '课堂进行中，正在跟随主讲',
+    browsing: '课堂进行中，自主浏览',
+  },
+  short: {
+    noServer: '未连接',
+    idle: '未加入',
+    archived: '已归档',
+    ended: '已结束',
+    connecting: '连接中',
+    presenter: '主讲',
+    follow: '跟随',
+    free: '自主',
+  },
+  /** Around the two code names of the hint shown without a classroom server. */
+  hint: ['文稿照常放映与阅读。要开课，启动 ', '，并在文稿 frontmatter 中设置 ', '。'],
+  nickname: '昵称',
+  create: '创建课堂',
+  join: '加入课堂',
+  joinRoom: (room: string) => `加入课堂 ${room}`,
+  role: { presenter: '（主讲）', learner: '（学习者）' },
+  joinLink: '加入链接：',
+  qr: '加入课堂的二维码',
+  participants: '参与者',
+  participantCount: (n: number) => `参与者（${n}）`,
+  end: '结束课堂',
+  archive: '归档课堂',
+  archiveTitle: '把课堂记录写入文稿目录，并从课堂服务中释放',
+  leaveClassroom: '离开课堂',
+  leave: '离开',
+  close: '关闭',
+  badge: '课堂状态',
+  followingPresenter: '正在跟随主讲',
+  browseAlone: '自主浏览',
+  browsingAlone: '自主浏览中',
+  presenterAt: (slide: number, step: number) => `主讲在第 ${slide} 节第 ${step} 步`,
+  backToPresenter: '回到主讲进度',
+  defaultName: { presenter: '主讲', learner: '学习者' },
+  errors: {
+    noServer: '文稿没有配置课堂服务',
+    ended: '课堂已结束，不再接受写入',
+    archived: '课堂已归档',
+    closed: (code: number) => `课堂服务关闭了连接（${code}）`,
+    unreachable: (server: string) => `无法连接课堂服务 ${server}`,
+    onlyPresenterEnds: '只有主讲可以结束课堂',
+    onlyPresenterArchives: '只有主讲可以归档课堂',
+    notCreator: '只有创建课堂的主讲可以归档',
+    noRoom: '课堂服务中没有这个课堂',
+    alreadyArchived: '课堂已经归档',
+    archiveFailed: (status: number) => `归档失败（${status}）`,
+  },
+}
+
+export type SessionMessages = typeof zh
+
+const en: SessionMessages = {
+  classroom: 'Classroom',
+  status: {
+    noServer: 'Not connected: the deck has no classroom server',
+    failed: error => `Not connected: ${error}`,
+    invited: room => `Not connected: invited to classroom ${room}`,
+    idle: 'Not connected: not in a classroom',
+    archived: file => `The classroom has ended and is archived to ${file}`,
+    ended: 'The classroom has ended',
+    connecting: 'Connecting to the classroom server…',
+    presenting: 'Classroom in progress, you are presenting',
+    following: 'Classroom in progress, following the presenter',
+    browsing: 'Classroom in progress, browsing alone',
+  },
+  short: {
+    noServer: 'not connected',
+    idle: 'not joined',
+    archived: 'archived',
+    ended: 'ended',
+    connecting: 'connecting',
+    presenter: 'presenting',
+    follow: 'following',
+    free: 'browsing',
+  },
+  hint: ['The deck presents and reads as usual. To hold a classroom, start ', ' and set ', ' in the deck frontmatter.'],
+  nickname: 'Nickname',
+  create: 'Create classroom',
+  join: 'Join classroom',
+  joinRoom: room => `Join classroom ${room}`,
+  role: { presenter: ' (presenter)', learner: ' (learner)' },
+  joinLink: 'Join link: ',
+  qr: 'QR code to join the classroom',
+  participants: 'Participants',
+  participantCount: n => `Participants (${n})`,
+  end: 'End classroom',
+  archive: 'Archive classroom',
+  archiveTitle: 'Write the classroom record to the deck directory and free it on the classroom server',
+  leaveClassroom: 'Leave classroom',
+  leave: 'Leave',
+  close: 'Close',
+  badge: 'Classroom status',
+  followingPresenter: 'Following the presenter',
+  browseAlone: 'Browse alone',
+  browsingAlone: 'Browsing alone',
+  presenterAt: (slide, step) => `The presenter is at section ${slide}, step ${step}`,
+  backToPresenter: 'Back to the presenter',
+  defaultName: { presenter: 'Presenter', learner: 'Learner' },
+  errors: {
+    noServer: 'The deck has no classroom server',
+    ended: 'The classroom has ended and takes no more writes',
+    archived: 'The classroom has been archived',
+    closed: code => `The classroom server closed the connection (${code})`,
+    unreachable: server => `Cannot reach the classroom server ${server}`,
+    onlyPresenterEnds: 'Only the presenter can end the classroom',
+    onlyPresenterArchives: 'Only the presenter can archive the classroom',
+    notCreator: 'Only the presenter who created the classroom can archive it',
+    noRoom: 'The classroom server has no such classroom',
+    alreadyArchived: 'The classroom is already archived',
+    archiveFailed: status => `Archiving failed (${status})`,
+  },
+}
+
+export const MESSAGES: Record<Locale, SessionMessages> = { 'zh-CN': zh, en }

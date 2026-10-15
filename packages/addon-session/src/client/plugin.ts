@@ -3,6 +3,7 @@ import { CLASSROOM_STORE, PRESENTER_PANELS, SESSION } from '@presmium/kernel'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { SESSION_ID, sessionConfig } from '../domain/index.ts'
 import { createClassroom } from './classroom.ts'
+import { messages } from './locale.ts'
 import SessionPanel from './SessionPanel.vue'
 import SessionToolbar from './SessionToolbar.vue'
 
@@ -48,8 +49,8 @@ export const sessionPlugin: PluginDefinition = {
     cleanup = [
       classroom.dispose,
       ctx.tryGet(SYNC_TRANSPORTS)?.add(classroom.transport),
-      ctx.tryGet(TOOLBAR)?.register({ id: SESSION_ID, title: '课堂', component: SessionToolbar }),
-      ctx.tryGet(PRESENTER_PANELS)?.register({ id: SESSION_ID, title: '课堂', component: SessionPanel, order: 10 }),
+      ctx.tryGet(TOOLBAR)?.register({ id: SESSION_ID, title: messages().classroom, component: SessionToolbar }),
+      ctx.tryGet(PRESENTER_PANELS)?.register({ id: SESSION_ID, title: messages().classroom, component: SessionPanel, order: 10 }),
     ].filter(stop => stop !== undefined)
     void classroom.resume(location.search)
   },

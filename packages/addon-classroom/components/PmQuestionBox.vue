@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PmBoundary } from '@presmium/host'
 import { computed, ref } from 'vue'
+import { useMessages } from '../src/client/locale.ts'
 import { newId, useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
 import { COLLECTIONS, placeText } from '../src/domain/index.ts'
 import type { Place, Question } from '../src/domain/index.ts'
@@ -21,8 +22,9 @@ const store = useClassroomStore()
 const questions = useCollection<Question>(() => store.value, COLLECTIONS.questions)
 const { failure, write } = useWrite()
 const text = ref('')
+const t = useMessages()
 
-const where = computed(() => (props.place ? placeText({ ...props.place, block: props.target }) : ''))
+const where = computed(() => (props.place ? placeText({ ...props.place, block: props.target }, t.value) : ''))
 const here = computed(() => questions.value
   .filter(({ value }) => value.section === props.place?.section && value.block === props.target)
   .sort((a, b) => a.value.at - b.value.at))
@@ -59,26 +61,26 @@ function toggleAnswered(id: string, question: Question): void {
         <slot />
       </div>
       <form v-if="canAsk" class="pm-question-box__form" @submit.prevent="ask">
-        <textarea v-model="text" aria-label="问题" rows="2" maxlength="500" placeholder="写下你的问题" @keydown.stop />
+        <textarea v-model="text" :aria-label="t.questions.question" rows="2" maxlength="500" :placeholder="t.questions.placeholder" @keydown.stop />
         <p class="pm-classroom-actions">
           <button type="submit" :disabled="!text.trim()">
-            提问
+            {{ t.questions.ask }}
           </button>
-          <span class="pm-classroom-status">问题挂在{{ where }}</span>
+          <span class="pm-classroom-status">{{ t.questions.attachedTo(where) }}</span>
         </p>
       </form>
       <p v-else-if="!joined" class="pm-classroom-status">
-        加入课堂后，可以在这里向主讲提问。
+        {{ t.questions.joinFirst }}
       </p>
       <p v-else-if="status !== 'active'" class="pm-classroom-status">
-        课堂已结束，不再接受提问。
+        {{ t.questions.ended }}
       </p>
-      <ul v-if="shown.length" class="pm-question-box__list" :aria-label="presenter ? '这里的提问' : '我的提问'">
+      <ul v-if="shown.length" class="pm-question-box__list" :aria-label="presenter ? t.questions.here : t.questions.mine">
         <li v-for="item in shown" :key="item.id" :data-answered="item.value.answered ? '' : undefined">
-          <span v-if="presenter" class="pm-question-box__name">{{ item.value.name }}：</span>{{ item.value.text }}
-          <span v-if="item.value.answered" class="pm-question-box__answered">（已回答）</span>
+          <span v-if="presenter" class="pm-question-box__name">{{ item.value.name }}{{ t.colon }}</span>{{ item.value.text }}
+          <span v-if="item.value.answered" class="pm-question-box__answered">{{ t.questions.answered }}</span>
           <button v-if="presenter && status === 'active'" type="button" @click="toggleAnswered(item.id, item.value)">
-            {{ item.value.answered ? '标为未回答' : '标为已回答' }}
+            {{ item.value.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
           </button>
         </li>
       </ul>

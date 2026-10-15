@@ -6,23 +6,35 @@
  * classroom survives reconnects and a late joiner gets its whole state.
  *
  * It speaks the y-websocket protocol through `y-protocols`, the building
- * blocks of y-websocket itself. Beyond that it knows one entry of the session
- * plugin's document: `status` in the `session` map. A room whose classroom has
- * ended is read-only. `POST /archive/<room>` archives a classroom (P-60): it
- * writes the document as JSON to `<deck>/.presmium/classroom/<room>.json` and
- * frees the room, together with the participants' own rooms `<room>.<key>`;
- * clients still connected, or connecting later, are closed with code 4410,
- * which y-websocket providers do not retry.
+ * blocks of y-websocket itself. Beyond that it knows the layout of the session
+ * plugin's document (`session`, `store:<collection>`, `sync:<channel>` maps).
+ * A room whose classroom has ended (`status` in the `session` map) is
+ * read-only. `POST /archive/<room>` archives a classroom (P-60): it writes the
+ * document as JSON to `<deck>/.presmium/classroom/<room>.json` and frees the
+ * room, together with the participants' own rooms `<room>.<key>`; clients
+ * still connected, or connecting later, are closed with code 4410, which
+ * y-websocket providers do not retry.
  *
- * Trust: the server is meant for a classroom's own network and does not
- * authenticate participants. Whoever has a join link can write to the room's
- * document, the classroom record included, so the presenter's rights (ending
- * the classroom, opening a quiz, marking questions answered) are enforced by
- * the clients only. Archiving, which disconnects everyone and frees the
- * participants' rooms, takes the room's key: the window that creates a room
- * claims it by connecting with `?claim=<key>`, and `POST /archive/<room>`
- * must send that key as its body. Anyone can still create and archive rooms
- * of their own, each an archive file of bounded name in `<deck>/.presmium/classroom/`.
+ * Trust: the server is meant for a classroom's own network. Whoever has a
+ * join link can connect and read the classroom, but the presenter's rights
+ * are enforced here (domain model, section 8). The window that creates a
+ * room claims it by connecting with `?claim=<key>`; connections that present
+ * that key are the presenter's and may write anything. Any other connection
+ * may write only its participant's own entries of the classroom store
+ * (`store:<collection>`): the entry's key names the participant
+ * (`<quiz>:<participant>`, `<participant>:<question>`, ...) and its value
+ * says so (`participant` or `author`). The classroom record (`session`, e.g.
+ * ending the classroom), the quizzes (`store:quizzes`, opening and closing
+ * them) and the presenter's synchronized state (`sync:<channel>`) are the
+ * presenter's alone. A connection proves its participant with
+ * `?participant=<id>&key=<key>`: the first connection that names a
+ * participant binds the id to its key. An update that breaks these rules is
+ * dropped. A participant's own rooms (`<room>.<key>`, named by a key only
+ * that participant knows) take any write. Archiving, which disconnects
+ * everyone and frees the participants' rooms, takes the claim key too:
+ * `POST /archive/<room>` must send it as its body. Anyone can still create
+ * and archive rooms of their own, each an archive file of bounded name in
+ * `<deck>/.presmium/classroom/`.
  */
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -55,9 +67,14 @@ class Room extends Y.Doc {
   archived = false
   /** Digest of the key that archives the room, from the first connection that claimed it. */
   claim?: Buffer
+  /** Digests of the participants' keys, by participant id, from the first connection that named each. */
+  readonly participants = new Map<string, Buffer>()
+  /** A participant's own room, `<room>.<key>`: whoever knows its name may write to it. */
+  readonly personal: boolean
 
-  constructor() {
+  constructor(name: string) {
     super({ gc: true })
+    this.personal = name.includes('.')
     this.awareness.setLocalState(null)
     this.on('update', (update: Uint8Array) => {
       const encoder = encoding.createEncoder()
@@ -115,13 +132,17 @@ function roomName(url = '/'): string | undefined {
   return ROOM.test(name) ? name : undefined
 }
 
-/** The `claim` parameter of a request URL: the key that will archive the room. */
-function claimOf(url = '/'): string | undefined {
-  return new URL(url, 'http://classroom').searchParams.get('claim') || undefined
+/** The parameters of a connection: `claim`, the presenter's key to the room; `participant` and its `key`. */
+function paramsOf(url = '/'): URLSearchParams {
+  return new URL(url, 'http://classroom').searchParams
 }
 
 function digest(key: string): Buffer {
   return createHash('sha256').update(key).digest()
+}
+
+function sameKey(known: Buffer | undefined, key: string | null): boolean {
+  return Boolean(known && key && timingSafeEqual(known, digest(key)))
 }
 
 /** The body of a small request, at most `limit` bytes. */
@@ -138,12 +159,54 @@ function readBody(request: IncomingMessage, limit = 1024): Promise<string> {
   })
 }
 
-function handle(room: Room, conn: WebSocket, data: Uint8Array): void {
+/** What a connection may write: anything from the presenter's windows, else its participant's own entries. */
+interface Writer {
+  presenter: boolean
+  /** The participant the connection proved with its key. */
+  participant?: string
+}
+
+/** Whether a change to entry `key` of the top-level map `name`, now `value` (undefined: deleted), is the participant's to make. */
+function ownEntry(name: string, key: string | null, value: unknown, participant: string | undefined): boolean {
+  if (!participant || key === null || !name.startsWith('store:') || name === 'store:quizzes') return false
+  if (!key.split(':').includes(participant)) return false
+  if (value === undefined) return true
+  const entry = value as { participant?: unknown, author?: unknown } | null
+  return typeof entry === 'object' && entry !== null && !(entry instanceof Y.AbstractType) && (entry.participant === participant || entry.author === participant)
+}
+
+/** Whether an update from a connection that is not the presenter's changes only its participant's entries: it is tried on a copy of the room. */
+function admissible(room: Room, update: Uint8Array, writer: Writer): boolean {
+  const probe = new Y.Doc()
+  Y.applyUpdate(probe, Y.encodeStateAsUpdate(room))
+  const changes: [type: unknown, keys: Set<string | null>][] = []
+  probe.on('afterTransaction', (transaction: Y.Transaction) => changes.push(...transaction.changed))
+  Y.applyUpdate(probe, update)
+  // A change inside a nested type has no top-level name: the plugins store plain values only.
+  const named = changes.map(([type, keys]) => [[...probe.share].find(([, shared]) => shared === type)?.[0], keys] as const)
+  const ok = named.every(([name, keys]) => name !== undefined
+    && [...keys].every(key => ownEntry(name, key, key === null ? undefined : probe.getMap(name).get(key), writer.participant)))
+  probe.destroy()
+  return ok
+}
+
+function handle(room: Room, conn: WebSocket, data: Uint8Array, writer: Writer): void {
   const decoder = decoding.createDecoder(data)
   const type = decoding.readVarUint(decoder)
   if (type === MESSAGE_SYNC) {
-    // An ended classroom still answers what a client asks for (step 1), but takes no updates.
-    if (room.ended && decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1) return
+    // Sync step 1 asks for what the client lacks; step 2 and updates write to the room.
+    if (decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1) {
+      // An ended classroom still answers what a client asks for, but takes no updates.
+      if (room.ended) return
+      if (!writer.presenter && !room.personal) {
+        const update = decoding.clone(decoder)
+        decoding.readVarUint(update)
+        if (!admissible(room, decoding.readVarUint8Array(update), writer)) {
+          console.warn(`[classroom] dropped an update to the classroom that is not ${writer.participant ? `participant ${writer.participant}'s` : 'an identified participant\'s'} to write`)
+          return
+        }
+      }
+    }
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, MESSAGE_SYNC)
     syncProtocol.readSyncMessage(decoder, encoder, room, conn)
@@ -189,7 +252,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
     if (archivedNames.has(name)) return { status: 410, body: { error: `课堂 ${name} 已归档` } }
     const room = rooms.get(name)
     if (!room) return { status: 404, body: { error: `没有课堂 ${name}` } }
-    if (!room.claim || !timingSafeEqual(room.claim, digest(key))) return { status: 403, body: { error: '只有创建课堂的主讲可以归档' } }
+    if (!sameKey(room.claim, key)) return { status: 403, body: { error: '只有创建课堂的主讲可以归档' } }
     const now = Date.now()
     room.transact(() => {
       if (!room.ended) {
@@ -252,15 +315,24 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
       return
     }
     let room = rooms.get(name)
-    if (!room) rooms.set(name, room = new Room())
+    if (!room) rooms.set(name, room = new Room(name))
     const current = room
-    const claim = claimOf(request.url)
+    const params = paramsOf(request.url)
+    const claim = params.get('claim')
     if (claim && !current.claim) current.claim = digest(claim)
+    const writer: Writer = { presenter: sameKey(current.claim, claim) }
+    // The first connection that names a participant binds the id to its key; later ones must bring the same key.
+    const participant = params.get('participant')
+    const key = params.get('key')
+    if (participant && key && ROOM.test(participant)) {
+      if (!current.participants.has(participant)) current.participants.set(participant, digest(key))
+      if (sameKey(current.participants.get(participant), key)) writer.participant = participant
+    }
     current.conns.set(conn, new Set())
     conn.binaryType = 'arraybuffer'
     conn.on('message', (data: ArrayBuffer) => {
       try {
-        handle(current, conn, new Uint8Array(data))
+        handle(current, conn, new Uint8Array(data), writer)
       } catch (error) {
         console.error(`[classroom] room ${name}: bad message`, error)
       }

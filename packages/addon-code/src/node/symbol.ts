@@ -1,4 +1,4 @@
-import type { AnchorResolver } from '@presmium/kernel'
+import type { AnchorResolver, AnchorString, SourceReader } from '@presmium/kernel'
 import python from '@ast-grep/lang-python'
 import { Lang, parse, registerDynamicLanguage } from '@ast-grep/napi'
 import type { SgNode } from '@ast-grep/napi'
@@ -85,6 +85,20 @@ function describe(file: string, lines: string[], node: SgNode): Candidate {
   return { location, print: codeFingerprint(text.join('\n')) }
 }
 
+type Tree = { failure: string } | { target: NonNullable<ReturnType<typeof splitTarget>>, at: string, lines: string[], root: SgNode }
+
+/** The syntax tree of an anchor's file, or why there is none. */
+async function syntaxTree(anchor: AnchorString, src: SourceReader, ref: string | undefined, expected: string): Promise<Tree> {
+  const target = splitTarget(anchor)
+  if (!target) return { failure: `malformed anchor "${anchor}": expected ${expected}` }
+  const lang = LANGS[target.file.split('.').pop() ?? '']
+  if (!lang) return { failure: `${target.scheme} anchors support ${Object.keys(LANGS).map(e => `.${e}`).join(' ')} files, not ${target.file}` }
+  const at = ref ? ` at ${ref}` : ''
+  const text = await src.read(target.file, ref)
+  if (text === undefined) return { failure: `${target.file} not found${at}` }
+  return { target, at, lines: text.split(/\r?\n/), root: parse(lang, text).root() }
+}
+
 /**
  * `symbol:<file>#<name>[.<member>...]`: a declaration found by name in the
  * syntax tree (P-11), for code that cannot carry region markers. Supports
@@ -93,16 +107,9 @@ function describe(file: string, lines: string[], node: SgNode): Candidate {
 export const symbolResolver: AnchorResolver = {
   scheme: 'symbol',
   async resolve(anchor, src, recorded, ref) {
-    const target = splitTarget(anchor)
-    if (!target) return { status: 'lost', message: `malformed anchor "${anchor}": expected symbol:<file>#<name>` }
-    const lang = LANGS[target.file.split('.').pop() ?? '']
-    if (!lang) return { status: 'lost', message: `symbol anchors support ${Object.keys(LANGS).map(e => `.${e}`).join(' ')} files, not ${target.file}` }
-    const text = await src.read(target.file, ref)
-    const at = ref ? ` at ${ref}` : ''
-    if (text === undefined) return { status: 'lost', message: `${target.file} not found${at}` }
-
-    const lines = text.split(/\r?\n/)
-    const root = parse(lang, text).root()
+    const tree = await syntaxTree(anchor, src, ref, 'symbol:<file>#<name>')
+    if ('failure' in tree) return { status: 'lost', message: tree.failure }
+    const { target, at, lines, root } = tree
     let node: SgNode | undefined = root
     for (const name of target.name.split('.')) {
       node = declarations(node).find(d => nameOf(d)!.text() === name)
@@ -114,5 +121,49 @@ export const symbolResolver: AnchorResolver = {
     }
     const candidates = declarations(root).map(d => describe(target.file, lines, d))
     return notFound(`symbol "${target.name}" not found in ${target.file}${at}`, candidates, recorded)
+  },
+}
+
+/** The whole lines of a node, fingerprinted as region and pattern anchors are. */
+function span(file: string, lines: string[], node: SgNode): Candidate {
+  const { start, end } = node.range()
+  const location = locate(file, lines, start.line + 1, end.line + 1)
+  return { location, print: codeFingerprint(location.text) }
+}
+
+/** Every node of a tree, each line span once: where locked code may be found again. */
+function spans(file: string, lines: string[], root: SgNode): Candidate[] {
+  const seen = new Map<string, Candidate>()
+  const visit = (node: SgNode) => {
+    const { start, end } = node.range()
+    const key = `${start.line}:${end.line}`
+    if (!seen.has(key)) seen.set(key, span(file, lines, node))
+    node.children().forEach(visit)
+  }
+  visit(root)
+  return [...seen.values()]
+}
+
+/**
+ * `pattern:<file>#<ast-grep pattern>`: the code that matches a pattern of
+ * ast-grep (P-11), e.g. `pattern:src/cart.ts#if (prices.length === 0) $$$`,
+ * for a fragment found by its syntactic structure rather than by a name;
+ * `$NAME` matches any one node, `$$$` any number. The first match in the file
+ * counts, as whole lines. Supports the languages of `symbol` anchors.
+ */
+export const patternResolver: AnchorResolver = {
+  scheme: 'pattern',
+  async resolve(anchor, src, recorded, ref) {
+    const tree = await syntaxTree(anchor, src, ref, 'pattern:<file>#<pattern>')
+    if ('failure' in tree) return { status: 'lost', message: tree.failure }
+    const { target, at, lines, root } = tree
+    let match: SgNode | null
+    try {
+      match = root.find(target.name)
+    } catch (error) {
+      return { status: 'lost', message: `invalid pattern "${target.name}": ${error instanceof Error ? error.message : String(error)}` }
+    }
+    if (match) return found(span(target.file, lines, match).location, recorded)
+    return notFound(`pattern "${target.name}" matches nothing in ${target.file}${at}`, recorded ? spans(target.file, lines, root) : [], recorded)
   },
 }
