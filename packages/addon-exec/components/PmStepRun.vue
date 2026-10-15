@@ -17,7 +17,16 @@ const props = withDefaults(defineProps<{
   code?: string
   params?: Record<string, string | number | boolean>
   timeout?: number
-}>(), { lang: 'python' })
+  /**
+   * Number of steps (executed lines), shown in the status once traced. Declare it:
+   * the steps then exist before the trace has run, so opening the slide at a
+   * step (link, reload, going back from the next slide) shows that step (K-04).
+   * Without it the steps appear only once the trace is ready.
+   */
+  steps?: number
+  /** Click of the first step, like `at` of Slidev code blocks; set it when other clicks on the slide come first. */
+  at?: number
+}>(), { lang: 'python', at: 1 })
 
 const tracer = useService(TRACER)
 const report = useStartReport()
@@ -25,13 +34,17 @@ const source = ref<HTMLElement>()
 const mounted = ref(false)
 const trace = shallowRef<Trace>()
 
-// Each step mark reports whether its step has been reached; the current step is the furthest one.
+const count = computed(() => props.steps ?? trace.value?.events.length ?? 0)
+const traced = computed(() => (trace.value?.error === undefined ? trace.value?.events.length : undefined))
+const mismatch = computed(() => props.steps !== undefined && traced.value !== undefined && traced.value !== props.steps)
+
+// Each step mark reports whether its click has been reached; marks are consecutive, so the step is how many are.
 const marks = shallowReactive(new Map<number, Readonly<Ref<StepState>>>())
-provide(STEP_MARKS, (at, state) => {
-  marks.set(at, state)
-  return () => marks.delete(at)
+provide(STEP_MARKS, (click, state) => {
+  marks.set(click, state)
+  return () => marks.delete(click)
 })
-const step = computed(() => Math.max(0, ...[...marks].filter(([, state]) => state.value.reached).map(([at]) => at)))
+const step = computed(() => [...marks.values()].filter(state => state.value.reached).length)
 const frame = computed(() => (trace.value ? frameAt(trace.value, step.value) : undefined))
 const state = computed(() => {
   if (trace.value) return trace.value.error === undefined ? 'ready' : 'failed'
@@ -57,7 +70,7 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
     <div
       class="pm-step-run"
       :data-state="state"
-      :data-steps="trace?.events.length"
+      :data-steps="count"
       :data-step="frame?.step"
       :data-line="frame?.line"
     >
@@ -78,19 +91,23 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
             追踪失败
           </template>
           <template v-else>
-            第 {{ frame?.step }} / {{ trace?.events.length }} 步<template v-if="frame?.line">
+            第 {{ frame?.step }} / {{ traced }} 步<template v-if="frame?.line">
               · 第 {{ frame.line }} 行
             </template>
             <template v-if="trace?.truncated">
               （已截断）
             </template>
+            <div v-if="mismatch" class="pm-step-run__warning">
+              steps 声明为 {{ steps }}，实际执行 {{ traced }} 行
+            </div>
+            <div v-else-if="steps === undefined" class="pm-step-run__warning">
+              未声明 steps（应为 {{ traced }}），直接打开某一步时无法恢复
+            </div>
           </template>
         </div>
         <pre class="pm-step-run__output">{{ trace?.error ?? frame?.output }}</pre>
       </div>
-      <template v-if="trace">
-        <StepMark v-for="i in trace.events.length" :key="i" :at="i" />
-      </template>
+      <StepMark v-for="i in count" :key="i" :at="at + i - 1" />
     </div>
   </PmBoundary>
 </template>
@@ -116,6 +133,9 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
 .pm-step-run__status {
   margin-bottom: 0.35rem;
   opacity: 0.75;
+}
+.pm-step-run__warning {
+  color: #d97706;
 }
 .pm-step-run__output {
   margin: 0;

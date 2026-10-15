@@ -1,11 +1,14 @@
 import type { RunResult } from '@presmium/kernel'
 import { diffLines } from 'diff'
 
+/** Output recorded ahead of time, shown when a run fails or times out (P-24). */
+export type RecordedOutput = string
+
 /**
  * P-24: a failed or timed-out run shows the recorded output instead, marked as
  * `source: 'recorded'`; the live stderr and `timedOut` are kept to explain why.
  */
-export function withRecordedFallback(result: RunResult, recorded: string | undefined): RunResult {
+export function withRecordedFallback(result: RunResult, recorded: RecordedOutput | undefined): RunResult {
   if (result.ok || recorded === undefined) return result
   return { ...result, stdout: recorded, source: 'recorded' }
 }
@@ -24,12 +27,15 @@ export interface RunRecord {
   result: RunResult
 }
 
-export function appendRun(history: readonly RunRecord[], args: Record<string, string>, result: RunResult): RunRecord[] {
+/** The runs of one code block in the current view, oldest first; any two can be compared. */
+export type RunHistory = readonly RunRecord[]
+
+export function appendRun(history: RunHistory, args: Record<string, string>, result: RunResult): RunHistory {
   return [...history, { id: history.length + 1, args: { ...args }, result }]
 }
 
 /** The two records compared by default: the last two runs. */
-export function defaultPair(history: readonly RunRecord[]): [number, number] | undefined {
+export function defaultPair(history: RunHistory): [number, number] | undefined {
   const n = history.length
   return n >= 2 ? [history[n - 2]!.id, history[n - 1]!.id] : undefined
 }

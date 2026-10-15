@@ -65,6 +65,30 @@ test('stepping back returns the output to the previous step', async ({ page }) =
   await expect(output).toHaveText('n=1 total=1\n')
 })
 
+test('opening the stepwise slide at a step shows the same as stepping there', async ({ page }) => {
+  const jumped = (await openSlide(page, 'exec-steps?clicks=7', '分步执行')).locator('.pm-step-run')
+  await expect(jumped).toHaveAttribute('data-state', 'ready', RUNTIME)
+  await expect(jumped).toHaveAttribute('data-step', '7')
+  await expect(page).toHaveURL(/clicks=7/)
+  const expected = await jumped.innerHTML()
+
+  const stepped = (await openSlide(page, 'exec-steps', '分步执行')).locator('.pm-step-run')
+  await expect(stepped).toHaveAttribute('data-state', 'ready', RUNTIME)
+  for (let step = 1; step <= 7; step++) {
+    await page.keyboard.press('ArrowRight')
+    await expect(stepped).toHaveAttribute('data-step', String(step))
+  }
+  expect(await stepped.innerHTML()).toBe(expected)
+
+  // Going back from the next slide, before anything has been traced, lands on the last step.
+  await openSlide(page, 'exec-fallback', '预录输出回退')
+  await page.keyboard.press('ArrowLeft')
+  const back = page.locator('.slidev-page', { has: page.locator('h1', { hasText: '分步执行' }) }).locator('.pm-step-run')
+  await expect(back).toBeVisible()
+  await expect(back).toHaveAttribute('data-step', '12', RUNTIME)
+  await expect(back.locator('.pm-step-run__output')).toHaveText('n=1 total=1\nn=2 total=3\nn=3 total=6\ndone\n')
+})
+
 test('a run that times out shows the recorded output, marked as recorded', async ({ page }) => {
   const panel = await openPanel(page, 'exec-fallback', '预录输出回退')
   await panel.locator('.pm-run-panel__run').click()

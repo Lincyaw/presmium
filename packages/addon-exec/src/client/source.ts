@@ -19,7 +19,7 @@ export function stringArgs(params: Record<string, unknown> | undefined): Record<
   return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, String(value)]))
 }
 
-/** Lets step marks report their step state to the component that renders them. */
-export type RegisterStepMark = (at: number, state: Readonly<Ref<StepState>>) => () => void
+/** Lets step marks report the state of their click to the component that renders them. */
+export type RegisterStepMark = (click: number, state: Readonly<Ref<StepState>>) => () => void
 
 export const STEP_MARKS: InjectionKey<RegisterStepMark> = Symbol('presmium.exec.stepMarks')

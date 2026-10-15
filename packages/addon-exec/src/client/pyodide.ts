@@ -4,10 +4,12 @@ import type { Trace, Tracer } from '../domain/index.ts'
 import type { RunOutput, TraceOutput, WorkerReply, WorkerRequest } from './protocol.ts'
 
 export interface PyodideExecutorOptions {
-  /** Base URL of the Pyodide runtime files, ending with `/`. */
+  /** Base URL of the Pyodide runtime files, ending with `/`; resolved against the page URL when a request is sent. */
   indexURL: string
   /** Default timeout; counted from the start of execution, so loading the runtime is not included. */
   timeoutMs: number
+  /** How long a request waits for the runtime to load before it fails, so a stalled download still ends (P-24). */
+  loadTimeoutMs: number
   maxTraceEvents: number
 }
 
@@ -19,8 +21,8 @@ type Outcome<T> =
 
 /**
  * Python in the browser (P-23): Pyodide runs in a worker, one request at a
- * time. A run that exceeds its timeout or is aborted terminates the worker;
- * the next request starts a fresh one.
+ * time. A request that exceeds its load or run timeout, or is aborted,
+ * terminates the worker; the next request starts a fresh one.
  */
 export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideExecutor {
   const id = 'pyodide'
@@ -35,7 +37,8 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
     const job = () => new Promise<Outcome<T>>((resolve) => {
       if (signal?.aborted) return resolve({ ok: false, error: '已取消', timedOut: false, durationMs: 0 })
       const target = spawn()
-      const message: WorkerRequest = { id: ++ids, kind, request: plain(request), indexURL: options.indexURL, maxEvents: options.maxTraceEvents }
+      const indexURL = new URL(options.indexURL, location.href).href
+      const message: WorkerRequest = { id: ++ids, kind, request: plain(request), indexURL, maxEvents: options.maxTraceEvents }
       let started = 0
       let timer: ReturnType<typeof setTimeout> | undefined
       const elapsed = () => (started ? Math.round(performance.now() - started) : 0)
@@ -54,6 +57,7 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       const onMessage = ({ data }: MessageEvent<WorkerReply>) => {
         if (data.id !== message.id) return
         if (data.type === 'started') {
+          clearTimeout(timer)
           started = performance.now()
           const timeoutMs = request.timeoutMs ?? options.timeoutMs
           timer = setTimeout(() => kill(`执行超过 ${timeoutMs} ms，已停止`, true), timeoutMs)
@@ -68,6 +72,7 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       target.addEventListener('message', onMessage)
       target.addEventListener('error', onError)
       signal?.addEventListener('abort', onAbort)
+      timer = setTimeout(() => kill(`Python 运行时 ${options.loadTimeoutMs} ms 内未加载完成，已停止`, true), options.loadTimeoutMs)
       target.postMessage(message)
     })
     const outcome = queue.then(job)

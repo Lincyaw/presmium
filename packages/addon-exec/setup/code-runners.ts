@@ -31,4 +31,4 @@ const python: CodeRunner = async (code, { options }) => {
   return outputs(withRecordedFallback(await executor.run({ lang: 'python', code, timeoutMs }), recorded))
 }
 
-export default defineCodeRunnersSetup(() => ({ python, py: python }))
+export default defineCodeRunnersSetup(() => ({ python, py: python, python3: python }))

@@ -4,7 +4,7 @@ import { EXECUTOR } from '@presmium/kernel'
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { slotSource, stringArgs } from '../src/client/index.ts'
 import { appendRun, compareRuns, defaultPair, fallbackReason, withRecordedFallback } from '../src/domain/index.ts'
-import type { RunRecord } from '../src/domain/index.ts'
+import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 
 // P-20 run panel: wraps a code block; runs it with the parameters in the form,
 // keeps a run history in this view and compares two runs. P-24: a failed or
@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<{
   code?: string
   /** Parameters and their initial values, injected into the program as variables. */
   params?: Record<string, string | number | boolean>
-  /** Output shown when the run fails or times out. */
+  /** The `RecordedOutput`, shown when the run fails or times out. */
   recorded?: string
   /** Timeout in ms; the executor's default when omitted. */
   timeout?: number
@@ -25,7 +25,7 @@ const executor = useService(EXECUTOR)
 const report = useStartReport()
 const source = ref<HTMLElement>()
 const args = reactive(stringArgs(props.params))
-const history = shallowRef<RunRecord[]>([])
+const history = shallowRef<RunHistory>([])
 const running = ref(false)
 // The runs being compared; each new run selects the last two.
 const selected = ref<number[]>([])
