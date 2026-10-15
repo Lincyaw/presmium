@@ -115,7 +115,8 @@ function output(run: RunResult & { cacheKey?: string }, i: number): VNode {
  * lines highlighted at the current step, where the code comes from, and its
  * recorded output. Expanded, it shows every variant and no step highlight.
  * Code whose `run.when` includes `live` runs in the browser with the
- * `executor` service; the output of the last run replaces the recorded one.
+ * `executor` service (its `run.executor` when registered); the output of the
+ * last run, or the error of a run that failed to start, replaces the recorded one.
  */
 export const CodeBlockView = defineComponent({
   name: 'PmCodeBlock',
@@ -131,11 +132,19 @@ export const CodeBlockView = defineComponent({
     const running = ref(false)
     const run = async () => {
       const node = props.block.node as CodeNode
-      if (!node.run || !executor.value || running.value) return
+      const router = executor.value
+      if (!node.run || !router || running.value) return
       running.value = true
+      const { lang, args, stdin, timeoutMs, executor: preferred } = node.run
+      // The preferred executor when it is registered and supports the language; the router picks otherwise.
+      const target = router.list().find(e => e.id === preferred && e.supports(lang)) ?? router
+      const started = Date.now()
       try {
-        const { lang, args, stdin, timeoutMs } = node.run
-        live.value = await executor.value.run({ lang, code: node.value, args, stdin, timeoutMs })
+        live.value = await target.run({ lang, code: node.value, args, stdin, timeoutMs })
+      } catch (error) {
+        // A runtime that fails to load or crashes shows as a failed run, not as nothing.
+        const stderr = `执行器 ${target.id} 出错：${error instanceof Error ? error.message : String(error)}`
+        live.value = { ok: false, stdout: '', stderr, exitCode: null, durationMs: Date.now() - started, timedOut: false, source: 'live', executorId: target.id }
       } finally {
         running.value = false
       }

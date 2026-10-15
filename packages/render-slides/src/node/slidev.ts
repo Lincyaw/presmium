@@ -102,7 +102,7 @@ function visual(block: IRBlock, options: SlidevOptions, notes: IRBlock[]): strin
   }
   const content = node.type === 'markdown' ? markdown(node.mdast, urls(block, options))
     : node.type === 'code' ? code(node, block.at)
-    : scoped(component(node, block, options, notes), node, block.at)
+    : scoped(component(node, block, options, notes), block.at)
   if (block.at === 0 && block.until === undefined) return content
   const click = block.until === undefined ? `v-click="${block.at}"`
     : block.at === 0 ? `v-click.hide="${block.until}"`
@@ -110,9 +110,12 @@ function visual(block: IRBlock, options: SlidevOptions, notes: IRBlock[]): strin
   return `<div ${click}>\n\n${content}\n\n</div>`
 }
 
-/** A plugin component counts its internal steps from its block's `at` (docs/ir.md 2.4). */
-function scoped(content: string, node: ComponentNode, at: number): string {
-  return node.plugin && at > 0 ? `<PmStepScope :at="${at}">\n\n${content}\n\n</PmStepScope>` : content
+/**
+ * A component counts its internal steps from its block's `at` (docs/ir.md 2.4),
+ * as in the viewer, which gives every block its `at`: a deck's own component too.
+ */
+function scoped(content: string, at: number): string {
+  return at > 0 ? `<PmStepScope :at="${at}">\n\n${content}\n\n</PmStepScope>` : content
 }
 
 /** What the code reference plugin records besides the IR's own fields (see @presmium/slidev-addon-code). */

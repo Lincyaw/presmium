@@ -15,9 +15,16 @@
  *   reads the wrong path and keeps the old entries), so the dev server serves
  *   its own index of the same shape: MiniSearch over the documents the
  *   renderer writes (a section each), with the deck's tokenizer, in the two
- *   modules the search box imports. Each live update hot updates them through
- *   the search box, which accepts its index module. Builds index with
- *   VitePress (`_render`).
+ *   modules the search box imports. The loader of the index module imports
+ *   the index under a new URL at each call, so a search box opened after an
+ *   update loads the current index (the browser keeps a module per URL), and
+ *   each live update hot updates the index module for a search box that is
+ *   open (it accepts that module). Builds index with VitePress (`_render`).
+ *
+ *   Known risk: the two module ids and the search box's hot update are
+ *   VitePress 1.6 internals, not its documented API. The dev search case of
+ *   e2e/viewer.spec.ts fails when they change; drop the override once
+ *   VitePress re-indexes changed pages in dev.
  */
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
@@ -80,7 +87,8 @@ export function presmiumIR(irFile: string, searchDocuments: string) {
       if (id === RESOLVED) return `export default JSON.parse(${JSON.stringify(readFileSync(irFile, 'utf8'))})`
       // Hot updates add a timestamp to the module ids.
       const module = dev ? id.split('?')[0] : undefined
-      if (module === SEARCH_INDEX) return `export default { root: () => import(${JSON.stringify(SEARCH_INDEX_ROOT.slice(1))}) }`
+      // Relative to the index module, so under the site's base; Vite drops the `t` query.
+      if (module === SEARCH_INDEX) return `export default { root: () => import(/* @vite-ignore */ ${JSON.stringify(`.${SEARCH_INDEX_ROOT}?t=`)} + Date.now()) }`
       if (module === SEARCH_INDEX_ROOT) return `export default ${JSON.stringify(searchIndex(searchDocuments))}`
       return undefined
     },
