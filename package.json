@@ -7,7 +7,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
+    "test": "node scripts/check-layering.mjs && vitest run --passWithNoTests",
     "demo:build": "pnpm --filter presmium-demo build",
     "demo:web": "pnpm --filter presmium-demo web:build",
     "demo:check": "pnpm --filter presmium-demo check",

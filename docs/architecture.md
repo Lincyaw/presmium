@@ -200,13 +200,16 @@ src: ./pages/core.md
 
 ## 7. 测试策略
 
+只写集成测试，不写单元测试：测试在真实组装的系统上运行，不对单个函数做隔离测试，不用 mock 替代宿主框架。每条验收标准对应一到两个用例。
+
 | 层级 | 工具 | 范围 | 命令 |
 |---|---|---|---|
-| 单元 | Vitest | 各包的 `src/domain`、`src/node`，以及 host 的组合式函数 | `pnpm test` |
+| 结构检查 | `scripts/check-layering.mjs` | 第 3 节的分层规则 | `pnpm test` |
+| 集成 | Vitest | 真实运行 CLI、构建产物检查、服务端（`packages/<pkg>/test/`） | `pnpm test` |
 | 幻灯片构建 | `slidev build` | 示例文稿完整构建 | `pnpm demo:build` |
 | 网页构建 | `presmium-web build` | 示例文稿转换并构建为网页 | `pnpm demo:web` |
 | 检查 | `presmium check` | 示例文稿全部检查项通过 | `pnpm demo:check` |
-| 端到端 | Playwright（Chromium） | 两种构建产物上的行为 | `pnpm e2e` |
+| 端到端 | Playwright（Chromium） | 两种构建产物上的行为（`e2e/`） | `pnpm e2e` |
 | 全部 | | 以上依次执行 | `pnpm verify` |
 
 端到端测试中，幻灯片产物服务在 `http://localhost:4173`，网页产物服务在 `http://localhost:4174`。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
@@ -218,23 +221,23 @@ src: ./pages/core.md
 | K-01、K-02、K-03、K-11、K-12、K-13、K-14、K-15 | 宿主（Slidev） | 示例文稿构建与端到端冒烟测试 |
 | K-04 | host、addon-core | 端到端：跳转到第 N 步与顺序前进到第 N 步的 DOM 一致 |
 | K-05 | addon-core | 端到端：演讲者面板只在演讲者视图出现 |
-| K-06 | addon-core、addon-session | 单元：传输接口；端到端：双页面同步 |
-| K-07 | kernel、host、addon-core | 单元：生命周期与降级；端到端：出错的组件不影响同页其他内容 |
-| K-08 | kernel | 单元：依赖排序、缺失、环路、版本不兼容 |
-| K-09 | addon-code、addon-exec-local | 单元与集成 |
-| K-10 | kernel、addon-code | 单元：四种解析状态 |
+| K-06 | addon-core、addon-session | 端到端：双页面同步 |
+| K-07 | kernel、host、addon-core | 端到端：服务依赖与降级反映在启动报告中；出错的组件不影响同页其他内容 |
+| K-08 | kernel、addon-core | 端到端：依赖方拿到提供方的实现；缺少必需服务的插件被禁用 |
+| K-09 | addon-code、addon-exec-local | 集成 |
+| K-10 | kernel、addon-code | 集成：对测试文稿运行 presmium check |
 | K-16 | cli | 集成：失效锚点使退出码非零，诊断带源码位置 |
 | N-01、N-02 | e2e | 端到端计时断言 |
 | N-03 | addon-publish、web | 端到端：断网后放映与搜索 |
 | N-05 | web | 端到端：手机视口下网页无横向滚动 |
 | N-06 | host、addon-publish | 端到端：减少动态效果、键盘操作 |
 | P-01 至 P-04 | addon-stage | 端到端 |
-| P-10 至 P-16 | addon-code | 单元 + 检查集成 + 端到端（两种形态） |
-| P-20 至 P-26 | addon-exec、addon-exec-local | 单元 + 端到端（Pyodide）；容器后端为集成测试，无 Docker 时跳过 |
+| P-10 至 P-16 | addon-code | 检查集成 + 端到端（两种形态） |
+| P-20 至 P-26 | addon-exec、addon-exec-local | 端到端（Pyodide）；本地环境为集成测试，无 Docker 时跳过容器用例 |
 | P-30 至 P-32 | addon-guide | 端到端 |
 | P-40 至 P-43 | addon-content | 端到端（两种形态） |
 | P-50 至 P-53 | addon-publish | 集成：导出产物中的链接、离线清单、视觉差异报告 |
-| P-60 至 P-67 | addon-session、classroom-server、addon-classroom | 单元（领域规则）+ 端到端（多个浏览器上下文接入同一课堂） |
-| P-70 至 P-74 | web | 单元：转换与降级规则；端到端：搜索、深链接、滚动叙事、形态切换 |
+| P-60 至 P-67 | addon-session、classroom-server、addon-classroom | 端到端（真实课堂服务，多个浏览器上下文接入同一课堂） |
+| P-70 至 P-74 | web | 端到端：章节与备注、搜索、深链接、滚动叙事、形态切换 |
 
 N-04、N-07 在端到端测试中以 Chromium 覆盖，其他浏览器在发布前手工验证。

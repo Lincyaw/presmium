@@ -17,10 +17,11 @@
 - 分层：`src/domain` 为纯 TS；组件只通过 `@presmium/host` 获取步骤状态与服务；只有 `addon-core` 使用 `@slidev/client`，只有 `web` 使用 vitepress。
 - 步骤可逆：组件的视觉状态是步骤的纯函数。
 - 源码以 `.ts`、`.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
+- 测试：只写集成测试（真实运行 CLI、构建产物、服务、浏览器），不写单元测试，不 mock 宿主框架；每条验收标准一到两个用例。
 
 ## 命令
 
-- `pnpm test`：Vitest 单元测试（需要 DOM 的测试文件首行写 `// @vitest-environment happy-dom`）
+- `pnpm test`：分层检查 + 集成测试（Vitest，`packages/<pkg>/test/`）
 - `pnpm demo:build`、`pnpm demo:web`、`pnpm demo:check`：示例文稿的幻灯片构建、网页构建、检查
 - `pnpm e2e`：Playwright 端到端测试（先构建）
 - `pnpm verify`：全部
