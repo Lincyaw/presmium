@@ -18,6 +18,8 @@ renderers:
   web: {}
   slides:
     theme: default
+    # The web form's addon: the "read on the web" button of the slides form (P-74).
+    addons: ['@presmium/web']
   notebook: {}
 ---
 

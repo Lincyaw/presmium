@@ -10,10 +10,11 @@ import type { Handler, Handlers } from 'mdast-util-to-hast'
 import { toHast } from 'mdast-util-to-hast'
 import { find, html as schema } from 'property-information'
 import type { Component, PropType, VNodeChild } from 'vue'
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, inject } from 'vue'
 import { CodeView } from './code.ts'
 import { itemVisible } from './domain/index.ts'
 import { PmMath, PmMermaid } from './rich.ts'
+import { footnoteId, VIEWER } from './viewer.ts'
 
 const ADMONITIONS: Record<string, string> = {
   note: '注意',
@@ -36,12 +37,12 @@ function text(value: string): ElementContent {
   return { type: 'text', value }
 }
 
-/** Handlers for MyST nodes; ids made here start with `prefix` (the section id), so they are unique on a page. */
-function handlers(prefix: string): Handlers {
+/** Handlers for MyST nodes; footnote references link with `footnoteHref` (by default, on the same page). */
+function handlers(footnoteHref: (identifier: string) => string = identifier => `#${footnoteId(identifier)}`): Handlers {
   const wrap = (tagName: string, className?: string): Handler => (state, node) =>
     element(tagName, className ? { className: [className] } : {}, state.all(node))
   const value = (node: { value?: unknown }) => (typeof node.value === 'string' ? node.value : '')
-  const id = (node: { identifier?: unknown, label?: unknown }) => `${prefix}-fn-${String(node.identifier ?? node.label)}`
+  const identifier = (node: { identifier?: unknown, label?: unknown }) => String(node.identifier ?? node.label)
   const custom: Record<string, Handler> = {
     math: (_, node) => element('pm-math', { pmTex: value(node), pmDisplay: true }),
     inlineMath: (_, node) => element('pm-math', { pmTex: value(node), pmDisplay: false }),
@@ -56,9 +57,9 @@ function handlers(prefix: string): Handlers {
     },
     admonitionTitle: wrap('p', 'pm-admonition__title'),
     footnoteReference: (_, node) => element('sup', { className: ['pm-footnote-ref'] }, [
-      element('a', { href: `#${id(node)}` }, [text(`[${String(node.label ?? node.identifier)}]`)]),
+      element('a', { href: footnoteHref(identifier(node)) }, [text(`[${String(node.label ?? node.identifier)}]`)]),
     ]),
-    footnoteDefinition: (state, node) => element('div', { id: id(node), className: ['pm-footnote'] }, [
+    footnoteDefinition: (state, node) => element('div', { id: footnoteId(identifier(node)), className: ['pm-footnote'] }, [
       element('sup', {}, [text(String(node.label ?? node.identifier))]),
       ...state.all(node),
     ]),
@@ -83,11 +84,12 @@ function textOf(node: ElementContent | Root): string {
 }
 
 /**
- * The hast tree of a markdown node. Headings get ids for the page outline;
+ * The hast tree of a markdown node. Headings get ids for the page outline,
+ * starting with `prefix` (the section id) so they are unique on a page;
  * top-level list items get `data-pm-item` (their index, for `reveal: items`).
  */
-export function markdownToHast(mdast: MdastNode, prefix: string): Root {
-  const tree = toHast(mdast as never, { allowDangerousHtml: true, handlers: handlers(prefix) }) as Root
+export function markdownToHast(mdast: MdastNode, prefix: string, footnoteHref?: (identifier: string) => string): Root {
+  const tree = toHast(mdast as never, { allowDangerousHtml: true, handlers: handlers(footnoteHref) }) as Root
   let item = 0
   for (const child of tree.children) {
     if (child.type !== 'element') continue
@@ -158,7 +160,8 @@ export const MarkdownView = defineComponent({
     prefix: { type: String, default: '' },
   },
   setup(props) {
-    const tree = computed(() => markdownToHast((props.block.node as MarkdownNode).mdast, props.prefix))
+    const viewer = inject(VIEWER, undefined)
+    const tree = computed(() => markdownToHast((props.block.node as MarkdownNode).mdast, props.prefix, viewer?.footnoteHref))
     return () => {
       const node = props.block.node as MarkdownNode
       const hidden = node.reveal === 'items' && !props.expanded ? (k: number) => !itemVisible(props.block, k, props.step) : undefined

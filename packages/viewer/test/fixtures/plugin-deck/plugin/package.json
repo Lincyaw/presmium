@@ -1,0 +1,7 @@
+{
+  "name": "presmium-example-viewer-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Example plugin for the IR runtime: a view, renderers, and a component written for Slidev"
+}

@@ -3,6 +3,8 @@ export const WEB_ID = 'presmium.web'
 
 /** Links between the forms (P-74), shared with the slides form's "read on the web" button. */
 export interface FormOptions {
+  /** Whether the deck has a slides form to link to. */
+  slides?: boolean
   /** Base URL of the slides form; default: the `slides` directory next to the web site. */
   slidesUrl?: string
   /** Base URL of the web form; default: the `web` directory next to the slides. */
@@ -31,13 +33,23 @@ function url(value: unknown): string | undefined {
 
 /**
  * Form links from the deck's `presmium` configuration (`presmium.web`, also
- * accepted under the short key `web`) and the slides renderer's `routerMode`.
+ * accepted under the short key `web`) and its `renderers`: there is a slides
+ * form when `slidesUrl` is set, `renderers.slides` is configured, or no
+ * renderer is (then every installed renderer builds). The slides renderer's
+ * `routerMode` shapes the slide URLs.
  */
-export function formOptions(presmium: unknown, slides?: unknown): FormOptions {
+export function formOptions(presmium: unknown, renderers?: unknown): FormOptions {
   const all = isRecord(presmium) ? presmium : {}
   const config = { ...(isRecord(all.web) ? all.web : {}), ...(isRecord(all[WEB_ID]) ? all[WEB_ID] : {}) }
-  const routerMode = isRecord(slides) && slides.routerMode === 'hash' ? 'hash' : 'history'
-  return { slidesUrl: url(config.slidesUrl), webUrl: url(config.webUrl), routerMode }
+  const configured = isRecord(renderers) ? renderers : {}
+  const slides = configured.slides
+  const slidesUrl = url(config.slidesUrl)
+  return {
+    slides: Boolean(slidesUrl) || slides !== undefined || Object.keys(configured).length === 0,
+    slidesUrl,
+    webUrl: url(config.webUrl),
+    routerMode: isRecord(slides) && slides.routerMode === 'hash' ? 'hash' : 'history',
+  }
 }
 
 /** The web renderer's options from `renderers.web`. */

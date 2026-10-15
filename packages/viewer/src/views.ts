@@ -1,8 +1,7 @@
 import type { IRSection } from '@presmium/kernel'
 import type { PropType } from 'vue'
-import { computed, defineComponent, h, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
+import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, provide, watch } from 'vue'
 import { getView } from './registry.ts'
-import type { ViewDefinition } from './registry.ts'
 import { createPageTracker, PAGE_TRACKER, SectionView } from './section.ts'
 import type { SectionLayout } from './section.ts'
 import { useViewer } from './viewer.ts'
@@ -33,9 +32,10 @@ const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
 /**
  * Renders the sections of one page in the active page view (or, while an
- * overlay view is active, in the last page view, under the overlay). Follows
- * the reading position while a page view is active, and scrolls to the
- * position after a view switch or a navigation.
+ * overlay view is active, in the last page view, under the overlay). A page
+ * opened directly starts at its own section; the view host follows the
+ * reading position while a page view is active, and scrolls to the position
+ * after a view switch or a navigation.
  */
 export const ViewHost = defineComponent({
   name: 'PmViewHost',
@@ -45,26 +45,32 @@ export const ViewHost = defineComponent({
   },
   setup(props) {
     const viewer = useViewer()
-    const isPage = (view: ViewDefinition | undefined): view is ViewDefinition => view?.kind === 'page'
-    const lastPage = ref(isPage(getView(viewer.view.value)) ? viewer.view.value : 'document')
-    watch(viewer.view, (id) => {
-      if (isPage(getView(id))) lastPage.value = id
-    })
-    const pageView = computed(() => getView(isPage(getView(viewer.view.value)) ? viewer.view.value : lastPage.value) ?? getView('document'))
+    const pageView = computed(() => getView(viewer.pageView.value) ?? getView('document'))
+    const isPage = () => getView(viewer.view.value)?.kind === 'page'
     const tracker = createPageTracker((section, step) => {
       const { position } = viewer
       viewer.go({ section, step: step ?? (section === position.value.section ? position.value.step : 0) })
-    }, () => isPage(getView(viewer.view.value)) && !viewer.restoring.value)
+    }, () => isPage() && !viewer.restoring.value)
     provide(PAGE_TRACKER, tracker)
     onBeforeUnmount(() => tracker.dispose())
 
+    // A page opened by a link, a reload or the sidebar: the section in the URL hash, else its first section.
+    // Runs before the layout handles `?section=` and `?view=`.
+    onMounted(() => {
+      if (viewer.restoring.value || props.sections.length === 0 || props.sections.includes(viewer.position.value.section)) return
+      const hash = decodeURIComponent(location.hash.slice(1))
+      viewer.go({ section: props.sections.includes(hash) ? hash : props.sections[0]!, step: 0 })
+    })
+
     watch([viewer.restoring, viewer.view], async () => {
-      if (!viewer.restoring.value || !isPage(getView(viewer.view.value))) return
+      if (!viewer.restoring.value || !isPage()) return
       await nextTick()
       await frame()
       await frame()
-      if (tracker.scrollTo(viewer.position.value)) viewer.restoring.value = false
-      else if (viewer.options.navigate) viewer.options.navigate(viewer.position.value)
+      const { position } = viewer
+      if (tracker.scrollTo(position.value)) viewer.restoring.value = false
+      else if (!props.sections.includes(position.value.section) && viewer.options.navigate) viewer.options.navigate(position.value)
+      // On this page, but the view does not lay out sections (a plugin's view): nothing to scroll to.
       else viewer.restoring.value = false
     }, { immediate: true })
 

@@ -167,6 +167,13 @@ export const SectionView = defineComponent({
           section.title,
           h('a', { 'class': 'header-anchor', 'href': `#${section.id}`, 'aria-label': `链接到“${section.title}”` }, '​'),
         ]),
+        viewer.options.openSource
+          ? h('p', { class: 'pm-section__source' }, h('button', {
+              type: 'button',
+              title: `${section.source.file}:${section.source.line}（Alt+单击任一块，打开该块的源码）`,
+              onClick: () => viewer.options.openSource!(section.source),
+            }, '在编辑器中打开源码'))
+          : null,
         problems.length
           ? h('ul', { class: 'pm-diagnostics', role: 'alert' }, problems.map((p, i) => h('li', { 'key': i, 'data-severity': p.severity }, `${p.severity}: ${p.message}`)))
           : null,

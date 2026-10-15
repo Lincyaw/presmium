@@ -30,8 +30,8 @@ export interface DevProcess {
   close(): Promise<void>
 }
 
-/** `vitepress dev <root>` with an IPC channel; resolves once the server listens. */
-export function vitepressDev(root: string, port?: number): Promise<DevProcess> {
+/** `vitepress dev <root>` with an IPC channel; resolves once the server listens. `receive` gets the other messages of the server. */
+export function vitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void): Promise<DevProcess> {
   const args = [bin(), 'dev', root, ...(port ? ['--port', String(port)] : [])]
   const child: ChildProcess = spawn(process.execPath, args, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
@@ -39,7 +39,10 @@ export function vitepressDev(root: string, port?: number): Promise<DevProcess> {
     child.once('error', reject)
     child.once('exit', code => reject(new Error(`vitepress dev exited with code ${code}`)))
     child.on('message', (message: DevMessage) => {
-      if (message?.type !== 'presmium:ready') return
+      if (message?.type !== 'presmium:ready') {
+        receive(message)
+        return
+      }
       resolve({
         port: message.port,
         send: m => void child.send(m),

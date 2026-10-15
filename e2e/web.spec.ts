@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { SLIDES, WEB } from './urls.ts'
@@ -223,7 +222,6 @@ test('the two forms link to each other at the same section and step', async ({ p
 })
 
 test('the built slides form and the web form open each other', async ({ page }) => {
-  test.skip(!existsSync('examples/demo/dist/slides'), 'the slides form is not built')
   const doc = await published(page)
   const index = doc.sections.findIndex(s => s.id === 'web') + 1
   await page.goto(`${WEB}/web.html`)

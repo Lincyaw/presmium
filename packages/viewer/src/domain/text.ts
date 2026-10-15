@@ -1,4 +1,4 @@
-import type { IRBlock, MdastNode } from '@presmium/kernel'
+import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
 
 const BREAKS = new Set(['paragraph', 'heading', 'listItem', 'tableRow', 'tableCell', 'code', 'math', 'blockquote', 'break'])
 
@@ -25,4 +25,26 @@ export function blockText(block: IRBlock): string {
     case 'code': return [node.title, node.value, ...(node.outputs ?? []).map(o => o.stdout)].filter(Boolean).join('\n')
     case 'component': return [...propText(node.props), ...(node.children ?? []).map(blockText)].join('\n')
   }
+}
+
+function definitions(node: MdastNode, found: (identifier: string) => void): void {
+  if (node.type === 'footnoteDefinition' && node.identifier !== undefined) found(String(node.identifier))
+  node.children?.forEach(child => definitions(child, found))
+}
+
+/**
+ * The section holding each footnote definition, by identifier. MyST moves
+ * definitions to the end of the document, so a reference may point to
+ * another section, or another page.
+ */
+export function footnoteSections(doc: IRDocument): Map<string, string> {
+  const sections = new Map<string, string>()
+  const visit = (section: string, blocks: readonly IRBlock[]) => {
+    for (const { node } of blocks) {
+      if (node.type === 'markdown') definitions(node.mdast, identifier => sections.set(identifier, section))
+      if (node.type === 'component') visit(section, node.children ?? [])
+    }
+  }
+  for (const section of doc.sections) visit(section.id, section.blocks)
+  return sections
 }

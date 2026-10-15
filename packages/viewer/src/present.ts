@@ -65,7 +65,7 @@ export const PresentView = defineComponent({
     const root = shallowRef<HTMLElement>()
     const presenter = () => viewer.options.openPresenter?.(viewer.position.value)
     useKeys(viewer, (key) => {
-      if (key === 'Escape') viewer.setView('document')
+      if (key === 'Escape') viewer.setView(viewer.pageView.value)
       else if (key === 'p') presenter()
       else return false
       return true
@@ -94,7 +94,7 @@ export const PresentView = defineComponent({
           button('下一步', () => viewer.next()),
           viewer.options.openPresenter ? button('演讲者窗口', presenter) : null,
           button('全屏', () => void root.value?.requestFullscreen?.().catch(() => {})),
-          button('退出放映', () => viewer.setView('document')),
+          button('退出放映', () => viewer.setView(viewer.pageView.value)),
         ]),
       ])
     }

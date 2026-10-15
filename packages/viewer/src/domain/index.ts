@@ -14,4 +14,4 @@ export {
   stepAtLine,
 } from './steps.ts'
 export type { Position } from './steps.ts'
-export { blockText, mdastText } from './text.ts'
+export { blockText, footnoteSections, mdastText } from './text.ts'

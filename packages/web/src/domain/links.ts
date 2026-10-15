@@ -4,6 +4,9 @@ import type { FormOptions } from './config.ts'
 /** Service worker of a web build, at the site root; it keeps pages and search available offline. */
 export const SERVICE_WORKER = 'presmium-sw.js'
 
+/** Dev server endpoint that opens a source file of the deck in the author's editor: `?file=<relative path>&line=<n>`. */
+export const SOURCE_ENDPOINT = '/__presmium/source'
+
 /** Query parameter that asks the web form to open the section of a slide (from the slides form). */
 export const SLIDE_PARAM = 'slide'
 

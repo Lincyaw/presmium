@@ -1,6 +1,6 @@
 export { formOptions, rendererConfig, WEB_ID } from './config.ts'
 export type { FormOptions, WebRendererConfig } from './config.ts'
-export { requested, SERVICE_WORKER, SLIDE_PARAM, slideUrl, webUrl } from './links.ts'
+export { requested, SERVICE_WORKER, SLIDE_PARAM, slideUrl, SOURCE_ENDPOINT, webUrl } from './links.ts'
 export type { Requested } from './links.ts'
 export { pageLink, pageMarkdown, pageOf, searchMarkdown, sectionLinks, sidebar, toPages } from './pages.ts'
 export type { WebPage } from './pages.ts'

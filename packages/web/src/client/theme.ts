@@ -1,13 +1,13 @@
 import { installHost, registerPresmiumPlugin, startPresmium } from '@presmium/host'
 import type { IRDocument, PluginDefinition } from '@presmium/kernel'
-import { createViewer, getView, installViewer, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
+import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
-import { requested, SERVICE_WORKER, sectionLinks, slideUrl, toPages } from '../domain/index.ts'
+import { requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost } from './host.ts'
 import { PresmiumPage, ViewMenu } from './page.ts'
@@ -20,6 +20,8 @@ export interface ThemeInput {
   components: Record<string, () => Promise<unknown>>
   /** Loaders of each plugin's `src/client/plugin.ts`. */
   plugins: (() => Promise<unknown>)[]
+  /** Loaders of each plugin's `src/client/viewer.ts`: views and renderers for the IR runtime. */
+  viewers?: (() => Promise<unknown>)[]
 }
 
 function isPluginDefinition(value: unknown): value is PluginDefinition {
@@ -63,6 +65,14 @@ function clientOnly(name: string, load: () => Promise<unknown>): Component {
   })
 }
 
+/** Installs the viewer plugins; one that fails to load is reported and left out. */
+async function loadViewerPlugins(loaders: NonNullable<ThemeInput['viewers']>): Promise<void> {
+  await Promise.all(loaders.map((load, i) => load().then(
+    module => void installViewerPlugin((module as { default?: unknown }).default, `viewer plugin ${i + 1}`),
+    error => console.error('[presmium] a viewer plugin failed to load', error),
+  )))
+}
+
 function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return
   const register = () => navigator.serviceWorker.register(withBase(`/${SERVICE_WORKER}`)).catch((error) => {
@@ -72,8 +82,10 @@ function registerServiceWorker(): void {
   else window.addEventListener('load', register, { once: true })
 }
 
-/** Base URL of the slides form: configured, else the `slides` directory next to the site. Browser only. */
+/** Base URL of the slides form: configured, else the `slides` directory next to the site; none without a slides form. Browser only. */
 const slidesBase = ref<string>()
+/** Settles when the viewer plugins are installed, so their views can be opened by `?view=`. */
+let viewersReady: Promise<void> = Promise.resolve()
 
 /**
  * Default layout plus the view menu in the navigation bar and the overlay
@@ -85,14 +97,16 @@ const Layout = defineComponent({
   setup() {
     const viewer = useViewer()
     const { theme } = useData()
-    onMounted(() => {
+    onMounted(async () => {
       const form: FormOptions = theme.value.presmium?.form ?? {}
-      slidesBase.value = form.slidesUrl ?? new URL('../slides', new URL(withBase('/'), location.href)).href
+      if (form.slides) slidesBase.value = form.slidesUrl ?? new URL('../slides', new URL(withBase('/'), location.href)).href
       const ask = requested(location.search, viewer.doc.value)
       if (!ask.section && !ask.view) return
       history.replaceState(history.state, '', location.pathname + location.hash)
       if (ask.section) viewer.show({ section: ask.section, step: ask.step ?? 0 })
-      if (ask.view && getView(ask.view)) viewer.setView(ask.view)
+      if (!ask.view) return
+      await viewersReady
+      if (getView(ask.view)) viewer.setView(ask.view)
     })
     return () => h(DefaultTheme.Layout, null, {
       'nav-bar-content-after': () => h(ViewMenu),
@@ -121,6 +135,10 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
           ])
         },
         diagnostics: import.meta.env.DEV,
+        // The dev server opens the file in the author's editor (K-11).
+        openSource: import.meta.env.DEV
+          ? source => void fetch(`${SOURCE_ENDPOINT}?file=${encodeURIComponent(source.file)}&line=${source.line}`)
+          : undefined,
         navigate: position => void router.go(pageOf(position)),
         openPresenter(position) {
           const url = new URL(location.href)
@@ -134,10 +152,19 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       app.component('PresmiumPage', PresmiumPage)
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
+      viewersReady = loadViewerPlugins(input.viewers ?? [])
       void startKernel(input.plugins, input.doc.config.presmium)
       if (import.meta.env.PROD) registerServiceWorker()
-      // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket.
-      import.meta.hot?.on('presmium:update', (update: LiveUpdate) => current.update(update))
+      // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket. The site
+      // title and the sidebar follow the document here, so the config never changes and the page never reloads.
+      import.meta.hot?.on('presmium:update', (update: LiveUpdate) => {
+        current.update(update)
+        const doc = current.doc.value
+        const site = siteData.value
+        const nav = sidebar(doc, toPages(doc))
+        if (site.title === doc.meta.title && JSON.stringify(site.themeConfig.sidebar) === JSON.stringify(nav)) return
+        siteData.value = { ...site, title: doc.meta.title, themeConfig: { ...site.themeConfig, sidebar: nav } }
+      })
     },
   }
 }

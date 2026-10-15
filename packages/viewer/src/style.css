@@ -67,6 +67,23 @@
   height: auto;
 }
 
+/* Dev servers: open the section's source in the editor. */
+.pm-section__source {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125em;
+}
+
+.pm-section__source button {
+  padding: 0;
+  color: var(--pm-c-text-2);
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
+.pm-section__source button:hover {
+  color: var(--pm-c-brand);
+}
+
 .pm-diagnostics {
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem 0.5rem 1.75rem;

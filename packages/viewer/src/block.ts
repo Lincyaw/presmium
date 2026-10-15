@@ -1,13 +1,14 @@
 import { PmBoundary } from '@presmium/host'
 import type { ComponentNode, IRBlock, IRSection } from '@presmium/kernel'
 import type { PropType, VNode } from 'vue'
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, provide, shallowRef, toRef } from 'vue'
+import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef, toRef } from 'vue'
 import { BLOCK_CLASS, trackClicks } from './clicks.ts'
 import { CodeBlockView } from './code.ts'
 import { BLOCK_CONTEXT } from './context.ts'
 import { blockVisible, FINAL_STEP } from './domain/index.ts'
 import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
 import { getComponent, getNodeRenderer } from './registry.ts'
+import { VIEWER } from './viewer.ts'
 
 const blockProps = {
   block: { type: Object as PropType<IRBlock>, required: true },
@@ -61,6 +62,7 @@ export const BlockView = defineComponent({
   name: 'PmBlock',
   props: blockProps,
   setup(props) {
+    const viewer = inject(VIEWER, undefined)
     const el = shallowRef<HTMLElement>()
     const step = toRef(props, 'step')
     const local = computed(() => (props.expanded ? FINAL_STEP : props.step - props.block.at))
@@ -70,6 +72,13 @@ export const BlockView = defineComponent({
       if (el.value) stop = trackClicks(el.value, local)
     })
     onBeforeUnmount(() => stop?.())
+    // Alt+click opens the block's source in the editor, where the dev server offers it.
+    const openSource = (event: MouseEvent) => {
+      if (!event.altKey || !viewer?.options.openSource) return
+      event.preventDefault()
+      event.stopPropagation()
+      viewer.options.openSource(props.block.source)
+    }
     return () => {
       const { block } = props
       const visible = props.expanded || blockVisible(block, props.step)
@@ -80,6 +89,7 @@ export const BlockView = defineComponent({
         'data-at': block.at,
         'data-component': block.node.type === 'component' ? block.node.name : undefined,
         'aria-hidden': visible ? undefined : 'true',
+        'onClick': viewer?.options.openSource ? openSource : undefined,
       }, [content({ block, section: props.section, step: props.step, expanded: props.expanded })])
     }
   },
