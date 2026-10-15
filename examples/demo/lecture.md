@@ -58,3 +58,6 @@ renderers:
 
 ```{include} pages/session.md
 ```
+
+```{include} pages/classroom.md
+```

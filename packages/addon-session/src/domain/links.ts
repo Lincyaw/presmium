@@ -29,3 +29,8 @@ export function joinUrl(base: string, room: string): string {
 export function roomId(random: Uint8Array): string {
   return [...random].map(byte => ALPHABET[byte % ALPHABET.length]).join('')
 }
+
+/** The classroom server's HTTP endpoint that archives a classroom: `POST <server>/archive/<room>`. */
+export function archiveUrl(server: string, room: string): string {
+  return `${server.replace(/^ws(s?):/, 'http$1:')}/archive/${encodeURIComponent(room)}`
+}

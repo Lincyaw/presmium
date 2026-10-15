@@ -1,0 +1,67 @@
+import type { ClassroomStore } from '@presmium/kernel'
+
+type Data = Record<string, Record<string, unknown>>
+
+function localStorageOrNone(): Storage | undefined {
+  try {
+    return window.localStorage
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * A `ClassroomStore` in the browser's `localStorage` under one key, for what
+ * a reader keeps outside a classroom (notes). Other tabs of the deck see the
+ * changes. Without storage (private mode, blocked) it keeps nothing.
+ */
+export function createBrowserStore(key: string, storage = localStorageOrNone()): ClassroomStore {
+  const listeners = new Map<string, Set<() => void>>()
+  const notify = (name?: string) => (name ? [listeners.get(name)] : [...listeners.values()]).forEach(set => set?.forEach(listener => listener()))
+  const read = (): Data => {
+    try {
+      return JSON.parse(storage?.getItem(key) ?? '{}') as Data ?? {}
+    } catch {
+      return {}
+    }
+  }
+  const change = (name: string, apply: (items: Record<string, unknown>) => void) => {
+    const data = read()
+    const items = data[name] ?? {}
+    apply(items)
+    data[name] = items
+    try {
+      storage?.setItem(key, JSON.stringify(data))
+    } catch {}
+    notify(name)
+  }
+  window.addEventListener('storage', (event) => {
+    if (event.key === key) notify()
+  })
+  return {
+    list: <T>(name: string) => Object.entries(read()[name] ?? {}).map(([id, value]) => ({ id, value: value as T })),
+    get: <T>(name: string, id: string) => read()[name]?.[id] as T | undefined,
+    put(name, id, value) {
+      change(name, items => items[id] = JSON.parse(JSON.stringify(value)))
+    },
+    remove(name, id) {
+      change(name, items => delete items[id])
+    },
+    subscribe(name, listener) {
+      let set = listeners.get(name)
+      if (!set) listeners.set(name, set = new Set())
+      set.add(listener)
+      return () => {
+        set.delete(listener)
+      }
+    },
+  }
+}
+
+let notes: ClassroomStore | undefined
+
+/** The notes kept in this browser, per deck (its base URL). */
+export function browserNotes(): ClassroomStore {
+  notes ??= createBrowserStore(`presmium.classroom:${new URL(import.meta.env.BASE_URL, location.href).pathname}`)
+  return notes
+}
