@@ -381,7 +381,7 @@ presmium: { ...各插件全局配置 }
 | 幻灯片形态中的现场执行代码块 | 带 `:run: live` 或 `:run: both` 的普通代码块在网页形态中有运行按钮；幻灯片渲染端把它写成普通代码块，没有运行按钮，只有执行面板能在幻灯片中运行代码。`setup/code-runners.ts` 已经通过 `executor` 服务支持 Slidev 的 Monaco Runner（Python、JavaScript、TypeScript），但 MyST 源码无法写出 `{monaco-run}` | 幻灯片渲染端把带 `run` 的代码块写成 `{monaco-run}`，或写成执行插件的运行组件 |
 | 课堂笔记依赖 IR 运行时的标记 | 课堂插件的笔记图层按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位章节与块。这两个属性因此是 IR 运行时对外的契约，修改时须同时修改笔记图层 | 在视图插件接口中提供块旁的挂载点 |
 
-### 9.x 代码执行的边界情况（WP-60d 验收遗留）
+### 9.3 代码执行的边界情况（WP-60d 验收遗留）
 
 | 情况 | 影响 | 后续 |
 |---|---|---|
