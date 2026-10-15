@@ -1,0 +1,9 @@
+{
+  "name": "presmium-fixture-steps",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

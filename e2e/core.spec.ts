@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 import { SLIDES } from './urls.ts'
 
-// examples/demo/pages/core.md is the first page after the cover.
+// The slides form is generated from the IR (`presmium build`, renderer `slides`).
+// examples/demo/pages/core.md is the first section after the cover, i.e. slide 2.
 const CORE = `${SLIDES}/2`
 const PRESENTER = `${SLIDES}/presenter/2`
 
@@ -78,7 +79,23 @@ test('with reduced motion the animated component shows its final state at once',
   expect(await still.evaluate(el => getComputedStyle(el).transform)).toBe('none')
 })
 
-test('the slides form hides doc-only content', async ({ page }) => {
+test('narration becomes the speaker notes, highlighted at the step it belongs to', async ({ page }) => {
+  await openCore(page, PRESENTER)
+  const notes = page.locator('.slidev-note')
+  // The first paragraphs belong to step 0; the one after the stepper's first state to step 1 (docs/ir.md 2.4).
+  const intro = notes.locator('p', { hasText: '本章演示宿主适配' })
+  const broken = notes.locator('p', { hasText: '故意抛错的组件显示错误占位' })
+  await expect(intro).not.toHaveClass(/slidev-note-fade/)
+  await expect(broken).toHaveClass(/slidev-note-fade/)
+
+  await page.keyboard.press('ArrowRight')
+  await expect(broken).not.toHaveClass(/slidev-note-fade/)
+  await expect(intro).toHaveClass(/slidev-note-fade/)
+})
+
+test('the slide shows the visual blocks only: no narration, no content limited to other renderers', async ({ page }) => {
   const slide = await openCore(page)
-  await expect(slide.locator('[doc-only]')).toBeHidden()
+  await expect(slide).toContainText('错误边界')
+  await expect(slide).not.toContainText('本章演示宿主适配')
+  await expect(slide).not.toContainText('网页形态中才出现的补充说明')
 })
