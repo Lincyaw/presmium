@@ -6,6 +6,7 @@ import { BLOCK_CLASS, trackClicks } from './clicks.ts'
 import { CodeBlockView } from './code.ts'
 import { BLOCK_CONTEXT } from './context.ts'
 import { blockVisible, FINAL_STEP } from './domain/index.ts'
+import { messages } from './i18n.ts'
 import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
 import { getComponent, getNodeRenderer } from './registry.ts'
 import { PmMermaid } from './rich.ts'
@@ -31,7 +32,7 @@ const ComponentView = defineComponent({
       if (!component) {
         // Unknown component: its static fallback, else a note (docs/ir.md section 6).
         const fallback = node.fallback ? hastToVNodes(markdownToHast(node.fallback, props.section.id).children, {}) : []
-        return h('div', { 'class': 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : `未注册的组件 ${node.name}`)
+        return h('div', { 'class': 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : messages().missingComponent(node.name))
       }
       const children = node.children?.length
         ? { default: () => node.children!.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded })) }

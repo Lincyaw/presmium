@@ -5,6 +5,7 @@ import { BlockView } from './block.ts'
 import { SECTION_CONTEXT } from './context.ts'
 import { FINAL_STEP, narrationAt, sectionDiagnostics, stepAtLine } from './domain/index.ts'
 import type { Position } from './domain/index.ts'
+import { messages } from './i18n.ts'
 import { useViewer } from './viewer.ts'
 
 /** `document`: every step at once; `scrolly`: content pinned on one side, the steps follow the narration as it scrolls. */
@@ -175,6 +176,7 @@ export const SectionView = defineComponent({
 
     return () => {
       const { section, layout } = props
+      const t = messages().section
       const current = step.value
       const problems = viewer.options.diagnostics ? sectionDiagnostics(section, viewer.doc.value.diagnostics) : []
       const body = layout === 'scrolly'
@@ -194,22 +196,22 @@ export const SectionView = defineComponent({
       }, [
         h('h2', { id: section.id, class: 'pm-section__title', tabindex: -1 }, [
           section.title,
-          h('a', { 'class': 'header-anchor', 'href': `#${section.id}`, 'aria-label': `链接到“${section.title}”` }, '​'),
+          h('a', { 'class': 'header-anchor', 'href': `#${section.id}`, 'aria-label': t.anchor(section.title) }, '​'),
         ]),
         viewer.options.openSource
           ? h('p', { class: 'pm-section__source' }, h('button', {
               type: 'button',
-              title: `${section.source.file}:${section.source.line}（Alt+单击任一块，打开该块的源码）`,
+              title: t.sourceTitle(`${section.source.file}:${section.source.line}`),
               onClick: () => viewer.options.openSource!(section.source),
-            }, '在编辑器中打开源码'))
+            }, t.openSource))
           : null,
         problems.length
           ? h('ul', { class: 'pm-diagnostics', role: 'alert' }, problems.map((p, i) => h('li', { 'key': i, 'data-severity': p.severity }, `${p.severity}: ${p.message}`)))
           : null,
         ...body,
-        h('nav', { 'class': 'pm-section-nav', 'aria-label': '章节导航' }, [
-          prev ? h('a', { class: 'pm-section-nav__prev', href: href(prev.id), rel: 'prev' }, [h('span', '上一节'), h('strong', prev.title)]) : h('span'),
-          next ? h('a', { class: 'pm-section-nav__next', href: href(next.id), rel: 'next' }, [h('span', '下一节'), h('strong', next.title)]) : h('span'),
+        h('nav', { 'class': 'pm-section-nav', 'aria-label': t.nav }, [
+          prev ? h('a', { class: 'pm-section-nav__prev', href: href(prev.id), rel: 'prev' }, [h('span', t.prev), h('strong', prev.title)]) : h('span'),
+          next ? h('a', { class: 'pm-section-nav__next', href: href(next.id), rel: 'next' }, [h('span', t.next), h('strong', next.title)]) : h('span'),
         ]),
         viewer.options.sectionFooter?.(section, current) ?? null,
       ])

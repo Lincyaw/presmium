@@ -2,6 +2,7 @@
 import { useNav } from '@slidev/client'
 import { shallowRef, watch } from 'vue'
 import { screen } from './setup/screen.ts'
+import { messages } from './src/client/messages.ts'
 
 const { isPresenter, isPrintMode } = useNav()
 const frame = shallowRef<HTMLElement>()
@@ -31,7 +32,8 @@ watch([() => screen.mode, frame], ([mode, el]) => {
   else el.replaceChildren()
 }, { flush: 'sync' })
 
-const LABELS = { black: '听众视图已黑屏', frozen: '听众视图已冻结' } as const
+/** Read when the badge shows: the page's language is set by then. */
+const label = (mode: 'black' | 'frozen') => messages().badge[mode]
 </script>
 
 <template>
@@ -39,7 +41,7 @@ const LABELS = { black: '听众视图已黑屏', frozen: '听众视图已冻结'
     <!-- The presenter keeps the live slides and gets a reminder of what the audience sees. -->
     <template v-if="isPresenter">
       <div v-if="screen.mode !== 'live'" class="pm-stage-badge" :data-mode="screen.mode">
-        {{ LABELS[screen.mode] }}
+        {{ label(screen.mode) }}
       </div>
     </template>
     <template v-else>

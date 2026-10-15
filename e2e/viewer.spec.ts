@@ -1,12 +1,15 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { extname, join, resolve, sep } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { WEB } from './urls.ts'
 
-// The IR runtime (@presmium/viewer) in the built web form on WEB, and in `presmium dev`.
+// The IR runtime (@presmium/viewer) in the built web form on WEB, in `presmium dev`, and in the
+// web form of the fixture decks under e2e/fixtures/viewer.
 // Sections of the demo: the cover, core (pages/core.md), web and scrolly (pages/web.md).
 
 const menu = (page: Page) => page.getByRole('combobox', { name: '视图' })
@@ -94,6 +97,9 @@ test('the present view pages with the keyboard; the presenter window follows wit
   const [presenter] = await Promise.all([page.waitForEvent('popup'), present.getByRole('button', { name: '演讲者窗口' }).click()])
   const notes = presenter.locator('.pm-presenter')
   await expect(notes).toHaveAttribute('data-step', '3')
+  // The current screen shows what the audience sees at this step.
+  await expect(notes.locator('.pm-presenter__slide .pm-demo-stepper')).toHaveAttribute('data-step', '1')
+  await expect(notes.locator('.pm-presenter__slide')).not.toContainText('先是离线缓存')
   await expect(notes.locator('.pm-current')).toContainText('先是离线缓存')
   await expect(notes.locator('.pm-presenter__next')).toContainText('然后是形态互跳')
   await expect(notes.locator('.pm-presenter__timer')).toHaveText(/^\d\d:\d\d$/)
@@ -108,6 +114,244 @@ test('the present view pages with the keyboard; the presenter window follows wit
   await presenter.keyboard.press('ArrowRight')
   await expect(present).toHaveAttribute('data-section', 'scrolly')
   await expect(present).toHaveAttribute('data-step', '0')
+})
+
+test('the overview of the present view lists every section; Enter or a click jumps there', async ({ page }) => {
+  await page.goto(`${WEB}/web.html?view=present`)
+  const present = page.getByRole('region', { name: '放映' })
+  await expect(present).toHaveAttribute('data-section', 'web')
+  await page.keyboard.press('o')
+  const overview = present.getByRole('dialog', { name: '总览' })
+  const sections = JSON.parse(readFileSync(resolve('examples/demo/dist/ir.json'), 'utf8')).sections as { id: string }[]
+  await expect(overview.getByRole('button')).toHaveCount(sections.length)
+  // The current section has the focus; the arrow keys move it, Enter jumps.
+  await expect(overview.locator('[aria-current="true"]')).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect(overview.locator('[data-section="scrolly"]')).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(overview).toHaveCount(0)
+  await expect(present).toHaveAttribute('data-section', 'scrolly')
+  await expect(present).toHaveAttribute('data-step', '0')
+
+  await present.getByRole('button', { name: '总览' }).click()
+  await overview.locator('[data-section="core"]').click()
+  await expect(present).toHaveAttribute('data-section', 'core')
+  // Escape closes the overview, not the present view.
+  await page.keyboard.press('o')
+  await page.keyboard.press('Escape')
+  await expect(overview).toHaveCount(0)
+  await expect(present).toBeVisible()
+})
+
+test('the full screen button puts the present view in full screen', async ({ page }) => {
+  await page.addInitScript(() => {
+    Element.prototype.requestFullscreen = function (this: Element) {
+      (window as { fullscreen?: string }).fullscreen = this.className
+      return Promise.resolve()
+    }
+  })
+  await page.goto(`${WEB}/web.html?view=present`)
+  await page.getByRole('region', { name: '放映' }).getByRole('button', { name: '全屏' }).click()
+  await expect.poll(() => page.evaluate(() => (window as { fullscreen?: string }).fullscreen)).toBe('pm-present')
+})
+
+test('after two reloads, code that also runs live still runs in the browser', async ({ page }) => {
+  await page.goto(`${WEB}/exec.html`)
+  await page.reload()
+  await page.reload()
+  const block = page.locator('.pm-section[data-section="exec-compile"] .pm-code-block[data-run="both"]')
+  await expect(block.getByRole('button', { name: '运行' })).toBeEnabled()
+  await block.getByRole('button', { name: '运行' }).click()
+  await expect(block.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', { timeout: 30_000 })
+  await expect(block.locator('.pm-output__stdout')).toContainText('合计： 55')
+})
+
+test('keyboard focus stays in the present view and returns to the view menu after Escape', async ({ page }) => {
+  await page.goto(`${WEB}/web.html`)
+  await menu(page).focus()
+  await menu(page).selectOption('present')
+  const present = page.getByRole('region', { name: '放映' })
+  await expect(present).toBeFocused()
+  const inside = () => page.evaluate(() => Boolean(document.activeElement?.closest('.pm-present')))
+  // More Tab presses than the view has controls: focus cycles inside, never into the page behind.
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press('Tab')
+    expect(await inside()).toBe(true)
+  }
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('Shift+Tab')
+    expect(await inside()).toBe(true)
+  }
+  expect(await page.evaluate(() => document.querySelector('.VPNav')?.closest('[inert]') !== null)).toBe(true)
+  await page.keyboard.press('ArrowRight')
+  await expect(present).toHaveAttribute('data-section', 'scrolly')
+  await page.keyboard.press('Escape')
+  await expect(present).toHaveCount(0)
+  await expect(menu(page)).toBeFocused()
+  expect(await page.locator('[inert]').count()).toBe(0)
+})
+
+test('the present view fits every section of the demo to the screen', async ({ page }) => {
+  test.setTimeout(180_000)
+  const { sections } = JSON.parse(readFileSync(resolve('examples/demo/dist/ir.json'), 'utf8')) as { sections: { id: string, steps: number }[] }
+  // Whether the slide's content reaches past its frame, which would cut it off.
+  const overflows = () => page.locator('.pm-present__slide').evaluate((frame) => {
+    const content = frame.querySelector('.pm-present__content')!.getBoundingClientRect()
+    const box = frame.getBoundingClientRect()
+    return frame.scrollHeight > frame.clientHeight + 1 || frame.scrollWidth > frame.clientWidth + 1 || content.bottom > box.bottom + 1
+  })
+  const present = page.getByRole('region', { name: '放映' })
+  for (const [width, height] of [[1280, 720], [1024, 768], [1280, 800]] as const) {
+    await page.setViewportSize({ width, height })
+    await page.goto(`${WEB}/index.html?view=present`)
+    // Every section at its first and its last step, paging on from one section to the next.
+    for (const section of sections) {
+      await expect(present).toHaveAttribute('data-section', section.id)
+      await expect.poll(overflows, { message: `${section.id} at ${width}x${height}` }).toBe(false)
+      for (let step = 0; step < section.steps; step++) await page.keyboard.press('ArrowRight')
+      await expect(present).toHaveAttribute('data-step', String(section.steps))
+      await expect.poll(overflows, { message: `${section.id}, last step, at ${width}x${height}` }).toBe(false)
+      await page.keyboard.press('ArrowRight')
+    }
+  }
+})
+
+/** Serves a build directory on a free port. */
+async function serve(dir: string): Promise<{ url: string, close(): Promise<void> }> {
+  const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
+  const server = createServer((request, response) => {
+    let file = join(dir, decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname))
+    if (!file.startsWith(dir + sep)) file = join(dir, 'index.html')
+    if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
+    const found = existsSync(file)
+    response.writeHead(found ? 200 : 404, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' })
+    createReadStream(found ? file : join(dir, '404.html')).pipe(response)
+  })
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
+  return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, close: () => new Promise(done => server.close(() => done())) }
+}
+
+/**
+ * The web form of a fixture deck (e2e/fixtures/viewer/<name>), built by `presmium build --to web`
+ * in a directory of its own inside the demo, so the renderers and plugins resolve.
+ */
+async function buildFixture(name: string): Promise<{ url: string, close(): Promise<void> }> {
+  const work = resolve('examples/demo/.presmium')
+  mkdirSync(work, { recursive: true })
+  const deck = mkdtempSync(join(work, `e2e-${name}-`))
+  writeFileSync(join(deck, '.gitignore'), '*\n')
+  cpSync(resolve('e2e/fixtures/viewer', name), deck, { recursive: true })
+  const child = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'build', '--to', 'web'], { cwd: deck, stdio: ['ignore', 'pipe', 'pipe'] })
+  let output = ''
+  child.stdout!.on('data', (chunk: Buffer) => output += chunk)
+  child.stderr!.on('data', (chunk: Buffer) => output += chunk)
+  const code = await new Promise<number | null>(done => child.once('exit', done))
+  if (code !== 0) {
+    rmSync(deck, { recursive: true, force: true })
+    throw new Error(`presmium build exited (${code}):\n${output}`)
+  }
+  const server = await serve(join(deck, 'dist/web'))
+  return {
+    url: server.url,
+    async close() {
+      await server.close()
+      rmSync(deck, { recursive: true, force: true })
+    },
+  }
+}
+
+/** Console messages of a page that report a hydration mismatch. */
+function hydrationMismatches(page: Page): string[] {
+  const found: string[] = []
+  page.on('console', (message) => {
+    if (/hydration/i.test(message.text()) && /mismatch/i.test(message.text())) found.push(message.text())
+  })
+  return found
+}
+
+test.describe('MyST roles and directives (e2e/fixtures/viewer/myst)', () => {
+  test.describe.configure({ timeout: 120_000 })
+  let site: Awaited<ReturnType<typeof buildFixture>>
+  test.beforeAll(async () => {
+    test.setTimeout(180_000)
+    site = await buildFixture('myst')
+  })
+  test.afterAll(() => site?.close())
+
+  test('render as their HTML elements, and the page hydrates without a mismatch', async ({ page }) => {
+    const mismatches = hydrationMismatches(page)
+    await page.goto(site.url)
+    const roles = page.locator('.pm-section[data-section="myst-roles"]')
+    await expect(roles.locator('p kbd')).toHaveText(['Ctrl', 'K'])
+    await expect(roles.locator('p sub')).toHaveText('2')
+    await expect(roles.locator('p sup')).toHaveText('2')
+    await expect(roles.locator('p abbr')).toHaveAttribute('title', 'intermediate representation')
+    // Inline content stays inside its paragraph.
+    await expect(page.locator('.pm-section p div')).toHaveCount(0)
+    await expect(roles.locator('p', { hasText: '打开搜索' })).toHaveCount(1)
+    // A reference without text shows its target section's title.
+    await expect(roles.getByRole('link', { name: '指令', exact: true })).toHaveAttribute('href', /#myst-directives$/)
+    await expect(roles.getByRole('link', { name: '角色', exact: true })).toHaveAttribute('href', /#myst-roles$/)
+
+    const directives = page.locator('.pm-section[data-section="myst-directives"]')
+    await expect(directives.locator('dl > dt')).toHaveText(['讲台', '听众视图'])
+    await expect(directives.locator('dl > dd')).toHaveText(['放映时演讲者所在的位置。', '投影给听众看的画面。'])
+    const details = directives.locator('details')
+    await expect(details.locator('summary')).toHaveText('展开细节')
+    await expect(details.getByText('折叠起来的补充说明')).toBeHidden()
+    await details.locator('summary').click()
+    await expect(details.getByText('折叠起来的补充说明')).toBeVisible()
+    await expect(directives.locator('aside.pm-admonition--tip.tip')).toContainText('带类的提示框')
+    await expect(directives.locator('aside.pm-admonition--note.pm-fixture-note')).toContainText('普通的注意事项')
+
+    await page.waitForLoadState('networkidle')
+    expect(mismatches).toEqual([])
+  })
+})
+
+test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
+  test.describe.configure({ timeout: 120_000 })
+  let site: Awaited<ReturnType<typeof buildFixture>>
+  test.beforeAll(async () => {
+    test.setTimeout(180_000)
+    site = await buildFixture('en')
+  })
+  test.afterAll(() => site?.close())
+
+  test('the present view, the presenter window, the stage and the code controls speak English', async ({ page }) => {
+    const mismatches = hydrationMismatches(page)
+    await page.goto(`${site.url}/?view=present&section=steps`)
+    const present = page.getByRole('region', { name: 'Presentation' })
+    await expect(present).toHaveAttribute('data-section', 'steps')
+    await expect(present.locator('.pm-present__counter')).toHaveText('2 / 3 · step 0 of 1')
+    for (const name of ['Previous', 'Next', 'Overview', 'Presenter window', 'Full screen', 'Exit presentation']) {
+      await expect(present.getByRole('button', { name, exact: true })).toBeVisible()
+    }
+
+    // The stage's black screen; the presenter window's reminder and labels.
+    await page.keyboard.press('b')
+    await expect(page.locator('.pm-stage-black')).toBeVisible()
+    const [presenter] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')])
+    const notes = presenter.locator('.pm-presenter')
+    await expect(notes.locator('.pm-stage-badge')).toHaveText('Audience view blacked out')
+    await expect(notes.locator('.pm-presenter__counter')).toHaveText('Step 0 of 1')
+    await expect(notes.locator('.pm-presenter__label')).toHaveText(['Narration', 'Next'])
+    await expect(notes.getByRole('button', { name: 'Restart timer' })).toBeVisible()
+    await presenter.keyboard.press('b')
+    await expect(page.locator('.pm-stage-black')).toHaveCount(0)
+
+    // The code block's controls: no executor in this deck.
+    await page.keyboard.press('End')
+    await expect(present).toHaveAttribute('data-section', 'code')
+    const block = present.locator('.pm-code-block')
+    await expect(block.getByRole('button', { name: 'Run', exact: true })).toBeDisabled()
+    await expect(block.locator('.pm-code-block__hint')).toHaveText('Execution service unavailable')
+
+    await page.keyboard.press('Escape')
+    await expect(page.locator('.pm-section-nav').first()).toHaveAttribute('aria-label', 'Section navigation')
+    await expect(page.locator('.pm-section[data-section="steps"] .pm-section-nav__next span')).toHaveText('Next section')
+    expect(mismatches).toEqual([])
+  })
 })
 
 /**

@@ -5,6 +5,7 @@ import type { PropType, VNode, VNodeChild } from 'vue'
 import { computed, defineComponent, h, onMounted, ref, shallowRef, watch } from 'vue'
 import { blockState } from './domain/index.ts'
 import { highlighterFor, THEMES } from './highlight.ts'
+import { messages } from './i18n.ts'
 
 type Loaded = Awaited<ReturnType<typeof highlighterFor>>
 
@@ -59,8 +60,6 @@ export const CodeView = defineComponent({
 type Origin = CodeOrigin
 type Variant = CodeVariant
 
-const STATUS: Record<string, string> = { moved: '已移动', fuzzy: '待确认', lost: '已失效' }
-
 function link(className: string, href: string | undefined, text: string, attrs: Record<string, unknown> = {}): VNode {
   return href
     ? h('a', { ...attrs, class: className, href, target: '_blank', rel: 'noopener' }, text)
@@ -76,32 +75,34 @@ function link(className: string, href: string | undefined, text: string, attrs: 
 function originBar(node: CodeNode, shown: number | undefined): VNodeChild {
   const origin = node.origin as Origin | undefined
   if (!origin) return node.title ? h('div', { class: 'pm-code-origin' }, [h('span', { class: 'pm-code-origin__file' }, node.title)]) : null
+  const t = messages().code
   const lines = origin.endLine > origin.startLine ? `${origin.startLine}-${origin.endLine}` : `${origin.startLine}`
   const variants = (node.variants ?? []) as Variant[]
   const commits = variants.length
     ? variants.map((variant, k) => link('pm-code-origin__variant', variant.permalink, variant.label, { 'key': variant.label, 'data-active': k === shown ? '' : undefined }))
-    : [h('span', { class: 'pm-code-origin__commit', title: origin.pin }, origin.pin ? `@ ${origin.pin.slice(0, 7)}` : '工作区')]
-  const badge = STATUS[origin.status]
-    ? h('span', { 'class': 'pm-code-origin__badge', 'data-status': origin.status }, STATUS[origin.status])
+    : [h('span', { class: 'pm-code-origin__commit', title: origin.pin }, origin.pin ? `@ ${origin.pin.slice(0, 7)}` : t.workingTree)]
+  const badge = t.status[origin.status]
+    ? h('span', { 'class': 'pm-code-origin__badge', 'data-status': origin.status }, t.status[origin.status])
     : origin.pin && !variants.length && origin.drift
       ? h('span', {
           'class': 'pm-code-origin__badge',
           'data-drift': origin.drift,
-          'title': origin.drift === 'drifted' ? '工作区中的代码已改变，运行 presmium check 查看差异' : '锁定的代码与工作区一致',
-        }, origin.drift === 'drifted' ? '已漂移' : '已锁定')
+          'title': origin.drift === 'drifted' ? t.driftedTitle : t.syncedTitle,
+        }, origin.drift === 'drifted' ? t.drifted : t.synced)
       : null
   return h('div', { 'class': 'pm-code-origin', 'data-anchor': origin.anchor }, [
-    link('pm-code-origin__file', origin.permalink, `${node.title ?? origin.file}:${lines}`, { title: origin.permalink ? `在仓库中打开 ${origin.file}` : origin.anchor }),
+    link('pm-code-origin__file', origin.permalink, `${node.title ?? origin.file}:${lines}`, { title: origin.permalink ? t.openFile(origin.file) : origin.anchor }),
     ...commits,
     badge,
   ])
 }
 
 function output(run: RunResult & { cacheKey?: string }, i: number): VNode {
+  const t = messages().code
   const notes = [
-    run.timedOut ? '超时' : '',
-    run.exitCode !== null && run.exitCode !== 0 ? `退出码 ${run.exitCode}` : '',
-    run.source === 'recorded' ? '预录输出' : '',
+    run.timedOut ? t.timedOut : '',
+    run.exitCode !== null && run.exitCode !== 0 ? t.exitCode(run.exitCode) : '',
+    run.source === 'recorded' ? t.recorded : '',
   ].filter(Boolean)
   return h('div', { 'key': run.cacheKey || i, 'class': ['pm-output', { 'pm-output--failed': !run.ok }], 'data-executor': run.executorId }, [
     run.stdout ? h('pre', { class: 'pm-output__stdout' }, run.stdout) : null,
@@ -117,6 +118,8 @@ function output(run: RunResult & { cacheKey?: string }, i: number): VNode {
  * Code whose `run.when` includes `live` runs in the browser with the
  * `executor` service (its `run.executor` when registered); the output of the
  * last run, or the error of a run that failed to start, replaces the recorded one.
+ * The run controls depend on the browser's services, so they render disabled
+ * until the block is mounted: the server render and the hydration agree.
  */
 export const CodeBlockView = defineComponent({
   name: 'PmCodeBlock',
@@ -130,6 +133,10 @@ export const CodeBlockView = defineComponent({
     const report = useStartReport()
     const live = shallowRef<RunResult>()
     const running = ref(false)
+    const mounted = ref(false)
+    onMounted(() => {
+      mounted.value = true
+    })
     const run = async () => {
       const node = props.block.node as CodeNode
       const router = executor.value
@@ -143,7 +150,7 @@ export const CodeBlockView = defineComponent({
         live.value = await target.run({ lang, code: node.value, args, stdin, timeoutMs })
       } catch (error) {
         // A runtime that fails to load or crashes shows as a failed run, not as nothing.
-        const stderr = `执行器 ${target.id} 出错：${error instanceof Error ? error.message : String(error)}`
+        const stderr = messages().code.executorFailed(target.id, error instanceof Error ? error.message : String(error))
         live.value = { ok: false, stdout: '', stderr, exitCode: null, durationMs: Date.now() - started, timedOut: false, source: 'live', executorId: target.id }
       } finally {
         running.value = false
@@ -165,10 +172,12 @@ export const CodeBlockView = defineComponent({
           ? variants.map(v => h('div', { key: v.label, class: 'pm-code-block__variant' }, [h('p', { class: 'pm-code-block__label' }, v.label), h(CodeView, { lang: node.lang, value: v.value })]))
           : [h(CodeView, { key: 'variant', lang: node.lang, value: variants[shown]!.value })]
       const runnable = node.run && node.run.when !== 'compile'
+      const t = messages().code
+      const available = mounted.value && executor.value
       const controls = runnable
         ? h('div', { class: 'pm-code-block__run' }, [
-            h('button', { type: 'button', disabled: running.value || !executor.value, onClick: run }, running.value ? '运行中…' : live.value ? '重跑' : '运行'),
-            !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, '执行服务不可用') : null,
+            h('button', { type: 'button', disabled: running.value || !available, onClick: run }, running.value ? t.running : live.value ? t.rerun : t.run),
+            mounted.value && !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, t.unavailable) : null,
           ])
         : null
       const runs = live.value ? [live.value] : node.outputs ?? []

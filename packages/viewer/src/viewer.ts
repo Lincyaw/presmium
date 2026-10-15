@@ -1,8 +1,9 @@
 import type { IRDocument, IRSection, SourcePos } from '@presmium/kernel'
 import type { App, InjectionKey, Ref, ShallowRef, VNodeChild } from 'vue'
-import { computed, inject, ref, shallowRef } from 'vue'
+import { computed, inject, reactive, ref, shallowRef, toRaw } from 'vue'
 import { applyUpdate, clampPosition, footnoteSections, nextPosition, prevPosition } from './domain/index.ts'
 import type { LiveUpdate, Position } from './domain/index.ts'
+import { setDocumentLanguage } from './i18n.ts'
 import { getView } from './registry.ts'
 
 export interface ViewerOptions {
@@ -47,6 +48,14 @@ export interface Viewer {
   setView(id: string): void
   /** Applies a live update from the dev server. */
   update(update: LiveUpdate): void
+  /**
+   * State the windows of a presentation share (the present view, the
+   * presenter window), by key: e.g. a plugin's black screen. Reactive; a
+   * window opened later gets the current values.
+   */
+  readonly shared: Readonly<Record<string, unknown>>
+  /** Sets a shared value, in this window and the other windows of the document. */
+  share(key: string, value: unknown): void
 }
 
 export const VIEWER: InjectionKey<Viewer> = Symbol('presmium.viewer')
@@ -56,8 +65,14 @@ export function footnoteId(identifier: string): string {
   return `fn-${identifier}`
 }
 
-/** Presentation windows of the same document follow each other's position. */
+/** Presentation windows of the same document follow each other's position and share state. */
 const CHANNEL = 'presmium.viewer'
+
+type Message =
+  | { type: 'position', position: Position }
+  | { type: 'shared', values: Record<string, unknown> }
+  /** A new window asks the others for the shared state. */
+  | { type: 'hello' }
 
 /** Creates the runtime state of one IR document. */
 export function createViewer(initial: IRDocument, options: ViewerOptions = {}): Viewer {
@@ -66,12 +81,15 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
   const pageView = ref('document')
   const position = shallowRef<Position>(clampPosition(initial, { section: initial.sections[0]?.id ?? '', step: 0 }))
   const restoring = ref(false)
+  const shared = reactive<Record<string, unknown>>({})
   // Browser only: in a server render the channel would keep the process alive.
   const channel = typeof window === 'undefined' || typeof BroadcastChannel === 'undefined'
     ? undefined
     : new BroadcastChannel(`${CHANNEL}:${initial.meta.title}`)
   const presenting = () => getView(view.value)?.kind === 'overlay'
   const footnotes = computed(() => footnoteSections(doc.value))
+  const post = (message: Message) => channel?.postMessage(message)
+  setDocumentLanguage(initial, options.renderer ?? 'web')
 
   const viewer: Viewer = {
     doc,
@@ -90,7 +108,7 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
       const next = clampPosition(doc.value, target)
       if (next.section === position.value.section && next.step === position.value.step) return
       position.value = next
-      if (!remote && presenting()) channel?.postMessage(next)
+      if (!remote && presenting()) post({ type: 'position', position: next })
     },
     show(target) {
       viewer.go(target)
@@ -119,10 +137,18 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
       const clamped = clampPosition(doc.value, position.value)
       if (clamped.section !== position.value.section || clamped.step !== position.value.step) position.value = clamped
     },
+    shared,
+    share(key, value) {
+      shared[key] = value
+      post({ type: 'shared', values: { [key]: toRaw(value) } })
+    },
   }
-  channel?.addEventListener('message', (event: MessageEvent<Position>) => {
-    if (presenting()) viewer.go(event.data, true)
+  channel?.addEventListener('message', ({ data }: MessageEvent<Message>) => {
+    if (data.type === 'position' && presenting()) viewer.go(data.position, true)
+    else if (data.type === 'shared') Object.assign(shared, data.values)
+    else if (data.type === 'hello' && Object.keys(shared).length > 0) post({ type: 'shared', values: toRaw(shared) })
   })
+  post({ type: 'hello' })
   return viewer
 }
 
