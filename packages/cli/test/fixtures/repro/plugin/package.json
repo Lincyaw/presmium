@@ -1,0 +1,9 @@
+{
+  "name": "presmium-fixture-plugin-repro",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts"
+  },
+  "slidev": {}
+}

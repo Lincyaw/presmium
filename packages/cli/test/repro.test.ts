@@ -1,7 +1,8 @@
 // `presmium build` of fixtures/repro (web and slides) is reproducible (Principle 5): the same bytes
-// from two checkouts of the deck and from a rebuild, with no path of the machine in them. The copies
-// lie in the demo, whose node_modules hold the renderers and plugins, at the same depth, as two
-// clones of the repository would.
+// from two checkouts of the deck and from a rebuild, with no path of the machine in them, although
+// a plugin's pass puts some in its configuration (fixtures/repro/plugin). The copies lie in the
+// demo, whose node_modules hold the renderers and plugins, at the same depth, as two clones of the
+// repository would.
 import { execFile } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -61,4 +62,13 @@ it('builds the same web and slides bytes in two checkouts and on a rebuild, with
   }
   const local = [...first].filter(([, bytes]) => bytes.includes(ROOT) || bytes.includes(a)).map(([file]) => file)
   expect(local, `files naming ${relative(process.cwd(), ROOT) || ROOT}`).toEqual([])
+
+  // The repository's paths are relative: to the deck in the site, to the generated Slidev deck
+  // (where Slidev resolves them) in the slides. A path of the site that exists on the machine stays.
+  const ir = JSON.parse(first.get('web/ir.json')!.toString()) as { config: { presmium: Record<string, unknown> }, sections: { id: string, config?: unknown }[] }
+  expect(ir.config.presmium['fixture.repro']).toEqual({ data: 'img', site: '/tmp' })
+  expect(ir.sections.find(section => section.id === 'first')!.config).toEqual({ 'fixture.repro': { data: 'pages' } })
+  const slides = readFileSync(join(a, '.presmium/slides/slides.md'), 'utf8')
+  expect(slides).toContain('data: ../../img\n    site: /tmp\n')
+  expect(slides).toContain('data: ../../pages\n')
 }, 600_000)

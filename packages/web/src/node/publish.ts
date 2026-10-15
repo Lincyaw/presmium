@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { IRBlock, IRDocument, MdastNode, SourcePos } from '@presmium/kernel'
 
 /** Directory of the site's `public/` where the deck's local images are copied. */
@@ -12,16 +12,28 @@ function relativeTo(deckDir: string, file: string): string {
   return isAbsolute(file) ? relative(deckDir, file).split('\\').join('/') : file
 }
 
+/** Where the deck is: its directory and its repository (`RenderContext.workspaceRoot`). */
+export interface DeckLocation {
+  deckDir: string
+  workspaceRoot: string
+}
+
+function inRepository(path: string, root: string): boolean {
+  if (!isAbsolute(path)) return false
+  const rel = relative(root, path)
+  return rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)
+}
+
 /**
- * A configuration value whose paths of this machine (absolute paths that
- * exist, e.g. a workspace a pass resolved) are made relative to the deck, so
- * the site does not depend on where the deck was built. Site paths such as
- * `/web` stay as they are.
+ * A configuration value whose absolute paths in the deck's repository (e.g.
+ * a workspace a pass resolved) are made relative to the deck, so the site
+ * does not depend on where the deck was built. Other strings, such as site
+ * paths (`/web`), stay as they are.
  */
-function portable(value: unknown, deckDir: string): unknown {
-  if (typeof value === 'string') return isAbsolute(value) && existsSync(value) ? relativeTo(deckDir, value) : value
-  if (Array.isArray(value)) return value.map(item => portable(item, deckDir))
-  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, deckDir)]))
+function portable(value: unknown, deck: DeckLocation): unknown {
+  if (typeof value === 'string') return inRepository(value, deck.workspaceRoot) ? relativeTo(deck.deckDir, value) || '.' : value
+  if (Array.isArray(value)) return value.map(item => portable(item, deck))
+  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, deck)]))
   return value
 }
 
@@ -31,7 +43,8 @@ function portable(value: unknown, deckDir: string): unknown {
  * site), and local images copied to `<publicDir>/media/` with their URLs
  * rewritten under the site base.
  */
-export function publishedDocument(doc: IRDocument, deckDir: string, publicDir: string, base: string): IRDocument {
+export function publishedDocument(doc: IRDocument, deck: DeckLocation, publicDir: string, base: string): IRDocument {
+  const { deckDir } = deck
   const copy = structuredClone(doc)
   const source = (pos: SourcePos) => {
     pos.file = relativeTo(deckDir, pos.file)
@@ -62,10 +75,10 @@ export function publishedDocument(doc: IRDocument, deckDir: string, publicDir: s
     source(b.source)
   }
   copy.meta.entry = relativeTo(deckDir, copy.meta.entry)
-  copy.config.presmium = portable(copy.config.presmium, deckDir) as IRDocument['config']['presmium']
+  copy.config.presmium = portable(copy.config.presmium, deck) as IRDocument['config']['presmium']
   for (const section of copy.sections) {
     source(section.source)
-    if (section.config) section.config = portable(section.config, deckDir) as typeof section.config
+    if (section.config) section.config = portable(section.config, deck) as typeof section.config
     section.blocks.forEach(block)
   }
   for (const finding of copy.diagnostics) {

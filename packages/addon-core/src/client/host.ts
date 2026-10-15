@@ -25,6 +25,8 @@ function useFrontmatter(): () => Record<string, unknown> {
 export function createSlidevHost(): HostAdapter {
   return {
     mode: 'slides',
+    // The deck's language, which the slides renderer writes to the headmatter `htmlAttrs`.
+    lang: configs.htmlAttrs?.lang,
     useCursor() {
       const { currentSlideNo, clicks } = useNav()
       return computed(() => ({ slide: currentSlideNo.value, step: clicks.value }))

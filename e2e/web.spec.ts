@@ -387,7 +387,7 @@ test.describe('the fixture deck in the web form', () => {
     await expect(label('presmium-fixture-deck-with-a-title-too-long-for-a-phone')).toHaveText('cover')
   })
 
-  test('two windows of the deck share a plugin state', async ({ context }) => {
+  test('two windows of the deck share a plugin state, and a window opened later gets it', async ({ context }) => {
     const [a, b] = [await context.newPage(), await context.newPage()]
     await a.goto(site())
     // The other window presents the section.
@@ -398,6 +398,20 @@ test.describe('the fixture deck in the web form', () => {
     await expect(presented.locator('output')).toHaveText('1')
     await presented.getByRole('button', { name: 'Add one' }).click()
     await expect(shown.locator('output')).toHaveText('2')
+
+    const late = await context.newPage()
+    await late.goto(`${site()}?view=presenter&section=shared`)
+    await expect(late.locator('.fx-shared output').first()).toHaveText('2')
+  })
+
+  test('a remote plugin state goes to the other devices through the sync transports, and comes back from them', async ({ page }) => {
+    await page.goto(site())
+    const remote = page.locator('.pm-section[data-section="shared"] .fx-remote')
+    await remote.getByRole('button', { name: 'Count on every device' }).click()
+    await expect(remote.locator('output')).toHaveText('1')
+    await expect.poll(() => page.evaluate(() => window.fixtureDevice?.published.at(-1))).toEqual({ value: 1, fromRemote: false })
+    await page.evaluate(() => window.fixtureDevice!.receive({ value: 5 }))
+    await expect(remote.locator('output')).toHaveText('5')
   })
 
   test('an en-US deck sets <html lang> and speaks English: the VitePress chrome, the links to the slides, the start report', async ({ page }) => {
@@ -415,6 +429,7 @@ test.describe('the fixture deck in the web form', () => {
     await page.locator('.pm-presenter-panels summary').click()
     await expect(page.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
     await expect(page.locator('.pm-start-report [data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
+    expect(await page.evaluate(() => window.fixtureLang)).toBe('en-US')
   })
 
   test('the presenter window reports the plugins that could not start and the component that failed; plugins are disposed when the page goes away', async ({ page }) => {

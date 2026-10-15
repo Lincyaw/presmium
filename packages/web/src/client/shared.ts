@@ -1,3 +1,4 @@
+import { joinWindows } from '@presmium/host'
 import type { SharedStateScope, SyncPublish, SyncTransport, SyncTransports } from '@presmium/host'
 import type { Ref } from 'vue'
 import { effectScope, ref, toRaw, watch } from 'vue'
@@ -21,7 +22,8 @@ const plain = (value: unknown): unknown => value === undefined ? undefined : JSO
 /**
  * Shared states of the web form (`useSharedState`). 'local' and 'remote'
  * states travel between the deck's windows in this browser over a
- * BroadcastChannel; 'remote' ones are also sync channels that each transport
+ * BroadcastChannel (`joinWindows`, which also brings a window opened later
+ * up to date); 'remote' ones are also sync channels that each transport
  * added through `transports` joins (e.g. a classroom), as Slidev's are in the
  * slides form. A change that came from another window or device is applied
  * here without being sent on again.
@@ -40,16 +42,16 @@ export function createSharedStates(deck: string): SharedStates {
 
   function create(id: string, initial: unknown, scope: SharedStateScope): Ref<unknown> {
     const state = ref(plain(initial))
-    if (scope === 'view' || typeof BroadcastChannel === 'undefined') return state
+    if (scope === 'view') return state
     const name = `presmium.shared:${deck}:${id}`
-    const windows = new BroadcastChannel(name)
     let from: 'window' | 'remote' | undefined
+    let changed = false
     const apply = (value: unknown, source: 'window' | 'remote') => {
       from = source
       state.value = value
       from = undefined
     }
-    windows.onmessage = (event: MessageEvent<unknown>) => apply(event.data, 'window')
+    const windows = joinWindows(name, value => apply(value, 'window'), () => changed ? plain(state.value) : undefined)
     const channel: Channel = {
       name,
       receive(patch) {
@@ -59,8 +61,9 @@ export function createSharedStates(deck: string): SharedStates {
       publishers: new Map(),
     }
     watch(state, (value) => {
+      changed = true
       const data = plain(value)
-      if (from === undefined) windows.postMessage(data)
+      if (from === undefined) windows?.send(data)
       channel.publishers.forEach(publish => publish({ value: data }, from !== undefined))
     }, { deep: true, flush: 'sync' })
     if (scope === 'remote') {

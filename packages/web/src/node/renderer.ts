@@ -39,7 +39,7 @@ export const renderer: Renderer = {
     const options = rendererConfig(ctx.config, doc.meta.lang)
     const workDir = join(ctx.deckDir, BUILD_DIR)
     const files = siteFiles(workDir)
-    const published = publishedDocument(doc, ctx.deckDir, files.publicDir, options.base)
+    const published = publishedDocument(doc, ctx, files.publicDir, options.base)
     writeSite(workDir, { doc: published, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
     // The IR is published with the site.
     write(join(files.publicDir, 'ir.json'), JSON.stringify(published))
@@ -53,7 +53,7 @@ export const renderer: Renderer = {
     const options = rendererConfig(ctx.config, doc.meta.lang)
     const workDir = ctx.outDir
     const files = siteFiles(workDir)
-    const publish = (d: IRDocument) => publishedDocument(d, ctx.deckDir, files.publicDir, options.base)
+    const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base)
     let current = publish(doc)
     writeSite(workDir, { doc: current, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
     // "Open in the editor" from a page (K-11): the author's editor, as launch-editor finds it ($EDITOR, a running editor).

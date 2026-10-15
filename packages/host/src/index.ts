@@ -25,6 +25,8 @@ export { PmStepScope, provideStepScope, useStepScope } from './scope.ts'
 export type { StepScope } from './scope.ts'
 export { default as PmToolbar } from './Toolbar.vue'
 export { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
+export { joinWindows } from './windows.ts'
+export type { WindowChannel } from './windows.ts'
 export type {
   HostAdapter,
   Navigation,

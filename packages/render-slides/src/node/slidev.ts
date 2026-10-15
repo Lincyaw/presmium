@@ -8,7 +8,7 @@
  * Narration becomes the slide notes, split by `[click]` markers.
  */
 import { existsSync, realpathSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { DEFAULT_LANG, localeOf } from '@presmium/kernel'
 import type { CodeNode, CodeOrigin, CodeVariant, ComponentNode, IRBlock, IRDocument, IRSection, Locale, RendererExtension } from '@presmium/kernel'
 import { stringify } from 'yaml'
@@ -18,6 +18,8 @@ export interface SlidevOptions {
   /** Directory of the generated deck; relative paths are rewritten against it. */
   dir: string
   deckDir: string
+  /** The deck's repository (`RenderContext.workspaceRoot`). */
+  workspaceRoot: string
   /** `renderers.slides` from the frontmatter: Slidev headmatter, plus the renderer's own keys. */
   config: Record<string, unknown>
   extensions: RendererExtension[]
@@ -57,6 +59,25 @@ interface Generation extends SlidevOptions {
  */
 const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#0ea5e9"/></svg>')}`
 
+/**
+ * Plugin configuration as the generated deck holds it: absolute paths in the
+ * deck's repository (e.g. a workspace a pass resolved) become relative to the
+ * generated deck, where Slidev and its addons resolve them, so the slides do
+ * not depend on where the deck is checked out. Other strings stay as they are.
+ */
+function portable(value: unknown, options: SlidevOptions): unknown {
+  if (typeof value === 'string') return inRepository(value, options.workspaceRoot) ? relative(options.dir, value).split('\\').join('/') || '.' : value
+  if (Array.isArray(value)) return value.map(item => portable(item, options))
+  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, options)]))
+  return value
+}
+
+function inRepository(path: string, root: string): boolean {
+  if (!isAbsolute(path)) return false
+  const rel = relative(root, path)
+  return rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)
+}
+
 /** The deck's language: its `lang`, else the default; both forms put it in `<html lang>`. */
 export function deckLang(doc: IRDocument): string {
   return typeof doc.meta.lang === 'string' && doc.meta.lang ? doc.meta.lang : DEFAULT_LANG
@@ -92,7 +113,7 @@ function headmatter(doc: IRDocument, options: SlidevOptions): Record<string, unk
     ...slidev,
     htmlAttrs: { lang: deckLang(doc), ...typeof htmlAttrs === 'object' ? htmlAttrs : {} },
     addons: [...new Set(listed.filter((name): name is string => typeof name === 'string').map(name => addonPath(name, options)))],
-    presmium: doc.config.presmium,
+    presmium: portable(doc.config.presmium, options),
   }
 }
 
@@ -149,7 +170,7 @@ function formAddons(doc: IRDocument, deckDir: string): string[] {
  * configuration; the cover's own goes under `presmiumSection`.
  */
 function slide(section: IRSection, head: Record<string, unknown>, options: Generation): string {
-  const config = section.config ? { [section.index === 1 ? 'presmiumSection' : 'presmium']: section.config } : {}
+  const config = section.config ? { [section.index === 1 ? 'presmiumSection' : 'presmium']: portable(section.config, options) } : {}
   const frontmatter = { ...head, ...section.hints.slides, ...config }
   const notes: IRBlock[] = []
   const parts = section.title ? [markdown({ type: 'heading', depth: 1, children: [{ type: 'text', value: section.title }] })] : []

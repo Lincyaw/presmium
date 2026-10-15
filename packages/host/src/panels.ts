@@ -50,7 +50,15 @@ function createRegistry<T extends Item>(kind: string): Registry<T> {
  */
 export function createPresenterPanels(): PresenterPanels {
   const service = createRegistry<PresenterPanel>('presenter panel')
-  service.register({ id: 'presmium.core.start-report', title: HOST_MESSAGES[currentLocale()].startReport, component: StartReportPanel, order: -1 })
+  service.register({
+    id: 'presmium.core.start-report',
+    // In the UI language when the panel is shown, which may follow the kernel's start.
+    get title() {
+      return HOST_MESSAGES[currentLocale()].startReport
+    },
+    component: StartReportPanel,
+    order: -1,
+  })
   return service
 }
 

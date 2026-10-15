@@ -280,6 +280,8 @@ export type Support = 'full' | 'degraded' | 'none'
 
 export interface RenderContext {
   deckDir: string
+  /** The deck's repository (its git root, else the deck directory), as in `PassContext`. */
+  workspaceRoot: string
   outDir: string
   /**
    * Where the renderer keeps what it generates on the way to its output, from

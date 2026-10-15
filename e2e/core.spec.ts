@@ -65,7 +65,9 @@ test('a throwing component shows a placeholder while the rest of the slide rende
 test('presenter panels appear only in the presenter view', async ({ page }) => {
   await openCore(page, PRESENTER)
   const panels = await openPanels(page)
-  await expect(panels.locator('[data-panel="presmium.core.start-report"]')).toBeVisible()
+  // The demo is a zh-CN deck, the browser's language en-US: the panels speak the deck's language.
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+  await expect(panels.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('启动报告')
   await expect(panels.locator('.pm-component-errors [data-component="PmDemoBroken"]')).toBeVisible()
 
   await openCore(page)
@@ -216,6 +218,8 @@ test.describe('the fixture deck in the slides form', () => {
     const panels = await openPanels(page)
     await expect(panels.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
     await expect(panels.locator('[data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
+    // Slidev's page says `lang="en"` until it applies the headmatter; the plugins start in the deck's language.
+    expect(await page.evaluate(() => window.fixtureLang)).toBe('en-US')
   })
 
   test('a plugin for another kernel, a throwing setup and a dependency cycle are reported; plugins are disposed when the page goes away', async ({ page }) => {
@@ -239,7 +243,7 @@ test.describe('the fixture deck in the slides form', () => {
     await expect.poll(disposals).toBe(before + 1)
   })
 
-  test('windows of the deck share a plugin state', async ({ context }) => {
+  test('windows of the deck share a plugin state, also with a window opened later', async ({ context }) => {
     const [a, b] = [await context.newPage(), await context.newPage()]
     for (const page of [a, b]) await page.goto(slide('shared'))
     const count = (page: Page) => page.locator(`.slidev-page-${deck.slide('shared')} .fx-shared__count`)
@@ -248,6 +252,20 @@ test.describe('the fixture deck in the slides form', () => {
     await a.getByRole('button', { name: 'Add one' }).click()
     await expect(count(a)).toHaveText('2')
     await expect(count(b)).toHaveText('2')
+
+    const late = await context.newPage()
+    await late.goto(`${deck.url}/slides/presenter/${deck.slide('shared')}`)
+    await expect(count(late).first()).toHaveText('2')
+  })
+
+  test('a remote plugin state goes to the other devices through the sync transports, and comes back from them', async ({ page }) => {
+    await page.goto(slide('shared'))
+    const remote = page.locator(`.slidev-page-${deck.slide('shared')} .fx-remote__count`)
+    await page.getByRole('button', { name: 'Count on every device' }).click()
+    await expect(remote).toHaveText('1')
+    await expect.poll(() => page.evaluate(() => window.fixtureDevice?.published.at(-1))).toEqual({ value: 1, fromRemote: false })
+    await page.evaluate(() => window.fixtureDevice!.receive({ value: 5 }))
+    await expect(remote).toHaveText('5')
   })
 
   test('with reduced motion, turning a page and revealing an item animate nothing', async ({ page }) => {
