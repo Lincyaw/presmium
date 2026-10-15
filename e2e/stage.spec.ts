@@ -85,7 +85,8 @@ test('b blacks out the audience view and b again restores it', async ({ page }) 
   await presenter.keyboard.press('b')
   await expect(audience.locator('.pm-stage-black')).toBeVisible()
   expect(await coversCentre(audience, '.pm-stage-black')).toBe(true)
-  await expect(presenter.locator('.pm-stage-badge')).toHaveText('听众视图已黑屏')
+  // The badge speaks the page's language; the demo leaves Slidev's.
+  await expect(presenter.locator('.pm-stage-badge')).toHaveAttribute('data-mode', 'black')
   await expect(presenter.locator('.pm-stage-black')).toHaveCount(0)
 
   await presenter.keyboard.press('b')
@@ -100,7 +101,7 @@ test('f freezes the audience view while the presenter moves on; f again resumes'
   await presenter.keyboard.press('f')
   const frozen = audience.locator('.pm-stage-frozen')
   await expect(frozen).toBeVisible()
-  await expect(presenter.locator('.pm-stage-badge')).toHaveText('听众视图已冻结')
+  await expect(presenter.locator('.pm-stage-badge')).toHaveAttribute('data-mode', 'frozen')
 
   await presenter.keyboard.press('ArrowRight')
   await expect(audience).toHaveURL(new RegExp(`/${steps}\\b`))
@@ -143,4 +144,78 @@ test('the web form shows the table, the footnote at its section and the highligh
   const code = section.locator('pre.shiki')
   await expect(code).toContainText('toggleScreen')
   await expect.poll(() => code.locator('.line span').evaluateAll(spans => new Set(spans.map(s => getComputedStyle(s).color)).size)).toBeGreaterThan(2)
+})
+
+test('in the web form\'s present view, b blacks out and f freezes the audience window; the presenter window shows which', async ({ page }) => {
+  test.skip(!WEB_BUILT, 'the web form is not built')
+  await page.goto(`${WEB}/stage.html?view=present`)
+  const present = page.getByRole('region', { name: '放映' })
+  await expect(present).toHaveAttribute('data-section', 'stage-basics')
+  const [presenter] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')])
+  await expect(presenter.locator('.pm-presenter')).toHaveAttribute('data-section', 'stage-basics')
+  const badge = presenter.locator('.pm-presenter .pm-stage-badge')
+
+  await page.keyboard.press('b')
+  await expect(page.locator('.pm-stage-black')).toBeVisible()
+  expect(await coversCentre(page, '.pm-stage-black')).toBe(true)
+  await expect(badge).toHaveAttribute('data-mode', 'black')
+  await page.keyboard.press('b')
+  await expect(page.locator('.pm-stage-black')).toHaveCount(0)
+  expect(await coversCentre(page, '.pm-present__slide')).toBe(true)
+  await expect(badge).toHaveCount(0)
+
+  // From the presenter window: the audience keeps seeing the frozen slide while the presenter moves on.
+  await presenter.keyboard.press('f')
+  const frozen = page.locator('.pm-stage-frozen')
+  await expect(frozen).toBeVisible()
+  await expect(badge).toHaveAttribute('data-mode', 'frozen')
+  await presenter.keyboard.press('ArrowRight')
+  await expect(present).toHaveAttribute('data-section', 'stage-steps')
+  expect(await coversCentre(page, '.pm-stage-frozen')).toBe(true)
+  await expect(frozen.locator('h1')).toHaveText('讲台：基础内容')
+  await presenter.keyboard.press('f')
+  await expect(frozen).toBeHidden()
+  await expect(present.locator('.pm-present__title')).toHaveText('讲台：步骤与画面')
+  expect(await coversCentre(page, '.pm-present__slide')).toBe(true)
+})
+
+test('the slides form fits the stage slides to a 4:3 and a 16:10 screen', async ({ page }) => {
+  for (const [width, height] of [[1024, 768], [1280, 800]] as const) {
+    await page.setViewportSize({ width, height })
+    for (const [no, layout] of [[basics, 'pm-stage-basics'], [steps, 'pm-stage-steps']] as const) {
+      await page.goto(`${SLIDES}/${no}`)
+      const slide = page.locator(`.slidev-layout.${layout}`).filter({ visible: true })
+      // The whole slide is on the screen (the ratio allows for sub-pixel scaling).
+      await expect(slide).toBeInViewport({ ratio: 0.999 })
+      expect(await slide.evaluate(el => el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth), `${layout} at ${width}x${height}`).toBe(true)
+    }
+  }
+})
+
+test('the slides form has an overview: o shows every slide, a click goes to one', async ({ page }) => {
+  await page.goto(`${SLIDES}/${basics}`)
+  await expect(page.locator('.pm-stage-basics h1')).toBeVisible()
+  const preview = page.locator('h1', { hasText: '讲台：步骤与画面' }).filter({ visible: true })
+  await expect(preview).toHaveCount(0)
+  await page.keyboard.press('o')
+  await expect(preview).toBeVisible()
+  // The preview's frame takes the click.
+  await preview.click({ force: true })
+  await expect(page).toHaveURL(new RegExp(`/${steps}$`))
+  // The overview closes on the chosen slide: its heading shows once, on the slide.
+  await expect(preview).toHaveCount(1)
+  await expect(page.locator('.pm-stage-steps h1').filter({ visible: true })).toBeInViewport()
+})
+
+test('an image written in the source, next to its page, loads in both forms', async ({ page }) => {
+  const loaded = async (slide: ReturnType<Page['locator']>) => {
+    const image = slide.getByRole('img', { name: '听众视图的三种状态：正常、黑屏、冻结' })
+    await expect(image).toBeVisible()
+    await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true)
+  }
+  await page.goto(`${SLIDES}/${steps}`)
+  await loaded(page.locator('.slidev-layout.pm-stage-steps').filter({ visible: true }))
+  test.skip(!WEB_BUILT, 'the web form is not built')
+  await page.goto(`${WEB}/stage.html`)
+  await loaded(page.locator('.pm-section[data-section="stage-steps"]'))
 })
