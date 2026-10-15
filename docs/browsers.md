@@ -10,9 +10,31 @@ N-04 要求支持最近两个大版本的 Chrome、Firefox、Safari 与 Edge。�
 |---|---|---|---|
 | Chrome | Chrome for Testing 156（chromium v1248） | 全部端到端用例 | 通过 |
 | Firefox | Firefox 157（firefox v1555） | `e2e/smoke.spec.ts` | 通过 |
-| Safari | WebKit 27.2（webkit v2370） | `e2e/smoke.spec.ts`，`PRESMIUM_E2E_BROWSERS=firefox,webkit` 时运行 | 未运行：开发主机缺少 WebKit 需要的系统库（`libevent-2.1-7t64`、`libavif16`），`playwright install` 报告依赖校验失败。在装有这些库的主机上（`sudo pnpm exec playwright install-deps webkit`）加上 `webkit` 运行 |
+| Safari | WebKit 27.2（webkit v2370） | `e2e/smoke.spec.ts`，`PRESMIUM_E2E_BROWSERS=firefox,webkit` 时运行；另见下面的全量运行 | 通过（在 Playwright 的 Docker 镜像中运行，见下文） |
 
 Edge 与 Chrome 使用同一引擎，由 Chromium 的结果覆盖；Edge 自身的界面差异在下面的手工检查中确认。
+
+### 在 Docker 中运行 WebKit
+
+开发主机缺少 WebKit 需要的系统库（如 `libevent-2.1-7t64`、`libavif16`）时，`playwright install` 报告依赖校验失败。可以在 Playwright 的 Docker 镜像（Ubuntu 24.04，装有这些库）中对同一个检出运行，镜像版本与 `@playwright/test` 的版本一致：
+
+```sh
+pnpm demo:build
+docker run --rm --network host --user "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD:$PWD" -w "$PWD" -e PRESMIUM_E2E_BROWSERS=webkit \
+  mcr.microsoft.com/playwright:v1.64.1-noble \
+  node_modules/.bin/playwright test --project=webkit
+```
+
+在 git worktree 中运行时还要挂载主仓库（`code.spec.ts` 读取 git 历史）。镜像版本与本机的浏览器版本不同时，可以把本机的 `~/.cache/ms-playwright` 挂载进容器并设置 `PLAYWRIGHT_BROWSERS_PATH`。
+
+### WebKit 全量运行
+
+冒烟用例之外，曾把全部端到端用例（性能用例除外）在 WebKit 中运行一次，记录结果；失败的用例由所属工作包处理。
+
+| 日期 | 提交 | 引擎 | 结果 |
+|---|---|---|---|
+| 2026-10-15 | WP-60d | WebKit 27.2（webkit v2370；在 Playwright 的 Docker 镜像中运行，挂载本机的浏览器） | 85 个用例中 82 个通过。失败：`e2e/content.spec.ts` 的两个媒体用例（音频的 `duration` 为 0，Playwright 的 Linux 版 WebKit 缺少该音频格式的解码器，Safari 需手工确认）；`e2e/session.spec.ts`“in the slides form a learner follows the presenter …”（学员页面停在 `/session`，没有跟随到第 3 页） |
 
 ## 发布前的手工检查
 
@@ -30,4 +52,4 @@ Edge 与 Chrome 使用同一引擎，由 Chromium 的结果覆盖；Edge 自身�
 
 | 日期 | 版本（提交） | 浏览器与版本 | 结果 | 检查人 |
 |---|---|---|---|---|
-| 2026-10-15 | WP-60d | Safari、Edge | 尚未检查：首次发布前进行 | — |
+| 2026-10-15 | WP-60d | Safari、Edge | 尚未检查：开发主机是 Linux，没有 Safari 与 Edge；引擎层面的结果见上面的 WebKit 全量运行与 Chromium 用例。首次发布前在 macOS 与 Windows 上按检查项进行 | — |

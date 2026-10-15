@@ -71,9 +71,9 @@ async function startSlidev(): Promise<string> {
   })
 }
 
-const post = (path: string, body: unknown) => fetch(`${base}/__presmium/exec-local/${path}`, {
+const post = (path: string, body: unknown, language?: string) => fetch(`${base}/__presmium/exec-local/${path}`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json' },
+  headers: { 'content-type': 'application/json', ...language ? { 'accept-language': language } : {} },
   body: JSON.stringify(body),
 })
 
@@ -155,14 +155,18 @@ describe('environment replicate (P-26)', () => {
     expect(built['.devcontainer/devcontainer.json']).toBe(DEFINITION)
     expect(built['src/greet.py']).toBe(readFileSync(join(FIXTURE, 'src/greet.py'), 'utf8'))
     expect(built['README.md']).toContain('devcontainer exec --workspace-folder . python3 src/greet.py')
+    // The archive built at compile time is in the deck's language (zh-CN by default)...
+    expect(built['README.md']).toMatch(/^# Presmium 导出的运行环境\n/)
 
+    // ...the one the dev server builds in the page's.
     const snippet = 'print("snippet")\n'
-    const res = await post('replicate', { file: 'src/snippet.py', content: snippet, lang: 'python' })
+    const res = await post('replicate', { file: 'src/snippet.py', content: snippet, lang: 'python' }, 'en-US')
     expect(res.headers.get('content-type')).toBe('application/zip')
     expect(res.headers.get('content-disposition')).toContain('presmium-env-snippet.zip')
     const served = archived(new Uint8Array(await res.arrayBuffer()))
     expect(Object.keys(served).sort()).toEqual(['.devcontainer/devcontainer.json', 'README.md', 'src/snippet.py'])
     expect(served['src/snippet.py']).toBe(snippet)
+    expect(served['README.md']).toMatch(/^# Environment exported by Presmium\n/)
     expect(served['.devcontainer/devcontainer.json']).toBe(DEFINITION)
   })
 })

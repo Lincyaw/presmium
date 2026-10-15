@@ -16,13 +16,16 @@ async function openPublish(page: Page): Promise<Locator> {
   return slide
 }
 
-/** Takes the browser offline once the page's service worker has precached the build; the HTTP cache is cleared. */
+/**
+ * Takes the browser offline once the page's service worker has precached the build. In Chromium
+ * the HTTP cache is cleared too; other engines have no such protocol and keep it (docs/browsers.md).
+ */
 async function goOffline(page: Page, context: BrowserContext) {
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready
   })
   await context.setOffline(true)
-  await (await context.newCDPSession(page)).send('Network.clearBrowserCache')
+  if (context.browser()?.browserType().name() === 'chromium') await (await context.newCDPSession(page)).send('Network.clearBrowserCache')
 }
 
 const loaded = (image: Locator) => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)

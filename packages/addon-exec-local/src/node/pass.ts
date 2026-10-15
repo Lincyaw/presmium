@@ -7,7 +7,8 @@
  *   dev-server endpoints of the generated Slidev deck (setup/vite-plugins.ts)
  *   find it; the published forms carry no path of the build machine (K-13);
  * - attaches to each `<PmLocalEnv>` its environment (P-26): the snippet and
- *   the devcontainer definition as a zip archive, downloadable from any build.
+ *   the devcontainer definition as a zip archive, downloadable from any build,
+ *   with a README in the deck's language.
  */
 import { relative, resolve, sep } from 'node:path'
 import type { CodeNode, ComponentNode, IRBlock, IRPass } from '@presmium/kernel'
@@ -15,6 +16,7 @@ import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
 import type { ContainerExecutor } from './container.ts'
 import { findDefinition } from './container.ts'
 import { requestedWorkspaces } from './directive.ts'
+import { inLanguage } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
 
 function localEnvs(blocks: IRBlock[]): { block: IRBlock, node: ComponentNode }[] {
@@ -53,7 +55,8 @@ export function localEnvPass(container: ContainerExecutor): IRPass {
         }
         const code = node.children?.find(child => child.node.type === 'code')?.node as CodeNode
         const file = String(node.props.file)
-        const { zip } = replicateArchive(dir, definition, { file, content: `${code.value}\n`, lang: String(node.props.lang) })
+        const request = { file, content: `${code.value}\n`, lang: String(node.props.lang) }
+        const { zip } = inLanguage(typeof doc.meta.lang === 'string' ? doc.meta.lang : undefined, () => replicateArchive(dir, definition, request))
         node.props.devcontainer = relative(dir, definition).split(sep).join('/')
         node.props.archive = Buffer.from(zip).toString('base64')
       }

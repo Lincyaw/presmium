@@ -131,13 +131,22 @@ packages/addon-<ctx>/
 ```ts
 type PresentationMode = 'slides' | 'document'
 type ViewRole = 'audience' | 'presenter' | 'reader'
+type SharedStateScope = 'view' | 'local' | 'remote'
 
 interface HostAdapter {
   readonly mode: PresentationMode
+  /** 文稿的语言标签（如 `en-US`），供没有页面的渲染使用；浏览器中由 `<html lang>` 携带 */
+  readonly lang?: string
   useCursor(): Readonly<Ref<Cursor>>       // { slide, step }
   /** 渲染该组件的页或章节的当前步骤（绝对步骤，不是块内步骤）；全部展开的文档视图为 Infinity */
   useStep(): Readonly<Ref<number>>
   useViewRole(): Readonly<Ref<ViewRole>>
+  /** 形态正在渲染静态副本（幻灯片打印 PDF、PNG）时为 true，组件显示 IR 的 fallback */
+  useStaticRender(): Readonly<Ref<boolean>>
+  /** 插件 pluginId 在调用组件所在页或章节的配置：全局配置之上合并该章节的 `{config}` */
+  useSectionConfig(pluginId: string): Readonly<Ref<Record<string, unknown>>>
+  /** 按 key 共享的状态（key 以插件 ID 开头，值为 JSON 数据），可在组件外调用 */
+  useSharedState<T>(key: string, initial: T, scope: SharedStateScope): Ref<T>
   getService<T>(token: ServiceToken<T>): T | undefined
   /** 内核启动报告；内核启动之前为 undefined */
   startReport(): StartReport | undefined
@@ -157,7 +166,7 @@ interface HostAdapter {
 | `PmBoundary` | 错误边界（5.4 节） |
 | `PmToolbar`、`PmPresenterPanels` | 宿主显示 `toolbar`、`presenterPanels` 服务内容的位置 |
 | `useSectionConfig(pluginId)` | 插件在当前章节的配置：全局配置合并章节的 `{config}`（5.2 节） |
-| `useSharedState(key, initial, { scope })` | 插件状态的共享范围：`view` 只在本视图，`local` 在本机所有窗口，`remote` 经 `syncTransports` 跨设备（K-06）。幻灯片形态用 Slidev 的 `createSyncState` 实现，网页形态用 BroadcastChannel 与同步传输端口 |
+| `useSharedState(key, initial, { scope })` | 插件状态的共享范围：`view` 只在本视图，`local`（默认）在本机所有窗口，`remote` 经 `syncTransports` 跨设备（K-06）。幻灯片形态用 Slidev 的 `createSyncState` 实现，网页形态用 BroadcastChannel 与同步传输端口 |
 | `useLocale()`、`useMessages(catalog)` | 界面语言 `'zh-CN'` 或 `'en'`，与按语言选取的文本（5.7 节） |
 | `useStaticRender()` | 静态导出（PDF、PNG）时为 true：幻灯片形态取自 Slidev 的打印模式，网页形态恒为 false（5.8 节） |
 | `registerPresmiumPlugin`、`startPresmium`、`stopPresmium` | 注册浏览器端插件、启动与停止内核；两个宿主在页面卸载（`pagehide`）与热更新替换时调用 `stopPresmium`，各插件的 `dispose` 因此会执行 |
@@ -247,14 +256,15 @@ presmium.exec: { timeoutMs: 30000 }
 
 N-07 要求界面文本有中文与英文：
 
-- 文稿的语言由头部的 `lang` 声明，例如 `lang: en-US`。两种形态都据此设置 `<html lang>`：幻灯片渲染端写入 Slidev 头部的 `htmlAttrs`，网页渲染端设置站点语言（`renderers.web.lang` 可以单独覆盖）。
-- `@presmium/host` 的 `useLocale()` 给出 `'zh-CN'` 或 `'en'`：先取 `<html lang>`，没有时取 `navigator.language`；`zh` 开头为中文，其余为英文。
-- 每个包在 `src/client/messages.ts` 中维护 zh-CN 与 en 两份文本，按同一规则选择，并跟随 `<html lang>` 的变化（Slidev 在应用启动之后才写入 `htmlAttrs`）。服务端渲染时没有页面，取中文；插件组件只在浏览器中渲染。开发服务器的端点（如本地环境插件的端点）按请求的 `Accept-Language` 回答，浏览器端在请求中带上页面的语言。
-- 编译时产生的内容（IR 中的录制输出、notebook 中的降级内容）不随界面语言变化。
+- 文稿的语言由头部的 `lang` 声明，例如 `lang: en-US`，默认 `zh-CN`。两种形态都据此设置 `<html lang>`：幻灯片渲染端写入 Slidev 头部的 `htmlAttrs`，网页渲染端设置站点语言（`renderers.web.lang` 可以单独覆盖）。
+- 界面语言为 `'zh-CN'` 或 `'en'`：`<html lang>` 以 `zh` 开头时为中文，以 `en` 开头时为英文；其他语言看 `navigator.language`，仍无法确定时为英文。`@presmium/host` 的 `useLocale()` 按这条规则给出语言，`useMessages(catalog)` 从 `{ 'zh-CN': …, en: … }` 中取出当前语言的文本。
+- 每个包维护自己的 zh-CN 与 en 文本，文件位置由包自定（例如 `src/domain/messages.ts` 或 `src/client/messages.ts`）。不经过宿主取语言的包按同一规则选择，并跟随 `<html lang>` 的变化（Slidev 在应用启动之后才写入 `htmlAttrs`）。服务端渲染时没有页面，取中文；插件组件只在浏览器中渲染。
+- 开发服务器的端点（如本地环境插件的端点）按请求的 `Accept-Language` 回答，浏览器端在请求中带上页面的语言。
+- 编译时写入产物的文本按文稿的 `lang`，例如 notebook 中指向网页版的说明、导出环境中的说明文件。编译时执行器写入录制输出的消息（例如超时）与解释器自身的报错一样为英文，也不含构建机器的路径。
 
 ### 5.8 静态导出
 
-PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示交互界面：幻灯片宿主在打印模式（`useStaticRender()` 为 true）下把带 `fallback` 的组件换成降级内容。插件负责让降级内容完整，例如执行面板的降级内容是代码加上 `:recorded:` 的录制输出。notebook 渲染端同样使用 `fallback`（`ir.md` 第 6 节）。
+PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示交互界面：幻灯片宿主在打印模式（`useStaticRender()` 为 true）下把带 `fallback` 的组件换成降级内容。插件负责让降级内容完整，例如执行面板的降级内容是代码加上 `:recorded:` 的录制输出。编译时执行的输出不在 `fallback` 中：指令生成组件时代码还没有执行，而插件的 IR 处理步骤都在编译时执行之前运行（9.2 节）。notebook 渲染端有自己的扩展时用扩展，否则使用 `fallback`（`ir.md` 第 6 节）；执行面板的 notebook 扩展从代码块取编译时的输出。
 
 ## 6. 示例文稿约定
 
@@ -292,8 +302,8 @@ presmium: { ...各插件全局配置 }
 
 - 示例文稿的幻灯片产物（`dist/slides`）与网页产物（`dist/web`）服务在 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT`（默认 4173、4174）。并行的检出各用一对端口；端口被占用时报错，不复用别处的服务。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
 - 需要专用文稿的用例（另一种界面语言、性能、课堂服务）在 `beforeAll` 中把测试文稿写到 `examples/demo/.presmium/e2e-*`（不入库，插件从示例文稿的依赖中解析），用真实的 `presmium build` 构建，再在空闲端口上服务产物。测试文稿放在 `e2e/fixtures/<组>/`。
-- 性能用例（`e2e/perf.spec.ts`，N-01、N-02）是单独的 Playwright 项目，在其他用例结束后运行，计时不与其他用例争用机器；`--no-deps` 可以只运行它。
-- 其他浏览器：`PRESMIUM_E2E_BROWSERS` 列出冒烟用例另外运行的浏览器，默认 `firefox`；主机装有 WebKit 所需的系统库时可以加上 `webkit`。浏览器用 `pnpm exec playwright install firefox webkit` 安装。Safari 与 Edge 在发布前按 `browsers.md` 手工检查并记录。
+- 性能用例（`e2e/perf.spec.ts`，N-01、N-02）是单独的 Playwright 项目，依赖 Chromium 项目，在其他用例结束后运行，计时不与其他用例争用机器。单独运行它要加 `--no-deps`：`pnpm exec playwright test e2e/perf.spec.ts --no-deps`；不加时 Playwright 先运行全部 Chromium 用例。
+- 其他浏览器：`PRESMIUM_E2E_BROWSERS` 列出冒烟用例另外运行的浏览器，默认 `firefox`；主机装有 WebKit 所需的系统库时可以加上 `webkit`，没有时在 Playwright 的 Docker 镜像中运行（`browsers.md`）。浏览器用 `pnpm exec playwright install firefox webkit` 安装。Safari 与 Edge 在发布前按 `browsers.md` 手工检查并记录。
 
 ## 8. 需求覆盖
 
@@ -324,13 +334,13 @@ presmium: { ...各插件全局配置 }
 | N-01 启动性能 | 全部 | `e2e/perf.spec.ts`（100 个章节的文稿：首张幻灯片、网页的第一个章节与放映视图在 2 s 内可见） |
 | N-02 翻页性能 | 全部 | `e2e/perf.spec.ts`（幻灯片的点击与翻页、网页放映视图的一步在 100 ms 内渲染） |
 | N-03 离线 | addon-publish、web | `e2e/publish.spec.ts`、`e2e/web.spec.ts`（断网后放映与搜索）、`addon-publish/test/offline.test.ts`、`web/test/offline.test.ts` |
-| N-04 浏览器 | — | 全部端到端用例在 Chromium 中运行，`e2e/smoke.spec.ts` 另在 Firefox 中运行；Safari、Edge 的手工检查见 `browsers.md` |
+| N-04 浏览器 | — | 全部端到端用例在 Chromium 中运行，`e2e/smoke.spec.ts` 另在 Firefox 中运行（WebKit 在装有其系统库的主机或 Playwright 的 Docker 镜像中运行）；WebKit 的全量运行结果与 Safari、Edge 的手工检查见 `browsers.md` |
 | N-05 显示 | web、viewer | `e2e/web.spec.ts`（手机视口无横向滚动） |
 | N-06 无障碍基线 | host、addon-guide、addon-publish、web | `e2e/core.spec.ts`、`e2e/guide.spec.ts`（减少动态效果、键盘操作）、`e2e/publish.spec.ts`（高对比度达到 WCAG AA）、`e2e/web.spec.ts`（字号缩放） |
-| N-07 界面语言 | 全部 | en-US 测试文稿上的英文界面：`e2e/web.spec.ts`、`e2e/core.spec.ts`（宿主与网页外壳）、`e2e/viewer.spec.ts`（IR 运行时）、课堂与富内容插件的端到端用例、`e2e/exec.spec.ts`（执行、本地环境与发布插件） |
+| N-07 界面语言 | 全部 | en-US 测试文稿上的英文界面：`e2e/core.spec.ts`、`e2e/web.spec.ts`（`e2e/fixtures/core/deck`：`<html lang>`、启动报告、两种形态的外壳与互相链接）、`e2e/viewer.spec.ts`（`e2e/fixtures/viewer/en`：放映视图、演讲者窗口、黑屏与代码块控件）、`e2e/classroom.spec.ts`“an English deck”（会话面板、加入表单与测验）、`e2e/exec.spec.ts`（`e2e/fixtures/exec/english`：执行面板、本地环境、高对比度开关）；开发服务器端点的回答与导出环境的说明文件见 `addon-exec-local/test/local-env.test.ts` |
 | P-01 至 P-04 | addon-stage | `e2e/stage.spec.ts` |
 | P-10 至 P-16 | addon-code | `addon-code/test/check.test.ts`、`e2e/code.spec.ts`（两种形态） |
-| P-20、P-21、P-23、P-24 | addon-exec | `e2e/exec.spec.ts`（Python、JavaScript、TypeScript，两种形态）、`addon-exec/test/compile.test.ts` |
+| P-20、P-21、P-23、P-24 | addon-exec | `e2e/exec.spec.ts`（Python、JavaScript、TypeScript，两种形态；定时器稍后的输出在编译时与浏览器中一致）、`addon-exec/test/compile.test.ts`（编译时执行；失败或超时的运行显示预录输出） |
 | P-22、P-25、P-26 | addon-exec-local | `addon-exec-local/test/local-env.test.ts`（没有 Docker 时跳过容器用例）、`e2e/exec-local.spec.ts`；P-25 的编辑回写端点已移出范围（WP-44） |
 | P-30 至 P-32 | addon-guide | `e2e/guide.spec.ts` |
 | P-40 至 P-43 | addon-content | `e2e/content.spec.ts`（两种形态） |
@@ -340,7 +350,7 @@ presmium: { ...各插件全局配置 }
 | P-53 | addon-publish | `addon-publish/test/diff.test.ts`（含 `--install` 的宿主或插件升级回归） |
 | P-60 至 P-67 | addon-session、classroom-server、addon-classroom | `e2e/session.spec.ts`、`e2e/classroom.spec.ts`（真实课堂服务，多个浏览器上下文接入同一课堂）、`classroom-server/test/server.test.ts`、`addon-classroom/test/notebook.test.ts` |
 | P-70 至 P-74 | web、viewer | `e2e/web.spec.ts`、`e2e/viewer.spec.ts` |
-| P-75 | render-notebook | `render-notebook/test/notebook.test.ts`、`render-notebook/test/demo.test.ts`（示例文稿的 notebook 从头到尾运行） |
+| P-75 | render-notebook、addon-exec | `render-notebook/test/notebook.test.ts`、`render-notebook/test/demo.test.ts`（示例文稿的 notebook 从头到尾运行）、`addon-exec/test/compile.test.ts`（执行面板的单元格带编译时输出或预录输出） |
 | P-76 | render-slides | `render-slides/test/slides.test.ts`、幻灯片形态的端到端用例 |
 | P-77 | viewer | `e2e/viewer.spec.ts` |
 | P-80、P-81 | language-server、vscode | `language-server/test/lsp.test.ts`、`vscode/test/build.test.ts` |
@@ -367,4 +377,6 @@ presmium: { ...各插件全局配置 }
 | 共享内核中的业务契约 | `@presmium/kernel` 除元能力外还定义了几个插件共用的业务服务契约：`EXECUTOR` 与 `RunRequest`、`SessionService`、`Role`、`ClassroomStore`，以及代码节点的 `run` 与 `outputs`。这是 4.5 节有意的选择：服务的提供方与使用方分属不同插件，契约只能放在双方都依赖的包中；设计原则 2 已据此修订 | 契约稳定后可以移到单独的契约包，内核只保留元能力 |
 | 网页的 Service Worker 手写 | 网页渲染端在 VitePress 构建完成后生成约 70 行的 Service Worker（`packages/web/src/node/offline.ts`）：此时页面、搜索索引与 Pyodide 运行时都已写出，按产物内容计算缓存版本，并把无扩展名的页面地址对应到 `.html`。`vite-plugin-pwa` 只用于幻灯片形态：VitePress 在 Vite 客户端构建之后才渲染 HTML 页面，在 Vite 构建中生成的预缓存清单拿不到这些页面，需要专门的 `@vite-pwa/vitepress` 集成 | 评估 `@vite-pwa/vitepress`；接入后删除手写的 Service Worker |
 | 网页按插件 ID 读取发布插件的配置 | `packages/web/src/domain/config.ts` 读取 `presmium.publish` 的 `offline` 决定是否生成 Service Worker：网页渲染端因此知道一个插件的配置键 | 增加渲染端扩展点，让插件参与网页构建 |
+| 执行面板的降级内容没有编译时输出 | 插件的 IR 处理步骤都在编译时执行之前运行，指令生成组件时代码也还没有执行，所以执行面板的 `fallback` 只有代码与 `:recorded:`；没有 `:recorded:` 的面板在 PDF、PNG 导出中只显示代码。notebook 不受影响：执行面板的 notebook 扩展在渲染时从代码块取编译时的输出 | 编译器为插件的 IR 处理步骤增加“编译时执行之后”的阶段（例如 `IRPass` 的 `after: 'execute'`），执行插件在这一阶段把输出追加到 `fallback` |
+| 幻灯片形态中的现场执行代码块 | 带 `:run: live` 或 `:run: both` 的普通代码块在网页形态中有运行按钮；幻灯片渲染端把它写成普通代码块，没有运行按钮，只有执行面板能在幻灯片中运行代码。`setup/code-runners.ts` 已经通过 `executor` 服务支持 Slidev 的 Monaco Runner（Python、JavaScript、TypeScript），但 MyST 源码无法写出 `{monaco-run}` | 幻灯片渲染端把带 `run` 的代码块写成 `{monaco-run}`，或写成执行插件的运行组件 |
 | 课堂笔记依赖 IR 运行时的标记 | 课堂插件的笔记图层按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位章节与块。这两个属性因此是 IR 运行时对外的契约，修改时须同时修改笔记图层 | 在视图插件接口中提供块旁的挂载点 |

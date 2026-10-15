@@ -226,7 +226,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | 插件 | 指令 | 参数与正文 | 选项 | 生成与步数 |
 |---|---|---|---|---|
 | 代码引用 `presmium.code` | `{code-ref}` | 参数为锚点，如 `region:src/bpe.py#merge` | `:pin:`（提交，默认工作区）、`:steps:`（逻辑单元名列表，即嵌套的 `#region`，每步高亮一个；`all` 或 `none` 表示这一步不突出任何单元）、`:variants:`（至少两个提交，逐步切换版本，不能与 `:pin:`、`:steps:` 同用）、`:lang:`（默认取文件扩展名）、`:repo:`（永久链接的仓库网址）、`:run:`、`:executor:`、`:timeout:` | `code` 节点，带 `origin`、`highlight` 或 `variants`；步数为单元数或版本数减一 |
-| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言：`python`（默认）、`javascript`、`typescript`；正文为代码 | `:params:`（YAML 映射，注入程序的变量；JavaScript 中为常量）、`:timeout:`（毫秒）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行） | `PmRunPanel`，子块为代码块；`fallback` 为代码加 `:recorded:` 的输出；notebook 中 Python 为代码单元格，附构建时的输出或 `:recorded:` 的输出，带超时而构建时没有正常结束的单元格标记 `skip-execution` |
+| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言：`python`（默认）、`javascript`、`typescript`；正文为代码 | `:params:`（YAML 映射，注入程序的变量；JavaScript 中为常量）、`:timeout:`（毫秒）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行） | `PmRunPanel`，子块为代码块；`fallback` 为代码加 `:recorded:` 的输出（不含构建时的输出，见 `architecture.md` 9.2 节）；notebook 中 Python 为代码单元格，其他语言为代码（JavaScript、TypeScript 前面加上参数常量）加输出的 Markdown 单元格。输出是构建时的输出；构建时没有执行、执行失败或超时的，有 `:recorded:` 时用它。带超时而构建时没有正常结束的代码单元格标记 `skip-execution` |
 | | `{step-run}` | 参数为语言（默认 `python`）；正文为代码 | `:steps:`（执行的行数，每行一步）、`:params:`、`:timeout:` | `PmStepRun`；步数为 `:steps:` |
 | 本地环境 `presmium.execLocal` | `{local-env}` | 参数为语言（默认 `python`）；正文为代码 | `:file:`（代码在工作区中的路径，必填）、`:workspace:`（devcontainer 所在目录，相对于本文件） | `PmLocalEnv`，子块为代码块；执行器 `presmium.container` 供代码块的 `:executor:` 使用 |
 | 引导 `presmium.guide` | `{cursor}` | 正文每行一个路径点：`[move\|hover\|click] <CSS 选择器>`，动作默认为 `move` | — | `PmCursor`；第 k 个路径点在块的第 k 步，步数为路径点数减一 |

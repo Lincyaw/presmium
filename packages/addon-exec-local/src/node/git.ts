@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { join, relative, resolve, sep } from 'node:path'
 import { simpleGit } from 'simple-git'
 import type { CommitRequest, CommitResult } from '../domain/index.ts'
-import { defaultBranch, defaultCommitMessage } from '../domain/index.ts'
+import { defaultBranch } from '../domain/index.ts'
 import { HttpError, requirePath } from './http.ts'
 import { text } from './messages.ts'
 
@@ -55,7 +55,7 @@ export async function commitOnNewBranch(workspace: string, request: CommitReques
     await indexed.raw(['read-tree', base])
     await indexed.raw(['update-index', '--add', '--cacheinfo', `${mode},${blob},${file}`])
     const tree = (await indexed.raw(['write-tree'])).trim()
-    const commit = (await git.raw(['commit-tree', tree, '-p', base, '-m', request.message ?? defaultCommitMessage(file)])).trim()
+    const commit = (await git.raw(['commit-tree', tree, '-p', base, '-m', request.message ?? text().commitMessage(file)])).trim()
     await git.raw(['branch', branch, commit])
     return { branch, commit, base, baseBranch, file }
   }

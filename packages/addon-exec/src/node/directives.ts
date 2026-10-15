@@ -3,7 +3,9 @@
  * a component wrapping a code block. The block is the component's only child,
  * so renderers that cannot run code still show it, with the output recorded
  * at compile time for a run panel. The component's `fallback`, which static
- * forms show in its place, is the code followed by the `:recorded:` output.
+ * forms show in its place, is the code followed by the `:recorded:` output;
+ * the compile-time output cannot be in it, since the directive is read before
+ * the code runs (the notebook takes that output from the code block).
  *
  * ```` ```{run-panel} python ```` options: `:params:` (a YAML mapping, the
  * variables injected into the program), `:timeout:` (ms), `:recorded:` (output

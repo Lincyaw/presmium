@@ -182,6 +182,19 @@ test.describe('an English deck with JavaScript and TypeScript', () => {
     await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
   })
 
+  test('code that prints from a timer records at compile time what it prints in the browser', async ({ page }) => {
+    interface Block { node: { type: string, children?: Block[], outputs?: { stdout: string }[] } }
+    const ir = JSON.parse(readFileSync(join(deck.dir, 'dist/ir.json'), 'utf8')) as { sections: { id: string, blocks: Block[] }[] }
+    const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
+    const code = blocks(ir.sections.find(section => section.id === 'js-later')!.blocks).find(block => block.node.type === 'code')
+    expect(code?.node.outputs?.map(run => run.stdout)).toEqual(['now\nlater\n'])
+
+    const panel = await slidePanel(page, 'js-later')
+    await panel.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
+    await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('now\nlater\n')
+  })
+
   test('in the web form, a run panel and live code run JavaScript in the browser', async ({ page }) => {
     await page.goto(`${web.url}/`)
     const js = page.locator('.pm-section[data-section="js-panel"] .pm-run-panel')

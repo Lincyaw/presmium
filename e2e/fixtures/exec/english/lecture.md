@@ -51,6 +51,14 @@ let x = 1
 while (true) x = (x + 2 / x) / 2
 ```
 
+(js-later)=
+## Later output
+
+```{run-panel} javascript
+setTimeout(() => console.log('later'), 50)
+console.log('now')
+```
+
 (js-live)=
 ## Live code
 

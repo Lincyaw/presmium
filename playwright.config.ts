@@ -30,13 +30,16 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: devices['Desktop Chrome'], testIgnore: 'perf.spec.ts' },
     // The timing assertions of N-01 and N-02 run once the other specs are done, so neither
-    // their measurements nor the timing assertions of other specs share the machine
-    // (`playwright test e2e/perf.spec.ts --no-deps` runs them alone).
+    // their measurements nor the timing assertions of other specs share the machine. A run of
+    // perf.spec.ts alone needs `--no-deps` (`pnpm exec playwright test e2e/perf.spec.ts --no-deps`);
+    // without it, Playwright runs every Chromium spec first.
     { name: 'perf', use: devices['Desktop Chrome'], testMatch: 'perf.spec.ts', dependencies: ['chromium'] },
     ...others.map(name => ({ name, use: OTHER_BROWSERS[name], testMatch: 'smoke.spec.ts' })),
   ],
   webServer: servers.map(s => ({
-    command: `pnpm exec sirv ${s.dir} ${s.single ? '--single ' : ''}--port ${s.port} --quiet`,
+    // The binary itself rather than `pnpm exec`, so the config also runs where pnpm is not
+    // installed, e.g. in the Playwright Docker image (docs/browsers.md).
+    command: `node_modules/.bin/sirv ${s.dir} ${s.single ? '--single ' : ''}--port ${s.port} --quiet`,
     port: s.port,
     reuseExistingServer: false,
   })),

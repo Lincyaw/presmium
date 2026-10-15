@@ -3,6 +3,9 @@
  * executors: the runner (src/runner.py, src/runner.mjs) reads its input as
  * JSON on stdin and prints `{ stdout, stderr, exitCode }`. Each run starts in
  * a fresh temporary directory and is killed once it exceeds its timeout.
+ * What a run records goes into the published forms, whatever the deck's
+ * language, so the messages added here are English, like the interpreters'
+ * own, and name nothing of the build machine (K-13).
  */
 import { spawn } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -48,13 +51,13 @@ export function runChild(runner: ChildRunner, request: RunRequest, input: unknow
     child.on('error', error => finish(failedRun(id, error.message, Date.now() - started)))
     child.on('close', () => {
       const durationMs = Date.now() - started
-      if (timedOut) return finish({ ...failedRun(id, `执行超过 ${timeoutMs} ms，已停止`, durationMs), timedOut: true })
+      if (timedOut) return finish({ ...failedRun(id, `Stopped after ${timeoutMs} ms`, durationMs), timedOut: true })
       let output: RunnerOutput
       try {
         output = JSON.parse(Buffer.concat(out).toString('utf8')) as RunnerOutput
       }
       catch {
-        return finish(failedRun(id, Buffer.concat(err).toString('utf8') || `${runner.command} produced no result`, durationMs))
+        return finish(failedRun(id, Buffer.concat(err).toString('utf8') || `the ${id} runner produced no result`, durationMs))
       }
       finish({ ok: output.exitCode === 0, stdout: output.stdout, stderr: output.stderr, exitCode: output.exitCode, durationMs, timedOut: false, source: 'live', executorId: id })
     })

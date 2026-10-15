@@ -5,14 +5,16 @@
  * component's slot, without its recorded output). The renderer gives the
  * component its block's `at` as step scope.
  *
- * Notebook: a run panel or stepwise run becomes a code cell (P-75), with the
- * parameters assigned first and the output recorded at compile time, else the
- * panel's `recorded` output (P-24). A cell with a timeout that did not finish
- * at compile time may never end; it is tagged `skip-execution`, which Jupyter
- * tools (nbclient, Jupyter Book) honor when they run the notebook.
+ * Notebook (P-75): a Python run panel or stepwise run becomes a code cell,
+ * with the parameters assigned first; code in another language becomes a
+ * Markdown cell with the code and its output. The output is the one recorded
+ * at compile time, or the panel's `recorded` output where that run failed,
+ * timed out or did not happen (P-24). A cell with a timeout that did not
+ * finish at compile time may never end; it is tagged `skip-execution`, which
+ * Jupyter tools (nbclient, Jupyter Book) honor when they run the notebook.
  */
 import type { CodeNode, ComponentNode, RecordedRun, RendererExtension } from '@presmium/kernel'
-import { isPython } from '../domain/index.ts'
+import { isPython, isScript } from '../domain/index.ts'
 
 function code(node: ComponentNode): CodeNode | undefined {
   const child = node.children?.find(block => block.node.type === 'code')
@@ -37,9 +39,9 @@ function slidesTag(node: ComponentNode): string {
   return source ? `<${node.name}${attrs}>\n\n${fence(source.lang, source.value)}\n\n</${node.name}>` : `<${node.name}${attrs} />`
 }
 
-/** A Python literal for a parameter value. */
-function literal(value: unknown): string {
-  if (typeof value === 'boolean') return value ? 'True' : 'False'
+/** A parameter value as a Python literal, or as a JavaScript one (`script`). */
+function literal(value: unknown, script = false): string {
+  if (typeof value === 'boolean') return script ? String(value) : value ? 'True' : 'False'
   return typeof value === 'number' ? String(value) : JSON.stringify(String(value))
 }
 
@@ -48,22 +50,33 @@ function lines(text: string): string[] {
   return text ? text.split(/(?<=\n)/) : []
 }
 
-function streams(runs: RecordedRun[] = []): unknown[] {
+function streams(runs: RecordedRun[]): unknown[] {
   return (['stdout', 'stderr'] as const).flatMap((name) => {
     const text = runs.map(run => run[name]).join('')
     return text ? [{ output_type: 'stream', name, text: lines(text) }] : []
   })
 }
 
-/** A code cell for Python; other languages fall back to the code block (the component's `fallback`). */
+/** The panel's `recorded` output, where it replaces the compile-time runs: none ran, or one failed or timed out (P-24). */
+function recordedInstead(node: ComponentNode, runs: RecordedRun[]): string | undefined {
+  const recorded = typeof node.props.recorded === 'string' ? node.props.recorded : undefined
+  return runs.length > 0 && runs.every(run => run.ok) ? undefined : recorded
+}
+
+/** A code cell for Python; a Markdown cell with the code and its output for other languages. */
 function notebookCell(node: ComponentNode) {
   const source = code(node)
-  if (!source || !isPython(source.lang)) return undefined
-  const params = node.props.params as Record<string, unknown> | undefined
-  const assignments = Object.entries(params ?? {}).map(([name, value]) => `${name} = ${literal(value)}\n`)
+  if (!source) return undefined
+  const params = Object.entries((node.props.params ?? {}) as Record<string, unknown>)
   const runs = source.outputs ?? []
-  const recorded = typeof node.props.recorded === 'string' ? node.props.recorded : undefined
-  const outputs = runs.length || recorded === undefined ? streams(runs) : [{ output_type: 'stream', name: 'stdout', text: lines(recorded) }]
+  const recorded = recordedInstead(node, runs)
+  if (!isPython(source.lang)) {
+    const declared = isScript(source.lang) ? params.map(([name, value]) => `const ${name} = ${literal(value, true)}\n`).join('') : ''
+    const output = (recorded ?? runs.map(run => run.stdout + run.stderr).join('')).trimEnd()
+    return [fence(source.lang, declared + source.value), ...output ? [fence('text', output)] : []].join('\n\n')
+  }
+  const assignments = params.map(([name, value]) => `${name} = ${literal(value)}\n`)
+  const outputs = recorded === undefined ? streams(runs) : [{ output_type: 'stream', name: 'stdout', text: lines(recorded) }]
   const finished = runs.length > 0 && runs.every(run => !run.timedOut)
   const metadata = node.props.timeout !== undefined && !finished ? { tags: ['skip-execution'] } : undefined
   return { cell_type: 'code' as const, source: [...assignments, ...lines(source.value)], outputs, execution_count: null, ...metadata ? { metadata } : {} }

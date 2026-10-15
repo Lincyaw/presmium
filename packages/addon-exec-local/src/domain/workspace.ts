@@ -33,7 +33,7 @@ export function runnersFrom(customizations: unknown): Runners {
 export function workspacePath(file: string): string {
   const parts = file.replaceAll('\\', '/').split('/').filter(part => part !== '' && part !== '.')
   if (!file || /^([a-z]:)?[\\/]/i.test(file) || parts.length === 0 || parts.includes('..') || parts[0] === '.git') {
-    throw new Error(`路径必须位于工作区内：${file}`)
+    throw new Error(`not a path inside the workspace: ${file}`)
   }
   return parts.join('/')
 }
@@ -44,32 +44,8 @@ export function defaultBranch(now: Date): string {
   return `presmium/edit-${stamp}`
 }
 
-export function defaultCommitMessage(file: string): string {
-  return `presmium: 演示中修改 ${file}`
-}
-
 /** File name of the exported environment: `presmium-env-greet.zip` for `src/greet.py`. */
 export function archiveName(file: string): string {
   const name = file.split('/').pop() ?? file
   return `presmium-env-${name.replace(/\.[^.]*$/, '') || 'snippet'}.zip`
-}
-
-/** README of the exported environment (P-26). */
-export function replicateReadme(file: string, runner?: string[]): string {
-  const run = runner ? `${runner[0]} ${file}` : `<运行 ${file} 的命令>`
-  return [
-    '# Presmium 导出的运行环境',
-    '',
-    `本压缩包包含演示中的代码片段 \`${file}\` 与仓库的 devcontainer 定义。`,
-    '',
-    '用 Dev Containers CLI 打开并运行：',
-    '',
-    '```sh',
-    'devcontainer up --workspace-folder .',
-    `devcontainer exec --workspace-folder . ${run}`,
-    '```',
-    '',
-    '也可以在 VS Code 中打开本目录，选择“Reopen in Container”。',
-    '',
-  ].join('\n')
 }
