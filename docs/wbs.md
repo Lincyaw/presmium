@@ -328,6 +328,27 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 - 未在文稿中手工配置时，幻灯片导航栏也有“在网页中阅读”按钮；从幻灯片第 N 页第 S 步跳到网页，停在对应章节与步骤。
 - `presmium dev` 中编辑段落后，新关键字可以被搜索到。
 
+#### WP-46 的拆分与合并后遗留项
+
+WP-46 拆为两个文件归属不重叠、可并行的工作包。
+
+**WP-46a 运行时侧**（拥有 `packages/host/`、`packages/addon-core/`、`packages/addon-guide/`、`packages/addon-exec/`、`packages/addon-code/`、`packages/viewer/`、`packages/web/`、`packages/render-slides/` 及对应 `e2e/`）：
+
+- 上文 WP-46 的步骤作用域、浏览器端插件注册、形态切换、开发模式（搜索索引、幻灯片开发服务器、滚动叙事阅读位置）、运行时执行（`run.when` 含 `live`、网页中提供 Pyodide 运行时）；
+- 去掉引导插件与分步执行插件各自的步骤偏移变通做法，统一使用步骤作用域；
+- IR 运行时把 ` ```mermaid ` 代码节点渲染为图表；网页中脚注引用的显示与 `e2e/web.spec.ts` 的文本比对一致；
+- 幻灯片渲染端显示 `CodeNode.origin`（文件与行区间链接、提交、漂移徽标），随后去掉代码引用插件插入的幻灯片专用信息栏；高对比度下代码引用徽标达到 WCAG AA（当前 3.63:1）；
+- `presmium.publish.offline: false` 同时关闭网页的 service worker。
+
+**WP-46b 编译侧**（拥有 `packages/compiler/`、`packages/kernel/`、`packages/cli/`、`packages/render-notebook/`、`packages/addon-content/`、`packages/addon-publish/`、`examples/demo/slides.md`、`docs/`）：
+
+- `presmium dev` 监听编译步骤读取过的文件（例如被引用的代码文件与 git 引用），被引用代码变化时实时更新（K-09）；
+- 编译器自行把脚注定义放回所在章节；`{code}` 的 `:emphasize-lines:` 映射为 `highlight`；
+- `RendererExtension` 的组件转换函数获得渲染上下文，插件不再为读取 Slidev 目录而依赖幻灯片渲染端包；
+- notebook 渲染端复制或改写本地媒体文件的路径（如本地化的 PlantUML 图、媒体降级链接）；
+- 移除 v1 遗留：`examples/demo/slides.md`、`transformMarkdown`、`MarkdownTransformInput`，以及不再使用的 `CheckContext.slides`；
+- 文档：在 `ir.md` 中列出各插件指令及选项（`{code-ref}`、`{run-panel}`、`{step-run}`、`{local-env}` 以及讲台、引导、富内容、发布的指令），在 `architecture.md` 第 5 节写明浏览器端插件注册与视图插件约定。
+
 ## 课堂波次的调整
 
 网页是主媒介，WP-30、WP-31 的课堂功能必须同时在网页与幻灯片中可用：会话与同步不只接入 Slidev 的 `addSyncMethod`，网页宿主中的“跟随主讲”按章节与步骤导航；测验、练习、提问等以指令声明（`{quiz}`、`{exercise}`、`{question}`），notebook 中降级为静态内容。
