@@ -2,26 +2,22 @@
 
 本文档定义工程结构、分层规则、跨上下文契约、插件约定与测试策略。领域概念见 `domain-model.md`，任务拆分见 `wbs.md`。
 
-## 1. 双形态
-
-同一份文稿源码生成两种形态：
+## 1. 编译管线
 
 ```
-                    examples/demo/slides.md + pages/*.md
-                                  │
-              ┌───────────────────┴───────────────────┐
-              ▼                                       ▼
-      幻灯片形态：Slidev                       网页形态：VitePress
-      slidev build                             presmium web build
-      宿主适配：addon-core                      宿主适配：web
-              │                                       │
-              └──────────► 插件组件（共用） ◄───────────┘
-                         只依赖 @presmium/host
+MyST 源码 + 真实代码文件
+      │  @presmium/compiler：解析 → 指令 → 角色 → 步骤 → 插件步骤 → 执行（缓存）→ 校验
+      ▼
+     IR（packages/kernel/src/ir.ts）
+      │
+      ├── @presmium/web              网页：VitePress 外壳 + @presmium/viewer（IR 运行时，动态渲染，实时更新）
+      ├── @presmium/render-slides    幻灯片：生成 Slidev 项目（可选的高保真渲染端）
+      └── @presmium/render-notebook  Jupyter .ipynb
 ```
 
-- 幻灯片形态由 Slidev 直接渲染文稿。
-- 网页形态由 `@presmium/web` 先把文稿转换为 VitePress 页面，再由 VitePress 构建。
-- 插件组件只通过 `@presmium/host` 获取步骤状态、服务与形态，因此在两种形态中共用。
+- 编辑只在源码中进行。渲染端只读 IR。
+- 网页与幻灯片在浏览器中运行同一批插件组件，组件只依赖 `@presmium/host`；两个渲染端各自提供宿主适配（VitePress 版在 `web`，Slidev 版在 `addon-core`）。
+- 源语法、IR、编译步骤、渲染端接口的完整定义见 `ir.md`。
 
 ## 2. 仓库结构
 
@@ -30,9 +26,13 @@ presmium/
 ├── packages/
 │   ├── kernel/              @presmium/kernel                    纯 TS 共享内核：契约、服务注册、锚点、检查
 │   ├── host/                @presmium/host                      形态无关的宿主接口与组合式函数（Vue）
-│   ├── cli/                 @presmium/cli                       presmium check
+│   ├── compiler/            @presmium/compiler                  MyST 解析、编译步骤、执行缓存、IR
+│   ├── cli/                 @presmium/cli                       presmium build | dev | ir | check
+│   ├── render-slides/       @presmium/render-slides             幻灯片渲染端（生成 Slidev 项目）
+│   ├── render-notebook/     @presmium/render-notebook           notebook 渲染端（.ipynb）
 │   ├── addon-core/          @presmium/slidev-addon-core         宿主适配：Slidev 实现
-│   ├── web/                 @presmium/web                       宿主适配：VitePress 实现；文稿转换；presmium-web 命令
+│   ├── viewer/              @presmium/viewer                    IR 运行时：动态渲染、运行时视图、实时更新
+│   ├── web/                 @presmium/web                       网页渲染端：VitePress 外壳与宿主适配
 │   ├── addon-stage/         @presmium/slidev-addon-stage
 │   ├── addon-code/          @presmium/slidev-addon-code
 │   ├── addon-exec/          @presmium/slidev-addon-exec
@@ -99,16 +99,18 @@ packages/addon-<ctx>/
 
 ### 4.2 Node 端插件
 
-```ts
-interface PresmiumNodePlugin {
-  id: string
-  resolvers?: AnchorResolver[]       // 锚点解析器
-  checks?: Check[]                    // presmium check 的检查项
-  transformMarkdown?(input: MarkdownTransformInput): string | Promise<string>
-}
-```
+各插件包的 `./presmium` 入口默认导出 `PresmiumNodePlugin`（定义在 `contracts.ts`）：
 
-`transformMarkdown` 是两种形态共用的 Markdown 预处理入口。插件在 `setup/transformers.ts` 中调用它服务幻灯片形态，`web` 包在转换文稿时调用它服务网页形态。代码引用就是这样在两种形态中展开 `coderef` 代码块的。
+| 字段 | 作用 |
+|---|---|
+| `directives` | MyST 指令规格，把源码转换为 IR 节点 |
+| `passes` | IR 编译步骤 |
+| `executors` | 编译时执行用的 Node 端执行器 |
+| `resolvers`、`anchors`、`checks` | 锚点解析器、文稿引用的锚点、检查项 |
+| `renderer` | 本插件提供的渲染端（网页、幻灯片、notebook 各是一个插件） |
+| `rendererExtensions` | 本插件为其他渲染端提供的组件转换，例如 notebook 中组件如何变成单元格 |
+
+`transformMarkdown` 是 v1 的钩子，已废弃，MR 波次中移除。
 
 ### 4.3 锚点与检查
 
@@ -182,21 +184,21 @@ interface HostAdapter {
 
 ## 6. 示例文稿约定
 
-`examples/demo/slides.md` 只包含 headmatter 与各上下文页面的引入：
+示例文稿的入口是 `examples/demo/lecture.md`（MyST），只包含 frontmatter 与各上下文页面的引入：
 
 ```md
 ---
-addons: [ ...全部插件包 ]
+title: Presmium Demo
+plugins: [ ...全部插件包 ]
 presmium: { ...各插件全局配置 }
 ---
 
----
-src: ./pages/core.md
----
+```{include} pages/core.md
+```
 ...
 ```
 
-每个上下文独占 `examples/demo/pages/<ctx>.md` 与 `e2e/<ctx>.spec.ts`。
+每个上下文独占 `examples/demo/pages/<ctx>.md` 与 `e2e/<ctx>.spec.ts`。构建产物位于 `examples/demo/dist/<渲染端 ID>/`。
 
 ## 7. 测试策略
 
@@ -206,13 +208,12 @@ src: ./pages/core.md
 |---|---|---|---|
 | 结构检查 | `scripts/check-layering.mjs` | 第 3 节的分层规则 | `pnpm test` |
 | 集成 | Vitest | 真实运行 CLI、构建产物检查、服务端（`packages/<pkg>/test/`） | `pnpm test` |
-| 幻灯片构建 | `slidev build` | 示例文稿完整构建 | `pnpm demo:build` |
-| 网页构建 | `presmium-web build` | 示例文稿转换并构建为网页 | `pnpm demo:web` |
+| 构建 | `presmium build` | 示例文稿编译并生成全部媒介 | `pnpm demo:build` |
 | 检查 | `presmium check` | 示例文稿全部检查项通过 | `pnpm demo:check` |
 | 端到端 | Playwright（Chromium） | 两种构建产物上的行为（`e2e/`） | `pnpm e2e` |
 | 全部 | | 以上依次执行 | `pnpm verify` |
 
-端到端测试中，幻灯片产物服务在 `http://localhost:4173`，网页产物服务在 `http://localhost:4174`。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
+端到端测试中，幻灯片产物（`dist/slides`）服务在 `http://localhost:4173`，网页产物（`dist/web`）服务在 `http://localhost:4174`。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
 
 ## 8. 需求覆盖
 

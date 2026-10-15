@@ -1,0 +1,6 @@
+export { execPlugin } from './plugin.ts'
+export { createPyodideExecutor } from './pyodide.ts'
+export type { PyodideExecutor, PyodideExecutorOptions } from './pyodide.ts'
+export { whenService } from './services.ts'
+export { markLine, slotSource, STEP_MARKS, stringArgs } from './source.ts'
+export type { RegisterStepMark } from './source.ts'

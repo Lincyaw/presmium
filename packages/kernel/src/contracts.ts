@@ -5,6 +5,8 @@
  * changing or removing existing signatures requires updating docs/architecture.md.
  */
 
+import type { DirectiveSpec, IRPass, Renderer, RendererExtension } from './ir.ts'
+
 export const KERNEL_VERSION = '0.1.0'
 
 // ---------------------------------------------------------------------------
@@ -261,7 +263,19 @@ export interface PresmiumNodePlugin {
    * --update-lock` resolves them in the working tree and records them in the lock.
    */
   anchors?(ctx: CheckContext): AnchorString[] | Promise<AnchorString[]>
+  /** @deprecated v1 hook; replaced by `directives` and `passes` (docs/ir.md). */
   transformMarkdown?(input: MarkdownTransformInput): string | Promise<string>
+  // --- v2: compiler and renderers (docs/ir.md) ---
+  /** MyST directives this plugin adds to the source syntax. */
+  directives?: DirectiveSpec[]
+  /** IR passes run after the built-in passes, ordered by `order`. */
+  passes?: IRPass[]
+  /** Node-side executors for compile-time execution. */
+  executors?: Executor[]
+  /** A renderer this plugin provides (e.g. the web, slides or notebook renderer). */
+  renderer?: Renderer
+  /** Contributions to renderers provided by other plugins, keyed by renderer id. */
+  rendererExtensions?: Record<string, Omit<RendererExtension, 'plugin'>>
 }
 
 // ---------------------------------------------------------------------------
