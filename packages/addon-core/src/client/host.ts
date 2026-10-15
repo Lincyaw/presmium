@@ -3,7 +3,7 @@ import type { HostAdapter, ViewRole } from '@presmium/host'
 import { configs, useNav, useSlideContext } from '@slidev/client'
 import { computed } from 'vue'
 import { presmiumConfig } from '../domain/index.ts'
-import { sharedState } from './shared.ts'
+import { sharedStates } from './shared.ts'
 
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
@@ -58,7 +58,7 @@ export function createSlidevHost(): HostAdapter {
         }
       })
     },
-    useSharedState: sharedState,
+    useSharedState: sharedStates.sharedState,
     getService: presmiumService,
     startReport: presmiumReport,
   }
