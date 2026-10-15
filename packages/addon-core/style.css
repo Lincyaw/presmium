@@ -1,0 +1,12 @@
+/* Form markers (architecture §5.6): the slides form hides document-only content. */
+[doc-only] {
+  display: none !important;
+}
+
+.pm-boundary-error {
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed #dc2626;
+  border-radius: 0.25rem;
+  color: #dc2626;
+  font-size: 0.85em;
+}
