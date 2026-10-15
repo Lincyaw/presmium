@@ -143,6 +143,9 @@ importers:
       markmap-view:
         specifier: ^0.18.12
         version: 0.18.12(markmap-common@0.18.9)
+      vue:
+        specifier: ^3.5.42
+        version: 3.5.44(typescript@6.0.3)
     devDependencies:
       '@slidev/client':
         specifier: 53.0.0
