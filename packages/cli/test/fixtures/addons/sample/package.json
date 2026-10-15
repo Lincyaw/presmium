@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-addon-sample",
+  "private": true,
+  "type": "module",
+  "keywords": ["slidev-addon", "slidev"],
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}
