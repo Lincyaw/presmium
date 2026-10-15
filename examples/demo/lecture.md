@@ -31,3 +31,6 @@ renderers:
 
 ```{include} pages/core.md
 ```
+
+```{include} pages/web.md
+```

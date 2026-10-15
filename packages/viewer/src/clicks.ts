@@ -1,26 +1,31 @@
 /**
- * `v-click` compatibility layer of the web form: the directives `v-click`,
- * `v-after`, `v-click-hide` and the components `<v-click>`, `<v-after>`,
- * `<v-clicks>`. Document sections show everything; scrolly sections show an
- * element while the scrolled-to step is inside its click range.
+ * `v-click` compatibility for plugin components written for Slidev: the
+ * directives `v-click`, `v-after`, `v-click-hide` and the components
+ * `<v-click>`, `<v-after>`, `<v-clicks>`. Click positions count in the
+ * block's own steps; an element shows while the block's step is inside its
+ * click range (`.hide`: outside it). Where every step is shown (the document
+ * view) elements take their final state, as the component's step state does.
  */
 import type { App, Directive, Ref } from 'vue'
 import { defineComponent, h, onBeforeUnmount, onMounted, shallowRef, watchEffect, withDirectives } from 'vue'
-import { clickVisible, resolveClicks } from '../domain/index.ts'
-import type { ClickRange, ClickSpec, SectionLayout } from '../domain/index.ts'
+import { clickVisible, resolveClicks } from './domain/index.ts'
+import type { ClickRange, ClickSpec } from './domain/index.ts'
 
 interface Controller {
   add(el: HTMLElement, spec: ClickSpec): void
   remove(el: HTMLElement): void
 }
 
+/** Root class of a block; its click elements are resolved together. */
+export const BLOCK_CLASS = 'pm-block'
+
 const controllers = new WeakMap<Element, Controller>()
-/** Elements mounted before their section (children mount first); claimed when it mounts. */
+/** Elements mounted before their block (children mount first); claimed when it mounts. */
 const pending = new Map<HTMLElement, ClickSpec>()
 
 function controllerOf(el: HTMLElement): Controller | undefined {
-  const section = el.closest('.pm-section')
-  return section ? controllers.get(section) : undefined
+  const block = el.closest(`.${BLOCK_CLASS}`)
+  return block ? controllers.get(block) : undefined
 }
 
 function register(el: HTMLElement, spec: ClickSpec): void {
@@ -35,10 +40,10 @@ function unregister(el: HTMLElement): void {
 }
 
 /**
- * Tracks the click elements of a section and marks each `data-pm-click="shown|hidden"`
- * for the section's step. Returns a function that stops tracking.
+ * Tracks the click elements of a block and marks each `data-pm-click="shown|hidden"`
+ * for the block's step. Returns a function that stops tracking.
  */
-export function trackClicks(section: HTMLElement, layout: SectionLayout, step: Readonly<Ref<number>>): () => void {
+export function trackClicks(block: HTMLElement, step: Readonly<Ref<number>>): () => void {
   const specs = new Map<HTMLElement, ClickSpec>()
   const ranges = shallowRef(new Map<HTMLElement, ClickRange>())
   const resolve = () => {
@@ -46,7 +51,7 @@ export function trackClicks(section: HTMLElement, layout: SectionLayout, step: R
     const resolved = resolveClicks(ordered.map(el => specs.get(el)!))
     ranges.value = new Map(ordered.map((el, i) => [el, resolved[i]!]))
   }
-  controllers.set(section, {
+  controllers.set(block, {
     add(el, spec) {
       specs.set(el, spec)
       resolve()
@@ -57,19 +62,17 @@ export function trackClicks(section: HTMLElement, layout: SectionLayout, step: R
     },
   })
   for (const [el, spec] of pending) {
-    if (!section.contains(el)) continue
+    if (!block.contains(el)) continue
     pending.delete(el)
     specs.set(el, spec)
   }
   resolve()
   const stop = watchEffect(() => {
-    for (const [el, range] of ranges.value) {
-      el.dataset.pmClick = layout === 'scrolly' && !clickVisible(range, step.value) ? 'hidden' : 'shown'
-    }
+    for (const [el, range] of ranges.value) el.dataset.pmClick = clickVisible(range, step.value) ? 'shown' : 'hidden'
   })
   return () => {
     stop()
-    controllers.delete(section)
+    controllers.delete(block)
   }
 }
 
