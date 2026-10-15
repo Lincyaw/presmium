@@ -10,8 +10,8 @@ MyST 源码 + 真实代码文件
       ▼
      IR（packages/kernel/src/ir.ts）
       │
-      ├── @presmium/web              网页（VitePress，主媒介）
-      ├── @presmium/render-slides    幻灯片（生成 Slidev 项目）
+      ├── @presmium/web              网页：VitePress 外壳 + @presmium/viewer（IR 运行时，动态渲染，实时更新）
+      ├── @presmium/render-slides    幻灯片：生成 Slidev 项目（可选的高保真渲染端）
       └── @presmium/render-notebook  Jupyter .ipynb
 ```
 
@@ -31,7 +31,8 @@ presmium/
 │   ├── render-slides/       @presmium/render-slides             幻灯片渲染端（生成 Slidev 项目）
 │   ├── render-notebook/     @presmium/render-notebook           notebook 渲染端（.ipynb）
 │   ├── addon-core/          @presmium/slidev-addon-core         宿主适配：Slidev 实现
-│   ├── web/                 @presmium/web                       网页渲染端与 VitePress 宿主适配
+│   ├── viewer/              @presmium/viewer                    IR 运行时：动态渲染、运行时视图、实时更新
+│   ├── web/                 @presmium/web                       网页渲染端：VitePress 外壳与宿主适配
 │   ├── addon-stage/         @presmium/slidev-addon-stage
 │   ├── addon-code/          @presmium/slidev-addon-code
 │   ├── addon-exec/          @presmium/slidev-addon-exec

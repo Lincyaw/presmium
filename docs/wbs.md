@@ -9,7 +9,7 @@
 | A | WP-00 工程骨架、WP-01 内核 | — |
 | B（M0） | WP-02 宿主适配、WP-03 检查命令 | A |
 | C（M1、M2） | WP-10 讲台、WP-11 代码引用、WP-12 网页形态、WP-20 浏览器执行、WP-21 本地环境、WP-22 引导、WP-23 富内容、WP-24 发布 | B |
-| R（MR） | 先 WP-40 编译器，然后并行 WP-41 幻灯片渲染端、WP-42 网页渲染端、WP-43 notebook 渲染端、WP-44 代码与执行插件迁移、WP-45 展示类插件迁移 | C |
+| R（MR） | 先 WP-40 编译器，然后并行 WP-41 幻灯片渲染端、WP-42 IR 运行时与网页渲染端、WP-43 notebook 渲染端、WP-44 代码与执行插件迁移、WP-45 展示类插件迁移 | C |
 | D（M3） | WP-30 会话与同步，然后 WP-31 课堂功能 | R |
 | E（M4） | WP-50 语言服务与预览同步 | R |
 
@@ -243,25 +243,34 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 - 用测试执行器（测试夹具中的插件）验证：首次编译执行一次，第二次命中缓存不再执行；修改代码后只重跑该块。
 - `presmium check` 原有验收全部保持（退出码、`文件:行号`、`--json`、`--update-lock`）。
 
-### WP-41 幻灯片渲染端
+### WP-41 幻灯片渲染端（可选的高保真渲染端）
 
 **拥有**：`packages/render-slides/`、`e2e/core.spec.ts`。
 
 **需求**：P-76、K-04、K-05、K-12，以及原 WP-02 的端到端验收。
 
-**交付**：从 IR 生成 Slidev 项目（每章节一页；上屏块按 `at` 包裹 `v-click`；`code` 节点按 `highlight` 生成逐步行高亮；`variants` 生成 Magic Move；讲解生成带 `[click]` 标记的备注；`component` 节点生成组件标签；`hints.slides.layout` 映射为布局；frontmatter 的插件列表映射为 `addons`），再调用 Slidev 构建或启动开发服务器。
+**交付**：从 IR 生成 Slidev 项目（每章节一页；上屏块按 `at` 包裹 `v-click`；`code` 节点按 `highlight` 生成逐步行高亮；`variants` 生成 Magic Move；讲解生成带 `[click]` 标记的备注；`component` 节点生成组件标签；`hints.slides.layout` 映射为布局；frontmatter 的插件列表映射为 `addons`），再调用 Slidev 构建或导出。
 
-**验收**：原 `e2e/core.spec.ts` 的五条验收在新产物上通过；讲解出现在演讲者视图的对应步骤。
+**验收**：原 `e2e/core.spec.ts` 的五条验收在新产物上通过；讲解出现在演讲者视图的对应步骤；`presmium build --to slides` 后可用 `slidev export` 导出 PDF。
 
-### WP-42 网页渲染端
+### WP-42 IR 运行时与网页渲染端
 
-**拥有**：`packages/web/`、`examples/demo/pages/web.md`、`e2e/web.spec.ts`。
+**拥有**：`packages/viewer/`、`packages/web/`、`examples/demo/pages/web.md`、`e2e/web.spec.ts`、`e2e/viewer.spec.ts`。
 
-**需求**：P-70 至 P-74、N-05。
+**需求**：K-11、K-20、P-70 至 P-74、P-77、N-05。
 
-**交付**：把 `@presmium/web` 从“Slidev Markdown 转 VitePress”改为“IR 生成 VitePress 项目”；保留 VitePress 宿主适配、中文搜索、滚动叙事、形态切换；`component` 节点渲染为插件组件；完整支持全部节点类型。
+**交付**：
 
-**验收**：原 WP-12 的端到端验收在新管线上通过；示例文稿中所有插件组件在网页中可用。
+- `@presmium/viewer`（`ir.md` 第 8 节）：IR 动态渲染（mdast→hast→Vue、Shiki、KaTeX、客户端图表、组件注册表）；视图注册表与三种内置视图（`document`、`scrolly`、`present`，`present` 含演讲者窗口与多窗口同步）；实时更新客户端（WebSocket 接收变化的章节，保持视图、章节、步骤与滚动位置）。
+- `@presmium/web` 渲染端：VitePress 外壳（导航、侧栏、大纲、深色模式、移动端、搜索界面），正文由 viewer 渲染；搜索索引在构建时由 IR 文本生成（`_render` 钩子），支持中文分词；`dev` 启动 VitePress 开发服务器与 IR 推送通道；`build` 产出静态站点（IR JSON 随产物发布）。
+- 保留 WP-12 中可复用的部分：VitePress 宿主适配、中文分词、滚动叙事、形态切换。
+
+**验收**（Playwright）：
+
+- 原 WP-12 的端到端验收在新管线上通过。
+- `presmium dev` 运行中修改示例源码的一个段落，300 ms 内页面更新，滚动位置与当前视图不变，页面未刷新。
+- 同一页面切换 `document`、`scrolly`、`present` 视图，章节与步骤位置保持；放映视图中键盘翻页、演讲者窗口显示当前步骤的讲解。
+- 示例文稿中所有插件组件在网页中可用。
 
 ### WP-43 notebook 渲染端
 

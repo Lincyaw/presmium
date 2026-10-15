@@ -13,8 +13,8 @@
         ▼
    IR（JSON，版本化）
         │
-        ├── web       VitePress 网页（主媒介，支持全部节点）
-        ├── slides    Slidev 幻灯片
+        ├── web       IR 运行时（浏览器内动态渲染）+ VitePress 外壳；主媒介，支持全部节点
+        ├── slides    Slidev 幻灯片（可选的高保真渲染端：导出 PDF、绘图、录制）
         ├── notebook  Jupyter .ipynb
         └── 其他渲染端（插件提供）
 ```
@@ -213,3 +213,41 @@ interface Renderer {
 | `presmium dev [--to web]` | 监听源码，增量编译，启动对应渲染端的开发服务器 |
 | `presmium ir [--out file]` | 输出 IR JSON，用于调试 |
 | `presmium check` | 编译到第 8 步，只输出诊断 |
+
+## 8. 实时渲染与运行时视图
+
+### 8.1 IR 运行时
+
+`@presmium/viewer` 是浏览器中的 IR 运行时：它读取 IR，用 Vue 动态渲染章节与块，不经过任何 Markdown 生成或静态编译。
+
+- `markdown` 节点：mdast 转为 hast 后渲染为 Vue 虚拟节点；代码高亮用 Shiki，公式用 KaTeX，图表在客户端渲染。
+- `code` 节点：按 `highlight` 与当前步骤高亮行，显示录制输出；`run.when` 含 `live` 时接入执行面板。
+- `component` 节点：按组件名从插件注册表中取 Vue 组件渲染；组件只依赖 `@presmium/host`。
+
+### 8.2 运行时视图
+
+同一份 IR 可以在运行时以不同视图呈现，切换视图不需要重新构建：
+
+| 视图 | 说明 |
+|---|---|
+| `document` | 文档式：全部展开，讲解为正文（默认） |
+| `scrolly` | 滚动叙事：上屏内容固定一侧，讲解滚动，步骤随滚动推进 |
+| `present` | 放映：全屏逐章节、逐步骤；另开窗口为演讲者视图（当前步骤的讲解、下一步预告、计时） |
+
+视图可插拔：插件通过 `registerView` 注册新视图，通过 `registerNodeRenderer` 为节点类型或组件名注册渲染器。
+
+### 8.3 实时更新
+
+```
+保存源码 → presmium dev 增量编译受影响的章节 → 比较章节内容哈希
+        → 通过 WebSocket 推送变化的章节 → 运行时替换这些章节并重渲染
+```
+
+- 不生成文件，不刷新页面；当前视图、章节、步骤与滚动位置保持不变。
+- 编译诊断随推送一起到达，在页面上标出出错的章节。
+- 目标：保存到画面更新 300 ms 以内（K-11）。
+
+### 8.4 与 VitePress、Slidev 的关系
+
+- **VitePress 是网页的外壳**：提供导航、侧栏、页内大纲、深色模式、移动端适配和搜索界面；页面正文由 IR 运行时渲染；搜索索引在构建时从 IR 文本生成（VitePress 搜索的 `_render` 钩子）。
+- **Slidev 是可选的高保真渲染端**：用于导出 PDF、圈画标注、录制等 Slidev 擅长的功能；实时预览不依赖 Slidev。

@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 内核 Kernel | `@presmium/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约 | K-07、K-08、K-10、K-16、K-17 |
 | 编译 Compilation | `@presmium/compiler` | 解析 MyST 源码、执行编译步骤、编译时执行与缓存、生成 IR | K-01、K-02、K-11、K-17、K-19 |
-| 渲染 Rendering | `@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook` | 从 IR 生成各媒介，声明支持程度并降级 | K-18、P-70、P-75、P-76 |
+| 渲染 Rendering | `@presmium/viewer`、`@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图 | K-18、K-20、P-70、P-75、P-76、P-77 |
 | 宿主适配 Host | `@presmium/host`、`@presmium/slidev-addon-core`、`@presmium/web` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现 | K-04、K-05、K-06、K-07 |
 | 检查 Diagnostics | `@presmium/cli` | 解析文稿、运行检查项、输出诊断 | K-16 |
 | 讲台 Stage | `@presmium/slidev-addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 | P-01 至 P-04 |
@@ -114,6 +114,8 @@
 | 支持程度 | `Support` | `full`、`degraded`、`none` |
 | 渲染扩展 | `RendererExtension` | 插件为某个渲染端提供的组件转换 |
 | 构建报告 | `RenderOutput` | 产物目录与未渲染的块 |
+| 运行时视图 | `View` | IR 运行时中的一种呈现方式：文档、滚动叙事、放映，可由插件注册 |
+| 章节更新 | `SectionPatch` | 实时更新时推送的变化章节及其诊断 |
 
 不变量：
 
