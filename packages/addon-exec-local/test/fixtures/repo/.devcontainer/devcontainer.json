@@ -1,0 +1,5 @@
+// Test repository: snippets run in this image.
+{
+  "name": "presmium-test-repo",
+  "image": "python:3.12-slim"
+}

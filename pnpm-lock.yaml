@@ -73,7 +73,7 @@ importers:
         version: link:../../packages/web
       '@slidev/cli':
         specifier: 53.0.0
-        version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(playwright-chromium@1.64.1)(postcss@8.5.30)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)
+        version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(playwright-chromium@1.64.1)(postcss@8.5.30)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)
       '@slidev/theme-default':
         specifier: ^0.25.0
         version: 0.25.0
@@ -191,6 +191,9 @@ importers:
 
   packages/addon-exec-local:
     dependencies:
+      '@devcontainers/cli':
+        specifier: 0.89.0
+        version: 0.89.0
       '@presmium/host':
         specifier: workspace:*
         version: link:../host
@@ -206,6 +209,9 @@ importers:
       simple-git:
         specifier: ^4.0.2
         version: 4.0.2
+      vue:
+        specifier: ^3.5.42
+        version: 3.5.44(typescript@6.0.3)
     devDependencies:
       '@slidev/client':
         specifier: 53.0.0
@@ -691,6 +697,11 @@ packages:
     peerDependencies:
       '@types/markdown-it': '*'
       markdown-it: ^14.0.0
+
+  '@devcontainers/cli@0.89.0':
+    resolution: {integrity: sha512-LzaoOGKQ/Zql6PsiZ4hVIYVZagzWkD65aG/1ou5/Kly5Y1PtjLg1yn7qu+LZCzVoAl6DZZ/pbz8qOO4RLNlqMg==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
 
   '@devframes/hub@1.2.4':
     resolution: {integrity: sha512-UGno4NpufOrvDvcgCKV6Z3CGq4BbRdOBNC9Xzyh5SH5TVwUa4HxlirsXUb/n+2Vn3O8zxP0AD+lcISINKMeYxQ==}
@@ -4828,6 +4839,8 @@ snapshots:
       js-yaml: 4.3.2
       markdown-it: 14.3.2
 
+  '@devcontainers/cli@0.89.0': {}
+
   '@devframes/hub@1.2.4(crossws@0.4.15(srvx@1.0.5))(devframe@1.2.4(cac@7.1.0)(srvx@1.0.5))':
     dependencies:
       destr: 2.0.5
@@ -5464,7 +5477,7 @@ snapshots:
     dependencies:
       '@simple-git/args-pathspec': 1.0.4
 
-  '@slidev/cli@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(playwright-chromium@1.64.1)(postcss@8.5.30)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)':
+  '@slidev/cli@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(playwright-chromium@1.64.1)(postcss@8.5.30)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)':
     dependencies:
       '@antfu/ni': 30.6.0
       '@antfu/utils': 9.3.0
@@ -5479,7 +5492,7 @@ snapshots:
       '@shikijs/markdown-it': 4.5.0
       '@shikijs/twoslash': 4.5.0(typescript@6.0.3)
       '@shikijs/vitepress-twoslash': 4.5.0(@nuxt/kit@3.21.11)(typescript@6.0.3)
-      '@slidev/client': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
+      '@slidev/client': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
       '@slidev/parser': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
       '@slidev/types': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
       '@unocss/extractor-mdc': 66.11.0
@@ -5673,7 +5686,7 @@ snapshots:
       - vite
       - webpack
 
-  '@slidev/client@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))':
+  '@slidev/client@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
       '@antfu/utils': 9.3.0
       '@fix-webm-duration/fix': 1.0.1
