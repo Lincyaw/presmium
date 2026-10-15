@@ -17,11 +17,12 @@
   },
   "slidev": {},
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "simple-git": "^4.0.2",
+    "@ast-grep/lang-python": "^0.0.6",
     "@ast-grep/napi": "^0.50.0",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
     "diff": "^9.0.0",
+    "simple-git": "^4.0.2",
     "yaml": "^2.9.1"
   },
   "devDependencies": {

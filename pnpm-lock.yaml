@@ -103,6 +103,9 @@ importers:
 
   packages/addon-code:
     dependencies:
+      '@ast-grep/lang-python':
+        specifier: ^0.0.6
+        version: 0.0.6
       '@ast-grep/napi':
         specifier: ^0.50.0
         version: 0.50.0
@@ -483,6 +486,14 @@ packages:
   '@antfu/utils@9.3.0':
     resolution: {integrity: sha512-9hFT4RauhcUzqOE4f1+frMKLZrgNog5b06I7VmZQV1BkvwvqrbC8EBZf3L1eEL2AKb6rNKjER0sEvJiSP1FXEA==}
 
+  '@ast-grep/lang-python@0.0.6':
+    resolution: {integrity: sha512-eF/bEBspmrxdVuPNihvZDyyJx5qtIpGEMz9l1nNQmrji7NZcUiRNC8WwzYyQCBdy1mj8HZ0Tn4I2q3gp/6Bkiw==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
   '@ast-grep/napi-darwin-arm64@0.50.0':
     resolution: {integrity: sha512-JZLEB4vKLbQc6FAFmia/pJ6u5EbPvhyxv5yx7VbnX0JKlMOBjYzE6AH3H0qq6sIwovZqiRVsXsAe/I9jqbJiTg==}
     engines: {node: '>= 10'}
@@ -544,6 +555,9 @@ packages:
   '@ast-grep/napi@0.50.0':
     resolution: {integrity: sha512-GXaeLVLuD7r7it44UIEtrvQ6HkUw0GgQg4m9wAXZYS5sgwQpEZFJkVycdJzhpNfsZCsIqOeC68geCJQ3QdirPw==}
     engines: {node: '>= 10'}
+
+  '@ast-grep/setup-lang@0.0.6':
+    resolution: {integrity: sha512-aSYZNF5nGQMxnwiA3Lcc8zi0AtpGlug47ADgqCgP/2n7p922FbnW7vo1rbW4kKjW72B/3mDdN7uvYidv8JnPnw==}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -4605,6 +4619,10 @@ snapshots:
 
   '@antfu/utils@9.3.0': {}
 
+  '@ast-grep/lang-python@0.0.6':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
   '@ast-grep/napi-darwin-arm64@0.50.0':
     optional: true
 
@@ -4643,6 +4661,8 @@ snapshots:
       '@ast-grep/napi-win32-arm64-msvc': 0.50.0
       '@ast-grep/napi-win32-ia32-msvc': 0.50.0
       '@ast-grep/napi-win32-x64-msvc': 0.50.0
+
+  '@ast-grep/setup-lang@0.0.6': {}
 
   '@babel/code-frame@7.29.7':
     dependencies:
