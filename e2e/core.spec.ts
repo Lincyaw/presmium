@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { fixtureDeck } from './fixtures/core/deck.ts'
 import type { FixtureDeck } from './fixtures/core/deck.ts'
 
@@ -10,6 +11,8 @@ declare global {
   interface Window {
     /** Running animations in each frame after a key press (`animationsAfter`). */
     motionFrames?: number[]
+    /** The names of the BroadcastChannels the page has opened (`recordChannels`). */
+    channelNames?: string[]
   }
 }
 
@@ -17,6 +20,21 @@ async function openPanels(page: Page) {
   const panels = page.locator('.pm-presenter-panels')
   await panels.locator('summary').click()
   return panels
+}
+
+/** Records the name of every BroadcastChannel the pages of `context` open, in `window.channelNames`. */
+async function recordChannels(context: BrowserContext) {
+  await context.addInitScript(() => {
+    const names: string[] = []
+    window.channelNames = names
+    const Native = BroadcastChannel
+    window.BroadcastChannel = class extends Native {
+      constructor(name: string) {
+        super(name)
+        names.push(name)
+      }
+    }
+  })
 }
 
 /** Frames sampled after a key press: half a second at 60 frames a second, longer when the machine is busy. */
@@ -63,44 +81,68 @@ renderers:
 :::
 `
 
-test('presmium dev serves the slides with Slidev and updates them when the source changes, without a reload', async ({ page }) => {
-  test.setTimeout(180_000)
-  const work = resolve('examples/demo/.presmium')
-  mkdirSync(work, { recursive: true })
-  const deck = mkdtempSync(join(work, 'e2e-slides-'))
-  writeFileSync(join(deck, '.gitignore'), '*\n')
-  writeFileSync(join(deck, 'lecture.md'), DEV_DECK)
-  const child = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'dev', '--to', 'slides'], { cwd: deck, stdio: ['ignore', 'pipe', 'inherit'] })
-  try {
-    const url = await new Promise<string>((done, fail) => {
-      let output = ''
-      child.stdout!.on('data', (chunk: Buffer) => {
-        output += chunk
-        const match = /^slides {2}(http\S+)$/m.exec(output)
-        if (match) done(match[1]!)
-      })
-      child.once('exit', code => fail(new Error(`presmium dev exited (${code}):\n${output}`)))
-    })
-    // The first visit may reload once while Vite optimizes the dependencies.
-    const slide = page.locator('.slidev-page-2')
-    for (let visit = 0; visit < 2; visit++) {
-      await page.goto(`${url}2`)
-      await expect(slide).toContainText('编辑前的内容', { timeout: 60_000 })
-      await page.waitForLoadState('networkidle')
-    }
-    await page.evaluate(() => {
-      (window as { marker?: boolean }).marker = true
-    })
+interface DevDeck {
+  /** The deck's source file. */
+  file: string
+  /** Starts `presmium dev --to slides` in the deck and resolves to the slides' URL. */
+  serve(): Promise<string>
+}
 
-    const file = join(deck, 'lecture.md')
-    writeFileSync(file, readFileSync(file, 'utf8').replace('编辑前的内容', '编辑后的内容'))
-    await expect(slide).toContainText('编辑后的内容')
-    expect(await page.evaluate(() => (window as { marker?: boolean }).marker)).toBe(true)
-  } finally {
-    child.kill('SIGTERM')
-    await new Promise(done => child.exitCode === null ? child.once('exit', done) : done(undefined))
-    rmSync(deck, { recursive: true, force: true })
+/**
+ * DEV_DECK in a directory of its own. The server stops and the directory goes away in the
+ * fixture's teardown, which also runs when the test times out (a `finally` in the test does not).
+ */
+const devTest = test.extend<{ devDeck: DevDeck }>({
+  // Playwright reads the fixtures a fixture uses from its first parameter, so it must be a pattern.
+  devDeck: async ({}, use) => {
+    const work = resolve('examples/demo/.presmium')
+    mkdirSync(work, { recursive: true })
+    const dir = mkdtempSync(join(work, 'e2e-slides-'))
+    writeFileSync(join(dir, '.gitignore'), '*\n')
+    writeFileSync(join(dir, 'lecture.md'), DEV_DECK)
+    let child: ChildProcess | undefined
+    await use({
+      file: join(dir, 'lecture.md'),
+      serve() {
+        const server = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'dev', '--to', 'slides'], { cwd: dir, stdio: ['ignore', 'pipe', 'inherit'] })
+        child = server
+        return new Promise<string>((done, fail) => {
+          let output = ''
+          server.stdout!.on('data', (chunk: Buffer) => {
+            output += chunk
+            const match = /^slides {2}(http\S+)$/m.exec(output)
+            if (match) done(match[1]!)
+          })
+          server.once('exit', code => fail(new Error(`presmium dev exited (${code}):\n${output}`)))
+        })
+      },
+    })
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exited = new Promise(done => child!.once('exit', done))
+      child.kill('SIGTERM')
+      await exited
+    }
+    rmSync(dir, { recursive: true, force: true })
+  },
+})
+
+devTest('presmium dev serves the slides with Slidev and updates them when the source changes, without a reload', async ({ page, devDeck }) => {
+  devTest.setTimeout(180_000)
+  const url = await devDeck.serve()
+  // The first visit may reload once while Vite optimizes the dependencies.
+  const slide = page.locator('.slidev-page-2')
+  for (let visit = 0; visit < 2; visit++) {
+    await page.goto(`${url}2`)
+    await expect(slide).toContainText('编辑前的内容', { timeout: 60_000 })
+    await page.waitForLoadState('networkidle')
   }
+  await page.evaluate(() => {
+    (window as { marker?: boolean }).marker = true
+  })
+
+  writeFileSync(devDeck.file, readFileSync(devDeck.file, 'utf8').replace('编辑前的内容', '编辑后的内容'))
+  await expect(slide).toContainText('编辑后的内容')
+  expect(await page.evaluate(() => (window as { marker?: boolean }).marker)).toBe(true)
 })
 
 // e2e/fixtures/core/deck: an en-US deck with a test plugin (fixture.core) whose components read
@@ -283,6 +325,23 @@ test.describe('the fixture deck in the slides form', () => {
     const late = await context.newPage()
     await open(late, presenter('shared'))
     await expect(count(late).first()).toHaveText('2')
+  })
+
+  test('a deck with the same title under another base on the same origin does not share the state: the web form of this deck', async ({ context }) => {
+    await recordChannels(context)
+    const channel = (base: string) => `presmium.shared:Presmium Fixture Deck With A Title Too Long For A Phone:local:fixture.core.count @ ${base}`
+    const channels = (page: Page) => page.evaluate(() => window.channelNames ?? [])
+    const [a, b, web] = [await context.newPage(), await context.newPage(), await context.newPage()]
+    for (const page of [a, b]) await open(page, slide('shared'))
+    await web.goto(`${deck.url}/web/?view=present&section=shared`)
+    // The channel names carry each form's base, which Vite sets in both builds.
+    await expect.poll(() => channels(a)).toContain(channel('/slides/'))
+    await expect.poll(() => channels(web)).toContain(channel('/web/'))
+
+    const count = (page: Page) => shown(page, 'shared').locator('.fx-shared__count')
+    await a.getByRole('button', { name: 'Add one' }).click()
+    await expect(count(b)).toHaveText('1')
+    await expect(web.locator('.fx-shared__count').first()).toHaveText('0')
   })
 
   test('a remote plugin state goes to the other devices through the sync transports and comes back from them, in the order the changes happen', async ({ page }) => {

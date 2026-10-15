@@ -177,11 +177,11 @@ interface HostAdapter {
 **共享状态。** `createSharedStates(deck)` 返回适配器的 `useSharedState` 实现与同步传输的接入点（`transports.add`，`syncTransports` 服务把每个传输交给它），`deck` 是文稿标题：
 
 - `local` 与 `remote` 状态经 `joinWindows` 在本机的窗口之间传递。BroadcastChannel 只送达加入之后的变化，所以新窗口加入时向其他窗口询问，状态改变过的窗口回答，中途打开的演讲者窗口因此从当前状态开始。
-- BroadcastChannel 对同源的全部页面可见。`joinWindows` 用 `deckChannel(name)` 给通道名加上文稿的基础路径（Vite 的 `import.meta.env.BASE_URL`，两种形态都由 Vite 构建），同一站点上同名的两份文稿因此不会串。同一文稿的网页与幻灯片基础路径不同，本机窗口之间的状态也不互通。
+- BroadcastChannel 对同源的全部页面可见。`joinWindows` 用 `deckChannel(name)` 给通道名加上文稿的基础路径（Vite 的 `import.meta.env.BASE_URL`，两种形态都由 Vite 构建），通道名形如 `presmium.shared:<文稿标题>:local:<key> @ /web/`，同一站点上同名的两份文稿因此不会串。同一文稿的网页与幻灯片基础路径不同，本机窗口之间的状态也不互通。IR 运行时自己的窗口通道（放映位置与视图插件的共享状态）还只按标题区分，见 9.5 节。
 - `remote` 状态另是名为 `presmium.shared:<文稿标题>:remote:<key>` 的同步通道，由每个同步传输接入（例如课堂）。两种形态的通道名相同，课堂中幻灯片与网页的设备共享同一份状态。
 - 变化按到达的顺序生效并立即发布：来自其他窗口或设备的变化在本窗口生效，以 `fromRemote` 发布，传输不会再把它发出去；紧接着的本地变化照常作为本地变化发布。
 
-幻灯片形态（`addon-core`）用 `createSharedStates`，不用 Slidev 的 `createSyncState`：后者忽略在本地变化的同一个任务中到达的远端值，又把同一个任务中紧跟在远端值之后的本地变化当作远端变化发布，传输因此不把它发出去。网页形态的 `packages/web/src/client/shared.ts` 是同样的实现。
+幻灯片形态（`addon-core`）用 `createSharedStates`，不用 Slidev 的 `createSyncState`：后者忽略在本地变化的同一个任务中到达的远端值，又把同一个任务中紧跟在远端值之后的本地变化当作远端变化发布，传输因此不把它发出去。网页形态的 `packages/web/src/client/shared.ts` 目前是同一实现的副本，改为使用 `@presmium/host` 的 `createSharedStates` 之前两处须同时修改（9.5 节）。
 
 ### 4.5 公共服务令牌
 
@@ -328,7 +328,7 @@ presmium: { ...各插件全局配置 }
 | K-03 渲染管线 | viewer、render-slides | `e2e/web.spec.ts`（示例文稿的每个插件组件在网页中渲染）、`e2e/content.spec.ts`（Web 组件） |
 | K-04 步骤时间轴 | host、addon-core、viewer | `e2e/core.spec.ts`（跳到第 N 步与顺序前进的 DOM 一致）、`e2e/exec.spec.ts`、`e2e/guide.spec.ts` |
 | K-05 视图 | addon-core、viewer | `e2e/core.spec.ts`（演讲者面板只在演讲者视图出现）、`e2e/viewer.spec.ts`（放映视图与演讲者窗口） |
-| K-06 状态与事件 | host、addon-core、web、addon-session | `e2e/session.spec.ts`（两种形态的跨设备跟随）、`e2e/web.spec.ts` 与 `e2e/core.spec.ts`（网页与幻灯片形态的 `useSharedState`：跨窗口与后开的窗口，`remote` 经同步传输往返；幻灯片形态中本地变化与远端值在同一个任务中先后到达时按顺序生效） |
+| K-06 状态与事件 | host、addon-core、web、addon-session | `e2e/session.spec.ts`（两种形态的跨设备跟随）、`e2e/web.spec.ts` 与 `e2e/core.spec.ts`（网页与幻灯片形态的 `useSharedState`：跨窗口与后开的窗口，`remote` 经同步传输往返；幻灯片形态中本地变化与远端值在同一个任务中先后到达时按顺序生效；同源同名、基础路径不同的文稿不共享窗口通道） |
 | K-07 插件宿主 | kernel、host、addon-core、web、compiler | `e2e/core.spec.ts`、`e2e/web.spec.ts`（启动报告、降级、出错组件的隔离、章节配置、生命周期） |
 | K-08 服务注册 | kernel | `e2e/core.spec.ts`（依赖方拿到提供方的实现；缺少必需服务的插件被禁用） |
 | K-09 工作区访问 | compiler、addon-exec-local、addon-stage | `e2e/viewer.spec.ts`（`presmium dev` 跟随读取过的文件）、`addon-exec-local/test/local-env.test.ts`（开发服务器端点）、`e2e/stage.spec.ts`（标注写回） |
@@ -411,3 +411,11 @@ zh-CN 文稿的网页形态已经设置了 VitePress 默认主题的大纲标题
 | “Switch to dark theme”、“Switch to light theme” | 明暗切换按钮悬停时的提示 | 主题配置 `darkModeSwitchTitle`、`lightModeSwitchTitle` |
 | 404 页的标题、引言与返回首页的链接 | `404.html` 与站内不存在的地址 | 默认主题布局的 `not-found` 插槽（VitePress 文档“Extending the Default Theme”） |
 
+### 9.5 宿主适配的遗留（WP-63 验收遗留）
+
+以下两项在 WP-61 拥有的包中，由 WP-61 处理：
+
+| 事项 | 影响 | 后续 |
+|---|---|---|
+| 网页宿主的共享状态是 `@presmium/host` 中 `createSharedStates` 的副本（`packages/web/src/client/shared.ts`） | 两份实现可能走样，例如只在一处修改变化的生效与发布顺序 | `packages/web/src/client/theme.ts` 改用 `@presmium/host` 的 `createSharedStates`，删除副本 |
+| IR 运行时的窗口通道 `presmium.viewer:<文稿标题>`（`packages/viewer/src/viewer.ts`）只按标题区分 | 同源下同名的两份文稿在网页形态中互相收到放映位置与视图插件的共享状态（`viewer.share`，例如舞台插件的黑屏） | 通道名改用 `@presmium/host` 的 `deckChannel` |
