@@ -30,7 +30,7 @@ const plugin: PresmiumNodePlugin = {
     id: 'slides',
     support: (node, extensions) => node.type === 'component' && !node.plugin && !extensionFor(node, extensions) ? 'degraded' : 'full',
     async build(doc, ctx) {
-      const dir = join(ctx.deckDir, SLIDEV_DIR)
+      const dir = ctx.workDir
       await writeDeck(dir, ctx.deckDir, markdownOf(doc, ctx, dir))
       await rm(ctx.outDir, { recursive: true, force: true })
       await slidev(['build', 'slides.md', '--out', ctx.outDir, ...base(ctx)], dir)
@@ -42,8 +42,8 @@ const plugin: PresmiumNodePlugin = {
       return { outDir: ctx.outDir, skipped: [] }
     },
     async dev(doc, ctx) {
-      // A deck of its own in the dev output directory, so a build does not disturb it.
-      const dir = ctx.outDir
+      // In dev the work directory is the dev output directory, so a build does not disturb it.
+      const dir = ctx.workDir
       await writeDeck(dir, ctx.deckDir, markdownOf(doc, ctx, dir))
       const port = Number(ctx.config.port)
       const server = await slidevDev(dir, [...Number.isInteger(port) && port > 0 ? ['--port', String(port)] : [], ...base(ctx)])

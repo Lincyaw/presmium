@@ -357,11 +357,12 @@ test.describe('a plugin that extends the IR runtime', () => {
     await expect.poll(() => Promise.all(['click', 'after', 'hide'].map(part => inPage.locator(`.pm-probe__${part}`).getAttribute('data-pm-click')))).toEqual(['shown', 'shown', 'hidden'])
   })
 
-  test('a footnote reference opens its definition, which MyST moves to the last section, on another page', async ({ page }) => {
+  test('a footnote reference opens its definition, which the compiler keeps in the same section', async ({ page }) => {
     await openDev(page, dev.url, '.pm-section[data-section="table"]')
     await page.locator('.pm-section[data-section="table"] .pm-footnote-ref a').click()
-    await expect(page).toHaveURL(/\/notes\.html#fn-csv$/)
-    await expect(page.locator('#fn-csv')).toContainText('CSV 是逗号分隔的值')
-    await expect(page.locator('#fn-csv')).toBeInViewport()
+    await expect(page).toHaveURL(/#fn-csv$/)
+    const definition = page.locator('.pm-section[data-section="table"] #fn-csv')
+    await expect(definition).toContainText('CSV 是逗号分隔的值')
+    await expect(definition).toBeInViewport()
   })
 })

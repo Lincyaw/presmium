@@ -131,7 +131,7 @@
 |---|---|---|---|
 | 形态 | `PresentationMode` | `'slides'` | `'document'` |
 | 光标 | `Cursor { slide, step }` | `useNav()` 的当前页与 `$clicks` | 当前章节；滚动叙事式下为滚动到的步骤 |
-| 步骤状态 | `useStepState(range)` | 由 `$clicks` 推导 | 文档式下恒为已到达；滚动叙事式下由滚动推导 |
+| 步骤状态 | `useStep()`，组件用 `useStepState(range)`（相对于块的步骤作用域） | 由 `$clicks` 推导 | 文档式下恒为已到达；滚动叙事式下由滚动推导 |
 | 视图角色 | `ViewRole` | 听众、演讲者 | 读者 |
 | 传输 | `SyncTransport` | `addSyncMethod` 注册的同步方式 | 不适用 |
 | 错误边界 | `PmBoundary` | Vue `onErrorCaptured` | 同左 |

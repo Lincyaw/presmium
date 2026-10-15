@@ -130,13 +130,14 @@ type ViewRole = 'audience' | 'presenter' | 'reader'
 interface HostAdapter {
   mode: PresentationMode
   useCursor(): Readonly<Ref<{ slide: number; step: number }>>
-  useStepState(range: StepRange): Readonly<Ref<StepState>>
+  /** Step of the enclosing step scope (block-relative), see `useStepScope`. */
+  useStep(): Readonly<Ref<number>>
   useViewRole(): Readonly<Ref<ViewRole>>
   getService<T>(token: ServiceToken<T>): T | undefined
 }
 ```
 
-组件使用 `@presmium/host` 导出的 `useStepState`、`useCursor`、`useViewRole`、`useService`、`usePresentationMode`、`usePrefersReducedMotion` 与 `PmBoundary`。两个宿主适配器在应用初始化时通过 `installHost(app, adapter)` 注入实现。
+组件使用 `@presmium/host` 导出的 `useStepState`（区间相对于所在块的步骤作用域）、`useStepScope`、`PmStepScope`、`useCursor`、`useViewRole`、`useService`、`usePresentationMode`、`usePrefersReducedMotion` 与 `PmBoundary`。两个宿主适配器在应用初始化时通过 `installHost(app, adapter)` 注入实现。
 
 ### 4.5 公共服务令牌
 

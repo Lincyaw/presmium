@@ -137,6 +137,8 @@ export interface CodeOrigin {
   status: ResolutionStatus
   /** Logical units (nested regions) with lines relative to the snippet, 1-based. */
   units?: Record<string, { startLine: number; endLine: number }>
+  /** 'drifted' when the referenced code changed after the pinned commit. */
+  drift?: 'synced' | 'drifted'
 }
 
 export interface RunSpec {
@@ -157,6 +159,7 @@ export interface RecordedRun extends RunResult {
 export interface CodeVariant {
   label: string
   value: string
+  permalink?: string
 }
 
 export interface CodeNode {

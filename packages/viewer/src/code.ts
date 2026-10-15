@@ -56,8 +56,8 @@ export const CodeView = defineComponent({
  * What the code reference plugin records besides the IR's own fields: whether
  * pinned code drifted from the working tree, and a permalink per version.
  */
-type Origin = CodeOrigin & { drift?: 'synced' | 'drifted' }
-type Variant = CodeVariant & { permalink?: string }
+type Origin = CodeOrigin
+type Variant = CodeVariant
 
 const STATUS: Record<string, string> = { moved: '已移动', fuzzy: '待确认', lost: '已失效' }
 

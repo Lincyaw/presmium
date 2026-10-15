@@ -119,8 +119,8 @@ function scoped(content: string, at: number): string {
 }
 
 /** What the code reference plugin records besides the IR's own fields (see @presmium/slidev-addon-code). */
-type Origin = CodeOrigin & { drift?: 'synced' | 'drifted' }
-type Variant = CodeVariant & { permalink?: string }
+type Origin = CodeOrigin
+type Variant = CodeVariant
 
 const STATUS: Record<string, string> = { moved: '已移动', fuzzy: '待确认', lost: '已失效' }
 
