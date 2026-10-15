@@ -2,8 +2,11 @@ export { CLASSROOM_ID, COLLECTIONS } from './config.ts'
 export {
   acceptsAnswers,
   answerId,
+  countedAnswers,
   isCorrect,
+  lateAnswers,
   optionLetter,
+  quizSwitched,
   tally,
 } from './quiz.ts'
 export type { Answer, QuizState, Tally } from './quiz.ts'

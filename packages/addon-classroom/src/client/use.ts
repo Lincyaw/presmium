@@ -3,7 +3,7 @@ import { CLASSROOM_STORE, SESSION } from '@presmium/kernel'
 import type { ClassroomStore, SessionSnapshot, StoredItem } from '@presmium/kernel'
 import type { ComputedRef, Ref } from 'vue'
 import { computed, shallowRef, watchEffect } from 'vue'
-import { browserNotes } from './local.ts'
+import { bothStores, browserNotes } from './local.ts'
 
 /** The `session` service and its live snapshot; `joined` while this window is in a classroom, active or ended. */
 export function useSession() {
@@ -40,10 +40,18 @@ export function useCollection<T>(store: () => ClassroomStore | undefined, name: 
   return items
 }
 
-/** Where this window's notes go: the participant's own store in a classroom, else the browser. */
-export function useNotesStore(): ComputedRef<ClassroomStore> {
-  const { session, joined } = useSession()
-  return computed(() => (joined.value && session.value?.personal) || browserNotes())
+/**
+ * Where this window's notes go: always to the browser, so they outlast the
+ * classroom (archiving it frees the participant's own store on the server, and
+ * another tab joins as another participant). While the classroom is active
+ * they also go to the participant's own store, and the window shows the notes
+ * of both.
+ */
+export function useNotes() {
+  const { session, status, joined } = useSession()
+  const inClassroom = computed(() => joined.value && status.value === 'active' && session.value?.personal !== undefined)
+  const store = computed(() => (inClassroom.value ? bothStores(session.value!.personal!, browserNotes()) : browserNotes()))
+  return { store, inClassroom }
 }
 
 /** Runs a write to a store; a refused write (e.g. after the classroom ended) becomes `failure`. */

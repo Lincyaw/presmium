@@ -13,7 +13,18 @@
  * frees the room, together with the participants' own rooms `<room>.<key>`;
  * clients still connected, or connecting later, are closed with code 4410,
  * which y-websocket providers do not retry.
+ *
+ * Trust: the server is meant for a classroom's own network and does not
+ * authenticate participants. Whoever has a join link can write to the room's
+ * document, the classroom record included, so the presenter's rights (ending
+ * the classroom, opening a quiz, marking questions answered) are enforced by
+ * the clients only. Archiving, which disconnects everyone and frees the
+ * participants' rooms, takes the room's key: the window that creates a room
+ * claims it by connecting with `?claim=<key>`, and `POST /archive/<room>`
+ * must send that key as its body. Anyone can still create and archive rooms
+ * of their own, each an archive file of bounded name in `<deck>/.presmium/classroom/`.
  */
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -42,6 +53,8 @@ class Room extends Y.Doc {
   readonly awareness = new awarenessProtocol.Awareness(this)
   /** Archived: freed once its last connection has closed. */
   archived = false
+  /** Digest of the key that archives the room, from the first connection that claimed it. */
+  claim?: Buffer
 
   constructor() {
     super({ gc: true })
@@ -102,6 +115,29 @@ function roomName(url = '/'): string | undefined {
   return ROOM.test(name) ? name : undefined
 }
 
+/** The `claim` parameter of a request URL: the key that will archive the room. */
+function claimOf(url = '/'): string | undefined {
+  return new URL(url, 'http://classroom').searchParams.get('claim') || undefined
+}
+
+function digest(key: string): Buffer {
+  return createHash('sha256').update(key).digest()
+}
+
+/** The body of a small request, at most `limit` bytes. */
+function readBody(request: IncomingMessage, limit = 1024): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let text = ''
+    request.setEncoding('utf8')
+    request.on('data', (chunk: string) => {
+      text += chunk
+      if (text.length > limit) request.destroy(new Error('request too large'))
+    })
+    request.on('end', () => resolve(text))
+    request.on('error', reject)
+  })
+}
+
 function handle(room: Room, conn: WebSocket, data: Uint8Array): void {
   const decoder = decoding.createDecoder(data)
   const type = decoding.readVarUint(decoder)
@@ -148,11 +184,12 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
   const archiveDir = resolve(options.deck ?? '.', ARCHIVE_DIR)
   const isArchived = (name: string) => [...archivedNames].some(archived => name === archived || name.startsWith(`${archived}.`))
 
-  /** Writes the classroom to its archive file, then frees it and its participants' rooms. */
-  async function archive(name: string): Promise<{ status: number, body: Record<string, unknown> }> {
+  /** Writes the classroom to its archive file, then frees it and its participants' rooms; `key` must be the room's. */
+  async function archive(name: string, key: string): Promise<{ status: number, body: Record<string, unknown> }> {
     if (archivedNames.has(name)) return { status: 410, body: { error: `课堂 ${name} 已归档` } }
     const room = rooms.get(name)
     if (!room) return { status: 404, body: { error: `没有课堂 ${name}` } }
+    if (!room.claim || !timingSafeEqual(room.claim, digest(key))) return { status: 403, body: { error: '只有创建课堂的主讲可以归档' } }
     const now = Date.now()
     room.transact(() => {
       if (!room.ended) {
@@ -188,7 +225,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
       response.writeHead(204, { 'Access-Control-Allow-Methods': 'POST' })
       response.end()
     } else if (request.method === 'POST' && target && ROOM.test(target[1]!)) {
-      archive(target[1]!).then(
+      readBody(request).then(key => archive(target[1]!, key.trim())).then(
         ({ status, body }) => reply(response, status, body),
         (error: unknown) => {
           console.error(`[classroom] room ${target[1]}: archive failed`, error)
@@ -217,6 +254,8 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
     let room = rooms.get(name)
     if (!room) rooms.set(name, room = new Room())
     const current = room
+    const claim = claimOf(request.url)
+    if (claim && !current.claim) current.claim = digest(claim)
     current.conns.set(conn, new Set())
     conn.binaryType = 'arraybuffer'
     conn.on('message', (data: ArrayBuffer) => {

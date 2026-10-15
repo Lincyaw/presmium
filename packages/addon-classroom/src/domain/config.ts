@@ -8,6 +8,6 @@ export const COLLECTIONS = {
   submissions: 'submissions',
   questions: 'questions',
   pulse: 'pulse',
-  /** In the participant's own store, or in the browser. */
+  /** In the browser, and in the participant's own store while a classroom is active. */
   notes: 'notes',
 } as const

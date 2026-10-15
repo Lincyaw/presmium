@@ -335,8 +335,9 @@ export interface SessionService {
   archive?(): Promise<string>
   /**
    * The participant's own collections in the classroom (e.g. notes, P-63):
-   * no other participant receives them. Empty outside a classroom. Optional:
-   * without it, such data stays in the browser.
+   * no other participant receives them. Empty outside a classroom; freed when
+   * the classroom is archived, so data that must outlast it needs a copy of
+   * its own. Optional: without it, such data stays in the browser.
    */
   readonly personal?: ClassroomStore
 }

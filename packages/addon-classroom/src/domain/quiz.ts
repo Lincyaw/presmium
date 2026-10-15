@@ -1,7 +1,10 @@
 /**
  * Classroom quizzes (P-64). The presenter opens and closes a quiz; while it is
  * open each participant answers, and answering again replaces their answer,
- * so the tally counts every participant's last answer only.
+ * so the tally counts every participant's last answer only. Closing freezes
+ * the result: the closed quiz keeps the answers that counted at that moment,
+ * so an answer that reaches the room later (from a learner whose view still
+ * showed the quiz open) changes nothing.
  */
 import type { SessionStatus } from '@presmium/kernel'
 import { latestPerParticipant } from './place.ts'
@@ -15,6 +18,8 @@ export interface QuizState extends Place {
   answer: number[]
   openedAt?: number
   closedAt?: number
+  /** Set by closing: each participant's last answer as the presenter's window had it then. */
+  final?: Answer[]
 }
 
 /** One participant's answer to a quiz (collection `answers`, by `answerId`). */
@@ -46,11 +51,28 @@ export function isCorrect(choice: readonly number[], answer: readonly number[]):
   return chosen.size === answer.length && answer.every(i => chosen.has(i))
 }
 
-/** The quiz's statistics: each participant's last answer counts. */
-export function tally(quiz: string, options: number, answer: readonly number[], answers: Iterable<Answer>): Tally {
-  const last = latestPerParticipant([...answers].filter(a => a.quiz === quiz))
-  const counts = Array.from({ length: options }, (_, i) => last.filter(a => a.choice.includes(i)).length)
-  return { counts, respondents: last.length, correct: last.filter(a => isCorrect(a.choice, answer)).length }
+/** The answers that count: each participant's last one, or once the quiz is closed, those it was closed with. */
+export function countedAnswers(quiz: string, state: QuizState | undefined, answers: Iterable<Answer>): Answer[] {
+  if (state?.open === false && state.final) return state.final
+  return latestPerParticipant([...answers].filter(a => a.quiz === quiz))
+}
+
+/** Each participant's last answer when it is not the one a closed quiz counts: it reached the room after closing. */
+export function lateAnswers(quiz: string, state: QuizState | undefined, answers: Iterable<Answer>): Answer[] {
+  if (state?.open !== false || !state.final) return []
+  const counted = new Map(state.final.map(a => [a.participant, a.at]))
+  return latestPerParticipant([...answers].filter(a => a.quiz === quiz)).filter(a => counted.get(a.participant) !== a.at)
+}
+
+/** The quiz's statistics over the answers that count (`countedAnswers`). */
+export function tally(options: number, answer: readonly number[], counted: readonly Answer[]): Tally {
+  const counts = Array.from({ length: options }, (_, i) => counted.filter(a => a.choice.includes(i)).length)
+  return { counts, respondents: counted.length, correct: counted.filter(a => isCorrect(a.choice, answer)).length }
+}
+
+/** The quiz `quiz` opened (`open`) or closed at `now`; closing freezes the answers that count then. */
+export function quizSwitched(quiz: Omit<QuizState, 'open' | 'closedAt' | 'final'>, open: boolean, counted: readonly Answer[], now: number): QuizState {
+  return open ? { ...quiz, open, openedAt: now } : { ...quiz, open, closedAt: now, final: [...counted] }
 }
 
 /** Answers are taken while the classroom is active and the presenter has the quiz open. */

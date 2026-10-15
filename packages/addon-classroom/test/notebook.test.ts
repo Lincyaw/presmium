@@ -1,5 +1,6 @@
 // Runs the real `presmium build --to notebook` on a deck with the classroom directives:
 // in a notebook a quiz is a question list and an exercise is its starter code and checks as code cells.
+// The build also warns about a label that looks like a generated block id.
 import { execFile } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -54,6 +55,12 @@ assert mean([1, 2, 3]) == 2
 
 \`\`\`{pulse} 讲清楚了吗？
 \`\`\`
+
+(labels)=
+## 标签
+
+(step-2)=
+这一段的标签像生成的块 ID。
 `
 
 interface Cell {
@@ -65,7 +72,7 @@ interface Cell {
 const dir = mkdtempSync(join(tmpdir(), 'presmium-classroom-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
-it('shows a quiz as a question list and an exercise as code cells; live-only components leave no cells', async () => {
+it('shows a quiz as a question list and an exercise as code cells; live-only components leave no cells; warns about labels like generated ids', async () => {
   writeFileSync(join(dir, 'lecture.md'), DECK)
   const { code, output } = await new Promise<{ code: number, output: string }>((resolve) => {
     execFile(process.execPath, [BIN, 'build', '--to', 'notebook', '--out', 'out'], { cwd: dir }, (error, stdout, stderr) => {
@@ -74,6 +81,7 @@ it('shows a quiz as a question list and an exercise as code cells; live-only com
   })
   expect(code, output).toBe(0)
   expect(output).not.toContain('not rendered')
+  expect(output).toMatch(/lecture\.md:\d+ +warning +label \(step-2\)= ends in -<number> like a generated block id/)
   const cells = (JSON.parse(readFileSync(join(dir, 'out/notebook/lecture.ipynb'), 'utf8')) as { cells: Cell[] }).cells
   const of = (section: string) => cells.filter(c => c.metadata.presmium.section === section).map(c => ({ type: c.cell_type, source: c.source.join('') }))
 

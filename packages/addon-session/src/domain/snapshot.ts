@@ -29,8 +29,9 @@ export interface ClassroomSession extends SessionService {
   archive(): Promise<string>
   /**
    * A document on the classroom server in a room named by a key that only
-   * this participant's tabs know. Unlike the shared store, it stays writable
-   * after the classroom has ended, until the classroom is archived.
+   * this participant's tab knows. Unlike the shared store, it stays writable
+   * after the classroom has ended, until the classroom is archived, which
+   * frees it: what must outlast the classroom needs a copy elsewhere.
    */
   readonly personal: ClassroomStore
 }

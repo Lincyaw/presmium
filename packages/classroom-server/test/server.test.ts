@@ -37,10 +37,10 @@ afterAll(async () => {
   rmSync(deck, { recursive: true, force: true })
 })
 
-/** A client document in a room, once it has synced with the server. */
-async function join(room: string): Promise<{ doc: Y.Doc, provider: WebsocketProvider }> {
+/** A client document in a room, once it has synced with the server; `params` go in the URL (e.g. `claim`). */
+async function join(room: string, params: Record<string, string> = {}): Promise<{ doc: Y.Doc, provider: WebsocketProvider }> {
   const doc = new Y.Doc()
-  const provider = new WebsocketProvider(url, room, doc, { WebSocketPolyfill: WebSocket as never, disableBc: true })
+  const provider = new WebsocketProvider(url, room, doc, { WebSocketPolyfill: WebSocket as never, disableBc: true, params })
   providers.push(provider)
   await new Promise<void>(resolve => provider.once('sync', () => resolve()))
   return { doc, provider }
@@ -103,9 +103,10 @@ it('takes no more writes once the classroom has ended', async () => {
   expect(answers(late.doc).toJSON()).toEqual({ before: 1 })
 })
 
-it('archives a classroom to the deck directory, frees it with its participants\' rooms, and refuses it afterwards', async () => {
-  const presenter = await join('room-e')
-  const learner = await join('room-e')
+it('archives a classroom with the key it was claimed with, frees it with its participants\' rooms, and refuses it afterwards', async () => {
+  const presenter = await join('room-e', { claim: 'presenter-key' })
+  // A later claim does not replace the first.
+  const learner = await join('room-e', { claim: 'learner-key' })
   const own = await join('room-e.k7m2qx9a')
   presenter.doc.getMap('session').set('status', 'active')
   presenter.doc.getMap('store:questions').set('q1', { text: '为什么？' })
@@ -115,7 +116,9 @@ it('archives a classroom to the deck directory, frees it with its participants\'
   const ownClosed = closed(own.provider)
 
   const http = url.replace(/^ws/, 'http')
-  const response = await fetch(`${http}/archive/room-e`, { method: 'POST' })
+  for (const key of ['', 'learner-key']) expect((await fetch(`${http}/archive/room-e`, { method: 'POST', body: key })).status).toBe(403)
+  expect(learner.doc.getMap('session').get('status')).toBe('active')
+  const response = await fetch(`${http}/archive/room-e`, { method: 'POST', body: 'presenter-key' })
   expect(response.status).toBe(200)
   const { file } = await response.json() as { file: string }
   expect(file).toBe('.presmium/classroom/room-e.json')
@@ -133,6 +136,6 @@ it('archives a classroom to the deck directory, frees it with its participants\'
   const again = new WebsocketProvider(url, 'room-e', new Y.Doc(), { WebSocketPolyfill: WebSocket as never, disableBc: true })
   providers.push(again)
   expect(await closed(again)).toBe(4410)
-  expect((await fetch(`${http}/archive/room-e`, { method: 'POST' })).status).toBe(410)
+  expect((await fetch(`${http}/archive/room-e`, { method: 'POST', body: 'presenter-key' })).status).toBe(410)
   expect(existsSync(joinPath(deck, '.presmium/classroom/room-e.k7m2qx9a.json'))).toBe(false)
 })

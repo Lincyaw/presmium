@@ -6,7 +6,9 @@
  * the slides form the presenter's Slidev state (navigation, drawings, ...)
  * also reaches the learners, as a `SyncTransport`. Each participant also has
  * a document of their own (`personal`), in a room named by a key only their
- * tabs know. The document's layout is in `./document.ts`.
+ * tab knows; archiving the classroom frees it. The presenter's window claims
+ * the room with a key of its own, which archiving the classroom takes. The
+ * document's layout is in `./document.ts`.
  */
 import type { Navigation, SyncTransport } from '@presmium/host'
 import type { ClassroomStore, Participant, Role, Unsubscribe } from '@presmium/kernel'
@@ -46,6 +48,8 @@ interface Membership {
   me: Participant
   /** Names the participant's own room, `<room>.<key>`; never shared. */
   key: string
+  /** The presenter's key to the room, which the classroom server asks for to archive it. */
+  claim?: string
 }
 
 /** A synchronized channel of the slides form. */
@@ -270,13 +274,13 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   }
 
   /** Connects to a room as `me`; `start` makes it a new classroom with `me` as presenter. */
-  async function enter(room: string, me: Participant, key: string, start = false): Promise<void> {
+  async function enter({ room, me, key, claim }: Omit<Membership, 'server'>, start = false): Promise<void> {
     if (!server) throw new Error('文稿没有配置课堂服务')
     disconnect()
     const next = new Y.Doc()
-    const connecting = new WebsocketProvider(server, room, next)
+    const connecting = new WebsocketProvider(server, room, next, claim ? { params: { claim } } : {})
     provider = connecting
-    membership = { server, room, me, key }
+    membership = { server, room, me, key, ...claim ? { claim } : {} }
     connection = 'connecting'
     follow = 'follow'
     error = undefined
@@ -338,11 +342,11 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     },
     async create(name) {
       const room = randomId(8)
-      await enter(room, { id: randomId(16), name: name.trim() || '主讲', role: 'presenter' }, randomId(24), true)
+      await enter({ room, me: { id: randomId(16), name: name.trim() || '主讲', role: 'presenter' }, key: randomId(24), claim: randomId(24) }, true)
       return room
     },
     async join(room, name) {
-      await enter(room, { id: randomId(16), name: name.trim() || '学习者', role: 'learner' }, randomId(24))
+      await enter({ room, me: { id: randomId(16), name: name.trim() || '学习者', role: 'learner' }, key: randomId(24) })
     },
     async end() {
       if (role() !== 'presenter') throw new Error('只有主讲可以结束课堂')
@@ -350,7 +354,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     },
     async archive() {
       if (!membership || role() !== 'presenter') throw new Error('只有主讲可以归档课堂')
-      const response = await fetch(archiveUrl(membership.server, membership.room), { method: 'POST' })
+      const response = await fetch(archiveUrl(membership.server, membership.room), { method: 'POST', body: membership.claim ?? '' })
         .catch(() => { throw new Error(`无法连接课堂服务 ${membership?.server}`) })
       const result = await response.json().catch(() => ({})) as { file?: string, error?: string }
       if (!response.ok || !result.file) throw new Error(result.error ?? `归档失败（${response.status}）`)
@@ -397,7 +401,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       try {
         // A reload of the page keeps this tab's place in its classroom.
         if (before && (!request || (request.room === before.room && (!request.name || request.name === before.me.name)))) {
-          await enter(before.room, before.me, before.key)
+          await enter(before)
         } else if (request?.name) {
           await session.join(request.room, request.name)
         } else if (request) {

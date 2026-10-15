@@ -58,6 +58,33 @@ export function createBrowserStore(key: string, storage = localStorageOrNone()):
   }
 }
 
+/**
+ * Two stores as one: writes go to both, reads see the items of both (`first`
+ * wins for an id in both), and a change in either is a change.
+ */
+export function bothStores(first: ClassroomStore, second: ClassroomStore): ClassroomStore {
+  return {
+    list<T>(name: string) {
+      const items = new Map(second.list<T>(name).map(item => [item.id, item]))
+      for (const item of first.list<T>(name)) items.set(item.id, item)
+      return [...items.values()]
+    },
+    get: <T>(name: string, id: string) => first.get<T>(name, id) ?? second.get<T>(name, id),
+    put(name, id, value) {
+      second.put(name, id, value)
+      first.put(name, id, value)
+    },
+    remove(name, id) {
+      second.remove(name, id)
+      first.remove(name, id)
+    },
+    subscribe(name, listener) {
+      const stops = [first.subscribe(name, listener), second.subscribe(name, listener)]
+      return () => stops.forEach(stop => stop())
+    },
+  }
+}
+
 let notes: ClassroomStore | undefined
 
 /** The notes kept in this browser, per deck (its base URL). */

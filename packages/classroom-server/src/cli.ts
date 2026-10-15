@@ -10,7 +10,11 @@ in their frontmatter: presmium: { presmium.session: { server: ws://<host>:<port>
   --host <address>    address to listen on (default: every interface)
   --deck <dir>        deck directory: archived classrooms are written to
                       <dir>/.presmium/classroom/<room>.json (default: the working directory)
-  -h, --help          show this help`
+  -h, --help          show this help
+
+The server does not authenticate participants: run it on the classroom's own
+network. Anyone with a join link can write to that classroom; only the window
+that created a classroom can archive it.`
 
 /** Runs the server until it is stopped; returns the exit code on a usage error. */
 export async function main(argv: string[]): Promise<number | undefined> {

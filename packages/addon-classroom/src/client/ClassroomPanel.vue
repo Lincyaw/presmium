@@ -2,7 +2,7 @@
 // The presenter's overview of the classroom, in the presenter panels of both forms and from the
 // toolbar: questions by place (P-66), the understanding pulse (P-67), quizzes (P-64) and exercises (P-65).
 import { computed } from 'vue'
-import { COLLECTIONS, distribution, placeText, questionsByPlace, summarize, tally } from '../domain/index.ts'
+import { COLLECTIONS, countedAnswers, distribution, placeText, questionsByPlace, summarize, tally } from '../domain/index.ts'
 import type { Answer, PulseVote, Question, QuizState, Submission } from '../domain/index.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from './use.ts'
 import './style.css'
@@ -35,7 +35,7 @@ const pulses = computed(() => {
 
 const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ ...value, id }))).map(quiz => ({
   ...quiz,
-  result: tally(quiz.id, quiz.options.length, quiz.answer, answers.value.map(item => item.value)),
+  result: tally(quiz.options.length, quiz.answer, countedAnswers(quiz.id, quiz, answers.value.map(item => item.value))),
 })))
 
 const exercises = computed(() => {
