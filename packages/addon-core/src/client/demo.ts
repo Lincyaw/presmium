@@ -1,8 +1,10 @@
 /**
- * Demo plugins for the core example page: a provider, a consumer of its
- * service, and a plugin whose required service nobody provides. Enabled with
+ * Demo plugins that show the kernel at work (the host tests use them, see
+ * e2e/fixtures/core/deck): a provider, a consumer of its service, and a
+ * plugin whose required service nobody provides. Enabled with
  * `presmium: { presmium.core: { demo: true } }`.
  */
+import { currentLocale } from '@presmium/host'
 import { defineService } from '@presmium/kernel'
 import type { PluginDefinition } from '@presmium/kernel'
 
@@ -29,7 +31,9 @@ export const demoPlugins: PluginDefinition[] = [
   {
     manifest: { id: 'presmium.demo.provider', version, kernel, provides: [DEMO_GREETER] },
     setup(ctx) {
-      ctx.provide(DEMO_GREETER, { greet: name => `${name} 收到 presmium.demo.provider 的问候` })
+      ctx.provide(DEMO_GREETER, {
+        greet: name => currentLocale() === 'zh-CN' ? `${name} 收到 presmium.demo.provider 的问候` : `${name} got a greeting from presmium.demo.provider`,
+      })
     },
   },
   {

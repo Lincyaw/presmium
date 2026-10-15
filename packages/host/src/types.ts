@@ -59,9 +59,9 @@ export interface HostAdapter {
 
 // ---------------------------------------------------------------------------
 // Sync transport port (K-06): how a network transport joins the host's
-// synchronized state. The slides host maps it onto Slidev's `addSyncMethod`
-// (navigation, drawings and the 'remote' shared states); the web host
-// connects it to the 'remote' shared states.
+// synchronized state. Both hosts connect it to the 'remote' shared states;
+// the slides host also maps it onto Slidev's `addSyncMethod` (navigation,
+// drawings).
 // ---------------------------------------------------------------------------
 
 /** Publishes local state; `fromRemote` is true when the change itself came from a transport. */

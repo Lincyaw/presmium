@@ -92,7 +92,7 @@ v0.6 起源码先编译为 IR（K-17），网页由 IR 运行时渲染，Slidev 
 - 分作用域的状态存储；状态可以在本视图、本机所有视图、跨设备三个范围共享。
 - 跨设备同步通过传输层接口接入，内核不绑定具体网络实现。
 
-**实现**：定制。`@presmium/host` 的 `useSharedState(key, initial, { scope })` 按作用域共享插件状态：`view` 只在本视图，`local` 在本机所有窗口，`remote` 跨设备。幻灯片形态用 Slidev 的 `createSyncState` 实现，本机多窗口同步由 Slidev 内置；网页形态用 BroadcastChannel。跨设备的传输通过宿主的 `syncTransports` 端口接入（幻灯片形态映射到 Slidev 的 `addSyncMethod`），课堂会话插件提供网络传输（P-61）；跟随主讲通过宿主的 `navigation` 服务实现。
+**实现**：定制。`@presmium/host` 的 `useSharedState(key, initial, { scope })` 按作用域共享插件状态：`view` 只在本视图，`local` 在本机所有窗口，`remote` 跨设备。两种形态的实现相同（`architecture.md` 4.4 节）：本机多窗口之间用 BroadcastChannel，通道按文稿区分；不用 Slidev 的 `createSyncState`，它会忽略紧跟在本地变化之后到达的远端值。跨设备的传输通过宿主的 `syncTransports` 端口接入（接入 `remote` 状态；幻灯片形态另映射到 Slidev 的 `addSyncMethod`，同步导航与圈画），课堂会话插件提供网络传输（P-61）；跟随主讲通过宿主的 `navigation` 服务实现。
 
 ### K-07 插件宿主
 

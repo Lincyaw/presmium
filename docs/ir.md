@@ -43,6 +43,7 @@ presmium:                      # 各插件的全局配置，键为插件 ID
 renderers:                     # 要构建的渲染端及其配置
   web: {}
   slides: { theme: default }
+execute: { rerun: environment } # 可选：另一运行环境的执行录制重新执行（第 4 节）
 ---
 ```
 
@@ -106,7 +107,11 @@ presmium.exec: { timeoutMs: 30000 }
 :::
 ```
 
-`{config}` 放在章节内，为插件提供只在本章节生效的配置：正文为 YAML，键为插件 ID，存为章节的 `config`。在该章节中，它合并在文稿头部的全局配置之上，交给指令与编译步骤；浏览器端用 `useSectionConfig(<插件 ID>)` 读取（`architecture.md` 5.2 节）。
+`{config}` 放在章节内，为插件提供只在本章节生效的配置：正文为 YAML 映射，键为插件 ID，值也须是映射（否则报错），存为章节的 `config`。
+
+- 位置：章节顶层，或章节内的 `{slide}`、`{only}` 中；不生成块，也不占步骤。放在第一个 `##` 之前时属于封面章节。
+- 合并：同一章节的多个 `{config}` 按源码顺序合并，同一插件的选项后写的覆盖先写的。编译器在转换本章节的块之前读取它们，所以章节中任何位置的指令都看到完整的章节配置。
+- 生效：在该章节中合并在文稿头部的全局配置之上，交给指令（`DirectiveContext.config`）与编译步骤（`PassContext.configFor(section)`）；浏览器端用 `useSectionConfig(<插件 ID>)` 读取。幻灯片渲染端把它写入该页 frontmatter 的 `presmium`，封面章节的写入 `presmiumSection`（封面页的 frontmatter 就是 Slidev 文稿的头部，其中的 `presmium` 已是全局配置）；网页形态从 IR 读取（`architecture.md` 5.2 节）。
 
 ### 2.6 示例
 
@@ -184,8 +189,9 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 ### 执行缓存
 
 - 缓存键为 `语言 + 代码 + 参数 + 执行器 ID + 环境指纹` 的哈希。
-- 缓存目录为文稿目录下的 `.presmium/freeze/`，可以随文稿提交。提交后，任何人构建都得到相同的输出，也无需安装运行环境。
-- 代码改动后只重跑受影响的节点。
+- 缓存目录为文稿目录下的 `.presmium/freeze/`，可以随文稿提交。提交后，任何人构建都得到相同的输出，也无需安装运行环境：没有对应执行器时使用已有的录制。
+- 代码改动后只重跑受影响的节点；`presmium build` 删除文稿中已不存在的代码的录制。超时取决于机器而不是代码，不录制。
+- 同一段代码已有另一运行环境（环境指纹不同，例如另一个解释器版本）的录制时，默认沿用它并给出警告，所有人构建得到相同的输出。文稿头部写 `execute: { rerun: environment }` 时，这类代码重新执行并替换录制。
 
 ## 5. 插件
 
@@ -259,7 +265,7 @@ interface Renderer {
 }
 ```
 
-`RenderContext` 提供文稿目录、输出目录 `outDir`、工作目录 `workDir`、本渲染端的配置、各插件的扩展与插件列表。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。
+`RenderContext` 提供文稿目录 `deckDir`、文稿所在仓库的根目录 `workspaceRoot`（不在仓库中时为文稿目录）、输出目录 `outDir`、工作目录 `workDir`、本渲染端的配置、各插件的扩展与插件列表。渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。
 
 notebook 渲染端把 Markdown 写成 Jupyter 能显示的 CommonMark、GFM 表格、内联 HTML 与 `$` 公式，不写 MyST 语法：提示框（`{note}` 等）与旁注写成带粗体标题的引用块，`{list-table}` 等表格写成 GFM 表格，`{dropdown}` 写成 `<details>`，图写成图片加斜体标题，公式写成 `$$`，`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等角色写成内联 HTML，交叉引用写成它的文字。没有对应写法的节点（如 `{embed}`、`{iframe}`）保留其中的文字，并作为降级在构建报告中逐块列出（警告，带源码位置）。
 
@@ -317,5 +323,5 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 ### 8.4 与 VitePress、Slidev 的关系
 
-- **VitePress 是网页的外壳**：提供导航、侧栏、页内大纲、深色模式、移动端适配和搜索界面；页面正文由 IR 运行时渲染；搜索索引在构建时从 IR 文本生成（VitePress 搜索的 `_render` 钩子）。
+- **VitePress 是网页的外壳**：提供导航、侧栏、页内大纲、深色模式、移动端适配和搜索界面；页面正文由 IR 运行时渲染；搜索索引由网页渲染端从 IR 文本生成（每个章节一个文档），在开发与构建中都替换 VitePress 本地搜索的索引模块（`architecture.md` 9.1 节）。
 - **Slidev 是可选的高保真渲染端**：用于导出 PDF、圈画标注、录制等 Slidev 擅长的功能；实时预览不依赖 Slidev。

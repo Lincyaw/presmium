@@ -23,9 +23,11 @@ export { createPresenterPanels, createToolbar } from './panels.ts'
 export { default as PmPresenterPanels } from './PresenterPanels.vue'
 export { PmStepScope, provideStepScope, useStepScope } from './scope.ts'
 export type { StepScope } from './scope.ts'
+export { createSharedStates } from './shared.ts'
+export type { SharedStates } from './shared.ts'
 export { default as PmToolbar } from './Toolbar.vue'
 export { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
-export { joinWindows } from './windows.ts'
+export { deckChannel, joinWindows } from './windows.ts'
 export type { WindowChannel } from './windows.ts'
 export type {
   HostAdapter,
