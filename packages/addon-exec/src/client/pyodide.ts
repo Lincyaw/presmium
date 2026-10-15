@@ -1,6 +1,7 @@
 import type { Executor, RunRequest, RunResult } from '@presmium/kernel'
 import { failedRun, isPython } from '../domain/index.ts'
 import type { Trace, Tracer } from '../domain/index.ts'
+import { messages } from './messages.ts'
 import type { RunOutput, TraceOutput, WorkerReply, WorkerRequest } from './protocol.ts'
 
 export interface PyodideExecutorOptions {
@@ -35,7 +36,7 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
 
   function send<T>(kind: WorkerRequest['kind'], request: RunRequest, signal?: AbortSignal): Promise<Outcome<T>> {
     const job = () => new Promise<Outcome<T>>((resolve) => {
-      if (signal?.aborted) return resolve({ ok: false, error: '已取消', timedOut: false, durationMs: 0 })
+      if (signal?.aborted) return resolve({ ok: false, error: messages().cancelled, timedOut: false, durationMs: 0 })
       const target = spawn()
       const indexURL = new URL(options.indexURL, location.href).href
       const message: WorkerRequest = { id: ++ids, kind, request: plain(request), indexURL, maxEvents: options.maxTraceEvents }
@@ -60,19 +61,19 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
           clearTimeout(timer)
           started = performance.now()
           const timeoutMs = request.timeoutMs ?? options.timeoutMs
-          timer = setTimeout(() => kill(`执行超过 ${timeoutMs} ms，已停止`, true), timeoutMs)
+          timer = setTimeout(() => kill(messages().runTimeout(timeoutMs), true), timeoutMs)
         } else if (data.type === 'done') {
           finish({ ok: true, value: data.value as T, durationMs: data.durationMs })
         } else {
           finish({ ok: false, error: data.error, timedOut: false, durationMs: elapsed() })
         }
       }
-      const onError = (event: ErrorEvent) => kill(`Python 运行时出错：${event.message}`, false)
-      const onAbort = () => kill('已取消', false)
+      const onError = (event: ErrorEvent) => kill(messages().runtimeCrashed('Python', event.message), false)
+      const onAbort = () => kill(messages().cancelled, false)
       target.addEventListener('message', onMessage)
       target.addEventListener('error', onError)
       signal?.addEventListener('abort', onAbort)
-      timer = setTimeout(() => kill(`Python 运行时 ${options.loadTimeoutMs} ms 内未加载完成，已停止`, true), options.loadTimeoutMs)
+      timer = setTimeout(() => kill(messages().loadTimeout('Python', options.loadTimeoutMs), true), options.loadTimeoutMs)
       target.postMessage(message)
     })
     const outcome = queue.then(job)

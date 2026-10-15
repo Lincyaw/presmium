@@ -30,3 +30,13 @@ export function execConfig(raw: Record<string, unknown>): ExecConfig {
 export function isPython(lang: string): boolean {
   return ['python', 'py', 'python3'].includes(lang.toLowerCase())
 }
+
+/** Languages the JavaScript executors accept (src/runner.mjs). */
+export function isScript(lang: string): boolean {
+  return ['javascript', 'js', 'mjs', 'typescript', 'ts'].includes(lang.toLowerCase())
+}
+
+/** Script languages whose types are removed before they run. */
+export function isTypeScript(lang: string): boolean {
+  return ['typescript', 'ts'].includes(lang.toLowerCase())
+}

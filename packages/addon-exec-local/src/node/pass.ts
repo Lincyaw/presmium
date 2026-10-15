@@ -3,8 +3,9 @@
  * workspace (`presmium.execLocal.workspace` relative to the deck, else the
  * first `{local-env}` that names one, else the git root) and
  * - binds the container executor to it for compile-time execution;
- * - writes it, absolute, into the deck's configuration, so the dev-server
- *   endpoints of the generated Slidev deck (setup/vite-plugins.ts) find it;
+ * - writes it, relative to the deck, into the deck's configuration, so the
+ *   dev-server endpoints of the generated Slidev deck (setup/vite-plugins.ts)
+ *   find it; the published forms carry no path of the build machine (K-13);
  * - attaches to each `<PmLocalEnv>` its environment (P-26): the snippet and
  *   the devcontainer definition as a zip archive, downloadable from any build.
  */
@@ -35,7 +36,8 @@ export function localEnvPass(container: ContainerExecutor): IRPass {
         ? resolve(ctx.deckDir, configured)
         : envs.map(env => requestedWorkspaces.get(env.node)).find(dir => dir !== undefined) ?? ctx.workspaceRoot
       container.bind(workspace)
-      doc.config.presmium = { ...doc.config.presmium, [EXEC_LOCAL_ID]: { ...ctx.config, workspace } }
+      const shared = relative(ctx.deckDir, workspace).split(sep).join('/') || '.'
+      doc.config.presmium = { ...doc.config.presmium, [EXEC_LOCAL_ID]: { ...ctx.config, workspace: shared } }
 
       for (const { block, node } of envs) {
         const dir = requestedWorkspaces.get(node) ?? workspace

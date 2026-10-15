@@ -5,9 +5,10 @@
 // cases are skipped (and reported as skipped) when no Docker daemon is available.
 import { execFile, execFileSync, spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { appendFileSync, cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument } from '@presmium/kernel'
@@ -18,10 +19,13 @@ import { imageName } from '../src/node/container.ts'
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
 const PRESMIUM = join(PACKAGES, 'cli/bin/presmium.mjs')
-// The demo deck's Slidev installation; test decks must live inside the workspace to resolve the addons.
+// The demo deck's Slidev installation; the test deck names the addons by absolute path.
 const SLIDEV = createRequire(fileURLToPath(new URL('../../../examples/demo/package.json', import.meta.url))).resolve('@slidev/cli/bin/slidev.mjs')
 const FIXTURE = join(PACKAGE, 'test/fixtures/repo')
-const REPO = join(PACKAGE, 'test/.tmp/repo')
+// A fresh repository per run, so parallel runs in one checkout do not share it; the
+// container sees it as /workspaces/repo.
+const SCRATCH = mkdtempSync(join(tmpdir(), 'presmium-local-env-'))
+const REPO = join(SCRATCH, 'repo')
 const DEFINITION = readFileSync(join(FIXTURE, '.devcontainer/devcontainer.json'), 'utf8')
 const PYTHON_INFO = 'import os, sys\nprint(os.getcwd(), sys.version_info[:2])\nprint(open("src/greet.py").read().count("def"))'
 
@@ -82,7 +86,6 @@ function archived(zip: Uint8Array): Record<string, string> {
 }
 
 beforeAll(async () => {
-  rmSync(REPO, { recursive: true, force: true })
   cpSync(FIXTURE, REPO, { recursive: true })
   const deck = join(REPO, 'lecture.md')
   writeFileSync(deck, readFileSync(deck, 'utf8')
@@ -105,7 +108,7 @@ beforeAll(async () => {
 afterAll(async () => {
   server?.kill()
   if (docker) spawnSync('docker', ['image', 'rm', '--force', imageName(REPO)], { stdio: 'ignore' })
-  rmSync(REPO, { recursive: true, force: true })
+  rmSync(SCRATCH, { recursive: true, force: true })
 })
 
 describe('container executor (P-22)', () => {
@@ -117,6 +120,18 @@ describe('container executor (P-22)', () => {
     expect(result).toMatchObject({ ok: true, exitCode: 0, timedOut: false, executorId: 'presmium.container' })
     expect(result.stdout).toBe('/workspaces/repo (3, 12)\n1\n')
   }, 180_000)
+})
+
+describe('workspace (K-13)', () => {
+  it('is published relative to the deck, in the IR and in the slides bundle; the dev server still finds it', () => {
+    // The deck's configuration as the IR and the bundled headmatter of the slides serialize it.
+    const written = readdirSync(join(REPO, 'dist'), { recursive: true, withFileTypes: true })
+      .filter(entry => entry.isFile() && /\.(json|js)$/.test(entry.name))
+      .flatMap(entry => [...readFileSync(join(entry.parentPath, entry.name), 'utf8').matchAll(/"presmium\.execLocal":\s*\{\s*"?workspace"?:\s*["'`]([^"'`]*)/g)])
+      .map(match => match[1])
+    expect(written.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(written)).toEqual(new Set(['.']))
+  })
 })
 
 describe('environment replicate (P-26)', () => {

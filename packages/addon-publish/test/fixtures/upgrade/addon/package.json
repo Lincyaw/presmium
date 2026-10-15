@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-addon",
+  "version": "1.0.0",
+  "private": true,
+  "keywords": ["slidev-addon"],
+  "slidev": {}
+}

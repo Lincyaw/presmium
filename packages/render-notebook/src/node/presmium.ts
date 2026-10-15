@@ -7,6 +7,9 @@
  *            code in the kernel's language becomes code cells
  *   webUrl   URL of the web version, linked from components the notebook cannot show
  *
+ * MyST nodes Jupyter cannot render are written as CommonMark and HTML, and the
+ * ones without such a form are reported as degraded (../domain/markdown.ts).
+ *
  * Plugins render their components as cells through `rendererExtensions.notebook`;
  * the cells they return are typed by `NotebookCellInput`, and paths in them
  * are relative to the notebook, in `ctx.outDir`. The local files that the
@@ -29,8 +32,12 @@ const plugin: PresmiumNodePlugin = {
     id: 'notebook',
     support,
     async build(doc, ctx) {
-      const { notebook, skipped, problems } = renderNotebook(doc, { ...options(ctx), media: localMedia(ctx.deckDir, ctx.outDir) })
+      const { notebook, skipped, problems, degraded } = renderNotebook(doc, { ...options(ctx), media: localMedia(ctx.deckDir, ctx.outDir) })
       for (const { message, source } of problems) ctx.report({ checkId: CHECK_ID, severity: 'warning', message, source: { file: source.file, line: source.line } })
+      for (const { section, block, nodes, source } of degraded) {
+        const message = `${section}#${block}: degraded in the notebook, which has no Jupyter form for ${nodes.join(', ')}; the text is kept`
+        ctx.report({ checkId: CHECK_ID, severity: 'warning', message, source: { file: source.file, line: source.line } })
+      }
       const name = basename(doc.meta.entry, extname(doc.meta.entry)) || 'notebook'
       await writeFile(join(ctx.outDir, `${name}.ipynb`), `${JSON.stringify(notebook, null, 1)}\n`)
       return { outDir: ctx.outDir, skipped }

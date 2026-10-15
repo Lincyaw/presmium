@@ -1,6 +1,7 @@
 import type { Executor, RunRequest, RunResult } from '@presmium/kernel/contracts'
 import { CONTAINER_EXECUTOR_ID, disconnected, ENDPOINT, failedRun, languageId } from '../domain/index.ts'
 import type { CommitRequest, CommitResult, LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domain/index.ts'
+import { messages } from './messages.ts'
 
 export interface LocalEnv extends LocalEnvService {
   /** The container executor (P-22) for the `executor` router. */
@@ -16,21 +17,21 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
   })
   if (!res.ok) {
     const error = await res.json().then((json: { error?: string }) => json.error, () => undefined)
-    throw new Error(error ?? `本地环境请求失败（${res.status}）`)
+    throw new Error(error ?? messages().requestFailed(res.status))
   }
   return res
 }
 
 async function probe(): Promise<LocalEnvStatus> {
   // Built decks and the web form have no dev server behind them.
-  if (!import.meta.env.DEV) return disconnected('本地环境只在开发服务器中可用')
+  if (!import.meta.env.DEV) return disconnected('devServerOnly')
   try {
     const res = await fetch(`${ENDPOINT}/status`)
-    if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return disconnected('开发服务器没有提供本地环境接口')
+    if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return disconnected('noEndpoints')
     return await res.json() as LocalEnvStatus
   }
   catch {
-    return disconnected('无法连接开发服务器')
+    return disconnected('unreachable')
   }
 }
 

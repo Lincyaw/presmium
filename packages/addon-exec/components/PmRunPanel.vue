@@ -2,7 +2,7 @@
 import { PmBoundary, useService, useStartReport } from '@presmium/host'
 import { EXECUTOR } from '@presmium/kernel'
 import { computed, reactive, ref, shallowRef } from 'vue'
-import { slotSource } from '../src/client/index.ts'
+import { slotSource, useMessages } from '../src/client/index.ts'
 import { appendRun, compareRuns, defaultPair, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'
 import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 
@@ -23,6 +23,7 @@ const props = withDefaults(defineProps<{
 
 const executor = useService(EXECUTOR)
 const report = useStartReport()
+const t = useMessages()
 const source = ref<HTMLElement>()
 const args = reactive(stringArgs(props.params))
 const history = shallowRef<RunHistory>([])
@@ -56,7 +57,7 @@ function select(id: number) {
 
 function describe(record: RunRecord): string {
   const params = Object.entries(record.args).map(([name, value]) => `${name}=${value}`).join(' ')
-  const status = record.result.source === 'recorded' ? '预录' : record.result.ok ? '成功' : '失败'
+  const status = record.result.source === 'recorded' ? t.value.recorded : record.result.ok ? t.value.succeeded : t.value.failedShort
   return [params, status, `${record.result.durationMs} ms`].filter(Boolean).join(' · ')
 }
 
@@ -78,15 +79,15 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
             <input v-model="args[name]" :name="name" spellcheck="false" autocomplete="off">
           </label>
           <button type="submit" class="pm-run-panel__run" :disabled="running || !executor">
-            {{ running ? '运行中…' : history.length ? '重跑' : '运行' }}
+            {{ running ? t.running : history.length ? t.rerun : t.run }}
           </button>
-          <span v-if="!executor && report" class="pm-run-panel__hint">执行服务不可用</span>
+          <span v-if="!executor && report" class="pm-run-panel__hint">{{ t.unavailable }}</span>
         </form>
       </div>
       <div class="pm-run-panel__side">
         <div v-if="latest" class="pm-run-panel__output" :data-source="latest.result.source" :data-ok="latest.result.ok">
           <div v-if="reason" class="pm-run-panel__badge">
-            预录输出 · {{ reason }}
+            {{ t.recordedBadge(t[reason]) }}
           </div>
           <pre class="pm-run-panel__stdout">{{ latest.result.stdout }}</pre>
           <pre v-if="latest.result.stderr && !reason" class="pm-run-panel__stderr">{{ latest.result.stderr }}</pre>
@@ -101,10 +102,10 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
         </ol>
         <div v-if="comparison" class="pm-run-panel__compare" :data-changed="comparison.changed">
           <div class="pm-run-panel__compare-title">
-            对比 #{{ comparison.before.id }} → #{{ comparison.after.id }}
+            {{ t.compare(comparison.before.id, comparison.after.id) }}
           </div>
           <div v-for="change in comparison.args" :key="change.name" class="pm-run-panel__arg" :data-arg="change.name">
-            {{ change.name }}：{{ change.before ?? '—' }} → {{ change.after ?? '—' }}
+            {{ t.argChange(change.name, change.before ?? '—', change.after ?? '—') }}
           </div>
           <pre class="pm-run-panel__diff"><span v-for="(line, i) in comparison.output" :key="i" :data-kind="line.kind">{{ SIGN[line.kind] }} {{ line.text }}</span></pre>
         </div>

@@ -6,7 +6,10 @@
  * component its block's `at` as step scope.
  *
  * Notebook: a run panel or stepwise run becomes a code cell (P-75), with the
- * parameters assigned first and the output recorded at compile time.
+ * parameters assigned first and the output recorded at compile time, else the
+ * panel's `recorded` output (P-24). A cell with a timeout that did not finish
+ * at compile time may never end; it is tagged `skip-execution`, which Jupyter
+ * tools (nbclient, Jupyter Book) honor when they run the notebook.
  */
 import type { CodeNode, ComponentNode, RecordedRun, RendererExtension } from '@presmium/kernel'
 import { isPython } from '../domain/index.ts'
@@ -58,7 +61,12 @@ function notebookCell(node: ComponentNode) {
   if (!source || !isPython(source.lang)) return undefined
   const params = node.props.params as Record<string, unknown> | undefined
   const assignments = Object.entries(params ?? {}).map(([name, value]) => `${name} = ${literal(value)}\n`)
-  return { cell_type: 'code' as const, source: [...assignments, ...lines(source.value)], outputs: streams(source.outputs), execution_count: null }
+  const runs = source.outputs ?? []
+  const recorded = typeof node.props.recorded === 'string' ? node.props.recorded : undefined
+  const outputs = runs.length || recorded === undefined ? streams(runs) : [{ output_type: 'stream', name: 'stdout', text: lines(recorded) }]
+  const finished = runs.length > 0 && runs.every(run => !run.timedOut)
+  const metadata = node.props.timeout !== undefined && !finished ? { tags: ['skip-execution'] } : undefined
+  return { cell_type: 'code' as const, source: [...assignments, ...lines(source.value)], outputs, execution_count: null, ...metadata ? { metadata } : {} }
 }
 
 export const rendererExtensions: Record<string, Omit<RendererExtension, 'plugin'>> = {

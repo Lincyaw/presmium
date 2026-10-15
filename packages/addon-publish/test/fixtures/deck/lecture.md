@@ -2,6 +2,10 @@
 title: Publish fixture
 plugins:
   - ADDON_DIR
+  - PACKAGES_DIR/addon-code
+presmium:
+  presmium.code:
+    repo: https://github.com/presmium/publish-fixture
 renderers:
   slides:
     theme: default
@@ -11,13 +15,8 @@ renderers:
 
 ## Code with a permalink
 
-:::{slide}
-[math.py#L1-L2 @ 3f2a9c1](https://github.com/presmium/sample-repo/blob/3f2a9c1/src/math.py#L1-L2)
-:::
-
-```py
-def add(a, b):
-    return a + b
+```{code-ref} region:math.py#add
+:steps: check, sum
 ```
 
 ## Steps

@@ -116,6 +116,20 @@ it('copies the local files that the images and links it shows point to next to t
   expect(markdown()).toContain('![坏图](%E0%A4.png)')
 })
 
+it('writes MyST directives and roles as Markdown that Jupyter renders, and reports the nodes it has no form for', () => {
+  expect(markdown()).not.toMatch(/:::\{|```\{|\{(sub|kbd|math)\}`/)
+  expect(markdown()).toContain('> **Note**\n>\n> 提示写成带粗体标题的引用块。')
+  expect(markdown()).toMatch(/\*\*价格表\*\*\n\n\| 名称 +\| 价格 +\|\n\| -+ \| -+ \|\n\| 苹果 +\| 3 +\|/)
+  expect(markdown()).toContain('<details>\n<summary>点开看答案</summary>\n\n答案是 42。\n\n</details>')
+  expect(markdown()).toContain('$$\nE = mc^2\n$$')
+  expect(markdown()).toContain('![求和示意](https://example.org/sum.png)\n\n*求和的过程。*')
+  expect(markdown()).toContain('水的化学式是 H<sub>2</sub>O，保存用 <kbd>Ctrl</kbd>。')
+  // An embed has no Jupyter form: the build report lists it as degraded, at its source line.
+  const line = readFileSync(join(dir, 'pages/myst.md'), 'utf8').split('\n').indexOf('```{embed} energy') + 1
+  expect(build.stdout).toContain(`pages/myst.md:${line}  warning  myst#embed-1: degraded in the notebook, which has no Jupyter form for embed`)
+  expect(build.stdout.match(/degraded in the notebook/g)).toHaveLength(1)
+})
+
 it('renders components through the plugin extension or the fallback, and reports the ones it cannot show', () => {
   const quiz = cells.findIndex(c => c.source.join('') === '**测验**：1 加到 10 等于多少？（[网页版](https://example.org/lecture/)）')
   expect(quiz).toBeGreaterThan(-1)

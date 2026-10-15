@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const ADDON_DIR = fileURLToPath(new URL('..', import.meta.url))
+const PACKAGES_DIR = fileURLToPath(new URL('../..', import.meta.url))
 
 // Scratch copies live inside the package so that the decks resolve the slides
 // renderer, @slidev/cli, the theme and playwright-chromium from its node_modules.
@@ -14,16 +15,28 @@ const SCRATCH = fileURLToPath(new URL('./.tmp', import.meta.url))
 const copies: string[] = []
 
 /**
- * A fresh copy of `fixtures/<name>`, with `ADDON_DIR` in its lecture.md replaced
- * by this addon's directory; call `removeCopies` in `afterAll`.
+ * A fresh copy of `fixtures/<name>`, with `ADDON_DIR` in its deck entry (`entry`)
+ * replaced by this addon's directory and `PACKAGES_DIR` by the directory of all
+ * packages; call `removeCopies` in `afterAll`.
  */
-export function copyFixture(name: string): string {
+export function copyFixture(name: string, entry = 'lecture.md'): string {
   mkdirSync(SCRATCH, { recursive: true })
   const dir = mkdtempSync(join(SCRATCH, `${name}-`))
   cpSync(join(FIXTURES, name), dir, { recursive: true, filter: src => !src.includes('node_modules') })
-  const lecture = join(dir, 'lecture.md')
-  writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('ADDON_DIR', ADDON_DIR))
+  const lecture = join(dir, entry)
+  writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('ADDON_DIR', ADDON_DIR).replace(/PACKAGES_DIR\//g, PACKAGES_DIR))
   copies.push(dir)
+  return dir
+}
+
+/** A copy of `fixtures/<name>` as a git repository with one commit; `prepare` runs before the commit. */
+export function repository(name: string, entry?: string, prepare?: (dir: string) => void): string {
+  const dir = copyFixture(name, entry)
+  writeFileSync(join(dir, '.gitignore'), 'node_modules/\n')
+  prepare?.(dir)
+  git(dir, 'init', '-q', '-b', 'main')
+  git(dir, 'add', '-A')
+  git(dir, 'commit', '-q', '-m', name)
   return dir
 }
 

@@ -194,6 +194,16 @@ test.describe('web form', () => {
     await expect(page.locator('.pm-section[data-section="publish"]')).toContainText('def add(a, b):')
   })
 
+  test('a page that places no switch of its own has the high-contrast switch in the navigation bar', async ({ page }) => {
+    await page.goto(`${WEB}/code.html`)
+    await expect(page.locator('.vp-doc .pm-contrast-toggle')).toHaveCount(0)
+    const toggle = page.getByRole('switch', { name: '高对比度' }).filter({ visible: true })
+    await expect(toggle).toHaveCount(1)
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
+  })
+
   test('the high-contrast switch of the publish section brings its text to AA', async ({ page }) => {
     await page.goto(`${WEB}/publish.html`)
     const section = page.locator('.pm-section[data-section="publish"]')

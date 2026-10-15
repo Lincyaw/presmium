@@ -8,7 +8,7 @@
  * - `POST replicate`  ReplicateRequest -> zip archive (P-26)
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { relative, resolve, sep } from 'node:path'
+import { basename, dirname, relative, resolve, sep } from 'node:path'
 import type { RunRequest } from '@presmium/kernel/contracts'
 import { ENDPOINT, failedRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
@@ -36,18 +36,12 @@ export interface LocalEnvServerOptions {
 async function status(workspace: string): Promise<LocalEnvStatus> {
   const definition = findDefinition(workspace)
   const [docker, root] = await Promise.all([dockerAvailable(), gitRoot(workspace)])
-  const reasons = [
-    !docker && '未找到可用的 Docker',
-    !definition && '工作区没有 devcontainer 定义',
-    !root && '工作区不在有提交的 git 仓库中',
-  ].filter(Boolean)
   return {
     connected: true,
     docker,
     devcontainer: definition ? relative(workspace, definition).split(sep).join('/') : null,
     git: root !== undefined,
     languages: docker && definition ? Object.keys(definitionRunners(definition)) : [],
-    reason: reasons.length ? reasons.join('；') : undefined,
   }
 }
 
@@ -106,6 +100,18 @@ async function handle(workspace: string, req: IncomingMessage, res: ServerRespon
     default:
       throw new HttpError(404, `未知的本地环境接口：${route}`)
   }
+}
+
+/**
+ * The deck that a generated Slidev deck belongs to: the parent of its nearest
+ * `.presmium` ancestor (`<deck>/.presmium/slides` in builds, under
+ * `<deck>/.presmium/dev` in dev), else the Slidev deck's own directory.
+ */
+export function deckDirOf(slidevDir: string): string {
+  for (let dir = resolve(slidevDir); dirname(dir) !== dir; dir = dirname(dir)) {
+    if (basename(dir) === '.presmium') return dirname(dir)
+  }
+  return resolve(slidevDir)
 }
 
 /** Vite plugin serving the endpoints under `/__presmium/exec-local/`; dev server only. */

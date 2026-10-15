@@ -5,8 +5,10 @@
  * becomes a code cell with the recorded outputs, other code a fenced block.
  * A component is rendered by its plugin's notebook extension, else by its
  * `fallback`, else by a note that links to the web version, and is then
- * listed in the build report. Steps do not exist in a notebook: every block
- * is shown in its final state. The URLs of images and links in the blocks'
+ * listed in the build report. Markdown is written in the form Jupyter
+ * renders (./markdown.ts); MyST nodes it has no form for are listed as
+ * degraded. Steps do not exist in a notebook: every block is shown in its
+ * final state. The URLs of images and links in the blocks'
  * Markdown go through `media`, which can point local files at copies.
  */
 import type {
@@ -81,6 +83,8 @@ export interface NotebookResult {
   /** Blocks the notebook does not show, with the reason. */
   skipped: { section: string, block: string, reason: string }[]
   problems: { message: string, source: SourcePos }[]
+  /** Blocks shown without the MyST nodes Jupyter has no form for, e.g. an embed; their text is kept. */
+  degraded: { section: string, block: string, nodes: string[], source: SourcePos }[]
 }
 
 type ComponentRenderer = (node: ComponentNode, block: IRBlock) => unknown
@@ -97,6 +101,7 @@ export function renderNotebook(doc: IRDocument, options: NotebookOptions): Noteb
     notebook: { nbformat: 4, nbformat_minor: 5, metadata: { kernelspec: kernel, language_info: { name: kernel.language } }, cells: [] },
     skipped: [],
     problems: [],
+    degraded: [],
   }
   if (doc.meta.title) out.notebook.metadata.title = doc.meta.title
   const ids = new Set<string>()
@@ -121,10 +126,10 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     pending = undefined
   }
   const markdown = (mdast: MdastNode, block?: IRBlock) => {
-    const { text, problems } = toMarkdown(mdast)
-    for (const problem of problems) {
-      out.problems.push({ message: `${section.id}#${block?.id ?? 'title'}: ${problem}`, source: block?.source ?? section.source })
-    }
+    const { text, problems, degraded } = toMarkdown(mdast)
+    const where = { section: section.id, block: block?.id ?? 'title', source: block?.source ?? section.source }
+    for (const problem of problems) out.problems.push({ message: `${where.section}#${where.block}: ${problem}`, source: where.source })
+    if (degraded.length) out.degraded.push({ ...where, nodes: degraded })
     if (!text) return
     pending ??= { parts: [], blocks: [] }
     pending.parts.push(text)

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "anchors": {
+    "region:examples/sample-repo/coderef/cart.ts#checkout": {
+      "fingerprint": "8668f5e1613ee618",
+      "file": "examples/sample-repo/coderef/cart.ts",
+      "startLine": 15
+    },
+    "symbol:examples/sample-repo/coderef/cart.ts#total": {
+      "fingerprint": "a4140865269a2955",
+      "file": "examples/sample-repo/coderef/cart.ts",
+      "startLine": 10
+    }
+  }
+}

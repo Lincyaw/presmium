@@ -14,3 +14,4 @@ dist-web/
 !**/.presmium/freeze/
 !**/.presmium/anchors.lock.json
 !**/.presmium/drawings/
+!**/.presmium/assets/

@@ -1,6 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { buildDeck, fixture, serve } from './fixtures/exec/deck.ts'
+import type { BuiltDeck } from './fixtures/exec/deck.ts'
 import { SLIDES, WEB } from './urls.ts'
 
 // examples/demo/pages/exec.md, built by `presmium build`. Slides are found by their
@@ -125,4 +128,70 @@ test('in the web form, code that also runs live runs again in the browser, with 
   await expect(outputs).toHaveAttribute('data-source', 'live', RUNTIME)
   await expect(outputs.locator('.pm-output__stdout')).toHaveText(`${COMPILED}\n`)
   await expect(outputs.locator('.pm-output')).toHaveAttribute('data-executor', 'pyodide')
+})
+
+// ---------------------------------------------------------------------------
+// e2e/fixtures/exec/english: a deck in en-US with JavaScript and TypeScript code
+// ---------------------------------------------------------------------------
+
+test.describe('an English deck with JavaScript and TypeScript', () => {
+  test.describe.configure({ mode: 'serial' })
+  let deck: BuiltDeck
+  let slides: Awaited<ReturnType<typeof serve>>
+  let web: Awaited<ReturnType<typeof serve>>
+
+  test.beforeAll(async () => {
+    test.setTimeout(240_000)
+    deck = await buildDeck('exec-english', fixture('english'))
+    slides = await serve(join(deck.dir, 'dist/slides'), true)
+    web = await serve(join(deck.dir, 'dist/web'), false)
+  })
+
+  test.afterAll(async () => {
+    await slides?.close()
+    await web?.close()
+    deck?.remove()
+  })
+
+  async function slidePanel(page: Page, id: string) {
+    const no = deck.slides[id]
+    await page.goto(`${slides.url}/${no}`)
+    return page.locator(`.slidev-page-${no} .pm-run-panel`)
+  }
+
+  test('in the slides form, the run panels run JavaScript and TypeScript and speak English', async ({ page }) => {
+    const js = await slidePanel(page, 'js-panel')
+    await js.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(js.locator('.pm-run-panel__stdout')).toHaveText('1 1\n2 4\n3 9\n4 16\n')
+    await expect(js.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live')
+    await expect(js.getByRole('button', { name: 'Run again', exact: true })).toBeEnabled()
+
+    const ts = await slidePanel(page, 'ts-panel')
+    await ts.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(ts.locator('.pm-run-panel__stdout')).toHaveText('Hello, Presmium\n')
+
+    // A script that never ends is stopped at its timeout and shows its recorded output.
+    const endless = await slidePanel(page, 'js-timeout')
+    await endless.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(endless.locator('.pm-run-panel__badge')).toHaveText('Recorded output · timed out')
+    await expect(endless.locator('.pm-run-panel__stdout')).toHaveText('settled at 1.4142135623730951 (recorded)')
+
+    // The other plugins of the deck speak English too: the local environment and the toolbar's switch.
+    await page.goto(`${slides.url}/${deck.slides['local-env']}`)
+    await expect(page.locator('.pm-local-env__notice').filter({ visible: true })).toHaveText('The local environment is available only from the dev server')
+    await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
+  })
+
+  test('in the web form, a run panel and live code run JavaScript in the browser', async ({ page }) => {
+    await page.goto(`${web.url}/`)
+    const js = page.locator('.pm-section[data-section="js-panel"] .pm-run-panel')
+    await js.getByRole('button', { name: 'Run', exact: true }).click()
+    await expect(js.locator('.pm-run-panel__stdout')).toHaveText('1 1\n2 4\n3 9\n4 16\n')
+
+    const live = page.locator('.pm-section[data-section="js-live"] .pm-code-block[data-run="live"]')
+    await live.locator('.pm-code-block__run button').click()
+    await expect(live.locator('.pm-output__stdout')).toHaveText('RUN IN THE BROWSER\n')
+    await expect(live.locator('.pm-output')).toHaveAttribute('data-executor', 'js-worker')
+    await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
+  })
 })

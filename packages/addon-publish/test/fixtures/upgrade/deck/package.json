@@ -1,0 +1,8 @@
+{
+  "name": "presmium-publish-fixture-upgrade-deck",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "presmium-fixture-addon": "workspace:*"
+  }
+}
