@@ -13,13 +13,16 @@
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
+    "./vite": "./src/node/vite.ts",
     "./package.json": "./package.json"
   },
   "slidev": {},
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
     "@presmium/host": "workspace:*",
-    "pyodide": "^314.0.7"
+    "@presmium/kernel": "workspace:*",
+    "diff": "^9.0.0",
+    "pyodide": "^314.0.7",
+    "vue": "^3.5.42"
   },
   "devDependencies": {
     "@slidev/client": "53.0.0",
