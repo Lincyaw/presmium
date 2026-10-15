@@ -119,6 +119,16 @@
   margin-top: 0;
 }
 
+/* A board that holds only overlays (components whose root is `.pm-overlay`, such as guidance
+   cues drawn over other content) has nothing of its own to show in the flow: drop the card.
+   (`:has()` cannot nest, hence the two separate tests.) */
+.pm-board:has(> .pm-block > .pm-overlay):not(:has(> .pm-block > :not(.pm-overlay))) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 .pm-board > :last-child > :last-child {
   margin-bottom: 0;
 }
@@ -161,6 +171,13 @@
 
 .pm-step--current {
   border-left-color: var(--pm-c-brand);
+}
+
+/* Every narration paragraph stays readable, so the track never looks empty and readers can scroll
+   back to reread; the paragraphs of other steps are dimmed and the current step's stands out. */
+.pm-section--scrolly > .pm-track .pm-block--narration.pm-hidden {
+  visibility: visible;
+  opacity: 0.35;
 }
 
 @media (max-width: 767px) {

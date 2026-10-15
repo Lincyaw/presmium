@@ -20,7 +20,7 @@ const { anchor, look, steps } = useCue(props, 'data-pm-spotlight', requestSpotli
 
 <template>
   <PmBoundary name="PmSpotlight">
-    <span ref="anchor" class="pm-spotlight" hidden :data-target="target" :data-look="look ?? 'off'">
+    <span ref="anchor" class="pm-spotlight pm-overlay" hidden :data-target="target" :data-look="look ?? 'off'">
       <span v-for="step in steps" :key="step" v-click="step" />
     </span>
   </PmBoundary>

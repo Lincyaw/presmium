@@ -117,7 +117,9 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
 <style scoped>
 .pm-run-panel {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  /* Code and output side by side where there is room (a slide); in a narrow place (a board in
+     the document view, a phone) they stack, so the code keeps the full width. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   gap: 0.75rem;
   font-size: 0.8rem;
 }

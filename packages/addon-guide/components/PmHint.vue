@@ -20,7 +20,7 @@ const { anchor, look, steps } = useCue(props, 'data-pm-hint', requestHint)
 
 <template>
   <PmBoundary name="PmHint">
-    <span ref="anchor" class="pm-hint" hidden :data-target="target" :data-look="look ?? 'off'">
+    <span ref="anchor" class="pm-hint pm-overlay" hidden :data-target="target" :data-look="look ?? 'off'">
       <span v-for="step in steps" :key="step" v-click="step" />
     </span>
   </PmBoundary>

@@ -54,7 +54,7 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
 <template>
   <div
     ref="cursor"
-    class="pm-cursor"
+    class="pm-cursor pm-overlay"
     aria-hidden="true"
     :data-waypoint="index"
     :data-action="point?.action ?? 'none'"
