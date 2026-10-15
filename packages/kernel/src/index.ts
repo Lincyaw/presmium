@@ -1,4 +1,5 @@
 export * from './contracts.ts'
+export * from './ir.ts'
 export { createAnchorResolverRegistry, parseAnchor } from './anchors.ts'
 export type { ParsedAnchor } from './anchors.ts'
 export { CheckRegistry } from './checks.ts'
