@@ -410,7 +410,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 来自用户试用反馈。在 WP-60 合并后进行。
 
-**拥有**：`packages/web/`、`packages/viewer/`、`e2e/web.spec.ts`、`e2e/viewer.spec.ts`、`e2e/fixtures/web/`。
+**拥有**：`packages/web/`、`packages/viewer/`、`e2e/web.spec.ts`、`e2e/viewer.spec.ts`、`e2e/fixtures/web/`、`e2e/fixtures/viewer/`。另外修稳两个在高负载下偶发失败的用例：`viewer.spec.ts` 的“300 ms 内更新”与 `web.spec.ts` 中从幻灯片跳到滚动叙事章节的步骤用例（以事件或状态等待代替固定时序）。
 
 **交付**：
 
@@ -424,7 +424,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 来自用户试用反馈。在 WP-60 合并后进行，可与 WP-61 并行。
 
-**拥有**：`examples/demo/`、`examples/sample-repo/`、`e2e/fixtures/`（`web/` 除外）、除 `web.spec.ts`、`viewer.spec.ts` 以外的全部 `e2e/*.spec.ts`。
+**拥有**：`examples/demo/`、`examples/sample-repo/`、`e2e/fixtures/`（`web/`、`core/`、`viewer/` 除外）、除 `web.spec.ts`、`viewer.spec.ts`、`core.spec.ts` 以外的全部 `e2e/*.spec.ts`。
 
 **交付**：
 
@@ -433,4 +433,19 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 - 各功能的端到端测试改为使用自己的测试文稿，不再依赖示例讲义的具体内容；另写一个面向示例讲义的冒烟测试：三种媒介都能构建，网页与幻灯片都能打开并翻页。
 
 **验收**：全量 `pnpm test` 与 Playwright 通过；示例讲义构建无警告；人工通读网页形态，内容连贯、无调试性文字。
+
+## WP-63 稳定性与文档收尾
+
+来自 WP-60 的验收遗留。可与 WP-61、WP-62 并行。
+
+**拥有**：`packages/host/`、`packages/addon-core/`、`packages/kernel/`、`packages/compiler/`、`packages/cli/`、`packages/render-slides/`、`e2e/core.spec.ts`、`e2e/fixtures/core/`、`docs/`（`docs/wbs.md` 除外）、`CLAUDE.md`。
+
+**交付**：
+
+- 幻灯片形态的 `remote` 共享状态：本地变更后紧接着到达的远端值不再被丢弃（WP-60a 验证中 40 次丢 28 次）；`e2e/core.spec.ts` 的对应用例在 `--repeat-each=10` 下稳定通过。
+- `e2e/core.spec.ts` 中“减少动态效果下翻页与逐项出现没有动画”用例改为等待幻灯片就绪、在翻页后的若干动画帧内采样，`--repeat-each=10` 稳定通过。
+- 网页共享状态的 BroadcastChannel 名称不再只用文稿标题区分（同源下同名文稿会串）。
+- 文档：`architecture.md` 第 9 节写明搜索索引的 VitePress 内部模块在开发与构建中都被拦截；封面章节配置写在 `presmiumSection`；新增的 `joinWindows`、`RenderContext.workspaceRoot` 与配置路径改写规则；`execute: { rerun: environment }` 开关；`ir.md` 的 `{config}` 指令。zh-CN 文稿中 VitePress 余下的英文界面文字（跳到正文、明暗切换提示、404 页）由 WP-61 处理，本包在文档中列出即可。
+
+**验收**：上述两个用例在 `--repeat-each=10` 下全部通过；全量 `pnpm test` 与 Playwright 通过；文档描述与代码一致。
 
