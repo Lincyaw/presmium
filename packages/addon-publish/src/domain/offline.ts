@@ -27,7 +27,7 @@ export const OFFLINE_MANIFEST: OfflineManifest = {
   runtime: [
     // Pyodide loaded from a CDN (cdn.jsdelivr.net/pyodide/..., .../npm/pyodide@...) or lazily from the deck.
     { cacheName: 'presmium-pyodide', urlPattern: /\/pyodide[/@]/ },
-    // Web fonts that Slidev imports from Google Fonts.
+    // Web fonts that Slidev imports from Google Fonts, when the build could not download them.
     { cacheName: 'presmium-fonts', urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\// },
   ],
   // Like vite-plugin-remote-assets' default rule, plus hosts with a port, GIF, AVIF, video, audio and fonts.

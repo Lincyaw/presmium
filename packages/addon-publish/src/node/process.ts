@@ -22,12 +22,13 @@ function binPath(dir: string): string {
 }
 
 /**
- * Runs a command installed for `cwd` (e.g. the deck's own `slidev`). Its output
- * goes to stderr so that our stdout stays machine-readable; rejects when it fails.
+ * Runs a command installed for `cwd` (e.g. the deck's own `slidev`), with `env`
+ * added to the environment. Its output goes to stderr so that our stdout stays
+ * machine-readable; rejects when it fails.
  */
-export function run(cwd: string, command: string, args: string[]): Promise<void> {
+export function run(cwd: string, command: string, args: string[], env: Record<string, string> = {}): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, env: { ...process.env, PATH: binPath(cwd) }, stdio: ['ignore', 2, 2] })
+    const child = spawn(command, args, { cwd, env: { ...process.env, ...env, PATH: binPath(cwd) }, stdio: ['ignore', 2, 2] })
     child.on('error', error => reject(new Error(`cannot run ${command}: ${error.message}`)))
     child.on('close', code => code === 0 ? resolve() : reject(new Error(`${command} ${args[0] ?? ''} exited with code ${code}`)))
   })

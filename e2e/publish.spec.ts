@@ -24,10 +24,13 @@ test('once loaded, the built deck reloads and plays offline', async ({ page, con
   await (await context.newCDPSession(page)).send('Network.clearBrowserCache')
   const slide = await openPublish(page)
   await expect(slide.locator('pre.shiki')).toContainText('def add(a, b):')
-  // Other slides load from the cache too.
+  // Other slides load from the cache too: the one before it, and the cover after another reload.
   await page.keyboard.press('ArrowLeft')
-  await expect(page).toHaveURL(/\/\d+$/)
-  await expect(page.locator(`.slidev-page-${new URL(page.url()).pathname.slice(1)}`)).toBeVisible()
+  await expect(page).not.toHaveURL(PUBLISH)
+  await expect(slide).toBeHidden()
+  await expect(page.locator('.slidev-layout:visible h1')).toBeVisible()
+  await page.goto(`${SLIDES}/1`)
+  await expect(page.locator('.slidev-page-1 .slidev-layout h1')).toHaveText('Presmium Demo')
 })
 
 /**
@@ -82,7 +85,7 @@ async function lowContrastTexts(slide: Locator): Promise<string[]> {
   return texts.filter(t => contrast(t.fg, t.bg) < 4.5).map(t => `${t.text} (${contrast(t.fg, t.bg).toFixed(2)})`)
 }
 
-test('the high-contrast switch brings every text to WCAG AA', async ({ page }) => {
+test('the high-contrast switch brings the text of the slide to WCAG AA and is remembered', async ({ page }) => {
   const slide = await openPublish(page)
   // Default theme colors, e.g. code comments, fall below AA.
   expect(await lowContrastTexts(slide)).not.toEqual([])
@@ -93,14 +96,33 @@ test('the high-contrast switch brings every text to WCAG AA', async ({ page }) =
   await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
   expect(await lowContrastTexts(slide)).toEqual([])
 
-  // The choice is remembered across pages; text the theme fades, like the cover subtitle, passes too.
-  await page.goto(`${SLIDES}/1`)
-  const cover = page.locator('.slidev-page-1 .slidev-layout')
-  await expect(cover.locator('h1')).toBeVisible()
+  await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
-  expect(await lowContrastTexts(cover)).toEqual([])
+  await expect(slide.getByRole('switch', { name: '高对比度' })).toHaveAttribute('aria-checked', 'true')
+})
 
-  // The dark color scheme has its own palette, which passes as well.
-  await page.emulateMedia({ colorScheme: 'dark' })
-  expect(await lowContrastTexts(await openPublish(page))).toEqual([])
+// Every slide of the demo deck, with all its click steps shown, whatever plugin draws it.
+test.describe('every slide', () => {
+  test.use({ serviceWorkers: 'block' })
+
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`in high contrast, every slide reaches WCAG AA (${colorScheme})`, async ({ page }) => {
+      test.setTimeout(120_000)
+      await page.emulateMedia({ colorScheme })
+      await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
+      const failures: string[] = []
+      let no = 1
+      for (; ; no++) {
+        await page.goto(`${SLIDES}/${no}?clicks=99`, { waitUntil: 'networkidle' })
+        // Past the last slide, Slidev shows the first one.
+        const layout = page.locator(`.slidev-page-${no} .slidev-layout`)
+        await expect(layout.or(page.locator('.slidev-page-1 .slidev-layout')).filter({ visible: true }).first()).toBeVisible()
+        if (!(await layout.isVisible())) break
+        await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
+        failures.push(...(await lowContrastTexts(layout)).map(text => `slide ${no}: ${text}`))
+      }
+      expect(no).toBeGreaterThan(10)
+      expect(failures).toEqual([])
+    })
+  }
 })

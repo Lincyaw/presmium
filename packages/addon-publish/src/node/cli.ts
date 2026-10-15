@@ -20,8 +20,9 @@ Exports every slide and click step of the deck at two commits as PNG, compares
 them pixel by pixel and writes report.md and report.json (default directory
 <deckDir>/.presmium/diff). Exits 1 when a page differs by more than the
 threshold (a ratio of pixels, default 0). --wait lets each page settle before
-it is captured (default 500). --install renders each commit with the
-dependencies of its own pnpm lockfile, e.g. to check a host upgrade.`
+it is captured (default 500). Both commits render with the host and addons
+installed for the deck; --install renders each commit with the dependencies of
+its own pnpm lockfile instead, e.g. to check a host or addon upgrade.`
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 /** A path relative to the working directory when it lies inside it. */
@@ -117,7 +118,8 @@ export async function diffMain(argv: string[]): Promise<number> {
   const deckDir = deckOrError(dir, DIFF_USAGE)
   if (!deckDir) return 2
   try {
-    const { report, out } = await visualDiff({ refA, refB, deckDir, out: values.out as string | undefined, threshold, wait, install: values.install as boolean | undefined })
+    const { report, out, warnings } = await visualDiff({ refA, refB, deckDir, out: values.out as string | undefined, threshold, wait, install: values.install as boolean | undefined })
+    warnings.forEach(w => console.error(`warning: ${w}`))
     if (values.json) {
       console.log(JSON.stringify(report, null, 2))
     } else {

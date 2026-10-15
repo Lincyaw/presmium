@@ -1,20 +1,24 @@
 import { VitePWA } from 'vite-plugin-pwa'
 import RemoteAssets from 'vite-plugin-remote-assets'
+import webfontDownload from 'vite-plugin-webfont-dl'
 import { OFFLINE_MANIFEST, onInBuild, publishOptions } from '../domain/index.ts'
 
 /**
  * Vite plugins that make `slidev build` output play offline (P-51, N-03): a
  * service worker that precaches the deck, its media and the Pyodide runtime
- * (vite-plugin-pwa, which Slidev's `pwa` option also uses), and remote assets
+ * (vite-plugin-pwa, which Slidev's `pwa` option also uses), remote assets
  * downloaded into the build (vite-plugin-remote-assets, as Slidev's
- * `remoteAssets` option does). A deck that turns on either Slidev option keeps
- * Slidev's own plugin for it. `presmium: { presmium.publish: { offline: false } }`
- * turns both off.
+ * `remoteAssets` option does), and the web fonts that Slidev links from Google
+ * Fonts, downloaded into the build as well (vite-plugin-webfont-dl). A deck
+ * that turns on either Slidev option keeps Slidev's own plugin for it.
+ * `presmium: { presmium.publish: { offline: false } }` turns them all off.
  */
 export function offlinePlugins(config: { pwa?: unknown, remoteAssets?: unknown }, mode: string) {
   if (mode !== 'build' || !publishOptions(config).offline) return []
   return [
     ...(onInBuild(config.remoteAssets) ? [] : [remoteAssets()]),
+    // Without network the build only warns and keeps the remote fonts, which the service worker then caches at runtime.
+    webfontDownload([], { throwError: false }),
     ...(onInBuild(config.pwa)
       ? []
       : VitePWA({

@@ -1,11 +1,15 @@
+import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { DECK_ENTRY, findWorkspaceRoot, loadDeck, loadNodePlugins } from '@presmium/cli'
 import type { Deck } from '@presmium/cli'
-import { declaredLinks, normalizeUrl, parseRange } from '../domain/index.ts'
+import { declaredLinks, linkLine, normalizeUrl, parseRange } from '../domain/index.ts'
 import { pdfLinks } from './pdf.ts'
 import { run } from './process.ts'
 
-/** Export job (P-50): a PDF of the deck, optionally one page per click step or a range of slides. */
+/**
+ * Export job (P-50): the deck as PDF, the format whose links can be checked,
+ * optionally one page per click step or a range of slides.
+ */
 export interface ExportJob {
   deckDir: string
   /** PDF path; defaults to `<exportFilename or slides-export>.pdf` in the deck directory. */
@@ -21,6 +25,7 @@ export interface ExportedLink {
   url: string
   /** First slide that declares the link. */
   slide: number
+  /** Where that slide writes the link; the slide's first line when an addon generates it (e.g. a code permalink). */
   source: { file: string, line: number }
   /** PDF pages that link to it; empty when the export lost the link. */
   pages: number[]
@@ -63,6 +68,11 @@ async function expectedLinks(deck: Deck, range: Set<number> | undefined, warning
   const { plugins, problems } = await loadNodePlugins(deck.dir, deck.headmatter.addons)
   warnings.push(...problems.map(p => p.message))
   const workspaceRoot = await findWorkspaceRoot(deck.dir)
+  const sources = new Map<string, string[]>()
+  const linesOf = async (file: string) => {
+    if (!sources.has(file)) sources.set(file, (await readFile(file, 'utf8')).split(/\r?\n/))
+    return sources.get(file)!
+  }
   const links = new Map<string, Omit<ExportedLink, 'pages'>>()
   for (const slide of deck.slides) {
     if (slide.frontmatter.hide || slide.frontmatter.disabled || (range && !range.has(slide.index))) continue
@@ -84,8 +94,12 @@ async function expectedLinks(deck: Deck, range: Set<number> | undefined, warning
         warnings.push(`${plugin.id}: transformMarkdown failed on slide ${slide.index}: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
+    // The slide's lines run up to the next slide of the same file.
+    const end = deck.slides.find(s => s.file === slide.file && s.line > slide.line)?.line
     for (const url of declaredLinks(content)) {
-      if (!links.has(url)) links.set(url, { url, slide: slide.index, source: { file: slide.file, line: slide.line } })
+      if (links.has(url)) continue
+      const line = linkLine(await linesOf(slide.file), url, slide.line, end) ?? slide.line
+      links.set(url, { url, slide: slide.index, source: { file: slide.file, line } })
     }
   }
   return [...links.values()]

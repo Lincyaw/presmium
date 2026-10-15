@@ -36,4 +36,6 @@ Shown after one click.
 
 [a link that never renders](https://example.com/hidden)
 
+<span data-ref='{"href": "https://example.com/json-prop"}'>nor does a link passed to a component as JSON</span>
+
 </div>

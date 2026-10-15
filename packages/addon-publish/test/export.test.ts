@@ -1,5 +1,6 @@
 // Runs the real `presmium-export` (`slidev export` to PDF, then the link check)
 // on a copy of ./fixtures/deck.
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, expect, it } from 'vitest'
 import { pdfLinks } from '../src/node/pdf.ts'
@@ -18,11 +19,15 @@ it('exports a PDF in which the code permalink is still a link', async () => {
   expect((await pdfLinks(join(dir, 'out.pdf')))[0]).toContain(PERMALINK)
 }, 120_000)
 
-it('reports a link that the PDF lost, located in the deck source', async () => {
+it('reports the links that the PDF lost, located in the deck source', async () => {
   const dir = copyFixture('deck')
   const { code, stdout, stderr } = await bin('presmium-export', dir)
   expect(code, stderr).toBe(1)
   expect(stdout).toContain('exported slides-export.pdf (3 pages)')
-  expect(stdout).toMatch(/^slides\.md:\d+ {2}link lost {2}https:\/\/example\.com\/hidden \(slide 3\)$/m)
-  expect(stdout).toContain('1 of 2 links kept')
+  const lines = readFileSync(join(dir, 'slides.md'), 'utf8').split('\n')
+  for (const url of ['https://example.com/hidden', 'https://example.com/json-prop']) {
+    const line = lines.findIndex(text => text.includes(url)) + 1
+    expect(stdout).toContain(`slides.md:${line}  link lost  ${url} (slide 3)`)
+  }
+  expect(stdout).toContain('1 of 3 links kept')
 }, 120_000)

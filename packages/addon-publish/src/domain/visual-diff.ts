@@ -15,7 +15,8 @@ export interface PageRef {
 
 export type PageStatus = 'same' | 'changed' | 'added' | 'removed'
 
-export interface PageDiff extends PageRef {
+/** The visual diff of one page. */
+export interface VisualDiff extends PageRef {
   status: PageStatus
   /** Differing pixels over all pixels, 0 to 1; 1 when the page exists on one side only or changed size. */
   ratio: number
@@ -32,9 +33,9 @@ export interface VisualDiffReport {
   b: DiffSide
   /** Pages with a ratio above it are listed. */
   threshold: number
-  pages: PageDiff[]
+  pages: VisualDiff[]
   /** The pages that differ, in page order. */
-  listed: PageDiff[]
+  listed: VisualDiff[]
 }
 
 /** Reads a Slidev PNG export name: `002-03.png` is slide 2 after two clicks, `002.png` a slide without clicks. */
@@ -62,7 +63,7 @@ export function pageStatus(ratio: number, threshold: number, a: boolean, b: bool
   return ratio > threshold ? 'changed' : 'same'
 }
 
-export function diffReport(a: DiffSide, b: DiffSide, threshold: number, pages: PageDiff[]): VisualDiffReport {
+export function diffReport(a: DiffSide, b: DiffSide, threshold: number, pages: VisualDiff[]): VisualDiffReport {
   return { a, b, threshold, pages, listed: pages.filter(page => page.status !== 'same') }
 }
 

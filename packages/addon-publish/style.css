@@ -7,3 +7,13 @@ html.pm-print *::after {
   transition-duration: 0s !important;
   transition-delay: 0s !important;
 }
+
+/*
+ * presmium-diff (setup/root.ts sets the class): text is laid out without font
+ * hinting. Otherwise Chromium hints some fonts and not others depending on
+ * timing while the browser starts, and two captures of an unchanged page
+ * differ by a fraction of a pixel in glyph positions.
+ */
+html.pm-visual-diff * {
+  text-rendering: geometricPrecision !important;
+}

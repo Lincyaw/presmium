@@ -9,15 +9,34 @@ const REFERENCE = /^ {0,3}\[[^\]]+\]:\s*<?(https?:\/\/[^\s<>]+)/gm
 const AUTOLINK = /<(https?:\/\/[^\s<>]+)>/g
 /** `href`, `to` and attributes named like `permalink`, `repo-url`. */
 const ATTRIBUTE = /\s(?:href|to|[\w-]*link|[\w-]*url)\s*=\s*(["'])(https?:\/\/[^"']+)\1/gi
+/** The same names as keys of JSON passed to a component, e.g. `variants="[{&quot;href&quot;:&quot;https://…&quot;}]"`. */
+const JSON_KEY = /"(?:href|to|[\w-]*link|[\w-]*url)"\s*:\s*"(https?:\/\/[^"\\\s]+)"/gi
 
 /** Absolute http(s) links of a slide, normalized and deduplicated, in source order. */
 export function declaredLinks(markdown: string): string[] {
   const text = withoutDocOnly(withoutCode(markdown).replace(/<!--[\s\S]*?-->/g, ''))
   const found = [
     ...[MARKDOWN_LINK, REFERENCE, AUTOLINK].flatMap(re => [...text.matchAll(re)].map(m => ({ at: m.index, url: m[1]! }))),
-    ...[...text.matchAll(ATTRIBUTE)].map(m => ({ at: m.index, url: m[2]!.replaceAll('&amp;', '&') })),
+    ...[...text.matchAll(ATTRIBUTE)].map(m => ({ at: m.index, url: m[2]! })),
+    // Positions in the unescaped text are close enough to order the links.
+    ...[...text.replaceAll('&quot;', '"').matchAll(JSON_KEY)].map(m => ({ at: m.index, url: m[1]! })),
   ].sort((a, b) => a.at - b.at)
-  return [...new Set(found.map(f => normalizeUrl(f.url)).filter((url): url is string => url !== undefined))]
+  return [...new Set(found.map(f => normalizeUrl(f.url.replaceAll('&amp;', '&'))).filter((url): url is string => url !== undefined))]
+}
+
+/**
+ * 1-based line, from line `from` up to before line `to`, where the source
+ * writes `url` (normalized as `declaredLinks` returns it); undefined when no
+ * line does, e.g. for a permalink that an addon generates.
+ */
+export function linkLine(lines: string[], url: string, from: number, to = lines.length + 1): number | undefined {
+  const forms = [url, url.replace(/\/$/, ''), url.replaceAll('&', '&amp;')].map(form => form.replace(/[.*+?^$()|[\]{}\\]/g, '\\$&'))
+  // The URL as a whole: followed by the end of the line or a character that ends a link.
+  const written = new RegExp(`(?:${forms.join('|')})(?=$|[\\s"'<>)\\]])`)
+  for (let i = Math.max(from, 1); i < Math.min(to, lines.length + 1); i++) {
+    if (written.test(lines[i - 1]!)) return i
+  }
+  return undefined
 }
 
 /** The WHATWG serialization, so source and PDF links compare equal; undefined when invalid. */
