@@ -463,7 +463,7 @@ test.describe('the fixture deck in the web form', () => {
 
     // A join link without a name: the learner's badge asks for one.
     await mobile.goto(`${site()}?room=fixture-room`)
-    const badge = mobile.getByRole('region', { name: '课堂状态' })
+    const badge = mobile.getByRole('region', { name: 'Classroom status' }) // an en-US deck
     await expect(badge).toBeInViewport({ ratio: 1 })
     await badge.getByRole('textbox').fill('Ada')
     await expect(badge.getByRole('textbox')).toHaveValue('Ada')

@@ -21,6 +21,8 @@ export interface BlockContext extends SectionContext {
 
 export const SECTION_CONTEXT: InjectionKey<SectionContext> = Symbol('presmium.viewer.section')
 export const BLOCK_CONTEXT: InjectionKey<BlockContext> = Symbol('presmium.viewer.block')
+/** Set inside a component node: its child blocks are the component's content, and the component owns running and output. */
+export const IN_COMPONENT: InjectionKey<boolean> = Symbol('presmium.viewer.inComponent')
 
 /** The enclosing section; undefined outside a section. Must be called inside a component setup or render. */
 export function useSectionContext(): SectionContext | undefined {

@@ -4,7 +4,7 @@ import type { PropType, VNode } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef, toRef } from 'vue'
 import { BLOCK_CLASS, trackClicks } from './clicks.ts'
 import { CodeBlockView } from './code.ts'
-import { BLOCK_CONTEXT } from './context.ts'
+import { BLOCK_CONTEXT, IN_COMPONENT } from './context.ts'
 import { blockVisible, FINAL_STEP } from './domain/index.ts'
 import { messages } from './i18n.ts'
 import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
@@ -26,6 +26,7 @@ const ComponentView = defineComponent({
   name: 'PmComponentNode',
   props: blockProps,
   setup(props) {
+    provide(IN_COMPONENT, true)
     return () => {
       const node = props.block.node as ComponentNode
       const component = getComponent(node.name)

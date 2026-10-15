@@ -2,7 +2,8 @@ import { useService, useStartReport } from '@presmium/host'
 import { EXECUTOR } from '@presmium/kernel'
 import type { CodeNode, CodeOrigin, CodeVariant, IRBlock, RunResult } from '@presmium/kernel'
 import type { PropType, VNode, VNodeChild } from 'vue'
-import { computed, defineComponent, h, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, defineComponent, h, inject, onMounted, ref, shallowRef, watch } from 'vue'
+import { IN_COMPONENT } from './context.ts'
 import { blockState } from './domain/index.ts'
 import { highlighterFor, THEMES } from './highlight.ts'
 import { messages } from './i18n.ts'
@@ -129,6 +130,8 @@ export const CodeBlockView = defineComponent({
     expanded: Boolean,
   },
   setup(props) {
+    // Inside a component (e.g. a run panel) the component runs the code and shows its output.
+    const owned = inject(IN_COMPONENT, false)
     const executor = useService(EXECUTOR)
     const report = useStartReport()
     const live = shallowRef<RunResult>()
@@ -171,7 +174,7 @@ export const CodeBlockView = defineComponent({
         : shown === undefined
           ? variants.map(v => h('div', { key: v.label, class: 'pm-code-block__variant' }, [h('p', { class: 'pm-code-block__label' }, v.label), h(CodeView, { lang: node.lang, value: v.value })]))
           : [h(CodeView, { key: 'variant', lang: node.lang, value: variants[shown]!.value })]
-      const runnable = node.run && node.run.when !== 'compile'
+      const runnable = !owned && node.run && node.run.when !== 'compile'
       const t = messages().code
       const available = mounted.value && executor.value
       const controls = runnable
@@ -180,7 +183,7 @@ export const CodeBlockView = defineComponent({
             mounted.value && !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, t.unavailable) : null,
           ])
         : null
-      const runs = live.value ? [live.value] : node.outputs ?? []
+      const runs = owned ? [] : live.value ? [live.value] : node.outputs ?? []
       const outputs = runs.length ? h('div', { 'class': 'pm-outputs', 'data-source': live.value ? 'live' : 'recorded' }, runs.map(output)) : null
       return h('div', { 'class': 'pm-code-block', 'data-state': props.expanded ? undefined : state, 'data-run': runnable ? node.run!.when : undefined }, [
         originBar(node, shown),
