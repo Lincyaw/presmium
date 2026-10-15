@@ -1,0 +1,95 @@
+/*
+ * High-contrast theme (P-52). `useHighContrast` sets data-pm-contrast="high" on
+ * <html>. Like the forced colors of an operating system's high-contrast mode,
+ * the content of slides (.slidev-layout) and of web pages (.vp-doc), plugin
+ * components included, is then drawn in two colors: text in --pm-contrast-fg
+ * (links in --pm-contrast-link) on --pm-contrast-bg, at full opacity. Both
+ * pairs exceed WCAG AA (4.5:1) by far, in the light and the dark color scheme.
+ */
+:root[data-pm-contrast='high'] {
+  --pm-contrast-bg: #ffffff;
+  --pm-contrast-fg: #000000;
+  --pm-contrast-link: #0030b0;
+  --pm-contrast-border: #000000;
+
+  --slidev-theme-primary: var(--pm-contrast-link);
+  --vp-c-bg: var(--pm-contrast-bg);
+  --vp-c-bg-alt: var(--pm-contrast-bg);
+  --vp-c-bg-soft: var(--pm-contrast-bg);
+  --vp-c-bg-elv: var(--pm-contrast-bg);
+  --vp-c-text-1: var(--pm-contrast-fg);
+  --vp-c-text-2: var(--pm-contrast-fg);
+  --vp-c-text-3: var(--pm-contrast-fg);
+  --vp-c-brand-1: var(--pm-contrast-link);
+  --vp-c-brand-2: var(--pm-contrast-link);
+  --vp-c-brand-3: var(--pm-contrast-link);
+  --vp-c-divider: var(--pm-contrast-border);
+  --vp-code-color: var(--pm-contrast-fg);
+  --vp-code-bg: var(--pm-contrast-bg);
+  --vp-code-block-bg: var(--pm-contrast-bg);
+}
+
+:root.dark[data-pm-contrast='high'] {
+  --pm-contrast-bg: #000000;
+  --pm-contrast-fg: #ffffff;
+  --pm-contrast-link: #ffe14d;
+  --pm-contrast-border: #ffffff;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) {
+  background: var(--pm-contrast-bg) !important;
+  color: var(--pm-contrast-fg) !important;
+}
+
+/* Every element: text in the foreground color, including syntax-highlighted code and colored badges or buttons. */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *,
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) .shiki span {
+  color: var(--pm-contrast-fg) !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+/*
+ * Elements that hold content show the page background through them. Empty
+ * elements hold no text and keep their colors: they draw shapes such as bars,
+ * icons or a cursor.
+ */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *:not(:empty) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/*
+ * Content is opaque, wherever a theme or a component fades it. Click steps keep
+ * their states (hidden until their click), transitions still fade, and lines
+ * that a code step dims stay dimmed, at an opacity that still passes AA.
+ */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *:not(:empty, [class*='slidev-vclick'], [class*='-enter-'], [class*='-leave-']) {
+  opacity: 1 !important;
+}
+
+:root[data-pm-contrast='high'] .slidev-layout .slidev-code .slidev-code-dishonored {
+  opacity: 0.6 !important;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(a, a *) {
+  color: var(--pm-contrast-link) !important;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) a {
+  text-decoration: underline;
+}
+
+/* Controls and code blocks, without their fill, are outlined. */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(button, input, select, textarea, [role='button'], [role='tab']) {
+  border: 1px solid var(--pm-contrast-border) !important;
+}
+
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) pre {
+  outline: 1px solid var(--pm-contrast-border);
+}
+
+:root[data-pm-contrast='high'] :focus-visible {
+  outline: 3px solid var(--pm-contrast-link) !important;
+  outline-offset: 2px;
+}
