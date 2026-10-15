@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { PmBoundary } from '@presmium/host'
 import { useHighContrast } from '../src/client/contrast.ts'
+import { useMessages } from '../src/client/messages.ts'
 
-// `compact` shows the icon only, for the slides form's navigation bar.
+// `compact` shows the icon only, as in the hosts' toolbars.
 defineProps<{ compact?: boolean }>()
 
 const { enabled, toggle } = useHighContrast()
+const t = useMessages()
 </script>
 
 <template>
@@ -16,12 +18,12 @@ const { enabled, toggle } = useHighContrast()
       class="pm-contrast-toggle"
       :class="{ 'pm-contrast-toggle--compact': compact }"
       :aria-checked="enabled"
-      aria-label="高对比度"
-      title="高对比度"
+      :aria-label="t.highContrast"
+      :title="t.highContrast"
       @click="toggle"
     >
       <span class="pm-contrast-toggle__icon" aria-hidden="true">◐</span>
-      <span v-if="!compact">高对比度：{{ enabled ? '开' : '关' }}</span>
+      <span v-if="!compact">{{ t.highContrastState(enabled) }}</span>
     </button>
   </PmBoundary>
 </template>

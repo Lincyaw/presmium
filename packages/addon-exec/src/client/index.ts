@@ -1,5 +1,8 @@
 export { execPlugin } from './plugin.ts'
+export { messages, useMessages } from './messages.ts'
+export type { ExecMessages } from './messages.ts'
 export { createPyodideExecutor } from './pyodide.ts'
+export { createScriptExecutor, SCRIPT_EXECUTOR_ID } from './script.ts'
 export type { PyodideExecutor, PyodideExecutorOptions } from './pyodide.ts'
 export { whenService } from './services.ts'
 export { markLine, slotSource, STEP_MARKS } from './source.ts'

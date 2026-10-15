@@ -15,6 +15,7 @@ import type { Executor, RunRequest, RunResult } from '@presmium/kernel/contracts
 import { parse } from 'jsonc-parser'
 import { CONTAINER_EXECUTOR_ID, failedRun, languageId, runnersFrom } from '../domain/index.ts'
 import type { Runners } from '../domain/index.ts'
+import { text } from './messages.ts'
 import { runProcess } from './process.ts'
 
 const CLI = createRequire(import.meta.url).resolve('@devcontainers/cli/devcontainer.js')
@@ -122,7 +123,7 @@ export function devcontainerImage(workspace: string, devcontainer: Devcontainer)
       const output = lastJson(result.stdout)
       if (output?.outcome !== 'success') {
         const detail = [output?.message, output?.description].filter(Boolean).join('\n') || result.stderr.trim().slice(-2000)
-        throw new Error(`devcontainer build 失败：${detail}`)
+        throw new Error(detail)
       }
       return name
     })
@@ -196,13 +197,13 @@ export function createContainerExecutor(): ContainerExecutor {
 /** Runs the code in a fresh container: the runner command gets the code as its last argument. */
 export async function runInContainer(workspace: string, devcontainer: Devcontainer, request: RunRequest, signal?: AbortSignal): Promise<RunResult> {
   const runner = devcontainer.runners[languageId(request.lang)]
-  if (!runner) return failedRun(`容器执行器不支持语言 ${request.lang}`)
+  if (!runner) return failedRun(text().unsupportedLanguage(request.lang))
   let image: string
   try {
     image = await devcontainerImage(workspace, devcontainer)
   }
   catch (error) {
-    return failedRun(error instanceof Error ? error.message : String(error))
+    return failedRun(text().buildFailed(error instanceof Error ? error.message : String(error)))
   }
   const started = Date.now()
   const name = `presmium-run-${randomUUID()}`

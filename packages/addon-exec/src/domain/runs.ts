@@ -19,9 +19,9 @@ export function withRecordedFallback(result: RunResult, recorded: RecordedOutput
 }
 
 /** Why a recorded output is shown; undefined for live output. */
-export function fallbackReason(result: RunResult): string | undefined {
+export function fallbackReason(result: RunResult): 'timedOut' | 'failed' | undefined {
   if (result.source !== 'recorded') return undefined
-  return result.timedOut ? '执行超时' : '执行失败'
+  return result.timedOut ? 'timedOut' : 'failed'
 }
 
 /** One run of a code block. Run records stay in the current view and are never written back. */

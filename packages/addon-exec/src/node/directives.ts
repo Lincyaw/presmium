@@ -2,7 +2,10 @@
  * `{run-panel}` (P-20, P-24) and `{step-run}` (P-21): a code body that becomes
  * a component wrapping a code block. The block is the component's only child,
  * so renderers that cannot run code still show it, with the output recorded
- * at compile time for a run panel.
+ * at compile time for a run panel. The component's `fallback`, which static
+ * forms show in its place, is the code followed by the `:recorded:` output;
+ * the compile-time output cannot be in it, since the directive is read before
+ * the code runs (the notebook takes that output from the code block).
  *
  * ```` ```{run-panel} python ```` options: `:params:` (a YAML mapping, the
  * variables injected into the program), `:timeout:` (ms), `:recorded:` (output
@@ -69,7 +72,11 @@ export const runPanelDirective: DirectiveSpec = {
     const when = input.options.run === undefined ? 'both' : String(input.options.run).trim()
     if (when !== 'both' && when !== 'live') ctx.report({ checkId: 'presmium.exec.syntax', severity: 'warning', message: `{run-panel} :run: ${when} is not both or live; using both` })
     const node = component('PmRunPanel', input, ctx, { when: when === 'live' ? 'live' : 'both' })
-    if (typeof input.options.recorded === 'string') node.props.recorded = input.options.recorded
+    const recorded = input.options.recorded
+    if (typeof recorded === 'string') {
+      node.props.recorded = recorded
+      node.fallback?.children?.push({ type: 'code', lang: 'text', value: recorded })
+    }
     return { node }
   },
 }

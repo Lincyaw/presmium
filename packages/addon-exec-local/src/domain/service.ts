@@ -6,6 +6,9 @@ export const ENDPOINT = '/__presmium/exec-local'
 
 export const CONTAINER_EXECUTOR_ID = 'presmium.container'
 
+/** Why a view has no local environment; the client says it in the page's language. */
+export type DisconnectedReason = 'devServerOnly' | 'noEndpoints' | 'unreachable' | 'pluginOff'
+
 export interface LocalEnvStatus {
   /** False outside the dev server: in a built deck or the web form. */
   connected: boolean
@@ -17,8 +20,8 @@ export interface LocalEnvStatus {
   git: boolean
   /** Languages the container executor runs. */
   languages: string[]
-  /** Why the environment is (partly) unavailable. */
-  reason?: string
+  /** Why a view is not connected; a connected view tells what is missing from the flags above. */
+  reason?: DisconnectedReason
 }
 
 /** P-25: commit edited code to a new branch; the current branch and the working tree stay as they are. */
@@ -62,7 +65,7 @@ export interface LocalEnvService {
 export const LOCAL_ENV = defineService<LocalEnvService>('presmium.localEnv')
 
 /** The status of a view that has no dev server behind it. */
-export function disconnected(reason: string): LocalEnvStatus {
+export function disconnected(reason: DisconnectedReason): LocalEnvStatus {
   return { connected: false, docker: false, devcontainer: null, git: false, languages: [], reason }
 }
 

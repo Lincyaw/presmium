@@ -12,14 +12,34 @@ const servers = [
   { dir: 'examples/demo/dist/web', port: WEB_PORT, single: false },
 ].filter(s => existsSync(s.dir))
 
+// N-04: every spec runs in Chromium; the smoke test also runs in the other engines
+// named by PRESMIUM_E2E_BROWSERS (default firefox; add webkit where the host has its
+// system libraries, see `playwright install --with-deps`). Install them with
+// `pnpm exec playwright install firefox webkit`. docs/browsers.md records the manual
+// checks of Safari and Edge.
+const OTHER_BROWSERS = { firefox: devices['Desktop Firefox'], webkit: devices['Desktop Safari'] }
+const others = (process.env.PRESMIUM_E2E_BROWSERS ?? 'firefox').split(',').map(name => name.trim())
+  .filter((name): name is keyof typeof OTHER_BROWSERS => Object.hasOwn(OTHER_BROWSERS, name))
+
 export default defineConfig({
   testDir: 'e2e',
   timeout: 60_000,
   fullyParallel: true,
   reporter: [['list']],
-  use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+  use: { trace: 'retain-on-failure' },
+  projects: [
+    { name: 'chromium', use: devices['Desktop Chrome'], testIgnore: 'perf.spec.ts' },
+    // The timing assertions of N-01 and N-02 run once the other specs are done, so neither
+    // their measurements nor the timing assertions of other specs share the machine. A run of
+    // perf.spec.ts alone needs `--no-deps` (`pnpm exec playwright test e2e/perf.spec.ts --no-deps`);
+    // without it, Playwright runs every Chromium spec first.
+    { name: 'perf', use: devices['Desktop Chrome'], testMatch: 'perf.spec.ts', dependencies: ['chromium'] },
+    ...others.map(name => ({ name, use: OTHER_BROWSERS[name], testMatch: 'smoke.spec.ts' })),
+  ],
   webServer: servers.map(s => ({
-    command: `pnpm exec sirv ${s.dir} ${s.single ? '--single ' : ''}--port ${s.port} --quiet`,
+    // The binary itself rather than `pnpm exec`, so the config also runs where pnpm is not
+    // installed, e.g. in the Playwright Docker image (docs/browsers.md).
+    command: `node_modules/.bin/sirv ${s.dir} ${s.single ? '--single ' : ''}--port ${s.port} --quiet`,
     port: s.port,
     reuseExistingServer: false,
   })),

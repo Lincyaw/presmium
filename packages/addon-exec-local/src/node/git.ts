@@ -8,8 +8,9 @@ import { tmpdir } from 'node:os'
 import { join, relative, resolve, sep } from 'node:path'
 import { simpleGit } from 'simple-git'
 import type { CommitRequest, CommitResult } from '../domain/index.ts'
-import { defaultBranch, defaultCommitMessage } from '../domain/index.ts'
+import { defaultBranch } from '../domain/index.ts'
 import { HttpError, requirePath } from './http.ts'
+import { text } from './messages.ts'
 
 /** The repository root of the workspace, or undefined when it is not in git or has no commit yet. */
 export async function gitRoot(workspace: string): Promise<string | undefined> {
@@ -25,7 +26,7 @@ export async function gitRoot(workspace: string): Promise<string | undefined> {
 
 export async function commitOnNewBranch(workspace: string, request: CommitRequest, now = new Date()): Promise<CommitResult> {
   const root = await gitRoot(workspace)
-  if (!root) throw new HttpError(409, '工作区不在 git 仓库中，或仓库还没有提交')
+  if (!root) throw new HttpError(409, text().notInGit)
   // git reports the real path of the root; resolve the workspace the same way.
   const absolute = resolve(await realpath(workspace), requirePath(request.file))
   const file = relative(root, absolute).split(sep).join('/')
@@ -36,12 +37,12 @@ export async function commitOnNewBranch(workspace: string, request: CommitReques
     await git.raw(['check-ref-format', '--branch', branch])
   }
   catch {
-    throw new HttpError(400, `分支名无效：${branch}`)
+    throw new HttpError(400, text().invalidBranch(branch))
   }
-  if ((await git.raw(['branch', '--list', branch])).trim()) throw new HttpError(409, `分支已存在：${branch}`)
+  if ((await git.raw(['branch', '--list', branch])).trim()) throw new HttpError(409, text().branchExists(branch))
 
   const content = request.content ?? await readFile(absolute, 'utf8').catch(() => {
-    throw new HttpError(404, `文件不存在：${request.file}`)
+    throw new HttpError(404, text().noSuchFile(request.file))
   })
   const base = (await git.revparse(['--verify', 'HEAD'])).trim()
   const baseBranch = (await git.revparse(['--abbrev-ref', 'HEAD'])).trim()
@@ -54,7 +55,7 @@ export async function commitOnNewBranch(workspace: string, request: CommitReques
     await indexed.raw(['read-tree', base])
     await indexed.raw(['update-index', '--add', '--cacheinfo', `${mode},${blob},${file}`])
     const tree = (await indexed.raw(['write-tree'])).trim()
-    const commit = (await git.raw(['commit-tree', tree, '-p', base, '-m', request.message ?? defaultCommitMessage(file)])).trim()
+    const commit = (await git.raw(['commit-tree', tree, '-p', base, '-m', request.message ?? text().commitMessage(file)])).trim()
     await git.raw(['branch', branch, commit])
     return { branch, commit, base, baseBranch, file }
   }

@@ -82,3 +82,6 @@ echo 不是内核语言的代码
 
 ```{include} pages/figure.md
 ```
+
+```{include} pages/myst.md
+```

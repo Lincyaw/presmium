@@ -12,6 +12,7 @@
 | R（MR） | 先 WP-40 编译器；再并行 WP-41 幻灯片渲染端、WP-42 IR 运行时与网页渲染端、WP-43 notebook 渲染端；再并行 WP-44 代码与执行插件迁移、WP-45 展示类插件迁移；最后 WP-46 跨包整合 | C |
 | D（M3） | WP-30 会话与同步，然后 WP-31 课堂功能（均基于 IR 管线，网页与幻灯片两种形态） | R |
 | E（M4） | WP-50 语言服务与预览同步 | R |
+| F | WP-60a 至 WP-60d 验收缺口修补 | D、E |
 
 ## 测试原则
 
@@ -25,7 +26,7 @@
 每个工作包都必须满足：
 
 1. `pnpm test` 通过（含分层检查）。
-2. 示例文稿中本包的页面 `examples/demo/pages/<ctx>.md` 能通过 `pnpm demo:build` 构建；WP-12 合并后，还必须通过 `pnpm demo:web` 构建。
+2. 示例文稿中本包的页面 `examples/demo/pages/<ctx>.md` 能通过 `pnpm demo:build` 构建（`presmium build` 生成网页、幻灯片与 notebook 全部媒介），并通过 `pnpm demo:check`。
 3. 本包的端到端测试 `e2e/<ctx>.spec.ts` 全部通过。
 4. 只修改本包拥有的路径。需要改动他人路径时，在交付报告中说明，不直接修改。
 5. 不 fork、不引用 Slidev 内部路径，只用公开接口（`@slidev/client` 入口导出、`@slidev/types`、文档中的 setup 钩子与约定目录）。Slidev 与 VitePress 文档的本地副本在 `vendor/docs/`（由 `scripts/fetch-docs.sh` 下载，不入库），查接口先查文档，不读框架源码。
@@ -39,7 +40,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 `Kernel`、`ServiceRegistry`、`EventBus`、`AnchorResolverRegistry`、指纹、`AnchorLock`、`CheckRegistry`。内核的行为由 WP-02（插件启动、降级、故障隔离）与 WP-03（锚点、检查）的集成测试覆盖。
 
-## WP-02 宿主适配
+## WP-02 宿主适配（已完成）
 
 **拥有**：`packages/host/`、`packages/addon-core/`、`examples/demo/pages/core.md`、`e2e/core.spec.ts`。
 
@@ -62,7 +63,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 演讲者面板只出现在 `/presenter/<页>`，不出现在听众视图。
 - 模拟 `prefers-reduced-motion: reduce` 时，动画组件直接显示终态。
 
-## WP-03 检查命令
+## WP-03 检查命令（已完成）
 
 **拥有**：`packages/cli/`。
 
@@ -77,7 +78,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - `--update-lock` 生成 `.presmium/anchors.lock.json`，再次运行结果稳定。
 - headmatter 中声明的插件包无法加载时报 `error`。
 
-## WP-10 讲台
+## WP-10 讲台（已完成）
 
 **拥有**：`packages/addon-stage/`、`examples/demo/pages/stage.md`、`e2e/stage.spec.ts`。
 
@@ -87,7 +88,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 **验收**（Playwright）：表格、脚注、代码高亮可见；演讲者视图中当前步骤的备注被突出、其他步骤的备注被弱化；按 `b` 后听众视图被遮挡，再按恢复；标注持久化配置生效。
 
-## WP-11 代码引用
+## WP-11 代码引用（已完成）
 
 **拥有**：`packages/addon-code/`、`examples/sample-repo/`、`examples/demo/pages/code.md`、`e2e/code.spec.ts`。
 
@@ -106,7 +107,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 集成（CLI）：在被引用文件中插入空行或重新缩进后，`presmium check` 仍通过；删除锚点后报 `error`；修改锁定后的代码后报告漂移并给出差异。
 - 端到端：代码块随步骤依次高亮各逻辑单元；跳转链接指向远端仓库对应提交与行区间；多版本代码块随步骤切换。
 
-## WP-12 网页形态
+## WP-12 网页形态（已完成）
 
 **拥有**：`packages/web/`、`examples/demo/pages/web.md`、`e2e/web.spec.ts`。
 
@@ -122,7 +123,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 形态切换（P-74）：网页章节提供“在幻灯片中打开”链接；幻灯片形态的导航栏提供“在网页中阅读”按钮（以 `custom-nav-controls` 实现，放在本包的 Slidev 插件部分）。
 - 命令：`presmium-web dev|build <deckDir> [--out]`。
 
-**验收**（Playwright，对 `pnpm demo:web` 的产物）：
+**验收**（Playwright，对 `pnpm demo:build` 的网页产物）：
 
 - 网页章节数等于幻灯片页数，每章包含该页内容与备注。
 - 中文关键字搜索 300 ms 内出结果，点击进入对应章节；断网后搜索可用。
@@ -130,7 +131,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 滚动叙事页随滚动推进步骤。
 - 两种形态互跳停在对应位置。
 
-## WP-20 浏览器执行
+## WP-20 浏览器执行（已完成）
 
 **拥有**：`packages/addon-exec/`、`examples/demo/pages/exec.md`、`e2e/exec.spec.ts`。
 
@@ -146,7 +147,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 **验收**（Playwright）：Python 代码在浏览器中运行并输出结果；修改参数重跑后对比视图显示差异；分步执行后退时输出回到上一步；故意超时的代码显示预录输出。
 
-## WP-21 本地环境
+## WP-21 本地环境（已完成）
 
 **拥有**：`packages/addon-exec-local/`、`examples/sample-repo/.devcontainer/`、`examples/demo/pages/exec-local.md`、`e2e/exec-local.spec.ts`。
 
@@ -160,7 +161,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 **验收**（集成测试，针对 Vite 开发服务器端点；无 Docker 时容器用例跳过并标记）：容器内执行 Python 输出正确；写回后目标仓库出现新分支与提交，原分支不变；导出的压缩包包含片段与 devcontainer 定义。
 
-## WP-22 引导
+## WP-22 引导（已完成）
 
 **拥有**：`packages/addon-guide/`、`examples/demo/pages/guide.md`、`e2e/guide.spec.ts`。
 
@@ -170,7 +171,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 **验收**（Playwright）：各步骤下光标位置、聚光目标、提示状态正确；后退可逆；减少动态效果时直接显示终态。
 
-## WP-23 富内容
+## WP-23 富内容（已完成）
 
 **拥有**：`packages/addon-content/`、`examples/demo/pages/content.md`、`e2e/content.spec.ts`。
 
@@ -180,7 +181,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 **验收**（Playwright）：各类内容在构建产物中渲染出预期 DOM；Web 组件保留交互（点击改变状态）。
 
-## WP-24 发布
+## WP-24 发布（已完成）
 
 **拥有**：`packages/addon-publish/`、`examples/demo/pages/publish.md`、`e2e/publish.spec.ts`。
 
@@ -219,7 +220,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 课堂结束后学习者看到结束状态。
 - 未配置课堂服务时，文稿照常放映与阅读，会话界面提示未连接。
 
-## WP-31 课堂功能
+## WP-31 课堂功能（已完成）
 
 **拥有**：`packages/addon-classroom/`、`examples/demo/pages/classroom.md`、`e2e/classroom.spec.ts`。
 
@@ -249,7 +250,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 
 MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完成后，M1、M2 的全部验收在新管线上重新通过。
 
-### WP-40 编译器
+### WP-40 编译器（已完成）
 
 **拥有**：`packages/compiler/`、`packages/cli/`、`examples/demo/lecture.md`、`examples/demo/pages/core.md`、`examples/demo/package.json`、`playwright.config.ts`、根 `package.json` 的脚本。
 
@@ -268,7 +269,7 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 - 用测试执行器（测试夹具中的插件）验证：首次编译执行一次，第二次命中缓存不再执行；修改代码后只重跑该块。
 - `presmium check` 原有验收全部保持（退出码、`文件:行号`、`--json`、`--update-lock`）。
 
-### WP-41 幻灯片渲染端（可选的高保真渲染端）
+### WP-41 幻灯片渲染端（可选的高保真渲染端，已完成）
 
 **拥有**：`packages/render-slides/`、`e2e/core.spec.ts`。
 
@@ -278,7 +279,7 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 
 **验收**：原 `e2e/core.spec.ts` 的五条验收在新产物上通过；讲解出现在演讲者视图的对应步骤；`presmium build --to slides` 后可用 `slidev export` 导出 PDF。
 
-### WP-42 IR 运行时与网页渲染端
+### WP-42 IR 运行时与网页渲染端（已完成）
 
 **拥有**：`packages/viewer/`、`packages/web/`、`examples/demo/pages/web.md`、`e2e/web.spec.ts`、`e2e/viewer.spec.ts`。
 
@@ -297,7 +298,7 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 - 同一页面切换 `document`、`scrolly`、`present` 视图，章节与步骤位置保持；放映视图中键盘翻页、演讲者窗口显示当前步骤的讲解。
 - 示例文稿中所有插件组件在网页中可用。
 
-### WP-43 notebook 渲染端
+### WP-43 notebook 渲染端（已完成）
 
 **拥有**：`packages/render-notebook/`、`e2e/notebook.spec.ts` 或 `packages/render-notebook/test/`。
 
@@ -307,7 +308,7 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 
 **验收**（集成测试）：生成的 notebook 通过 nbformat 结构校验；用本机 Python 依次执行全部代码单元格，输出与录制输出一致；讲解文字完整出现在 Markdown 单元格中。
 
-### WP-44 代码与执行插件迁移
+### WP-44 代码与执行插件迁移（已完成）
 
 **拥有**：`packages/addon-code/`、`packages/addon-exec/`、`packages/addon-exec-local/`、`examples/sample-repo/`、`examples/demo/pages/code.md`、`examples/demo/pages/exec.md`、`examples/demo/pages/exec-local.md`、`e2e/code.spec.ts`、`e2e/exec.spec.ts`、`e2e/exec-local.spec.ts`。
 
@@ -317,7 +318,7 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 
 **验收**：原 WP-11、WP-20、WP-21 的验收在新管线上通过（P-25 除外）；编译时执行的输出出现在网页与 notebook 中。
 
-### WP-45 展示类插件迁移
+### WP-45 展示类插件迁移（已完成）
 
 **拥有**：`packages/addon-stage/`、`packages/addon-guide/`、`packages/addon-content/`、`packages/addon-publish/`、对应的 `examples/demo/pages/*.md` 与 `e2e/*.spec.ts`。
 
@@ -331,7 +332,7 @@ MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完�
 
 **验收**：原 WP-10、WP-22、WP-23、WP-24 的验收在新管线上通过；N-06 遗留问题有端到端用例覆盖。
 
-### WP-46 跨包整合
+### WP-46 跨包整合（已完成）
 
 **拥有**：`packages/host/`、`packages/addon-core/`、`packages/render-slides/`、`packages/viewer/`、`packages/web/`，以及为适配步骤作用域而需要修改的各插件组件。
 
@@ -376,7 +377,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 ## 课堂波次的调整
 
-网页是主媒介，WP-30、WP-31 的课堂功能必须同时在网页与幻灯片中可用：会话与同步不只接入 Slidev 的 `addSyncMethod`，网页宿主中的“跟随主讲”按章节与步骤导航；测验、练习、提问等以指令声明（`{quiz}`、`{exercise}`、`{question}`），notebook 中降级为静态内容。
+网页是主媒介，WP-30、WP-31 的课堂功能必须同时在网页与幻灯片中可用：会话与同步不只接入 Slidev 的 `addSyncMethod`，网页宿主中的“跟随主讲”按章节与步骤导航；测验、练习、提问等以指令声明（`{quiz}`、`{exercise}`、`{question-box}`、`{pulse}`），notebook 中降级为静态内容。
 
 ## WP-50 语言服务与预览同步（M4，已完成）
 

@@ -1,6 +1,7 @@
-export { DEFAULT_EXEC_CONFIG, EXEC_ID, execConfig, isPython } from './config.ts'
+export { DEFAULT_EXEC_CONFIG, EXEC_ID, execConfig, isPython, isScript, isTypeScript } from './config.ts'
 export type { ExecConfig } from './config.ts'
 export { createExecutorRouter, failedRun } from './router.ts'
+export type { RouterText } from './router.ts'
 export { appendRun, compareRuns, defaultPair, fallbackReason, stringArgs, withRecordedFallback } from './runs.ts'
 export type { ArgChange, OutputLine, RecordedOutput, RunComparison, RunHistory, RunRecord } from './runs.ts'
 export { frameAt, TRACER } from './trace.ts'

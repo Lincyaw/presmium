@@ -9,6 +9,7 @@
 import { PmBoundary, useService, useStartReport } from '@presmium/host'
 import type { RunResult } from '@presmium/kernel/contracts'
 import { computed, ref, shallowRef, watch } from 'vue'
+import { useMessages } from '../src/client/messages.ts'
 import { archiveName, disconnected, languageId, LOCAL_ENV } from '../src/domain/index.ts'
 import type { CommitResult, LocalEnvStatus } from '../src/domain/index.ts'
 
@@ -24,12 +25,13 @@ const props = withDefaults(defineProps<{
 
 const env = useService(LOCAL_ENV)
 const report = useStartReport()
+const t = useMessages()
 const probed = shallowRef<LocalEnvStatus>()
 watch(env, async (service) => {
   if (service) probed.value = await service.status()
 }, { immediate: true })
 // Undefined while the kernel starts and the dev server answers.
-const status = computed(() => probed.value ?? (report.value && !env.value ? disconnected('本地环境插件未启用') : undefined))
+const status = computed(() => probed.value ?? (report.value && !env.value ? disconnected('pluginOff') : undefined))
 
 const source = ref<HTMLElement>()
 const editing = ref(false)
@@ -41,7 +43,13 @@ const error = ref<string>()
 
 const state = computed(() => !status.value ? 'pending' : status.value.connected ? 'connected' : 'disconnected')
 const canRun = computed(() => !!status.value?.languages.includes(languageId(props.lang)))
-const notice = computed(() => !status.value ? '正在连接本地环境……' : status.value.reason)
+const notice = computed(() => {
+  const current = status.value
+  if (!current) return t.value.connecting
+  if (!current.connected) return current.reason && t.value[current.reason]
+  const missing = [!current.docker && t.value.noDocker, !current.devcontainer && t.value.noDefinition, !current.git && t.value.noGit].filter(Boolean)
+  return missing.length ? missing.join(t.value.separator) : undefined
+})
 const connected = computed(() => !!status.value?.connected)
 const canExport = computed(() => (connected.value ? !!status.value?.devcontainer : !!props.archive))
 
@@ -104,7 +112,7 @@ async function replicate() {
     <section class="pm-local-env" :data-state="state">
       <header class="pm-local-env__header">
         <code>{{ file }}</code>
-        <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge">容器：{{ status?.devcontainer ?? devcontainer }}</span>
+        <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge">{{ t.container(status?.devcontainer ?? devcontainer ?? '') }}</span>
       </header>
       <div v-show="!editing" ref="source" class="pm-local-env__source">
         <slot />
@@ -114,31 +122,31 @@ async function replicate() {
         v-model="draft"
         class="pm-local-env__editor"
         spellcheck="false"
-        :aria-label="`编辑 ${file}`"
+        :aria-label="t.editFile(file)"
         @keydown.stop
       />
       <div v-if="connected || archive" class="pm-local-env__actions">
         <template v-if="connected">
           <button v-if="!editing" type="button" data-action="edit" @click="edit">
-            编辑
+            {{ t.edit }}
           </button>
           <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
-            {{ busy === 'run' ? '运行中……' : '在容器中运行' }}
+            {{ busy === 'run' ? t.running : t.runInContainer }}
           </button>
           <button type="button" data-action="commit" :disabled="!status?.git || !!busy" @click="commit">
-            提交到新分支
+            {{ t.commit }}
           </button>
         </template>
         <button type="button" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
-          导出环境
+          {{ t.replicate }}
         </button>
       </div>
       <p v-if="notice" class="pm-local-env__notice">
         {{ notice }}
       </p>
-      <pre v-if="output" class="pm-local-env__output" :data-ok="output.ok">{{ output.stdout }}{{ output.stderr }}{{ output.timedOut ? '（运行超时，已停止）' : '' }}</pre>
+      <pre v-if="output" class="pm-local-env__output" :data-ok="output.ok">{{ output.stdout }}{{ output.stderr }}{{ output.timedOut ? t.timedOut : '' }}</pre>
       <p v-if="committed" class="pm-local-env__commit" :data-branch="committed.branch">
-        已提交到分支 <code>{{ committed.branch }}</code>（{{ committed.commit.slice(0, 7) }}），{{ committed.baseBranch }} 保持不变
+        {{ t.committedTo }} <code>{{ committed.branch }}</code>{{ t.committedFrom(committed.commit.slice(0, 7), committed.baseBranch) }}
       </p>
       <p v-if="error" class="pm-local-env__error" role="alert">
         {{ error }}

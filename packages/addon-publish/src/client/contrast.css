@@ -72,7 +72,8 @@
   opacity: 1 !important;
 }
 
-:root[data-pm-contrast='high'] .slidev-layout .slidev-code .slidev-code-dishonored {
+/* Code lines a step dims, as code-lines.ts marks them. */
+:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) pre .line[data-pm-dimmed] {
   opacity: 0.6 !important;
 }
 

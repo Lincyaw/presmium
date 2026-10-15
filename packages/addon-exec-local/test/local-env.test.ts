@@ -5,9 +5,10 @@
 // cases are skipped (and reported as skipped) when no Docker daemon is available.
 import { execFile, execFileSync, spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { appendFileSync, cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument } from '@presmium/kernel'
@@ -18,10 +19,13 @@ import { imageName } from '../src/node/container.ts'
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
 const PRESMIUM = join(PACKAGES, 'cli/bin/presmium.mjs')
-// The demo deck's Slidev installation; test decks must live inside the workspace to resolve the addons.
+// The demo deck's Slidev installation; the test deck names the addons by absolute path.
 const SLIDEV = createRequire(fileURLToPath(new URL('../../../examples/demo/package.json', import.meta.url))).resolve('@slidev/cli/bin/slidev.mjs')
 const FIXTURE = join(PACKAGE, 'test/fixtures/repo')
-const REPO = join(PACKAGE, 'test/.tmp/repo')
+// A fresh repository per run, so parallel runs in one checkout do not share it; the
+// container sees it as /workspaces/repo.
+const SCRATCH = mkdtempSync(join(tmpdir(), 'presmium-local-env-'))
+const REPO = join(SCRATCH, 'repo')
 const DEFINITION = readFileSync(join(FIXTURE, '.devcontainer/devcontainer.json'), 'utf8')
 const PYTHON_INFO = 'import os, sys\nprint(os.getcwd(), sys.version_info[:2])\nprint(open("src/greet.py").read().count("def"))'
 
@@ -67,9 +71,9 @@ async function startSlidev(): Promise<string> {
   })
 }
 
-const post = (path: string, body: unknown) => fetch(`${base}/__presmium/exec-local/${path}`, {
+const post = (path: string, body: unknown, language?: string) => fetch(`${base}/__presmium/exec-local/${path}`, {
   method: 'POST',
-  headers: { 'content-type': 'application/json' },
+  headers: { 'content-type': 'application/json', ...language ? { 'accept-language': language } : {} },
   body: JSON.stringify(body),
 })
 
@@ -82,7 +86,6 @@ function archived(zip: Uint8Array): Record<string, string> {
 }
 
 beforeAll(async () => {
-  rmSync(REPO, { recursive: true, force: true })
   cpSync(FIXTURE, REPO, { recursive: true })
   const deck = join(REPO, 'lecture.md')
   writeFileSync(deck, readFileSync(deck, 'utf8')
@@ -105,7 +108,7 @@ beforeAll(async () => {
 afterAll(async () => {
   server?.kill()
   if (docker) spawnSync('docker', ['image', 'rm', '--force', imageName(REPO)], { stdio: 'ignore' })
-  rmSync(REPO, { recursive: true, force: true })
+  rmSync(SCRATCH, { recursive: true, force: true })
 })
 
 describe('container executor (P-22)', () => {
@@ -119,6 +122,30 @@ describe('container executor (P-22)', () => {
   }, 180_000)
 })
 
+describe('workspace (K-13)', () => {
+  it('is published relative to the deck, in the IR and in the slides bundle; the dev server still finds it', () => {
+    // The deck's configuration as the IR and the bundled headmatter of the slides serialize it.
+    const written = readdirSync(join(REPO, 'dist'), { recursive: true, withFileTypes: true })
+      .filter(entry => entry.isFile() && /\.(json|js)$/.test(entry.name))
+      .flatMap(entry => [...readFileSync(join(entry.parentPath, entry.name), 'utf8').matchAll(/"presmium\.execLocal":\s*\{\s*"?workspace"?:\s*["'`]([^"'`]*)/g)])
+      .map(match => match[1])
+    expect(written.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(written)).toEqual(new Set(['.']))
+  })
+})
+
+describe('dev server (N-07)', () => {
+  it('answers in the language the page asks for', async () => {
+    const ask = (language: string) => fetch(`${base}/__presmium/exec-local/replicate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'accept-language': language },
+      body: JSON.stringify({ file: '../outside.py', content: '' }),
+    }).then(res => res.json())
+    expect(await ask('en')).toEqual({ error: 'The path must be inside the workspace: ../outside.py' })
+    expect(await ask('zh-CN')).toEqual({ error: '路径必须位于工作区内：../outside.py' })
+  })
+})
+
 describe('environment replicate (P-26)', () => {
   it('exports the snippet and the devcontainer definition, archived at compile time and from the dev server', async () => {
     const env = blocks().map(block => block.node).find((node): node is ComponentNode => node.type === 'component' && node.name === 'PmLocalEnv')!
@@ -128,14 +155,18 @@ describe('environment replicate (P-26)', () => {
     expect(built['.devcontainer/devcontainer.json']).toBe(DEFINITION)
     expect(built['src/greet.py']).toBe(readFileSync(join(FIXTURE, 'src/greet.py'), 'utf8'))
     expect(built['README.md']).toContain('devcontainer exec --workspace-folder . python3 src/greet.py')
+    // The archive built at compile time is in the deck's language (zh-CN by default)...
+    expect(built['README.md']).toMatch(/^# Presmium 导出的运行环境\n/)
 
+    // ...the one the dev server builds in the page's.
     const snippet = 'print("snippet")\n'
-    const res = await post('replicate', { file: 'src/snippet.py', content: snippet, lang: 'python' })
+    const res = await post('replicate', { file: 'src/snippet.py', content: snippet, lang: 'python' }, 'en-US')
     expect(res.headers.get('content-type')).toBe('application/zip')
     expect(res.headers.get('content-disposition')).toContain('presmium-env-snippet.zip')
     const served = archived(new Uint8Array(await res.arrayBuffer()))
     expect(Object.keys(served).sort()).toEqual(['.devcontainer/devcontainer.json', 'README.md', 'src/snippet.py'])
     expect(served['src/snippet.py']).toBe(snippet)
+    expect(served['README.md']).toMatch(/^# Environment exported by Presmium\n/)
     expect(served['.devcontainer/devcontainer.json']).toBe(DEFINITION)
   })
 })

@@ -1,11 +1,13 @@
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
+import { raiseDimmedLines } from './code-lines.ts'
 import { styleDiagrams } from './diagrams.ts'
 
 /**
  * High-contrast preference (P-52), shared by both forms. When on, `<html>`
  * carries `data-pm-contrast="high"` and contrast.css switches its CSS
- * variables. The choice is remembered per browser; without one, the system
+ * variables; diagrams and dimmed code lines follow (diagrams.ts,
+ * code-lines.ts). The choice is remembered per browser; without one, the system
  * setting `prefers-contrast: more` decides.
  */
 export const CONTRAST_ATTRIBUTE = 'data-pm-contrast'
@@ -28,6 +30,7 @@ function apply(on: boolean): void {
   if (on) document.documentElement.setAttribute(CONTRAST_ATTRIBUTE, 'high')
   else document.documentElement.removeAttribute(CONTRAST_ATTRIBUTE)
   styleDiagrams(on)
+  raiseDimmedLines(on)
 }
 
 /** Applies the remembered or system preference once; later calls do nothing. */

@@ -1,0 +1,6 @@
+{
+  "name": "presmium-e2e-exec-english",
+  "private": true,
+  "type": "module",
+  "description": "A deck of its own, so a build of a copy gets its own Vite cache"
+}

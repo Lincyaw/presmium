@@ -1,5 +1,6 @@
 ---
 title: Presmium Demo
+lang: zh-CN
 plugins:
   - '@presmium/slidev-addon-core'
   - '@presmium/slidev-addon-stage'

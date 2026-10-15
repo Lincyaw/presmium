@@ -5,8 +5,10 @@
  * becomes a code cell with the recorded outputs, other code a fenced block.
  * A component is rendered by its plugin's notebook extension, else by its
  * `fallback`, else by a note that links to the web version, and is then
- * listed in the build report. Steps do not exist in a notebook: every block
- * is shown in its final state. The URLs of images and links in the blocks'
+ * listed in the build report. Markdown is written in the form Jupyter
+ * renders (./markdown.ts); MyST nodes it has no form for are listed as
+ * degraded. Steps do not exist in a notebook: every block is shown in its
+ * final state. The URLs of images and links in the blocks'
  * Markdown go through `media`, which can point local files at copies.
  */
 import type {
@@ -81,6 +83,8 @@ export interface NotebookResult {
   /** Blocks the notebook does not show, with the reason. */
   skipped: { section: string, block: string, reason: string }[]
   problems: { message: string, source: SourcePos }[]
+  /** Blocks shown without the MyST nodes Jupyter has no form for, e.g. an embed; their text is kept. */
+  degraded: { section: string, block: string, nodes: string[], source: SourcePos }[]
 }
 
 type ComponentRenderer = (node: ComponentNode, block: IRBlock) => unknown
@@ -97,14 +101,16 @@ export function renderNotebook(doc: IRDocument, options: NotebookOptions): Noteb
     notebook: { nbformat: 4, nbformat_minor: 5, metadata: { kernelspec: kernel, language_info: { name: kernel.language } }, cells: [] },
     skipped: [],
     problems: [],
+    degraded: [],
   }
   if (doc.meta.title) out.notebook.metadata.title = doc.meta.title
   const ids = new Set<string>()
-  for (const section of doc.sections) renderSection(section, options, out, ids)
+  const english = typeof doc.meta.lang === 'string' && doc.meta.lang.trim() !== '' && !/^zh\b/i.test(doc.meta.lang.trim())
+  for (const section of doc.sections) renderSection(section, options, out, ids, english)
   return out
 }
 
-function renderSection(section: IRSection, options: NotebookOptions, out: NotebookResult, ids: Set<string>): void {
+function renderSection(section: IRSection, options: NotebookOptions, out: NotebookResult, ids: Set<string>, english: boolean): void {
   let pending: { parts: string[], blocks: string[] } | undefined
 
   const cell = (type: NotebookCell['cell_type'], source: string | string[], blocks: string[], extra: Partial<NotebookCell> = {}) => {
@@ -121,10 +127,10 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     pending = undefined
   }
   const markdown = (mdast: MdastNode, block?: IRBlock) => {
-    const { text, problems } = toMarkdown(mdast)
-    for (const problem of problems) {
-      out.problems.push({ message: `${section.id}#${block?.id ?? 'title'}: ${problem}`, source: block?.source ?? section.source })
-    }
+    const { text, problems, degraded } = toMarkdown(mdast)
+    const where = { section: section.id, block: block?.id ?? 'title', source: block?.source ?? section.source }
+    for (const problem of problems) out.problems.push({ message: `${where.section}#${where.block}: ${problem}`, source: where.source })
+    if (degraded.length) out.degraded.push({ ...where, nodes: degraded })
     if (!text) return
     pending ??= { parts: [], blocks: [] }
     pending.parts.push(text)
@@ -180,7 +186,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
       }
     }
     if (node.fallback) return markdown(local(node.fallback, block), block)
-    markdown(webNote(node, section, options.webUrl), block)
+    markdown(webNote(node, section, english, options.webUrl), block)
     const reason = render ? `the notebook extension of ${node.name} rendered nothing and it has no fallback` : `component ${node.name} has no notebook extension or fallback`
     out.skipped.push({ section: section.id, block: block.id, reason: `${reason}; a note points to the web version` })
     node.children?.forEach(renderBlock)
@@ -235,16 +241,16 @@ function codeCaption(node: CodeNode): MdastNode | undefined {
   return children.length ? { type: 'paragraph', children } : undefined
 }
 
-function webNote(node: ComponentNode, section: IRSection, webUrl?: string): MdastNode {
-  const web: MdastNode = { type: 'text', value: '网页版' }
+/** The note in place of a component, in the deck's language: Chinese for zh-* or none (the default), else English. */
+function webNote(node: ComponentNode, section: IRSection, english: boolean, webUrl?: string): MdastNode {
+  const text = (value: string): MdastNode => ({ type: 'text', value })
+  const web = text(english ? 'the web version' : '网页版')
   const link = webUrl ? { type: 'link', url: `${webUrl.replace(/#.*$/, '')}#${encodeURIComponent(section.id)}`, children: [web] } : web
-  return { type: 'blockquote', children: [{ type: 'paragraph', children: [
-    { type: 'text', value: '交互组件 ' },
-    { type: 'inlineCode', value: node.name },
-    { type: 'text', value: ' 需要在' },
-    link,
-    { type: 'text', value: '中查看。' },
-  ] }] }
+  const name: MdastNode = { type: 'inlineCode', value: node.name }
+  const words = english
+    ? [text('The interactive component '), name, text(' can only be used in '), link, text('.')]
+    : [text('交互组件 '), name, text(' 需要在'), link, text('中查看。')]
+  return { type: 'blockquote', children: [{ type: 'paragraph', children: words }] }
 }
 
 /** Recorded runs as nbformat stream outputs. */

@@ -8,13 +8,14 @@
  * - `POST replicate`  ReplicateRequest -> zip archive (P-26)
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { relative, resolve, sep } from 'node:path'
+import { basename, dirname, relative, resolve, sep } from 'node:path'
 import type { RunRequest } from '@presmium/kernel/contracts'
 import { ENDPOINT, failedRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
 import { definitionRunners, dockerAvailable, findDefinition, readDevcontainer, runInContainer } from './container.ts'
 import { commitOnNewBranch, gitRoot } from './git.ts'
 import { HttpError, optionalString, readJson, requireString, sendJson } from './http.ts'
+import { inLanguage, text } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
 
 type Middleware = (req: IncomingMessage, res: ServerResponse, next: (error?: unknown) => void) => void
@@ -36,25 +37,19 @@ export interface LocalEnvServerOptions {
 async function status(workspace: string): Promise<LocalEnvStatus> {
   const definition = findDefinition(workspace)
   const [docker, root] = await Promise.all([dockerAvailable(), gitRoot(workspace)])
-  const reasons = [
-    !docker && '未找到可用的 Docker',
-    !definition && '工作区没有 devcontainer 定义',
-    !root && '工作区不在有提交的 git 仓库中',
-  ].filter(Boolean)
   return {
     connected: true,
     docker,
     devcontainer: definition ? relative(workspace, definition).split(sep).join('/') : null,
     git: root !== undefined,
     languages: docker && definition ? Object.keys(definitionRunners(definition)) : [],
-    reason: reasons.length ? reasons.join('；') : undefined,
   }
 }
 
 function runRequest(body: Record<string, unknown>): RunRequest {
   const args = body.args
   if (args !== undefined && (typeof args !== 'object' || args === null || Object.values(args).some(v => typeof v !== 'string'))) {
-    throw new HttpError(400, '字段 args 必须是字符串表')
+    throw new HttpError(400, text().notStringTable('args'))
   }
   return {
     lang: requireString(body, 'lang'),
@@ -72,9 +67,9 @@ async function handle(workspace: string, req: IncomingMessage, res: ServerRespon
       return sendJson(res, 200, await status(workspace))
     case 'POST /run': {
       const request = runRequest(await readJson(req))
-      if (!findDefinition(workspace)) return sendJson(res, 200, failedRun('工作区没有 devcontainer 定义'))
+      if (!findDefinition(workspace)) return sendJson(res, 200, failedRun(text().noDefinition))
       const devcontainer = await readDevcontainer(workspace)
-      if (!devcontainer) return sendJson(res, 200, failedRun('无法读取 devcontainer 定义，请确认 Docker 可用'))
+      if (!devcontainer) return sendJson(res, 200, failedRun(text().unreadableDefinition))
       // Closing the connection (the client aborted) stops the container.
       const aborted = new AbortController()
       res.on('close', () => {
@@ -95,7 +90,7 @@ async function handle(workspace: string, req: IncomingMessage, res: ServerRespon
       const body = await readJson(req)
       const request = { file: requireString(body, 'file'), content: requireString(body, 'content'), lang: optionalString(body, 'lang') }
       const definition = findDefinition(workspace)
-      if (!definition) throw new HttpError(404, '工作区没有 devcontainer 定义')
+      if (!definition) throw new HttpError(404, text().noDefinition)
       const { name, zip } = replicateArchive(workspace, definition, request)
       res.statusCode = 200
       res.setHeader('content-type', 'application/zip')
@@ -104,8 +99,20 @@ async function handle(workspace: string, req: IncomingMessage, res: ServerRespon
       return
     }
     default:
-      throw new HttpError(404, `未知的本地环境接口：${route}`)
+      throw new HttpError(404, text().unknownEndpoint(route))
   }
+}
+
+/**
+ * The deck that a generated Slidev deck belongs to: the parent of its nearest
+ * `.presmium` ancestor (`<deck>/.presmium/slides` in builds, under
+ * `<deck>/.presmium/dev` in dev), else the Slidev deck's own directory.
+ */
+export function deckDirOf(slidevDir: string): string {
+  for (let dir = resolve(slidevDir); dirname(dir) !== dir; dir = dirname(dir)) {
+    if (basename(dir) === '.presmium') return dirname(dir)
+  }
+  return resolve(slidevDir)
 }
 
 /** Vite plugin serving the endpoints under `/__presmium/exec-local/`; dev server only. */
@@ -119,8 +126,8 @@ export function localEnvServer(options: LocalEnvServerOptions): DevServerPlugin 
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(ENDPOINT, (req, res) => {
-        resolveWorkspace()
-          .then(dir => handle(dir, req, res))
+        // Each request is answered in the language the page asks for.
+        inLanguage(req.headers['accept-language'], () => resolveWorkspace().then(dir => handle(dir, req, res)))
           .catch((error: unknown) => {
             if (res.headersSent) return void res.end()
             const status = error instanceof HttpError ? error.status : 500

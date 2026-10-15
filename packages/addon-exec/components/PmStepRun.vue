@@ -3,7 +3,7 @@ import { PmBoundary, useService, useStartReport } from '@presmium/host'
 import type { StepState } from '@presmium/kernel'
 import type { Ref } from 'vue'
 import { computed, onMounted, provide, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
-import { markLine, slotSource, STEP_MARKS } from '../src/client/index.ts'
+import { markLine, slotSource, STEP_MARKS, useMessages } from '../src/client/index.ts'
 import StepMark from '../src/client/StepMark.vue'
 import { frameAt, stringArgs, TRACER } from '../src/domain/index.ts'
 import type { Trace } from '../src/domain/index.ts'
@@ -29,6 +29,7 @@ const props = withDefaults(defineProps<{
 
 const tracer = useService(TRACER)
 const report = useStartReport()
+const t = useMessages()
 const source = ref<HTMLElement>()
 const mounted = ref(false)
 const trace = shallowRef<Trace>()
@@ -81,26 +82,21 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
       <div class="pm-step-run__side">
         <div class="pm-step-run__status">
           <template v-if="state === 'loading'">
-            正在追踪执行……
+            {{ t.tracing }}
           </template>
           <template v-else-if="state === 'unavailable'">
-            执行服务不可用
+            {{ t.unavailable }}
           </template>
           <template v-else-if="state === 'failed'">
-            追踪失败
+            {{ t.traceFailed }}
           </template>
           <template v-else>
-            第 {{ frame?.step }} / {{ traced }} 步<template v-if="frame?.line">
-              · 第 {{ frame.line }} 行
-            </template>
-            <template v-if="trace?.truncated">
-              （已截断）
-            </template>
+            {{ t.stepOf(frame?.step ?? 0, traced ?? 0) }}{{ frame?.line ? t.atLine(frame.line) : '' }}{{ trace?.truncated ? t.truncated : '' }}
             <div v-if="mismatch" class="pm-step-run__warning">
-              steps 声明为 {{ steps }}，实际执行 {{ traced }} 行
+              {{ t.stepsMismatch(steps ?? 0, traced ?? 0) }}
             </div>
             <div v-else-if="steps === undefined" class="pm-step-run__warning">
-              未声明 steps（应为 {{ traced }}），直接打开某一步时无法恢复
+              {{ t.stepsMissing(traced ?? 0) }}
             </div>
           </template>
         </div>

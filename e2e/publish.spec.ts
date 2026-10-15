@@ -16,13 +16,16 @@ async function openPublish(page: Page): Promise<Locator> {
   return slide
 }
 
-/** Takes the browser offline once the page's service worker has precached the build; the HTTP cache is cleared. */
+/**
+ * Takes the browser offline once the page's service worker has precached the build. In Chromium
+ * the HTTP cache is cleared too; other engines have no such protocol and keep it (docs/browsers.md).
+ */
 async function goOffline(page: Page, context: BrowserContext) {
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready
   })
   await context.setOffline(true)
-  await (await context.newCDPSession(page)).send('Network.clearBrowserCache')
+  if (context.browser()?.browserType().name() === 'chromium') await (await context.newCDPSession(page)).send('Network.clearBrowserCache')
 }
 
 const loaded = (image: Locator) => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)
@@ -192,6 +195,16 @@ test.describe('web form', () => {
     await expect.poll(() => loaded(diagram)).toBeGreaterThan(0)
     await page.goto(`${WEB}/publish.html`)
     await expect(page.locator('.pm-section[data-section="publish"]')).toContainText('def add(a, b):')
+  })
+
+  test('a page that places no switch of its own has the high-contrast switch in the navigation bar', async ({ page }) => {
+    await page.goto(`${WEB}/code.html`)
+    await expect(page.locator('.vp-doc .pm-contrast-toggle')).toHaveCount(0)
+    const toggle = page.getByRole('switch', { name: '高对比度' }).filter({ visible: true })
+    await expect(toggle).toHaveCount(1)
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-checked', 'true')
+    await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
   })
 
   test('the high-contrast switch of the publish section brings its text to AA', async ({ page }) => {
