@@ -1,4 +1,6 @@
-// Test-only plugin. Self-contained (type imports only) so the fixture works from a temp copy.
+// Test-only plugin. Self-contained (Node built-ins and type imports only) so the fixture works from a temp copy.
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import type { AnchorResolver, AnchorString, ComponentNode, Finding, IRBlock, IRDocument, PresmiumNodePlugin } from '@presmium/kernel'
 
 // Anchor syntax of this fixture: the directive ```{anchor} line:<file>#<text>```.
@@ -28,8 +30,18 @@ const plugin: PresmiumNodePlugin = {
     name: 'anchor',
     arg: true,
     toIR: input => ({ node: { type: 'component', plugin: 'sample', name: 'SampleAnchor', props: { anchor: input.arg } } }),
+  }, {
+    // `{motto} <file>` shows the file's text; the directive reads it itself, so it declares it.
+    name: 'motto',
+    arg: true,
+    toIR: (input, ctx) => {
+      const file = resolve(dirname(ctx.file), input.arg ?? '')
+      ctx.watch(file)
+      return { node: { type: 'component', plugin: 'sample', name: 'SampleMotto', props: { text: readFileSync(file, 'utf8').trim() } } }
+    },
   }],
-  // Quotes each anchored line as it is in the working tree and as it was committed.
+  // Quotes each anchored line as it is in the working tree and as it was committed, and puts the
+  // text of the `banner` file in the metadata; the pass reads that file itself, so it declares it.
   passes: [{
     name: 'sample.quote',
     async run(doc, ctx) {
@@ -37,6 +49,11 @@ const plugin: PresmiumNodePlugin = {
         const { props } = block.node as ComponentNode
         props.text = (await ctx.resolvers.resolve(anchor, ctx.src)).location?.text
         props.committed = (await ctx.resolvers.resolve(anchor, ctx.src, undefined, 'HEAD')).location?.text
+      }
+      if (typeof ctx.config.banner === 'string') {
+        const file = resolve(ctx.deckDir, ctx.config.banner)
+        ctx.watch(file)
+        doc.meta.banner = readFileSync(file, 'utf8').trim()
       }
     },
   }],

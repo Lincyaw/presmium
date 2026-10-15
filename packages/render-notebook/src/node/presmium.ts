@@ -9,15 +9,15 @@
  *
  * Plugins render their components as cells through `rendererExtensions.notebook`;
  * the cells they return are typed by `NotebookCellInput`, and paths in them
- * are relative to the notebook, in `ctx.outDir`. The local files that images
- * and links of the IR point to are copied to `<outDir>/media/` (./media.ts).
+ * are relative to the notebook, in `ctx.outDir`. The local files that the
+ * images and links it shows point to are copied to `<outDir>/media/` (./media.ts).
  */
 import { writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import type { PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
 import { DEFAULT_KERNEL, renderNotebook, support } from '../domain/notebook.ts'
 import type { KernelSpec, NotebookOptions } from '../domain/notebook.ts'
-import { withLocalMedia } from './media.ts'
+import { localMedia } from './media.ts'
 
 export type { NotebookCellInput } from '../domain/notebook.ts'
 
@@ -29,7 +29,7 @@ const plugin: PresmiumNodePlugin = {
     id: 'notebook',
     support,
     async build(doc, ctx) {
-      const { notebook, skipped, problems } = renderNotebook(withLocalMedia(doc, ctx.deckDir, ctx.outDir), options(ctx))
+      const { notebook, skipped, problems } = renderNotebook(doc, { ...options(ctx), media: localMedia(ctx.deckDir, ctx.outDir) })
       for (const { message, source } of problems) ctx.report({ checkId: CHECK_ID, severity: 'warning', message, source: { file: source.file, line: source.line } })
       const name = basename(doc.meta.entry, extname(doc.meta.entry)) || 'notebook'
       await writeFile(join(ctx.outDir, `${name}.ipynb`), `${JSON.stringify(notebook, null, 1)}\n`)

@@ -36,7 +36,7 @@ it('dev recompiles when a source file is saved and pushes the IR to the renderer
   try {
     let output = ''
     child.stdout.on('data', (chunk: Buffer) => output += chunk)
-    await expect.poll(() => output, { timeout: 15_000 }).toContain('watching')
+    await expect.poll(() => output, { timeout: 15_000 }).toContain('watching;')
     expect(output).toContain('fixture  fixture://dev')
     expect(json(ir).sections[2].title).toBe('逐步演示')
 
@@ -51,20 +51,21 @@ it('dev recompiles when a source file is saved and pushes the IR to the renderer
   expect(json(server).at(-1)).toBe('closed')
 })
 
-it('dev recompiles when code that a pass read changes, and when a commit moves the revision it read (K-09)', async () => {
+it('dev recompiles when code that a pass read changes, when a commit moves the revision it read, and when a declared file changes (K-09)', async () => {
   const deck = join(fixtures(), 'watch')
   const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: deck })
   git('init', '-q')
   git('add', '.')
   git('commit', '-qm', 'first')
+  const ir = () => json(join(deck, 'dev/ir.json'))
   // The sample plugin's pass quotes the anchored line from the working tree and from HEAD.
-  const quote = () => json(join(deck, 'dev/ir.json')).sections[0].blocks[0].node.props
+  const quote = () => ir().sections[0].blocks[0].node.props
   const child = spawn(process.execPath, [BIN, 'dev', '.', '--out', 'dev'], { cwd: deck })
   const exited = new Promise<number | null>(resolve => child.on('exit', resolve))
   try {
     let output = ''
     child.stdout.on('data', (chunk: Buffer) => output += chunk)
-    await expect.poll(() => output, { timeout: 15_000 }).toContain('watching')
+    await expect.poll(() => output, { timeout: 15_000 }).toContain('watching;')
     expect(quote()).toMatchObject({ text: 'def greet(name):  # first', committed: 'def greet(name):  # first' })
 
     const code = join(deck, 'greet.py')
@@ -73,6 +74,11 @@ it('dev recompiles when code that a pass read changes, and when a commit moves t
 
     git('commit', '-qam', 'second')
     await expect.poll(quote, { timeout: 10_000 }).toMatchObject({ committed: 'def greet(name):  # second' })
+
+    // The {motto} directive and the pass read these files themselves and declare them with ctx.watch.
+    writeFileSync(join(deck, 'motto.txt'), '再读再写\n')
+    writeFileSync(join(deck, 'banner.txt'), '第二版\n')
+    await expect.poll(() => [ir().sections[0].blocks[2].node.props.text, ir().meta.banner], { timeout: 10_000 }).toEqual(['再读再写', '第二版'])
   } finally {
     child.kill('SIGTERM')
   }

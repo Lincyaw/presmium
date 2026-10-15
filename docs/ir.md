@@ -190,7 +190,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 | `renderer` | 本插件提供的渲染端（第 6 节） |
 | `rendererExtensions` | 按渲染端 ID 提供的扩展，例如 notebook 渲染端把某个组件转换为单元格 |
 
-- 指令与编译步骤通过 `ctx.src`、`ctx.resolvers` 读取文件，编译器记录读过的文件与读取时的 git 版本；其他方式读取的文件用 `ctx.watch(...files)` 声明。`presmium dev` 在这些文件或命名该版本的 git 引用（`HEAD`、所在分支、`packed-refs`）变化时重新编译（K-09）。
+- 指令与编译步骤通过 `ctx.src`、`ctx.resolvers` 读取文件，编译器记录读过的文件与读取时的 git 版本；其他方式读取的文件用 `ctx.watch(...files)` 声明。`presmium dev` 在这些文件或命名该版本的 git 引用（`HEAD`、所在分支、`packed-refs`）变化时重新编译（K-09）。编译器只知道传给 `ctx.src`、`ctx.resolvers` 的版本名：插件若先把分支或标签名（如 `{code-ref}` 的 `:pin:`、`:variants:`）解析为提交再读取，要自己用 `ctx.watch` 声明这些名字对应的 git 引用文件，否则这些分支前进时不会重新编译。`presmium dev` 在一次编译所依赖的文件都被监听之后才报告这次编译；编译开始后改动、监听前未能察觉的文件，按修改时间补一次编译。
 - 渲染端扩展的组件转换函数为 `(node, block, ctx)`，`ctx` 是正在运行的渲染端的 `RenderContext`（输出目录、工作目录、渲染端配置），例如据此写出相对于渲染产物的路径。编译器把 `ctx` 绑定后交给渲染端，渲染端以 `(node, block)` 调用。
 - 浏览器端（网页、幻灯片）按 `component` 节点的组件名，查找插件注册的 Vue 组件。组件仍只依赖 `@presmium/host`。浏览器端的注册约定见 `architecture.md` 第 5 节。
 
@@ -244,7 +244,7 @@ interface Renderer {
 
 `RenderContext` 提供文稿目录、输出目录 `outDir`、工作目录 `workDir`、本渲染端的配置、各插件的扩展与插件列表。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。
 
-notebook 渲染端把图片与链接指向的本地文件（如本地化的 PlantUML 图、媒体的降级链接）复制到 notebook 旁边的 `media/` 并改写路径，notebook 目录可以整体移动。
+notebook 渲染端把它显示的图片与链接所指向的本地文件（如本地化的 PlantUML 图、媒体的降级链接）复制到 notebook 旁边的 `media/` 并改写路径，notebook 目录可以整体移动。只复制实际写入 notebook 的地址所指的文件：组件由插件扩展或降级内容显示时，其子块中的文件不复制。地址按 URL 解码后查找文件（文件名中的 `#`、`?` 写作 `%23`、`%3F`），转义不完整的地址原样保留。
 
 降级规则：
 

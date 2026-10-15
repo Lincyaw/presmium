@@ -63,17 +63,23 @@ export class Dependencies {
   }
 }
 
+/** A full commit hash (SHA-1 or SHA-256): it names no ref, so no git file can move it. */
+const COMMIT = /^(?:[\da-f]{40}|[\da-f]{64})$/i
+
 /**
- * The git files whose change can make `rev` name another commit, in the
- * repository that holds `file`: HEAD (checkouts), packed-refs, the branch HEAD
- * is on (commits) and the ref `rev` names when it is a branch or tag. Empty
- * when git cannot answer, e.g. outside a repository.
+ * The git files whose change can make one of `revs` name another commit, in
+ * the repository that holds `dir`: HEAD (checkouts), packed-refs, the branch
+ * HEAD is on (commits) and the refs that the branch and tag names among
+ * `revs` stand for. Commit hashes add nothing, so files read at any number of
+ * commits cost the same git calls. Empty when git cannot answer, e.g. outside
+ * a repository.
  */
-export async function revisionFiles({ file, rev }: Revision): Promise<string[]> {
-  let cwd = dirname(file)
+export async function revisionFiles(dir: string, revs: Iterable<string>): Promise<string[]> {
+  let cwd = dir
   while (!existsSync(cwd) && dirname(cwd) !== cwd) cwd = dirname(cwd)
   const git = (args: string[]) => run('git', args, { cwd }).then(({ stdout }) => stdout.split('\n').filter(Boolean), () => [])
-  const names = ['HEAD', 'packed-refs']
-  for (const name of rev.startsWith('-') ? ['HEAD'] : [rev, 'HEAD']) names.push(...await git(['rev-parse', '--symbolic-full-name', name]))
-  return (await git(['rev-parse', ...[...new Set(names)].flatMap(name => ['--git-path', name])])).map(path => resolve(cwd, path))
+  const names = new Set(['HEAD', ...[...revs].filter(rev => !rev.startsWith('-') && !COMMIT.test(rev))])
+  const refs = await Promise.all([...names].map(name => git(['rev-parse', '--symbolic-full-name', name])))
+  const files = new Set(['HEAD', 'packed-refs', ...refs.flat()])
+  return (await git(['rev-parse', ...[...files].flatMap(name => ['--git-path', name])])).map(path => resolve(cwd, path))
 }

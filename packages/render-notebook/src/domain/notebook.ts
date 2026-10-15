@@ -6,7 +6,8 @@
  * A component is rendered by its plugin's notebook extension, else by its
  * `fallback`, else by a note that links to the web version, and is then
  * listed in the build report. Steps do not exist in a notebook: every block
- * is shown in its final state.
+ * is shown in its final state. The URLs of images and links in the blocks'
+ * Markdown go through `media`, which can point local files at copies.
  */
 import type {
   CodeNode,
@@ -67,6 +68,12 @@ export interface NotebookOptions {
   /** URL of the web version; a component the notebook cannot show links to `<webUrl>#<section id>`. */
   webUrl?: string
   extensions: RendererExtension[]
+  /**
+   * The URL to use for an image or link URL of a block's Markdown, given the
+   * source file of the block it is relative to; undefined keeps the URL. Only
+   * the Markdown the notebook shows goes through it.
+   */
+  media?: (url: string, file: string) => string | undefined
 }
 
 export interface NotebookResult {
@@ -124,6 +131,12 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     if (block && !pending.blocks.includes(block.id)) pending.blocks.push(block.id)
   }
 
+  /** The Markdown of a block, with its URLs mapped by `options.media`. */
+  const local = (mdast: MdastNode, block: IRBlock) => {
+    const { media } = options
+    return media ? relink(mdast, url => media(url, block.source.file)) : mdast
+  }
+
   const code = (node: CodeNode, block: IRBlock) => {
     const caption = codeCaption(node)
     if (caption) markdown(caption, block)
@@ -166,7 +179,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
         out.problems.push({ message: `${section.id}#${block.id}: the notebook extension of ${node.name} failed: ${message}`, source: block.source })
       }
     }
-    if (node.fallback) return markdown(node.fallback, block)
+    if (node.fallback) return markdown(local(node.fallback, block), block)
     markdown(webNote(node, section, options.webUrl), block)
     const reason = render ? `the notebook extension of ${node.name} rendered nothing and it has no fallback` : `component ${node.name} has no notebook extension or fallback`
     out.skipped.push({ section: section.id, block: block.id, reason: `${reason}; a note points to the web version` })
@@ -175,7 +188,7 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
 
   const renderBlock = (block: IRBlock): void => {
     const { node } = block
-    if (node.type === 'markdown') markdown(node.mdast, block)
+    if (node.type === 'markdown') markdown(local(node.mdast, block), block)
     else if (node.type === 'code') code(node, block)
     else component(node, block)
   }
@@ -201,6 +214,13 @@ function cellInputs(value: unknown): NotebookCellInput[] | undefined {
     if (!valid) throw new Error(`returned ${JSON.stringify(c)?.slice(0, 80)}, which is not a notebook cell`)
   }
   return cells as NotebookCellInput[]
+}
+
+/** A copy of `node` with the URLs of its images, links and link definitions mapped by `map`; undefined keeps a URL. */
+function relink(node: MdastNode, map: (url: string) => string | undefined): MdastNode {
+  const url = (node.type === 'image' || node.type === 'link' || node.type === 'definition') && typeof node.url === 'string' ? map(node.url) : undefined
+  const children = node.children?.map(child => relink(child, map))
+  return { ...node, ...url === undefined ? {} : { url }, ...children ? { children } : {} }
 }
 
 function codeCaption(node: CodeNode): MdastNode | undefined {

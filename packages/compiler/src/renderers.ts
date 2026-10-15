@@ -5,7 +5,7 @@
  * Each renderer gets a view of the IR without the blocks `only` excludes;
  * blocks it does not support at all are listed in the build report.
  */
-import { watch } from 'node:fs'
+import { statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
@@ -131,8 +131,10 @@ export interface DevOptions {
  * on every change of what the IR depends on, and pushes the new IR to the
  * servers: the source files, the files that directives and passes read (e.g.
  * referenced code, K-09), and the git files that name the revisions they read.
+ * Each compilation is reported once what it depends on is watched.
  */
 export async function dev(compiler: Compiler, options: DevOptions): Promise<DevSession> {
+  let started = Date.now()
   let compilation = await compiler.compile()
   const ir = await writeIR(compilation.doc, options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
@@ -153,62 +155,82 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
   }
   if (servers.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer dev server; watching the source and writing the IR to ${ir}`))
-  options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...findings])
 
   const watchers = new Map<string, FSWatcher>()
+  let watched = new Set<string>()
   let timer: NodeJS.Timeout | undefined
   let running = Promise.resolve()
-  const recompile = async () => {
-    const renderFindings: Finding[] = []
-    try {
-      compilation = await compiler.compile()
-      await writeIR(compilation.doc, options.outDir)
-      for (const { renderer, server } of servers) {
-        await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
-          renderFindings.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
-        })
-      }
-      options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...renderFindings])
-    } catch (error) {
-      options.onCompile?.(compilation, [renderFinding(compilation, 'error', errorMessage(error))])
-    }
-    await watchFiles()
+  let closed = false
+  const schedule = () => {
+    if (closed) return
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      running = running.then(recompile)
+    }, 30)
   }
   // Directories are watched rather than files, so editors and git, which save by renaming, are seen too.
-  let watched = new Set<string>()
+  // A file changed after the compilation started, possibly before its directory was watched, is compiled again.
   const watchFiles = async () => {
     const { files, revisions } = compilation.dependencies
-    // Files read at a revision in one directory share their repository.
-    const byDir = new Map(revisions.map(r => [`${dirname(r.file)}\0${r.rev}`, r]))
-    const git = await Promise.all([...byDir.values()].map(revisionFiles))
+    const revs = new Map<string, Set<string>>()
+    for (const { file, rev } of revisions) revs.set(dirname(file), (revs.get(dirname(file)) ?? new Set<string>()).add(rev))
+    const git = await Promise.all([...revs].map(([dir, names]) => revisionFiles(dir, names)))
+    if (closed) return
     watched = new Set([...compilation.files, ...files, ...git.flat()])
     for (const dir of new Set([...watched].map(f => dirname(f)))) {
       if (watchers.has(dir)) continue
       try {
         watchers.set(dir, watch(dir, (_event, name) => {
-          if (!name || !watched.has(join(dir, basename(name)))) return
-          clearTimeout(timer)
-          timer = setTimeout(() => {
-            running = running.then(recompile)
-          }, 30)
+          if (name && watched.has(join(dir, basename(name)))) schedule()
         }))
       } catch {
         // A directory that does not exist, e.g. that of a referenced file not written yet, is not watched.
       }
     }
+    if ([...watched].some(file => modifiedSince(file, started))) schedule()
+  }
+  const recompile = async () => {
+    started = Date.now()
+    const reported: Finding[] = []
+    try {
+      compilation = await compiler.compile()
+      await writeIR(compilation.doc, options.outDir)
+      reported.push(...compilation.doc.diagnostics)
+      for (const { renderer, server } of servers) {
+        await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
+          reported.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
+        })
+      }
+    } catch (error) {
+      reported.push(renderFinding(compilation, 'error', errorMessage(error)))
+    }
+    await watchFiles()
+    options.onCompile?.(compilation, reported)
   }
   await watchFiles()
+  options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...findings])
 
   return {
     servers: servers.map(({ renderer, url }) => ({ renderer, url })),
     ir,
     async close() {
+      closed = true
       clearTimeout(timer)
       for (const watcher of watchers.values()) watcher.close()
       await running
       await Promise.all(servers.map(s => s.server.close()))
     },
   }
+}
+
+/**
+ * Whether `file` was modified at or after `time`. File times can lag the
+ * clock by a few milliseconds; one in the future (e.g. an extracted archive)
+ * is not a modification, or every compilation would start another.
+ */
+function modifiedSince(file: string, time: number): boolean {
+  const modified = statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0
+  return modified >= time - 20 && modified <= Date.now()
 }
 
 /** The document a renderer sees: blocks limited by `only` to other renderers are left out. */

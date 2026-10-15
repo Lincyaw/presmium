@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
-import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
 
 /** Directory next to the notebook that holds the local files it shows or links. */
 export const MEDIA_DIR = 'media'
@@ -10,42 +9,39 @@ export const MEDIA_DIR = 'media'
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 
 /**
- * The document with every local file that an image or a link points to (a
- * figure, a localized diagram, the fallback link of a media file) copied to
- * `<outDir>/media/<hash>-<name>` and its URL rewritten to that path, so the
- * notebook keeps them wherever its directory goes. In the IR such URLs are
- * relative to the source file of their block; `/...` names a file in the
- * deck's `public/`, as in the web and slides forms.
+ * Empties `<outDir>/media` and returns the `media` option of the notebook
+ * renderer: the URL of a local file that an image or a link points to (a
+ * figure, a localized diagram, the fallback link of a media file) becomes
+ * that of its copy, `media/<hash>-<name>`, so the notebook keeps its files
+ * wherever its directory goes. A file is copied when the notebook first shows
+ * a URL to it. In the IR such URLs are relative to the source file of their
+ * block; `/...` names a file in the deck's `public/`, as in the web and slides
+ * forms. Other URLs, and those that name no file, are kept.
  */
-export function withLocalMedia(doc: IRDocument, deckDir: string, outDir: string): IRDocument {
-  const copy = structuredClone(doc)
-  rmSync(join(outDir, MEDIA_DIR), { recursive: true, force: true })
-  const local = (url: string, from: string): string | undefined => {
+export function localMedia(deckDir: string, outDir: string): (url: string, from: string) => string | undefined {
+  const dir = join(outDir, MEDIA_DIR)
+  rmSync(dir, { recursive: true, force: true })
+  return (url, from) => {
     if (REMOTE.test(url)) return undefined
     const [, path = '', rest = ''] = /^([^?#]*)(.*)$/s.exec(url) ?? []
-    if (!path) return undefined
-    const file = path.startsWith('/') ? join(deckDir, 'public', decodeURI(path)) : resolve(dirname(from), decodeURI(path))
+    const name = path && decoded(path)
+    if (!name) return undefined
+    const file = name.startsWith('/') ? join(deckDir, 'public', name) : resolve(dirname(from), name)
     if (!existsSync(file) || !statSync(file).isFile()) return undefined
-    const name = `${createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8)}-${basename(file)}`
-    if (!existsSync(join(outDir, MEDIA_DIR, name))) {
-      mkdirSync(join(outDir, MEDIA_DIR), { recursive: true })
-      copyFileSync(file, join(outDir, MEDIA_DIR, name))
+    const copy = `${createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8)}-${basename(file)}`
+    if (!existsSync(join(dir, copy))) {
+      mkdirSync(dir, { recursive: true })
+      copyFileSync(file, join(dir, copy))
     }
-    return `${MEDIA_DIR}/${encodeURI(name)}${rest}`
+    return `${MEDIA_DIR}/${encodeURIComponent(copy)}${rest}`
   }
-  const rewrite = (node: MdastNode, from: string) => {
-    if ((node.type === 'image' || node.type === 'link' || node.type === 'definition') && typeof node.url === 'string') {
-      node.url = local(node.url, from) ?? node.url
-    }
-    node.children?.forEach(child => rewrite(child, from))
+}
+
+/** The path a URL path names; undefined when its escapes are malformed. */
+function decoded(path: string): string | undefined {
+  try {
+    return decodeURIComponent(path)
+  } catch {
+    return undefined
   }
-  const block = ({ node, source }: IRBlock) => {
-    if (node.type === 'markdown') rewrite(node.mdast, source.file)
-    if (node.type === 'component') {
-      if (node.fallback) rewrite(node.fallback, source.file)
-      node.children?.forEach(block)
-    }
-  }
-  copy.sections.forEach(section => section.blocks.forEach(block))
-  return copy
 }

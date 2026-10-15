@@ -1,7 +1,7 @@
 // Runs the real `presmium build` on a copy of ./fixtures and checks the notebook it writes;
 // the local Jupyter stack (python3 with nbformat, nbclient and ipykernel) validates and runs it.
 import { execFile, spawnSync } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -97,17 +97,23 @@ it('puts the section titles and all narration text in Markdown cells', () => {
   expect(markdown()).not.toContain('只在网页中出现')
 })
 
-it('copies the local files that images and links point to next to the notebook and links the copies', () => {
+it('copies the local files that the images and links it shows point to next to the notebook and links the copies', () => {
   // The image is written relative to an included page, the link in a component fallback relative to the entry.
   const image = /!\[点图\]\((media\/[\w-]+\.svg)\)/.exec(markdown())?.[1]
   const link = /\[下载数据\]\((media\/[\w-]+\.csv)\)/.exec(markdown())?.[1]
+  const escaped = /\[原始数据\]\((media\/[\w-]+%231\.csv)\)/.exec(markdown())?.[1]
   expect(image).toMatch(/^media\/[0-9a-f]{8}-dot\.svg$/)
   expect(link).toMatch(/^media\/[0-9a-f]{8}-data\.csv$/)
+  expect(escaped).toMatch(/^media\/[0-9a-f]{8}-raw%231\.csv$/)
   const notebookDir = join(dir, 'out/notebook')
   expect(readFileSync(join(notebookDir, image!), 'utf8')).toBe(readFileSync(join(dir, 'figures/dot.svg'), 'utf8'))
   expect(readFileSync(join(notebookDir, link!), 'utf8')).toBe(readFileSync(join(dir, 'figures/data.csv'), 'utf8'))
-  // Remote URLs are kept.
+  expect(readFileSync(join(notebookDir, decodeURIComponent(escaped!)), 'utf8')).toBe(readFileSync(join(dir, 'figures/raw#1.csv'), 'utf8'))
+  // Only what the notebook shows is copied: not the preview image of the chart, whose fallback it shows.
+  expect(readdirSync(join(notebookDir, 'media')).sort()).toEqual([image!, link!, decodeURIComponent(escaped!)].map(f => f.slice('media/'.length)).sort())
+  // Remote URLs and URLs with malformed escapes are kept.
   expect(markdown()).toContain('(https://example.org/gauss)')
+  expect(markdown()).toContain('![坏图](%E0%A4.png)')
 })
 
 it('renders components through the plugin extension or the fallback, and reports the ones it cannot show', () => {
