@@ -10,8 +10,10 @@
  *   at the last step used, unless it reveals, and takes the `span` steps after
  *   `at`: its internal steps always follow the steps before it, so it is not
  *   on screen at step 0 when earlier blocks reveal.
- * - Narration binds to the step at which the latest revealed or spanning
- *   block appeared (its `at`, not its last internal step), 0 before any.
+ * - Narration binds to the latest revealed or spanning block: the first
+ *   narration block after it to its `at`, the next one to `at + 1`, and so on
+ *   up to `at + span`, so an author can write one paragraph per step. Before
+ *   any such block, narration binds to step 0.
  *
  * Also gives every block its id: its label, or `<kind>-<n>` numbered per kind
  * in source order. Generated ids are stable across recompiles of the same
@@ -42,21 +44,35 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
   })
 
   let last = 0
+  // The latest revealed or spanning block: where it appears, its span, and how many narration blocks followed it.
   let current = 0
+  let currentSpan = 0
+  let narrated = 0
   const groups = new Map<number, number>()
   const blocks = drafts.map((draft, i): IRBlock => {
     const { group } = draft
     if (group !== undefined && !groups.has(group)) {
       // A group takes a step of its own when it shows something not revealed separately.
-      if (drafts.some(d => d.group === group && d.role === 'visual' && !d.reveal)) current = ++last
+      if (drafts.some(d => d.group === group && d.role === 'visual' && !d.reveal)) {
+        current = ++last
+        currentSpan = 0
+        narrated = 0
+      }
       groups.set(group, current)
     }
     const at = draft.reveal ? last + 1
-      : draft.role === 'narration' ? current
+      : draft.role === 'narration' ? current + Math.min(narrated, currentSpan)
       : draft.span > 0 ? last
       : group !== undefined ? groups.get(group)!
       : 0
-    if (draft.role === 'visual' && (draft.reveal || draft.span > 0)) current = at
+    if (draft.role === 'visual' && (draft.reveal || draft.span > 0)) {
+      current = at
+      currentSpan = draft.span
+      narrated = 0
+    }
+    else if (draft.role === 'narration') {
+      narrated++
+    }
     last = Math.max(last, at + draft.span)
     return {
       id: ids[i]!,

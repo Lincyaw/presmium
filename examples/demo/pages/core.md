@@ -21,7 +21,7 @@ presmium.demo.provider 提供问候服务，presmium.demo.consumer 依赖它，p
 :::
 
 :::{component} PmDemoStepper
-:span: 3
+:span: 2
 steps: [解析文稿, 启动插件, 渲染页面]
 :::
 

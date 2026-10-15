@@ -9,7 +9,6 @@
   "scripts": {
     "test": "node scripts/check-layering.mjs && vitest run --passWithNoTests",
     "demo:build": "pnpm --filter presmium-demo build",
-    "demo:web": "pnpm --filter presmium-demo web:build",
     "demo:check": "pnpm --filter presmium-demo check",
     "demo:ir": "pnpm --filter presmium-demo ir",
     "e2e": "playwright test",

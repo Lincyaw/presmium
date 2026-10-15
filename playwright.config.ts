@@ -1,12 +1,15 @@
 import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
+import { SLIDES_PORT, WEB_PORT } from './e2e/urls.ts'
 
-// `presmium build` writes each renderer's output to examples/demo/dist/<renderer id>:
-// the slides form is served on 4173, the web form on 4174. Build first (`pnpm demo:build`);
-// a form whose output is missing is not served.
+// `presmium build` writes each renderer's output to examples/demo/dist/<renderer id>.
+// Build first (`pnpm demo:build`). A form whose output is missing is not served.
+// Ports come from PRESMIUM_E2E_SLIDES_PORT / PRESMIUM_E2E_WEB_PORT so parallel
+// checkouts do not collide; an occupied port is an error, never silently reused,
+// so a run cannot test another checkout's build.
 const servers = [
-  { dir: 'examples/demo/dist/slides', port: 4173, single: true },
-  { dir: 'examples/demo/dist/web', port: 4174, single: false },
+  { dir: 'examples/demo/dist/slides', port: SLIDES_PORT, single: true },
+  { dir: 'examples/demo/dist/web', port: WEB_PORT, single: false },
 ].filter(s => existsSync(s.dir))
 
 export default defineConfig({
@@ -18,6 +21,6 @@ export default defineConfig({
   webServer: servers.map(s => ({
     command: `pnpm exec sirv ${s.dir} ${s.single ? '--single ' : ''}--port ${s.port} --quiet`,
     port: s.port,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
   })),
 })

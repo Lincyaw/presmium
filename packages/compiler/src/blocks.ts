@@ -98,7 +98,7 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
     const items = draft.node.type === 'markdown' ? listItems(draft.node.mdast) : 0
     if (scope.items && items > 0 && draft.node.type === 'markdown') {
       draft.node.reveal = 'items'
-      draft.span = items
+      draft.span = items - 1
     }
     out.blocks.push({ ...draft, label: draft.label ?? label, reveal: draft.reveal === true, group: scope.group, only: scope.only })
     label = undefined

@@ -27,11 +27,13 @@ slides: { layout: two-cols }
 ## 逐步演示
 
 :::{component} FixtureStepper
-:span: 2
+:span: 1
 labels: [统计, 合并]
 :::
 
-组件出现时的讲解，讲到组件的两步。
+第一步统计相邻字节对。
+
+第二步合并出现最多的一对。
 
 :::{slide}
 :reveal:

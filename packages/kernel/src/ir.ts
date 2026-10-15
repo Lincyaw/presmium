@@ -91,12 +91,16 @@ export interface IRBlock {
   role: BlockRole
   /**
    * Step at which a visual block appears, or to which a narration block
-   * belongs (the `at` of the latest revealed or spanning block before it).
+   * belongs. After a revealed or spanning block B, the k-th narration block
+   * (0-based) belongs to `B.at + min(k, B.span)` (docs/ir.md 2.4).
    */
   at: number
   /** Step at which the block disappears; undefined means it stays. */
   until?: number
-  /** Steps the block advances internally after `at` (e.g. stepwise highlight); default 0. */
+  /**
+   * Steps the block advances internally; default 0. The block has `span + 1`
+   * internal states, state k shown at step `at + k` (e.g. highlight k, list item k).
+   */
   span?: number
   /** Restricts the block to these renderers. */
   only?: RendererId[]
@@ -116,7 +120,7 @@ export interface MarkdownNode {
   mdast: MdastNode
   /**
    * 'items': the top-level list items appear one per step, item k (0-based, in
-   * document order) at `at + 1 + k`; the block's `span` equals the item count.
+   * document order) at `at + k`; the block's `span` is the item count minus one.
    */
   reveal?: 'items'
 }
@@ -161,7 +165,7 @@ export interface CodeNode {
   value: string
   title?: string
   origin?: CodeOrigin
-  /** Line sets (1-based, relative to `value`) highlighted at step at+0, at+1, ...; length = span + 1 or span. */
+  /** Line sets (1-based, relative to `value`) highlighted at steps at, at+1, ..., at+span; length = span + 1. */
   highlight?: number[][]
   run?: RunSpec
   outputs?: RecordedRun[]

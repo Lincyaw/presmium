@@ -18,22 +18,24 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
     { id: 'bpe-分词', depth: 0, steps: 0, blocks: ['paragraph-1 visual 0', 'paragraph-2 narration 0'] },
     // The id comes from the label; list items reveal one per step; narration binds to the step at which
     // the stepwise block before it appears; visual content without :reveal: shows from step 0.
-    { id: 'bpe-merge', depth: 2, steps: 2, blocks: [
+    { id: 'bpe-merge', depth: 2, steps: 1, blocks: [
       'paragraph-1 narration 0',
-      'list-1 visual 0+2',
+      'list-1 visual 0+1',
       'paragraph-2 narration 0',
       'code-1 visual 0',
-      'paragraph-3 narration 0 only web,notebook',
+      'paragraph-3 narration 1 only web,notebook',
     ] },
     // A component spans its steps; a revealed {slide} appears whole at the next step; so does a revealed block.
-    { id: '逐步演示', depth: 2, steps: 4, blocks: [
-      'fixture-stepper-1 visual 0+2',
+    // One narration paragraph per internal step of the spanning block (ir.md 2.4).
+    { id: '逐步演示', depth: 2, steps: 3, blocks: [
+      'fixture-stepper-1 visual 0+1',
       'paragraph-1 narration 0',
-      'paragraph-2 visual 3',
-      'list-1 visual 3',
-      'paragraph-3 narration 3',
-      'code-1 visual 4',
-      'paragraph-4 narration 4',
+      'paragraph-2 narration 1',
+      'paragraph-3 visual 2',
+      'list-1 visual 2',
+      'paragraph-4 narration 2',
+      'code-1 visual 3',
+      'paragraph-5 narration 3',
     ] },
   ])
 
