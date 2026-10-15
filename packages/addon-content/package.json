@@ -13,6 +13,7 @@
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
+    "./media/*": "./media/*",
     "./package.json": "./package.json"
   },
   "slidev": {},
@@ -20,7 +21,8 @@
     "@presmium/kernel": "workspace:*",
     "@presmium/host": "workspace:*",
     "markmap-lib": "^0.18.12",
-    "markmap-view": "^0.18.12"
+    "markmap-view": "^0.18.12",
+    "vue": "^3.5.42"
   },
   "devDependencies": {
     "@slidev/client": "53.0.0",
