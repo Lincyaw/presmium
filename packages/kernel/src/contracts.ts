@@ -107,6 +107,24 @@ export type KernelEvent =
   | DomainEvent<'kernel.plugin.failed', { id: string; error: string }>
 
 // ---------------------------------------------------------------------------
+// Language (N-07)
+// ---------------------------------------------------------------------------
+
+/** The UI languages Presmium has messages for. */
+export type Locale = 'zh-CN' | 'en'
+
+/** Language of a deck that names none (its `lang`); both forms put it in `<html lang>`. */
+export const DEFAULT_LANG = 'zh-CN'
+
+/** The UI language for a language tag such as `en-US` or `zh-Hans`; undefined when Presmium has no messages for it. */
+export function localeOf(lang: string | null | undefined): Locale | undefined {
+  const tag = lang?.trim().toLowerCase() ?? ''
+  if (tag === 'zh' || tag.startsWith('zh-')) return 'zh-CN'
+  if (tag === 'en' || tag.startsWith('en-')) return 'en'
+  return undefined
+}
+
+// ---------------------------------------------------------------------------
 // Steps (form-neutral)
 // ---------------------------------------------------------------------------
 
@@ -231,6 +249,13 @@ export interface Check {
 /** Default export of each addon's `./presmium` entry. */
 export interface PresmiumNodePlugin {
   id: string
+  /** The plugin's own version, reported with problems. */
+  version?: string
+  /**
+   * Semver range of compatible kernel versions, e.g. '^0.1.0'; the compiler
+   * does not load a plugin whose range excludes `KERNEL_VERSION`.
+   */
+  kernel?: string
   resolvers?: AnchorResolver[]
   checks?: Check[]
   /**

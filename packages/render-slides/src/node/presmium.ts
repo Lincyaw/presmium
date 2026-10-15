@@ -22,7 +22,7 @@ export const SLIDEV_DIR = '.presmium/slides'
 const STYLE = fileURLToPath(new URL('../deck/style.css', import.meta.url))
 
 const markdownOf = (doc: IRDocument, ctx: RenderContext, dir: string) =>
-  slidevMarkdown(doc, { dir, deckDir: ctx.deckDir, config: ctx.config, extensions: ctx.extensions })
+  slidevMarkdown(doc, { dir, deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot, config: ctx.config, extensions: ctx.extensions })
 
 const plugin: PresmiumNodePlugin = {
   id: 'presmium.slides',

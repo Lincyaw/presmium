@@ -1,12 +1,14 @@
 import type { SyncTransports } from '@presmium/host'
 import { addSyncMethod } from '@slidev/client'
+import { isLocalChannel } from './shared.ts'
 
 type SlidevSync = Parameters<typeof addSyncMethod>[0]
 
 /**
  * The `syncTransports` service: joins a `SyncTransport` to Slidev's synchronized
- * state through `addSyncMethod`. Slidev cannot remove a sync method, so a
- * detached transport is muted instead.
+ * state through `addSyncMethod`, except the shared states limited to this
+ * browser. Slidev cannot remove a sync method, so a detached transport is
+ * muted instead.
  */
 export function createSyncTransports(): SyncTransports {
   return {
@@ -14,7 +16,7 @@ export function createSyncTransports(): SyncTransports {
       let attached = true
       const sync: SlidevSync = {
         init(channel, onUpdate, state, persist) {
-          if (!attached) return undefined
+          if (!attached || isLocalChannel(channel)) return undefined
           const receive = (patch: Record<string, unknown>) => {
             if (attached) onUpdate(patch as Parameters<typeof onUpdate>[0])
           }

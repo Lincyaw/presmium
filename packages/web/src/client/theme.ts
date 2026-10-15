@@ -1,4 +1,5 @@
-import { createPresenterPanels, createToolbar, installHost, NAVIGATION, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, startPresmium, SYNC_TRANSPORTS, TOOLBAR } from '@presmium/host'
+import { createPresenterPanels, createToolbar, currentLocale, installHost, NAVIGATION, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, startPresmium, stopPresmium, stopPresmiumOnPageHide, SYNC_TRANSPORTS, TOOLBAR } from '@presmium/host'
+import type { SyncTransports } from '@presmium/host'
 import { PRESENTER_PANELS } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
@@ -8,10 +9,11 @@ import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
-import { offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages } from '../domain/index.ts'
+import { offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
-import { createViewerHost, createViewerNavigation, viewerSyncTransports } from './host.ts'
+import { createViewerHost, createViewerNavigation } from './host.ts'
 import { PresmiumPage, ViewMenu } from './page.ts'
+import { createSharedStates } from './shared.ts'
 import './style.css'
 
 /** What the generated theme passes in: the IR and the deck's plugin modules, imported lazily. */
@@ -25,23 +27,29 @@ export interface ThemeInput {
   viewers?: (() => Promise<unknown>)[]
 }
 
-/** Registers the kernel plugins of every plugin package, as the slides form does, and starts the kernel. */
-async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer): Promise<void> {
+/**
+ * Registers the kernel plugins of every plugin package, as the slides form
+ * does, and starts the kernel. The plugins are disposed when the page goes
+ * away, and start again when the browser shows it again from its cache.
+ */
+async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer, transports: SyncTransports): Promise<void> {
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
   modules.flatMap(module => pluginsOf(module, config)).forEach(registerPresmiumPlugin)
-  await startPresmium({
+  const start = () => startPresmium({
     mode: 'document',
     config,
     beforeStart(kernel) {
       kernel.provide(PRESENTER_PANELS, createPresenterPanels())
-      kernel.provide(SYNC_TRANSPORTS, viewerSyncTransports)
+      kernel.provide(SYNC_TRANSPORTS, transports)
       kernel.provide(NAVIGATION, createViewerNavigation(viewer))
       kernel.provide(TOOLBAR, createToolbar())
     },
   })
+  stopPresmiumOnPageHide(() => void start())
+  await start()
 }
 
 /**
@@ -118,9 +126,10 @@ const Layout = defineComponent({
       if (getView(ask.view)) viewer.setView(ask.view)
     })
     return () => h(DefaultTheme.Layout, null, {
-      // On phones the toolbar items move to the navigation screen (the menu), as VitePress does with its links.
-      'nav-bar-content-after': () => [h(ViewMenu), h(PmToolbar, { class: 'pm-toolbar--bar' })],
-      'nav-screen-content-after': () => h(PmToolbar, { class: 'pm-toolbar--screen' }),
+      // On phones the view menu and the toolbar items move to the navigation screen (the menu), as VitePress
+      // does with its links, so the bar keeps the width of the screen.
+      'nav-bar-content-after': () => [h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
+      'nav-screen-content-after': () => [h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
       // Overlay views get the typography of the page body.
       'layout-bottom': () => [
         h('div', { class: 'vp-doc pm-overlay' }, [h(OverlayHost)]),
@@ -145,7 +154,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         sectionFooter(section, step) {
           if (!slidesBase.value) return null
           return h('p', { class: 'pm-section__links' }, [
-            h('a', { class: 'pm-open-slides', href: slideUrl(slidesBase.value, form, section.index, step) }, '在幻灯片中打开'),
+            h('a', { class: 'pm-open-slides', href: slideUrl(slidesBase.value, form, section.index, step) }, WEB_MESSAGES[currentLocale()].openInSlides),
           ])
         },
         diagnostics: import.meta.env.DEV,
@@ -161,13 +170,14 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
           window.open(url.href, 'presmium-presenter', 'popup,width=1100,height=720')
         },
       })
-      installHost(app, createViewerHost(current))
+      const shared = createSharedStates(input.doc.meta.title)
+      installHost(app, createViewerHost(current, { lang: siteData.value.lang, shared }))
       installViewer(app, current)
       app.component('PresmiumPage', PresmiumPage)
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
       viewersReady = loadViewerPlugins(input.viewers ?? [])
-      void startKernel(input.plugins, input.doc.config.presmium, current)
+      void startKernel(input.plugins, input.doc.config.presmium, current, shared.transports)
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
       // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket. The site
       // title and the sidebar follow the document here, so the config never changes and the page never reloads.
@@ -182,3 +192,5 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
     },
   }
 }
+
+import.meta.hot?.dispose(() => stopPresmium())

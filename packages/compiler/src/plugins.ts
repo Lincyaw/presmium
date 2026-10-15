@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { kernelIncompatibility } from '@presmium/kernel'
 import type { PresmiumNodePlugin, Severity } from '@presmium/kernel'
 import { createJiti } from 'jiti'
 import { errorMessage, isRecord } from './workspace.ts'
@@ -43,6 +44,12 @@ export async function loadPlugin(name: string, deckDir: string): Promise<{ loade
     }
     const plugin = await jiti.import(file, { default: true })
     if (!isNodePlugin(plugin)) throw new Error(`default export of ${NODE_PLUGIN_EXPORT} is not a PresmiumNodePlugin`)
+    // A plugin built for another kernel is not loaded: its directives, passes and renderer are left out.
+    const incompatible = plugin.kernel === undefined ? undefined : kernelIncompatibility(plugin.kernel)
+    if (incompatible) {
+      const version = plugin.version ? ` ${plugin.version}` : ''
+      return { problem: problem('error', `plugin "${name}" (${plugin.id}${version}) is not loaded: ${incompatible}`) }
+    }
     return { loaded: { name, dir, plugin } }
   } catch (error) {
     return { problem: problem('error', `cannot load plugin "${name}": ${errorMessage(error)}`) }
@@ -94,5 +101,6 @@ function isNodePlugin(value: unknown): value is PresmiumNodePlugin {
   const lists = ['resolvers', 'checks', 'directives', 'passes', 'executors'] as const
   const renderer = value.renderer
   return lists.every(key => value[key] === undefined || Array.isArray(value[key]))
+    && ['version', 'kernel'].every(key => value[key] === undefined || typeof value[key] === 'string')
     && (renderer === undefined || (isRecord(renderer) && typeof renderer.id === 'string' && typeof renderer.build === 'function'))
 }

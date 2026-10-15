@@ -9,8 +9,20 @@ import type { Cursor, PresentationMode, ServiceToken, StartReport, Unsubscribe }
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
 
+/**
+ * Who shares a state (`useSharedState`): this window only; every window of
+ * the deck in this browser (e.g. the presenter and the audience window); or
+ * also other devices, through the sync transports (e.g. a classroom).
+ */
+export type SharedStateScope = 'view' | 'local' | 'remote'
+
 export interface HostAdapter {
   readonly mode: PresentationMode
+  /**
+   * Language tag of the deck (e.g. `en-US`), for renders without a document
+   * (a server render); in the browser `<html lang>` carries it.
+   */
+  readonly lang?: string
   /** Must be called inside a component setup. */
   useCursor(): Readonly<Ref<Cursor>>
   /**
@@ -21,6 +33,25 @@ export interface HostAdapter {
   useStep(): Readonly<Ref<number>>
   /** Must be called inside a component setup. */
   useViewRole(): Readonly<Ref<ViewRole>>
+  /**
+   * True while the form renders a static copy (the slides form printing a PDF
+   * or PNG export): components then show their IR `fallback`. Must be called
+   * inside a component setup.
+   */
+  useStaticRender(): Readonly<Ref<boolean>>
+  /**
+   * The configuration of plugin `pluginId` for the slide or section of the
+   * calling component (the current one outside a section): the global
+   * `presmium.<plugin id>` with the section's `{config}` over it. Must be
+   * called inside a component setup.
+   */
+  useSectionConfig(pluginId: string): Readonly<Ref<Record<string, unknown>>>
+  /**
+   * A state shared by `key` (prefix it with the plugin id) within `scope`;
+   * every caller with the same key and scope gets the same state. Values must
+   * be JSON data. Callable outside components.
+   */
+  useSharedState<T>(key: string, initial: T, scope: SharedStateScope): Ref<T>
   getService<T>(token: ServiceToken<T>): T | undefined
   /** Kernel start report, available after the kernel has started. */
   startReport(): StartReport | undefined
@@ -28,9 +59,9 @@ export interface HostAdapter {
 
 // ---------------------------------------------------------------------------
 // Sync transport port (K-06): how a network transport joins the host's
-// synchronized state. The slides host maps it onto Slidev's `addSyncMethod`;
-// the web host has no synchronized state channels, so a transport added
-// there is never connected.
+// synchronized state. The slides host maps it onto Slidev's `addSyncMethod`
+// (navigation, drawings and the 'remote' shared states); the web host
+// connects it to the 'remote' shared states.
 // ---------------------------------------------------------------------------
 
 /** Publishes local state; `fromRemote` is true when the change itself came from a transport. */
@@ -55,7 +86,7 @@ export interface SyncTransports {
   add(transport: SyncTransport): Unsubscribe
 }
 
-/** Host service of both forms; only the slides form has channels (see above). */
+/** Host service of both forms (see above). */
 export const SYNC_TRANSPORTS = defineService<SyncTransports>('presmium.syncTransports')
 
 // ---------------------------------------------------------------------------

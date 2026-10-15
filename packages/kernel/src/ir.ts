@@ -74,6 +74,12 @@ export interface IRSection {
   steps: number
   /** Layout hints per renderer, from `{hints}`; renderers ignore what they do not know. */
   hints: Record<RendererId, Record<string, unknown>>
+  /**
+   * Plugin configuration of this section, from `{config}`, keyed by plugin id;
+   * each plugin's options override its global `presmium.<plugin id>` here.
+   * Absent when the section configures nothing.
+   */
+  config?: Record<string, Record<string, unknown>>
   blocks: IRBlock[]
 }
 
@@ -207,7 +213,7 @@ export interface DirectiveContext {
   file: string
   deckDir: string
   workspaceRoot: string
-  /** This plugin's configuration. */
+  /** This plugin's configuration: global, with the `{config}` of the directive's section over it. */
   config: Record<string, unknown>
   source: SourcePos
   /** Parses MyST markdown (e.g. a directive body) into mdast. */
@@ -247,6 +253,8 @@ export interface PassContext {
   cache: RunCache
   /** Configuration of the plugin that owns the pass. */
   config: Record<string, unknown>
+  /** That configuration in one section: `config` with the section's `{config}` for the plugin over it. */
+  configFor(section: IRSection): Record<string, unknown>
   report(finding: Finding): void
   /**
    * Declares files outside the source that the output depends on (absolute,
@@ -272,6 +280,8 @@ export type Support = 'full' | 'degraded' | 'none'
 
 export interface RenderContext {
   deckDir: string
+  /** The deck's repository (its git root, else the deck directory), as in `PassContext`. */
+  workspaceRoot: string
   outDir: string
   /**
    * Where the renderer keeps what it generates on the way to its output, from

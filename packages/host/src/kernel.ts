@@ -46,7 +46,10 @@ export interface StartOptions {
   log?: Logger
 }
 
-/** Starts the kernel with every registered plugin. Only the first call starts it; later calls share its result. */
+/**
+ * Starts the kernel with every registered plugin. Only the first call starts
+ * it; later calls share its result, until `stopPresmium`.
+ */
 export function startPresmium(options: StartOptions): Promise<StartReport> {
   starting ??= (async () => {
     const kernel = new Kernel({ mode: options.mode, config: options.config, log: options.log })
@@ -57,6 +60,34 @@ export function startPresmium(options: StartOptions): Promise<StartReport> {
     return report
   })()
   return starting
+}
+
+/**
+ * Disposes the running plugins in reverse start order (their `dispose`) and
+ * forgets the kernel, so `startPresmium` can start the registered plugins
+ * again. Host adapters call it when the page goes away (`pagehide`) and when
+ * a hot update replaces the module that started the kernel.
+ */
+export async function stopPresmium(): Promise<void> {
+  const current = starting
+  if (!current) return
+  starting = undefined
+  await current.catch(() => undefined)
+  const kernel = running.value
+  running.value = undefined
+  await kernel?.dispose()
+}
+
+/**
+ * Stops the kernel when the page is hidden for good or kept for later
+ * (back-forward cache), and starts it again with `start` when such a page
+ * is shown again. For host adapters, in the browser.
+ */
+export function stopPresmiumOnPageHide(start: () => void): void {
+  window.addEventListener('pagehide', () => void stopPresmium())
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) start()
+  })
 }
 
 /** Reactive service lookup; undefined until the kernel has started. Host adapters delegate `getService` here. */

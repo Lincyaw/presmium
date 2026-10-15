@@ -1,0 +1,8 @@
+{
+  "name": "presmium-fixture-plugin-interp",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts"
+  }
+}

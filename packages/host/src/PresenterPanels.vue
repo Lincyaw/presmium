@@ -5,7 +5,10 @@ import type { PresenterPanel } from '@presmium/kernel'
 import { computed, shallowRef, watchEffect } from 'vue'
 import { componentErrors } from './boundary.ts'
 import { useService, useStartReport } from './host.ts'
+import { useMessages } from './locale.ts'
+import { HOST_MESSAGES } from './messages.ts'
 
+const t = useMessages(HOST_MESSAGES)
 const service = useService(PRESENTER_PANELS)
 const report = useStartReport()
 const panels = shallowRef<PresenterPanel[]>([])
@@ -30,7 +33,7 @@ const problems = computed(() => {
   <Teleport to="body">
     <details v-if="service" class="pm-presenter-panels">
       <summary>
-        Presmium <span v-if="problems > 0" class="pm-presenter-panels__badge" :title="`${problems} 个问题`">{{ problems }}</span>
+        Presmium <span v-if="problems > 0" class="pm-presenter-panels__badge" :title="t.problems(problems)">{{ problems }}</span>
       </summary>
       <section v-for="panel in panels" :key="panel.id" :data-panel="panel.id">
         <h3>{{ panel.title }}</h3>

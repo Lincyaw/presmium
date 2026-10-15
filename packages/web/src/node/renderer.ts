@@ -36,10 +36,10 @@ export const renderer: Renderer = {
   support: () => 'full',
 
   async build(doc: IRDocument, ctx: RenderContext) {
-    const options = rendererConfig(ctx.config)
+    const options = rendererConfig(ctx.config, doc.meta.lang)
     const workDir = join(ctx.deckDir, BUILD_DIR)
     const files = siteFiles(workDir)
-    const published = publishedDocument(doc, ctx.deckDir, files.publicDir, options.base)
+    const published = publishedDocument(doc, ctx, files.publicDir, options.base)
     writeSite(workDir, { doc: published, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
     // The IR is published with the site.
     write(join(files.publicDir, 'ir.json'), JSON.stringify(published))
@@ -50,10 +50,10 @@ export const renderer: Renderer = {
   },
 
   async dev(doc: IRDocument, ctx: RenderContext) {
-    const options = rendererConfig(ctx.config)
+    const options = rendererConfig(ctx.config, doc.meta.lang)
     const workDir = ctx.outDir
     const files = siteFiles(workDir)
-    const publish = (d: IRDocument) => publishedDocument(d, ctx.deckDir, files.publicDir, options.base)
+    const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base)
     let current = publish(doc)
     writeSite(workDir, { doc: current, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
     // "Open in the editor" from a page (K-11): the author's editor, as launch-editor finds it ($EDITOR, a running editor).
@@ -70,8 +70,8 @@ export const renderer: Renderer = {
         const update = diffDocuments(current, published)
         if (!update) return
         // Only changed files are written. The config never changes with the IR, so the server never restarts;
-        // the content goes to the pages over the WebSocket (a page's Markdown changes only with its title or
-        // search text: hot updated, and indexed for search again).
+        // the content goes to the pages over the WebSocket, the search documents to the search index (a page's
+        // Markdown changes only with its title: hot updated).
         writeSite(workDir, { doc: published, deckDir: ctx.deckDir, plugins: ctx.plugins, options })
         current = published
         server.send({ type: 'presmium:update', update })

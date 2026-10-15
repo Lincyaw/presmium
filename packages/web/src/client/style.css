@@ -1,5 +1,33 @@
 /* Web form on VitePress; the IR runtime brings its own styles. */
 
+/* The reader's default font size applies (N-06); VitePress sets 16px on html and body. */
+html {
+  font-size: 100%;
+}
+
+body {
+  font-size: 1rem;
+}
+
+/* On a phone a long deck title ends with an ellipsis instead of widening the page (N-05). */
+.VPNavBar .container > .title {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.VPNavBarTitle,
+.VPNavBarTitle a.title {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.VPNavBarTitle a.title > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Anchors and restored positions stay clear of the fixed navigation bar. */
 .pm-section {
   scroll-margin-top: calc(var(--vp-nav-height) + 1rem);
@@ -41,18 +69,21 @@
   font-size: 0.8125rem;
 }
 
-/* Plugins' toolbar items (@presmium/host): in the navigation bar, on phones in the navigation screen. */
+/* The view menu and plugins' toolbar items (@presmium/host): in the navigation bar, on phones in the navigation screen. */
+.pm-view-menu--screen,
 .pm-toolbar--screen {
-  margin-top: 1rem;
+  margin: 1rem 0 0;
 }
 
 @media (max-width: 767px) {
+  .pm-view-menu--bar,
   .pm-toolbar--bar {
     display: none !important;
   }
 }
 
 @media (min-width: 768px) {
+  .pm-view-menu--screen,
   .pm-toolbar--screen {
     display: none !important;
   }

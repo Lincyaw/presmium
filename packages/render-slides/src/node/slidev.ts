@@ -1,14 +1,16 @@
 /**
  * IR to the Markdown of a Slidev deck (docs/ir.md section 6): one slide per
- * section, the section title as its heading and `hints.slides` as its
- * frontmatter. Visual blocks appear at their step through absolute `v-click`
+ * section, the section title as its heading and `hints.slides` and the
+ * section's `{config}` as its frontmatter; the deck's language in `htmlAttrs`.
+ * Visual blocks appear at their step through absolute `v-click`
  * positions; a component block gets its `at` as step scope (`<PmStepScope>`
  * of @presmium/host), from which the component counts its internal steps.
  * Narration becomes the slide notes, split by `[click]` markers.
  */
-import { existsSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import type { CodeNode, CodeOrigin, CodeVariant, ComponentNode, IRBlock, IRDocument, IRSection, RendererExtension } from '@presmium/kernel'
+import { existsSync, realpathSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { DEFAULT_LANG, localeOf } from '@presmium/kernel'
+import type { CodeNode, CodeOrigin, CodeVariant, ComponentNode, IRBlock, IRDocument, IRSection, Locale, RendererExtension } from '@presmium/kernel'
 import { stringify } from 'yaml'
 import { codeLang, escapeHtml, markdown } from './markdown.ts'
 
@@ -16,9 +18,69 @@ export interface SlidevOptions {
   /** Directory of the generated deck; relative paths are rewritten against it. */
   dir: string
   deckDir: string
+  /** The deck's repository (`RenderContext.workspaceRoot`). */
+  workspaceRoot: string
   /** `renderers.slides` from the frontmatter: Slidev headmatter, plus the renderer's own keys. */
   config: Record<string, unknown>
   extensions: RendererExtension[]
+}
+
+/** What the generated deck says itself, in the deck's language. */
+const MESSAGES = {
+  'zh-CN': {
+    status: { moved: '已移动', fuzzy: '待确认', lost: '已失效' } as Record<string, string>,
+    workingTree: '工作区',
+    drifted: '已漂移',
+    pinned: '已锁定',
+    openInRepository: (file: string) => `在仓库中打开 ${file}`,
+    webOnly: (name: string) => `组件 ${name} 只能在网页中查看。`,
+  },
+  'en': {
+    status: { moved: 'moved', fuzzy: 'to confirm', lost: 'lost' } as Record<string, string>,
+    workingTree: 'working tree',
+    drifted: 'drifted',
+    pinned: 'pinned',
+    openInRepository: (file: string) => `Open ${file} in the repository`,
+    webOnly: (name: string) => `The component ${name} can only be viewed on the web.`,
+  },
+} satisfies Record<Locale, unknown>
+
+type Messages = (typeof MESSAGES)[Locale]
+
+/** Options of one generation: the deck's messages are chosen once. */
+interface Generation extends SlidevOptions {
+  t: Messages
+}
+
+/**
+ * A favicon of the deck's own. Slidev's default is a remote image that its
+ * build downloads under the generated deck and refers to by a path from the
+ * file system root, so the slides would depend on where the deck is checked out.
+ */
+const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#0ea5e9"/></svg>')}`
+
+/**
+ * Plugin configuration as the generated deck holds it: absolute paths in the
+ * deck's repository (e.g. a workspace a pass resolved) become relative to the
+ * generated deck, where Slidev and its addons resolve them, so the slides do
+ * not depend on where the deck is checked out. Other strings stay as they are.
+ */
+function portable(value: unknown, options: SlidevOptions): unknown {
+  if (typeof value === 'string') return inRepository(value, options.workspaceRoot) ? relative(options.dir, value).split('\\').join('/') || '.' : value
+  if (Array.isArray(value)) return value.map(item => portable(item, options))
+  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, options)]))
+  return value
+}
+
+function inRepository(path: string, root: string): boolean {
+  if (!isAbsolute(path)) return false
+  const rel = relative(root, path)
+  return rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)
+}
+
+/** The deck's language: its `lang`, else the default; both forms put it in `<html lang>`. */
+export function deckLang(doc: IRDocument): string {
+  return typeof doc.meta.lang === 'string' && doc.meta.lang ? doc.meta.lang : DEFAULT_LANG
 }
 
 /** Keys of `renderers.slides` that configure the renderer rather than the Slidev headmatter. */
@@ -28,7 +90,8 @@ const RENDERER_KEYS = new Set(['package', 'base', 'port'])
 const WEB_PACKAGE = '@presmium/web'
 
 export function slidevMarkdown(doc: IRDocument, options: SlidevOptions): string {
-  return doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, options) : {}, options)).join('\n')
+  const generation: Generation = { ...options, t: MESSAGES[localeOf(deckLang(doc)) ?? 'en'] }
+  return doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, options) : {}, generation)).join('\n')
 }
 
 /** Whether a plugin renders the component for this renderer (a `rendererExtensions.slides` entry). */
@@ -38,27 +101,54 @@ export function extensionFor(node: ComponentNode, extensions: RendererExtension[
 
 function headmatter(doc: IRDocument, options: SlidevOptions): Record<string, unknown> {
   const { theme = 'default', addons = [], ...rest } = Object.fromEntries(Object.entries(options.config).filter(([key]) => !RENDERER_KEYS.has(key)))
-  // Local paths are relative to the deck; Slidev gets them absolute.
+  // Local paths are relative to the deck; Slidev gets the theme's absolute.
   const local = (name: unknown) => typeof name === 'string' && name.startsWith('.') ? resolve(options.deckDir, name) : name
   // Plugins are Slidev addons: their components, setups and layers load in the deck.
   const listed = [...doc.config.plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, options.deckDir)]
+  const { htmlAttrs, ...slidev } = rest
   return {
     theme: local(theme),
     title: doc.meta.title,
-    ...doc.meta.lang ? { htmlAttrs: { lang: doc.meta.lang } } : {},
-    ...rest,
-    addons: [...new Set(listed.map(local))],
-    presmium: doc.config.presmium,
+    favicon: FAVICON,
+    ...slidev,
+    htmlAttrs: { lang: deckLang(doc), ...typeof htmlAttrs === 'object' ? htmlAttrs : {} },
+    addons: [...new Set(listed.filter((name): name is string => typeof name === 'string').map(name => addonPath(name, options)))],
+    presmium: portable(doc.config.presmium, options),
   }
 }
 
-/** Whether a package (a name, or a path relative to the deck) can be found from the deck, as the compiler looks plugins up. */
-function installed(name: string, deckDir: string): boolean {
-  if (name.startsWith('.') || isAbsolute(name)) return existsSync(join(resolve(deckDir, name), 'package.json'))
-  for (let d = resolve(deckDir); ; d = dirname(d)) {
-    if (existsSync(join(d, 'node_modules', name, 'package.json'))) return true
-    if (dirname(d) === d) return false
+/**
+ * An addon as the generated deck names it: the path of its package directory
+ * relative to the directory holding the deck, where Slidev resolves local
+ * addons. Slidev looks addons up concurrently and orders them as the lookups
+ * finish; local paths need no lookup, so the order of the setups, layers and
+ * styles of the slides is the order of `plugins`, the same in every build.
+ * Relative, the paths do not tie the slides to where the deck is checked out.
+ * A package that cannot be found keeps its name, for Slidev to report.
+ */
+function addonPath(name: string, options: SlidevOptions): string {
+  const dir = packageDir(name, options.deckDir)
+  if (!dir) return name
+  const path = relative(dirname(options.dir), dir).split('\\').join('/')
+  return path.startsWith('.') ? path : `./${path}`
+}
+
+/** The directory of a package (a name, or a path relative to the deck), found from the deck as the compiler looks plugins up. */
+function packageDir(name: string, deckDir: string): string | undefined {
+  if (name.startsWith('.') || isAbsolute(name)) {
+    const dir = resolve(deckDir, name)
+    return existsSync(join(dir, 'package.json')) ? dir : undefined
   }
+  for (let d = resolve(deckDir); ; d = dirname(d)) {
+    const dir = join(d, 'node_modules', name)
+    if (existsSync(join(dir, 'package.json'))) return realpathSync(dir)
+    if (dirname(d) === d) return undefined
+  }
+}
+
+/** Whether a package (a name, or a path relative to the deck) can be found from the deck. */
+function installed(name: string, deckDir: string): boolean {
+  return packageDir(name, deckDir) !== undefined
 }
 
 /**
@@ -73,8 +163,15 @@ function formAddons(doc: IRDocument, deckDir: string): string[] {
   return installed(name, deckDir) ? [name] : []
 }
 
-function slide(section: IRSection, head: Record<string, unknown>, options: SlidevOptions): string {
-  const frontmatter = { ...head, ...section.hints.slides }
+/**
+ * A slide: the section's `hints.slides` in its frontmatter, and its `{config}`
+ * under `presmium`, where the slides host adapter reads it (`useSectionConfig`).
+ * The cover's frontmatter is the headmatter, whose `presmium` is the global
+ * configuration; the cover's own goes under `presmiumSection`.
+ */
+function slide(section: IRSection, head: Record<string, unknown>, options: Generation): string {
+  const config = section.config ? { [section.index === 1 ? 'presmiumSection' : 'presmium']: portable(section.config, options) } : {}
+  const frontmatter = { ...head, ...section.hints.slides, ...config }
   const notes: IRBlock[] = []
   const parts = section.title ? [markdown({ type: 'heading', depth: 1, children: [{ type: 'text', value: section.title }] })] : []
   parts.push(...blocks(section.blocks, options, notes))
@@ -84,7 +181,7 @@ function slide(section: IRSection, head: Record<string, unknown>, options: Slide
 }
 
 /** The visual blocks as Slidev Markdown; narration blocks are collected into `notes`. */
-function blocks(list: IRBlock[], options: SlidevOptions, notes: IRBlock[]): string[] {
+function blocks(list: IRBlock[], options: Generation, notes: IRBlock[]): string[] {
   const out: string[] = []
   for (const block of list) {
     if (block.role === 'narration') notes.push(block)
@@ -93,7 +190,7 @@ function blocks(list: IRBlock[], options: SlidevOptions, notes: IRBlock[]): stri
   return out
 }
 
-function visual(block: IRBlock, options: SlidevOptions, notes: IRBlock[]): string {
+function visual(block: IRBlock, options: Generation, notes: IRBlock[]): string {
   const { node } = block
   if (node.type === 'markdown' && node.reveal === 'items') {
     // Item k at step at + k. Slidev reads an absolute click 0 as "the next click", so a list
@@ -101,7 +198,7 @@ function visual(block: IRBlock, options: SlidevOptions, notes: IRBlock[]): strin
     return `<v-clicks at="${block.at === 0 ? '+0' : block.at}">\n\n${markdown(node.mdast, urls(block, options))}\n\n</v-clicks>`
   }
   const content = node.type === 'markdown' ? markdown(node.mdast, urls(block, options))
-    : node.type === 'code' ? code(node, block.at)
+    : node.type === 'code' ? code(node, block.at, options.t)
     : scoped(component(node, block, options, notes), block.at)
   if (block.at === 0 && block.until === undefined) return content
   const click = block.until === undefined ? `v-click="${block.at}"`
@@ -122,8 +219,6 @@ function scoped(content: string, at: number): string {
 type Origin = CodeOrigin
 type Variant = CodeVariant
 
-const STATUS: Record<string, string> = { moved: '已移动', fuzzy: '待确认', lost: '已失效' }
-
 function link(className: string, href: string | undefined, text: string, attrs = ''): string {
   return href
     ? `<a class="${className}" href="${escapeHtml(href)}" target="_blank" rel="noopener"${attrs}>${escapeHtml(text)}</a>`
@@ -137,28 +232,28 @@ function link(className: string, href: string | undefined, text: string, attrs =
  * from `$clicks`), and whether pinned code drifted or the anchor moved. The
  * web form shows the same bar. One HTML block: no blank line inside.
  */
-function originBar(node: CodeNode, at: number): string {
+function originBar(node: CodeNode, at: number, t: Messages): string {
   const origin = node.origin as Origin | undefined
   if (!origin) return ''
   const lines = origin.endLine > origin.startLine ? `${origin.startLine}-${origin.endLine}` : `${origin.startLine}`
-  const title = ` title="${escapeHtml(origin.permalink ? `在仓库中打开 ${origin.file}` : origin.anchor)}"`
+  const title = ` title="${escapeHtml(origin.permalink ? t.openInRepository(origin.file) : origin.anchor)}"`
   const variants = (node.variants ?? []) as Variant[]
   // Version k is on screen from step at + k (the first one from the start) until the next.
   const shown = `Math.min(Math.max($clicks - ${at}, 0), ${variants.length - 1})`
   const commits = variants.length
     ? variants.map((variant, k) => link('pm-code-origin__variant', variant.permalink, variant.label, ` :data-active="${shown} === ${k} ? '' : undefined"`))
-    : [`<span class="pm-code-origin__commit"${origin.pin ? ` title="${origin.pin}"` : ''}>${origin.pin ? `@ ${origin.pin.slice(0, 7)}` : '工作区'}</span>`]
-  const badge = STATUS[origin.status]
-    ? `<span class="pm-code-origin__badge" data-status="${origin.status}">${STATUS[origin.status]}</span>`
+    : [`<span class="pm-code-origin__commit"${origin.pin ? ` title="${origin.pin}"` : ''}>${origin.pin ? `@ ${origin.pin.slice(0, 7)}` : escapeHtml(t.workingTree)}</span>`]
+  const badge = t.status[origin.status]
+    ? `<span class="pm-code-origin__badge" data-status="${origin.status}">${escapeHtml(t.status[origin.status]!)}</span>`
     : origin.pin && !variants.length && origin.drift
-      ? `<span class="pm-code-origin__badge" data-drift="${origin.drift}">${origin.drift === 'drifted' ? '已漂移' : '已锁定'}</span>`
+      ? `<span class="pm-code-origin__badge" data-drift="${origin.drift}">${escapeHtml(origin.drift === 'drifted' ? t.drifted : t.pinned)}</span>`
       : ''
   const file = link('pm-code-origin__file', origin.permalink, `${node.title ?? origin.file}:${lines}`, title)
   return `<div class="pm-code-origin" data-anchor="${escapeHtml(origin.anchor)}">\n${[file, ...commits, badge].filter(Boolean).join('\n')}\n</div>`
 }
 
 /** A code block; `highlight` steps through its line sets, `variants` morph with Shiki Magic Move. */
-function code(node: CodeNode, at: number): string {
+function code(node: CodeNode, at: number, t: Messages): string {
   // Slidev's `at` on a code block is the click of the second stage; the first is shown with the block.
   const stages = (sets: number[][]) => `{${sets.map(lineRanges).join('|')}}${sets.length > 1 ? `{at:${at + 1}}` : ''}`
   const title = (label?: string) => label ? ` [${label}]` : ''
@@ -173,18 +268,28 @@ function code(node: CodeNode, at: number): string {
     out = fence(node.lang, node.value, `${title(node.title)}${node.highlight?.length ? ` ${stages(node.highlight)}` : ''}`)
   }
   const outputs = (node.outputs ?? []).map(run => [run.stdout, run.stderr].filter(Boolean).join('\n').replace(/\n$/, '')).filter(Boolean)
-  return [originBar(node, at), out, ...outputs.map(text => `<div class="pm-output">\n\n${fence('text', text, '')}\n\n</div>`)].filter(Boolean).join('\n\n')
+  return [originBar(node, at, t), out, ...outputs.map(text => `<div class="pm-output">\n\n${fence('text', text, '')}\n\n</div>`)].filter(Boolean).join('\n\n')
 }
 
 /**
  * A plugin component: the plugin's Slidev extension when it has one, else the
  * component tag (plugins are addons, so Slidev registers their components).
  * A component no plugin provides degrades to its `fallback` (docs/ir.md section 6).
+ * One with a `fallback` shows it in PDF and PNG exports (`PmStaticFallback` of
+ * @presmium/slidev-addon-core), so an export never depends on what the
+ * component did at run time.
  */
-function component(node: ComponentNode, block: IRBlock, options: SlidevOptions, notes: IRBlock[]): string {
+function component(node: ComponentNode, block: IRBlock, options: Generation, notes: IRBlock[]): string {
   const extension = extensionFor(node, options.extensions)
-  if (extension) return String(extension(node, block))
-  if (!node.plugin) return node.fallback ? markdown(node.fallback, urls(block, options)) : `> 组件 ${node.name} 只能在网页中查看。`
+  if (!extension && !node.plugin) return node.fallback ? markdown(node.fallback, urls(block, options)) : `> ${options.t.webOnly(node.name)}`
+  const live = extension ? String(extension(node, block)) : tag(node, options, notes)
+  // `v-slot:` rather than `#`: Markdown reads the tag as HTML only with attribute names it knows.
+  return node.fallback
+    ? `<PmStaticFallback>\n\n${live}\n\n<template v-slot:fallback>\n\n${markdown(node.fallback, urls(block, options))}\n\n</template>\n</PmStaticFallback>`
+    : live
+}
+
+function tag(node: ComponentNode, options: Generation, notes: IRBlock[]): string {
   const attrs = Object.entries(node.props).map(([name, value]) => typeof value === 'string'
     ? ` ${name}="${escapeHtml(value).replace(/\n/g, '&#10;')}"`
     // A Vue expression in single quotes: JSON with `'` and `&` escaped stays valid JavaScript.

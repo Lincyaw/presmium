@@ -255,6 +255,7 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
   const config = compilation.doc.config.renderers[id]
   const ctx: RenderContext = {
     deckDir: compilation.deckDir,
+    workspaceRoot: compilation.workspaceRoot,
     outDir,
     workDir,
     config: isRecord(config) ? config : {},

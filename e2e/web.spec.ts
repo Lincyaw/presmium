@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import { fixtureDeck } from './fixtures/core/deck.ts'
+import type { FixtureDeck } from './fixtures/core/deck.ts'
 import { SLIDES, WEB } from './urls.ts'
 
 /** The parts of the IR (packages/kernel/src/ir.ts) the tests read. */
@@ -41,11 +43,26 @@ async function published(page: Page): Promise<IRDocument> {
   return (await page.request.get(`${WEB}/ir.json`)).json()
 }
 
-/** Paths of the web pages, in sidebar order. */
-async function webPages(page: Page): Promise<string[]> {
-  await page.goto(WEB)
+/** Paths of the web pages of the site at `site`, in sidebar order. */
+async function webPages(page: Page, site = WEB): Promise<string[]> {
+  await page.goto(site)
   const hrefs = await page.locator('.VPSidebar a').evaluateAll(links => links.map(a => (a as HTMLAnchorElement).pathname))
   return [...new Set(hrefs)]
+}
+
+/** Opens every page of the site at `origin` and expects none to scroll sideways. */
+async function expectNoSidewaysScroll(page: Page, origin: string, paths: string[]) {
+  for (const path of paths) {
+    await page.goto(`${origin}${path}`)
+    await expect(page.locator('.pm-client-only')).toHaveCount(0)
+    const [scroll, client] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth])
+    expect(scroll, path).toBeLessThanOrEqual(client)
+  }
+}
+
+/** A phone: 375 CSS px wide, with a mobile viewport and touch. */
+function phone(browser: Browser) {
+  return browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
 }
 
 /** Every rendered section with its heading, narration, visual text and section links, in page order. */
@@ -74,10 +91,13 @@ async function webSections(page: Page) {
 /** Search results; the view menu's options are not among them. */
 const results = (page: Page) => page.getByRole('listbox').getByRole('option')
 
+/** Opens the search box with its shortcut, again until the page has hydrated and takes it. */
 async function openSearch(page: Page) {
-  await page.keyboard.press('Control+k')
   const input = page.getByRole('searchbox')
-  await expect(input).toBeFocused()
+  await expect(async () => {
+    if (!await input.isVisible()) await page.keyboard.press('Control+k')
+    await expect(input).toBeFocused({ timeout: 500 })
+  }).toPass({ timeout: 10_000 })
   return input
 }
 
@@ -158,6 +178,39 @@ test('a Chinese keyword is found within 300 ms and opens its section', async ({ 
   await expect(page.locator('h2#web')).toBeInViewport()
 })
 
+test('a section title alone finds its section', async ({ page }) => {
+  await page.goto(`${WEB}/core.html`)
+  const input = await openSearch(page)
+  await input.fill('滚动叙事')
+  const first = results(page).first()
+  await expect(first.locator('.title')).toContainText('滚动叙事')
+  await first.click()
+  await expect(page).toHaveURL(/\/web\.html#scrolly$/)
+  await expect(page.locator('h2#scrolly')).toBeInViewport()
+})
+
+test('the page outline lists the page\'s sections, also after moving to another page; each section links to the previous one', async ({ page }) => {
+  const outline = page.locator('.VPDocAsideOutline .VPDocOutlineItem.root > li > a')
+  const titles = page.locator('.pm-section > h2')
+  await page.goto(`${WEB}/web.html`)
+  await expect(titles.first()).toBeVisible()
+  await expect(outline).toHaveText(await titles.allTextContents())
+
+  await page.locator('.VPSidebar a[href$="/core.html"]').click()
+  await expect(page).toHaveURL(/\/core\.html$/)
+  await expect(page.locator('h2#core')).toBeVisible()
+  await expect(outline).toHaveText(await titles.allTextContents())
+
+  // The first section of web.html links back to the last section of the page before it.
+  const doc = await published(page)
+  const previous = doc.sections[doc.sections.findIndex(s => s.id === 'web') - 1]!
+  await page.goto(`${WEB}/web.html`)
+  const back = page.locator('.pm-section[data-section="web"] .pm-section-nav__prev')
+  await expect(back).toContainText(previous.title)
+  await back.click()
+  await expect(page.locator(`h2#${previous.id}`)).toBeInViewport()
+})
+
 test('search keeps working offline once the site has loaded', async ({ page, context }) => {
   await page.goto(WEB)
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
@@ -171,15 +224,29 @@ test('search keeps working offline once the site has loaded', async ({ page, con
   await expect(page.locator('.pm-section[data-section="web"] .pm-code')).toContainText('createViewer')
 })
 
-test('no page scrolls sideways on a 375 px wide phone', async ({ page }) => {
+test('no page scrolls sideways on a 375 px wide phone', async ({ page, browser }) => {
   const paths = await webPages(page)
-  await page.setViewportSize({ width: 375, height: 812 })
-  for (const path of paths) {
-    await page.goto(`${WEB}${path}`)
-    await expect(page.locator('.pm-client-only')).toHaveCount(0)
-    const [scroll, client] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth])
-    expect(scroll, path).toBeLessThanOrEqual(client)
+  const context = await phone(browser)
+  await expectNoSidewaysScroll(await context.newPage(), WEB, paths)
+  await context.close()
+})
+
+test('pages reflow at 200 % and 400 % zoom and follow the reader\'s font size', async ({ page, browser }) => {
+  const paths = await webPages(page)
+  // 200 %: 640 CSS px on a 1280 px wide screen; 400 %: 320 CSS px.
+  for (const options of [{ viewport: { width: 640, height: 400 }, deviceScaleFactor: 2 }, { viewport: { width: 320, height: 256 } }]) {
+    const context = await browser.newContext(options)
+    await expectNoSidewaysScroll(await context.newPage(), WEB, paths)
+    await context.close()
   }
+
+  // The browser's default font size (a Chromium setting) sizes the text.
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Page.setFontSizes', { fontSizes: { standard: 24 } })
+  await page.goto(`${WEB}/web.html`)
+  const size = (selector: string) => page.locator(selector).first().evaluate(el => getComputedStyle(el).fontSize)
+  expect(await size('html')).toBe('24px')
+  expect(await size('body')).toBe('24px')
 })
 
 test('a scrollytelling section advances its steps with the narration, and back', async ({ page }) => {
@@ -296,4 +363,112 @@ test('the demo plugins start in the web form as in the slides: the greeting show
   expect(web).toEqual({ 'presmium.demo.consumer': 'started', 'presmium.demo.provider': 'started', 'presmium.demo.orphan': 'disabled' })
   await page.goto(`${SLIDES}/presenter/2`)
   expect(await demoPlugins()).toEqual(web)
+})
+
+// e2e/fixtures/core/deck: an en-US deck with a long title and a test plugin (fixture.core) whose
+// components read their section's configuration and share a state, and whose kernel plugins
+// cannot all start. The web form is served under /web/.
+test.describe('the fixture deck in the web form', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let deck: FixtureDeck
+  const site = (path = '') => `${deck.url}/web/${path}`
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    deck = await fixtureDeck()
+  })
+  test.afterAll(() => deck?.close())
+
+  test('a section\'s {config} overrides a plugin option in its section only', async ({ page }) => {
+    await page.goto(site())
+    const label = (section: string) => page.locator(`.pm-section[data-section="${section}"] .fx-config`)
+    await expect(label('global')).toHaveText('global')
+    await expect(label('scoped')).toHaveText('section')
+    await expect(label('presmium-fixture-deck-with-a-title-too-long-for-a-phone')).toHaveText('cover')
+  })
+
+  test('two windows of the deck share a plugin state, and a window opened later gets it', async ({ context }) => {
+    const [a, b] = [await context.newPage(), await context.newPage()]
+    await a.goto(site())
+    // The other window presents the section.
+    await b.goto(`${site()}?view=present&section=shared`)
+    const [shown, presented] = [a.locator('.pm-section[data-section="shared"] .fx-shared'), b.locator('.pm-present .fx-shared')]
+    await expect(presented.locator('output')).toHaveText('0')
+    await shown.getByRole('button', { name: 'Add one' }).click()
+    await expect(presented.locator('output')).toHaveText('1')
+    await presented.getByRole('button', { name: 'Add one' }).click()
+    await expect(shown.locator('output')).toHaveText('2')
+
+    const late = await context.newPage()
+    await late.goto(`${site()}?view=presenter&section=shared`)
+    await expect(late.locator('.fx-shared output').first()).toHaveText('2')
+  })
+
+  test('a remote plugin state goes to the other devices through the sync transports, and comes back from them', async ({ page }) => {
+    await page.goto(site())
+    const remote = page.locator('.pm-section[data-section="shared"] .fx-remote')
+    await remote.getByRole('button', { name: 'Count on every device' }).click()
+    await expect(remote.locator('output')).toHaveText('1')
+    await expect.poll(() => page.evaluate(() => window.fixtureDevice?.published.at(-1))).toEqual({ value: 1, fromRemote: false })
+    await page.evaluate(() => window.fixtureDevice!.receive({ value: 5 }))
+    await expect(remote.locator('output')).toHaveText('5')
+  })
+
+  test('an en-US deck sets <html lang> and speaks English: the VitePress chrome, the links to the slides, the start report', async ({ page }) => {
+    await page.goto(site())
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
+    await expect(page.locator('.DocSearch-Button-Placeholder')).toHaveText('Search')
+    await expect(page.locator('.VPDocAsideOutline .outline-title')).toHaveText('On this page')
+    await expect(page.locator('.pm-view-menu--bar')).toHaveAttribute('aria-label', 'View')
+    await expect(page.locator('.pm-section[data-section="global"]').getByRole('link', { name: 'Open in the slides' })).toHaveAttribute('href', /\/slides\/2$/)
+    const input = await openSearch(page)
+    await input.fill('nothing like this')
+    await expect(page.locator('.VPLocalSearchBox')).toContainText('No results for')
+
+    await page.goto(`${site()}?view=presenter&section=lifecycle`)
+    await page.locator('.pm-presenter-panels summary').click()
+    await expect(page.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
+    await expect(page.locator('.pm-start-report [data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
+    expect(await page.evaluate(() => window.fixtureLang)).toBe('en-US')
+  })
+
+  test('the presenter window reports the plugins that could not start and the component that failed; plugins are disposed when the page goes away', async ({ page }) => {
+    await page.goto(`${site()}?view=presenter&section=lifecycle`)
+    await page.locator('.pm-presenter-panels summary').click()
+    const plugin = (id: string) => page.locator(`.pm-start-report [data-plugin="${id}"]`)
+    await expect(plugin('fixture.core.future')).toHaveAttribute('data-status', 'disabled')
+    await expect(plugin('fixture.core.future')).toContainText('kernel 0.1.0 does not satisfy "^9.0.0"')
+    await expect(plugin('fixture.core.throws')).toHaveAttribute('data-status', 'failed')
+    await expect(plugin('fixture.core.throws')).toContainText('fixture setup failed on purpose')
+    for (const id of ['fixture.core.cycle-a', 'fixture.core.cycle-b']) {
+      await expect(plugin(id)).toHaveAttribute('data-status', 'disabled')
+      await expect(plugin(id)).toContainText('dependency cycle')
+    }
+    await expect(plugin('fixture.core.lifecycle')).toHaveAttribute('data-status', 'started')
+    await expect(page.locator('.pm-component-errors [data-component="FixtureBroken"]')).toHaveText('FixtureBroken failed: fixture component failed on purpose')
+
+    const disposals = () => page.evaluate(() => Number(localStorage.getItem('fixture.core.disposals') ?? 0))
+    const before = await disposals()
+    await page.reload()
+    await expect.poll(disposals).toBe(before + 1)
+  })
+
+  test('on a phone a long deck title does not widen any page, and the classroom badge stays on screen', async ({ page, browser }) => {
+    const paths = await webPages(page, site())
+    expect(paths.length).toBeGreaterThan(1)
+    const context = await phone(browser)
+    const mobile = await context.newPage()
+    await expectNoSidewaysScroll(mobile, deck.url, paths)
+    await expect(mobile.locator('.VPNavBarTitle .title span')).toHaveCSS('text-overflow', 'ellipsis')
+
+    // A join link without a name: the learner's badge asks for one.
+    await mobile.goto(`${site()}?room=fixture-room`)
+    const badge = mobile.getByRole('region', { name: '课堂状态' })
+    await expect(badge).toBeInViewport({ ratio: 1 })
+    await badge.getByRole('textbox').fill('Ada')
+    await expect(badge.getByRole('textbox')).toHaveValue('Ada')
+    const [scroll, client] = await mobile.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth])
+    expect(scroll).toBeLessThanOrEqual(client)
+    await context.close()
+  })
 })

@@ -1,0 +1,16 @@
+{
+  "name": "presmium-fixture-core",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/core.spec.ts and e2e/web.spec.ts: section configuration, shared state, plugin lifecycle",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

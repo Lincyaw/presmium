@@ -1,4 +1,6 @@
 import { defineComponent, h, onErrorCaptured, shallowRef } from 'vue'
+import { useMessages } from './locale.ts'
+import { HOST_MESSAGES } from './messages.ts'
 
 export interface ComponentError {
   component: string
@@ -29,6 +31,7 @@ export const PmBoundary = defineComponent({
     name: { type: String, default: 'component' },
   },
   setup(props, { slots }) {
+    const t = useMessages(HOST_MESSAGES)
     const failed = shallowRef<ComponentError>()
     onErrorCaptured((error) => {
       failed.value = { component: props.name, message: error instanceof Error ? error.message : String(error) }
@@ -38,7 +41,7 @@ export const PmBoundary = defineComponent({
     })
     return () => failed.value
       ? h('div', { 'class': 'pm-boundary-error', 'role': 'alert', 'data-pm-error': failed.value.component }, [
-          `${failed.value.component} 出错：${failed.value.message}`,
+          t.value.componentError(failed.value.component, failed.value.message),
         ])
       : slots.default?.()
   },
