@@ -17,6 +17,16 @@ export interface CodeRefView {
   drift?: 'synced' | 'drifted'
   error?: string
   variants?: VariantView[]
+  /** Click at which the second step or version appears (Slidev's `at`). */
+  at?: number
+  /** Logical units highlighted one per step, listed in the document form. */
+  steps?: StepView[]
+}
+
+export interface StepView {
+  name: string
+  /** Lines of the displayed code, e.g. `2-3`. */
+  lines: string
 }
 
 export interface VariantView {
@@ -27,23 +37,21 @@ export interface VariantView {
 
 export interface CodeVersion {
   code: string
-  /** Slidev line highlight sequence, e.g. `2-3|4-5|6`. */
-  highlight?: string
   /** Shown as the tab title where versions become tabs. */
   label: string
 }
 
 const SLIDEV_RANGES = new Set(['all', 'none'])
 
-/** Converts logical unit names into a Slidev click sequence of line ranges (P-15). */
-export function highlightSteps(steps: string[], units: Snippet['units']): string {
+/** Converts logical unit names into the line ranges of a Slidev click sequence (P-15). */
+export function highlightSteps(steps: string[], units: Snippet['units']): StepView[] {
   return steps.map((step) => {
     const unit = units.get(step)
-    if (unit) return unit.from === unit.to ? `${unit.from}` : `${unit.from}-${unit.to}`
-    if (SLIDEV_RANGES.has(step)) return step
+    if (unit) return { name: step, lines: lineRange(unit.from, unit.to) }
+    if (SLIDEV_RANGES.has(step)) return { name: step, lines: step }
     const known = [...units.keys()].join(', ') || 'none'
     throw new Error(`step "${step}" is not a #region inside the referenced code (regions: ${known})`)
-  }).join('|')
+  })
 }
 
 export function lineRange(start: number, end: number): string {
@@ -55,12 +63,14 @@ function escapeAttr(value: string): string {
 }
 
 function attributes(view: CodeRefView): string {
-  const { variants, pinned, ...strings } = view
+  const { variants, steps, at, pinned, ...strings } = view
   const parts = Object.entries(strings)
     .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
     .map(([name, value]) => ` ${name}="${escapeAttr(value)}"`)
   if (pinned) parts.push(' pinned')
+  if (at) parts.push(` :at="${at}"`)
   if (variants) parts.push(` variants="${escapeAttr(JSON.stringify(variants))}"`)
+  if (steps) parts.push(` steps="${escapeAttr(JSON.stringify(steps))}"`)
   return parts.join('')
 }
 
@@ -78,21 +88,27 @@ function codeBlock(lang: string, version: CodeVersion, meta = ''): string {
 /**
  * Markdown for one code reference: `<PmCodeRef>` around a standard code block.
  * Slides get Slidev's click-driven line highlighting, and Magic Move for
- * several versions; documents get plain blocks, and a VitePress code group for
- * several versions.
+ * several versions; documents get numbered lines with the steps listed, and a
+ * VitePress code group for several versions.
  */
 export function renderCodeRef(view: CodeRefView, lang: string, versions: CodeVersion[], mode: PresentationMode): string {
-  const open = `<PmCodeRef${attributes(view)}>`
+  const slides = mode === 'slides'
+  // Documents list the logical units; Slidev's `all` and `none` are not units.
+  const listed = slides ? undefined : view.steps?.filter(step => /^\d/.test(step.lines))
+  const open = `<PmCodeRef${attributes({ ...view, steps: listed })}>`
   if (view.error || versions.length === 0) return `${open}</PmCodeRef>`
+  const at = view.at ? `{at:${view.at}}` : ''
   let body: string
   if (versions.length === 1) {
     const [version] = versions as [CodeVersion]
-    body = codeBlock(lang, version, mode === 'slides' && version.highlight ? ` {${version.highlight}}` : '')
+    if (!view.steps) body = codeBlock(lang, version)
+    else if (slides) body = codeBlock(lang, version, ` {${view.steps.map(step => step.lines).join('|')}}${at}`)
+    else body = codeBlock(`${lang}:line-numbers`, version)
   }
-  else if (mode === 'slides') {
+  else if (slides) {
     const blocks = versions.map(v => codeBlock(lang, v))
     const outer = fence(blocks.join('\n'), 4)
-    body = `${outer}md magic-move\n${blocks.join('\n')}\n${outer}`
+    body = `${outer}md magic-move ${at}\n${blocks.join('\n')}\n${outer}`
   }
   else {
     body = `::: code-group\n\n${versions.map(v => codeBlock(lang, v, ` [${v.label}]`)).join('\n\n')}\n\n:::`

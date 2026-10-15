@@ -2,6 +2,7 @@ packages:
   - packages/*
   - examples/*
 allowBuilds:
+  '@ast-grep/lang-python': false
   esbuild: true
   playwright-chromium: true
 minimumReleaseAgeExclude:

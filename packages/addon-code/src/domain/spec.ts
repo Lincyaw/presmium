@@ -11,6 +11,11 @@ export interface CodeRefSpec {
   steps?: string[]
   /** Commits shown one per step with Magic Move. */
   variants?: string[]
+  /**
+   * Click at which the second step or version appears, as Slidev's `at`.
+   * Variants default to 1; steps by default follow the slide's earlier clicks.
+   */
+  at?: number
   /** Highlighting language; the file extension by default. */
   lang?: string
 }
@@ -21,34 +26,45 @@ export interface CodeRefBlock {
   end: number
   /** 0-based line of the opening fence. */
   line: number
+  /** Indentation of the opening fence, e.g. inside a list item. */
+  indent: string
   body: string
 }
 
-const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/
+const FENCE = /^( *)(`{3,}|~{3,})(.*)$/
 
 /** Top-level ```` ```coderef ```` blocks; blocks nested in other fences (e.g. shown as examples) are skipped. */
 export function findCodeRefBlocks(markdown: string): CodeRefBlock[] {
   const blocks: CodeRefBlock[] = []
   const lines = markdown.split('\n')
   let offset = 0
-  let open: { fence: string, coderef: boolean, start: number, line: number, bodyStart: number } | undefined
+  let open: { fence: string, indent: string, coderef: boolean, start: number, line: number, body: string[] } | undefined
   lines.forEach((text, i) => {
     const lineEnd = offset + text.length
     const m = FENCE.exec(text.replace(/\r$/, ''))
     if (!open && m) {
-      open = { fence: m[1]!, coderef: m[2]!.trim() === 'coderef', start: offset, line: i, bodyStart: lineEnd + 1 }
+      open = { fence: m[2]!, indent: m[1]!, coderef: m[3]!.trim() === 'coderef', start: offset, line: i, body: [] }
     }
     // A closing fence repeats the opening character at least as many times and has no info string.
-    else if (open && m && m[1]!.startsWith(open.fence) && m[2]!.trim() === '') {
-      if (open.coderef) blocks.push({ start: open.start, end: lineEnd, line: open.line, body: markdown.slice(open.bodyStart, Math.max(open.bodyStart, offset - 1)) })
+    else if (open && m && m[2]!.startsWith(open.fence) && m[3]!.trim() === '') {
+      if (open.coderef) blocks.push({ start: open.start, end: lineEnd, line: open.line, indent: open.indent, body: open.body.join('\n') })
       open = undefined
+    }
+    else if (open) {
+      // Body lines lose up to the fence's indentation, as in CommonMark.
+      open.body.push(text.slice(Math.min(open.indent.length, /^ */.exec(text)![0].length)))
     }
     offset = lineEnd + 1
   })
   return blocks
 }
 
-const KEYS = new Set(['anchor', 'pin', 'steps', 'variants', 'lang'])
+/** Indents every non-blank line of `text`, to put a rendered block back where its fence was. */
+export function indent(text: string, prefix: string): string {
+  return prefix ? text.split('\n').map(line => (line.trim() ? prefix + line : line)).join('\n') : text
+}
+
+const KEYS = new Set(['anchor', 'pin', 'steps', 'variants', 'at', 'lang'])
 
 function stringList(value: unknown, key: string): string[] {
   if (!Array.isArray(value) || value.length === 0 || !value.every(v => typeof v === 'string' && v.trim() !== '')) {
@@ -72,7 +88,7 @@ export function parseCodeRef(body: string): CodeRefSpec {
   const unknown = Object.keys(fields).filter(k => !KEYS.has(k))
   if (unknown.length > 0) throw new Error(`unknown key "${unknown[0]}" (allowed: ${[...KEYS].join(', ')})`)
 
-  const { anchor, pin, steps, variants, lang } = fields
+  const { anchor, pin, steps, variants, at, lang } = fields
   if (typeof anchor !== 'string' || !parseAnchor(anchor.trim())) throw new Error('"anchor" must be scheme:target, e.g. region:src/app.ts#main')
   const spec: CodeRefSpec = { anchor: anchor.trim() as AnchorString }
   for (const [key, value] of Object.entries({ pin, lang })) {
@@ -85,6 +101,11 @@ export function parseCodeRef(body: string): CodeRefSpec {
     spec.variants = stringList(variants, 'variants')
     if (spec.variants.length < 2) throw new Error('"variants" needs at least two commits')
     if (spec.pin || spec.steps) throw new Error('"variants" cannot be combined with "pin" or "steps"')
+  }
+  if (at !== undefined) {
+    if (typeof at !== 'string' || !/^[1-9]\d*$/.test(at.trim())) throw new Error('"at" must be a click number, 1 or more')
+    if (!spec.steps && !spec.variants) throw new Error('"at" needs "steps" or "variants"')
+    spec.at = Number(at)
   }
   return spec
 }

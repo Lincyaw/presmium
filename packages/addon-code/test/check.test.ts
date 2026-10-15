@@ -27,28 +27,44 @@ export function checkout(prices: number[], coupon?: string): string {
 // #endregion checkout
 `
 
-// The same code with blank lines inserted and the checkout region re-indented as a whole.
+// The same code with blank lines inserted, indented four spaces per level, and the checkout region shifted right.
 const CART_REFORMATTED = `
 
 export function total(prices: number[]): number {
-  return prices.reduce((sum, price) => sum + price, 0)
+    return prices.reduce((sum, price) => sum + price, 0)
 }
 
   // #region checkout
   export function checkout(prices: number[], coupon?: string): string {
-    // #region validate
-    if (prices.length === 0)
-      throw new Error('empty')
-    // #endregion validate
+      // #region validate
+      if (prices.length === 0)
+          throw new Error('empty')
+      // #endregion validate
 
-    // #region price
-    const discount = coupon ? 0.1 : 0
-    // #endregion price
+      // #region price
+      const discount = coupon ? 0.1 : 0
+      // #endregion price
 
-    return \`total: \${total(prices) * (1 - discount)}\`
+      return \`total: \${total(prices) * (1 - discount)}\`
   }
   // #endregion checkout
 `
+
+// Python code without markers, referenced by symbol.
+const PARSER = `class Parser:
+    def __init__(self, text):
+        self.text = text
+
+    def parse(self):
+        words = []
+        for word in self.text.split():
+            if word:
+                words.append(word.lower())
+        return words
+`
+
+// The same code with blank lines inserted and indented two spaces per level.
+const PARSER_REFORMATTED = `\n\n${PARSER.replace(/^(?: {4})+/gm, lead => ' '.repeat(lead.length / 2))}`
 
 const repos: string[] = []
 afterAll(() => repos.forEach(dir => rmSync(dir, { recursive: true, force: true })))
@@ -61,15 +77,16 @@ interface Finding {
   source: { file: string, line: number }
 }
 
-/** A git repository with src/cart.ts committed and a deck that pins one anchor to that commit. */
-function createRepo(): { dir: string, deck: string, fenceLine: number, edit: (text: string) => void } {
+/** A git repository with src/cart.ts and src/parser.py committed and a deck that pins one anchor to that commit. */
+function createRepo(): { dir: string, deck: string, fenceLine: number, edit: (text: string, file?: string) => void } {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-code-'))
   repos.push(dir)
   const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir, encoding: 'utf8' }).trim()
-  const edit = (text: string) => writeFileSync(join(dir, 'src/cart.ts'), text)
+  const edit = (text: string, file = 'src/cart.ts') => writeFileSync(join(dir, file), text)
   mkdirSync(join(dir, 'src'))
   mkdirSync(join(dir, 'deck'))
   edit(CART)
+  edit(PARSER, 'src/parser.py')
   git('init', '-q')
   git('add', '.')
   git('commit', '-qm', 'cart')
@@ -95,6 +112,14 @@ steps: [validate, price]
 
 \`\`\`coderef
 anchor: symbol:src/cart.ts#total
+\`\`\`
+
+---
+
+# Python
+
+\`\`\`coderef
+anchor: symbol:src/parser.py#Parser.parse
 \`\`\`
 `
   writeFileSync(join(dir, 'deck/slides.md'), deck)
@@ -123,26 +148,31 @@ it('keeps passing after blank lines are inserted and the referenced code is re-i
   expect(locked.findings).toEqual([])
 
   repo.edit(CART_REFORMATTED)
+  repo.edit(PARSER_REFORMATTED, 'src/parser.py')
   const { code, findings } = await check(repo.dir)
   expect(code).toBe(0)
   expect(problems(findings)).toEqual([])
-  // The lock notices that both anchors moved down.
+  // The lock notices that the anchors moved down, and nothing else: the code itself is unchanged.
   expect(findings.map(f => f.message)).toEqual([
     'anchor region:src/cart.ts#checkout moved to src/cart.ts:8',
     'anchor symbol:src/cart.ts#total moved to src/cart.ts:3',
+    'anchor symbol:src/parser.py#Parser.parse moved to src/parser.py:7',
   ])
 })
 
-it('asks to confirm a renamed region and reports a deleted anchor as an error at its block', async () => {
+it('asks to confirm a renamed region or method and reports a deleted anchor as an error at its block', async () => {
   const repo = createRepo()
   await check(repo.dir, '--update-lock')
 
   repo.edit(CART.replaceAll('region checkout', 'region pay'))
+  repo.edit(PARSER.replace('def parse(', 'def parse_all('), 'src/parser.py')
   const renamed = await check(repo.dir)
   expect(renamed.code).toBe(0)
   expect(problems(renamed.findings)).toMatchObject([
     { checkId: 'presmium.code.anchors', severity: 'warning', message: expect.stringContaining('candidates: src/cart.ts:6') },
+    { checkId: 'presmium.code.anchors', severity: 'warning', message: expect.stringContaining('candidates: src/parser.py:5') },
   ])
+  repo.edit(PARSER, 'src/parser.py')
 
   repo.edit(CART.split('\n').filter(line => !line.includes('region checkout')).join('\n'))
   const deleted = await check(repo.dir)

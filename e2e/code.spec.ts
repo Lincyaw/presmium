@@ -1,5 +1,10 @@
-import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { execFileSync, spawn } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import { SLIDES } from './urls.ts'
 
@@ -74,4 +79,98 @@ test('the multi-version code block switches versions with the steps', async ({ p
   await expect(code).toContainText(versions[1]!)
   await expect(code).not.toContainText(versions[2]!)
   await expect(active).toHaveText(commits[1]!.slice(0, 7))
+})
+
+// K-09: `slidev dev` on a throwaway repository, whose code changes while the slides are open.
+test.describe('dev server', () => {
+  const root = (path: string) => fileURLToPath(new URL(`../${path}`, import.meta.url))
+  const CART = `// #region checkout
+export function checkout(prices: number[]): string {
+  return \`total: \${prices.length}\`
+}
+// #endregion checkout
+`
+  let repo: string
+  let url: string
+  let server: ChildProcess | undefined
+  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: repo, encoding: 'utf8' }).trim()
+
+  test.beforeAll(async () => {
+    repo = mkdtempSync(join(tmpdir(), 'presmium-code-dev-'))
+    mkdirSync(join(repo, 'src'))
+    mkdirSync(join(repo, 'deck'))
+    writeFileSync(join(repo, 'src/cart.ts'), CART)
+    git('init', '-q', '-b', 'main')
+    git('add', '.')
+    git('commit', '-qm', 'cart')
+    // Permalinks come from the origin remote; the deck does not configure presmium.code.repo.
+    git('remote', 'add', 'origin', 'git@github.com:acme/shop.git')
+    writeFileSync(join(repo, 'deck/slides.md'), `---
+theme: ${root('examples/demo/node_modules/@slidev/theme-default')}
+addons:
+  - ${root('packages/addon-core')}
+  - ${root('packages/addon-code')}
+---
+
+# Pinned and live
+
+\`\`\`coderef
+anchor: region:src/cart.ts#checkout
+pin: ${git('rev-parse', '--short', 'HEAD')}
+\`\`\`
+
+\`\`\`coderef
+anchor: symbol:src/cart.ts#checkout
+\`\`\`
+
+---
+
+# Broken
+
+\`\`\`coderef
+anchor: region:src/cart.ts#missing
+\`\`\`
+`)
+    const port = await new Promise<number>((resolve) => {
+      const probe = createServer().listen(0, () => {
+        const { port } = probe.address() as { port: number }
+        probe.close(() => resolve(port))
+      })
+    })
+    url = `http://localhost:${port}`
+    server = spawn(process.execPath, [root('examples/demo/node_modules/@slidev/cli/bin/slidev.mjs'), 'slides.md', '--port', String(port)], { cwd: join(repo, 'deck'), stdio: 'ignore' })
+    await expect.poll(() => fetch(url).then(res => res.ok, () => false), { timeout: 60_000 }).toBe(true)
+  })
+
+  test.afterAll(() => {
+    server?.kill()
+    rmSync(repo, { recursive: true, force: true })
+  })
+
+  test('code references follow the referenced file and git history without a restart', async ({ page }) => {
+    test.setTimeout(240_000)
+    const pinned = page.locator('.pm-coderef[data-anchor="region:src/cart.ts#checkout"]:visible')
+    const live = page.locator('.pm-coderef[data-anchor="symbol:src/cart.ts#checkout"]:visible')
+    // The first visit to a fresh deck may race Vite's dependency optimization; reload until the slide renders.
+    await expect(async () => {
+      await page.goto(`${url}/1`)
+      await expect(live).toBeVisible({ timeout: 30_000 })
+    }).toPass({ timeout: 180_000 })
+    await expect(live.locator('a.pm-coderef__file')).toHaveAttribute('href', `https://github.com/acme/shop/blob/${git('rev-parse', 'HEAD')}/src/cart.ts#L2-L4`)
+    await expect(pinned.locator('.pm-coderef__badge')).toHaveText('已锁定')
+
+    // Give the dev server a moment to start watching the referenced file, then change it.
+    await page.waitForTimeout(1000)
+    writeFileSync(join(repo, 'src/cart.ts'), CART.replace('prices.length', 'prices.length * 2'))
+    await expect(live.locator('.slidev-code')).toContainText('prices.length * 2', { timeout: 15_000 })
+    await expect(pinned.locator('.slidev-code')).not.toContainText('prices.length * 2')
+    await expect(pinned.locator('.pm-coderef__badge')).toHaveText('已漂移')
+
+    // A commit moves HEAD, which the permalink of unpinned code follows.
+    git('commit', '-qam', 'double')
+    await expect(live.locator('a.pm-coderef__file')).toHaveAttribute('href', new RegExp(`/blob/${git('rev-parse', 'HEAD')}/`), { timeout: 15_000 })
+
+    await page.goto(`${url}/2`)
+    await expect(page.locator('.pm-coderef--error:visible')).toContainText('region "missing" not found in src/cart.ts')
+  })
 })

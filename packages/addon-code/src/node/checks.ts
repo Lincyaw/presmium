@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { isRenderable } from '@presmium/kernel'
 import type { Check, CheckContext, DeckSlide, Finding, Resolution } from '@presmium/kernel'
-import { driftDiff, findCodeRefBlocks, highlightSteps, parseCodeRef, toSnippet } from '../domain/index.ts'
+import { codeConfig, driftDiff, findCodeRefBlocks, highlightSteps, parseCodeRef, toSnippet } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 import { openWorkspace } from './git.ts'
-import { errorMessage, repoFor } from './transform.ts'
+import { errorMessage, repositoryOf, repoUrl } from './transform.ts'
 
 /** A coderef block in the deck. */
 interface Usage {
@@ -91,15 +91,17 @@ const anchors = eachCodeRef('presmium.code.anchors', async ({ spec }, emit, ctx)
     emit('info', `code at ${spec.anchor} changed since the anchor was locked`, LOCK_HINT)
   }
 
+  // Commits are read with this addon's reader, which also reads submodules.
   const workspace = openWorkspace(ctx.workspaceRoot)
+  const repo = await repositoryOf(workspace, spec.anchor)
   let shown: Resolution | undefined = spec.pin ? undefined : current
   for (const rev of spec.variants ?? (spec.pin ? [spec.pin] : [])) {
-    const commit = await workspace.commit(rev)
+    const commit = await repo.commit(rev)
     if (!commit) {
-      emit('error', `commit "${rev}" of ${spec.anchor} not found`, 'use a commit of this repository')
+      emit('error', `commit "${rev}" of ${spec.anchor} not found`, 'use a commit of the repository that holds the file')
       continue
     }
-    const resolution = await ctx.resolvers.resolve(spec.anchor, ctx.src, undefined, commit)
+    const resolution = await ctx.resolvers.resolve(spec.anchor, workspace.src, undefined, commit)
     if (!isRenderable(resolution)) emit('error', `anchor ${spec.anchor} cannot be read at ${rev}: ${resolution.message}`)
     else if (rev === spec.pin) shown = resolution
   }
@@ -116,9 +118,10 @@ const anchors = eachCodeRef('presmium.code.anchors', async ({ spec }, emit, ctx)
 /** Drift (P-14): the working tree no longer has the code of the pinned commit. */
 const drift = eachCodeRef('presmium.code.drift', async ({ spec }, emit, ctx) => {
   if (!spec.pin) return
-  const commit = await openWorkspace(ctx.workspaceRoot).commit(spec.pin)
+  const workspace = openWorkspace(ctx.workspaceRoot)
+  const commit = await (await repositoryOf(workspace, spec.anchor)).commit(spec.pin)
   if (!commit) return
-  const pinned = await ctx.resolvers.resolve(spec.anchor, ctx.src, undefined, commit)
+  const pinned = await ctx.resolvers.resolve(spec.anchor, workspace.src, undefined, commit)
   const current = await ctx.resolvers.resolve(spec.anchor, ctx.src)
   if (!isRenderable(pinned) || !isRenderable(current) || pinned.fingerprint === current.fingerprint) return
   const diff = driftDiff(pinned.location!.file, { commit, text: pinned.location!.text }, { label: 'working-tree', text: current.location!.text })
@@ -127,7 +130,8 @@ const drift = eachCodeRef('presmium.code.drift', async ({ spec }, emit, ctx) => 
 
 /** Permalinks (P-13) need a remote repository; without one the slides show plain paths. */
 const links = eachCodeRef('presmium.code.links', async ({ spec, slide }, emit, ctx) => {
-  if (await repoFor(openWorkspace(ctx.workspaceRoot), ctx.headmatter, slide.frontmatter)) return
+  const repo = await repositoryOf(openWorkspace(ctx.workspaceRoot), spec.anchor)
+  if (await repoUrl(repo, codeConfig(ctx.headmatter, slide.frontmatter).repo)) return
   emit('info', `no remote repository for ${spec.anchor}; it is shown without a permalink`, 'set presmium.code.repo in the headmatter or add an origin remote')
 })
 

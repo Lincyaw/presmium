@@ -1,28 +1,39 @@
+import { resolve } from 'node:path'
 import { createAnchorResolverRegistry, isRenderable } from '@presmium/kernel'
 import type { AnchorString, MarkdownTransformInput, PresentationMode, ResolvedLocation } from '@presmium/kernel'
 import {
   codeConfig,
   findCodeRefBlocks,
   highlightSteps,
+  indent,
   lineRange,
   parseCodeRef,
   permalink,
   regionResolver,
   renderCodeRef,
   repoWebUrl,
+  splitTarget,
   toSnippet,
 } from '../domain/index.ts'
 import type { CodeRefSpec, CodeRefView, CodeVersion } from '../domain/index.ts'
 import { openWorkspace } from './git.ts'
-import type { Workspace } from './git.ts'
+import type { Repository, Workspace } from './git.ts'
 import { symbolResolver } from './symbol.ts'
 
 /** Resolvers of the anchor schemes code references accept. */
 export const codeResolvers = createAnchorResolverRegistry([regionResolver, symbolResolver])
 
-/** Web URL for permalinks: `presmium.code.repo` from the slide or deck, else the `origin` remote. */
-export async function repoFor(workspace: Workspace, headmatter: unknown, frontmatter: unknown): Promise<string | undefined> {
-  return repoWebUrl(codeConfig(headmatter, frontmatter).repo ?? await workspace.remote())
+/**
+ * Web URL of a repository for permalinks: for the workspace's own repository
+ * `presmium.code.repo` of the slide or deck when set, otherwise the `origin` remote.
+ */
+export async function repoUrl(repo: Repository, configured: string | undefined): Promise<string | undefined> {
+  return repoWebUrl((repo.prefix ? undefined : configured) ?? await repo.remote())
+}
+
+/** The repository holding the file an anchor names. */
+export function repositoryOf(workspace: Workspace, anchor: AnchorString): Promise<Repository> {
+  return workspace.repository(splitTarget(anchor)?.file ?? '')
 }
 
 export function errorMessage(error: unknown): string {
@@ -38,7 +49,7 @@ interface Snapshot {
 
 /** The code an anchor names at a revision (the working tree when omitted); throws when it cannot be rendered. */
 export async function snapshot(workspace: Workspace, anchor: AnchorString, rev?: string): Promise<Snapshot> {
-  const commit = rev === undefined ? undefined : await workspace.commit(rev)
+  const commit = rev === undefined ? undefined : await (await repositoryOf(workspace, anchor)).commit(rev)
   if (rev !== undefined && !commit) throw new Error(`commit "${rev}" not found`)
   const resolution = await codeResolvers.resolve(anchor, workspace.src, undefined, commit)
   if (!isRenderable(resolution) || !resolution.location) throw new Error(resolution.message ?? `anchor ${anchor} is ${resolution.status}`)
@@ -47,11 +58,15 @@ export async function snapshot(workspace: Workspace, anchor: AnchorString, rev?:
 
 interface Env {
   workspace: Workspace
+  /** `presmium.code.repo` of the slide or deck. */
   repo?: string
 }
 
-function link(env: Env, commit: string | undefined, { file, startLine, endLine }: ResolvedLocation): string | undefined {
-  return env.repo && commit ? permalink(env.repo, commit, file, startLine, endLine) : undefined
+async function link(env: Env, commit: string | undefined, { file, startLine, endLine }: ResolvedLocation): Promise<string | undefined> {
+  if (!commit) return undefined
+  const repo = await env.workspace.repository(file)
+  const url = await repoUrl(repo, env.repo)
+  return url && permalink(url, commit, repo.path(file), startLine, endLine)
 }
 
 async function single(spec: CodeRefSpec, env: Env): Promise<{ view: CodeRefView, versions: CodeVersion[] }> {
@@ -66,14 +81,17 @@ async function single(spec: CodeRefSpec, env: Env): Promise<{ view: CodeRefView,
     lines: lineRange(startLine, endLine),
     commit: shown.commit,
     pinned: spec.pin !== undefined,
-    href: linked && link(env, linked.commit, linked.location),
+    href: linked && await link(env, linked.commit, linked.location),
   }
   if (shown.commit) {
     const current = await codeResolvers.resolve(spec.anchor, env.workspace.src)
     view.drift = isRenderable(current) && current.fingerprint === shown.fingerprint ? 'synced' : 'drifted'
   }
-  const highlight = spec.steps && highlightSteps(spec.steps, snippet.units)
-  return { view, versions: [{ code: snippet.code, highlight, label: shown.commit?.slice(0, 7) ?? file }] }
+  if (spec.steps) {
+    view.steps = highlightSteps(spec.steps, snippet.units)
+    view.at = spec.at
+  }
+  return { view, versions: [{ code: snippet.code, label: shown.commit?.slice(0, 7) ?? file }] }
 }
 
 async function variants(spec: CodeRefSpec, revs: string[], env: Env): Promise<{ view: CodeRefView, versions: CodeVersion[] }> {
@@ -81,7 +99,9 @@ async function variants(spec: CodeRefSpec, revs: string[], env: Env): Promise<{ 
   const view: CodeRefView = {
     anchor: spec.anchor,
     file: shots.at(-1)!.location.file,
-    variants: shots.map(s => ({ commit: s.commit!, lines: lineRange(s.location.startLine, s.location.endLine), href: link(env, s.commit, s.location) })),
+    variants: await Promise.all(shots.map(async s => ({ commit: s.commit!, lines: lineRange(s.location.startLine, s.location.endLine), href: await link(env, s.commit, s.location) }))),
+    // An absolute click, so that the component knows which version Magic Move shows.
+    at: spec.at ?? 1,
   }
   const versions = shots.map(s => ({ code: toSnippet(s.location.text).code, label: s.commit!.slice(0, 7) }))
   return { view, versions }
@@ -112,13 +132,37 @@ async function renderBlock(body: string, env: Env, mode: PresentationMode): Prom
 export async function transformCodeRefs(input: MarkdownTransformInput): Promise<string> {
   const blocks = findCodeRefBlocks(input.content)
   if (blocks.length === 0) return input.content
-  const workspace = openWorkspace(input.workspaceRoot)
-  const env: Env = { workspace, repo: await repoFor(workspace, input.headmatter, input.frontmatter) }
+  const env: Env = { workspace: openWorkspace(input.workspaceRoot), repo: codeConfig(input.headmatter, input.frontmatter).repo }
   let out = ''
   let last = 0
   for (const block of blocks) {
-    out += input.content.slice(last, block.start) + await renderBlock(block.body, env, input.mode)
+    out += input.content.slice(last, block.start) + indent(await renderBlock(block.body, env, input.mode), block.indent)
     last = block.end
   }
   return out + input.content.slice(last)
+}
+
+/**
+ * Absolute paths of the files that the code references of a slide depend on
+ * (K-09): the referenced files, and the git refs behind revisions that can
+ * move, such as HEAD for unpinned code, whose permalink points at HEAD.
+ */
+export async function watchedFiles(content: string, workspaceRoot: string): Promise<string[]> {
+  const workspace = openWorkspace(workspaceRoot)
+  const files = new Set<string>()
+  for (const block of findCodeRefBlocks(content)) {
+    let spec: CodeRefSpec
+    try {
+      spec = parseCodeRef(block.body)
+    }
+    catch {
+      continue
+    }
+    const file = splitTarget(spec.anchor)?.file
+    if (!file) continue
+    files.add(resolve(workspaceRoot, file))
+    const repo = await workspace.repository(file)
+    for (const rev of spec.variants ?? [spec.pin ?? 'HEAD']) (await repo.refFiles(rev)).forEach(f => files.add(f))
+  }
+  return [...files]
 }

@@ -63,10 +63,11 @@ steps: [validate, price, receipt]
 ```
 ````
 
-- `anchor`：`region:<文件>#<区间名>` 或 `symbol:<文件>#<符号名>`，文件相对于仓库根目录
+- `anchor`：`region:<文件>#<区间名>` 或 `symbol:<文件>#<类名.方法名>`（TypeScript、JavaScript、Python），文件相对于仓库根目录
 - `pin`：锁定的提交；省略时读取工作区
 - `steps`：逐步高亮的逻辑单元，即锚点内嵌套的 `#region`
 - `variants`：逐步切换的提交列表
+- `at`：第几次点击切换到第二个步骤或版本；`variants` 默认为 1，`steps` 默认接在本页之前的点击之后
 - `lang`：高亮语言，默认取文件扩展名
 
-`presmium check` 报告失效的锚点、待确认的模糊匹配，以及锁定提交之后代码的漂移和差异。
+`presmium check` 报告失效的锚点、待确认的模糊匹配，以及锁定提交之后代码的漂移和差异。`slidev` 开发服务器监听被引用的文件和 git 引用，修改代码或提交后页面随即更新。

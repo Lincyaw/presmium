@@ -7,6 +7,11 @@ interface Variant {
   href?: string
 }
 
+interface Step {
+  name: string
+  lines: string
+}
+
 // Rendered by the coderef transform (src/node/transform.ts); everything is resolved at build time.
 const props = defineProps<{
   anchor: string
@@ -19,11 +24,20 @@ const props = defineProps<{
   error?: string
   /** JSON list of versions shown one per step. */
   variants?: string
+  /** Click at which Magic Move shows the second version. */
+  at?: number
+  /** JSON list of the logical units highlighted one per step; given in the document form. */
+  steps?: string
 }>()
 
 const variants: Variant[] = props.variants ? JSON.parse(props.variants) : []
-// Magic Move shows version k from step k until the next version replaces it.
-const shown = variants.map((_, k) => useStepState({ from: k, to: k + 1 < variants.length ? k + 1 : undefined }))
+const steps: Step[] = props.steps ? JSON.parse(props.steps) : []
+// Magic Move shows the first version until click `at`, then one more version per click.
+const at = props.at ?? 1
+const shown = variants.map((_, k) => useStepState({
+  from: k === 0 ? 0 : at + k - 1,
+  to: k + 1 < variants.length ? at + k : undefined,
+}))
 
 function short(commit: string): string {
   return commit.slice(0, 7)
@@ -52,6 +66,11 @@ function short(commit: string): string {
         >{{ drift === 'drifted' ? '已漂移' : '已锁定' }}</span>
       </figcaption>
       <slot />
+      <ol v-if="steps.length" class="pm-coderef__steps">
+        <li v-for="step in steps" :key="step.name">
+          <code>{{ step.name }}</code>：第 {{ step.lines }} 行
+        </li>
+      </ol>
     </figure>
   </PmBoundary>
 </template>
@@ -92,6 +111,10 @@ function short(commit: string): string {
 .pm-coderef__badge[data-drift='drifted'] {
   border-color: #d97706;
   color: #d97706;
+}
+.pm-coderef__steps {
+  margin: 0.25rem 0 0;
+  font-size: 0.85em;
 }
 .pm-coderef--error {
   padding: 0.5rem 0.75rem;
