@@ -8,11 +8,7 @@ export interface Item {
 }
 
 export function total(prices: number[]): number {
-  let sum = 0
-  for (const price of prices) {
-    sum += price
-  }
-  return sum
+  return prices.reduce((sum, price) => sum + price, 0)
 }
 
 // #region checkout
