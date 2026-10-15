@@ -6,7 +6,9 @@
 
 | 上下文 | 包 | 职责 | 覆盖需求 |
 |---|---|---|---|
-| 内核 Kernel | `@presmium/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约 | K-07、K-08、K-10、K-16 |
+| 内核 Kernel | `@presmium/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约 | K-07、K-08、K-10、K-16、K-17 |
+| 编译 Compilation | `@presmium/compiler` | 解析 MyST 源码、执行编译步骤、编译时执行与缓存、生成 IR | K-01、K-02、K-11、K-17、K-19 |
+| 渲染 Rendering | `@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook` | 从 IR 生成各媒介，声明支持程度并降级 | K-18、P-70、P-75、P-76 |
 | 宿主适配 Host | `@presmium/host`、`@presmium/slidev-addon-core`、`@presmium/web` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现 | K-04、K-05、K-06、K-07 |
 | 检查 Diagnostics | `@presmium/cli` | 解析文稿、运行检查项、输出诊断 | K-16 |
 | 讲台 Stage | `@presmium/slidev-addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 | P-01 至 P-04 |
@@ -18,7 +20,7 @@
 | 发布 Publishing | `@presmium/slidev-addon-publish` | 导出、离线、高对比度、可视化差异 | P-50 至 P-53 |
 | 课堂 Classroom | `@presmium/slidev-addon-session`、`@presmium/slidev-addon-classroom`、`@presmium/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度 | P-60 至 P-67 |
 
-演示本身（文稿、页、步骤、光标）由 Slidev 承担，网页的排版、搜索、目录由 VitePress 承担。Presmium 不重建这部分模型，只通过宿主适配层读取。
+文稿模型（章节、块、步骤、讲解）由 Presmium 以 IR 的形式自己定义，这是核心领域，也是各上下文之间的公开语言（Published Language）。Slidev、VitePress 只作为渲染端与浏览器宿主，负责排版、放映、搜索等它们擅长的部分。
 
 ## 2. 上下文映射
 
@@ -83,6 +85,41 @@
 ### 领域事件
 
 `PluginStarted`、`PluginDegraded`、`PluginDisabled`、`PluginFailed`。
+
+## 3A. 编译
+
+| 中文 | 标识符 | 含义 |
+|---|---|---|
+| 源码 | `SourceDocument` | 入口 MyST 文件及其引入的文件 |
+| 指令 | `DirectiveSpec` | 插件注册的 MyST 指令，把源码节点转换为 IR 节点 |
+| 编译步骤 | `IRPass` | IR 上的有序变换 |
+| 中间表示 | `IRDocument` | 编译结果：章节、块、步骤、讲解、录制输出 |
+| 块角色 | `BlockRole` | `visual`（上屏内容）或 `narration`（讲解） |
+| 执行缓存 | `RunCache` | 按内容哈希保存的执行结果，位于 `.presmium/freeze/` |
+
+不变量：
+
+- 编译是确定的：同一源码、同一缓存得到相同的 IR。
+- 每个章节 ID 在文稿内唯一；块 ID 在章节内唯一。
+- 讲解块的 `at` 不超过所在章节的步骤数。
+- 编译诊断与检查诊断使用同一个 `Finding` 类型，都带源码位置。
+
+领域事件：`DocumentCompiled`、`RunRecorded`、`RunCacheHit`。
+
+## 3B. 渲染
+
+| 中文 | 标识符 | 含义 |
+|---|---|---|
+| 渲染端 | `Renderer` | 从 IR 生成一种媒介 |
+| 支持程度 | `Support` | `full`、`degraded`、`none` |
+| 渲染扩展 | `RendererExtension` | 插件为某个渲染端提供的组件转换 |
+| 构建报告 | `RenderOutput` | 产物目录与未渲染的块 |
+
+不变量：
+
+- 网页渲染端对所有节点的支持程度都是 `full`。
+- 渲染端只读 IR，不读源码，不回写源码。
+- 支持程度为 `none` 的块必须出现在构建报告中。
 
 ## 4. 宿主适配
 

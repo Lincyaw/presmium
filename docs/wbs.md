@@ -9,7 +9,9 @@
 | A | WP-00 工程骨架、WP-01 内核 | — |
 | B（M0） | WP-02 宿主适配、WP-03 检查命令 | A |
 | C（M1、M2） | WP-10 讲台、WP-11 代码引用、WP-12 网页形态、WP-20 浏览器执行、WP-21 本地环境、WP-22 引导、WP-23 富内容、WP-24 发布 | B |
-| D（M3） | WP-30 会话与同步，然后 WP-31 课堂功能 | C |
+| R（MR） | 先 WP-40 编译器，然后并行 WP-41 幻灯片渲染端、WP-42 网页渲染端、WP-43 notebook 渲染端、WP-44 代码与执行插件迁移、WP-45 展示类插件迁移 | C |
+| D（M3） | WP-30 会话与同步，然后 WP-31 课堂功能 | R |
+| E（M4） | WP-50 语言服务与预览同步 | R |
 
 ## 测试原则
 
@@ -217,3 +219,90 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 **交付**：学习笔记（挂载锚点，仅本人可见）、课堂测验（主讲开放与关闭、实时统计，每人只计最后一次作答）、练习校验（调用 `executor` 跑测试用例，标记典型错误）、提问（挂载到页或锚点）、理解度汇聚（演讲者面板显示分布）；课堂结束后拒绝写入。
 
 **验收**（Playwright，三个浏览器上下文：主讲、两名学习者）：完成一轮测验，统计正确且重复作答只计最后一次；关闭后不再接受作答；提问出现在演讲者面板并标注所在页；练习提交后返回校验结果；学习者 A 的笔记对学习者 B 不可见。
+
+## MR 波次：中间表示
+
+MR 波次把 M1、M2 的成果迁移到 IR 管线（`docs/ir.md`）。迁移完成后，M1、M2 的全部验收在新管线上重新通过。
+
+### WP-40 编译器
+
+**拥有**：`packages/compiler/`、`packages/cli/`、`examples/demo/lecture.md`、`examples/demo/pages/core.md`、`examples/demo/package.json`、`playwright.config.ts`、根 `package.json` 的脚本。
+
+**需求**：K-01、K-02、K-11、K-16、K-17、K-19。
+
+**交付**：
+
+- `@presmium/compiler`：剥离 frontmatter、`myst-parser` 解析、`{include}`；切分章节与章节 ID；内置指令 `{slide}`、`{only}`、`{hints}`；划分角色；编排步骤（`:reveal:`、`:reveal: items`、`span`）；加载插件的指令、编译步骤、执行器、检查项；执行步骤与执行缓存（`.presmium/freeze/`）；IR 校验；增量编译（按文件）。
+- 渲染端注册与调度：按 frontmatter 的 `renderers` 与各插件的 `renderer` 调用 `build` / `dev`，汇总构建报告。
+- CLI：`presmium build [--to] [--out]`、`presmium dev [--to]`、`presmium ir`、`presmium check`（改为基于编译器）。
+- 示例文稿入口改为 `examples/demo/lecture.md`，`core.md` 改写为 MyST；根脚本 `demo:build` 改为 `presmium build`，产物位于 `examples/demo/dist/<渲染端>/`；Playwright 配置指向新的产物目录。
+
+**验收**（集成测试，真实运行 CLI）：
+
+- 对测试文稿运行 `presmium ir`：章节数、章节 ID、讲解与上屏的划分、`at` 与步骤数符合 `ir.md` 第 2 节。
+- 用测试执行器（测试夹具中的插件）验证：首次编译执行一次，第二次命中缓存不再执行；修改代码后只重跑该块。
+- `presmium check` 原有验收全部保持（退出码、`文件:行号`、`--json`、`--update-lock`）。
+
+### WP-41 幻灯片渲染端
+
+**拥有**：`packages/render-slides/`、`e2e/core.spec.ts`。
+
+**需求**：P-76、K-04、K-05、K-12，以及原 WP-02 的端到端验收。
+
+**交付**：从 IR 生成 Slidev 项目（每章节一页；上屏块按 `at` 包裹 `v-click`；`code` 节点按 `highlight` 生成逐步行高亮；`variants` 生成 Magic Move；讲解生成带 `[click]` 标记的备注；`component` 节点生成组件标签；`hints.slides.layout` 映射为布局；frontmatter 的插件列表映射为 `addons`），再调用 Slidev 构建或启动开发服务器。
+
+**验收**：原 `e2e/core.spec.ts` 的五条验收在新产物上通过；讲解出现在演讲者视图的对应步骤。
+
+### WP-42 网页渲染端
+
+**拥有**：`packages/web/`、`examples/demo/pages/web.md`、`e2e/web.spec.ts`。
+
+**需求**：P-70 至 P-74、N-05。
+
+**交付**：把 `@presmium/web` 从“Slidev Markdown 转 VitePress”改为“IR 生成 VitePress 项目”；保留 VitePress 宿主适配、中文搜索、滚动叙事、形态切换；`component` 节点渲染为插件组件；完整支持全部节点类型。
+
+**验收**：原 WP-12 的端到端验收在新管线上通过；示例文稿中所有插件组件在网页中可用。
+
+### WP-43 notebook 渲染端
+
+**拥有**：`packages/render-notebook/`、`e2e/notebook.spec.ts` 或 `packages/render-notebook/test/`。
+
+**需求**：P-75。
+
+**交付**：从 IR 生成 nbformat 4 的 `.ipynb`：章节标题与讲解、`markdown` 节点为 Markdown 单元格；`code` 节点为代码单元格（语言匹配 notebook 内核时），附录制输出；`component` 节点使用插件的 notebook 扩展，否则渲染 `fallback`；不支持的块列入构建报告。
+
+**验收**（集成测试）：生成的 notebook 通过 nbformat 结构校验；用本机 Python 依次执行全部代码单元格，输出与录制输出一致；讲解文字完整出现在 Markdown 单元格中。
+
+### WP-44 代码与执行插件迁移
+
+**拥有**：`packages/addon-code/`、`packages/addon-exec/`、`packages/addon-exec-local/`、`examples/sample-repo/`、`examples/demo/pages/code.md`、`examples/demo/pages/exec.md`、`examples/demo/pages/exec-local.md`、`e2e/code.spec.ts`、`e2e/exec.spec.ts`、`e2e/exec-local.spec.ts`。
+
+**需求**：P-10 至 P-16、P-20 至 P-26、K-09、K-19 的执行器部分。
+
+**交付**：`{code-ref}` 指令与编译步骤（锚点解析、锁定、逻辑单元换算为 `highlight`、永久链接、`variants`）；代码块的 `:run:` 选项生成 `RunSpec`；Node 端执行器（本地 Python 进程；容器执行器）用于编译时执行；浏览器端 Pyodide 与运行面板保持；移除 `setup/transformers.ts` 与 `transformMarkdown`；notebook 扩展（运行面板降级为代码单元格）；示例页改写为 MyST。P-25 编辑回写不再要求（编辑只在源码中进行），保留现有实现但不作为验收项。
+
+**验收**：原 WP-11、WP-20、WP-21 的验收在新管线上通过（P-25 除外）；编译时执行的输出出现在网页与 notebook 中。
+
+### WP-45 展示类插件迁移
+
+**拥有**：`packages/addon-stage/`、`packages/addon-guide/`、`packages/addon-content/`、`packages/addon-publish/`、对应的 `examples/demo/pages/*.md` 与 `e2e/*.spec.ts`。
+
+**需求**：P-01 至 P-04、P-30 至 P-32、P-40 至 P-43、P-50 至 P-53、N-06。
+
+**交付**：各插件的组件改为由指令生成（例如 `{spotlight}`、`{cursor}`、`{hint}`、`{markmap}`、媒体指令），提供 `fallback` 或 notebook 扩展；示例页改写为 MyST；发布插件改为基于渲染端产物（幻灯片导出 PDF、网页离线缓存、可视化差异对比渲染产物）；修复 WP-22 遗留问题：聚光时按 Tab 可以聚焦到被聚光的元素（N-06）。
+
+**验收**：原 WP-10、WP-22、WP-23、WP-24 的验收在新管线上通过；N-06 遗留问题有端到端用例覆盖。
+
+## 课堂波次的调整
+
+网页是主媒介，WP-30、WP-31 的课堂功能必须同时在网页与幻灯片中可用：会话与同步不只接入 Slidev 的 `addSyncMethod`，网页宿主中的“跟随主讲”按章节与步骤导航；测验、练习、提问等以指令声明（`{quiz}`、`{exercise}`、`{question}`），notebook 中降级为静态内容。
+
+## WP-50 语言服务与预览同步（M4）
+
+**拥有**：`packages/language-server/`、`packages/vscode/`。
+
+**需求**：P-80、P-81。
+
+**交付**：基于 `vscode-languageserver` 与 `@presmium/compiler` 的语言服务：诊断、锚点跳转、悬停显示引用代码与录制输出、补全；VS Code 扩展；编辑器光标所在章节与 `presmium dev` 预览同步。
+
+**验收**（集成测试，以 LSP 协议驱动语言服务进程）：失效锚点产生诊断；在锚点上请求定义返回代码区间；补全返回 region 名与指令名。
