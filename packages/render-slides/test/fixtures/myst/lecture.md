@@ -5,6 +5,8 @@ plugins:
   - ../widgets
   - ../twin
 renderers:
+  web:
+    package: ../site
   slides:
     package: ../../..
     transition: none
@@ -68,3 +70,11 @@ An embedded page.
 
 :::{pointer}
 :::
+
+## Notes
+
+```{include} notes/one.md
+```
+
+```{include} notes/two.md
+```

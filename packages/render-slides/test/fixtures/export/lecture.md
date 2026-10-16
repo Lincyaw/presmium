@@ -8,6 +8,7 @@ plugins:
 renderers:
   slides:
     package: ../../..
+    base: talks/export
     transition: none
 ---
 

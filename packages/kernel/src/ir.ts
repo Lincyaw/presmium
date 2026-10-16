@@ -336,6 +336,15 @@ export interface RenderContext {
   lang?: string
   /** Ids of the renderers this build or dev session runs, this one included. */
   renderers: RendererId[]
+  /**
+   * Public base path the renderer's output is served under, `/` or
+   * `/<path>/`: `renderers.<id>.base`; else, when a build runs two or more
+   * site renderers (`Renderer.site`) and none of them sets a base, `/<id>/`,
+   * so the output directory deploys as one site (`dist/web/`, `dist/slides/`);
+   * else `/`. In dev, where each server has an origin of its own, the
+   * configured base, else `/`.
+   */
+  base: string
   /** Vite plugins of the deck's plugins (`PresmiumNodePlugin.vitePlugins`), for the renderers that run Vite. */
   vitePlugins: unknown[]
   /**
@@ -375,6 +384,8 @@ export interface RenderDevServer {
 
 export interface Renderer {
   id: RendererId
+  /** The renderer builds a site served under a public base path, which it takes from `RenderContext.base`. */
+  site?: boolean
   support(node: IRNode, extensions: RendererExtension[]): Support
   /**
    * Writes what the renderer generates in `ctx.workDir` on the way to its

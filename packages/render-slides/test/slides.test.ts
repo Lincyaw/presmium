@@ -1,14 +1,17 @@
 // `presmium build --to slides` on real decks, then `slidev export` on the Slidev deck it leaves (WP-41).
 // The fixture decks stay in place (their .presmium/ is ignored) so the generated deck resolves
 // Slidev, its theme and playwright-chromium from this package's node_modules.
-import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { createReadStream, existsSync, lstatSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, extname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { presmium, run } from '@presmium/cli/testing'
 import { PDFDocument } from 'pdf-lib'
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { chromium } from 'playwright-chromium'
 import { afterAll, expect, it } from 'vitest'
 
 const DECK = fileURLToPath(new URL('./fixtures/deck', import.meta.url))
@@ -32,6 +35,35 @@ async function slidev(args: string[], cwd = DECK): Promise<{ code: number, outpu
   return { code, output: stdout + stderr }
 }
 
+const TYPES: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.webm': 'video/webm' }
+
+/**
+ * Serves a build's output directory as one site, each renderer's output under
+ * `/<id>/`; a path under `/slides/` that is no file is a route of the slides.
+ */
+async function serveSite(dir: string): Promise<{ url: string, close(): Promise<void> }> {
+  const server = createServer((request, response) => {
+    const path = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname)
+    let file = join(dir, path)
+    if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
+    if (!existsSync(file) && path.startsWith('/slides/') && !extname(path)) file = join(dir, 'slides/index.html')
+    if (!file.startsWith(dir + sep) || !existsSync(file)) {
+      response.writeHead(404).end()
+      return
+    }
+    response.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' })
+    createReadStream(file).pipe(response)
+  })
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
+  return {
+    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+    close: () => new Promise((done) => {
+      server.close(() => done())
+      server.closeAllConnections()
+    }),
+  }
+}
+
 /** NFKC: fonts in PDFs often map CJK characters to compatibility code points (a radical for 示). */
 const normal = (text: string) => text.normalize('NFKC')
 
@@ -49,7 +81,8 @@ async function pdfText(file: string): Promise<string[]> {
 it('build --to slides leaves a Slidev deck that slidev export turns into a PDF with a page per step', async () => {
   const built = await build(['build', '--to', 'slides', '--out', out])
   expect(built.code, built.output).toBe(0)
-  expect(existsSync(join(out, 'slides/index.html'))).toBe(true)
+  // Built alone, the slides are served at the root of their site (C-13).
+  expect(readFileSync(join(out, 'slides/index.html'), 'utf8')).toMatch(/src="\/assets\/index-/)
   // The deck's public/ directory is served with the slides: linked entry by entry, never written to.
   expect(existsSync(join(out, 'slides/dot.svg'))).toBe(true)
   expect(lstatSync(join(DECK, '.presmium/slides/public/dot.svg')).isSymbolicLink()).toBe(true)
@@ -73,6 +106,8 @@ it('a PDF export shows the static fallback of interactive components, not their 
   const target = join(out, 'export')
   const built = await build(['build', '--to', 'slides', '--out', target], EXPORT_DECK)
   expect(built.code, built.output).toBe(0)
+  // The base the deck sets, as a path from the root.
+  expect(readFileSync(join(target, 'slides/index.html'), 'utf8')).toMatch(/src="\/talks\/export\/assets\/index-/)
   const pdf = join(target, 'export.pdf')
   // The slides of plugin components load late on a busy machine; the export waits for them (Slidev's `--wait`).
   const exported = await slidev(['export', '.presmium/slides/slides.md', '--wait', '2000', '--output', pdf], EXPORT_DECK)
@@ -92,8 +127,12 @@ it('a PDF export shows the static fallback of interactive components, not their 
 
 it('writes MyST as Slidev reads it, publishes the local files the slides show and isolates each plugin component', async () => {
   const target = join(out, 'myst')
-  const built = await build(['build', '--to', 'slides,notebook', '--out', target], MYST_DECK)
+  const built = await build(['build', '--to', 'web,slides,notebook', '--out', target], MYST_DECK)
   expect(built.code, built.output).toBe(0)
+  // Built with another site and no base set, the slides are served under /slides/ and the other site
+  // under /<its id>/, so the output directory deploys as one site (C-13).
+  expect(readFileSync(join(target, 'web/index.html'), 'utf8')).toContain('base /web/')
+  expect(readFileSync(join(target, 'slides/index.html'), 'utf8')).toMatch(/src="\/slides\/assets\/index-/)
   const slides = readFileSync(join(MYST_DECK, '.presmium/slides/slides.md'), 'utf8')
   const notebook = (JSON.parse(readFileSync(join(target, 'notebook/lecture.ipynb'), 'utf8')) as { cells: { source: string[] }[] }).cells.map(c => c.source.join('')).join('\n\n')
 
@@ -109,11 +148,17 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
   expect(slides).toContain('<iframe src="https://example.org/embed" width="80%" loading="lazy"></iframe>')
 
   // Local files of an included page, and the file a component names, are published at the root of the
-  // slides under their content hash (R-06); a URL with a malformed escape stays as it is.
-  expect(slides).toContain('![A dot](/e385aa54-dot.svg) [The handout](/003d456f-handout.pdf) [A broken link](%E0%A4.pdf)')
-  expect(slides).toContain('<FixtureClip src="/7cb92485-clip.webm" />')
+  // slides under their content hash (R-06): an image by its path from the root, to which Vite and Slidev's
+  // image preloader add the base; a link, as HTML (Slidev's links are routes), and a component's prop with
+  // the base. A URL with a malformed escape stays as it is.
+  expect(slides).toContain('![A dot](/e385aa54-dot.svg) <a href="/slides/003d456f-handout.pdf" target="_blank" rel="noopener">The handout</a> [A broken link](%E0%A4.pdf)')
+  expect(slides).toContain(`<FixtureClip :src='"/slides/7cb92485-clip.webm"' />`)
   for (const file of ['e385aa54-dot.svg', '003d456f-handout.pdf', '7cb92485-clip.webm']) expect(existsSync(join(target, 'slides', file)), file).toBe(true)
   expect(notebook).toContain('![A dot](media/e385aa54-dot.svg) [The handout](media/003d456f-handout.pdf)')
+
+  // Footnotes of two included files that both write [^1] stay apart in one slide (R-04).
+  expect(slides).toContain('One[^1].\n\n[^1]: The first note.')
+  expect(slides).toContain('Two[^1-2].\n\n[^1-2]: The second note.')
 
   // Each plugin component is isolated (K-07); an extension that throws leaves the component and a warning
   // at its block (R-33); code that a component holds shows no recorded output (C-5).
@@ -130,4 +175,33 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
   // An overlay with nothing to show in exports is not wrapped for them (C-15).
   expect(slides).toContain('<PmBoundary name="FixturePointer">\n\n<FixturePointer />\n\n</PmBoundary>')
 
-}, 180_000)
+  // In the browser, under the base: the image shows, the handout opens in a tab of its own while the
+  // slides stay where they are, and nothing the slides ask for is missing.
+  const { sections } = JSON.parse(readFileSync(join(target, 'ir.json'), 'utf8')) as { sections: { id: string, index: number }[] }
+  const media = sections.find(s => s.id === 'media')!.index
+  const site = await serveSite(target)
+  const browser = await chromium.launch()
+  try {
+    const page = await browser.newPage()
+    const failed: string[] = []
+    page.context().on('response', (response) => {
+      if (response.status() >= 400) failed.push(`${response.status()} ${response.url()}`)
+    })
+    await page.goto(`${site.url}/slides/${media}`)
+    const image = page.locator(`.slidev-page-${media} img[alt="A dot"]`)
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0)
+    const [tab, handout] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.context().waitForEvent('response', response => response.url().endsWith('.pdf')),
+      page.locator(`.slidev-page-${media}`).getByText('The handout').click(),
+    ])
+    expect(handout.url()).toBe(`${site.url}/slides/003d456f-handout.pdf`)
+    expect(handout.status()).toBe(200)
+    expect(handout.frame().page()).toBe(tab)
+    expect(page.url()).toBe(`${site.url}/slides/${media}`)
+    expect(failed).toEqual([])
+  } finally {
+    await browser.close()
+    await site.close()
+  }
+}, 240_000)

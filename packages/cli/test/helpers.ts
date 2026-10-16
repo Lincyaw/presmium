@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll } from 'vitest'
 
-export { PRESMIUM_BIN as BIN, presmium } from '../src/testing.ts'
+export { PRESMIUM_BIN as BIN, presmium, run } from '../src/testing.ts'
 export type { Run } from '../src/testing.ts'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))

@@ -10,11 +10,19 @@
   },
   "dependencies": {
     "@presmium/kernel": "workspace:*",
-    "@presmium/web": "workspace:*",
     "myst-to-md": "^1.0.17",
     "vfile": "^5.3.7"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*"
+    "@presmium/cli": "workspace:*",
+    "@presmium/web": "workspace:*"
+  },
+  "peerDependencies": {
+    "@presmium/web": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@presmium/web": {
+      "optional": true
+    }
   }
 }

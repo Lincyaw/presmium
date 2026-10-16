@@ -482,9 +482,6 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/web':
-        specifier: workspace:*
-        version: link:../web
       myst-to-md:
         specifier: ^1.0.17
         version: 1.0.17(supports-color@9.4.0)
@@ -495,6 +492,9 @@ importers:
       '@presmium/cli':
         specifier: workspace:*
         version: link:../cli
+      '@presmium/web':
+        specifier: workspace:*
+        version: link:../web
 
   packages/render-slides:
     dependencies:

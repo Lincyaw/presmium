@@ -1,12 +1,12 @@
 // The language server (P-80, P-81) driven over LSP on a MyST deck that references code in a
 // throwaway git repository; the deck is compiled by the real compiler with the code and
 // execution plugins.
-import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { run } from '@presmium/cli/testing'
 import { CompletionRequest, DefinitionRequest, HoverRequest } from 'vscode-languageserver/node'
 import type { CompletionItem, CompletionList, Hover, Location, MarkupContent } from 'vscode-languageserver/node'
 import { afterAll, beforeAll, expect, it } from 'vitest'
@@ -99,10 +99,13 @@ beforeAll(async () => {
   writeFileSync(code, BPE)
   writeFileSync(parser, PARSER)
   writeFileSync(deck, DECK)
-  const git = (...args: string[]) => spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir })
-  git('init', '-q')
-  git('add', '.')
-  git('commit', '-qm', 'bpe')
+  const git = async (...args: string[]) => {
+    const result = await run('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: dir })
+    expect(result.code, `git ${args.join(' ')}: ${result.stderr}`).toBe(0)
+  }
+  await git('init', '-q')
+  await git('add', '.')
+  await git('commit', '-qm', 'bpe')
   // The working tree moves on from the commit the `pinned` section pins; lines and output stay.
   writeFileSync(code, BPE.replace('pairs = {}', 'pairs = dict()'))
   server = await startServer()

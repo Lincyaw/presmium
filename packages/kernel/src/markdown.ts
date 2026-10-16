@@ -9,6 +9,9 @@
  */
 import type { MdastNode } from './ir.ts'
 
+/** Nodes that hold a URL, which `LowerOptions.urls` maps. */
+export type LinkedType = 'image' | 'link' | 'definition'
+
 export interface LowerOptions {
   /**
    * The URL of a link to a MyST label within the deck (`[text](#label)`, a
@@ -16,8 +19,8 @@ export interface LowerOptions {
    * link's text.
    */
   links?: (label: string) => string | undefined
-  /** The URL to write for the URL of an image, link or link definition; undefined keeps it. */
-  urls?: (url: string) => string | undefined
+  /** The URL to write for the URL of an image, link or link definition (`type`); undefined keeps it. */
+  urls?: (url: string, type: LinkedType) => string | undefined
   /** `gfm` keeps footnotes as GFM footnotes; `html` (default) writes `<sup>[n]</sup>`, with the footnote's `enumerator`. */
   footnotes?: 'gfm' | 'html'
   /** `element` writes an `{iframe}` as an `<iframe>`; `link` (default) as a link to the page, which is a degradation. */
@@ -47,11 +50,15 @@ const STANDARD: Record<string, string[]> = {
   linkReference: ['identifier', 'label', 'referenceType'], imageReference: ['identifier', 'label', 'referenceType', 'alt'],
 }
 
-/** GFM footnotes, kept with `footnotes: 'gfm'`. */
-const FOOTNOTES: Record<string, string[]> = { footnoteReference: ['identifier', 'label'], footnoteDefinition: ['identifier', 'label'] }
+/**
+ * GFM footnotes, kept with `footnotes: 'gfm'`, by identifier: it is unique
+ * in the deck, whereas the label an author wrote may repeat in another
+ * included file, and a writer writes the label where there is one.
+ */
+const FOOTNOTES: Record<string, string[]> = { footnoteReference: ['identifier'], footnoteDefinition: ['identifier'] }
 
 /** Nodes whose URL `urls` maps. */
-const LINKED = new Set(['image', 'link', 'definition'])
+const LINKED = new Set<string>(['image', 'link', 'definition'] satisfies LinkedType[])
 
 /** Inline HTML tags for MyST roles. */
 const TAGS: Record<string, string> = { subscript: 'sub', superscript: 'sup', delete: 'del', underline: 'u', keyboard: 'kbd' }
@@ -127,7 +134,7 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
   const fields = STANDARD[node.type] ?? (options.footnotes === 'gfm' ? FOOTNOTES[node.type] : undefined)
   if (fields) {
     const own: Record<string, unknown> = Object.fromEntries(fields.filter(key => node[key] != null).map(key => [key, node[key]]))
-    if (LINKED.has(node.type) && typeof own.url === 'string') own.url = options.urls?.(own.url) ?? own.url
+    if (LINKED.has(node.type) && typeof own.url === 'string') own.url = options.urls?.(own.url, node.type as LinkedType) ?? own.url
     return [{ type: node.type, ...own, ...node.children ? { children: children() } : {} }]
   }
   switch (node.type) {

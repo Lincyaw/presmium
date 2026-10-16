@@ -1,10 +1,10 @@
 // `presmium build` and `presmium dev`: renderer dispatch, incremental recompilation and what dev watches.
-import { spawn, spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { expect, it } from 'vitest'
-import { BIN, fixtures, presmium } from './helpers.ts'
+import { BIN, fixtures, presmium, run } from './helpers.ts'
 
 const json = (file: string) => JSON.parse(readFileSync(file, 'utf8'))
 
@@ -72,10 +72,13 @@ it('dev recompiles when a source file is saved and pushes the IR to the renderer
 
 it('dev recompiles when code that a pass read changes, when a commit moves the revision it read, and when a declared file changes (K-09)', async () => {
   const deck = join(fixtures(), 'watch')
-  const git = (...args: string[]) => spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: deck })
-  git('init', '-q')
-  git('add', '.')
-  git('commit', '-qm', 'first')
+  const git = async (...args: string[]) => {
+    const result = await run('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: deck })
+    expect(result.code, `git ${args.join(' ')}: ${result.stderr}`).toBe(0)
+  }
+  await git('init', '-q')
+  await git('add', '.')
+  await git('commit', '-qm', 'first')
   const ir = () => json(join(deck, 'dev/ir.json'))
   // The sample plugin's pass quotes the anchored line from the working tree and from HEAD.
   const quote = () => ir().sections[0].blocks[0].node.props
@@ -91,7 +94,7 @@ it('dev recompiles when code that a pass read changes, when a commit moves the r
     writeFileSync(code, readFileSync(code, 'utf8').replace('# first', '# second'))
     await expect.poll(quote, { timeout: 10_000 }).toMatchObject({ text: 'def greet(name):  # second', committed: 'def greet(name):  # first' })
 
-    git('commit', '-qam', 'second')
+    await git('commit', '-qam', 'second')
     await expect.poll(quote, { timeout: 10_000 }).toMatchObject({ committed: 'def greet(name):  # second' })
 
     // The {motto} directive and the pass read these files themselves and declare them with ctx.watch.

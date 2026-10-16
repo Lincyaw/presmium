@@ -6,8 +6,9 @@
  *   kernel   the kernel name (default python3), or { name, language, display_name };
  *            code in the kernel's language becomes code cells
  *   webUrl   URL of the web version, linked from components the notebook cannot
- *            show; when the same build builds the web form, they link to it
- *            relatively (`../web/<page>#<section>`, as in the output directory)
+ *            show; when the same build builds the web form with @presmium/web,
+ *            they link to it relatively (`../web/<page>#<section>`, as in the
+ *            output directory), on the pages @presmium/web lays out
  *
  * MyST nodes Jupyter cannot render are written as CommonMark and HTML, and the
  * ones without such a form are reported as degraded (../domain/markdown.ts).
@@ -22,7 +23,6 @@ import { writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { deckLocale } from '@presmium/kernel'
 import type { IRDocument, IRSection, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
-import { sectionLinks, toPages } from '@presmium/web/domain'
 import { DEFAULT_KERNEL, renderNotebook, support } from '../domain/notebook.ts'
 import type { KernelSpec, NotebookOptions } from '../domain/notebook.ts'
 import { localMedia } from './media.ts'
@@ -40,7 +40,7 @@ const plugin: PresmiumNodePlugin = {
     id: 'notebook',
     support,
     async build(doc, ctx) {
-      const { notebook, skipped, problems, degraded, unlinked } = renderNotebook(doc, { ...options(doc, ctx), media: localMedia(ctx) })
+      const { notebook, skipped, problems, degraded, unlinked } = renderNotebook(doc, { ...await options(doc, ctx), media: localMedia(ctx) })
       for (const { message, source } of problems) ctx.report({ checkId: CHECK_ID, severity: 'warning', message, source: { file: source.file, line: source.line } })
       for (const { section, block, nodes, source } of degraded) {
         const message = `${section}#${block}: degraded in the notebook, which has no Jupyter form for ${nodes.join(', ')}; the text is kept`
@@ -58,21 +58,28 @@ const plugin: PresmiumNodePlugin = {
 
 export default plugin
 
-function options(doc: IRDocument, ctx: RenderContext): Omit<NotebookOptions, 'media'> {
+async function options(doc: IRDocument, ctx: RenderContext): Promise<Omit<NotebookOptions, 'media'>> {
   const warn = (message: string) => ctx.report({ checkId: CHECK_ID, severity: 'warning', message })
   const { kernel, webUrl } = ctx.config
   if (webUrl !== undefined && typeof webUrl !== 'string') warn('renderers.notebook.webUrl must be a URL; components are not linked to the web version')
-  return { kernel: kernelSpec(kernel, warn), locale: deckLocale(ctx.lang), webLink: webLink(doc, ctx, webUrl), extensionFor: ctx.extensionFor }
+  return { kernel: kernelSpec(kernel, warn), locale: deckLocale(ctx.lang), webLink: await webLink(doc, ctx, webUrl), extensionFor: ctx.extensionFor }
 }
+
+/** The default web renderer, whose page layout the notebook follows (an optional peer dependency). */
+const WEB_PACKAGE = '@presmium/web'
 
 /**
  * Where a section is in the web version: under `webUrl`, else, when this build
- * also builds the web form, its page beside the notebook's directory.
+ * also builds the web form with the default web renderer, its page beside the
+ * notebook's directory. Another web renderer lays out pages of its own.
  */
-function webLink(doc: IRDocument, ctx: RenderContext, webUrl: unknown): ((section: IRSection) => string) | undefined {
+async function webLink(doc: IRDocument, ctx: RenderContext, webUrl: unknown): Promise<((section: IRSection) => string) | undefined> {
   if (typeof webUrl === 'string') return section => `${webUrl.replace(/#.*$/, '')}#${encodeURIComponent(section.id)}`
-  if (!ctx.renderers.includes('web')) return undefined
-  const links = sectionLinks(toPages(doc))
+  const web = doc.config.renderers.web?.package ?? WEB_PACKAGE
+  if (!ctx.renderers.includes('web') || web !== WEB_PACKAGE) return undefined
+  const layout = await import('@presmium/web/domain').catch(() => undefined)
+  if (!layout) return undefined
+  const links = layout.sectionLinks(layout.toPages(doc))
   // The site's first page is its directory; a notebook opened from disk needs the file.
   return section => `../web${(links[section.id] ?? '/').replace(/^\/(?=#|$)/, '/index.html')}`
 }

@@ -7,12 +7,13 @@
  * of @presmium/host), from which the component counts its internal steps.
  * Narration becomes the slide notes, split by `[click]` markers. MyST is
  * lowered to standard Markdown (`lowerMyst`); local files that blocks name
- * are published with the slides, at the root of the site.
+ * are published with the slides, at the root of the site, and links to them
+ * open the file in a tab of its own.
  */
 import { existsSync, realpathSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, lowerMyst, nodeMdast } from '@presmium/kernel'
-import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, Locale, MdastNode, RenderContext } from '@presmium/kernel'
+import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, Locale, MdastNode, RenderContext } from '@presmium/kernel'
 import { stringify } from 'yaml'
 import { codeLang, escapeHtml, markdown } from './markdown.ts'
 
@@ -51,9 +52,9 @@ interface Generation {
   /** Directory of the generated deck; relative paths are written against it. */
   dir: string
   t: Messages
-  /** Public base path of the slides, `/` or `/<path>/`. */
-  base: string
   assets: Map<string, string>
+  /** URLs of the published files that links point to. */
+  files: Set<string>
   /** The slide route of a label in the deck, for links to it. */
   links: (label: string) => string | undefined
 }
@@ -70,11 +71,6 @@ export function deckLang(doc: IRDocument): string {
   return typeof doc.meta.lang === 'string' && doc.meta.lang ? doc.meta.lang : DEFAULT_LANG
 }
 
-/** Public base path of the slides: `renderers.slides.base`, as `/<path>/`, else `/`. */
-export function slidesBase(config: Record<string, unknown>): string {
-  return typeof config.base === 'string' && config.base.trim() ? `/${config.base.trim().replace(/^\/+|\/+$/g, '')}/`.replace('//', '/') : '/'
-}
-
 /** Keys of `renderers.slides` that configure the renderer rather than the Slidev headmatter. */
 const RENDERER_KEYS = new Set(['package', 'base', 'port'])
 
@@ -83,7 +79,7 @@ const WEB_PACKAGE = '@presmium/web'
 
 /** `dir` is the directory of the generated deck. */
 export function slidevMarkdown(doc: IRDocument, ctx: RenderContext, dir: string): SlidevDeck {
-  const generation: Generation = { ctx, dir, t: MESSAGES[deckLocale(ctx.lang ?? deckLang(doc))], base: slidesBase(ctx.config), assets: new Map(), links: slideLinks(doc) }
+  const generation: Generation = { ctx, dir, t: MESSAGES[deckLocale(ctx.lang ?? deckLang(doc))], assets: new Map(), files: new Set(), links: slideLinks(doc) }
   const markdown = doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, generation) : {}, generation)).join('\n')
   return { markdown, assets: generation.assets }
 }
@@ -243,9 +239,9 @@ function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes 
     footnotes: 'gfm',
     iframes: 'element',
     links: notes ? undefined : gen.links,
-    urls: block ? url => asset(url, block, gen) : undefined,
+    urls: block ? (url, type) => asset(url, block, gen, type) : undefined,
   })
-  return markdown(slidevNodes(mdast))
+  return markdown(slidevNodes(mdast, gen))
 }
 
 /** Slidev compiles slides as Vue templates: text with `{{` must not become an interpolation, nor its `$` math. */
@@ -256,23 +252,44 @@ function verbatim(node: MdastNode): MdastNode {
   return node.children ? { ...node, children: node.children.map(verbatim) } : node
 }
 
-/** Code in a language Slidev's Shiki knows; links to slides (`/<n>`) through Slidev's `<Link>`, which keeps the base. */
-function slidevNodes(node: MdastNode): MdastNode {
+/**
+ * Code in a language Slidev's Shiki knows. Links to slides (`/<n>`) go
+ * through Slidev's `<Link>`, which keeps the base; links to published files
+ * are HTML links that open the file in a tab of its own, since Slidev makes
+ * every Markdown link to a path a route of the deck.
+ */
+function slidevNodes(node: MdastNode, gen: Generation): MdastNode {
   if (node.type === 'code') return { ...node, lang: codeLang(node.lang), meta: null }
+  const html = (value: string): MdastNode => ({ type: 'html', value })
   const children = node.children?.flatMap((child): MdastNode[] => {
-    const to = child.type === 'link' ? /^\/(\d+)$/.exec(String(child.url))?.[1] : undefined
-    if (!to) return [slidevNodes(child)]
-    return [{ type: 'html', value: `<Link to="${to}">` }, ...(child.children ?? []).map(slidevNodes), { type: 'html', value: '</Link>' }]
+    if (child.type !== 'link') return [slidevNodes(child, gen)]
+    const url = String(child.url)
+    const inner = (child.children ?? []).map(c => slidevNodes(c, gen))
+    const slide = /^\/(\d+)$/.exec(url)?.[1]
+    if (slide) return [html(`<Link to="${slide}">`), ...inner, html('</Link>')]
+    if (!gen.files.has(url)) return [{ ...child, children: inner }]
+    const title = typeof child.title === 'string' ? ` title="${escapeHtml(child.title)}"` : ''
+    return [html(`<a href="${escapeHtml(url)}"${title} target="_blank" rel="noopener">`), ...inner, html('</a>')]
   })
   return children ? { ...node, children } : node
 }
 
-/** The published URL of a local file a block names (`RenderContext.localAsset`); undefined keeps the URL. */
-function asset(url: string, block: IRBlock, gen: Generation): string | undefined {
+/**
+ * The URL of a local file a block names (`RenderContext.localAsset`), which
+ * the slides publish at the root of the site; undefined keeps the URL. An
+ * image is written as a path from the root, without the base: Vite resolves
+ * it to the file in `public/` and adds the base, as Slidev's image preloader
+ * does. A link or a component's prop is used as it is written, with the base.
+ */
+function asset(url: string, block: IRBlock, gen: Generation, type: LinkedType | 'prop'): string | undefined {
   const found = gen.ctx.localAsset(block.source, url)
   if (!found) return undefined
   gen.assets.set(found.name, found.file)
-  return `${gen.base}${encodeURIComponent(found.name)}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
+  const path = `${encodeURIComponent(found.name)}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
+  if (type === 'image') return `/${path}`
+  const published = `${gen.ctx.base}${path}`
+  if (type === 'link') gen.files.add(published)
+  return published
 }
 
 /**
@@ -347,7 +364,7 @@ function code(node: CodeNode, at: number, gen: Generation, owned: boolean): stri
 function published(node: ComponentNode, block: IRBlock, gen: Generation): ComponentNode {
   if (!node.assets) return node
   const props = { ...node.props }
-  for (const [prop, url] of Object.entries(node.assets)) props[prop] = asset(url, block, gen) ?? url
+  for (const [prop, url] of Object.entries(node.assets)) props[prop] = asset(url, block, gen, 'prop') ?? url
   return { ...node, props }
 }
 
@@ -393,8 +410,13 @@ function component(original: ComponentNode, block: IRBlock, gen: Generation, not
   return `<PmBoundary name="${escapeHtml(node.name)}">\n\n${content}\n\n</PmBoundary>`
 }
 
+/**
+ * A component's tag. The URL of a file it shows is bound as an expression:
+ * Slidev's image preloader adds the base to the `src` it reads in a slide,
+ * which holds it already.
+ */
 function tag(node: ComponentNode, gen: Generation, notes: IRBlock[]): string {
-  const attrs = Object.entries(node.props).map(([name, value]) => typeof value === 'string'
+  const attrs = Object.entries(node.props).map(([name, value]) => typeof value === 'string' && !node.assets?.[name]
     ? ` ${name}="${escapeHtml(value).replace(/\n/g, '&#10;')}"`
     // A Vue expression in single quotes: JSON with `'` and `&` escaped stays valid JavaScript.
     : ` :${name}='${JSON.stringify(value).replace(/'/g, '\\u0027').replace(/&/g, '\\u0026')}'`).join('')

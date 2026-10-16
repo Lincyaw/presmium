@@ -136,20 +136,21 @@ it('renders components through the plugin extension or the fallback, and reports
   expect(build.stdout).toContain(`${section}#fixture-canvas-1: component FixtureCanvas has no notebook extension or fallback`)
 })
 
-it('links the notes of components to the web form of the same build when no webUrl is set (R-48)', async () => {
-  const deck = mkdtempSync(join(tmpdir(), 'presmium-notebook-web-'))
+it('links the notes of components to their page of the web form built with them when no webUrl is set (R-48)', async () => {
+  // Built inside the demo, whose node_modules hold the web renderer, VitePress and Vue.
+  const work = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+  mkdirSync(work, { recursive: true })
+  const deck = mkdtempSync(join(work, 'notebook-linked-'))
   try {
-    cpSync(dir, deck, { recursive: true, filter: source => !source.includes(`${join(dir, 'out')}`) })
-    const entry = join(deck, 'lecture.md')
-    writeFileSync(entry, readFileSync(entry, 'utf8').replace('    webUrl: https://example.org/lecture/\n', '  web:\n    package: ./addons/web\n'))
+    cpSync(fileURLToPath(new URL('./linked', import.meta.url)), deck, { recursive: true })
     const built = await presmium(deck, ['build', '--out', 'out'])
     expect(built.code, built.stdout + built.stderr).toBe(0)
-    const ir = JSON.parse(readFileSync(join(deck, 'out/ir.json'), 'utf8')) as IRDocument
-    const section = ir.sections.find(s => s.title === '组件')!.id
     const text = (JSON.parse(readFileSync(join(deck, 'out/notebook/lecture.ipynb'), 'utf8')).cells as Cell[]).map(c => c.source.join('')).join('\n\n')
-    // The section opens no page of its own: the note links to its anchor on the page that holds it.
-    expect(text).toContain(`> 交互组件 \`FixtureCanvas\` 需要在[网页版](../web/index.html#${encodeURIComponent(section)})中查看。`)
+    // The section opens no page of its own: the note links to its anchor on the page of its chapter,
+    // which the web build wrote.
+    expect(text).toContain('> The interactive component `Gauge` can only be used in [the web version](../web/gauge.html#the-gauge).')
+    expect(readFileSync(join(deck, 'out/web/gauge.html'), 'utf8')).toContain('id="the-gauge"')
   } finally {
     rmSync(deck, { recursive: true, force: true })
   }
-}, 30_000)
+}, 300_000)

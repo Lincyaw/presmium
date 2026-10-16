@@ -89,6 +89,36 @@ async function selectRenderers(compilation: Compilation, to?: string[]): Promise
   return { selected, findings }
 }
 
+/** The renderers run together: their ids, and the public base of each (`RenderContext.base`). */
+interface Run {
+  ids: string[]
+  bases: Map<string, string>
+}
+
+/** `renderers.<id>.base` as a public base path, `/` or `/<path>/`; undefined when it is not set. */
+function configuredBase(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined
+  const path = value.trim().replace(/^\/+|\/+$/g, '')
+  return path ? `/${path}/` : '/'
+}
+
+/**
+ * The renderers run together and their public bases: the configured base;
+ * else, in a build (`shared`) of two or more site renderers none of which
+ * sets one, `/<id>/` for each, so the output directory deploys as one site
+ * (C-13); else `/`.
+ */
+function runOf(compilation: Compilation, selected: InstalledRenderer[], shared: boolean): Run {
+  const renderers = selected.map(({ renderer }) => renderer)
+  const configured = new Map(renderers.map(({ id }) => [id, configuredBase(compilation.doc.config.renderers[id]?.base)]))
+  const sites = renderers.filter(renderer => renderer.site)
+  const together = shared && sites.length > 1 && sites.every(({ id }) => configured.get(id) === undefined)
+  return {
+    ids: renderers.map(({ id }) => id),
+    bases: new Map(renderers.map(({ id, site }) => [id, configured.get(id) ?? (together && site ? `/${id}/` : '/')])),
+  }
+}
+
 /**
  * Writes `<outDir>/ir.json` (with paths relative to the deck, `relativeIR`)
  * and runs the selected renderers, each into `<outDir>/<id>`. They write
@@ -100,10 +130,10 @@ export async function build(compilation: Compilation, options: { outDir: string,
   const ir = await writeIR(relativeIR(doc, compilation.deckDir, compilation.workspaceRoot), options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
   if (selected.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer available; only the IR was written to ${ir}`))
-  const ids = selected.map(({ renderer }) => renderer.id)
+  const run = runOf(compilation, selected, true)
   const results = await Promise.all(selected.map(async ({ renderer }) => {
     const reported: Finding[] = []
-    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), ids, reported)
+    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, reported)
     const view = viewFor(doc, renderer.id)
     const unsupported = unsupportedBlocks(view, renderer, ctx.extensions)
     try {
@@ -129,10 +159,10 @@ export async function build(compilation: Compilation, options: { outDir: string,
  */
 export async function prepare(compilation: Compilation, options: { outDir: string, to?: string[] }): Promise<{ outputs: Omit<RendererOutput, 'skipped'>[], findings: Finding[] }> {
   const { selected, findings } = await selectRenderers(compilation, options.to)
-  const ids = selected.map(({ renderer }) => renderer.id)
+  const run = runOf(compilation, selected, true)
   const outputs: Omit<RendererOutput, 'skipped'>[] = []
   for (const { renderer } of selected) {
-    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), ids, findings)
+    const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, findings)
     if (!renderer.prepare) {
       findings.push(renderFinding(compilation, 'warning', `renderer ${renderer.id} prepares nothing`))
       continue
@@ -175,7 +205,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
   let compilation = await compiler.compile()
   const ir = await writeIR(compilation.doc, options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
-  const ids = selected.map(({ renderer }) => renderer.id)
+  const run = runOf(compilation, selected, false)
   const servers: { renderer: string, url: string, server: RenderDevServer }[] = []
   for (const { renderer } of selected) {
     if (!renderer.dev) {
@@ -183,7 +213,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       continue
     }
     const outDir = join(options.outDir, renderer.id)
-    const ctx = renderContext(compilation, renderer.id, outDir, outDir, ids, findings)
+    const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings)
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)
@@ -364,10 +394,10 @@ function extensionOf(node: ComponentNode, extensions: RendererExtension[]) {
 }
 
 /**
- * The context of renderer `id`; the plugins' component renderers for it are
- * bound to it. `renderers` are the ids run together with it.
+ * The context of renderer `id`, one of those `run` runs together; the
+ * plugins' component renderers for it are bound to it.
  */
-function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, renderers: string[], findings: Finding[]): RenderContext {
+function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, run: Run, findings: Finding[]): RenderContext {
   const { deckDir, workspaceRoot, doc } = compilation
   const config = doc.config.renderers[id]
   const report = (finding: Finding) => findings.push({ ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } })
@@ -392,7 +422,8 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     plugins: doc.config.plugins,
     pluginDirs: Object.fromEntries(compilation.plugins.map(loaded => [loaded.name, loaded.dir])),
     lang: doc.meta.lang,
-    renderers,
+    renderers: run.ids,
+    base: run.bases.get(id) ?? '/',
     vitePlugins,
     extensionFor: node => extensionOf(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),

@@ -15,7 +15,7 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { IRDocument, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
-import { hasExtension, slidesBase, slidevMarkdown } from './slidev.ts'
+import { hasExtension, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
 /** Directory of the generated Slidev deck, relative to the deck directory. */
@@ -31,6 +31,7 @@ const plugin: PresmiumNodePlugin = {
   kernel: '^0.1.0',
   renderer: {
     id: 'slides',
+    site: true,
     support: (node, extensions) => node.type === 'component' && !node.plugin && !hasExtension(node, extensions) ? 'degraded' : 'full',
     async prepare(doc, ctx) {
       await writeDeck(ctx.workDir, ctx, slidevMarkdown(doc, ctx, ctx.workDir))
@@ -70,8 +71,9 @@ const plugin: PresmiumNodePlugin = {
 
 export default plugin
 
+/** The public base of the slides (`RenderContext.base`; C-13). */
 function base(ctx: RenderContext): string[] {
-  return typeof ctx.config.base === 'string' ? ['--base', slidesBase(ctx.config)] : []
+  return ctx.base !== '/' ? ['--base', ctx.base] : []
 }
 
 /**
