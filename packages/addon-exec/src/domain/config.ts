@@ -47,6 +47,15 @@ export function isScript(lang: string): boolean {
   return ['javascript', 'typescript'].includes(languageId(lang))
 }
 
+/**
+ * Modules that JavaScript and TypeScript code in the browser imports by name,
+ * and where the deck serves them, under its base URL: the script worker
+ * resolves these names itself, as workers have no import maps. jax-js
+ * (`@jax-js/jax`, P-104) is published by the WebGPU plugin
+ * (`addon-exec-webgpu`); without it the import fails.
+ */
+export const SCRIPT_IMPORTS: Readonly<Record<string, string>> = { '@jax-js/jax': 'presmium/jax-js/index.js' }
+
 /** Script languages whose types are removed before they run. */
 export function isTypeScript(lang: string): boolean {
   return languageId(lang) === 'typescript'

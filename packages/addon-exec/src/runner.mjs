@@ -38,11 +38,19 @@ function literal(raw) {
   }
 }
 
-/** The module to run: the argument constants on the first line, so line numbers stay, then the code. */
-export function prepare({ code, args = {}, typescript = false }) {
+/** A module specifier in `import … from '…'`, `export … from '…'`, `import '…'` or `import('…')`. */
+const SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\2/g
+
+/**
+ * The module to run: the argument constants on the first line, so line numbers stay, then the code,
+ * its imports of the names `imports` maps (an import map, which workers do not have) going to
+ * their URLs.
+ */
+export function prepare({ code, args = {}, typescript = false, imports = {} }) {
   const js = typescript ? transform(code, { transforms: ['typescript'], disableESTransforms: true }).code : code
   const constants = Object.entries(args).filter(([name]) => IDENTIFIER.test(name)).map(([name, raw]) => `const ${name} = ${literal(String(raw))};`)
-  return constants.join(' ') + js
+  const mapped = js.replace(SPECIFIER, (match, keyword, quote, name) => Object.hasOwn(imports, name) ? `${keyword}${quote}${imports[name]}${quote}` : match)
+  return constants.join(' ') + mapped
 }
 
 /**

@@ -20,7 +20,7 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 宿主适配 | `host`、`addon-core`、`web` | 形态无关的宿主接口（`@presmium/host`）及 Slidev（`@presmium/slidev-addon-core`）、VitePress（`@presmium/web`）两个实现 |
 | 讲台 | `addon-stage` | 黑屏、冻结、圈画、脚注就近 |
 | 代码引用 | `addon-code` | `{code-ref}`、锚点解析、锁定、漂移、永久链接 |
-| 代码执行 | `addon-exec`、`addon-exec-local` | 执行服务（Pyodide、脚本 Worker、本机进程、容器）、执行面板、分步执行、环境复刻 |
+| 代码执行 | `addon-exec`、`addon-exec-local`、`addon-exec-webgpu` | 执行服务（Pyodide、脚本 Worker、本机进程、容器）、执行面板、分步执行、环境复刻；浏览器 GPU 后端（WGSL 计算着色器、Python 桥 `presmium_gpu`、jax-js，构建时在 Playwright 的 Chromium 中录制） |
 | 引导 | `addon-guide` | 模拟光标、聚光、交互提示 |
 | 富内容 | `addon-content` | 思维导图、媒体、PlantUML |
 | 发布 | `addon-publish` | 离线、高对比度、`presmium-export`、`presmium-diff` |

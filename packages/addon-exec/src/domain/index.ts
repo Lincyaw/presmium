@@ -1,4 +1,4 @@
-export { configuredTimeout, DEFAULT_EXEC_CONFIG, EXEC_ID, execConfig, isPython, isScript, isTypeScript } from './config.ts'
+export { configuredTimeout, DEFAULT_EXEC_CONFIG, EXEC_ID, execConfig, isPython, isScript, isTypeScript, SCRIPT_IMPORTS } from './config.ts'
 export type { ExecConfig } from './config.ts'
 export { declarations, shownOutput } from './panel.ts'
 export { createExecutorRouter } from './router.ts'

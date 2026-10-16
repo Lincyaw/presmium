@@ -8,10 +8,12 @@
  * once the code has run at compile time, ./fallback.ts puts the parameters
  * and the compile-time output in it.
  *
- * ```` ```{run-panel} python ```` options: `:params:` (a YAML mapping, the
- * variables injected into the program), `:timeout:` (ms), `:recorded:` (output
- * shown when a run fails or times out) and `:run:` (`both`, the default, also
- * records the output at compile time; `live` only runs in the browser).
+ * ```` ```{run-panel} python ```` (any language an executor runs, e.g. `wgsl`)
+ * options: `:params:` (a YAML mapping, the variables injected into the
+ * program; other languages' executors read it themselves, docs/ir.md 5.1),
+ * `:timeout:` (ms), `:recorded:` (output shown when a run fails or times
+ * out) and `:run:` (`both`, the default, also records the output at compile
+ * time; `live` only runs in the browser).
  *
  * ```` ```{step-run} python ```` options: `:steps:` (the number of executed
  * lines, one step each), `:params:` and `:timeout:`.
@@ -21,23 +23,30 @@
  */
 import type { CodeNode, ComponentNode, DirectiveContext, DirectiveInput, DirectiveSpec, IRBlock, RunSpec } from '@presmium/kernel'
 import { parse } from 'yaml'
-import { configuredTimeout, EXEC_ID, stringArgs } from '../domain/index.ts'
+import { configuredTimeout, EXEC_ID, isPython, isScript, stringArgs } from '../domain/index.ts'
 
-type Params = Record<string, string | number | boolean>
+type Params = Record<string, unknown>
 
-/** The `:params:` mapping: YAML in the option, or already a mapping from a `---` option block. */
-function params(value: unknown, ctx: DirectiveContext): Params | undefined {
+/**
+ * The `:params:` mapping: YAML in the option, or already a mapping from a
+ * `---` option block. Python, JavaScript and TypeScript get variables, so
+ * their values are strings, numbers or booleans; other languages' executors
+ * read it themselves (e.g. `wgsl`, the buffers and dispatch of a shader), so
+ * any values go.
+ */
+function params(value: unknown, lang: string, ctx: DirectiveContext): Params | undefined {
   if (value === undefined) return undefined
   let data = value
   try {
     if (typeof value === 'string') data = parse(value)
   }
   catch {}
+  const variables = isPython(lang) || isScript(lang)
   if (data !== null && typeof data === 'object' && !Array.isArray(data)
-    && Object.values(data).every(v => ['string', 'number', 'boolean'].includes(typeof v))) {
+    && (!variables || Object.values(data).every(v => ['string', 'number', 'boolean'].includes(typeof v)))) {
     return data as Params
   }
-  ctx.report({ checkId: 'presmium.exec.syntax', severity: 'error', message: ':params: must be a mapping of names to values, e.g. {n: 5}' })
+  ctx.report({ checkId: 'presmium.exec.syntax', severity: 'error', message: variables ? ':params: must be a mapping of names to values, e.g. {n: 5}' : ':params: must be a mapping, e.g. {n: 5}' })
   return undefined
 }
 
@@ -51,7 +60,7 @@ function component(name: string, input: DirectiveInput, ctx: DirectiveContext, r
   const lang = input.arg?.trim() || 'python'
   const value = input.body.replace(/\n+$/, '')
   const props: Record<string, unknown> = { lang, code: value }
-  const values = params(input.options.params, ctx)
+  const values = params(input.options.params, lang, ctx)
   if (values) props.params = values
   const timeout = positive(input.options.timeout) ?? configuredTimeout(ctx.config)
   if (timeout) props.timeout = timeout

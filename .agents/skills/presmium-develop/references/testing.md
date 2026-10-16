@@ -61,6 +61,7 @@ it('writes the poll as a list in the notebook', async () => {
 - 项目 `perf`（`e2e/perf.spec.ts`）依赖 `chromium`，在全部 Chromium 用例之后运行。单独运行它要加 `--no-deps`：`pnpm exec playwright test e2e/perf.spec.ts --no-deps`，否则先跑全部 Chromium 用例。
 - 示例文稿的产物 `examples/demo/dist` 是一个站点（同时构建两种形态的默认 `base`：网页在 `/web/`，幻灯片在 `/slides/`），由 sirv 服务（`--single slides/index.html`，幻灯片的页地址回落到幻灯片首页）在 `PRESMIUM_E2E_SLIDES_PORT`（默认 4173）与 `PRESMIUM_E2E_WEB_PORT`（默认 4174）；`e2e/urls.ts` 的 `SLIDES`、`WEB` 是两种形态的地址。`reuseExistingServer: false`：端口被占用时报错，不复用别处的服务，免得测到另一个检出的产物。并行工作时每个检出用自己的一对端口。
 - 幻灯片地址 `/<页号>?clicks=<步骤>`，演讲者视图 `/presenter/<页号>`；网页用 `?section=<章节 ID>&step=<n>&view=<视图>` 定位。
+- WebGPU：默认的无头 Chromium 有 `navigator.gpu` 而没有适配器（验证回退）；`test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })` 得到 SwiftShader（回退适配器，有 `timestamp-query`）。`test.use` 的 `launchOptions` 也是 `playwright.chromium.launch()` 的默认值，要默认参数的浏览器时写 `launch({ args: [] })`（范例 `e2e/exec-webgpu.spec.ts`）。不在示例文稿依赖中的插件包用 `useFixture` 的 `link` 链接进测试文稿。
 
 ### 测试文稿
 

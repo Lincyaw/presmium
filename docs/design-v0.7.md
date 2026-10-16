@@ -580,7 +580,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | 事项 | 工作包 |
 |---|---|
 | Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74 |
-| JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
+| JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法；SwiftShader 在无头 Chromium 中的计算着色器与计时；适配器的默认限制 | WP-75（已完成，结论见下） |
 | Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76 |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
 | 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83 |
@@ -614,6 +614,14 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
+
+**WP-75 开始时的验证（2026-10-16，Playwright 1.64.1 的 Chromium 156 与 Firefox 157、Pyodide 314.0.7、jax-js 0.1.25；本机有 RTX 5090）**的结论：
+
+- **JSPI**：Chromium 156 与 Firefox 157 都有 `WebAssembly.Suspending` 与 `WebAssembly.promising`（WebKit 在本机无法启动，没有实测）。在模块 Worker 中，以 `callPromising` 调用的 Python 函数里 `pyodide.ffi.run_sync` 能等到 Promise（两个浏览器都是），普通调用则报 “Cannot stack switch because the Python entrypoint was a synchronous function”；`can_run_sync()` 在前者中为真。因此 Python 桥以异步写法为基本（代码块顶层的 `await`：以 `ast.PyCF_ALLOW_TOP_LEVEL_AWAIT` 编译，`eval` 得到协程，由 Worker 等待，两个浏览器都可用），有 JSPI 时 Worker 以 `callPromising` 运行代码块，另提供同步写法 `run_sync`。Pyodide 314 把 JavaScript 的 `null` 给成 `pyodide.ffi.jsnull` 而不是 `None`，桥里按两者判断。
+- **无头 Chromium 中的 WebGPU**：默认参数下 `navigator.gpu` 存在（页面与 Worker 中都是），但 `requestAdapter()` 为 `null`，正好验证“没有适配器”的回退。加 `--enable-unsafe-webgpu --use-webgpu-adapter=swiftshader --enable-unsafe-swiftshader` 后得到 SwiftShader：`info.vendor` 为 `google`、`architecture` 为 `swiftshader`、`isFallbackAdapter` 为真、`description` 为空；计算着色器在页面与专用 Worker 中都能运行，并且有 `timestamp-query`（四个元素的向量加法约 33 µs）。加 `--enable-unsafe-webgpu --enable-features=Vulkan --use-angle=vulkan` 时无头 Chromium 经 Vulkan 用上显卡（`nvidia`、`blackwell`，不是回退适配器，约 5 µs），所以录制的 `auto` 先试这组参数，没有适配器时再用 SwiftShader。Firefox 157 在 Linux 上没有 `navigator.gpu`。
+- **默认限制**：SwiftShader 适配器的 `maxStorageBufferBindingSize`、`maxBufferSize` 为 1 GiB，`maxComputeWorkgroupsPerDimension` 65535，`maxComputeInvocationsPerWorkgroup` 256，`maxStorageBuffersPerShaderStage` 10；RTX 5090 为 2 GiB、4 GiB、65535、1024、16。不带 `requiredLimits` 请求的设备只有规范的默认值（绑定 128 MiB、缓冲区 256 MiB），所以执行器按缓冲区的大小请求所需的限制，适配器不够时按“缺少限制”回退；运行的规模上限定为全部缓冲区 128 MiB、`repeat` 至多 1000。
+- **录制页面**：Playwright 新开的 `about:blank` 不是安全上下文，没有 `navigator.gpu`；录制器经 `page.route` 从一个 `https:` 的源（`https://webgpu.presmium.invalid/`）提供页面与计算核心，不占端口。
+- **jax-js 的导入**：Worker 没有导入映射；`data:` 模块（脚本 Worker 运行代码的方式）可以导入同源的 `http:` 模块（两个浏览器都是），所以脚本 Worker 把代码中的模块名改写为地址。jax-js 0.1.25 的 ES 模块构建是互相导入的 5 个文件、没有 wasm 文件与外部依赖，原样复制到产物的 `presmium/jax-js/` 即可；把它作为额外的入口 chunk 打包进网页形态的构建时，页面加载后内核没有启动（没有报错，原因未深究），因此不打包。SwiftShader 上 `init()` 给出 `webgpu`，2×2 矩阵乘法在 WebGPU 上得到正确结果。Slidev 构建时会为 `{monaco-run}` 代码中导入的包查找类型，在 pnpm 布局中从生成的文稿目录找不到 `@jax-js/jax` 而构建失败，测试文稿以 `renderers.slides.monacoTypesSource: none` 避开（`architecture.md` 9.3 节）。
 
 ## 12. 包与工作包
 

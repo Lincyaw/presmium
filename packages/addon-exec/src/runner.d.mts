@@ -3,6 +3,8 @@ export interface ScriptRequest {
   code: string
   args?: Record<string, string>
   typescript?: boolean
+  /** Module names the code imports and their URLs, as an import map gives them (the browser's script worker). */
+  imports?: Record<string, string>
 }
 
 export interface ScriptOutput {

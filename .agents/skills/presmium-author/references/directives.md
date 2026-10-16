@@ -170,11 +170,11 @@ def merge(ids, pair, new_id):
 
 ### `{run-panel}`
 
-参数为语言：`python`（默认）、`javascript`、`typescript`；正文为代码。
+参数为语言：`python`（默认）、`javascript`、`typescript`，或其他有执行器的语言（如 WebGPU 插件的 `wgsl`，见下文“浏览器 GPU”）；正文为代码。
 
 | 选项 | 类型 | 作用 |
 |---|---|---|
-| `:params:` | string | YAML 映射，注入程序的变量（JavaScript 中为常量），观众可改后重跑 |
+| `:params:` | string | YAML 映射，注入程序的变量（JavaScript 中为常量），观众可改后重跑；其他语言由执行器读取（如 `wgsl` 的缓冲区与派发），值可以是列表与映射，表单中显示为 JSON |
 | `:timeout:` | number | 毫秒；默认本章节的 `presmium.exec.timeoutMs` |
 | `:recorded:` | string | 执行失败或超时时显示的预录输出 |
 | `:run:` | string | `both`（默认，构建时也录制输出）或 `live`（只在浏览器中执行） |
@@ -188,7 +188,7 @@ print(*[i * i for i in range(n)])
 ```
 ````
 
-生成 `PmRunPanel`，步数 0。PDF、PNG 导出显示先给参数赋值的代码，加上构建时的输出（构建时没有执行、执行失败或超时的用 `:recorded:`）；notebook 中与内核同语言（默认 Python）的为代码单元格（参数赋值在前），其他语言为代码加输出的 Markdown 单元格。
+生成 `PmRunPanel`，步数 0。现场运行没能进行（没有运行时、没有 GPU 适配器、超时）而面板没有 `:recorded:` 时，显示构建时录制的输出并写明原因。PDF、PNG 导出显示先给参数赋值的代码，加上构建时的输出（构建时没有执行、执行失败或超时的用 `:recorded:`）；notebook 中与内核同语言（默认 Python）的为代码单元格（参数赋值在前），其他语言为代码加输出的 Markdown 单元格。
 
 ### `{step-run}`
 
@@ -231,6 +231,39 @@ print("hello")
 ````
 
 生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与开发服务器（`presmium dev`，网页与幻灯片都可以）；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
+
+## 浏览器 GPU `presmium.execWebgpu`（`@presmium/slidev-addon-exec-webgpu`）
+
+没有自己的指令：它为 `{run-panel} wgsl` 提供 WebGPU 计算着色器的执行器（浏览器中运行，构建时在 Playwright 的 Chromium 中录制），并让 JavaScript、TypeScript 代码能导入 jax-js。要和执行插件一起列在 `plugins` 中。
+
+````md
+```{run-panel} wgsl
+---
+params:
+  buffers:
+    a: [1, 2, 3, 4]
+    b: [10, 20, 30, 40]
+    out: { size: 4 }
+  dispatch: 1
+  repeat: 10
+---
+@group(0) @binding(0) var<storage, read> a: array<f32>;
+@group(0) @binding(1) var<storage, read> b: array<f32>;
+@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  if (id.x < arrayLength(&out)) { out[id.x] = a[id.x] + b[id.x]; }
+}
+```
+````
+
+- `:params:` 的键：`buffers`（必填：着色器中每个 `var<storage>`、`var<uniform>` 按变量名给出数据列表，或 `{ data, size, fill, type, read }`；组、绑定、读写与类型 `f32`、`i32`、`u32` 取自着色器）、`dispatch`（每个维度的工作组数，1 到 3 个数，默认 1）、`entry`（入口函数，默认唯一的计算入口）、`repeat`（运行次数，默认 1，至多 1000，计时取中位数）、`features`（需要的适配器特性，如 `[shader-f16]`）。全部缓冲区至多 128 MiB。
+- 输出：可写的存储缓冲区（`read_write`）读回后每个一行，如 `out: f32[4] = [11, 22, 33, 44]`（长的显示首尾与最小、最大、平均），再加每次派发的时间与适配器；在 CPU 模拟的回退适配器（SwiftShader）上计时注明“CPU 模拟”。构建时录制的输出是英文。
+- 浏览器没有 WebGPU、没有 GPU 适配器、缺少特性或限制、设备丢失或超时时，面板显示构建时录制的输出与原因（如“预录输出 · 没有可用的 GPU 适配器”）；着色器的错误照常显示为错误。
+- 构建时：有显卡时 Chromium 经 Vulkan 用显卡，否则用 SwiftShader；`execute.environments` 中声明 `cpu: { kind: webgpu, adapter: swiftshader }` 并写 `:env: cpu`，任何机器上录制都相同（`adapter` 还可以是 `auto`、`gpu`）。没有安装 Playwright 的 Chromium 时不录制，沿用已有的录制。
+- Python（Pyodide）中运行同样的着色器：`import presmium_gpu as gpu`，`result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)`（代码块顶层可以 `await`），`result['out']` 是读回的列表，`print(result)` 显示与面板相同的摘要；Chromium、Firefox 等有 JSPI 的浏览器另有同步写法 `gpu.run_sync(...)`。不能运行时抛出 `presmium_gpu.GPUUnavailable`。这样的代码块写 `:run: live`（构建时的 Python 没有 WebGPU）。
+- JavaScript、TypeScript 中 `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` 使用 jax-js（张量与自动微分；`await init()` 之后 `defaultDevice('webgpu')` 在 GPU 上计算，没有 WebGPU 时默认用 WebAssembly）。jax-js 随产物发布，第一次导入时加载；这样的代码块写 `:run: live`。幻灯片形态中有这样的现场代码块时，在 `renderers.slides` 中写 `monacoTypesSource: none`，否则 Slidev 构建时找不到 jax-js 的类型而失败。
 
 ## 引导 `presmium.guide`（`@presmium/slidev-addon-guide`）
 

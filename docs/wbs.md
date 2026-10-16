@@ -587,6 +587,8 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 - 同一文件（默认的无头 Chromium，没有 GPU 适配器）：GPU 代码块显示录制的输出与原因“没有可用的 GPU 适配器”。
 - `packages/addon-exec-webgpu/test/record.test.ts`：`presmium build` 在 SwiftShader 中录制出该着色器的输出，录制的环境指纹注明回退适配器。
 
+**实际交付**：新包 `@presmium/slidev-addon-exec-webgpu`（插件 ID `presmium.execWebgpu`）：`wgsl` 执行器 `presmium.webgpu` 与 `kind: webgpu` 的环境提供方（环境选项 `adapter`：`auto`、`gpu`、`swiftshader`）；纯 JavaScript 的计算核心 `src/gpu.mjs`（浏览器中在每次运行一个的 Worker 里，编译时在 Playwright 的 Chromium 中经 `page.route` 提供的 `https:` 页面里运行同一份）；`src/domain/params.ts` 从着色器的声明与 `:params:` 得出请求（缓冲区按变量名，组、绑定、读写与类型取自声明）；中英文的原因与摘要；超时由 Worker 销毁设备后结束，设备丢失结束运行，规模上限 128 MiB 与 `repeat` 1000；Vite 插件（`vite.config.ts`、`src/node/jax.ts`）把 jax-js 的 ES 模块构建原样发布到 `<base>presmium/jax-js/`。执行插件：Pyodide Worker 中的 `presmium_gpu`（`src/client/presmium_gpu.py`，`await presmium_gpu.run(…)`；有 JSPI 时 Worker 以 `callPromising` 运行代码块，另有 `run_sync`）与代码块顶层的 `await`（`src/client/run_await.py`）；脚本 Worker 的导入映射 `SCRIPT_IMPORTS`（`runner.mjs` 的 `prepare` 改写模块名）；执行面板接受任何语言的 `:params:` 映射，并在现场运行没能进行时显示编译时的输出（属性 `compiledOutput`）与原因。验收用例在 `e2e/exec-webgpu.spec.ts`（测试文稿 `e2e/fixtures/exec-webgpu/`）与 `packages/addon-exec-webgpu/test/record.test.ts`。实现细节写在 `architecture.md` 4.6 节标明 WP-75 的段落、9.3 节（Slidev 为 `{monaco-run}` 中导入的包查找类型）与 `ir.md` 2.7 节，先行验证的结论在 `design-v0.7.md` 第 11 节。新增依赖：`@jax-js/jax` 0.1.25、`playwright-chromium` 1.64.1（与仓库一致）、`yaml`（与执行插件相同的范围）。
+
 ### WP-76 远端环境、部署模板与浏览器终端（M6，P-105 至 P-107）
 
 **归属**：`packages/addon-exec-jupyter/**`（新）、`templates/env/**`（新）、`e2e/exec-remote.spec.ts`、`e2e/fixtures/exec-remote/**`。
