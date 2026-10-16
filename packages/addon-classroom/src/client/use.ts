@@ -1,5 +1,5 @@
 import { useService } from '@presmium/host'
-import { CLASSROOM_STORE, SESSION } from '@presmium/kernel'
+import { CLASSROOM_STORE, errorMessage, SESSION } from '@presmium/kernel'
 import type { ClassroomStore, SessionSnapshot, StoredItem } from '@presmium/kernel'
 import type { ComputedRef, Ref } from 'vue'
 import { computed, shallowRef, watchEffect } from 'vue'
@@ -26,13 +26,17 @@ export function useClassroomStore(): ComputedRef<ClassroomStore | undefined> {
   return useService(CLASSROOM_STORE)
 }
 
-/** The items of a collection of `store`, kept current as the store changes or is replaced. */
-export function useCollection<T>(store: () => ClassroomStore | undefined, name: string): Readonly<Ref<StoredItem<T>[]>> {
+/**
+ * The items of a collection of `store` whose value has the shape `valid`
+ * checks (participants write them), kept current as the store changes or is
+ * replaced.
+ */
+export function useCollection<T>(store: () => ClassroomStore | undefined, name: string, valid: (value: unknown) => value is T): Readonly<Ref<StoredItem<T>[]>> {
   const items = shallowRef<StoredItem<T>[]>([])
   watchEffect((onCleanup) => {
     const current = store()
     const update = () => {
-      items.value = current?.list<T>(name) ?? []
+      items.value = (current?.list<unknown>(name) ?? []).filter((item): item is StoredItem<T> => valid(item.value))
     }
     update()
     if (current) onCleanup(current.subscribe(name, update))
@@ -42,8 +46,8 @@ export function useCollection<T>(store: () => ClassroomStore | undefined, name: 
 
 /**
  * Where this window's notes go: always to the browser, so they outlast the
- * classroom (archiving it frees the participant's own store on the server, and
- * another tab joins as another participant). While the classroom is active
+ * classroom (archiving it frees the participant's own store on the server).
+ * While the classroom is active
  * they also go to the participant's own store, and the window shows the notes
  * of both.
  */
@@ -63,7 +67,7 @@ export function useWrite() {
       action()
       return true
     } catch (error) {
-      failure.value = error instanceof Error ? error.message : String(error)
+      failure.value = errorMessage(error)
       return false
     }
   }

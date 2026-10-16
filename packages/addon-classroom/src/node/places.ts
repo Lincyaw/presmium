@@ -1,5 +1,6 @@
+import { deckLocale } from '@presmium/kernel'
 import type { IRPass } from '@presmium/kernel'
-import { CLASSROOM_ID, isLabel, localeOf, MESSAGES } from '../domain/index.ts'
+import { CLASSROOM_ID, isLabel, MESSAGES } from '../domain/index.ts'
 import type { Place } from '../domain/index.ts'
 import { fallbackOf } from './fallbacks.ts'
 
@@ -27,8 +28,7 @@ function labelled(lines: readonly string[], from: number, at: number, id: string
 export const placesPass: IRPass = {
   name: 'classroom-places',
   async run(doc, ctx) {
-    // The deck's language; the web form's when the deck names none.
-    const t = MESSAGES[localeOf(doc.meta.lang, doc.config.renderers.web?.lang)]
+    const t = MESSAGES[deckLocale(ctx.lang)]
     const sources = new Map<string, Promise<string[]>>()
     const linesOf = (file: string) => {
       let lines = sources.get(file)

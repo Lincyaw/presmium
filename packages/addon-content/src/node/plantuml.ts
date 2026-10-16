@@ -1,16 +1,10 @@
-import type { IRBlock, IRPass } from '@presmium/kernel'
+import { deckLocale, docBlocks } from '@presmium/kernel'
+import type { IRPass } from '@presmium/kernel'
 import plantuml from 'plantuml-encoder'
-import { localeOf, MESSAGES } from '../domain/index.ts'
+import { MESSAGES } from '../domain/index.ts'
 
 /** PlantUML server that draws the diagrams, as Slidev's `plantUmlServer` defaults to. */
 const DEFAULT_SERVER = 'https://www.plantuml.com/plantuml'
-
-function each(blocks: IRBlock[], visit: (block: IRBlock) => void): void {
-  for (const block of blocks) {
-    visit(block)
-    if (block.node.type === 'component' && block.node.children) each(block.node.children, visit)
-  }
-}
 
 /**
  * ```plantuml code blocks become images of the diagram (P-41), drawn as SVG
@@ -21,15 +15,12 @@ export const plantUmlPass: IRPass = {
   name: 'plantuml',
   run(doc, ctx) {
     const server = (typeof ctx.config.plantUmlServer === 'string' ? ctx.config.plantUmlServer : DEFAULT_SERVER).replace(/\/+$/, '')
-    // The deck's language; the web form's when the deck names none.
-    const alt = MESSAGES[localeOf(doc.meta.lang, doc.config.renderers.web?.lang)].plantUml
-    for (const section of doc.sections) {
-      each(section.blocks, (block) => {
-        const { node } = block
-        if (node.type !== 'code' || !/^(?:plantuml|puml)$/i.test(node.lang)) return
-        const image = { type: 'image', url: `${server}/svg/${plantuml.encode(node.value)}`, alt: node.title ?? alt }
-        block.node = { type: 'markdown', mdast: { type: 'root', children: [{ type: 'paragraph', children: [image] }] } }
-      })
+    const alt = MESSAGES[deckLocale(ctx.lang)].plantUml
+    for (const { block } of docBlocks(doc)) {
+      const { node } = block
+      if (node.type !== 'code' || !/^(?:plantuml|puml)$/i.test(node.lang)) continue
+      const image = { type: 'image', url: `${server}/svg/${plantuml.encode(node.value)}`, alt: node.title ?? alt }
+      block.node = { type: 'markdown', mdast: { type: 'root', children: [{ type: 'paragraph', children: [image] }] } }
     }
   },
 }

@@ -4,6 +4,7 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, join, resolve, sep } from 'node:path'
 import { presmium } from '../deck.ts'
 
@@ -26,6 +27,30 @@ export async function startClassroomServer(deck?: string): Promise<{ url: string
     child.once('exit', code => fail(new Error(`classroom server exited (${code}): ${output}`)))
   })
   return { url, child }
+}
+
+/** A classroom client of another implementation or version, as the classroom server sees it. */
+export interface RawLearner {
+  /** Writes an entry of the classroom store, as it is. */
+  write(collection: string, id: string, value: unknown): void
+  close(): void
+}
+
+/**
+ * A learner's y-websocket client in Node, outside any deck: it proves participant `participant`
+ * and writes what it is told to. Yjs and y-websocket come from the classroom server's package.
+ */
+export async function rawLearner(server: string, room: string, participant: string): Promise<RawLearner> {
+  const require = createRequire(resolve('packages/classroom-server/package.json'))
+  const { Doc } = require('yjs') as { Doc: new () => { getMap(name: string): { set(key: string, value: unknown): void } } }
+  const { WebsocketProvider } = require('y-websocket') as { WebsocketProvider: new (...args: unknown[]) => { once(event: string, listener: () => void): void, destroy(): void } }
+  const doc = new Doc()
+  const provider = new WebsocketProvider(server, room, doc, { WebSocketPolyfill: require('ws'), disableBc: true, params: { participant, key: `${participant}-key` } })
+  await new Promise<void>(done => provider.once('sync', () => done()))
+  return {
+    write: (collection, id, value) => doc.getMap(`store:${collection}`).set(id, value),
+    close: () => provider.destroy(),
+  }
 }
 
 /**

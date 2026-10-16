@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { usePrefersReducedMotion, usePresentationMode } from '@presmium/host'
+import { currentLocale, usePrefersReducedMotion, usePresentationMode } from '@presmium/host'
 import { deriveOptions, Markmap } from 'markmap-view'
 import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { decodeMarkmap } from '../domain/index.ts'
-import { messages } from './locale.ts'
+import { decodeMarkmap, MESSAGES } from '../domain/index.ts'
 
 const props = defineProps<{ data: string }>()
 
@@ -17,16 +16,21 @@ let markmap: Markmap | undefined
 let observer: ResizeObserver | undefined
 
 // Slides are mounted hidden before they are shown, and node sizes can only be
-// measured while visible, so the map is drawn whenever the svg gets a size.
+// measured while visible, so the map is laid out the first time the svg has a
+// size; when the size changes later, it is only fitted again.
 async function draw(el: SVGSVGElement) {
   if (!el.clientWidth) return
-  markmap ??= Markmap.create(el, { ...deriveOptions(options), autoFit: false, zoom: interactive, pan: interactive })
-  const { duration } = markmap.options
+  if (markmap) {
+    fit(markmap, el)
+    return
+  }
+  const map = markmap = Markmap.create(el, { ...deriveOptions(options), autoFit: false, zoom: interactive, pan: interactive })
+  const { duration } = map.options
   // The map appears complete at once, as exports and screenshots need; only
   // folding a node afterwards animates, unless motion is reduced.
-  await markmap.setData(root, { duration: 0 })
-  fit(markmap, el)
-  markmap.setOptions({ duration: reduced.value ? 0 : duration })
+  await map.setData(root, { duration: 0 })
+  fit(map, el)
+  map.setOptions({ duration: reduced.value ? 0 : duration })
 }
 
 // Room around the laid-out nodes for the circles drawn on their bottom edges.
@@ -57,7 +61,7 @@ function describeToggles(el: SVGSVGElement) {
     circle.setAttribute('tabindex', '0')
     circle.setAttribute('role', 'button')
     circle.setAttribute('aria-expanded', String(!node.classList.contains('markmap-fold')))
-    circle.setAttribute('aria-label', messages().toggle(node.querySelector('foreignObject')?.textContent?.trim() ?? ''))
+    circle.setAttribute('aria-label', MESSAGES[currentLocale()].toggle(node.querySelector('foreignObject')?.textContent?.trim() ?? ''))
   }
 }
 
@@ -91,7 +95,7 @@ onBeforeUnmount(() => {
   markmap?.destroy()
 })
 
-// Rethrown from a watcher so that the surrounding PmBoundary shows the failure.
+// Rethrown from a watcher so that the PmBoundary the renderer puts around the component shows the failure.
 watch(failure, (error) => {
   throw error
 })

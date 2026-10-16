@@ -29,3 +29,14 @@ export function claimBadge(): { owns: Readonly<Ref<boolean>>, release(): void } 
     release: () => owners.value = owners.value.filter(t => t !== token),
   }
 }
+
+/**
+ * Takes the focus out of a form that is about to go away. An engine that does
+ * not focus the button clicked (WebKit) leaves it on the form's input, which
+ * keeps it once removed: the hosts' shortcuts (Slidev's arrow keys) would
+ * still see the reader typing.
+ */
+export function releaseFocus(): void {
+  const active = document.activeElement
+  if (active instanceof HTMLElement) active.blur()
+}

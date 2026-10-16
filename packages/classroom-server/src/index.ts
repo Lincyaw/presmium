@@ -22,19 +22,28 @@
  * that key are the presenter's and may write anything. Any other connection
  * may write only its participant's own entries of the classroom store
  * (`store:<collection>`): the entry's key names the participant
- * (`<quiz>:<participant>`, `<participant>:<question>`, ...) and its value
- * says so (`participant` or `author`). The classroom record (`session`, e.g.
- * ending the classroom), the quizzes (`store:quizzes`, opening and closing
- * them) and the presenter's synchronized state (`sync:<channel>`) are the
- * presenter's alone. A connection proves its participant with
- * `?participant=<id>&key=<key>`: the first connection that names a
- * participant binds the id to its key. An update that breaks these rules is
- * dropped. A participant's own rooms (`<room>.<key>`, named by a key only
- * that participant knows) take any write. Archiving, which disconnects
- * everyone and frees the participants' rooms, takes the claim key too:
- * `POST /archive/<room>` must send it as its body. Anyone can still create
- * and archive rooms of their own, each an archive file of bounded name in
- * `<deck>/.presmium/classroom/`.
+ * (`<quiz>:<participant>`, `<participant>:<question>`, ...), its value says
+ * so (`participant` or `author`) and is at most 16 KiB as JSON. The classroom
+ * record (`session`, e.g. ending the classroom), the quizzes
+ * (`store:quizzes`, opening and closing them) and the presenter's
+ * synchronized state (`sync:<channel>`) are the presenter's alone. A
+ * connection proves its participant with `?participant=<id>&key=<key>`: the
+ * first connection that names a participant binds the id to its key. Such an
+ * update must also integrate at once: one with structs that wait for structs
+ * the room does not have (a gap in a client's clocks, an origin or a parent
+ * not sent yet), or that deletes what the room does not have, would apply
+ * later as part of what others write. An update that breaks these rules is
+ * dropped and the connection closed with code 4403: the client's document
+ * holds what the room refused, so the session plugin starts again from the
+ * room's and tells the learner. Awareness (who is connected)
+ * follows the same trust: a connection sets the states of its own clients
+ * only, and a learner's state names only the participant it proved, as a
+ * learner. A participant's own rooms (`<room>.<key>`, named by a key only
+ * that participant knows) take any write and keep no awareness. Archiving,
+ * which disconnects everyone and frees the participants' rooms, takes the
+ * claim key too: `POST /archive/<room>` must send it as its body. Anyone can
+ * still create and archive rooms of their own, each an archive file of
+ * bounded name in `<deck>/.presmium/classroom/`. Messages are at most 1 MiB.
  */
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -42,6 +51,7 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join, resolve } from 'node:path'
+import { errorMessage } from '@presmium/kernel'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
 import { WebSocket, WebSocketServer } from 'ws'
@@ -56,13 +66,20 @@ const PING_INTERVAL = 30_000
 const ROOM = /^[\w.-]{1,128}$/
 /** Close code for an archived room: in the 4400-4499 range, so clients stop reconnecting. */
 export const ARCHIVED_CLOSE_CODE = 4410
+/** Close code for a connection whose update was refused: the client starts again from the room's document. */
+export const REFUSED_CLOSE_CODE = 4403
 /** Where archives go, relative to the deck directory. */
 export const ARCHIVE_DIR = '.presmium/classroom'
+/** Largest WebSocket message the server takes. */
+const MAX_MESSAGE = 1 << 20
+/** Largest value, as JSON, of a learner's entry. */
+const MAX_ENTRY = 16 << 10
 
 class Room extends Y.Doc {
   /** Connections, each with the awareness client ids it controls. */
   readonly conns = new Map<WebSocket, Set<number>>()
-  readonly awareness = new awarenessProtocol.Awareness(this)
+  /** Who is connected; a participant's own room has none. */
+  readonly awareness?: awarenessProtocol.Awareness
   /** Archived: freed once its last connection has closed. */
   archived = false
   /** Digest of the key that archives the room, from the first connection that claimed it. */
@@ -75,21 +92,23 @@ class Room extends Y.Doc {
   constructor(name: string) {
     super({ gc: true })
     this.personal = name.includes('.')
-    this.awareness.setLocalState(null)
     this.on('update', (update: Uint8Array) => {
       const encoder = encoding.createEncoder()
       encoding.writeVarUint(encoder, MESSAGE_SYNC)
       syncProtocol.writeUpdate(encoder, update)
       this.broadcast(encoding.toUint8Array(encoder))
     })
-    this.awareness.on('update', ({ added, updated, removed }: Record<'added' | 'updated' | 'removed', number[]>, conn: WebSocket | null) => {
+    if (this.personal) return
+    const awareness = this.awareness = new awarenessProtocol.Awareness(this)
+    awareness.setLocalState(null)
+    awareness.on('update', ({ added, updated, removed }: Record<'added' | 'updated' | 'removed', number[]>, conn: WebSocket | null) => {
       const changed = [...added, ...updated, ...removed]
       const controlled = conn && this.conns.get(conn)
       if (controlled) {
         added.forEach(id => controlled.add(id))
         removed.forEach(id => controlled.delete(id))
       }
-      this.broadcast(awarenessMessage(this.awareness, changed))
+      this.broadcast(awarenessMessage(awareness, changed))
     })
   }
 
@@ -110,6 +129,11 @@ class Room extends Y.Doc {
   /** The document as JSON: every top-level type is a map in the session plugin's layout. */
   content(): Record<string, unknown> {
     return Object.fromEntries([...this.share.keys()].map(key => [key, this.getMap(key).toJSON()]))
+  }
+
+  override destroy(): void {
+    this.awareness?.destroy()
+    super.destroy()
   }
 }
 
@@ -160,51 +184,129 @@ function readBody(request: IncomingMessage, limit = 1024): Promise<string> {
 }
 
 /** What a connection may write: anything from the presenter's windows, else its participant's own entries. */
-interface Writer {
+export interface ClassroomWriter {
   presenter: boolean
   /** The participant the connection proved with its key. */
   participant?: string
 }
 
-/** Whether a change to entry `key` of the top-level map `name`, now `value` (undefined: deleted), is the participant's to make. */
-function ownEntry(name: string, key: string | null, value: unknown, participant: string | undefined): boolean {
-  if (!participant || key === null || !name.startsWith('store:') || name === 'store:quizzes') return false
-  if (!key.split(':').includes(participant)) return false
-  if (value === undefined) return true
+/** Why a change to entry `key` of the top-level map `name`, now `value` (undefined: deleted), is not the participant's to make; undefined when it is. */
+function entryRefusal(name: string, key: string | null, value: unknown, participant: string | undefined): string | undefined {
+  if (!participant) return 'a write from a connection that proved no participant'
+  if (key === null || !name.startsWith('store:') || name === 'store:quizzes') return `a write to ${name}, which is the presenter's`
+  if (!key.split(':').includes(participant)) return `a write to ${name} under another participant's key`
+  if (value === undefined) return undefined
   const entry = value as { participant?: unknown, author?: unknown } | null
-  return typeof entry === 'object' && entry !== null && !(entry instanceof Y.AbstractType) && (entry.participant === participant || entry.author === participant)
+  if (typeof entry !== 'object' || entry === null || entry instanceof Y.AbstractType || (entry.participant !== participant && entry.author !== participant)) {
+    return `a value in ${name} that does not name its participant`
+  }
+  return JSON.stringify(entry).length > MAX_ENTRY ? `a value in ${name} over ${MAX_ENTRY} bytes` : undefined
 }
 
-/** Whether an update from a connection that is not the presenter's changes only its participant's entries: it is tried on a copy of the room. */
-function admissible(room: Room, update: Uint8Array, writer: Writer): boolean {
+/** What a document keeps pending: structs that wait for structs it lacks, and deletions of structs it lacks. */
+function pending(doc: Y.Doc): [structs: Uint8Array, deletions: Uint8Array] {
+  return [doc.store.pendingStructs?.update ?? new Uint8Array(), doc.store.pendingDs ?? new Uint8Array()]
+}
+
+/**
+ * Why an update from a connection that is not the presenter's may not be
+ * applied; undefined when it changes only its participant's entries. The
+ * rules are tried on a copy of the room. The update must integrate at once:
+ * Yjs keeps a struct that waits for structs the room lacks (a gap in its
+ * client's clocks, or an origin or parent no one has sent yet), and a
+ * deletion of structs the room lacks, pending, and applies them later as part
+ * of what others write, out of reach of these rules.
+ */
+function refusal(room: Room, update: Uint8Array, writer: ClassroomWriter): string | undefined {
   const probe = new Y.Doc()
   Y.applyUpdate(probe, Y.encodeStateAsUpdate(room))
+  const before = pending(probe)
   const changes: [type: unknown, keys: Set<string | null>][] = []
   probe.on('afterTransaction', (transaction: Y.Transaction) => changes.push(...transaction.changed))
   Y.applyUpdate(probe, update)
-  // A change inside a nested type has no top-level name: the plugins store plain values only.
-  const named = changes.map(([type, keys]) => [[...probe.share].find(([, shared]) => shared === type)?.[0], keys] as const)
-  const ok = named.every(([name, keys]) => name !== undefined
-    && [...keys].every(key => ownEntry(name, key, key === null ? undefined : probe.getMap(name).get(key), writer.participant)))
+  const after = pending(probe)
+  let refused = before.every((bytes, i) => Buffer.compare(bytes, after[i]!) === 0) ? undefined : 'an update that does not integrate into the room'
+  for (const [type, keys] of changes) {
+    // A change inside a nested type has no top-level name: the plugins store plain values only.
+    const name = [...probe.share].find(([, shared]) => shared === type)?.[0]
+    for (const key of keys) {
+      refused ??= name === undefined ? 'a change inside a nested type' : entryRefusal(name, key, key === null ? undefined : probe.getMap(name).get(key), writer.participant)
+    }
+  }
   probe.destroy()
-  return ok
+  return refused
 }
 
-function handle(room: Room, conn: WebSocket, data: Uint8Array, writer: Writer): void {
+/** Whether an update changes anything: structs or deletions. */
+function changes(update: Uint8Array): boolean {
+  const { structs, ds } = Y.decodeUpdate(update)
+  return structs.length > 0 || ds.clients.size > 0
+}
+
+/**
+ * The entries of an awareness update that change something and that the
+ * connection may make: states of clients no other connection controls (nor
+ * the room itself), whose participant, for a connection that is not the
+ * presenter's, is the one it proved, as a learner. `dropped` counts the
+ * others. y-websocket clients send on every state they receive, which
+ * changes nothing and is left out without counting.
+ */
+function ownAwareness(room: Room, awareness: awarenessProtocol.Awareness, conn: WebSocket, update: Uint8Array, writer: ClassroomWriter): { update: Uint8Array, dropped: number } {
+  const decoder = decoding.createDecoder(update)
+  const kept: [client: number, clock: number, state: string][] = []
+  let dropped = 0
+  const count = decoding.readVarUint(decoder)
+  for (let i = 0; i < count; i++) {
+    const entry: [number, number, string] = [decoding.readVarUint(decoder), decoding.readVarUint(decoder), decoding.readVarString(decoder)]
+    const [client, clock, state] = entry
+    const known = awareness.meta.get(client)?.clock ?? -1
+    if (clock < known || (clock === known && !(state === 'null' && awareness.getStates().has(client)))) continue
+    if (ownClient(room, awareness, conn, client) && ownState(state, writer)) kept.push(entry)
+    else dropped++
+  }
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, kept.length)
+  for (const [client, clock, state] of kept) {
+    encoding.writeVarUint(encoder, client)
+    encoding.writeVarUint(encoder, clock)
+    encoding.writeVarString(encoder, state)
+  }
+  return { update: encoding.toUint8Array(encoder), dropped }
+}
+
+function ownClient(room: Room, awareness: awarenessProtocol.Awareness, conn: WebSocket, client: number): boolean {
+  return client !== awareness.clientID && ![...room.conns].some(([other, clients]) => other !== conn && clients.has(client))
+}
+
+function ownState(json: string, writer: ClassroomWriter): boolean {
+  if (writer.presenter) return true
+  try {
+    const participant = (JSON.parse(json) as { participant?: { id?: unknown, role?: unknown } | null } | null)?.participant
+    return participant == null || (writer.participant !== undefined && participant.id === writer.participant && participant.role === 'learner')
+  } catch {
+    return false
+  }
+}
+
+function handle(room: Room, conn: WebSocket, data: Uint8Array, writer: ClassroomWriter, drop: (reason: string) => void): void {
   const decoder = decoding.createDecoder(data)
   const type = decoding.readVarUint(decoder)
   if (type === MESSAGE_SYNC) {
     // Sync step 1 asks for what the client lacks; step 2 and updates write to the room.
     if (decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1) {
+      const message = decoding.clone(decoder)
+      decoding.readVarUint(message)
+      const update = decoding.readVarUint8Array(message)
       // An ended classroom still answers what a client asks for, but takes no updates.
-      if (room.ended) return
-      if (!writer.presenter && !room.personal) {
-        const update = decoding.clone(decoder)
-        decoding.readVarUint(update)
-        if (!admissible(room, decoding.readVarUint8Array(update), writer)) {
-          console.warn(`[classroom] dropped an update to the classroom that is not ${writer.participant ? `participant ${writer.participant}'s` : 'an identified participant\'s'} to write`)
-          return
-        }
+      if (room.ended) {
+        if (changes(update)) drop('an update after the classroom ended')
+        return
+      }
+      const refused = writer.presenter || room.personal ? undefined : refusal(room, update, writer)
+      if (refused) {
+        drop(refused)
+        conn.close(REFUSED_CLOSE_CODE, 'update refused')
+        return
       }
     }
     const encoder = encoding.createEncoder()
@@ -212,8 +314,10 @@ function handle(room: Room, conn: WebSocket, data: Uint8Array, writer: Writer): 
     syncProtocol.readSyncMessage(decoder, encoder, room, conn)
     // Only sync step 1 has an answer (step 2); updates have none.
     if (encoding.length(encoder) > 1) send(conn, encoding.toUint8Array(encoder))
-  } else if (type === MESSAGE_AWARENESS) {
-    awarenessProtocol.applyAwarenessUpdate(room.awareness, decoding.readVarUint8Array(decoder), conn)
+  } else if (type === MESSAGE_AWARENESS && room.awareness) {
+    const own = ownAwareness(room, room.awareness, conn, decoding.readVarUint8Array(decoder), writer)
+    if (own.dropped > 0) drop(`${own.dropped} awareness state(s) of other clients or participants`)
+    awarenessProtocol.applyAwarenessUpdate(room.awareness, own.update, conn)
   }
 }
 
@@ -229,6 +333,12 @@ export interface ClassroomServerOptions {
   host?: string
   /** The deck directory, under which archives are written (`.presmium/classroom/`). Default: the working directory. */
   deck?: string
+  /**
+   * Called when the server drops what a connection may not write: an update
+   * (the connection is then closed with `REFUSED_CLOSE_CODE`, unless the
+   * classroom has ended) or awareness states. Default: a warning on the console.
+   */
+  onDropped?(room: string, writer: ClassroomWriter, reason: string): void
 }
 
 export interface ClassroomServer {
@@ -240,12 +350,18 @@ export interface ClassroomServer {
   close(): Promise<void>
 }
 
+function warnDropped(room: string, writer: ClassroomWriter, reason: string): void {
+  const who = writer.presenter ? 'the presenter' : writer.participant ? `participant ${writer.participant}` : 'an unidentified participant'
+  console.warn(`[classroom] room ${room}: dropped ${reason} from ${who}`)
+}
+
 export async function startClassroomServer(options: ClassroomServerOptions = {}): Promise<ClassroomServer> {
   const rooms = new Map<string, Room>()
   /** Names of archived rooms; their participants' rooms are `<name>.<key>`. */
   const archivedNames = new Set<string>()
   const archiveDir = resolve(options.deck ?? '.', ARCHIVE_DIR)
   const isArchived = (name: string) => [...archivedNames].some(archived => name === archived || name.startsWith(`${archived}.`))
+  const onDropped = options.onDropped ?? warnDropped
 
   /** Writes the classroom to its archive file, then frees it and its participants' rooms; `key` must be the room's. */
   async function archive(name: string, key: string): Promise<{ status: number, body: Record<string, unknown> }> {
@@ -292,7 +408,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
         ({ status, body }) => reply(response, status, body),
         (error: unknown) => {
           console.error(`[classroom] room ${target[1]}: archive failed`, error)
-          reply(response, 500, { error: error instanceof Error ? error.message : String(error) })
+          reply(response, 500, { error: errorMessage(error) })
         },
       )
     } else {
@@ -300,7 +416,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
       response.end('presmium classroom server\n')
     }
   })
-  const wss = new WebSocketServer({ noServer: true })
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE })
 
   function connect(conn: WebSocket, request: IncomingMessage): void {
     // Invalid frames from a client end its connection; without a listener they would end the process.
@@ -320,7 +436,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
     const params = paramsOf(request.url)
     const claim = params.get('claim')
     if (claim && !current.claim) current.claim = digest(claim)
-    const writer: Writer = { presenter: sameKey(current.claim, claim) }
+    const writer: ClassroomWriter = { presenter: sameKey(current.claim, claim) }
     // The first connection that names a participant binds the id to its key; later ones must bring the same key.
     const participant = params.get('participant')
     const key = params.get('key')
@@ -332,7 +448,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
     conn.binaryType = 'arraybuffer'
     conn.on('message', (data: ArrayBuffer) => {
       try {
-        handle(current, conn, new Uint8Array(data), writer)
+        handle(current, conn, new Uint8Array(data), writer, reason => onDropped(name, writer, reason))
       } catch (error) {
         console.error(`[classroom] room ${name}: bad message`, error)
       }
@@ -356,7 +472,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
         if (current.conns.size === 0) current.destroy()
         return
       }
-      if (controlled?.size) awarenessProtocol.removeAwarenessStates(current.awareness, [...controlled], null)
+      if (controlled?.size && current.awareness) awarenessProtocol.removeAwarenessStates(current.awareness, [...controlled], null)
       if (current.conns.size === 0 && current.store.clients.size === 0 && rooms.get(name) === current) {
         rooms.delete(name)
         current.destroy()
@@ -367,8 +483,8 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
     encoding.writeVarUint(encoder, MESSAGE_SYNC)
     syncProtocol.writeSyncStep1(encoder, current)
     send(conn, encoding.toUint8Array(encoder))
-    const states = [...current.awareness.getStates().keys()]
-    if (states.length > 0) send(conn, awarenessMessage(current.awareness, states))
+    const states = current.awareness ? [...current.awareness.getStates().keys()] : []
+    if (current.awareness && states.length > 0) send(conn, awarenessMessage(current.awareness, states))
   }
 
   wss.on('connection', (conn: WebSocket, request: IncomingMessage) => {

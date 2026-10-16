@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import { useMessages } from '@presmium/host'
 import { computed } from 'vue'
-import { useMessages } from '../src/client/locale.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { COLLECTIONS, distribution, placeKey, voteId } from '../src/domain/index.ts'
+import { COLLECTIONS, distribution, isPulseVote, MESSAGES, placeKey, voteId } from '../src/domain/index.ts'
 import type { Place, PulseVote } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -18,9 +17,9 @@ const props = defineProps<{
 
 const { me, status, joined, presenter } = useSession()
 const store = useClassroomStore()
-const votes = useCollection<PulseVote>(() => store.value, COLLECTIONS.pulse)
+const votes = useCollection(() => store.value, COLLECTIONS.pulse, isPulseVote)
 const { failure, write } = useWrite()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const question = computed(() => props.question ?? t.value.pulse.question)
 const levels = computed(() => props.levels ?? t.value.pulse.levels)
 
@@ -45,32 +44,30 @@ function vote(level: number): void {
 </script>
 
 <template>
-  <PmBoundary name="PmPulse">
-    <div class="pm-pulse pm-classroom-card" :data-pulse="id">
-      <p class="pm-pulse__question">
-        {{ question }}
-      </p>
-      <slot />
-      <p v-if="canVote" class="pm-classroom-actions" role="group" :aria-label="question">
-        <button v-for="(level, i) in levels" :key="i" type="button" :aria-pressed="mine?.level === i" @click="vote(i)">
-          {{ level }}
-        </button>
-      </p>
-      <p v-else-if="!joined" class="pm-classroom-status">
-        {{ t.pulse.joinFirst }}
-      </p>
-      <ul v-if="presenter" class="pm-pulse__distribution" :aria-label="t.pulse.distribution">
-        <li v-for="(level, i) in levels" :key="i" :data-level="level" :data-count="counts[i]">
-          <span class="pm-pulse__label">{{ level }}</span>
-          <span class="pm-pulse__bar" :style="{ width: `${total ? (counts[i]! / total) * 100 : 0}%` }" />
-          <span class="pm-pulse__count">{{ t.people(counts[i]!) }}</span>
-        </li>
-      </ul>
-      <p v-if="failure" class="pm-classroom-error" role="alert">
-        {{ failure }}
-      </p>
-    </div>
-  </PmBoundary>
+  <div class="pm-pulse pm-classroom-card" :data-pulse="id">
+    <p class="pm-pulse__question">
+      {{ question }}
+    </p>
+    <slot />
+    <p v-if="canVote" class="pm-classroom-actions" role="group" :aria-label="question">
+      <button v-for="(level, i) in levels" :key="i" type="button" :aria-pressed="mine?.level === i" @click="vote(i)">
+        {{ level }}
+      </button>
+    </p>
+    <p v-else-if="!joined" class="pm-classroom-status">
+      {{ t.pulse.joinFirst }}
+    </p>
+    <ul v-if="presenter" class="pm-pulse__distribution" :aria-label="t.pulse.distribution">
+      <li v-for="(level, i) in levels" :key="i" :data-level="level" :data-count="counts[i]">
+        <span class="pm-pulse__label">{{ level }}</span>
+        <span class="pm-pulse__bar" :style="{ width: `${total ? (counts[i]! / total) * 100 : 0}%` }" />
+        <span class="pm-pulse__count">{{ t.people(counts[i]!) }}</span>
+      </li>
+    </ul>
+    <p v-if="failure" class="pm-classroom-error" role="alert">
+      {{ failure }}
+    </p>
+  </div>
 </template>
 
 <style scoped>

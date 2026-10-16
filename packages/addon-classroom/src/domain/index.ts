@@ -17,18 +17,20 @@ export {
   reportKinds,
   submissionId,
   summarize,
+  summaryText,
   typicalError,
 } from './exercise.ts'
 export type { CheckCase, CheckError, CheckReport, ExerciseSummary, Submission } from './exercise.ts'
+export { isAnswer, isNote, isPulseVote, isQuestion, isQuizState, isSubmission } from './guards.ts'
 export { notesAt } from './notes.ts'
 export type { Note } from './notes.ts'
 export { isLabel, latestPerParticipant, placeKey, placeText } from './place.ts'
 export type { Place } from './place.ts'
-export { localeOf, MESSAGES } from './messages.ts'
-export type { ClassroomMessages, Locale } from './messages.ts'
+export { MESSAGES } from './messages.ts'
+export type { ClassroomMessages } from './messages.ts'
 export { distribution, pulseLevels, voteId } from './pulse.ts'
 export type { PulseVote } from './pulse.ts'
 export { questionsByPlace } from './questions.ts'
 export type { Question, QuestionGroup } from './questions.ts'
-export { parseExercise, parseQuiz } from './source.ts'
+export { exerciseSource, quizSource } from './source.ts'
 export type { CodeSource, ExerciseSource, QuizSource } from './source.ts'

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import { useMessages } from '@presmium/host'
 import { computed, ref } from 'vue'
-import { useMessages } from '../src/client/locale.ts'
 import { newId, useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { COLLECTIONS, placeText } from '../src/domain/index.ts'
+import { COLLECTIONS, isQuestion, MESSAGES, placeText } from '../src/domain/index.ts'
 import type { Place, Question } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -19,10 +18,10 @@ const props = defineProps<{
 
 const { me, status, joined, presenter } = useSession()
 const store = useClassroomStore()
-const questions = useCollection<Question>(() => store.value, COLLECTIONS.questions)
+const questions = useCollection(() => store.value, COLLECTIONS.questions, isQuestion)
 const { failure, write } = useWrite()
 const text = ref('')
-const t = useMessages()
+const t = useMessages(MESSAGES)
 
 const where = computed(() => (props.place ? placeText({ ...props.place, block: props.target }, t.value) : ''))
 const here = computed(() => questions.value
@@ -55,40 +54,38 @@ function toggleAnswered(id: string, question: Question): void {
 </script>
 
 <template>
-  <PmBoundary name="PmQuestionBox">
-    <div class="pm-question-box pm-classroom-card" :data-place="where">
-      <div class="pm-question-box__prompt">
-        <slot />
-      </div>
-      <form v-if="canAsk" class="pm-question-box__form" @submit.prevent="ask">
-        <textarea v-model="text" :aria-label="t.questions.question" rows="2" maxlength="500" :placeholder="t.questions.placeholder" @keydown.stop />
-        <p class="pm-classroom-actions">
-          <button type="submit" :disabled="!text.trim()">
-            {{ t.questions.ask }}
-          </button>
-          <span class="pm-classroom-status">{{ t.questions.attachedTo(where) }}</span>
-        </p>
-      </form>
-      <p v-else-if="!joined" class="pm-classroom-status">
-        {{ t.questions.joinFirst }}
-      </p>
-      <p v-else-if="status !== 'active'" class="pm-classroom-status">
-        {{ t.questions.ended }}
-      </p>
-      <ul v-if="shown.length" class="pm-question-box__list" :aria-label="presenter ? t.questions.here : t.questions.mine">
-        <li v-for="item in shown" :key="item.id" :data-answered="item.value.answered ? '' : undefined">
-          <span v-if="presenter" class="pm-question-box__name">{{ item.value.name }}{{ t.colon }}</span>{{ item.value.text }}
-          <span v-if="item.value.answered" class="pm-question-box__answered">{{ t.questions.answered }}</span>
-          <button v-if="presenter && status === 'active'" type="button" @click="toggleAnswered(item.id, item.value)">
-            {{ item.value.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
-          </button>
-        </li>
-      </ul>
-      <p v-if="failure" class="pm-classroom-error" role="alert">
-        {{ failure }}
-      </p>
+  <div class="pm-question-box pm-classroom-card" :data-place="where">
+    <div class="pm-question-box__prompt">
+      <slot />
     </div>
-  </PmBoundary>
+    <form v-if="canAsk" class="pm-question-box__form" @submit.prevent="ask">
+      <textarea v-model="text" :aria-label="t.questions.question" rows="2" maxlength="500" :placeholder="t.questions.placeholder" @keydown.stop />
+      <p class="pm-classroom-actions">
+        <button type="submit" :disabled="!text.trim()">
+          {{ t.questions.ask }}
+        </button>
+        <span class="pm-classroom-status">{{ t.questions.attachedTo(where) }}</span>
+      </p>
+    </form>
+    <p v-else-if="!joined" class="pm-classroom-status">
+      {{ t.questions.joinFirst }}
+    </p>
+    <p v-else-if="status !== 'active'" class="pm-classroom-status">
+      {{ t.questions.ended }}
+    </p>
+    <ul v-if="shown.length" class="pm-question-box__list" :aria-label="presenter ? t.questions.here : t.questions.mine">
+      <li v-for="item in shown" :key="item.id" :data-answered="item.value.answered ? '' : undefined">
+        <span v-if="presenter" class="pm-question-box__name">{{ item.value.name }}{{ t.colon }}</span>{{ item.value.text }}
+        <span v-if="item.value.answered" class="pm-question-box__answered">{{ t.questions.answered }}</span>
+        <button v-if="presenter && status === 'active'" type="button" @click="toggleAnswered(item.id, item.value)">
+          {{ item.value.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
+        </button>
+      </li>
+    </ul>
+    <p v-if="failure" class="pm-classroom-error" role="alert">
+      {{ failure }}
+    </p>
+  </div>
 </template>
 
 <style scoped>

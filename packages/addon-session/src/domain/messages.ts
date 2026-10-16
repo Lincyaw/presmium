@@ -1,18 +1,8 @@
 /**
- * The plugin's words in the languages it speaks (N-07). A page shows the
- * language of its `<html lang>`, else of the browser, else Chinese.
+ * The plugin's words in the languages it speaks (N-07), chosen by
+ * `@presmium/host` (`useMessages`, `currentLocale`).
  */
-export type Locale = 'zh-CN' | 'en'
-
-/** The first of the language tags the plugin speaks; Chinese when none is. */
-export function localeOf(...tags: (string | null | undefined)[]): Locale {
-  for (const tag of tags) {
-    const lang = tag?.trim().toLowerCase() ?? ''
-    if (lang.startsWith('zh')) return 'zh-CN'
-    if (lang.startsWith('en')) return 'en'
-  }
-  return 'zh-CN'
-}
+import type { Locale } from '@presmium/kernel'
 
 const zh = {
   classroom: '课堂',
@@ -61,6 +51,10 @@ const zh = {
   browsingAlone: '自主浏览中',
   presenterAt: (slide: number, step: number) => `主讲在第 ${slide} 节第 ${step} 步`,
   backToPresenter: '回到主讲进度',
+  rejoin: (room: string) => `以主讲身份回到课堂 ${room}`,
+  rejoinTitle: '这个浏览器创建过这个课堂，可以继续主讲、结束与归档它',
+  loopbackLink: '学习者的设备打不开这个地址，请用局域网地址打开文稿',
+  refused: '课堂服务拒绝了你刚才的写入（例如超出长度的提问），页面已按课堂的记录重新同步',
   defaultName: { presenter: '主讲', learner: '学习者' },
   errors: {
     noServer: '文稿没有配置课堂服务',
@@ -125,6 +119,10 @@ const en: SessionMessages = {
   browsingAlone: 'Browsing alone',
   presenterAt: (slide, step) => `The presenter is at section ${slide}, step ${step}`,
   backToPresenter: 'Back to the presenter',
+  rejoin: room => `Rejoin classroom ${room} as presenter`,
+  rejoinTitle: 'This browser created the classroom: go on presenting it, end it and archive it',
+  loopbackLink: 'Learners\' devices cannot open this address; open the deck at its address on the local network',
+  refused: 'The classroom server refused your last write (such as a question over the length limit); the page has synced again with the classroom',
   defaultName: { presenter: 'Presenter', learner: 'Learner' },
   errors: {
     noServer: 'The deck has no classroom server',

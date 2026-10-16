@@ -1,18 +1,9 @@
 /**
- * The plugin's words in the languages it speaks (N-07): a page's language is
- * its `<html lang>`, else the browser's; a compiled deck's is its `lang`.
+ * The plugin's words in the languages it speaks (N-07): a page's are chosen
+ * by `@presmium/host` (`currentLocale`), a compiled deck's by its `lang`
+ * (`deckLocale`).
  */
-export type Locale = 'zh-CN' | 'en'
-
-/** The first of the language tags the plugin speaks; Chinese when none is. */
-export function localeOf(...tags: unknown[]): Locale {
-  for (const tag of tags) {
-    const lang = typeof tag === 'string' ? tag.trim().toLowerCase() : ''
-    if (lang.startsWith('zh')) return 'zh-CN'
-    if (lang.startsWith('en')) return 'en'
-  }
-  return 'zh-CN'
-}
+import type { Locale } from '@presmium/kernel'
 
 export interface ContentMessages {
   /** The demo counter's default label, and what follows a label. */

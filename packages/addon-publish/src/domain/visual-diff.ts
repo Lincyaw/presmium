@@ -1,13 +1,15 @@
 /**
  * Visual diff (P-53): the share of differing pixels between two commits on the
- * same page, a page being one slide at one click step. Invariant: every page
- * whose difference exceeds the threshold is listed in the report.
+ * same page. A page of the slides is one slide at one click step; a page of
+ * the web form is one of its pages in the document view, or one section in
+ * the present view. Invariant: every page whose difference exceeds the
+ * threshold is listed in the report.
  */
 
 export interface PageRef {
-  /** File stem of the exported image, e.g. `002-03`. */
+  /** Path of the image without extension, e.g. `002-03` (slides) or `web/index`, `web/present-intro` (web form). */
   id: string
-  /** 1-based slide number. */
+  /** 1-based slide (section) number; 0 for a page of the web form's document view. */
   slide: number
   /** Click step, 0 before the first click. */
   step: number
@@ -45,16 +47,28 @@ export function parsePageFile(name: string): PageRef | undefined {
   return { id: name.slice(0, -4), slide: Number(match[1]), step: match[2] === undefined ? 0 : Number(match[2]) - 1 }
 }
 
-/** Pairs the exported images of both sides by page, in page order. */
-export function pairPages(a: string[], b: string[]): { page: PageRef, a?: string, b?: string }[] {
+/**
+ * Reads the name of a capture of the web form (in `web/`): `<page>.png` is a
+ * page in the document view, `present-<section>.png` a section in the present
+ * view, numbered by `sections` (section id -> number).
+ */
+export function parseWebFile(name: string, sections: ReadonlyMap<string, number>): PageRef | undefined {
+  if (!name.endsWith('.png')) return undefined
+  const stem = name.slice(0, -4)
+  const present = /^present-(.+)$/.exec(stem)?.[1]
+  return { id: `web/${stem}`, slide: present === undefined ? 0 : sections.get(present) ?? 0, step: 0 }
+}
+
+/** Pairs the exported images of both sides by page, in page order; `parse` reads their names. */
+export function pairPages(a: string[], b: string[], parse: (name: string) => PageRef | undefined = parsePageFile): { page: PageRef, a?: string, b?: string }[] {
   const pages = new Map<string, { page: PageRef, a?: string, b?: string }>()
   for (const [side, files] of [['a', a], ['b', b]] as const) {
     for (const file of files) {
-      const page = parsePageFile(file)
+      const page = parse(file)
       if (page) pages.set(page.id, { page, ...pages.get(page.id), [side]: file })
     }
   }
-  return [...pages.values()].sort((x, y) => x.page.slide - y.page.slide || x.page.step - y.page.step)
+  return [...pages.values()].sort((x, y) => x.page.slide - y.page.slide || x.page.step - y.page.step || x.page.id.localeCompare(y.page.id))
 }
 
 export function pageStatus(ratio: number, threshold: number, a: boolean, b: boolean): PageStatus {

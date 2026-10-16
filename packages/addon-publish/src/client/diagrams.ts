@@ -3,7 +3,8 @@
  * SVG (in the slides form, inside a shadow root that the page's CSS does not
  * reach), and its dark theme labels fall below AA. In high contrast these
  * rules draw diagrams in the two colors of contrast.css: text and lines in the
- * foreground, shapes and labels filled with the background.
+ * foreground, shapes and labels filled with the background. contrast.ts gives
+ * the shadow roots that appear while the mode is on their sheet (`adoptShadows`).
  */
 const DIAGRAM = 'svg[aria-roledescription]'
 
@@ -23,6 +24,8 @@ ${scope} marker * { fill: ${fg} !important; stroke: ${fg} !important; }
 /** Rules for the diagrams in shadow roots; empty while the mode is off. */
 let shadowSheet: CSSStyleSheet | undefined
 
+const supported = () => typeof CSSStyleSheet !== 'undefined' && 'adoptedStyleSheets' in Document.prototype
+
 function adopt(host: Element): void {
   const shadow = host.shadowRoot
   if (shadow && shadowSheet && !shadow.adoptedStyleSheets.includes(shadowSheet)) {
@@ -30,34 +33,28 @@ function adopt(host: Element): void {
   }
 }
 
-function adoptAll(root: Element | Document): void {
-  if (root instanceof Element) adopt(root)
-  for (const host of root.querySelectorAll('*')) {
+/** Gives the open shadow roots in or at `node` the diagrams' sheet. */
+export function adoptShadows(node: Node): void {
+  if (!shadowSheet || !(node instanceof Element || node instanceof Document)) return
+  if (node instanceof Element) adopt(node)
+  for (const host of node.querySelectorAll('*')) {
     if (host.shadowRoot) adopt(host)
   }
 }
 
 /**
- * Starts styling diagrams: the page's own diagrams through a document-wide
- * sheet, the ones in open shadow roots through a sheet adopted by every
- * shadow root that appears. `on` switches the shadow sheet's rules.
+ * Styles diagrams (`on`) or stops: the page's own diagrams through a
+ * document-wide sheet, the ones in open shadow roots through a sheet that the
+ * shadow roots of the page adopt, whose rules `on` switches.
  */
 export function styleDiagrams(on: boolean): void {
-  if (typeof CSSStyleSheet === 'undefined' || !('adoptedStyleSheets' in Document.prototype)) return
+  if (!supported()) return
   if (!shadowSheet) {
     shadowSheet = new CSSStyleSheet()
     const page = new CSSStyleSheet()
     page.replaceSync(rules(`:root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) ${DIAGRAM}`))
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, page]
-    // A shadow root is attached when its host mounts, before this observer runs.
-    new MutationObserver((records) => {
-      for (const record of records) {
-        for (const node of record.addedNodes) {
-          if (node instanceof Element) adoptAll(node)
-        }
-      }
-    }).observe(document.documentElement, { childList: true, subtree: true })
-    adoptAll(document)
   }
   shadowSheet.replaceSync(on ? rules(DIAGRAM) : '')
+  if (on) adoptShadows(document)
 }

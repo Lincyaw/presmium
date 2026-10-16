@@ -1,25 +1,28 @@
-// Runs the real `presmium build --to notebook` on a deck with the classroom directives:
-// in a notebook a quiz is a question list and an exercise is its starter code and checks as code cells.
+// Runs the real `presmium build --to notebook` on decks with the classroom directives: in a notebook
+// a quiz is a question list and an exercise is its prompt, its starter code and its checks as code
+// cells, written in the deck's language (English for a language without messages, such as French).
 // The build also warns about a label that looks like a generated block id.
-import { execFile } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { presmium } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
-const BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const NOTEBOOK = fileURLToPath(new URL('../../render-notebook', import.meta.url))
 
-const DECK = `---
+const headmatter = (lang: string) => `---
+lang: ${lang}
 plugins:
   - ${ADDON}
 renderers:
   notebook:
     package: ${NOTEBOOK}
 ---
+`
 
+const DECK = `${headmatter('zh-CN')}
 (quiz)=
 ## 测验
 
@@ -63,27 +66,76 @@ assert mean([1, 2, 3]) == 2
 这一段的标签像生成的块 ID。
 `
 
+const FRENCH = `${headmatter('fr')}
+(exercise)=
+## Exercice
+
+\`\`\`\`{exercise} python
+Press {kbd}\`Ctrl\` and compute {math}\`x^2\`, H{sub}\`2\`O.
+
+![a dot](img/dot.svg)
+
+\`\`\`python
+def square(x):
+    return x
+\`\`\`
+
+\`\`\`python
+assert square(2) == 4
+\`\`\`
+\`\`\`\`
+
+(quiz)=
+## Quiz
+
+\`\`\`{quiz}
+Which items make a task list?
+
+~~~md
+- [x] an example in a fence is no option
+~~~
+
+- [ ] the first
+- [x] the second
+\`\`\`
+
+(pulse)=
+## Pulse
+
+\`\`\`{pulse}
+\`\`\`
+`
+
 interface Cell {
   cell_type: string
   source: string[]
   metadata: { presmium: { section: string } }
 }
 
-const dir = mkdtempSync(join(tmpdir(), 'presmium-classroom-'))
-afterAll(() => rmSync(dir, { recursive: true, force: true }))
+const dirs: string[] = []
+afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
-it('shows a quiz as a question list and an exercise as code cells; live-only components leave no cells; warns about labels like generated ids', async () => {
-  writeFileSync(join(dir, 'lecture.md'), DECK)
-  const { code, output } = await new Promise<{ code: number, output: string }>((resolve) => {
-    execFile(process.execPath, [BIN, 'build', '--to', 'notebook', '--out', 'out'], { cwd: dir }, (error, stdout, stderr) => {
-      resolve({ code: error ? Number(error.code) : 0, output: stdout + stderr })
-    })
-  })
+/** Builds `deck` (`lecture.md` and `files`) to a notebook; the build's output and the notebook's cells by section. */
+async function notebook(deck: string, files: Record<string, string> = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'presmium-classroom-'))
+  dirs.push(dir)
+  writeFileSync(join(dir, 'lecture.md'), deck)
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(join(dir, path, '..'), { recursive: true })
+    writeFileSync(join(dir, path), text)
+  }
+  const { code, stdout, stderr } = await presmium(dir, ['build', '--to', 'notebook', '--out', 'out'])
+  const output = stdout + stderr
   expect(code, output).toBe(0)
-  expect(output).not.toContain('not rendered')
-  expect(output).toMatch(/lecture\.md:\d+ +warning +label \(step-2\)= ends in -<number> like a generated block id/)
   const cells = (JSON.parse(readFileSync(join(dir, 'out/notebook/lecture.ipynb'), 'utf8')) as { cells: Cell[] }).cells
   const of = (section: string) => cells.filter(c => c.metadata.presmium.section === section).map(c => ({ type: c.cell_type, source: c.source.join('') }))
+  return { dir, output, of }
+}
+
+it('shows a quiz as a question list and an exercise as code cells; live-only components leave no cells; warns about labels like generated ids', async () => {
+  const { output, of } = await notebook(DECK)
+  expect(output).not.toContain('not rendered')
+  expect(output).toMatch(/lecture\.md:\d+ +warning +label \(step-2\)= ends in -<number> like a generated block id/)
 
   // One Markdown cell with the section title.
   const [quiz, ...rest] = of('quiz')
@@ -101,4 +153,30 @@ it('shows a quiz as a question list and an exercise as code cells; live-only com
 
   // Only the section title: the question box and the pulse need a classroom.
   expect(of('live')).toEqual([{ type: 'markdown', source: '## 课堂' }])
+})
+
+it('writes an exercise\'s prompt as the deck\'s Markdown, its local image copied, in the deck\'s language; a fenced task list is no option (N-07, P-75)', async () => {
+  const { dir, of } = await notebook(FRENCH, { 'img/dot.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>' })
+  const [prompt, starter, checks] = of('exercise').slice(1)
+  expect(prompt?.source).toContain('**Exercise**')
+  expect(prompt?.source).toContain('<kbd>Ctrl</kbd>')
+  expect(prompt?.source).toContain('$x^2$')
+  expect(prompt?.source).toContain('H<sub>2</sub>O')
+  const [media] = readdirSync(join(dir, 'out/notebook/media'))
+  expect(media).toMatch(/^[\da-f]{8}-dot\.svg$/)
+  expect(prompt?.source).toContain(`![a dot](media/${media})`)
+  expect(starter).toEqual({ type: 'code', source: 'def square(x):\n    return x' })
+  expect(checks).toEqual({ type: 'code', source: '# Check: run the cell above, then this one; no error means it passes.\nassert square(2) == 4' })
+
+  const [quiz] = of('quiz')
+  expect(quiz?.source).toContain('- [x] an example in a fence is no option')
+  expect(quiz?.source).toMatch(/1\.\s+the first\n2\.\s+the second\n/)
+  expect(quiz?.source).not.toMatch(/3\.\s/)
+  expect(quiz?.source).toContain('<details><summary>Answer</summary>B</details>')
+
+  // The pulse's default question, written at compile time.
+  const ir = JSON.parse(readFileSync(join(dir, 'out/ir.json'), 'utf8')) as { meta: { lang: string }, sections: { id: string, blocks: { node: { props?: Record<string, unknown> } }[] }[] }
+  expect(ir.meta.lang).toBe('fr')
+  const pulse = ir.sections.find(s => s.id === 'pulse')!.blocks.map(b => b.node.props).find(props => props?.question)
+  expect(pulse).toMatchObject({ question: 'Did you follow this section?', levels: ['Got it', 'A bit unclear', 'Lost'] })
 })

@@ -1,10 +1,9 @@
-import { TOOLBAR } from '@presmium/host'
+import { currentLocale, TOOLBAR } from '@presmium/host'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { defineComponent, h } from 'vue'
 import PmContrastToggle from '../../components/PmContrastToggle.vue'
-import { PUBLISH_ID } from '../domain/index.ts'
+import { MESSAGES, PUBLISH_ID } from '../domain/index.ts'
 import { initHighContrast } from './contrast.ts'
-import { messages } from './messages.ts'
 import './contrast.css'
 
 /** The switch as the hosts' toolbars show it: the icon only. */
@@ -22,7 +21,7 @@ export const publishPlugin: PluginDefinition = {
   manifest: { id: PUBLISH_ID, version: '0.1.0', kernel: '^0.1.0', requires: [{ token: TOOLBAR, optional: true }] },
   setup(ctx) {
     initHighContrast()
-    unregister = ctx.tryGet(TOOLBAR)?.register({ id: PUBLISH_ID, title: messages().highContrast, component: ToolbarToggle, order: 20 })
+    unregister = ctx.tryGet(TOOLBAR)?.register({ id: PUBLISH_ID, title: MESSAGES[currentLocale()].highContrast, component: ToolbarToggle, order: 20 })
   },
   dispose() {
     unregister?.()

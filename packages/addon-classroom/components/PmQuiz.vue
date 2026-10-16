@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import { useMessages } from '@presmium/host'
 import { computed, ref, useId, watch } from 'vue'
-import { useMessages } from '../src/client/locale.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { acceptsAnswers, answerId, COLLECTIONS, countedAnswers, isCorrect, lateAnswers, optionLetter, placeKey, quizSwitched, tally } from '../src/domain/index.ts'
+import { acceptsAnswers, answerId, COLLECTIONS, countedAnswers, isAnswer, isCorrect, isQuizState, lateAnswers, MESSAGES, optionLetter, placeKey, quizSwitched, tally } from '../src/domain/index.ts'
 import type { Answer, Place, QuizState } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -22,10 +21,10 @@ const props = defineProps<{
 
 const { me, status, joined, presenter } = useSession()
 const store = useClassroomStore()
-const quizzes = useCollection<QuizState>(() => store.value, COLLECTIONS.quizzes)
-const answers = useCollection<Answer>(() => store.value, COLLECTIONS.answers)
+const quizzes = useCollection(() => store.value, COLLECTIONS.quizzes, isQuizState)
+const answers = useCollection(() => store.value, COLLECTIONS.answers, isAnswer)
 const { failure, write } = useWrite()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const name = useId()
 
 const id = computed(() => (props.place ? placeKey(props.place) : ''))
@@ -99,56 +98,54 @@ function setOpen(next: boolean): void {
 </script>
 
 <template>
-  <PmBoundary name="PmQuiz">
-    <div class="pm-quiz pm-classroom-card" :data-quiz="id" :data-state="open ? 'open' : closed ? 'closed' : 'waiting'">
-      <div class="pm-quiz__prompt">
-        <slot />
-      </div>
-      <form class="pm-quiz__form" @submit.prevent="submit">
-        <ol class="pm-quiz__options">
-          <li
-            v-for="(option, i) in options"
-            :key="i"
-            class="pm-quiz__option"
-            :data-option="optionLetter(i)"
-            :data-correct="revealed && answer.includes(i) ? '' : undefined"
-          >
-            <label>
-              <input :type="multiple ? 'checkbox' : 'radio'" :name="name" :checked="choice.includes(i)" :disabled="!canAnswer" @change="toggle(i)">
-              <span class="pm-quiz__letter">{{ optionLetter(i) }}</span>
-              <span>{{ option }}</span>
-            </label>
-            <span v-if="showTally" class="pm-quiz__count">{{ t.people(result.counts[i]!) }}</span>
-          </li>
-        </ol>
-        <p class="pm-classroom-actions">
-          <button v-if="!presenter" type="submit" :disabled="!canAnswer || choice.length === 0">
-            {{ t.quiz.submit }}
-          </button>
-          <template v-if="presenter && status === 'active'">
-            <button v-if="!open" type="button" @click="setOpen(true)">
-              {{ t.quiz.openButton }}
-            </button>
-            <button v-else type="button" @click="setOpen(false)">
-              {{ t.quiz.closeButton }}
-            </button>
-          </template>
-        </p>
-      </form>
-      <p class="pm-classroom-status" role="status">
-        {{ statusText }}
-      </p>
-      <p v-if="showTally" class="pm-quiz__tally">
-        {{ t.quiz.tally(result.respondents, result.correct) }}
-      </p>
-      <p v-if="presenter && late.length" class="pm-quiz__late">
-        {{ t.quiz.late(late.length) }}
-      </p>
-      <p v-if="failure" class="pm-classroom-error" role="alert">
-        {{ failure }}
-      </p>
+  <div class="pm-quiz pm-classroom-card" :data-quiz="id" :data-state="open ? 'open' : closed ? 'closed' : 'waiting'">
+    <div class="pm-quiz__prompt">
+      <slot />
     </div>
-  </PmBoundary>
+    <form class="pm-quiz__form" @submit.prevent="submit">
+      <ol class="pm-quiz__options">
+        <li
+          v-for="(option, i) in options"
+          :key="i"
+          class="pm-quiz__option"
+          :data-option="optionLetter(i)"
+          :data-correct="revealed && answer.includes(i) ? '' : undefined"
+        >
+          <label>
+            <input :type="multiple ? 'checkbox' : 'radio'" :name="name" :checked="choice.includes(i)" :disabled="!canAnswer" @change="toggle(i)">
+            <span class="pm-quiz__letter">{{ optionLetter(i) }}</span>
+            <span>{{ option }}</span>
+          </label>
+          <span v-if="showTally" class="pm-quiz__count">{{ t.people(result.counts[i]!) }}</span>
+        </li>
+      </ol>
+      <p class="pm-classroom-actions">
+        <button v-if="!presenter" type="submit" :disabled="!canAnswer || choice.length === 0">
+          {{ t.quiz.submit }}
+        </button>
+        <template v-if="presenter && status === 'active'">
+          <button v-if="!open" type="button" @click="setOpen(true)">
+            {{ t.quiz.openButton }}
+          </button>
+          <button v-else type="button" @click="setOpen(false)">
+            {{ t.quiz.closeButton }}
+          </button>
+        </template>
+      </p>
+    </form>
+    <p class="pm-classroom-status" role="status">
+      {{ statusText }}
+    </p>
+    <p v-if="showTally" class="pm-quiz__tally">
+      {{ t.quiz.tally(result.respondents, result.correct) }}
+    </p>
+    <p v-if="presenter && late.length" class="pm-quiz__late">
+      {{ t.quiz.late(late.length) }}
+    </p>
+    <p v-if="failure" class="pm-classroom-error" role="alert">
+      {{ failure }}
+    </p>
+  </div>
 </template>
 
 <style scoped>

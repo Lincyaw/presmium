@@ -15,8 +15,20 @@ export interface ClassroomSnapshot extends SessionSnapshot {
   joinUrl?: string
   /** A join link opened without a name: the room to join once the learner gives one. */
   invitation?: string
+  /**
+   * Outside a classroom: a classroom this browser created, which the window
+   * can rejoin as its presenter (`ClassroomSession.rejoin`), e.g. after the
+   * presenter's window was closed.
+   */
+  rejoin?: string
   /** Why the last attempt to create or join failed. */
   error?: string
+  /**
+   * The classroom server refused a write of this window, which then started
+   * again from the classroom's document: that write is gone. Cleared by the
+   * next write.
+   */
+  refused?: boolean
   /** The classroom was archived to this file (relative to the deck directory): it has ended and is offline. */
   archive?: string
 }
@@ -27,6 +39,8 @@ export interface ClassroomSession extends SessionService {
   subscribe(listener: (snapshot: ClassroomSnapshot) => void): Unsubscribe
   /** A learner follows the presenter or browses alone; following goes to the presenter's position at once. */
   setFollow(mode: FollowMode): void
+  /** Rejoins the classroom of the snapshot's `rejoin` as its presenter, with the key that created it. */
+  rejoin(): Promise<void>
   archive(): Promise<string>
   /**
    * A document on the classroom server in a room named by a key that only

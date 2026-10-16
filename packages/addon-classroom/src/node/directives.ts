@@ -35,21 +35,23 @@
  * ```
  * ````
  */
-import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock } from '@presmium/kernel'
-import { CLASSROOM_ID, parseExercise, parseQuiz, pulseLevels } from '../domain/index.ts'
+import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, MdastNode } from '@presmium/kernel'
+import { CLASSROOM_ID, exerciseSource, pulseLevels, quizSource } from '../domain/index.ts'
 
-/** A component of this plugin with `prompt` as its child block. */
-function component(name: string, props: Record<string, unknown>, prompt: string, ctx: DirectiveContext): ComponentNode {
-  const mdast = prompt ? ctx.parse(prompt) : { type: 'root', children: [] }
-  const children: IRBlock[] = mdast.children?.length ? [{ id: 'prompt', role: 'visual', at: 0, source: ctx.source, node: { type: 'markdown', mdast } }] : []
+/** A component of this plugin with the `prompt` nodes as its child block. */
+function component(name: string, props: Record<string, unknown>, prompt: MdastNode[], ctx: DirectiveContext): ComponentNode {
+  const children: IRBlock[] = prompt.length ? [{ id: 'prompt', role: 'visual', at: 0, source: ctx.source, node: { type: 'markdown', mdast: { type: 'root', children: prompt } } }] : []
   return { type: 'component', plugin: CLASSROOM_ID, name, props, ...children.length ? { children } : {} }
 }
+
+/** The body parsed once, as the deck's Markdown. */
+const body = (text: string, ctx: DirectiveContext): MdastNode => (text.trim() ? ctx.parse(text) : { type: 'root', children: [] })
 
 export const quizDirective: DirectiveSpec = {
   name: 'quiz',
   body: true,
   toIR(input, ctx) {
-    const { prompt, options, answer } = parseQuiz(input.body)
+    const { prompt, options, answer } = quizSource(body(input.body, ctx))
     if (options.length < 2) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{quiz} needs at least two options, written as a task list: `- [ ] wrong`, `- [x] right`' })
     else if (answer.length === 0) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{quiz}: mark the right options with `[x]`' })
     return { node: component('PmQuiz', { options, answer }, prompt, ctx) }
@@ -63,7 +65,7 @@ export const exerciseDirective: DirectiveSpec = {
   options: { timeout: 'number' },
   toIR(input, ctx) {
     const lang = input.arg?.trim() || 'python'
-    const { prompt, code } = parseExercise(input.body)
+    const { prompt, code } = exerciseSource(body(input.body, ctx))
     const [starter, checks] = code
     if (!checks) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{exercise} needs two code blocks: the starter code, then the checks' })
     if (code.length > 2) ctx.report({ checkId: 'presmium.classroom', severity: 'warning', message: '{exercise}: code blocks after the second (the checks) are ignored' })
@@ -81,7 +83,7 @@ export const questionBoxDirective: DirectiveSpec = {
   options: { target: 'string' },
   toIR(input, ctx) {
     const target = typeof input.options.target === 'string' ? input.options.target.trim() : ''
-    return { node: component('PmQuestionBox', target ? { target } : {}, input.body.trim(), ctx) }
+    return { node: component('PmQuestionBox', target ? { target } : {}, body(input.body, ctx).children ?? [], ctx) }
   },
 }
 
@@ -94,6 +96,6 @@ export const pulseDirective: DirectiveSpec = {
     // Without them, the pass gives the question and the levels in the deck's language.
     const question = input.arg?.trim()
     const levels = pulseLevels(input.options.levels)
-    return { node: component('PmPulse', { ...question ? { question } : {}, ...levels ? { levels } : {} }, input.body.trim(), ctx) }
+    return { node: component('PmPulse', { ...question ? { question } : {}, ...levels ? { levels } : {} }, body(input.body, ctx).children ?? [], ctx) }
   },
 }

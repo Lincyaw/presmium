@@ -1,18 +1,24 @@
 <script setup lang="ts">
-// The classroom in the hosts' toolbar: a button with its state that opens the session panel.
+// The classroom in the hosts' toolbar: a button with its state that opens the session panel in a
+// popover (the browser's own: it closes with Esc or a click elsewhere, over everything).
 // It also places the learner's badge on the page.
-import { onBeforeUnmount, ref } from 'vue'
-import { shortStatus, statusText } from '../domain/index.ts'
-import { useMessages } from './locale.ts'
+import { useMessages } from '@presmium/host'
+import { onBeforeUnmount, ref, useId } from 'vue'
+import { MESSAGES, shortStatus, statusText } from '../domain/index.ts'
 import SessionBadge from './SessionBadge.vue'
 import SessionPanel from './SessionPanel.vue'
 import { claimBadge, useClassroom } from './use.ts'
 
 const { snapshot } = useClassroom()
-const t = useMessages()
+const t = useMessages(MESSAGES)
+const id = useId()
 const open = ref(false)
 const badge = claimBadge()
 onBeforeUnmount(badge.release)
+
+function toggled(event: Event): void {
+  open.value = (event as ToggleEvent).newState === 'open'
+}
 </script>
 
 <template>
@@ -20,19 +26,21 @@ onBeforeUnmount(badge.release)
     <button
       type="button"
       class="pm-session-toolbar__button"
+      :popovertarget="id"
       :title="statusText(snapshot, t)"
       :aria-expanded="open"
       :data-status="snapshot.status"
-      @click="open = !open"
     >
       <span class="pm-session-toolbar__dot" :data-connection="snapshot.server ? snapshot.connection : 'none'" aria-hidden="true" />
       {{ t.classroom }}<span class="pm-session-toolbar__state">{{ shortStatus(snapshot, t) }}</span>
     </button>
-    <div v-if="open" class="pm-session-popover" role="dialog" :aria-label="t.classroom">
-      <SessionPanel />
-      <button type="button" class="pm-session-popover__close" @click="open = false">
-        {{ t.close }}
-      </button>
+    <div :id="id" popover class="pm-session-popover" role="dialog" :aria-label="t.classroom" @toggle="toggled">
+      <template v-if="open">
+        <SessionPanel />
+        <button type="button" class="pm-session-popover__close" :popovertarget="id" popovertargetaction="hide">
+          {{ t.close }}
+        </button>
+      </template>
     </div>
     <Teleport v-if="badge.owns.value" to="body">
       <SessionBadge />
@@ -74,13 +82,14 @@ onBeforeUnmount(badge.release)
 .pm-session-toolbar__dot[data-connection='connecting'] {
   background: #f59e0b;
 }
+/* The text wraps, whatever the toolbar around it sets. */
 .pm-session-popover {
   position: fixed;
-  top: 4.5rem;
-  right: 1rem;
-  z-index: 2100;
+  inset: 4.5rem 1rem auto auto;
+  box-sizing: border-box;
   width: min(22rem, calc(100vw - 2rem));
   max-height: 75vh;
+  margin: 0;
   overflow: auto;
   padding: 0.75rem;
   border: 1px solid rgba(125, 125, 125, 0.4);
@@ -89,6 +98,8 @@ onBeforeUnmount(badge.release)
   color: var(--vp-c-text-1, inherit);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
   text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .pm-session-popover__close {
   margin-top: 0.5rem;

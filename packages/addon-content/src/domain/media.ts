@@ -3,7 +3,7 @@ import type { MdastNode } from '@presmium/kernel'
 /**
  * Media directives (P-42): `{video}`, `{audio}` and `{animation}` (an
  * animated image, with a still image shown instead when the system asks for
- * reduced motion).
+ * reduced motion). `PmMedia` draws the elements of `mediaElements`.
  */
 export type MediaKind = 'video' | 'audio' | 'animation'
 
@@ -50,44 +50,6 @@ export function mediaElements(kind: MediaKind, options: MediaOptions, still: boo
     { tag: 'img', file: 'media', attrs: { class: 'pm-media-motion', ...alt, ...size } },
     { tag: 'img', file: 'still', attrs: { class: 'pm-media-still', ...alt, ...size } },
   ]
-}
-
-function escape(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-
-/**
- * The elements as HTML, each source given by `src`. Audio names its file in a
- * `<source>`: that is where Vue's templates (Slidev) turn a relative URL into a
- * bundled asset, as they do for `<video src>` and `<img src>`.
- */
-export function mediaHtml(elements: MediaElement[], src: (file: MediaElement['file']) => string): string {
-  return elements.map(({ tag, file, attrs }) => {
-    const list = Object.entries(attrs).map(([name, value]) => (value === true ? ` ${name}` : ` ${name}="${escape(String(value))}"`)).join('')
-    const url = escape(src(file))
-    if (tag === 'img') return `<img src="${url}"${list}>`
-    return tag === 'audio' ? `<audio${list}><source src="${url}"></audio>` : `<${tag} src="${url}"${list}></${tag}>`
-  }).join('\n')
-}
-
-/**
- * The elements as mdast: image nodes whose `data.hName` makes them the media
- * element in HTML (mdast-util-to-hast), so renderers that publish the local
- * images of the IR publish the media files too.
- */
-export function mediaMdast(elements: MediaElement[], url: (file: MediaElement['file']) => string): MdastNode {
-  return {
-    type: 'root',
-    children: elements.map(({ tag, file, attrs }) => {
-      const { class: className, alt, ...rest } = attrs
-      return {
-        type: 'image',
-        url: url(file),
-        alt: typeof alt === 'string' ? alt : null,
-        data: { hName: tag, hProperties: { ...rest, ...className === undefined ? {} : { className: [String(className)] } } },
-      }
-    }),
-  }
 }
 
 /** Static content for renderers without the media element (a notebook, an export): a link to the file, named by the caption or the file name. */

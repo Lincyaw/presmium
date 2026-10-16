@@ -1,9 +1,9 @@
-export { SESSION_ID, sessionConfig } from './config.ts'
+export { isLoopback, reachableServer, SESSION_ID, sessionConfig } from './config.ts'
 export type { SessionConfig } from './config.ts'
-export { archiveUrl, joinRequest, joinUrl, roomId } from './links.ts'
+export { archiveUrl, joinRequest, joinUrl, loopbackLink, roomId } from './links.ts'
 export type { JoinRequest } from './links.ts'
-export { localeOf, MESSAGES } from './messages.ts'
-export type { Locale, SessionMessages } from './messages.ts'
+export { MESSAGES } from './messages.ts'
+export type { SessionMessages } from './messages.ts'
 export {
   changedEntries,
   cursorOf,
