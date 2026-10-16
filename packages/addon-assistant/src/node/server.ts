@@ -6,46 +6,57 @@
  *   mode the runtime's, in SHARED mode the gateway's), the runtime's name
  *   once an agent started, the kinds of task this member may submit.
  * - `POST tasks`: a task (`AgentTaskRequest`, with the id the page drew);
- *   learners' questions run in `tutor` mode.
+ *   learners' questions run in `tutor` mode; change tasks (editors and
+ *   owners, where `REVISIONS` commits them) one per document at a time.
  * - `GET tasks/<id>/events`: its events (SSE, from the first), to the
- *   member who submitted it and owners.
- * - `POST tasks/<id>/cancel`.
+ *   member who submitted it and owners; `POST tasks/<id>/cancel`;
+ *   `POST tasks/<id>/review`: the decision on a change task's review.
+ * - `POST revert` (`{ task }`): undoes the commit of a change task.
+ * - `GET excerpt?file=&start=&end=`: lines of a source file of the
+ *   document, for an annotation.
  *
- * Each task opens one agent session: `cwd` the document directory, the MCP
- * token `MCP_ENDPOINT` issues for the member and mode (revoked when the
- * session closes). The agent's permission requests of a question are
- * refused, asking no one; those of other tasks go to `APPROVALS` with their
- * scope. The terminal event (`done` or `error`) comes once the session and
- * its tokens are closed.
+ * Each task opens one agent session (`cwd` the document directory, or the
+ * review's root for a change task), with the MCP token `MCP_ENDPOINT`
+ * issues for the member and mode (revoked when the session closes). The
+ * agent's permission requests of a question are refused, asking no one;
+ * those of a change task within its directory were confirmed by sending it,
+ * the others go to `APPROVALS` with their scope. The terminal event (`done`
+ * or `error`) comes once the session and its tokens are closed.
  */
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { AGENT_RUNTIME, APPROVALS, deckLocale, errorMessage, eventStream, MCP_ENDPOINT } from '@presmium/kernel'
-import type { AgentEvent, AgentMode, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
-import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, runtimeChoice, taskRequestOf } from '../domain/index.ts'
-import type { AssistantInfo } from '../domain/index.ts'
-
-interface Task {
-  id: string
-  member: Member
-  kind: AgentTaskKind
-  events: AgentEvent[]
-  ended: boolean
-  wake: Set<() => void>
-  abort: AbortController
-}
-
-/** How long an ended task's events stay for a page that reconnects. */
-const KEPT_MS = 10 * 60_000
+import { AGENT_RUNTIME, APPROVALS, deckLocale, errorMessage, eventStream, isRecord, MCP_ENDPOINT, REVISIONS } from '@presmium/kernel'
+import type { AgentEvent, AgentMode, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
+import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
+import type { AssistantInfo, RevertAnswer } from '../domain/index.ts'
+import { runChange } from './changes.ts'
+import type { AgentApproval } from './permissions.ts'
+import { Tasks } from './tasks.ts'
+import type { Task } from './tasks.ts'
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } })
 
 const isOwner = (member: Member) => member.roles.includes('owner')
+const mayEdit = (member: Member) => member.roles.some(role => role === 'editor' || role === 'owner')
+
+/** Whether `path` is `dir` or below it. */
+function within(path: string, dir: string): boolean {
+  const rel = relative(dir, path)
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+}
+
+/** An excerpt is at most this many lines and characters. */
+const EXCERPT_LINES = 60
+const EXCERPT_CHARS = 4000
 
 let reported = false
 
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
-  const tasks = new Map<string, Task>()
+  const tasks = new Tasks()
+  /** The change task of each document, while it runs or waits for its review. */
+  const changing = new Map<string, string>()
 
   // The provider in SHARED mode is the gateway's (its environment has the model access): kept once it
   // answers, asked again a minute after it did not.
@@ -82,78 +93,80 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     ctx.log.warn(`the assistant is unavailable: ${why}`)
   }
 
-  /** The kinds this member may submit: questions for everyone while there is a runtime and a provider. */
-  const kinds = async (_member: Member): Promise<AgentTaskKind[]> => ((await provider()) ? ['question'] : [])
-
-  const push = (task: Task, event: AgentEvent) => {
-    task.events.push(event)
-    for (const wake of task.wake) wake()
+  /**
+   * The kinds this member may submit: questions for everyone while there is a runtime and a provider;
+   * change tasks for editors and owners where the workspace commits them (`REVISIONS`, presmium serve).
+   */
+  const kinds = async (member: Member): Promise<AgentTaskKind[]> => {
+    if (!(await provider())) return []
+    return ['question', ...mayEdit(member) && ctx.service(REVISIONS) ? CHANGE_KINDS : []]
   }
-  const end = (task: Task, event: AgentEvent) => {
-    push(task, event)
-    task.ended = true
-    for (const wake of task.wake) wake()
-    setTimeout(() => tasks.delete(task.id), KEPT_MS).unref?.()
+
+  /** An approval asked for a task: announced to its page, answered by the members its scope names. */
+  const ask = async (task: Task, request: ApprovalRequest): Promise<boolean> => {
+    const approvals = ctx.service(APPROVALS)
+    if (!approvals) return false
+    const asked: ApprovalRequest = { ...request, from: `agent:${task.id}`, member: task.member.id }
+    tasks.push(task, { type: 'approval', id: randomUUID(), request: asked })
+    return approvals.request(asked, task.abort.signal)
   }
 
   /**
    * The agent's permission requests: a question's are refused. Of a change task, a write within its
-   * directory (`content`) was confirmed by sending the task (N-08); the rest go to the approvals, by scope.
+   * directory (`content`) was confirmed by sending the task (N-08); the rest go to the approvals, by
+   * scope, and a write outside it that an owner allowed is committed with the task.
    */
-  const approve = async (task: Task, request: ApprovalRequest): Promise<boolean> => {
+  const approve = async (task: Task, request: AgentApproval): Promise<boolean> => {
     if (task.kind === 'question') return false
-    if (request.scope === 'content') return true
-    const approvals = ctx.service(APPROVALS)
-    if (!approvals) return false
-    const asked: ApprovalRequest = { ...request, from: `agent:${task.id}`, member: task.member.id }
-    push(task, { type: 'approval', id: randomUUID(), request: asked })
-    return approvals.request(asked, task.abort.signal)
+    const { path, ...rest } = request
+    if (rest.scope === 'content') return true
+    const allowed = await ask(task, rest)
+    if (allowed && rest.kind === 'write' && typeof path === 'string') (task.allowed ??= new Set()).add(path)
+    return allowed
   }
 
-  const run = async (task: Task, request: AgentTaskRequest, member: Member): Promise<void> => {
+  /** The task's agent session in `cwd`: its events (an agent's failure throws), then its messages; closed, with its token, before it resolves. */
+  const session = async (task: Task, cwd: string, request: AgentTaskRequest, onEvent: (event: AgentEvent) => Promise<void> | void): Promise<string[]> => {
     const runtime = ctx.service(AGENT_RUNTIME)
-    if (!runtime) return end(task, { type: 'error', message: t.noRuntime })
+    if (!runtime) throw new Error(t.noRuntime)
     const mode: AgentMode = request.kind === 'question' ? 'tutor' : 'author'
-    const grant = ctx.service(MCP_ENDPOINT)?.issue(member, mode)
-    let terminal: AgentEvent = { type: 'done' }
-    let session: Awaited<ReturnType<typeof runtime.open>> | undefined
+    const grant = ctx.service(MCP_ENDPOINT)?.issue(task.member, mode)
+    const messages: string[] = []
+    let opened: AgentSession | undefined
     try {
-      session = await runtime.open({
-        cwd: ctx.deckDir,
+      opened = await runtime.open({
+        cwd,
         mode,
-        member,
+        member: task.member,
         ...grant ? { mcp: { url: grant.url, token: grant.token } } : {},
         approve: asked => approve(task, asked),
       })
       if (!task.abort.signal.aborted) {
-        for await (const event of session.prompt(request, task.abort.signal)) {
-          // agent-host's transport passes its approval events on; this task announces its own (`approve`).
-          if (event.type !== 'approval') push(task, event)
+        for await (const event of opened.prompt(request, task.abort.signal)) {
+          // agent-host's transport passes its approval events on; this task announces its own (`ask`).
+          if (event.type === 'approval' || event.type === 'done') continue
+          if (event.type === 'error') throw new Error(event.message)
+          if (event.type === 'message') messages.push(event.text)
+          await onEvent(event)
         }
       }
     } catch (error) {
-      if (!task.abort.signal.aborted) terminal = { type: 'error', message: errorMessage(error) }
+      if (!task.abort.signal.aborted) throw error
     } finally {
       grant?.revoke()
-      await session?.close().catch((error: unknown) => ctx.log.warn(`the agent session did not close: ${errorMessage(error)}`))
-      end(task, terminal)
+      await opened?.close().catch((error: unknown) => ctx.log.warn(`the agent session did not close: ${errorMessage(error)}`))
     }
+    return messages
   }
 
-  async function* follow(task: Task, signal: AbortSignal): AsyncIterable<{ data: AgentEvent }> {
-    let next = 0
-    for (;;) {
-      while (next < task.events.length) yield { data: task.events[next++]! }
-      if (task.ended || signal.aborted) return
-      await new Promise<void>((resolve) => {
-        const wake = () => {
-          task.wake.delete(wake)
-          resolve()
-        }
-        task.wake.add(wake)
-        signal.addEventListener('abort', wake, { once: true })
-      })
+  const question = async (task: Task, request: AgentTaskRequest): Promise<void> => {
+    let terminal: AgentEvent = { type: 'done' }
+    try {
+      await session(task, ctx.deckDir, request, event => tasks.push(task, event))
+    } catch (error) {
+      terminal = { type: 'error', message: errorMessage(error) }
     }
+    tasks.end(task, terminal)
   }
 
   /** A task the member may follow: theirs, or any for owners. */
@@ -162,6 +175,15 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     if (!task) return json({ error: 'no such task' }, 404)
     if (task.member.id !== member.id && !isOwner(member)) return json({ error: 'not your task' }, 403)
     return task
+  }
+
+  /** A file of the document directory, by its path relative to it (its real path inside it). */
+  const documentFile = (file: string): string | undefined => {
+    const deck = realpathSync(ctx.deckDir)
+    const path = resolve(deck, file)
+    if (!within(path, deck) || !existsSync(path)) return undefined
+    const real = realpathSync(path)
+    return within(real, deck) && statSync(real).isFile() ? real : undefined
   }
 
   return {
@@ -180,17 +202,30 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
         async handle(request, rc: RequestContext) {
           if (request.method !== 'POST') return json({ error: 'POST a task' }, 405)
           const parsed = taskRequestOf(await request.json().catch(() => undefined))
-          if (!parsed) return json({ error: 'a task request: { kind, prompt, context, id? }' }, 400)
+          if (!parsed) return json({ error: 'a task request: { kind, prompt, context, annotations? (annotations), track? (transcript), id? }' }, 400)
+          const { kind } = parsed.request
           const allowed = await kinds(rc.member)
           if (!allowed.length) return json({ error: t.noRuntime }, 503)
-          // Change tasks (annotations, chat, transcript) come with the change review (WP-81).
-          if (CHANGE_KINDS.includes(parsed.request.kind) || !allowed.includes(parsed.request.kind)) return json({ error: t.noChanges }, 501)
+          if (CHANGE_KINDS.includes(kind) && !ctx.service(REVISIONS)) return json({ error: t.noChanges }, 501)
+          if (!allowed.includes(kind)) return json({ error: t.notAllowed }, 403)
           const id = parsed.id ?? randomUUID()
           if (tasks.has(id)) return json({ error: 'a task with this id exists' }, 409)
-          const task: Task = { id, member: rc.member, kind: parsed.request.kind, events: [], ended: false, wake: new Set(), abort: new AbortController() }
-          tasks.set(id, task)
           // The document is the one the request belongs to, whatever the page said.
-          void run(task, { ...parsed.request, context: { ...parsed.request.context, document: rc.document } }, rc.member)
+          const document = rc.document
+          const taskRequest: AgentTaskRequest = { ...parsed.request, context: { ...parsed.request.context, document } }
+          if (kind === 'question') {
+            const task = tasks.create(id, rc.member, kind, document)
+            task.run = question(task, taskRequest)
+            return json({ id }, 201)
+          }
+          // One change task per document: running, or waiting for its review.
+          if (changing.has(document)) return json({ error: t.busy }, 409)
+          if (kind === 'transcript' && !documentFile(join('lectures', taskRequest.track!, 'track.json'))) return json({ error: t.noTrack(taskRequest.track!) }, 400)
+          const task = tasks.create(id, rc.member, kind, document)
+          changing.set(document, id)
+          task.run = runChange({ ctx, tasks, agent: session, ask }, task, taskRequest).finally(() => {
+            if (changing.get(document) === id) changing.delete(document)
+          })
           return json({ id }, 201)
         },
       },
@@ -200,17 +235,53 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           const [id = '', action] = rc.rest.split('/')
           const found = taskOf(id, rc.member)
           if (found instanceof Response) return found
-          if (action === 'events' && request.method === 'GET') return eventStream(follow(found, request.signal), request.signal)
+          if (action === 'events' && request.method === 'GET') return eventStream(tasks.follow(found, request.signal), request.signal)
           if (action === 'cancel' && request.method === 'POST') {
             found.abort.abort()
             return new Response(null, { status: 204 })
           }
-          return json({ error: 'GET tasks/<id>/events or POST tasks/<id>/cancel' }, 404)
+          if (action === 'review' && request.method === 'POST') {
+            const decision = reviewDecisionOf(await request.json().catch(() => undefined))
+            if (!decision) return json({ error: 'a review decision: { accept: true, reject?: string[] } or { accept: false }' }, 400)
+            if (!found.decide) return json({ error: t.notReviewing }, 409)
+            found.decide(decision)
+            return new Response(null, { status: 204 })
+          }
+          return json({ error: 'GET tasks/<id>/events, POST tasks/<id>/cancel or tasks/<id>/review' }, 404)
+        },
+      },
+      'revert': {
+        role: 'editor',
+        async handle(request, rc: RequestContext) {
+          if (request.method !== 'POST') return json({ error: 'POST { task }' }, 405)
+          const body: unknown = await request.json().catch(() => undefined)
+          const task = isRecord(body) && typeof body.task === 'string' ? body.task : undefined
+          const revisions = ctx.service(REVISIONS)
+          if (!task) return json({ error: 'POST { task }' }, 400)
+          if (!revisions) return json({ error: t.noChanges }, 501)
+          const revision = (await revisions.history({ task })).find(found => !found.revertedBy)
+          if (!revision) return json({ error: `no commit of task ${task} to undo` }, 404)
+          const result = await revisions.revert(revision.id, rc.member)
+          const answer: RevertAnswer = result.ok ? { ok: true, revision: result.revision.id } : { ok: false, conflicts: result.conflicts }
+          return json(answer, result.ok ? 200 : 409)
+        },
+      },
+      'excerpt': {
+        role: 'editor',
+        async handle(request) {
+          const params = new URL(request.url).searchParams
+          const start = Number(params.get('start'))
+          const end = Number(params.get('end') ?? start)
+          const file = documentFile(params.get('file') ?? '')
+          if (!file || !Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) return json({ error: 'GET excerpt?file=<path in the document>&start=<line>&end=<line>' }, 400)
+          const lines = readFileSync(file, 'utf8').split('\n').slice(start - 1, Math.min(end, start + EXCERPT_LINES - 1))
+          return json({ text: lines.join('\n').slice(0, EXCERPT_CHARS) })
         },
       },
     },
     close() {
-      for (const task of tasks.values()) task.abort.abort()
+      // Change tasks under way or waiting for their review are rolled back.
+      return tasks.close()
     },
   }
 }

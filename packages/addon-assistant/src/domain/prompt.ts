@@ -1,12 +1,18 @@
 /**
  * What the assistant sends the agent (ACP `session/prompt`): how to read the
  * deck (the Presmium MCP tools), how to cite, the context of the request as
- * one JSON line (`presmium-context:`), and the request itself.
+ * one JSON line (`presmium-context:`), and the request itself. A change task
+ * says what to change and where: the annotations as one JSON line
+ * (`presmium-annotations:`) with the report line expected for each, a
+ * lecture track with its file, or the author's message.
  */
 import type { AgentContext, AgentTaskRequest } from '@presmium/kernel'
+import { isDraft } from './changes.ts'
 
 /** The marker of the context line. */
 export const CONTEXT_MARKER = 'presmium-context:'
+/** The marker of the annotations line of an `annotations` task. */
+export const ANNOTATIONS_MARKER = 'presmium-annotations:'
 
 const LANGUAGES: Record<string, string> = { zh: 'Simplified Chinese (zh-CN)', en: 'English' }
 
@@ -24,6 +30,37 @@ function context(value: AgentContext): string {
   return `${CONTEXT_MARKER} ${JSON.stringify(Object.fromEntries(entries))}`
 }
 
+/** What a change task asks, by kind. */
+function changeLines(request: AgentTaskRequest, lang: string | undefined): string[] {
+  const common = [
+    'You change a course document (a Presmium deck: MyST Markdown, its entry lecture.md) in your working directory: edit its source files there only, and keep its headmatter.',
+    'The Presmium MCP tools (list_sections, get_section, locate_source, get_diagnostics) show where each part of the document is in the source; the author reviews your changes file by file before they are committed.',
+  ]
+  if (request.kind === 'annotations') {
+    const annotations = (request.annotations ?? []).map(({ id, section, block, source, excerpt, request: asked }) => ({ id, section, block, file: source.file, startLine: source.startLine, endLine: source.endLine, excerpt, request: asked }))
+    return [
+      ...common,
+      'The author annotated blocks of the page: each annotation names the block\'s source (file, relative to your working directory, and lines), an excerpt of it and a request. Apply each request to its block.',
+      `${ANNOTATIONS_MARKER} ${JSON.stringify(annotations)}`,
+      `Then say in ${language(lang)} what you changed, and end with one line for each annotation: \`presmium-annotation <id>: <what you did>\`, or \`presmium-annotation <id> failed: <why>\`.`,
+    ]
+  }
+  if (request.kind === 'transcript') {
+    return [
+      ...common,
+      `The lecture track ${request.track} (its file: lectures/${request.track}/track.json, relative to your working directory) holds the transcript of a recorded lecture: speech segments with their text and times, and the sections and steps the speaker was at. Write it back into the narration as the request says.`,
+      `Then say in ${language(lang)} what you changed.`,
+    ]
+  }
+  return [
+    ...common,
+    isDraft(request)
+      ? 'The author asks for a draft of this document, which may be new: write it in full in lecture.md as the request says (chapters with level-1 headings, sections with level-2 headings).'
+      : 'The request is the author\'s message in the page; the context says where they are in the document (section, step, block, selected text, and the section\'s source lines).',
+    `Then say in ${language(lang)} what you changed.`,
+  ]
+}
+
 /** The prompt of a task, in the deck's language `lang`. */
 export function promptText(request: AgentTaskRequest, lang?: string): string {
   const lines = request.kind === 'question'
@@ -33,10 +70,7 @@ export function promptText(request: AgentTaskRequest, lang?: string): string {
         CITE,
         `Answer in ${language(lang)}, briefly.`,
       ]
-    : [
-        `Change the course document (a Presmium deck) in your working directory as requested (a ${request.kind} task): edit its source files there only.`,
-        'The Presmium MCP tools (list_sections, get_section, locate_source, get_diagnostics) show where each part of the document is in the source.',
-        `Then say in ${language(lang)} what you changed.`,
-      ]
-  return [...lines, '', context(request.context), ...request.track ? [`track: ${request.track}`] : [], '', request.kind === 'question' ? 'Question:' : 'Request:', request.prompt].join('\n')
+    : changeLines(request, lang)
+  const track = request.kind === 'transcript' && request.track ? [`track: ${request.track} (lectures/${request.track}/track.json)`] : []
+  return [...lines, '', context(request.context), ...track, '', request.kind === 'question' ? 'Question:' : 'Request:', request.prompt].join('\n')
 }

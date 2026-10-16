@@ -21,7 +21,13 @@ export interface ToolCallInfo {
   locations?: { path: string }[] | null
 }
 
-export type Classified = { refuse: string } | { request: ApprovalRequest }
+/**
+ * A permission request as an approval; a write names its path (absolute), so a
+ * change task commits the writes outside its directory that an owner allowed.
+ */
+export type AgentApproval = ApprovalRequest & { path?: string }
+
+export type Classified = { refuse: string } | { request: AgentApproval }
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined)
 
@@ -46,7 +52,7 @@ export function classify(call: ToolCallInfo, where: { cwd: string, operatorDir?:
     if (where.operatorDir && within(path, where.operatorDir)) return { refuse: `${path} is in the operator directory` }
     if (!shell && !network) {
       const inside = within(path, where.cwd)
-      return { request: { ...base, kind: 'write', scope: inside ? 'content' : 'workspace', title: t.write(path), ...detail(justification) ? { detail: detail(justification) } : {} } }
+      return { request: { ...base, kind: 'write', scope: inside ? 'content' : 'workspace', title: t.write(path), path, ...detail(justification) ? { detail: detail(justification) } : {} } }
     }
   }
   if (shell) return { request: { ...base, kind: 'agent', scope: 'workspace', title: t.shell, detail: detail(text(input.command), justification) } }

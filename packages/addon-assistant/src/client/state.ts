@@ -5,7 +5,7 @@
  * questions asked here and their answers, and how a citation moves the page
  * (the IR runtime's viewer in the web form, ./viewer.ts).
  */
-import type { AgentClient, AgentContext, Citation } from '@presmium/kernel'
+import type { AgentClient, AgentContext, Citation, IRBlock, SourcePos } from '@presmium/kernel'
 import { errorMessage } from '@presmium/kernel'
 import { ref, shallowRef } from 'vue'
 
@@ -18,6 +18,10 @@ export interface Navigator {
   /** The section's title. */
   title(section: string): string | undefined
   show(citation: Citation): void
+  /** A block of the page's document (nested ones too), by its section and id. */
+  block(section: string, block: string): IRBlock | undefined
+  /** Where a section is in the source (its file relative to the deck). */
+  source(section: string): SourcePos | undefined
 }
 
 let navigator: (() => Navigator | undefined) | undefined
