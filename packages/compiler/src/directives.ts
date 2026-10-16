@@ -27,6 +27,11 @@ export const COMMON_DIRECTIVE_OPTIONS: Record<string, DirectiveOptionInfo> = {
     values: ['items'],
   },
   label: { type: 'string', doc: { 'zh-CN': '块 ID。', 'en': 'Block id.' } },
+  audience: {
+    type: 'string',
+    doc: { 'zh-CN': '只给这些受众（逗号分隔），如 `teacher`；`presmium build --audience student` 不输出它。', 'en': 'Only for these audiences (comma-separated), e.g. `teacher`; `presmium build --audience student` leaves it out.' },
+    values: ['teacher', 'student'],
+  },
 }
 
 /** `:run:` of code blocks and of the plugins' code directives. */
@@ -93,6 +98,7 @@ export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [
   { name: 'only', doc: { 'zh-CN': '只在这些渲染端出现的内容，如 `{only} web, notebook`。', 'en': 'Content limited to renderers, e.g. `{only} web, notebook`.' }, options: {} },
   { name: 'hints', doc: { 'zh-CN': '各渲染端的排版提示；正文为 YAML。', 'en': 'Layout hints per renderer; the body is YAML.' }, options: {} },
   { name: 'config', doc: { 'zh-CN': '只在本章节生效的插件配置；正文为 YAML，键为插件 ID。', 'en': 'Plugin configuration of this section; the body is YAML keyed by plugin id.' }, options: {} },
+  { name: 'audience', doc: { 'zh-CN': '整个章节只给这些受众，如 `{audience} teacher`；放在章节顶层，没有正文。', 'en': 'The whole section is only for these audiences, e.g. `{audience} teacher`; at the top of a section, without a body.' }, options: {} },
   {
     name: 'component',
     doc: { 'zh-CN': '插件组件，如 `{component} PmQuiz`；正文为 YAML 属性。', 'en': 'A plugin component, e.g. `{component} PmQuiz`; the body is YAML props.' },

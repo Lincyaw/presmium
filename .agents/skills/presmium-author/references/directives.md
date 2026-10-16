@@ -2,10 +2,11 @@
 
 每条指令给出：提供它的插件包（写进文稿头部 `plugins`）、插件 ID（`presmium:` 下的配置键）、参数、正文、选项、生成的 IR 与步数（`span`，见 `docs/ir.md` 2.4 节），以及一个最小示例。完整语义以 `docs/ir.md` 5.1 节和各插件的 `src/node/` 为准。
 
-所有指令都接受两个通用选项：
+所有指令都接受三个通用选项：
 
 - `:reveal:`：块在下一步出现。`{slide}`、`{only}` 上写 `:reveal: items` 时其中的列表逐项出现。
 - `:label:`：块 ID，等同于在块前写 `(名字)=`。
+- `:audience:`：块只给这些受众（逗号分隔，如 `teacher`）；写在 `{slide}`、`{only}` 上时其中全部的块都是，嵌套时取交集。讲解段落要标受众时用 `{only}` 包起来。嵌在另一个指令正文中或列表项中的 MyST 指令（`{tab-item}`、`{card}`、`{note}` 中的 `{tip}`、列表项中的 `{code}`）也可以写，只去掉它自己，所在的块留下；写在 `{include}` 上时包含进来的全部内容都是，其中的标题照样开出章节，这些章节整节只给这些受众。`presmium build --audience student` 不输出受众不含 `student` 的块，见下文 `{audience}`。
 
 选项值按指令声明的类型读取（`string`、`number`、`boolean`、`list`）；指令声明了选项时，写错的选项名得到警告 `unknown option`。
 
@@ -68,6 +69,34 @@ presmium.exec: { timeoutMs: 30000 }
 
 - `presmium.exec: { timeoutMs }`：这一节的代码（`:run:` 的代码块、`{code-ref}`、`{run-panel}`、`{step-run}`）在编译时与浏览器中运行的超时；某一段代码自己的 `:timeout:` 优先。上例让一个慢的例子可以运行 30 秒。
 - `presmium.code: { repo }`：这一节 `{code-ref}` 永久链接的仓库网址；`:repo:` 优先。
+
+### `{audience}`
+
+参数为受众名列表（逗号或空格分隔）；没有正文。放在章节顶层，把整个章节标为只给这些受众（例如教师指南的一节）；不生成块，不占步骤。只标一部分内容时用通用选项 `:audience:`。
+
+```md
+## 现场演示要点
+
+:::{audience} teacher
+:::
+
+演示合并之前先断开网络。
+
+## 合并规则
+
+:::{only} web, slides
+:audience: teacher
+这一段只给教师：先在白板上画出两个分支。
+:::
+```
+
+- 不带受众的内容对所有受众可见；不带 `--audience` 的构建包含全部内容。
+- `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（其余章节重新编号，步骤随之压缩），被去掉的代码不执行；构建后扫描写出的全部文件，被去掉的内容中 12 个字符以上的句子（学生内容自己也有的句子除外）出现在其中就是错误 `presmium.audience`，位置是被去掉的块，消息给出句子和文件（例如它经代码块的输出漏了进来）。
+- `presmium check --audience student` 按学生版编译后检查。
+- `presmium serve` 中读者（学习者）看到的页面、搜索索引与 AI 助手读到的内容都是学生版；编辑者与所有者看到全部。
+- 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；`{audience}` 或 `:audience:` 缺少受众名时报错（这时 `:audience:` 标的内容不给任何受众）。
+- 指向只给教师的章节的 `{ref}` 在学生版中没有目标（构建时警告 `target not found`），学生内容中不要引用教师章节。
+- 学生版的块 ID 与完整版相同，但章节序号与步骤重新编号：课堂跟随讲者时，讲者与学习者要用同一个版本。
 
 插件的其他选项只读全局配置。
 

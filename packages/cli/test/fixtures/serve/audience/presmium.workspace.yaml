@@ -1,0 +1,7 @@
+title: 学生视图测试
+members:
+  owners: [owner@test]
+  editors: [editor@test]
+settings:
+  presmium.workspace:
+    plugins: [presmium-fixture-tutor]

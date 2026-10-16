@@ -30,6 +30,8 @@ Commands:
           (presmium.workspace.yaml) builds the workspace site into <out>/web/
           --to <ids>      renderers to run, comma-separated (default: the deck's renderers)
           --out <dir>     output directory (default: <deck>/dist)
+          --audience <name>  only the content for this audience (e.g. student); then every file
+                          written is scanned for the sentences of the content left out
   dev     compile, start the Presmium server and the renderers' dev servers, recompile on save
           --to <ids>      renderers to run, comma-separated
           --out <dir>     working directory (default: <deck>/.presmium/dev)
@@ -41,6 +43,8 @@ Commands:
           --json          print the result as JSON
           --update-lock   re-resolve anchors and rewrite .presmium/anchors.lock.json
           --env           also connect to the environments of execute.environments
+          --audience <name>  check the deck as compiled for this audience
+          --external-links   also check the external links, with lychee when it is installed
   serve   the workspace service (the argument is the workspace root, or a deck): the workspace
           site, edit mode, the documents and their history, the plugins' routes; with a login
           proxy (PRESMIUM_PROXY_SECRET, PRESMIUM_PROXY_SECRET_FILE or --trust-proxy-from) it is
@@ -73,10 +77,10 @@ Commands:
 Exit codes: 0 no errors, 1 error findings, 2 usage or internal error.`
 
 const OPTIONS = {
-  'build': ['to', 'out'],
+  'build': ['to', 'out', 'audience'],
   'dev': ['to', 'out', 'server-port', 'allow'],
   'ir': ['out'],
-  'check': ['json', 'update-lock', 'env'],
+  'check': ['json', 'update-lock', 'env', 'audience', 'external-links'],
   'serve': ['port', 'host', 'trust-proxy-from', 'user', 'operator-dir'],
   'gateway': ['operator-dir', 'serve', 'port', 'host', 'hostname', 'user'],
   'agent-host': ['port', 'host', 'hostname', 'user'],
@@ -98,6 +102,10 @@ interface Command {
   updateLock: boolean
   /** `check --env`: probe the declared environments. */
   env: boolean
+  /** `build`, `check`: compile for this audience only (P-55). */
+  audience?: string
+  /** `check --external-links`: lychee checks the external links (P-54). */
+  externalLinks: boolean
   serverPort?: number
   allow: ApprovalKind[]
   operatorDir?: string
@@ -148,6 +156,8 @@ function parseCommand(argv: string[]): Command | 'help' {
       'json': { type: 'boolean', default: false },
       'update-lock': { type: 'boolean', default: false },
       'env': { type: 'boolean', default: false },
+      'audience': { type: 'string' },
+      'external-links': { type: 'boolean', default: false },
       'server-port': { type: 'string' },
       'allow': { type: 'string' },
       'operator-dir': { type: 'string' },
@@ -171,6 +181,9 @@ function parseCommand(argv: string[]): Command | 'help' {
   if (extra.length > 0) throw new Error(`unexpected argument "${extra[0]}"`)
   const workspace = name === 'build' && existsSync(deck) && statSync(deck).isDirectory() && isWorkspaceRoot(resolve(deck)) ? resolve(deck) : undefined
   if (workspace && values.to) throw new Error('--to does not apply to a workspace: its site is the web form')
+  if (workspace && values.audience !== undefined) throw new Error('--audience does not apply to a workspace yet: build each document for its audience')
+  const audience = values.audience?.trim()
+  if (values.audience !== undefined && !/^[\w.-]+$/.test(audience ?? '')) throw new Error(`--audience takes the name of an audience, e.g. student, not "${values.audience}"`)
   // gateway, agent-host and serve take a directory: the workspace root (serve: or a deck directory).
   const directory = name === 'gateway' || name === 'agent-host' || name === 'serve'
   const entry = directory || workspace ? resolve(deck) : resolveEntry(deck)
@@ -189,6 +202,8 @@ function parseCommand(argv: string[]): Command | 'help' {
     json: values.json,
     updateLock: values['update-lock'],
     env: values.env,
+    ...audience ? { audience } : {},
+    externalLinks: values['external-links'],
     serverPort: port(values['server-port'], '--server-port'),
     allow: allow as ApprovalKind[],
     operatorDir: values['operator-dir'],
@@ -214,7 +229,13 @@ function port(value: string | undefined, option: string): number | undefined {
 }
 
 async function check(command: Command): Promise<number> {
-  const result = await runCheck({ deck: command.entry, updateLock: command.updateLock, environments: command.env, compiler: { bundled: BUNDLED } })
+  const result = await runCheck({
+    deck: command.entry,
+    updateLock: command.updateLock,
+    environments: command.env,
+    externalLinks: command.externalLinks,
+    compiler: { bundled: BUNDLED, ...command.audience ? { audience: command.audience } : {} },
+  })
   process.stdout.write(command.json ? `${JSON.stringify(checkJson(result), null, 2)}\n` : checkText(result))
   return exitCode(result.findings)
 }
@@ -239,10 +260,12 @@ async function buildDeck(command: Command): Promise<number> {
     process.stdout.write(workspaceText(report))
     return exitCode(report.findings)
   }
-  const compilation = await new Compiler(command.entry, { bundled: BUNDLED }).compile({ pruneCache: true })
+  const compilation = await new Compiler(command.entry, { bundled: BUNDLED, ...command.audience ? { audience: command.audience } : {} }).compile({ pruneCache: true })
   const outDir = resolve(command.out ?? join(compilation.deckDir, 'dist'))
-  const report = await build(compilation, { outDir, to: command.to })
-  process.stdout.write(buildText(report, compilation.runs))
+  const built = await build(compilation, { outDir, to: command.to })
+  // For an audience, the files written must hold nothing of what was left out (P-55).
+  const report = compilation.audience ? { ...built, findings: [...built.findings, ...await compilation.audience.scan(outDir)] } : built
+  process.stdout.write(buildText(report, compilation.runs, compilation.audience?.name))
   return exitCode(report.findings)
 }
 
@@ -412,8 +435,9 @@ function workspaceText(report: WorkspaceBuild, cwd = process.cwd()): string {
   return `${out.join('\n')}\n`
 }
 
-function buildText(report: BuildReport, runs: RunStats, cwd = process.cwd()): string {
+function buildText(report: BuildReport, runs: RunStats, audience?: string, cwd = process.cwd()): string {
   const out = findingLines(report.findings, cwd)
+  if (audience) out.push(`audience  ${audience}`)
   out.push(`ir  ${relative(cwd, report.ir)}`)
   for (const { renderer, outDir, skipped } of report.outputs) {
     out.push(`${renderer}  ${relative(cwd, outDir)}${skipped.length ? `  (${skipped.length} blocks not rendered)` : ''}`)
