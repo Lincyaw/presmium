@@ -1,0 +1,10 @@
+title: 两周的课程
+documents: [week1/lecture.md, week2/lecture.md]
+site:
+  home: week1
+  nav:
+    - { text: 第 1 周, link: /week1/ }
+    - { text: 第 2 周, link: /week2/ }
+  footer: { message: 两周的课程资料 }
+  head: { description: 一门两周的测试课程 }
+  sitemap: { hostname: 'https://course.example.edu' }

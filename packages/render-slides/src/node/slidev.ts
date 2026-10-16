@@ -11,7 +11,7 @@
  * open the file in a tab of its own.
  */
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, languageId, lowerMyst, nodeMdast, withProp } from '@presmium/kernel'
@@ -22,7 +22,7 @@ import { gfm } from 'micromark-extension-gfm'
 import { originParts, outputNotes } from '@presmium/viewer/domain'
 import type { OriginPart } from '@presmium/viewer/domain'
 import { stringify } from 'yaml'
-import { codeLang, escapeHtml, markdown } from './markdown.ts'
+import { codeLang, escapeHtml, mapHtmlUrls, markdown } from './markdown.ts'
 
 /** What the generated deck says itself, in the deck's language; the origin bar of code says what the web form's does (`@presmium/viewer/domain`). */
 const MESSAGES = {
@@ -253,7 +253,9 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
  * published with the slides.
  */
 function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes = false): string {
-  const { mdast } = lowerMyst(buttons(verbatim(tree)), {
+  // Vue resolves `src` and `poster` of a slide as it resolves an image's; an `href` is a link.
+  const published = block ? rawHtml(tree, (url, attribute) => asset(url, block, gen, attribute === 'href' ? 'link' : 'image', notes)) : tree
+  const { mdast } = lowerMyst(buttons(verbatim(published)), {
     footnotes: 'gfm',
     iframes: 'element',
     // Cards, grids and tabs as HTML elements, laid out by the deck's styles (../deck/style.css).
@@ -264,6 +266,12 @@ function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes 
     roles: notes ? 'marks' : 'children',
   })
   return markdown(slidevNodes(mdast, gen))
+}
+
+/** Raw HTML with the local files its `src`, `poster` and `href` name published (docs/ir.md 6.2). */
+function rawHtml(node: MdastNode, map: (url: string, attribute: string) => string | undefined): MdastNode {
+  if (node.type === 'html' && typeof node.value === 'string') return { ...node, value: mapHtmlUrls(node.value, map) }
+  return node.children ? { ...node, children: node.children.map(child => rawHtml(child, map)) } : node
 }
 
 /** Slidev compiles slides as Vue templates: text with `{{` must not become an interpolation, nor its `$` math. */
@@ -324,7 +332,9 @@ function asset(url: string, block: IRBlock, gen: Generation, type: LinkedType | 
   const found = gen.ctx.localAsset(block.source, url)
   if (!found) return undefined
   gen.assets.set(found.name, found.file)
-  const path = `${encodeURIComponent(found.name)}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
+  // A directory opens at its file listing (docs/ir.md 6.2).
+  const listing = statSync(found.file).isDirectory() ? '/index.html' : ''
+  const path = `${encodeURIComponent(found.name)}${listing}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
   if (type === 'image' && !notes) return `/${path}`
   const published = `${gen.ctx.base}${path}`
   if (type === 'link') gen.files.add(published)

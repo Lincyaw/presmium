@@ -3,18 +3,27 @@
  * `renderer` of a plugin: one listed in `plugins`, or the package installed
  * for a renderer id (`renderers.<id>.package`, else the default package).
  * Each renderer gets a view of the IR without the blocks `only` excludes;
- * blocks it does not support at all are listed in the build report.
+ * blocks it does not support at all are listed in the build report. The
+ * web renderer also gets the translations the deck declares, compiled
+ * (`RenderContext.translations`, docs/ir.md 2.12). The local files the
+ * renderers publish are those `RenderContext.localAsset` gives (docs/ir.md
+ * 6.2): files, and directories inside the deck as a file listing; a local
+ * reference that cannot be published is a warning on its line.
  */
-import { existsSync, statSync, watch } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
-import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, IRSection, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension } from '@presmium/kernel'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { deckLocale, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
+import type { ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, IRSection, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@presmium/kernel'
+import { DECK_ENTRY } from './compiler.ts'
 import type { Compilation, Compiler } from './compiler.ts'
 import { revisionFiles } from './dependencies.ts'
 import { localAsset, portable, relativeIR } from './paths.ts'
 import { loadPlugin, pluginId } from './plugins.ts'
+import { compileTranslations } from './translations.ts'
+import type { CompiledTranslation } from './translations.ts'
 import { refusedFile } from './workspace.ts'
 
 /** Parent of the renderers' work directories in `build`, relative to the deck. */
@@ -134,9 +143,12 @@ export async function build(compilation: Compilation, options: { outDir: string,
   const { selected, findings } = await selectRenderers(compilation, options.to)
   if (selected.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer available; only the IR was written to ${ir}`))
   const run = runOf(compilation, selected, true)
+  const translated = await translationsFor(compilation, run)
+  findings.push(...translated.findings)
   const results = await Promise.all(selected.map(async ({ renderer }) => {
     const reported: Finding[] = []
     const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, reported)
+    if (renderer.id === WEB) ctx.translations = translated.views
     const view = viewFor(doc, renderer.id)
     const unsupported = unsupportedBlocks(view, renderer, ctx.extensions)
     try {
@@ -151,7 +163,29 @@ export async function build(compilation: Compilation, options: { outDir: string,
     }
   }))
   const outputs = results.flatMap(({ result }) => result ? [result] : [])
-  return { ir, outputs, findings: [...doc.diagnostics, ...findings, ...results.flatMap(({ reported }) => reported)] }
+  // Each renderer reports the local references it cannot publish: a reference is reported once.
+  return { ir, outputs, findings: unique([...doc.diagnostics, ...findings, ...results.flatMap(({ reported }) => reported)]) }
+}
+
+/** The renderer that gets the translations (`RenderContext.translations`). */
+const WEB = 'web'
+
+/** The translations of a run with the web renderer, compiled, and the web renderer's views of them. */
+async function translationsFor(compilation: Compilation, run: Run, compilers?: Map<string, Compiler>): Promise<{ translations: CompiledTranslation[], views: NonNullable<RenderContext['translations']>, findings: Finding[] }> {
+  if (!run.ids.includes(WEB) || !compilation.doc.config.translations) return { translations: [], views: [], findings: [] }
+  const { translations, findings } = await compileTranslations(compilation, compilers)
+  return { translations, views: translations.map(({ lang, doc }) => ({ lang, doc: viewFor(doc, WEB) })), findings }
+}
+
+/** Findings without repetitions. */
+function unique(findings: Finding[]): Finding[] {
+  const seen = new Set<string>()
+  return findings.filter((finding) => {
+    const key = JSON.stringify([finding.checkId, finding.severity, finding.message, finding.source?.file, finding.source?.line])
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 /**
@@ -215,6 +249,11 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
   const ir = await writeIR(compilation.doc, options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
   const run = runOf(compilation, selected, false)
+  // The translations are compiled again with the original; the web dev server reads them at each update.
+  const translators = new Map<string, Compiler>()
+  let translated = await translationsFor(compilation, run, translators)
+  findings.push(...translated.findings)
+  const translations = translated.views
   const servers: { renderer: string, url: string, server: RenderDevServer }[] = []
   for (const { renderer } of selected) {
     if (!renderer.dev) {
@@ -223,6 +262,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
     const outDir = join(options.outDir, renderer.id)
     const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings, options.server)
+    if (renderer.id === WEB) ctx.translations = translations
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)
@@ -267,7 +307,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     for (const { file, rev } of revisions) revs.set(dirname(file), (revs.get(dirname(file)) ?? new Set<string>()).add(rev))
     const git = await Promise.all([...revs].map(([dir, names]) => revisionFiles(dir, names)))
     if (closed) return
-    watched = new Set([...compilation.files, ...files, ...git.flat()])
+    watched = new Set([...compilation.files, ...files, ...git.flat(), ...translated.translations.flatMap(t => t.files)])
     const next = new Map<string, Set<string>>()
     for (const file of watched) {
       // A file in a directory not created yet (e.g. an include being written): its nearest existing ancestor is watched.
@@ -304,6 +344,9 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       compilation = await compiler.compile()
       await writeIR(compilation.doc, options.outDir)
       reported.push(...compilation.doc.diagnostics)
+      translated = await translationsFor(compilation, run, translators)
+      reported.push(...translated.findings)
+      translations.splice(0, translations.length, ...translated.views)
       if (servers.length > 0 && setup(compilation) !== initial) {
         reported.push(renderFinding(compilation, 'warning', 'the plugins or renderers in the headmatter changed; restart presmium dev to load them in the dev servers'))
       }
@@ -409,7 +452,11 @@ function extensionOf(node: ComponentNode, extensions: RendererExtension[]) {
 function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, run: Run, findings: Finding[], server?: { url: string }): RenderContext {
   const { deckDir, workspaceRoot, doc } = compilation
   const config = doc.config.renderers[id]
-  const report = (finding: Finding) => findings.push({ ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } })
+  // A renderer may ask for a file again (a dev server at each update): what it reports is kept once.
+  const report = (finding: Finding) => {
+    const located = { ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } }
+    if (!findings.some(f => JSON.stringify(f) === JSON.stringify(located))) findings.push(located)
+  }
   const vitePlugins = compilation.plugins.flatMap((loaded) => {
     const contribute = loaded.plugin?.vitePlugins
     if (!contribute) return []
@@ -436,15 +483,7 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     vitePlugins,
     extensionFor: node => extensionOf(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),
-    localAsset(source, url) {
-      const found = localAsset(deckDir, source, url)
-      // SHARED `presmium serve` reads only the workspace's files (docs/architecture.md 10.2).
-      if (found && compilation.scope && !compilation.scope.allows(found.file)) {
-        report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(found.file), source: { file: source.file, line: source.line } })
-        return undefined
-      }
-      return found
-    },
+    localAsset: (source, url) => publishedAsset(compilation, source, url, report),
     report,
     service: compilation.service,
     ...server ? { server } : {},
@@ -457,6 +496,137 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     return [{ plugin: pluginId(loaded), ...components ? { components } : {} }]
   })
   return ctx
+}
+
+/** URLs that name no local file: a scheme, protocol-relative, or a fragment (as `localAsset` reads them). */
+const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
+
+/** Directory of the deck's work directory where the directories it publishes are prepared (see `publishedDirectory`). */
+const FILES_DIR = 'files'
+
+function inside(path: string, dir: string): boolean {
+  const rel = relative(dir, path)
+  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
+}
+
+/** The line of a block's source that holds `text`, else the block's first line. */
+function lineOf(source: SourcePos, text: string): number {
+  try {
+    const lines = readFileSync(source.file, 'utf8').split(/\r?\n/)
+    for (let line = source.line; line <= Math.max(source.line, source.endLine ?? 0); line++) {
+      if (lines[line - 1]?.includes(text)) return line
+    }
+  } catch {
+    // The block's line.
+  }
+  return source.line
+}
+
+/**
+ * The local file a block's URL names, as the renderers publish it
+ * (`RenderContext.localAsset`, docs/ir.md 6.2): a file in the repository,
+ * or a directory strictly inside the deck that is not a deck itself (a link
+ * to another document of a workspace stays a link), published with a file
+ * listing. A relative reference to nothing, or to a file outside the git
+ * repository the deck is in, cannot be published: a warning on its line. In SHARED
+ * `presmium serve` only the workspace's files are read (docs/architecture.md 10.2).
+ */
+function publishedAsset(compilation: Compilation, source: SourcePos, url: string, report: (finding: Finding) => void): { file: string, name: string } | undefined {
+  const { deckDir, workspaceRoot, scope } = compilation
+  const warn = (message: string) => report({ checkId: 'presmium.links', severity: 'warning', message, source: { file: source.file, line: lineOf(source, url) } })
+  const refuse = (file: string) => {
+    report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(file), source: { file: source.file, line: source.line } })
+    return undefined
+  }
+  const found = localAsset(deckDir, source, url)
+  if (found && scope && !scope.allows(found.file)) return refuse(found.file)
+  // A deck outside any git repository has no repository to keep its files in.
+  if (found && !inside(found.file, workspaceRoot) && existsSync(join(workspaceRoot, '.git'))) {
+    warn(`${url} is not published: the file lies outside the deck's repository`)
+    return undefined
+  }
+  if (found || REMOTE.test(url)) return found
+  const path = url.replace(/[?#].*$/s, '')
+  // `/...` names a file of the deck's public/, or a path of the site.
+  if (!path || path.startsWith('/')) return undefined
+  let name = path
+  try {
+    name = decodeURIComponent(path)
+  } catch {
+    // As written.
+  }
+  const target = resolve(dirname(source.file), name)
+  const stat = lstatSync(target, { throwIfNoEntry: false })
+  if (!stat) {
+    warn(`${url} is not published: there is no such file`)
+    return undefined
+  }
+  if (!stat.isDirectory() || target === deckDir || !inside(target, deckDir) || existsSync(join(target, DECK_ENTRY))) return undefined
+  if (scope && !scope.allows(target)) return refuse(target)
+  return publishedDirectory(target, join(deckDir, WORK_DIR, FILES_DIR), compilation.doc.meta.lang)
+}
+
+/** The files a published directory holds, relative to it: regular files, not hidden, not in `node_modules`, not through symbolic links. */
+function directoryFiles(dir: string, prefix = ''): string[] {
+  return readdirSync(join(dir, prefix), { withFileTypes: true })
+    .filter(entry => !entry.name.startsWith('.') && entry.name !== 'node_modules')
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+    .flatMap((entry) => {
+      const path = prefix ? `${prefix}/${entry.name}` : entry.name
+      return entry.isDirectory() ? directoryFiles(dir, path) : entry.isFile() ? [path] : []
+    })
+}
+
+/** What a file listing says, in the deck's language. */
+const LISTING = {
+  'zh-CN': { count: (n: number) => `${n} 个文件，点击下载`, files: '文件' },
+  'en': { count: (n: number) => `${n} file${n === 1 ? '' : 's'}; select one to download it`, files: 'Files' },
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+/**
+ * A directory as it is published: a copy of its files named `<hash>-<name>`
+ * (the hash of their paths and contents) with a file listing, `index.html`,
+ * from which each file downloads (unless the directory has an `index.html`
+ * of its own). The copy is prepared once, in `stage`; the renderers publish
+ * it as they publish a file.
+ */
+function publishedDirectory(dir: string, stage: string, lang?: string): { file: string, name: string } {
+  const files = directoryFiles(dir)
+  const hash = createHash('sha256')
+  for (const file of files) hash.update(file).update('\0').update(readFileSync(join(dir, file))).update('\0')
+  const name = `${hash.digest('hex').slice(0, 8)}-${basename(dir)}`
+  const target = join(stage, name)
+  if (existsSync(target)) return { file: target, name }
+  // Prepared beside it, then renamed: a build stopped halfway leaves no partial copy under the name.
+  const partial = `${target}.${process.pid}`
+  rmSync(partial, { recursive: true, force: true })
+  mkdirSync(partial, { recursive: true })
+  for (const file of files) cpSync(join(dir, file), join(partial, file))
+  if (!files.includes('index.html')) {
+    const t = LISTING[deckLocale(lang)]
+    const href = (file: string) => file.split('/').map(encodeURIComponent).join('/')
+    const items = files.map(file => `<li><a href="${escapeHtml(href(file))}" download>${escapeHtml(file)}</a> <small>${statSync(join(dir, file)).size} B</small></li>`)
+    writeFileSync(join(partial, 'index.html'), `<!doctype html>
+<html lang="${escapeHtml(lang ?? 'zh-CN')}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(basename(dir))}</title>
+<style>body{font:16px/1.6 system-ui,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem}small{color:#666}</style></head>
+<body><h1>${escapeHtml(basename(dir))}/</h1><p>${escapeHtml(t.count(files.length))}</p>
+<ul aria-label="${escapeHtml(t.files)}">
+${items.join('\n')}
+</ul></body></html>
+`)
+  }
+  try {
+    renameSync(partial, target)
+  } catch {
+    // Another build prepared it meanwhile.
+    rmSync(partial, { recursive: true, force: true })
+  }
+  return { file: target, name }
 }
 
 function unsupportedBlocks(doc: IRDocument, renderer: Renderer, extensions: RendererExtension[]): RenderOutput['skipped'] {

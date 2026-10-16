@@ -251,3 +251,28 @@ html.pm-presenting {
   font-family: var(--vp-font-family-mono);
   font-size: 0.85rem;
 }
+
+/* The site shell's footer under a chapter page (P-78), as the default theme's footer looks. */
+.pm-site-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--vp-c-gutter);
+  text-align: center;
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--vp-c-text-2);
+}
+
+.pm-site-footer p {
+  margin: 0;
+}
+
+.pm-site-footer a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.25s;
+}
+
+.pm-site-footer a:hover {
+  color: var(--vp-c-text-1);
+}

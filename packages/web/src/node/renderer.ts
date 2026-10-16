@@ -12,10 +12,11 @@ import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
 import { diffDocuments } from '@presmium/viewer/domain'
 import launchEditor from 'launch-editor'
 import { offlineEnabled, rendererConfig } from '../domain/index.ts'
+import type { WebRendererConfig } from '../domain/index.ts'
 import { clientModules, nodeVitePlugins } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 import { writeServiceWorker } from './offline.ts'
-import { publishedDocument } from './publish.ts'
+import { publishedDocument, publishedFile } from './publish.ts'
 import { siteFiles, write, writeSite } from './site.ts'
 import type { WorkspaceOptions } from './site.ts'
 import { buildSite, devSite } from './sites.ts'
@@ -40,6 +41,8 @@ export interface DocumentSite {
   workspace?: WorkspaceOptions
   /** Client modules of the whole site (the workspace's browser plugin), added to the document's. */
   extra?: ClientModules
+  /** The file the site shell's options come from, to which a local `head.image` is relative (a workspace's configuration); default the deck's entry. */
+  config?: string
 }
 
 function merge(modules: ClientModules, extra?: ClientModules): ClientModules {
@@ -53,6 +56,22 @@ function merge(modules: ClientModules, extra?: ClientModules): ClientModules {
   }
 }
 
+/** URLs with a scheme or protocol-relative: not local files. */
+const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i
+
+/**
+ * The image of the site shell's `head` (P-78) as the pages name it: a URL as
+ * it is, a local file published with the site (relative to the file
+ * `document.config`, by default the deck's entry); absolute under the
+ * sitemap's host name when there is one, as Open Graph wants it.
+ */
+function headImage(doc: IRDocument, ctx: RenderContext, options: WebRendererConfig, publicDir: string, document: DocumentSite): string | undefined {
+  const image = options.shell.head?.image
+  if (!image || REMOTE.test(image)) return image
+  const published = publishedFile(ctx, publicDir, options.base, { file: document.config ?? resolve(ctx.deckDir, doc.meta.entry), line: 1 }, image)
+  return published && options.shell.sitemap ? `${options.shell.sitemap.hostname}${published}` : published
+}
+
 /** Prepares a working directory: the files published there last time go, so the site holds the current ones only. */
 async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, document: DocumentSite = {}) {
   const options = rendererConfig(ctx)
@@ -63,7 +82,17 @@ async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, doc
   // registers one added to the deck while it runs.
   const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium, Boolean(document.workspace))
   const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base)
-  const site = (published: IRDocument) => writeSite(workDir, { doc: published, deck, modules: merge(clientModules(ctx, nodeVite), document.extra), options, workspace: document.workspace })
+  const image = headImage(doc, ctx, options, files.publicDir, document)
+  // The translations (P-123) are read at each write: `presmium dev` compiles them again with the original.
+  const site = (published: IRDocument) => writeSite(workDir, {
+    doc: published,
+    deck,
+    modules: merge(clientModules(ctx, nodeVite), document.extra),
+    options,
+    workspace: document.workspace,
+    translations: (ctx.translations ?? []).map(({ lang, doc: translated }) => ({ lang, doc: publish(translated) })),
+    image,
+  })
   return { options, files, publish, site }
 }
 
@@ -106,11 +135,15 @@ export async function devDocument(doc: IRDocument, ctx: RenderContext, document:
     async update(next: IRDocument) {
       const published = publish(next)
       const update = diffDocuments(current, published)
-      if (!update) return
       // Only changed files are written. The config never changes with the IR, so the server never restarts;
       // the content goes to the pages over the WebSocket, the search documents to the search index (a page's
       // Markdown changes only with its chapter's title and those of the chapters around it: hot updated).
+      // A page of a translation gets the translation as it is now when it loads.
       site(published)
+      if (!update) {
+        if (ctx.translations?.length) server.send({ type: 'presmium:translations' })
+        return
+      }
       const base = revision
       current = published
       revision = revisionOf(JSON.stringify(published))

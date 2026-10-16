@@ -60,6 +60,8 @@ export type DevMessage =
   | { type: 'presmium:ready', port: number }
   /** A file of the published IR (relative to the deck) and a line, to open in the editor. */
   | { type: 'presmium:source', file: string, line: number }
+  /** The translations changed, the original did not: pages loaded later get them. */
+  | { type: 'presmium:translations' }
 
 interface Request { url?: string }
 interface Response { statusCode: number, setHeader(name: string, value: string): void, end(body?: string): void }
@@ -80,10 +82,10 @@ interface DevServer {
 
 /**
  * The search box's index module (the index of each locale, lazily) and the
- * index of the site's only locale; VitePress resolves `@localSearchIndex…` to `/@localSearchIndex…`.
+ * index of a locale, `root` (the original) or a translation's language;
+ * VitePress resolves `@localSearchIndex…` to `/@localSearchIndex…`.
  */
 const SEARCH_INDEX = '/@localSearchIndex'
-const SEARCH_INDEX_ROOT = `${SEARCH_INDEX}root`
 
 /** The local search index of the documents, as VitePress builds it: title, headings and text of each section. */
 function searchIndex(documentsFile: string): string {
@@ -92,11 +94,11 @@ function searchIndex(documentsFile: string): string {
   return JSON.stringify(index)
 }
 
-/**
- * The site's Vite plugin. `endpoints` are the dev server's own paths: the
- * defaults in `presmium dev`; under the document's base in a workspace site,
- * where `presmium serve` answers `/__presmium/` itself.
- */
+/** The file of a translation beside the original's (`ir.json` -> `ir.en.json`), as ./site.ts writes it. */
+function localeFile(file: string, lang: string): string {
+  return file.replace(/\.json$/, `.${lang}.json`)
+}
+
 /** The Vite plugin of a project without an IR (a workspace site's home page): it tells the parent process once the dev server listens. */
 export function presmiumReady() {
   return {
@@ -110,28 +112,42 @@ export function presmiumReady() {
   }
 }
 
-export function presmiumIR(irFile: string, searchDocuments: string, endpoints: { ir: string, source: string } = { ir: IR_ENDPOINT, source: SOURCE_ENDPOINT }) {
+/**
+ * The site's Vite plugin. `endpoints` are the dev server's own paths: the
+ * defaults in `presmium dev`; under the document's base in a workspace site,
+ * where `presmium serve` answers `/__presmium/` itself. `locales` are the
+ * languages of the translations (P-123): `virtual:presmium/ir` loads each one's
+ * IR lazily (`translations`, from `virtual:presmium/ir/<lang>`), and each has
+ * its search index.
+ */
+export function presmiumIR(irFile: string, searchDocuments: string, endpoints: { ir: string, source: string } = { ir: IR_ENDPOINT, source: SOURCE_ENDPOINT }, locales: string[] = []) {
   let dev = false
+  const names = ['root', ...locales]
+  const documentsOf = (name: string) => (name === 'root' ? searchDocuments : localeFile(searchDocuments, name))
   return {
     name: 'presmium:ir',
     // Its search index modules come before VitePress's.
     enforce: 'pre' as const,
     resolveId(id: string) {
-      return id === IR_MODULE ? RESOLVED : undefined
+      if (id === IR_MODULE) return RESOLVED
+      return id.startsWith(`${IR_MODULE}/`) && locales.includes(id.slice(IR_MODULE.length + 1)) ? `\0${id}` : undefined
     },
     load(id: string) {
       if (id === RESOLVED) {
         const json = readFileSync(irFile, 'utf8')
-        return `export default JSON.parse(${JSON.stringify(json)})\nexport const revision = ${JSON.stringify(revisionOf(json))}`
+        const translations = locales.map(lang => `${JSON.stringify(lang)}: () => import(${JSON.stringify(`${IR_MODULE}/${lang}`)})`)
+        return `export default JSON.parse(${JSON.stringify(json)})\nexport const revision = ${JSON.stringify(revisionOf(json))}\nexport const translations = { ${translations.join(', ')} }`
       }
+      if (id.startsWith(`${RESOLVED}/`)) return `export default JSON.parse(${JSON.stringify(readFileSync(localeFile(irFile, id.slice(RESOLVED.length + 1)), 'utf8'))})`
       // Hot updates add a timestamp to the module ids.
-      const module = id.split('?')[0]
+      const module = id.split('?')[0]!
       if (module === SEARCH_INDEX) {
         // In dev relative to the index module, so under the site's base; Vite drops the `t` query.
-        const root = dev ? `import(/* @vite-ignore */ ${JSON.stringify(`.${SEARCH_INDEX_ROOT}?t=`)} + Date.now())` : `import(${JSON.stringify(SEARCH_INDEX_ROOT.slice(1))})`
-        return `export default { root: () => ${root} }`
+        const load = (name: string) => dev ? `import(/* @vite-ignore */ ${JSON.stringify(`.${SEARCH_INDEX}${name}?t=`)} + Date.now())` : `import(${JSON.stringify(`${SEARCH_INDEX.slice(1)}${name}`)})`
+        return `export default { ${names.map(name => `${JSON.stringify(name)}: () => ${load(name)}`).join(', ')} }`
       }
-      if (module === SEARCH_INDEX_ROOT) return `export default ${JSON.stringify(searchIndex(searchDocuments))}`
+      const name = module.startsWith(SEARCH_INDEX) ? module.slice(SEARCH_INDEX.length) : undefined
+      if (name && names.includes(name)) return `export default ${JSON.stringify(searchIndex(documentsOf(name)))}`
       return undefined
     },
     configureServer(server: DevServer) {
@@ -140,15 +156,20 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
         const index = server.moduleGraph.getModuleById(SEARCH_INDEX)
         // Not loaded before a page opens the search box.
         if (!index) return
-        const root = server.moduleGraph.getModuleById(SEARCH_INDEX_ROOT)
-        if (root) server.moduleGraph.invalidateModule(root, new Set(), Date.now(), true)
+        for (const name of names) {
+          const module = server.moduleGraph.getModuleById(`${SEARCH_INDEX}${name}`)
+          if (module) server.moduleGraph.invalidateModule(module, new Set(), Date.now(), true)
+        }
         void server.reloadModule(index)
       }
       const receive = (message: DevMessage) => {
-        if (message?.type !== 'presmium:update') return
-        const module = server.moduleGraph.getModuleById(RESOLVED)
-        if (module) server.moduleGraph.invalidateModule(module)
-        server.ws.send(UPDATE_EVENT, { update: message.update, base: message.base, revision: message.revision } satisfies UpdateEvent)
+        if (message?.type !== 'presmium:update' && message?.type !== 'presmium:translations') return
+        // The original's IR and the translations', which the pages read when they load.
+        for (const id of [RESOLVED, ...locales.map(lang => `${RESOLVED}/${lang}`)]) {
+          const module = server.moduleGraph.getModuleById(id)
+          if (module) server.moduleGraph.invalidateModule(module)
+        }
+        if (message.type === 'presmium:update') server.ws.send(UPDATE_EVENT, { update: message.update, base: message.base, revision: message.revision } satisfies UpdateEvent)
         refreshSearch()
       }
       process.on('message', receive)

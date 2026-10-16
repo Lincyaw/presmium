@@ -1,6 +1,6 @@
 // The workspace site (P-122, docs/ir.md 6.3): `presmium build` at the workspace root builds one site whose
-// home page lists every document and links to `/<dir>/`, each document readable on its own pages and
-// searchable in its own index; in a document's directory it builds that document only.
+// home page lists every document and links to `/<dir>/`, each document readable on its own pages, its search
+// box finding the other documents too (WP-86); in a document's directory it builds that document only.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -21,7 +21,7 @@ describe('presmium build of a workspace', () => {
   })
   afterAll(() => remove(dir))
 
-  it('builds the site at the root: the home page lists the documents, each readable and searchable under its directory', async () => {
+  it('builds the site at the root: the home page lists the documents, each readable under its directory and searching them all', async () => {
     const built = await presmium(dir, ['build'])
     expect(built.code, built.stderr).toBe(0)
     expect(built.stdout).toMatch(/^document {2}alpha {2}甲文档$/m)
@@ -43,11 +43,12 @@ describe('presmium build of a workspace', () => {
     expect(readFileSync(join(site, 'beta/index.html'), 'utf8')).toContain('乙文档讲 quokkaland')
     expect(readFileSync(join(site, 'beta/more.html'), 'utf8')).toContain('乙文档的第二章')
 
-    // Each document is searched on its own.
-    expect(searchIndex(join(site, 'alpha'))).toContain('zymurgy')
-    expect(searchIndex(join(site, 'alpha'))).not.toContain('quokkaland')
-    expect(searchIndex(join(site, 'beta'))).toContain('quokkaland')
-    expect(searchIndex(join(site, 'beta'))).not.toContain('zymurgy')
+    // Each document's search box finds the other documents too, under their pages.
+    for (const doc of ['alpha', 'beta']) {
+      expect(searchIndex(join(site, doc))).toContain('zymurgy')
+      expect(searchIndex(join(site, doc))).toContain('quokkaland')
+    }
+    expect(searchIndex(join(site, 'alpha'))).toContain('/beta/more.html')
   }, 600_000)
 
   it('builds only the one document in its directory', async () => {

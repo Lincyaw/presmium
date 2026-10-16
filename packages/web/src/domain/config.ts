@@ -16,6 +16,59 @@ export interface FormOptions {
   routerMode?: 'history' | 'hash'
 }
 
+/** An entry of the navigation bar, of the shape of VitePress's `themeConfig.nav`: a link, or a menu of entries. */
+export interface NavItem {
+  text: string
+  link?: string
+  items?: NavItem[]
+}
+
+/**
+ * The site shell (P-78, docs/ir.md 2.1): `nav`, `footer`, `head` and
+ * `sitemap` of `renderers.web`, or of the `site` of a workspace's
+ * configuration for a workspace site.
+ */
+export interface SiteShell {
+  nav?: NavItem[]
+  footer?: { message?: string, copyright?: string }
+  /** The pages' description and Open Graph data; `image` is a URL, or a local file (relative to the deck, or `/...` in its `public/`). */
+  head?: { description?: string, image?: string }
+  /** `sitemap.xml` with the pages under `hostname` (and the site's base). */
+  sitemap?: { hostname: string }
+}
+
+function text(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
+function navItems(value: unknown): NavItem[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item): NavItem[] => {
+    if (!isRecord(item) || !text(item.text)) return []
+    const items = navItems(item.items)
+    const link = text(item.link)
+    return link || items.length > 0 ? [{ text: text(item.text)!, ...link ? { link } : {}, ...items.length > 0 ? { items } : {} }] : []
+  })
+}
+
+/** The site shell of the options `config` (`renderers.web`, or a workspace's `site`); what is malformed is left out. */
+export function siteShell(config: Record<string, unknown>): SiteShell {
+  const shell: SiteShell = {}
+  const nav = navItems(config.nav)
+  if (nav.length > 0) shell.nav = nav
+  if (isRecord(config.footer)) {
+    const footer = { message: text(config.footer.message), copyright: text(config.footer.copyright) }
+    if (footer.message || footer.copyright) shell.footer = Object.fromEntries(Object.entries(footer).filter(([, v]) => v)) as SiteShell['footer']
+  }
+  if (isRecord(config.head)) {
+    const head = { description: text(config.head.description), image: text(config.head.image) }
+    if (head.description || head.image) shell.head = Object.fromEntries(Object.entries(head).filter(([, v]) => v)) as SiteShell['head']
+  }
+  const hostname = isRecord(config.sitemap) ? text(config.sitemap.hostname) : undefined
+  if (hostname) shell.sitemap = { hostname: hostname.replace(/\/+$/, '') }
+  return shell
+}
+
 /** The web renderer's options. */
 export interface WebRendererConfig {
   /** Public base path of the site, `/` or `/<path>/` (`RenderContext.base`: `renderers.web.base`, else `/web/` beside the slides). */
@@ -26,6 +79,8 @@ export interface WebRendererConfig {
   lang: string
   /** In `presmium dev`: the server's address, to which the dev server proxies `/__presmium/` (`RenderContext.server`). */
   server?: string
+  /** The site shell (`renderers.web`'s `nav`, `footer`, `head`, `sitemap`). */
+  shell: SiteShell
 }
 
 function url(value: unknown): string | undefined {
@@ -70,5 +125,6 @@ export function rendererConfig(ctx: { config: Record<string, unknown>, base: str
     port: Number.isInteger(port) && port > 0 ? port : undefined,
     lang: ctx.lang || DEFAULT_LANG,
     ...ctx.server ? { server: ctx.server.url } : {},
+    shell: siteShell(ctx.config),
   }
 }

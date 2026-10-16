@@ -14,7 +14,7 @@ import type { Theme } from 'vitepress'
 import { inBrowser, useData } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, readonly, ref, shallowRef } from 'vue'
-import { WEB_MESSAGES } from '../domain/index.ts'
+import { samePage, WEB_MESSAGES } from '../domain/index.ts'
 import './style.css'
 
 export interface SiteHomeInput {
@@ -96,6 +96,23 @@ const SiteHome = defineComponent({
   },
 })
 
+/**
+ * The home page of a site whose `site.home` names a document: it leads to
+ * that document (a refresh in the page's head does without JavaScript too),
+ * and says so with a link meanwhile.
+ */
+const SiteRedirect = defineComponent({
+  name: 'PresmiumSiteRedirect',
+  setup() {
+    const { theme, page } = useData()
+    const href = computed(() => theme.value.presmium?.redirect as string | undefined)
+    onMounted(() => {
+      if (href.value) location.replace(href.value)
+    })
+    return () => h('p', { class: 'pm-site-home' }, [h('a', { class: 'pm-site-home__link', href: href.value }, page.value.title)])
+  },
+})
+
 /** The host of the home page: no document, no steps; the toolbar, the shared states and the server's client. */
 function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): HostAdapter {
   const cursor = readonly(ref({ slide: 1, step: 0 }))
@@ -128,8 +145,19 @@ export function createSiteHomeTheme(input: SiteHomeInput): Theme {
   return {
     extends: DefaultTheme,
     Layout,
-    enhanceApp({ app, siteData }) {
+    enhanceApp({ app, router, siteData }) {
       app.component('PresmiumSiteHome', SiteHome)
+      app.component('PresmiumSiteRedirect', SiteRedirect)
+      // The documents are sites of their own: a link to one loads it, rather than the router's 404.
+      router.onBeforeRouteChange = (to) => {
+        if (!inBrowser) return
+        const url = new URL(to, location.href)
+        const { base } = siteData.value
+        const own = [base, `${base}index.html`, siteData.value.themeConfig.presmium?.list]
+        if (url.origin !== location.origin || samePage(url.pathname, location.pathname) || own.includes(url.pathname)) return
+        location.assign(url.href)
+        return false
+      }
       const shared = createSharedStates(`${siteData.value.title} (home)`)
       installHost(app, homeHost(siteData.value.lang, shared.sharedState))
       if (!inBrowser) return
