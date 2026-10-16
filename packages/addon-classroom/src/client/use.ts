@@ -1,19 +1,13 @@
-import { useService } from '@presmium/host'
-import { CLASSROOM_STORE, errorMessage, SESSION } from '@presmium/kernel'
-import type { ClassroomStore, SessionSnapshot, StoredItem } from '@presmium/kernel'
+import { useService, useSessionSnapshot } from '@presmium/host'
+import { CLASSROOM_STORE, errorMessage } from '@presmium/kernel'
+import type { ClassroomStore, StoredItem } from '@presmium/kernel'
 import type { ComputedRef, Ref } from 'vue'
 import { computed, shallowRef, watchEffect } from 'vue'
 import { bothStores, browserNotes } from './local.ts'
 
-/** The `session` service and its live snapshot; `joined` while this window is in a classroom, active or ended. */
+/** The `session` service and its live snapshot (the host's `useSessionSnapshot`); `joined` while this window is in a classroom, active or ended. */
 export function useSession() {
-  const session = useService(SESSION)
-  const snapshot = shallowRef<SessionSnapshot>()
-  watchEffect((onCleanup) => {
-    const current = session.value
-    snapshot.value = current?.snapshot()
-    if (current) onCleanup(current.subscribe(next => snapshot.value = next))
-  })
+  const { session, snapshot } = useSessionSnapshot()
   const me = computed(() => snapshot.value?.me)
   const status = computed(() => snapshot.value?.status ?? 'idle')
   const joined = computed(() => status.value !== 'idle' && me.value !== undefined)
@@ -77,16 +71,4 @@ export function useWrite() {
 /** An id for a new item: unique enough within one participant's items. */
 export function newId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
-}
-
-/** Toolbar items that could show the notes layer; the first one does, so a window has one. */
-const layerOwners = shallowRef<symbol[]>([])
-
-export function claimNotesLayer(): { owns: Readonly<Ref<boolean>>, release(): void } {
-  const token = Symbol('notes')
-  layerOwners.value = [...layerOwners.value, token]
-  return {
-    owns: computed(() => layerOwners.value[0] === token),
-    release: () => layerOwners.value = layerOwners.value.filter(t => t !== token),
-  }
 }

@@ -2,19 +2,19 @@
 // The classroom in the hosts' toolbar: a button with its state that opens the session panel in a
 // popover (the browser's own: it closes with Esc or a click elsewhere, over everything).
 // It also places the learner's badge on the page.
-import { useMessages } from '@presmium/host'
-import { onBeforeUnmount, ref, useId } from 'vue'
+import { claimFirst, useMessages } from '@presmium/host'
+import { ref, useId } from 'vue'
 import { MESSAGES, shortStatus, statusText } from '../domain/index.ts'
 import SessionBadge from './SessionBadge.vue'
 import SessionPanel from './SessionPanel.vue'
-import { claimBadge, useClassroom } from './use.ts'
+import { useClassroom } from './use.ts'
 
 const { snapshot } = useClassroom()
 const t = useMessages(MESSAGES)
 const id = useId()
 const open = ref(false)
-const badge = claimBadge()
-onBeforeUnmount(badge.release)
+// Of the toolbar's instances in a window (the bar and the menu of a phone), the first shows the badge.
+const badge = claimFirst('presmium.session.badge')
 
 function toggled(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'

@@ -2,12 +2,12 @@
 // The classroom in the hosts' toolbar: for the presenter, a button with the number of open
 // questions that opens the overview of the classroom in a popover (the browser's own: it closes
 // with Esc or a click elsewhere). It also places the web form's notes.
-import { useMessages } from '@presmium/host'
-import { computed, onBeforeUnmount, ref, useId } from 'vue'
+import { claimFirst, useMessages } from '@presmium/host'
+import { computed, ref, useId } from 'vue'
 import { COLLECTIONS, isQuestion, MESSAGES } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'
 import NotesLayer from './NotesLayer.vue'
-import { claimNotesLayer, useClassroomStore, useCollection, useSession } from './use.ts'
+import { useClassroomStore, useCollection, useSession } from './use.ts'
 import './style.css'
 
 const { presenter } = useSession()
@@ -17,8 +17,8 @@ const questions = useCollection(() => store.value, COLLECTIONS.questions, isQues
 const unanswered = computed(() => questions.value.filter(({ value }) => !value.answered).length)
 const id = useId()
 const open = ref(false)
-const layer = claimNotesLayer()
-onBeforeUnmount(layer.release)
+// Of the toolbar's instances in a window (the bar and the menu of a phone), the first places the notes.
+const layer = claimFirst('presmium.classroom.notes')
 
 function toggled(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'
