@@ -2,15 +2,16 @@ import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
 import { SLIDES_PORT, WEB_PORT } from './e2e/urls.ts'
 
-// `presmium build` writes each renderer's output to examples/demo/dist/<renderer id>.
-// Build first (`pnpm demo:build`). A form whose output is missing is not served.
+// `presmium build` writes each renderer's output to examples/demo/dist/<renderer id>, and the
+// forms built together are one site: the web form under /web/, the slides under /slides/ (see
+// e2e/urls.ts). Build first (`pnpm demo:build`). A form whose output is missing is not served.
 // Ports come from PRESMIUM_E2E_SLIDES_PORT / PRESMIUM_E2E_WEB_PORT so parallel
 // checkouts do not collide; an occupied port is an error, never silently reused,
 // so a run cannot test another checkout's build.
 const servers = [
-  { dir: 'examples/demo/dist/slides', port: SLIDES_PORT, single: true },
-  { dir: 'examples/demo/dist/web', port: WEB_PORT, single: false },
-].filter(s => existsSync(s.dir))
+  { form: 'examples/demo/dist/slides', port: SLIDES_PORT, single: 'slides/index.html' },
+  { form: 'examples/demo/dist/web', port: WEB_PORT, single: '' },
+].filter(s => existsSync(s.form))
 
 // N-04: every spec runs in Chromium; the smoke test also runs in the other engines
 // named by PRESMIUM_E2E_BROWSERS (default firefox; add webkit where the host has its
@@ -39,7 +40,7 @@ export default defineConfig({
   webServer: servers.map(s => ({
     // The binary itself rather than `pnpm exec`, so the config also runs where pnpm is not
     // installed, e.g. in the Playwright Docker image (docs/browsers.md).
-    command: `node_modules/.bin/sirv ${s.dir} ${s.single ? '--single ' : ''}--port ${s.port} --quiet`,
+    command: `node_modules/.bin/sirv examples/demo/dist ${s.single ? `--single ${s.single} ` : ''}--port ${s.port} --quiet`,
     port: s.port,
     reuseExistingServer: false,
   })),

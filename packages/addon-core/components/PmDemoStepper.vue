@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmBoundary, useStepScope, useStepState } from '@presmium/host'
+import { useStepScope, useStepState } from '@presmium/host'
 import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{ steps?: string[] }>(), {
@@ -21,13 +21,11 @@ function status(i: number): string {
 </script>
 
 <template>
-  <PmBoundary name="PmDemoStepper">
-    <ol class="pm-demo-stepper" :data-step="reached">
-      <li v-for="(label, i) in steps" :key="label" v-click="scope.step(i + 1)" :data-status="status(i)">
-        {{ label }}
-      </li>
-    </ol>
-  </PmBoundary>
+  <ol class="pm-demo-stepper" :data-step="reached">
+    <li v-for="(label, i) in steps" :key="label" v-click="scope.step(i + 1)" :data-status="status(i)">
+      {{ label }}
+    </li>
+  </ol>
 </template>
 
 <style scoped>

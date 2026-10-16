@@ -1,3 +1,4 @@
+import { isRecord } from '@presmium/kernel'
 import { DEFAULT_LANG } from '@presmium/kernel/contracts'
 
 /** Plugin id of the web renderer; its configuration is `presmium: { presmium.web: {...} }`. */
@@ -15,18 +16,14 @@ export interface FormOptions {
   routerMode?: 'history' | 'hash'
 }
 
-/** `renderers.web` of the frontmatter. */
+/** The web renderer's options. */
 export interface WebRendererConfig {
-  /** Public base path of the site (default `/`). */
+  /** Public base path of the site, `/` or `/<path>/` (`RenderContext.base`: `renderers.web.base`, else `/web/` beside the slides). */
   base: string
-  /** Port of the dev server (default: VitePress's). */
+  /** Port of the dev server (`renderers.web.port`; default: VitePress's). */
   port?: number
-  /** Site language: `renderers.web.lang`, else the deck's `lang`, else `zh-CN`. */
+  /** Site language: the deck's `lang` (`IRDocument.meta.lang`), else `zh-CN`. */
   lang: string
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function url(value: unknown): string | undefined {
@@ -63,14 +60,12 @@ export function offlineEnabled(presmium: unknown): boolean {
   return !(isRecord(publish) && publish.offline === false)
 }
 
-/** The web renderer's options from `renderers.web`; `deckLang` is the deck's `lang`. */
-export function rendererConfig(config: Record<string, unknown>, deckLang?: unknown): WebRendererConfig {
-  const base = typeof config.base === 'string' ? `/${config.base.replace(/^\/+|\/+$/g, '')}/`.replace('//', '/') : '/'
-  const port = Number(config.port)
-  const lang = [config.lang, deckLang].find((value): value is string => typeof value === 'string' && value !== '')
+/** The web renderer's options from its render context: `renderers.web` (`config`), the public `base` and the deck's `lang`. */
+export function rendererConfig(ctx: { config: Record<string, unknown>, base: string, lang?: string }): WebRendererConfig {
+  const port = Number(ctx.config.port)
   return {
-    base,
+    base: ctx.base,
     port: Number.isInteger(port) && port > 0 ? port : undefined,
-    lang: lang ?? DEFAULT_LANG,
+    lang: ctx.lang || DEFAULT_LANG,
   }
 }

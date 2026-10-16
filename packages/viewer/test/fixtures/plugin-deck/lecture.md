@@ -2,6 +2,7 @@
 title: 插件扩展示例
 plugins:
   - './plugin'
+  - './broken'
 renderers:
   web: {}
 ---

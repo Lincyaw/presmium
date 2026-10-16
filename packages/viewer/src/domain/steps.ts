@@ -46,6 +46,19 @@ export function clampPosition(doc: IRDocument, position: Position): Position {
   return { section: section.id, step }
 }
 
+/**
+ * The position after a live update from `prev` to `next`: the same section
+ * and step where they still exist; when the section is gone (e.g. its title,
+ * which gave its id, was edited), the section at the same place in the order,
+ * so a presentation does not jump back to the cover (K-11).
+ */
+export function keepPosition(prev: IRDocument, next: IRDocument, position: Position): Position {
+  if (next.sections.some(s => s.id === position.section) || next.sections.length === 0) return clampPosition(next, position)
+  const at = prev.sections.findIndex(s => s.id === position.section)
+  const section = next.sections[Math.min(Math.max(at, 0), next.sections.length - 1)]!
+  return clampPosition(next, { section: section.id, step: position.step })
+}
+
 /** The next step, or the first step of the next section; undefined at the end of the document. */
 export function nextPosition(doc: IRDocument, position: Position): Position | undefined {
   const i = doc.sections.findIndex(s => s.id === position.section)

@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-viewer",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/viewer.spec.ts: code nodes with an origin, versions and recorded output, without a repository",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

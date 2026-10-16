@@ -1,31 +1,20 @@
 /**
  * The audience screen (P-03) in the web form's present view: `b` blacks it
  * out, `f` freezes it while the presenter moves on; the same key again
- * restores it. The mode is shared presentation state of the IR runtime, so
- * the present view (the audience window) and the presenter window follow
- * each other; the presenter window shows a reminder instead.
+ * restores it. The mode is the host's shared state (`useScreen`), so the
+ * present view (the audience window), the presenter window and the other
+ * devices of a classroom follow each other; the presenter window shows a
+ * reminder instead.
  */
 import type { Component } from 'vue'
 import { defineComponent, h, shallowRef, watch } from 'vue'
-import { SCREEN_KEY, screenMode, toggleScreen } from '../domain/index.ts'
-import type { ScreenMode } from '../domain/index.ts'
 import { messages } from './messages.ts'
-
-/** What the stage uses of the IR runtime's viewer (`Viewer` of @presmium/viewer). */
-interface SharedState {
-  readonly shared: Readonly<Record<string, unknown>>
-  share(key: string, value: unknown): void
-}
+import { useScreen } from './screen.ts'
 
 /** What the stage uses of the viewer plugin context (`ViewerPluginContext` of @presmium/viewer). */
 export interface StageViewerContext {
-  registerAction(action: { id: string, keys: readonly string[], run(viewer: SharedState): boolean | void }): void
+  registerAction(action: { id: string, keys: readonly string[], run(viewer: unknown): boolean | void }): void
   registerLayer(layer: { id: string, component: Component }): void
-  useViewer(): SharedState
-}
-
-function toggle(viewer: SharedState, wanted: Exclude<ScreenMode, 'live'>): void {
-  viewer.share(SCREEN_KEY, toggleScreen(screenMode(viewer.shared[SCREEN_KEY]), wanted))
 }
 
 /** A static copy of the slide as it is now, without ids; laid over it while frozen. */
@@ -49,13 +38,12 @@ function freeze(frame: HTMLElement): void {
 }
 
 /** The layer over the present view (a black screen, a frozen copy) and the presenter window (a reminder). */
-const screenLayer = (useViewer: () => SharedState): Component => defineComponent({
+const ScreenLayer: Component = defineComponent({
   name: 'PmStageScreen',
   props: { view: { type: String, required: true } },
   setup(props) {
-    const viewer = useViewer()
+    const { mode } = useScreen()
     const frame = shallowRef<HTMLElement>()
-    const mode = () => screenMode(viewer.shared[SCREEN_KEY])
     // Synchronously, so the copy shows the slide before a position that follows the freeze arrives.
     watch([mode, frame], ([current, el]) => {
       if (!el) return
@@ -63,7 +51,7 @@ const screenLayer = (useViewer: () => SharedState): Component => defineComponent
       else el.replaceChildren()
     }, { flush: 'sync', immediate: true })
     return () => {
-      const current = mode()
+      const current = mode.value
       if (props.view === 'presenter') {
         return current === 'live' ? null : h('div', {
           'class': 'pm-stage-badge',
@@ -80,8 +68,8 @@ const screenLayer = (useViewer: () => SharedState): Component => defineComponent
 })
 
 /** The viewer plugin (docs/ir.md section 8.2) the web form loads from `src/client/viewer.ts`. */
-export default function stageViewerPlugin({ registerAction, registerLayer, useViewer }: StageViewerContext): void {
-  registerAction({ id: 'presmium.stage.black', keys: ['b'], run: viewer => toggle(viewer, 'black') })
-  registerAction({ id: 'presmium.stage.freeze', keys: ['f'], run: viewer => toggle(viewer, 'frozen') })
-  registerLayer({ id: 'presmium.stage.screen', component: screenLayer(useViewer) })
+export default function stageViewerPlugin({ registerAction, registerLayer }: StageViewerContext): void {
+  registerAction({ id: 'presmium.stage.black', keys: ['b'], run: () => useScreen().toggle('black') })
+  registerAction({ id: 'presmium.stage.freeze', keys: ['f'], run: () => useScreen().toggle('frozen') })
+  registerLayer({ id: 'presmium.stage.screen', component: ScreenLayer })
 }

@@ -1,5 +1,7 @@
 ---
 title: MyST 节点
+plugins:
+  - ./plugin
 renderers:
   web: {}
 ---
@@ -36,4 +38,43 @@ MyST 的内置角色与指令在网页形态中的呈现。
 :::{note}
 :class: pm-fixture-note
 普通的注意事项。
+:::
+
+(raw-html)=
+## 原始 HTML
+
+Energy <b>is</b> $E = mc^2$ here.
+
+| 键 | 说明 |
+|---|---|
+| <kbd>Ctrl</kbd> | 第一行<br>第二行，公式 $x^2$ 也在 |
+
+(embed)=
+## 嵌入页面
+
+:::{iframe} https://example.com/
+:width: 80%
+嵌入的页面
+:::
+
+(versions)=
+## 代码版本
+
+:::{versions} python
+def merge(pair):
+    return pair
++++
+def merge(pair, new_id):
+    first, second = pair
+    return new_id
+:::
+
+逐步切换代码的版本。
+
+(pinned)=
+## 锁定的代码
+
+:::{pinned} python
+counts = {}
+print(counts)
 :::

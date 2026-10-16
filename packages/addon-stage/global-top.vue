@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useNav } from '@slidev/client'
 import { shallowRef, watch } from 'vue'
-import { screen } from './setup/screen.ts'
 import { messages } from './src/client/messages.ts'
+import { useScreen } from './src/client/screen.ts'
 
 const { isPresenter, isPrintMode } = useNav()
+const { mode } = useScreen()
 const frame = shallowRef<HTMLElement>()
 
 /**
@@ -26,28 +27,28 @@ function freeze(frame: HTMLElement): void {
   frame.replaceChildren(...copies)
 }
 
-watch([() => screen.mode, frame], ([mode, el]) => {
+watch([mode, frame], ([current, el]) => {
   if (!el) return
-  if (mode === 'frozen') freeze(el)
+  if (current === 'frozen') freeze(el)
   else el.replaceChildren()
 }, { flush: 'sync' })
 
 /** Read when the badge shows: the page's language is set by then. */
-const label = (mode: 'black' | 'frozen') => messages().badge[mode]
+const label = (which: 'black' | 'frozen') => messages().badge[which]
 </script>
 
 <template>
   <template v-if="!isPrintMode">
     <!-- The presenter keeps the live slides and gets a reminder of what the audience sees. -->
     <template v-if="isPresenter">
-      <div v-if="screen.mode !== 'live'" class="pm-stage-badge" :data-mode="screen.mode">
-        {{ label(screen.mode) }}
+      <div v-if="mode !== 'live'" class="pm-stage-badge" :data-mode="mode">
+        {{ label(mode) }}
       </div>
     </template>
     <template v-else>
-      <div v-show="screen.mode === 'frozen'" ref="frame" class="pm-stage-frozen" aria-hidden="true" />
+      <div v-show="mode === 'frozen'" ref="frame" class="pm-stage-frozen" aria-hidden="true" />
       <Teleport to="body">
-        <div v-if="screen.mode === 'black'" class="pm-stage-black" />
+        <div v-if="mode === 'black'" class="pm-stage-black" />
       </Teleport>
     </template>
   </template>

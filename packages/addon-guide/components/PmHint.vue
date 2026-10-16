@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import CueNote from '../src/client/CueNote.vue'
 import { requestHint, useCue } from '../src/client/index.ts'
 
 const props = defineProps<{
@@ -15,15 +15,15 @@ const props = defineProps<{
 }>()
 
 // On the audience's slide a driver.js beacon pulses at the target; elsewhere a ring pulses around it.
-const { anchor, look, steps } = useCue(props, 'data-pm-hint', requestHint)
+// In the web form's page views, its title and text show in place.
+const { anchor, look, note, steps } = useCue(props, 'data-pm-hint', requestHint)
 </script>
 
 <template>
-  <PmBoundary name="PmHint">
-    <span ref="anchor" class="pm-hint pm-overlay" hidden :data-target="target" :data-look="look ?? 'off'">
-      <span v-for="step in steps" :key="step" v-click="step" />
-    </span>
-  </PmBoundary>
+  <CueNote :title="title" :text="text" :state="note" />
+  <span ref="anchor" class="pm-hint" hidden :data-target="target" :data-look="look ?? 'off'">
+    <span v-for="step in steps" :key="step" v-click="step" />
+  </span>
 </template>
 
 <style>
@@ -33,7 +33,7 @@ const { anchor, look, steps } = useCue(props, 'data-pm-hint', requestHint)
 /* Like the spotlight, beacons and their popover lie just above the slide, under the host's own layers. */
 body .driver-hint.pm-hint-beacon,
 body .driver-popover.pm-hint-popover {
-  z-index: 2;
+  z-index: calc(var(--pm-cue-z, 1) + 1);
 }
 [data-pm-hint='inline'] {
   outline: 2px solid #818cf8;

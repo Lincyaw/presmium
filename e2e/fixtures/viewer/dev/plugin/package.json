@@ -1,0 +1,6 @@
+{
+  "name": "presmium-fixture-viewer-dev",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/viewer.spec.ts: components that a live update changes"
+}

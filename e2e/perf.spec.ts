@@ -2,13 +2,17 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
-import { buildDeck, serve } from './fixtures/exec/deck.ts'
+import { buildFixture, serve } from './fixtures/deck.ts'
+import type { FixtureDeck } from './fixtures/deck.ts'
+import { buildDeck } from './fixtures/exec/deck.ts'
 import type { BuiltDeck } from './fixtures/exec/deck.ts'
 
 // N-01 and N-02 on a deck of 100 sections, built in beforeAll: the first screen of each
 // form shows within 2 s in a fresh browser context, and a step renders within 100 ms of
 // its key press. Times are taken in the page: from navigation start, and from the
-// keydown's timeStamp to the first animation frame that shows the new state.
+// keydown's timeStamp to the first animation frame that shows the new state. The frame
+// rate of N-02 is taken while things move: the guidance cursor of e2e/fixtures/guide in the
+// web form's present view, and page turns of the slides.
 
 const SECTIONS = 100
 
@@ -46,8 +50,11 @@ ${Array.from({ length: SECTIONS }, (_, i) => section(i + 1)).join('\n')}`
 }
 
 let deck: BuiltDeck
-let slides: Awaited<ReturnType<typeof serve>>
-let web: Awaited<ReturnType<typeof serve>>
+/** The build's `dist/`, one site: built together, the forms are under /web/ and /slides/. */
+let site: Awaited<ReturnType<typeof serve>>
+let slides = ''
+let web = ''
+let guide: FixtureDeck
 
 test.describe.configure({ mode: 'serial' })
 
@@ -57,14 +64,16 @@ test.beforeAll(async () => {
     writeFileSync(join(dir, 'lecture.md'), hundredSections())
     writeFileSync(join(dir, 'package.json'), '{ "private": true, "type": "module" }\n')
   })
-  slides = await serve(join(deck.dir, 'dist/slides'), true)
-  web = await serve(join(deck.dir, 'dist/web'), false)
+  site = await serve(join(deck.dir, 'dist'), '/slides/')
+  slides = `${site.url}/slides`
+  web = `${site.url}/web`
+  guide = await buildFixture('guide')
 })
 
 test.afterAll(async () => {
-  await slides?.close()
-  await web?.close()
+  await site?.close()
   deck?.remove()
+  await guide?.close()
 })
 
 /** Milliseconds from navigation start to the first frame in which `selector` is visible, in a fresh context. */
@@ -106,26 +115,81 @@ async function keyToFrame(page: Page, key: string, shown: string): Promise<numbe
 test(`the first screen of each form shows within 2 s on a deck of ${SECTIONS} sections (N-01)`, async ({ browser }) => {
   expect(Object.keys(deck.slides)).toHaveLength(SECTIONS)
   const screens = {
-    'first slide': await firstRender(browser, `${slides.url}/1`, '.slidev-page-1 .slidev-layout h1'),
-    'first web section': await firstRender(browser, `${web.url}/`, '.pm-section[data-section="s1"] h2'),
-    'present view': await firstRender(browser, `${web.url}/?view=present`, '.pm-present[data-section="s1"]'),
+    'first slide': await firstRender(browser, `${slides}/1`, '.slidev-page-1 .slidev-layout h1'),
+    'first web section': await firstRender(browser, `${web}/`, '.pm-section[data-section="s1"] h2'),
+    'present view': await firstRender(browser, `${web}/?view=present`, '.pm-present[data-section="s1"]'),
   }
   test.info().annotations.push({ type: 'first render (ms)', description: JSON.stringify(screens) })
   for (const [screen, ms] of Object.entries(screens)) expect(ms, screen).toBeLessThan(2000)
 })
 
 test('a slides click, a slides page turn and a step of the web present view render within 100 ms (N-02)', async ({ page }) => {
-  await page.goto(`${slides.url}/50`)
+  await page.goto(`${slides}/50`)
   await expect(page.locator('.slidev-page-50 .slidev-layout h1')).toBeVisible()
   const hidden = '.slidev-page-50 .slidev-vclick-hidden'
   await expect(page.locator(hidden)).toHaveCount(1)
   const click = await keyToFrame(page, 'ArrowRight', `!document.querySelector('${hidden}')`)
   const turn = await keyToFrame(page, 'ArrowRight', `document.querySelector('.slidev-page-51')?.checkVisibility() === true`)
 
-  await page.goto(`${web.url}/?view=present`)
+  await page.goto(`${web}/?view=present`)
   await expect(page.locator('.pm-present')).toHaveAttribute('data-step', '0')
   const step = await keyToFrame(page, 'ArrowRight', `document.querySelector('.pm-present')?.getAttribute('data-step') === '1'`)
 
   test.info().annotations.push({ type: 'step render (ms)', description: JSON.stringify({ click, turn, step }) })
   for (const [action, ms] of Object.entries({ click, turn, step })) expect(ms, action).toBeLessThan(100)
+})
+
+/** Milliseconds between the animation frames while `act` runs. */
+async function frameIntervals(page: Page, act: () => Promise<void>): Promise<number[]> {
+  await page.evaluate(() => {
+    const times: number[] = []
+    Object.assign(window, { pmFrames: times })
+    const tick = (now: number) => {
+      times.push(now)
+      if ((window as { pmFrames?: number[] }).pmFrames === times) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })
+  await act()
+  return page.evaluate(() => {
+    const times = (window as { pmFrames?: number[] }).pmFrames!
+    Object.assign(window, { pmFrames: undefined })
+    return times.slice(1).map((time, i) => time - times[i]!)
+  })
+}
+
+function p95(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor(0.95 * (sorted.length - 1))]!
+}
+
+test('the guidance cursor of the present view and the slides\' page turns keep 60 frames a second (N-02)', async ({ page }) => {
+  await page.goto(`${guide.web}/guide.html?view=present&section=guide&step=0`)
+  const present = page.locator('.pm-present')
+  await expect(present.locator('.pm-cursor')).toBeAttached()
+  const cursor = await frameIntervals(page, async () => {
+    for (const step of [1, 2, 3]) {
+      await page.keyboard.press('ArrowRight')
+      await expect(present).toHaveAttribute('data-step', String(step))
+      // The cursor moves for half a second.
+      await page.waitForTimeout(700)
+    }
+  })
+
+  await page.goto(`${slides}/20`)
+  await expect(page.locator('.slidev-page-20 .slidev-layout h1')).toBeVisible()
+  const turns = await frameIntervals(page, async () => {
+    for (const no of [21, 22, 23]) {
+      // Past the reveal of the slide, then to the next one.
+      await page.keyboard.press('ArrowRight')
+      await page.keyboard.press('ArrowRight')
+      await expect(page.locator(`.slidev-page-${no}`)).toBeVisible()
+      await page.waitForTimeout(500)
+    }
+  })
+
+  const p95s = { cursor: p95(cursor), turns: p95(turns) }
+  test.info().annotations.push({ type: 'frame interval p95 (ms)', description: JSON.stringify(p95s) })
+  // 60 frames a second is 16.7 ms a frame; headless browsers jitter.
+  for (const [action, ms] of Object.entries(p95s)) expect(ms, action).toBeLessThanOrEqual(20)
 })

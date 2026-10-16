@@ -9,6 +9,43 @@ body {
   font-size: 1rem;
 }
 
+/* Headings follow the reader's font size too, and stay above the body text (N-06). VitePress gives the
+   headings of its documents sizes in px; the sidebar, the outline and the doc footer have no CSS
+   variable for theirs, so they keep VitePress's. */
+.vp-doc .pm-section h1 {
+  font-size: 2rem;
+}
+
+.vp-doc .pm-section h2 {
+  font-size: 1.5rem;
+}
+
+.vp-doc .pm-section h3 {
+  font-size: 1.25rem;
+}
+
+.vp-doc .pm-section :is(h4, h5, h6) {
+  font-size: 1.0625rem;
+}
+
+/* Bold text where the font has no bold face (e.g. a Chinese fallback font): the browser draws it bold,
+   as the slides do; VitePress allows only synthesized italics. */
+.vp-doc :is(strong, b, th),
+.pm-present :is(strong, b),
+.pm-presenter :is(strong, b) {
+  font-synthesis: weight style;
+}
+
+/* Presmium's controls show where the keyboard focus is (N-06). */
+.pm-view-menu:focus-visible,
+.pm-block :is(button, input, select, textarea, summary, [tabindex]):focus-visible,
+.pm-present :is(button, input, select, textarea, summary):focus-visible,
+.pm-presenter :is(button, input, select, textarea, summary):focus-visible,
+.pm-toolbar :is(button, input, select, textarea, a):focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
 /* On a phone a long deck title ends with an ellipsis instead of widening the page (N-05). */
 .VPNavBar .container > .title {
   flex-shrink: 1;
@@ -28,7 +65,8 @@ body {
   white-space: nowrap;
 }
 
-/* The sidebar is a tree of chapters with their sections indented below (see `sidebar`): chapters stand out. */
+/* The sidebar is a tree of chapters with their sections indented below (see `sidebar`): chapters stand out.
+   VitePress has no option for it; the class is its own (e2e/web.spec.ts checks the weight). */
 .VPSidebarItem.level-1 > .item .text {
   font-weight: 600;
 }
@@ -119,7 +157,7 @@ body {
   z-index: calc(var(--vp-z-index-local-nav, 32) + 100);
 }
 
-/* The presenter panels (@presmium/host) lie over the presenter window. */
-:root {
-  --pm-presenter-panels-z: calc(var(--vp-z-index-local-nav, 32) + 110);
+/* Page-level effects of plugins (e.g. the dimming of a guidance spotlight) lie over the present view. */
+html.pm-presenting {
+  --pm-cue-z: calc(var(--vp-z-index-local-nav, 32) + 101);
 }

@@ -4,7 +4,8 @@
  * each other's service, and one that starts, notes the UI language it starts
  * in and, when the page goes away, counts its disposal in localStorage. One
  * more plays another device: a sync transport that the tests drive through
- * `window.fixtureDevice`. Plain objects (a service token is `{ id }`), so the
+ * `window.fixtureDevice` (the state `fixture.core.remote`) and `window.fixtureDevices`
+ * (every 'remote' shared state). Plain objects (a service token is `{ id }`), so the
  * fixture needs no package of its own to compile.
  */
 const kernel = '^0.1.0'
@@ -28,6 +29,8 @@ interface Device {
 declare global {
   interface Window {
     fixtureDevice?: Device
+    /** The other device on every 'remote' shared state, by the state's key (e.g. `presmium.stage.screen`). */
+    fixtureDevices?: Record<string, Device>
     /** `<html lang>` when the kernel started the plugins. */
     fixtureLang?: string
   }
@@ -58,9 +61,11 @@ export default [
     setup(ctx: { get(token: unknown): { add(transport: unknown): unknown } }) {
       ctx.get(SYNC_TRANSPORTS).add({
         connect(channel: string, receive: Receive): Publish | undefined {
-          if (!channel.endsWith('remote:fixture.core.remote')) return undefined
+          const key = /:remote:(.+)$/.exec(channel)?.[1]
+          if (!key) return undefined
           const device: Device = { published: [], receive }
-          window.fixtureDevice = device
+          window.fixtureDevices = { ...window.fixtureDevices, [key]: device }
+          if (key === 'fixture.core.remote') window.fixtureDevice = device
           return (state, fromRemote) => device.published.push({ value: state.value, fromRemote })
         },
       })

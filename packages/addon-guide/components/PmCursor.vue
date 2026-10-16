@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
 import { computed } from 'vue'
 import CursorPath from '../src/client/CursorPath.vue'
 import { planCursorPath } from '../src/domain/index.ts'
@@ -16,7 +15,5 @@ const key = computed(() => JSON.stringify(plan.value))
 </script>
 
 <template>
-  <PmBoundary name="PmCursor">
-    <CursorPath :key="key" :plan="plan" />
-  </PmBoundary>
+  <CursorPath :key="key" :plan="plan" />
 </template>

@@ -21,7 +21,7 @@ export const DRAWINGS_DIR = '.presmium/drawings'
 /** Dev server endpoint that removes the saved drawing of a slide whose drawing was cleared (`?page=<n>`). */
 export const CLEAR_DRAWING = '/@presmium-stage/clear-drawing'
 
-/** Key of the audience screen mode in the web form's shared presentation state. */
+/** Key of the audience screen mode, a shared state of the host (`useSharedState`) in both forms. */
 export const SCREEN_KEY = 'presmium.stage.screen'
 
 /** The screen mode a shared value stands for; anything else is live. */
@@ -29,5 +29,5 @@ export function screenMode(value: unknown): ScreenMode {
   return value === 'black' || value === 'frozen' ? value : 'live'
 }
 
-export { messagesFor, stageLocale } from './messages.ts'
+export { STAGE_MESSAGES } from './messages.ts'
 export type { StageMessages } from './messages.ts'

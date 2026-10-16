@@ -1,11 +1,12 @@
 /**
  * `markdown` nodes: mdast to hast (mdast-util-to-hast, with handlers for the
- * MyST nodes), then hast to Vue virtual nodes. Math, diagrams and code inside
- * prose become the viewer's own components.
+ * MyST nodes), raw HTML parsed into the same tree (hast-util-raw), then hast
+ * to Vue virtual nodes. Math, diagrams and code inside prose become the
+ * viewer's own components, also inside raw HTML.
  */
 import type { IRBlock, MarkdownNode, MdastNode } from '@presmium/kernel'
-import type { Element, ElementContent, Properties, Root, RootContent } from 'hast'
-import { toHtml } from 'hast-util-to-html'
+import type { Element, ElementContent, Nodes, Properties, Root, RootContent } from 'hast'
+import { raw } from 'hast-util-raw'
 import type { Handler, Handlers, State } from 'mdast-util-to-hast'
 import { defaultHandlers, toHast } from 'mdast-util-to-hast'
 import { find, html as schema } from 'property-information'
@@ -46,15 +47,44 @@ function text(value: string): ElementContent {
   return { type: 'text', value }
 }
 
+/**
+ * Content the viewer renders with its own components: hast nodes of their own
+ * types, which the HTML parser passes through untouched (`passThrough`).
+ */
+type ViewerNode =
+  | { type: 'pmMath', tex: string, display: boolean, html?: string }
+  | { type: 'pmMermaid', code: string }
+  | { type: 'pmCode', lang: string, code: string }
+
+const VIEWER_NODES: ViewerNode['type'][] = ['pmMath', 'pmMermaid', 'pmCode']
+
+function viewerNode(node: ViewerNode): ElementContent {
+  return node as unknown as ElementContent
+}
+
+function asViewerNode(node: { type: string }): ViewerNode | undefined {
+  return (VIEWER_NODES as string[]).includes(node.type) ? node as ViewerNode : undefined
+}
+
 /** Elements that cannot be inside a paragraph. */
 const BLOCK_ELEMENTS = new Set([
   'address', 'article', 'aside', 'blockquote', 'details', 'div', 'dl', 'dt', 'dd', 'fieldset', 'figcaption', 'figure', 'footer',
-  'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'li', 'main', 'nav', 'ol', 'p', 'pre', 'section', 'table', 'ul',
-  'pm-code', 'pm-mermaid',
+  'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'iframe', 'li', 'main', 'nav', 'ol', 'p', 'pre', 'section', 'table', 'ul',
 ])
 
 function isBlock(node: ElementContent): boolean {
-  return node.type === 'element' && (BLOCK_ELEMENTS.has(node.tagName) || (node.tagName === 'pm-math' && node.properties.pmDisplay === true))
+  const own = asViewerNode(node)
+  if (own) return own.type !== 'pmMath' || own.display
+  return node.type === 'element' && BLOCK_ELEMENTS.has(node.tagName)
+}
+
+/** A URL escape decoded; a malformed one stays as it is. */
+export function decoded(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
 }
 
 /**
@@ -85,6 +115,9 @@ function handlers(links: MarkdownLinks): Handlers {
   const value = (node: { value?: unknown }) => (typeof node.value === 'string' ? node.value : '')
   const identifier = (node: { identifier?: unknown, label?: unknown }) => String(node.identifier ?? node.label)
   const label = (node: { identifier?: unknown, label?: unknown }) => String(node.label ?? node.identifier)
+  /** A footnote's mark: its number in the deck (the compiler's `enumerator`), else its label. */
+  const mark = (node: { identifier?: unknown, label?: unknown, enumerator?: unknown }) => (node.enumerator !== undefined ? String(node.enumerator) : label(node))
+  const math = (node: MdastNode, display: boolean) => viewerNode({ type: 'pmMath', tex: value(node), display, html: typeof node.html === 'string' ? node.html : undefined })
   /** A link to a section gets the section's page; one without text gets the section's title, else `fallback`. */
   const reference = (el: Element, id: string, fallback: string): Element => {
     const target = id ? links.section?.(id) : undefined
@@ -93,10 +126,17 @@ function handlers(links: MarkdownLinks): Handlers {
     return el
   }
   const custom: Record<string, Handler> = {
-    math: (_, node) => element('pm-math', { pmTex: value(node), pmDisplay: true }),
-    inlineMath: (_, node) => element('pm-math', { pmTex: value(node), pmDisplay: false }),
-    mermaid: (_, node) => element('pm-mermaid', { pmCode: value(node) }),
-    code: (_, node) => element('pm-code', { pmLang: typeof node.lang === 'string' ? node.lang : '', pmCode: value(node) }),
+    math: (_, node) => math(node, true),
+    inlineMath: (_, node) => math(node, false),
+    mermaid: (_, node) => viewerNode({ type: 'pmMermaid', code: value(node) }),
+    code: (_, node) => viewerNode({ type: 'pmCode', lang: typeof node.lang === 'string' ? node.lang : '', code: value(node) }),
+    // An `{iframe}`: the embedded page, in the figure that holds its caption.
+    iframe: (_, node) => element('iframe', {
+      src: typeof node.src === 'string' ? node.src : '',
+      width: node.width == null || node.width === '' ? undefined : String(node.width),
+      height: node.height == null || node.height === '' ? undefined : String(node.height),
+      loading: 'lazy',
+    }),
     admonition(state, node) {
       const names = messages().markdown.admonitions
       const extra = classes(node)
@@ -111,10 +151,10 @@ function handlers(links: MarkdownLinks): Handlers {
     // Footnote marks are not text of the document (the IR has none, nor has the search index):
     // the label shows through CSS, from `data-label`, and names the link for assistive technology.
     footnoteReference: (_, node) => element('sup', { className: ['pm-footnote-ref'] }, [
-      element('a', { href: footnoteHref(identifier(node)), dataLabel: label(node), ariaLabel: messages().markdown.footnote(label(node)) }, []),
+      element('a', { href: footnoteHref(identifier(node)), dataLabel: mark(node), ariaLabel: messages().markdown.footnote(mark(node)) }, []),
     ]),
     footnoteDefinition: (state, node) => element('div', { id: footnoteId(identifier(node)), className: ['pm-footnote'] }, [
-      element('sup', { dataLabel: label(node) }, []),
+      element('sup', { dataLabel: mark(node) }, []),
       ...state.all(node),
     ]),
     container: (state, node) => element('figure', { id: typeof node.identifier === 'string' ? node.identifier : undefined, className: ['pm-figure'] }, state.all(node)),
@@ -126,7 +166,7 @@ function handlers(links: MarkdownLinks): Handlers {
     link(state, node) {
       const el = defaultHandlers.link(state, node as never)
       const url = typeof node.url === 'string' ? node.url : ''
-      return url.startsWith('#') ? reference(el, decodeURIComponent(url.slice(1)), url.slice(1)) : reference(el, '', url)
+      return url.startsWith('#') ? reference(el, decoded(url.slice(1)), url.slice(1)) : reference(el, '', url)
     },
     keyboard: wrap('kbd'),
     subscript: wrap('sub'),
@@ -153,12 +193,14 @@ function textOf(node: ElementContent | Root): string {
 }
 
 /**
- * The hast tree of a markdown node. Headings get ids for the page outline,
- * starting with `prefix` (the section id) so they are unique on a page;
- * top-level list items get `data-pm-item` (their index, for `reveal: items`).
+ * The hast tree of a markdown node, raw HTML parsed into it. Headings get ids
+ * for the page outline, starting with `prefix` (the section id) so they are
+ * unique on a page; top-level list items get `data-pm-item` (their index, for
+ * `reveal: items`).
  */
 export function markdownToHast(mdast: MdastNode, prefix: string, links: MarkdownLinks = {}): Root {
-  const tree = toHast(mdast as never, { allowDangerousHtml: true, handlers: handlers(links), unknownHandler: unknown as never }) as Root
+  const html = toHast(mdast as never, { allowDangerousHtml: true, handlers: handlers(links), unknownHandler: unknown as never }) as Nodes
+  const tree = raw(html, { passThrough: VIEWER_NODES }) as Root
   let item = 0
   for (const child of tree.children) {
     if (child.type !== 'element') continue
@@ -181,11 +223,13 @@ function attributes(properties: Properties): Record<string, unknown> {
   return attrs
 }
 
-/** Elements the viewer renders with its own components. */
-const COMPONENTS: Record<string, (p: Properties) => [Component, Record<string, unknown>]> = {
-  'pm-math': p => [PmMath, { tex: String(p.pmTex ?? ''), display: p.pmDisplay === true }],
-  'pm-mermaid': p => [PmMermaid, { code: String(p.pmCode ?? '') }],
-  'pm-code': p => [CodeView, { lang: String(p.pmLang ?? ''), value: String(p.pmCode ?? '') }],
+/** The viewer's own content as its components. */
+function viewerComponent(node: ViewerNode): [Component, Record<string, unknown>] {
+  switch (node.type) {
+    case 'pmMath': return [PmMath, { tex: node.tex, display: node.display, html: node.html }]
+    case 'pmMermaid': return [PmMermaid, { code: node.code }]
+    case 'pmCode': return [CodeView, { lang: node.lang, value: node.code }]
+  }
 }
 
 export interface HastRenderContext {
@@ -193,28 +237,24 @@ export interface HastRenderContext {
   hidden?(item: number): boolean
 }
 
-function raw(value: string, inline: boolean): VNodeChild {
-  return h(inline ? 'span' : 'div', { class: 'pm-raw', innerHTML: value })
-}
+/** Elements whose text the HTML parser does not decode: Vue would escape it in a server render. */
+const RAW_TEXT = new Set(['script', 'style'])
 
-/** Converts hast to Vue virtual nodes. Raw HTML is set as `innerHTML` of its parent, so split tags stay balanced. */
-export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], ctx: HastRenderContext, inline = false): VNodeChild[] {
+/** Converts hast to Vue virtual nodes. */
+export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], ctx: HastRenderContext): VNodeChild[] {
   return nodes.map((node): VNodeChild => {
-    if (node.type === 'text') return node.value
-    if (node.type === 'raw') return raw(node.value, inline)
-    if (node.type !== 'element') return null
-    const custom = COMPONENTS[node.tagName]
-    if (custom) {
-      const [component, props] = custom(node.properties)
+    const own = asViewerNode(node)
+    if (own) {
+      const [component, props] = viewerComponent(own)
       return h(component, props)
     }
+    if (node.type === 'text') return node.value
+    if (node.type !== 'element') return null
     const attrs = attributes(node.properties)
     const item = node.properties.dataPmItem
     if (typeof item === 'number' && ctx.hidden?.(item)) attrs.class = [attrs.class, 'pm-hidden']
-    if (node.children.some(c => c.type === 'raw')) {
-      return h(node.tagName, { ...attrs, innerHTML: toHtml({ type: 'root', children: node.children }, { allowDangerousHtml: true }) })
-    }
-    return h(node.tagName, attrs, hastToVNodes(node.children, ctx, true))
+    if (RAW_TEXT.has(node.tagName)) return h(node.tagName, { ...attrs, innerHTML: node.children.map(c => (c.type === 'text' ? c.value : '')).join('') })
+    return h(node.tagName, attrs, hastToVNodes(node.children, ctx))
   })
 }
 

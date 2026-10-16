@@ -1,12 +1,13 @@
 import { presmiumReport, presmiumService } from '@presmium/host'
 import type { HostAdapter, ViewRole } from '@presmium/host'
+import { isRecord } from '@presmium/kernel'
 import { configs, useNav, useSlideContext } from '@slidev/client'
 import { computed } from 'vue'
 import { presmiumConfig } from '../domain/index.ts'
 import { sharedStates } from './shared.ts'
 
 function record(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+  return isRecord(value) ? value : {}
 }
 
 /** The frontmatter of the slide that renders the caller; the current slide's outside slides (global layers). */

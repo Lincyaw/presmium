@@ -123,23 +123,45 @@ function useModal(root: Readonly<Ref<HTMLElement | undefined>>): void {
   })
 }
 
+/** How the content of a slide is fitted to its frame: its layout width, its scale, the height it shows at and its shift to the centre. */
+interface Fitted {
+  width?: number
+  scale: number
+  height: number
+  shift: number
+}
+
 /**
  * Fits the content of a slide to its frame (N-05): content taller than the
- * frame is scaled down, as a slide is, so nothing is cut off at any screen
- * size. Hidden steps keep their place, so the scale is the same at every step.
- * The scaled content's box gets the scaled height, so the frame never overflows.
+ * frame, or wider (a listing or a table whose lines are longer than the
+ * frame), is scaled down as a slide is, so nothing is cut off or scrolls at
+ * any screen size. Wide content is laid out wider by what it lacks, then the
+ * whole is scaled to the frame. Hidden steps keep their place, so the scale
+ * is the same at every step. The scaled content's box gets the scaled height,
+ * so the frame never overflows.
  */
 function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly<Ref<HTMLElement | undefined>>) {
-  const fitted = ref<{ scale: number, height: number }>()
+  const fitted = ref<Fitted>()
   const fit = () => {
     const [outer, inner] = [frame.value, content.value]
     if (!outer || !inner) return
     const style = getComputedStyle(outer)
-    const available = outer.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom) - 1
-    // The layout height: a transform does not change it.
+    const available = {
+      height: outer.clientHeight - Number.parseFloat(style.paddingTop) - Number.parseFloat(style.paddingBottom) - 1,
+      width: outer.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
+    }
+    if (available.height <= 0 || available.width <= 0) return
+    // Measured at the frame's width (a transform changes no layout size), then at the width wide content needs.
+    inner.style.width = ''
+    const wide = Math.max(0, ...[...inner.querySelectorAll<HTMLElement>('pre, table, .pm-block, .pm-mermaid, .pm-math--display')].map(el => el.scrollWidth - el.clientWidth))
+    const width = available.width + wide
+    if (wide > 0) inner.style.width = `${width}px`
     const natural = inner.offsetHeight
-    const next = natural > available && available > 0 ? { scale: available / natural, height: available } : undefined
-    if (next?.scale !== fitted.value?.scale || next?.height !== fitted.value?.height) fitted.value = next
+    const scale = Math.min(1, available.width / width, available.height / natural)
+    const next = scale < 1 ? { width: wide > 0 ? width : undefined, scale, height: natural * scale, shift: (available.width - width * scale) / 2 } : undefined
+    if (JSON.stringify(next) !== JSON.stringify(fitted.value)) fitted.value = next
+    // The render sets the same width; it does not patch a style that has not changed.
+    else if (next?.width) inner.style.width = `${next.width}px`
   }
   let observer: ResizeObserver | undefined
   onMounted(() => {
@@ -154,12 +176,34 @@ function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly
   return fitted
 }
 
-/** The current section and step, given to the components inside as `SECTION_CONTEXT`. */
-function useCurrent(viewer: Viewer) {
+/**
+ * The height of an overlay view's control bar, as the CSS variable
+ * `--pm-overlay-bar` of the page (`<html>`), so what lies over the view in
+ * the body (e.g. a classroom badge) keeps clear of it.
+ */
+function useOverlayBar(bar: Readonly<Ref<HTMLElement | undefined>>): void {
+  const root = () => document.documentElement.style
+  let observer: ResizeObserver | undefined
+  onMounted(() => {
+    const el = bar.value
+    if (!el) return
+    const update = () => root().setProperty('--pm-overlay-bar', `${el.offsetHeight}px`)
+    update()
+    observer = new ResizeObserver(update)
+    observer.observe(el)
+  })
+  onBeforeUnmount(() => {
+    observer?.disconnect()
+    root().removeProperty('--pm-overlay-bar')
+  })
+}
+
+/** The current section and step, given to the components inside as `SECTION_CONTEXT` of view `view`. */
+function useCurrent(viewer: Viewer, view: string) {
   const section = computed(() => viewer.section(viewer.position.value.section))
   const step = computed(() => viewer.position.value.step)
   // Rendered only while the section exists.
-  provide(SECTION_CONTEXT, { section: section as Readonly<Ref<IRSection>>, step })
+  provide(SECTION_CONTEXT, { section: section as Readonly<Ref<IRSection>>, step, view: computed(() => view) })
   return { section, step }
 }
 
@@ -191,11 +235,13 @@ export const PresentView = defineComponent({
   name: 'PmPresentView',
   setup() {
     const viewer = useViewer()
-    const { section, step } = useCurrent(viewer)
+    const { section, step } = useCurrent(viewer, 'present')
     const root = shallowRef<HTMLElement>()
     const frame = shallowRef<HTMLElement>()
     const content = shallowRef<HTMLElement>()
+    const bar = shallowRef<HTMLElement>()
     const fitted = useFit(frame, content)
+    useOverlayBar(bar)
     overview.value = false
     const closeOverview = () => {
       overview.value = false
@@ -249,7 +295,9 @@ export const PresentView = defineComponent({
             key: current.id,
             ref: content,
             class: 'pm-present__content',
-            style: fitted.value ? { transform: `scale(${fitted.value.scale})` } : undefined,
+            style: fitted.value
+              ? { width: fitted.value.width ? `${fitted.value.width}px` : undefined, transform: `translateX(${fitted.value.shift}px) scale(${fitted.value.scale})` }
+              : undefined,
           }, [
             h('h1', { class: 'pm-present__title' }, current.title),
             ...visuals(current, step.value),
@@ -265,7 +313,7 @@ export const PresentView = defineComponent({
               }, [h('span', { class: 'pm-overview__index' }, String(s.index)), h('span', { class: 'pm-overview__title' }, s.title)])))))
             : null,
         ]),
-        h('div', { class: 'pm-present__bar' }, [
+        h('div', { ref: bar, class: 'pm-present__bar' }, [
           h('span', { class: 'pm-present__counter' }, t.present.counter(current.index, sections.length, step.value, current.steps)),
           button(t.present.prev, () => viewer.prev()),
           button(t.present.next, () => viewer.next()),
@@ -289,9 +337,11 @@ export const PresenterView = defineComponent({
   name: 'PmPresenterView',
   setup() {
     const viewer = useViewer()
-    const { section, step } = useCurrent(viewer)
+    const { section, step } = useCurrent(viewer, 'presenter')
     const root = shallowRef<HTMLElement>()
+    const bar = shallowRef<HTMLElement>()
     useActions(viewer, 'presenter')
+    useOverlayBar(bar)
     useModal(root)
     const started = ref(Date.now())
     const now = ref(Date.now())
@@ -317,16 +367,17 @@ export const PresenterView = defineComponent({
       const t = messages()
       const notes = current.blocks.filter(b => b.role === 'narration')
       return h('div', { 'ref': root, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step.value }, [
-        h('div', { class: 'pm-presenter__bar' }, [
+        h('div', { ref: bar, class: 'pm-presenter__bar' }, [
           h('strong', { class: 'pm-presenter__title' }, `${current.index}. ${current.title}`),
-          h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step.value, current.steps)),
+          current.steps > 0 ? h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step.value, current.steps)) : null,
           h('span', { 'class': 'pm-presenter__timer', 'aria-label': t.presenter.timer }, clock(now.value - started.value)),
           button(t.presenter.restart, () => started.value = now.value = Date.now()),
           button(t.present.prev, () => viewer.prev()),
           button(t.present.next, () => viewer.next()),
         ]),
         h('div', { class: 'pm-presenter__main' }, [
-          h('div', { key: current.id, class: 'pm-presenter__slide' }, visuals(current, step.value)),
+          // What the audience sees: the section's title, then its visual blocks at this step.
+          h('div', { key: current.id, class: 'pm-presenter__slide' }, [h('h1', { class: 'pm-present__title' }, current.title), ...visuals(current, step.value)]),
           h('div', { class: 'pm-presenter__side' }, [
             h('p', { class: 'pm-presenter__label' }, t.presenter.notes),
             h('div', { class: 'pm-presenter__notes' }, notes.length

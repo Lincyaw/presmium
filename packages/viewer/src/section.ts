@@ -1,7 +1,7 @@
 import type { IRBlock, IRSection } from '@presmium/kernel'
 import type { InjectionKey, PropType, Ref, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRef } from 'vue'
-import { BlockView } from './block.ts'
+import { BlockView, isOverlay } from './block.ts'
 import { SECTION_CONTEXT } from './context.ts'
 import { FINAL_STEP, isChapterTitle, narrationAt, sectionDiagnostics, stepAtLine } from './domain/index.ts'
 import type { Position } from './domain/index.ts'
@@ -13,6 +13,13 @@ export type SectionLayout = 'document' | 'scrolly'
 
 /** Share of the viewport height, from the top, that a step marker must pass to become current. */
 export const STEP_LINE = 0.6
+
+/**
+ * Share of the viewport height, from the top, that a section's top must pass
+ * to become the section read: a section whose heading is near the top of the
+ * screen, rather than one whose start has reached the step line.
+ */
+const READ_LINE = 0.25
 
 interface Tracked {
   el: HTMLElement
@@ -43,39 +50,70 @@ function markers(el: HTMLElement): HTMLElement[] {
 }
 
 /**
- * `report` gets the section at the reading line, with its step when it is a
- * scrolly section. After `scrollTo`, nothing is reported until the reader
- * scrolls, so a restored position is not replaced by a nearby section.
+ * `report` gets the section read (the last one whose top has passed the
+ * reading line, near the top of the screen), with its step when it is a
+ * scrolly section. After `scrollTo` (an explicit navigation: a link to a
+ * section, a view switch), nothing is reported until the reader scrolls, so
+ * the target stays the section read even where the page cannot scroll it to
+ * the top; until then, content that lays out late above it (components that
+ * load in the browser, diagrams) does not push it away: it is scrolled to again.
  */
 export function createPageTracker(report: (section: string, step?: number) => void, active: () => boolean): PageTracker {
   const tracked = new Set<Tracked>()
   let frame = 0
   let restoredY: number | undefined
+  /** The target of the last `scrollTo`, while the reader has not scrolled since. */
+  let pinned: Position | undefined
+  const resized = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => schedule())
+  const scrolled = () => restoredY !== undefined && Math.abs(window.scrollY - restoredY) >= 2
 
   const update = () => {
     frame = 0
-    const line = window.innerHeight * STEP_LINE
+    const steps = window.innerHeight * STEP_LINE
+    const line = window.innerHeight * READ_LINE
     let reading: { section: Tracked, top: number } | undefined
     let first: { section: Tracked, top: number } | undefined
     for (const section of tracked) {
       if (section.layout() === 'scrolly') {
-        section.step.value = stepAtLine(markers(section.el).map(m => ({ step: Number(m.dataset.step), top: m.getBoundingClientRect().top })), line)
+        section.step.value = stepAtLine(markers(section.el).map(m => ({ step: Number(m.dataset.step), top: m.getBoundingClientRect().top })), steps)
       }
       const top = section.el.getBoundingClientRect().top
       if (top <= line && (!reading || top > reading.top)) reading = { section, top }
       if (!first || top < first.top) first = { section, top }
     }
-    if (!active() || (restoredY !== undefined && Math.abs(window.scrollY - restoredY) < 2)) return
+    if (restoredY !== undefined && !scrolled()) {
+      // Not scrolled since the last navigation: keep its target in place if content above it moved.
+      if (pinned) place(pinned)
+      return
+    }
     restoredY = undefined
+    pinned = undefined
+    if (!active()) return
     const current = (reading ?? first)?.section
     if (current) report(current.id(), current.layout() === 'scrolly' ? current.step.value : undefined)
   }
   const schedule = () => {
     frame ||= requestAnimationFrame(update)
   }
+  /** Scrolls to a position on this page; false when its section is not here. */
+  const place = (position: Position): boolean => {
+    const section = [...tracked].find(s => s.id() === position.section)
+    if (!section) return false
+    const marker = section.layout() === 'scrolly'
+      ? markers(section.el).filter(m => Number(m.dataset.step) <= position.step).at(-1)
+      : undefined
+    const top = marker
+      // The marker of the step just passes the step line.
+      ? window.scrollY + marker.getBoundingClientRect().top - window.innerHeight * STEP_LINE + 1
+      : window.scrollY + section.el.getBoundingClientRect().top - Number.parseFloat(getComputedStyle(section.el).scrollMarginTop || '0')
+    if (Math.abs(window.scrollY - Math.max(top, 0)) >= 1) window.scrollTo({ top, behavior: 'instant' })
+    restoredY = window.scrollY
+    return true
+  }
   const dispose = () => {
     cancelAnimationFrame(frame)
     frame = 0
+    resized?.disconnect()
     window.removeEventListener('scroll', schedule)
     window.removeEventListener('resize', schedule)
   }
@@ -87,9 +125,11 @@ export function createPageTracker(report: (section: string, step?: number) => vo
         window.addEventListener('resize', schedule)
       }
       tracked.add(section)
+      resized?.observe(section.el)
       schedule()
       return () => {
         tracked.delete(section)
+        resized?.unobserve(section.el)
         if (tracked.size === 0) dispose()
       }
     },
@@ -117,19 +157,8 @@ export function createPageTracker(report: (section: string, step?: number) => vo
       }
     },
     scrollTo(position) {
-      const section = [...tracked].find(s => s.id() === position.section)
-      if (!section) return false
-      const marker = section.layout() === 'scrolly'
-        ? markers(section.el).filter(m => Number(m.dataset.step) <= position.step).at(-1)
-        : undefined
-      if (marker) {
-        // The marker of the step just passes the reading line.
-        const line = window.innerHeight * STEP_LINE
-        window.scrollTo({ top: window.scrollY + marker.getBoundingClientRect().top - line + 1, behavior: 'instant' })
-      } else {
-        section.el.scrollIntoView({ block: 'start', behavior: 'instant' })
-      }
-      restoredY = window.scrollY
+      if (!place(position)) return false
+      pinned = position
       schedule()
       return true
     },
@@ -144,6 +173,8 @@ function blockViews(blocks: IRBlock[], section: IRSection, step: number, expande
 /**
  * The blocks of a section in the document layout: narration as body text,
  * each run of visual blocks (what the slide shows) together on a board.
+ * Overlays (`ComponentNode.layer`), which draw over other content, stand
+ * outside the boards, so a board never holds only them.
  */
 function documentBlocks(section: IRSection, step: number): VNodeChild[] {
   const children: VNodeChild[] = []
@@ -153,11 +184,11 @@ function documentBlocks(section: IRSection, step: number): VNodeChild[] {
     board = []
   }
   for (const block of section.blocks) {
-    if (block.role === 'visual') {
+    if (block.role === 'visual' && !isOverlay(block)) {
       board.push(block)
       continue
     }
-    flush()
+    if (block.role === 'narration') flush()
     children.push(h(BlockView, { key: block.id, block, section, step, expanded: true }))
   }
   flush()
@@ -181,7 +212,7 @@ export const SectionView = defineComponent({
     const el = shallowRef<HTMLElement>()
     const scrolled = ref(0)
     const step = computed(() => (props.layout === 'scrolly' ? scrolled.value : FINAL_STEP))
-    provide(SECTION_CONTEXT, { section: toRef(props, 'section'), step })
+    provide(SECTION_CONTEXT, { section: toRef(props, 'section'), step, view: viewer.pageView })
 
     let untrack: (() => void) | undefined
     onMounted(() => {
@@ -201,8 +232,11 @@ export const SectionView = defineComponent({
       const body = layout === 'scrolly' && section.blocks.some(b => b.role === 'visual')
         ? [
             h('div', { class: 'pm-stage pm-board' }, blockViews(section.blocks.filter(b => b.role === 'visual'), section, current, false)),
-            h('div', { class: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) =>
-              h('div', { 'key': k, 'class': ['pm-step', { 'pm-step--current': k === current }], 'data-step': k }, blockViews(narrationAt(section, k), section, current, false)))),
+            // A step without narration (a component's own step) takes less of the track.
+            h('div', { class: 'pm-track' }, Array.from({ length: section.steps + 1 }, (_, k) => {
+              const narration = narrationAt(section, k)
+              return h('div', { 'key': k, 'class': ['pm-step', { 'pm-step--current': k === current, 'pm-step--bare': narration.length === 0 }], 'data-step': k }, blockViews(narration, section, current, false))
+            })),
           ]
         : [h('div', { class: 'pm-section__body' }, documentBlocks(section, current))]
       return h('section', {

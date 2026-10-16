@@ -4,6 +4,7 @@ lang: en-US
 plugins:
   - '@presmium/slidev-addon-core'
   - '@presmium/slidev-addon-session'
+  - '@presmium/slidev-addon-stage'
   - ./plugin
 presmium:
   fixture.core: { label: global }
@@ -62,6 +63,9 @@ The rest of the slide renders.
 :::
 
 ```{include} pages/motion.md
+```
+
+```{include} pages/errors.md
 ```
 
 ```{include} pages/host.md

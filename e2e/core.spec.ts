@@ -1,11 +1,10 @@
-import { spawn } from 'node:child_process'
-import type { ChildProcess } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { fixtureDeck } from './fixtures/core/deck.ts'
-import type { FixtureDeck } from './fixtures/core/deck.ts'
+import { deckDir, openDevPage, startDev } from './fixtures/deck.ts'
+import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 
 declare global {
   interface Window {
@@ -95,33 +94,17 @@ interface DevDeck {
 const devTest = test.extend<{ devDeck: DevDeck }>({
   // Playwright reads the fixtures a fixture uses from its first parameter, so it must be a pattern.
   devDeck: async ({}, use) => {
-    const work = resolve('examples/demo/.presmium')
-    mkdirSync(work, { recursive: true })
-    const dir = mkdtempSync(join(work, 'e2e-slides-'))
-    writeFileSync(join(dir, '.gitignore'), '*\n')
+    const dir = deckDir('slides')
     writeFileSync(join(dir, 'lecture.md'), DEV_DECK)
-    let child: ChildProcess | undefined
+    let server: DevServer | undefined
     await use({
       file: join(dir, 'lecture.md'),
-      serve() {
-        const server = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'dev', '--to', 'slides'], { cwd: dir, stdio: ['ignore', 'pipe', 'inherit'] })
-        child = server
-        return new Promise<string>((done, fail) => {
-          let output = ''
-          server.stdout!.on('data', (chunk: Buffer) => {
-            output += chunk
-            const match = /^slides {2}(http\S+)$/m.exec(output)
-            if (match) done(match[1]!)
-          })
-          server.once('exit', code => fail(new Error(`presmium dev exited (${code}):\n${output}`)))
-        })
+      async serve() {
+        server = await startDev(dir, 'slides')
+        return server.url
       },
     })
-    if (child && child.exitCode === null && child.signalCode === null) {
-      const exited = new Promise(done => child!.once('exit', done))
-      child.kill('SIGTERM')
-      await exited
-    }
+    await server?.stop()
     rmSync(dir, { recursive: true, force: true })
   },
 })
@@ -129,13 +112,8 @@ const devTest = test.extend<{ devDeck: DevDeck }>({
 devTest('presmium dev serves the slides with Slidev and updates them when the source changes, without a reload', async ({ page, devDeck }) => {
   devTest.setTimeout(180_000)
   const url = await devDeck.serve()
-  // The first visit may reload once while Vite optimizes the dependencies.
   const slide = page.locator('.slidev-page-2')
-  for (let visit = 0; visit < 2; visit++) {
-    await page.goto(`${url}2`)
-    await expect(slide).toContainText('编辑前的内容', { timeout: 60_000 })
-    await page.waitForLoadState('networkidle')
-  }
+  await openDevPage(page, `${url}2`, slide.filter({ hasText: '编辑前的内容' }))
   await page.evaluate(() => {
     (window as { marker?: boolean }).marker = true
   })
@@ -262,6 +240,38 @@ test.describe('the fixture deck in the slides form', () => {
     await open(page, presenter('lifecycle'))
     const panels = await openPanels(page)
     await expect(panels.locator('.pm-component-errors [data-component="FixtureBroken"]')).toBeVisible()
+  })
+
+  test('a component that throws in its own setup shows a placeholder in both forms; the presenter lists its one error', async ({ page }) => {
+    await open(page, slide('setup-error'))
+    const own = shown(page, 'setup-error')
+    await expect(own.locator('[data-pm-error="FixtureSetupThrows"]')).toContainText('fixture setup threw on purpose')
+    await expect(own).toContainText('the rest of the slide renders')
+    await open(page, presenter('setup-error'))
+    const panels = await openPanels(page)
+    await expect(panels.locator('.pm-component-errors li')).toHaveCount(1)
+    await expect(panels.locator('.pm-component-errors [data-component="FixtureSetupThrows"]')).toBeVisible()
+
+    // The web form: its page, and its presenter window.
+    await page.goto(`${deck.url}/web/errors.html`)
+    const section = page.locator('.pm-section[data-section="setup-error"]')
+    await expect(section.locator('[data-pm-error="FixtureSetupThrows"]')).toContainText('fixture setup threw on purpose')
+    await expect(section).toContainText('the rest of the slide renders')
+    await page.goto(`${deck.url}/web/errors.html?view=presenter&section=setup-error`)
+    await expect(page.locator('.pm-presenter__slide [data-pm-error="FixtureSetupThrows"]')).toBeVisible()
+    await page.locator('.pm-presenter-panels summary').click()
+    await expect(page.locator('.pm-component-errors li')).toHaveCount(1)
+  })
+
+  test('a control on a slide shows the keyboard focus', async ({ page }) => {
+    await open(page, slide('shared'))
+    const button = shown(page, 'shared').getByRole('button', { name: 'Add one' })
+    await expect(async () => {
+      await page.keyboard.press('Tab')
+      await expect(button).toBeFocused({ timeout: 100 })
+    }).toPass({ timeout: 30_000, intervals: [0] })
+    const focus = await button.evaluate(el => ({ outline: getComputedStyle(el).outlineStyle, shadow: getComputedStyle(el).boxShadow }))
+    expect(focus.outline !== 'none' || focus.shadow !== 'none', JSON.stringify(focus)).toBe(true)
   })
 
   test('a section\'s {config} overrides a plugin option on its slide only', async ({ page }) => {

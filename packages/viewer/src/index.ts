@@ -27,10 +27,10 @@ export function installViewer(app: App, viewer: Viewer): void {
   installSlideGlobals(app, viewer)
 }
 
-export { BlockView } from './block.ts'
+export { BlockView, PmComponentFallback } from './block.ts'
 export { CodeView } from './code.ts'
-export { BLOCK_CONTEXT, SECTION_CONTEXT, useBlockContext, useSectionContext } from './context.ts'
-export type { BlockContext, SectionContext } from './context.ts'
+export { SECTION_CONTEXT, useSectionContext } from './context.ts'
+export type { SectionContext } from './context.ts'
 export * from './domain/index.ts'
 export { sectionFrontmatter, withSlideGlobals } from './globals.ts'
 export { messages } from './i18n.ts'

@@ -23,23 +23,26 @@ interface Controller {
 export const BLOCK_CLASS = 'pm-block'
 
 const controllers = new WeakMap<Element, Controller>()
+/** The controller each element is registered with: an element that leaves on its own is out of its block by its `unmounted`. */
+const owners = new WeakMap<HTMLElement, Controller>()
 /** Elements mounted before their block (children mount first); claimed when it mounts. */
 const pending = new Map<HTMLElement, ClickSpec>()
 
-function controllerOf(el: HTMLElement): Controller | undefined {
-  const block = el.closest(`.${BLOCK_CLASS}`)
-  return block ? controllers.get(block) : undefined
-}
-
 function register(el: HTMLElement, spec: ClickSpec): void {
-  const controller = controllerOf(el)
-  if (controller) controller.add(el, spec)
-  else pending.set(el, spec)
+  const block = el.closest(`.${BLOCK_CLASS}`)
+  const controller = block ? controllers.get(block) : undefined
+  if (!controller) {
+    pending.set(el, spec)
+    return
+  }
+  owners.set(el, controller)
+  controller.add(el, spec)
 }
 
 function unregister(el: HTMLElement): void {
   pending.delete(el)
-  controllerOf(el)?.remove(el)
+  owners.get(el)?.remove(el)
+  owners.delete(el)
 }
 
 /**
@@ -54,19 +57,20 @@ export function trackClicks(block: HTMLElement, step: Readonly<Ref<number>>): ()
     const resolved = resolveClicks(ordered.map(el => specs.get(el)!))
     ranges.value = new Map(ordered.map((el, i) => [el, resolved[i]!]))
   }
-  controllers.set(block, {
+  const controller: Controller = {
     add(el, spec) {
       specs.set(el, spec)
       resolve()
     },
     remove(el) {
-      specs.delete(el)
-      resolve()
+      if (specs.delete(el)) resolve()
     },
-  })
+  }
+  controllers.set(block, controller)
   for (const [el, spec] of pending) {
     if (!block.contains(el)) continue
     pending.delete(el)
+    owners.set(el, controller)
     specs.set(el, spec)
   }
   resolve()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // N labels take N internal steps after the initial state (`:span: N`): internal step k reveals
 // label k and highlights it until the next one. Steps count from the component's block.
-import { PmBoundary, useStepScope, useStepState } from '@presmium/host'
+import { useStepScope, useStepState } from '@presmium/host'
 import { computed } from 'vue'
 
 const props = defineProps<{ steps: string[] }>()
@@ -17,11 +17,9 @@ function status(i: number): string {
 </script>
 
 <template>
-  <PmBoundary name="FixtureStepper">
-    <ol class="fx-stepper" :data-step="reached">
-      <li v-for="(label, i) in steps" :key="label" v-click="scope.step(i + 1)" :data-status="status(i)">
-        {{ label }}
-      </li>
-    </ol>
-  </PmBoundary>
+  <ol class="fx-stepper" :data-step="reached">
+    <li v-for="(label, i) in steps" :key="label" v-click="scope.step(i + 1)" :data-status="status(i)">
+      {{ label }}
+    </li>
+  </ol>
 </template>

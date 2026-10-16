@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmBoundary, useMessages, useService, useStartReport } from '@presmium/host'
+import { useMessages, useService, useStartReport } from '@presmium/host'
 import { computed } from 'vue'
 import { DEMO_GREETING } from '../src/client/demo.ts'
 
@@ -16,9 +16,7 @@ const text = computed(() => greeting.value ?? (report.value ? t.value.unavailabl
 </script>
 
 <template>
-  <PmBoundary name="PmDemoGreeting">
-    <p class="pm-demo-greeting">
-      {{ text }}
-    </p>
-  </PmBoundary>
+  <p class="pm-demo-greeting">
+    {{ text }}
+  </p>
 </template>

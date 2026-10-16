@@ -1,7 +1,7 @@
 export { formOptions, offlineEnabled, rendererConfig, WEB_ID } from './config.ts'
 export type { FormOptions, WebRendererConfig } from './config.ts'
 export { SITE_LABELS, WEB_MESSAGES } from './messages.ts'
-export { requested, SERVICE_WORKER, SLIDE_PARAM, slideUrl, SOURCE_ENDPOINT, webUrl } from './links.ts'
+export { IR_ENDPOINT, requested, SERVICE_WORKER, SLIDE_PARAM, slideUrl, SOURCE_ENDPOINT, urlPath, viewSearch, webUrl } from './links.ts'
 export type { Requested } from './links.ts'
 export { pageLink, pageMarkdown, pageOf, searchDocuments, sectionLinks, sidebar, toPages } from './pages.ts'
 export type { SearchDocument, SidebarItem, WebPage } from './pages.ts'

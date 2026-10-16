@@ -1,18 +1,23 @@
-import { spawn } from 'node:child_process'
-import type { ChildProcess } from 'node:child_process'
-import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:http'
-import type { AddressInfo } from 'node:net'
-import { extname, join, resolve, sep } from 'node:path'
+import { cpSync, existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
+import { buildFixture, deckDir, openDevPage, serve, startDev } from './fixtures/deck.ts'
+import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 import { webDeck } from './fixtures/web/deck.ts'
 import type { WebDeck } from './fixtures/web/deck.ts'
 
 // The IR runtime (@presmium/viewer) in the web form of the fixture decks: the reading deck of
 // e2e/fixtures/web/deck (cover; basics.html with `reading` and the scrolly section `scrolly`;
-// advanced.html with steppers and live code; wide-content.html), the decks under
-// e2e/fixtures/viewer, and `presmium dev` on e2e/fixtures/viewer/dev.
+// advanced.html with steppers, a run panel and a diagram, and live code; wide-content.html), the
+// decks under e2e/fixtures/viewer, and `presmium dev` on e2e/fixtures/viewer/dev.
+
+declare global {
+  interface Window {
+    /** The names of the BroadcastChannels the page has opened (`recordChannels`). */
+    channelNames?: string[]
+  }
+}
 
 const menu = (page: Page) => page.getByRole('combobox', { name: '视图' })
 
@@ -33,6 +38,26 @@ async function scrollToStep(page: Page, section: string, step: number) {
     await target.locator(`.pm-step[data-step="${step}"]`).evaluate(el => el.scrollIntoView({ block: 'center' }))
     await expect(target).toHaveAttribute('data-step', String(step), { timeout: 500 })
   }).toPass()
+}
+
+/** Records the name of every BroadcastChannel the pages of `context` open, in `window.channelNames`. */
+async function recordChannels(context: BrowserContext) {
+  await context.addInitScript(() => {
+    const names: string[] = []
+    window.channelNames = names
+    const Native = BroadcastChannel
+    window.BroadcastChannel = class extends Native {
+      constructor(name: string) {
+        super(name)
+        names.push(name)
+      }
+    }
+  })
+}
+
+/** Whether two boxes overlap. */
+function overlap(a: { x: number, y: number, width: number, height: number }, b: typeof a): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 }
 
 test.describe('the reading fixture deck', () => {
@@ -106,8 +131,9 @@ test.describe('the reading fixture deck', () => {
     const [presenter] = await Promise.all([page.waitForEvent('popup'), present.getByRole('button', { name: '演讲者窗口' }).click()])
     const notes = presenter.locator('.pm-presenter')
     await expect(notes).toHaveAttribute('data-step', '3')
-    // The current screen shows what the audience sees at this step.
+    // The current screen shows what the audience sees at this step, under the section's title.
     await expect(notes.locator('.pm-presenter__slide .fx-stepper')).toHaveAttribute('data-step', '1')
+    await expect(notes.locator('.pm-presenter__slide .pm-present__title')).toHaveText('滚动叙事')
     await expect(notes.locator('.pm-presenter__slide')).not.toContainText('先是离线缓存')
     await expect(notes.locator('.pm-current')).toContainText('先是离线缓存')
     await expect(notes.locator('.pm-presenter__next')).toContainText('然后是形态互跳')
@@ -123,6 +149,28 @@ test.describe('the reading fixture deck', () => {
     await presenter.keyboard.press('ArrowRight')
     await expect(present).toHaveAttribute('data-section', 'scrolly')
     await expect(present).toHaveAttribute('data-step', '0')
+  })
+
+  test('the counters count steps from 1 and leave out a section without steps; the presenter panels stand beside the preview', async ({ page }) => {
+    const scrolly = deck.doc.sections.find(s => s.id === 'scrolly')!
+    const total = deck.doc.sections.length
+    await page.goto(deck.web('basics.html?view=present'))
+    const counter = page.locator('.pm-present__counter')
+    // `reading` has no steps.
+    await expect(counter).toHaveText(`2 / ${total}`)
+    await page.keyboard.press('ArrowRight')
+    await expect(counter).toHaveText(`3 / ${total} · 第 1 步，共 ${scrolly.steps + 1} 步`)
+    for (let step = 0; step < scrolly.steps; step++) await page.keyboard.press('ArrowRight')
+    await expect(counter).toHaveText(`3 / ${total} · 第 ${scrolly.steps + 1} 步，共 ${scrolly.steps + 1} 步`)
+
+    const [presenter] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')])
+    await expect(presenter.locator('.pm-presenter__counter')).toHaveText(`第 ${scrolly.steps + 1} 步，共 ${scrolly.steps + 1} 步`)
+    const panels = presenter.locator('.pm-presenter-panels')
+    await expect(panels.locator('summary')).toContainText('课堂与工具')
+    await panels.locator('summary').click()
+    await expect(panels.locator('[data-panel="presmium.core.start-report"]')).toBeVisible()
+    const [box, preview] = await Promise.all([panels.boundingBox(), presenter.locator('.pm-presenter__slide').boundingBox()])
+    expect(overlap(box!, preview!)).toBe(false)
   })
 
   test('the overview of the present view lists every section; Enter or a click jumps there', async ({ page }) => {
@@ -163,6 +211,44 @@ test.describe('the reading fixture deck', () => {
     await expect.poll(() => page.evaluate(() => (window as { fullscreen?: string }).fullscreen)).toBe('pm-present')
   })
 
+  test('a reload keeps the present view and the presenter window at their section and step (P-77)', async ({ page }) => {
+    await page.goto(deck.web('basics.html?view=present'))
+    const present = page.getByRole('region', { name: '放映' })
+    await expect(present).toHaveAttribute('data-section', 'reading')
+    // A section of another page, at a step of its own.
+    await page.keyboard.press('End')
+    await expect(present).toHaveAttribute('data-section', 'wide')
+    await page.keyboard.press('ArrowLeft')
+    const { section, step } = await present.evaluate(el => ({ section: (el as HTMLElement).dataset.section, step: (el as HTMLElement).dataset.step }))
+    await page.reload()
+    await expect(present).toHaveAttribute('data-section', section!)
+    await expect(present).toHaveAttribute('data-step', step!)
+
+    const [presenter] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')])
+    const notes = presenter.locator('.pm-presenter')
+    await expect(notes).toHaveAttribute('data-section', section!)
+    await presenter.keyboard.press('ArrowLeft')
+    const moved = await notes.evaluate(el => ({ section: (el as HTMLElement).dataset.section, step: (el as HTMLElement).dataset.step }))
+    await presenter.reload()
+    await expect(notes).toHaveAttribute('data-section', moved.section!)
+    await expect(notes).toHaveAttribute('data-step', moved.step!)
+    // Back in the page view, the address names no view.
+    await page.keyboard.press('Escape')
+    await expect(page).not.toHaveURL(/view=/)
+  })
+
+  test('a link to a section below content that loads late opens it at the top of the screen; the present view starts there', async ({ page }) => {
+    await page.goto(deck.web('advanced.html#live-code'))
+    // The run panel and the diagram above it render in the browser, after the page has loaded.
+    await expect(page.locator('.pm-section[data-section="panel"] .pm-mermaid[data-rendered]')).toBeAttached()
+    await expect(page.locator('.pm-section[data-section="panel"] .pm-client-only')).toHaveCount(0)
+    const heading = page.locator('h2#live-code')
+    await expect.poll(async () => Math.round((await heading.boundingBox())!.y), { timeout: 10_000 }).toBeLessThan(120)
+    await expect(heading).toBeInViewport()
+    await selectView(page, 'present')
+    await expect(page.getByRole('region', { name: '放映' })).toHaveAttribute('data-section', 'live-code')
+  })
+
   test('after two reloads, code that also runs live still runs in the browser', async ({ page }) => {
     await page.goto(deck.web('advanced.html'))
     await page.reload()
@@ -201,17 +287,18 @@ test.describe('the reading fixture deck', () => {
     expect(await page.locator('[inert]').count()).toBe(0)
   })
 
-  test('the present view fits every section to the screen, wide code and tables too', async ({ page }) => {
-    test.setTimeout(180_000)
+  test('the present view fits every section to the screen at the usual projector resolutions, wide code and tables too', async ({ page }) => {
+    test.setTimeout(300_000)
     const { sections } = deck.doc
-    // Whether the slide's content reaches past its frame, which would cut it off.
+    // Whether the slide's content reaches past its frame, which would cut it off, or a listing or a table of it scrolls.
     const overflows = () => page.locator('.pm-present__slide').evaluate((frame) => {
       const content = frame.querySelector('.pm-present__content')!.getBoundingClientRect()
       const box = frame.getBoundingClientRect()
-      return frame.scrollHeight > frame.clientHeight + 1 || frame.scrollWidth > frame.clientWidth + 1 || content.bottom > box.bottom + 1
+      const scrolls = [...frame.querySelectorAll('pre, table')].some(el => el.scrollWidth > el.clientWidth + 1)
+      return scrolls || frame.scrollHeight > frame.clientHeight + 1 || frame.scrollWidth > frame.clientWidth + 1 || content.bottom > box.bottom + 1
     })
     const present = page.getByRole('region', { name: '放映' })
-    for (const [width, height] of [[1280, 720], [1024, 768], [1280, 800]] as const) {
+    for (const [width, height] of [[1920, 1080], [1440, 900], [1366, 768], [1280, 720], [1280, 800], [1024, 768]] as const) {
       await page.setViewportSize({ width, height })
       await page.goto(deck.web('?view=present'))
       // Every section at its first and its last step, paging on from one section to the next.
@@ -225,51 +312,55 @@ test.describe('the reading fixture deck', () => {
       }
     }
   })
+
+  test('the windows of a presentation share a channel of this deck: its name carries the base', async ({ context }) => {
+    await recordChannels(context)
+    const page = await context.newPage()
+    await page.goto(deck.web('basics.html?view=present'))
+    await expect(page.getByRole('region', { name: '放映' })).toHaveAttribute('data-section', 'reading')
+    await expect.poll(() => page.evaluate(() => window.channelNames ?? [])).toContain('presmium.viewer.position:网页阅读测试文稿 @ /web/')
+  })
 })
 
-/** Serves a build directory on a free port. */
-async function serve(dir: string): Promise<{ url: string, close(): Promise<void> }> {
-  const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' }
-  const server = createServer((request, response) => {
-    let file = join(dir, decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname))
-    if (!file.startsWith(dir + sep)) file = join(dir, 'index.html')
-    if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
-    const found = existsSync(file)
-    response.writeHead(found ? 200 : 404, { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' })
-    createReadStream(found ? file : join(dir, '404.html')).pipe(response)
+test.describe('two decks of the same title under two bases of one origin (e2e/fixtures/viewer/en)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  const decks: FixtureDeck[] = []
+  let site: Awaited<ReturnType<typeof serve>>
+  let root: string
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    const base = (path: string) => (dir: string) => {
+      const file = join(dir, 'lecture.md')
+      writeFileSync(file, readFileSync(file, 'utf8').replace('  web: {}', `  web: { base: ${path} }`))
+    }
+    decks.push(...await Promise.all(['/a/', '/b/'].map(path => buildFixture('viewer/en', { to: 'web', edit: base(path) }))))
+    root = deckDir('bases')
+    symlinkSync(join(decks[0]!.dir, 'dist/web'), join(root, 'a'), 'junction')
+    symlinkSync(join(decks[1]!.dir, 'dist/web'), join(root, 'b'), 'junction')
+    site = await serve(root)
   })
-  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
-  return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, close: () => new Promise(done => server.close(() => done())) }
-}
+  test.afterAll(async () => {
+    await site?.close()
+    await Promise.all(decks.map(deck => deck.close()))
+    if (root) rmSync(root, { recursive: true, force: true })
+  })
 
-/**
- * The web form of a fixture deck (e2e/fixtures/viewer/<name>), built by `presmium build --to web`
- * in a directory of its own inside the demo, so the renderers and plugins resolve.
- */
-async function buildFixture(name: string): Promise<{ url: string, close(): Promise<void> }> {
-  const work = resolve('examples/demo/.presmium')
-  mkdirSync(work, { recursive: true })
-  const deck = mkdtempSync(join(work, `e2e-${name}-`))
-  writeFileSync(join(deck, '.gitignore'), '*\n')
-  cpSync(resolve('e2e/fixtures/viewer', name), deck, { recursive: true })
-  const child = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'build', '--to', 'web'], { cwd: deck, stdio: ['ignore', 'pipe', 'pipe'] })
-  let output = ''
-  child.stdout!.on('data', (chunk: Buffer) => output += chunk)
-  child.stderr!.on('data', (chunk: Buffer) => output += chunk)
-  const code = await new Promise<number | null>(done => child.once('exit', done))
-  if (code !== 0) {
-    rmSync(deck, { recursive: true, force: true })
-    throw new Error(`presmium build exited (${code}):\n${output}`)
-  }
-  const server = await serve(join(deck, 'dist/web'))
-  return {
-    url: server.url,
-    async close() {
-      await server.close()
-      rmSync(deck, { recursive: true, force: true })
-    },
-  }
-}
+  test('paging or blacking out one leaves the other as it is', async ({ context }) => {
+    const [a, b] = [await context.newPage(), await context.newPage()]
+    for (const [page, path] of [[a, 'a'], [b, 'b']] as const) {
+      await page.goto(`${site.url}/${path}/?view=present&section=steps`)
+      await expect(page.getByRole('region', { name: 'Presentation' })).toHaveAttribute('data-step', '0')
+    }
+    await a.keyboard.press('ArrowRight')
+    await a.keyboard.press('b')
+    await expect(a.getByRole('region', { name: 'Presentation' })).toHaveAttribute('data-step', '1')
+    await expect(a.locator('.pm-stage-black')).toBeVisible()
+    // Time for a message to arrive, were there one.
+    await b.waitForTimeout(500)
+    await expect(b.getByRole('region', { name: 'Presentation' })).toHaveAttribute('data-step', '0')
+    await expect(b.locator('.pm-stage-black')).toHaveCount(0)
+  })
+})
 
 /** Console messages of a page that report a hydration mismatch. */
 function hydrationMismatches(page: Page): string[] {
@@ -280,18 +371,18 @@ function hydrationMismatches(page: Page): string[] {
   return found
 }
 
-test.describe('MyST roles and directives (e2e/fixtures/viewer/myst)', () => {
-  test.describe.configure({ timeout: 120_000 })
-  let site: Awaited<ReturnType<typeof buildFixture>>
+test.describe('MyST roles and directives, raw HTML and code origins (e2e/fixtures/viewer/myst)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let site: FixtureDeck
   test.beforeAll(async () => {
-    test.setTimeout(180_000)
-    site = await buildFixture('myst')
+    test.setTimeout(300_000)
+    site = await buildFixture('viewer/myst', { to: 'web' })
   })
   test.afterAll(() => site?.close())
 
   test('render as their HTML elements, and the page hydrates without a mismatch', async ({ page }) => {
     const mismatches = hydrationMismatches(page)
-    await page.goto(site.url)
+    await page.goto(site.web)
     const roles = page.locator('.pm-section[data-section="myst-roles"]')
     await expect(roles.locator('p kbd')).toHaveText(['Ctrl', 'K'])
     await expect(roles.locator('p sub')).toHaveText('2')
@@ -318,23 +409,76 @@ test.describe('MyST roles and directives (e2e/fixtures/viewer/myst)', () => {
     await page.waitForLoadState('networkidle')
     expect(mismatches).toEqual([])
   })
+
+  test('math beside raw HTML renders, in a paragraph and in a table cell with a line break; an iframe embeds its page', async ({ page }) => {
+    await page.goto(site.web)
+    const raw = page.locator('.pm-section[data-section="raw-html"]')
+    const paragraph = raw.locator('p', { hasText: 'Energy' })
+    await expect(paragraph.locator('b')).toHaveText('is')
+    await expect(paragraph.locator('.katex')).toHaveCount(1)
+    await expect(paragraph).toContainText('here.')
+    const cell = raw.locator('td').nth(1)
+    await expect(cell.locator('br')).toHaveCount(1)
+    await expect(cell.locator('.katex')).toHaveCount(1)
+    await expect(cell).toContainText('第一行')
+    await expect(cell).toContainText('也在')
+    await expect(raw.locator('td kbd')).toHaveText('Ctrl')
+
+    const figure = page.locator('.pm-section[data-section="embed"] figure')
+    await expect(figure.locator('iframe')).toHaveAttribute('src', 'https://example.com/')
+    await expect(figure.locator('figcaption')).toHaveText('嵌入的页面')
+  })
+
+  test('the origin bar names the version on screen and explains its badge; the output notes say what the run did', async ({ page }) => {
+    await page.goto(`${site.web}/?view=present&section=versions&step=0`)
+    const present = page.getByRole('region', { name: '放映' })
+    const file = present.locator('.pm-code-origin__file')
+    await expect(file).toHaveText('merge.py:1-2')
+    await expect(file).toHaveAttribute('href', /\/v1\/merge\.py#L1-L2$/)
+    await expect(present.locator('.pm-code-origin__variant[data-active]')).toHaveText('v1')
+    await page.keyboard.press('ArrowRight')
+    await expect(file).toHaveText('merge.py:11-13')
+    await expect(file).toHaveAttribute('href', /\/v2\/merge\.py#L11-L13$/)
+    await expect(present.locator('.pm-code-origin__variant[data-active]')).toHaveText('v2')
+
+    await page.goto(site.web)
+    const pinned = page.locator('.pm-section[data-section="pinned"]')
+    await expect(pinned.locator('.pm-code-origin__badge[data-drift="drifted"]')).toHaveAttribute('title', /presmium check/)
+    await expect(pinned.locator('.pm-output__note')).toHaveText('超时 · 退出码 1 · 预录输出')
+  })
+
+  test('a listing morphs from one version to the next; with reduced motion it is replaced at once', async ({ page }) => {
+    await page.goto(`${site.web}/?view=present&section=versions&step=0`)
+    const present = page.getByRole('region', { name: '放映' })
+    await expect(present.locator('.shiki-magic-move-container')).toBeVisible()
+    await page.keyboard.press('ArrowRight')
+    await expect(present.locator('.shiki-magic-move-container')).toContainText('new_id')
+
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto(`${site.web}/?view=present&section=versions&step=0`)
+    await expect(present.locator('.pm-code .shiki')).toContainText('return pair')
+    await page.keyboard.press('ArrowRight')
+    await expect(present.locator('.pm-code .shiki')).toContainText('new_id')
+    await expect(present.locator('.shiki-magic-move-container')).toHaveCount(0)
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(0)
+  })
 })
 
 test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
   test.describe.configure({ timeout: 120_000 })
-  let site: Awaited<ReturnType<typeof buildFixture>>
+  let site: FixtureDeck
   test.beforeAll(async () => {
-    test.setTimeout(180_000)
-    site = await buildFixture('en')
+    test.setTimeout(300_000)
+    site = await buildFixture('viewer/en', { to: 'web' })
   })
   test.afterAll(() => site?.close())
 
   test('the present view, the presenter window, the stage and the code controls speak English', async ({ page }) => {
     const mismatches = hydrationMismatches(page)
-    await page.goto(`${site.url}/?view=present&section=steps`)
+    await page.goto(`${site.web}/?view=present&section=steps`)
     const present = page.getByRole('region', { name: 'Presentation' })
     await expect(present).toHaveAttribute('data-section', 'steps')
-    await expect(present.locator('.pm-present__counter')).toHaveText('2 / 3 · step 0 of 1')
+    await expect(present.locator('.pm-present__counter')).toHaveText('2 / 3 · step 1 of 2')
     for (const name of ['Previous', 'Next', 'Overview', 'Presenter window', 'Full screen', 'Exit presentation']) {
       await expect(present.getByRole('button', { name, exact: true })).toBeVisible()
     }
@@ -345,9 +489,10 @@ test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
     const [presenter] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')])
     const notes = presenter.locator('.pm-presenter')
     await expect(notes.locator('.pm-stage-badge')).toHaveText('Audience view blacked out')
-    await expect(notes.locator('.pm-presenter__counter')).toHaveText('Step 0 of 1')
+    await expect(notes.locator('.pm-presenter__counter')).toHaveText('Step 1 of 2')
     await expect(notes.locator('.pm-presenter__label')).toHaveText(['Narration', 'Next'])
     await expect(notes.getByRole('button', { name: 'Restart timer' })).toBeVisible()
+    await expect(presenter.locator('.pm-presenter-panels summary')).toContainText('Panels')
     await presenter.keyboard.press('b')
     await expect(page.locator('.pm-stage-black')).toHaveCount(0)
 
@@ -365,51 +510,33 @@ test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
 })
 
 /**
- * `presmium dev --to web` on a copy of a deck, in a directory of its own inside
- * the demo (so the renderers and plugins resolve), printing the dev server URL.
+ * `presmium dev --to web` on a copy of a deck, in a directory of its own inside the demo (so the
+ * renderers and plugins resolve). Its "editor" records what it is asked to open.
  */
-async function startDev(files: string[]): Promise<{ deck: string, url: string, child: ChildProcess, stop(): Promise<void> }> {
-  const work = resolve('examples/demo/.presmium')
-  mkdirSync(work, { recursive: true })
-  const deck = mkdtempSync(join(work, 'e2e-'))
-  writeFileSync(join(deck, '.gitignore'), '*\n')
+async function devDeck(files: string[]): Promise<{ deck: string, url: string, stop(): Promise<void> }> {
+  const deck = deckDir('dev')
   for (const file of files) cpSync(file, join(deck, file.split('/').at(-1)!), { recursive: true })
-  // The "editor" records what it is asked to open.
   writeFileSync(join(deck, 'editor.sh'), `#!/bin/sh\nprintf '%s\\n' "$@" > '${join(deck, 'opened.txt')}'\n`, { mode: 0o755 })
-  const child = spawn(process.execPath, [resolve('packages/cli/bin/presmium.mjs'), 'dev', '--to', 'web'], {
-    cwd: deck,
-    stdio: ['ignore', 'pipe', 'inherit'],
-    env: { ...process.env, LAUNCH_EDITOR: join(deck, 'editor.sh') },
-  })
-  const stop = async () => {
-    if (child.exitCode === null) {
-      child.kill('SIGTERM')
-      await new Promise(done => child.once('exit', done))
-    }
+  let server: DevServer
+  try {
+    server = await startDev(deck, 'web', { LAUNCH_EDITOR: join(deck, 'editor.sh') })
+  } catch (error) {
     rmSync(deck, { recursive: true, force: true })
-  }
-  const url = await new Promise<string>((done, fail) => {
-    let output = ''
-    child.stdout!.on('data', (chunk: Buffer) => {
-      output += chunk
-      const match = /^web {2}(http\S+)$/m.exec(output)
-      if (match) done(match[1]!)
-    })
-    child.once('exit', code => fail(new Error(`presmium dev exited (${code}):\n${output}`)))
-  }).catch(async (error: unknown) => {
-    await stop()
     throw error
-  })
-  return { deck, url, child, stop }
+  }
+  return {
+    deck,
+    url: server.url,
+    async stop() {
+      await server.stop()
+      rmSync(deck, { recursive: true, force: true })
+    },
+  }
 }
 
-/** Opens a dev page once its dependencies are optimized (the first visit may reload the page once). */
-async function openDev(page: Page, url: string, ready: string) {
-  for (let visit = 0; visit < 2; visit++) {
-    await page.goto(url)
-    await expect(page.locator(ready).first()).toBeVisible()
-    await page.waitForLoadState('networkidle')
-  }
+/** Opens a dev page once its dependencies are optimized (`openDevPage`), when `ready` shows. */
+function openDev(page: Page, url: string, ready: string) {
+  return openDevPage(page, url, page.locator(ready).first())
 }
 
 /** Marks the window, so a reload shows as a missing mark. */
@@ -435,14 +562,14 @@ async function restingScroll(page: Page): Promise<number> {
 
 test.describe('presmium dev', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
-  let dev: Awaited<ReturnType<typeof startDev>>
+  let dev: Awaited<ReturnType<typeof devDeck>>
   test.beforeAll(async () => {
-    test.setTimeout(120_000)
-    dev = await startDev([resolve('e2e/fixtures/viewer/dev/lecture.md'), resolve('e2e/fixtures/viewer/dev/pages')])
+    test.setTimeout(180_000)
+    dev = await devDeck(['lecture.md', 'pages', 'plugin'].map(file => resolve('e2e/fixtures/viewer/dev', file)))
   })
   test.afterAll(() => dev?.stop())
-  const edit = (from: string | RegExp, to: string) => {
-    const file = join(dev.deck, 'pages/web.md')
+  const edit = (from: string | RegExp, to: string, page = 'web') => {
+    const file = join(dev.deck, `pages/${page}.md`)
     writeFileSync(file, readFileSync(file, 'utf8').replace(from, to))
   }
 
@@ -575,15 +702,83 @@ test.describe('presmium dev', () => {
     await result.click()
     await expect(page).toHaveURL(/\/web\.html#scrolly$/)
   })
+
+  test('a component that failed shows its content once the author fixes it, without a reload; the presenter\'s error count goes back to none', async ({ context }) => {
+    const page = await context.newPage()
+    await openDev(page, `${dev.url}live.html`, '.pm-section[data-section="components"]')
+    const section = page.locator('.pm-section[data-section="components"]')
+    await expect(section.locator('[data-pm-error="FixtureBoom"]')).toContainText('boom')
+    const presenter = await context.newPage()
+    await presenter.goto(`${dev.url}live.html?view=presenter&section=components`)
+    const badge = presenter.locator('.pm-presenter-panels__badge')
+    await expect(badge).toHaveText('1')
+    await mark(page)
+
+    edit('fail: true', 'fail: false', 'live')
+    await expect(section.locator('.fx-boom')).toHaveText('all good')
+    await expect(section.locator('[data-pm-error]')).toHaveCount(0)
+    await expect(badge).toHaveCount(0)
+    expect(await marked(page)).toBe(true)
+  })
+
+  test('a live update that removes a click target leaves the relative clicks after it at their steps', async ({ page }) => {
+    await openDev(page, `${dev.url}live.html?view=present&section=components&step=4`, '.pm-present .fx-clicks')
+    const last = page.locator('.pm-present .fx-clicks__last')
+    await expect(last).toHaveAttribute('data-pm-click', 'shown')
+    await page.keyboard.press('ArrowLeft')
+    await expect(last).toHaveAttribute('data-pm-click', 'hidden')
+
+    // One word less: the last mark comes one step earlier.
+    edit(':span: 4\nitems: [甲, 乙, 丙]', ':span: 3\nitems: [甲, 乙]', 'live')
+    await expect(page.locator('.pm-present .fx-clicks__item')).toHaveCount(2)
+    await expect(page.locator('.pm-present')).toHaveAttribute('data-step', '3')
+    await expect(last).toHaveAttribute('data-pm-click', 'shown')
+    await page.keyboard.press('ArrowLeft')
+    await expect(last).toHaveAttribute('data-pm-click', 'hidden')
+    await expect(page.locator('.pm-present .fx-clicks__item').nth(1)).toHaveAttribute('data-pm-click', 'shown')
+  })
+
+  test('renaming the title of the section on screen keeps the present view at its place', async ({ page }) => {
+    const id = (await (await page.request.get(`${dev.url}__presmium/ir`)).json() as { doc: { sections: { id: string, title: string }[] } })
+      .doc.sections.find(s => s.title === '会改名的一节')!.id
+    await openDev(page, `${dev.url}live.html?view=present&section=${encodeURIComponent(id)}&step=1`, '.pm-present')
+    const present = page.locator('.pm-present')
+    await expect(present).toHaveAttribute('data-step', '1')
+    edit('## 会改名的一节', '## 改过名的一节', 'live')
+    await expect(present.locator('.pm-present__title')).toHaveText('改过名的一节')
+    await expect(present).toHaveAttribute('data-step', '1')
+    await expect(present.locator('li').nth(1)).toBeVisible()
+  })
+
+  test('a page opened right after a save shows the saved text', async ({ page }) => {
+    await openDev(page, `${dev.url}live.html`, '.pm-section[data-section="slow"]')
+    edit('这段代码运行四秒。', '这段代码运行四秒，保存后立即打开。', 'live')
+    await page.goto(`${dev.url}live.html`)
+    await expect(page.locator('.pm-section[data-section="slow"]')).toContainText('保存后立即打开', { timeout: 15_000 })
+  })
+
+  test('the output of a run of code that changed while it ran is not shown', async ({ page }) => {
+    await openDev(page, `${dev.url}live.html`, '.pm-section[data-section="slow"]')
+    const block = page.locator('.pm-section[data-section="slow"] .pm-code-block')
+    await expect(block.getByRole('button', { name: '运行' })).toBeEnabled({ timeout: 30_000 })
+    await block.getByRole('button', { name: '运行' }).click()
+    await expect(block.getByRole('button', { name: '运行中…' })).toBeVisible()
+    edit('旧代码的输出', '新代码的输出', 'live')
+    await expect(block).toContainText('新代码的输出')
+    await expect(block.getByRole('button', { name: '运行' })).toBeEnabled()
+    // Longer than the run would have taken.
+    await page.waitForTimeout(5000)
+    await expect(block.locator('.pm-outputs')).toHaveCount(0)
+  })
 })
 
 test.describe('a plugin that extends the IR runtime', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
-  let dev: Awaited<ReturnType<typeof startDev>>
+  let dev: Awaited<ReturnType<typeof devDeck>>
   test.beforeAll(async () => {
-    test.setTimeout(120_000)
+    test.setTimeout(180_000)
     const fixture = resolve('packages/viewer/test/fixtures/plugin-deck')
-    dev = await startDev(['lecture.md', 'notes.md', 'plugin'].map(file => join(fixture, file)))
+    dev = await devDeck(['lecture.md', 'notes.md', 'plugin', 'broken'].map(file => join(fixture, file)))
   })
   test.afterAll(() => dev?.stop())
 
@@ -606,6 +801,15 @@ test.describe('a plugin that extends the IR runtime', () => {
     await expect(table.locator('.pm-swap')).toHaveCount(0)
     // The deck has no slides form, so no section links to one.
     await expect(page.getByRole('link', { name: '在幻灯片中打开' })).toHaveCount(0)
+  })
+
+  test('a viewer plugin that throws is left out: the others install, and the start report says it failed', async ({ page }) => {
+    await openDev(page, `${dev.url}?view=presenter&section=probe`, '.pm-presenter')
+    await expect(menu(page).locator('option', { hasText: '卡片' })).toBeAttached()
+    await page.locator('.pm-presenter-panels summary').click()
+    const broken = page.locator('.pm-start-report [data-plugin="presmium-example-broken-viewer (viewer)"]')
+    await expect(broken).toHaveAttribute('data-status', 'failed')
+    await expect(broken).toContainText('the fixture viewer plugin failed on purpose')
   })
 
   test('a component written for Slidev sees its section\'s $frontmatter, $page and $clicks, and v-click rules', async ({ page }) => {
@@ -636,12 +840,16 @@ test.describe('a plugin that extends the IR runtime', () => {
     await expect.poll(() => Promise.all(['click', 'after', 'hide'].map(part => inPage.locator(`.pm-probe__${part}`).getAttribute('data-pm-click')))).toEqual(['shown', 'shown', 'hidden'])
   })
 
-  test('a footnote reference opens its definition, which the compiler keeps in the same section', async ({ page }) => {
+  test('a footnote reference opens its definition, which the compiler keeps in the same section, by its number', async ({ page }) => {
     await openDev(page, dev.url, '.pm-section[data-section="table"]')
-    await page.locator('.pm-section[data-section="table"] .pm-footnote-ref a').click()
+    const reference = page.locator('.pm-section[data-section="table"] .pm-footnote-ref a')
+    // The deck's first footnote, numbered by the compiler.
+    await expect(reference).toHaveAttribute('data-label', '1')
+    await reference.click()
     await expect(page).toHaveURL(/#fn-csv$/)
     const definition = page.locator('.pm-section[data-section="table"] #fn-csv')
     await expect(definition).toContainText('CSV 是逗号分隔的值')
+    await expect(definition.locator('sup')).toHaveAttribute('data-label', '1')
     await expect(definition).toBeInViewport()
   })
 })
