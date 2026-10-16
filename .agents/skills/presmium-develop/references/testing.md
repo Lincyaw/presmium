@@ -13,7 +13,7 @@
 
 | 层级 | 命令 | 内容 |
 |---|---|---|
-| 结构检查 | `pnpm test` | `scripts/check-layering.mjs`（分层）、`scripts/check-skills.mjs`（技能与代码一致） |
+| 结构检查 | `pnpm test` | `scripts/check-layering.mjs`（分层）、`scripts/check-skills.mjs`（技能与代码一致）、`scripts/check-plugins.mjs`（Node 插件的 `version` 与 `kernel`） |
 | 集成 | `pnpm test` | Vitest：`packages/*/test/**/*.test.ts`，Node 环境，单个用例超时 30 秒 |
 | 检查 | `pnpm demo:check` | 示例文稿 `presmium check` 无错误 |
 | 构建 | `pnpm demo:build` | 示例文稿生成网页、幻灯片、notebook，产物在 `examples/demo/dist/<渲染端>/` |
@@ -24,37 +24,38 @@
 
 ## Vitest 集成测试的写法
 
-在临时目录写一份文稿，插件用绝对路径列出（编译器接受相对于文稿的路径与绝对路径，也在 `node_modules` 中查找包名），渲染端用 `renderers.<id>.package` 指到包目录，然后真正运行 `packages/cli/bin/presmium.mjs`：
+在临时目录写一份文稿，插件用绝对路径列出（编译器接受相对于文稿的路径与绝对路径，也在 `node_modules` 中查找包名），渲染端用 `renderers.<id>.package` 指到包目录，然后用 `@presmium/cli/testing` 的 `presmium(cwd, args, env?)` 真正运行 CLI（包的 `devDependencies` 加 `"@presmium/cli": "workspace:*"`）。它去掉 Vitest 设置的 `NODE_ENV=test`，构建与作者的一样；结果为 `{ code, stdout, stderr }`，不论退出码：
 
 ```ts
-import { execFile } from 'node:child_process'
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
+import { presmium } from '@presmium/cli/testing'
 import { expect, it } from 'vitest'
 
-const BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const NOTEBOOK = fileURLToPath(new URL('../../render-notebook', import.meta.url))
 
 it('writes the poll as a list in the notebook', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-poll-'))
   writeFileSync(join(dir, 'lecture.md'), `---\nplugins:\n  - ${ADDON}\nrenderers:\n  notebook:\n    package: ${NOTEBOOK}\n---\n\n## 投票\n\n\`\`\`{poll} 喜欢哪种？\n甲\n乙\n\`\`\`\n`)
-  await promisify(execFile)(process.execPath, [BIN, 'build', dir, '--to', 'notebook'])
+  const { code, stdout, stderr } = await presmium(dir, ['build', '--to', 'notebook'])
+  expect(code, stdout + stderr).toBe(0)
   const notebook = JSON.parse(readFileSync(join(dir, 'dist/notebook/lecture.ipynb'), 'utf8'))
   expect(JSON.stringify(notebook.cells)).toContain('甲')
 })
 ```
 
-完整的范例：`packages/addon-classroom/test/notebook.test.ts`、`packages/cli/test/build.test.ts`（测试用插件在 `packages/cli/test/fixtures/addons/`）。
+需要开发服务器时，以子进程运行 `presmium dev`（`PRESMIUM_BIN` 也从 `@presmium/cli/testing` 导出），从输出的 `<渲染端>  <地址>` 一行取地址，结束时按 PID 停止它（范例 `packages/addon-exec-local/test/local-env.test.ts`）。
+
+完整的范例：`packages/addon-exec/test/compile.test.ts`、`packages/cli/test/build.test.ts`（测试用插件在 `packages/cli/test/fixtures/addons/`）。
 
 ## 端到端测试
 
 `playwright.config.ts`：
 
-- 项目 `chromium` 运行全部用例（除性能用例）；`PRESMIUM_E2E_BROWSERS`（默认 `firefox`，可加 `webkit`）列出的浏览器只运行 `e2e/smoke.spec.ts`；浏览器用 `pnpm exec playwright install firefox webkit` 安装，WebKit 缺系统库时在 Playwright 的 Docker 镜像中运行（`docs/browsers.md`）。
+- 项目 `chromium` 运行全部用例（除性能用例）；`PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）列出的浏览器只运行 `e2e/smoke.spec.ts`。没有安装或在本机无法启动的浏览器被跳过，配置文件打印原因与安装命令；浏览器用 `pnpm exec playwright install firefox webkit` 安装，WebKit 缺系统库时在 Playwright 的 Docker 镜像中运行（`docs/browsers.md`）。
 - 项目 `perf`（`e2e/perf.spec.ts`）依赖 `chromium`，在全部 Chromium 用例之后运行。单独运行它要加 `--no-deps`：`pnpm exec playwright test e2e/perf.spec.ts --no-deps`，否则先跑全部 Chromium 用例。
 - 示例文稿的产物由 sirv 服务：幻灯片 `examples/demo/dist/slides`（`--single`）在 `PRESMIUM_E2E_SLIDES_PORT`（默认 4173），网页 `examples/demo/dist/web` 在 `PRESMIUM_E2E_WEB_PORT`（默认 4174）。`reuseExistingServer: false`：端口被占用时报错，不复用别处的服务，免得测到另一个检出的产物。并行工作时每个检出用自己的一对端口。
 - 幻灯片地址 `/<页号>?clicks=<步骤>`，演讲者视图 `/presenter/<页号>`；网页用 `?section=<章节 ID>&step=<n>&view=<视图>` 定位。
@@ -70,6 +71,7 @@ it('writes the poll as a list in the notebook', async () => {
 | `FixtureOptions` | `with`（另外复制的 `e2e/fixtures` 下的路径）、`edit(dir)`（构建前修改副本）、`to`（渲染端） |
 | `FixtureDeck` | `dir`、`web`、`slides`（地址）、`slide(id)`（章节 ID → 页号）、`close()` |
 | `serve(dir, single?)`、`presmium(args, cwd)` | 服务目录、运行 CLI |
+| `deckDir`、`startDev`、`openSlide`，`buildFixture` 的 `link` 与 `bases` 选项 | 测试文稿的目录、启动 `presmium dev` 并等待地址、按章节 ID 与标题打开幻灯片等共用的辅助 |
 
 ```ts
 import { expect, test } from '@playwright/test'

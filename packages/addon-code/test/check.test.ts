@@ -1,13 +1,13 @@
 // Runs the real `presmium check` CLI on a MyST deck that references code in a throwaway git
 // repository; the diagnostics come from the {code-ref} resolution pass of the compiler.
-import { execFile, execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { presmium } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
-const BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 
 const CART = `export function total(prices: number[]): number {
@@ -70,6 +70,13 @@ const PARSER_REFORMATTED = `\n\n${PARSER.replace(/^(?: {4})+/gm, lead => ' '.rep
 // A fragment without markers or a name, found by its syntax: the guard of checkout.
 const GUARD = 'pattern:src/cart.ts#if ($COND) throw $ERR'
 
+/** Runs a command and returns its output; throws with its error output when it fails. */
+function sh(cwd: string, command: string, args: string[]): string {
+  const result = spawnSync(command, args, { cwd, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed: ${result.stderr}`)
+  return result.stdout.trim()
+}
+
 const repos: string[] = []
 afterAll(() => repos.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
@@ -85,7 +92,7 @@ interface Finding {
 function createRepo(): { dir: string, deck: string, fenceLine: number, edit: (text: string, file?: string) => void } {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-code-'))
   repos.push(dir)
-  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir, encoding: 'utf8' }).trim()
+  const git = (...args: string[]) => sh(dir, 'git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args])
   const edit = (text: string, file = 'src/cart.ts') => writeFileSync(join(dir, file), text)
   mkdirSync(join(dir, 'src'))
   mkdirSync(join(dir, 'deck'))
@@ -128,17 +135,14 @@ presmium:
   return { dir, deck: join(dir, 'deck/lecture.md'), fenceLine: deck.split('\n').indexOf('```{code-ref} region:src/cart.ts#checkout') + 1, edit }
 }
 
-function check(dir: string, ...args: string[]): Promise<{ code: number, findings: Finding[] }> {
-  return new Promise((resolve, reject) => {
-    execFile(process.execPath, [BIN, 'check', 'deck', '--json', ...args], { cwd: dir }, (error, stdout, stderr) => {
-      try {
-        resolve({ code: error ? Number(error.code) : 0, findings: JSON.parse(stdout).findings })
-      }
-      catch {
-        reject(new Error(`presmium check failed: ${stderr}`))
-      }
-    })
-  })
+async function check(dir: string, ...args: string[]): Promise<{ code: number, findings: Finding[] }> {
+  const { code, stdout, stderr } = await presmium(dir, ['check', 'deck', '--json', ...args])
+  try {
+    return { code, findings: JSON.parse(stdout).findings }
+  }
+  catch {
+    throw new Error(`presmium check failed: ${stderr}`)
+  }
 }
 
 const problems = (findings: Finding[]) => findings.filter(f => f.severity !== 'info')
@@ -204,14 +208,11 @@ it('reports drift with a diff when the pinned code changes in the working tree',
 interface CodeNode { value: string, origin: { anchor: string, file: string, startLine: number, endLine: number, pin?: string, permalink?: string } }
 
 /** The code nodes of the deck at `deck` (relative to `dir`), compiled by `presmium ir`. */
-function codeNodes(dir: string, deck = 'deck'): Promise<CodeNode[]> {
-  return new Promise((resolve, reject) => {
-    execFile(process.execPath, [BIN, 'ir', deck], { cwd: dir }, (error, stdout, stderr) => {
-      if (error) return reject(new Error(`presmium ir failed: ${stderr}`))
-      const doc = JSON.parse(stdout) as { sections: { blocks: { node: { type: string } }[] }[] }
-      resolve(doc.sections.flatMap(s => s.blocks.map(b => b.node)).filter(node => node.type === 'code') as unknown as CodeNode[])
-    })
-  })
+async function codeNodes(dir: string, deck = 'deck'): Promise<CodeNode[]> {
+  const { code, stdout, stderr } = await presmium(dir, ['ir', deck])
+  if (code !== 0) throw new Error(`presmium ir failed: ${stderr}`)
+  const doc = JSON.parse(stdout) as { sections: { blocks: { node: { type: string } }[] }[] }
+  return doc.sections.flatMap(s => s.blocks.map(b => b.node)).filter(node => node.type === 'code') as unknown as CodeNode[]
 }
 
 it('finds a fragment by its syntax with an ast-grep pattern, and reports it lost once nothing matches (P-11)', async () => {
@@ -233,7 +234,7 @@ it('reads pinned code from a git submodule and links it to the submodule\'s repo
   const repo = createRepo()
   const lib = mkdtempSync(join(tmpdir(), 'presmium-lib-'))
   repos.push(lib)
-  const git = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'protocol.file.allow=always', ...args], { cwd, encoding: 'utf8' }).trim()
+  const git = (cwd: string, ...args: string[]) => sh(cwd, 'git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'protocol.file.allow=always', ...args])
   mkdirSync(join(lib, 'src'))
   writeFileSync(join(lib, 'src/x.ts'), '// lib\n// #region part\nexport function part(a: number): number {\n  return a * 2\n}\n// #endregion part\n')
   git(lib, 'init', '-q')
@@ -265,4 +266,46 @@ presmium:
   const [part] = await codeNodes(repo.dir, 'sub')
   expect(part?.value).toBe('export function part(a: number): number {\n  return a * 2\n}')
   expect(part?.origin).toMatchObject({ file: 'vendor/lib/src/x.ts', pin: pinned, permalink: `https://github.com/acme/lib/blob/${pinned}/src/x.ts#L3-L5` })
+})
+
+it('reads anchor paths from the repository root and says so when a path is written from the deck (R-107)', async () => {
+  const repo = createRepo()
+  // The deck's own file, named from the deck's directory instead of the repository root.
+  mkdirSync(join(repo.dir, 'deck/lib'))
+  writeFileSync(join(repo.dir, 'deck/lib/util.ts'), '// #region one\nexport const one = 1\n// #endregion one\n')
+  writeFileSync(repo.deck, `${readFileSync(repo.deck, 'utf8')}
+## Relative
+
+\`\`\`{code-ref} region:lib/util.ts#one
+\`\`\`
+`)
+  const { code, findings } = await check(repo.dir)
+  expect(code).toBe(1)
+  expect(findings.filter(f => f.severity === 'error')).toEqual([expect.objectContaining({
+    checkId: 'presmium.code.anchors',
+    message: 'anchor region:lib/util.ts#one is lost: lib/util.ts not found under the repository root (..); anchor paths are relative to the repository root',
+    hint: 'lib/util.ts is a file of the deck\'s directory; from the repository root it is deck/lib/util.ts: write region:deck/lib/util.ts#one',
+  })])
+})
+
+it('links a section\'s code to the repository its {config} names (R-26)', async () => {
+  const repo = createRepo()
+  writeFileSync(repo.deck, `${readFileSync(repo.deck, 'utf8')}
+## Elsewhere
+
+:::{config}
+presmium.code: { repo: https://github.com/acme/elsewhere }
+:::
+
+\`\`\`{code-ref} symbol:src/cart.ts#total
+:pin: HEAD
+\`\`\`
+`)
+  const nodes = await codeNodes(repo.dir)
+  const links = nodes.filter(node => node.origin.anchor === 'symbol:src/cart.ts#total').map(node => node.origin.permalink)
+  // The section without a {config} keeps the headmatter's repository.
+  expect(links).toEqual([
+    expect.stringMatching(/^https:\/\/github\.com\/acme\/shop\/blob\/[0-9a-f]{40}\/src\/cart\.ts#L1-L3$/),
+    expect.stringMatching(/^https:\/\/github\.com\/acme\/elsewhere\/blob\/[0-9a-f]{40}\/src\/cart\.ts#L1-L3$/),
+  ])
 })

@@ -33,7 +33,7 @@ export const localEnvDirective: DirectiveSpec = {
       type: 'component',
       plugin: EXEC_LOCAL_ID,
       name: 'PmLocalEnv',
-      props: { file, lang },
+      props: { file, lang, code: code.value },
       children: [{ id: 'source', role: 'visual', at: 0, source: ctx.source, node: code }],
       fallback: { type: 'root', children: [{ type: 'code', lang, value: code.value }] },
     }

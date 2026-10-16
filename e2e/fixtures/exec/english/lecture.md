@@ -1,6 +1,7 @@
 ---
 title: Running Code
-lang: en-US
+# A language Presmium has no messages for: the interface follows the browser (English in the tests).
+lang: fr
 plugins:
   - '@presmium/slidev-addon-core'
   - '@presmium/slidev-addon-exec'
@@ -10,15 +11,14 @@ presmium:
   presmium.publish:
     offline: false
 renderers:
-  web:
-    lang: en-US
+  web: {}
   slides:
     theme: default
 ---
 
 # Running Code
 
-An English deck: the execution, local environment and publishing plugins speak English.
+A deck in French, a language Presmium has no messages for: the execution, local environment and publishing plugins speak the browser's language, English.
 
 (js-panel)=
 ## JavaScript
@@ -57,6 +57,14 @@ while (true) x = (x + 2 / x) / 2
 ```{run-panel} javascript
 setTimeout(() => console.log('later'), 50)
 console.log('now')
+```
+
+(js-rejected)=
+## A promise rejected later
+
+```{run-panel} javascript
+new Promise((_, reject) => setTimeout(() => reject(new Error('late')), 20))
+console.log('started')
 ```
 
 (js-live)=

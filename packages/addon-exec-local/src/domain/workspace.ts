@@ -1,17 +1,14 @@
-/** Language id -> command that receives the code as its last argument. */
+import { isRecord, languageId } from '@presmium/kernel'
+
+/**
+ * Language id (`languageId` of @presmium/kernel) -> command that receives the
+ * code as its last argument. A Python command runs Presmium's runner in
+ * place of the code, which gives the request's parameters as variables.
+ */
 export type Runners = Record<string, string[]>
 
 /** Used unless the devcontainer definition sets `customizations.presmium.runners`. */
 export const DEFAULT_RUNNERS: Runners = { python: ['python3', '-c'] }
-
-export function languageId(lang: string): string {
-  const id = lang.trim().toLowerCase()
-  return id === 'py' ? 'python' : id
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
 
 /** The runners of a devcontainer definition's `customizations`, over the defaults. */
 export function runnersFrom(customizations: unknown): Runners {

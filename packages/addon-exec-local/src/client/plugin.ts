@@ -1,5 +1,5 @@
-import { EXECUTOR } from '@presmium/kernel/contracts'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel/contracts'
+import { EXECUTOR } from '@presmium/kernel'
+import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig, LOCAL_ENV } from '../domain/index.ts'
 import { createLocalEnv } from './local-env.ts'
 

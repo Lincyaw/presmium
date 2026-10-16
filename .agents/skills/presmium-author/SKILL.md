@@ -17,7 +17,7 @@ Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再生成
 - 在仓库外试用：把示例文稿装好的依赖链接过来，`ln -s <仓库>/examples/demo/node_modules <文稿目录>/node_modules`，再运行 `<文稿目录>/node_modules/.bin/presmium <命令>`。
 - 两种情况都可以直接运行 `node <仓库>/packages/cli/bin/presmium.mjs <命令> <文稿目录>`。
 
-`{code-ref}` 的锚点路径相对于文稿所在 git 仓库的根目录，锁定提交也要在这个仓库里，所以引用代码的文稿要放在被引用代码的 git 仓库中。
+`{code-ref}` 的锚点路径相对于文稿所在 git 仓库的根目录（不在 git 中时相对于文稿目录），锁定提交也要在这个仓库里，所以引用代码的文稿要放在被引用代码的 git 仓库中。按文稿目录写了路径时，`presmium check` 报文件不存在，并给出从仓库根目录起的写法。
 
 ## 2. 文稿头部
 
@@ -41,15 +41,18 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 ```
 
 - `plugins` 中没有列出的插件，其指令报错 `unknown directive`。总是列出 `@presmium/slidev-addon-core`（幻灯片形态的宿主适配，插件组件与静态导出靠它）；讲台功能（黑屏、冻结、圈画、脚注就近显示）来自 `@presmium/slidev-addon-stage`。
-- `renderers.web`：`base`（站点路径，默认 `/`）、`port`（开发服务器端口）、`lang`（单独覆盖网页的语言）。`renderers.slides`：Slidev 文稿头部的选项（如 `theme`、`routerMode`、`exportFilename`），另有 `base`、`port`、`addons`。`renderers.notebook`：`kernel`（默认 `python3`）、`webUrl`（notebook 显示不了的组件链接到网页版）。任一渲染端都可以用 `package` 换成另一个包。
+- `lang` 是文稿语言的唯一来源：两种形态的 `<html lang>`、界面语言、编译时写进产物的文字（notebook 的说明等）都按它；渲染端不能另设语言。Presmium 只有中文与英文文本，其他语言（如 `fr`）的界面跟随浏览器的语言，再不行用英文。
+- `renderers.web`：`base`（站点路径）、`port`（开发服务器端口）。`renderers.slides`：Slidev 文稿头部的选项（如 `theme`、`routerMode`、`exportFilename`），另有 `base`、`port`、`addons`。`renderers.notebook`：`kernel`（默认 `python3`，与内核同语言的代码成为代码单元格）、`webUrl`（notebook 显示不了的组件链接到网页版；不写而同时构建网页时用相对链接 `../web/<页>#<章节>`）。任一渲染端都可以用 `package` 换成另一个包。
+- `base` 的默认值：同时构建网页与幻灯片、两者都不写 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体就是一个站点；只构建一种时为 `/`。
 - 不写 `renderers` 时构建全部已安装的渲染端。
+- 入口文件以 UTF-8 BOM 开头（Windows 记事本）也没关系。
 
 ## 3. 章节
 
 - `##`（`sectionDepth` 级标题）开始一个章节。第一个 `##` 之前的内容是封面章节，其中的 `#` 标题是文稿标题；之后的每个 `#` 是分章标题，自成一个章节。
 - 一个章节是幻灯片的一页、网页的一节、notebook 中以标题开头的一组单元格。
 - 网页每章一页：封面、每个 `#` 分章标题、每个被引入文件的开头都开始新的一页；页面文件名取源文件名（第一页为 `index.html`）。
-- 章节 ID 取自标题前一行的标签 `(bpe-merge)=`，没有标签时由标题生成。ID 用于深链接、形态互跳与笔记挂载，发布后不要改；需要稳定 ID 的章节都写标签。
+- 章节 ID 取自标题前一行的标签 `(bpe-merge)=`，没有标签时由标题生成（与某个标签相同时加 `-2`，标签优先）。ID 用于深链接、形态互跳与笔记挂载，发布后不要改；需要稳定 ID 的章节都写标签。
 
 ## 4. 讲解与上屏内容
 
@@ -97,13 +100,13 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 ## 6. 媒介限定、排版提示、章节配置
 
-- `:::{only} web, notebook` 让内容只出现在列出的渲染端（`web`、`slides`、`notebook`）。
-- `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: two-cols`）。
-- `:::{config}` 为插件提供只在本章节生效的配置（YAML，键为插件 ID）。目前官方插件都只读全局配置，章节配置供读取它的插件使用。
+- `:::{only} web, notebook` 让内容只出现在列出的渲染端（`web`、`slides`、`notebook`）。拼错的 ID（如 `slide`）得到警告 `unknown renderer id`，否则内容会从所有形态中消失。只在某个渲染端出现的块所占的步骤，在其他渲染端中不存在。
+- `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: center`）。不要用 `two-cols` 这类需要 `::right::` 插槽的布局，MyST 写不出插槽，内容会全挤在左栏。
+- `:::{config}` 为插件提供只在本章节生效的配置（YAML，键为插件 ID）。读取章节配置的是 `presmium.exec.timeoutMs`（这一节代码在编译时与浏览器中的超时）与 `presmium.code.repo`（这一节 `{code-ref}` 永久链接的仓库）；其他选项只读全局配置。
 
 ## 7. 引入、标签与交叉引用
 
-- 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件。
+- 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件；不同文件可以都用 `[^1]`，每个文件的脚注各自从 1 编号。
 - 标签：标题前的 `(id)=` 给章节 ID；块前的 `(id)=` 或指令的 `:label: id` 给块 ID（章节内唯一）。`{question-box}` 的 `:target:` 和课堂笔记依赖块 ID；没有标签的块 ID 随前面插入同类块而变化。
 - 交叉引用：`` {ref}`merge` `` 引用章节（文字为章节标题），`{numref}`、`{eq}` 引用带标签的图、表、公式；自己写了文字的引用保留文字。目标不存在时警告 `presmium.references`。
 
@@ -111,22 +114,26 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 指令一览、选项与最小示例见 `references/directives.md`。先确认提供该指令的包已写进 `plugins`。
 
+文稿自己的组件：放在文稿目录的 `components/` 下（`StepBadge.vue`），用 `{component} StepBadge` 放进正文，两种形态都渲染。组件只能引用 `@presmium/host`、`@presmium/kernel` 与 vue，文稿的 `package.json` 要依赖 `@presmium/host`。
+
 ## 9. 引用真实代码
 
 `{code-ref}` 引用仓库中的代码，不复制进文稿：
 
 - 锚点 `region:<文件>#<区间名>`（代码中的 `#region` 注释）、`symbol:<文件>#<类名.方法名>`（TypeScript、JavaScript、Python 的语法树）或 `pattern:<文件>#<ast-grep 模式>`。
-- `:pin: <提交>` 读取该提交中的代码，并生成指向该提交的永久链接（仓库网址取 `:repo:`、`presmium.code.repo` 或 `origin` 远端）。不写 `:pin:` 时读取工作区。
+- `:pin: <提交>` 读取该提交中的代码，并生成指向该提交的永久链接（仓库网址取 `:repo:`、本章节的 `presmium.code.repo`（可以用 `{config}` 按章节改）或 `origin` 远端）。不写 `:pin:` 时读取工作区。`:variants:` 的每个版本有自己的文件链接与行号，随步骤切换。
 - 漂移：锁定的代码在工作区中变了时，`presmium check` 与 `presmium build` 给出警告 `presmium.code.drift` 并附差异。看过差异后，要么改 `:pin:` 到新提交，要么接受旧版本。
 - 锚点状态：精确、已移动（提示）、模糊（警告，需确认）、丢失（错误）。`presmium check --update-lock` 在工作区重新解析全部锚点并写入 `.presmium/anchors.lock.json`，之后移动与改动按这份记录判断。
 
 ## 10. 执行代码与缓存
 
-- 编译时执行：`{code}` 加 `:run:`（或 `:run: compile`、`both`）、`{code-ref}` 加 `:run:`、`{run-panel}`（默认 `both`）。构建时用本机的 `python3`、`node` 执行，输出写进 IR，所有媒介都显示。
-- 浏览器中执行：`:run: live` 或 `both`。网页中的代码块有运行按钮；幻灯片中只有 `{run-panel}`、`{step-run}` 能运行。浏览器中的 Python 由 Pyodide 执行，可离线。
-- 执行缓存在 `.presmium/freeze/`，键为语言、代码、参数、执行器与环境指纹的哈希。`check`、`ir`、`build`、`dev` 每次编译都执行需要执行的代码并写入缓存；代码不变就不重跑；没有运行环境时沿用已提交的录制；超时不录制。只有 `presmium build` 删除已不存在的代码的录制。编译时的默认超时为 10 秒，用 `:timeout:` 改。
+- 编译时执行：`{code}`（或 MyST notebook 的 `{code-cell}`）加 `:run:`（或 `:run: compile`、`both`）、`{code-ref}` 加 `:run:`、`{run-panel}`（默认 `both`）。构建时用本机的 `python3`、`node` 执行（`py`、`python3`、`ipython` 都是 Python），输出写进 IR，所有媒介都显示；程序直接写标准输出（`process.stdout.write`、`console.dir`）也照常录制。
+- 浏览器中执行：`:run: live` 或 `both`。网页中的代码块有运行按钮；幻灯片中只有 `{run-panel}`、`{step-run}` 能运行。浏览器中的 Python 由 Pyodide 执行，可离线；每次运行有自己的工作目录，一次运行写的文件、改的递归限制不影响下一次，与编译时一致。
+- 组件里的代码（执行面板、分步执行、本地环境包着的代码块）由组件运行，不另显示运行按钮与录制输出。
+- 执行缓存在 `.presmium/freeze/`，键为语言、代码、参数、执行器与环境指纹的哈希。`check`、`ir`、`build`、`dev` 每次编译都执行需要执行的代码并写入缓存；代码不变就不重跑；没有运行环境时沿用已提交的录制；超时不录制。只有 `presmium build` 删除已不存在的代码的录制。
+- 超时：代码块或指令的 `:timeout:`，否则 `presmium.exec.timeoutMs`（头部的全局值，或某一节 `{config}` 中的值），否则编译时默认 10 秒。
 - 别的运行环境（如另一个 Python 版本）录制的输出默认沿用并警告；头部写 `execute: { rerun: environment }` 时重新执行并替换录制。
-- 执行失败或超时的 `{run-panel}` 显示 `:recorded:` 的预录输出。
+- 执行失败或超时的 `{run-panel}` 显示 `:recorded:` 的预录输出。PDF、PNG 导出中执行面板显示先给参数赋值的代码与编译时的输出（没有时用 `:recorded:`）。
 
 ## 11. 命令
 
@@ -153,6 +160,9 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium.parse` `{include} …: file not found` | 路径相对于写 `{include}` 的文件 |
 | `presmium.sections` `duplicate section label` 或 `duplicate block label` | 标签在文稿（章节）或章节（块）内须唯一 |
 | `presmium.code.anchors` `anchor … is lost` | 恢复 `#region` 标记或声明，或改正锚点；`:steps:` 的名字须是锚点内嵌套的区间 |
+| `presmium.code.anchors` `… not found under the repository root` | 锚点路径从仓库根目录写起；按提示的写法改 |
+| `presmium.directive` `{only}: unknown renderer id` | 改正渲染端 ID |
+| `presmium.execLocal.workspace` `{local-env} names the workspace …` | 一份文稿只有一个工作区：各 `{local-env}` 写同一个 `:workspace:`，或设置 `presmium.execLocal.workspace` |
 | `presmium.code.anchors` `moved` 或 `needs confirmation` | 确认位置后运行 `presmium check --update-lock` |
 | `presmium.code.drift` `drifted since pinned commit` | 读差异，改代码或改 `:pin:` |
 | `presmium.execute` `no executor for … and no recorded output` | 安装 `python3` 或 `node`，或提交 `.presmium/freeze/` 中的录制 |

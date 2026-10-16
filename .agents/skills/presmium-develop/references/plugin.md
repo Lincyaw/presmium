@@ -32,7 +32,7 @@ packages/addon-poll/
   },
   "slidev": {},
   "dependencies": { "@presmium/kernel": "workspace:*", "@presmium/host": "workspace:*", "vue": "^3.5.42" },
-  "devDependencies": { "@slidev/client": "53.0.0", "@slidev/types": "53.0.0" }
+  "devDependencies": { "@presmium/cli": "workspace:*", "@slidev/client": "53.0.0", "@slidev/types": "53.0.0" }
 }
 ```
 
@@ -44,20 +44,23 @@ packages/addon-poll/
 
 | 位置 | 可以引用 | 不得引用 |
 |---|---|---|
-| `src/domain/` | `@presmium/kernel`、纯计算库、`src/domain/` 内的相对路径 | vue、`@slidev/*`、vitepress、`@presmium/host`、Node 内置模块（`node:fs` 与 `fs` 都算） |
+| `src/domain/` | `@presmium/kernel`、纯计算库、`src/domain/` 内的相对路径 | vue 与 `@vue/*`、`@slidev/*`、vitepress、`@presmium/host`、Node 内置模块（`node:fs` 与 `fs` 都算） |
 | `components/`、`src/client/` | `src/domain/`、`@presmium/kernel`、`@presmium/host`、vue | `@slidev/*`、vitepress（只有 `addon-core` 可以用 `@slidev/client`） |
-| `setup/`、全局图层 | 以上全部，加 `@slidev/client` 的公开导出与 `@slidev/types` | vitepress |
-| `src/node/` | `src/domain/`、`@presmium/kernel`、Node 库 | vue |
+| `setup/`、全局图层（`global-top.vue` 等） | 以上全部，加 `@slidev/client` 的公开导出与 `@slidev/types` | Slidev 的其他包、vitepress |
+| `src/node/` | `src/domain/`、`@presmium/kernel`、Node 库 | vue 与 `@vue/*` |
 
-另外：不引用别的插件包（`@presmium/slidev-addon-*`），相对路径不离开本包，不引用框架内部路径（`@slidev/client/` 的子路径、`vitepress/dist`、`@slidev/cli/dist`）。两个插件要共用的契约放进 `@presmium/kernel`（业务服务契约，如 `EXECUTOR`、`SESSION`）或 `@presmium/host`（宿主层令牌，如 `TOOLBAR`、`NAVIGATION`）。
+另外：不引用插件包（`@presmium/slidev-addon-*`，对渲染端与 IR 运行时同样适用），相对路径不离开本包，不引用框架内部路径（`@slidev/client/` 的子路径、`vitepress/dist`、`@slidev/cli/dist`）。两个插件要共用的契约放进 `@presmium/kernel`（业务服务契约，如 `EXECUTOR`、`SESSION`）或 `@presmium/host`（宿主层令牌，如 `TOOLBAR`、`NAVIGATION`）。
 
 ## 3. 指令：源码 → IR
 
 `src/node/presmium.ts`：
 
 ```ts
+import { createRequire } from 'node:module'
 import type { DirectiveSpec, PresmiumNodePlugin } from '@presmium/kernel'
 import { POLL_ID, parseChoices } from '../domain/index.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 const poll: DirectiveSpec = {
   name: 'poll',
@@ -81,15 +84,18 @@ const poll: DirectiveSpec = {
   },
 }
 
-const plugin: PresmiumNodePlugin = { id: POLL_ID, directives: [poll] }
+// version 与 kernel：编译器不加载内核范围不符的插件；scripts/check-plugins.mjs 检查每个官方插件都写了
+const plugin: PresmiumNodePlugin = { id: POLL_ID, version, kernel: '^0.1.0', directives: [poll] }
 export default plugin
 ```
 
 - `DirectiveResult` 为 `{ node, role?, span? }`；`role` 默认 `visual`。
 - `:reveal:` 与 `:label:` 由编译器处理，不传给指令。指令声明了 `options` 时，未声明的选项得到警告。
 - 指令名与内置指令（`slide`、`only`、`hints`、`config`、`component`）或别的插件重名时报错。
-- `ctx`（`DirectiveContext`）：`file`、`deckDir`、`workspaceRoot`、`config`（全局配置合并本章节的 `{config}`）、`source`、`parse(markdown)`（把正文中的 MyST 解析成 mdast，例如做成子块）、`report(finding)`、`watch(...files)`。
-- 组件的子块（`children`，如代码块、题干）由两种浏览器形态渲染到组件的默认插槽中。
+- `ctx`（`DirectiveContext`）：`file`、`deckDir`、`workspaceRoot`、`lang`（文稿语言，写进产物的文字用 `deckLocale(ctx.lang)` 选择）、`config`（全局配置合并本章节的 `{config}`）、`source`、`parse(markdown)`（把正文中的 MyST 解析成 mdast，例如做成子块）、`report(finding)`、`watch(...files)`。
+- 参数是锚点（`scheme:target`）时写 `arg: 'anchor'`，编辑器据此跳转、悬停与补全。
+- 组件的子块（`children`，如代码块、题干）由两种浏览器形态渲染到组件的默认插槽中。子块中的代码块属于组件：渲染端不给它们运行控件，也不显示录制输出；组件要运行的代码放进属性（如执行面板的 `code`），不从渲染后的 DOM 读回。
+- 组件引用本地文件（图片、媒体）时，把 URL 放进属性，并在节点的 `assets` 中声明（属性名到 URL），渲染端发布文件并改写属性。画在页面之上、不占版面的组件，节点写 `layer: 'overlay'`。
 - 读取工作区文件用编译步骤的 `ctx.src`、`ctx.resolvers`（编译器记录依赖，`presmium dev` 据此重新编译）；用别的方式读的文件用 `ctx.watch` 声明。
 
 新指令要同时写进 `docs/ir.md` 5.1 节的指令表和 `.agents/skills/presmium-author/references/directives.md`（`scripts/check-skills.mjs` 检查后者）。
@@ -100,29 +106,32 @@ export default plugin
 
 | 字段 | 形状 | 说明 |
 |---|---|---|
-| `passes` | `IRPass { name, order?, run(doc, ctx) }` | 在内置的编排步骤之后、编译时执行之前运行，按 `order` 排序；`ctx` 有 `src`、`resolvers`、`lock`、`executors`、`cache`、`config`、`configFor(section)`、`report`、`watch` |
+| `passes` | `IRPass { name, order?, after?, run(doc, ctx) }` | 在内置的编排步骤之后、编译时执行之前运行，按 `order` 排序；`after: 'execute'` 的在编译时执行之后运行，此时代码节点已有 `outputs`；`ctx` 有 `src`、`resolvers`、`lock`、`executors`、`cache`、`lang`、`config`、`configFor(section)`、`report`、`watch` |
 | `executors` | `Executor { id, supports(lang), run(request), fingerprint? }` | 编译时执行；`fingerprint` 进入执行缓存的键 |
 | `resolvers` | `AnchorResolver { scheme, resolve(...) }` | 新的锚点方案 |
 | `checks` | `Check { id, run(ctx) }` | `presmium check` 运行，返回带源码位置的 `Finding[]` |
 | `anchors` | `(ctx) => AnchorString[]` | `presmium check --update-lock` 要记录的锚点 |
 | `renderer` | `Renderer` | 本插件就是一个渲染端（见 SKILL.md） |
 | `rendererExtensions` | `{ [渲染端 ID]: { components: { [组件名]: (node, block, ctx) => unknown } } }` | 见第 7 节 |
-| `version`、`kernel` | string | `kernel` 为兼容的内核版本范围，不兼容时编译器不加载 |
+| `vitePlugins` | `(ctx: { deckDir, workspaceRoot, config }) => unknown[]` | 两种形态的开发服务器与构建加入的 Vite 插件（如开发服务器的端点）；幻灯片形态另由插件包的 `setup/vite-plugins.ts` 注册 |
+| `version`、`kernel` | string | 必须写：`version` 与 `package.json` 一致，`kernel` 为兼容的内核版本范围（如 `^0.1.0`），不兼容时编译器不加载 |
 
-注意：编译步骤在编译时执行之前运行，所以组件的 `fallback` 里拿不到编译时的输出（`docs/architecture.md` 9.2 节）。
+遍历块用 `@presmium/kernel` 的 `docBlocks(doc)`（含组件的子块），报错消息用 `errorMessage(error)`，语言名比较用 `languageId(lang)`。
 
 ## 5. 组件：只经过 `@presmium/host`
 
 `components/PmPoll.vue` 在网页与幻灯片两种形态中共用。规则（`docs/architecture.md` 5.3 至 5.9 节）：
 
-- 根元素包在 `PmBoundary` 中，出错只影响本组件。
+- 不要在模板中自己包 `PmBoundary`：渲染端在每个插件组件外面包了一层，组件自身 `setup` 或模板抛错也只影响它自己（`docs/architecture.md` 5.4 节）。
 - 视觉状态是步骤的纯函数：`useStepState({ from, to })` 给出块内第 k 步的状态（`active`、`reached`、`done`），步骤从块的 `at` 算起，不要自己再减 `at`。用 `v-click="scope.step(k)"`（`const scope = useStepScope()`）向宿主登记块内第 k 步，范例见 `packages/addon-core/components/PmDemoStepper.vue`。
 - 动画读 `usePrefersReducedMotion()`，开启时直接显示终态。
-- 界面文本：`const t = useMessages({ 'zh-CN': {...}, en: {...} })`，模板中用 `t.value.xxx`；语言由 `<html lang>` 决定（`useLocale()`）。
+- 界面文本：`const t = useMessages(CATALOG)`（`CATALOG` 为 `{ 'zh-CN': {...}, en: {...} }`），模板中用 `t.value.xxx`；组件之外用 `CATALOG[currentLocale()]`。语言由 `<html lang>` 决定，不要自己判断或观察它。
 - 配置：`useSectionConfig(POLL_ID)` 是全局配置合并本章节 `{config}` 后的结果。
 - 服务：`useService(TOKEN)`；跨窗口或跨设备的状态：`useSharedState('presmium.poll:<key>', initial, { scope: 'view' | 'local' | 'remote' })`，键以插件 ID 开头。
 - 静态导出：带 `fallback` 的组件在 PDF、PNG 中由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
-- 绘制在其他内容之上、自身不占版面的浮层组件，根元素带 `pm-overlay` 类（例如 `packages/addon-guide/components/PmSpotlight.vue`）。
+- 绘制在其他内容之上、自身不占版面的浮层组件，由指令把节点标为 `layer: 'overlay'`（例如引导插件的 `{cursor}`），渲染端不给它单独的位置。
+- 全部展开的文档视图（`useHost().useStep()` 为无穷大）中，有内部步骤的组件可以给读者自己的步进控件；视觉状态是（章节步骤，本地步骤）的纯函数（`docs/architecture.md` 5.3 节，范例 `packages/addon-exec/components/PmStepRun.vue`）。
+- 持有 Worker、定时器等资源的服务在插件的 `dispose` 中释放：页面从往返缓存恢复时内核会再次启动插件。
 
 ## 6. 浏览器端注册
 
@@ -140,7 +149,7 @@ export default plugin
     })
     ```
 
-- `components/*.vue`：幻灯片形态由 Slidev 自动注册；网页形态由 `@presmium/web` 按文件名注册（文稿自己的 `components/` 覆盖同名组件）。
+- `components/*.vue`：幻灯片形态由 Slidev 自动注册；网页形态由 `@presmium/web` 按文件名注册（文稿自己的 `components/` 覆盖同名组件；文稿自己的组件以插件 ID `deck` 登记）。
 - `src/client/viewer.ts`（只用于网页形态）默认导出视图插件 `(ctx) => void`；`ctx` 有 `registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`。只以类型方式引用 `@presmium/viewer`（`import type { ViewerPlugin } from '@presmium/viewer'`）。范例：`packages/addon-stage/src/client/viewer.ts`（动作与图层）、`packages/viewer/test/fixtures/plugin-deck/plugin/src/client/viewer.ts`（视图）。
 
 ## 7. 静态渲染端：扩展与 `fallback`
@@ -149,11 +158,11 @@ export default plugin
 
 | 渲染端 | 有扩展 | 没有扩展 |
 |---|---|---|
-| `slides` | 写入扩展返回的 Slidev Markdown | 写组件标签 `<PmPoll question="…" :choices='[…]'>`，子块放进插槽；有 `fallback` 时外面包 `PmStaticFallback`，导出 PDF 时显示降级内容 |
+| `slides` | 写入扩展返回的 Slidev Markdown；扩展抛错时报告警告并改用组件标签 | 写组件标签 `<PmPoll question="…" :choices='[…]'>`，子块放进插槽（子块中的代码块不带运行控件与录制输出）；有 `fallback` 时外面包 `PmStaticFallback`，导出 PDF 时显示降级内容；最外层都包 `PmBoundary` |
 | `notebook` | 写入扩展返回的单元格；返回 `undefined` 时退回 `fallback`，返回 `[]` 时什么都不写 | 渲染 `fallback`；也没有 `fallback` 时写一行说明并链接网页版，构建报告列出该块 |
 | `web` | — | IR 运行时按组件名找到组件；找不到时显示 `fallback` |
 
-notebook 扩展返回一个或一组单元格：字符串是 Markdown 单元格，对象为 `{ cell_type: 'markdown' | 'code' | 'raw', source, metadata?, outputs?, execution_count? }`（`packages/render-notebook/src/domain/notebook.ts` 的 `NotebookCellInput`）。
+notebook 扩展返回一个或一组单元格：字符串是 Markdown 单元格，对象为 `{ cell_type: 'markdown' | 'code' | 'raw', source, metadata?, outputs?, execution_count? }`，或 `{ cell_type: 'markdown', mdast }`：渲染端把 mdast 与正文一样降为 Jupyter 能显示的 Markdown，复制其中的本地文件并报告降级（`packages/render-notebook/src/domain/notebook.ts` 的 `NotebookCellInput`）。写代码单元格前用 `languageId` 比较代码与内核的语言（`ctx.config.kernel`，默认 Python），不要写死 Python。
 
 ```ts
 rendererExtensions: {
@@ -161,10 +170,10 @@ rendererExtensions: {
 },
 ```
 
-扩展的第三个参数 `ctx` 是该渲染端的 `RenderContext`（`outDir`、`workDir`、`deckDir` 等），例如写出相对于产物的路径（`packages/addon-content/src/node/media.ts` 的 `slidesMedia`）。编译时写入产物的文本按文稿的 `lang` 选择中文或英文。
+扩展的第三个参数 `ctx` 是该渲染端的 `RenderContext`（`outDir`、`workDir`、`deckDir`、`config`、`lang` 等）。编译时写入产物的文本按 `deckLocale(ctx.lang)` 选择中文或英文。范例：`packages/addon-exec/src/node/extensions.ts`（代码单元格或 mdast 单元格）。
 
 ## 8. 测试与文档
 
-- 集成测试：`packages/addon-poll/test/*.test.ts`，在临时目录写一份文稿，`plugins` 写本包的绝对路径，真正运行 CLI 构建，检查产物（范例 `packages/addon-classroom/test/notebook.test.ts`）。
+- 集成测试：`packages/addon-poll/test/*.test.ts`，在临时目录写一份文稿，`plugins` 写本包的绝对路径，用 `@presmium/cli/testing` 的 `presmium(cwd, args)` 真正运行 CLI 构建，检查产物（范例 `packages/addon-exec/test/compile.test.ts`）。
 - 端到端：测试文稿放 `e2e/fixtures/poll/`，用例 `e2e/poll.spec.ts` 用 `useFixture('poll')` 在 `beforeAll` 中构建（见 `references/testing.md`）。两种形态各测一遍。
 - 文档：`docs/ir.md` 5.1 节、`docs/architecture.md` 第 8 节的需求覆盖表、`.agents/skills/presmium-author/references/directives.md`。

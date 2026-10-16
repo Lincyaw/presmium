@@ -1,3 +1,4 @@
+import { errorMessage } from '@presmium/kernel'
 import type { CodeNode, DirectiveSpec, RunSpec } from '@presmium/kernel'
 import { parseCodeRef, splitTarget } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
@@ -7,10 +8,6 @@ import type { CodeRefSpec } from '../domain/index.ts'
  * same compilation (./resolve.ts). The IR keeps only what was resolved.
  */
 export const codeRefs = new WeakMap<CodeNode, CodeRefSpec>()
-
-export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 function langOf(file: string | undefined): string {
   return /\.([\w-]+)$/.exec(file ?? '')?.[1] ?? 'text'
@@ -35,7 +32,8 @@ function runSpec(lang: string, options: Record<string, unknown>): RunSpec | unde
  */
 export const codeRefDirective: DirectiveSpec = {
   name: 'code-ref',
-  arg: true,
+  // Editors resolve the argument as an anchor (go to definition, hover, completion).
+  arg: 'anchor',
   options: { pin: 'string', steps: 'list', variants: 'list', lang: 'string', repo: 'string', run: 'string', executor: 'string', timeout: 'number' },
   toIR(input, ctx) {
     let spec: CodeRefSpec

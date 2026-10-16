@@ -1,20 +1,4 @@
-import type { CodeOrigin, CodeVariant } from '@presmium/kernel'
 import type { Snippet } from './regions.ts'
-
-/**
- * What a code reference records in its code node besides the IR's own
- * fields: whether pinned code still matches the working tree, and the
- * permalink of each version. The renderers show them with the origin.
- */
-export interface CodeRefOrigin extends CodeOrigin {
-  /** For pinned code: `drifted` when the working tree has other code (P-14). */
-  drift?: 'synced' | 'drifted'
-}
-
-export interface CodeRefVariant extends CodeVariant {
-  /** Link to the version's lines at its commit (P-13). */
-  permalink?: string
-}
 
 /** Step names that highlight no unit in particular. */
 const NO_UNIT = new Set(['all', 'none'])

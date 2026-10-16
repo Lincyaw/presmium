@@ -1,5 +1,5 @@
 export { createLocalEnv } from './local-env.ts'
 export type { LocalEnv } from './local-env.ts'
 export { default as localEnvPlugin } from './plugin.ts'
-export { messages, useMessages } from './messages.ts'
+export { messages, MESSAGES, useMessages } from './messages.ts'
 export type { LocalEnvMessages } from './messages.ts'

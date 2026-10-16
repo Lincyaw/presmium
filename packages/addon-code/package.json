@@ -18,10 +18,11 @@
   "dependencies": {
     "@ast-grep/lang-python": "^0.0.6",
     "@ast-grep/napi": "^0.50.0",
-    "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
     "diff": "^9.0.0",
-    "simple-git": "^4.0.2",
-    "vue": "^3.5.42"
+    "simple-git": "^4.0.2"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*"
   }
 }

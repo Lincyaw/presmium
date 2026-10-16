@@ -37,7 +37,7 @@
 :::
 ```
 
-缺少参数时报错 `needs the renderer ids it is limited to`。
+缺少参数时报错 `needs the renderer ids it is limited to`；不认识的 ID（如拼错的 `slide`）得到警告 `unknown renderer id`。
 
 ### `{hints}`
 
@@ -46,12 +46,12 @@
 ```md
 :::{hints}
 web: { layout: scrolly }
-slides: { layout: two-cols, class: my-page }
+slides: { layout: center, class: my-page }
 :::
 ```
 
 - `web.layout: scrolly`：网页中这一节用滚动叙事版式（上屏内容固定一侧，讲解滚动）。
-- `slides` 下的键原样写进这一页 Slidev 的 frontmatter（`layout`、`class`、`routeAlias` 等 Slidev 的页面选项）。
+- `slides` 下的键原样写进这一页 Slidev 的 frontmatter（`layout`、`class`、`routeAlias` 等 Slidev 的页面选项）。不要选 `two-cols` 这类需要 `::right::` 插槽的布局：MyST 写不出插槽，内容会全在左栏。
 - 渲染端不认识的提示直接忽略。
 
 ### `{config}`
@@ -64,7 +64,12 @@ presmium.exec: { timeoutMs: 30000 }
 :::
 ```
 
-章节配置交给插件的指令（`DirectiveContext.config`）、编译步骤（`PassContext.configFor`）与浏览器端的 `useSectionConfig`。生效与否取决于插件是否读取章节配置：目前官方插件都只读全局配置（例如执行插件在浏览器端按全局的 `presmium.exec` 设置超时），所以要改某一段代码的超时，在指令上写 `:timeout:`。
+章节配置交给插件的指令（`DirectiveContext.config`）、编译步骤（`PassContext.configFor`）与浏览器端的 `useSectionConfig`。读取章节配置的选项：
+
+- `presmium.exec: { timeoutMs }`：这一节的代码（`:run:` 的代码块、`{code-ref}`、`{run-panel}`、`{step-run}`）在编译时与浏览器中运行的超时；某一段代码自己的 `:timeout:` 优先。上例让一个慢的例子可以运行 30 秒。
+- `presmium.code: { repo }`：这一节 `{code-ref}` 永久链接的仓库网址；`:repo:` 优先。
+
+插件的其他选项只读全局配置。
 
 ### `{component}`
 
@@ -77,7 +82,7 @@ steps: [解析, 启动, 渲染]
 :::
 ```
 
-`PmDemoStepper` 来自 `@presmium/slidev-addon-core`；`PmContrastToggle`（高对比度开关，`@presmium/slidev-addon-publish`）也可以这样放进正文。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
+`PmDemoStepper` 来自 `@presmium/slidev-addon-core`；`PmContrastToggle`（高对比度开关，`@presmium/slidev-addon-publish`）也可以这样放进正文。文稿目录下 `components/` 中的组件（插件 ID `deck`）也可以放进来，两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
 
 ### `{include}`
 
@@ -90,7 +95,7 @@ steps: [解析, 启动, 渲染]
 
 ### `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}`
 
-参数为语言；正文为代码。选项：`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（各步都强调的行，如 `2, 4-5`）、`:run:`、`:executor:`、`:timeout:`（毫秒）。
+参数为语言；正文为代码。选项：`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（各步都强调的行，如 `2, 4-5`）、`:run:`、`:executor:`、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）。`{code-cell}`（MyST notebook 的写法）同样生成代码块，`:run:` 照常执行。
 
 ````md
 ```{code} python
@@ -103,6 +108,7 @@ print(sum(range(10)))
 - `:executor:` 指定执行器 ID：`presmium.python`、`presmium.node`（执行插件）、`presmium.container`（本地环境插件）。
 - 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
 - 网页中带 `live` 或 `both` 的代码块有运行按钮；幻灯片中它是普通代码块，要在幻灯片里运行请用 `{run-panel}`。
+- 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
 
 ### 其他 MyST 指令
 
@@ -120,12 +126,12 @@ MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-ta
 | `:steps:` | list | 逐步高亮的逻辑单元名（锚点内嵌套的 `#region`），每步一个；`all`、`none` 表示这一步不突出任何单元 |
 | `:variants:` | list | 至少两个提交，逐步切换版本；不能与 `:pin:`、`:steps:` 同用 |
 | `:lang:` | string | 高亮语言，默认取文件扩展名 |
-| `:repo:` | string | 永久链接用的仓库网址，默认 `presmium.code.repo`，再默认 `origin` 远端 |
+| `:repo:` | string | 永久链接用的仓库网址，默认本章节的 `presmium.code.repo`（`{config}` 可按章节设置），再默认 `origin` 远端 |
 | `:run:`、`:executor:`、`:timeout:` | | 同 `{code}` |
 
 步数：`:steps:` 或 `:variants:` 的项数减一。
 
-锚点（文件路径相对于文稿所在 git 仓库的根目录）：
+锚点（文件路径相对于文稿所在 git 仓库的根目录，不在 git 中时相对于文稿目录；按文稿目录写错时诊断给出正确的写法）：
 
 - `region:<文件>#<区间名>`：`#region 名字` 与 `#endregion 名字` 两行注释之间的代码（`# #region`、`#region`、`// #region`、`<!-- #region -->` 等 VS Code 折叠区间的写法都认）。标记行不显示，公共缩进去掉。
 - `symbol:<文件>#<名字>`：按语法树找声明，如 `Parser.parse`；支持 TypeScript、JavaScript、Python，被引用的代码不需要标记。
@@ -156,7 +162,7 @@ def merge(ids, pair, new_id):
 
 ## 浏览器执行 `presmium.exec`（`@presmium/slidev-addon-exec`）
 
-浏览器中 Python 由 Pyodide 执行，JavaScript、TypeScript 由脚本 Worker 执行；编译时执行用本机的 `python3` 与 `node`。全局配置 `presmium.exec`：`timeoutMs`（默认 10000）、`loadTimeoutMs`（默认 30000）、`maxTraceEvents`（默认 500）、`pyodideURL`。
+浏览器中 Python 由 Pyodide 执行，JavaScript、TypeScript 由脚本 Worker 执行；编译时执行用本机的 `python3` 与 `node`。语言名 `py`、`python3`、`ipython` 都是 Python，`js`、`mjs` 是 JavaScript，`ts` 是 TypeScript。全局配置 `presmium.exec`：`timeoutMs`（默认 10000，也可以在某一节的 `{config}` 中设置）、`loadTimeoutMs`（默认 30000）、`maxTraceEvents`（默认 500）、`pyodideURL`。
 
 ### `{run-panel}`
 
@@ -165,7 +171,7 @@ def merge(ids, pair, new_id):
 | 选项 | 类型 | 作用 |
 |---|---|---|
 | `:params:` | string | YAML 映射，注入程序的变量（JavaScript 中为常量），观众可改后重跑 |
-| `:timeout:` | number | 毫秒 |
+| `:timeout:` | number | 毫秒；默认本章节的 `presmium.exec.timeoutMs` |
 | `:recorded:` | string | 执行失败或超时时显示的预录输出 |
 | `:run:` | string | `both`（默认，构建时也录制输出）或 `live`（只在浏览器中执行） |
 
@@ -177,7 +183,7 @@ print(*[i * i for i in range(n)])
 ```
 ````
 
-生成 `PmRunPanel`，步数 0。PDF、PNG 导出显示代码加 `:recorded:`；notebook 中 Python 为代码单元格（参数赋值在前），其他语言为代码加输出的 Markdown 单元格。
+生成 `PmRunPanel`，步数 0。PDF、PNG 导出显示先给参数赋值的代码，加上构建时的输出（构建时没有执行、执行失败或超时的用 `:recorded:`）；notebook 中与内核同语言（默认 Python）的为代码单元格（参数赋值在前），其他语言为代码加输出的 Markdown 单元格。
 
 ### `{step-run}`
 
@@ -199,7 +205,7 @@ print(total)
 ```
 ````
 
-生成 `PmStepRun`，步数为 `:steps:`。
+生成 `PmStepRun`，步数为 `:steps:`。网页的文档视图中组件有自己的上一步、下一步与滑块，读者可以逐行查看；网页中组件接近屏幕时才加载 Python 运行时。
 
 ## 本地环境 `presmium.execLocal`（`@presmium/slidev-addon-exec-local`）
 
@@ -219,7 +225,7 @@ print("hello")
 ```
 ````
 
-生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）。
+生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与开发服务器（`presmium dev`，网页与幻灯片都可以）；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
 
 ## 引导 `presmium.guide`（`@presmium/slidev-addon-guide`）
 

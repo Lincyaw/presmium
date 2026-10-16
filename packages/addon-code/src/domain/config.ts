@@ -6,7 +6,7 @@ export interface CodeConfig {
   repo?: string
 }
 
-/** `presmium: { presmium.code: {...} }` of the headmatter, as the compiler hands it to the plugin. */
+/** `presmium.code` of the headmatter, with a section's `{config}` over it where the compiler gives it so. */
 export function codeConfig(config: Record<string, unknown>): CodeConfig {
   return typeof config.repo === 'string' && config.repo.trim() ? { repo: config.repo.trim() } : {}
 }

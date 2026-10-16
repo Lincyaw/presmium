@@ -1,3 +1,4 @@
+import { errorMessage } from '@presmium/kernel'
 import type { AnchorResolver, AnchorString, SourceReader } from '@presmium/kernel'
 import python from '@ast-grep/lang-python'
 import { Lang, parse, registerDynamicLanguage } from '@ast-grep/napi'
@@ -53,8 +54,22 @@ function nameOf(node: SgNode): SgNode | null {
   return node.field('name') ?? (kind(node) === 'assignment' ? node.field('left') : null)
 }
 
+/**
+ * The declaration of `name` below `scope`: looked for one level of the tree
+ * after another, so the shallowest wins (`Parser.parse` is the method, not a
+ * nested helper of the same name) and the search ends there.
+ */
+function findDeclaration(scope: SgNode, name: string): SgNode | undefined {
+  let level = scope.children()
+  while (level.length > 0) {
+    const hit = level.find(node => DECLARATIONS.has(kind(node)) && nameOf(node)?.text() === name)
+    if (hit) return hit
+    level = level.flatMap(node => node.children())
+  }
+  return undefined
+}
 
-/** Declarations below `scope`, shallowest first, so `Parser.parse` prefers the method over nested helpers. */
+/** Every declaration below `scope`, shallowest first: the candidates when a name is not found. */
 function declarations(scope: SgNode): SgNode[] {
   const result: SgNode[] = []
   let level = scope.children()
@@ -112,7 +127,7 @@ export const symbolResolver: AnchorResolver = {
     const { target, at, lines, root } = tree
     let node: SgNode | undefined = root
     for (const name of target.name.split('.')) {
-      node = declarations(node).find(d => nameOf(d)!.text() === name)
+      node = findDeclaration(node, name)
       if (!node) break
     }
     if (node) {
@@ -161,7 +176,7 @@ export const patternResolver: AnchorResolver = {
     try {
       match = root.find(target.name)
     } catch (error) {
-      return { status: 'lost', message: `invalid pattern "${target.name}": ${error instanceof Error ? error.message : String(error)}` }
+      return { status: 'lost', message: `invalid pattern "${target.name}": ${errorMessage(error)}` }
     }
     if (match) return found(span(target.file, lines, match).location, recorded)
     return notFound(`pattern "${target.name}" matches nothing in ${target.file}${at}`, recorded ? spans(target.file, lines, root) : [], recorded)

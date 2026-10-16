@@ -1,5 +1,5 @@
-import { defineService } from '@presmium/kernel/contracts'
-import type { RunRequest, RunResult } from '@presmium/kernel/contracts'
+import { defineService, failedRun } from '@presmium/kernel'
+import type { RunRequest, RunResult } from '@presmium/kernel'
 
 /** Dev-server endpoints of the local environment (K-09 write access goes through here). */
 export const ENDPOINT = '/__presmium/exec-local'
@@ -56,7 +56,12 @@ export interface ReplicateRequest {
 
 export interface LocalEnvService {
   status(): Promise<LocalEnvStatus>
-  /** Runs code in the devcontainer image; `args` become environment variables. */
+  /**
+   * Runs code in a fresh container of the devcontainer image, as the
+   * container executor does: the request's files are in the working
+   * directory, its stdin is the program's; Python gets the parameters as
+   * variables, other runners as environment variables.
+   */
   run(request: RunRequest, signal?: AbortSignal): Promise<RunResult>
   commit(request: CommitRequest): Promise<CommitResult>
   replicate(request: ReplicateRequest): Promise<Blob>
@@ -69,7 +74,7 @@ export function disconnected(reason: DisconnectedReason): LocalEnvStatus {
   return { connected: false, docker: false, devcontainer: null, git: false, languages: [], reason }
 }
 
-/** A failed run that never reached the program, e.g. Docker is missing. */
-export function failedRun(message: string, durationMs = 0): RunResult {
-  return { ok: false, stdout: '', stderr: message, exitCode: null, durationMs, timedOut: false, source: 'live', executorId: CONTAINER_EXECUTOR_ID }
+/** A failed run of the container executor that never reached the program, e.g. Docker is missing. */
+export function failedContainerRun(message: string, durationMs = 0): RunResult {
+  return failedRun(CONTAINER_EXECUTOR_ID, message, durationMs)
 }

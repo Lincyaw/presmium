@@ -9,11 +9,15 @@ import { runChild } from './child.ts'
 
 export const SCRIPT_EXECUTOR_ID = 'presmium.node'
 
-const MAIN = `import { runScript } from ${JSON.stringify(new URL('../runner.mjs', import.meta.url).href)}
+// The result goes to file descriptor 3 (./child.ts); the run has cancelled what the code left
+// pending, and whatever else it opened ends with the process.
+const MAIN = `import { writeSync } from 'node:fs'
+import { runScript } from ${JSON.stringify(new URL('../runner.mjs', import.meta.url).href)}
 let input = ''
 for await (const chunk of process.stdin) input += chunk
-// The run has cancelled what the code left pending; whatever else it opened ends with the process.
-process.stdout.write(JSON.stringify(await runScript(JSON.parse(input))), () => process.exit(0))
+const result = Buffer.from(JSON.stringify(await runScript(JSON.parse(input))))
+for (let written = 0; written < result.length;) written += writeSync(3, result, written)
+process.exit(0)
 `
 
 const runner = { executorId: SCRIPT_EXECUTOR_ID, command: process.execPath, args: ['--input-type=module', '-e', MAIN] }

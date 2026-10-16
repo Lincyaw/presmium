@@ -5,7 +5,8 @@
 1. 编码：按学到的先后合并
 2. 解码：把字节拼回来
 3. 在分词器里看结果
-4. 小测验
+4. 自己分词
+5. 小测验
 :::
 
 训练得到的合并规则表，就是分词器的全部知识。这一章用它给新文本分词，也就是编码；再把编号还原成文本，也就是解码。
@@ -37,8 +38,8 @@
 
 <div class="bpe-playground">
   <input id="bpe-text" value="slowest" readonly aria-label="要分词的文本">
-  <button id="bpe-run" type="button">分词</button>
-  <button id="bpe-vocab" type="button">词表</button>
+  <button id="bpe-run" type="button" disabled aria-disabled="true">分词</button>
+  <button id="bpe-vocab" type="button" disabled aria-disabled="true">词表</button>
   <div id="bpe-output" class="bpe-playground__output">
     <p class="bpe-playground__tokens"><span>s<small>115</small></span><span>low<small>260</small></span><span>est<small>257</small></span></p>
     <p class="bpe-playground__count">3 个词元，7 个字节</p>
@@ -68,6 +69,7 @@
   border-radius: 0.25rem;
   background: #0369a1;
   color: #fff;
+  cursor: default;
 }
 .bpe-playground__output {
   grid-column: 1 / -1;
@@ -96,8 +98,9 @@
 .bpe-playground__tokens small {
   font-size: 0.7em;
 }
-/* The result shows once the cursor has clicked the button. */
-.bpe-playground__output p {
+/* Where the cursor plays (the web form and the slides), the result shows once it has clicked the
+   button; elsewhere (a notebook) it is always shown. */
+:is(.pm-section, .pm-present, .slidev-layout) .bpe-playground__output p {
   visibility: hidden;
 }
 #bpe-run[data-pm-cursor='click'] ~ .bpe-playground__output p {
@@ -105,7 +108,7 @@
 }
 </style>
 
-很多分词器都提供这样的演练场：输入一段文本，就能看到它被切成了哪些词元。本节的演练场只是示意，按钮不会响应点击，结果是预先算好的：分词器用 `src/bpe.py` 在上一章“在浏览器里训练”的那段文本上学了 10 条规则。
+很多分词器都提供这样的演练场：输入一段文本，就能看到它被切成了哪些词元。本节的演练场只是示意，按钮不会响应点击，结果是预先算好的：分词器用 `src/bpe.py` 在上一章“在浏览器里训练”的那段文本上学了 10 条规则。下一节可以自己运行这个分词器。
 
 :::{cursor}
 :reveal:
@@ -134,7 +137,69 @@ click #bpe-run
 在真实的演练场中，这个按钮列出全部 266 个词元：256 个字节，加上学到的 10 条规则。
 :::
 
-想知道某个编号代表什么，可以打开词表查看。
+想知道某个编号代表什么，就去词表里查：编号 256 以后的词元，都是由两个更早的词元拼成的。
+
+(encode-run)=
+## 自己分词
+
+```{run-panel} python
+:params: {text: slowest}
+from collections import Counter
+
+
+def get_stats(ids):
+    return Counter(zip(ids, ids[1:]))
+
+
+def merge(ids, pair, new_id):
+    out, i = [], 0
+    while i < len(ids):
+        if i + 1 < len(ids) and (ids[i], ids[i + 1]) == pair:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def train(text, vocab_size):
+    ids = list(text.encode("utf-8"))
+    merges = {}
+    for new_id in range(256, vocab_size):
+        stats = get_stats(ids)
+        if not stats:
+            break
+        pair = max(stats, key=stats.get)
+        ids = merge(ids, pair, new_id)
+        merges[pair] = new_id
+    return merges
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        stats = get_stats(ids)
+        pair = min(stats, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+corpus = " ".join(["low"] * 5 + ["lower"] * 2 + ["newest"] * 6 + ["widest"] * 3)
+merges = train(corpus, 266)
+vocab = {i: bytes([i]) for i in range(256)}
+for (a, b), new_id in merges.items():
+    vocab[new_id] = vocab[a] + vocab[b]
+ids = encode(text, merges)
+tokens = [vocab[i].decode("utf-8", errors="replace") for i in ids]
+print(f"{tokens} {ids}")
+```
+
+这就是 `src/bpe.py` 中的 `get_stats`、`merge`、`train` 与 `encode`，训练文本也和上一章相同。代码先学 10 条规则，再给参数 `text` 分词，打印每个词元的文字与编号；文字来自末尾像解码那样建起的词表。点“运行”，得到的正是上一节演练场中的 `s`、`low`、`est`。
+
+把 `text` 改成 `newer`、`lowest` 或者你自己的词再运行，面板会对比两次的结果。训练文本里没有的字母只能保留为单个字节，学过的片段则会合并成一个词元。
 
 (encode-quiz)=
 ## 小测验
