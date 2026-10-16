@@ -822,6 +822,33 @@ WP-73a 至 WP-79 合并后（main 90c054d：`pnpm test` 161/161，Playwright 218
 
 **实际交付**：助手插件（`packages/addon-assistant`）中的修改任务，对 `annotations`、`chat`（含起草）与 `transcript` 一视同仁：`src/node/changes.ts`（审阅、检查点、批注的结果、按 `settings.presmium.assistant.review` 审阅或直接接受、工作区配置的所有者确认、经 `REVISIONS` 提交、失败、取消与关闭时回滚）、`src/node/git-review.ts`（内置的 git 审阅：临时索引写出的树为快照与检查点，按快照恢复，删除任务新建的文件）、`src/node/tasks.ts`（任务与事件）、`server.ts` 的路由（`tasks` 中一文档一个修改任务与 409、`tasks/<id>/review`、`revert`、`excerpt`；`info` 的 `kinds` 对编辑者与所有者在有 `REVISIONS` 时另有三种修改任务）、`permissions.ts` 给写入的确认附上路径（所有者允许的文档目录之外的写入随任务提交）；`src/domain/` 的 `api.ts`（批注、讲授轨与审阅决定的校验）、`changes.ts`（批注报告行的解析、提交说明）、`prompt.ts`（修改任务的提示：`presmium-annotations:` 一行、讲授轨的文件、起草）与中英文。浏览器端：`AGENT` 把上下文写明文档的任务发往那份文档的路由（首页起草新文档）；编辑模式中的“AI 修改”面板（`EditPanel.vue`：点选 `[data-block]` 加批注，摘录取自 `excerpt` 路由，成批发送；对话带上章节、步骤、选中内容与章节的源码行；两处写明服务提供方）与修改任务（`ChangeTask.vue`、`edit.ts`：进度与各步、逐个文件的审阅、提交与撤销）；视图插件 `viewer.ts` 另给出块与章节的源码位置。测试 agent（`test/fixtures/scripted-agent.mjs`）增加修改任务的行为（批注、`#append`、新增一节、起草、讲授轨，写工作目录之外先请求权限）。验收用例都在 `e2e/assistant-edit.spec.ts`（测试工作区 `e2e/fixtures/assistant-edit/`，端口 4973 至 4977）：浏览器中的批注、对话、审阅与撤销；deltabox（主机不满足条件时跳过）；首页的起草；git 审阅的拒绝某个文件、全部拒绝、一文档一任务与 `transcript`、运营者目录、所有者允许的目录之外的写入、进程结束时待审阅的任务回滚与 `review: auto`；单份文稿的仓库中工作区配置的所有者确认（拒绝与允许）；SHARED 中 DeepSeek Harness 写文档目录之外的工作区配置（确认只在所有者控制台上，编辑者回答得到 403，拒绝后不变，提交中没有它）。与设计不同或设计没有写明之处写在 `architecture.md` 4.8 节“实现（WP-81）”与 10.7 节“git 实现（WP-81）”。没有实现 P-115 的“回退到某次工具调用之前”（`ChangeReview` 没有这个方法）。首页的起草需要工作区（本波次属于 WP-86）补上两处：首页加载列在 `settings.presmium.workspace.plugins` 中、带浏览器部分的运营者插件（助手的 `src/client/plugin.ts`）；首页的“文档”有运营者插件的 Node 服务与服务端路由，使助手的 `info` 在首页可用（或首页的 `info` 由某一份文档回答）。在此之前用例以 `page.route` 补上这两处，起草本身照常发往新文档的路由。实测发现：随包的 DeepSeek Harness 的每次写入（暂存目录中的临时文件，提交后删去暂存目录）使 deltabox-lite 0.1.1 的审阅会话出错（`architecture.md` 9.5 节），以 deltabox 审阅时它的第一次写入就使任务失败，文档在重启之前不能再开修改任务；所以 agent 是随包的 DeepSeek Harness 时（SHARED 中总是，LOCAL 中没有替换的运行时）助手不用 `CHANGE_REVIEW`，用自己的 git 审阅，启动日志写明（验证者的意见；上游修复后去掉这个判断），用例：随包的 DeepSeek Harness 与假模型在默认设置下连续两个修改任务都经 git 审阅形成提交、不留下暂存目录。验证者意见的其余修正：git 审阅以 `GIT_LITERAL_PATHSPECS=1` 运行；工作目录之内 `.git/` 中的写入属于 `workspace` 范围；单份文稿的仓库中 git 审阅看守仓库 git 目录中 git 借以执行代码的文件（`config`、`hooks/`、`info/`，`src/node/git-guard.ts`），每步与结束时恢复原样（随包的 DeepSeek Harness 在工作目录之内写入不发权限请求，用例：它写的钩子与定义过滤驱动的配置在审阅运行 git 之前被恢复，过滤驱动没有执行）；等待所有者对工作区配置的确认时任务被取消或服务端关闭则回滚；浏览器端发往别的文档改用 `@presmium/host` 的 `createServerClient({ document })`；deltabox 的用例覆盖任务开始前未提交的改动；首页起草的两处替身只在首页的 `info` 不可用时启用（工作区补上之后自动不用）。
 
+### WP-81e J 波次合并后集成（验收者）
+
+WP-81、WP-83、WP-86、WP-87 合并后（main 7ccc6b5）验证遗留的问题，与 WP-84 同时进行，分两组。逐条的出处见各工作包的验证报告（验收者整理在会话的草稿中）。
+
+**WP-81e1 助手**（拥有 `packages/addon-assistant`、`packages/addon-deltabox`、`packages/kernel/src/contracts*`（只为第 2 项增加）、`e2e/assistant*.spec.ts` 及其夹具）：
+
+1. 刷新或离开页面后，文档的待审阅修改不再成为无主的审阅并锁住修改任务：审阅由服务端按文档保存，页面加载时重新接上待审阅的修改（列出、接受、放弃）；没有任何窗口处理的审阅在可设置的时限后回滚并释放；服务重启后从快照恢复或回滚。用例：审阅中刷新页面后仍能接受；关闭所有窗口后超时回滚。
+2. P-115 的“回退到某次工具调用之前”：验收者批准在 `ChangeReview` 上增加可选的 `restoreTo?(stepId: string): Promise<void>`；git 与 deltabox 两种实现，审阅界面在每一步提供“回到这一步之前”。deltabox 会话出错时，审阅从自己的快照恢复、结束会话并释放目录。用例各一。
+3. git 目录保护覆盖 `commondir`、`gitdir` 等全部可改变 git 行为的文件；写入的范围按真实路径（解析符号链接）判断。
+4. 撤销（revert）与同一文档进行中的修改任务互斥；用例。
+5. 首页起草：助手的 `info` 等路由在首页（文档 `''`）应答，配合 WP-81e2 第 6 项去掉 `e2e/assistant-edit.spec.ts` 中的替身。
+6. `e2e/assistant.spec.ts` 第 91 行的定位器只选章节（`section.pm-section[data-section=…]`）。
+
+**WP-81e2 编译与站点**（拥有 `packages/compiler`、`packages/cli`、`packages/web`、`packages/workspace`、`packages/render-*`、`e2e/site.spec.ts`、`e2e/workspace*.spec.ts`、`e2e/fixtures/publish-checks/**` 及相关夹具）：
+
+1. 译本按受众编译：`--audience student` 与 `presmium serve` 的学生视图中，译本同样去掉教师内容；用例（含教师章节的中文文稿与英文译本，学生版两种语言都没有教师内容）。
+2. `{audience}` 没有受众名时只给教师（失败即关闭），并报错；被删除章节的诊断不留在学生版的 IR 中；`{include}` 带受众且被引入的文件开启章节时，其后的内容不被误归为教师内容（或给出诊断）。
+3. 工作区的 `ServerHost.build` 遵守 `student` 视图。
+4. 发布目录时不发布隐藏文件与目录、`node_modules`；目录发布的哈希按文件缓存；原始 HTML 的地址改写只匹配真正的属性（用 HTML 解析，不用正则）。
+5. 译本编译不在作者的文稿目录中写临时文件；不再用诊断数组的访问器替换来合并过期诊断；工作区站点中声明译本的文档要么生成语言切换，要么给出诊断。
+6. 首页加载运营者插件（`settings.presmium.workspace.plugins`）的浏览器部分，使助手的 `AGENT` 在首页可用（配合 WP-81e1 第 5 项）。
+7. `publishedDirectory` 等在 compiler 与 workspace 中重复的代码合为一份（workspace 从 compiler 引用）。
+
+**验收**：各项有用例；`pnpm test`、`pnpm demo:check`、`pnpm demo:build`、各自的 spec 与 `e2e/smoke.spec.ts` 通过；合并后验收者运行完整的 Playwright 套件。
+
+WP-84 同时处理 WP-83 在 `packages/addon-lecture` 中的遗留：读者经 `tracks/script` 的路径与 SHARED 下读者看到 `script` 时的提示、修正句子时显示当前引擎的服务提供方、`{only} lecture`、对齐与线性估算的用例、单独脚本的诊断位置。
+
 ### WP-84 转写回写讲义（M7、M8，P-136；P-137 中由 agent 生成译文）
 
 **归属**：`packages/addon-lecture/**`、`e2e/lecture-writeback.spec.ts`、`e2e/fixtures/lecture-writeback/**`。
