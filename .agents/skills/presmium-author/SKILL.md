@@ -140,6 +140,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 执行会话：同一 `:session:` 的代码块共享解释器（前一块定义、后一块使用），编译时改了其中一块整个会话重新执行；浏览器中每个页面各有一份，“重置会话”丢弃它。
 - 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象与 matplotlib 的图录制为富输出，各媒介按类型显示；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。
 - 编译时执行的代码只得到清理过的环境变量：去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量（运营者可在工作区配置的 `settings.presmium.exec.passEnv` 中列出要传入的变量）。打印环境变量的代码因此不会把凭据写进录制与产物。
+- 进程沙箱：在满足条件的 Linux 主机上（glibc 2.39 以上、FUSE 与 Landlock），编译时的 Python 与 JavaScript 默认在 deltabox 中运行（构建报告写 `isolated by deltabox cbcow-through`）：不能联网（本机地址也不行），只能写自己的运行目录，只读得到系统目录、文稿目录与解释器的安装目录，`HOME` 是临时目录。代码要读别处的文件（例如 `~/.local` 中的 Python 包、数据目录）时，运营者在工作区配置的 `settings.presmium.deltabox.read` 中列出；`settings.presmium.deltabox.sandbox: false` 关闭沙箱（构建报告写明没有沙箱的原因）。
 - 组件里的代码（执行面板、分步执行、本地环境包着的代码块）由组件运行，不另显示运行按钮与录制输出。
 - 执行缓存在 `.presmium/freeze/`，键为语言、代码、参数、执行器与环境指纹的哈希（会话中的块还包含前一块的键）；较大的图片等输出存在 `.presmium/freeze/blobs/`。`check`、`ir`、`build`、`dev` 每次编译都执行需要执行的代码并写入缓存；代码不变就不重跑；没有运行环境时沿用已提交的录制；超时不录制。只有 `presmium build` 删除已不存在的代码的录制。
 - 超时：代码块或指令的 `:timeout:`，否则 `presmium.exec.timeoutMs`（头部的全局值，或某一节 `{config}` 中的值），否则编译时默认 10 秒。

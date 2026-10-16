@@ -117,7 +117,7 @@ v0.8 新增的规则：
 | `./client` | `src/client/index.ts` | 浏览器端 API |
 | `./presmium` | `src/node/presmium.ts` | Node 端插件入口，默认导出 `PresmiumNodePlugin` |
 
-源码直接以 `.ts`、`.vue` 发布，不预编译。Slidev、VitePress 与 Vitest 直接处理 TS；CLI 通过 jiti 加载 TS。
+源码直接以 `.ts`、`.vue` 发布，不预编译。Slidev、VitePress 与 Vitest 直接处理 TS；CLI 通过 jiti 加载 TS；插件自己以 TS 写的子进程（`addon-deltabox` 的辅助进程）以 `node --import <jiti/register>` 启动，因为装在 `node_modules` 中的 `.ts` 不被 Node 剥离类型。
 
 ## 4. 跨上下文契约
 
@@ -1612,7 +1612,7 @@ v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下是计划�
 | P-132、P-133 | addon-speech、addon-lecture | `addon-speech/test/speech.test.ts`、`addon-speech/test/engines.test.ts`、`addon-speech/test/gateway.test.ts`（WP-82）；讲授轨中的转写与换音色见 `e2e/lecture-script.spec.ts`（WP-83） |
 | P-134、P-135 | addon-lecture | `e2e/lecture-script.spec.ts`、`addon-lecture/test/script.test.ts`、`addon-lecture/test/video.test.ts`（WP-83） |
 | P-136 | addon-lecture | `e2e/lecture-writeback.spec.ts`（WP-84） |
-| N-08 安全基线 | server、compiler、addon-exec、mcp、addon-assistant、workspace、addon-speech、addon-exec-jupyter、addon-lecture、addon-deltabox | 各工作包的拒绝用例：外来 `Host` 与 `Origin`、缺令牌、缺登录、读者调用编辑者的路由、`presmium gateway` 不带令牌或带作废的限定令牌、SHARED 模式的 serve 在环境中有第三方凭据或缺少 gateway、agent-host 与控制台的主机名时拒绝启动（`server/test/server.test.ts`，WP-73a）；所有者控制台：工作区站点的源上没有所有者路由、收不到也不能回答 `workspace` 范围的确认，控制台只接受来自自己的源的回答，站点页面中的组件以所有者的身份发出的回答被拒绝（`server/test/server.test.ts`、`e2e/server.spec.ts`，WP-73a）；编译时执行的代码经自己的环境拿不到凭据（`addon-exec/test/secrets.test.ts`，WP-73b）；进程沙箱中的代码读不到父进程环境中的秘密、连不上网络、写不了运行目录之外，没有工作区配置的 `presmium build` 默认经它运行（`addon-deltabox/test/sandbox.test.ts`，WP-90）；SHARED 模式中未录制的代码等所有者确认、只在 agent-host 中执行且不重复请求、`off` 不执行，`presmium serve` 拒绝文稿相对路径与文稿目录 `node_modules` 中的插件与渲染端包，文稿组件引用的 VitePress 数据加载器只在 agent-host 中运行，指向工作区之外的符号链接不被读取（`cli/test/serve.test.ts`，WP-79）；compose 布局的隔离：三个容器的 uid 不同、sandbox 只连得到 gateway、serve 只在内部网络上、serve 的环境中没有第三方凭据与它自己的令牌、sandbox 写不了 `.git/` 与工作区配置（`workspace/test/deploy.test.ts`，WP-79，需要 Docker）；未确认的操作类工具、作废的会话令牌（WP-78）；`tutor` 模式的写入、SHARED 模式中编辑者的令牌调用 `run_code` 只由所有者在控制台上确认、agent 只拿到会话的模型令牌且会话结束后作废、LOCAL 模式中 agent 的环境没有 `PRESMIUM_` 开头的变量而模型访问改名传入（WP-80）；编辑者不能回答自己 agent 的工作区范围的确认，agent 对运营者目录的权限请求直接被拒绝，被拒绝的文件恢复为任务开始时的内容，单份文稿的仓库中审阅里的工作区配置要所有者另行允许（`e2e/assistant-edit.spec.ts`，WP-81）；文稿把凭据引向别的地址（WP-76、WP-82）；没有同意记录的克隆音色、写在文稿中的同意记录、SHARED 模式中写在工作区里的记录（gateway 只认自己运营者目录中的记录），所有者路由只在控制台的源上（WP-82）。服务提供方的标明：`e2e/assistant.spec.ts`（WP-80）、`e2e/assistant-edit.spec.ts`（WP-81）、`addon-speech/test/speech.test.ts`（WP-82）、`e2e/lecture-script.spec.ts`（WP-83）。AI 合成的标识：`e2e/lecture-script.spec.ts`（播放界面，WP-83）、`addon-speech/test/speech.test.ts`（音频与 `<键>.json` 的元数据，WP-82）（第 11 节） |
+| N-08 安全基线 | server、compiler、addon-exec、mcp、addon-assistant、workspace、addon-speech、addon-exec-jupyter、addon-lecture、addon-deltabox | 各工作包的拒绝用例：外来 `Host` 与 `Origin`、缺令牌、缺登录、读者调用编辑者的路由、`presmium gateway` 不带令牌或带作废的限定令牌、SHARED 模式的 serve 在环境中有第三方凭据或缺少 gateway、agent-host 与控制台的主机名时拒绝启动（`server/test/server.test.ts`，WP-73a）；所有者控制台：工作区站点的源上没有所有者路由、收不到也不能回答 `workspace` 范围的确认，控制台只接受来自自己的源的回答，站点页面中的组件以所有者的身份发出的回答被拒绝（`server/test/server.test.ts`、`e2e/server.spec.ts`，WP-73a）；编译时执行的代码经自己的环境拿不到凭据（`addon-exec/test/secrets.test.ts`，WP-73b）；进程沙箱中的代码读不到父进程与 LOCAL 服务（`presmium dev`）的 `/proc/<pid>/environ` 中的秘密、连不上网络与 Docker 的套接字、写不了运行目录之外，没有工作区配置的 `presmium build` 默认经它运行，运营者关闭时报告写明原因（`addon-deltabox/test/sandbox.test.ts`，WP-90）；SHARED 模式中未录制的代码等所有者确认、只在 agent-host 中执行且不重复请求、`off` 不执行，`presmium serve` 拒绝文稿相对路径与文稿目录 `node_modules` 中的插件与渲染端包，文稿组件引用的 VitePress 数据加载器只在 agent-host 中运行，指向工作区之外的符号链接不被读取（`cli/test/serve.test.ts`，WP-79）；compose 布局的隔离：三个容器的 uid 不同、sandbox 只连得到 gateway、serve 只在内部网络上、serve 的环境中没有第三方凭据与它自己的令牌、sandbox 写不了 `.git/` 与工作区配置（`workspace/test/deploy.test.ts`，WP-79，需要 Docker）；未确认的操作类工具、作废的会话令牌（WP-78）；`tutor` 模式的写入、SHARED 模式中编辑者的令牌调用 `run_code` 只由所有者在控制台上确认、agent 只拿到会话的模型令牌且会话结束后作废、LOCAL 模式中 agent 的环境没有 `PRESMIUM_` 开头的变量而模型访问改名传入（WP-80）；编辑者不能回答自己 agent 的工作区范围的确认，agent 对运营者目录的权限请求直接被拒绝，被拒绝的文件恢复为任务开始时的内容，单份文稿的仓库中审阅里的工作区配置要所有者另行允许（`e2e/assistant-edit.spec.ts`，WP-81）；文稿把凭据引向别的地址（WP-76、WP-82）；没有同意记录的克隆音色、写在文稿中的同意记录、SHARED 模式中写在工作区里的记录（gateway 只认自己运营者目录中的记录），所有者路由只在控制台的源上（WP-82）。服务提供方的标明：`e2e/assistant.spec.ts`（WP-80）、`e2e/assistant-edit.spec.ts`（WP-81）、`addon-speech/test/speech.test.ts`（WP-82）、`e2e/lecture-script.spec.ts`（WP-83）。AI 合成的标识：`e2e/lecture-script.spec.ts`（播放界面，WP-83）、`addon-speech/test/speech.test.ts`（音频与 `<键>.json` 的元数据，WP-82）（第 11 节） |
 
 ## 9. 已知风险
 
@@ -1666,7 +1666,7 @@ LOCAL 模式（`presmium dev`、`build`、`check` 与只监听本机、没有登
 
 | 代码 | 拿得到什么 | 已有的纵深防御 |
 |---|---|---|
-| 编译时执行的代码（没有进程沙箱时） | `presmium` 进程与 agent 进程的 `/proc/<pid>/environ`：`DEEPSEEK_API_KEY` 或 `PRESMIUM_MODEL_KEY`、`PRESMIUM_SPEECH_<ID>_KEY`、`PRESMIUM_ENV_<名>_TOKEN`、设置了的 `PRESMIUM_PROXY_SECRET`；`~/.ssh`、`~/.config` 等用户文件；Docker 的套接字（用户在 `docker` 组中时等于 root）与 D-Bus 会话总线；任意网络；运营者目录（可以伪造同意记录）；任何文档目录 | `RunContext.env` 只有清理过的变量；主机满足条件时（Linux，10.6 节）默认经进程沙箱运行：看不到沙箱外的进程与 Unix 套接字，网络全部拒绝，只能写运行目录。进程沙箱中 `/tmp` 仍可读（deltabox 固定允许），文稿目录与解释器的安装目录只读 |
+| 编译时执行的代码（没有进程沙箱时） | `presmium` 进程与 agent 进程的 `/proc/<pid>/environ`：`DEEPSEEK_API_KEY` 或 `PRESMIUM_MODEL_KEY`、`PRESMIUM_SPEECH_<ID>_KEY`、`PRESMIUM_ENV_<名>_TOKEN`、设置了的 `PRESMIUM_PROXY_SECRET`；`~/.ssh`、`~/.config` 等用户文件；Docker 的套接字（用户在 `docker` 组中时等于 root）与 D-Bus 会话总线；任意网络；运营者目录（可以伪造同意记录）；任何文档目录 | `RunContext.env` 只有清理过的变量；主机满足条件时（Linux，10.6 节）默认经进程沙箱运行：看不到沙箱外的进程与 Unix 套接字，网络全部拒绝，只能写运行目录。进程沙箱中 `/tmp` 仍可读（deltabox 固定允许），文稿目录、解释器的安装目录与执行器的包所在的最外层 `node_modules` 只读；代码以 `setsid` 离开进程组的子进程在超时时不被结束，留在沙箱中直到自己退出 |
 | agent（DeepSeek Harness）与它的 shell 命令 | 同上：DeepSeek Harness 的沙箱只管文件的写入（`workspace-write`），不隐藏进程与网络；agent 自己的环境中有模型的密钥 | 写到工作目录之外、shell 与网络的权限请求经所有者（本机用户）确认；修改经审阅后才提交，可以全部或逐个文件拒绝 |
 | agent 写进被 `.gitignore` 忽略的路径 | git 实现的审阅不含被忽略的文件：agent 写进文稿目录的 `node_modules/` 或 `.presmium/` 中工作目录的文件不出现在差异中，拒绝时也不恢复；`presmium dev` 加载文稿目录 `node_modules` 中的插件，这样写入的包在下一次启动时在 `presmium` 进程中运行 | 无（LOCAL 中 agent 本来就有 shell，能直接做同样的事） |
 | 文稿声明的本地容器（`kind: devcontainer`） | 容器定义来自文稿，可以挂载主机的任意路径或以特权运行，等于用户的 Docker 权限 | 命令行只得到 `RunContext.env` 与 Docker 客户端的变量；不经进程沙箱（要用 Docker 的套接字） |
@@ -1699,6 +1699,13 @@ deltabox 的先行验证（`design-v0.7.md` 第 11 节）发现的五个上游�
 | `filesystem.write` 在项目内部不收窄：项目中的任何路径（含 `.git/config`、`.git/hooks/`）都可写 | deltabox-lite | 同上，以项目目录本身划定可写范围 |
 | copy-private 模式中被执行的代码的父进程是带着调用者全部环境的 `deltabox` 命令行，`/proc/<ppid>/environ` 中有调用者的秘密 | deltabox-lite | 不用 copy-private（审阅与进程沙箱都用 cbcow 模式）；`addon-deltabox` 另在一个只带 `PATH`、`HOME` 与 `DELTABOX_STATE_DIR` 的辅助进程中使用 deltabox 的 Node 绑定，deltabox 的进程都是它的后代，从它继承的环境中没有秘密（10.6 节） |
 | `dsh-acp` 只把带 `callId` 的 `approval/request` 转为 ACP 的 `session/request_permission`，并且不带原因；dsh-deltabox 的任务审阅没有 `callId`，在 ACP 下落到失败关闭，agent 空闲时修改被静默回滚 | DeepSeek Harness（`dsh-acp`） | 不采用 dsh-deltabox（方案 A），由 Presmium 自己持有 deltabox 会话（方案 C）；上游修复后再评估 |
+
+WP-90 另外遇到的两处（同样没有提交）：
+
+| 问题 | 上游 | 影响与处理 |
+|---|---|---|
+| `session.stop` 之后会话的运行时目录（`/tmp/deltabox-<uid>/deltabox-lite/<会话>/`）与项目在状态目录 `projects/` 中的登记都留在原处 | deltabox-lite | 每次编译都新建运行目录，会越积越多：`addon-deltabox` 停止会话之后自己删去（运行时目录在确认视图已卸载之后） |
+| Node 绑定的 `exec` 没有取消与超时 | deltabox-lite | `addon-deltabox` 按命令行中的会话 ID 找到会话的 worker，结束它之下与它进程组中的进程 |
 
 
 ## 10. 服务端与部署
@@ -1839,6 +1846,15 @@ presmium serve（SHARED，compose 布局）
   - **启动方式**：插件不在 `presmium` 进程中加载 deltabox 的 Node 绑定，而是启动一个辅助进程（`node <插件>/src/node/helper.ts`），它的环境只有 `PATH`、`HOME` 与 `DELTABOX_STATE_DIR`，由它调用绑定的 `loadNative()`；审阅与进程沙箱的请求经它的标准输入输出（JSON 行）转发。deltabox 的文件系统 helper、命令 helper 与被执行的命令都是这个辅助进程的后代，沿父进程链读到的环境中没有秘密（先行验证中 copy-private 的命令能读到带着调用者全部环境的父进程，这里既不用 copy-private，父进程也不是带秘密的进程）。
   - **隔离方式**：每次编译一个预热的会话，模式 cbcow-through（`--require-fs-mode`），隔离为 sandlock；项目是一个临时的运行目录（`mkdtemp`），网络 `deny_all`（含本机回环）。每次运行前把输入写进运行目录，命令结束后从运行目录读回 `collect` 的文件（through 模式中写入立即可见），再 `abort` 回到空目录。文稿目录、解释器的安装目录（按 `RunContext.env.PATH` 解析到的解释器的前缀，例如 nvm 或 conda 的目录）与 `settings.presmium.deltabox.read` 列为只读；会话的项目中不设拒绝规则（9.5 节）。
   - 主机不满足条件或运营者关闭时照旧启动子进程；构建报告写明隔离方式或没有进程沙箱的原因。LOCAL 模式中拿得到什么见 9.4 节。
+  - **实现（WP-90）**：`packages/addon-deltabox/src/node/`（`presmium.ts` 插件与设置，`client.ts` 辅助进程的客户端，`helper.ts` 辅助进程，`sandbox.ts`，`review.ts`，`records.ts` 会话的记录，`messages.ts` 中英文）。与上面不同或上面没有写明之处：
+    - 辅助进程以 `node --import <jiti/register> <插件>/src/node/helper.ts` 启动（源码以 `.ts` 发布，装在 `node_modules` 中时 Node 不剥离类型），在自己的进程组中，所以终端的 Ctrl-C 只到 `presmium`。`presmium` 没有别的事要做时（`beforeExit`）关闭它的标准输入并等它回滚审阅、停止会话（至多 30 秒）；`presmium` 被信号结束时，辅助进程在标准输入关闭后自行收尾。
+    - 可用性由 `helper.ts probe` 判断（另 `exec` 一次 `true`，确认 sandlock 能启动命令），每个进程每个状态目录问一次；满足条件的结果按开机（`/proc/sys/kernel/random/boot_id`）与两个包的版本记在状态目录的 `presmium/probe.json` 中，同一次开机中不再探测，除非有崩溃留下的会话（之后会话启动失败时，这次运行按失败处理，显示录制输出）。macOS 不探测，直接不登记。
+    - 状态目录默认是 `${XDG_STATE_HOME:-~/.local/state}/presmium/deltabox`，各工作区共用；`settings.presmium.deltabox.stateDir`（相对于工作区根目录，可写 `~/`）在工作区之内时两项服务都不登记。状态目录不在工作区的文件系统上时，审阅的快照是完整的复制。
+    - 运行会话按只读路径的集合分组（不同执行器的路径不同），每组至多 4 个预热的会话，同时到达的运行并行；会话在 `presmium` 进程的整个生命期中保持预热。只读路径另有系统目录（`/usr`、`/bin`、`/sbin`、`/lib`、`/lib32`、`/lib64`、`/etc` 中存在的），以及位于 `node_modules` 中的路径所在的最外层 `node_modules`（包的依赖装在它旁边，pnpm 放在 `.pnpm` 中；执行插件的 JavaScript 运行器只列出 Sucrase 自己的目录）。
+    - 命令的 `HOME`、`TMPDIR`、`XDG_CACHE_HOME`、`XDG_CONFIG_HOME` 是 deltabox 给会话的临时目录，`RunContext.env` 中这四个变量不传入（主机上的那些目录在沙箱中不可写）；其余变量照传。
+    - 输入经会话写入、`collect` 的文件经会话读回：deltabox 拒绝穿过符号链接的读取，代码不能用链接把运行目录之外的文件带进录制。标准错误中的运行目录路径换成 `.`。超时与中止时结束会话的 worker 之下的进程与 worker 进程组中余下的进程（命令退出时留下的子进程也在其中），worker 保持预热；以 `setsid` 离开进程组的进程不在其中（9.4 节）。
+    - 每个会话在状态目录的 `presmium/sessions/` 中有一条记录（辅助进程的 pid 与启动时刻，所以 pid 被重用或共用状态目录的另一份安装的辅助进程都不会被当成同一个）。辅助进程启动与探测时恢复辅助进程已不在的会话：结束会话的 deltabox 进程，`abort`，停止。会话停止之后另删去 deltabox 留下的运行时目录（确认视图已卸载之后）与运行目录在 `projects/` 中的登记；停止失败时结束剩下的 deltabox 进程并卸载视图（`fusermount3 -u -z`）。
+    - 构建报告：有进程沙箱时 CLI 照旧写 `isolated by deltabox cbcow-through`（编译器在 `RunContext.sandbox` 存在时就写，WASI 等不经它的运行也算在内）；LOCAL 模式中没有进程沙箱（也没有别的插件提供）而文稿有编译时执行的代码时，插件的编译步骤（`after: 'execute'`）给出信息级诊断 `presmium.deltabox`，写明原因与启用方法。启动日志（`[presmium.deltabox]`，标准错误）写明不登记的服务与原因，以及清理了哪些崩溃留下的审阅。文字按文稿的 `lang`。
 - **SHARED 模式**：serve 不运行任何执行器。编译器的 `remote` 选项把每次运行交给 agent-host（10.8 节），代码在 sandbox 容器中运行：那里没有第三方凭据，网络只到 gateway；需要远端环境时 agent-host 用 serve 为这次运行签发的限定令牌经 gateway 连接（`RunContext.gateway`）。agent-host 同样默认加载 `addon-deltabox`，启用 deltabox 的覆盖配置时（10.5 节）主机条件满足，代码同样经进程沙箱运行。执行缓存（`.presmium/freeze/`）中已有录制的代码照常使用录制；没有录制的代码按运营者设置 `settings.presmium.exec.compile` 处理：
   - `approve`（默认）：一次编译中待执行的代码合为一个 `operate` 确认（`workspace` 范围，只在所有者控制台上，列出章节、块与代码）；确认之前与被拒绝时按没有执行处理，显示 `:recorded:` 的录制输出或降级内容，并给出信息级诊断；所有者允许后工作区重新编译，这些代码交给 agent-host 执行。这个确认只由 `compile` 决定，`approvals.operate` 的 `allow` 不放行它。
   - `trusted`：不确认，交给 agent-host 执行（运营者信任全部编辑者）。
@@ -1872,6 +1888,8 @@ agent 的修改在提交之前由发起人审阅。契约是 4.8 节的 `CHANGE_
 6. 接受之后的撤销仍是 `git revert`（P-115）。待审阅的任务只在内存中：进程退出时关闭审阅（等于全部拒绝）；deltabox 实现启动时清理崩溃留下的会话（杀掉 helper 并 `abort`）。
 
 写到 `root` 之外的路径不在审阅中：它们本来就要经 `workspace` 范围的确认（10.4 节）。任务进行中作者对同一文档目录的改动：git 实现把它们算进审阅，deltabox 不记录它们，但拒绝同一个文件时快照会覆盖它们（9.4 节）。
+
+**deltabox 实现（WP-90）**：审阅在插件的辅助进程中（10.6 节）。`open` 把文档目录（真实路径）的文件、目录与链接以 `COPYFILE_FICLONE` 复制到状态目录的 `presmium/snapshots/<ID>/`，再以没有拒绝规则、网络 `deny_all` 的策略启动 cbcow-through 会话，`root` 是它的视图（`/tmp/deltabox-<uid>/deltabox-lite/<会话>/mount`），`visibility` 为 `immediate`；同一文档目录已有审阅时（本进程的，或另一进程的会话占着 deltabox 对目录的租约，`session busy`）`open` 失败。`step` 先取上一个检查点以来的差异（`diff --from`）再记检查点，步骤的 ID 是检查点的 ID；第 100 步之后的 `step` 不再记检查点，把最后一步换成倒数第二个检查点以来的差异。`accept(reject)` 取整个任务的差异，`commit`，停止会话，再把被拒绝的路径（只限文档目录之内）从快照复制回来，快照中没有的删除（连同任务新建、已空的目录），返回其余改动的路径；`rollback` 为 `abort` 再停止。路径在契约中相对于工作区根目录，在辅助进程中相对于文档目录。`presmium` 正常退出时辅助进程回滚进行中的审阅；崩溃之后，下一个 `presmium` 进程加载插件时恢复文档目录并在启动日志中写明。已知的缺口：恢复发生在编译器读过文稿头部之后，所以崩溃之后 `presmium dev` 的第一次编译用的是 agent 改过的内容，监听随即看到恢复并重新编译；被改过的是头部中的插件或渲染端时要重启 `presmium dev`。
 
 ### 10.8 agent-host（SHARED，D13）
 

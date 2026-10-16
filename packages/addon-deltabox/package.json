@@ -1,0 +1,19 @@
+{
+  "name": "@presmium/slidev-addon-deltabox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Change review and process sandbox through deltabox (D12, D13); an operator plugin installed with the CLI",
+  "keywords": [
+    "presmium"
+  ],
+  "exports": {
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@presmium/kernel": "workspace:*",
+    "deltabox-lite": "0.1.1",
+    "jiti": "^2.7.0"
+  }
+}

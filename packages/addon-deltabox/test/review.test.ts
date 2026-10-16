@@ -1,0 +1,135 @@
+// Change review through deltabox (D12, docs/architecture.md 10.7; WP-90). A test plugin's routes take
+// CHANGE_REVIEW in `presmium dev` and open a review of the deck directory; the test writes through the
+// review's root from a process outside any sandbox, as the agent writes. The steps and the diff show the
+// writes, which are in the deck directory (and recompiled) before anything is accepted; accepting with
+// a file rejected keeps the others and restores that one; rejecting all restores everything; a second
+// review of the same directory is refused. A `presmium dev` killed with its helpers leaves the review
+// behind, and the next one restores the deck directory when it starts.
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import type { Running } from './helpers.ts'
+import { env, FIXTURES, presmiumProcess, processTree, qualification } from './helpers.ts'
+
+const host = qualification()
+if (!host.ok) console.warn(`review.test.ts skipped: ${host.why}`)
+
+const LECTURE = `---
+title: 审阅
+plugins:
+  - ${join(FIXTURES, 'review-plugin')}
+---
+
+## 第一节
+
+开始时的内容。
+`
+
+/** Writes through the review's root as the agent does: a process of its own, outside any sandbox. */
+function agentWrites(root: string, script: string): void {
+  const result = spawnSync('sh', ['-c', script], { cwd: root, encoding: 'utf8' })
+  expect(result.status, result.stderr).toBe(0)
+}
+
+describe.skipIf(!host.ok)('change review through deltabox', () => {
+  let base: string
+  let deck: string
+  let state: string
+  let dev: Running | undefined
+  let server: string
+
+  const lecture = () => readFileSync(join(deck, 'lecture.md'), 'utf8')
+  const ir = () => JSON.parse(readFileSync(join(deck, '.presmium/dev/ir.json'), 'utf8')) as { sections: { title: string }[] }
+  const call = async (route: string, body?: unknown) => {
+    const response = await fetch(`${server}/__presmium/fixture.review/${route}`, body === undefined ? {} : { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })
+    return { status: response.status, json: await response.json() as Record<string, any> }
+  }
+
+  /** `presmium dev` on the deck, with deltabox's state in the test's own state directory. */
+  async function start(): Promise<Running> {
+    const running = presmiumProcess(['dev'], { cwd: deck, env: env({ XDG_STATE_HOME: state }) })
+    server = (await running.wait(/^server {2}(http\S+)$/m))[1]!
+    await running.wait(/^watching;/m)
+    return running
+  }
+
+  beforeAll(async () => {
+    base = mkdtempSync(join(tmpdir(), 'presmium-review-'))
+    deck = join(base, 'deck')
+    state = join(base, 'state')
+    mkdirSync(deck)
+    writeFileSync(join(deck, 'lecture.md'), LECTURE)
+    dev = await start()
+  }, 120_000)
+  afterEach(() => {
+    // A failed case leaves no review open for the next.
+    if (dev) return call('rollback', {}).then(() => {})
+  })
+  afterAll(async () => {
+    await dev?.stop()
+    rmSync(base, { recursive: true, force: true })
+  })
+
+  it('shows the agent\'s writes through the root as steps and a diff, live in the deck directory; accepts with a file rejected, rolls back, and refuses a second review', async () => {
+    const opened = await call('open', {})
+    expect(opened.status, JSON.stringify(opened.json)).toBe(200)
+    expect(opened.json).toMatchObject({ engine: 'deltabox', visibility: 'immediate' })
+    const root = opened.json.root as string
+    expect(root).not.toBe(deck)
+    expect((await call('open', {})).status).toBe(409)
+
+    agentWrites(root, 'printf "\\n## 第二节\\n\\nagent 写的。\\n" >> lecture.md && printf "# 笔记\\n" > notes.md')
+    // Before any acceptance the writes are in the deck directory, and presmium dev compiles them.
+    expect(lecture()).toContain('agent 写的。')
+    await expect.poll(() => ir().sections.map(s => s.title), { timeout: 15_000 }).toEqual(['第一节', '第二节'])
+
+    const step = await call('step', { label: '写讲义与笔记' })
+    expect(step.json).toMatchObject({ label: '写讲义与笔记', tool: 'edit' })
+    expect(step.json.changes.map((c: { path: string, kind: string }) => [c.path, c.kind]).sort()).toEqual([['lecture.md', 'modified'], ['notes.md', 'added']])
+    const diff = await call('diff')
+    expect(diff.json.changes.map((c: { path: string, kind: string }) => [c.path, c.kind]).sort()).toEqual([['lecture.md', 'modified'], ['notes.md', 'added']])
+    expect(diff.json.changes.find((c: { path: string }) => c.path === 'lecture.md').diff).toContain('+agent 写的。')
+    expect(diff.json.steps).toHaveLength(1)
+
+    const accepted = await call('accept', { reject: ['lecture.md'] })
+    expect(accepted.json).toEqual({ files: ['notes.md'] })
+    expect(lecture()).toBe(LECTURE)
+    expect(readFileSync(join(deck, 'notes.md'), 'utf8')).toBe('# 笔记\n')
+
+    // Another review, rejected as a whole: the changed file and the new one go back to the start.
+    const again = (await call('open', {})).json.root as string
+    agentWrites(again, 'printf "改写\\n" > lecture.md && printf "草稿\\n" > draft.md')
+    expect(lecture()).toBe('改写\n')
+    expect((await call('rollback', {})).status).toBe(200)
+    expect(lecture()).toBe(LECTURE)
+    expect(existsSync(join(deck, 'draft.md'))).toBe(false)
+    expect(readFileSync(join(deck, 'notes.md'), 'utf8')).toBe('# 笔记\n')
+  }, 60_000)
+
+  it('restores the deck directory when presmium dev starts again after it was killed with its helpers during a review', async () => {
+    const root = (await call('open', {})).json.root as string
+    agentWrites(root, 'printf "\\n## 崩溃之前\\n" >> lecture.md && printf "残留\\n" > crash.md')
+    expect(lecture()).toBe(`${LECTURE}\n## 崩溃之前\n`)
+    // The whole process tree at once (presmium dev, the plugin's helper, deltabox's helpers), as a crash would.
+    const exited = new Promise(done => dev!.child.once('exit', done))
+    for (const pid of processTree(dev!.child.pid!)) {
+      try {
+        process.kill(pid, 'SIGKILL')
+      } catch {}
+    }
+    await exited
+    expect(lecture()).toBe(`${LECTURE}\n## 崩溃之前\n`)
+
+    dev = await start()
+    expect(dev.output()).toContain(`已清理崩溃的进程留下的 deltabox 会话：${realpathSync(deck)}`)
+    expect(lecture()).toBe(LECTURE)
+    expect(existsSync(join(deck, 'crash.md'))).toBe(false)
+    await expect.poll(() => ir().sections.map(s => s.title), { timeout: 15_000 }).toEqual(['第一节'])
+    // Nothing of the old session holds the directory.
+    const reopened = await call('open', {})
+    expect(reopened.status, JSON.stringify(reopened.json) + dev.output()).toBe(200)
+    expect((await call('rollback', {})).status).toBe(200)
+  }, 120_000)
+})

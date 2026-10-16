@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-review",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/addon-deltabox/test: routes that drive CHANGE_REVIEW for the deck directory",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}
