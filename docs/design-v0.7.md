@@ -592,6 +592,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | mystmd 的 `myst-ext-card`、`myst-ext-grid`、`myst-ext-tabs`、`myst-ext-button` 与 myst-parser 1.7 一起用时给出的 mdast；它们在两种形态与 notebook 中的写法（`wbs.md` 没有为 WP-85 列出先行验证，开始时做了这几项小规模实测） | WP-85（已完成，结论见下） |
 | 组件的子块能否分开显示（IR 运行时与幻灯片中的插槽）；子块的 `v-click` 在组件插槽中是否照常按步骤出现；课堂服务是否接受 `predictions` 的写入（`wbs.md` 没有为 WP-88 列出先行验证，开始时做了这几项小规模实测） | WP-88（结论见下） |
 | MCP SDK v2 在服务端的挂载（Fetch 处理函数与调用方）、资源订阅与通知、JSON Schema 输入、stdio；网页形态的放映视图中能否回答确认（`wbs.md` 没有为 WP-78 列出先行验证，开始时做了这几项小规模实测） | WP-78（已完成，结论见下） |
+| myst-parser 对带 `:file:` 的 `{csv-table}` 给出什么；构建产物中的文字是否以原样出现（泄漏扫描的前提）；工作区站点开发服务器中 IR 模块与搜索索引的地址（`wbs.md` 没有为 WP-87 列出先行验证，开始时做了这几项小规模实测） | WP-87（结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -699,6 +700,12 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **其他会把凭据带走的地方**：网页搜索 `web-search-deepseek` 带着 `DEEPSEEK_API_KEY`（同时以 `x-api-key` 与 `Authorization`）访问自己的地址（默认 DeepSeek 的官方地址，只读 `DEEPSEEK_SEARCH_BASE_URL`，不看 `DEEPSEEK_BASE_URL`），所以 LOCAL 中用 `PRESMIUM_MODEL_*` 时助手另把 `DEEPSEEK_SEARCH_BASE_URL` 设为运营者服务的 `/v1`。`$DSH_HOME/.credentials.yaml` 中存储的凭据先于环境变量，`$DSH_HOME/cordis.patch.yml` 在 profile 之上生效，所以助手给 DeepSeek Harness 一个 Presmium 自己的 `DSH_HOME`。出站请求遵守 `HTTPS_PROXY`（本机回环除外），测试以此确认只有假密钥时没有请求发出。
 - **启动与其他**：第一次在一个 `DSH_HOME` 中启动时初始化 `profiles/acp`，之后 `initialize` 约 0.6 秒、`session/new` 约 0.1 秒（含连接 MCP 服务）；`initialize` 的 `agentInfo` 是 `{ name: 'deepseek-harness-acp', version: '0.0.1' }`（ACP 桥的版本，不是 DeepSeek Harness 的）；它声明 `sessionCapabilities.close`。`--patch` 的路径要写绝对路径（相对路径相对于进程的 `cwd`，而 `cwd` 是会话的目录）。安装脚本（`node-pty`、`koffi`、`@deepseek-ai/dsh-subprocess-local` 等）不运行时 Linux 上 ACP、shell 与文件工具照常（`node-pty` 有随包的预编译二进制）；整个依赖约 860 MB（npm 安装）。
 - **Node 22.19**：本机 Node 22.22.1；`@deepseek-ai/dsh` 的 `package.json` 没有声明 `engines`，22.19 的要求出自它的文档（`docs/development.md`）。根目录的 `engines`（`>=22.18`）提高到 `>=22.19` 由验收者在合并时修改（交付报告中提出）。
+
+**WP-87 开始时的验证（2026-10-16，myst-parser 1.7.4、VitePress 1.6.4、Slidev 53.0.0）**的结论：
+
+- **MyST 的指令错误**：myst-parser 把应用失败的指令换成 `mystDirectiveError` 节点（`message` 如 `required body not provided for directive: csv-table`，`options` 保留作者写的选项），角色同样有 `mystRoleError`；不认识的选项（如 `{csv-table}` 的 `:file:`、`{note}` 的 `:badoption:`）只是给 vfile 的警告，编译器读不到。所以 `presmium.directive` 由这两种节点给出，并按 myst-parser 的 `defaultOptions.directives` 列出该指令不接受的选项，作为可能的原因。
+- **产物中的文字**：VitePress 与 Slidev 的构建产物（页面、JavaScript 块、搜索索引）、notebook 与 `ir.json` 中的中文是 UTF-8 原文，不转成 `\u` 转义；高亮的代码被拆进 `<span>`，JSON 与 JavaScript 字符串中的引号与换行是转义。泄漏扫描因此还原转义与字符引用、另去掉标签读一遍，按每段文字（而不是整段拼起来的文字）分句。搜索索引（MiniSearch）只存小写的词，测试用 ASCII 的标记词检查它。
+- **工作区站点中的模块**：每份文档的 VitePress 开发服务器以 `/<文档目录>/` 为 `base`，页面加载的 IR 模块是 `/<文档目录>/@id/__x00__virtual:presmium/ir`（`export default JSON.parse("…")`），搜索索引是 `/<文档目录>/@localSearchIndexroot`；经 `presmium serve` 按成员转发后读者与编辑者请求同一地址得到各自视图的内容。
 
 ## 12. 包与工作包
 

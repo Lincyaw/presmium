@@ -392,6 +392,15 @@ print(answer_key())
 
 外部链接的检查可选：`presmium check --external-links` 在本机装有 lychee 时检查外部链接，没有时给出信息级提示。
 
+实现（WP-87）：
+
+- **写法的细节**：`{audience}` 没有正文（写了正文是警告，正文被忽略）；同一节写了几个 `{audience}` 时取交集。`:audience:` 写在 `{slide}`、`{only}` 上时其中的块都带它，内层的 `:audience:` 与外层取交集（同 `{only}` 的渲染端）；它是通用选项，不交给插件的指令，也不成为 `{component}` 的属性。
+- **何时去掉**：编译器在步骤编排（第 5 步）之后、插件的编译步骤与编译时执行之前去掉其他受众的章节与块（`packages/compiler/src/audience.ts` 的 `audienceView`），而不是在第 2、3 步：块 ID 因此与完整文稿的相同（学生版与完整版的位置、课堂笔记、讲授轨中的块 ID 一致），剩下的步骤按 `viewFor` 的办法压缩（不写 `stepMap`），章节重新编号。被去掉的代码不执行，插件的编译步骤与渲染端都看不到它们；不带受众的构建与此前完全相同。带 `--audience` 的 `presmium build` 不删除执行缓存中的录制（只编译了一部分代码）。
+- **泄漏扫描**：被去掉的每个块与章节（标题、正文中的每段文字、代码的每行、组件的属性与 `fallback`）按句末标点（`。！？!?；;`、换行与句点后的空白）分句，取 12 个字符以上的句子；留下的内容自己的源码（不含录制输出）中也有的句子不算。构建结束后读输出目录中的每个文本文件（跳过图片、音视频、字体、WebAssembly 等与含 NUL 字节的文件），还原 JavaScript 与 JSON 字符串的转义和 HTML 的字符引用，再去掉标签读一遍（高亮的代码被拆进标签），一个被去掉的块只报告第一句命中：`content only for teacher is in the build for student: "<句子>" in <文件>`。
+- **学生视图**：`Compilation.forAudience(name)` 在编译好的完整文稿上做同样的筛选（另去掉位于被去掉内容中的诊断）；`presmium serve` 的 `student` 视图（`packages/workspace/src/node/audience.ts`）与 `presmium dev` 的 `ServerHost`（`tutor` 令牌）都用它，所以读者的站点与 MCP 读到的块 ID 也与完整文稿相同。插件的编译步骤这时已经在完整文稿上运行过，它们从被去掉的内容派生、写到别处的文字不在筛选之内（构建的泄漏扫描会发现这种情况）。
+- **发布检查**：`presmium.links`、`presmium.forbid` 在 `presmium check`、语言服务与服务端的 `ServerHost.check`（MCP 的 `get_diagnostics`）中运行（`@presmium/cli` 的 `pluginChecks` 调用 `Compilation.publishChecks`），不在 `presmium build` 中运行；`presmium.directive` 的 MyST 错误在每次编译中报告。检查的渲染端是头部 `renderers` 配置的，没有配置时是三个内置渲染端加插件提供的渲染端；同一处问题在几个视图中都有时只报告一次，只在部分视图中有时消息末尾写 `(in slides)` 等。`presmium.links` 检查链接、图片、定义、卡片的 `:link:`、组件 `assets` 中的地址与原始 HTML 的 `href`、`src`、`poster`：本地文件相对于写它的源文件，`/…` 在文稿的 `public/` 中，指向目录也算存在，在仓库（工作区）之外是错误；片段可以是章节 ID、块 ID、mdast 的 `identifier`、`label`，标题的 slug，脚注 `fn-<标识>` 与原始 HTML 的 `id`、`name`；`<路径>.md#片段`（或指向含 `lecture.md` 的目录）指向本文稿时按本文稿检查，指向另一份文档时按它的源码（展开 `{include}`，按 `sectionDepth` 分节，不加载它的插件）检查。诊断的行是块中写有这个地址（或命中文字）的那一行，找不到时是块的第一行。`presmium.forbid` 的正则以 JavaScript 的 `RegExp` 编译（无效时报告在头部该行），匹配章节标题、块的文字（含链接目标与原始 HTML）、代码（含多版本）与录制输出（流、错误、`text/*` 与 JSON 的数据）。`presmium.directive` 由 myst-parser 留下的 `mystDirectiveError`、`mystRoleError` 节点给出（它们不进入 IR）；消息附上该 MyST 指令不接受的选项（如 `{csv-table} takes no :file:`），myst-parser 对其他选项的警告不报告。lychee 检查失败的外部链接是警告。
+- **命令**：`--audience` 不适用于工作区根目录的 `presmium build`（报用法错误；工作区站点按文档构建学生版留给后续工作包）。
+
 ### 2.12 译本（P-123）
 
 ```yaml
@@ -507,10 +516,10 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | 顺序 | 步骤 | 作用 |
 |---|---|---|
 | 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，把脚注定义放回书写处，处理 `{include}` 与 `{literalinclude}`（文件的内容按 MyST 的选项截取后成为代码块；与 `{include}` 一样经读取范围，指向工作区之外的符号链接在 `presmium serve` 中被拒绝）；被引入的各文件可以用相同的脚注名（如 `[^1]`），后出现的文件中重名的脚注换一个内部标识（作者写的标签不变），每个文件的脚注从 1 起按首次引用的顺序编号 |
-| 2 | 切分章节 | 按标题切分，生成章节 ID；带受众编译时（`--audience`）去掉不属于该受众的章节 |
-| 3 | 指令转换 | 调用各插件注册的指令与行内角色，把指令节点转为 IR 节点、角色转为 `presmiumRole`；带受众编译时去掉不属于该受众的块 |
+| 2 | 切分章节 | 按标题切分，生成章节 ID |
+| 3 | 指令转换 | 调用各插件注册的指令与行内角色，把指令节点转为 IR 节点、角色转为 `presmiumRole`；记下 `:audience:` 与 `{audience}` 给出的受众 |
 | 4 | 划分角色 | 按 2.3 节判定讲解与上屏内容 |
-| 5 | 编排步骤 | 按 2.4 节计算 `at`、`until` 与章节步骤数 |
+| 5 | 编排步骤 | 按 2.4 节计算 `at`、`until` 与章节步骤数；带受众编译时（`--audience`）随后去掉不属于该受众的章节与块并压缩步骤（WP-87：在这里而不是第 2、3 步，块 ID 与完整文稿的相同，2.11 节） |
 | 6 | 插件步骤 | 各插件注册的变换，例如解析代码锚点、计算高亮行 |
 | 7 | 执行 | 执行带 `run` 的代码节点，结果写入 `outputs`，并写入执行缓存；之后运行声明了 `after: 'execute'` 的插件步骤，例如执行插件把编译时的输出写进执行面板的 `fallback` |
 | 8 | 校验 | 按 IR schema 校验，产生诊断 |
@@ -700,7 +709,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 | 命令 | 选项 | 作用 |
 |---|---|---|
-| `presmium build` | `--to <ids>`（渲染端，逗号分隔）、`--out <dir>`（默认 `<deck>/dist`）、`--audience <受众>`（只构建给该受众的内容并扫描产物，2.11 节）；在工作区根目录执行时构建整个工作区站点（第 10 节） | 编译并生成媒介：`<out>/ir.json`（相对路径，第 3 节）与 `<out>/<渲染端 ID>/`。不写 `--to` 时生成文稿头部 `renderers` 中配置的渲染端，没有配置时生成全部已安装的渲染端；各渲染端并行构建；删除执行缓存中文稿已不存在的代码的录制 |
+| `presmium build` | `--to <ids>`（渲染端，逗号分隔）、`--out <dir>`（默认 `<deck>/dist`）、`--audience <受众>`（只构建给该受众的内容并扫描产物，2.11 节；不适用于工作区根目录）；在工作区根目录执行时构建整个工作区站点（第 10 节） | 编译并生成媒介：`<out>/ir.json`（相对路径，第 3 节）与 `<out>/<渲染端 ID>/`。不写 `--to` 时生成文稿头部 `renderers` 中配置的渲染端，没有配置时生成全部已安装的渲染端；各渲染端并行构建；删除执行缓存中文稿已不存在的代码的录制 |
 | `presmium dev` | `--to <ids>`、`--out <dir>`（工作目录，默认 `<deck>/.presmium/dev`）、`--server-port <n>`（服务端的端口，默认空闲端口）、`--allow <种类,…>`（不询问就放行的确认种类：`operate`、`spend`、`write`、`agent`） | 监听源码与编译读取过的文件（第 5 节），增量编译，启动对应渲染端的开发服务器并打印其地址。保存频繁时合并排队的编译；被引入而尚不存在的文件在创建后即被编译；头部的 `plugins` 或 `renderers` 变化时提示重启 |
 | `presmium ir` | `--out <file>` | 输出 IR JSON（绝对路径），诊断写到标准错误；用于调试 |
 | `presmium check` | `--json`（JSON 输出）、`--update-lock`（先在工作区重新解析全部锚点，重写 `.presmium/anchors.lock.json`）、`--env`（连接每个具名环境，报告不可达的环境）、`--audience <受众>`（按该受众编译后检查）、`--external-links`（用 lychee 检查外部链接） | 完整编译（含编译时执行），再运行各插件的检查项（`Check`），只输出诊断 |

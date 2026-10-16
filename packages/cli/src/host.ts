@@ -1,7 +1,8 @@
 /**
  * The `ServerHost` of `presmium dev` (docs/architecture.md 10.2): its one
  * document is the deck, as the dev loop last compiled it; checks, builds and
- * runs of a code block work on that compilation, with its executors.
+ * runs of a code block work on that compilation, with its executors. The
+ * student view is that compilation as the audience `student` sees it (P-55).
  */
 import { join } from 'node:path'
 import { irBlocks } from '@presmium/kernel'
@@ -21,9 +22,10 @@ export function devHost(latest: () => Compilation | undefined, deckDir: string):
       const compilation = latest()
       return compilation ? [{ dir: '', title: compilation.doc.meta.title, lang: compilation.doc.meta.lang }] : []
     },
-    async compile(document) {
-      // The student view is the full deck until audiences are compiled (WP-87).
-      const { doc } = current(document)
+    async compile(document, view = 'full') {
+      // The student view (`tutor` tokens, P-55): the deck as the audience `student` sees it.
+      const compilation = current(document)
+      const doc = view === 'student' ? compilation.forAudience('student') : compilation.doc
       return { doc, diagnostics: doc.diagnostics }
     },
     async check(document) {
@@ -31,7 +33,9 @@ export function devHost(latest: () => Compilation | undefined, deckDir: string):
       return [...compilation.doc.diagnostics, ...await pluginChecks(compilation)]
     },
     async build(document, options = {}) {
-      const report = await build(current(document), { outDir: join(deckDir, 'dist'), to: options.to })
+      const compilation = current(document)
+      const viewed = options.view === 'student' ? { ...compilation, doc: compilation.forAudience('student') } : compilation
+      const report = await build(viewed, { outDir: join(deckDir, 'dist'), to: options.to })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
     async run(document, target, signal) {

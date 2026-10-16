@@ -11,6 +11,8 @@ import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
+import { audienceView, scanOutputs, withheld } from './audience.ts'
+import type { Withheld } from './audience.ts'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective, PluginRole } from './blocks.ts'
 import { Dependencies } from './dependencies.ts'
@@ -19,6 +21,8 @@ import { checkRuns, checkSecrets, environmentExecutors, environmentProviders, re
 import { executePass, FREEZE_DIR, FreezeCache, runEnvironment } from './execute.ts'
 import type { ExecutionOptions, RunStats } from './execute.ts'
 import { numberFootnotes } from './footnotes.ts'
+import { checkForbidden } from './forbid.ts'
+import { checkLinks } from './links.ts'
 import { DECK_PLUGIN, directoryComponents, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
 import { resolveReferences } from './references.ts'
@@ -68,6 +72,21 @@ export interface CompilerOptions {
   secret?: (name: string) => string | undefined
   /** How compile-time execution runs (docs/architecture.md 4.6, 10.6): the rules of `RunContext.env`, `admit`, `remote`. */
   execution?: ExecutionOptions
+  /**
+   * Compile for this audience only (`presmium build --audience`, P-55): the
+   * sections and blocks whose `:audience:` or `{audience}` leaves it out are
+   * removed before the plugin passes and compile-time execution.
+   */
+  audience?: string
+}
+
+/** A compilation for an audience (`CompilerOptions.audience`): what it left out, and the scan of a build for it. */
+export interface AudienceCompilation {
+  name: string
+  /** The content left out, with its longer sentences. */
+  withheld: Withheld[]
+  /** Errors (`presmium.audience`) for the content left out whose sentences are in a file under `dir` (a build's output). */
+  scan(dir: string): Promise<Finding[]>
 }
 
 /** A declared environment and its provider, for `presmium check --env`. */
@@ -126,6 +145,20 @@ export interface Compilation {
    * `run_code`, docs/architecture.md 10.6).
    */
   run(node: CodeNode, signal?: AbortSignal): Promise<RunResult>
+  /** Set when compiled for an audience (`CompilerOptions.audience`). */
+  audience?: AudienceCompilation
+  /**
+   * The document as an audience sees it (P-55): without the sections and
+   * blocks for other audiences, steps and sections numbered again; the
+   * student view of `presmium serve` and of `tutor` tokens.
+   */
+  forAudience(name: string): IRDocument
+  /**
+   * The publication checks (P-54, docs/ir.md 2.11) in the view of each
+   * renderer the deck builds: `presmium.links` and `presmium.forbid`; with
+   * `externalLinks`, lychee checks the external links when it is installed.
+   */
+  publishChecks(options?: { externalLinks?: boolean }): Promise<Finding[]>
 }
 
 export interface CompileOptions {
@@ -275,8 +308,11 @@ export class Compiler {
     const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
     const sections: IRSection[] = []
     for (const [i, section] of raw.entries()) {
-      const { blocks: drafts, hints, config } = await sectionBlocks(section.nodes, ctx)
+      const { blocks: drafts, hints, config, audience } = await sectionBlocks(section.nodes, ctx)
       const { blocks, steps } = scheduleSteps(drafts, report)
+      drafts.forEach((draft, j) => {
+        if (draft.audience) blocks[j]!.audience = draft.audience
+      })
       sections.push({
         id: section.id,
         index: i + 1,
@@ -287,6 +323,7 @@ export class Compiler {
         hints,
         ...Object.keys(config).length > 0 ? { config } : {},
         blocks,
+        ...audience ? { audience } : {},
       })
     }
 
@@ -301,6 +338,15 @@ export class Compiler {
       },
       sections,
       diagnostics: [],
+    }
+    // For an audience: the other audiences' content goes before any pass, executor or renderer sees it (P-55).
+    let audience: AudienceCompilation | undefined
+    if (this.options.audience) {
+      const name = this.options.audience
+      const view = audienceView(doc, name)
+      doc.sections = view.doc.sections
+      const left = withheld(view.removed, doc)
+      audience = { name, withheld: left, scan: dir => scanOutputs(left, dir, name) }
     }
     checkRuns(doc, execute, report)
     applyTranslations(doc, translationFields(headmatter))
@@ -374,7 +420,9 @@ export class Compiler {
     }
     scope?.refused.clear()
     doc.diagnostics = sortFindings(findings)
-    if (options.pruneCache && !findings.some(f => f.severity === 'error')) cache.prune()
+    // A build for an audience compiled only part of the deck: the recordings of the rest stay.
+    if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
+    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins) }
 
     return {
       doc,
@@ -401,6 +449,9 @@ export class Compiler {
       executors,
       runContext,
       run: (node, signal) => this.#run(doc, node, executors, runContext, signal),
+      ...audience ? { audience } : {},
+      forAudience: name => audienceView(doc, name).doc,
+      publishChecks: async (checks = {}) => [...await checkLinks(publish, checks), ...checkForbidden(publish, headmatter)],
     }
   }
 
@@ -514,6 +565,17 @@ export function sortFindings(findings: Finding[]): Finding[] {
   const file = (f: Finding) => f.source?.file ?? ''
   const line = (f: Finding) => f.source?.line ?? 0
   return findings.toSorted((a, b) => file(a) < file(b) ? -1 : file(a) > file(b) ? 1 : line(a) - line(b))
+}
+
+/**
+ * The renderers whose views the publication checks read: those the
+ * headmatter configures, else the built-in ones and those of the plugins (as
+ * a build without `--to` runs them).
+ */
+function publishedRenderers(doc: IRDocument, plugins: LoadedPlugin[]): string[] {
+  const configured = Object.keys(doc.config.renderers)
+  if (configured.length > 0) return configured
+  return [...new Set([...BUILTIN_RENDERERS, ...plugins.flatMap(loaded => (loaded.plugin?.renderer ? [loaded.plugin.renderer.id] : []))])]
 }
 
 function stringList(value: unknown): string[] {

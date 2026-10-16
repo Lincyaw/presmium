@@ -1,8 +1,11 @@
 /**
  * How each view of a document is compiled in `presmium serve` (D8, P-55,
  * docs/architecture.md 10.3): editors and owners see the `full` view, readers
- * (learners) and `tutor` tokens the `student` view. This file alone decides
- * it; until audiences are compiled (WP-87) the student view is the full deck.
+ * (learners) and `tutor` tokens the `student` view: the document as the
+ * audience `student` sees it, without the sections and blocks only for other
+ * audiences (`{audience} teacher`, `:audience: teacher`), its steps and
+ * sections numbered again (`Compilation.forAudience`, WP-87). This file
+ * alone decides it.
  */
 import type { Compilation } from '@presmium/compiler'
 import type { IRDocument } from '@presmium/kernel'
@@ -11,7 +14,10 @@ import type { DocumentView } from '@presmium/server'
 /** The views of a document, in the order the server forwards to them. */
 export const VIEWS: readonly DocumentView[] = ['full', 'student']
 
+/** The audience the student view is compiled for. */
+export const STUDENT = 'student'
+
 /** The IR a view of a compiled document shows. */
-export function viewDocument(compilation: Compilation, _view: DocumentView): IRDocument {
-  return compilation.doc
+export function viewDocument(compilation: Compilation, view: DocumentView): IRDocument {
+  return view === 'student' ? compilation.forAudience(STUDENT) : compilation.doc
 }

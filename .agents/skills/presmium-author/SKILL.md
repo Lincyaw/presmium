@@ -1,6 +1,6 @@
 ---
 name: presmium-author
-description: "Presmium 讲义作者指南：用 MyST Markdown 新建或修改讲义（文稿头部 title、lang、plugins、presmium 插件配置、renderers；章节、讲解与上屏内容 {slide}、步骤 :reveal:、{only}、{hints}、{config}、{include}、标签与交叉引用；各插件指令 {code-ref}、{run-panel}、{step-run}、{quiz}、{exercise}、{cursor}、{markmap} 等），运行 presmium check、ir、build、dev 并修复诊断，决定 .presmium 中哪些文件提交。Use when writing or editing a Presmium lecture or deck (lecture.md, MyST directives, code references with pins and drift, compile-time or live code runs, freeze cache, step and narration binding) or fixing presmium check/build diagnostics."
+description: "Presmium 讲义作者指南：用 MyST Markdown 新建或修改讲义（文稿头部 title、lang、plugins、presmium 插件配置、renderers；章节、讲解与上屏内容 {slide}、步骤 :reveal:、{only}、{hints}、{config}、{include}、标签与交叉引用、受众 :audience: 与 {audience}（学生版）；各插件指令 {code-ref}、{run-panel}、{step-run}、{quiz}、{exercise}、{cursor}、{markmap} 等），运行 presmium check（含发布检查：失效链接、MyST 指令错误、checks.forbid）、ir、build、dev 并修复诊断，决定 .presmium 中哪些文件提交。Use when writing or editing a Presmium lecture or deck (lecture.md, MyST directives, code references with pins and drift, compile-time or live code runs, freeze cache, step and narration binding) or fixing presmium check/build diagnostics."
 ---
 
 # 编写 Presmium 讲义
@@ -109,6 +109,16 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - `:::{only} web, notebook` 让内容只出现在列出的渲染端（`web`、`slides`、`notebook`）。拼错的 ID（如 `slide`）得到警告 `unknown renderer id`，否则内容会从所有形态中消失。只在某个渲染端出现的块所占的步骤，在其他渲染端中不存在。
 - `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: center`）。不要用 `two-cols` 这类需要 `::right::` 插槽的布局，MyST 写不出插槽，内容会全挤在左栏。
 - `:::{config}` 为插件提供只在本章节生效的配置（YAML，键为插件 ID）。读取章节配置的是 `presmium.exec.timeoutMs`（这一节代码在编译时与浏览器中的超时）与 `presmium.code.repo`（这一节 `{code-ref}` 永久链接的仓库）；其他选项只读全局配置。
+- 受众：任何指令加 `:audience: teacher` 让块只给教师（讲解段落用 `{only}` 包起来再加），章节顶层的 `:::{audience} teacher` 让整节只给教师。`presmium build --audience student` 生成学生版并扫描产物中有没有被去掉的句子（`presmium.audience`）；`presmium serve` 中读者只看到学生版。写法见 `references/directives.md` 的 `{audience}`。
+
+## 6.1 发布检查
+
+`presmium check` 在每个渲染端的视图中检查（只出现在某个媒介中的内容只在该媒介中检查，只在部分媒介中出错时消息末尾写 `(in slides)` 等）：
+
+- `presmium.links`：链接、图片、卡片的 `:link:`、组件的本地文件与原始 HTML 的 `href`、`src`、`poster` 指向的本地文件不存在或在仓库之外；`#片段` 不是本文稿的章节 ID、块 ID、标签或标题；`其他文档/lecture.md#片段` 指向的文档没有这个片段。
+- `presmium.directive`：MyST 指令与角色的错误（myst-parser 无法应用的指令，如带 `:file:` 的 `{csv-table}`），错误级；消息写出该指令不接受的选项。
+- `presmium.forbid`：头部 `checks: { forbid: ['T-\d{3}', 'instructor/'] }` 中的正则（JavaScript 语法）在标题、讲解、上屏内容、链接目标、代码与录制输出中的命中。
+- `presmium check --external-links`：本机装有 lychee 时检查外部链接（失败是警告），没有时给出一条信息级提示。
 
 ## 7. 引入、标签与交叉引用
 
@@ -153,9 +163,9 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 | 命令 | 作用 |
 |---|---|
-| `presmium check [deck]` | 编译并运行插件的检查项，只输出诊断；`--json` 输出 JSON，`--update-lock` 先重写锚点锁定文件，`--env` 另外连接头部声明的执行环境 |
+| `presmium check [deck]` | 编译并运行插件的检查项与发布检查（6.1 节），只输出诊断；`--json` 输出 JSON，`--update-lock` 先重写锚点锁定文件，`--env` 另外连接头部声明的执行环境，`--audience student` 按学生版编译后检查，`--external-links` 用 lychee 检查外部链接 |
 | `presmium ir [deck]` | 把 IR 输出到标准输出（诊断在标准错误）；`--out <file>` 写到文件 |
-| `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录 |
+| `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录，`--audience student` 只构建学生版并扫描产物（第 6 节） |
 | `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口 |
 | `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式，首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。默认只监听本机（`--port`，默认 4310）；`--host` 其他地址时必须在登录代理之后（`--trust-proxy-from` 或 `PRESMIUM_PROXY_SECRET`），那是共享部署，见 `templates/workspace/compose/README.md` |
 | `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下，各自可读、可搜索；在文档目录中执行则只构建这一份 |
@@ -196,6 +206,10 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 | `presmium.code.anchors` `anchor … is lost` | 恢复 `#region` 标记或声明，或改正锚点；`:steps:` 的名字须是锚点内嵌套的区间 |
 | `presmium.code.anchors` `… not found under the repository root` | 锚点路径从仓库根目录写起；按提示的写法改 |
 | `presmium.directive` `{only}: unknown renderer id` | 改正渲染端 ID |
+| `presmium.directive` `{csv-table}: required body not provided …; {csv-table} takes no :file:` | MyST 指令写错了（这里 `{csv-table}` 不读文件）：按 MyST 的写法改正，如把表格写进正文 |
+| `presmium.links` `x: no such file` 或 `#x is no section, block, label or heading of the deck` | 改正路径（相对于写它的文件）或片段；`(in slides)` 表示只有幻灯片中的链接出错，例如它指向只在网页中出现的块 |
+| `presmium.forbid` `"…" matches … of checks.forbid` | 删掉命中的文字（内部编号、未发布内容的名字），或改头部的 `checks.forbid` |
+| `presmium.audience` `content only for teacher is in the build for student: "…" in <文件>` | 被去掉的教师内容又进了学生版（多半经代码块的输出或另一个文件）：在来源处删掉，或给那个块也加 `:audience: teacher` |
 | `presmium.execLocal.workspace` `{local-env} names the workspace …` | 一份文稿只有一个工作区：各 `{local-env}` 写同一个 `:workspace:`，或设置 `presmium.execLocal.workspace` |
 | `presmium.code.anchors` `moved` 或 `needs confirmation` | 确认位置后运行 `presmium check --update-lock` |
 | `presmium.code.drift` `drifted since pinned commit` | 读差异，改代码或改 `:pin:` |

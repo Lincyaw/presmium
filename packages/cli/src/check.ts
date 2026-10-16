@@ -14,6 +14,8 @@ export interface CheckOptions {
   compiler?: CompilerOptions
   /** Connect to the declared environments (`presmium check --env`, P-100). */
   environments?: boolean
+  /** Check the external links with lychee when it is installed (`presmium check --external-links`, P-54). */
+  externalLinks?: boolean
 }
 
 export interface LockUpdate {
@@ -31,7 +33,11 @@ export interface CheckResult {
   lock?: LockUpdate
 }
 
-/** Compiles the deck to its validated IR (docs/ir.md section 7) and runs the plugins' checks. */
+/**
+ * Compiles the deck to its validated IR (docs/ir.md section 7), for an
+ * audience when `compiler.audience` names one, and runs the plugins' checks
+ * and the publication checks.
+ */
 export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   const compiler = new Compiler(options.deck, options.compiler)
   let compilation = await compiler.compile()
@@ -47,18 +53,20 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
     compilation = await compiler.compile()
   }
 
-  findings.push(...await pluginChecks(compilation))
+  findings.push(...await pluginChecks(compilation, { externalLinks: options.externalLinks }))
   if (options.environments) findings.push(...await probeEnvironments(compilation, entryText))
   const all = [...compilation.doc.diagnostics, ...findings].map(f => f.source ? f : { ...f, source: { file: compilation.entry, line: 1 } })
   return { entry: compilation.entry, findings: sortFindings(all), lock }
 }
 
 /**
- * The plugins' checks on a compilation, as `presmium check` and the language
- * server run them. A finding without a source, e.g. that of a crashing check,
- * is located at the entry, on the frontmatter line of its plugin.
+ * The plugins' checks on a compilation, and the publication checks
+ * (`presmium.links`, `presmium.forbid`, P-54), as `presmium check`, the
+ * language server and the hosts of the server (`ServerHost.check`) run them.
+ * A finding without a source, e.g. that of a crashing check, is located at
+ * the entry, on the frontmatter line of its plugin.
  */
-export async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
+export async function pluginChecks(compilation: Compilation, options: { externalLinks?: boolean } = {}): Promise<Finding[]> {
   const text = await readFile(compilation.entry, 'utf8')
   const at = (name: string) => ({ file: compilation.entry, line: frontmatterLine(text, name) })
   const checks = new CheckRegistry()
@@ -77,6 +85,7 @@ export async function pluginChecks(compilation: Compilation): Promise<Finding[]>
   for (const finding of await checks.run(checkContext(compilation))) {
     findings.push(finding.source ? finding : { ...finding, source: places.get(finding.checkId) ?? { file: compilation.entry, line: 1 } })
   }
+  findings.push(...await compilation.publishChecks({ externalLinks: options.externalLinks }))
   return findings
 }
 

@@ -2,8 +2,9 @@
  * Passes 3 and 4 (docs/ir.md sections 2.3 to 2.5): turns the nodes of a
  * section into blocks. Directives become IR nodes (built-in `{slide}`,
  * `{only}`, `{hints}`, `{config}`, `{component}`, and the directives of
- * plugins); every block gets its role, narration or visual. Step numbers are
- * assigned later (see steps.ts) from `reveal`, `group` and `span`.
+ * plugins); every block gets its role, narration or visual, and the audiences
+ * `:audience:` and `{audience}` give it and its section (docs/ir.md 2.11).
+ * Step numbers are assigned later (see steps.ts) from `reveal`, `group` and `span`.
  */
 import { environmentExecutor, errorMessage, isRecord } from '@presmium/kernel'
 import type {
@@ -24,6 +25,7 @@ import type {
 } from '@presmium/kernel'
 import { htmlTagNames } from 'html-tag-names'
 import { mathmlTagNames } from 'mathml-tag-names'
+import { defaultOptions } from 'myst-parser'
 import { svgTagNames } from 'svg-tag-names'
 import { parse as parseYaml } from 'yaml'
 import { BODY, ROLE, sourceOf } from './source.ts'
@@ -41,6 +43,8 @@ export interface BlockDraft {
   group?: number
   span: number
   only?: RendererId[]
+  /** `:audience:` of the block, or of the `{slide}` or `{only}` around it (docs/ir.md 2.11). */
+  audience?: string[]
   source: SourcePos
   node: IRNode
 }
@@ -83,10 +87,12 @@ export type Hints = Record<RendererId, Record<string, unknown>>
 export type SectionConfig = Record<string, Record<string, unknown>>
 
 /** Built-in directives; the value tells whether the body is MyST parsed in place. */
-export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hints', false], ['config', false], ['component', false]])
+export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hints', false], ['config', false], ['component', false], ['audience', false]])
 
 /** Options every directive accepts; they are not passed to plugin directives. */
-const COMMON_OPTIONS = ['reveal', 'label']
+const COMMON_OPTIONS = ['reveal', 'label', 'audience']
+/** What myst-parser leaves in place of a directive or role it could not apply (e.g. `{csv-table}` with `:file:`). */
+const MYST_ERRORS = new Set(['mystDirectiveError', 'mystRoleError'])
 /** Options of the code a directive runs (docs/ir.md 2.7), which the compiler reads for plugin directives that do not declare them. */
 const RUN_OPTIONS = ['env', 'session']
 /** The reserved environment name: route by language, as without environments. */
@@ -107,6 +113,8 @@ const HTML_ELEMENTS = new Set(htmlTagNames)
 const FOREIGN_ELEMENTS = { svg: new Set(svgTagNames.map(name => name.toLowerCase())), math: new Set(mathmlTagNames) }
 /** A tag: `/` if it closes, its name, its attributes (ending in `/` if it closes itself), `>`. */
 const TAG = /<(\/?)([A-Za-z][\w:.-]*)([^<>]*)(>?)/g
+/** MyST's own directives, with the options each takes. */
+const MYST_DIRECTIVES = defaultOptions.directives as unknown as { name: string, alias?: string[], options?: Record<string, unknown> }[]
 
 interface Scope {
   visual: boolean
@@ -115,6 +123,8 @@ interface Scope {
   items?: boolean
   /** Group of the enclosing `{slide}` or `{only}` with `:reveal:`. */
   group?: number
+  /** `:audience:` of the enclosing `{slide}` or `{only}`. */
+  audience?: string[]
 }
 
 /** The blocks, hints and configuration of the section being converted. */
@@ -124,14 +134,16 @@ interface Output {
   /** Read before the blocks, so a directive anywhere in the section sees it. */
   config: SectionConfig
   groups: number
+  /** `{audience}`: the section is only for these audiences. */
+  audience?: string[]
 }
 
 type Push = (draft: Omit<BlockDraft, 'only' | 'reveal' | 'group' | 'label'> & { label?: string, reveal?: boolean }) => void
 
-export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Promise<{ blocks: BlockDraft[], hints: Hints, config: SectionConfig }> {
+export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Promise<{ blocks: BlockDraft[], hints: Hints, config: SectionConfig, audience?: string[] }> {
   const out: Output = { blocks: [], hints: {}, config: sectionConfig(nodes, ctx), groups: 0 }
   await convert(nodes, { visual: false }, ctx, out)
-  return { blocks: out.blocks, hints: out.hints, config: out.config }
+  return { blocks: out.blocks, hints: out.hints, config: out.config, ...out.audience ? { audience: out.audience } : {} }
 }
 
 /**
@@ -166,7 +178,8 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
       draft.node.reveal = 'items'
       draft.span = items - 1
     }
-    out.blocks.push({ ...draft, label: draft.label ?? label, reveal: draft.reveal === true, group: scope.group, only: scope.only })
+    const audience = draft.audience ?? scope.audience
+    out.blocks.push({ ...draft, label: draft.label ?? label, reveal: draft.reveal === true, group: scope.group, only: scope.only, ...audience ? { audience } : {} })
     label = undefined
   }
 
@@ -174,6 +187,10 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
     const source = sourceOf(node, ctx.entry)
     if (node.type === 'mystTarget') {
       label = typeof node.label === 'string' ? node.label : undefined
+      continue
+    }
+    if (MYST_ERRORS.has(node.type)) {
+      mystError(node, source, ctx)
       continue
     }
     if (DROPPED.has(node.type)) continue
@@ -202,6 +219,15 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   const reveal = options.reveal === undefined ? undefined : options.reveal === 'items' ? 'items' : 'next'
   const fail = (message: string, severity: Finding['severity'] = 'error') =>
     ctx.report({ checkId: 'presmium.directive', severity, message: `{${name}}: ${message}`, source: { file: source.file, line: source.line } })
+  const audience = options.audience === undefined ? scope.audience : audienceOption(options.audience, scope.audience, fail)
+
+  if (name === 'audience') {
+    const names = audienceList(arg)
+    if (names.length === 0) return fail('needs the audiences its section is for, e.g. {audience} teacher')
+    if (body.trim()) fail('takes no body: it marks its whole section; to mark part of a section, give a directive :audience:, e.g. an {only} around the paragraphs', 'warning')
+    out.audience = out.audience ? out.audience.filter(a => names.includes(a)) : names
+    return
+  }
 
   if (name === 'slide' || name === 'only') {
     let only = scope.only
@@ -219,6 +245,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       only,
       items: reveal === undefined ? scope.items : reveal === 'items',
       group: reveal === 'next' ? ++out.groups : scope.group,
+      audience,
     }
     const start = out.blocks.length
     await convert(bodyNodes(node), inner, ctx, out)
@@ -250,7 +277,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     if (plugin === undefined) fail(`no plugin in \`plugins\` registers the component ${arg}`, 'warning')
     const span = options.span === undefined ? 0 : Number(options.span)
     if (!Number.isInteger(span) || span < 0) return fail(`:span: must be a non-negative integer`)
-    push({ kind: kebab(arg), label, reveal: reveal !== undefined, role: 'visual', span, source, node: { type: 'component', plugin: plugin ?? '', name: arg, props } })
+    push({ kind: kebab(arg), label, reveal: reveal !== undefined, role: 'visual', span, source, audience, node: { type: 'component', plugin: plugin ?? '', name: arg, props } })
     return
   }
 
@@ -284,7 +311,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       for (const run of runs) runOptions(run, given, fail, ctx)
       if (runs.length === 0 && Object.keys(given).length > 0) fail(`${Object.keys(given).map(key => `:${key}:`).join(' and ')} has no effect: the directive runs no code`, 'warning')
       const kind = result.node.type === 'component' ? kebab(result.node.name) : result.node.type === 'code' ? 'code' : name
-      push({ kind, label, reveal: reveal !== undefined, role: result.role ?? 'visual', span: result.span ?? 0, source, node: result.node })
+      push({ kind, label, reveal: reveal !== undefined, role: result.role ?? 'visual', span: result.span ?? 0, source, audience, node: result.node })
     } catch (error) {
       fail(`plugin ${plugin} failed: ${errorMessage(error)}`)
     }
@@ -294,12 +321,43 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   const children = (node.children ?? []).filter(c => c.type !== BODY)
   const code = CODE_DIRECTIVES.has(name) ? codeOf(children[0]) : undefined
   if (code) {
-    push({ kind: 'code', label, reveal: reveal !== undefined, role: 'visual', span: 0, source, node: codeNode(code, options, source, ctx) })
+    push({ kind: 'code', label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: codeNode(code, options, source, ctx) })
     return
   }
   if (children.length === 0) return fail('unknown directive; is the plugin that provides it listed in `plugins`?')
   // A MyST directive (admonition, figure, math, ...): its standard mdast output is visual content.
-  push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, node: markdown(children, ctx) })
+  push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: markdown(children, ctx) })
+}
+
+/** Audience names, comma- or space-separated (docs/ir.md 2.11). */
+function audienceList(text: string): string[] {
+  return [...new Set(text.split(/[\s,]+/).filter(Boolean))]
+}
+
+/** `:audience:` of a directive: its audiences, within those of the `{slide}` or `{only}` around it. */
+function audienceOption(value: string | true, outer: string[] | undefined, fail: (message: string) => void): string[] | undefined {
+  const names = value === true ? [] : audienceList(value)
+  if (names.length === 0) {
+    fail(':audience: needs the audiences it is for, e.g. :audience: teacher')
+    return outer
+  }
+  return outer ? outer.filter(name => names.includes(name)) : names
+}
+
+/**
+ * A directive or role myst-parser could not apply leaves a `mystDirectiveError`
+ * or `mystRoleError` in its place: an error of the deck (`presmium.directive`,
+ * P-54), and nothing of it reaches the IR. Options the MyST directive does not
+ * take are named, as the likely cause (`{csv-table}` reads no `:file:`).
+ */
+function mystError(node: MdastNode, source: SourcePos, ctx: BlockContext): void {
+  const name = String(node.name ?? '')
+  const message = typeof node.message === 'string' ? node.message : 'invalid'
+  const spec = node.type === 'mystDirectiveError' ? MYST_DIRECTIVES.find(d => d.name === name || d.alias?.includes(name)) : undefined
+  const unknown = spec && isRecord(node.options) ? Object.keys(node.options).filter(key => !(key in (spec.options ?? {})) && !COMMON_OPTIONS.includes(key)) : []
+  const hint = unknown.length > 0 ? `; {${name}} takes no ${unknown.map(key => `:${key}:`).join(', ')}` : ''
+  const what = node.type === 'mystDirectiveError' ? `{${name}}` : `role {${name}}`
+  ctx.report({ checkId: 'presmium.directive', severity: 'error', message: `${what}: ${message}${hint}`, source: { file: source.file, line: source.line } })
 }
 
 /**
@@ -429,6 +487,10 @@ function literalTags(nodes: MdastNode[], foreign: Foreign = { svg: 0, math: 0 })
  */
 function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNode[] {
   return nodes.flatMap((node): MdastNode[] => {
+    if (MYST_ERRORS.has(node.type)) {
+      mystError(node, sourceOf(node, file), ctx)
+      return []
+    }
     if (DROPPED.has(node.type)) return []
     if (node.type === 'mystRole' && ctx.roles.has(String(node.name))) return [roleNode(node, ctx, file)]
     if (node.type === 'mystDirective' || node.type === 'mystRole') {
