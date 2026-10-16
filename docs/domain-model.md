@@ -202,28 +202,29 @@ v0.8 新增的上下文之间的关系：
 | 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content`（发起成员自己的文档与会话：任务的文档目录中的文件、MCP 的操作类与计费类工具）发给发起任务的成员；`workspace`（工作区配置、成员、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求、SHARED 模式中执行没有录制的代码，以及 `compile: approve` 时 MCP 的 `run_code`）只发给所有者；没有标明时按 `workspace` |
 | 确认策略 | `presmium dev --allow`、`presmium.workspace.yaml` 的 `approvals` | 每种确认取 `off`（不提供这类操作）、`ask`（默认）或 `allow`（不询问） |
 | 执行的环境变量 | `RunContext.env` | 编译时执行的代码能得到的全部环境变量：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与像凭据的变量，`serve` 中只有允许列表；都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量 |
-| 信任模式 | `TrustMode`（`local`、`shared`） | LOCAL：`presmium dev`、`build`、`check` 与只监听本机、没有登录的 `presmium serve`，唯一的用户就是运营者，被执行的代码与 agent 以他的身份受信任，措施只是纵深防御；SHARED：带登录的 `presmium serve`，只支持随仓库的 compose 布局（serve、gateway、sandbox 三个容器，uid 各不相同），编辑者与 agent 写的代码不受信任 |
+| 信任模式 | `TrustMode`（`local`、`shared`） | LOCAL：`presmium dev`、`build`、`check` 与只监听本机、没有登录的 `presmium serve`，唯一的用户就是运营者，被执行的代码与 agent 以他的身份受信任，措施只是纵深防御；SHARED：带登录的 `presmium serve`，只支持随仓库的 compose 布局（serve、gateway、sandbox 三个容器，uid 各不相同；文档在工作区根目录的子目录中），编辑者与 agent 写的代码不受信任，所有者独有的操作在所有者控制台上 |
 | gateway | `presmium gateway`；插件的 `GatewayContribution` | SHARED 模式中唯一持有第三方凭据（模型、语音、远端环境）与运营者数据（同意记录、服务提供方的名字）的进程；挂载插件的 gateway 贡献，签发绑定会话或运行、有期限的限定令牌，把 `/mcp` 转发到 serve |
-| agent-host | `presmium agent-host` | SHARED 模式中 sandbox 容器里的进程：助手的 ACP 客户端与 DeepSeek Harness、全部编译时执行与构建、deltabox 的审阅会话；没有秘密，网络只到 gateway；serve 经认证的 HTTP/SSE 接口调用它，LOCAL 模式中同样的契约在 serve 进程中运行 |
-| 运营者插件 | `settings.presmium.workspace.plugins`；`PresmiumNodePlugin.operator` | 运营者安装在工作区根目录、列在设置中的插件包；`presmium serve`、gateway 与 agent-host 只加载它们，声明了 `operator` 的（如 `addon-deltabox`）每份文档都加载 |
+| agent-host | `presmium agent-host` | SHARED 模式中 sandbox 容器里的进程：助手的 ACP 客户端与 DeepSeek Harness、全部编译时执行与构建、工作区站点的开发服务器、deltabox 的审阅会话；没有秘密，网络只到 gateway；serve 经认证的 HTTP/SSE 接口调用它，LOCAL 模式中同样的契约在 serve 进程中运行 |
+| 所有者控制台 | serve 在 `PRESMIUM_CONSOLE_HOST` 上的源 | SHARED 模式中所有者独有的操作所在的源：`workspace` 范围的确认、所有者路由（如登记同意记录）；只有 Presmium 自己的页面，不显示文稿的任何内容，只接受来自自己的源的改变状态的请求。工作区站点的源上运行着文稿的组件，那里没有这些操作 |
+| 运营者插件 | `settings.presmium.workspace.plugins`；`PresmiumNodePlugin.operator` | 运营者安装在工作区根目录、列在设置中的插件包；`presmium serve`、gateway 与 agent-host 只加载它们（另加随 CLI 安装的渲染端与 `addon-deltabox`），声明了 `operator` 的每份文档都加载；文稿目录中的插件与渲染端包只在 LOCAL 的 `presmium dev`、`build`、`check` 中加载 |
 | 编译时执行的策略 | `settings.presmium.exec` 的 `compile` | SHARED 模式中没有录制的代码怎样执行：`approve`（默认，所有者确认后在 agent-host 中执行）、`trusted`（直接在 agent-host 中执行）、`off`（不执行，显示录制输出或降级内容）。MCP 的 `run_code` 与 `build` 同一规则。LOCAL 模式中全部执行 |
-| 进程沙箱 | `ProcessSandbox`（`PROCESS_SANDBOX`） | 编译时执行的子进程在其中运行：网络拒绝，看不到其他进程与 Unix 套接字，只能写运行目录；`addon-deltabox` 在主机满足条件时提供 |
+| 进程沙箱 | `ProcessSandbox`（`PROCESS_SANDBOX`） | 编译时执行的子进程在其中运行：网络拒绝，看不到其他进程与 Unix 套接字，只能写运行目录；随 CLI 安装的 `addon-deltabox` 在主机满足条件时提供（默认启用，Linux） |
 | 控制通道 | 服务端内置的 `/__presmium/presmium.server/control` | 页面向服务端报告位置与状态摘要，接收跳转、开关课堂与确认请求 |
 | 凭据 | `ServerContext.secret(name)`、`GatewayContext.secret(name)` | 只来自持有凭据的进程的环境变量的密钥（LOCAL 为 `presmium` 进程，SHARED 为 gateway）；与它要发往的地址成对给出（如 `PRESMIUM_ENV_<名>_TOKEN` 与 `PRESMIUM_ENV_<名>_URL`）。SHARED 模式中 serve 与 agent-host 经 `GatewayAccess` 调用 gateway，不持有凭据 |
 | 运营者设置 | `ServerContext.settings`、`NodeServiceContext.settings`、`GatewayContext.settings` | 运营者给插件的设置：工作区配置 `presmium.workspace.yaml` 的 `settings.<插件 ID>`，如工作区的插件列表、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行的策略、录音的去处、是否允许克隆音色、同意记录的目录；与文稿配置 `config` 不同，文稿与 agent 改不了正在运行的设置 |
-| 运营者目录 | LOCAL：工作区根目录的 `.presmium-operator/`；SHARED：gateway 的 `--operator-dir`（`GatewayContext.operatorDir`） | 运营者的数据（同意记录目录 `consent/`），不属于任何文档：不进入文档的提交；agent 对它的权限请求一律拒绝。SHARED 模式中它只挂在 gateway 容器中，文稿、agent 与被执行的代码都访问不到 |
+| 运营者目录 | LOCAL：用户状态目录中按工作区区分的 `presmium/operator/<工作区标识>/`（`NodeServiceContext.operatorDir`、`ServerContext.operatorDir`）；SHARED：gateway 的 `--operator-dir`（`GatewayContext.operatorDir`） | 运营者的数据（同意记录目录 `consent/`），在任何工作区与文档目录之外，不属于任何文档：不进入提交；agent 对它的权限请求一律拒绝。SHARED 模式中它只挂在 gateway 容器中，文稿、agent 与被执行的代码都访问不到 |
 | MCP 访问 | `McpEndpoint`（`MCP_ENDPOINT`）、`McpAccess` | 服务端为一个 agent 会话签发的 `/mcp` 地址与令牌，令牌绑定成员与模式，会话关闭时作废 |
 
 不变量：
 
 - 凭据只在服务端：不写入文稿、IR、构建产物与浏览器；浏览器经服务端的代理访问需要凭据的服务。SHARED 模式中第三方凭据只在 gateway 中：serve 的环境中有第三方凭据时拒绝启动，sandbox 中只有限定令牌。
-- **SHARED 模式中由文稿决定的代码只在 sandbox 中运行**：编译时与 `run_code` 执行的代码、构建（含服务端渲染文稿的组件）、agent 与它的工具都在 agent-host 中；serve 与 gateway 只加载运营者插件，不加载文稿相对路径或文稿目录 `node_modules` 中的插件（错误级诊断）。
+- **SHARED 模式中由文稿决定的代码只在 sandbox 中运行**：编译时与 `run_code` 执行的代码、构建（含服务端渲染文稿的组件）、工作区站点的开发服务器（Vite 在 Node 中加载的模块，如 VitePress 的数据加载器）、agent 与它的工具都在 agent-host 中；serve 与 gateway 只加载运营者插件，不加载文稿相对路径或文稿目录 `node_modules` 中的插件与渲染端包（错误级诊断）；serve 只把文档当作数据读取，它的环境与它能读的文件中没有秘密，编译器另外不读真实路径在工作区之外的文件。
 - **LOCAL 模式不声称隔离同一 uid 的代码**：被执行的代码与 agent 能读这个用户能读的一切（包括 `presmium` 进程的 `/proc/<pid>/environ`），措施是纵深防御（清理过的环境、可用时的进程沙箱、确认与审阅），残余风险写在 `architecture.md` 9.4 节。
 - 默认只监听本机，并校验 `Host` 与 `Origin`；部署时只接受经登录代理转发的请求（共享密钥或固定的来源地址），成员与角色来自代理传来的身份。
 - 身份、角色与本机的检查在挂载点完成；插件的路由只声明所需的最低角色，不各自实现。
 - 确认的关口在服务端：任何 agent 运行时、任何 MCP 客户端调用操作类工具，都经同一个 `Approvals`，换用其他运行时同样生效。
 - 确认策略不来自文稿：文稿是内容，不能关闭确认；`allow` 只能由本机作者在命令行或工作区所有者在工作区配置中设置。
-- **确认按范围分发**：`workspace` 范围的确认只有所有者能回答；编辑者不能批准自己的 agent 改动工作区配置、写入文档目录之外或使用 shell 与网络。
+- **确认按范围分发**：`workspace` 范围的确认只有所有者能回答；编辑者不能批准自己的 agent 改动工作区配置、写入文档目录之外或使用 shell 与网络。SHARED 模式中这些确认与所有者路由只在所有者控制台的源上，工作区站点上运行的文稿组件不能以所有者的身份完成它们。
 - **文稿不决定凭据的去向**：凭据只发往运营者为它给出的地址；文稿只用名字选择环境与引擎，文稿中的地址与运营者的地址不同源时不连接。
 - **编译时执行的代码经自己的环境拿不到凭据**：他们写的代码在编译时只得到 `RunContext.env`，执行器不读进程的环境（打印全部环境变量的代码因此不会把凭据写进录制）。SHARED 模式中这些代码在 agent-host 中运行，没有录制的按 `settings.presmium.exec.compile` 执行（默认经所有者确认，同一段代码不重复请求），MCP 的 `run_code` 与 `build` 也一样（`approve` 时 `run_code` 只由所有者确认）；LOCAL 模式中全部执行，可用时经进程沙箱（`architecture.md` 10.6 节）。
 - 运营者设置在进程启动时读取一次；改动要等运营者重启才生效。
@@ -436,7 +437,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | agent 资源 | `presmium://…` | 与读取类工具对应的只读资源；放映位置的资源可以订阅更新 |
 | agent 运行时 | `AgentRuntime`（`AGENT_RUNTIME`，Node） | 驱动一个 agent：打开会话、提交任务、接收事件、取消、关闭；唯一的实现是 ACP 客户端 |
 | 运行时模式 | `AgentMode`（`AgentSessionOptions.mode`） | `author`（作者，可以写源码；LOCAL 模式用配置模板 `presmium`，保留 shell；SHARED 模式用 `presmium-shared`，没有 shell、命令执行与联网工具）或 `tutor`（学习者问答，只读，配置模板 `presmium-tutor`） |
-| 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`；`AgentSessionOptions.model` | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。SHARED 模式中这些变量只在 gateway 中，agent 只得到 gateway 上的地址与这个会话的限定令牌 |
+| 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`；`AgentSessionOptions.model` | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。LOCAL 模式中它得到 `DEEPSEEK_API_KEY`，或由 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 改名而来的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY`（不带其他 `PRESMIUM_` 变量）；SHARED 模式中这些变量只在 gateway 中，agent 只得到 gateway 上的地址与这个会话的限定令牌 |
 | 替换的运行时 | `PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` | 运营者给出的其他 ACP agent（Claude、Codex、Gemini 的适配），只在 LOCAL 模式中替换默认的运行时 |
 | 模型提供方 | `AgentRuntime.provider`、`AgentClient.provider()` | 回答问题、修改文稿的模型属于哪家服务，界面据此标明（N-08）；来自运营者的配置（模型访问；替换的运行时取 `settings.presmium.assistant.provider` 或 `PRESMIUM_AGENT_PROVIDER`），在任何请求之前就已知 |
 | 运行时名字 | `AgentRuntime.runtime`、`AgentClient.runtime()` | agent 在 ACP `initialize` 中报告的名字与版本（如 DeepSeek Harness），与模型提供方分开显示 |
@@ -451,14 +452,14 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 批注 | `Annotation` | 目标（章节 ID、块 ID、源码文件与行区间、摘录）与要求；状态 `AnnotationStatus`：草稿、已发送、已处理、未能处理 |
 | 浏览器端助手 | `AgentClient`（`AGENT`，浏览器） | 页面向服务端的助手提交任务并接收事件 |
 
-**任务（聚合根）**：种类、发起成员、文档、上下文、批注、事件流、审阅与产生的修改。批注是任务内的实体，状态只由任务事件推进。修改任务（`annotations`、`chat`、`transcript`，以及起草新文档的 `chat`）由助手按同一条规则处理；工作区的新建表单、编辑模式的面板与讲授面板只构造请求。
+**任务（聚合根）**：种类、发起成员、文档、上下文、批注、事件流与产生的修改；修改任务经 ID 引用它的审阅（下一个聚合）。批注是任务内的实体，状态只由任务事件推进。修改任务（`annotations`、`chat`、`transcript`，以及起草新文档的 `chat`）由助手按同一条规则处理；工作区的新建表单、编辑模式的面板与讲授面板只构造请求。
 
-**修改审阅（任务内的实体）**：状态为进行中（agent 工作，逐步记检查点）、待审阅（agent 结束，`review` 事件已发出）、已接受（留下的文件已提交）、已拒绝（恢复为任务开始时的快照）。它属于一个任务与一个文档目录，同一文档目录同一时间至多一个；审阅只在内存中，进程退出时关闭（等于拒绝）。
+**修改审阅（聚合根，以文档目录为标识）**：一个文档目录上进行中的审阅：所属的任务与发起成员、任务开始时的快照、agent 的工作目录 `root`、检查点 `ReviewStep` 与相对于快照的改动 `ReviewChange`。状态为进行中（agent 工作，逐步记检查点）、待审阅（agent 结束，`review` 事件已发出）、已接受（留下的文件已提交）、已拒绝（恢复为任务开始时的快照）；接受或拒绝之后审阅结束，这个标识空出来。“同一文档目录同一时间至多一个审阅”跨越任务，所以审阅自成聚合、以文档目录为标识：打开第二个就是标识冲突（deltabox 按会话的项目目录、git 实现按它登记的文档目录拒绝）；“一文档一修改任务”也由它保证，因为修改任务只有打开了审阅才开始。审阅只在内存中，进程退出时关闭（等于拒绝）。
 
 不变量：
 
-- **只写源码，不碰产物**：agent 只修改工作区中的源码，工作目录是任务的文档目录（审阅的 `root`）；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许。agent 对运营者目录 `.presmium-operator/` 的权限请求一律拒绝；任务结束时不复原这个目录。
-- **一文档一任务**：同一文档同一时间只有一个修改任务；问答不受限制。
+- **只写源码，不碰产物**：agent 只修改工作区中的源码，工作目录是任务的文档目录（审阅的 `root`）；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许（SHARED 模式中在所有者控制台上）。agent 对运营者目录的权限请求一律拒绝；运营者目录在任何工作区与文档目录之外（4A 节），agent 的文件工具不经请求写不到它。
+- **一文档一任务**：同一文档同一时间只有一个修改任务（由修改审阅的标识保证）；问答不受限制。
 - **先审阅后提交**（D12）：`review: required` 时修改任务结束后等发起人的决定；被拒绝的文件恢复为任务开始时的内容，任务新建的文件删除；全部拒绝时文档目录回到任务开始时的状态。审阅以文件为单位，各步的差异只供查看。
 - **每批一提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），说明列出批注、对话摘要或讲授轨 ID，与 agent 的解释，尾注带 `Presmium-Task: <任务 ID>` 与发起人；接受之后的撤销是 `git revert`。
 - **学习者只读**：`question` 任务使用 `tutor` 运行时，没有写文件、shell、网络与操作类工具；学习者不直接接触作者的 agent。
@@ -498,8 +499,8 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - **撤销即 `git revert`**：有冲突时报告冲突的文件，不强行撤销，工作树保持原样。
 - **编辑按角色**：读者只能阅读与提问，看到的是学生视图（第 10 节）；编辑者可以进入编辑模式、修改与撤销；所有者另管工作区设置，并且只有所有者能回答 `workspace` 范围的确认（4A 节）。
 - **按需编译**：只编译正在被访问的文档并监听它的源码；其他文档只读取头部，用于列表。没有录制的编译时代码按 `settings.presmium.exec.compile` 执行（4A 节）。
-- **运营者目录不属于文档**：`.presmium-operator/` 中的文件不进入任何提交（SHARED 模式中运营者目录在 gateway 容器中，不在工作区里）。
-- **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor；SHARED 的 compose 布局中只有 serve 能写 `.git/` 与工作区根目录，sandbox 只能写文档目录。
+- **运营者目录不属于文档**：运营者目录在工作区之外（LOCAL 模式中在用户的状态目录中，SHARED 模式中在 gateway 容器中），其中的文件从不进入提交。
+- **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor；SHARED 的 compose 布局中只有 serve 能写 `.git/` 与工作区根目录，sandbox 只能写文档目录（文档目录必须是工作区根目录的子目录，SHARED 模式不支持单份文稿的仓库）。
 - 浏览器不直接修改渲染结果；一切修改都落在源码上（原则 6）。
 
 服务：`REVISIONS`（Node）、`EDIT_MODE`（浏览器）。
@@ -546,7 +547,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音网关，Node 端直接调用引擎 |
 | 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）、`webspeech`（浏览器试听，只用本机音色，不能导出）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
 | 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
-| 同意记录 | `VoiceConsent`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录是 `<工作区>/.presmium-operator/`，SHARED 模式是 gateway 的 `--operator-dir`），只由所有者经服务端或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
+| 同意记录 | `VoiceConsent`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`），只由所有者经服务端（SHARED 模式中只在所有者控制台的源上）或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
 | 语音网关 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；只有网关接触服务提供方 |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |
@@ -559,7 +560,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - 合成缓存保证可复现（原则 5）：命中缓存的段落从不重新合成，全部命中的构建不向引擎发出请求；构建只为缺失的段落调用引擎并写入缓存（同编译时执行的录制，K-19）；缓存缺失又没有可用的引擎时，构建与 `presmium check` 报错并指出是哪些段落；改一段只重新合成一段。
 - 凭据只在服务端，并且只发往运营者为它给出的地址；文稿只写引擎与音色的名字，不写地址与凭据的变量名。
 - 文字发给第三方语音服务须由运营者定义引擎、文稿选用它；没有定义引擎时不发出任何请求。
-- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且运营者目录的同意记录目录中有该音色的记录时可以合成；语音服务在合成前检查，Node 端与语音网关是同一个关口（SHARED 模式中关口在 gateway 中）。文稿目录中的记录被忽略。SHARED 模式中运营者目录只挂在 gateway 容器中，能编辑文稿的人与 agent 写不进去；LOCAL 模式中它在工作区的 `.presmium-operator/`，agent 对它的权限请求一律拒绝，同一 uid 的代码绕过工具写它是残余风险（`architecture.md` 9.4 节）。
+- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且运营者目录的同意记录目录中有该音色的记录时可以合成；语音服务在合成前检查，Node 端与语音网关是同一个关口（SHARED 模式中关口在 gateway 中）。文稿目录中的记录被忽略。SHARED 模式中运营者目录只挂在 gateway 容器中，能编辑文稿的人、agent 与被执行的代码都写不进去，登记只在所有者控制台的源上，站点上运行的文稿组件不能以所有者的身份登记；LOCAL 模式中它在工作区之外的用户状态目录中，agent 对它的权限请求一律拒绝，同一 uid 的代码绕过工具写它是残余风险（`architecture.md` 9.4 节）。
 - 转写与合成的入口标明引擎的服务提供方，名字来自运营者的配置，在任何请求之前就已知。
 - 合成的音频与它的 `<键>.json` 带 AI 生成的标识与 GB 45438 的元数据，由语音服务在写入缓存时加入（不重新编码，任何引擎都一样）；播放合成的讲授时界面显示“AI 合成语音”。
 
