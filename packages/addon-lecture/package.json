@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Lecture tracks: recording, playback and the lecture renderer (P-90, P-130, P-131, P-137)",
+  "description": "Lecture tracks: recording, playback, scripted lectures with speech, the lecture renderer and video export (P-90, P-130 to P-135, P-137)",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "bin": {
+    "presmium-lecture": "./bin/presmium-lecture.mjs"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./presmium": "./src/node/presmium.ts",
@@ -16,13 +19,26 @@
   },
   "slidev": {},
   "dependencies": {
+    "@presmium/compiler": "workspace:*",
     "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
+    "jiti": "^2.7.0",
+    "mdast-util-from-markdown": "2.1.0",
     "mediabunny": "1.61.3",
     "vue": "^3.5.42"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
     "@presmium/cli": "workspace:*",
-    "@presmium/viewer": "workspace:*"
+    "@presmium/viewer": "workspace:*",
+    "playwright-chromium": "1.64.1"
+  },
+  "peerDependencies": {
+    "playwright-chromium": "^1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright-chromium": {
+      "optional": true
+    }
   }
 }

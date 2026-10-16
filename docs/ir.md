@@ -60,7 +60,7 @@ execute: { rerun: environment } # 可选：另一运行环境的执行录制重�
 | `slides` | `base`、`port`；其余选项写进生成的 Slidev 文稿头部，如 `theme`、`routerMode`（`hash` 时页地址为 `/#/<页号>`）、`exportFilename`、`addons` |
 | `notebook` | `kernel`：内核名（默认 `python3`），或 `{ name, language, display_name }`，与内核同语言的代码成为代码单元格；`webUrl`：网页版的地址，notebook 显示不了的组件附上指向它的链接 |
 | `web`（v0.8，P-78） | `nav`：顶部导航，`[{ text, link }]`（VitePress `themeConfig.nav` 的形状）；`footer`：`{ message, copyright }`；`head`：`{ description, image }`，写成页面的 `description` 与 OG 元数据（`og:title`、`og:description`、`og:image`）；`sitemap`：`{ hostname }`，生成 `sitemap.xml` |
-| `lecture`（v0.8，讲授插件提供） | `voice`：`{ engine, voice, rate, style }`；`script`：单独的讲授脚本文件（2.9 节）；`gap`：一步说完之后推进前的停顿，默认 `500ms`。`lecture` 是站点渲染端：与网页一同构建时输出在 `dist/lecture/`，网页的讲授视图从 `../lecture/` 读取 |
+| `lecture`（v0.8，讲授插件提供） | `voice`：`{ engine, voice, rate, style }`，写了 `voice` 才合成讲义的讲授（WP-83：合成要花钱，所以要显式选用音色；`engine` 省略时用 `presmium.speech.engine`）；`script`：单独的讲授脚本文件（2.9 节）；`gap`：一步说完之后推进前的停顿，默认 `500ms`（毫秒数或 `800ms`、`1.5s`）。`lecture` 是站点渲染端：与网页一同构建时输出在 `dist/lecture/`，网页的讲授视图从 `../lecture/` 读取 |
 
 站点路径 `base` 的默认值：同一次构建同时生成网页与幻灯片、两者都没有设置 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体作为一个站点部署（网页在 `dist/web`，幻灯片在 `dist/slides`）；只生成其中一种时为 `/`。`presmium dev` 中每个开发服务器有自己的地址，`base` 默认为 `/`。
 
@@ -309,6 +309,15 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 - **时间**：提示标记在它所在字的时刻触发：优先用引擎返回的逐字或逐词时间；没有时把合成的音频转写一遍对齐；再不行按字数线性估算。一步在其讲解说完后 `gap`（默认 0.5 秒）推进，或在 `{cue}`next`` 处推进。
 - **单独的讲授脚本**：`renderers.lecture.script` 指向一个 MyST 文件，其中的章节用与讲义相同的标签（`(merge)=`）对应讲义的章节；某一节在脚本中出现时，讲授用脚本中这一节的段落代替讲义的讲解（第 k 段属于第 k 步，规则同 2.4 节），讲义本身的显示不变。由 agent 整堂生成的讲授写在这里。
 - **产物**：讲授计划经合成成为与录制的讲授格式相同的讲授轨（`voice.kind: synthetic`）与音频片段，写入 `dist/lecture/<id>/`，静态站点离线可放，不需要凭据（第 9 节）。
+
+实际的做法（WP-83）：
+
+- **讲授计划**（`addon-lecture` 的 `src/domain/plan.ts`）：讲授渲染端的视图中每一节、每一步的讲解段落（`{only}` 限于其他媒介的讲解不说；嵌在组件中的讲解随该组件），每段读成两份文字：显示的（字幕、逐字稿）与说的（`{say}` 换成 `alias`）。空白合并为一个空格，两个中日韩字符（含全角标点）之间的空白去掉，所以写在角色两边的空格不进入字幕。段落在 `{cue}`pause …`` 处切开，每一块是一个语音段（`u1`、`u2`……按讲授的顺序）。头部的 `renderers` 要写出 `lecture`：编译器认识的渲染端 ID 是 `web`、`slides`、`notebook` 与 `renderers` 的键，没有写出时 `{only} lecture` 得到“不认识的渲染端”的警告。
+- **提示标记的位置**：`{cue}` 作用于它之后的第一个字（写在“这三行”之前的聚光在说“这”时出现），段末的提示标记在最后一个字说完时；`at` 的字偏移是语音段 `words` 的下标，没有逐字时间的语音段为字符偏移（码点）。`next` 推进一步（超过本节的步数时忽略），`pause` 停顿，`mark` 写一个章节点；`spot`、`hint`、`point`、`ink`、`click`、`run` 作用于 `to` 指的块（先在本节、再在全文按块的标签找），没有 `to` 时作用于这段讲解前面最近的上屏块（单独的脚本中为这一步显示的上屏块）。`sel` 写成页面上的选择器 `[data-section=…] .pm-block[data-block=…] <sel>`；`point` 指向块的中心（有 `lines` 时带 `line`）；`ink` 为荧光笔（`lines` 或整个块），下一节开始时清除；`run` 的结果是块录制输出的 `freeze:<缓存键>`，没有录制时为 `live`。
+- **时间线**（`src/domain/synthesis.ts`）：每节以 `go` 到第 0 步开始；一段说完停 `gap`；一步的讲解说完、停顿之后推进到下一步，除非 `next` 已推进过；没有讲解的步也停 `gap`。`go` 的步号换算为网页形态的步号（视图的 `stepMap`）。
+- **`{say}` 的逐字时间**：引擎按说的文字给出逐字时间，读出一个 `{say}` 的几个字词合为显示文字中的一个词（`B`、`P`、`E` 合为 `BPE`），与语音服务处理读音词典的做法相同。引擎不给逐字时间时，讲授插件把片段交给语音服务转写一遍，得到的逐字时间写在合成缓存中片段的旁边（`.presmium/speech/<键>.align.json`，随缓存提交），没有转写引擎时按字数线性估算。
+- **单独的讲授脚本**按 CommonMark 读（`mdast-util-from-markdown`）：标签行 `(merge)=` 之后的标题开始一节，没有标签的标题给出警告；其中的段落、列表与引用是讲解，`{cue …}` 与 `{say …}` 按“角色加反引号中的内容”认出。脚本有的章节用脚本的段落，其他章节仍用讲义的讲解，讲义的显示不变。
+- **合成的讲授**的 ID 是 `script`（`lectures/script` 这个录制的讲授因此不发布，构建给出警告）；`voice` 记下引擎、模型、音色与服务提供方（`provider`，取自片段的 `<键>.json`），播放界面显示“AI 合成语音（<服务提供方>）”。
 
 ### 2.10 卡片、栅格、选项卡与按钮（P-46）
 
@@ -688,7 +697,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 ### 6.3 讲授渲染端、工作区站点与译本
 
-- **`lecture`**：讲授插件提供的站点渲染端。它把自己的视图（`viewFor(doc, 'lecture')`）编为讲授计划（每一步要说的文字与提示标记，2.9 节），经 `RenderContext.service(SPEECH)` 合成（先查合成缓存，命中的段落不重新合成，全部命中时不向引擎发请求；只为缺失的段落调用引擎并写入缓存；缺失又没有可用的引擎时报错并指出段落），写出 `dist/lecture/<id>/track.json`、音频片段与 `index.json`（讲授列表）；文稿目录 `lectures/` 中录制的讲授轨与音频一并发布。网页的讲授视图从同一站点的 `../lecture/` 读取，分开部署时在 `presmium.lecture.url` 中写明地址。录制的讲授（WP-77）发布为 `dist/lecture/<id>/track.json`、它的本地音频与录像（`audio/`、`video/`，外部地址的不复制）、`captions.<语言>.vtt`（讲授轨的语言与每种译文各一份，过期的译文带 `NOTE stale` 并给出警告）、`chapters.vtt` 与 `events.vtt`；`index.json` 的每项为 `{ id, lang, voice, duration, captions }`。`presmium dev` 中讲授视图读服务端的路由（9.4 节），这个渲染端的开发服务器只打印路由的地址。
+- **`lecture`**：讲授插件提供的站点渲染端。它把自己的视图（`viewFor(doc, 'lecture')`）编为讲授计划（每一步要说的文字与提示标记，2.9 节），经 `RenderContext.service(SPEECH)` 合成（先查合成缓存，命中的段落不重新合成，全部命中时不向引擎发请求；只为缺失的段落调用引擎并写入缓存；缺失又没有可用的引擎时报错并指出段落），写出 `dist/lecture/<id>/track.json`、音频片段与 `index.json`（讲授列表）；文稿目录 `lectures/` 中录制的讲授轨与音频一并发布。网页的讲授视图从同一站点的 `../lecture/` 读取，分开部署时在 `presmium.lecture.url` 中写明地址。录制的讲授（WP-77）发布为 `dist/lecture/<id>/track.json`、它的本地音频与录像（`audio/`、`video/`，外部地址的不复制）、`captions.<语言>.vtt`（讲授轨的语言与每种译文各一份，过期的译文带 `NOTE stale` 并给出警告）、`chapters.vtt` 与 `events.vtt`；`index.json` 的每项为 `{ id, lang, voice, duration, captions }`。`presmium dev` 中讲授视图读服务端的路由（9.4 节），这个渲染端的开发服务器只打印路由的地址。实际（WP-83）：写了 `renderers.lecture.voice` 时构建先合成 `script`：片段（合成缓存中的文件）复制到 `dist/lecture/<id>/clips/`，重新合成过的录制讲授的片段同样发布；讲授插件需要语音插件提供的 `SPEECH`（没有时是错误）；缺少片段又不能合成的语音段各是一条错误级诊断（带段落的源码位置），这时不发布 `script`。每份讲授都发布成功时，`.presmium/speech.lock.json` 只留下这些讲授用到的键（格式不变）。`presmium dev` 与 `presmium serve` 中 `script` 由服务端在页面请求它时按最近一次编译的 IR 合成（命中缓存的段落不发请求），每份 IR 只合成一次；计划取自 IR 的讲授渲染端视图（`viewFor(doc, 'lecture')`），与构建、`presmium check` 和 agent 工具相同。合成要花钱，所以只有编辑者（与所有者）的请求让引擎合成缓存缺的片段；读者的请求不发起计费的请求：为最新 IR 合成过的讲授直接给出，否则在没有可用的合成引擎时只查缓存（也不为对齐转写片段），再否则给出最近一次合成的讲授，都没有时为 409。
 - **工作区站点**：网页渲染端实现 `buildSite` 与 `devSite`（`architecture.md` 4.10 节）：首页是文档列表（搜索与标签），或工作区配置指定的一份文档；每份文档在 `/<文档目录>/` 下，内部仍按章分页；搜索索引包含全部文档；页末的上一章与下一章跨越文档，按工作区配置中的顺序。
 - **译本**：网页渲染端把 `RenderContext.translations` 中的每个译本构建为 VitePress 的一个 locale（`/<语言>/`），语言菜单在两种语言的同一章节之间切换。
 - **实现（WP-86）**：站点外壳写进生成的 VitePress 配置：`themeConfig.nav`、`themeConfig.footer`、`description`、`head`（`og:type`、`og:description`、`og:image`；`og:title` 取每页的标题，由 `transformHead` 在构建时写入）、`sitemap`（`hostname` 加上站点路径）。默认主题在有侧栏的页面上不显示页脚，章节页面另在 `doc-after` 插槽中显示同样的页脚。`head.image` 是本地文件时随站点发布在 `media/` 下，有 `sitemap.hostname` 时写成完整地址。工作区站点：工作区配置 `site` 的 `nav`、`footer`、`head`、`sitemap` 作用于首页与每份文档（文档页面中的导航链接改写为相对于页面的路径，因为 VitePress 给站内链接加上的是文档自己的 `base`）；整个站点只有首页项目生成 `sitemap.xml`，以 `transformItems` 加入每份文档的页面；`site.home` 指定首页文档时，首页 `index.html` 以头部的刷新与页面脚本转到 `/<文档目录>/`，文档列表改在 `documents.html`，文档页面导航栏中的“文档列表”链接到它。每份文档的搜索索引另含其他文档的章节（结果的标题前加上那份文档的标题），文档的第一页的“上一章”是前一份文档的最后一章，最后一页的“下一章”是后一份文档的第一页（`presmium serve` 中按已编译的文档给出，没有编译的给出文档目录与标题）。
@@ -799,6 +808,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - `video`：可选，只有录制时开启了摄像头或屏幕才有；`kind` 为 `camera` 或 `screen`，时刻规则同 `audio`。回放仍由事件驱动真实页面，不依赖它。
 - `blocks`：被事件引用的块的内容指纹（键为 `<章节 ID>/<块 ID>`）与行数；`ir.hash` 是录制时的 IR 哈希，`ir.sections` 是录制时每一节的 IR 哈希（WP-79e2；重录一节只换那一节的，其他各节保留原来录制时的）。它们用于漂移检查。
 - `utterances[].words`：`[开始毫秒, 时长毫秒, 字或词]`；中文为单字。`translations` 的 `source` 是翻译时原文的摘要，与当前原文不一致即过期（P-137）。
+- 实际增加的字段（WP-83）：`utterances[].clip` 是这一句合成的片段，合成缓存中的文件名 `<键>.wav` 或 `<键>.ogg`（讲授轨中只能是这种名字），发布在讲授目录的 `clips/` 下；合成的讲授（`voice.kind: synthetic`）由 `ClipClock` 在每个语音段的时刻播放它的片段（录制的音频不再播放）。`voice` 的合成形式另有可选的 `provider`（引擎的服务提供方，N-08）。录制的讲授经转写得到语音段（`id` 为 `u1`、`u2`……，`section` 与 `step` 取自它开始时的位置），在某个语音段说话期间发生的事件绑定到当时说的字（`at`）；改一句的文字时保留未改动的字的时间、新字按字数分配其间的时间，绑定到这一句的事件随它的字移动，片段去掉（合成的讲授立即重新合成这一句）；换音色重新合成时每句在原来的时刻开始，比前一句的新片段结束得早时推到它结束之后（片段不重叠），没有 `at` 的事件时刻不变。
 
 ### 9.2 事件词汇
 
@@ -825,6 +835,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - 导出（只作为交换格式，不作为主存储）：`captions.<语言>.vtt`（每种语言一份，含译文；过期的译文导出时警告）、`chapters.vtt`（由 `mark` 与章节切换生成）、`events.vtt`（元数据轨，每个事件的 JSON）。
 - 检查项 `presmium.lecture`：按块指纹与 IR 哈希报告移动、失效的块与变化的步骤数，分级同锚点（exact、moved、fuzzy、lost）；`{cue}` 的目标不存在；合成缓存缺失又没有可用的引擎（经 `CheckContext.service(SPEECH).engines()` 判断）时指出是哪些段落。回放时丢弃失效的事件并提示。
 - 实际的检查（WP-77）：块指纹是块的文字（代码；Markdown 的文字，不含地址；组件的名字、不含本地文件的属性与子块）的 `fingerprint`，IR 哈希是网页形态显示的全部块的键与指纹的 `fnv1a64`，所以各形态改写的地址不影响它们；哈希相同时不再逐块比较。有 `ir.sections` 的讲授轨（WP-79e2）按每一节比较：讲授轨记下的每一节的哈希都与现在的相同时才不逐块比较，所以重录一节之后，其他各节在录制之后的改动仍被报告；没有它的讲授轨按整个 IR 的哈希。重录一节之后的 `ir.hash` 只在每一节都与新录制时相同时才是新录制的，否则保留原来的；旧的讲授轨（没有 `ir.sections`）重录时，不知道的各节记为空的哈希（总是逐块比较）。同一块键、同一指纹为 exact；指纹唯一地出现在另一个键上为 moved，回放跟到新键；块还在但内容变了为 fuzzy；都没有为 lost。`go` 到不存在的章节为 lost，步骤超出章节现在的步数为 fuzzy；`lines` 超出代码现在的行数为 lost；`at` 指向不存在的语音段为 fuzzy。lost 与 fuzzy 是警告，moved 是提示；诊断写明讲授 ID、事件的时刻（`m:ss` 与毫秒）与它在 `track.json` 中的行。
+- 讲授计划的检查（WP-83）：编译时 `{cue}` 不认识的命令、`pause` 没有时长、`click` 没有动作、`{say}` 没有 `alias` 是警告；`presmium check` 另报告 `to` 指的块不存在、没有 `to` 也没有前面的上屏块、块不在网页形态中显示、`lines` 超出代码的行数、`run` 不是代码块（警告，构建跳过这个提示标记）。写了 `renderers.lecture.voice` 而没有可用的合成引擎时（`SPEECH.engines()` 中没有所选的引擎），检查逐句查找合成缓存（查找不发请求，没有逐字时间的片段也不转写对齐，只用已有的 `<键>.align.json`），缺少的每一句是一条错误级诊断，指出这句话、它的章节与源码位置。讲义中 `{cue}` 命令的问题只在编译时报告一次（检查与构建的计划不再重复）；单独的讲授脚本不经编译器，其中命令的问题由计划报告。检查的计划与构建一样取自讲授渲染端的视图。
 
 ### 9.4 录制与存储（WP-77）
 
@@ -832,6 +843,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - 回放（P-131）：播放栏、字幕、逐字稿（按句与按字跳转）与章节；章节面板在每一节之下列出讲授走到的各步（`go` 事件中章节或步骤的变化，`stepStops`），点击跳到那一步（WP-79e2）。没有音频的讲授（只有字幕）由 `SilentClock` 按页面的时钟播放。
 - 录音开启回声消除与降噪，经 Mediabunny 的 WebCodecs 路径录为 Ogg/Opus（24 kbps）；没有 Opus 编码器的浏览器退回 MediaRecorder（`audio/ogg`、`audio/webm` 或 `audio/mp4`，时长取录制时的时钟）。摄像头与屏幕录为 WebM。每节每种一个文件：`audio/<章节>.ogg`、`video/<章节>.camera.webm`、`video/<章节>.screen.webm`（同名时加 `-2`）。
 - 服务端的路由（`/__presmium/presmium.lecture/`）：读者可用的 `GET tracks`（讲授列表）、`GET tracks/<id>`（`track.json`）与 `GET tracks/<id>/<audio|video>/<文件>`（支持范围请求）；编辑者可用的 `POST recordings`（`{ track? }`；新讲授的 ID 是录制当天的日期，同一天再录加 `-2`；同时写入忽略媒体的文件）、`POST recordings/<id>/media`（为一节的文件取名）、`PUT recordings/<id>/files/<文件>?at=<位置>`（每 5 秒一块，按位置写入，只能改写已有部分或在末尾追加）与 `POST recordings/<id>/finish`（`{ head, recording, section? }`，写 `track.json` 与媒体的 `sha256`）。
+- WP-83 增加的路由：读者可用的 `GET tracks/script`（合成的讲授，编辑者的请求按需合成，读者的请求不发起计费的合成，见 6.3 节）与 `GET tracks/<id>/clips/<键>.<wav|ogg>`（合成缓存中的片段）；编辑者可用的 `GET speech`（转写与合成引擎的 ID、服务提供方、是否本机与合成引擎的音色）、`POST editing/<id>/transcribe`（以文稿的转写引擎，即 `presmium.speech.transcribe`，否则 `engine`，否则第一个能转写的引擎，转写每一节的录音）、`PUT editing/<id>/utterances/<语音段>`（`{ text }`）与 `POST editing/<id>/synthesize`（`{ voice, engine? }`，每一句以这个音色重新合成），都写回 `track.json` 并返回它。播放器的逐字稿面板中，编辑者有“转写（<服务提供方>）”“重新合成（<服务提供方>）”与每句的修改；转写与合成先弹出写明服务提供方（本机引擎另写明不外发）的确认，确认之后录音与文字才发给语音服务。合成音色的讲授中改一句时，保存按钮是“保存并重新合成（<服务提供方>）”，同样先确认，确认之后这句话才发给语音服务。
 - 运营者设置 `settings.presmium.lecture.audio`：`ignore`（默认，`lectures/<id>/.gitignore` 忽略 `audio/` 与 `video/`）、`lfs`（`.gitattributes` 把它们交给 LFS）或外部地址的前缀（仍然忽略，讲授轨中的 `src` 写成 `<前缀><id>/<文件>`，由运营者把文件放到那里）。
 - `track.json` 每个字段一行，事件、语音段、媒体与块每项一行，改一个事件只改一行。
 

@@ -49,6 +49,51 @@ export function serverSource(server: ServerClient): LectureSource {
   }
 }
 
+/** An engine of the speech service, as the editor names it (N-08). */
+export interface EngineChoice {
+  engine: string
+  provider: string
+  local: boolean
+}
+
+export interface SpeechChoices {
+  transcribe?: EngineChoice
+  synthesize?: EngineChoice & { voices: { id: string, label: string, cloned?: boolean }[] }
+}
+
+/** Work on a recorded lecture's words (editors, `presmium dev` and `presmium serve`); each call gives the track written. */
+export interface LectureEditing {
+  speech(): Promise<SpeechChoices>
+  transcribe(id: string): Promise<LectureTrack>
+  editUtterance(id: string, utterance: string, text: string): Promise<LectureTrack>
+  synthesize(id: string, voice: string, engine?: string): Promise<LectureTrack>
+}
+
+async function answer(response: Promise<Response>): Promise<unknown> {
+  const r = await response
+  const body: unknown = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(isRecord(body) && typeof body.error === 'string' ? body.error : `HTTP ${r.status}`)
+  return body
+}
+
+async function changed(response: Promise<Response>): Promise<LectureTrack> {
+  const body = await answer(response)
+  const track = isRecord(body) ? parseTrack(body.track).track : undefined
+  if (!track) throw new Error('the server gave no track')
+  return track
+}
+
+export function serverEditing(server: ServerClient): LectureEditing {
+  const send = (path: string, method: string, body: unknown = {}) => server.fetch(LECTURE_ID, path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const at = (id: string) => `editing/${encodeURIComponent(id)}`
+  return {
+    speech: async () => (await answer(server.fetch(LECTURE_ID, 'speech'))) as SpeechChoices,
+    transcribe: id => changed(send(`${at(id)}/transcribe`, 'POST')),
+    editUtterance: (id, utterance, text) => changed(send(`${at(id)}/utterances/${encodeURIComponent(utterance)}`, 'PUT', { text })),
+    synthesize: (id, voice, engine) => changed(send(`${at(id)}/synthesize`, 'POST', { voice, ...engine ? { engine } : {} })),
+  }
+}
+
 /** The lectures a build published under `base` (a URL ending in `/`). */
 export function staticSource(base: string): LectureSource {
   return {

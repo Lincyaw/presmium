@@ -584,7 +584,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
 | Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76（已完成，结论见下；`runsc` 与 GPU 的组合没有验证） |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
-| 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83 |
+| 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83（FFmpeg 是 GPL，只导出 WebM，结论见下） |
 | dsh 配置项 ID；dsh 在调用 MCP 工具前是否询问 | WP-80（已完成，结论见下） |
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
@@ -706,6 +706,10 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **MyST 的指令错误**：myst-parser 把应用失败的指令换成 `mystDirectiveError` 节点（`message` 如 `required body not provided for directive: csv-table`，`options` 保留作者写的选项），角色同样有 `mystRoleError`；不认识的选项（如 `{csv-table}` 的 `:file:`、`{note}` 的 `:badoption:`）只是给 vfile 的警告，编译器读不到。所以 `presmium.directive` 由这两种节点给出，并按 myst-parser 的 `defaultOptions.directives` 列出该指令不接受的选项，作为可能的原因。
 - **产物中的文字**：VitePress 与 Slidev 的构建产物（页面、JavaScript 块、搜索索引）、notebook 与 `ir.json` 中的中文是 UTF-8 原文，不转成 `\u` 转义；高亮的代码被拆进 `<span>`，JSON 与 JavaScript 字符串中的引号与换行是转义。泄漏扫描因此还原转义与字符引用、另去掉标签读一遍，按每段文字（而不是整段拼起来的文字）分句。搜索索引（MiniSearch）只存小写的词，测试用 ASCII 的标记词检查它。
 - **工作区站点中的模块**：每份文档的 VitePress 开发服务器以 `/<文档目录>/` 为 `base`，页面加载的 IR 模块是 `/<文档目录>/@id/__x00__virtual:presmium/ir`（`export default JSON.parse("…")`），搜索索引是 `/<文档目录>/@localSearchIndexroot`；经 `presmium serve` 按成员转发后读者与编辑者请求同一地址得到各自视图的内容。
+**WP-83 的先行验证（2026-10-16，`@mediabunny/server` 1.61.6（依赖 `node-av` ^6）、`@seydx/node-av-linux-x64` 6.1.1、Mediabunny 1.61.3、Playwright 1.64.1 的 Chromium）**的结论：
+
+- **`@mediabunny/server` 的 FFmpeg 是 GPL**：包本身是 MPL-2.0，`node-av` 与各平台的二进制包标为 MIT，但二进制 `node-av.node` 静态链接的 FFmpeg 的配置串（二进制中可读）是 Jellyfin 的构建，带 `--enable-gpl --enable-version3`，并链接 `libx264`、`libx265`（GPL）与 `libfdk-aac`。按工作包的规定，`presmium-lecture export` 只导出 WebM：在 Chromium 页面中用 Mediabunny 的 WebCodecs 路径（`CanvasSource` 的 VP9，没有时 VP8；`AudioBufferSource` 的 Opus）合成，不依赖 `@mediabunny/server`，不导出 MP4（`--out` 不是 `.webm` 时用法错误并说明原因）。WP-82 为 MP4 定下的 `AIGC` 写法因此不用；WebM 的标识写在 Matroska 的标签中：`COMMENT` 为 `AIGC={…}`，另有名为 `AIGC` 的标签（字段的 JSON），Mediabunny 读回为 `comment` 与 `raw.AIGC`（`packages/addon-lecture/test/video.test.ts`）。
+- **逐帧导出**：播放器的导出模式（地址加 `&export`，没有控件）由导出者调用 `window.presmiumLecture.advance(t)` 逐帧推进（事件按时间应用，同播放，不重放折叠），每帧截图（JPEG）后交给另一个页面编码；无头 Chromium 的 `VideoEncoder`（VP9）与 `AudioEncoder`（Opus）可用，`OfflineAudioContext.decodeAudioData` 解码假引擎的 WAV 与录制的 Ogg/Opus。10 秒的讲授以 5 帧每秒、960×540 约 10 秒导完（构建网页另需约 20 秒）；导出的时长是帧数除以帧率，比讲授轨长不到一帧，音轨同长。
 
 ## 12. 包与工作包
 

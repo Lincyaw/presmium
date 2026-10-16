@@ -14,10 +14,17 @@ export interface TimedEvent {
   index: number
 }
 
-/** The time of word `offset` of an utterance: its own time when it has word times, else a linear estimate by characters. */
+/**
+ * The time of word `offset` of an utterance: its own time when it has word
+ * times (past the last word, the end of the last word), else a linear
+ * estimate by characters.
+ */
 export function wordTime(utterance: Utterance, offset: number): number {
-  const word = utterance.words?.[Math.max(0, Math.min(offset, utterance.words.length - 1))]
-  if (word) return word[0]
+  const words = utterance.words
+  if (words?.length) {
+    if (offset >= words.length) return words.at(-1)![0] + words.at(-1)![1]
+    return words[Math.max(0, offset)]![0]
+  }
   const length = Math.max(1, [...utterance.text].length)
   return utterance.t + Math.round(utterance.d * Math.max(0, Math.min(offset, length)) / length)
 }

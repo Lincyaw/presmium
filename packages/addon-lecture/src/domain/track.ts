@@ -36,7 +36,23 @@ export interface Utterance {
   step?: number
   /** Language tag to translation. */
   translations?: Record<string, Translation>
+  /**
+   * Its synthesized audio (WP-83): a file of the deck's synthesis cache,
+   * `<key>.wav` or `<key>.ogg` (`CLIP_FILE`), published beside the track
+   * under `clips/`. A synthesized lecture plays these clips at the
+   * utterances' times (`ClipClock`).
+   */
+  clip?: string
 }
+
+/** The name of a clip: a file of the synthesis cache (docs/ir.md 9.1). */
+export const CLIP_FILE = /^[0-9a-f]{32}\.(wav|ogg)$/
+
+/** Where a track's clips are published, relative to its directory. */
+export const CLIPS_DIR = 'clips'
+
+/** The id of the lecture synthesized from the deck's narration or script (P-134). */
+export const SCRIPT_TRACK = 'script'
 
 /** Recorded media of one section: `start` and `duration` in seconds; `src` relative to the track's directory, or a URL. */
 export interface MediaSegment {
@@ -53,7 +69,8 @@ export interface VideoSegment extends MediaSegment {
 
 export type Voice =
   | { kind: 'recorded', speaker?: string }
-  | { kind: 'synthetic', engine: string, model?: string, voice: string }
+  /** `provider`: the engine's provider (N-08), which the player names with the AI-generated label. */
+  | { kind: 'synthetic', engine: string, model?: string, voice: string, provider?: string }
 
 /** Content fingerprint and line count of a block an event refers to. */
 export interface TrackBlock {
@@ -116,6 +133,7 @@ function utterance(value: unknown, problems: string[], i: number): Utterance | u
     ...typeof value.section === 'string' ? { section: value.section } : {},
     ...isNumber(value.step) ? { step: value.step } : {},
     ...translations ? { translations } : {},
+    ...typeof value.clip === 'string' && CLIP_FILE.test(value.clip) ? { clip: value.clip } : {},
   }
 }
 
@@ -134,7 +152,13 @@ function irOf(value: unknown): LectureTrack['ir'] {
 
 function voice(value: unknown): Voice {
   if (isRecord(value) && value.kind === 'synthetic' && typeof value.engine === 'string' && typeof value.voice === 'string') {
-    return { kind: 'synthetic', engine: value.engine, voice: value.voice, ...typeof value.model === 'string' ? { model: value.model } : {} }
+    return {
+      kind: 'synthetic',
+      engine: value.engine,
+      voice: value.voice,
+      ...typeof value.model === 'string' ? { model: value.model } : {},
+      ...typeof value.provider === 'string' ? { provider: value.provider } : {},
+    }
   }
   return { kind: 'recorded', ...isRecord(value) && typeof value.speaker === 'string' ? { speaker: value.speaker } : {} }
 }

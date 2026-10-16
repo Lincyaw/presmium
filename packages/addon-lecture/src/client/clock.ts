@@ -2,8 +2,9 @@
  * The time of a lecture being played (`TrackClock`, docs/domain-model.md
  * section 15): `SilentClock` runs on the page's clock, for a lecture with
  * captions only; `MediaClock` follows the audio of a recorded lecture, one
- * file per section, and runs on the page's clock between and after them.
- * Times in ms since the lecture started.
+ * file per section, and runs on the page's clock between and after them;
+ * `ClipClock` does so with the clips of a synthesized lecture, one per
+ * utterance. Times in ms since the lecture started.
  */
 import type { Ref } from 'vue'
 import { shallowRef } from 'vue'
@@ -162,3 +163,10 @@ export class MediaClock extends SilentClock {
     }
   }
 }
+
+/**
+ * The clock of a synthesized lecture (`ClipClock`): the clips of its
+ * utterances, each from its utterance's time for its length, on the page's
+ * clock between them, as a `MediaClock` plays one file per section.
+ */
+export class ClipClock extends MediaClock {}
