@@ -18,7 +18,8 @@
 | I（M6、M8、M9） | 先 WP-73a 契约与服务端，再 WP-73b 环境、会话与富输出。之后两条线并行：执行与内容一线并行 WP-74 WebAssembly 后端、WP-75 浏览器 GPU 后端、WP-76 远端环境、部署模板与浏览器终端、WP-85 富内容增补（视频封面与字幕轨、卡片与栅格）、WP-88 先预测再揭示；讲授一线先并行 WP-77 讲授轨、录制与回放，WP-82 语音服务与 gateway 中的语音，再 WP-83 脚本化讲授、语音串联与导出视频 | H；WP-82 还要 WP-79（SHARED 模式的用例要 `presmium serve` 与 `presmium agent-host`） |
 | J（M7） | WP-73b 之后开始，与 I 的后半并行：先并行 WP-78 agent 环境（MCP）、WP-79 工作区服务、文档管理与共享部署；再并行 WP-80 agent 运行时接入与学习者问答、WP-90 修改审阅与进程沙箱（deltabox）；再并行 WP-81 批注修改、对话修改、修改审阅与修改历史，WP-84 转写回写讲义 | WP-73b；WP-80 还要 WP-88（同改课堂插件）；WP-90 还要 WP-79（它拥有 `packages/cli/package.json`，此前属于 WP-79）；WP-81 还要 WP-90（审阅的 deltabox 实现）；WP-84 还要 WP-80 与 WP-83（同改讲授插件） |
 | J2（M9） | 并行 WP-86 课程站点、WP-87 发布治理 | WP-79；WP-85（同改编译器的 MyST 设置与指令信息）；WP-87 还要 WP-78（读者的 MCP 令牌只读学生视图）；WP-87 与 WP-90 可能同时进行，`packages/cli/package.json` 属于 WP-90 |
-| K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2 |
+| S | WP-91 共享部署安全加固（SHARED 模式的威胁模型与专门的安全评审；完成前 SHARED 模式标为实验性） | J、J2 |
+| K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2（S 不阻塞 K；SHARED 模式在 S 通过前保持实验性） |
 
 ## 测试原则
 
@@ -786,6 +787,20 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 - `packages/cli/test/publish-checks.test.ts`：测试文稿中有失效的本地链接、`#nowhere`、带 `:file:` 的 `{csv-table}` 与命中 `checks.forbid` 的文字，`presmium check` 以错误退出并在各自的行上给出四条诊断；只在 `{only} slides` 中、指向只出现在网页中的块的链接只在幻灯片的检查中报告。
 - `packages/cli/test/audience.test.ts`：`presmium build --audience student` 的产物（网页、幻灯片、notebook、`ir.json`、搜索索引）中没有教师内容的任何一句，教师章节不在网页目录与幻灯片中；一个教师块的句子又经代码块的输出出现在学生内容中时，构建以错误退出，诊断指向该教师块。
 - 同一文件（`presmium serve` 中的受众，SHARED 模式，以测试设置的代理请求头给出身份，另起 `presmium gateway` 与 `presmium agent-host`）：读者打开的文档页面、它的搜索索引与页面加载的 IR（网页渲染端的 IR 模块 `virtual:presmium/ir`，测试以读者身份经服务端请求页面引用的该模块）中都没有教师块的句子，编辑者的页面与 IR 中有；测试插件的路由为读者成员经 `MCP_ENDPOINT.issue(member, 'tutor')` 取得令牌，以它调用 `get_section` 得到的讲解中也没有这句。
+
+### WP-91 共享部署安全加固（S 波次；N-08、N-09 的 SHARED 部分）
+
+WP-72 经四轮设计评审后，本机模式与整体架构定稿；共享部署（`presmium serve` 加登录，多人使用）下更深的攻击面单列于此，按明确的威胁模型处理，并经一轮专门的安全评审。完成前，SHARED 模式与 compose 模板标为实验性，文档与启动日志写明。
+
+**威胁模型**：读者、编辑者与他们触发的 agent、讲义代码都不可信；只有运营者与所有者可信。资产：gateway 中的第三方凭据、工作区的 git 仓库与配置、所有者的确认、其他文档。
+
+**交付与验收**（承接 WP-72 第四轮评审的遗留）：
+
+- serve 不向沙箱可写的目录写入任何内容：回滚与恢复、录制结果、文档复制与权限、重命名时改写链接，都由 agent-host 以沙箱身份执行；serve 对工作区 git 的操作在隔离的配置下进行（不读工作区与文档中的 git 配置、属性、过滤器与钩子）。用例：沙箱在任务中把文件替换为指向 `.git/config`、`presmium.workspace.yaml` 的符号链接，放弃审阅、回退与关闭任务都不改动这些文件，也不执行任何 git 过滤器或外部程序。
+- 9.4 节残余风险的表述与实测一致（deltabox 覆盖不到的部分写明）。
+- `RunContext.env` 的计算方唯一；serve 读取令牌文件的方式唯一（以 root 读取后降权，或由编排注入文件描述符）。
+- 所有者控制台的来源规则同时覆盖路由与代理。
+- 一轮独立的安全评审通过后，去掉“实验性”标记。
 
 ### WP-89 第三轮验收（K 波次）
 
