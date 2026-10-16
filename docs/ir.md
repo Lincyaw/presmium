@@ -424,8 +424,8 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 
 - `{predict}` 的参数是问题；`:choices:` 给出选项（至少两个），省略时学习者写一段文字。
 - 揭示内容：`{predict}` 之后的下一步出现的全部内容，即 `:reveal:` 让它在下一步出现的上屏内容，以及绑定到这一步的讲解。“下一步”是源码中直到 `{predict}` 为止用到的最后一步的下一步，所以 `{predict}` 本身在第 0 步出现、前面已有揭示时，揭示内容仍是它之后第一个 `:reveal:` 的一步。课堂插件的编译步骤 `predict-reveals`（在 `classroom-places` 之前）把它们移入 `PmPredict` 组件的子块，排在补充说明（子块 `prompt`）之后（块 ID 与步骤不变）；属性 `reveal`、`notes` 分别列出移入的上屏块与讲解的 ID，`PmPredict` 块的 `span` 到达揭示的一步（通常为 1）。之后一步什么也不出现时给出警告（`presmium.classroom`），组件没有揭示内容。
-- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
-- notebook 中为问题、选项与折叠的揭示内容（`<details>`，含移入的讲解）；它也是组件的 `fallback`。
+- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏。幻灯片中补充说明在表单之前：幻灯片渲染端给组件子块的步骤包装元素写上子块的 ID 作为 Vue 的 `key`（网页的 IR 运行时同样按块 ID 给子块 `key`），`PmPredict` 由此分出揭示内容与补充说明（WP-79e2）。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
+- notebook 中为问题、选项与折叠的揭示内容（`<details data-static="open">`，含移入的讲解；揭示的代码带编译时录制的输出，揭示的执行面板为它的降级内容）；它也是组件的 `fallback`。降级内容由 `classroom-places` 写出，编译时执行之后再由 `classroom-predict-fallbacks`（`after: 'execute'`，在执行插件的 `presmium.exec.fallbacks` 之后）重写一次，所以含揭示内容中的运行输出（WP-79e2）。幻灯片的 PDF、PNG 导出中不能展开折叠，`data-static="open"` 的 `<details>` 在导出中展开（第 6 节），测验答案这类没有这个标记的折叠仍收起。
 
 ### 2.14 视频的封面与字幕轨（P-42 增补）
 
@@ -643,7 +643,7 @@ interface Renderer {
 | `renderers`、`base` | 本次构建或开发运行的全部渲染端，与本渲染端的站点路径（2.1 节） |
 | `vitePlugins` | 插件提供的 Vite 插件（第 5 节），运行 Vite 的渲染端在开发与构建中加入 |渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。生成的文稿按幻灯片的站点路径写出（链接到的本地文件与组件属性中的文件地址带上 `base`），而 `slidev export` 总在根路径服务文稿：`base` 不是 `/` 时（例如同时构建两种形态的默认 `/slides/`），构建报告提示改用 `presmium-export`，它为导出另写一份以 `/` 为 `base` 的文稿。
 
-各渲染端用同一套规则把 MyST 降为标准 Markdown（`@presmium/kernel` 的 `lowerMyst`）：幻灯片中图注独立成段，`{dropdown}` 写成 `<details>`，定义列表保留结构，`#标签` 的交叉引用链接到目标章节所在的页。卡片、栅格与选项卡（2.10 节）按选项 `cards`：`element`（幻灯片，不写 `cards` 而写了 `iframes: 'element'` 时也是它）写成带类名的 `<div>`（`pm-grid` 带 `--pm-grid-columns`、`pm-card`、`pm-card__header`、`pm-card__title`、`pm-card__footer`、`pm-tabs__item`、`pm-tabs__title`），按钮为 `pm-button` 中的链接，样式在幻灯片的 `style.css`；`headings`（默认，notebook）写成四级小标题加内容，栅格、卡片与选项卡列为降级。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。
+各渲染端用同一套规则把 MyST 降为标准 Markdown（`@presmium/kernel` 的 `lowerMyst`）：幻灯片中图注独立成段，`{dropdown}` 写成 `<details>`，定义列表保留结构，`#标签` 的交叉引用链接到目标章节所在的页。卡片、栅格与选项卡（2.10 节）按选项 `cards`：`element`（幻灯片渲染端显式传入，WP-79e2；不写 `cards` 而写了 `iframes: 'element'` 时也是它）写成带类名的 `<div>`（`pm-grid` 带 `--pm-grid-columns`、`pm-card`、`pm-card__header`、`pm-card__title`、`pm-card__footer`、`pm-tabs__item`、`pm-tabs__title`），按钮为 `pm-button` 中的链接，样式在幻灯片的 `style.css`；没有目标的 `{button}`（`class: 'button'` 的 `span`）由幻灯片渲染端写成 `<span class="pm-button pm-button--text">`，与带链接的按钮同样的样式（WP-79e2）；`headings`（默认，notebook）写成四级小标题加内容，栅格、卡片与选项卡列为降级。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。幻灯片中有 `fallback` 的组件包在 `PmStaticFallback` 中，PDF、PNG 导出显示 `fallback`；其中带 `data-static="open"` 的 `<details>` 写成展开的（导出不能点开，WP-79e2）。
 
 渲染端发布块中引用的本地文件：Markdown 中的图片与链接，以及组件在 `assets` 中声明的属性。网页把文件发布在站点的 `media/` 下；幻灯片把它们复制到生成的 Slidev 文稿的 `public/`，从站点根路径引用（构建时加上站点路径，翻页预加载也不再请求不存在的相对路径），链接到的文件在新标签页中打开；notebook 把它们复制到 notebook 旁边的 `media/`。文件名中的 `#`、`?` 写作 `%23`、`%3F`，转义不完整的地址不使构建失败。幻灯片的讲解（演讲者备注）是 Slidev 原样显示的 HTML，不经 Vite 处理，其中的图片因此也写成带站点路径的地址。
 
@@ -658,7 +658,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | 渲染端 | 处理 |
 |---|---|
 | 网页（IR 运行时） | 每个输出按 MIME 类型选择渲染器，顺序同 JupyterLab：`text/html`（DOMPurify 清洗后内联显示；只在浏览器中清洗，服务端渲染与清洗之前显示 `text/plain`）、`text/markdown`（`mdast-util-from-markdown` 与 GFM 转为 mdast 后照正文显示，其中的原始 HTML 作为文字）、`text/latex`（KaTeX）、`image/svg+xml`、`image/png`、`image/jpeg`、`image/gif`、`application/json`、`text/plain`；`stream` 与 `error` 的 ANSI 转义转为样式。插件可以为新的类型注册渲染器（`registerNodeRenderer('mime:<类型>')`），优先于内置的。`echo: false` 的代码块不显示代码，`text/markdown` 输出不加输出框 |
-| 幻灯片 | 录制的输出写进 Slidev 文稿：图片为 `<img>`（base64 超过 16 KB 时作为文件发布），`text/markdown` 为 Markdown（其中的原始 HTML 作为文字），`text/html` 放进没有脚本权限的沙箱 iframe（`srcdoc`），`text/latex` 为公式，其他为文本；带 `live` 或 `both` 的 Python、JavaScript、TypeScript 代码块（没有高亮步骤与多版本时）写成 `{monaco-run}`，点运行按钮执行，执行器、会话与超时经生成文稿头部的 `presmiumRuns` 交给执行插件的 code runner（`architecture.md` 4.6、9.2 节），录制的输出写在它下方；`echo: false` 的代码块只写输出，Markdown 输出不加输出框 |
+| 幻灯片 | 录制的输出写进 Slidev 文稿：图片为 `<img>`（base64 超过 16 KB 时作为文件发布），`text/markdown` 为 Markdown（其中的原始 HTML 作为文字），`text/html` 放进没有脚本权限的沙箱 iframe（`srcdoc`），`text/latex` 为公式，其他为文本；带 `live` 或 `both` 的 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 代码块（没有高亮步骤与多版本时；WASI 语言自 WP-79e2）写成 `{monaco-run}`，点运行按钮执行，执行器、会话与超时经生成文稿头部的 `presmiumRuns` 交给执行插件的 code runner（`architecture.md` 4.6、9.2 节），录制的输出写在它下方；`echo: false` 的代码块只写输出，Markdown 输出不加输出框 |
 | notebook | 把 `outputs` 原样写入代码单元格的 `outputs`（`execution_count` 按顺序编号）；`echo: false` 的单元格带元数据 `jupyter.source_hidden` |
 | 静态导出（PDF、PNG） | 使用录制的输出，同幻灯片 |
 
@@ -764,7 +764,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 讲授轨借鉴 asciinema 的 asciicast（事件是元组，不认识的类型忽略），时间用自讲授开始的绝对毫秒，便于跳转与编辑：
 
 ```json
-{ "track": 1, "id": "bpe-2026-10-16", "doc": "lecture.md", "lang": "zh-CN", "ir": { "hash": "…" },
+{ "track": 1, "id": "bpe-2026-10-16", "doc": "lecture.md", "lang": "zh-CN", "ir": { "hash": "…", "sections": { "merge": "…" } },
   "voice": { "kind": "recorded", "speaker": "张老师" },
   "audio": [{ "section": "merge", "start": 0, "src": "audio/merge.ogg", "duration": 312.4, "sha256": "…" }],
   "video": [{ "section": "merge", "start": 0, "src": "video/merge.camera.webm", "kind": "camera", "duration": 312.4 }],
@@ -781,7 +781,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - `voice`：`{ kind: 'recorded', speaker }`，或 `{ kind: 'synthetic', engine, model, voice }`；合成的讲授在播放界面标明“AI 合成语音”。
 - `audio`：录制的讲授每节一段音频（`start` 是该段在讲授中的开始时刻，秒）；合成的讲授没有这一项，片段由语音段经合成缓存给出（`ClipClock`）。
 - `video`：可选，只有录制时开启了摄像头或屏幕才有；`kind` 为 `camera` 或 `screen`，时刻规则同 `audio`。回放仍由事件驱动真实页面，不依赖它。
-- `blocks`：被事件引用的块的内容指纹（键为 `<章节 ID>/<块 ID>`）与行数；`ir.hash` 是录制时的 IR 哈希。两者用于漂移检查。
+- `blocks`：被事件引用的块的内容指纹（键为 `<章节 ID>/<块 ID>`）与行数；`ir.hash` 是录制时的 IR 哈希，`ir.sections` 是录制时每一节的 IR 哈希（WP-79e2；重录一节只换那一节的，其他各节保留原来录制时的）。它们用于漂移检查。
 - `utterances[].words`：`[开始毫秒, 时长毫秒, 字或词]`；中文为单字。`translations` 的 `source` 是翻译时原文的摘要，与当前原文不一致即过期（P-137）。
 
 ### 9.2 事件词汇
@@ -802,17 +802,18 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - 任何事件可以带 `at: [语音段 ID, 字偏移]`：时刻由该字的时间决定；改文字、换音色、重新合成某一段后按新的逐字时间重新计算（“改文字、换音色，操作跟着走”）。
 - 插件自己的类型以插件 ID 开头（如 `presmium.classroom.quiz`），由该插件登记重放；回放忽略没有插件重放的类型。
 - 时刻 t 的画面是 t 之前事件的折叠：`state(t) = fold(events ≤ t)`。回放每帧与每次跳转后，经宿主的 `OPERATIONS` 依次重放（跳转时先 `clear`），由此重建导航、聚光、指针与执行结果。
-- 实际的数据（WP-77）：`go` 由播放器去掉 `view` 后重放（回放总在放映视图中）。`spot`、`hint` 的 `block` 写作 `<章节 ID>/<块 ID>`，可加 `lines`（`3-5`、`2,4`，代码行）、`span`（再持续的步数）、`title`、`text`；没有 `block` 与 `selector` 的数据取消它；它持续到位置离开它所在的章节或步骤（加 `span`），所以做出来、依次重放与一次折叠得到同一画面。放映视图中按 `s`、`h` 给指针下的块加上或取消聚光、提示（引导插件报告）。`point` 的 `path` 是 `[毫秒偏移, x, y]`（块内 0 到 1，约 20 Hz 采样，Ramer–Douglas–Peucker 简化，停顿 0.4 秒或满 1 秒报告一段），代码块另带 `line`；录制者把它的时刻记为路径的开始。`ink` 为 `{ block, tool: 'laser' | 'marker', lines }`（代码行）或 `{ block, tool, range: [x0, y0, x1, y1] }`（块内相对坐标），`{ clear: true }` 清除；荧光笔留到清除，激光笔 1.5 秒后消失，跳转时不重现。`run` 的块写作 `section` 与不带章节的 `block`（IR 运行时的报告），漂移检查与回放按 `<section>/<block>` 处理。
+- 实际的数据（WP-77）：`go` 由播放器去掉 `view` 后重放（回放总在放映视图中）。`spot`、`hint` 的 `block` 写作 `<章节 ID>/<块 ID>`，可加 `lines`（`3-5`、`2,4`，代码行）、`span`（再持续的步数）、`title`、`text`；没有 `block` 与 `selector` 的数据取消它；它持续到位置离开它所在的章节或步骤（加 `span`），所以做出来、依次重放与一次折叠得到同一画面。放映视图中按 `s`、`h` 给指针下的块加上或取消聚光、提示（引导插件报告）。`point` 的 `path` 是 `[毫秒偏移, x, y]`（块内 0 到 1，约 20 Hz 采样，Ramer–Douglas–Peucker 简化，停顿 0.4 秒或满 1 秒报告一段），代码块另带 `line`；录制者把它的时刻记为路径的开始（第一次采样的事件时间，由录制面板告诉录制者，而不是报告时刻减去路径的长度，WP-79e2）。`ink` 为 `{ block, tool: 'laser' | 'marker', lines }`（代码行）或 `{ block, tool, range: [x0, y0, x1, y1] }`（块内相对坐标），`{ clear: true }` 清除；荧光笔留到清除，激光笔 1.5 秒后消失，跳转时不重现。`run` 的块写作 `section` 与不带章节的 `block`（IR 运行时的报告），漂移检查与回放按 `<section>/<block>` 处理。
 
 ### 9.3 导出与检查
 
 - 导出（只作为交换格式，不作为主存储）：`captions.<语言>.vtt`（每种语言一份，含译文；过期的译文导出时警告）、`chapters.vtt`（由 `mark` 与章节切换生成）、`events.vtt`（元数据轨，每个事件的 JSON）。
 - 检查项 `presmium.lecture`：按块指纹与 IR 哈希报告移动、失效的块与变化的步骤数，分级同锚点（exact、moved、fuzzy、lost）；`{cue}` 的目标不存在；合成缓存缺失又没有可用的引擎（经 `CheckContext.service(SPEECH).engines()` 判断）时指出是哪些段落。回放时丢弃失效的事件并提示。
-- 实际的检查（WP-77）：块指纹是块的文字（代码；Markdown 的文字，不含地址；组件的名字、不含本地文件的属性与子块）的 `fingerprint`，IR 哈希是网页形态显示的全部块的键与指纹的 `fnv1a64`，所以各形态改写的地址不影响它们；哈希相同时不再逐块比较。同一块键、同一指纹为 exact；指纹唯一地出现在另一个键上为 moved，回放跟到新键；块还在但内容变了为 fuzzy；都没有为 lost。`go` 到不存在的章节为 lost，步骤超出章节现在的步数为 fuzzy；`lines` 超出代码现在的行数为 lost；`at` 指向不存在的语音段为 fuzzy。lost 与 fuzzy 是警告，moved 是提示；诊断写明讲授 ID、事件的时刻（`m:ss` 与毫秒）与它在 `track.json` 中的行。
+- 实际的检查（WP-77）：块指纹是块的文字（代码；Markdown 的文字，不含地址；组件的名字、不含本地文件的属性与子块）的 `fingerprint`，IR 哈希是网页形态显示的全部块的键与指纹的 `fnv1a64`，所以各形态改写的地址不影响它们；哈希相同时不再逐块比较。有 `ir.sections` 的讲授轨（WP-79e2）按每一节比较：讲授轨记下的每一节的哈希都与现在的相同时才不逐块比较，所以重录一节之后，其他各节在录制之后的改动仍被报告；没有它的讲授轨按整个 IR 的哈希。重录一节之后的 `ir.hash` 只在每一节都与新录制时相同时才是新录制的，否则保留原来的；旧的讲授轨（没有 `ir.sections`）重录时，不知道的各节记为空的哈希（总是逐块比较）。同一块键、同一指纹为 exact；指纹唯一地出现在另一个键上为 moved，回放跟到新键；块还在但内容变了为 fuzzy；都没有为 lost。`go` 到不存在的章节为 lost，步骤超出章节现在的步数为 fuzzy；`lines` 超出代码现在的行数为 lost；`at` 指向不存在的语音段为 fuzzy。lost 与 fuzzy 是警告，moved 是提示；诊断写明讲授 ID、事件的时刻（`m:ss` 与毫秒）与它在 `track.json` 中的行。
 
 ### 9.4 录制与存储（WP-77）
 
-- 放映视图中的录制图层（`presmium dev` 与 `presmium serve` 中）：录制新的讲授，或选一个已有的讲授“重录本节”（只替换当前一节，离开这一节即停止：这一节的事件、语音段与媒体换成新录的，之后的一切按长度之差平移）；可选摄像头与屏幕；激光笔、荧光笔与清除标记。离开放映视图时录制结束并保存。
+- 放映视图中的录制图层（`presmium dev` 与 `presmium serve` 中）：录制新的讲授，或选一个已有的讲授“重录本节”（只替换当前一节，离开这一节即停止：这一节的事件、语音段与媒体换成新录的，之后的一切按长度之差平移）；可选摄像头与屏幕；激光笔、荧光笔与清除标记。离开放映视图时录制结束并保存。开始录制时先请求共享屏幕（要在点击“录制”的用户手势有效时请求），再请求麦克风与摄像头（WP-79e2）。
+- 回放（P-131）：播放栏、字幕、逐字稿（按句与按字跳转）与章节；章节面板在每一节之下列出讲授走到的各步（`go` 事件中章节或步骤的变化，`stepStops`），点击跳到那一步（WP-79e2）。没有音频的讲授（只有字幕）由 `SilentClock` 按页面的时钟播放。
 - 录音开启回声消除与降噪，经 Mediabunny 的 WebCodecs 路径录为 Ogg/Opus（24 kbps）；没有 Opus 编码器的浏览器退回 MediaRecorder（`audio/ogg`、`audio/webm` 或 `audio/mp4`，时长取录制时的时钟）。摄像头与屏幕录为 WebM。每节每种一个文件：`audio/<章节>.ogg`、`video/<章节>.camera.webm`、`video/<章节>.screen.webm`（同名时加 `-2`）。
 - 服务端的路由（`/__presmium/presmium.lecture/`）：读者可用的 `GET tracks`（讲授列表）、`GET tracks/<id>`（`track.json`）与 `GET tracks/<id>/<audio|video>/<文件>`（支持范围请求）；编辑者可用的 `POST recordings`（`{ track? }`；新讲授的 ID 是录制当天的日期，同一天再录加 `-2`；同时写入忽略媒体的文件）、`POST recordings/<id>/media`（为一节的文件取名）、`PUT recordings/<id>/files/<文件>?at=<位置>`（每 5 秒一块，按位置写入，只能改写已有部分或在末尾追加）与 `POST recordings/<id>/finish`（`{ head, recording, section? }`，写 `track.json` 与媒体的 `sha256`）。
 - 运营者设置 `settings.presmium.lecture.audio`：`ignore`（默认，`lectures/<id>/.gitignore` 忽略 `audio/` 与 `video/`）、`lfs`（`.gitattributes` 把它们交给 LFS）或外部地址的前缀（仍然忽略，讲授轨中的 `src` 写成 `<前缀><id>/<文件>`，由运营者把文件放到那里）。

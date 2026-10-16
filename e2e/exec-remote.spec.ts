@@ -18,8 +18,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/exec-remote')
 /** The plugin, which the demo does not depend on. */
 const LINK = { '@presmium/slidev-addon-exec-jupyter': 'packages/addon-exec-jupyter' }
-/** The compose environment's port, in WP-76's range (the fixture's web dev server is on 4845). */
-const JUPYTER_PORT = 4843
+/** The compose environment's port, in WP-79e2's range (the fixture's web dev server is on 4934). */
+const JUPYTER_PORT = 4935
 const OUTPUT = '远端内核 CPython 42\n'
 /** A kernel takes a moment to start. */
 const KERNEL = { timeout: 60_000 }
@@ -30,7 +30,7 @@ test.skip(!dockerCompose, 'needs Docker with docker compose (templates/env/compo
 let jupyter: Jupyter | undefined
 test.beforeAll(() => {
   test.setTimeout(600_000)
-  jupyter = startJupyter('wp76-exec-remote', JUPYTER_PORT)
+  jupyter = startJupyter('wp79e2-exec-remote', JUPYTER_PORT)
 })
 test.afterAll(() => {
   jupyter?.stop()
@@ -69,9 +69,8 @@ test.describe('presmium dev, auth: proxy', () => {
     await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
     await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
 
-    await expect(async () => {
-      await run(where)
-    }).toPass({ timeout: 120_000 })
+    // The dev server pre-bundled the Jupyter client, so its first import does not reload the page.
+    await run(where)
     await expect(where.locator('.pm-output')).toHaveAttribute('data-executor', 'presmium.env.lab')
     await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
 

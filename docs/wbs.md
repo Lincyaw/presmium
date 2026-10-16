@@ -755,6 +755,16 @@ WP-73a 至 WP-79 合并后（main 90c054d：`pnpm test` 161/161，Playwright 218
 
 **验收**：各项有对应用例；`pnpm test`、`pnpm demo:check`、`pnpm demo:build` 与各自的 spec、`e2e/smoke.spec.ts` 通过；合并后验收者运行完整的 Playwright 套件。
 
+**WP-79e2 实际交付**（契约：`RunContext.lang?: string`，编译器传入文稿的语言）：
+
+1. 幻灯片渲染端为带 `live` 或 `both` 的 C、C++、Ruby、SQL 代码块写 `{monaco-run}`（别名写成 code runner 的名字），执行插件的 `setup/code-runners.ts` 为这些语言登记同一个经 `executor` 服务的 code runner；发布插件的离线预缓存加上 `.gz`。用例：`e2e/exec-wasi.spec.ts`（测试文稿另构建幻灯片，C 程序在 Monaco Runner 中现场运行）、`packages/addon-publish/test/offline.test.ts`（现场 Ruby 代码的运行时 `wasi/ruby-3.2.0.tar.gz` 在 Service Worker 的预缓存中）。
+2. `addon-exec-wasi` 的 `LICENSES`（Runno 的 MIT，LLVM 8 的 NCSA，Apache 2.0 加 LLVM 例外，Ruby 的 BSD-2，SQLite 的公有领域声明）随运行时发布为 `<base>wasi/LICENSES`，开发服务器同样提供；`architecture.md` 依赖表更正了 clang 8.0.1 的许可证。用例：`e2e/exec-wasi.spec.ts`（两种形态）、`offline.test.ts`（幻灯片）。
+3. `presmium_gpu.py` 在请求适配器之前检查规模限制（128 MiB、`repeat` 1000、`dispatch`、缓冲区的形状），`requestDevice` 失败为 `GPUUnavailable`；`addon-exec-webgpu` 去掉 `vue`；WebGPU 的编译时录制按 `RunContext.lang`；幻灯片渲染端在现场的 JavaScript、TypeScript 代码导入了从生成文稿的目录找不到的包时写 `monacoTypesSource: none`。用例：`e2e/exec-webgpu.spec.ts`（Python 超限的两种情况；录制的输出是中文；测试文稿去掉了 `monacoTypesSource`）、`packages/addon-exec-webgpu/test/record.test.ts`。
+4. Jupyter 的内核关闭后经 Contents API 删除 `presmium-runs/<id>/`（先删其中的文件）；插件的 Vite 插件在开发服务器启动时预打包 `@jupyterlab/services` 与 xterm，执行插件预打包 `diff`，`e2e/exec-remote.spec.ts` 去掉 `toPass` 的重试（实测：不预打包时页面在加载后因 `diff`、xterm 与 Jupyter 客户端重新优化而重新加载）；Kubernetes 说明中 gVisor 只在 CPU 配置的 `kubespawner_override.extra_pod_config` 中。用例：`packages/addon-exec-jupyter/test/remote.test.ts`（构建之后 `presmium-runs` 为空）、`e2e/exec-remote.spec.ts`；Kubernetes 说明不经测试（同 WP-76）。两者的端口与 compose 项目名改为本工作包的。
+5. 讲授：讲授轨增加 `ir.sections`（每节的 IR 哈希），检查按每节比较，重录一节只换那一节的哈希；`point` 的时刻由录制面板给出路径开始的页面时间；章节面板列出各步并可跳转（`stepStops`）；先请求屏幕共享再请求麦克风与摄像头。用例在 `e2e/lecture.spec.ts`：`point` 的时刻、激光笔与荧光笔（`ink`）、`h`（`hint`）与录制中每 5 秒上传、重录一节（媒体替换、其他各节平移，`presmium check` 仍报告另一节的改动）、按步跳转、没有音频的讲授（`SilentClock`）、屏幕在麦克风与摄像头之前请求并录为 `screen` 视频（页面记下请求的顺序；无头 Chromium 不共享屏幕，用例以假摄像头代替屏幕）。测试文稿的开发服务器端口改为本工作包的。
+6. 幻灯片渲染端给组件子块的步骤包装元素写块 ID 的 `key`，`PmPredict` 因此在幻灯片中把补充说明放在表单之前；预测的降级中折叠的揭示内容标为 `data-static="open"`，幻灯片的 PDF、PNG 导出中展开（测验答案仍收起）；新的编译步骤 `classroom-predict-fallbacks`（`after: 'execute'`）重写预测的降级，揭示的代码带录制的输出。用例：`e2e/predict.spec.ts`（测试文稿另构建幻灯片）、`packages/render-slides/test/slides.test.ts` 的 PDF 导出（揭示内容与其中代码的输出）、`packages/addon-classroom/test/predict.test.ts`。
+7. 幻灯片渲染端显式传入 `cards: 'element'`；没有目标的 `{button}` 写成 `pm-button pm-button--text`，样式同带链接的按钮。用例：`packages/render-slides/test/slides.test.ts`（生成的文稿与浏览器中的边框）；卡片仍由 `e2e/content.spec.ts` 验证。
+
 ### WP-90 修改审阅与进程沙箱：deltabox（D12、D13）
 
 **归属**：`packages/addon-deltabox/**`（新）、`packages/cli/package.json`（只增加对本包的依赖；WP-79 之后，`packages/cli/` 的其余部分在本波次属于 WP-87）。

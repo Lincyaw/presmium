@@ -316,7 +316,7 @@ export class Compiler {
       report({ checkId: 'presmium.lock', severity: 'error', message: errorMessage(error), source: { file: lockFile, line: 1 } })
     }
     const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR), relative(this.deckDir, this.entry), scope)
-    const runContext = this.#runContext(workspaceRoot, settings, service)
+    const runContext = this.#runContext(workspaceRoot, settings, service, lang)
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
     const runPass = async ({ pass, loaded }: { pass: IRPass, loaded: LoadedPlugin }) => {
@@ -407,15 +407,17 @@ export class Compiler {
   /**
    * The context of the runs of a compilation: the environment the code may
    * see (`execution.env` rules, with `settings.presmium.exec.passEnv`), the
-   * process sandbox when a Node service provides one, the gateway access.
+   * process sandbox when a Node service provides one, the gateway access and
+   * the deck's language.
    */
-  #runContext(workspaceRoot: string, settings: OperatorSettings, service: <T>(token: ServiceToken<T>) => T | undefined): RunContext {
+  #runContext(workspaceRoot: string, settings: OperatorSettings, service: <T>(token: ServiceToken<T>) => T | undefined, lang: string): RunContext {
     const passEnv = stringList(settings['presmium.exec']?.passEnv)
     const sandbox = service(PROCESS_SANDBOX)
     return {
       env: runEnvironment(this.options.execution?.env ?? 'local', passEnv, workspaceRoot),
       ...sandbox ? { sandbox } : {},
       ...this.options.gateway ? { gateway: this.options.gateway } : {},
+      lang,
     }
   }
 

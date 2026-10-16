@@ -1,4 +1,4 @@
-import { deckLocale } from '@presmium/kernel'
+import { deckLocale, docBlocks } from '@presmium/kernel'
 import type { IRBlock, IRPass, IRSection } from '@presmium/kernel'
 import { CLASSROOM_ID, isLabel, MESSAGES } from '../domain/index.ts'
 import type { Place } from '../domain/index.ts'
@@ -80,6 +80,25 @@ export const placesPass: IRPass = {
           delete node.props.target
         }
       }
+    }
+  },
+}
+
+/**
+ * A predict's static form again once compile-time execution has run
+ * (`after: 'execute'`), so code it reveals shows with its recorded output and
+ * a run panel it reveals with its static form, which the execution plugin's
+ * `presmium.exec.fallbacks` writes first (`order`). Without execution (an IR
+ * with errors) the form `classroom-places` wrote stays.
+ */
+export const predictFallbacksPass: IRPass = {
+  name: 'classroom-predict-fallbacks',
+  after: 'execute',
+  order: 1,
+  run(doc, ctx) {
+    const t = MESSAGES[deckLocale(ctx.lang)]
+    for (const { block: { node } } of docBlocks(doc)) {
+      if (node.type === 'component' && node.plugin === CLASSROOM_ID && node.name === 'PmPredict') node.fallback = fallbackOf(node, t)
     }
   },
 }

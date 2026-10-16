@@ -42,6 +42,7 @@ export interface LectureMessages {
     missing: (id: string) => string
     dropped: (count: number) => string
     jump: (time: string) => string
+    step: (step: number) => string
   }
   list: {
     title: string
@@ -92,6 +93,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       missing: id => `找不到讲授 ${id}`,
       dropped: count => `讲义改动后有 ${count} 个操作失效，回放时略过`,
       jump: time => `跳到 ${time}`,
+      step: step => `第 ${step} 步`,
     },
     list: {
       title: '讲授',
@@ -140,6 +142,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       missing: id => `Lecture ${id} not found`,
       dropped: count => `${count} actions no longer match the deck and are skipped`,
       jump: time => `Go to ${time}`,
+      step: step => `Step ${step}`,
     },
     list: {
       title: 'Lectures',

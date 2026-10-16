@@ -111,8 +111,8 @@ print(sum(range(10)))
 - `:echo: false`（须有 `:run:`）：只显示输出，不显示代码与运行控件；只输出 Markdown（`text/markdown`）时按正文显示，用于从数据生成表格与列表。与 `:run: live` 同用时警告并按 `compile` 执行。
 - 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片。网页、幻灯片按类型显示（HTML 经清洗，幻灯片中放进沙箱 iframe），notebook 把输出原样写进单元格。
 - 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
-- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@presmium/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。幻灯片中这些代码块显示录制的输出。
-- 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行，录制的输出显示在它下方。
+- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@presmium/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
+- 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行（C 等语言要列出 `@presmium/slidev-addon-exec-wasi`），录制的输出显示在它下方。
 - 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
 
 ### `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` 与 `{button}`
@@ -301,11 +301,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 ````
 
 - `:params:` 的键：`buffers`（必填：着色器中每个 `var<storage>`、`var<uniform>` 按变量名给出数据列表，或 `{ data, size, fill, type, read }`；组、绑定、读写与类型 `f32`、`i32`、`u32` 取自着色器）、`dispatch`（每个维度的工作组数，1 到 3 个数，默认 1）、`entry`（入口函数，默认唯一的计算入口）、`repeat`（运行次数，默认 1，至多 1000，计时取中位数）、`features`（需要的适配器特性，如 `[shader-f16]`）。全部缓冲区至多 128 MiB。
-- 输出：可写的存储缓冲区（`read_write`）读回后每个一行，如 `out: f32[4] = [11, 22, 33, 44]`（长的显示首尾与最小、最大、平均），再加每次派发的时间与适配器；在 CPU 模拟的回退适配器（SwiftShader）上计时注明“CPU 模拟”。构建时录制的输出是英文。
+- 输出：可写的存储缓冲区（`read_write`）读回后每个一行，如 `out: f32[4] = [11, 22, 33, 44]`（长的显示首尾与最小、最大、平均），再加每次派发的时间与适配器；在 CPU 模拟的回退适配器（SwiftShader）上计时注明“CPU 模拟”。构建时录制的输出按文稿的 `lang`（默认中文）。
 - 浏览器没有 WebGPU、没有 GPU 适配器、缺少特性或限制、设备丢失或超时时，面板显示构建时录制的输出与原因（如“预录输出 · 没有可用的 GPU 适配器”）；着色器的错误照常显示为错误。
 - 构建时：有显卡时 Chromium 经 Vulkan 用显卡，否则用 SwiftShader；`execute.environments` 中声明 `cpu: { kind: webgpu, adapter: swiftshader }` 并写 `:env: cpu`，任何机器上录制都相同（`adapter` 还可以是 `auto`、`gpu`）。没有安装 Playwright 的 Chromium 时不录制，沿用已有的录制。
-- Python（Pyodide）中运行同样的着色器：`import presmium_gpu as gpu`，`result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)`（代码块顶层可以 `await`），`result['out']` 是读回的列表，`print(result)` 显示与面板相同的摘要；Chromium、Firefox 等有 JSPI 的浏览器另有同步写法 `gpu.run_sync(...)`。不能运行时抛出 `presmium_gpu.GPUUnavailable`。这样的代码块写 `:run: live`（构建时的 Python 没有 WebGPU）。
-- JavaScript、TypeScript 中 `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` 使用 jax-js（张量与自动微分；`await init()` 之后 `defaultDevice('webgpu')` 在 GPU 上计算，没有 WebGPU 时默认用 WebAssembly）。jax-js 随产物发布，第一次导入时加载；这样的代码块写 `:run: live`。幻灯片形态中有这样的现场代码块时，在 `renderers.slides` 中写 `monacoTypesSource: none`，否则 Slidev 构建时找不到 jax-js 的类型而失败。
+- Python（Pyodide）中运行同样的着色器：`import presmium_gpu as gpu`，`result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)`（代码块顶层可以 `await`），`result['out']` 是读回的列表，`print(result)` 显示与面板相同的摘要（英文）；Chromium、Firefox 等有 JSPI 的浏览器另有同步写法 `gpu.run_sync(...)`。规模限制与面板相同（缓冲区共 128 MiB，`repeat` 至多 1000），超出时抛出 `ValueError`；不能运行时抛出 `presmium_gpu.GPUUnavailable`。这样的代码块写 `:run: live`（构建时的 Python 没有 WebGPU）。
+- JavaScript、TypeScript 中 `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` 使用 jax-js（张量与自动微分；`await init()` 之后 `defaultDevice('webgpu')` 在 GPU 上计算，没有 WebGPU 时默认用 WebAssembly）。jax-js 随产物发布，第一次导入时加载；这样的代码块写 `:run: live`。幻灯片中 Monaco 编辑器不显示 jax-js 的类型（渲染端自动关掉找不到的包的类型查找），运行不受影响。
 ## 远端环境 `presmium.execJupyter`（`@presmium/slidev-addon-exec-jupyter`）
 
 提供 `kind: jupyter` 的具名环境：任何 Jupyter Server（`templates/env/compose/` 的 docker compose 模板、JupyterHub、agent-sandbox 等）。头部声明环境，代码块用 `:env:` 选择，构建时与浏览器中都在它的内核中运行：
@@ -515,7 +515,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 讲解：每一轮只合并出现最多的那一对。
 ````
 
-生成 `PmPredict`；编译步骤 `predict-reveals` 把揭示内容移入它的子块（块 ID 与步骤不变），之后一步什么也不出现时警告。网页的文档视图中，读者保存预测之前不显示揭示内容；放映、演讲者视图与幻灯片按步骤显示。预测保存在本机浏览器；课堂中学习者的预测另交给主讲，“互动”面板按选项显示人数。notebook 中为问题、选项与折叠的揭示内容（`<details>`）。
+生成 `PmPredict`；编译步骤 `predict-reveals` 把揭示内容移入它的子块（块 ID 与步骤不变），之后一步什么也不出现时警告。网页的文档视图中，读者保存预测之前不显示揭示内容；放映、演讲者视图与幻灯片按步骤显示（正文的补充说明在表单之前）。预测保存在本机浏览器；课堂中学习者的预测另交给主讲，“互动”面板按选项显示人数。notebook 中为问题、选项与折叠的揭示内容（`<details>`，其中的代码带编译时录制的输出）；幻灯片导出的 PDF、PNG 中揭示内容展开显示。
 
 ## 没有指令的插件
 

@@ -10,7 +10,7 @@
 import type { Operations, ServerClient } from '@presmium/host'
 import type { IRDocument, Operation, TrackEvent } from '@presmium/kernel'
 import { shallowRef } from 'vue'
-import { irHash, LECTURE_ID, referencedBlocks } from '../domain/index.ts'
+import { irHash, LECTURE_ID, referencedBlocks, sectionHashes } from '../domain/index.ts'
 import type { MediaSegment, Recording, VideoSegment } from '../domain/index.ts'
 import type { Capture, Chunk } from './media.ts'
 import { captureAudio, captureVideo } from './media.ts'
@@ -70,6 +70,8 @@ export class LectureRecorder {
 
   private readonly options: RecorderOptions
   private readonly events: TrackEvent[] = []
+  /** The page time (`performance.now()`) at which each pointer path about to be reported began, by its data. */
+  private readonly paths = new WeakMap<object, number>()
   private readonly segments: Segment[] = []
   private streams: Partial<Record<Source, MediaStream>> = {}
   private t0 = 0
@@ -92,9 +94,11 @@ export class LectureRecorder {
 
   async start(): Promise<void> {
     try {
+      // The screen first: sharing it needs the click that started the recording (transient
+      // activation), which waiting for the presenter to allow the microphone could outlast.
+      if (this.options.screen) this.streams.screen = await navigator.mediaDevices.getDisplayMedia({ video: true })
       this.streams.audio = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
       if (this.options.camera) this.streams.camera = await navigator.mediaDevices.getUserMedia({ video: true })
-      if (this.options.screen) this.streams.screen = await navigator.mediaDevices.getDisplayMedia({ video: true })
       const { id } = await answer<{ id: string }>(this.post('recordings', { track: this.options.track }))
       this.id = id
       this.t0 = performance.now()
@@ -111,6 +115,15 @@ export class LectureRecorder {
     }
   }
 
+  /**
+   * Says when a pointer path began (page time) before it is reported as
+   * `point` with `data`: the path is reported once it ends, a while after its
+   * last move, and its event is at its start (docs/ir.md 9.2).
+   */
+  pathStarted(data: Record<string, unknown>, at: number): void {
+    this.paths.set(data, at)
+  }
+
   /** Ends the recording, uploads what is left and writes the track; resolves when it is saved. */
   stop(): Promise<void> {
     this.stopping ??= this.finish()
@@ -123,9 +136,10 @@ export class LectureRecorder {
 
   private record({ type, data }: Operation): void {
     if (this.state.value !== 'recording') return
-    // A pointer path is reported when it ends; it began its length earlier.
+    // A pointer path is reported when it ends: its event is at its start, which the panel gave, else its length earlier.
+    const began = this.paths.get(data)
     const path = type === 'point' && Array.isArray(data.path) ? data.path as [number, number, number][] : undefined
-    const t = Math.max(0, Math.round(this.now() - (path?.at(-1)?.[0] ?? 0)))
+    const t = Math.max(0, Math.round(began !== undefined ? began - this.t0 : this.now() - (path?.at(-1)?.[0] ?? 0)))
     if (type === 'go' && typeof data.section === 'string' && data.section !== this.current) {
       if (this.section) {
         void this.stop()
@@ -237,6 +251,7 @@ export class LectureRecorder {
         doc: doc.meta.entry,
         lang: doc.meta.lang ?? 'zh-CN',
         irHash: irHash(doc),
+        sections: sectionHashes(doc),
         voice: { kind: 'recorded', ...this.options.speaker ? { speaker: this.options.speaker } : {} },
         blocks: referencedBlocks(doc, this.events),
       }

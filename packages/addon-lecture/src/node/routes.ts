@@ -95,6 +95,7 @@ function readHead(value: unknown, id: string): TrackHead | undefined {
     doc: value.doc,
     lang: typeof value.lang === 'string' ? value.lang : 'zh-CN',
     irHash: value.irHash,
+    sections: isRecord(value.sections) ? Object.fromEntries(Object.entries(value.sections).filter((entry): entry is [string, string] => typeof entry[1] === 'string')) : {},
     voice: isRecord(value.voice) && value.voice.kind === 'recorded'
       ? { kind: 'recorded', ...typeof value.voice.speaker === 'string' ? { speaker: value.voice.speaker } : {} }
       : { kind: 'recorded' },

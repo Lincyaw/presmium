@@ -6,7 +6,7 @@
  */
 import { errorMessage } from '@presmium/kernel'
 import type { Check, Finding, IRDocument, Severity } from '@presmium/kernel'
-import { blockOf, clockText, eventDrift, eventLine, irHash, LECTURE_ID } from '../domain/index.ts'
+import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, unchanged } from '../domain/index.ts'
 import type { EventDrift } from '../domain/index.ts'
 import { readTrack, trackIds } from './store.ts'
 
@@ -42,7 +42,7 @@ export function trackFindings(deckDir: string, id: string, doc: IRDocument): Fin
   if (!stored) return []
   const { track, text, file, problems } = stored
   const findings: Finding[] = problems.map(message => ({ checkId: LECTURE_ID, severity: 'warning', message: `lecture ${id}: ${message}`, source: { file } }))
-  if (track.ir.hash === irHash(doc)) return findings
+  if (unchanged(track, doc)) return findings
   for (const drift of eventDrift(track, doc)) {
     if (drift.grade === 'exact') continue
     const [t, type] = track.events[drift.index]!

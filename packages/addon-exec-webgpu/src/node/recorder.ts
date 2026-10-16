@@ -9,6 +9,9 @@
  * this process's (docs/architecture.md 4.6, 10.6), and is closed after each
  * run: the compiler has no hook to close it later.
  *
+ * What the run says itself (its summary, the reasons it failed) is in the
+ * deck's language (`RunContext.lang`).
+ *
  * The environment fingerprint names the browser and the adapter, `fallback`
  * for SwiftShader. Where Chromium is not installed the executor runs nothing
  * (recordings stand in); where it has no adapter, or the adapter cannot run
@@ -19,7 +22,7 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { failedRun } from '@presmium/kernel'
+import { deckLocale, failedRun } from '@presmium/kernel'
 import type { Executor, RunContext, RunResult } from '@presmium/kernel'
 import type { Browser, BrowserType, Page } from 'playwright-chromium'
 import { adapterName, computeRequest, DEFAULT_TIMEOUT_MS, failure, fingerprint, isWgsl, MESSAGES, programError, runResult, unavailable } from '../domain/index.ts'
@@ -122,7 +125,8 @@ export function createRecorder(options: { id: string, adapter: AdapterChoice }):
       return fingerprint(version, adapter)
     },
     async run(request, signal, ctx?: RunContext): Promise<RunResult> {
-      const text = MESSAGES.en
+      // A recording is written in the deck's language; without a compiler's context, in English.
+      const text = MESSAGES[ctx?.lang ? deckLocale(ctx.lang) : 'en']
       const made = computeRequest(request.code, request.args, text)
       if ('error' in made) return programError(id, made.error, 0)
       const env = ctx?.env ?? plainEnv()

@@ -13,7 +13,7 @@ execute:
     lab: { kind: jupyter, auth: proxy, image: 'quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a' }
 renderers:
   web:
-    port: 4845
+    port: 4934
   slides:
     theme: default
 ---

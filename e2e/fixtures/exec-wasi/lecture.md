@@ -7,12 +7,14 @@ plugins:
   - '@presmium/slidev-addon-exec-wasi'
 renderers:
   web: {}
+  slides:
+    theme: default
 ---
 
 # WebAssembly 测试文稿
 
 :::{slide}
-e2e/exec-wasi.spec.ts 的测试文稿：C 程序在浏览器中运行于 WebAssembly（WASI），编译时用同一份二进制录制输出。
+e2e/exec-wasi.spec.ts 的测试文稿：C 程序在浏览器中（网页与幻灯片）运行于 WebAssembly（WASI），编译时用同一份二进制录制输出。
 :::
 
 (c-program)=

@@ -43,6 +43,11 @@ singleuser:
   profileList:
     - display_name: CPU
       default: true
+      kubespawner_override:
+        # CPU 的内核运行在 gVisor 中（需要集群中名为 gvisor 的 RuntimeClass）。GPU 配置不用它：GPU 节点上
+        # 要用 gVisor 的 nvproxy 并按 gVisor 文档核对驱动版本，或改用 Kata，这一组合没有经过验证。
+        extra_pod_config:
+          runtimeClassName: gvisor
     - display_name: GPU
       kubespawner_override:
         image: quay.io/jupyter/pytorch-notebook:cuda12-2026-10-12@sha256:<摘要>
@@ -51,10 +56,6 @@ singleuser:
       kubespawner_override:
         image: quay.io/jupyter/pytorch-notebook:cuda12-2026-10-12@sha256:<摘要>
         extra_resource_limits: { nvidia.com/mig-1g.10gb: "1" }
-  # 内核运行在 gVisor 中（需要集群中名为 gvisor 的 RuntimeClass）。GPU 节点上要用 gVisor 的 nvproxy
-  # 并按 gVisor 文档核对驱动版本，或改用 Kata；这一组合没有经过验证。
-  extraPodConfig:
-    runtimeClassName: gvisor
   networkPolicy:
     enabled: true
 

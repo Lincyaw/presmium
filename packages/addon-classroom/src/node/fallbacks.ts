@@ -4,7 +4,7 @@
  * reader of a static copy can use, in the deck's language. A notebook shows
  * them so (`./extensions.ts`).
  */
-import type { ComponentNode, IRBlock, MdastNode } from '@presmium/kernel'
+import type { ComponentNode, IRBlock, MdastNode, RunResult } from '@presmium/kernel'
 import { optionLetter } from '../domain/index.ts'
 import type { ClassroomMessages } from '../domain/index.ts'
 
@@ -15,18 +15,44 @@ const strings = (value: unknown): string[] => (Array.isArray(value) ? value.map(
 const html = (value: string): MdastNode => ({ type: 'html', value })
 const numbered = (items: string[]): MdastNode => ({ type: 'list', ordered: true, spread: false, children: items.map(item => ({ type: 'listItem', children: [paragraph(text(item))] })) })
 
-/** What a block shows, as mdast: its Markdown, its code, or a component's static form. */
+const joined = (value: unknown): string => (Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : '')
+
+/** What a run printed, as text: its streams, the plain text of its results, its error. */
+function printed(run: RunResult): string {
+  if (!run.outputs) return [run.stdout, run.stderr].join('')
+  return run.outputs.map((output) => {
+    if (output.output_type === 'stream') return joined(output.text)
+    if (output.output_type === 'error') return `${output.ename}: ${output.evalue}\n`
+    const text = joined(output.data['text/plain'])
+    return text && !text.endsWith('\n') ? `${text}\n` : text
+  }).join('')
+}
+
+/**
+ * What a block shows, as mdast: its Markdown, its code with the output
+ * recorded at compile time, or a component's static form.
+ */
 function shown({ node }: IRBlock): MdastNode[] {
   if (node.type === 'markdown') return node.mdast.type === 'root' ? node.mdast.children ?? [] : [node.mdast]
-  if (node.type === 'code') return [{ type: 'code', lang: node.lang, value: node.value }]
+  if (node.type === 'code') {
+    const output = (node.outputs ?? []).map(printed).join('').trimEnd()
+    return [
+      ...node.echo === false ? [] : [{ type: 'code', lang: node.lang, value: node.value }],
+      ...output ? [{ type: 'code', lang: 'text', value: output }] : [],
+    ]
+  }
   return node.fallback?.children ?? []
 }
 
-/** What a predict reveals (its children that `reveal` and `notes` name), folded away. */
+/**
+ * What a predict reveals (its children that `reveal` and `notes` name),
+ * folded away; exports, where nothing can be unfolded, show it open
+ * (`data-static="open"`, docs/ir.md 2.13).
+ */
 function folded(node: ComponentNode, t: ClassroomMessages): MdastNode[] {
   const ids = new Set([...strings(node.props.reveal), ...strings(node.props.notes)])
   const content = (node.children ?? []).filter(block => ids.has(block.id)).flatMap(shown)
-  return content.length ? [html(`<details><summary>${t.fallback.reveal}</summary>`), ...content, html('</details>')] : []
+  return content.length ? [html(`<details data-static="open"><summary>${t.fallback.reveal}</summary>`), ...content, html('</details>')] : []
 }
 
 function after(node: ComponentNode, t: ClassroomMessages): MdastNode[] {

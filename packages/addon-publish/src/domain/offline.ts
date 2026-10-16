@@ -17,11 +17,11 @@ export interface OfflineManifest {
 const DECK = ['html', 'js', 'mjs', 'css', 'json', 'txt', 'md']
 /** Media and fonts, including remote assets downloaded at build time. */
 const MEDIA = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'ico', 'bmp', 'woff', 'woff2', 'ttf', 'otf', 'mp4', 'webm', 'ogg', 'mp3', 'wav', 'm4a', 'pdf']
-/** The Pyodide runtime and its packages when they are part of the build. */
-const PYODIDE = ['wasm', 'zip', 'whl', 'tar', 'data']
+/** The Pyodide runtime and its packages, and the WASI runtimes with their archives (`clang-fs.tar.gz`), when they are part of the build. */
+const RUNTIMES = ['wasm', 'zip', 'whl', 'tar', 'data', 'gz']
 
 export const OFFLINE_MANIFEST: OfflineManifest = {
-  precache: [`**/*.{${[...DECK, ...MEDIA, ...PYODIDE].join(',')}}`],
+  precache: [`**/*.{${[...DECK, ...MEDIA, ...RUNTIMES].join(',')}}`],
   // Same limit as Slidev's own PWA option; the Pyodide wasm alone is about 10 MB.
   maxFileBytes: 100 * 1024 * 1024,
   runtime: [

@@ -13,7 +13,10 @@ variables (a list of numbers, or a dict with `data`, `size`, `fill`, `type`, `re
 `await` works at the top of a code block. Where the browser has JavaScript Promise Integration
 (JSPI), `gpu.run_sync(...)` does the same without `await` (`gpu.can_run_sync()` says whether it
 can). A shader that cannot run here (no WebGPU, no adapter, a missing feature or limit, a lost
-device) raises `GPUUnavailable`; one WebGPU rejects, `GPUError`.
+device) raises `GPUUnavailable`; one WebGPU rejects, `GPUError`. The run has the scale limits of
+`{run-panel} wgsl` (the WebGPU plugin's `LIMITS`): all buffers together at most 128 MiB, and
+`repeat` at most 1000; buffers, `dispatch` or `repeat` beyond them or of the wrong shape raise
+`ValueError` before the GPU is asked for.
 """
 import re
 
@@ -27,6 +30,9 @@ __all__ = ['GPUError', 'GPUUnavailable', 'Result', 'can_run_sync', 'run', 'run_s
 _ARRAYS = {'f32': 'Float32Array', 'i32': 'Int32Array', 'u32': 'Uint32Array'}
 # Values shown at each end of a long buffer.
 _ENDS = 4
+# The scale limits of a run, as the WebGPU plugin's `LIMITS` (src/domain/config.ts there).
+_MAX_BYTES = 128 * 1024 * 1024
+_MAX_REPEAT = 1000
 _DECLARATION = re.compile(r'((?:@\s*\w+\s*(?:\([^)]*\))?\s*)+)var\s*<\s*(storage|uniform)\s*(?:,\s*(read_write|read))?\s*>\s*([A-Za-z_]\w*)\s*:\s*([^;]+);')
 _SHORTHAND = {'f': 'f32', 'i': 'i32', 'u': 'u32', 'h': 'f16'}
 
@@ -78,17 +84,30 @@ def _buffers(code, specs):
         if d['name'] not in specs:
             raise ValueError("The shader's buffer %s is not in buffers" % d['name'])
         spec = specs[d['name']]
+        if not isinstance(spec, (list, tuple, range, dict)):
+            raise ValueError('The buffer %s is a list of numbers, or {data, size, fill, type, read}' % d['name'])
         fields = {'data': list(spec)} if isinstance(spec, (list, tuple, range)) else dict(spec)
         data = fields.get('data')
+        size = fields.get('size')
+        if (data is not None and not (isinstance(data, (list, tuple, range)) and all(_is_number(v) for v in data))) or (size is not None and not _positive(size)):
+            raise ValueError('The buffer %s is a list of numbers, or {data, size, fill, type, read}' % d['name'])
         kind = fields.get('type') or d['scalar'] or 'f32'
         if kind not in _ARRAYS:
             raise ValueError('The type %s of the buffer %s is not supported (f32, i32, u32)' % (kind, d['name']))
-        length = max(fields.get('size') or 0, len(data) if data is not None else 0)
+        length = max(size or 0, len(data) if data is not None else 0)
         if length == 0:
             raise ValueError('The buffer %s needs data or size (its number of values)' % d['name'])
         read = fields.get('read')
         buffers.append(dict(d, type=kind, length=length, data=data, fill=fields.get('fill'), read=d['access'] == 'read_write' if read is None else read))
     return buffers
+
+
+def _is_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value == value and abs(value) != float('inf')
+
+
+def _positive(value, most=float('inf')):
+    return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= most
 
 
 def _bytes(buffer):
@@ -140,6 +159,16 @@ def _adapter(adapter):
 
 async def run(shader, buffers, dispatch=1, entry=None, repeat=1, features=()):
     """Runs the compute shader `repeat` times on the buffers; returns the `Result`."""
+    specs = _buffers(shader, buffers)
+    groups = list(dispatch) if isinstance(dispatch, (list, tuple)) else [dispatch]
+    if not 1 <= len(groups) <= 3 or not all(_positive(n) for n in groups):
+        raise ValueError('dispatch is 1 to 3 positive integers (workgroups in each dimension)')
+    groups += [1] * (3 - len(groups))
+    if not _positive(repeat, _MAX_REPEAT):
+        raise ValueError('repeat is an integer from 1 to %d' % _MAX_REPEAT)
+    total = sum(_bytes(b) for b in specs)
+    if total > _MAX_BYTES:
+        raise ValueError('The buffers take %d bytes, over the scale limit of %d bytes' % (total, _MAX_BYTES))
     gpu = getattr(js.navigator, 'gpu', None)
     if _absent(gpu):
         raise GPUUnavailable('This browser has no WebGPU')
@@ -150,9 +179,6 @@ async def run(shader, buffers, dispatch=1, entry=None, repeat=1, features=()):
     missing = [f for f in features if not adapter.features.has(f)]
     if missing:
         raise GPUUnavailable('The GPU adapter lacks the feature %s' % ', '.join(missing))
-    specs = _buffers(shader, buffers)
-    groups = list(dispatch) if isinstance(dispatch, (list, tuple)) else [dispatch]
-    groups += [1] * (3 - len(groups))
     storage = [_bytes(b) for b in specs if b['usage'] == 'storage']
     uniform = [_bytes(b) for b in specs if b['usage'] == 'uniform']
     needs = {
@@ -166,7 +192,10 @@ async def run(shader, buffers, dispatch=1, entry=None, repeat=1, features=()):
         if needed > getattr(adapter.limits, limit):
             raise GPUUnavailable("The GPU adapter's limits are too low: %s %d < %d" % (limit, getattr(adapter.limits, limit), needed))
     timestamps = adapter.features.has('timestamp-query')
-    device = await adapter.requestDevice(_js({'requiredFeatures': list(features) + (['timestamp-query'] if timestamps else []), 'requiredLimits': needs}))
+    try:
+        device = await adapter.requestDevice(_js({'requiredFeatures': list(features) + (['timestamp-query'] if timestamps else []), 'requiredLimits': needs}))
+    except JsException as error:
+        raise GPUUnavailable("The GPU adapter's limits are too low: %s" % error) from None
     lost = []
     device.lost.then(create_once_callable(lambda info: lost.append(info.message) if info.reason != 'destroyed' else None))
     try:

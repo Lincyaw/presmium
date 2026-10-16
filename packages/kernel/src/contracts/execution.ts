@@ -73,6 +73,13 @@ export interface RunContext {
    * credentials come from `EnvironmentContext.secret`.
    */
   gateway?: GatewayAccess
+  /**
+   * The deck's language (its headmatter's `lang`, `zh-CN` when it has none).
+   * Text an executor writes into a recording itself, e.g. the summary of a
+   * WebGPU run, is in it (`deckLocale`), as other text written into the
+   * build output at compile time is (docs/architecture.md 5.7).
+   */
+  lang?: string
 }
 
 /** One run in the process sandbox (D13): the command runs in a new run directory, inputs and results are files in it. */

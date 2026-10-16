@@ -1,7 +1,8 @@
 // A kind: jupyter environment at compile time (P-105, WP-76): `presmium build` runs the deck's code in
 // the kernels of the compose environment (templates/env/compose/compose.yaml) with the operator's pair
-// PRESMIUM_ENV_<NAME>_URL and _TOKEN, and records the outputs with the environment's fingerprint;
-// `presmium check --env` reports an environment it cannot reach. Needs Docker; skipped without it.
+// PRESMIUM_ENV_<NAME>_URL and _TOKEN, and records the outputs with the environment's fingerprint,
+// leaving no run directory on the server; `presmium check --env` reports an environment it cannot
+// reach. Needs Docker; skipped without it.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CodeNode, IRDocument } from '@presmium/kernel'
@@ -10,8 +11,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Jupyter } from './helpers.ts'
 import { closedPort, dockerCompose, presmium, remove, startJupyter, testDeck } from './helpers.ts'
 
-/** The compose environment's port, in WP-76's range. */
-const PORT = 4846
+/** The compose environment's port, in WP-79e2's range. */
+const PORT = 4933
 const IMAGE = 'quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a'
 
 if (!dockerCompose) console.warn('[remote.test] skipped: needs Docker with docker compose (templates/env/compose); start the Docker daemon to run it')
@@ -22,7 +23,7 @@ describe.skipIf(!dockerCompose)('remote environment (P-105)', () => {
   let closed: number
 
   beforeAll(async () => {
-    jupyter = startJupyter('wp76-remote-test', PORT)
+    jupyter = startJupyter('wp79e2-remote-test', PORT)
     closed = await closedPort()
     dir = testDeck('remote', `
 execute:
@@ -92,6 +93,11 @@ print(x + 1)
     // The second build answers from the recordings.
     const again = await presmium(dir, ['build', '--to', 'notebook'], env())
     expect(again.stdout).toMatch(/code runs: 0 executed, 3 from cache/)
+
+    // Each kernel's run directory (presmium-runs/<id>/, its working directory) went with the kernel.
+    const runs = await fetch(`${jupyter!.url}api/contents/presmium-runs?content=1`, { headers: { Authorization: `token ${jupyter!.token}` } })
+    expect(runs.status).toBe(200)
+    expect((await runs.json() as { content: unknown[] }).content).toEqual([])
   }, 300_000)
 
   it('presmium check --env reports an environment on a closed port as unreachable', async () => {

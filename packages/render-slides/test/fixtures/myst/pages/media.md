@@ -1,7 +1,7 @@
 ## Media
 
 :::{slide}
-![A dot](../img/dot.svg) [The handout](../files/handout.pdf) [A broken link](%E0%A4.pdf)
+![A dot](../img/dot.svg) [The handout](../files/handout.pdf) [A broken link](%E0%A4.pdf) {button}`Soon`
 :::
 
 :::{clip} ../files/clip.webm

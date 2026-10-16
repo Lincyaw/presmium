@@ -2,8 +2,8 @@
  * Text of the WebGPU backend in zh-CN and en (N-07): why a shader cannot run
  * (its recorded output shows instead), what is wrong with its `:params:`, and
  * the summary of a run. The browser follows the UI language
- * (`@presmium/host`); compile time records in English, like the other
- * executors' messages, since a recording goes into every form.
+ * (`@presmium/host`); compile time records in the deck's language
+ * (`RunContext.lang`), as other text written into the build output is.
  */
 import type { Locale } from '@presmium/kernel'
 

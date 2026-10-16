@@ -12,8 +12,9 @@
  * line by line (`input_reply`); at its timeout, or when the caller aborts,
  * the kernel is interrupted; its `files` are written with the Contents API to
  * the kernel's own directory (`presmium-runs/<id>/`, its working
- * directory). Starting a kernel sends its name and path only, never
- * environment variables: the kernel has the server's environment.
+ * directory), which is deleted, with what the code wrote there, once the
+ * kernel has shut down. Starting a kernel sends its name and path only,
+ * never environment variables: the kernel has the server's environment.
  */
 import { failedRun, languageId } from '@presmium/kernel'
 import type { RunRequest, RunResult } from '@presmium/kernel'
@@ -177,7 +178,9 @@ export function createKernels(options: KernelsOptions): Kernels {
     } catch {
       // Gone already (culled, or the server stopped).
     }
+    const settings = handle.connection.serverSettings
     handle.connection.dispose()
+    await removeDirectory(settings, handle.dir)
   }
 
   const write = async (handle: Handle, settings: ServerConnection.ISettings, files: Record<string, string>) => {
@@ -362,6 +365,27 @@ export function createKernels(options: KernelsOptions): Kernels {
       sessions.clear()
     },
   }
+}
+
+/**
+ * Deletes a directory on the server with the Contents API, its files and
+ * directories first: a server deletes a directory that is not empty only
+ * when its contents manager sends it to the trash or `always_delete_dir` is
+ * set. What cannot be deleted (the server stopped, a hidden file it does
+ * not list) stays.
+ */
+async function removeDirectory(settings: ServerConnection.ISettings, path: string): Promise<void> {
+  const { Drive } = await services()
+  const drive = new Drive({ serverSettings: settings })
+  const remove = async (dir: string): Promise<void> => {
+    const model = await drive.get(dir, { content: true })
+    for (const item of Array.isArray(model.content) ? model.content as { path: string, type: string }[] : []) {
+      if (item.type === 'directory') await remove(item.path)
+      else await drive.delete(item.path)
+    }
+    await drive.delete(dir)
+  }
+  await remove(path).catch(() => {})
 }
 
 /** Resolves once the kernel answered `kernel_info` over its WebSocket; rejects when it cannot connect. */
