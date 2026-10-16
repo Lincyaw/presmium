@@ -92,7 +92,8 @@ const RUN_OPTIONS = ['env', 'session']
 /** The reserved environment name: route by language, as without environments. */
 const BROWSER = 'browser'
 const COMPONENT_OPTIONS = [...COMMON_OPTIONS, 'span', 'plugin']
-const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode'])
+/** Directives whose child is code; an `{include}` left in the tree is a literal one (source.ts expands the others). */
+const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode', 'literalinclude', 'include'])
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
 /** Dropped wherever they are: `outputs` is the output area MyST gives a `{code-cell}`, with a random id. */
 const DROPPED = new Set(['comment', 'mystTarget', 'outputs', BODY])

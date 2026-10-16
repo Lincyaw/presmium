@@ -1,7 +1,7 @@
 /**
  * The built-in directives as editors describe them (docs/ir.md section 5.1):
  * names, options and what they do, in the languages Presmium has messages
- * for. The compiler implements them in source.ts (`{include}`, and MyST's
+ * for. The compiler implements them in source.ts (`{include}`, `{literalinclude}`, and MyST's
  * card, grid and tab extensions) and blocks.ts.
  */
 import type { DirectiveOptionType, Locale } from '@presmium/kernel'
@@ -99,6 +99,18 @@ export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [
     options: { span: { type: 'number', doc: { 'zh-CN': '内部步数。', 'en': 'Internal steps.' } }, plugin: { type: 'string', doc: { 'zh-CN': '插件 ID。', 'en': 'Plugin id.' } } },
   },
   { name: 'include', doc: { 'zh-CN': '引入另一个源文件。', 'en': 'Includes another source file.' }, options: {} },
+  {
+    name: 'literalinclude',
+    doc: { 'zh-CN': '以代码显示一个文件（或其中几行）；参数为文件路径。', 'en': 'Shows a file (or some of its lines) as code; the argument is the file path.' },
+    options: {
+      'language': { type: 'string', doc: { 'zh-CN': '语言；默认按扩展名。', 'en': 'Language; by default from the extension.' } },
+      'lines': { type: 'string', doc: { 'zh-CN': '只显示这些行，如 `2, 4-6`。', 'en': 'Only these lines, e.g. `2, 4-6`.' } },
+      'start-after': { type: 'string', doc: { 'zh-CN': '从含这段文字的行之后开始。', 'en': 'Starts after the line with this text.' } },
+      'end-before': { type: 'string', doc: { 'zh-CN': '到含这段文字的行之前结束。', 'en': 'Ends before the line with this text.' } },
+      'caption': CODE_OPTIONS.caption!,
+      'emphasize-lines': CODE_OPTIONS['emphasize-lines']!,
+    },
+  },
   ...['code', 'code-block', 'code-cell', 'sourcecode'].map(name => ({ name, doc: { 'zh-CN': '代码；参数为语言。', 'en': 'Code; the argument is the language.' }, options: CODE_OPTIONS })),
   ...LAYOUT_DIRECTIVES,
 ]

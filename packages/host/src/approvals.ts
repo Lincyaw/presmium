@@ -2,8 +2,10 @@
  * The approvals entry of the toolbar (docs/architecture.md 10.4): shown only
  * while approvals wait for this window, with what each one asks, who asks,
  * and Allow and Deny. In SHARED mode an owner's site window only learns how
- * many wait in the owner console, and links to it.
+ * many wait in the owner console, and links to it. The web form's present
+ * and presenter views, which cover the toolbar, show it in their control bars.
  */
+import type { PropType } from 'vue'
 import { defineComponent, h, ref, watch } from 'vue'
 import { useMessages } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
@@ -13,7 +15,6 @@ import { approvals } from './server.ts'
 const PANEL = {
   position: 'absolute',
   right: '0',
-  top: '100%',
   zIndex: '1000',
   minWidth: '18rem',
   maxWidth: '28rem',
@@ -30,7 +31,11 @@ const PANEL = {
 
 export const PmApprovals = defineComponent({
   name: 'PmApprovals',
-  setup() {
+  props: {
+    /** Where the panel opens: below the entry (a toolbar at the top), or above it (a control bar at the bottom). */
+    placement: { type: String as PropType<'below' | 'above'>, default: 'below' },
+  },
+  setup(props) {
     const t = useMessages(HOST_MESSAGES)
     const open = ref(false)
     const failed = ref<string>()
@@ -55,7 +60,8 @@ export const PmApprovals = defineComponent({
         'onClick': () => open.value = !open.value,
       }, t.value.approvals(pending.length + (elsewhere?.count ?? 0)))]
       if (open.value) {
-        children.push(h('div', { 'class': 'pm-approvals__panel', 'role': 'dialog', 'aria-label': t.value.approvalsTitle, 'style': PANEL }, [
+        const at = props.placement === 'above' ? { bottom: '100%' } : { top: '100%' }
+        children.push(h('div', { 'class': 'pm-approvals__panel', 'role': 'dialog', 'aria-label': t.value.approvalsTitle, 'style': { ...PANEL, ...at } }, [
           ...pending.map(({ id, request }) => h('div', { 'key': id, 'class': 'pm-approvals__item', 'data-approval': id }, [
             h('p', { class: 'pm-approvals__title' }, request.title),
             h('p', { class: 'pm-approvals__from' }, t.value.from(request.from)),

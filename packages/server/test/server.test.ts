@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, EventStream } from './helpers.ts'
-import { eventStream, FIXTURES, listener, presmiumProcess, raw, remove, serveHost, waitFor, workspace } from './helpers.ts'
+import { as, eventStream, FIXTURES, listener, presmiumProcess, raw, remove, serveHost, sharedEnv, waitFor, workspace } from './helpers.ts'
 
 const DECK = join(FIXTURES, 'deck')
 
@@ -65,26 +65,6 @@ describe('presmium dev', () => {
     expect(context.operatorDir.startsWith(dir)).toBe(false)
   })
 })
-
-/** The environment of a SHARED serve: the login proxy's secret, the gateway, agent-host and console. */
-function sharedEnv(dir: string, gateway: string, agentHost: string, extra: Record<string, string> = {}): Record<string, string> {
-  return {
-    SERVE_WORKSPACE: dir,
-    SERVE_ROLES: JSON.stringify({ 'owner@test': ['owner'], 'editor@test': ['editor'] }),
-    PRESMIUM_PROXY_SECRET: 'proxy-secret',
-    PRESMIUM_GATEWAY_URL: gateway,
-    PRESMIUM_GATEWAY_TOKEN: 'gateway-token',
-    PRESMIUM_AGENT_HOST_URL: agentHost,
-    PRESMIUM_AGENT_HOST_TOKEN: 'agent-host-token',
-    PRESMIUM_CONSOLE_HOST: 'console.test',
-    ...extra,
-  }
-}
-
-/** Headers of a request through the login proxy, to the site or the console. */
-function as(email: string | undefined, host = 'site.test', extra: Record<string, string> = {}): Record<string, string> {
-  return { 'Host': host, 'X-Presmium-Proxy-Secret': 'proxy-secret', ...email ? { 'X-Forwarded-Email': email } : {}, 'Presmium-Document': 'doc', ...extra }
-}
 
 describe('presmium serve with a login (SHARED)', () => {
   let dir: string

@@ -5,7 +5,7 @@
  * need no style sheet in either form.
  */
 import { useMessages, useServer } from '@presmium/host'
-import type { AgentClient, Revision } from '@presmium/kernel'
+import type { AgentClient, AgentTask, ReviewChange, Revision } from '@presmium/kernel'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import type { DocumentOperation, DocumentsAnswer, ExecutionState, OperationAnswer, RevertAnswer, RevisionsAnswer, WorkspaceDocument } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
@@ -145,6 +145,22 @@ export const History = defineComponent({
   },
 })
 
+/** The agent's draft of a new document, followed until its commit. */
+interface Draft {
+  dir: string
+  task: AgentTask
+  state: 'drafting' | 'review' | 'failed'
+  /** The agent's latest progress or message, or why the draft failed. */
+  note?: string
+  /** The changes a review shows. */
+  changes?: ReviewChange[]
+}
+
+/** The page of a document of the site. */
+function documentUrl(dir: string): string {
+  return new URL(`${encodeURI(dir)}/`, location.href).href
+}
+
 export const Documents = defineComponent({
   name: 'PmWorkspaceDocuments',
   setup() {
@@ -155,6 +171,36 @@ export const Documents = defineComponent({
     const message = ref<string>()
     const busy = ref(false)
     const form = ref({ dir: '', title: '', template: '', draft: false, request: '' })
+    const agentDraft = shallowRef<Draft>()
+    /**
+     * Follows the drafting task (P-121): the page stays until the task ends
+     * with its commit (`done`), answering a review it waits for here, then
+     * opens the new document with the draft. Leaving at once would lose the
+     * task's events, and show the template before the draft.
+     */
+    const follow = async (dir: string, task: AgentTask) => {
+      const update = (next: Partial<Draft>) => agentDraft.value = { ...agentDraft.value!, ...next }
+      agentDraft.value = { dir, task, state: 'drafting' }
+      try {
+        for await (const event of task.events) {
+          if (event.type === 'progress' || event.type === 'message') update({ note: event.text })
+          else if (event.type === 'review') update({ state: 'review', changes: event.changes })
+          else if (event.type === 'error') return update({ state: 'failed', note: event.message })
+          else if (event.type === 'done') return location.assign(documentUrl(dir))
+        }
+        update({ state: 'failed', note: undefined })
+      } catch (error) {
+        update({ state: 'failed', note: error instanceof Error ? error.message : String(error) })
+      }
+    }
+    const review = (accept: boolean) => {
+      const current = agentDraft.value
+      if (!current) return
+      agentDraft.value = { ...current, state: 'drafting', changes: undefined }
+      current.task.review({ accept }).catch((error: unknown) => {
+        agentDraft.value = { ...current, state: 'failed', note: error instanceof Error ? error.message : String(error) }
+      })
+    }
     const targets = ref<Record<string, string>>({})
     const load = async () => {
       try {
@@ -183,9 +229,8 @@ export const Documents = defineComponent({
       void run({ op: 'create', dir: dir.trim(), ...title.trim() ? { title: title.trim() } : {}, ...template ? { template } : {} }, (result) => {
         form.value = { dir: '', title: '', template: '', draft: false, request: '' }
         if (!drafting || !result.dir) return
-        // Drafted by the agent: one chat task whose context is the new document's directory (P-121), then the document.
-        agent.value!.submit({ kind: 'chat', prompt: request, context: { document: result.dir } })
-        location.assign(new URL(`${encodeURI(result.dir)}/`, location.href).href)
+        // Drafted by the agent: one chat task whose context is the new document's directory (P-121), followed until its commit.
+        void follow(result.dir, agent.value!.submit({ kind: 'chat', prompt: request, context: { document: result.dir } }))
       })
     }
     const field = (name: 'dir' | 'title' | 'request', label: string) => h('label', { style: { display: 'block', margin: '0.25rem 0' } }, [
@@ -203,6 +248,19 @@ export const Documents = defineComponent({
     }
     onMounted(() => window.addEventListener(DOCUMENTS_EVENT, onChange))
     onBeforeUnmount(() => window.removeEventListener(DOCUMENTS_EVENT, onChange))
+    const draftStatus = (current: Draft) => h('div', { 'class': 'pm-workspace-draft', 'data-state': current.state, 'role': 'status', 'style': { margin: '0.5rem 0' } }, current.state === 'failed'
+      ? [
+          h('p', { role: 'alert' }, t.value.draftFailed(current.note)),
+          h('a', { class: 'pm-workspace-draft__open', href: documentUrl(current.dir) }, t.value.openDocument(current.dir)),
+        ]
+      : current.state === 'review'
+        ? [
+            h('p', t.value.draftReview),
+            h('ul', { class: 'pm-workspace-draft__changes' }, (current.changes ?? []).map(change => h('li', { key: change.path }, `${change.path} (+${change.added} −${change.removed})`))),
+            h('button', { type: 'button', class: 'pm-workspace-draft__accept', style: BUTTON, onClick: () => review(true) }, t.value.accept),
+            h('button', { type: 'button', class: 'pm-workspace-draft__reject', style: BUTTON, onClick: () => review(false) }, t.value.reject),
+          ]
+        : [h('p', t.value.drafting(current.dir)), current.note ? h('p', { class: 'pm-workspace-draft__note', style: { opacity: 0.75 } }, current.note) : null])
     return () => {
       if (!editor.value) return null
       const known = answer.value
@@ -233,8 +291,9 @@ export const Documents = defineComponent({
               ])
             : null,
           canDraft && form.value.draft ? field('request', t.value.draftRequest) : null,
-          h('button', { type: 'submit', disabled: busy.value, style: BUTTON }, t.value.submit),
+          h('button', { type: 'submit', disabled: busy.value || agentDraft.value?.state === 'drafting' || agentDraft.value?.state === 'review', style: BUTTON }, t.value.submit),
         ]),
+        agentDraft.value ? draftStatus(agentDraft.value) : null,
         message.value ? h('p', { class: 'pm-workspace-documents__message', role: 'alert' }, message.value) : null,
         h('ul', { class: 'pm-workspace-documents__list', style: { listStyle: 'none', padding: 0, margin: '0.5rem 0 0' } }, (known?.documents ?? []).map((doc: WorkspaceDocument) => h('li', {
           'key': doc.dir,

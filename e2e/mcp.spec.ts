@@ -1,7 +1,7 @@
-// The agent environment in the browser (WP-78, P-110): with the present view open under `presmium dev`,
-// an MCP client's `navigate` to the third section asks for approval in the page, and once allowed the
-// present view shows that section and a subscriber of presmium://position hears it; a test plugin's
-// `STATUS` summary reaches MCP's `get_classroom`.
+// The agent environment in the browser (WP-78, P-110): with only the present view open under `presmium dev`,
+// an MCP client's `navigate` to the third section asks for approval in the view's control bar, and once
+// allowed there the present view shows that section and a subscriber of presmium://position hears it; a
+// test plugin's `STATUS` summary reaches MCP's `get_classroom`.
 import { cpSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,16 +33,12 @@ test.afterAll(async () => {
   if (dir) rmSync(dir, { recursive: true, force: true })
 })
 
-test('navigate asks in the page, and once allowed the present view shows the third section', async ({ page, context }) => {
-  // The present view in one window; the author's page with the toolbar in another.
+test('navigate asks in the present view\'s control bar, and once allowed there the view shows the third section', async ({ page }) => {
+  // Only the present view is open: it covers the page's toolbar, so the approval entry is in its own bar.
   const present = page.locator('.pm-present')
   await openDevPage(page, `${dev.url}?view=present`, present)
   await expect(present).toHaveAttribute('data-section', 'mcp-端到端测试文稿')
   await expect.poll(async () => resultOf(await mcp.callTool({ name: 'get_position', arguments: {} })).position?.view).toBe('present')
-
-  const author = await context.newPage()
-  await author.goto(dev.url)
-  await expect(author.locator('.pm-section').first()).toBeVisible()
 
   // A subscriber of presmium://position hears the present view report where it moved.
   let updates = 0
@@ -52,10 +48,11 @@ test('navigate asks in the page, and once allowed the present view shows the thi
   const subscription = await mcp.listen({ resourceSubscriptions: ['presmium://position'] })
 
   const moved = mcp.callTool({ name: 'navigate', arguments: { section: '第三节' } })
-  const entry = author.locator('.pm-approvals__toggle')
+  const entry = present.locator('.pm-present__bar .pm-approvals__toggle')
   await expect(entry).toHaveText('待确认 1')
   await entry.click()
-  const dialog = author.getByRole('dialog', { name: '待确认的操作' })
+  const dialog = present.getByRole('dialog', { name: '待确认的操作' })
+  await expect(dialog).toBeInViewport()
   await expect(dialog.locator('.pm-approvals__title')).toHaveText('放映跳转到「第三节」')
   updates = 0
   await dialog.getByRole('button', { name: '允许' }).click()
@@ -64,8 +61,7 @@ test('navigate asks in the page, and once allowed the present view shows the thi
   expect(result.isError).toBeFalsy()
   expect(resultOf(result)).toMatchObject({ section: '第三节', step: 0, windows: 1 })
   await expect(present).toHaveAttribute('data-section', '第三节')
-  // Only the presenting window moved.
-  await expect(author.locator('.pm-present')).toHaveCount(0)
+  await expect(entry).toHaveCount(0)
   // Once the present view reported the third section, its update was announced.
   const where = async () => JSON.parse(((await mcp.readResource({ uri: 'presmium://position' })).contents[0] as { text: string }).text).position
   await expect.poll(async () => updates > 0 && (await where())?.section).toBe('第三节')

@@ -1,0 +1,10 @@
+{
+  "name": "@presmium/slidev-addon-deltabox",
+  "private": true,
+  "type": "module",
+  "description": "Test-only stand-in of packages/mcp/test: the operator plugin installed with the CLI, whose agent tool shows that presmium-mcp loaded it",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

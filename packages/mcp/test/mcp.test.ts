@@ -1,7 +1,8 @@
 // The agent environment (WP-78, P-110): an MCP SDK client connects to `/mcp` of `presmium dev` on a
 // test deck, reads its sections and code, runs a code block once the control channel allows it, is
 // refused without a token, sees only read tools with a `tutor` token a plugin's route issued (and 401
-// once revoked), and hears of a new position it subscribed to; `presmium-mcp` lists the read tools on stdio.
+// once revoked, its subscription ended), and hears of a new position it subscribed to; `presmium-mcp`
+// lists the read tools on stdio and loads the packages installed with the deck's CLI.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -92,7 +93,8 @@ describe('presmium dev', () => {
 
     const client = await connect()
     expect(client.getInstructions()).toContain('No tool writes files')
-    expect(client.getInstructions()).toMatch(/^Operate tools: navigate, run_code, build, classroom_start, classroom_end\. Each may first wait for a person/m)
+    expect(client.getInstructions()).toContain('presmium dev compiles the deck again on save')
+    expect(client.getInstructions()).toMatch(/^Operate tools: navigate, run_code, build, classroom_start, classroom_end\. Each may first wait for a person to allow it \(in the page\)/m)
     const tools = await names(client)
     expect(tools).toEqual(expect.arrayContaining([...READ, 'get_position', 'get_classroom', 'run_code', 'build', 'navigate', 'fixture_echo']))
     expect(tools.some(name => /write|edit/.test(name))).toBe(false)
@@ -109,8 +111,13 @@ describe('presmium dev', () => {
     // The read-only resources hold the same data.
     const step = await client.readResource({ uri: 'presmium://sections/merge/steps/0' })
     expect(JSON.parse((step.contents[0] as { text: string }).text)).toMatchObject({ section: 'merge', step: 0, screen: [{ lang: 'python' }] })
-    // `?document=` names the document of a resource (a host with several).
+    // `?document=` names the document of a resource (a host with several); other query parameters change nothing.
     await expect(client.readResource({ uri: 'presmium://sections/merge?document=elsewhere' })).rejects.toThrow('no document "elsewhere"')
+    await expect(client.readResource({ uri: 'presmium://sections/merge?x=1&document=elsewhere' })).rejects.toThrow('no document "elsewhere"')
+    const plain = await client.readResource({ uri: 'presmium://sections/merge?x=1' })
+    expect(JSON.parse((plain.contents[0] as { text: string }).text)).toMatchObject({ id: 'merge', title: '合并' })
+    const deck = await client.readResource({ uri: 'presmium://deck?document=&x=1' })
+    expect(JSON.parse((deck.contents[0] as { text: string }).text)).toMatchObject({ title: 'MCP 测试文稿', sections: 3 })
 
     // The web form's index finds the section; a plugin's tool gets the caller.
     const found = resultOf(await client.callTool({ name: 'search', arguments: { query: '相邻对' } }))
@@ -138,7 +145,7 @@ describe('presmium dev', () => {
     expect(resultOf(denied)).toContain('not allowed')
   })
 
-  it('a tutor token a plugin\'s route issued sees no operate tool, and gets 401 once revoked', async () => {
+  it('a tutor token a plugin\'s route issued sees no operate tool, and gets 401 once revoked, which ends its subscription', async () => {
     const grant = await (await fetch(`${server}/__presmium/fixture.mcp/tutor`)).json() as { url: string, token: string }
     expect(grant.url).toBe(`${server}/mcp`)
     const tutor = await connect(grant.token)
@@ -146,8 +153,18 @@ describe('presmium dev', () => {
     expect(tools).toEqual(expect.arrayContaining(READ))
     expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
     expect(tutor.getInstructions()).toContain('reads only')
+    // Its subscription stream carries the updates while the token is valid.
+    const updated = new Promise<string>(resolve => tutor.setNotificationHandler('notifications/resources/updated', n => resolve(n.params.uri)))
+    const subscription = await tutor.listen({ resourceSubscriptions: ['presmium://position'] })
+    const page = await window('tutor-page')
+    expect(await page.report({ position: { slide: 2, step: 0, view: 'document' }, role: 'reader', status: {} })).toBe(200)
+    expect(await updated).toBe('presmium://position')
+    const open = await Promise.race([subscription.closed, new Promise(done => setTimeout(() => done('open'), 300))])
+    expect(open).toBe('open')
 
     await (await fetch(`${server}/__presmium/fixture.mcp/revoke`, { method: 'POST' })).json()
+    // The server ended the stream; the client did not close it.
+    expect(await subscription.closed).not.toBe('local')
     const after = await fetch(grant.url, { method: 'POST', headers: { 'Authorization': `Bearer ${grant.token}`, 'Content-Type': 'application/json' }, body: '{}' })
     expect(after.status).toBe(401)
   })
@@ -167,8 +184,13 @@ describe('presmium dev', () => {
   })
 })
 
-it('presmium-mcp lists the read tools on stdio, and no operation without --allow operate', async () => {
+it('presmium-mcp lists the read tools on stdio, no operation without --allow operate, and loads what the CLI installs', async () => {
   const dir = deck()
+  // The deck's project has the CLI installed, with the operator plugin it ships (a stand-in whose tool shows it loaded).
+  const cli = join(dir, 'node_modules/@presmium/cli')
+  mkdirSync(join(cli, 'node_modules/@presmium'), { recursive: true })
+  writeFileSync(join(cli, 'package.json'), `${JSON.stringify({ name: '@presmium/cli', private: true, type: 'module' })}\n`)
+  cpSync(fileURLToPath(new URL('./fixtures/bundled', import.meta.url)), join(cli, 'node_modules/@presmium/slidev-addon-deltabox'), { recursive: true })
   const client = new Client({ name: 'presmium-test', version: '0.1.0' })
   try {
     await client.connect(new StdioClientTransport({ command: process.execPath, args: [MCP_BIN, dir], env: env() as Record<string, string>, stderr: 'ignore' }))
@@ -176,6 +198,8 @@ it('presmium-mcp lists the read tools on stdio, and no operation without --allow
     expect(tools).toEqual(expect.arrayContaining(READ))
     expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
     expect(client.getInstructions()).toContain('No operation is offered')
+    expect(client.getInstructions()).toContain('presmium-mcp compiles the deck again at the next call')
+    expect(resultOf(await client.callTool({ name: 'fixture_bundled', arguments: {} }))).toEqual({ bundled: true })
     const info = resultOf(await client.callTool({ name: 'deck_info', arguments: {} }))
     expect(info).toMatchObject({ title: 'MCP 测试文稿', sections: 3, entry: 'lecture.md' })
   } finally {

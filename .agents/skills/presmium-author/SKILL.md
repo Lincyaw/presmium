@@ -166,7 +166,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：读取类工具 `list_documents`、`deck_info`、`list_sections`、`get_section`（讲解与上屏内容）、`get_step`、`search`、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`（相对于文稿目录的文件与行），以及放映中的 `get_position`、`get_classroom`；操作类 `navigate`、`run_code`、`build`、`classroom_start`、`classroom_end` 要在页面工具栏的“待确认”中允许。没有写文件的工具：agent 用自己的文件工具改源码，`presmium dev` 随即重新编译。
 
 - `presmium dev` 运行时：MCP 的地址（`mcp  http://127.0.0.1:<端口>/mcp`）与令牌在 `.presmium/server.json`，agent 以 HTTP 方式连接，请求头 `Authorization: Bearer <令牌>`。
-- 不启动服务端时：`node <仓库>/packages/mcp/bin/presmium-mcp.mjs <文稿目录>` 以 stdio 提供读取类工具；加 `--allow operate` 另提供并直接允许 `run_code` 与 `build`。网页形态的放映视图盖住了工具栏，放映时的确认在文档视图的窗口中回答。
+- 不启动服务端时：`node <仓库>/packages/mcp/bin/presmium-mcp.mjs <文稿目录>` 以 stdio 提供读取类工具；加 `--allow operate` 另提供并直接允许 `run_code` 与 `build`。网页形态的放映视图与演讲者视图在自己的控制条中显示确认入口（“待确认”），放映时在那里允许或拒绝。
 - 同样的数据也是只读资源（`presmium://sections`、`presmium://sections/{section}` 等，服务说明列出它们）。有多份文档时，工具以 `document` 指定文档，资源在 URI 后加 `?document=<文档目录>`。`navigate` 只移动自己打开的窗口：自己没有窗口显示文稿时直接返回错误，不询问。
 
 ## 12. 读诊断

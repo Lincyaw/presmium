@@ -757,3 +757,28 @@ test.describe('a deck in French', () => {
     await expect(page.locator('.DocSearch-Button-Placeholder')).toHaveText('Search')
   })
 })
+
+// e2e/fixtures/web/links (P-46): a card whose :link: names a local file links to the published file,
+// as a link and a {button} to it do; a {button} without a target looks like a button too.
+test.describe('cards and buttons in the web form', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let site: FixtureDeck
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    site = await buildFixture('web/links', { to: 'web' })
+  })
+  test.afterAll(() => site?.close())
+
+  test('a card\'s link to a local file is published; a button without a target is drawn as one', async ({ page, request }) => {
+    await page.goto(site.web)
+    const link = page.locator('.pm-card--link').getByRole('link', { name: '讲义' })
+    await expect(link).toHaveAttribute('href', /\/media\/[0-9a-f]{8}-handout\.txt$/)
+    const handout = await request.get(new URL((await link.getAttribute('href'))!, page.url()).href)
+    expect(handout.status()).toBe(200)
+    expect(await handout.text()).toContain('本周讲义')
+
+    const button = page.locator('span.pm-button')
+    await expect(button).toHaveText('即将开放')
+    expect(await button.evaluate(el => [getComputedStyle(el).display, getComputedStyle(el).borderTopStyle])).toEqual(['inline-block', 'solid'])
+  })
+})

@@ -57,7 +57,17 @@ export interface McpPluginTools {
   service<T>(token: ServiceToken<T>): T | undefined
 }
 
+/** The process that serves MCP, as the service's instructions describe it. */
+export interface McpProcess {
+  /** `presmium dev`, `presmium serve` or `presmium-mcp`: how a change of the source reaches the tools. */
+  command: 'dev' | 'serve' | 'presmium-mcp'
+  /** SHARED mode: an operation may also wait for the owner console. */
+  shared?: boolean
+}
+
 export interface McpHost {
+  /** The process that serves MCP; omitted, the instructions describe it in general terms. */
+  process?: McpProcess
   documents(): Promise<McpDocument[]>
   compile(document: string, view: McpView): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
   /** The compilation's diagnostics and the plugins' checks (the full view). */

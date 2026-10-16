@@ -6,12 +6,14 @@
  * Keys run the named actions of the registry (K-15); plugins add their own,
  * and layers drawn over the views.
  */
+import { PmApprovals } from '@presmium/host'
+import { blockText, sectionNarration } from '@presmium/kernel'
 import type { IRSection } from '@presmium/kernel'
 import type { Ref } from 'vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { BlockView } from './block.ts'
 import { SECTION_CONTEXT } from './context.ts'
-import { blockText, narrationAt, nextPosition } from './domain/index.ts'
+import { nextPosition } from './domain/index.ts'
 import { messages } from './i18n.ts'
 import { listActions, listLayers } from './registry.ts'
 import type { ViewerAction } from './registry.ts'
@@ -321,6 +323,8 @@ export const PresentView = defineComponent({
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
           button(t.present.fullscreen, () => void root.value?.requestFullscreen?.().catch(() => {})),
           button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
+          // The view covers the page's toolbar: approvals (e.g. an agent's navigate) are answered here.
+          h(PmApprovals, { placement: 'above' }),
         ]),
         ...layers('present'),
       ])
@@ -351,21 +355,24 @@ export const PresenterView = defineComponent({
     })
     onBeforeUnmount(() => clearInterval(timer))
 
-    /** What comes next: the narration of the next step, or the next section. */
+    /**
+     * What comes next: the narration of the next step, or the next section.
+     * The narration a pass moved into a component (a reveal's, in `PmPredict`) counts.
+     */
     const upcoming = computed(() => {
       const t = messages()
       const next = nextPosition(viewer.doc.value, viewer.position.value)
       if (!next) return t.presenter.end
       const target = viewer.section(next.section)!
       if (next.section !== section.value?.id) return t.presenter.nextSection(target.title)
-      return narrationAt(target, next.step).map(blockText).join('\n') || t.presenter.nextStep(next.step)
+      return sectionNarration(target).filter(block => block.at === next.step).map(blockText).join('\n') || t.presenter.nextStep(next.step)
     })
 
     return () => {
       const current = section.value
       if (!current) return null
       const t = messages()
-      const notes = current.blocks.filter(b => b.role === 'narration')
+      const notes = sectionNarration(current)
       return h('div', { 'ref': root, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step.value }, [
         h('div', { ref: bar, class: 'pm-presenter__bar' }, [
           h('strong', { class: 'pm-presenter__title' }, `${current.index}. ${current.title}`),
@@ -374,6 +381,7 @@ export const PresenterView = defineComponent({
           button(t.presenter.restart, () => started.value = now.value = Date.now()),
           button(t.present.prev, () => viewer.prev()),
           button(t.present.next, () => viewer.next()),
+          h(PmApprovals),
         ]),
         h('div', { class: 'pm-presenter__main' }, [
           // What the audience sees: the section's title, then its visual blocks at this step.

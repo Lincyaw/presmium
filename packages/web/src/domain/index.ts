@@ -5,4 +5,3 @@ export { IR_ENDPOINT, requested, SERVER_PROXY, SERVICE_WORKER, SLIDE_PARAM, slid
 export type { Requested } from './links.ts'
 export { pageLink, pageMarkdown, pageOf, searchDocuments, sectionLinks, sidebar, toPages } from './pages.ts'
 export type { SearchDocument, SidebarItem, WebPage } from './pages.ts'
-export { tokenize } from './search.ts'

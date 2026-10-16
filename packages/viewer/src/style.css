@@ -579,7 +579,7 @@
   text-decoration: none;
 }
 
-.pm-block .pm-button:hover {
+.pm-block a.pm-button:hover {
   background: var(--pm-c-brand);
   color: var(--pm-c-bg);
 }
