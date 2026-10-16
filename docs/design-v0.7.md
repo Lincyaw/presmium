@@ -579,7 +579,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 
 | 事项 | 工作包 |
 |---|---|
-| Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74 |
+| Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74（已完成，结论见下） |
 | JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
 | Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76 |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
@@ -614,6 +614,15 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
+
+**WP-74 的先行验证（2026-10-16，`@runno/wasi` 0.10.0、`@runno/sandbox` 0.10.2、`@runno/runtime` 0.10.0，Node 22.22，Playwright Chromium 1.64）**的结论：
+
+- **二进制在哪里、能否自托管**：Runno 的语言二进制是 `@runno/sandbox` 包中的静态文件（`dist/langs`，包与 Runno 都是 MIT）：`clang.wasm`（31.2 MB，binji/wasm-clang 的 clang 8.0.1）、`wasm-ld.wasm`（19.5 MB）、sysroot `clang-fs.tar.gz`（1.8 MB，416 个文件，ustar）、`ruby-3.2.0.wasm`（24.5 MB，VMware webassembly-language-runtimes）与它只含 `.rubyopts.rb` 的 `ruby-3.2.0.tar.gz`、`sqlite.wasm`（3.6 MB，SQLite 3.26），另有本插件不用的 Python、PHP、QuickJS（包解开约 118 MB，npm 压缩包 47.6 MB）。它们可以原样复制到产物中，由同源地址加载。`@runno/runtime`（网页组件）从 `https://runno.dev/langs` 加载，它的 `WASIWorkerHost` 为交互式的标准输入用 `SharedArrayBuffer`，页面必须跨源隔离（COOP/COEP）；所以不用它，而在插件自己的 Worker 中调用 `@runno/wasi` 的 `WASI`，标准输入一次给出，不需要跨源隔离。
+- **离线**：运行时复制到 `<base>wasi/` 后，网页渲染端手写的 Service Worker（预缓存产物中的全部文件）就缓存了它们；断网并清空 HTTP 缓存后重新加载页面，新的 Worker 从 Service Worker 取得运行时，编译并运行 C 程序（`e2e/exec-wasi.spec.ts`）。服务器对 `.tar.gz` 加 `Content-Encoding: gzip` 时浏览器会先解压，所以运行器按 gzip 的魔数判断是否还要解压（`DecompressionStream`，浏览器与 Node 都有，不需要另外的解压库）。
+- **Node 中运行同一份二进制**：`@runno/wasi`（自称“只用于浏览器”）在 Node 22 中原样可用：它的 Worker 宿主只在使用时创建，`self.Blob` 有判断。`WASI.start(Response)` 经 `instantiateStreaming`，Node 不接受非 `Response` 的参数，所以先 `WebAssembly.compile`，再 `new WASI(ctx)`、`WebAssembly.instantiate(module, wasi.getImportObject())`、`wasi.start({ module, instance })`，浏览器中也这样做。不用 `node:wasi`（要预先打开真实目录，文件系统与浏览器不同）；也不用 `@runno/sandbox` 的 Node 接口 `runCode`：它在模块顶层导入 `node:worker_threads`（浏览器中不能用），不给程序环境变量，诊断带颜色。运行在工作线程中，超时时 `worker.terminate()` 能结束死循环中的 WebAssembly。
+- **命令行**：沿用 Runno 的 clang 与 wasm-ld 参数，去掉 `-fcolor-diagnostics`（录制是纯文本）。Runno 的 SQLite 命令 `sqlite -cmd ".read <文件>"` 在 `@runno/wasi` 中把标准输入当作终端，输出版本横幅与提示符 `sqlite>`；改为 `sqlite :memory: ".read /program.sql"`：没有横幅，语句出错时退出码为 1。`abort()` 由 Runno 处理为退出码 134。
+- **耗时**（本机，Node）：读取并解开 sysroot 65 ms；`WebAssembly.compile(clang.wasm)` 31 ms（惰性分层编译）；编译一个小的 C 程序 144 ms、含 `<iostream>` 的 C++ 程序 540 ms；wasm-ld 26 至 49 ms；Ruby 120 ms；SQLite 19 ms。编译时每次运行另有启动工作线程、读取与编译运行时的开销：C、C++、Ruby、SQL 各一块加一个具名环境中的 C 程序的测试文稿，只构建 notebook 的整次 `presmium build` 约 2.5 秒。浏览器中经本机的服务器，端到端用例（第一次运行时下载 52 MB、等待 Service Worker 预缓存、断网重新加载后再运行）共约 2 秒。
+- **产物体积**：C 与 C++ 的运行时 52.5 MB，Ruby 24.5 MB，SQLite 3.6 MB。所以构建只发布浏览器中运行的代码需要的运行时（编译步骤写进插件配置的 `runtimes`），没有这类代码的文稿不发布。
 
 ## 12. 包与工作包
 

@@ -1,0 +1,30 @@
+{
+  "name": "@presmium/slidev-addon-exec-wasi",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WebAssembly execution: C, C++, Ruby and SQLite programs in the browser and at compile time, on the same WASI binaries (P-103)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@runno/sandbox": "0.10.2",
+    "@runno/wasi": "0.10.0"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/render-notebook": "workspace:*",
+    "@slidev/types": "53.0.0"
+  }
+}
