@@ -194,7 +194,19 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 - 或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER` 三者：运营者的 Messages 兼容服务，优先于前者；
 - 或替换的运行时（只在本机）：`PRESMIUM_AGENT_COMMAND`（问答另可用 `PRESMIUM_AGENT_TUTOR_COMMAND`）是一个 ACP agent 的命令行，同时要有 `PRESMIUM_AGENT_PROVIDER`；也可以写在工作区配置的 `settings.presmium.assistant` 的 `command`、`tutor`、`provider` 中。
 
-都没有时助手不可用，不启动任何进程，`presmium dev` 的日志说明缺少哪项设置。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录）后每份文档的服务端都有它，页面上的面板仍要文稿的 `plugins` 列出它。由助手修改源码的批注与对话还没有提供。
+都没有时助手不可用，不启动任何进程，`presmium dev` 的日志说明缺少哪项设置。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录）后每份文档的服务端都有它，页面上的面板仍要文稿的 `plugins` 列出它。
+
+### 由 agent 修改讲义（批注、对话、审阅与撤销）
+
+`presmium serve` 中（工作区是 git 仓库，编辑者或所有者），文稿的 `plugins` 列出助手时，工具栏“编辑”进入编辑模式后有“AI 修改”面板，不用接触源码：
+
+- **批注**：在页面上点选一个块（段落、代码、组件），面板显示它的源码摘录，写下要求后“添加批注”；可以攒几条再“发送 N 条批注”。每条批注随后显示“已处理”或“未能处理”与 agent 的说明。
+- **对话**：写一句要求（如“在本章末尾新增一节”）发送，自动带上当前章节、步骤与在讲义中选中的文字。
+- 两处都写明模型的服务提供方。同一份文档一次只能有一个修改任务；agent 的修改立即出现在页面上。
+- **审阅**：agent 结束后面板逐个文件列出改动（文字显示差异，二进制文件只标出）与各步，可以“全部接受”、取消勾选某些文件后“接受其余”，或“全部拒绝”。被拒绝的文件恢复为任务开始时的内容（包括当时没有提交的改动），任务新建的文件删除；接受后留下的改动成为一个提交，说明列出批注或对话与 agent 的解释。每个提交可以在面板中“撤销这次修改”（`git revert`；与之后的修改冲突时列出文件），“修改历史”中也能撤销。
+- 首页“管理文档”新建文档时勾选“由 agent 起草”并写下要求：新建之后 agent 写出初稿，在表单中审阅，接受后打开新文档。
+
+agent 只写文档目录：写到目录之外（如工作区的其他文档）要所有者在“待确认”中允许，允许的写入随任务一起提交；运营者目录一律拒绝。单份文稿的仓库中改动 `presmium.workspace.yaml` 时，接受前另需所有者允许，否则它被恢复。运营者设置 `settings.presmium.assistant.review: auto` 时不审阅，任务结束直接提交。修改审阅在 Linux 主机满足条件时由 deltabox 完成（面板写明），否则由 git 完成；被 `.gitignore` 忽略的文件不在 git 的审阅中。随包的 DeepSeek Harness 的修改目前总由 git 审阅（它的写入使 deltabox 的审阅出错；只有替换的运行时用 deltabox）。单份文稿的仓库中 agent 写进 `.git/` 的配置与钩子在审阅时被恢复原样。
 
 ## 12. 读诊断
 

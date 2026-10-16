@@ -5,8 +5,11 @@
  * known once an agent started). A task's id is drawn here, so `submit`
  * returns at once; its events come from `tasks/<id>/events` (SSE), each
  * once even when the stream reconnects (the server sends them from the
- * first), until `done` or `error`.
+ * first), until `done` or `error`. A task whose context names a document
+ * goes to that document's routes: the workspace's new-document form drafts
+ * the document it created (P-121) from the home page.
  */
+import { createServerClient } from '@presmium/host'
 import type { ServerClient } from '@presmium/host'
 import type { AgentClient, AgentEvent, AgentTask, AgentTaskKind, AgentTaskRequest, ReviewDecision } from '@presmium/kernel'
 import { shallowRef } from 'vue'
@@ -24,6 +27,17 @@ const terminal = (event: AgentEvent) => event.type === 'done' || event.type === 
 
 function taskId(): string {
   return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
+}
+
+/** The server clients of the other documents the page's tasks went to (the home page drafting a new one). */
+const others = new Map<string, ServerClient>()
+
+/** The server client of the page's document, or of another document of the workspace. */
+function serverOf(server: ServerClient, document: string | undefined): ServerClient {
+  if (!document) return server
+  let other = others.get(document)
+  if (!other) others.set(document, other = createServerClient({ document }))
+  return other
 }
 
 /** The events of a submitted task, from its SSE route. */
@@ -90,17 +104,18 @@ export function createAgentClient(server: ServerClient): AssistantClient {
     runtime: () => info.value?.runtime,
     submit(request: AgentTaskRequest): AgentTask {
       const id = taskId()
-      const posted = server.fetch(ASSISTANT_ID, 'tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...request, id }) })
+      const target = serverOf(server, request.context.document || undefined)
+      const posted = target.fetch(ASSISTANT_ID, 'tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...request, id }) })
       const events: AsyncIterable<AgentEvent> = {
         async* [Symbol.asyncIterator]() {
           try {
-            yield* follow(server, id, posted)
+            yield* follow(target, id, posted)
           } finally {
             void refresh()
           }
         },
       }
-      const after = (path: string, body?: unknown) => posted.then(() => server.fetch(ASSISTANT_ID, `tasks/${encodeURIComponent(id)}/${path}`, {
+      const after = (path: string, body?: unknown) => posted.then(() => target.fetch(ASSISTANT_ID, `tasks/${encodeURIComponent(id)}/${path}`, {
         method: 'POST',
         ...body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
       }))

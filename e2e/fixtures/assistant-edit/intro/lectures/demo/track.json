@@ -1,0 +1,14 @@
+{
+  "track": 1,
+  "id": "demo",
+  "doc": "lecture.md",
+  "lang": "zh-CN",
+  "voice": {"kind":"recorded","speaker":"张老师"},
+  "utterances": [
+    {"id":"u1","t":500,"d":1960,"text":"合并的是出现最多的一对","section":"合并规则","step":0},
+    {"id":"u2","t":3200,"d":2400,"text":"，每轮一次。","section":"合并规则","step":0}
+  ],
+  "events": [
+    [0,"go",{"section":"合并规则","step":0,"view":"present"}]
+  ]
+}

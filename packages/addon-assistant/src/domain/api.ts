@@ -1,11 +1,13 @@
 /**
  * The assistant's routes under `/__presmium/presmium.assistant/` (docs/architecture.md
  * 4.8, design-v0.7 5.3): `info` (what the member may ask, the provider and
- * the runtime), `tasks` (submit), `tasks/<id>/events` (SSE of `AgentEvent`)
- * and `tasks/<id>/cancel`.
+ * the runtime), `tasks` (submit), `tasks/<id>/events` (SSE of `AgentEvent`),
+ * `tasks/<id>/cancel`, `tasks/<id>/review` (the decision on a change task's
+ * review), `revert` (undo a task's commit) and `excerpt` (lines of a source
+ * file of the document, for an annotation).
  */
 import { isRecord } from '@presmium/kernel'
-import type { AgentContext, AgentTaskKind, AgentTaskRequest } from '@presmium/kernel'
+import type { AgentContext, AgentTaskKind, AgentTaskRequest, Annotation, ReviewDecision, SourceRange } from '@presmium/kernel'
 
 /** `GET info`. */
 export interface AssistantInfo {
@@ -17,12 +19,28 @@ export interface AssistantInfo {
   kinds: AgentTaskKind[]
 }
 
+/** `POST revert`: the commit of a task undone, or the files that conflict with later commits. */
+export type RevertAnswer = { ok: true, revision: string } | { ok: false, conflicts: string[] }
+
 const KINDS: AgentTaskKind[] = ['question', 'annotations', 'chat', 'transcript']
 
-/** Kinds that change the source (P-113, P-114, P-136). */
+/** Kinds that change the source (P-113, P-114, P-136; drafting a new document is a `chat`). */
 export const CHANGE_KINDS: AgentTaskKind[] = ['annotations', 'chat', 'transcript']
 
+/** At most this many annotations go in one task. */
+export const MAX_ANNOTATIONS = 50
+
+const TASK_ID = /^[\w-]{8,64}$/
+const TRACK_ID = /^[\w.-]{1,100}$/
+
 const str = (value: unknown, max = 20_000) => (typeof value === 'string' && value.length <= max ? value : undefined)
+
+function sourceOf(value: unknown): SourceRange | undefined {
+  if (!isRecord(value) || typeof value.file !== 'string' || !value.file || value.file.length > 1000) return undefined
+  const { startLine, endLine } = value
+  if (typeof startLine !== 'number' || typeof endLine !== 'number' || !Number.isInteger(startLine) || !Number.isInteger(endLine) || startLine < 1 || endLine < startLine) return undefined
+  return { file: value.file, startLine, endLine }
+}
 
 function contextOf(value: unknown): AgentContext | undefined {
   if (!isRecord(value)) return undefined
@@ -32,27 +50,63 @@ function contextOf(value: unknown): AgentContext | undefined {
     if (found) context[key] = found
   }
   if (typeof value.step === 'number' && Number.isInteger(value.step) && value.step >= 0) context.step = value.step
-  if (isRecord(value.source) && typeof value.source.file === 'string' && typeof value.source.startLine === 'number' && typeof value.source.endLine === 'number') {
-    context.source = { file: value.source.file, startLine: value.source.startLine, endLine: value.source.endLine }
-  }
+  const source = sourceOf(value.source)
+  if (source) context.source = source
   return context
+}
+
+/** An annotation as the page sends it; its status becomes `sent`. */
+function annotationOf(value: unknown): Annotation | undefined {
+  if (!isRecord(value)) return undefined
+  const id = str(value.id, 64)
+  const section = str(value.section, 1000)
+  const block = str(value.block, 1000)
+  const request = str(value.request, 4000)
+  const source = sourceOf(value.source)
+  if (!id || !/^[\w-]+$/.test(id) || !section || !block || !request?.trim() || !source) return undefined
+  return { id, section, block, source, excerpt: (str(value.excerpt) ?? '').slice(0, 4000), request, status: 'sent' }
 }
 
 /** The body of `POST tasks`: a task request, and the id the page drew for it. */
 export function taskRequestOf(body: unknown): { id?: string, request: AgentTaskRequest } | undefined {
   if (!isRecord(body) || !KINDS.includes(body.kind as AgentTaskKind)) return undefined
-  const prompt = str(body.prompt)
+  const kind = body.kind as AgentTaskKind
+  const prompt = str(body.prompt) ?? ''
   const context = contextOf(body.context)
-  if (!prompt?.trim() || !context) return undefined
-  const id = typeof body.id === 'string' && /^[\w-]{8,64}$/.test(body.id) ? body.id : undefined
+  if (!context) return undefined
+  const annotations = Array.isArray(body.annotations) ? body.annotations.map(annotationOf) : []
+  if (kind === 'annotations') {
+    if (annotations.length === 0 || annotations.length > MAX_ANNOTATIONS || annotations.some(a => !a)) return undefined
+  } else if (!prompt.trim()) {
+    return undefined
+  }
+  const track = typeof body.track === 'string' && TRACK_ID.test(body.track) ? body.track : undefined
+  if (kind === 'transcript' && !track) return undefined
+  const id = typeof body.id === 'string' && TASK_ID.test(body.id) ? body.id : undefined
   return {
     ...id ? { id } : {},
     request: {
-      kind: body.kind as AgentTaskKind,
+      kind,
       prompt,
       context,
-      ...Array.isArray(body.annotations) ? { annotations: body.annotations as AgentTaskRequest['annotations'] } : {},
-      ...typeof body.track === 'string' ? { track: body.track } : {},
+      ...kind === 'annotations' ? { annotations: annotations as Annotation[] } : {},
+      ...kind === 'transcript' ? { track } : {},
     },
   }
+}
+
+/** The body of `POST tasks/<id>/review`. */
+export function reviewDecisionOf(body: unknown): ReviewDecision | undefined {
+  if (!isRecord(body) || typeof body.accept !== 'boolean') return undefined
+  if (!body.accept) return { accept: false }
+  if (body.reject === undefined) return { accept: true }
+  if (!Array.isArray(body.reject) || body.reject.length > 10_000 || body.reject.some(path => typeof path !== 'string')) return undefined
+  return { accept: true, reject: body.reject as string[] }
+}
+
+/** How a change task ends (`settings.presmium.assistant.review`): reviewed by its sender (default), or accepted at once. */
+export type ReviewMode = 'required' | 'auto'
+
+export function reviewMode(settings: Record<string, unknown>): ReviewMode {
+  return settings.review === 'auto' ? 'auto' : 'required'
 }
