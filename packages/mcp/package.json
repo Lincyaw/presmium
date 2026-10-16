@@ -1,0 +1,24 @@
+{
+  "name": "@presmium/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The agent environment: the deck as MCP tools and resources (createPresmiumMcp over the McpHost it declares), and presmium-mcp over stdio",
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@presmium/compiler": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/viewer": "workspace:*",
+    "jiti": "^2.7.0",
+    "minisearch": "7.2.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1"
+  },
+  "bin": {
+    "presmium-mcp": "./bin/presmium-mcp.mjs"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

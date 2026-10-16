@@ -66,6 +66,7 @@ export interface ControlOptions {
 export class Control {
   readonly #windows = new Map<string, Window>()
   readonly #pending = new Map<string, Pending>()
+  readonly #watchers = new Set<() => void>()
   readonly #options: ControlOptions
 
   constructor(options: ControlOptions) {
@@ -128,8 +129,29 @@ export class Control {
   report(id: string, member: Member, report: Omit<WindowReport, 'at'>): boolean {
     const window = this.#windows.get(id)
     if (!window || window.member.id !== member.id) return false
+    const moved = JSON.stringify(report.position) !== JSON.stringify(window.report?.position)
     window.report = { ...report, at: Date.now() }
+    if (moved) for (const listener of [...this.#watchers]) listener()
     return true
+  }
+
+  /** Calls `listener` whenever a window reports a new position (MCP's `presmium://position`); returns the function that stops it. */
+  watch(listener: () => void): () => void {
+    this.#watchers.add(listener)
+    return () => void this.#watchers.delete(listener)
+  }
+
+  /** The policy of a kind of approval: the operations of an `off` kind are not offered (MCP does not list their tools). */
+  policy(kind: ApprovalKind): ApprovalPolicy {
+    return this.#options.policy[kind] ?? 'ask'
+  }
+
+  /**
+   * Asks even when the policy of the kind is `allow`: SHARED mode's `run_code`
+   * under `compile: approve`, which only the owner's answer lets through (10.6).
+   */
+  ask(request: ApprovalRequest, signal?: AbortSignal): Promise<boolean> {
+    return this.#request(request, signal, true)
   }
 
   /**
@@ -145,34 +167,38 @@ export class Control {
     return 200
   }
 
-  /** The windows' latest reports, newest first: the presenter and audience windows of `member` first when given (MCP's `get_position`). */
-  positions(member?: Member): { window: string, member: string, document: string, report: WindowReport }[] {
-    const all = [...this.#windows.values()].filter(w => w.report && !w.console && (!member || w.member.id === member.id))
+  /**
+   * The positions the windows last reported (of `member`, of one document,
+   * when given), newest first, the present and presenter windows before the
+   * others (MCP's `get_position`).
+   */
+  positions(member?: Member, document?: string): { window: string, member: string, document: string, report: WindowReport }[] {
+    const all = [...this.#windows.values()].filter(w => w.report?.position && !w.console && (!member || w.member.id === member.id) && (document === undefined || w.document === document))
     const rank = (w: Window) => (w.report?.role === 'presenter' || w.report?.role === 'audience' ? 0 : 1)
     return all.sort((a, b) => rank(a) - rank(b) || b.report!.at - a.report!.at)
       .map(w => ({ window: w.id, member: w.member.id, document: w.document, report: w.report! }))
   }
 
-  /** Sends `go` to the windows of the present and presenter views (all of `member`'s when none presents). */
-  go(position: WindowPosition, member?: Member): number {
-    const windows = [...this.#windows.values()].filter(w => !w.console && (!member || w.member.id === member.id))
+  /** Sends `go` to the windows (of `member`, of one document, when given) of the present and presenter views, or to all of them when none presents. */
+  go(position: WindowPosition, member?: Member, document?: string): number {
+    const windows = [...this.#windows.values()].filter(w => !w.console && (!member || w.member.id === member.id) && (document === undefined || w.document === document))
     const presenting = windows.filter(w => w.report?.role === 'presenter' || w.report?.role === 'audience')
     const targets = presenting.length > 0 ? presenting : windows
     for (const window of targets) window.send('go', position)
     return targets.length
   }
 
-  /** Starts or ends the classroom in the windows of the present and presenter views. */
-  session(action: 'start' | 'end', name?: string): number {
-    const windows = [...this.#windows.values()].filter(w => !w.console && (w.report?.role === 'presenter' || w.report?.role === 'audience'))
+  /** Starts or ends the classroom in the windows (of one document, when given) of the present and presenter views. */
+  session(action: 'start' | 'end', name?: string, document?: string): number {
+    const windows = [...this.#windows.values()].filter(w => !w.console && (document === undefined || w.document === document) && (w.report?.role === 'presenter' || w.report?.role === 'audience'))
     for (const window of windows) window.send('session', { action, name })
     return windows.length
   }
 
-  /** The plugins' status summaries the windows reported, newest first per plugin. */
-  status(): Record<string, unknown> {
+  /** The plugins' status summaries the windows (of one document, when given) reported, the newest of each plugin. */
+  status(document?: string): Record<string, unknown> {
     const out: Record<string, unknown> = {}
-    const windows = [...this.#windows.values()].filter(w => w.report?.status).sort((a, b) => a.report!.at - b.report!.at)
+    const windows = [...this.#windows.values()].filter(w => w.report?.status && (document === undefined || w.document === document)).sort((a, b) => a.report!.at - b.report!.at)
     for (const window of windows) Object.assign(out, window.report!.status)
     return out
   }
@@ -182,9 +208,9 @@ export class Control {
     for (const window of [...this.#windows.values()]) window.close()
   }
 
-  #request(request: ApprovalRequest, signal?: AbortSignal): Promise<boolean> {
+  #request(request: ApprovalRequest, signal?: AbortSignal, ask = false): Promise<boolean> {
     const policy = this.#options.policy[request.kind] ?? 'ask'
-    if (policy === 'allow') return Promise.resolve(true)
+    if (policy === 'allow' && !ask) return Promise.resolve(true)
     if (policy === 'off' || signal?.aborted) return Promise.resolve(false)
     return new Promise<boolean>((resolve) => {
       const id = randomUUID()

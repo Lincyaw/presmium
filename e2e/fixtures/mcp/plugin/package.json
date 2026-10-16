@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-mcp-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/mcp.spec.ts: a status summary the pages report, which MCP's get_classroom returns",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

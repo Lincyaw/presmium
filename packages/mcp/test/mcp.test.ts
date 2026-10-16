@@ -1,0 +1,181 @@
+// The agent environment (WP-78, P-110): an MCP SDK client connects to `/mcp` of `presmium dev` on a
+// test deck, reads its sections and code, runs a code block once the control channel allows it, is
+// refused without a token, sees only read tools with a `tutor` token a plugin's route issued (and 401
+// once revoked), and hears of a new position it subscribed to; `presmium-mcp` lists the read tools on stdio.
+import { execFileSync, spawn } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { Client } from '@modelcontextprotocol/client'
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { connectMcp, controlWindow, resultOf } from './client.ts'
+import type { ControlWindow } from './client.ts'
+
+const DECK = fileURLToPath(new URL('./fixtures/deck', import.meta.url))
+/** The CLI depends on the server, which depends on this package: its command is named by path, not as a dependency. */
+const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
+const MCP_BIN = fileURLToPath(new URL('../bin/presmium-mcp.mjs', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+
+const READ = ['list_documents', 'deck_info', 'list_sections', 'get_section', 'get_step', 'search', 'get_code_ref', 'get_outputs', 'get_diagnostics', 'locate_source']
+const OPERATE = ['navigate', 'run_code', 'build', 'classroom_start', 'classroom_end']
+
+/** The test deck in a directory of the demo (its plugins and renderers resolve from there), a git repository of its own. */
+function deck(): string {
+  mkdirSync(WORK, { recursive: true })
+  const dir = mkdtempSync(join(WORK, 'mcp-'))
+  cpSync(DECK, dir, { recursive: true })
+  writeFileSync(join(dir, '.gitignore'), '*\n')
+  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
+  execFileSync('git', ['init', '-q'], { cwd: dir })
+  return dir
+}
+
+/** The environment without Vitest's NODE_ENV and Presmium's variables. */
+function env(): NodeJS.ProcessEnv {
+  const { NODE_ENV: _test, ...rest } = process.env
+  return Object.fromEntries(Object.entries(rest).filter(([name]) => !name.startsWith('PRESMIUM_')))
+}
+
+const names = async (client: Client) => (await client.listTools()).tools.map(tool => tool.name)
+
+describe('presmium dev', () => {
+  let dir: string
+  let dev: ChildProcess
+  let server: string
+  let token: string
+  const clients: Client[] = []
+  const windows: ControlWindow[] = []
+  const connect = async (with_ = token) => {
+    const client = await connectMcp(`${server}/mcp`, with_)
+    clients.push(client)
+    return client
+  }
+  const window = async (id: string) => {
+    const opened = await controlWindow(server, id)
+    windows.push(opened)
+    await opened.next('ready')
+    return opened
+  }
+
+  beforeAll(async () => {
+    dir = deck()
+    dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'notebook'], { cwd: dir, env: env(), stdio: ['ignore', 'pipe', 'pipe'] })
+    let output = ''
+    server = await new Promise<string>((resolve, reject) => {
+      const read = (chunk: Buffer) => {
+        output += chunk
+        const match = /^server {2}(http\S+)$/m.exec(output)
+        if (match) resolve(match[1]!)
+      }
+      dev.stdout!.on('data', read)
+      dev.stderr!.on('data', read)
+      dev.once('exit', code => reject(new Error(`presmium dev exited (${code}):\n${output}`)))
+    })
+    token = (JSON.parse(readFileSync(join(dir, '.presmium/server.json'), 'utf8')) as { token: string }).token
+  }, 180_000)
+  afterAll(async () => {
+    for (const client of clients) await client.close().catch(() => undefined)
+    for (const opened of windows) opened.close()
+    if (dev && dev.exitCode === null) {
+      const exited = new Promise(done => dev.once('exit', done))
+      dev.kill('SIGTERM')
+      await exited
+    }
+    if (dir) rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('lists the sections and reads a section\'s narration and code; without a token /mcp answers 401', async () => {
+    expect((await fetch(`${server}/mcp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status).toBe(401)
+
+    const client = await connect()
+    expect(client.getInstructions()).toContain('No tool writes files')
+    const tools = await names(client)
+    expect(tools).toEqual(expect.arrayContaining([...READ, 'get_position', 'get_classroom', 'run_code', 'build', 'navigate', 'fixture_echo']))
+    expect(tools.some(name => /write|edit/.test(name))).toBe(false)
+
+    const { sections } = resultOf(await client.callTool({ name: 'list_sections', arguments: {} }))
+    expect(sections.map((s: { id: string }) => s.id)).toEqual(['mcp-测试文稿', 'merge', '第三节'])
+
+    const section = resultOf(await client.callTool({ name: 'get_section', arguments: { section: 'merge' } }))
+    expect(section.title).toBe('合并')
+    expect(section.narration.map((n: { text: string }) => n.text).join('\n')).toContain('每一轮合并出现次数最多的相邻对')
+    const code = section.blocks.find((b: { kind: string }) => b.kind === 'code')
+    expect(code).toMatchObject({ lang: 'python', code: 'print(6 * 7)', source: { file: 'lecture.md' } })
+
+    // The read-only resources hold the same data.
+    const step = await client.readResource({ uri: 'presmium://sections/merge/steps/0' })
+    expect(JSON.parse((step.contents[0] as { text: string }).text)).toMatchObject({ section: 'merge', step: 0, screen: [{ lang: 'python' }] })
+
+    // The web form's index finds the section; a plugin's tool gets the caller.
+    const found = resultOf(await client.callTool({ name: 'search', arguments: { query: '相邻对' } }))
+    expect(found.results[0].section).toBe('merge')
+    expect(resultOf(await client.callTool({ name: 'fixture_echo', arguments: { text: 'hi' } }))).toEqual({ echo: 'hi', document: '', member: 'local' })
+  })
+
+  it('run_code asks the control channel: allowed it gives the output, refused an error result', async () => {
+    const page = await window('runner')
+    const client = await connect()
+    const code = (await resultOf(await client.callTool({ name: 'get_section', arguments: { section: 'merge' } }))).blocks.find((b: { kind: string }) => b.kind === 'code').id
+
+    const allowed = client.callTool({ name: 'run_code', arguments: { section: 'merge', block: code } })
+    const asked = await page.next('approval')
+    expect(asked.request).toMatchObject({ kind: 'operate', scope: 'content', title: `运行「合并」一节的 ${code}`, detail: 'print(6 * 7)', member: 'local' })
+    expect(await page.answer(asked.id, true)).toBe(200)
+    const ran = await allowed
+    expect(ran.isError).toBeFalsy()
+    expect(resultOf(ran)).toMatchObject({ ok: true, stdout: '42\n' })
+
+    const refused = client.callTool({ name: 'run_code', arguments: { section: 'merge', block: code } })
+    expect(await page.answer((await page.next('approval')).id, false)).toBe(200)
+    const denied = await refused
+    expect(denied.isError).toBe(true)
+    expect(resultOf(denied)).toContain('not allowed')
+  })
+
+  it('a tutor token a plugin\'s route issued sees no operate tool, and gets 401 once revoked', async () => {
+    const grant = await (await fetch(`${server}/__presmium/fixture.mcp/tutor`)).json() as { url: string, token: string }
+    expect(grant.url).toBe(`${server}/mcp`)
+    const tutor = await connect(grant.token)
+    const tools = await names(tutor)
+    expect(tools).toEqual(expect.arrayContaining(READ))
+    expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
+    expect(tutor.getInstructions()).toContain('reads only')
+
+    await (await fetch(`${server}/__presmium/fixture.mcp/revoke`, { method: 'POST' })).json()
+    const after = await fetch(grant.url, { method: 'POST', headers: { 'Authorization': `Bearer ${grant.token}`, 'Content-Type': 'application/json' }, body: '{}' })
+    expect(after.status).toBe(401)
+  })
+
+  it('a subscriber of presmium://position hears resources/updated when a page reports a new position', async () => {
+    const page = await window('presenter')
+    const client = await connect()
+    const updated = new Promise<string>(resolve => client.setNotificationHandler('notifications/resources/updated', n => resolve(n.params.uri)))
+    const subscription = await client.listen({ resourceSubscriptions: ['presmium://position'] })
+    expect(subscription.honoredFilter.resourceSubscriptions).toEqual(['presmium://position'])
+
+    expect(await page.report({ position: { slide: 3, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
+    expect(await updated).toBe('presmium://position')
+    const read = await client.readResource({ uri: 'presmium://position' })
+    expect(JSON.parse((read.contents[0] as { text: string }).text).position).toMatchObject({ section: '第三节', step: 0, view: 'present' })
+    await subscription.close()
+  })
+})
+
+it('presmium-mcp lists the read tools on stdio, and no operation without --allow operate', async () => {
+  const dir = deck()
+  const client = new Client({ name: 'presmium-test', version: '0.1.0' })
+  try {
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [MCP_BIN, dir], env: env() as Record<string, string>, stderr: 'ignore' }))
+    const tools = await names(client)
+    expect(tools).toEqual(expect.arrayContaining(READ))
+    expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
+    const info = resultOf(await client.callTool({ name: 'deck_info', arguments: {} }))
+    expect(info).toMatchObject({ title: 'MCP 测试文稿', sections: 3, entry: 'lecture.md' })
+  } finally {
+    await client.close()
+    rmSync(dir, { recursive: true, force: true })
+  }
+}, 120_000)

@@ -61,6 +61,10 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 
 两个窗口通过同一浏览器内的 BroadcastChannel 同步，任一窗口翻页另一个跟随；所以听众窗口与演讲者窗口要在同一浏览器、同一地址下打开。投影时把放映窗口拖到投影屏并全屏，演讲者窗口留在自己的屏幕上。
 
+### 由 agent 跳转（`presmium dev`）
+
+`presmium dev` 中，连接了 MCP 的 agent（见 presmium-author 技能）可以查询放映位置（`get_position`）并请求跳转（`navigate`）、开始或结束课堂（`classroom_start`、`classroom_end`）。每次操作先在页面工具栏出现“待确认”入口，允许后放映与演讲者窗口跳到该位置，拒绝时 agent 得到错误。放映视图与演讲者视图盖住了工具栏，所以放映时另开一个文档视图的窗口回答确认。
+
 ## 4. 幻灯片形态
 
 - 页地址：`/<页号>?clicks=<步>`；演讲者视图 `/presenter/<页号>`。`renderers.slides.routerMode: hash` 时为 `/#/<页号>`。

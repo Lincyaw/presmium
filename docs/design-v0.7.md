@@ -588,6 +588,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
 | 共享的运行器经包的 `exports` 以 `?raw` 进入两种形态的 Worker；Slidev 的 `{monaco-run}` 在构建产物中运行 Python 并接收执行器与会话；运行器的富输出（`IPython.display`、matplotlib）；在浏览器中解析 Markdown 输出（`wbs.md` 没有为 WP-73b 列出先行验证，开始时做了这几项小规模实测） | WP-73b（已完成，结论见下） |
+| MCP SDK v2 在服务端的挂载（Fetch 处理函数与调用方）、资源订阅与通知、JSON Schema 输入、stdio；网页形态的放映视图中能否回答确认（`wbs.md` 没有为 WP-78 列出先行验证，开始时做了这几项小规模实测） | WP-78（已完成，结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -614,6 +615,15 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
+
+**WP-78 开始时的验证（2026-10-16，`@modelcontextprotocol/server` 与 `@modelcontextprotocol/client` 2.3.1（协议版本 2026-07-28）、Node 22.22、Playwright 1.64.1）**的结论：
+
+- **HTTP 的挂载**：v2 的 `createMcpHandler(factory, options)` 返回 `{ fetch, notify, bus, close }`，`fetch(request, { authInfo })` 是 Fetch API 的处理函数，`authInfo` 原样交给工厂（可以是异步的），工厂为每个请求新建一个服务器实例，没有会话。服务端已经以 `@hono/node-server` 把 Node 的请求转为 Fetch，并自己校验 `Host`、`Origin` 与令牌，所以挂载时用不到设计中列出的 `@modelcontextprotocol/node`（它提供的正是 Node 的转换与这两项校验）；校验过的成员与模式经 `authInfo.extra` 进入工厂，工具的范围因此由令牌决定。
+- **订阅与通知**：SDK 的客户端默认用 2025 年的握手（`initialize`，协商到 `2025-11-25`），工具与资源照常可用；2026-07-28 的 `subscriptions/listen`（`client.listen({ resourceSubscriptions })`）要求客户端以 `versionNegotiation: { mode: 'auto' }` 连接，否则本地报 `METHOD_NOT_SUPPORTED_BY_PROTOCOL_VERSION`。服务端必须声明 `capabilities.resources.subscribe`，否则 `honoredFilter` 为空，`notify.resourceUpdated(uri)` 发出的更新永远收不到（实测一直等待）；声明之后订阅者收到带 `subscriptionId` 的 `notifications/resources/updated`。2025 年的客户端在无状态的服务中没有接收通知的通道（GET 得到 405），`resources/subscribe` 对它们不可用；DeepSeek Harness 不读资源，照常用 `get_position`。
+- **输入的 JSON Schema**：`fromJsonSchema(schema)` 让插件的 `AgentTool.input`（JSON Schema）直接作为工具的输入，SDK 以 JSON Schema 校验，不需要 zod；返回 `isError: true` 的结果到达客户端时是错误结果，不是协议错误。
+- **stdio**：`serveStdio(factory)`（`@modelcontextprotocol/server/stdio`）用同一个工厂提供 stdio，客户端的 `StdioClientTransport` 以两种协议都能连接。
+- **放映视图中的确认**：网页形态的放映视图是 `position: fixed; inset: 0; z-index: 1000` 的覆盖层，盖住了 VitePress 导航栏中的工具栏，工具栏的确认入口在放映视图中显示却点不到（Playwright：`pm-present__slide … intercepts pointer events`）。确认同时发往该成员的全部窗口，所以 `e2e/mcp.spec.ts` 在作者的另一个窗口（文档视图）中回答；在放映视图的控制条中加入确认入口属于 `viewer` 与 `host`，交给验收者（`architecture.md` 10.2 节）。
+- **共用的搜索**：`@presmium/mcp` 依赖 `@presmium/web` 以复用 `searchDocuments` 与 `tokenize` 会使 pnpm 的符号链接成环（`web` 的开发依赖有 `cli`，`cli → server → mcp`），所以 `search` 用 `@presmium/viewer/domain` 的 `chapters`、`blockText` 与 `minisearch` 按同样的文档、分词与参数建立索引，分词函数是副本。
 
 ## 12. 包与工作包
 
