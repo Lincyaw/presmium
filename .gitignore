@@ -7,7 +7,8 @@ coverage/
 test-results/
 playwright-report/
 vendor/
-.claude/
+.claude/*
+!.claude/skills
 dist-web/
 # Deck working directory: keep what belongs to the deck, ignore generated projects.
 **/.presmium/*
@@ -15,3 +16,4 @@ dist-web/
 !**/.presmium/anchors.lock.json
 !**/.presmium/drawings/
 !**/.presmium/assets/
+.playwright-mcp/
