@@ -1,6 +1,6 @@
 ---
 name: presmium-develop
-description: "Presmium 仓库开发者指南：包结构与限界上下文、分层规则与 scripts/check-layering.mjs、契约（packages/kernel/src/contracts.ts、ir.ts，packages/host/src/types.ts）、新增插件（指令 DirectiveSpec 转 IR、编译步骤、只经 @presmium/host 的 Vue 组件、src/client/viewer.ts 视图插件、幻灯片与 notebook 的渲染端扩展和 fallback、zh-CN 与 en 文本、pm-overlay）、新增渲染端、只写集成测试（e2e/fixtures、端口环境变量、Firefox 冒烟、性能用例 --no-deps）、pnpm test、demo、e2e、verify、docs:fetch 命令、依赖政策、提交约定与常见陷阱。Use when developing the Presmium monorepo: adding or changing a plugin, directive, pass, component, renderer, host adapter, or test; fixing layering or skill-check failures; running or debugging pnpm test, pnpm e2e, Playwright fixtures; committing or merging work packages."
+description: "Presmium 仓库开发者指南：包结构与限界上下文、分层规则与 scripts/check-layering.mjs、契约（packages/kernel/src/contracts.ts、ir.ts，packages/host/src/types.ts）、新增插件（指令 DirectiveSpec 转 IR、编译步骤、只经 @presmium/host 的 Vue 组件、src/client/viewer.ts 视图插件、幻灯片与 notebook 的渲染端扩展和 fallback、zh-CN 与 en 文本、浮层 layer）、新增渲染端、只写集成测试（@presmium/cli/testing、e2e/fixtures、端口环境变量、Firefox 与 WebKit 冒烟、性能用例 --no-deps）、pnpm test、demo、e2e、verify、docs:fetch 命令、依赖政策、提交约定与常见陷阱。Use when developing the Presmium monorepo: adding or changing a plugin, directive, pass, component, renderer, host adapter, or test; fixing layering or skill-check failures; running or debugging pnpm test, pnpm e2e, Playwright fixtures; committing or merging work packages."
 ---
 
 # 开发 Presmium
@@ -30,21 +30,22 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 
 ## 2. 分层
 
-规则见 `docs/architecture.md` 第 3 节，表格版见 `references/plugin.md` 第 2 节。要点：`src/domain` 为纯 TS；组件与 `src/client` 只经 `@presmium/host` 取得步骤状态与服务，不用 `@slidev/*`（`addon-core` 除外，可用 `@slidev/client`）；只在幻灯片形态加载的 `setup/` 与全局图层可以用 `@slidev/client` 的公开导出；只有 `web` 用 vitepress；插件包之间不互相引用；不引用框架内部路径。
+规则见 `docs/architecture.md` 第 3 节，表格版见 `references/plugin.md` 第 2 节。要点：`src/domain` 为纯 TS（不引用 vue 与 `@vue/*`）；组件与 `src/client` 只经 `@presmium/host` 取得步骤状态与服务，不用 `@slidev/*`（只有 `addon-core` 可用 `@slidev/client`，`web` 也不行）；只在幻灯片形态加载的 `setup/` 与全局图层只能用 Slidev 的 `@slidev/client` 公开导出与 `@slidev/types`；只有 `web` 用 vitepress；任何包（测试除外）都不引用插件包 `@presmium/slidev-addon-*`；不引用框架内部路径。
 
-`scripts/check-layering.mjs` 扫描 `packages/*` 中所有 `.ts`、`.vue`、`.mjs` 等文件的静态 `import`、`export … from`、动态 `import()` 与 `require()`（注释里的也算）。通过时打印 `layering ok`；失败时逐行打印 `<文件>: <被引用的模块>  (<规则名>)` 并以 1 退出。
+`scripts/check-layering.mjs` 扫描 `packages/*` 中所有 `.ts`、`.tsx`、`.vue`、`.js`、`.jsx`、`.mjs` 等文件的静态 `import`、`export … from`、动态 `import()` 与 `require()`（注释里的也算）。通过时打印 `layering ok`；失败时逐行打印 `<文件>: <被引用的模块>  (<规则名>)` 并以 1 退出。
 
 ## 3. 契约
 
 唯一来源是源码；改签名先改 `docs/architecture.md`（`contracts.ts` 文件头的规定）。
 
-- `packages/kernel/src/contracts.ts`：`defineService`、`PluginDefinition`（`manifest`、`setup(ctx)`、`dispose`）、`PluginContext`、`StartReport`、锚点（`AnchorString`、`AnchorResolver`、`Resolution`、锁定文件 `AnchorLockFile`）、检查（`Check`、`Finding`、`CheckContext`）、`PresmiumNodePlugin`、`Executor` 与 `RunRequest`、`SessionService`、`ClassroomStore`、`PresenterPanels`、`localeOf`。
-- `packages/kernel/src/ir.ts`：`IRDocument`、`IRSection`、`IRBlock`、节点（`markdown`、`code`、`component`）、`DirectiveSpec`、`IRPass`、`Renderer`、`RenderContext`、`RendererExtension`。只允许加可选字段；其他改动要提升 `IR_VERSION`。
-- `packages/host/src/types.ts`：`HostAdapter`、`SharedStateScope`、`SyncTransport`、`Navigation`、`Toolbar` 与令牌 `SYNC_TRANSPORTS`、`NAVIGATION`、`TOOLBAR`。组合式函数从 `@presmium/host` 导出（`useStepState`、`useStepScope`、`PmBoundary`、`useMessages`、`useSectionConfig`、`useSharedState`、`useService` 等）。
+- `packages/kernel/src/contracts.ts`：`defineService`、`PluginDefinition`（`manifest`、`setup(ctx)`、`dispose`）、`PluginContext`、`StartReport`、锚点（`AnchorString`、`AnchorResolver`、`Resolution`、锁定文件 `AnchorLockFile`）、检查（`Check`、`Finding`、`CheckContext`）、`PresmiumNodePlugin`（含 `version`、`kernel`、`vitePlugins`）、`Executor` 与 `RunRequest`、`SessionService`、`ClassroomStore`（JSDoc 写明课堂的写入规则）、`PresenterPanels`、`localeOf`、`deckLocale`。
+- `packages/kernel/src/ir.ts`：`IRDocument`、`IRSection`、`IRBlock`、节点（`markdown`、`code`、`component`）、`DirectiveSpec`、`IRPass`（`after: 'execute'`）、`Renderer`（`site`、`prepare`）、`RenderContext`（`lang`、`pluginDirs`、`extensionFor`、`portable`、`localAsset`、`base`、`vitePlugins` 等）、`RendererExtension`。只允许加可选字段；其他改动要提升 `IR_VERSION`。
+- `@presmium/kernel` 的共用纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`errorMessage`、`isRecord`、`failedRun`、`languageId`、`lowerMyst`、`deckLocale`。用它们，不要在包里另写副本。
+- `packages/host/src/types.ts`：`HostAdapter`、`SharedStateScope`、`SyncTransport`、`Navigation`、`Toolbar` 与令牌 `SYNC_TRANSPORTS`、`NAVIGATION`、`TOOLBAR`。组合式函数从 `@presmium/host` 导出（`useStepState`、`useStepScope`、`PmBoundary`、`useMessages`、`currentLocale`、`useSectionConfig`、`useSharedState`、`useService`、`useSessionSnapshot`、`claimFirst`、`startHost` 等）。
 
 ## 4. 新增插件
 
-完整步骤见 `references/plugin.md`：包结构与 `package.json`、指令（`DirectiveSpec` → IR 节点与 `span`）、编译步骤、执行器、检查项、只经 `@presmium/host` 的组件（`PmBoundary`、`useStepState`、`useMessages`、`pm-overlay`）、`src/client/plugin.ts` 与 `setup/main.ts`、`src/client/viewer.ts`、`rendererExtensions.slides` 与 `.notebook`、`fallback`、测试与文档。新指令要写进 `.agents/skills/presmium-author/references/directives.md`，否则 `pnpm test` 中的技能检查失败。
+完整步骤见 `references/plugin.md`：包结构与 `package.json`、`./presmium` 的 `version` 与 `kernel`、指令（`DirectiveSpec` → IR 节点与 `span`）、编译步骤（含 `after: 'execute'`）、执行器、检查项、`vitePlugins`、只经 `@presmium/host` 的组件（`useStepState`、`useMessages`，不自包装 `PmBoundary`，浮层用 `layer: 'overlay'`）、`src/client/plugin.ts` 与 `setup/main.ts`、`src/client/viewer.ts`、`rendererExtensions.slides` 与 `.notebook`、`fallback`、测试与文档。新指令要写进 `.agents/skills/presmium-author/references/directives.md`，`./presmium` 要声明 `version` 与 `kernel`，否则 `pnpm test` 中的技能检查或插件检查失败。
 
 ## 5. 新增渲染端
 
@@ -67,8 +68,9 @@ const plugin: PresmiumNodePlugin = {
 
 - 选择：`presmium build --to <id>`，否则文稿头部 `renderers` 的键，否则全部已安装的渲染端。`web`、`slides`、`notebook` 默认由 `packages/compiler/src/renderers.ts` 的 `DEFAULT_RENDERER_PACKAGES` 找包；其他 ID 要在 `plugins` 中列出该包，或写 `renderers.<id>.package`。
 - `build` 收到的 IR 已去掉 `only` 排除的块；`support` 返回 `none` 的块由编译器列入构建报告；`degraded` 的组件由渲染端渲染其 `fallback`，没有时写一行说明并附网页版链接。
-- `RenderContext`：`deckDir`、`workspaceRoot`、`outDir`（`<out>/<id>`）、`workDir`（`build` 中为 `<文稿>/.presmium/<id>`，渲染端自己创建并保持不入库；`dev` 中等于 `outDir`）、`config`（`renderers.<id>`）、`extensions`（各插件的 `rendererExtensions[<id>]`，已绑定本 `ctx`）、`plugins`、`report`。
-- 发布插件配置时把位于 `workspaceRoot` 内的绝对路径改为相对路径，产物不随检出位置变化（`docs/architecture.md` 4.2 节）；编译时写进产物的文本按文稿的 `lang`。
+- `RenderContext`：`deckDir`、`workspaceRoot`、`outDir`（`<out>/<id>`）、`workDir`（`build` 中为 `<文稿>/.presmium/<id>`，渲染端自己创建并保持不入库；`dev` 中等于 `outDir`）、`config`（`renderers.<id>`）、`extensions`（各插件的 `rendererExtensions[<id>]`，已绑定本 `ctx`）与 `extensionFor(node)`、`plugins` 与 `pluginDirs`、`lang`、`renderers`、`base`（声明 `site: true` 的渲染端的站点路径）、`vitePlugins`、`localAsset(source, url)`、`portable(value, from)`、`report`。
+- 发布插件配置时用 `ctx.portable` 把位于 `workspaceRoot` 内的绝对路径改为相对路径，产物不随检出位置变化（`docs/architecture.md` 4.2 节）；块中引用的本地文件用 `ctx.localAsset` 找到并随产物发布；编译时写进产物的文本按 `deckLocale(ctx.lang)`。
+- 插件组件外面包 `PmBoundary`（错误隔离是渲染端的事，`docs/architecture.md` 5.4 节）；可以只生成工作目录时提供 `prepare(doc, ctx)`。
 - 范例：`packages/render-notebook`（只有 `build`）、`packages/cli/test/fixtures/addons/render/presmium.ts`（最小的 `build` 与 `dev`）。
 
 ## 6. 测试
@@ -80,21 +82,21 @@ const plugin: PresmiumNodePlugin = {
 | 命令 | 作用 |
 |---|---|
 | `pnpm install` | 安装依赖；加包、改依赖或合并后锁文件冲突时运行 |
-| `pnpm test` | 分层检查、技能检查（`scripts/check-skills.mjs`）与 Vitest 集成测试（`packages/<pkg>/test/`） |
+| `pnpm test` | 分层检查、技能检查（`scripts/check-skills.mjs`）、插件声明检查（`scripts/check-plugins.mjs`）与 Vitest 集成测试（`packages/<pkg>/test/`） |
 | `pnpm demo:check`、`pnpm demo:build`、`pnpm demo:ir` | 示例文稿的 `presmium check`、`presmium build`（产物在 `examples/demo/dist/<渲染端>/`）、`presmium ir` |
-| `pnpm e2e` | Playwright 端到端测试（先 `pnpm demo:build`）；`PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口，`PRESMIUM_E2E_BROWSERS` 指定冒烟用例的其他浏览器 |
+| `pnpm e2e` | Playwright 端到端测试（先 `pnpm demo:build`）；`PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口，`PRESMIUM_E2E_BROWSERS` 指定冒烟用例的其他浏览器（默认 `firefox,webkit`，未安装或无法启动的跳过并提示） |
 | `pnpm exec playwright test e2e/perf.spec.ts --no-deps` | 单独运行性能用例 |
 | `pnpm verify` | 以上全部 |
 | `pnpm docs:fetch` | 拉取框架文档到 `vendor/docs/slidev`、`vendor/docs/vitepress`（`vendor/` 不入库） |
 
-`pnpm test` 中的 `scripts/check-skills.mjs` 检查：`.claude/skills` 是指向 `../.agents/skills` 的软链接、`AGENTS.md` 是指向 `CLAUDE.md` 的软链接；每个技能的 frontmatter（`name` 与目录同名、`description` 非空）；编译器内置指令与各包 `./presmium` 入口声明的指令都写进了 `presmium-author/references/directives.md`；技能中出现的 `presmium <命令>` 及其选项是 CLI 真有的。改了指令或 CLI 后同步更新技能。
+`pnpm test` 中的 `scripts/check-skills.mjs` 检查：`.claude/skills` 是指向 `../.agents/skills` 的软链接、`AGENTS.md` 是指向 `CLAUDE.md` 的软链接；每个技能的 frontmatter（`name` 与目录同名、`description` 非空）；编译器内置指令与各包 `./presmium` 入口声明的指令都写进了 `presmium-author/references/directives.md`；技能中出现的 `presmium <命令>` 及其选项是 CLI 真有的。改了指令或 CLI 后同步更新技能。`scripts/check-plugins.mjs` 检查每个导出 `./presmium` 的包都声明了 `version`（与 `package.json` 一致）和当前内核满足的 `kernel` 范围。
 
 ## 8. 依赖与源码
 
 - 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用 Slidev 或 VitePress 的内部路径。查框架接口先读 `vendor/docs/slidev`、`vendor/docs/vitepress`（缺失时 `pnpm docs:fetch`），不读框架的编译产物。仍在使用的未文档化接口及守护它们的用例列在 `docs/architecture.md` 9.1 节，升级框架前先跑这些用例。
 - 版本固定：Slidev 53.0.0、VitePress 1.6.4，由 `pnpm-lock.yaml` 锁定。不引入 AGPL 依赖；跨设备功能只用课堂的同步通道。
 - 源码以 `.ts`、`.vue` 直接发布，不预编译（CLI 通过 jiti 加载）；相对导入写 `.ts` 扩展名。只有 `vscode` 预打包。
-- 界面文本：每个包维护自己的 zh-CN 与 en 文本（位置自定，如 `src/domain/messages.ts`），按 `<html lang>` 选择，组件用 `useLocale`、`useMessages(catalog)`；编译时写入产物的文本按文稿的 `lang`。
+- 界面文本：每个包维护自己的 zh-CN 与 en 文本（位置自定，如 `src/domain/messages.ts`）。浏览器端一律经 `@presmium/host`：组件中 `useMessages(CATALOG)`，组件外 `CATALOG[currentLocale()]`；不要自己判断语言或观察 `<html lang>`。编译时写入产物的文本用指令、编译步骤、渲染上下文的 `lang` 与 `deckLocale(lang)`（`@presmium/kernel`）。
 
 ## 9. 提交
 
@@ -107,8 +109,9 @@ const plugin: PresmiumNodePlugin = {
 - **静态服务器缓存**：sirv 启动时读取文件列表，重新构建后必须重启，否则新文件 404。
 - **e2e 服务器**：不要复用别人的服务器（`reuseExistingServer: false`，端口被占用就报错）；并行工作时换一对端口。也不要停掉别人的服务器。
 - **不要在 shell 中用 `pkill -f`、`killall`**：`pkill -f <模式>` 也匹配执行它的 shell 自己的命令行和别的代理的服务器。启动时记下 PID，按 PID 停自己的进程（`kill <pid>`）。
-- **网页宿主的共享状态是副本**：`packages/web/src/client/shared.ts` 复制了 `@presmium/host` 的 `createSharedStates`，改其中一处要同时改另一处（`docs/architecture.md` 4.4、9.5 节）。
-- **IR 运行时的标记是契约**：课堂笔记按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位，改 IR 运行时的 DOM 要同时改笔记图层（9.2 节）。
-- **生成的块 ID 会移动**：`<kind>-<n>` 随前面插入同类块而变；测试与挂载点用标签 `(name)=`。
-- **执行插件的 `fallback` 没有编译时输出**：插件的编译步骤在编译时执行之前运行（9.2、9.3 节）。
+- **IR 运行时的标记是契约**：课堂笔记按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位，改 IR 运行时的 DOM 要同时改笔记图层（`docs/architecture.md` 9.2 节）。
+- **生成的块 ID 会移动**：`<kind>-<n>` 随前面插入同类块而变，并且按章节编号（两个章节的第一个代码块都是 `code-1`）；测试与挂载点用标签 `(name)=`。
+- **编译步骤默认在编译时执行之前运行**：要用代码的 `outputs`，声明 `after: 'execute'`。
+- **插件状态要在 `dispose` 中释放**：页面从往返缓存恢复时内核会再次启动插件，没有释放的 Worker、定时器会留下第二份。
+- **notebook 共用一个解释器**：同一份测试文稿也会被 notebook 的测试（`render-notebook/test/demo.test.ts`）在 Jupyter 中从头运行；只演示浏览器行为的块放进 `{only} web, slides`。
 - **残留的测试文稿**：中断的端到端运行可能留下 `examples/demo/.presmium/e2e-*`，它们不入库，可以删除。

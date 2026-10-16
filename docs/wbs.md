@@ -32,7 +32,7 @@
 每个工作包都必须满足：
 
 1. `pnpm test` 通过（含分层检查）。
-2. 示例文稿中本包的页面 `examples/demo/pages/<ctx>.md` 能通过 `pnpm demo:build` 构建（`presmium build` 生成网页、幻灯片与 notebook 全部媒介），并通过 `pnpm demo:check`。
+2. 本包的功能用自己的测试文稿 `e2e/fixtures/<组>/` 演示与测试（端到端用例在 `beforeAll` 中用真实的 `presmium build` 构建它们）；示例讲义 `examples/demo` 是一份完整的讲义，不放功能性演示，修改后仍能通过 `pnpm demo:build`（生成网页、幻灯片与 notebook 全部媒介，无警告）与 `pnpm demo:check`。
 3. 本包的端到端测试 `e2e/<ctx>.spec.ts` 全部通过。
 4. 只修改本包拥有的路径。需要改动他人路径时，在交付报告中说明，不直接修改。
 5. 不 fork、不引用 Slidev 内部路径，只用公开接口（`@slidev/client` 入口导出、`@slidev/types`、文档中的 setup 钩子与约定目录）。Slidev 与 VitePress 文档的本地副本在 `vendor/docs/`（由 `scripts/fetch-docs.sh` 下载，不入库），查接口先查文档，不读框架源码。
@@ -124,7 +124,7 @@ pnpm 工作区、TypeScript 与 Vitest 配置、Playwright 配置、各包 `pack
 - 文稿转换：用 `@slidev/parser` 解析文稿，每个 `src:` 引入的文件生成一个 VitePress 页面，每页幻灯片生成一个章节（锚点来自页 ID 或标题）；备注按 `[click]` 切分为正文段落；调用各插件的 `transformMarkdown`；Slidev 专有语法按降级规则处理（`v-click` 系列、布局插槽、`slide-only`）。
 - VitePress 宿主适配：网页版 `HostAdapter`（`mode: 'document'`），注册各插件包的 `components/` 与 `src/client/plugin.ts`；提供 `v-click`、`v-after`、`v-clicks` 等兼容实现。
 - 搜索：VitePress 本地搜索，配置中文分词（`Intl.Segmenter`），索引包含备注与代码。
-- 翻阅：侧边目录、页内大纲、上一节与下一节。
+- 翻阅：侧边目录、页内大纲、上一章与下一章（按章分页，WP-61）。
 - 滚动叙事（P-73）：页 frontmatter `presmium: { web: { layout: scrolly } }` 时，幻灯片内容固定在一侧，正文随滚动推进步骤。
 - 形态切换（P-74）：网页章节提供“在幻灯片中打开”链接；幻灯片形态的导航栏提供“在网页中阅读”按钮（以 `custom-nav-controls` 实现，放在本包的 Slidev 插件部分）。
 - 命令：`presmium-web dev|build <deckDir> [--out]`。
@@ -395,7 +395,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 **验收**（集成测试，以 LSP 协议驱动语言服务进程）：失效锚点产生诊断；在锚点上请求定义返回代码区间；补全返回 region 名与指令名。
 
-## WP-60 验收缺口修补
+## WP-60 验收缺口修补（已完成）
 
 最终验收审计在 `main` f33198c 上发现 51 个缺口（12 个主要、39 个次要），完整清单、证据与修法见 `docs/acceptance-gaps.md`。缺口按代码归属分为四个可并行的工作包，文件归属互不重叠；组间需要配合的地方以 `acceptance-gaps.md`“组间约定”一节中的接口约定为准（语言、章节级配置、静态导出降级、交叉引用文字）。
 
@@ -412,7 +412,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 - 按组间约定实现本组承担的一侧，并用本组自己的测试文稿（`e2e/fixtures/<组>/`）验证，不依赖其他组的实现；
 - 合并前全量 `pnpm test` 与全量 Playwright 套件通过。
 
-## WP-61 网页阅读体验
+## WP-61 网页阅读体验（已完成）
 
 来自用户试用反馈。在 WP-60 合并后进行。
 
@@ -426,7 +426,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 **验收**（Playwright）：侧栏为两级结构且章节点击后跳到对应页的对应锚点；一章一页、页末有上一章与下一章、节底部没有翻页链接；上屏内容与讲解的样式可区分（例如上屏块带有专门的类名与边框或背景）；滚动叙事中示例代码块不出现截断（元素的 `scrollWidth` 不大于可视宽度，或带可滚动容器）。
 
-## WP-62 示例讲义
+## WP-62 示例讲义（已完成）
 
 来自用户试用反馈。在 WP-60 合并后进行，可与 WP-61 并行。
 
@@ -440,7 +440,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 **验收**：全量 `pnpm test` 与 Playwright 通过；示例讲义构建无警告；人工通读网页形态，内容连贯、无调试性文字。
 
-## WP-63 稳定性与文档收尾
+## WP-63 稳定性与文档收尾（已完成）
 
 来自 WP-60 的验收遗留。可与 WP-61、WP-62 并行。
 
