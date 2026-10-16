@@ -1,6 +1,6 @@
 // Runs the real `presmium check` CLI on a MyST deck that references code in a throwaway git
 // repository; the diagnostics come from the {code-ref} resolution pass of the compiler.
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -70,6 +70,13 @@ const PARSER_REFORMATTED = `\n\n${PARSER.replace(/^(?: {4})+/gm, lead => ' '.rep
 // A fragment without markers or a name, found by its syntax: the guard of checkout.
 const GUARD = 'pattern:src/cart.ts#if ($COND) throw $ERR'
 
+/** Runs a command and returns its output; throws with its error output when it fails. */
+function sh(cwd: string, command: string, args: string[]): string {
+  const result = spawnSync(command, args, { cwd, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed: ${result.stderr}`)
+  return result.stdout.trim()
+}
+
 const repos: string[] = []
 afterAll(() => repos.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
@@ -85,7 +92,7 @@ interface Finding {
 function createRepo(): { dir: string, deck: string, fenceLine: number, edit: (text: string, file?: string) => void } {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-code-'))
   repos.push(dir)
-  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir, encoding: 'utf8' }).trim()
+  const git = (...args: string[]) => sh(dir, 'git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args])
   const edit = (text: string, file = 'src/cart.ts') => writeFileSync(join(dir, file), text)
   mkdirSync(join(dir, 'src'))
   mkdirSync(join(dir, 'deck'))
@@ -227,7 +234,7 @@ it('reads pinned code from a git submodule and links it to the submodule\'s repo
   const repo = createRepo()
   const lib = mkdtempSync(join(tmpdir(), 'presmium-lib-'))
   repos.push(lib)
-  const git = (cwd: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'protocol.file.allow=always', ...args], { cwd, encoding: 'utf8' }).trim()
+  const git = (cwd: string, ...args: string[]) => sh(cwd, 'git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', '-c', 'protocol.file.allow=always', ...args])
   mkdirSync(join(lib, 'src'))
   writeFileSync(join(lib, 'src/x.ts'), '// lib\n// #region part\nexport function part(a: number): number {\n  return a * 2\n}\n// #endregion part\n')
   git(lib, 'init', '-q')

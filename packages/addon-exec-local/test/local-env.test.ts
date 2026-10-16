@@ -2,7 +2,7 @@
 // (`presmium build --to slides`), then starts the real `presmium dev` servers on it. Checks what
 // the compiler records (container output, environment archive) and what the dev-server endpoints
 // answer. Container cases are skipped (and reported as skipped) when no Docker daemon is available.
-import { execFileSync, spawn, spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -34,7 +34,11 @@ const docker = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'
 // `RenderContext.vitePlugins` (C-8, WP-70b); until then its dev server has no endpoints to test.
 const webAddsVitePlugins = readdirSync(join(PACKAGES, 'web/src/node')).some(file => readFileSync(join(PACKAGES, 'web/src/node', file), 'utf8').includes('vitePlugins'))
 
-const git = (...args: string[]) => execFileSync('git', args, { cwd: REPO, encoding: 'utf8' }).trim()
+function git(...args: string[]): string {
+  const result = spawnSync('git', args, { cwd: REPO, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`)
+  return result.stdout.trim()
+}
 
 const servers: ChildProcess[] = []
 let ir: IRDocument
