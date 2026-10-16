@@ -1,11 +1,12 @@
 /**
  * `{run-panel}` (P-20, P-24) and `{step-run}` (P-21): a code body that becomes
  * a component wrapping a code block. The block is the component's only child,
- * so renderers that cannot run code still show it, with the output recorded
- * at compile time for a run panel. The component's `fallback`, which static
+ * so renderers that cannot run code still show it; being the component's own
+ * code, it shows neither run controls nor recorded output (docs/ir.md 5.1).
+ * The component runs the code of its `code` prop. Its `fallback`, which static
  * forms show in its place, is the code followed by the `:recorded:` output;
- * the compile-time output cannot be in it, since the directive is read before
- * the code runs (the notebook takes that output from the code block).
+ * once the code has run at compile time, ./fallback.ts puts the parameters
+ * and the compile-time output in it.
  *
  * ```` ```{run-panel} python ```` options: `:params:` (a YAML mapping, the
  * variables injected into the program), `:timeout:` (ms), `:recorded:` (output
@@ -14,10 +15,13 @@
  *
  * ```` ```{step-run} python ```` options: `:steps:` (the number of executed
  * lines, one step each), `:params:` and `:timeout:`.
+ *
+ * Without `:timeout:`, the timeout is `presmium.exec.timeoutMs` of the
+ * directive's section (its `{config}` over the global configuration), when set.
  */
 import type { CodeNode, ComponentNode, DirectiveContext, DirectiveInput, DirectiveSpec, IRBlock, RunSpec } from '@presmium/kernel'
 import { parse } from 'yaml'
-import { EXEC_ID, stringArgs } from '../domain/index.ts'
+import { configuredTimeout, EXEC_ID, stringArgs } from '../domain/index.ts'
 
 type Params = Record<string, string | number | boolean>
 
@@ -45,12 +49,13 @@ function positive(value: unknown): number | undefined {
 /** The component node around the code block of the directive body. */
 function component(name: string, input: DirectiveInput, ctx: DirectiveContext, run?: Omit<RunSpec, 'lang'>): ComponentNode {
   const lang = input.arg?.trim() || 'python'
-  const props: Record<string, unknown> = { lang }
+  const value = input.body.replace(/\n+$/, '')
+  const props: Record<string, unknown> = { lang, code: value }
   const values = params(input.options.params, ctx)
   if (values) props.params = values
-  const timeout = positive(input.options.timeout)
+  const timeout = positive(input.options.timeout) ?? configuredTimeout(ctx.config)
   if (timeout) props.timeout = timeout
-  const code: CodeNode = { type: 'code', lang, value: input.body.replace(/\n+$/, '') }
+  const code: CodeNode = { type: 'code', lang, value }
   if (run) code.run = { lang, ...run, ...values ? { args: stringArgs(values) } : {}, ...timeout ? { timeoutMs: timeout } : {} }
   const source: IRBlock = { id: 'source', role: 'visual', at: 0, source: ctx.source, node: code }
   return {
@@ -59,7 +64,7 @@ function component(name: string, input: DirectiveInput, ctx: DirectiveContext, r
     name,
     props,
     children: [source],
-    fallback: { type: 'root', children: [{ type: 'code', lang, value: code.value }] },
+    fallback: { type: 'root', children: [{ type: 'code', lang, value }] },
   }
 }
 

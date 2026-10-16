@@ -1,6 +1,8 @@
 /**
- * Dev-server endpoints of the local environment, registered from
- * `setup/vite-plugins.ts` (K-09 write-back goes through here):
+ * Dev-server endpoints of the local environment, a Vite plugin that the
+ * plugin's `./presmium` entry gives the dev servers of both forms
+ * (`vitePlugins`) and `setup/vite-plugins.ts` registers in Slidev's (K-09
+ * write-back goes through here):
  *
  * - `GET  status`     what is available: Docker, devcontainer definition, git
  * - `POST run`        RunRequest -> RunResult, in the devcontainer image (P-22)
@@ -9,12 +11,13 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { basename, dirname, relative, resolve, sep } from 'node:path'
-import type { RunRequest } from '@presmium/kernel/contracts'
-import { ENDPOINT, failedRun } from '../domain/index.ts'
+import { errorMessage, isRecord } from '@presmium/kernel'
+import type { RunRequest } from '@presmium/kernel'
+import { ENDPOINT, failedContainerRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
 import { definitionRunners, dockerAvailable, findDefinition, readDevcontainer, runInContainer } from './container.ts'
 import { commitOnNewBranch, gitRoot } from './git.ts'
-import { HttpError, optionalString, readJson, requireString, sendJson } from './http.ts'
+import { HttpError, optionalString, readJson, requirePath, requireString, sendJson } from './http.ts'
 import { inLanguage, text } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
 
@@ -30,8 +33,10 @@ export interface DevServerPlugin {
 export interface LocalEnvServerOptions {
   /** Absolute deck directory. */
   deckDir: string
-  /** Workspace relative to the deck directory; defaults to the git root of the deck. */
+  /** Workspace relative to the deck directory; defaults to the repository root of the deck. */
   workspace?: string
+  /** How long building the devcontainer image may take (`presmium.execLocal.buildTimeoutMs`). */
+  buildTimeoutMs?: number
 }
 
 async function status(workspace: string): Promise<LocalEnvStatus> {
@@ -46,36 +51,43 @@ async function status(workspace: string): Promise<LocalEnvStatus> {
   }
 }
 
+/** A mapping of names to strings from a request (`args`, `files`), or undefined. */
+function stringTable(body: Record<string, unknown>, key: string): Record<string, string> | undefined {
+  const value = body[key]
+  if (value === undefined) return undefined
+  if (!isRecord(value) || Object.values(value).some(v => typeof v !== 'string')) throw new HttpError(400, text().notStringTable(key))
+  return value as Record<string, string>
+}
+
 function runRequest(body: Record<string, unknown>): RunRequest {
-  const args = body.args
-  if (args !== undefined && (typeof args !== 'object' || args === null || Object.values(args).some(v => typeof v !== 'string'))) {
-    throw new HttpError(400, text().notStringTable('args'))
-  }
+  const files = stringTable(body, 'files')
+  for (const file of Object.keys(files ?? {})) requirePath(file)
   return {
     lang: requireString(body, 'lang'),
     code: requireString(body, 'code'),
-    args: args as Record<string, string> | undefined,
+    args: stringTable(body, 'args'),
     stdin: optionalString(body, 'stdin'),
     timeoutMs: typeof body.timeoutMs === 'number' ? body.timeoutMs : undefined,
+    files,
   }
 }
 
-async function handle(workspace: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handle(workspace: string, options: LocalEnvServerOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
   const route = `${req.method} ${new URL(req.url ?? '/', 'http://localhost').pathname}`
   switch (route) {
     case 'GET /status':
       return sendJson(res, 200, await status(workspace))
     case 'POST /run': {
       const request = runRequest(await readJson(req))
-      if (!findDefinition(workspace)) return sendJson(res, 200, failedRun(text().noDefinition))
+      if (!findDefinition(workspace)) return sendJson(res, 200, failedContainerRun(text().noDefinition))
       const devcontainer = await readDevcontainer(workspace)
-      if (!devcontainer) return sendJson(res, 200, failedRun(text().unreadableDefinition))
+      if (!devcontainer) return sendJson(res, 200, failedContainerRun(text().unreadableDefinition))
       // Closing the connection (the client aborted) stops the container.
       const aborted = new AbortController()
       res.on('close', () => {
         if (!res.writableEnded) aborted.abort()
       })
-      return sendJson(res, 200, await runInContainer(workspace, devcontainer, request, aborted.signal))
+      return sendJson(res, 200, await runInContainer(workspace, devcontainer, request, options, aborted.signal))
     }
     case 'POST /commit': {
       const body = await readJson(req)
@@ -115,7 +127,7 @@ export function deckDirOf(slidevDir: string): string {
   return resolve(slidevDir)
 }
 
-/** Vite plugin serving the endpoints under `/__presmium/exec-local/`; dev server only. */
+/** Vite plugin serving the endpoints under `/__presmium/exec-local/`; dev servers only. */
 export function localEnvServer(options: LocalEnvServerOptions): DevServerPlugin {
   let workspace: Promise<string> | undefined
   const resolveWorkspace = () => workspace ??= options.workspace === undefined
@@ -127,11 +139,11 @@ export function localEnvServer(options: LocalEnvServerOptions): DevServerPlugin 
     configureServer(server) {
       server.middlewares.use(ENDPOINT, (req, res) => {
         // Each request is answered in the language the page asks for.
-        inLanguage(req.headers['accept-language'], () => resolveWorkspace().then(dir => handle(dir, req, res)))
+        inLanguage(req.headers['accept-language'], () => resolveWorkspace().then(dir => handle(dir, options, req, res)))
           .catch((error: unknown) => {
             if (res.headersSent) return void res.end()
             const status = error instanceof HttpError ? error.status : 500
-            sendJson(res, status, { error: error instanceof Error ? error.message : String(error) })
+            sendJson(res, status, { error: errorMessage(error) })
           })
       })
     },

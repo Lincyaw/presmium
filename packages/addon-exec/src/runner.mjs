@@ -1,8 +1,10 @@
 // Runs JavaScript and TypeScript for Presmium: in a Web Worker for client/script.worker.ts, and in
 // a node process for node/script.ts, so both give the same output. Like runner.py for Python, it is
 // plain code shared by both. TypeScript loses its types (Sucrase keeps the line numbers); the
-// arguments are declared as constants before the code; the console output is captured until the
-// code has nothing left to do, so output from its timers is part of the run in both places.
+// arguments are declared as constants before the code; the console output (and, in node, what the
+// code writes to process.stdout and process.stderr) is captured until the code has nothing left to
+// do, so output from its timers is part of the run in both places, and an error a timer or a
+// promise raises after the code ran fails the run in both.
 import { transform } from 'sucrase'
 
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
@@ -45,9 +47,12 @@ export function prepare({ code, args = {}, typescript = false }) {
 
 /**
  * Lets the run wait for the timers the code sets (`setTimeout`, `setInterval`) while it is active.
- * `idle()` resolves once none is left, or rejects with the first error a callback threw or a
- * promise rejection nobody handled, as a node process ends in either case. An interval that is
- * never cleared keeps the run going until the executor's timeout stops it, as in node.
+ * `idle()` resolves once none is left, or rejects with the first error a callback threw (or the
+ * promise an async callback returned rejected with) or a promise rejection nobody handled, as a
+ * node process ends in either case. A rejection nobody handled is reported in a task of its own
+ * after the one that left it (in a worker, on the worker; in node, before the next timer), so the
+ * run settles only after a further task finds nothing pending. An interval that is never cleared
+ * keeps the run going until the executor's timeout stops it, as in node.
  */
 function trackTimers() {
   const native = { setTimeout, clearTimeout, setInterval, clearInterval }
@@ -58,11 +63,16 @@ function trackTimers() {
   let failed
   let settle
   const done = new Promise((resolve, reject) => settle = { resolve, reject })
-  // Checked in a later task, once the callbacks of this one and their promise jobs have run.
-  const check = () => later(() => {
-    if (!armed) return
+  const decide = () => {
     if (failed) settle.reject(failed.reason)
     else if (pending.size === 0) settle.resolve()
+  }
+  // Checked in a later task, once the callbacks of this one and their promise jobs have run, and
+  // once more in the task after, by when a rejection they left unhandled has been reported.
+  const check = () => later(() => {
+    if (!armed) return
+    if (failed || pending.size > 0) return decide()
+    later(decide)
   })
   const fail = (reason) => {
     failed ??= { reason }
@@ -70,7 +80,9 @@ function trackTimers() {
   }
   const call = (callback, args) => {
     try {
-      if (typeof callback === 'function') callback(...args)
+      const result = typeof callback === 'function' ? callback(...args) : undefined
+      // An async callback fails when the promise it returns rejects.
+      if (typeof result?.then === 'function') result.then(undefined, fail)
     } catch (error) {
       fail(error)
     }
@@ -123,13 +135,29 @@ function trackTimers() {
   }
 }
 
+/** In node, what the code writes to process.stdout and process.stderr goes to the run's output. */
+function captureStreams(out, err) {
+  const streams = [[globalThis.process?.stdout, out], [globalThis.process?.stderr, err]].filter(([stream]) => typeof stream?.write === 'function')
+  const saved = streams.map(([stream]) => [stream, stream.write])
+  for (const [stream, target] of streams) {
+    stream.write = (chunk, encoding, callback) => {
+      target.push(typeof chunk === 'string' ? chunk : new TextDecoder().decode(chunk))
+      const done = typeof encoding === 'function' ? encoding : callback
+      if (typeof done === 'function') queueMicrotask(done)
+      return true
+    }
+  }
+  return () => saved.forEach(([stream, write]) => stream.write = write)
+}
+
 /** Runs the code as a module and returns `{ stdout, stderr, exitCode }` once it has nothing left to do. */
 export async function runScript(request) {
   const out = []
   const err = []
   const write = target => (...values) => void target.push(`${values.map(show).join(' ')}\n`)
-  const saved = { log: console.log, info: console.info, debug: console.debug, warn: console.warn, error: console.error }
-  Object.assign(console, { log: write(out), info: write(out), debug: write(out), warn: write(err), error: write(err) })
+  const saved = { log: console.log, info: console.info, debug: console.debug, dir: console.dir, warn: console.warn, error: console.error }
+  Object.assign(console, { log: write(out), info: write(out), debug: write(out), dir: value => write(out)(value), warn: write(err), error: write(err) })
+  const restoreStreams = captureStreams(out, err)
   const timers = trackTimers()
   let exitCode = 0
   try {
@@ -140,6 +168,7 @@ export async function runScript(request) {
     exitCode = 1
   } finally {
     timers.restore()
+    restoreStreams()
     Object.assign(console, saved)
   }
   return { stdout: out.join(''), stderr: err.join(''), exitCode }

@@ -1,5 +1,6 @@
-import type { Executor, RunRequest, RunResult } from '@presmium/kernel/contracts'
-import { CONTAINER_EXECUTOR_ID, disconnected, ENDPOINT, failedRun, languageId } from '../domain/index.ts'
+import { errorMessage, languageId } from '@presmium/kernel'
+import type { Executor, RunRequest, RunResult } from '@presmium/kernel'
+import { CONTAINER_EXECUTOR_ID, disconnected, ENDPOINT, failedContainerRun } from '../domain/index.ts'
 import type { CommitRequest, CommitResult, LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domain/index.ts'
 import { language, messages } from './messages.ts'
 
@@ -52,7 +53,7 @@ export function createLocalEnv(): LocalEnv {
         return await (await post('run', request, signal)).json() as RunResult
       }
       catch (error) {
-        return failedRun(error instanceof Error ? error.message : String(error))
+        return failedContainerRun(errorMessage(error))
       }
     },
     async commit(request: CommitRequest): Promise<CommitResult> {

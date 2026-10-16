@@ -1,10 +1,11 @@
 /**
- * UI strings of the local environment in zh-CN and en (N-07), chosen as by
- * @presmium/host's useLocale: the page's language (`<html lang>`, which both
- * forms set from the deck) when it is zh-* or en-*, else the browser's, else
- * English.
+ * UI strings of the local environment in zh-CN and en (N-07), in the UI
+ * language of @presmium/host: `useMessages()` in components, `messages()`
+ * where a string is needed outside them; requests to the dev-server
+ * endpoints ask for answers in it (`language()`).
  */
-import { computed, ref } from 'vue'
+import { currentLocale, useMessages as useCatalog } from '@presmium/host'
+import type { Catalog, Locale } from '@presmium/host'
 import type { ComputedRef } from 'vue'
 
 const zhCN = {
@@ -55,36 +56,19 @@ const en: LocalEnvMessages = {
   separator: '; ',
 }
 
-/** 'zh-CN' for a zh-* tag, 'en' for en-*; undefined for languages without strings. */
-function localeOf(tag: string): 'zh-CN' | 'en' | undefined {
-  return /^zh(-|$)/i.test(tag) ? 'zh-CN' : /^en(-|$)/i.test(tag) ? 'en' : undefined
+export const MESSAGES: Catalog<LocalEnvMessages> = { 'zh-CN': zhCN, en }
+
+/** The UI language, in which the client asks the dev-server endpoints to answer. */
+export function language(): Locale {
+  return currentLocale()
 }
 
-function detect(): 'zh-CN' | 'en' {
-  // Server-side rendering has no page; the plugin's components render in the browser.
-  if (typeof document === 'undefined') return 'zh-CN'
-  return localeOf(document.documentElement.lang) ?? localeOf(navigator.language) ?? 'en'
-}
-
-const locale = ref(detect())
-// A form may set <html lang> after the plugins start (Slidev applies its htmlAttrs at runtime).
-if (typeof MutationObserver !== 'undefined') {
-  new MutationObserver(() => {
-    locale.value = detect()
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] })
-}
-
-/** The page's language, in which the client asks the dev-server endpoints to answer. */
-export function language(): 'zh-CN' | 'en' {
-  return locale.value
-}
-
-/** The strings of the page's language, read when a string is needed. */
+/** The strings of the UI language, read when a string is needed. */
 export function messages(): LocalEnvMessages {
-  return locale.value === 'en' ? en : zhCN
+  return MESSAGES[currentLocale()]
 }
 
-/** For components: the strings, following the page's language. */
+/** For components: the strings, following the UI language. */
 export function useMessages(): ComputedRef<LocalEnvMessages> {
-  return computed(messages)
+  return useCatalog(MESSAGES)
 }

@@ -26,6 +26,7 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
+    "@presmium/cli": "workspace:*",
     "@slidev/client": "53.0.0",
     "@slidev/types": "53.0.0"
   }

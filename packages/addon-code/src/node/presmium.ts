@@ -1,8 +1,11 @@
+import { createRequire } from 'node:module'
 import type { PresmiumNodePlugin } from '@presmium/kernel'
 import { CODE_ID, regionResolver } from '../domain/index.ts'
 import { codeRefDirective } from './directive.ts'
 import { codeRefAnchors, codeRefPass } from './resolve.ts'
 import { patternResolver, symbolResolver } from './symbol.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 /**
  * Code references (P-10..P-16): the `region`, `symbol` and `pattern` anchors,
@@ -11,6 +14,8 @@ import { patternResolver, symbolResolver } from './symbol.ts'
  */
 const plugin: PresmiumNodePlugin = {
   id: CODE_ID,
+  version,
+  kernel: '^0.1.0',
   resolvers: [regionResolver, symbolResolver, patternResolver],
   directives: [codeRefDirective],
   passes: [codeRefPass],

@@ -2,26 +2,30 @@
 /**
  * A code snippet backed by the local environment: run it in the devcontainer
  * image (P-22), commit the edited code to a new branch (P-25), or export it
- * with the devcontainer definition (P-26). The snippet is the code block in
- * the default slot. Running and committing need a dev server behind the deck;
- * the export also works in any build, from the archive made at compile time.
+ * with the devcontainer definition (P-26). The code block in the default
+ * slot shows the snippet, the `code` prop holds it. Running and committing
+ * need a dev server behind the deck; the export also works in any build, from
+ * the archive made at compile time.
  */
-import { PmBoundary, useService, useStartReport } from '@presmium/host'
-import type { RunResult } from '@presmium/kernel/contracts'
+import { useService, useStartReport } from '@presmium/host'
+import { errorMessage, languageId } from '@presmium/kernel'
+import type { RunResult } from '@presmium/kernel'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useMessages } from '../src/client/messages.ts'
-import { archiveName, disconnected, languageId, LOCAL_ENV } from '../src/domain/index.ts'
+import { archiveName, disconnected, LOCAL_ENV } from '../src/domain/index.ts'
 import type { CommitResult, LocalEnvStatus } from '../src/domain/index.ts'
 
 const props = withDefaults(defineProps<{
   /** File of the snippet, relative to the workspace; target of commits and exports. */
   file: string
   lang?: string
+  /** The snippet; the wrapped code block shows it. */
+  code?: string
   /** The snippet and the devcontainer definition as a base64 zip archive, made at compile time. */
   archive?: string
   /** The devcontainer definition, relative to the workspace. */
   devcontainer?: string
-}>(), { lang: 'python' })
+}>(), { lang: 'python', code: '' })
 
 const env = useService(LOCAL_ENV)
 const report = useStartReport()
@@ -33,7 +37,6 @@ watch(env, async (service) => {
 // Undefined while the kernel starts and the dev server answers.
 const status = computed(() => probed.value ?? (report.value && !env.value ? disconnected('pluginOff') : undefined))
 
-const source = ref<HTMLElement>()
 const editing = ref(false)
 const draft = ref('')
 const busy = ref<string>()
@@ -53,9 +56,9 @@ const notice = computed(() => {
 const connected = computed(() => !!status.value?.connected)
 const canExport = computed(() => (connected.value ? !!status.value?.devcontainer : !!props.archive))
 
-/** The edited code, or the slot's code block until the presenter edits it. */
+/** The edited code, or the snippet until the presenter edits it. */
 function currentCode(): string {
-  const text = editing.value ? draft.value : (source.value?.querySelector('pre') ?? source.value)?.textContent ?? ''
+  const text = editing.value ? draft.value : props.code
   return text.endsWith('\n') ? text : `${text}\n`
 }
 
@@ -73,7 +76,7 @@ async function act<T>(name: string, task: (service: NonNullable<typeof env.value
     return await task(service)
   }
   catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
+    error.value = errorMessage(e)
   }
   finally {
     busy.value = undefined
@@ -108,51 +111,49 @@ async function replicate() {
 </script>
 
 <template>
-  <PmBoundary name="PmLocalEnv">
-    <section class="pm-local-env" :data-state="state">
-      <header class="pm-local-env__header">
-        <code>{{ file }}</code>
-        <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge">{{ t.container(status?.devcontainer ?? devcontainer ?? '') }}</span>
-      </header>
-      <div v-show="!editing" ref="source" class="pm-local-env__source">
-        <slot />
-      </div>
-      <textarea
-        v-if="editing"
-        v-model="draft"
-        class="pm-local-env__editor"
-        spellcheck="false"
-        :aria-label="t.editFile(file)"
-        @keydown.stop
-      />
-      <div v-if="connected || archive" class="pm-local-env__actions">
-        <template v-if="connected">
-          <button v-if="!editing" type="button" data-action="edit" @click="edit">
-            {{ t.edit }}
-          </button>
-          <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
-            {{ busy === 'run' ? t.running : t.runInContainer }}
-          </button>
-          <button type="button" data-action="commit" :disabled="!status?.git || !!busy" @click="commit">
-            {{ t.commit }}
-          </button>
-        </template>
-        <button type="button" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
-          {{ t.replicate }}
+  <section class="pm-local-env" :data-state="state">
+    <header class="pm-local-env__header">
+      <code>{{ file }}</code>
+      <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge">{{ t.container(status?.devcontainer ?? devcontainer ?? '') }}</span>
+    </header>
+    <div v-show="!editing" class="pm-local-env__source">
+      <slot />
+    </div>
+    <textarea
+      v-if="editing"
+      v-model="draft"
+      class="pm-local-env__editor"
+      spellcheck="false"
+      :aria-label="t.editFile(file)"
+      @keydown.stop
+    />
+    <div v-if="connected || archive" class="pm-local-env__actions">
+      <template v-if="connected">
+        <button v-if="!editing" type="button" data-action="edit" @click="edit">
+          {{ t.edit }}
         </button>
-      </div>
-      <p v-if="notice" class="pm-local-env__notice">
-        {{ notice }}
-      </p>
-      <pre v-if="output" class="pm-local-env__output" :data-ok="output.ok">{{ output.stdout }}{{ output.stderr }}{{ output.timedOut ? t.timedOut : '' }}</pre>
-      <p v-if="committed" class="pm-local-env__commit" :data-branch="committed.branch">
-        {{ t.committedTo }} <code>{{ committed.branch }}</code>{{ t.committedFrom(committed.commit.slice(0, 7), committed.baseBranch) }}
-      </p>
-      <p v-if="error" class="pm-local-env__error" role="alert">
-        {{ error }}
-      </p>
-    </section>
-  </PmBoundary>
+        <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
+          {{ busy === 'run' ? t.running : t.runInContainer }}
+        </button>
+        <button type="button" data-action="commit" :disabled="!status?.git || !!busy" @click="commit">
+          {{ t.commit }}
+        </button>
+      </template>
+      <button type="button" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
+        {{ t.replicate }}
+      </button>
+    </div>
+    <p v-if="notice" class="pm-local-env__notice">
+      {{ notice }}
+    </p>
+    <pre v-if="output" class="pm-local-env__output" :data-ok="output.ok">{{ output.stdout }}{{ output.stderr }}{{ output.timedOut ? t.timedOut : '' }}</pre>
+    <p v-if="committed" class="pm-local-env__commit" :data-branch="committed.branch">
+      {{ t.committedTo }} <code>{{ committed.branch }}</code>{{ t.committedFrom(committed.commit.slice(0, 7), committed.baseBranch) }}
+    </p>
+    <p v-if="error" class="pm-local-env__error" role="alert">
+      {{ error }}
+    </p>
+  </section>
 </template>
 
 <style scoped>

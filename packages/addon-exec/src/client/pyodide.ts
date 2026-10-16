@@ -1,5 +1,6 @@
+import { failedRun } from '@presmium/kernel'
 import type { Executor, RunRequest, RunResult } from '@presmium/kernel'
-import { failedRun, isPython } from '../domain/index.ts'
+import { isPython } from '../domain/index.ts'
 import type { Trace, Tracer } from '../domain/index.ts'
 import { messages } from './messages.ts'
 import type { RunOutput, TraceOutput, WorkerReply, WorkerRequest } from './protocol.ts'
@@ -14,7 +15,10 @@ export interface PyodideExecutorOptions {
   maxTraceEvents: number
 }
 
-export type PyodideExecutor = Executor & Tracer
+export type PyodideExecutor = Executor & Tracer & {
+  /** Terminates the worker and forgets its traces; a later request starts a fresh one. */
+  dispose(): void
+}
 
 type Outcome<T> =
   | { ok: true; value: T; durationMs: number }
@@ -23,7 +27,10 @@ type Outcome<T> =
 /**
  * Python in the browser (P-23): Pyodide runs in a worker, one request at a
  * time. A request that exceeds its load or run timeout, or is aborted,
- * terminates the worker; the next request starts a fresh one.
+ * terminates the worker; the next request starts a fresh one. `dispose()`,
+ * called when the kernel stops (page hidden, hot update), terminates the
+ * worker, so a page restored from the back-forward cache does not keep a
+ * second runtime alive.
  */
 export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideExecutor {
   const id = 'pyodide'
@@ -31,6 +38,8 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
   let queue: Promise<unknown> = Promise.resolve()
   let ids = 0
   const traces = new Map<string, Promise<Trace>>()
+  /** Cancels the request the worker is handling. */
+  let cancel: (() => void) | undefined
 
   const spawn = () => (worker ??= new Worker(new URL('./pyodide.worker.ts', import.meta.url), { type: 'module', name: 'presmium-pyodide' }))
 
@@ -45,6 +54,7 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       const elapsed = () => (started ? Math.round(performance.now() - started) : 0)
       const finish = (outcome: Outcome<T>) => {
         clearTimeout(timer)
+        cancel = undefined
         target.removeEventListener('message', onMessage)
         target.removeEventListener('error', onError)
         signal?.removeEventListener('abort', onAbort)
@@ -70,6 +80,7 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       }
       const onError = (event: ErrorEvent) => kill(messages().runtimeCrashed('Python', event.message), false)
       const onAbort = () => kill(messages().cancelled, false)
+      cancel = onAbort
       target.addEventListener('message', onMessage)
       target.addEventListener('error', onError)
       signal?.addEventListener('abort', onAbort)
@@ -89,6 +100,13 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       if (!outcome.ok) return { ...failedRun(id, outcome.error, outcome.durationMs), timedOut: outcome.timedOut }
       const { stdout, stderr, exitCode } = outcome.value
       return { ok: exitCode === 0, stdout, stderr, exitCode, durationMs: outcome.durationMs, timedOut: false, source: 'live', executorId: id }
+    },
+    dispose() {
+      cancel?.()
+      worker?.terminate()
+      worker = undefined
+      traces.clear()
+      queue = Promise.resolve()
     },
     trace(request, signal) {
       // Tracing is deterministic for the same input, so every view of a slide shares one trace.

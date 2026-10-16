@@ -20,6 +20,16 @@ function option(name: string): string {
   return new RegExp(`^:${name}: (.+)$`, 'm').exec(PAGE)![1]!
 }
 
+/** Lines of the function `total` in cart.ts at a commit, as the symbol anchor finds them (1-based). */
+function totalLines(commit: string): [number, number] {
+  const lines = git('show', `${commit}:${FILE}`).split('\n')
+  const start = lines.findIndex(line => line.startsWith('export function total')) + 1
+  const end = lines.findIndex((line, i) => i >= start && line === '}') + 1
+  return [start, end]
+}
+
+const VERSIONS = ['for (let i = 0; i < prices.length; i++)', 'for (const price of prices)', 'prices.reduce((sum, price) => sum + price, 0)']
+
 /** Slidev keeps neighbouring slides in the DOM; the one shown is found by its heading. */
 async function openSlide(page: Page, id: string, heading: string) {
   await page.goto(`${deck().slides}/${deck().slide(id)}`)
@@ -64,27 +74,33 @@ test('the link points to the remote repository at the pinned commit and line ran
   await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
 })
 
-test('the multi-version code block switches versions with the steps', async ({ page }) => {
+test('the multi-version code block switches versions with the steps, the file link with them (C-10)', async ({ page }) => {
   const commits = option('variants').split(',').map(rev => git('rev-parse', `${rev.trim()}^{commit}`))
-  const versions = ['for (let i = 0; i < prices.length; i++)', 'for (const price of prices)', 'prices.reduce((sum, price) => sum + price, 0)']
 
   const slide = await openSlide(page, 'code-variants', '多版本切换')
   const ref = slide.locator('.pm-code-origin[data-anchor$="#total"]')
   const code = slide.locator('.slidev-code')
   const active = ref.locator('.pm-code-origin__variant[data-active]')
+  const file = ref.locator('a.pm-code-origin__file').filter({ visible: true })
+  const expectVersion = async (k: number) => {
+    const [start, end] = totalLines(commits[k]!)
+    await expect(code).toContainText(VERSIONS[k]!)
+    await expect(active).toHaveText(commits[k]!.slice(0, 7))
+    // The file and lines of the version on screen, linked at its commit.
+    await expect(file).toHaveText(`${FILE}:${start}-${end}`)
+    await expect(file).toHaveAttribute('href', `${option('repo')}/blob/${commits[k]}/${FILE}#L${start}-L${end}`)
+  }
   for (const [i, commit] of commits.entries()) {
     await expect(ref.locator('.pm-code-origin__variant').nth(i)).toHaveAttribute('href', new RegExp(`/blob/${commit}/${FILE}#L\\d+-L\\d+$`))
   }
 
   for (const step of [0, 1, 2]) {
     if (step > 0) await page.keyboard.press('ArrowRight')
-    await expect(code).toContainText(versions[step]!)
-    await expect(active).toHaveText(commits[step]!.slice(0, 7))
+    await expectVersion(step)
   }
   await page.keyboard.press('ArrowLeft')
-  await expect(code).toContainText(versions[1]!)
-  await expect(code).not.toContainText(versions[2]!)
-  await expect(active).toHaveText(commits[1]!.slice(0, 7))
+  await expectVersion(1)
+  await expect(code).not.toContainText(VERSIONS[2]!)
 })
 
 test('the web form links the code to the remote repository at the pinned commit', async ({ page }) => {
@@ -97,4 +113,37 @@ test('the web form links the code to the remote repository at the pinned commit'
   const ref = page.locator('.pm-section[data-section="code-steps"] .pm-code-origin[data-anchor$="#checkout"]')
   await expect(ref.locator('.pm-code-origin__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
   await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')
+})
+
+test('the web form\'s present view highlights the units and switches the versions step by step (R-109)', async ({ page }) => {
+  const present = page.getByRole('region', { name: '放映' })
+  const highlighted = present.locator('.pm-code .line.highlighted')
+  await page.goto(`${deck().web}/code.html?view=present&section=code-steps`)
+  await expect(present).toHaveAttribute('data-section', 'code-steps')
+  const units = [['if (items.length === 0)', 'throw new Error(\'cart is empty\')'], ['const subtotal =', 'const discount ='], ['return `total:']]
+  for (const [step, unit] of units.entries()) {
+    if (step > 0) await page.keyboard.press('ArrowRight')
+    await expect(present).toHaveAttribute('data-step', String(step))
+    await expect(highlighted).toHaveCount(unit.length)
+    for (const [i, text] of unit.entries()) await expect(highlighted.nth(i)).toContainText(text)
+  }
+  await page.keyboard.press('ArrowLeft')
+  await expect(highlighted.first()).toContainText(units[1]![0]!)
+
+  const commits = option('variants').split(',').map(rev => git('rev-parse', `${rev.trim()}^{commit}`))
+  await page.goto(`${deck().web}/code.html?view=present&section=code-variants`)
+  await expect(present).toHaveAttribute('data-section', 'code-variants')
+  const active = present.locator('.pm-code-origin__variant[data-active]')
+  const expectVersion = async (step: number) => {
+    await expect(present).toHaveAttribute('data-step', String(step))
+    await expect(present.locator('.pm-code')).toContainText(VERSIONS[step]!)
+    await expect(active).toHaveText(commits[step]!.slice(0, 7))
+  }
+  await expectVersion(0)
+  for (const step of [1, 2]) {
+    await page.keyboard.press('ArrowRight')
+    await expectVersion(step)
+  }
+  await page.keyboard.press('ArrowLeft')
+  await expectVersion(1)
 })

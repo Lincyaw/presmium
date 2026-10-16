@@ -2,7 +2,7 @@
  * Local Python executor for compile-time execution (K-19): runs code with the
  * machine's `python3` through the same runner as the browser (src/runner.py),
  * so parameters, stdin and files behave alike in both. The request's files
- * are written into the run's temporary directory.
+ * are written into the run's own temporary directory.
  */
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -13,10 +13,13 @@ import { runChild } from './child.ts'
 export const PYTHON_EXECUTOR_ID = 'presmium.python'
 
 const PYTHON = 'python3'
+// The result goes to file descriptor 3 (./child.ts).
 const MAIN = `${readFileSync(new URL('../runner.py', import.meta.url), 'utf8')}
-import json as _pm_json, sys as _pm_sys
+import json as _pm_json, os as _pm_os, sys as _pm_sys
 _pm_request = _pm_json.loads(_pm_sys.stdin.read())
-_pm_sys.stdout.write(_pm_run(_pm_request['code'], _pm_json.dumps(_pm_request.get('args') or {}), _pm_request.get('stdin') or '', _pm_json.dumps(_pm_request.get('files') or {}), 0))
+_pm_result = _pm_run(_pm_request['code'], _pm_json.dumps(_pm_request.get('args') or {}), _pm_request.get('stdin') or '', _pm_json.dumps(_pm_request.get('files') or {}), 0)
+with _pm_os.fdopen(3, 'w', encoding='utf-8') as _pm_channel:
+    _pm_channel.write(_pm_result)
 `
 
 let version: string | undefined

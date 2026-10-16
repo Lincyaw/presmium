@@ -1,5 +1,6 @@
+import { failedRun } from '@presmium/kernel'
 import type { Executor, RunResult } from '@presmium/kernel'
-import { failedRun, isScript, isTypeScript } from '../domain/index.ts'
+import { isScript, isTypeScript } from '../domain/index.ts'
 import type { ScriptOutput, ScriptRequest } from '../runner.mjs'
 import { messages } from './messages.ts'
 

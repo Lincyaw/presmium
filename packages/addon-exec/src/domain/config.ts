@@ -1,3 +1,5 @@
+import { languageId } from '@presmium/kernel'
+
 /** Id under which this addon reads its options from the `presmium` config. */
 export const EXEC_ID = 'presmium.exec'
 
@@ -26,17 +28,26 @@ export function execConfig(raw: Record<string, unknown>): ExecConfig {
   }
 }
 
-/** Languages the Python executors accept. */
+/**
+ * The `timeoutMs` a configuration sets (global `presmium.exec`, with a
+ * section's `{config}` over it); undefined when it sets none, so that the
+ * executor's own default applies.
+ */
+export function configuredTimeout(raw: Record<string, unknown>): number | undefined {
+  return typeof raw.timeoutMs === 'number' && raw.timeoutMs > 0 ? raw.timeoutMs : undefined
+}
+
+/** Languages the Python executors accept (`python`, `py`, `python3`, `ipython*`). */
 export function isPython(lang: string): boolean {
-  return ['python', 'py', 'python3'].includes(lang.toLowerCase())
+  return languageId(lang) === 'python'
 }
 
 /** Languages the JavaScript executors accept (src/runner.mjs). */
 export function isScript(lang: string): boolean {
-  return ['javascript', 'js', 'mjs', 'typescript', 'ts'].includes(lang.toLowerCase())
+  return ['javascript', 'typescript'].includes(languageId(lang))
 }
 
 /** Script languages whose types are removed before they run. */
 export function isTypeScript(lang: string): boolean {
-  return ['typescript', 'ts'].includes(lang.toLowerCase())
+  return languageId(lang) === 'typescript'
 }

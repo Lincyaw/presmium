@@ -7,6 +7,7 @@
  * compile time are English, like those of the other compile-time executors.
  */
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { deckLocale } from '@presmium/kernel'
 
 const zhCN = {
   noDefinition: '工作区没有 devcontainer 定义',
@@ -83,15 +84,17 @@ const en: ServerMessages = {
   ].join('\n'),
 }
 
+const MESSAGES = { 'zh-CN': zhCN, en }
+
 const requested = new AsyncLocalStorage<ServerMessages>()
 
 /**
  * Runs `task` with the texts of a language: a request's Accept-Language or a
- * deck's `lang`. Chinese for zh-*, and when none is named (the default deck
- * language); English otherwise.
+ * deck's `lang`, as `deckLocale` of @presmium/kernel reads it (Chinese when
+ * none is named, the default deck language).
  */
 export function inLanguage<T>(language: string | undefined, task: () => T): T {
-  return requested.run(language?.trim() && !/^zh\b/i.test(language.trim()) ? en : zhCN, task)
+  return requested.run(MESSAGES[deckLocale(language?.trim())], task)
 }
 
 /** The texts of the request or deck being handled; English elsewhere (the container executor at compile time). */

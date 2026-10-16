@@ -3,6 +3,7 @@
  * Runs Python in Pyodide off the main thread, so a run that never ends can be
  * stopped by terminating the worker. Requests are handled one at a time.
  */
+import { errorMessage } from '@presmium/kernel'
 import type { loadPyodide as LoadPyodide, PyodideInterface } from 'pyodide'
 import runner from '../runner.py?raw'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
@@ -43,6 +44,6 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
       fn.destroy()
     }
   } catch (error) {
-    reply({ id, type: 'failed', error: error instanceof Error ? error.message : String(error) })
+    reply({ id, type: 'failed', error: errorMessage(error) })
   }
 }

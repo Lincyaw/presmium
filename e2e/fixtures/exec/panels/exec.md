@@ -17,6 +17,35 @@ for i in range(1, n + 1):
 
 参数 `n` 作为变量注入程序。修改 n 后点“重跑”，右侧对比最近两次运行：参数的变化与输出的逐行差异。勾选运行记录可以换成任意两次对比。运行记录只保存在当前视图，不写回文稿。
 
+(exec-isolation)=
+## 互不影响的运行
+
+::::{only} web, slides
+```{code} python
+:run: both
+import sys
+open("data.txt", "w").write("x")
+sys.setrecursionlimit(60)
+print("写好了 data.txt")
+```
+
+浏览器中的 Python 解释器在整个页面中只有一个。上面的代码写了一个文件，还把递归深度的上限降到 60；每次运行都在自己的工作目录中进行，结束后这些改动都会撤销。
+
+```{code} python
+:run: both
+import os
+
+def depth(n):
+    return 0 if n == 0 else 1 + depth(n - 1)
+
+print(os.path.exists("data.txt"), depth(100))
+```
+
+所以下面的代码在浏览器中运行，结果与编译时录制的一样：看不到 data.txt，递归 100 层也没有问题。
+
+notebook 的单元格本来就共用一个解释器，所以这一节只在网页与幻灯片中出现。
+::::
+
 (exec-steps)=
 ## 分步执行
 

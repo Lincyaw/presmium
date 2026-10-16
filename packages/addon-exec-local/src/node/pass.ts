@@ -1,16 +1,21 @@
 /**
  * The workspace pass of the local environment. It settles the deck's
  * workspace (`presmium.execLocal.workspace` relative to the deck, else the
- * first `{local-env}` that names one, else the git root) and
+ * first `{local-env}` that names one, else the repository root) and
  * - binds the container executor to it for compile-time execution;
  * - writes it, relative to the deck, into the deck's configuration, so the
- *   dev-server endpoints of the generated Slidev deck (setup/vite-plugins.ts)
- *   find it; the published forms carry no path of the build machine (K-13);
+ *   dev-server endpoints (`vitePlugins` of ./presmium.ts, and
+ *   setup/vite-plugins.ts in the generated Slidev deck) find it; the
+ *   published forms carry no path of the build machine (K-13);
+ * - reports a `{local-env}` that names another workspace: running and
+ *   committing go through the deck's one workspace, so it would run in
+ *   another image and commit to another repository than it exports;
  * - attaches to each `<PmLocalEnv>` its environment (P-26): the snippet and
  *   the devcontainer definition as a zip archive, downloadable from any build,
  *   with a README in the deck's language.
  */
 import { relative, resolve, sep } from 'node:path'
+import { docBlocks } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRPass } from '@presmium/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
 import type { ContainerExecutor } from './container.ts'
@@ -19,44 +24,47 @@ import { requestedWorkspaces } from './directive.ts'
 import { inLanguage } from './messages.ts'
 import { replicateArchive } from './replicate.ts'
 
-function localEnvs(blocks: IRBlock[]): { block: IRBlock, node: ComponentNode }[] {
-  return blocks.flatMap((block) => {
-    const { node } = block
-    if (node.type !== 'component') return []
-    const own = node.plugin === EXEC_LOCAL_ID && node.name === 'PmLocalEnv' ? [{ block, node }] : []
-    return [...own, ...localEnvs(node.children ?? [])]
-  })
-}
-
 export function localEnvPass(container: ContainerExecutor): IRPass {
   return {
     name: 'presmium.execLocal.workspace',
     run(doc, ctx) {
-      const envs = doc.sections.flatMap(section => localEnvs(section.blocks))
-      const configured = execLocalConfig(ctx.config).workspace
-      const workspace = configured !== undefined
-        ? resolve(ctx.deckDir, configured)
+      const envs = [...docBlocks(doc)].map(({ block }) => block)
+        .filter((block): block is IRBlock & { node: ComponentNode } => block.node.type === 'component' && block.node.plugin === EXEC_LOCAL_ID && block.node.name === 'PmLocalEnv')
+      const config = execLocalConfig(ctx.config)
+      const workspace = config.workspace !== undefined
+        ? resolve(ctx.deckDir, config.workspace)
         : envs.map(env => requestedWorkspaces.get(env.node)).find(dir => dir !== undefined) ?? ctx.workspaceRoot
-      container.bind(workspace)
+      container.bind(workspace, config)
       const shared = relative(ctx.deckDir, workspace).split(sep).join('/') || '.'
       doc.config.presmium = { ...doc.config.presmium, [EXEC_LOCAL_ID]: { ...ctx.config, workspace: shared } }
+      const named = (dir: string) => relative(ctx.deckDir, dir).split(sep).join('/') || '.'
 
-      for (const { block, node } of envs) {
+      for (const { node, source } of envs) {
         const dir = requestedWorkspaces.get(node) ?? workspace
+        const at = { file: source.file, line: source.line }
+        if (dir !== workspace) {
+          ctx.report({
+            checkId: 'presmium.execLocal.workspace',
+            severity: 'error',
+            message: `{local-env} names the workspace ${named(dir)}, but the deck's workspace is ${named(workspace)}: the snippet would run and be committed in ${named(workspace)}`,
+            hint: 'give every {local-env} of the deck the same :workspace:, or set presmium.execLocal.workspace',
+            source: at,
+          })
+        }
         const definition = findDefinition(dir)
         if (!definition) {
           ctx.report({
             checkId: 'presmium.execLocal.devcontainer',
             severity: 'warning',
-            message: `no devcontainer definition in ${relative(ctx.deckDir, dir) || '.'}; the snippet cannot be run in a container or exported`,
-            source: { file: block.source.file, line: block.source.line },
+            message: `no devcontainer definition in ${named(dir)}; the snippet cannot be run in a container or exported`,
+            source: at,
           })
           continue
         }
         const code = node.children?.find(child => child.node.type === 'code')?.node as CodeNode
         const file = String(node.props.file)
         const request = { file, content: `${code.value}\n`, lang: String(node.props.lang) }
-        const { zip } = inLanguage(typeof doc.meta.lang === 'string' ? doc.meta.lang : undefined, () => replicateArchive(dir, definition, request))
+        const { zip } = inLanguage(ctx.lang, () => replicateArchive(dir, definition, request))
         node.props.devcontainer = relative(dir, definition).split(sep).join('/')
         node.props.archive = Buffer.from(zip).toString('base64')
       }
