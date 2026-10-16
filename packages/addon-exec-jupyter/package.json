@@ -1,0 +1,35 @@
+{
+  "name": "@presmium/slidev-addon-exec-jupyter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Remote environments: Jupyter kernels at compile time and in the browser, the server's proxy, the browser terminal (P-105, P-107)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@jupyterlab/services": "7.6.4",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
+    "dompurify": "3.4.17",
+    "vue": "^3.5.42",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*",
+    "@slidev/client": "53.0.0",
+    "@slidev/types": "53.0.0",
+    "@types/ws": "8.18.2"
+  }
+}

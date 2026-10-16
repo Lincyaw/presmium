@@ -1,0 +1,11 @@
+# gVisor for the remote environment (an overlay of compose.yaml): the kernels' system calls go to
+# gVisor's kernel in user space (runsc), not to the host's.
+#
+#   JUPYTER_TOKEN=... docker compose -f compose.yaml -f compose.gvisor.yaml up -d
+#
+# Needs runsc installed and registered with Docker as the runtime `runsc`
+# (https://gvisor.dev/docs/user_guide/install/). Not combined with compose.gpu.yaml: gVisor with
+# GPUs (nvproxy) was not verified with this template (docs/design-v0.7.md section 11).
+services:
+  jupyter:
+    runtime: runsc

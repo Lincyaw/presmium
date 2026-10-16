@@ -265,6 +265,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 - 构建时：有显卡时 Chromium 经 Vulkan 用显卡，否则用 SwiftShader；`execute.environments` 中声明 `cpu: { kind: webgpu, adapter: swiftshader }` 并写 `:env: cpu`，任何机器上录制都相同（`adapter` 还可以是 `auto`、`gpu`）。没有安装 Playwright 的 Chromium 时不录制，沿用已有的录制。
 - Python（Pyodide）中运行同样的着色器：`import presmium_gpu as gpu`，`result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)`（代码块顶层可以 `await`），`result['out']` 是读回的列表，`print(result)` 显示与面板相同的摘要；Chromium、Firefox 等有 JSPI 的浏览器另有同步写法 `gpu.run_sync(...)`。不能运行时抛出 `presmium_gpu.GPUUnavailable`。这样的代码块写 `:run: live`（构建时的 Python 没有 WebGPU）。
 - JavaScript、TypeScript 中 `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` 使用 jax-js（张量与自动微分；`await init()` 之后 `defaultDevice('webgpu')` 在 GPU 上计算，没有 WebGPU 时默认用 WebAssembly）。jax-js 随产物发布，第一次导入时加载；这样的代码块写 `:run: live`。幻灯片形态中有这样的现场代码块时，在 `renderers.slides` 中写 `monacoTypesSource: none`，否则 Slidev 构建时找不到 jax-js 的类型而失败。
+## 远端环境 `presmium.execJupyter`（`@presmium/slidev-addon-exec-jupyter`）
+
+提供 `kind: jupyter` 的具名环境：任何 Jupyter Server（`templates/env/compose/` 的 docker compose 模板、JupyterHub、agent-sandbox 等）。头部声明环境，代码块用 `:env:` 选择，构建时与浏览器中都在它的内核中运行：
+
+```yaml
+execute:
+  environments:
+    lab: { kind: jupyter, auth: proxy, kernel: python3, image: 'quay.io/jupyter/base-notebook:2026-10-12@sha256:…' }
+
+- `auth`（默认 `env`）：`env` 只在构建时可用；`proxy` 在浏览器中经 Presmium 服务端（`presmium dev` 与工作区服务）的代理连接（静态产物中显示录制输出）；`prompt` 连接文稿的 `url`，学习者在页面上粘贴自己的令牌（只存在本页的 `sessionStorage` 中，用于已发布的静态站点）；`none` 连接 `url`，不带令牌；`hub` 预留。JupyterHub 的用户服务器写 `url: https://hub.example.edu/user/{user}/`。
+- 凭据不写在文稿中：构建与代理用运营者的一对环境变量 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`（名字大写，其他字符变为 `_`）。文稿写的 `url` 与运营者的地址不同源时不连接，是错误；没有地址时不发送令牌。
+- 会话（`:session:`）是一个内核：每个页面、每个学习者各自一个；`image` 进入环境指纹。`:run: both` 的输出在构建时录制，浏览器中运行的结果与它相同。
+- `presmium check --env` 连接每个环境，连不上是错误。
+
+### `{terminal}`
+
+参数为 `kind: jupyter` 的环境名；没有正文。打开该 Jupyter Server 的一个终端（xterm.js），凭据方式同环境；读者点“打开终端”后连接。
+
+| 选项 | 类型 | 作用 |
+|---|---|---|
+| `:height:` | number | 行数，默认 16 |
+
+```md
+:::{terminal} lab
+:height: 12
+:::
+
+生成 `PmTerminal`。环境不存在或不是 `kind: jupyter` 时报错（`presmium.execJupyter`）。静态产物中 `proxy` 方式的终端显示说明而不连接，`prompt` 方式照常可用；notebook 中不生成单元格，PDF 等静态导出显示一行说明。
 
 ## 引导 `presmium.guide`（`@presmium/slidev-addon-guide`）
 

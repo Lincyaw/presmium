@@ -582,6 +582,9 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74（已完成，结论见下） |
 | JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法；SwiftShader 在无头 Chromium 中的计算着色器与计时；适配器的默认限制 | WP-75（已完成，结论见下） |
 | Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76 |
+| Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74 |
+| JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
+| Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76（已完成，结论见下；`runsc` 与 GPU 的组合没有验证） |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
 | 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83 |
 | dsh 配置项 ID；dsh 在调用 MCP 工具前是否询问 | WP-80 |
@@ -630,6 +633,12 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **默认限制**：SwiftShader 适配器的 `maxStorageBufferBindingSize`、`maxBufferSize` 为 1 GiB，`maxComputeWorkgroupsPerDimension` 65535，`maxComputeInvocationsPerWorkgroup` 256，`maxStorageBuffersPerShaderStage` 10；RTX 5090 为 2 GiB、4 GiB、65535、1024、16。不带 `requiredLimits` 请求的设备只有规范的默认值（绑定 128 MiB、缓冲区 256 MiB），所以执行器按缓冲区的大小请求所需的限制，适配器不够时按“缺少限制”回退；运行的规模上限定为全部缓冲区 128 MiB、`repeat` 至多 1000。
 - **录制页面**：Playwright 新开的 `about:blank` 不是安全上下文，没有 `navigator.gpu`；录制器经 `page.route` 从一个 `https:` 的源（`https://webgpu.presmium.invalid/`）提供页面与计算核心，不占端口。
 - **jax-js 的导入**：Worker 没有导入映射；`data:` 模块（脚本 Worker 运行代码的方式）可以导入同源的 `http:` 模块（两个浏览器都是），所以脚本 Worker 把代码中的模块名改写为地址。jax-js 0.1.25 的 ES 模块构建是互相导入的 5 个文件、没有 wasm 文件与外部依赖，原样复制到产物的 `presmium/jax-js/` 即可；把它作为额外的入口 chunk 打包进网页形态的构建时，页面加载后内核没有启动（没有报错，原因未深究），因此不打包。SwiftShader 上 `init()` 给出 `webgpu`，2×2 矩阵乘法在 WebGPU 上得到正确结果。Slidev 构建时会为 `{monaco-run}` 代码中导入的包查找类型，在 pnpm 布局中从生成的文稿目录找不到 `@jax-js/jax` 而构建失败，测试文稿以 `renderers.slides.monacoTypesSource: none` 避开（`architecture.md` 9.3 节）。
+**WP-76 的先行验证（2026-10-16，`@jupyterlab/services` 7.6.4、docker-stacks `quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b802…`（jupyter_server 2.21.1、ipykernel 7.4.0、JupyterHub 6.0.1）、configurable-http-proxy 5.3.0、Vite 5.4 / VitePress 1.6.4、Playwright 1.64.1 的 Chromium、Docker Compose 5.1）**的结论：
+
+- **WebSocket 升级时加凭据**：浏览器 → 网页开发服务器的 Vite 代理（`ws: true`，保留 `Host` 与 `Origin`）→ `presmium dev` 服务端的 `ProxySpec`（`http-proxy-3`，`headers` 在升级请求上同样生效）→ compose 中的 Jupyter Server，内核通道与终端的 WebSocket 都连得上，页面与它的请求中没有令牌。代理把 `Host` 与 `Origin` 设为目标的（Jupyter 校验 WebSocket 的来源与 `Host` 是否一致；放在按主机名分流的入口之后的服务器也需要自己的 `Host`）。Node 端用 `ws` 带请求头，令牌不进地址；`@jupyterlab/services` 在 Node 中以 `console.debug` 打印每个 WebSocket 与内核状态（是标准输出），插件只滤掉这两类行。内核的启动请求可以带 `path`，jupyter_server 以它的目录为工作目录。
+- **浏览器以令牌访问 JupyterHub 用户服务器的跨域**：单用户服务器的 REST 接口跨源可用，需要 `--ServerApp.allow_origin_pat`（`Spawner.args`）；内核的 WebSocket 只能把令牌写在地址中，而 JupyterHub 5 起单用户服务器只在请求带 `Sec-Fetch-Mode: websocket` 时接受地址中的令牌，Chromium 的 WebSocket 握手不带这个请求头（实测为 403，Node 的 `ws` 加上它即可连上），所以单用户服务器的环境中要设置 `JUPYTERHUB_ALLOW_TOKEN_IN_URL=1`；`{user}` 要读 `<hub>/hub/api/user`，hub 默认不回答跨源请求，需要 `JupyterHub.tornado_settings.headers` 给出 `Access-Control-Allow-Origin` 与 `Access-Control-Allow-Headers: Authorization, Content-Type`。三项都设置后，另一个源的页面读出用户名、调用单用户服务器的接口并打开内核的 WebSocket。这些写进 `templates/env/kubernetes/README.md` 的 z2jh 片段。直接的 jupyter_server（compose 模板）以 `allow_origin_pat` 允许站点的来源后，`auth: prompt` 的静态页面跨源运行代码与打开 WebSocket（地址中的令牌）都可用（`e2e/exec-remote.spec.ts`）。
+- **`runtime: runsc` 与 GPU 同时使用**：没有验证。本机（RTX 5090 两张，NVIDIA Container Toolkit 与 CDI）没有安装 runsc，也没有改 Docker 守护进程配置的权限；compose 的 GPU 覆盖配置（`deploy.resources.reservations.devices`）实测可用（容器中 `nvidia-smi -L` 列出两张卡，与 `cap_drop: [ALL]`、`no-new-privileges` 同时）。按约定模板不提供两者的组合：`compose.gpu.yaml` 与 `compose.gvisor.yaml` 是分开的覆盖配置，说明中写明不组合；`compose.gvisor.yaml` 只经 `docker compose config` 校验。
+- **另外发现**：Rollup 会加载死分支中的动态导入，网页的服务端渲染因此也打包插件的浏览器模块，`@jupyterlab/services` 的 `require('ws')` 在那里没有 `browser` 字段的替换而打包失败；插件的 `vite.config.ts` 把它解析为该包自己的垫片（`architecture.md` 4.6 节 WP-76 的段落）。docker-stacks 镜像中内核继承容器的环境，读得到 `JUPYTER_TOKEN`：compose 模板是单用户服务器，学习者之间的隔离要用 JupyterHub（模板说明中写明）。devcontainer 命令行以清理过的环境运行，指向 compose 的开发容器定义要经 `settings.presmium.exec.passEnv` 传入 `JUPYTER_TOKEN`，之后本地环境插件可以在其中运行代码。
 
 ## 12. 包与工作包
 

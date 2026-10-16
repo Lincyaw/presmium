@@ -609,6 +609,8 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 - `packages/addon-exec-jupyter/test/gateway.test.ts`（D13，不需要 Docker）：`presmium gateway` 的环境中有 `PRESMIUM_ENV_GPU_URL`（指向测试起的监听器）与 `PRESMIUM_ENV_GPU_TOKEN`：带含 `presmium.execJupyter` 的限定令牌请求 `presmium.execJupyter/env/gpu/api/kernelspecs`，监听器收到带该令牌的请求，调用方的响应中没有它；只含其他插件的限定令牌得到 403；没有地址的环境 `cpu` 得到 404，监听器收不到请求。
 - Kubernetes 的示例配置由验收者按文档评审（不运行集群）。
 
+**实际交付**：`@presmium/slidev-addon-exec-jupyter`：`kind: jupyter` 的环境提供方（`src/node/environments.ts`：编译时执行器、环境指纹、`probe`）、Node 与浏览器共用的 `@jupyterlab/services` 客户端（`src/jupyter/`：内核池、输出映射、`stdin`、中断、Contents API 的文件、终端）、凭据规则（`src/domain/connection.ts`）、服务端的代理（`src/node/server.ts`）、gateway 中的代理（`src/node/gateway.ts`）、`{terminal}` 与编译步骤 `presmium.execJupyter.terminals`（检查环境）、浏览器端的执行器与 `JUPYTER_ENVIRONMENTS`（`src/client/`，`prompt` 的令牌对话框）、`PmTerminal`（xterm.js）、网页服务端渲染用的 Vite 插件（`vite.config.ts`）；模板 `templates/env/compose/`（`compose.yaml`、`compose.gpu.yaml`、`compose.gvisor.yaml`、`.devcontainer/devcontainer.json`、`README.md`）与 `templates/env/kubernetes/README.md`。开发容器定义放在 `.devcontainer/` 中（devcontainer 命令行与本地环境插件按约定在那里找它）。验收用例在 `packages/addon-exec-jupyter/test/remote.test.ts`、`credentials.test.ts`、`gateway.test.ts` 与 `e2e/exec-remote.spec.ts`（测试文稿 `e2e/fixtures/exec-remote/`，compose 项目名 `wp76-*`，端口 4843、4845、4846）。实现的细节与设计没有写明之处在 `architecture.md` 4.6 节标明 WP-76 的段落，先行验证的结论在 `design-v0.7.md` 第 11 节（`runsc` 与 GPU 的组合没有验证，模板不提供）。新增依赖：`@jupyterlab/services` 7.6.4、`@xterm/xterm` 6.0.0、`@xterm/addon-fit` 0.11.0、`ws` 8、`dompurify` 3.4.17（浏览器中清洗远端的 HTML 输出），开发依赖 `@types/ws`。SHARED 模式中 serve 到 gateway 的代理要等服务端转发时去掉浏览器的 `Origin`（交付报告中提出）。
+
 ### WP-85 富内容增补：视频封面与字幕轨、卡片与栅格（M9，P-42 增补、P-46）
 
 P-46 原计划在 WP-86；它改的是编译器、内核的 Markdown 降级与 IR 运行时，与站点无关，放在 I 波次以免 J2 的两个工作包同改编译器。
