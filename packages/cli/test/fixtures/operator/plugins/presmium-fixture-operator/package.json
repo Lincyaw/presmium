@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-operator",
+  "private": true,
+  "type": "module",
+  "description": "Test-only operator plugin of packages/cli/test/plugins.test.ts: a Node service and a pass that writes what the service holds",
+  "exports": { "./presmium": "./presmium.ts" }
+}

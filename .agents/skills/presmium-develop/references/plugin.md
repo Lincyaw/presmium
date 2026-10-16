@@ -114,6 +114,12 @@ export default plugin
 | `renderer` | `Renderer` | 本插件就是一个渲染端（见 SKILL.md） |
 | `rendererExtensions` | `{ [渲染端 ID]: { components: { [组件名]: (node, block, ctx) => unknown } } }` | 见第 7 节 |
 | `vitePlugins` | `(ctx: { deckDir, workspaceRoot, config }) => unknown[]` | 两种形态的开发服务器与构建加入的 Vite 插件（如开发服务器的端点）；幻灯片形态另由插件包的 `setup/vite-plugins.ts` 注册 |
+| `services` | `(ctx: NodeServiceContext) => [令牌, 实现][]` | Node 端服务；编译步骤、渲染端、检查项与服务端贡献经 `ctx.service?.(令牌)` 取用。`ctx.config` 是文稿的 `presmium.<插件 ID>`，`ctx.settings` 是运营者在工作区根目录 `presmium.workspace.yaml` 的 `settings.<插件 ID>`（文稿改不了），还有 `trust`、`secret(name)`、LOCAL 的 `operatorDir`。服务在插件加载时创建一次；一个令牌只有一个实现，重复的被忽略并警告 |
+| `server` | `(ctx: ServerContext) => { routes?, proxies?, close? }` | 挂在 `/__presmium/<插件 ID>/` 下的路由（Fetch API 的 `handle(request, { member, document, rest })`，`role` 默认 `editor`，`owner` 的在 SHARED 中只在所有者控制台上）与反向代理；`presmium dev` 中每份文稿一次。浏览器经 `useServer().fetch(插件 ID, 路径)` 调用。需要确认时 `ctx.service(APPROVALS).request({ kind, scope, title, from, member })` |
+| `roles` | `RoleSpec[]` | 行内角色 ``{名 key=value}`内容` ``（选项写成 `key=value`）；IR 中为 `presmiumRole` 节点，渲染端显示 `children`，没有子内容的在演讲者窗口与备注中显示标记 `〔名 value〕` |
+| `gateway` | `(ctx: GatewayContext) => { routes?, proxies? }` | 只在 `presmium gateway` 中挂载、使用第三方凭据的部分（SHARED 模式） |
+| `operator` | `boolean` | 运营者插件：列在 `settings.presmium.workspace.plugins` 中、安装在工作区根目录时每份文稿都加载 |
+| `environments`、`tools` | | 具名环境的提供方（WP-73b 起）；agent 工具（WP-78 起） |
 | `version`、`kernel` | string | 必须写：`version` 与 `package.json` 一致，`kernel` 为兼容的内核版本范围（如 `^0.1.0`），不兼容时编译器不加载 |
 
 遍历块用 `@presmium/kernel` 的 `docBlocks(doc)`（含组件的子块），报错消息用 `errorMessage(error)`，语言名比较用 `languageId(lang)`。

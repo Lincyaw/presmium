@@ -392,3 +392,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 | `@presmium/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `footnotes` 把脚注定义放到引用它的块旁 |
 | `@presmium/slidev-addon-publish` | `presmium.publish` | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
 | `@presmium/slidev-addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |
+
+## 行内角色
+
+插件可以登记行内角色（`docs/ir.md` 2.8 节），写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口、编辑模式与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。

@@ -1,0 +1,56 @@
+/**
+ * The `ServerHost` of `presmium dev` (docs/architecture.md 10.2): its one
+ * document is the deck, as the dev loop last compiled it; checks, builds and
+ * runs of a code block work on that compilation, with its executors.
+ */
+import { join } from 'node:path'
+import { irBlocks, failedRun } from '@presmium/kernel'
+import type { RunRequest } from '@presmium/kernel'
+import { build } from '@presmium/compiler'
+import type { Compilation } from '@presmium/compiler'
+import type { ServerHost } from '@presmium/server'
+import { pluginChecks } from './check.ts'
+
+export function devHost(latest: () => Compilation | undefined, deckDir: string): ServerHost {
+  const current = (document: string): Compilation => {
+    const compilation = latest()
+    if (document !== '' || !compilation) throw new Error(document === '' ? 'the deck is still compiling' : `no document ${JSON.stringify(document)} in presmium dev`)
+    return compilation
+  }
+  return {
+    async documents() {
+      const compilation = latest()
+      return compilation ? [{ dir: '', title: compilation.doc.meta.title, lang: compilation.doc.meta.lang }] : []
+    },
+    async compile(document) {
+      // The student view is the full deck until audiences are compiled (WP-87).
+      const { doc } = current(document)
+      return { doc, diagnostics: doc.diagnostics }
+    },
+    async check(document) {
+      const compilation = current(document)
+      return [...compilation.doc.diagnostics, ...await pluginChecks(compilation)]
+    },
+    async build(document, options = {}) {
+      const report = await build(current(document), { outDir: join(deckDir, 'dist'), to: options.to })
+      return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
+    },
+    async run(document, target, signal) {
+      const compilation = current(document)
+      const section = compilation.doc.sections.find(s => s.id === target.section)
+      const block = section && [...irBlocks(section.blocks)].find(b => b.id === target.block)
+      if (!block || block.node.type !== 'code') throw new Error(`no code block ${target.section}/${target.block}`)
+      const node = block.node
+      const run = node.run ?? { lang: node.lang, when: 'live' as const }
+      const executors = compilation.plugins.flatMap(loaded => loaded.plugin?.executors ?? [])
+      const executor = run.executor ? executors.find(e => e.id === run.executor) : executors.find(e => e.supports(run.lang))
+      if (!executor) return failedRun(run.executor ?? '', `no executor for ${run.executor ?? run.lang} in presmium dev`)
+      const request: RunRequest = { lang: run.lang, code: node.value }
+      if (run.args) request.args = run.args
+      if (run.stdin !== undefined) request.stdin = run.stdin
+      if (run.timeoutMs !== undefined) request.timeoutMs = run.timeoutMs
+      if (run.session) request.session = run.session
+      return executor.run(request, signal)
+    },
+  }
+}

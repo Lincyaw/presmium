@@ -16,6 +16,7 @@ import type {
   IRNode,
   MdastNode,
   RendererId,
+  RoleSpec,
   RunSpec,
   SourcePos,
 } from '@presmium/kernel'
@@ -23,7 +24,7 @@ import { htmlTagNames } from 'html-tag-names'
 import { mathmlTagNames } from 'mathml-tag-names'
 import { svgTagNames } from 'svg-tag-names'
 import { parse as parseYaml } from 'yaml'
-import { BODY, sourceOf } from './source.ts'
+import { BODY, ROLE, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
 
 /** A block before step scheduling. */
@@ -48,6 +49,12 @@ export interface PluginDirective {
   spec: DirectiveSpec
 }
 
+export interface PluginRole {
+  plugin: string
+  config: Record<string, unknown>
+  spec: RoleSpec
+}
+
 export interface BlockContext {
   entry: string
   deckDir: string
@@ -58,6 +65,8 @@ export interface BlockContext {
   renderers: Set<string>
   parser: Parser
   directives: Map<string, PluginDirective>
+  /** The roles plugins register (docs/ir.md 2.8). */
+  roles: Map<string, PluginRole>
   /** Component name -> id of the plugin that registers it. */
   components: Map<string, string>
   report(finding: Finding): void
@@ -361,6 +370,7 @@ function literalTags(nodes: MdastNode[], foreign: Foreign = { svg: 0, math: 0 })
 function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNode[] {
   return nodes.flatMap((node): MdastNode[] => {
     if (DROPPED.has(node.type)) return []
+    if (node.type === 'mystRole' && ctx.roles.has(String(node.name))) return [roleNode(node, ctx, file)]
     if (node.type === 'mystDirective' || node.type === 'mystRole') {
       const name = String(node.name)
       if (node.children?.length && !(node.type === 'mystDirective' && (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name)))) {
@@ -385,6 +395,44 @@ function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNo
     const cleaned = clean(children, ctx, file)
     return [{ ...rest, children: node.type === 'tableCell' ? literalTags(cleaned) : cleaned } as MdastNode]
   })
+}
+
+/**
+ * A role a plugin registers, as the IR keeps it (docs/ir.md 2.8): a
+ * `presmiumRole` node with the plugin's id, the options (typed as the role
+ * declares them, and `value`, the content between the backticks) and the
+ * children the role gives, by default the text of `value`.
+ */
+function roleNode(node: MdastNode, ctx: BlockContext, file: string): MdastNode {
+  const name = String(node.name)
+  const { plugin, config, spec } = ctx.roles.get(name)!
+  const value = typeof node.value === 'string' ? node.value : ''
+  const where = sourceOf(node, file)
+  const report = (finding: Finding) => ctx.report({ ...finding, source: finding.source ?? { file: where.file, line: where.line } })
+  const raw = node.children?.find(child => child.type === ROLE)?.options
+  const options: Record<string, unknown> = {}
+  for (const [key, given] of Object.entries(isRecord(raw) ? raw : {})) {
+    const type = spec.options?.[key]
+    options[key] = type === 'list' && typeof given === 'string' ? given.split(/[\s,]+/).filter(Boolean) : given
+  }
+  const dctx: DirectiveContext = {
+    file: where.file,
+    deckDir: ctx.deckDir,
+    workspaceRoot: ctx.workspaceRoot,
+    lang: ctx.lang,
+    config,
+    source: where,
+    parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, where.line).children ?? [], ctx, where.file) }),
+    report,
+    watch: ctx.watch,
+  }
+  let children: MdastNode[] = [{ type: 'text', value }]
+  try {
+    if (spec.children) children = spec.children({ name, value, options }, dctx)
+  } catch (error) {
+    report({ checkId: 'presmium.plugins', severity: 'error', message: `role {${name}} of plugin ${plugin} failed: ${errorMessage(error)}` })
+  }
+  return { type: 'presmiumRole', plugin, name, options: { ...options, value }, children }
 }
 
 function bodyNodes(node: MdastNode): MdastNode[] {

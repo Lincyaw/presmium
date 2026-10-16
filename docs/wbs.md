@@ -491,7 +491,7 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 - **外部条件**：需要 Docker、GPU 或模型与语音凭据的用例在条件不满足时跳过并打印原因与启用方法（`architecture.md` 第 7 节）；验收者在有条件的机器上至少运行一次。
 - **先行验证**：工作包开始时先做表中列出的小规模实测，结论写进交付报告与 `design-v0.7.md` 第 11 节；实测否定设计时先报告，不自行改设计。
 
-### WP-73a 契约与服务端（I 波次第一步）
+### WP-73a 契约与服务端（I 波次第一步；已完成）
 
 **需求**：v0.8 各上下文共用的基础：`architecture.md` 4.6 至 4.10 节的契约，服务端（第 10 节），K-08 的 Node 端服务，N-08 的本机检查、令牌与确认，信任模式与 gateway 的宿主（D13），运营者插件与 `presmium serve` 中插件的来源（D14 的编译器部分），所有者控制台（`design-v0.7.md` 第 37 条）；`OPERATIONS`（原计划在 WP-77）与 `useServer`。
 
@@ -528,6 +528,8 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 - `packages/cli/test/assets.test.ts`：组件以属性路径声明的本地文件（`files.a`）在网页、幻灯片与 notebook 中都被发布并改写。
 - 生成的 Slidev 文稿头部有 `mcp: false`（`packages/render-slides/test/deck.test.ts`）；`pnpm test` 的分层检查包含五条新规则并通过。
 - 现有的全部测试通过，示例文稿的 IR 不变。
+
+**实际交付**：契约按 `architecture.md` 4.6 至 4.10 节写入（`packages/kernel/src/contracts/` 的六个模块由 `contracts.ts` 再导出）；`@presmium/server`（`startServer`、`startGateway`、`ServerHost`、所有者控制台）；CLI 的 `presmium dev --server-port --allow` 与 `presmium gateway`；编译器的 Node 端服务注册表、行内角色、译本字段（`translations.ts`）、运营者插件、插件策略与读取范围（`CompilerOptions`）；宿主的 `useServer`、`OPERATIONS`、`STATUS`、控制通道与工具栏的确认入口；IR 运行时的 `go`（`followOperations`）与角色的标记；三个渲染端的属性路径。验收用例在 `packages/server/test/server.test.ts`、`gateway.test.ts`，`packages/cli/test/plugins.test.ts`、`roles.test.ts`、`assets.test.ts`，`packages/render-slides/test/deck.test.ts` 与 `e2e/server.spec.ts`。`presmium serve` 属于 WP-79，`serve` 模式的用例由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 启动真实的 `startServer`。与设计不同或设计没有写明之处写在 `architecture.md` 4.6、4.7、4.9、10.2 至 10.4、10.9 节标明 WP-73a 的段落中，先行验证的结论在 `design-v0.7.md` 第 11 节。
 
 ### WP-73b 环境、会话与富输出（I 波次第二步；M6，P-100 至 P-102）
 

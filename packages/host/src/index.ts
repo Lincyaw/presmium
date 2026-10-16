@@ -19,7 +19,10 @@ export { pluginsOf, presmiumReport, presmiumService, registerPresmiumPlugin, rep
 export type { HostStart, StartOptions } from './kernel.ts'
 export { currentLocale, useLocale, useMessages } from './locale.ts'
 export type { Catalog } from './locale.ts'
+export { PmApprovals } from './approvals.ts'
+export { createOperations, createStatusRegistry } from './operations.ts'
 export { createPresenterPanels, createToolbar } from './panels.ts'
+export { createServerClient, provideServer, useServer } from './server.ts'
 export { default as PmPresenterPanels } from './PresenterPanels.vue'
 export { PmStepScope, provideStepScope, useStepScope } from './scope.ts'
 export { claimFirst, useSessionSnapshot } from './session.ts'
@@ -27,14 +30,20 @@ export type { StepScope } from './scope.ts'
 export { createSharedStates } from './shared.ts'
 export type { SharedStates } from './shared.ts'
 export { default as PmToolbar } from './Toolbar.vue'
-export { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
+export { EDIT_MODE, NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
 export { deckChannel, joinWindows } from './windows.ts'
 export type { WindowChannel } from './windows.ts'
 export type {
+  EditMode,
   HostAdapter,
   Navigation,
   NavigationPosition,
+  Operations,
+  ReplayHandler,
+  ServerClient,
   SharedStateScope,
+  StatusProvider,
+  StatusRegistry,
   SyncPublish,
   SyncTransport,
   SyncTransports,

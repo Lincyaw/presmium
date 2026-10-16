@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-attach",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/cli/test/assets.test.ts: a component whose nested prop names a local file",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

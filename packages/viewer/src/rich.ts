@@ -7,9 +7,13 @@
  * never loads them (`import.meta.env.SSR`), so its build leaves them out.
  * KaTeX's stylesheet comes with the page, for the math rendered beforehand.
  */
+import { EDIT_MODE, useService } from '@presmium/host'
+import type { EditMode } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
 import 'katex/dist/katex.min.css'
-import { defineComponent, h, onMounted, ref, watch } from 'vue'
+import type { ComputedRef } from 'vue'
+import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
+import { useSectionContext } from './context.ts'
 import { useDark } from './dark.ts'
 
 function escape(text: string): string {
@@ -105,5 +109,28 @@ export const PmMermaid = defineComponent({
       'title': failed.value,
       'innerHTML': drawn.value?.svg ?? `<pre>${escape(props.code)}</pre>`,
     })
+  },
+})
+
+/**
+ * The mark of a registered role without children (docs/ir.md 2.8, 6.4), e.g.
+ * where a `{cue}` stands: `〔<name> <value>〕`, shown only in the presenter
+ * window and in edit mode (`EDIT_MODE`), so the author sees where the marks
+ * are; elsewhere it renders nothing.
+ */
+export const PmRoleMark = defineComponent({
+  name: 'PmRoleMark',
+  props: { mark: { type: String, required: true } },
+  setup(props) {
+    const section = useSectionContext()
+    // Outside a host (a render of the viewer alone) there is no edit mode.
+    let editMode: ComputedRef<EditMode | undefined> | undefined
+    try {
+      editMode = useService(EDIT_MODE)
+    } catch {
+      editMode = undefined
+    }
+    const shown = computed(() => section?.view.value === 'presenter' || editMode?.value?.active.value === true)
+    return () => (shown.value ? h('span', { class: 'pm-role-mark' }, props.mark) : null)
   },
 })

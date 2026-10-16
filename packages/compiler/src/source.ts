@@ -6,12 +6,20 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { errorMessage, isRecord } from '@presmium/kernel'
-import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
+import type { DirectiveOptionType, Finding, MdastNode, SourcePos } from '@presmium/kernel'
 import { mystParse } from 'myst-parser'
 import { parse as parseYaml } from 'yaml'
+import { refusedFile } from './workspace.ts'
+import type { ReadScope } from './workspace.ts'
 
 /** Child that a registered directive leaves in place of its body. */
 export const BODY = 'presmiumDirectiveBody'
+
+/** Child that a registered role leaves under its `mystRole` node: the options myst-parser read. */
+export const ROLE = 'presmiumRoleOptions'
+
+/** myst-parser's types of the options of each `DirectiveOptionType`; a list is read as a string and split later. */
+const OPTION_TYPES = { string: String, number: Number, boolean: Boolean, list: String } as const
 
 export interface ParsedFile {
   file: string
@@ -58,10 +66,25 @@ export function withoutBom(text: string): string {
 
 export class Parser {
   readonly #specs: object[]
+  readonly #roles: object[]
   readonly #cache = new Map<string, ParsedFile>()
+  /** The files it may read (SHARED `presmium serve`); all when absent. */
+  scope?: ReadScope
 
-  /** `directives` maps each Presmium directive name to whether its body is MyST to parse in place. */
-  constructor(directives: Map<string, boolean>) {
+  /**
+   * `directives` maps each Presmium directive name to whether its body is
+   * MyST to parse in place; `roles` each role a plugin registers to the types
+   * of its options (docs/ir.md 2.8).
+   */
+  constructor(directives: Map<string, boolean>, roles: Map<string, Record<string, DirectiveOptionType> | undefined> = new Map()) {
+    this.#roles = [...roles].map(([name, options]) => ({
+      name,
+      options: Object.fromEntries(Object.entries(options ?? {}).map(([key, type]) => [key, { type: OPTION_TYPES[type] ?? String }])),
+      body: { type: String },
+      run(data: { options?: Record<string, unknown> }) {
+        return [{ type: ROLE, options: data.options ?? {} }]
+      },
+    }))
     this.#specs = [...directives].map(([name, mystBody]) => ({
       name,
       arg: { type: String },
@@ -76,7 +99,7 @@ export class Parser {
 
   /** Parses MyST text whose first line is `line` of its file. */
   parse(markdown: string, line = 1): MdastNode {
-    const tree = mystParse(markdown, { directives: this.#specs as never }) as MdastNode
+    const tree = mystParse(markdown, { directives: this.#specs as never, roles: this.#roles as never }) as MdastNode
     if (line !== 1) shiftLines(tree, line - 1)
     return tree
   }
@@ -162,6 +185,10 @@ export class Parser {
     if (!arg) return fail('{include} needs a file argument')
     const target = resolve(dirname(file), arg)
     if (stack.includes(target)) return fail(`{include} ${arg} includes itself`)
+    if (this.scope && !this.scope.allows(target)) {
+      out.findings.push({ checkId: 'presmium.files', severity: 'error', message: refusedFile(target), source })
+      return []
+    }
     const parsed = await this.read(target)
     if (!parsed) {
       // Watched all the same: the author may be about to create it.

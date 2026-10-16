@@ -14,7 +14,8 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 上下文 | 包（`packages/`） | 职责 |
 |---|---|---|
 | 内核 | `kernel` → `@presmium/kernel` | 纯 TS：插件清单、服务注册、锚点、检查、步骤、IR 契约，及插件共用的服务契约（`EXECUTOR`、`SESSION`、`CLASSROOM_STORE`、`PRESENTER_PANELS`） |
-| 编译 | `compiler`、`cli` → `@presmium/compiler`、`@presmium/cli` | MyST 解析、编译步骤、编译时执行与缓存、IR、检查；命令 `presmium build | dev | ir | check` |
+| 编译 | `compiler`、`cli` → `@presmium/compiler`、`@presmium/cli` | MyST 解析、编译步骤、编译时执行与缓存、IR、检查、Node 端服务注册表、行内角色、运营者插件与插件的来源；命令 `presmium build | dev | ir | check | gateway` |
+| 服务端 | `server` → `@presmium/server` | `presmium dev` 的服务端与工作区服务所用的 `serve` 模式（插件的路由与代理、登录与角色、确认、控制通道、所有者控制台），以及 `presmium gateway`；只由 `cli` 与 `workspace` 引用 |
 | 渲染 | `viewer`、`web`、`render-slides`、`render-notebook` | IR 运行时与运行时视图；网页（VitePress 外壳）、幻灯片（生成 Slidev 文稿）、notebook 渲染端 |
 | 宿主适配 | `host`、`addon-core`、`web` | 形态无关的宿主接口（`@presmium/host`）及 Slidev（`@presmium/slidev-addon-core`）、VitePress（`@presmium/web`）两个实现 |
 | 讲台 | `addon-stage` | 黑屏、冻结、圈画、脚注就近 |
@@ -38,10 +39,10 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 
 唯一来源是源码；改签名先改 `docs/architecture.md`（`contracts.ts` 文件头的规定）。
 
-- `packages/kernel/src/contracts.ts`：`defineService`、`PluginDefinition`（`manifest`、`setup(ctx)`、`dispose`）、`PluginContext`、`StartReport`、锚点（`AnchorString`、`AnchorResolver`、`Resolution`、锁定文件 `AnchorLockFile`）、检查（`Check`、`Finding`、`CheckContext`）、`PresmiumNodePlugin`（含 `version`、`kernel`、`vitePlugins`）、`Executor` 与 `RunRequest`、`SessionService`、`ClassroomStore`（JSDoc 写明课堂的写入规则）、`PresenterPanels`、`localeOf`、`deckLocale`。
+- `packages/kernel/src/contracts.ts`：`defineService`、`PluginDefinition`（`manifest`、`setup(ctx)`、`dispose`）、`PluginContext`（含 `environments`）、`StartReport`、锚点（`AnchorString`、`AnchorResolver`、`Resolution`、锁定文件 `AnchorLockFile`）、检查（`Check`、`Finding`、`CheckContext`，含 `service`）、`PresmiumNodePlugin`（含 `version`、`kernel`、`vitePlugins`，v0.8 的 `services`、`environments`、`server`、`roles`、`tools`、`gateway`、`operator`）、`SessionService`、`ClassroomStore`（JSDoc 写明课堂的写入规则）、`PresenterPanels`、`localeOf`、`deckLocale`。v0.8 的业务契约按领域分在 `packages/kernel/src/contracts/`（`execution.ts`：`Executor`、`RunRequest`、`RunContext`、`PROCESS_SANDBOX`、具名环境；`server.ts`：`Member`、`Route`、`ServerContext`、`NodeServiceContext`、`APPROVALS`、`eventStream`、`MCP_ENDPOINT`、gateway；`speech.ts`；`agent.ts`：智能体、修改审阅、`REVISIONS`；`operations.ts`），都由 `contracts.ts` 再导出，入口不变。WP-73a 之后契约只能增加，由验收者决定。
 - `packages/kernel/src/ir.ts`：`IRDocument`、`IRSection`、`IRBlock`、节点（`markdown`、`code`、`component`）、`DirectiveSpec`、`IRPass`（`after: 'execute'`）、`Renderer`（`site`、`prepare`）、`RenderContext`（`lang`、`pluginDirs`、`extensionFor`、`portable`、`localAsset`、`base`、`vitePlugins` 等）、`RendererExtension`。只允许加可选字段；其他改动要提升 `IR_VERSION`。
-- `@presmium/kernel` 的共用纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`errorMessage`、`isRecord`、`failedRun`、`languageId`、`lowerMyst`、`deckLocale`。用它们，不要在包里另写副本。
-- `packages/host/src/types.ts`：`HostAdapter`、`SharedStateScope`、`SyncTransport`、`Navigation`、`Toolbar` 与令牌 `SYNC_TRANSPORTS`、`NAVIGATION`、`TOOLBAR`。组合式函数从 `@presmium/host` 导出（`useStepState`、`useStepScope`、`PmBoundary`、`useMessages`、`currentLocale`、`useSectionConfig`、`useSharedState`、`useService`、`useSessionSnapshot`、`claimFirst`、`startHost` 等）。
+- `@presmium/kernel` 的共用纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`withProp`（按属性路径设置组件属性，`assets` 的 `captions.en` 这类键）、`errorMessage`、`isRecord`、`failedRun`、`languageId`、`lowerMyst`（`roles: 'marks'` 写出没有子内容的角色的标记）、`roleMark`、`deckLocale`、`environmentExecutor`、`eventStream`。用它们，不要在包里另写副本。
+- `packages/host/src/types.ts`：`HostAdapter`、`SharedStateScope`、`SyncTransport`、`Navigation`、`Toolbar`、`ServerClient`、`Operations`、`StatusRegistry`、`EditMode` 与令牌 `SYNC_TRANSPORTS`、`NAVIGATION`、`TOOLBAR`、`OPERATIONS`、`STATUS`、`EDIT_MODE`。组合式函数从 `@presmium/host` 导出（`useStepState`、`useStepScope`、`PmBoundary`、`useMessages`、`currentLocale`、`useSectionConfig`、`useSharedState`、`useService`、`useServer`、`useSessionSnapshot`、`claimFirst`、`startHost` 等）。组件经 `useServer()` 调用插件的服务端路由，`available` 为 false（静态产物）时降级。
 
 ## 4. 新增插件
 

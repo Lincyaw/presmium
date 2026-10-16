@@ -586,6 +586,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83 |
 | dsh 配置项 ID；dsh 在调用 MCP 工具前是否询问 | WP-80 |
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
+| 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -597,6 +598,14 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **macOS**（只读了文档，没有实测）：Seatbelt、APFS 克隆与 FSEvents，不需要 macFUSE；cbcow-through 在项目本身中运行并假定 deltabox 是唯一的写入者，所以计划用 cbcow-private。不在沙箱中的写入者对私有 `LIVE` 树的写入是否被记录没有验证，所以 macOS 上在先行验证通过之前不启用（第 43 条）。
 - **许可与维护**：核心 Apache-2.0，sandlock-core Apache-2.0，fuser MIT，dsh-deltabox MIT；仓库 2026-08 创建，约 6 位作者，0.1.0 与 0.1.1 都在 2026-10-14 发布。
 - 这些结论写进了第 28 至 31、34 条（第五轮的第 41、43、44 条按它们修正了启动方式、macOS 与残余风险的措辞）与 `architecture.md` 9.4、9.5、10.5 至 10.7 节；五个上游问题见 `architecture.md` 9.5 节。
+
+**WP-73a 开始时的验证（2026-10-16，VitePress 1.6.4、Slidev 53.0.0、myst-parser 1.7、@hono/node-server 2.1.3、http-proxy-3 2.0.1、Playwright 1.64.1）**的结论：
+
+- **网页的开发服务器**：生成的 VitePress 配置中 `vite.server.proxy` 的键可以是以 `^` 开头的正则。`^/__presmium/(?!(?:ir|source)(?:[/?]|$))` 把插件的路由与服务端自己的路由（含 WebSocket，`ws: true`）转给服务端，网页渲染端自己的 `/__presmium/ir`、`/__presmium/source` 仍由开发服务器回答（插件在 `configureServer` 中直接加的中间件本来就排在代理之前，正则只是不依赖这个顺序）。代理保留 `Host`（`localhost:<端口>`）与页面的 `Origin`，服务端的本机检查照常通过。
+- **幻灯片的开发服务器**：Slidev 合并生成文稿目录中的 `vite.config.ts`，其中的 `server.proxy` 同样生效；`presmium dev --to slides` 中经 `http://localhost:3030/__presmium/<插件 ID>/…` 得到服务端的回答。Slidev 的 `configs` 带着头部的全部字段，所以开发中的头部写 `presmiumServer: true`，`addon-core` 据此给出服务端的客户端；页面要有 `addon-core`（文稿的 `plugins` 列出它，示例文稿就是这样）才有宿主适配。
+- **长连接与 `networkidle`**：Playwright 判断网络空闲时不算 `EventSource` 的请求，但一个响应体没有被读完的 `fetch` 一直算作进行中，`page.waitForLoadState('networkidle')`（`e2e/fixtures/deck.ts` 的 `openDevPage`）因此永远等不到。控制通道用 SSE 接收没有问题，报告与回答的 `POST` 必须读完响应体；宿主的实现这样做。
+- **myst-parser 的角色选项**：`mystParse` 的 `roles` 选项接受带 `options`（`String`、`Number`、`Boolean`）的角色规格，``{probe mark=提示 count=2}`x` `` 的选项按类型读出；只写键不写值（``{probe flag}`x` ``）是 `mystRoleError`。登记的角色不影响 MyST 自带的 `{sub}` 等，`defaultOptions.roles` 列出它们的名字，插件登记同名的角色是错误。
+- **依赖**：`@hono/node-server` 2.x 以 `hono` 为对等依赖，服务端包精确固定 `hono` 4.13.13（`http-proxy-3` 2.0.1 没有对等依赖）。Node 22.18 起默认去掉类型标注，测试用的 `serve` 模式宿主（`packages/server/test/fixtures/serve-host.ts`）不经 jiti 直接运行；`@presmium/server` 不在开发依赖中引用 `@presmium/cli`（两者互相依赖时 pnpm 的符号链接成环，`scripts/check-layering.mjs` 遍历时 `ELOOP`），测试按路径找到 CLI 的可执行文件。
 
 ## 12. 包与工作包
 

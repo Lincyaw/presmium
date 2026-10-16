@@ -8,10 +8,12 @@ import type {
   AnchorLockFile,
   AnchorResolverRegistry,
   AnchorString,
+  ExecuteConfig,
   Executor,
   Finding,
   ResolutionStatus,
   RunResult,
+  ServiceToken,
   SourceReader,
 } from './contracts.ts'
 
@@ -48,6 +50,8 @@ export interface IRDocument {
     entry: string
     /** The deck's language, from the headmatter `lang`; the compiler writes `DEFAULT_LANG` when it names none. */
     lang?: string
+    /** When this deck is a translation: the original's entry file (relative to the deck directory) and the digest of the original it follows (P-123). */
+    translationOf?: { entry: string, digest: string }
     [key: string]: unknown
   }
   config: {
@@ -57,6 +61,10 @@ export interface IRDocument {
     presmium: Record<string, unknown>
     /** Per-renderer configuration from the frontmatter. */
     renderers: Record<RendererId, Record<string, unknown>>
+    /** The headmatter's `execute`, without credentials (P-100). */
+    execute?: ExecuteConfig
+    /** The headmatter's `translations`: language to the entry file of its translation (P-123). */
+    translations?: Record<string, string>
   }
   sections: IRSection[]
   diagnostics: Finding[]
@@ -90,6 +98,8 @@ export interface IRSection {
    */
   config?: Record<string, Record<string, unknown>>
   blocks: IRBlock[]
+  /** Only for these audiences, e.g. `['teacher']`; omitted, for every audience (P-55). */
+  audience?: string[]
 }
 
 export type BlockRole = 'visual' | 'narration'
@@ -119,6 +129,8 @@ export interface IRBlock {
   span?: number
   /** Restricts the block to these renderers. */
   only?: RendererId[]
+  /** Only for these audiences (P-55). */
+  audience?: string[]
   source: SourcePos
   node: IRNode
 }
@@ -165,6 +177,8 @@ export interface RunSpec {
   executor?: string
   /** 'compile' records output at build time; 'live' runs in the viewer; 'both' does both. */
   when: 'compile' | 'live' | 'both'
+  /** Execution session (`:session:`). */
+  session?: string
 }
 
 export interface RecordedRun extends RunResult {
@@ -192,6 +206,8 @@ export interface CodeNode {
   outputs?: RecordedRun[]
   /** Alternative versions shown in place of `value`, one per step. */
   variants?: CodeVariant[]
+  /** `false`: neither the code nor its run controls show, only the output; a `text/markdown` output shows as prose (P-102). */
+  echo?: false
 }
 
 export interface ComponentNode {
@@ -207,7 +223,9 @@ export interface ComponentNode {
   /**
    * Props that hold the URL of a local file (relative to the block's source
    * file, or `/...` in the deck's `public/`), by prop name: renderers publish
-   * the file with their output and set the prop to its published URL.
+   * the file with their output and set the prop to its published URL. A key
+   * may be a property path, such as `captions.en`: each `.` goes one object
+   * property deeper (`withProp`).
    */
   assets?: Record<string, string>
   /**
@@ -254,6 +272,33 @@ export interface DirectiveResult {
   span?: number
 }
 
+/** The input of an inline role: {name key=value}`value`. */
+export interface RoleInput {
+  name: string
+  /** The content between the backticks. */
+  value: string
+  options: Record<string, unknown>
+}
+
+/** An inline role a plugin registers (docs/ir.md 2.8). */
+export interface RoleSpec {
+  name: string
+  options?: Record<string, DirectiveOptionType>
+  /** The role node's children; omitted, one text node of `value`. `{cue}` returns an empty array, its command in `options.value`. */
+  children?(input: RoleInput, ctx: DirectiveContext): MdastNode[]
+}
+
+/** A registered role in the IR (in the mdast of `markdown` nodes); renderers that do not know it show its `children`. */
+export interface PresmiumRoleNode extends MdastNode {
+  type: 'presmiumRole'
+  /** Id of the plugin that registers the role. */
+  plugin: string
+  name: string
+  /** The options, and `value` (the content between the backticks). */
+  options: Record<string, unknown>
+  children: MdastNode[]
+}
+
 export interface DirectiveSpec {
   name: string
   /** Whether the directive takes an argument; 'anchor' when the argument is an anchor (`scheme:target`), which editors resolve. */
@@ -291,6 +336,8 @@ export interface PassContext {
    * `resolvers` are recorded without it.
    */
   watch(...files: string[]): void
+  /** Node services (docs/architecture.md 4.6); the compiler always gives it, optional for compatibility (a plugin writes `ctx.service?.(SPEECH)`). */
+  service?<T>(token: ServiceToken<T>): T | undefined
 }
 
 export interface IRPass {
@@ -368,6 +415,12 @@ export interface RenderContext {
    */
   localAsset(source: SourcePos, url: string): { file: string, name: string } | undefined
   report(finding: Finding): void
+  /** As `PassContext.service`. */
+  service?<T>(token: ServiceToken<T>): T | undefined
+  /** The translations the headmatter declares, compiled apart (language, IR); the web renderer uses them (P-123). */
+  translations?: { lang: string, doc: IRDocument }[]
+  /** In `presmium dev`: the server's address, to which the dev servers proxy `/__presmium/`; omitted in builds. */
+  server?: { url: string }
 }
 
 export interface RenderOutput {
@@ -395,6 +448,38 @@ export interface Renderer {
   prepare?(doc: IRDocument, ctx: RenderContext): Promise<void>
   build(doc: IRDocument, ctx: RenderContext): Promise<RenderOutput>
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>
+  /** Builds several documents into one site (P-122); only the web renderer implements it. */
+  buildSite?(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput>
+  /** The dev server of a workspace site; when a page asks for a document not compiled yet it calls `compile`. */
+  devSite?(site: SiteSpec, ctx: RenderContext, compile: (dir: string) => Promise<IRDocument>): Promise<SiteDevServer>
+}
+
+/** A document of a workspace site (P-122). */
+export interface SiteDocument {
+  /** Its directory, relative to the workspace root; its pages lie under `<base><dir>/`. */
+  dir: string
+  title: string
+  lang?: string
+  tags?: string[]
+  /** The compiled IR; absent in dev for a document not visited yet. */
+  doc?: IRDocument
+}
+
+export interface SiteSpec {
+  title: string
+  /** In the order of the workspace configuration, also that of the previous and next links between documents. */
+  documents: SiteDocument[]
+  /** The directory of the document that is the home page; omitted, the home page lists the documents. */
+  home?: string
+  /** The workspace configuration's `site`: the same options as the site shell of `renderers.web`. */
+  config: Record<string, unknown>
+}
+
+export interface SiteDevServer {
+  url: string
+  /** Called after a document compiled or recompiled. */
+  update(dir: string, doc: IRDocument): Promise<void>
+  close(): Promise<void>
 }
 
 /**

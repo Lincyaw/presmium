@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-probe",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/cli/test/roles.test.ts and e2e/server.spec.ts: the inline role {probe}",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-server-probe",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/server.spec.ts: the inline role {probe}, which has no children for `hidden`",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

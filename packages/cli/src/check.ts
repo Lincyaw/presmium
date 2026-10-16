@@ -3,13 +3,15 @@ import { dirname, join } from 'node:path'
 import { ANCHOR_LOCK_PATH, CheckRegistry, errorMessage } from '@presmium/kernel'
 import type { AnchorString, CheckContext, Finding } from '@presmium/kernel'
 import { Compiler, frontmatterLine, sortFindings } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
+import type { Compilation, CompilerOptions } from '@presmium/compiler'
 
 export interface CheckOptions {
   /** Deck directory or entry file. */
   deck: string
   /** Re-resolve the deck's anchors and rewrite `.presmium/anchors.lock.json` before checking. */
   updateLock?: boolean
+  /** What the host gives the compiler (e.g. where Presmium's own packages are installed). */
+  compiler?: CompilerOptions
 }
 
 export interface LockUpdate {
@@ -29,7 +31,7 @@ export interface CheckResult {
 
 /** Compiles the deck to its validated IR (docs/ir.md section 7) and runs the plugins' checks. */
 export async function runCheck(options: CheckOptions): Promise<CheckResult> {
-  const compiler = new Compiler(options.deck)
+  const compiler = new Compiler(options.deck, options.compiler)
   let compilation = await compiler.compile()
   const entryText = await readFile(compilation.entry, 'utf8')
   const findings: Finding[] = []
@@ -84,6 +86,7 @@ export function checkContext(compilation: Compilation): CheckContext {
     resolvers: compilation.resolvers,
     lock: compilation.lock.toJSON(),
     ir: compilation.doc,
+    service: compilation.service,
   }
 }
 

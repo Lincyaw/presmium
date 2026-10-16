@@ -18,6 +18,21 @@ const vue = spec => /^(vue(\/|$)|@vue\/)/.test(spec)
 /** Where a relative reference points, relative to the package; undefined for package names. */
 const target = (spec, file, pkgDir) => spec.startsWith('.') ? relative(pkgDir, resolve(dirname(file), spec)) : undefined
 const outside = (path, dir) => path === '..' || path.startsWith(`..${sep}`) || (dir !== '.' && path !== dir && !path.startsWith(dir + sep))
+/** The package directory's name, e.g. `addon-exec`. */
+const pkgName = pkgDir => pkgDir.split(sep).filter(Boolean).at(-1)
+/** A file's path in its package, with `/` separators. */
+const inPackage = (file, pkgDir) => relative(pkgDir, file).split(sep).join('/')
+
+// Clients of external protocols and vendors, each in one adapter only (docs/architecture.md section 3, v0.8).
+const ADAPTERS = [
+  { name: '@modelcontextprotocol/*', pattern: /^@modelcontextprotocol\//, allowed: pkg => pkg === 'mcp' },
+  { name: '@agentclientprotocol/sdk', pattern: /^@agentclientprotocol\/sdk(\/|$)/, allowed: (pkg, path) => pkg === 'addon-assistant' && path.startsWith('src/node/') },
+  { name: '@jupyterlab/services', pattern: /^@jupyterlab\/services(\/|$)/, allowed: pkg => pkg === 'addon-exec-jupyter' },
+  { name: '@xterm/*', pattern: /^@xterm\//, allowed: pkg => pkg === 'addon-exec-jupyter' },
+  { name: 'mediabunny', pattern: /^mediabunny(\/|$)/, allowed: pkg => pkg === 'addon-lecture' },
+  { name: 'deltabox-lite', pattern: /^deltabox-lite(\/|$)/, allowed: (pkg, path) => pkg === 'addon-deltabox' && path.startsWith('src/node/') },
+  { name: 'simple-git', pattern: /^simple-git(\/|$)/, allowed: (_pkg, path) => path.startsWith('src/node/') },
+]
 
 // Each rule applies to the files under `dirs` of a package (and its `files`), in the packages
 // `pkgs` names (all when absent) but those `except` names; `skip` leaves out subdirectories.
@@ -39,6 +54,17 @@ const rules = [
   { name: 'no framework internals', dirs: ['.'], forbid: spec => /^@slidev\/client\/(?!index)|^vitepress\/dist|^@slidev\/cli\/dist/.test(spec) },
   { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/slidev-addon-/.test(spec) },
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
+  // v0.8 (WP-73a): the server packages, the hosts plugins do not use, and the protocol adapters.
+  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) },
+  { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/server(\/|$)/.test(spec) },
+  { name: 'only the server uses mcp', pkgs: pkg => !['server', 'mcp'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/mcp(\/|$)/.test(spec) },
+  { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/(server|mcp|workspace|web)(\/|$)/.test(spec) },
+  {
+    name: 'protocol clients stay in their adapter',
+    dirs: ['.'],
+    skip: ['test'],
+    forbid: (spec, file, pkgDir) => ADAPTERS.some(adapter => adapter.pattern.test(spec) && !adapter.allowed(pkgName(pkgDir), inPackage(file, pkgDir))),
+  },
 ]
 
 const SOURCE = /\.(ts|tsx|vue|mts|mjs|js|jsx|cjs)$/

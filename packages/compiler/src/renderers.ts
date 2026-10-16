@@ -15,6 +15,7 @@ import type { Compilation, Compiler } from './compiler.ts'
 import { revisionFiles } from './dependencies.ts'
 import { localAsset, portable, relativeIR } from './paths.ts'
 import { loadPlugin, pluginId } from './plugins.ts'
+import { refusedFile } from './workspace.ts'
 
 /** Parent of the renderers' work directories in `build`, relative to the deck. */
 export const WORK_DIR = '.presmium'
@@ -65,7 +66,7 @@ async function installedRenderers(compilation: Compilation): Promise<{ renderers
       missing.set(id, 'no package provides it; set renderers.<id>.package')
       continue
     }
-    const { loaded, problem } = await loadPlugin(pkg, compilation.deckDir)
+    const { loaded, problem } = await loadPlugin(pkg, compilation.deckDir, compilation.pluginSources)
     const renderer = loaded?.plugin?.renderer
     if (renderer?.id === id) renderers.set(id, { renderer, package: pkg })
     else missing.set(id, problem?.message ?? `package ${pkg} provides no renderer "${id}"`)
@@ -194,6 +195,8 @@ export interface DevSession {
 export interface DevOptions {
   outDir: string
   to?: string[]
+  /** The Presmium server of `presmium dev`, to which the renderers' dev servers proxy `/__presmium/` (`RenderContext.server`). */
+  server?: { url: string }
   /** Called after every compilation, the first one included. */
   onCompile?(compilation: Compilation, findings: Finding[]): void
 }
@@ -219,7 +222,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       continue
     }
     const outDir = join(options.outDir, renderer.id)
-    const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings)
+    const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings, options.server)
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)
@@ -403,7 +406,7 @@ function extensionOf(node: ComponentNode, extensions: RendererExtension[]) {
  * The context of renderer `id`, one of those `run` runs together; the
  * plugins' component renderers for it are bound to it.
  */
-function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, run: Run, findings: Finding[]): RenderContext {
+function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, run: Run, findings: Finding[], server?: { url: string }): RenderContext {
   const { deckDir, workspaceRoot, doc } = compilation
   const config = doc.config.renderers[id]
   const report = (finding: Finding) => findings.push({ ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } })
@@ -433,8 +436,18 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     vitePlugins,
     extensionFor: node => extensionOf(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),
-    localAsset: (source, url) => localAsset(deckDir, source, url),
+    localAsset(source, url) {
+      const found = localAsset(deckDir, source, url)
+      // SHARED `presmium serve` reads only the workspace's files (docs/architecture.md 10.2).
+      if (found && compilation.scope && !compilation.scope.allows(found.file)) {
+        report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(found.file), source: { file: source.file, line: source.line } })
+        return undefined
+      }
+      return found
+    },
     report,
+    service: compilation.service,
+    ...server ? { server } : {},
   }
   const bind = (render: ComponentRenderer) => (node: ComponentNode, block: IRBlock) => render(node, block, ctx)
   ctx.extensions = compilation.plugins.flatMap((loaded): RendererExtension[] => {

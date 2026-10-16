@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "presmium build | dev | ir | check",
+  "description": "presmium build | dev | ir | check | gateway",
   "dependencies": {
     "@presmium/compiler": "workspace:*",
     "@presmium/kernel": "workspace:*",
+    "@presmium/server": "workspace:*",
     "jiti": "^2.7.0"
   },
   "bin": {

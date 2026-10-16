@@ -1,0 +1,5 @@
+# The workspace configuration of the test deck: the operator's settings of the test plugin.
+settings:
+  fixture.server:
+    mode: operator
+    quota: 3

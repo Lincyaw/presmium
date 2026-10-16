@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { irBlocks } from '@presmium/kernel'
+import { irBlocks, withProp } from '@presmium/kernel'
 import type { IRBlock, IRDocument, MdastNode, RenderContext, SourcePos } from '@presmium/kernel'
 import katex from 'katex'
 import { urlPath } from '../domain/index.ts'
@@ -92,9 +92,9 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
     if (node.type === 'markdown') mdast(node.mdast, source)
     if (node.type === 'component') {
       if (node.fallback) mdast(node.fallback, source)
-      for (const [prop, url] of Object.entries(node.assets ?? {})) {
+      for (const [path, url] of Object.entries(node.assets ?? {})) {
         const published = publish(url, source)
-        if (published) node.props[prop] = published
+        if (published) node.props = withProp(node.props, path, published)
       }
     }
   }

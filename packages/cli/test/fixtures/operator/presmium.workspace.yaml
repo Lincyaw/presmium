@@ -1,0 +1,6 @@
+# The operator lists two plugins; only the one that declares `operator: true` is loaded for every deck.
+settings:
+  presmium.workspace:
+    plugins: [presmium-fixture-operator, presmium-fixture-listed]
+  fixture.operator:
+    stamp: 运营者的设置

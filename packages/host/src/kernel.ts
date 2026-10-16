@@ -1,13 +1,20 @@
 import { Kernel, PRESENTER_PANELS } from '@presmium/kernel'
-import type { Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@presmium/kernel'
+import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@presmium/kernel'
 import { shallowRef } from 'vue'
+import { PmApprovals } from './approvals.ts'
+import { currentLocale } from './locale.ts'
+import { HOST_MESSAGES } from './messages.ts'
+import { createOperations, createStatusRegistry } from './operations.ts'
 import { createPresenterPanels, createToolbar } from './panels.ts'
-import { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
-import type { Navigation, SyncTransports } from './types.ts'
+import { connectControl, provideServer } from './server.ts'
+import { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
+import type { Navigation, ServerClient, SyncTransports } from './types.ts'
 
 const registered: PluginDefinition[] = []
 const running = shallowRef<Kernel>()
 let starting: Promise<StartReport> | undefined
+/** Disconnects the control channel of the running kernel. */
+let disconnect: (() => void) | undefined
 /** Plugins the host loads besides the kernel's (e.g. the web form's viewer plugins) that failed. */
 const failures = shallowRef<PluginReport[]>([])
 
@@ -49,6 +56,8 @@ export interface StartOptions {
   /** Provides host-level services before plugins start. */
   beforeStart?(kernel: Kernel): void
   log?: Logger
+  /** Given to `KernelOptions.environments`. */
+  environments?: Record<string, EnvironmentSpec>
 }
 
 /**
@@ -57,7 +66,7 @@ export interface StartOptions {
  */
 export function startPresmium(options: StartOptions): Promise<StartReport> {
   starting ??= (async () => {
-    const kernel = new Kernel({ mode: options.mode, config: options.config, log: options.log })
+    const kernel = new Kernel({ mode: options.mode, config: options.config, log: options.log, environments: options.environments })
     options.beforeStart?.(kernel)
     for (const plugin of registered) kernel.register(plugin)
     const report = await kernel.start()
@@ -77,6 +86,8 @@ export async function stopPresmium(): Promise<void> {
   const current = starting
   if (!current) return
   starting = undefined
+  disconnect?.()
+  disconnect = undefined
   await current.catch(() => undefined)
   const kernel = running.value
   running.value = undefined
@@ -125,23 +136,48 @@ export interface HostStart {
   navigation: Navigation
   /** The form's `syncTransports` service. */
   transports: SyncTransports
+  /** The IR's `config.execute.environments`; both host adapters give it (the slides form reads it from the Slidev headmatter). */
+  environments?: Record<string, EnvironmentSpec>
+  /** The server's client when `presmium dev` or `presmium serve` serves the page (4.7); omitted, `useServer().available` is false. */
+  server?: ServerClient
 }
 
 /**
  * Starts the kernel with the registered plugins and the host services every
- * form provides: the presenter panels, the sync transports, the navigation
- * and the toolbar. The plugins are disposed when the page goes away, and
- * start again when the browser shows it again from its cache. Browser only.
+ * form provides: the presenter panels, the sync transports, the navigation,
+ * the toolbar, the operations and the status summaries. With a server, the
+ * page joins its control channel and the toolbar shows the approvals that
+ * wait for this window. The plugins are disposed when the page goes away,
+ * and start again when the browser shows it again from its cache. Browser only.
  */
 export function startHost(options: HostStart): Promise<StartReport> {
+  if (options.server) provideServer(options.server)
   const start = () => startPresmium({
     mode: options.mode,
     config: options.config,
+    environments: options.environments,
     beforeStart(kernel) {
+      const toolbar = createToolbar()
+      const status = createStatusRegistry()
       kernel.provide(PRESENTER_PANELS, createPresenterPanels())
       kernel.provide(SYNC_TRANSPORTS, options.transports)
       kernel.provide(NAVIGATION, options.navigation)
-      kernel.provide(TOOLBAR, createToolbar())
+      kernel.provide(TOOLBAR, toolbar)
+      kernel.provide(OPERATIONS, createOperations())
+      kernel.provide(STATUS, status)
+      disconnect?.()
+      disconnect = undefined
+      const { server } = options
+      if (!server?.available) return
+      toolbar.register({
+        id: 'presmium.approvals',
+        get title() {
+          return HOST_MESSAGES[currentLocale()].approvalsTitle
+        },
+        component: PmApprovals,
+        order: 1000,
+      })
+      disconnect = connectControl(server, { navigation: options.navigation, status, service: token => kernel.getService(token) })
     },
   })
   stopPresmiumOnPageHide(() => void start())

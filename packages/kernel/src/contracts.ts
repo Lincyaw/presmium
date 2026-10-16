@@ -5,23 +5,26 @@
  * changing or removing existing signatures requires updating docs/architecture.md.
  */
 
-import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution } from './ir.ts'
+import type { AgentTool } from './contracts/agent.ts'
+import type { EnvironmentProvider, EnvironmentSpec, Executor } from './contracts/execution.ts'
+import type { GatewayContext, GatewayContribution, NodeServiceContext, ServerContext, ServerContribution } from './contracts/server.ts'
+import { defineService } from './contracts/service.ts'
+import type { ServiceToken } from './contracts/service.ts'
+import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from './ir.ts'
+
+// The business contracts, by domain (docs/architecture.md 9.2), all exported from this entry.
+export * from './contracts/agent.ts'
+export * from './contracts/execution.ts'
+export * from './contracts/operations.ts'
+export * from './contracts/server.ts'
+export * from './contracts/service.ts'
+export * from './contracts/speech.ts'
 
 export const KERNEL_VERSION = '0.1.0'
 
 // ---------------------------------------------------------------------------
 // Services
 // ---------------------------------------------------------------------------
-
-export interface ServiceToken<T> {
-  readonly id: string
-  /** Phantom field that carries the service type. Never set at runtime. */
-  readonly __service?: T
-}
-
-export function defineService<T>(id: string): ServiceToken<T> {
-  return Object.freeze({ id }) as ServiceToken<T>
-}
 
 export type Capability = 'fs' | 'network' | 'exec' | 'git'
 
@@ -74,6 +77,8 @@ export interface PluginContext {
   tryGet<T>(token: ServiceToken<T>): T | undefined
   events: EventBus
   log: Logger
+  /** The named environments the deck declares (from `KernelOptions.environments`); a provider plugin registers browser executors for those of its `kind`. */
+  environments?: Readonly<Record<string, EnvironmentSpec>>
 }
 
 export interface PluginDefinition {
@@ -249,6 +254,8 @@ export interface CheckContext {
   lock: AnchorLockFile
   /** The compiled deck (docs/ir.md section 7). */
   ir: IRDocument
+  /** Node services (docs/architecture.md 4.6); the compiler always gives it, optional for compatibility. */
+  service?<T>(token: ServiceToken<T>): T | undefined
 }
 
 export interface Check {
@@ -290,55 +297,30 @@ export interface PresmiumNodePlugin {
    * Typed loosely to keep the kernel free of Vite.
    */
   vitePlugins?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): unknown[]
+  /** Node service implementations, e.g. `[[SPEECH, speech]]`; one implementation per token, a later plugin's duplicate is ignored and reported. */
+  services?(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][]
+  /** Providers of named environments, by `EnvironmentSpec.kind`. */
+  environments?: Record<string, EnvironmentProvider>
+  /** Server contribution; once per deck in `presmium dev`, once per document requested in `presmium serve` (docs/architecture.md section 10). */
+  server?(ctx: ServerContext): ServerContribution | Promise<ServerContribution>
+  /** MyST inline roles (docs/architecture.md 4.10, docs/ir.md 2.8). */
+  roles?: RoleSpec[]
+  /** Agent tools, which the MCP service exposes as tools (docs/architecture.md 4.8). */
+  tools?: AgentTool[]
+  /** Gateway contribution: mounted only in `presmium gateway`, the one place of third-party credentials (4.7, 10.9). */
+  gateway?(ctx: GatewayContext): GatewayContribution | Promise<GatewayContribution>
+  /**
+   * An operator plugin: listed in `settings.presmium.workspace.plugins`, it is
+   * loaded for every document (every command) without the deck listing it in
+   * `plugins`; e.g. `addon-deltabox`, which provides `CHANGE_REVIEW` and
+   * `PROCESS_SANDBOX` (installed with the CLI, loaded without being listed).
+   */
+  operator?: boolean
 }
 
 // ---------------------------------------------------------------------------
 // Public services
 // ---------------------------------------------------------------------------
-
-// Execution -----------------------------------------------------------------
-
-export interface RunRequest {
-  lang: string
-  code: string
-  /** Named parameters injected by the runtime (e.g. as variables). */
-  args?: Record<string, string>
-  stdin?: string
-  timeoutMs?: number
-  /** Extra files available to the program, path -> content. */
-  files?: Record<string, string>
-}
-
-export interface RunResult {
-  ok: boolean
-  stdout: string
-  stderr: string
-  exitCode: number | null
-  durationMs: number
-  timedOut: boolean
-  /** 'recorded' when the output is a fallback recording. */
-  source: 'live' | 'recorded'
-  executorId: string
-}
-
-export interface Executor {
-  readonly id: string
-  supports(lang: string): boolean
-  run(request: RunRequest, signal?: AbortSignal): Promise<RunResult>
-  /**
-   * Identifies the runtime environment for `lang` (e.g. interpreter version or
-   * image digest). Part of the compile-time execution cache key; '' when omitted.
-   */
-  fingerprint?(lang: string): string | Promise<string>
-}
-
-/** Routes requests to registered executors; higher priority wins. */
-export interface ExecutorRouter extends Executor {
-  register(executor: Executor, priority?: number): Unsubscribe
-  list(): Executor[]
-}
-
-export const EXECUTOR = defineService<ExecutorRouter>('presmium.executor')
 
 // Session ---------------------------------------------------------------------
 

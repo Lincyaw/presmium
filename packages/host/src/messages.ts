@@ -12,6 +12,16 @@ export interface HostMessages {
   because: string
   componentError(component: string, message: string): string
   problems(count: number): string
+  /** The toolbar entry of the approvals waiting for this window. */
+  approvals(count: number): string
+  approvalsTitle: string
+  allow: string
+  deny: string
+  /** Who asks for an approval. */
+  from(who: string): string
+  /** Approvals that only the owner console answers (SHARED). */
+  inConsole(count: number): string
+  openConsole: string
 }
 
 export const HOST_MESSAGES: Catalog<HostMessages> = {
@@ -24,6 +34,13 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     because: '：',
     componentError: (component, message) => `${component} 出错：${message}`,
     problems: count => `${count} 个问题`,
+    approvals: count => `待确认 ${count}`,
+    approvalsTitle: '待确认的操作',
+    allow: '允许',
+    deny: '拒绝',
+    from: who => `来自 ${who}`,
+    inConsole: count => `${count} 个确认在所有者控制台中等待`,
+    openConsole: '打开所有者控制台',
   },
   'en': {
     panels: 'Panels',
@@ -34,5 +51,12 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     because: ': ',
     componentError: (component, message) => `${component} failed: ${message}`,
     problems: count => `${count} ${count === 1 ? 'problem' : 'problems'}`,
+    approvals: count => `Approvals ${count}`,
+    approvalsTitle: 'Operations to approve',
+    allow: 'Allow',
+    deny: 'Deny',
+    from: who => `from ${who}`,
+    inConsole: count => `${count} ${count === 1 ? 'approval waits' : 'approvals wait'} in the owner console`,
+    openConsole: 'Open the owner console',
   },
 }

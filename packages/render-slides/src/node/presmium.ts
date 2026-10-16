@@ -123,7 +123,7 @@ function base(ctx: RenderContext): string[] {
 async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck): Promise<void> {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '*\n')
-  await writeFile(join(dir, 'vite.config.ts'), `export default { cacheDir: 'node_modules/.vite' }\n`)
+  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx))
   await copyFile(STYLE, join(dir, 'style.css'))
   await rm(join(dir, 'public'), { recursive: true, force: true })
   await mkdir(join(dir, 'public'))
@@ -133,6 +133,16 @@ async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck): Pro
   await rm(join(dir, 'components'), { recursive: true, force: true })
   if (existsSync(join(ctx.deckDir, 'components'))) await symlink(join(ctx.deckDir, 'components'), join(dir, 'components'), 'junction')
   await writeFile(join(dir, 'slides.md'), deck.markdown)
+}
+
+/**
+ * The generated deck's `vite.config.ts` (Slidev merges it with its own): a
+ * Vite cache of its own and, in `presmium dev`, the paths of `/__presmium/`
+ * proxied to the Presmium server, WebSockets too (docs/architecture.md 10.1).
+ */
+function viteConfig(ctx: RenderContext): string {
+  const proxy = ctx.server ? `, server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } } }` : ''
+  return `export default { cacheDir: 'node_modules/.vite'${proxy} }\n`
 }
 
 /** Copies the local files the slides show into the deck's `public/`; their names hold their content hash, so a copy is never stale. */

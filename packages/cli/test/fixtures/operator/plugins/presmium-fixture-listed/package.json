@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-listed",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/cli/test/plugins.test.ts: listed by the operator but not an operator plugin, so decks load it only when they name it",
+  "exports": { "./presmium": "./presmium.ts" }
+}

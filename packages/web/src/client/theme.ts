@@ -1,8 +1,8 @@
-import { createSharedStates, currentLocale, installHost, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium } from '@presmium/host'
-import type { SyncTransports } from '@presmium/host'
+import { createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmPresenterPanels, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium } from '@presmium/host'
+import type { ServerClient, SyncTransports } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
-import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
+import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
@@ -45,13 +45,13 @@ interface UpdateEvent {
  * Registers the kernel plugins of every plugin package, as the slides form
  * does, and starts the kernel with the host services (`startHost`).
  */
-async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer, transports: SyncTransports): Promise<void> {
+async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer, transports: SyncTransports, server?: ServerClient): Promise<void> {
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
   modules.flatMap(module => pluginsOf(module, config)).forEach(registerPresmiumPlugin)
-  await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports })
+  await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports, server })
 }
 
 /**
@@ -265,7 +265,14 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
       viewersReady = loadViewerPlugins(input.viewers ?? [])
-      void startKernel(input.plugins, input.doc.config.presmium, current, shared.transports)
+      // `presmium dev` serves the page: the server's client, given before any component asks for it (`useServer`).
+      const server = siteData.value.themeConfig.presmium?.server ? createServerClient() : undefined
+      provideServer(server)
+      void startKernel(input.plugins, input.doc.config.presmium, current, shared.transports, server)
+      // The IR runtime reports and replays `go` through the running kernel's operations (each start has its own).
+      watch(() => presmiumService(OPERATIONS), (operations, _, onCleanup) => {
+        if (operations) onCleanup(followOperations(current, operations))
+      }, { immediate: true })
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
       followDevServer(current, input.revision, (doc) => {
         const site = siteData.value

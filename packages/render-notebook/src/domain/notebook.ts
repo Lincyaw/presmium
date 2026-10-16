@@ -12,7 +12,7 @@
  * `assets` of components, go through `media`, which can point local files at
  * copies. The words the notebook adds are in the deck's language.
  */
-import { errorMessage, isRecord, languageId } from '@presmium/kernel'
+import { errorMessage, isRecord, languageId, withProp } from '@presmium/kernel'
 import type {
   CodeNode,
   ComponentNode,
@@ -244,8 +244,8 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
 function published(node: ComponentNode, block: IRBlock, options: NotebookOptions): ComponentNode {
   const { media } = options
   if (!node.assets || !media) return node
-  const props = { ...node.props }
-  for (const [prop, url] of Object.entries(node.assets)) props[prop] = media(url, block.source) ?? url
+  let props = node.props
+  for (const [path, url] of Object.entries(node.assets)) props = withProp(props, path, media(url, block.source) ?? url)
   return { ...node, props }
 }
 

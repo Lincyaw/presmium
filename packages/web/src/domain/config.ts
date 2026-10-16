@@ -24,6 +24,8 @@ export interface WebRendererConfig {
   port?: number
   /** Site language: the deck's `lang` (`IRDocument.meta.lang`), else `zh-CN`. */
   lang: string
+  /** In `presmium dev`: the server's address, to which the dev server proxies `/__presmium/` (`RenderContext.server`). */
+  server?: string
 }
 
 function url(value: unknown): string | undefined {
@@ -61,11 +63,12 @@ export function offlineEnabled(presmium: unknown): boolean {
 }
 
 /** The web renderer's options from its render context: `renderers.web` (`config`), the public `base` and the deck's `lang`. */
-export function rendererConfig(ctx: { config: Record<string, unknown>, base: string, lang?: string }): WebRendererConfig {
+export function rendererConfig(ctx: { config: Record<string, unknown>, base: string, lang?: string, server?: { url: string } }): WebRendererConfig {
   const port = Number(ctx.config.port)
   return {
     base: ctx.base,
     port: Number.isInteger(port) && port > 0 ? port : undefined,
     lang: ctx.lang || DEFAULT_LANG,
+    ...ctx.server ? { server: ctx.server.url } : {},
   }
 }

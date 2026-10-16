@@ -1,5 +1,6 @@
 import { KERNEL_VERSION } from './contracts.ts'
 import type {
+  EnvironmentSpec,
   EventBus,
   KernelEvent,
   Logger,
@@ -20,6 +21,8 @@ export interface KernelOptions {
   config?: Record<string, unknown>
   log?: Logger
   events?: EventBus
+  /** The deck's named environments, given to every plugin as `PluginContext.environments`. */
+  environments?: Record<string, EnvironmentSpec>
 }
 
 /**
@@ -34,6 +37,7 @@ export class Kernel {
   readonly events: EventBus
   #log: Logger
   #config: Record<string, unknown>
+  #environments?: Readonly<Record<string, EnvironmentSpec>>
   #plugins: PluginDefinition[] = []
   #state: 'idle' | 'starting' | 'started' | 'disposed' = 'idle'
   #report?: StartReport
@@ -41,6 +45,7 @@ export class Kernel {
   constructor(options: KernelOptions) {
     this.mode = options.mode
     this.#config = options.config ?? {}
+    this.#environments = options.environments && Object.freeze({ ...options.environments })
     this.#log = options.log ?? console
     this.events = options.events ?? createEventBus((error, event) => {
       this.#log.error(`[presmium] handler for "${event.type}" threw`, error)
@@ -170,6 +175,7 @@ export class Kernel {
       },
       events: this.events,
       log: prefixed(this.#log, id),
+      ...this.#environments ? { environments: this.#environments } : {},
     }
   }
 }

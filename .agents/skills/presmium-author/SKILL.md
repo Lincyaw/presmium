@@ -146,7 +146,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium check [deck]` | 编译并运行插件的检查项，只输出诊断；`--json` 输出 JSON，`--update-lock` 先重写锚点锁定文件 |
 | `presmium ir [deck]` | 把 IR 输出到标准输出（诊断在标准错误）；`--out <file>` 写到文件 |
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录 |
-| `presmium dev [deck]` | 启动渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`） |
+| `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口 |
 
 常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
 

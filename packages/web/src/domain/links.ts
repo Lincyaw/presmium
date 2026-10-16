@@ -19,6 +19,13 @@ export const SOURCE_ENDPOINT = '/__presmium/source'
 /** Dev server endpoint that gives the document now, with its revision: `{ revision, doc }`. */
 export const IR_ENDPOINT = '/__presmium/ir'
 
+/**
+ * The paths of `/__presmium/` the dev server proxies to the Presmium server
+ * in `presmium dev` (the plugins' routes, the server's own): all but the dev
+ * server's own endpoints above. A regular expression, as Vite's `server.proxy` takes one.
+ */
+export const SERVER_PROXY = '^/__presmium/(?!(?:ir|source)(?:[/?]|$))'
+
 /** Query parameter that asks the web form to open the section of a slide (from the slides form). */
 export const SLIDE_PARAM = 'slide'
 

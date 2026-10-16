@@ -265,7 +265,7 @@ interface HostAdapter {
 
 ### 4.6 v0.8 的契约增补：执行环境、会话与富输出
 
-4.6 至 4.10 节是 v0.8 新增范围（执行环境、智能体、工作区、讲授与 M9）的契约，设计依据见 `design-v0.7.md`。全部是兼容扩展：只增加可选字段、可选参数（`Executor.run` 的第三个参数 `ctx`）、新类型、新函数与新的服务令牌，已有的字段与参数不变，`IR_VERSION` 仍为 1，现有插件与文稿不受影响。WP-73a 把它们写入 `contracts.ts`、`ir.ts` 与 `host/src/types.ts`（`HostStart`、`StartOptions` 的增补写在它们所在的 `host/src/kernel.ts`，`KernelOptions` 的增补写在 `kernel/src/kernel.ts`）；之后的工作包只实现，不再改这些文件（需要改时在交付报告中提出）。业务契约较多，`contracts.ts` 可以拆为几个模块（执行、服务端、语音、智能体），由它统一再导出，入口 `@presmium/kernel/contracts` 不变（9.2 节）。
+4.6 至 4.10 节是 v0.8 新增范围（执行环境、智能体、工作区、讲授与 M9）的契约，设计依据见 `design-v0.7.md`。全部是兼容扩展：只增加可选字段、可选参数（`Executor.run` 的第三个参数 `ctx`）、新类型、新函数与新的服务令牌，已有的字段与参数不变，`IR_VERSION` 仍为 1，现有插件与文稿不受影响。WP-73a 已把它们写入 `contracts.ts`、`ir.ts` 与 `host/src/types.ts`（`HostStart`、`StartOptions` 的增补写在它们所在的 `host/src/kernel.ts`，`KernelOptions` 的增补写在 `kernel/src/kernel.ts`）；之后的工作包只实现，不再改这些文件（需要改时在交付报告中提出，由验收者决定，只能增加）。业务契约按领域拆在 `packages/kernel/src/contracts/` 中：`service.ts`（`ServiceToken`、`defineService`，其他模块只从这里取运行时的值，没有循环引用）、`execution.ts`（执行、进程沙箱、具名环境与 `environmentExecutor`）、`server.ts`（成员、路由、信任模式、两种 Node 端上下文、确认与 `eventStream`、MCP 访问、gateway）、`speech.ts`、`agent.ts`（智能体、修改审阅与修改历史）、`operations.ts`；`contracts.ts` 保留插件、锚点、检查与课堂的契约并统一再导出，入口 `@presmium/kernel/contracts` 不变（9.2 节）。内核另导出 `withProp(props, path, value)`（按 `.` 分隔的属性路径设置组件属性，渲染端改写 `ComponentNode.assets` 用）与 `roleMark(node)`（角色的标记 `〔名 value〕`），`lowerMyst` 增加选项 `roles: 'marks'`。
 
 `packages/kernel/src/contracts.ts`：
 
@@ -785,6 +785,8 @@ export interface HostStart {
 }
 ```
 
+宿主层的实现（WP-73a）：`useServer()` 返回一个始终可用的代理，读它的 `available` 是响应式的，宿主适配给出客户端之前渲染的组件在之后自动更新；宿主适配经 `startHost({ server })` 给出客户端，也可以更早调用 `provideServer(client)`（网页形态在创建应用时调用）。`createServerClient({ document })` 是两种形态共用的客户端：请求头 `Presmium-Document` 的值是 URI 编码的文档目录（请求头只能是 Latin-1），`EventSource` 不能带请求头，所以 `events()` 把文档目录放在查询参数 `document` 中。网页形态在 `presmium dev` 中由生成的 VitePress 配置写 `themeConfig.presmium.server`，幻灯片形态由生成的 Slidev 头部写 `presmiumServer: true`，两者据此创建客户端；静态构建两者都没有。有服务端时 `startHost` 在工具栏登记确认入口 `PmApprovals`（`@presmium/host` 导出），并连接控制通道（10.4 节）。
+
 服务端怎样挂载这些契约、怎样认证与确认，见第 10 节。`settings` 与 `config` 的区别：`config` 是文稿头部的内容，任何能编辑文稿的人（包括 agent）都能改；`settings` 只由运营者设置，确认策略之外的安全相关设置（工作区的插件列表、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行的策略与传入的环境变量、录音的去处、是否允许克隆音色、同意记录的目录）都在这里或在环境变量中（第 11 节）。
 
 gateway 的契约只给插件写 `gateway()` 贡献用：gateway 怎样签发与校验令牌、怎样转发 `/mcp`，见 10.9 节。插件在 serve 与 agent-host 中经 `NodeServiceContext.gateway`、`ServerContext.gateway`、`EnvironmentContext.gateway`、`RunContext.gateway` 调用自己在 gateway 中的贡献（`<url>/<插件 ID>/…`）；这些字段只在 SHARED 模式中出现，LOCAL 模式中插件在本进程中经 `secret` 读取凭据，不经 gateway。
@@ -1212,6 +1214,8 @@ export interface Operations {
 export const OPERATIONS = defineService<Operations>('presmium.operations')
 ```
 
+`createOperations()` 是两种宿主共用的实现（`startHost` 提供它与 `STATUS`）：`replay` 调用登记的重放后，`replaying` 保持为 true 到下一个任务，期间同步发生的报告被丢弃。IR 运行时的部分是 `@presmium/viewer` 的 `followOperations(viewer, operations)`：位置或视图变化时同步报告 `go`（数据 `{ section, step, view }`，章节是 ID），重放 `go` 时先切到它的视图（隐藏的演讲者视图除外）再到达位置；网页主题在每次内核启动后接上它。
+
 报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
 
 ### 4.10 IR 与渲染端的增补
@@ -1482,6 +1486,8 @@ v0.8 的外部服务一律用说同一协议的真实实现来测试，不 mock 
 | 讲授 | 录制：Chromium 的假麦克风播放假引擎合成的音频（`--use-fake-ui-for-media-stream`、`--use-fake-device-for-media-stream`、`--use-file-for-fake-audio-capture=<wav>%noloop`，以 `test.use({ launchOptions })` 只加在讲授的用例上），讲授轨中有 `go` 与 `point`，回放到时刻 t 显示正确的章节与步骤；脚本化：用假引擎构建测试讲义，检查片段、VTT 与提示标记的时刻 |
 | 工作区 | 临时目录中的真实 git 仓库：文档操作与撤销各形成正确的提交（读 `git log` 与尾注）；部署模板的冒烟用例需要 Docker，没有时跳过 |
 
+服务端的用例（WP-73a）：`packages/server/test/server.test.ts` 对测试文稿运行 `presmium dev`；`presmium serve` 由 WP-79 交付，在那之前 `serve` 模式的用例由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 启动（以子进程调用真实的 `startServer`，文档用真实的编译器编译），`e2e/server.spec.ts` 的所有者控制台用例同样用它，并在前面放一个测试用的登录代理（保留 `Host`，加上共享密钥与身份）。浏览器不允许 `fetch` 设置 `Host`，Node 端的用例用 `node:http` 发送原样的请求头。
+
 这些用例的启动参数只加在各自的 spec 中，`playwright.config.ts` 不为它们增加项目。需要 Docker、GPU 或模型凭据的用例跳过时打印原因与启用方法，不算失败。
 
 辅助命令（插件包与服务包的可执行文件）：
@@ -1720,8 +1726,10 @@ presmium serve（SHARED，compose 布局）
 - **运营者设置**：`startServer` 接受 `settings`（插件 ID 到设置），交给各插件的 `ServerContext.settings` 与 `NodeServiceContext.settings`。`presmium dev`、`build`、`check` 读取工作区根目录 `presmium.workspace.yaml` 的 `settings`（没有该文件时为空），`presmium serve` 由工作区读取同一个键；都只在进程启动时读取一次，运行中改动配置文件不生效，直到运营者重启（`ir.md` 第 10 节）。
 - **生命周期**：`presmium dev` 启动时为文稿创建一次各插件的贡献，头部的 `plugins` 变化时照旧提示重启；`presmium serve` 在一份文档第一次被请求时创建它的贡献。Node 端服务（`services`）与贡献使用同一份文稿配置与运营者设置；服务端另外登记 `APPROVALS` 与 `MCP_ENDPOINT`，工作区登记 `REVISIONS`（SHARED 模式中另登记 agent-host 的客户端，4.5 节）。
 - **插件的来源**（D14，4.2 节）：`presmium serve` 只加载安装在工作区根目录、列在 `settings.presmium.workspace.plugins` 中的 Node 插件（另加随 CLI 安装的渲染端与 `addon-deltabox`）；文稿的 `plugins` 与替换渲染端的 `renderers.<id>.package` 中的相对路径、文稿目录 `node_modules` 中的包与没有列出的包都不加载，编译给出错误级诊断 `presmium.plugins`。列表中声明了 `operator: true` 的插件每份文档都加载。`presmium dev`、`build`、`check` 照旧按文稿的 `plugins` 与 `renderers.<id>.package` 加载，另加运营者插件（列表中的，与随 CLI 安装的 `addon-deltabox`）。
+- **编译器的宿主选项（WP-73a）**：`new Compiler(deck, options)` 的 `CompilerOptions`：`settings`（默认读取工作区根目录 `presmium.workspace.yaml` 的 `settings`，每个进程每个文件一次；文件读不出时是错误级诊断 `presmium.workspace`）、`trust`、`services`（宿主的 Node 端服务，先于插件的登记）、`reserved`（宿主保留的令牌）、`policy`（插件策略）、`scope`（读取范围，`ReadScope`：入口、`{include}`、`ctx.src`、执行缓存与 `localAsset` 的真实路径在工作区根目录之内且不在 `.git/` 中，否则错误级诊断 `presmium.files`）、`bundled`（随 CLI 安装的 Presmium 自己的包从哪里解析：CLI 的包目录）、`operatorDir`、`gateway`、`secret`。运营者插件排在文稿的插件之前（同一令牌以运营者的实现为准；没有加入 IR 的 `config.plugins`，所以 IR 不变，渲染端也不加载它们的浏览器部分），文稿也列出的同一个包只加载一次。各插件的 `services(ctx)` 在插件加载时调用一次，用当时文稿的配置；`presmium dev` 中改动头部的 `presmium.<插件 ID>` 要重启才进入服务（同 `plugins`）。LOCAL 的运营者目录由编译器按 10.5 节的规则得出（`operatorDir(root, given)`，`@presmium/compiler` 导出），`presmium dev`、`build`、`check` 读 `PRESMIUM_OPERATOR_DIR`；目录不创建，在工作区之中时是错误级诊断。
 - **SHARED 模式中 serve 不运行文稿的代码，只把文档当作数据读取**：编译时执行交给 agent-host（编译器的 `remote` 选项）；构建（含网页渲染端的服务端渲染，它会运行文稿的组件）与 MCP 的 `build` 交给 agent-host；工作区站点的开发服务器（两个视图）同样在 agent-host 中运行（网页渲染端的 `devSite`，10.8 节）。Vite 与 VitePress 在开发服务器的 Node 进程中会加载文稿决定的模块：文稿组件引用的 VitePress 数据加载器（`*.data.*`，开发中同样运行它的 `load()`）、配置文件、样式预处理器的插件；它们因此只在 sandbox 中运行，生成的站点项目与 Vite 的缓存也在 sandbox 容器自己的目录中，serve 不读它们。serve 只做编译中不执行代码的部分（解析 MyST、运行运营者插件的编译步骤），把编译结果经 agent-host 的接口交给站点；浏览器的其余请求（含 HMR 的 WebSocket）由 serve 转发到那里。serve 中的编译器读取文档目录中的文件（源码、被引用的文件、执行缓存）时先解析真实路径，真实路径不在工作区根目录之内或在 `.git/` 之中的（例如指向 `/proc/self/environ` 的符号链接）不读取，给出错误级诊断 `presmium.files`；这是纵深防御，serve 的环境与它的 uid 能读的文件中本来就没有秘密（10.1、10.5 节）。git 命令关闭钩子与 fsmonitor（4.8 节）。
-- **端口**：`presmium dev` 的服务端默认取空闲端口（`--server-port` 指定），启动时打印 MCP 地址；`presmium serve` 用 `--port`（默认 4310）与 `--host`（默认 `127.0.0.1`）。
+- **端口**：`presmium dev` 的服务端默认取空闲端口（`--server-port` 指定），启动时在渲染端的地址之后打印 `server  <地址>` 与 `mcp  <地址>/mcp`；`presmium serve` 用 `--port`（默认 4310）与 `--host`（默认 `127.0.0.1`）。
+- **实现（WP-73a）**：`startServer(options)`（`@presmium/server`）的选项：`mode`（`dev` 或 `serve`）、`host`、`port`、`document(dir)`（文档目录到 `ServedDocument`：编译器加载的插件及其配置、Node 端服务、运营者设置与运营者目录，`servedDocument(compilation)` 由编译结果得出；第一次请求该文档时创建贡献）、`serverHost`（`ServerHost`：`documents()`、`compile(document, view)`、`check(document)`、`build(document, { to, view })`、`run(document, { section, block }, signal)`；`presmium dev` 的实现在 `packages/cli/src/host.ts`，以开发循环最近一次的编译为准）、`settings`、`approvals`（种类到 `off`、`ask`、`allow`）、`trustProxyFrom`、`roles(identity)`、`forward(member)`、`operatorDir`、`user`、`stateFile`、`mcp`（WP-78 挂载 MCP 服务；没有时带有效令牌的请求得到 501）、`env`。返回值的 `services`（`APPROVALS`、`MCP_ENDPOINT`）由宿主交给编译器（`CompilerOptions.services`），`control` 给出窗口的位置、`go`、`session` 与状态摘要（供 WP-78 的 MCP）。请求经 Node 的请求先判断（身份、代理、转发），其余交给 `@hono/node-server` 转换为 Fetch API；路由处理函数出错时返回 500 与原因。
 
 ### 10.3 登录与权限
 
@@ -1730,6 +1738,7 @@ presmium serve（SHARED，compose 布局）
 - **角色**：读者只能阅读与提问；编辑者可以进入编辑模式、修改与撤销、回答发给自己的 `content` 范围的确认；所有者另管工作区设置，并且是唯一能回答 `workspace` 范围确认的角色（SHARED 模式中只在所有者控制台上，10.4 节）。角色来自 `presmium.workspace.yaml` 的 `members`（按邮箱或代理传来的组），登录的其他成员是读者。
 - **读者看到学生视图**（P-55）：读者是学习者，看到的文稿按受众 `student` 编译：页面、IR、搜索索引与读者的问答都没有只给教师的章节与块；读者的 MCP 令牌与所有 `tutor` 令牌经 `ServerHost` 的 `student` 视图读取文稿。编辑者与所有者看到全部内容。`presmium dev` 中只有本机作者（所有者），但问答的 `tutor` 令牌同样只读学生视图。
 - **路由的角色**：挂载点按 `Route.role`、`ProxySpec.role`（默认 `editor`）检查；不满足时返回 403，插件不各自检查。
+- **实现（WP-73a）**：`presmium dev` 的 `.presmium/server.json`（权限 0600）记 `{ url, mcp, token, pid }`。`serve` 模式中共享密钥的请求头是 `X-Presmium-Proxy-Secret`（常数时间比较），`--trust-proxy-from` 按连接的来源地址比较（去掉 IPv4 映射前缀）；身份按 `X-Forwarded-Email`、`X-Forwarded-User`、`X-Forwarded-Preferred-Username`、`X-Forwarded-Groups` 读出，`roles(identity)` 没有给出角色的成员是读者，没有身份的请求得到 401，不经登录代理的请求得到 403。SHARED 模式中站点上改变状态的请求（`GET`、`HEAD` 以外）带的 `Origin` 与请求的 `Host` 不是同一个主机名时得到 403。插件的反向代理与站点的转发都去掉 `X-Presmium-Proxy-Secret`；`ServerContext.secret` 从不返回服务端自己的三个秘密（及其 `_FILE` 变量）。
 - **MCP 的身份**：助手的服务端路由经 `MCP_ENDPOINT.issue(member, mode)` 为每个 agent 会话取得令牌，令牌绑定成员与模式（`author` 或 `tutor`），放进 ACP `session/new` 的 `mcpServers`，会话关闭时作废。`presmium serve` 中 `/mcp` 只接受这种令牌（没有每进程的令牌），以令牌认证，不经登录代理。签发的地址：LOCAL 模式中是服务端的本机地址，agent 子进程直接访问；SHARED 模式中是 gateway 的 `/mcp`，gateway 原样转发到 serve，令牌由 serve 校验（sandbox 的网络只到 gateway，10.9 节）。`tutor` 令牌只看得到读取类工具。工具的范围由令牌决定，不由请求参数决定。
 
 ### 10.4 控制通道与确认
@@ -1744,6 +1753,7 @@ presmium serve（SHARED，compose 布局）
   - 控制台上会改变状态的请求必须带主机名为控制台主机名的 `Origin`（如 `https://console.course.example.edu`）与请求头 `Presmium-Console: 1`；后者不在 CORS 的安全列表中，站点页面跨源发出这样的请求时浏览器先发预检，serve 从不允许，不带它的表单提交则被拒绝。不满足的请求得到 403。
   - 站点的主机名上：所有者路由得到 404；`workspace` 范围的确认不发给任何站点窗口（所有者的站点窗口只收到待回答的数量与控制台的地址），对它们的回答得到 403。
   - LOCAL 模式中没有控制台：唯一的用户在站点上回答全部确认，站点上的组件能以他的身份回答（9.4 节）。
+- **控制通道的消息（WP-73a）**：`GET /__presmium/presmium.server/control?window=<窗口 ID>&document=<文档>` 是 SSE，事件有 `ready`（`{ window }`）、`approval`（`{ id, request }`，打开时补发这个窗口可以回答的、仍在等待的确认）、`settled`（`{ id, allow }`）、`pending`（SHARED 中所有者的站点窗口：`{ count, console }`，`console` 是控制台的地址）、`go`（`{ slide, step, view }`）与 `session`（`{ action: 'start' | 'end', name }`）。`POST` 同一路径：`{ window, type: 'report', position, role, status }`（窗口未知或属于其他成员时 404）与 `{ window, type: 'answer', id, allow }`（200；没有这个确认 404；这位成员不能在这里回答 403）。`hello` 返回 `{ member, document, trust }`，SHARED 中所有者在站点上另有 `console`。页面读完每个 `POST` 的响应体（否则浏览器一直算它在进行中，`design-v0.7.md` 第 11 节）。控制台的页面在 `/`，脚本在 `/__presmium/presmium.server/console.js`，所有者路由的列表在 `/__presmium/presmium.server/routes`（只列出已经被请求过的文档），它的控制通道带 `console=1`；控制台的主机名上其余路径得到 404，响应都带控制台的安全头。一个确认 50 秒（`approvalTimeoutMs`）没有回答视为拒绝，服务端关闭时全部视为拒绝。
 - **发送即确认**：编辑模式中发送一批批注或一条对话消息，就是对这次任务在文档目录中的写入的确认（N-08），助手不再逐个文件询问；这些写入在提交之前还要经发起人的审阅（10.7 节）。写入超出当前文档目录或改动工作区配置时仍以 `write` 确认，它属于 `workspace` 范围，只有所有者能允许；单份文稿的仓库（只在 LOCAL 模式中）里工作区配置在文档目录之中，审阅中出现它的改动时接受前另需所有者的 `write` 确认（第 11 节）。agent 对运营者目录（同意记录等，10.5 节）的权限请求一律拒绝，不发给任何人。运营者目录在任何工作区与文档目录之外（LOCAL 模式中在用户的状态目录中，SHARED 模式中只在 gateway 容器中），agent 的文件工具以文档目录为根，写不到它而不发出请求；LOCAL 模式中同一 uid 的代码绕过工具直接写它是 9.4 节的残余风险，SHARED 模式中 sandbox 访问不到它。
 
 ### 10.5 部署（N-09）
@@ -1838,6 +1848,7 @@ serve 为每个 agent 会话向 gateway 签发一个只含 `presmium.assistant` 
 - **挂载**：启动时读取工作区配置，加载 `settings.presmium.workspace.plugins` 中的包，把每个插件的 `gateway(ctx)` 贡献挂在 `/<插件 ID>/` 下（`GatewayContext` 带 `secret`、`settings` 与 `operatorDir`）。贡献由各插件实现：助手的模型代理 `presmium.assistant/model`（Messages 兼容，DeepSeek Harness 的 `DEEPSEEK_BASE_URL`；转发到运营者的模型地址并换上真正的密钥，`GET presmium.assistant/info` 给出服务提供方），语音插件的 `presmium.speech/v1/…`（同语音网关的协议，含同意记录的检查与所有者的登记），远端环境插件的 `presmium.execJupyter/env/<名>/`（HTTP 与 WebSocket，令牌只发往同一对中的地址）。
 - **令牌**：每个请求要求 `Authorization: Bearer`。serve 用服务令牌 `PRESMIUM_GATEWAY_TOKEN`；serve 经 `POST /tokens`（只接受服务令牌）签发限定令牌（插件 ID、用途、成员、期限），`DELETE /tokens/<id>` 作废；限定令牌不能签发令牌，也不能调用 `service: true` 的路由。令牌只在 gateway 的内存中，重启后全部作废。
 - **`/mcp` 的转发**：gateway 把 `/mcp` 原样转发到 serve（`--serve <地址>`），不加也不看凭据，MCP 令牌由 serve 校验；sandbox 因此只需连到 gateway。
+- **实现（WP-73a）**：`GET /info`（任何有效令牌）返回 `{ plugins }`，serve 启动时以它与 agent-host 的 `GET /v1/info` 确认两者可达（只记日志，不阻止启动）。`POST /tokens` 的请求体是 `{ plugins, purpose, member?, ttlSeconds? }`（默认一小时），返回 201 与 `{ id, token, expires }`。gateway 的反向代理去掉调用方的 `Authorization`，只带插件给出的请求头。插件经 `@presmium/compiler` 的插件加载器按插件策略加载（`startGateway` 在 `@presmium/server` 中）。
 - **本机检查**：默认只监听 `127.0.0.1`（`--host` 指定其他地址）；校验 `Host` 是本机或 `--host` 给出的名字（compose 中为 `gateway`）；只接受不带 `Origin` 的请求（serve、agent-host 与 agent 的请求都不带，serve 转发浏览器经代理的请求时去掉它），不发送 CORS 响应头。这些规则代替了原先单独运行的语音网关 `presmium-speech serve`（D9）。
 
 ## 11. 安全（N-08）

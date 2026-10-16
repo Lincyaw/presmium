@@ -246,6 +246,7 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 
 - 登记过的角色在 IR 中保留为 mdast 节点 `{ type: 'presmiumRole', plugin, name, options, children }`，`options` 另带 `value`（反引号中的内容）。不认识这个角色的渲染端只显示 `children`。
 - 没有登记的角色照旧压平为文字，并给出警告。
+- 选项只能写成 `key=value`（只写键是 myst-parser 的语法错误），按 `RoleSpec.options` 声明的类型读出（`list` 按空白与逗号拆开）；`children` 抛错时是错误级诊断，节点保留 `value` 的文字。插件不能登记与 MyST 自带角色同名的角色（错误级诊断 `presmium.plugins`），两个插件登记同名角色时后者的被忽略。
 - MyST 自带的角色（`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等）与编译器内置的 `{button}`（2.10 节）不经这个扩展点。
 
 渲染：网页、幻灯片与 notebook 显示 `children`。演讲者窗口、幻灯片的演讲者备注与编辑模式中，没有子内容的角色显示一个标记 `〔<名> <value>〕`，作者能看见提示标记的位置。
@@ -658,7 +659,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `presmium ir` | `--out <file>` | 输出 IR JSON（绝对路径），诊断写到标准错误；用于调试 |
 | `presmium check` | `--json`（JSON 输出）、`--update-lock`（先在工作区重新解析全部锚点，重写 `.presmium/anchors.lock.json`）、`--env`（连接每个具名环境，报告不可达的环境）、`--audience <受众>`（按该受众编译后检查）、`--external-links`（用 lychee 检查外部链接） | 完整编译（含编译时执行），再运行各插件的检查项（`Check`），只输出诊断 |
 | `presmium serve` | `[目录]`（工作区根目录或一份文稿，默认当前目录）、`--port <n>`（默认 4310）、`--host <地址>`（默认 `127.0.0.1`；其他地址要求配置登录代理）、`--trust-proxy-from <地址>`、`--user <uid>`（以 root 启动时，读取令牌文件后降为这个用户）、`--operator-dir <dir>`（LOCAL 的运营者目录，默认在用户的状态目录中，第 10 节） | 工作区服务（P-120）：工作区站点的开发服务器、编辑模式、文档管理、助手、MCP 与各插件的服务端贡献（`architecture.md` 第 10 节）。配置了登录（`PRESMIUM_PROXY_SECRET` 或 `--trust-proxy-from`）时是 SHARED 模式：要求 `PRESMIUM_GATEWAY_URL`、`PRESMIUM_AGENT_HOST_URL`、两者的令牌（compose 中取自只有 root 可读的文件，`--user` 指定降权后的用户）与所有者控制台的主机名 `PRESMIUM_CONSOLE_HOST`，文档必须在工作区根目录的子目录中，环境中有第三方凭据时拒绝启动；工作区站点的开发服务器这时在 agent-host 中（`architecture.md` 10.1、10.2、10.4 节） |
-| `presmium gateway` | `[目录]`（工作区根目录，只读取工作区配置）、`--operator-dir <dir>`（运营者目录）、`--serve <url>`（`/mcp` 转发的目标）、`--port <n>`（默认 4320）、`--host <地址>`（默认 `127.0.0.1`） | SHARED 模式中持有第三方凭据的进程：挂载运营者插件的 gateway 贡献（模型、语音、远端环境的代理），签发与校验限定令牌（服务令牌取自 `PRESMIUM_GATEWAY_TOKEN`），转发 `/mcp`（`architecture.md` 10.9 节） |
+| `presmium gateway` | `[目录]`（工作区根目录，只读取工作区配置）、`--operator-dir <dir>`（运营者目录，默认按 LOCAL 运营者目录的规则）、`--serve <url>`（`/mcp` 转发的目标）、`--port <n>`（默认 4320）、`--host <地址>`（默认 `127.0.0.1`） | SHARED 模式中持有第三方凭据的进程：挂载运营者插件的 gateway 贡献（模型、语音、远端环境的代理），签发与校验限定令牌（服务令牌取自 `PRESMIUM_GATEWAY_TOKEN`），转发 `/mcp`（`architecture.md` 10.9 节） |
 | `presmium agent-host` | `[目录]`（工作区根目录）、`--port <n>`（默认 4330）、`--host <地址>`（默认 `127.0.0.1`）、`--user <uid>`（以 root 启动时，读取令牌文件后降为这个用户） | SHARED 模式中 sandbox 容器里的进程：agent 会话、编译时执行、构建、工作区站点的开发服务器与 deltabox 的审阅，经认证的 HTTP/SSE 接口由 serve 调用；令牌取自 `PRESMIUM_AGENT_HOST_TOKEN_FILE` 指向的文件（compose 中只有 root 可读）或 `PRESMIUM_AGENT_HOST_TOKEN`（`architecture.md` 10.8 节） |
 
 插件包还提供辅助命令（`presmium-export`、`presmium-diff`、`presmium-classroom-server`、`presmium-language-server`，以及 v0.8 的 `presmium-mcp`、`presmium-lecture`、`presmium-speech`），见 `architecture.md` 第 7 节。

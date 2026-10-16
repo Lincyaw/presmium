@@ -667,3 +667,13 @@ html.pm-presenting {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The mark of a role without children (docs/ir.md 2.8), in the presenter window and edit mode only. */
+.pm-role-mark {
+  margin: 0 0.15em;
+  padding: 0 0.2em;
+  border-radius: 3px;
+  font-size: 0.85em;
+  color: var(--vp-c-text-2, #666);
+  background: var(--vp-c-default-soft, rgba(128, 128, 128, 0.15));
+}

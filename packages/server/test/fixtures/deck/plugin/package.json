@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-server",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/server/test: a Node service, server routes of each role, an approval and an owner route",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

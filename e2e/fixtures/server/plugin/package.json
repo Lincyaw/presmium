@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-server-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/server.spec.ts: server routes, a component that uses useServer(), and a recorder of the host's operations",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

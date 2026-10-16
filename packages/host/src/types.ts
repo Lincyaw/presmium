@@ -5,7 +5,7 @@
  */
 import type { Ref } from 'vue'
 import { defineService } from '@presmium/kernel/contracts'
-import type { Cursor, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@presmium/kernel/contracts'
+import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@presmium/kernel/contracts'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
 
@@ -136,3 +136,74 @@ export interface Toolbar {
  * the web form, the navigation controls of the slides form.
  */
 export const TOOLBAR = defineService<Toolbar>('presmium.toolbar')
+
+// ---------------------------------------------------------------------------
+// Server (docs/architecture.md 4.7): the page's access to `presmium dev` and
+// `presmium serve`, and what the page reports to them.
+// ---------------------------------------------------------------------------
+
+export interface ServerClient {
+  /** True when `presmium dev` or `presmium serve` serves the page; false in static output and server renders. */
+  readonly available: boolean
+  /** The current member; set after the handshake. */
+  readonly member: Readonly<Ref<Member | undefined>>
+  /** Calls a plugin's route `/__presmium/<plugin>/<path>`, with the document directory (`Presmium-Document`) and the UI language (`Accept-Language`). */
+  fetch(plugin: string, path: string, init?: RequestInit): Promise<Response>
+  /** Subscribes to a plugin's SSE route. */
+  events(plugin: string, path: string): EventSource
+}
+
+export interface StatusProvider {
+  /** The plugin id. */
+  id: string
+  /** JSON data, without learners' identities. */
+  read(): unknown
+}
+
+export interface StatusRegistry {
+  register(provider: StatusProvider): Unsubscribe
+  list(): StatusProvider[]
+}
+
+/** Host service of both forms: the plugins' status summaries, sent to the server over the control channel. */
+export const STATUS = defineService<StatusRegistry>('presmium.status')
+
+export interface EditMode {
+  readonly active: Readonly<Ref<boolean>>
+  /** The current member may enter edit mode (editors and owners). */
+  readonly allowed: Readonly<Ref<boolean>>
+  enter(): void
+  leave(): void
+}
+
+/** Provided by the workspace's browser plugin; absent in `presmium dev` and in static output. */
+export const EDIT_MODE = defineService<EditMode>('presmium.editMode')
+
+// ---------------------------------------------------------------------------
+// Operations (docs/architecture.md 4.9): what viewers do, reported and replayed.
+// ---------------------------------------------------------------------------
+
+export interface ReplayHandler {
+  /** Applies one operation; `seeking` is true while fast-forwarding to a time, with no animation. */
+  apply(data: Record<string, unknown>, seeking: boolean): void
+  /** Returns to the state without operations of this type; called before seeking. */
+  clear?(): void
+}
+
+export interface Operations {
+  /** Plugins report what the user did; dropped while `replaying` is true. */
+  report(operation: Operation): void
+  /** Gets every reported operation (a recorder). */
+  subscribe(listener: (operation: Operation) => void): Unsubscribe
+  /** Registers the replay of one type of operation. */
+  onReplay(type: string, handler: ReplayHandler): Unsubscribe
+  /** Replays an operation; false when no plugin replays its type, which a player ignores. */
+  replay(operation: Operation, seeking?: boolean): boolean
+  /** Calls every replay's `clear`. */
+  clear(): void
+  /** True while a player applies operations, back to false once the page has settled. */
+  readonly replaying: Ref<boolean>
+}
+
+/** Host service of both forms. */
+export const OPERATIONS = defineService<Operations>('presmium.operations')

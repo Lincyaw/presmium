@@ -4,6 +4,7 @@
  * to Vue virtual nodes. Math, diagrams and code inside prose become the
  * viewer's own components, also inside raw HTML.
  */
+import { roleMark } from '@presmium/kernel'
 import type { IRBlock, MarkdownNode, MdastNode } from '@presmium/kernel'
 import type { Element, ElementContent, Nodes, Properties, Root, RootContent } from 'hast'
 import { raw } from 'hast-util-raw'
@@ -15,7 +16,7 @@ import { computed, defineComponent, h, inject } from 'vue'
 import { CodeView } from './code.ts'
 import { itemVisible } from './domain/index.ts'
 import { messages } from './i18n.ts'
-import { PmMath, PmMermaid } from './rich.ts'
+import { PmMath, PmMermaid, PmRoleMark } from './rich.ts'
 import { footnoteId, VIEWER } from './viewer.ts'
 import type { Viewer } from './viewer.ts'
 
@@ -55,8 +56,10 @@ type ViewerNode =
   | { type: 'pmMath', tex: string, display: boolean, html?: string }
   | { type: 'pmMermaid', code: string }
   | { type: 'pmCode', lang: string, code: string }
+  /** A registered role without children: its mark, which only the presenter and edit mode show. */
+  | { type: 'pmRole', mark: string }
 
-const VIEWER_NODES: ViewerNode['type'][] = ['pmMath', 'pmMermaid', 'pmCode']
+const VIEWER_NODES: ViewerNode['type'][] = ['pmMath', 'pmMermaid', 'pmCode', 'pmRole']
 
 function viewerNode(node: ViewerNode): ElementContent {
   return node as unknown as ElementContent
@@ -74,7 +77,7 @@ const BLOCK_ELEMENTS = new Set([
 
 function isBlock(node: ElementContent): boolean {
   const own = asViewerNode(node)
-  if (own) return own.type !== 'pmMath' || own.display
+  if (own) return own.type === 'pmMermaid' || own.type === 'pmCode' || (own.type === 'pmMath' && own.display)
   return node.type === 'element' && BLOCK_ELEMENTS.has(node.tagName)
 }
 
@@ -179,6 +182,13 @@ function handlers(links: MarkdownLinks): Handlers {
     summary: wrap('summary'),
     div: (state, node) => element('div', classed(node), state.all(node)),
     span: (state, node) => element('span', classed(node), state.all(node)),
+    // A plugin's role (docs/ir.md 2.8): its children; one without children shows its mark where the presenter sees it.
+    presmiumRole(state, node) {
+      const children = state.all(node)
+      return children.length
+        ? element('span', { className: ['pm-role'], dataRole: String(node.name ?? '') }, children)
+        : viewerNode({ type: 'pmRole', mark: roleMark(node) })
+    },
   }
   return custom as Handlers
 }
@@ -229,6 +239,7 @@ function viewerComponent(node: ViewerNode): [Component, Record<string, unknown>]
     case 'pmMath': return [PmMath, { tex: node.tex, display: node.display, html: node.html }]
     case 'pmMermaid': return [PmMermaid, { code: node.code }]
     case 'pmCode': return [CodeView, { lang: node.lang, value: node.code }]
+    case 'pmRole': return [PmRoleMark, { mark: node.mark }]
   }
 }
 

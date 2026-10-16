@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { deckLocale } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
-import { formOptions, pageMarkdown, searchDocuments, sidebar, SITE_LABELS, toPages } from '../domain/index.ts'
+import { formOptions, pageMarkdown, searchDocuments, SERVER_PROXY, sidebar, SITE_LABELS, toPages } from '../domain/index.ts'
 import type { FormOptions, WebRendererConfig } from '../domain/index.ts'
 import type { ClientModules } from './addons.ts'
 
@@ -108,6 +108,12 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>,
   ].join('')
   const nodePlugins = modules.nodeVite.map(({ config: options }, i) =>
     `...(node${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(options)} }) ?? [])`)
+  // In `presmium dev`, the plugins' routes and the server's own are the Presmium server's (WebSockets too);
+  // the pages know a server serves them.
+  const server = options.server ? `
+site.themeConfig.presmium.server = true
+site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.stringify(options.server)}, ws: true } } }
+` : ''
   return `${GENERATED}
 import { readFileSync } from 'node:fs'
 import { tokenize } from ${JSON.stringify(SEARCH)}
@@ -131,7 +137,7 @@ site.vite = {
   ],
   resolve: { dedupe: ['vue'] },
 }
-
+${server}
 // Local search over the IR text of each section: titles, narration, prose and code. The index is
 // the renderer's own (see presmiumIR); the search box tokenizes queries as it does, Chinese into words.
 site.themeConfig.search = {

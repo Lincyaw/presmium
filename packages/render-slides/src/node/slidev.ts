@@ -12,7 +12,7 @@
  */
 import { existsSync, realpathSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, lowerMyst, nodeMdast } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, lowerMyst, nodeMdast, withProp } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, Locale, MdastNode, RenderContext, RunResult } from '@presmium/kernel'
 import { originParts, outputNotes } from '@presmium/viewer/domain'
 import type { OriginPart } from '@presmium/viewer/domain'
@@ -131,6 +131,10 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     htmlAttrs: { lang: deckLang(doc), ...typeof htmlAttrs === 'object' ? htmlAttrs : {} },
     addons: [...new Set(listed.filter((name): name is string => typeof name === 'string').map(name => addonPath(name, gen)))],
     presmium: ctx.portable(doc.config.presmium, gen.dir),
+    // Slidev's dev server has an MCP endpoint that edits the generated deck; agents edit the source (principle 6).
+    mcp: false,
+    // In `presmium dev` the Presmium server serves the slides too (`/__presmium/`, proxied in vite.config.ts).
+    ...ctx.server ? { presmiumServer: true } : {},
   }
 }
 
@@ -235,6 +239,8 @@ function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes 
     iframes: 'element',
     links: notes ? undefined : gen.links,
     urls: block ? (url, type) => asset(url, block, gen, type, notes) : undefined,
+    // The presenter sees where a role without children stands, e.g. a cue (docs/ir.md 2.8).
+    roles: notes ? 'marks' : 'children',
   })
   return markdown(slidevNodes(mdast, gen))
 }
@@ -375,8 +381,8 @@ function code(node: CodeNode, at: number, gen: Generation, owned: boolean): stri
 /** A component with its `assets` props set to the URLs of the files the slides publish. */
 function published(node: ComponentNode, block: IRBlock, gen: Generation): ComponentNode {
   if (!node.assets) return node
-  const props = { ...node.props }
-  for (const [prop, url] of Object.entries(node.assets)) props[prop] = asset(url, block, gen, 'prop') ?? url
+  let props = node.props
+  for (const [path, url] of Object.entries(node.assets)) props = withProp(props, path, asset(url, block, gen, 'prop') ?? url)
   return { ...node, props }
 }
 

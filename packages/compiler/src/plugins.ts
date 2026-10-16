@@ -23,16 +23,67 @@ export interface PluginProblem {
   message: string
 }
 
+/** Package of the operator plugin installed with the CLI (D13, docs/architecture.md 10.6). */
+export const DELTABOX_PACKAGE = '@presmium/slidev-addon-deltabox'
+
+/** Presmium's own packages installed with the CLI: the default renderers and the deltabox plugin. */
+const BUNDLED = new Set(['@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', DELTABOX_PACKAGE])
+
+/**
+ * Where plugins come from (D14, docs/architecture.md 4.2, 10.2). `listed`
+ * is the operator's list (`settings.presmium.workspace.plugins`), installed
+ * at the workspace root; `bundled` the directory from which Presmium's own
+ * packages installed with the CLI resolve. With `policy` (`presmium serve`,
+ * gateway, agent-host) the deck's `plugins` and `renderers.<id>.package` load
+ * only listed packages, or Presmium's own, found at the workspace root or
+ * with the CLI: a relative path, or a package found only in the deck's
+ * `node_modules`, is not loaded.
+ */
+export interface PluginSources {
+  workspaceRoot: string
+  listed: string[]
+  bundled?: string
+  policy?: boolean
+}
+
 const jiti = createJiti(import.meta.url)
 
 /**
  * Loads one plugin package: a path relative to the deck, or a package found in
  * node_modules. A package without a usable `./presmium` entry is a browser-only plugin.
  */
-export async function loadPlugin(name: string, deckDir: string): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
+export async function loadPlugin(name: string, deckDir: string, sources?: PluginSources): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
   const problem = (severity: Severity, message: string): PluginProblem => ({ name, severity, message })
-  const dir = findPackageDir(name, resolve(deckDir))
+  if (sources?.policy) {
+    const refusal = refused(name, deckDir, sources)
+    if (refusal) return { problem: problem('error', refusal) }
+  }
+  const dir = sources?.policy
+    ? findPackageDir(name, resolve(sources.workspaceRoot), false) ?? bundledDir(name, sources)
+    : findPackageDir(name, resolve(deckDir)) ?? bundledDir(name, sources)
   if (!dir) return { problem: problem('error', `cannot load plugin "${name}": package not found from ${deckDir}`) }
+  return loadFrom(name, dir, problem)
+}
+
+/** Why the plugin policy refuses a package of the deck; undefined when it may load. */
+function refused(name: string, deckDir: string, sources: PluginSources): string | undefined {
+  const rule = 'presmium serve loads only the packages the operator lists in settings.presmium.workspace.plugins, installed at the workspace root'
+  if (name.startsWith('.') || isAbsolute(name)) return `plugin "${name}" is not loaded: a path is not a package; ${rule}`
+  const own = BUNDLED.has(name) && bundledDir(name, sources)
+  if (!sources.listed.includes(name) && !own) return `plugin "${name}" is not loaded: it is not listed; ${rule}`
+  if (!own && !findPackageDir(name, resolve(sources.workspaceRoot), false)) {
+    const where = findPackageDir(name, resolve(deckDir)) ? 'it is found only from the deck directory' : 'it is not installed there'
+    return `plugin "${name}" is not loaded: ${where}; ${rule}`
+  }
+  return undefined
+}
+
+/** The directory of one of Presmium's own packages installed with the CLI. */
+function bundledDir(name: string, sources?: PluginSources): string | undefined {
+  return sources?.bundled && BUNDLED.has(name) ? findPackageDir(name, sources.bundled) : undefined
+}
+
+async function loadFrom(name: string, dir: string, problem: (severity: Severity, message: string) => PluginProblem): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
   try {
     const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8')) as { exports?: Record<string, unknown> }
     const target = exportTarget(pkg.exports?.[NODE_PLUGIN_EXPORT])
@@ -55,13 +106,42 @@ export async function loadPlugin(name: string, deckDir: string): Promise<{ loade
   }
 }
 
-export async function loadPlugins(deckDir: string, names: string[]): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[] }> {
+export async function loadPlugins(deckDir: string, names: string[], sources?: PluginSources): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[] }> {
   const plugins: LoadedPlugin[] = []
   const problems: PluginProblem[] = []
   for (const name of names) {
-    const { loaded, problem } = await loadPlugin(name, deckDir)
+    const { loaded, problem } = await loadPlugin(name, deckDir, sources)
     if (loaded) plugins.push(loaded)
     if (problem) problems.push(problem)
+  }
+  return { plugins, problems }
+}
+
+/**
+ * The operator plugins of every deck (D14): those of the operator's list
+ * that declare `operator: true`, in its order, found at the workspace root
+ * (or with the CLI), then the deltabox plugin installed with the CLI, so an
+ * implementation of the same token the operator lists comes first. The
+ * deltabox plugin is skipped when the CLI does not have it.
+ */
+export async function loadOperatorPlugins(sources: PluginSources): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[] }> {
+  const plugins: LoadedPlugin[] = []
+  const problems: PluginProblem[] = []
+  for (const name of sources.listed) {
+    const dir = findPackageDir(name, resolve(sources.workspaceRoot), false) ?? bundledDir(name, sources)
+    if (!dir) {
+      problems.push({ name, severity: 'error', message: `operator plugin "${name}" (settings.presmium.workspace.plugins) is not installed at the workspace root ${sources.workspaceRoot}` })
+      continue
+    }
+    const { loaded, problem } = await loadFrom(name, dir, (severity, message) => ({ name, severity, message }))
+    if (problem) problems.push(problem)
+    if (loaded?.plugin?.operator === true) plugins.push(loaded)
+  }
+  const deltabox = !sources.listed.includes(DELTABOX_PACKAGE) && bundledDir(DELTABOX_PACKAGE, sources)
+  if (deltabox) {
+    const { loaded, problem } = await loadFrom(DELTABOX_PACKAGE, deltabox, (severity, message) => ({ name: DELTABOX_PACKAGE, severity, message }))
+    if (problem) problems.push(problem)
+    if (loaded?.plugin) plugins.push(loaded)
   }
   return { plugins, problems }
 }
@@ -83,16 +163,17 @@ export function pluginId(plugin: LoadedPlugin): string {
   return plugin.plugin?.id ?? plugin.name
 }
 
-function findPackageDir(name: string, deckDir: string): string | undefined {
+/** The package directory of `name` from `from`: a path relative to it, or found in `node_modules` up from it (only its own with `up` false). */
+function findPackageDir(name: string, from: string, up = true): string | undefined {
   if (name.startsWith('.') || isAbsolute(name)) {
-    const dir = resolve(deckDir, name)
+    const dir = resolve(from, name)
     return existsSync(join(dir, 'package.json')) ? dir : undefined
   }
   // The real directory, as the browser renderers name it to their bundlers.
-  for (let d = deckDir; ; d = dirname(d)) {
+  for (let d = from; ; d = dirname(d)) {
     const dir = join(d, 'node_modules', name)
     if (existsSync(join(dir, 'package.json'))) return realpathSync(dir)
-    if (dirname(d) === d) return undefined
+    if (!up || dirname(d) === d) return undefined
   }
 }
 
@@ -104,7 +185,7 @@ function exportTarget(value: unknown): string | undefined {
 
 function isNodePlugin(value: unknown): value is PresmiumNodePlugin {
   if (!isRecord(value) || typeof value.id !== 'string') return false
-  const lists = ['resolvers', 'checks', 'directives', 'passes', 'executors'] as const
+  const lists = ['resolvers', 'checks', 'directives', 'passes', 'executors', 'roles', 'tools'] as const
   const renderer = value.renderer
   return lists.every(key => value[key] === undefined || Array.isArray(value[key]))
     && ['version', 'kernel'].every(key => value[key] === undefined || typeof value[key] === 'string')

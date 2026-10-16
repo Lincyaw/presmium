@@ -25,6 +25,12 @@ export interface LowerOptions {
   footnotes?: 'gfm' | 'html'
   /** `element` writes an `{iframe}` as an `<iframe>`; `link` (default) as a link to the page, which is a degradation. */
   iframes?: 'element' | 'link'
+  /**
+   * `marks` writes a registered role without children (`presmiumRole`, e.g. a
+   * `{cue}`) as its mark `〔<name> <value>〕`, for the presenter's notes;
+   * otherwise (default) a role is its children (docs/ir.md 2.8).
+   */
+  roles?: 'children' | 'marks'
 }
 
 export interface LoweredMarkdown {
@@ -38,7 +44,7 @@ export interface LoweredMarkdown {
 const PHRASING = new Set([
   'text', 'emphasis', 'strong', 'delete', 'inlineCode', 'inlineMath', 'break', 'link', 'linkReference', 'image',
   'imageReference', 'footnoteReference', 'abbreviation', 'subscript', 'superscript', 'crossReference', 'cite', 'citeGroup',
-  'underline', 'keyboard', 'smallcaps',
+  'underline', 'keyboard', 'smallcaps', 'presmiumRole',
 ])
 
 /** Standard nodes and the fields of each that plain Markdown writes; other fields could make a writer write MyST. */
@@ -199,6 +205,9 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
       degraded.add(node.type)
       return [paragraph([{ type: 'link', url: src, children: [text(src)] }])]
     }
+    case 'presmiumRole':
+      if (!node.children?.length && options.roles === 'marks') return [text(roleMark(node))]
+      return children()
     case 'comment':
     case 'mystTarget':
       return []
@@ -213,6 +222,13 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
   }
   degraded.add(node.type)
   return node.children ? children() : typeof node.value === 'string' && node.value ? [text(node.value)] : []
+}
+
+/** The mark of a registered role without children, where the presenter sees it: `〔<name> <value>〕`. */
+export function roleMark(node: MdastNode): string {
+  const options = typeof node.options === 'object' && node.options !== null ? node.options as Record<string, unknown> : {}
+  const value = typeof options.value === 'string' ? options.value.trim() : ''
+  return `〔${String(node.name ?? '')}${value ? ` ${value}` : ''}〕`
 }
 
 /** The number a footnote shows: its `enumerator` (numbered by the compiler), else its label. */

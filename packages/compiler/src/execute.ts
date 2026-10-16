@@ -16,6 +16,7 @@ import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { join } from 'node:path'
 import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { CodeNode, Executor, Finding, IRBlock, IRDocument, RecordedRun, RunCache, RunRequest } from '@presmium/kernel'
+import type { ReadScope } from './workspace.ts'
 
 /** Cache location relative to the deck directory. */
 export const FREEZE_DIR = '.presmium/freeze'
@@ -39,10 +40,13 @@ export class FreezeCache implements RunCache {
   readonly used = new Set<string>()
   /** File name -> record, read once when first needed (a lookup without an executor, or pruning). */
   #records?: Map<string, FreezeRecord>
+  /** The files it may read (SHARED `presmium serve`). */
+  readonly #scope?: ReadScope
 
-  constructor(dir: string, entry: string) {
+  constructor(dir: string, entry: string, scope?: ReadScope) {
     this.dir = dir
     this.entry = entry
+    this.#scope = scope
   }
 
   get(key: string): RecordedRun | undefined {
@@ -110,6 +114,7 @@ export class FreezeCache implements RunCache {
   }
 
   #read(file: string): FreezeRecord | undefined {
+    if (this.#scope && !this.#scope.allows(join(this.dir, file))) return undefined
     try {
       const data: unknown = JSON.parse(readFileSync(join(this.dir, file), 'utf8'))
       return isRecord(data) && isRecord(data.run) ? data as unknown as FreezeRecord : undefined
