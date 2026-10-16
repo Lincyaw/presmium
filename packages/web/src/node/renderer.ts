@@ -11,7 +11,7 @@ import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
 import { diffDocuments } from '@presmium/viewer/domain'
 import launchEditor from 'launch-editor'
 import { offlineEnabled, rendererConfig } from '../domain/index.ts'
-import { clientModules } from './addons.ts'
+import { clientModules, nodeVitePlugins } from './addons.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument } from './publish.ts'
 import { siteFiles, write, writeSite } from './site.ts'
@@ -37,9 +37,11 @@ async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string) {
   const files = siteFiles(workDir)
   rmSync(files.publicDir, { recursive: true, force: true })
   const deck = { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }
-  const modules = await clientModules(ctx, doc.config.presmium)
+  // The plugins' Node entries are imported once; the components are listed at each write, so a dev server
+  // registers one added to the deck while it runs.
+  const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium)
   const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base)
-  const site = (published: IRDocument) => writeSite(workDir, { doc: published, deck, modules, options })
+  const site = (published: IRDocument) => writeSite(workDir, { doc: published, deck, modules: clientModules(ctx, nodeVite), options })
   return { options, files, publish, site }
 }
 

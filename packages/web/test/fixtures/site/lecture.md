@@ -18,3 +18,7 @@ renderers:
 公式 $x^2 + y^2 = z^2$ 在构建时渲染，图表随站点发布：
 
 ![图表](img/chart.svg)
+
+本节的[讲义](docs/handout.pdf)与[笔记]随站点发布；[写坏的链接](bad%E0%A4.pdf)保持原样。
+
+[笔记]: notes.txt

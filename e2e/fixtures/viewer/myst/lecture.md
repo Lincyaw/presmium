@@ -78,3 +78,55 @@ def merge(pair, new_id):
 counts = {}
 print(counts)
 :::
+
+(version-track)=
+## 逐版本讲解
+
+:::{hints}
+web: { layout: scrolly }
+:::
+
+:::{versions} python
+def merge(pair):
+    return pair
++++
+def merge(pair, new_id):
+    return new_id
++++
+def merge(pair, new_id):
+    first = pair[0]
+    return new_id
++++
+def merge(pair, new_id):
+    first, second = pair
+    return new_id
++++
+def merge(tokens, pair, new_id):
+    first, second = pair
+    return tokens
++++
+def merge(tokens, pair, new_id):
+    out = []
+    return out
++++
+def merge(tokens, pair, new_id):
+    out, i = [], 0
+    return out
++++
+def merge(tokens, pair, new_id):
+    out, i = [], 0
+    while i < len(tokens):
+        i += 1
+    return out
++++
+def merge(tokens, pair, new_id):
+    out, i = [], 0
+    while i < len(tokens):
+        out.append(tokens[i])
+        i += 1
+    return out
+:::
+
+代码从第一个版本开始，逐步改写成完整的合并函数。
+
+第二个版本加上新词元的编号；之后的七个版本没有讲解，是代码块自己的步骤。

@@ -67,7 +67,7 @@ function nodeEntry(dir: string): string | undefined {
  * (`presmium.<id>`). The site's Vite runs in a process of its own, where the
  * site's configuration imports these entries and calls their `vitePlugins`.
  */
-async function nodeVitePlugins(ctx: RenderContext, presmium: Record<string, unknown>): Promise<VitePluginsEntry[]> {
+export async function nodeVitePlugins(ctx: RenderContext, presmium: Record<string, unknown>): Promise<VitePluginsEntry[]> {
   if (ctx.vitePlugins.length === 0) return []
   const entries: VitePluginsEntry[] = []
   for (const name of ctx.plugins) {
@@ -85,13 +85,15 @@ async function nodeVitePlugins(ctx: RenderContext, presmium: Record<string, unkn
 
 /**
  * The components, kernel plugins, viewer plugins and Vite plugins of the
- * deck's plugins, in declaration order; the deck's own `components/`
- * override them. The plugin packages are where the compiler loaded them
+ * deck's plugins, in declaration order, with the Node entries that add Vite
+ * plugins (`nodeVitePlugins`); the deck's own `components/` override them.
+ * The plugin packages are where the compiler loaded them
  * (`RenderContext.pluginDirs`); one it could not load is left out (the
- * compiler reports it).
+ * compiler reports it). The directories are read at each call, so a dev
+ * server that calls it at every update registers a component added meanwhile.
  */
-export async function clientModules(ctx: RenderContext, presmium: Record<string, unknown>): Promise<ClientModules> {
-  const modules: ClientModules = { components: new Map(), plugins: [], viewers: [], vite: [], nodeVite: await nodeVitePlugins(ctx, presmium) }
+export function clientModules(ctx: RenderContext, nodeVite: VitePluginsEntry[]): ClientModules {
+  const modules: ClientModules = { components: new Map(), plugins: [], viewers: [], vite: [], nodeVite }
   for (const name of ctx.plugins) {
     const dir = ctx.pluginDirs[name]
     // The package's own name, also for a plugin the deck names by its path.

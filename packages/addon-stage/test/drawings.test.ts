@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
-import type { Browser } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
 import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
@@ -63,6 +63,26 @@ function startDev(): Promise<string> {
   })
 }
 
+/**
+ * Opens the slides once the dev server has optimized its dependencies: while Vite optimizes them it
+ * may reload the first visits or abort their module requests (slowly on a loaded machine), so a
+ * visit is repeated until the slide shows, then the slides are visited once more.
+ */
+async function openSlides(page: Page, url: string): Promise<void> {
+  const heading = page.locator('.slidev-page h1', { hasText: 'Drawings' }).first()
+  const deadline = Date.now() + 180_000
+  for (let shown = 0; shown < 2;) {
+    try {
+      await page.goto(url)
+      await heading.waitFor({ timeout: 30_000 })
+      await page.waitForLoadState('networkidle')
+      shown++
+    } catch (error) {
+      if (Date.now() > deadline) throw error
+    }
+  }
+}
+
 function filesOf(dir: string): string[] {
   return readdirSync(dir, { recursive: true, encoding: 'utf8' }).map(file => join(dir, file)).filter(file => statSync(file).isFile())
 }
@@ -71,12 +91,7 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   const url = await startDev()
   browser = await chromium.launch()
   const page = await browser.newPage()
-  // The first visit may reload once while Vite optimizes dependencies.
-  for (let visit = 0; visit < 2; visit++) {
-    await page.goto(url)
-    await page.locator('.slidev-page h1', { hasText: 'Drawings' }).first().waitFor()
-    await page.waitForLoadState('networkidle')
-  }
+  await openSlides(page, url)
 
   await page.getByTitle('Show drawing toolbar').click()
   const box = (await page.locator('#slide-content').boundingBox())!
@@ -100,4 +115,4 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   // The drawing toolbar's "Delete" clears the slide's drawing.
   await page.getByTitle('Delete', { exact: true }).click()
   await expect.poll(() => existsSync(drawing), { timeout: 15_000 }).toBe(false)
-}, 240_000)
+}, 360_000)

@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Page } from '@playwright/test'
@@ -462,6 +462,20 @@ test.describe('MyST roles and directives, raw HTML and code origins (e2e/fixture
     await expect(present.locator('.shiki-magic-move-container')).toHaveCount(0)
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0)
   })
+
+  test('in the scrolly layout, a step without narration (the code block\'s own) takes a quarter of a screen', async ({ page }) => {
+    await page.goto(`${site.web}/#version-track`)
+    const section = page.locator('.pm-section[data-section="version-track"]')
+    await expect(section).toHaveClass(/pm-section--scrolly/)
+    // Nine versions: narration at the first two steps, the other seven are the block's own.
+    expect(site.doc.sections.find(s => s.id === 'version-track')!.steps).toBe(8)
+    const narrated = 2
+    const bare = 7
+    await expect(section.locator('.pm-step')).toHaveCount(narrated + bare)
+    await expect(section.locator('.pm-step--bare')).toHaveCount(bare)
+    const { height, screen } = await section.evaluate(el => ({ height: el.getBoundingClientRect().height, screen: innerHeight }))
+    expect(height).toBeLessThanOrEqual((narrated + bare * 0.25) * screen)
+  })
 })
 
 test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
@@ -769,6 +783,15 @@ test.describe('presmium dev', () => {
     // Longer than the run would have taken.
     await page.waitForTimeout(5000)
     await expect(block.locator('.pm-outputs')).toHaveCount(0)
+  })
+
+  test('a component the author adds to the deck while the server runs is registered at the next save', async ({ page }) => {
+    await openDev(page, `${dev.url}live.html`, '.pm-section[data-section="components"]')
+    mkdirSync(join(dev.deck, 'components'), { recursive: true })
+    writeFileSync(join(dev.deck, 'components/FixtureAdded.vue'), '<template><p class="fx-added">新加的组件</p></template>\n')
+    edit(/$/, '\n(added-component)=\n## 新加的组件\n\n:::{component} FixtureAdded\n:::\n\n服务运行时加入的组件。\n', 'live')
+    // The theme's list of components changes too: the page may reload.
+    await expect(page.locator('.pm-section[data-section="added-component"] .fx-added')).toHaveText('新加的组件', { timeout: 30_000 })
   })
 })
 
