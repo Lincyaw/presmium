@@ -4,9 +4,10 @@
 // (`.pm-section[data-section]`, `.pm-block[data-block]`) but offers nothing to add beside them, so
 // the layer adds a slot of its own there and teleports a spot into it, following the page as it
 // changes. The layer reads the notes once and gives each spot those of its place. A block's spot
-// shows while the reader points at or focuses the block (or writes a note), so a section shows one
-// notes button; it is named after the block's first words, not its label. The slides form has no
-// such markup, and no notes.
+// shows while the reader points at the block or focuses in it, while it is open and while the block
+// has notes, so a section shows one notes button; it is named after the block's first words, not
+// its label. Until then it is transparent, not hidden, so keyboard users reach it with Tab. The
+// slides form has no such markup, and no notes.
 import { computed, onBeforeUnmount, onMounted, shallowRef } from 'vue'
 import { COLLECTIONS, isLabel, isNote, notesAt } from '../domain/index.ts'
 import NoteSpot from './NoteSpot.vue'
@@ -112,7 +113,7 @@ onBeforeUnmount(() => {
 .pm-note-slot--block {
   margin: 0.15rem 0 0.4rem;
 }
-.pm-block:not(:hover, :focus-within, :has(> .pm-note-slot [aria-expanded='true'])) > .pm-note-slot--block {
-  visibility: hidden;
+.pm-block:not(:hover, :focus-within, :has(> .pm-note-slot :is([aria-expanded='true'], [data-notes]:not([data-notes='0'])))) > .pm-note-slot--block {
+  opacity: 0;
 }
 </style>

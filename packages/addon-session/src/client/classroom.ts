@@ -173,6 +173,8 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   let follow: FollowMode = 'follow'
   let invitation: string | undefined
   let error: string | undefined
+  /** The server refused a write of this window since its last write. */
+  let refused = false
   /** A join link to a classroom this browser presents: the one to offer to rejoin. */
   let preferred: string | undefined
   /** The presenter position this window last went to. */
@@ -216,6 +218,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       invitation,
       rejoin: membership || invitation ? undefined : presented()?.room,
       error,
+      refused,
       sessionId: membership?.room,
       status: membership ? sessionStatus(record) : 'idle',
       me: membership?.me,
@@ -239,6 +242,10 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   // The shared collections take no writes once the classroom has ended (the server refuses them too).
   const shared = documentStore(() => doc, () => {
     if (membership && !active()) throw new Error(messages().errors.ended)
+    if (refused) {
+      refused = false
+      notify()
+    }
   })
   // The participant's own room is connected when the store is first used in a classroom.
   const personal = documentStore(() => {
@@ -305,6 +312,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     mirror = false
     connection = 'offline'
     followed = undefined
+    refused = false
     bind(new Y.Doc())
     bindPersonal(new Y.Doc())
   }
@@ -390,9 +398,13 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     })
     connecting.on('closed', ({ code }: { code: number }) => {
       if (!current() || !membership) return
-      // The server refused an update this document holds: start again from the room's.
+      // The server refused an update this document holds: start again from the room's, and say so.
       if (code === REFUSED_CLOSE_CODE) {
-        void enter({ ...membership, follow }, false, mirror).catch(() => {})
+        void enter({ ...membership, follow }, false, mirror).then(() => {
+          if (membership?.room !== room || membership.me.id !== me.id) return
+          refused = true
+          notify()
+        }, () => {})
         return
       }
       // An archived classroom: the server is done with it, the document stays readable here.

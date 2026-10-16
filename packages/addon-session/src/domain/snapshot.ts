@@ -23,6 +23,12 @@ export interface ClassroomSnapshot extends SessionSnapshot {
   rejoin?: string
   /** Why the last attempt to create or join failed. */
   error?: string
+  /**
+   * The classroom server refused a write of this window, which then started
+   * again from the classroom's document: that write is gone. Cleared by the
+   * next write.
+   */
+  refused?: boolean
   /** The classroom was archived to this file (relative to the deck directory): it has ended and is offline. */
   archive?: string
 }

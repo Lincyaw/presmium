@@ -20,6 +20,8 @@ const noteSpot = (page: Page, section: string, block?: string) =>
   page.locator(block ? `.pm-note-spot[data-section="${section}"][data-block="${block}"]` : `.pm-note-spot[data-section="${section}"]:not([data-block])`)
 /** The block a note spot stands in, if any: its notes button shows while the reader points at it. */
 const blockOf = (spot: Locator) => spot.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " pm-block ")][1]')
+/** Whether the reader sees a note spot: a block's spot is transparent until it shows. */
+const shown = (spot: Locator) => spot.evaluate(el => getComputedStyle(el.closest('.pm-note-slot')!).opacity !== '0')
 /** The notes button of the labelled block `merge-rule`, named after the block's first words. */
 const MERGE_RULE = /^笔记：合并规则：每一轮把出现次数最多/
 
@@ -98,17 +100,31 @@ test.describe('without a classroom', () => {
 
     // Every section has a note spot, and so has the labelled block; a section shows one notes
     // button, the block's shows while the reader points at the block, named after its first words.
-    await expect(noteSpot(page, 'classroom-questions', 'merge-rule')).toHaveCount(1)
-    const questions = page.locator('.pm-section[data-section="classroom-questions"]')
-    await expect(questions.getByRole('button', { name: /^笔记：/ })).toHaveCount(1)
+    const section = noteSpot(page, 'classroom-questions')
+    const block = noteSpot(page, 'classroom-questions', 'merge-rule')
+    await expect(block).toHaveCount(1)
+    await expect(block.getByRole('button')).toHaveAccessibleName(MERGE_RULE)
+    await expect.poll(() => shown(block)).toBe(false)
     await page.locator('.pm-block[data-block="merge-rule"]').hover()
-    await expect(questions.getByRole('button', { name: /^笔记：/ })).toHaveCount(2)
-    await expect(noteSpot(page, 'classroom-questions', 'merge-rule').getByRole('button')).toHaveAccessibleName(MERGE_RULE)
-    // A note survives a reload.
+    await expect.poll(() => shown(block)).toBe(true)
+    await page.mouse.move(0, 0)
+    await expect.poll(() => shown(block)).toBe(false)
+    // A keyboard user reaches it with Tab from the section's button, and it shows while focused (N-06).
+    await section.getByRole('button').focus()
+    for (let i = 0; i < 10 && !await block.getByRole('button').evaluate(el => el === document.activeElement); i++) await page.keyboard.press('Tab')
+    await expect(block.getByRole('button')).toBeFocused()
+    await expect.poll(() => shown(block)).toBe(true)
+    await page.keyboard.press('Enter')
+    await block.getByLabel('新笔记').fill('频率相同时怎么办？')
+    await block.getByRole('button', { name: '保存笔记' }).press('Enter')
+    await expect(block.getByRole('list', { name: '我的笔记' })).toContainText('频率相同时怎么办？')
+    // A note survives a reload, and a block with notes shows its button with their count.
     await addNote(page, noteSpot(page, 'classroom-quiz'), '课堂测验', '合并看的是频率')
     await expect(noteSpot(page, 'classroom-quiz').locator('.pm-note-spot__where')).toHaveText('保存在这个浏览器中，只有你能看到')
     await page.reload()
     await expect(noteSpot(page, 'classroom-quiz')).toHaveAttribute('data-notes', '1')
+    await expect(block.locator('.pm-note-spot__count')).toHaveText('1')
+    await expect.poll(() => shown(block)).toBe(true)
   })
 })
 
@@ -422,7 +438,7 @@ test.describe('a classroom', () => {
     await close()
   })
 
-  test('after a write the classroom server refuses, the learner\'s window starts again from the classroom and the next answer counts (P-60)', async ({ browser }) => {
+  test('after a write the classroom server refuses, the learner\'s window starts again from the classroom, says so, and the next answer counts (P-60)', async ({ browser }) => {
     const { presenter, a, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
@@ -431,12 +447,14 @@ test.describe('a classroom', () => {
     await box.getByLabel('问题').evaluate(el => el.removeAttribute('maxlength'))
     await box.getByLabel('问题').fill('长'.repeat(20_000))
     await box.getByRole('button', { name: '提问' }).click()
-    // The window drops what the server refused, as the classroom has it.
+    // The window drops what the server refused, as the classroom has it, and says so until the next write.
     await expect(box.getByRole('list', { name: '我的提问' })).toHaveCount(0)
     await expect(badge(a)).toContainText('自主浏览中')
+    await expect(badge(a).getByRole('alert')).toHaveText(/^课堂服务拒绝了你刚才的写入/)
     await quiz(a).getByRole('radio', { name: /次数最多/ }).check()
     await quiz(a).getByRole('button', { name: '提交' }).click()
     await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 1 人，答对 1 人')
+    await expect(badge(a).getByRole('alert')).toHaveCount(0)
     await close()
   })
 

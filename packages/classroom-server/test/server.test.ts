@@ -206,9 +206,30 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s entr
   expect(late.doc.getMap('store:quizzes').toJSON()).toEqual({ 's/quiz': { open: true } })
 })
 
-it('refuses a learner\'s update that would wait in the room, such as one deleting what the presenter writes next (P-60, P-61)', async () => {
+/**
+ * An update with one struct of a client of its own that sets `value` right after the struct of
+ * `client` at `clock`, encoded as Yjs does (version 1): a forged client can send it before
+ * that struct exists.
+ */
+function structAfter(client: number, clock: number, value: unknown): Uint8Array {
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, 1) // one client
+  encoding.writeVarUint(encoder, 1) // with one struct
+  encoding.writeVarUint(encoder, 987654321) // the client
+  encoding.writeVarUint(encoder, 0) // from clock 0
+  encoding.writeUint8(encoder, 0x80 | 8) // an item with an origin, its content any value
+  encoding.writeVarUint(encoder, client)
+  encoding.writeVarUint(encoder, clock)
+  encoding.writeVarUint(encoder, 1)
+  encoding.writeAny(encoder, value as never)
+  encoding.writeVarUint(encoder, 0) // no deletions
+  return encoding.toUint8Array(encoder)
+}
+
+it('refuses a learner\'s update that would wait in the room, such as one deleting what the presenter writes next or placing a value after it (P-60, P-61)', async () => {
   const presenter = await join('room-g', { claim: 'presenter-key' })
   presenter.doc.getMap('session').set('status', 'active')
+  const next = Y.getState(presenter.doc.store, presenter.doc.clientID)
   // A delete set for the presenter's next 20 structs, which nobody has yet: without structs of its
   // own, it would wait in the room and delete what the presenter writes next.
   const future = new Y.Doc()
@@ -220,13 +241,21 @@ it('refuses a learner\'s update that would wait in the room, such as one deletin
   const code = closed(forged)
   forged.send(updateMessage(Y.encodeStateAsUpdate(future, Y.encodeStateVector(future))))
   expect(await code).toBe(4403)
-  expect(drops('room-g').map(d => d.reason)).toEqual(['an update that does not integrate into the room'])
+  // A value after the presenter's fourth struct from now, the third cursor below: it would wait in
+  // the room, then become the cursor that the presenter's windows and the learners follow.
+  const placed = await socket('room-g', { participant: 'p1', key: 'p1-key' })
+  const placedCode = closed(placed)
+  placed.send(updateMessage(structAfter(presenter.doc.clientID, next + 3, { slide: 666, step: 0 })))
+  expect(await placedCode).toBe(4403)
+  expect(drops('room-g').map(d => d.reason)).toEqual(Array(2).fill('an update that does not integrate into the room'))
 
   presenter.doc.getMap('store:quizzes').set('q2', { open: true })
-  presenter.doc.getMap('session').set('cursor', { slide: 2, step: 0 })
+  for (const slide of [1, 2, 3]) presenter.doc.getMap('session').set('cursor', { slide, step: 0 })
+  expect(Y.getState(presenter.doc.store, presenter.doc.clientID)).toBe(next + 4)
   const late = await join('room-g')
-  await expect.poll(() => late.doc.getMap('session').get('cursor')).toEqual({ slide: 2, step: 0 })
+  await expect.poll(() => late.doc.getMap('session').get('cursor')).toEqual({ slide: 3, step: 0 })
   expect(late.doc.getMap('store:quizzes').get('q2')).toEqual({ open: true })
+  expect(presenter.doc.getMap('session').get('cursor')).toEqual({ slide: 3, step: 0 })
 })
 
 it('closes the connection of a refused update, and takes the learner\'s writes again once the client starts over', async () => {

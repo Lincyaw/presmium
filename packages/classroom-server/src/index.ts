@@ -29,11 +29,13 @@
  * synchronized state (`sync:<channel>`) are the presenter's alone. A
  * connection proves its participant with `?participant=<id>&key=<key>`: the
  * first connection that names a participant binds the id to its key. Such an
- * update must also integrate at once: one that waits for structs or deletes
- * what the room does not have would apply later to what others write. An
- * update that breaks these rules is dropped and the connection closed with
- * code 4403: the client's document holds what the room refused, so the
- * session plugin starts again from the room's. Awareness (who is connected)
+ * update must also integrate at once: one with structs that wait for structs
+ * the room does not have (a gap in a client's clocks, an origin or a parent
+ * not sent yet), or that deletes what the room does not have, would apply
+ * later as part of what others write. An update that breaks these rules is
+ * dropped and the connection closed with code 4403: the client's document
+ * holds what the room refused, so the session plugin starts again from the
+ * room's and tells the learner. Awareness (who is connected)
  * follows the same trust: a connection sets the states of its own clients
  * only, and a learner's state names only the participant it proved, as a
  * learner. A participant's own rooms (`<room>.<key>`, named by a key only
@@ -201,35 +203,29 @@ function entryRefusal(name: string, key: string | null, value: unknown, particip
   return JSON.stringify(entry).length > MAX_ENTRY ? `a value in ${name} over ${MAX_ENTRY} bytes` : undefined
 }
 
-/**
- * Whether an update integrates into the room at once (Yjs's own encoding,
- * read with its public API): each client's structs start where the room has
- * that client's, with no gap inside, and it deletes only structs the room or
- * the update has. Otherwise Yjs keeps the update pending and applies it
- * later, to what others write meanwhile.
- */
-function integrates(room: Room, update: Uint8Array): boolean {
-  const { structs, ds } = Y.decodeUpdate(update)
-  if (structs.some(struct => struct instanceof Y.Skip)) return false
-  const { from, to } = Y.parseUpdateMeta(update)
-  const known = (client: number) => Math.max(Y.getState(room.store, client), to.get(client) ?? 0)
-  return [...from].every(([client, clock]) => clock <= Y.getState(room.store, client))
-    && [...ds.clients].every(([client, deletions]) => deletions.every(({ clock, len }) => clock + len <= known(client)))
+/** What a document keeps pending: structs that wait for structs it lacks, and deletions of structs it lacks. */
+function pending(doc: Y.Doc): [structs: Uint8Array, deletions: Uint8Array] {
+  return [doc.store.pendingStructs?.update ?? new Uint8Array(), doc.store.pendingDs ?? new Uint8Array()]
 }
 
 /**
  * Why an update from a connection that is not the presenter's may not be
  * applied; undefined when it changes only its participant's entries. The
- * rules are tried on a copy of the room.
+ * rules are tried on a copy of the room. The update must integrate at once:
+ * Yjs keeps a struct that waits for structs the room lacks (a gap in its
+ * client's clocks, or an origin or parent no one has sent yet), and a
+ * deletion of structs the room lacks, pending, and applies them later as part
+ * of what others write, out of reach of these rules.
  */
 function refusal(room: Room, update: Uint8Array, writer: ClassroomWriter): string | undefined {
-  if (!integrates(room, update)) return 'an update that does not integrate into the room'
   const probe = new Y.Doc()
   Y.applyUpdate(probe, Y.encodeStateAsUpdate(room))
+  const before = pending(probe)
   const changes: [type: unknown, keys: Set<string | null>][] = []
   probe.on('afterTransaction', (transaction: Y.Transaction) => changes.push(...transaction.changed))
   Y.applyUpdate(probe, update)
-  let refused: string | undefined
+  const after = pending(probe)
+  let refused = before.every((bytes, i) => Buffer.compare(bytes, after[i]!) === 0) ? undefined : 'an update that does not integrate into the room'
   for (const [type, keys] of changes) {
     // A change inside a nested type has no top-level name: the plugins store plain values only.
     const name = [...probe.share].find(([, shared]) => shared === type)?.[0]

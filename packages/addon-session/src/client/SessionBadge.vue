@@ -58,6 +58,9 @@ async function join(): Promise<void> {
         {{ t.backToPresenter }}
       </button>
     </div>
+    <p v-if="snapshot.refused && snapshot.status !== 'idle'" class="pm-session-badge__note" role="alert">
+      {{ t.refused }}
+    </p>
   </div>
 </template>
 
@@ -93,6 +96,11 @@ async function join(): Promise<void> {
 }
 .pm-session-badge button {
   cursor: pointer;
+}
+.pm-session-badge__note {
+  max-width: 24rem;
+  margin: 0.3rem 0 0;
+  color: var(--vp-c-text-2, inherit);
 }
 .pm-session-badge[data-status='ended'] {
   border-color: #dc2626;

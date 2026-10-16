@@ -54,6 +54,7 @@ const zh = {
   rejoin: (room: string) => `以主讲身份回到课堂 ${room}`,
   rejoinTitle: '这个浏览器创建过这个课堂，可以继续主讲、结束与归档它',
   loopbackLink: '学习者的设备打不开这个地址，请用局域网地址打开文稿',
+  refused: '课堂服务拒绝了你刚才的写入（例如超出长度的提问），页面已按课堂的记录重新同步',
   defaultName: { presenter: '主讲', learner: '学习者' },
   errors: {
     noServer: '文稿没有配置课堂服务',
@@ -121,6 +122,7 @@ const en: SessionMessages = {
   rejoin: room => `Rejoin classroom ${room} as presenter`,
   rejoinTitle: 'This browser created the classroom: go on presenting it, end it and archive it',
   loopbackLink: 'Learners\' devices cannot open this address; open the deck at its address on the local network',
+  refused: 'The classroom server refused your last write (such as a question over the length limit); the page has synced again with the classroom',
   defaultName: { presenter: 'Presenter', learner: 'Learner' },
   errors: {
     noServer: 'The deck has no classroom server',
