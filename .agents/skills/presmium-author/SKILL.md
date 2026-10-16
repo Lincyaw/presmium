@@ -187,8 +187,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 | `presmium.execute` `no executor for … and no recorded output` | 安装 `python3` 或 `node`，或提交 `.presmium/freeze/` 中的录制 |
 | `presmium.execute` `recorded output was made with …` | 别的环境录制的输出被沿用；要重跑就加 `execute: { rerun: environment }` |
 | `presmium.execute` `:env: x: no such environment` | 在头部 `execute.environments` 中声明它，或改正名字 |
-| `presmium.execute` `no plugin in plugins provides environments of kind …` | 把提供该类环境的插件加进 `plugins`（`devcontainer`：`@presmium/slidev-addon-exec-local`；`webgpu`：`@presmium/slidev-addon-exec-webgpu`） |
-| `presmium.execute` `no plugin in plugins provides environments of kind …` | 把提供该类环境的插件加进 `plugins`（`devcontainer`：`@presmium/slidev-addon-exec-local`；`jupyter`：`@presmium/slidev-addon-exec-jupyter`） |
+| `presmium.execute` `no plugin in plugins provides environments of kind …` | 把提供该类环境的插件加进 `plugins`（`devcontainer`：`@presmium/slidev-addon-exec-local`；`webgpu`：`@presmium/slidev-addon-exec-webgpu`；`jupyter`：`@presmium/slidev-addon-exec-jupyter`；`wasi`：`@presmium/slidev-addon-exec-wasi`） |
 | `presmium.execute` `the deck's url … is not the operator's address` | `jupyter` 环境的 `url` 与运营者的 `PRESMIUM_ENV_<名>_URL` 不同源：去掉 `url`，或写运营者的地址 |
 | `presmium.execute` `PRESMIUM_ENV_<名>_URL is not set` | 运营者在运行 `presmium` 的环境中给出这个环境的地址与令牌（`templates/env/compose/README.md`） |
 | `presmium.execute` `session "…" runs in … and here in …` | 同一会话的代码块写同一个 `:env:` |

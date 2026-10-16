@@ -21,13 +21,11 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 宿主适配 | `host`、`addon-core`、`web` | 形态无关的宿主接口（`@presmium/host`）及 Slidev（`@presmium/slidev-addon-core`）、VitePress（`@presmium/web`）两个实现 |
 | 讲台 | `addon-stage` | 黑屏、冻结、圈画、脚注就近 |
 | 代码引用 | `addon-code` | `{code-ref}`、锚点解析、锁定、漂移、永久链接 |
-| 代码执行 | `addon-exec`、`addon-exec-local`、`addon-exec-wasi`、`addon-exec-webgpu` | 执行服务（Pyodide、脚本 Worker、本机进程、容器、WebAssembly 中的 C/C++/Ruby/SQL）、执行面板、分步执行、环境复刻；浏览器 GPU 后端（WGSL 计算着色器、Python 桥 `presmium_gpu`、jax-js，构建时在 Playwright 的 Chromium 中录制） |
-| 代码执行 | `addon-exec`、`addon-exec-local`、`addon-exec-jupyter` | 执行服务（Pyodide、脚本 Worker、本机进程、容器）、执行面板、分步执行、环境复刻；远端环境（`kind: jupyter`：Jupyter 内核、服务端代理、gateway 中的代理、`{terminal}`，`src/jupyter/` 是 Node 与浏览器共用的 `@jupyterlab/services` 客户端） |
+| 代码执行 | `addon-exec`、`addon-exec-local`、`addon-exec-wasi`、`addon-exec-webgpu`、`addon-exec-jupyter` | 执行服务（Pyodide、脚本 Worker、本机进程、容器、WebAssembly 中的 C/C++/Ruby/SQL）、执行面板、分步执行、环境复刻；浏览器 GPU 后端（WGSL 计算着色器、Python 桥 `presmium_gpu`、jax-js，构建时在 Playwright 的 Chromium 中录制）；远端环境（`kind: jupyter`：Jupyter 内核、服务端代理、gateway 中的代理、`{terminal}`，`src/jupyter/` 是 Node 与浏览器共用的 `@jupyterlab/services` 客户端） |
 | 引导 | `addon-guide` | 模拟光标、聚光、交互提示 |
 | 富内容 | `addon-content` | 思维导图、媒体、PlantUML |
 | 发布 | `addon-publish` | 离线、高对比度、`presmium-export`、`presmium-diff` |
 | 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问、理解度、先预测再揭示、笔记；y-websocket 课堂服务 |
-| 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问、理解度、笔记；y-websocket 课堂服务 |
 | 讲授 | `addon-lecture` | 讲授轨（`lectures/<id>/track.json`）、放映视图中的录制（Mediabunny 录 Ogg/Opus，只在 `src/client/media.ts`）、视图 `lecture` 的回放（`OPERATIONS` 折叠出 `state(t)`）、检查项 `presmium.lecture`、站点渲染端 `lecture` 与 VTT 导出 |
 | 编辑 | `language-server`、`vscode` | 语言服务；VS Code 扩展（唯一预打包的包） |
 

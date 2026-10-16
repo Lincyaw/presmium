@@ -581,8 +581,6 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 |---|---|
 | Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74（已完成，结论见下） |
 | JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法；SwiftShader 在无头 Chromium 中的计算着色器与计时；适配器的默认限制 | WP-75（已完成，结论见下） |
-| Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76 |
-| Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74 |
 | JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
 | Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76（已完成，结论见下；`runsc` 与 GPU 的组合没有验证） |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
