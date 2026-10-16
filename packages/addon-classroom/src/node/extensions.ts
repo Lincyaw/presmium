@@ -4,8 +4,9 @@
  * exercise is its prompt, given as mdast so the notebook renderer writes it
  * as the deck's Markdown (MyST lowered, local files copied), and two code
  * cells: the starter code to edit and the checks to run after it, labelled in
- * the deck's language. A question box and a pulse only make sense in a
- * classroom and leave no cell.
+ * the deck's language. A predict is its question, the choices and what it
+ * reveals folded away, in one Markdown cell (its static form). A question box
+ * and a pulse only make sense in a classroom and leave no cell.
  */
 import { deckLocale } from '@presmium/kernel'
 import type { ComponentNode, IRBlock, MdastNode, RenderContext, RendererContribution } from '@presmium/kernel'
@@ -27,10 +28,15 @@ function exerciseCells(node: ComponentNode, _block: IRBlock, ctx: RenderContext)
   ]
 }
 
+function predictCells(node: ComponentNode): unknown[] {
+  return node.fallback ? [{ cell_type: 'markdown', mdast: node.fallback }] : []
+}
+
 export const rendererExtensions: Record<string, RendererContribution> = {
   notebook: {
     components: {
       PmExercise: exerciseCells,
+      PmPredict: predictCells,
       PmQuestionBox: () => [],
       PmPulse: () => [],
     },

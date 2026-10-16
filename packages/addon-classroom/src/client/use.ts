@@ -3,7 +3,7 @@ import { CLASSROOM_STORE, errorMessage } from '@presmium/kernel'
 import type { ClassroomStore, StoredItem } from '@presmium/kernel'
 import type { ComputedRef, Ref } from 'vue'
 import { computed, shallowRef, watchEffect } from 'vue'
-import { bothStores, browserNotes } from './local.ts'
+import { bothStores, browserStore } from './local.ts'
 
 /** The `session` service and its live snapshot (the host's `useSessionSnapshot`); `joined` while this window is in a classroom, active or ended. */
 export function useSession() {
@@ -48,7 +48,7 @@ export function useCollection<T>(store: () => ClassroomStore | undefined, name: 
 export function useNotes() {
   const { session, status, joined } = useSession()
   const inClassroom = computed(() => joined.value && status.value === 'active' && session.value?.personal !== undefined)
-  const store = computed(() => (inClassroom.value ? bothStores(session.value!.personal!, browserNotes()) : browserNotes()))
+  const store = computed(() => (inClassroom.value ? bothStores(session.value!.personal!, browserStore()) : browserStore()))
   return { store, inClassroom }
 }
 

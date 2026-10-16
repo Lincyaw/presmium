@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // The presenter's overview of the classroom, in the presenter panels of both forms and from the
-// toolbar: questions by place (P-66), the understanding pulse (P-67), quizzes (P-64) and exercises (P-65).
-// Entries without the shape their collection has are left out (`../domain/guards.ts`).
+// toolbar: questions by place (P-66), the understanding pulse (P-67), quizzes (P-64), predictions
+// (P-68) and exercises (P-65). Entries without the shape their collection has are left out
+// (`../domain/guards.ts`).
 import { useMessages } from '@presmium/host'
 import { computed } from 'vue'
 import {
@@ -9,18 +10,20 @@ import {
   countedAnswers,
   distribution,
   isAnswer,
+  isPrediction,
   isPulseVote,
   isQuestion,
   isQuizState,
   isSubmission,
   MESSAGES,
   placeText,
+  predictionTally,
   questionsByPlace,
   summarize,
   summaryText,
   tally,
 } from '../domain/index.ts'
-import type { PulseVote, Question, Submission } from '../domain/index.ts'
+import type { Prediction, PulseVote, Question, Submission } from '../domain/index.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from './use.ts'
 import './style.css'
 
@@ -32,6 +35,7 @@ const votes = useCollection(from, COLLECTIONS.pulse, isPulseVote)
 const quizzes = useCollection(from, COLLECTIONS.quizzes, isQuizState)
 const answers = useCollection(from, COLLECTIONS.answers, isAnswer)
 const submissions = useCollection(from, COLLECTIONS.submissions, isSubmission)
+const predictions = useCollection(from, COLLECTIONS.predictions, isPrediction)
 const { failure, write } = useWrite()
 const t = useMessages(MESSAGES)
 
@@ -57,6 +61,22 @@ const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ 
   const result = tally(quiz.options.length, quiz.answer, countedAnswers(quiz.id, quiz, answers.value.map(item => item.value)))
   return { id: quiz.id, text: t.value.panel.quiz(placeText(quiz, t.value), quiz.open, result.respondents, result.correct) }
 }))
+
+// How the class predicted: per choice, or the written predictions without their authors.
+const predicted = computed(() => {
+  const latest = new Map<string, Prediction>()
+  for (const { value } of predictions.value) latest.set(value.predict, value)
+  return byPlace([...latest.values()]).map((prediction) => {
+    const result = predictionTally(prediction.predict, prediction.choices?.length ?? 0, predictions.value.map(item => item.value))
+    return {
+      id: prediction.predict,
+      place: t.value.panel.predicted(placeText(prediction, t.value), result.respondents),
+      question: prediction.question,
+      choices: (prediction.choices ?? []).map((choice, i) => ({ choice, count: result.counts[i]! })),
+      texts: result.texts,
+    }
+  })
+})
 
 const exercises = computed(() => {
   const groups = new Map<string, Submission[]>()
@@ -114,6 +134,23 @@ function toggleAnswered(question: Question & { id: string }): void {
         <p v-for="quiz in quizRows" :key="quiz.id" class="pm-classroom-panel__place" :data-quiz="quiz.id">
           {{ quiz.text }}
         </p>
+      </section>
+      <section v-if="predicted.length" :aria-label="t.panel.predictions">
+        <h4>{{ t.panel.predictions }}</h4>
+        <div v-for="item in predicted" :key="item.id" class="pm-classroom-panel__place" :data-predict="item.id">
+          <p class="pm-classroom-panel__where">
+            {{ item.place }}
+          </p>
+          <p>{{ item.question }}</p>
+          <ul>
+            <li v-for="({ choice, count }, i) in item.choices" :key="i" :data-choice="choice" :data-count="count">
+              {{ choice }}{{ t.colon }}{{ t.people(count) }}
+            </li>
+            <li v-for="(text, i) in item.texts" :key="i">
+              {{ text }}
+            </li>
+          </ul>
+        </div>
       </section>
       <section v-if="exercises.length" :aria-label="t.panel.exercises">
         <h4>{{ t.panel.exercises }}</h4>

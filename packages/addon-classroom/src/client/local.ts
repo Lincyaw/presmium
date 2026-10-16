@@ -12,8 +12,9 @@ function localStorageOrNone(): Storage | undefined {
 
 /**
  * A `ClassroomStore` in the browser's `localStorage` under one key, for what
- * a reader keeps outside a classroom (notes). Other tabs of the deck see the
- * changes. Without storage (private mode, blocked) it keeps nothing.
+ * a reader keeps outside a classroom (notes, predictions). Other tabs of the
+ * deck see the changes. Without storage (private mode, blocked) it keeps
+ * nothing.
  */
 export function createBrowserStore(key: string, storage = localStorageOrNone()): ClassroomStore {
   const listeners = new Map<string, Set<() => void>>()
@@ -85,10 +86,10 @@ export function bothStores(first: ClassroomStore, second: ClassroomStore): Class
   }
 }
 
-let notes: ClassroomStore | undefined
+let kept: ClassroomStore | undefined
 
-/** The notes kept in this browser, per deck (its base URL). */
-export function browserNotes(): ClassroomStore {
-  notes ??= createBrowserStore(`presmium.classroom:${new URL(import.meta.env.BASE_URL, location.href).pathname}`)
-  return notes
+/** What this browser keeps of a deck (its base URL): the reader's notes and predictions. */
+export function browserStore(): ClassroomStore {
+  kept ??= createBrowserStore(`presmium.classroom:${new URL(import.meta.env.BASE_URL, location.href).pathname}`)
+  return kept
 }

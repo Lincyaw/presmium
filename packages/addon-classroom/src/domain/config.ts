@@ -8,6 +8,8 @@ export const COLLECTIONS = {
   submissions: 'submissions',
   questions: 'questions',
   pulse: 'pulse',
+  /** In a classroom; this browser keeps the reader's own predictions in its store, by the predict's id. */
+  predictions: 'predictions',
   /** In the browser, and in the participant's own store while a classroom is active. */
   notes: 'notes',
 } as const

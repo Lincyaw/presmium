@@ -422,10 +422,10 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 讲解：每一轮只合并出现最多的那一对。
 ```
 
-- `{predict}` 的参数是问题；`:choices:` 给出选项，省略时学习者写一段文字。
-- 揭示内容：`{predict}` 之后的下一步出现的全部内容，即 `:reveal:` 让它在下一步出现的上屏内容，以及绑定到这一步的讲解。课堂插件的编译步骤把它们移入 `PmPredict` 组件的子块（块 ID 与步骤不变）。
-- 读者保存预测之前，揭示内容不显示（文档视图中也是如此）；保存后显示，并保存在本机（`localStorage`）。投在全班面前的放映画面与演讲者视图按步骤显示。课堂中预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`），主讲在演讲者面板中看到分布。
-- notebook 中为问题、选项与折叠的揭示内容（`<details>`）。
+- `{predict}` 的参数是问题；`:choices:` 给出选项（至少两个），省略时学习者写一段文字。
+- 揭示内容：`{predict}` 之后的下一步出现的全部内容，即 `:reveal:` 让它在下一步出现的上屏内容，以及绑定到这一步的讲解。“下一步”是源码中直到 `{predict}` 为止用到的最后一步的下一步，所以 `{predict}` 本身在第 0 步出现、前面已有揭示时，揭示内容仍是它之后第一个 `:reveal:` 的一步。课堂插件的编译步骤 `predict-reveals`（在 `classroom-places` 之前）把它们移入 `PmPredict` 组件的子块，排在补充说明（子块 `prompt`）之后（块 ID 与步骤不变）；属性 `reveal`、`notes` 分别列出移入的上屏块与讲解的 ID，`PmPredict` 块的 `span` 到达揭示的一步（通常为 1）。之后一步什么也不出现时给出警告（`presmium.classroom`），组件没有揭示内容。
+- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
+- notebook 中为问题、选项与折叠的揭示内容（`<details>`，含移入的讲解）；它也是组件的 `fallback`。
 
 ### 2.14 视频的封面与字幕轨（P-42 增补）
 
@@ -598,11 +598,11 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | | `{exercise}` | 参数为语言（默认 `python`，只有 Python 能校验）；正文为题面，之后两个代码块：起始代码、校验代码（每条顶层语句一项校验） | `:timeout:`（毫秒） | `PmExercise`；notebook 中为题面与两个代码单元格（起始代码、校验） |
 | | `{question-box}` | 正文为提示语 | `:target:`（本章节中一个带标签的块，问题挂在它上面） | `PmQuestionBox`；notebook 中不生成单元格 |
 | | `{pulse}` | 参数为问题（默认“这一节理解了吗？”）；正文为说明 | `:levels:`（至少两个选项，逗号分隔；默认“懂了、有点模糊、没懂”） | `PmPulse`；notebook 中不生成单元格 |
-| | `{predict}` | 参数为问题；正文为补充说明 | `:choices:`（逗号分隔的选项；省略时写文字） | `PmPredict`，揭示内容为它的子块（2.13 节）；步数 1；notebook 中为问题、选项与折叠的揭示内容 |
+| | `{predict}` | 参数为问题；正文为补充说明 | `:choices:`（逗号分隔的选项；省略时写文字） | `PmPredict`，揭示内容为它的子块（2.13 节）；步数 1（`span` 到达揭示的一步）；notebook 中为问题、选项与折叠的揭示内容 |
 | 远端环境 `presmium.execJupyter` | `{terminal}` | 参数为 `kind: jupyter` 的环境名 | `:height:`（行数，默认 16） | `PmTerminal`（2.7 节）；降级为一行说明；notebook 中不生成单元格 |
 | 会话 `presmium.session` | 无指令 | — | 全局配置 `server`（课堂服务的地址，`ws://` 或 `http://` 均可）；没有时文稿照常放映，会话显示未连接 | 浏览器端提供 `session` 与 `classroomStore` 服务 |
 
-课堂插件另有编译步骤 `classroom-places`：给每个课堂组件加上属性 `place`（所在章节与块的 ID、章节标题与序号，块 ID 在编排步骤之后才确定），并检查 `{question-box}` 的 `:target:` 是否是本章节的块。
+课堂插件另有编译步骤 `classroom-places`：给每个课堂组件（含 `{predict}` 揭示内容中的）加上属性 `place`（所在章节与块的 ID、章节标题与序号，块 ID 在编排步骤之后才确定）、写出它的 `fallback`，并检查 `{question-box}` 的 `:target:` 是否是本章节的块。
 
 行内角色：
 

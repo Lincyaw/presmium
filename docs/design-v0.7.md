@@ -592,6 +592,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
 | 共享的运行器经包的 `exports` 以 `?raw` 进入两种形态的 Worker；Slidev 的 `{monaco-run}` 在构建产物中运行 Python 并接收执行器与会话；运行器的富输出（`IPython.display`、matplotlib）；在浏览器中解析 Markdown 输出（`wbs.md` 没有为 WP-73b 列出先行验证，开始时做了这几项小规模实测） | WP-73b（已完成，结论见下） |
 | mystmd 的 `myst-ext-card`、`myst-ext-grid`、`myst-ext-tabs`、`myst-ext-button` 与 myst-parser 1.7 一起用时给出的 mdast；它们在两种形态与 notebook 中的写法（`wbs.md` 没有为 WP-85 列出先行验证，开始时做了这几项小规模实测） | WP-85（已完成，结论见下） |
+| 组件的子块能否分开显示（IR 运行时与幻灯片中的插槽）；子块的 `v-click` 在组件插槽中是否照常按步骤出现；课堂服务是否接受 `predictions` 的写入（`wbs.md` 没有为 WP-88 列出先行验证，开始时做了这几项小规模实测） | WP-88（结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -646,6 +647,12 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **mdast 与设计的出入**：`{grid-item}` 生成的节点类型是 `grid-item`（不是 `ir.md` 原写的 `gridItem`）；``{button}`文字 <地址>` `` 生成带 `class: 'button'` 的 `link`（不是 `kind: 'button'`），没有地址时是带同样类名的 `span`；`tabItem` 的标题是字符串字段 `title`，卡片的链接是 `card.url`，栅格的列数是 `grid.columns`（1 到 4 个 1 至 12 的整数，缺省 `1 2 2 3`）。IR 保留这些节点的原样，`ir.md` 2.10 节按实际改写；没有改契约（`ir.ts` 不涉及这些 mdast）。
 - **幻灯片**：`lowerMyst` 把栅格与卡片写成带类名的 HTML 块（`<div class="pm-grid" style="--pm-grid-columns: 3">`，每个开闭标签单独成块，中间空行），Slidev 的 Markdown 照常解析其中的 Markdown 并编进 Vue 模板；幻灯片的画面宽度固定，列数取最宽一档。渲染端只给 `lowerMyst` 传 `iframes: 'element'`（`render-slides/src/node/slidev.ts` 不在 WP-85 的归属中），所以选项 `cards` 不写时随 `iframes`：`element` 的渲染端（幻灯片）保留结构，其余（notebook）写成小标题加段落并列为降级。
 - **网页**：VitePress 默认主题给 `.vp-doc` 中的外链的 `::after` 设了宽、高与图标遮罩，整张卡片的链接（标题链接的 `::after` 覆盖卡片）要以更高的优先级重设它们；`.vp-doc p` 的外边距同样压过单个类名的选择器。选项卡的标签与面板的 id 用 Vue 3.5 的 `useId()`，服务端渲染与水合一致。
+**WP-88 开始时的验证（2026-10-16，Slidev 53.0.0、VitePress 1.6.4、Playwright 1.64.1）**的结论：
+
+- **子块在插槽中**：IR 运行时把组件的子块作为默认插槽交给组件，每个子块是一个以块 ID 为 `key` 的节点（`@presmium/viewer` 的 `ComponentView`），所以 `PmPredict` 按属性 `reveal`、`notes` 中的 ID 把补充说明与揭示内容分开，读者视图中保存预测之前不渲染揭示内容（DOM 中没有它），放映与演讲者视图照常交给子块按步骤显示，只去掉移入的讲解。幻灯片形态的插槽是渲染端写出的 Slidev Markdown，节点没有块 ID：组件把整个插槽放在作答区之后，揭示内容由渲染端包上的 `<div v-click="<步>">` 控制。构建产物中验证过：组件插槽中的 `v-click` 按幻灯片的绝对步数出现（第 0 步隐藏、第 1 步显示），移入的讲解由渲染端照常写进演讲者备注。
+- **网页的服务端渲染**：插件组件在挂载之前显示它的 `fallback`（`packages/web` 的 `clientOnly`），所以 `fallback` 中的揭示内容放在关闭的 `<details>` 中，不会在挂载之前直接显示；挂载后组件取代它。
+- **课堂服务的写入规则**：学习者的写入只要键按 `:` 分开后含自己的参与者 ID、值的 `participant` 是自己即可（`packages/classroom-server`），`predictions` 集合以 `<章节>/<块>:<参与者>` 为键，不需要改服务端。
+- **未覆盖的地方**：网页演讲者视图的讲解列表与滚动叙事视图的讲解轨只读章节顶层的讲解块。移入 `PmPredict` 的讲解因此不在演讲者视图的讲解列表中，在滚动叙事视图中也不在讲解轨上，而是保存预测后显示在舞台上的组件里（放映画面与幻灯片的演讲者备注不受影响）；由 `@presmium/viewer` 按 `irBlocks` 读取讲解即可补上，留给验收者决定（交付报告中列出）。
 
 ## 12. 包与工作包
 

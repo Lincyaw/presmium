@@ -1,6 +1,6 @@
 ---
 name: presmium-present
-description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、结束、归档）。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server."
+description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档）。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server."
 ---
 
 # 用 Presmium 放映与授课
@@ -131,9 +131,10 @@ presmium:
 3. 学生默认“正在跟随主讲”：主讲翻到哪一节哪一步、切到哪个视图，学生就跟到哪里；主讲按 `b` 黑屏、`f` 冻结时学生的画面也一样（两种形态都是）。点“自主浏览”可以自己翻看（刷新后仍是自主浏览），状态栏显示主讲的位置，点“回到主讲进度”回来。学生关掉标签页后用同一浏览器重新加入，还是原来的参与者，作答不会重复计数。
 4. 测验 `{quiz}`：主讲点“开放作答”，学生选择后“提交”（关闭前可以改）；主讲看到已作答与答对人数、各选项人数；点“关闭作答”后才公布正确答案。
 5. 练习 `{exercise}`：学生改代码后“提交”，在浏览器中用 Pyodide 运行校验；主讲在卡片上看到提交与通过人数和常见错误。课堂结束后学生仍能运行校验，结果只在自己的浏览器中显示，不再提交给主讲。
-6. 提问 `{question-box}` 与理解度 `{pulse}`：学生提问、投票；主讲在卡片上看到问题（可“标为已回答”）与理解度分布。导航栏的“互动”按钮（幻灯片在演讲者视图的“课堂互动”面板）汇总全部提问、理解度、测验与练习，标出所在位置。
-7. 学生的笔记（网页形态中章节与带标签的块旁的“笔记”按钮）只有自己看得到。
-8. 下课：主讲点“结束课堂”，再点“归档课堂”。归档把课堂记录写到课堂服务 `--deck` 目录下的 `.presmium/classroom/<课堂号>.json`，并从服务中释放课堂；归档后不能再加入或写入。学生的个人笔记不进归档。归档文件被仓库的 `.gitignore` 忽略（`.presmium/` 中只有缓存、锁定文件、标注与资源随文稿提交），要保留就自行备份。
+6. 提问 `{question-box}` 与理解度 `{pulse}`：学生提问、投票；主讲在卡片上看到问题（可“标为已回答”）与理解度分布。导航栏的“互动”按钮（幻灯片在演讲者视图的“课堂互动”面板）汇总全部提问、理解度、测验、预测与练习，标出所在位置。
+7. 先预测再揭示 `{predict}`：学生在网页的文档视图中选一个选项或写一句话，点“保存预测”后才看到之后一步的内容（预测保存在学生的浏览器中，刷新后仍在）；课堂中预测另交给主讲，“互动”面板按选项显示人数（文字预测列出内容，不带姓名）。放映与演讲者视图、幻灯片照常按步骤显示揭示内容，所以投在屏幕上的画面由主讲翻页揭晓。
+8. 学生的笔记（网页形态中章节与带标签的块旁的“笔记”按钮）只有自己看得到。
+9. 下课：主讲点“结束课堂”，再点“归档课堂”。归档把课堂记录写到课堂服务 `--deck` 目录下的 `.presmium/classroom/<课堂号>.json`，并从服务中释放课堂；归档后不能再加入或写入。学生的个人笔记不进归档。归档文件被仓库的 `.gitignore` 忽略（`.presmium/` 中只有缓存、锁定文件、标注与资源随文稿提交），要保留就自行备份。
 
 ## 9. 常见问题
 

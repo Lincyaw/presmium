@@ -24,10 +24,3 @@ export function distribution(pulse: string, levels: number, votes: Iterable<Puls
   const last = latestPerParticipant([...votes].filter(v => v.pulse === pulse))
   return Array.from({ length: levels }, (_, i) => last.filter(v => v.level === i).length)
 }
-
-/** Levels from the directive: `a, b, c`, or a list; undefined (the default levels) when fewer than two are given. */
-export function pulseLevels(value: unknown): string[] | undefined {
-  const items = Array.isArray(value) ? value.map(String) : typeof value === 'string' ? value.split(/[,，]/) : []
-  const levels = items.map(item => item.trim()).filter(Boolean)
-  return levels.length >= 2 ? levels : undefined
-}
