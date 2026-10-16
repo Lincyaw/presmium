@@ -1,8 +1,20 @@
 import { deckLocale } from '@presmium/kernel'
-import type { IRPass } from '@presmium/kernel'
+import type { IRBlock, IRPass, IRSection } from '@presmium/kernel'
 import { CLASSROOM_ID, isLabel, MESSAGES } from '../domain/index.ts'
 import type { Place } from '../domain/index.ts'
 import { fallbackOf } from './fallbacks.ts'
+
+/**
+ * The blocks of a section, with what its predicts reveal (`./reveals.ts`)
+ * before each predict, whose static form shows them.
+ */
+function sectionBlocks(section: IRSection): IRBlock[] {
+  return section.blocks.flatMap((block) => {
+    const { node } = block
+    const predict = node.type === 'component' && node.plugin === CLASSROOM_ID && node.name === 'PmPredict'
+    return predict ? [...(node.children ?? []).filter(child => child.id !== 'prompt'), block] : [block]
+  })
+}
 
 /**
  * Whether the author wrote the label `id` (`(id)=`, or `:label: id` among a
@@ -16,12 +28,13 @@ function labelled(lines: readonly string[], from: number, at: number, id: string
 }
 
 /**
- * Gives every classroom component its place (section and block ids, section
- * title and number) as the prop `place`: block ids exist only after the
- * compiler has scheduled the steps. It also writes each component's static
- * form (`fallback`) and a pulse's default question and levels in the deck's
- * language (`lang` in the headmatter). A question box's `:target:` must name a
- * block of its section. A label in the form of a generated id (`step-2`)
+ * Gives every classroom component, also one a predict reveals, its place
+ * (section and block ids, section title and number) as the prop `place`:
+ * block ids exist only after the compiler has scheduled the steps. It also
+ * writes each component's static form (`fallback`) and a pulse's default
+ * question and levels in the deck's language (`lang` in the headmatter). A
+ * question box's `:target:` must name a block of its section. A label in
+ * the form of a generated id (`step-2`)
  * counts as generated, so it takes no notes and is not named in the
  * presenter's lists; the pass warns about such labels.
  */
@@ -36,7 +49,8 @@ export const placesPass: IRPass = {
       return lines
     }
     for (const section of doc.sections) {
-      for (const block of section.blocks) {
+      const blocks = sectionBlocks(section)
+      for (const block of blocks) {
         const { node, source } = block
         // Ids are unique in a section, so a label written in the section names this block.
         const from = source.file === section.source.file ? section.source.line : 1
@@ -56,7 +70,7 @@ export const placesPass: IRPass = {
         }
         node.fallback = fallbackOf(node, t)
         const { target } = node.props
-        if (typeof target === 'string' && !section.blocks.some(b => b.id === target)) {
+        if (typeof target === 'string' && !blocks.some(b => b.id === target)) {
           ctx.report({
             checkId: 'presmium.classroom',
             severity: 'warning',

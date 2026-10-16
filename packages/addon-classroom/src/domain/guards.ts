@@ -7,6 +7,7 @@
 import { isRecord } from '@presmium/kernel'
 import type { Submission } from './exercise.ts'
 import type { Note } from './notes.ts'
+import type { Prediction, SavedPrediction } from './predict.ts'
 import type { PulseVote } from './pulse.ts'
 import type { Question } from './questions.ts'
 import type { Answer, QuizState } from './quiz.ts'
@@ -49,4 +50,14 @@ export function isQuestion(value: unknown): value is Question {
 
 export function isNote(value: unknown): value is Note {
   return isRecord(value) && isString(value.section) && (value.block === undefined || isString(value.block)) && isString(value.text) && isTime(value.at)
+}
+
+/** A prediction as the browser keeps it: a choice or a text. */
+export function isSavedPrediction(value: unknown): value is SavedPrediction {
+  return isRecord(value) && (isCount(value.choice) || isString(value.text)) && isTime(value.at)
+}
+
+export function isPrediction(value: unknown): value is Prediction {
+  return isRecord(value) && isPlace(value) && isString(value.predict) && isString(value.participant) && isString(value.question)
+    && (value.choices === undefined || isStrings(value.choices)) && isSavedPrediction(value)
 }

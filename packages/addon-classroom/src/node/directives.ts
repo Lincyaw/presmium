@@ -33,10 +33,17 @@
  * ```{pulse} 这一节讲清楚了吗？
  * :levels: 懂了, 有点模糊, 没懂
  * ```
+ *
+ * ```{predict} 合并三轮之后，词表中有几个新符号？
+ * :choices: 1, 2, 3          # optional: without them, readers write their prediction
+ * ```
  * ````
+ *
+ * What `{predict}` reveals, the content of the step after it, becomes its
+ * children in the `predict-reveals` pass (`./reveals.ts`).
  */
 import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, MdastNode } from '@presmium/kernel'
-import { CLASSROOM_ID, exerciseSource, pulseLevels, quizSource } from '../domain/index.ts'
+import { CLASSROOM_ID, exerciseSource, optionList, quizSource } from '../domain/index.ts'
 
 /** A component of this plugin with the `prompt` nodes as its child block. */
 function component(name: string, props: Record<string, unknown>, prompt: MdastNode[], ctx: DirectiveContext): ComponentNode {
@@ -95,7 +102,21 @@ export const pulseDirective: DirectiveSpec = {
   toIR(input, ctx) {
     // Without them, the pass gives the question and the levels in the deck's language.
     const question = input.arg?.trim()
-    const levels = pulseLevels(input.options.levels)
+    const levels = optionList(input.options.levels)
     return { node: component('PmPulse', { ...question ? { question } : {}, ...levels ? { levels } : {} }, body(input.body, ctx).children ?? [], ctx) }
+  },
+}
+
+export const predictDirective: DirectiveSpec = {
+  name: 'predict',
+  arg: true,
+  body: true,
+  options: { choices: 'string' },
+  toIR(input, ctx) {
+    const question = input.arg?.trim() ?? ''
+    const choices = optionList(input.options.choices)
+    if (!question) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{predict} needs the question as its argument: ```{predict} How many …?' })
+    if (input.options.choices !== undefined && !choices) ctx.report({ checkId: 'presmium.classroom', severity: 'warning', message: '{predict}: :choices: needs at least two, separated by commas; readers write their prediction instead' })
+    return { node: component('PmPredict', { question, ...choices ? { choices } : {} }, body(input.body, ctx).children ?? [], ctx) }
   },
 }

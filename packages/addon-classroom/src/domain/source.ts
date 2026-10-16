@@ -60,3 +60,14 @@ export function exerciseSource(body: MdastNode): ExerciseSource {
   }
   return { prompt, code }
 }
+
+/**
+ * The options of a directive option such as `{pulse}`'s `:levels:` or
+ * `{predict}`'s `:choices:`: `a, b, c` (a full-width comma too), or a list;
+ * undefined when fewer than two are given.
+ */
+export function optionList(value: unknown): string[] | undefined {
+  const items = Array.isArray(value) ? value.map(String) : typeof value === 'string' ? value.split(/[,，]/) : []
+  const options = items.map(item => item.trim()).filter(Boolean)
+  return options.length >= 2 ? options : undefined
+}

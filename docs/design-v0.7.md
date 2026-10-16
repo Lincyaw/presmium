@@ -588,6 +588,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
 | 共享的运行器经包的 `exports` 以 `?raw` 进入两种形态的 Worker；Slidev 的 `{monaco-run}` 在构建产物中运行 Python 并接收执行器与会话；运行器的富输出（`IPython.display`、matplotlib）；在浏览器中解析 Markdown 输出（`wbs.md` 没有为 WP-73b 列出先行验证，开始时做了这几项小规模实测） | WP-73b（已完成，结论见下） |
+| 组件的子块能否分开显示（IR 运行时与幻灯片中的插槽）；子块的 `v-click` 在组件插槽中是否照常按步骤出现；课堂服务是否接受 `predictions` 的写入（`wbs.md` 没有为 WP-88 列出先行验证，开始时做了这几项小规模实测） | WP-88（结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -614,6 +615,13 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
+
+**WP-88 开始时的验证（2026-10-16，Slidev 53.0.0、VitePress 1.6.4、Playwright 1.64.1）**的结论：
+
+- **子块在插槽中**：IR 运行时把组件的子块作为默认插槽交给组件，每个子块是一个以块 ID 为 `key` 的节点（`@presmium/viewer` 的 `ComponentView`），所以 `PmPredict` 按属性 `reveal`、`notes` 中的 ID 把补充说明与揭示内容分开，读者视图中保存预测之前不渲染揭示内容（DOM 中没有它），放映与演讲者视图照常交给子块按步骤显示，只去掉移入的讲解。幻灯片形态的插槽是渲染端写出的 Slidev Markdown，节点没有块 ID：组件把整个插槽放在作答区之后，揭示内容由渲染端包上的 `<div v-click="<步>">` 控制。构建产物中验证过：组件插槽中的 `v-click` 按幻灯片的绝对步数出现（第 0 步隐藏、第 1 步显示），移入的讲解由渲染端照常写进演讲者备注。
+- **网页的服务端渲染**：插件组件在挂载之前显示它的 `fallback`（`packages/web` 的 `clientOnly`），所以 `fallback` 中的揭示内容放在关闭的 `<details>` 中，不会在挂载之前直接显示；挂载后组件取代它。
+- **课堂服务的写入规则**：学习者的写入只要键按 `:` 分开后含自己的参与者 ID、值的 `participant` 是自己即可（`packages/classroom-server`），`predictions` 集合以 `<章节>/<块>:<参与者>` 为键，不需要改服务端。
+- **未覆盖的地方**：网页演讲者视图的讲解列表与滚动叙事视图的讲解轨只读章节顶层的讲解块。移入 `PmPredict` 的讲解因此不在演讲者视图的讲解列表中，在滚动叙事视图中也不在讲解轨上，而是保存预测后显示在舞台上的组件里（放映画面与幻灯片的演讲者备注不受影响）；由 `@presmium/viewer` 按 `irBlocks` 读取讲解即可补上，留给验收者决定（交付报告中列出）。
 
 ## 12. 包与工作包
 
