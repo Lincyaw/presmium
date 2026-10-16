@@ -728,6 +728,33 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 
 **实际交付**：`@presmium/workspace`（`packages/workspace`）：工作区配置与文档列表（`src/node/config.ts`，只读头部）；`REVISIONS`（`revisions.ts`：simple-git，钩子与 fsmonitor 关闭，尾注 `Presmium-Origin`、`Presmium-Task`、`Presmium-Revert` 与 `Co-authored-by`）；文档操作（`documents.ts`：从 `templates/document/<名>/` 新建、重命名并改写其他文档 Markdown 中的相对链接与 `{include}` 等指令的路径、复制、删除，各一个提交）；工作区的路由（`routes.ts`）；`presmium serve`（`serve.ts`：按需编译与监听 `session.ts`、插件策略与 `renderers.<id>.package` 的拒绝、SHARED 的读取范围与 `remote` 执行、按 `compile` 的编译确认 `execution.ts`、LOCAL 的站点在本进程中、SHARED 的站点在 agent-host 中并由 serve 按视图的本机路由先编译再转发 `remote-site.ts`）；`presmium agent-host`（`agent-host.ts`）与 serve 中的客户端（`agent-client.ts`：`remote`、`AGENT_RUNTIME`、`CHANGE_REVIEW`、为每次运行与构建签发并作废 gateway 的限定令牌）；`audience.ts`（两个视图相同，WP-87 接入）；浏览器插件（`src/client/`：`EDIT_MODE`、工具栏的编辑、首页的文档管理、修改历史、“请求执行”、有助手时“由 agent 起草”）；工作区的构建（`build.ts`）。网页渲染端的 `buildSite`、`devSite` 与首页（`packages/web/src/node/sites.ts`、`src/client/home.ts`）。CLI：`presmium serve`、`presmium agent-host`、在工作区根目录的 `presmium build`，`presmium gateway` 增加 `--hostname`、`--user`。模板：`templates/workspace/compose/`、`templates/workspace/kubernetes/README.md`、`templates/workspace/presmium.workspace.yaml`、`templates/document/default/`。验收用例在 `packages/workspace/test/documents.test.ts`、`site.test.ts`、`deploy.test.ts`，`packages/cli/test/serve.test.ts`，`e2e/workspace.spec.ts`。与设计不同或设计没有写明之处写在 `architecture.md` 10.2、10.5、10.8 节标明 WP-79 的段落中，先行验证的结论在 `design-v0.7.md` 第 11 节；其中两处偏离验收的字面：编译器不展开 `{literalinclude}`（它什么也不读），符号链接的拒绝以 `{include}` 验证；以 `remote` 执行时编译器仍在 serve 中探测执行器（Python 执行器启动一次 `python3 -c 'import sys…'`），用例检查的是 serve 从未运行文稿的代码（运行器）。
 
+### WP-79e I 波次合并后集成（验收者）
+
+WP-73a 至 WP-79 合并后（main 90c054d：`pnpm test` 161/161，Playwright 218 通过、1 跳过）各工作包验证遗留的问题，分两组并行；与 WP-90 同时进行。逐条的出处见各工作包的验证报告。
+
+**WP-79e1 核心**（拥有 `packages/server`、`packages/mcp`、`packages/kernel`（除 `contracts*` 外）、`packages/viewer`、`packages/web`、`packages/host`、`packages/workspace` 及其 e2e 与夹具）：
+
+1. SHARED 模式下经 gateway 访问 `/mcp`：serve 对 `/mcp` 先以 MCP 令牌认证，不再要求登录代理的身份；真实的 gateway 加 serve 用例。
+2. serve 代理到 gateway 的请求（`auth: proxy` 的 Jupyter）去掉浏览器的 `Origin`，gateway 不再拒绝；用例。
+3. 放映与演讲者视图中可以直接确认（批准入口在覆盖视图的控制条中）；`e2e/mcp.spec.ts` 只开放映视图即可允许 `navigate`。
+4. `@presmium/mcp` 不再依赖 `@presmium/viewer`：`chapters`、`blockText`、`blockState`、`narrationAt` 与分词移入 `@presmium/kernel` 的纯函数，viewer、web、mcp 都从内核引用；恢复 architecture.md 第 3 节的依赖表。
+5. MCP 的细节：说明文字按模式；多文档时资源可以用 `?document=` 指定文档，多余的查询参数不影响匹配；作废令牌时关闭其订阅流；`presmium-mcp` 与 CLI 一样带上随 CLI 发布的插件。
+6. 网页演讲者视图的备注与预告包括移入 `PmPredict` 的讲解。
+7. 卡片的 `:link:` 指向本地文件时在网页中发布并改写；没有目标的 `{button}` 在网页中显示为按钮样式。
+8. `{literalinclude}` 也拒绝指向工作区之外的符号链接；编辑模式中 agent 起草的新文档在提交后再跳转。
+
+**WP-79e2 插件**（拥有 `packages/addon-exec*`、`packages/addon-lecture`、`packages/addon-classroom`、`packages/addon-content`、`packages/addon-publish`、`packages/render-slides`、`templates/`，以及为第 3 项在 `packages/kernel/src/contracts*` 的 `RunContext` 增加可选 `lang` 与 `packages/compiler` 传入它（验收者批准的增加）及这些包的 e2e 与夹具）：
+
+1. 幻灯片中 C、C++、Ruby、SQL 可以现场运行（经执行服务）；幻灯片的离线预缓存包括 `.gz` 运行时文件。
+2. 发布的 WASI 运行时附带许可证说明（`<base>wasi/LICENSES`）。
+3. WebGPU：Python 桥执行与 JS 相同的规模限制；去掉未使用的 `vue` 依赖；编译时录制的文字按文稿语言（`RunContext.lang`）；用到 jax-js 时幻灯片渲染端自动设置 `monacoTypesSource: none`。
+4. Jupyter：内核关闭后删除 `presmium-runs/<id>/`；`e2e/exec-remote.spec.ts` 去掉重试，改为预先打包依赖等确定的等待；Kubernetes 说明中 gVisor 只用于 CPU 配置。
+5. 讲授：重录一节后漂移检查仍按每节的 IR 哈希工作；`point` 的时间是路径开始的时刻；回放可以按步骤跳转（P-131）；先请求屏幕共享再请求麦克风与摄像头；补上重录一节、激光笔与荧光笔、提示、超过 5 秒的分块上传与 `SilentClock` 的用例。
+6. 先预测再揭示：幻灯片中提示在表单之前；静态导出（PDF、PNG）显示揭示的内容；`PmPredict` 的降级在编译时执行之后生成（包含揭示内容中的运行输出）。
+7. 幻灯片渲染端显式传入卡片的形式；没有目标的 `{button}` 在幻灯片中显示为按钮样式。
+
+**验收**：各项有对应用例；`pnpm test`、`pnpm demo:check`、`pnpm demo:build` 与各自的 spec、`e2e/smoke.spec.ts` 通过；合并后验收者运行完整的 Playwright 套件。
+
 ### WP-90 修改审阅与进程沙箱：deltabox（D12、D13）
 
 **归属**：`packages/addon-deltabox/**`（新）、`packages/cli/package.json`（只增加对本包的依赖；WP-79 之后，`packages/cli/` 的其余部分在本波次属于 WP-87）。
