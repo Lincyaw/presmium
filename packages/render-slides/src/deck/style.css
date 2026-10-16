@@ -55,6 +55,71 @@
   background: white;
 }
 
+/*
+ * Cards, grids and tabs (docs/ir.md 2.10), as `lowerMyst` writes them for the
+ * slides: a grid has the columns its argument gives for the widest screen,
+ * a tab set shows its tabs one after another, each under its title.
+ */
+.slidev-layout .pm-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--pm-grid-columns, 1), minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.slidev-layout .pm-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(125, 125, 125, 0.4);
+  border-radius: 0.5rem;
+  font-size: 0.85em;
+}
+
+.slidev-layout .pm-card__title {
+  font-weight: 700;
+}
+
+.slidev-layout :is(.pm-card__header, .pm-card__footer) {
+  margin: 0 -0.75rem;
+  padding: 0 0.75rem;
+  background: rgba(125, 125, 125, 0.1);
+}
+
+.slidev-layout .pm-card__footer {
+  margin-top: auto;
+}
+
+/* A card that links somewhere is a link as a whole; the links in it stay above that link. */
+.slidev-layout .pm-card--link a {
+  position: relative;
+  z-index: 1;
+}
+
+.slidev-layout .pm-card--link .pm-card__title a {
+  position: static;
+}
+
+.slidev-layout .pm-card--link .pm-card__title a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.slidev-layout .pm-button a {
+  display: inline-block;
+  padding: 0.15em 0.8em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.slidev-layout .pm-tabs__title {
+  margin-top: 0.75rem;
+  font-weight: 700;
+}
+
 /* The Monaco Runner's hint before the first run ("Click the play button…") is half transparent, below AA; readable instead. */
 .slidev-layout .slidev-monaco-container .opacity-50 {
   opacity: 0.75;

@@ -4,8 +4,10 @@
  * admonition or aside becomes a blockquote with a bold title, a list table a
  * GFM table, a dropdown `<details>`, a figure its image and caption, math `$`
  * and `$$`, roles such as {sub} and {kbd} inline HTML, a definition list a
- * list of bold terms. A node with no such form keeps its text and is listed
- * as degraded. Pure: no dependencies, the input is not changed.
+ * list of bold terms. Cards, grids and tabs (P-46) keep their structure as
+ * HTML elements, or become small headings over their content. A node with no
+ * such form keeps its text and is listed as degraded. Pure: no dependencies,
+ * the input is not changed.
  */
 import type { MdastNode } from './ir.ts'
 
@@ -31,6 +33,18 @@ export interface LowerOptions {
    * otherwise (default) a role is its children (docs/ir.md 2.8).
    */
   roles?: 'children' | 'marks'
+  /**
+   * Cards, grids and tabs (docs/ir.md 2.10). `element` writes a grid and a
+   * card as `<div>`s around their content, laid out by the renderer's
+   * styles (`pm-grid` with `--pm-grid-columns`, `pm-card`, `pm-tabs`, ...),
+   * a button as a link in a `pm-button` span, and a tab set as its tabs one
+   * after another, each under its title. `headings` writes a card's and a
+   * tab's title as a small heading over its content, a grid as its content
+   * and a button as a link: the card, grid and tab set are listed as
+   * degraded. Default: `element` where `iframes` is `element` (a renderer
+   * that shows HTML elements, as the slides do), else `headings`.
+   */
+  cards?: 'element' | 'headings'
 }
 
 export interface LoweredMarkdown {
@@ -83,6 +97,9 @@ interface Lowering {
   degraded: Set<string>
 }
 
+/** The depth of the headings a card's or a tab's title becomes: below a section's. */
+const SMALL_HEADING = 4
+
 export function lowerMyst(mdast: MdastNode, options: LowerOptions = {}): LoweredMarkdown {
   // A copy without undefined fields: the IR is JSON, and writers read some fields' presence.
   const tree = JSON.parse(JSON.stringify(mdast)) as MdastNode
@@ -132,6 +149,9 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
   const { options, degraded } = ctx
   const all = (nodes: MdastNode[] = []) => nodes.flatMap(child => lower(child, ctx))
   const children = () => all(node.children)
+  if (node.type === 'link' && isButton(node) && cardsAs(options) === 'element') {
+    return [html('<span class="pm-button">'), ...lower({ ...node, class: undefined }, ctx), html('</span>')]
+  }
   if (node.type === 'link' && String(node.url).startsWith('#')) {
     const label = String(node.url).slice(1)
     return labelLink([label], node.children?.length ? children() : [text(label)], ctx)
@@ -208,6 +228,12 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
     case 'presmiumRole':
       if (!node.children?.length && options.roles === 'marks') return [text(roleMark(node))]
       return children()
+    case 'grid':
+    case 'grid-item':
+    case 'card':
+    case 'tabSet':
+    case 'tabItem':
+      return layout(node, ctx)
     case 'comment':
     case 'mystTarget':
       return []
@@ -222,6 +248,67 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
   }
   degraded.add(node.type)
   return node.children ? children() : typeof node.value === 'string' && node.value ? [text(node.value)] : []
+}
+
+/** How cards, grids and tabs are written (`LowerOptions.cards`). */
+function cardsAs(options: LowerOptions): 'element' | 'headings' {
+  return options.cards ?? (options.iframes === 'element' ? 'element' : 'headings')
+}
+
+/** A link that `{button}` made. */
+function isButton(node: MdastNode): boolean {
+  return typeof node.class === 'string' && node.class.split(/\s+/).includes('button')
+}
+
+/**
+ * A grid, card or tab set (docs/ir.md 2.10) as `LowerOptions.cards` says:
+ * HTML elements around the content, or small headings over it.
+ */
+function layout(node: MdastNode, ctx: Lowering): MdastNode[] {
+  const all = (nodes: MdastNode[] = []) => nodes.flatMap(child => lower(child, ctx))
+  const element = cardsAs(ctx.options) === 'element'
+  const div = (className: string, content: MdastNode[], style = '') => [html(`<div class="${className}"${style}>`), ...content, html('</div>')]
+  const heading = (content: MdastNode[]): MdastNode => ({ type: 'heading', depth: SMALL_HEADING, children: content })
+  const items = node.children ?? []
+  switch (node.type) {
+    case 'grid': {
+      if (!element) {
+        ctx.degraded.add(node.type)
+        return all(items)
+      }
+      // A slide has one width: the grid's widest.
+      const columns = Array.isArray(node.columns) ? Number(node.columns.at(-1)) || 1 : 1
+      return div('pm-grid', all(items), ` style="--pm-grid-columns: ${columns}"`)
+    }
+    case 'grid-item':
+      return element ? div('pm-grid__item', all(items)) : all(items)
+    case 'card': {
+      const part = (type: string) => items.find(child => child.type === type)?.children ?? []
+      const title = all(part('cardTitle'))
+      const url = typeof node.url === 'string' && node.url ? node.url : undefined
+      // The link of the whole card is on its title, or else on a line of its own.
+      const linked = url ? lower({ type: 'link', url, children: title.length ? title : [text(url)] }, ctx) : title
+      const body = all(items.filter(child => !['header', 'cardTitle', 'footer'].includes(child.type)))
+      if (!element) {
+        ctx.degraded.add(node.type)
+        const top = title.length ? [heading(linked)] : url ? [paragraph(linked)] : []
+        return [...all(part('header')), ...top, ...body, ...all(part('footer'))]
+      }
+      const header = part('header').length ? div('pm-card__header', all(part('header'))) : []
+      const footer = part('footer').length ? div('pm-card__footer', all(part('footer'))) : []
+      const top = title.length || url ? div('pm-card__title', [paragraph(linked)]) : []
+      return div(url ? 'pm-card pm-card--link' : 'pm-card', [...header, ...top, ...body, ...footer])
+    }
+    case 'tabSet':
+      if (!element) ctx.degraded.add(node.type)
+      return element ? div('pm-tabs', all(items)) : all(items)
+    case 'tabItem': {
+      const title = typeof node.title === 'string' ? node.title : ''
+      if (!element) return [...title ? [heading([text(title)])] : [], ...all(items)]
+      return div('pm-tabs__item', [...title ? [html(`<div class="pm-tabs__title">${escape(title)}</div>`)] : [], ...all(items)])
+    }
+  }
+  return all(items)
 }
 
 /** The mark of a registered role without children, where the presenter sees it: `〔<name> <value>〕`. */

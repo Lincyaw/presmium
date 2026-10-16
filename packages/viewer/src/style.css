@@ -437,6 +437,186 @@
   cursor: pointer;
 }
 
+/*
+ * Cards, grids, tabs and buttons (docs/ir.md 2.10). A grid has the columns
+ * its argument gives for the screen width: a phone, then from 576px, 768px
+ * and 992px (the widths of sphinx-design); an item with `:columns:` spans
+ * its share of them (cards.ts).
+ */
+.pm-grid {
+  --pm-grid-columns: var(--pm-grid-xs, 1);
+  /* The spans of an enclosing grid's item are not this grid's. */
+  --pm-span-xs: initial;
+  --pm-span-sm: initial;
+  --pm-span-md: initial;
+  --pm-span-lg: initial;
+  display: grid;
+  grid-template-columns: repeat(var(--pm-grid-columns), minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.pm-grid > * {
+  --pm-span: var(--pm-span-xs, 1);
+  grid-column: span var(--pm-span);
+  min-width: 0;
+}
+
+@media (min-width: 576px) {
+  .pm-grid {
+    --pm-grid-columns: var(--pm-grid-sm, 1);
+  }
+
+  .pm-grid > * {
+    --pm-span: var(--pm-span-sm, 1);
+  }
+}
+
+@media (min-width: 768px) {
+  .pm-grid {
+    --pm-grid-columns: var(--pm-grid-md, 1);
+  }
+
+  .pm-grid > * {
+    --pm-span: var(--pm-span-md, 1);
+  }
+}
+
+@media (min-width: 992px) {
+  .pm-grid {
+    --pm-grid-columns: var(--pm-grid-lg, 1);
+  }
+
+  .pm-grid > * {
+    --pm-span: var(--pm-span-lg, 1);
+  }
+}
+
+.pm-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 1rem 0;
+  border: 1px solid var(--pm-c-border);
+  border-radius: 0.5rem;
+  background: var(--pm-c-bg);
+  overflow: hidden;
+}
+
+.pm-grid > .pm-card {
+  margin: 0;
+}
+
+.pm-card--link:hover {
+  border-color: var(--pm-c-brand);
+}
+
+.pm-card__header,
+.pm-card__footer {
+  padding: 0 1rem;
+  background: var(--pm-c-bg-soft);
+}
+
+.pm-card__header {
+  border-bottom: 1px solid var(--pm-c-border);
+}
+
+/* The footer keeps to the bottom of a card that is taller than its content, as in a row of a grid. */
+.pm-card__footer {
+  margin-top: auto;
+  border-top: 1px solid var(--pm-c-border);
+}
+
+.pm-card > .pm-card__title {
+  margin: 0.75rem 1rem 0;
+  font-weight: 600;
+}
+
+.pm-card__body {
+  padding: 0 1rem;
+}
+
+.pm-card__header > :first-child,
+.pm-card__body > :first-child,
+.pm-card__footer > :first-child {
+  margin-top: 0.75rem;
+}
+
+.pm-card__header > :last-child,
+.pm-card__body > :last-child,
+.pm-card__footer > :last-child {
+  margin-bottom: 0.75rem;
+}
+
+/*
+ * A card that links somewhere is a link as a whole: its title's link covers
+ * it (in place of the icon a host may give external links); the links in it
+ * stay above that link.
+ */
+.pm-card.pm-card--link > .pm-card__title > a[href]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none;
+  mask-image: none;
+}
+
+.pm-card--link :is(.pm-card__header, .pm-card__body, .pm-card__footer) a {
+  position: relative;
+  z-index: 1;
+}
+
+.pm-block .pm-button {
+  display: inline-block;
+  padding: 0.3em 1em;
+  border: 1px solid var(--pm-c-brand);
+  border-radius: 999px;
+  color: var(--pm-c-brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pm-block .pm-button:hover {
+  background: var(--pm-c-brand);
+  color: var(--pm-c-bg);
+}
+
+.pm-tabs {
+  margin: 1rem 0;
+}
+
+.pm-tabs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--pm-c-border);
+}
+
+.pm-tabs__tab {
+  margin-bottom: -1px;
+  padding: 0.4rem 0.9rem;
+  border-bottom: 2px solid transparent;
+  color: var(--pm-c-text-2);
+  cursor: pointer;
+}
+
+.pm-tabs__tab:hover {
+  color: var(--pm-c-text);
+}
+
+.pm-tabs__tab[aria-selected='true'] {
+  border-bottom-color: var(--pm-c-brand);
+  color: var(--pm-c-brand);
+  font-weight: 600;
+}
+
+.pm-tabs__panel {
+  padding-top: 0.25rem;
+}
+
 .pm-footnote {
   font-size: 0.875em;
   color: var(--pm-c-text-2);

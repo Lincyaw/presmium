@@ -1,9 +1,10 @@
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import type { ComponentNode, DirectiveContext, DirectiveSpec } from '@presmium/kernel'
-import { CONTENT_ID, isRemote, MEDIA_OPTIONS, mediaFallback, youtubeId } from '../domain/index.ts'
-import type { MediaKind } from '../domain/index.ts'
+import { deckLocale } from '@presmium/kernel'
+import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, RenderContext } from '@presmium/kernel'
+import { captionTracks, CONTENT_ID, isRemote, languageTag, MEDIA_OPTIONS, mediaFallback, parseCaptions, videoHtml, youtubeId } from '../domain/index.ts'
+import type { MediaKind, MediaOptions } from '../domain/index.ts'
 
 /**
  * A media file named in the deck: a path relative to the source file, or a
@@ -21,12 +22,23 @@ function resolveMedia(path: string, ctx: DirectiveContext): string | undefined {
 
 const posix = (path: string) => path.split(sep).join('/')
 
+/** Options of each media directive besides `MEDIA_OPTIONS`: files are strings, read below. */
+const FILE_OPTIONS = {
+  video: { 'poster': 'string', 'captions': 'string', 'captions-default': 'string' },
+  audio: {},
+  animation: { still: 'string' },
+} as const
+
 /**
  * `{video} path`, `{audio} path`, `{animation} path` (P-42). The block is a
- * `PmMedia` figure that draws the media elements, the body its caption. Its
- * `src` and `still` props name a local file relative to the source file and
- * are declared as `assets`, so each renderer publishes the file with its
- * output and sets the prop to the published URL. An online file, an
+ * `PmMedia` figure that draws the media elements, the body its caption. A
+ * video's `:poster:` is its cover image, its `:captions:` caption tracks
+ * (`en=a.vtt, zh-CN=b.vtt`), `:captions-default:` the language shown at
+ * first (docs/ir.md 2.14). Each local file is relative to the source file
+ * (or a package path) and declared in `assets` by its prop's path (`src`,
+ * `still`, `poster`, `captions.<language>`), so each renderer publishes the
+ * file with its output and sets the prop to the published URL; a file that
+ * does not exist is an error on the directive's line. An online file, an
  * `http(s)://` URL, stays as it is in every form.
  */
 export function mediaDirective(kind: MediaKind): DirectiveSpec {
@@ -34,37 +46,60 @@ export function mediaDirective(kind: MediaKind): DirectiveSpec {
     name: kind,
     arg: true,
     body: true,
-    options: kind === 'animation' ? { ...MEDIA_OPTIONS, still: 'string' } : MEDIA_OPTIONS,
+    options: { ...MEDIA_OPTIONS, ...FILE_OPTIONS[kind] },
     toIR(input, ctx) {
-      const fail = (message: string) => ctx.report({ checkId: CONTENT_ID, severity: 'error', message: `{${kind}}: ${message}` })
-      const files = { media: input.arg?.trim(), still: typeof input.options.still === 'string' ? input.options.still.trim() : undefined }
-      if (!files.media) fail('needs the path or URL of the media file')
-      const urls: Partial<Record<'src' | 'still', string>> = {}
+      const report = (severity: 'error' | 'warning', message: string) => ctx.report({ checkId: CONTENT_ID, severity, message: `{${kind}}: ${message}` })
+      const option = (name: string) => (typeof input.options[name] === 'string' ? (input.options[name] as string).trim() : undefined)
+      const media = input.arg?.trim()
+      if (!media) report('error', 'needs the path or URL of the media file')
       const assets: Record<string, string> = {}
-      for (const [key, prop] of [['media', 'src'], ['still', 'still']] as const) {
-        const path = files[key]
-        if (!path) continue
-        if (isRemote(path)) {
-          urls[prop] = path
-          continue
-        }
+      /** The URL of a file a prop names: an online file as it is, a local one relative to the source file, declared in `assets`. */
+      const url = (path: string, prop: string) => {
+        if (isRemote(path)) return path
         const file = resolveMedia(path, ctx)
-        if (!file) fail(`file not found: ${path}`)
-        urls[prop] = assets[prop] = file ? posix(relative(dirname(ctx.file), file)) : path
+        if (!file) report('error', `file not found: ${path}`)
+        return assets[prop] = file ? posix(relative(dirname(ctx.file), file)) : path
       }
-      const { still: _still, ...options } = input.options
+      const props: Record<string, unknown> = { kind, src: media ? url(media, 'src') : '' }
+      const still = option('still')
+      if (still) props.still = url(still, 'still')
+      const poster = option('poster')
+      if (poster) props.poster = url(poster, 'poster')
+      const { captions, invalid } = parseCaptions(option('captions') ?? '')
+      for (const entry of invalid) report('error', `:captions: "${entry}" is not <language>=<file>, e.g. en=films/loop.en.vtt`)
+      if (Object.keys(captions).length) props.captions = Object.fromEntries(Object.entries(captions).map(([lang, path]) => [lang, url(path, `captions.${lang}`)]))
+      const chosen = option('captions-default')
+      const shown = chosen && Object.keys(captions).find(lang => lang === languageTag(chosen))
+      if (chosen && !shown) report('warning', `:captions-default: ${chosen} is not a language of :captions:; no captions show at first`)
+      if (shown) props.captionsDefault = shown
+      const { still: _still, 'poster': _poster, 'captions': _captions, 'captions-default': _default, ...options } = input.options
       const caption = input.body.trim()
       const node: ComponentNode = {
         type: 'component',
         plugin: CONTENT_ID,
         name: 'PmMedia',
-        props: { kind, src: urls.src ?? '', ...urls.still ? { still: urls.still } : {}, ...options, ...caption ? { caption } : {} },
+        props: { ...props, ...options, ...caption ? { caption } : {} },
         ...Object.keys(assets).length ? { assets } : {},
-        fallback: mediaFallback(urls.src ?? '', caption),
+        fallback: mediaFallback(String(props.src), caption),
       }
       return { node }
     },
   }
+}
+
+/**
+ * A video with a poster or captions in a notebook (docs/ir.md 2.14): the
+ * `<video>` with its `<track>`s as HTML, the tracks labelled in the deck's
+ * language. The renderer has copied the files to the notebook's `media/` and
+ * set the props to the copies. Other media keep their fallback, a link to
+ * the file.
+ */
+export function notebookMedia(node: ComponentNode, _block: IRBlock, ctx: RenderContext): unknown {
+  const { kind, src, poster, captions, captionsDefault, caption, ...options } = node.props
+  if (kind !== 'video' || (!poster && !captions)) return undefined
+  const tracks = captionTracks(captions as Record<string, string> | undefined, captionsDefault as string | undefined, deckLocale(ctx.lang))
+  const html = videoHtml({ src: String(src), poster: poster as string | undefined, tracks, caption: caption as string | undefined, options: options as MediaOptions })
+  return { cell_type: 'markdown', source: html }
 }
 
 /**

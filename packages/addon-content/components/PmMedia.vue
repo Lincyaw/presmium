@@ -1,17 +1,24 @@
 <script setup lang="ts">
+import { useLocale } from '@presmium/host'
 import { computed } from 'vue'
-import { mediaElements } from '../src/domain/index.ts'
+import { captionTracks, mediaElements } from '../src/domain/index.ts'
 import type { MediaKind } from '../src/domain/index.ts'
 
 /**
  * A media block (P-42) from `{video}`, `{audio}` or `{animation}`: the media
- * element, and for an animation with a still image both images. `src` and
- * `still` are the URLs the renderer published the files at.
+ * element, and for an animation with a still image both images. A video
+ * shows its `poster` before it plays and has a caption track per language of
+ * `captions`, labelled with the language's name in the UI language;
+ * `captionsDefault` shows at first. `src`, `still`, `poster` and the files of
+ * `captions` are the URLs the renderer published the files at.
  */
 const props = defineProps<{
   kind: MediaKind
   src: string
   still?: string
+  poster?: string
+  captions?: Record<string, string>
+  captionsDefault?: string
   caption?: string
   controls?: boolean
   autoplay?: boolean
@@ -22,15 +29,19 @@ const props = defineProps<{
   alt?: string
 }>()
 
+const locale = useLocale()
 const elements = computed(() => mediaElements(props.kind, props, props.still !== undefined).map(({ tag, file, attrs }) => ({
   tag,
-  attrs: { ...attrs, src: file === 'still' ? props.still : props.src },
+  attrs: { ...attrs, src: file === 'still' ? props.still : props.src, ...tag === 'video' && props.poster ? { poster: props.poster } : {} },
 })))
+const tracks = computed(() => (props.kind === 'video' ? captionTracks(props.captions, props.captionsDefault, locale.value) : []))
 </script>
 
 <template>
   <figure class="pm-media" :data-kind="kind">
-    <component :is="element.tag" v-for="(element, i) in elements" :key="i" v-bind="element.attrs" />
+    <component :is="element.tag" v-for="(element, i) in elements" :key="i" v-bind="element.attrs">
+      <track v-for="track in element.tag === 'video' ? tracks : []" :key="track.srclang" kind="captions" :src="track.src" :srclang="track.srclang" :label="track.label" :default="track.default">
+    </component>
     <figcaption v-if="caption">
       {{ caption }}
     </figcaption>

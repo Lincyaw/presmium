@@ -2,7 +2,8 @@
  * `markdown` nodes: mdast to hast (mdast-util-to-hast, with handlers for the
  * MyST nodes), raw HTML parsed into the same tree (hast-util-raw), then hast
  * to Vue virtual nodes. Math, diagrams and code inside prose become the
- * viewer's own components, also inside raw HTML.
+ * viewer's own components, also inside raw HTML; cards, grids and tabs are
+ * laid out by ./cards.ts.
  */
 import { roleMark } from '@presmium/kernel'
 import type { IRBlock, MarkdownNode, MdastNode } from '@presmium/kernel'
@@ -13,6 +14,7 @@ import { defaultHandlers, toHast } from 'mdast-util-to-hast'
 import { find, html as schema } from 'property-information'
 import type { Component, PropType, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject } from 'vue'
+import { cardHandlers, isButton, tabEntries, TabSetView } from './cards.ts'
 import { CodeView } from './code.ts'
 import { itemVisible } from './domain/index.ts'
 import { messages } from './i18n.ts'
@@ -168,6 +170,7 @@ function handlers(links: MarkdownLinks): Handlers {
     crossReference: (state, node) => reference(element('a', { href: `#${identifier(node)}` }, state.all(node)), identifier(node), label(node)),
     link(state, node) {
       const el = defaultHandlers.link(state, node as never)
+      if (isButton(node)) el.properties.className = ['pm-button']
       const url = typeof node.url === 'string' ? node.url : ''
       return url.startsWith('#') ? reference(el, decoded(url.slice(1)), url.slice(1)) : reference(el, '', url)
     },
@@ -182,6 +185,7 @@ function handlers(links: MarkdownLinks): Handlers {
     summary: wrap('summary'),
     div: (state, node) => element('div', classed(node), state.all(node)),
     span: (state, node) => element('span', classed(node), state.all(node)),
+    ...cardHandlers(),
     // A plugin's role (docs/ir.md 2.8): its children; one without children shows its mark where the presenter sees it.
     presmiumRole(state, node) {
       const children = state.all(node)
@@ -265,6 +269,9 @@ export function hastToVNodes(nodes: readonly (RootContent | ElementContent)[], c
     const item = node.properties.dataPmItem
     if (typeof item === 'number' && ctx.hidden?.(item)) attrs.class = [attrs.class, 'pm-hidden']
     if (RAW_TEXT.has(node.tagName)) return h(node.tagName, { ...attrs, innerHTML: node.children.map(c => (c.type === 'text' ? c.value : '')).join('') })
+    if (node.properties.dataPmTabs !== undefined) {
+      return h(TabSetView, { class: attrs.class, tabs: tabEntries(node, children => hastToVNodes(children, ctx)) })
+    }
     return h(node.tagName, attrs, hastToVNodes(node.children, ctx))
   })
 }

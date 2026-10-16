@@ -591,6 +591,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
 | 共享的运行器经包的 `exports` 以 `?raw` 进入两种形态的 Worker；Slidev 的 `{monaco-run}` 在构建产物中运行 Python 并接收执行器与会话；运行器的富输出（`IPython.display`、matplotlib）；在浏览器中解析 Markdown 输出（`wbs.md` 没有为 WP-73b 列出先行验证，开始时做了这几项小规模实测） | WP-73b（已完成，结论见下） |
+| mystmd 的 `myst-ext-card`、`myst-ext-grid`、`myst-ext-tabs`、`myst-ext-button` 与 myst-parser 1.7 一起用时给出的 mdast；它们在两种形态与 notebook 中的写法（`wbs.md` 没有为 WP-85 列出先行验证，开始时做了这几项小规模实测） | WP-85（已完成，结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -639,6 +640,12 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **浏览器以令牌访问 JupyterHub 用户服务器的跨域**：单用户服务器的 REST 接口跨源可用，需要 `--ServerApp.allow_origin_pat`（`Spawner.args`）；内核的 WebSocket 只能把令牌写在地址中，而 JupyterHub 5 起单用户服务器只在请求带 `Sec-Fetch-Mode: websocket` 时接受地址中的令牌，Chromium 的 WebSocket 握手不带这个请求头（实测为 403，Node 的 `ws` 加上它即可连上），所以单用户服务器的环境中要设置 `JUPYTERHUB_ALLOW_TOKEN_IN_URL=1`；`{user}` 要读 `<hub>/hub/api/user`，hub 默认不回答跨源请求，需要 `JupyterHub.tornado_settings.headers` 给出 `Access-Control-Allow-Origin` 与 `Access-Control-Allow-Headers: Authorization, Content-Type`。三项都设置后，另一个源的页面读出用户名、调用单用户服务器的接口并打开内核的 WebSocket。这些写进 `templates/env/kubernetes/README.md` 的 z2jh 片段。直接的 jupyter_server（compose 模板）以 `allow_origin_pat` 允许站点的来源后，`auth: prompt` 的静态页面跨源运行代码与打开 WebSocket（地址中的令牌）都可用（`e2e/exec-remote.spec.ts`）。
 - **`runtime: runsc` 与 GPU 同时使用**：没有验证。本机（RTX 5090 两张，NVIDIA Container Toolkit 与 CDI）没有安装 runsc，也没有改 Docker 守护进程配置的权限；compose 的 GPU 覆盖配置（`deploy.resources.reservations.devices`）实测可用（容器中 `nvidia-smi -L` 列出两张卡，与 `cap_drop: [ALL]`、`no-new-privileges` 同时）。按约定模板不提供两者的组合：`compose.gpu.yaml` 与 `compose.gvisor.yaml` 是分开的覆盖配置，说明中写明不组合；`compose.gvisor.yaml` 只经 `docker compose config` 校验。
 - **另外发现**：Rollup 会加载死分支中的动态导入，网页的服务端渲染因此也打包插件的浏览器模块，`@jupyterlab/services` 的 `require('ws')` 在那里没有 `browser` 字段的替换而打包失败；插件的 `vite.config.ts` 把它解析为该包自己的垫片（`architecture.md` 4.6 节 WP-76 的段落）。docker-stacks 镜像中内核继承容器的环境，读得到 `JUPYTER_TOKEN`：compose 模板是单用户服务器，学习者之间的隔离要用 JupyterHub（模板说明中写明）。devcontainer 命令行以清理过的环境运行，指向 compose 的开发容器定义要经 `settings.presmium.exec.passEnv` 传入 `JUPYTER_TOKEN`，之后本地环境插件可以在其中运行代码。
+**WP-85 开始时的验证（2026-10-16，myst-parser 1.7.4、myst-ext-card 1.0.9、myst-ext-grid 1.1.1、myst-ext-tabs 1.0.10、myst-ext-button 0.0.2、Slidev 53.0.0、VitePress 1.6.4）**的结论：
+
+- **登记**：四个包导出的指令与角色规格（`cardDirective`、`gridDirectives`、`tabDirectives`、`buttonRole`）直接放进 `mystParse` 的 `directives`、`roles` 选项即可，嵌套的 `::::{grid}` 中的 `:::{card}`、卡片正文中的 `+++`（页脚，`blockBreak`）与 `^^^`（页眉）、卡片标题中的行内 MyST 都按 mystmd 的规则读出。myst-parser 对同名规格取先登记的一个，所以这些规格排在插件的指令之前。四个包都是 MIT，与 myst-parser 同一发行（`myst-common` 1.10.1、`myst-directives` 1.7.4），不引入新的传递依赖。
+- **mdast 与设计的出入**：`{grid-item}` 生成的节点类型是 `grid-item`（不是 `ir.md` 原写的 `gridItem`）；``{button}`文字 <地址>` `` 生成带 `class: 'button'` 的 `link`（不是 `kind: 'button'`），没有地址时是带同样类名的 `span`；`tabItem` 的标题是字符串字段 `title`，卡片的链接是 `card.url`，栅格的列数是 `grid.columns`（1 到 4 个 1 至 12 的整数，缺省 `1 2 2 3`）。IR 保留这些节点的原样，`ir.md` 2.10 节按实际改写；没有改契约（`ir.ts` 不涉及这些 mdast）。
+- **幻灯片**：`lowerMyst` 把栅格与卡片写成带类名的 HTML 块（`<div class="pm-grid" style="--pm-grid-columns: 3">`，每个开闭标签单独成块，中间空行），Slidev 的 Markdown 照常解析其中的 Markdown 并编进 Vue 模板；幻灯片的画面宽度固定，列数取最宽一档。渲染端只给 `lowerMyst` 传 `iframes: 'element'`（`render-slides/src/node/slidev.ts` 不在 WP-85 的归属中），所以选项 `cards` 不写时随 `iframes`：`element` 的渲染端（幻灯片）保留结构，其余（notebook）写成小标题加段落并列为降级。
+- **网页**：VitePress 默认主题给 `.vp-doc` 中的外链的 `::after` 设了宽、高与图标遮罩，整张卡片的链接（标题链接的 `::after` 覆盖卡片）要以更高的优先级重设它们；`.vp-doc p` 的外边距同样压过单个类名的选择器。选项卡的标签与面板的 id 用 Vue 3.5 的 `useId()`，服务端渲染与水合一致。
 
 ## 12. 包与工作包
 

@@ -115,6 +115,47 @@ print(sum(range(10)))
 - 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行，录制的输出显示在它下方。
 - 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
 
+### `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` 与 `{button}`
+
+MyST 标准的卡片、栅格、选项卡与按钮（mystmd 的 `myst-ext-card`、`myst-ext-grid`、`myst-ext-tabs`、`myst-ext-button`），编译器内置，用于课程首页与导读页。它们是上屏内容。
+
+`````md
+::::{grid} 1 1 2 3
+:::{card} 第 1 周：智能体环路
+:link: week-01/
+读、想、做的循环。
++++
+{button}`进入讲义 <week-01/>`
+:::
+:::{card} 第 2 周：上下文
+页眉
+^^^
+上下文窗口里放什么。
+:::
+::::
+
+::::{tab-set}
+:::{tab-item} Python
+:sync: py
+用 `print` 输出。
+:::
+:::{tab-item} JavaScript
+:sync: js
+用 `console.log` 输出。
+:::
+::::
+`````
+
+| 写法 | 参数与选项 |
+|---|---|
+| `{grid}` | 参数为四档屏宽（手机、576px 起、768px 起、992px 起）的列数，1 到 4 个数，少写时最后一个数用于更宽的屏幕，默认 `1 2 2 3`；`:class:` |
+| `{grid-item}` | 栅格中的一格；`:columns:` 占一行 12 份中的几份；`:class:` |
+| `{card}` | 参数为标题；`:link:`（整张卡片链接到的地址）、`:header:`、`:footer:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚 |
+| `{tab-set}`、`{tab-item}` | `{tab-item}` 的参数为标题；`:sync:` 同步键（选中它时页面上同一键的选项卡一起切换）、`:selected:` 开始时选中 |
+| ``{button}`文字 <地址>` `` | 按钮样式的链接；没有 `<地址>` 时只是按钮样式的文字 |
+
+各媒介：网页完整显示（栅格按屏宽分列，选项卡可切换）；幻灯片中卡片与栅格照常显示（列数取最宽一档），选项卡依次展开为带标题的几段；notebook 中卡片标题与选项卡标题成为小标题（`####`），其余为段落，按钮为链接，构建报告列出这些降级（`degraded in the notebook, which has no Jupyter form for grid, card`）。
+
 ### 其他 MyST 指令
 
 MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-table}`、`{dropdown}` 等）作为上屏内容保留标准 mdast。```` ```mermaid ```` 代码块由渲染端绘制。未注册、也不是 MyST 指令的名字报错 `unknown directive; is the plugin that provides it listed in plugins?`。
@@ -359,15 +400,21 @@ markmap:
 | `:width:`、`:height:` | number |
 | `:alt:` | string |
 | `:still:`（只有 `{animation}`） | string：减少动态效果时显示的静止图片 |
+| `:poster:`（只有 `{video}`） | string：封面图片，播放前显示 |
+| `:captions:`（只有 `{video}`） | string：逗号分隔的 `语言=VTT 文件`，如 `en=films/loop.en.vtt, zh-CN=films/loop.zh.vtt`；字幕的标签是语言的名称（按界面语言） |
+| `:captions-default:`（只有 `{video}`） | string：开始时显示的字幕语言；省略时不默认显示字幕 |
 
 ````md
 ```{video} media/demo.webm
 :controls:
+:poster: media/demo.jpg
+:captions: en=media/demo.en.vtt, zh-CN=media/demo.zh.vtt
+:captions-default: zh-CN
 演示录像。
 ```
 ````
 
-生成 `PmMedia`，降级为文件链接。文件不存在时报错 `file not found`。
+生成 `PmMedia`，降级为文件链接。封面与字幕文件和媒体文件一样相对于本文件，随每种媒介发布。媒体、静止图片、封面或字幕文件不存在时报错 `file not found`，诊断在指令的行上。notebook 中有封面或字幕的视频写成带 `poster` 与 `<track>` 的 `<video>`（文件复制到 `media/`），其他媒体写成文件链接。
 
 ### `{youtube}`
 

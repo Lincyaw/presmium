@@ -19,3 +19,6 @@ e2e/content.spec.ts 的测试文稿。PlantUML 图已下载到 `.presmium/assets
 
 ```{include} content.md
 ```
+
+```{include} cards.md
+```
