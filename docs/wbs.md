@@ -17,7 +17,7 @@
 | H | WP-72 设计：执行环境、智能体、工作区、讲授四个上下文的需求细化、领域模型、架构、源语法与契约（已完成） | G |
 | I（M6、M8、M9） | 先 WP-73a 契约与服务端，再 WP-73b 环境、会话与富输出。之后两条线并行：执行与内容一线并行 WP-74 WebAssembly 后端、WP-75 浏览器 GPU 后端、WP-76 远端环境、部署模板与浏览器终端、WP-85 富内容增补（视频封面与字幕轨、卡片与栅格）、WP-88 先预测再揭示；讲授一线先并行 WP-77 讲授轨、录制与回放，WP-82 语音服务，再 WP-83 脚本化讲授、语音串联与导出视频 | H |
 | J（M7） | WP-73b 之后开始，与 I 的后半并行：先并行 WP-78 agent 环境（MCP）、WP-79 工作区服务与文档管理；再 WP-80 agent 运行时接入与学习者问答；再并行 WP-81 批注修改、对话修改与修改历史，WP-84 转写回写讲义 | WP-73b；WP-80 还要 WP-88（同改课堂插件）；WP-84 还要 WP-80 与 WP-83（同改讲授插件） |
-| J2（M9） | 并行 WP-86 课程站点、WP-87 发布治理 | WP-79；WP-85（同改编译器的 MyST 设置与指令信息） |
+| J2（M9） | 并行 WP-86 课程站点、WP-87 发布治理 | WP-79；WP-85（同改编译器的 MyST 设置与指令信息）；WP-87 还要 WP-78（读者的 MCP 令牌只读学生视图） |
 | K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2 |
 
 ## 测试原则
@@ -470,11 +470,11 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 **验收**：按 `presmium-author` 从零写一份文稿并构建三种媒介；检查脚本发现技能中不存在的命令或缺少的指令时失败。
 
-### WP-72 设计（已完成；P-100 至 P-137、P-90，以及 M9 的 P-46、P-54、P-55、P-68、P-78、P-79、P-123）
+### WP-72 设计（已完成；v0.7 的 P-90、P-100 至 P-106、P-110 至 P-115、P-120 至 P-122、P-130 至 P-136、N-08、N-09，以及 v0.8（M9）的 P-42 增补、P-46、P-54、P-55、P-68、P-78、P-79、P-102 增补、P-107、P-122 增补、P-123、P-137）
 
 **交付**：`domain-model.md` 新增执行环境、智能体、工作区、讲授（含语音）四个限界上下文与服务端（4A 节），并在富内容、课堂、网页形态、发布、编译中加入 M9 的部分；`architecture.md` 新增包划分与分层规则、4.6 至 4.10 节的契约（精确的 TypeScript 签名）、服务端的挂载与登录（第 10 节）、安全（第 11 节）、依赖选型（第 12 节）、测试策略的增补与 9.2 节的决定；`ir.md` 新增 2.7 至 2.14 节（`:env:`、`:session:`、`:echo:`、行内角色、讲授脚本、卡片与栅格、受众与发布检查、译本、先预测再揭示、视频的封面与字幕轨）、富输出与文件发布的渲染规则、讲授轨格式与工作区配置；本节各工作包的文件归属、先行验证与验收用例；`design-v0.7.md` 开头的说明。只改文档，不改代码：契约由 WP-73a 写入 `contracts.ts`、`ir.ts` 与 `host/src/types.ts`。
 
-**验收**：验收者对照需求逐条审阅：每条需求在领域模型、包、契约与工作包中都有位置；文档之间没有矛盾；同一时间并行的工作包归属互不重叠；契约变更只有增加；`pnpm test` 通过。
+**验收**：验收者对照需求逐条审阅：每条需求在领域模型、包、契约与工作包中都有位置；文档之间没有矛盾；同一时间并行的工作包归属互不重叠；契约变更只有增加；`pnpm test` 通过。设计评审中验收者的决定（D1 至 D10）记在 `design-v0.7.md` 说明的第 17 至 26 条，并已写入各文档与下列工作包。
 
 ### WP-70e 合并后修复（已完成）
 
@@ -483,7 +483,7 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 ## I、J、J2 波次的约定
 
 - **归属**：同一时间并行的工作包，归属的路径互不重叠；这包括跨波次并行的 I 的后半与 J（开发波次表中的前置决定了谁和谁同时进行）。先后执行的工作包可以拥有同一路径。“包名/**”指整个包，列出文件时只拥有这些文件。
-- **契约只由 WP-73a 写**：`packages/kernel/src/contracts.ts`（及其拆出的模块）、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts` 与 `packages/host/src/kernel.ts` 中的 `HostStart` 在 WP-73a 之后不再修改。后来的工作包发现契约不够用时，在交付报告中提出，由验收者决定（只能增加）。
+- **契约只由 WP-73a 写**：`packages/kernel/src/contracts.ts`（及其拆出的模块）、`packages/kernel/src/ir.ts`、`packages/kernel/src/kernel.ts` 中的 `KernelOptions`、`packages/host/src/types.ts` 与 `packages/host/src/kernel.ts` 中的 `HostStart`、`StartOptions` 在 WP-73a 之后不再修改。后来的工作包发现契约不够用时，在交付报告中提出，由验收者决定（只能增加）。
 - **共享文件**不计入独占归属，各工作包只改与自己需求对应的部分，后合并的变基并解决冲突：`docs/*.md`（写入实际实现：命令、选项、测试文件、与设计不同之处）；`.agents/skills/**`（`presmium-author/references/directives.md` 必须覆盖新的指令，`scripts/check-skills.mjs` 检查）；`e2e/fixtures/deck.ts`（只增加导出，不改签名）；`pnpm-lock.yaml`（合并时重新生成，新依赖写在交付报告中）；根目录 `.gitignore`（只有 WP-82 增加合成缓存的例外）。
 - **根目录的配置**（`package.json`、`vitest.config.ts`、`playwright.config.ts`、`pnpm-workspace.yaml`）不属于任何工作包；需要改动时（例如把用 Playwright 的集成测试放进单独的 Vitest 项目、提高 `engines.node`）在交付报告中提出，由验收者在合并时修改。
 - **端口**：每个工作包用自己的一组端口（`PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT`，以及 spec 中取的空闲端口），不复用别处的服务。
@@ -498,18 +498,18 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 
 **交付**：
 
-1. 契约：4.6 至 4.10 节的全部类型、函数与令牌（含 `MCP_ENDPOINT`、`McpAccess`、`AgentMode`、`ServerContext.settings`、`NodeServiceContext.settings`、`CheckContext.service`，以及 `host/src/kernel.ts` 中 `HostStart.server`）；`environmentExecutor`、`eventStream` 的实现；`contracts.ts` 按领域拆为模块并统一再导出（9.2 节）。
-2. `@presmium/server`：`startServer`，挂载插件的路由与代理（`@hono/node-server`、`http-proxy-3`）；`hello` 与控制通道；`APPROVALS`（策略、超时、按成员分发）；`dev` 模式的 `Host`、`Origin` 检查与每进程的令牌（写 `.presmium/server.json`）；`serve` 模式需要的部分：信任登录代理（共享密钥或固定来源）、按请求头解析成员的挂钩（由工作区提供角色）、按 `Presmium-Document` 分文档创建插件实例、其余路径转发到给定的目标（含 WebSocket）；`startServer` 接受运营者设置 `settings`（插件 ID 到设置），交给 `ServerContext.settings`。另定义 `ServerHost`（编译、检查、构建、文档列表），由 CLI（`presmium dev`）与工作区（WP-79）实现；MCP 不引用服务端，WP-78 在服务端中按 `@presmium/mcp` 自己声明的 `McpHost` 适配它（`architecture.md` 10.2 节）。
+1. 契约：4.6 至 4.10 节的全部类型、函数与令牌（含 `MCP_ENDPOINT`、`McpAccess`、`AgentMode`、`ServerContext.settings`、`NodeServiceContext.settings`、`CheckContext.service`、`RunContext` 与 `Executor.run` 的第三个可选参数、`ApprovalScope` 与 `ApprovalRequest.scope`、`AgentClient.runtime`、`AgentRuntime.runtime`，以及 `host/src/kernel.ts` 中 `HostStart.server`）；`HostStart`、`StartOptions` 与 `KernelOptions` 的 `environments`，内核把它交给每个插件的 `PluginContext.environments`；`environmentExecutor`、`eventStream` 的实现；`contracts.ts` 按领域拆为模块并统一再导出（9.2 节）。
+2. `@presmium/server`：`startServer`，挂载插件的路由与代理（`@hono/node-server`、`http-proxy-3`）；`hello` 与控制通道；`APPROVALS`（策略、超时，按 `ApprovalScope` 分发：`content` 给 `member`，`workspace` 只给所有者，只接受所有者对它的回答，`architecture.md` 10.4 节）；`dev` 模式的 `Host`、`Origin` 检查与每进程的令牌（写 `.presmium/server.json`）；`serve` 模式需要的部分：信任登录代理（共享密钥或固定来源）、按请求头解析成员的挂钩（由工作区提供角色）、按 `Presmium-Document` 分文档创建插件实例、其余路径按成员转发到给定的目标（转发选项是成员到地址的函数，含 WebSocket）；`startServer` 接受运营者设置 `settings`（插件 ID 到设置），交给 `ServerContext.settings`。另定义 `ServerHost`（编译、检查、构建、文档列表；编译结果按视图 `full` 或 `student` 给出），由 CLI（`presmium dev`）与工作区（WP-79）实现，`student` 视图在 WP-87 实现受众筛选之前与 `full` 相同；MCP 不引用服务端，WP-78 在服务端中按 `@presmium/mcp` 自己声明的 `McpHost` 适配它（`architecture.md` 10.2 节）。
 3. 编译器：Node 端服务注册表（`services`），总是提供可选的 `PassContext.service`、`RenderContext.service` 与 `CheckContext.service`（`presmium check` 与语言服务的检查上下文）；`NodeServiceContext.settings` 读取工作区根目录 `presmium.workspace.yaml` 的 `settings.<插件 ID>`（启动时一次，没有该文件时为空）；行内角色的扩展点与 `presmiumRole`；`ComponentNode.assets` 的属性路径（三个渲染端都改写嵌套属性）；`RenderContext.server`；头部的 `translations` 写入 IR 的 `config.translations`、`translationOf` 写入 `meta.translationOf`（不再落进 `meta` 的其余字段），这部分写在新文件 `packages/compiler/src/translations.ts` 中并由 `compiler.ts` 调用，WP-86 在同一文件中加入译本的编译与过期检查，不必改 `compiler.ts`。
 4. `presmium dev` 启动服务端，挂载各插件的 `server()`，渲染端的开发服务器代理 `/__presmium/`（网页写进生成的 VitePress 配置，幻灯片写进生成的 Slidev 项目的 `vite.config.ts`）；选项 `--server-port`、`--allow`。
-5. 宿主：`useServer`（两种宿主适配给出 `server`）、控制通道的连接（报告位置与 `STATUS`，执行 `go` 与课堂命令）、`PmToolbar` 中的确认入口、`STATUS`、`OPERATIONS` 的实现；IR 运行时报告 `go`。
+5. 宿主：`useServer`（两种宿主适配给出 `server`）、`startHost` 把 `HostStart.environments` 经 `StartOptions` 交给内核（宿主适配给出它的值在 WP-73b）、控制通道的连接（报告位置与 `STATUS`，执行 `go` 与课堂命令）、`PmToolbar` 中的确认入口、`STATUS`、`OPERATIONS` 的实现；IR 运行时报告 `go`。
 6. 幻灯片渲染端：生成的 Slidev 文稿头部写 `mcp: false`；演讲者备注中显示没有子内容的角色的标记。IR 运行时：演讲者窗口中，以及 `EDIT_MODE.active` 时，显示没有子内容的角色的标记 `〔<名> <value>〕`（`ir.md` 2.8、6.4 节；编辑模式的提供方是 WP-79）。网页与 notebook 显示角色的子内容。
 7. `scripts/check-layering.mjs` 的五条新规则（`architecture.md` 第 3 节）。
 
 **验收**：
 
-- `packages/server/test/server.test.ts`：测试插件经 `server()` 贡献一个路由，路由返回它经 `services` 提供的 Node 端服务的值；对测试文稿运行 `presmium dev`，经网页开发服务器的 `/__presmium/<插件 ID>/` 访问得到该值；`Host: evil.example` 的请求得到 403；`/mcp` 不带令牌得到 401（MCP 本身由 WP-78 挂载，这里只验证挂载点的认证）。
-- 同一文件：以 `serve` 模式启动并设置 `PRESMIUM_PROXY_SECRET`：不带密钥的请求被拒绝；带密钥与 `X-Forwarded-Email` 的读者调用默认角色（`editor`）的路由得到 403，调用 `role: 'reader'` 的路由成功；以非本机地址启动而没有配置登录代理时拒绝启动。
+- `packages/server/test/server.test.ts`：测试插件经 `server()` 贡献一个路由，路由返回它经 `services` 提供的 Node 端服务的值；对测试文稿运行 `presmium dev`，经网页开发服务器的 `/__presmium/<插件 ID>/` 访问得到该值；`Host: evil.example` 的请求与 `Origin: https://evil.example` 的请求都得到 403；`/mcp` 不带令牌得到 401（MCP 本身由 WP-78 挂载，这里只验证挂载点的认证）；以 `--allow operate` 启动时，测试路由请求的 `operate` 确认不经控制通道直接允许。
+- 同一文件：以 `serve` 模式启动并设置 `PRESMIUM_PROXY_SECRET`：不带密钥的请求被拒绝；带密钥与 `X-Forwarded-Email` 的读者调用默认角色（`editor`）的路由得到 403，调用 `role: 'reader'` 的路由成功；编辑者调用的测试路由请求一个 `workspace` 范围的确认时，确认只出现在所有者的控制通道上，编辑者回答它得到 403；以非本机地址启动而没有配置登录代理时拒绝启动。
 - `e2e/server.spec.ts`：测试组件用 `useServer()` 显示服务端的回答；同一文稿的静态构建中显示“不可用”的降级文字。测试路由请求一个 `operate` 确认：页面工具栏出现确认入口，点“允许”后路由返回允许，点“拒绝”后返回拒绝。
 - 同一文件：放映视图中推进步骤与翻页，测试插件经 `OPERATIONS.subscribe` 收到 `go` 操作；重放一个记录下来的 `go`，放映视图到达该位置，且重放期间不产生新的报告。
 - `packages/server/test/server.test.ts`：工作区根目录的 `presmium.workspace.yaml` 中 `settings.<测试插件 ID>` 的值出现在测试插件的 `ServerContext.settings` 与 `NodeServiceContext.settings` 中（路由返回它）；文稿头部 `presmium.<测试插件 ID>` 中的同名键只在 `config` 中，不进入 `settings`。
@@ -521,24 +521,26 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 
 ### WP-73b 环境、会话与富输出（I 波次第二步；M6，P-100 至 P-102）
 
-**需求**：P-100、P-101、P-102（含增补：`text/markdown` 输出作为正文、`:echo: false`）；`review-round2.md` 决定 5（`RunRequest.executor` 精确匹配）；`architecture.md` 9.2 节中归 WP-73b 的三项决定（幻灯片中的现场执行代码块、共享的 Python 运行器、首选执行器）。
+**需求**：P-100、P-101、P-102（含增补：`text/markdown` 输出作为正文、`:echo: false`）；`review-round2.md` 决定 5（`RunRequest.executor` 精确匹配）；`architecture.md` 9.2 节中归 WP-73b 的三项决定（幻灯片中的现场执行代码块、共享的 Python 运行器、首选执行器）；N-08 中编译时执行的部分（`design-v0.7.md` 第 17 条：清理过的环境变量，以及供 `presmium serve` 使用的执行选项）。
 
 **归属**：`packages/kernel/src/runner.py`（新）与 `packages/kernel/package.json`（只增加它的导出；契约文件不改）、`packages/compiler/**`、`packages/cli/**`、`packages/viewer/**`、`packages/web/**`、`packages/addon-core/**`、`packages/render-slides/**`、`packages/render-notebook/**`、`packages/addon-exec/**`、`packages/addon-exec-local/**`、`e2e/exec-env.spec.ts`、`e2e/fixtures/exec-env/**`。
 
 **交付**：
 
 1. 编译器：头部 `execute` 写入 IR 的 `config.execute`；代码块与执行面板的 `:env:`、`:session:`、`:echo:`；按 `kind` 由提供方创建环境的执行器；未声明的环境、没有提供方的 `kind`、一个会话中混用环境都是错误；会话键链与会话的重新执行；录制块（`blobs/`）的写入、读回与清理；检查项 `presmium.secrets`（头部中像凭据的值）；`presmium check --env`（调用提供方的 `probe`）。
-2. 执行路由按 `RunRequest.executor` 精确选择；IR 运行时、执行面板与幻灯片的 code runner 把 `executor` 与 `session` 放进请求，不再自己挑选。
-3. 执行插件：Pyodide 的会话（每个会话一个常驻的全局命名空间，`endSession` 丢弃）；富输出（`display` 与 matplotlib 的图片、对象的 `_repr_html_`、`_repr_markdown_`）；编译时的 Python 执行器支持会话（会话期间常驻的子进程）与富输出；执行面板的 `:env:`、`:session:`；报告 `run` 操作；Python 运行器移到 `@presmium/kernel/runner.py`，执行插件与本地环境插件共用。
-4. 本地环境插件：作为 `kind: devcontainer` 的环境提供方（现有的容器执行器以环境名登记）。
-5. IR 运行时：按 MIME 类型显示输出（`ir.md` 6.1 节，DOMPurify、ansi_up、浏览器中的 Markdown 解析）；`echo: false`；会话的“重置”控件；两种宿主把 `config.execute.environments` 交给 `PluginContext.environments`（幻灯片渲染端把它写进 Slidev 头部）。
-6. 幻灯片渲染端：录制的富输出；带 `live` 或 `both` 的代码块写成 `{monaco-run}`。notebook 渲染端：原样写入 `outputs`，`echo: false` 的单元格带 `source_hidden`。
+2. 编译时执行的环境变量与执行选项（`architecture.md` 4.6、10.6 节）：编译器为每次运行给出 `RunContext.env`（`local` 规则：进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量；`serve` 规则：允许列表与每个工作区一个临时 `HOME`；都加上 `settings.presmium.exec.passEnv`）；执行选项 `env`、`admit`、`sandbox` 供 `presmium serve` 使用（由 WP-79 接入与验收）。执行插件的子进程（修正 `packages/addon-exec/src/node/child.ts` 把 `process.env` 整个传入）与本地环境插件的 `docker`、devcontainer 命令行都以 `RunContext.env` 为环境，没有 `ctx` 时只给 `PATH`、`LANG` 与临时的 `HOME`。
+3. 执行路由按 `RunRequest.executor` 精确选择；IR 运行时、执行面板与幻灯片的 code runner 把 `executor` 与 `session` 放进请求，不再自己挑选。
+4. 执行插件：Pyodide 的会话（每个会话一个常驻的全局命名空间，`endSession` 丢弃）；富输出（`display` 与 matplotlib 的图片、对象的 `_repr_html_`、`_repr_markdown_`）；编译时的 Python 执行器支持会话（会话期间常驻的子进程）与富输出；执行面板的 `:env:`、`:session:`；报告 `run` 操作；Python 运行器移到 `@presmium/kernel/runner.py`，执行插件与本地环境插件共用。
+5. 本地环境插件：作为 `kind: devcontainer` 的环境提供方（现有的容器执行器以环境名登记）。
+6. IR 运行时：按 MIME 类型显示输出（`ir.md` 6.1 节，DOMPurify、ansi_up、浏览器中的 Markdown 解析）；`echo: false`；会话的“重置”控件；两种宿主适配把 IR 的 `config.execute.environments` 交给 `startHost` 的 `HostStart.environments`（契约与内核中的传递由 WP-73a 实现，经 `StartOptions`、`KernelOptions` 到 `PluginContext.environments`；幻灯片渲染端把它写进 Slidev 头部，`addon-core` 从那里读取）。
+7. 幻灯片渲染端：录制的富输出；带 `live` 或 `both` 的代码块写成 `{monaco-run}`。notebook 渲染端：原样写入 `outputs`，`echo: false` 的单元格带 `source_hidden`。
 
 **验收**：
 
 - P-100（`packages/cli/test/env.test.ts`）：文稿声明 `box: { kind: devcontainer }`，代码块写 `:env: box` 时 IR 中 `run.executor` 为 `presmium.env.box`；代码块写 `:env: nowhere` 时 `presmium check` 以错误退出，诊断在该代码块的行上；头部写 `token: sk-…` 时得到警告。
 - P-100 与决定 5（`e2e/exec-env.spec.ts`）：现场代码块指定一个没有登记的环境时，运行失败并显示录制输出与原因，不由 Pyodide 运行；不写 `:env:` 的现有测试文稿 IR 与录制不变（示例文稿 `pnpm demo:build` 报告 0 次执行）。
-- P-101（`e2e/exec-env.spec.ts`）：网页中同一 `:session:` 的两个 Python 代码块，先运行定义 `x = 41` 的一块，再运行 `print(x + 1)` 的一块得到 `42`；重置会话后再运行第二块得到 `NameError`；另一个浏览器上下文只运行第二块得到 `NameError`（会话按学习者隔离）。
+- P-101（`e2e/exec-env.spec.ts`）：网页中同一 `:session:` 的两个 Python 代码块，先运行定义 `x = 41` 的一块，再运行 `print(x + 1)` 的一块得到 `42`；重置会话后再运行第二块得到 `NameError`；同一浏览器上下文中另开一个页面只运行第二块得到 `NameError`（会话按页面隔离）；另一个浏览器上下文只运行第二块得到 `NameError`（会话按学习者隔离）。
+- N-08（`packages/addon-exec/test/secrets.test.ts`）：设置 `PRESMIUM_PROXY_SECRET` 与 `OPENAI_API_KEY` 后对测试文稿运行 `presmium build`，打印全部环境变量的 Python 代码块与 JavaScript 代码块的录制中没有这两个变量名与它们的值，`.presmium/freeze/`、`ir.json` 与网页产物中都搜不到这两个值；另一份测试文稿的工作区配置写 `settings.presmium.exec.passEnv: [OPENAI_API_KEY]` 时它出现在录制中，`PRESMIUM_PROXY_SECRET` 仍然没有。
 - P-101（`packages/addon-exec/test/session.test.ts`）：编译时同一会话的第二块录制为 `42`；第二次构建 0 次执行；改动第一块后整个会话重新执行，两块都更新。
 - P-102（`e2e/exec-env.spec.ts` 与 `packages/render-notebook/test/outputs.test.ts`）：生成 PNG 图片的代码块（不依赖 matplotlib，用标准库写出一张小图）在网页与幻灯片中显示 `<img>`，notebook 的单元格中有 `display_data` 的 `image/png`；`:echo: false` 且输出 `text/markdown` 表格的代码块在网页中显示为表格、不显示代码，notebook 中该单元格带 `source_hidden`。
 - 9.2 节：幻灯片中带 `:run: live` 的 Python 代码块可以运行并显示输出；执行插件与本地环境插件的集成测试都用共享的运行器通过。
@@ -549,7 +551,7 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 
 **先行验证**：Runno 的运行时二进制（clang、ruby、sqlite）能否自托管、离线加载；Node 中能否运行同一份二进制（`node:wasi` 或 Runno 的 Node 接口）；产物体积。
 
-**交付**：语言 `c`、`cpp`、`ruby`、`sql` 的执行器（浏览器中在 Worker 里运行，编译时在 Node 中运行同一份二进制）；运行时二进制随产物发布并由网页的 Service Worker 预缓存；环境指纹为二进制的哈希；`kind: wasi` 的环境提供方；中英文的界面文字。
+**交付**：语言 `c`、`cpp`、`ruby`、`sql` 的执行器（浏览器中在 Worker 里运行，编译时在 Node 中运行同一份二进制；编译时 WASI 程序的环境只取自 `RunContext.env`，`architecture.md` 10.6 节）；运行时二进制随产物发布并由网页的 Service Worker 预缓存；环境指纹为二进制的哈希；`kind: wasi` 的环境提供方；中英文的界面文字。
 
 **验收**：
 
@@ -566,7 +568,7 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 
 **验收**：
 
-- `e2e/exec-webgpu.spec.ts`（以 SwiftShader 参数启动 Chromium）：一个计算着色器（向量加法）运行并显示正确的结果与计时，计时标明为 CPU 模拟；Pyodide 中经 `presmium_gpu` 运行同一个着色器得到同样的结果。
+- `e2e/exec-webgpu.spec.ts`（以 SwiftShader 参数启动 Chromium）：一个计算着色器（向量加法）运行并显示正确的结果与计时，计时标明为 CPU 模拟；Pyodide 中经 `presmium_gpu` 运行同一个着色器得到同样的结果；一个 JavaScript 代码块用 jax-js 计算 2×2 矩阵乘法，显示正确的结果（P-104 的张量代码）。
 - 同一文件（默认的无头 Chromium，没有 GPU 适配器）：GPU 代码块显示录制的输出与原因“没有可用的 GPU 适配器”。
 - `packages/addon-exec-webgpu/test/record.test.ts`：`presmium build` 在 SwiftShader 中录制出该着色器的输出，录制的环境指纹注明回退适配器。
 
@@ -576,12 +578,13 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 
 **先行验证**：服务端的代理在 WebSocket 升级时加上凭据（经渲染端开发服务器的 Vite 代理再转发一次）；浏览器以令牌访问 JupyterHub 用户服务器时的跨域；compose 中 `runtime: runsc` 与 GPU 同时使用（记录结论，模板只在验证通过时提供组合）。
 
-**交付**：`kind: jupyter` 的环境提供方（Node 与浏览器都用 `@jupyterlab/services`）：会话对应内核（`endSession` 关闭内核），每个会话、每个学习者一个内核；输出映射（`stream`、`display_data`、`execute_result`、`error`，`stdin` 经 `input_reply`，超时经中断，`files` 经 Contents API，`args` 写成赋值的前导代码）；环境指纹（镜像摘要、内核规格哈希、`kernel_info`）；`probe`；`env` 与 `proxy` 方式的凭据与地址成对来自运营者的 `PRESMIUM_ENV_<名>_TOKEN`、`PRESMIUM_ENV_<名>_URL`，令牌只发往该地址，文稿的 `url` 与它不同源时不连接并给出错误诊断，没有通用的后备变量（`architecture.md` 第 11 节）；`proxy` 方式的服务端代理（`/__presmium/presmium.execJupyter/env/<名>/`，目标是运营者给出的地址）；`prompt` 方式的令牌输入（`sessionStorage`）；返回的 HTML 经清洗显示；`{terminal}`（xterm.js 与 Jupyter 终端接口）。模板：`templates/env/compose/` 的 `compose.yaml`（固定摘要的 docker-stacks 镜像、令牌、允许的来源、空闲回收、资源限制）、`compose.gpu.yaml`、`compose.gvisor.yaml`、`devcontainer.json`（指向 compose，可用于本地容器与环境复刻）与说明；`templates/env/kubernetes/README.md`（Zero to JupyterHub 的 `values.yaml` 片段、CPU/GPU/MIG 配置、gVisor、回收，agent-sandbox 的模板）。
+**交付**：`kind: jupyter` 的环境提供方（Node 与浏览器都用 `@jupyterlab/services`）：会话对应内核（`endSession` 关闭内核），每个会话、每个学习者一个内核；输出映射（`stream`、`display_data`、`execute_result`、`error`，`stdin` 经 `input_reply`，超时经中断，`files` 经 Contents API，`args` 写成赋值的前导代码）；环境指纹（镜像摘要、内核规格哈希、`kernel_info`）；`probe`；`env` 与 `proxy` 方式的凭据与地址成对来自运营者的 `PRESMIUM_ENV_<名>_TOKEN`、`PRESMIUM_ENV_<名>_URL`，令牌只发往该地址，文稿的 `url` 与它不同源时不连接并给出错误诊断，没有通用的后备变量（`architecture.md` 第 11 节）；`proxy` 方式的服务端代理（`/__presmium/presmium.execJupyter/env/<名>/`，目标是运营者给出的地址）；`prompt` 方式的令牌输入（`sessionStorage`）；返回的 HTML 经清洗显示；`{terminal}`（xterm.js 与 Jupyter 终端接口）；编译时的客户端不把进程的环境变量传给内核（启动内核的请求不带宿主的环境，`architecture.md` 10.6 节）；同一个提供方也用于 `presmium serve` 的沙箱（`settings.presmium.exec.sandbox`，由 WP-79 接入）。模板：`templates/env/compose/` 的 `compose.yaml`（固定摘要的 docker-stacks 镜像、令牌、允许的来源、空闲回收、资源限制）、`compose.gpu.yaml`、`compose.gvisor.yaml`、`devcontainer.json`（指向 compose，可用于本地容器与环境复刻）与说明；`templates/env/kubernetes/README.md`（Zero to JupyterHub 的 `values.yaml` 片段、CPU/GPU/MIG 配置、gVisor、回收，agent-sandbox 的模板）。
 
 **验收**（需要 Docker，没有时跳过并说明）：
 
 - `packages/addon-exec-jupyter/test/remote.test.ts`：用 `templates/env/compose/compose.yaml` 启动环境，`presmium build` 录制出远端内核的输出，环境指纹包含镜像摘要与内核版本；指向关闭端口的环境在 `presmium check --env` 中报告不可达。
-- `e2e/exec-remote.spec.ts`：`presmium dev` 中 `auth: proxy` 的代码块在浏览器中运行于 compose 的内核，页面与它发出的请求中都没有令牌；两个浏览器上下文中同一 `:session:` 的变量互不可见。
+- `e2e/exec-remote.spec.ts`：`presmium dev` 中 `auth: proxy` 的代码块在浏览器中运行于 compose 的内核，输出与编译时录制的输出一致，页面与它发出的请求中都没有令牌；两个浏览器上下文中同一 `:session:` 的变量互不可见。
+- 同一文件（P-105 的 `prompt` 方式）：静态构建的网页中，`auth: prompt` 的代码块在学习者粘贴 compose 环境的令牌后运行成功，令牌只在本页的 `sessionStorage` 中，不出现在产物里。
 - 同一文件：`{terminal}` 中执行 `echo presmium-$((6*7))`，终端显示 `presmium-42`。
 - `packages/addon-exec-jupyter/test/credentials.test.ts`（不需要 Docker）：设置 `PRESMIUM_ENV_GPU_URL` 与 `PRESMIUM_ENV_GPU_TOKEN`，文稿把环境 `gpu` 的 `url` 写成测试在另一个端口上起的监听器：`presmium build` 与 `presmium dev` 的代理都不连接它（监听器收不到任何请求，令牌没有出现），诊断说明文稿的地址与运营者的地址不一致；只设置令牌而不设置地址时同样不发送令牌。
 - Kubernetes 的示例配置由验收者按文档评审（不运行集群）。
@@ -607,7 +610,7 @@ P-46 原计划在 WP-86；它改的是编译器、内核的 Markdown 降级与 I
 
 **验收**：
 
-- `e2e/predict.spec.ts`：文档视图中揭示内容在作答前不可见，选择一个选项并保存后可见，重新加载页面后仍可见；课堂中两个学习者分别选 2 与 3，主讲的面板显示两个选项各 1 人。
+- `e2e/predict.spec.ts`：文档视图中揭示内容在作答前不可见，选择一个选项并保存后可见，重新加载页面后仍可见；没有 `:choices:` 的预测写下一段文字并保存后揭示内容可见；课堂中两个学习者分别选 2 与 3，主讲的面板显示两个选项各 1 人。
 - `packages/addon-classroom/test/predict.test.ts`：notebook 中为问题、选项与折叠的揭示内容。
 
 ### WP-77 讲授轨、录制与回放（M8，P-130、P-90、P-131、P-137）
@@ -618,28 +621,32 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 
 **先行验证**：Mediabunny 经 WebCodecs 录为 Ogg/Opus 在 Chromium、Firefox、WebKit（Safari 26）中是否可用、可跳转；不可用时退回 MediaRecorder 的 WebM 与时长修正。
 
-**交付**：讲授轨的领域模型与格式（`ir.md` 第 9 节，含语音段的译文）；放映视图中的录制：录音（回声消除与降噪）、每 5 秒一块经服务端路由上传、订阅 `OPERATIONS` 写成事件、指针 `point` 与激光笔、荧光笔 `ink` 的报告、可选的摄像头与屏幕、只重录某一节、`lectures/<id>/` 中忽略音频的 `.gitignore`（录音的去处取运营者设置 `settings.presmium.lecture.audio`，默认 `ignore`）；回放视图 `lecture`：`TrackClock`（`MediaClock`、`SilentClock`）、经 `OPERATIONS` 折叠出 `state(t)`、逐字稿（点击跳转）、章节、字幕、倍速、“我来试试”（暂停后自行操作，回到讲授时还原）、AI 语音标识；导出 `captions.<语言>.vtt`（含译文，过期时警告）、`chapters.vtt`、`events.vtt`；检查项 `presmium.lecture`（漂移分级、失效事件）；`lecture` 站点渲染端发布录制的讲授轨（合成部分在 WP-83）；引导插件报告与重放聚光、提示。
+**交付**：讲授轨的领域模型与格式（`ir.md` 第 9 节，含语音段的译文与可选的 `video`）；放映视图中的录制：录音（回声消除与降噪）、每 5 秒一块经服务端路由上传、订阅 `OPERATIONS` 写成事件、指针 `point` 与激光笔、荧光笔 `ink` 的报告、可选的摄像头与屏幕（写入 `lectures/<id>/video/`，轨中的 `video` 引用它们）、只重录某一节、`lectures/<id>/` 中忽略音频与录像的 `.gitignore`（去处取运营者设置 `settings.presmium.lecture.audio`，默认 `ignore`）；回放视图 `lecture`：`TrackClock`（`MediaClock`、`SilentClock`）、经 `OPERATIONS` 折叠出 `state(t)`、逐字稿（点击跳转）、章节、字幕、倍速、“我来试试”（暂停后自行操作，回到讲授时还原）、AI 语音标识；导出 `captions.<语言>.vtt`（含译文，过期时警告）、`chapters.vtt`、`events.vtt`；检查项 `presmium.lecture`（漂移分级、失效事件）；`lecture` 站点渲染端发布录制的讲授轨（合成部分在 WP-83）；引导插件报告与重放聚光、提示。
 
 **验收**：
 
 - `e2e/lecture.spec.ts`（假麦克风，参数只加在本 spec）：放映视图中录制一段讲授：翻到第二节、推进两步、指向代码块并聚光；停止后 `lectures/<id>/track.json` 中有 `go`、`point`、`spot` 事件与 Ogg/Opus 音频，没有视频。
+- 同一文件（P-90 可选的摄像头）：开启摄像头（Chromium 的假摄像头）再录一段，`lectures/<id>/video/` 中有一段录像，`track.json` 的 `video` 引用它。
 - 同一文件：以另一个窗口尺寸回放一份带语音段的测试讲授轨：跳到第二个 `go` 的时刻显示对应的章节与步骤；点击一句逐字稿跳到它的时刻；暂停后自行翻页，再回到讲授时恢复 `state(t)`。
+- 同一文件（P-131 的倍速与字幕）：以 2 倍速播放 1 秒后时钟约在 2 秒（相差不超过 0.3 秒）；开启字幕后显示当前语音段的文字。
 - `packages/addon-lecture/test/track.test.ts`：删掉测试讲授轨引用的块后，`presmium check` 以 `presmium.lecture` 报告失效的事件与它的时刻；导出中英两份字幕；改动一句原文后，英文译文导出时被标为过期。
 
-### WP-82 语音服务（M8，P-132、P-133 的服务部分）
+### WP-82 语音服务（M8，P-132、P-133 的服务部分；N-08 中语音的部分）
 
 讲授轨中的转写与重新合成在 WP-83 串起来；这里交付语音服务本身。
 
 **归属**：`packages/addon-speech/**`（新）、根目录 `.gitignore`（增加 `!**/.presmium/speech/` 与 `!**/.presmium/speech.lock.json`）。
 
-**先行验证**：火山引擎转写中英混说的效果（用一段测试讲授的录音）；GB 45438 元数据字段在 Ogg 与 MP4 中的写法；Safari 26 录制 Ogg/Opus（与 WP-77 一起）。
+**先行验证**：火山引擎转写中英混说的效果（用一段测试讲授的录音）；GB 45438 元数据字段在 Ogg 与 MP4 中的写法（结论决定 AI 标识用例检查的字段）；Safari 26 录制 Ogg/Opus（与 WP-77 一起）。
 
-**交付**：`SPEECH` 的两个实现（Node 端直接调用引擎，浏览器端经网关）；语音网关（服务端贡献：OpenAI 音频接口的形态与 `/audio/speech/timestamps`，引擎与音色列表，每个引擎带服务提供方 `provider`；编辑者可用）；引擎适配：`volcengine`（合成用 `seed-tts-2.0` 的 HTTP 分块接口并开启 `enable_subtitle`；转写用极速版；地址固定，凭据来自 `PRESMIUM_SPEECH_VOLCENGINE_APPID`、`PRESMIUM_SPEECH_VOLCENGINE_KEY`）、OpenAI 音频接口形态的引擎（运营者以 `PRESMIUM_SPEECH_<ID>_URL` 与 `PRESMIUM_SPEECH_<ID>_KEY` 成对定义，文稿的 `presmium.speech.engine`、`transcribe` 只用 ID 选用默认的合成与转写引擎；`presmium.speech` 中的 `url`、`keyEnv` 等引擎定义是错误级诊断且不被使用）、`fake`、浏览器中的 `webspeech` 试听（只用 `localService` 为真的本机音色，文字不离开浏览器）；合成缓存与 `speech.lock.json`；合成的音频写入 AI 生成的元数据；克隆音色的关口（运营者设置 `settings.presmium.speech.cloned` 与同意记录 `.presmium/speech/consent/<引擎>/<音色>.json`，合成前检查，Node 端与网关同一处）；`presmium-speech fake`（音色中有一个克隆音色）与 `presmium-speech serve`；没有定义引擎时不发出请求。
+**交付**：`SPEECH` 的两个实现（Node 端直接调用引擎，浏览器端经网关）；语音网关（服务端贡献：OpenAI 音频接口的形态与 `/audio/speech/timestamps`，引擎与音色列表，每个引擎带运营者配置的服务提供方 `provider`；编辑者可用）；引擎适配：`volcengine`（合成用 `seed-tts-2.0` 的 HTTP 分块接口并开启 `enable_subtitle`；转写用极速版；地址与服务提供方的名字固定，为“火山引擎”，英文界面为 Volcengine；凭据来自 `PRESMIUM_SPEECH_VOLCENGINE_APPID`、`PRESMIUM_SPEECH_VOLCENGINE_KEY`）、OpenAI 音频接口形态的引擎（运营者以 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`（必需）与可选的 `PRESMIUM_SPEECH_<ID>_KEY` 定义，凭据只发往同一组中的地址，缺少地址或服务提供方时引擎不可用；文稿的 `presmium.speech.engine`、`transcribe` 只用 ID 选用默认的合成与转写引擎；`presmium.speech` 中的 `url`、`keyEnv` 等引擎定义是错误级诊断且不被使用）、`fake`、浏览器中的 `webspeech` 试听（只用 `localService` 为真的本机音色，文字不离开浏览器）；合成缓存与 `speech.lock.json`；合成的音频文件与 `<键>.json` 写入 AI 生成的标识与 GB 45438 的元数据（字段按先行验证的结论，写进 `design-v0.7.md` 第 11 节）；克隆音色的关口（运营者设置 `settings.presmium.speech.cloned` 与运营者目录中的同意记录 `<consentDir>/<引擎>/<音色>.json`，`consentDir` 取 `settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`；合成前检查，Node 端与网关同一处；文稿目录中的同意记录被忽略）；所有者登记同意记录的路由 `consent/<引擎>/<音色>`（`role: 'owner'`，写入 `consentDir`）；`presmium-speech fake`（音色中有一个克隆音色）与 `presmium-speech serve`（默认只监听 `127.0.0.1`，校验 `Host` 与 `Origin`，要求 `Authorization: Bearer` 令牌：`PRESMIUM_SPEECH_SERVE_TOKEN`，没有时启动时随机生成并打印；`architecture.md` 第 7 节）；没有定义引擎时不发出请求。
 
 **验收**：
 
 - `packages/addon-speech/test/speech.test.ts`（假引擎）：把假引擎合成的一段音频转写，得到带逐字时间的语音片段，文字一致；用音色 A 合成一句话后缓存中有它的音频与逐字时间，再次合成不向引擎发请求；换音色 B 得到新的缓存键与音频；对测试文稿运行 `presmium dev`，经网关（`/__presmium/presmium.speech/v1/audio/speech/timestamps`，浏览器端的实现所用的路径）合成成功，请求与响应中都没有凭据；没有配置引擎时假引擎收不到任何请求。
-- 同一文件（N-08）：经网关列出的引擎带服务提供方（假引擎为 `Presmium fake`）；假引擎的克隆音色在运营者没有设置 `cloned: true` 时合成被拒绝，设置后没有同意记录仍被拒绝并指出缺少的记录文件，写入同意记录后合成成功。
+- 同一文件（N-08）：经网关列出的引擎带服务提供方（假引擎由测试设置 `PRESMIUM_SPEECH_FAKE_PROVIDER=Presmium fake`）；另一个只设置了 `_URL` 与 `_KEY`、没有 `_PROVIDER` 的引擎不可用，诊断指出缺少的变量；假引擎的克隆音色在运营者没有设置 `cloned: true` 时合成被拒绝，设置后没有同意记录仍被拒绝并指出缺少的记录文件；同一份记录写在文稿的 `.presmium/speech/consent/` 中时被忽略，合成仍被拒绝；所有者经 `consent/<引擎>/<音色>` 路由登记后（文件出现在 `consentDir` 中），合成成功。
+- 同一文件（N-08 的 AI 标识）：假引擎合成并写入缓存的 Ogg 文件的元数据与它的 `<键>.json` 都带 AI 生成的标识与先行验证确定的 GB 45438 字段。
+- 同一文件（单独运行的网关）：`presmium-speech serve` 监听 `127.0.0.1`；不带令牌的请求得到 401，带令牌而 `Host: evil.example` 的请求得到 403，带令牌的合成成功。
 - 同一文件（N-08）：文稿头部写 `presmium.speech.engines.x: { url: <测试监听器的地址>, keyEnv: PRESMIUM_PROXY_SECRET }` 并选用 `engine: x`：`presmium check` 给出错误诊断，构建与经网关的合成都失败并说明引擎未定义，监听器收不到任何请求，`PRESMIUM_PROXY_SECRET` 的值不出现在任何请求与响应中。
 - `packages/addon-speech/test/engines.test.ts`：火山引擎与 Groq 的冒烟用例只在设置了 `PRESMIUM_TEST_VOLCENGINE_KEY`、`PRESMIUM_TEST_GROQ_KEY` 时运行，没有时跳过并说明。
 
@@ -653,7 +660,7 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 
 **验收**：
 
-- `e2e/lecture-script.spec.ts`：用假引擎构建测试讲义（讲解中有 ``{cue to=code-1 lines=2-3}`spot` ``），回放到提示标记所在字的时刻时，`code-1` 的第 2、3 行被聚光；`{say}` 的显示文字不变、合成请求中是别名。
+- `e2e/lecture-script.spec.ts`：用假引擎构建测试讲义（讲解中有 ``{cue to=code-1 lines=2-3}`spot` ``），回放到提示标记所在字的时刻时，`code-1` 的第 2、3 行被聚光；`{say}` 的显示文字不变、合成请求中是别名；回放这份合成的讲授时播放界面显示“AI 合成语音”（N-08）。
 - 同一文件：录制一段讲授（假麦克风）并转写，转写的按钮与确认中写明服务提供方 `Presmium fake`，得到语音段；把一句改为新的文字、换一个音色重新合成，回放时这一句的片段是新文字、新音色（假引擎的音频中嵌入了文字与音色），没有 `at` 的事件时刻不变。
 - `packages/addon-lecture/test/script.test.ts`：第一次构建为每个段落向假引擎请求一次合成并写入缓存，讲授计划、片段、字幕与提示标记的时刻符合假引擎的逐字时间；第二次构建假引擎收不到请求；删掉缓存且没有定义引擎时构建失败，`presmium check` 指出缺少合成的段落。
 - 同一文件（P-134 的单独脚本）：`renderers.lecture.script` 指向的脚本中有 `(merge)=` 一节，讲授计划中这一节各步的文字取自脚本（第 k 段属于第 k 步），其他章节仍取讲义的讲解；网页中 `merge` 一节的讲解不变。
@@ -663,24 +670,28 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 
 **归属**：`packages/mcp/**`（新）、`packages/server/**`（挂载 `/mcp`、为 agent 会话签发令牌）、`e2e/mcp.spec.ts`、`e2e/fixtures/mcp/**`。
 
-**交付**：`McpHost`（`@presmium/mcp` 自己声明的宿主接口，`architecture.md` 10.2 节）与 `createPresmiumMcp(host)`：读取类工具 `list_documents`、`deck_info`、`list_sections`、`get_section`、`get_step`、`search`（与网页搜索同一份索引）、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`、`get_position`、`get_classroom`；操作类工具 `navigate`、`run_code`、`build`、`classroom_start`、`classroom_end`（经 `APPROVALS`）；插件贡献的 `AgentTool`；与读取类工具对应的只读资源，`presmium://position` 可订阅并在位置变化时发出 `resources/updated`；服务说明（instructions）；`tutor` 令牌只列出读取类工具；`presmium-mcp`（stdio，在编译器上实现 `McpHost`，不加 `--allow operate` 时没有操作类工具）。服务端：在 `ServerHost`、控制通道与 `APPROVALS` 之上实现 `McpHost` 并挂载 `/mcp`；`MCP_ENDPOINT` 的实现（签发绑定成员与模式的令牌，`revoke` 作废），`presmium dev` 另接受每进程的令牌。不提供写文件的工具。
+**交付**：`McpHost`（`@presmium/mcp` 自己声明的宿主接口，`architecture.md` 10.2 节）与 `createPresmiumMcp(host)`：读取类工具 `list_documents`、`deck_info`、`list_sections`、`get_section`、`get_step`、`search`（与网页搜索同一份索引）、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`、`get_position`、`get_classroom`（页面经 `STATUS` 报告的摘要，按插件 ID）；操作类工具 `navigate`、`run_code`、`build`、`classroom_start`、`classroom_end`（经 `APPROVALS`，范围为 `content`，发给令牌所绑定的成员）；读取对读者成员的令牌与 `tutor` 令牌用 `ServerHost` 的 `student` 视图（D8，筛选由 WP-87 实现）；插件贡献的 `AgentTool`；与读取类工具对应的只读资源，`presmium://position` 可订阅并在位置变化时发出 `resources/updated`；服务说明（instructions）；`tutor` 令牌只列出读取类工具；`presmium-mcp`（stdio，在编译器上实现 `McpHost`，不加 `--allow operate` 时没有操作类工具）。服务端：在 `ServerHost`、控制通道与 `APPROVALS` 之上实现 `McpHost` 并挂载 `/mcp`；`MCP_ENDPOINT` 的实现（签发绑定成员与模式的令牌，`revoke` 作废），`presmium dev` 另接受每进程的令牌。不提供写文件的工具。
 
 **验收**：
 
 - `packages/mcp/test/mcp.test.ts`（MCP SDK 的客户端连接 `presmium dev` 的 `/mcp`）：列出章节；读取一节的讲解与代码；`run_code` 发出确认请求，测试经控制通道允许后得到输出，拒绝时得到错误结果；不带令牌得到 401；测试插件的路由经 `MCP_ENDPOINT.issue(member, 'tutor')` 取得令牌，以它连接时看不到操作类工具，`revoke` 之后同一令牌得到 401；订阅 `presmium://position` 后，页面报告新的位置时收到 `resources/updated`；`presmium-mcp` 以 stdio 列出读取类工具。
 - `e2e/mcp.spec.ts`：放映视图打开时，MCP 客户端调用 `navigate` 到第三节，页面出现确认入口，允许后放映视图显示第三节。
+- 同一文件：测试插件向 `STATUS` 登记一个摘要，页面打开时 MCP 的 `get_classroom` 返回它（课堂插件的真实汇总由 WP-88 登记）。
 
-### WP-79 工作区服务与文档管理（M7，P-120 至 P-122、P-115 的提交与撤销、N-09）
+### WP-79 工作区服务与文档管理（M7，P-120 至 P-122、P-115 的提交与撤销、N-09；N-08 中 `presmium serve` 的编译时执行）
 
 **归属**：`packages/workspace/**`（新）、`packages/web/**`（`buildSite`、`devSite` 与文档列表首页）、`packages/cli/**`（`presmium serve`，在工作区根目录执行 `presmium build`；`package.json` 增加 `@presmium/workspace`）、`templates/workspace/**`（新）、`templates/document/**`（新）、`e2e/workspace.spec.ts`、`e2e/fixtures/workspace/**`。
 
-**交付**：`presmium.workspace.yaml` 的读取与文档列表（只读头部）；`presmium serve`（服务端的 `serve` 模式、转发到工作区站点的开发服务器、按需编译、按文档创建插件实例、成员与角色、运营者设置 `settings` 交给服务端与编译器、`REVISIONS` 的登记）；文档操作接口（`/__presmium/presmium.workspace/documents`：新建、重命名并改写其他文档中的相对链接、复制、删除），各形成一个提交；修改历史与撤销接口（按尾注筛选，`git revert`，冲突时报告文件）；工作区的浏览器插件：`EDIT_MODE`、工具栏的编辑入口、首页的文档操作、修改历史面板；新建文档的表单在 `AGENT.available('chat')` 时提供“由 agent 起草”与要求的输入，新建并提交之后经 `AGENT` 提交一轮 `chat` 任务（上下文为新文档的目录）并打开新文档，没有助手时不显示这一项（P-121；助手在 WP-80 之后才有，端到端的验收在 WP-81）；`presmium build` 在工作区根目录构建整个站点；部署模板 `templates/workspace/compose/`（oauth2-proxy、工作区服务、课堂服务）与 `templates/workspace/kubernetes/README.md`；新建文档的模板。
+**交付**：`presmium.workspace.yaml` 的读取与文档列表（只读头部）；`presmium serve`（服务端的 `serve` 模式、转发到工作区站点的开发服务器、按需编译、按文档创建插件实例、成员与角色、运营者设置 `settings` 交给服务端与编译器、`REVISIONS` 的登记）；`presmium serve` 中的编译时执行（`architecture.md` 10.6 节，经 WP-73b 的编译器执行选项）：`serve` 规则的环境变量（允许列表，每个工作区一个临时 `HOME`），`settings.presmium.exec.compile`（`approve` 时把一次编译中待执行的代码合为一个 `workspace` 范围的 `operate` 确认发给所有者，允许后重新编译并执行；`trusted`；`off`），`settings.presmium.exec.sandbox`（把环境名交给编译器，由它经文档加载的 `kind: jupyter` 提供方、以运营者的 `PRESMIUM_ENV_<名>_URL`、`_TOKEN` 创建沙箱执行器；不可用时不执行，不退回主机）；读者的学生视图（读者的工作区站点在第一位读者访问时启动，服务端按成员转发；`ServerHost` 的 `student` 视图；视图怎样编译只由 `packages/workspace/src/node/audience.ts` 决定，本工作包中 `student` 与 `full` 相同，WP-87 接入受众筛选）；运营者目录 `.presmium-operator/`（`REVISIONS` 不提交其中的文件，工作区模板的 `.gitignore` 忽略它）；文档操作接口（`/__presmium/presmium.workspace/documents`：新建、重命名并改写其他文档中的相对链接、复制、删除），各形成一个提交；修改历史与撤销接口（按尾注筛选，`git revert`，冲突时报告文件）；工作区的浏览器插件：`EDIT_MODE`、工具栏的编辑入口、首页的文档操作、修改历史面板；新建文档的表单在 `AGENT.available('chat')` 时提供“由 agent 起草”与要求的输入，新建并提交之后经 `AGENT` 提交一轮 `chat` 任务（上下文为新文档的目录）并打开新文档，没有助手时不显示这一项（P-121；助手在 WP-80 之后才有，端到端的验收在 WP-81）；`presmium build` 在工作区根目录构建整个站点；部署模板 `templates/workspace/compose/`（oauth2-proxy、工作区服务、课堂服务）与 `templates/workspace/kubernetes/README.md`；新建文档的模板。
 
 **验收**：
 
 - `packages/workspace/test/documents.test.ts`（临时目录中的真实 git 仓库）：经接口新建（从模板）、重命名（另一份文档中指向它的链接随之改写）、复制、删除，各形成一个带 `Presmium-Origin: document` 尾注的提交；撤销重命名恢复原目录；与之后的提交冲突的撤销报告冲突的文件，工作树不变。
 - `packages/workspace/test/site.test.ts`：在工作区根目录 `presmium build`，首页列出全部文档并链接到 `/<文档目录>/`，每份文档可以独立阅读与搜索；在文档目录中执行只构建这一份。
 - `packages/cli/test/serve.test.ts`：`presmium serve` 一条命令启动并打印地址；以非本机地址启动而没有配置登录代理时拒绝启动；带共享密钥与编辑者身份的请求可以新建文档，读者得到 403。
+- 同一文件（N-08，默认 `compile: approve`，设置 `PRESMIUM_PROXY_SECRET`）：文档中写入一个没有录制、打印全部环境变量的代码块，编辑者打开文档时页面显示降级内容而不执行，确认只出现在所有者的控制通道上；所有者允许后重新编译并执行，录制中只有允许列表中的变量（`HOME` 是临时目录），没有 `PRESMIUM_PROXY_SECRET`。
+- 同一文件：`compile: off` 时不执行也不请求确认，显示 `:recorded:` 的录制输出；`compile: trusted` 时不经确认直接执行。
+- 同一文件（需要 Docker 与远端环境插件，没有时跳过并说明，验收者在 WP-76 合并后运行一次）：`settings.presmium.exec.sandbox` 指向 `templates/env/compose/` 启动的环境时，代码块在容器的内核中运行（录制的输出中是容器的主机名），主机上没有启动 Python 子进程。
 - `e2e/workspace.spec.ts`：浏览器中（编辑者身份由测试设置的代理请求头给出）新建、重命名、复制、删除文档，修改历史中出现四个提交；读者看不到编辑入口；没有助手时新建表单中没有“由 agent 起草”。
 - 同一文件：进入编辑模式后，测试插件登记的没有子内容的角色显示标记 `〔<名> <value>〕`，离开编辑模式后不显示（`ir.md` 2.8 节，IR 运行时的部分由 WP-73a 实现）。
 - `packages/workspace/test/deploy.test.ts`（需要 Docker）：compose 模板启动后，未登录的请求被 oauth2-proxy 引向登录，工作区服务的端口没有对外发布。
@@ -691,37 +702,38 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 
 **先行验证**：DeepSeek Harness 配置项的 ID（`--dump-default-config`）；在 `workspace-write` 加 `ask` 下调用 MCP 工具前是否询问；Node 22.19 的要求（必要时在交付报告中提出提高根目录 `engines`）。
 
-**交付**：`AGENT_RUNTIME`：ACP 客户端（`@agentclientprotocol/sdk`），按 `PRESMIUM_AGENT_COMMAND`（`tutor` 为 `PRESMIUM_AGENT_TUTOR_COMMAND`）或运营者设置 `settings.presmium.assistant.command`、`tutor`（`NodeServiceContext.settings`）启动 agent，只传入清理过的环境变量；没有命令时不登记 `AGENT_RUNTIME`，`AGENT.available()` 为 false；`provider`（运营者设置或 `PRESMIUM_AGENT_PROVIDER`，没有时取 ACP `initialize` 报告的 agent 名字）；每个会话 `session/new` 时 `cwd` 为工作区根目录，`mcpServers` 为服务端路由经 `ctx.service(MCP_ENDPOINT).issue(member, mode)` 取得的 `AgentSessionOptions.mcp`，会话关闭时 `revoke`；`session/request_permission` 交给 `APPROVALS`；ACP 更新映射为 `AgentEvent`。服务端路由（`tasks`、`tasks/<id>/events`、`tasks/<id>/cancel`）；浏览器端的 `AGENT`（含 `provider()`）；网页的阅读侧栏与演讲者面板中的问答，引用位置可以点击跳转，面板写明模型的服务提供方（N-08）；`tutor` 模式；DeepSeek Harness 的两份配置模板（`dsh/presmium.cordis.yml`、`dsh/presmium-tutor.cordis.yml`）；确定性的测试 agent（`test/fixtures/scripted-agent.mjs`）；课堂插件的问题列表中“AI 回答”（按钮写明服务提供方，主讲确认后把回答发回课堂）。
+**交付**：`AGENT_RUNTIME`：ACP 客户端（`@agentclientprotocol/sdk`），按 `PRESMIUM_AGENT_COMMAND`（`tutor` 为 `PRESMIUM_AGENT_TUTOR_COMMAND`）或运营者设置 `settings.presmium.assistant.command`、`tutor`（`NodeServiceContext.settings`）启动 agent，传入的环境去掉全部 `PRESMIUM_` 开头的变量（agent 自己的模型凭据照常传入）；`provider` 来自运营者设置 `settings.presmium.assistant.provider` 或 `PRESMIUM_AGENT_PROVIDER`（模型的服务提供方，如 `DeepSeek`），不退回 agent 报告的名字；没有命令或没有 `provider` 时不登记 `AGENT_RUNTIME`，`AGENT.available()` 为 false，启动日志说明缺少的设置；`runtime` 取 ACP `initialize` 的 `agentInfo`（名字与版本）；每个会话 `session/new` 时 `cwd` 为工作区根目录，`mcpServers` 为服务端路由经 `ctx.service(MCP_ENDPOINT).issue(member, mode)` 取得的 `AgentSessionOptions.mcp`，会话关闭时 `revoke`；`session/request_permission` 按 `ApprovalScope` 分类后交给 `APPROVALS`（`architecture.md` 4.8 节：文档目录中的写入为 `content`，shell、网络与文档目录之外为 `workspace`，只有所有者能允许；`question` 任务一律拒绝）；ACP 更新映射为 `AgentEvent`。服务端路由（`tasks`、`tasks/<id>/events`、`tasks/<id>/cancel`）；浏览器端的 `AGENT`（含 `provider()` 与 `runtime()`）；网页的阅读侧栏与演讲者面板中的问答，引用位置可以点击跳转，面板写明模型的服务提供方，已知时另写明运行时（N-08）；`tutor` 模式；DeepSeek Harness 的两份配置模板（`dsh/presmium.cordis.yml`、`dsh/presmium-tutor.cordis.yml`）；确定性的测试 agent（`test/fixtures/scripted-agent.mjs`）；课堂插件的问题列表中“AI 回答”（按钮写明服务提供方，主讲确认后把回答发回课堂）。
 
 **验收**：
 
-- `packages/addon-assistant/test/acp.test.ts`：按 `PRESMIUM_AGENT_COMMAND` 启动测试 agent：`session/new` 的 `mcpServers` 中是本进程的 `/mcp` 与经 `MCP_ENDPOINT` 签发的令牌，测试 agent 用它列出工具成功，任务结束后同一令牌得到 401；agent 调用 `get_section` 后给出带引用位置的回答；agent 的权限请求被拒绝时它收到拒绝；取消进行中的任务时测试 agent 收到 `session/cancel`，页面收到结束的事件；父进程中设置的 `PRESMIUM_PROXY_SECRET`、语音凭据不出现在 agent 的环境变量中；不设置命令时 `AGENT.available('question')` 为 false，没有进程被启动。
+- `packages/addon-assistant/test/acp.test.ts`：按 `PRESMIUM_AGENT_COMMAND` 启动测试 agent：`session/new` 的 `mcpServers` 中是本进程的 `/mcp` 与经 `MCP_ENDPOINT` 签发的令牌，测试 agent 用它列出工具成功，任务结束后同一令牌得到 401；agent 调用 `get_section` 后给出带引用位置的回答；agent 的权限请求被拒绝时它收到拒绝；取消进行中的任务时测试 agent 收到 `session/cancel`，页面收到结束的事件；父进程中设置的 `PRESMIUM_PROXY_SECRET`、语音凭据不出现在 agent 的环境变量中；不设置命令时 `AGENT.available('question')` 为 false，没有进程被启动；设置了命令而没有 `provider` 时同样不可用，没有进程被启动。
 - `packages/addon-assistant/test/dsh.test.ts`：对固定版本的 DeepSeek Harness 运行 `--dump-config`，两份模板关闭了会话日志上传与遥测，`presmium-tutor` 没有 shell、网络与写文件工具；真实运行时的问答用例需要 `DEEPSEEK_API_KEY`，默认跳过。
-- `e2e/assistant.spec.ts`：读者在网页中选中一段代码提问，提问面板写明运营者设置的服务提供方（测试设置为 `Test Provider`），回答中的引用位置可以点击，点击后跳到对应章节；`tutor` 模式中测试 agent 试图写文件被拒绝，文件不变；课堂中学习者的问题出现在主讲的面板中，主讲点“AI 回答”后学习者看到回答。
+- `e2e/assistant.spec.ts`：读者在网页中选中一段代码提问，提问面板在提问之前就写明运营者设置的服务提供方（测试设置为 `Test Provider`），回答之后另写明运行时（测试 agent 报告的名字），回答中的引用位置可以点击，点击后跳到对应章节；`tutor` 模式中测试 agent 试图写文件被拒绝，文件不变；课堂中学习者的问题出现在主讲的面板中，主讲点“AI 回答”后学习者看到回答。
 
 ### WP-81 批注修改、对话修改与修改历史（M7，P-113 至 P-115）
 
 **归属**：`packages/addon-assistant/**`、`e2e/assistant-edit.spec.ts`、`e2e/fixtures/assistant-edit/**`。
 
-**交付**：编辑模式中的批注（按 `[data-block]` 点选块，源码位置取自 IR 中块的 `source`，带摘录）；成批发送（`annotations` 任务，发送即确认），每条批注显示处理状态与 agent 的说明；对话面板（自动带上文档、章节、步骤与选中内容）；批注的发送与对话面板写明模型的服务提供方（`AGENT.provider()`）；同一文档一次一个修改任务；任务结束时经 `REVISIONS` 提交（说明列出批注或对话摘要与 agent 的解释，尾注带任务 ID 与发起人）；按任务一键撤销，冲突时报告文件；写入超出文档目录或改动 `presmium.workspace.yaml` 时经 `write` 确认，被拒绝时复原（`architecture.md` 第 11 节）；起草（P-121）：上下文只有文档目录的 `chat` 任务按要求写出全篇，由工作区的新建表单提交（表单在 WP-79），结束时同样形成一个提交。
+**交付**：编辑模式中的批注（按 `[data-block]` 点选块，源码位置取自 IR 中块的 `source`，带摘录）；成批发送（`annotations` 任务，发送即确认），每条批注显示处理状态与 agent 的说明；对话面板（自动带上文档、章节、步骤与选中内容）；批注的发送与对话面板写明模型的服务提供方（`AGENT.provider()`）；修改任务的通用规则，对 `annotations`、`chat`、`transcript` 与起草一视同仁（`design-v0.7.md` 第 23 条）：同一文档一次一个修改任务；任务结束时经 `REVISIONS` 提交（说明列出批注、对话摘要或讲授轨 ID，与 agent 的解释，尾注带任务 ID 与发起人）；按任务一键撤销，冲突时报告文件；`transcript` 任务把讲授轨 ID 与它的文件位置交给 agent，其余同 `chat`（讲授一侧的请求在 WP-84）；写入超出文档目录或改动 `presmium.workspace.yaml` 时经 `write` 确认，范围为 `workspace`，只发给所有者，发起任务的编辑者不能回答，被拒绝时复原（`architecture.md` 10.4、第 11 节）；agent 对运营者目录 `.presmium-operator/` 的写入不发确认，直接复原（任务前后比较该目录）；起草（P-121）：上下文只有文档目录的 `chat` 任务按要求写出全篇，由工作区的新建表单提交（表单在 WP-79），结束时同样形成一个提交。
 
 **验收**：
 
-- `e2e/assistant-edit.spec.ts`（`presmium serve` 与测试 agent，走 6.13 节验收的流程：从浏览器中新建的一份文档开始）：对两个块各加一条批注并发送，源码中两处被修改，页面不刷新即更新，`git log` 中只多一个带 `Presmium-Task` 的提交，两条批注都显示已处理与说明；对话“在本章末尾新增一节”后页面出现新的一节，形成一个提交；撤销批注那次修改后两处内容复原（多一个撤销提交）。
+- `e2e/assistant-edit.spec.ts`（`presmium serve` 与测试 agent，走 6.13 节验收的流程：从浏览器中新建的一份文档开始）：批注的发送区与对话面板写明运营者设置的服务提供方（`Test Provider`）；对两个块各加一条批注并发送，源码中两处被修改，页面不刷新即更新，`git log` 中只多一个带 `Presmium-Task` 的提交，两条批注都显示已处理与说明；对话“在本章末尾新增一节”后页面出现新的一节，形成一个提交；撤销批注那次修改后两处内容复原（多一个撤销提交）。
 - 同一文件（P-121）：在工作区首页的新建表单中选择“由 agent 起草”并写下要求，测试 agent 写出初稿：新文档的 `lecture.md` 含初稿的章节，`git log` 中依次是新建的提交（`Presmium-Origin: document`）与起草的提交（带 `Presmium-Task`），页面打开新文档并显示初稿。
-- 同一文件：第一个任务进行中再提交同一文档的修改任务被拒绝并说明原因。
+- 同一文件：第一个任务进行中再提交同一文档的修改任务被拒绝并说明原因；经助手的 `tasks` 路由提交的 `transcript` 任务（带测试讲授轨的 ID）由测试 agent 改写一节讲解，同样形成一个带 `Presmium-Task` 的提交。
+- 同一文件（N-08 的确认范围，拒绝用例）：编辑者发起的任务中测试 agent 改动 `presmium.workspace.yaml` 并写入 `.presmium-operator/consent/` 下的一个文件：`write` 确认只出现在所有者的页面上，编辑者的页面没有确认入口，编辑者经控制通道回答它得到 403；所有者拒绝后 `presmium.workspace.yaml` 复原，`.presmium-operator/` 中的文件不经确认即被删除，任务的提交中两者都没有。
 
 ### WP-84 转写回写讲义（M7、M8，P-136；P-137 中由 agent 生成译文）
 
 **归属**：`packages/addon-lecture/**`、`e2e/lecture-writeback.spec.ts`、`e2e/fixtures/lecture-writeback/**`。
 
-**交付**：编辑模式中讲授面板的“整理为讲解”（`transcript` 任务，带讲授轨 ID）：agent 按章节把整理后的逐字稿写成讲解，并在 `at` 绑定的位置写入 `{cue}`；由助手经 `REVISIONS` 提交为一批，可以撤销；“生成译文”：一轮对话任务，把语音段的译文写进讲授轨。
+**交付**：只构造讲授一侧的请求，任务的执行、提交与撤销由助手的通用规则完成（WP-81，`design-v0.7.md` 第 23 条）：编辑模式中讲授面板的“整理为讲解”提交 `transcript` 任务（带讲授轨 ID 与要求：按章节把整理后的逐字稿写成讲解，并在 `at` 绑定的位置写入 `{cue}`）；“生成译文”提交一轮 `chat` 任务（上下文为讲授轨，要求把语音段的译文写进讲授轨）；面板显示任务的进度、结果的提交与撤销入口。
 
 **验收**：`e2e/lecture-writeback.spec.ts`（测试 agent）：把一段带语音段的测试讲授轨交给“整理为讲解”，源码中对应章节的讲解变为整理后的文字，`{cue}` 出现在绑定的位置，形成一个提交，撤销后复原；“生成译文”后讲授轨的语音段带英文译文，可以导出英文字幕。
 
 ### WP-86 课程站点（M9，P-78、P-79、P-123，P-122 增补）
 
-**归属**：`packages/web/**`、`packages/workspace/**`、`packages/render-slides/src/**`、`packages/render-notebook/src/**`、`packages/compiler/src/renderers.ts`、`packages/compiler/src/translations.ts`（WP-73a 建立并由 `compiler.ts` 调用；本工作包在其中加入译本的编译与过期检查，不改 `compiler.ts`，它在本波次属于 WP-87）、`e2e/site.spec.ts`、`e2e/fixtures/site/**`。
+**归属**：`packages/web/**`、`packages/workspace/**`（`src/node/audience.ts` 除外，它在本波次属于 WP-87）、`packages/render-slides/src/**`、`packages/render-notebook/src/**`、`packages/compiler/src/renderers.ts`、`packages/compiler/src/translations.ts`（WP-73a 建立并由 `compiler.ts` 调用；本工作包在其中加入译本的编译与过期检查，不改 `compiler.ts`，它在本波次属于 WP-87）、`e2e/site.spec.ts`、`e2e/fixtures/site/**`。
 
 **交付**：站点外壳（`nav`、`footer`、`head` 的描述与 OG 元数据、`sitemap`），单份文稿与工作区站点都可用；文件发布（`ir.md` 6.2 节：正文链接的本地文件、目录的文件清单页、原始 HTML 的 `src`、`poster`、`href`，三种媒介一致，无法发布时给出诊断）；工作区首页可以指定为一份文稿、跨文稿搜索、跨文稿的上一章与下一章；译本（`translations.ts` 中编译每个译本，`renderers.ts` 把它们交给 `RenderContext.translations`；VitePress `locales`；在同一章节之间切换；诊断 `presmium.translations` 在编译原文时报告过期并给出新的摘要，`presmium check` 因此照常报告）。
 
@@ -731,16 +743,17 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 - 同一文件：工作区首页显示指定的那份文稿；只出现在另一份文稿中的词能被搜索到并跳到那份文稿；第一份文稿最后一章的“下一章”指向第二份文稿。
 - 同一文件：中文文稿在第二章切换到英文后停在英文的第二章；`packages/web/test/translations.test.ts`：改动原文后 `presmium check` 报告译本过期并给出新的摘要，写回摘要后不再报告。
 
-### WP-87 发布治理（M9，P-54、P-55）
+### WP-87 发布治理（M9，P-54、P-55，含 `presmium serve` 中读者的学生视图）
 
-**归属**：`packages/compiler/src/blocks.ts`、`packages/compiler/src/compiler.ts`、`packages/compiler/src/directives.ts`、`packages/compiler/src/audience.ts`（新）、`packages/compiler/src/links.ts`（新）、`packages/compiler/src/forbid.ts`（新）、`packages/cli/**`、`e2e/fixtures/publish-checks/**`。
+**归属**：`packages/compiler/src/blocks.ts`、`packages/compiler/src/compiler.ts`、`packages/compiler/src/directives.ts`、`packages/compiler/src/audience.ts`（新）、`packages/compiler/src/links.ts`（新）、`packages/compiler/src/forbid.ts`（新）、`packages/cli/**`、`packages/workspace/src/node/audience.ts`（WP-79 建立）、`e2e/fixtures/publish-checks/**`。
 
-**交付**：通用选项 `:audience:` 与章节级的 `{audience}`；按受众编译（`--audience`），`presmium build --audience` 构建后的泄漏扫描（`presmium.audience`）；`presmium check --audience`；检查项 `presmium.links`（每个渲染端的视图，含原始 HTML 与 `#片段`，工作区中的跨文稿链接）、`presmium.directive`（`mystDirectiveError` 与 `mystRoleError` 成为错误级诊断）、`presmium.forbid`（`checks.forbid`）；`--external-links`（有 lychee 时检查外部链接）。
+**交付**：通用选项 `:audience:` 与章节级的 `{audience}`；按受众编译（`--audience`），`presmium build --audience` 构建后的泄漏扫描（`presmium.audience`）；`presmium check --audience`；检查项 `presmium.links`（每个渲染端的视图，含原始 HTML 与 `#片段`，工作区中的跨文稿链接）、`presmium.directive`（`mystDirectiveError` 与 `mystRoleError` 成为错误级诊断）、`presmium.forbid`（`checks.forbid`）；`--external-links`（有 lychee 时检查外部链接）。学生视图（`design-v0.7.md` 第 24 条）：`ServerHost` 的 `student` 视图按受众 `student` 编译，在 `packages/workspace/src/node/audience.ts`（`presmium serve` 的读者站点与读者、`tutor` 的 MCP 令牌）与 CLI 的 `ServerHost`（`presmium dev` 中的 `tutor` 令牌）中接入。
 
 **验收**：
 
 - `packages/cli/test/publish-checks.test.ts`：测试文稿中有失效的本地链接、`#nowhere`、带 `:file:` 的 `{csv-table}` 与命中 `checks.forbid` 的文字，`presmium check` 以错误退出并在各自的行上给出四条诊断；只在 `{only} slides` 中、指向只出现在网页中的块的链接只在幻灯片的检查中报告。
 - `packages/cli/test/audience.test.ts`：`presmium build --audience student` 的产物（网页、幻灯片、notebook、`ir.json`、搜索索引）中没有教师内容的任何一句，教师章节不在网页目录与幻灯片中；一个教师块的句子又经代码块的输出出现在学生内容中时，构建以错误退出，诊断指向该教师块。
+- 同一文件（`presmium serve` 中的受众，以测试设置的代理请求头给出身份）：读者打开的文档页面与它的搜索索引中没有教师块的句子，编辑者的页面中有；测试插件的路由为读者成员经 `MCP_ENDPOINT.issue(member, 'tutor')` 取得令牌，以它调用 `get_section` 得到的讲解中也没有这句。
 
 ### WP-89 第三轮验收（K 波次）
 

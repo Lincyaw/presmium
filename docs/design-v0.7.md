@@ -35,7 +35,20 @@
 > 13. **凭据与地址成对**（7.4、9 节）：本文说文稿只写引擎与音色的名字；定稿把它推广为“文稿不决定凭据发往哪里”：语音引擎的地址与凭据都由运营者在环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_KEY` 中定义（WP-72 初稿中文稿可写的 `url`、`keyEnv` 已去掉），远端环境的令牌只发往 `PRESMIUM_ENV_<名>_URL`，文稿的地址与它不同源时不连接，也没有 `JUPYTER_TOKEN` 这类通用的后备变量。否则编辑文稿的人或受提示注入的 agent 可以把服务端的密钥引向自己的地址。
 > 14. **agent 必须显式启用**（5.3 节）：本文默认启动 `dsh --profile presmium`；定稿要求运营者给出命令（`PRESMIUM_AGENT_COMMAND` 或 `settings.presmium.assistant.command`），没有时助手不可用，问题与源码不发给任何模型（N-08 的“须在配置中显式开启”）。随包的 DeepSeek Harness 模板仍是推荐的写法；界面标明模型的服务提供方（`AgentClient.provider()`）。
 > 15. **构建与合成缓存**（7.4 节）：本文的“构建只读缓存”指已缓存的段落从不重新合成。定稿写明构建只为缺失的段落调用引擎并写入缓存（同编译时执行的录制），全部命中时不发请求，缺失又没有可用的引擎时报错。
-> 16. **克隆音色的关口**（7.6 节）：同意记录放在 `.presmium/speech/consent/<引擎>/<音色>.json`，由语音服务在合成前检查（Node 端与网关同一处），另需运营者设置 `settings.presmium.speech.cloned: true`。`azure` 引擎不在本期范围，以后作为新的适配器加入。
+> 16. **克隆音色的关口**（7.6 节）：由语音服务在合成前检查同意记录（Node 端与网关同一处），另需运营者设置 `settings.presmium.speech.cloned: true`；同意记录的位置见第 19 条（WP-72 第二稿曾放在文稿的 `.presmium/speech/consent/` 中）。`azure` 引擎不在本期范围，以后作为新的适配器加入。
+>
+> 以下各条是 WP-72 设计评审中验收者的决定（D1 至 D10）：
+>
+> 17. **编译时执行的信任模型**（D1；9 节只清理了 agent 子进程的环境）：文稿的编辑者与受提示注入的 agent 不受信任，而编译时执行的正是他们写的代码。（a）每个 Node 端执行器（执行插件的子进程、本地环境插件的容器、WASI 与 Jupyter 的编译时客户端）只给代码编译器给出的 `RunContext.env`：`presmium build`、`dev` 中是进程的环境去掉全部 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`presmium serve` 中只有允许列表（`PATH`、每个工作区一个临时目录的 `HOME`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR`），都加上运营者设置 `settings.presmium.exec.passEnv`。这也修正现有代码（`packages/addon-exec/src/node/child.ts` 把 `process.env` 整个传给子进程），由 WP-73b 实现并以拒绝用例验收。（b）`presmium serve` 中没有录制的代码只在所有者的 `operate` 确认后执行，除非 `settings.presmium.exec.compile` 为 `trusted`（另有默认的 `approve` 与 `off`；`off` 不执行、不记录，显示录制输出或降级内容）；配置了 `settings.presmium.exec.sandbox: <环境名>`（例如 compose 的 gVisor Jupyter 环境）时，`serve` 把这些代码改在沙箱中运行。契约增加 `RunContext` 与 `Executor.run` 的第三个可选参数（`architecture.md` 4.6、10.6 节；WP-73b、WP-79）。
+> 18. **确认按范围分发**（D2）：确认分为 `content`（任务的文档目录中的文件，发给发起任务的编辑者或所有者）与 `workspace`（`presmium.workspace.yaml`、成员、确认策略、运营者设置、同意记录、文档目录之外的任何路径、agent 的 shell 与网络权限请求，只发给所有者）。编辑者不能批准自己的 agent 的工作区范围请求。契约增加 `ApprovalScope` 与 `ApprovalRequest.scope`（默认 `workspace`）；拒绝用例在 WP-81。
+> 19. **同意记录由运营者保管**（D3）：同意记录不在文稿中，而在运营者控制的目录 `settings.presmium.speech.consentDir`（默认 `<工作区>/.presmium-operator/consent/`）：只由所有者经服务端写入，agent 不能写入，文档的提交不包含它。否则能编辑文稿的人（包括 agent）可以伪造本人的同意。WP-82 的拒绝用例：写在文稿中的同意记录被忽略。
+> 20. **服务提供方来自运营者的配置**（D4）：界面要在任何请求之前写明服务提供方。语音引擎由 `PRESMIUM_SPEECH_<ID>_PROVIDER` 给出（运营者定义的引擎必需；内置的 `volcengine` 为“火山引擎”，英文界面为 Volcengine）；助手由 `settings.presmium.assistant.provider` 给出（模型的服务提供方，如 DeepSeek），不再退回 agent 在 ACP `initialize` 中报告的名字，那个名字是运行时（如 DeepSeek Harness），另行显示（`AgentRuntime.runtime`、`AgentClient.runtime()`）。
+> 21. **AI 合成的标识有验收**（D5，N-08）：播放合成的讲授显示“AI 合成语音”（`e2e/lecture-script.spec.ts`，WP-83）；合成的音频文件与它的 `<键>.json` 带 AI 生成的标识与 WP-82 先行验证确定的 GB 45438 元数据（`addon-speech/test/speech.test.ts`）。
+> 22. **具名环境交给浏览器端插件的契约**（D6）：`PluginContext.environments` 原先没有来源。`HostStart`、`StartOptions` 与 `KernelOptions` 都增加 `environments?: Record<string, EnvironmentSpec>`，由 WP-73a 写入契约并在内核中传递，两种宿主适配（WP-73b）把 IR 的 `config.execute.environments` 交给 `HostStart`。
+> 23. **修改任务由助手统一处理**（D7）：`annotations`、`chat`、`transcript` 与起草都按同一条规则提交与撤销，由 WP-81 实现（含 `transcript`）；WP-84 只构造讲授一侧的请求。
+> 24. **工作区服务中的受众**（D8，P-55）：`presmium serve` 中角色为读者的成员（学习者）看到学生视图：读者的站点按受众 `student` 编译，读者成员的 MCP 令牌与所有 `tutor` 令牌也只读学生视图；编辑者与所有者看到全部。`ServerHost` 按视图（`full`、`student`）给出文稿，服务端按成员转发到对应的站点（WP-73a、WP-78、WP-79 留出位置，WP-87 实现筛选并验收）。
+> 25. **单独运行的语音网关的安全**（D9）：`presmium-speech serve` 持有运营者的凭据，默认只监听 `127.0.0.1`，校验 `Host` 与 `Origin`，要求 `Authorization: Bearer` 令牌（同 MCP）；WP-82 一个用例。
+> 26. **补齐的验收用例与文字**（D10）：P-104 的 jax-js 张量代码（WP-75）；P-131 的倍速与字幕、P-90 可选的摄像头（WP-77，讲授轨格式因此增加 `video`）；P-105 的 `prompt` 方式与远端内核的录制输出与现场一致（WP-76）；P-101 同一浏览器上下文中按页面隔离（WP-73b）；P-68 的文字预测（WP-88）；`STATUS` 到达 MCP 的 `get_classroom`（WP-78）；WP-73a 的 `Origin` 检查与 `presmium dev --allow`；WP-81 面板上的服务提供方。`wbs.md` 中 WP-72 的标题列出 P-42、P-102、P-122 的增补与 P-107、P-137；`ir.md` 2.1 节含义不明的“（第 9 节）”改为指向 `architecture.md` 第 11 节。
 
 本文是需求 v0.7 新增范围（`requirements.md` 6.10 至 6.14 节，N-08、N-09）的总体架构：执行环境、智能体、工作区、讲授四个新的限界上下文，以及它们共用的服务端与契约。WP-72 把定稿的内容并入 `domain-model.md`、`architecture.md`、`ir.md` 与契约源码；在那之前，本文是新增范围的设计依据。调研记录（DeepSeek Harness、浏览器 GPU、远端环境、语音）的结论已经吸收进本文，出处见各节。
 

@@ -90,9 +90,9 @@ presmium:
 | `execute.env`、`execute.environments` | 默认环境与具名环境（2.7 节）；编译器写入 IR 的 `config.execute` |
 | `translations` | 语言到译本入口文件（相对于文稿目录）；译本自己的头部写 `translationOf`（2.12 节） |
 | `checks.forbid` | 正则表达式的列表（JavaScript 语法），`presmium check` 报告每个媒介中的命中（2.11 节） |
-| `presmium.lecture`、`presmium.speech` | 讲授与语音插件的配置：读音词典、默认的合成引擎 `engine` 与转写引擎 `transcribe`（引擎 ID）；音色在 `renderers.lecture.voice` 中。只写名字，不写地址、凭据或存放凭据的变量名（第 9 节） |
+| `presmium.lecture`、`presmium.speech` | 讲授与语音插件的配置：读音词典、默认的合成引擎 `engine` 与转写引擎 `transcribe`（引擎 ID）；音色在 `renderers.lecture.voice` 中。只写名字，不写地址、凭据或存放凭据的变量名（`architecture.md` 第 11 节） |
 
-文稿头部不能写凭据：`presmium check` 对像凭据的值告警（`architecture.md` 第 11 节）。文稿也不决定凭据发往哪里：语音引擎 `<ID>` 由运营者在服务端的环境变量 `PRESMIUM_SPEECH_<ID>_URL` 与 `PRESMIUM_SPEECH_<ID>_KEY` 中成对定义（`volcengine` 的地址固定，只需 `PRESMIUM_SPEECH_VOLCENGINE_APPID` 与 `PRESMIUM_SPEECH_VOLCENGINE_KEY`），文稿用 ID 选用；`presmium.speech` 中出现 `url`、`keyEnv` 等引擎定义是错误级诊断，不被使用。远端环境的地址与令牌同样成对（2.7 节）。确认策略、agent 的启动命令与模型、录音的去处也不在文稿中设置，它们来自命令行、环境变量与工作区配置的运营者设置（第 10 节）。
+文稿头部不能写凭据：`presmium check` 对像凭据的值告警（`architecture.md` 第 11 节）。文稿也不决定凭据发往哪里：语音引擎 `<ID>` 由运营者在服务端的环境变量中定义：地址 `PRESMIUM_SPEECH_<ID>_URL`、服务提供方的名字 `PRESMIUM_SPEECH_<ID>_PROVIDER`（界面据此标明，必需）与可选的凭据 `PRESMIUM_SPEECH_<ID>_KEY`，凭据只发往同一组中的地址（`volcengine` 的地址与名字“火山引擎”固定，只需 `PRESMIUM_SPEECH_VOLCENGINE_APPID` 与 `PRESMIUM_SPEECH_VOLCENGINE_KEY`），文稿用 ID 选用；`presmium.speech` 中出现 `url`、`keyEnv` 等引擎定义是错误级诊断，不被使用。远端环境的地址与令牌同样成对（2.7 节）。确认策略、agent 的启动命令与模型、录音的去处也不在文稿中设置，它们来自命令行、环境变量与工作区配置的运营者设置（第 10 节）。
 
 notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback`）写成一行说明：设置了 `webUrl` 时附上 `<webUrl>#<章节 ID>`；没有设置、而同一次构建也用默认的网页渲染端生成网页时，附上相对链接 `../web/<页>#<章节 ID>`（与 `dist/` 的目录结构一致）；都不满足时说明不带链接，构建报告提示设置 `renderers.notebook.webUrl`。
 
@@ -338,6 +338,7 @@ print(answer_key())
 - `{audience} <受众>` 放在章节顶层（不生成块，同 `{hints}`），把整个章节标为只给这些受众，例如教师指南的一节。
 - 编译器把它们写入 `IRBlock.audience` 与 `IRSection.audience`。不带受众的内容对所有受众可见。
 - `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（步骤随之压缩），所有渲染端都拿不到它们；不带 `--audience` 的构建包含全部内容。构建结束后扫描产物（页面、`ir.json`、搜索索引、幻灯片的备注与 notebook），被去掉的内容中较长的句子（12 个字符以上）出现在产物中就是错误级诊断 `presmium.audience`，位置是被去掉的块（例如它的文字又经代码输出或另一个文件漏进来）。
+- `presmium serve` 中，角色为读者的成员（学习者）看到同样按 `student` 编译的学生视图：他们的页面、IR 与搜索索引来自学生视图的站点，读者成员的 MCP 令牌与所有 `tutor` 令牌也只读学生视图；编辑者与所有者看到全部内容（`architecture.md` 10.3 节）。
 
 `presmium check` 的发布检查（每个渲染端按自己的视图检查，只出现在某个媒介中的内容只在该媒介中检查）：
 
@@ -483,6 +484,8 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 - **会话键链**：带 `:session:` 的代码块按在文稿中出现的顺序组成会话，第 i 个代码块的缓存键是 `hash(第 i−1 个的键, 语言, 代码, 参数, 执行器 ID, 环境指纹)`，第一个的“前一个键”为会话名。所有块都命中缓存时不运行；有一块未命中时，结束该会话（`endSession`），从会话的第一个块起依次重新执行并重新录制。构建结束时结束所有用过的会话。不带 `:session:` 的代码块，键的算法与 v0.7 相同。
 - **富输出与录制块**：录制保存 `outputs`。MIME 数据中长度超过 4096 个字符的值存为 `.presmium/freeze/blobs/<sha256>`，录制只保存引用 `{ "presmium/blob": "<sha256>" }`；编译器读取录制时把它们放回 IR，IR 与产物中的输出因此是完整的 nbformat 输出。`presmium build` 删除不再被引用的录制块。
 - 编译时执行器（执行插件的 `presmium.python`、`presmium.node`）在子进程中、每次运行一个新的临时目录中执行代码，结果经单独的通道（文件描述符 3）返回：程序直接写标准输出（`process.stdout.write`、`console.dir`）不会破坏结果，这些输出照常录制；顶层 `await` 永不完成时，结果为失败并说明原因。运行末尾才发生的 Promise 拒绝与定时器中的异常使运行失败，与浏览器中一致。
+- **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会被代码打印进录制、IR 与产物。
+- **工作区服务中的执行**：`presmium serve` 中没有录制的代码按 `settings.presmium.exec.compile` 执行：`approve`（默认）等所有者的 `operate` 确认，`trusted` 直接执行，`off` 不执行；没有执行时显示 `:recorded:` 的录制输出或降级内容。`settings.presmium.exec.sandbox` 给出一个 Jupyter 环境时，原本在本机运行的代码改在其中运行（`architecture.md` 10.6 节）。
 
 ## 5. 插件
 
@@ -703,10 +706,12 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | 文件 | 内容 | 是否提交 |
 |---|---|---|
 | `lectures/<id>/track.json` | 讲授轨：语音段、事件、音频片段、块指纹、IR 哈希、音色 | 提交 |
-| `lectures/<id>/audio/*.ogg` | 录制的音频（Ogg/Opus，可以跳转），每节一段 | 默认不提交：讲授插件在 `lectures/<id>/` 写一个忽略 `audio/` 的 `.gitignore`；运营者设置 `settings.presmium.lecture.audio`（第 10 节）可以改为 git LFS 或外部地址 |
-| `.presmium/speech/<键>.ogg`、`<键>.json` | 合成缓存：音频，与逐字时间、时长、引擎信息、AI 生成标识 | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
+| `lectures/<id>/audio/*.ogg` | 录制的音频（Ogg/Opus，可以跳转），每节一段 | 默认不提交：讲授插件在 `lectures/<id>/` 写一个忽略 `audio/` 与 `video/` 的 `.gitignore`；运营者设置 `settings.presmium.lecture.audio`（第 10 节）可以改为 git LFS 或外部地址 |
+| `lectures/<id>/video/*.webm` | 可选的摄像头与屏幕录像（P-90），每节每种一段；默认不录 | 同音频 |
+| `.presmium/speech/<键>.ogg`、`<键>.json` | 合成缓存：音频（元数据中带 AI 生成的标识与 GB 45438 的字段，写法由 WP-82 的先行验证确定），与逐字时间、时长、引擎信息、AI 生成标识 | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
 | `.presmium/speech.lock.json` | 文稿用到的合成键与音频的 sha256 | 提交 |
-| `.presmium/speech/consent/<引擎>/<音色>.json` | 克隆音色的同意记录：说话人、范围、日期、同意声明录音的 sha256；语音服务合成克隆音色前检查它（`architecture.md` 第 11 节） | 提交 |
+
+克隆音色的同意记录不在文稿目录中：它在运营者控制的目录 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`），内容为说话人、范围、日期、同意声明录音的 sha256，只由所有者经语音插件的路由写入或由运营者放入，不随文稿提交；文稿中的 `.presmium/speech/consent/` 之类的文件被忽略（`architecture.md` 第 11 节）。
 
 讲授轨借鉴 asciinema 的 asciicast（事件是元组，不认识的类型忽略），时间用自讲授开始的绝对毫秒，便于跳转与编辑：
 
@@ -714,6 +719,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 { "track": 1, "id": "bpe-2026-10-16", "doc": "lecture.md", "lang": "zh-CN", "ir": { "hash": "…" },
   "voice": { "kind": "recorded", "speaker": "张老师" },
   "audio": [{ "section": "merge", "start": 0, "src": "audio/merge.ogg", "duration": 312.4, "sha256": "…" }],
+  "video": [{ "section": "merge", "start": 0, "src": "video/merge.camera.webm", "kind": "camera", "duration": 312.4 }],
   "blocks": { "merge/code-1": { "fp": "…", "lines": 14 } },
   "utterances": [{ "id": "u12", "t": 81200, "d": 5400, "text": "我们先看这三行",
                    "words": [[81200, 210, "我"]], "section": "merge", "step": 2,
@@ -726,6 +732,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 - `voice`：`{ kind: 'recorded', speaker }`，或 `{ kind: 'synthetic', engine, model, voice }`；合成的讲授在播放界面标明“AI 合成语音”。
 - `audio`：录制的讲授每节一段音频（`start` 是该段在讲授中的开始时刻，秒）；合成的讲授没有这一项，片段由语音段经合成缓存给出（`ClipClock`）。
+- `video`：可选，只有录制时开启了摄像头或屏幕才有；`kind` 为 `camera` 或 `screen`，时刻规则同 `audio`。回放仍由事件驱动真实页面，不依赖它。
 - `blocks`：被事件引用的块的内容指纹（键为 `<章节 ID>/<块 ID>`）与行数；`ir.hash` 是录制时的 IR 哈希。两者用于漂移检查。
 - `utterances[].words`：`[开始毫秒, 时长毫秒, 字或词]`；中文为单字。`translations` 的 `source` 是翻译时原文的摘要，与当前原文不一致即过期（P-137）。
 
@@ -775,13 +782,21 @@ settings:                            # 插件的运营者设置，键为插件 I
   presmium.assistant:
     command: [dsh, --profile, presmium, --patch, '{templates}/presmium.cordis.yml']
     tutor: [dsh, --profile, presmium-tutor, --patch, '{templates}/presmium-tutor.cordis.yml']
-    provider: DeepSeek               # 模型的服务提供方，界面据此标明
-  presmium.lecture: { audio: ignore }   # 录制音频的去处：ignore（默认）、lfs，或外部地址的前缀
-  presmium.speech: { cloned: false }    # 是否允许克隆音色（默认 false；允许时每个克隆音色仍要有同意记录）
+    provider: DeepSeek               # 模型的服务提供方，界面据此标明（必需）；运行时的名字另取自 agent
+  presmium.exec:                     # 编译时执行（architecture.md 10.6 节）
+    compile: approve                 # presmium serve 中没有录制的代码：approve（默认，所有者确认）、trusted、off
+    sandbox: sandbox                 # 可选：serve 中改在这个 Jupyter 环境中运行（PRESMIUM_ENV_SANDBOX_URL、_TOKEN）
+    passEnv: [HF_HOME]               # 另外传给被执行代码的环境变量
+  presmium.lecture: { audio: ignore }   # 录制音频与录像的去处：ignore（默认）、lfs，或外部地址的前缀
+  presmium.speech:
+    cloned: false                    # 是否允许克隆音色（默认 false；允许时每个克隆音色仍要有同意记录）
+    consentDir: .presmium-operator/consent   # 同意记录的目录，相对于工作区根目录（默认值）
 ```
 
 - 文档的身份是目录；标题、语言与标签取自各文档的头部（`title`、`lang`、`tags`）。
 - `site` 的 `nav`、`footer`、`head`、`sitemap` 与 `renderers.web` 的同名选项相同（2.1 节），作用于整个工作区站点。
 - `members` 与 `approvals` 只在 `presmium serve` 中使用。`settings` 是插件的运营者设置：`presmium dev`、`build`、`check` 与 `presmium serve` 都读取文稿所在工作区根目录的这个文件（单份文稿的仓库也可以只写 `settings`），只在进程启动时读取一次，运行中改动要等运营者重启才生效。
-- `presmium.assistant` 的命令中 `{templates}` 代入助手插件随包提供的 DeepSeek Harness 配置模板目录；命令也可以由环境变量 `PRESMIUM_AGENT_COMMAND`（`tutor` 模式为 `PRESMIUM_AGENT_TUTOR_COMMAND`）给出，环境变量优先，`provider` 也可以由 `PRESMIUM_AGENT_PROVIDER` 给出。两处都没有命令时助手不可用，不启动任何 agent。
+- `presmium.assistant` 的命令中 `{templates}` 代入助手插件随包提供的 DeepSeek Harness 配置模板目录；命令也可以由环境变量 `PRESMIUM_AGENT_COMMAND`（`tutor` 模式为 `PRESMIUM_AGENT_TUTOR_COMMAND`）给出，环境变量优先，`provider` 也可以由 `PRESMIUM_AGENT_PROVIDER` 给出。没有命令或没有 `provider` 时助手不可用，不启动任何 agent。
+- `presmium.exec` 由编译器读取：`passEnv` 在所有命令中生效；`compile` 与 `sandbox` 只在 `presmium serve` 中生效。`sandbox` 的地址与令牌只取运营者的 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`，不取文稿中同名的环境；文档的 `plugins` 要包含远端环境插件，沙箱不可用时代码不执行，不退回主机。
+- `presmium.speech.consentDir` 是运营者控制的目录：只有所有者经语音插件的路由写入（运营者也可以直接放入文件），不随文稿提交；默认的 `.presmium-operator/` 不属于任何文档，工作区的提交不包含它，agent 不能写入。
 - 这些设置都不能写在文稿中：文稿头部 `presmium.<插件 ID>` 中的同名键不进入 `settings`。
