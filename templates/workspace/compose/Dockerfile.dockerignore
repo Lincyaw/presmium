@@ -1,0 +1,12 @@
+# What the image does not take from the checkout: git's data, outputs, caches, test workspaces.
+# (node_modules stays whole: its packages' own dist/ directories are their code.)
+.git
+dist
+packages/*/dist
+packages/*/test
+examples/*/dist
+examples/demo/.presmium
+vendor
+test-results
+playwright-report
+.playwright-mcp

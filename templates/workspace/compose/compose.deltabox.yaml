@@ -1,0 +1,9 @@
+# Optional: what deltabox needs in the sandbox (docs/architecture.md 10.5), so agent-host's
+# addon-deltabox can register the change review and the process sandbox. These permissions weaken the
+# outer container (docs/architecture.md 9.4), so they are not in compose.yaml:
+#   docker compose -f compose.yaml -f compose.deltabox.yaml up -d
+services:
+  sandbox:
+    devices: [/dev/fuse]
+    cap_add: [SYS_ADMIN, SYS_PTRACE]
+    security_opt: ['apparmor:unconfined']

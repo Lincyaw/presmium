@@ -14,8 +14,9 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 上下文 | 包（`packages/`） | 职责 |
 |---|---|---|
 | 内核 | `kernel` → `@presmium/kernel` | 纯 TS：插件清单、服务注册、锚点、检查、步骤、IR 契约，及插件共用的服务契约（`EXECUTOR`、`SESSION`、`CLASSROOM_STORE`、`PRESENTER_PANELS`） |
-| 编译 | `compiler`、`cli` → `@presmium/compiler`、`@presmium/cli` | MyST 解析、编译步骤、编译时执行与缓存、IR、检查、Node 端服务注册表、行内角色、运营者插件与插件的来源；命令 `presmium build | dev | ir | check | gateway` |
+| 编译 | `compiler`、`cli` → `@presmium/compiler`、`@presmium/cli` | MyST 解析、编译步骤、编译时执行与缓存、IR、检查、Node 端服务注册表、行内角色、运营者插件与插件的来源；命令 `presmium build | dev | ir | check | serve | gateway | agent-host` |
 | 服务端 | `server` → `@presmium/server` | `presmium dev` 的服务端与工作区服务所用的 `serve` 模式（插件的路由与代理、登录与角色、确认、控制通道、所有者控制台），以及 `presmium gateway`；只由 `cli` 与 `workspace` 引用 |
+| 工作区 | `workspace` → `@presmium/workspace` | `presmium serve`（按需编译、成员与角色、`REVISIONS`、文档操作与修改历史的路由、编译时执行的确认、LOCAL 中本进程的工作区站点、SHARED 中 agent-host 的客户端与按视图的路由）、`presmium agent-host`、工作区的构建；浏览器插件（`src/client/plugin.ts`：`EDIT_MODE`、工具栏的编辑、文档管理、修改历史与“请求执行”）是工作区站点自己的插件；`src/node/audience.ts` 决定视图怎样编译（WP-87 接入受众） |
 | 渲染 | `viewer`、`web`、`render-slides`、`render-notebook` | IR 运行时与运行时视图；网页（VitePress 外壳）、幻灯片（生成 Slidev 文稿）、notebook 渲染端 |
 | 宿主适配 | `host`、`addon-core`、`web` | 形态无关的宿主接口（`@presmium/host`）及 Slidev（`@presmium/slidev-addon-core`）、VitePress（`@presmium/web`）两个实现 |
 | 讲台 | `addon-stage` | 黑屏、冻结、圈画、脚注就近 |

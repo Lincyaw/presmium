@@ -1,0 +1,7 @@
+title: 端到端测试工作区
+members:
+  owners: [owner@test]
+  editors: [editor@test]
+settings:
+  presmium.workspace:
+    plugins: [presmium-fixture-workspace-probe]

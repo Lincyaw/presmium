@@ -615,6 +615,15 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
 
+**WP-79 开始时的验证（2026-10-16，VitePress 1.6.4 与其 Vite 5.4.21、simple-git 4.0.2、oauth2-proxy 7.12.0、Docker Compose 5.1、`node:22-trixie-slim`）**（`wbs.md` 没有为 WP-79 列出先行验证，开始时做了这几项小规模实测）的结论：
+
+- **工作区站点的开发服务器**：每份文档一个 VitePress 开发服务器（`base` 为 `/<文档目录>/`，与单份文稿的网页形态同一套生成的项目），首页另一个 VitePress 项目，前面是网页渲染端自己的路由：按路径中最长的文档目录转发，HTTP 与 HMR 的 WebSocket 都是（Vite 5 的 HMR 路径就是 `base`），文档的开发服务器在它第一次被请求时以 `compile` 给出的 IR 启动。经 `presmium serve` 转发并保留浏览器的 `Host` 时，Vite 5.4.12 起的主机检查拒绝请求，所以站点的开发服务器设 `server.allowedHosts: true`（它们只监听本机，或 agent-host 在 `agents` 网络上的地址）；生成的项目不在工作区中（在 serve 或 agent-host 自己的缓存目录中），所以 `server.fs.allow` 列出项目、文档目录、插件与 Presmium 的包。VitePress 1.6 的命令行不接受 `--port 0`（回落到 5173 并递增），所以先在本机取空闲端口再传给它。serve 自己回答 `/__presmium/`，所以开发服务器的 IR 端点改在文档的 `base` 下（`<base>@presmium/ir`）。在页面打开时改动源码，经 serve、路由与 HMR 的推送照常到达页面。
+- **VitePress 的数据加载器**：文稿组件引用的 `*.data.ts` 在开发服务器的 Node 进程中运行 `load()`，时机是浏览器请求这个模块（实测经 `/<文档目录>/@fs/<路径>` 请求即运行），所以 SHARED 中它运行在 agent-host 启动的 VitePress 子进程中，父进程链上没有 serve。
+- **git**：simple-git 4 拒绝 `-c core.hooksPath=…` 与 `-c core.fsmonitor=…`，除非打开它的 `unsafe.allowUnsafeHooksPath`、`allowUnsafeFsMonitor`；工作区只以这两个开关传入自己的常量配置（另加 `commit.gpgSign=false`）。revert 进行中 `git commit -- <路径>` 被拒绝（partial commit），所以撤销提交整个索引；冲突时 `git revert --abort` 使工作树复原，冲突的文件取自 `git diff --diff-filter=U`，本地改动挡住的文件取自 git 的提示。
+- **编译器**：`{literalinclude}` 不被展开（myst-parser 给出 `literal: true` 的 `include` 节点，编译器只展开 `{include}`），所以它什么也不读、也没有诊断；指向工作区之外的符号链接经 `{include}` 读取时给出 `presmium.files`。以 `remote` 执行时编译器仍在 serve 中调用执行插件的 `supports` 与 `fingerprint`：Python 执行器以 `python3 -c 'import sys…'` 探测版本，所以 serve 会启动一次 Python 子进程，只是不运行文稿的代码（运行器）。运行器在运行期间设置 `MPLBACKEND`，它出现在录制的环境中。
+- **确认策略**：服务端的确认策略按种类生效，`approvals.operate: allow` 也会放行编译确认，所以 SHARED 且 `compile: approve` 时工作区把交给服务端的 `operate` 改为 `ask` 并记日志。
+- **compose**：`node:22-trixie-slim` 的 glibc 为 2.41，没有 Python 与 git（镜像另装）；compose 的文件型 `secrets` 以主机文件的属主与权限挂载，主机上 0600 的文件在容器中只有 root 可读，正合“以 root 读取后降权”。oauth2-proxy 只能经 alpha 配置添加固定的请求头，所以模板以它在 `edge` 上的固定地址让 serve 信任它（`--trust-proxy-from`），共享密钥仍可用于其他登录代理。镜像的构建上下文是已 `pnpm install` 的检出（pnpm 的符号链接都是相对的），`.dockerignore` 不能写 `**/dist`（会去掉依赖包自己的 `dist/`）。
+
 ## 12. 包与工作包
 
 | 包 | 新建或修改 | 工作包 |

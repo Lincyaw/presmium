@@ -34,6 +34,17 @@ export interface ThemeInput {
   viewers?: ViewerModule[]
 }
 
+/** What the generated site configuration tells the theme (`themeConfig.presmium`, see ../node/site.ts). */
+interface ThemeOptions {
+  form?: FormOptions
+  /** `presmium dev` or `presmium serve` serves the pages. */
+  server?: boolean
+  /** In a workspace site: the document directory, the home page and the dev server's IR endpoint. */
+  document?: string
+  home?: string
+  ir?: string
+}
+
 /** A live update of the dev server, with the revision it applies to and the one it makes (see ../node/vite.ts). */
 interface UpdateEvent {
   update: LiveUpdate
@@ -171,11 +182,16 @@ const Layout = defineComponent({
         if (search !== location.search) history.replaceState(history.state, '', location.pathname + search + location.hash)
       }, { immediate: true })
     })
+    // In a workspace site, the navigation bar links the site's home page (the list of documents).
+    const home = () => {
+      const href = theme.value.presmium?.home
+      return href ? h('a', { class: 'pm-site-link', href }, WEB_MESSAGES[currentLocale()].documents) : null
+    }
     return () => h(DefaultTheme.Layout, null, {
       // On phones the view menu and the toolbar items move to the navigation screen (the menu), as VitePress
       // does with its links, so the bar keeps the width of the screen.
-      'nav-bar-content-after': () => [h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
-      'nav-screen-content-after': () => [h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
+      'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
+      'nav-screen-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
       // Overlay views get the typography of the page body.
       'layout-bottom': () => [
         h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayHost)]),
@@ -193,13 +209,13 @@ const Layout = defineComponent({
  * it does whenever it connects. The site title and the sidebar follow the
  * document here, so the config never changes and the page never reloads.
  */
-function followDevServer(viewer: Viewer, revision: string | undefined, follow: (doc: IRDocument) => void): void {
+function followDevServer(viewer: Viewer, revision: string | undefined, endpoint: string, follow: (doc: IRDocument) => void): void {
   const hot = import.meta.hot
   if (!hot) return
   let current = revision
   const fetchCurrent = async () => {
     try {
-      const response = await fetch(IR_ENDPOINT, { cache: 'no-store' })
+      const response = await fetch(endpoint, { cache: 'no-store' })
       if (!response.ok) return
       const { revision: latest, doc } = await response.json() as { revision: string, doc: IRDocument }
       if (latest === current) return
@@ -229,7 +245,8 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
     extends: DefaultTheme,
     Layout,
     enhanceApp({ app, router, siteData }) {
-      const form: FormOptions = siteData.value.themeConfig.presmium?.form ?? {}
+      const presmium: ThemeOptions = siteData.value.themeConfig.presmium ?? {}
+      const form: FormOptions = presmium.form ?? {}
       const links = computed(() => sectionLinks(toPages(current.doc.value)))
       const pageOf = (position: Position) => withBase((links.value[position.section] ?? '/').split('#')[0]!)
       const current = createViewer(input.doc, {
@@ -248,8 +265,8 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
           }, [slidesIcon()])
         },
         diagnostics: import.meta.env.DEV,
-        // The dev server opens the file in the author's editor (K-11).
-        openSource: import.meta.env.DEV
+        // The dev server of `presmium dev` opens the file in the author's editor (K-11); a workspace site's has no editor.
+        openSource: import.meta.env.DEV && presmium.document === undefined
           ? source => void fetch(`${SOURCE_ENDPOINT}?file=${encodeURIComponent(source.file)}&line=${source.line}`)
           : undefined,
         navigate: position => void router.go(pageOf(position)),
@@ -268,8 +285,9 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
       viewersReady = loadViewerPlugins(input.viewers ?? [])
-      // `presmium dev` serves the page: the server's client, given before any component asks for it (`useServer`).
-      const server = siteData.value.themeConfig.presmium?.server ? createServerClient() : undefined
+      // `presmium dev` or `presmium serve` serves the page: the server's client, given before any component asks for it
+      // (`useServer`); in a workspace site it names the page's document.
+      const server = presmium.server ? createServerClient({ document: presmium.document }) : undefined
       provideServer(server)
       void startKernel(input.plugins, input.doc, current, shared.transports, server)
       // The IR runtime reports and replays `go` through the running kernel's operations (each start has its own).
@@ -277,7 +295,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         if (operations) onCleanup(followOperations(current, operations))
       }, { immediate: true })
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
-      followDevServer(current, input.revision, (doc) => {
+      followDevServer(current, input.revision, presmium.ir ?? IR_ENDPOINT, (doc) => {
         const site = siteData.value
         const nav = sidebar(doc, toPages(doc))
         if (site.title === doc.meta.title && JSON.stringify(site.themeConfig.sidebar) === JSON.stringify(nav)) return
