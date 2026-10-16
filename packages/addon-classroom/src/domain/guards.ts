@@ -46,6 +46,7 @@ export function isQuestion(value: unknown): value is Question {
   return isRecord(value) && isString(value.section) && (value.block === undefined || isString(value.block)) && isString(value.title)
     && isCount(value.index) && isString(value.text) && isString(value.author) && isString(value.name) && isTime(value.at)
     && (value.answered === undefined || typeof value.answered === 'boolean')
+    && (value.reply === undefined || (isRecord(value.reply) && isString(value.reply.text) && isTime(value.reply.at) && (value.reply.provider === undefined || isString(value.reply.provider))))
 }
 
 export function isNote(value: unknown): value is Note {

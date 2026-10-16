@@ -77,6 +77,9 @@ function toggleAnswered(id: string, question: Question): void {
       <li v-for="item in shown" :key="item.id" :data-answered="item.value.answered ? '' : undefined">
         <span v-if="presenter" class="pm-question-box__name">{{ item.value.name }}{{ t.colon }}</span>{{ item.value.text }}
         <span v-if="item.value.answered" class="pm-question-box__answered">{{ t.questions.answered }}</span>
+        <p v-if="item.value.reply" class="pm-classroom-reply">
+          {{ item.value.reply.provider ? t.questions.reply(item.value.reply.provider) : '' }}{{ item.value.reply.text }}
+        </p>
         <button v-if="presenter && status === 'active'" type="button" @click="toggleAnswered(item.id, item.value)">
           {{ item.value.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
         </button>
@@ -98,5 +101,11 @@ function toggleAnswered(id: string, question: Question): void {
 }
 .pm-question-box__name {
   font-weight: 600;
+}
+.pm-classroom-reply {
+  margin: 0.25rem 0;
+  padding-left: 0.5rem;
+  border-left: 3px solid rgba(125, 125, 125, 0.4);
+  white-space: pre-wrap;
 }
 </style>

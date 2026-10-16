@@ -1,0 +1,62 @@
+# DeepSeek Harness patch for Presmium's tutor (learners' questions, both modes; D15, docs/architecture.md
+# 4.8): read only. No shell, no command execution, no network, no tool that writes a file; the sandbox is
+# read-only, and the assistant refuses every permission request of a question. The agent reads the deck
+# through Presmium's MCP tools (a `tutor` token: the reading tools, the student view) and its own read
+# and search tools. The row ids are those of the pinned version; packages/addon-assistant/test/dsh.test.ts
+# checks them with `--dump-config`.
+
+# No session-log upload, no session telemetry, no plugin inventory sent with requests.
+- id: session-log-deepseek
+  disabled: true
+- id: session-telemetry-otel
+  disabled: true
+- id: plugin-package-inventory-deepseek
+  disabled: true
+
+- id: sandbox-policy
+  config:
+    mode: read-only
+    workspaceRoot: !!js process.cwd()
+- id: approval
+  config:
+    policy: ask
+
+# Reading only: no write or edit tool.
+- id: tool-fs
+  config:
+    write: false
+    edit: false
+
+# Shell (the sandbox backends stay: the permission presets need them, and nothing runs through them).
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+
+# Command execution: background jobs, model-written programs, workflows and subagents.
+- id: tool-jobs
+  disabled: true
+- id: ptc-runtime
+  disabled: true
+- id: workflow-ptc
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+
+# Network: web search and fetch.
+- id: web
+  disabled: true
+- id: web-search-deepseek
+  disabled: true
+- id: web-fetch-http
+  disabled: true
+- id: tool-web
+  disabled: true

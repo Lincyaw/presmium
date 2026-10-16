@@ -19,6 +19,15 @@ export interface Question {
   name: string
   at: number
   answered?: boolean
+  /** An answer the presenter confirmed and sent to the classroom (P-112): an AI answer names the model's provider. */
+  reply?: QuestionReply
+}
+
+export interface QuestionReply {
+  text: string
+  /** The model's provider of an AI answer (N-08). */
+  provider?: string
+  at: number
 }
 
 export interface QuestionGroup<T extends Question> {

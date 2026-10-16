@@ -1,0 +1,22 @@
+# DeepSeek Harness patch for Presmium's author agent in LOCAL mode (D11, D15; docs/architecture.md 4.8).
+# The assistant starts `dsh --profile acp --patch <this file>` with DSH_TELEMETRY_MODE=DISABLED and its own
+# DSH_HOME. The row ids are those of the pinned version (`dsh --profile acp --dump-default-config`);
+# packages/addon-assistant/test/dsh.test.ts checks them with `--dump-config`.
+
+# No session-log upload, no session telemetry, no plugin inventory sent with requests.
+- id: session-log-deepseek
+  disabled: true
+- id: session-telemetry-otel
+  disabled: true
+- id: plugin-package-inventory-deepseek
+  disabled: true
+
+# The shell stays; file effects are confined to the session's directory (the document directory, or its
+# review), and anything wider asks Presmium (ACP session/request_permission), whatever the environment says.
+- id: sandbox-policy
+  config:
+    mode: workspace-write
+    workspaceRoot: !!js process.cwd()
+- id: approval
+  config:
+    policy: ask

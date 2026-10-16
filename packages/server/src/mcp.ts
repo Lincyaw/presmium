@@ -33,7 +33,7 @@ export interface McpHostOptions {
  */
 function runCodeScope(shared: boolean, settings: Record<string, Record<string, unknown>> | undefined): ApprovalScope | 'off' {
   if (!shared) return 'content'
-  const exec = settings?.presmium?.exec
+  const exec = settings?.['presmium.exec']
   const compile = isRecord(exec) ? exec.compile : undefined
   return compile === 'off' ? 'off' : compile === 'trusted' ? 'content' : 'workspace'
 }

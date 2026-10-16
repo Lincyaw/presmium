@@ -1,0 +1,32 @@
+{
+  "name": "@presmium/slidev-addon-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The assistant (P-111, P-112; D11, D15): agent runtimes over ACP with DeepSeek Harness bundled, learners' questions, the classroom's AI answers and the gateway's model proxy",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@agentclientprotocol/sdk": "1.8.0",
+    "@deepseek-ai/dsh": "0.2.1-alpha.4",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
+    "@presmium/cli": "workspace:*",
+    "@presmium/viewer": "workspace:*",
+    "@slidev/types": "53.0.0"
+  }
+}

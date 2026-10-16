@@ -24,6 +24,7 @@ import {
   tally,
 } from '../domain/index.ts'
 import type { Prediction, PulseVote, Question, Submission } from '../domain/index.ts'
+import { useAiAnswers } from './ai.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from './use.ts'
 import './style.css'
 
@@ -38,6 +39,7 @@ const submissions = useCollection(from, COLLECTIONS.submissions, isSubmission)
 const predictions = useCollection(from, COLLECTIONS.predictions, isPrediction)
 const { failure, write } = useWrite()
 const t = useMessages(MESSAGES)
+const ai = useAiAnswers()
 
 const byPlace = <T extends { index: number }>(items: T[]) => [...items].sort((a, b) => a.index - b.index)
 
@@ -91,6 +93,15 @@ function toggleAnswered(question: Question & { id: string }): void {
   const { id, ...value } = question
   write(() => store.value?.put<Question>(COLLECTIONS.questions, id, { ...value, answered: !value.answered }))
 }
+
+/** Sends the AI's answer, once the presenter confirmed it, to the classroom as the question's reply. */
+function sendAnswer(question: Question & { id: string }): void {
+  const draft = ai.drafts.get(question.id)
+  if (draft?.state !== 'ready') return
+  const { id, ...value } = question
+  const sent = write(() => store.value?.put<Question>(COLLECTIONS.questions, id, { ...value, answered: true, reply: { text: draft.text, ...draft.provider ? { provider: draft.provider } : {}, at: Date.now() } }))
+  if (sent) ai.drafts.delete(id)
+}
 </script>
 
 <template>
@@ -114,6 +125,36 @@ function toggleAnswered(question: Question & { id: string }): void {
               <button v-if="status === 'active'" type="button" @click="toggleAnswered(q)">
                 {{ q.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
               </button>
+              <button v-if="status === 'active' && ai.provider.value && !q.reply && !ai.drafts.has(q.id)" type="button" class="pm-classroom-panel__ai" :title="t.questions.aiTitle(ai.provider.value)" @click="ai.answer(q.id, q)">
+                {{ t.questions.ai(ai.provider.value) }}
+              </button>
+              <div v-if="ai.drafts.get(q.id)" class="pm-classroom-panel__draft" :data-state="ai.drafts.get(q.id)!.state">
+                <p v-if="ai.drafts.get(q.id)!.state === 'running'" class="pm-classroom-status" role="status">
+                  {{ t.questions.aiAnswering }}
+                </p>
+                <template v-else-if="ai.drafts.get(q.id)!.state === 'ready'">
+                  <p class="pm-classroom-status">
+                    {{ t.questions.aiDraft }}
+                  </p>
+                  <p class="pm-classroom-panel__answer">
+                    {{ ai.drafts.get(q.id)!.text }}
+                  </p>
+                </template>
+                <p v-else class="pm-classroom-error" role="alert">
+                  {{ t.questions.aiFailed(ai.drafts.get(q.id)!.error ?? '') }}
+                </p>
+                <p class="pm-classroom-actions">
+                  <button v-if="ai.drafts.get(q.id)!.state === 'ready'" type="button" @click="sendAnswer(q)">
+                    {{ t.questions.send }}
+                  </button>
+                  <button type="button" @click="ai.discard(q.id)">
+                    {{ t.questions.discard }}
+                  </button>
+                </p>
+              </div>
+              <p v-if="q.reply" class="pm-classroom-reply">
+                {{ q.reply.provider ? t.questions.reply(q.reply.provider) : '' }}{{ q.reply.text }}
+              </p>
             </li>
           </ul>
         </div>
@@ -189,5 +230,15 @@ function toggleAnswered(question: Question & { id: string }): void {
 }
 .pm-classroom-panel__where {
   font-weight: 600;
+}
+.pm-classroom-panel__draft,
+.pm-classroom-reply {
+  margin: 0.25rem 0;
+  padding-left: 0.5rem;
+  border-left: 3px solid rgba(125, 125, 125, 0.4);
+}
+.pm-classroom-panel__answer,
+.pm-classroom-reply {
+  white-space: pre-wrap;
 }
 </style>

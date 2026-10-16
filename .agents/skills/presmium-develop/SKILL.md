@@ -27,7 +27,8 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 引导 | `addon-guide` | 模拟光标、聚光、交互提示 |
 | 富内容 | `addon-content` | 思维导图、媒体、PlantUML |
 | 发布 | `addon-publish` | 离线、高对比度、`presmium-export`、`presmium-diff` |
-| 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问、理解度、先预测再揭示、笔记；y-websocket 课堂服务 |
+| 助手 | `addon-assistant` | 运营者插件：`AGENT_RUNTIME`（ACP 客户端，`@agentclientprotocol/sdk` 只在 `src/node/`；默认以子进程启动随包精确固定的 DeepSeek Harness，模板在 `dsh/`），服务端路由 `info`、`tasks`、`tasks/<id>/events`、`tasks/<id>/cancel`，gateway 中的模型代理 `model/*`；浏览器端的 `AGENT`、工具栏与演讲者面板中的提问面板（引用经视图插件跳转）。修改任务在 WP-81 |
+| 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问（主讲确认后发给课堂的 AI 回答，经 `AGENT`）、理解度、先预测再揭示、笔记；y-websocket 课堂服务 |
 | 讲授 | `addon-lecture` | 讲授轨（`lectures/<id>/track.json`）、放映视图中的录制（Mediabunny 录 Ogg/Opus，只在 `src/client/media.ts`）、视图 `lecture` 的回放（`OPERATIONS` 折叠出 `state(t)`）、检查项 `presmium.lecture`、站点渲染端 `lecture` 与 VTT 导出 |
 | 编辑 | `language-server`、`vscode` | 语言服务；VS Code 扩展（唯一预打包的包） |
 

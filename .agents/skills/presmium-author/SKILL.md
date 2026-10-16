@@ -170,6 +170,18 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 - 不启动服务端时：`node <仓库>/packages/mcp/bin/presmium-mcp.mjs <文稿目录>` 以 stdio 提供读取类工具；加 `--allow operate` 另提供并直接允许 `run_code` 与 `build`。网页形态的放映视图与演讲者视图在自己的控制条中显示确认入口（“待确认”），放映时在那里允许或拒绝。
 - 同样的数据也是只读资源（`presmium://sections`、`presmium://sections/{section}` 等，服务说明列出它们）。有多份文档时，工具以 `document` 指定文档，资源在 URI 后加 `?document=<文档目录>`。`navigate` 只移动自己打开的窗口：自己没有窗口显示文稿时直接返回错误，不询问。
 
+### 页面中的 AI 助手
+
+文稿的 `plugins` 加上 `@presmium/slidev-addon-assistant` 后，`presmium dev` 与 `presmium serve` 的页面有“提问”（网页导航栏；幻灯片与网页的演讲者视图在 Presmium 面板中）：读者问当前一节，或先在讲义中选中一段文字（如代码）再问，回答中的引用点了就跳到那一节。面板在提问之前写明模型的服务提供方，回答之后另写明运行时。问题只读：agent 用只读的 `tutor` 模式（只有读取类 MCP 工具，读学生视图），它的权限请求一律被拒绝。课堂中主讲的“互动”总览里每个提问有“AI 回答（服务提供方）”，主讲确认后发给课堂。静态构建的产物中没有这些。
+
+助手只在运营者配置了模型访问时可用，设置写在运行 `presmium` 的环境中，不写在文稿里：
+
+- `DEEPSEEK_API_KEY`：随包的 DeepSeek Harness 访问 DeepSeek 的官方地址（服务提供方 DeepSeek）；
+- 或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER` 三者：运营者的 Messages 兼容服务，优先于前者；
+- 或替换的运行时（只在本机）：`PRESMIUM_AGENT_COMMAND`（问答另可用 `PRESMIUM_AGENT_TUTOR_COMMAND`）是一个 ACP agent 的命令行，同时要有 `PRESMIUM_AGENT_PROVIDER`；也可以写在工作区配置的 `settings.presmium.assistant` 的 `command`、`tutor`、`provider` 中。
+
+都没有时助手不可用，不启动任何进程，`presmium dev` 的日志说明缺少哪项设置。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录）后每份文档的服务端都有它，页面上的面板仍要文稿的 `plugins` 列出它。由助手修改源码的批注与对话还没有提供。
+
 ## 12. 读诊断
 
 每行诊断为 `<文件>:<行>  <级别>  <消息>  (<检查 ID>)`，有提示时下一行是 `hint:`。常见的：
