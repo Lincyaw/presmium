@@ -4,11 +4,13 @@
  * tool call (DeepSeek Harness sends the call's id alone), so the tool call
  * the agent announced before (`tool_call`: title, kind, input, locations)
  * says what it is: a file within the session's directory is `content`
- * (`write`); a file elsewhere, a shell command, the network or any other
- * tool is `workspace` (owners only); the operator directory is refused
- * outright, asking no one.
+ * (`write`), except in a git directory (`.git/`: in a single-deck repository
+ * the document directory holds the repository's, whose configuration and
+ * hooks git runs, and no review shows it); a file elsewhere, a shell command,
+ * the network or any other tool is `workspace` (owners only); the operator
+ * directory is refused outright, asking no one.
  */
-import { isAbsolute, relative, resolve } from 'node:path'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { deckLocale, isRecord } from '@presmium/kernel'
 import type { ApprovalRequest } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -51,8 +53,8 @@ export function classify(call: ToolCallInfo, where: { cwd: string, operatorDir?:
     const path = resolve(where.cwd, target)
     if (where.operatorDir && within(path, where.operatorDir)) return { refuse: `${path} is in the operator directory` }
     if (!shell && !network) {
-      const inside = within(path, where.cwd)
-      return { request: { ...base, kind: 'write', scope: inside ? 'content' : 'workspace', title: t.write(path), path, ...detail(justification) ? { detail: detail(justification) } : {} } }
+      const content = within(path, where.cwd) && !relative(resolve(where.cwd), path).split(sep).some(part => part.toLowerCase() === '.git')
+      return { request: { ...base, kind: 'write', scope: content ? 'content' : 'workspace', title: t.write(path), path, ...detail(justification) ? { detail: detail(justification) } : {} } }
     }
   }
   if (shell) return { request: { ...base, kind: 'agent', scope: 'workspace', title: t.shell, detail: detail(text(input.command), justification) } }

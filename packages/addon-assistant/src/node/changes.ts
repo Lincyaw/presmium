@@ -2,9 +2,10 @@
  * A change task (`annotations`, `chat` with drafting, `transcript`; D12,
  * docs/architecture.md 4.8 and 10.7), the same rule for every kind:
  *
- * 1. Its review opens first: `CHANGE_REVIEW` where one is registered
- *    (deltabox; in SHARED serve agent-host's), else the assistant's git
- *    review (./git-review.ts). The agent's working directory is its `root`.
+ * 1. Its review opens first: the review service the server chose
+ *    (`CHANGE_REVIEW`: deltabox; in SHARED serve agent-host's), else the
+ *    assistant's git review (./git-review.ts). The agent's working directory
+ *    is its `root`.
  * 2. Each tool call the agent completes is a checkpoint (`step` event).
  * 3. Once the agent ended, its reports on the annotations become their
  *    `annotation` events; then, by `settings.presmium.assistant.review`, the
@@ -21,8 +22,8 @@
  * closes, is rolled back.
  */
 import { isAbsolute, relative, resolve, sep } from 'node:path'
-import { CHANGE_REVIEW, deckLocale, errorMessage, REVISIONS } from '@presmium/kernel'
-import type { AgentEvent, AgentTaskRequest, ApprovalRequest, ChangeReview, ReviewChange, ReviewDecision, ServerContext } from '@presmium/kernel'
+import { deckLocale, errorMessage, REVISIONS } from '@presmium/kernel'
+import type { AgentEvent, AgentTaskRequest, ApprovalRequest, ChangeReview, ChangeReviewService, ReviewChange, ReviewDecision, ServerContext } from '@presmium/kernel'
 import { annotationNotes, ASSISTANT_MESSAGES, commitMessage, explanationOf, reviewMode, WORKSPACE_CONFIG } from '../domain/index.ts'
 import { GIT_ENGINE, openGitReview } from './git-review.ts'
 import type { Task, Tasks } from './tasks.ts'
@@ -30,6 +31,8 @@ import type { Task, Tasks } from './tasks.ts'
 export interface ChangeRun {
   ctx: ServerContext
   tasks: Tasks
+  /** The review service (`CHANGE_REVIEW`) to use; without one, the assistant's git review. */
+  reviews?: ChangeReviewService
   /** Runs the task's agent session in `cwd` (events through `onEvent`); resolves with its messages, throws its failure. */
   agent(task: Task, cwd: string, request: AgentTaskRequest, onEvent: (event: AgentEvent) => Promise<void>): Promise<string[]>
   /** Asks an approval for the task (announced to its page). */
@@ -61,14 +64,18 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
   const locale = deckLocale(ctx.lang)
   const t = ASSISTANT_MESSAGES[locale]
   const revisions = ctx.service(REVISIONS)
-  const service = ctx.service(CHANGE_REVIEW)
+  const service = run.reviews
   const engine = service?.engine ?? GIT_ENGINE
   let review: ChangeReview
   try {
     if (!revisions) throw new Error(t.noChanges)
     review = service
       ? await service.open({ document: task.document, task: task.id, member: task.member })
-      : await openGitReview({ workspaceRoot: ctx.workspaceRoot, deckDir: ctx.deckDir })
+      : await openGitReview({
+        workspaceRoot: ctx.workspaceRoot,
+        deckDir: ctx.deckDir,
+        onRestore: paths => ctx.log.warn(`task ${task.id}: the agent changed the git directory, put back: ${paths.join(', ')}`),
+      })
   } catch (error) {
     return tasks.end(task, { type: 'error', message: t.noReview(errorMessage(error)) })
   }
@@ -112,6 +119,11 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
     // The workspace configuration is in the document directory of a single-deck repository only: an owner allows it first.
     if (changes.some(change => change.path === WORKSPACE_CONFIG) && !reject.has(WORKSPACE_CONFIG)) {
       const allowed = await run.ask(task, { kind: 'write', scope: 'workspace', title: t.approval.config(WORKSPACE_CONFIG), from: `agent:${task.id}`, member: task.member.id })
+      // Cancelled, or the server closing, while the owner was asked: rolled back, not committed.
+      if (task.abort.signal.aborted) {
+        fail(t.rejectedNote)
+        return
+      }
       if (!allowed) reject.add(WORKSPACE_CONFIG)
     }
     const kept = await review.accept([...reject])

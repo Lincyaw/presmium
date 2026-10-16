@@ -10,13 +10,18 @@
  * does not have (the task's new files) are deleted. Files `.gitignore`
  * ignores are not reviewed (9.4). Every git command runs with the
  * repository's hooks, fsmonitor, external diff drivers and text conversions
- * off. One review per document directory at a time.
+ * off, and takes paths literally (a file named `notes[1].md` is not a glob).
+ * When the document directory holds the git directory (a single-deck
+ * repository), the files through which git runs code are put back as the
+ * task found them before each of the review's steps (./git-guard.ts). One
+ * review per document directory at a time.
  */
 import { execFile } from 'node:child_process'
 import { mkdtempSync, readdirSync, realpathSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import type { ChangeReview, ReviewChange, ReviewChangeKind, ReviewStep } from '@presmium/kernel'
+import { guardGitDir } from './git-guard.ts'
 
 /** The engine's name, as the review event and the panel show it. */
 export const GIT_ENGINE = 'git'
@@ -40,7 +45,7 @@ function git(cwd: string, args: string[], index?: string): Promise<Buffer> {
       cwd,
       encoding: 'buffer',
       maxBuffer: 256 << 20,
-      env: { ...process.env, ...index ? { GIT_INDEX_FILE: index } : {}, GIT_OPTIONAL_LOCKS: '0' },
+      env: { ...process.env, ...index ? { GIT_INDEX_FILE: index } : {}, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1' },
     }, (error, stdout, stderr) => {
       if (error) reject(new Error(`git ${args[0]}: ${stderr.toString('utf8').trim() || error.message}`))
       else resolve(stdout)
@@ -60,6 +65,8 @@ export interface GitReviewOptions {
   workspaceRoot: string
   /** The document directory. */
   deckDir: string
+  /** Told the git directory's files the review put back (relative to the workspace root). */
+  onRestore?: (paths: string[]) => void
 }
 
 export async function openGitReview(options: GitReviewOptions): Promise<ChangeReview> {
@@ -67,6 +74,13 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
   const root = realpathSync(options.workspaceRoot)
   if (opened.has(deck)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way already`)
   const top = realpathSync((await text(deck, ['rev-parse', '--show-toplevel'])).trim())
+  const gitDir = realpathSync((await text(deck, ['rev-parse', '--absolute-git-dir'])).trim())
+  const guard = within(gitDir, deck) ? guardGitDir(gitDir) : undefined
+  /** The git directory's guarded files put back, before the review's own git commands. */
+  const guarded = () => {
+    const paths = guard?.restore() ?? []
+    if (paths.length > 0) options.onRestore?.(paths.map(path => relative(root, join(gitDir, path)).split(sep).join('/')))
+  }
   /** The document directory as git's pathspec, from the top of the work tree. */
   const pathspec = relative(top, deck).split(sep).join('/') || '.'
   const work = mkdtempSync(join(tmpdir(), 'presmium-review-'))
@@ -169,6 +183,7 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
     visibility: 'immediate',
     async step(label, tool) {
       live()
+      guarded()
       const now = await tree()
       if (steps.length >= MAX_STEPS) {
         // The last step takes the later changes: compared with the checkpoint before it.
@@ -185,10 +200,12 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
     steps: () => steps,
     async diff() {
       live()
+      guarded()
       return compare(snapshot, await tree())
     },
     async accept(reject = []) {
       live()
+      guarded()
       const changes = await compare(snapshot, await tree())
       const rejected = new Set(reject.filter(path => changes.some(change => change.path === path)))
       await restore([...rejected])
@@ -197,12 +214,14 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
     },
     async rollback() {
       live()
+      guarded()
       await restore((await compare(snapshot, await tree())).map(change => change.path))
       settle()
     },
     async close() {
       if (settled) return
       try {
+        guarded()
         await restore((await compare(snapshot, await tree())).map(change => change.path))
       } finally {
         settle()

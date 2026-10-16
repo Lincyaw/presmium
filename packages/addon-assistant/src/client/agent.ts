@@ -9,7 +9,7 @@
  * goes to that document's routes: the workspace's new-document form drafts
  * the document it created (P-121) from the home page.
  */
-import { currentLocale } from '@presmium/host'
+import { createServerClient } from '@presmium/host'
 import type { ServerClient } from '@presmium/host'
 import type { AgentClient, AgentEvent, AgentTask, AgentTaskKind, AgentTaskRequest, ReviewDecision } from '@presmium/kernel'
 import { shallowRef } from 'vue'
@@ -29,30 +29,19 @@ function taskId(): string {
   return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
 }
 
-/** The assistant's routes of the page's document, or of another document of the workspace. */
-interface Routes {
-  fetch(path: string, init?: RequestInit): Promise<Response>
-  events(path: string): EventSource
-}
+/** The server clients of the other documents the page's tasks went to (the home page drafting a new one). */
+const others = new Map<string, ServerClient>()
 
-function routesOf(server: ServerClient, document: string | undefined): Routes {
-  if (!document) return { fetch: (path, init) => server.fetch(ASSISTANT_ID, path, init), events: path => server.events(ASSISTANT_ID, path) }
-  // As the server client addresses its own document: the header, or the query of an event stream.
-  const named = encodeURIComponent(document)
-  const url = (path: string) => `/__presmium/${ASSISTANT_ID}/${path}`
-  return {
-    fetch(path, init = {}) {
-      const headers = new Headers(init.headers)
-      headers.set('Presmium-Document', named)
-      if (!headers.has('Accept-Language')) headers.set('Accept-Language', currentLocale())
-      return fetch(url(path), { ...init, headers })
-    },
-    events: path => new EventSource(`${url(path)}?document=${named}`),
-  }
+/** The server client of the page's document, or of another document of the workspace. */
+function serverOf(server: ServerClient, document: string | undefined): ServerClient {
+  if (!document) return server
+  let other = others.get(document)
+  if (!other) others.set(document, other = createServerClient({ document }))
+  return other
 }
 
 /** The events of a submitted task, from its SSE route. */
-async function* follow(routes: Routes, id: string, posted: Promise<Response>): AsyncIterable<AgentEvent> {
+async function* follow(server: ServerClient, id: string, posted: Promise<Response>): AsyncIterable<AgentEvent> {
   const response = await posted.catch((error: unknown) => error)
   if (!(response instanceof Response) || !response.ok) {
     const body = response instanceof Response ? await response.json().catch(() => ({})) as { error?: string } : {}
@@ -65,7 +54,7 @@ async function* follow(routes: Routes, id: string, posted: Promise<Response>): A
   let seen = 0
   let index = 0
   let lost = false
-  const source = routes.events(`tasks/${encodeURIComponent(id)}/events`)
+  const source = server.events(ASSISTANT_ID, `tasks/${encodeURIComponent(id)}/events`)
   source.addEventListener('open', () => index = 0)
   source.addEventListener('message', (message) => {
     if (index++ < seen) return
@@ -115,18 +104,18 @@ export function createAgentClient(server: ServerClient): AssistantClient {
     runtime: () => info.value?.runtime,
     submit(request: AgentTaskRequest): AgentTask {
       const id = taskId()
-      const routes = routesOf(server, request.context.document || undefined)
-      const posted = routes.fetch('tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...request, id }) })
+      const target = serverOf(server, request.context.document || undefined)
+      const posted = target.fetch(ASSISTANT_ID, 'tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...request, id }) })
       const events: AsyncIterable<AgentEvent> = {
         async* [Symbol.asyncIterator]() {
           try {
-            yield* follow(routes, id, posted)
+            yield* follow(target, id, posted)
           } finally {
             void refresh()
           }
         },
       }
-      const after = (path: string, body?: unknown) => posted.then(() => routes.fetch(`tasks/${encodeURIComponent(id)}/${path}`, {
+      const after = (path: string, body?: unknown) => posted.then(() => target.fetch(ASSISTANT_ID, `tasks/${encodeURIComponent(id)}/${path}`, {
         method: 'POST',
         ...body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
       }))

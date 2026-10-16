@@ -11,11 +11,14 @@
 //   found it (uncommitted changes too) and the commit has the rest; rejecting all leaves the directory as it
 //   was, without a commit; with `review: auto` the task commits at once.
 // - D12 with deltabox (where the host qualifies): the panel names deltabox, the agent works in the session's
-//   view, and a rejected file comes back.
+//   view, and a rejected file comes back as the task found it (uncommitted changes too).
 // - P-121: the home page's new-document form drafts the document with the agent, reviewed in the form.
 // - One change task per document at a time; a transcript task through the `tasks` route.
 // - The operator directory is refused outright; in a single-deck repository a change of
 //   presmium.workspace.yaml needs the owner's write approval.
+// - The bundled DeepSeek Harness (LOCAL) with the default settings, driven by a fake model, in a single-deck
+//   repository: its change tasks are reviewed with git even where deltabox's review is registered
+//   (architecture.md 9.5) and commit; what it writes in the repository's git directory is put back.
 // - SHARED (N-08): see the last describe.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
@@ -37,7 +40,7 @@ const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const AGENT = join(ROOT, 'packages/addon-assistant/test/fixtures/scripted-agent.mjs')
 const ASSISTANT = join(ROOT, 'packages/addon-assistant')
 /** This work package's ports (WP-81: 4971 to 4979). */
-const PORTS = { browser: 4973, git: 4974, single: 4975, shared: 4976, gateway: 4977 }
+const PORTS = { browser: 4973, git: 4974, single: 4975, shared: 4976, gateway: 4977, dsh: 4978 }
 
 /** The test's environment without Vitest's or Presmium's variables or credentials, then `extra`. */
 function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
@@ -93,12 +96,12 @@ interface Serve {
   stop(): Promise<void>
 }
 
-/** `presmium serve` of a workspace, with the scripted agent as the replacement runtime. */
-async function serve(dir: string, port: number, extra: Record<string, string> = {}): Promise<Serve> {
-  const command = `${process.execPath} ${AGENT}`
+/** `presmium serve` of a workspace, with the scripted agent as the replacement runtime (or, `bundled`, without one). */
+async function serve(dir: string, port: number, extra: Record<string, string> = {}, runtime: 'scripted' | 'bundled' = 'scripted'): Promise<Serve> {
+  const scripted: Record<string, string> = runtime === 'scripted' ? { PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider', SCRIPTED_AGENT_LOG: `${dir}.agent.log` } : {}
   const child = spawn(process.execPath, [PRESMIUM, 'serve', '--port', String(port)], {
     cwd: dir,
-    env: clean({ PRESMIUM_AGENT_COMMAND: command, PRESMIUM_AGENT_PROVIDER: 'Test Provider', SCRIPTED_AGENT_LOG: `${dir}.agent.log`, XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, ...extra }),
+    env: clean({ ...scripted, XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, ...extra }),
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   let output = ''
@@ -268,6 +271,8 @@ test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () =
 
   test('deltabox: the panel names it, the agent works in the session\'s view; a rejected file comes back, the rest is committed', async ({ page }) => {
     test.skip(!deltabox.ok, `deltabox is not available on this host: ${deltabox.why}`)
+    // A change not committed when the task starts: the rejected file comes back with it.
+    writeFileSync(join(dir, 'week5/lecture.md'), `${readFileSync(join(dir, 'week5/lecture.md'), 'utf8')}\n任务开始前没有提交的一行。\n`)
     const lecture = readFileSync(join(dir, 'week5/lecture.md'), 'utf8')
     const before = commits(dir).length
     const panel = await editPanel(page, 'week5')
@@ -288,17 +293,23 @@ test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () =
     expect(readFileSync(join(dir, 'week5/notes.md'), 'utf8')).toBe('deltabox 写的笔记\n')
     expect(commits(dir)).toHaveLength(before + 1)
     expect(filesOf(dir, commits(dir)[0]!.id)).toEqual(['week5/notes.md'])
+    git(dir, ['checkout', '--', 'week5/lecture.md'])
   })
 
   test('the home page\'s form drafts a new document with the agent: reviewed in the form, committed after the document\'s own commit, then opened', async ({ page }) => {
-    // Stands in for the workspace's part (reported to its owner): the home page loads the assistant's browser
-    // plugin with the workspace's own, and asks the assistant's `info` of a document (the home page has no
-    // assistant of its own). The draft itself goes to the new document's assistant, as the AGENT client sends it.
-    await page.route('**/packages/workspace/src/client/plugin.ts*', async (route) => {
-      const response = await route.fetch()
-      await route.fulfill({ response, body: `${await response.text()}\nexport { assistantPlugin as presmiumAssistant } from '/@fs${ASSISTANT}/src/client/plugin.ts'\n` })
-    })
-    await page.route('**/__presmium/presmium.assistant/info', route => route.continue({ headers: { ...route.request().headers(), 'presmium-document': 'intro' } }))
+    // Until the workspace gives its home page the assistant (reported to its owner: the home page loads the
+    // operator plugins' browser parts, and the assistant's `info` answers there), the test stands in for both:
+    // the assistant's browser plugin after the workspace's own, and the home page's `info` asked of a
+    // document. The draft itself goes to the new document's assistant, as the AGENT client sends it.
+    const home = await fetch(`${server.url}/__presmium/presmium.assistant/info`, { headers: { 'Presmium-Document': '' } })
+    await home.text()
+    if (!home.ok) {
+      await page.route('**/packages/workspace/src/client/plugin.ts*', async (route) => {
+        const response = await route.fetch()
+        await route.fulfill({ response, body: `${await response.text()}\nexport { assistantPlugin as presmiumAssistant } from '/@fs${ASSISTANT}/src/client/plugin.ts'\n` })
+      })
+      await page.route('**/__presmium/presmium.assistant/info', route => route.continue({ headers: { ...route.request().headers(), 'presmium-document': 'intro' } }))
+    }
     const before = commits(dir).length
     await openDevPage(page, `${server.url}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
     await page.locator('.pm-workspace-documents__toggle').click()
@@ -544,6 +555,86 @@ settings:
   }
 })
 
+test.describe('the bundled DeepSeek Harness with the default settings, in a single-deck repository (LOCAL)', () => {
+  let dir: string
+  let server: Serve
+  let model: FakeModel
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    // No deltabox settings: where the host qualifies, deltabox's review is registered all the same.
+    dir = workspace('dsh', '', {
+      'presmium.workspace.yaml': `title: 单份文稿\nsettings:\n  presmium.workspace:\n    plugins: ['@presmium/slidev-addon-assistant']\n`,
+      'lecture.md': '---\ntitle: 单份文稿\n---\n\n# 引言\n\n## 第一节\n\n开始时的内容。\n',
+    })
+    // DeepSeek Harness, driven by the model's script: the first two tasks write a note each; the third writes a
+    // hook, attributes naming a filter driver, git's configuration defining it (in the repository's git
+    // directory: its sandbox lets it, without asking, the document directory being its working directory) and
+    // a note.
+    model = await fakeModel([
+      { tool: 'write', input: { file_path: 'notes.md', content: '第一个任务的笔记\n' } },
+      { text: '完毕：写了笔记。' },
+      { tool: 'write', input: { file_path: 'summary.md', content: '第二个任务的小结\n' } },
+      { text: '完毕：写了小结。' },
+      { tool: 'write', input: { file_path: '.git/hooks/post-checkout', content: '#!/bin/sh\necho planted\n' } },
+      { tool: 'write', input: { file_path: '.gitattributes', content: '* filter=planted\n' } },
+      { tool: 'read', input: { file_path: '.git/config' } },
+      { tool: 'write', input: { file_path: '.git/config', content: '[core]\n\thooksPath = .git/hooks\n[filter "planted"]\n\tclean = touch planted\n' } },
+      { tool: 'write', input: { file_path: 'remarks.md', content: '第三个任务的备注\n' } },
+      { text: '完毕：写了备注。' },
+    ])
+    server = await serve(dir, PORTS.dsh, { PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-81e', PRESMIUM_MODEL_PROVIDER: 'Test Provider' }, 'bundled')
+  })
+  test.afterAll(async () => {
+    await server?.stop()
+    await model?.close()
+    for (const path of [dir, `${dir}.state`, `${dir}.cache`]) if (path) rmSync(path, { recursive: true, force: true })
+  })
+
+  /** A chat task accepted in its review (but the `reject`ed files): the paths it listed, and its commit. */
+  async function accepted(prompt: string, reject: string[] = []): Promise<{ paths: string[], revision: string, id: string }> {
+    const { id, events } = await submit(server, '', chat(prompt))
+    try {
+      const review = await next(events, 'review')
+      expect(review.engine).toBe('git')
+      expect((await call(server, '', `tasks/${id}/review`, { accept: true, reject })).status).toBe(204)
+      const done = await next(events, 'done')
+      return { paths: review.changes.map((c: { path: string }) => c.path), revision: done.revision as string, id }
+    } finally {
+      events.close()
+    }
+  }
+
+  test('its change tasks are reviewed with git and committed one after the other, leaving nothing behind', async () => {
+    const before = commits(dir).length
+    for (const file of ['notes.md', 'summary.md']) {
+      const { paths, revision, id } = await accepted(`写 ${file}`)
+      expect(paths).toEqual([file])
+      expect(commits(dir)[0]!.id).toBe(revision)
+      expect(commits(dir)[0]!.trailers).toMatch(new RegExp(`^Presmium-Task: ${id}$`, 'm'))
+      expect(filesOf(dir, revision)).toEqual([file])
+    }
+    expect(commits(dir)).toHaveLength(before + 2)
+    // DeepSeek Harness's staging directories are gone with its writes: nothing uncommitted is left.
+    expect(git(dir, ['status', '--porcelain', '--untracked-files=all'])).toBe('')
+    // Where deltabox's review is registered, the log says why the assistant does not use it.
+    if (deltabox.ok) expect(server.output()).toContain('change tasks use the assistant\'s git review, not deltabox\'s')
+  })
+
+  test('what it writes in the repository\'s git directory is put back before the review runs git: no hook, no filter driver', async () => {
+    const config = readFileSync(join(dir, '.git/config'), 'utf8')
+    const { paths, revision } = await accepted('写备注', ['.gitattributes'])
+    expect(paths).toEqual(['.gitattributes', 'remarks.md'])
+    expect(filesOf(dir, revision)).toEqual(['remarks.md'])
+    expect(existsSync(join(dir, '.git/hooks/post-checkout'))).toBe(false)
+    expect(readFileSync(join(dir, '.git/config'), 'utf8')).toBe(config)
+    // The review's git never ran the planted filter driver.
+    expect(existsSync(join(dir, 'planted'))).toBe(false)
+    expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/hooks\/post-checkout/)
+    expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/config/)
+  })
+})
+
 test.describe('SHARED (N-08): a write outside the document, of an editor\'s task, is the owner\'s on the console only', () => {
   const SECRETS = { proxy: 'proxy-secret-81a', gateway: 'gateway-token-81b', agentHost: 'agent-host-token-81c', model: 'model-key-81d' }
   let dir: string
@@ -580,10 +671,9 @@ test.describe('SHARED (N-08): a write outside the document, of an editor\'s task
 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
-    // The assistant's git review in serve: DeepSeek Harness's writes (a staging directory next to the target,
-    // removed after the commit) fault a deltabox-lite 0.1.1 session (an unlink in a directory the session
-    // created gets EIO), so this case does not depend on whether agent-host offers deltabox's review.
-    dir = workspace('shared', '  presmium.deltabox:\n    review: false\n')
+    // The default settings: the assistant reviews DeepSeek Harness's changes with git in serve whether or not
+    // agent-host offers deltabox's review (its writes fault a deltabox-lite 0.1.1 session, architecture.md 9.5).
+    dir = workspace('shared')
     const config = join(dir, 'presmium.workspace.yaml')
     writeFileSync(config, `${readFileSync(config, 'utf8')}members:\n  owners: [owner@test]\n  editors: [editor@test]\n`)
     git(dir, ['commit', '-q', '-am', 'Members'])

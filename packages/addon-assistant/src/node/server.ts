@@ -22,11 +22,17 @@
  * those of a change task within its directory were confirmed by sending it,
  * the others go to `APPROVALS` with their scope. The terminal event (`done`
  * or `error`) comes once the session and its tokens are closed.
+ *
+ * A change task's review is `CHANGE_REVIEW`'s, except under the bundled
+ * DeepSeek Harness (always in SHARED mode): its writes fault a deltabox-lite
+ * 0.1.1 review (a file it unlinks in the staging directory it made in the
+ * session, docs/architecture.md 9.5), so its tasks use the assistant's git
+ * review.
  */
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { AGENT_RUNTIME, APPROVALS, deckLocale, errorMessage, eventStream, isRecord, MCP_ENDPOINT, REVISIONS } from '@presmium/kernel'
+import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, errorMessage, eventStream, isRecord, MCP_ENDPOINT, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentMode, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
 import type { AssistantInfo, RevertAnswer } from '../domain/index.ts'
@@ -51,6 +57,7 @@ const EXCERPT_LINES = 60
 const EXCERPT_CHARS = 4000
 
 let reported = false
+let gitReviewed = false
 
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
@@ -82,6 +89,15 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     if (gatewayProvider || !ctx.gateway) return gatewayProvider
     if (!asking && Date.now() - failed >= 60_000) asking = askGateway(ctx.gateway).finally(() => asking = undefined)
     return asking
+  }
+
+  /** Whether the agent is the bundled DeepSeek Harness: agent-host runs only it (SHARED); in LOCAL mode, unless replaced. */
+  const bundled = ctx.trust === 'shared' || runtimeChoice(name => ctx.secret(name), ctx.settings).kind === 'bundled'
+  /** The change tasks' review service: none (the assistant's git review) under the bundled DeepSeek Harness. */
+  const reviews = () => (bundled ? undefined : ctx.service(CHANGE_REVIEW))
+  if (bundled && ctx.service(CHANGE_REVIEW) && !gitReviewed) {
+    gitReviewed = true
+    ctx.log.info(`change tasks use the assistant's git review, not ${ctx.service(CHANGE_REVIEW)!.engine}'s: the bundled DeepSeek Harness's writes fault a deltabox-lite 0.1.1 review`)
   }
 
   if (!ctx.service(AGENT_RUNTIME) && !reported) {
@@ -223,7 +239,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           if (kind === 'transcript' && !documentFile(join('lectures', taskRequest.track!, 'track.json'))) return json({ error: t.noTrack(taskRequest.track!) }, 400)
           const task = tasks.create(id, rc.member, kind, document)
           changing.set(document, id)
-          task.run = runChange({ ctx, tasks, agent: session, ask }, task, taskRequest).finally(() => {
+          const service = reviews()
+          task.run = runChange({ ctx, tasks, ...service ? { reviews: service } : {}, agent: session, ask }, task, taskRequest).finally(() => {
             if (changing.get(document) === id) changing.delete(document)
           })
           return json({ id }, 201)
