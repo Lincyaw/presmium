@@ -12,12 +12,14 @@ MyST 源码 + 真实代码文件
       │
       ├── @presmium/web              网页：VitePress 外壳 + @presmium/viewer（IR 运行时，动态渲染，实时更新）
       ├── @presmium/render-slides    幻灯片：生成 Slidev 项目（可选的高保真渲染端）
-      └── @presmium/render-notebook  Jupyter .ipynb
+      ├── @presmium/render-notebook  Jupyter .ipynb
+      └── 插件提供的渲染端            例如 lecture：讲授计划与合成的音频（addon-lecture）
 ```
 
 - 编辑只在源码中进行。渲染端只读 IR。
 - 网页与幻灯片在浏览器中运行同一批插件组件，组件只依赖 `@presmium/host`；两个渲染端各自提供宿主适配（VitePress 版在 `web`，Slidev 版在 `addon-core`）。
 - 源语法、IR、编译步骤、渲染端接口的完整定义见 `ir.md`。
+- `presmium dev` 与 `presmium serve` 的进程中另有一个服务端 `@presmium/server`：挂载插件的服务端贡献（远端环境的代理、语音网关、助手、讲授的上传）、MCP 端点与控制通道，统一处理身份、权限、凭据与确认（第 10 节）。静态构建产物不依赖它：需要服务端的功能在静态产物中隐藏或降级。
 
 ## 2. 仓库结构
 
@@ -44,7 +46,20 @@ presmium/
 │   ├── addon-classroom/     @presmium/slidev-addon-classroom
 │   ├── classroom-server/    @presmium/classroom-server          y-websocket 服务
 │   ├── language-server/     @presmium/language-server           语言服务（诊断、跳转、悬停、补全、预览同步）
-│   └── vscode/              presmium-vscode                     VS Code 扩展（唯一预打包的包）
+│   ├── vscode/              presmium-vscode                     VS Code 扩展（唯一预打包的包）
+│   ├── server/              @presmium/server                    服务端：挂载服务端贡献、登录与权限、确认、控制通道、反向代理（Node）
+│   ├── mcp/                 @presmium/mcp                       agent 环境：MCP 工具与资源；presmium-mcp（stdio）
+│   ├── workspace/           @presmium/workspace                 工作区服务 presmium serve：文档管理、修改历史（REVISIONS）、成员、编辑模式
+│   ├── addon-exec-wasi/     @presmium/slidev-addon-exec-wasi    WebAssembly 后端（Runno）
+│   ├── addon-exec-webgpu/   @presmium/slidev-addon-exec-webgpu  浏览器 GPU 后端（WGSL、jax-js），构建时在 Chromium 中录制
+│   ├── addon-exec-jupyter/  @presmium/slidev-addon-exec-jupyter 远端环境（Jupyter 内核协议）与浏览器终端
+│   ├── addon-assistant/     @presmium/slidev-addon-assistant    agent 运行时（ACP 客户端）、问答、批注与对话修改；dsh 配置模板
+│   ├── addon-lecture/       @presmium/slidev-addon-lecture      讲授轨、录制、回放、lecture 渲染端、{cue}/{say}、导出视频（presmium-lecture）
+│   └── addon-speech/        @presmium/slidev-addon-speech       语音网关、引擎适配、合成缓存（presmium-speech）
+├── templates/
+│   ├── env/                 远端环境：compose/（compose.yaml、compose.gpu.yaml、compose.gvisor.yaml、devcontainer.json）、kubernetes/（文档）
+│   ├── workspace/           工作区部署：compose/（工作区服务、oauth2-proxy、课堂服务）、kubernetes/（文档）
+│   └── document/            新建文档的模板
 ├── examples/
 │   ├── demo/                示例文稿，端到端测试的对象
 │   └── sample-repo/         被示例文稿引用的“业务代码”
@@ -78,8 +93,18 @@ packages/addon-<ctx>/
 | `components/`、`src/client/` | `src/domain/`、`@presmium/kernel`、`@presmium/host`、vue | `@slidev/*`、vitepress |
 | `setup/`、全局图层（`global-top.vue`、`global-bottom.vue`、`custom-nav-controls.vue`、`slide-top.vue`、`slide-bottom.vue`） | 以上全部，加 `@slidev/client` 公开导出与 `@slidev/types` | Slidev 的其他包（如 `@slidev/parser`）、vitepress |
 | `src/node/` | `src/domain/`、`@presmium/kernel`、Node 库 | vue 与 `@vue/*` |
+| `packages/server/`、`packages/mcp/`（整个包都是 Node 端） | `@presmium/kernel`、`@presmium/compiler`、Node 库 | vue 与 `@vue/*`、`@slidev/*`、vitepress |
 
 此外：只有 `addon-core` 可以在组件与 `src/client/` 中使用 `@slidev/client`，这两处不用 `@slidev/*` 的其他包（`web` 的组件与 `src/client/` 同样不用 `@slidev/client`）；只有 `web` 可以使用 vitepress；任何包（测试除外）都不引用插件包 `@presmium/slidev-addon-*`，渲染端与 IR 运行时也不例外，相对路径不离开本包，共用的契约放在 `@presmium/kernel` 或 `@presmium/host`。`scripts/check-layering.mjs` 检查以上全部规则，扫描 `.ts`、`.tsx`、`.vue`、`.js`、`.jsx`、`.mjs`、`.cjs`、`.mts` 文件，静态 `import`、`export ... from`、动态 `import()` 与 `require()` 都算引用。
+
+v0.8 新增的规则：
+
+- `@presmium/server` 只由 `cli` 与 `workspace` 引用。插件经 `ServerContext`、`RequestContext` 与 `APPROVALS` 使用服务端，浏览器端经 `@presmium/host` 的 `useServer()`。
+- 插件包（`addon-*`）不引用 `@presmium/server`、`@presmium/mcp`、`@presmium/workspace` 与 `@presmium/web`；`workspace` 与 `mcp` 也不引用插件包（已有的“没有包引用插件”规则）。
+- 外部协议与厂商的客户端各只在一个适配器中：`@modelcontextprotocol/*` 只在 `mcp`（各包的 `test/` 另算）；`@agentclientprotocol/sdk` 只在 `addon-assistant/src/node/`；`@jupyterlab/services` 与 `@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture`；`simple-git` 只在各包的 `src/node/`。语音服务提供方没有 SDK，它们的接口只出现在 `addon-speech/src/node/engines/`，由代码评审守护。
+- `workspace` 的 `src/client/` 与 `components/` 同插件组件的规则。
+
+`scripts/check-layering.mjs` 相应增加四条规则（WP-73a）：`node packages are framework-free`（`server`、`mcp` 的 `src/` 不引用 vue、`@slidev/*`、vitepress）；`only cli and workspace use the server`；`plugins use contracts, not the hosts`（`addon-*` 不引用上述四个包）；`protocol clients stay in their adapter`（上一条列表中的包名只出现在给定的目录中）。
 
 `package.json` 的 `exports`：
 
@@ -115,6 +140,11 @@ packages/addon-<ctx>/
 | `rendererExtensions` | 本插件为其他渲染端提供的组件转换，例如 notebook 中组件如何变成单元格 |
 | `vitePlugins(ctx)` | 运行 Vite 的渲染端在开发服务器与构建中加入的 Vite 插件；`ctx` 为 `{ deckDir, workspaceRoot, config }`，`config` 是本插件的 `presmium.<插件 ID>`（编译步骤写回的值也在其中）。例如本地环境插件以此给两种形态的开发服务器加上自己的端点 |
 | `version`、`kernel` | 插件的版本（与 `package.json` 一致）与兼容的内核版本范围；编译器不加载范围不含当前内核的插件。字段在契约中是可选的，官方插件都声明，`scripts/check-plugins.mjs` 检查（并入 `pnpm test`） |
+| `roles` | MyST 行内角色规格（`RoleSpec`，4.10 节），例如讲授插件的 `{cue}`、`{say}` |
+| `services(ctx)` | Node 端服务实现，例如语音插件的 `SPEECH`、助手插件的 `AGENT_RUNTIME`；编译步骤、渲染端、检查项与服务端贡献经 `service(token)` 使用（4.6 节） |
+| `environments` | 具名环境的提供方，键为环境的 `kind`（4.6 节） |
+| `server(ctx)` | 服务端贡献：挂在 `/__presmium/<插件 ID>/` 下的路由与反向代理（4.7 节、第 10 节） |
+| `tools` | agent 工具，MCP 服务以工具暴露（4.8 节） |
 
 - 编译步骤 `IRPass` 可以声明 `after: 'execute'`，在编译时执行之后运行，此时代码节点已有 `outputs`（执行插件以此把编译时输出写进执行面板的 `fallback`）。渲染端 `Renderer` 可以提供 `prepare(doc, ctx)`：只生成工作目录、不构建（幻灯片渲染端写出 Slidev 文稿），编译器在 `build` 旁导出 `prepare(compilation, { to, outDir, base })`，发布插件的导出与视觉差异用它（`base` 换掉渲染端的站点路径：`slidev export` 在根路径服务生成的文稿，导出时传 `/`）。构建报告的每个输出给出 `outDir`、`workDir` 与站点路径 `base`。
 - 渲染上下文 `RenderContext` 另有 `lang`（文稿语言）、`pluginDirs`（编译器加载的插件目录）、`extensionFor(node)`（各渲染端选中同一插件的扩展）、`portable(value, from)`、`localAsset(source, url)`（本地文件）、`renderers` 与 `base`（站点路径）、`vitePlugins`，见 `ir.md` 第 6 节。
@@ -183,6 +213,8 @@ interface HostAdapter {
 | `startHost({ mode, config, navigation, transports })` | 宿主适配启动内核的共同部分：提供 `presenterPanels`、`syncTransports`、`navigation`、`toolbar` 四个宿主服务，并接上 `pagehide` |
 | `useSessionSnapshot()`、`claimFirst(group)` | 会话快照（`session` 服务的订阅），与“同一组中第一个实例拥有”的判断，会话与课堂插件共用 |
 | `currentLocale()` | 组件之外的界面语言，按 `CATALOG[currentLocale()]` 取文本 |
+| `useServer()` | 服务端的访问（4.7 节）：`available`、当前成员、`fetch(plugin, path)`、`events(plugin, path)`；静态产物中 `available` 为 false，组件据此隐藏或降级。可在组件外调用 |
+| `OPERATIONS`、`STATUS`、`EDIT_MODE` | 宿主层的服务令牌：操作的报告与重放（4.9 节）、插件的状态摘要、编辑模式（4.7 节） |
 
 **共享状态。** `createSharedStates(deck)` 返回适配器的 `useSharedState` 实现与同步传输的接入点（`transports.add`，`syncTransports` 服务把每个传输交给它），`deck` 是文稿标题。两种形态的宿主适配都用它，跨窗口、跨设备的状态只有这一套实现：
 
@@ -208,10 +240,697 @@ interface HostAdapter {
 | `presmium.syncTransports` | 宿主适配（两种形态：`remote` 共享状态；幻灯片形态另有 Slidev 经 `addSyncMethod` 同步的导航与圈画） | 会话（课堂的网络传输） |
 | `presmium.navigation` | 宿主适配（两种形态） | 会话（读取与设置位置：章节、步骤、视图） |
 | `presmium.toolbar` | 宿主适配（两种形态，由 `PmToolbar` 显示） | 需要工具栏入口的插件（如会话状态） |
+| `presmium.operations`（`OPERATIONS`） | 宿主适配（两种形态，`@presmium/host` 的实现） | 报告：IR 运行时（`go`）、执行插件（`run`）、引导插件（`spot`、`hint`）、讲授插件（`point`、`ink`）；录制与重放：讲授插件 |
+| `presmium.status`（`STATUS`） | 宿主适配 | 登记：课堂插件的汇总；读取：控制通道（送给 MCP 的 `get_classroom`） |
+| `presmium.editMode`（`EDIT_MODE`） | 工作区的浏览器插件 | 助手插件（批注与对话）、讲授插件（转写回写） |
+| `presmium.speech`（`SPEECH`） | 语音插件：浏览器端经语音网关，Node 端直接调用引擎 | 讲授插件（转写、合成、构建时合成）、讲授插件贡献的 agent 工具 |
+| `presmium.agent`（`AGENT`，浏览器） | 助手插件 | 课堂插件（课堂中的 AI 回答）、讲授插件（转写回写） |
+| `presmium.agentRuntime`（`AGENT_RUNTIME`，Node） | 助手插件 | 助手自己的服务端路由；以后的批处理任务 |
+| `presmium.revisions`（`REVISIONS`，Node） | 工作区（`presmium serve` 为每份文档登记） | 助手插件（每个修改任务一次提交）、工作区的文档管理 |
+| `presmium.approvals`（`APPROVALS`，Node） | 服务端 | MCP 服务（操作类与计费类工具）、助手插件（agent 的权限请求）、语音插件（计费的合成） |
 
-内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`）定义在 `packages/kernel/src/contracts.ts`；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`）定义在 `packages/host/src/types.ts`。服务替换时，提供方与使用方都不需要改动。
+内核契约中的令牌（`executor`、`session`、`classroomStore`、`presenterPanels`，以及 v0.8 的 `speech`、`agent`、`agentRuntime`、`revisions`、`approvals`）定义在 `packages/kernel/src/contracts.ts`；宿主层的令牌（`syncTransports`、`navigation`、`toolbar`，以及 v0.8 的 `operations`、`status`、`editMode`）定义在 `packages/host/src/types.ts`。服务替换时，提供方与使用方都不需要改动。Node 端的令牌（`agentRuntime`、`revisions`、`approvals`）登记在编译器为每份文稿建立的 Node 端服务注册表中（`PresmiumNodePlugin.services`，服务端与工作区另行登记自己的实现），规则与浏览器端相同：一个令牌只有一个实现。
 
 `executor`、`session`、`classroomStore` 的接口（`RunRequest`、`SessionService`、`Role` 等）是业务契约。它们放在内核包中是有意的：提供方与使用方是不同的插件，插件之间不互相引用（第 3 节），契约只能放在双方都依赖的共享内核中。内核的运行时（服务注册、启动、锚点、检查）不使用这些概念。见第 9.2 节。
+
+### 4.6 v0.8 的契约增补：执行环境、会话与富输出
+
+4.6 至 4.10 节是 v0.8 新增范围（执行环境、智能体、工作区、讲授与 M9）的契约，设计依据见 `design-v0.7.md`。全部是兼容扩展：只增加可选字段、新类型、新函数与新的服务令牌，不改变已有签名，`IR_VERSION` 仍为 1，现有插件与文稿不受影响。WP-73a 把它们写入 `contracts.ts`、`ir.ts` 与 `host/src/types.ts`；之后的工作包只实现，不再改这三个文件（需要改时在交付报告中提出）。业务契约较多，`contracts.ts` 可以拆为几个模块（执行、服务端、语音、智能体），由它统一再导出，入口 `@presmium/kernel/contracts` 不变（9.2 节）。
+
+`packages/kernel/src/contracts.ts`：
+
+```ts
+export interface RunRequest {
+  // ……已有字段……
+  /**
+   * 指定的执行器（IR 的 `RunSpec.executor`；`:env:` 编译为 `environmentExecutor(name)`）。
+   * 路由只把请求交给这个执行器；它没有登记或不支持该语言时返回失败的结果
+   * （`failedRun`），由预录输出回退（P-24），不改用其他执行器。省略时按语言与优先级选择。
+   */
+  executor?: string
+  /** 执行会话：同一会话的运行共享解释器状态，按请求顺序执行；不支持会话的执行器忽略它 */
+  session?: string
+}
+
+/** nbformat v4 的单元格输出（结构复制，内核不依赖 nbformat 包） */
+export type RunOutput =
+  | { output_type: 'stream', name: 'stdout' | 'stderr', text: string }
+  | { output_type: 'display_data' | 'execute_result', data: Record<string, unknown>, metadata?: Record<string, unknown> }
+  | { output_type: 'error', ename: string, evalue: string, traceback: string[] }
+
+export interface RunResult {
+  // ……已有字段……
+  /** 富输出，按产生的顺序；`stdout`、`stderr` 仍是文本流的拼接，只读文本的使用方不受影响 */
+  outputs?: RunOutput[]
+}
+
+export interface Executor {
+  // ……已有字段……
+  /** 丢弃会话的状态（重启或关闭解释器、内核）；“重置会话”与构建结束时调用 */
+  endSession?(session: string): Promise<void>
+}
+
+/** 凭据方式（P-105）；凭据本身只在服务端 */
+export type EnvironmentAuth = 'none' | 'env' | 'proxy' | 'prompt' | 'hub'
+
+/** 文稿头部 `execute.environments` 的一项（P-100）；不含凭据 */
+export interface EnvironmentSpec {
+  /** 提供方类型：`jupyter`、`devcontainer`、`wasi`、`webgpu`，或其他插件登记的类型 */
+  kind: string
+  /** 服务地址（`jupyter`） */
+  url?: string
+  /** 内核规格名（`jupyter`，默认 `python3`） */
+  kernel?: string
+  /** 可用语言；省略时由提供方决定 */
+  languages?: string[]
+  /** 默认 `none`；`jupyter` 默认 `env` */
+  auth?: EnvironmentAuth
+  /** 镜像摘要 `name@sha256:…`，进入环境指纹 */
+  image?: string
+  /** 定义所在的目录（`devcontainer`），相对于文稿目录 */
+  path?: string
+  /** 提供方自己的选项 */
+  [option: string]: unknown
+}
+
+/** 文稿头部的 `execute`，编译器写入 IR 的 `config.execute` */
+export interface ExecuteConfig {
+  /** 有 `:run:` 而不写 `:env:` 的代码块的环境；省略或为保留名 `browser` 时按语言路由 */
+  env?: string
+  environments?: Record<string, EnvironmentSpec>
+  /** `environment`：另一运行环境的录制重新执行（4.3 节） */
+  rerun?: 'environment'
+}
+
+/** 具名环境的执行器 ID：`presmium.env.<name>` */
+export function environmentExecutor(name: string): string
+
+export interface EnvironmentContext {
+  deckDir: string
+  workspaceRoot: string
+  /** 服务端的凭据，例如 `secret('PRESMIUM_ENV_GPU_TOKEN')`；没有时为 undefined */
+  secret(name: string): string | undefined
+  log: Logger
+}
+
+export interface EnvironmentProvider {
+  /** 为一个声明的环境创建编译时执行器，其 ID 为 `environmentExecutor(name)` */
+  create(name: string, spec: EnvironmentSpec, ctx: EnvironmentContext): Executor | Promise<Executor>
+  /** `presmium check --env`：连接环境；可达时为 undefined，否则返回原因 */
+  probe?(name: string, spec: EnvironmentSpec, ctx: EnvironmentContext): Promise<string | undefined>
+}
+
+export interface PluginContext {
+  // ……已有字段……
+  /** 文稿声明的具名环境；提供方插件为自己 `kind` 的环境登记浏览器端执行器 */
+  environments?: Readonly<Record<string, EnvironmentSpec>>
+}
+
+export interface NodeServiceContext {
+  deckDir: string
+  workspaceRoot: string
+  /** 本插件的 `presmium.<插件 ID>` 配置 */
+  config: Record<string, unknown>
+  lang?: string
+  secret(name: string): string | undefined
+  log: Logger
+}
+
+export interface PresmiumNodePlugin {
+  // ……已有字段……
+  /** Node 端服务实现，例如 `[[SPEECH, speech]]`；一个令牌只有一个实现，后加载的插件的重复实现被忽略并报告 */
+  services?(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][]
+  /** 具名环境的提供方，键为 `EnvironmentSpec.kind` */
+  environments?: Record<string, EnvironmentProvider>
+  /** 服务端贡献；`presmium dev` 中每份文稿一次，`presmium serve` 中每份被访问的文档一次（第 10 节） */
+  server?(ctx: ServerContext): ServerContribution | Promise<ServerContribution>
+  /** MyST 行内角色（4.10 节，`ir.md` 2.8 节） */
+  roles?: RoleSpec[]
+  /** agent 工具，MCP 服务以工具暴露（4.8 节） */
+  tools?: AgentTool[]
+}
+```
+
+要点：
+
+- **执行器的选择**：浏览器中的 IR 运行时、执行面板与编译时执行都把代码块的 `run.executor` 放进 `RunRequest.executor`，由路由精确选择（`review-round2.md` 决定 5）。IR 运行时不再自己挑选首选执行器。
+- **会话 ID**：浏览器中由代码块的 `:session:` 加上页面实例的标识组成（每个页面、每个学习者各自一份）；编译时由文稿与 `:session:` 组成，构建结束时对每个用过的会话调用 `endSession`。
+- **富输出**：执行器把输出写入 `outputs`，同时照旧拼接 `stdout`、`stderr`。渲染见 `ir.md` 第 6 节；HTML 输出在显示前清洗（第 11 节）。
+- **环境的登记**：编译器为头部声明的每个环境找到 `kind` 对应的提供方，创建执行器并加入编译时的执行器列表；没有提供方的 `kind` 与未声明的环境名都是错误级诊断。浏览器端由同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记执行器，ID 相同。
+
+### 4.7 服务端契约
+
+`packages/kernel/src/contracts.ts`：
+
+```ts
+export type MemberRole = 'reader' | 'editor' | 'owner'
+
+export interface Member {
+  id: string
+  name: string
+  email?: string
+  roles: MemberRole[]
+}
+
+export interface RequestContext {
+  /** 发起请求的成员；`presmium dev` 中是本机作者（`owner`） */
+  member: Member
+  /** 请求所属文档的目录，相对于工作区根目录；`presmium dev` 中为 '' */
+  document: string
+  /** `/*` 路由中路由键之后的路径（不以 `/` 开头）；其他路由为 '' */
+  rest: string
+}
+
+export type RouteHandler = (request: Request, ctx: RequestContext) => Response | Promise<Response>
+
+export interface Route {
+  /** 能调用的最低角色，默认 `editor`；学习者可用的路由写 `reader` */
+  role?: MemberRole
+  handle: RouteHandler
+}
+
+export interface ProxySpec {
+  /** 挂在 `/__presmium/<插件 ID>/<path>/` 下；HTTP 与 WebSocket 都转发 */
+  path: string
+  target: string
+  /** 转发时加上的请求头，例如凭据；浏览器看不到 */
+  headers?: Record<string, string>
+  /** 默认 `editor` */
+  role?: MemberRole
+}
+
+export interface ServerContribution {
+  /** 键为挂在 `/__presmium/<插件 ID>/` 之后的路径，如 `tasks`；以 `/*` 结尾时匹配其下的全部路径。流式结果用 SSE */
+  routes?: Record<string, Route>
+  proxies?: ProxySpec[]
+  /** 服务端关闭时调用 */
+  close?(): void | Promise<void>
+}
+
+export interface ServerContext {
+  deckDir: string
+  workspaceRoot: string
+  /** 本插件的 `presmium.<插件 ID>` 配置 */
+  config: Record<string, unknown>
+  lang?: string
+  /** Node 端服务：插件的 `services`，以及服务端的 `APPROVALS`、工作区的 `REVISIONS` */
+  service<T>(token: ServiceToken<T>): T | undefined
+  secret(name: string): string | undefined
+  log: Logger
+}
+
+export type ApprovalKind = 'operate' | 'spend' | 'write' | 'agent'
+
+export interface ApprovalRequest {
+  kind: ApprovalKind
+  /** 一句话说明要做什么，按文稿语言，例如“运行 merge 一节的 code-1” */
+  title: string
+  detail?: string
+  /** 发起方：插件 ID，或 `agent:<任务 ID>` */
+  from: string
+  /** 代表哪位成员发起；确认只发给这位成员的窗口，没有时发给全部编辑者与所有者 */
+  member?: string
+}
+
+export interface Approvals {
+  /** 按确认策略放行、拒绝或询问；询问时等到有人回答、`signal` 中止或超时（视为拒绝） */
+  request(request: ApprovalRequest, signal?: AbortSignal): Promise<boolean>
+}
+
+/** Node 端服务，由服务端提供 */
+export const APPROVALS = defineService<Approvals>('presmium.approvals')
+
+/** SSE 响应：每个事件写成 `event:` 与 `data:`（JSON）行；`signal` 中止或事件结束时关闭 */
+export function eventStream(events: AsyncIterable<{ event?: string, data: unknown }>, signal?: AbortSignal): Response
+```
+
+`packages/host/src/types.ts`：
+
+```ts
+export interface ServerClient {
+  /** 页面由 `presmium dev` 或 `presmium serve` 提供时为 true；静态产物与服务端渲染中为 false */
+  readonly available: boolean
+  /** 当前成员；握手之后才有值 */
+  readonly member: Readonly<Ref<Member | undefined>>
+  /** 调用插件的路由 `/__presmium/<plugin>/<path>`；自动带上文档目录（`Presmium-Document`）与界面语言（`Accept-Language`） */
+  fetch(plugin: string, path: string, init?: RequestInit): Promise<Response>
+  /** 订阅插件的 SSE 路由 */
+  events(plugin: string, path: string): EventSource
+}
+
+/** 服务端的访问；可在组件外调用。宿主适配在 `startHost({ server })` 中给出，省略时不可用 */
+export function useServer(): ServerClient
+
+export interface HostStart {
+  // ……已有字段……
+  server?: ServerClient
+}
+
+export interface StatusProvider {
+  /** 插件 ID */
+  id: string
+  /** JSON 数据，不含学习者身份 */
+  read(): unknown
+}
+
+export interface StatusRegistry {
+  register(provider: StatusProvider): Unsubscribe
+  list(): StatusProvider[]
+}
+
+/** 宿主服务（两种形态）：插件的状态摘要，经控制通道送到服务端 */
+export const STATUS = defineService<StatusRegistry>('presmium.status')
+
+export interface EditMode {
+  readonly active: Readonly<Ref<boolean>>
+  /** 当前成员可以进入编辑模式（编辑者与所有者） */
+  readonly allowed: Readonly<Ref<boolean>>
+  enter(): void
+  leave(): void
+}
+
+/** 由工作区的浏览器插件提供；`presmium dev` 与静态产物中没有 */
+export const EDIT_MODE = defineService<EditMode>('presmium.editMode')
+```
+
+服务端怎样挂载这些契约、怎样认证与确认，见第 10 节。
+
+### 4.8 语音、智能体与修改历史
+
+`packages/kernel/src/contracts.ts`：
+
+```ts
+// 语音（P-132、P-133）---------------------------------------------------------
+
+/** 秒；中文为单字 */
+export interface SpeechWord { text: string, start: number, end: number }
+
+export interface Synthesis {
+  /** 浏览器中为 Blob；Node 中为合成缓存中文件的路径 */
+  audio: Blob | string
+  mime: string
+  /** 秒 */
+  duration: number
+  words?: SpeechWord[]
+  /** 合成缓存的键 */
+  key: string
+  engine: string
+  model: string
+  voice: string
+  synthetic: true
+}
+
+export interface TranscriptSegment { start: number, end: number, text: string, words: SpeechWord[] }
+
+export interface Transcript {
+  lang: string
+  /** 秒 */
+  duration: number
+  text: string
+  segments: TranscriptSegment[]
+}
+
+export interface SpeechEngineInfo {
+  id: string
+  /** 服务提供方的名字，界面据此标明（N-08） */
+  provider: string
+  stt: boolean
+  tts: boolean
+  /** 合成时给出逐字或逐词时间 */
+  wordTimes: boolean
+  /** 不把数据发给第三方 */
+  local: boolean
+}
+
+export interface VoiceInfo { id: string, label: string, lang: string[], cloned?: boolean }
+
+export interface SynthesisRequest {
+  engine?: string
+  voice: string
+  text: string
+  /** BCP 47 语言标签 */
+  lang: string
+  rate?: number
+  style?: string
+  /** 读音词典：写法到读法 */
+  lexicon?: Record<string, string>
+}
+
+export interface TranscriptionRequest {
+  engine?: string
+  audio: Blob
+  lang?: string
+  /** 热词，例如文稿的术语 */
+  hints?: string[]
+}
+
+export interface SpeechService {
+  engines(): SpeechEngineInfo[]
+  voices(engine: string, lang?: string): Promise<VoiceInfo[]>
+  /** 先查合成缓存；缺失时调用引擎并写入缓存 */
+  synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
+  transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
+}
+
+export const SPEECH = defineService<SpeechService>('presmium.speech')
+
+// 智能体（P-110 至 P-114、P-136）-------------------------------------------------
+
+export interface SourceRange { file: string, startLine: number, endLine: number }
+
+export interface AgentContext {
+  /** 文档目录，相对于工作区根目录 */
+  document: string
+  section?: string
+  step?: number
+  block?: string
+  view?: string
+  /** 选中的文字 */
+  selection?: string
+  source?: SourceRange
+}
+
+export type AgentTaskKind = 'question' | 'annotations' | 'chat' | 'transcript'
+
+export type AnnotationStatus = 'draft' | 'sent' | 'done' | 'failed'
+
+export interface Annotation {
+  id: string
+  section: string
+  block: string
+  source: SourceRange
+  /** 被批注的源码摘录 */
+  excerpt: string
+  /** 要求 */
+  request: string
+  status: AnnotationStatus
+  /** agent 的说明 */
+  note?: string
+}
+
+export interface AgentTaskRequest {
+  kind: AgentTaskKind
+  /** 问题、对话消息或整体要求 */
+  prompt: string
+  context: AgentContext
+  /** `annotations` 任务的批注 */
+  annotations?: Annotation[]
+  /** `transcript` 任务的讲授轨 ID */
+  track?: string
+}
+
+export interface Citation {
+  /** 显示的文字 */
+  label: string
+  section: string
+  step?: number
+  block?: string
+}
+
+export type AgentEvent =
+  | { type: 'progress', text: string, tool?: string }
+  | { type: 'message', text: string, citations?: Citation[] }
+  | { type: 'approval', id: string, request: ApprovalRequest }
+  | { type: 'annotation', id: string, status: AnnotationStatus, note?: string }
+  | { type: 'done', revision?: string }
+  | { type: 'error', message: string }
+
+export interface AgentTask {
+  readonly id: string
+  readonly events: AsyncIterable<AgentEvent>
+  cancel(): void
+}
+
+/** 浏览器端：页面向服务端的助手提交任务 */
+export interface AgentClient {
+  /** 服务端有 agent 运行时，且当前成员可以提交这类任务 */
+  available(kind: AgentTaskKind): boolean
+  submit(request: AgentTaskRequest): AgentTask
+}
+
+export const AGENT = defineService<AgentClient>('presmium.agent')
+
+export interface AgentSessionOptions {
+  /** 工作区根目录，即 ACP `session/new` 的 `cwd` */
+  cwd: string
+  /** `author` 可以写源码；`tutor` 只读，没有操作类工具 */
+  mode: 'author' | 'tutor'
+  member: Member
+  /** agent 自身的权限请求（ACP `session/request_permission`）交给它确认 */
+  approve(request: ApprovalRequest): Promise<boolean>
+}
+
+export interface AgentSession {
+  prompt(request: AgentTaskRequest, signal?: AbortSignal): AsyncIterable<AgentEvent>
+  cancel(): Promise<void>
+  close(): Promise<void>
+}
+
+/** Node 端：驱动一个 agent；唯一的实现是 ACP 客户端 */
+export interface AgentRuntime {
+  open(options: AgentSessionOptions): Promise<AgentSession>
+}
+
+export const AGENT_RUNTIME = defineService<AgentRuntime>('presmium.agentRuntime')
+
+export type AgentToolKind = 'read' | 'operate' | 'spend'
+
+export interface AgentToolContext {
+  document: string
+  member: Member
+  service<T>(token: ServiceToken<T>): T | undefined
+  signal: AbortSignal
+}
+
+export interface AgentTool {
+  /** MCP 工具名，小写加下划线，如 `lecture_preview` */
+  name: string
+  description: string
+  /** 输入的 JSON Schema（对象） */
+  input: Record<string, unknown>
+  /** `operate`、`spend` 由 MCP 服务先经 `APPROVALS` 确认再调用 */
+  kind: AgentToolKind
+  /** 返回 JSON 数据或文字，作为工具结果 */
+  run(input: Record<string, unknown>, ctx: AgentToolContext): Promise<unknown>
+}
+
+// 修改历史（P-115、P-121）----------------------------------------------------------
+
+export interface RevisionOrigin {
+  kind: 'agent' | 'document' | 'editor'
+  /** agent 任务的 ID */
+  task?: string
+  member?: Member
+}
+
+export interface Revision {
+  /** 提交的哈希 */
+  id: string
+  message: string
+  author: string
+  /** ISO 8601 */
+  date: string
+  origin: RevisionOrigin
+  /** 改动的文件，相对于工作区根目录 */
+  files: string[]
+  /** 撤销这次修改的提交 */
+  revertedBy?: string
+}
+
+export type RevertResult = { ok: true, revision: Revision } | { ok: false, conflicts: string[] }
+
+export interface RevisionService {
+  /** 把这些文件的改动提交为一个提交；没有改动时为 undefined */
+  commit(change: { files: string[], message: string, origin: RevisionOrigin }): Promise<Revision | undefined>
+  history(filter?: { document?: string, task?: string, limit?: number }): Promise<Revision[]>
+  /** `git revert`；有冲突时不提交、工作树复原，返回冲突的文件 */
+  revert(id: string, member: Member): Promise<RevertResult>
+}
+
+export const REVISIONS = defineService<RevisionService>('presmium.revisions')
+```
+
+要点：
+
+- 提交说明的格式：第一行是摘要；正文列出批注（或对话摘要）与 agent 的说明；尾注 `Presmium-Task: <任务 ID>`、`Presmium-Origin: agent|document|editor` 与 `Co-authored-by`（发起人）。作者字段取登录身份。修改历史按尾注筛选，所以不依赖服务端的数据库。
+- 语音的 `lang` 是 BCP 47 标签而不是界面语言 `Locale`：文稿可以是 Presmium 界面没有翻译的语言，语音引擎照样支持。
+
+### 4.9 操作与讲授轨
+
+`packages/kernel/src/contracts.ts`：
+
+```ts
+/** 一次语义化的操作，以章节、块与锚点为坐标（词汇见 `ir.md` 9.2 节） */
+export interface Operation {
+  /** 内置类型（`go`、`point`……）或以插件 ID 开头的类型 */
+  type: string
+  data: Record<string, unknown>
+}
+
+/** 讲授轨中的事件：`[自讲授开始的毫秒, 类型, 数据]` */
+export type TrackEvent = [t: number, type: string, data: Record<string, unknown>]
+
+/** 事件数据中的 `at`：[语音段 ID, 字偏移] */
+export type UtteranceAnchor = [utterance: string, offset: number]
+```
+
+`packages/host/src/types.ts`：
+
+```ts
+export interface ReplayHandler {
+  /** 应用一次操作；`seeking` 为 true 时是跳转中的快进，不播放动画 */
+  apply(data: Record<string, unknown>, seeking: boolean): void
+  /** 回到没有这类操作的状态；跳转前调用 */
+  clear?(): void
+}
+
+export interface Operations {
+  /** 插件报告用户做的操作；`replaying` 为 true 时报告被丢弃 */
+  report(operation: Operation): void
+  /** 收到每个报告的操作（录制者） */
+  subscribe(listener: (operation: Operation) => void): Unsubscribe
+  /** 登记一类操作的重放 */
+  onReplay(type: string, handler: ReplayHandler): Unsubscribe
+  /** 重放一个操作；没有插件重放这类操作时返回 false，回放者忽略它 */
+  replay(operation: Operation, seeking?: boolean): boolean
+  /** 调用每个重放的 `clear` */
+  clear(): void
+  /** 回放者应用操作期间置为 true，画面稳定后置回 false */
+  readonly replaying: Ref<boolean>
+}
+
+/** 宿主服务（两种形态） */
+export const OPERATIONS = defineService<Operations>('presmium.operations')
+```
+
+报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
+
+### 4.10 IR 与渲染端的增补
+
+`packages/kernel/src/ir.ts`：
+
+```ts
+export interface IRDocument {
+  meta: {
+    // ……已有字段……
+    /** 本文稿是译本时：原文的入口文件（相对于文稿目录）与译本所依据的原文摘要（P-123） */
+    translationOf?: { entry: string, digest: string }
+  }
+  config: {
+    // ……已有字段……
+    /** 头部的 `execute`，不含凭据 */
+    execute?: ExecuteConfig
+    /** 头部的 `translations`：语言到译本的入口文件 */
+    translations?: Record<string, string>
+  }
+}
+
+export interface IRSection {
+  /** 只给这些受众，如 `['teacher']`；省略时对所有受众（P-55） */
+  audience?: string[]
+}
+
+export interface IRBlock {
+  audience?: string[]
+}
+
+export interface RunSpec {
+  /** 执行会话（`:session:`） */
+  session?: string
+}
+
+export interface CodeNode {
+  /** `false`：不显示代码与运行控件，只显示输出；`text/markdown` 输出按正文显示（P-102） */
+  echo?: false
+}
+
+// RecordedRun extends RunResult：继承 `outputs`
+
+export interface ComponentNode {
+  /** 键可以是属性路径，如 `captions.en`：按 `.` 逐层进入对象属性 */
+  assets?: Record<string, string>
+}
+
+/** 行内角色的输入：{name key=value}`value` */
+export interface RoleInput {
+  name: string
+  /** 反引号中的内容 */
+  value: string
+  options: Record<string, unknown>
+}
+
+export interface RoleSpec {
+  name: string
+  options?: Record<string, DirectiveOptionType>
+  /** 角色节点的子内容；省略时为一个内容是 `value` 的文本节点。`{cue}` 返回空数组，命令写在 `options.value` 中 */
+  children?(input: RoleInput, ctx: DirectiveContext): MdastNode[]
+}
+
+/** IR 中登记过的角色（`markdown` 节点的 mdast 中）；不认识它的渲染端只显示 `children` */
+export interface PresmiumRoleNode extends MdastNode {
+  type: 'presmiumRole'
+  /** 登记该角色的插件 ID */
+  plugin: string
+  name: string
+  /** 选项，以及 `value`（反引号中的内容） */
+  options: Record<string, unknown>
+  children: MdastNode[]
+}
+
+export interface PassContext {
+  // ……已有字段……
+  /** Node 端服务；编译器总是提供，可选只是为了兼容（插件写 `ctx.service?.(SPEECH)`） */
+  service?<T>(token: ServiceToken<T>): T | undefined
+}
+
+export interface RenderContext {
+  // ……已有字段……
+  /** 同 `PassContext.service` */
+  service?<T>(token: ServiceToken<T>): T | undefined
+  /** 头部声明的译本，编译器另行编译（语言，IR）；网页渲染端使用 */
+  translations?: { lang: string, doc: IRDocument }[]
+  /** `presmium dev` 中服务端的地址，开发服务器把 `/__presmium/` 代理到它；构建中省略 */
+  server?: { url: string }
+}
+
+/** 工作区站点中的一份文档（P-122） */
+export interface SiteDocument {
+  /** 目录，相对于工作区根目录；文档的页面在 `<base><dir>/` 下 */
+  dir: string
+  title: string
+  lang?: string
+  tags?: string[]
+  /** 编译好的 IR；开发中尚未访问的文档没有 */
+  doc?: IRDocument
+}
+
+export interface SiteSpec {
+  title: string
+  /** 按工作区配置的顺序，也是文稿之间前后导航的顺序 */
+  documents: SiteDocument[]
+  /** 作为首页的文档目录；省略时首页是文档列表 */
+  home?: string
+  /** 工作区配置的 `site`：与 `renderers.web` 的站点外壳选项相同 */
+  config: Record<string, unknown>
+}
+
+export interface SiteDevServer {
+  url: string
+  /** 一份文档编译或重新编译之后调用 */
+  update(dir: string, doc: IRDocument): Promise<void>
+  close(): Promise<void>
+}
+
+export interface Renderer {
+  // ……已有字段……
+  /** 把多份文档构建为一个站点（P-122）；只有网页渲染端实现 */
+  buildSite?(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput>
+  /** 工作区站点的开发服务器；页面请求一份尚未编译的文档时调用 `compile` */
+  devSite?(site: SiteSpec, ctx: RenderContext, compile: (dir: string) => Promise<IRDocument>): Promise<SiteDevServer>
+}
+```
+
+源语法与这些字段的对应、各渲染端的处理见 `ir.md`（2.7 至 2.14 节、第 6 节、第 9、10 节）。媒介 ID `lecture` 不是新的 IR 字段：它是讲授插件的渲染端 ID，`{only} lecture` 照常经 `only` 字段生效。
 
 ## 5. 插件约定
 
@@ -337,6 +1056,22 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 - 集成测试运行 CLI 用 `@presmium/cli/testing` 的 `presmium(cwd, args, env?)`：它去掉 Vitest 设置的 `NODE_ENV=test`，构建与作者、端到端用例在同一模式下运行。端到端的测试文稿与服务用 `e2e/fixtures/deck.ts` 的 `useFixture`、`buildFixture`、`serve`、`startDev`、`openSlide` 等。
 - 手工起的静态服务器在重新构建后要重启：sirv 启动时读取一次文件列表，之后新生成的文件（带哈希的 `assets/`）它找不到，页面报 404 或白屏；经常重建时用 `sirv --dev` 启动，它每次请求都查找文件。
 
+v0.8 的外部服务一律用说同一协议的真实实现来测试，不 mock 宿主框架，也不在进程内替换被测的边界：
+
+| 对象 | 测试方式 |
+|---|---|
+| 服务端 | 对测试文稿真正运行 `presmium dev` 与 `presmium serve`，用 `fetch` 访问渲染端开发服务器代理过来的 `/__presmium/` 路由；部署时的登录由测试请求带上登录代理会加的请求头（`X-Forwarded-User` 等与共享密钥）模拟，不带的请求必须被拒绝 |
+| 远端环境 | `templates/env/compose/` 的模板起一个真实的 `jupyter_server`，浏览器与编译时都在其中运行代码；会话隔离用两个浏览器上下文验证。本机没有 Docker 时这些用例跳过并说明原因（同本地环境插件） |
+| WebAssembly | 真实的 WASI 运行时；编译时把构建机的 `PATH` 换成不含 C 工具链的目录，证明不需要本机工具链；断网（`context.setOffline(true)`）验证离线 |
+| WebGPU | 默认的无头 Chromium 没有 GPU 适配器，正好验证回退；用例另以 `test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })` 验证执行路径与“CPU 模拟”的计时标注 |
+| MCP | MCP SDK 的客户端（`@modelcontextprotocol/client`）连接 `/mcp` 与 `presmium-mcp`，逐个调用工具；确认经控制通道回答 |
+| agent | ACP 协议的确定性测试 agent（`packages/addon-assistant/test/fixtures/scripted-agent.mjs`，用 `@agentclientprotocol/sdk` 的 agent 端写成的真实子进程）：按测试给出的脚本读取 MCP 工具、修改文件、请求权限、给出带引用的回答；助手按配置的命令启动它，与启动 DeepSeek Harness 走同一条路。真实 DeepSeek Harness 的用例需要模型凭据，默认跳过；`dsh --dump-config` 校验配置模板的用例对固定版本运行 |
+| 语音 | 确定性的假引擎（`presmium-speech fake`）：真实的 HTTP 服务，同一协议；中文每字 220 ms、拉丁字母每字 60 ms、词间 80 ms，合成的 WAV 中嵌入文字，合成后再转写可以精确往返；用例数它收到的请求，验证缓存命中时不再合成。火山引擎与 Groq 的冒烟用例只在设置了 `PRESMIUM_TEST_VOLCENGINE_KEY`、`PRESMIUM_TEST_GROQ_KEY` 时运行 |
+| 讲授 | 录制：Chromium 的假麦克风播放假引擎合成的音频（`--use-fake-ui-for-media-stream`、`--use-fake-device-for-media-stream`、`--use-file-for-fake-audio-capture=<wav>%noloop`，以 `test.use({ launchOptions })` 只加在讲授的用例上），讲授轨中有 `go` 与 `point`，回放到时刻 t 显示正确的章节与步骤；脚本化：用假引擎构建测试讲义，检查片段、VTT 与提示标记的时刻 |
+| 工作区 | 临时目录中的真实 git 仓库：文档操作与撤销各形成正确的提交（读 `git log` 与尾注）；部署模板的冒烟用例需要 Docker，没有时跳过 |
+
+这些用例的启动参数只加在各自的 spec 中，`playwright.config.ts` 不为它们增加项目。需要 Docker、GPU 或模型凭据的用例跳过时打印原因与启用方法，不算失败。
+
 辅助命令（插件包与服务包的可执行文件）：
 
 | 命令 | 包 | 选项 | 作用 |
@@ -345,6 +1080,9 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | `presmium-diff <refA> <refB> [deck]` | 同上 | `--out <dir>`、`--threshold <ratio>`、`--wait <ms>`、`--install`、`--json` | 两个提交的视觉差异：幻灯片逐页，网页逐页（文档视图）与逐节（放映视图）截图比较，报告写在 `.presmium/diff/` |
 | `presmium-classroom-server` | `@presmium/classroom-server` | `--port <n>`（默认 1234，`0` 取空闲端口）、`--host <address>`（默认全部网卡）、`--deck <dir>`（归档写到 `<dir>/.presmium/classroom/`） | 课堂服务（y-websocket）；启动后打印服务地址与局域网地址 |
 | `presmium-language-server` | `@presmium/language-server` | `--stdio`、`--node-ipc`、`--socket=<port>` | 语言服务，VS Code 扩展启动它 |
+| `presmium-mcp [deck]` | `@presmium/mcp` | `--allow operate`（不加时不提供操作类工具） | 以 stdio 提供与 `/mcp` 相同的读取类工具，供编辑器中的 agent（Claude Code、Codex、VS Code）使用；没有放映位置与课堂（WP-78） |
+| `presmium-lecture export [deck]` | `@presmium/slidev-addon-lecture` | `--track <id>`、`--out <file>`（`.webm` 或 `.mp4`）、`--size <宽x高>`、`--fps <n>` | 用 Playwright 播放讲授并与音频合成为视频文件（P-135，WP-83） |
+| `presmium-speech fake`、`presmium-speech serve` | `@presmium/slidev-addon-speech` | `--port <n>`；`serve` 另有 `--engine <id>` | 确定性的假引擎；单独运行的语音网关（WP-82） |
 
 ## 8. 需求覆盖
 
@@ -396,6 +1134,30 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | P-77 | viewer | `e2e/viewer.spec.ts` |
 | P-80、P-81 | language-server、vscode | `language-server/test/lsp.test.ts`、`vscode/test/build.test.ts` |
 
+v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下是计划中的位置，合并后照实更新：
+
+| 需求 | 包 | 验证（工作包） |
+|---|---|---|
+| K-08 Node 端服务、服务端贡献、行内角色、N-08 本机检查 | server、compiler、cli、host | `server/test/server.test.ts`、`e2e/server.spec.ts`、`cli/test/roles.test.ts`、`cli/test/assets.test.ts`（WP-73a） |
+| P-46 卡片、栅格、选项卡、按钮 | compiler、kernel、viewer | `e2e/content.spec.ts`、`render-notebook/test/cards.test.ts`（WP-85） |
+| P-42 增补 封面与字幕轨 | addon-content | `e2e/content.spec.ts`、`addon-content/test/media.test.ts`（WP-85） |
+| P-54 发布检查、P-55 受众范围 | compiler、cli | `cli/test/publish-checks.test.ts`、`cli/test/audience.test.ts`（WP-87） |
+| P-68 先预测再揭示 | addon-classroom | `e2e/predict.spec.ts`、`addon-classroom/test/predict.test.ts`（WP-88） |
+| P-78、P-79、P-123，P-122 增补 | web、workspace、render-slides、render-notebook、compiler | `e2e/site.spec.ts`、`web/test/translations.test.ts`（WP-86） |
+| P-100 至 P-102 | compiler、addon-exec、addon-exec-local、viewer、render-slides、render-notebook | `e2e/exec-env.spec.ts`、`addon-exec/test/session.test.ts`、`render-notebook/test/outputs.test.ts`、`cli/test/env.test.ts`（WP-73b） |
+| P-103 | addon-exec-wasi | `e2e/exec-wasi.spec.ts`、`addon-exec-wasi/test/compile.test.ts`（WP-74） |
+| P-104 | addon-exec-webgpu、addon-exec | `e2e/exec-webgpu.spec.ts`、`addon-exec-webgpu/test/record.test.ts`（WP-75） |
+| P-105 至 P-107 | addon-exec-jupyter、templates/env | `e2e/exec-remote.spec.ts`、`addon-exec-jupyter/test/remote.test.ts`（WP-76） |
+| P-110 | mcp | `mcp/test/mcp.test.ts`、`e2e/mcp.spec.ts`（WP-78） |
+| P-111、P-112 | addon-assistant、addon-classroom | `addon-assistant/test/acp.test.ts`、`addon-assistant/test/dsh.test.ts`、`e2e/assistant.spec.ts`（WP-80） |
+| P-113 至 P-115 | addon-assistant、workspace | `e2e/assistant-edit.spec.ts`（WP-81）、`workspace/test/documents.test.ts`（WP-79） |
+| P-120 至 P-122、N-09 | workspace、web、cli | `workspace/test/documents.test.ts`、`workspace/test/site.test.ts`、`workspace/test/deploy.test.ts`、`cli/test/serve.test.ts`、`e2e/workspace.spec.ts`（WP-79） |
+| P-90、P-130、P-131、P-137 | addon-lecture、addon-guide | `e2e/lecture.spec.ts`、`addon-lecture/test/track.test.ts`（WP-77）；由 agent 生成译文见 `e2e/lecture-writeback.spec.ts`（WP-84） |
+| P-132、P-133 | addon-speech、addon-lecture | `addon-speech/test/speech.test.ts`、`addon-speech/test/engines.test.ts`（WP-82）；讲授轨中的转写与换音色见 `e2e/lecture-script.spec.ts`（WP-83） |
+| P-134、P-135 | addon-lecture | `e2e/lecture-script.spec.ts`、`addon-lecture/test/script.test.ts`、`addon-lecture/test/video.test.ts`（WP-83） |
+| P-136 | addon-lecture | `e2e/lecture-writeback.spec.ts`（WP-84） |
+| N-08 安全基线 | server、mcp、addon-assistant、workspace、addon-speech | 各工作包的拒绝用例：外来 `Host`、`Origin`、缺令牌、缺登录、读者调用编辑者的路由、未确认的操作类工具、`tutor` 模式的写入（第 11 节） |
+
 ## 9. 已知风险
 
 ### 9.1 仍在使用的框架内部接口
@@ -416,17 +1178,17 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 9.2 设计取舍与扩展点缺口
 
-以下取舍留给 WP-72，与 v0.7 的设计一起处理。
+以下取舍原先留给 WP-72（`review-round2.md` 决定 8），WP-72 与 v0.8 的设计一起做出决定，由表中的工作包实现：
 
-| 事项 | 现状与理由 | 计划 |
+| 事项 | 现状与理由 | 决定 |
 |---|---|---|
-| 共享内核中的业务契约 | `@presmium/kernel` 除元能力外还定义了几个插件共用的业务服务契约：`EXECUTOR` 与 `RunRequest`、`SessionService`、`Role`、`ClassroomStore`，以及代码节点的 `run` 与 `outputs`。这是 4.5 节有意的选择：服务的提供方与使用方分属不同插件，契约只能放在双方都依赖的包中；设计原则 2 已据此修订 | 契约稳定后可以移到单独的契约包，内核只保留元能力 |
-| 网页的 Service Worker 手写 | 网页渲染端在 VitePress 构建完成后生成约 70 行的 Service Worker（`packages/web/src/node/offline.ts`）：此时页面、搜索索引与 Pyodide 运行时都已写出，按产物内容计算缓存版本，并把无扩展名的页面地址对应到 `.html`。`vite-plugin-pwa` 只用于幻灯片形态：VitePress 在 Vite 客户端构建之后才渲染 HTML 页面，在 Vite 构建中生成的预缓存清单拿不到这些页面，需要专门的 `@vite-pwa/vitepress` 集成 | 评估 `@vite-pwa/vitepress`；接入后删除手写的 Service Worker |
-| 网页按插件 ID 读取发布插件的配置 | `packages/web/src/domain/config.ts` 读取 `presmium.publish` 的 `offline` 决定是否生成 Service Worker：网页渲染端因此知道一个插件的配置键 | 增加渲染端扩展点，让插件参与网页构建 |
-| 幻灯片形态中的现场执行代码块 | 带 `:run: live` 或 `:run: both` 的普通代码块在网页形态中有运行按钮；幻灯片渲染端把它写成普通代码块，没有运行按钮，只有执行面板能在幻灯片中运行代码。`setup/code-runners.ts` 已经通过 `executor` 服务支持 Slidev 的 Monaco Runner（Python、JavaScript、TypeScript），但 MyST 源码无法写出 `{monaco-run}` | 幻灯片渲染端把带 `run` 的代码块写成 `{monaco-run}`，或写成执行插件的运行组件 |
-| 课堂笔记依赖 IR 运行时的标记 | 课堂插件的笔记图层按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位章节与块。这两个属性因此是 IR 运行时对外的契约，修改时须同时修改笔记图层 | 在视图插件接口中提供块旁的挂载点 |
-| 首选执行器 | 代码块的 `:executor:` 在浏览器中只是首选：指定的执行器没有注册或不支持该语言时，由路由按语言与优先级另选 | WP-73：`RunRequest.executor` 精确匹配，指定的执行器不可用时返回失败，由 P-24 显示录制输出，不回退到其他执行器（`:env:` 依赖它） |
-| 本地环境的 Python 运行器 | 容器执行器在容器中运行自己的 Python 运行器（`packages/addon-exec-local/src/node/runner.py`），按 `RunRequest` 的约定处理参数、标准输入与文件，与执行插件的运行器（`packages/addon-exec/src/runner.py`）规则相同。两个插件包不互相引用（第 3 节），所以各有一份 | 把运行器作为共享内核的资源发布，两个插件共用 |
+| 共享内核中的业务契约 | `@presmium/kernel` 除元能力外还定义了几个插件共用的业务服务契约：`EXECUTOR` 与 `RunRequest`、`SessionService`、`Role`、`ClassroomStore`，以及代码节点的 `run` 与 `outputs`。这是 4.5 节有意的选择：服务的提供方与使用方分属不同插件，契约只能放在双方都依赖的包中；设计原则 2 已据此修订 | 保留在内核包中。v0.8 又增加语音、智能体、修改历史、确认与操作词汇，`contracts.ts` 按领域拆为几个模块并统一再导出，入口 `@presmium/kernel/contracts` 不变（WP-73a）。全部包都是私有的，移到单独的契约包成本很低，留到 v0.8 的契约稳定之后（K 波次之后再评估） |
+| 网页的 Service Worker 手写 | 网页渲染端在 VitePress 构建完成后生成约 70 行的 Service Worker（`packages/web/src/node/offline.ts`）：此时页面、搜索索引与 Pyodide 运行时都已写出，按产物内容计算缓存版本，并把无扩展名的页面地址对应到 `.html`。`vite-plugin-pwa` 只用于幻灯片形态：VitePress 在 Vite 客户端构建之后才渲染 HTML 页面，在 Vite 构建中生成的预缓存清单拿不到这些页面，需要专门的 `@vite-pwa/vitepress` 集成 | 保留手写的 Service Worker：它预缓存产物中的全部文件，所以 v0.8 新增的 WASI 运行时、发布的文件（P-79）与同站点下讲授的片段都在离线范围内，不需要新的机制。不再计划换成 `@vite-pwa/vitepress` |
+| 网页按插件 ID 读取发布插件的配置 | `packages/web/src/domain/config.ts` 读取 `presmium.publish` 的 `offline` 决定是否生成 Service Worker：网页渲染端因此知道一个插件的配置键 | 保留。这是一个只读的配置键，代价小于为此增加渲染端扩展点；v0.8 中没有第二个插件需要参与网页构建（P-79 的文件发布属于网页渲染端自己） |
+| 幻灯片形态中的现场执行代码块 | 带 `:run: live` 或 `:run: both` 的普通代码块在网页形态中有运行按钮；幻灯片渲染端把它写成普通代码块，没有运行按钮，只有执行面板能在幻灯片中运行代码。`setup/code-runners.ts` 已经通过 `executor` 服务支持 Slidev 的 Monaco Runner（Python、JavaScript、TypeScript），但 MyST 源码无法写出 `{monaco-run}` | 幻灯片渲染端把带 `live` 或 `both` 的代码块写成 Slidev 文档化的 `{monaco-run}` 代码块，执行插件的 code runner 把 `executor`、`session` 放进请求，富输出按 Slidev code runner 的 HTML 输出显示（WP-73b） |
+| 课堂笔记依赖 IR 运行时的标记 | 课堂插件的笔记图层按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位章节与块。这两个属性因此是 IR 运行时对外的契约，修改时须同时修改笔记图层 | 正式作为 IR 运行时对外的标记契约：讲授的指针录制与编辑模式的批注同样据此定位，`domain-model.md` 第 9 节列出，`e2e/viewer.spec.ts` 守护。不另加挂载点接口 |
+| 首选执行器 | 代码块的 `:executor:` 在浏览器中只是首选：指定的执行器没有注册或不支持该语言时，由路由按语言与优先级另选 | `RunRequest.executor` 精确匹配，指定的执行器不可用时返回失败，由 P-24 显示录制输出，不回退到其他执行器（`review-round2.md` 决定 5，WP-73b） |
+| 本地环境的 Python 运行器 | 容器执行器在容器中运行自己的 Python 运行器（`packages/addon-exec-local/src/node/runner.py`），按 `RunRequest` 的约定处理参数、标准输入与文件，与执行插件的运行器（`packages/addon-exec/src/runner.py`）规则相同。两个插件包不互相引用（第 3 节），所以各有一份 | 运行器作为共享内核的资源发布（`@presmium/kernel/runner.py`，`package.json` 的 `exports` 指向文件；内核不读它，只发布），两个插件共用，会话与富输出也只实现一次（WP-73b） |
 
 ### 9.3 框架的已知问题
 
@@ -435,3 +1197,112 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 幻灯片形态在 Slidev 的开发服务器中（`presmium dev --to slides`、`slidev export` 与 `presmium-export`）控制台报 “Failed to patch FloatingVue: TypeError: Cannot read properties of undefined (reading 'Popper')”；构建产物中不出现 | Slidev 53 的 `setup/main.ts` 在每份文稿中安装 `@shikijs/vitepress-twoslash` 4.5 的 Twoslash 弹出层；它对 floating-vue 菜单组件的补丁按旧的组件结构查找 `components.Popper`，而 Slidev 依赖的 floating-vue 5.4 的菜单组件已没有这个结构（三者都是 npm 上的最新版本） | 只影响在 Twoslash 弹出层上拖动时不弹出，生成的文稿不含 Twoslash 代码；错误被它自己捕获并打印，不影响页面。不打补丁，等上游修复 | `e2e/smoke.spec.ts`“the slides open … with no error in the console”：控制台没有其他错误 |
 | 测试中的幻灯片控制台报 “Wake Lock permission request denied” | Slidev 的 `wakeLock` 选项（默认开启）在放映时请求屏幕常亮，Playwright 驱动的浏览器拒绝请求 | 被拒绝时只多这一条错误，页面照常；讲者的浏览器允许时屏幕在放映中保持常亮，所以不关闭该选项 | 同上 |
 
+
+## 10. 服务端与部署
+
+### 10.1 进程与拓扑
+
+| 进程 | 作用 | 何时需要 |
+|---|---|---|
+| `presmium dev` 或 `presmium serve` | 编译、实时推送、服务端（插件的服务端贡献、MCP、agent 适配、修改提交、控制通道） | 编辑、agent、远端环境的代理模式、语音 |
+| agent（默认 DeepSeek Harness，子进程，ACP over stdio） | agent | 使用助手时 |
+| 课堂服务 `presmium-classroom-server` | 课堂同步（P-61），不变 | 开课时 |
+| Jupyter Server（容器或集群） | 远端执行 | 使用远端环境时 |
+
+```
+presmium dev（一份文稿，本机）
+  浏览器 ──► 网页开发服务器（VitePress 子进程）──┐
+         ──► 幻灯片开发服务器（Slidev）─────────┤ Vite 的 server.proxy：/__presmium/（含 WebSocket）
+                                               ▼
+                       Presmium 服务端（presmium dev 的主进程，127.0.0.1:<空闲端口>）
+                       ├ /__presmium/<插件 ID>/…          插件的路由与反向代理
+                       ├ /__presmium/presmium.server/…    握手（hello）、控制通道（control）
+                       └ /mcp                             MCP（令牌）
+
+presmium serve（工作区，部署时在登录代理之后）
+  浏览器 ──► 登录代理（oauth2-proxy）──► Presmium 服务端（唯一对外的端口）
+                                        ├ /__presmium/…、/mcp      同上，按成员与角色
+                                        └ 其余路径 ──► 工作区站点的网页开发服务器（VitePress 子进程，只监听本机，含 HMR 的 WebSocket）
+```
+
+服务端在主进程中，而不是作为 Vite 中间件挂在开发服务器里：网页的开发服务器是 VitePress 命令行起的子进程（`packages/web/src/node/vitepress.ts`），编译结果、执行器、MCP 与 agent 适配都在主进程中。渲染端只需在开发服务器的 Vite 配置中加一条代理（`RenderContext.server`）：网页渲染端写进生成的 VitePress 配置，幻灯片渲染端写进生成的 Slidev 项目的 `vite.config.ts`（Slidev 文档化的配置文件）。浏览器因此总是同源访问 `/__presmium/`，没有跨域请求，登录代理的 Cookie 也照常带上。
+
+静态构建产物不依赖服务端：渲染端不写服务端地址，`useServer().available` 为 false。浏览器内执行（Pyodide、WASI、WebGPU）、预先合成的讲授音频与录制输出照常可用；agent、远端环境的代理模式与实时转写隐藏或降级。
+
+### 10.2 挂载
+
+- **路径**：插件 `server(ctx)` 的贡献挂在 `/__presmium/<插件 ID>/` 下；服务端自己的路由在 `/__presmium/presmium.server/`：`hello`（成员、文档、可用的功能，读者可用）与 `control`（控制通道，10.4 节）；MCP 在 `/mcp`。
+- **请求**：路由处理函数用标准 Fetch API 写，不绑定服务器框架；Node 的请求与 Fetch 之间由 `@hono/node-server` 的 `getRequestListener` 转换。流式结果用 SSE（`eventStream`，4.7 节）。
+- **文档**：`useServer().fetch` 带上请求头 `Presmium-Document: <文档目录>`，服务端据此给出 `RequestContext.document`，并把请求交给该文档的插件实例。
+- **反向代理**：`ProxySpec` 由 `http-proxy-3` 实现，HTTP 与 WebSocket 升级都加上 `headers`（例如远端环境的 `Authorization`），浏览器拿不到这些头。
+- **宿主进程的接口**：启动服务端的命令给它一个 `ServerHost`（`@presmium/server` 自己的类型，不是内核契约）：文档列表、编译结果与诊断、运行检查、构建。`presmium dev` 由 CLI 在它的编译器上实现，`presmium serve` 由工作区实现；MCP 与控制通道经它读取文稿。
+- **生命周期**：`presmium dev` 启动时为文稿创建一次各插件的贡献，头部的 `plugins` 变化时照旧提示重启；`presmium serve` 在一份文档第一次被请求时创建它的贡献。Node 端服务（`services`）与贡献使用同一份文稿配置；服务端另外登记 `APPROVALS`，工作区登记 `REVISIONS`。
+- **端口**：`presmium dev` 的服务端默认取空闲端口（`--server-port` 指定），启动时打印 MCP 地址；`presmium serve` 用 `--port`（默认 4310）与 `--host`（默认 `127.0.0.1`）。
+
+### 10.3 登录与权限
+
+- **`presmium dev`**：只监听本机。服务端检查 `Host` 是 `localhost`、`127.0.0.1` 或 `[::1]`（任何端口），`Origin` 缺省或同样是本机的地址（任何端口，因为页面来自渲染端的开发服务器，经它的代理转发），挡住 DNS 重绑定与其他网站的请求（MCP SDK 的 `localhostAllowedHostnames`、`localhostAllowedOrigins` 做法相同）。成员是本机作者，角色为所有者。`/mcp` 另外要求 `Authorization: Bearer <令牌>`：令牌每个进程随机生成，打印在终端并写入 `<文稿>/.presmium/server.json`（权限 0600，不入库），助手启动的 agent 在 ACP `session/new` 的 `mcpServers` 中得到它。
+- **`presmium serve`**：默认只监听本机，本机使用不需要登录。监听其他地址时必须配置登录代理，否则拒绝启动：服务端只信任带共享密钥请求头 `X-Presmium-Proxy-Secret`（值来自环境变量 `PRESMIUM_PROXY_SECRET`）的请求，或来自 `--trust-proxy-from <地址>` 的请求。身份取自代理传来的请求头（oauth2-proxy 的 `X-Forwarded-User`、`X-Forwarded-Email`、`X-Forwarded-Preferred-Username`、`X-Forwarded-Groups`）。
+- **角色**：读者只能阅读与提问；编辑者可以进入编辑模式、修改与撤销、回答确认；所有者另管工作区设置。角色来自 `presmium.workspace.yaml` 的 `members`（按邮箱或代理传来的组），登录的其他成员是读者。
+- **路由的角色**：挂载点按 `Route.role`、`ProxySpec.role`（默认 `editor`）检查；不满足时返回 403，插件不各自检查。
+- **MCP 的身份**：`presmium serve` 中 `/mcp` 只接受服务端为 agent 会话签发的令牌，令牌绑定成员与模式（`author` 或 `tutor`）；`tutor` 令牌只看得到读取类工具。工具的范围由令牌决定，不由请求参数决定。
+
+### 10.4 控制通道与确认
+
+- **控制通道**：`useServer().available` 时，宿主在 `startHost` 中连接 `/__presmium/presmium.server/control`（SSE 接收，POST 报告）。页面报告：自己的位置（`navigation` 服务的位置与视图）、视图角色，以及 `STATUS` 中各插件的摘要（变化时，至多每秒一次）。服务端发来：`go`（经 `navigation.go` 跳转）、`session`（经 `session` 服务开始或结束课堂）、`approval`（确认请求）。MCP 的 `get_position` 返回该成员处于放映或演讲者视图的窗口最近报告的位置，没有时返回任一窗口的位置；`navigate` 向这些窗口发出 `go`，听众视图照旧经已有的通道跟随。
+- **确认**：`APPROVALS` 按种类的策略处理：`off` 时这类操作不提供（MCP 不列出对应的工具），`ask`（默认）时把请求经控制通道发给该成员的窗口，没有指定成员时发给全部编辑者与所有者；任一窗口回答即生效，50 秒内（低于 DeepSeek Harness 调用 MCP 工具的 60 秒超时）没有回答视为拒绝。`allow` 只能由本机作者用 `presmium dev --allow <种类,…>` 或工作区所有者在 `presmium.workspace.yaml` 的 `approvals` 中设置，文稿不能设置。
+- **确认界面**：宿主在 `PmToolbar` 中加入一个只在有待确认请求时出现的入口，两种形态都显示：说明、发起方、允许与拒绝。
+- **发送即确认**：编辑模式中发送一批批注或一条对话消息，就是对这次任务的写入的确认（N-08），助手不再逐个文件询问；写入超出当前文档目录时仍以 `write` 确认。
+
+### 10.5 部署（N-09）
+
+- **本机**：`presmium serve [目录]` 一条命令启动工作区服务；目录中没有 `presmium.workspace.yaml` 而有 `lecture.md` 时，作为只有一份文档的工作区。工作区必须在 git 仓库中，否则编辑功能不可用并提示 `git init`。
+- **docker compose**：`templates/workspace/compose/compose.yaml`：oauth2-proxy（唯一发布端口的服务）、工作区服务（不发布端口，只信任代理）、课堂服务，以及与 `templates/env/compose/` 共用覆盖配置的 Jupyter 环境；数据卷是工作区仓库；凭据经 `.env` 传给各容器。
+- **Kubernetes**：`templates/workspace/kubernetes/README.md` 与 `templates/env/kubernetes/README.md` 只给文档与清单片段（工作区：带 oauth2-proxy 边车的 Deployment、仓库的 PVC、Service 与 Ingress；远端环境：Zero to JupyterHub 的 `values.yaml` 片段，按 CPU、GPU、MIG 划分的配置，gVisor 的 `runtimeClassName`，回收设置，以及 agent-sandbox 的模板），不维护 Helm chart。集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书、身份提供方由用户负责。
+- 静态构建产物仍可发布到任意静态托管。
+
+## 11. 安全（N-08）
+
+| 风险 | 措施 |
+|---|---|
+| 本机端点被其他网站或进程调用 | 默认只监听本机；校验 `Host` 与 `Origin`；MCP 要求每个进程独有的令牌 |
+| 部署时绕过登录 | 监听非本机地址时必须配置登录代理；只信任带共享密钥或来自固定地址的请求；工作区服务的端口在 compose 模板中不发布 |
+| agent 误改或越权 | 只写工作区中的源码；超出当前文档目录要确认；一批一提交，可撤销；操作类与计费类工具、agent 自身的权限请求都要确认；确认的关口在我们的服务端 |
+| 文稿关闭安全设置 | 确认策略、agent 的启动命令与模型都不从文稿读取，只来自命令行、环境变量与工作区配置 |
+| 提示注入（学习者的问题、远端输出、网页内容） | 学习者的问题用 `tutor` 运行时：只读，没有 shell、网络、写文件与操作类工具；回答在课堂中公开前可以要求主讲确认 |
+| 凭据泄露 | 凭据只在服务端（环境变量、agent 自己的凭据存储）；代理代加凭据；IR 与产物不含凭据；`presmium check` 对文稿头部中像凭据的字段告警（字段名含 `token`、`secret`、`password`、`key` 且值不是环境变量名，或值形如常见的密钥前缀）；启动 agent 子进程时只传入清理过的环境变量 |
+| 数据外发 | DeepSeek Harness 的会话日志上传与遥测由配置模板关闭，并以 `DSH_TELEMETRY_MODE=DISABLED` 启动；语音与模型的服务提供方在界面上标明；没有在配置中开启的引擎不发出请求；录音只在显式“转写”时发出 |
+| 不可信的富输出 | 执行输出中的 HTML 用 DOMPurify 清洗后显示（去掉脚本与事件属性）；幻灯片中以没有脚本权限的沙箱 iframe 显示 |
+| GPU 被学习者代码拖垮 | 限制派发规模与重复次数；超时就销毁设备并结束 Worker；监听设备丢失，避免浏览器把站点列入 GPU 黑名单；可以只给录制输出 |
+| 生成的产物被 agent 修改 | 幻灯片渲染端在生成的 Slidev 文稿头部写 `mcp: false`，关闭 Slidev 53 开发服务器自带的、会修改生成文稿的 `/__mcp` 端点（原则 6） |
+| 音色滥用 | 克隆音色默认关闭，需要本人录制的同意声明；合成的音频在播放界面与元数据中标明由 AI 生成（GB 45438-2025、《人工智能生成合成内容标识办法》） |
+
+## 12. 依赖选型（v0.8 新增）
+
+依赖准则沿用 `requirements.md` 5.4 节：只用公开接口，不 fork，不引入 AGPL；版本精确固定，遵守 `pnpm-workspace.yaml` 的最短发布时间。版本是 2026-10 调研时的版本，实现时取当时满足准则的版本。
+
+| 组件 | 版本 | 许可证 | 用途 | 包 |
+|---|---|---|---|---|
+| `@modelcontextprotocol/server`、`@modelcontextprotocol/node`；测试用 `@modelcontextprotocol/client` | 2.3 | Apache-2.0（既有代码 MIT） | MCP 服务（`createMcpHandler`、`serveStdio`、Host 与 Origin 校验）与测试中的客户端 | mcp |
+| `@agentclientprotocol/sdk` | 1.8 | Apache-2.0 | ACP 客户端（助手）与测试 agent | addon-assistant |
+| DeepSeek Harness（`@deepseek-ai/dsh`） | 精确固定的预览版（如 0.2.0-rc.2） | MIT | 默认的 agent 运行时，作为子进程用命令启动，不作为库引用；只是开发依赖（测试 `--dump-config`），用户自行安装。它要求 Node 22.19 以上 | addon-assistant |
+| `@jupyterlab/services` | 7.6 | BSD-3-Clause | Jupyter 内核与终端协议的客户端，浏览器与 Node 共用 | addon-exec-jupyter |
+| `@xterm/xterm`、`@xterm/addon-fit` | 5.x | MIT | 浏览器终端（P-107） | addon-exec-jupyter |
+| Runno（`@runno/wasi` 等） | 当前版本 | MIT | 浏览器内的 WASI 运行时与 C、C++、Ruby、SQLite 的二进制；Node 端用同一份二进制（先行验证） | addon-exec-wasi |
+| jax-js（`@jax-js/jax`、`@jax-js/optax`） | 0.1 | MIT | JS/TS 中的张量代码与自动微分，WebGPU 后端；按需加载 | addon-exec-webgpu |
+| playwright-chromium | 与仓库一致 | Apache-2.0 | 构建时在 Chromium 中录制 WebGPU 输出；导出讲授视频 | addon-exec-webgpu、addon-lecture |
+| Mediabunny（`mediabunny`） | 1.6x | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs）；导出视频时合成音视频；`@mediabunny/server` 附带的 FFmpeg 的许可证先行验证 | addon-lecture |
+| simple-git | 已用 | MIT | 修改历史的提交、撤销与按尾注筛选 | workspace |
+| `@hono/node-server` | 当前版本 | MIT | Node 请求与 Fetch API 之间的转换 | server |
+| http-proxy-3 | 当前版本 | MIT | HTTP 与 WebSocket 反向代理（远端环境、工作区站点） | server |
+| DOMPurify | 3.x | Apache-2.0 或 MPL-2.0 | 清洗执行输出中的 HTML | viewer |
+| ansi_up | 6.x | MIT | 把回溯与输出中的 ANSI 转义转为样式 | viewer |
+| mdast-util-from-markdown、mdast-util-gfm、micromark-extension-gfm | 当前版本 | MIT | 浏览器中把现场运行的 `text/markdown` 输出转为 mdast | viewer |
+| myst-ext-card、myst-ext-grid、myst-ext-tabs、myst-ext-button | 与 myst-parser 同一发行 | MIT | 卡片、栅格、选项卡、按钮（P-46） | compiler |
+| VitePress 的 `locales`、`sitemap`、`themeConfig.nav`、`footer`、`head` | 已用 | MIT | 站点外壳与译本（P-78、P-123） | web |
+| lychee | 用户安装的命令 | MIT 或 Apache-2.0 | 可选的外部链接检查（P-54） | cli |
+| 镜像：docker-stacks、`jupyter_server`、oauth2-proxy；可选 gVisor | 固定摘要 | BSD-3-Clause、MIT、Apache-2.0 | 部署模板 | templates |
+
+语音服务没有采用 SDK：火山引擎没有 npm SDK，OpenAI 音频接口形态的服务用 `fetch` 即可；网关的适配器直接调用 HTTP 与 WebSocket 接口。
+
+不采用：ffmpeg.wasm（核心为 GPL）、Remotion（超过 3 人的公司需要商业许可）、Motion Canvas（2024 年底起停止维护）、TensorFlow.js 的 WebGPU 后端与 webgpu-torch（停更）、Jupyter Kernel Gateway（停更，浏览器跨域有缺陷）、Daytona 等 AGPL 许可的沙箱平台、edge-tts（非官方接口）、在进程内 mock 语音或模型的测试库。

@@ -1,5 +1,37 @@
 # v0.7 总体设计
 
+> **说明（WP-72）**：本文的定稿已经并入下列文档，实现以它们为准；本文保留为取舍的理由与调研结论的记录，不再随实现更新（第 11 节先行验证的结论除外）。
+>
+> | 本文 | 并入 |
+> |---|---|
+> | 第 1 节 设计原则 | `architecture.md` 第 10、11 节；`domain-model.md` 第 2 节（外部系统只经防腐层） |
+> | 第 2 节 总体结构 | `architecture.md` 第 1 节、10.1 节 |
+> | 第 3 节 跨上下文契约 | `architecture.md` 4.2、4.4、4.5 节与 4.6 至 4.10 节（精确的签名，由 WP-73a 写入契约源码） |
+> | 第 4 节 执行环境 | `domain-model.md` 第 12 节；`ir.md` 2.7 节、第 4 节、6.1 节；`templates/env/`（WP-76） |
+> | 第 5 节 智能体 | `domain-model.md` 第 13 节；`architecture.md` 4.8 节、第 10 节 |
+> | 第 6 节 工作区 | `domain-model.md` 第 14 节；`ir.md` 6.3 节、第 10 节；`architecture.md` 10.5 节 |
+> | 第 7 节 讲授 | `domain-model.md` 第 15 节；`ir.md` 2.8、2.9 节与第 9 节；`architecture.md` 4.8、4.9 节 |
+> | 第 8 节 服务端与部署 | `architecture.md` 第 10 节 |
+> | 第 9 节 安全 | `architecture.md` 第 11 节 |
+> | 第 10 节 测试策略 | `architecture.md` 第 7 节 |
+> | 第 11 节 先行验证 | `wbs.md` 各工作包的“先行验证”；结论写回本文第 11 节 |
+> | 第 12 节 包与工作包 | `architecture.md` 第 2 节；`wbs.md` 的 I、J、J2 波次 |
+> | M9（v0.8 新增，本文未覆盖） | `domain-model.md` 7A、8、9、10 节；`ir.md` 2.10 至 2.14 节、6.2 节；`wbs.md` 的 WP-85 至 WP-88 |
+>
+> 定稿与本文不同之处（理由见括号）：
+>
+> 1. **服务端的位置**（3.4 节）：服务端不是 Vite 开发服务器的中间件，而是 `presmium dev`、`presmium serve` 主进程中的一个 HTTP 服务（`@presmium/server`），渲染端的开发服务器把 `/__presmium/` 代理到它。网页的开发服务器是 VitePress 命令行起的子进程（`packages/web/src/node/vitepress.ts`），编译结果、MCP 与 agent 适配都在主进程中，中间件拿不到它们。`presmium serve` 中服务端是唯一对外的端口，其余路径转发到工作区站点的开发服务器。
+> 2. **契约的细化**（3.3、3.4 节）：`services` 是接收文稿配置与凭据访问的函数；`RequestContext` 带成员、文档与路由之后的路径；路由与代理声明所需的最低角色。新增本文没有的契约：`APPROVALS`（确认的关口）、`STATUS`（插件的状态摘要，供 `get_classroom`）、`EDIT_MODE`、插件贡献的 agent 工具 `AgentTool`（例如讲授插件的 `lecture_preview`，MCP 包因此不依赖插件）、工作区站点 `SiteSpec` 与 `Renderer.buildSite`、译本与受众的 IR 字段。
+> 3. **指定执行器**（4.2 节）：本文说路由器不需要修改；按 `review-round2.md` 决定 5，`RunRequest.executor` 由路由精确匹配，IR 运行时不再自己挑选首选执行器，所以路由与 IR 运行时都要改（WP-73b）。
+> 4. **MCP**（5.2 节）：除工具外也提供只读资源，放映位置的资源可以订阅（P-110 要求以资源更新通知推送；DeepSeek Harness 不读资源，仍用 `get_position`）。学习者的权限由服务端签发的令牌决定，不由 `/mcp?role=learner` 这样的请求参数决定。stdio 方式是辅助命令 `presmium-mcp`，不是 `presmium mcp`（同其他辅助命令的约定，也避免 WP-78 与 WP-79 同改 CLI）。
+> 5. **确认策略不来自文稿**：本文（以及调研记录中的 `presmium: { assistant: { operate } }`）把策略放在文稿配置中；定稿只允许本机作者的命令行与工作区所有者的配置设置，文稿不能关闭确认。
+> 6. **工作包的划分**（第 12 节）：WP-73 拆为 WP-73a（全部契约与服务端）与 WP-73b（环境、会话与富输出）；`OPERATIONS` 由 WP-73a 实现（原为 WP-77），`go` 由 IR 运行时报告、`run` 由执行插件报告，讲授一线因此不改执行插件；P-46 从 WP-86 移到 WP-85；P-137 的格式与导出在 WP-77，由 agent 生成译文在 WP-84；P-132、P-133 在讲授轨中的串联在 WP-83。都是为了同一时间并行的工作包不改同一个文件。
+> 7. **语音契约**（7.4 节）：`lang` 是 BCP 47 标签而不是界面语言 `Locale`（文稿的语言可以是 Presmium 界面没有翻译的语言）；引擎信息增加 `provider`，界面据此标明服务提供方（N-08）。
+> 8. **单独的讲授脚本**（7.3 节）：本文说不需要另写文件；P-134 要求也能从单独的讲授脚本生成，定稿增加 `renderers.lecture.script`（按章节标签代替讲解），讲解本身仍是默认的脚本。
+> 9. **路由的路径**：插件的路由都挂在 `/__presmium/<插件 ID>/` 下，所以语音网关是 `/__presmium/presmium.speech/v1/`，环境代理是 `/__presmium/presmium.execJupyter/env/<名>/`，助手是 `/__presmium/presmium.assistant/tasks`。
+> 10. **富输出中的 HTML**（4.5、9 节）：网页中用 DOMPurify 清洗后内联显示（表格因此可以被搜索、样式一致），幻灯片中放进没有脚本权限的沙箱 iframe。
+> 11. **讲授渲染端是站点渲染端**：它的产物在 `dist/lecture/`，网页的讲授视图从同一站点读取；与网页一同构建时，按已有规则网页的默认 `base` 为 `/web/`。
+
 本文是需求 v0.7 新增范围（`requirements.md` 6.10 至 6.14 节，N-08、N-09）的总体架构：执行环境、智能体、工作区、讲授四个新的限界上下文，以及它们共用的服务端与契约。WP-72 把定稿的内容并入 `domain-model.md`、`architecture.md`、`ir.md` 与契约源码；在那之前，本文是新增范围的设计依据。调研记录（DeepSeek Harness、浏览器 GPU、远端环境、语音）的结论已经吸收进本文，出处见各节。
 
 ## 1. 设计原则
