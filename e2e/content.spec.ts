@@ -139,6 +139,76 @@ test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ p
   await expect(map.locator('.markmap-node')).toHaveCount(13)
 })
 
+/** The video of e2e/fixtures/content/cards.md: a poster and two caption tracks, every file answered. */
+async function expectCaptionedVideo(page: Page, video: Locator) {
+  const tracks = video.locator('track')
+  await expect(tracks).toHaveCount(2)
+  await expect(tracks.nth(0)).toHaveAttribute('srclang', 'en')
+  await expect(tracks.nth(0)).toHaveAttribute('label', '英语')
+  await expect(tracks.nth(0)).toHaveAttribute('default', '')
+  await expect(tracks.nth(1)).toHaveAttribute('srclang', 'zh-CN')
+  await expect(tracks.nth(1)).not.toHaveAttribute('default')
+  const files = [await video.getAttribute('poster'), ...await tracks.evaluateAll(list => list.map(track => track.getAttribute('src')))]
+  expect(files).toEqual([expect.stringMatching(/poster\.png$/), expect.stringMatching(/loop\.en\.vtt$/), expect.stringMatching(/loop\.zh\.vtt$/)])
+  for (const file of files) expect((await page.request.get(new URL(file!, page.url()).href)).status()).toBe(200)
+}
+
+test('a video with a poster and captions in two languages has its poster and two tracks in both forms (P-42)', async ({ page }) => {
+  await page.goto(`${content().web}/cards.html`)
+  const video = page.locator('.pm-section[data-section="content-captions"] figure.pm-media video')
+  await expect(video).toHaveAttribute('poster', /^\/web\/media\/[0-9a-f]{8}-poster\.png$/)
+  await expectCaptionedVideo(page, video)
+
+  const slide = await open(page, 'content-captions')
+  await expectCaptionedVideo(page, slide.locator('figure.pm-media video'))
+})
+
+test('a grid of three cards has three columns on a desktop and one on a phone; a card\'s button is a link (P-46)', async ({ page }) => {
+  const cards = page.locator('.pm-section[data-section="content-cards"] .pm-grid > .pm-card')
+  /** The columns the cards stand in: their distinct left edges. */
+  const columns = async () => new Set(await cards.evaluateAll(list => list.map(card => Math.round(card.getBoundingClientRect().left)))).size
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto(`${content().web}/cards.html`)
+  await expect(cards).toHaveCount(3)
+  await expect.poll(columns).toBe(3)
+  await page.setViewportSize({ width: 375, height: 800 })
+  await expect.poll(columns).toBe(1)
+
+  // The first card links somewhere as a whole; its button is a link to a section.
+  await expect(cards.nth(0).locator('.pm-card__title a')).toHaveAttribute('href', 'https://example.com/week-01/')
+  const button = cards.nth(0).locator('.pm-card__footer a.pm-button')
+  await expect(button).toHaveText('进入讲义')
+  await expect(button).toHaveAttribute('href', /#content-tabs$/)
+  await expect(cards.nth(2).locator('.pm-card__header')).toHaveText('页眉')
+})
+
+test('choosing a tab chooses the tab with the same :sync: key in the other tab set (P-46)', async ({ page }) => {
+  await page.goto(`${content().web}/cards.html`)
+  const sets = page.locator('.pm-section[data-section="content-tabs"] .pm-tabs')
+  await expect(sets).toHaveCount(2)
+  const [first, second] = [sets.nth(0), sets.nth(1)]
+  await expect(second.getByRole('tabpanel')).toHaveText('安装：pip install presmium')
+  await first.getByRole('tab', { name: 'JavaScript' }).click()
+  await expect(first.getByRole('tab', { name: 'JavaScript' })).toHaveAttribute('aria-selected', 'true')
+  await expect(first.getByRole('tabpanel')).toHaveText('用 console.log 输出。')
+  await expect(second.getByRole('tab', { name: 'JavaScript' })).toHaveAttribute('aria-selected', 'true')
+  await expect(second.getByRole('tabpanel')).toHaveText('安装：npm install presmium')
+})
+
+test('the slides show the cards in their grid, and a tab set as its tabs one after another (P-46)', async ({ page }) => {
+  const slide = await open(page, 'content-cards')
+  const cards = slide.locator('.pm-grid > .pm-card')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.nth(1)).toBeVisible()
+  await expect(cards.nth(1)).toContainText('第 2 周：上下文')
+  const tops = await cards.evaluateAll(list => list.map(card => Math.round(card.getBoundingClientRect().top)))
+  expect(new Set(tops).size).toBe(1)
+
+  const tabs = (await open(page, 'content-tabs')).locator('.pm-tabs').first()
+  await expect(tabs.locator('.pm-tabs__title')).toHaveText(['Python', 'JavaScript'])
+  await expect(tabs).toContainText('用 console.log 输出。')
+})
+
 test.describe('online media', () => {
   test.describe.configure({ timeout: 120_000 })
   let deck: string

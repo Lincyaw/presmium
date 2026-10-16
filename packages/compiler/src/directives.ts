@@ -1,7 +1,8 @@
 /**
  * The built-in directives as editors describe them (docs/ir.md section 5.1):
  * names, options and what they do, in the languages Presmium has messages
- * for. The compiler implements them in source.ts (`{include}`) and blocks.ts.
+ * for. The compiler implements them in source.ts (`{include}`, and MyST's
+ * card, grid and tab extensions) and blocks.ts.
  */
 import type { DirectiveOptionType, Locale } from '@presmium/kernel'
 
@@ -49,6 +50,44 @@ const CODE_OPTIONS: Record<string, DirectiveOptionInfo> = {
   'echo': { type: 'string', doc: { 'zh-CN': '`false`：只显示输出，Markdown 输出按正文显示。', 'en': '`false`: only the output shows, Markdown output as prose.' }, values: ['false'] },
 }
 
+const CLASS: DirectiveOptionInfo = { type: 'string', doc: { 'zh-CN': 'CSS 类名。', 'en': 'CSS class names.' } }
+
+/** MyST's cards, grids and tabs (docs/ir.md 2.10). */
+const LAYOUT_DIRECTIVES: DirectiveInfo[] = [
+  {
+    name: 'grid',
+    doc: { 'zh-CN': '栅格：参数为四档屏宽（手机、小、中、大）的列数，如 `1 1 2 3`；正文为 `{card}` 或 `{grid-item}`。', 'en': 'A grid: the argument is the columns at four screen widths (phone, small, medium, large), e.g. `1 1 2 3`; the body holds `{card}` or `{grid-item}`.' },
+    options: { class: CLASS },
+  },
+  {
+    name: 'grid-item',
+    doc: { 'zh-CN': '栅格中的一格。', 'en': 'An item of a grid.' },
+    options: { columns: { type: 'number', doc: { 'zh-CN': '占一行 12 份中的几份。', 'en': 'How many twelfths of a row it takes.' } }, class: CLASS },
+  },
+  {
+    name: 'card',
+    doc: { 'zh-CN': '卡片：参数为标题；正文中 `^^^` 之前为页眉，`+++` 之后为页脚。', 'en': 'A card: the argument is its title; in the body, what precedes `^^^` is its header, what follows `+++` its footer.' },
+    options: {
+      link: { type: 'string', doc: { 'zh-CN': '整张卡片链接到的地址。', 'en': 'Where the whole card links to.' } },
+      header: { type: 'string', doc: { 'zh-CN': '页眉。', 'en': 'Header.' } },
+      footer: { type: 'string', doc: { 'zh-CN': '页脚。', 'en': 'Footer.' } },
+    },
+  },
+  {
+    name: 'tab-set',
+    doc: { 'zh-CN': '一组选项卡；正文为 `{tab-item}`。', 'en': 'A set of tabs; the body holds `{tab-item}`.' },
+    options: { class: CLASS },
+  },
+  {
+    name: 'tab-item',
+    doc: { 'zh-CN': '一个选项卡：参数为标题。', 'en': 'A tab: the argument is its title.' },
+    options: {
+      sync: { type: 'string', doc: { 'zh-CN': '同步键：选中它时，页面上同一键的选项卡一起切换。', 'en': 'Sync key: choosing it switches the tabs with the same key on the page.' } },
+      selected: { type: 'boolean', doc: { 'zh-CN': '开始时选中。', 'en': 'Selected at first.' } },
+    },
+  },
+]
+
 export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [
   { name: 'slide', doc: { 'zh-CN': '上屏内容；正文为 MyST。', 'en': 'Content shown on screen; the body is MyST.' }, options: {} },
   { name: 'only', doc: { 'zh-CN': '只在这些渲染端出现的内容，如 `{only} web, notebook`。', 'en': 'Content limited to renderers, e.g. `{only} web, notebook`.' }, options: {} },
@@ -61,4 +100,5 @@ export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [
   },
   { name: 'include', doc: { 'zh-CN': '引入另一个源文件。', 'en': 'Includes another source file.' }, options: {} },
   ...['code', 'code-block', 'code-cell', 'sourcecode'].map(name => ({ name, doc: { 'zh-CN': '代码；参数为语言。', 'en': 'Code; the argument is the language.' }, options: CODE_OPTIONS })),
+  ...LAYOUT_DIRECTIVES,
 ]

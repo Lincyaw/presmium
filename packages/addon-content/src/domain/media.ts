@@ -3,7 +3,8 @@ import type { MdastNode } from '@presmium/kernel'
 /**
  * Media directives (P-42): `{video}`, `{audio}` and `{animation}` (an
  * animated image, with a still image shown instead when the system asks for
- * reduced motion). `PmMedia` draws the elements of `mediaElements`.
+ * reduced motion). `PmMedia` draws the elements of `mediaElements`; a video
+ * may have a poster and caption tracks in several languages.
  */
 export type MediaKind = 'video' | 'audio' | 'animation'
 
@@ -50,6 +51,81 @@ export function mediaElements(kind: MediaKind, options: MediaOptions, still: boo
     { tag: 'img', file: 'media', attrs: { class: 'pm-media-motion', ...alt, ...size } },
     { tag: 'img', file: 'still', attrs: { class: 'pm-media-still', ...alt, ...size } },
   ]
+}
+
+/**
+ * A caption track of a video (docs/ir.md 2.14): its language, its file, its
+ * label (the language's name) and whether it shows without being chosen.
+ */
+export interface CaptionTrack {
+  srclang: string
+  src: string
+  label: string
+  default: boolean
+}
+
+/**
+ * `:captions: en=films/loop.en.vtt, zh-CN=films/loop.zh.vtt`: language to
+ * file, in the order written; `invalid` holds the entries that are not
+ * `<language tag>=<file>`.
+ */
+export function parseCaptions(value: string): { captions: Record<string, string>, invalid: string[] } {
+  const captions: Record<string, string> = {}
+  const invalid: string[] = []
+  for (const entry of value.split(',').map(part => part.trim()).filter(Boolean)) {
+    const [lang = '', ...file] = entry.split('=')
+    const tag = languageTag(lang.trim())
+    const path = file.join('=').trim()
+    if (tag && path) captions[tag] = path
+    else invalid.push(entry)
+  }
+  return { captions, invalid }
+}
+
+/** The canonical form of a BCP 47 language tag (`zh-cn` gives `zh-CN`); undefined when it is none. */
+export function languageTag(value: string): string | undefined {
+  try {
+    return value ? Intl.getCanonicalLocales(value)[0] : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** The name of a language in the language `locale` (`en` in `zh-CN` is 英语); the tag itself where it has none. */
+export function languageName(lang: string, locale: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'language' }).of(lang) ?? lang
+  } catch {
+    return lang
+  }
+}
+
+/** The tracks of a video's captions, labelled in `locale`; the language `chosen` shows by default. */
+export function captionTracks(captions: Record<string, string> | undefined, chosen: string | undefined, locale: string): CaptionTrack[] {
+  return Object.entries(captions ?? {}).map(([srclang, src]) => ({ srclang, src, label: languageName(srclang, locale), default: srclang === chosen }))
+}
+
+const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/** HTML attributes: a value, or the name alone for `true`. */
+function htmlAttributes(attrs: Record<string, string | number | true | undefined>): string {
+  return Object.entries(attrs)
+    .filter(([, value]) => value !== undefined)
+    .map(([name, value]) => (value === true ? ` ${name}` : ` ${name}="${escapeHtml(String(value))}"`))
+    .join('')
+}
+
+/**
+ * A video with its poster and caption tracks as HTML, for a renderer that
+ * writes HTML rather than running the component (the notebook): the element
+ * `PmMedia` draws, and its caption.
+ */
+export function videoHtml(video: { src: string, poster?: string, tracks: CaptionTrack[], caption?: string, options: MediaOptions }): string {
+  const [element] = mediaElements('video', video.options, false)
+  const tracks = video.tracks.map(track => `<track${htmlAttributes({ kind: 'captions', src: track.src, srclang: track.srclang, label: track.label, default: track.default || undefined })}>`)
+  const lines = ['<figure>', `<video${htmlAttributes({ ...element!.attrs, src: video.src, poster: video.poster })}>`, ...tracks, '</video>']
+  if (video.caption) lines.push(`<figcaption>${escapeHtml(video.caption)}</figcaption>`)
+  return [...lines, '</figure>'].join('\n')
 }
 
 /** Static content for renderers without the media element (a notebook, an export): a link to the file, named by the caption or the file name. */

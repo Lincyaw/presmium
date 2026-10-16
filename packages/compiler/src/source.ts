@@ -7,6 +7,10 @@ import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { errorMessage, isRecord } from '@presmium/kernel'
 import type { DirectiveOptionType, Finding, MdastNode, SourcePos } from '@presmium/kernel'
+import { buttonRole } from 'myst-ext-button'
+import { cardDirective } from 'myst-ext-card'
+import { gridDirectives } from 'myst-ext-grid'
+import { tabDirectives } from 'myst-ext-tabs'
 import { mystParse } from 'myst-parser'
 import { parse as parseYaml } from 'yaml'
 import { refusedFile } from './workspace.ts'
@@ -17,6 +21,14 @@ export const BODY = 'presmiumDirectiveBody'
 
 /** Child that a registered role leaves under its `mystRole` node: the options myst-parser read. */
 export const ROLE = 'presmiumRoleOptions'
+
+/**
+ * MyST's extensions for cards, grids, tabs and buttons (docs/ir.md 2.10),
+ * built in as mystmd builds them in: `{grid}`, `{grid-item}`, `{card}`,
+ * `{tab-set}`, `{tab-item}` and the role `{button}` give their standard mdast
+ * (`grid`, `grid-item`, `card`, `tabSet`, `tabItem`, a link with `class: 'button'`).
+ */
+const MYST_EXTENSIONS = { directives: [cardDirective, ...gridDirectives, ...tabDirectives], roles: [buttonRole] }
 
 /** myst-parser's types of the options of each `DirectiveOptionType`; a list is read as a string and split later. */
 const OPTION_TYPES = { string: String, number: Number, boolean: Boolean, list: String } as const
@@ -77,15 +89,15 @@ export class Parser {
    * of its options (docs/ir.md 2.8).
    */
   constructor(directives: Map<string, boolean>, roles: Map<string, Record<string, DirectiveOptionType> | undefined> = new Map()) {
-    this.#roles = [...roles].map(([name, options]) => ({
+    this.#roles = [...MYST_EXTENSIONS.roles, ...[...roles].map(([name, options]) => ({
       name,
       options: Object.fromEntries(Object.entries(options ?? {}).map(([key, type]) => [key, { type: OPTION_TYPES[type] ?? String }])),
       body: { type: String },
       run(data: { options?: Record<string, unknown> }) {
         return [{ type: ROLE, options: data.options ?? {} }]
       },
-    }))
-    this.#specs = [...directives].map(([name, mystBody]) => ({
+    }))]
+    this.#specs = [...MYST_EXTENSIONS.directives, ...[...directives].map(([name, mystBody]) => ({
       name,
       arg: { type: String },
       body: { type: mystBody ? 'myst' : String },
@@ -94,7 +106,7 @@ export class Parser {
         const children = mystBody && Array.isArray(data.body) ? data.body as MdastNode[] : []
         return [{ type: BODY, line: body && lineOf(body)?.line, children }]
       },
-    }))
+    }))]
   }
 
   /** Parses MyST text whose first line is `line` of its file. */

@@ -588,6 +588,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
 | 共享的运行器经包的 `exports` 以 `?raw` 进入两种形态的 Worker；Slidev 的 `{monaco-run}` 在构建产物中运行 Python 并接收执行器与会话；运行器的富输出（`IPython.display`、matplotlib）；在浏览器中解析 Markdown 输出（`wbs.md` 没有为 WP-73b 列出先行验证，开始时做了这几项小规模实测） | WP-73b（已完成，结论见下） |
+| mystmd 的 `myst-ext-card`、`myst-ext-grid`、`myst-ext-tabs`、`myst-ext-button` 与 myst-parser 1.7 一起用时给出的 mdast；它们在两种形态与 notebook 中的写法（`wbs.md` 没有为 WP-85 列出先行验证，开始时做了这几项小规模实测） | WP-85（已完成，结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -614,6 +615,13 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
+
+**WP-85 开始时的验证（2026-10-16，myst-parser 1.7.4、myst-ext-card 1.0.9、myst-ext-grid 1.1.1、myst-ext-tabs 1.0.10、myst-ext-button 0.0.2、Slidev 53.0.0、VitePress 1.6.4）**的结论：
+
+- **登记**：四个包导出的指令与角色规格（`cardDirective`、`gridDirectives`、`tabDirectives`、`buttonRole`）直接放进 `mystParse` 的 `directives`、`roles` 选项即可，嵌套的 `::::{grid}` 中的 `:::{card}`、卡片正文中的 `+++`（页脚，`blockBreak`）与 `^^^`（页眉）、卡片标题中的行内 MyST 都按 mystmd 的规则读出。myst-parser 对同名规格取先登记的一个，所以这些规格排在插件的指令之前。四个包都是 MIT，与 myst-parser 同一发行（`myst-common` 1.10.1、`myst-directives` 1.7.4），不引入新的传递依赖。
+- **mdast 与设计的出入**：`{grid-item}` 生成的节点类型是 `grid-item`（不是 `ir.md` 原写的 `gridItem`）；``{button}`文字 <地址>` `` 生成带 `class: 'button'` 的 `link`（不是 `kind: 'button'`），没有地址时是带同样类名的 `span`；`tabItem` 的标题是字符串字段 `title`，卡片的链接是 `card.url`，栅格的列数是 `grid.columns`（1 到 4 个 1 至 12 的整数，缺省 `1 2 2 3`）。IR 保留这些节点的原样，`ir.md` 2.10 节按实际改写；没有改契约（`ir.ts` 不涉及这些 mdast）。
+- **幻灯片**：`lowerMyst` 把栅格与卡片写成带类名的 HTML 块（`<div class="pm-grid" style="--pm-grid-columns: 3">`，每个开闭标签单独成块，中间空行），Slidev 的 Markdown 照常解析其中的 Markdown 并编进 Vue 模板；幻灯片的画面宽度固定，列数取最宽一档。渲染端只给 `lowerMyst` 传 `iframes: 'element'`（`render-slides/src/node/slidev.ts` 不在 WP-85 的归属中），所以选项 `cards` 不写时随 `iframes`：`element` 的渲染端（幻灯片）保留结构，其余（notebook）写成小标题加段落并列为降级。
+- **网页**：VitePress 默认主题给 `.vp-doc` 中的外链的 `::after` 设了宽、高与图标遮罩，整张卡片的链接（标题链接的 `::after` 覆盖卡片）要以更高的优先级重设它们；`.vp-doc p` 的外边距同样压过单个类名的选择器。选项卡的标签与面板的 id 用 Vue 3.5 的 `useId()`，服务端渲染与水合一致。
 
 ## 12. 包与工作包
 

@@ -304,12 +304,14 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 
 | 写法 | 生成 |
 |---|---|
-| `{grid}`（参数为四档屏宽的列数）、`{grid-item}`（`:columns:`） | mdast `grid`、`gridItem` |
-| `{card}`（参数为标题；`:header:`、`:footer:`、`:link:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚） | mdast `card`（`cardTitle`、`header`、`footer`） |
-| `{tab-set}`、`{tab-item}`（参数为标题；`:sync:`、`:selected:`） | mdast `tabSet`、`tabItem` |
-| ``{button}`文字 <地址>` `` | 带 `kind: 'button'` 的链接 |
+| `{grid}`（参数为四档屏宽的列数，1 到 4 个数，默认 `1 2 2 3`）、`{grid-item}`（`:columns:`，占一行 12 份中的几份） | mdast `grid`（`columns` 为列数的数组）、`grid-item` |
+| `{card}`（参数为标题；`:header:`、`:footer:`、`:link:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚） | mdast `card`（`url`；子节点 `header`、`cardTitle`、正文、`footer`） |
+| `{tab-set}`、`{tab-item}`（参数为标题；`:sync:`、`:selected:`） | mdast `tabSet`、`tabItem`（`title`、`sync`、`selected`） |
+| ``{button}`文字 <地址>` `` | 带 `class: 'button'` 的链接（没有地址时为带同样类名的 `span`） |
 
-它们是 `markdown` 节点中的标准 mdast，不是组件，属于上屏内容。各媒介：网页完整显示（栅格按屏宽分列，选项卡可切换，同 `:sync:` 的选项卡一起切换）；幻灯片中卡片与栅格照常显示，选项卡依次展开为带标题的几段；notebook 降级为标题加段落（卡片标题与选项卡标题成为小标题，按钮成为链接），列入构建报告。搜索索引包含其中的文字。
+节点的名字与字段是 mystmd 这四个包给出的原样（WP-85：`grid-item`，按钮为 `class: 'button'`；设计时写的 `gridItem` 与 `kind: 'button'` 不是它们的输出，没有另作转换）。编译器在 myst-parser 的指令与角色之外登记这些规格（`packages/compiler/src/source.ts`），语言服务的补全列出这五个指令与它们的选项。
+
+它们是 `markdown` 节点中的标准 mdast，不是组件，属于上屏内容。各媒介：网页完整显示（栅格按屏宽分列：手机、576px 起、768px 起、992px 起四档，同 sphinx-design；卡片有 `:link:` 时整张卡片是链接；选项卡可切换，同 `:sync:` 的选项卡一起切换，包括之后打开的页面）；幻灯片中卡片与栅格照常显示（列数取最宽一档），选项卡依次展开为带标题的几段；notebook 降级为标题加段落（卡片标题与选项卡标题成为四级小标题，按钮成为链接），列入构建报告。降为标准 Markdown 的规则在 `lowerMyst` 的选项 `cards` 中（第 6 节）。搜索索引包含其中的文字（选项卡的标题除外）。
 
 ### 2.11 受众与发布检查（P-54、P-55）
 
@@ -401,7 +403,8 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 
 - `:poster:` 是封面图片；`:captions:` 是逗号分隔的 `语言=VTT 文件`，`:captions-default:` 是默认显示的语言（省略时不默认显示字幕）。字幕的标签按语言名称显示。
 - 本地文件与媒体文件一样相对于本文件，随每种媒介发布：组件的 `assets` 声明 `poster` 与 `captions.<语言>`（属性路径），渲染端改写为发布后的地址。文件不存在时报错，带源码位置。
-- 网页与幻灯片显示带 `poster` 与 `<track>` 的 `<video>`；notebook 中为同样的 HTML，文件复制到 `media/`。
+- 网页与幻灯片显示带 `poster` 与 `<track kind="captions">` 的 `<video>`，字幕的标签是语言的名称（`Intl.DisplayNames`，按界面语言：中文界面中 `en` 为“英语”）；notebook 中为同样的 HTML（标签按文稿的语言），文件复制到 `media/`。notebook 只为有封面或字幕的视频写 `<video>`，其他媒体仍为文件链接（富内容插件的 notebook 扩展）。
+- `:captions:` 的语言写法按 BCP 47 规范化（`zh-cn` 写作 `zh-CN`）；不是 `语言=文件` 的项是错误；`:captions-default:` 不是其中的语言时警告，不默认显示字幕。
 
 ## 3. IR
 
@@ -454,7 +457,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | `code` | `echo` | `false`：只显示输出 |
 | `code.outputs[]` | `outputs` | 录制的富输出：nbformat 的输出列表（`stream`、`display_data`、`execute_result`、`error`）；`stdout`、`stderr` 仍是文本流的拼接 |
 | `component` | `assets` | 键可以是属性路径，如 `captions.en` |
-| `markdown` 的 mdast | `presmiumRole` | 登记过的行内角色（2.8 节）；`card`、`grid`、`gridItem`、`tabSet`、`tabItem` 与 `kind: 'button'` 的链接（2.10 节） |
+| `markdown` 的 mdast | `presmiumRole` | 登记过的行内角色（2.8 节）；`card`、`grid`、`grid-item`、`tabSet`、`tabItem` 与 `class: 'button'` 的链接（2.10 节） |
 
 文件路径：`presmium build` 写出的 `<out>/ir.json` 中，入口文件（`meta.entry`）与各块的 `source.file` 是相对于文稿目录的路径，产物因此不随检出位置变化（K-13）；`presmium ir` 的标准输出与 `presmium dev` 推送给浏览器的 IR 保留绝对路径，供编辑器跳转到源码。
 
@@ -531,7 +534,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | `{include}` | 参数为文件路径 | — | 引入文件的内容；被引入文件的 frontmatter 被忽略 |
 | `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}` | 参数为语言；正文为代码 | `:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（强调的行，如 `2, 4-5`，各步都高亮这些行）、`:run:`、`:executor:`、`:timeout:`、`:env:`、`:session:`、`:echo:`（2.7 节） | `code` 节点 |
 | `{audience}` | 参数为受众名列表 | — | 章节的 `audience`（2.11 节）；放在章节顶层，不生成块 |
-| `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` | 见 2.10 节 | 见 2.10 节 | mdast `grid`、`gridItem`、`card`、`tabSet`、`tabItem`（MyST 标准写法） |
+| `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` | 见 2.10 节 | 见 2.10 节 | mdast `grid`、`grid-item`、`card`、`tabSet`、`tabItem`（MyST 标准写法） |
 
 代码块的 `:run:` 取 `compile`（默认，构建时执行并录制输出）、`live`（只在浏览器中执行）或 `both`；`:executor:` 指定执行器 ID；`:timeout:` 为毫秒。`{code-cell}` 是 MyST notebook 的写法，编成同样的 `code` 节点，`:run:` 同样生效；MyST 为它生成的 `outputs` 节点被丢弃，输出只来自编译时执行，所以同一份源码两次编译得到相同的 IR。
 
@@ -567,7 +570,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 
 | 插件 | 角色 | 内容与选项 | 生成 |
 |---|---|---|---|
-| 内置（MyST） | `{button}` | ``{button}`文字 <地址>` `` | 带 `kind: 'button'` 的链接（2.10 节） |
+| 内置（MyST） | `{button}` | ``{button}`文字 <地址>` `` | 带 `class: 'button'` 的链接（2.10 节） |
 | 讲授 `presmium.lecture` | `{cue}` | 内容为命令；`to`、`lines`、`sel` | `presmiumRole`，子内容为空（2.9 节） |
 | | `{say}` | 内容为显示的文字；`alias` | `presmiumRole`，子内容为显示的文字 |
 
@@ -602,7 +605,7 @@ interface Renderer {
 | `renderers`、`base` | 本次构建或开发运行的全部渲染端，与本渲染端的站点路径（2.1 节） |
 | `vitePlugins` | 插件提供的 Vite 插件（第 5 节），运行 Vite 的渲染端在开发与构建中加入 |渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。生成的文稿按幻灯片的站点路径写出（链接到的本地文件与组件属性中的文件地址带上 `base`），而 `slidev export` 总在根路径服务文稿：`base` 不是 `/` 时（例如同时构建两种形态的默认 `/slides/`），构建报告提示改用 `presmium-export`，它为导出另写一份以 `/` 为 `base` 的文稿。
 
-各渲染端用同一套规则把 MyST 降为标准 Markdown（`@presmium/kernel` 的 `lowerMyst`）：幻灯片中图注独立成段，`{dropdown}` 写成 `<details>`，定义列表保留结构，`#标签` 的交叉引用链接到目标章节所在的页。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。
+各渲染端用同一套规则把 MyST 降为标准 Markdown（`@presmium/kernel` 的 `lowerMyst`）：幻灯片中图注独立成段，`{dropdown}` 写成 `<details>`，定义列表保留结构，`#标签` 的交叉引用链接到目标章节所在的页。卡片、栅格与选项卡（2.10 节）按选项 `cards`：`element`（幻灯片，不写 `cards` 而写了 `iframes: 'element'` 时也是它）写成带类名的 `<div>`（`pm-grid` 带 `--pm-grid-columns`、`pm-card`、`pm-card__header`、`pm-card__title`、`pm-card__footer`、`pm-tabs__item`、`pm-tabs__title`），按钮为 `pm-button` 中的链接，样式在幻灯片的 `style.css`；`headings`（默认，notebook）写成四级小标题加内容，栅格、卡片与选项卡列为降级。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。
 
 渲染端发布块中引用的本地文件：Markdown 中的图片与链接，以及组件在 `assets` 中声明的属性。网页把文件发布在站点的 `media/` 下；幻灯片把它们复制到生成的 Slidev 文稿的 `public/`，从站点根路径引用（构建时加上站点路径，翻页预加载也不再请求不存在的相对路径），链接到的文件在新标签页中打开；notebook 把它们复制到 notebook 旁边的 `media/`。文件名中的 `#`、`?` 写作 `%23`、`%3F`，转义不完整的地址不使构建失败。幻灯片的讲解（演讲者备注）是 Slidev 原样显示的 HTML，不经 Vite 处理，其中的图片因此也写成带站点路径的地址。
 

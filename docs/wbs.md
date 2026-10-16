@@ -618,6 +618,8 @@ P-46 原计划在 WP-86；它改的是编译器、内核的 Markdown 降级与 I
 - P-42（`e2e/content.spec.ts`）：带封面与中英字幕的 `{video}` 在网页与幻灯片中是带 `poster` 与两个 `<track>` 的 `<video>`，封面与两个 VTT 文件都返回 200；`packages/addon-content/test/media.test.ts`：notebook 中有同样的 `<track>`，文件在 `media/` 中；字幕文件不存在时构建报错，诊断在该指令的行上。
 - P-46（`e2e/content.spec.ts`）：三张卡片的栅格在桌面宽度下为三列、手机宽度下为一列，卡片中的按钮是链接；切换一个选项卡时同 `:sync:` 的另一组一起切换；幻灯片中显示卡片。`packages/render-notebook/test/cards.test.ts`：notebook 中卡片与选项卡成为标题加段落，构建报告列出这些降级。
 
+**实现说明**：测试文稿在 `e2e/fixtures/content/cards.md`（由 `lecture.md` 引入）；IR 保留 mystmd 原样的 `grid-item` 与 `class: 'button'`，`lowerMyst` 新增选项 `cards`（不写时随 `iframes`），网页的选项卡在 `packages/viewer/src/cards.ts`。与设计的出入及其原因见 `design-v0.7.md` 第 11 节。
+
 ### WP-88 先预测再揭示（M9，P-68）
 
 **归属**：`packages/addon-classroom/**`、`e2e/predict.spec.ts`、`e2e/fixtures/predict/**`。
