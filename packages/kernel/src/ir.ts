@@ -46,6 +46,7 @@ export interface IRDocument {
     title: string
     /** Absolute path of the entry file. */
     entry: string
+    /** The deck's language, from the headmatter `lang`; the compiler writes `DEFAULT_LANG` when it names none. */
     lang?: string
     [key: string]: unknown
   }
@@ -72,6 +73,14 @@ export interface IRSection {
   source: SourcePos
   /** Number of steps; step 0 is the initial state, so a section without reveals has steps = 0. */
   steps: number
+  /**
+   * Set in a renderer's view of the document (`viewFor`) when blocks limited
+   * to other renderers took steps of their own, which the view drops: entry s
+   * is the step of this view that step s of the whole document shows, so a
+   * position can go from one form to another (P-74). Absent when the steps
+   * are those of the document.
+   */
+  stepMap?: number[]
   /** Layout hints per renderer, from `{hints}`; renderers ignore what they do not know. */
   hints: Record<RendererId, Record<string, unknown>>
   /**
@@ -166,6 +175,9 @@ export interface CodeVariant {
   label: string
   value: string
   permalink?: string
+  /** Lines of the version in its file (1-based, inclusive), like `CodeOrigin`'s for the version on screen. */
+  startLine?: number
+  endLine?: number
 }
 
 export interface CodeNode {
@@ -192,6 +204,17 @@ export interface ComponentNode {
   children?: IRBlock[]
   /** Static rendering used by renderers that cannot run the component. */
   fallback?: MdastNode
+  /**
+   * Props that hold the URL of a local file (relative to the block's source
+   * file, or `/...` in the deck's `public/`), by prop name: renderers publish
+   * the file with their output and set the prop to its published URL.
+   */
+  assets?: Record<string, string>
+  /**
+   * 'overlay': the component draws over the page (e.g. a cursor) rather than
+   * in the flow of the content; renderers do not give it a place of its own.
+   */
+  layer?: 'overlay'
 }
 
 // ---------------------------------------------------------------------------
@@ -213,6 +236,8 @@ export interface DirectiveContext {
   file: string
   deckDir: string
   workspaceRoot: string
+  /** The deck's language (`IRDocument.meta.lang`), for text the directive writes; see `deckLocale`. */
+  lang?: string
   /** This plugin's configuration: global, with the `{config}` of the directive's section over it. */
   config: Record<string, unknown>
   source: SourcePos
@@ -231,7 +256,8 @@ export interface DirectiveResult {
 
 export interface DirectiveSpec {
   name: string
-  arg?: boolean
+  /** Whether the directive takes an argument; 'anchor' when the argument is an anchor (`scheme:target`), which editors resolve. */
+  arg?: boolean | 'anchor'
   body?: boolean
   options?: Record<string, DirectiveOptionType>
   toIR(input: DirectiveInput, ctx: DirectiveContext): DirectiveResult | Promise<DirectiveResult>
@@ -245,6 +271,8 @@ export interface RunCache {
 export interface PassContext {
   deckDir: string
   workspaceRoot: string
+  /** The deck's language (`IRDocument.meta.lang`), for text the pass writes; see `deckLocale`. */
+  lang?: string
   src: SourceReader
   resolvers: AnchorResolverRegistry
   lock: AnchorLockFile
@@ -269,6 +297,11 @@ export interface IRPass {
   name: string
   /** Lower runs first among plugin passes; default 0. */
   order?: number
+  /**
+   * 'execute': the pass runs after compile-time execution (step 7), when
+   * code nodes have their `outputs`, e.g. to put them in a fallback.
+   */
+  after?: 'execute'
   run(doc: IRDocument, ctx: PassContext): void | Promise<void>
 }
 
@@ -297,6 +330,34 @@ export interface RenderContext {
   extensions: RendererExtension[]
   /** Plugin package names, so browser renderers can load their components. */
   plugins: string[]
+  /** Absolute package directory of each plugin, by package name as `plugins` lists it, as the compiler loaded it. */
+  pluginDirs: Record<string, string>
+  /** The deck's language (`IRDocument.meta.lang`); see `deckLocale`. */
+  lang?: string
+  /** Ids of the renderers this build or dev session runs, this one included. */
+  renderers: RendererId[]
+  /** Vite plugins of the deck's plugins (`PresmiumNodePlugin.vitePlugins`), for the renderers that run Vite. */
+  vitePlugins: unknown[]
+  /**
+   * This renderer's extension for a component: that of the plugin the node
+   * names (`node.plugin`), else of any plugin that renders a component of its
+   * name. Every renderer picks the same one.
+   */
+  extensionFor(node: ComponentNode): ((node: ComponentNode, block: IRBlock) => unknown) | undefined
+  /**
+   * A configuration value as an output publishes it: absolute paths in the
+   * deck's repository become relative to `from` (a directory), so the output
+   * does not depend on where the deck is checked out; other values stay.
+   */
+  portable(value: unknown, from: string): unknown
+  /**
+   * The local file a URL of a block names: relative to the block's source
+   * file (`source.file`), or `/...` in the deck's `public/`; query and
+   * fragment are ignored, escapes decoded (a malformed one is kept as it is).
+   * `name` is the name to publish it under, `<first 8 hex of its content
+   * hash>-<file name>`. Undefined for a remote URL or no file.
+   */
+  localAsset(source: SourcePos, url: string): { file: string, name: string } | undefined
   report(finding: Finding): void
 }
 
@@ -315,6 +376,12 @@ export interface RenderDevServer {
 export interface Renderer {
   id: RendererId
   support(node: IRNode, extensions: RendererExtension[]): Support
+  /**
+   * Writes what the renderer generates in `ctx.workDir` on the way to its
+   * output, without building it (e.g. the Slidev deck that `slidev export`
+   * works on). `build` does this first.
+   */
+  prepare?(doc: IRDocument, ctx: RenderContext): Promise<void>
   build(doc: IRDocument, ctx: RenderContext): Promise<RenderOutput>
   dev?(doc: IRDocument, ctx: RenderContext): Promise<RenderDevServer>
 }

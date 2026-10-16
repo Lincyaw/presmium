@@ -1,5 +1,6 @@
 // Test-only plugin: code blocks that step through line highlights ({stepcode}) or
-// versions ({morph}), and an `echo` executor whose output is recorded at build time.
+// versions ({morph}, each at its own lines and permalink, as a code reference gives them),
+// and an `echo` executor whose output is recorded at build time.
 import type { PresmiumNodePlugin } from '@presmium/kernel'
 
 const lines = (spec: string) => spec.split(',').flatMap((part) => {
@@ -27,8 +28,9 @@ const plugin: PresmiumNodePlugin = {
       arg: true,
       body: true,
       toIR({ arg = '', body }) {
-        const variants = body.split(/\n===\n/).map((value, i) => ({ label: `v${i + 1}`, value }))
-        return { node: { type: 'code', lang: arg, value: variants[0]!.value, variants }, span: variants.length - 1 }
+        const variants = body.split(/\n===\n/).map((value, i) => ({ label: `v${i + 1}`, value, permalink: `https://example.org/v${i + 1}/sum.py#L${i + 1}`, startLine: i + 1, endLine: i + 1 }))
+        const origin = { anchor: 'line:sum.py#total' as const, file: 'sum.py', startLine: 2, endLine: 2, status: 'exact' as const, permalink: variants.at(-1)!.permalink }
+        return { node: { type: 'code', lang: arg, value: variants[0]!.value, variants, origin }, span: variants.length - 1 }
       },
     },
   ],

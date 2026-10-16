@@ -1,5 +1,5 @@
 /**
- * Anchors of `{code-ref}` in the editor: the definition is the code region
+ * Anchors of directives in the editor: the definition is the code region
  * the deck's resolver finds in the working tree, the hover shows the code and
  * the recorded output of the last compilation, and completion offers the
  * schemes, files and names of an anchor being typed.
@@ -13,14 +13,14 @@ import type { AnchorString, CodeNode, Resolution, ResolvedLocation } from '@pres
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver/node'
 import type { CompletionItem, Hover, Location, Range } from 'vscode-languageserver/node'
 import { blockAt, declarationNames, regionNames } from '../domain/index.ts'
-import type { AnchorRef } from '../domain/index.ts'
+import type { AnchorRef, LsMessages } from '../domain/index.ts'
 
 /** Most names checked against the resolver per completion. */
 const MAX_NAMES = 200
 /** Most lines of code shown in a hover. */
 const MAX_LINES = 60
 
-const SUGGEST = { title: 'Suggest', command: 'editor.action.triggerSuggest' }
+const suggest = (t: LsMessages) => ({ title: t.suggest, command: 'editor.action.triggerSuggest' })
 
 function resolveAnchor(compilation: Compilation, anchor: AnchorString): Promise<Resolution> {
   return compilation.resolvers.resolve(anchor, compilation.src, compilation.lock.get(anchor))
@@ -42,9 +42,9 @@ export async function anchorDefinition(compilation: Compilation, ref: AnchorRef)
 }
 
 /** A fenced code block whose fence is longer than any backtick run in the text. */
-function fenced(text: string, lang = ''): string {
+function fenced(t: LsMessages, text: string, lang = ''): string {
   const lines = text.replace(/\n+$/, '').split('\n')
-  const shown = lines.length > MAX_LINES ? [...lines.slice(0, MAX_LINES), `… ${lines.length - MAX_LINES} more lines`] : lines
+  const shown = lines.length > MAX_LINES ? [...lines.slice(0, MAX_LINES), t.moreLines(lines.length - MAX_LINES)] : lines
   const fence = '`'.repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map(m => m[0].length + 1)))
   return `${fence}${lang}\n${shown.join('\n')}\n${fence}`
 }
@@ -58,34 +58,34 @@ function where(file: string, startLine: number, endLine: number): string {
  * last compilation is used when it is at the hovered line (it carries the
  * pinned code and the outputs); else the anchor is resolved in the working tree.
  */
-export async function anchorHover(compilation: Compilation, file: string, ref: AnchorRef): Promise<Hover> {
+export async function anchorHover(compilation: Compilation, file: string, ref: AnchorRef, t: LsMessages): Promise<Hover> {
   const range: Range = { start: { line: ref.line, character: ref.start }, end: { line: ref.line, character: ref.end } }
   const block = blockAt(compilation.doc, file, ref.line + 1)
   const node = block?.node.type === 'code' && block.node.origin?.anchor === ref.anchor ? block.node : undefined
-  const parts = node?.origin && node.origin.startLine > 0 ? codeNodeHover(node) : await resolvedHover(compilation, ref)
+  const parts = node?.origin && node.origin.startLine > 0 ? codeNodeHover(node, t) : await resolvedHover(compilation, ref, t)
   return { contents: { kind: MarkupKind.Markdown, value: parts.join('\n\n') }, range }
 }
 
-function codeNodeHover(node: CodeNode): string[] {
+function codeNodeHover(node: CodeNode, t: LsMessages): string[] {
   const origin = node.origin!
-  const notes = [origin.status, origin.pin && `pinned at ${origin.pin.slice(0, 7)}`, origin.drift === 'drifted' && 'drifted since the pin'].filter(Boolean)
-  const parts = [`**${origin.anchor}** ${where(origin.file, origin.startLine, origin.endLine)} (${notes.join(', ')})`, fenced(node.value, node.lang)]
+  const notes = [t.status[origin.status] ?? origin.status, origin.pin && t.pinnedAt(origin.pin.slice(0, 7)), origin.drift === 'drifted' && t.drifted].filter(Boolean)
+  const parts = [`**${origin.anchor}** ${where(origin.file, origin.startLine, origin.endLine)} (${notes.join(', ')})`, fenced(t, node.value, node.lang)]
   const run = node.outputs?.[0]
   if (run) {
-    const status = run.timedOut ? 'timed out' : run.ok ? `${run.durationMs} ms` : `exit code ${run.exitCode}`
-    parts.push(`**Recorded output** (${run.executorId}, ${status})`, fenced([run.stdout, run.stderr].filter(Boolean).join('\n') || '(no output)'))
+    const status = run.timedOut ? t.timedOut : run.ok ? `${run.durationMs} ms` : t.exitCode(run.exitCode)
+    parts.push(`**${t.recordedOutput}** (${run.executorId}, ${status})`, fenced(t, [run.stdout, run.stderr].filter(Boolean).join('\n') || t.noOutput))
   } else if (node.run) {
-    parts.push(node.run.when === 'live' ? '*Runs in the browser (`:run: live`); no recorded output.*' : '*No recorded output yet.*')
+    parts.push(node.run.when === 'live' ? t.runsLive : t.notRecorded)
   }
   return parts
 }
 
-async function resolvedHover(compilation: Compilation, ref: AnchorRef): Promise<string[]> {
+async function resolvedHover(compilation: Compilation, ref: AnchorRef, t: LsMessages): Promise<string[]> {
   const resolution = await resolveAnchor(compilation, ref.anchor)
   const { location } = resolution
-  const parts = [[`**${ref.anchor}**`, location && where(location.file, location.startLine, location.endLine), `(${resolution.status})`].filter(Boolean).join(' ')]
+  const parts = [[`**${ref.anchor}**`, location && where(location.file, location.startLine, location.endLine), `(${t.status[resolution.status] ?? resolution.status})`].filter(Boolean).join(' ')]
   if (resolution.message) parts.push(resolution.message)
-  if (location && isRenderable(resolution)) parts.push(fenced(location.text, /\.([\w-]+)$/.exec(location.file)?.[1] ?? ''))
+  if (location && isRenderable(resolution)) parts.push(fenced(t, location.text, /\.([\w-]+)$/.exec(location.file)?.[1] ?? ''))
   return parts
 }
 
@@ -94,11 +94,11 @@ async function resolvedHover(compilation: Compilation, ref: AnchorRef): Promise<
  * a scheme, then a workspace file, then a name in the file that the scheme's
  * resolver resolves.
  */
-export async function anchorCompletion(compilation: Compilation, prefix: string, line: number, start: number, end: number): Promise<CompletionItem[]> {
+export async function anchorCompletion(compilation: Compilation, prefix: string, line: number, start: number, end: number, t: LsMessages): Promise<CompletionItem[]> {
   const edit = (from: number, newText: string) => ({ range: { start: { line, character: from }, end: { line, character: end } }, newText })
   const colon = prefix.indexOf(':')
   if (colon < 0) {
-    return compilation.resolvers.schemes().map(scheme => ({ label: `${scheme}:`, kind: CompletionItemKind.Keyword, detail: 'anchor scheme', textEdit: edit(start, `${scheme}:`), command: SUGGEST }))
+    return compilation.resolvers.schemes().map(scheme => ({ label: `${scheme}:`, kind: CompletionItemKind.Keyword, detail: t.anchorScheme, textEdit: edit(start, `${scheme}:`), command: suggest(t) }))
   }
   const scheme = prefix.slice(0, colon)
   const target = prefix.slice(colon + 1)
@@ -112,14 +112,17 @@ export async function anchorCompletion(compilation: Compilation, prefix: string,
     const entries = await readdir(path, { withFileTypes: true }).catch(() => [])
     return entries.filter(entry => !entry.name.startsWith('.') && entry.name !== 'node_modules').map((entry) => {
       const name = entry.isDirectory() ? `${entry.name}/` : `${entry.name}#`
-      return { label: name, kind: entry.isDirectory() ? CompletionItemKind.Folder : CompletionItemKind.File, textEdit: edit(start + colon + 1 + dir.length, name), command: SUGGEST }
+      return { label: name, kind: entry.isDirectory() ? CompletionItemKind.Folder : CompletionItemKind.File, textEdit: edit(start + colon + 1 + dir.length, name), command: suggest(t) }
     })
   }
 
   const file = target.slice(0, hash)
   const text = await compilation.src.read(file)
   if (text === undefined) return []
-  const harvested = scheme === 'region' ? regionNames(text) : scheme === 'symbol' ? declarationNames(text) : [...regionNames(text), ...declarationNames(text)]
+  // Only the names that hold what is typed after `#` are resolved, each a search of the file (R-30).
+  const typed = target.slice(hash + 1).toLowerCase()
+  const harvested = (scheme === 'region' ? regionNames(text) : scheme === 'symbol' ? declarationNames(text) : [...regionNames(text), ...declarationNames(text)])
+    .filter(name => name.toLowerCase().includes(typed))
   const resolved = await Promise.all(harvested.slice(0, MAX_NAMES).map(async (name) => {
     const resolution = await compilation.resolvers.resolve(`${scheme}:${file}#${name}`, compilation.src)
     return isRenderable(resolution) ? { name, location: resolution.location! } : undefined
@@ -128,7 +131,7 @@ export async function anchorCompletion(compilation: Compilation, prefix: string,
     label: name,
     kind: scheme === 'region' ? CompletionItemKind.Reference : CompletionItemKind.Function,
     detail: `${location.file}:${location.startLine}-${location.endLine}`,
-    documentation: { kind: MarkupKind.Markdown, value: fenced(location.text) },
+    documentation: { kind: MarkupKind.Markdown, value: fenced(t, location.text) },
     textEdit: edit(start + colon + 1 + hash + 1, name),
   }))
 }

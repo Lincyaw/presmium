@@ -14,8 +14,8 @@
 import { createHash } from 'node:crypto'
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { CodeNode, Executor, Finding, IRBlock, IRDocument, RecordedRun, RunCache, RunRequest } from '@presmium/kernel'
-import { errorMessage, isRecord } from './workspace.ts'
 
 /** Cache location relative to the deck directory. */
 export const FREEZE_DIR = '.presmium/freeze'
@@ -140,7 +140,7 @@ export interface ExecuteOptions {
 export async function executePass(doc: IRDocument, executors: Executor[], cache: FreezeCache, report: (finding: Finding) => void, options: ExecuteOptions = {}): Promise<RunStats> {
   const stats: RunStats = { executed: 0, cached: 0 }
   for (const section of doc.sections) {
-    for (const block of allBlocks(section.blocks)) {
+    for (const block of irBlocks(section.blocks)) {
       if (block.node.type !== 'code' || !block.node.run || block.node.run.when === 'live') continue
       await runCode(block.node, block, executors, cache, stats, options, (severity, message) =>
         report({ checkId: 'presmium.execute', severity, message, source: { file: block.source.file, line: block.source.line } }))
@@ -205,13 +205,6 @@ async function runCode(
     if (!result.ok) report('warning', `block ${block.id} exited with ${result.timedOut ? 'a timeout' : `code ${result.exitCode}`}`)
   } catch (error) {
     report('error', `executor ${executor.id} failed on block ${block.id}: ${errorMessage(error)}`)
-  }
-}
-
-function* allBlocks(blocks: IRBlock[]): Generator<IRBlock> {
-  for (const block of blocks) {
-    yield block
-    if (block.node.type === 'component' && block.node.children) yield* allBlocks(block.node.children)
   }
 }
 

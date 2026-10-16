@@ -182,3 +182,63 @@ it('{config} overrides a plugin\'s global options in its section, for its direct
   expect(future.code).toBe(1)
   expect(future.stderr).toContain('plugin "../addons/future" (fixture.future 2.0.0) is not loaded: kernel 0.1.0 does not satisfy "^9.0.0"')
 })
+
+it('compiles a {code-cell} as a code block, keeps labels as ids, keeps the footnotes of each included file its own and reports a misspelled {only} (R-02, R-04, R-37, R-38)', async () => {
+  const dir = fixtures()
+  const first = await presmium(dir, ['ir', 'syntax'])
+  expect(first.code).toBe(0)
+  const doc = JSON.parse(first.stdout) as IRDocument
+  // The labelled section has its label; the earlier title whose slug it is takes the next id, without a diagnostic.
+  expect(doc.sections.map(s => s.id)).toEqual(['intro-2', 'intro', 'only', 'chapter-a', 'chapter-b'])
+  const entry = join(dir, 'syntax/lecture.md')
+  const line = readFileSync(entry, 'utf8').split('\n').indexOf(':::{only} slide') + 1
+  expect(doc.diagnostics).toMatchObject([{ severity: 'warning', message: expect.stringContaining('unknown renderer id "slide"'), source: { file: entry, line } }])
+
+  // `:run:` of a {code-cell} runs at compile time; MyST's output area, with its random id, is not in the IR.
+  expect(doc.sections[1]!.blocks[0]!.node).toMatchObject({ type: 'code', lang: 'echo', value: 'hello cell', run: { when: 'compile' }, outputs: [{ stdout: 'HELLO CELL\n' }] })
+  expect(first.stdout).not.toContain('"type": "outputs"')
+  // A plugin pass that runs after compile-time execution sees the outputs (C-17).
+  expect(doc.meta.recorded).toEqual(['HELLO CELL\n'])
+  expect((await presmium(dir, ['ir', 'syntax'])).stdout).toBe(first.stdout)
+
+  // Both chapters write [^1]: each reference goes to the definition of its own chapter, and each chapter counts from 1.
+  const footnotes = (id: string) => doc.sections.find(s => s.id === id)!.blocks.flatMap((b) => {
+    const found: MdastNode[] = []
+    const visit = (node: MdastNode) => (node.type.startsWith('footnote') ? found.push(node) : node.children?.forEach(visit))
+    if (b.node.type === 'markdown') visit(b.node.mdast)
+    return found.map(n => [n.type, n.identifier, n.label, n.enumerator])
+  })
+  expect(footnotes('chapter-a')).toEqual([['footnoteReference', '1', '1', '1'], ['footnoteDefinition', '1', '1', '1']])
+  expect(footnotes('chapter-b')).toEqual([['footnoteReference', '1-2', '1', '1'], ['footnoteDefinition', '1-2', '1', '1']])
+})
+
+it('gives each renderer the steps of what it shows: steps that only blocks of other renderers took are left out (R-03)', async () => {
+  const dir = fixtures()
+  const out = join(dir, 'out')
+  expect((await presmium(dir, ['build', 'syntax', '--out', out])).code).toBe(0)
+  // `{only} web` with `:reveal:` takes step 1 of the document, before the revealed code.
+  const only = (JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as IRDocument).sections.find(s => s.id === 'only')!
+  expect([only.steps, only.blocks.find(b => b.id === 'code-1')!.at]).toEqual([2, 2])
+  // The fixture renderer shows the code at the first click, and has no step without a change.
+  expect(JSON.parse(readFileSync(join(out, 'fixture/outline.json'), 'utf8')).steps.only).toEqual({ steps: 1, at: { 'code-1': 1 } })
+})
+
+it('names the pass that leaves a malformed IR in a located presmium.ir error, instead of crashing (R-32)', async () => {
+  const dir = fixtures()
+  mkdirSync(join(dir, 'breaking'))
+  writeFileSync(join(dir, 'breaking/lecture.md'), '---\ntitle: Breaking\nplugins:\n  - ../addons/breaker\n---\n\n## First\n\nSee {ref}`first`.\n')
+  const { code, stderr } = await presmium(dir, ['ir', 'breaking'])
+  expect(code).toBe(1)
+  expect(stderr).toContain('breaking/lecture.md:9  error  block paragraph-1 of section first: mdast > root[1] has a node without a type  (presmium.ir)')
+  expect(stderr).toContain('hint: the IR is invalid after pass fixture.breaker.typeless of plugin fixture.breaker')
+})
+
+it('reads the headmatter of an entry that starts with a byte order mark (R-36)', async () => {
+  const dir = fixtures()
+  mkdirSync(join(dir, 'bom'))
+  writeFileSync(join(dir, 'bom/lecture.md'), '﻿---\ntitle: BOM deck\nlang: en-US\nplugins:\n  - ../addons/echo\n---\n\n## First\n\nText.\n')
+  const { code, stdout } = await presmium(dir, ['ir', 'bom'])
+  expect(code).toBe(0)
+  const doc = JSON.parse(stdout) as IRDocument
+  expect([doc.meta.title, doc.meta.lang, doc.config.plugins, doc.sections.map(s => s.id), doc.diagnostics]).toEqual(['BOM deck', 'en-US', ['../addons/echo'], ['first'], []])
+})

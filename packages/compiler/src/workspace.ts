@@ -6,6 +6,9 @@ import type { SourceReader } from '@presmium/kernel'
 
 const run = promisify(execFile)
 
+/** A full commit hash (SHA-1 or SHA-256): what it names never changes. */
+export const COMMIT = /^(?:[\da-f]{40}|[\da-f]{64})$/i
+
 /** The enclosing git work tree root, or `dir` itself when it is not inside one. */
 export async function findWorkspaceRoot(dir: string): Promise<string> {
   return run('git', ['rev-parse', '--show-toplevel'], { cwd: dir })
@@ -24,12 +27,4 @@ export function createSourceReader(root: string): SourceReader {
         .then(({ stdout }) => stdout, () => undefined)
     },
   }
-}
-
-export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }

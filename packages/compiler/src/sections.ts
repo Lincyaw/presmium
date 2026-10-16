@@ -7,7 +7,7 @@
  * MyST label before the heading, or from the title.
  */
 import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
-import { fileOf, lineOf } from './source.ts'
+import { fileOf, lineOf, sourceOf } from './source.ts'
 
 export interface RawSection {
   id: string
@@ -64,13 +64,23 @@ export function splitSections(nodes: MdastNode[], options: SplitOptions, report:
   const cover = drafts[0]
   if (cover?.depth === 0 && !cover.titled && cover.nodes.length === 0) drafts.shift()
 
+  // Labels give stable ids, so they are taken first; a title's slug gets what is left (R-37).
   const used = new Set<string>()
-  return drafts.map(({ label, title, depth, source, nodes }): RawSection => {
-    if (label && used.has(label)) {
-      report({ checkId: 'presmium.sections', severity: 'error', message: `duplicate section label (${label})=`, source })
+  const labelled = new Set<Draft>()
+  for (const draft of drafts) {
+    if (!draft.label) continue
+    if (used.has(draft.label)) {
+      report({ checkId: 'presmium.sections', severity: 'error', message: `duplicate section label (${draft.label})=`, source: draft.source })
+      continue
     }
+    used.add(draft.label)
+    labelled.add(draft)
+  }
+  return drafts.map((draft): RawSection => {
+    const { title, depth, source, nodes } = draft
     const ends = nodes.filter(n => fileOf(n, options.entry) === source.file).map(n => lineOf(n)?.endLine ?? 0)
-    return { id: unique(label ?? slugify(title), used), title, depth, source: { ...source, endLine: Math.max(source.line, ...ends) }, nodes }
+    const id = labelled.has(draft) ? draft.label! : unique(draft.label ?? slugify(title), used)
+    return { id, title, depth, source: { ...source, endLine: Math.max(source.line, ...ends) }, nodes }
   })
 }
 
@@ -80,11 +90,6 @@ function takeLabel(nodes: MdastNode[]): string | undefined {
   if (last?.type !== 'mystTarget' || typeof last.label !== 'string') return undefined
   nodes.pop()
   return last.label
-}
-
-function sourceOf(node: MdastNode, entry: string): SourcePos {
-  const lines = lineOf(node)
-  return { file: fileOf(node, entry), line: lines?.line ?? 1, endLine: lines?.endLine }
 }
 
 /** Concatenated text of a node's descendants. */

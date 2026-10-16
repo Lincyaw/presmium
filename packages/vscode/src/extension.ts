@@ -6,6 +6,7 @@
 import { randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
+import { errorMessage } from '@presmium/kernel'
 import { previewUrl } from '@presmium/language-server/domain'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '@presmium/language-server/protocol'
 import type { Preview, SectionAt } from '@presmium/language-server/protocol'
@@ -39,7 +40,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     server = serverModule(context)
   } catch (error) {
-    void vscode.window.showErrorMessage(`Presmium: ${error instanceof Error ? error.message : String(error)}`)
+    void vscode.window.showErrorMessage(`Presmium: ${errorMessage(error)}`)
     return
   }
   const runtime = vscode.workspace.getConfiguration('presmium').get<string>('server.runtime') || 'node'
@@ -73,7 +74,7 @@ async function openPreview(client: LanguageClient): Promise<void> {
     preview = await vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'Starting presmium dev' }, () =>
       client.sendRequest<Preview>(PREVIEW_REQUEST, { textDocument: { uri: editor.document.uri.toString() } }))
   } catch (error) {
-    void vscode.window.showErrorMessage(`Presmium preview: ${error instanceof Error ? error.message : String(error)}`)
+    void vscode.window.showErrorMessage(`Presmium preview: ${errorMessage(error)}`)
     return
   }
   const base = (await vscode.env.asExternalUri(vscode.Uri.parse(preview.url))).toString(true).replace(/\/?$/, '/')

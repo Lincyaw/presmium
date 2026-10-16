@@ -1,0 +1,8 @@
+{
+  "name": "presmium-fixture-web",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts"
+  }
+}

@@ -5,9 +5,8 @@
  * every violation is an `error` finding located at its section or block, or
  * at the first line of the entry file when it concerns the whole document.
  */
-import { IR_VERSION } from '@presmium/kernel'
-import type { Finding, IRBlock, IRDocument, IRSection, SourcePos } from '@presmium/kernel'
-import { isRecord } from './workspace.ts'
+import { IR_VERSION, isRecord } from '@presmium/kernel'
+import type { Finding, IRBlock, IRDocument, IRSection, MdastNode, SourcePos } from '@presmium/kernel'
 
 /** `entry` locates the document-level findings; it defaults to `meta.entry`. */
 export function validateIR(doc: IRDocument, entry?: string): Finding[] {
@@ -29,6 +28,7 @@ export function validateIR(doc: IRDocument, entry?: string): Finding[] {
 
   const ids = new Set<string>()
   doc.sections.forEach((section, i) => {
+    if (!isRecord(section)) return fail(`section ${i + 1} is not an object`)
     const where = isSource(section.source) ? section.source : undefined
     if (!where) fail(`section ${i + 1} has no source position`)
     if (typeof section.id !== 'string' || section.id === '') fail(`section ${i + 1} has no id`, where)
@@ -48,6 +48,10 @@ export function validateIR(doc: IRDocument, entry?: string): Finding[] {
 function validateBlocks(blocks: IRBlock[], section: IRSection, fail: (message: string, source?: SourcePos) => void): void {
   const ids = new Set<string>()
   for (const block of blocks) {
+    if (!isRecord(block)) {
+      fail(`a block of section ${section.id} is not an object`, section.source)
+      continue
+    }
     const where = isSource(block.source) ? block.source : section.source
     const name = `block ${block.id} of section ${section.id}`
     if (!isSource(block.source)) fail(`${name} has no source position`, where)
@@ -70,7 +74,7 @@ function nodeProblem({ node }: IRBlock): string | undefined {
   if (!isRecord(node)) return 'node is missing'
   switch (node.type) {
     case 'markdown':
-      return isRecord(node.mdast) && typeof node.mdast.type === 'string' ? undefined : 'markdown node needs an mdast tree'
+      return isRecord(node.mdast) ? mdastProblem(node.mdast, 'mdast') : 'markdown node needs an mdast tree'
     case 'code':
       if (typeof node.lang !== 'string' || typeof node.value !== 'string') return 'code node needs lang and value'
       if (node.highlight && !node.highlight.every(lines => Array.isArray(lines) && lines.every(n => Number.isInteger(n) && n >= 1))) return 'highlight must list 1-based line numbers per step'
@@ -81,11 +85,24 @@ function nodeProblem({ node }: IRBlock): string | undefined {
     case 'component':
       if (typeof node.plugin !== 'string' || typeof node.name !== 'string' || node.name === '') return 'component node needs plugin and name'
       if (!isRecord(node.props)) return 'component props must be an object'
-      if (node.fallback !== undefined && !(isRecord(node.fallback) && typeof node.fallback.type === 'string')) return 'component fallback must be mdast'
+      if (node.fallback !== undefined) return isRecord(node.fallback) ? mdastProblem(node.fallback, 'fallback') : 'component fallback must be mdast'
+      if (node.assets !== undefined && !(isRecord(node.assets) && Object.values(node.assets).every(url => typeof url === 'string'))) return 'component assets must map props to URLs'
       return undefined
     default:
       return `unknown node type ${String((node as { type?: unknown }).type)}`
   }
+}
+
+/** What is wrong with an mdast tree: every node needs a type, and children must be a list of nodes. */
+function mdastProblem(node: MdastNode, path: string): string | undefined {
+  if (typeof node.type !== 'string') return `${path} has a node without a type`
+  if (node.children === undefined) return undefined
+  if (!Array.isArray(node.children)) return `${path}: the children of a ${node.type} node must be a list`
+  for (const [i, child] of node.children.entries()) {
+    const problem = isRecord(child) ? mdastProblem(child, `${path} > ${node.type}[${i}]`) : `${path} > ${node.type}[${i}] is not a node`
+    if (problem) return problem
+  }
+  return undefined
 }
 
 function isCount(value: unknown): value is number {

@@ -1,0 +1,9 @@
+{
+  "displayName": "Presmium",
+  "description": "在 VS Code 中编写 Presmium 文稿：Presmium 语言服务提供的诊断、锚点跳转与补全，以及跟随光标的 presmium dev 预览",
+  "category": "Presmium",
+  "command.openPreview": "在侧边打开预览",
+  "configuration.title": "Presmium",
+  "configuration.server.runtime": "运行语言服务的 Node.js 可执行文件（Node.js 22.18 或更高版本）。",
+  "configuration.server.path": "presmium-language-server.mjs 的路径。默认使用工作区中安装的 @presmium/language-server，没有时使用扩展自带的。"
+}

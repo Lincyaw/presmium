@@ -1,10 +1,11 @@
 // The language server (P-80, P-81) driven over LSP on a MyST deck that references code in a
 // throwaway git repository; the deck is compiled by the real compiler with the code and
 // execution plugins.
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { CompletionRequest, DefinitionRequest, HoverRequest } from 'vscode-languageserver/node'
 import type { CompletionItem, CompletionList, Hover, Location, MarkupContent } from 'vscode-languageserver/node'
@@ -98,7 +99,7 @@ beforeAll(async () => {
   writeFileSync(code, BPE)
   writeFileSync(parser, PARSER)
   writeFileSync(deck, DECK)
-  const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir })
+  const git = (...args: string[]) => spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args], { cwd: dir })
   git('init', '-q')
   git('add', '.')
   git('commit', '-qm', 'bpe')
@@ -160,14 +161,15 @@ it('goes from an anchor to the code region it references', async () => {
   expect(lines[locations[0]!.range.end.line + 1]).toBe('# endregion merge')
 })
 
-it('shows the referenced code and its recorded output on hover', async () => {
+it('shows the referenced code and its recorded output on hover, in the deck\'s language', async () => {
   const position = { line: lineOf(DECK, '```{code-ref} region:src/bpe.py#merge'), character: 20 }
   const hover = await server.connection.sendRequest(HoverRequest.type, { textDocument: { uri }, position }) as Hover
   const { value } = hover.contents as MarkupContent
   expect(value).toContain('region:src/bpe.py#merge')
   expect(value).toContain('best = max(pairs, key=pairs.get)')
   expect(value).not.toContain('# region pick')
-  expect(value).toMatch(/Recorded output[\s\S]*ab 2/)
+  // The deck names no language, so it is in zh-CN.
+  expect(value).toMatch(/录制的输出[\s\S]*ab 2/)
 })
 
 it('completes region names in an anchor, directive names and options', async () => {
@@ -182,7 +184,8 @@ it('completes region names in an anchor, directive names and options', async () 
   expect(regions).toEqual(expect.arrayContaining(['merge', 'count', 'pick']))
   expect(regions).not.toContain('gone')
   expect(await complete('```{code-ref} symbol:src/parser.py#')).toEqual(expect.arrayContaining(['Parser', 'Parser.__init__', 'Parser.parse', 'helper']))
-  expect(await complete('```{')).toEqual(expect.arrayContaining(['code-ref', 'run-panel', 'slide', 'component']))
+  // The compiler's built-in directives, {config} among them, and the plugins'.
+  expect(await complete('```{')).toEqual(expect.arrayContaining(['code-ref', 'run-panel', 'slide', 'component', 'config']))
   expect(await complete(':')).toEqual(expect.arrayContaining(['steps', 'pin', 'run', 'reveal']))
 })
 
@@ -198,3 +201,19 @@ it('maps the cursor to its section and opens the presmium dev preview (P-81)', a
   expect(page.status).toBe(200)
   expect(await page.text()).toContain('<div id="app">')
 }, 120_000)
+
+it('answers at once about a file of a deck that is compiling again after a save (R-46)', async () => {
+  const entry = join(dir, 'slow/lecture.md')
+  const text = `---\ntitle: Slow\nplugins:\n  - ${fileURLToPath(new URL('./fixtures/slow', import.meta.url))}\n---\n\n## Slow\n\nA pass of a second.\n`
+  mkdirSync(join(dir, 'slow'))
+  writeFileSync(entry, text)
+  const slow = pathToFileURL(entry).href
+  server.open(slow, text)
+  await server.diagnostics(slow)
+  server.save(slow)
+  // The compilation the save starts takes a second; the hover does not wait for it.
+  await sleep(300)
+  const started = Date.now()
+  await server.connection.sendRequest(HoverRequest.type, { textDocument: { uri: slow }, position: { line: 7, character: 0 } })
+  expect(Date.now() - started).toBeLessThan(200)
+}, 30_000)

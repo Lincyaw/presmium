@@ -2,12 +2,12 @@ import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
+import { errorMessage } from '@presmium/kernel'
 import type { Finding, Severity } from '@presmium/kernel'
 import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
 import type { BuildReport, RunStats } from '@presmium/compiler'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
-import { errorMessage } from './errors.ts'
 
 const USAGE = `Usage: presmium <command> [deck] [options]
 

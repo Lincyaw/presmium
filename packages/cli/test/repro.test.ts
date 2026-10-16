@@ -1,14 +1,13 @@
-// `presmium build` of fixtures/repro (web and slides) is reproducible (Principle 5): the same bytes
-// from two checkouts of the deck and from a rebuild, with no path of the machine in them, although
-// a plugin's pass puts some in its configuration (fixtures/repro/plugin). The copies lie in the
-// demo, whose node_modules hold the renderers and plugins, at the same depth, as two clones of the
-// repository would.
-import { execFile } from 'node:child_process'
+// `presmium build` of fixtures/repro (web, slides and notebook) is reproducible (Principle 5): the
+// same bytes from two checkouts of the deck and from a rebuild, with no path of the machine in them,
+// although a plugin's pass puts some in its configuration (fixtures/repro/plugin). The copies lie in
+// the demo, whose node_modules hold the renderers and plugins, at the same depth, as two clones of
+// the repository would.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, expect, it } from 'vitest'
-import { BIN } from './helpers.ts'
+import { presmium } from './helpers.ts'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/repro', import.meta.url))
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
@@ -25,30 +24,22 @@ function checkout(): string {
   return join(dir, 'deck')
 }
 
-/** `presmium build` as an author runs it: Vitest's NODE_ENV=test would make Vue builds name their source files. */
-function build(deck: string, out: string): Promise<void> {
-  const { NODE_ENV: _test, ...env } = process.env
-  return new Promise((resolve, reject) => {
-    execFile(process.execPath, [BIN, 'build', '--out', out], { cwd: deck, env, maxBuffer: 16 << 20 }, (error, stdout, stderr) => {
-      if (error) reject(new Error(`presmium build exited with ${error.code}\n${stdout}${stderr}`))
-      else resolve()
-    })
-  })
+/** `presmium build` as an author runs it (`presmium` of @presmium/cli/testing). */
+async function build(deck: string, out: string): Promise<void> {
+  const { code, stdout, stderr } = await presmium(deck, ['build', '--out', out])
+  if (code !== 0) throw new Error(`presmium build exited with ${code}\n${stdout}${stderr}`)
 }
 
-/** Every file of the web and slides outputs, by path. */
+/** Every file of the outputs, the IR beside them included, by path. */
 function outputs(out: string): Map<string, Buffer> {
   const files = new Map<string, Buffer>()
-  for (const form of ['web', 'slides']) {
-    const dir = join(out, form)
-    for (const file of readdirSync(dir, { recursive: true, encoding: 'utf8' })) {
-      if (statSync(join(dir, file)).isFile()) files.set(`${form}/${file}`, readFileSync(join(dir, file)))
-    }
+  for (const file of readdirSync(out, { recursive: true, encoding: 'utf8' })) {
+    if (statSync(join(out, file)).isFile()) files.set(file, readFileSync(join(out, file)))
   }
   return files
 }
 
-it('builds the same web and slides bytes in two checkouts and on a rebuild, without paths of the machine', async () => {
+it('builds the same IR, web, slides and notebook bytes in two checkouts and on a rebuild, without paths of the machine', async () => {
   const [a, b] = [checkout(), checkout()]
   await Promise.all([
     build(a, join(a, 'out1')).then(() => build(a, join(a, 'out2'))),
@@ -56,6 +47,7 @@ it('builds the same web and slides bytes in two checkouts and on a rebuild, with
   ])
   const first = outputs(join(a, 'out1'))
   expect(first.size).toBeGreaterThan(20)
+  expect(['ir.json', 'notebook/lecture.ipynb'].filter(file => !first.has(file))).toEqual([])
   for (const other of [outputs(join(a, 'out2')), outputs(join(b, 'out1'))]) {
     expect([...other.keys()].sort()).toEqual([...first.keys()].sort())
     for (const [file, bytes] of first) expect(other.get(file)!.equals(bytes), file).toBe(true)
@@ -63,8 +55,11 @@ it('builds the same web and slides bytes in two checkouts and on a rebuild, with
   const local = [...first].filter(([, bytes]) => bytes.includes(ROOT) || bytes.includes(a)).map(([file]) => file)
   expect(local, `files naming ${relative(process.cwd(), ROOT) || ROOT}`).toEqual([])
 
-  // The repository's paths are relative: to the deck in the site, to the generated Slidev deck
-  // (where Slidev resolves them) in the slides. A path of the site that exists on the machine stays.
+  // The repository's paths are relative: to the deck in the IR and the site, to the generated Slidev
+  // deck (where Slidev resolves them) in the slides. A path of the site that exists on the machine stays.
+  const published = JSON.parse(first.get('ir.json')!.toString()) as { meta: { entry: string }, config: { presmium: Record<string, unknown> }, sections: { source: { file: string } }[] }
+  expect([published.meta.entry, published.sections.at(-1)!.source.file]).toEqual(['lecture.md', 'pages/two.md'])
+  expect(published.config.presmium['fixture.repro']).toEqual({ data: 'img', site: '/tmp' })
   const ir = JSON.parse(first.get('web/ir.json')!.toString()) as { config: { presmium: Record<string, unknown> }, sections: { id: string, config?: unknown }[] }
   expect(ir.config.presmium['fixture.repro']).toEqual({ data: 'img', site: '/tmp' })
   expect(ir.sections.find(section => section.id === 'first')!.config).toEqual({ 'fixture.repro': { data: 'pages' } })

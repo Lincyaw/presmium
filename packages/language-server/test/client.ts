@@ -5,6 +5,7 @@ import {
   createProtocolConnection,
   DidChangeTextDocumentNotification,
   DidOpenTextDocumentNotification,
+  DidSaveTextDocumentNotification,
   ExitNotification,
   InitializedNotification,
   InitializeRequest,
@@ -22,6 +23,8 @@ export interface Client {
   open(uri: string, text: string): void
   /** Replaces the whole text of an open document, without saving it. */
   change(uri: string, text: string, version: number): void
+  /** Tells the server the document was saved, as an editor does once it wrote the file. */
+  save(uri: string): void
   /** The diagnostics last published for a document; waits for the first publication. */
   diagnostics(uri: string): Promise<Diagnostic[]>
   close(): Promise<void>
@@ -49,6 +52,9 @@ export async function startServer(): Promise<Client> {
     },
     change(uri, text, version) {
       void connection.sendNotification(DidChangeTextDocumentNotification.type, { textDocument: { uri, version }, contentChanges: [{ text }] })
+    },
+    save(uri) {
+      void connection.sendNotification(DidSaveTextDocumentNotification.type, { textDocument: { uri } })
     },
     diagnostics(uri) {
       const known = published.get(uri)

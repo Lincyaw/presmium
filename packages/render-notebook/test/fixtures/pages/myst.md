@@ -29,5 +29,15 @@ E = mc^2
 
 水的化学式是 H{sub}`2`O，保存用 {kbd}`Ctrl`。
 
+A coffee costs \$5 and a cake \$3, written with escaped dollars.
+
+| 词 | 切分 | 次数 |
+|---|---|---|
+| `lowest` | `low` + `est` | 260 |
+
+最后一句有脚注[^note]。
+
+[^note]: 脚注写成编号。
+
 ```{embed} energy
 ```

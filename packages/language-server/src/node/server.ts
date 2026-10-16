@@ -19,6 +19,7 @@ import { Decks } from './decks.ts'
 import type { Deck } from './decks.ts'
 import { toDiagnostics } from './diagnostics.ts'
 import { Previews } from './preview.ts'
+import { deckSyntax } from './syntax.ts'
 
 /** Saves and file events close together compile once. */
 const COMPILE_DELAY = 50
@@ -101,16 +102,23 @@ export function startServer(): void {
   })
   connection.onDidChangeWatchedFiles(({ changes }) => changed(changes.flatMap(change => fileOf(change.uri) ?? [])))
 
+  /** The anchor at a position of a document, with what its deck accepts and says. */
+  const anchorOf = async (uri: string, line: number) => {
+    const found = await deckOf(uri)
+    if (!found) return undefined
+    const syntax = deckSyntax(found.compilation)
+    const ref = anchorAt(bufferLines(uri), line, found.compilation.resolvers.schemes(), syntax.anchors)
+    return ref && { ...found, ref, t: syntax.t }
+  }
+
   connection.onDefinition(async ({ textDocument, position }) => {
-    const found = await deckOf(textDocument.uri)
-    const ref = found && anchorAt(bufferLines(textDocument.uri), position.line, found.compilation.resolvers.schemes())
-    return ref ? anchorDefinition(found.compilation, ref) : null
+    const found = await anchorOf(textDocument.uri, position.line)
+    return found ? anchorDefinition(found.compilation, found.ref) : null
   })
 
   connection.onHover(async ({ textDocument, position }) => {
-    const found = await deckOf(textDocument.uri)
-    const ref = found && anchorAt(bufferLines(textDocument.uri), position.line, found.compilation.resolvers.schemes())
-    return ref ? anchorHover(found.compilation, found.file, ref) : null
+    const found = await anchorOf(textDocument.uri, position.line)
+    return found ? anchorHover(found.compilation, found.file, found.ref, found.t) : null
   })
 
   connection.onCompletion(async ({ textDocument, position }) => {

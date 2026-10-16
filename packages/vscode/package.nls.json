@@ -1,0 +1,9 @@
+{
+  "displayName": "Presmium",
+  "description": "Presmium decks in VS Code: diagnostics, anchor navigation and completion from the Presmium language server, and a presmium dev preview that follows the cursor",
+  "category": "Presmium",
+  "command.openPreview": "Open Preview to the Side",
+  "configuration.title": "Presmium",
+  "configuration.server.runtime": "Node.js executable that runs the language server (Node.js 22.18 or later).",
+  "configuration.server.path": "Path to presmium-language-server.mjs. By default the one of @presmium/language-server installed in the workspace, else the extension's own."
+}

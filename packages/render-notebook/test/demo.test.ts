@@ -1,18 +1,17 @@
 // Builds notebooks with the real `presmium build` and runs them from top to bottom with the local
 // Jupyter stack, as a reader would (P-75): the demo lecture (examples/demo), and the execution
 // fixture deck (e2e/fixtures/exec/panels), whose timeout section has a cell that never ends.
-import { execFile, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { presmium, run } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const DEMO = fileURLToPath(new URL('../../../examples/demo', import.meta.url))
 const EXEC_FIXTURE = fileURLToPath(new URL('../../../e2e/fixtures/exec/panels', import.meta.url))
 const CHECKER = fileURLToPath(new URL('./notebook.py', import.meta.url))
-const CLI = join(dirname(createRequire(import.meta.url).resolve('@presmium/cli')), '../bin/presmium.mjs')
 const JUPYTER = spawnSync('python3', ['-c', 'import nbformat, nbclient, ipykernel']).status === 0
 
 interface Output {
@@ -25,12 +24,6 @@ interface Cell {
   cell_type: string
   metadata: { tags?: string[], presmium: { section: string, blocks: string[] } }
   outputs?: Output[]
-}
-
-function run(command: string, args: string[]): Promise<{ code: number, stdout: string, stderr: string }> {
-  return new Promise((resolve) => {
-    execFile(command, args, { maxBuffer: 16 << 20 }, (error, stdout, stderr) => resolve({ code: error ? Number(error.code) : 0, stdout, stderr }))
-  })
 }
 
 const streams = (outputs: Output[] = []) => outputs.filter(o => o.output_type === 'stream').map(o => `${o.name}: ${[o.text ?? ''].flat().join('')}`)
@@ -47,7 +40,7 @@ afterAll(() => {
 async function buildAndRun(deck: string) {
   const out = mkdtempSync(join(tmpdir(), 'presmium-notebook-run-'))
   temporary.push(out)
-  const build = await run(process.execPath, [CLI, 'build', deck, '--to', 'notebook', '--out', out])
+  const build = await presmium(deck, ['build', '--to', 'notebook', '--out', out])
   expect(build.code, build.stdout + build.stderr).toBe(0)
   const file = join(out, 'notebook/lecture.ipynb')
   const written = (JSON.parse(readFileSync(file, 'utf8')).cells as Cell[]).filter(cell => cell.cell_type === 'code')

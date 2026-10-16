@@ -124,6 +124,16 @@ export function localeOf(lang: string | null | undefined): Locale | undefined {
   return undefined
 }
 
+/**
+ * The UI language of a deck whose `lang` is `lang` (`IRDocument.meta.lang`,
+ * the contexts' `lang`): its messages when Presmium has them, the default
+ * language's when it names none, else English. Text written at compile time
+ * (notes in a notebook, the slides' own words) follows it.
+ */
+export function deckLocale(lang?: string): Locale {
+  return localeOf(lang || DEFAULT_LANG) ?? 'en'
+}
+
 // ---------------------------------------------------------------------------
 // Steps (form-neutral)
 // ---------------------------------------------------------------------------
@@ -273,6 +283,13 @@ export interface PresmiumNodePlugin {
   renderer?: Renderer
   /** Contributions to renderers provided by other plugins, keyed by renderer id. */
   rendererExtensions?: Record<string, RendererContribution>
+  /**
+   * Vite plugins the dev servers and builds of the browser renderers add
+   * (`RenderContext.vitePlugins`), e.g. a server endpoint the plugin's
+   * components call. `config` is the plugin's `presmium.<id>` configuration.
+   * Typed loosely to keep the kernel free of Vite.
+   */
+  vitePlugins?(ctx: { deckDir: string, workspaceRoot: string, config: Record<string, unknown> }): unknown[]
 }
 
 // ---------------------------------------------------------------------------
@@ -374,6 +391,16 @@ export interface StoredItem<T> {
   value: T
 }
 
+/**
+ * The classroom's shared collections (P-60 to P-65). Write rules, which the
+ * classroom server enforces: the presenter may write anything; a learner may
+ * write only entries of their own, whose key contains their participant id
+ * (e.g. `<quiz>:<participant>`, `<participant>:<question>`) and whose value
+ * is an object that names them in `participant` or `author`. The `quizzes`
+ * collection is the presenter's alone. A learner's write that breaks these
+ * rules is dropped by the server and `put` does not report it, so a plugin
+ * that stores learners' data must give it this shape.
+ */
 export interface ClassroomStore {
   list<T>(collection: string): StoredItem<T>[]
   get<T>(collection: string, id: string): T | undefined

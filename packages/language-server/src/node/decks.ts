@@ -5,15 +5,11 @@
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import { checkContext } from '@presmium/cli'
-import { Compiler, DECK_ENTRY, frontmatterLine } from '@presmium/compiler'
+import { pluginChecks } from '@presmium/cli'
+import { Compiler, DECK_ENTRY, readFrontmatter } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
-import { ANCHOR_LOCK_PATH, CheckRegistry } from '@presmium/kernel'
+import { ANCHOR_LOCK_PATH, errorMessage } from '@presmium/kernel'
 import type { Finding } from '@presmium/kernel'
-
-export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 export class Deck {
   readonly entry: string
@@ -68,7 +64,7 @@ export class Deck {
   async #compileOnce(): Promise<void> {
     try {
       const compilation = await this.#compiler.compile()
-      this.findings = [...compilation.doc.diagnostics, ...await runChecks(compilation)]
+      this.findings = [...compilation.doc.diagnostics, ...await pluginChecks(compilation)]
       this.compilation = compilation
     } catch (error) {
       this.findings = [{ checkId: 'presmium.compile', severity: 'error', message: errorMessage(error), source: { file: this.entry, line: 1 } }]
@@ -77,33 +73,10 @@ export class Deck {
   }
 }
 
-/** The plugins' checks, as `presmium check` runs them; a finding without a source is put on its plugin's frontmatter line. */
-async function runChecks(compilation: Compilation): Promise<Finding[]> {
-  const text = readFileSync(compilation.entry, 'utf8')
-  const checks = new CheckRegistry()
-  const lines = new Map<string, number>()
-  const findings: Finding[] = []
-  for (const { name, plugin } of compilation.plugins) {
-    for (const check of plugin?.checks ?? []) {
-      try {
-        checks.register(check)
-        lines.set(check.id, frontmatterLine(text, name))
-      } catch (error) {
-        findings.push({ checkId: 'presmium.plugins', severity: 'error', message: `plugin "${name}": ${errorMessage(error)}`, source: { file: compilation.entry, line: frontmatterLine(text, name) } })
-      }
-    }
-  }
-  for (const finding of await checks.run(checkContext(compilation))) {
-    findings.push(finding.source ? finding : { ...finding, source: { file: compilation.entry, line: lines.get(finding.checkId) ?? 1 } })
-  }
-  return findings
-}
-
 /** Whether a Markdown file's frontmatter lists plugins, which makes it a deck entry. */
 function declaresPlugins(file: string): boolean {
   try {
-    const frontmatter = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(readFileSync(file, 'utf8'))?.[1]
-    return frontmatter !== undefined && /^plugins[ \t]*:/m.test(frontmatter)
+    return 'plugins' in readFrontmatter(readFileSync(file, 'utf8'))
   } catch {
     return false
   }
@@ -145,9 +118,15 @@ export class Decks {
     return deck
   }
 
-  /** The deck a source file belongs to, after its compilation under way; undefined for a file of no deck. */
+  /**
+   * The deck a source file belongs to; undefined for a file of no deck. A deck
+   * whose latest compilation holds the file answers at once, even while it
+   * compiles again (R-46); otherwise the compilations under way are awaited.
+   */
   async of(file: string): Promise<Deck | undefined> {
     const known = this.all()
+    const owner = known.find(deck => deck.compilation?.files.includes(file))
+    if (owner) return owner
     for (const deck of known) {
       await deck.ready()
       if (deck.owns(file)) return deck

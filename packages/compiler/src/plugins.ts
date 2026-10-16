@@ -1,10 +1,9 @@
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { kernelIncompatibility } from '@presmium/kernel'
+import { errorMessage, isRecord, kernelIncompatibility } from '@presmium/kernel'
 import type { PresmiumNodePlugin, Severity } from '@presmium/kernel'
 import { createJiti } from 'jiti'
-import { errorMessage, isRecord } from './workspace.ts'
 
 /** Package export that holds a plugin's Node entry (docs/architecture.md section 3). */
 export const NODE_PLUGIN_EXPORT = './presmium'
@@ -67,10 +66,16 @@ export async function loadPlugins(deckDir: string, names: string[]): Promise<{ p
   return { plugins, problems }
 }
 
-/** Vue components a plugin package registers by convention (`components/*.vue`), by name. */
-export async function pluginComponents(plugin: LoadedPlugin): Promise<string[]> {
-  const files = await readdir(join(plugin.dir, 'components')).catch(() => [])
-  return files.filter(f => f.endsWith('.vue')).map(f => f.slice(0, -'.vue'.length)).sort()
+/** Plugin id of the components in the deck's own `components/` directory (R-47). */
+export const DECK_PLUGIN = 'deck'
+
+/** A component file of the `components/` convention, as the web form registers it: `Name.vue`, `Name.ts`, ... */
+const COMPONENT = /^[^.]+\.(?:vue|[jt]sx?)$/
+
+/** Components a package or the deck registers by convention (`components/*.vue`), by name. */
+export async function directoryComponents(dir: string): Promise<string[]> {
+  const files = await readdir(join(dir, 'components')).catch(() => [])
+  return files.filter(f => COMPONENT.test(f)).map(f => f.replace(/\.[^.]+$/, '')).sort()
 }
 
 /** The plugin id: the Node entry's id, or the package name for a browser-only plugin. */
@@ -83,9 +88,10 @@ function findPackageDir(name: string, deckDir: string): string | undefined {
     const dir = resolve(deckDir, name)
     return existsSync(join(dir, 'package.json')) ? dir : undefined
   }
+  // The real directory, as the browser renderers name it to their bundlers.
   for (let d = deckDir; ; d = dirname(d)) {
     const dir = join(d, 'node_modules', name)
-    if (existsSync(join(dir, 'package.json'))) return dir
+    if (existsSync(join(dir, 'package.json'))) return realpathSync(dir)
     if (dirname(d) === d) return undefined
   }
 }

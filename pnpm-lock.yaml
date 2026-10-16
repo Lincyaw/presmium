@@ -482,6 +482,9 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@presmium/web':
+        specifier: workspace:*
+        version: link:../web
       myst-to-md:
         specifier: ^1.0.17
         version: 1.0.17(supports-color@9.4.0)
@@ -569,6 +572,9 @@ importers:
 
   packages/vscode:
     dependencies:
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       '@presmium/language-server':
         specifier: workspace:*
         version: link:../language-server

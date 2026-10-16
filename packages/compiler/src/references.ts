@@ -6,7 +6,8 @@
  * or the number, e.g. `(1)` or `Figure 2`. References with text keep it; a
  * reference whose target does not exist is reported.
  */
-import type { Finding, IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
+import { irBlocks, nodeMdast } from '@presmium/kernel'
+import type { Finding, IRDocument, MdastNode } from '@presmium/kernel'
 import type { GenericParent } from 'myst-common'
 import { normalizeLabel } from 'myst-common'
 import { enumerateTargetsTransform, ReferenceState } from 'myst-transforms'
@@ -18,7 +19,7 @@ export function resolveReferences(doc: IRDocument, report: (finding: Finding) =>
   const targets: MdastNode[] = []
   for (const section of doc.sections) {
     targets.push({ type: 'heading', depth: Math.max(section.depth, 1), ...normalizeLabel(section.id), children: [{ type: 'text', value: section.title }] })
-    for (const block of allBlocks(section.blocks)) {
+    for (const block of irBlocks(section.blocks)) {
       if (block.node.type === 'markdown') targets.push(...block.node.mdast.children ?? [])
     }
   }
@@ -26,10 +27,8 @@ export function resolveReferences(doc: IRDocument, report: (finding: Finding) =>
   enumerateTargetsTransform({ type: 'root', children: targets } as GenericParent, { state })
 
   for (const section of doc.sections) {
-    for (const block of allBlocks(section.blocks)) {
-      const { node } = block
-      const trees = node.type === 'markdown' ? [node.mdast] : node.type === 'component' && node.fallback ? [node.fallback] : []
-      for (const reference of trees.flatMap(crossReferences)) {
+    for (const block of irBlocks(section.blocks)) {
+      for (const reference of nodeMdast(block.node).flatMap(crossReferences)) {
         // Resolved on a copy: the IR keeps the reference as written, only its text is filled in.
         const resolved = { ...reference } as Reference
         state.resolveReferenceContent(resolved)
@@ -45,13 +44,6 @@ export function resolveReferences(doc: IRDocument, report: (finding: Finding) =>
         }
       }
     }
-  }
-}
-
-function* allBlocks(blocks: IRBlock[]): Generator<IRBlock> {
-  for (const block of blocks) {
-    yield block
-    if (block.node.type === 'component' && block.node.children) yield* allBlocks(block.node.children)
   }
 }
 

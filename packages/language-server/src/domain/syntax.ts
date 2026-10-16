@@ -1,6 +1,6 @@
 /**
  * The MyST source around a position in the editor: the directive fence on a
- * line, the options block under it, the anchor of a `{code-ref}` and what is
+ * line, the options block under it, the anchor of a directive and what is
  * being typed. The editor's buffer may not parse yet, so this reads lines;
  * the compiler stays the parser of the deck.
  */
@@ -16,9 +16,6 @@ export interface Fence {
   arg: string
   argStart: number
 }
-
-/** Directives whose argument is an anchor (`scheme:target`). */
-export const ANCHOR_DIRECTIVES = new Set(['code-ref'])
 
 const FENCE = /^([ \t]*(?:`{3,}|~{3,}|:{3,})\{)([^{}\s]*)\}(.*)$/
 const OPTION = /^[ \t]*:[\w-]*(?::.*)?$/
@@ -61,17 +58,18 @@ export interface AnchorRef {
 }
 
 /**
- * The anchor on a fence line: the argument of an anchor directive (a
- * `pattern:` anchor may hold spaces), or the first word of the argument of
- * any directive when it starts with one of `schemes`.
+ * The anchor on a fence line: the argument of a directive whose argument is
+ * an anchor (`anchors`, from the specs' `arg: 'anchor'`; a `pattern:` anchor
+ * may hold spaces), or the first word of the argument of any directive when
+ * it starts with one of `schemes`.
  */
-export function anchorAt(lines: readonly string[], line: number, schemes: readonly string[] = []): AnchorRef | undefined {
+export function anchorAt(lines: readonly string[], line: number, schemes: readonly string[] = [], anchors: ReadonlySet<string> = new Set()): AnchorRef | undefined {
   const fence = fenceAt(lines, line)
-  const word = (fence && ANCHOR_DIRECTIVES.has(fence.name) ? fence.arg : fence?.arg.split(/\s/)[0]) ?? ''
+  const word = (fence && anchors.has(fence.name) ? fence.arg : fence?.arg.split(/\s/)[0]) ?? ''
   const colon = word.indexOf(':')
   if (!fence || colon <= 0) return undefined
   const scheme = word.slice(0, colon)
-  if (!ANCHOR_DIRECTIVES.has(fence.name) && !schemes.includes(scheme)) return undefined
+  if (!anchors.has(fence.name) && !schemes.includes(scheme)) return undefined
   return { anchor: word as AnchorRef['anchor'], scheme, line, start: fence.argStart, end: fence.argStart + word.length }
 }
 

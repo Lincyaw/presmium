@@ -1,10 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { ANCHOR_LOCK_PATH, CheckRegistry } from '@presmium/kernel'
+import { ANCHOR_LOCK_PATH, CheckRegistry, errorMessage } from '@presmium/kernel'
 import type { AnchorString, CheckContext, Finding } from '@presmium/kernel'
 import { Compiler, frontmatterLine, sortFindings } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
-import { errorMessage } from './errors.ts'
 
 export interface CheckOptions {
   /** Deck directory or entry file. */
@@ -33,36 +32,47 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   const compiler = new Compiler(options.deck)
   let compilation = await compiler.compile()
   const entryText = await readFile(compilation.entry, 'utf8')
-  const pluginLine = (name: string) => frontmatterLine(entryText, name)
   const findings: Finding[] = []
   const fail = (message: string, line: number) =>
     findings.push({ checkId: 'presmium.plugins', severity: 'error', message, source: { file: compilation.entry, line } })
 
   let lock: LockUpdate | undefined
   if (options.updateLock) {
-    lock = await updateLock(compilation, (name, error) => fail(`plugin "${name}" failed to list anchors: ${errorMessage(error)}`, pluginLine(name)))
+    lock = await updateLock(compilation, (name, error) => fail(`plugin "${name}" failed to list anchors: ${errorMessage(error)}`, frontmatterLine(entryText, name)))
     // Plugin passes read the lock, so the IR is compiled again against the new one.
     compilation = await compiler.compile()
   }
 
-  // A crashing check is located at the entry, on the frontmatter line of its plugin.
+  findings.push(...await pluginChecks(compilation))
+  const all = [...compilation.doc.diagnostics, ...findings].map(f => f.source ? f : { ...f, source: { file: compilation.entry, line: 1 } })
+  return { entry: compilation.entry, findings: sortFindings(all), lock }
+}
+
+/**
+ * The plugins' checks on a compilation, as `presmium check` and the language
+ * server run them. A finding without a source, e.g. that of a crashing check,
+ * is located at the entry, on the frontmatter line of its plugin.
+ */
+export async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
+  const text = await readFile(compilation.entry, 'utf8')
+  const at = (name: string) => ({ file: compilation.entry, line: frontmatterLine(text, name) })
   const checks = new CheckRegistry()
-  const checkLine = new Map<string, number>()
+  const places = new Map<string, Finding['source']>()
+  const findings: Finding[] = []
   for (const { name, plugin } of compilation.plugins) {
-    try {
-      for (const check of plugin?.checks ?? []) {
+    for (const check of plugin?.checks ?? []) {
+      try {
         checks.register(check)
-        checkLine.set(check.id, pluginLine(name))
+        places.set(check.id, at(name))
+      } catch (error) {
+        findings.push({ checkId: 'presmium.plugins', severity: 'error', message: `plugin "${name}": ${errorMessage(error)}`, source: at(name) })
       }
-    } catch (error) {
-      fail(`plugin "${name}": ${errorMessage(error)}`, pluginLine(name))
     }
   }
   for (const finding of await checks.run(checkContext(compilation))) {
-    findings.push({ ...finding, source: finding.source ?? { file: compilation.entry, line: checkLine.get(finding.checkId) ?? 1 } })
+    findings.push(finding.source ? finding : { ...finding, source: places.get(finding.checkId) ?? { file: compilation.entry, line: 1 } })
   }
-  const all = [...compilation.doc.diagnostics, ...findings].map(f => f.source ? f : { ...f, source: { file: compilation.entry, line: 1 } })
-  return { entry: compilation.entry, findings: sortFindings(all), lock }
+  return findings
 }
 
 export function checkContext(compilation: Compilation): CheckContext {

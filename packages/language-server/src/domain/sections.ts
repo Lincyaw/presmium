@@ -1,11 +1,5 @@
+import { irBlocks } from '@presmium/kernel'
 import type { IRBlock, IRDocument, IRSection } from '@presmium/kernel'
-
-function* blocksOf(blocks: IRBlock[]): Generator<IRBlock> {
-  for (const block of blocks) {
-    yield block
-    if (block.node.type === 'component' && block.node.children) yield* blocksOf(block.node.children)
-  }
-}
 
 /**
  * The section at a 1-based line of a source file (P-81): the last section
@@ -19,7 +13,7 @@ export function sectionAt(doc: IRDocument, file: string, line: number): IRSectio
   let first: IRSection | undefined
   let last: { section: IRSection, line: number } | undefined
   for (const section of doc.sections) {
-    for (const block of blocksOf(section.blocks)) {
+    for (const block of irBlocks(section.blocks)) {
       if (block.source.file !== file) continue
       first ??= section
       if (block.source.line <= line && block.source.line >= (last?.line ?? 0)) last = { section, line: block.source.line }
@@ -31,7 +25,7 @@ export function sectionAt(doc: IRDocument, file: string, line: number): IRSectio
 /** The block at a 1-based line of a source file, e.g. the code node of a `{code-ref}`. */
 export function blockAt(doc: IRDocument, file: string, line: number): IRBlock | undefined {
   for (const section of doc.sections) {
-    for (const block of blocksOf(section.blocks)) {
+    for (const block of irBlocks(section.blocks)) {
       if (block.source.file === file && block.source.line === line) return block
     }
   }

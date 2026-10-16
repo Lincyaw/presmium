@@ -5,6 +5,7 @@
  * plugins); every block gets its role, narration or visual. Step numbers are
  * assigned later (see steps.ts) from `reveal`, `group` and `span`.
  */
+import { errorMessage, isRecord } from '@presmium/kernel'
 import type {
   BlockRole,
   CodeNode,
@@ -19,9 +20,8 @@ import type {
   SourcePos,
 } from '@presmium/kernel'
 import { parse as parseYaml } from 'yaml'
-import { BODY, fileOf, lineOf } from './source.ts'
+import { BODY, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
-import { errorMessage, isRecord } from './workspace.ts'
 
 /** A block before step scheduling. */
 export interface BlockDraft {
@@ -49,6 +49,10 @@ export interface BlockContext {
   entry: string
   deckDir: string
   workspaceRoot: string
+  /** The deck's language (`meta.lang`). */
+  lang: string
+  /** Renderer ids `{only}` may name: the built-in ones and those the headmatter configures. */
+  renderers: Set<string>
   parser: Parser
   directives: Map<string, PluginDirective>
   /** Component name -> id of the plugin that registers it. */
@@ -70,7 +74,8 @@ const COMMON_OPTIONS = ['reveal', 'label']
 const COMPONENT_OPTIONS = [...COMMON_OPTIONS, 'span', 'plugin']
 const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode'])
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
-const DROPPED = new Set(['comment', 'mystTarget', BODY])
+/** Dropped wherever they are: `outputs` is the output area MyST gives a `{code-cell}`, with a random id. */
+const DROPPED = new Set(['comment', 'mystTarget', 'outputs', BODY])
 
 interface Scope {
   visual: boolean
@@ -171,6 +176,9 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     if (name === 'only') {
       const ids = arg.split(/[\s,]+/).filter(Boolean)
       if (ids.length === 0) fail('needs the renderer ids it is limited to, e.g. {only} web, notebook')
+      for (const id of ids.filter(id => !ctx.renderers.has(id))) {
+        fail(`unknown renderer id "${id}": its content shows in no form; known ids are ${[...ctx.renderers].join(', ')}`, 'warning')
+      }
       only = scope.only ? scope.only.filter(id => ids.includes(id)) : ids
     }
     // `:reveal:` makes the whole directive a group that appears at the next step.
@@ -229,6 +237,7 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       file: source.file,
       deckDir: ctx.deckDir,
       workspaceRoot: ctx.workspaceRoot,
+      lang: ctx.lang,
       config: { ...config, ...out.config[plugin] },
       source,
       parse: markdown => ({ type: 'root', children: clean(ctx.parser.parse(markdown, bodyLine).children ?? [], ctx, source.file) }),
@@ -256,10 +265,14 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, node: markdown(children, ctx) })
 }
 
-/** The code of a code directive: its child, or the code in the container that `:caption:` makes. */
+/**
+ * The code of a code directive: its child, or the code in the container that
+ * `:caption:` makes or in the notebook block of a `{code-cell}` (whose
+ * output area is dropped).
+ */
 function codeOf(node: MdastNode | undefined): MdastNode | undefined {
   if (node?.type === 'code') return node
-  return node?.type === 'container' ? node.children?.find(c => c.type === 'code') : undefined
+  return node?.type === 'container' || node?.type === 'block' ? node.children?.find(c => c.type === 'code') : undefined
 }
 
 function codeNode(node: MdastNode, options: Record<string, string | true>, source: SourcePos, ctx: BlockContext): CodeNode {
@@ -335,11 +348,6 @@ function bodyNodes(node: MdastNode): MdastNode[] {
 function bodyNodeLine(node: MdastNode): number | undefined {
   const line = node.children?.find(c => c.type === BODY)?.line
   return typeof line === 'number' ? line : undefined
-}
-
-function sourceOf(node: MdastNode, entry: string): SourcePos {
-  const lines = lineOf(node)
-  return { file: fileOf(node, entry), line: lines?.line ?? 1, endLine: lines?.endLine }
 }
 
 /** Top-level list items of a markdown block, the units of `:reveal: items`. */

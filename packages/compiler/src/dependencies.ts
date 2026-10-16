@@ -9,6 +9,14 @@ import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import type { AnchorResolverRegistry, SourceReader } from '@presmium/kernel'
+import { COMMIT } from './workspace.ts'
+
+/**
+ * Files read at a full commit hash, by `<absolute path>\0<hash>`: what a hash
+ * names never changes, so a compiler keeps them from one compilation to the
+ * next, whatever reader read them (R-39).
+ */
+export type CommittedFiles = Map<string, string>
 
 const run = promisify(execFile)
 
@@ -20,12 +28,14 @@ export interface Revision {
 
 export class Dependencies {
   readonly #root: string
+  readonly #committed: CommittedFiles
   readonly #files = new Set<string>()
   readonly #revisions = new Map<string, Revision>()
 
   /** `root` is the workspace root, against which relative paths resolve. */
-  constructor(root: string) {
+  constructor(root: string, committed: CommittedFiles = new Map()) {
     this.#root = root
+    this.#committed = committed
   }
 
   /** Absolute paths of the files read in the working tree or declared. */
@@ -41,14 +51,22 @@ export class Dependencies {
     for (const file of files) this.#files.add(resolve(this.#root, file))
   }
 
-  /** A reader that records what is read through `src`. */
+  /** A reader that records what is read through `src`; a file read at a commit hash is read once. */
   reader(src: SourceReader): SourceReader {
     return {
-      read: (file, ref) => {
+      read: async (file, ref) => {
         const path = resolve(this.#root, file)
-        if (ref === undefined) this.#files.add(path)
-        else this.#revisions.set(`${path}\0${ref}`, { file: path, rev: ref })
-        return src.read(file, ref)
+        if (ref === undefined) {
+          this.#files.add(path)
+          return src.read(file, ref)
+        }
+        const key = `${path}\0${ref}`
+        this.#revisions.set(key, { file: path, rev: ref })
+        const known = this.#committed.get(key)
+        if (known !== undefined) return known
+        const text = await src.read(file, ref)
+        if (text !== undefined && COMMIT.test(ref)) this.#committed.set(key, text)
+        return text
       },
     }
   }
@@ -62,9 +80,6 @@ export class Dependencies {
     }
   }
 }
-
-/** A full commit hash (SHA-1 or SHA-256): it names no ref, so no git file can move it. */
-const COMMIT = /^(?:[\da-f]{40}|[\da-f]{64})$/i
 
 /**
  * The git files whose change can make one of `revs` name another commit, in

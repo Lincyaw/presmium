@@ -9,6 +9,7 @@ presmium:
 renderers:
   web: {}
   slides: {}
+  notebook: {}
 ---
 
 # Reproducible builds
