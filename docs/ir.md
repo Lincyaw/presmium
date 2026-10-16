@@ -242,6 +242,8 @@ WASI 与 WebGPU 的执行器按语言登记（`c`、`cpp`、`ruby`、`sql`；`wg
 
 `{terminal}` 的参数是一个 `kind: jupyter` 的环境；它打开该 Jupyter Server 的一个终端（凭据方式同环境）。静态产物中，`proxy` 方式的终端显示说明而不连接；`prompt` 方式照常可用。
 
+实现（WP-76）：`{terminal}` 生成 `PmTerminal`（属性 `env`、`rows`），读者点“打开终端”后连接（`prompt` 方式这时询问令牌），离开页面时关闭终端；`fallback` 是一行说明（按文稿语言）。环境不存在或不是 `kind: jupyter` 时，编译步骤 `presmium.execJupyter.terminals` 在指令的行上报错。`kind: jupyter` 的环境：运营者变量中的名字是环境名的大写，其他字符变为 `_`（`my-gpu` 为 `PRESMIUM_ENV_MY_GPU_URL`）；构建时 `prompt` 方式同样用运营者的一对录制输出（没有学习者）；`languages` 省略时按内核规格的语言判断；`image` 与内核规格的哈希、`kernel_info` 的版本组成环境指纹。服务端的代理只为 `auth: proxy` 的环境挂载。
+
 ### 2.8 行内角色
 
 MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cue to=code-1 lines=3-5}`spot` ``（myst-parser 按登记的选项解析）。插件用 `PresmiumNodePlugin.roles` 登记角色（`RoleSpec`）：

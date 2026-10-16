@@ -1,0 +1,52 @@
+# A remote environment for Presmium (P-105, P-106): one Jupyter Server from a docker-stacks image
+# pinned by digest. Code blocks with `:env: <name>` run in its kernels, at build time and in the
+# browser; `{terminal} <name>` opens its terminals. See README.md.
+#
+#   JUPYTER_TOKEN=$(openssl rand -hex 24) docker compose up -d
+#
+# then give the operator's pair to `presmium build`, `dev` or `gateway` (never to the deck):
+#
+#   PRESMIUM_ENV_<NAME>_URL=http://127.0.0.1:8888/  PRESMIUM_ENV_<NAME>_TOKEN=$JUPYTER_TOKEN
+#
+# Overlays: compose.gpu.yaml (NVIDIA GPUs), compose.gvisor.yaml (the gVisor runtime). They are not
+# combined: gVisor with GPUs (nvproxy) was not verified (docs/design-v0.7.md section 11).
+name: presmium-env
+
+services:
+  jupyter:
+    # The deck's `image` names the same digest, so it enters the environment fingerprint.
+    image: ${PRESMIUM_JUPYTER_IMAGE:-quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a}
+    environment:
+      # jupyter_server reads its token from here: it is not on the command line.
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?set JUPYTER_TOKEN to a long random value}
+      # The plain Jupyter Server, without the JupyterLab front end.
+      DOCKER_STACKS_JUPYTER_CMD: server
+    command:
+      - start-notebook.py
+      # Browsers of published static sites (`auth: prompt`) call it from another origin: name
+      # those origins (a regular expression, e.g. https://course\.example\.edu). Empty: none.
+      - --ServerApp.allow_origin_pat=${JUPYTER_ALLOW_ORIGIN_PAT:-}
+      # Idle kernels and terminals are shut down, also those a browser still holds (a tab left open).
+      - --MappingKernelManager.cull_idle_timeout=${JUPYTER_CULL_IDLE_SECONDS:-1200}
+      - --MappingKernelManager.cull_interval=60
+      - --MappingKernelManager.cull_connected=True
+      - --TerminalManager.cull_inactive_timeout=${JUPYTER_CULL_IDLE_SECONDS:-1200}
+      - --TerminalManager.cull_interval=60
+    ports:
+      # This machine only; put a TLS reverse proxy in front for other machines.
+      - ${JUPYTER_BIND:-127.0.0.1}:${JUPYTER_PORT:-8888}:8888
+    # The image's user (jovyan, uid 1000) needs no capability.
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    deploy:
+      resources:
+        limits:
+          cpus: ${JUPYTER_CPUS:-2}
+          memory: ${JUPYTER_MEMORY:-4g}
+          pids: ${JUPYTER_PIDS:-512}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8888/api]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped

@@ -51,6 +51,8 @@ it('writes the poll as a list in the notebook', async () => {
 
 完整的范例：`packages/addon-exec/test/compile.test.ts`、`packages/cli/test/build.test.ts`（测试用插件在 `packages/cli/test/fixtures/addons/`）。
 
+需要外部条件（Docker、GPU、凭据）的用例在条件不满足时跳过并打印原因与启用方法（`describe.skipIf`、`test.skip`），容器与 compose 项目以工作包编号命名，用工作包自己的端口，结束时只停自己启动的。远端环境的用例用 `templates/env/compose/compose.yaml` 起一台真实的 Jupyter Server（`docker compose -p <项目> up -d --wait`，`JUPYTER_TOKEN`、`JUPYTER_PORT`；范例 `packages/addon-exec-jupyter/test/helpers.ts`、`e2e/fixtures/exec-remote/jupyter.ts`）；不需要 Docker 的凭据用例用记下全部请求的监听器代替环境。
+
 服务端的用例（`packages/server/test/`）：`presmium dev` 打印 `server  <地址>` 一行，`/__presmium/<插件 ID>/` 也可以经渲染端开发服务器的地址访问；要设置 `Host` 等浏览器不让 `fetch` 设置的请求头时用 `node:http`（`packages/server/test/helpers.ts` 的 `raw`、`eventStream`）。`serve` 模式（登录、角色、所有者控制台）由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 以子进程启动（Node 直接运行 TS），环境变量给出工作区、角色与 SHARED 模式的设置；子进程的环境要去掉开发者机器上像凭据的变量，否则 SHARED 模式拒绝启动。需要自己的工作区根目录（`presmium.workspace.yaml`）的文稿放在 `examples/demo/.presmium/` 中并 `git init`，否则工作区根目录是整个仓库。
 
 ## 端到端测试

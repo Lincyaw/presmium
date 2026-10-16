@@ -232,6 +232,37 @@ print("hello")
 
 生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与开发服务器（`presmium dev`，网页与幻灯片都可以）；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
 
+## 远端环境 `presmium.execJupyter`（`@presmium/slidev-addon-exec-jupyter`）
+
+提供 `kind: jupyter` 的具名环境：任何 Jupyter Server（`templates/env/compose/` 的 docker compose 模板、JupyterHub、agent-sandbox 等）。头部声明环境，代码块用 `:env:` 选择，构建时与浏览器中都在它的内核中运行：
+
+```yaml
+execute:
+  environments:
+    lab: { kind: jupyter, auth: proxy, kernel: python3, image: 'quay.io/jupyter/base-notebook:2026-10-12@sha256:…' }
+```
+
+- `auth`（默认 `env`）：`env` 只在构建时可用；`proxy` 在浏览器中经 Presmium 服务端（`presmium dev` 与工作区服务）的代理连接（静态产物中显示录制输出）；`prompt` 连接文稿的 `url`，学习者在页面上粘贴自己的令牌（只存在本页的 `sessionStorage` 中，用于已发布的静态站点）；`none` 连接 `url`，不带令牌；`hub` 预留。JupyterHub 的用户服务器写 `url: https://hub.example.edu/user/{user}/`。
+- 凭据不写在文稿中：构建与代理用运营者的一对环境变量 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`（名字大写，其他字符变为 `_`）。文稿写的 `url` 与运营者的地址不同源时不连接，是错误；没有地址时不发送令牌。
+- 会话（`:session:`）是一个内核：每个页面、每个学习者各自一个；`image` 进入环境指纹。`:run: both` 的输出在构建时录制，浏览器中运行的结果与它相同。
+- `presmium check --env` 连接每个环境，连不上是错误。
+
+### `{terminal}`
+
+参数为 `kind: jupyter` 的环境名；没有正文。打开该 Jupyter Server 的一个终端（xterm.js），凭据方式同环境；读者点“打开终端”后连接。
+
+| 选项 | 类型 | 作用 |
+|---|---|---|
+| `:height:` | number | 行数，默认 16 |
+
+```md
+:::{terminal} lab
+:height: 12
+:::
+```
+
+生成 `PmTerminal`。环境不存在或不是 `kind: jupyter` 时报错（`presmium.execJupyter`）。静态产物中 `proxy` 方式的终端显示说明而不连接，`prompt` 方式照常可用；notebook 中不生成单元格，PDF 等静态导出显示一行说明。
+
 ## 引导 `presmium.guide`（`@presmium/slidev-addon-guide`）
 
 目标用 CSS 选择器指定，通常是同一章节中你自己写的 HTML 元素的 `id`。

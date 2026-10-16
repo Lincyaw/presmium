@@ -581,7 +581,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 |---|---|
 | Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74 |
 | JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
-| Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76 |
+| Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76（已完成，结论见下；`runsc` 与 GPU 的组合没有验证） |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
 | 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83 |
 | dsh 配置项 ID；dsh 在调用 MCP 工具前是否询问 | WP-80 |
@@ -614,6 +614,13 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
 - **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
 - **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
+
+**WP-76 的先行验证（2026-10-16，`@jupyterlab/services` 7.6.4、docker-stacks `quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b802…`（jupyter_server 2.21.1、ipykernel 7.4.0、JupyterHub 6.0.1）、configurable-http-proxy 5.3.0、Vite 5.4 / VitePress 1.6.4、Playwright 1.64.1 的 Chromium、Docker Compose 5.1）**的结论：
+
+- **WebSocket 升级时加凭据**：浏览器 → 网页开发服务器的 Vite 代理（`ws: true`，保留 `Host` 与 `Origin`）→ `presmium dev` 服务端的 `ProxySpec`（`http-proxy-3`，`headers` 在升级请求上同样生效）→ compose 中的 Jupyter Server，内核通道与终端的 WebSocket 都连得上，页面与它的请求中没有令牌。代理把 `Host` 与 `Origin` 设为目标的（Jupyter 校验 WebSocket 的来源与 `Host` 是否一致；放在按主机名分流的入口之后的服务器也需要自己的 `Host`）。Node 端用 `ws` 带请求头，令牌不进地址；`@jupyterlab/services` 在 Node 中以 `console.debug` 打印每个 WebSocket 与内核状态（是标准输出），插件只滤掉这两类行。内核的启动请求可以带 `path`，jupyter_server 以它的目录为工作目录。
+- **浏览器以令牌访问 JupyterHub 用户服务器的跨域**：单用户服务器的 REST 接口跨源可用，需要 `--ServerApp.allow_origin_pat`（`Spawner.args`）；内核的 WebSocket 只能把令牌写在地址中，而 JupyterHub 5 起单用户服务器只在请求带 `Sec-Fetch-Mode: websocket` 时接受地址中的令牌，Chromium 的 WebSocket 握手不带这个请求头（实测为 403，Node 的 `ws` 加上它即可连上），所以单用户服务器的环境中要设置 `JUPYTERHUB_ALLOW_TOKEN_IN_URL=1`；`{user}` 要读 `<hub>/hub/api/user`，hub 默认不回答跨源请求，需要 `JupyterHub.tornado_settings.headers` 给出 `Access-Control-Allow-Origin` 与 `Access-Control-Allow-Headers: Authorization, Content-Type`。三项都设置后，另一个源的页面读出用户名、调用单用户服务器的接口并打开内核的 WebSocket。这些写进 `templates/env/kubernetes/README.md` 的 z2jh 片段。直接的 jupyter_server（compose 模板）以 `allow_origin_pat` 允许站点的来源后，`auth: prompt` 的静态页面跨源运行代码与打开 WebSocket（地址中的令牌）都可用（`e2e/exec-remote.spec.ts`）。
+- **`runtime: runsc` 与 GPU 同时使用**：没有验证。本机（RTX 5090 两张，NVIDIA Container Toolkit 与 CDI）没有安装 runsc，也没有改 Docker 守护进程配置的权限；compose 的 GPU 覆盖配置（`deploy.resources.reservations.devices`）实测可用（容器中 `nvidia-smi -L` 列出两张卡，与 `cap_drop: [ALL]`、`no-new-privileges` 同时）。按约定模板不提供两者的组合：`compose.gpu.yaml` 与 `compose.gvisor.yaml` 是分开的覆盖配置，说明中写明不组合；`compose.gvisor.yaml` 只经 `docker compose config` 校验。
+- **另外发现**：Rollup 会加载死分支中的动态导入，网页的服务端渲染因此也打包插件的浏览器模块，`@jupyterlab/services` 的 `require('ws')` 在那里没有 `browser` 字段的替换而打包失败；插件的 `vite.config.ts` 把它解析为该包自己的垫片（`architecture.md` 4.6 节 WP-76 的段落）。docker-stacks 镜像中内核继承容器的环境，读得到 `JUPYTER_TOKEN`：compose 模板是单用户服务器，学习者之间的隔离要用 JupyterHub（模板说明中写明）。devcontainer 命令行以清理过的环境运行，指向 compose 的开发容器定义要经 `settings.presmium.exec.passEnv` 传入 `JUPYTER_TOKEN`，之后本地环境插件可以在其中运行代码。
 
 ## 12. 包与工作包
 

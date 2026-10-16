@@ -1,0 +1,17 @@
+# NVIDIA GPUs for the remote environment (an overlay of compose.yaml):
+#
+#   JUPYTER_TOKEN=... docker compose -f compose.yaml -f compose.gpu.yaml up -d
+#
+# Needs the NVIDIA Container Toolkit on the host. The base image has no CUDA libraries: choose an
+# image with them, pinned by digest (PRESMIUM_JUPYTER_IMAGE, e.g. a quay.io/jupyter/pytorch-notebook
+# cuda tag), and write the same digest in the deck's `image`. Not combined with compose.gvisor.yaml.
+services:
+  jupyter:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              # `all`, or a number of GPUs.
+              count: ${JUPYTER_GPUS:-all}
+              capabilities: [gpu]

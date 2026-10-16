@@ -538,6 +538,15 @@ export interface HostStart {
 - **浏览器中运行失败**：路由对指定了执行器而没有登记（或不支持该语言）的请求返回 `failedRun`（`exitCode` 为 null）；IR 运行时的代码块对 `exitCode` 为 null 的失败显示录制的输出并在说明中写出原因，程序自己的错误（如 `NameError`）照常显示为现场的输出。
 - **幻灯片中的现场代码**：Slidev 53 只读到代码块属性中第一个 `}`（9.3 节），所以执行器、会话与超时写在生成文稿头部的 `presmiumRuns`（键为 `<章节 ID>/<块 ID>`），代码块写成 ```` ```python {monaco-run} {autorun:false,height:'auto',runnerOptions:$slidev.configs.presmiumRuns['<键>']} ````，不在显示时自动运行，录制的输出显示在它下方；有高亮步骤或多版本的代码块仍是普通代码块。生成的头部另有 `presmiumEnvironments`（IR 的 `config.execute.environments`），`addon-core` 交给 `startHost`。
 
+实现（WP-76，远端环境 `addon-exec-jupyter`）：
+
+- **包内结构**：除 `src/domain`、`src/node`、`src/client` 外另有 `src/jupyter/`：Node 与浏览器共用的 `@jupyterlab/services` 客户端（`kernels.ts` 的内核池与运行、`terminals.ts` 的终端），它不引用 Node 内置模块与 vue，两端各自给出连接的设置（`src/node/connection.ts`：`ws` 的 WebSocket 与带请求头的 `fetch`；`src/client/environments.ts`：浏览器的 `fetch` 与 `WebSocket`）。`@jupyterlab/services` 在第一次运行时才加载。
+- **凭据规则**（`src/domain/connection.ts` 的 `operatorConnection`）：`none` 连接文稿的 `url`，不带令牌；`env`、`proxy`、`prompt` 在服务端（构建、代理、`probe`）都用运营者的一对 `PRESMIUM_ENV_<名>_URL`、`_TOKEN`（构建时没有学习者，`prompt` 的录制同样用运营者的令牌）；名字转为大写，其他字符变为 `_`。没有地址时不连接（运行失败并说明），文稿的 `url` 与地址不同源时提供方的 `create` 抛错，编译器给出 `presmium.execute` 的错误诊断，代理同样不挂载。SHARED 模式中连接是 gateway 中本插件的代理 `<gateway>/presmium.execJupyter/env/<名>/`，带 gateway 的令牌（`RunContext.gateway`，否则 `EnvironmentContext.gateway`）。令牌以 `Authorization: token …` 请求头发送，Node 端的 WebSocket 同样带请求头，令牌不进地址。
+- **运行**：一个会话是一个内核（`endSession` 关闭它），没有会话的运行用一个之后关闭的内核；同一会话的运行按请求的顺序排队。启动内核的请求只有内核名与路径 `presmium-runs/<id>/kernel`（jupyter_server 以它的目录为内核的工作目录，`files` 经 Contents API 写进这个目录），不带任何环境变量。`args` 先作为一段静默执行的赋值运行；`stdin` 按行回答 `input_request`；超时或中止时经 REST 中断内核，5 秒内没有停下的内核被关闭。环境指纹为 `jupyter image=<文稿的 image> kernelspec=<内核名>:sha256:<内核规格的哈希> kernel=<kernel_info 的实现与版本、语言与版本>`，启动一个内核读 `kernel_info` 得出，60 秒内复用。`languages` 省略时按内核规格的语言判断，不符的运行失败。
+- **浏览器**：客户端插件为每个 `kind: jupyter` 的环境登记执行器 `presmium.env.<名>`，并提供 `PmTerminal` 用的 `JUPYTER_ENVIRONMENTS`。`proxy` 经 `/__presmium/presmium.execJupyter/env/<名>/`：HTTP 带 `Presmium-Document`，WebSocket 不能带请求头，文档放在查询参数 `document` 中（由 `hello` 得知）。`prompt` 第一次运行时弹出对话框，令牌存在 `sessionStorage` 的 `presmium.execJupyter.token:<名>` 中，以 `?token=` 带在 WebSocket 地址中（只发往这个服务器），服务器拒绝（401、403）时忘掉它；`url` 中的 `{user}` 由 `<hub>/hub/api/user` 给出。HTML 与 SVG 输出在执行器中先经 DOMPurify 清洗。
+- **服务端与 gateway**：服务端贡献的代理随编译器最近一次为该文稿创建的环境变化（`proxies`、`routes` 是读取时计算的属性），只为 `auth: proxy` 的环境挂载，角色为 `reader`；代理设置目标的 `Host` 与 `Origin`（以服务端为 Jupyter 的客户端；Jupyter 校验 WebSocket 的来源），不能挂载时同一路径回答 502 与原因。gateway 中的贡献按进程环境中的 `PRESMIUM_ENV_<名>_URL` 挂载 `env/<小写名>/`（它不读文稿），没有地址的环境没有代理（404）。SHARED 模式中 serve 的代理以 gateway 为目标并设置 gateway 的 `Host`，但浏览器的 `Origin` 会随请求转发，而 gateway 只接受不带 `Origin` 的请求（10.9 节）：`ProxySpec` 没有去掉请求头的字段，`@presmium/server` 现在只去掉登录代理的密钥，所以这一路径要等服务端在转发到 gateway 时去掉 `Origin`（WP-76 的交付报告中提出，归 `@presmium/server` 的拥有者）。
+- **站点的服务端渲染**：Rollup 会加载死分支中的动态导入，网页的服务端渲染因此也打包插件的浏览器模块；`@jupyterlab/services` 只在非浏览器环境 `require('ws')`（包的 `browser` 字段把它换成垫片），服务端渲染的打包没有这一字段，会连 `ws` 与 Node 内置模块一起打包而失败。插件的 `vite.config.ts` 用一个 Vite 插件（`src/node/vite.ts`）在每次打包中把这一处 `ws` 解析为该包自己的垫片。
+
 ### 4.7 服务端契约
 
 `packages/kernel/src/contracts.ts`：
@@ -1900,8 +1909,9 @@ serve 为每个 agent 会话向 gateway 签发一个只含 `presmium.assistant` 
 | `@agentclientprotocol/sdk` | 1.8 | Apache-2.0 | ACP 客户端（助手）与测试 agent | addon-assistant |
 | DeepSeek Harness（`@deepseek-ai/dsh`） | 精确固定的预览版（先行验证用过 0.2.0-rc.2，本地文档为 0.2.1-alpha.4；实现时取满足最短发布时间的一个版本） | MIT | 默认的 agent 运行时（D11）：助手插件的依赖，运营者配置了模型访问时以子进程启动（ACP over stdio），不作为库引用，用户不必另外安装。它要求 Node 22.19 以上，根目录的 `engines` 因此要提高（WP-80） | addon-assistant |
 | deltabox-lite（`deltabox-lite` 与平台包 `deltabox-lite-<os>-<arch>`） | 0.1.1（精确固定） | Apache-2.0（内含 sandlock-core 0.9，Apache-2.0；fuser，MIT） | 修改审阅与进程沙箱（D12、D13），在插件的辅助进程中经 Node 绑定使用，命令行只用于诊断；有 Linux 与 macOS 的 x64、arm64 预编译，本期只在 Linux 上启用（macOS 待先行验证，10.7 节）。Linux 上要求 glibc 2.39 以上；cbcow 模式要 FUSE（`/dev/fuse`、`fusermount3`）与 Landlock，没有降级的保护（`degraded_protections` 为空）才登记服务 | addon-deltabox（随 CLI 安装） |
-| `@jupyterlab/services` | 7.6 | BSD-3-Clause | Jupyter 内核与终端协议的客户端，浏览器与 Node 共用 | addon-exec-jupyter |
-| `@xterm/xterm`、`@xterm/addon-fit` | 5.x | MIT | 浏览器终端（P-107） | addon-exec-jupyter |
+| `@jupyterlab/services` | 7.6（WP-76 取 7.6.4） | BSD-3-Clause | Jupyter 内核与终端协议的客户端，浏览器与 Node 共用 | addon-exec-jupyter |
+| `@xterm/xterm`、`@xterm/addon-fit` | 5.x（WP-76 取当时的 6.0.0 与 0.11.0） | MIT | 浏览器终端（P-107） | addon-exec-jupyter |
+| `ws` | 8.x | MIT | Node 端连接内核与终端的 WebSocket（能带请求头，令牌不进地址；`@jupyterlab/services` 本身也依赖它） | addon-exec-jupyter |
 | Runno（`@runno/wasi` 等） | 当前版本 | MIT | 浏览器内的 WASI 运行时与 C、C++、Ruby、SQLite 的二进制；Node 端用同一份二进制（先行验证） | addon-exec-wasi |
 | jax-js（`@jax-js/jax`、`@jax-js/optax`） | 0.1 | MIT | JS/TS 中的张量代码与自动微分，WebGPU 后端；按需加载 | addon-exec-webgpu |
 | playwright-chromium | 与仓库一致 | Apache-2.0 | 构建时在 Chromium 中录制 WebGPU 输出；导出讲授视频 | addon-exec-webgpu、addon-lecture |
