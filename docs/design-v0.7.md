@@ -31,6 +31,11 @@
 > 9. **路由的路径**：插件的路由都挂在 `/__presmium/<插件 ID>/` 下，所以语音网关是 `/__presmium/presmium.speech/v1/`，环境代理是 `/__presmium/presmium.execJupyter/env/<名>/`，助手是 `/__presmium/presmium.assistant/tasks`。
 > 10. **富输出中的 HTML**（4.5、9 节）：网页中用 DOMPurify 清洗后内联显示（表格因此可以被搜索、样式一致），幻灯片中放进没有脚本权限的沙箱 iframe。
 > 11. **讲授渲染端是站点渲染端**：它的产物在 `dist/lecture/`，网页的讲授视图从同一站点读取；与网页一同构建时，按已有规则网页的默认 `base` 为 `/web/`。
+> 12. **运营者设置与 MCP 访问**（3.3、3.4 节）：本文没有说插件怎样拿到不来自文稿的设置与 MCP 令牌。定稿增加 `ServerContext.settings`、`NodeServiceContext.settings`（工作区配置 `settings.<插件 ID>`，进程启动时读取一次），以及服务端提供的 `MCP_ENDPOINT`（为每个 agent 会话签发绑定成员与模式的令牌）和 `AgentSessionOptions.mcp`；工作区配置中原来的 `assistant`、`lectures` 移到 `settings` 之下。`@presmium/mcp` 声明自己的 `McpHost`，由服务端实现，依赖只有 `server → mcp` 一个方向。
+> 13. **凭据与地址成对**（7.4、9 节）：本文说文稿只写引擎与音色的名字；定稿把它推广为“文稿不决定凭据发往哪里”：语音引擎的地址与凭据都由运营者在环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_KEY` 中定义（WP-72 初稿中文稿可写的 `url`、`keyEnv` 已去掉），远端环境的令牌只发往 `PRESMIUM_ENV_<名>_URL`，文稿的地址与它不同源时不连接，也没有 `JUPYTER_TOKEN` 这类通用的后备变量。否则编辑文稿的人或受提示注入的 agent 可以把服务端的密钥引向自己的地址。
+> 14. **agent 必须显式启用**（5.3 节）：本文默认启动 `dsh --profile presmium`；定稿要求运营者给出命令（`PRESMIUM_AGENT_COMMAND` 或 `settings.presmium.assistant.command`），没有时助手不可用，问题与源码不发给任何模型（N-08 的“须在配置中显式开启”）。随包的 DeepSeek Harness 模板仍是推荐的写法；界面标明模型的服务提供方（`AgentClient.provider()`）。
+> 15. **构建与合成缓存**（7.4 节）：本文的“构建只读缓存”指已缓存的段落从不重新合成。定稿写明构建只为缺失的段落调用引擎并写入缓存（同编译时执行的录制），全部命中时不发请求，缺失又没有可用的引擎时报错。
+> 16. **克隆音色的关口**（7.6 节）：同意记录放在 `.presmium/speech/consent/<引擎>/<音色>.json`，由语音服务在合成前检查（Node 端与网关同一处），另需运营者设置 `settings.presmium.speech.cloned: true`。`azure` 引擎不在本期范围，以后作为新的适配器加入。
 
 本文是需求 v0.7 新增范围（`requirements.md` 6.10 至 6.14 节，N-08、N-09）的总体架构：执行环境、智能体、工作区、讲授四个新的限界上下文，以及它们共用的服务端与契约。WP-72 把定稿的内容并入 `domain-model.md`、`architecture.md`、`ir.md` 与契约源码；在那之前，本文是新增范围的设计依据。调研记录（DeepSeek Harness、浏览器 GPU、远端环境、语音）的结论已经吸收进本文，出处见各节。
 

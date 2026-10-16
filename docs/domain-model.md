@@ -43,7 +43,7 @@
               外部：Jupyter Server（防腐层）  外部：语音服务（语音网关）   外部：ACP agent · git
 ```
 
-- **内核是共享内核**：所有上下文只依赖内核的契约，彼此之间不直接依赖。多个插件共用的业务服务契约（`executor`、`session`、`classroomStore`，v0.8 起还有 `speech`、`agent`、`agentRuntime`、`revisions`、`approvals` 与操作词汇 `TrackEvent`）也放在内核包中，因为提供方与使用方是不同的插件（`architecture.md` 4.5 节）。
+- **内核是共享内核**：所有上下文只依赖内核的契约，彼此之间不直接依赖。多个插件共用的业务服务契约（`executor`、`session`、`classroomStore`，v0.8 起还有 `speech`、`agent`、`agentRuntime`、`revisions`、`approvals`、`mcpEndpoint` 与操作词汇 `TrackEvent`）也放在内核包中，因为提供方与使用方是不同的插件（`architecture.md` 4.5 节）。
 - **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）不引用 `@slidev/*` 与 vitepress，只通过 `@presmium/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行。只在幻灯片形态中加载的部分（插件包的 `setup/` 与全局图层）可以使用 `@slidev/client` 的公开导出；只有网页渲染端使用 vitepress。领域层（`src/domain/`）不引用 Vue。完整规则见 `architecture.md` 第 3 节。服务端（`@presmium/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
 - **上下文之间通过服务协作**：例如课堂的练习校验使用代码执行提供的 `executor` 服务；测验、笔记等功能使用会话插件提供的 `session` 服务，会话插件可以整体替换。
 - **外部系统只经防腐层接入**：每个外部系统只在一个适配器中出现，适配器说一种标准协议（`architecture.md` 第 3 节的检查规则）。
@@ -62,7 +62,7 @@ v0.8 新增的上下文之间的关系：
 | 外部语音服务 | 语音 | 防腐层：语音网关的适配器，对内只有 OpenAI 音频接口的形态 | `addon-speech` |
 | 外部 Jupyter Server | 执行环境 | 防腐层：Jupyter 内核协议的客户端 | `addon-exec-jupyter` |
 | 宿主适配 | 讲授、引导、代码执行 | 共享内核：插件报告操作，讲授录制并重放 | `OPERATIONS`、`TrackEvent` |
-| 服务端（宿主适配） | 执行环境、语音、智能体、工作区、讲授 | 宿主：挂载服务端贡献，处理身份、权限、凭据与确认 | `ServerContribution`、`APPROVALS`、`useServer` |
+| 服务端（宿主适配） | 执行环境、语音、智能体、工作区、讲授 | 宿主：挂载服务端贡献，处理身份、权限、凭据、运营者设置与确认；为 agent 会话签发 MCP 令牌 | `ServerContribution`、`ServerContext.settings`、`APPROVALS`、`MCP_ENDPOINT`、`useServer` |
 
 ## 3. 内核
 
@@ -196,10 +196,12 @@ v0.8 新增的上下文之间的关系：
 | 服务端上下文 | `ServerContext` | 插件创建服务端贡献时得到的文稿目录、配置、Node 端服务与凭据 |
 | 请求上下文 | `RequestContext` | 发起请求的成员、请求所属的文档、路由之后的路径 |
 | 成员 | `Member` | 登录身份：ID、名字、角色 `MemberRole`（`reader` 读者、`editor` 编辑者、`owner` 所有者）；`presmium dev` 中是本机作者，角色为所有者 |
-| 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂）、`spend`（计费的语音调用）、`write`（agent 写入当前文档目录之外）、`agent`（agent 自身的权限请求） |
+| 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂）、`spend`（计费的语音调用）、`write`（agent 写入当前文档目录之外，或改动工作区配置）、`agent`（agent 自身的权限请求） |
 | 确认策略 | `presmium dev --allow`、`presmium.workspace.yaml` 的 `approvals` | 每种确认取 `off`（不提供这类操作）、`ask`（默认）或 `allow`（不询问） |
 | 控制通道 | 服务端内置的 `/__presmium/presmium.server/control` | 页面向服务端报告位置与状态摘要，接收跳转、开关课堂与确认请求 |
-| 凭据 | `ServerContext.secret(name)` | 只来自服务端的环境变量（或 agent 自己的凭据存储）的密钥 |
+| 凭据 | `ServerContext.secret(name)` | 只来自服务端的环境变量（或 agent 自己的凭据存储）的密钥；与它要发往的地址成对给出（如 `PRESMIUM_ENV_<名>_TOKEN` 与 `PRESMIUM_ENV_<名>_URL`） |
+| 运营者设置 | `ServerContext.settings`、`NodeServiceContext.settings` | 运营者给插件的设置：工作区配置 `presmium.workspace.yaml` 的 `settings.<插件 ID>`，如 agent 的命令、录音的去处、是否允许克隆音色；与文稿配置 `config` 不同，文稿与 agent 改不了正在运行的设置 |
+| MCP 访问 | `McpEndpoint`（`MCP_ENDPOINT`）、`McpAccess` | 服务端为一个 agent 会话签发的 `/mcp` 地址与令牌，令牌绑定成员与模式，会话关闭时作废 |
 
 不变量：
 
@@ -208,6 +210,10 @@ v0.8 新增的上下文之间的关系：
 - 身份、角色与本机的检查在挂载点完成；插件的路由只声明所需的最低角色，不各自实现。
 - 确认的关口在服务端：任何 agent 运行时、任何 MCP 客户端调用操作类工具，都经同一个 `Approvals`，换用其他运行时同样生效。
 - 确认策略不来自文稿：文稿是内容，不能关闭确认；`allow` 只能由本机作者在命令行或工作区所有者在工作区配置中设置。
+- **文稿不决定凭据的去向**：凭据只发往运营者为它给出的地址；文稿只用名字选择环境与引擎，文稿中的地址与运营者的地址不同源时不连接。
+- 运营者设置在进程启动时读取一次；改动要等运营者重启才生效。
+
+**服务端（聚合根，每个进程一个）**：挂载的贡献、成员的会话、待回答的确认与签发的 MCP 令牌；令牌与确认都只在这个进程中有效。
 
 规划中的领域事件：`ApprovalRequested`、`ApprovalDecided`（目前以控制通道上的消息体现）。
 
@@ -372,7 +378,7 @@ v0.8 新增的上下文之间的关系：
 | 环境提供方 | `EnvironmentProvider`（`PresmiumNodePlugin.environments`） | 插件按 `kind` 为声明的环境创建 Node 端执行器，并可探测环境是否可达；浏览器端由同一插件为同类环境登记执行器 |
 | 环境执行器 | `environmentExecutor(name)` | 具名环境的执行器 ID `presmium.env.<名>`，即代码块的 `RunSpec.executor` |
 | 环境指纹 | `Executor.fingerprint` | 运行时的身份，进入编译时执行的缓存键：Jupyter 为镜像摘要、内核规格哈希与内核报告的版本；WASI 为运行时二进制的哈希；WebGPU 为浏览器与显卡适配器的描述 |
-| 凭据方式 | `EnvironmentAuth` | `env`（构建机的环境变量，编译时）、`proxy`（服务端代理代加，浏览器拿不到）、`prompt`（学习者粘贴自己的令牌，用于静态站点）、`hub`（以后由课堂服务充当 JupyterHub 的 OAuth 客户端）、`none` |
+| 凭据方式 | `EnvironmentAuth` | `env`（构建机的环境变量，编译时）、`proxy`（服务端代理代加，浏览器拿不到）、`prompt`（学习者粘贴自己的令牌，用于静态站点）、`hub`（以后由课堂服务充当 JupyterHub 的 OAuth 客户端）、`none`；`env` 与 `proxy` 的令牌只发往运营者在同一对环境变量中给出的地址（`PRESMIUM_ENV_<名>_URL`） |
 | 执行会话 | `RunSpec.session`、`RunRequest.session` | 共享解释器状态的一组运行；浏览器中按（页面实例，学习者）隔离，编译时按代码块在文稿中出现的顺序执行 |
 | 重置会话 | `Executor.endSession` | 丢弃会话的状态：重启或关闭解释器、内核 |
 | 富输出 | `RunOutput`（`RunResult.outputs`） | nbformat 的输出：文本流、显示数据与执行结果（MIME 类型到数据）、错误 |
@@ -384,9 +390,9 @@ v0.8 新增的上下文之间的关系：
 | 部署模板 | `templates/env/compose/` | 随仓库维护的 docker compose 模板（可选 gVisor 与 GPU 覆盖，附 devcontainer 定义）；Kubernetes 与轻量虚拟化只给文档 |
 | 浏览器终端 | `{terminal}`、`PmTerminal` | 远端环境中的终端，经 Jupyter Server 的终端接口（P-107） |
 
-**具名环境（值对象）**：名字在文稿内唯一，`browser` 是保留名；同一个名字在浏览器与编译时指向同一种运行时。
+**执行配置（聚合根，`ExecuteConfig`）**：文稿声明的默认环境与全部具名环境。具名环境是其中的值对象：名字在文稿内唯一，`browser` 是保留名；同一个名字在浏览器与编译时指向同一种运行时。
 
-**执行会话（实体，以会话 ID 标识）**：浏览器中的会话 ID 由代码块的 `:session:` 加上页面实例的标识组成，重新加载页面即是新会话；编译时的会话 ID 由文稿与 `:session:` 组成，构建结束时结束。
+**执行会话（聚合根，以会话 ID 标识）**：同一会话的运行按请求顺序执行、共享解释器状态，只用一个环境。浏览器中的会话 ID 由代码块的 `:session:` 加上页面实例的标识组成，重新加载页面即是新会话；编译时的会话 ID 由文稿与 `:session:` 组成，构建结束时结束。
 
 不变量：
 
@@ -394,7 +400,7 @@ v0.8 新增的上下文之间的关系：
 2. **环境不可用时不悄悄换环境**：指定的执行器没有登记、缺凭据、不可达或超时，运行失败，由 P-24 显示录制输出与原因，不改到别的执行器上运行。
 3. **会话代码块的缓存键包含前序代码**：同一会话中第 i 个代码块的键是第 i−1 个的键加上本块的输入、执行器与环境指纹；有一块未命中时，整个会话从头重新执行并重新录制。
 4. 同一会话的代码块使用同一个环境；在一个会话中混用环境是错误。
-5. 文稿与 IR 不含凭据；`presmium check` 对文稿头部中像凭据的字段告警。
+5. 文稿与 IR 不含凭据；`presmium check` 对文稿头部中像凭据的字段告警。文稿中的地址不决定凭据的去向：服务端的令牌只发往运营者给出的地址，与文稿的 `url` 不同源时不连接（N-08）。
 6. 远端与现场运行返回的 HTML 不可信：先清洗再显示。
 7. 编译时与浏览器中尽量使用同一份运行时（同一个 WASI 二进制；WebGPU 在 Chromium 中录制），录制输出与现场输出一致；用 CPU 模拟的 GPU 计时标明为模拟。
 
@@ -412,7 +418,10 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | agent 工具 | MCP 工具；插件贡献的 `AgentTool` | 读取类（`read`）、操作类（`operate`，需要确认）、计费类（`spend`，需要确认）；插件可以贡献工具，如讲授插件的 `lecture_preview` |
 | agent 资源 | `presmium://…` | 与读取类工具对应的只读资源；放映位置的资源可以订阅更新 |
 | agent 运行时 | `AgentRuntime`（`AGENT_RUNTIME`，Node） | 驱动一个 agent：打开会话、提交任务、接收事件、取消、关闭；唯一的实现是 ACP 客户端 |
-| 运行时模式 | `AgentSessionOptions.mode` | `author`（作者，可以写源码，默认配置模板 `presmium`）或 `tutor`（学习者问答，只读，配置模板 `presmium-tutor`） |
+| 运行时模式 | `AgentMode`（`AgentSessionOptions.mode`） | `author`（作者，可以写源码，默认配置模板 `presmium`）或 `tutor`（学习者问答，只读，配置模板 `presmium-tutor`） |
+| agent 命令 | `PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` | 运营者给出的启动命令；没有时助手不可用 |
+| 模型提供方 | `AgentRuntime.provider`、`AgentClient.provider()` | 回答问题、修改文稿的模型属于哪家服务，界面据此标明（N-08） |
+| 会话的 MCP 访问 | `AgentSessionOptions.mcp`（`McpAccess`） | 服务端为这个会话签发的 `/mcp` 地址与令牌（4A 节），写进 ACP `session/new` 的 `mcpServers` |
 | 任务 | `AgentTaskRequest`、`AgentTask` | 一次交给 agent 的工作，种类 `AgentTaskKind`：`question` 问答、`annotations` 一批批注、`chat` 一轮对话、`transcript` 转写回写 |
 | 上下文 | `AgentContext` | 任务所在的文档、章节、步骤、块、选中内容与源码位置 |
 | 任务事件 | `AgentEvent` | 进度、回答（带引用位置）、确认请求、批注的处理结果、完成（带提交）、错误 |
@@ -424,14 +433,16 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 
 不变量：
 
-- **只写源码，不碰产物**：agent 只修改工作区中的源码；写入超出当前文档目录时需要确认（`write`）。
+- **只写源码，不碰产物**：agent 只修改工作区中的源码；写入超出当前文档目录或改动工作区配置时需要确认（`write`）。
 - **一文档一任务**：同一文档同一时间只有一个修改任务；问答不受限制。
 - **每批一提交**：修改任务结束时，修改由工作区提交为一个提交（`REVISIONS`），说明列出批注或对话摘要与 agent 的解释，尾注带 `Presmium-Task: <任务 ID>` 与发起人。
 - **学习者只读**：`question` 任务使用 `tutor` 运行时，没有写文件、shell、网络与操作类工具；学习者不直接接触作者的 agent。
 - **发送即确认**：编辑模式中发送一批批注或一条对话消息，就是对这次任务的写入的确认（N-08）；操作类、计费类工具与 agent 自身的权限请求仍逐次确认。
 - **MCP 不提供写文件的工具**：agent 用自己的文件工具修改源码，服务随即重新编译并推送。
 - 回答中的引用位置必须对应 IR 中的章节、步骤或块；无法解析的引用不显示为链接。
-- agent 的启动命令与模型不来自文稿，只来自命令行、环境变量或工作区配置。
+- agent 的启动命令与模型不来自文稿，只来自环境变量或工作区配置的运营者设置；没有给出命令时不启动任何 agent，问题与源码不发给任何模型服务。
+- 提问与对话的界面标明模型的服务提供方。
+- agent 经 MCP 能做什么由服务端签发给它的令牌决定（成员与模式），会话结束令牌即作废。
 
 服务：`AGENT`（浏览器）、`AGENT_RUNTIME`（Node）；MCP 是对外的开放主机服务。
 
@@ -441,7 +452,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、成员、确认策略与 agent 命令 |
+| 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、成员、确认策略与插件的运营者设置 `settings`（如 agent 命令） |
 | 文档 | `Document` | 一份文稿：目录（身份）、入口文件、标题、语言、标签，取自它的头部 |
 | 文档操作 | `DocumentOperation` | 新建（从模板，或由 agent 起草）、重命名、复制、删除 |
 | 文档模板 | `templates/document/<名>/` | 新建文档时复制的目录 |
@@ -479,7 +490,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 字锚 | `UtteranceAnchor`（事件数据的 `at`） | 把事件绑定到语音段的第几个字；改文字、换音色后按新的逐字时间重新计算事件时刻 |
 | 块指纹 | `LectureTrack.blocks` | 被事件引用的块的内容指纹，用于漂移检查 |
 | 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；录制的讲授用媒体元素（`MediaClock`），合成的讲授用按已知偏移排列的片段（`ClipClock`），只有字幕时用 `SilentClock` |
-| 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色带同意记录 `VoiceConsent` |
+| 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色要有同意记录 `VoiceConsent`（见下文“语音”） |
 | 讲授计划 | `LecturePlan` | `lecture` 渲染端从 IR 得到的每一步要说的文字与提示标记 |
 | 提示标记 | `{cue}` 角色 | 讲解中的行内标记：说到此处时推进一步、聚光、提示、指点、点击、运行、圈画、停顿或标记章节 |
 | 读音 | `{say}` 角色、头部的读音词典 | 显示一种写法，读出另一种 |
@@ -495,8 +506,8 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - 事件只引用章节、块（带内容指纹）与锚点，不引用像素与屏幕尺寸；讲授轨中没有视频。
 - 时刻 t 的画面是 t 之前事件的折叠 `state(t) = fold(events ≤ t)`：跳转精确、可逆；回放者应用事件时宿主处于重放状态，插件不把重放当作用户操作报告。
 - **漂移**：块指纹或 IR 哈希不一致时，检查项 `presmium.lecture` 按 exact、moved、fuzzy、lost 分级报告（同锚点）；回放丢弃失效的事件并提示。需要长期回放的块应写标签，生成的 `<kind>-<n>` ID 会随插入而移动。
-- 录音默认只保存在本地，不提交；只有对某一段讲授显式执行“转写”时才发给语音服务，界面标明服务提供方。
-- 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明。
+- 录音默认只保存在本地，不提交（去处由运营者设置 `settings.presmium.lecture.audio` 决定）；只有对某一段讲授显式执行“转写”时才发给语音服务，转写的入口标明服务提供方。
+- 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明（语音服务把关）。
 - 译文记录它所依据的原文摘要；原文改动后译文标记为过期，导出时提示。
 
 ### 语音
@@ -504,17 +515,22 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音网关，Node 端直接调用引擎 |
-| 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、`openai-compatible`（按地址接入，如 Groq、OpenAI、自建服务）、`azure`、`fake`（CI）、`webspeech`（浏览器试听，不能导出） |
+| 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）、`webspeech`（浏览器试听，只用本机音色，不能导出）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明 |
+| 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址与凭据成对出现（火山引擎的地址固定在适配器中，只给凭据）；文稿只用 ID 选择引擎 |
+| 同意记录 | `VoiceConsent`；`.presmium/speech/consent/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256；随文稿提交 |
 | 语音网关 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；只有网关接触服务提供方 |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |
 | 合成缓存 | `.presmium/speech/<键>.ogg`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、模型、音色、语言、语速、风格、读音词典哈希、文字）的 sha256 缓存，随文稿提交 |
 
+**合成缓存（聚合根）**：按键存放的合成结果与 `speech.lock.json`；键由规范化的请求决定，同一个键的内容不再改变。**同意记录**是另一个聚合，按（引擎，音色）标识。
+
 不变量：
 
-- 合成缓存保证可复现（原则 5）：构建只读缓存；缓存缺失又没有凭据时，`presmium check` 报错并指出是哪些段落；改一段只重新合成一段。
-- 凭据只在服务端；文稿只写引擎与音色的名字，以及存放凭据的环境变量名。
-- 文字发给第三方语音服务须在配置中显式开启引擎；没有配置引擎时不发出任何请求。
+- 合成缓存保证可复现（原则 5）：命中缓存的段落从不重新合成，全部命中的构建不向引擎发出请求；构建只为缺失的段落调用引擎并写入缓存（同编译时执行的录制，K-19）；缓存缺失又没有可用的引擎时，构建与 `presmium check` 报错并指出是哪些段落；改一段只重新合成一段。
+- 凭据只在服务端，并且只发往运营者为它给出的地址；文稿只写引擎与音色的名字，不写地址与凭据的变量名。
+- 文字发给第三方语音服务须由运营者定义引擎、文稿选用它；没有定义引擎时不发出任何请求。
+- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且有该音色的同意记录时可以合成；语音服务在合成前检查，Node 端与语音网关是同一个关口。
 
 服务：`SPEECH`（Node 与浏览器各一个实现，同一契约）。
 
