@@ -10,7 +10,7 @@ N-04 要求支持最近两个大版本的 Chrome、Firefox、Safari 与 Edge。�
 |---|---|---|---|
 | Chrome | Chrome for Testing 156（chromium v1248） | 全部端到端用例 | 通过 |
 | Firefox | Firefox 157（firefox v1555） | `e2e/smoke.spec.ts` | 通过 |
-| Safari | WebKit 27.2（webkit v2370） | `e2e/smoke.spec.ts`（默认运行）；另见下面的全量运行 | 通过（在 Playwright 的 Docker 镜像中运行，见下文）；2026-10-16（WP-70d）复查通过 |
+| Safari | WebKit 27.2（webkit v2370） | `e2e/smoke.spec.ts`（默认运行）；另见下面的全量运行 | 通过（在 Playwright 的 Docker 镜像中运行，见下文）；2026-10-16（WP-70d）复查通过；2026-10-16（WP-70e，冒烟用例增加控制台无错误的断言）复查通过 |
 
 Edge 与 Chrome 使用同一引擎，由 Chromium 的结果覆盖；Edge 自身的界面差异在下面的手工检查中确认。
 
