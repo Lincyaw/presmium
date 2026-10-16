@@ -90,6 +90,8 @@ notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback
 | 幻灯片 | 显示在页面上 | 成为演讲备注，按步骤切分 |
 | notebook | Markdown 或代码单元格 | Markdown 单元格 |
 
+讲解与表格单元格中的原始 HTML 标签，若不是 HTML 元素（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`），按字面显示为文字：编译器把它们写成 IR 中的文本，三种媒介都显示标签本身，幻灯片的构建也不因没有闭合的这类标签失败。其他位置的原始 HTML 照常作为 HTML（例如正文中的 Web 组件）。
+
 ### 2.4 步骤
 
 - 上屏内容默认在第 0 步就显示。
@@ -193,7 +195,7 @@ IR 是一个 JSON 文档。顶层结构：
 
 IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的高亮行、录制的输出），不记录任何媒介专属的语法。
 
-`code` 节点的 `variants`（多版本）中，每个版本带有自己的标签、代码、在文件中的行区间（`startLine`、`endLine`）与永久链接，渲染端显示某个版本时，来源栏的文件链接与行号就是这个版本的。`component` 节点另有 `assets`（属性名到本地文件 URL，渲染端发布这些文件并改写属性，第 6 节）与 `layer`（`overlay`：组件画在页面之上，渲染端不给它单独的位置）。脚注的 `footnoteReference`、`footnoteDefinition` 带 `enumerator`，即显示的编号（4 节，步骤 1）。
+`code` 节点的 `variants`（多版本）中，每个版本带有自己的标签、代码、在文件中的行区间（`startLine`、`endLine`）与永久链接，渲染端显示某个版本时，来源栏的文件链接与行号就是这个版本的。网页与幻灯片的来源栏和录制输出的说明（超时、退出码、预录输出）出自同一组纯函数（`@presmium/viewer/domain` 的 `originParts`、`outputNotes`），文字相同。`component` 节点另有 `assets`（属性名到本地文件 URL，渲染端发布这些文件并改写属性，第 6 节）与 `layer`（`overlay`：组件画在页面之上，渲染端不给它单独的位置）。脚注的 `footnoteReference`、`footnoteDefinition` 带 `enumerator`，即显示的编号（4 节，步骤 1）。
 
 文件路径：`presmium build` 写出的 `<out>/ir.json` 中，入口文件（`meta.entry`）与各块的 `source.file` 是相对于文稿目录的路径，产物因此不随检出位置变化（K-13）；`presmium ir` 的标准输出与 `presmium dev` 推送给浏览器的 IR 保留绝对路径，供编辑器跳转到源码。
 
@@ -313,11 +315,13 @@ interface Renderer {
 | `portable(value, from)` | 发布配置时把仓库内的绝对路径改为相对于 `from` 的路径 |
 | `localAsset(source, url)` | 块中引用的本地文件：相对于块所在的源文件，或 `/...`（文稿的 `public/`）；按 URL 解码（转义不完整时保留原文），给出文件与发布名 `<内容哈希前 8 位>-<文件名>`；远程地址或文件不存在时为空 |
 | `renderers`、`base` | 本次构建或开发运行的全部渲染端，与本渲染端的站点路径（2.1 节） |
-| `vitePlugins` | 插件提供的 Vite 插件（第 5 节），运行 Vite 的渲染端在开发与构建中加入 |渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。
+| `vitePlugins` | 插件提供的 Vite 插件（第 5 节），运行 Vite 的渲染端在开发与构建中加入 |渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。生成的文稿按幻灯片的站点路径写出（链接到的本地文件与组件属性中的文件地址带上 `base`），而 `slidev export` 总在根路径服务文稿：`base` 不是 `/` 时（例如同时构建两种形态的默认 `/slides/`），构建报告提示改用 `presmium-export`，它为导出另写一份以 `/` 为 `base` 的文稿。
 
 各渲染端用同一套规则把 MyST 降为标准 Markdown（`@presmium/kernel` 的 `lowerMyst`）：幻灯片中图注独立成段，`{dropdown}` 写成 `<details>`，定义列表保留结构，`#标签` 的交叉引用链接到目标章节所在的页。插件组件由渲染端包在错误边界 `PmBoundary` 中，组件自身出错只影响它自己（`architecture.md` 5.4 节）；扩展抛错时渲染端在块的位置报告警告，改为写组件标签或 `fallback`。
 
-渲染端发布块中引用的本地文件：Markdown 中的图片与链接，以及组件在 `assets` 中声明的属性。网页把文件发布在站点的 `media/` 下；幻灯片把它们复制到生成的 Slidev 文稿的 `public/`，从站点根路径引用（构建时加上站点路径，翻页预加载也不再请求不存在的相对路径），链接到的文件在新标签页中打开；notebook 把它们复制到 notebook 旁边的 `media/`。文件名中的 `#`、`?` 写作 `%23`、`%3F`，转义不完整的地址不使构建失败。
+渲染端发布块中引用的本地文件：Markdown 中的图片与链接，以及组件在 `assets` 中声明的属性。网页把文件发布在站点的 `media/` 下；幻灯片把它们复制到生成的 Slidev 文稿的 `public/`，从站点根路径引用（构建时加上站点路径，翻页预加载也不再请求不存在的相对路径），链接到的文件在新标签页中打开；notebook 把它们复制到 notebook 旁边的 `media/`。文件名中的 `#`、`?` 写作 `%23`、`%3F`，转义不完整的地址不使构建失败。幻灯片的讲解（演讲者备注）是 Slidev 原样显示的 HTML，不经 Vite 处理，其中的图片因此也写成带站点路径的地址。
+
+幻灯片渲染端把每页写成 Slidev 编译的 Vue 模板。`slidev build` 因某一页失败时（例如原始 HTML 的标签没有闭合），错误报告在源码中：该页的章节里只有一个块含原始 HTML 时报告在这个块的位置，否则在章节标题处，而不是生成的 `slides.md__slidev_<页号>.md`。
 
 notebook 渲染端把 Markdown 写成 Jupyter 能显示的 CommonMark、GFM 表格、内联 HTML 与 `$` 公式，不写 MyST 语法：提示框（`{note}` 等）与旁注写成带粗体标题的引用块，`{list-table}` 等表格写成 GFM 表格，`{dropdown}` 写成 `<details>`，图写成图片加斜体标题，公式写成 `$$`，`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等角色写成内联 HTML，交叉引用写成它的文字。正文中的 `$`（如价格）写作 `\$`，不被 Jupyter 当作公式；表格单元格中的行内内容直接拼接，只在换行与块级内容处断开。没有对应写法的节点（如 `{embed}`、`{iframe}`）保留其中的文字，并作为降级在构建报告中逐块列出（警告，带源码位置）。网页与幻灯片把 `{iframe}` 写成 figure 中的 `<iframe>`。
 

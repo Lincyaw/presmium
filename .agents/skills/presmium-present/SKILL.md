@@ -78,7 +78,7 @@ presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clic
 - 默认导出 PDF，写到 `<文稿>/slides-export.pdf`（`renderers.slides.exportFilename` 改文件名）；`--format png` 每页一张图片。`--with-clicks` 把每一步展开为一页，`--range` 只导出列出的页。
 - PDF 导出后检查幻灯片上的每个链接（包括代码的永久链接）在 PDF 中仍是链接，有丢失时退出码为 1；PNG 中的链接无法检查，报告会说明。
 - 导出中插件组件显示静态降级内容（例如执行面板显示先给参数赋值的代码与构建时的输出，没有时用 `:recorded:`）。
-- 也可以在 `<文稿>/.presmium/slides/` 中直接运行 `slidev export`（构建报告给出这个路径）。
+- 也可以在 `<文稿>/.presmium/slides/` 中直接运行 `slidev export`（构建报告给出这个路径）。`slidev export` 总在根路径服务文稿，而构建写出的文稿按幻灯片的站点路径引用本地文件：幻灯片的 `base` 不是 `/` 时（包括同时构建两种形态的默认 `/slides/`），链接到的文件与媒体组件的文件在导出中找不到，这时用 `presmium-export`，它为导出另写一份以 `/` 为站点路径的文稿。
 
 ## 5. notebook
 
@@ -95,7 +95,7 @@ presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clic
 ## 7. 网页与幻灯片互跳
 
 - 网页中每个章节标题旁的小图标“在幻灯片中打开”跳到对应页（滚动叙事中带上当前步骤）；幻灯片导航栏的“在网页中阅读”回到对应章节与步骤。
-- 两种形态同时构建、都没有写 `base` 时，网页在 `/web/`、幻灯片在 `/slides/`，互跳链接按这两个路径生成：用一个服务器服务整个 `dist/`（`pnpm exec sirv <文稿>/dist`）就能互跳。幻灯片的页地址（`/slides/3`）要服务器回落到 `/slides/index.html`，而 sirv 的 `--single` 只回落到站点根的 `index.html`，所以这样部署时写 `renderers.slides.routerMode: hash`（页地址为 `/slides/#/3`），或换用能按目录回落的服务器。
+- 两种形态同时构建、都没有写 `base` 时，网页在 `/web/`、幻灯片在 `/slides/`，互跳链接按这两个路径生成：用一个服务器服务整个 `dist/`（`pnpm exec sirv <文稿>/dist`）就能互跳。幻灯片的页地址（`/slides/3`）要服务器回落到 `/slides/index.html`：sirv 用 `--single slides/index.html`（端到端测试就这样服务示例讲义，网页中不存在的地址也会得到幻灯片的首页），或写 `renderers.slides.routerMode: hash`（页地址为 `/slides/#/3`），或换用能按目录回落的服务器。
 - 自己写了 `base` 时，两边的链接按写的路径生成，同样放在同一个站点下即可。
 - 分开部署时，在头部写明两边的地址：`presmium: { presmium.web: { slidesUrl: <幻灯片地址>, webUrl: <网页地址> } }`。
 
