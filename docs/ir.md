@@ -484,8 +484,8 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 - **会话键链**：带 `:session:` 的代码块按在文稿中出现的顺序组成会话，第 i 个代码块的缓存键是 `hash(第 i−1 个的键, 语言, 代码, 参数, 执行器 ID, 环境指纹)`，第一个的“前一个键”为会话名。所有块都命中缓存时不运行；有一块未命中时，结束该会话（`endSession`），从会话的第一个块起依次重新执行并重新录制。构建结束时结束所有用过的会话。不带 `:session:` 的代码块，键的算法与 v0.7 相同。
 - **富输出与录制块**：录制保存 `outputs`。MIME 数据中长度超过 4096 个字符的值存为 `.presmium/freeze/blobs/<sha256>`，录制只保存引用 `{ "presmium/blob": "<sha256>" }`；编译器读取录制时把它们放回 IR，IR 与产物中的输出因此是完整的 nbformat 输出。`presmium build` 删除不再被引用的录制块。
 - 编译时执行器（执行插件的 `presmium.python`、`presmium.node`）在子进程中、每次运行一个新的临时目录中执行代码，结果经单独的通道（文件描述符 3）返回：程序直接写标准输出（`process.stdout.write`、`console.dir`）不会破坏结果，这些输出照常录制；顶层 `await` 永不完成时，结果为失败并说明原因。运行末尾才发生的 Promise 拒绝与定时器中的异常使运行失败，与浏览器中一致。
-- **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会被代码打印进录制、IR 与产物。
-- **工作区服务中的执行**：`presmium serve` 中没有录制的代码按 `settings.presmium.exec.compile` 执行：`approve`（默认）等所有者的 `operate` 确认，`trusted` 直接执行，`off` 不执行；没有执行时显示 `:recorded:` 的录制输出或降级内容。`settings.presmium.exec.sandbox` 给出一个 Jupyter 环境时，原本在本机运行的代码改在其中运行（`architecture.md` 10.6 节）。
+- **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会被代码打印进录制、IR 与产物。本地容器的 `docker` 与 devcontainer 命令行另得到 Docker 客户端需要的几个变量（`DOCKER_HOST`、`XDG_RUNTIME_DIR` 等与真实的 `HOME`，都不是凭据），容器里的代码经命令行只得到 `RunContext.env` 中的变量（`architecture.md` 10.6 节）。
+- **工作区服务中的执行**：`presmium serve` 中没有录制的代码按 `settings.presmium.exec.compile` 执行：`approve`（默认）等所有者的 `operate` 确认（同一段代码被拒绝或超时后不再自动请求，代码改动或编辑者点“请求执行”时再请求），`trusted` 直接执行，`off` 不执行；没有执行时显示 `:recorded:` 的录制输出或降级内容。`settings.presmium.exec.sandbox` 给出一个 Jupyter 环境时，原本在本机运行的代码改在其中运行，沙箱的内核不支持的语言不执行，都不退回本机。MCP 的 `run_code` 与 `build` 按同一规则执行（`architecture.md` 10.6 节）。
 
 ## 5. 插件
 
@@ -708,10 +708,10 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `lectures/<id>/track.json` | 讲授轨：语音段、事件、音频片段、块指纹、IR 哈希、音色 | 提交 |
 | `lectures/<id>/audio/*.ogg` | 录制的音频（Ogg/Opus，可以跳转），每节一段 | 默认不提交：讲授插件在 `lectures/<id>/` 写一个忽略 `audio/` 与 `video/` 的 `.gitignore`；运营者设置 `settings.presmium.lecture.audio`（第 10 节）可以改为 git LFS 或外部地址 |
 | `lectures/<id>/video/*.webm` | 可选的摄像头与屏幕录像（P-90），每节每种一段；默认不录 | 同音频 |
-| `.presmium/speech/<键>.ogg`、`<键>.json` | 合成缓存：音频（元数据中带 AI 生成的标识与 GB 45438 的字段，写法由 WP-82 的先行验证确定），与逐字时间、时长、引擎信息、AI 生成标识 | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
+| `.presmium/speech/<键>.<扩展名>`、`<键>.json` | 合成缓存：音频保留引擎返回的格式，不重新编码。语音服务向引擎请求 Ogg/Opus（火山引擎的 `ogg_opus`，OpenAI 音频接口的 `response_format: opus`），所以通常是 `<键>.ogg`；只给出其他格式的引擎按其格式保存（假引擎为 `<键>.wav`）。语音服务（不是引擎）写入缓存时在音频的元数据中加入 AI 生成的标识与 GB 45438 的字段（Ogg 写在 Opus 的注释头中，WAV 写在 `LIST`/`INFO` 块中，字段由 WP-82 的先行验证确定），不改动引擎写入的其他内容（假引擎嵌入的文字与音色因此保留）。`<键>.json` 是逐字时间、时长、格式（`mime`）、引擎信息与同样的 AI 生成标识 | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
 | `.presmium/speech.lock.json` | 文稿用到的合成键与音频的 sha256 | 提交 |
 
-克隆音色的同意记录不在文稿目录中：它在运营者控制的目录 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`），内容为说话人、范围、日期、同意声明录音的 sha256，只由所有者经语音插件的路由写入或由运营者放入，不随文稿提交；文稿中的 `.presmium/speech/consent/` 之类的文件被忽略（`architecture.md` 第 11 节）。
+克隆音色的同意记录不在文稿目录中：它在运营者控制的目录 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`），内容为说话人、范围、日期、同意声明录音的 sha256 与服务端的签名 `signature`（以运营者的密钥 `PRESMIUM_SPEECH_CONSENT_KEY` 计算的 HMAC-SHA256，覆盖其余字段与引擎、音色）。记录只经两条途径产生：所有者经语音插件的路由登记，或运营者在服务端的环境中运行 `presmium-speech consent`；两者都由服务端签名。语音服务只承认签名有效的记录，没有密钥时克隆音色不可用。记录不随文稿提交；没有签名或签名不符的文件（例如 agent 写进该目录的文件）与文稿中的 `.presmium/speech/consent/` 之类的文件都被忽略（`architecture.md` 第 11 节）。
 
 讲授轨借鉴 asciinema 的 asciicast（事件是元组，不认识的类型忽略），时间用自讲授开始的绝对毫秒，便于跳转与编辑：
 
@@ -785,11 +785,11 @@ settings:                            # 插件的运营者设置，键为插件 I
     provider: DeepSeek               # 模型的服务提供方，界面据此标明（必需）；运行时的名字另取自 agent
   presmium.exec:                     # 编译时执行（architecture.md 10.6 节）
     compile: approve                 # presmium serve 中没有录制的代码：approve（默认，所有者确认）、trusted、off
-    sandbox: sandbox                 # 可选：serve 中改在这个 Jupyter 环境中运行（PRESMIUM_ENV_SANDBOX_URL、_TOKEN）
+    sandbox: sandbox                 # 可选：serve 中改在这个 Jupyter 环境中运行（PRESMIUM_ENV_SANDBOX_URL、_TOKEN）；它不支持的语言不执行
     passEnv: [HF_HOME]               # 另外传给被执行代码的环境变量
   presmium.lecture: { audio: ignore }   # 录制音频与录像的去处：ignore（默认）、lfs，或外部地址的前缀
   presmium.speech:
-    cloned: false                    # 是否允许克隆音色（默认 false；允许时每个克隆音色仍要有同意记录）
+    cloned: false                    # 是否允许克隆音色（默认 false；允许时每个克隆音色仍要有签名的同意记录，并需要 PRESMIUM_SPEECH_CONSENT_KEY）
     consentDir: .presmium-operator/consent   # 同意记录的目录，相对于工作区根目录（默认值）
 ```
 
@@ -797,6 +797,6 @@ settings:                            # 插件的运营者设置，键为插件 I
 - `site` 的 `nav`、`footer`、`head`、`sitemap` 与 `renderers.web` 的同名选项相同（2.1 节），作用于整个工作区站点。
 - `members` 与 `approvals` 只在 `presmium serve` 中使用。`settings` 是插件的运营者设置：`presmium dev`、`build`、`check` 与 `presmium serve` 都读取文稿所在工作区根目录的这个文件（单份文稿的仓库也可以只写 `settings`），只在进程启动时读取一次，运行中改动要等运营者重启才生效。
 - `presmium.assistant` 的命令中 `{templates}` 代入助手插件随包提供的 DeepSeek Harness 配置模板目录；命令也可以由环境变量 `PRESMIUM_AGENT_COMMAND`（`tutor` 模式为 `PRESMIUM_AGENT_TUTOR_COMMAND`）给出，环境变量优先，`provider` 也可以由 `PRESMIUM_AGENT_PROVIDER` 给出。没有命令或没有 `provider` 时助手不可用，不启动任何 agent。
-- `presmium.exec` 由编译器读取：`passEnv` 在所有命令中生效；`compile` 与 `sandbox` 只在 `presmium serve` 中生效。`sandbox` 的地址与令牌只取运营者的 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`，不取文稿中同名的环境；文档的 `plugins` 要包含远端环境插件，沙箱不可用时代码不执行，不退回主机。
-- `presmium.speech.consentDir` 是运营者控制的目录：只有所有者经语音插件的路由写入（运营者也可以直接放入文件），不随文稿提交；默认的 `.presmium-operator/` 不属于任何文档，工作区的提交不包含它，agent 不能写入。
+- `presmium.exec` 由编译器读取：`passEnv` 在所有命令中生效；`compile` 与 `sandbox` 只在 `presmium serve` 中生效。`sandbox` 的地址与令牌只取运营者的 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`，不取文稿中同名的环境；文档的 `plugins` 要包含远端环境插件。沙箱的内核不支持的语言不执行，沙箱不可用时代码不执行，都不退回主机。
+- `presmium.speech.consentDir` 是运营者控制的目录：记录只由所有者经语音插件的路由或运营者用 `presmium-speech consent` 登记，都由服务端以 `PRESMIUM_SPEECH_CONSENT_KEY` 签名（9.1 节），不随文稿提交；默认的 `.presmium-operator/` 不属于任何文档，工作区的提交不包含它。agent 写不出有效的记录：它拿不到密钥，写进该目录的文件不被承认，任务结束时被复原，它对该目录的权限请求一律被拒绝。
 - 这些设置都不能写在文稿中：文稿头部 `presmium.<插件 ID>` 中的同名键不进入 `settings`。

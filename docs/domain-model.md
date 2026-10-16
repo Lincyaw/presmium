@@ -197,14 +197,14 @@ v0.8 新增的上下文之间的关系：
 | 请求上下文 | `RequestContext` | 发起请求的成员、请求所属的文档、路由之后的路径 |
 | 成员 | `Member` | 登录身份：ID、名字、角色 `MemberRole`（`reader` 读者、`editor` 编辑者、`owner` 所有者）；`presmium dev` 中是本机作者，角色为所有者 |
 | 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂；`presmium serve` 中执行没有录制的编译时代码）、`spend`（计费的语音调用）、`write`（agent 写入当前文档目录之外，或改动工作区配置）、`agent`（agent 自身的权限请求） |
-| 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content`（发起成员自己的文档与会话：任务的文档目录中的文件、MCP 的操作类与计费类工具）发给发起任务的成员；`workspace`（工作区配置、成员、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求、`presmium serve` 中的编译时执行）只发给所有者；没有标明时按 `workspace` |
+| 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content`（发起成员自己的文档与会话：任务的文档目录中的文件、MCP 的操作类与计费类工具）发给发起任务的成员；`workspace`（工作区配置、成员、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求、`presmium serve` 中在服务端执行没有录制的代码，以及 `compile: approve` 时 MCP 的 `run_code`）只发给所有者；没有标明时按 `workspace` |
 | 确认策略 | `presmium dev --allow`、`presmium.workspace.yaml` 的 `approvals` | 每种确认取 `off`（不提供这类操作）、`ask`（默认）或 `allow`（不询问） |
 | 执行的环境变量 | `RunContext.env` | 编译时执行的代码能得到的全部环境变量：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与像凭据的变量，`serve` 中只有允许列表；都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量 |
-| 编译时执行的策略 | `settings.presmium.exec` 的 `compile`、`sandbox` | `presmium serve` 中没有录制的代码怎样执行：`approve`（默认，所有者确认后执行）、`trusted`（直接执行）、`off`（不执行，显示录制输出或降级内容）；`sandbox` 给出改在其中运行的环境 |
+| 编译时执行的策略 | `settings.presmium.exec` 的 `compile`、`sandbox` | `presmium serve` 中没有录制的代码怎样执行：`approve`（默认，所有者确认后执行）、`trusted`（直接执行）、`off`（不执行，显示录制输出或降级内容）；`sandbox` 给出改在其中运行的环境，它的内核不支持的语言不执行，不退回主机。MCP 的 `run_code` 与 `build` 同一规则 |
 | 控制通道 | 服务端内置的 `/__presmium/presmium.server/control` | 页面向服务端报告位置与状态摘要，接收跳转、开关课堂与确认请求 |
 | 凭据 | `ServerContext.secret(name)` | 只来自服务端的环境变量（或 agent 自己的凭据存储）的密钥；与它要发往的地址成对给出（如 `PRESMIUM_ENV_<名>_TOKEN` 与 `PRESMIUM_ENV_<名>_URL`） |
 | 运营者设置 | `ServerContext.settings`、`NodeServiceContext.settings` | 运营者给插件的设置：工作区配置 `presmium.workspace.yaml` 的 `settings.<插件 ID>`，如 agent 的命令与模型的服务提供方、编译时执行的策略、录音的去处、是否允许克隆音色、同意记录的目录；与文稿配置 `config` 不同，文稿与 agent 改不了正在运行的设置 |
-| 运营者目录 | 工作区根目录的 `.presmium-operator/` | 运营者的数据（默认的同意记录目录 `consent/`），不属于任何文档：不进入文档的提交，agent 不能写入 |
+| 运营者目录 | 工作区根目录的 `.presmium-operator/` | 运营者的数据（默认的同意记录目录 `consent/`），不属于任何文档：不进入文档的提交；agent 对它的权限请求一律拒绝，agent 写进去的文件不被承认（同意记录要有服务端的签名），任务结束时复原 |
 | MCP 访问 | `McpEndpoint`（`MCP_ENDPOINT`）、`McpAccess` | 服务端为一个 agent 会话签发的 `/mcp` 地址与令牌，令牌绑定成员与模式，会话关闭时作废 |
 
 不变量：
@@ -216,7 +216,7 @@ v0.8 新增的上下文之间的关系：
 - 确认策略不来自文稿：文稿是内容，不能关闭确认；`allow` 只能由本机作者在命令行或工作区所有者在工作区配置中设置。
 - **确认按范围分发**：`workspace` 范围的确认只有所有者能回答；编辑者不能批准自己的 agent 改动工作区配置、写入文档目录之外或使用 shell 与网络。
 - **文稿不决定凭据的去向**：凭据只发往运营者为它给出的地址；文稿只用名字选择环境与引擎，文稿中的地址与运营者的地址不同源时不连接。
-- **编译时执行的代码读不到凭据**：文稿的编辑者与 agent 不受信任，他们写的代码在编译时只得到 `RunContext.env`，执行器不读进程的环境。`presmium serve` 中没有录制的代码按 `settings.presmium.exec.compile` 执行（默认经所有者确认），可以改在运营者给出的沙箱环境中运行（`architecture.md` 10.6 节）。
+- **编译时执行的代码读不到凭据**：文稿的编辑者与 agent 不受信任，他们写的代码在编译时只得到 `RunContext.env`，执行器不读进程的环境。`presmium serve` 中没有录制的代码按 `settings.presmium.exec.compile` 执行（默认经所有者确认，同一段代码不重复请求），MCP 的 `run_code` 与 `build` 也一样（`approve` 时 `run_code` 只由所有者确认）；运营者给出沙箱环境时，这些代码不在主机上运行，沙箱不支持的语言不执行（`architecture.md` 10.6 节）。
 - 运营者设置在进程启动时读取一次；改动要等运营者重启才生效。
 
 **服务端（聚合根，每个进程一个）**：挂载的贡献、成员的会话、待回答的确认与签发的 MCP 令牌；令牌与确认都只在这个进程中有效。
@@ -442,7 +442,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 
 不变量：
 
-- **只写源码，不碰产物**：agent 只修改工作区中的源码；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许。运营者目录 `.presmium-operator/` 不接受 agent 的写入。
+- **只写源码，不碰产物**：agent 只修改工作区中的源码；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许。agent 对运营者目录 `.presmium-operator/` 的权限请求一律拒绝；它不经请求写进去的文件不被承认（同意记录要有服务端的签名），任务结束时复原。
 - **一文档一任务**：同一文档同一时间只有一个修改任务；问答不受限制。
 - **每批一提交**：修改任务结束时，修改由工作区提交为一个提交（`REVISIONS`），说明列出批注、对话摘要或讲授轨 ID，与 agent 的解释，尾注带 `Presmium-Task: <任务 ID>` 与发起人。
 - **学习者只读**：`question` 任务使用 `tutor` 运行时，没有写文件、shell、网络与操作类工具；学习者不直接接触作者的 agent。
@@ -528,11 +528,11 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音网关，Node 端直接调用引擎 |
 | 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）、`webspeech`（浏览器试听，只用本机音色，不能导出）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
 | 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
-| 同意记录 | `VoiceConsent`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者控制的目录（`settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`），只由所有者经服务端写入，不随文稿提交 |
+| 同意记录 | `VoiceConsent`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256，以及服务端以运营者的密钥 `PRESMIUM_SPEECH_CONSENT_KEY` 计算的签名。放在运营者控制的目录（`settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`），只由所有者经服务端或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
 | 语音网关 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；只有网关接触服务提供方 |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |
-| 合成缓存 | `.presmium/speech/<键>.ogg`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、模型、音色、语言、语速、风格、读音词典哈希、文字）的 sha256 缓存，随文稿提交 |
+| 合成缓存 | `.presmium/speech/<键>.<扩展名>`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、模型、音色、语言、语速、风格、读音词典哈希、文字）的 sha256 缓存，随文稿提交；音频保留引擎返回的格式（通常是 Ogg/Opus，假引擎为 WAV） |
 
 **合成缓存（聚合根）**：按键存放的合成结果与 `speech.lock.json`；键由规范化的请求决定，同一个键的内容不再改变。**同意记录**是另一个聚合，按（引擎，音色）标识。
 
@@ -541,9 +541,9 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - 合成缓存保证可复现（原则 5）：命中缓存的段落从不重新合成，全部命中的构建不向引擎发出请求；构建只为缺失的段落调用引擎并写入缓存（同编译时执行的录制，K-19）；缓存缺失又没有可用的引擎时，构建与 `presmium check` 报错并指出是哪些段落；改一段只重新合成一段。
 - 凭据只在服务端，并且只发往运营者为它给出的地址；文稿只写引擎与音色的名字，不写地址与凭据的变量名。
 - 文字发给第三方语音服务须由运营者定义引擎、文稿选用它；没有定义引擎时不发出任何请求。
-- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且同意记录目录中有该音色的记录时可以合成；语音服务在合成前检查，Node 端与语音网关是同一个关口。能编辑文稿的人与 agent 写不了同意记录：文稿目录中的同意记录被忽略。
+- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且同意记录目录中有该音色的记录时可以合成；语音服务在合成前检查，Node 端与语音网关是同一个关口。能编辑文稿的人与 agent 写不出有效的同意记录：语音服务只承认带服务端签名的记录，签名的密钥不进入 agent 与被执行代码的环境；文稿目录中的记录与没有有效签名的记录都被忽略，即使它们就在同意记录目录中。
 - 转写与合成的入口标明引擎的服务提供方，名字来自运营者的配置，在任何请求之前就已知。
-- 合成的音频与它的 `<键>.json` 带 AI 生成的标识与 GB 45438 的元数据；播放合成的讲授时界面显示“AI 合成语音”。
+- 合成的音频与它的 `<键>.json` 带 AI 生成的标识与 GB 45438 的元数据，由语音服务在写入缓存时加入（不重新编码，任何引擎都一样）；播放合成的讲授时界面显示“AI 合成语音”。
 
 服务：`SPEECH`（Node 与浏览器各一个实现，同一契约）。
 

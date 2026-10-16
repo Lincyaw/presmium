@@ -100,7 +100,7 @@ packages/addon-<ctx>/
 v0.8 新增的规则：
 
 - `@presmium/server` 只由 `cli` 与 `workspace` 引用。插件经 `ServerContext`、`RequestContext`、`APPROVALS` 与 `MCP_ENDPOINT` 使用服务端，浏览器端经 `@presmium/host` 的 `useServer()`。
-- `@presmium/mcp` 只由 `server` 引用（挂载 `/mcp`）。MCP 服务需要的宿主能力由它自己声明为接口 `McpHost`（`@presmium/mcp` 的类型：文档列表、编译结果与诊断、检查、构建、放映位置与课堂状态、确认），服务端在 `ServerHost` 与控制通道之上实现它，`presmium-mcp` 直接在编译器上实现它；`mcp` 不引用 `server`，两者之间没有循环依赖（10.2 节）。
+- `@presmium/mcp` 只由 `server` 引用（挂载 `/mcp`）。MCP 服务需要的宿主能力由它自己声明为接口 `McpHost`（`@presmium/mcp` 的类型：文档列表、编译结果与诊断、检查、构建、运行代码块、放映位置与课堂状态、确认），服务端在 `ServerHost` 与控制通道之上实现它，`presmium-mcp` 直接在编译器上实现它；`mcp` 不引用 `server`，两者之间没有循环依赖（10.2 节）。
 - 插件包（`addon-*`）不引用 `@presmium/server`、`@presmium/mcp`、`@presmium/workspace` 与 `@presmium/web`；`workspace` 与 `mcp` 也不引用插件包（已有的“没有包引用插件”规则）。
 - 外部协议与厂商的客户端各只在一个适配器中：`@modelcontextprotocol/*` 只在 `mcp`（各包的 `test/` 另算）；`@agentclientprotocol/sdk` 只在 `addon-assistant/src/node/`；`@jupyterlab/services` 与 `@xterm/*` 只在 `addon-exec-jupyter`；`mediabunny` 只在 `addon-lecture`；`simple-git` 只在各包的 `src/node/`。语音服务提供方没有 SDK，它们的接口只出现在 `addon-speech/src/node/engines/`，由代码评审守护。
 - `workspace` 的 `src/client/` 与 `components/` 同插件组件的规则。
@@ -290,7 +290,8 @@ export interface RunResult {
 export interface RunContext {
   /**
    * 被执行的代码能得到的全部环境变量（见下文“执行的环境变量”与第 11 节）。执行器不读 `process.env`：
-   * 子进程、`docker` 与 devcontainer 命令行以它为环境，容器、WASI 程序与内核至多得到其中的变量
+   * 子进程以它为环境；`docker` 与 devcontainer 命令行以它加上 Docker 客户端的变量为环境（10.6 节）；
+   * 容器、WASI 程序、WebGPU 录制所用的 Chromium 与内核至多得到其中的变量
    */
   env: Readonly<Record<string, string>>
 }
@@ -435,8 +436,8 @@ export interface HostStart {
 - **会话 ID**：浏览器中由代码块的 `:session:` 加上页面实例的标识组成（每个页面、每个学习者各自一份）；编译时由文稿与 `:session:` 组成，构建结束时对每个用过的会话调用 `endSession`。
 - **富输出**：执行器把输出写入 `outputs`，同时照旧拼接 `stdout`、`stderr`。渲染见 `ir.md` 第 6 节；HTML 输出在显示前清洗（第 11 节）。
 - **环境的登记**：编译器为头部声明的每个环境找到 `kind` 对应的提供方，创建执行器并加入编译时的执行器列表；没有提供方的 `kind` 与未声明的环境名都是错误级诊断。浏览器端由同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记执行器，ID 相同。
-- **执行的环境变量**（N-08）：编译时执行的代码由文稿的编辑者或 agent 写出，不能读到服务端的凭据。编译器为每次运行给出 `RunContext.env`：`presmium build`、`check`、`dev` 与语言服务中，是进程的环境去掉全部 `PRESMIUM_` 开头的变量，以及名字（不分大小写）以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量；`presmium serve` 中只有允许列表：`PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR`，以及 `HOME`（每个工作区一个临时目录）。两种情况都再加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量（取进程中的值，即使名字像凭据）。执行插件的子进程、本地环境插件的 `docker` 与 devcontainer 命令行（容器定义中的 `${localEnv:…}` 因此取不到被去掉的变量）、WASI 程序与远端内核都只得到其中的变量，执行器不读 `process.env`。
-- **`presmium serve` 中的编译时执行**（N-08，10.6 节）：编译器的执行选项（编译器自己的接口，不是内核契约）由宿主给出：`env`（`local` 或 `serve`，决定上一条的规则）、`admit`（未命中缓存的运行交给它判断：放行的执行，其余按没有执行处理，显示录制输出或降级内容，并列在编译结果中）与 `sandbox`（环境名：编译器以文档加载的 `jupyter` 提供方、运营者的 `PRESMIUM_ENV_<名>_URL` 与 `_TOKEN` 为它创建执行器，原本在本机运行的代码改由它运行；不可用时这些代码不执行，不退回本机）。`presmium build`、`check`、`dev` 不给 `admit` 与 `sandbox`，全部执行；`presmium serve` 按运营者设置 `settings.presmium.exec` 的 `compile` 与 `sandbox` 给出。
+- **执行的环境变量**（N-08）：编译时执行的代码由文稿的编辑者或 agent 写出，不能读到服务端的凭据。编译器为每次运行给出 `RunContext.env`：`presmium build`、`check`、`dev` 与语言服务中，是进程的环境去掉全部 `PRESMIUM_` 开头的变量，以及名字（不分大小写）以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量；`presmium serve` 中只有允许列表：`PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR`，以及 `HOME`（每个工作区一个临时目录）。两种情况都再加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量（取进程中的值，即使名字像凭据）。执行插件的子进程、WASI 程序、WebGPU 录制所启动的 Chromium 与远端内核都只得到其中的变量，执行器不读 `process.env`；本地环境插件的 `docker` 与 devcontainer 命令行以它加上 Docker 客户端需要的几个变量为环境（容器定义中的 `${localEnv:…}` 因此取不到被去掉的变量），容器里的代码至多得到 `RunContext.env` 中的变量（10.6 节）。
+- **`presmium serve` 中的编译时执行**（N-08，10.6 节）：编译器的执行选项（编译器自己的接口，不是内核契约）由宿主给出：`env`（`local` 或 `serve`，决定上一条的规则）、`admit`（未命中缓存的运行交给它判断：放行的执行，其余按没有执行处理，显示录制输出或降级内容，并列在编译结果中）与 `sandbox`（环境名：编译器以文档加载的 `jupyter` 提供方、运营者的 `PRESMIUM_ENV_<名>_URL` 与 `_TOKEN` 为它创建执行器；除文稿声明的 `kind: jupyter` 环境之外，原本在本机运行的代码都改由它运行，它的内核不支持的语言不执行；不可用时这些代码不执行；两种情况都不退回本机）。宿主的 `ServerHost` 运行单个代码块（MCP 的 `run_code`）与构建时使用同一套选项（10.6 节）。`presmium build`、`check`、`dev` 不给 `admit` 与 `sandbox`，全部执行；`presmium serve` 按运营者设置 `settings.presmium.exec` 的 `compile` 与 `sandbox` 给出。
 
 ### 4.7 服务端契约
 
@@ -508,7 +509,8 @@ export type ApprovalKind = 'operate' | 'spend' | 'write' | 'agent'
  * 确认的范围，决定谁能回答（10.4 节）。`content`：只涉及发起成员自己的文档与会话
  * （任务的文档目录中的文件、MCP 的操作类与计费类工具），发给 `member`；
  * `workspace`：工作区配置 `presmium.workspace.yaml`（成员、确认策略、运营者设置）、同意记录、
- * 文档目录之外的任何路径、agent 的 shell 与网络权限请求、`presmium serve` 中的编译时执行，只发给所有者
+ * 文档目录之外的任何路径、agent 的 shell 与网络权限请求、`presmium serve` 中在服务端执行编辑者或 agent
+ * 写的代码（没有录制的编译时执行；`compile: approve` 时 MCP 的 `run_code`，10.6 节），只发给所有者
  */
 export type ApprovalScope = 'content' | 'workspace'
 
@@ -632,6 +634,10 @@ export interface SpeechWord { text: string, start: number, end: number }
 export interface Synthesis {
   /** 浏览器中为 Blob；Node 中为合成缓存中文件的路径 */
   audio: Blob | string
+  /**
+   * 引擎返回的格式，缓存不重新编码：语音服务向引擎请求 Ogg/Opus（`audio/ogg`），
+   * 只给出其他格式的引擎按其格式保存（假引擎为 `audio/wav`）。AI 生成的标识由语音服务写进它的元数据
+   */
   mime: string
   /** 秒 */
   duration: number
@@ -676,7 +682,7 @@ export interface VoiceInfo {
   lang: string[]
   /**
    * 克隆某人的音色：只在运营者设置 `cloned: true`、且运营者的同意记录目录（`consentDir`，ir.md 第 10 节）
-   * 中有本人的同意记录时可以合成（N-08）；文稿目录中的同意记录不算
+   * 中有本人的、带服务端签名的同意记录时可以合成（N-08）；没有签名的记录与文稿目录中的记录都不算
    */
   cloned?: boolean
 }
@@ -706,8 +712,8 @@ export interface SpeechService {
   engines(): SpeechEngineInfo[]
   voices(engine: string, lang?: string): Promise<VoiceInfo[]>
   /**
-   * 先查合成缓存，命中时不发请求；缺失时调用引擎并写入缓存。引擎不可用时、
-   * 克隆音色没有开启或没有同意记录时拒绝（抛出带原因的错误）
+   * 先查合成缓存，命中时不发请求；缺失时调用引擎，在音频的元数据中加入 AI 生成的标识后写入缓存。
+   * 引擎不可用时、克隆音色没有开启或没有有效的同意记录时拒绝（抛出带原因的错误）
    */
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
@@ -1228,6 +1234,7 @@ v0.8 的外部服务一律用说同一协议的真实实现来测试，不 mock 
 | `presmium-mcp [deck]` | `@presmium/mcp` | `--allow operate`（不加时不提供操作类工具） | 以 stdio 提供与 `/mcp` 相同的读取类工具，供编辑器中的 agent（Claude Code、Codex、VS Code）使用；没有放映位置与课堂（WP-78） |
 | `presmium-lecture export [deck]` | `@presmium/slidev-addon-lecture` | `--track <id>`、`--out <file>`（`.webm` 或 `.mp4`）、`--size <宽x高>`、`--fps <n>` | 用 Playwright 播放讲授并与音频合成为视频文件（P-135，WP-83） |
 | `presmium-speech fake`、`presmium-speech serve` | `@presmium/slidev-addon-speech` | `--port <n>`；`serve` 另有 `--engine <id>`、`--host <地址>`（默认 `127.0.0.1`） | 确定性的假引擎；单独运行的语音网关（WP-82）。网关持有运营者的凭据，所以同 MCP：校验 `Host` 与 `Origin`（同 10.3 节，另接受 `--host` 给出的地址），每个请求要求 `Authorization: Bearer <令牌>`，令牌取自 `PRESMIUM_SPEECH_SERVE_TOKEN`，没有时每次启动随机生成并打印 |
+| `presmium-speech consent` | `@presmium/slidev-addon-speech` | `<引擎> <音色> <记录文件>`、`--workspace <目录>`（默认当前目录） | 运营者登记克隆音色的同意记录（WP-82）：以环境变量 `PRESMIUM_SPEECH_CONSENT_KEY` 签名，写入工作区设置的 `consentDir`；与所有者经语音插件路由的登记效果相同（第 11 节） |
 
 ## 8. 需求覆盖
 
@@ -1301,7 +1308,7 @@ v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下是计划�
 | P-132、P-133 | addon-speech、addon-lecture | `addon-speech/test/speech.test.ts`、`addon-speech/test/engines.test.ts`（WP-82）；讲授轨中的转写与换音色见 `e2e/lecture-script.spec.ts`（WP-83） |
 | P-134、P-135 | addon-lecture | `e2e/lecture-script.spec.ts`、`addon-lecture/test/script.test.ts`、`addon-lecture/test/video.test.ts`（WP-83） |
 | P-136 | addon-lecture | `e2e/lecture-writeback.spec.ts`（WP-84） |
-| N-08 安全基线 | server、compiler、addon-exec、mcp、addon-assistant、workspace、addon-speech、addon-exec-jupyter、addon-lecture | 各工作包的拒绝用例：外来 `Host` 与 `Origin`、缺令牌、缺登录、读者调用编辑者的路由（WP-73a）；编译时执行的代码读不到凭据（`addon-exec/test/secrets.test.ts`，WP-73b）；`presmium serve` 中未录制的代码等所有者确认、`off` 不执行（`cli/test/serve.test.ts`，WP-79）；未确认的操作类工具、作废的会话令牌（WP-78）；`tutor` 模式的写入（WP-80）；编辑者不能回答自己 agent 的工作区范围的确认（`e2e/assistant-edit.spec.ts`，WP-81）；文稿把凭据引向别的地址（WP-76、WP-82）；没有同意记录的克隆音色、写在文稿中的同意记录、没有令牌访问 `presmium-speech serve`（WP-82）。服务提供方的标明：`e2e/assistant.spec.ts`（WP-80）、`e2e/assistant-edit.spec.ts`（WP-81）、`addon-speech/test/speech.test.ts`（WP-82）、`e2e/lecture-script.spec.ts`（WP-83）。AI 合成的标识：`e2e/lecture-script.spec.ts`（播放界面，WP-83）、`addon-speech/test/speech.test.ts`（音频与 `<键>.json` 的元数据，WP-82）（第 11 节） |
+| N-08 安全基线 | server、compiler、addon-exec、mcp、addon-assistant、workspace、addon-speech、addon-exec-jupyter、addon-lecture | 各工作包的拒绝用例：外来 `Host` 与 `Origin`、缺令牌、缺登录、读者调用编辑者的路由（WP-73a）；编译时执行的代码读不到凭据（`addon-exec/test/secrets.test.ts`，WP-73b）；`presmium serve` 中未录制的代码等所有者确认且不重复请求、`off` 不执行、沙箱不支持的语言不在主机上执行（`cli/test/serve.test.ts`，WP-79）；未确认的操作类工具、作废的会话令牌、`presmium serve` 中编辑者的令牌调用 `run_code` 只由所有者确认（WP-78）；`tutor` 模式的写入（WP-80）；编辑者不能回答自己 agent 的工作区范围的确认（`e2e/assistant-edit.spec.ts`，WP-81）；文稿把凭据引向别的地址（WP-76、WP-82）；没有同意记录的克隆音色、写在文稿中的同意记录、没有服务端签名的同意记录、没有令牌访问 `presmium-speech serve`（WP-82）。服务提供方的标明：`e2e/assistant.spec.ts`（WP-80）、`e2e/assistant-edit.spec.ts`（WP-81）、`addon-speech/test/speech.test.ts`（WP-82）、`e2e/lecture-script.spec.ts`（WP-83）。AI 合成的标识：`e2e/lecture-script.spec.ts`（播放界面，WP-83）、`addon-speech/test/speech.test.ts`（音频与 `<键>.json` 的元数据，WP-82）（第 11 节） |
 
 ## 9. 已知风险
 
@@ -1381,9 +1388,9 @@ presmium serve（工作区，部署时在登录代理之后）
 - **请求**：路由处理函数用标准 Fetch API 写，不绑定服务器框架；Node 的请求与 Fetch 之间由 `@hono/node-server` 的 `getRequestListener` 转换。流式结果用 SSE（`eventStream`，4.7 节）。
 - **文档**：`useServer().fetch` 带上请求头 `Presmium-Document: <文档目录>`，服务端据此给出 `RequestContext.document`，并把请求交给该文档的插件实例。
 - **反向代理**：`ProxySpec` 由 `http-proxy-3` 实现，HTTP 与 WebSocket 升级都加上 `headers`（例如远端环境的 `Authorization`），浏览器拿不到这些头。
-- **宿主进程的接口**：启动服务端的命令给它一个 `ServerHost`（`@presmium/server` 自己的类型，不是内核契约）：文档列表、编译结果与诊断、运行检查、构建。编译结果按视图给出：`full`（完整的文稿）或 `student`（按受众 `student` 编译，P-55）；读者成员与 `tutor` 令牌只得到 `student` 视图（10.3 节）。`presmium dev` 由 CLI 在它的编译器上实现，`presmium serve` 由工作区实现；控制通道经它读取文稿。
+- **宿主进程的接口**：启动服务端的命令给它一个 `ServerHost`（`@presmium/server` 自己的类型，不是内核契约）：文档列表、编译结果与诊断、运行检查、构建、运行一个代码块（MCP 的 `run_code`）；构建与运行代码块使用与该宿主的编译相同的执行选项（4.6 节，10.6 节）。编译结果按视图给出：`full`（完整的文稿）或 `student`（按受众 `student` 编译，P-55）；读者成员与 `tutor` 令牌只得到 `student` 视图（10.3 节）。`presmium dev` 由 CLI 在它的编译器上实现，`presmium serve` 由工作区实现；控制通道经它读取文稿。
 - **转发**：`presmium serve` 中其余路径的转发目标由工作区按成员给出（`startServer` 的转发选项是成员到地址的函数）：编辑者与所有者转发到完整的工作区站点，读者转发到学生视图的站点，HMR 的 WebSocket 同样按成员转发。
-- **MCP 的挂载**：`@presmium/mcp` 声明自己需要的宿主接口 `McpHost`（文档列表、编译结果与诊断、检查、构建、放映位置及其变化、课堂状态、跳转与开关课堂、确认），导出 `createPresmiumMcp(host)`。服务端引用 `@presmium/mcp`，在 `ServerHost`、控制通道与 `APPROVALS` 之上实现 `McpHost` 并把它挂在 `/mcp`；`presmium-mcp` 在编译器上实现它（没有放映位置与课堂）。`mcp` 不引用 `server`（第 3 节），依赖只有 `server → mcp` 一个方向。
+- **MCP 的挂载**：`@presmium/mcp` 声明自己需要的宿主接口 `McpHost`（文档列表、编译结果与诊断、检查、构建、运行代码块、放映位置及其变化、课堂状态、跳转与开关课堂、确认），导出 `createPresmiumMcp(host)`。服务端引用 `@presmium/mcp`，在 `ServerHost`、控制通道与 `APPROVALS` 之上实现 `McpHost` 并把它挂在 `/mcp`；`presmium-mcp` 在编译器上实现它（没有放映位置与课堂）。`mcp` 不引用 `server`（第 3 节），依赖只有 `server → mcp` 一个方向。
 - **运营者设置**：`startServer` 接受 `settings`（插件 ID 到设置），交给各插件的 `ServerContext.settings` 与 `NodeServiceContext.settings`。`presmium dev`、`build`、`check` 读取工作区根目录 `presmium.workspace.yaml` 的 `settings`（没有该文件时为空），`presmium serve` 由工作区读取同一个键；都只在进程启动时读取一次，运行中改动配置文件不生效，直到运营者重启（`ir.md` 第 10 节）。
 - **生命周期**：`presmium dev` 启动时为文稿创建一次各插件的贡献，头部的 `plugins` 变化时照旧提示重启；`presmium serve` 在一份文档第一次被请求时创建它的贡献。Node 端服务（`services`）与贡献使用同一份文稿配置与运营者设置；服务端另外登记 `APPROVALS` 与 `MCP_ENDPOINT`，工作区登记 `REVISIONS`。
 - **端口**：`presmium dev` 的服务端默认取空闲端口（`--server-port` 指定），启动时打印 MCP 地址；`presmium serve` 用 `--port`（默认 4310）与 `--host`（默认 `127.0.0.1`）。
@@ -1401,14 +1408,14 @@ presmium serve（工作区，部署时在登录代理之后）
 
 - **控制通道**：`useServer().available` 时，宿主在 `startHost` 中连接 `/__presmium/presmium.server/control`（SSE 接收，POST 报告）。页面报告：自己的位置（`navigation` 服务的位置与视图）、视图角色，以及 `STATUS` 中各插件的摘要（变化时，至多每秒一次）。服务端发来：`go`（经 `navigation.go` 跳转）、`session`（经 `session` 服务开始或结束课堂）、`approval`（确认请求）。MCP 的 `get_position` 返回该成员处于放映或演讲者视图的窗口最近报告的位置，没有时返回任一窗口的位置；`navigate` 向这些窗口发出 `go`，听众视图照旧经已有的通道跟随。
 - **确认**：`APPROVALS` 按种类的策略处理：`off` 时这类操作不提供（MCP 不列出对应的工具），`ask`（默认）时经控制通道发出请求；任一有资格的窗口回答即生效，50 秒内（低于 DeepSeek Harness 调用 MCP 工具的 60 秒超时）没有回答视为拒绝。`allow` 只能由本机作者用 `presmium dev --allow <种类,…>` 或工作区所有者在 `presmium.workspace.yaml` 的 `approvals` 中设置，文稿不能设置。
-- **按范围分发**（`ApprovalScope`，4.7 节）：`content` 范围的请求发给 `member` 的窗口（没有指定成员时发给全部编辑者与所有者）；`workspace` 范围的请求（工作区配置、成员、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求、`presmium serve` 中的编译时执行）只发给所有者的窗口，发起它的编辑者看不到，也不能回答：服务端只接受所有者对它的回答，其他成员的回答得到 403。没有标明范围的请求按 `workspace` 处理。`presmium dev` 中唯一的成员是所有者，两种范围都发给本机作者。
+- **按范围分发**（`ApprovalScope`，4.7 节）：`content` 范围的请求发给 `member` 的窗口（没有指定成员时发给全部编辑者与所有者）；`workspace` 范围的请求（工作区配置、成员、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求、`presmium serve` 中在服务端执行没有录制的代码与 `compile: approve` 时 MCP 的 `run_code`，10.6 节）只发给所有者的窗口，发起它的编辑者看不到，也不能回答：服务端只接受所有者对它的回答，其他成员的回答得到 403。没有标明范围的请求按 `workspace` 处理。`presmium dev` 中唯一的成员是所有者，两种范围都发给本机作者。
 - **确认界面**：宿主在 `PmToolbar` 中加入一个只在有待确认请求时出现的入口，两种形态都显示：说明、发起方、允许与拒绝。
-- **发送即确认**：编辑模式中发送一批批注或一条对话消息，就是对这次任务在文档目录中的写入的确认（N-08），助手不再逐个文件询问；写入超出当前文档目录或改动工作区配置时仍以 `write` 确认，它属于 `workspace` 范围，只有所有者能允许。运营者目录 `.presmium-operator/`（同意记录等，第 11 节）不接受 agent 的写入：助手不发确认，直接复原。
+- **发送即确认**：编辑模式中发送一批批注或一条对话消息，就是对这次任务在文档目录中的写入的确认（N-08），助手不再逐个文件询问；写入超出当前文档目录或改动工作区配置时仍以 `write` 确认，它属于 `workspace` 范围，只有所有者能允许。agent 对运营者目录 `.presmium-operator/`（同意记录等，第 11 节）的权限请求一律拒绝，不发给任何人；agent 不经请求写进去的文件在任务结束时被复原，在那之前也不起作用：语音服务只承认带服务端签名的同意记录（第 11 节），agent 拿不到签名的密钥。
 
 ### 10.5 部署（N-09）
 
 - **本机**：`presmium serve [目录]` 一条命令启动工作区服务；目录中没有 `presmium.workspace.yaml` 而有 `lecture.md` 时，作为只有一份文档的工作区。工作区必须在 git 仓库中，否则编辑功能不可用并提示 `git init`。
-- **运营者目录**：工作区根目录的 `.presmium-operator/` 存放运营者的数据（默认的同意记录目录 `consent/`），不属于任何文档：`REVISIONS` 不提交其中的文件，工作区模板的 `.gitignore` 忽略它，agent 的写入被复原（10.4 节）。部署时它与工作区仓库在同一个数据卷上，也可以由 `settings.presmium.speech.consentDir` 指向别处。
+- **运营者目录**：工作区根目录的 `.presmium-operator/` 存放运营者的数据（默认的同意记录目录 `consent/`），不属于任何文档：`REVISIONS` 不提交其中的文件，工作区模板的 `.gitignore` 忽略它，agent 的写入不被承认并在任务结束时复原（10.4 节）。部署时它与工作区仓库在同一个数据卷上，也可以由 `settings.presmium.speech.consentDir` 指向别处。
 - **docker compose**：`templates/workspace/compose/compose.yaml`：oauth2-proxy（唯一发布端口的服务）、工作区服务（不发布端口，只信任代理）、课堂服务，以及与 `templates/env/compose/` 共用覆盖配置的 Jupyter 环境；数据卷是工作区仓库；凭据经 `.env` 传给各容器。
 - **Kubernetes**：`templates/workspace/kubernetes/README.md` 与 `templates/env/kubernetes/README.md` 只给文档与清单片段（工作区：带 oauth2-proxy 边车的 Deployment、仓库的 PVC、Service 与 Ingress；远端环境：Zero to JupyterHub 的 `values.yaml` 片段，按 CPU、GPU、MIG 划分的配置，gVisor 的 `runtimeClassName`，回收设置，以及 agent-sandbox 的模板），不维护 Helm chart。集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书、身份提供方由用户负责。
 - 静态构建产物仍可发布到任意静态托管。
@@ -1417,12 +1424,20 @@ presmium serve（工作区，部署时在登录代理之后）
 
 文稿的编辑者与受提示注入的 agent 都不受信任（第 11 节），而编译时执行的代码正是他们写的，运行在服务端的主机上。规则如下，实现见 4.6 节的 `RunContext` 与编译器的执行选项：
 
-- **环境变量**：每个 Node 端执行器（执行插件的子进程、本地环境插件的容器与 `docker`、devcontainer 命令行、WASI 与 Jupyter 的编译时客户端）只给代码清理过的环境 `RunContext.env`。`presmium build`、`check`、`dev`：进程的环境去掉全部 `PRESMIUM_` 开头的变量与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量；`presmium serve`：只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与 `HOME`（每个工作区一个临时目录）。两者都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量。
+- **环境变量**：每个 Node 端执行器（执行插件的子进程、本地环境插件的容器、WASI 与 Jupyter 的编译时客户端、WebGPU 录制所启动的 Chromium）只给代码清理过的环境 `RunContext.env`。`presmium build`、`check`、`dev`：进程的环境去掉全部 `PRESMIUM_` 开头的变量与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量；`presmium serve`：只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与 `HOME`（每个工作区一个临时目录）。两者都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量。
+- **容器命令行的环境**：`docker` 与 devcontainer 命令行是执行器调用的工具，它们读的容器定义（`${localEnv:…}`）却来自文稿，所以同样以 `RunContext.env` 为基础，只另加 Docker 客户端需要的变量：进程中的 `DOCKER_HOST`、`DOCKER_CONTEXT`、`DOCKER_CONFIG`、`DOCKER_CERT_PATH`、`DOCKER_TLS_VERIFY`、`XDG_RUNTIME_DIR`，以及进程真实的 `HOME`（Docker 从 `~/.docker/` 读取上下文与镜像仓库的登录）。这些都不是凭据，rootless Docker 与 Docker 上下文因此在 `presmium serve` 中照常可用，运营者不必经 `passEnv` 传入。容器里的代码经命令行只得到 `RunContext.env` 中的变量（逐个传入，不传主机上的路径 `PATH`、`HOME`）；容器定义经 `${localEnv:…}` 至多还能取到上面这几个不是凭据的变量。
 - **`presmium serve` 中未录制的代码**：执行缓存（`.presmium/freeze/`）中已有录制的代码照常使用录制；没有录制的代码按运营者设置 `settings.presmium.exec.compile` 处理：
   - `approve`（默认）：一次编译中待执行的代码合为一个 `operate` 确认（`workspace` 范围，只发给所有者，列出章节与块）；确认之前与被拒绝时按没有执行处理，显示 `:recorded:` 的录制输出或降级内容，并给出信息级诊断；所有者允许后工作区重新编译并执行这些代码。这个确认只由 `compile` 决定，`approvals.operate` 的 `allow` 不放行它。
   - `trusted`：不确认，直接执行（运营者信任全部编辑者）。
   - `off`：不执行，也不记录，只显示录制输出或降级内容。
-- **沙箱**：运营者设置 `settings.presmium.exec.sandbox: <环境名>` 时，`presmium serve` 中原本在主机上运行的编译时代码（执行插件的子进程、本地容器、WASI）改在这个环境中运行；沙箱的内核不支持的语言仍按 `compile` 的规则在主机上运行。沙箱是一个 `kind: jupyter`、`auth: env` 的环境，地址与令牌只来自运营者的 `PRESMIUM_ENV_<名>_URL` 与 `PRESMIUM_ENV_<名>_TOKEN`，不取文稿中同名环境的声明，例如 `templates/env/compose/` 以 gVisor 覆盖配置启动的环境；编译器在文档加载的插件中找 `jupyter` 的提供方（文档的 `plugins` 要包含远端环境插件）。沙箱不可用时（没有提供方、缺地址或令牌、不可达），这些代码按没有执行处理并给出诊断，不退回主机。沙箱中的执行同样要经 `compile` 的确认。
+- **编译确认的生命周期**：编译不等待确认，照常以录制输出或降级内容完成。一份文档同一时间至多一个待回答的编译确认，它照常有 50 秒的超时（10.4 节）。确认列出的代码（按缓存键）在等待中、被拒绝或超时之后，不再自动请求：再次编译、其他成员打开文档、读者的访问都不重复发出（读者的学生视图从不发出编译确认）。代码改动后（缓存键变化），下一次编译为改动后的代码发出新的确认；编辑者或所有者也可以在文档页面上那条信息级诊断的“请求执行”中再次发出（工作区的路由）。这些记录只在内存中，服务重启后清空。
+- **沙箱**：运营者设置 `settings.presmium.exec.sandbox: <环境名>` 时，`presmium serve` 中原本在主机上运行的编译时代码（执行插件的子进程、本地环境插件的容器、WASI、WebGPU 在 Chromium 中的录制）都不再在主机上运行：沙箱的内核支持的语言改在沙箱中运行；内核不支持的语言（默认的 `python3` 内核之外的 JavaScript、C、C++、Ruby、`wgsl` 等）不执行，按没有执行处理（显示录制输出或降级内容，给出信息级诊断），`compile` 为 `trusted` 时也一样。这些代码的录制可以由作者在自己的机器上用 `presmium dev` 或 `build` 生成，随文稿提交。沙箱是一个 `kind: jupyter`、`auth: env` 的环境，地址与令牌只来自运营者的 `PRESMIUM_ENV_<名>_URL` 与 `PRESMIUM_ENV_<名>_TOKEN`，不取文稿中同名环境的声明，例如 `templates/env/compose/` 以 gVisor 覆盖配置启动的环境；编译器在文档加载的插件中找 `jupyter` 的提供方（文档的 `plugins` 要包含远端环境插件）。沙箱不可用时（没有提供方、缺地址或令牌、不可达），这些代码按没有执行处理并给出诊断，不退回主机。沙箱中的执行同样要经 `compile` 的确认。文稿声明的 `kind: jupyter` 环境本来就不在主机上运行，不改去沙箱，没有录制的代码同样按 `compile` 处理。
+- **MCP 的 `run_code` 与 `build`**：这两个工具也在服务端执行文稿中的代码（`run_code` 经 `ServerHost` 以编译器的执行器重新运行一个代码块，不读也不写录制；`build` 构建文档），使用与同一宿主的编译相同的执行选项，所以 `presmium serve` 中同样只有 `serve` 规则的环境变量，配置了沙箱时同样不在主机上运行。确认的范围随 `compile`：
+  - `approve`：`run_code` 的确认是 `workspace` 范围的 `operate`，只发给所有者，令牌所绑定的编辑者看不到也不能回答，所有者的允许同时放行这次执行（不再另经编译确认）；它同样只由 `compile` 决定，`approvals.operate` 的 `allow` 不放行它。`build` 的确认仍是 `content` 范围：构建中没有录制的代码照常经上面的编译确认，没有允许时按没有执行处理。
+  - `trusted`：两者都是 `content` 范围，发给令牌所绑定的成员。
+  - `off`：MCP 不列出 `run_code`；`build` 不执行没有录制的代码。
+
+  `presmium dev` 与 `presmium-mcp` 中两者都是 `content` 范围，全部执行。
 - `presmium dev` 与 `presmium build` 是作者在自己的机器上运行的命令，没有确认与沙箱，只清理环境变量。
 
 ## 11. 安全（N-08）
@@ -1433,7 +1448,7 @@ presmium serve（工作区，部署时在登录代理之后）
 | 部署时绕过登录 | 监听非本机地址时必须配置登录代理；只信任带共享密钥或来自固定地址的请求；工作区服务的端口在 compose 模板中不发布 |
 | agent 误改或越权 | 只写工作区中的源码；超出当前文档目录要确认；一批一提交，可撤销；操作类与计费类工具、agent 自身的权限请求都要确认；确认的关口在我们的服务端。确认按范围分发（10.4 节）：工作区配置、成员、运营者设置、同意记录、文档目录之外的路径与 agent 的 shell、网络权限请求只由所有者确认，编辑者不能批准自己的 agent 的这类请求 |
 | 文稿关闭安全设置 | 确认策略、agent 的启动命令与模型的服务提供方、编译时执行的策略（`settings.presmium.exec`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效；agent 改动它总要以 `write` 确认（`workspace` 范围，只有所有者能允许；即使单份文稿的仓库中它在文档目录里），被拒绝时助手复原该文件 |
-| 编辑者或 agent 写的代码在服务端运行 | 编译时执行的代码只得到清理过的环境变量，读不到 `PRESMIUM_` 开头与像凭据的变量（`RunContext.env`，4.6 节）；`presmium serve` 中只有允许列表中的变量，没有录制的代码经所有者的 `operate` 确认才执行（`settings.presmium.exec.compile`：`approve`、`trusted`、`off`），可以改在运营者给出的沙箱环境中运行（10.6 节） |
+| 编辑者或 agent 写的代码在服务端运行 | 编译时执行的代码只得到清理过的环境变量，读不到 `PRESMIUM_` 开头与像凭据的变量（`RunContext.env`，4.6 节）；`presmium serve` 中只有允许列表中的变量，没有录制的代码经所有者的 `operate` 确认才执行（`settings.presmium.exec.compile`：`approve`、`trusted`、`off`），确认不重复发出；MCP 的 `run_code` 与 `build` 同一规则，`approve` 时 `run_code` 只由所有者确认；运营者给出沙箱环境时这些代码不在主机上运行，沙箱不支持的语言不执行（10.6 节） |
 | 文稿把服务端的凭据引向别的地址 | 文稿只写环境与引擎的名字，不能决定哪个凭据发往哪个地址：凭据与它的地址由运营者在服务端的环境变量中成对给出。远端环境：`PRESMIUM_ENV_<名>_TOKEN` 只发往 `PRESMIUM_ENV_<名>_URL`，文稿中的 `url` 与它不同源时不连接并给出错误诊断，不回退到通用的变量（如 `JUPYTER_TOKEN`）；没有给出地址时不发送令牌。语音：引擎 `<ID>` 的地址与凭据是 `PRESMIUM_SPEECH_<ID>_URL` 与 `PRESMIUM_SPEECH_<ID>_KEY`（火山引擎的地址固定在适配器中），文稿只用 `engine`、`voice` 选择引擎与音色；文稿中出现 `url`、`keyEnv` 这类字段时是错误，不被使用 |
 | 提示注入（学习者的问题、远端输出、网页内容） | 学习者的问题用 `tutor` 运行时：只读，没有 shell、网络、写文件与操作类工具；回答在课堂中公开前可以要求主讲确认 |
 | 凭据泄露 | 凭据只在服务端（环境变量、agent 自己的凭据存储）；代理代加凭据；IR 与产物不含凭据；`presmium check` 对文稿头部中像凭据的字段告警（字段名含 `token`、`secret`、`password`、`key` 且值不是环境变量名，或值形如常见的密钥前缀）；编译时执行的代码只得到清理过的环境（见上）；启动 agent 子进程时去掉全部 `PRESMIUM_` 开头的变量（agent 自己的模型凭据照常传入） |
@@ -1441,7 +1456,7 @@ presmium serve（工作区，部署时在登录代理之后）
 | 不可信的富输出 | 执行输出中的 HTML 用 DOMPurify 清洗后显示（去掉脚本与事件属性）；幻灯片中以没有脚本权限的沙箱 iframe 显示 |
 | GPU 被学习者代码拖垮 | 限制派发规模与重复次数；超时就销毁设备并结束 Worker；监听设备丢失，避免浏览器把站点列入 GPU 黑名单；可以只给录制输出 |
 | 生成的产物被 agent 修改 | 幻灯片渲染端在生成的 Slidev 文稿头部写 `mcp: false`，关闭 Slidev 53 开发服务器自带的、会修改生成文稿的 `/__mcp` 端点（原则 6） |
-| 音色滥用 | 克隆音色默认关闭：只在运营者设置 `settings.presmium.speech.cloned: true` 时可用，且每个克隆音色要有本人的同意记录 `<consentDir>/<引擎>/<音色>.json`（说话人、范围、日期、同意声明录音的 sha256），语音服务在合成前检查，缺一即拒绝。同意记录在运营者控制的目录中，不在文稿里：`settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`；只有所有者经语音插件的路由（`role: owner`）写入，或运营者直接放入；agent 对 `.presmium-operator/` 的写入一律复原，文档的提交不包含它；文稿目录中的同意记录被忽略。合成的音频在播放界面与元数据中标明由 AI 生成（GB 45438-2025、《人工智能生成合成内容标识办法》） |
+| 音色滥用 | 克隆音色默认关闭：只在运营者设置 `settings.presmium.speech.cloned: true` 时可用，且每个克隆音色要有本人的同意记录 `<consentDir>/<引擎>/<音色>.json`（说话人、范围、日期、同意声明录音的 sha256），语音服务在合成前检查，缺一即拒绝。同意记录在运营者控制的目录中，不在文稿里：`settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`；只有所有者经语音插件的路由（`role: owner`）登记，或运营者在服务端的环境中用 `presmium-speech consent` 登记；两者都由服务端以运营者的密钥 `PRESMIUM_SPEECH_CONSENT_KEY` 签名（HMAC-SHA256，覆盖记录的内容与引擎、音色），语音服务只承认签名有效的记录，没有这个密钥时克隆音色不可用。agent 与被执行的代码拿不到这个密钥（它们的环境去掉了全部 `PRESMIUM_` 开头的变量），所以 agent 写进 `.presmium-operator/` 的文件在任务进行中也不起作用，任务结束时被复原；agent 对该目录的权限请求一律拒绝；文档的提交不包含它；文稿目录中的同意记录被忽略。合成的音频在播放界面与元数据中标明由 AI 生成（GB 45438-2025、《人工智能生成合成内容标识办法》）：元数据由语音服务在写入缓存时加入，不依赖引擎 |
 | 只给教师的内容到达学习者 | `presmium build --audience student` 的产物扫描泄漏（P-55）；`presmium serve` 中读者看到学生视图，读者与 `tutor` 令牌经 MCP 也只读学生视图（10.3 节） |
 
 ## 12. 依赖选型（v0.8 新增）
