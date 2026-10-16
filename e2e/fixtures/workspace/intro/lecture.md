@@ -11,3 +11,13 @@ plugins:
 ## 第二节
 
 第二节的内容。
+
+(code)=
+## 代码
+
+```{literalinclude} code.py
+:lines: 2
+```
+
+```{literalinclude} secret.txt
+```

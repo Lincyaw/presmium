@@ -1,7 +1,7 @@
 /**
  * Pass 1 (docs/ir.md section 4): strips the frontmatter, parses MyST with
- * myst-parser and expands `{include}`. Parsed files are cached by content, so
- * a recompilation only re-parses the files that changed.
+ * myst-parser and expands `{include}` and `{literalinclude}`. Parsed files are
+ * cached by content, so a recompilation only re-parses the files that changed.
  */
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
@@ -12,6 +12,7 @@ import { cardDirective } from 'myst-ext-card'
 import { gridDirectives } from 'myst-ext-grid'
 import { tabDirectives } from 'myst-ext-tabs'
 import { mystParse } from 'myst-parser'
+import { includeDirectiveTransform } from 'myst-transforms'
 import { parse as parseYaml } from 'yaml'
 import { refusedFile } from './workspace.ts'
 import type { ReadScope } from './workspace.ts'
@@ -45,9 +46,9 @@ export interface ParsedFile {
 export interface ExpandedSource {
   /** Top-level nodes of the entry with includes expanded. */
   children: MdastNode[]
-  /** Every source file read, entry first. */
+  /** Every source file read, entry first: the included files, and those a `{literalinclude}` shows. */
   files: string[]
-  /** Files an `{include}` names that could not be read: creating one changes the source. */
+  /** Files an `{include}` or `{literalinclude}` names that could not be read: creating one changes the source. */
   missing: string[]
   findings: Finding[]
 }
@@ -170,6 +171,10 @@ export class Parser {
   async #expandAll(nodes: MdastNode[], file: string, stack: string[], out: Expansion): Promise<MdastNode[]> {
     const result: MdastNode[] = []
     for (const node of nodes) {
+      if (node.type === 'mystDirective' && node.children?.some(child => child.type === 'include' && child.literal === true)) {
+        result.push(...await this.#literal(node, file, out))
+        continue
+      }
       if (node.type === 'mystDirective' && node.name === 'include') {
         result.push(...await this.#include(node, file, stack, out))
         continue
@@ -213,6 +218,54 @@ export class Parser {
       out.findings.push({ checkId: 'presmium.parse', severity: 'warning', message: 'the frontmatter of an included file is ignored', source: { file: target, line: 1 } })
     }
     return this.#expandAll(parsed.children, target, [...stack, target], out)
+  }
+
+  /**
+   * `{literalinclude}` (and an `{include}` with `:literal:` or `:lang:`): the
+   * file's text as code, cut by its options (`:lines:`, `:start-after:`, ...)
+   * as MyST's include transform does. The file is read like an `{include}`d
+   * one, under the read scope: a symbolic link out of the workspace is refused.
+   */
+  async #literal(node: MdastNode, file: string, out: Expansion): Promise<MdastNode[]> {
+    const source = { file, line: lineOf(node)?.line ?? 1 }
+    const name = `{${String(node.name)}}`
+    const fail = (message: string, checkId = 'presmium.parse') => {
+      out.findings.push({ checkId, severity: 'error', message, source })
+      return []
+    }
+    const include = structuredClone(node.children!.find(child => child.type === 'include')!)
+    const arg = typeof include.file === 'string' ? include.file.trim() : ''
+    if (!arg) return fail(`${name} needs a file argument`)
+    const target = resolve(dirname(file), arg)
+    if (this.scope && !this.scope.allows(target)) return fail(refusedFile(target), 'presmium.files')
+    const text = await readFile(target, 'utf8').catch(() => undefined)
+    if (text === undefined) {
+      if (!out.missing.includes(target)) out.missing.push(target)
+      return fail(`${name} ${arg}: file not found`)
+    }
+    if (!out.files.includes(target)) out.files.push(target)
+    // MyST's transform fills the include with the code (in a container when it has a caption); its messages are warnings here.
+    const vfile = {
+      message(reason: string) {
+        out.findings.push({ checkId: 'presmium.directive', severity: 'warning', message: `${name} ${arg}: ${reason}`, source })
+        return {}
+      },
+    }
+    await includeDirectiveTransform({ type: 'root', children: [include] } as never, {}, vfile as never, {
+      loadFile: () => text,
+      resolveFile: () => target,
+      parseContent: () => ({ mdast: { type: 'root', children: [] } }),
+      sourceFile: file,
+      sourcePath: dirname(file),
+    })
+    const children = include.children ?? []
+    // The file's last line break ends its last line, as a fenced block's closing fence does: no empty line after it.
+    for (const code of [...children, ...children.flatMap(child => child.children ?? [])]) {
+      if (code.type === 'code' && typeof code.value === 'string') code.value = code.value.replace(/\r?\n$/, '')
+    }
+    const copy: MdastNode = { ...node, children }
+    origin.set(copy, file)
+    return [copy]
   }
 }
 

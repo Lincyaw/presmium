@@ -49,6 +49,45 @@ export const SERVER_PATH = '/__presmium/presmium.server'
 /** Headers serve does not pass on to proxies and the site: the login proxy's secret. */
 const PROXY_STRIP = ['x-presmium-proxy-secret']
 
+/**
+ * Headers serve does not pass on to the gateway (a plugin's proxy to
+ * `ServerContext.gateway`, e.g. a Jupyter environment of `auth: proxy`): the
+ * gateway takes no request that carries the browser's `Origin` (10.9).
+ */
+const GATEWAY_STRIP = [...PROXY_STRIP, 'origin']
+
+/** The MCP mount point and the paths under it. */
+function isMcp(path: string): boolean {
+  return path === '/mcp' || path.startsWith('/mcp/')
+}
+
+/** Whether `target` is the gateway: the same origin as its address. */
+function sameOrigin(target: string, gateway: string): boolean {
+  try {
+    return new URL(target).origin === new URL(gateway).origin
+  } catch {
+    return false
+  }
+}
+
+/**
+ * A response whose body ends when `signal` aborts: an MCP subscription stream
+ * (`subscriptions/listen`) of a token that was revoked. The stream it passes
+ * on is cancelled, so the MCP service drops the subscription; `done` is called
+ * once the body ended either way.
+ */
+function endedBy(response: Response, signal: AbortSignal, done: () => void): Response {
+  if (!response.body) {
+    done()
+    return response
+  }
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
+  void response.body.pipeTo(writable, { signal, preventAbort: true })
+    .catch(() => writable.close().catch(() => undefined))
+    .finally(done)
+  return new Response(readable, { status: response.status, statusText: response.statusText, headers: response.headers })
+}
+
 /** The identity a login proxy passes (oauth2-proxy's headers). */
 export interface Identity {
   user?: string
@@ -200,6 +239,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   })
   const token = options.mode === 'dev' ? randomBytes(24).toString('base64url') : undefined
   const mcpTokens = new Map<string, { member: Member, mode: AgentMode }>()
+  /** The open responses of each issued token (subscription streams), ended when it is revoked. */
+  const mcpStreams = new Map<string, Set<AbortController>>()
   let url = ''
   const mcpEndpoint: McpEndpoint = {
     issue(member, mode) {
@@ -209,7 +250,11 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
         // The agent reaches serve's /mcp through the gateway in SHARED mode (10.9).
         url: shared ? `${shared.gateway.url.replace(/\/$/, '')}/mcp` : `${url}/mcp`,
         token: value,
-        revoke: () => void mcpTokens.delete(value),
+        revoke: () => {
+          mcpTokens.delete(value)
+          for (const stream of mcpStreams.get(value) ?? []) stream.abort()
+          mcpStreams.delete(value)
+        },
       }
     },
   }
@@ -265,6 +310,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const mcp = options.mcp ? undefined : createPresmiumMcp(serverMcpHost({
     serverHost: options.serverHost,
     control,
+    command: options.mode,
     shared: Boolean(shared),
     settings: dir => options.settings ?? loaded.get(dir)?.settings,
     mount: async dir => (await mount(dir))?.doc,
@@ -318,17 +364,25 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   const refuse = (auth: { status: number, message: string }): Decision => ({ kind: 'answer', response: problem(auth.status, auth.message) })
 
+  /**
+   * SHARED: `/mcp` on the site's host names is authenticated by its MCP token
+   * alone, not by the login proxy (10.3): agents reach it through the
+   * gateway, which forwards it as it is (10.9). The console has no MCP.
+   */
+  const tokenOnly = (req: IncomingMessage, path: string) => Boolean(shared) && isMcp(path) && hostname(header(req.headers, 'host')) !== consoleHost
+
   const decide = async (req: IncomingMessage): Promise<Decision> => {
-    const auth = authenticate(req)
-    if ('status' in auth) return refuse(auth)
     const url = new URL(req.url ?? '/', 'http://presmium')
     const path = url.pathname
+    if (tokenOnly(req, path)) return { kind: 'fetch' }
+    const auth = authenticate(req)
+    if ('status' in auth) return refuse(auth)
     if (auth.console) {
       // The console has Presmium's page, its control channel and the owner routes; nothing of the site, no MCP.
       if (path === '/' || path === CONSOLE_SCRIPT_PATH || path.startsWith(`${SERVER_PATH}/`) || pluginPath(path)) return { kind: 'fetch' }
       return { kind: 'answer', response: new Response('not found', { status: 404, headers: CONSOLE_HEADERS }) }
     }
-    if (path === '/mcp' || path.startsWith('/mcp/')) return { kind: 'fetch' }
+    if (isMcp(path)) return { kind: 'fetch' }
     const target = pluginPath(path)
     if (target) {
       if (target.plugin === 'presmium.server') return { kind: 'fetch' }
@@ -346,7 +400,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     const found = findProxy(contribution?.proxies, target.path)
     if (!found) return undefined
     if (!hasRole(auth.member, found.spec.role ?? 'editor')) return refuse({ status: 403, message: `this proxy needs the role ${found.spec.role ?? 'editor'}` })
-    const to: ProxyTarget = { target: found.spec.target, path: `${found.rest || '/'}${search}`, headers: found.spec.headers, strip: PROXY_STRIP }
+    const gateway = shared && sameOrigin(found.spec.target, shared.gateway.url)
+    const to: ProxyTarget = { target: found.spec.target, path: `${found.rest || '/'}${search}`, headers: found.spec.headers, strip: gateway ? GATEWAY_STRIP : PROXY_STRIP }
     return { kind: 'proxy', to }
   }
 
@@ -356,11 +411,27 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     return { status: decision.kind === 'answer' ? decision.response.status : 404 }
   }
 
+  /** `/mcp`: the caller its bearer token names; a subscription stream of an issued token ends when the token is revoked. */
+  const serveMcp = async (request: Request): Promise<Response> => {
+    const given = bearer(request.headers.get('authorization'))
+    const access = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
+    if (!access) return problem(401, 'MCP needs an Authorization: Bearer token')
+    const response = await (options.mcp ? options.mcp(request, access) : mcp!.fetch(request, access))
+    if (given === token || !response.headers.get('content-type')?.startsWith('text/event-stream')) return response
+    // Revoked while the request was answered: the stream ends at once.
+    if (!mcpTokens.has(given!)) return endedBy(response, AbortSignal.abort(), () => {})
+    const stream = new AbortController()
+    const open = mcpStreams.get(given!) ?? new Set()
+    mcpStreams.set(given!, open.add(stream))
+    return endedBy(response, stream.signal, () => open.delete(stream))
+  }
+
   const handle = async (request: Request, req: IncomingMessage): Promise<Response> => {
-    const auth = authenticate(req)
-    if ('status' in auth) return problem(auth.status, auth.message)
     const url = new URL(request.url)
     const path = url.pathname
+    if (tokenOnly(req, path)) return serveMcp(request)
+    const auth = authenticate(req)
+    if ('status' in auth) return problem(auth.status, auth.message)
     const document = documentOf(req.headers, url)
     const consoleHeaders = auth.console ? CONSOLE_HEADERS : undefined
     if (auth.console && path === '/') {
@@ -368,12 +439,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       return new Response(consolePage(header(req.headers, 'accept-language') ?? 'en'), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...CONSOLE_HEADERS } })
     }
     if (auth.console && path === CONSOLE_SCRIPT_PATH) return new Response(CONSOLE_SCRIPT, { headers: { 'Content-Type': 'text/javascript; charset=utf-8', ...CONSOLE_HEADERS } })
-    if (path === '/mcp' || path.startsWith('/mcp/')) {
-      const given = bearer(request.headers.get('authorization'))
-      const access = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
-      if (!access) return problem(401, 'MCP needs an Authorization: Bearer token')
-      return options.mcp ? options.mcp(request, access) : mcp!.fetch(request, access)
-    }
+    if (isMcp(path)) return serveMcp(request)
     if (path.startsWith(`${SERVER_PATH}/`)) return withHeaders(await serverRoute(request, path.slice(SERVER_PATH.length + 1), auth, document, req), consoleHeaders)
     const target = pluginPath(path)
     if (!target) return problem(404, 'not found')

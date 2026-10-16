@@ -5,9 +5,13 @@
  * change; no pages, so no position, navigation or classroom. There is no page
  * to ask either, so operations are offered only for the approval kinds that
  * `--allow` names (`operate` gives `run_code` and `build`), and allowed then.
+ * Like the CLI, it loads Presmium's own packages installed with the CLI (the
+ * renderers and the operator plugin `addon-deltabox`): from the CLI's package
+ * directory (`bundledDir`).
  */
+import { existsSync, realpathSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { CheckRegistry, errorMessage, irBlocks } from '@presmium/kernel'
@@ -20,12 +24,28 @@ import { serveMcpStdio } from './mcp.ts'
 /** The one member of a local process: the author, an owner. */
 const AUTHOR: Member = { id: 'local', name: 'local author', roles: ['owner'] }
 const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
+/** This package's directory. */
+const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
+const CLI_PACKAGE = '@presmium/cli'
+
+/** The real directory of the package `name` in a `node_modules` from `from` upward. */
+function packageUp(name: string, from: string): string | undefined {
+  for (let dir = from; ; dir = dirname(dir)) {
+    const found = join(dir, 'node_modules', name)
+    if (existsSync(join(found, 'package.json'))) return realpathSync(found)
+    if (dirname(dir) === dir) return undefined
+  }
+}
+
 /**
  * Where Presmium's own packages installed with the CLI resolve from
- * (`CompilerOptions.bundled`): this package's directory, installed with the
- * CLI, as the CLI's own directory is for `presmium check`.
+ * (`CompilerOptions.bundled`), as for `presmium check`: the CLI's package
+ * directory. The CLI is the deck's (installed in its project), else the one
+ * this package was installed with; without one, this package's directory.
  */
-const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
+function bundledDir(deckDir: string): string {
+  return packageUp(CLI_PACKAGE, deckDir) ?? packageUp(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
+}
 
 const USAGE = `Usage: presmium-mcp [deck] [--allow <kinds>]
 
@@ -68,7 +88,7 @@ async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
 
 /** The `McpHost` of one deck on the compiler. */
 export function compilerHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
-  const compiler = new Compiler(entry, { bundled: BUNDLED })
+  const compiler = new Compiler(entry, { bundled: bundledDir(dirname(entry)) })
   let latest: { compilation: Compilation, files: string[], stamp: string } | undefined
   let queue = Promise.resolve()
   /** The current compilation: compiled again when a file it read changed (one compilation at a time). */
@@ -88,6 +108,7 @@ export function compilerHost(entry: string, allow: readonly ApprovalKind[]): Mcp
     return current()
   }
   return {
+    process: { command: 'presmium-mcp' },
     async documents() {
       const { doc } = await current()
       return [{ dir: '', title: doc.meta.title, lang: doc.meta.lang }]

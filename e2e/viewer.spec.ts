@@ -502,6 +502,31 @@ test.describe('MyST roles and directives, raw HTML and code origins (e2e/fixture
   })
 })
 
+test.describe('narration a pass moved into a component (e2e/fixtures/viewer/predict)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let site: FixtureDeck
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    site = await buildFixture('viewer/predict', { to: 'web' })
+  })
+  test.afterAll(() => site?.close())
+
+  test('the presenter view lists a reveal\'s narration, which PmPredict holds, among its notes and as the next step\'s', async ({ page }) => {
+    const reveal = '每一轮只合并出现最多的那一对'
+    await page.goto(`${site.web}?view=presenter&section=merge&step=0`)
+    const notes = page.locator('.pm-presenter')
+    await expect(notes).toHaveAttribute('data-step', '0')
+    await expect(notes.locator('.pm-presenter__note')).toHaveText([/先请大家估计一下/, new RegExp(reveal)])
+    await expect(notes.locator('.pm-current')).toContainText('先请大家估计一下')
+    await expect(notes.locator('.pm-presenter__next')).toContainText(reveal)
+    // On the screen the audience sees, the narration stays off the slide.
+    await expect(notes.locator('.pm-presenter__slide')).not.toContainText(reveal)
+    await page.keyboard.press('ArrowRight')
+    await expect(notes).toHaveAttribute('data-step', '1')
+    await expect(notes.locator('.pm-current')).toContainText(reveal)
+  })
+})
+
 test.describe('tags of an agent\'s trace beside inline SVG and MathML (e2e/fixtures/viewer/tags)', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let site: FixtureDeck

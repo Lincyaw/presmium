@@ -652,9 +652,6 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/viewer':
-        specifier: workspace:*
-        version: link:../viewer
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -751,6 +748,10 @@ importers:
       http-proxy-3:
         specifier: 2.0.1
         version: 2.0.1(supports-color@9.4.0)
+    devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: 2.3.1
+        version: 2.3.1
 
   packages/viewer:
     dependencies:

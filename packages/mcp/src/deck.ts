@@ -5,9 +5,8 @@
  * Paths are relative to the deck directory, where an agent edits the source.
  */
 import { dirname, relative } from 'node:path'
-import { irBlocks } from '@presmium/kernel'
+import { blockState, blockText, blockVisible, chapters, irBlocks, narrationAt, tokenize } from '@presmium/kernel'
 import type { CodeNode, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunOutput, RunResult, SourcePos } from '@presmium/kernel'
-import { blockState, blockText, blockVisible, chapters, narrationAt } from '@presmium/viewer/domain'
 import MiniSearch from 'minisearch'
 
 export interface Place {
@@ -209,21 +208,6 @@ export function locate(doc: IRDocument, target: { section?: string, step?: numbe
     return { section: section.id, step: target.step, blocks: blocks.map(b => ({ block: b.id, role: b.role, source: place(doc, b.source) })) }
   }
   return { section: section.id, source: place(doc, section.source) }
-}
-
-/**
- * Splits at spaces and punctuation, then into words by `Intl.Segmenter`, as
- * the web form's search box does (`tokenize` of `@presmium/web/domain`).
- */
-function tokenize(text: string): string[] {
-  const segmenter = new Intl.Segmenter('zh', { granularity: 'word' })
-  const words: string[] = []
-  for (const piece of text.split(/[\n\r\p{Z}\p{P}]+/u)) {
-    for (const part of segmenter.segment(piece)) {
-      if (part.isWordLike) words.push(part.segment)
-    }
-  }
-  return words
 }
 
 const indexes = new WeakMap<IRDocument, MiniSearch>()

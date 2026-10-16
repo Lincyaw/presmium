@@ -93,6 +93,17 @@ steps: [解析, 启动, 渲染]
 ```
 ````
 
+### `{literalinclude}`
+
+以代码块显示一个文件（相对于当前文件），或其中几行；文件改动后重新编译。选项：`:language:`（默认按扩展名）、`:lines:`（如 `2, 4-6`）、`:start-line:`、`:end-line:`、`:start-after:`、`:end-before:`、`:start-at:`、`:end-at:`（按行号或按含某段文字的行截取，同 MyST）、`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`。文件不存在时报错。`presmium serve` 的共享部署中只读工作区之内的文件：指向工作区之外的符号链接不被读取，报错 `presmium.files`。
+
+````md
+```{literalinclude} src/bpe.py
+:start-after: def merge
+:end-before: def encode
+```
+````
+
 ### `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}`
 
 参数为语言；正文为代码。选项：`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（各步都强调的行，如 `2, 4-5`）、`:run:`、`:executor:`、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）、`:env:`、`:session:`、`:echo:`。`{code-cell}`（MyST notebook 的写法）同样生成代码块，`:run:` 照常执行。
@@ -150,9 +161,9 @@ MyST 标准的卡片、栅格、选项卡与按钮（mystmd 的 `myst-ext-card`�
 |---|---|
 | `{grid}` | 参数为四档屏宽（手机、576px 起、768px 起、992px 起）的列数，1 到 4 个数，少写时最后一个数用于更宽的屏幕，默认 `1 2 2 3`；`:class:` |
 | `{grid-item}` | 栅格中的一格；`:columns:` 占一行 12 份中的几份；`:class:` |
-| `{card}` | 参数为标题；`:link:`（整张卡片链接到的地址）、`:header:`、`:footer:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚 |
+| `{card}` | 参数为标题；`:link:`（整张卡片链接到的地址，可以是本地文件，随讲义发布）、`:header:`、`:footer:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚 |
 | `{tab-set}`、`{tab-item}` | `{tab-item}` 的参数为标题；`:sync:` 同步键（选中它时页面上同一键的选项卡一起切换）、`:selected:` 开始时选中 |
-| ``{button}`文字 <地址>` `` | 按钮样式的链接；没有 `<地址>` 时只是按钮样式的文字 |
+| ``{button}`文字 <地址>` `` | 按钮样式的链接；没有 `<地址>` 时只是按钮样式的文字（不能点） |
 
 各媒介：网页完整显示（栅格按屏宽分列，选项卡可切换）；幻灯片中卡片与栅格照常显示（列数取最宽一档），选项卡依次展开为带标题的几段；notebook 中卡片标题与选项卡标题成为小标题（`####`），其余为段落，按钮为链接，构建报告列出这些降级（`degraded in the notebook, which has no Jupyter form for grid, card`）。
 

@@ -1,38 +1,5 @@
 import { docBlocks } from '@presmium/kernel'
-import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
-
-const BREAKS = new Set(['paragraph', 'heading', 'listItem', 'tableRow', 'tableCell', 'code', 'math', 'blockquote', 'break'])
-
-/** The text raw HTML shows: its tags, styles and scripts left out. */
-function htmlText(html: string): string {
-  return html.replace(/<(style|script)\b[\s\S]*?<\/\1\s*>/gi, ' ').replace(/<[^>]*>/g, ' ')
-}
-
-/** The text of an mdast tree; block-level nodes are separated by line breaks. */
-export function mdastText(node: MdastNode): string {
-  if (node.type === 'html' && typeof node.value === 'string') return htmlText(node.value)
-  if (typeof node.value === 'string' && !node.children) return node.value
-  const text = (node.children ?? []).map(mdastText).join('')
-  return BREAKS.has(node.type) ? `${text}\n` : text
-}
-
-/** String values of component props, e.g. the labels of a stepper. */
-function propText(value: unknown): string[] {
-  if (typeof value === 'string') return [value]
-  if (Array.isArray(value)) return value.flatMap(propText)
-  if (value && typeof value === 'object') return Object.values(value).flatMap(propText)
-  return []
-}
-
-/** The readable text of a block: prose, code, recorded output, component props and children. */
-export function blockText(block: IRBlock): string {
-  const { node } = block
-  switch (node.type) {
-    case 'markdown': return mdastText(node.mdast).trim()
-    case 'code': return [node.title, node.value, ...(node.outputs ?? []).map(o => o.stdout)].filter(Boolean).join('\n')
-    case 'component': return [...propText(node.props), ...(node.children ?? []).map(blockText)].join('\n')
-  }
-}
+import type { IRDocument, MdastNode } from '@presmium/kernel'
 
 /** East Asian wide and fullwidth characters, which take two columns of monospaced text. */
 const WIDE = /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|[\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}]/u

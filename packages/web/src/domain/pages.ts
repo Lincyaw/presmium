@@ -1,7 +1,7 @@
+import { blockText, chapters } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
-import { blockText, chapters } from '@presmium/viewer/domain'
 
-/** A VitePress page: one chapter of the document (see `chapters` of @presmium/viewer). */
+/** A VitePress page: one chapter of the document (see `chapters` of @presmium/kernel). */
 export interface WebPage {
   /** Site path without extension; the first page is `index`. */
   path: string

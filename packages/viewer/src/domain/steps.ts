@@ -1,4 +1,4 @@
-import type { IRBlock, IRDocument, IRSection } from '@presmium/kernel'
+import type { IRBlock, IRDocument } from '@presmium/kernel'
 
 /** The step of a view that shows every step at once (the document view): all steps reached. */
 export const FINAL_STEP = Number.POSITIVE_INFINITY
@@ -9,24 +9,9 @@ export interface Position {
   step: number
 }
 
-/** A visual block is on screen from `at` until `until` (docs/ir.md section 3). */
-export function blockVisible(block: IRBlock, step: number): boolean {
-  return step >= block.at && (block.until === undefined || step < block.until)
-}
-
-/** Internal state of a block that spans steps: 0 at `at`, up to `span` (docs/ir.md section 2.4). */
-export function blockState(block: IRBlock, step: number): number {
-  return Math.min(Math.max(step - block.at, 0), block.span ?? 0)
-}
-
 /** Item k of a `reveal: items` list appears at `at + k`. */
 export function itemVisible(block: IRBlock, item: number, step: number): boolean {
   return step >= block.at + item
-}
-
-/** Narration blocks bound to `step`, in source order. */
-export function narrationAt(section: IRSection, step: number): IRBlock[] {
-  return section.blocks.filter(block => block.role === 'narration' && block.at === step)
 }
 
 /**

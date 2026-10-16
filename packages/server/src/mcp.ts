@@ -13,6 +13,8 @@ import type { ServedDocument, ServerHost } from './host.ts'
 export interface McpHostOptions {
   serverHost?: ServerHost
   control: Control
+  /** `presmium dev` or `presmium serve`, for the service's instructions. */
+  command: 'dev' | 'serve'
   shared: boolean
   /** The operator's settings of a document (the server's, else those its compiler read), when known. */
   settings(document: string): Record<string, Record<string, unknown>> | undefined
@@ -56,6 +58,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     return { document: entry.document, member: entry.member, slide: report.position!.slide, step: report.position!.step, view: report.position!.view, role: report.role, at: report.at }
   }
   return {
+    process: { command: options.command, shared: options.shared },
     documents: () => host().documents(),
     compile: (document, view) => host().compile(document, view),
     check: document => host().check(document),

@@ -8,8 +8,8 @@ import { urlPath } from '../domain/index.ts'
 /** Directory of the site's `public/` where the deck's local files are copied. */
 export const MEDIA = 'media'
 
-/** Nodes whose URL may name a local file. */
-const LINKED = new Set(['image', 'link', 'definition'])
+/** Nodes whose URL may name a local file: a card's `:link:` too (docs/ir.md 2.10). */
+const LINKED = new Set(['image', 'link', 'definition', 'card'])
 
 /** A local file a URL names, with the size and time it had when its name was hashed. */
 interface Asset {
@@ -59,7 +59,7 @@ function renderMath(tex: string, display: boolean): string {
 /**
  * The document as the web site publishes it: source paths and paths in the
  * plugin configuration relative to the deck (no local paths in a public
- * site); the local files that images, links, link definitions and the
+ * site); the local files that images, links, link definitions, cards and the
  * `assets` of components name copied to `<publicDir>/media/` under their
  * published names (`RenderContext.localAsset`), their URLs rewritten under the
  * site base; and math rendered by KaTeX, so the static pages show it.

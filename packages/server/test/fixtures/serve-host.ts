@@ -1,16 +1,41 @@
 // A `serve` mode host for the tests of the server (packages/server/test, e2e/server.spec.ts): it
 // starts the real server on a workspace whose documents it compiles with the real compiler, as the
-// workspace (WP-79) will. Configured by the environment: SERVE_WORKSPACE (the workspace root),
-// SERVE_ROLES (JSON: email -> roles), SERVE_FORWARD (where the site's paths go), SERVE_HOST and
-// SERVE_PORT. It prints `{"url": ...}` once it listens, or `{"error": ...}` and exits 1.
+// workspace (WP-79) does, and reads them for MCP (the documents and their compiled IR; no checks,
+// builds or runs). Configured by the environment: SERVE_WORKSPACE (the workspace root), SERVE_ROLES
+// (JSON: email -> roles), SERVE_FORWARD (where the site's paths go), SERVE_HOST and SERVE_PORT. It
+// prints `{"url": ...}` once it listens, or `{"error": ...}` and exits 1.
+import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { Compiler } from '@presmium/compiler'
 import type { MemberRole } from '@presmium/kernel'
 import { servedDocument, startServer } from '@presmium/server'
+import type { ServerHost } from '@presmium/server'
 
 const root = process.env.SERVE_WORKSPACE ?? process.cwd()
 const roles = JSON.parse(process.env.SERVE_ROLES ?? '{}') as Record<string, MemberRole[]>
 const compilers = new Map<string, Compiler>()
+
+/** The compilation of a document directory, one compiler each. */
+function compile(dir: string) {
+  let compiler = compilers.get(dir)
+  if (!compiler) compilers.set(dir, compiler = new Compiler(join(root, dir), { trust: 'shared' }))
+  return compiler.compile()
+}
+
+const unsupported = () => Promise.reject(new Error('the test host only reads documents'))
+const serverHost: ServerHost = {
+  async documents() {
+    const dirs = readdirSync(root, { withFileTypes: true }).filter(entry => entry.isDirectory() && existsSync(join(root, entry.name, 'lecture.md'))).map(entry => entry.name)
+    return Promise.all(dirs.map(async dir => ({ dir, title: (await compile(dir)).doc.meta.title })))
+  },
+  async compile(dir) {
+    const { doc } = await compile(dir)
+    return { doc, diagnostics: doc.diagnostics }
+  },
+  check: unsupported,
+  build: unsupported,
+  run: unsupported,
+}
 
 try {
   const server = await startServer({
@@ -21,11 +46,10 @@ try {
     roles: identity => roles[identity.email ?? ''] ?? [],
     forward: () => process.env.SERVE_FORWARD || undefined,
     approvalTimeoutMs: Number(process.env.SERVE_APPROVAL_TIMEOUT ?? 50_000),
+    serverHost,
     async document(dir) {
       if (!dir) return undefined
-      let compiler = compilers.get(dir)
-      if (!compiler) compilers.set(dir, compiler = new Compiler(join(root, dir), { trust: 'shared' }))
-      return servedDocument(await compiler.compile())
+      return servedDocument(await compile(dir))
     },
   })
   process.stdout.write(`${JSON.stringify({ url: server.url, trust: server.trust })}\n`)

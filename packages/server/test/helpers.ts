@@ -94,6 +94,35 @@ export function presmiumProcess(cwd: string, args: string[], env: NodeJS.Process
   return started(spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }))
 }
 
+/** The environment of a SHARED serve: the login proxy's secret, the gateway, agent-host and console. */
+export function sharedEnv(dir: string, gateway: string, agentHost: string, extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    SERVE_WORKSPACE: dir,
+    SERVE_ROLES: JSON.stringify({ 'owner@test': ['owner'], 'editor@test': ['editor'] }),
+    PRESMIUM_PROXY_SECRET: 'proxy-secret',
+    PRESMIUM_GATEWAY_URL: gateway,
+    PRESMIUM_GATEWAY_TOKEN: 'gateway-token',
+    PRESMIUM_AGENT_HOST_URL: agentHost,
+    PRESMIUM_AGENT_HOST_TOKEN: 'agent-host-token',
+    PRESMIUM_CONSOLE_HOST: 'console.test',
+    ...extra,
+  }
+}
+
+/** Headers of a request through the login proxy, to the site or the console. */
+export function as(email: string | undefined, host = 'site.test', extra: Record<string, string> = {}): Record<string, string> {
+  return { 'Host': host, 'X-Presmium-Proxy-Secret': 'proxy-secret', ...email ? { 'X-Forwarded-Email': email } : {}, 'Presmium-Document': 'doc', ...extra }
+}
+
+/** A port no process listens on now, for a server whose address another must know before it starts. */
+export async function freePort(): Promise<number> {
+  const server = createServer()
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
+  const { port } = server.address() as AddressInfo
+  await new Promise(done => server.close(done))
+  return port
+}
+
 /** The `serve` mode host on a workspace; resolves with its first line (`{ url }` or `{ error }`) and the process. */
 export async function serveHost(env: Record<string, string>): Promise<{ host: Child, url?: string, error?: string }> {
   const host = started(spawn(process.execPath, [join(FIXTURES, 'serve-host.ts')], { env: cleanEnv(env), stdio: ['ignore', 'pipe', 'pipe'] }))

@@ -3,10 +3,12 @@
 // that adds the secret and the member's identity, as oauth2-proxy would. An editor creates, renames, copies and
 // deletes documents on the home page, and the history shows the four commits; without an assistant the new
 // document form has no "draft with the agent"; a reader sees no edit entry; in edit mode the mark of a role
-// without children shows.
+// without children shows; a `{literalinclude}` shows a file of the workspace but not one a symbolic link out
+// of it names; with an assistant (a stand-in of the `AGENT` service), a drafted document opens once the
+// draft is committed.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createServer, request } from 'node:http'
 import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -21,6 +23,19 @@ const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 
 // The site's host name and the owner console's lead to this machine.
 test.use({ launchOptions: { args: ['--host-resolver-rules=MAP site.test 127.0.0.1, MAP console.test 127.0.0.1'] } })
+
+/** The stand-in of the assistant's `AGENT` client in the page: one drafting task, whose events the test sends. */
+interface DraftAgent {
+  requests: unknown[]
+  emit(event: Record<string, unknown>): void
+  client: unknown
+}
+
+declare global {
+  interface Window {
+    draftAgent?: DraftAgent
+  }
+}
 
 /** The environment of the test without credentials or Presmium's variables. */
 function clean(extra: Record<string, string>): NodeJS.ProcessEnv {
@@ -88,7 +103,9 @@ async function loginProxy(target: string, secret: string, email: string): Promis
 
 test.describe('the workspace in the browser (SHARED)', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
+  const SENTINEL = `sentinel-${Math.random().toString(36).slice(2)}`
   let dir: string
+  let outside: string
   const children: ChildProcess[] = []
   const servers: Server[] = []
   let editor: number
@@ -100,6 +117,10 @@ test.describe('the workspace in the browser (SHARED)', () => {
     mkdirSync(work, { recursive: true })
     dir = mkdtempSync(join(work, 'e2e-workspace-'))
     cpSync(FIXTURE, dir, { recursive: true })
+    // A symbolic link in a document to a file outside the workspace, which a `{literalinclude}` names.
+    outside = mkdtempSync(join(work, 'e2e-outside-'))
+    writeFileSync(join(outside, 'secret.txt'), `${SENTINEL}\n`)
+    symlinkSync(join(outside, 'secret.txt'), join(dir, 'intro/secret.txt'))
     // The operator's plugin, installed at the workspace root (D14).
     cpSync(join(FIXTURE, 'plugins/presmium-fixture-workspace-probe'), join(dir, 'node_modules/presmium-fixture-workspace-probe'), { recursive: true })
     rmSync(join(dir, 'plugins'), { recursive: true, force: true })
@@ -138,6 +159,7 @@ test.describe('the workspace in the browser (SHARED)', () => {
       await new Promise(done => server.close(done))
     }
     if (dir) rmSync(dir, { recursive: true, force: true })
+    if (outside) rmSync(outside, { recursive: true, force: true })
   })
 
   test('an editor creates, renames, copies and deletes documents; the history shows the four commits; no agent draft without an assistant', async ({ page }) => {
@@ -205,5 +227,96 @@ test.describe('the workspace in the browser (SHARED)', () => {
     await expect(narration.locator('.pm-role-mark')).toHaveText('〔probe hidden〕')
     await page.locator('.pm-workspace-edit').click()
     await expect(page.locator('.pm-role-mark')).toHaveCount(0)
+  })
+
+  test('a {literalinclude} shows a file of the workspace as code, and nothing of a symbolic link out of it', async ({ page }) => {
+    const section = page.locator('.pm-section[data-section="code"]')
+    await openDevPage(page, `http://site.test:${editor}/intro/`, section)
+    await expect(section.locator('pre').first()).toContainText('print("在工作区之内")')
+    await expect(section).not.toContainText('引入的代码')
+    await expect(page.locator('body')).not.toContainText(SENTINEL)
+    // The compilation refused to read it, and says so; the sentinel is nowhere in the IR.
+    const ir = await page.evaluate(async () => (await fetch('/intro/@presmium/ir')).text())
+    expect(ir).not.toContain(SENTINEL)
+    const { doc } = JSON.parse(ir) as { doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }
+    expect(doc.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ checkId: 'presmium.files', severity: 'error', message: expect.stringContaining('intro/secret.txt') })]))
+  })
+
+  test('with an assistant, a document the agent drafts opens once the draft is committed, after its review', async ({ page }) => {
+    // The assistant's `AGENT` client (WP-80) stands in, as one more plugin of the page's workspace module.
+    const decisions: unknown[] = []
+    await page.exposeFunction('recordDraftDecision', (decision: unknown) => decisions.push(decision))
+    await page.addInitScript(() => {
+      const events: Record<string, unknown>[] = []
+      let wake: (() => void) | undefined
+      const agent: DraftAgent = {
+        requests: [],
+        emit(event) {
+          events.push(event)
+          wake?.()
+        },
+        client: {
+          available: () => true,
+          provider: () => 'Fixture',
+          runtime: () => undefined,
+          submit(request: unknown) {
+            agent.requests.push(request)
+            return {
+              id: 'draft-1',
+              events: (async function* () {
+                for (;;) {
+                  const event = events.shift()
+                  if (!event) {
+                    await new Promise<void>(done => wake = done)
+                    continue
+                  }
+                  yield event
+                  if (event.type === 'done' || event.type === 'error') return
+                }
+              })(),
+              cancel() {},
+              async review(decision: unknown) {
+                await (window as unknown as { recordDraftDecision(decision: unknown): Promise<void> }).recordDraftDecision(decision)
+                agent.emit({ type: 'done', revision: 'draft-commit' })
+              },
+            }
+          },
+        },
+      }
+      window.draftAgent = agent
+    })
+    await page.route('**/packages/workspace/src/client/plugin.ts*', async (route) => {
+      // Fetched from the test process, where site.test does not resolve: the login proxy's own address.
+      const response = await route.fetch({ url: route.request().url().replace('//site.test:', '//127.0.0.1:') })
+      const agentPlugin = `export const fixtureAgent = { manifest: { id: 'fixture.agent', version: '0.1.0', kernel: '^0.1.0', provides: [{ id: 'presmium.agent' }] }, setup(ctx) { ctx.provide({ id: 'presmium.agent' }, window.draftAgent.client) } }`
+      await route.fulfill({ response, body: `${await response.text()}\n${agentPlugin}\n` })
+    })
+
+    const home = `http://site.test:${editor}/`
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await page.locator('.pm-workspace-documents__toggle').click()
+    const panel = page.getByRole('dialog', { name: '管理文档' })
+    await panel.locator('input[name="dir"]').fill('week5')
+    await panel.locator('input[name="title"]').fill('第五周')
+    await panel.getByRole('checkbox', { name: '由 agent 起草（模型由 Fixture 提供）' }).check()
+    await panel.locator('textarea[name="request"]').fill('写一节关于上下文窗口的讲义')
+    await panel.getByRole('button', { name: '新建', exact: true }).click()
+
+    // The document exists from its template; the page stays while the agent drafts, and the review is answered here.
+    const draft = panel.locator('.pm-workspace-draft')
+    await expect(draft).toHaveAttribute('data-state', 'drafting')
+    await expect(page.locator('.pm-site-home__document[data-document="week5"]')).toContainText('第五周')
+    expect(await page.evaluate(() => window.draftAgent!.requests)).toEqual([{ kind: 'chat', prompt: '写一节关于上下文窗口的讲义', context: { document: 'week5' } }])
+    await page.evaluate(() => window.draftAgent!.emit({ type: 'progress', text: '写第一节' }))
+    await expect(draft.locator('.pm-workspace-draft__note')).toHaveText('写第一节')
+    await page.evaluate(() => window.draftAgent!.emit({ type: 'review', engine: 'git', changes: [{ path: 'week5/lecture.md', kind: 'modified', binary: false, added: 12, removed: 3 }], steps: [] }))
+    await expect(draft).toHaveAttribute('data-state', 'review')
+    await expect(draft.locator('.pm-workspace-draft__changes')).toContainText('week5/lecture.md (+12 −3)')
+    expect(new URL(page.url()).pathname).toBe('/')
+
+    // Accepted, the task commits and ends: then the page opens the new document.
+    await draft.getByRole('button', { name: '接受' }).click()
+    await expect(page).toHaveURL(`${home}week5/`)
+    expect(decisions).toEqual([{ accept: true }])
   })
 })

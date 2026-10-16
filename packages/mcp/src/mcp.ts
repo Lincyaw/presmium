@@ -13,13 +13,13 @@
  * can be subscribed to (`subscriptions/listen`) and is announced updated
  * whenever a window reports a position. `serveMcpStdio` serves it on stdio.
  */
-import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate } from '@modelcontextprotocol/server'
-import type { AuthInfo, CallToolResult, JsonSchemaType } from '@modelcontextprotocol/server'
+import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
+import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { deckLocale, errorMessage, isRecord } from '@presmium/kernel'
 import type { AgentTool, ApprovalKind, ApprovalScope, Finding, IRDocument, Member, MemberRole } from '@presmium/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
-import type { McpCaller, McpHost, McpView } from './host.ts'
+import type { McpCaller, McpHost, McpProcess, McpView } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 
@@ -323,11 +323,23 @@ function inputSchema(properties: Record<string, unknown> = {}, required: string[
   return fromJsonSchema<Args>({ type: 'object', properties, ...required.length ? { required } : {} } as JsonSchemaType)
 }
 
+/** How an edit of the source reaches the tools, by the process that serves MCP. */
+function recompiles(process: McpProcess | undefined): string {
+  switch (process?.command) {
+    case 'dev': return 'presmium dev compiles the deck again on save.'
+    case 'serve': return 'presmium serve compiles a document again when its files change.'
+    case 'presmium-mcp': return 'presmium-mcp compiles the deck again at the next call once its files changed.'
+    default: return 'The host compiles the deck again when its files change.'
+  }
+}
+
 /** The service's instructions: the tools this caller has, the resources, and how operations are allowed. */
 function instructions(host: McpHost, caller: McpCaller, tools: { name: string, kind: 'read' | ApprovalKind }[], title?: string): string {
   const pages = Boolean(host.positions)
   const reads = tools.filter(tool => tool.kind === 'read').map(tool => tool.name)
   const operations = tools.filter(tool => tool.kind !== 'read').map(tool => tool.name)
+  // Only SHARED mode has an owner console, where approvals of workspace scope go (10.4).
+  const where = host.process?.shared ? 'in the page, or in the owner console' : 'in the page'
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
     `Read tools: ${reads.join(', ')}.`,
@@ -338,17 +350,40 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
       : operations.length === 0
         ? (pages ? 'No operation is offered here.' : 'No operation is offered: presmium-mcp offers the kinds of operation its --allow names.')
         : pages
-          ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page, or in the owner console), and fails when refused.`
+          ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (${where}), and fails when refused.`
           : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
-    'No tool writes files: edit the deck\'s source with your own file tools; presmium dev compiles again on save. With several documents, name one with `document` (list_documents).',
+    `No tool writes files: edit the deck's source with your own file tools; ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
 }
 
 const RESOURCE = { mimeType: 'application/json' }
 
-/** A resource URI's variables as a tool's arguments: decoded, `step` a number. */
-function argsOf(variables: Record<string, string | string[]>): Args {
-  const args: Args = Object.fromEntries(Object.entries(variables).map(([key, value]) => [key, decodeURIComponent(String(value))]))
+/**
+ * The template of a resource of one document, `<uri>{?document}`: it matches
+ * the URI with or without `?document=<dir>`, and query parameters besides
+ * `document`, in any order, do not change the match (the SDK's own matching
+ * takes exactly the query the template names).
+ */
+class DocumentTemplate extends UriTemplate {
+  readonly #path: UriTemplate
+
+  constructor(uri: string) {
+    super(`${uri}{?document}`)
+    this.#path = new UriTemplate(uri)
+  }
+
+  override match(uri: string): Variables | null {
+    const query = uri.indexOf('?')
+    const variables = this.#path.match(query < 0 ? uri : uri.slice(0, query))
+    if (!variables) return null
+    const document = query < 0 ? null : new URLSearchParams(uri.slice(query + 1)).get('document')
+    return document === null ? variables : { ...variables, document }
+  }
+}
+
+/** A resource URI's variables as a tool's arguments: decoded (`document` is decoded already), `step` a number. */
+function argsOf(variables: Variables): Args {
+  const args: Args = Object.fromEntries(Object.entries(variables).map(([key, value]) => [key, key === 'document' ? String(value) : decodeURIComponent(String(value))]))
   if (args.step !== undefined) args.step = Number(args.step)
   return args
 }
@@ -424,13 +459,14 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
 
   type Read = (call: Call) => Promise<unknown>
   const contents = (url: URL, data: unknown) => ({ contents: [{ uri: url.href, mimeType: 'application/json', text: json(data) }] })
+  /** A resource of a document: the one document's, or a named one's with `?document=<dir>` (`DocumentTemplate`). */
   const template = (name: string, uri: string, read: Read) => {
-    server.registerResource(name, new ResourceTemplate(uri, { list: undefined }), RESOURCE, async (url, variables, ctx) => contents(url, await read(call(argsOf(variables), ctx.mcpReq.signal))))
+    server.registerResource(name, new ResourceTemplate(new DocumentTemplate(uri), { list: undefined }), RESOURCE, async (url, variables, ctx) => contents(url, await read(call(argsOf(variables), ctx.mcpReq.signal))))
   }
-  /** A resource of the one document, and of a named one: `<uri>?document=<dir>`. */
+  /** A fixed resource, listed; with `ofDocument` also its template for a named document. */
   const resource = (name: string, uri: string, read: Read, ofDocument = true) => {
     server.registerResource(name, uri, RESOURCE, async (url, ctx) => contents(url, await read(call({}, ctx.mcpReq.signal))))
-    if (ofDocument) template(`${name}-of-document`, `${uri}{?document}`, read)
+    if (ofDocument) template(`${name}-of-document`, uri, read)
   }
   const read = (name: string): Read => c => TOOLS.find(tool => tool.name === name)!.run(c)
   resource('documents', 'presmium://documents', read('list_documents'), false)
@@ -441,11 +477,7 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
   // The position of any document's windows (a subscription names this URI); get_position takes a document.
   if (host.positions) resource('position', POSITION_URI, c => position(c), false)
   if (host.classroom) resource('classroom', 'presmium://classroom', read('get_classroom'))
-  const section = (name: string, uri: string, tool: string) => {
-    // The variant with `?document=` first: the plain template would read the query as part of its last variable.
-    template(`${name}-of-document`, `${uri}{?document}`, read(tool))
-    template(name, uri, read(tool))
-  }
+  const section = (name: string, uri: string, tool: string) => template(name, uri, read(tool))
   section('section', 'presmium://sections/{section}', 'get_section')
   section('step', 'presmium://sections/{section}/steps/{step}', 'get_step')
   section('outputs', 'presmium://sections/{section}/outputs', 'get_outputs')

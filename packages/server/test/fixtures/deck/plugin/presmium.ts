@@ -1,12 +1,14 @@
 // The server contribution of a test plugin (packages/server/test, e2e/server.spec.ts): its routes return
-// what the plugin's own Node service holds, the contexts the plugin got, and the answer to an approval.
+// what the plugin's own Node service holds, the contexts the plugin got, the answer to an approval and an
+// MCP token for the member; in SHARED mode a proxy to the gateway, as a plugin with `auth: proxy` has.
 // Plain objects: tokens are compared by id, so the fixture needs no package to compile.
-interface Context { config: Record<string, unknown>, settings: Record<string, unknown>, trust: string, operatorDir?: string, secret(name: string): string | undefined, service(token: { id: string }): any }
+interface Context { config: Record<string, unknown>, settings: Record<string, unknown>, trust: string, operatorDir?: string, gateway?: { url: string, token: string }, secret(name: string): string | undefined, service(token: { id: string }): any }
 interface Request { url: string }
 interface RequestContext { member: { id: string, roles: string[] }, document: string, rest: string }
 
 const ECHO = { id: 'fixture.echo' }
 const APPROVALS = { id: 'presmium.approvals' }
+const MCP_ENDPOINT = { id: 'presmium.mcpEndpoint' }
 
 const json = (data: unknown) => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })
 
@@ -41,6 +43,17 @@ export default {
         },
       },
       'echo/*': { role: 'reader', handle: (_: Request, r: RequestContext) => json({ rest: r.rest, document: r.document }) },
+      // An `author` MCP token for the member who calls, as an agent session gets one (its `url` is the gateway's in SHARED mode).
+      'mcp': {
+        handle: (_: Request, r: RequestContext) => {
+          const { url, token } = ctx.service(MCP_ENDPOINT).issue(r.member, 'author')
+          return json({ url, token })
+        },
+      },
     },
+    // The gateway's routes with serve's service token, as a plugin's proxy to an `auth: proxy` environment.
+    proxies: ctx.gateway
+      ? [{ path: 'gateway', target: ctx.gateway.url, role: 'reader', headers: { Authorization: `Bearer ${ctx.gateway.token}`, Host: new URL(ctx.gateway.url).host } }]
+      : [],
   }),
 }

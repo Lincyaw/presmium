@@ -18,6 +18,14 @@ export interface WorkspaceMessages {
   /** The new document is drafted by the agent (P-121); `provider` names the model's service provider (N-08). */
   draft(provider: string | undefined): string
   draftRequest: string
+  /** The agent drafts the new document; the page opens it once the draft is committed. */
+  drafting(dir: string): string
+  /** The draft waits for its requester's review (`settings.presmium.assistant.review: required`). */
+  draftReview: string
+  accept: string
+  reject: string
+  draftFailed(reason: string | undefined): string
+  openDocument(dir: string): string
   rename: string
   copy: string
   remove: string
@@ -46,6 +54,12 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     submit: '新建',
     draft: provider => `由 agent 起草${provider ? `（模型由 ${provider} 提供）` : ''}`,
     draftRequest: '起草的要求',
+    drafting: dir => `agent 正在起草 ${dir}，完成并提交后打开它。`,
+    draftReview: '初稿等待审阅，接受后提交：',
+    accept: '接受',
+    reject: '拒绝',
+    draftFailed: reason => `起草没有完成${reason ? `：${reason}` : '。'}`,
+    openDocument: dir => `打开 ${dir}`,
     rename: '重命名',
     copy: '复制',
     remove: '删除',
@@ -72,6 +86,12 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     submit: 'Create',
     draft: provider => `Draft with the agent${provider ? ` (model by ${provider})` : ''}`,
     draftRequest: 'What to write',
+    drafting: dir => `The agent is drafting ${dir}; it opens once the draft is committed.`,
+    draftReview: 'The draft waits for your review; accepting commits it:',
+    accept: 'Accept',
+    reject: 'Reject',
+    draftFailed: reason => `The draft did not finish${reason ? `: ${reason}` : '.'}`,
+    openDocument: dir => `Open ${dir}`,
     rename: 'Rename',
     copy: 'Copy',
     remove: 'Delete',

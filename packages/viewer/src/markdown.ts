@@ -184,7 +184,8 @@ function handlers(links: MarkdownLinks): Handlers {
     details: (state, node) => element('details', classed(node, { open: node.open === true }), state.all(node)),
     summary: wrap('summary'),
     div: (state, node) => element('div', classed(node), state.all(node)),
-    span: (state, node) => element('span', classed(node), state.all(node)),
+    // `{button}` without a target is a span of class `button` (docs/ir.md 2.10): it looks like a button.
+    span: (state, node) => element('span', isButton(node) ? { className: ['pm-button'] } : classed(node), state.all(node)),
     ...cardHandlers(),
     // A plugin's role (docs/ir.md 2.8): its children; one without children shows its mark where the presenter sees it.
     presmiumRole(state, node) {

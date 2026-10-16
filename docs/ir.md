@@ -344,11 +344,11 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 | `{grid}`（参数为四档屏宽的列数，1 到 4 个数，默认 `1 2 2 3`）、`{grid-item}`（`:columns:`，占一行 12 份中的几份） | mdast `grid`（`columns` 为列数的数组）、`grid-item` |
 | `{card}`（参数为标题；`:header:`、`:footer:`、`:link:`；正文中 `^^^` 之前为页眉，`+++` 之后为页脚） | mdast `card`（`url`；子节点 `header`、`cardTitle`、正文、`footer`） |
 | `{tab-set}`、`{tab-item}`（参数为标题；`:sync:`、`:selected:`） | mdast `tabSet`、`tabItem`（`title`、`sync`、`selected`） |
-| ``{button}`文字 <地址>` `` | 带 `class: 'button'` 的链接（没有地址时为带同样类名的 `span`） |
+| ``{button}`文字 <地址>` `` | 带 `class: 'button'` 的链接（没有地址时为带同样类名的 `span`，网页中同样显示为按钮的样子，只是不能点） |
 
 节点的名字与字段是 mystmd 这四个包给出的原样（WP-85：`grid-item`，按钮为 `class: 'button'`；设计时写的 `gridItem` 与 `kind: 'button'` 不是它们的输出，没有另作转换）。编译器在 myst-parser 的指令与角色之外登记这些规格（`packages/compiler/src/source.ts`），语言服务的补全列出这五个指令与它们的选项。
 
-它们是 `markdown` 节点中的标准 mdast，不是组件，属于上屏内容。各媒介：网页完整显示（栅格按屏宽分列：手机、576px 起、768px 起、992px 起四档，同 sphinx-design；卡片有 `:link:` 时整张卡片是链接；选项卡可切换，同 `:sync:` 的选项卡一起切换，包括之后打开的页面）；幻灯片中卡片与栅格照常显示（列数取最宽一档），选项卡依次展开为带标题的几段；notebook 降级为标题加段落（卡片标题与选项卡标题成为四级小标题，按钮成为链接），列入构建报告。降为标准 Markdown 的规则在 `lowerMyst` 的选项 `cards` 中（第 6 节）。搜索索引包含其中的文字（选项卡的标题除外）。
+它们是 `markdown` 节点中的标准 mdast，不是组件，属于上屏内容。各媒介：网页完整显示（栅格按屏宽分列：手机、576px 起、768px 起、992px 起四档，同 sphinx-design；卡片有 `:link:` 时整张卡片是链接，指向本地文件时网页渲染端像链接一样发布这个文件并改写地址；选项卡可切换，同 `:sync:` 的选项卡一起切换，包括之后打开的页面）；幻灯片中卡片与栅格照常显示（列数取最宽一档），选项卡依次展开为带标题的几段；notebook 降级为标题加段落（卡片标题与选项卡标题成为四级小标题，按钮成为链接），列入构建报告。降为标准 Markdown 的规则在 `lowerMyst` 的选项 `cards` 中（第 6 节）。搜索索引包含其中的文字（选项卡的标题除外）。
 
 ### 2.11 受众与发布检查（P-54、P-55）
 
@@ -424,7 +424,7 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 
 - `{predict}` 的参数是问题；`:choices:` 给出选项（至少两个），省略时学习者写一段文字。
 - 揭示内容：`{predict}` 之后的下一步出现的全部内容，即 `:reveal:` 让它在下一步出现的上屏内容，以及绑定到这一步的讲解。“下一步”是源码中直到 `{predict}` 为止用到的最后一步的下一步，所以 `{predict}` 本身在第 0 步出现、前面已有揭示时，揭示内容仍是它之后第一个 `:reveal:` 的一步。课堂插件的编译步骤 `predict-reveals`（在 `classroom-places` 之前）把它们移入 `PmPredict` 组件的子块，排在补充说明（子块 `prompt`）之后（块 ID 与步骤不变）；属性 `reveal`、`notes` 分别列出移入的上屏块与讲解的 ID，`PmPredict` 块的 `span` 到达揭示的一步（通常为 1）。之后一步什么也不出现时给出警告（`presmium.classroom`），组件没有揭示内容。
-- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
+- 读者保存预测之前，揭示内容不显示（文档视图与滚动叙事视图，即视图角色为 `reader` 时）；保存后显示，并保存在本机（`localStorage`，按讲义的地址与 `<章节>/<块>` 保存，刷新后仍在；保存后不能修改）。投在全班面前的放映画面与演讲者视图（角色 `audience`、`presenter`）以及幻灯片按步骤显示；放映画面中移入的讲解不上屏，网页的演讲者视图在备注与“下一步”的预告中照常列出它（`@presmium/kernel` 的 `sectionNarration` 读出组件子块中的讲解）。课堂中学习者的预测另写入 `predictions` 集合（键为 `<位置>:<参与者>`，值带位置、问题与选项），主讲在演讲者面板（“互动”）中看到各选项的人数，文字预测列出内容而不带姓名。
 - notebook 中为问题、选项与折叠的揭示内容（`<details>`，含移入的讲解）；它也是组件的 `fallback`。
 
 ### 2.14 视频的封面与字幕轨（P-42 增补）
@@ -504,7 +504,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 
 | 顺序 | 步骤 | 作用 |
 |---|---|---|
-| 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，把脚注定义放回书写处，处理 `{include}`；被引入的各文件可以用相同的脚注名（如 `[^1]`），后出现的文件中重名的脚注换一个内部标识（作者写的标签不变），每个文件的脚注从 1 起按首次引用的顺序编号 |
+| 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，把脚注定义放回书写处，处理 `{include}` 与 `{literalinclude}`（文件的内容按 MyST 的选项截取后成为代码块；与 `{include}` 一样经读取范围，指向工作区之外的符号链接在 `presmium serve` 中被拒绝）；被引入的各文件可以用相同的脚注名（如 `[^1]`），后出现的文件中重名的脚注换一个内部标识（作者写的标签不变），每个文件的脚注从 1 起按首次引用的顺序编号 |
 | 2 | 切分章节 | 按标题切分，生成章节 ID；带受众编译时（`--audience`）去掉不属于该受众的章节 |
 | 3 | 指令转换 | 调用各插件注册的指令与行内角色，把指令节点转为 IR 节点、角色转为 `presmiumRole`；带受众编译时去掉不属于该受众的块 |
 | 4 | 划分角色 | 按 2.3 节判定讲解与上屏内容 |
@@ -569,6 +569,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | `{config}` | 正文为 YAML，键为插件 ID | — | 章节的 `config`，在本章节合并在全局插件配置之上 |
 | `{component}` | 参数为组件名；正文为 YAML 属性 | `:span:`（步数）、`:plugin:`（插件 ID，默认为注册该组件的插件）；其余选项作为属性，值按 YAML 读取 | `component` 节点 |
 | `{include}` | 参数为文件路径 | — | 引入文件的内容；被引入文件的 frontmatter 被忽略 |
+| `{literalinclude}` | 参数为文件路径 | `:language:`（默认按扩展名）、`:lines:`、`:start-line:`、`:end-line:`、`:start-after:`、`:end-before:`、`:start-at:`、`:end-at:`（MyST 的截取选项）、`:caption:` 或 `:filename:`、`:emphasize-lines:` | `code` 节点，内容是文件（或截取的几行），去掉末尾的一个换行；文件不存在时是错误，编译监听它 |
 | `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}` | 参数为语言；正文为代码 | `:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（强调的行，如 `2, 4-5`，各步都高亮这些行）、`:run:`、`:executor:`、`:timeout:`、`:env:`、`:session:`、`:echo:`（2.7 节） | `code` 节点 |
 | `{audience}` | 参数为受众名列表 | — | 章节的 `audience`（2.11 节）；放在章节顶层，不生成块 |
 | `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` | 见 2.10 节 | 见 2.10 节 | mdast `grid`、`grid-item`、`card`、`tabSet`、`tabItem`（MyST 标准写法） |
