@@ -34,9 +34,15 @@ export function devHost(latest: () => Compilation | undefined, deckDir: string):
     },
     async build(document, options = {}) {
       const compilation = current(document)
-      const viewed = options.view === 'student' ? { ...compilation, doc: compilation.forAudience('student') } : compilation
-      const report = await build(viewed, { outDir: join(deckDir, 'dist'), to: options.to })
-      return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
+      const student = options.view === 'student'
+      const viewed = student ? { ...compilation, doc: compilation.forAudience('student') } : compilation
+      const outDir = join(deckDir, 'dist')
+      const report = await build(viewed, { outDir, to: options.to })
+      // As `presmium build --audience student`: the files this build wrote hold nothing of what the view leaves out.
+      // A `tutor` token asked for it, so the findings do not quote what they found.
+      const written = [report.ir, ...report.outputs.map(output => output.outDir)]
+      const leaks = student ? await compilation.audienceOf('student').scan(outDir, written, { quote: false }) : []
+      return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: [...report.findings, ...leaks] }
     },
     async run(document, target, signal) {
       const compilation = current(document)

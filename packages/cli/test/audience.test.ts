@@ -1,7 +1,8 @@
 // Audiences (WP-87, P-55, docs/ir.md 2.11): `presmium build --audience student` leaves the teacher's blocks and
-// sections out of every output and scans what it wrote for their sentences; in `presmium serve` (SHARED) readers
-// see the student view: their pages, the IR module the pages load, the search index and what a `tutor` MCP token
-// reads, while editors see the whole deck.
+// sections out of every output, the directives nested in another's body or a list and an `{include}` with
+// `:audience:` among them, and scans what it wrote for their sentences; `presmium check --audience student` checks
+// the student version; in `presmium serve` (SHARED) readers see the student view: their pages, the IR module the
+// pages load, the search index and what a `tutor` MCP token reads, while editors see the whole deck.
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -12,6 +13,8 @@ import { FIXTURES, raw, remove, ROOT, shared, workspace } from './serve-helpers.
 const DECK = join(ROOT, 'e2e/fixtures/publish-checks/audience')
 /** What only the teacher's blocks and section hold (lowercase: the search index keeps its terms so). */
 const TEACHER = ['teacheronly42', 'guideonly17', 'answerkey99', 'demotips', '演示合并之前先断开网络', '这一节整节只给教师']
+/** What only the teacher's nested directives (a tab, a tip in a note, a card, code in a list item) and included file hold. */
+const NESTED = ['tabkey31', 'tipkey58', 'cardkey64', 'listkey72', 'includekey85', 'handbook23', '助教手册']
 
 /** A copy of the deck in examples/demo/.presmium, where its plugins, Slidev and VitePress resolve. */
 function deck(): string {
@@ -45,7 +48,10 @@ describe('presmium build --audience student', () => {
     const built = await presmium(dir, ['build', '--audience', 'student', '--out', 'student'])
     expect(built.code, built.stdout + built.stderr).toBe(0)
     const out = join(dir, 'student')
-    for (const text of TEACHER) expect(holding(out, text), text).toEqual([])
+    for (const text of [...TEACHER, ...NESTED]) expect(holding(out, text), text).toEqual([])
+    // The nested teacher's content is in the whole deck: it is the audience that leaves it out.
+    const full = await presmium(dir, ['ir'])
+    for (const text of NESTED) expect(full.stdout.toLowerCase(), text).toContain(text)
     // The student's content is there, in each output: so the search above reads them.
     const student = holding(out, 'studentvisible')
     for (const output of [/^ir\.json$/, /^web\/.*\.html$/, /^web\/assets\/chunks\/@localSearchIndexroot\.\w+\.js$/, /^slides\/assets\/.*\.js$/, /^notebook\/.*\.ipynb$/]) {
@@ -65,6 +71,18 @@ describe('presmium build --audience student', () => {
     const line = readFileSync(join(dir, 'lecture.md'), 'utf8').split('\n').findIndex(text => text.includes('TEACHERONLY42')) + 1
     expect(built.stdout).toMatch(new RegExp(`^lecture\\.md:${line} {2}error {2}content only for teacher is in the build for student: "[^"]*TEACHERONLY42" in [^ ]+ {2}\\(presmium\\.audience\\)$`, 'm'))
   }, 300_000)
+
+  it('checks the student version with presmium check --audience student: a broken link only the teacher sees is not reported', async () => {
+    const dir = deck()
+    dirs.push(dir)
+    appendFileSync(join(dir, 'lecture.md'), '\n:::{only} web\n:audience: teacher\n教师的 [评分表](grading/missing.csv)。\n:::\n')
+    const links = async (args: string[]) => {
+      const checked = await presmium(dir, ['check', '--json', ...args])
+      return (JSON.parse(checked.stdout) as { findings: { checkId: string, message: string }[] }).findings.filter(f => f.checkId === 'presmium.links').map(f => f.message)
+    }
+    expect(await links([])).toEqual([expect.stringContaining('grading/missing.csv: no such file')])
+    expect(await links(['--audience', 'student'])).toEqual([])
+  }, 120_000)
 })
 
 /** A JSON-RPC request to MCP (Streamable HTTP) with a bearer token; the result, whether answered as JSON or as an event. */
@@ -91,7 +109,7 @@ describe('presmium serve with a login proxy (SHARED): readers see the student vi
     remove(dir)
   }, 60_000)
 
-  it('gives a reader\'s page, IR module and search index no teacher\'s sentence, an editor\'s IR all; a reader\'s tutor token reads the student view', async () => {
+  it('gives a reader\'s page, IR module and search index no teacher\'s sentence, an editor\'s all; a reader\'s tutor token reads the student view', async () => {
     const reader = setup.as('reader@test')
     const editor = setup.as('editor@test')
     const page = await raw(`${setup.url}/course/`, { headers: reader })
@@ -103,12 +121,16 @@ describe('presmium serve with a login proxy (SHARED): readers see the student vi
     const index = await raw(`${setup.url}/course/@localSearchIndexroot`, { headers: reader })
     expect(index.status, index.text).toBe(200)
     expect(index.text.toLowerCase()).toContain('studentvisible')
-    for (const text of TEACHER) {
+    // The nested tip too; and a student's {ref} to the teacher's section does not take its title ("现场演示要点 DEMOTIPS").
+    for (const text of [...TEACHER, 'tipkey58']) {
       for (const answer of [page, module, index]) expect(answer.text.toLowerCase(), text).not.toContain(text)
     }
+    // The editor's page is the same shell; what it shows, its IR module and search index, holds the teacher's content.
     const full = await raw(`${setup.url}/course/@id/__x00__virtual:presmium/ir`, { headers: editor })
-    expect(full.text).toContain('TEACHERONLY42')
-    expect(full.text).toContain('GUIDEONLY17')
+    for (const text of ['TEACHERONLY42', 'GUIDEONLY17', 'TIPKEY58']) expect(full.text).toContain(text)
+    const editorIndex = await raw(`${setup.url}/course/@localSearchIndexroot`, { headers: editor })
+    expect(editorIndex.status, editorIndex.text).toBe(200)
+    for (const text of ['teacheronly42', 'guideonly17']) expect(editorIndex.text.toLowerCase()).toContain(text)
 
     // The tutor token the test plugin's route issues for the reader (`MCP_ENDPOINT.issue(member, 'tutor')`).
     const grant = await raw(`${setup.url}/__presmium/fixture.tutor/tutor`, { headers: { ...reader, 'Presmium-Document': 'course' } })

@@ -109,7 +109,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - `:::{only} web, notebook` 让内容只出现在列出的渲染端（`web`、`slides`、`notebook`）。拼错的 ID（如 `slide`）得到警告 `unknown renderer id`，否则内容会从所有形态中消失。只在某个渲染端出现的块所占的步骤，在其他渲染端中不存在。
 - `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: center`）。不要用 `two-cols` 这类需要 `::right::` 插槽的布局，MyST 写不出插槽，内容会全挤在左栏。
 - `:::{config}` 为插件提供只在本章节生效的配置（YAML，键为插件 ID）。读取章节配置的是 `presmium.exec.timeoutMs`（这一节代码在编译时与浏览器中的超时）与 `presmium.code.repo`（这一节 `{code-ref}` 永久链接的仓库）；其他选项只读全局配置。
-- 受众：任何指令加 `:audience: teacher` 让块只给教师（讲解段落用 `{only}` 包起来再加），章节顶层的 `:::{audience} teacher` 让整节只给教师。`presmium build --audience student` 生成学生版并扫描产物中有没有被去掉的句子（`presmium.audience`）；`presmium serve` 中读者只看到学生版。写法见 `references/directives.md` 的 `{audience}`。
+- 受众：任何指令加 `:audience: teacher` 让块只给教师（讲解段落用 `{only}` 包起来再加；嵌在另一个指令正文中或列表项中的指令，如 `{tab-set}` 中的一个 `{tab-item}`、`{grid}` 中的一张 `{card}`，也可以加），章节顶层的 `:::{audience} teacher` 让整节只给教师，`{include}` 加 `:audience: teacher` 让包含进来的全部内容（连同其中的章节）只给教师。`presmium build --audience student` 生成学生版并扫描产物中有没有被去掉的句子（`presmium.audience`）；`presmium serve` 中读者只看到学生版。写法见 `references/directives.md` 的 `{audience}`。
 
 ## 6.1 发布检查
 
@@ -209,6 +209,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 | `presmium.directive` `{csv-table}: required body not provided …; {csv-table} takes no :file:` | MyST 指令写错了（这里 `{csv-table}` 不读文件）：按 MyST 的写法改正，如把表格写进正文 |
 | `presmium.links` `x: no such file` 或 `#x is no section, block, label or heading of the deck` | 改正路径（相对于写它的文件）或片段；`(in slides)` 表示只有幻灯片中的链接出错，例如它指向只在网页中出现的块 |
 | `presmium.forbid` `"…" matches … of checks.forbid` | 删掉命中的文字（内部编号、未发布内容的名字），或改头部的 `checks.forbid` |
+| `presmium.audience` `the block shows content only for teacher (written at <文件>:<行>); it is left out of the view for student` | `presmium serve` 的学生视图中，这个块（多半是代码的录制输出）含有教师内容的句子，所以读者看不到这个块：同下一行处理 |
 | `presmium.audience` `content only for teacher is in the build for student: "…" in <文件>` | 被去掉的教师内容又进了学生版（多半经代码块的输出或另一个文件）：在来源处删掉，或给那个块也加 `:audience: teacher` |
 | `presmium.execLocal.workspace` `{local-env} names the workspace …` | 一份文稿只有一个工作区：各 `{local-env}` 写同一个 `:workspace:`，或设置 `presmium.execLocal.workspace` |
 | `presmium.code.anchors` `moved` 或 `needs confirmation` | 确认位置后运行 `presmium check --update-lock` |

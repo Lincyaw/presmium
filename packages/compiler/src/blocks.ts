@@ -3,7 +3,9 @@
  * section into blocks. Directives become IR nodes (built-in `{slide}`,
  * `{only}`, `{hints}`, `{config}`, `{component}`, and the directives of
  * plugins); every block gets its role, narration or visual, and the audiences
- * `:audience:` and `{audience}` give it and its section (docs/ir.md 2.11).
+ * `:audience:` and `{audience}` give it and its section (docs/ir.md 2.11);
+ * `:audience:` on a directive nested deeper marks the nodes it gives, and an
+ * `{include}` with `:audience:` is a scope around what it includes.
  * Step numbers are assigned later (see steps.ts) from `reveal`, `group` and `span`.
  */
 import { environmentExecutor, errorMessage, isRecord } from '@presmium/kernel'
@@ -28,6 +30,7 @@ import { mathmlTagNames } from 'mathml-tag-names'
 import { defaultOptions } from 'myst-parser'
 import { svgTagNames } from 'svg-tag-names'
 import { parse as parseYaml } from 'yaml'
+import { AUDIENCE_SCOPE, audienceList, markAudience, within } from './audience.ts'
 import { BODY, ROLE, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
 
@@ -153,12 +156,12 @@ export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Prom
 function sectionConfig(nodes: MdastNode[], ctx: BlockContext): SectionConfig {
   const config: SectionConfig = {}
   for (const node of nodes) {
-    if (node.type !== 'mystDirective') continue
-    if (node.name === 'slide' || node.name === 'only') {
-      for (const [id, options] of Object.entries(sectionConfig(bodyNodes(node), ctx))) config[id] = { ...config[id], ...options }
+    const inner = node.type === AUDIENCE_SCOPE ? node.children : node.type === 'mystDirective' && (node.name === 'slide' || node.name === 'only') ? bodyNodes(node) : undefined
+    if (inner) {
+      for (const [id, options] of Object.entries(sectionConfig(inner, ctx))) config[id] = { ...config[id], ...options }
       continue
     }
-    if (node.name !== 'config') continue
+    if (node.type !== 'mystDirective' || node.name !== 'config') continue
     const source = sourceOf(node, ctx.entry)
     const fail = (message: string) =>
       ctx.report({ checkId: 'presmium.directive', severity: 'error', message: `{config}: ${message}`, source: { file: source.file, line: source.line } })
@@ -191,6 +194,22 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
     }
     if (MYST_ERRORS.has(node.type)) {
       mystError(node, source, ctx)
+      continue
+    }
+    if (node.type === AUDIENCE_SCOPE) {
+      // What an `{include}` with `:audience:` includes; after a heading it included, the section it opens.
+      const audience = scopeAudience(node, source, ctx)
+      if (node.section) {
+        out.audience = within(out.audience, audience)
+        continue
+      }
+      const start = out.blocks.length
+      await convert(node.children ?? [], { ...scope, audience: within(scope.audience, audience) }, ctx, out)
+      const first = out.blocks[start]
+      if (first) {
+        first.label ??= label
+        label = undefined
+      }
       continue
     }
     if (DROPPED.has(node.type)) continue
@@ -329,19 +348,24 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: markdown(children, ctx) })
 }
 
-/** Audience names, comma- or space-separated (docs/ir.md 2.11). */
-function audienceList(text: string): string[] {
-  return [...new Set(text.split(/[\s,]+/).filter(Boolean))]
+/**
+ * `:audience:` of a directive: its audiences, within those of the `{slide}`
+ * or `{only}` around it. Without names it is an error, and the content is
+ * for no audience: left out of every build for one.
+ */
+function audienceOption(value: unknown, outer: string[] | undefined, fail: (message: string) => void): string[] {
+  const names = typeof value === 'string' ? audienceList(value) : []
+  if (names.length === 0) fail(':audience: needs the audiences it is for, e.g. :audience: teacher')
+  return within(outer, names)
 }
 
-/** `:audience:` of a directive: its audiences, within those of the `{slide}` or `{only}` around it. */
-function audienceOption(value: string | true, outer: string[] | undefined, fail: (message: string) => void): string[] | undefined {
-  const names = value === true ? [] : audienceList(value)
-  if (names.length === 0) {
-    fail(':audience: needs the audiences it is for, e.g. :audience: teacher')
-    return outer
+/** The audiences of an audience scope (`{include}` with `:audience:`); an error when it names none. */
+function scopeAudience(node: MdastNode, source: SourcePos, ctx: BlockContext): string[] {
+  const audience = node.audience as string[]
+  if (audience.length === 0 && !node.section) {
+    ctx.report({ checkId: 'presmium.directive', severity: 'error', message: '{include}: :audience: needs the audiences it is for, e.g. :audience: teacher', source: { file: source.file, line: source.line } })
   }
-  return outer ? outer.filter(name => names.includes(name)) : names
+  return audience
 }
 
 /**
@@ -492,15 +516,20 @@ function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNo
       return []
     }
     if (DROPPED.has(node.type)) return []
+    // What an `{include}` with `:audience:` includes, here inside a block: its nodes are marked.
+    if (node.type === AUDIENCE_SCOPE) return markAudience(clean(node.children ?? [], ctx, file), scopeAudience(node, sourceOf(node, file), ctx))
     if (node.type === 'mystRole' && ctx.roles.has(String(node.name))) return [roleNode(node, ctx, file)]
     if (node.type === 'mystDirective' || node.type === 'mystRole') {
       const name = String(node.name)
-      if (node.children?.length && !(node.type === 'mystDirective' && (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name)))) {
-        return clean(node.children, ctx, file)
-      }
       const where = sourceOf(node, file)
       const report = (severity: Finding['severity'], message: string) =>
         ctx.report({ checkId: 'presmium.directive', severity, message, source: { file: where.file, line: where.line } })
+      if (node.children?.length && !(node.type === 'mystDirective' && (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name)))) {
+        const nodes = clean(node.children, ctx, file)
+        // `:audience:` of a MyST directive nested in a block (docs/ir.md 2.11): the nodes it gives are marked.
+        const option = node.type === 'mystDirective' && isRecord(node.options) ? node.options.audience : undefined
+        return option === undefined ? nodes : markAudience(nodes, audienceOption(option, undefined, message => report('error', `{${name}}: ${message}`)))
+      }
       if (node.type === 'mystRole') {
         report('warning', `unknown role {${name}}; its text is kept as plain text`)
         return typeof node.value === 'string' ? [{ type: 'text', value: node.value }] : []

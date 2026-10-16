@@ -6,7 +6,7 @@
 
 - `:reveal:`：块在下一步出现。`{slide}`、`{only}` 上写 `:reveal: items` 时其中的列表逐项出现。
 - `:label:`：块 ID，等同于在块前写 `(名字)=`。
-- `:audience:`：块只给这些受众（逗号分隔，如 `teacher`）；写在 `{slide}`、`{only}` 上时其中全部的块都是，嵌套时取交集。讲解段落要标受众时用 `{only}` 包起来。`presmium build --audience student` 不输出受众不含 `student` 的块，见下文 `{audience}`。
+- `:audience:`：块只给这些受众（逗号分隔，如 `teacher`）；写在 `{slide}`、`{only}` 上时其中全部的块都是，嵌套时取交集。讲解段落要标受众时用 `{only}` 包起来。嵌在另一个指令正文中或列表项中的 MyST 指令（`{tab-item}`、`{card}`、`{note}` 中的 `{tip}`、列表项中的 `{code}`）也可以写，只去掉它自己，所在的块留下；写在 `{include}` 上时包含进来的全部内容都是，其中的标题照样开出章节，这些章节整节只给这些受众。`presmium build --audience student` 不输出受众不含 `student` 的块，见下文 `{audience}`。
 
 选项值按指令声明的类型读取（`string`、`number`、`boolean`、`list`）；指令声明了选项时，写错的选项名得到警告 `unknown option`。
 
@@ -94,7 +94,9 @@ presmium.exec: { timeoutMs: 30000 }
 - `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（其余章节重新编号，步骤随之压缩），被去掉的代码不执行；构建后扫描写出的全部文件，被去掉的内容中 12 个字符以上的句子（学生内容自己也有的句子除外）出现在其中就是错误 `presmium.audience`，位置是被去掉的块，消息给出句子和文件（例如它经代码块的输出漏了进来）。
 - `presmium check --audience student` 按学生版编译后检查。
 - `presmium serve` 中读者（学习者）看到的页面、搜索索引与 AI 助手读到的内容都是学生版；编辑者与所有者看到全部。
-- 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；缺少受众名时报错。
+- 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；`{audience}` 或 `:audience:` 缺少受众名时报错（这时 `:audience:` 标的内容不给任何受众）。
+- 指向只给教师的章节的 `{ref}` 在学生版中没有目标（构建时警告 `target not found`），学生内容中不要引用教师章节。
+- 学生版的块 ID 与完整版相同，但章节序号与步骤重新编号：课堂跟随讲者时，讲者与学习者要用同一个版本。
 
 插件的其他选项只读全局配置。
 

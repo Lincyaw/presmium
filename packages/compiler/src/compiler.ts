@@ -11,7 +11,7 @@ import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
-import { audienceView, scanOutputs, withheld } from './audience.ts'
+import { audienceDocument, AudienceParser, audienceView, emptyReferences, liftScopes, scanOutputs, withheld } from './audience.ts'
 import type { Withheld } from './audience.ts'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective, PluginRole } from './blocks.ts'
@@ -29,7 +29,8 @@ import { resolveReferences } from './references.ts'
 import { splitSections } from './sections.ts'
 import { NodeServices, operatorDir, operatorPlugins, pluginLogger, workspaceSettings } from './settings.ts'
 import type { OperatorSettings } from './settings.ts'
-import { Parser, readFrontmatter, withoutBom } from './source.ts'
+import { readFrontmatter, withoutBom } from './source.ts'
+import type { Parser } from './source.ts'
 import { scheduleSteps } from './steps.ts'
 import { applyTranslations, translationFields } from './translations.ts'
 import { validateIR } from './validate.ts'
@@ -80,13 +81,18 @@ export interface CompilerOptions {
   audience?: string
 }
 
-/** A compilation for an audience (`CompilerOptions.audience`): what it left out, and the scan of a build for it. */
+/** A compilation for an audience (`CompilerOptions.audience`, `Compilation.audienceOf`): what it left out, and the scan of a build for it. */
 export interface AudienceCompilation {
   name: string
   /** The content left out, with its longer sentences. */
   withheld: Withheld[]
-  /** Errors (`presmium.audience`) for the content left out whose sentences are in a file under `dir` (a build's output). */
-  scan(dir: string): Promise<Finding[]>
+  /**
+   * Errors (`presmium.audience`) for the content left out whose sentences are
+   * in a file under `dir` (a build's output), or only under `paths` (the
+   * files and directories the build wrote in it). With `quote: false` the
+   * messages leave the sentence out, for findings the audience itself reads.
+   */
+  scan(dir: string, paths?: string[], options?: { quote?: boolean }): Promise<Finding[]>
 }
 
 /** A declared environment and its provider, for `presmium check --env`. */
@@ -148,11 +154,15 @@ export interface Compilation {
   /** Set when compiled for an audience (`CompilerOptions.audience`). */
   audience?: AudienceCompilation
   /**
-   * The document as an audience sees it (P-55): without the sections and
-   * blocks for other audiences, steps and sections numbered again; the
+   * The document as an audience sees it (P-55): without the sections, blocks
+   * and nested nodes for other audiences, steps and sections numbered again,
+   * cross-references resolved in it, and without the blocks that still show
+   * a sentence of what was left out (an error in its diagnostics); the
    * student view of `presmium serve` and of `tutor` tokens.
    */
   forAudience(name: string): IRDocument
+  /** What `forAudience(name)` leaves out, and the scan of a build of it. */
+  audienceOf(name: string): AudienceCompilation
   /**
    * The publication checks (P-54, docs/ir.md 2.11) in the view of each
    * renderer the deck builds: `presmium.links` and `presmium.forbid`; with
@@ -302,8 +312,8 @@ export class Compiler {
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(this.entry, extname(this.entry))
     const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
 
-    // Passes 2 to 5: sections, directives, roles, steps.
-    const raw = splitSections(source.children, { entry: this.entry, title, sectionDepth }, report)
+    // Passes 2 to 5: sections, directives, roles, steps. The headings an `{include}` with `:audience:` holds still open sections.
+    const raw = splitSections(liftScopes(source.children, sectionDepth), { entry: this.entry, title, sectionDepth }, report)
     const rendererIds = new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []])
     const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
     const sections: IRSection[] = []
@@ -345,8 +355,7 @@ export class Compiler {
       const name = this.options.audience
       const view = audienceView(doc, name)
       doc.sections = view.doc.sections
-      const left = withheld(view.removed, doc)
-      audience = { name, withheld: left, scan: dir => scanOutputs(left, dir, name) }
+      audience = audienceCompilation(name, withheld(view.removed, doc))
     }
     checkRuns(doc, execute, report)
     applyTranslations(doc, translationFields(headmatter))
@@ -404,7 +413,10 @@ export class Compiler {
     // Cross-references take the text of their targets once every pass has shaped the IR;
     // pass 7, compile-time execution; then the plugin passes that work on its outputs.
     let runs: RunStats = { executed: 0, cached: 0, refused: [] }
+    // The references resolution fills in, which a view for an audience resolves again in itself.
+    let filled = new WeakSet<object>()
     if (invalid.length === 0) {
+      filled = emptyReferences(doc)
       resolveReferences(doc, report)
       runs = await executePass(doc, executors, cache, report, { ...this.options.execution, rerun: execute.rerun === 'environment', context: runContext })
       for (const step of passes.filter(({ pass }) => pass.after === 'execute')) await runPass(step)
@@ -450,7 +462,11 @@ export class Compiler {
       runContext,
       run: (node, signal) => this.#run(doc, node, executors, runContext, signal),
       ...audience ? { audience } : {},
-      forAudience: name => audienceView(doc, name).doc,
+      forAudience: name => audienceDocument(doc, name, filled),
+      audienceOf: (name) => {
+        const view = audienceView(doc, name)
+        return audienceCompilation(name, withheld(view.removed, view.doc))
+      },
       publishChecks: async (checks = {}) => [...await checkLinks(publish, checks), ...checkForbidden(publish, headmatter)],
     }
   }
@@ -548,9 +564,14 @@ export class Compiler {
     const syntax = new Map([...BUILTIN_DIRECTIVES, ...[...directives.keys()].map(name => [name, false] as const)])
     const options = new Map<string, Record<string, DirectiveOptionType> | undefined>([...roles].map(([name, { spec }]) => [name, spec.options]))
     const key = JSON.stringify([[...syntax].sort(), [...options].sort()])
-    if (this.#parser?.key !== key) this.#parser = { key, parser: new Parser(syntax, options) }
+    if (this.#parser?.key !== key) this.#parser = { key, parser: new AudienceParser(syntax, options) }
     return this.#parser.parser
   }
+}
+
+/** What a view for the audience `name` left out, with its sentences (`left`), and the scan of a build of it. */
+function audienceCompilation(name: string, left: Withheld[]): AudienceCompilation {
+  return { name, withheld: left, scan: (dir, paths, options = {}) => scanOutputs(left, paths ?? [dir], name, dir, options.quote) }
 }
 
 /** 1-based line of the first frontmatter line that mentions `text`; 1 when absent. */

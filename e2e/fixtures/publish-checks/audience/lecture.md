@@ -32,6 +32,47 @@ renderers:
 print('ANSWERKEY99: 冲突的行号是十二')
 ```
 
+::::{tab-set}
+:::{tab-item} 学生
+学生的选项卡：先读冲突标记。
+:::
+:::{tab-item} 教师
+:audience: teacher
+教师的选项卡：按三条标准评分 TABKEY31。
+:::
+::::
+
+:::::{note}
+合并之前先拉取最新的提交。
+
+:::{tip}
+:audience: teacher
+提醒学生留意行尾空白的差异 TIPKEY58。
+:::
+:::::
+
+::::{grid} 2
+:::{card} 冲突标记
+两组尖括号之间就是冲突的内容。
+:::
+:::{card} 讲评
+:audience: teacher
+讲评时展示三个常见的错误 CARDKEY64。
+:::
+::::
+
+1. 运行 `git status` 找出冲突的文件
+2. 打开冲突的文件
+
+   ```{code} python
+   :audience: teacher
+   print('LISTKEY72: 答案在第十二行')
+   ```
+
+```{include} handbook.md
+:audience: teacher
+```
+
 ## 现场演示要点 DEMOTIPS
 
 :::{audience} teacher

@@ -376,9 +376,9 @@ print(answer_key())
 ```
 ````
 
-- 每个指令都接受 `:audience:`（逗号分隔的受众名），与 `:reveal:`、`:label:` 一样是通用选项；讲解段落要标受众时用 `{only}` 包起来。
+- 每个指令都接受 `:audience:`（逗号分隔的受众名），与 `:reveal:`、`:label:` 一样是通用选项；讲解段落要标受众时用 `{only}` 包起来。嵌在另一个指令正文中或列表项中的 MyST 指令（`{tab-set}` 中的 `{tab-item}`、`{grid}` 中的 `{card}`、`{note}` 中的 `{tip}`、列表项中的 `{code}`）同样可以写；`{include}` 上的 `:audience:` 让包含进来的全部内容只给这些受众，其中开始章节的标题开出的章节也是。
 - `{audience} <受众>` 放在章节顶层（不生成块，同 `{hints}`），把整个章节标为只给这些受众，例如教师指南的一节。
-- 编译器把它们写入 `IRBlock.audience` 与 `IRSection.audience`。不带受众的内容对所有受众可见。
+- 编译器把它们写入 `IRBlock.audience` 与 `IRSection.audience`；嵌在块中的指令给出的 mdast 节点带 `data.audience`（受众名的列表，mdast 的 `data` 字段，渲染端不读它）。不带受众的内容对所有受众可见。
 - `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（步骤随之压缩），所有渲染端都拿不到它们；不带 `--audience` 的构建包含全部内容。构建结束后扫描产物（页面、`ir.json`、搜索索引、幻灯片的备注与 notebook），被去掉的内容中较长的句子（12 个字符以上）出现在产物中就是错误级诊断 `presmium.audience`，位置是被去掉的块（例如它的文字又经代码输出或另一个文件漏进来）。
 - `presmium serve` 中，角色为读者的成员（学习者）看到同样按 `student` 编译的学生视图：他们的页面、IR 与搜索索引来自学生视图的站点，读者成员的 MCP 令牌与所有 `tutor` 令牌也只读学生视图；编辑者与所有者看到全部内容（`architecture.md` 10.3 节）。
 
@@ -394,10 +394,11 @@ print(answer_key())
 
 实现（WP-87）：
 
-- **写法的细节**：`{audience}` 没有正文（写了正文是警告，正文被忽略）；同一节写了几个 `{audience}` 时取交集。`:audience:` 写在 `{slide}`、`{only}` 上时其中的块都带它，内层的 `:audience:` 与外层取交集（同 `{only}` 的渲染端）；它是通用选项，不交给插件的指令，也不成为 `{component}` 的属性。
-- **何时去掉**：编译器在步骤编排（第 5 步）之后、插件的编译步骤与编译时执行之前去掉其他受众的章节与块（`packages/compiler/src/audience.ts` 的 `audienceView`），而不是在第 2、3 步：块 ID 因此与完整文稿的相同（学生版与完整版的位置、课堂笔记、讲授轨中的块 ID 一致），剩下的步骤按 `viewFor` 的办法压缩（不写 `stepMap`），章节重新编号。被去掉的代码不执行，插件的编译步骤与渲染端都看不到它们；不带受众的构建与此前完全相同。带 `--audience` 的 `presmium build` 不删除执行缓存中的录制（只编译了一部分代码）。
+- **写法的细节**：`{audience}` 没有正文（写了正文是警告，正文被忽略）；同一节写了几个 `{audience}` 时取交集。`:audience:` 写在 `{slide}`、`{only}` 上时其中的块都带它，内层的 `:audience:` 与外层取交集（同 `{only}` 的渲染端）；它是通用选项，不交给插件的指令，也不成为 `{component}` 的属性。`:audience:` 没有写受众名是错误，这时内容不给任何受众（带 `--audience` 的构建与学生视图都没有它）。
+- **嵌套的指令与 `{include}`**：块以外更深一层的 MyST 指令（另一个指令的 MyST 正文中、列表项中）在转换时被展开成它的 mdast（`blocks.ts` 的 `clean`），带 `:audience:` 时它给出的每个顶层节点写上 `data.audience`（与已有的取交集）；筛选时这些节点从所在的块中去掉（块与块 ID 留下，步骤不变），插件指令的正文经 `parse` 得到的 mdast（组件的属性与 `fallback`）同样筛选。嵌在 MyST 正文中的 Presmium 指令与插件指令照旧被丢弃并警告。`{include}` 在第 1 步展开：编译器的解析器（`audience.ts` 的 `AudienceParser`，按公开的 `read` 包装 `Parser`）把带 `:audience:` 的 `{include}` 放进一个受众范围节点，在其中展开；第 2 步之前（`liftScopes`）范围中开始章节的标题被取出，仍然开出章节，标题后的范围节点让该章节只给这些受众（同 `{audience}`），第一个标题之前的内容留在范围中，转换时其中的块带这些受众（同 `{only}` 上的 `:audience:`）；范围在 `{slide}`、`{only}` 的正文中同样如此，在块中（另一个指令的正文中）时它的节点写上 `data.audience`。同一个文件既按受众又不按受众包含时，各处按各自的写法。
+- **何时去掉**：编译器在步骤编排（第 5 步）之后、插件的编译步骤与编译时执行之前去掉其他受众的章节与块（`packages/compiler/src/audience.ts` 的 `audienceView`），而不是在第 2、3 步：块 ID 因此与完整文稿的相同（课堂笔记、讲授轨与问答引用的块 ID 在学生版与完整版中一致），剩下的步骤按 `viewFor` 的办法压缩（不写 `stepMap`），章节重新编号。位置（章节序号与步骤）因此不一致：教师的章节或步骤在前时，学生版中同一个块的位置比完整版中的靠前，没有记录两者的对应。课堂的跟随按位置（`{slide, step}`）进行，所以讲者用完整版、学习者用学生版（`presmium serve` 中编辑者讲、读者跟，或讲者放映完整的构建、学习者打开学生版的构建）时，跟随者会停在别的章节或步骤上；这是已知的限制，要跟随时讲者与学习者用同一版本（讲者也打开学生版）。被去掉的代码不执行，插件的编译步骤与渲染端都看不到它们；不带受众的构建与此前完全相同。带 `--audience` 的 `presmium build` 不删除执行缓存中的录制（只编译了一部分代码）。
 - **泄漏扫描**：被去掉的每个块与章节（标题、正文中的每段文字、代码的每行、组件的属性与 `fallback`）按句末标点（`。！？!?；;`、换行与句点后的空白）分句，取 12 个字符以上的句子；留下的内容自己的源码（不含录制输出）中也有的句子不算。构建结束后读输出目录中的每个文本文件（跳过图片、音视频、字体、WebAssembly 等与含 NUL 字节的文件），还原 JavaScript 与 JSON 字符串的转义和 HTML 的字符引用，再去掉标签读一遍（高亮的代码被拆进标签），一个被去掉的块只报告第一句命中：`content only for teacher is in the build for student: "<句子>" in <文件>`。
-- **学生视图**：`Compilation.forAudience(name)` 在编译好的完整文稿上做同样的筛选（另去掉位于被去掉内容中的诊断）；`presmium serve` 的 `student` 视图（`packages/workspace/src/node/audience.ts`）与 `presmium dev` 的 `ServerHost`（`tutor` 令牌）都用它，所以读者的站点与 MCP 读到的块 ID 也与完整文稿相同。插件的编译步骤这时已经在完整文稿上运行过，它们从被去掉的内容派生、写到别处的文字不在筛选之内（构建的泄漏扫描会发现这种情况）。
+- **学生视图**：`Compilation.forAudience(name)` 在编译好的完整文稿上做同样的筛选（另去掉位于被去掉的章节与块中的诊断）；`presmium serve` 的 `student` 视图（`packages/workspace/src/node/audience.ts`）与 `presmium dev` 的 `ServerHost`（`tutor` 令牌）都用它，所以读者的站点与 MCP 读到的块 ID 也与完整文稿相同。交叉引用在视图自己的副本中重新解析（完整的编译填入的引用文字先去掉）：指向被去掉的章节的 `{ref}` 不带它的标题（同带 `--audience` 的构建，那里它报告 `target not found`），图与公式按视图中的顺序编号。插件的编译步骤与编译时执行这时已经在完整文稿上运行过，它们从被去掉的内容派生、写到别处的文字不在筛选之内；所以视图还按泄漏扫描的句子检查留下的每个块（序列化的节点，不含图片数据），含有被去掉内容的句子（例如代码的录制输出打印了它）的块也从视图中去掉，视图的诊断中加一条错误 `presmium.audience`：`the block shows content only for teacher (written at <文件>:<行>); it is left out of the view for student`，只写位置，不引用内容（读者能读到视图的诊断）。`presmium dev` 的 `ServerHost.build` 以 `view: 'student'`（`tutor` 令牌经 MCP 的 `build`）构建时，构建后同样扫描它写出的 `ir.json` 与各渲染端的目录（`Compilation.audienceOf(name).scan`），诊断同样不引用句子。
 - **发布检查**：`presmium.links`、`presmium.forbid` 在 `presmium check`、语言服务与服务端的 `ServerHost.check`（MCP 的 `get_diagnostics`）中运行（`@presmium/cli` 的 `pluginChecks` 调用 `Compilation.publishChecks`），不在 `presmium build` 中运行；`presmium.directive` 的 MyST 错误在每次编译中报告。检查的渲染端是头部 `renderers` 配置的，没有配置时是三个内置渲染端加插件提供的渲染端；同一处问题在几个视图中都有时只报告一次，只在部分视图中有时消息末尾写 `(in slides)` 等。`presmium.links` 检查链接、图片、定义、卡片的 `:link:`、组件 `assets` 中的地址与原始 HTML 的 `href`、`src`、`poster`：本地文件相对于写它的源文件，`/…` 在文稿的 `public/` 中，指向目录也算存在，在仓库（工作区）之外是错误；片段可以是章节 ID、块 ID、mdast 的 `identifier`、`label`，标题的 slug，脚注 `fn-<标识>` 与原始 HTML 的 `id`、`name`；`<路径>.md#片段`（或指向含 `lecture.md` 的目录）指向本文稿时按本文稿检查，指向另一份文档时按它的源码（展开 `{include}`，按 `sectionDepth` 分节，不加载它的插件）检查。诊断的行是块中写有这个地址（或命中文字）的那一行，找不到时是块的第一行。`presmium.forbid` 的正则以 JavaScript 的 `RegExp` 编译（无效时报告在头部该行），匹配章节标题、块的文字（含链接目标与原始 HTML）、代码（含多版本）与录制输出（流、错误、`text/*` 与 JSON 的数据）。`presmium.directive` 由 myst-parser 留下的 `mystDirectiveError`、`mystRoleError` 节点给出（它们不进入 IR）；消息附上该 MyST 指令不接受的选项（如 `{csv-table} takes no :file:`），myst-parser 对其他选项的警告不报告。lychee 检查失败的外部链接是警告。
 - **命令**：`--audience` 不适用于工作区根目录的 `presmium build`（报用法错误；工作区站点按文档构建学生版留给后续工作包）。
 
@@ -515,8 +516,8 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 
 | 顺序 | 步骤 | 作用 |
 |---|---|---|
-| 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，把脚注定义放回书写处，处理 `{include}` 与 `{literalinclude}`（文件的内容按 MyST 的选项截取后成为代码块；与 `{include}` 一样经读取范围，指向工作区之外的符号链接在 `presmium serve` 中被拒绝）；被引入的各文件可以用相同的脚注名（如 `[^1]`），后出现的文件中重名的脚注换一个内部标识（作者写的标签不变），每个文件的脚注从 1 起按首次引用的顺序编号 |
-| 2 | 切分章节 | 按标题切分，生成章节 ID |
+| 1 | 解析 | 剥离 frontmatter，`myst-parser` 解析，把脚注定义放回书写处，处理 `{include}` 与 `{literalinclude}`（文件的内容按 MyST 的选项截取后成为代码块；与 `{include}` 一样经读取范围，指向工作区之外的符号链接在 `presmium serve` 中被拒绝）；被引入的各文件可以用相同的脚注名（如 `[^1]`），后出现的文件中重名的脚注换一个内部标识（作者写的标签不变），每个文件的脚注从 1 起按首次引用的顺序编号；带 `:audience:` 的 `{include}` 在受众范围中展开（2.11 节） |
+| 2 | 切分章节 | 按标题切分，生成章节 ID；受众范围中开始章节的标题仍开出章节（2.11 节） |
 | 3 | 指令转换 | 调用各插件注册的指令与行内角色，把指令节点转为 IR 节点、角色转为 `presmiumRole`；记下 `:audience:` 与 `{audience}` 给出的受众 |
 | 4 | 划分角色 | 按 2.3 节判定讲解与上屏内容 |
 | 5 | 编排步骤 | 按 2.4 节计算 `at`、`until` 与章节步骤数；带受众编译时（`--audience`）随后去掉不属于该受众的章节与块并压缩步骤（WP-87：在这里而不是第 2、3 步，块 ID 与完整文稿的相同，2.11 节） |
