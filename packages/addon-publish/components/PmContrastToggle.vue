@@ -1,31 +1,29 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import { useMessages } from '@presmium/host'
 import { useHighContrast } from '../src/client/contrast.ts'
-import { useMessages } from '../src/client/messages.ts'
+import { MESSAGES } from '../src/domain/index.ts'
 
 // `compact` shows the icon only, as in the hosts' toolbars.
 defineProps<{ compact?: boolean }>()
 
 const { enabled, toggle } = useHighContrast()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 </script>
 
 <template>
-  <PmBoundary name="PmContrastToggle">
-    <button
-      type="button"
-      role="switch"
-      class="pm-contrast-toggle"
-      :class="{ 'pm-contrast-toggle--compact': compact }"
-      :aria-checked="enabled"
-      :aria-label="t.highContrast"
-      :title="t.highContrast"
-      @click="toggle"
-    >
-      <span class="pm-contrast-toggle__icon" aria-hidden="true">◐</span>
-      <span v-if="!compact">{{ t.highContrastState(enabled) }}</span>
-    </button>
-  </PmBoundary>
+  <button
+    type="button"
+    role="switch"
+    class="pm-contrast-toggle"
+    :class="{ 'pm-contrast-toggle--compact': compact }"
+    :aria-checked="enabled"
+    :aria-label="t.highContrast"
+    :title="t.highContrast"
+    @click="toggle"
+  >
+    <span class="pm-contrast-toggle__icon" aria-hidden="true">◐</span>
+    <span v-if="!compact">{{ t.highContrastState(enabled) }}</span>
+  </button>
 </template>
 
 <style>

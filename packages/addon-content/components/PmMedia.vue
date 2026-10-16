@@ -1,24 +1,40 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import { computed } from 'vue'
+import { mediaElements } from '../src/domain/index.ts'
+import type { MediaKind } from '../src/domain/index.ts'
 
 /**
- * A media block (P-42): the video, audio or animated image comes as the
- * default slot, written by the renderer from the media directive. The other
- * props of the directive (`src`, sizes, flags) are already on that element.
+ * A media block (P-42) from `{video}`, `{audio}` or `{animation}`: the media
+ * element, and for an animation with a still image both images. `src` and
+ * `still` are the URLs the renderer published the files at.
  */
-defineOptions({ inheritAttrs: false })
-defineProps<{ kind: string, caption?: string }>()
+const props = defineProps<{
+  kind: MediaKind
+  src: string
+  still?: string
+  caption?: string
+  controls?: boolean
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  width?: number
+  height?: number
+  alt?: string
+}>()
+
+const elements = computed(() => mediaElements(props.kind, props, props.still !== undefined).map(({ tag, file, attrs }) => ({
+  tag,
+  attrs: { ...attrs, src: file === 'still' ? props.still : props.src },
+})))
 </script>
 
 <template>
-  <PmBoundary name="PmMedia">
-    <figure class="pm-media" :data-kind="kind">
-      <slot />
-      <figcaption v-if="caption">
-        {{ caption }}
-      </figcaption>
-    </figure>
-  </PmBoundary>
+  <figure class="pm-media" :data-kind="kind">
+    <component :is="element.tag" v-for="(element, i) in elements" :key="i" v-bind="element.attrs" />
+    <figcaption v-if="caption">
+      {{ caption }}
+    </figcaption>
+  </figure>
 </template>
 
 <style>

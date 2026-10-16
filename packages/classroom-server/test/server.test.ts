@@ -1,39 +1,42 @@
-// `presmium-classroom-server --port 0` as a real process, with y-websocket clients (as the session plugin uses) in rooms.
+// The classroom server as a real server (in this process, so a test can wait for the writes it
+// drops), with y-websocket clients as the session plugin uses and raw WebSocket clients that send
+// what a forged client would; one test starts the `presmium-classroom-server` command.
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { connect } from 'node:net'
-import { tmpdir } from 'node:os'
+import { networkInterfaces, tmpdir } from 'node:os'
 import { join as joinPath } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import * as encoding from 'lib0/encoding'
 import { afterAll, afterEach, beforeAll, expect, it } from 'vitest'
 import WebSocket from 'ws'
+import * as syncProtocol from 'y-protocols/sync'
 import { WebsocketProvider } from 'y-websocket'
 import * as Y from 'yjs'
+import { startClassroomServer } from '../src/index.ts'
+import type { ClassroomServer, ClassroomWriter } from '../src/index.ts'
 
 const BIN = fileURLToPath(new URL('../bin/server.mjs', import.meta.url))
 const deck = mkdtempSync(joinPath(tmpdir(), 'presmium-classroom-'))
-const server = spawn(process.execPath, [BIN, '--port', '0', '--host', '127.0.0.1', '--deck', deck], { stdio: ['ignore', 'pipe', 'inherit'] })
+let server: ClassroomServer
 let url = ''
+const dropped: { room: string, writer: ClassroomWriter, reason: string }[] = []
 const providers: WebsocketProvider[] = []
+const sockets: WebSocket[] = []
 
 beforeAll(async () => {
-  url = await new Promise<string>((resolve, reject) => {
-    let output = ''
-    server.stdout!.on('data', (chunk: Buffer) => {
-      output += chunk
-      const match = /^classroom server {2}(ws:\S+)$/m.exec(output)
-      if (match) resolve(match[1]!)
-    })
-    server.once('exit', code => reject(new Error(`server exited (${code}): ${output}`)))
-  })
+  server = await startClassroomServer({ port: 0, host: '127.0.0.1', deck, onDropped: (room, writer, reason) => void dropped.push({ room, writer, reason }) })
+  url = server.url
 })
 
 // Each test's clients leave when it ends.
-afterEach(() => providers.splice(0).forEach(p => p.destroy()))
+afterEach(() => {
+  providers.splice(0).forEach(p => p.destroy())
+  sockets.splice(0).forEach(s => s.terminate())
+})
 
 afterAll(async () => {
-  server.kill('SIGTERM')
-  await new Promise(resolve => server.once('exit', resolve))
+  await server.close()
   rmSync(deck, { recursive: true, force: true })
 })
 
@@ -45,6 +48,64 @@ async function join(room: string, params: Record<string, string> = {}): Promise<
   await new Promise<void>(resolve => provider.once('sync', () => resolve()))
   return { doc, provider }
 }
+
+/** A raw connection to a room, open. */
+async function socket(room: string, params: Record<string, string>): Promise<WebSocket> {
+  const ws = new WebSocket(`${url}/${room}?${new URLSearchParams(params)}`)
+  sockets.push(ws)
+  await new Promise(resolve => ws.once('open', resolve))
+  return ws
+}
+
+const closed = (ws: WebSocket) => new Promise<number>(resolve => ws.once('close', resolve))
+const providerClosed = (provider: WebsocketProvider) => new Promise<number>(resolve => provider.once('closed', ({ code }: { code: number }) => resolve(code)))
+const drops = (room: string) => dropped.filter(d => d.room === room)
+
+/** A sync message with a Yjs update, as y-websocket clients send their changes. */
+function updateMessage(update: Uint8Array): Uint8Array {
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, 0)
+  syncProtocol.writeUpdate(encoder, update)
+  return encoding.toUint8Array(encoder)
+}
+
+/** An awareness message setting the states of the given clients. */
+function awarenessMessage(states: [client: number, clock: number, state: unknown][]): Uint8Array {
+  const update = encoding.createEncoder()
+  encoding.writeVarUint(update, states.length)
+  for (const [client, clock, state] of states) {
+    encoding.writeVarUint(update, client)
+    encoding.writeVarUint(update, clock)
+    encoding.writeVarString(update, JSON.stringify(state))
+  }
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, 1)
+  encoding.writeVarUint8Array(encoder, encoding.toUint8Array(update))
+  return encoding.toUint8Array(encoder)
+}
+
+/** An answer of participant `p` to quiz `q`, as the classroom plugin writes it. */
+const answer = (q: string, p: string, choice: number) => [`${q}:${p}`, { quiz: q, participant: p, choice: [choice] }] as const
+
+it('starts from the command, which prints its address and, on every interface, its addresses on the network (P-60)', async () => {
+  const child = spawn(process.execPath, [BIN, '--port', '0', '--deck', deck], { stdio: ['ignore', 'pipe', 'inherit'] })
+  try {
+    const output = await new Promise<string>((resolve, reject) => {
+      let text = ''
+      child.stdout!.on('data', (chunk: Buffer) => {
+        text += chunk
+        if (text.includes('archives')) resolve(text)
+      })
+      child.once('exit', code => reject(new Error(`server exited (${code}): ${text}`)))
+    })
+    const port = /^classroom server {2}ws:\/\/localhost:(\d+)$/m.exec(output)?.[1]
+    expect(port, output).toBeDefined()
+    const lan = Object.values(networkInterfaces()).flat().filter(entry => entry?.family === 'IPv4' && !entry.internal).map(entry => entry!.address)
+    for (const address of lan) expect(output).toContain(`network           ws://${address}:${port}`)
+  } finally {
+    child.kill('SIGTERM')
+  }
+})
 
 it('syncs the documents of a room, keeps them for late joiners, and keeps rooms apart', async () => {
   const a = await join('room-a', { claim: 'presenter-key' })
@@ -83,13 +144,9 @@ it('closes a connection with a bad room path or an invalid frame and keeps servi
   raw.write(Buffer.from([0x82, 0x01, 0x00]))
   await new Promise(resolve => raw.once('close', resolve))
 
-  expect(server.exitCode).toBeNull()
   const after = await join('room-c')
   expect(after.doc.getMap('session').get('status')).toBe('active')
 })
-
-/** An answer of participant `p` to quiz `q`, as the classroom plugin writes it. */
-const answer = (q: string, p: string, choice: number) => [`${q}:${p}`, { quiz: q, participant: p, choice: [choice] }] as const
 
 it('takes no more writes once the classroom has ended', async () => {
   const presenter = await join('room-d', { claim: 'presenter-key' })
@@ -100,13 +157,13 @@ it('takes no more writes once the classroom has ended', async () => {
   await expect.poll(() => learner.doc.getMap('session').get('status')).toBe('ended')
 
   answers(learner.doc).set(...answer('q2', 'p1', 1))
-  // The server has not applied the late write: a client that joins now reads the classroom without it.
-  await new Promise(resolve => setTimeout(resolve, 200))
+  // The server has dropped the late write: a client that joins now reads the classroom without it.
+  await expect.poll(() => drops('room-d').map(d => d.reason)).toEqual(['an update after the classroom ended'])
   const late = await join('room-d')
   expect(Object.keys(answers(late.doc).toJSON())).toEqual(['q:p1'])
 })
 
-it('takes the presenter\'s writes only from the presenter, and a learner\'s answers only under their own id (P-60)', async () => {
+it('takes the presenter\'s writes only from the presenter, and a learner\'s entries only under their own id and of bounded size (P-60)', async () => {
   const presenter = await join('room-f', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
   const learner = await join('room-f', { participant: 'p1', key: 'p1-key' })
   // Someone who knows p1's id from the room, but not p1's key, is not p1.
@@ -118,27 +175,92 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s answ
   learner.doc.getMap('store:answers').set(...answer('s/quiz2', 'p1', 1))
   await expect.poll(() => presenter.doc.getMap('store:answers').has('s/quiz2:p1')).toBe(true)
 
-  // A learner cannot end the classroom, nor open a quiz (each write from a connection of its own:
-  // once an update is dropped, the writer's later updates wait for it in vain).
-  const learners = await Promise.all([1, 2, 3, 4].map(() => join('room-f', { participant: 'p1', key: 'p1-key' })))
+  // A learner cannot end the classroom, nor open a quiz (each write from a connection of its own,
+  // which the server closes), nor answer for another participant, under the other's id or with
+  // the other's id in the answer, nor write a value over 16 KiB.
+  const learners = await Promise.all([1, 2, 3, 4, 5].map(() => join('room-f', { participant: 'p1', key: 'p1-key' })))
+  const closes = learners.map(l => providerClosed(l.provider))
   learners[0]!.doc.getMap('session').set('status', 'ended')
   learners[1]!.doc.getMap('store:quizzes').set('s/quiz', { open: true })
-  // Nor answer for another participant, under the other's id or with the other's id in the answer.
   learners[2]!.doc.getMap('store:answers').set(...answer('s/quiz', 'p2', 0))
   learners[3]!.doc.getMap('store:answers').set('s/quiz:p1', { quiz: 's/quiz', participant: 'p2', choice: [0] })
+  learners[4]!.doc.getMap('store:questions').set('p1:big', { author: 'p1', text: 'x'.repeat(20_000) })
   impostor.doc.getMap('store:answers').set(...answer('s/other', 'p1', 2))
 
-  await new Promise(resolve => setTimeout(resolve, 200))
+  await expect.poll(() => drops('room-f').length).toBe(6)
+  expect(await Promise.all(closes)).toEqual([4403, 4403, 4403, 4403, 4403])
+  expect(drops('room-f').map(d => d.reason)).toContain('a value in store:questions over 16384 bytes')
+  // Writes after a dropped one are taken as before.
+  learner.doc.getMap('store:answers').set(...answer('s/quiz3', 'p1', 0))
+  await expect.poll(() => presenter.doc.getMap('store:answers').has('s/quiz3:p1')).toBe(true)
   const late = await join('room-f')
   expect(late.doc.getMap('session').get('status')).toBe('active')
   expect(late.doc.getMap('store:quizzes').toJSON()).toEqual({})
-  expect(late.doc.getMap('store:answers').toJSON()).toEqual({ 's/quiz2:p1': { quiz: 's/quiz2', participant: 'p1', choice: [1] } })
+  expect(Object.keys(late.doc.getMap('store:answers').toJSON()).sort()).toEqual(['s/quiz2:p1', 's/quiz3:p1'])
+  expect(late.doc.getMap('store:questions').toJSON()).toEqual({})
 
   // The presenter opens a quiz and ends the classroom.
   presenter.doc.getMap('store:quizzes').set('s/quiz', { open: true })
   presenter.doc.getMap('session').set('status', 'ended')
   await expect.poll(() => late.doc.getMap('session').get('status')).toBe('ended')
   expect(late.doc.getMap('store:quizzes').toJSON()).toEqual({ 's/quiz': { open: true } })
+})
+
+it('refuses a learner\'s update that would wait in the room, such as one deleting what the presenter writes next (P-60, P-61)', async () => {
+  const presenter = await join('room-g', { claim: 'presenter-key' })
+  presenter.doc.getMap('session').set('status', 'active')
+  // A delete set for the presenter's next 20 structs, which nobody has yet: without structs of its
+  // own, it would wait in the room and delete what the presenter writes next.
+  const future = new Y.Doc()
+  future.clientID = presenter.doc.clientID
+  Y.applyUpdate(future, Y.encodeStateAsUpdate(presenter.doc))
+  for (let i = 0; i < 20; i++) future.getMap('scratch').set('x', i)
+  future.getMap('scratch').delete('x')
+  const forged = await socket('room-g', { participant: 'p1', key: 'p1-key' })
+  const code = closed(forged)
+  forged.send(updateMessage(Y.encodeStateAsUpdate(future, Y.encodeStateVector(future))))
+  expect(await code).toBe(4403)
+  expect(drops('room-g').map(d => d.reason)).toEqual(['an update that does not integrate into the room'])
+
+  presenter.doc.getMap('store:quizzes').set('q2', { open: true })
+  presenter.doc.getMap('session').set('cursor', { slide: 2, step: 0 })
+  const late = await join('room-g')
+  await expect.poll(() => late.doc.getMap('session').get('cursor')).toEqual({ slide: 2, step: 0 })
+  expect(late.doc.getMap('store:quizzes').get('q2')).toEqual({ open: true })
+})
+
+it('closes the connection of a refused update, and takes the learner\'s writes again once the client starts over', async () => {
+  const presenter = await join('room-h', { claim: 'presenter-key' })
+  const learner = await join('room-h', { participant: 'p1', key: 'p1-key' })
+  const code = providerClosed(learner.provider)
+  learner.doc.getMap('store:quizzes').set('q', { open: true })
+  expect(await code).toBe(4403)
+  // As the session plugin does: a new document, connected again with the same participant.
+  const again = await join('room-h', { participant: 'p1', key: 'p1-key' })
+  again.doc.getMap('store:answers').set(...answer('q', 'p1', 1))
+  await expect.poll(() => presenter.doc.getMap('store:answers').get('q:p1')).toEqual({ quiz: 'q', participant: 'p1', choice: [1] })
+  expect(presenter.doc.getMap('store:quizzes').toJSON()).toEqual({})
+})
+
+it('takes awareness states only for a connection\'s own clients, naming the participant it proved (P-60)', async () => {
+  const presenter = await join('room-i', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
+  presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
+  const learner = await join('room-i', { participant: 'p1', key: 'p1-key' })
+  learner.provider.awareness.setLocalStateField('participant', { id: 'p1', name: '小明', role: 'learner' })
+  const names = () => [...presenter.provider.awareness.getStates().values()].map(s => s.participant?.name).filter(Boolean).sort()
+  await expect.poll(names).toEqual(['小明', '王老师'])
+
+  const attacker = await socket('room-i', { participant: 'p2', key: 'p2-key' })
+  attacker.send(awarenessMessage([
+    // The presenter's client leaves; a client of its own claims to be the presenter; the learner is renamed.
+    [presenter.doc.clientID, 1000, null],
+    [424242, 1, { participant: { id: 'p0', name: '冒充的主讲', role: 'presenter' } }],
+    [learner.doc.clientID, 1000, { participant: { id: 'p1', name: '改掉的名字', role: 'learner' } }],
+  ]))
+  // Its own client as itself, which counts.
+  attacker.send(awarenessMessage([[424242, 2, { participant: { id: 'p2', name: 'Eve', role: 'learner' } }]]))
+  await expect.poll(names).toEqual(['Eve', '小明', '王老师'])
+  expect(drops('room-i').map(d => d.reason)).toEqual(['3 awareness state(s) of other clients or participants'])
 })
 
 it('archives a classroom with the key it was claimed with, frees it with its participants\' rooms, and refuses it afterwards', async () => {
@@ -149,9 +271,8 @@ it('archives a classroom with the key it was claimed with, frees it with its par
   presenter.doc.getMap('session').set('status', 'active')
   presenter.doc.getMap('store:questions').set('q1', { text: '为什么？' })
   await expect.poll(() => learner.doc.getMap('store:questions').size).toBe(1)
-  const closed = (provider: WebsocketProvider) => new Promise<number>(resolve => provider.once('closed', ({ code }: { code: number }) => resolve(code)))
-  const learnerClosed = closed(learner.provider)
-  const ownClosed = closed(own.provider)
+  const learnerClosed = providerClosed(learner.provider)
+  const ownClosed = providerClosed(own.provider)
 
   const http = url.replace(/^ws/, 'http')
   for (const key of ['', 'learner-key']) expect((await fetch(`${http}/archive/room-e`, { method: 'POST', body: key })).status).toBe(403)
@@ -173,7 +294,7 @@ it('archives a classroom with the key it was claimed with, frees it with its par
   // The room is gone: joining it again is refused, and so is archiving it twice.
   const again = new WebsocketProvider(url, 'room-e', new Y.Doc(), { WebSocketPolyfill: WebSocket as never, disableBc: true })
   providers.push(again)
-  expect(await closed(again)).toBe(4410)
+  expect(await providerClosed(again)).toBe(4410)
   expect((await fetch(`${http}/archive/room-e`, { method: 'POST', body: 'presenter-key' })).status).toBe(410)
   expect(existsSync(joinPath(deck, '.presmium/classroom/room-e.k7m2qx9a.json'))).toBe(false)
 })

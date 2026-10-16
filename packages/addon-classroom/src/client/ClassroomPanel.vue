@@ -1,23 +1,39 @@
 <script setup lang="ts">
 // The presenter's overview of the classroom, in the presenter panels of both forms and from the
 // toolbar: questions by place (P-66), the understanding pulse (P-67), quizzes (P-64) and exercises (P-65).
+// Entries without the shape their collection has are left out (`../domain/guards.ts`).
+import { useMessages } from '@presmium/host'
 import { computed } from 'vue'
-import { COLLECTIONS, countedAnswers, distribution, placeText, questionsByPlace, summarize, tally } from '../domain/index.ts'
-import type { Answer, PulseVote, Question, QuizState, Submission } from '../domain/index.ts'
-import { useMessages } from './locale.ts'
+import {
+  COLLECTIONS,
+  countedAnswers,
+  distribution,
+  isAnswer,
+  isPulseVote,
+  isQuestion,
+  isQuizState,
+  isSubmission,
+  MESSAGES,
+  placeText,
+  questionsByPlace,
+  summarize,
+  summaryText,
+  tally,
+} from '../domain/index.ts'
+import type { PulseVote, Question, Submission } from '../domain/index.ts'
 import { useClassroomStore, useCollection, useSession, useWrite } from './use.ts'
 import './style.css'
 
 const { status, presenter } = useSession()
 const store = useClassroomStore()
 const from = () => store.value
-const questions = useCollection<Question>(from, COLLECTIONS.questions)
-const votes = useCollection<PulseVote>(from, COLLECTIONS.pulse)
-const quizzes = useCollection<QuizState>(from, COLLECTIONS.quizzes)
-const answers = useCollection<Answer>(from, COLLECTIONS.answers)
-const submissions = useCollection<Submission>(from, COLLECTIONS.submissions)
+const questions = useCollection(from, COLLECTIONS.questions, isQuestion)
+const votes = useCollection(from, COLLECTIONS.pulse, isPulseVote)
+const quizzes = useCollection(from, COLLECTIONS.quizzes, isQuizState)
+const answers = useCollection(from, COLLECTIONS.answers, isAnswer)
+const submissions = useCollection(from, COLLECTIONS.submissions, isSubmission)
 const { failure, write } = useWrite()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 
 const byPlace = <T extends { index: number }>(items: T[]) => [...items].sort((a, b) => a.index - b.index)
 
@@ -45,11 +61,9 @@ const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ 
 const exercises = computed(() => {
   const groups = new Map<string, Submission[]>()
   for (const { value } of submissions.value) groups.set(value.exercise, [...groups.get(value.exercise) ?? [], value])
-  const { exercise, list, people, panel } = t.value
   return byPlace([...groups.values()].map(group => ({ ...group[0]!, summary: summarize(group) }))).map(({ summary, ...first }) => ({
     id: first.exercise,
-    text: panel.exercise(placeText(first, t.value), exercise.summary(summary.submitted, summary.passed)
-      + (summary.kinds.length ? exercise.common(summary.kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)) : '')),
+    text: t.value.panel.exercise(placeText(first, t.value), summaryText(summary, t.value)),
   }))
 })
 

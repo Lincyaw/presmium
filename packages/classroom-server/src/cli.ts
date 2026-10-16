@@ -1,10 +1,14 @@
+import { networkInterfaces } from 'node:os'
 import { parseArgs } from 'node:util'
+import { errorMessage } from '@presmium/kernel'
 import { startClassroomServer } from './index.ts'
 
 const USAGE = `Usage: presmium-classroom-server [--port <n>] [--host <address>] [--deck <dir>]
 
 Starts the room server that classroom sessions sync through. Decks point to it
 in their frontmatter: presmium: { presmium.session: { server: ws://<host>:<port> } }
+Listening on every interface, it also prints its addresses on the local network:
+learners' devices reach it there, not at localhost.
 
   --port <n>          port to listen on; 0 picks a free one (default: 1234)
   --host <address>    address to listen on (default: every interface)
@@ -36,13 +40,19 @@ export async function main(argv: string[]): Promise<number | undefined> {
     host = values.host
     deck = values.deck
   } catch (error) {
-    process.stderr.write(`presmium-classroom-server: ${error instanceof Error ? error.message : String(error)}\n\n${USAGE}\n`)
+    process.stderr.write(`presmium-classroom-server: ${errorMessage(error)}\n\n${USAGE}\n`)
     return 2
   }
   const server = await startClassroomServer({ port, host, deck })
-  process.stdout.write(`classroom server  ${server.url}\narchives          ${server.archiveDir}\n`)
+  const network = !host || host === '0.0.0.0' || host === '::' ? lanAddresses().map(address => `network           ws://${address}:${server.port}\n`) : []
+  process.stdout.write(`classroom server  ${server.url}\n${network.join('')}archives          ${server.archiveDir}\n`)
   const stop = () => void server.close().then(() => process.exit(0))
   process.once('SIGINT', stop)
   process.once('SIGTERM', stop)
   return undefined
+}
+
+/** The machine's IPv4 addresses on its networks (not the loopback), where other devices reach it. */
+function lanAddresses(): string[] {
+  return Object.values(networkInterfaces()).flatMap(entries => entries ?? []).filter(entry => entry.family === 'IPv4' && !entry.internal).map(entry => entry.address)
 }

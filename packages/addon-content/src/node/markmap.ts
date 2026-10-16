@@ -1,12 +1,9 @@
+import { isRecord } from '@presmium/kernel'
 import type { DirectiveSpec } from '@presmium/kernel'
 import { Transformer } from 'markmap-lib'
 import { CONTENT_ID, encodeMarkmap, markmapOutline } from '../domain/index.ts'
 
 const transformer = new Transformer()
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 /**
  * `{markmap}` (P-41): headings and lists drawn as a mindmap by `PmMarkmap`;

@@ -1,13 +1,11 @@
+import { isRecord } from '@presmium/kernel'
+
 /** Id under which this addon reads its options from the `presmium` config. */
 export const PUBLISH_ID = 'presmium.publish'
 
 export interface PublishOptions {
   /** Service worker precache and remote asset bundling in `slidev build` (default true). */
   offline: boolean
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 /** Options from the headmatter: `presmium: { presmium.publish: { offline: false } }`. */

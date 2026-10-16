@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
 import { computed } from 'vue'
 
 /** A YouTube video (P-42) from `{youtube}`: the privacy-enhanced player in an iframe, in both forms. */
@@ -9,23 +8,21 @@ const src = computed(() => `https://www.youtube-nocookie.com/embed/${encodeURICo
 </script>
 
 <template>
-  <PmBoundary name="PmYoutube">
-    <figure class="pm-media pm-youtube" data-kind="youtube">
-      <iframe
-        :src="src"
-        :title="caption || 'YouTube'"
-        :width="width ?? 560"
-        :height="height ?? 315"
-        loading="lazy"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        referrerpolicy="strict-origin-when-cross-origin"
-        allowfullscreen
-      />
-      <figcaption v-if="caption">
-        {{ caption }}
-      </figcaption>
-    </figure>
-  </PmBoundary>
+  <figure class="pm-media pm-youtube" data-kind="youtube">
+    <iframe
+      :src="src"
+      :title="caption || 'YouTube'"
+      :width="width ?? 560"
+      :height="height ?? 315"
+      loading="lazy"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allowfullscreen
+    />
+    <figcaption v-if="caption">
+      {{ caption }}
+    </figcaption>
+  </figure>
 </template>
 
 <style>

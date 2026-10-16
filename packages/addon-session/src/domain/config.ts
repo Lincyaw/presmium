@@ -12,3 +12,26 @@ export function sessionConfig(config: Record<string, unknown>): SessionConfig {
   if (!server) return {}
   return { server: server.replace(/^http(s?):\/\//, 'ws$1://').replace(/\/+$/, '') }
 }
+
+/** A loopback host name: `localhost`, `127.x.x.x` or `::1`. */
+export function isLoopback(hostname: string): boolean {
+  return /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(hostname)
+}
+
+/**
+ * The classroom server as a page on `pageHost` reaches it. A server on a
+ * loopback host (as `presmium-classroom-server` prints it) is on the machine
+ * that serves the deck; a learner's device that opened the deck on the
+ * network reaches that machine at the page's host instead.
+ */
+export function reachableServer(server: string, pageHost: string): string {
+  let url: URL
+  try {
+    url = new URL(server)
+  } catch {
+    return server
+  }
+  if (!pageHost || !isLoopback(url.hostname) || isLoopback(pageHost)) return server
+  url.hostname = pageHost
+  return url.href.replace(/\/+$/, '')
+}

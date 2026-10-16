@@ -1,3 +1,4 @@
+import { errorMessage } from '@presmium/kernel'
 import { VitePWA } from 'vite-plugin-pwa'
 import RemoteAssets from 'vite-plugin-remote-assets'
 import webfontDownload from 'vite-plugin-webfont-dl'
@@ -62,7 +63,7 @@ function remoteAssets() {
       } catch (error) {
         // transform(code, id) or transformIndexHtml(html, { filename })
         const file = typeof args[1] === 'string' ? args[1] : (args[1] as { filename?: string } | undefined)?.filename
-        console.warn(`[presmium.publish] remote assets in ${file} stay remote, so they need network when presenting: ${error instanceof Error ? error.message : String(error)}`)
+        console.warn(`[presmium.publish] remote assets in ${file} stay remote, so they need network when presenting: ${errorMessage(error)}`)
         return undefined
       }
     }

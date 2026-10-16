@@ -1,10 +1,12 @@
 <script setup lang="ts">
 // The notes of one place (P-63): a section, or a labelled block of it. Only their author sees them.
-import { computed, ref } from 'vue'
-import { COLLECTIONS, notesAt } from '../domain/index.ts'
+// The notes layer gives the spot its notes and the store they are kept in.
+import { useMessages } from '@presmium/host'
+import type { ClassroomStore, StoredItem } from '@presmium/kernel'
+import { ref } from 'vue'
+import { COLLECTIONS, MESSAGES } from '../domain/index.ts'
 import type { Note } from '../domain/index.ts'
-import { useMessages } from './locale.ts'
-import { newId, useCollection, useNotes } from './use.ts'
+import { newId } from './use.ts'
 import './style.css'
 
 const props = defineProps<{
@@ -12,31 +14,33 @@ const props = defineProps<{
   block?: string
   /** What the notes are about, for the button's accessible name. */
   label: string
+  /** The notes of this place, oldest first. */
+  notes: StoredItem<Note>[]
+  store: ClassroomStore
+  /** The notes also go to the participant's own store of the classroom. */
+  inClassroom: boolean
 }>()
 
-const { store, inClassroom } = useNotes()
-const t = useMessages()
-const notes = useCollection<Note>(() => store.value, COLLECTIONS.notes)
-const here = computed(() => notesAt(notes.value, props.section, props.block))
+const t = useMessages(MESSAGES)
 const open = ref(false)
 const text = ref('')
 
 function add(): void {
   const note = text.value.trim()
   if (!note) return
-  store.value.put<Note>(COLLECTIONS.notes, newId(), { section: props.section, ...props.block ? { block: props.block } : {}, text: note, at: Date.now() })
+  props.store.put<Note>(COLLECTIONS.notes, newId(), { section: props.section, ...props.block ? { block: props.block } : {}, text: note, at: Date.now() })
   text.value = ''
 }
 </script>
 
 <template>
-  <div class="pm-note-spot" :data-section="section" :data-block="block" :data-notes="here.length">
+  <div class="pm-note-spot" :data-section="section" :data-block="block" :data-notes="notes.length">
     <button type="button" class="pm-note-spot__toggle" :aria-expanded="open" :aria-label="t.notes.label(label)" :title="t.notes.label(label)" @click="open = !open">
-      {{ t.notes.button }}<span v-if="here.length" class="pm-note-spot__count">{{ here.length }}</span>
+      {{ t.notes.button }}<span v-if="notes.length" class="pm-note-spot__count">{{ notes.length }}</span>
     </button>
     <div v-if="open" class="pm-note-spot__panel">
-      <ul v-if="here.length" class="pm-note-spot__list" :aria-label="t.notes.mine">
-        <li v-for="note in here" :key="note.id">
+      <ul v-if="notes.length" class="pm-note-spot__list" :aria-label="t.notes.mine">
+        <li v-for="note in notes" :key="note.id">
           <span class="pm-note-spot__text">{{ note.value.text }}</span>
           <button type="button" :aria-label="t.notes.removeLabel(note.value.text)" @click="store.remove(COLLECTIONS.notes, note.id)">
             {{ t.notes.remove }}

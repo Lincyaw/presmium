@@ -1,8 +1,6 @@
 import { existsSync } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { build, Compiler, DECK_ENTRY } from '@presmium/compiler'
+import { Compiler, DECK_ENTRY, prepare } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 
 /** Entry of the Slidev deck that the slides renderer writes to its work directory (docs/ir.md section 6). */
@@ -21,23 +19,29 @@ export function isDeck(dir: string): boolean {
   return existsSync(join(dir, DECK_ENTRY))
 }
 
+/** Whether the deck has the form of renderer `id`: it configures that renderer, or none (then every installed renderer runs). */
+export function hasForm(compilation: Compilation, id: string): boolean {
+  const { renderers } = compilation.doc.config
+  return Object.keys(renderers).length === 0 || id in renderers
+}
+
 /**
- * Compiles the deck and runs the slides renderer, which writes the Slidev
- * deck to its work directory; the renderer's own build output is discarded.
- * Throws when the renderer is missing or fails.
+ * Has the slides renderer write the Slidev deck of a compilation to its work
+ * directory, without building it (`prepare`): `slidev export` serves the deck
+ * itself. Throws when the renderer is missing or fails.
  */
-export async function slidesDeck(deckDir: string): Promise<SlidesDeck> {
-  const compilation = await new Compiler(deckDir).compile()
-  const out = await mkdtemp(join(tmpdir(), 'presmium-publish-'))
-  try {
-    const report = await build(compilation, { outDir: out, to: ['slides'] })
-    const warnings = report.findings.filter(f => f.severity !== 'info').map(f => f.message)
-    const slides = report.outputs.find(o => o.renderer === 'slides')
-    if (!slides) {
-      throw new Error(report.findings.filter(f => f.checkId === 'presmium.render').map(f => f.message).join('; ') || 'the slides renderer did not run')
-    }
-    return { compilation, dir: slides.workDir, warnings }
-  } finally {
-    await rm(out, { recursive: true, force: true })
+export async function slidevDeck(compilation: Compilation): Promise<SlidesDeck> {
+  // Nothing is written to the output directory.
+  const report = await prepare(compilation, { outDir: join(compilation.deckDir, 'dist'), to: ['slides'] })
+  const warnings = report.findings.filter(f => f.severity !== 'info').map(f => f.message)
+  const slides = report.outputs.find(o => o.renderer === 'slides')
+  if (!slides) {
+    throw new Error(report.findings.filter(f => f.checkId === 'presmium.render').map(f => f.message).join('; ') || 'the slides renderer did not run')
   }
+  return { compilation, dir: slides.workDir, warnings }
+}
+
+/** Compiles the deck and writes its Slidev deck (`slidevDeck`). */
+export async function slidesDeck(deckDir: string): Promise<SlidesDeck> {
+  return slidevDeck(await new Compiler(deckDir).compile())
 }

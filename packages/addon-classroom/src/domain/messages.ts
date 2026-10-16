@@ -1,19 +1,9 @@
 /**
- * The plugin's words in the languages it speaks (N-07). A page shows the
- * language of its `<html lang>`, else of the browser, else Chinese; the
- * static forms (a notebook, an export) the language of the deck.
+ * The plugin's words in the languages it speaks (N-07): a page's are chosen
+ * by `@presmium/host` (`useMessages`, `currentLocale`), the static forms (a
+ * notebook, an export) are in the deck's language (`deckLocale`).
  */
-export type Locale = 'zh-CN' | 'en'
-
-/** The first of the language tags the plugin speaks; Chinese when none is. */
-export function localeOf(...tags: unknown[]): Locale {
-  for (const tag of tags) {
-    const lang = typeof tag === 'string' ? tag.trim().toLowerCase() : ''
-    if (lang.startsWith('zh')) return 'zh-CN'
-    if (lang.startsWith('en')) return 'en'
-  }
-  return 'zh-CN'
-}
+import type { Locale } from '@presmium/kernel'
 
 /** A typical error (its name) and what to look at. */
 type Typical = [kind: string, hint: string]
@@ -61,6 +51,7 @@ const zh = {
     noExecutor: '执行服务不可用',
     error: (hint: string, type: string, message: string, line?: number) => `${hint}。${type}${message ? `: ${message}` : ''}${line ? `（第 ${line} 行）` : ''}`,
     summary: (submitted: number, passed: number) => `已提交 ${submitted} 人，通过 ${passed} 人`,
+    ended: '课堂已结束：结果只在本机显示，不再提交',
     common: (kinds: string) => `；常见错误：${kinds}`,
     noResult: '校验程序没有给出结果',
     unchecked: ['无法校验', '校验没有运行完，查看错误信息'] as Typical,
@@ -128,6 +119,8 @@ const zh = {
   fallback: {
     answer: '答案',
     checks: '校验',
+    exercise: '练习',
+    checkCell: '# 校验：先运行上面的单元格，再运行这个单元格；没有报错就是通过。',
     questions: ['提问', '：加入课堂后，在网页或幻灯片中向主讲提问。'] as [string, string],
     pulse: ['理解度投票', (question: string, levels: string[]) => `：${question}（${levels.join(' / ')}）`] as [string, (question: string, levels: string[]) => string],
   },
@@ -178,6 +171,7 @@ const en: ClassroomMessages = {
     noExecutor: 'The execution service is unavailable',
     error: (hint, type, message, line) => `${hint}. ${type}${message ? `: ${message}` : ''}${line ? ` (line ${line})` : ''}`,
     summary: (submitted, passed) => `${submitted} submitted, ${passed} passed`,
+    ended: 'The classroom has ended: the result shows here only and is not submitted',
     common: kinds => `; common errors: ${kinds}`,
     noResult: 'The checks gave no result',
     unchecked: ['Not checked', 'The checks did not finish; read the error message'],
@@ -244,6 +238,8 @@ const en: ClassroomMessages = {
   fallback: {
     answer: 'Answer',
     checks: 'Checks',
+    exercise: 'Exercise',
+    checkCell: '# Check: run the cell above, then this one; no error means it passes.',
     questions: ['Questions', ': join the classroom to ask the presenter in the web or slides form.'],
     pulse: ['Understanding vote', (question, levels) => `: ${question} (${levels.join(' / ')})`],
   },

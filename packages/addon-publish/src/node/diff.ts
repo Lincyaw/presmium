@@ -1,13 +1,14 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
-import { DECK_ENTRY } from '@presmium/compiler'
+import { Compiler, DECK_ENTRY, viewFor } from '@presmium/compiler'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
-import { diffReport, pageStatus, pairPages, reportMarkdown } from '../domain/index.ts'
-import type { DiffSide, VisualDiff, VisualDiffReport } from '../domain/index.ts'
+import { diffReport, pageStatus, pairPages, parsePageFile, parseWebFile, reportMarkdown } from '../domain/index.ts'
+import type { DiffSide, PageRef, VisualDiff, VisualDiffReport } from '../domain/index.ts'
 import { git, run } from './process.ts'
-import { SLIDEV_ENTRY, slidesDeck } from './slides.ts'
+import { hasForm, SLIDEV_ENTRY, slidevDeck } from './slides.ts'
+import { captureWeb } from './web.ts'
 
 export interface DiffJob {
   refA: string
@@ -17,7 +18,7 @@ export interface DiffJob {
   out?: string
   /** Share of differing pixels above which a page is listed (default 0: any difference). */
   threshold?: number
-  /** Milliseconds `slidev export` waits before capturing each page, so layout and rendering settle (default 500). */
+  /** Milliseconds to wait before capturing each page, so layout and rendering settle (default 500). */
   wait?: number
   /**
    * Installs each commit's own dependencies from its lockfile (pnpm) instead of
@@ -28,10 +29,13 @@ export interface DiffJob {
 }
 
 /**
- * Renders the deck of two commits with the slides renderer, exports every
- * page (slide and click step) of each Slidev deck as PNG with `slidev export`,
- * compares them with pixelmatch and writes `report.json`, `report.md` and the
- * images under `a/`, `b/` and `diff/` of the report directory.
+ * Renders the deck of two commits in each form it has. The slides renderer
+ * writes the Slidev deck, whose every page (slide and click step) `slidev
+ * export` captures as PNG; the web renderer builds the site, whose every page
+ * (document view) and section (present view) Playwright captures, into
+ * `web/`. The captures are compared with pixelmatch; `report.json`,
+ * `report.md` and the images go under `a/`, `b/` and `diff/` of the report
+ * directory.
  *
  * Each commit is checked out as a git worktree inside the deck directory, so
  * the deck's plugins and renderers resolve from it by the usual Node lookup.
@@ -57,6 +61,8 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
   await writeFile(join(work, '.gitignore'), '*\n')
   for (const dir of ['a', 'b', 'diff']) await rm(join(out, dir), { recursive: true, force: true })
 
+  /** Section numbers of the web form's present view, by id, of both commits. */
+  const sections = new Map<string, number>()
   for (const [label, side] of [['a', sides[0]!], ['b', sides[1]!]] as const) {
     const checkout = join(work, `checkout-${label}`)
     await removeWorktree(root, checkout)
@@ -65,16 +71,26 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
       const deck = join(checkout, relative(root, deckDir))
       if (!existsSync(join(deck, DECK_ENTRY))) throw new Error(`${side.ref} has no ${relative(root, join(deckDir, DECK_ENTRY))}`)
       if (job.install) await run(lockfileDir(deck, checkout), 'pnpm', ['install', '--frozen-lockfile', '--prefer-offline'])
-      const slides = await slidesDeck(deck)
-      warnings.push(...slides.warnings.map(w => `${side.ref}: ${w}`))
-      // The variable reaches the page as import.meta.env (Vite exposes VITE_*); setup/root.ts then makes text rendering deterministic.
-      await run(slides.dir, 'slidev', ['export', SLIDEV_ENTRY, '--format', 'png', '--with-clicks', '--wait', String(job.wait ?? 500), '--output', join(out, label)], { VITE_PRESMIUM_VISUAL_DIFF: '1' })
+      const compilation = await new Compiler(deck).compile()
+      const wait = job.wait ?? 500
+      if (hasForm(compilation, 'slides')) {
+        const slides = await slidevDeck(compilation)
+        warnings.push(...slides.warnings.map(w => `${side.ref}: ${w}`))
+        // The variable reaches the page as import.meta.env (Vite exposes VITE_*); setup/root.ts then makes text rendering deterministic.
+        await run(slides.dir, 'slidev', ['export', SLIDEV_ENTRY, '--format', 'png', '--with-clicks', '--wait', String(wait), '--output', join(out, label)], { VITE_PRESMIUM_VISUAL_DIFF: '1' })
+      }
+      if (hasForm(compilation, 'web')) {
+        for (const section of viewFor(compilation.doc, 'web').sections) sections.set(section.id, section.index)
+        warnings.push(...(await captureWeb(compilation, join(work, `web-${label}`), join(out, label, 'web'), wait)).map(w => `${side.ref}: ${w}`))
+      }
     } finally {
       await removeWorktree(root, checkout)
     }
   }
 
-  const report = diffReport(sides[0]!, sides[1]!, job.threshold ?? 0, await comparePages(out, job.threshold ?? 0))
+  const threshold = job.threshold ?? 0
+  const pages = [...await comparePages(out, '', threshold, parsePageFile), ...await comparePages(out, 'web', threshold, name => parseWebFile(name, sections))]
+  const report = diffReport(sides[0]!, sides[1]!, threshold, pages)
   await writeFile(join(out, 'report.json'), `${JSON.stringify(report, null, 2)}\n`)
   await writeFile(join(out, 'report.md'), reportMarkdown(report))
   return { report, out, warnings }
@@ -94,16 +110,17 @@ async function unrendered(root: string, deckDir: string, a: string, b: string): 
   return [`changes outside the deck are not rendered from their commit: ${shown}; --install renders each commit with its own dependencies`]
 }
 
-async function comparePages(out: string, threshold: number): Promise<VisualDiff[]> {
-  const list = async (side: string) => (existsSync(join(out, side)) ? readdir(join(out, side)) : [])
-  await mkdir(join(out, 'diff'), { recursive: true })
+/** Compares the images of `a/<dir>` and `b/<dir>`, page by page as `parse` names them; the differences go to `diff/`. */
+async function comparePages(out: string, dir: string, threshold: number, parse: (name: string) => PageRef | undefined): Promise<VisualDiff[]> {
+  const list = async (side: string) => (existsSync(join(out, side, dir)) ? readdir(join(out, side, dir)) : [])
+  await mkdir(join(out, 'diff', dir), { recursive: true })
   const pages: VisualDiff[] = []
-  for (const { page, a, b } of pairPages(await list('a'), await list('b'))) {
+  for (const { page, a, b } of pairPages(await list('a'), await list('b'), parse)) {
     if (!a || !b) {
       pages.push({ ...page, status: pageStatus(1, threshold, !!a, !!b), ratio: 1, diffPixels: 0 })
       continue
     }
-    const [imgA, imgB] = await Promise.all([readFile(join(out, 'a', a)), readFile(join(out, 'b', b))]).then(files => files.map(f => PNG.sync.read(f)))
+    const [imgA, imgB] = await Promise.all([readFile(join(out, 'a', dir, a)), readFile(join(out, 'b', dir, b))]).then(files => files.map(f => PNG.sync.read(f)))
     const { width, height } = imgA!
     if (width !== imgB!.width || height !== imgB!.height) {
       pages.push({ ...page, status: pageStatus(1, threshold, true, true), ratio: 1, diffPixels: width * height })

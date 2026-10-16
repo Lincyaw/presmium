@@ -1,8 +1,11 @@
+import { createRequire } from 'node:module'
 import type { PresmiumNodePlugin } from '@presmium/kernel'
-import { CONTENT_ID } from '../domain/index.ts'
+import { CONTENT_ID, MEDIA_KINDS } from '../domain/index.ts'
 import { markmapDirective } from './markmap.ts'
-import { mediaDirective, slidesMedia, youtubeDirective } from './media.ts'
+import { mediaDirective, youtubeDirective } from './media.ts'
 import { plantUmlPass } from './plantuml.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 /**
  * Rich content (P-40 to P-43). Math and Mermaid are drawn by the renderers;
@@ -12,11 +15,10 @@ import { plantUmlPass } from './plantuml.ts'
  */
 const plugin: PresmiumNodePlugin = {
   id: CONTENT_ID,
-  directives: [markmapDirective, mediaDirective('video'), mediaDirective('audio'), mediaDirective('animation'), youtubeDirective],
+  version,
+  kernel: '^0.1.0',
+  directives: [markmapDirective, ...MEDIA_KINDS.map(kind => mediaDirective(kind)), youtubeDirective],
   passes: [plantUmlPass],
-  rendererExtensions: {
-    slides: { components: { PmMedia: slidesMedia } },
-  },
 }
 
 export default plugin

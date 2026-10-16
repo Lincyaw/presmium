@@ -1,12 +1,14 @@
 <script setup lang="ts">
-// A learner's classroom controls, over everything (also over the present view): join a classroom from
-// a link without a name, follow the presenter or browse alone, and see when the classroom has ended.
+// A learner's classroom controls, over everything (also over the present view, above its control bar,
+// whose height the hosts give as --pm-overlay-bar): join a classroom from a link without a name,
+// follow the presenter or browse alone, and see when the classroom has ended.
+import { useMessages } from '@presmium/host'
 import { computed, ref } from 'vue'
-import { useMessages } from './locale.ts'
-import { useClassroom } from './use.ts'
+import { MESSAGES } from '../domain/index.ts'
+import { releaseFocus, useClassroom } from './use.ts'
 
 const { session, snapshot } = useClassroom()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const name = ref('')
 const busy = ref(false)
 
@@ -17,6 +19,7 @@ async function join(): Promise<void> {
   const room = snapshot.value?.invitation
   if (!session.value || !room || busy.value) return
   busy.value = true
+  releaseFocus()
   await session.value.join(room, name.value).catch(() => {})
   busy.value = false
 }
@@ -62,7 +65,7 @@ async function join(): Promise<void> {
 .pm-session-badge {
   position: fixed;
   right: 1rem;
-  bottom: 1rem;
+  bottom: calc(var(--pm-overlay-bar, 0px) + 1rem);
   z-index: 2000;
   max-width: calc(100vw - 2rem);
   padding: 0.4rem 0.6rem;

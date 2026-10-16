@@ -1,6 +1,6 @@
+import { currentLocale } from '@presmium/host'
 import { defineCustomElement, h, ref } from 'vue'
-import { DEMO_COUNTER_TAG } from '../domain/index.ts'
-import { messages } from './locale.ts'
+import { DEMO_COUNTER_TAG, MESSAGES } from '../domain/index.ts'
 
 /**
  * Demo web component (P-43): a counter whose state lives in the element, so
@@ -15,7 +15,7 @@ const DemoCounter = defineCustomElement({
   setup(props) {
     const count = ref(props.start)
     return () => h('button', { type: 'button', part: 'button', onClick: () => count.value++ }, [
-      `${props.label ?? messages().counter}${messages().colon}`,
+      `${props.label ?? MESSAGES[currentLocale()].counter}${MESSAGES[currentLocale()].colon}`,
       h('output', count.value),
     ])
   },

@@ -1,14 +1,16 @@
 <script setup lang="ts">
-// The classroom: its state, creating or joining it, the join link and QR code, the participants, ending and archiving it.
+// The classroom: its state, creating, joining or rejoining it, the join link and QR code (with a warning when
+// learners' devices cannot open it), the participants, ending and archiving it.
 // Shown in the presenter panels of both forms and from the toolbar.
+import { useMessages } from '@presmium/host'
+import { errorMessage } from '@presmium/kernel'
 import { renderSVG } from 'uqr'
 import { computed, ref } from 'vue'
-import { statusText } from '../domain/index.ts'
-import { useMessages } from './locale.ts'
-import { useClassroom } from './use.ts'
+import { loopbackLink, MESSAGES, statusText } from '../domain/index.ts'
+import { releaseFocus, useClassroom } from './use.ts'
 
 const { session, snapshot } = useClassroom()
-const t = useMessages()
+const t = useMessages(MESSAGES)
 const name = ref('')
 const busy = ref(false)
 const failure = ref('')
@@ -23,7 +25,7 @@ async function run(action: (s: NonNullable<typeof session.value>) => unknown): P
   try {
     await action(session.value)
   } catch (error) {
-    failure.value = error instanceof Error ? error.message : String(error)
+    failure.value = errorMessage(error)
   } finally {
     busy.value = false
   }
@@ -31,6 +33,7 @@ async function run(action: (s: NonNullable<typeof session.value>) => unknown): P
 
 function submit(): void {
   const room = snapshot.value?.invitation
+  releaseFocus()
   void run(s => (room ? s.join(room, name.value) : s.create(name.value)))
 }
 </script>
@@ -43,12 +46,19 @@ function submit(): void {
     <p v-if="!snapshot.server" class="pm-session__hint">
       {{ t.hint[0] }}<code>presmium-classroom-server</code>{{ t.hint[1] }}<code>presmium.session.server</code>{{ t.hint[2] }}
     </p>
-    <form v-else-if="snapshot.status === 'idle'" class="pm-session__form" @submit.prevent="submit">
-      <input v-model="name" :aria-label="t.nickname" :placeholder="t.nickname" maxlength="40" required>
-      <button type="submit" :disabled="busy">
-        {{ snapshot.invitation ? t.join : t.create }}
-      </button>
-    </form>
+    <template v-else-if="snapshot.status === 'idle'">
+      <p v-if="snapshot.rejoin" class="pm-session__actions">
+        <button type="button" :disabled="busy" :title="t.rejoinTitle" @click="run(s => s.rejoin())">
+          {{ t.rejoin(snapshot.rejoin) }}
+        </button>
+      </p>
+      <form class="pm-session__form" @submit.prevent="submit">
+        <input v-model="name" :aria-label="t.nickname" :placeholder="t.nickname" maxlength="40" required>
+        <button type="submit" :disabled="busy">
+          {{ snapshot.invitation ? t.join : t.create }}
+        </button>
+      </form>
+    </template>
     <template v-else>
       <p>
         {{ t.classroom }} <code class="pm-session__room">{{ snapshot.sessionId }}</code> · {{ snapshot.me?.name }}{{ presenter ? t.role.presenter : t.role.learner }}
@@ -56,6 +66,9 @@ function submit(): void {
       <template v-if="presenter && snapshot.status === 'active' && snapshot.joinUrl">
         <p class="pm-session__join">
           {{ t.joinLink }}<a class="pm-session__link" :href="snapshot.joinUrl" target="_blank" rel="noopener">{{ snapshot.joinUrl }}</a>
+        </p>
+        <p v-if="loopbackLink(snapshot.joinUrl)" class="pm-session__warning" role="note">
+          {{ t.loopbackLink }}
         </p>
         <!-- eslint-disable-next-line vue/no-v-html -- an SVG generated from the link -->
         <div class="pm-session__qr" role="img" :aria-label="t.qr" v-html="qr" />
@@ -146,7 +159,8 @@ function submit(): void {
   margin: 0;
   padding-left: 1.2em;
 }
-.pm-session__error {
+.pm-session__error,
+.pm-session__warning {
   color: #dc2626;
 }
 </style>

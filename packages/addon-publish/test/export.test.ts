@@ -1,11 +1,13 @@
 // Runs the real `presmium-export` (compiler, slides renderer, `slidev export` to
-// PDF, then the link check) on a git repository holding a copy of ./fixtures/deck,
-// whose first slide shows math.py through {code-ref}: the permalink is generated.
-import { readFileSync } from 'node:fs'
+// PDF, then the link check, or to PNG) on a git repository holding a copy of
+// ./fixtures/deck, whose first slide shows math.py through {code-ref}: the
+// permalink is generated; and on ./fixtures/export, four slides, the second with
+// a click, the third a quiz, which an export shows in its static form.
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, expect, it } from 'vitest'
 import { pdfLinks } from '../src/node/pdf.ts'
-import { bin, git, removeCopies, repository } from './helpers.ts'
+import { bin, copyFixture, git, removeCopies, repository } from './helpers.ts'
 
 afterAll(removeCopies)
 
@@ -34,4 +36,20 @@ it('reports the links that the PDF lost, located in the deck source', async () =
     expect(stdout).toContain(`lecture.md:${line}  link lost  ${url} (slide 3)`)
   }
   expect(stdout).toContain('1 of 3 links kept')
+}, 180_000)
+
+it('exports PNG images, one per click step, the slide of a component in its static form included (P-50)', async () => {
+  const dir = copyFixture('export')
+  const { code, stdout, stderr } = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--json')
+  expect(code, stderr).toBe(0)
+  expect(JSON.parse(stdout)).toMatchObject({ format: 'png', pages: 5, links: [] })
+  expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png', '003-01.png', '004-01.png'])
+}, 180_000)
+
+it('exports only the slides of a range', async () => {
+  const dir = copyFixture('export')
+  const { code, stdout, stderr } = await bin('presmium-export', dir, '--range', '1-3', '--output', 'part.pdf', '--json')
+  expect(code, stderr).toBe(0)
+  expect(JSON.parse(stdout)).toMatchObject({ format: 'pdf', pages: 3 })
+  expect((await pdfLinks(join(dir, 'part.pdf'))).length).toBe(3)
 }, 180_000)

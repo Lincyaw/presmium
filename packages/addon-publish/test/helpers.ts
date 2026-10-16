@@ -1,7 +1,9 @@
-import { execFile, execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { presmium, run } from '@presmium/cli/testing'
+import type { Run } from '@presmium/cli/testing'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const ADDON_DIR = fileURLToPath(new URL('..', import.meta.url))
@@ -47,29 +49,28 @@ export function removeCopies(): void {
 /** The environment of a shell: without Vitest's NODE_ENV=test, which would change how Vite and Workbox build. */
 export const SHELL_ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => name !== 'NODE_ENV'))
 
-export interface Run {
-  code: number
-  stdout: string
-  stderr: string
-}
+export type { Run }
 
 const BINS = {
   'presmium-export': join(ADDON_DIR, 'bin/presmium-export.mjs'),
   'presmium-diff': join(ADDON_DIR, 'bin/presmium-diff.mjs'),
-  'presmium': join(ADDON_DIR, 'node_modules/@presmium/cli/bin/presmium.mjs'),
 }
 
 /** Runs one of this package's bins, or the `presmium` CLI, as a real process. */
-export function bin(name: keyof typeof BINS, cwd: string, ...args: string[]): Promise<Run> {
-  return new Promise((resolve) => {
-    execFile(process.execPath, [BINS[name], ...args], { cwd, env: SHELL_ENV, maxBuffer: 16 << 20 }, (error, stdout, stderr) => {
-      resolve({ code: error ? Number(error.code) : 0, stdout, stderr })
-    })
-  })
+export function bin(name: keyof typeof BINS | 'presmium', cwd: string, ...args: string[]): Promise<Run> {
+  if (name === 'presmium') return presmium(cwd, args)
+  return run(process.execPath, [BINS[name], ...args], { cwd, env: SHELL_ENV })
 }
 
 const GIT_ENV = { GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@example.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@example.com' }
 
+/** Runs a command and returns its trimmed stdout; throws when it fails. */
+export function command(cwd: string, name: string, ...args: string[]): string {
+  const result = spawnSync(name, args, { cwd, env: { ...SHELL_ENV, ...GIT_ENV }, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(`${name} ${args.join(' ')} failed (${result.status}): ${result.stderr}`)
+  return result.stdout.trim()
+}
+
 export function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', ['-c', 'commit.gpgsign=false', ...args], { cwd, env: { ...SHELL_ENV, ...GIT_ENV }, encoding: 'utf8' }).trim()
+  return command(cwd, 'git', '-c', 'commit.gpgsign=false', ...args)
 }

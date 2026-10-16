@@ -159,3 +159,10 @@ export function summarize(submissions: Submission[]): ExerciseSummary {
     kinds: [...counts].sort((a, b) => b[1] - a[1]),
   }
 }
+
+/** The presenter's line on an exercise: how many submitted and passed, and the most common errors. */
+export function summaryText(summary: ExerciseSummary, t: ClassroomMessages): string {
+  const { exercise, list, people } = t
+  const common = summary.kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)
+  return exercise.summary(summary.submitted, summary.passed) + (common ? exercise.common(common) : '')
+}

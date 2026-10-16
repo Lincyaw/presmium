@@ -1,3 +1,5 @@
+import { isLoopback } from './config.ts'
+
 /** Room ids: as the classroom server accepts them, kept short for links and QR codes. */
 const ROOM = /^[\w.-]{1,128}$/
 const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
@@ -23,6 +25,15 @@ export function joinUrl(base: string, room: string): string {
   url.search = `?room=${encodeURIComponent(room)}`
   url.hash = ''
   return url.href
+}
+
+/** Whether a join link names a loopback host, which learners' devices cannot open. */
+export function loopbackLink(link: string): boolean {
+  try {
+    return isLoopback(new URL(link).hostname)
+  } catch {
+    return false
+  }
 }
 
 /** A new room id from random bytes, e.g. `k7m2qx9a`. */

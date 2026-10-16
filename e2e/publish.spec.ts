@@ -30,6 +30,16 @@ async function goOffline(page: Page, context: BrowserContext) {
 
 const loaded = (image: Locator) => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)
 
+/** Loading the Python runtime for the first check takes a few seconds. */
+const RUNTIME = { timeout: 60_000 }
+
+/** Checks the exercise of e2e/fixtures/plugins/classroom.md with Python: it runs in the browser, from the runtime the build serves. */
+async function checkExercise(exercise: Locator): Promise<void> {
+  await exercise.getByRole('button', { name: '提交' }).click()
+  await expect(exercise.locator('.pm-exercise__verdict')).toHaveText('未通过 1/2', RUNTIME)
+  await expect(exercise.locator('.pm-exercise__report')).toHaveAttribute('data-executor', 'pyodide')
+}
+
 test('once loaded, the built deck reloads and plays offline, remote diagrams included', async ({ page, context }) => {
   await openPublish(page)
   await goOffline(page, context)
@@ -112,6 +122,13 @@ async function lowContrastTexts(slide: Locator): Promise<string[]> {
   return texts.filter(t => contrast(t.fg, t.bg) < 4.5).map(t => `${t.text} (${contrast(t.fg, t.bg).toFixed(2)})`)
 }
 
+test('offline, the slides still run Python: the service worker keeps the Pyodide runtime (P-23, P-51)', async ({ page, context }) => {
+  await page.goto(slides(deck().slide('classroom-exercise')))
+  await goOffline(page, context)
+  await page.reload()
+  await checkExercise(page.locator('.slidev-layout .pm-exercise').filter({ visible: true }))
+})
+
 test('the high-contrast switch brings the text of the slide to WCAG AA and is remembered', async ({ page }) => {
   const slide = await openPublish(page)
   // Default theme colors, e.g. code comments, fall below AA.
@@ -189,6 +206,13 @@ test.describe('web form', () => {
     await expect.poll(() => loaded(diagram)).toBeGreaterThan(0)
     await page.goto(`${deck().web}/publish.html`)
     await expect(page.locator('.pm-section[data-section="publish"]')).toContainText('def add(a, b):')
+  })
+
+  test('offline, a web page still runs Python: the service worker keeps the Pyodide runtime (P-23, P-51)', async ({ page, context }) => {
+    await page.goto(`${deck().web}/classroom.html`)
+    await goOffline(page, context)
+    await page.reload()
+    await checkExercise(page.locator('.pm-section[data-section="classroom-exercise"] .pm-exercise'))
   })
 
   test('a page that places no switch of its own has the high-contrast switch in the navigation bar', async ({ page }) => {
