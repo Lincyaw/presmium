@@ -685,6 +685,12 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **审阅**：不在沙箱中的进程（测试与 agent 的写法）经视图的写入出现在 `diff` 中，`abort` 恢复它们并删除新建的文件；同一项目再开会话得到 `session busy`；结束整个进程树（插件的进程、辅助进程与 deltabox 的 helper）之后，另一个进程以记录的会话 ID 对同一项目 `abort` 恢复了文档目录（helper 由 deltabox 从日志重新启动）。
 - **macOS**：没有主机，没有验证；插件在 macOS 上不探测也不登记（第 43 条），由 WP-89 补做。
 
+**WP-82 开始时的验证（2026-10-16，火山引擎文档 6561/1598757（HTTP 分块合成 V3）、6561/1631584（极速版识别）、6561/1354868（录音文件识别的字段）；FFmpeg 7.0.2（libavformat 61）；本机没有语音凭据）**的结论：
+
+- **GB 45438 的隐式标识**：字段为 `Label`（生成合成服务自己写 `"1"`；`"2"`、`"3"` 是传播平台的“可能”“疑似”）、`ContentProducer`、`ProduceID`、`ReservedCode1`、`ContentPropagator`、`PropagateID`、`ReservedCode2`，字符串结构为 `AIGC={…}`（阿里云 AIGC 音频标识指南、腾讯云 API 文档；火山引擎合成接口的 `additions.aigc_metadata` 用同一组字段：`content_producer`、`produce_id`、`content_propagator`、`propagate_id`）。TC260 2025-08-28 采纳的《文件元数据隐式标识（音频文件）》实践指南按格式规定了存放位置，但正文只在征求意见稿的压缩包中，这里没能读到原文，以下写法要由验收者对照指南确认。定稿：WAV 在 `LIST`/`INFO` 块中写子块 `AIGC`（字段的 JSON）与 `ICMT`（`AIGC={…}`）；Ogg/Opus 在注释头（`OpusTags`）中加注释 `AIGC={…}`，注释头跨页时重排它的页，其后各页只改页序号与校验和；MP4（WP-83 的导出）用 FFmpeg 的 `-metadata AIGC=… -movflags use_metadata_tags`（`moov/meta` 的 `mdta` 键）。三种格式中 `ffprobe` 都把它读成名为 `AIGC` 的标签（WAV 的 `ICMT` 另读成 `comment`），标识之后的文件照常解码，假引擎的 `pmfk` 块与 Opus 的音频页不变。`ContentProducer` 写引擎的服务提供方，`ProduceID` 写合成缓存的键，传播方的两项留空。
+- **火山引擎**：合成用 HTTP 分块接口，响应是逐行的 JSON：`data` 为 base64 的音频片段，`sentence.words` 为字幕（`startTime`、`endTime`，秒，字幕的字是原文），`code: 20000000` 结束；`enable_subtitle` 只在 2.0 模型上有效，开启 SSML、`enable_latex_tn` 或服务端缓存时没有字幕；新控制台的密钥只要 `X-Api-Key`，旧控制台是 `X-Api-App-Id`（合成）或 `X-Api-App-Key`（识别）加 `X-Api-Access-Key`，所以 `PRESMIUM_SPEECH_VOLCENGINE_APPID` 是可选的（有它时按旧控制台）。极速版识别直接上传 base64 的音频（WAV、MP3、Ogg/Opus），状态在 `X-Api-Status-Code`（`20000003` 是静音），热词经 `request.corpus.context` 的 `{"hotwords":[…]}` 传入，`audio.language` 留空时识别中英文与方言。适配器以本机的模拟服务按文档的示例响应核对了请求头、请求体与解析。中英混说的转写效果没有实测（没有凭据）：`packages/addon-speech/test/engines.test.ts` 的火山引擎用例合成并转写一句中英混说的话，并打印转写结果，由验收者在有凭据时运行。
+- **Safari 26 录制 Ogg/Opus**：本机不能启动 WebKit（同 WP-77），没有实测，由验收者或 WP-89 在 macOS 上补做。
+
 ## 12. 包与工作包
 
 | 包 | 新建或修改 | 工作包 |
