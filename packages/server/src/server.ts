@@ -32,12 +32,14 @@ import type {
   ServiceToken,
   TrustMode,
 } from '@presmium/kernel'
+import { createPresmiumMcp } from '@presmium/mcp'
 import { CONSOLE_HEADER, CONSOLE_HEADERS, CONSOLE_SCRIPT, CONSOLE_SCRIPT_PATH, consolePage } from './console.ts'
 import { Control, hasRole } from './control.ts'
 import type { ApprovalPolicy, WindowPosition } from './control.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
 import { bearer, closeServer, createProxy, header, hostname, isLoopback, json, listen, nodeServer, originHost, problem, sameSecret, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
+import { serverMcpHost } from './mcp.ts'
 import { dropPrivileges, ownSecret, sharedSetup } from './trust.ts'
 import type { SharedSetup } from './trust.ts'
 
@@ -85,7 +87,10 @@ export interface ServerOptions {
   user?: string
   /** `dev`: where the per-process token is written (`<deck>/.presmium/server.json`, mode 0600). */
   stateFile?: string
-  /** The MCP service behind `/mcp` (WP-78); without it an authenticated request gets 501. */
+  /**
+   * Another MCP service behind `/mcp`; by default `@presmium/mcp` over the
+   * `serverHost`, the control channel and the approvals (WP-78).
+   */
   mcp?(request: Request, access: { member: Member, mode: AgentMode }): Promise<Response>
   /** The process's environment (SHARED's checks, `secret`); default `process.env`. */
   env?: NodeJS.ProcessEnv
@@ -213,12 +218,15 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   // Documents and their contributions, made on the first request of each.
   const mounted = new Map<string, Promise<Mounted | undefined>>()
+  /** The documents loaded so far, for their operator settings. */
+  const loaded = new Map<string, ServedDocument>()
   const mount = (dir: string) => {
     let known = mounted.get(dir)
     if (!known) {
       known = (async () => {
         const doc = await options.document(dir)
         if (!doc) return undefined
+        loaded.set(dir, doc)
         const contributions = new Map<string, ServerContribution>()
         for (const { id, plugin, config } of doc.plugins) {
           if (!plugin.server) continue
@@ -243,12 +251,26 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
         }
         return { doc, contributions }
       })()
-      // A document that failed to load (a compilation error of the host) is tried again on its next request.
-      known.catch(() => mounted.delete(dir))
+      // A document that failed to load (a compilation error of the host), or was not there yet, is tried again on its next request.
+      const loading = known
+      loading.then((found) => {
+        if (!found && mounted.get(dir) === loading) mounted.delete(dir)
+      }, () => mounted.delete(dir))
       mounted.set(dir, known)
     }
     return known
   }
+
+  // MCP at /mcp: the documents and operations of the host, the windows and the approvals (10.2).
+  const mcp = options.mcp ? undefined : createPresmiumMcp(serverMcpHost({
+    serverHost: options.serverHost,
+    control,
+    shared: Boolean(shared),
+    settings: dir => options.settings ?? loaded.get(dir)?.settings,
+    mount: async dir => (await mount(dir))?.doc,
+    mounted: async () => (await Promise.all([...mounted.values()].map(known => known.catch(() => undefined)))).flatMap(m => (m ? [m.doc] : [])),
+    service: <T>(token: ServiceToken<T>) => own.get(token.id) as T | undefined,
+  }))
 
   const auths = new WeakMap<IncomingMessage, Auth | { status: number, message: string }>()
   /** Who sent a request, and whether to the console; or why it is refused. */
@@ -350,7 +372,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       const given = bearer(request.headers.get('authorization'))
       const access = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
       if (!access) return problem(401, 'MCP needs an Authorization: Bearer token')
-      return options.mcp ? options.mcp(request, access) : problem(501, 'the MCP service is not mounted')
+      return options.mcp ? options.mcp(request, access) : mcp!.fetch(request, access)
     }
     if (path.startsWith(`${SERVER_PATH}/`)) return withHeaders(await serverRoute(request, path.slice(SERVER_PATH.length + 1), auth, document, req), consoleHeaders)
     const target = pluginPath(path)
@@ -438,7 +460,9 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     serverHost: options.serverHost,
     gateway: shared?.gateway,
     async close() {
+      // Waiting approvals are refused first, so the MCP calls that wait for them end.
       control.close()
+      await mcp?.close().catch((error: unknown) => log.error(`MCP failed to close: ${errorMessage(error)}`))
       for (const known of mounted.values()) {
         for (const contribution of (await known.catch(() => undefined))?.contributions.values() ?? []) {
           await Promise.resolve(contribution.close?.()).catch((error: unknown) => log.error(`a contribution failed to close: ${errorMessage(error)}`))

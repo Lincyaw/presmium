@@ -55,6 +55,8 @@ it('writes the poll as a list in the notebook', async () => {
 
 服务端的用例（`packages/server/test/`）：`presmium dev` 打印 `server  <地址>` 一行，`/__presmium/<插件 ID>/` 也可以经渲染端开发服务器的地址访问；要设置 `Host` 等浏览器不让 `fetch` 设置的请求头时用 `node:http`（`packages/server/test/helpers.ts` 的 `raw`、`eventStream`）。`serve` 模式（登录、角色、所有者控制台）由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 以子进程启动（Node 直接运行 TS），环境变量给出工作区、角色与 SHARED 模式的设置；子进程的环境要去掉开发者机器上像凭据的变量，否则 SHARED 模式拒绝启动。需要自己的工作区根目录（`presmium.workspace.yaml`）的文稿放在 `examples/demo/.presmium/` 中并 `git init`，否则工作区根目录是整个仓库。
 
+MCP 的用例（`packages/mcp/test/`、`e2e/mcp.spec.ts`）：`packages/mcp/test/client.ts` 的 `connectMcp(url, token)` 是 MCP SDK 的客户端（以 `versionNegotiation: { mode: 'auto' }` 连接，订阅 `presmium://position` 要用 2026-07-28 的协议），`resultOf` 取工具结果中的 JSON，`controlWindow(server, id)` 是控制通道的一个窗口（报告位置、回答确认），端到端用例按相对路径引用它。`presmium dev` 的每进程令牌与 `/mcp` 的地址在 `<文稿>/.presmium/server.json`；只要服务端时用 `presmium dev --to notebook`，不启动 VitePress。`mcp` 与 `server` 的测试都按路径运行 CLI 的可执行文件，不把 `@presmium/cli` 列为开发依赖（`cli → server → mcp`，互相依赖时 pnpm 的符号链接成环）。
+
 ## 端到端测试
 
 `playwright.config.ts`：

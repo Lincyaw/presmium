@@ -39,11 +39,12 @@ describe('presmium dev', () => {
     // A page of the dev server (another port of this machine) is welcome.
     expect((await raw(`${server}/__presmium/fixture.server/value`, { headers: { Origin: web } })).status).toBe(200)
 
-    // /mcp needs the token; the per-process one is in .presmium/server.json (0600). MCP itself comes with WP-78.
+    // /mcp needs the token; the per-process one is in .presmium/server.json (0600). With it the MCP service
+    // (packages/mcp/test) answers, here that a request without a JSON body is not one it takes.
     expect((await raw(`${server}/mcp`, { method: 'POST' })).status).toBe(401)
     const state = JSON.parse(readFileSync(join(dir, '.presmium/server.json'), 'utf8')) as { token: string, url: string }
     expect(state.url).toBe(server)
-    expect((await raw(`${server}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${state.token}` } })).status).toBe(501)
+    expect((await raw(`${server}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${state.token}` } })).status).toBe(415)
 
     // `--allow operate`: the route's approval is given without asking.
     const approved = await fetch(`${web}/__presmium/fixture.server/approve`, { method: 'POST' })

@@ -638,6 +638,31 @@ importers:
         specifier: 1.0.15
         version: 1.0.15
 
+  packages/mcp:
+    dependencies:
+      '@modelcontextprotocol/server':
+        specifier: 2.3.1
+        version: 2.3.1
+      '@presmium/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@presmium/viewer':
+        specifier: workspace:*
+        version: link:../viewer
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+      minisearch:
+        specifier: 7.2.0
+        version: 7.2.0
+    devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: 2.3.1
+        version: 2.3.1
+
   packages/render-notebook:
     dependencies:
       '@presmium/kernel':
@@ -714,6 +739,9 @@ importers:
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@presmium/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       hono:
         specifier: 4.13.13
         version: 4.13.13
@@ -1935,6 +1963,10 @@ packages:
   '@mermaid-js/parser@2.0.1':
     resolution: {integrity: sha512-j37dj/h6p6pots1L7pLPPNuABEEu9WP4OYg9pW1g+nYG331j0+3canE9OagtYdytYvdSAMG+2fKU5cxep6LgjA==}
     engines: {node: '>=22.12.0'}
+
+  '@modelcontextprotocol/client@2.3.1':
+    resolution: {integrity: sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==}
+    engines: {node: '>=20'}
 
   '@modelcontextprotocol/core@2.3.1':
     resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
@@ -4059,6 +4091,14 @@ packages:
     resolution: {integrity: sha512-lW6is4T1NFOYnmqGZIfvixqj7A7sSvScF+DN8EK6K58xI5MZ5UvYe0GjopxOXQtZvUn4eDdVuZ8XSoYWTMEKwA==}
     engines: {node: '>=20'}
 
+  eventsource-parser@3.1.1:
+    resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
+    engines: {node: '>=18.0.0'}
+
+  eventsource@3.0.7:
+    resolution: {integrity: sha512-CRT1WTyuQoD771GW56XEZFQ/ZoSfWid1alKGDYMmkt2yl8UXrVR4pspqWNEcqKvVIzg6PAltWjxcSSPrboA4iA==}
+    engines: {node: '>=18.0.0'}
+
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
@@ -4696,6 +4736,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -5586,6 +5629,10 @@ packages:
   pixelmatch@8.0.0:
     resolution: {integrity: sha512-cIqOLfh5k52us715qf3B3+kTOxZv+WDv77HN7xokLScYQGYQHi4m/ynoDIPpvF2LvCyUJGyvzY64i0QCXtzu1g==}
     hasBin: true
+
+  pkce-challenge@5.0.1:
+    resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
+    engines: {node: '>=16.20.0'}
 
   pkg-types@1.3.1:
     resolution: {integrity: sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ==}
@@ -8224,6 +8271,16 @@ snapshots:
   '@mermaid-js/parser@2.0.1':
     dependencies:
       '@chevrotain/types': 13.2.0
+
+  '@modelcontextprotocol/client@2.3.1':
+    dependencies:
+      '@modelcontextprotocol/core': 2.3.1
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      jose: 6.2.12
+      pkce-challenge: 5.0.1
+      zod: 4.6.7
 
   '@modelcontextprotocol/core@2.3.1':
     dependencies:
@@ -11299,6 +11356,12 @@ snapshots:
 
   eta@4.6.0: {}
 
+  eventsource-parser@3.1.1: {}
+
+  eventsource@3.0.7:
+    dependencies:
+      eventsource-parser: 3.1.1
+
   expect-type@1.4.0: {}
 
   exsolve@1.1.3: {}
@@ -12030,6 +12093,8 @@ snapshots:
       picocolors: 1.1.1
 
   jiti@2.7.0: {}
+
+  jose@6.2.12: {}
 
   js-tokens@4.0.0: {}
 
@@ -13335,6 +13400,8 @@ snapshots:
   pixelmatch@8.0.0:
     dependencies:
       pngjs: 7.0.0
+
+  pkce-challenge@5.0.1: {}
 
   pkg-types@1.3.1:
     dependencies:

@@ -120,7 +120,7 @@ export default plugin
 | `gateway` | `(ctx: GatewayContext) => { routes?, proxies? }` | 只在 `presmium gateway` 中挂载、使用第三方凭据的部分（SHARED 模式） |
 | `operator` | `boolean` | 运营者插件：列在 `settings.presmium.workspace.plugins` 中、安装在工作区根目录时每份文稿都加载 |
 | `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | 具名环境的提供方：为头部 `execute.environments` 中该 `kind` 的环境创建编译时执行器，ID 必须是 `environmentExecutor(name)`（`presmium.env.<名>`）；`probe` 供 `presmium check --env`。浏览器端同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记同 ID 的执行器（范例：`addon-exec-local` 的 `devcontainer`） |
-| `tools` | | agent 工具（WP-78 起） |
+| `tools` | `AgentTool { name, description, input, kind, run(input, ctx) }` | agent 工具：MCP 服务（`/mcp` 与 `presmium-mcp`）以 `name`（小写加下划线，与内置工具同名的被忽略）列出，`input` 是对象的 JSON Schema（MCP 另加可选的 `document`）；`kind` 为 `read` 的每个令牌都能用，`operate`、`spend` 只给作者的令牌，先经 `APPROVALS` 确认再调用。`run` 的 `ctx` 有 `document`、`member`、`service`（Node 端服务）、`signal`，返回 JSON 数据或文字 |
 | `version`、`kernel` | string | 必须写：`version` 与 `package.json` 一致，`kernel` 为兼容的内核版本范围（如 `^0.1.0`），不兼容时编译器不加载 |
 
 遍历块用 `@presmium/kernel` 的 `docBlocks(doc)`（含组件的子块），报错消息用 `errorMessage(error)`，语言名比较用 `languageId(lang)`。

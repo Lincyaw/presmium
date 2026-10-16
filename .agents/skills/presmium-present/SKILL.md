@@ -71,6 +71,9 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 - **文件**：每次录制在文稿目录写 `lectures/<日期>/track.json`（提交它）与 `audio/*.ogg`、`video/*.webm`（默认被该目录的 `.gitignore` 忽略；运营者设置 `settings.presmium.lecture.audio: lfs` 时交给 git LFS）。
 - **回放**：地址加 `?view=lecture&track=<ID>`，或在“视图”菜单中选“讲授”再挑一个。放映视图下方是播放栏：播放与暂停、进度、倍速、字幕（可选译文的语言）、逐字稿（点时间或某个字跳过去）、章节、“我来试试”（暂停后自己翻页或运行代码，点“回到讲授”恢复到讲授的画面）。合成的讲授显示“AI 合成语音”。讲义改动后失效的操作被略过并提示，`presmium check` 的 `presmium.lecture` 列出它们。
 - **静态站点**：`presmium build --to web,lecture` 把讲授发布在 `dist/lecture/`（含 `captions.<语言>.vtt`、`chapters.vtt`、`events.vtt`），网页从同一站点的 `../lecture/` 读取；分开部署时在头部写 `presmium: { presmium.lecture: { url: <地址> } }`。
+### 由 agent 跳转（`presmium dev`）
+
+`presmium dev` 中，连接了 MCP 的 agent（见 presmium-author 技能）可以查询放映位置（`get_position`）并请求跳转（`navigate`）、开始或结束课堂（`classroom_start`、`classroom_end`）。每次操作先在页面工具栏出现“待确认”入口，允许后放映与演讲者窗口跳到该位置，拒绝时 agent 得到错误。放映视图与演讲者视图盖住了工具栏，所以放映时另开一个文档视图的窗口回答确认。
 
 ## 4. 幻灯片形态
 
