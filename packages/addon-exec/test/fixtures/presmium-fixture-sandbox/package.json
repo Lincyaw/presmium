@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-sandbox",
+  "private": true,
+  "type": "module",
+  "description": "Test-only operator plugin of packages/addon-exec/test/sandbox.test.ts: a PROCESS_SANDBOX that runs the command directly in a new run directory and logs each call",
+  "exports": { "./presmium": "./presmium.ts" }
+}

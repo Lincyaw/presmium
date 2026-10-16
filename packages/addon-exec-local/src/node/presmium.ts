@@ -1,8 +1,9 @@
 import { createRequire } from 'node:module'
-import { isRecord, languageId } from '@presmium/kernel'
-import type { CodeNode, PresmiumNodePlugin } from '@presmium/kernel'
+import { resolve } from 'node:path'
+import { environmentExecutor, isRecord, languageId } from '@presmium/kernel'
+import type { CodeNode, EnvironmentProvider, EnvironmentSpec, PresmiumNodePlugin } from '@presmium/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
-import { createContainerExecutor } from './container.ts'
+import { createContainerExecutor, dockerAvailable, findDefinition } from './container.ts'
 import { localEnvDirective } from './directive.ts'
 import { localEnvPass } from './pass.ts'
 import { localEnvServer } from './server.ts'
@@ -18,13 +19,35 @@ function kernelLanguage(kernel: unknown): string {
   return 'python'
 }
 
+/** Where a `devcontainer` environment's definition is: its `path`, relative to the deck, else the workspace root. */
+const definitionDir = (spec: EnvironmentSpec, deckDir: string, workspaceRoot: string) => typeof spec.path === 'string' && spec.path ? resolve(deckDir, spec.path) : workspaceRoot
+
+/**
+ * The provider of `kind: devcontainer` environments (P-100): the container
+ * executor, named after the environment (`presmium.env.<name>`), bound to the
+ * definition of the environment's `path`.
+ */
+const devcontainer: EnvironmentProvider = {
+  create(name, spec, ctx) {
+    const executor = createContainerExecutor(environmentExecutor(name))
+    executor.bind(definitionDir(spec, ctx.deckDir, ctx.workspaceRoot))
+    return executor
+  },
+  async probe(_name, spec, ctx) {
+    const dir = definitionDir(spec, ctx.deckDir, ctx.workspaceRoot)
+    if (!findDefinition(dir)) return `no devcontainer definition (.devcontainer/devcontainer.json) in ${dir}`
+    return await dockerAvailable() ? undefined : 'Docker is not available'
+  },
+}
+
 /**
  * The local environment (P-22, P-26): the `{local-env}` directive, the
  * container executor for compile-time execution (`:executor: presmium.container`
  * on a code block), the dev-server endpoints that run the edited snippet in
  * the container and commit it (./server.ts, for the dev servers of both
  * forms; Slidev also registers them from setup/vite-plugins.ts), and the
- * snippet as a notebook code cell when it is in the kernel's language.
+ * snippet as a notebook code cell when it is in the kernel's language; and
+ * the provider of `kind: devcontainer` environments.
  */
 const plugin: PresmiumNodePlugin = {
   id: EXEC_LOCAL_ID,
@@ -33,6 +56,7 @@ const plugin: PresmiumNodePlugin = {
   directives: [localEnvDirective],
   passes: [localEnvPass(container)],
   executors: [container],
+  environments: { devcontainer },
   vitePlugins({ deckDir, config }) {
     const { workspace, buildTimeoutMs } = execLocalConfig(config)
     return [localEnvServer({ deckDir, workspace, buildTimeoutMs })]

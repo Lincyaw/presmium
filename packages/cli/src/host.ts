@@ -4,8 +4,7 @@
  * runs of a code block work on that compilation, with its executors.
  */
 import { join } from 'node:path'
-import { irBlocks, failedRun } from '@presmium/kernel'
-import type { RunRequest } from '@presmium/kernel'
+import { irBlocks } from '@presmium/kernel'
 import { build } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 import type { ServerHost } from '@presmium/server'
@@ -40,17 +39,8 @@ export function devHost(latest: () => Compilation | undefined, deckDir: string):
       const section = compilation.doc.sections.find(s => s.id === target.section)
       const block = section && [...irBlocks(section.blocks)].find(b => b.id === target.block)
       if (!block || block.node.type !== 'code') throw new Error(`no code block ${target.section}/${target.block}`)
-      const node = block.node
-      const run = node.run ?? { lang: node.lang, when: 'live' as const }
-      const executors = compilation.plugins.flatMap(loaded => loaded.plugin?.executors ?? [])
-      const executor = run.executor ? executors.find(e => e.id === run.executor) : executors.find(e => e.supports(run.lang))
-      if (!executor) return failedRun(run.executor ?? '', `no executor for ${run.executor ?? run.lang} in presmium dev`)
-      const request: RunRequest = { lang: run.lang, code: node.value }
-      if (run.args) request.args = run.args
-      if (run.stdin !== undefined) request.stdin = run.stdin
-      if (run.timeoutMs !== undefined) request.timeoutMs = run.timeoutMs
-      if (run.session) request.session = run.session
-      return executor.run(request, signal)
+      // The executor and the execution options of the compilation; recordings are neither read nor written.
+      return compilation.run(block.node, signal)
     },
   }
 }

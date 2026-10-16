@@ -2,7 +2,9 @@
  * IR to a Jupyter notebook in nbformat 4.5 (docs/ir.md section 6). Each
  * section opens with its title; narration and visual Markdown become Markdown
  * cells, consecutive ones merged into one; code in the kernel's language
- * becomes a code cell with the recorded outputs, other code a fenced block.
+ * becomes a code cell with the recorded outputs (nbformat outputs as they
+ * were recorded, numbered in order; hidden source for `echo: false`, P-102),
+ * other code a fenced block.
  * A component is rendered by its plugin's notebook extension, else by its
  * `fallback`, else by a note that links to the web version, and is then
  * listed in the build report. Markdown is written in the form Jupyter
@@ -24,6 +26,7 @@ import type {
   MdastNode,
   RecordedRun,
   RendererExtension,
+  RunOutput,
   SourcePos,
   Support,
 } from '@presmium/kernel'
@@ -136,11 +139,12 @@ export function renderNotebook(doc: IRDocument, options: NotebookOptions): Noteb
   }
   if (doc.meta.title) out.notebook.metadata.title = doc.meta.title
   const ids = new Set<string>()
-  for (const section of doc.sections) renderSection(section, options, out, ids)
+  const executions = { count: 0 }
+  for (const section of doc.sections) renderSection(section, options, out, ids, executions)
   return out
 }
 
-function renderSection(section: IRSection, options: NotebookOptions, out: NotebookResult, ids: Set<string>): void {
+function renderSection(section: IRSection, options: NotebookOptions, out: NotebookResult, ids: Set<string>, executions: { count: number }): void {
   let pending: { parts: string[], blocks: string[] } | undefined
 
   const cell = (type: NotebookCell['cell_type'], source: string | string[], blocks: string[], extra: Partial<NotebookCell> = {}) => {
@@ -174,16 +178,20 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
   }
 
   const code = (node: CodeNode, block: IRBlock) => {
+    const shown = node.echo !== false
     const caption = codeCaption(node)
-    if (caption) markdown(caption, block)
+    if (caption && shown) markdown(caption, block)
     if (languageId(node.lang) === languageId(options.kernel.language)) {
       flush()
-      cell('code', node.value, [block.id], { execution_count: null, outputs: streams(node.outputs) })
+      const runs = node.outputs ?? []
+      const count = runs.length ? ++executions.count : null
+      const hidden = shown ? {} : { metadata: { jupyter: { source_hidden: true } } }
+      cell('code', node.value, [block.id], { execution_count: count, outputs: cellOutputs(runs, count), ...hidden })
     } else {
       const output = (node.outputs ?? []).map(run => run.stdout + run.stderr).join('').trimEnd()
-      const blocks: MdastNode[] = [{ type: 'code', lang: node.lang, value: node.value }]
+      const blocks: MdastNode[] = shown ? [{ type: 'code', lang: node.lang, value: node.value }] : []
       if (output) blocks.push({ type: 'code', lang: 'text', value: output })
-      markdown({ type: 'root', children: blocks }, block)
+      if (blocks.length) markdown({ type: 'root', children: blocks }, block)
     }
     for (const variant of node.variants ?? []) {
       markdown({ type: 'root', children: [
@@ -277,6 +285,25 @@ function codeCaption(node: CodeNode): MdastNode | undefined {
 function webNote(node: ComponentNode, t: (typeof MESSAGES)[Locale], url?: string): MdastNode {
   const web = url ? { type: 'link', url, children: [text(t.web)] } : text(t.web)
   return { type: 'blockquote', children: [{ type: 'paragraph', children: t.note({ type: 'inlineCode', value: node.name }, web) }] }
+}
+
+/** Text MIME types, which nbformat writes as lines. */
+const TEXT_TYPE = /^text\/|^image\/svg\+xml$/
+
+/**
+ * The outputs of a code cell: the recorded nbformat outputs as they are
+ * (multiline text as lines; a result numbered with the cell), or, for runs
+ * recorded without them, their text streams.
+ */
+function cellOutputs(runs: RecordedRun[], count: number | null): unknown[] {
+  if (!runs.some(run => run.outputs)) return streams(runs)
+  return runs.flatMap(run => run.outputs ?? streams([run])).map((output) => {
+    const o = output as RunOutput
+    if (o.output_type === 'stream') return { ...o, text: lines(Array.isArray(o.text) ? o.text.join('') : o.text) }
+    if (o.output_type === 'error') return o
+    const data = Object.fromEntries(Object.entries(o.data).map(([type, value]) => [type, TEXT_TYPE.test(type) && typeof value === 'string' ? lines(value) : value]))
+    return { ...o, data, metadata: o.metadata ?? {}, ...o.output_type === 'execute_result' ? { execution_count: count } : {} }
+  })
 }
 
 /** Recorded runs as nbformat stream outputs. */

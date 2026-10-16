@@ -40,3 +40,22 @@
 .dark .slidev-layout .pm-code-origin__badge:is([data-drift='drifted'], [data-status]) {
   color: #fbbf24;
 }
+
+/* Rich outputs recorded at compile time (docs/ir.md 6.1): an image keeps to the slide; HTML in a sandboxed frame. */
+.slidev-layout .pm-output__image {
+  max-width: 100%;
+  max-height: 60vh;
+}
+
+.slidev-layout .pm-output__html {
+  width: 100%;
+  min-height: 8rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  background: white;
+}
+
+/* The Monaco Runner's hint before the first run ("Click the play button…") is half transparent, below AA; readable instead. */
+.slidev-layout .slidev-monaco-container .opacity-50 {
+  opacity: 0.75;
+}

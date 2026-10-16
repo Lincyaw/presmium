@@ -28,6 +28,8 @@ const WEB_PORT = 4744
 // Each run starts in a directory of its own; the workspace is read-only, its modules importable.
 const PYTHON_INFO = 'import os, sys\nprint(os.getcwd(), sys.version_info[:2])\nfrom src.greet import greet\nprint(greet("容器"))'
 const PYTHON_OUTPUT = '/presmium-run (3, 12)\n你好，Presmium\n你好，容器\n'
+// In the environment `box` (the same definition), the code sees the build's variables but its credentials and the host's paths.
+const ENV_INFO = 'import os\nprint(os.environ.get("FIXTURE_PLAIN"), os.environ.get("FIXTURE_API_TOKEN"), os.environ["HOME"] != os.environ.get("FIXTURE_HOST_HOME"))'
 
 const docker = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { stdio: 'ignore' }).status === 0
 
@@ -90,6 +92,7 @@ beforeAll(async () => {
   if (docker) {
     appendFileSync(deck, `\n## 编译时\n\n\`\`\`{code} python\n:run:\n:executor: presmium.container\n${PYTHON_INFO}\n\`\`\`\n`)
     appendFileSync(deck, `\n## python3\n\n\`\`\`{code} python3\n:run:\nprint("python3", 6 * 7)\n\`\`\`\n`)
+    appendFileSync(deck, `\n## 环境\n\n\`\`\`{code} python\n:run:\n:env: box\n${ENV_INFO}\n\`\`\`\n`)
   }
   git('init', '-q', '-b', 'main')
   git('config', 'user.name', 'Presmium Test')
@@ -97,7 +100,7 @@ beforeAll(async () => {
   git('config', 'commit.gpgsign', 'false')
   git('add', '-A')
   git('commit', '-q', '-m', 'initial')
-  const built = await presmium(REPO, ['build', '--to', 'slides', '--out', 'dist'])
+  const built = await presmium(REPO, ['build', '--to', 'slides', '--out', 'dist'], { FIXTURE_PLAIN: 'plain', FIXTURE_API_TOKEN: 'secret', FIXTURE_HOST_HOME: process.env.HOME ?? '' })
   if (built.code !== 0) throw new Error(`presmium build failed:\n${built.stdout}${built.stderr}`)
   ir = JSON.parse(readFileSync(join(REPO, 'dist/ir.json'), 'utf8'))
   slides = await startDev('slides')
@@ -116,6 +119,11 @@ describe('container executor (P-22)', () => {
     expect(recorded?.outputs?.[0]).toMatchObject({ ok: true, exitCode: 0, executorId: 'presmium.container', stdout: PYTHON_OUTPUT })
     const python3 = blocks().map(block => block.node).find((node): node is CodeNode => node.type === 'code' && node.lang === 'python3')
     expect(python3?.outputs?.[0]).toMatchObject({ ok: true, executorId: 'presmium.container', stdout: 'python3 42\n' })
+  })
+
+  it.skipIf(!docker)('runs code that names a devcontainer environment with its executor, which passes the run\'s variables but not its credentials or the host\'s paths (P-100)', () => {
+    const boxed = blocks().map(block => block.node).find((node): node is CodeNode => node.type === 'code' && node.run?.executor === 'presmium.env.box')
+    expect(boxed?.outputs?.[0]).toMatchObject({ ok: true, executorId: 'presmium.env.box', stdout: 'plain None True\n' })
   })
 
   it.skipIf(!docker)('answers a run request as the other executors do: files beside the program, parameters as variables (R-24)', async () => {

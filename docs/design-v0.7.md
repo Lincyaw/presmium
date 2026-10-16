@@ -587,6 +587,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | dsh 配置项 ID；dsh 在调用 MCP 工具前是否询问 | WP-80 |
 | deltabox-lite 能否用于修改的审阅与回滚、能否作为编译时执行的进程沙箱；dsh-deltabox 能否直接用 | WP-72 第四轮（已完成，结论见下） |
 | 两种开发服务器把 `/__presmium/` 代理到主进程的服务端；页面的长连接与端到端用例；myst-parser 的角色选项（`wbs.md` 没有为 WP-73a 列出先行验证，开始时做了这几项小规模实测） | WP-73a（已完成，结论见下） |
+| 共享的运行器经包的 `exports` 以 `?raw` 进入两种形态的 Worker；Slidev 的 `{monaco-run}` 在构建产物中运行 Python 并接收执行器与会话；运行器的富输出（`IPython.display`、matplotlib）；在浏览器中解析 Markdown 输出（`wbs.md` 没有为 WP-73b 列出先行验证，开始时做了这几项小规模实测） | WP-73b（已完成，结论见下） |
 
 **deltabox 的先行验证（2026-10-16，deltabox-lite 0.1.1、dsh-deltabox 0.1.2、dsh 0.2.0-rc.2）**的结论：
 
@@ -606,6 +607,13 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **长连接与 `networkidle`**：Playwright 判断网络空闲时不算 `EventSource` 的请求，但一个响应体没有被读完的 `fetch` 一直算作进行中，`page.waitForLoadState('networkidle')`（`e2e/fixtures/deck.ts` 的 `openDevPage`）因此永远等不到。控制通道用 SSE 接收没有问题，报告与回答的 `POST` 必须读完响应体；宿主的实现这样做。
 - **myst-parser 的角色选项**：`mystParse` 的 `roles` 选项接受带 `options`（`String`、`Number`、`Boolean`）的角色规格，``{probe mark=提示 count=2}`x` `` 的选项按类型读出；只写键不写值（``{probe flag}`x` ``）是 `mystRoleError`。登记的角色不影响 MyST 自带的 `{sub}` 等，`defaultOptions.roles` 列出它们的名字，插件登记同名的角色是错误。
 - **依赖**：`@hono/node-server` 2.x 以 `hono` 为对等依赖，服务端包精确固定 `hono` 4.13.13（`http-proxy-3` 2.0.1 没有对等依赖）。Node 22.18 起默认去掉类型标注，测试用的 `serve` 模式宿主（`packages/server/test/fixtures/serve-host.ts`）不经 jiti 直接运行；`@presmium/server` 不在开发依赖中引用 `@presmium/cli`（两者互相依赖时 pnpm 的符号链接成环，`scripts/check-layering.mjs` 遍历时 `ELOOP`），测试按路径找到 CLI 的可执行文件。
+
+**WP-73b 开始时的验证（2026-10-16，Slidev 53.0.0、VitePress 1.6.4、Vite 8.3、Pyodide 314.0.7、Python 3.13 与 matplotlib 3.10）**的结论：
+
+- **共享的运行器**：`import runner from '@presmium/kernel/runner.py?raw'` 在执行插件的 Pyodide Worker 中可用：Vite 先按包的 `exports`（`"./runner.py": "./src/runner.py"`）解析子路径再处理 `?raw`，网页（VitePress）与幻灯片（Slidev）的构建产物中的 Worker 都含运行器的源码；Node 端用 `createRequire(...).resolve('@presmium/kernel/runner.py')` 读它。内核不读它，分层检查不受影响。
+- **Slidev 的 `{monaco-run}`**：构建产物中可用（不只开发服务器），运行按钮的 `title` 为 “Run code”，输出在 `.slidev-runner-output` 中；执行插件已有的 `setup/code-runners.ts` 经 `executor` 服务以 Pyodide 运行 Python。代码块属性只读到第一个 `}`：`{autorun:false,height:'auto'}` 可用，任何嵌套的对象（包括文档中的 ```` ```ts {monaco} { editorOptions: { wordWrap:'on'} } ````）都使 `slidev build` 报 “Error parsing JavaScript expression”，双引号的字符串同样不行。因此执行器与会话写在生成文稿的头部（`presmiumRuns`），代码块以 `runnerOptions:$slidev.configs.presmiumRuns['<键>']` 引用（`$slidev.configs` 是文档化的全局上下文，带着头部的全部字段）。幻灯片形态控制台中的 FloatingVue 错误在没有 `{monaco-run}` 的示例文稿中同样出现（`architecture.md` 9.3 节）。
+- **富输出**：运行器在 `sys.meta_path` 的最前面提供 `IPython`、`IPython.display` 与 matplotlib 的后端模块。直接把它们放进 `sys.modules` 不可行：matplotlib 看到 `sys.modules['IPython']` 就调用 `get_ipython()` 并比较 `version_info`（所以模块提供这两项，`version_info` 为 8.24 以上，表示不需要它为旧版 IPython 做的调整）；以 `ModuleType` 的模块级 `__getattr__` 惰性给出 `FigureCanvas` 也不行，matplotlib 用 `vars()` 读后端模块，所以后端模块由导入器在被导入时创建并直接写入 `FigureCanvas = FigureCanvasAgg` 与 `show`。`MPLBACKEND=module://_presmium_matplotlib` 只在运行期间设置。用标准库（`zlib`、`struct`）写出的 PNG 经 `IPython.display.Image` 成为 `image/png` 输出，不依赖 matplotlib。
+- **浏览器中的 Markdown 输出**：`mdast-util-from-markdown` 2.1 加 `micromark-extension-gfm` 3.0 与 `mdast-util-gfm` 3.1 给出 IR 运行时已能显示的 mdast（表格为 GFM 的 `table`），在服务端渲染中同样可用，所以 `echo: false` 的 Markdown 表格在静态 HTML 中就是表格；DOMPurify 3.4 只在浏览器中加载（服务端渲染没有 DOM），HTML 输出在挂载之前显示其 `text/plain`。
 
 ## 12. 包与工作包
 

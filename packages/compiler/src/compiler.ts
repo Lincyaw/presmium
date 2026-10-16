@@ -4,18 +4,20 @@
  * `presmium dev` recompiles incrementally: only changed files are re-parsed
  * and only changed code is re-executed.
  */
+import { randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
-import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, createAnchorResolverRegistry, errorMessage, isRecord } from '@presmium/kernel'
-import type { AnchorResolverRegistry, DirectiveOptionType, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
+import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
+import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective, PluginRole } from './blocks.ts'
 import { Dependencies } from './dependencies.ts'
 import type { CommittedFiles, Revision } from './dependencies.ts'
-import { executePass, FREEZE_DIR, FreezeCache } from './execute.ts'
-import type { RunStats } from './execute.ts'
+import { checkRuns, checkSecrets, environmentExecutors, environmentProviders, readExecute } from './environments.ts'
+import { executePass, FREEZE_DIR, FreezeCache, runEnvironment } from './execute.ts'
+import type { ExecutionOptions, RunStats } from './execute.ts'
 import { numberFootnotes } from './footnotes.ts'
 import { DECK_PLUGIN, directoryComponents, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
@@ -64,6 +66,16 @@ export interface CompilerOptions {
   gateway?: GatewayAccess
   /** The process's environment variables plugins may read (`secret`); default `process.env`. */
   secret?: (name: string) => string | undefined
+  /** How compile-time execution runs (docs/architecture.md 4.6, 10.6): the rules of `RunContext.env`, `admit`, `remote`. */
+  execution?: ExecutionOptions
+}
+
+/** A declared environment and its provider, for `presmium check --env`. */
+export interface DeclaredEnvironment {
+  name: string
+  spec: EnvironmentSpec
+  provider: EnvironmentProvider
+  context: EnvironmentContext
 }
 
 export interface Compilation {
@@ -100,6 +112,20 @@ export interface Compilation {
   pluginSources: PluginSources
   /** The read scope of SHARED `presmium serve`. */
   scope?: ReadScope
+  /** The headmatter's `execute` as far as it is well formed. */
+  execute: ExecuteConfig
+  /** The declared environments that a plugin provides. */
+  environments: DeclaredEnvironment[]
+  /** The compile-time executors: the plugins' and those of the declared environments. */
+  executors: Executor[]
+  /** The context of the compile-time runs. */
+  runContext: RunContext
+  /**
+   * Runs a code node now with the executor compile time would choose and the
+   * same execution options, without reading or writing recordings (MCP's
+   * `run_code`, docs/architecture.md 10.6).
+   */
+  run(node: CodeNode, signal?: AbortSignal): Promise<RunResult>
 }
 
 export interface CompileOptions {
@@ -142,6 +168,8 @@ export class Compiler {
   readonly #committed: CommittedFiles = new Map()
   #plugins?: Plugins
   #parser?: { key: string, parser: Parser }
+  /** The executors of the declared environments, kept between compilations (environments.ts). */
+  readonly #environments = new Map<string, Executor>()
 
   constructor(deck: string, options: CompilerOptions = {}) {
     this.entry = resolveEntry(deck)
@@ -188,11 +216,14 @@ export class Compiler {
     const service = <T>(token: ServiceToken<T>) => services.get(token)
     const at = (name: string) => ({ file: this.entry, line: frontmatterLine(text, name) })
     for (const p of problems) report({ checkId: 'presmium.plugins', severity: p.severity, message: p.message, source: at(p.name) })
+    const execute = readExecute(headmatter.execute, report, at)
+    checkSecrets(headmatter, report, at)
 
     const directives = new Map<string, PluginDirective>()
     const roles = new Map<string, PluginRole>()
     const resolvers = createAnchorResolverRegistry()
     const executors: Executor[] = []
+    const providers = new Map<string, EnvironmentProvider>()
     const components = new Map<string, string>()
     for (const loaded of plugins) {
       for (const name of await directoryComponents(loaded.dir)) if (!components.has(name)) components.set(name, pluginId(loaded))
@@ -218,9 +249,15 @@ export class Compiler {
         report({ checkId: 'presmium.plugins', severity: 'error', message: `plugin ${plugin.id}: ${errorMessage(error)}`, source: at(loaded.name) })
       }
       executors.push(...plugin.executors ?? [])
+      for (const [kind, provider] of Object.entries(plugin.environments ?? {})) if (!providers.has(kind)) providers.set(kind, provider)
     }
     // The deck's own components, which the browser renderers load as they load the plugins' (R-47).
     for (const name of await directoryComponents(this.deckDir)) components.set(name, DECK_PLUGIN)
+    // The declared environments: their executors run the blocks that name them (docs/ir.md 2.7).
+    const secret = this.options.secret ?? (name => process.env[name])
+    const environmentContext: EnvironmentContext = { deckDir: this.deckDir, workspaceRoot, secret, ...this.options.gateway ? { gateway: this.options.gateway } : {}, log: pluginLogger('presmium.execute') }
+    const declared = environmentProviders(execute, providers, report, at)
+    executors.push(...await environmentExecutors(execute, declared, environmentContext, this.#environments, report, at))
 
     // Pass 1: parse and expand includes.
     const parser = this.#parserFor(directives, roles)
@@ -228,14 +265,14 @@ export class Compiler {
     const source = await parser.expand(this.entry)
     findings.push(...source.findings)
     dependencies.watch(...source.missing)
-    const { title: _title, lang: _lang, plugins: _plugins, presmium: _presmium, renderers, sectionDepth: depth, execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
+    const { title: _title, lang: _lang, plugins: _plugins, presmium: _presmium, renderers, sectionDepth: depth, execute: _execute, translations: _translations, translationOf: _translationOf, ...rest } = headmatter
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(this.entry, extname(this.entry))
     const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
 
     // Passes 2 to 5: sections, directives, roles, steps.
     const raw = splitSections(source.children, { entry: this.entry, title, sectionDepth }, report)
     const rendererIds = new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []])
-    const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, report, watch }
+    const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
     const sections: IRSection[] = []
     for (const [i, section] of raw.entries()) {
       const { blocks: drafts, hints, config } = await sectionBlocks(section.nodes, ctx)
@@ -260,10 +297,12 @@ export class Compiler {
         plugins: names,
         presmium,
         renderers: isRecord(renderers) ? recordOfRecords(renderers) : {},
+        ...Object.keys(execute).length > 0 ? { execute } : {},
       },
       sections,
       diagnostics: [],
     }
+    checkRuns(doc, execute, report)
     applyTranslations(doc, translationFields(headmatter))
 
     numberFootnotes(doc, source.files)
@@ -277,6 +316,7 @@ export class Compiler {
       report({ checkId: 'presmium.lock', severity: 'error', message: errorMessage(error), source: { file: lockFile, line: 1 } })
     }
     const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR), relative(this.deckDir, this.entry), scope)
+    const runContext = this.#runContext(workspaceRoot, settings, service)
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
     const runPass = async ({ pass, loaded }: { pass: IRPass, loaded: LoadedPlugin }) => {
@@ -317,10 +357,10 @@ export class Compiler {
 
     // Cross-references take the text of their targets once every pass has shaped the IR;
     // pass 7, compile-time execution; then the plugin passes that work on its outputs.
-    let runs: RunStats = { executed: 0, cached: 0 }
+    let runs: RunStats = { executed: 0, cached: 0, refused: [] }
     if (invalid.length === 0) {
       resolveReferences(doc, report)
-      runs = await executePass(doc, executors, cache, report, { rerun: rerunOption(execute) })
+      runs = await executePass(doc, executors, cache, report, { ...this.options.execution, rerun: execute.rerun === 'environment', context: runContext })
       for (const step of passes.filter(({ pass }) => pass.after === 'execute')) await runPass(step)
       // Pass 8: validation.
       invalid = validateIR(doc, this.entry)
@@ -356,7 +396,55 @@ export class Compiler {
       operatorDir: workspace.operatorDir,
       pluginSources: workspace.sources,
       scope,
+      execute,
+      environments: [...declared].map(([name, provider]) => ({ name, spec: execute.environments![name]!, provider, context: environmentContext })),
+      executors,
+      runContext,
+      run: (node, signal) => this.#run(doc, node, executors, runContext, signal),
     }
+  }
+
+  /**
+   * The context of the runs of a compilation: the environment the code may
+   * see (`execution.env` rules, with `settings.presmium.exec.passEnv`), the
+   * process sandbox when a Node service provides one, the gateway access.
+   */
+  #runContext(workspaceRoot: string, settings: OperatorSettings, service: <T>(token: ServiceToken<T>) => T | undefined): RunContext {
+    const passEnv = stringList(settings['presmium.exec']?.passEnv)
+    const sandbox = service(PROCESS_SANDBOX)
+    return {
+      env: runEnvironment(this.options.execution?.env ?? 'local', passEnv, workspaceRoot),
+      ...sandbox ? { sandbox } : {},
+      ...this.options.gateway ? { gateway: this.options.gateway } : {},
+    }
+  }
+
+  /** A code node run now (`Compilation.run`); a block of a session runs after the session's blocks before it, in a session of its own. */
+  async #run(doc: IRDocument, node: CodeNode, executors: Executor[], context: RunContext, signal?: AbortSignal): Promise<RunResult> {
+    const run = node.run ?? { lang: node.lang, when: 'live' as const }
+    const executor = run.executor
+      ? executors.find(e => e.id === run.executor && e.supports(run.lang))
+      : executors.find(e => !e.id.startsWith(environmentExecutor('')) && e.supports(run.lang))
+    if (!executor) return failedRun(run.executor ?? '', `no executor for ${run.executor ?? run.lang}`)
+    const request = (code: CodeNode): RunRequest => {
+      const spec = code.run ?? run
+      return { lang: spec.lang, code: code.value, ...spec.args ? { args: spec.args } : {}, ...spec.stdin !== undefined ? { stdin: spec.stdin } : {}, ...spec.timeoutMs !== undefined ? { timeoutMs: spec.timeoutMs } : {} }
+    }
+    let nodes = [node]
+    if (run.session) {
+      const before: CodeNode[] = []
+      for (const { block } of docBlocks(doc)) {
+        if (block.node === node) break
+        if (block.node.type === 'code' && block.node.run?.session === run.session && block.node.run.when !== 'live') before.push(block.node)
+      }
+      nodes = [...before, node]
+    }
+    const session = run.session ? `run:${randomUUID()}` : undefined
+    const requests = nodes.map(code => ({ ...request(code), ...session ? { session } : {} }))
+    const remote = this.options.execution?.remote
+    const results = await Promise.all(requests.map(r => remote ? remote.run(executor.id, r, context.env, signal) : executor.run(r, signal, context)))
+    if (session) await (remote ? remote.endSession(executor.id, session) : executor.endSession?.(session))
+    return results.at(-1)!
   }
 
   /** The workspace of the deck: its root, settings, plugin sources and operator directory, found once. */
@@ -424,15 +512,6 @@ export function sortFindings(findings: Finding[]): Finding[] {
   const file = (f: Finding) => f.source?.file ?? ''
   const line = (f: Finding) => f.source?.line ?? 0
   return findings.toSorted((a, b) => file(a) < file(b) ? -1 : file(a) > file(b) ? 1 : line(a) - line(b))
-}
-
-/**
- * `execute: { rerun: environment }` in the headmatter: code whose recording was
- * made with another runtime (e.g. another interpreter version) runs again
- * instead of reusing the recording.
- */
-function rerunOption(execute: unknown): boolean {
-  return isRecord(execute) && execute.rerun === 'environment'
 }
 
 function stringList(value: unknown): string[] {

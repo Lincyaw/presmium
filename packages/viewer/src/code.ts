@@ -1,18 +1,20 @@
-import { currentLocale, usePrefersReducedMotion, useService, useStartReport } from '@presmium/host'
+import { currentLocale, OPERATIONS, usePrefersReducedMotion, useService, useStartReport } from '@presmium/host'
+import type { Operations } from '@presmium/host'
 import { EXECUTOR, errorMessage, failedRun } from '@presmium/kernel'
-import type { CodeNode, IRBlock, RunResult } from '@presmium/kernel'
+import type { CodeNode, IRBlock, RecordedRun, RunRequest, RunResult } from '@presmium/kernel'
 import { ShikiMagicMove } from '@shikijs/magic-move/vue'
 import '@shikijs/magic-move/style.css'
 import type { Element, ElementContent, Root } from 'hast'
 import { toHtml } from 'hast-util-to-html'
 import type { PropType, VNode, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { IN_COMPONENT } from './context.ts'
+import { IN_COMPONENT, useSectionContext } from './context.ts'
 import { useDark } from './dark.ts'
-import { blockState, codeColumns, originParts, outputNotes } from './domain/index.ts'
+import { blockState, codeColumns, originParts } from './domain/index.ts'
 import type { OriginPart } from './domain/index.ts'
 import { highlighterFor, THEMES } from './highlight.ts'
 import { messages } from './i18n.ts'
+import { proseOnly, runOutput } from './outputs.ts'
 
 type Loaded = Awaited<ReturnType<typeof highlighterFor>>
 
@@ -134,23 +136,34 @@ function originBar(node: CodeNode, shown: number | undefined): VNodeChild {
   return bar ? h('div', { 'class': 'pm-code-origin', 'data-anchor': bar.anchor }, bar.parts.map(originPart)) : null
 }
 
-function output(run: RunResult & { cacheKey?: string }, i: number): VNode {
-  const notes = outputNotes(run, currentLocale())
-  return h('div', { 'key': run.cacheKey || i, 'class': ['pm-output', { 'pm-output--failed': !run.ok }], 'data-executor': run.executorId }, [
-    run.stdout ? h('pre', { class: 'pm-output__stdout' }, run.stdout) : null,
-    run.stderr ? h('pre', { class: 'pm-output__stderr' }, run.stderr) : null,
-    notes.length ? h('p', { class: 'pm-output__note' }, notes.join(' · ')) : null,
-  ])
+/** The replays of the mounted code blocks: the host replays one handler per operation type. */
+const replays = new Set<(data: Record<string, unknown>) => void>()
+const followed = new WeakSet<Operations>()
+
+/** Replays `run` operations into the mounted code blocks, once per operations service. */
+function followRuns(operations: Operations): void {
+  if (followed.has(operations)) return
+  followed.add(operations)
+  operations.onReplay('run', { apply: data => replays.forEach(replay => replay(data)) })
 }
 
 /**
  * An IR `code` node: the listing (or the variant of the current step), the
  * lines highlighted at the current step, where the code comes from, and its
- * recorded output. Expanded, it shows every variant and no step highlight.
+ * recorded output, by MIME type (./outputs.ts). Expanded, it shows every
+ * variant and no step highlight. With `echo: false` only the output shows,
+ * Markdown output as the section's prose (P-102).
+ *
  * Code whose `run.when` includes `live` runs in the browser with the
- * `executor` service (its `run.executor` when registered); the output of the
- * last run, or the error of a run that failed to start, replaces the recorded
- * one. A run of code that has changed since it started (a live update), or
+ * `executor` service, which gives the request to the executor `run.executor`
+ * names, else chooses by language (docs/review-round2.md, decision 5). The
+ * output of the last run replaces the recorded one; a run that could not
+ * happen (no such executor, a runtime that did not load, a timeout) shows the
+ * recorded output with the reason, when there is one (P-24). Code of a
+ * session (`run.session`) shares the interpreter with the session's other
+ * blocks of the page; "reset session" drops it (P-101). A run is reported as
+ * the operation `run` (docs/ir.md 9.2), and replaying one shows the output it
+ * names. A run of code that has changed since it started (a live update), or
  * that a later run overtook, is stopped and its output dropped. The run
  * controls depend on the browser's services, so they render disabled until
  * the block is mounted: the server render and the hydration agree.
@@ -166,8 +179,12 @@ export const CodeBlockView = defineComponent({
     // Inside a component (e.g. a run panel) the component runs the code and shows its output.
     const owned = inject(IN_COMPONENT, false)
     const executor = useService(EXECUTOR)
+    const operations = useService(OPERATIONS)
+    const section = useSectionContext()
     const report = useStartReport()
     const live = shallowRef<RunResult>()
+    /** Why the recorded output shows in place of a live run that could not happen. */
+    const fallback = ref<string>()
     const running = ref(false)
     const mounted = ref(false)
     /** The run under way: stopped when the code changes, the block goes away or another run starts. */
@@ -181,6 +198,13 @@ export const CodeBlockView = defineComponent({
       mounted.value = true
     })
     onBeforeUnmount(stop)
+    const show = (result: RunResult | undefined) => {
+      const node = props.block.node as CodeNode
+      // A run that never got to the program shows what compile time recorded, with the reason.
+      const recorded = result && !result.ok && result.exitCode === null && node.outputs?.length
+      fallback.value = recorded ? result.stderr.trim() || messages().code.unavailable : undefined
+      live.value = recorded ? undefined : result
+    }
     const run = async () => {
       const node = props.block.node as CodeNode
       const router = executor.value
@@ -189,26 +213,45 @@ export const CodeBlockView = defineComponent({
       const controller = new AbortController()
       current = controller
       running.value = true
-      const { lang, args, stdin, timeoutMs, executor: preferred } = node.run
-      // The preferred executor when it is registered and supports the language; the router picks otherwise.
-      const target = router.list().find(e => e.id === preferred && e.supports(lang)) ?? router
+      const { lang, args, stdin, timeoutMs, executor: named, session } = node.run
+      const request: RunRequest = { lang, code: node.value, args, stdin, timeoutMs, executor: named, session }
       const started = Date.now()
       let result: RunResult
       try {
-        result = await target.run({ lang, code: node.value, args, stdin, timeoutMs }, controller.signal)
+        result = await router.run(request, controller.signal)
       } catch (error) {
         // A runtime that fails to load or crashes shows as a failed run, not as nothing.
-        result = failedRun(target.id, messages().code.executorFailed(target.id, errorMessage(error)), Date.now() - started)
+        result = failedRun(router.id, messages().code.executorFailed(router.id, errorMessage(error)), Date.now() - started)
       }
       if (controller.signal.aborted) return
-      live.value = result
+      show(result)
       current = undefined
       running.value = false
+      const recording = node.outputs?.[0] as RecordedRun | undefined
+      operations.value?.report({ type: 'run', data: { section: section?.section.value.id, block: props.block.id, result: fallback.value && recording ? `freeze:${recording.cacheKey}` : 'live' } })
     }
+    const reset = async () => {
+      const node = props.block.node as CodeNode
+      if (!node.run?.session) return
+      stop()
+      await executor.value?.endSession?.(node.run.session)
+      show(undefined)
+    }
+    // Replaying a run shows the recorded output, which is what a recording can name.
+    const replay = (data: Record<string, unknown>) => {
+      if (data.block !== props.block.id || (data.section !== undefined && data.section !== section?.section.value.id)) return
+      stop()
+      show(undefined)
+    }
+    watch(operations, (ops) => {
+      if (ops) followRuns(ops)
+    }, { immediate: true })
+    onMounted(() => replays.add(replay))
+    onBeforeUnmount(() => replays.delete(replay))
     // A changed listing makes the output of its last run obsolete, and stops a run under way.
     watch(() => (props.block.node as CodeNode).value, () => {
       stop()
-      live.value = undefined
+      show(undefined)
     })
 
     return () => {
@@ -221,23 +264,26 @@ export const CodeBlockView = defineComponent({
         : shown === undefined
           ? variants.map(v => h('div', { key: v.label, class: 'pm-code-block__variant' }, [h('p', { class: 'pm-code-block__label' }, v.label), h(CodeView, { lang: node.lang, value: v.value })]))
           : [h(VariantView, { key: 'variant', lang: node.lang, value: variants[shown]!.value })]
-      const runnable = !owned && node.run && node.run.when !== 'compile'
+      const echo = node.echo !== false
+      const runnable = !owned && echo && node.run && node.run.when !== 'compile'
       const t = messages().code
       const available = mounted.value && executor.value
       const controls = runnable
         ? h('div', { class: 'pm-code-block__run' }, [
             h('button', { type: 'button', disabled: running.value || !available, onClick: run }, running.value ? t.running : live.value ? t.rerun : t.run),
+            node.run!.session ? h('button', { 'type': 'button', 'class': 'pm-code-block__reset', 'disabled': !available, 'data-session': node.run!.session, 'onClick': reset }, t.resetSession) : null,
             mounted.value && !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, t.unavailable) : null,
           ])
         : null
       const runs = owned ? [] : live.value ? [live.value] : node.outputs ?? []
-      const outputs = runs.length ? h('div', { 'class': 'pm-outputs', 'data-source': live.value ? 'live' : 'recorded' }, runs.map(output)) : null
-      return h('div', { 'class': 'pm-code-block', 'data-state': props.expanded ? undefined : state, 'data-run': runnable ? node.run!.when : undefined }, [
-        originBar(node, shown),
-        ...listings,
-        controls,
-        outputs,
-      ])
+      const prose = !echo && !live.value && runs.length > 0 && runs.every(proseOnly)
+      const prefix = section?.section.value.id ?? props.block.id
+      const outputs = runs.length
+        ? h('div', { 'class': ['pm-outputs', { 'pm-outputs--prose': prose }], 'data-source': live.value ? 'live' : 'recorded' }, runs.map((r, i) => runOutput(r, (r as RecordedRun).cacheKey || i, prefix, { prose, note: fallback.value })))
+        : null
+      return h('div', { 'class': ['pm-code-block', { 'pm-code-block--output-only': !echo }], 'data-state': props.expanded ? undefined : state, 'data-run': runnable ? node.run!.when : undefined, 'data-session': node.run?.session }, echo
+        ? [originBar(node, shown), ...listings, controls, outputs]
+        : [outputs])
     }
   },
 })

@@ -35,7 +35,11 @@ renderers:                      # presmium build 默认构建的渲染端及其�
   web: {}
   slides: { theme: default }
   notebook: {}
-execute: { rerun: environment } # 可选：另一运行环境录制的输出重新执行
+execute:                        # 可选：执行环境（第 10 节）
+  env: box                      # 写了 :run: 而不写 :env: 的代码块的环境；不写时按语言选执行器
+  environments:                 # 具名环境：kind 为 devcontainer（本地环境插件）、jupyter、wasi、webgpu 等
+    box: { kind: devcontainer, path: . }
+  rerun: environment            # 另一运行环境录制的输出重新执行
 sectionDepth: 2                 # 可选：开始章节的标题级别，默认 2
 ---
 ```
@@ -130,9 +134,13 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 ## 10. 执行代码与缓存
 
 - 编译时执行：`{code}`（或 MyST notebook 的 `{code-cell}`）加 `:run:`（或 `:run: compile`、`both`）、`{code-ref}` 加 `:run:`、`{run-panel}`（默认 `both`）。构建时用本机的 `python3`、`node` 执行（`py`、`python3`、`ipython` 都是 Python），输出写进 IR，所有媒介都显示；程序直接写标准输出（`process.stdout.write`、`console.dir`）也照常录制。
-- 浏览器中执行：`:run: live` 或 `both`。网页中的代码块有运行按钮；幻灯片中只有 `{run-panel}`、`{step-run}` 能运行。浏览器中的 Python 由 Pyodide 执行，可离线；每次运行有自己的工作目录，一次运行写的文件、改的递归限制不影响下一次，与编译时一致。
+- 浏览器中执行：`:run: live` 或 `both`。网页中的代码块有运行按钮；幻灯片中 Python、JavaScript、TypeScript 的这类代码块是 Monaco Runner，点运行按钮执行。浏览器中的 Python 由 Pyodide 执行，可离线；每次运行有自己的工作目录，一次运行写的文件、改的递归限制不影响下一次，与编译时一致。
+- 运行环境：头部 `execute.environments` 声明具名环境（不含凭据；凭据只来自环境变量，如 `PRESMIUM_ENV_<名>_TOKEN`，头部中像凭据的值给出警告 `presmium.secrets`），代码块与 `{run-panel}`、`{code-ref}` 用 `:env: <名>` 选择。环境不可用时不改用别的执行器：有录制就显示录制。`presmium check --env` 连接每个声明的环境，连不上是错误。
+- 执行会话：同一 `:session:` 的代码块共享解释器（前一块定义、后一块使用），编译时改了其中一块整个会话重新执行；浏览器中每个页面各有一份，“重置会话”丢弃它。
+- 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象与 matplotlib 的图录制为富输出，各媒介按类型显示；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。
+- 编译时执行的代码只得到清理过的环境变量：去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量（运营者可在工作区配置的 `settings.presmium.exec.passEnv` 中列出要传入的变量）。打印环境变量的代码因此不会把凭据写进录制与产物。
 - 组件里的代码（执行面板、分步执行、本地环境包着的代码块）由组件运行，不另显示运行按钮与录制输出。
-- 执行缓存在 `.presmium/freeze/`，键为语言、代码、参数、执行器与环境指纹的哈希。`check`、`ir`、`build`、`dev` 每次编译都执行需要执行的代码并写入缓存；代码不变就不重跑；没有运行环境时沿用已提交的录制；超时不录制。只有 `presmium build` 删除已不存在的代码的录制。
+- 执行缓存在 `.presmium/freeze/`，键为语言、代码、参数、执行器与环境指纹的哈希（会话中的块还包含前一块的键）；较大的图片等输出存在 `.presmium/freeze/blobs/`。`check`、`ir`、`build`、`dev` 每次编译都执行需要执行的代码并写入缓存；代码不变就不重跑；没有运行环境时沿用已提交的录制；超时不录制。只有 `presmium build` 删除已不存在的代码的录制。
 - 超时：代码块或指令的 `:timeout:`，否则 `presmium.exec.timeoutMs`（头部的全局值，或某一节 `{config}` 中的值），否则编译时默认 10 秒。
 - 别的运行环境（如另一个 Python 版本）录制的输出默认沿用并警告；头部写 `execute: { rerun: environment }` 时重新执行并替换录制。
 - 执行失败或超时的 `{run-panel}` 显示 `:recorded:` 的预录输出。PDF、PNG 导出中执行面板显示先给参数赋值的代码与编译时的输出（没有时用 `:recorded:`）。
@@ -143,7 +151,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 | 命令 | 作用 |
 |---|---|
-| `presmium check [deck]` | 编译并运行插件的检查项，只输出诊断；`--json` 输出 JSON，`--update-lock` 先重写锚点锁定文件 |
+| `presmium check [deck]` | 编译并运行插件的检查项，只输出诊断；`--json` 输出 JSON，`--update-lock` 先重写锚点锁定文件，`--env` 另外连接头部声明的执行环境 |
 | `presmium ir [deck]` | 把 IR 输出到标准输出（诊断在标准错误）；`--out <file>` 写到文件 |
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录 |
 | `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口 |
@@ -169,6 +177,10 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium.code.drift` `drifted since pinned commit` | 读差异，改代码或改 `:pin:` |
 | `presmium.execute` `no executor for … and no recorded output` | 安装 `python3` 或 `node`，或提交 `.presmium/freeze/` 中的录制 |
 | `presmium.execute` `recorded output was made with …` | 别的环境录制的输出被沿用；要重跑就加 `execute: { rerun: environment }` |
+| `presmium.execute` `:env: x: no such environment` | 在头部 `execute.environments` 中声明它，或改正名字 |
+| `presmium.execute` `no plugin in plugins provides environments of kind …` | 把提供该类环境的插件加进 `plugins`（`devcontainer`：`@presmium/slidev-addon-exec-local`） |
+| `presmium.execute` `session "…" runs in … and here in …` | 同一会话的代码块写同一个 `:env:` |
+| `presmium.secrets` `… looks like a credential` | 从头部删掉它，改用环境变量 |
 | `presmium.references` `target "…" not found` | 给目标加标签，或改正引用 |
 | `presmium.classroom` `{quiz} needs at least two options` | 选项写成任务列表 `- [ ]`、`- [x]` |
 

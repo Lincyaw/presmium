@@ -95,7 +95,7 @@ steps: [解析, 启动, 渲染]
 
 ### `{code}`、`{code-block}`、`{code-cell}`、`{sourcecode}`
 
-参数为语言；正文为代码。选项：`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（各步都强调的行，如 `2, 4-5`）、`:run:`、`:executor:`、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）。`{code-cell}`（MyST notebook 的写法）同样生成代码块，`:run:` 照常执行。
+参数为语言；正文为代码。选项：`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`（各步都强调的行，如 `2, 4-5`）、`:run:`、`:executor:`、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）、`:env:`、`:session:`、`:echo:`。`{code-cell}`（MyST notebook 的写法）同样生成代码块，`:run:` 照常执行。
 
 ````md
 ```{code} python
@@ -105,9 +105,13 @@ print(sum(range(10)))
 ````
 
 - `:run:` 取 `compile`（默认：构建时执行并录制输出）、`live`（只在浏览器中执行）、`both`。只写 `:run:` 等于 `compile`。
-- `:executor:` 指定执行器 ID：`presmium.python`、`presmium.node`（执行插件）、`presmium.container`（本地环境插件）。
+- `:executor:` 指定执行器 ID：`presmium.python`、`presmium.node`（执行插件）、`presmium.container`（本地环境插件）。指定的执行器不可用时不改用别的执行器：浏览器中运行失败，显示录制输出与原因。
+- `:env:` 选运行环境：头部 `execute.environments` 中的名字（编译为执行器 `presmium.env.<名>`），或保留名 `browser`（按语言选执行器）；不写时取头部的 `execute.env`。与 `:executor:` 同时写是错误；未声明的环境是错误，诊断在代码块的行上。
+- `:session:` 会话名：同一会话的代码块共享解释器（前一块定义的变量后一块能用）。编译时按文稿中的顺序在同一个解释器中运行，改了其中一块整个会话重新执行；浏览器中每个页面、每个学习者各有一份，代码块旁的“重置会话”丢弃它。同一会话的块须在同一环境。
+- `:echo: false`（须有 `:run:`）：只显示输出，不显示代码与运行控件；只输出 Markdown（`text/markdown`）时按正文显示，用于从数据生成表格与列表。与 `:run: live` 同用时警告并按 `compile` 执行。
+- 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片。网页、幻灯片按类型显示（HTML 经清洗，幻灯片中放进沙箱 iframe），notebook 把输出原样写进单元格。
 - 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
-- 网页中带 `live` 或 `both` 的代码块有运行按钮；幻灯片中它是普通代码块，要在幻灯片里运行请用 `{run-panel}`。
+- 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行，录制的输出显示在它下方。
 - 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
 
 ### 其他 MyST 指令
@@ -127,7 +131,7 @@ MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-ta
 | `:variants:` | list | 至少两个提交，逐步切换版本；不能与 `:pin:`、`:steps:` 同用 |
 | `:lang:` | string | 高亮语言，默认取文件扩展名 |
 | `:repo:` | string | 永久链接用的仓库网址，默认本章节的 `presmium.code.repo`（`{config}` 可按章节设置），再默认 `origin` 远端 |
-| `:run:`、`:executor:`、`:timeout:` | | 同 `{code}` |
+| `:run:`、`:executor:`、`:timeout:`、`:env:`、`:session:` | | 同 `{code}` |
 
 步数：`:steps:` 或 `:variants:` 的项数减一。
 
@@ -174,6 +178,7 @@ def merge(ids, pair, new_id):
 | `:timeout:` | number | 毫秒；默认本章节的 `presmium.exec.timeoutMs` |
 | `:recorded:` | string | 执行失败或超时时显示的预录输出 |
 | `:run:` | string | `both`（默认，构建时也录制输出）或 `live`（只在浏览器中执行） |
+| `:env:`、`:session:` | string | 同 `{code}`：运行环境与执行会话 |
 
 ````md
 ```{run-panel} python

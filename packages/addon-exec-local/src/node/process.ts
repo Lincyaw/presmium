@@ -10,6 +10,8 @@ export interface ProcessResult {
 
 export interface ProcessOptions {
   cwd?: string
+  /** The process's whole environment; default this process's. */
+  env?: Record<string, string>
   /** Written to stdin, which is then closed. */
   input?: string
   timeoutMs?: number
@@ -31,7 +33,7 @@ const GRACE_MS = 5_000
 export function runProcess(command: string, args: string[], options: ProcessOptions = {}): Promise<ProcessResult> {
   return new Promise((resolve) => {
     const group = process.platform !== 'win32'
-    const child = spawn(command, args, { cwd: options.cwd, stdio: 'pipe', detached: group })
+    const child = spawn(command, args, { cwd: options.cwd, env: options.env, stdio: 'pipe', detached: group })
     const stdout: Buffer[] = []
     const stderr: Buffer[] = []
     let timedOut = false

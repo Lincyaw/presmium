@@ -230,6 +230,8 @@ WASI 与 WebGPU 的执行器按语言登记（`c`、`cpp`、`ruby`、`sql`；`wg
 
 浏览器中，同一会话的状态按页面实例隔离：每个打开的页面（每个学习者）各有一份，重新加载即重新开始；代码块旁的“重置会话”丢弃它（`Executor.endSession`）。编译时，同一会话的代码块按在文稿中出现的顺序在同一个解释器中运行（第 4 节的会话键链）。
 
+实现（WP-73b）：`:env:` 与 `:session:` 由编译器读取，所以插件的指令（`{run-panel}`、`{code-ref}`）不必自己声明它们：指令的结果中有带 `run` 的代码（它自己，或组件的子块）时，编译器把环境与会话写进它的 `run`；指令声明了同名选项时由指令自己处理；结果中没有要运行的代码时警告这两个选项不起作用。执行面板经执行插件的编译步骤把 `run.executor`、`run.session` 作为属性 `executor`、`session` 交给组件。头部的 `execute` 原样写入 IR 的 `config.execute`（只保留合法的部分：`env`、`environments` 中带 `kind` 的项、`rerun`），环境名只能由字母、数字、`_`、`-` 组成，`browser` 是保留名。Python 代码中 `display(obj)` 不必导入，`IPython.display` 的 `Markdown`、`HTML`、`Latex`、`SVG`、`JSON`、`Image` 由运行器提供（浏览器与编译时一致，不用安装了的 IPython），matplotlib 的图在 `plt.show()` 与运行结束时成为 `image/png` 输出（`architecture.md` 4.6 节）。
+
 远端环境的浏览器终端（P-107）：
 
 ```md
@@ -614,8 +616,8 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 | 渲染端 | 处理 |
 |---|---|
-| 网页（IR 运行时） | 每个输出按 MIME 类型选择渲染器，顺序同 JupyterLab：`text/html`（DOMPurify 清洗后内联显示）、`text/markdown`（转为 mdast 后照正文显示）、`text/latex`（KaTeX）、`image/svg+xml`、`image/png`、`image/jpeg`、`image/gif`、`application/json`、`text/plain`；`stream` 与 `error` 的 ANSI 转义转为样式。插件可以为新的类型注册渲染器（`registerNodeRenderer('mime:<类型>')`），优先于内置的。`echo: false` 的代码块不显示代码，`text/markdown` 输出不加输出框 |
-| 幻灯片 | 录制的输出写进 Slidev 文稿：图片为 `<img>`（数据较大时作为文件发布），`text/markdown` 为 Markdown，`text/html` 放进没有脚本权限的沙箱 iframe（`srcdoc`），其他为文本；带 `live` 或 `both` 的代码块写成 `{monaco-run}`（`architecture.md` 9.2 节） |
+| 网页（IR 运行时） | 每个输出按 MIME 类型选择渲染器，顺序同 JupyterLab：`text/html`（DOMPurify 清洗后内联显示；只在浏览器中清洗，服务端渲染与清洗之前显示 `text/plain`）、`text/markdown`（`mdast-util-from-markdown` 与 GFM 转为 mdast 后照正文显示，其中的原始 HTML 作为文字）、`text/latex`（KaTeX）、`image/svg+xml`、`image/png`、`image/jpeg`、`image/gif`、`application/json`、`text/plain`；`stream` 与 `error` 的 ANSI 转义转为样式。插件可以为新的类型注册渲染器（`registerNodeRenderer('mime:<类型>')`），优先于内置的。`echo: false` 的代码块不显示代码，`text/markdown` 输出不加输出框 |
+| 幻灯片 | 录制的输出写进 Slidev 文稿：图片为 `<img>`（base64 超过 16 KB 时作为文件发布），`text/markdown` 为 Markdown（其中的原始 HTML 作为文字），`text/html` 放进没有脚本权限的沙箱 iframe（`srcdoc`），`text/latex` 为公式，其他为文本；带 `live` 或 `both` 的 Python、JavaScript、TypeScript 代码块（没有高亮步骤与多版本时）写成 `{monaco-run}`，点运行按钮执行，执行器、会话与超时经生成文稿头部的 `presmiumRuns` 交给执行插件的 code runner（`architecture.md` 4.6、9.2 节），录制的输出写在它下方；`echo: false` 的代码块只写输出，Markdown 输出不加输出框 |
 | notebook | 把 `outputs` 原样写入代码单元格的 `outputs`（`execution_count` 按顺序编号）；`echo: false` 的单元格带元数据 `jupyter.source_hidden` |
 | 静态导出（PDF、PNG） | 使用录制的输出，同幻灯片 |
 
@@ -751,7 +753,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `ink` | `block`、`lines` 或 `range` | 讲授插件（激光笔、荧光笔） |
 | `select` | `block`、`range` | 讲授插件 |
 | `click` | `block`、`action`（组件的具名动作，不是原始的 DOM 点击） | 提供该动作的插件 |
-| `run` | `block`、`result`（`freeze:<缓存键>`，回放时默认重放录制的结果） | 执行插件 |
+| `run` | `section`、`block`、`result`（`live`，或 `freeze:<缓存键>`；回放时重放录制的结果） | IR 运行时的代码块（WP-73b；块 ID 只有 IR 运行时知道，`architecture.md` 4.6 节） |
 | `scroll` | `block`、`fraction` | 讲授插件 |
 | `mark` | `label` | 讲授插件（章节标记，导出为 `chapters.vtt`） |
 | `pause` | `ms` | 讲授插件 |

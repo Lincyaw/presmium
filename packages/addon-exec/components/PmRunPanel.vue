@@ -19,6 +19,10 @@ const props = withDefaults(defineProps<{
   recorded?: string
   /** Timeout in ms; else `presmium.exec.timeoutMs` of the section, else the executor's default. */
   timeout?: number
+  /** The executor of its environment (`:env:`, docs/ir.md 2.7); without it the router chooses by language. */
+  executor?: string
+  /** The execution session (`:session:`) it shares with code blocks and panels of the page. */
+  session?: string
 }>(), { lang: 'python', code: '' })
 
 const executor = useService(EXECUTOR)
@@ -42,7 +46,7 @@ async function run() {
   if (!executor.value || running.value) return
   running.value = true
   try {
-    const request = { lang: props.lang, code: props.code, args: { ...args }, timeoutMs: props.timeout ?? configuredTimeout(config.value) }
+    const request = { lang: props.lang, code: props.code, args: { ...args }, timeoutMs: props.timeout ?? configuredTimeout(config.value), executor: props.executor, session: props.session }
     const result = await executor.value.run(request)
     history.value = appendRun(history.value, request.args, withRecordedFallback(result, props.recorded))
     selected.value = defaultPair(history.value) ?? []

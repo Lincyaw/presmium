@@ -1,25 +1,43 @@
 /**
  * Pass 7 (docs/ir.md section 4): runs code nodes whose `run.when` is
- * 'compile' or 'both' with the plugins' Node executors and records the result
- * in `outputs`. Results are cached in `.presmium/freeze/` under a hash of
- * language, code, arguments, executor id and environment, so unchanged code
- * never runs twice, and a deck with a committed cache builds without the
- * runtime installed. A recording of the same code made in another
- * environment (e.g. another interpreter version) is reused with a warning, so
- * everyone who builds the deck gets the same output; the headmatter
- * `execute: { rerun: environment }` runs such code again and replaces the
- * recording. `presmium build` prunes the recordings of code that is no longer
- * in the deck.
+ * 'compile' or 'both' with the plugins' Node executors and the executors of
+ * the declared environments, and records the result in `outputs`. Results are
+ * cached in `.presmium/freeze/` under a hash of language, code, arguments,
+ * executor id and environment, so unchanged code never runs twice, and a deck
+ * with a committed cache builds without the runtime installed. A recording of
+ * the same code made in another environment (e.g. another interpreter
+ * version) is reused with a warning, so everyone who builds the deck gets the
+ * same output; the headmatter `execute: { rerun: environment }` runs such
+ * code again and replaces the recording. `presmium build` prunes the
+ * recordings of code that is no longer in the deck, and the blobs no
+ * recording refers to.
+ *
+ * The blocks of one `:session:` share an interpreter: a block's key chains
+ * the key of the block before it, so changing one block runs the whole
+ * session again, from its first block, in one go (P-101). Large MIME data of
+ * rich outputs is stored apart, in `blobs/<sha256>` (P-102).
+ *
+ * Each run gets its `RunContext` (docs/architecture.md 4.6, 10.6): the
+ * environment the code may see, cleaned of credentials, and the process
+ * sandbox when a Node service provides one. The host may decide which runs
+ * that the cache does not answer happen (`admit`), or run them elsewhere
+ * (`remote`: SHARED `presmium serve` hands them to agent-host).
  */
 import { createHash } from 'node:crypto'
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { CodeNode, Executor, Finding, IRBlock, IRDocument, RecordedRun, RunCache, RunRequest } from '@presmium/kernel'
+import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
+import type { CodeNode, Executor, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunCache, RunContext, RunOutput, RunRequest, RunResult } from '@presmium/kernel'
 import type { ReadScope } from './workspace.ts'
 
 /** Cache location relative to the deck directory. */
 export const FREEZE_DIR = '.presmium/freeze'
+/** Where MIME data longer than `BLOB_LENGTH` characters is stored, relative to the cache. */
+const BLOBS = 'blobs'
+const BLOB_LENGTH = 4096
+/** How a recording refers to a blob: `{ "presmium/blob": "<sha256>" }`. */
+const BLOB_REF = 'presmium/blob'
 
 interface FreezeRecord {
   /** Hash of the request without executor and environment; finds a recording when no executor is installed. */
@@ -38,7 +56,7 @@ export class FreezeCache implements RunCache {
   readonly entry: string
   /** Inputs of the requests made in this compilation. */
   readonly used = new Set<string>()
-  /** File name -> record, read once when first needed (a lookup without an executor, or pruning). */
+  /** File name -> record as stored (blobs referred to), read once when first needed (a lookup without an executor, or pruning). */
   #records?: Map<string, FreezeRecord>
   /** The files it may read (SHARED `presmium serve`). */
   readonly #scope?: ReadScope
@@ -50,7 +68,8 @@ export class FreezeCache implements RunCache {
   }
 
   get(key: string): RecordedRun | undefined {
-    return this.#read(`${key}.json`)?.run
+    const record = this.#read(`${key}.json`)
+    return record && this.#restore(record.run)
   }
 
   set(key: string, run: RecordedRun): void {
@@ -75,15 +94,16 @@ export class FreezeCache implements RunCache {
   /** The record of a recording of the same request by any executor, in any environment. */
   recording(input: string): { run: RecordedRun, environment?: string } | undefined {
     for (const record of this.#all().values()) {
-      if (record.input === input) return record
+      if (record.input === input) return { run: this.#restore(record.run), environment: record.environment }
     }
     return undefined
   }
 
   /**
    * Removes the records of this entry whose request was not made in this
-   * compilation: the outputs of code that was edited or deleted. Records of
-   * other entries and those stored by plugins through `set` are kept.
+   * compilation (the outputs of code that was edited or deleted), then the
+   * blobs no record refers to. Records of other entries and those stored by
+   * plugins through `set` are kept.
    */
   prune(): number {
     let removed = 0
@@ -93,6 +113,13 @@ export class FreezeCache implements RunCache {
       this.#records?.delete(file)
       removed++
     }
+    const referred = new Set<string>()
+    for (const record of this.#all().values()) blobRefs(record.run, referred)
+    let blobs: string[] = []
+    try {
+      blobs = readdirSync(join(this.dir, BLOBS))
+    } catch {}
+    for (const blob of blobs.filter(name => !referred.has(name))) rmSync(join(this.dir, BLOBS, blob), { force: true })
     return removed
   }
 
@@ -125,9 +152,93 @@ export class FreezeCache implements RunCache {
 
   #write(key: string, record: FreezeRecord): void {
     mkdirSync(this.dir, { recursive: true })
-    writeFileSync(join(this.dir, `${key}.json`), `${JSON.stringify(record, null, 2)}\n`)
-    this.#records?.set(`${key}.json`, record)
+    const stored = { ...record, run: this.#store(record.run) }
+    writeFileSync(join(this.dir, `${key}.json`), `${JSON.stringify(stored, null, 2)}\n`)
+    this.#records?.set(`${key}.json`, stored)
   }
+
+  /** The run with its long MIME data written to blobs and referred to. */
+  #store(run: RecordedRun): RecordedRun {
+    if (!run.outputs) return run
+    return { ...run, outputs: run.outputs.map(output => mapData(output, (value) => {
+      const text = Array.isArray(value) && value.every(v => typeof v === 'string') ? value.join('') : value
+      if (typeof text !== 'string' || text.length <= BLOB_LENGTH) return value
+      const name = createHash('sha256').update(text).digest('hex')
+      const file = join(this.dir, BLOBS, name)
+      if (!existsSync(file)) {
+        mkdirSync(join(this.dir, BLOBS), { recursive: true })
+        writeFileSync(file, text)
+      }
+      return { [BLOB_REF]: name }
+    })) }
+  }
+
+  /** The run with the blobs it refers to read back; data whose blob is missing is left out. */
+  #restore(run: RecordedRun): RecordedRun {
+    if (!run.outputs) return run
+    return { ...run, outputs: run.outputs.map(output => mapData(output, (value) => {
+      if (!isRecord(value) || typeof value[BLOB_REF] !== 'string') return value
+      const file = join(this.dir, BLOBS, value[BLOB_REF].replace(/[^0-9a-f]/g, ''))
+      if (this.#scope && !this.#scope.allows(file)) return undefined
+      try {
+        return readFileSync(file, 'utf8')
+      } catch {
+        return undefined
+      }
+    })) }
+  }
+}
+
+/** An output with each MIME value replaced by `map`'s; an undefined value is left out. */
+function mapData(output: RunOutput, map: (value: unknown) => unknown): RunOutput {
+  if (output.output_type !== 'display_data' && output.output_type !== 'execute_result') return output
+  const data: Record<string, unknown> = {}
+  for (const [mime, value] of Object.entries(output.data)) {
+    const mapped = map(value)
+    if (mapped !== undefined) data[mime] = mapped
+  }
+  return { ...output, data }
+}
+
+function blobRefs(run: RecordedRun, into: Set<string>): void {
+  for (const output of run.outputs ?? []) {
+    mapData(output, (value) => {
+      if (isRecord(value) && typeof value[BLOB_REF] === 'string') into.add(value[BLOB_REF])
+      return value
+    })
+  }
+}
+
+/** A run the cache did not answer, as the host's `admit` sees it. */
+export interface PendingRun {
+  section: string
+  block: string
+  source: { file: string, line: number }
+  /** The executor that would run it. */
+  executor: string
+  request: RunRequest
+}
+
+/** Runs every run elsewhere instead of in this process (SHARED `presmium serve`: in agent-host, docs/architecture.md 10.8). */
+export interface RemoteExecution {
+  run(executor: string, request: RunRequest, env: Readonly<Record<string, string>>, signal?: AbortSignal): Promise<RunResult>
+  /** Ends an execution session of that executor. */
+  endSession(executor: string, session: string): Promise<void>
+}
+
+/** The execution options of the compiler (docs/architecture.md 4.6, 10.6), which the host gives; not a kernel contract. */
+export interface ExecutionOptions {
+  /** The rules of `RunContext.env`: `local` (default; build, check, dev) or `serve` (an allowlist and a temporary `HOME` per workspace). */
+  env?: 'local' | 'serve'
+  /**
+   * Decides which of the runs the cache does not answer happen, once per
+   * compilation, all of them at once; the others are not executed (their
+   * blocks show a recording made elsewhere or none) and are listed in
+   * `RunStats.refused`. A session runs only when all its runs are admitted.
+   */
+  admit?(runs: PendingRun[]): PendingRun[] | Promise<PendingRun[]>
+  /** Runs no executor in this process: every run and the end of every session go to it. */
+  remote?: RemoteExecution
 }
 
 export interface RunStats {
@@ -135,82 +246,232 @@ export interface RunStats {
   executed: number
   /** Code nodes answered from the cache. */
   cached: number
+  /** Runs the host's `admit` did not let happen. */
+  refused: PendingRun[]
+  /** How the runs were isolated (`ProcessSandbox.kind`), when they ran in a process sandbox. */
+  sandbox?: string
 }
 
-export interface ExecuteOptions {
+export interface ExecuteOptions extends ExecutionOptions {
   /** Run code again whose recording was made in another environment, instead of reusing it. */
   rerun?: boolean
+  /** The context of every run. */
+  context: RunContext
 }
 
-export async function executePass(doc: IRDocument, executors: Executor[], cache: FreezeCache, report: (finding: Finding) => void, options: ExecuteOptions = {}): Promise<RunStats> {
-  const stats: RunStats = { executed: 0, cached: 0 }
-  for (const section of doc.sections) {
-    for (const block of irBlocks(section.blocks)) {
-      if (block.node.type !== 'code' || !block.node.run || block.node.run.when === 'live') continue
-      await runCode(block.node, block, executors, cache, stats, options, (severity, message) =>
-        report({ checkId: 'presmium.execute', severity, message, source: { file: block.source.file, line: block.source.line } }))
+const CREDENTIAL = /_(?:KEY|TOKEN|SECRET|PASSWORD)$/i
+const SERVE_ALLOWED = /^(?:PATH|LANG|LC_\w+|TZ|TMPDIR)$/
+
+/**
+ * `RunContext.env` (docs/architecture.md 4.6): under the `local` rules the
+ * process's environment without the variables that start with `PRESMIUM_` or
+ * whose names end with `_KEY`, `_TOKEN`, `_SECRET`, `_PASSWORD`; under the
+ * `serve` rules only `PATH`, `LANG`, `LC_*`, `TZ`, `TMPDIR` and a temporary
+ * `HOME` of the workspace. Both add the variables the operator lists in
+ * `settings.presmium.exec.passEnv`, with this process's values.
+ */
+export function runEnvironment(rules: 'local' | 'serve', passEnv: readonly string[], workspaceRoot: string, source: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const env: Record<string, string> = {}
+  for (const [name, value] of Object.entries(source)) {
+    if (value === undefined) continue
+    const kept = rules === 'serve' ? SERVE_ALLOWED.test(name) : !/^PRESMIUM_/i.test(name) && !CREDENTIAL.test(name)
+    if (kept) env[name] = value
+  }
+  if (rules === 'serve') {
+    const home = join(tmpdir(), `presmium-home-${createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 16)}`)
+    mkdirSync(home, { recursive: true })
+    env.HOME = home
+  }
+  for (const name of passEnv) {
+    const value = source[name]
+    if (value !== undefined) env[name] = value
+  }
+  return env
+}
+
+/** A code node to run at compile time, with its request and the hash of it (`input`). */
+interface Item {
+  node: CodeNode
+  block: IRBlock
+  section: IRSection
+  request: RunRequest
+  input: string
+  key?: string
+}
+
+/** What runs as one: a block, or the blocks of a session in document order. */
+interface Unit {
+  session?: string
+  items: Item[]
+  executor?: Executor
+  environment: string
+}
+
+type Report = (severity: Finding['severity'], message: string, block: IRBlock) => void
+
+export async function executePass(doc: IRDocument, executors: Executor[], cache: FreezeCache, report: (finding: Finding) => void, options: ExecuteOptions): Promise<RunStats> {
+  const stats: RunStats = { executed: 0, cached: 0, refused: [], ...options.context.sandbox && !options.remote ? { sandbox: options.context.sandbox.kind } : {} }
+  const say: Report = (severity, message, block) =>
+    report({ checkId: 'presmium.execute', severity, message, source: { file: block.source.file, line: block.source.line } })
+  const units = collect(doc, cache)
+
+  // Answer what the cache can; the rest is pending.
+  const pending: Unit[] = []
+  for (const unit of units) {
+    const run = unit.items[0]!.node.run!
+    // A block that names no environment runs as it would without environments (docs/ir.md 2.7).
+    unit.executor = run.executor
+      ? executors.find(e => e.id === run.executor && e.supports(run.lang))
+      : executors.find(e => !e.id.startsWith(environmentExecutor('')) && e.supports(run.lang))
+    if (!unit.executor) {
+      for (const item of unit.items) fromRecording(item, cache, stats, say, run.executor)
+      continue
     }
+    try {
+      unit.environment = await unit.executor.fingerprint?.(run.lang) ?? ''
+    } catch (error) {
+      for (const item of unit.items) fromRecording(item, cache, stats, say, run.executor, errorMessage(error))
+      continue
+    }
+    let previous = unit.session
+    for (const item of unit.items) {
+      item.key = hash(unit.session ? { previous, input: item.input, executor: unit.executor.id, environment: unit.environment } : { input: item.input, executor: unit.executor.id, environment: unit.environment })
+      previous = item.key
+    }
+    const cached = unit.items.map(item => cache.get(item.key!))
+    if (cached.every(Boolean)) {
+      unit.items.forEach((item, i) => item.node.outputs = [cached[i]!])
+      stats.cached += unit.items.length
+      continue
+    }
+    // Recorded for the same code, but by another runtime: the output everyone else gets.
+    const others = options.rerun ? [] : unit.items.map(item => cache.recording(item.input))
+    if (others.length > 0 && others.every(Boolean)) {
+      unit.items.forEach((item, i) => {
+        const other = others[i]!
+        item.node.outputs = [other.run]
+        const made = other.environment === undefined ? 'another environment' : `"${other.environment || 'no fingerprint'}"`
+        say('warning', `block ${item.block.id}: its recorded output was made with ${made}, this build has "${unit.environment || 'no fingerprint'}"; the recording is reused (\`execute: { rerun: environment }\` in the headmatter runs it again)`, item.block)
+      })
+      stats.cached += unit.items.length
+      continue
+    }
+    pending.push(unit)
+  }
+
+  // The host decides which runs happen.
+  let admitted = pending
+  if (options.admit && pending.length > 0) {
+    const runs = new Map(pending.flatMap(unit => unit.items.map(item => [pendingRun(item, unit.executor!), unit] as const)))
+    const allowed = new Set(await options.admit([...runs.keys()]))
+    const refused = new Set([...runs].filter(([run]) => !allowed.has(run)).map(([, unit]) => unit))
+    admitted = pending.filter(unit => !refused.has(unit))
+    for (const unit of refused) {
+      for (const item of unit.items) {
+        stats.refused.push(pendingRun(item, unit.executor!))
+        const other = cache.recording(item.input)
+        if (other) item.node.outputs = [other.run]
+        say('info', `block ${item.block.id} was not executed: its code has no recording and running it was not allowed`, item.block)
+      }
+    }
+  }
+
+  const sessions: [Executor, string][] = []
+  for (const unit of admitted) {
+    const executor = unit.executor!
+    const run = (request: RunRequest) => options.remote
+      ? options.remote.run(executor.id, request, options.context.env)
+      : executor.run(request, undefined, options.context)
+    try {
+      if (unit.session) {
+        // The session starts afresh; its blocks are sent together, and run in order.
+        await (options.remote ? options.remote.endSession(executor.id, unit.session) : executor.endSession?.(unit.session))
+        sessions.push([executor, unit.session])
+        const results = await Promise.all(unit.items.map(item => run(item.request)))
+        unit.items.forEach((item, i) => record(item, results[i]!, unit, cache, stats, say))
+      } else {
+        const item = unit.items[0]!
+        record(item, await run(item.request), unit, cache, stats, say)
+      }
+    } catch (error) {
+      for (const item of unit.items) fromRecording(item, cache, stats, say, executor.id, errorMessage(error))
+    }
+  }
+  // The end of the compilation ends the sessions it used.
+  for (const [executor, session] of sessions) {
+    await (options.remote ? options.remote.endSession(executor.id, session) : executor.endSession?.(session))?.catch(() => {})
   }
   return stats
 }
 
-async function runCode(
-  node: CodeNode,
-  block: IRBlock,
-  executors: Executor[],
-  cache: FreezeCache,
-  stats: RunStats,
-  options: ExecuteOptions,
-  report: (severity: Finding['severity'], message: string) => void,
-): Promise<void> {
-  const run = node.run!
-  const request: RunRequest = { lang: run.lang, code: node.value }
-  if (run.args) request.args = run.args
-  if (run.stdin !== undefined) request.stdin = run.stdin
-  if (run.timeoutMs !== undefined) request.timeoutMs = run.timeoutMs
-  const input = hash({ lang: request.lang, code: request.code, args: request.args, stdin: request.stdin, executor: run.executor })
-  cache.used.add(input)
-  const executor = run.executor ? executors.find(e => e.id === run.executor) : executors.find(e => e.supports(run.lang))
-
-  if (!executor) {
-    const recorded = cache.find(input)
-    if (recorded) {
-      node.outputs = [recorded]
-      stats.cached++
-    } else {
-      report('warning', `no executor for ${run.executor ?? run.lang} and no recorded output in ${FREEZE_DIR}; block ${block.id} has no output`)
+/** The code nodes to run at compile time, as units: blocks alone, and sessions at their first block. */
+function collect(doc: IRDocument, cache: FreezeCache): Unit[] {
+  const units: Unit[] = []
+  const sessions = new Map<string, Unit>()
+  for (const section of doc.sections) {
+    for (const block of irBlocks(section.blocks)) {
+      const node = block.node
+      if (node.type !== 'code' || !node.run || node.run.when === 'live') continue
+      const run = node.run
+      const request: RunRequest = { lang: run.lang, code: node.value }
+      if (run.args) request.args = run.args
+      if (run.stdin !== undefined) request.stdin = run.stdin
+      if (run.timeoutMs !== undefined) request.timeoutMs = run.timeoutMs
+      const fields = { lang: request.lang, code: request.code, args: request.args, stdin: request.stdin, executor: run.executor }
+      if (!run.session) {
+        const input = hash(fields)
+        cache.used.add(input)
+        units.push({ items: [{ node, block, section, request, input }], environment: '' })
+        continue
+      }
+      // A session of the deck: `<entry>:<name>` for the executors.
+      const session = `${cache.entry}:${run.session}`
+      request.session = session
+      let unit = sessions.get(session)
+      if (!unit) {
+        unit = { session, items: [], environment: '' }
+        sessions.set(session, unit)
+        units.push(unit)
+      }
+      const input = hash({ previous: unit.items.at(-1)?.input ?? session, ...fields })
+      cache.used.add(input)
+      unit.items.push({ node, block, section, request, input })
     }
+  }
+  return units
+}
+
+function pendingRun(item: Item, executor: Executor): PendingRun {
+  return { section: item.section.id, block: item.block.id, source: { file: item.block.source.file, line: item.block.source.line }, executor: executor.id, request: item.request }
+}
+
+function record(item: Item, result: RunResult, unit: Unit, cache: FreezeCache, stats: RunStats, say: Report): void {
+  const recorded: RecordedRun = { ...result, cacheKey: item.key! }
+  item.node.outputs = [recorded]
+  stats.executed++
+  // A timeout depends on the machine, not on the code; it is not recorded.
+  if (!result.timedOut) cache.record(item.key!, item.input, item.request, recorded, unit.environment)
+  if (!result.ok) say('warning', `block ${item.block.id} exited with ${result.timedOut ? 'a timeout' : result.exitCode === null ? `no exit code: ${result.stderr.trim().split('\n')[0]}` : `code ${result.exitCode}`}`, item.block)
+}
+
+/**
+ * A block whose executor is missing or unavailable: the recording of the
+ * same request by any executor, else nothing. A named environment's
+ * executor is never replaced by another (docs/ir.md section 4), so a block
+ * of an environment without recording is an error.
+ */
+function fromRecording(item: Item, cache: FreezeCache, stats: RunStats, say: Report, executor: string | undefined, failure?: string): void {
+  const recorded = cache.find(item.input)
+  const which = executor ?? item.request.lang
+  if (recorded) {
+    item.node.outputs = [recorded]
+    stats.cached++
+    if (failure) say('warning', `executor ${which} is unavailable (${failure}); block ${item.block.id} shows its recorded output`, item.block)
     return
   }
-
-  try {
-    const environment = await executor.fingerprint?.(run.lang) ?? ''
-    const cacheKey = hash({ input, executor: executor.id, environment })
-    const cached = cache.get(cacheKey)
-    if (cached) {
-      node.outputs = [cached]
-      stats.cached++
-      return
-    }
-    // Recorded for the same code, but by another runtime: the output everyone else gets.
-    const other = options.rerun ? undefined : cache.recording(input)
-    if (other) {
-      node.outputs = [other.run]
-      stats.cached++
-      const made = other.environment === undefined ? 'another environment' : `"${other.environment || 'no fingerprint'}"`
-      report('warning', `block ${block.id}: its recorded output was made with ${made}, this build has "${environment || 'no fingerprint'}"; the recording is reused (\`execute: { rerun: environment }\` in the headmatter runs it again)`)
-      return
-    }
-    const result = await executor.run(request)
-    const recorded: RecordedRun = { ...result, cacheKey }
-    node.outputs = [recorded]
-    stats.executed++
-    // A timeout depends on the machine, not on the code; it is not recorded.
-    if (!result.timedOut) cache.record(cacheKey, input, request, recorded, environment)
-    if (!result.ok) report('warning', `block ${block.id} exited with ${result.timedOut ? 'a timeout' : `code ${result.exitCode}`}`)
-  } catch (error) {
-    report('error', `executor ${executor.id} failed on block ${block.id}: ${errorMessage(error)}`)
-  }
+  if (failure) return say('error', `executor ${which} failed on block ${item.block.id}: ${failure}`, item.block)
+  const environment = executor?.startsWith(environmentExecutor(''))
+  say(environment ? 'error' : 'warning', `no executor for ${which} and no recorded output in ${FREEZE_DIR}; block ${item.block.id} has no output`, item.block)
 }
 
 function hash(value: unknown): string {

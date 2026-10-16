@@ -6,6 +6,10 @@
  *   `presmium.exec.timeoutMs` of its section, when the configuration sets one,
  *   so a section's `{config}` and the global option bound compile-time and
  *   live runs alike (R-26).
+ * - `presmium.exec.panels` (step 6): a run panel runs its code where the
+ *   code's run says, the environment (`:env:`, compiled to the executor)
+ *   and the session (`:session:`) the compiler read on the directive
+ *   (docs/ir.md 2.7), so it gets them as props.
  * - `presmium.exec.fallbacks` (after step 7, `after: 'execute'`): a run
  *   panel's fallback, which PDF and PNG exports show, becomes its code with
  *   the parameters assigned first, followed by the output recorded at compile
@@ -28,6 +32,18 @@ export const timeoutPass: IRPass = {
       if (node.type !== 'code' || !node.run || node.run.timeoutMs !== undefined) continue
       const timeout = configuredTimeout(ctx.configFor(section))
       if (timeout) node.run.timeoutMs = timeout
+    }
+  },
+}
+
+export const panelPass: IRPass = {
+  name: 'presmium.exec.panels',
+  run(doc) {
+    for (const { block: { node } } of docBlocks(doc)) {
+      if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmRunPanel') continue
+      const run = ownCode(node)?.run
+      if (run?.executor) node.props.executor = run.executor
+      if (run?.session) node.props.session = run.session
     }
   },
 }

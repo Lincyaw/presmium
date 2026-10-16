@@ -2,29 +2,44 @@
  * Local JavaScript and TypeScript executor for compile-time execution (K-19):
  * runs code with the node that runs the compiler, through the same runner as
  * the browser (src/runner.mjs), so the recorded output matches a live run.
+ * Each run is a module of its own: it has no sessions.
  */
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
 import type { Executor } from '@presmium/kernel'
-import { isScript, isTypeScript } from '../domain/index.ts'
-import { runChild } from './child.ts'
+import { isScript } from '../domain/index.ts'
+import { childRuns, REQUEST_FILE } from './child.ts'
 
 export const SCRIPT_EXECUTOR_ID = 'presmium.node'
 
-// The result goes to file descriptor 3 (./child.ts); the run has cancelled what the code left
-// pending, and whatever else it opened ends with the process.
-const MAIN = `import { writeSync } from 'node:fs'
-import { runScript } from ${JSON.stringify(new URL('../runner.mjs', import.meta.url).href)}
-let input = ''
-for await (const chunk of process.stdin) input += chunk
-const result = Buffer.from(JSON.stringify(await runScript(JSON.parse(input))))
-for (let written = 0; written < result.length;) written += writeSync(3, result, written)
+const RUNNER = new URL('../runner.mjs', import.meta.url)
+/** The package of the runner and of Sucrase, which it imports: read by the run. */
+const READ = [fileURLToPath(new URL('../..', import.meta.url)), dirname(createRequire(RUNNER).resolve('sucrase/package.json')), dirname(dirname(process.execPath))]
+
+// The result goes to a file of the run directory (./child.ts); the run has cancelled what the code
+// left pending, and whatever else it opened ends with the process.
+const MAIN = `import { readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { runScript } from ${JSON.stringify(RUNNER.href)}
+const { runs } = JSON.parse(readFileSync(${JSON.stringify(REQUEST_FILE)}, 'utf8'))
+for (const [i, run] of runs.entries()) {
+  const result = await runScript({ code: run.code, args: run.args, typescript: /^(ts|typescript)$/i.test(run.lang ?? '') })
+  writeFileSync(\`.presmium/result-\${i}.part\`, JSON.stringify(result))
+  renameSync(\`.presmium/result-\${i}.part\`, \`.presmium/result-\${i}.json\`)
+}
 process.exit(0)
 `
 
-const runner = { executorId: SCRIPT_EXECUTOR_ID, command: process.execPath, args: ['--input-type=module', '-e', MAIN] }
+const runs = childRuns({
+  executorId: SCRIPT_EXECUTOR_ID,
+  argv: [process.execPath, '--input-type=module', '-e', MAIN],
+  read: () => READ,
+  sessions: false,
+})
 
 export const scriptExecutor: Executor = {
   id: SCRIPT_EXECUTOR_ID,
   supports: isScript,
   fingerprint: () => `node ${process.version}`,
-  run: (request, signal) => runChild(runner, request, { code: request.code, args: request.args, typescript: isTypeScript(request.lang) }, signal),
+  run: runs.run,
 }

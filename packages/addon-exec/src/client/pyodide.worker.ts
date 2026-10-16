@@ -1,11 +1,13 @@
 /// <reference lib="webworker" />
 /**
  * Runs Python in Pyodide off the main thread, so a run that never ends can be
- * stopped by terminating the worker. Requests are handled one at a time.
+ * stopped by terminating the worker. Requests are handled one at a time. The
+ * runner (`@presmium/kernel/runner.py`, the one compile time uses) keeps the
+ * globals of each session until the session ends (P-101).
  */
 import { errorMessage } from '@presmium/kernel'
 import type { loadPyodide as LoadPyodide, PyodideInterface } from 'pyodide'
-import runner from '../runner.py?raw'
+import runner from '@presmium/kernel/runner.py?raw'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 declare const self: DedicatedWorkerGlobalScope
@@ -35,10 +37,12 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
   try {
     const pyodide = await load(indexURL)
     reply({ id, type: 'started' })
-    const fn = pyodide.globals.get(kind === 'trace' ? '_pm_trace' : '_pm_run')
+    const fn = pyodide.globals.get(kind === 'trace' ? '_pm_trace' : kind === 'end' ? '_pm_end' : '_pm_run')
     try {
       const started = performance.now()
-      const json = fn(request.code, JSON.stringify(request.args ?? {}), request.stdin ?? '', JSON.stringify(request.files ?? {}), maxEvents) as string
+      const json = kind === 'end'
+        ? (fn(request.session ?? ''), 'null')
+        : fn(request.code, JSON.stringify(request.args ?? {}), request.stdin ?? '', JSON.stringify(request.files ?? {}), maxEvents, request.session ?? null) as string
       reply({ id, type: 'done', value: JSON.parse(json), durationMs: Math.round(performance.now() - started) })
     } finally {
       fn.destroy()

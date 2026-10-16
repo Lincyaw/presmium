@@ -12,6 +12,8 @@ export interface CheckOptions {
   updateLock?: boolean
   /** What the host gives the compiler (e.g. where Presmium's own packages are installed). */
   compiler?: CompilerOptions
+  /** Connect to the declared environments (`presmium check --env`, P-100). */
+  environments?: boolean
 }
 
 export interface LockUpdate {
@@ -46,6 +48,7 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   }
 
   findings.push(...await pluginChecks(compilation))
+  if (options.environments) findings.push(...await probeEnvironments(compilation, entryText))
   const all = [...compilation.doc.diagnostics, ...findings].map(f => f.source ? f : { ...f, source: { file: compilation.entry, line: 1 } })
   return { entry: compilation.entry, findings: sortFindings(all), lock }
 }
@@ -73,6 +76,25 @@ export async function pluginChecks(compilation: Compilation): Promise<Finding[]>
   }
   for (const finding of await checks.run(checkContext(compilation))) {
     findings.push(finding.source ? finding : { ...finding, source: places.get(finding.checkId) ?? { file: compilation.entry, line: 1 } })
+  }
+  return findings
+}
+
+/**
+ * `presmium check --env`: each declared environment's provider connects to it
+ * (`EnvironmentProvider.probe`); one that cannot be reached is an error on its
+ * line of the headmatter, with the provider's reason.
+ */
+export async function probeEnvironments(compilation: Compilation, text: string): Promise<Finding[]> {
+  const findings: Finding[] = []
+  for (const { name, spec, provider, context } of compilation.environments) {
+    let reason: string | undefined
+    try {
+      reason = await provider.probe?.(name, spec, context)
+    } catch (error) {
+      reason = errorMessage(error)
+    }
+    if (reason) findings.push({ checkId: 'presmium.execute', severity: 'error', message: `environment "${name}" (${spec.kind}) is not reachable: ${reason}`, source: { file: compilation.entry, line: frontmatterLine(text, `${name}:`) } })
   }
   return findings
 }

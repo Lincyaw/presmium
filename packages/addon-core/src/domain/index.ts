@@ -1,1 +1,1 @@
-export { CORE_ID, presmiumConfig, wantsDemo } from './config.ts'
+export { CORE_ID, presmiumConfig, presmiumEnvironments, wantsDemo } from './config.ts'

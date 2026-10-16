@@ -44,6 +44,9 @@ const CODE_OPTIONS: Record<string, DirectiveOptionInfo> = {
   'run': RUN_OPTION,
   'executor': { type: 'string', doc: { 'zh-CN': '执行器 ID。', 'en': 'Executor id.' } },
   'timeout': { type: 'number', doc: { 'zh-CN': '毫秒。', 'en': 'Milliseconds.' } },
+  'env': { type: 'string', doc: { 'zh-CN': '运行环境：头部 `execute.environments` 中的名字，或 `browser`。', 'en': 'Where it runs: a name of `execute.environments` in the headmatter, or `browser`.' } },
+  'session': { type: 'string', doc: { 'zh-CN': '执行会话：同一会话的代码块共享解释器。', 'en': 'Execution session: code blocks of one session share the interpreter.' } },
+  'echo': { type: 'string', doc: { 'zh-CN': '`false`：只显示输出，Markdown 输出按正文显示。', 'en': '`false`: only the output shows, Markdown output as prose.' }, values: ['false'] },
 }
 
 export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [

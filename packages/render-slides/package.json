@@ -13,8 +13,10 @@
     "@presmium/viewer": "workspace:*",
     "@slidev/cli": "53.0.0",
     "@slidev/theme-default": "^0.25.0",
+    "mdast-util-from-markdown": "2.1.0",
     "mdast-util-gfm": "^3.1.0",
     "mdast-util-to-markdown": "^2.2.0",
+    "micromark-extension-gfm": "3.0.0",
     "shiki": "^4.5.0",
     "yaml": "^2.9.1"
   },

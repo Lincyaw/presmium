@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-lab-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/exec-env.spec.ts: the provider of `kind: fixture-lab` environments, whose compile-time executor records a fixed output; no browser executor",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

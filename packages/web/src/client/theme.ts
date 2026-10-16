@@ -43,15 +43,18 @@ interface UpdateEvent {
 
 /**
  * Registers the kernel plugins of every plugin package, as the slides form
- * does, and starts the kernel with the host services (`startHost`).
+ * does, and starts the kernel with the host services (`startHost`) and the
+ * deck's named environments (the IR's `config.execute.environments`), for
+ * which provider plugins register their executors.
  */
-async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer, transports: SyncTransports, server?: ServerClient): Promise<void> {
+async function startKernel(loaders: ThemeInput['plugins'], doc: IRDocument, viewer: Viewer, transports: SyncTransports, server?: ServerClient): Promise<void> {
+  const config = doc.config.presmium
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
   modules.flatMap(module => pluginsOf(module, config)).forEach(registerPresmiumPlugin)
-  await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports, server })
+  await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports, server, environments: doc.config.execute?.environments })
 }
 
 /**
@@ -268,7 +271,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       // `presmium dev` serves the page: the server's client, given before any component asks for it (`useServer`).
       const server = siteData.value.themeConfig.presmium?.server ? createServerClient() : undefined
       provideServer(server)
-      void startKernel(input.plugins, input.doc.config.presmium, current, shared.transports, server)
+      void startKernel(input.plugins, input.doc, current, shared.transports, server)
       // The IR runtime reports and replays `go` through the running kernel's operations (each start has its own).
       watch(() => presmiumService(OPERATIONS), (operations, _, onCleanup) => {
         if (operations) onCleanup(followOperations(current, operations))

@@ -26,8 +26,11 @@ type Outcome<T> =
 
 /**
  * Python in the browser (P-23): Pyodide runs in a worker, one request at a
- * time. A request that exceeds its load or run timeout, or is aborted,
- * terminates the worker; the next request starts a fresh one. `dispose()`,
+ * time. The runs of a session (`RunRequest.session`) share their globals
+ * until `endSession` (P-101); the worker is the page's, so sessions are the
+ * page's and the learner's. A request that exceeds its load or run timeout,
+ * or is aborted, terminates the worker (its sessions with it); the next
+ * request starts a fresh one. `dispose()`,
  * called when the kernel stops (page hidden, hot update), terminates the
  * worker, so a page restored from the back-forward cache does not keep a
  * second runtime alive.
@@ -98,8 +101,12 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
     async run(request, signal): Promise<RunResult> {
       const outcome = await send<RunOutput>('run', request, signal)
       if (!outcome.ok) return { ...failedRun(id, outcome.error, outcome.durationMs), timedOut: outcome.timedOut }
-      const { stdout, stderr, exitCode } = outcome.value
-      return { ok: exitCode === 0, stdout, stderr, exitCode, durationMs: outcome.durationMs, timedOut: false, source: 'live', executorId: id }
+      const { stdout, stderr, exitCode, outputs } = outcome.value
+      return { ok: exitCode === 0, stdout, stderr, exitCode, durationMs: outcome.durationMs, timedOut: false, source: 'live', executorId: id, ...outputs ? { outputs } : {} }
+    },
+    async endSession(session) {
+      // Without a worker there is no session to end; starting one only to end it would load the runtime.
+      if (worker) await send<null>('end', { lang: 'python', code: '', session })
     },
     dispose() {
       cancel?.()

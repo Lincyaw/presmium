@@ -37,6 +37,7 @@ Commands:
   check   compile and run the plugins' checks
           --json          print the result as JSON
           --update-lock   re-resolve anchors and rewrite .presmium/anchors.lock.json
+          --env           also connect to the environments of execute.environments
   gateway  the gateway of a shared deployment (the argument is the workspace root):
           the operator's plugins' gateway routes, scoped tokens, /mcp forwarded to serve;
           its service token is PRESMIUM_GATEWAY_TOKEN (or PRESMIUM_GATEWAY_TOKEN_FILE)
@@ -53,7 +54,7 @@ const OPTIONS = {
   build: ['to', 'out'],
   dev: ['to', 'out', 'server-port', 'allow'],
   ir: ['out'],
-  check: ['json', 'update-lock'],
+  check: ['json', 'update-lock', 'env'],
   gateway: ['operator-dir', 'serve', 'port', 'host'],
 } as const
 
@@ -69,6 +70,8 @@ interface Command {
   out?: string
   json: boolean
   updateLock: boolean
+  /** `check --env`: probe the declared environments. */
+  env: boolean
   serverPort?: number
   allow: ApprovalKind[]
   operatorDir?: string
@@ -113,6 +116,7 @@ function parseCommand(argv: string[]): Command | 'help' {
       'out': { type: 'string' },
       'json': { type: 'boolean', default: false },
       'update-lock': { type: 'boolean', default: false },
+      'env': { type: 'boolean', default: false },
       'server-port': { type: 'string' },
       'allow': { type: 'string' },
       'operator-dir': { type: 'string' },
@@ -145,6 +149,7 @@ function parseCommand(argv: string[]): Command | 'help' {
     out: values.out,
     json: values.json,
     updateLock: values['update-lock'],
+    env: values.env,
     serverPort: port(values['server-port'], '--server-port'),
     allow: allow as ApprovalKind[],
     operatorDir: values['operator-dir'],
@@ -162,7 +167,7 @@ function port(value: string | undefined, option: string): number | undefined {
 }
 
 async function check(command: Command): Promise<number> {
-  const result = await runCheck({ deck: command.entry, updateLock: command.updateLock, compiler: { bundled: BUNDLED } })
+  const result = await runCheck({ deck: command.entry, updateLock: command.updateLock, environments: command.env, compiler: { bundled: BUNDLED } })
   process.stdout.write(command.json ? `${JSON.stringify(checkJson(result), null, 2)}\n` : checkText(result))
   return exitCode(result.findings)
 }
@@ -306,7 +311,8 @@ function buildText(report: BuildReport, runs: RunStats, cwd = process.cwd()): st
     out.push(`${renderer}  ${relative(cwd, outDir)}${skipped.length ? `  (${skipped.length} blocks not rendered)` : ''}`)
     for (const s of skipped) out.push(`    ${s.section}#${s.block}: ${s.reason}`)
   }
-  if (runs.executed + runs.cached > 0) out.push(`code runs: ${runs.executed} executed, ${runs.cached} from cache`)
+  if (runs.executed + runs.cached > 0) out.push(`code runs: ${runs.executed} executed, ${runs.cached} from cache${runs.sandbox && runs.executed > 0 ? `, isolated by ${runs.sandbox}` : ''}`)
+  if (runs.refused.length > 0) out.push(`code runs not allowed: ${runs.refused.map(run => `${run.section}#${run.block}`).join(', ')}`)
   out.push(summary(report.findings))
   return `${out.join('\n')}\n`
 }

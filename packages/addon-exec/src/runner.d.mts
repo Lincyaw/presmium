@@ -9,6 +9,8 @@ export interface ScriptOutput {
   stdout: string
   stderr: string
   exitCode: number
+  /** The text streams as nbformat stream outputs, in the order written. */
+  outputs: { output_type: 'stream', name: 'stdout' | 'stderr', text: string }[]
 }
 
 export function prepare(request: ScriptRequest): string

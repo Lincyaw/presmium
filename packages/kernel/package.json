@@ -13,6 +13,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./contracts": "./src/contracts.ts",
-    "./ir": "./src/ir.ts"
+    "./ir": "./src/ir.ts",
+    "./runner.py": "./src/runner.py"
   }
 }

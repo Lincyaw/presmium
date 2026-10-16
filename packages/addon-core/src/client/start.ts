@@ -1,6 +1,6 @@
 import { createServerClient, pluginsOf, registerPresmiumPlugin, startHost, stopPresmium } from '@presmium/host'
 import { configs } from '@slidev/client'
-import { presmiumConfig } from '../domain/index.ts'
+import { presmiumConfig, presmiumEnvironments } from '../domain/index.ts'
 import { createSlidevNavigation } from './navigation.ts'
 import * as clientPlugin from './plugin.ts'
 import { createSyncTransports } from './sync.ts'
@@ -18,7 +18,9 @@ export function startSlidevPresmium(): void {
   pluginsOf(clientPlugin, config).forEach(registerPresmiumPlugin)
   // The slides renderer marks the deck that `presmium dev` serves, whose dev server proxies `/__presmium/` to the server.
   const server = (configs as { presmiumServer?: unknown }).presmiumServer === true ? createServerClient() : undefined
-  void startHost({ mode: 'slides', config, navigation: createSlidevNavigation(), transports: createSyncTransports(), server })
+  // The slides renderer writes the deck's named environments into the headmatter (the IR's `config.execute.environments`).
+  const environments = presmiumEnvironments(configs)
+  void startHost({ mode: 'slides', config, navigation: createSlidevNavigation(), transports: createSyncTransports(), server, environments })
 }
 
 import.meta.hot?.dispose(() => stopPresmium())

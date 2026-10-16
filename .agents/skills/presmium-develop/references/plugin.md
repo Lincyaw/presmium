@@ -107,7 +107,7 @@ export default plugin
 | 字段 | 形状 | 说明 |
 |---|---|---|
 | `passes` | `IRPass { name, order?, after?, run(doc, ctx) }` | 在内置的编排步骤之后、编译时执行之前运行，按 `order` 排序；`after: 'execute'` 的在编译时执行之后运行，此时代码节点已有 `outputs`；`ctx` 有 `src`、`resolvers`、`lock`、`executors`、`cache`、`lang`、`config`、`configFor(section)`、`report`、`watch` |
-| `executors` | `Executor { id, supports(lang), run(request), fingerprint? }` | 编译时执行；`fingerprint` 进入执行缓存的键 |
+| `executors` | `Executor { id, supports(lang), run(request, signal?, ctx?), fingerprint?, endSession? }` | 编译时执行；`fingerprint` 进入执行缓存的键。`ctx`（`RunContext`）由编译器给出：代码只能得到 `ctx.env`（不读 `process.env`；没有 `ctx` 时只给 `PATH`、`LANG` 与临时的 `HOME`），有 `ctx.sandbox`（进程沙箱）时启动子进程的执行器经它运行，输入与结果经运行目录中的文件传递。`request.session` 相同的运行共享解释器、按请求顺序执行（编译器把一个会话的块一起发出），`endSession` 丢弃会话。结果的 `outputs` 是 nbformat 的富输出。Python 用共享的运行器 `@presmium/kernel/runner.py`（`_pm_run`、`_pm_main`），不另写一份 |
 | `resolvers` | `AnchorResolver { scheme, resolve(...) }` | 新的锚点方案 |
 | `checks` | `Check { id, run(ctx) }` | `presmium check` 运行，返回带源码位置的 `Finding[]` |
 | `anchors` | `(ctx) => AnchorString[]` | `presmium check --update-lock` 要记录的锚点 |
@@ -119,7 +119,8 @@ export default plugin
 | `roles` | `RoleSpec[]` | 行内角色 ``{名 key=value}`内容` ``（选项写成 `key=value`）；IR 中为 `presmiumRole` 节点，渲染端显示 `children`，没有子内容的在演讲者窗口与备注中显示标记 `〔名 value〕` |
 | `gateway` | `(ctx: GatewayContext) => { routes?, proxies? }` | 只在 `presmium gateway` 中挂载、使用第三方凭据的部分（SHARED 模式） |
 | `operator` | `boolean` | 运营者插件：列在 `settings.presmium.workspace.plugins` 中、安装在工作区根目录时每份文稿都加载 |
-| `environments`、`tools` | | 具名环境的提供方（WP-73b 起）；agent 工具（WP-78 起） |
+| `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | 具名环境的提供方：为头部 `execute.environments` 中该 `kind` 的环境创建编译时执行器，ID 必须是 `environmentExecutor(name)`（`presmium.env.<名>`）；`probe` 供 `presmium check --env`。浏览器端同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记同 ID 的执行器（范例：`addon-exec-local` 的 `devcontainer`） |
+| `tools` | | agent 工具（WP-78 起） |
 | `version`、`kernel` | string | 必须写：`version` 与 `package.json` 一致，`kernel` 为兼容的内核版本范围（如 `^0.1.0`），不兼容时编译器不加载 |
 
 遍历块用 `@presmium/kernel` 的 `docBlocks(doc)`（含组件的子块），报错消息用 `errorMessage(error)`，语言名比较用 `languageId(lang)`。

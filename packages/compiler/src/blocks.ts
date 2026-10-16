@@ -5,13 +5,15 @@
  * plugins); every block gets its role, narration or visual. Step numbers are
  * assigned later (see steps.ts) from `reveal`, `group` and `span`.
  */
-import { errorMessage, isRecord } from '@presmium/kernel'
+import { environmentExecutor, errorMessage, isRecord } from '@presmium/kernel'
 import type {
   BlockRole,
   CodeNode,
+  ComponentNode,
   DirectiveContext,
   DirectiveOptionType,
   DirectiveSpec,
+  ExecuteConfig,
   Finding,
   IRNode,
   MdastNode,
@@ -69,6 +71,8 @@ export interface BlockContext {
   roles: Map<string, PluginRole>
   /** Component name -> id of the plugin that registers it. */
   components: Map<string, string>
+  /** The headmatter's `execute`: the environment of code with `:run:` and no `:env:` (docs/ir.md 2.7). */
+  execute: ExecuteConfig
   report(finding: Finding): void
   watch(...files: string[]): void
 }
@@ -83,6 +87,10 @@ export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hi
 
 /** Options every directive accepts; they are not passed to plugin directives. */
 const COMMON_OPTIONS = ['reveal', 'label']
+/** Options of the code a directive runs (docs/ir.md 2.7), which the compiler reads for plugin directives that do not declare them. */
+const RUN_OPTIONS = ['env', 'session']
+/** The reserved environment name: route by language, as without environments. */
+const BROWSER = 'browser'
 const COMPONENT_OPTIONS = [...COMMON_OPTIONS, 'span', 'plugin']
 const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode'])
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
@@ -249,8 +257,9 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
   if (registered) {
     const { spec, plugin, config } = registered
     const typed: Record<string, unknown> = {}
+    const own = (key: string) => spec.options?.[key] !== undefined
     for (const [key, value] of Object.entries(options)) {
-      if (COMMON_OPTIONS.includes(key)) continue
+      if (COMMON_OPTIONS.includes(key) || (RUN_OPTIONS.includes(key) && !own(key))) continue
       const type = spec.options?.[key]
       if (spec.options && !type) fail(`unknown option :${key}:`, 'warning')
       typed[key] = type ? optionValue(value, type) : value
@@ -269,6 +278,10 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     }
     try {
       const result = await spec.toIR({ name, arg: arg || undefined, options: typed, body }, dctx)
+      const runs = runnableCode(result.node)
+      const given = Object.fromEntries(RUN_OPTIONS.filter(key => !own(key) && options[key] !== undefined).map(key => [key, options[key]!]))
+      for (const run of runs) runOptions(run, given, fail, ctx)
+      if (runs.length === 0 && Object.keys(given).length > 0) fail(`${Object.keys(given).map(key => `:${key}:`).join(' and ')} has no effect: the directive runs no code`, 'warning')
       const kind = result.node.type === 'component' ? kebab(result.node.name) : result.node.type === 'code' ? 'code' : name
       push({ kind, label, reveal: reveal !== undefined, role: result.role ?? 'visual', span: result.span ?? 0, source, node: result.node })
     } catch (error) {
@@ -311,19 +324,65 @@ function codeNode(node: MdastNode, options: Record<string, string | true>, sourc
     ctx.report({ checkId: 'presmium.directive', severity: 'warning', message: `:emphasize-lines: lines outside the ${count} lines of the code are ignored`, source: { file: source.file, line: source.line } })
   }
   if (lines.length > 0) code.highlight = [lines]
-  if (options.run !== undefined) code.run = runSpec(lang, options, source, ctx)
+  const warn = (message: string, severity: Finding['severity'] = 'warning') => ctx.report({ checkId: 'presmium.directive', severity, message, source: { file: source.file, line: source.line } })
+  if (options.run !== undefined) code.run = runSpec(lang, options, warn, ctx)
+  else if (options.env !== undefined || options.session !== undefined) warn(':env: and :session: need :run:; they are ignored')
+  if (options.echo !== undefined) {
+    const echo = options.echo === true ? '' : options.echo.trim().toLowerCase()
+    if (echo !== 'false' && echo !== 'true') warn(`:echo: ${echo} is not true or false; ignored`)
+    else if (echo === 'false' && !code.run) warn(':echo: false needs :run:; the code shows')
+    else if (echo === 'false') {
+      code.echo = false
+      // Hidden code cannot be run by readers: what it shows is what compile time recorded.
+      if (code.run!.when === 'live') {
+        warn(':echo: false with :run: live: the code has no controls to run it; it runs at compile time')
+        code.run!.when = 'compile'
+      }
+    }
+  }
   return code
 }
 
-/** `:run:` [compile|live|both], `:executor:`, `:timeout:` (ms) of a code directive. */
-function runSpec(lang: string, options: Record<string, string | true>, source: SourcePos, ctx: BlockContext): RunSpec {
+/** The code a directive's node runs: its own, or that of a component's child blocks. */
+function runnableCode(node: IRNode): RunSpec[] {
+  if (node.type === 'code') return node.run ? [node.run] : []
+  if (node.type !== 'component') return []
+  return (node as ComponentNode).children?.flatMap(child => runnableCode(child.node)) ?? []
+}
+
+/**
+ * `:env:` and `:session:` on code that runs (docs/ir.md 2.7): the environment,
+ * else the headmatter's `execute.env`, becomes the executor
+ * `presmium.env.<name>`; the reserved `browser` routes by language. Whether
+ * the environment is declared, and the sessions, are checked once the deck
+ * is converted (environments.ts).
+ */
+function runOptions(spec: RunSpec, options: Record<string, string | true>, warn: (message: string, severity?: Finding['severity']) => void, ctx: BlockContext): void {
+  const env = typeof options.env === 'string' ? options.env.trim() : undefined
+  if (options.env === true || env === '') warn(':env: needs the name of an environment of `execute.environments`, or browser', 'error')
+  if (env && spec.executor && spec.executor !== environmentExecutor(env)) {
+    warn(`:env: ${env} and :executor: ${spec.executor} both choose where the code runs; write one of them`, 'error')
+  } else if (env) {
+    if (env === BROWSER) delete spec.executor
+    else spec.executor = environmentExecutor(env)
+  } else if (!spec.executor && ctx.execute.env && ctx.execute.env !== BROWSER) {
+    spec.executor = environmentExecutor(ctx.execute.env)
+  }
+  const session = typeof options.session === 'string' ? options.session.trim() : ''
+  if (options.session !== undefined && !session) warn(':session: needs a name', 'error')
+  if (session) spec.session = session
+}
+
+/** `:run:` [compile|live|both], `:executor:`, `:timeout:` (ms), `:env:`, `:session:` of a code directive. */
+function runSpec(lang: string, options: Record<string, string | true>, warn: (message: string, severity?: Finding['severity']) => void, ctx: BlockContext): RunSpec {
   const when = options.run === true || options.run === '' ? 'compile' : options.run
   const spec: RunSpec = { lang, when: 'compile' }
   if (when === 'compile' || when === 'live' || when === 'both') spec.when = when
-  else ctx.report({ checkId: 'presmium.directive', severity: 'warning', message: `:run: ${when} is not compile, live or both; using compile`, source: { file: source.file, line: source.line } })
+  else warn(`:run: ${when} is not compile, live or both; using compile`)
   if (typeof options.executor === 'string') spec.executor = options.executor
   const timeout = Number(options.timeout)
   if (options.timeout !== undefined && Number.isFinite(timeout) && timeout > 0) spec.timeoutMs = timeout
+  runOptions(spec, options, warn, ctx)
   return spec
 }
 

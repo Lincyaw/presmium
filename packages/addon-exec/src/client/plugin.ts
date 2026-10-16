@@ -33,6 +33,7 @@ export const execPlugin: PluginDefinition = {
     })
     const router = createExecutorRouter({
       noExecutor: lang => messages().noExecutor(lang),
+      executorUnavailable: (id, lang) => messages().executorUnavailable(id, lang),
       executorCrashed: (id, error) => messages().executorCrashed(id, error),
     })
     router.register(pyodide)

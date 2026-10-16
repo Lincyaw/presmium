@@ -1,76 +1,200 @@
 /**
  * Compile-time execution in a child process (K-19), shared by the local
- * executors: the runner (src/runner.py, src/runner.mjs) reads its input as
- * JSON on stdin and writes `{ stdout, stderr, exitCode }` to file descriptor
- * 3, a channel of its own, so whatever the program writes to its standard
- * streams cannot break the result. Each run starts in a fresh temporary
- * directory and is killed once it exceeds its timeout. What a run records
- * goes into the published forms, whatever the deck's language, so the
- * messages added here are English, like the interpreters' own, and name
- * nothing of the build machine (K-13).
+ * executors. A run happens in a run directory of its own: the runner's input
+ * is a file in it (`.presmium/request.json`) and the runner writes the result
+ * of each request to `.presmium/result-<i>.json` there, so whatever the
+ * program writes to its standard streams cannot break the result, and a
+ * process sandbox, which passes on no standard input or extra file
+ * descriptor, runs it the same way (docs/architecture.md 4.6, 10.6). With
+ * the compiler's `RunContext.sandbox` the command runs through it; otherwise
+ * it runs here, in a new temporary directory, and is killed once it exceeds
+ * its timeout. The code gets `RunContext.env` and nothing else of this
+ * process's environment; without a context only `PATH`, `LANG` and a
+ * temporary `HOME`.
+ *
+ * The runs of one session (`RunRequest.session`) share the interpreter: the
+ * requests of a session that arrive together (the compiler sends a session's
+ * blocks at once) run in one process, in order, and a later request of the
+ * session runs again those before it, so it finds what they defined.
+ *
+ * What a run records goes into the published forms, whatever the deck's
+ * language, so the messages added here are English, like the interpreters'
+ * own, and name nothing of the build machine (K-13).
  */
 import { spawn } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { failedRun } from '@presmium/kernel'
-import type { RunRequest, RunResult } from '@presmium/kernel'
+import type { ProcessSandbox, RunContext, RunOutput, RunRequest, RunResult, SandboxResult, SandboxRun } from '@presmium/kernel'
 import { DEFAULT_EXEC_CONFIG } from '../domain/index.ts'
 
+/** What a runner writes for one request. */
 interface RunnerOutput {
   stdout: string
   stderr: string
   exitCode: number
+  outputs?: RunOutput[]
 }
 
-export interface ChildRunner {
-  executorId: string
-  command: string
-  args: string[]
-  env?: Record<string, string>
-}
+/** The runner's input file in the run directory. */
+export const REQUEST_FILE = '.presmium/request.json'
+const resultFile = (i: number) => `.presmium/result-${i}.json`
 
 /** Node's exit code when the event loop empties while a top-level await is still pending. */
 const UNSETTLED_AWAIT = 13
 
-export function runChild(runner: ChildRunner, request: RunRequest, input: unknown, signal?: AbortSignal): Promise<RunResult> {
-  const id = runner.executorId
-  const timeoutMs = request.timeoutMs ?? DEFAULT_EXEC_CONFIG.timeoutMs
-  const cwd = mkdtempSync(join(tmpdir(), 'presmium-run-'))
-  const started = Date.now()
-  return new Promise<RunResult>((resolve) => {
-    const child = spawn(runner.command, runner.args, { cwd, env: { ...process.env, ...runner.env }, signal, stdio: ['pipe', 'pipe', 'pipe', 'pipe'] })
-    const result: Buffer[] = []
-    const err: Buffer[] = []
-    let timedOut = false
-    const timer = setTimeout(() => {
-      timedOut = true
-      child.kill('SIGKILL')
-    }, timeoutMs)
-    child.stdout!.resume()
-    child.stderr!.on('data', (chunk: Buffer) => err.push(chunk))
-    child.stdio[3]!.on('data', (chunk: Buffer) => result.push(chunk))
-    const finish = (outcome: RunResult) => {
-      clearTimeout(timer)
-      rmSync(cwd, { recursive: true, force: true })
-      resolve(outcome)
+/** The environment of code run without a compiler's context: `PATH`, `LANG` and a temporary `HOME`. */
+export function plainEnv(): Record<string, string> {
+  const home = join(tmpdir(), 'presmium-home')
+  mkdirSync(home, { recursive: true })
+  return { PATH: process.env.PATH ?? '', LANG: process.env.LANG ?? 'C.UTF-8', HOME: home }
+}
+
+/**
+ * Runs a command as the process sandbox would (`ProcessSandbox.run`), without
+ * isolation: in a new temporary directory holding the files, with exactly the
+ * given environment, killed at the timeout or on abort.
+ */
+export const directRun: ProcessSandbox = {
+  kind: 'none',
+  run(request: SandboxRun): Promise<SandboxResult> {
+    const dir = mkdtempSync(join(tmpdir(), 'presmium-run-'))
+    for (const [path, content] of Object.entries(request.files)) {
+      mkdirSync(dirname(join(dir, path)), { recursive: true })
+      writeFileSync(join(dir, path), content)
     }
-    child.on('error', error => finish(failedRun(id, error.message, Date.now() - started)))
-    child.on('close', (code) => {
-      const durationMs = Date.now() - started
-      if (timedOut) return finish({ ...failedRun(id, `Stopped after ${timeoutMs} ms`, durationMs), timedOut: true })
-      let output: RunnerOutput
-      try {
-        output = JSON.parse(Buffer.concat(result).toString('utf8')) as RunnerOutput
+    return new Promise((resolve) => {
+      const [command, ...args] = request.argv
+      const child = spawn(command!, args, { cwd: dir, env: { ...request.env }, stdio: ['ignore', 'pipe', 'pipe'] })
+      const out: Buffer[] = []
+      const err: Buffer[] = []
+      let stopped = false
+      const stop = () => {
+        stopped = true
+        child.kill('SIGKILL')
       }
-      catch {
-        if (code === UNSETTLED_AWAIT) return finish({ ...failedRun(id, 'The program ended while a top-level await was still pending', durationMs), exitCode: code })
-        const stderr = Buffer.concat(err).toString('utf8').replaceAll(cwd, '.')
-        return finish(failedRun(id, stderr || `the ${id} runner produced no result`, durationMs))
+      const timer = setTimeout(stop, request.timeoutMs)
+      if (request.signal?.aborted) stop()
+      request.signal?.addEventListener('abort', stop, { once: true })
+      child.stdout.on('data', (chunk: Buffer) => out.push(chunk))
+      child.stderr.on('data', (chunk: Buffer) => err.push(chunk))
+      let settled = false
+      const finish = (exitCode: number | null, error?: Error) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        request.signal?.removeEventListener('abort', stop)
+        const files: Record<string, Uint8Array> = {}
+        for (const path of request.collect) {
+          try {
+            files[path] = readFileSync(join(dir, path))
+          } catch {}
+        }
+        rmSync(dir, { recursive: true, force: true })
+        const stderr = Buffer.concat(err).toString('utf8').replaceAll(dir, '.')
+        resolve({ exitCode: stopped ? null : exitCode, stdout: Buffer.concat(out).toString('utf8'), stderr: error ? `${stderr}${error.message}` : stderr, files })
       }
-      finish({ ok: output.exitCode === 0, stdout: output.stdout, stderr: output.stderr, exitCode: output.exitCode, durationMs, timedOut: false, source: 'live', executorId: id })
+      child.on('error', error => finish(null, error))
+      child.on('close', code => finish(code))
     })
-    child.stdin!.on('error', () => {})
-    child.stdin!.end(JSON.stringify(input))
-  })
+  },
+}
+
+export interface ChildRunner {
+  executorId: string
+  /** The command and its arguments; it reads `.presmium/request.json` in its working directory. */
+  argv: string[]
+  /** Paths outside the run directory the command reads (the interpreter, the runner's own files). */
+  read(): string[]
+  /** Whether requests of one session share the interpreter. */
+  sessions: boolean
+}
+
+interface Pending {
+  request: RunRequest
+  signal?: AbortSignal
+  ctx?: RunContext
+  resolve(result: RunResult): void
+}
+
+interface Session {
+  /** Requests run in the session so far, which a later request runs again first. */
+  history: RunRequest[]
+  queue: Pending[]
+  tail: Promise<void>
+}
+
+/** A local executor's runs: in the sandbox of the run's context or directly, sessions batched (see the top of this file). */
+export function childRuns(runner: ChildRunner) {
+  const sessions = new Map<string, Session>()
+
+  async function batch(requests: RunRequest[], skip: number, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult[]> {
+    const id = runner.executorId
+    const session = runner.sessions ? requests[0]?.session : undefined
+    const input = { session, runs: requests.map(({ code, args, stdin, files, lang }) => ({ code, args, stdin, files, lang })) }
+    // A session's runs share the time of all of them; each one's own timeout is its share.
+    const timeouts = requests.map(r => r.timeoutMs ?? DEFAULT_EXEC_CONFIG.timeoutMs)
+    const timeoutMs = timeouts.reduce((sum, t) => sum + t, 0)
+    const sandbox = ctx?.sandbox ?? directRun
+    const started = Date.now()
+    let outcome: SandboxResult
+    try {
+      outcome = await sandbox.run({
+        argv: runner.argv,
+        files: { [REQUEST_FILE]: JSON.stringify(input) },
+        collect: requests.map((_, i) => resultFile(i)),
+        env: ctx?.env ?? plainEnv(),
+        read: runner.read(),
+        timeoutMs,
+        signal,
+      })
+    } catch (error) {
+      return requests.slice(skip).map(() => failedRun(id, `the ${sandbox.kind} sandbox failed: ${error instanceof Error ? error.message : String(error)}`, Date.now() - started))
+    }
+    const durationMs = Date.now() - started
+    let missing = false
+    return requests.map((_, i): RunResult => {
+      const file = outcome.files[resultFile(i)]
+      let output: RunnerOutput | undefined
+      try {
+        output = file ? JSON.parse(Buffer.from(file).toString('utf8')) as RunnerOutput : undefined
+      } catch {}
+      if (output) return { ok: output.exitCode === 0, stdout: output.stdout, stderr: output.stderr, exitCode: output.exitCode, durationMs, timedOut: false, source: 'live', executorId: id, ...output.outputs ? { outputs: output.outputs } : {} }
+      const first = !missing
+      missing = true
+      if (!first) return failedRun(id, 'Not run: an earlier block of the session did not finish', durationMs)
+      if (outcome.exitCode === null && !signal?.aborted) return { ...failedRun(id, `Stopped after ${timeouts.slice(0, i + 1).reduce((sum, t) => sum + t, 0)} ms`, durationMs), timedOut: true }
+      if (outcome.exitCode === UNSETTLED_AWAIT) return { ...failedRun(id, 'The program ended while a top-level await was still pending', durationMs), exitCode: outcome.exitCode }
+      return failedRun(id, outcome.stderr || `the ${id} runner produced no result`, durationMs)
+    }).slice(skip)
+  }
+
+  async function flush(state: Session): Promise<void> {
+    const queue = state.queue
+    state.queue = []
+    const skip = state.history.length
+    const requests = [...state.history, ...queue.map(p => p.request)]
+    const results = await batch(requests, skip, queue[0]?.signal, queue[0]?.ctx)
+    state.history = requests
+    queue.forEach((pending, i) => pending.resolve(results[i]!))
+  }
+
+  return {
+    run(request: RunRequest, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult> {
+      const name = runner.sessions ? request.session : undefined
+      if (!name) return batch([request], 0, signal, ctx).then(results => results[0]!)
+      let state = sessions.get(name)
+      if (!state) sessions.set(name, state = { history: [], queue: [], tail: Promise.resolve() })
+      const session = state
+      return new Promise((resolve) => {
+        session.queue.push({ request, signal, ctx, resolve })
+        // The requests of the session sent together run in one process, once the earlier ones are done.
+        if (session.queue.length === 1) session.tail = session.tail.then(() => new Promise(next => setImmediate(next))).then(() => flush(session))
+      })
+    },
+    async endSession(session: string): Promise<void> {
+      sessions.delete(session)
+    },
+  }
 }

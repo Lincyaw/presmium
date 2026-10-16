@@ -348,6 +348,27 @@
   color: var(--pm-c-text-2);
 }
 
+.pm-output__stderr,
+.pm-output__error {
+  border-left-color: var(--pm-c-danger) !important;
+}
+
+/* Rich outputs (P-102): images keep to the column; HTML and Markdown read as content. */
+.pm-output__display {
+  margin: 0.25rem 0;
+  overflow-x: auto;
+}
+
+.pm-output__display img {
+  max-width: 100%;
+}
+
+/* Markdown that code with `echo: false` prints is the section's prose. */
+.pm-outputs--prose,
+.pm-output--prose .pm-output__display {
+  margin: 0;
+}
+
 /* Prose */
 .pm-math--display {
   overflow-x: auto;

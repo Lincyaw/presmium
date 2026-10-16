@@ -135,6 +135,27 @@ function trackTimers() {
   }
 }
 
+/**
+ * The output of a run: the text streams, and the same text as nbformat stream outputs in the
+ * order it was written (`outputs`, docs/ir.md 6.1).
+ */
+function collector() {
+  const text = { stdout: [], stderr: [] }
+  const outputs = []
+  return {
+    text,
+    outputs,
+    stream: name => ({
+      push(chunk) {
+        text[name].push(chunk)
+        const last = outputs.at(-1)
+        if (last?.name === name) last.text += chunk
+        else outputs.push({ output_type: 'stream', name, text: chunk })
+      },
+    }),
+  }
+}
+
 /** In node, what the code writes to process.stdout and process.stderr goes to the run's output. */
 function captureStreams(out, err) {
   const streams = [[globalThis.process?.stdout, out], [globalThis.process?.stderr, err]].filter(([stream]) => typeof stream?.write === 'function')
@@ -150,10 +171,11 @@ function captureStreams(out, err) {
   return () => saved.forEach(([stream, write]) => stream.write = write)
 }
 
-/** Runs the code as a module and returns `{ stdout, stderr, exitCode }` once it has nothing left to do. */
+/** Runs the code as a module and returns `{ stdout, stderr, exitCode, outputs }` once it has nothing left to do. */
 export async function runScript(request) {
-  const out = []
-  const err = []
+  const output = collector()
+  const out = output.stream('stdout')
+  const err = output.stream('stderr')
   const write = target => (...values) => void target.push(`${values.map(show).join(' ')}\n`)
   const saved = { log: console.log, info: console.info, debug: console.debug, dir: console.dir, warn: console.warn, error: console.error }
   Object.assign(console, { log: write(out), info: write(out), debug: write(out), dir: value => write(out)(value), warn: write(err), error: write(err) })
@@ -171,5 +193,5 @@ export async function runScript(request) {
     restoreStreams()
     Object.assign(console, saved)
   }
-  return { stdout: out.join(''), stderr: err.join(''), exitCode }
+  return { stdout: output.text.stdout.join(''), stderr: output.text.stderr.join(''), exitCode, outputs: output.outputs }
 }

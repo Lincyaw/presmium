@@ -531,7 +531,7 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 
 **实际交付**：契约按 `architecture.md` 4.6 至 4.10 节写入（`packages/kernel/src/contracts/` 的六个模块由 `contracts.ts` 再导出）；`@presmium/server`（`startServer`、`startGateway`、`ServerHost`、所有者控制台）；CLI 的 `presmium dev --server-port --allow` 与 `presmium gateway`；编译器的 Node 端服务注册表、行内角色、译本字段（`translations.ts`）、运营者插件、插件策略与读取范围（`CompilerOptions`）；宿主的 `useServer`、`OPERATIONS`、`STATUS`、控制通道与工具栏的确认入口；IR 运行时的 `go`（`followOperations`）与角色的标记；三个渲染端的属性路径。验收用例在 `packages/server/test/server.test.ts`、`gateway.test.ts`，`packages/cli/test/plugins.test.ts`、`roles.test.ts`、`assets.test.ts`，`packages/render-slides/test/deck.test.ts` 与 `e2e/server.spec.ts`。`presmium serve` 属于 WP-79，`serve` 模式的用例由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 启动真实的 `startServer`。与设计不同或设计没有写明之处写在 `architecture.md` 4.6、4.7、4.9、10.2 至 10.4、10.9 节标明 WP-73a 的段落中，先行验证的结论在 `design-v0.7.md` 第 11 节。
 
-### WP-73b 环境、会话与富输出（I 波次第二步；M6，P-100 至 P-102）
+### WP-73b 环境、会话与富输出（I 波次第二步；M6，P-100 至 P-102；已完成）
 
 **需求**：P-100、P-101、P-102（含增补：`text/markdown` 输出作为正文、`:echo: false`）；`review-round2.md` 决定 5（`RunRequest.executor` 精确匹配）；`architecture.md` 9.2 节中归 WP-73b 的三项决定（幻灯片中的现场执行代码块、共享的 Python 运行器、首选执行器）；N-08 中编译时执行的部分（`design-v0.7.md` 第 17 条：清理过的环境变量，以及供 `presmium serve` 使用的执行选项；第 29 条：进程沙箱与 `remote` 选项）。
 
@@ -557,6 +557,8 @@ WP-70 合并后由验收者处理的小项：去掉 WP-70c 中等待 WP-70b 的�
 - P-101（`packages/addon-exec/test/session.test.ts`）：编译时同一会话的第二块录制为 `42`；第二次构建 0 次执行；改动第一块后整个会话重新执行，两块都更新。
 - P-102（`e2e/exec-env.spec.ts` 与 `packages/render-notebook/test/outputs.test.ts`）：生成 PNG 图片的代码块（不依赖 matplotlib，用标准库写出一张小图）在网页与幻灯片中显示 `<img>`，notebook 的单元格中有 `display_data` 的 `image/png`；`:echo: false` 且输出 `text/markdown` 表格的代码块在网页中显示为表格、不显示代码，notebook 中该单元格带 `source_hidden`。
 - 9.2 节：幻灯片中带 `:run: live` 的 Python 代码块可以运行并显示输出；执行插件与本地环境插件的集成测试都用共享的运行器通过。
+
+**实际交付**：共享的运行器 `@presmium/kernel/runner.py`（会话、富输出、`IPython.display` 与 matplotlib 的后端，运行目录中的输入与结果文件）；编译器的 `:env:`、`:session:`、`:echo:`（插件的指令由编译器统一读取 `:env:`、`:session:`，`{code-ref}` 因此不必改动 `addon-code`），`config.execute`、具名环境的提供方与检查（`packages/compiler/src/environments.ts`：未声明的环境、没有提供方的 `kind`、一个会话中混用环境、`presmium.secrets`），会话键链、整组执行与录制块 `blobs/`，`RunContext`（`runEnvironment`、`PROCESS_SANDBOX`、`gateway`），执行选项 `CompilerOptions.execution`（`env`、`admit`、`remote`）与 `Compilation.run`；`presmium check --env`；执行插件的本机执行器（运行目录协议、进程沙箱、会话的整组运行）、路由的精确选择与按页面区分的会话、Pyodide 的会话与富输出、执行面板与 code runner 的执行器与会话；本地环境插件的 `devcontainer` 提供方与 Docker 命令行的环境；IR 运行时按 MIME 类型显示输出（`packages/viewer/src/outputs.ts`）、`echo: false`、“重置会话”与 `run` 操作；两种宿主适配的 `HostStart.environments`；幻灯片的富输出与 `{monaco-run}`；notebook 的 `outputs` 与 `source_hidden`。验收用例在 `packages/cli/test/env.test.ts`、`packages/addon-exec/test/session.test.ts`、`sandbox.test.ts`、`secrets.test.ts`、`packages/render-notebook/test/outputs.test.ts`、`packages/addon-exec-local/test/local-env.test.ts`（`kind: devcontainer` 的环境，需要 Docker）与 `e2e/exec-env.spec.ts`。与设计不同或设计没有写明之处写在 `architecture.md` 4.6 节标明 WP-73b 的段落与 9.3 节（Slidev 的代码块属性），先行验证的结论在 `design-v0.7.md` 第 11 节。新增依赖：viewer 的 `dompurify` 3.4.17、`ansi_up` 6.0.6、`mdast-util-from-markdown` 2.1.0、`mdast-util-gfm` 3.1.0、`micromark-extension-gfm` 3.0.0；执行插件的 `dompurify`（幻灯片中 code runner 的 HTML 输出）；幻灯片渲染端的 `mdast-util-from-markdown`、`micromark-extension-gfm`（录制的 Markdown 输出）。
 
 ### WP-74 WebAssembly 后端（M6，P-103）
 
