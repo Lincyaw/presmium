@@ -275,6 +275,37 @@ importers:
         specifier: 53.0.0
         version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
 
+  packages/addon-exec-webgpu:
+    dependencies:
+      '@jax-js/jax':
+        specifier: 0.1.25
+        version: 0.1.25
+      '@presmium/host':
+        specifier: workspace:*
+        version: link:../host
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      playwright-chromium:
+        specifier: 1.64.1
+        version: 1.64.1
+      vue:
+        specifier: ^3.5.42
+        version: 3.5.44(typescript@6.0.3)
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+    devDependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@slidev/client':
+        specifier: 53.0.0
+        version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vitejs/devtools-kit@0.7.6(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(lightningcss@1.33.0)(markdown-it@15.0.2)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@slidev/types':
+        specifier: 53.0.0
+        version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+
   packages/addon-guide:
     dependencies:
       '@presmium/host':
@@ -1709,6 +1740,10 @@ packages:
   '@isaacs/fs-minipass@4.0.1':
     resolution: {integrity: sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==}
     engines: {node: '>=18.0.0'}
+
+  '@jax-js/jax@0.1.25':
+    resolution: {integrity: sha512-g6PxWa6ZLjeQdDAM0ImBSqpdYnC6InCUTCCbMLxhMHMsMNu+JbHRjIQZ/anjBcP69of6hiqfGmTl+3gBn1qu/A==}
+    engines: {pnpm: '>=10.0.0'}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -7807,6 +7842,8 @@ snapshots:
   '@isaacs/fs-minipass@4.0.1':
     dependencies:
       minipass: 7.1.3
+
+  '@jax-js/jax@0.1.25': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

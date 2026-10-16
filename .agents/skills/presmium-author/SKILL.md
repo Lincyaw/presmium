@@ -179,7 +179,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium.execute` `no executor for … and no recorded output` | 安装 `python3` 或 `node`，或提交 `.presmium/freeze/` 中的录制 |
 | `presmium.execute` `recorded output was made with …` | 别的环境录制的输出被沿用；要重跑就加 `execute: { rerun: environment }` |
 | `presmium.execute` `:env: x: no such environment` | 在头部 `execute.environments` 中声明它，或改正名字 |
-| `presmium.execute` `no plugin in plugins provides environments of kind …` | 把提供该类环境的插件加进 `plugins`（`devcontainer`：`@presmium/slidev-addon-exec-local`） |
+| `presmium.execute` `no plugin in plugins provides environments of kind …` | 把提供该类环境的插件加进 `plugins`（`devcontainer`：`@presmium/slidev-addon-exec-local`；`webgpu`：`@presmium/slidev-addon-exec-webgpu`） |
 | `presmium.execute` `session "…" runs in … and here in …` | 同一会话的代码块写同一个 `:env:` |
 | `presmium.secrets` `… looks like a credential` | 从头部删掉它，改用环境变量 |
 | `presmium.references` `target "…" not found` | 给目标加标签，或改正引用 |

@@ -1,9 +1,14 @@
 import type { RunResult } from '@presmium/kernel'
 import { diffLines } from 'diff'
 
-/** Run parameters as strings, the form of `RunRequest.args`; runners read literals back (`5` is a number). */
+/**
+ * Run parameters as strings, the form of `RunRequest.args`; runners read
+ * literals back (`5` is a number). Lists and mappings (the parameters of
+ * languages whose executor reads them, e.g. a shader's buffers) become JSON,
+ * which is also YAML.
+ */
 export function stringArgs(params: Record<string, unknown> | undefined): Record<string, string> {
-  return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, String(value)]))
+  return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value)]))
 }
 
 /** Output recorded ahead of time, shown when a run fails or times out (P-24). */

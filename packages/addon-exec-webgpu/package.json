@@ -1,0 +1,32 @@
+{
+  "name": "@presmium/slidev-addon-exec-webgpu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser GPU backend: WGSL compute shaders and jax-js, recorded in Chromium at build time (P-104)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@jax-js/jax": "0.1.25",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "playwright-chromium": "1.64.1",
+    "vue": "^3.5.42",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*",
+    "@slidev/client": "53.0.0",
+    "@slidev/types": "53.0.0"
+  }
+}

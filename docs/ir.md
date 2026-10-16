@@ -225,10 +225,43 @@ print(markdown_table(model.summary()))
 | `image` | 镜像摘要，进入环境指纹；部署模板以同一个值启动容器 |
 | `languages` | 可用语言；省略时由提供方给出（`jupyter` 取内核规格的语言） |
 | `path` | `devcontainer`：定义所在目录 |
+| `adapter` | `webgpu`：编译时录制所用的适配器：`auto`（默认，Chromium 经 Vulkan 找到显卡时用显卡，否则用 SwiftShader）、`gpu`、`swiftshader`（CPU 模拟，任何机器上录制都相同）；浏览器中由浏览器决定 |
 
 WASI 与 WebGPU 的执行器按语言登记（`c`、`cpp`、`ruby`、`sql`；`wgsl`），不声明环境也能运行；声明 `kind: wasi` 或 `kind: webgpu` 的环境只是为了用 `:env:` 明确选择。
 
 实现（WP-74）：WebAssembly 插件 `@presmium/slidev-addon-exec-wasi` 的执行器 ID 为 `presmium.wasi`，语言名另接受 `c++`、`cc`、`cxx`（C++）、`rb`（Ruby）与 `sqlite`（SQL）；`kind: wasi` 的环境可以用 `languages` 限定语言。C 与 C++ 由 WebAssembly 中的 clang 8 编译（与 Runno 相同的 `-O2 -Werror`：默认开启的警告也按错误处理；编译错误是这次运行的输出，退出码为编译器的），SQL 在内存数据库中执行，Ruby 为 3.2。编译时与浏览器中用同一份二进制运行，构建机不需要工具链。程序可以读 `RunRequest.files`（放在根目录，C 程序以绝对路径 `/<名字>` 打开）与标准输入，编译时得到清理过的环境变量（`RunContext.env`），浏览器中没有环境变量；不支持参数（`args`）与会话（`:session:` 被忽略，每次运行是一个独立的程序）。插件的编译步骤把浏览器中运行的代码需要的运行时写进 `config.presmium['presmium.execWasi'].runtimes`，两种形态只发布这些运行时（C 与 C++ 约 52 MB）。插件配置 `presmium.execWasi.loadTimeoutMs`：浏览器中下载与编译运行时的时限，默认 120 秒。`wgsl` 计算着色器用 `{run-panel} wgsl` 运行，`:params:` 是 YAML 写的缓冲区与派发说明（`buffers`、`dispatch`、`entry`、`repeat`、`features`），结果是读回的缓冲区摘要与计时。
+
+````md
+```{run-panel} wgsl
+---
+params:
+  buffers:
+    a: [1, 2, 3, 4]          # 数据；类型取自着色器的 array<f32>
+    b: { data: [10, 20, 30, 40] }
+    out: { size: 4 }         # 4 个值，初值 0（fill 给出别的初值）
+  dispatch: 1                # 每个维度的工作组数，1 到 3 个数
+  repeat: 10                 # 在同一组缓冲区上运行 10 次，计时取中位数
+---
+@group(0) @binding(0) var<storage, read> a: array<f32>;
+@group(0) @binding(1) var<storage, read> b: array<f32>;
+@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  if (id.x < arrayLength(&out)) { out[id.x] = a[id.x] + b[id.x]; }
+}
+```
+````
+
+实现（WP-75）：`buffers` 按着色器中缓冲区变量（`var<storage>`、`var<uniform>`）的名字给出每个缓冲区，写成数字列表（数据），或 `{ data, size, fill, type, read }`；组、绑定、存储的读写与值的类型（`f32`、`i32`、`u32`）取自着色器的声明（结构体类型的统一缓冲区默认 `f32`，`type` 可以指定）。着色器声明的每个缓冲区都要在 `buffers` 中，反之亦然。可写的存储缓冲区（`read_write`）在运行后读回并显示，`read` 可以改变。`entry` 省略时用着色器中唯一的计算入口；`repeat` 默认 1，至多 1000；全部缓冲区至多 128 MiB。结果的文本（`stdout`）如：
+
+```text
+out: f32[4] = [11, 22, 33, 44]
+计时：每次派发 0.0331 ms（10 次的中位数；GPU 时间戳；CPU 模拟）
+适配器：google swiftshader（回退适配器）
+```
+
+长的缓冲区显示首尾各 4 个值与最小、最大、平均；编译时的录制为英文（`time: … ms per dispatch (…)`、`adapter: …`）。执行面板的表单中每个参数是一个输入框（列表与映射写成 JSON，也就是 YAML），可以改了再运行。不能运行时（浏览器没有 WebGPU、没有适配器、缺少特性或限制、设备丢失、超时）显示编译时录制的输出与原因。Python 中经 `presmium_gpu` 运行同样的着色器（`await presmium_gpu.run(SHADER, buffers={…})`，代码块顶层可以 `await`；有 JSPI 的浏览器另有 `presmium_gpu.run_sync`），JavaScript 与 TypeScript 中 `import { numpy as np } from '@jax-js/jax'` 使用 jax-js（`:run: live`，只在浏览器中运行）；`architecture.md` 4.6 节。
 
 浏览器中，同一会话的状态按页面实例隔离：每个打开的页面（每个学习者）各有一份，重新加载即重新开始；代码块旁的“重置会话”丢弃它（`Executor.endSession`）。编译时，同一会话的代码块按在文稿中出现的顺序在同一个解释器中运行（第 4 节的会话键链）。
 
@@ -544,7 +577,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | 插件 | 指令 | 参数与正文 | 选项 | 生成与步数 |
 |---|---|---|---|---|
 | 代码引用 `presmium.code` | `{code-ref}` | 参数为锚点，如 `region:src/bpe.py#merge`；锚点中的文件路径相对于文稿所在 git 仓库的根目录，不在 git 中时相对于文稿目录 | `:pin:`（提交，默认工作区）、`:steps:`（逻辑单元名列表，即嵌套的 `#region`，每步高亮一个；`all` 或 `none` 表示这一步不突出任何单元）、`:variants:`（至少两个提交，逐步切换版本，不能与 `:pin:`、`:steps:` 同用）、`:lang:`（默认取文件扩展名）、`:repo:`（永久链接的仓库网址，默认取本章节的 `presmium.code.repo`）、`:run:`、`:executor:`、`:timeout:` | `code` 节点，带 `origin`、`highlight` 或 `variants`（每个版本带自己的行区间与永久链接）；步数为单元数或版本数减一。文件不存在时的诊断说明路径的基准，按文稿目录写的路径给出从仓库根目录起的写法 |
-| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言：`python`（默认，`py`、`python3`、`ipython` 同义）、`javascript`、`typescript`；v0.8 起也可以是任何有执行器的语言（如 `wgsl`、`c`） | `:params:`（YAML 映射，注入程序的变量；JavaScript 中为常量；其他语言由执行器解释，如 `wgsl` 的缓冲区与派发说明）、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行）、`:env:`、`:session:` | `PmRunPanel`，子块为代码块，代码也在属性 `code` 中；`fallback`（PDF、PNG 导出）为先给参数赋值的代码，加上构建时的输出，构建时没有执行、执行失败或超时的用 `:recorded:`；notebook 中与内核同语言的为代码单元格（参数赋值在前），其他语言为代码（JavaScript、TypeScript 前面加上参数常量）加输出的 Markdown 单元格，输出的取法同 `fallback`。带超时而构建时没有正常结束的代码单元格标记 `skip-execution` |
+| 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言：`python`（默认，`py`、`python3`、`ipython` 同义）、`javascript`、`typescript`；v0.8 起也可以是任何有执行器的语言（如 `wgsl`、`c`） | `:params:`（YAML 映射，注入程序的变量；JavaScript 中为常量；其他语言由执行器解释，如 `wgsl` 的缓冲区与派发说明）、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行）、`:env:`、`:session:` | `PmRunPanel`，子块为代码块，代码也在属性 `code` 中；构建时成功录制的输出另在属性 `compiledOutput` 中，现场运行没能进行（没有运行时或 GPU 适配器、超时）而没有 `:recorded:` 时面板显示它与原因（WP-75）；`fallback`（PDF、PNG 导出）为先给参数赋值的代码，加上构建时的输出，构建时没有执行、执行失败或超时的用 `:recorded:`；notebook 中与内核同语言的为代码单元格（参数赋值在前），其他语言为代码（JavaScript、TypeScript 前面加上参数常量）加输出的 Markdown 单元格，输出的取法同 `fallback`。带超时而构建时没有正常结束的代码单元格标记 `skip-execution` |
 | | `{step-run}` | 参数为语言（默认 `python`）；正文为代码 | `:steps:`（执行的行数，每行一步）、`:params:`、`:timeout:` | `PmStepRun`；步数为 `:steps:`。文档视图（全部展开）中组件有自己的步进控件（上一步、下一步与滑块），读者在其中逐行查看；网页中组件接近视口时才加载 Python 运行时并追踪 |
 | 本地环境 `presmium.execLocal` | `{local-env}` | 参数为语言（默认 `python`）；正文为代码 | `:file:`（代码在工作区中的路径，必填）、`:workspace:`（devcontainer 所在目录，相对于本文件） | `PmLocalEnv`，子块为代码块；执行器 `presmium.container` 供代码块的 `:executor:` 使用。一份文稿只有一个工作区：各 `{local-env}` 指定不同的工作区时报错（`presmium.execLocal.workspace`）。全局配置 `workspace`、`priority`、`buildTimeoutMs`（构建镜像的时限，默认 10 分钟） |
 | WebAssembly `presmium.execWasi` | 无指令；语言为 `c`、`cpp`、`ruby`、`sql` 的代码（带 `:run:` 的代码块，或执行面板）由它运行（2.7 节） | — | 全局配置 `loadTimeoutMs`；环境 `kind: wasi` | 执行器 `presmium.wasi`；编译步骤 `presmium.execWasi.runtimes` 写出两种形态要发布的运行时 |

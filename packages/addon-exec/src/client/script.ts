@@ -1,15 +1,22 @@
 import { failedRun } from '@presmium/kernel'
 import type { Executor, RunResult } from '@presmium/kernel'
-import { isScript, isTypeScript } from '../domain/index.ts'
+import { isScript, isTypeScript, SCRIPT_IMPORTS } from '../domain/index.ts'
 import type { ScriptOutput, ScriptRequest } from '../runner.mjs'
 import { messages } from './messages.ts'
 
 export const SCRIPT_EXECUTOR_ID = 'js-worker'
 
+/** The modules code may import by name (`SCRIPT_IMPORTS`), at their URLs under the deck's base. */
+function imports(): Record<string, string> {
+  return Object.fromEntries(Object.entries(SCRIPT_IMPORTS).map(([name, path]) => [name, new URL(`${import.meta.env.BASE_URL}${path}`, location.href).href]))
+}
+
 /**
  * JavaScript and TypeScript in the browser (P-20): each run gets a fresh
  * module worker, terminated when the run ends, times out or is aborted.
- * Parameters become constants; stdin and files are not available.
+ * Parameters become constants; stdin and files are not available. Imports of
+ * the names `SCRIPT_IMPORTS` lists (jax-js, P-104) load the modules the deck
+ * publishes, on first use.
  */
 export function createScriptExecutor(options: { timeoutMs: number }): Executor {
   const id = SCRIPT_EXECUTOR_ID
@@ -36,7 +43,7 @@ export function createScriptExecutor(options: { timeoutMs: number }): Executor {
         })
         worker.onerror = event => finish(failedRun(id, messages().runtimeCrashed('JavaScript', event.message), elapsed()))
         signal?.addEventListener('abort', onAbort)
-        const message: ScriptRequest = { code: request.code, args: { ...request.args }, typescript: isTypeScript(request.lang) }
+        const message: ScriptRequest = { code: request.code, args: { ...request.args }, typescript: isTypeScript(request.lang), imports: imports() }
         worker.postMessage(message)
       })
     },

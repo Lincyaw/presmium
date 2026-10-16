@@ -580,7 +580,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 | 事项 | 工作包 |
 |---|---|
 | Runno 的运行时二进制能否自托管、离线加载，以及在 Node 中运行同一份二进制 | WP-74（已完成，结论见下） |
-| JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法 | WP-75 |
+| JSPI 在各浏览器中的可用性，决定 Python 的 WebGPU 桥是否提供同步写法；SwiftShader 在无头 Chromium 中的计算着色器与计时；适配器的默认限制 | WP-75（已完成，结论见下） |
 | Vite 代理能否在 WebSocket 升级时加凭据；浏览器访问 JupyterHub 用户服务器时的跨域；`runsc` 与 GPU 同时使用 | WP-76 |
 | 录制文件在各浏览器中能否跳转；WebM 时长修正 | WP-77 |
 | 火山引擎转写中英混说的效果；Safari 26 录制 Ogg/Opus；GB 45438 元数据字段在各容器中的写法；`@mediabunny/server` 附带的 FFmpeg 是 LGPL 还是 GPL | WP-77、WP-82、WP-83 |
@@ -623,6 +623,13 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **命令行**：沿用 Runno 的 clang 与 wasm-ld 参数，去掉 `-fcolor-diagnostics`（录制是纯文本）。Runno 的 SQLite 命令 `sqlite -cmd ".read <文件>"` 在 `@runno/wasi` 中把标准输入当作终端，输出版本横幅与提示符 `sqlite>`；改为 `sqlite :memory: ".read /program.sql"`：没有横幅，语句出错时退出码为 1。`abort()` 由 Runno 处理为退出码 134。
 - **耗时**（本机，Node）：读取并解开 sysroot 65 ms；`WebAssembly.compile(clang.wasm)` 31 ms（惰性分层编译）；编译一个小的 C 程序 144 ms、含 `<iostream>` 的 C++ 程序 540 ms；wasm-ld 26 至 49 ms；Ruby 120 ms；SQLite 19 ms。编译时每次运行另有启动工作线程、读取与编译运行时的开销：C、C++、Ruby、SQL 各一块加一个具名环境中的 C 程序的测试文稿，只构建 notebook 的整次 `presmium build` 约 2.5 秒。浏览器中经本机的服务器，端到端用例（第一次运行时下载 52 MB、等待 Service Worker 预缓存、断网重新加载后再运行）共约 2 秒。
 - **产物体积**：C 与 C++ 的运行时 52.5 MB，Ruby 24.5 MB，SQLite 3.6 MB。所以构建只发布浏览器中运行的代码需要的运行时（编译步骤写进插件配置的 `runtimes`），没有这类代码的文稿不发布。
+**WP-75 开始时的验证（2026-10-16，Playwright 1.64.1 的 Chromium 156 与 Firefox 157、Pyodide 314.0.7、jax-js 0.1.25；本机有 RTX 5090）**的结论：
+
+- **JSPI**：Chromium 156 与 Firefox 157 都有 `WebAssembly.Suspending` 与 `WebAssembly.promising`（WebKit 在本机无法启动，没有实测）。在模块 Worker 中，以 `callPromising` 调用的 Python 函数里 `pyodide.ffi.run_sync` 能等到 Promise（两个浏览器都是），普通调用则报 “Cannot stack switch because the Python entrypoint was a synchronous function”；`can_run_sync()` 在前者中为真。因此 Python 桥以异步写法为基本（代码块顶层的 `await`：以 `ast.PyCF_ALLOW_TOP_LEVEL_AWAIT` 编译，`eval` 得到协程，由 Worker 等待，两个浏览器都可用），有 JSPI 时 Worker 以 `callPromising` 运行代码块，另提供同步写法 `run_sync`。Pyodide 314 把 JavaScript 的 `null` 给成 `pyodide.ffi.jsnull` 而不是 `None`，桥里按两者判断。
+- **无头 Chromium 中的 WebGPU**：默认参数下 `navigator.gpu` 存在（页面与 Worker 中都是），但 `requestAdapter()` 为 `null`，正好验证“没有适配器”的回退。加 `--enable-unsafe-webgpu --use-webgpu-adapter=swiftshader --enable-unsafe-swiftshader` 后得到 SwiftShader：`info.vendor` 为 `google`、`architecture` 为 `swiftshader`、`isFallbackAdapter` 为真、`description` 为空；计算着色器在页面与专用 Worker 中都能运行，并且有 `timestamp-query`（四个元素的向量加法约 33 µs）。加 `--enable-unsafe-webgpu --enable-features=Vulkan --use-angle=vulkan` 时无头 Chromium 经 Vulkan 用上显卡（`nvidia`、`blackwell`，不是回退适配器，约 5 µs），所以录制的 `auto` 先试这组参数，没有适配器时再用 SwiftShader。Firefox 157 在 Linux 上没有 `navigator.gpu`。
+- **默认限制**：SwiftShader 适配器的 `maxStorageBufferBindingSize`、`maxBufferSize` 为 1 GiB，`maxComputeWorkgroupsPerDimension` 65535，`maxComputeInvocationsPerWorkgroup` 256，`maxStorageBuffersPerShaderStage` 10；RTX 5090 为 2 GiB、4 GiB、65535、1024、16。不带 `requiredLimits` 请求的设备只有规范的默认值（绑定 128 MiB、缓冲区 256 MiB），所以执行器按缓冲区的大小请求所需的限制，适配器不够时按“缺少限制”回退；运行的规模上限定为全部缓冲区 128 MiB、`repeat` 至多 1000。
+- **录制页面**：Playwright 新开的 `about:blank` 不是安全上下文，没有 `navigator.gpu`；录制器经 `page.route` 从一个 `https:` 的源（`https://webgpu.presmium.invalid/`）提供页面与计算核心，不占端口。
+- **jax-js 的导入**：Worker 没有导入映射；`data:` 模块（脚本 Worker 运行代码的方式）可以导入同源的 `http:` 模块（两个浏览器都是），所以脚本 Worker 把代码中的模块名改写为地址。jax-js 0.1.25 的 ES 模块构建是互相导入的 5 个文件、没有 wasm 文件与外部依赖，原样复制到产物的 `presmium/jax-js/` 即可；把它作为额外的入口 chunk 打包进网页形态的构建时，页面加载后内核没有启动（没有报错，原因未深究），因此不打包。SwiftShader 上 `init()` 给出 `webgpu`，2×2 矩阵乘法在 WebGPU 上得到正确结果。Slidev 构建时会为 `{monaco-run}` 代码中导入的包查找类型，在 pnpm 布局中从生成的文稿目录找不到 `@jax-js/jax` 而构建失败，测试文稿以 `renderers.slides.monacoTypesSource: none` 避开（`architecture.md` 9.3 节）。
 
 ## 12. 包与工作包
 

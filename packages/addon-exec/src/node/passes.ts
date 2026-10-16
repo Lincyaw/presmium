@@ -14,7 +14,9 @@
  *   panel's fallback, which PDF and PNG exports show, becomes its code with
  *   the parameters assigned first, followed by the output recorded at compile
  *   time, or the panel's `recorded` output where that run failed, timed out
- *   or did not happen (K-12, P-24).
+ *   or did not happen (K-12, P-24). The output recorded at compile time is
+ *   also the panel's `compiledOutput`, which it shows with the reason when a
+ *   live run cannot happen (no runtime, no GPU adapter, P-104).
  */
 import { docBlocks } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRPass, MdastNode } from '@presmium/kernel'
@@ -61,6 +63,8 @@ export const fallbackPass: IRPass = {
       const children: MdastNode[] = [{ type: 'code', lang: code.lang, value: declarations(code.lang, node.props.params as Record<string, unknown>) + code.value }]
       if (output) children.push({ type: 'code', lang: 'text', value: output })
       node.fallback = { type: 'root', children }
+      const runs = code.outputs ?? []
+      if (runs.length > 0 && runs.every(run => run.ok)) node.props.compiledOutput = shownOutput(runs, undefined).text
     }
   },
 }

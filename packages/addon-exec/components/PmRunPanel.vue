@@ -8,15 +8,19 @@ import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 
 // P-20 run panel: wraps a code block; runs it with the parameters in the form,
 // keeps a run history in this view and compares two runs. P-24: a failed or
-// timed-out run shows `recorded` instead, marked as recorded.
+// timed-out run shows `recorded` instead, marked as recorded; a run that could
+// not happen (no runtime, no GPU adapter, a timeout) shows the output recorded
+// at compile time, with the reason. Any language an executor runs (e.g. `wgsl`).
 const props = withDefaults(defineProps<{
   lang?: string
   /** The code to run; the wrapped code block shows it. */
   code?: string
-  /** Parameters and their initial values, injected into the program as variables. */
-  params?: Record<string, string | number | boolean>
+  /** Parameters and their initial values, injected into the program as variables (other languages' executors read them, e.g. a shader's buffers). */
+  params?: Record<string, unknown>
   /** The `RecordedOutput`, shown when the run fails or times out. */
   recorded?: string
+  /** The output recorded at compile time, shown with the reason when a run cannot happen. */
+  compiledOutput?: string
   /** Timeout in ms; else `presmium.exec.timeoutMs` of the section, else the executor's default. */
   timeout?: number
   /** The executor of its environment (`:env:`, docs/ir.md 2.7); without it the router chooses by language. */
@@ -36,7 +40,13 @@ const running = ref(false)
 const selected = ref<number[]>([])
 
 const latest = computed(() => history.value.at(-1))
-const reason = computed(() => latest.value && fallbackReason(latest.value.result))
+// Why a recorded output shows: a timeout, the program's failure, or what kept the run from happening.
+const reason = computed(() => {
+  const result = latest.value?.result
+  const why = result && fallbackReason(result)
+  if (!why) return undefined
+  return why === 'failed' && result.exitCode === null && result.stderr.trim() ? result.stderr.trim() : t.value[why]
+})
 const comparison = computed(() => {
   const [before, after] = [...selected.value].sort((a, b) => a - b).map(id => history.value.find(record => record.id === id))
   return before && after ? compareRuns(before, after) : undefined
@@ -48,7 +58,8 @@ async function run() {
   try {
     const request = { lang: props.lang, code: props.code, args: { ...args }, timeoutMs: props.timeout ?? configuredTimeout(config.value), executor: props.executor, session: props.session }
     const result = await executor.value.run(request)
-    history.value = appendRun(history.value, request.args, withRecordedFallback(result, props.recorded))
+    const recorded = props.recorded ?? (!result.ok && result.exitCode === null ? props.compiledOutput : undefined)
+    history.value = appendRun(history.value, request.args, withRecordedFallback(result, recorded))
     selected.value = defaultPair(history.value) ?? []
   } finally {
     running.value = false
@@ -91,7 +102,7 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
     <div v-if="latest || history.length" class="pm-run-panel__side">
       <div v-if="latest" class="pm-run-panel__output" :data-source="latest.result.source" :data-ok="latest.result.ok">
         <div v-if="reason" class="pm-run-panel__badge">
-          {{ t.recordedBadge(t[reason]) }}
+          {{ t.recordedBadge(reason) }}
         </div>
         <pre class="pm-run-panel__stdout">{{ latest.result.stdout }}</pre>
         <pre v-if="latest.result.stderr && !reason" class="pm-run-panel__stderr">{{ latest.result.stderr }}</pre>
