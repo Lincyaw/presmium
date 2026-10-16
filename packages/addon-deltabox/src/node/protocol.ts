@@ -7,7 +7,7 @@
 /** Why this host does not qualify (docs/architecture.md 10.6); `detail` is deltabox's or the system's own words. */
 export interface Unqualified {
   ok: false
-  reason: 'platform' | 'macos' | 'glibc' | 'binding' | 'start' | 'degraded' | 'helper'
+  reason: 'platform' | 'macos' | 'glibc' | 'binding' | 'start' | 'isolation' | 'degraded' | 'helper'
   detail: string
 }
 
@@ -48,10 +48,16 @@ export interface RunAnswer {
   files: Record<string, string>
 }
 
-/** A file's change as deltabox reports it, with the path relative to the document directory. */
+/**
+ * A change as deltabox reports it, with the path relative to the document
+ * directory. A directory is listed too, with neither size; the helper leaves
+ * it out, so the plugin gets files and links only.
+ */
 export interface BoxChange {
   path: string
   kind: 'added' | 'modified' | 'deleted'
+  old_size: number | null
+  new_size: number | null
   is_binary: boolean
   added_lines: number
   removed_lines: number

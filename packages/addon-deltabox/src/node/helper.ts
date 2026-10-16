@@ -18,21 +18,23 @@
  * - runs: warm sessions on run directories of their own, network `deny_all`,
  *   the system's directories and the given paths read-only; the inputs are
  *   written through the session, the results read through it (a link out of
- *   the run directory is refused), then `abort` empties it for the next run.
+ *   the run directory is refused), then what the command left running is
+ *   ended and `abort` empties the directory for the next run. A session idle
+ *   for `IDLE_MS` is stopped.
  *
  * Each session is recorded in `<state>/presmium/sessions/` with this
- * process's pid and start time (./records.ts). A helper that starts recovers the sessions of helpers that
- * are gone: it kills deltabox's processes of the session, aborts it (which
- * restores the document directory) and stops it. When its standard input
- * closes (the plugin's process ended), the helper rolls back its reviews,
- * stops its sessions and exits.
+ * process's pid and start time (./records.ts). A helper that starts recovers
+ * the sessions of helpers that are gone: it kills deltabox's processes of
+ * the session, aborts it (which restores the document directory) and stops
+ * it. When its standard input closes (the plugin's process ended), the
+ * helper rolls back its reviews, stops its sessions and exits.
  */
 import { spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { chmodSync, constants, copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { createInterface } from 'node:readline'
 import type { Availability, BoxChange, Request, ReviewOpened, RunAnswer, RunParams } from './protocol.ts'
 import { orphans, recordsDir, startTime } from './records.ts'
@@ -75,6 +77,8 @@ const SYSTEM = ['/usr', '/bin', '/sbin', '/lib', '/lib32', '/lib64', '/etc'].fil
 const SCRATCH = new Set(['HOME', 'TMPDIR', 'XDG_CACHE_HOME', 'XDG_CONFIG_HOME'])
 /** Warm sessions per set of readable paths, so runs sent together run side by side. */
 const POOL = 4
+/** How long a warm session waits for its next run before it is stopped. */
+const IDLE_MS = 60_000
 
 const STATE: string = process.env.DELTABOX_STATE_DIR ?? ''
 if (!STATE) throw new Error('DELTABOX_STATE_DIR is not set')
@@ -173,16 +177,46 @@ function kill(pids: number[]): void {
 /** deltabox's processes of a session (file system helper, command helper, worker): their arguments name its directories. */
 const sessionProcesses = (all: Proc[], session: string) => all.filter(p => p.cmdline.includes(`/${session}/`) && p.pid !== process.pid)
 
+/** What a process has open (`pipe:[<inode>]`, paths); nothing when it is gone. */
+function openFiles(pid: number): string[] {
+  try {
+    return readdirSync(`/proc/${pid}/fd`).flatMap((fd) => {
+      try {
+        return [readlinkSync(`/proc/${pid}/fd/${fd}`)]
+      } catch {
+        return []
+      }
+    })
+  } catch {
+    return []
+  }
+}
+
+/** Whether a process works in the session's runtime directory (its view, the command's home). */
+function worksIn(pid: number, session: string): boolean {
+  try {
+    return `${readlinkSync(`/proc/${pid}/cwd`)}/`.includes(`/${session}/`)
+  } catch {
+    return false
+  }
+}
+
 /**
- * Ends the command a session runs: everything below the session's worker,
- * which stays warm, and what is left of its process group (the worker
- * leads it), such as a child the command left running when it exited.
+ * Ends what a session's command runs, the worker staying warm: everything
+ * below the worker, what is left of its process group (the worker leads
+ * it), and what left both with `setsid`: a process holding the command's
+ * output pipes, which the worker reads (deltabox's `exec` waits until they
+ * close), or working in the session's runtime directory.
  */
 function killCommand(session: string): void {
   const all = processes()
-  const worker = sessionProcesses(all, session).find(p => p.cmdline.split('\0')[1] === 'worker')
+  const own = sessionProcesses(all, session)
+  const worker = own.find(p => p.cmdline.split('\0')[1] === 'worker')
   if (!worker) return
-  kill([...descendants(all, worker.pid), ...all.filter(p => p.pgid === worker.pid && p.pid !== worker.pid)].map(p => p.pid))
+  const pipes = new Set(openFiles(worker.pid).filter(file => file.startsWith('pipe:')))
+  const spared = new Set([process.pid, ...own.map(p => p.pid)])
+  const left = all.filter(p => !spared.has(p.pid) && (p.pgid === worker.pid || worksIn(p.pid, session) || openFiles(p.pid).some(file => pipes.has(file))))
+  kill([...descendants(all, worker.pid), ...left].map(p => p.pid))
 }
 
 /**
@@ -243,7 +277,7 @@ function glibc(): string | undefined {
   return header?.glibcVersionRuntime
 }
 
-/** Whether this host qualifies (docs/architecture.md 10.6): Linux x64 or arm64, glibc 2.39, the binding, cbcow-through started strictly, no degraded protection. */
+/** Whether this host qualifies (docs/architecture.md 10.6): Linux x64 or arm64, glibc 2.39, the binding, cbcow-through started strictly, isolated by sandlock, no degraded protection. */
 async function probe(): Promise<Availability> {
   if (process.platform === 'darwin') return { ok: false, reason: 'macos', detail: process.arch }
   if (process.platform !== 'linux' || !['x64', 'arm64'].includes(process.arch)) return { ok: false, reason: 'platform', detail: `${process.platform}-${process.arch}` }
@@ -263,11 +297,12 @@ async function probe(): Promise<Availability> {
     entry = { session: info.session_id, kind: 'probe', project, ...info.mountpoint ? { mount: info.mountpoint } : {} }
     record(entry)
     if (info.resolved_fs_mode !== MODE) return { ok: false, reason: 'start', detail: `resolved ${info.resolved_fs_mode}` }
+    if (info.isolation_provider !== 'sandlock') return { ok: false, reason: 'isolation', detail: info.isolation_provider ?? 'none' }
     if (info.degraded_protections?.length) return { ok: false, reason: 'degraded', detail: info.degraded_protections.join(', ') }
     // Commands start under sandlock (Landlock and seccomp), not only the file system.
     const ran = await it.exec(entry.session, ['true'])
     if (ran.exit_code !== 0) return { ok: false, reason: 'start', detail: ran.stderr.trim() || `true exited with ${ran.exit_code}` }
-    return { ok: true, kind: `deltabox ${MODE}`, version: VERSION, isolation: info.isolation_provider ?? 'none' }
+    return { ok: true, kind: `deltabox ${MODE}`, version: VERSION, isolation: info.isolation_provider }
   } catch (error) {
     return { ok: false, reason: 'start', detail: message(error) }
   } finally {
@@ -281,7 +316,15 @@ async function probe(): Promise<Availability> {
 
 // Runs ----------------------------------------------------------------------------------------------
 
-interface RunSession { session: string, project: string, mount: string, box: Box, entry?: Entry }
+interface RunSession {
+  session: string
+  project: string
+  mount: string
+  box: Box
+  entry?: Entry
+  /** Stops the session once it has been idle for `IDLE_MS`. */
+  timer?: NodeJS.Timeout
+}
 
 /** The warm sessions of one policy (one set of readable paths): idle ones, and runs waiting for one. */
 interface Pool {
@@ -294,7 +337,7 @@ interface Pool {
 const pools = new Map<string, Pool>()
 /** Ends the command of a run under way, by request id. */
 const stops = new Map<number, () => void>()
-/** Broken sessions being stopped. */
+/** Broken or idle sessions being stopped. */
 const stopping = new Set<Promise<void>>()
 
 function acquire(read: string[]): { pool: Pool, slot: Promise<RunSession> } {
@@ -302,6 +345,7 @@ function acquire(read: string[]): { pool: Pool, slot: Promise<RunSession> } {
   let pool = pools.get(file)
   if (!pool) pools.set(file, pool = { policy: file, sessions: [], idle: [], waiting: [] })
   const idle = pool.idle.pop()
+  clearTimeout(idle?.timer)
   if (idle) return { pool, slot: Promise.resolve(idle) }
   if (pool.sessions.length >= POOL) return { pool, slot: new Promise((resolve, reject) => pool.waiting.push({ resolve, reject })) }
   return { pool, slot: start(pool) }
@@ -325,18 +369,25 @@ async function start(pool: Pool): Promise<RunSession> {
 
 /** Gives a session back after a run; a broken one is stopped, and a run waiting gets a new one. */
 function release(pool: Pool, slot: RunSession, broken: boolean): void {
-  if (broken) {
-    pool.sessions.splice(pool.sessions.indexOf(slot), 1)
-    const stopped = stopRun(slot).finally(() => stopping.delete(stopped))
-    stopping.add(stopped)
-  }
+  if (broken) retire(pool, slot)
   const next = pool.waiting.shift()
   if (!next) {
-    if (!broken) pool.idle.push(slot)
+    if (broken) return
+    pool.idle.push(slot)
+    slot.timer = setTimeout(() => retire(pool, slot), IDLE_MS).unref()
     return
   }
   if (broken) start(pool).then(next.resolve, next.reject)
   else next.resolve(slot)
+}
+
+/** Takes a session out of its pool (and an empty pool out of the map) and stops it. */
+function retire(pool: Pool, slot: RunSession): void {
+  pool.sessions.splice(pool.sessions.indexOf(slot), 1)
+  if (pool.idle.includes(slot)) pool.idle.splice(pool.idle.indexOf(slot), 1)
+  if (pool.sessions.length === 0 && pool.waiting.length === 0) pools.delete(pool.policy)
+  const stopped = stopRun(slot).finally(() => stopping.delete(stopped))
+  stopping.add(stopped)
 }
 
 async function stopRun(slot: RunSession): Promise<void> {
@@ -377,6 +428,8 @@ async function run(id: number, params: RunParams): Promise<RunAnswer> {
     const ran = await slot.box.exec(slot.session, params.argv, undefined, env, 'presmium-run').finally(() => {
       clearTimeout(timer)
       running = undefined
+      // What the command left running (in the background, or detached with `setsid`) ends with the run.
+      killCommand(slot.session)
     })
     const files: Record<string, string> = {}
     for (const path of params.collect) {
@@ -447,9 +500,15 @@ function review(session: unknown): Review {
   return found
 }
 
+/** The changes of files and links since a checkpoint (or the session's start): deltabox lists directories too, with neither size. */
+async function fileChanges(r: Review, from?: string): Promise<BoxChange[]> {
+  const { changes } = await r.box.diff(r.session, from)
+  return changes.filter(change => change.old_size !== null || change.new_size !== null)
+}
+
 async function step(params: { session: string, from?: string, checkpoint: boolean, label: string }): Promise<{ changes: BoxChange[], checkpoint?: string }> {
   const r = review(params.session)
-  const { changes } = await r.box.diff(r.session, params.from)
+  const changes = await fileChanges(r, params.from)
   const checkpoint = params.checkpoint ? (await r.box.checkpoint(r.session, params.label)).id : undefined
   return { changes, ...checkpoint ? { checkpoint } : {} }
 }
@@ -491,17 +550,19 @@ function restore(r: Review, path: string): void {
 
 async function accept(params: { session: string, reject: string[] }): Promise<{ files: string[] }> {
   const r = review(params.session)
-  const { changes } = await r.box.diff(r.session)
+  const changed = (await fileChanges(r)).map(change => change.path)
   await r.box.commit(r.session)
   reviews.delete(r.session)
   await r.box.stopSession(r.session).catch(() => {})
   forget(r.entry)
-  // deltabox cannot take back one path: the rejected ones come back from the snapshot after the commit.
-  const reject = new Set(params.reject.filter(path => !isAbsolute(path)))
+  // deltabox cannot take back one path: the rejected files come back from the snapshot after the commit.
+  const reject = new Set(params.reject.filter(path => changed.includes(path)))
   for (const path of reject) restore(r, path)
   rmSync(r.snapshot, { recursive: true, force: true })
   reviewed.delete(r.project)
-  return { files: changes.map(c => c.path).filter(path => !reject.has(path)) }
+  // A file restored where the task had made a directory took the directory's files with it.
+  const rejected = (path: string) => [...reject].some(file => path === file || path.startsWith(`${file}/`))
+  return { files: changed.filter(path => !rejected(path)) }
 }
 
 async function rollback(params: { session: string }): Promise<Record<string, never>> {
@@ -521,10 +582,7 @@ const METHODS: Record<string, (params: never, id: number) => Promise<unknown>> =
   },
   'review.open': openReview,
   'review.step': step,
-  'review.diff': async (params: { session: string }) => {
-    const r = review(params.session)
-    return { changes: (await r.box.diff(r.session)).changes }
-  },
+  'review.diff': async (params: { session: string }) => ({ changes: await fileChanges(review(params.session)) }),
   'review.accept': accept,
   'review.rollback': rollback,
 }
@@ -541,6 +599,7 @@ async function shutdown(): Promise<void> {
       await endReview(r)
     }),
     ...[...pools.values()].flatMap(pool => pool.sessions).map((slot) => {
+      clearTimeout(slot.timer)
       killCommand(slot.session)
       return stopRun(slot)
     }),

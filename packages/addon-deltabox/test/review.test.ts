@@ -3,7 +3,8 @@
 // review's root from a process outside any sandbox, as the agent writes. The steps and the diff show the
 // writes, which are in the deck directory (and recompiled) before anything is accepted; accepting with
 // a file rejected keeps the others and restores that one; rejecting all restores everything; a second
-// review of the same directory is refused. A `presmium dev` killed with its helpers leaves the review
+// review of the same directory is refused. The changes are files only (deltabox lists directories too),
+// so what accepting returns can be committed. A `presmium dev` killed with its helpers leaves the review
 // behind, and the next one restores the deck directory when it starts.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
@@ -59,8 +60,9 @@ describe.skipIf(!host.ok)('change review through deltabox', () => {
     base = mkdtempSync(join(tmpdir(), 'presmium-review-'))
     deck = join(base, 'deck')
     state = join(base, 'state')
-    mkdirSync(deck)
+    mkdirSync(join(deck, 'old'), { recursive: true })
     writeFileSync(join(deck, 'lecture.md'), LECTURE)
+    writeFileSync(join(deck, 'old', 'a.md'), '旧\n')
     dev = await start()
   }, 120_000)
   afterEach(() => {
@@ -106,6 +108,22 @@ describe.skipIf(!host.ok)('change review through deltabox', () => {
     expect(lecture()).toBe(LECTURE)
     expect(existsSync(join(deck, 'draft.md'))).toBe(false)
     expect(readFileSync(join(deck, 'notes.md'), 'utf8')).toBe('# 笔记\n')
+  }, 60_000)
+
+  it('lists files only, not the directories the agent made or removed, and leaves no directory of rejected files behind', async () => {
+    const root = (await call('open', {})).json.root as string
+    agentWrites(root, 'mkdir -p figs/raw empty && printf png > figs/raw/p.png && printf "图\\n" > figs/note.md && rm -r old')
+    const paths = (changes: { path: string, kind: string }[]) => changes.map(c => [c.path, c.kind]).sort()
+    const files = [['figs/note.md', 'added'], ['figs/raw/p.png', 'added'], ['old/a.md', 'deleted']]
+    expect(paths((await call('step', { label: '整理图片' })).json.changes)).toEqual(files)
+    expect(paths((await call('diff')).json.changes)).toEqual(files)
+
+    // Every file of figs/raw rejected: the directory goes with them; what is returned is files to commit.
+    const accepted = await call('accept', { reject: ['figs/raw/p.png', 'figs'] })
+    expect(accepted.json.files.sort()).toEqual(['figs/note.md', 'old/a.md'])
+    expect(existsSync(join(deck, 'figs/raw'))).toBe(false)
+    expect(readFileSync(join(deck, 'figs/note.md'), 'utf8')).toBe('图\n')
+    expect(existsSync(join(deck, 'old'))).toBe(false)
   }, 60_000)
 
   it('restores the deck directory when presmium dev starts again after it was killed with its helpers during a review', async () => {

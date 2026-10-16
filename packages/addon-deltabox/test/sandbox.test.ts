@@ -2,11 +2,12 @@
 // workspace configuration: the plugin comes with the CLI. Its Python block probes what it can reach:
 // the environments of its ancestors and of every process it can see, a listener of the test on
 // 127.0.0.1, the deck directory and its run directory, Docker's socket. Built with a secret in the
-// environment of `presmium build` (and, in the second case, of `presmium dev`, the LOCAL server, whose
+// environment of `presmium build` (and, in the last case, of `presmium dev`, the LOCAL server, whose
 // own /proc/<pid>/environ the block is told to read), none of it leaks. With
 // `settings.presmium.deltabox.sandbox: false` the same build runs without the sandbox, reaches all of
-// it, and its report says why.
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+// it, and its report says why. Children the code detaches with `setsid` end at the timeout or with the
+// run, so they neither hold the build nor outlive it.
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer, Socket } from 'node:net'
 import type { AddressInfo, Server } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -169,6 +170,49 @@ describe.skipIf(!host.ok)('process sandbox through deltabox', () => {
     expect(plain.connected).toBe(1)
     expect(plain.probed.deck).toBe('written')
     if (await dockerReachable()) expect(plain.probed.docker).toBe('connected')
+  }, 120_000)
+
+  it('ends what the code leaves running: a detached child holding its output at the timeout, one detached away from it with the run', async () => {
+    // Without that, the first block would hold the build for its child's whole sleep, and both children would outlive it.
+    const holding = 3000 + (process.pid % 1000)
+    const away = holding + 1000
+    const deck = join(base, 'detached')
+    mkdirSync(deck)
+    writeFileSync(join(deck, 'lecture.md'), `---
+title: 进程沙箱
+plugins:
+  - ${ADDON_EXEC}
+---
+
+## 留下的进程
+
+\`\`\`{code} python
+:run:
+:timeout: 2000
+import subprocess
+subprocess.Popen(['sleep', '${holding}'], start_new_session=True)
+print('holding')
+\`\`\`
+
+\`\`\`{code} python
+:run:
+import subprocess
+subprocess.Popen(['sleep', '${away}'], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+print('away')
+\`\`\`
+`)
+    const result = await presmium(['build'], { cwd: deck, env: env({ XDG_STATE_HOME: join(base, 'state') }) })
+    expect(result.code, result.stdout + result.stderr).toBe(0)
+    const doc = JSON.parse(readFileSync(join(deck, 'dist/ir.json'), 'utf8')) as { sections: { blocks: { node: { type: string, outputs?: { stdout: string }[] } }[] }[] }
+    expect(doc.sections[0]!.blocks.filter(block => block.node.type === 'code').map(block => block.node.outputs![0]!.stdout)).toEqual(['holding\n', 'away\n'])
+    const sleeping = readdirSync('/proc').filter(pid => /^\d+$/.test(pid)).flatMap((pid) => {
+      try {
+        return [readFileSync(`/proc/${pid}/cmdline`, 'utf8')]
+      } catch {
+        return []
+      }
+    }).filter(cmdline => cmdline === `sleep\0${holding}\0` || cmdline === `sleep\0${away}\0`)
+    expect(sleeping).toEqual([])
   }, 120_000)
 
   it('keeps the environment of the LOCAL server (presmium dev) out of reach of the code it runs', async () => {
