@@ -92,6 +92,7 @@ describe('presmium dev', () => {
 
     const client = await connect()
     expect(client.getInstructions()).toContain('No tool writes files')
+    expect(client.getInstructions()).toMatch(/^Operate tools: navigate, run_code, build, classroom_start, classroom_end\. Each may first wait for a person/m)
     const tools = await names(client)
     expect(tools).toEqual(expect.arrayContaining([...READ, 'get_position', 'get_classroom', 'run_code', 'build', 'navigate', 'fixture_echo']))
     expect(tools.some(name => /write|edit/.test(name))).toBe(false)
@@ -108,6 +109,8 @@ describe('presmium dev', () => {
     // The read-only resources hold the same data.
     const step = await client.readResource({ uri: 'presmium://sections/merge/steps/0' })
     expect(JSON.parse((step.contents[0] as { text: string }).text)).toMatchObject({ section: 'merge', step: 0, screen: [{ lang: 'python' }] })
+    // `?document=` names the document of a resource (a host with several).
+    await expect(client.readResource({ uri: 'presmium://sections/merge?document=elsewhere' })).rejects.toThrow('no document "elsewhere"')
 
     // The web form's index finds the section; a plugin's tool gets the caller.
     const found = resultOf(await client.callTool({ name: 'search', arguments: { query: '相邻对' } }))
@@ -172,6 +175,7 @@ it('presmium-mcp lists the read tools on stdio, and no operation without --allow
     const tools = await names(client)
     expect(tools).toEqual(expect.arrayContaining(READ))
     expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
+    expect(client.getInstructions()).toContain('No operation is offered')
     const info = resultOf(await client.callTool({ name: 'deck_info', arguments: {} }))
     expect(info).toMatchObject({ title: 'MCP 测试文稿', sections: 3, entry: 'lecture.md' })
   } finally {

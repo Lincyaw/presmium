@@ -53,7 +53,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
   }
   const position = (entry: ReturnType<Control['positions']>[number]): McpPosition => {
     const { report } = entry
-    return { document: entry.document, slide: report.position!.slide, step: report.position!.step, view: report.position!.view, role: report.role, at: report.at }
+    return { document: entry.document, member: entry.member, slide: report.position!.slide, step: report.position!.step, view: report.position!.view, role: report.role, at: report.at }
   }
   return {
     documents: () => host().documents(),

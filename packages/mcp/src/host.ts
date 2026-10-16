@@ -38,6 +38,8 @@ export interface McpDocument {
 /** Where a window shows the deck, as the page reported it. */
 export interface McpPosition {
   document: string
+  /** The id of the member whose window it is. */
+  member: string
   /** 1-based section number (`Cursor.slide`). */
   slide: number
   step: number

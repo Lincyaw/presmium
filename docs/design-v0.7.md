@@ -624,6 +624,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **stdio**：`serveStdio(factory)`（`@modelcontextprotocol/server/stdio`）用同一个工厂提供 stdio，客户端的 `StdioClientTransport` 以两种协议都能连接。
 - **放映视图中的确认**：网页形态的放映视图是 `position: fixed; inset: 0; z-index: 1000` 的覆盖层，盖住了 VitePress 导航栏中的工具栏，工具栏的确认入口在放映视图中显示却点不到（Playwright：`pm-present__slide … intercepts pointer events`）。确认同时发往该成员的全部窗口，所以 `e2e/mcp.spec.ts` 在作者的另一个窗口（文档视图）中回答；在放映视图的控制条中加入确认入口属于 `viewer` 与 `host`，交给验收者（`architecture.md` 10.2 节）。
 - **共用的搜索**：`@presmium/mcp` 依赖 `@presmium/web` 以复用 `searchDocuments` 与 `tokenize` 会使 pnpm 的符号链接成环（`web` 的开发依赖有 `cli`，`cli → server → mcp`），所以 `search` 用 `@presmium/viewer/domain` 的 `chapters`、`blockText` 与 `minisearch` 按同样的文档、分词与参数建立索引，分词函数是副本。
+- **复查后的补充（交给验收者）**：设计的资源 URI 不含文档，`presmium serve` 有多份文档时读不到一份文档的资源，所以每个文档资源另有带 `?document=<目录>` 的资源模板（SDK 的 URI 模板把查询参数当作必需的，所以不带参数的 URI 仍单独登记）；`compile: off` 是整个工作区的设置，任一文档为 `off` 时都不列出 `run_code`。`@presmium/mcp` 依赖 `@presmium/viewer`（只用 `./domain`）使服务端的安装带上浏览器运行时的依赖（vue、mermaid、shiki 等），第 3 节的依赖表也因此允许 `mcp` 用 `@presmium/viewer/domain`；把 `chapters`、`blockText`、`tokenize` 与 `searchDocuments` 移到不带浏览器依赖的位置由验收者决定。
 
 ## 12. 包与工作包
 

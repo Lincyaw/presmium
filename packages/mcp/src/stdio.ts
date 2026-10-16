@@ -8,6 +8,7 @@
  */
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { CheckRegistry, errorMessage, irBlocks } from '@presmium/kernel'
 import type { ApprovalKind, Finding, Member } from '@presmium/kernel'
@@ -19,6 +20,12 @@ import { serveMcpStdio } from './mcp.ts'
 /** The one member of a local process: the author, an owner. */
 const AUTHOR: Member = { id: 'local', name: 'local author', roles: ['owner'] }
 const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
+/**
+ * Where Presmium's own packages installed with the CLI resolve from
+ * (`CompilerOptions.bundled`): this package's directory, installed with the
+ * CLI, as the CLI's own directory is for `presmium check`.
+ */
+const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 
 const USAGE = `Usage: presmium-mcp [deck] [--allow <kinds>]
 
@@ -61,7 +68,7 @@ async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
 
 /** The `McpHost` of one deck on the compiler. */
 export function compilerHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
-  const compiler = new Compiler(entry)
+  const compiler = new Compiler(entry, { bundled: BUNDLED })
   let latest: { compilation: Compilation, files: string[], stamp: string } | undefined
   let queue = Promise.resolve()
   /** The current compilation: compiled again when a file it read changed (one compilation at a time). */

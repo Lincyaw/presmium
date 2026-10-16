@@ -226,7 +226,9 @@ const TOOLS: ToolSpec[] = [
       const { doc } = await call.compiled()
       const section = findSection(doc, str(call.args.section) ?? '')
       const step = Math.min(int(call.args.step) ?? 0, section.steps)
-      if (!call.host.positions?.(document, call.caller.member).length) throw new Error('no window shows the deck: open it first')
+      // `go` reaches only the caller's windows: without one, nothing is asked.
+      const own = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id) ?? []
+      if (own.length === 0) throw new Error('none of your windows shows the deck: open it first')
       await call.approve('operate', m => m.navigate(section.title, step))
       const windows = call.host.navigate!(document, { slide: section.index, step }, call.caller.member)
       if (windows === 0) throw new Error('none of your windows shows the deck')
@@ -321,20 +323,34 @@ function inputSchema(properties: Record<string, unknown> = {}, required: string[
   return fromJsonSchema<Args>({ type: 'object', properties, ...required.length ? { required } : {} } as JsonSchemaType)
 }
 
-function instructions(host: McpHost, caller: McpCaller, title?: string): string {
+/** The service's instructions: the tools this caller has, the resources, and how operations are allowed. */
+function instructions(host: McpHost, caller: McpCaller, tools: { name: string, kind: 'read' | ApprovalKind }[], title?: string): string {
   const pages = Boolean(host.positions)
+  const reads = tools.filter(tool => tool.kind === 'read').map(tool => tool.name)
+  const operations = tools.filter(tool => tool.kind !== 'read').map(tool => tool.name)
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
-    `Read tools: list_documents, deck_info, list_sections, get_section, get_step, search, get_code_ref, get_outputs, get_diagnostics, locate_source${pages ? ', get_position (where the presentation is), get_classroom' : ''}.`,
-    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics, presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves), presmium://classroom' : ''}.`,
+    `Read tools: ${reads.join(', ')}.`,
+    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics, presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}${host.classroom ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>).`,
     'Sections are named by id (list_sections); steps count from 0. Paths are relative to the deck directory.',
     !operates(caller)
       ? 'This token reads only, and sees what learners see.'
-      : pages
-        ? 'Operate tools (navigate, run_code, build, classroom_start, classroom_end) wait for a person to allow them in the page, and fail when refused.'
-        : 'Operations are offered only as far as presmium-mcp --allow lets them.',
+      : operations.length === 0
+        ? (pages ? 'No operation is offered here.' : 'No operation is offered: presmium-mcp offers the kinds of operation its --allow names.')
+        : pages
+          ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page, or in the owner console), and fails when refused.`
+          : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
     'No tool writes files: edit the deck\'s source with your own file tools; presmium dev compiles again on save. With several documents, name one with `document` (list_documents).',
   ].join('\n')
+}
+
+const RESOURCE = { mimeType: 'application/json' }
+
+/** A resource URI's variables as a tool's arguments: decoded, `step` a number. */
+function argsOf(variables: Record<string, string | string[]>): Args {
+  const args: Args = Object.fromEntries(Object.entries(variables).map(([key, value]) => [key, decodeURIComponent(String(value))]))
+  if (args.step !== undefined) args.step = Number(args.step)
+  return args
 }
 
 /** The MCP server for one caller: the tools and resources its token may use. */
@@ -342,9 +358,23 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
   const view = viewOf(caller)
   const documents = await host.documents().catch(() => [])
   const only = documents.length === 1 ? documents[0]!.dir : undefined
+
+  const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (operates(caller) && host.offers(kind))
+  // SHARED `compile: off` is a setting of the whole workspace (10.6): run_code is not listed when a document has it.
+  const runOff = documents.some(d => host.runCode?.(d.dir) === 'off')
+  const builtIn = TOOLS.filter(tool => offered(tool.kind) && supported(host, tool.name) && !(tool.name === 'run_code' && runOff))
+  // The plugins' tools: those of the one document, else of the documents the host has loaded.
+  const plugins: AgentTool[] = []
+  const names = new Set(TOOLS.map(tool => tool.name))
+  for (const tool of (await host.tools?.(only).catch(() => undefined))?.tools ?? []) {
+    if (names.has(tool.name) || !offered(tool.kind)) continue
+    names.add(tool.name)
+    plugins.push(tool)
+  }
+
   const server = new McpServer({ name: 'presmium', version: MCP_VERSION }, {
     capabilities: { resources: { subscribe: true } },
-    instructions: instructions(host, caller, documents.length === 1 ? documents[0]!.title : undefined),
+    instructions: instructions(host, caller, [...builtIn, ...plugins], documents.length === 1 ? documents[0]!.title : undefined),
   })
 
   const call = (args: Args, signal: AbortSignal): Call => {
@@ -375,23 +405,14 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
     return self
   }
 
-  const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (operates(caller) && host.offers(kind))
-  for (const tool of TOOLS) {
-    if (!offered(tool.kind) || !supported(host, tool.name)) continue
-    if (tool.name === 'run_code' && only !== undefined && host.runCode?.(only) === 'off') continue
+  for (const tool of builtIn) {
     server.registerTool(tool.name, {
       description: tool.description,
       inputSchema: inputSchema(tool.properties, tool.required),
       annotations: { readOnlyHint: tool.kind === 'read' },
     }, (args, ctx) => answer(() => tool.run(call(args, ctx.mcpReq.signal))))
   }
-
-  // The plugins' tools: those of the one document, else of the documents the host has loaded.
-  const plugins = await host.tools?.(only).catch(() => undefined)
-  const builtIn = new Set(TOOLS.map(tool => tool.name))
-  for (const tool of plugins?.tools ?? []) {
-    if (builtIn.has(tool.name) || !offered(tool.kind)) continue
-    builtIn.add(tool.name)
+  for (const tool of plugins) {
     const schema = isRecord(tool.input) ? tool.input : {}
     const properties = { ...DOCUMENT, ...isRecord(schema.properties) ? schema.properties : {} }
     server.registerTool(tool.name, {
@@ -401,29 +422,33 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
     }, (args, ctx) => answer(() => pluginTool(call(args, ctx.mcpReq.signal), tool)))
   }
 
-  const resource = (name: string, uri: string, read: (call: Call) => Promise<unknown>) => {
-    server.registerResource(name, uri, { mimeType: 'application/json' }, async (url, ctx) => ({
-      contents: [{ uri: url.href, mimeType: 'application/json', text: json(await read(call({}, ctx.mcpReq.signal))) }],
-    }))
+  type Read = (call: Call) => Promise<unknown>
+  const contents = (url: URL, data: unknown) => ({ contents: [{ uri: url.href, mimeType: 'application/json', text: json(data) }] })
+  const template = (name: string, uri: string, read: Read) => {
+    server.registerResource(name, new ResourceTemplate(uri, { list: undefined }), RESOURCE, async (url, variables, ctx) => contents(url, await read(call(argsOf(variables), ctx.mcpReq.signal))))
   }
-  const read = (name: string) => (c: Call) => TOOLS.find(tool => tool.name === name)!.run(c)
-  resource('documents', 'presmium://documents', read('list_documents'))
+  /** A resource of the one document, and of a named one: `<uri>?document=<dir>`. */
+  const resource = (name: string, uri: string, read: Read, ofDocument = true) => {
+    server.registerResource(name, uri, RESOURCE, async (url, ctx) => contents(url, await read(call({}, ctx.mcpReq.signal))))
+    if (ofDocument) template(`${name}-of-document`, `${uri}{?document}`, read)
+  }
+  const read = (name: string): Read => c => TOOLS.find(tool => tool.name === name)!.run(c)
+  resource('documents', 'presmium://documents', read('list_documents'), false)
   resource('deck', 'presmium://deck', read('deck_info'))
   resource('sections', 'presmium://sections', read('list_sections'))
   resource('diagnostics', 'presmium://diagnostics', read('get_diagnostics'))
   resource('ir', 'presmium://ir', async c => (await c.compiled()).doc)
-  if (host.positions) resource('position', POSITION_URI, c => position(c))
+  // The position of any document's windows (a subscription names this URI); get_position takes a document.
+  if (host.positions) resource('position', POSITION_URI, c => position(c), false)
   if (host.classroom) resource('classroom', 'presmium://classroom', read('get_classroom'))
-  const template = (name: string, uri: string, tool: string) => {
-    server.registerResource(name, new ResourceTemplate(uri, { list: undefined }), { mimeType: 'application/json' }, async (url, variables, ctx) => {
-      const args = Object.fromEntries(Object.entries(variables).map(([key, value]) => [key, decodeURIComponent(String(value))]))
-      if (args.step !== undefined) Object.assign(args, { step: Number(args.step) })
-      return { contents: [{ uri: url.href, mimeType: 'application/json', text: json(await read(tool)(call(args, ctx.mcpReq.signal))) }] }
-    })
+  const section = (name: string, uri: string, tool: string) => {
+    // The variant with `?document=` first: the plain template would read the query as part of its last variable.
+    template(`${name}-of-document`, `${uri}{?document}`, read(tool))
+    template(name, uri, read(tool))
   }
-  template('section', 'presmium://sections/{section}', 'get_section')
-  template('step', 'presmium://sections/{section}/steps/{step}', 'get_step')
-  template('outputs', 'presmium://sections/{section}/outputs', 'get_outputs')
+  section('section', 'presmium://sections/{section}', 'get_section')
+  section('step', 'presmium://sections/{section}/steps/{step}', 'get_step')
+  section('outputs', 'presmium://sections/{section}/outputs', 'get_outputs')
   return server
 }
 
@@ -447,7 +472,7 @@ async function resolveDocument(host: McpHost, named: string | undefined): Promis
     return named
   }
   if (documents.length === 1) return documents[0]!.dir
-  throw new Error(documents.length === 0 ? 'no document yet (the deck may still be compiling)' : 'several documents: name one with `document` (list_documents)')
+  throw new Error(documents.length === 0 ? 'no document yet (the deck may still be compiling)' : 'several documents: name one with `document` (list_documents), or a resource\'s with ?document=<dir>')
 }
 
 /** The MCP service over HTTP: `fetch` answers a request to `/mcp` of a caller the host authenticated. */

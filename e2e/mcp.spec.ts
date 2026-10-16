@@ -1,6 +1,7 @@
 // The agent environment in the browser (WP-78, P-110): with the present view open under `presmium dev`,
 // an MCP client's `navigate` to the third section asks for approval in the page, and once allowed the
-// present view shows that section; a test plugin's `STATUS` summary reaches MCP's `get_classroom`.
+// present view shows that section and a subscriber of presmium://position hears it; a test plugin's
+// `STATUS` summary reaches MCP's `get_classroom`.
 import { cpSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,12 +44,20 @@ test('navigate asks in the page, and once allowed the present view shows the thi
   await author.goto(dev.url)
   await expect(author.locator('.pm-section').first()).toBeVisible()
 
+  // A subscriber of presmium://position hears the present view report where it moved.
+  let updates = 0
+  mcp.setNotificationHandler('notifications/resources/updated', (n) => {
+    if (n.params.uri === 'presmium://position') updates++
+  })
+  const subscription = await mcp.listen({ resourceSubscriptions: ['presmium://position'] })
+
   const moved = mcp.callTool({ name: 'navigate', arguments: { section: '第三节' } })
   const entry = author.locator('.pm-approvals__toggle')
   await expect(entry).toHaveText('待确认 1')
   await entry.click()
   const dialog = author.getByRole('dialog', { name: '待确认的操作' })
   await expect(dialog.locator('.pm-approvals__title')).toHaveText('放映跳转到「第三节」')
+  updates = 0
   await dialog.getByRole('button', { name: '允许' }).click()
 
   const result = await moved
@@ -57,6 +66,10 @@ test('navigate asks in the page, and once allowed the present view shows the thi
   await expect(present).toHaveAttribute('data-section', '第三节')
   // Only the presenting window moved.
   await expect(author.locator('.pm-present')).toHaveCount(0)
+  // Once the present view reported the third section, its update was announced.
+  const where = async () => JSON.parse(((await mcp.readResource({ uri: 'presmium://position' })).contents[0] as { text: string }).text).position
+  await expect.poll(async () => updates > 0 && (await where())?.section).toBe('第三节')
+  await subscription.close()
 })
 
 test('a plugin\'s STATUS summary reaches get_classroom while a page is open', async ({ page }) => {

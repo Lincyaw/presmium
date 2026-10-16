@@ -164,6 +164,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 
 - `presmium dev` 运行时：MCP 的地址（`mcp  http://127.0.0.1:<端口>/mcp`）与令牌在 `.presmium/server.json`，agent 以 HTTP 方式连接，请求头 `Authorization: Bearer <令牌>`。
 - 不启动服务端时：`node <仓库>/packages/mcp/bin/presmium-mcp.mjs <文稿目录>` 以 stdio 提供读取类工具；加 `--allow operate` 另提供并直接允许 `run_code` 与 `build`。网页形态的放映视图盖住了工具栏，放映时的确认在文档视图的窗口中回答。
+- 同样的数据也是只读资源（`presmium://sections`、`presmium://sections/{section}` 等，服务说明列出它们）。有多份文档时，工具以 `document` 指定文档，资源在 URI 后加 `?document=<文档目录>`。`navigate` 只移动自己打开的窗口：自己没有窗口显示文稿时直接返回错误，不询问。
 
 ## 12. 读诊断
 
