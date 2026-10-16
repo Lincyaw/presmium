@@ -5,8 +5,8 @@
  * AI-generated label), and `.presmium/speech.lock.json`, the keys the deck
  * used with the sha256 of their audio.
  */
-import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { createHash, randomBytes } from 'node:crypto'
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SpeechWord } from '@presmium/kernel'
 import { isRecord } from '@presmium/kernel'
@@ -38,9 +38,10 @@ interface LockFile {
   synthesis: Record<string, { audio: string, sha256: string }>
 }
 
+/** Writes beside `file` and renames over it, so a link at `file` is replaced rather than followed. */
 function writeAtomic(file: string, data: string | Uint8Array): void {
-  const temporary = `${file}.${process.pid}.tmp`
-  writeFileSync(temporary, data)
+  const temporary = `${file}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`
+  writeFileSync(temporary, data, { flag: 'wx' })
   renameSync(temporary, file)
 }
 
@@ -48,19 +49,39 @@ export class SynthesisCache {
   readonly dir: string
   readonly lockFile: string
 
+  readonly #deckDir: string
+
   constructor(deckDir: string) {
+    this.#deckDir = deckDir
     this.dir = join(deckDir, '.presmium', 'speech')
     this.lockFile = join(deckDir, '.presmium', 'speech.lock.json')
   }
 
-  /** The record and audio file of a key, when both are there. */
+  /** The cache directory resolves inside the deck (no linked `.presmium` or `speech`). */
+  #contained(): boolean {
+    const deck = realpathSync(this.#deckDir)
+    const dir = realpathSync(this.dir)
+    return dir === join(deck, '.presmium', 'speech')
+  }
+
+  /**
+   * The record and audio file of a key, when both are there. The record is
+   * committed with the deck and may be edited by anyone who edits the deck, so
+   * nothing in it can point elsewhere: the audio must be `<key>.wav` or
+   * `<key>.ogg`, and the cache directory, the record and the audio must be
+   * real files inside the deck, not symbolic links.
+   */
   find(key: string): { record: CacheRecord, file: string } | undefined {
     if (!/^[0-9a-f]{32}$/.test(key)) return undefined
     try {
-      const record = JSON.parse(readFileSync(join(this.dir, `${key}.json`), 'utf8')) as CacheRecord
+      if (!this.#contained()) return undefined
+      const json = join(this.dir, `${key}.json`)
+      if (!lstatSync(json).isFile()) return undefined
+      const record = JSON.parse(readFileSync(json, 'utf8')) as CacheRecord
       if (!isRecord(record) || record.key !== key || typeof record.audio !== 'string') return undefined
+      if (record.audio !== `${key}.wav` && record.audio !== `${key}.ogg`) return undefined
       const file = join(this.dir, record.audio)
-      if (!existsSync(file)) return undefined
+      if (!existsSync(file) || !lstatSync(file).isFile()) return undefined
       this.#lock(key, record)
       return { record, file }
     } catch {
@@ -70,6 +91,7 @@ export class SynthesisCache {
 
   write(result: SynthesisResult, request: { lang: string, text: string }): { record: CacheRecord, file: string } {
     mkdirSync(this.dir, { recursive: true })
+    if (!this.#contained()) throw new Error(`the synthesis cache ${this.dir} resolves outside the deck`)
     const audio = `${result.key}.${result.ext}`
     const file = join(this.dir, audio)
     const record: CacheRecord = {

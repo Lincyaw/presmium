@@ -4,7 +4,7 @@
 // test plugin's routes, fixtures/speech-probe). The fake engine is a process of its own, defined like any
 // engine (PRESMIUM_SPEECH_FAKE_URL, _PROVIDER, _KEY); it lists the requests it got.
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, Fake } from './helpers.ts'
@@ -103,6 +103,36 @@ describe('presmium dev with the fake engine defined', () => {
 
     // Neither the answers nor dev's output carry the engine's key.
     for (const text of [first.text, again.text, beta.text, JSON.stringify(transcript), devProcess.output()]) expect(text).not.toContain(KEY)
+  }, 120_000)
+
+  it('never reads a file outside the cache through an edited record or a linked clip: the clip is synthesized again', async () => {
+    const outside = join(dir, '..', `speech-outside-${process.pid}.txt`)
+    writeFileSync(outside, 'NOT-A-CLIP-OUTSIDE-THE-DECK')
+    try {
+      const input = '只看缓存里的文件。'
+      const first = (await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input, lang: 'zh-CN' })).json<Timed>()
+      const cache = join(dir, '.presmium/speech')
+      const recordFile = join(cache, `${first.key}.json`)
+      const record = JSON.parse(readFileSync(recordFile, 'utf8')) as { audio: string }
+
+      // An edited record pointing out of the cache.
+      writeFileSync(recordFile, JSON.stringify({ ...record, audio: `../../../${outside.split('/').pop()}` }))
+      const before = (await fake.requests()).length
+      const traversed = await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input, lang: 'zh-CN' })
+      expect(traversed.status, traversed.text).toBe(200)
+      expect(Buffer.from(traversed.json<Timed>().audio, 'base64').toString('latin1')).not.toContain('NOT-A-CLIP')
+      expect((await fake.requests()).length).toBeGreaterThan(before)
+
+      // A clip replaced by a link to a file outside the deck.
+      const clip = join(cache, `${first.key}.wav`)
+      rmSync(clip)
+      symlinkSync(outside, clip)
+      const linked = await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input, lang: 'zh-CN' })
+      expect(linked.status, linked.text).toBe(200)
+      expect(Buffer.from(linked.json<Timed>().audio, 'base64').toString('latin1')).not.toContain('NOT-A-CLIP')
+    } finally {
+      rmSync(outside, { force: true })
+    }
   }, 120_000)
 
   it('lists the engines with their providers; one without a provider is unavailable, naming the variable, and gets no request', async () => {
