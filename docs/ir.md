@@ -35,7 +35,7 @@
 ---
 title: BPE 分词
 lang: zh-CN                    # 文稿的语言：两种形态的 <html lang>、界面语言、编译时写入产物的文字
-plugins:                       # 插件包名
+plugins:                       # 插件包名；presmium serve 中只能是运营者列出的包（第 10 节）
   - '@presmium/slidev-addon-code'
   - '@presmium/slidev-addon-exec'
 presmium:                      # 各插件的全局配置，键为插件 ID
@@ -483,9 +483,10 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 - **环境指纹**：Jupyter 为声明的镜像摘要、内核规格（含 `metadata`）的哈希、内核报告的实现与语言版本；WASI 为运行时二进制的哈希；WebGPU 为浏览器版本与显卡适配器的描述（CPU 模拟的适配器写明 `fallback`）。
 - **会话键链**：带 `:session:` 的代码块按在文稿中出现的顺序组成会话，第 i 个代码块的缓存键是 `hash(第 i−1 个的键, 语言, 代码, 参数, 执行器 ID, 环境指纹)`，第一个的“前一个键”为会话名。所有块都命中缓存时不运行；有一块未命中时，结束该会话（`endSession`），从会话的第一个块起依次重新执行并重新录制。构建结束时结束所有用过的会话。不带 `:session:` 的代码块，键的算法与 v0.7 相同。
 - **富输出与录制块**：录制保存 `outputs`。MIME 数据中长度超过 4096 个字符的值存为 `.presmium/freeze/blobs/<sha256>`，录制只保存引用 `{ "presmium/blob": "<sha256>" }`；编译器读取录制时把它们放回 IR，IR 与产物中的输出因此是完整的 nbformat 输出。`presmium build` 删除不再被引用的录制块。
-- 编译时执行器（执行插件的 `presmium.python`、`presmium.node`）在子进程中、每次运行一个新的临时目录中执行代码，结果经单独的通道（文件描述符 3）返回：程序直接写标准输出（`process.stdout.write`、`console.dir`）不会破坏结果，这些输出照常录制；顶层 `await` 永不完成时，结果为失败并说明原因。运行末尾才发生的 Promise 拒绝与定时器中的异常使运行失败，与浏览器中一致。
-- **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会被代码打印进录制、IR 与产物。本地容器的 `docker` 与 devcontainer 命令行另得到 Docker 客户端需要的几个变量（`DOCKER_HOST`、`XDG_RUNTIME_DIR` 等与真实的 `HOME`，都不是凭据），容器里的代码经命令行只得到 `RunContext.env` 中的变量（`architecture.md` 10.6 节）。
-- **工作区服务中的执行**：`presmium serve` 中没有录制的代码按 `settings.presmium.exec.compile` 执行：`approve`（默认）等所有者的 `operate` 确认（同一段代码被拒绝或超时后不再自动请求，代码改动或编辑者点“请求执行”时再请求），`trusted` 直接执行，`off` 不执行；没有执行时显示 `:recorded:` 的录制输出或降级内容。`settings.presmium.exec.sandbox` 给出一个 Jupyter 环境时，原本在本机运行的代码改在其中运行，沙箱的内核不支持的语言不执行，都不退回本机。MCP 的 `run_code` 与 `build` 按同一规则执行（`architecture.md` 10.6 节）。
+- 编译时执行器（执行插件的 `presmium.python`、`presmium.node`）在子进程中、每次运行一个新的临时目录（运行目录）中执行代码；代码、参数与输入写成运行目录中的文件，结果由运行器写进运行目录中的结果文件（WP-73b 起不再用标准输入与文件描述符 3，进程沙箱不转发它们，`architecture.md` 4.6 节）：程序直接写标准输出（`process.stdout.write`、`console.dir`）不会破坏结果，这些输出照常录制；顶层 `await` 永不完成时，结果为失败并说明原因。运行末尾才发生的 Promise 拒绝与定时器中的异常使运行失败，与浏览器中一致。
+- **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会经代码自己的环境被打印进录制、IR 与产物；有意读取其他进程信息的代码按信任模式处理（`architecture.md` 10.1、10.6 节）。本地容器的 `docker` 与 devcontainer 命令行另得到 Docker 客户端需要的几个变量（`DOCKER_HOST`、`XDG_RUNTIME_DIR` 等与真实的 `HOME`，都不是凭据），容器里的代码经命令行只得到 `RunContext.env` 中的变量（`architecture.md` 10.6 节）。
+- **进程沙箱**：运营者插件 `addon-deltabox` 可用时，执行插件的子进程在 deltabox 中运行（网络拒绝，看不到其他进程与 Unix 套接字，只能写运行目录；同一会话的代码块在同一次运行中依次执行），构建报告写明隔离方式；不可用时照旧运行并在构建报告中说明（`architecture.md` 10.6 节）。
+- **工作区服务中的执行**：LOCAL 模式（只监听本机、没有登录）的 `presmium serve` 与 `presmium dev` 一样全部执行。SHARED 模式（带登录，compose 布局）中代码只在 sandbox 容器的 agent-host 中执行，没有录制的代码按 `settings.presmium.exec.compile` 执行：`approve`（默认）等所有者的 `operate` 确认（同一段代码被拒绝或超时后不再自动请求，代码改动或编辑者点“请求执行”时再请求），`trusted` 直接执行，`off` 不执行；没有执行时显示 `:recorded:` 的录制输出或降级内容。MCP 的 `run_code` 与 `build` 按同一规则执行（`architecture.md` 10.6 节）。
 
 ## 5. 插件
 
@@ -504,6 +505,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | `services` | Node 端服务实现，编译步骤（`PassContext.service`）与渲染端（`RenderContext.service`）使用，例如 `lecture` 渲染端经 `SPEECH` 合成 |
 | `environments` | 具名环境的提供方（2.7 节、第 4 节） |
 | `server`、`tools` | 服务端贡献与 agent 工具，只在 `presmium dev`、`presmium serve` 中使用（`architecture.md` 4.7、4.8 节） |
+| `gateway`、`operator` | gateway 贡献（只在 `presmium gateway` 中挂载，使用第三方凭据）；运营者插件的标记（列在工作区的插件列表中时每份文档都加载，第 10 节） |
 
 - 指令与编译步骤通过 `ctx.src`、`ctx.resolvers` 读取文件，编译器记录读过的文件与读取时的 git 版本；其他方式读取的文件用 `ctx.watch(...files)` 声明。`presmium dev` 在这些文件或命名该版本的 git 引用（`HEAD`、所在分支、`packed-refs`）变化时重新编译（K-09）。编译器只知道传给 `ctx.src`、`ctx.resolvers` 的版本名：插件若先把分支或标签名（如 `{code-ref}` 的 `:pin:`、`:variants:`）解析为提交再读取，要自己用 `ctx.watch` 声明这些名字对应的 git 引用文件，否则这些分支前进时不会重新编译。`presmium dev` 在一次编译所依赖的文件都被监听之后才报告这次编译；编译开始后改动、监听前未能察觉的文件，按修改时间补一次编译。
 - 渲染端扩展的组件转换函数为 `(node, block, ctx)`，`ctx` 是正在运行的渲染端的 `RenderContext`（输出目录、工作目录、渲染端配置），例如据此写出相对于渲染产物的路径。编译器把 `ctx` 绑定后交给渲染端，渲染端以 `(node, block)` 调用。
@@ -655,7 +657,9 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `presmium dev` | `--to <ids>`、`--out <dir>`（工作目录，默认 `<deck>/.presmium/dev`）、`--server-port <n>`（服务端的端口，默认空闲端口）、`--allow <种类,…>`（不询问就放行的确认种类：`operate`、`spend`、`write`、`agent`） | 监听源码与编译读取过的文件（第 5 节），增量编译，启动对应渲染端的开发服务器并打印其地址。保存频繁时合并排队的编译；被引入而尚不存在的文件在创建后即被编译；头部的 `plugins` 或 `renderers` 变化时提示重启 |
 | `presmium ir` | `--out <file>` | 输出 IR JSON（绝对路径），诊断写到标准错误；用于调试 |
 | `presmium check` | `--json`（JSON 输出）、`--update-lock`（先在工作区重新解析全部锚点，重写 `.presmium/anchors.lock.json`）、`--env`（连接每个具名环境，报告不可达的环境）、`--audience <受众>`（按该受众编译后检查）、`--external-links`（用 lychee 检查外部链接） | 完整编译（含编译时执行），再运行各插件的检查项（`Check`），只输出诊断 |
-| `presmium serve` | `[目录]`（工作区根目录或一份文稿，默认当前目录）、`--port <n>`（默认 4310）、`--host <地址>`（默认 `127.0.0.1`；其他地址要求配置登录代理）、`--trust-proxy-from <地址>` | 工作区服务（P-120）：工作区站点的开发服务器、编辑模式、文档管理、助手、MCP 与各插件的服务端贡献（`architecture.md` 第 10 节） |
+| `presmium serve` | `[目录]`（工作区根目录或一份文稿，默认当前目录）、`--port <n>`（默认 4310）、`--host <地址>`（默认 `127.0.0.1`；其他地址要求配置登录代理）、`--trust-proxy-from <地址>` | 工作区服务（P-120）：工作区站点的开发服务器、编辑模式、文档管理、助手、MCP 与各插件的服务端贡献（`architecture.md` 第 10 节）。配置了登录（`PRESMIUM_PROXY_SECRET` 或 `--trust-proxy-from`）时是 SHARED 模式：要求 `PRESMIUM_GATEWAY_URL`、`PRESMIUM_GATEWAY_TOKEN`、`PRESMIUM_AGENT_HOST_URL`、`PRESMIUM_AGENT_HOST_TOKEN`，环境中有第三方凭据时拒绝启动（`architecture.md` 10.1 节） |
+| `presmium gateway` | `[目录]`（工作区根目录，只读取工作区配置）、`--operator-dir <dir>`（运营者目录）、`--serve <url>`（`/mcp` 转发的目标）、`--port <n>`（默认 4320）、`--host <地址>`（默认 `127.0.0.1`） | SHARED 模式中持有第三方凭据的进程：挂载运营者插件的 gateway 贡献（模型、语音、远端环境的代理），签发与校验限定令牌（服务令牌取自 `PRESMIUM_GATEWAY_TOKEN`），转发 `/mcp`（`architecture.md` 10.9 节） |
+| `presmium agent-host` | `[目录]`（工作区根目录）、`--port <n>`（默认 4330）、`--host <地址>`（默认 `127.0.0.1`）、`--user <uid>`（以 root 启动时，读取令牌文件后降为这个用户） | SHARED 模式中 sandbox 容器里的进程：agent 会话、编译时执行、构建与 deltabox 的审阅，经认证的 HTTP/SSE 接口由 serve 调用；令牌取自 `PRESMIUM_AGENT_HOST_TOKEN_FILE` 指向的文件（compose 中只有 root 可读）或 `PRESMIUM_AGENT_HOST_TOKEN`（`architecture.md` 10.8 节） |
 
 插件包还提供辅助命令（`presmium-export`、`presmium-diff`、`presmium-classroom-server`、`presmium-language-server`，以及 v0.8 的 `presmium-mcp`、`presmium-lecture`、`presmium-speech`），见 `architecture.md` 第 7 节。
 
@@ -711,7 +715,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `.presmium/speech/<键>.<扩展名>`、`<键>.json` | 合成缓存：音频保留引擎返回的格式，不重新编码。语音服务向引擎请求 Ogg/Opus（火山引擎的 `ogg_opus`，OpenAI 音频接口的 `response_format: opus`），所以通常是 `<键>.ogg`；只给出其他格式的引擎按其格式保存（假引擎为 `<键>.wav`）。语音服务（不是引擎）写入缓存时在音频的元数据中加入 AI 生成的标识与 GB 45438 的字段（Ogg 写在 Opus 的注释头中，WAV 写在 `LIST`/`INFO` 块中，字段由 WP-82 的先行验证确定），不改动引擎写入的其他内容（假引擎嵌入的文字与音色因此保留）。`<键>.json` 是逐字时间、时长、格式（`mime`）、引擎信息与同样的 AI 生成标识 | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
 | `.presmium/speech.lock.json` | 文稿用到的合成键与音频的 sha256 | 提交 |
 
-克隆音色的同意记录不在文稿目录中：它在运营者控制的目录 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `<工作区>/.presmium-operator/consent/`），内容为说话人、范围、日期、同意声明录音的 sha256 与服务端的签名 `signature`（以运营者的密钥 `PRESMIUM_SPEECH_CONSENT_KEY` 计算的 HMAC-SHA256，覆盖其余字段与引擎、音色）。记录只经两条途径产生：所有者经语音插件的路由登记，或运营者在服务端的环境中运行 `presmium-speech consent`；两者都由服务端签名。语音服务只承认签名有效的记录，没有密钥时克隆音色不可用。记录不随文稿提交；没有签名或签名不符的文件（例如 agent 写进该目录的文件）与文稿中的 `.presmium/speech/consent/` 之类的文件都被忽略（`architecture.md` 第 11 节）。
+克隆音色的同意记录不在文稿目录中：它在运营者目录中的 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录是 `<工作区>/.presmium-operator/`，SHARED 模式是 gateway 的 `--operator-dir`，只挂在 gateway 容器中），内容为说话人、范围、日期与同意声明录音的 sha256。记录只经两条途径产生：所有者经语音插件的路由登记（SHARED 模式中 serve 转给 gateway 写入），或运营者在持有凭据的环境中（SHARED 为 gateway 容器）运行 `presmium-speech consent`。记录不随文稿提交；文稿中的 `.presmium/speech/consent/` 之类的文件被忽略（`architecture.md` 第 11 节）。
 
 讲授轨借鉴 asciinema 的 asciicast（事件是元组，不认识的类型忽略），时间用自讲授开始的绝对毫秒，便于跳转与编辑：
 
@@ -778,25 +782,32 @@ members:
   editors: ['group:course-staff']    # 按登录代理传来的组
 approvals: { operate: ask, spend: ask, write: ask, agent: ask }
 templates: templates/document        # 新建文档的模板目录；默认使用随包提供的模板
-settings:                            # 插件的运营者设置，键为插件 ID（ServerContext.settings、NodeServiceContext.settings）
+settings:                            # 插件的运营者设置，键为插件 ID（ServerContext.settings、NodeServiceContext.settings、GatewayContext.settings）
+  presmium.workspace:
+    plugins:                         # 运营者插件：安装在工作区根目录的包；presmium serve、gateway、agent-host 只加载它们（D14）
+      - '@presmium/slidev-addon-code'
+      - '@presmium/slidev-addon-exec'
+      - '@presmium/slidev-addon-assistant'
+      - '@presmium/slidev-addon-deltabox'   # operator: true，每份文档都加载（修改审阅与进程沙箱）
   presmium.assistant:
-    command: [dsh, --profile, presmium, --patch, '{templates}/presmium.cordis.yml']
-    tutor: [dsh, --profile, presmium-tutor, --patch, '{templates}/presmium-tutor.cordis.yml']
-    provider: DeepSeek               # 模型的服务提供方，界面据此标明（必需）；运行时的名字另取自 agent
+    review: required                 # 修改任务先审阅后提交（默认）；auto：直接全部接受并提交
+    # command、tutor、provider 只用于替换随包的 DeepSeek Harness（LOCAL 模式），例如：
+    # command: [claude-code-acp]
+    # provider: Anthropic
   presmium.exec:                     # 编译时执行（architecture.md 10.6 节）
-    compile: approve                 # presmium serve 中没有录制的代码：approve（默认，所有者确认）、trusted、off
-    sandbox: sandbox                 # 可选：serve 中改在这个 Jupyter 环境中运行（PRESMIUM_ENV_SANDBOX_URL、_TOKEN）；它不支持的语言不执行
+    compile: approve                 # SHARED 模式中没有录制的代码：approve（默认，所有者确认）、trusted、off
     passEnv: [HF_HOME]               # 另外传给被执行代码的环境变量
   presmium.lecture: { audio: ignore }   # 录制音频与录像的去处：ignore（默认）、lfs，或外部地址的前缀
   presmium.speech:
-    cloned: false                    # 是否允许克隆音色（默认 false；允许时每个克隆音色仍要有签名的同意记录，并需要 PRESMIUM_SPEECH_CONSENT_KEY）
-    consentDir: .presmium-operator/consent   # 同意记录的目录，相对于工作区根目录（默认值）
+    cloned: false                    # 是否允许克隆音色（默认 false；允许时每个克隆音色仍要有运营者目录中的同意记录）
+    consentDir: consent              # 同意记录的目录，相对于运营者目录（默认值）
 ```
 
 - 文档的身份是目录；标题、语言与标签取自各文档的头部（`title`、`lang`、`tags`）。
 - `site` 的 `nav`、`footer`、`head`、`sitemap` 与 `renderers.web` 的同名选项相同（2.1 节），作用于整个工作区站点。
-- `members` 与 `approvals` 只在 `presmium serve` 中使用。`settings` 是插件的运营者设置：`presmium dev`、`build`、`check` 与 `presmium serve` 都读取文稿所在工作区根目录的这个文件（单份文稿的仓库也可以只写 `settings`），只在进程启动时读取一次，运行中改动要等运营者重启才生效。
-- `presmium.assistant` 的命令中 `{templates}` 代入助手插件随包提供的 DeepSeek Harness 配置模板目录；命令也可以由环境变量 `PRESMIUM_AGENT_COMMAND`（`tutor` 模式为 `PRESMIUM_AGENT_TUTOR_COMMAND`）给出，环境变量优先，`provider` 也可以由 `PRESMIUM_AGENT_PROVIDER` 给出。没有命令或没有 `provider` 时助手不可用，不启动任何 agent。
-- `presmium.exec` 由编译器读取：`passEnv` 在所有命令中生效；`compile` 与 `sandbox` 只在 `presmium serve` 中生效。`sandbox` 的地址与令牌只取运营者的 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN`，不取文稿中同名的环境；文档的 `plugins` 要包含远端环境插件。沙箱的内核不支持的语言不执行，沙箱不可用时代码不执行，都不退回主机。
-- `presmium.speech.consentDir` 是运营者控制的目录：记录只由所有者经语音插件的路由或运营者用 `presmium-speech consent` 登记，都由服务端以 `PRESMIUM_SPEECH_CONSENT_KEY` 签名（9.1 节），不随文稿提交；默认的 `.presmium-operator/` 不属于任何文档，工作区的提交不包含它。agent 写不出有效的记录：它拿不到密钥，写进该目录的文件不被承认，任务结束时被复原，它对该目录的权限请求一律被拒绝。
+- `members` 与 `approvals` 只在 `presmium serve` 中使用。`settings` 是插件的运营者设置：`presmium dev`、`build`、`check`、`presmium serve`、`presmium gateway` 与 `presmium agent-host` 都读取文稿所在工作区根目录的这个文件（单份文稿的仓库也可以只写 `settings`），只在进程启动时读取一次，运行中改动要等运营者重启才生效。
+- `presmium.workspace.plugins` 是运营者的插件列表（D14）：`presmium serve`、gateway 与 agent-host 只从工作区根目录的 `node_modules`（以及随 CLI 安装的 Presmium 自己的包）加载这里列出的 Node 插件；文稿的 `plugins` 中没有列出的包、相对路径与只在文稿目录 `node_modules` 中的包不加载，并给出错误级诊断 `presmium.plugins`。声明了 `operator: true` 的插件（`addon-deltabox`）在所有命令中每份文档都加载。`presmium dev`、`build`、`check` 照旧接受文稿自己的插件。
+- 助手的模型访问来自环境变量，不来自这个文件：`DEEPSEEK_API_KEY`（DeepSeek 的官方地址，服务提供方为 DeepSeek），或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER`（Messages 兼容的服务，三者都要有）。配置了模型访问时助手启动随包的 DeepSeek Harness（模板随包提供），没有时助手不可用。`presmium.assistant` 的 `command`、`tutor`（或环境变量 `PRESMIUM_AGENT_COMMAND`、`PRESMIUM_AGENT_TUTOR_COMMAND`，环境变量优先）只用来替换运行时，要同时给出 `provider`（或 `PRESMIUM_AGENT_PROVIDER`），只在 LOCAL 模式中生效。SHARED 模式中这些凭据只在 gateway 的环境中。
+- `presmium.exec` 由编译器读取：`passEnv` 在所有命令中生效；`compile` 只在 SHARED 模式的 `presmium serve` 中生效（LOCAL 模式全部执行）。
+- `presmium.speech.consentDir` 在运营者目录之中：LOCAL 模式是工作区的 `.presmium-operator/`（不属于任何文档，工作区的提交不包含它，agent 对它的权限请求一律被拒绝），SHARED 模式是 gateway 的 `--operator-dir`，只挂在 gateway 容器中。记录只由所有者经语音插件的路由或运营者用 `presmium-speech consent` 登记（9.1 节），不随文稿提交。
 - 这些设置都不能写在文稿中：文稿头部 `presmium.<插件 ID>` 中的同名键不进入 `settings`。
