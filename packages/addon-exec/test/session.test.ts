@@ -47,7 +47,8 @@ it('records what the session\'s blocks print in one interpreter, runs nothing ag
     expect(result.code, result.stdout + result.stderr).toBe(0)
     const doc = JSON.parse(readFileSync(join(dir, 'dist/ir.json'), 'utf8')) as IRDocument
     const outputs = doc.sections[0]!.blocks.map(block => (block.node as CodeNode).outputs?.[0]?.stdout)
-    return { outputs, runs: /code runs: .*/.exec(result.stdout)?.[0] }
+    // The count only: where the host qualifies, the line goes on to say the runs were isolated by deltabox.
+    return { outputs, runs: /code runs: \d+ executed, \d+ from cache/.exec(result.stdout)?.[0] }
   }
 
   writeFileSync(join(dir, 'lecture.md'), deck(41))

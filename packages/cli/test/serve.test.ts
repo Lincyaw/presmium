@@ -222,6 +222,9 @@ members:
 settings:
   presmium.workspace:
     plugins: ['@presmium/slidev-addon-exec']
+  # These cases check the process that runs the code (serve or agent-host) and its HOME, not the process sandbox.
+  presmium.deltabox:
+    sandbox: false
 ${compile ? `  presmium.exec:\n    compile: ${compile}\n` : ''}`)
   return dir
 }

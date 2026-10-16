@@ -91,7 +91,7 @@ async function build(dir: string, path: string) {
   const runs = Object.fromEntries(doc.sections.flatMap(s => s.blocks).map(block => [block.id, (block.node as CodeNode).outputs?.[0]]))
   const freeze = join(dir, '.presmium/freeze')
   const environments = readdirSync(freeze).filter(f => f.endsWith('.json')).map(f => (JSON.parse(readFileSync(join(freeze, f), 'utf8')) as { environment: string }).environment)
-  return { runs, environments: [...new Set(environments)].sort(), log: /code runs: .*/.exec(result.stdout)?.[0] }
+  return { runs, environments: [...new Set(environments)].sort(), log: /code runs: \d+ executed, \d+ from cache/.exec(result.stdout)?.[0] }
 }
 
 it('records C, C++, Ruby and SQL without a toolchain on the build machine, under the hash of the runtime binaries, the same in a second build', async () => {
