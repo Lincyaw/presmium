@@ -66,9 +66,11 @@ function nodeEntry(dir: string): string | undefined {
  * The plugins whose Node entry adds Vite plugins, with their configuration
  * (`presmium.<id>`). The site's Vite runs in a process of its own, where the
  * site's configuration imports these entries and calls their `vitePlugins`.
+ * The compiler's `ctx.vitePlugins` says whether any does; a document of a
+ * workspace site (`always`) has no compiler of its own here, so its entries are looked at.
  */
-export async function nodeVitePlugins(ctx: RenderContext, presmium: Record<string, unknown>): Promise<VitePluginsEntry[]> {
-  if (ctx.vitePlugins.length === 0) return []
+export async function nodeVitePlugins(ctx: RenderContext, presmium: Record<string, unknown>, always = false): Promise<VitePluginsEntry[]> {
+  if (ctx.vitePlugins.length === 0 && !always) return []
   const entries: VitePluginsEntry[] = []
   for (const name of ctx.plugins) {
     const dir = ctx.pluginDirs[name]

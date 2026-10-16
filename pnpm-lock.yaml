@@ -549,6 +549,9 @@ importers:
       '@presmium/server':
         specifier: workspace:*
         version: link:../server
+      '@presmium/workspace':
+        specifier: workspace:*
+        version: link:../workspace
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -837,6 +840,9 @@ importers:
       '@presmium/viewer':
         specifier: workspace:*
         version: link:../viewer
+      http-proxy-3:
+        specifier: 2.0.1
+        version: 2.0.1(supports-color@9.4.0)
       katex:
         specifier: 0.18.10
         version: 0.18.10
@@ -862,6 +868,33 @@ importers:
       '@slidev/types':
         specifier: 53.0.0
         version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+
+  packages/workspace:
+    dependencies:
+      '@presmium/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@presmium/host':
+        specifier: workspace:*
+        version: link:../host
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@presmium/server':
+        specifier: workspace:*
+        version: link:../server
+      http-proxy-3:
+        specifier: 2.0.1
+        version: 2.0.1(supports-color@9.4.0)
+      simple-git:
+        specifier: ^4.0.2
+        version: 4.0.2(supports-color@9.4.0)
+      vue:
+        specifier: ^3.5.42
+        version: 3.5.44(typescript@6.0.3)
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
 packages:
 

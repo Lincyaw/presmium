@@ -156,8 +156,10 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium ir [deck]` | 把 IR 输出到标准输出（诊断在标准错误）；`--out <file>` 写到文件 |
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录 |
 | `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口 |
+| `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式，首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。默认只监听本机（`--port`，默认 4310）；`--host` 其他地址时必须在登录代理之后（`--trust-proxy-from` 或 `PRESMIUM_PROXY_SECRET`），那是共享部署，见 `templates/workspace/compose/README.md` |
+| `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下，各自可读、可搜索；在文档目录中执行则只构建这一份 |
 
-常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
+常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。多份文档组成的课程用工作区：`presmium serve` 编辑与预览，`presmium build` 在根目录构建整个站点。`presmium serve` 只加载运营者在 `settings.presmium.workspace.plugins` 中列出、装在工作区根目录的插件；文稿以相对路径引用或只装在文稿目录 `node_modules` 中的插件与渲染端（`renderers.<id>.package`）被拒绝（`presmium.plugins` 错误），`presmium dev`、`build`、`check` 照旧接受它们。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
 
 ### 编辑器中的 agent（MCP）
 

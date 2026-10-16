@@ -3,6 +3,7 @@
  * IR runtime (@presmium/viewer) renders in the browser. It supports every IR
  * node. `build` writes a static site with the IR next to it; `dev` runs the
  * VitePress dev server and pushes changed sections to open pages.
+ * `buildSite` and `devSite` do the same for a workspace site (./sites.ts).
  */
 import { rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -12,9 +13,12 @@ import { diffDocuments } from '@presmium/viewer/domain'
 import launchEditor from 'launch-editor'
 import { offlineEnabled, rendererConfig } from '../domain/index.ts'
 import { clientModules, nodeVitePlugins } from './addons.ts'
+import type { ClientModules } from './addons.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument } from './publish.ts'
 import { siteFiles, write, writeSite } from './site.ts'
+import type { WorkspaceOptions } from './site.ts'
+import { buildSite, devSite } from './sites.ts'
 import { revisionOf } from './vite.ts'
 import { vitepressBuild, vitepressDev } from './vitepress.ts'
 
@@ -31,18 +35,89 @@ function sourceFiles(doc: IRDocument): Set<string> {
   return files
 }
 
+/** How a document's site is made besides its render context: as part of a workspace site, with the site's own client modules. */
+export interface DocumentSite {
+  workspace?: WorkspaceOptions
+  /** Client modules of the whole site (the workspace's browser plugin), added to the document's. */
+  extra?: ClientModules
+}
+
+function merge(modules: ClientModules, extra?: ClientModules): ClientModules {
+  if (!extra) return modules
+  return {
+    components: new Map([...extra.components, ...modules.components]),
+    plugins: [...extra.plugins, ...modules.plugins],
+    viewers: [...extra.viewers, ...modules.viewers],
+    vite: [...extra.vite, ...modules.vite],
+    nodeVite: [...extra.nodeVite, ...modules.nodeVite],
+  }
+}
+
 /** Prepares a working directory: the files published there last time go, so the site holds the current ones only. */
-async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string) {
+async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, document: DocumentSite = {}) {
   const options = rendererConfig(ctx)
   const files = siteFiles(workDir)
   rmSync(files.publicDir, { recursive: true, force: true })
   const deck = { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }
   // The plugins' Node entries are imported once; the components are listed at each write, so a dev server
   // registers one added to the deck while it runs.
-  const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium)
+  const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium, Boolean(document.workspace))
   const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base)
-  const site = (published: IRDocument) => writeSite(workDir, { doc: published, deck, modules: clientModules(ctx, nodeVite), options })
+  const site = (published: IRDocument) => writeSite(workDir, { doc: published, deck, modules: merge(clientModules(ctx, nodeVite), document.extra), options, workspace: document.workspace })
   return { options, files, publish, site }
+}
+
+/** Builds a document's site into `ctx.outDir`, working in `workDir`. */
+export async function buildDocument(doc: IRDocument, ctx: RenderContext, workDir: string, document: DocumentSite = {}): Promise<void> {
+  const { options, files, publish, site } = await prepare(doc, ctx, workDir, document)
+  const published = publish(doc)
+  site(published)
+  // The IR is published with the site.
+  write(join(files.publicDir, 'ir.json'), JSON.stringify(published))
+  const code = await vitepressBuild(files.root, ctx.outDir)
+  if (code !== 0) throw new Error(`vitepress build exited with code ${code}`)
+  if (offlineEnabled(doc.config.presmium)) writeServiceWorker(ctx.outDir, options.base)
+}
+
+export interface DocumentDevServer {
+  port: number
+  update(doc: IRDocument): Promise<void>
+  close(): Promise<void>
+}
+
+/**
+ * Runs a document's dev server, working in `ctx.outDir`; `port` overrides the configured one (0: a free
+ * port), `host` VitePress's address; an abort of `signal` stops it while it starts.
+ */
+export async function devDocument(doc: IRDocument, ctx: RenderContext, document: DocumentSite = {}, port?: number, listen: { host?: string, signal?: AbortSignal } = {}): Promise<DocumentDevServer> {
+  const { options, files, publish, site } = await prepare(doc, ctx, ctx.outDir, document)
+  let current = publish(doc)
+  let revision = revisionOf(JSON.stringify(current))
+  site(current)
+  // "Open in the editor" from a page (K-11): the author's editor, as launch-editor finds it ($EDITOR, a running editor).
+  const server = await vitepressDev(files.root, port ?? options.port, (message) => {
+    if (message.type !== 'presmium:source' || document.workspace || !sourceFiles(current).has(message.file)) return
+    launchEditor(`${resolve(ctx.deckDir, message.file)}:${message.line}`, (file, error) => {
+      console.error(`[presmium] could not open ${file} in an editor${error ? `: ${error}` : ''}; set $EDITOR or $LAUNCH_EDITOR`)
+    })
+  }, listen)
+  return {
+    port: server.port,
+    async update(next: IRDocument) {
+      const published = publish(next)
+      const update = diffDocuments(current, published)
+      if (!update) return
+      // Only changed files are written. The config never changes with the IR, so the server never restarts;
+      // the content goes to the pages over the WebSocket, the search documents to the search index (a page's
+      // Markdown changes only with its chapter's title and those of the chapters around it: hot updated).
+      site(published)
+      const base = revision
+      current = published
+      revision = revisionOf(JSON.stringify(published))
+      server.send({ type: 'presmium:update', update, base, revision })
+    },
+    close: () => server.close(),
+  }
 }
 
 export const renderer: Renderer = {
@@ -51,45 +126,20 @@ export const renderer: Renderer = {
   support: () => 'full',
 
   async build(doc: IRDocument, ctx: RenderContext) {
-    const { options, files, publish, site } = await prepare(doc, ctx, join(ctx.deckDir, BUILD_DIR))
-    const published = publish(doc)
-    site(published)
-    // The IR is published with the site.
-    write(join(files.publicDir, 'ir.json'), JSON.stringify(published))
-    const code = await vitepressBuild(files.root, ctx.outDir)
-    if (code !== 0) throw new Error(`vitepress build exited with code ${code}`)
-    if (offlineEnabled(doc.config.presmium)) writeServiceWorker(ctx.outDir, options.base)
+    await buildDocument(doc, ctx, join(ctx.deckDir, BUILD_DIR))
     return { outDir: ctx.outDir, skipped: [] }
   },
 
   async dev(doc: IRDocument, ctx: RenderContext) {
-    const { options, files, publish, site } = await prepare(doc, ctx, ctx.outDir)
-    let current = publish(doc)
-    let revision = revisionOf(JSON.stringify(current))
-    site(current)
-    // "Open in the editor" from a page (K-11): the author's editor, as launch-editor finds it ($EDITOR, a running editor).
-    const server = await vitepressDev(files.root, options.port, (message) => {
-      if (message.type !== 'presmium:source' || !sourceFiles(current).has(message.file)) return
-      launchEditor(`${resolve(ctx.deckDir, message.file)}:${message.line}`, (file, error) => {
-        console.error(`[presmium] could not open ${file} in an editor${error ? `: ${error}` : ''}; set $EDITOR or $LAUNCH_EDITOR`)
-      })
-    })
+    const server = await devDocument(doc, ctx)
+    const { base } = rendererConfig(ctx)
     return {
-      url: `http://localhost:${server.port}${options.base}`,
-      async update(next: IRDocument) {
-        const published = publish(next)
-        const update = diffDocuments(current, published)
-        if (!update) return
-        // Only changed files are written. The config never changes with the IR, so the server never restarts;
-        // the content goes to the pages over the WebSocket, the search documents to the search index (a page's
-        // Markdown changes only with its chapter's title and those of the chapters around it: hot updated).
-        site(published)
-        const base = revision
-        current = published
-        revision = revisionOf(JSON.stringify(published))
-        server.send({ type: 'presmium:update', update, base, revision })
-      },
+      url: `http://localhost:${server.port}${base}`,
+      update: next => server.update(next),
       close: () => server.close(),
     }
   },
+
+  buildSite,
+  devSite,
 }

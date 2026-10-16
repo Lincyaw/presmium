@@ -92,7 +92,25 @@ function searchIndex(documentsFile: string): string {
   return JSON.stringify(index)
 }
 
-export function presmiumIR(irFile: string, searchDocuments: string) {
+/**
+ * The site's Vite plugin. `endpoints` are the dev server's own paths: the
+ * defaults in `presmium dev`; under the document's base in a workspace site,
+ * where `presmium serve` answers `/__presmium/` itself.
+ */
+/** The Vite plugin of a project without an IR (a workspace site's home page): it tells the parent process once the dev server listens. */
+export function presmiumReady() {
+  return {
+    name: 'presmium:ready',
+    configureServer(server: DevServer) {
+      server.httpServer?.once('listening', () => {
+        const address = server.httpServer?.address()
+        if (address && typeof address === 'object') process.send?.({ type: 'presmium:ready', port: address.port } satisfies DevMessage)
+      })
+    },
+  }
+}
+
+export function presmiumIR(irFile: string, searchDocuments: string, endpoints: { ir: string, source: string } = { ir: IR_ENDPOINT, source: SOURCE_ENDPOINT }) {
   let dev = false
   return {
     name: 'presmium:ir',
@@ -135,14 +153,14 @@ export function presmiumIR(irFile: string, searchDocuments: string) {
       }
       process.on('message', receive)
       server.httpServer?.once('close', () => process.off('message', receive))
-      server.middlewares.use(IR_ENDPOINT, (_req, res) => {
+      server.middlewares.use(endpoints.ir, (_req, res) => {
         const json = readFileSync(irFile, 'utf8')
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
         res.setHeader('Cache-Control', 'no-store')
         res.end(`{"revision":${JSON.stringify(revisionOf(json))},"doc":${json}}`)
       })
-      server.middlewares.use(SOURCE_ENDPOINT, (req, res) => {
+      server.middlewares.use(endpoints.source, (req, res) => {
         const params = new URL(req.url ?? '', 'http://localhost').searchParams
         const file = params.get('file')
         const line = Number(params.get('line'))

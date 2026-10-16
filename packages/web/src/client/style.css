@@ -161,3 +161,93 @@ body {
 html.pm-presenting {
   --pm-cue-z: calc(var(--vp-z-index-local-nav, 32) + 101);
 }
+
+/* A workspace site (P-122): the link of a document's pages to the home page, and the home page's list. */
+.pm-site-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.75rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--vp-c-text-1);
+  white-space: nowrap;
+}
+
+.pm-site-link:hover {
+  color: var(--vp-c-brand-1);
+}
+
+.pm-site-home {
+  margin: 0 auto;
+  max-width: 48rem;
+  padding: 2rem 0;
+}
+
+.pm-site-home__title {
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.pm-site-home__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.pm-site-home__search {
+  flex: 1 1 16rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+}
+
+.pm-site-home__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.pm-site-home__tag,
+.pm-site-home__badge {
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.pm-site-home__tag[aria-pressed='true'] {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+
+.pm-site-home__documents {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pm-site-home__document {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.pm-site-home__link {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+}
+
+.pm-site-home__dir {
+  color: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85rem;
+}

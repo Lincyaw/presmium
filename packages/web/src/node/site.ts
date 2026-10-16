@@ -58,7 +58,7 @@ function copyDir(from: string, to: string): void {
 }
 
 /** Links the web package's own `vitepress` and `vue` into the project, so they resolve from its root. */
-function linkDependencies(root: string): void {
+export function linkDependencies(root: string): void {
   const require = createRequire(import.meta.url)
   for (const name of ['vitepress', 'vue']) {
     const target = dirname(require.resolve(`${name}/package.json`))
@@ -77,12 +77,34 @@ export interface SiteData {
   form: FormOptions
 }
 
-export function siteData(doc: IRDocument): SiteData {
+export function siteData(doc: IRDocument, workspace?: WorkspaceOptions): SiteData {
+  const form = formOptions(doc.config.presmium, doc.config.renderers)
   return {
     title: doc.meta.title,
     sidebar: sidebar(doc, toPages(doc)),
-    form: formOptions(doc.config.presmium, doc.config.renderers),
+    // A workspace site builds the web form only: a link to slides goes where the deck says, or nowhere.
+    form: workspace ? { ...form, slides: Boolean(form.slidesUrl) } : form,
   }
+}
+
+/**
+ * A document's site as part of a workspace site (P-122): under its directory,
+ * its pages telling the server which document they are of; in the dev
+ * server of `presmium serve` the pages have the server, which is in front of
+ * the dev server (no proxy), and the dev server takes the host names serve
+ * forwards and the files of the workspace and of Presmium's packages.
+ */
+export interface WorkspaceOptions {
+  /** The document directory, relative to the workspace root. */
+  document: string
+  /** The workspace site's home page, which the navigation bar links. */
+  home: string
+  /** The dev server's own endpoints (`presmiumIR`), under the document's base. */
+  endpoints: { ir: string, source: string }
+  /** `presmium serve` serves the pages (dev). */
+  served?: boolean
+  /** Directories the dev server may serve files of (Vite's `server.fs.allow`). */
+  allow?: string[]
 }
 
 /** Where the deck is, for the Vite plugins of its plugins (`PresmiumNodePlugin.vitePlugins`). */
@@ -91,7 +113,7 @@ export interface DeckPaths {
   workspaceRoot: string
 }
 
-function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths): string {
+function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths, workspace?: WorkspaceOptions): string {
   // The labels of the default theme and its search box are in the deck's language.
   const labels = SITE_LABELS[deckLocale(options.lang)]
   const site = {
@@ -114,6 +136,11 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>,
 site.themeConfig.presmium.server = true
 site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.stringify(options.server)}, ws: true } } }
 ` : ''
+  // A document of a workspace site: its directory and endpoints; in `presmium serve` its server is in front.
+  const inWorkspace = workspace ? `
+Object.assign(site.themeConfig.presmium, ${JSON.stringify({ document: workspace.document, home: workspace.home, ir: workspace.endpoints.ir, ...workspace.served ? { server: true } : {} })})
+${workspace.served ? `site.vite.server = { allowedHosts: true, fs: { allow: ${JSON.stringify(workspace.allow ?? [])} } }
+` : ''}` : ''
   return `${GENERATED}
 import { readFileSync } from 'node:fs'
 import { tokenize } from ${JSON.stringify(SEARCH)}
@@ -132,12 +159,12 @@ site.themeConfig.presmium = { form: data.form }
 const deck = ${JSON.stringify(deck)}
 site.vite = {
   plugins: [
-    presmiumIR(${JSON.stringify(files.ir)}, ${JSON.stringify(files.searchDocuments)}),
+    presmiumIR(${JSON.stringify(files.ir)}, ${JSON.stringify(files.searchDocuments)}${workspace ? `, ${JSON.stringify(workspace.endpoints)}` : ''}),
     ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? []),${nodePlugins.map(plugin => `\n    ${plugin},`).join('')}
   ],
   resolve: { dedupe: ['vue'] },
 }
-${server}
+${server}${inWorkspace}
 // Local search over the IR text of each section: titles, narration, prose and code. The index is
 // the renderer's own (see presmiumIR); the search box tokenizes queries as it does, Chinese into words.
 site.themeConfig.search = {
@@ -197,6 +224,8 @@ export interface SiteInput {
   /** The client modules and Vite plugins of the deck's plugins (`clientModules`). */
   modules: ClientModules
   options: WebRendererConfig
+  /** The document is part of a workspace site. */
+  workspace?: WorkspaceOptions
 }
 
 /**
@@ -213,10 +242,10 @@ export function writeSite(workDir: string, input: SiteInput): void {
   const pages = toPages(doc)
   write(files.ir, JSON.stringify(doc))
   write(files.searchDocuments, JSON.stringify(searchDocuments(doc, input.options.base)))
-  write(files.site, JSON.stringify(siteData(doc)))
+  write(files.site, JSON.stringify(siteData(doc, input.workspace)))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(files.root)
-  write(join(files.root, '.vitepress/config.mjs'), config(input.options, files, modules, input.deck))
+  write(join(files.root, '.vitepress/config.mjs'), config(input.options, files, modules, input.deck, input.workspace))
   write(join(files.root, '.vitepress/theme/index.ts'), theme())
   write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))
   const names = new Set(pages.map(page => `${page.path}.md`))

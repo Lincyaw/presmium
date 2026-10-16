@@ -11,6 +11,13 @@ export const WEB_MESSAGES = {
     /** The hidden labels of the default theme's sidebar and doc footer, which its configuration has no option for. */
     sidebarNav: '侧边栏导航',
     pager: '翻页',
+    /** The link of a workspace site's pages to its home page. */
+    documents: '文档列表',
+    /** The home page of a workspace site. */
+    searchDocuments: '搜索文档',
+    tags: '标签',
+    allTags: '全部',
+    noDocuments: '没有文档',
   },
   'en': {
     viewMenu: 'View',
@@ -19,6 +26,11 @@ export const WEB_MESSAGES = {
     readOnWeb: 'Read on the web',
     sidebarNav: 'Sidebar Navigation',
     pager: 'Pager',
+    documents: 'Documents',
+    searchDocuments: 'Search the documents',
+    tags: 'Tags',
+    allTags: 'All',
+    noDocuments: 'No documents',
   },
 } satisfies Record<Locale, unknown>
 
