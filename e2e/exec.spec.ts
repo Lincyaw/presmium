@@ -209,7 +209,7 @@ test.describe('in the present view at 1920x1080', () => {
   async function code(present: Locator, selector: string) {
     const pre = present.locator(`${selector} pre`).first()
     await expect(pre).toBeVisible()
-    return pre.evaluate((el) => {
+    return pre.evaluate((el: HTMLElement) => {
       const scale = el.getBoundingClientRect().width / el.offsetWidth
       return { size: Number.parseFloat(getComputedStyle(el.querySelector('code') ?? el).fontSize) * scale, cut: el.scrollWidth - el.clientWidth }
     })
