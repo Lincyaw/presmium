@@ -5,7 +5,8 @@
 // chapters with the steps of each section (one seeks to its time), "try it" and "back to the
 // lecture", and a label on a synthesized voice, which plays its utterances' clips. Editors under
 // `presmium dev` and `presmium serve` work on a recorded lecture's words here (TrackEditor.vue, and
-// an utterance's text in the transcript). For `presmium-lecture export` (`&export`) it shows no
+// an utterance's text in the transcript; in a synthetic voice saving it says it again, after a
+// confirmation that names the provider, N-08). For `presmium-lecture export` (`&export`) it shows no
 // controls and steps through the lecture on the exporter's call.
 import type { Operations } from '@presmium/host'
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
@@ -112,6 +113,12 @@ const editingUtterance = ref<string>()
 const draft = ref('')
 const saving = ref(false)
 const editFailure = ref<string>()
+/** A synthetic voice says a corrected sentence again: its provider, asked first (N-08). */
+const sayer = computed(() => {
+  const v = player.value?.track.voice
+  return v?.kind === 'synthetic' ? v.provider || v.engine : undefined
+})
+const confirmingEdit = ref(false)
 
 /** Plays the edited track from where the lecture is. */
 function changed(track: LectureTrack) {
@@ -124,11 +131,18 @@ function edit(u: Utterance) {
   editingUtterance.value = u.id
   draft.value = u.text
   editFailure.value = undefined
+  confirmingEdit.value = false
+}
+
+function submitUtterance() {
+  if (sayer.value) confirmingEdit.value = true
+  else void saveUtterance()
 }
 
 async function saveUtterance() {
   const id = editingUtterance.value
   const track = player.value?.track
+  confirmingEdit.value = false
   if (!id || !track || !editing.value || saving.value) return
   saving.value = true
   try {
@@ -215,10 +229,15 @@ function close() {
             :aria-current="current?.id === u.id ? 'true' : undefined"
           >
             <button type="button" class="pm-lecture-transcript__time" :aria-label="t.player.jump(clockText(u.t))" @click="seekTo(u.t)">{{ clockText(u.t) }}</button>
-            <form v-if="editingUtterance === u.id" class="pm-lecture-transcript__edit" @submit.prevent="saveUtterance">
+            <form v-if="editingUtterance === u.id" class="pm-lecture-transcript__edit" @submit.prevent="submitUtterance">
               <input v-model="draft" type="text" :aria-label="t.editor.edit(u.id)" :disabled="saving">
-              <button type="submit" class="pm-lecture-button" :disabled="saving">{{ saving ? t.editor.saving : t.editor.save }}</button>
+              <button type="submit" class="pm-lecture-button" :disabled="saving || confirmingEdit">{{ saving ? t.editor.saving : sayer ? t.editor.saveSay(sayer) : t.editor.save }}</button>
               <button type="button" class="pm-lecture-button" :disabled="saving" @click="editingUtterance = undefined">{{ t.editor.cancel }}</button>
+              <div v-if="confirmingEdit && sayer" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="t.editor.saveSayConfirm(sayer)">
+                <p>{{ t.editor.saveSayConfirm(sayer) }}</p>
+                <button type="button" class="pm-lecture-button" @click="saveUtterance">{{ t.editor.confirm }}</button>
+                <button type="button" class="pm-lecture-button" @click="confirmingEdit = false">{{ t.editor.cancel }}</button>
+              </div>
               <span v-if="editFailure" role="alert">{{ editFailure }}</span>
             </form>
             <template v-else>
@@ -427,6 +446,9 @@ function close() {
 .pm-lecture-transcript__edit input {
   flex: 1 1 8rem;
   font: inherit;
+}
+.pm-lecture-transcript__edit .pm-lecture-editor__confirm {
+  flex-basis: 100%;
 }
 .pm-lecture-transcript__edit-button {
   margin-inline-start: auto;

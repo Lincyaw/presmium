@@ -6,7 +6,9 @@
 // what it shows and the engine was asked for its alias; the player labels the AI voice with its provider.
 // Recorded: under `presmium dev`, with Chromium's fake microphone (flags for this spec only), a lecture is
 // recorded, transcribed (a front of the fake engine answers the recorded Ogg/Opus, which the fake engine
-// cannot read, with a fixed transcript), one sentence corrected and the lecture said again in another voice.
+// cannot read, with a fixed transcript), one sentence corrected and the lecture said again in another voice;
+// in that voice a corrected sentence is said again after a confirmation that names the provider; playing a
+// sentence plays its clip (the audio the page plays, spied on `HTMLMediaElement.prototype.play`, is the clip).
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
@@ -222,6 +224,16 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
   const read = (id: string) => JSON.parse(readFileSync(join(dir, 'lectures', id, 'track.json'), 'utf8')) as Track
 
   test('transcribes with the provider named, then a corrected sentence said in a new voice plays its new clip; unbound events keep their times', async ({ page }) => {
+    // The audio the page starts playing, by its URL (it calls through).
+    await page.addInitScript(() => {
+      const played: string[] = []
+      Object.assign(window, { playedMedia: played })
+      const play = HTMLMediaElement.prototype.play
+      HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+        played.push(this.src)
+        return play.call(this)
+      }
+    })
     // Record: the opening, then the merge section, where the code is spotlighted while the first sentence is said.
     await openDevPage(page, `${dev!.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const recorder = page.getByRole('region', { name: '讲授录制' })
@@ -276,13 +288,31 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     await expect(editor.getByRole('status')).toHaveText('已重新合成', { timeout: 30_000 })
     await expect(player.locator('.pm-lecture-player__ai')).toHaveText(`AI 合成语音（${PROVIDER}）`)
 
-    // Playing the corrected sentence plays its new clip: the new text in the new voice.
+    // In the synthetic voice a corrected sentence is said again: the button and its confirmation name the provider (N-08).
+    const first = page.locator('.pm-lecture-transcript__item[data-utterance="u1"]')
+    await first.getByRole('button', { name: '修改语音段 u1' }).click()
+    await first.getByRole('textbox', { name: '修改语音段 u1' }).fill('我们从开场白讲起')
+    await first.getByRole('button', { name: `保存并重新合成（${PROVIDER}）` }).click()
+    const sayAgain = first.getByRole('alertdialog')
+    await expect(sayAgain).toContainText(`把改过的这句话发给 ${PROVIDER} 重新合成`)
+    await sayAgain.getByRole('button', { name: '确定' }).click()
+    await expect(first).toContainText('我们从开场白讲起', { timeout: 30_000 })
+
+    // The corrected sentences have new clips: the new text in the new voice.
     const said = read(id)
     expect(said.voice).toMatchObject({ kind: 'synthetic', voice: 'beta', provider: PROVIDER })
+    expect(fakeContent(readFileSync(join(dir, '.presmium/speech', said.utterances.find(u => u.id === 'u1')!.clip!)))).toMatchObject({ text: '我们从开场白讲起', voice: 'beta' })
     await page.locator('.pm-lecture-transcript__item[data-utterance="u3"] .pm-lecture-transcript__time').click()
     const clip = await player.getAttribute('data-clip')
     expect(clip).toBe(said.utterances.find(u => u.id === 'u3')!.clip)
     expect(fakeContent(readFileSync(join(dir, '.presmium/speech', clip!)))).toMatchObject({ text: '注意这两行代码', voice: 'beta' })
+    // Playing from there plays that clip, as the server serves it (ClipClock).
+    const played = () => page.evaluate(() => (window as unknown as { playedMedia: string[] }).playedMedia)
+    await page.evaluate(() => (window as unknown as { playedMedia: string[] }).playedMedia.splice(0))
+    await player.getByRole('button', { name: '播放', exact: true }).click()
+    await expect.poll(async () => (await played()).length).toBeGreaterThan(0)
+    const bytes = await page.evaluate(async (src) => Array.from(new Uint8Array(await (await fetch(src)).arrayBuffer())), (await played())[0]!)
+    expect(fakeContent(Buffer.from(bytes))).toMatchObject({ text: '注意这两行代码', voice: 'beta' })
     // The events not bound to words keep their times; the bound ones follow their words.
     expect(said.events.filter(([, , data]) => !data.at)).toEqual(unbound)
     const spot = said.events.find(([, type]) => type === 'spot')!

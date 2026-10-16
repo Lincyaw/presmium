@@ -62,6 +62,8 @@ export interface PlannedSection {
 export interface PlanProblem {
   message: string
   source?: SourcePos
+  /** The compiler reported it already: a cue command of the deck's narration, which the role `{cue}` reads. */
+  compiled?: boolean
 }
 
 export interface LecturePlan {
@@ -144,17 +146,19 @@ interface Reader {
   /** The block a cue without `to` acts on. */
   target?: IRBlock
   source?: SourcePos
+  /** A separate script's text, which the compiler did not read (the role reported the deck's cue commands). */
+  script?: boolean
   problems: PlanProblem[]
 }
 
 /** The cues of a text read, with their operations' data; problems for the ones that cannot be. */
 function planCues(spoken: SpokenText, at: Reader): PlannedCue[] {
   const cues: PlannedCue[] = []
-  const problem = (message: string) => at.problems.push({ message: `section ${at.section.id}: ${message}`, source: at.source })
+  const problem = (message: string, compiled = false) => at.problems.push({ message: `section ${at.section.id}: ${message}`, source: at.source, ...compiled ? { compiled } : {} })
   for (const mark of spoken.cues) {
     const read = readCue(mark.command)
     if ('problem' in read) {
-      problem(`{cue}\`${mark.command}\`: ${read.problem}`)
+      problem(`{cue}\`${mark.command}\`: ${read.problem}`, !at.script)
       continue
     }
     const { name, arg } = read
@@ -260,7 +264,7 @@ export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePl
       fromScript.forEach(({ paragraphs: nodes, source }) => nodes.forEach((node, k) => {
         const step = Math.min(k, section.steps)
         const spoken = spokenText(node)
-        const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, problems })
+        const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, script: true, problems })
         paragraphs.push({ step, pieces: pieces(spoken, cues), ...source ? { source } : {} })
       }))
     } else {

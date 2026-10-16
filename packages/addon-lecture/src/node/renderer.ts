@@ -24,7 +24,7 @@ import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
 import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, eventsVtt, formatTrack, LECTURE_ID, lectureVoice, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
-import { lectureConfig } from './plan.ts'
+import { LECTURE_RENDERER, lectureConfig } from './plan.ts'
 import { mediaFile, readTrack, TRACK_FILE, trackIds } from './store.ts'
 
 /** The digest translations record of their original (P-137). */
@@ -105,7 +105,7 @@ function summary(track: LectureTrack) {
 }
 
 export const lectureRenderer: Renderer = {
-  id: 'lecture',
+  id: LECTURE_RENDERER,
   site: true,
   support: () => 'full',
   async build(doc, ctx) {

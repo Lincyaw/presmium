@@ -6,13 +6,17 @@
  * header last), then sends the track.
  *
  *   GET  tracks                                the lectures: id, length, voice, language
- *   GET  tracks/<id>                           track.json; `script`, the synthesized lecture, made on demand
+ *   GET  tracks/<id>                           track.json; `script`, the synthesized lecture, made on an editor's demand
  *   GET  tracks/<id>/<audio|video>/<file>      a media file, with ranges (seeking)
  *   GET  tracks/<id>/clips/<key>.<wav|ogg>     a synthesized clip, from the synthesis cache
  *   POST recordings          { track? }        a new lecture, or one to record a section of again: { id }
  *   POST recordings/<id>/media  { folder, section, kind?, ext }   a free file name: { src }
  *   PUT  recordings/<id>/files/<src>?at=<n>    bytes written at position n
  *   POST recordings/<id>/finish  { head, recording, section? }    writes track.json: { id, track }
+ *
+ * Synthesis is paid, so only an editor's request makes `script` with the
+ * engine: a reader gets the one made for the latest IR, else what the cache
+ * alone gives when no engine can synthesize the voice, else the last one made.
  *
  * Editors also work on a recorded lecture's words (WP-83), each change
  * written to its track.json, which comes back:
@@ -26,11 +30,11 @@ import { createReadStream, existsSync, rmSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
 import { errorMessage, isRecord, SPEECH } from '@presmium/kernel'
-import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
+import type { IRDocument, Member, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
 import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
 import { clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, transcriptionEngine, unsaidMessage } from './lecture.ts'
-import { latestDoc, lectureConfig } from './plan.ts'
+import { latestDoc, latestView, lectureConfig } from './plan.ts'
 import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
 import { freeMediaPath, mediaFile, mediaPolicy, newTrackId, readTrack, sha256File, trackDir, trackIds, writeAt, writeGitFiles, writeTrack } from './store.ts'
@@ -196,30 +200,50 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     if (!found) throw new Refusal(503, 'no speech service: add @presmium/slidev-addon-speech to the deck\'s plugins')
     return found
   }
+  /** The lecture renderer's view of the latest IR, which the lecture is planned from as a build plans it. */
   const compiled = (): IRDocument => {
-    const doc = latestDoc(deckDir)
+    const doc = latestView(deckDir)
     if (!doc) throw new Refusal(503, 'the deck has not compiled yet')
     return doc
   }
   const lexicon = lexiconOf(ctx.config)
 
-  /** The synthesized lecture of the latest IR, made once per IR (on demand: the clips the cache lacks are synthesized). */
-  let synthesized: { doc: IRDocument, made: Promise<LectureTrack> } | undefined
-  const scriptTrack = (): Promise<LectureTrack> => {
-    const doc = compiled()
-    if (synthesized?.doc === doc) return synthesized.made
-    const made = synthesizedLecture(doc, deckDir, speech()).then(({ deck, track, unsaid }) => {
-      if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
-      if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
-      return track
+  /** The deck's synthesized lecture: with `lookup`, from the cache alone (no clip transcribed to align it). */
+  const synthesize = (doc: IRDocument, lookup: boolean): Promise<LectureTrack> => synthesizedLecture(doc, deckDir, speech(), undefined, { lookup }).then(({ deck, track, unsaid }) => {
+    if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
+    if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
+    return track
+  })
+  /** The synthesized lecture of the latest IR, made once per IR (a lookup-made one serves lookups only), and the last one made. */
+  let synthesized: { doc: IRDocument, made: Promise<LectureTrack>, lookup: boolean } | undefined
+  let last: LectureTrack | undefined
+  const made = (doc: IRDocument, lookup: boolean): Promise<LectureTrack> => {
+    if (synthesized?.doc === doc && (!synthesized.lookup || lookup)) return synthesized.made
+    const making = synthesize(doc, lookup)
+    synthesized = { doc, made: making, lookup }
+    making.then((track) => {
+      last = track
+    }, () => {
+      if (synthesized?.made === making) synthesized = undefined
     })
-    synthesized = { doc, made }
-    made.catch(() => {
-      if (synthesized?.made === made) synthesized = undefined
-    })
-    return made
+    return making
   }
-  /** Whether the deck names a voice, so `script` is its synthesized lecture. */
+  const scriptTrack = async (member: Member): Promise<LectureTrack> => {
+    const doc = compiled()
+    if (member.roles.some(role => role === 'editor' || role === 'owner')) return made(doc, false)
+    // A reader's request spends nothing: the cache alone when no engine can synthesize the voice (each clip a lookup).
+    if (synthesized?.doc === doc) return synthesized.made
+    if (!(await synthesisEngineOf(speech(), doc, voiced()?.engine))) {
+      try {
+        return await made(doc, true)
+      } catch (error) {
+        if (!last) throw error
+      }
+    }
+    if (last) return last
+    throw new Refusal(409, `lecture ${SCRIPT_TRACK} is synthesized when an editor opens it (synthesis is paid)`)
+  }
+  /** The voice the deck names, so `script` is its synthesized lecture. */
   const voiced = () => {
     const doc = latestDoc(deckDir)
     return doc ? lectureVoice(lectureConfig(doc)) : undefined
@@ -302,11 +326,11 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
       },
       'tracks/*': {
         role: 'reader',
-        async handle(request, { rest }) {
+        async handle(request, { rest, member }) {
           const [id = '', ...path] = rest.split('/')
           try {
             if (path.length === 0) {
-              if (id === SCRIPT_TRACK && voiced()) return json(await scriptTrack())
+              if (id === SCRIPT_TRACK && voiced()) return json(await scriptTrack(member))
               const found = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
               return found ? json(found.track) : problem(404, `no lecture ${id}`)
             }

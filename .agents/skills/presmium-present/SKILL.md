@@ -71,8 +71,8 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 - **回放**：地址加 `?view=lecture&track=<ID>`，或在“视图”菜单中选“讲授”再挑一个。放映视图下方是播放栏：播放与暂停、进度、倍速、字幕（可选译文的语言）、逐字稿（点时间或某个字跳过去）、章节（每一节下列出讲授走到的各步，点击跳到那一步）、“我来试试”（暂停后自己翻页或运行代码，点“回到讲授”恢复到讲授的画面）。合成的讲授显示“AI 合成语音”。讲义改动后失效的操作被略过并提示，`presmium check` 的 `presmium.lecture` 列出它们。
 - **静态站点**：`presmium build --to web,lecture` 把讲授发布在 `dist/lecture/`（含 `captions.<语言>.vtt`、`chapters.vtt`、`events.vtt`），网页从同一站点的 `../lecture/` 读取；分开部署时在头部写 `presmium: { presmium.lecture: { url: <地址> } }`。
 - **合成的讲授**：头部写了 `renderers.lecture.voice`（并列出 `@presmium/slidev-addon-speech`）时，讲义的讲解就是讲授的脚本（写法见 presmium-author 技能）：`presmium build --to web,lecture` 把它合成为讲授 `script`（片段发布在 `dist/lecture/script/clips/`），`?view=lecture&track=script` 播放，提示标记 `{cue}` 在说到相应的字时聚光、推进；`presmium dev` 中打开它时由服务端按需合成。播放栏显示“AI 合成语音（<服务提供方>）”。合成要运营者定义的语音引擎（`PRESMIUM_SPEECH_<ID>_URL` 与 `_PROVIDER`），合成过的片段在合成缓存 `.presmium/speech/` 中，提交后别处构建不需要引擎。
-- **转写与修改**（`presmium dev` 与工作区服务中，编辑者）：回放一份录制的讲授，打开“逐字稿”：“转写（<服务提供方>）”先确认把录音发给谁，转写后得到逐句的文字，录制时在说某句话期间做的操作绑定到当时说的字；每句后的 ✎ 修改这句的文字（没改的字保留时间）；选一个“音色”点“重新合成（<服务提供方>）”，整段讲授换成这个音色的合成语音，操作跟着字走，没有绑定到字的操作时刻不变。改动都写回 `lectures/<id>/track.json`。
-- **导出视频**：`presmium-lecture export [文稿目录] --track <ID> --out <文件>.webm`（`--size 1280x720`、`--fps 10` 为默认）构建网页与讲授，在 Chromium 中逐帧播放并与声音合成为 WebM 视频（只导出 WebM）；合成的声音在文件的元数据中标明由 AI 生成。
+- **转写与修改**（`presmium dev` 与工作区服务中，编辑者）：回放一份录制的讲授，打开“逐字稿”：“转写（<服务提供方>）”先确认把录音发给谁，转写后得到逐句的文字，录制时在说某句话期间做的操作绑定到当时说的字；每句后的 ✎ 修改这句的文字（没改的字保留时间；合成音色的讲授中保存时重新合成这一句，先确认发给哪个服务提供方）；选一个“音色”点“重新合成（<服务提供方>）”，整段讲授换成这个音色的合成语音，操作跟着字走，没有绑定到字的操作时刻不变。改动都写回 `lectures/<id>/track.json`。
+- **导出视频**：`presmium-lecture export [文稿目录] --track <ID> --out <文件>.webm`（`--size 1280x720`、`--fps 10` 为默认）构建网页与讲授，在 Chromium 中逐帧播放并与声音合成为 WebM 视频（只导出 WebM；要文稿安装 `playwright-chromium`，与 `slidev export` 相同）；合成的声音在文件的元数据中标明由 AI 生成。
 ### 由 agent 跳转（`presmium dev`）
 
 `presmium dev` 中，连接了 MCP 的 agent（见 presmium-author 技能）可以查询放映位置（`get_position`）并请求跳转（`navigate`）、开始或结束课堂（`classroom_start`、`classroom_end`）。每次操作先在页面工具栏出现“待确认”入口，允许后放映与演讲者窗口跳到该位置，拒绝时 agent 得到错误。放映视图与演讲者视图盖住了工具栏，所以放映时另开一个文档视图的窗口回答确认。

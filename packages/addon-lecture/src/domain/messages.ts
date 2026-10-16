@@ -69,6 +69,9 @@ export interface LectureMessages {
     cancel: string
     edit: (id: string) => string
     save: string
+    /** Saving a sentence of a synthetic voice says it again: the button and its confirmation name the provider. */
+    saveSay: (provider: string) => string
+    saveSayConfirm: (provider: string) => string
     saving: string
     failed: (reason: string) => string
   }
@@ -140,6 +143,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       cancel: '取消',
       edit: id => `修改语音段 ${id}`,
       save: '保存',
+      saveSay: provider => `保存并重新合成（${provider}）`,
+      saveSayConfirm: provider => `把改过的这句话发给 ${provider} 重新合成？合成由该服务计费，结果由 AI 生成。`,
       saving: '正在保存…',
       failed: reason => `失败：${reason}`,
     },
@@ -209,6 +214,8 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       cancel: 'Cancel',
       edit: id => `Edit utterance ${id}`,
       save: 'Save',
+      saveSay: provider => `Save and say again (${provider})`,
+      saveSayConfirm: provider => `Send the corrected sentence to ${provider} to say it again? The service charges for it; the result is AI-generated.`,
       saving: 'Saving…',
       failed: reason => `Failed: ${reason}`,
     },

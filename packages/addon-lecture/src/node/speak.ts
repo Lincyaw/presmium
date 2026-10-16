@@ -24,6 +24,13 @@ export interface SpeakOptions {
   voice: LectureVoice
   lang: string
   lexicon?: Record<string, string>
+  /**
+   * Only look things up: a clip without word times takes the words kept
+   * beside it, and none when there are none, instead of a transcription.
+   * (Whether the synthesis itself is a lookup is the caller's: it is when no
+   * engine can synthesize the voice.)
+   */
+  lookup?: boolean
 }
 
 /** A synthesized clip, with what made it. */
@@ -53,8 +60,8 @@ export function audioBlob(file: string): Blob {
   return new Blob([readFileSync(file)], { type: MIME[file.split('.').at(-1) ?? ''] ?? 'application/octet-stream' })
 }
 
-/** The words of a clip without word times: a transcript of it, kept beside it (`<key>.align.json`); undefined when none can be made. */
-async function alignedWords(speech: SpeechService, file: string, key: string, lang: string, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
+/** The words of a clip without word times: a transcript of it, kept beside it (`<key>.align.json`); undefined when none can be made (or `lookup` and none is kept). */
+async function alignedWords(speech: SpeechService, file: string, key: string, lang: string, lookup: boolean, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
   const kept = join(dirname(file), `${key}.align.json`)
   if (/^[0-9a-f]{32}$/.test(key) && existsSync(kept)) {
     try {
@@ -64,6 +71,7 @@ async function alignedWords(speech: SpeechService, file: string, key: string, la
       // Made again below.
     }
   }
+  if (lookup) return undefined
   try {
     const transcript = await speech.transcribe({ audio: audioBlob(file), lang }, signal)
     const words = transcript.segments.flatMap(s => s.words)
@@ -91,7 +99,7 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
   }
   const synthesis = await speech.synthesize(request, signal)
   if (typeof synthesis.audio !== 'string') throw new Error('the Node speech service gave no file of its cache')
-  const engineWords = synthesis.words?.length ? synthesis.words : await alignedWords(speech, synthesis.audio, synthesis.key, options.lang, signal)
+  const engineWords = synthesis.words?.length ? synthesis.words : await alignedWords(speech, synthesis.audio, synthesis.key, options.lang, Boolean(options.lookup), signal)
   const words: PlacedWord[] | undefined = engineWords && writtenWords(engineWords, said.text, said.spoken, said.spans)
   const provider = record(synthesis.audio)?.provider
   return {

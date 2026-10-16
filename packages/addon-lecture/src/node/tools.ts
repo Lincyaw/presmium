@@ -6,14 +6,15 @@
  * recorded lecture transcribed (`track_transcribe`, paid: its audio goes to
  * the transcription engine's provider). MCP asks for approval of the paid
  * ones (`spend`) before calling them. A tool reaches its deck through the
- * deck's Node service `LECTURE_DECK`, and plans from the latest IR.
+ * deck's Node service `LECTURE_DECK`, and plans from the latest IR (the
+ * lecture renderer's view of it, as a build does).
  */
 import { defineService, SPEECH } from '@presmium/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SpeechService } from '@presmium/kernel'
 import { SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { LecturePlan } from '../domain/index.ts'
 import { synthesizedLecture, transcribeLecture, unsaidMessage } from './lecture.ts'
-import { deckPlan, latestDoc } from './plan.ts'
+import { deckPlan, latestView } from './plan.ts'
 
 /** The deck of a document, for the tools: a Node service of the lecture plugin. */
 export interface LectureDeck {
@@ -25,7 +26,7 @@ export const LECTURE_DECK = defineService<LectureDeck>('presmium.lecture.deck')
 function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument } {
   const deck = ctx.service(LECTURE_DECK)
   if (!deck) throw new Error('this document does not use the lecture plugin')
-  const doc = latestDoc(deck.deckDir)
+  const doc = latestView(deck.deckDir)
   if (!doc) throw new Error('the document has not compiled yet')
   return { deckDir: deck.deckDir, doc }
 }
@@ -68,7 +69,7 @@ export const lecturePreview: AgentTool = {
       voice: deck.voice ?? null,
       gapMs: deck.gap,
       sections: planView(deck.plan, typeof input.section === 'string' ? input.section : undefined),
-      problems: deck.findings.map(f => f.message),
+      problems: [...deck.findings.map(f => f.message), ...deck.plan.problems.filter(p => p.compiled).map(p => p.message)],
       play: deck.voice ? `?view=lecture&track=${SCRIPT_TRACK}` : null,
     }
   },

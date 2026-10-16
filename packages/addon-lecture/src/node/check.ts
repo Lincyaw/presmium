@@ -3,16 +3,18 @@
  * the deck against the deck as it is now. Events whose block or section is
  * gone are reported with their time (the player drops them), as are blocks
  * that moved or changed and sections whose steps changed. And the lecture
- * plan (WP-83): cues whose command or block is wrong, and, when the deck
- * names a voice but no engine can synthesize it, the utterances the
- * synthesis cache lacks (the build would fail on them).
+ * plan (WP-83), made as the build makes it: cues whose block is wrong (and
+ * whose command is, in a separate script; the role reports it in the deck),
+ * and, when the deck names a voice but no engine can synthesize it, the
+ * utterances the synthesis cache lacks (the build would fail on them). The
+ * check only looks things up: it sends nothing to a speech engine.
  */
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { Check, CheckContext, Finding, IRDocument, Severity } from '@presmium/kernel'
 import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift } from '../domain/index.ts'
 import { synthesisEngineOf } from './lecture.ts'
-import { deckPlan } from './plan.ts'
+import { deckPlan, lectureView } from './plan.ts'
 import { synthesizeClip } from './speak.ts'
 import { readTrack, trackIds } from './store.ts'
 
@@ -65,7 +67,8 @@ export function trackFindings(deckDir: string, id: string, doc: IRDocument): Fin
 
 /** The findings of the lecture plan: its cues, and the clips no engine can make. */
 async function planFindings(ctx: CheckContext): Promise<Finding[]> {
-  const deck = deckPlan(ctx.ir, ctx.deckDir)
+  const view = lectureView(ctx.ir)
+  const deck = deckPlan(view, ctx.deckDir)
   const findings = [...deck.findings]
   if (!deck.voice) return findings
   const speech = ctx.service?.(SPEECH)
@@ -74,11 +77,11 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @presmium/slidev-addon-speech to plugins', source })
     return findings
   }
-  if (await synthesisEngineOf(speech, ctx.ir, deck.voice.engine).catch(() => undefined)) return findings
-  // No engine to make a clip: the cache must have every one (a lookup sends no request).
+  if (await synthesisEngineOf(speech, view, deck.voice.engine).catch(() => undefined)) return findings
+  // No engine to make a clip: the cache must have every one (a lookup sends no request; nor is a clip transcribed to align it).
   for (const u of plannedUtterances(deck.plan)) {
     try {
-      await synthesizeClip(speech, u, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {} })
+      await synthesizeClip(speech, u, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, lookup: true })
     } catch (error) {
       const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
       findings.push({
