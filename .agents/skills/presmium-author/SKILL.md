@@ -195,6 +195,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 | `presmium.execute` `PRESMIUM_ENV_<名>_URL is not set` | 运营者在运行 `presmium` 的环境中给出这个环境的地址与令牌（`templates/env/compose/README.md`） |
 | `presmium.execute` `session "…" runs in … and here in …` | 同一会话的代码块写同一个 `:env:` |
 | `presmium.secrets` `… looks like a credential` | 从头部删掉它，改用环境变量 |
+| `presmium.speech` `presmium.speech.engines.x … is not used` | 文稿只写引擎的 ID（`presmium.speech: { engine: volcengine, transcribe: groq }`），删掉 `url`、`keyEnv` 等；引擎由运营者在环境变量中定义（`PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER`、可选的 `_KEY`；火山引擎只要 `PRESMIUM_SPEECH_VOLCENGINE_KEY`） |
 | `presmium.references` `target "…" not found` | 给目标加标签，或改正引用 |
 | `presmium.classroom` `{quiz} needs at least two options` | 选项写成任务列表 `- [ ]`、`- [x]` |
 
@@ -206,6 +207,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 - `.presmium/anchors.lock.json`：锚点锁定记录（`presmium check --update-lock` 生成）。
 - `.presmium/drawings/`：幻灯片中的圈画标注。
 - `.presmium/assets/`：本地化的远程图片（如 PlantUML 图），新增一个后要提交。
+- `.presmium/speech/` 与 `.presmium/speech.lock.json`：合成缓存（`@presmium/slidev-addon-speech`）：合成的音频（引擎给的格式，通常是 Ogg/Opus）与 `<键>.json`（逐字时间、引擎、AI 生成的标识），以及文稿用到的键。提交后别人构建不再调用语音引擎、不需要凭据。
 
 录制的讲授（`@presmium/slidev-addon-lecture`，见 presmium-present 技能）在文稿目录的 `lectures/<id>/` 中：提交 `track.json`（讲授轨：语音段与操作，每项一行，便于比较差异）；`audio/`、`video/` 默认被该目录的 `.gitignore` 忽略（运营者设置决定是否交给 git LFS）。讲义改了讲授引用的块时，`presmium check` 的 `presmium.lecture` 报告失效的操作；要长期回放的块写标签 `(名字)=`。
 

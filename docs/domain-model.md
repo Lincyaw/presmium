@@ -545,13 +545,13 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音网关，Node 端直接调用引擎 |
-| 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）、`webspeech`（浏览器试听，只用本机音色，不能导出）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
+| 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）、`webspeech`（浏览器试听，只用本机音色，不能导出；它不给音频，所以不是 `SPEECH` 的引擎，由浏览器端的 `previewWebSpeech` 提供，WP-82）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
 | 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
 | 同意记录 | `VoiceConsent`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`），只由所有者经服务端（SHARED 模式中只在所有者控制台的源上）或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
 | 语音网关 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；只有网关接触服务提供方 |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |
-| 合成缓存 | `.presmium/speech/<键>.<扩展名>`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、模型、音色、语言、语速、风格、读音词典哈希、文字）的 sha256 缓存，随文稿提交；音频保留引擎返回的格式（通常是 Ogg/Opus，假引擎为 WAV） |
+| 合成缓存 | `.presmium/speech/<键>.<扩展名>`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、音色、语言、语速、风格、文字、应用读音词典之后要说的文字）的 sha256 缓存，随文稿提交；模型写在 `<键>.json` 中，不进入键（SHARED 模式中只有 gateway 知道它，WP-82）；音频保留引擎返回的格式（通常是 Ogg/Opus，假引擎为 WAV） |
 
 **合成缓存（聚合根）**：按键存放的合成结果与 `speech.lock.json`；键由规范化的请求决定，同一个键的内容不再改变。**同意记录**是另一个聚合，按（引擎，音色）标识。
 

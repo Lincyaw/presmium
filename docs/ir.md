@@ -92,7 +92,7 @@ presmium:
 | `checks.forbid` | 正则表达式的列表（JavaScript 语法），`presmium check` 报告每个媒介中的命中（2.11 节） |
 | `presmium.lecture`、`presmium.speech` | 讲授与语音插件的配置：读音词典、默认的合成引擎 `engine` 与转写引擎 `transcribe`（引擎 ID）；音色在 `renderers.lecture.voice` 中。只写名字，不写地址、凭据或存放凭据的变量名（`architecture.md` 第 11 节） |
 
-文稿头部不能写凭据：`presmium check` 对像凭据的值告警（`architecture.md` 第 11 节）。文稿也不决定凭据发往哪里：语音引擎 `<ID>` 由运营者在服务端的环境变量中定义：地址 `PRESMIUM_SPEECH_<ID>_URL`、服务提供方的名字 `PRESMIUM_SPEECH_<ID>_PROVIDER`（界面据此标明，必需）与可选的凭据 `PRESMIUM_SPEECH_<ID>_KEY`，凭据只发往同一组中的地址（`volcengine` 的地址与名字“火山引擎”固定，只需 `PRESMIUM_SPEECH_VOLCENGINE_APPID` 与 `PRESMIUM_SPEECH_VOLCENGINE_KEY`），文稿用 ID 选用；`presmium.speech` 中出现 `url`、`keyEnv` 等引擎定义是错误级诊断，不被使用。远端环境的地址与令牌同样成对（2.7 节）。确认策略、agent 的启动命令与模型、录音的去处也不在文稿中设置，它们来自命令行、环境变量与工作区配置的运营者设置（第 10 节）。
+文稿头部不能写凭据：`presmium check` 对像凭据的值告警（`architecture.md` 第 11 节）。文稿也不决定凭据发往哪里：语音引擎 `<ID>` 由运营者在服务端的环境变量中定义：地址 `PRESMIUM_SPEECH_<ID>_URL`、服务提供方的名字 `PRESMIUM_SPEECH_<ID>_PROVIDER`（界面据此标明，必需）与可选的凭据 `PRESMIUM_SPEECH_<ID>_KEY`，凭据只发往同一组中的地址（`volcengine` 的地址与名字“火山引擎”固定，只需 `PRESMIUM_SPEECH_VOLCENGINE_KEY`；旧控制台的密钥另要 `PRESMIUM_SPEECH_VOLCENGINE_APPID`，WP-82），文稿用 ID 选用；`presmium.speech` 中出现 `url`、`keyEnv` 等引擎定义是错误级诊断，不被使用。远端环境的地址与令牌同样成对（2.7 节）。引擎 ID 按变量的写法比较，不分大小写，`-` 与 `_` 相同：文稿的 `engine: my-engine` 选用 `PRESMIUM_SPEECH_MY_ENGINE_URL` 定义的引擎 `my_engine`（WP-82）。WP-82 另有两个可选的运营者变量：`PRESMIUM_SPEECH_<ID>_MODEL` 与 `_TRANSCRIBE_MODEL`（OpenAI 音频接口形态的引擎的合成与转写模型，默认 `tts-1` 与 `whisper-1`，例如 Groq 的 `whisper-large-v3-turbo`）；`presmium.speech` 中 `cloned`、`consentDir` 是运营者设置，写在文稿中是警告且被忽略，其他不认识的键也是警告（检查 ID `presmium.speech`）。确认策略、agent 的启动命令与模型、录音的去处也不在文稿中设置，它们来自命令行、环境变量与工作区配置的运营者设置（第 10 节）。
 
 notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback`）写成一行说明：设置了 `webUrl` 时附上 `<webUrl>#<章节 ID>`；没有设置、而同一次构建也用默认的网页渲染端生成网页时，附上相对链接 `../web/<页>#<章节 ID>`（与 `dist/` 的目录结构一致）；都不满足时说明不带链接，构建报告提示设置 `renderers.notebook.webUrl`。
 
@@ -305,7 +305,7 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 | `{say}` | 内容是显示的文字；选项 `alias` 是读出的文字 | 显示一种写法，读出另一种 |
 
 - **只说与只显示**：`{only} lecture` 中的文字只在讲授中说出；`{only} web, slides` 中的讲解只显示、不说。
-- **读音词典**：`presmium.lecture.lexicon`（写法到读法）随合成请求送给引擎（火山引擎的 `pronunciation_dict`），也计入合成缓存的键。
+- **读音词典**：`presmium.lecture.lexicon`（写法到读法）随合成请求送给语音服务，也计入合成缓存的键。实际的做法（WP-82）：语音服务在调用引擎之前把文字中的写法换成读法（较长的写法优先），所有引擎都这样处理，所以读法是文字（火山引擎的 `pronunciation_dict` 与它的拼音写法不用）；引擎按读法给出的逐字时间再换回原文：读出一个写法的几个字或词合为原文中的一个词（从第一个的开始到最后一个的结束），其余的字词不变，所以 `words` 与提示标记的偏移都按原文计。引擎的字词在读法中按顺序找不到时（引擎改写了文字），`words` 按引擎给出的原样返回。
 - **时间**：提示标记在它所在字的时刻触发：优先用引擎返回的逐字或逐词时间；没有时把合成的音频转写一遍对齐；再不行按字数线性估算。一步在其讲解说完后 `gap`（默认 0.5 秒）推进，或在 `{cue}`next`` 处推进。
 - **单独的讲授脚本**：`renderers.lecture.script` 指向一个 MyST 文件，其中的章节用与讲义相同的标签（`(merge)=`）对应讲义的章节；某一节在脚本中出现时，讲授用脚本中这一节的段落代替讲义的讲解（第 k 段属于第 k 步，规则同 2.4 节），讲义本身的显示不变。由 agent 整堂生成的讲授写在这里。
 - **产物**：讲授计划经合成成为与录制的讲授格式相同的讲授轨（`voice.kind: synthetic`）与音频片段，写入 `dist/lecture/<id>/`，静态站点离线可放，不需要凭据（第 9 节）。
@@ -759,10 +759,10 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `lectures/<id>/track.json` | 讲授轨：语音段、事件、音频片段、块指纹、IR 哈希、音色 | 提交 |
 | `lectures/<id>/audio/*.ogg` | 录制的音频（Ogg/Opus，可以跳转），每节一段 | 默认不提交：讲授插件在 `lectures/<id>/` 写一个忽略 `audio/` 与 `video/` 的 `.gitignore`；运营者设置 `settings.presmium.lecture.audio`（第 10 节）可以改为 git LFS 或外部地址 |
 | `lectures/<id>/video/*.webm` | 可选的摄像头与屏幕录像（P-90），每节每种一段；默认不录 | 同音频 |
-| `.presmium/speech/<键>.<扩展名>`、`<键>.json` | 合成缓存：音频保留引擎返回的格式，不重新编码。语音服务向引擎请求 Ogg/Opus（火山引擎的 `ogg_opus`，OpenAI 音频接口的 `response_format: opus`），所以通常是 `<键>.ogg`；只给出其他格式的引擎按其格式保存（假引擎为 `<键>.wav`）。语音服务（不是引擎）写入缓存时在音频的元数据中加入 AI 生成的标识与 GB 45438 的字段（Ogg 写在 Opus 的注释头中，WAV 写在 `LIST`/`INFO` 块中，字段由 WP-82 的先行验证确定），不改动引擎写入的其他内容（假引擎嵌入的文字与音色因此保留）。`<键>.json` 是逐字时间、时长、格式（`mime`）、引擎信息与同样的 AI 生成标识 | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
-| `.presmium/speech.lock.json` | 文稿用到的合成键与音频的 sha256 | 提交 |
+| `.presmium/speech/<键>.<扩展名>`、`<键>.json` | 合成缓存：音频保留引擎返回的格式，不重新编码。语音服务向引擎请求 Ogg/Opus（火山引擎的 `ogg_opus`，OpenAI 音频接口的 `response_format: opus`），所以通常是 `<键>.ogg`；只给出其他格式的引擎按其格式保存（假引擎为 `<键>.wav`）。语音服务（不是引擎）写入缓存时在音频的元数据中加入 AI 生成的标识与 GB 45438 的字段（Ogg 写在 Opus 的注释头中，WAV 写在 `LIST`/`INFO` 块中，字段由 WP-82 的先行验证确定），不改动引擎写入的其他内容（假引擎嵌入的文字与音色因此保留）。`<键>.json` 是逐字时间、时长、格式（`mime`）、引擎信息与同样的 AI 生成标识。实际的格式（WP-82）：键是规范化的（引擎、音色、语言、语速、风格、原文、应用读音词典之后要说的文字）的 sha256 的前 32 位十六进制数；模型不在键中（SHARED 模式中只有 gateway 知道模型，而命中时不能发请求），写在 `<键>.json` 中；读音词典以“要说的文字”进入键，所以改动与这段文字无关的词条不使缓存失效。`<键>.json` 的字段为 `key`、`audio`（音频文件名）、`mime`、`duration`、`words`、`engine`、`model`、`voice`、`provider`、`cloned`、`lang`、`text`、`synthetic: true`、`AIGC`（GB 45438 的字段：`Label`、`ContentProducer`（引擎的服务提供方）、`ProduceID`（键）、`ReservedCode1`、`ContentPropagator`、`PropagateID`、`ReservedCode2`）与音频的 `sha256`。WAV 的 `LIST`/`INFO` 块中是 `AIGC`（上述字段的 JSON）与 `ICMT`（`AIGC={…}`），Ogg/Opus 的注释头中是 `AIGC={…}`（`design-v0.7.md` 第 11 节）；引擎给出其他格式时合成失败（无法写入标识） | 提交（Opus 约 24 kbps，一小时约 11 MB），或用 LFS |
+| `.presmium/speech.lock.json` | 文稿用到的合成键与音频的 sha256：`{ "version": 1, "synthesis": { "<键>": { "audio": "<键>.wav", "sha256": "…" } } }`，每个键一行、按键排序；语音服务每次合成（含缓存命中）时加入用到的键，不删除（清理不再用到的键由讲授的构建负责，WP-83） | 提交 |
 
-克隆音色的同意记录不在文稿目录中：它在运营者目录中的 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`，只挂在 gateway 容器中），内容为说话人、范围、日期与同意声明录音的 sha256。记录只经两条途径产生：所有者经语音插件的路由登记（SHARED 模式中只在所有者控制台的源上，serve 转给 gateway 写入），或运营者在持有凭据的环境中（SHARED 为 gateway 容器）运行 `presmium-speech consent`。记录不随文稿提交；文稿中的 `.presmium/speech/consent/` 之类的文件被忽略（`architecture.md` 第 11 节）。
+克隆音色的同意记录不在文稿目录中：它在运营者目录中的 `<consentDir>/<引擎>/<音色>.json`（第 10 节的 `settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`，只挂在 gateway 容器中），内容为说话人、范围、日期与同意声明录音的 sha256（JSON `{ speaker, scope, date, statementSha256 }`，`date` 为 ISO 8601 日期，`statementSha256` 为十六进制；WP-82）。记录只经两条途径产生：所有者经语音插件的路由登记（SHARED 模式中只在所有者控制台的源上，serve 转给 gateway 写入），或运营者在持有凭据的环境中（SHARED 为 gateway 容器）运行 `presmium-speech consent`。记录不随文稿提交；文稿中的 `.presmium/speech/consent/` 之类的文件被忽略（`architecture.md` 第 11 节）。
 
 讲授轨借鉴 asciinema 的 asciicast（事件是元组，不认识的类型忽略），时间用自讲授开始的绝对毫秒，便于跳转与编辑：
 

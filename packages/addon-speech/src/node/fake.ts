@@ -1,0 +1,133 @@
+/**
+ * The deterministic fake engine (`presmium-speech fake`, docs/architecture.md
+ * section 7): a real HTTP service of the OpenAI audio API shape with
+ * Presmium's extensions, which the operator defines like any engine
+ * (`PRESMIUM_SPEECH_FAKE_URL`, `PRESMIUM_SPEECH_FAKE_PROVIDER`). Synthesis
+ * gives a WAV of one tone per word at the fake timing (../domain/words.ts)
+ * with the text, voice and words in a chunk `pmfk`, so transcribing it gives
+ * them back exactly. One of its voices is a clone. `GET /requests` lists the
+ * requests it got (method, path, `Authorization`), for tests to count.
+ */
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import type { SpeechWord, VoiceInfo } from '@presmium/kernel'
+import { isRecord } from '@presmium/kernel'
+import { fakeWords, oneSegment } from '../domain/index.ts'
+import { isWav, makeWav, wavChunks, wavDuration } from './audio/riff.ts'
+
+const RATE = 8000
+const CHUNK = 'pmfk'
+
+export const FAKE_VOICES: VoiceInfo[] = [
+  { id: 'alpha', label: '假音色甲 Alpha', lang: ['zh-CN', 'en-US'] },
+  { id: 'beta', label: '假音色乙 Beta', lang: ['zh-CN', 'en-US'] },
+  { id: 'cloned-lin', label: '林老师（克隆音色）', lang: ['zh-CN'], cloned: true },
+]
+
+export interface FakeContent {
+  text: string
+  voice: string
+  lang: string
+  words: SpeechWord[]
+}
+
+/** The fake engine's audio of a text. */
+export function fakeAudio(text: string, voice: string, lang: string): { audio: Uint8Array, words: SpeechWord[], duration: number } {
+  const { words, duration } = fakeWords(text)
+  const samples = new Int16Array(Math.round(duration * RATE))
+  for (const word of words) {
+    const frequency = 220 + (word.text.codePointAt(0)! % 64) * 8
+    for (let i = Math.round(word.start * RATE); i < Math.round(word.end * RATE); i++) samples[i] = Math.round(6000 * Math.sin((2 * Math.PI * frequency * i) / RATE))
+  }
+  const content: FakeContent = { text, voice, lang, words }
+  return { audio: makeWav(samples, RATE, [{ id: CHUNK, data: new TextEncoder().encode(JSON.stringify(content)) }]), words, duration }
+}
+
+/** What the fake engine embedded in its audio; undefined for other audio. */
+export function fakeContent(bytes: Uint8Array): FakeContent | undefined {
+  if (!isWav(bytes)) return undefined
+  const chunk = wavChunks(bytes).find(c => c.id === CHUNK)
+  if (!chunk) return undefined
+  try {
+    return JSON.parse(new TextDecoder().decode(chunk.data)) as FakeContent
+  } catch {
+    return undefined
+  }
+}
+
+export interface FakeEngine {
+  /** The base address to define the engine with (`…/v1`). */
+  url: string
+  close(): Promise<void>
+}
+
+interface Logged {
+  method: string
+  path: string
+  authorization: string | null
+}
+
+export async function startFakeEngine(options: { port?: number, host?: string } = {}): Promise<FakeEngine> {
+  const requests: Logged[] = []
+  const answer = (status: number, body: unknown, type = 'application/json; charset=utf-8') => new Response(body instanceof Uint8Array ? new Blob([new Uint8Array(body)]) : JSON.stringify(body), { status, headers: { 'Content-Type': type } })
+
+  const route = async (request: Request, path: string): Promise<Response> => {
+    if (path === '/v1/audio/voices' && request.method === 'GET') return answer(200, { voices: FAKE_VOICES })
+    if ((path === '/v1/audio/speech' || path === '/v1/audio/speech/timestamps') && request.method === 'POST') {
+      const body: unknown = await request.json().catch(() => undefined)
+      if (!isRecord(body) || typeof body.input !== 'string' || typeof body.voice !== 'string') return answer(400, { error: { message: '{ model, voice, input } expected' } })
+      if (!FAKE_VOICES.some(voice => voice.id === body.voice)) return answer(400, { error: { message: `no voice "${body.voice}"; the fake engine has ${FAKE_VOICES.map(v => v.id).join(', ')}` } })
+      const { audio, words, duration } = fakeAudio(body.input, body.voice, typeof body.language === 'string' ? body.language : 'zh-CN')
+      if (path === '/v1/audio/speech') return answer(200, audio, 'audio/wav')
+      return answer(200, { audio: Buffer.from(audio).toString('base64'), format: 'wav', duration, words })
+    }
+    if (path === '/v1/audio/transcriptions' && request.method === 'POST') {
+      const form = await request.formData().catch(() => undefined)
+      const file = form?.get('file')
+      if (!(file instanceof Blob)) return answer(400, { error: { message: 'multipart form data with `file` expected' } })
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      const content = fakeContent(bytes)
+      const language = typeof form?.get('language') === 'string' ? form.get('language') as string : undefined
+      const duration = isWav(bytes) ? wavDuration(bytes) : 0
+      const transcript = oneSegment(content?.text ?? '', content?.words ?? [], language ?? content?.lang ?? 'zh-CN', duration)
+      return answer(200, { ...transcript, language: transcript.lang, words: content?.words ?? [] })
+    }
+    if (path === '/v1/models' && request.method === 'GET') return answer(200, { object: 'list', data: [{ id: 'fake-tts', object: 'model' }, { id: 'fake-stt', object: 'model' }] })
+    return answer(404, { error: { message: `no route ${request.method} ${path}` } })
+  }
+
+  const server = createServer((req, res) => {
+    const chunks: Buffer[] = []
+    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    req.on('end', () => {
+      const path = (req.url ?? '/').split('?')[0]!
+      const send = (response: Response) => response.arrayBuffer().then((body) => {
+        res.writeHead(response.status, Object.fromEntries(response.headers))
+        res.end(Buffer.from(body))
+      })
+      if (path === '/requests' && req.method === 'GET') {
+        void send(answer(200, { requests }))
+        return
+      }
+      requests.push({ method: req.method ?? 'GET', path, authorization: req.headers.authorization ?? null })
+      const headers = new Headers()
+      for (const [name, value] of Object.entries(req.headers)) if (typeof value === 'string') headers.set(name, value)
+      const method = req.method ?? 'GET'
+      const request = new Request(`http://fake${req.url ?? '/'}`, { method, headers, ...method === 'GET' || method === 'HEAD' ? {} : { body: Buffer.concat(chunks) } })
+      void route(request, path).catch((error: unknown) => answer(500, { error: { message: String(error) } })).then(send)
+    })
+  })
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(options.port ?? 0, options.host ?? '127.0.0.1', () => resolve())
+  })
+  const { port } = server.address() as AddressInfo
+  const host = options.host && options.host !== '0.0.0.0' ? options.host : '127.0.0.1'
+  return {
+    url: `http://${host.includes(':') ? `[${host}]` : host}:${port}/v1`,
+    close: () => new Promise((resolve) => {
+      server.close(() => resolve())
+      server.closeAllConnections()
+    }),
+  }
+}

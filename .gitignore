@@ -16,4 +16,6 @@ dist-web/
 !**/.presmium/anchors.lock.json
 !**/.presmium/drawings/
 !**/.presmium/assets/
+!**/.presmium/speech/
+!**/.presmium/speech.lock.json
 .playwright-mcp/

@@ -1,0 +1,32 @@
+{
+  "name": "@presmium/slidev-addon-speech",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Speech (P-132, P-133): the speech gateway, the engines' adapters, the synthesis cache with the AI-generated label, consent records for cloned voices, and presmium-speech",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "bin": {
+    "presmium-speech": "./bin/presmium-speech.mjs"
+  },
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./client": "./src/client/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@presmium/compiler": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "jiti": "^2.7.0"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*",
+    "@slidev/types": "53.0.0"
+  }
+}
