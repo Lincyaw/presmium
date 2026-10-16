@@ -1397,6 +1397,14 @@ export interface Renderer {
 
 源语法与这些字段的对应、各渲染端的处理见 `ir.md`（2.7 至 2.14 节、第 6 节、第 9、10 节）。媒介 ID `lecture` 不是新的 IR 字段：它是讲授插件的渲染端 ID，`{only} lecture` 照常经 `only` 字段生效。
 
+**实现（WP-86）**：契约没有变化，以下是写明之外的做法。
+
+- `RenderContext.localAsset` 的结果也可以是目录（`ir.md` 6.2 节）：编译器（`renderers.ts`）与工作区站点的上下文（`packages/workspace/src/node/site.ts`）把文稿之内的目录准备为带文件清单页的副本，渲染端以 `cpSync(…, { recursive: true })` 发布它，与文件相同；不能发布的本地引用由这两处报告 `presmium.links`（构建报告去掉各渲染端重复的报告）。工作区站点的上下文另拒绝工作区之外的文件（此前只在 SHARED 中拒绝）。
+- 译本的过期检查在 `translations.ts` 的 `applyTranslations(doc, fields)` 中：`compiler.ts`（本波次属于 WP-87）只把 IR 交给它，而编译器在编译结束时一次写入 `doc.diagnostics`，所以检查结果以 `doc.diagnostics` 上的一次性存取器并入这次写入（写入之后它是普通属性）。提议：`compiler.ts` 把 `report` 与 `source.files` 交给 `applyTranslations`，之后去掉存取器、摘要的文件取自 `source.files`。
+- 译本的编译同样受 `compiler.ts` 的限制：编译器只从入口文件的头部读取文稿配置，`compileTranslations` 因此在原文旁写一个临时入口（原文的插件与渲染端配置，加上译本自己的头部，正文以 `{include}` 引入译本），编译选项取自原文的编译结果（运营者设置、信任模式、插件策略、读取范围、随 CLI 安装的包与运营者目录；宿主服务没有记录在编译结果中，译本的编译没有它们）。提议：`CompilerOptions` 增加入口头部的默认值，届时不再写临时文件。
+- 网页主题用 VitePress 文档化的路由钩子：`onBeforePageLoad` 在页面载入之前按页面的 locale 换上原文或译本的 IR（服务端渲染中同样，按页面路径），`onBeforeRouteChange` 让指向站内页面之外的链接整页载入。工作区首页的主题同样处理指向文档的链接。
+- `presmium serve` 的工作区站点中，文档开发服务器的上一章、下一章与其他文档的搜索内容按当时已编译的文档给出，在该文档下一次更新时写入。
+
 ## 5. 插件约定
 
 ### 5.1 浏览器端注册
@@ -1637,7 +1645,7 @@ v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下是计划�
 
 | 内部接口 | 位置 | 守护用例 | 后续 |
 |---|---|---|---|
-| VitePress 1.6 本地搜索的虚拟模块 `/@localSearchIndex`、`/@localSearchIndexroot`，以及搜索框对索引模块的热更新：开发与构建中都拦截这两个模块，换成网页渲染端从 IR 生成的索引（与 VitePress 同样的 MiniSearch 索引，每个章节一个文档，按文稿顺序加入）。构建中索引因此确定，产物与 Service Worker 的缓存版本在每次构建中相同（VitePress 并发建索引，顺序取决于页面完成的先后）；开发中索引随编辑更新（VitePress 1.6 开发模式只在启动时建索引） | `packages/web/src/node/vite.ts` | `e2e/web.spec.ts`“a Chinese keyword is found within 300 ms”与“search keeps working offline”（构建）、`e2e/viewer.spec.ts`“a keyword written while the server runs can be searched”（开发）、`cli/test/repro.test.ts`（重复构建的字节一致） | VitePress 固定为 1.6.4；VitePress 提供确定的构建索引与开发中的索引更新后移除拦截 |
+| VitePress 1.6 本地搜索的虚拟模块 `/@localSearchIndex`、`/@localSearchIndexroot`（有译本时另有每种语言的 `/@localSearchIndex<语言>`，WP-86），以及搜索框对索引模块的热更新：开发与构建中都拦截这些模块，换成网页渲染端从 IR 生成的索引（与 VitePress 同样的 MiniSearch 索引，每个章节一个文档，按文稿顺序加入；工作区站点中另有其他文档的章节）。构建中索引因此确定，产物与 Service Worker 的缓存版本在每次构建中相同（VitePress 并发建索引，顺序取决于页面完成的先后）；开发中索引随编辑更新（VitePress 1.6 开发模式只在启动时建索引） | `packages/web/src/node/vite.ts` | `e2e/web.spec.ts`“a Chinese keyword is found within 300 ms”与“search keeps working offline”（构建）、`e2e/viewer.spec.ts`“a keyword written while the server runs can be searched”（开发）、`e2e/site.spec.ts`“a word only another document holds is found”（工作区站点）、`cli/test/repro.test.ts`（重复构建的字节一致） | VitePress 固定为 1.6.4；VitePress 提供确定的构建索引与开发中的索引更新后移除拦截 |
 | Slidev 的根组件钩子 `setup/root.ts`（`defineRootSetup` 只出现在 `@slidev/types` 的类型中，文档没有列出），以及它在全部 `setup/main.ts` 之后运行的顺序：幻灯片形态在这里启动内核，发布插件在这里读取打印模式 | `packages/addon-core/setup/root.ts`、`packages/addon-publish/setup/root.ts` | `e2e/core.spec.ts`（启动报告与服务依赖）、`addon-publish/test/export.test.ts` 与 `diff.test.ts`（打印与视觉差异的样式） | 改用文档化的钩子或全局图层 |
 | Slidev 幻灯片内容层的类名 `.slidev-slide-content`：冻结画面复制它的各层 | `packages/addon-stage/global-top.vue` | `e2e/stage.spec.ts`“f freezes the audience view” | 改用全局图层自己的结构 |
 | Slidev 演讲者备注的类名 `.slidev-note-with-clicks`、`.slidev-note-fade`：突出当前步骤的备注 | `packages/addon-stage/style.css` | `e2e/stage.spec.ts`“presenter notes highlight the current step” | 没有文档化的替代，由用例守护 |

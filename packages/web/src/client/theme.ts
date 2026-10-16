@@ -4,15 +4,16 @@ import { errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
+import { applyUpdate } from '@presmium/viewer/domain'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue'
-import { IR_ENDPOINT, offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
+import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, translationPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
-import { PresmiumPage, ViewMenu } from './page.ts'
+import { PAGES, PresmiumPage, ViewMenu } from './page.ts'
 import './style.css'
 
 /** A plugin's `src/client/viewer.ts`, by package name, loaded lazily. */
@@ -32,6 +33,8 @@ export interface ThemeInput {
   plugins: (() => Promise<unknown>)[]
   /** Each plugin's `src/client/viewer.ts`: views and renderers for the IR runtime. */
   viewers?: ViewerModule[]
+  /** The translations (P-123), by language, each the locale `/<lang>/` of the site: their IR, imported when a page of theirs opens. */
+  translations?: Record<string, () => Promise<{ default: IRDocument }>>
 }
 
 /** What the generated site configuration tells the theme (`themeConfig.presmium`, see ../node/site.ts). */
@@ -187,11 +190,22 @@ const Layout = defineComponent({
       const href = theme.value.presmium?.home
       return href ? h('a', { class: 'pm-site-link', href }, WEB_MESSAGES[currentLocale()].documents) : null
     }
+    // The site shell's footer (P-78): the default theme shows its own on pages without a sidebar only, the
+    // chapter pages have one. Its texts may hold inline HTML, as the default theme's.
+    const footer = () => {
+      const { message, copyright } = (theme.value.footer ?? {}) as { message?: string, copyright?: string }
+      if (!message && !copyright) return null
+      return h('footer', { class: 'pm-site-footer' }, [
+        message ? h('p', { class: 'pm-site-footer__message', innerHTML: message }) : null,
+        copyright ? h('p', { class: 'pm-site-footer__copyright', innerHTML: copyright }) : null,
+      ])
+    }
     return () => h(DefaultTheme.Layout, null, {
       // On phones the view menu and the toolbar items move to the navigation screen (the menu), as VitePress
       // does with its links, so the bar keeps the width of the screen.
       'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
       'nav-screen-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
+      'doc-after': footer,
       // Overlay views get the typography of the page body.
       'layout-bottom': () => [
         h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayHost)]),
@@ -203,13 +217,13 @@ const Layout = defineComponent({
 
 /**
  * Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's
- * WebSocket. An update applies to the document of its `base` revision; a
- * page that holds another one (it loaded while the deck was compiling, or
- * missed updates while disconnected) gets the current document instead, as
- * it does whenever it connects. The site title and the sidebar follow the
- * document here, so the config never changes and the page never reloads.
+ * WebSocket, of the original. An update applies to the document of its
+ * `base` revision; a page that holds another one (it loaded while the deck
+ * was compiling, or missed updates while disconnected) gets the current
+ * document instead, as it does whenever it connects. `follow` gets the
+ * original as it is then.
  */
-function followDevServer(viewer: Viewer, revision: string | undefined, endpoint: string, follow: (doc: IRDocument) => void): void {
+function followDevServer(original: () => IRDocument, revision: string | undefined, endpoint: string, follow: (doc: IRDocument) => void): void {
   const hot = import.meta.hot
   if (!hot) return
   let current = revision
@@ -220,8 +234,7 @@ function followDevServer(viewer: Viewer, revision: string | undefined, endpoint:
       const { revision: latest, doc } = await response.json() as { revision: string, doc: IRDocument }
       if (latest === current) return
       current = latest
-      viewer.replace(doc)
-      follow(viewer.doc.value)
+      follow(doc)
     } catch (error) {
       console.warn('[presmium] could not get the current document from the dev server', error)
     }
@@ -232,11 +245,17 @@ function followDevServer(viewer: Viewer, revision: string | undefined, endpoint:
       return
     }
     current = next
-    viewer.update(update)
-    follow(viewer.doc.value)
+    follow(applyUpdate(original(), update))
   })
   hot.on('vite:ws:connect', () => void fetchCurrent())
   void fetchCurrent()
+}
+
+/** The locale of a path of the site (VitePress names pages without the base in a server render): a translation's language, or `root`. */
+function localeOf(path: string, base: string, langs: string[]): string {
+  const rest = path.startsWith(base) ? path.slice(base.length) : path.replace(/^\//, '')
+  const first = rest.split('/')[0]!
+  return langs.includes(first) ? first : 'root'
 }
 
 /** The VitePress theme of the web form: default theme, the IR runtime, the web host adapter. */
@@ -247,11 +266,26 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
     enhanceApp({ app, router, siteData }) {
       const presmium: ThemeOptions = siteData.value.themeConfig.presmium ?? {}
       const form: FormOptions = presmium.form ?? {}
-      const links = computed(() => sectionLinks(toPages(current.doc.value)))
-      const pageOf = (position: Position) => withBase((links.value[position.section] ?? '/').split('#')[0]!)
+      // The translations (P-123): the viewer shows the document of the page's locale, the original or a
+      // translation, whose pages bear the paths of the original's chapters; the original keeps its live updates.
+      const translations = input.translations ?? {}
+      const langs = Object.keys(translations)
+      const original = shallowRef(input.doc)
+      const locale = ref('root')
+      const loaded = new Map<string, Promise<IRDocument>>()
+      const documentOf = (lang: string): Promise<IRDocument> => {
+        if (lang === 'root' || !translations[lang]) return Promise.resolve(original.value)
+        let doc = loaded.get(lang)
+        if (!doc) loaded.set(lang, doc = translations[lang]().then(module => module.default))
+        return doc
+      }
+      const pages = computed(() => (locale.value === 'root' ? toPages(current.doc.value) : translationPages(current.doc.value, toPages(original.value))))
+      const prefix = computed(() => (locale.value === 'root' ? '' : `/${locale.value}`))
+      const links = computed(() => sectionLinks(pages.value, prefix.value))
+      const pageOf = (position: Position) => withBase((links.value[position.section] ?? `${prefix.value}/`).split('#')[0]!)
       const current = createViewer(input.doc, {
         renderer: 'web',
-        sectionHref: id => withBase(links.value[id] ?? `/#${id}`),
+        sectionHref: id => withBase(links.value[id] ?? `${prefix.value}/#${id}`),
         // A small link beside each section heading opens the section's slide at the step read (P-74).
         sectionHeading(section, step) {
           if (!slidesBase.value) return null
@@ -277,10 +311,43 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
           window.open(url.href, 'presmium-presenter', 'popup,width=1100,height=720')
         },
       })
+      // A page loads in the document of its locale (on the server too, where pages are rendered by path).
+      router.onBeforePageLoad = async (to) => {
+        // The original as the viewer holds it now, whatever replaced it.
+        if (locale.value === 'root') original.value = current.doc.value
+        const lang = localeOf(new URL(to, 'http://site').pathname, siteData.value.base, langs)
+        const doc = await documentOf(lang)
+        locale.value = lang
+        if (current.doc.value !== doc) current.replace(doc)
+      }
+      // A link to anything but a page of this site (another document of a workspace site, its home page, a
+      // published file such as a directory's file listing) loads that page, rather than the router's 404.
+      const ownPage = (path: string) => {
+        const { base } = siteData.value
+        if (!path.startsWith(base)) return false
+        const lang = localeOf(path, base, langs)
+        let rest = path.slice(base.length + (lang === 'root' ? 0 : lang.length + 1))
+        try {
+          rest = decodeURI(rest)
+        } catch {
+          // As written.
+        }
+        const name = rest === '' || rest === 'index.html' ? 'index' : rest.replace(/\.html$/, '')
+        return toPages(original.value).some(page => page.path === name) || (lang !== 'root' && pages.value.some(page => page.path === name))
+      }
+      router.onBeforeRouteChange = (to) => {
+        if (!inBrowser) return
+        const url = new URL(to, location.href)
+        // The page the router opens first is the one loaded (`/web` is `/web.html` to the router).
+        if (url.origin !== location.origin || samePage(url.pathname, location.pathname) || ownPage(url.pathname)) return
+        location.assign(url.href)
+        return false
+      }
       // Shared states of the deck's windows, kept by title (so both forms meet in a classroom) and base.
       const shared = createSharedStates(input.doc.meta.title)
       installHost(app, createViewerHost(current, { lang: siteData.value.lang, shared }))
       installViewer(app, current)
+      app.provide(PAGES, { pages, prefix })
       app.component('PresmiumPage', PresmiumPage)
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
@@ -295,7 +362,11 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         if (operations) onCleanup(followOperations(current, operations))
       }, { immediate: true })
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
-      followDevServer(current, input.revision, presmium.ir ?? IR_ENDPOINT, (doc) => {
+      // The site title and the sidebar follow the original here, so the config never changes and the page
+      // never reloads; a page of a translation keeps its document.
+      followDevServer(() => original.value, input.revision, presmium.ir ?? IR_ENDPOINT, (doc) => {
+        original.value = doc
+        if (locale.value === 'root') current.replace(doc)
         const site = siteData.value
         const nav = sidebar(doc, toPages(doc))
         if (site.title === doc.meta.title && JSON.stringify(site.themeConfig.sidebar) === JSON.stringify(nav)) return

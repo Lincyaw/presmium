@@ -10,6 +10,12 @@ export function urlPath(path: string): string {
   return encodeURI(path).replace(/[#?]/g, char => encodeURIComponent(char))
 }
 
+/** Whether two paths name the same page, as VitePress's router writes them (with or without `.html` or a final `/`). */
+export function samePage(a: string, b: string): boolean {
+  const page = (path: string) => path.replace(/(?:\.html|\/)$/, '')
+  return page(a) === page(b)
+}
+
 /** Service worker of a web build, at the site root; it keeps pages and search available offline. */
 export const SERVICE_WORKER = 'presmium-sw.js'
 

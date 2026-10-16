@@ -76,7 +76,7 @@ const plugin: PresmiumNodePlugin = {
 - 选择：`presmium build --to <id>`，否则文稿头部 `renderers` 的键，否则全部已安装的渲染端。`web`、`slides`、`notebook` 默认由 `packages/compiler/src/renderers.ts` 的 `DEFAULT_RENDERER_PACKAGES` 找包；其他 ID 要在 `plugins` 中列出该包，或写 `renderers.<id>.package`。
 - `build` 收到的 IR 已去掉 `only` 排除的块；`support` 返回 `none` 的块由编译器列入构建报告；`degraded` 的组件由渲染端渲染其 `fallback`，没有时写一行说明并附网页版链接。
 - `RenderContext`：`deckDir`、`workspaceRoot`、`outDir`（`<out>/<id>`）、`workDir`（`build` 中为 `<文稿>/.presmium/<id>`，渲染端自己创建并保持不入库；`dev` 中等于 `outDir`）、`config`（`renderers.<id>`）、`extensions`（各插件的 `rendererExtensions[<id>]`，已绑定本 `ctx`）与 `extensionFor(node)`、`plugins` 与 `pluginDirs`、`lang`、`renderers`、`base`（声明 `site: true` 的渲染端的站点路径）、`vitePlugins`、`localAsset(source, url)`、`portable(value, from)`、`report`。
-- 发布插件配置时用 `ctx.portable` 把位于 `workspaceRoot` 内的绝对路径改为相对路径，产物不随检出位置变化（`docs/architecture.md` 4.2 节）；块中引用的本地文件用 `ctx.localAsset` 找到并随产物发布；编译时写进产物的文本按 `deckLocale(ctx.lang)`。
+- 发布插件配置时用 `ctx.portable` 把位于 `workspaceRoot` 内的绝对路径改为相对路径，产物不随检出位置变化（`docs/architecture.md` 4.2 节）；块中引用的本地文件用 `ctx.localAsset` 找到并随产物发布：它给出的 `file` 也可以是目录（文稿中链接的子目录，已准备好文件与清单页 `index.html`），所以用 `cpSync(file, target, { recursive: true })` 复制，指向目录的地址写到其中的 `index.html`；原始 HTML 的 `src`、`poster`、`href` 也要经它改写；不能发布的引用由 `localAsset` 自己报告 `presmium.links`，渲染端不必再报（`docs/ir.md` 6.2 节）。网页渲染端另从 `ctx.translations` 得到译本。编译时写进产物的文本按 `deckLocale(ctx.lang)`。
 - 插件组件外面包 `PmBoundary`（错误隔离是渲染端的事，`docs/architecture.md` 5.4 节）；可以只生成工作目录时提供 `prepare(doc, ctx)`。
 - 范例：`packages/render-notebook`（只有 `build`）、`packages/cli/test/fixtures/addons/render/presmium.ts`（最小的 `build` 与 `dev`）。
 

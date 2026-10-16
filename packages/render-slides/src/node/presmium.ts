@@ -10,7 +10,7 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -145,10 +145,14 @@ function viteConfig(ctx: RenderContext): string {
   return `export default { cacheDir: 'node_modules/.vite'${proxy} }\n`
 }
 
-/** Copies the local files the slides show into the deck's `public/`; their names hold their content hash, so a copy is never stale. */
+/**
+ * Copies the local files the slides show into the deck's `public/` (a
+ * directory with its file listing); their names hold their content hash, so
+ * a copy is never stale.
+ */
 async function publish(dir: string, assets: Map<string, string>): Promise<void> {
   for (const [name, file] of assets) {
-    if (!existsSync(join(dir, 'public', name))) await copyFile(file, join(dir, 'public', name))
+    if (!existsSync(join(dir, 'public', name))) await cp(file, join(dir, 'public', name), { recursive: true })
   }
 }
 

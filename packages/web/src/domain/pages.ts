@@ -40,15 +40,37 @@ export function toPages(doc: IRDocument): WebPage[] {
   })
 }
 
-/** Site-relative link of a page. */
-export function pageLink(page: WebPage): string {
-  return page.path === 'index' ? '/' : `/${page.path}.html`
+/**
+ * The pages of a translation (docs/ir.md 2.12): a chapter that opens with
+ * the same section as a chapter of the original takes the path of that
+ * chapter's page, so the language menu, which keeps the path, stays on the
+ * chapter; other chapters keep their own path, unless the original's pages
+ * hold it.
+ */
+export function translationPages(doc: IRDocument, original: readonly WebPage[]): WebPage[] {
+  const pages = toPages(doc)
+  const matched = pages.map(page => original.find(o => o.sections[0] === page.sections[0])?.path)
+  const paths = new Set(matched.filter(path => path !== undefined))
+  return pages.map((page, i) => {
+    let path = matched[i]
+    if (path === undefined) {
+      path = page.path
+      for (let n = 2; paths.has(path); n++) path = `${page.path}-${n}`
+      paths.add(path)
+    }
+    return { ...page, path }
+  })
+}
+
+/** Site-relative link of a page; `prefix` is the path of its locale, e.g. `/en` (docs/ir.md 2.12). */
+export function pageLink(page: WebPage, prefix = ''): string {
+  return page.path === 'index' ? `${prefix}/` : `${prefix}/${page.path}.html`
 }
 
 /** Site-relative link of each section: its page, and its anchor unless it opens the page. */
-export function sectionLinks(pages: readonly WebPage[]): Record<string, string> {
+export function sectionLinks(pages: readonly WebPage[], prefix = ''): Record<string, string> {
   return Object.fromEntries(pages.flatMap(page => page.sections.map((id, i) =>
-    [id, i === 0 ? pageLink(page) : `${pageLink(page)}#${encodeURIComponent(id)}`])))
+    [id, i === 0 ? pageLink(page, prefix) : `${pageLink(page, prefix)}#${encodeURIComponent(id)}`])))
 }
 
 /** An entry of the sidebar of VitePress's default theme. */
@@ -65,12 +87,12 @@ export interface SidebarItem {
  * them as a tree (sections indented under their chapter) rather than as
  * separate groups.
  */
-export function sidebar(doc: IRDocument, pages: readonly WebPage[]): SidebarItem[] {
-  const links = sectionLinks(pages)
+export function sidebar(doc: IRDocument, pages: readonly WebPage[], prefix = ''): SidebarItem[] {
+  const links = sectionLinks(pages, prefix)
   const titles = new Map(doc.sections.map(section => [section.id, section.title]))
   const chapters = pages.map((page): SidebarItem => {
     const items = page.sections.slice(1).map(id => ({ text: titles.get(id) ?? id, link: links[id]! }))
-    return { text: page.title, link: pageLink(page), ...items.length ? { items } : {} }
+    return { text: page.title, link: pageLink(page, prefix), ...items.length ? { items } : {} }
   })
   return [{ items: chapters }]
 }
@@ -81,14 +103,25 @@ export function pageOf(pages: readonly WebPage[], relativePath: string): WebPage
   return pages.find(page => page.path === path)
 }
 
+/** A link of the doc footer to the chapter before or after a page: in the same document, or in the one before or after it in a workspace site. */
+export interface Neighbour {
+  text: string
+  link: string
+}
+
+/** The doc footer's link to a page of the same document and locale. */
+export function neighbour(page: WebPage | undefined, prefix = ''): Neighbour | undefined {
+  return page && { text: page.title, link: pageLink(page, prefix) }
+}
+
 /**
  * The VitePress Markdown file of a page: the IR runtime renders its body,
  * and the default theme's doc footer at its end links the chapters before
  * and after it (`prev`, `next`).
  */
-export function pageMarkdown(page: WebPage, prev?: WebPage, next?: WebPage): string {
-  const neighbour = (other?: WebPage) => (other ? JSON.stringify({ text: other.title, link: pageLink(other) }) : 'false')
-  return ['---', `title: ${JSON.stringify(page.title)}`, 'outline: [2, 3]', `prev: ${neighbour(prev)}`, `next: ${neighbour(next)}`, '---', '', '<PresmiumPage />', ''].join('\n')
+export function pageMarkdown(page: WebPage, prev?: Neighbour, next?: Neighbour): string {
+  const link = (other?: Neighbour) => (other ? JSON.stringify(other) : 'false')
+  return ['---', `title: ${JSON.stringify(page.title)}`, 'outline: [2, 3]', `prev: ${link(prev)}`, `next: ${link(next)}`, '---', '', '<PresmiumPage />', ''].join('\n')
 }
 
 /** A document of the local search index: one per section, as VitePress indexes a page per heading. */
@@ -101,14 +134,19 @@ export interface SearchDocument {
   text: string
 }
 
-/** The search documents of a document: each section's title and text, linked under the site `base`. */
-export function searchDocuments(doc: IRDocument, base: string): SearchDocument[] {
-  return toPages(doc).flatMap((page) => {
+/**
+ * The search documents of a document: each section's title and text, linked
+ * under `base` (the site's, or that of a locale or of another document of a
+ * workspace site) on its page of `pages`. `titles` come first among the
+ * headings of every section (the title of another document of the site).
+ */
+export function searchDocuments(doc: IRDocument, base: string, pages: readonly WebPage[] = toPages(doc), titles: string[] = []): SearchDocument[] {
+  return pages.flatMap((page) => {
     const path = page.path === 'index' ? '' : `${page.path}.html`
     return page.sections.flatMap(id => doc.sections.filter(s => s.id === id)).map((section, i) => ({
       id: `${base}${path}#${section.id}`,
       title: section.title,
-      titles: i === 0 ? [] : [page.title],
+      titles: [...titles, ...i === 0 ? [] : [page.title]],
       text: section.blocks.map(blockText).filter(Boolean).join('\n'),
     }))
   })

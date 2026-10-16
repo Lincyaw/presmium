@@ -20,9 +20,26 @@ export interface MarkdownText {
   degraded: string[]
 }
 
-/** `urls` maps the URLs of images and links (`LowerOptions.urls`); links to labels keep their text. */
+/** The attributes of raw HTML whose URLs the notebook publishes (docs/ir.md 6.2). */
+const URL_ATTRIBUTES = /(\s(?:src|poster|href)\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi
+
+/** Raw HTML with the URLs of its `src`, `poster` and `href` attributes mapped by `urls`. */
+function rawHtml(node: MdastNode, urls: NonNullable<LowerOptions['urls']>): MdastNode {
+  if (node.type === 'html' && typeof node.value === 'string') {
+    return {
+      ...node,
+      value: node.value.replace(URL_ATTRIBUTES, (whole, attribute: string, double?: string, single?: string, bare?: string) => {
+        const mapped = urls((double ?? single ?? bare ?? '').replace(/&amp;/g, '&'), 'link')
+        return mapped === undefined ? whole : `${attribute}"${mapped.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`
+      }),
+    }
+  }
+  return node.children ? { ...node, children: node.children.map(child => rawHtml(child, urls)) } : node
+}
+
+/** `urls` maps the URLs of images, links and raw HTML (`LowerOptions.urls`); links to labels keep their text. */
 export function toMarkdown(mdast: MdastNode, urls?: LowerOptions['urls']): MarkdownText {
-  const lowered = lowerMyst(mdast, { urls })
+  const lowered = lowerMyst(urls ? rawHtml(mdast, urls) : mdast, { urls })
   const problems: string[] = []
   const parts = (lowered.mdast.children ?? []).map((block) => {
     const file = new VFile()

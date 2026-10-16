@@ -406,6 +406,7 @@ translationOf: { entry: lecture.md, digest: 3f9a…c2 }
 - 译本是同一目录中的另一个入口文件，插件与渲染端配置取自原文，章节标签与原文相同，以便两种语言互相跳转。
 - `presmium build` 同时编译原文与译本；网页渲染端用 VitePress 的 `locales` 把译本放在 `/<语言>/` 下，页面上可以切换语言，切换后停在同一章节。幻灯片与 notebook 只构建原文。
 - `digest` 是原文的摘要：原文入口及其 `{include}` 的文件规范化后的 sha256（只看内容，不看路径）。原文改动后 `presmium check` 报告译本过期（`presmium.translations`，警告级），提示中给出新的摘要，译者核对后写回译本头部。
+- 实现（WP-86）：摘要是原文标题与各文件正文的 sha256（十六进制 64 位）：文件依次为入口与 IR 中出现的被引入文件（按出现的顺序），各去掉 BOM 与头部，换行统一为 `\n`，去掉末尾空白，文件之间以 `\0` 分隔；所以只改头部的其他字段（如增加一个译本）不使译本过期。编译原文时检查它声明的每个译本：不在文稿目录中（按真实路径，指向别处的符号链接不算）的报在原文头部该行；没有 `translationOf` 的、`translationOf.entry` 指的不是这份原文的、摘要不同的报在译本的头部（摘要不同时在 `digest` 一行），消息给出新的摘要。网页渲染端所在的 `presmium build` 与 `presmium dev` 中，编译器以原文头部的 `plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`checks` 与译本自己的其余头部编译每个译本（`translations.ts` 在原文旁写一个临时入口 `.presmium-translation.<语言>.md`，以 `{include}` 引入译本，编译后删除；块的源码位置仍是译本文件），交给网页渲染端的 `RenderContext.translations`；译本的诊断随构建报告给出。译本的章与原文的章以第一个章节的 ID 对应，取原文那一页的路径，语言菜单（VitePress 的 `i18nRouting`）因此停在同一章同一节；搜索框按语言各有索引。`presmium dev` 中译本随原文重新编译，并监视译本的文件；译本的页面在重新载入时得到新的内容。工作区站点（`presmium build` 在工作区根目录、`presmium serve`）还不构建文档的译本：这要 `SiteDocument` 带上译本（契约的增补），已在 WP-86 的交付报告中提出。
 
 ### 2.13 先预测再揭示（P-68）
 
@@ -673,12 +674,14 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - **目录**：链接到本地目录时，网页与幻灯片生成一个文件清单页 `media/<哈希>-<目录名>/index.html`（列出目录中的文件，每个文件可以下载），notebook 把目录复制到 `media/` 并链接到它。
 - **原始 HTML**：原始 HTML 中 `src`、`poster`、`href` 引用的本地文件同样发布并改写地址。
 - 无法发布的本地引用（文件不存在、指向文稿所在仓库之外）是警告级诊断，带源码位置；`presmium check` 的 `presmium.links` 报告同样的问题（2.11 节）。
+- 实现（WP-86）：`RenderContext.localAsset` 对目录也给出结果：文稿目录之内（不是文稿目录本身，也不含 `lecture.md`，所以工作区中指向另一份文档的相对链接仍是链接）的目录，在 `<文稿>/.presmium/files/<哈希>-<目录名>/` 中准备一份副本（目录中的普通文件，不含隐藏文件、`node_modules` 与符号链接；哈希取路径与内容）与文件清单页 `index.html`（按文稿语言，每个文件带 `download`；目录自己有 `index.html` 时不写），渲染端像发布文件一样复制它：网页链接到 `<base>media/<哈希>-<目录名>/index.html`，幻灯片到 `<base><哈希>-<目录名>/index.html`，notebook 到 `media/<哈希>-<目录名>/`。网页中指向站内页面之外（文件清单页、工作区中的其他文档）的链接整页载入（VitePress 路由的 `onBeforeRouteChange`），不显示路由的 404。幻灯片中原始 HTML 的 `src`、`poster` 与图片一样写成从根起的路径（Vue 的模板编译按 `public/` 解析并加上站点路径），`href` 带站点路径。诊断的检查 ID 是 `presmium.links`，行号是块中写有该地址的行；“仓库之外”只对 git 仓库中的文稿适用（不在仓库中的文稿没有这条限制），工作区站点中是工作区根目录之外；以 `/` 开头而 `public/` 中没有的地址是站内路径，不报告。同一引用在几个渲染端中只报告一次。
 
 ### 6.3 讲授渲染端、工作区站点与译本
 
 - **`lecture`**：讲授插件提供的站点渲染端。它把自己的视图（`viewFor(doc, 'lecture')`）编为讲授计划（每一步要说的文字与提示标记，2.9 节），经 `RenderContext.service(SPEECH)` 合成（先查合成缓存，命中的段落不重新合成，全部命中时不向引擎发请求；只为缺失的段落调用引擎并写入缓存；缺失又没有可用的引擎时报错并指出段落），写出 `dist/lecture/<id>/track.json`、音频片段与 `index.json`（讲授列表）；文稿目录 `lectures/` 中录制的讲授轨与音频一并发布。网页的讲授视图从同一站点的 `../lecture/` 读取，分开部署时在 `presmium.lecture.url` 中写明地址。录制的讲授（WP-77）发布为 `dist/lecture/<id>/track.json`、它的本地音频与录像（`audio/`、`video/`，外部地址的不复制）、`captions.<语言>.vtt`（讲授轨的语言与每种译文各一份，过期的译文带 `NOTE stale` 并给出警告）、`chapters.vtt` 与 `events.vtt`；`index.json` 的每项为 `{ id, lang, voice, duration, captions }`。`presmium dev` 中讲授视图读服务端的路由（9.4 节），这个渲染端的开发服务器只打印路由的地址。
 - **工作区站点**：网页渲染端实现 `buildSite` 与 `devSite`（`architecture.md` 4.10 节）：首页是文档列表（搜索与标签），或工作区配置指定的一份文档；每份文档在 `/<文档目录>/` 下，内部仍按章分页；搜索索引包含全部文档；页末的上一章与下一章跨越文档，按工作区配置中的顺序。
 - **译本**：网页渲染端把 `RenderContext.translations` 中的每个译本构建为 VitePress 的一个 locale（`/<语言>/`），语言菜单在两种语言的同一章节之间切换。
+- **实现（WP-86）**：站点外壳写进生成的 VitePress 配置：`themeConfig.nav`、`themeConfig.footer`、`description`、`head`（`og:type`、`og:description`、`og:image`；`og:title` 取每页的标题，由 `transformHead` 在构建时写入）、`sitemap`（`hostname` 加上站点路径）。默认主题在有侧栏的页面上不显示页脚，章节页面另在 `doc-after` 插槽中显示同样的页脚。`head.image` 是本地文件时随站点发布在 `media/` 下，有 `sitemap.hostname` 时写成完整地址。工作区站点：工作区配置 `site` 的 `nav`、`footer`、`head`、`sitemap` 作用于首页与每份文档（文档页面中的导航链接改写为相对于页面的路径，因为 VitePress 给站内链接加上的是文档自己的 `base`）；整个站点只有首页项目生成 `sitemap.xml`，以 `transformItems` 加入每份文档的页面；`site.home` 指定首页文档时，首页 `index.html` 以头部的刷新与页面脚本转到 `/<文档目录>/`，文档列表改在 `documents.html`，文档页面导航栏中的“文档列表”链接到它。每份文档的搜索索引另含其他文档的章节（结果的标题前加上那份文档的标题），文档的第一页的“上一章”是前一份文档的最后一章，最后一页的“下一章”是后一份文档的第一页（`presmium serve` 中按已编译的文档给出，没有编译的给出文档目录与标题）。
 
 ### 6.4 行内角色
 

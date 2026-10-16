@@ -46,10 +46,11 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 - `plugins` 中没有列出的插件，其指令报错 `unknown directive`。总是列出 `@presmium/slidev-addon-core`（幻灯片形态的宿主适配，插件组件与静态导出靠它）；讲台功能（黑屏、冻结、圈画、脚注就近显示）来自 `@presmium/slidev-addon-stage`。
 - `lang` 是文稿语言的唯一来源：两种形态的 `<html lang>`、界面语言、编译时写进产物的文字（notebook 的说明等）都按它；渲染端不能另设语言。Presmium 只有中文与英文文本，其他语言（如 `fr`）的界面跟随浏览器的语言，再不行用英文。
-- `renderers.web`：`base`（站点路径）、`port`（开发服务器端口）。`renderers.slides`：Slidev 文稿头部的选项（如 `theme`、`routerMode`、`exportFilename`），另有 `base`、`port`、`addons`。`renderers.notebook`：`kernel`（默认 `python3`，与内核同语言的代码成为代码单元格）、`webUrl`（notebook 显示不了的组件链接到网页版；不写而同时构建网页时用相对链接 `../web/<页>#<章节>`）。任一渲染端都可以用 `package` 换成另一个包。
+- `renderers.web`：`base`（站点路径）、`port`（开发服务器端口）；站点外壳（P-78）：`nav: [{ text, link }]`（顶部导航，`link` 为站内路径如 `/chapter2.html` 或完整地址，也可以 `{ text, items: [...] }` 成为下拉菜单）、`footer: { message, copyright }`（每页底部，可含行内 HTML）、`head: { description, image }`（页面的描述与 `og:title`、`og:description`、`og:image`；`image` 可以是文稿中的本地文件）、`sitemap: { hostname }`（生成 `sitemap.xml`，地址带上站点路径）。`renderers.slides`：Slidev 文稿头部的选项（如 `theme`、`routerMode`、`exportFilename`），另有 `base`、`port`、`addons`。`renderers.notebook`：`kernel`（默认 `python3`，与内核同语言的代码成为代码单元格）、`webUrl`（notebook 显示不了的组件链接到网页版；不写而同时构建网页时用相对链接 `../web/<页>#<章节>`）。任一渲染端都可以用 `package` 换成另一个包。
 - `base` 的默认值：同时构建网页与幻灯片、两者都不写 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体就是一个站点；只构建一种时为 `/`。
 - 不写 `renderers` 时构建全部已安装的渲染端。
 - 入口文件以 UTF-8 BOM 开头（Windows 记事本）也没关系。
+- 译本（P-123）：原文头部写 `translations: { en: lecture.en.md }`（语言到同一目录中的另一个入口文件）。译本自己的头部只写 `title`、`lang` 与 `translationOf: { entry: lecture.md, digest: <摘要> }`，插件与渲染端配置取自原文；章节标签与原文相同（原文没有写标签的章节，译本照原文由标题生成的 ID 写上标签），语言菜单才能停在同一章。`presmium build` 把译本放在网页的 `/<语言>/` 下（幻灯片与 notebook 只有原文）。原文改动后 `presmium check` 警告译本过期（`presmium.translations`，位置在译本的 `digest` 一行）并给出新的摘要：核对译文后把它写回 `digest`。新写的译本先随便写一个摘要，检查会给出正确的。
 
 ## 3. 章节
 
@@ -115,6 +116,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件；不同文件可以都用 `[^1]`，每个文件的脚注各自从 1 编号。
 - 标签：标题前的 `(id)=` 给章节 ID；块前的 `(id)=` 或指令的 `:label: id` 给块 ID（章节内唯一）。`{question-box}` 的 `:target:` 和课堂笔记依赖块 ID；没有标签的块 ID 随前面插入同类块而变化。
 - 交叉引用：`` {ref}`merge` `` 引用章节（文字为章节标题），`{numref}`、`{eq}` 引用带标签的图、表、公式；自己写了文字的引用保留文字。目标不存在时警告 `presmium.references`。
+- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；隐藏文件与 `node_modules` 不发布，含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
 
 ## 8. 插件指令
 
@@ -158,7 +160,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录 |
 | `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口 |
 | `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式，首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。默认只监听本机（`--port`，默认 4310）；`--host` 其他地址时必须在登录代理之后（`--trust-proxy-from` 或 `PRESMIUM_PROXY_SECRET`），那是共享部署，见 `templates/workspace/compose/README.md` |
-| `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下，各自可读、可搜索；在文档目录中执行则只构建这一份 |
+| `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下；每份文档的搜索框也搜得到其他文档，第一页与最后一页的上一章、下一章接到配置顺序中前后的文档。工作区配置的 `site` 有与 `renderers.web` 相同的 `nav`（链接从站点根写起，如 `/week1/`）、`footer`、`head`、`sitemap`（整个站点一个 `sitemap.xml`），`home: <文档目录>` 让首页转到那份文档（文档列表在 `documents.html`）；在文档目录中执行则只构建这一份 |
 
 常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。多份文档组成的课程用工作区：`presmium serve` 编辑与预览，`presmium build` 在根目录构建整个站点。`presmium serve` 只加载运营者在 `settings.presmium.workspace.plugins` 中列出、装在工作区根目录的插件；文稿以相对路径引用或只装在文稿目录 `node_modules` 中的插件与渲染端（`renderers.<id>.package`）被拒绝（`presmium.plugins` 错误），`presmium dev`、`build`、`check` 照旧接受它们。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
 
@@ -209,6 +211,9 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 | `presmium.secrets` `… looks like a credential` | 从头部删掉它，改用环境变量 |
 | `presmium.speech` `presmium.speech.engines.x … is not used` | 文稿只写引擎的 ID（`presmium.speech: { engine: volcengine, transcribe: groq }`），删掉 `url`、`keyEnv` 等；引擎由运营者在环境变量中定义（`PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER`、可选的 `_KEY`；火山引擎只要 `PRESMIUM_SPEECH_VOLCENGINE_KEY`） |
 | `presmium.references` `target "…" not found` | 给目标加标签，或改正引用 |
+| `presmium.links` `… is not published: there is no such file`（构建报告） | 路径相对于写链接的文件；改正路径或补上文件 |
+| `presmium.links` `… is not published: the file lies outside the deck's repository`（工作区站点中为 `outside the workspace`） | 把文件放进文稿所在的仓库（工作区） |
+| `presmium.translations` `translation "en" (…) is out of date` | 核对译本与原文的差异，把消息中的新摘要写进译本头部 `translationOf.digest` |
 | `presmium.classroom` `{quiz} needs at least two options` | 选项写成任务列表 `- [ ]`、`- [x]` |
 
 ## 13. 提交哪些文件
