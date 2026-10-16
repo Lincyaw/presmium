@@ -653,6 +653,12 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **网页的服务端渲染**：插件组件在挂载之前显示它的 `fallback`（`packages/web` 的 `clientOnly`），所以 `fallback` 中的揭示内容放在关闭的 `<details>` 中，不会在挂载之前直接显示；挂载后组件取代它。
 - **课堂服务的写入规则**：学习者的写入只要键按 `:` 分开后含自己的参与者 ID、值的 `participant` 是自己即可（`packages/classroom-server`），`predictions` 集合以 `<章节>/<块>:<参与者>` 为键，不需要改服务端。
 - **未覆盖的地方**：网页演讲者视图的讲解列表与滚动叙事视图的讲解轨只读章节顶层的讲解块。移入 `PmPredict` 的讲解因此不在演讲者视图的讲解列表中，在滚动叙事视图中也不在讲解轨上，而是保存预测后显示在舞台上的组件里（放映画面与幻灯片的演讲者备注不受影响）；由 `@presmium/viewer` 按 `irBlocks` 读取讲解即可补上，留给验收者决定（交付报告中列出）。
+**WP-77 开始时的验证（2026-10-16，Mediabunny 1.61.3、Playwright 1.64.1 的 Chromium 与 Firefox，假麦克风与假摄像头；WebKit 在本机无法启动）**的结论：
+
+- **Ogg/Opus 录音**：Mediabunny 的 `MediaStreamAudioTrackSource`（WebCodecs 的 `AudioEncoder`，`codec: 'opus'`）加 `OggOutputFormat`（`maximumPageDuration: 1`）与 `StreamTarget`，在 Chromium 与 Firefox 中都可用：`canEncodeAudio('opus')` 为真，4 秒的录音得到时长为 4.0 秒左右、可以跳转（`seekable` 为整段，跳到 2 秒后 `currentTime` 为 2）的文件；写入全部按顺序追加（每个块的位置等于此前的长度），开始 2 秒时已有数据写出，所以每 5 秒上传一块、在服务端按位置写入即可。码率用 `new Quality({ bitrate: 24_000 })`（`new Quality(24000)` 的数字是质量系数，Chromium 报“Infinity bps 不支持”）。Firefox 的假设备不应用 `echoCancellation`、`noiseSuppression`（`getSettings()` 为 false），Chromium 应用。
+- **MediaRecorder 的退路**：两种浏览器的 `audio/webm` 录音时长都是 `Infinity`，Firefox 中还不能跳转；Chromium 不支持 `audio/ogg`，Firefox 支持。所以只在浏览器没有 Opus 的 `AudioEncoder` 时退回 MediaRecorder（优先 `audio/ogg`，其次 `audio/webm`、`audio/mp4`），讲授轨的 `audio[].duration` 取录制时的时钟，回放的时钟不依赖文件报告的时长；不做 WebM 的时长修正（重新封装）。Safari 26 的 WebCodecs Opus 编码没有实测（WebKit 在本机无法启动），由验收者或 WP-89 在 macOS 上补做；不可用时 Safari 走 MediaRecorder 的 `audio/mp4`。
+- **摄像头与屏幕**：`MediaStreamVideoTrackSource`（`getFirstEncodableVideoCodec` 选出 VP9）加 `WebMOutputFormat` 在两种浏览器中得到时长正确、可以跳转的 WebM；收尾时回到文件开头改写头部（写入不按顺序），所以上传的每一块带位置，服务端按位置写入（只允许改写已有的部分或在末尾追加）。
+- **回放**：无头 Chromium 中 `<audio>` 在点击“播放”后正常播放（假的音频输出），2 倍速时媒体时钟一秒走约 1.94 秒；播放被拒绝时时钟退回页面时钟（`MediaClock`），回放照常进行。
 
 ## 12. 包与工作包
 

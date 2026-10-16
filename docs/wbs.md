@@ -655,6 +655,8 @@ P-137 的格式、导出与过期标记属于讲授轨，在这里实现；由 a
 - 同一文件（P-131 的倍速与字幕）：以 2 倍速播放 1 秒后时钟约在 2 秒（相差不超过 0.3 秒）；开启字幕后显示当前语音段的文字。
 - `packages/addon-lecture/test/track.test.ts`：删掉测试讲授轨引用的块后，`presmium check` 以 `presmium.lecture` 报告失效的事件与它的时刻；导出中英两份字幕；改动一句原文后，英文译文导出时被标为过期。
 
+**实际交付**：`@presmium/slidev-addon-lecture`（新）：讲授轨的领域层（`src/domain/`：读写与每项一行的 `track.json`、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、三种 VTT、指针路径的简化、重录一节的拼接）；服务端路由（讲授列表、讲授轨与媒体的读取，录制的开始、文件命名、按位置上传、结束；`ir.md` 9.4 节）；检查项 `presmium.lecture`；站点渲染端 `lecture`（录制的讲授轨、媒体、`captions.<语言>.vtt`、`chapters.vtt`、`events.vtt` 与 `index.json`）；浏览器端的视图 `lecture`、放映视图上的录制与播放图层、`SilentClock` 与 `MediaClock`、`point` 与 `ink` 的报告与重放。引导插件：`spot`、`hint` 的报告（放映视图中的 `s`、`h`）与重放（新的 `src/client/plugin.ts`、`src/client/viewer.ts`、`src/client/adhoc.ts`），driver.js 的层叠样式从组件移到 `spotlight.css`、`hints.css`，没有 `{spotlight}` 的页面上的聚光同样不挡住操作。验收用例在 `e2e/lecture.spec.ts`（测试文稿 `e2e/fixtures/lecture`，其中的 `lectures/demo/track.json` 是回放用的讲授轨，音频由用例在构建前写入）与 `packages/addon-lecture/test/track.test.ts`。与设计不同之处：回放在放映视图上进行（`architecture.md` 4.9 节），先行验证的结论在 `design-v0.7.md` 第 11 节。新增依赖：`mediabunny` 1.61.3（MPL-2.0，`addon-lecture`）。
+
 ### WP-82 语音服务与 gateway 中的语音（M8，P-132、P-133 的服务部分；N-08 中语音的部分；D13 中 gateway 的语音、同意记录与服务提供方）
 
 讲授轨中的转写与重新合成在 WP-83 串起来；这里交付语音服务本身。gateway 的宿主（`presmium gateway`、令牌、挂载）由 WP-73a 建成，本工作包交付语音插件在其中的贡献，并验收 gateway 中的运营者数据（同意记录、服务提供方的名字）。

@@ -1,0 +1,8 @@
+/* Like the spotlight, hint beacons and their popover lie just above the slide, under the host's own layers. */
+.pm-hint-beacon {
+  --driver-hint-size: 32px;
+}
+body .driver-hint.pm-hint-beacon,
+body .driver-popover.pm-hint-popover {
+  z-index: calc(var(--pm-cue-z, 1) + 1);
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@presmium/slidev-addon-lecture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lecture tracks: recording, playback and the lecture renderer (P-90, P-130, P-131, P-137)",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./domain": "./src/domain/index.ts",
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {},
+  "dependencies": {
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "mediabunny": "1.61.3",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/viewer": "workspace:*"
+  }
+}

@@ -673,7 +673,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 
 ### 6.3 讲授渲染端、工作区站点与译本
 
-- **`lecture`**：讲授插件提供的站点渲染端。它把自己的视图（`viewFor(doc, 'lecture')`）编为讲授计划（每一步要说的文字与提示标记，2.9 节），经 `RenderContext.service(SPEECH)` 合成（先查合成缓存，命中的段落不重新合成，全部命中时不向引擎发请求；只为缺失的段落调用引擎并写入缓存；缺失又没有可用的引擎时报错并指出段落），写出 `dist/lecture/<id>/track.json`、音频片段与 `index.json`（讲授列表）；文稿目录 `lectures/` 中录制的讲授轨与音频一并发布。网页的讲授视图从同一站点的 `../lecture/` 读取，分开部署时在 `presmium.lecture.url` 中写明地址。
+- **`lecture`**：讲授插件提供的站点渲染端。它把自己的视图（`viewFor(doc, 'lecture')`）编为讲授计划（每一步要说的文字与提示标记，2.9 节），经 `RenderContext.service(SPEECH)` 合成（先查合成缓存，命中的段落不重新合成，全部命中时不向引擎发请求；只为缺失的段落调用引擎并写入缓存；缺失又没有可用的引擎时报错并指出段落），写出 `dist/lecture/<id>/track.json`、音频片段与 `index.json`（讲授列表）；文稿目录 `lectures/` 中录制的讲授轨与音频一并发布。网页的讲授视图从同一站点的 `../lecture/` 读取，分开部署时在 `presmium.lecture.url` 中写明地址。录制的讲授（WP-77）发布为 `dist/lecture/<id>/track.json`、它的本地音频与录像（`audio/`、`video/`，外部地址的不复制）、`captions.<语言>.vtt`（讲授轨的语言与每种译文各一份，过期的译文带 `NOTE stale` 并给出警告）、`chapters.vtt` 与 `events.vtt`；`index.json` 的每项为 `{ id, lang, voice, duration, captions }`。`presmium dev` 中讲授视图读服务端的路由（9.4 节），这个渲染端的开发服务器只打印路由的地址。
 - **工作区站点**：网页渲染端实现 `buildSite` 与 `devSite`（`architecture.md` 4.10 节）：首页是文档列表（搜索与标签），或工作区配置指定的一份文档；每份文档在 `/<文档目录>/` 下，内部仍按章分页；搜索索引包含全部文档；页末的上一章与下一章跨越文档，按工作区配置中的顺序。
 - **译本**：网页渲染端把 `RenderContext.translations` 中的每个译本构建为 VitePress 的一个 locale（`/<语言>/`），语言菜单在两种语言的同一章节之间切换。
 
@@ -727,7 +727,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `scrolly` | 滚动叙事：上屏内容固定一侧，讲解滚动，步骤随滚动推进 |
 | `present` | 放映：全屏逐章节、逐步骤；另开窗口为演讲者视图（当前步骤的讲解、下一步预告、计时） |
 
-讲授插件另外注册视图 `lecture`（`?view=lecture&track=<id>`）：以讲授轨驱动真实页面的回放（第 9 节），并在放映视图的工具栏中加入录制。编辑模式（工作区提供）中，助手插件给每个块加上批注入口（按 `.pm-block[data-block]` 定位，源码位置取自 IR 中块的 `source`）。
+讲授插件另外注册视图 `lecture`（`?view=lecture&track=<id>`）：以讲授轨驱动真实页面的回放（第 9 节），并在放映视图的工具栏中加入录制。实际实现（WP-77）：回放的“真实页面”就是放映视图，`lecture` 视图把页面切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的一个图层（视图插件只以类型引用 `@presmium/viewer`，自己画不出带章节上下文的幻灯片）；没有 `track` 参数时它列出文稿的讲授供选择。录制同样是放映视图上的图层，只在 `presmium dev` 与 `presmium serve` 中出现（9.4 节）。编辑模式（工作区提供）中，助手插件给每个块加上批注入口（按 `.pm-block[data-block]` 定位，源码位置取自 IR 中块的 `source`）。
 
 视图可插拔：插件包的 `src/client/viewer.ts` 默认导出视图插件 `ViewerPlugin`，通过 `registerView` 注册新视图，通过 `registerNodeRenderer` 为节点类型、`code:<语言>` 或组件名注册渲染器。约定见 `architecture.md` 5.1 节。
 
@@ -802,11 +802,21 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - 任何事件可以带 `at: [语音段 ID, 字偏移]`：时刻由该字的时间决定；改文字、换音色、重新合成某一段后按新的逐字时间重新计算（“改文字、换音色，操作跟着走”）。
 - 插件自己的类型以插件 ID 开头（如 `presmium.classroom.quiz`），由该插件登记重放；回放忽略没有插件重放的类型。
 - 时刻 t 的画面是 t 之前事件的折叠：`state(t) = fold(events ≤ t)`。回放每帧与每次跳转后，经宿主的 `OPERATIONS` 依次重放（跳转时先 `clear`），由此重建导航、聚光、指针与执行结果。
+- 实际的数据（WP-77）：`go` 由播放器去掉 `view` 后重放（回放总在放映视图中）。`spot`、`hint` 的 `block` 写作 `<章节 ID>/<块 ID>`，可加 `lines`（`3-5`、`2,4`，代码行）、`span`（再持续的步数）、`title`、`text`；没有 `block` 与 `selector` 的数据取消它；它持续到位置离开它所在的章节或步骤（加 `span`），所以做出来、依次重放与一次折叠得到同一画面。放映视图中按 `s`、`h` 给指针下的块加上或取消聚光、提示（引导插件报告）。`point` 的 `path` 是 `[毫秒偏移, x, y]`（块内 0 到 1，约 20 Hz 采样，Ramer–Douglas–Peucker 简化，停顿 0.4 秒或满 1 秒报告一段），代码块另带 `line`；录制者把它的时刻记为路径的开始。`ink` 为 `{ block, tool: 'laser' | 'marker', lines }`（代码行）或 `{ block, tool, range: [x0, y0, x1, y1] }`（块内相对坐标），`{ clear: true }` 清除；荧光笔留到清除，激光笔 1.5 秒后消失，跳转时不重现。`run` 的块写作 `section` 与不带章节的 `block`（IR 运行时的报告），漂移检查与回放按 `<section>/<block>` 处理。
 
 ### 9.3 导出与检查
 
 - 导出（只作为交换格式，不作为主存储）：`captions.<语言>.vtt`（每种语言一份，含译文；过期的译文导出时警告）、`chapters.vtt`（由 `mark` 与章节切换生成）、`events.vtt`（元数据轨，每个事件的 JSON）。
 - 检查项 `presmium.lecture`：按块指纹与 IR 哈希报告移动、失效的块与变化的步骤数，分级同锚点（exact、moved、fuzzy、lost）；`{cue}` 的目标不存在；合成缓存缺失又没有可用的引擎（经 `CheckContext.service(SPEECH).engines()` 判断）时指出是哪些段落。回放时丢弃失效的事件并提示。
+- 实际的检查（WP-77）：块指纹是块的文字（代码；Markdown 的文字，不含地址；组件的名字、不含本地文件的属性与子块）的 `fingerprint`，IR 哈希是网页形态显示的全部块的键与指纹的 `fnv1a64`，所以各形态改写的地址不影响它们；哈希相同时不再逐块比较。同一块键、同一指纹为 exact；指纹唯一地出现在另一个键上为 moved，回放跟到新键；块还在但内容变了为 fuzzy；都没有为 lost。`go` 到不存在的章节为 lost，步骤超出章节现在的步数为 fuzzy；`lines` 超出代码现在的行数为 lost；`at` 指向不存在的语音段为 fuzzy。lost 与 fuzzy 是警告，moved 是提示；诊断写明讲授 ID、事件的时刻（`m:ss` 与毫秒）与它在 `track.json` 中的行。
+
+### 9.4 录制与存储（WP-77）
+
+- 放映视图中的录制图层（`presmium dev` 与 `presmium serve` 中）：录制新的讲授，或选一个已有的讲授“重录本节”（只替换当前一节，离开这一节即停止：这一节的事件、语音段与媒体换成新录的，之后的一切按长度之差平移）；可选摄像头与屏幕；激光笔、荧光笔与清除标记。离开放映视图时录制结束并保存。
+- 录音开启回声消除与降噪，经 Mediabunny 的 WebCodecs 路径录为 Ogg/Opus（24 kbps）；没有 Opus 编码器的浏览器退回 MediaRecorder（`audio/ogg`、`audio/webm` 或 `audio/mp4`，时长取录制时的时钟）。摄像头与屏幕录为 WebM。每节每种一个文件：`audio/<章节>.ogg`、`video/<章节>.camera.webm`、`video/<章节>.screen.webm`（同名时加 `-2`）。
+- 服务端的路由（`/__presmium/presmium.lecture/`）：读者可用的 `GET tracks`（讲授列表）、`GET tracks/<id>`（`track.json`）与 `GET tracks/<id>/<audio|video>/<文件>`（支持范围请求）；编辑者可用的 `POST recordings`（`{ track? }`；新讲授的 ID 是录制当天的日期，同一天再录加 `-2`；同时写入忽略媒体的文件）、`POST recordings/<id>/media`（为一节的文件取名）、`PUT recordings/<id>/files/<文件>?at=<位置>`（每 5 秒一块，按位置写入，只能改写已有部分或在末尾追加）与 `POST recordings/<id>/finish`（`{ head, recording, section? }`，写 `track.json` 与媒体的 `sha256`）。
+- 运营者设置 `settings.presmium.lecture.audio`：`ignore`（默认，`lectures/<id>/.gitignore` 忽略 `audio/` 与 `video/`）、`lfs`（`.gitattributes` 把它们交给 LFS）或外部地址的前缀（仍然忽略，讲授轨中的 `src` 写成 `<前缀><id>/<文件>`，由运营者把文件放到那里）。
+- `track.json` 每个字段一行，事件、语音段、媒体与块每项一行，改一个事件只改一行。
 
 ## 10. 工作区配置（P-120 至 P-122）
 

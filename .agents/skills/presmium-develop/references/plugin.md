@@ -157,6 +157,7 @@ export default plugin
     ```
 
 - `components/*.vue`：幻灯片形态由 Slidev 自动注册；网页形态由 `@presmium/web` 按文件名注册（文稿自己的 `components/` 覆盖同名组件；文稿自己的组件以插件 ID `deck` 登记）。
+- 讲授能录下、回放的操作（`docs/ir.md` 9.2 节）：用户做了一件值得重放的事时 `presmiumService(OPERATIONS)?.report({ type, data })`（数据以章节、块 `<章节>/<块>` 与相对坐标为坐标，不用像素）；在内核插件的 `setup` 中 `ctx.tryGet(OPERATIONS)?.onReplay(type, { apply(data, seeking), clear() })` 登记重放，`dispose` 中取消。视觉状态要是“此前的操作”的函数：依次重放与跳转后的一次折叠（`clear()` 后以 `seeking` 为 true 重放）必须得到同一画面。范例：`packages/addon-guide/src/client/adhoc.ts`（`spot`、`hint`）、`packages/addon-lecture/src/client/marks.ts`（`point`、`ink`）。
 - `src/client/viewer.ts`（只用于网页形态）默认导出视图插件 `(ctx) => void`；`ctx` 有 `registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`。只以类型方式引用 `@presmium/viewer`（`import type { ViewerPlugin } from '@presmium/viewer'`）。范例：`packages/addon-stage/src/client/viewer.ts`（动作与图层）、`packages/viewer/test/fixtures/plugin-deck/plugin/src/client/viewer.ts`（视图）。
 
 ## 7. 静态渲染端：扩展与 `fallback`

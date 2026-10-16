@@ -197,4 +197,6 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - `.presmium/drawings/`：幻灯片中的圈画标注。
 - `.presmium/assets/`：本地化的远程图片（如 PlantUML 图），新增一个后要提交。
 
+录制的讲授（`@presmium/slidev-addon-lecture`，见 presmium-present 技能）在文稿目录的 `lectures/<id>/` 中：提交 `track.json`（讲授轨：语音段与操作，每项一行，便于比较差异）；`audio/`、`video/` 默认被该目录的 `.gitignore` 忽略（运营者设置决定是否交给 git LFS）。讲义改了讲授引用的块时，`presmium check` 的 `presmium.lecture` 报告失效的操作；要长期回放的块写标签 `(名字)=`。
+
 不提交：`dist/`（构建产物）、`.presmium/web`、`.presmium/slides`、`.presmium/dev` 等渲染端工作目录。文稿在别的 git 仓库中时，把本仓库根目录 `.gitignore` 中关于 `.presmium` 的几行复制过去。

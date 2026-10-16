@@ -1253,6 +1253,8 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
 
+实际交付（WP-77）：引导插件新增内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@presmium/slidev-addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。与设计不同之处：视图插件只以类型引用 `@presmium/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。若以后要独立的讲授视图，需要视图插件的上下文提供放映视图的组件或章节上下文（只增加，由验收者决定）。`run` 的重放没有 `clear`（`packages/viewer/src/code.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
+
 ### 4.10 IR 与渲染端的增补
 
 `packages/kernel/src/ir.ts`：
@@ -1518,7 +1520,7 @@ v0.8 的外部服务一律用说同一协议的真实实现来测试，不 mock 
 | gateway | `presmium gateway` 的真实进程：模型代理的上游是测试起的 Messages 兼容 HTTP 监听器，语音的上游是假引擎，远端环境的上游是 compose 模板的 Jupyter；用例检查上游收到的凭据、serve 与 agent-host 的环境中没有凭据，以及限定令牌在会话结束后得到 401 |
 | 修改审阅 | git 实现：临时目录中的真实 git 仓库；deltabox 实现：真实的 `deltabox-lite`（Node 绑定），不满足条件（平台、glibc、FUSE、Landlock）时跳过并说明原因 |
 | 语音 | 确定性的假引擎（`presmium-speech fake`）：真实的 HTTP 服务，同一协议，测试经 `PRESMIUM_SPEECH_FAKE_URL` 与 `PRESMIUM_SPEECH_FAKE_PROVIDER=Presmium fake` 把它定义为引擎 `fake`（与真实引擎同一条配置路径）；中文每字 220 ms、拉丁字母每字 60 ms、词间 80 ms，合成的 WAV 中嵌入文字与音色，合成后再转写可以精确往返；音色列表中有一个克隆音色，用于同意记录的用例；用例数它收到的请求，验证缓存命中时不再合成。火山引擎与 Groq 的冒烟用例只在设置了 `PRESMIUM_TEST_VOLCENGINE_KEY`、`PRESMIUM_TEST_GROQ_KEY` 时运行 |
-| 讲授 | 录制：Chromium 的假麦克风播放假引擎合成的音频（`--use-fake-ui-for-media-stream`、`--use-fake-device-for-media-stream`、`--use-file-for-fake-audio-capture=<wav>%noloop`，以 `test.use({ launchOptions })` 只加在讲授的用例上），讲授轨中有 `go` 与 `point`，回放到时刻 t 显示正确的章节与步骤；脚本化：用假引擎构建测试讲义，检查片段、VTT 与提示标记的时刻 |
+| 讲授 | 录制：Chromium 的假麦克风播放假引擎合成的音频（`--use-fake-ui-for-media-stream`、`--use-fake-device-for-media-stream`、`--use-file-for-fake-audio-capture=<wav>%noloop`，以 `test.use({ launchOptions })` 只加在讲授的用例上），讲授轨中有 `go` 与 `point`，回放到时刻 t 显示正确的章节与步骤（WP-77 的 `e2e/lecture.spec.ts` 用假设备自带的音调与假摄像头，不加 `--use-file-for-fake-audio-capture`：假引擎由同时进行的 WP-82 交付；回放的测试讲授轨带一段构建前写入的静音 WAV，所以走 `MediaClock`）；脚本化：用假引擎构建测试讲义，检查片段、VTT 与提示标记的时刻 |
 | 工作区 | 临时目录中的真实 git 仓库：文档操作与撤销各形成正确的提交（读 `git log` 与尾注）；部署模板的冒烟用例需要 Docker，没有时跳过 |
 
 服务端的用例（WP-73a）：`packages/server/test/server.test.ts` 对测试文稿运行 `presmium dev`；`presmium serve` 由 WP-79 交付，在那之前 `serve` 模式的用例由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 启动（以子进程调用真实的 `startServer`，文档用真实的编译器编译），`e2e/server.spec.ts` 的所有者控制台用例同样用它，并在前面放一个测试用的登录代理（保留 `Host`，加上共享密钥与身份）。浏览器不允许 `fetch` 设置 `Host`，Node 端的用例用 `node:http` 发送原样的请求头。
@@ -1935,7 +1937,7 @@ serve 为每个 agent 会话向 gateway 签发一个只含 `presmium.assistant` 
 | Runno（`@runno/wasi` 等） | 当前版本 | MIT | 浏览器内的 WASI 运行时与 C、C++、Ruby、SQLite 的二进制；Node 端用同一份二进制（先行验证） | addon-exec-wasi |
 | jax-js（`@jax-js/jax`、`@jax-js/optax`） | 0.1 | MIT | JS/TS 中的张量代码与自动微分，WebGPU 后端；按需加载 | addon-exec-webgpu |
 | playwright-chromium | 与仓库一致 | Apache-2.0 | 构建时在 Chromium 中录制 WebGPU 输出；导出讲授视频 | addon-exec-webgpu、addon-lecture |
-| Mediabunny（`mediabunny`） | 1.6x | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs）；导出视频时合成音视频；`@mediabunny/server` 附带的 FFmpeg 的许可证先行验证 | addon-lecture |
+| Mediabunny（`mediabunny`） | 1.61.3（WP-77 精确固定） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时合成音视频；`@mediabunny/server` 附带的 FFmpeg 的许可证先行验证 | addon-lecture |
 | simple-git | 已用 | MIT | 修改历史的提交、撤销与按尾注筛选 | workspace |
 | `@hono/node-server` | 当前版本 | MIT | Node 请求与 Fetch API 之间的转换 | server |
 | http-proxy-3 | 当前版本 | MIT | HTTP 与 WebSocket 反向代理（远端环境、工作区站点） | server |
