@@ -14,3 +14,10 @@ onBeforeUnmount(() => unregister?.())
 <template>
   <span v-click="scope.step(step)" class="pm-step-mark" aria-hidden="true" />
 </template>
+
+<style scoped>
+/* A mark has no box: in the grid of a stepwise run it would take a cell of its own (R-27). */
+.pm-step-mark {
+  display: none;
+}
+</style>

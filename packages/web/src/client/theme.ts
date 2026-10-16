@@ -8,7 +8,7 @@ import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, watch } from 'vue'
 import { IR_ENDPOINT, offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
@@ -117,6 +117,20 @@ function slidesIcon() {
   ])
 }
 
+/**
+ * The labels that the default theme gives its sidebar and doc footer for
+ * assistive technology, in the deck's language: its configuration has no
+ * option for them (R-72), so they are set once a page has rendered. They are
+ * found by the ids the theme gives them (docs/architecture.md 9.1).
+ */
+function localizeHiddenLabels(): void {
+  const t = WEB_MESSAGES[currentLocale()]
+  for (const [id, text] of [['sidebar-aria-label', t.sidebarNav], ['doc-footer-aria-label', t.pager]] as const) {
+    const label = document.getElementById(id)
+    if (label && label.textContent !== text) label.textContent = text
+  }
+}
+
 /** Base URL of the slides form: configured, else the `slides` directory next to the site; none without a slides form. Browser only. */
 const slidesBase = ref<string>()
 /** Settles when the viewer plugins are installed, so their views can be opened by `?view=`. */
@@ -134,8 +148,10 @@ const Layout = defineComponent({
   name: 'PresmiumLayout',
   setup() {
     const viewer = useViewer()
-    const { theme } = useData()
+    const { theme, page } = useData()
     onMounted(async () => {
+      localizeHiddenLabels()
+      watch(() => page.value.relativePath, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
       const form: FormOptions = theme.value.presmium?.form ?? {}
       if (form.slides) slidesBase.value = form.slidesUrl ?? new URL('../slides', new URL(withBase('/'), location.href)).href
       const ask = requested(location.search, viewer.doc.value)

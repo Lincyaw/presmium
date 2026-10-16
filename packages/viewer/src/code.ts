@@ -59,7 +59,8 @@ export const CodeView = defineComponent({
       if (!tree.value) return undefined
       const marked = lines.value
       lineElements(tree.value).forEach((line, i) => {
-        line.properties.className = marked.has(i + 1) ? ['line', 'highlighted'] : ['line']
+        // Shiki's tree names the property `class`, as HTML does; a `className` beside it would be lost.
+        line.properties.class = marked.has(i + 1) ? 'line highlighted' : 'line'
       })
       return toHtml(tree.value)
     })

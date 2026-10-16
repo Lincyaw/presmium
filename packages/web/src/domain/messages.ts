@@ -8,12 +8,17 @@ export const WEB_MESSAGES = {
     /** The short label of that link beside a section heading. */
     slides: '幻灯片',
     readOnWeb: '在网页中阅读',
+    /** The hidden labels of the default theme's sidebar and doc footer, which its configuration has no option for. */
+    sidebarNav: '侧边栏导航',
+    pager: '翻页',
   },
   'en': {
     viewMenu: 'View',
     openInSlides: 'Open in the slides',
     slides: 'Slides',
     readOnWeb: 'Read on the web',
+    sidebarNav: 'Sidebar Navigation',
+    pager: 'Pager',
   },
 } satisfies Record<Locale, unknown>
 
@@ -22,7 +27,8 @@ export const WEB_MESSAGES = {
  * language: every label its configuration documents; English ones are
  * VitePress's own. The doc footer links the chapters before and after a
  * page. VitePress has no option for the hidden labels of its sidebar
- * ("Sidebar Navigation") and doc footer ("Pager"): they stay English.
+ * ("Sidebar Navigation") and doc footer ("Pager"): the theme sets them in
+ * the browser (`WEB_MESSAGES`).
  */
 export const SITE_LABELS = {
   'zh-CN': {
