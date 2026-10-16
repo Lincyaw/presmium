@@ -676,6 +676,15 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **确认策略**：服务端的确认策略按种类生效，`approvals.operate: allow` 也会放行编译确认，所以 SHARED 且 `compile: approve` 时工作区把交给服务端的 `operate` 改为 `ask` 并记日志。
 - **compose**：`node:22-trixie-slim` 的 glibc 为 2.41，没有 Python 与 git（镜像另装）；compose 的文件型 `secrets` 以主机文件的属主与权限挂载，主机上 0600 的文件在容器中只有 root 可读，正合“以 root 读取后降权”。oauth2-proxy 只能经 alpha 配置添加固定的请求头，所以模板以它在 `edge` 上的固定地址让 serve 信任它（`--trust-proxy-from`），共享密钥仍可用于其他登录代理。镜像的构建上下文是已 `pnpm install` 的检出（pnpm 的符号链接都是相对的），`.dockerignore` 不能写 `**/dist`（会去掉依赖包自己的 `dist/`）。
 
+**WP-90 开始时的验证（2026-10-16，deltabox-lite 0.1.1（npm 包与 `deltabox-lite-linux-x64`）、Node 22.22；Linux 7.0、x86_64、ext4、glibc 2.39、Landlock ABI 8、`/dev/fuse`）**的结论：
+
+- **Node 绑定**：`loadNative()` 在只有 `PATH`、`HOME` 与 `DELTABOX_STATE_DIR` 的进程中能加载（约 5 ms）。`NativeDeltabox` 的构造参数里项目目录是固定的，所以每个项目（文档目录、运行目录）一个实例；`startSession` 的策略是 TOML 文件的路径，会话的每次操作都重新读它。cbcow-through 以 `require_fs_mode` 启动约 70 ms，`isolation_provider` 为 sandlock，会话信息中没有 `degraded_protections`；预热会话中一次 Python 运行约 50 ms，`abort` 约 1 ms，停止约 130 ms。
+- **可用性的判断**：辅助进程在临时项目上以 `require_fs_mode` 启动会话、检查 `degraded_protections`，再 `exec` 一次 `true`（sandlock 能启动命令），约 250 ms；经 jiti 启动 TypeScript 的辅助进程约 310 ms。结果按开机与包的版本缓存，满足条件的主机在同一次开机中不再探测。
+- **进程**：deltabox 的文件系统 helper、命令 helper 与 sandlock worker 都是调用绑定的进程的子进程（不脱离为守护进程），会话的命令是 worker 的子进程并属于 worker 的进程组；它们的命令行含会话 ID 的目录，所以能按会话找到。被执行的代码沿父进程链只读得到 worker（环境里只有辅助进程的三个变量），再往上与 `/proc` 中其他进程的环境都读不到；连 `127.0.0.1` 的监听器与 Docker 的套接字都得到 `PermissionError`，写文稿目录得到 `PermissionError`。
+- **绑定的细节**：`exec` 没有取消，超时与中止要由调用者结束 worker 之下的进程（`exec` 随即返回，`exit_code` 为 null，worker 保持预热）；`readFile` 拒绝穿过符号链接的路径（`path crosses a symlink`）；`writeFile` 会建立中间目录，写入进入日志，`abort` 把它删除；直接写在会话背后的项目目录中的文件不进日志，`abort` 不删。`stopSession` 之后会话的运行时目录（`/tmp/deltabox-<uid>/deltabox-lite/<会话>/`）与项目在 `projects/<路径的 SHA-256 前 16 位>/` 的登记留在原处。检查点到 105 个时 `diff --from` 第一个仍可用（设计仍按 100 个处理）。
+- **审阅**：不在沙箱中的进程（测试与 agent 的写法）经视图的写入出现在 `diff` 中，`abort` 恢复它们并删除新建的文件；同一项目再开会话得到 `session busy`；结束整个进程树（插件的进程、辅助进程与 deltabox 的 helper）之后，另一个进程以记录的会话 ID 对同一项目 `abort` 恢复了文档目录（helper 由 deltabox 从日志重新启动）。
+- **macOS**：没有主机，没有验证；插件在 macOS 上不探测也不登记（第 43 条），由 WP-89 补做。
+
 ## 12. 包与工作包
 
 | 包 | 新建或修改 | 工作包 |

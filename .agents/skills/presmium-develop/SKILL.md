@@ -22,6 +22,7 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 宿主适配 | `host`、`addon-core`、`web` | 形态无关的宿主接口（`@presmium/host`）及 Slidev（`@presmium/slidev-addon-core`）、VitePress（`@presmium/web`）两个实现 |
 | 讲台 | `addon-stage` | 黑屏、冻结、圈画、脚注就近 |
 | 代码引用 | `addon-code` | `{code-ref}`、锚点解析、锁定、漂移、永久链接 |
+| 修改审阅与进程沙箱 | `addon-deltabox` | 运营者插件（只有 Node 端，随 CLI 安装，不必列出）：主机满足条件（Linux、glibc 2.39、FUSE 与 Landlock）时以 deltabox-lite 登记 `PROCESS_SANDBOX`（编译时的 Python 与 JavaScript 默认在其中运行）与 `CHANGE_REVIEW`；Node 绑定只在辅助进程 `src/node/helper.ts` 中加载；运营者设置 `settings.presmium.deltabox`（`sandbox`、`review`、`read`、`stateDir`） |
 | 代码执行 | `addon-exec`、`addon-exec-local`、`addon-exec-wasi`、`addon-exec-webgpu`、`addon-exec-jupyter` | 执行服务（Pyodide、脚本 Worker、本机进程、容器、WebAssembly 中的 C/C++/Ruby/SQL）、执行面板、分步执行、环境复刻；浏览器 GPU 后端（WGSL 计算着色器、Python 桥 `presmium_gpu`、jax-js，构建时在 Playwright 的 Chromium 中录制）；远端环境（`kind: jupyter`：Jupyter 内核、服务端代理、gateway 中的代理、`{terminal}`，`src/jupyter/` 是 Node 与浏览器共用的 `@jupyterlab/services` 客户端） |
 | 引导 | `addon-guide` | 模拟光标、聚光、交互提示 |
 | 富内容 | `addon-content` | 思维导图、媒体、PlantUML |

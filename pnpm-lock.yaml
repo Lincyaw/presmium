@@ -182,6 +182,18 @@ importers:
         specifier: 53.0.0
         version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
 
+  packages/addon-deltabox:
+    dependencies:
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      deltabox-lite:
+        specifier: 0.1.1
+        version: 0.1.1
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+
   packages/addon-exec:
     dependencies:
       '@presmium/host':
@@ -546,6 +558,9 @@ importers:
       '@presmium/server':
         specifier: workspace:*
         version: link:../server
+      '@presmium/slidev-addon-deltabox':
+        specifier: workspace:*
+        version: link:../addon-deltabox
       '@presmium/workspace':
         specifier: workspace:*
         version: link:../workspace
@@ -3893,6 +3908,32 @@ packages:
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
+
+  deltabox-lite-darwin-arm64@0.1.1:
+    resolution: {integrity: sha512-nMxllDYi5JfuZjzsDHcJhKfYlMwta4j9YkapBavZUKi+oUNhnp/MP5LObKn5n7FU8bq7rUjHCGYuGz6C+MyFCQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  deltabox-lite-darwin-x64@0.1.1:
+    resolution: {integrity: sha512-O6DP5relI7vcD/riW1nfW6dgzp1vhLrLU3UNuug1S7Yv9S1KVtXtvWQrhl2fr/a/83eJO5pOztZws3NokOwIGg==}
+    cpu: [x64]
+    os: [darwin]
+
+  deltabox-lite-linux-arm64@0.1.1:
+    resolution: {integrity: sha512-kNTnN+q9yw7XD6/jBcO051PmqTSHBhom8UFf8HS17Ubu7CUk2vMoWWe+QUNIMzNqy87Waw8HFfQE7Ty/ftH3ew==}
+    cpu: [arm64]
+    os: [linux]
+
+  deltabox-lite-linux-x64@0.1.1:
+    resolution: {integrity: sha512-F1aFQmABPVajR8vUJv4l+DOw2z956QcZ3AY5MvxS1yrlGmv1Vmjke2wVTSVza6gwWpzyqAIEubC8rOOmvFSsAQ==}
+    cpu: [x64]
+    os: [linux]
+
+  deltabox-lite@0.1.1:
+    resolution: {integrity: sha512-EsQ/lRwsimC0ITzyQH4VV4/8Djz+oT/F/vSgngfCnCVfCNJXw12NxPCW2fU3G4mRHAGBVVv92UKasC6D1x1y1Q==}
+    engines: {node: '>=18'}
+    os: [darwin, linux]
+    hasBin: true
 
   dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
@@ -11111,6 +11152,25 @@ snapshots:
       robust-predicates: 3.0.3
 
   delayed-stream@1.0.0: {}
+
+  deltabox-lite-darwin-arm64@0.1.1:
+    optional: true
+
+  deltabox-lite-darwin-x64@0.1.1:
+    optional: true
+
+  deltabox-lite-linux-arm64@0.1.1:
+    optional: true
+
+  deltabox-lite-linux-x64@0.1.1:
+    optional: true
+
+  deltabox-lite@0.1.1:
+    optionalDependencies:
+      deltabox-lite-darwin-arm64: 0.1.1
+      deltabox-lite-darwin-x64: 0.1.1
+      deltabox-lite-linux-arm64: 0.1.1
+      deltabox-lite-linux-x64: 0.1.1
 
   dequal@2.0.3: {}
 
