@@ -1,7 +1,8 @@
-import { messagesFor } from '../domain/index.ts'
+import { currentLocale } from '@presmium/host'
+import { STAGE_MESSAGES } from '../domain/index.ts'
 import type { StageMessages } from '../domain/index.ts'
 
-/** The stage's interface text in the page's language (`<html lang>`), else the browser's. Browser only. */
+/** The stage's interface text in the UI language (`currentLocale` of @presmium/host). */
 export function messages(): StageMessages {
-  return messagesFor(document.documentElement.lang || navigator.language)
+  return STAGE_MESSAGES[currentLocale()]
 }

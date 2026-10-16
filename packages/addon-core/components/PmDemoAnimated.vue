@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { PmBoundary, usePrefersReducedMotion } from '@presmium/host'
+import { usePrefersReducedMotion } from '@presmium/host'
 
 // With reduced motion the bar is drawn in its final state without animating.
 const reduced = usePrefersReducedMotion()
 </script>
 
 <template>
-  <PmBoundary name="PmDemoAnimated">
-    <div class="pm-demo-animated" :data-motion="reduced ? 'reduced' : 'full'">
-      <div class="pm-demo-animated__bar" :class="{ 'pm-demo-animated__bar--animate': !reduced }" />
-    </div>
-  </PmBoundary>
+  <div class="pm-demo-animated" :data-motion="reduced ? 'reduced' : 'full'">
+    <div class="pm-demo-animated__bar" :class="{ 'pm-demo-animated__bar--animate': !reduced }" />
+  </div>
 </template>
 
 <style scoped>

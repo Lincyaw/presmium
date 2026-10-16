@@ -1,12 +1,11 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { localeOf } from '@presmium/kernel'
+import { deckLocale } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { formOptions, pageMarkdown, searchDocuments, sidebar, SITE_LABELS, toPages } from '../domain/index.ts'
 import type { FormOptions, WebRendererConfig } from '../domain/index.ts'
-import { clientModules } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 
 const CLIENT_ENTRY = fileURLToPath(new URL('../client/index.ts', import.meta.url))
@@ -38,11 +37,23 @@ export function write(file: string, content: string | Buffer): void {
   writeFileSync(file, content)
 }
 
-/** Copies a directory file by file with `write`: unchanged files are not touched. */
+/**
+ * Copies a directory file by file. A copy has the size and modification time
+ * of its source, so a file whose copy has them too is skipped unread: saving
+ * the deck's source does not copy its media again.
+ */
 function copyDir(from: string, to: string): void {
   for (const file of readdirSync(from, { recursive: true, encoding: 'utf8' })) {
     const source = join(from, file)
-    if (statSync(source).isFile()) write(join(to, file), readFileSync(source))
+    const stat = statSync(source)
+    if (!stat.isFile()) continue
+    const target = join(to, file)
+    const copied = existsSync(target) ? statSync(target) : undefined
+    // A copy's time is set to the millisecond.
+    if (copied && copied.size === stat.size && Math.abs(copied.mtimeMs - stat.mtimeMs) < 1) continue
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, readFileSync(source))
+    utimesSync(target, stat.atime, stat.mtime)
   }
 }
 
@@ -74,9 +85,15 @@ export function siteData(doc: IRDocument): SiteData {
   }
 }
 
-function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, vite: readonly string[]): string {
-  // The labels of the default theme and its search box are in the site's language.
-  const labels = SITE_LABELS[localeOf(options.lang) ?? 'en']
+/** Where the deck is, for the Vite plugins of its plugins (`PresmiumNodePlugin.vitePlugins`). */
+export interface DeckPaths {
+  deckDir: string
+  workspaceRoot: string
+}
+
+function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths): string {
+  // The labels of the default theme and its search box are in the deck's language.
+  const labels = SITE_LABELS[deckLocale(options.lang)]
   const site = {
     lang: options.lang,
     base: options.base,
@@ -85,7 +102,12 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>,
     ignoreDeadLinks: true,
     themeConfig: labels.themeConfig,
   }
-  const imports = vite.map((file, i) => `import vite${i} from ${JSON.stringify(file)}\n`).join('')
+  const imports = [
+    ...modules.vite.map((file, i) => `import vite${i} from ${JSON.stringify(file)}\n`),
+    ...modules.nodeVite.map(({ file }, i) => `import node${i} from ${JSON.stringify(file)}\n`),
+  ].join('')
+  const nodePlugins = modules.nodeVite.map(({ config: options }, i) =>
+    `...(node${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(options)} }) ?? [])`)
   return `${GENERATED}
 import { readFileSync } from 'node:fs'
 import { tokenize } from ${JSON.stringify(SEARCH)}
@@ -99,9 +121,14 @@ site.title = data.title
 site.themeConfig.sidebar = data.sidebar
 site.themeConfig.presmium = { form: data.form }
 
-// The Vite plugins of the deck's plugin packages (their \`vite.config.ts\`, as in the slides form).
+// The Vite plugins of the deck's plugin packages: their \`vite.config.ts\`, as in the slides form, and those
+// their Node entry adds (\`vitePlugins\`), with the plugin's configuration.
+const deck = ${JSON.stringify(deck)}
 site.vite = {
-  plugins: [presmiumIR(${JSON.stringify(files.ir)}, ${JSON.stringify(files.searchDocuments)}), ...[${vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])],
+  plugins: [
+    presmiumIR(${JSON.stringify(files.ir)}, ${JSON.stringify(files.searchDocuments)}),
+    ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? []),${nodePlugins.map(plugin => `\n    ${plugin},`).join('')}
+  ],
   resolve: { dedupe: ['vue'] },
 }
 
@@ -121,29 +148,38 @@ export default site
 
 function theme(): string {
   return `${GENERATED}
-import doc from 'virtual:presmium/ir'
+import doc, { revision } from 'virtual:presmium/ir'
 import { createPresmiumTheme } from ${JSON.stringify(CLIENT_ENTRY)}
 import { components, plugins, viewers } from './addons.ts'
 
-export default createPresmiumTheme({ doc, components, plugins, viewers })
+export default createPresmiumTheme({ doc, revision, components, plugins, viewers })
 `
 }
 
-/** Plugin components, kernel plugins and viewer plugins, loaded lazily so the server render never runs them. */
+/**
+ * Plugin components, kernel plugins and viewer plugins, loaded lazily in the
+ * browser. A server render never runs them (`import.meta.env.SSR`, which its
+ * build replaces): there a component's loader never settles, so the component
+ * keeps its name and renders its placeholder, and there are no plugins; the
+ * server build leaves their modules out.
+ */
 function addons(modules: ClientModules): string {
-  const components = [...modules.components].map(([name, file]) => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(file)}),`)
-  const loaders = (files: string[]) => files.map(file => `  () => import(${JSON.stringify(file)}),`).join('\n')
+  const load = (file: string) => `() => import(${JSON.stringify(file)})`
+  const components = [...modules.components].map(([name, file]) => `  ${JSON.stringify(name)}: ssr ? never : ${load(file)},`)
   return `${GENERATED}
+const ssr = import.meta.env.SSR
+const never = () => new Promise(() => {})
+
 export const components = {
 ${components.join('\n')}
 }
 
-export const plugins = [
-${loaders(modules.plugins)}
+export const plugins = ssr ? [] : [
+${modules.plugins.map(file => `  ${load(file)},`).join('\n')}
 ]
 
-export const viewers = [
-${loaders(modules.viewers)}
+export const viewers = ssr ? [] : [
+${modules.viewers.map(({ name, file }) => `  { name: ${JSON.stringify(name)}, load: ${load(file)} },`).join('\n')}
 ]
 `
 }
@@ -151,8 +187,9 @@ ${loaders(modules.viewers)}
 export interface SiteInput {
   /** The document as published (see `publishedDocument`). */
   doc: IRDocument
-  deckDir: string
-  plugins: readonly string[]
+  deck: DeckPaths
+  /** The client modules and Vite plugins of the deck's plugins (`clientModules`). */
+  modules: ClientModules
   options: WebRendererConfig
 }
 
@@ -166,20 +203,19 @@ export interface SiteInput {
  */
 export function writeSite(workDir: string, input: SiteInput): void {
   const files = siteFiles(workDir)
-  const { doc } = input
+  const { doc, modules } = input
   const pages = toPages(doc)
-  const modules = clientModules(input.deckDir, input.plugins)
   write(files.ir, JSON.stringify(doc))
   write(files.searchDocuments, JSON.stringify(searchDocuments(doc, input.options.base)))
   write(files.site, JSON.stringify(siteData(doc)))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(files.root)
-  write(join(files.root, '.vitepress/config.mjs'), config(input.options, files, modules.vite))
+  write(join(files.root, '.vitepress/config.mjs'), config(input.options, files, modules, input.deck))
   write(join(files.root, '.vitepress/theme/index.ts'), theme())
   write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))
   const names = new Set(pages.map(page => `${page.path}.md`))
   for (const file of readdirSync(files.root).filter(f => f.endsWith('.md') && !names.has(f))) rmSync(join(files.root, file))
   pages.forEach((page, i) => write(join(files.root, `${page.path}.md`), pageMarkdown(page, pages[i - 1], pages[i + 1])))
-  const deckPublic = join(input.deckDir, 'public')
+  const deckPublic = join(input.deck.deckDir, 'public')
   if (existsSync(deckPublic)) copyDir(deckPublic, files.publicDir)
 }

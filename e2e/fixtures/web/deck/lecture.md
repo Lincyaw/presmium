@@ -4,6 +4,7 @@ lang: zh-CN
 plugins:
   - '@presmium/slidev-addon-core'
   - '@presmium/slidev-addon-exec'
+  - '@presmium/slidev-addon-publish'
   - ./plugin
 renderers:
   web: { base: /web/ }

@@ -42,8 +42,7 @@
   }
 }
 
-.pm-v-click,
-.pm-raw {
+.pm-v-click {
   display: contents;
 }
 
@@ -119,14 +118,10 @@
   margin-top: 0;
 }
 
-/* A board that holds only overlays (components whose root is `.pm-overlay`, such as guidance
-   cues drawn over other content) has nothing of its own to show in the flow: drop the card.
-   (`:has()` cannot nest, hence the two separate tests.) */
-.pm-board:has(> .pm-block > .pm-overlay):not(:has(> .pm-block > :not(.pm-overlay))) {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
+/* An overlay (`ComponentNode.layer`, e.g. a guidance cursor) draws over the content around it: it
+   stands outside the boards and takes no room in the flow. */
+.pm-block--overlay {
+  overflow: visible;
 }
 
 .pm-board > :last-child > :last-child {
@@ -171,6 +166,11 @@
 
 .pm-step--current {
   border-left-color: var(--pm-c-brand);
+}
+
+/* A step without narration (a component's own step) takes less of the track. */
+.pm-step--bare {
+  min-height: 25vh;
 }
 
 /* Every narration paragraph stays readable, so the track never looks empty and readers can scroll
@@ -357,7 +357,13 @@
 
 .pm-mermaid {
   margin: 1rem 0;
+  overflow-x: auto;
   text-align: center;
+}
+
+/* A diagram keeps the size Mermaid gives it, so its labels stay readable; a wide one scrolls. */
+.pm-mermaid svg {
+  max-width: none;
 }
 
 .pm-admonition {
@@ -481,15 +487,15 @@ html.pm-presenting {
   flex: 1;
   width: 100%;
   min-height: 0;
-  max-width: 72rem;
+  max-width: min(92vw, 120rem);
   margin: 0 auto;
-  padding: 5vh 6vw;
+  padding: 5vh 4vw;
   overflow: hidden;
   font-size: clamp(1rem, min(2vw, 3.6vh), 1.75rem);
 }
 
 .pm-present__content {
-  transform-origin: top center;
+  transform-origin: top left;
 }
 
 /* Tables and code follow the slide's type size. */
@@ -551,7 +557,8 @@ html.pm-presenting {
   font-variant-numeric: tabular-nums;
 }
 
-.pm-present .pm-present__title {
+.pm-present .pm-present__title,
+.pm-presenter .pm-present__title {
   margin: 0 0 1em;
   font-size: 1.6em;
   font-weight: 700;

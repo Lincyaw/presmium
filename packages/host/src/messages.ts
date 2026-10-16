@@ -2,6 +2,8 @@ import type { PluginStatus } from '@presmium/kernel/contracts'
 import type { Catalog } from './locale.ts'
 
 export interface HostMessages {
+  /** The presenter panels' heading: what they hold, the start report among the plugins' panels. */
+  panels: string
   startReport: string
   starting: string
   noPlugins: string
@@ -14,6 +16,7 @@ export interface HostMessages {
 
 export const HOST_MESSAGES: Catalog<HostMessages> = {
   'zh-CN': {
+    panels: '课堂与工具',
     startReport: '启动报告',
     starting: '内核启动中……',
     noPlugins: '没有注册插件。',
@@ -23,6 +26,7 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     problems: count => `${count} 个问题`,
   },
   'en': {
+    panels: 'Panels',
     startReport: 'Start report',
     starting: 'Starting the kernel…',
     noPlugins: 'No plugins registered.',

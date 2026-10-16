@@ -7,6 +7,8 @@ import { placeFootnotes, STAGE_ID } from '../domain/index.ts'
  */
 const plugin: PresmiumNodePlugin = {
   id: STAGE_ID,
+  version: '0.1.0',
+  kernel: '^0.1.0',
   passes: [{ name: 'footnotes', run: doc => placeFootnotes(doc) }],
 }
 

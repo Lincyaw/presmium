@@ -1,3 +1,4 @@
+import { docBlocks } from '@presmium/kernel'
 import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
 
 const BREAKS = new Set(['paragraph', 'heading', 'listItem', 'tableRow', 'tableCell', 'code', 'math', 'blockquote', 'break'])
@@ -59,12 +60,8 @@ function definitions(node: MdastNode, found: (identifier: string) => void): void
  */
 export function footnoteSections(doc: IRDocument): Map<string, string> {
   const sections = new Map<string, string>()
-  const visit = (section: string, blocks: readonly IRBlock[]) => {
-    for (const { node } of blocks) {
-      if (node.type === 'markdown') definitions(node.mdast, identifier => sections.set(identifier, section))
-      if (node.type === 'component') visit(section, node.children ?? [])
-    }
+  for (const { section, block: { node } } of docBlocks(doc)) {
+    if (node.type === 'markdown') definitions(node.mdast, identifier => sections.set(identifier, section.id))
   }
-  for (const section of doc.sections) visit(section.id, section.blocks)
   return sections
 }

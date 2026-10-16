@@ -1,13 +1,18 @@
 /**
- * The IR runtime's interface text (N-07), in Chinese and English. The
- * language is the page's (`<html lang>`), else the browser's; any language
- * other than Chinese gets English.
+ * The IR runtime's interface text (N-07), in Chinese and English, as a
+ * catalog of @presmium/host (`useMessages`, `currentLocale`).
  */
+import type { Locale } from '@presmium/kernel/contracts'
+
+/** `第 k 步，共 n 步` of a section with steps; steps count from 1 for the reader. */
+const zhStep = (step: number, steps: number) => `第 ${step + 1} 步，共 ${steps + 1} 步`
+
 const zh = {
   views: { document: '文档', scrolly: '滚动叙事', present: '放映', presenter: '演讲者' },
   present: {
     region: '放映',
-    counter: (index: number, total: number, step: number, steps: number) => `${index} / ${total} · 第 ${step} 步，共 ${steps} 步`,
+    /** Section `index` of `total`, then the step when the section has steps (0-based `step`, last step `steps`). */
+    counter: (index: number, total: number, step: number, steps: number) => `${index} / ${total}${steps > 0 ? ` · ${zhStep(step, steps)}` : ''}`,
     prev: '上一步',
     next: '下一步',
     overview: '总览',
@@ -16,7 +21,8 @@ const zh = {
     exit: '退出放映',
   },
   presenter: {
-    step: (step: number, steps: number) => `第 ${step} 步，共 ${steps} 步`,
+    /** The step when the section has steps; empty otherwise. */
+    step: (step: number, steps: number) => (steps > 0 ? zhStep(step, steps) : ''),
     timer: '计时',
     restart: '重新计时',
     notes: '讲解',
@@ -24,7 +30,7 @@ const zh = {
     upcoming: '下一步',
     end: '已到结尾',
     nextSection: (title: string) => `下一节：${title}`,
-    nextStep: (step: number) => `第 ${step} 步`,
+    nextStep: (step: number) => `第 ${step + 1} 步`,
   },
   section: {
     anchor: (title: string) => `链接到“${title}”`,
@@ -32,16 +38,6 @@ const zh = {
     sourceTitle: (where: string) => `${where}（Alt+单击任一块，打开该块的源码）`,
   },
   code: {
-    status: { moved: '已移动', fuzzy: '待确认', lost: '已失效' } as Record<string, string>,
-    workingTree: '工作区',
-    drifted: '已漂移',
-    driftedTitle: '工作区中的代码已改变，运行 presmium check 查看差异',
-    synced: '已锁定',
-    syncedTitle: '锁定的代码与工作区一致',
-    openFile: (file: string) => `在仓库中打开 ${file}`,
-    timedOut: '超时',
-    exitCode: (code: number) => `退出码 ${code}`,
-    recorded: '预录输出',
     executorFailed: (id: string, message: string) => `执行器 ${id} 出错：${message}`,
     run: '运行',
     rerun: '重跑',
@@ -72,7 +68,7 @@ const en: Messages = {
   views: { document: 'Document', scrolly: 'Scrollytelling', present: 'Present', presenter: 'Presenter' },
   present: {
     region: 'Presentation',
-    counter: (index, total, step, steps) => `${index} / ${total} · step ${step} of ${steps}`,
+    counter: (index, total, step, steps) => `${index} / ${total}${steps > 0 ? ` · step ${step + 1} of ${steps + 1}` : ''}`,
     prev: 'Previous',
     next: 'Next',
     overview: 'Overview',
@@ -81,7 +77,7 @@ const en: Messages = {
     exit: 'Exit presentation',
   },
   presenter: {
-    step: (step, steps) => `Step ${step} of ${steps}`,
+    step: (step, steps) => (steps > 0 ? `Step ${step + 1} of ${steps + 1}` : ''),
     timer: 'Timer',
     restart: 'Restart timer',
     notes: 'Narration',
@@ -89,7 +85,7 @@ const en: Messages = {
     upcoming: 'Next',
     end: 'End of the document',
     nextSection: title => `Next section: ${title}`,
-    nextStep: step => `Step ${step}`,
+    nextStep: step => `Step ${step + 1}`,
   },
   section: {
     anchor: title => `Link to "${title}"`,
@@ -97,16 +93,6 @@ const en: Messages = {
     sourceTitle: where => `${where} (Alt+click a block to open its source)`,
   },
   code: {
-    status: { moved: 'Moved', fuzzy: 'Unconfirmed', lost: 'Lost' },
-    workingTree: 'working tree',
-    drifted: 'Drifted',
-    driftedTitle: 'The code changed in the working tree; run presmium check to see the difference',
-    synced: 'Pinned',
-    syncedTitle: 'The pinned code matches the working tree',
-    openFile: file => `Open ${file} in the repository`,
-    timedOut: 'Timed out',
-    exitCode: code => `Exit code ${code}`,
-    recorded: 'Recorded output',
     executorFailed: (id, message) => `Executor ${id} failed: ${message}`,
     run: 'Run',
     rerun: 'Run again',
@@ -131,13 +117,5 @@ const en: Messages = {
   missingComponent: name => `Unregistered component ${name}`,
 }
 
-export type Locale = 'zh-CN' | 'en'
-
-/** The catalog for a language tag such as `zh-CN` or `en-US`; Chinese when none is given. */
-export function localeOf(lang: string | undefined): Locale {
-  return !lang || /^zh\b/i.test(lang) ? 'zh-CN' : 'en'
-}
-
-export function messagesFor(locale: Locale): Messages {
-  return locale === 'en' ? en : zh
-}
+/** The IR runtime's text in each UI language. */
+export const VIEWER_MESSAGES: Record<Locale, Messages> = { 'zh-CN': zh, 'en': en }

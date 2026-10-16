@@ -19,8 +19,10 @@ export const WEB_MESSAGES = {
 
 /**
  * The labels of the VitePress default theme and its local search, by
- * language; English ones are VitePress's own. The doc footer links the
- * chapters before and after a page.
+ * language: every label its configuration documents; English ones are
+ * VitePress's own. The doc footer links the chapters before and after a
+ * page. VitePress has no option for the hidden labels of its sidebar
+ * ("Sidebar Navigation") and doc footer ("Pager"): they stay English.
  */
 export const SITE_LABELS = {
   'zh-CN': {
@@ -34,6 +36,7 @@ export const SITE_LABELS = {
       darkModeSwitchTitle: '切换到深色模式',
       skipToContentLabel: '跳到正文',
       langMenuLabel: '切换语言',
+      lastUpdated: { text: '最后更新于' },
       notFound: {
         title: '页面不存在',
         quote: '这个地址没有对应的页面，可能已经移动或删除。',
@@ -48,7 +51,15 @@ export const SITE_LABELS = {
         resetButtonTitle: '清除',
         backButtonTitle: '关闭搜索',
         noResultsText: '没有结果',
-        footer: { selectText: '选择', navigateText: '切换', closeText: '关闭' },
+        footer: {
+          selectText: '选择',
+          selectKeyAriaLabel: '回车键',
+          navigateText: '切换',
+          navigateUpKeyAriaLabel: '上箭头',
+          navigateDownKeyAriaLabel: '下箭头',
+          closeText: '关闭',
+          closeKeyAriaLabel: 'Esc 键',
+        },
       },
     } as Record<string, unknown> | undefined,
   },

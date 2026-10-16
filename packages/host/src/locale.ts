@@ -8,7 +8,7 @@ import { localeOf } from '@presmium/kernel/contracts'
 import type { Locale } from '@presmium/kernel/contracts'
 import type { ComputedRef } from 'vue'
 import { computed, getCurrentInstance, inject, shallowRef } from 'vue'
-import { HOST } from './key.ts'
+import { HOST, installed } from './key.ts'
 
 /** Messages of a package in each UI language. */
 export type Catalog<T> = Record<Locale, T>
@@ -35,9 +35,13 @@ function resolveLocale(fallbackLang?: string): Locale {
   return localeOf(htmlLang.value || fallbackLang) ?? localeOf(browser) ?? 'en'
 }
 
-/** The UI language now, outside a component (e.g. when a service is created). */
+/**
+ * The UI language now, outside a component (e.g. when a service is created
+ * or a view is labelled): as `useLocale`; in a render without a document,
+ * the deck language of the installed host.
+ */
 export function currentLocale(): Locale {
-  return resolveLocale()
+  return resolveLocale(installed.adapter?.lang)
 }
 
 /**

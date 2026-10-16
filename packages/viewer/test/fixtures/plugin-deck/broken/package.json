@@ -1,0 +1,7 @@
+{
+  "name": "presmium-example-broken-viewer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A viewer plugin that throws while it installs: the other plugins still install"
+}

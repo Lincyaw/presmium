@@ -1,13 +1,15 @@
 /**
  * Code highlighting in the browser with Shiki. Only the grammars listed here
  * are bundled, each loaded on first use, so the build stays small; other
- * languages show as plain text.
+ * languages show as plain text. A server render has none (`import.meta.env.SSR`):
+ * it shows plain text, and its build leaves Shiki out.
  */
+import { languageId } from '@presmium/kernel'
 import type { HighlighterCore } from 'shiki/core'
 
 type Loader = () => Promise<unknown>
 
-const GRAMMARS: Record<string, Loader> = {
+const GRAMMARS: Record<string, Loader> = import.meta.env.SSR ? {} : {
   python: () => import('shiki/langs/python.mjs'),
   javascript: () => import('shiki/langs/javascript.mjs'),
   typescript: () => import('shiki/langs/typescript.mjs'),
@@ -30,11 +32,8 @@ const GRAMMARS: Record<string, Loader> = {
   java: () => import('shiki/langs/java.mjs'),
 }
 
+/** Grammar names of languages besides those `languageId` of the kernel resolves. */
 const ALIASES: Record<string, string> = {
-  py: 'python',
-  js: 'javascript',
-  mjs: 'javascript',
-  ts: 'typescript',
   mts: 'typescript',
   sh: 'shellscript',
   bash: 'shellscript',
@@ -52,6 +51,7 @@ let highlighter: Promise<HighlighterCore> | undefined
 const loading = new Map<string, Promise<void>>()
 
 function load(): Promise<HighlighterCore> {
+  if (import.meta.env.SSR) return new Promise(() => {})
   highlighter ??= Promise.all([import('shiki/core'), import('shiki/engine/javascript')]).then(([core, engine]) =>
     core.createHighlighterCore({
       themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark.mjs')],
@@ -63,7 +63,8 @@ function load(): Promise<HighlighterCore> {
 
 /** The grammar name of a code block language, or undefined when it is not bundled. */
 export function grammarOf(lang: string): string | undefined {
-  const name = ALIASES[lang.toLowerCase()] ?? lang.toLowerCase()
+  const id = languageId(lang)
+  const name = ALIASES[id] ?? id
   return name in GRAMMARS ? name : undefined
 }
 

@@ -1,9 +1,9 @@
+import { joinWindows } from '@presmium/host'
 import type { IRDocument, IRSection, SourcePos } from '@presmium/kernel'
 import type { App, InjectionKey, Ref, ShallowRef, VNodeChild } from 'vue'
-import { computed, inject, reactive, ref, shallowRef, toRaw } from 'vue'
-import { applyUpdate, clampPosition, footnoteSections, nextPosition, prevPosition } from './domain/index.ts'
+import { computed, inject, ref, shallowRef } from 'vue'
+import { applyUpdate, clampPosition, footnoteSections, keepPosition, nextPosition, prevPosition } from './domain/index.ts'
 import type { LiveUpdate, Position } from './domain/index.ts'
-import { setDocumentLanguage } from './i18n.ts'
 import { getView } from './registry.ts'
 
 export interface ViewerOptions {
@@ -48,14 +48,8 @@ export interface Viewer {
   setView(id: string): void
   /** Applies a live update from the dev server. */
   update(update: LiveUpdate): void
-  /**
-   * State the windows of a presentation share (the present view, the
-   * presenter window), by key: e.g. a plugin's black screen. Reactive; a
-   * window opened later gets the current values.
-   */
-  readonly shared: Readonly<Record<string, unknown>>
-  /** Sets a shared value, in this window and the other windows of the document. */
-  share(key: string, value: unknown): void
+  /** Replaces the document, e.g. with the dev server's current one after a reconnection; the position stays where it can. */
+  replace(doc: IRDocument): void
 }
 
 export const VIEWER: InjectionKey<Viewer> = Symbol('presmium.viewer')
@@ -65,14 +59,12 @@ export function footnoteId(identifier: string): string {
   return `fn-${identifier}`
 }
 
-/** Presentation windows of the same document follow each other's position and share state. */
-const CHANNEL = 'presmium.viewer'
-
-type Message =
-  | { type: 'position', position: Position }
-  | { type: 'shared', values: Record<string, unknown> }
-  /** A new window asks the others for the shared state. */
-  | { type: 'hello' }
+/**
+ * Presentation windows of the same document follow each other's position
+ * (`joinWindows` of @presmium/host: the deck's windows in this browser, by
+ * title and base). Other state the windows share is `useSharedState`'s.
+ */
+const CHANNEL = 'presmium.viewer.position'
 
 /** Creates the runtime state of one IR document. */
 export function createViewer(initial: IRDocument, options: ViewerOptions = {}): Viewer {
@@ -81,15 +73,18 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
   const pageView = ref('document')
   const position = shallowRef<Position>(clampPosition(initial, { section: initial.sections[0]?.id ?? '', step: 0 }))
   const restoring = ref(false)
-  const shared = reactive<Record<string, unknown>>({})
-  // Browser only: in a server render the channel would keep the process alive.
-  const channel = typeof window === 'undefined' || typeof BroadcastChannel === 'undefined'
-    ? undefined
-    : new BroadcastChannel(`${CHANNEL}:${initial.meta.title}`)
   const presenting = () => getView(view.value)?.kind === 'overlay'
   const footnotes = computed(() => footnoteSections(doc.value))
-  const post = (message: Message) => channel?.postMessage(message)
-  setDocumentLanguage(initial, options.renderer ?? 'web')
+  // Undefined in a server render. A window that joins later starts from its own position (its URL).
+  const windows = joinWindows(`${CHANNEL}:${initial.meta.title}`, (value) => {
+    if (presenting()) viewer.go(value as Position, true)
+  }, () => undefined)
+  /** A new document; a section that was removed, renamed or shortened moves the position to a valid place nearby. */
+  const replace = (next: IRDocument) => {
+    const kept = keepPosition(doc.value, next, position.value)
+    doc.value = next
+    if (kept.section !== position.value.section || kept.step !== position.value.step) position.value = kept
+  }
 
   const viewer: Viewer = {
     doc,
@@ -108,7 +103,7 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
       const next = clampPosition(doc.value, target)
       if (next.section === position.value.section && next.step === position.value.step) return
       position.value = next
-      if (!remote && presenting()) post({ type: 'position', position: next })
+      if (!remote && presenting()) windows?.send(next)
     },
     show(target) {
       viewer.go(target)
@@ -131,24 +126,9 @@ export function createViewer(initial: IRDocument, options: ViewerOptions = {}): 
       if (target.kind === 'page') pageView.value = id
       restoring.value = true
     },
-    update(update) {
-      doc.value = applyUpdate(doc.value, update)
-      // A section that was removed or shortened moves the position to a valid place.
-      const clamped = clampPosition(doc.value, position.value)
-      if (clamped.section !== position.value.section || clamped.step !== position.value.step) position.value = clamped
-    },
-    shared,
-    share(key, value) {
-      shared[key] = value
-      post({ type: 'shared', values: { [key]: toRaw(value) } })
-    },
+    update: update => replace(applyUpdate(doc.value, update)),
+    replace,
   }
-  channel?.addEventListener('message', ({ data }: MessageEvent<Message>) => {
-    if (data.type === 'position' && presenting()) viewer.go(data.position, true)
-    else if (data.type === 'shared') Object.assign(shared, data.values)
-    else if (data.type === 'hello' && Object.keys(shared).length > 0) post({ type: 'shared', values: toRaw(shared) })
-  })
-  post({ type: 'hello' })
   return viewer
 }
 

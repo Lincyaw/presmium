@@ -4,8 +4,7 @@ lang: en-US
 plugins:
   - '@presmium/slidev-addon-stage'
 renderers:
-  web:
-    lang: en-US
+  web: {}
 ---
 
 # An English Deck

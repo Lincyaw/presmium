@@ -1,6 +1,6 @@
 import { defineShortcutsSetup } from '@slidev/types'
 import { ref } from 'vue'
-import { toggle } from './screen.ts'
+import { useScreen } from '../src/client/screen.ts'
 
 /**
  * Slidev binds a plain `f` to fullscreen outside the configurable shortcut list.
@@ -29,6 +29,6 @@ window.addEventListener('blur', () => {
 /** P-03: `b` blacks out the audience view, `f` freezes it; the same key again restores it. */
 export default defineShortcutsSetup((_nav, base) => [
   ...base,
-  { name: 'presmium_stage_black', key: 'b', fn: () => toggle('black') },
-  { name: 'presmium_stage_freeze', key: freezeKey, fn: () => toggle('frozen') },
+  { name: 'presmium_stage_black', key: 'b', fn: () => useScreen().toggle('black') },
+  { name: 'presmium_stage_freeze', key: freezeKey, fn: () => useScreen().toggle('frozen') },
 ])

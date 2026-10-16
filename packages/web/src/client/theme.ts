@@ -1,36 +1,49 @@
-import { createPresenterPanels, createToolbar, currentLocale, installHost, NAVIGATION, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, startPresmium, stopPresmium, stopPresmiumOnPageHide, SYNC_TRANSPORTS, TOOLBAR } from '@presmium/host'
+import { createSharedStates, currentLocale, installHost, pluginsOf, PmPresenterPanels, PmToolbar, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium } from '@presmium/host'
 import type { SyncTransports } from '@presmium/host'
-import { PRESENTER_PANELS } from '@presmium/kernel'
+import { errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
-import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
+import { createViewer, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref } from 'vue'
-import { offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, WEB_MESSAGES } from '../domain/index.ts'
+import { computed, defineAsyncComponent, defineComponent, h, onMounted, ref, watch } from 'vue'
+import { IR_ENDPOINT, offlineEnabled, requested, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
 import { PresmiumPage, ViewMenu } from './page.ts'
-import { createSharedStates } from './shared.ts'
 import './style.css'
+
+/** A plugin's `src/client/viewer.ts`, by package name, loaded lazily. */
+export interface ViewerModule {
+  name: string
+  load: () => Promise<unknown>
+}
 
 /** What the generated theme passes in: the IR and the deck's plugin modules, imported lazily. */
 export interface ThemeInput {
   doc: IRDocument
+  /** The revision of `doc` (a hash), which live updates in the dev server name. */
+  revision?: string
   /** Component name to loader, from each plugin's `components/` directory. */
   components: Record<string, () => Promise<unknown>>
   /** Loaders of each plugin's `src/client/plugin.ts` (see `pluginsOf` of @presmium/host). */
   plugins: (() => Promise<unknown>)[]
-  /** Loaders of each plugin's `src/client/viewer.ts`: views and renderers for the IR runtime. */
-  viewers?: (() => Promise<unknown>)[]
+  /** Each plugin's `src/client/viewer.ts`: views and renderers for the IR runtime. */
+  viewers?: ViewerModule[]
+}
+
+/** A live update of the dev server, with the revision it applies to and the one it makes (see ../node/vite.ts). */
+interface UpdateEvent {
+  update: LiveUpdate
+  base: string
+  revision: string
 }
 
 /**
  * Registers the kernel plugins of every plugin package, as the slides form
- * does, and starts the kernel. The plugins are disposed when the page goes
- * away, and start again when the browser shows it again from its cache.
+ * does, and starts the kernel with the host services (`startHost`).
  */
 async function startKernel(loaders: ThemeInput['plugins'], config: Record<string, unknown>, viewer: Viewer, transports: SyncTransports): Promise<void> {
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
@@ -38,25 +51,16 @@ async function startKernel(loaders: ThemeInput['plugins'], config: Record<string
     return {}
   })))
   modules.flatMap(module => pluginsOf(module, config)).forEach(registerPresmiumPlugin)
-  const start = () => startPresmium({
-    mode: 'document',
-    config,
-    beforeStart(kernel) {
-      kernel.provide(PRESENTER_PANELS, createPresenterPanels())
-      kernel.provide(SYNC_TRANSPORTS, transports)
-      kernel.provide(NAVIGATION, createViewerNavigation(viewer))
-      kernel.provide(TOOLBAR, createToolbar())
-    },
-  })
-  stopPresmiumOnPageHide(() => void start())
-  await start()
+  await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports })
 }
 
 /**
  * Plugin components render in the browser only: they may use browser APIs
- * that the server render of VitePress does not have. They see Slidev's
- * `$frontmatter` of their section rather than VitePress's of the page. The
- * viewer puts them in an error boundary.
+ * that the server render of VitePress does not have. Until one has loaded and
+ * mounted (and in the server render, so readers without JavaScript see it),
+ * its IR `fallback` stands in for it. They see Slidev's `$frontmatter` of
+ * their section rather than VitePress's of the page. The viewer puts them in
+ * an error boundary.
  */
 function clientOnly(name: string, load: () => Promise<unknown>): Component {
   const loaded = defineAsyncComponent(() => load().then(module => withSlideGlobals((module as { default: Component }).default)))
@@ -68,17 +72,25 @@ function clientOnly(name: string, load: () => Promise<unknown>): Component {
       onMounted(() => {
         mounted.value = true
       })
-      return () => (mounted.value ? h(loaded, attrs, slots) : h('span', { 'class': 'pm-client-only', 'data-component': name }))
+      return () => (mounted.value
+        ? h(loaded, attrs, slots)
+        : h('div', { 'class': 'pm-client-only', 'data-component': name }, [h(PmComponentFallback)]))
     },
   })
 }
 
-/** Installs the viewer plugins; one that fails to load is reported and left out. */
-async function loadViewerPlugins(loaders: NonNullable<ThemeInput['viewers']>): Promise<void> {
-  await Promise.all(loaders.map((load, i) => load().then(
-    module => void installViewerPlugin((module as { default?: unknown }).default, `viewer plugin ${i + 1}`),
-    error => console.error('[presmium] a viewer plugin failed to load', error),
-  )))
+/** Installs the viewer plugins; one that fails is left out and reported in the start report. */
+async function loadViewerPlugins(modules: ViewerModule[]): Promise<void> {
+  await Promise.all(modules.map(async ({ name, load }) => {
+    const id = `${name} (viewer)`
+    try {
+      const reason = installViewerPlugin(((await load()) as { default?: unknown }).default, id)
+      if (reason) reportPluginFailure(id, reason)
+    } catch (error) {
+      console.error(`[presmium] ${id} failed to load`, error)
+      reportPluginFailure(id, errorMessage(error))
+    }
+  }))
 }
 
 /** Registers the service worker of the build; without offline support, removes one an earlier build registered. */
@@ -113,9 +125,10 @@ let viewersReady: Promise<void> = Promise.resolve()
 /**
  * Default layout plus the view menu and the plugins' toolbar items in the
  * navigation bar, the overlay views and, in the presenter window, the
- * presenter panels. `?slide=N&step=<n>`
- * (from the slides form), `?section=<id>&step=<n>` and `?view=<id>` open a
- * position and a view.
+ * presenter panels in its side column. `?slide=N&step=<n>` (from the slides
+ * form), `?section=<id>&step=<n>` and `?view=<id>` open a position and a
+ * view; while an overlay view is shown, the URL names its view and position,
+ * so a reload shows them again.
  */
 const Layout = defineComponent({
   name: 'PresmiumLayout',
@@ -126,12 +139,18 @@ const Layout = defineComponent({
       const form: FormOptions = theme.value.presmium?.form ?? {}
       if (form.slides) slidesBase.value = form.slidesUrl ?? new URL('../slides', new URL(withBase('/'), location.href)).href
       const ask = requested(location.search, viewer.doc.value)
-      if (!ask.section && !ask.view) return
-      history.replaceState(history.state, '', location.pathname + location.hash)
-      if (ask.section) viewer.show({ section: ask.section, step: ask.step ?? 0 })
-      if (!ask.view) return
-      await viewersReady
-      if (getView(ask.view)) viewer.setView(ask.view)
+      if (ask.section || ask.view) {
+        history.replaceState(history.state, '', location.pathname + viewSearch(location.search) + location.hash)
+        if (ask.section) viewer.show({ section: ask.section, step: ask.step ?? 0 })
+        if (ask.view) {
+          await viewersReady
+          if (getView(ask.view)) viewer.setView(ask.view)
+        }
+      }
+      watch([viewer.view, viewer.position], ([view, position]) => {
+        const search = viewSearch(location.search, getView(view)?.kind === 'overlay' ? { view, ...position } : undefined)
+        if (search !== location.search) history.replaceState(history.state, '', location.pathname + search + location.hash)
+      }, { immediate: true })
     })
     return () => h(DefaultTheme.Layout, null, {
       // On phones the view menu and the toolbar items move to the navigation screen (the menu), as VitePress
@@ -140,12 +159,50 @@ const Layout = defineComponent({
       'nav-screen-content-after': () => [h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
       // Overlay views get the typography of the page body.
       'layout-bottom': () => [
-        h('div', { class: 'vp-doc pm-overlay' }, [h(OverlayHost)]),
-        viewer.view.value === 'presenter' ? h(PmPresenterPanels) : null,
+        h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayHost)]),
+        viewer.view.value === 'presenter' ? h(PmPresenterPanels, { to: '.pm-presenter__side', docked: true }) : null,
       ],
     })
   },
 })
+
+/**
+ * Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's
+ * WebSocket. An update applies to the document of its `base` revision; a
+ * page that holds another one (it loaded while the deck was compiling, or
+ * missed updates while disconnected) gets the current document instead, as
+ * it does whenever it connects. The site title and the sidebar follow the
+ * document here, so the config never changes and the page never reloads.
+ */
+function followDevServer(viewer: Viewer, revision: string | undefined, follow: (doc: IRDocument) => void): void {
+  const hot = import.meta.hot
+  if (!hot) return
+  let current = revision
+  const fetchCurrent = async () => {
+    try {
+      const response = await fetch(IR_ENDPOINT, { cache: 'no-store' })
+      if (!response.ok) return
+      const { revision: latest, doc } = await response.json() as { revision: string, doc: IRDocument }
+      if (latest === current) return
+      current = latest
+      viewer.replace(doc)
+      follow(viewer.doc.value)
+    } catch (error) {
+      console.warn('[presmium] could not get the current document from the dev server', error)
+    }
+  }
+  hot.on('presmium:update', ({ update, base, revision: next }: UpdateEvent) => {
+    if (base !== current) {
+      void fetchCurrent()
+      return
+    }
+    current = next
+    viewer.update(update)
+    follow(viewer.doc.value)
+  })
+  hot.on('vite:ws:connect', () => void fetchCurrent())
+  void fetchCurrent()
+}
 
 /** The VitePress theme of the web form: default theme, the IR runtime, the web host adapter. */
 export function createPresmiumTheme(input: ThemeInput): Theme {
@@ -180,10 +237,11 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         openPresenter(position) {
           const url = new URL(location.href)
           url.hash = ''
-          url.search = `?view=presenter&section=${encodeURIComponent(position.section)}&step=${position.step}`
+          url.search = viewSearch(url.search, { view: 'presenter', ...position })
           window.open(url.href, 'presmium-presenter', 'popup,width=1100,height=720')
         },
       })
+      // Shared states of the deck's windows, kept by title (so both forms meet in a classroom) and base.
       const shared = createSharedStates(input.doc.meta.title)
       installHost(app, createViewerHost(current, { lang: siteData.value.lang, shared }))
       installViewer(app, current)
@@ -193,11 +251,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       viewersReady = loadViewerPlugins(input.viewers ?? [])
       void startKernel(input.plugins, input.doc.config.presmium, current, shared.transports)
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
-      // Live updates from `presmium dev` (docs/ir.md section 8.3), over Vite's WebSocket. The site
-      // title and the sidebar follow the document here, so the config never changes and the page never reloads.
-      import.meta.hot?.on('presmium:update', (update: LiveUpdate) => {
-        current.update(update)
-        const doc = current.doc.value
+      followDevServer(current, input.revision, (doc) => {
         const site = siteData.value
         const nav = sidebar(doc, toPages(doc))
         if (site.title === doc.meta.title && JSON.stringify(site.themeConfig.sidebar) === JSON.stringify(nav)) return

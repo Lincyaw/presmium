@@ -191,14 +191,25 @@ test('the slides form has an overview: o shows every slide, a click goes to one'
   await expect(page.locator('.pm-stage-steps h1').filter({ visible: true })).toBeInViewport()
 })
 
-test('an image written in the source, next to its page, loads in both forms', async ({ page }) => {
+test('an image written in the source, next to its page, loads in both forms, and neither page requests a missing file', async ({ page }) => {
+  // Requests answered 4xx, and files answered with a page: the slides' server sends its index.html
+  // for any path it does not have, as Slidev's routes need.
+  const missing: string[] = []
+  page.on('response', (response) => {
+    const navigation = response.request().resourceType() === 'document'
+    const html = response.headers()['content-type']?.startsWith('text/html')
+    if (response.status() >= 400 || (html && !navigation)) missing.push(`${response.status()} ${response.url()}`)
+  })
   const loaded = async (slide: ReturnType<Page['locator']>) => {
     const image = slide.getByRole('img', { name: '听众视图的三种状态：正常、黑屏、冻结' })
     await expect(image).toBeVisible()
     await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true)
+    // Slidev preloads the images of the slides around the current one.
+    await page.waitForLoadState('networkidle')
   }
   await page.goto(slides(steps()))
   await loaded(page.locator('.slidev-layout.pm-stage-steps').filter({ visible: true }))
   await page.goto(`${deck().web}/stage.html`)
   await loaded(page.locator('.pm-section[data-section="stage-steps"]'))
+  expect(missing).toEqual([])
 })

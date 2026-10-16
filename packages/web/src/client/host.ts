@@ -1,14 +1,10 @@
 import { presmiumReport, presmiumService } from '@presmium/host'
-import type { HostAdapter, Navigation, ViewRole } from '@presmium/host'
+import type { HostAdapter, Navigation, SharedStates, ViewRole } from '@presmium/host'
+import { isRecord } from '@presmium/kernel'
 import type { PresentationMode } from '@presmium/kernel'
 import { FINAL_STEP, getView, useSectionContext } from '@presmium/viewer'
 import type { Viewer } from '@presmium/viewer'
 import { computed, readonly, ref } from 'vue'
-import type { SharedStates } from './shared.ts'
-
-function record(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
-}
 
 export interface ViewerHostOptions {
   /** The site language, for the server render. */
@@ -16,17 +12,23 @@ export interface ViewerHostOptions {
   shared: SharedStates
 }
 
+/** The role of a view: the presenter window, the audience of an overlay view (the present view), a reader of a page view. */
+function roleOf(view: string): ViewRole {
+  return view === 'presenter' ? 'presenter' : getView(view)?.kind === 'overlay' ? 'audience' : 'reader'
+}
+
 /**
  * Host adapter of the web form, fed by the IR runtime: the step of a
  * component is its section's step (every step reached in the document view;
  * the IR runtime gives each block its step scope), the cursor is the
- * enclosing section and its step, and the role follows the view (reader,
- * audience of the present view, presenter window). A section's `{config}`
+ * enclosing section and its step, and the role is that of the view that
+ * renders the component (a reader of the page under the present view stays
+ * a reader; outside a section, the active view's). A section's `{config}`
  * comes with its IR section. The web form renders no static copies.
  */
 export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): HostAdapter {
   const overlay = () => getView(viewer.view.value)?.kind === 'overlay'
-  const role = computed((): ViewRole => (viewer.view.value === 'presenter' ? 'presenter' : overlay() ? 'audience' : 'reader'))
+  const role = computed(() => roleOf(viewer.view.value))
   const staticRender = readonly(ref(false))
   return {
     get mode(): PresentationMode {
@@ -45,13 +47,17 @@ export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): Ho
       const section = useSectionContext()
       return computed(() => section?.step.value ?? FINAL_STEP)
     },
-    useViewRole: () => role,
+    useViewRole() {
+      const section = useSectionContext()
+      return section ? computed(() => roleOf(section.view.value)) : role
+    },
     useStaticRender: () => staticRender,
     useSectionConfig(pluginId) {
       const context = useSectionContext()
       return computed(() => {
         const section = context?.section.value ?? viewer.section(viewer.position.value.section)
-        return { ...record(viewer.doc.value.config.presmium[pluginId]), ...section?.config?.[pluginId] }
+        const global = viewer.doc.value.config.presmium[pluginId]
+        return { ...(isRecord(global) ? global : {}), ...section?.config?.[pluginId] }
       })
     },
     useSharedState: options.shared.sharedState,

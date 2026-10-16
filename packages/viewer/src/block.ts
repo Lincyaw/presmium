@@ -1,10 +1,11 @@
 import { PmBoundary, provideStepScope } from '@presmium/host'
+import { fnv1a64 } from '@presmium/kernel'
 import type { ComponentNode, IRBlock, IRSection } from '@presmium/kernel'
-import type { PropType, VNode } from 'vue'
-import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef, toRef } from 'vue'
+import type { InjectionKey, PropType, VNode } from 'vue'
+import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
 import { BLOCK_CLASS, trackClicks } from './clicks.ts'
 import { CodeBlockView } from './code.ts'
-import { BLOCK_CONTEXT, IN_COMPONENT } from './context.ts'
+import { IN_COMPONENT } from './context.ts'
 import { blockVisible, FINAL_STEP } from './domain/index.ts'
 import { messages } from './i18n.ts'
 import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
@@ -21,24 +22,63 @@ const blockProps = {
   expanded: Boolean,
 } as const
 
-/** A `component` node: the registered plugin component in an error boundary, its child blocks as the default slot. */
+/** The component node being rendered and its section, for what stands in for the component (`PmComponentFallback`). */
+const COMPONENT_NODE: InjectionKey<{ node: ComponentNode, section: string }> = Symbol('presmium.viewer.componentNode')
+
+/** A component node's static `fallback`, rendered as Markdown; none when it has no fallback. */
+function fallbackOf(node: ComponentNode, section: string): VNode[] {
+  return node.fallback ? hastToVNodes(markdownToHast(node.fallback, section).children, {}) as VNode[] : []
+}
+
+/**
+ * What the component node being rendered shows without running (its IR
+ * `fallback`), e.g. for a host to render until the component itself has
+ * loaded in the browser, so readers without JavaScript see it too.
+ */
+export const PmComponentFallback = defineComponent({
+  name: 'PmComponentFallback',
+  setup() {
+    const current = inject(COMPONENT_NODE, undefined)
+    return () => (current ? fallbackOf(current.node, current.section) : null)
+  },
+})
+
+/**
+ * A `component` node: the registered plugin component in an error boundary,
+ * its child blocks as the default slot. The boundary renders the component
+ * again when its props or children change (a live update) and, where it
+ * follows the steps, at each step (K-11).
+ */
 const ComponentView = defineComponent({
   name: 'PmComponentNode',
   props: blockProps,
   setup(props) {
     provide(IN_COMPONENT, true)
+    provide(COMPONENT_NODE, {
+      get node() {
+        return props.block.node as ComponentNode
+      },
+      get section() {
+        return props.section.id
+      },
+    })
+    const content = computed(() => {
+      const { props: values, children } = props.block.node as ComponentNode
+      return fnv1a64(JSON.stringify([values, children ?? []]))
+    })
     return () => {
       const node = props.block.node as ComponentNode
       const component = getComponent(node.name)
       if (!component) {
         // Unknown component: its static fallback, else a note (docs/ir.md section 6).
-        const fallback = node.fallback ? hastToVNodes(markdownToHast(node.fallback, props.section.id).children, {}) : []
+        const fallback = fallbackOf(node, props.section.id)
         return h('div', { 'class': 'pm-component-missing', 'data-component': node.name }, fallback.length ? fallback : messages().missingComponent(node.name))
       }
       const children = node.children?.length
         ? { default: () => node.children!.map(child => h(BlockView, { key: child.id, block: child, section: props.section, step: props.step, expanded: props.expanded })) }
         : undefined
-      return h(PmBoundary, { name: node.name }, () => h(component, { ...node.props }, children))
+      const resetKey = props.expanded ? content.value : `${content.value}@${props.step}`
+      return h(PmBoundary, { name: node.name, resetKey }, () => h(component, { ...node.props }, children))
     }
   },
 })
@@ -59,10 +99,15 @@ function content(props: { block: IRBlock, section: IRSection, step: number, expa
   }
 }
 
+/** Whether a block draws over the page instead of taking a place in it (`ComponentNode.layer`). */
+export function isOverlay(block: IRBlock): boolean {
+  return block.node.type === 'component' && block.node.layer === 'overlay'
+}
+
 /**
  * One IR block. Hidden blocks keep their place (and their components keep
- * their state), so stepping back and forth never moves the layout. Gives the
- * components inside the block its step through `BLOCK_CONTEXT`.
+ * their state), so stepping back and forth never moves the layout. The
+ * components inside count their steps from the block's `at` (its step scope).
  */
 export const BlockView = defineComponent({
   name: 'PmBlock',
@@ -70,9 +115,6 @@ export const BlockView = defineComponent({
   setup(props) {
     const viewer = inject(VIEWER, undefined)
     const el = shallowRef<HTMLElement>()
-    const step = toRef(props, 'step')
-    const local = computed(() => (props.expanded ? FINAL_STEP : props.step - props.block.at))
-    provide(BLOCK_CONTEXT, { section: toRef(props, 'section'), block: toRef(props, 'block'), step, local })
     // The components of the block count their internal steps from its `at` (docs/ir.md 2.4);
     // their clicks are steps of the section, as in a slide.
     provideStepScope(() => props.block.at)
@@ -94,7 +136,7 @@ export const BlockView = defineComponent({
       const visible = props.expanded || blockVisible(block, props.step)
       return h('div', {
         'ref': el,
-        'class': [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, { 'pm-hidden': !visible }],
+        'class': [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, { 'pm-block--overlay': isOverlay(block), 'pm-hidden': !visible }],
         'data-block': block.id,
         'data-at': block.at,
         'data-component': block.node.type === 'component' ? block.node.name : undefined,

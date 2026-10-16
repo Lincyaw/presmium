@@ -3,17 +3,17 @@
 // deck; `presmium build` ships it without the author's paths; clearing it removes the file.
 // The deck lives in the demo's ignored .presmium directory, so it resolves Slidev, its theme and
 // the plugins from the demo's node_modules.
-import { execFile, spawn } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
-import type { Browser } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const DEMO = fileURLToPath(new URL('../../../examples/demo', import.meta.url))
-const PRESMIUM = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 /** The environment of a shell: without Vitest's NODE_ENV=test, which would change how Vite builds. */
 const ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => name !== 'NODE_ENV'))
 
@@ -49,7 +49,7 @@ afterAll(async () => {
 
 /** Starts `presmium dev --to slides` and resolves with the URL of the slides. */
 function startDev(): Promise<string> {
-  dev = spawn(process.execPath, [PRESMIUM, 'dev', '--to', 'slides'], { cwd: deck, env: ENV, stdio: ['ignore', 'pipe', 'pipe'] })
+  dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'slides'], { cwd: deck, env: ENV, stdio: ['ignore', 'pipe', 'pipe'] })
   return new Promise((resolve, reject) => {
     let output = ''
     const read = (chunk: Buffer) => {
@@ -63,12 +63,24 @@ function startDev(): Promise<string> {
   })
 }
 
-function build(): Promise<{ code: number, output: string }> {
-  return new Promise((resolve) => {
-    execFile(process.execPath, [PRESMIUM, 'build', '--to', 'slides'], { cwd: deck, env: ENV, maxBuffer: 16 << 20 }, (error, stdout, stderr) => {
-      resolve({ code: error ? Number(error.code) : 0, output: stdout + stderr })
-    })
-  })
+/**
+ * Opens the slides once the dev server has optimized its dependencies: while Vite optimizes them it
+ * may reload the first visits or abort their module requests (slowly on a loaded machine), so a
+ * visit is repeated until the slide shows, then the slides are visited once more.
+ */
+async function openSlides(page: Page, url: string): Promise<void> {
+  const heading = page.locator('.slidev-page h1', { hasText: 'Drawings' }).first()
+  const deadline = Date.now() + 180_000
+  for (let shown = 0; shown < 2;) {
+    try {
+      await page.goto(url)
+      await heading.waitFor({ timeout: 30_000 })
+      await page.waitForLoadState('networkidle')
+      shown++
+    } catch (error) {
+      if (Date.now() > deadline) throw error
+    }
+  }
 }
 
 function filesOf(dir: string): string[] {
@@ -79,12 +91,7 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   const url = await startDev()
   browser = await chromium.launch()
   const page = await browser.newPage()
-  // The first visit may reload once while Vite optimizes dependencies.
-  for (let visit = 0; visit < 2; visit++) {
-    await page.goto(url)
-    await page.locator('.slidev-page h1', { hasText: 'Drawings' }).first().waitFor()
-    await page.waitForLoadState('networkidle')
-  }
+  await openSlides(page, url)
 
   await page.getByTitle('Show drawing toolbar').click()
   const box = (await page.locator('#slide-content').boundingBox())!
@@ -99,8 +106,8 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   const path = /<path[^>]* d="([^"]{12})/.exec(readFileSync(drawing, 'utf8'))?.[1]
   expect(path).toBeTruthy()
 
-  const built = await build()
-  expect(built.code, built.output).toBe(0)
+  const built = await presmium(deck, ['build', '--to', 'slides'])
+  expect(built.code, built.stdout + built.stderr).toBe(0)
   const shipped = filesOf(join(deck, 'dist/slides')).filter(file => /\.(js|html|json)$/.test(file)).map(file => readFileSync(file, 'utf8'))
   expect(shipped.some(text => text.includes(path!))).toBe(true)
   expect(shipped.filter(text => text.includes(deck))).toEqual([])
@@ -108,4 +115,4 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   // The drawing toolbar's "Delete" clears the slide's drawing.
   await page.getByTitle('Delete', { exact: true }).click()
   await expect.poll(() => existsSync(drawing), { timeout: 15_000 }).toBe(false)
-}, 240_000)
+}, 360_000)

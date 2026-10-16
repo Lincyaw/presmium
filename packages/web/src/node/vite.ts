@@ -3,11 +3,15 @@
  * VitePress process, so it imports Node built-ins, MiniSearch and the pure
  * domain only.
  *
- * - `virtual:presmium/ir` is the IR document, read from the file the renderer writes.
+ * - `virtual:presmium/ir` is the IR document, read from the file the renderer
+ *   writes, and its `revision` (a hash of the file).
  * - In the dev server, live updates arrive from the `presmium dev` process over
  *   the IPC channel and go to the browsers over Vite's WebSocket as the
- *   custom event `presmium:update` (docs/ir.md section 8.3). The module is
- *   invalidated, so a page loaded later gets the new IR, but no reload is sent.
+ *   custom event `presmium:update` (docs/ir.md section 8.3), with the revision
+ *   they apply to and the one they make. The module is invalidated, so a page
+ *   loaded later gets the new IR, but no reload is sent. A page that missed an
+ *   update (loaded while the deck was compiling, or reconnected) gets the
+ *   current document from `GET /__presmium/ir` (`{ revision, doc }`).
  * - `GET /__presmium/source?file=&line=` asks the `presmium dev` process to
  *   open a source file in the author's editor (K-11).
  * - The local search index is the renderer's own, of the same shape as
@@ -27,25 +31,38 @@
  *   VitePress 1.6 internals, not its documented API. The search cases of
  *   e2e/web.spec.ts (build) and e2e/viewer.spec.ts (dev) fail when they change.
  */
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import MiniSearch from 'minisearch'
-import { SOURCE_ENDPOINT } from '../domain/links.ts'
+import { IR_ENDPOINT, SOURCE_ENDPOINT } from '../domain/links.ts'
 import { tokenize } from '../domain/search.ts'
 
 export const IR_MODULE = 'virtual:presmium/ir'
 export const UPDATE_EVENT = 'presmium:update'
 const RESOLVED = `\0${IR_MODULE}`
 
+/** The revision of a published document: a hash of its JSON, as the renderer writes it. */
+export function revisionOf(json: string): string {
+  return createHash('sha256').update(json).digest('hex').slice(0, 16)
+}
+
+/** A live update as the pages get it: the update, the revision it applies to (`base`) and the one it makes. */
+export interface UpdateEvent {
+  update: unknown
+  base: string
+  revision: string
+}
+
 /** Messages between `presmium dev` and the VitePress process. */
 export type DevMessage =
-  | { type: 'presmium:update', update: unknown }
+  | ({ type: 'presmium:update' } & UpdateEvent)
   | { type: 'presmium:ready', port: number }
   /** A file of the published IR (relative to the deck) and a line, to open in the editor. */
   | { type: 'presmium:source', file: string, line: number }
 
 interface Request { url?: string }
-interface Response { statusCode: number, end(): void }
+interface Response { statusCode: number, setHeader(name: string, value: string): void, end(body?: string): void }
 
 interface Module { id: string | null }
 
@@ -85,7 +102,10 @@ export function presmiumIR(irFile: string, searchDocuments: string) {
       return id === IR_MODULE ? RESOLVED : undefined
     },
     load(id: string) {
-      if (id === RESOLVED) return `export default JSON.parse(${JSON.stringify(readFileSync(irFile, 'utf8'))})`
+      if (id === RESOLVED) {
+        const json = readFileSync(irFile, 'utf8')
+        return `export default JSON.parse(${JSON.stringify(json)})\nexport const revision = ${JSON.stringify(revisionOf(json))}`
+      }
       // Hot updates add a timestamp to the module ids.
       const module = id.split('?')[0]
       if (module === SEARCH_INDEX) {
@@ -110,11 +130,18 @@ export function presmiumIR(irFile: string, searchDocuments: string) {
         if (message?.type !== 'presmium:update') return
         const module = server.moduleGraph.getModuleById(RESOLVED)
         if (module) server.moduleGraph.invalidateModule(module)
-        server.ws.send(UPDATE_EVENT, message.update)
+        server.ws.send(UPDATE_EVENT, { update: message.update, base: message.base, revision: message.revision } satisfies UpdateEvent)
         refreshSearch()
       }
       process.on('message', receive)
       server.httpServer?.once('close', () => process.off('message', receive))
+      server.middlewares.use(IR_ENDPOINT, (_req, res) => {
+        const json = readFileSync(irFile, 'utf8')
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store')
+        res.end(`{"revision":${JSON.stringify(revisionOf(json))},"doc":${json}}`)
+      })
       server.middlewares.use(SOURCE_ENDPOINT, (req, res) => {
         const params = new URL(req.url ?? '', 'http://localhost').searchParams
         const file = params.get('file')

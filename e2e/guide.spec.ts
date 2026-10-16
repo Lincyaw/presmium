@@ -49,16 +49,16 @@ function cursorOffset(page: Page, selector: string) {
   }, selector)
 }
 
-/** Whether the spotlight's cutout lies on `#guide-output`: the box is lit, the page just outside it is dimmed. */
-function spotlightFits(page: Page) {
-  return page.evaluate(() => {
+/** Whether the spotlight's cutout lies on `#guide-output` of `slide`: the box is lit, the page just outside it is dimmed. */
+function spotlightFits(page: Page, slide = '.pm-guide') {
+  return page.evaluate((slide) => {
     const path = document.querySelector<SVGPathElement>('.driver-overlay path')
-    const box = document.querySelector('.pm-guide #guide-output')!.getBoundingClientRect()
+    const box = document.querySelector(`${slide} #guide-output`)!.getBoundingClientRect()
     const dimmed = ([x, y]: number[]) => !!path?.isPointInFill(new DOMPoint(x, y))
     const inside = [[box.left + 2, box.top + 2], [box.right - 2, box.bottom - 2]]
     const outside = [[box.left - 20, box.top], [box.right + 20, box.bottom], [box.left, box.top - 20], [box.right, box.bottom + 20]]
     return !inside.some(dimmed) && outside.every(dimmed)
-  })
+  }, slide)
 }
 
 /** Distance in pixels from the centre of the hint beacon to the top right corner of the help button. */
@@ -219,12 +219,14 @@ test('under the spotlight, Tab moves the focus to the spotlit element and the ke
   await expect.poll(() => cues(page)).toEqual(STEPS[4])
 })
 
-test('in the web form the cues follow the steps of the present view and show in place', async ({ page }) => {
+test('in the web form the cues follow the steps of the present view, which draws them over the page', async ({ page }) => {
   await page.goto(`${deck().web}/guide.html`)
-  // The document view shows every step done: the cursor has clicked, no spotlight or hint is left.
+  // The document view shows every step done: the cursor has clicked, no spotlight or hint is left,
+  // and the explanations of the spotlight and the hint stand in the text.
   const section = page.locator('.pm-section[data-section="guide"]')
   await expect(section.locator('#guide-run')).toHaveAttribute('data-pm-cursor', 'click')
   await expect(section.locator('[data-pm-spotlight], [data-pm-hint]')).toHaveCount(0)
+  await expect(section.locator('.pm-cue-note')).toHaveText(['搜索结果：点击搜索后，结果出现在这里。', '帮助：不确定关键字怎么写时，点这里查看语法。'])
 
   await page.getByRole('combobox', { name: '视图' }).selectOption('present')
   const present = page.getByRole('region', { name: '放映' })
@@ -238,16 +240,89 @@ test('in the web form the cues follow the steps of the present view and show in 
     { cursor: '', spotlight: '', hint: '' },
     { cursor: 'guide-run=hover', spotlight: '', hint: '' },
     { cursor: 'guide-run=click', spotlight: '', hint: '' },
-    { cursor: 'guide-run=click', spotlight: 'guide-output=inline', hint: '' },
-    { cursor: 'guide-run=click', spotlight: '', hint: 'guide-help=inline' },
+    { cursor: 'guide-run=click', spotlight: 'guide-output=live', hint: '' },
+    { cursor: 'guide-run=click', spotlight: '', hint: 'guide-help=live' },
   ]
   for (const [step, marked] of expected.entries()) {
     if (step > 0) await page.keyboard.press('ArrowRight')
     await expect(present).toHaveAttribute('data-step', String(step))
     await expect.poll(marks).toEqual(marked)
+    if (step === 4) {
+      // The page is dimmed around the results, with the spotlight's explanation.
+      await expect.poll(() => spotlightFits(page, '.pm-present')).toBe(true)
+      await expect(page.locator('.pm-spotlight-popover .driver-popover-title')).toHaveText('搜索结果')
+      await expect(page.locator('.pm-spotlight-popover .driver-popover-description')).toHaveText('点击搜索后，结果出现在这里。')
+    }
   }
+  // The beacon on the help button opens its explanation.
+  await page.locator('.driver-hint.pm-hint-beacon').click()
+  await expect(page.locator('.pm-hint-popover .driver-popover-title')).toHaveText('帮助')
   for (let step = expected.length - 2; step >= 0; step--) {
     await page.keyboard.press('ArrowLeft')
     await expect.poll(marks).toEqual(expected[step])
   }
+})
+
+test('in the web form\'s scrolly view a cue explains its target while it is active', async ({ page }) => {
+  await page.goto(`${deck().web}/guide.html`)
+  await page.getByRole('combobox', { name: '视图' }).selectOption('scrolly')
+  const section = page.locator('.pm-section[data-section="guide"]')
+  const notes = section.locator('.pm-cue-note')
+  const step = async (k: number) => {
+    await expect(async () => {
+      await section.locator(`.pm-step[data-step="${k}"]`).evaluate(el => el.scrollIntoView({ block: 'center' }))
+      await expect(section).toHaveAttribute('data-step', String(k), { timeout: 500 })
+    }).toPass()
+  }
+  await step(4)
+  await expect(section.locator('#guide-output')).toHaveAttribute('data-pm-spotlight', 'inline')
+  await expect(notes.nth(0)).toHaveAttribute('data-state', 'shown')
+  await expect(notes.nth(1)).toHaveAttribute('data-state', 'hidden')
+  await step(5)
+  await expect(notes.nth(0)).toHaveAttribute('data-state', 'hidden')
+  await expect(notes.nth(1)).toHaveAttribute('data-state', 'shown')
+})
+
+test('without JavaScript the page has no empty board, and loading it moves nothing', async ({ browser }) => {
+  const height = async (javaScriptEnabled: boolean) => {
+    const context = await browser.newContext({ javaScriptEnabled })
+    const page = await context.newPage()
+    await page.goto(`${deck().web}/guide.html`)
+    const section = page.locator('.pm-section[data-section="guide"]')
+    if (javaScriptEnabled) {
+      await expect(section.locator('.pm-client-only')).toHaveCount(0)
+      await expect(section.locator('.pm-cue-note')).toHaveCount(2)
+    } else {
+      // Every board shows something: the cues' explanations stand in for them.
+      const empty = await page.locator('.pm-board').evaluateAll(boards => boards.filter(board => !board.textContent?.trim()).length)
+      expect(empty).toBe(0)
+      await expect(section).toContainText('点击搜索后，结果出现在这里。')
+    }
+    await page.waitForLoadState('networkidle')
+    const box = await section.evaluate(el => Math.round(el.getBoundingClientRect().height))
+    await context.close()
+    return box
+  }
+  expect(await height(true)).toBe(await height(false))
+})
+
+test('a cue that keeps still stops reading its target on every frame', async ({ page }) => {
+  await openGuide(page, 5)
+  await expect.poll(() => cues(page)).toEqual(STEPS[5])
+  await page.waitForTimeout(2000)
+  const frames = await page.evaluate(async () => {
+    let calls = 0
+    const native = window.requestAnimationFrame
+    window.requestAnimationFrame = (callback) => {
+      calls++
+      return native(callback)
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    window.requestAnimationFrame = native
+    return calls
+  })
+  expect(frames).toBe(0)
+  // A resize wakes it, and the beacon follows its target again.
+  await page.setViewportSize({ width: 900, height: 900 })
+  await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
 })

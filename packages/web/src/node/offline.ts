@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, sep } from 'node:path'
-import { SERVICE_WORKER } from '../domain/index.ts'
+import { SERVICE_WORKER, urlPath } from '../domain/index.ts'
 
 /**
  * The service worker precaches every file of the build, so a page loaded once
@@ -52,10 +52,31 @@ self.addEventListener('fetch', (event) => {
 `
 }
 
+/**
+ * Fonts in an older format (`.woff`, `.ttf`) that the build's stylesheets
+ * offer beside a `.woff2` of the same font (an `@font-face`, where the
+ * `.woff2` may be inlined): every browser Presmium supports
+ * (docs/browsers.md) loads the `.woff2` instead, so they are never fetched.
+ * By file name.
+ */
+function fallbackFonts(dir: string, all: string[]): Set<string> {
+  const unused = new Set<string>()
+  for (const file of all.filter(f => f.endsWith('.css'))) {
+    for (const [, face] of readFileSync(join(dir, file), 'utf8').matchAll(/@font-face\s*\{([^}]*)\}/g)) {
+      if (!/woff2/.test(face!)) continue
+      for (const [, url] of face!.matchAll(/url\(\s*["']?([^"')]+\.(?:woff|ttf))["']?\s*\)/g)) unused.add(url!.split('/').pop()!)
+    }
+  }
+  return unused
+}
+
+/** The files to precache: every file of the build, except fonts no browser fetches (`fallbackFonts`). */
 function files(dir: string): string[] {
-  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
+  const all = readdirSync(dir, { recursive: true, encoding: 'utf8' })
     .filter(file => statSync(join(dir, file)).isFile() && file !== SERVICE_WORKER)
     .sort()
+  const unused = fallbackFonts(dir, all)
+  return all.filter(file => !unused.has(file.split(sep).pop()!))
 }
 
 /** Writes the service worker into a finished build; its cache name changes with the build's content. */
@@ -63,6 +84,7 @@ export function writeServiceWorker(outDir: string, base: string): void {
   const list = files(outDir)
   const hash = createHash('sha256')
   for (const file of list) hash.update(file).update(readFileSync(join(outDir, file)))
-  const urls = list.map(file => encodeURI(base + file.split(sep).join('/')))
+  // As pages ask for them: a `#` or `?` in a file name is part of the name.
+  const urls = list.map(file => base + urlPath(file.split(sep).join('/')))
   writeFileSync(join(outDir, SERVICE_WORKER), source(`presmium-web-${hash.digest('hex').slice(0, 12)}`, urls, base))
 }

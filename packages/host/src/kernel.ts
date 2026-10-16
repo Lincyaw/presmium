@@ -1,10 +1,15 @@
-import { Kernel } from '@presmium/kernel'
-import type { Logger, PluginDefinition, PresentationMode, ServiceToken, StartReport } from '@presmium/kernel'
+import { Kernel, PRESENTER_PANELS } from '@presmium/kernel'
+import type { Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@presmium/kernel'
 import { shallowRef } from 'vue'
+import { createPresenterPanels, createToolbar } from './panels.ts'
+import { NAVIGATION, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
+import type { Navigation, SyncTransports } from './types.ts'
 
 const registered: PluginDefinition[] = []
 const running = shallowRef<Kernel>()
 let starting: Promise<StartReport> | undefined
+/** Plugins the host loads besides the kernel's (e.g. the web form's viewer plugins) that failed. */
+const failures = shallowRef<PluginReport[]>([])
 
 /**
  * Registers a plugin for the kernel start. Addons call it from `setup/main.ts`;
@@ -95,7 +100,50 @@ export function presmiumService<T>(token: ServiceToken<T>): T | undefined {
   return running.value?.getService(token)
 }
 
-/** Reactive start report; undefined until the kernel has started. Host adapters delegate `startReport` here. */
+/**
+ * Reports a plugin the host loads outside the kernel (e.g. a viewer plugin
+ * of the web form) that failed: the start report lists it as failed.
+ */
+export function reportPluginFailure(id: string, reason: string): void {
+  failures.value = [...failures.value.filter(report => report.id !== id), { id, status: 'failed', reason }]
+}
+
+/**
+ * Reactive start report, with the failures `reportPluginFailure` reported;
+ * undefined until the kernel has started. Host adapters delegate `startReport` here.
+ */
 export function presmiumReport(): StartReport | undefined {
-  return running.value?.report()
+  const report = running.value?.report()
+  return report && failures.value.length ? { ...report, plugins: [...report.plugins, ...failures.value] } : report
+}
+
+export interface HostStart {
+  mode: PresentationMode
+  /** The headmatter `presmium` object. */
+  config: Record<string, unknown>
+  /** The form's `navigation` service. */
+  navigation: Navigation
+  /** The form's `syncTransports` service. */
+  transports: SyncTransports
+}
+
+/**
+ * Starts the kernel with the registered plugins and the host services every
+ * form provides: the presenter panels, the sync transports, the navigation
+ * and the toolbar. The plugins are disposed when the page goes away, and
+ * start again when the browser shows it again from its cache. Browser only.
+ */
+export function startHost(options: HostStart): Promise<StartReport> {
+  const start = () => startPresmium({
+    mode: options.mode,
+    config: options.config,
+    beforeStart(kernel) {
+      kernel.provide(PRESENTER_PANELS, createPresenterPanels())
+      kernel.provide(SYNC_TRANSPORTS, options.transports)
+      kernel.provide(NAVIGATION, options.navigation)
+      kernel.provide(TOOLBAR, createToolbar())
+    },
+  })
+  stopPresmiumOnPageHide(() => void start())
+  return start()
 }

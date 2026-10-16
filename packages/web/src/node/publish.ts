@@ -1,88 +1,114 @@
-import { createHash } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import type { IRBlock, IRDocument, MdastNode, SourcePos } from '@presmium/kernel'
+import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { irBlocks } from '@presmium/kernel'
+import type { IRBlock, IRDocument, MdastNode, RenderContext, SourcePos } from '@presmium/kernel'
+import katex from 'katex'
+import { urlPath } from '../domain/index.ts'
 
-/** Directory of the site's `public/` where the deck's local images are copied. */
-const MEDIA = 'media'
+/** Directory of the site's `public/` where the deck's local files are copied. */
+export const MEDIA = 'media'
 
-const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#|\/)/i
+/** Nodes whose URL may name a local file. */
+const LINKED = new Set(['image', 'link', 'definition'])
 
-function relativeTo(deckDir: string, file: string): string {
-  return isAbsolute(file) ? relative(deckDir, file).split('\\').join('/') : file
-}
-
-/** Where the deck is: its directory and its repository (`RenderContext.workspaceRoot`). */
-export interface DeckLocation {
-  deckDir: string
-  workspaceRoot: string
-}
-
-function inRepository(path: string, root: string): boolean {
-  if (!isAbsolute(path)) return false
-  const rel = relative(root, path)
-  return rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)
+/** A local file a URL names, with the size and time it had when its name was hashed. */
+interface Asset {
+  file: string
+  name: string
+  size: number
+  mtimeMs: number
 }
 
 /**
- * A configuration value whose absolute paths in the deck's repository (e.g.
- * a workspace a pass resolved) are made relative to the deck, so the site
- * does not depend on where the deck was built. Other strings, such as site
- * paths (`/web`), stay as they are.
+ * The files URLs name, by source file and URL: a dev server publishes the
+ * document at every edit, and a file whose size and time have not changed
+ * keeps its name without being read and hashed again.
  */
-function portable(value: unknown, deck: DeckLocation): unknown {
-  if (typeof value === 'string') return inRepository(value, deck.workspaceRoot) ? relativeTo(deck.deckDir, value) || '.' : value
-  if (Array.isArray(value)) return value.map(item => portable(item, deck))
-  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, deck)]))
-  return value
+const assets = new Map<string, Asset>()
+
+function localAsset(ctx: RenderContext, source: SourcePos, url: string): Asset | undefined {
+  const key = `${source.file}\0${url}`
+  const known = assets.get(key)
+  const now = known && statSync(known.file, { throwIfNoEntry: false })
+  if (known && now && now.size === known.size && now.mtimeMs === known.mtimeMs) return known
+  const found = ctx.localAsset(source, url)
+  const stat = found && statSync(found.file)
+  if (!found || !stat) {
+    assets.delete(key)
+    return undefined
+  }
+  const asset = { ...found, size: stat.size, mtimeMs: stat.mtimeMs }
+  assets.set(key, asset)
+  return asset
+}
+
+/** Math rendered once per formula: a dev server publishes the document at every edit. */
+const rendered = new Map<string, string>()
+
+/** KaTeX's HTML of a formula, as the browser would render it, so pages show math without loading KaTeX. */
+function renderMath(tex: string, display: boolean): string {
+  const key = `${display ? 'D' : 'I'}${tex}`
+  let html = rendered.get(key)
+  if (html === undefined) {
+    html = katex.renderToString(tex, { displayMode: display, throwOnError: false })
+    rendered.set(key, html)
+  }
+  return html
 }
 
 /**
  * The document as the web site publishes it: source paths and paths in the
  * plugin configuration relative to the deck (no local paths in a public
- * site), and local images copied to `<publicDir>/media/` with their URLs
- * rewritten under the site base.
+ * site); the local files that images, links, link definitions and the
+ * `assets` of components name copied to `<publicDir>/media/` under their
+ * published names (`RenderContext.localAsset`), their URLs rewritten under the
+ * site base; and math rendered by KaTeX, so the static pages show it.
  */
-export function publishedDocument(doc: IRDocument, deck: DeckLocation, publicDir: string, base: string): IRDocument {
-  const { deckDir } = deck
+export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string): IRDocument {
+  const { deckDir } = ctx
   const copy = structuredClone(doc)
-  const source = (pos: SourcePos) => {
-    pos.file = relativeTo(deckDir, pos.file)
+  const media = join(publicDir, MEDIA)
+  const relative = (pos: { file: string }) => {
+    pos.file = ctx.portable(pos.file, deckDir) as string
   }
-  const image = (node: MdastNode, from: string) => {
-    if (node.type === 'image' && typeof node.url === 'string' && !REMOTE.test(node.url)) {
-      const file = resolve(dirname(from), decodeURI(node.url.split(/[?#]/)[0]!))
-      if (existsSync(file) && statSync(file).isFile()) {
-        const hash = createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8)
-        const name = `${hash}-${basename(file)}`
-        // The name holds the content hash: an existing copy is up to date, and a dev server sees no change.
-        if (!existsSync(join(publicDir, MEDIA, name))) {
-          mkdirSync(join(publicDir, MEDIA), { recursive: true })
-          copyFileSync(file, join(publicDir, MEDIA, name))
-        }
-        node.url = `${base}${MEDIA}/${encodeURIComponent(name)}`
-      }
+  const publish = (url: string, source: SourcePos): string | undefined => {
+    const asset = localAsset(ctx, source, url)
+    if (!asset) return undefined
+    const target = join(media, asset.name)
+    // The name holds the content hash: an existing copy is up to date, and a dev server sees no change.
+    if (!existsSync(target)) {
+      mkdirSync(media, { recursive: true })
+      copyFileSync(asset.file, target)
     }
-    node.children?.forEach(child => image(child, from))
+    return `${base}${MEDIA}/${urlPath(asset.name)}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
+  }
+  const mdast = (node: MdastNode, source: SourcePos) => {
+    if (LINKED.has(node.type) && typeof node.url === 'string') node.url = publish(node.url, source) ?? node.url
+    if ((node.type === 'math' || node.type === 'inlineMath') && typeof node.value === 'string') node.html = renderMath(node.value, node.type === 'math')
+    node.children?.forEach(child => mdast(child, source))
   }
   const block = (b: IRBlock) => {
-    const file = b.source.file
-    if (b.node.type === 'markdown') image(b.node.mdast, file)
-    if (b.node.type === 'component') {
-      if (b.node.fallback) image(b.node.fallback, file)
-      b.node.children?.forEach(block)
+    const { node, source } = b
+    if (node.type === 'markdown') mdast(node.mdast, source)
+    if (node.type === 'component') {
+      if (node.fallback) mdast(node.fallback, source)
+      for (const [prop, url] of Object.entries(node.assets ?? {})) {
+        const published = publish(url, source)
+        if (published) node.props[prop] = published
+      }
     }
-    source(b.source)
   }
-  copy.meta.entry = relativeTo(deckDir, copy.meta.entry)
-  copy.config.presmium = portable(copy.config.presmium, deck) as IRDocument['config']['presmium']
+  copy.meta.entry = ctx.portable(copy.meta.entry, deckDir) as string
+  copy.config.presmium = ctx.portable(copy.config.presmium, deckDir) as IRDocument['config']['presmium']
   for (const section of copy.sections) {
-    source(section.source)
-    if (section.config) section.config = portable(section.config, deck) as typeof section.config
-    section.blocks.forEach(block)
+    relative(section.source)
+    if (section.config) section.config = ctx.portable(section.config, deckDir) as typeof section.config
+    for (const b of irBlocks(section.blocks)) block(b)
+    // Positions last: the files of a block are found relative to its source file.
+    for (const b of irBlocks(section.blocks)) relative(b.source)
   }
   for (const finding of copy.diagnostics) {
-    if (finding.source) finding.source.file = relativeTo(deckDir, finding.source.file)
+    if (finding.source) relative(finding.source)
   }
   return copy
 }

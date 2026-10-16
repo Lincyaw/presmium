@@ -1,6 +1,7 @@
 import type { IRSection } from '@presmium/kernel'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, provide, watch } from 'vue'
+import { decoded } from './markdown.ts'
 import { getView } from './registry.ts'
 import { createPageTracker, PAGE_TRACKER, SectionView } from './section.ts'
 import type { SectionLayout } from './section.ts'
@@ -54,13 +55,27 @@ export const ViewHost = defineComponent({
     provide(PAGE_TRACKER, tracker)
     onBeforeUnmount(() => tracker.dispose())
 
+    /** The section of this page the URL hash names, if any. */
+    const linked = () => {
+      const hash = decoded(location.hash.slice(1))
+      return props.sections.includes(hash) ? hash : undefined
+    }
+    // A link to a section (the sidebar, an anchor, the back button) is an explicit navigation: the section
+    // is the one read, kept in place while content above it loads, until the reader scrolls.
+    const onHash = () => {
+      const section = linked()
+      if (section && isPage()) viewer.show({ section, step: 0 })
+    }
     // A page opened by a link, a reload or the sidebar: the section in the URL hash, else its first section.
     // Runs before the layout handles `?section=` and `?view=`.
     onMounted(() => {
-      if (viewer.restoring.value || props.sections.length === 0 || props.sections.includes(viewer.position.value.section)) return
-      const hash = decodeURIComponent(location.hash.slice(1))
-      viewer.go({ section: props.sections.includes(hash) ? hash : props.sections[0]!, step: 0 })
+      window.addEventListener('hashchange', onHash)
+      if (viewer.restoring.value || props.sections.length === 0) return
+      const section = linked()
+      if (section) viewer.show({ section, step: 0 })
+      else if (!props.sections.includes(viewer.position.value.section)) viewer.go({ section: props.sections[0]!, step: 0 })
     })
+    onBeforeUnmount(() => window.removeEventListener('hashchange', onHash))
 
     // A live update keeps what the reader is reading where it is, even when content above it changed (K-11).
     watch(viewer.doc, async () => {

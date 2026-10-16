@@ -3,16 +3,13 @@ import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState 
 import type { App, ComputedRef, Ref } from 'vue'
 import { computed, getCurrentInstance, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
 import { PmBoundary } from './boundary.ts'
-import { HOST } from './key.ts'
+import { HOST, installed } from './key.ts'
 import { PmStepScope, useStepScope } from './scope.ts'
 import type { HostAdapter, SharedStateScope } from './types.ts'
 
-/** The adapter installed last; `useSharedState` works outside components through it. */
-let installed: HostAdapter | undefined
-
 /** Called by a host adapter when the app is created. Also registers `PmBoundary` and `PmStepScope` globally. */
 export function installHost(app: App, adapter: HostAdapter): void {
-  installed = adapter
+  installed.adapter = adapter
   app.provide(HOST, adapter)
   app.component('PmBoundary', PmBoundary)
   app.component('PmStepScope', PmStepScope)
@@ -91,7 +88,7 @@ export interface SharedStateOptions {
  * forms, inside or outside components (after the host is installed).
  */
 export function useSharedState<T>(key: string, initial: T, options: SharedStateOptions = {}): Ref<T> {
-  const host = (getCurrentInstance() ? inject(HOST, undefined) : undefined) ?? installed
+  const host = (getCurrentInstance() ? inject(HOST, undefined) : undefined) ?? installed.adapter
   if (!host) throw new Error('[presmium] no host installed: the host adapter must call installHost(app, adapter)')
   return host.useSharedState(key, initial, options.scope ?? 'local')
 }

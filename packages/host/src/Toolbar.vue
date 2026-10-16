@@ -1,12 +1,17 @@
 <script setup lang="ts">
 // The toolbar items (the `toolbar` service); each host shows them in its toolbar.
-import { shallowRef, watchEffect } from 'vue'
+import { onMounted, ref, shallowRef, watchEffect } from 'vue'
 import { useService } from './host.ts'
 import { TOOLBAR } from './types.ts'
 import type { ToolbarItem } from './types.ts'
 
 const service = useService(TOOLBAR)
 const items = shallowRef<ToolbarItem[]>([])
+// Items show once mounted: a server render has none, so the first render in the browser agrees with it.
+const mounted = ref(false)
+onMounted(() => {
+  mounted.value = true
+})
 
 watchEffect((onCleanup) => {
   const registry = service.value
@@ -20,7 +25,7 @@ watchEffect((onCleanup) => {
 </script>
 
 <template>
-  <span v-if="items.length" class="pm-toolbar">
+  <span v-if="mounted && items.length" class="pm-toolbar">
     <component :is="item.component" v-for="item in items" :key="item.id" :data-toolbar-item="item.id" />
   </span>
 </template>

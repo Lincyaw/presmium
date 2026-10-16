@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmBoundary } from '@presmium/host'
+import CueNote from '../src/client/CueNote.vue'
 import { requestSpotlight, useCue } from '../src/client/index.ts'
 
 const props = defineProps<{
@@ -15,15 +15,15 @@ const props = defineProps<{
 }>()
 
 // On the audience's slide driver.js dims the page around the target; elsewhere the target is outlined.
-const { anchor, look, steps } = useCue(props, 'data-pm-spotlight', requestSpotlight)
+// In the web form's page views, its title and text show in place.
+const { anchor, look, note, steps } = useCue(props, 'data-pm-spotlight', requestSpotlight)
 </script>
 
 <template>
-  <PmBoundary name="PmSpotlight">
-    <span ref="anchor" class="pm-spotlight pm-overlay" hidden :data-target="target" :data-look="look ?? 'off'">
-      <span v-for="step in steps" :key="step" v-click="step" />
-    </span>
-  </PmBoundary>
+  <CueNote :title="title" :text="text" :state="note" />
+  <span ref="anchor" class="pm-spotlight" hidden :data-target="target" :data-look="look ?? 'off'">
+    <span v-for="step in steps" :key="step" v-click="step" />
+  </span>
 </template>
 
 <style>
@@ -31,14 +31,14 @@ const { anchor, look, steps } = useCue(props, 'data-pm-spotlight', requestSpotli
    and lets pointer events through. driver.js sets the overlay's z-index and the path's pointer
    events inline. */
 .driver-overlay {
-  z-index: 1 !important;
+  z-index: var(--pm-cue-z, 1) !important;
 }
 .driver-overlay,
 .driver-overlay * {
   pointer-events: none !important;
 }
 body .driver-popover.pm-spotlight-popover {
-  z-index: 2;
+  z-index: calc(var(--pm-cue-z, 1) + 1);
 }
 [data-pm-spotlight='inline'] {
   outline: 3px solid #f59e0b;
