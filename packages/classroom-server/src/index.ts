@@ -30,13 +30,15 @@
  * connection proves its participant with `?participant=<id>&key=<key>`: the
  * first connection that names a participant binds the id to its key. A Yjs
  * client (the id of a document's structs) belongs to the writer that first
- * wrote its structs, or that holds it in awareness: a learner's update with
- * structs of another writer's client, such as the presenter's next ones,
- * would make that writer's own update a duplicate that every document
- * ignores, and is refused. Such an update must also integrate at once: one with structs that wait for structs
- * the room does not have (a gap in a client's clocks, an origin or a parent
- * not sent yet), or that deletes what the room does not have, would apply
- * later as part of what others write. An update that breaks these rules is
+ * wrote its structs or set its awareness state, for as long as the room
+ * lasts: a presenter whose connection drops before it has written anything
+ * keeps its client while it reconnects. A learner's update with structs of
+ * another writer's client, such as the presenter's next ones, would make that
+ * writer's own update a duplicate that every document ignores, and is
+ * refused. Such an update must also integrate at once: one with structs that
+ * wait for structs the room does not have (a gap in a client's clocks, an
+ * origin or a parent not sent yet), or that deletes what the room does not
+ * have, would apply later as part of what others write. An update that breaks these rules is
  * dropped and the connection closed with code 4403: the client's document
  * holds what the room refused, so the session plugin starts again from the
  * room's and tells the learner. Awareness (who is connected)
@@ -85,11 +87,12 @@ class Room extends Y.Doc {
   /** Who writes through each connection (`writerKey`). */
   readonly writers = new Map<WebSocket, string>()
   /**
-   * Who wrote the structs of each Yjs client id (`writerKey`), from the first
-   * update that held one; the room's own client is the room's (''). A Yjs
-   * client's structs are identified by its id and a clock, so whoever writes
-   * the next clock of a client first makes that client's own write a
-   * duplicate, which every document ignores.
+   * Who writes as each Yjs client id (`writerKey`): the writer of the first
+   * update that held its structs or of the first awareness state set for it;
+   * the room's own client is the room's (''). Kept while the room lasts, after
+   * the connection closes too. A Yjs client's structs are identified by its id
+   * and a clock, so whoever writes the next clock of a client first makes that
+   * client's own write a duplicate, which every document ignores.
    */
   readonly authors = new Map<number, string>()
   /** Who is connected; a participant's own room has none. */
@@ -122,6 +125,9 @@ class Room extends Y.Doc {
       if (controlled) {
         added.forEach(id => controlled.add(id))
         removed.forEach(id => controlled.delete(id))
+        // A client the writer shows in awareness is its own, also before its first write and once the connection is gone.
+        const writer = this.writers.get(conn)!
+        for (const id of added) if (!this.authors.has(id)) this.authors.set(id, writer)
       }
       this.broadcast(awarenessMessage(awareness, changed))
     })
@@ -210,14 +216,6 @@ function writerKey(writer: ClassroomWriter): string {
   return writer.presenter ? 'presenter' : `participant:${writer.participant ?? ''}`
 }
 
-/** Who writes as a Yjs client: the writer of its structs so far, else of the connection that controls it in awareness. */
-function authorOf(room: Room, client: number): string | undefined {
-  const known = room.authors.get(client)
-  if (known !== undefined) return known
-  const controller = [...room.conns].find(([, clients]) => clients.has(client))?.[0]
-  return controller && room.writers.get(controller)
-}
-
 /** The Yjs client ids of an update's structs. */
 function structClients(update: Uint8Array): number[] {
   return [...Y.parseUpdateMeta(update).from.keys()]
@@ -254,7 +252,7 @@ function refusal(room: Room, update: Uint8Array, writer: ClassroomWriter): strin
   // Structs of another writer's client, e.g. the presenter's next clock: the presenter's own
   // write of that clock would then be ignored everywhere (P-60, P-61).
   const own = writerKey(writer)
-  if (structClients(update).some(client => (authorOf(room, client) ?? own) !== own)) return 'an update in the name of another writer\'s client'
+  if (structClients(update).some(client => (room.authors.get(client) ?? own) !== own)) return 'an update in the name of another writer\'s client'
   const probe = new Y.Doc()
   Y.applyUpdate(probe, Y.encodeStateAsUpdate(room))
   const before = pending(probe)
@@ -282,9 +280,10 @@ function changes(update: Uint8Array): boolean {
 
 /**
  * The entries of an awareness update that change something and that the
- * connection may make: states of clients no other connection controls (nor
- * the room itself), whose participant, for a connection that is not the
- * presenter's, is the one it proved, as a learner. `dropped` counts the
+ * connection may make: states of clients that no other writer owns
+ * (`Room.authors`, the room's own client included) and no other connection
+ * controls, whose participant, for a connection that is not the presenter's,
+ * is the one it proved, as a learner. `dropped` counts the
  * others. y-websocket clients send on every state they receive, which
  * changes nothing and is left out without counting.
  */
@@ -298,7 +297,7 @@ function ownAwareness(room: Room, awareness: awarenessProtocol.Awareness, conn: 
     const [client, clock, state] = entry
     const known = awareness.meta.get(client)?.clock ?? -1
     if (clock < known || (clock === known && !(state === 'null' && awareness.getStates().has(client)))) continue
-    if (ownClient(room, awareness, conn, client) && ownState(state, writer)) kept.push(entry)
+    if (ownClient(room, conn, client, writer) && ownState(state, writer)) kept.push(entry)
     else dropped++
   }
   const encoder = encoding.createEncoder()
@@ -311,8 +310,9 @@ function ownAwareness(room: Room, awareness: awarenessProtocol.Awareness, conn: 
   return { update: encoding.toUint8Array(encoder), dropped }
 }
 
-function ownClient(room: Room, awareness: awarenessProtocol.Awareness, conn: WebSocket, client: number): boolean {
-  return client !== awareness.clientID && ![...room.conns].some(([other, clients]) => other !== conn && clients.has(client))
+function ownClient(room: Room, conn: WebSocket, client: number, writer: ClassroomWriter): boolean {
+  const own = writerKey(writer)
+  return (room.authors.get(client) ?? own) === own && ![...room.conns].some(([other, clients]) => other !== conn && clients.has(client))
 }
 
 function ownState(json: string, writer: ClassroomWriter): boolean {

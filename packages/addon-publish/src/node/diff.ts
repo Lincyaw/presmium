@@ -7,7 +7,7 @@ import { PNG } from 'pngjs'
 import { diffReport, pageStatus, pairPages, parsePageFile, parseWebFile, reportMarkdown } from '../domain/index.ts'
 import type { DiffSide, PageRef, VisualDiff, VisualDiffReport } from '../domain/index.ts'
 import { git, run } from './process.ts'
-import { hasForm, SLIDEV_ENTRY, slidevDeck } from './slides.ts'
+import { hasForm, slidevDeck, slidevExport } from './slides.ts'
 import { captureWeb } from './web.ts'
 
 export interface DiffJob {
@@ -77,7 +77,7 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
         const slides = await slidevDeck(compilation)
         warnings.push(...slides.warnings.map(w => `${side.ref}: ${w}`))
         // The variable reaches the page as import.meta.env (Vite exposes VITE_*); setup/root.ts then makes text rendering deterministic.
-        await run(slides.dir, 'slidev', ['export', SLIDEV_ENTRY, '--format', 'png', '--with-clicks', '--wait', String(wait), '--output', join(out, label)], { VITE_PRESMIUM_VISUAL_DIFF: '1' })
+        await slidevExport(slides, { format: 'png', withClicks: true, wait, output: join(out, label), env: { VITE_PRESMIUM_VISUAL_DIFF: '1' } })
       }
       if (hasForm(compilation, 'web')) {
         for (const section of viewFor(compilation.doc, 'web').sections) sections.set(section.id, section.index)

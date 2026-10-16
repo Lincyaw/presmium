@@ -89,7 +89,8 @@ const hasHtml = (node: MdastNode): boolean => node.type === 'html' || (node.chil
  * they are.
  */
 function located(error: unknown, doc: IRDocument, ctx: RenderContext): unknown {
-  const output = errorMessage(error)
+  // The whole output: the line that names the slide may lie far before the end, which the message keeps.
+  const output = error instanceof SlidevError ? error.output : errorMessage(error)
   const at = /slides\.md__slidev_(\d+)\.md(?::\d+(?::\d+)?)?\s*\n(?:\w*Error: )?([^\n]+)/.exec(output)
   const section = at && doc.sections[Number(at[1]) - 1]
   if (!at || !section) return error
@@ -146,7 +147,16 @@ function slidevBin(): string {
   return join(dirname(pkg), (require(pkg) as { bin: { slidev: string } }).bin.slidev)
 }
 
-/** Runs the `slidev` command of @slidev/cli in `cwd`. */
+/** A failed `slidev` command: the end of its output in the message, all of it in `output`. */
+class SlidevError extends Error {
+  readonly output: string
+  constructor(message: string, output: string) {
+    super(`${message}\n${output.slice(-4000)}`)
+    this.output = output
+  }
+}
+
+/** Runs the `slidev` command of @slidev/cli in `cwd`; rejects with a `SlidevError` when it fails. */
 function slidev(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [slidevBin(), ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -154,7 +164,7 @@ function slidev(args: string[], cwd: string): Promise<void> {
     child.stdout.on('data', (chunk: Buffer) => output += chunk)
     child.stderr.on('data', (chunk: Buffer) => output += chunk)
     child.on('error', reject)
-    child.on('close', code => code === 0 ? resolve() : reject(new Error(`slidev ${args[0]} exited with code ${code}\n${output.slice(-4000)}`)))
+    child.on('close', code => code === 0 ? resolve() : reject(new SlidevError(`slidev ${args[0]} exited with code ${code}`, output)))
   })
 }
 
