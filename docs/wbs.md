@@ -470,7 +470,7 @@ WP-46 拆为两个文件归属不重叠、可并行的工作包。
 
 **验收**：按 `presmium-author` 从零写一份文稿并构建三种媒介；检查脚本发现技能中不存在的命令或缺少的指令时失败。
 
-### WP-72 设计（P-100 至 P-136、P-90）
+### WP-72 设计（P-100 至 P-137、P-90，以及 M9 的 P-17、P-44 至 P-46、P-54、P-55、P-68、P-78、P-79、P-123）
 
 **交付**：`domain-model.md` 新增执行环境、智能体、工作区、讲授四个限界上下文；`architecture.md` 新增包划分、依赖选型（Runno、WebGPU 库、`@jupyterlab/services`、MCP SDK、DeepSeek Harness、ACP、语音引擎）、契约与安全边界；`ir.md` 新增 `:env:`、`:session:`、富输出、讲解中的行内提示标记与讲授脚本；`contracts.ts`、`ir.ts` 的兼容扩展；本节各工作包的文件归属与验收用例。
 
