@@ -65,7 +65,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 想让列表或表格出现在幻灯片上，把它放进 `{slide}`；不放进去的列表是讲解，只进备注。表格与只含图片的段落本身就是上屏内容。
 
-讲解与表格单元格中不是 HTML 元素的标签（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`）按字面显示，不用转义。其他位置的原始 HTML 照常是 HTML：没有闭合的标签会使幻灯片构建失败，`presmium build` 把错误报告在源码中该块的位置。
+讲解与表格单元格中不是 HTML 元素的标签（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`）按字面显示，不用转义；行内的 `<svg>`、`<math>` 及其中的 SVG、MathML 元素照常是元素。其他位置的原始 HTML 照常是 HTML：没有闭合的标签会使幻灯片构建失败，`presmium build` 把错误报告在源码中该块的位置。
 
 ## 5. 步骤与讲解的绑定
 

@@ -313,6 +313,30 @@ test.describe('the reading fixture deck', () => {
     }
   })
 
+  test('the present view keeps the numbers of a list on the slide, at the slide\'s type size', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto(deck.web('advanced.html?view=present'))
+    const present = page.getByRole('region', { name: '放映' })
+    await expect(present).toHaveAttribute('data-section', 'advanced')
+    const list = present.locator('.pm-present__slide ol')
+    await expect(list.locator('li')).toHaveCount(4)
+    // Where the first item's marker starts: as far before the item as the marker is wide, which is
+    // how far a marker inside an item of a list beside it moves the item's text. The block and the
+    // slide frame clip what reaches before them.
+    const { marker, block, frame } = await list.evaluate((ol) => {
+      const probe = document.createElement('ol')
+      probe.style.cssText = 'list-style-position: inside; margin: 0; padding: 0'
+      probe.innerHTML = '<li><span>x</span></li>'
+      ol.after(probe)
+      const width = probe.querySelector('span')!.getBoundingClientRect().left - probe.getBoundingClientRect().left
+      probe.remove()
+      const left = (selector: string) => ol.closest(selector)!.getBoundingClientRect().left
+      return { marker: ol.querySelector('li')!.getBoundingClientRect().left - width, block: left('.pm-block'), frame: left('.pm-present__slide') }
+    })
+    expect(marker).toBeGreaterThanOrEqual(block)
+    expect(marker).toBeGreaterThanOrEqual(frame)
+  })
+
   test('the windows of a presentation share a channel of this deck: its name carries the base', async ({ context }) => {
     await recordChannels(context)
     const page = await context.newPage()
@@ -475,6 +499,42 @@ test.describe('MyST roles and directives, raw HTML and code origins (e2e/fixture
     await expect(section.locator('.pm-step--bare')).toHaveCount(bare)
     const { height, screen } = await section.evaluate(el => ({ height: el.getBoundingClientRect().height, screen: innerHeight }))
     expect(height).toBeLessThanOrEqual((narrated + bare * 0.25) * screen)
+  })
+})
+
+test.describe('tags of an agent\'s trace beside inline SVG and MathML (e2e/fixtures/viewer/tags)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let site: FixtureDeck
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    // The build fails if the slides' unclosed <reminder> reaches Slidev as markup.
+    site = await buildFixture('viewer/tags', { to: 'web,slides,notebook' })
+  })
+  test.afterAll(() => site?.close())
+
+  test('inline SVG and MathML stay elements in narration and in a table cell, and a tag that names no element shows as written, in the three forms', async ({ page }) => {
+    const SVG = 'http://www.w3.org/2000/svg'
+    await page.goto(site.web)
+    const section = page.locator('.pm-section[data-section="trace"]')
+    const narration = section.locator('p', { hasText: '完成的回合' })
+    for (const where of [narration, section.locator('td', { hasText: '完成' })]) {
+      await expect(where.locator('svg.pm-fixture-dot circle')).toHaveCount(1)
+      expect(await where.locator('circle').evaluate(el => el.namespaceURI)).toBe(SVG)
+    }
+    expect(await narration.locator('math mi').evaluate(el => el.namespaceURI)).toBe('http://www.w3.org/1998/Math/MathML')
+    await expect(narration).toContainText('写一个 <reminder>；圆点')
+    await expect(section.locator('td', { hasText: '保持测试通过' })).toHaveText('<reminder> 保持测试通过')
+    await expect(section.locator('reminder')).toHaveCount(0)
+
+    await page.goto(`${site.slides}/${site.slide('trace')}`)
+    const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: '智能体的轨迹' }) })
+    await expect(slide.locator('td', { hasText: '保持测试通过' })).toHaveText('<reminder> 保持测试通过')
+    expect(await slide.locator('td svg.pm-fixture-dot circle').evaluate(el => el.namespaceURI)).toBe(SVG)
+
+    const notebook = readFileSync(join(site.dir, 'dist/notebook/lecture.ipynb'), 'utf8')
+    expect(notebook).toContain('\\\\<reminder> 保持测试通过')
+    expect(notebook).toContain('<circle cx=\\"6\\" cy=\\"6\\" r=\\"5\\" fill=\\"currentColor\\"/></svg>')
+    expect(notebook).toContain('<math><mi>n</mi><mo>+</mo><mn>1</mn></math>')
   })
 })
 

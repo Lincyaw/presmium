@@ -47,8 +47,9 @@ async function firstTurns(): Promise<[Section, Section][]> {
  *   driven by Playwright denies it.
  * - Slidev 53 installs the Twoslash popups of @shikijs/vitepress-twoslash 4.5 in every deck; their
  *   patch to the menus of floating-vue 5.4 fails, as the menu component no longer has the shape the
- *   patch expects. Slidev's dev server (`presmium dev`, `slidev export`) reports it; only dragging
- *   over a Twoslash popup is affected, and decks have no Twoslash code.
+ *   patch expects. The built slides report it on every load, as Slidev's dev server (`presmium dev`,
+ *   `slidev export`) does; only dragging over a Twoslash popup is affected, and decks have no
+ *   Twoslash code.
  */
 const FRAMEWORK_ERRORS = [/^Wake Lock permission request denied$/, /^Failed to patch FloatingVue\b/]
 

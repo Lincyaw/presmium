@@ -120,7 +120,7 @@ notebook 中显示不了的组件（没有 notebook 扩展，也没有 `fallback
 | 幻灯片 | 显示在页面上 | 成为演讲备注，按步骤切分 |
 | notebook | Markdown 或代码单元格 | Markdown 单元格 |
 
-讲解与表格单元格中的原始 HTML 标签，若不是 HTML 元素（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`），按字面显示为文字：编译器把它们写成 IR 中的文本，三种媒介都显示标签本身，幻灯片的构建也不因没有闭合的这类标签失败。其他位置的原始 HTML 照常作为 HTML（例如正文中的 Web 组件）。
+讲解与表格单元格中的原始 HTML 标签，若不是 HTML 元素，也不是 `<svg>` 中的 SVG 元素或 `<math>` 中的 MathML 元素（例如 agent 轨迹中的 `<reminder>`、`<system-reminder>`），按字面显示为文字：编译器把它们写成 IR 中的文本，三种媒介都显示标签本身，幻灯片的构建也不因没有闭合的这类标签失败。其他位置的原始 HTML 照常作为 HTML（例如正文中的 Web 组件）。
 
 ### 2.4 步骤
 

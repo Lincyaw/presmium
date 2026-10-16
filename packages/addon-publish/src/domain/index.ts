@@ -1,5 +1,6 @@
 export { onInBuild, PUBLISH_ID, publishOptions } from './config.ts'
 export type { PublishOptions } from './config.ts'
+export { exportedSlides, missingSlides } from './export.ts'
 export { linkLine, normalizeUrl, parseRange, slideLinks } from './links.ts'
 export { MESSAGES } from './messages.ts'
 export type { PublishMessages } from './messages.ts'

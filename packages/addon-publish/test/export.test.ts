@@ -1,8 +1,10 @@
 // Runs the real `presmium-export` (compiler, slides renderer, `slidev export` to
 // PDF, then the link check, or to PNG) on a git repository holding a copy of
 // ./fixtures/deck, whose first slide shows math.py through {code-ref}: the
-// permalink is generated; and on ./fixtures/export, four slides, the second with
-// a click, the third a quiz, which an export shows in its static form; the deck sets a base for its slides.
+// permalink is generated; on ./fixtures/export, four slides, the second with
+// a click, the third a quiz, which an export shows in its static form; the deck sets a base for its slides;
+// and on ./fixtures/late, two slides, the second with a click, whose test plugin's Slidev app setup
+// holds the app back for ten seconds: the print page has loaded, idle, and shows no slide yet.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, expect, it } from 'vitest'
@@ -54,4 +56,19 @@ it('exports only the slides of a range', async () => {
   expect(code, stderr).toBe(0)
   expect(JSON.parse(stdout)).toMatchObject({ format: 'pdf', pages: 3 })
   expect((await pdfLinks(join(dir, 'part.pdf'))).length).toBe(3)
+}, 180_000)
+
+it('fails, rather than pass for the slides, when slidev export captures the print page before it shows them; --wait lets the page settle (P-50)', async () => {
+  const dir = copyFixture('late')
+  // `slidev export` itself exits 0 here, with no image.
+  const early = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--json')
+  expect(early.code, early.stderr).toBe(2)
+  expect(early.stdout).toBe('')
+  expect(early.stderr).toContain('presmium-export: slidev export wrote 0 images, none of slide 1, 2 of the 2 slides exported: it captured the print page before the page showed every slide')
+  expect(early.stderr).toContain('let the page settle longer than 1000 ms with --wait <ms>')
+
+  const settled = await bin('presmium-export', dir, '--format', 'png', '--with-clicks', '--output', 'pages', '--wait', '20000', '--json')
+  expect(settled.code, settled.stderr).toBe(0)
+  expect(JSON.parse(settled.stdout)).toMatchObject({ format: 'png', pages: 3 })
+  expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png'])
 }, 180_000)

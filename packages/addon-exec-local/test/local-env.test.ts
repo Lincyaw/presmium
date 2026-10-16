@@ -30,9 +30,6 @@ const PYTHON_INFO = 'import os, sys\nprint(os.getcwd(), sys.version_info[:2])\nf
 const PYTHON_OUTPUT = '/presmium-run (3, 12)\n你好，Presmium\n你好，容器\n'
 
 const docker = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { stdio: 'ignore' }).status === 0
-// The web renderer adds the deck's Vite plugins to its dev server once it reads
-// `RenderContext.vitePlugins` (C-8, WP-70b); until then its dev server has no endpoints to test.
-const webAddsVitePlugins = readdirSync(join(PACKAGES, 'web/src/node')).some(file => readFileSync(join(PACKAGES, 'web/src/node', file), 'utf8').includes('vitePlugins'))
 
 function git(...args: string[]): string {
   const result = spawnSync('git', args, { cwd: REPO, encoding: 'utf8' })
@@ -143,7 +140,7 @@ describe('container executor (P-22)', () => {
     expect(await (await post(slides, 'run', { lang: 'python', code: PYTHON_INFO })).json()).toMatchObject({ ok: true, exitCode: 0, timedOut: false, stdout: PYTHON_OUTPUT })
   }, 180_000)
 
-  it.skipIf(!docker || !webAddsVitePlugins)('is served by `presmium dev --to web` (R-25)', async () => {
+  it.skipIf(!docker)('is served by `presmium dev --to web` (R-25)', async () => {
     const web = await startDev('web')
     expect(await (await fetch(`${web}/__presmium/exec-local/status`)).json()).toMatchObject({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json' })
     expect(await (await post(web, 'run', { lang: 'python', code: PYTHON_INFO })).json()).toMatchObject({ ok: true, stdout: PYTHON_OUTPUT })

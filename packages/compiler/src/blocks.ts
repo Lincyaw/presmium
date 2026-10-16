@@ -20,6 +20,8 @@ import type {
   SourcePos,
 } from '@presmium/kernel'
 import { htmlTagNames } from 'html-tag-names'
+import { mathmlTagNames } from 'mathml-tag-names'
+import { svgTagNames } from 'svg-tag-names'
 import { parse as parseYaml } from 'yaml'
 import { BODY, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
@@ -77,9 +79,16 @@ const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode'
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
 /** Dropped wherever they are: `outputs` is the output area MyST gives a `{code-cell}`, with a random id. */
 const DROPPED = new Set(['comment', 'mystTarget', 'outputs', BODY])
-/** The elements of HTML, which raw HTML may name; a tag that names none (`<reminder>`) is no markup. */
+/**
+ * The elements raw HTML may name, as the HTML parser reads them: HTML's
+ * (`svg` and `math` among them), and inside an `<svg>` or a `<math>` those of
+ * SVG or MathML (`circle`, `mi`). A tag that names none of them where it
+ * stands (`<reminder>`) is no markup.
+ */
 const HTML_ELEMENTS = new Set(htmlTagNames)
-const TAG = /<\/?([A-Za-z][\w:.-]*)/g
+const FOREIGN_ELEMENTS = { svg: new Set(svgTagNames.map(name => name.toLowerCase())), math: new Set(mathmlTagNames) }
+/** A tag: `/` if it closes, its name, its attributes (ending in `/` if it closes itself), `>`. */
+const TAG = /<(\/?)([A-Za-z][\w:.-]*)([^<>]*)(>?)/g
 
 interface Scope {
   visual: boolean
@@ -313,20 +322,33 @@ function markdown(nodes: MdastNode[], ctx: BlockContext): Extract<IRNode, { type
   return { type: 'markdown', mdast: { type: 'root', children: clean(nodes, ctx) } }
 }
 
+/** How deep the raw HTML read so far is inside `<svg>` and `<math>` elements. */
+type Foreign = Record<keyof typeof FOREIGN_ELEMENTS, number>
+
 /**
- * Inline raw HTML whose tags name no HTML element, such as the `<reminder>`
- * of an agent's trace, as the text it is: in narration and in table cells
- * such tags are words of the content rather than markup, and a renderer that
- * compiles the HTML (the slides', as Vue templates) fails on one that is not
- * closed (docs/coverage-agentic-se.md section 4).
+ * Inline raw HTML whose tags name no element, such as the `<reminder>` of an
+ * agent's trace, as the text it is: in narration and in table cells such tags
+ * are words of the content rather than markup, and a renderer that compiles
+ * the HTML (the slides', as Vue templates) fails on one that is not closed
+ * (docs/coverage-agentic-se.md section 4). Inline HTML comes one tag per
+ * node, so the `<svg>` or `<math>` that SVG and MathML tags stand in is
+ * followed across the nodes.
  */
-function literalTags(nodes: MdastNode[]): MdastNode[] {
+function literalTags(nodes: MdastNode[], foreign: Foreign = { svg: 0, math: 0 }): MdastNode[] {
   return nodes.map((node) => {
     if (node.type === 'html' && typeof node.value === 'string') {
-      const names = [...node.value.matchAll(TAG)].map(match => match[1]!.toLowerCase())
-      return names.length > 0 && names.every(name => !HTML_ELEMENTS.has(name)) ? { type: 'text', value: node.value } : node
+      const tags = [...node.value.matchAll(TAG)]
+      const known = (name: string) => HTML_ELEMENTS.has(name) || (foreign.svg > 0 && FOREIGN_ELEMENTS.svg.has(name)) || (foreign.math > 0 && FOREIGN_ELEMENTS.math.has(name))
+      if (tags.length > 0 && tags.every(([, , name]) => !known(name!.toLowerCase()))) return { type: 'text', value: node.value }
+      for (const [, close, name, attributes, end] of tags) {
+        const ns = name!.toLowerCase()
+        if (ns !== 'svg' && ns !== 'math') continue
+        if (close) foreign[ns] = Math.max(0, foreign[ns] - 1)
+        else if (!(end && attributes!.trimEnd().endsWith('/'))) foreign[ns]++
+      }
+      return node
     }
-    return node.children ? { ...node, children: literalTags(node.children) } : node
+    return node.children ? { ...node, children: literalTags(node.children, { ...foreign }) } : node
   })
 }
 

@@ -296,6 +296,39 @@ it('refuses a learner\'s structs in the name of the presenter\'s client, which w
   expect(late.doc.getMap('store:answers').toJSON()).toEqual({})
 })
 
+it('keeps the presenter\'s client, known from awareness only, as the presenter\'s while its connection is down: a learner can neither show it nor write as it (P-60, R-20)', async () => {
+  const presenter = await join('room-k', { claim: 'presenter-key' })
+  presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
+  const learner = await join('room-k', { participant: 'p1', key: 'p1-key' })
+  await expect.poll(() => learner.provider.awareness.getStates().has(presenter.doc.clientID)).toBe(true)
+  // A brief disconnect before the presenter has written anything: its client leaves the room's awareness.
+  presenter.provider.disconnect()
+  await expect.poll(() => learner.provider.awareness.getStates().has(presenter.doc.clientID)).toBe(false)
+
+  // The learner's own answer, as the presenter's client at the clock the presenter writes first.
+  const forged = new Y.Doc()
+  forged.clientID = presenter.doc.clientID
+  forged.getMap('store:answers').set(...answer('q', 'p1', 0))
+  const attacker = await socket('room-k', { participant: 'p1', key: 'p1-key' })
+  const code = closed(attacker)
+  attacker.send(awarenessMessage([[presenter.doc.clientID, 100, { participant: { id: 'p1', name: '小明', role: 'learner' } }]]))
+  attacker.send(updateMessage(Y.encodeStateAsUpdate(forged)))
+  expect(await code).toBe(4403)
+  expect(drops('room-k').map(d => d.reason)).toEqual(['1 awareness state(s) of other clients or participants', 'an update in the name of another writer\'s client'])
+
+  // Back, the presenter shows and writes as its client: both count, for the learner and for a late joiner.
+  presenter.provider.connect()
+  await expect.poll(() => presenter.provider.synced).toBe(true)
+  presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
+  presenter.doc.getMap('store:quizzes').set('q', { open: true })
+  await expect.poll(() => learner.doc.getMap('store:quizzes').get('q')).toEqual({ open: true })
+  await expect.poll(() => learner.provider.awareness.getStates().get(presenter.doc.clientID)?.participant?.name).toBe('王老师')
+  const late = await join('room-k')
+  expect(late.doc.getMap('store:quizzes').get('q')).toEqual({ open: true })
+  expect(late.doc.getMap('store:answers').toJSON()).toEqual({})
+  expect(drops('room-k')).toHaveLength(2)
+})
+
 it('closes the connection of a refused update, and takes the learner\'s writes again once the client starts over', async () => {
   const presenter = await join('room-h', { claim: 'presenter-key' })
   const learner = await join('room-h', { participant: 'p1', key: 'p1-key' })

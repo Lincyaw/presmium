@@ -72,12 +72,13 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 `@presmium/slidev-addon-publish` 提供 `presmium-export`（在装有它的文稿目录运行，例如 `pnpm exec presmium-export`）：
 
 ```sh
-presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clicks] [--range 1,3-5] [--dark] [--timeout <ms>] [--json]
+presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clicks] [--range 1,3-5] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
 ```
 
 - 默认导出 PDF，写到 `<文稿>/slides-export.pdf`（`renderers.slides.exportFilename` 改文件名）；`--format png` 每页一张图片。`--with-clicks` 把每一步展开为一页，`--range` 只导出列出的页。
 - PDF 导出后检查幻灯片上的每个链接（包括代码的永久链接）在 PDF 中仍是链接，有丢失时退出码为 1；PNG 中的链接无法检查，报告会说明。
 - 导出中插件组件显示静态降级内容（例如执行面板显示先给参数赋值的代码与构建时的输出，没有时用 `:recorded:`）。
+- `slidev export` 在打印页加载完、再等 `--wait` 毫秒（默认 1000）后截图。机器繁忙或文稿第一次导出（Vite 优化依赖后重新加载页面）时，页面可能还没显示全部幻灯片：导出缺少某张幻灯片时 `presmium-export` 报错退出（退出码 2），再导出一次或加大 `--wait` 即可。
 - 也可以在 `<文稿>/.presmium/slides/` 中直接运行 `slidev export`（构建报告给出这个路径）。`slidev export` 总在根路径服务文稿，而构建写出的文稿按幻灯片的站点路径引用本地文件：幻灯片的 `base` 不是 `/` 时（包括同时构建两种形态的默认 `/slides/`），链接到的文件与媒体组件的文件在导出中找不到，这时用 `presmium-export`，它为导出另写一份以 `/` 为站点路径的文稿。
 
 ## 5. notebook

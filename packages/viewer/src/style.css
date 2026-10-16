@@ -507,6 +507,20 @@ html.pm-presenting {
   padding: 0.3em 0.6em;
 }
 
+/*
+ * A list's markers stand in its padding, before its items. The slide's type is larger than the
+ * page's, and the padding the host gives lists in rem leaves its numbers no room: the block, which
+ * clips what reaches past it (wide content scrolls in it), would cut them off. On the slide the
+ * padding follows the type size.
+ */
+.pm-present .pm-present__slide ul {
+  padding-inline-start: 1.5em;
+}
+
+.pm-present .pm-present__slide ol {
+  padding-inline-start: 2em;
+}
+
 /* Overview of the present view: every section, keyboard reachable, over the slide. */
 .pm-overview {
   position: absolute;

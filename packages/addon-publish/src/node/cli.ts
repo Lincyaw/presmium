@@ -5,18 +5,21 @@ import { DECK_ENTRY } from '@presmium/compiler'
 import { errorMessage } from '@presmium/kernel'
 import { visualDiff } from './diff.ts'
 import { exportDeck } from './export.ts'
-import { isDeck } from './slides.ts'
+import { EXPORT_TIMEOUT, EXPORT_WAIT, isDeck } from './slides.ts'
 
 // Exit codes as in `presmium check`: 0 ok, 1 problems found, 2 usage or runtime error.
 
-const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|png] [--output <file.pdf | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--timeout <ms>] [--json]
+const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|png] [--output <file.pdf | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
 
 Renders the deck with the slides renderer and exports the Slidev deck it
 writes with \`slidev export\`: to PDF (default), then checks that every link
 the slides show (Markdown links, href and *link/*url attributes, code
 permalinks) is still a link in the PDF, and exits 1 when a link was lost; or
 to PNG images, one per slide (per click step with --with-clicks), in the
---output directory, where links cannot be checked.`
+--output directory, where links cannot be checked. The print page loads
+until the network is idle, within --timeout (default ${EXPORT_TIMEOUT}), and
+settles for --wait (default ${EXPORT_WAIT}) before it is captured; an export
+that lacks a slide fails (exit 2).`
 
 const DIFF_USAGE = `Usage: presmium-diff <refA> <refB> [deckDir] [--out <dir>] [--threshold <ratio>] [--wait <ms>] [--install] [--json]
 
@@ -26,7 +29,8 @@ view and every section in the present view, captured with playwright-chromium).
 Compares the images pixel by pixel and writes report.md and report.json
 (default directory <deckDir>/.presmium/diff). Exits 1 when a page differs by
 more than the threshold (a ratio of pixels, default 0). --wait lets each page
-settle before it is captured (default 500). Both commits render with the host and addons
+settle before it is captured (default 500); a slides export that lacks a slide
+fails (exit 2). Both commits render with the host and addons
 installed for the deck; --install renders each commit with the dependencies of
 its own pnpm lockfile instead, e.g. to check a host or addon upgrade.`
 
@@ -58,6 +62,7 @@ export async function exportMain(argv: string[]): Promise<number> {
     'with-clicks': { type: 'boolean', short: 'c' },
     'range': { type: 'string' },
     'dark': { type: 'boolean' },
+    'wait': { type: 'string' },
     'timeout': { type: 'string' },
   }, EXPORT_USAGE)
   if (!args) return 2
@@ -71,6 +76,11 @@ export async function exportMain(argv: string[]): Promise<number> {
     console.error(EXPORT_USAGE)
     return 2
   }
+  const [wait, timeout] = [values.wait, values.timeout].map(value => (value === undefined ? undefined : Number(value)))
+  if ((wait !== undefined && !(wait >= 0)) || (timeout !== undefined && !(timeout > 0))) {
+    console.error(`--wait and --timeout take a number of milliseconds\n\n${EXPORT_USAGE}`)
+    return 2
+  }
   const deckDir = deckOrError(positionals[0] ?? '.', EXPORT_USAGE)
   if (!deckDir) return 2
   try {
@@ -81,7 +91,8 @@ export async function exportMain(argv: string[]): Promise<number> {
       withClicks: values['with-clicks'] as boolean | undefined,
       range: values.range as string | undefined,
       dark: values.dark as boolean | undefined,
-      timeout: values.timeout === undefined ? undefined : Number(values.timeout),
+      wait,
+      timeout,
     })
     const lost = result.links.filter(link => link.pages.length === 0)
     if (values.json) {
