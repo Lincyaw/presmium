@@ -1,6 +1,7 @@
 import { hints } from 'driver.js/hints'
 import type { DriverHint, Hints } from 'driver.js/hints'
 import 'driver.js/dist/hints.css'
+import './hints.css'
 import { sameCue } from './cue.ts'
 import type { CueRequest } from './cue.ts'
 

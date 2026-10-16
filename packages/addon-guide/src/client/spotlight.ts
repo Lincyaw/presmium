@@ -1,6 +1,7 @@
 import { driver } from 'driver.js'
 import type { Config, Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
+import './spotlight.css'
 import { sameCue } from './cue.ts'
 import type { CueRequest } from './cue.ts'
 

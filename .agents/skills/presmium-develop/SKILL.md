@@ -25,6 +25,7 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 富内容 | `addon-content` | 思维导图、媒体、PlantUML |
 | 发布 | `addon-publish` | 离线、高对比度、`presmium-export`、`presmium-diff` |
 | 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问、理解度、笔记；y-websocket 课堂服务 |
+| 讲授 | `addon-lecture` | 讲授轨（`lectures/<id>/track.json`）、放映视图中的录制（Mediabunny 录 Ogg/Opus，只在 `src/client/media.ts`）、视图 `lecture` 的回放（`OPERATIONS` 折叠出 `state(t)`）、检查项 `presmium.lecture`、站点渲染端 `lecture` 与 VTT 导出 |
 | 编辑 | `language-server`、`vscode` | 语言服务；VS Code 扩展（唯一预打包的包） |
 
 插件包名为 `@presmium/slidev-addon-<上下文>`，每个插件包本身就是一个 Slidev 插件。`examples/demo` 是示例讲义（BPE 分词），`examples/sample-repo` 是它引用的代码。

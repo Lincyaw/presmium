@@ -1,0 +1,14 @@
+/* The dimming of a spotlight lies just above the slide, under the host's own layers (the overview,
+   dialogs), and lets pointer events through. driver.js sets the overlay's z-index and the path's
+   pointer events inline. Imported with the spotlight, so a spotlight made while presenting (no
+   {spotlight} on the page) is layered the same. */
+.driver-overlay {
+  z-index: var(--pm-cue-z, 1) !important;
+}
+.driver-overlay,
+.driver-overlay * {
+  pointer-events: none !important;
+}
+body .driver-popover.pm-spotlight-popover {
+  z-index: calc(var(--pm-cue-z, 1) + 1);
+}
