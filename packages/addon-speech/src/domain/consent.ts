@@ -5,6 +5,7 @@
  * the sha256 of the recorded consent statement.
  */
 import { isRecord } from '@presmium/kernel'
+import { engineId } from './engines.ts'
 
 export interface ConsentRecord {
   speaker: string
@@ -30,7 +31,7 @@ export function consentProblem(value: unknown): string | undefined {
   return undefined
 }
 
-/** The record's path in the consent directory. */
+/** The record's path in the consent directory, under the engine's id (`my-engine` is `my_engine`). */
 export function consentPath(engine: string, voice: string): string {
-  return `${engine}/${voice}.json`
+  return `${engineId(engine)}/${voice}.json`
 }

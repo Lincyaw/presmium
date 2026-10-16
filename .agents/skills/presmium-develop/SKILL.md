@@ -29,7 +29,7 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 发布 | `addon-publish` | 离线、高对比度、`presmium-export`、`presmium-diff` |
 | 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问、理解度、先预测再揭示、笔记；y-websocket 课堂服务 |
 | 讲授 | `addon-lecture` | 讲授轨（`lectures/<id>/track.json`）、放映视图中的录制（Mediabunny 录 Ogg/Opus，只在 `src/client/media.ts`）、视图 `lecture` 的回放（`OPERATIONS` 折叠出 `state(t)`）、检查项 `presmium.lecture`、站点渲染端 `lecture` 与 VTT 导出 |
-| 语音 | `addon-speech` | 运营者插件：`SPEECH` 的 Node 端（LOCAL 直接调用引擎，SHARED 经 `NodeServiceContext.gateway`）与浏览器端（经 `useServer()` 的 `v1/` 路由）；语音网关的协议（OpenAI 音频接口形态，`src/node/routes.ts`）挂在服务端与 gateway 中；引擎由运营者的环境变量定义（`src/domain/engines.ts`），服务提供方的接口只在 `src/node/engines/`；合成缓存 `.presmium/speech/` 与 AI 生成的标识（WAV 的 `LIST`/`INFO`、Ogg 的 Opus 注释头）；克隆音色的同意记录在运营者目录中；`presmium-speech fake`、`consent` |
+| 语音 | `addon-speech` | 运营者插件：`SPEECH` 的 Node 端（LOCAL 直接调用引擎，SHARED 经 `NodeServiceContext.gateway`）与浏览器端（经 `useServer()` 的 `v1/` 路由，它与 Node 端一样经文稿的合成缓存，SHARED 中未命中时以服务令牌调用 gateway）；语音网关的协议（OpenAI 音频接口形态，`src/node/routes.ts`）挂在服务端与 gateway 中；引擎由运营者的环境变量定义（`src/domain/engines.ts`），服务提供方的接口只在 `src/node/engines/`；合成缓存 `.presmium/speech/` 与 AI 生成的标识（WAV 的 `LIST`/`INFO`、Ogg 的 Opus 注释头）；克隆音色的同意记录在运营者目录中；`presmium-speech fake`、`consent` |
 | 编辑 | `language-server`、`vscode` | 语言服务；VS Code 扩展（唯一预打包的包） |
 
 插件包名为 `@presmium/slidev-addon-<上下文>`，每个插件包本身就是一个 Slidev 插件。`examples/demo` 是示例讲义（BPE 分词），`examples/sample-repo` 是它引用的代码。

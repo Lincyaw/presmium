@@ -1,9 +1,9 @@
 /**
  * The speech gateway's protocol (../domain/protocol.ts) over a backend: the
- * routes `v1/*` of `presmium dev` and LOCAL `presmium serve` (the engines of
- * the process, with the deck's cache) and of `presmium gateway` (its
- * engines). Answers carry no credential: engines are called by the backend,
- * never with the caller's headers.
+ * routes `v1/*` of `presmium dev` and `presmium serve` (the deck's cache over
+ * the engines of the process in LOCAL mode, over the gateway in SHARED mode)
+ * and of `presmium gateway` (its engines). Answers carry no credential:
+ * engines are called by the backend, never with the caller's headers.
  */
 import type { TimedSpeech, TranscriptionAnswer } from '../domain/index.ts'
 import { synthesisRequestOf } from '../domain/index.ts'

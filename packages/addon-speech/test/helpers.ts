@@ -1,7 +1,8 @@
 // Real processes for the tests of speech: `presmium` commands on test decks, the fake engine
-// (`presmium-speech fake`) as a process of its own, SHARED mode's serve, gateway and agent-host on this
-// machine, listeners that record what reaches them, requests with the headers a login proxy adds
-// (`Host` included, which fetch cannot set), and a reader of WAV chunks independent of the package.
+// (`presmium-speech fake`) as a process of its own (and a front of it whose voice list can fail), SHARED
+// mode's serve, gateway and agent-host on this machine, listeners that record what reaches them, requests
+// with the headers a login proxy adds (`Host` included, which fetch cannot set), a test plugin that calls
+// the Node SPEECH service (fixtures/speech-probe), and a reader of WAV chunks independent of the package.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -16,6 +17,9 @@ import type { Run } from '@presmium/cli/testing'
 export const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
 const SPEECH_BIN = join(PACKAGE, 'bin/presmium-speech.mjs')
+/** The test plugin whose routes `engines`, `synthesize` and `transcribe` call the Node SPEECH service. */
+export const PROBE = join(PACKAGE, 'test/fixtures/speech-probe')
+export const PROBE_NAME = 'presmium-fixture-speech-probe'
 /** Workspaces of SHARED mode go here (ignored by git), where VitePress and the renderers resolve from the demo's node_modules. */
 const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
 
@@ -39,20 +43,22 @@ export function temporary(prefix: string): string {
   return mkdtempSync(join(tmpdir(), `presmium-${prefix}-`))
 }
 
-/** A deck in a new temporary directory: `lecture.md` with the speech plugin and the notebook renderer named by their paths. */
-export function testDeck(prefix: string, headmatter: string, body = '## 第一节\n\n讲解。'): string {
+/** A deck in a new temporary directory: `lecture.md` with the speech plugin (and `plugins`) and the notebook renderer named by their paths. */
+export function testDeck(prefix: string, headmatter: string, plugins: string[] = []): string {
   const dir = temporary(prefix)
   writeFileSync(join(dir, 'lecture.md'), [
     '---',
     'title: 语音测试文稿',
     'plugins:',
-    `  - ${PACKAGE}`,
+    ...[PACKAGE, ...plugins].map(plugin => `  - ${plugin}`),
     'renderers:',
     `  notebook: { package: ${join(PACKAGES, 'render-notebook')} }`,
     headmatter.trim(),
     '---',
     '',
-    body.trim(),
+    '## 第一节',
+    '',
+    '讲解。',
     '',
   ].join('\n'))
   return dir
@@ -148,6 +154,46 @@ export async function startFake(): Promise<Fake> {
   }
 }
 
+/**
+ * A front of the fake engine at an address of its own: it passes every request on, except that it answers
+ * `GET …/audio/voices` with 503 while `failVoices` is above 0 (a transient failure of the voice list).
+ */
+export async function front(fake: Fake): Promise<{ url: string, failVoices: number, voiceRequests: number, close(): Promise<void> }> {
+  const upstream = new URL(fake.url)
+  const state = { url: '', failVoices: 0, voiceRequests: 0, close: async () => {} }
+  const server = createServer((req, res) => {
+    const chunks: Buffer[] = []
+    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    req.on('end', () => {
+      const voices = req.method === 'GET' && (req.url ?? '').split('?')[0]!.endsWith('/audio/voices')
+      if (voices) state.voiceRequests++
+      if (voices && state.failVoices > 0) {
+        state.failVoices--
+        res.writeHead(503, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: { message: 'the voice list is busy' } }))
+        return
+      }
+      const headers: Record<string, string> = {}
+      for (const name of ['authorization', 'content-type']) if (typeof req.headers[name] === 'string') headers[name] = req.headers[name]
+      void fetch(new URL(req.url ?? '/', upstream), { method: req.method, headers, ...req.method === 'GET' || req.method === 'HEAD' ? {} : { body: Buffer.concat(chunks) } })
+        .then(async (response) => {
+          res.writeHead(response.status, { 'Content-Type': response.headers.get('content-type') ?? 'application/octet-stream' })
+          res.end(Buffer.from(await response.arrayBuffer()))
+        }, (error: unknown) => {
+          res.writeHead(502)
+          res.end(String(error))
+        })
+    })
+  })
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
+  state.url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`
+  state.close = () => new Promise((done) => {
+    server.close(() => done())
+    server.closeAllConnections()
+  })
+  return state
+}
+
 /** A listener that records every request that reaches it. */
 export async function listener(): Promise<{ url: string, received: string[], close(): Promise<void> }> {
   const received: string[] = []
@@ -194,6 +240,11 @@ export function speechUrl(server: string, path: string): string {
   return `${server.replace(/\/$/, '')}/__presmium/presmium.speech/${path}`
 }
 
+/** A route of the test plugin (fixtures/speech-probe) of a server. */
+export function probeUrl(server: string, path: string): string {
+  return `${server.replace(/\/$/, '')}/__presmium/fixture.speechProbe/${path}`
+}
+
 /** A JSON POST with fetch (a `presmium dev` server, on this machine). */
 export async function post(url: string, body: unknown): Promise<{ status: number, text: string, json: <T = Record<string, unknown>>() => T }> {
   const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -222,7 +273,7 @@ export function wavInfo(bytes: Buffer): { info: Record<string, string>, chunks: 
 
 // SHARED mode ---------------------------------------------------------------------
 
-/** A workspace in examples/demo/.presmium with these files and the speech plugin installed at its root, committed. */
+/** A workspace in examples/demo/.presmium with these files and the speech plugin and the test plugin installed at its root, committed. */
 export function workspace(prefix: string, files: Record<string, string>): string {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, `speech-${prefix}-`))
@@ -234,6 +285,7 @@ export function workspace(prefix: string, files: Record<string, string>): string
   }
   mkdirSync(join(dir, 'node_modules/@presmium'), { recursive: true })
   symlinkSync(PACKAGE, join(dir, 'node_modules/@presmium/slidev-addon-speech'), 'junction')
+  symlinkSync(PROBE, join(dir, 'node_modules', PROBE_NAME), 'junction')
   const git = (args: string[]) => execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', '-c', 'core.hooksPath=/dev/null', ...args], { cwd: dir })
   git(['init', '-q', '-b', 'main'])
   git(['add', '-A'])

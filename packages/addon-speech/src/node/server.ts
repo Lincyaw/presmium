@@ -3,56 +3,61 @@
  * under `/__presmium/presmium.speech/`:
  *
  * - `v1/…` (editors): the speech gateway's protocol, which the browser's
- *   `SPEECH` uses. LOCAL mode: the engines of this process's environment and
- *   the deck's synthesis cache. SHARED mode: a proxy to the plugin's
- *   contribution in `presmium gateway` with serve's gateway token; serve has
- *   no speech credential.
+ *   `SPEECH` uses, through the deck's synthesis cache as the Node `SPEECH`
+ *   (a hit sends no request). LOCAL mode: the engines of this process's
+ *   environment. SHARED mode: the plugin's contribution in `presmium gateway`
+ *   with serve's gateway token (./remote.ts); serve has no speech credential.
  * - `consent/<engine>/<voice>` (owners): registers a consent record. LOCAL
  *   mode: in the operator directory outside the workspace. SHARED mode: only
  *   on the owner console's origin (the server mounts owner routes there
  *   only), passed on to the gateway's route of the same name, which takes the
  *   service token only.
  */
-import type { GatewayAccess, ServerContext, ServerContribution } from '@presmium/kernel'
+import type { GatewayAccess, Route, ServerContext, ServerContribution } from '@presmium/kernel'
 import { CONSENT_PATH, deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID } from '../domain/index.ts'
+import type { SpeechBackend } from './backend.ts'
 import { SynthesisCache } from './cache.ts'
 import { consentRoute } from './consent.ts'
 import { reportEngines, speechCore } from './core.ts'
 import { DeckSpeech } from './deck.ts'
+import { gatewayBackend } from './remote.ts'
 import { protocolHandler } from './routes.ts'
 
-function sharedServer(gateway: GatewayAccess): ServerContribution {
-  const base = `${gateway.url.replace(/\/+$/, '')}/${SPEECH_ID}`
+/** The gateway's `consent/<engine>/<voice>` for an owner's request on the console, with serve's service token. */
+function sharedConsent(gateway: GatewayAccess): Route {
+  const base = `${gateway.url.replace(/\/+$/, '')}/${SPEECH_ID}/${CONSENT_PATH}`
   return {
-    // The gateway checks `Host`, takes no `Origin` (serve leaves it out towards the gateway) and gets serve's token, not the browser's headers.
-    proxies: [{ path: PROTOCOL_PATH, target: `${base}/${PROTOCOL_PATH}`, headers: { host: new URL(gateway.url).host, authorization: `Bearer ${gateway.token}` }, role: 'editor' }],
-    routes: {
-      [`${CONSENT_PATH}/*`]: {
-        role: 'owner',
-        async handle(request, ctx) {
-          const path = ctx.rest.split('/').map(encodeURIComponent).join('/')
-          const response = await fetch(`${base}/${CONSENT_PATH}/${path}`, {
-            method: request.method,
-            headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
-            ...request.method === 'GET' || request.method === 'HEAD' ? {} : { body: await request.text() },
-            redirect: 'error',
-          })
-          return new Response(await response.text(), { status: response.status, headers: { 'Content-Type': response.headers.get('content-type') ?? 'application/json; charset=utf-8' } })
-        },
-      },
+    role: 'owner',
+    async handle(request, ctx) {
+      const path = ctx.rest.split('/').map(encodeURIComponent).join('/')
+      const response = await fetch(`${base}/${path}`, {
+        method: request.method,
+        headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
+        ...request.method === 'GET' || request.method === 'HEAD' ? {} : { body: await request.text() },
+        redirect: 'error',
+      })
+      return new Response(await response.text(), { status: response.status, headers: { 'Content-Type': response.headers.get('content-type') ?? 'application/json; charset=utf-8' } })
     },
   }
 }
 
 export function speechServer(ctx: ServerContext): ServerContribution {
-  if (ctx.gateway) return sharedServer(ctx.gateway)
-  const core = speechCore({ names: () => Object.keys(process.env), secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
-  void reportEngines(core, ctx.log)
-  const handle = protocolHandler(new DeckSpeech(core, new SynthesisCache(ctx.deckDir), deckSpeechConfig(ctx.config).config))
+  let inner: SpeechBackend
+  let consent: Route
+  if (ctx.gateway) {
+    inner = gatewayBackend(ctx.gateway)
+    consent = sharedConsent(ctx.gateway)
+  } else {
+    const core = speechCore({ names: () => Object.keys(process.env), secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
+    void reportEngines(core, ctx.log)
+    inner = core
+    consent = { role: 'owner', handle: (request, route) => consentRoute(request, route.rest, (engine, voice, record) => core.registerConsent(engine, voice, record)) }
+  }
+  const handle = protocolHandler(new DeckSpeech(inner, new SynthesisCache(ctx.deckDir), deckSpeechConfig(ctx.config).config))
   return {
     routes: {
       [`${PROTOCOL_PATH}/*`]: { role: 'editor', handle: (request, route) => handle(request, route.rest) },
-      [`${CONSENT_PATH}/*`]: { role: 'owner', handle: (request, route) => consentRoute(request, route.rest, (engine, voice, record) => core.registerConsent(engine, voice, record)) },
+      [`${CONSENT_PATH}/*`]: consent,
     },
   }
 }

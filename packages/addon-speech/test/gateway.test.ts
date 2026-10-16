@@ -1,12 +1,13 @@
 // Speech in SHARED mode (D13, WP-82): `presmium gateway` has the fake engine's variables and its own
-// operator directory; `presmium serve` has no speech variable and passes the speech gateway's routes on
-// to the gateway, which alone calls the engine and checks consent records. And a deck cannot define an
-// engine: `engines.x` with an address and a variable of a credential is an error and leads nowhere (N-08).
+// operator directory; `presmium serve` has no speech variable and answers the speech gateway's routes (and
+// the Node SPEECH of the test plugin, fixtures/speech-probe) through the document's synthesis cache over the
+// gateway, which alone calls the engine and checks consent records. And a deck cannot define an engine:
+// `engines.x` with an address and a variable of a credential is an error and leads nowhere (N-08).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Fake, Shared } from './helpers.ts'
-import { dev, listener, post, presmium, raw, remove, shared, speechUrl, startFake, temporary, testDeck, workspace } from './helpers.ts'
+import { dev, listener, post, presmium, PROBE_NAME, probeUrl, raw, remove, shared, speechUrl, startFake, temporary, testDeck, workspace } from './helpers.ts'
 
 const KEY = 'fake-engine-key-in-the-gateway-only'
 const RECORD = { speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'b'.repeat(64) }
@@ -28,12 +29,12 @@ describe('speech through serve and the gateway (SHARED)', () => {
         '  editors: [editor@test]',
         'settings:',
         '  presmium.workspace:',
-        '    plugins: ["@presmium/slidev-addon-speech"]',
+        `    plugins: ["@presmium/slidev-addon-speech", ${PROBE_NAME}]`,
         '  presmium.speech:',
         '    cloned: true',
         '',
       ].join('\n'),
-      'talk/lecture.md': '---\ntitle: 讲授\npresmium:\n  presmium.speech: { engine: fake }\n---\n\n# 讲授\n\n讲解。\n',
+      'talk/lecture.md': `---\ntitle: 讲授\nplugins: [${PROBE_NAME}]\npresmium:\n  presmium.speech: { engine: fake }\n---\n\n# 讲授\n\n讲解。\n`,
     })
     setup = await shared(dir, operator, { PRESMIUM_SPEECH_FAKE_URL: fake.url, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake', PRESMIUM_SPEECH_FAKE_KEY: KEY })
   }, 240_000)
@@ -45,11 +46,9 @@ describe('speech through serve and the gateway (SHARED)', () => {
   }, 60_000)
 
   const site = (email: string) => setup.as(email, 'site', { 'Presmium-Document': 'talk', 'Content-Type': 'application/json' })
-  const synthesize = (voice: string) => raw(speechUrl(setup.url, 'v1/audio/speech/timestamps'), {
-    method: 'POST',
-    headers: { ...site('editor@test'), Origin: `http://${site('editor@test').Host}` },
-    body: JSON.stringify({ voice, input: '经网关合成。', lang: 'zh-CN' }),
-  })
+  const postAs = (url: string, body: unknown) => raw(url, { method: 'POST', headers: { ...site('editor@test'), Origin: `http://${site('editor@test').Host}` }, body: JSON.stringify(body) })
+  const synthesize = (voice: string, input = '经网关合成。') => postAs(speechUrl(setup.url, 'v1/audio/speech/timestamps'), { voice, input, lang: 'zh-CN' })
+  const cache = () => join(dir, 'talk/.presmium/speech')
 
   it('lists the gateway\'s engines with their provider through serve and synthesizes there; the engine is asked by the gateway only', async () => {
     expect(setup.gateway.output()).toMatch(/^plugins {2}.*presmium\.speech/m)
@@ -69,6 +68,35 @@ describe('speech through serve and the gateway (SHARED)', () => {
     expect(asked.every(r => r.authorization === `Bearer ${KEY}`)).toBe(true)
     expect(synthesized.text).not.toContain(KEY)
     expect(setup.serve.output()).not.toContain(KEY)
+
+    // serve keeps the clip in the document's synthesis cache, and a repeat is answered from it without a request.
+    const { key } = synthesized.json<{ key: string }>()
+    expect(existsSync(join(cache(), `${key}.wav`))).toBe(true)
+    expect(JSON.parse(readFileSync(join(cache(), `${key}.json`), 'utf8'))).toMatchObject({ key, engine: 'fake', model: 'fake-tts', provider: 'Presmium fake' })
+    const again = await synthesize('alpha')
+    expect(again.json<{ key: string }>().key).toBe(key)
+    expect((await fake.requests()).length).toBe(before + 2)
+  }, 120_000)
+
+  it('gives the Node SPEECH of serve the gateway\'s engines and the document\'s cache', async () => {
+    const engines = await raw(probeUrl(setup.url, 'engines'), { headers: site('editor@test') })
+    expect(engines.status, engines.text).toBe(200)
+    expect(engines.json()).toEqual([expect.objectContaining({ id: 'fake', provider: 'Presmium fake' })])
+
+    // A clip the browser's path made is a hit for the Node SPEECH: no request, and its audio is the file in the document's cache.
+    const text = '浏览器与节点端共用缓存。'
+    const { key } = (await synthesize('beta', text)).json<{ key: string }>()
+    const before = (await fake.requests()).length
+    const hit = await postAs(probeUrl(setup.url, 'synthesize'), { voice: 'beta', text, lang: 'zh-CN' })
+    expect(hit.status, hit.text).toBe(200)
+    expect(hit.json()).toMatchObject({ key, audio: join(cache(), `${key}.wav`), engine: 'fake', synthetic: true })
+    expect((await fake.requests()).length).toBe(before)
+
+    // Transcription goes through the gateway, which alone holds the engine's key.
+    const transcribed = await postAs(probeUrl(setup.url, 'transcribe'), { audio: join(cache(), `${key}.wav`), lang: 'zh-CN' })
+    expect(transcribed.status, transcribed.text).toBe(200)
+    expect(transcribed.json<{ text: string }>().text).toBe(text)
+    expect((await fake.requests()).slice(before).map(r => `${r.method} ${r.path} ${r.authorization}`)).toEqual([`POST /v1/audio/transcriptions Bearer ${KEY}`])
   }, 120_000)
 
   it('refuses a cloned voice whose consent record is in the workspace, and takes the owner\'s registration from the owner console only', async () => {

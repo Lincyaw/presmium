@@ -1,10 +1,11 @@
 /**
  * The gateway seen from serve and agent-host (SHARED mode, D13): their
- * environments hold no speech credentials, so the Node `SPEECH` service
- * speaks the speech gateway's protocol to the speech plugin's contribution in
- * `presmium gateway` (`<gateway>/presmium.speech/v1/…`) with the gateway
- * token it was given; the engines, their providers and the consent gate are
- * the gateway's.
+ * environments hold no speech credentials, so the Node `SPEECH` service and
+ * serve's `v1/` routes speak the speech gateway's protocol to the speech
+ * plugin's contribution in `presmium gateway`
+ * (`<gateway>/presmium.speech/v1/…`) with the gateway token they were given;
+ * the engines, their providers and the consent gate are the gateway's, the
+ * synthesis cache is the deck's (./deck.ts).
  */
 import type { GatewayAccess, TranscriptionRequest } from '@presmium/kernel'
 import type { EngineListing, TimedSpeech, TranscriptionAnswer, VoiceListing } from '../domain/index.ts'

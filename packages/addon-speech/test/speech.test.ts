@@ -1,13 +1,14 @@
 // Speech with the deterministic fake engine (WP-82, P-132, P-133, N-08), through the speech gateway's routes
 // of `presmium dev` (`/__presmium/presmium.speech/v1/…`, the path the browser's SPEECH uses), which call the
-// engines of dev's environment and keep the deck's synthesis cache. The fake engine is a process of its own,
-// defined like any engine (PRESMIUM_SPEECH_FAKE_URL, _PROVIDER, _KEY); it lists the requests it got.
+// engines of dev's environment and keep the deck's synthesis cache, and through the Node SPEECH service (the
+// test plugin's routes, fixtures/speech-probe). The fake engine is a process of its own, defined like any
+// engine (PRESMIUM_SPEECH_FAKE_URL, _PROVIDER, _KEY); it lists the requests it got.
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, Fake } from './helpers.ts'
-import { dev, listener, post, remove, speechUrl, startFake, temporary, testDeck, wavInfo } from './helpers.ts'
+import { dev, front, listener, post, PROBE, probeUrl, remove, speechUrl, startFake, temporary, testDeck, wavInfo } from './helpers.ts'
 
 const KEY = 'fake-engine-key-only-the-operator-holds'
 const SENTENCE = '我们先看这三行 BPE 合并。'
@@ -39,7 +40,7 @@ describe('presmium dev with the fake engine defined', () => {
   let devProcess: Child
 
   beforeAll(async () => {
-    dir = testDeck('speech', 'presmium:\n  presmium.speech: { engine: fake }')
+    dir = testDeck('speech', 'presmium:\n  presmium.speech: { engine: fake }', [PROBE])
     operator = temporary('speech-operator')
     // `other` has an address and a key but no provider: unavailable.
     other = await listener()
@@ -128,6 +129,38 @@ describe('presmium dev with the fake engine defined', () => {
     form.set('file', new Blob([readFileSync(join(dir, '.presmium/speech', `${key}.wav`))], { type: 'audio/wav' }), 'clip.wav')
     expect((await (await fetch(speechUrl(server, 'v1/audio/transcriptions'), { method: 'POST', body: form })).json() as { text: string }).text).toBe('标识测试。')
   }, 60_000)
+
+  it('sends the lexicon\'s spoken form to the engine and gives the words of the written text', async () => {
+    const timed = (await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input: SENTENCE, lang: 'zh-CN', lexicon: { BPE: 'B P E' } })).json<Timed>()
+    // The fake engine embeds the text it got: B, P and E apart.
+    const form = new FormData()
+    form.set('file', new Blob([Buffer.from(timed.audio, 'base64')], { type: 'audio/wav' }), 'clip.wav')
+    expect((await (await fetch(speechUrl(server, 'v1/audio/transcriptions'), { method: 'POST', body: form })).json() as { text: string }).text).toBe('我们先看这三行 B P E 合并。')
+    // BPE is one word again, from the start of B to the end of E; the words after it keep their times.
+    expect(timed.words.map(w => w.text)).toEqual(['我', '们', '先', '看', '这', '三', '行', 'BPE', '合', '并'])
+    expect(timed.words.slice(7, 9)).toEqual([{ text: 'BPE', start: 2.1, end: 2.44 }, { text: '合', start: 2.52, end: 2.74 }])
+  }, 60_000)
+
+  it('gives the Node SPEECH the deck\'s cache too: its clip is the file in the cache, a hit for the routes, and transcribes back', async () => {
+    const engines = await (await fetch(probeUrl(server, 'engines'))).json()
+    expect(engines).toEqual([{ id: 'fake', provider: 'Presmium fake', stt: true, tts: true, wordTimes: true, local: true }])
+    const request = { voice: 'beta', text: '节点端的语音服务。', lang: 'zh-CN' }
+    const synthesized = await post(probeUrl(server, 'synthesize'), request)
+    expect(synthesized.status, synthesized.text).toBe(200)
+    const { key, audio } = synthesized.json<{ key: string, audio: string }>()
+    expect(synthesized.json()).toMatchObject({ mime: 'audio/wav', engine: 'fake', voice: 'beta', synthetic: true })
+    expect(audio).toBe(join(dir, '.presmium/speech', `${key}.wav`))
+    expect(JSON.parse(readFileSync(join(dir, '.presmium/speech.lock.json'), 'utf8')).synthesis[key]).toBeDefined()
+
+    const before = (await fake.requests()).length
+    expect((await post(probeUrl(server, 'synthesize'), request)).json<{ key: string }>().key).toBe(key)
+    expect((await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'beta', input: request.text, lang: 'zh-CN' })).json<Timed>().key).toBe(key)
+    expect((await fake.requests()).length).toBe(before)
+
+    const transcribed = await post(probeUrl(server, 'transcribe'), { audio, lang: 'zh-CN' })
+    expect(transcribed.status, transcribed.text).toBe(200)
+    expect(transcribed.json<{ text: string }>().text).toBe(request.text)
+  }, 60_000)
 })
 
 describe('cloned voices in LOCAL mode', () => {
@@ -143,6 +176,27 @@ describe('cloned voices in LOCAL mode', () => {
   })
 
   afterAll(() => remove(dir, operator))
+
+  it('refuses a cloned voice when the engine\'s voice list fails, and asks for the list again on the next synthesis', async () => {
+    const proxy = await front(fake)
+    proxy.failVoices = 1
+    const started = await dev(dir, { ...env(), PRESMIUM_SPEECH_FAKE_URL: proxy.url })
+    const before = (await fake.requests()).length
+    try {
+      const failed = await clone(started.server)
+      expect(failed.status).toBe(502)
+      expect(failed.json().error).toContain('the voices of speech engine "fake" are not known, so a cloned voice cannot be told')
+      // The failure is not kept: the list is asked for again, and it marks the voice as cloned.
+      const refused = await clone(started.server)
+      expect(refused.status).toBe(403)
+      expect(refused.json().error).toContain('settings.presmium.speech.cloned: true')
+      expect(proxy.voiceRequests).toBe(2)
+    } finally {
+      await started.dev.stop()
+      await proxy.close()
+    }
+    expect((await fake.requests()).slice(before).map(r => `${r.method} ${r.path}`)).toEqual(['GET /v1/audio/voices'])
+  }, 240_000)
 
   it('refuses a cloned voice until the operator allows them and the owner registers the consent record outside the workspace', async () => {
     let started = await dev(dir, env())

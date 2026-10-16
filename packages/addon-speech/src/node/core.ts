@@ -2,12 +2,13 @@
  * Speech with the engines of this process's environment: `presmium` in
  * LOCAL mode, `presmium gateway` in SHARED mode (D13). Picks the engine (an
  * engine the operator did not define gets no request), checks a cloned
- * voice's consent (./consent.ts) before synthesizing, and labels the audio
- * as AI-generated (./audio/label.ts).
+ * voice's consent (./consent.ts) before synthesizing, applies the
+ * pronunciation lexicon to the text (words come back in the written form),
+ * and labels the audio as AI-generated (./audio/label.ts).
  */
 import type { Logger, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
 import type { EngineDefinition } from '../domain/index.ts'
-import { aigcLabel, applyLexicon, engineInfo, howToDefine, operatorEngines, providerName } from '../domain/index.ts'
+import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak, writtenWords } from '../domain/index.ts'
 import { audioMime, labelAudio } from './audio/label.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
 import { cacheKey } from './backend.ts'
@@ -65,9 +66,9 @@ export function speechCore(options: CoreOptions): SpeechCore {
       if (list[0]) return list[0]
       throw new SpeechError(400, 'no speech engine is defined, so none was asked: the operator defines one in the environment (PRESMIUM_SPEECH_<ID>_URL and PRESMIUM_SPEECH_<ID>_PROVIDER, or PRESMIUM_SPEECH_VOLCENGINE_KEY)')
     }
-    const found = list.find(engine => engine.id === id)
+    const found = list.find(engine => engine.id === engineId(id))
     if (found) return found
-    const reason = unavailable.find(engine => engine.id === id)?.reason
+    const reason = unavailable.find(engine => engine.id === engineId(id))?.reason
     throw new SpeechError(400, reason ? `speech engine "${id}" is unavailable: ${reason}` : `speech engine "${id}" is not defined; ${howToDefine(id)}`)
   }
 
@@ -90,13 +91,14 @@ export function speechCore(options: CoreOptions): SpeechCore {
       const listed = (await allVoices(engine)).find(voice => voice.id === request.voice)
       const cloned = listed?.cloned === true || adapter(engine).cloned?.(request.voice) === true
       if (cloned) checkConsent(options.operatorDir, options.settings, engine.id, request.voice)
-      const spoken = applyLexicon(request.text, request.lexicon)
-      const key = cacheKey({ ...request, engine: engine.id }, spoken)
-      const produced = await adapter(engine).synthesize({ voice: request.voice, text: spoken, lang: request.lang, rate: request.rate, style: request.style }, signal)
+      // The engine gets the text as spoken; the words it times are given as words of the written text.
+      const spoken = speak(request.text, request.lexicon)
+      const key = cacheKey({ ...request, engine: engine.id }, spoken.text)
+      const produced = await adapter(engine).synthesize({ voice: request.voice, text: spoken.text, lang: request.lang, rate: request.rate, style: request.style }, signal)
       const provider = providerName(engine, request.lang)
       const label = aigcLabel(provider, key)
       const labeled = labelAudio(produced.audio, label)
-      const words = produced.words?.length ? produced.words : undefined
+      const words = produced.words?.length ? writtenWords(produced.words, request.text, spoken) : undefined
       return {
         audio: labeled.audio,
         mime: labeled.mime,

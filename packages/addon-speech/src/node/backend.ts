@@ -8,6 +8,7 @@
 import { createHash } from 'node:crypto'
 import type { SpeechWord, SynthesisRequest, Transcript, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
 import type { AigcLabel, EngineListing } from '../domain/index.ts'
+import { engineId } from '../domain/index.ts'
 
 export interface SynthesisResult {
   /** Labeled with `AIGC` in its metadata. */
@@ -43,6 +44,6 @@ export interface SpeechBackend {
  * no request; the record names it.
  */
 export function cacheKey(request: SynthesisRequest & { engine: string }, spoken: string): string {
-  const parts = ['presmium.speech/1', request.engine, request.voice, request.lang, request.rate ?? 1, request.style ?? '', request.text, spoken]
+  const parts = ['presmium.speech/1', engineId(request.engine), request.voice, request.lang, request.rate ?? 1, request.style ?? '', request.text, spoken]
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex').slice(0, 32)
 }

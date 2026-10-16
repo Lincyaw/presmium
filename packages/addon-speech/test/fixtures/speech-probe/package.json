@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-speech-probe",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/addon-speech/test: routes that call the Node SPEECH service the way the lecture plugin does",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

@@ -49,9 +49,18 @@ const SUFFIXES = ['URL', 'PROVIDER', 'KEY', 'APPID', 'MODEL', 'TRANSCRIBE_MODEL'
 type Suffix = typeof SUFFIXES[number]
 const VARIABLE = new RegExp(`^PRESMIUM_SPEECH_([A-Z0-9_]+?)_(${SUFFIXES.join('|')})$`)
 
+/**
+ * An engine's id as its variables write it, in lower case: a deck's
+ * `my-engine` or `My_Engine` is the engine `my_engine` of
+ * `PRESMIUM_SPEECH_MY_ENGINE_URL`.
+ */
+export function engineId(name: string): string {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')
+}
+
 /** `PRESMIUM_SPEECH_<ID>_<SUFFIX>` of an engine id (`my-engine` is `MY_ENGINE`). */
 export function engineVariable(id: string, suffix: Suffix): string {
-  return `PRESMIUM_SPEECH_${id.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_${suffix}`
+  return `PRESMIUM_SPEECH_${engineId(id).toUpperCase()}_${suffix}`
 }
 
 /** How the operator defines an engine, for messages. */
@@ -64,7 +73,7 @@ export function engineIds(names: Iterable<string>): string[] {
   const ids = new Set<string>()
   for (const name of names) {
     const match = VARIABLE.exec(name)
-    if (match && match[2] !== 'MODEL' && match[2] !== 'TRANSCRIBE_MODEL') ids.add(match[1]!.toLowerCase())
+    if (match && match[2] !== 'MODEL' && match[2] !== 'TRANSCRIBE_MODEL') ids.add(engineId(match[1]!))
   }
   return [...ids].sort()
 }

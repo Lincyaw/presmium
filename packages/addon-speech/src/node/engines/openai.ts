@@ -50,12 +50,20 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
   const what = `speech engine "${engine.id}" (${engine.provider})`
 
   return {
+    /**
+     * The engine's voices. An engine without the extension (404, 405) has no
+     * list, so none of its voices is known as a clone; any other failure,
+     * or an answer that is not a list, rejects: whether a voice is cloned
+     * cannot be told then, and the consent gate fails closed (N-08).
+     */
     async voices(lang, signal) {
       const response = await call('audio/voices', { method: 'GET' }, signal)
-      if (!response.ok) return []
+      if (response.status === 404 || response.status === 405) return []
+      if (!response.ok) throw await answerError(response, what)
       const body: unknown = await response.json().catch(() => undefined)
-      const list = isRecord(body) ? body.voices : body
-      return (Array.isArray(list) ? list : []).flatMap(item => voiceOf(item) ?? []).filter(voice => speaks(voice, lang))
+      const list = isRecord(body) ? body.voices ?? body.data : body
+      if (!Array.isArray(list)) throw new SpeechError(502, `${what} answered audio/voices without a list of voices`)
+      return list.flatMap(item => voiceOf(item) ?? []).filter(voice => speaks(voice, lang))
     },
 
     async synthesize(request: EngineSynthesis, signal): Promise<EngineAudio> {
