@@ -135,6 +135,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 - 编译时执行：`{code}`（或 MyST notebook 的 `{code-cell}`）加 `:run:`（或 `:run: compile`、`both`）、`{code-ref}` 加 `:run:`、`{run-panel}`（默认 `both`）。构建时用本机的 `python3`、`node` 执行（`py`、`python3`、`ipython` 都是 Python），输出写进 IR，所有媒介都显示；程序直接写标准输出（`process.stdout.write`、`console.dir`）也照常录制。
 - 浏览器中执行：`:run: live` 或 `both`。网页中的代码块有运行按钮；幻灯片中 Python、JavaScript、TypeScript 的这类代码块是 Monaco Runner，点运行按钮执行。浏览器中的 Python 由 Pyodide 执行，可离线；每次运行有自己的工作目录，一次运行写的文件、改的递归限制不影响下一次，与编译时一致。
+- C、C++、Ruby、SQL：列出 `@presmium/slidev-addon-exec-wasi` 后，编译时与网页中都在 WebAssembly 中用同一份运行时执行（构建机不需要工具链，网页离线可用）；有浏览器中运行的这类代码时，构建发布对应的运行时（C、C++ 约 52 MB）。见 `references/directives.md` 的 `{code}`。
 - 运行环境：头部 `execute.environments` 声明具名环境（不含凭据；凭据只来自环境变量，如 `PRESMIUM_ENV_<名>_TOKEN`，头部中像凭据的值给出警告 `presmium.secrets`），代码块与 `{run-panel}`、`{code-ref}` 用 `:env: <名>` 选择。环境不可用时不改用别的执行器：有录制就显示录制。`presmium check --env` 连接每个声明的环境，连不上是错误。
 - 执行会话：同一 `:session:` 的代码块共享解释器（前一块定义、后一块使用），编译时改了其中一块整个会话重新执行；浏览器中每个页面各有一份，“重置会话”丢弃它。
 - 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象与 matplotlib 的图录制为富输出，各媒介按类型显示；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。

@@ -226,7 +226,9 @@ print(markdown_table(model.summary()))
 | `languages` | 可用语言；省略时由提供方给出（`jupyter` 取内核规格的语言） |
 | `path` | `devcontainer`：定义所在目录 |
 
-WASI 与 WebGPU 的执行器按语言登记（`c`、`cpp`、`ruby`、`sql`；`wgsl`），不声明环境也能运行；声明 `kind: wasi` 或 `kind: webgpu` 的环境只是为了用 `:env:` 明确选择。`wgsl` 计算着色器用 `{run-panel} wgsl` 运行，`:params:` 是 YAML 写的缓冲区与派发说明（`buffers`、`dispatch`、`entry`、`repeat`、`features`），结果是读回的缓冲区摘要与计时。
+WASI 与 WebGPU 的执行器按语言登记（`c`、`cpp`、`ruby`、`sql`；`wgsl`），不声明环境也能运行；声明 `kind: wasi` 或 `kind: webgpu` 的环境只是为了用 `:env:` 明确选择。
+
+实现（WP-74）：WebAssembly 插件 `@presmium/slidev-addon-exec-wasi` 的执行器 ID 为 `presmium.wasi`，语言名另接受 `c++`、`cc`、`cxx`（C++）、`rb`（Ruby）与 `sqlite`（SQL）；`kind: wasi` 的环境可以用 `languages` 限定语言。C 与 C++ 由 WebAssembly 中的 clang 8 编译（与 Runno 相同的 `-O2 -Werror`：默认开启的警告也按错误处理；编译错误是这次运行的输出，退出码为编译器的），SQL 在内存数据库中执行，Ruby 为 3.2。编译时与浏览器中用同一份二进制运行，构建机不需要工具链。程序可以读 `RunRequest.files`（放在根目录，C 程序以绝对路径 `/<名字>` 打开）与标准输入，编译时得到清理过的环境变量（`RunContext.env`），浏览器中没有环境变量；不支持参数（`args`）与会话（`:session:` 被忽略，每次运行是一个独立的程序）。插件的编译步骤把浏览器中运行的代码需要的运行时写进 `config.presmium['presmium.execWasi'].runtimes`，两种形态只发布这些运行时（C 与 C++ 约 52 MB）。插件配置 `presmium.execWasi.loadTimeoutMs`：浏览器中下载与编译运行时的时限，默认 120 秒。`wgsl` 计算着色器用 `{run-panel} wgsl` 运行，`:params:` 是 YAML 写的缓冲区与派发说明（`buffers`、`dispatch`、`entry`、`repeat`、`features`），结果是读回的缓冲区摘要与计时。
 
 浏览器中，同一会话的状态按页面实例隔离：每个打开的页面（每个学习者）各有一份，重新加载即重新开始；代码块旁的“重置会话”丢弃它（`Executor.endSession`）。编译时，同一会话的代码块按在文稿中出现的顺序在同一个解释器中运行（第 4 节的会话键链）。
 
@@ -545,6 +547,7 @@ v0.8 增加的字段（全部可选，`ir` 仍为 `1`；TypeScript 定义见 `ar
 | 浏览器执行 `presmium.exec` | `{run-panel}` | 参数为语言：`python`（默认，`py`、`python3`、`ipython` 同义）、`javascript`、`typescript`；v0.8 起也可以是任何有执行器的语言（如 `wgsl`、`c`） | `:params:`（YAML 映射，注入程序的变量；JavaScript 中为常量；其他语言由执行器解释，如 `wgsl` 的缓冲区与派发说明）、`:timeout:`（毫秒，默认取本章节的 `presmium.exec.timeoutMs`）、`:recorded:`（执行失败或超时时显示的输出）、`:run:`（`both` 默认，同时在构建时录制；`live` 只在浏览器中执行）、`:env:`、`:session:` | `PmRunPanel`，子块为代码块，代码也在属性 `code` 中；`fallback`（PDF、PNG 导出）为先给参数赋值的代码，加上构建时的输出，构建时没有执行、执行失败或超时的用 `:recorded:`；notebook 中与内核同语言的为代码单元格（参数赋值在前），其他语言为代码（JavaScript、TypeScript 前面加上参数常量）加输出的 Markdown 单元格，输出的取法同 `fallback`。带超时而构建时没有正常结束的代码单元格标记 `skip-execution` |
 | | `{step-run}` | 参数为语言（默认 `python`）；正文为代码 | `:steps:`（执行的行数，每行一步）、`:params:`、`:timeout:` | `PmStepRun`；步数为 `:steps:`。文档视图（全部展开）中组件有自己的步进控件（上一步、下一步与滑块），读者在其中逐行查看；网页中组件接近视口时才加载 Python 运行时并追踪 |
 | 本地环境 `presmium.execLocal` | `{local-env}` | 参数为语言（默认 `python`）；正文为代码 | `:file:`（代码在工作区中的路径，必填）、`:workspace:`（devcontainer 所在目录，相对于本文件） | `PmLocalEnv`，子块为代码块；执行器 `presmium.container` 供代码块的 `:executor:` 使用。一份文稿只有一个工作区：各 `{local-env}` 指定不同的工作区时报错（`presmium.execLocal.workspace`）。全局配置 `workspace`、`priority`、`buildTimeoutMs`（构建镜像的时限，默认 10 分钟） |
+| WebAssembly `presmium.execWasi` | 无指令；语言为 `c`、`cpp`、`ruby`、`sql` 的代码（带 `:run:` 的代码块，或执行面板）由它运行（2.7 节） | — | 全局配置 `loadTimeoutMs`；环境 `kind: wasi` | 执行器 `presmium.wasi`；编译步骤 `presmium.execWasi.runtimes` 写出两种形态要发布的运行时 |
 | 引导 `presmium.guide` | `{cursor}` | 正文每行一个路径点：`[move\|hover\|click] <CSS 选择器>`，动作默认为 `move` | — | `PmCursor`；第 k 个路径点在块的第 k 步，步数为路径点数减一 |
 | | `{spotlight}`、`{hint}` | 参数为目标的 CSS 选择器；正文为弹出说明 | `:title:`（说明标题）、`:span:`（持续的步数，默认 0） | `PmSpotlight`、`PmHint` |
 | 富内容 `presmium.content` | `{markmap}` | 正文为标题与列表；开头的 YAML 块可写 `markmap` 选项 | — | `PmMarkmap`，降级为嵌套列表 |
