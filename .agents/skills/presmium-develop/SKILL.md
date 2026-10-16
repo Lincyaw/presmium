@@ -27,7 +27,8 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 | 引导 | `addon-guide` | 模拟光标、聚光、交互提示 |
 | 富内容 | `addon-content` | 思维导图、媒体、PlantUML |
 | 发布 | `addon-publish` | 离线、高对比度、`presmium-export`、`presmium-diff` |
-| 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问、理解度、先预测再揭示、笔记；y-websocket 课堂服务 |
+| 助手 | `addon-assistant` | 运营者插件：`AGENT_RUNTIME`（ACP 客户端，`@agentclientprotocol/sdk` 只在 `src/node/`；默认以子进程启动随包精确固定的 DeepSeek Harness，模板在 `dsh/`），服务端路由 `info`、`tasks`、`tasks/<id>/events`、`tasks/<id>/cancel`，gateway 中的模型代理 `model/*`；浏览器端的 `AGENT`、工具栏与演讲者面板中的提问面板（引用经视图插件跳转）。修改任务在 WP-81 |
+| 课堂 | `addon-session`、`addon-classroom`、`classroom-server` | 会话与同步、测验、练习、提问（主讲确认后发给课堂的 AI 回答，经 `AGENT`）、理解度、先预测再揭示、笔记；y-websocket 课堂服务 |
 | 讲授 | `addon-lecture` | 讲授轨（`lectures/<id>/track.json`）、放映视图中的录制（Mediabunny 录 Ogg/Opus，只在 `src/client/media.ts`）、视图 `lecture` 的回放（`OPERATIONS` 折叠出 `state(t)`）、检查项 `presmium.lecture`、站点渲染端 `lecture` 与 VTT 导出 |
 | 语音 | `addon-speech` | 运营者插件：`SPEECH` 的 Node 端（LOCAL 直接调用引擎，SHARED 经 `NodeServiceContext.gateway`）与浏览器端（经 `useServer()` 的 `v1/` 路由，它与 Node 端一样经文稿的合成缓存，SHARED 中未命中时以服务令牌调用 gateway）；语音网关的协议（OpenAI 音频接口形态，`src/node/routes.ts`）挂在服务端与 gateway 中；引擎由运营者的环境变量定义（`src/domain/engines.ts`），服务提供方的接口只在 `src/node/engines/`；合成缓存 `.presmium/speech/` 与 AI 生成的标识（WAV 的 `LIST`/`INFO`、Ogg 的 Opus 注释头）；克隆音色的同意记录在运营者目录中；`presmium-speech fake`、`consent` |
 | 编辑 | `language-server`、`vscode` | 语言服务；VS Code 扩展（唯一预打包的包） |
