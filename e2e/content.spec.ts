@@ -112,7 +112,8 @@ test('the web form renders the same content: math, diagrams, mindmap, media and 
 
   // The media files are the component's `assets`, which the web renderer publishes.
   const video = section('content-media').locator('figure.pm-media video')
-  test.skip(!(await video.getAttribute('src'))?.startsWith('/'), 'WP-70b: the web renderer publishes ComponentNode.assets (C-7); remove this guard once WP-70b is merged')
+  await expect(video).toHaveAttribute('src', /^\/web\/media\/[0-9a-f]{8}-/)
+  expect((await page.request.get(new URL((await video.getAttribute('src'))!, page.url()).href)).status()).toBe(200)
   await expect(video).toHaveAttribute('width', '280')
   await expect.poll(() => media(video)).toBeCloseTo(3, 0)
   await expect.poll(() => media(section('content-media').locator('figure.pm-media audio'))).toBeCloseTo(2, 0)
@@ -141,10 +142,10 @@ test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ p
 test.describe('online media', () => {
   test.describe.configure({ timeout: 120_000 })
   let deck: string
-  let web: Awaited<ReturnType<typeof serve>>
-  let slides: Awaited<ReturnType<typeof serve>>
+  let site: Awaited<ReturnType<typeof serve>>
 
-  // e2e/fixtures/plugins/online.md: {youtube}, and {video} and {audio} with URLs.
+  // e2e/fixtures/plugins/online.md: {youtube}, and {video} and {audio} with URLs. Built together,
+  // the forms are one site: the web form under /web/, the slides under /slides/.
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     deck = writeDeck('online', `
@@ -159,13 +160,11 @@ renderers:
   notebook: {}
 `, ['online.md'])
     await build(deck, 'web,slides,notebook')
-    web = await serve(join(deck, 'dist/web'))
-    slides = await serve(join(deck, 'dist/slides'), true)
+    site = await serve(join(deck, 'dist'), '/slides/')
   })
 
   test.afterAll(async () => {
-    await web?.close()
-    await slides?.close()
+    await site?.close()
     if (deck) rmSync(deck, { recursive: true, force: true })
   })
 
@@ -174,14 +173,14 @@ renderers:
     await page.route(/youtube|example\.com/, route => route.abort())
     const PLAYER = 'https://www.youtube-nocookie.com/embed/luoMHjh-XcQ?start=30'
 
-    await page.goto(`${web.url}/online.html`)
+    await page.goto(`${site.url}/web/online.html`)
     const section = page.locator('.pm-section[data-section="online"]')
     await expect(section.locator('figure.pm-youtube iframe')).toHaveAttribute('src', PLAYER)
     await expect(section.locator('figure.pm-youtube figcaption')).toHaveText('A talk on YouTube')
     await expect(section.locator('figure.pm-media video')).toHaveAttribute('src', 'https://example.com/media/clip.mp4')
     await expect(section.locator('figure.pm-media audio')).toHaveAttribute('src', 'https://example.com/media/tone.ogg')
 
-    await page.goto(`${slides.url}/online`)
+    await page.goto(`${site.url}/slides/online`)
     const slide = page.locator('.slidev-layout.pm-online')
     await expect(slide.locator('figure.pm-youtube iframe')).toHaveAttribute('src', PLAYER)
     await expect(slide.locator('figure.pm-media video')).toHaveAttribute('src', 'https://example.com/media/clip.mp4')

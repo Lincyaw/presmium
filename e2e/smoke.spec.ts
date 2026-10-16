@@ -40,7 +40,22 @@ async function firstTurns(): Promise<[Section, Section][]> {
   return [[all[0]!, all[1]!], [all[1]!, all[2]!]]
 }
 
-test('the slides open on the cover and page from section to section', async ({ page }) => {
+/**
+ * Errors in the browser console that come from Slidev and the browser under test, not from
+ * Presmium, with why they stay (docs/architecture.md section 9.3):
+ * - Slidev asks for a screen wake lock while the slides are shown (its `wakeLock` option); a browser
+ *   driven by Playwright denies it.
+ * - Slidev 53 installs the Twoslash popups of @shikijs/vitepress-twoslash 4.5 in every deck; their
+ *   patch to the menus of floating-vue 5.4 fails, as the menu component no longer has the shape the
+ *   patch expects. Slidev's dev server (`presmium dev`, `slidev export`) reports it; only dragging
+ *   over a Twoslash popup is affected, and decks have no Twoslash code.
+ */
+const FRAMEWORK_ERRORS = [/^Wake Lock permission request denied$/, /^Failed to patch FloatingVue\b/]
+
+test('the slides open on the cover and page from section to section, with no error in the console', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', message => void (message.type() === 'error' && errors.push(message.text())))
+  page.on('pageerror', error => void errors.push(error.message))
   const turns = await firstTurns()
   await page.goto(`${SLIDES}/1`)
   await expect(page.locator('.slidev-page-1 h1')).toHaveText(turns[0]![0].title)
@@ -50,6 +65,7 @@ test('the slides open on the cover and page from section to section', async ({ p
     await expect(page).toHaveURL(new RegExp(`/${next.index}(\\?|$)`))
     await expect(page.locator(`.slidev-page-${next.index} h1`)).toHaveText(next.title)
   }
+  expect(errors.filter(text => !FRAMEWORK_ERRORS.some(known => known.test(text)))).toEqual([])
 })
 
 test('the web form opens on the cover, goes to a section from the sidebar and pages in the present view', async ({ page }) => {

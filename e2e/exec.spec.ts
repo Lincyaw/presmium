@@ -268,19 +268,19 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
   test.describe.configure({ mode: 'serial' })
   test.use({ locale: 'en-US' })
   let deck: BuiltDeck
-  let slides: Awaited<ReturnType<typeof serve>>
-  let web: Awaited<ReturnType<typeof serve>>
+  /** Built together, the forms are one site: the web form under /web/, the slides under /slides/. */
+  let site: Awaited<ReturnType<typeof serve>>
+  const slides = { get url() { return `${site.url}/slides` } }
+  const web = { get url() { return `${site.url}/web` } }
 
   test.beforeAll(async () => {
     test.setTimeout(240_000)
     deck = await buildDeck('exec-english', fixture('english'))
-    slides = await serve(join(deck.dir, 'dist/slides'), true)
-    web = await serve(join(deck.dir, 'dist/web'), false)
+    site = await serve(join(deck.dir, 'dist'), '/slides/')
   })
 
   test.afterAll(async () => {
-    await slides?.close()
-    await web?.close()
+    await site?.close()
     deck?.remove()
   })
 

@@ -218,8 +218,10 @@ test.describe('a classroom', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let server: Awaited<ReturnType<typeof startClassroomServer>>
   let deck: string
-  let web: Awaited<ReturnType<typeof serve>>
-  let slides: Awaited<ReturnType<typeof serve>>
+  /** Built together, the forms are one site: the web form under /web/, the slides under /slides/. */
+  let site: Awaited<ReturnType<typeof serve>>
+  const web = { get url() { return `${site.url}/web` } }
+  const slides = { get url() { return `${site.url}/slides` } }
   let sections: Record<string, number>
 
   test.beforeAll(async () => {
@@ -230,13 +232,11 @@ test.describe('a classroom', () => {
     await build(deck, 'web,slides')
     const ir = JSON.parse(readFileSync(join(deck, 'dist/ir.json'), 'utf8')) as { sections: { id: string, index: number }[] }
     sections = Object.fromEntries(ir.sections.map(s => [s.id, s.index]))
-    web = await serve(join(deck, 'dist/web'), false)
-    slides = await serve(join(deck, 'dist/slides'), true)
+    site = await serve(join(deck, 'dist'), '/slides/')
   })
 
   test.afterAll(async () => {
-    await web?.close()
-    await slides?.close()
+    await site?.close()
     server?.child.kill('SIGTERM')
     if (deck) rmSync(deck, { recursive: true, force: true })
   })

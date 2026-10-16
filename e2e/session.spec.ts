@@ -42,6 +42,8 @@ test('without a classroom server the deck shows and reads as before, and its bui
   }
   await page.goto(`${offline().web}/session.html?view=presenter&section=session`)
   await sessionPlugins()
+  // The presenter view, like the present view, gives the height of its control bar to what lies over it (C-9).
+  await expect.poll(() => overlayBar(page)).toMatch(/^[1-9]\d*(\.\d+)?px$/)
 
   // The slides: the presenter view has no classroom panel either; the slides still step.
   await page.goto(`${offline().slides}/presenter/session`)
@@ -91,13 +93,15 @@ async function create(presenter: Page, name = '王老师'): Promise<{ panel: Loc
   const panel = presenter.getByRole('dialog', { name: '课堂' })
   await panel.getByLabel('昵称').fill(name)
   await panel.getByRole('button', { name: '创建课堂' }).click()
+  // Started: the window keeps its membership from then on, so it can be closed and the classroom rejoined (R-19).
+  await expect(panel.getByRole('status')).toHaveText('课堂进行中，你是主讲')
   await expect(panel.getByRole('img', { name: '加入课堂的二维码' }).locator('svg')).toBeVisible()
   const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
   return { panel, link, room: new URL(link).searchParams.get('room')! }
 }
 
-/** Whether the overlay views set the height of their control bar (C-9), which WP-70b adds to the IR runtime. */
-const overlayBar = (page: Page) => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pm-overlay-bar').trim() !== '')
+/** The height of the overlay view's control bar that the page gives what lies over it (C-9): `--pm-overlay-bar` of `<html>`. */
+const overlayBar = (page: Page) => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pm-overlay-bar').trim())
 
 test.describe('a classroom', () => {
   test.describe.configure({ mode: 'serial', timeout: 90_000 })
@@ -228,14 +232,18 @@ test.describe('a classroom', () => {
     for (const page of [learner, mobile]) await expect(badge(page)).toContainText('正在跟随主讲')
     await panel.getByRole('button', { name: '关闭' }).click()
     await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
-    for (const page of [learner, mobile]) await expect(present(page)).toBeVisible()
-    test.skip(!(await overlayBar(learner)), 'WP-70b: the present view sets --pm-overlay-bar (C-9); remove this guard once WP-70b is merged')
+    for (const page of [learner, mobile]) {
+      await expect(present(page)).toBeVisible()
+      await expect.poll(() => overlayBar(page)).toMatch(/^[1-9]\d*(\.\d+)?px$/)
+    }
 
     // The mouse on a desktop, a finger on a phone.
     const press = (page: Page, target: Locator) => (page === mobile ? target.tap() : target.click())
     for (const page of [learner, mobile]) {
       await press(page, present(page).getByRole('button', { name: '退出放映' }))
       await expect(present(page)).toHaveCount(0)
+      // Without the present view, nothing lies over the page.
+      expect(await overlayBar(page)).toBe('')
     }
     // The presenter moves on and the learners follow into the present view again; browsing alone,
     // they step and open the overview themselves.
@@ -314,7 +322,6 @@ test.describe('a classroom', () => {
 
     await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
     await expect(present(learner)).toBeVisible()
-    test.skip(!(await overlayBar(presenter)), 'WP-70b: the stage keeps its screen in host shared state in the web form too (C-9, R-08); remove this guard once WP-70b is merged')
     await presenter.keyboard.press('b')
     await expect(learner.locator('.pm-stage-black')).toBeVisible()
     await presenter.keyboard.press('b')

@@ -535,6 +535,12 @@ test.describe('the reading fixture deck', () => {
     await expect(page.locator('.VPSkipLink')).toHaveText('跳到正文')
     await expect(page.locator('.VPNavBar .VPSwitchAppearance').filter({ visible: true })).toHaveAttribute('title', /^切换到(深色|浅色)模式$/)
     await expect(page.locator('.VPDocFooter .pager-link .desc')).toHaveText(['上一章', '下一章'])
+    // The sidebar and the links to the chapters before and after are named for assistive technology too (R-72),
+    // also on a page reached from the sidebar.
+    for (const name of ['侧边栏导航', '翻页']) await expect(page.getByRole('navigation', { name, exact: true })).toBeAttached()
+    await page.locator('.VPDocFooter .pager-link.next').click()
+    await expect(page).not.toHaveURL(/basics\.html/)
+    for (const name of ['侧边栏导航', '翻页']) await expect(page.getByRole('navigation', { name, exact: true })).toBeAttached()
     // The keys of the search box are named for assistive technology too.
     await openSearch(page)
     const keys = page.locator('.VPLocalSearchBox')
