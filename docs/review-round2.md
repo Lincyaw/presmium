@@ -1030,3 +1030,31 @@
 **修法与验收**：`playwright.config.ts` 的冒烟浏览器默认包括 `webkit`（未安装时跳过并提示安装命令）；`docs/browsers.md` 与 requirements N-04 写明人工检查的范围；smoke 用例在 WebKit 中通过，或把失败记录为 R-90 的一部分修复。
 
 另：R-92 的验收增加一条：`presmium-export --range 1-3` 只导出第 1 至 3 页（技能编写时观察到导出了整份讲义）。
+
+## WP-70e（合并后集成，在 main 上）
+
+WP-70a 至 70d 合并后（main de03433）由一个工作包完成的集成修复与验证遗留。拥有：全部路径（只在本节范围内修改）。端口：`PRESMIUM_E2E_SLIDES_PORT=4751`、`PRESMIUM_E2E_WEB_PORT=4752`，其他服务用 4753–4759。
+
+**必须完成（主要）**
+
+1. **导出失败**：`pnpm test` 中 `packages/addon-publish/test/export.test.ts`（PNG 导出）与 `packages/render-slides/test/slides.test.ts`（PDF 导出显示静态降级）失败（“locator resolved to hidden <body>”）。原因：C-13 启用后，同时构建两种形态时幻灯片的 base 为 `/slides/`，而对生成的 Slidev 文稿直接运行 `slidev export` 时 base 为 `/`。presmium-export 与测试都要传入生成文稿的 base（或导出时让生成文稿使用对应的 base），`pnpm test` 全部通过。
+2. **C-13 的后果**：所有把 `dist/web` 或 `dist/slides` 放在服务器根目录的端到端服务改为把 `dist/` 作为一个站点（网页在 `/web/`，幻灯片在 `/slides/`）：`playwright.config.ts` 的两个 webServer、`e2e/urls.ts`、`e2e/fixtures/*/deck*.ts`，以及 classroom、content、exec、perf 等 spec 中直接起服务的用例（优先改用 `e2e/fixtures/deck.ts` 的 `serve(dir, '/slides/')` 与 `buildFixture`）。完整的 Playwright 套件（Chromium 全部 + Firefox、WebKit 冒烟 + 性能用例）全部通过。
+3. **去掉 WP-70c 中等待 WP-70b 的跳过条件**（session.spec 中网页黑屏到达学员、`--pm-overlay-bar`、C-7 网页媒体），让这些验收用例真正运行并通过。
+4. **C-7**：网页渲染端发布组件的 `assets`（`ctx.localAsset(block.source, url)` → `<out>/media/<name>`，属性改写为 `<base>media/<name>`，构建与开发都要），网页形态中本地视频返回 200。若缺失则实现；被停掉的重复运行的分支 `worktree-wf_db11de46-424-1`（f0fb965）可作参考，不要整体合并它。
+5. **C-9**：放映或演讲者视图挂载时在 `document.documentElement` 上设置 `--pm-overlay-bar`，卸载时移除；课堂徽章不再遮挡“退出放映”（R-18）。
+6. **R-20（WP-70c 第二轮验证的主要问题）**：学习者仍能经主讲的 Yjs 结构写入，悄悄撤销主讲之后的写入。课堂服务端按写入规则拒绝学习者对主讲所有结构的更新（包括挂起在房间里的更新），拒绝时通知该学习者；classroom-server 的集成测试覆盖该攻击。
+7. **R-19**：`e2e/session.spec.ts` 的验收用例存在竞态（约 255 行，助手 `create()` 约 89 行），改为等待确定的状态，在 `--repeat-each=5` 下稳定。
+8. **R-118**：幻灯片形态控制台的 “Failed to patch FloatingVue”：查明来源并修复；若属框架问题，在 architecture.md 第 9 节记录并在 smoke 用例中说明理由。
+9. **C-21**：addon-session、addon-classroom 改用 `@presmium/host` 的 `useSessionSnapshot()` 与 `claimFirst()`，删除各自的副本。
+10. **C-10**：render-slides 的来源栏改用 `@presmium/viewer/domain` 的 `originParts`、`outputNotes`，删除自己的文本。
+
+**应当完成（次要）**
+
+11. 幻灯片构建失败时把错误位置映射回源码块（而不是 `.presmium/slides/slides.md__slidev_N.md`）；表格单元格与讲解中的伪 XML 标签（例如 `<reminder>`）按字面显示，不再破坏幻灯片构建（`docs/coverage-agentic-se.md` 第 4 节）。
+12. 非根 base 下演讲者备注中的图片 404（WP-70a 第二轮验证）。
+13. presmium-diff 的网页一轮遵守 `renderers.web.base`（R-93）。
+14. R-32：在第一个插件步骤之前先校验一次 IR，指令产生的无效 IR 不再归咎于第一个步骤。
+15. R-72：断言侧栏与翻页的中文 aria-label。
+16. 文档与实际一致：WP-70d 按计划写的文档按实际实现核对（C-13 已启用、导出的 base、组件资源、`--pm-overlay-bar`），`CLAUDE.md` 的命令与约定；`.agents/skills` 同步，`scripts/check-skills.mjs` 通过。
+
+**验收**：`pnpm test`、`pnpm demo:check`、`pnpm demo:build` 无错误与警告，完整 Playwright 套件全部通过；第 1–10 项各有对应的用例或说明。
