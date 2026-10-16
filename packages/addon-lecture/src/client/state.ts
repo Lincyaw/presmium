@@ -28,6 +28,13 @@ function fromUrl(): string | undefined {
 /** The lecture being played, if any. */
 export const playing = shallowRef<string | undefined>(fromUrl())
 
+/**
+ * The page plays a lecture for `presmium-lecture export` (`&export`): no
+ * controls, and the player steps through the lecture on the exporter's
+ * call (`window.presmiumLecture`) instead of playing it.
+ */
+export const exporting = typeof location !== 'undefined' && new URLSearchParams(location.search).has('export')
+
 /** Plays a lecture (or none), keeping the page URL in step. */
 export function play(id: string | undefined): void {
   playing.value = id

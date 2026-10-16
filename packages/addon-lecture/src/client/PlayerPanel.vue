@@ -3,16 +3,23 @@
 // player.ts); play and pause, the time and a seek bar, the speed, captions in the lecture's
 // language or a translation, the transcript (a word or a sentence's time seeks to it), the
 // chapters with the steps of each section (one seeks to its time), "try it" and "back to the
-// lecture", and a label on a synthesized voice.
+// lecture", and a label on a synthesized voice, which plays its utterances' clips. Editors under
+// `presmium dev` and `presmium serve` work on a recorded lecture's words here (TrackEditor.vue, and
+// an utterance's text in the transcript). For `presmium-lecture export` (`&export`) it shows no
+// controls and steps through the lecture on the exporter's call.
+import type { Operations } from '@presmium/host'
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { captionLanguages, chapters, clockText, LECTURE_ID, LECTURE_MESSAGES, stepStops, trackDuration, utteranceAt } from '../domain/index.ts'
-import type { Utterance } from '../domain/index.ts'
-import { MediaClock, SilentClock } from './clock.ts'
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { captionLanguages, chapters, CLIPS_DIR, clockText, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, trackDuration, utteranceAt } from '../domain/index.ts'
+import type { LectureTrack, Utterance } from '../domain/index.ts'
+import type { ClockMedia, TrackClock } from './clock.ts'
+import { ClipClock, MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
-import { serverSource, staticBase, staticSource } from './source.ts'
-import { play, playing, useViewer } from './state.ts'
+import type { LectureSource } from './source.ts'
+import { serverEditing, serverSource, staticBase, staticSource } from './source.ts'
+import { exporting, play, playing, useViewer } from './state.ts'
+import TrackEditor from './TrackEditor.vue'
 
 defineProps<{ view: string }>()
 
@@ -28,36 +35,111 @@ const captions = ref(false)
 const language = ref<string>()
 const panel = ref<'transcript' | 'chapters'>()
 
+/** Where the lectures come from: the server's routes, else the build's `lecture` output. */
+function lectureSource(): LectureSource {
+  const config = viewer.doc.value.config.presmium[LECTURE_ID]
+  return server.available ? serverSource(server) : staticSource(staticBase(isRecord(config) ? config : undefined))
+}
+
+/** The clock of a track: the clips of a synthetic voice, else the recorded audio, else the page's. */
+async function clockOf(track: LectureTrack, source: LectureSource): Promise<TrackClock> {
+  const length = trackDuration(track)
+  const url = (src: string) => source.media(track.id, src).catch(() => '')
+  if (track.voice.kind === 'synthetic') {
+    const clips = await Promise.all(track.utterances.filter(u => u.clip).map(async (u): Promise<ClockMedia> => ({ url: await url(`${CLIPS_DIR}/${u.clip}`), start: u.t, duration: u.d })))
+    if (clips.some(c => c.url)) return new ClipClock(length, clips.filter(c => c.url))
+  }
+  const audio = await Promise.all((track.audio ?? []).map(async (a): Promise<ClockMedia> => ({ url: await url(a.src), start: a.start * 1000, duration: a.duration * 1000 })))
+  const media = audio.filter(a => a.url)
+  return media.length > 0 ? new MediaClock(length, media) : new SilentClock(length)
+}
+
 let loading = 0
+/** Plays a track (its time `at`), in place of the one played. */
+async function start(track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0) {
+  const clock = await clockOf(track, source)
+  if (load !== loading) return clock.dispose()
+  player.value?.dispose()
+  player.value = new LecturePlayer(track, viewer.doc.value, ops, clock)
+  language.value ??= track.lang
+  status.value = 'ready'
+  player.value.seek(at)
+  if (exporting) exportHook(player.value)
+}
+
 watch([playing, operations], async ([id, ops]) => {
   const load = ++loading
   player.value?.dispose()
   player.value = undefined
   status.value = undefined
+  language.value = undefined
   if (!id || !ops) return
   status.value = 'loading'
-  const config = viewer.doc.value.config.presmium[LECTURE_ID]
-  const source = server.available ? serverSource(server) : staticSource(staticBase(isRecord(config) ? config : undefined))
+  const source = lectureSource()
   const track = await source.track(id).catch(() => undefined)
   if (load !== loading) return
   if (!track) {
     status.value = 'missing'
     return
   }
-  const audio = await Promise.all((track.audio ?? []).map(async a => ({ url: await source.media(id, a.src).catch(() => ''), start: a.start * 1000, duration: a.duration * 1000 })))
-  if (load !== loading) return
-  const length = trackDuration(track)
-  const media = audio.filter(a => a.url)
-  const clock = media.length > 0 ? new MediaClock(length, media) : new SilentClock(length)
-  player.value = new LecturePlayer(track, viewer.doc.value, ops, clock)
-  language.value = track.lang
-  status.value = 'ready'
-  player.value.seek(0)
+  await start(track, source, ops, load)
 }, { immediate: true })
 onBeforeUnmount(() => {
   loading++
   player.value?.dispose()
 })
+
+/** `presmium-lecture export` steps the lecture: `advance(t)` shows the lecture at t once the page has drawn it. */
+function exportHook(p: LecturePlayer) {
+  const frame = () => new Promise<void>(done => requestAnimationFrame(() => done()))
+  Object.assign(window, {
+    presmiumLecture: {
+      duration: p.duration,
+      async advance(at: number) {
+        p.advanceTo(at)
+        await nextTick()
+        await frame()
+        await frame()
+      },
+    },
+  })
+}
+
+// Editors work on a stored lecture's words (not on `script`, which the deck's narration makes).
+const editing = computed(() => (server.available && server.member.value?.roles.some(role => role === 'editor' || role === 'owner') ? serverEditing(server) : undefined))
+const editable = computed(() => Boolean(editing.value && player.value && playing.value !== SCRIPT_TRACK))
+const editingUtterance = ref<string>()
+const draft = ref('')
+const saving = ref(false)
+const editFailure = ref<string>()
+
+/** Plays the edited track from where the lecture is. */
+function changed(track: LectureTrack) {
+  const ops = operations.value
+  if (!ops) return
+  void start(track, lectureSource(), ops, ++loading, player.value?.time.value ?? 0)
+}
+
+function edit(u: Utterance) {
+  editingUtterance.value = u.id
+  draft.value = u.text
+  editFailure.value = undefined
+}
+
+async function saveUtterance() {
+  const id = editingUtterance.value
+  const track = player.value?.track
+  if (!id || !track || !editing.value || saving.value) return
+  saving.value = true
+  try {
+    changed(await editing.value.editUtterance(track.id, id, draft.value))
+    editingUtterance.value = undefined
+  } catch (error) {
+    editFailure.value = t.value.editor.failed(error instanceof Error ? error.message : String(error))
+  } finally {
+    saving.value = false
+  }
+}
 
 const time = computed(() => player.value?.time.value ?? 0)
 const state = computed(() => (!player.value ? undefined : player.value.trying.value ? 'trying' : player.value.clock.playing.value ? 'playing' : 'paused'))
@@ -72,6 +154,9 @@ const entries = computed(() => [
 const entry = computed(() => entries.value.filter(e => e.t <= time.value).at(-1))
 const languages = computed(() => (player.value ? captionLanguages(player.value.track) : []))
 const current = computed(() => (player.value ? utteranceAt(player.value.track, time.value) : undefined))
+const voice = computed(() => player.value?.track.voice)
+/** The AI-generated label of a synthetic voice, with its provider when the track names it (N-08). */
+const synthetic = computed(() => (voice.value?.kind === 'synthetic' && voice.value.provider ? t.value.player.syntheticBy(voice.value.provider) : t.value.player.synthetic))
 
 function text(u: Utterance): string {
   const lang = language.value
@@ -109,9 +194,18 @@ function close() {
       {{ t.player.missing(playing) }}
       <button type="button" class="pm-lecture-button" @click="close">{{ t.player.close }}</button>
     </p>
+    <div
+      v-else-if="player && exporting"
+      class="pm-lecture-export"
+      :data-time="Math.round(time)"
+      :data-clip="current?.clip"
+    >
+      <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai">{{ synthetic }}</span>
+    </div>
     <template v-else-if="player">
       <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite">{{ text(current) }}</p>
       <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
+        <TrackEditor v-if="panel === 'transcript' && editable && editing" :key="player.track.id" :track="player.track" :editing="editing" @changed="changed" />
         <ol v-if="panel === 'transcript'" class="pm-lecture-transcript" :lang="language">
           <li
             v-for="u in player.track.utterances"
@@ -121,10 +215,19 @@ function close() {
             :aria-current="current?.id === u.id ? 'true' : undefined"
           >
             <button type="button" class="pm-lecture-transcript__time" :aria-label="t.player.jump(clockText(u.t))" @click="seekTo(u.t)">{{ clockText(u.t) }}</button>
-            <span v-if="u.words?.length && language === player.track.lang" class="pm-lecture-transcript__text">
-              <span v-for="(w, i) in u.words" :key="i" class="pm-lecture-word" @click="seekTo(w[0])">{{ w[2] }}</span>
-            </span>
-            <span v-else class="pm-lecture-transcript__text" @click="seekTo(u.t)">{{ text(u) }}</span>
+            <form v-if="editingUtterance === u.id" class="pm-lecture-transcript__edit" @submit.prevent="saveUtterance">
+              <input v-model="draft" type="text" :aria-label="t.editor.edit(u.id)" :disabled="saving">
+              <button type="submit" class="pm-lecture-button" :disabled="saving">{{ saving ? t.editor.saving : t.editor.save }}</button>
+              <button type="button" class="pm-lecture-button" :disabled="saving" @click="editingUtterance = undefined">{{ t.editor.cancel }}</button>
+              <span v-if="editFailure" role="alert">{{ editFailure }}</span>
+            </form>
+            <template v-else>
+              <span v-if="u.words?.length && language === player.track.lang" class="pm-lecture-transcript__text">
+                <span v-for="(w, i) in u.words" :key="i" class="pm-lecture-word" @click="seekTo(w[0])">{{ w[2] }}</span>
+              </span>
+              <span v-else class="pm-lecture-transcript__text" @click="seekTo(u.t)">{{ text(u) }}</span>
+              <button v-if="editable && language === player.track.lang" type="button" class="pm-lecture-transcript__edit-button" :aria-label="t.editor.edit(u.id)" @click="edit(u)">✎</button>
+            </template>
           </li>
         </ol>
         <ol v-else class="pm-lecture-chapters">
@@ -145,7 +248,7 @@ function close() {
           </li>
         </ol>
       </aside>
-      <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)">
+      <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)" :data-clip="current?.clip">
         <p v-if="player.dropped > 0" class="pm-lecture-player__notice">{{ t.player.dropped(player.dropped) }}</p>
         <p v-if="state === 'trying'" class="pm-lecture-player__notice">{{ t.player.trying }}</p>
         <div class="pm-lecture-player__row">
@@ -179,7 +282,7 @@ function close() {
           <button type="button" class="pm-lecture-button" :aria-pressed="panel === 'chapters'" @click="panel = panel === 'chapters' ? undefined : 'chapters'">{{ t.player.chapters }}</button>
           <button v-if="state === 'trying'" type="button" class="pm-lecture-button pm-lecture-player__back" @click="player.back()">{{ t.player.back }}</button>
           <button v-else type="button" class="pm-lecture-button pm-lecture-player__try" @click="player.tryIt()">{{ t.player.tryIt }}</button>
-          <span v-if="player.track.voice.kind === 'synthetic'" class="pm-lecture-player__ai">{{ t.player.synthetic }}</span>
+          <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai">{{ synthetic }}</span>
           <button type="button" class="pm-lecture-button" :aria-label="t.player.close" @click="close">×</button>
         </div>
       </div>
@@ -314,5 +417,28 @@ function close() {
 }
 .pm-lecture-chapters__step {
   padding-inline-start: 1.5rem;
+}
+.pm-lecture-transcript__edit {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.pm-lecture-transcript__edit input {
+  flex: 1 1 8rem;
+  font: inherit;
+}
+.pm-lecture-transcript__edit-button {
+  margin-inline-start: auto;
+  border: 0;
+  background: none;
+  color: var(--vp-c-text-2, #555);
+  cursor: pointer;
+}
+.pm-lecture-export {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 4;
 }
 </style>

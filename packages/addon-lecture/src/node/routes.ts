@@ -6,20 +6,33 @@
  * header last), then sends the track.
  *
  *   GET  tracks                                the lectures: id, length, voice, language
- *   GET  tracks/<id>                           track.json
+ *   GET  tracks/<id>                           track.json; `script`, the synthesized lecture, made on demand
  *   GET  tracks/<id>/<audio|video>/<file>      a media file, with ranges (seeking)
+ *   GET  tracks/<id>/clips/<key>.<wav|ogg>     a synthesized clip, from the synthesis cache
  *   POST recordings          { track? }        a new lecture, or one to record a section of again: { id }
  *   POST recordings/<id>/media  { folder, section, kind?, ext }   a free file name: { src }
  *   PUT  recordings/<id>/files/<src>?at=<n>    bytes written at position n
  *   POST recordings/<id>/finish  { head, recording, section? }    writes track.json: { id, track }
+ *
+ * Editors also work on a recorded lecture's words (WP-83), each change
+ * written to its track.json, which comes back:
+ *
+ *   GET  speech                                the engines: transcription and synthesis, with providers and voices
+ *   POST editing/<id>/transcribe               its audio transcribed: utterances, events bound to words
+ *   PUT  editing/<id>/utterances/<u> { text }  an utterance's text corrected (said again in a synthetic voice)
+ *   POST editing/<id>/synthesize { voice, engine? }   every utterance said again in a voice
  */
 import { createReadStream, existsSync, rmSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
-import { errorMessage, isRecord } from '@presmium/kernel'
-import type { Route, ServerContext, ServerContribution } from '@presmium/kernel'
-import { fileStem, recordedTrack, spliceSection, trackDuration } from '../domain/index.ts'
-import type { LectureTrack, MediaSegment, Recording, TrackHead } from '../domain/index.ts'
+import { errorMessage, isRecord, SPEECH } from '@presmium/kernel'
+import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
+import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
+import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
+import { clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, transcriptionEngine, unsaidMessage } from './lecture.ts'
+import { latestDoc, lectureConfig } from './plan.ts'
+import type { MadeClip } from './speak.ts'
+import { clipVoice, synthesizeClip } from './speak.ts'
 import { freeMediaPath, mediaFile, mediaPolicy, newTrackId, readTrack, sha256File, trackDir, trackIds, writeAt, writeGitFiles, writeTrack } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
@@ -34,6 +47,16 @@ const TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
   '.m4a': 'audio/mp4',
   '.wav': 'audio/wav',
+}
+
+/** Thrown to answer with a status and a message. */
+class Refusal extends Error {
+  readonly status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
 }
 
 function json(body: unknown, status = 200): Response {
@@ -168,35 +191,151 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     },
   }
 
+  const speech = (): SpeechService => {
+    const found = ctx.service(SPEECH)
+    if (!found) throw new Refusal(503, 'no speech service: add @presmium/slidev-addon-speech to the deck\'s plugins')
+    return found
+  }
+  const compiled = (): IRDocument => {
+    const doc = latestDoc(deckDir)
+    if (!doc) throw new Refusal(503, 'the deck has not compiled yet')
+    return doc
+  }
+  const lexicon = lexiconOf(ctx.config)
+
+  /** The synthesized lecture of the latest IR, made once per IR (on demand: the clips the cache lacks are synthesized). */
+  let synthesized: { doc: IRDocument, made: Promise<LectureTrack> } | undefined
+  const scriptTrack = (): Promise<LectureTrack> => {
+    const doc = compiled()
+    if (synthesized?.doc === doc) return synthesized.made
+    const made = synthesizedLecture(doc, deckDir, speech()).then(({ deck, track, unsaid }) => {
+      if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
+      if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
+      return track
+    })
+    synthesized = { doc, made }
+    made.catch(() => {
+      if (synthesized?.made === made) synthesized = undefined
+    })
+    return made
+  }
+  /** Whether the deck names a voice, so `script` is its synthesized lecture. */
+  const voiced = () => {
+    const doc = latestDoc(deckDir)
+    return doc ? lectureVoice(lectureConfig(doc)) : undefined
+  }
+
+  /** A stored lecture to work on. */
+  const stored = (id: string): LectureTrack => {
+    const found = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
+    if (!found) throw new Refusal(404, `no lecture ${id}`)
+    return found.track
+  }
+  const save = (track: LectureTrack, extra: Record<string, unknown> = {}) => {
+    writeTrack(deckDir, track)
+    return json({ ...extra, track })
+  }
+  /** The track with its utterances (those of `only`, else all) said again in `voice`. */
+  const resynthesize = async (track: LectureTrack, voice: { engine?: string, voice: string }, only?: string): Promise<LectureTrack> => {
+    const clips = new Map<string, MadeClip>()
+    for (const u of track.utterances) {
+      if (only && u.id !== only) continue
+      clips.set(u.id, await synthesizeClip(speech(), { text: u.text, spoken: u.text, spans: [] }, { voice, lang: track.lang, ...lexicon ? { lexicon } : {} }))
+    }
+    const said: Voice = clips.size ? clipVoice(clips.values(), voice) : track.voice
+    return resynthesizedTrack(track, clips, said)
+  }
+
+  const editing: Route = {
+    async handle(request, { rest }) {
+      const [id = '', action, ...path] = rest.split('/')
+      try {
+        const track = stored(id)
+        if (action === 'transcribe' && request.method === 'POST') {
+          if (!(await transcriptionEngine(speech(), latestDoc(deckDir)))) throw new Refusal(503, 'no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
+          const { track: transcribed, bound, provider } = await transcribeLecture(deckDir, track.id, speech(), latestDoc(deckDir), request.signal)
+          ctx.log.info(`lecture ${id}: transcribed by ${provider}, ${transcribed.utterances.length} utterances, ${bound} events bound to words`)
+          return json({ provider, bound, track: transcribed })
+        }
+        if (action === 'utterances' && request.method === 'PUT' && path.length === 1) {
+          const body: unknown = await request.json().catch(() => undefined)
+          if (!isRecord(body) || typeof body.text !== 'string' || !body.text.trim()) throw new Refusal(400, 'expected { text }')
+          const edited = editUtterance(track, decoded(path), body.text)
+          if (!edited) throw new Refusal(404, `lecture ${id} has no utterance ${decoded(path)}`)
+          // A synthetic voice says the new text at once.
+          const { voice } = track
+          return save(voice.kind === 'synthetic' ? await resynthesize(edited, { engine: voice.engine, voice: voice.voice }, decoded(path)) : edited)
+        }
+        if (action === 'synthesize' && request.method === 'POST') {
+          const body: unknown = await request.json().catch(() => undefined)
+          if (!isRecord(body) || typeof body.voice !== 'string' || !body.voice) throw new Refusal(400, 'expected { voice, engine? }')
+          if (track.utterances.length === 0) throw new Refusal(409, `lecture ${id} has no utterances to say: transcribe it first`)
+          const engine = typeof body.engine === 'string' && body.engine ? body.engine : undefined
+          return save(await resynthesize(track, { ...engine ? { engine } : {}, voice: body.voice }))
+        }
+        return problem(404, 'unknown editing action')
+      } catch (error) {
+        if (error instanceof Refusal) return problem(error.status, error.message)
+        ctx.log.error(`lecture ${id}: ${errorMessage(error)}`)
+        return problem(502, errorMessage(error))
+      }
+    },
+  }
+
   return {
     routes: {
       'tracks': {
         role: 'reader',
-        handle: () => json(trackIds(deckDir).flatMap((id) => {
-          try {
-            const { track } = readTrack(deckDir, id)!
-            return [{ id, lang: track.lang, voice: track.voice, duration: trackDuration(track) }]
-          } catch {
-            return []
-          }
-        })),
+        handle() {
+          const doc = latestDoc(deckDir)
+          const voice = voiced()
+          const synthetic = voice && doc ? [{ id: SCRIPT_TRACK, lang: doc.meta.lang ?? 'zh-CN', voice: { kind: 'synthetic', ...voice } }] : []
+          return json([...synthetic, ...trackIds(deckDir).filter(id => !(voice && id === SCRIPT_TRACK)).flatMap((id) => {
+            try {
+              const { track } = readTrack(deckDir, id)!
+              return [{ id, lang: track.lang, voice: track.voice, duration: trackDuration(track) }]
+            } catch {
+              return []
+            }
+          })])
+        },
       },
       'tracks/*': {
         role: 'reader',
-        handle(request, { rest }) {
+        async handle(request, { rest }) {
           const [id = '', ...path] = rest.split('/')
-          if (path.length === 0) {
-            try {
-              const stored = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
-              return stored ? json(stored.track) : problem(404, `no lecture ${id}`)
-            } catch (error) {
-              return problem(500, errorMessage(error))
+          try {
+            if (path.length === 0) {
+              if (id === SCRIPT_TRACK && voiced()) return json(await scriptTrack())
+              const found = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
+              return found ? json(found.track) : problem(404, `no lecture ${id}`)
             }
+            if (path[0] === CLIPS_DIR && path.length === 2) {
+              const clip = clipFile(deckDir, decoded(path.slice(1)))
+              return clip && existsSync(clip) ? serveFile(clip, request) : problem(404, 'no such clip')
+            }
+          } catch (error) {
+            return error instanceof Refusal ? problem(error.status, error.message) : problem(500, errorMessage(error))
           }
           const file = mediaFile(deckDir, id, decoded(path))
           return file && existsSync(file) ? serveFile(file, request) : problem(404, 'no such file')
         },
       },
+      'speech': {
+        async handle() {
+          try {
+            const service = speech()
+            const doc = latestDoc(deckDir)
+            const [transcribe, synthesize] = await Promise.all([transcriptionEngine(service, doc), synthesisEngineOf(service, doc)])
+            const voices = synthesize ? await service.voices(synthesize.id, doc?.meta.lang).catch(() => []) : []
+            const info = (e: typeof transcribe) => e && { engine: e.id, provider: e.provider, local: e.local }
+            return json({ transcribe: info(transcribe), synthesize: synthesize && { ...info(synthesize), voices } })
+          } catch (error) {
+            return error instanceof Refusal ? problem(error.status, error.message) : problem(502, errorMessage(error))
+          }
+        },
+      },
+      'editing/*': editing,
       'recordings': {
         async handle(request) {
           if (request.method !== 'POST') return problem(405, 'POST to start a recording')

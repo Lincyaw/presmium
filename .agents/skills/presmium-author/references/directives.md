@@ -541,3 +541,21 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 ## 行内角色
 
 插件可以登记行内角色（`docs/ir.md` 2.8 节），写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口、编辑模式与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
+
+## 讲授的角色 `presmium.lecture`（`@presmium/slidev-addon-lecture`）
+
+讲授插件登记两个行内角色，写在讲解中（`docs/ir.md` 2.9 节）。讲解就是讲授的脚本：文稿头部写了 `renderers.lecture.voice` 时，`presmium build --to web,lecture` 把每一步的讲解经语音服务（`@presmium/slidev-addon-speech`，也要列在 `plugins` 中）合成为讲授 `script`，网页以 `?view=lecture&track=script` 播放。
+
+```markdown
+我们先看 {cue to=code-1 lines=3-5}`spot` 这三行，{cue}`next` 再把它合并成新符号。
+运行一下 {cue to=code-1}`run` 看看结果。{say alias="B P E"}`BPE` 的词表就这样长出来。{cue}`pause 800ms`
+```
+
+| 角色 | 内容 | 选项 | 作用 |
+|---|---|---|---|
+| `{cue}` | 命令：`next`、`spot`、`hint`、`point`、`click <动作>`、`run`、`ink`、`pause <时长>`（`800ms`、`1.5s`）、`mark <名称>` | `to`（块的标签）、`lines`（代码行，如 `2-3`）、`sel`（块内的 CSS 选择器） | 说到它之后的第一个字时执行：`next` 推进一步，`spot`、`hint` 聚光与提示，`point` 指向块，`ink` 用荧光笔圈出，`run` 显示录制的输出，`click` 触发组件的具名动作，`pause` 停顿，`mark` 记一个章节点。没有 `to` 时作用于这段讲解前面最近的上屏块。页面上不显示（演讲者窗口与备注中显示 `〔cue spot〕`） |
+| `{say}` | 显示的文字 | `alias`：读出的文字 | 显示一种写法，讲授读另一种（字幕与逐字稿仍是显示的文字） |
+
+头部的配置（`renderers.lecture`）：`voice: { engine, voice, rate, style }`（写了 `voice` 才合成；`engine` 只写运营者定义的引擎 ID，省略时用 `presmium.speech.engine`）、`script`（单独的讲授脚本文件，其中以与讲义相同的标签 `(merge)=` 开始的一节代替讲义这一节的讲解，第 k 段属于第 k 步；讲义的显示不变）、`gap`（一步说完到推进的停顿，默认 500 毫秒）。`presmium.lecture: { lexicon: { BPE: B P E } }` 是整份文稿的读音词典。`{only} lecture` 中的讲解只说不显示，`{only} web, slides` 中的只显示不说；头部的 `renderers` 要写出 `lecture`，否则 `{only} lecture` 得到“不认识的渲染端”的警告。
+
+合成的片段在合成缓存 `.presmium/speech/` 中（提交它，别人构建时不再调用引擎）。缓存缺少某一句而又没有引擎时，构建失败，`presmium check` 的 `presmium.lecture` 逐句指出；提示标记的目标不存在、`lines` 超出代码的行数也由它报告。

@@ -1,6 +1,6 @@
 ---
 name: presmium-present
-description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档），讲授的录制与回放（放映视图中录音、摄像头、聚光 s、激光笔与荧光笔，lectures/<id>/track.json，?view=lecture&track=<id> 的回放、倍速、字幕、逐字稿、我来试试）。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server, recording a lecture and playing it back."
+description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档），讲授的录制与回放（放映视图中录音、摄像头、聚光 s、激光笔与荧光笔，lectures/<id>/track.json，?view=lecture&track=<id> 的回放、倍速、字幕、逐字稿、我来试试；由讲解合成的讲授 script、录制讲授的转写与修改、换音色重新合成、presmium-lecture export 导出 WebM 视频）。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server, recording a lecture and playing it back, a lecture synthesized from the narration, transcribing and correcting a recorded lecture, exporting a lecture video."
 ---
 
 # 用 Presmium 放映与授课
@@ -70,6 +70,9 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 - **文件**：每次录制在文稿目录写 `lectures/<日期>/track.json`（提交它）与 `audio/*.ogg`、`video/*.webm`（默认被该目录的 `.gitignore` 忽略；运营者设置 `settings.presmium.lecture.audio: lfs` 时交给 git LFS）。
 - **回放**：地址加 `?view=lecture&track=<ID>`，或在“视图”菜单中选“讲授”再挑一个。放映视图下方是播放栏：播放与暂停、进度、倍速、字幕（可选译文的语言）、逐字稿（点时间或某个字跳过去）、章节（每一节下列出讲授走到的各步，点击跳到那一步）、“我来试试”（暂停后自己翻页或运行代码，点“回到讲授”恢复到讲授的画面）。合成的讲授显示“AI 合成语音”。讲义改动后失效的操作被略过并提示，`presmium check` 的 `presmium.lecture` 列出它们。
 - **静态站点**：`presmium build --to web,lecture` 把讲授发布在 `dist/lecture/`（含 `captions.<语言>.vtt`、`chapters.vtt`、`events.vtt`），网页从同一站点的 `../lecture/` 读取；分开部署时在头部写 `presmium: { presmium.lecture: { url: <地址> } }`。
+- **合成的讲授**：头部写了 `renderers.lecture.voice`（并列出 `@presmium/slidev-addon-speech`）时，讲义的讲解就是讲授的脚本（写法见 presmium-author 技能）：`presmium build --to web,lecture` 把它合成为讲授 `script`（片段发布在 `dist/lecture/script/clips/`），`?view=lecture&track=script` 播放，提示标记 `{cue}` 在说到相应的字时聚光、推进；`presmium dev` 中打开它时由服务端按需合成。播放栏显示“AI 合成语音（<服务提供方>）”。合成要运营者定义的语音引擎（`PRESMIUM_SPEECH_<ID>_URL` 与 `_PROVIDER`），合成过的片段在合成缓存 `.presmium/speech/` 中，提交后别处构建不需要引擎。
+- **转写与修改**（`presmium dev` 与工作区服务中，编辑者）：回放一份录制的讲授，打开“逐字稿”：“转写（<服务提供方>）”先确认把录音发给谁，转写后得到逐句的文字，录制时在说某句话期间做的操作绑定到当时说的字；每句后的 ✎ 修改这句的文字（没改的字保留时间）；选一个“音色”点“重新合成（<服务提供方>）”，整段讲授换成这个音色的合成语音，操作跟着字走，没有绑定到字的操作时刻不变。改动都写回 `lectures/<id>/track.json`。
+- **导出视频**：`presmium-lecture export [文稿目录] --track <ID> --out <文件>.webm`（`--size 1280x720`、`--fps 10` 为默认）构建网页与讲授，在 Chromium 中逐帧播放并与声音合成为 WebM 视频（只导出 WebM）；合成的声音在文件的元数据中标明由 AI 生成。
 ### 由 agent 跳转（`presmium dev`）
 
 `presmium dev` 中，连接了 MCP 的 agent（见 presmium-author 技能）可以查询放映位置（`get_position`）并请求跳转（`navigate`）、开始或结束课堂（`classroom_start`、`classroom_end`）。每次操作先在页面工具栏出现“待确认”入口，允许后放映与演讲者窗口跳到该位置，拒绝时 agent 得到错误。放映视图与演讲者视图盖住了工具栏，所以放映时另开一个文档视图的窗口回答确认。
@@ -161,6 +164,8 @@ presmium:
 | 放映视图没有录制栏 | 录制只在 `presmium dev` 与工作区服务中；文稿 `plugins` 要有 `@presmium/slidev-addon-lecture` |
 | `presmium.lecture` `… which the deck no longer has (lost)` | 讲义删掉或改名了讲授引用的块或章节：给要长期回放的块加标签，或重录那一节 |
 | `presmium.lecture` `the en translation of … is stale` | 原文改过，重新翻译那一句 |
+| 讲授列表中没有 `script`，或播放它时“找不到讲授” | 头部 `renderers.lecture.voice` 写明音色，`plugins` 列出 `@presmium/slidev-addon-speech`；构建时定义了引擎，或合成缓存中有全部片段（`presmium check` 的 `presmium.lecture` 逐句指出缺少的） |
+| 逐字稿中没有“转写”按钮 | 只在 `presmium dev` 与工作区服务中、编辑者可见；运营者要定义能转写的语音引擎，文稿 `plugins` 要有 `@presmium/slidev-addon-speech` |
 | 没有课堂入口，或开发中显示“未连接” | 配置 `presmium.session.server`、启动课堂服务，重新构建 |
 | 学生打不开加入链接 | 主讲用局域网地址打开讲义，课堂服务地址也用局域网地址（服务启动时打印） |
 | 主讲的标签页关掉了 | 同一浏览器重新打开讲义，在课堂面板中以主讲身份回到课堂 |

@@ -120,6 +120,8 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 指令一览、选项与最小示例见 `references/directives.md`。先确认提供该指令的包已写进 `plugins`。
 
+讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。
+
 文稿自己的组件：放在文稿目录的 `components/` 下（`StepBadge.vue`），用 `{component} StepBadge` 放进正文，两种形态都渲染。组件只能引用 `@presmium/host`、`@presmium/kernel` 与 vue，文稿的 `package.json` 要依赖 `@presmium/host`。
 
 ## 9. 引用真实代码
@@ -208,6 +210,9 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 | `presmium.execute` `session "…" runs in … and here in …` | 同一会话的代码块写同一个 `:env:` |
 | `presmium.secrets` `… looks like a credential` | 从头部删掉它，改用环境变量 |
 | `presmium.speech` `presmium.speech.engines.x … is not used` | 文稿只写引擎的 ID（`presmium.speech: { engine: volcengine, transcribe: groq }`），删掉 `url`、`keyEnv` 等；引擎由运营者在环境变量中定义（`PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER`、可选的 `_KEY`；火山引擎只要 `PRESMIUM_SPEECH_VOLCENGINE_KEY`） |
+| `presmium.lecture` `the lecture's 「…」 … is not in the synthesis cache, and no speech engine can synthesize it` | 讲授（`renderers.lecture.voice`）的这句话没有合成过：在定义了该引擎的环境中（`PRESMIUM_SPEECH_<ID>_URL`、`_PROVIDER`）构建一次并提交 `.presmium/speech/`，或改回缓存中有的文字 |
+| `presmium.lecture` `{cue to=…}…: the deck has no block …` 或 `… has no block before it to act on` | 给要聚光、指向的块写标签 `(code-1)=` 并在 `to=` 中写它，或把提示标记写在那个块之后的讲解中 |
+| `presmium.lecture` `unknown cue command` | `{cue}` 的内容只能是 `next`、`spot`、`hint`、`point`、`click <动作>`、`run`、`ink`、`pause <时长>`、`mark <名称>` |
 | `presmium.references` `target "…" not found` | 给目标加标签，或改正引用 |
 | `presmium.classroom` `{quiz} needs at least two options` | 选项写成任务列表 `- [ ]`、`- [x]` |
 
@@ -219,7 +224,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 - `.presmium/anchors.lock.json`：锚点锁定记录（`presmium check --update-lock` 生成）。
 - `.presmium/drawings/`：幻灯片中的圈画标注。
 - `.presmium/assets/`：本地化的远程图片（如 PlantUML 图），新增一个后要提交。
-- `.presmium/speech/` 与 `.presmium/speech.lock.json`：合成缓存（`@presmium/slidev-addon-speech`）：合成的音频（引擎给的格式，通常是 Ogg/Opus）与 `<键>.json`（逐字时间、引擎、AI 生成的标识），以及文稿用到的键。提交后别人构建不再调用语音引擎、不需要凭据。
+- `.presmium/speech/` 与 `.presmium/speech.lock.json`：合成缓存（`@presmium/slidev-addon-speech`）：合成的音频（引擎给的格式，通常是 Ogg/Opus）与 `<键>.json`（逐字时间、引擎、AI 生成的标识；讲授插件转写对齐得到的逐字时间在 `<键>.align.json`），以及文稿用到的键（讲授的构建只留下讲授用到的键）。提交后别人构建不再调用语音引擎、不需要凭据。
 
 录制的讲授（`@presmium/slidev-addon-lecture`，见 presmium-present 技能）在文稿目录的 `lectures/<id>/` 中：提交 `track.json`（讲授轨：语音段与操作，每项一行，便于比较差异）；`audio/`、`video/` 默认被该目录的 `.gitignore` 忽略（运营者设置决定是否交给 git LFS）。讲义改了讲授引用的块时，`presmium check` 的 `presmium.lecture` 报告失效的操作；要长期回放的块写标签 `(名字)=`。
 

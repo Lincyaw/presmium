@@ -109,13 +109,21 @@ export class LecturePlayer {
     this.operations.replay({ type: event.type, data: event.data }, seeking)
   }
 
+  /**
+   * Moves on to time t (not before the time shown) as playing does: the
+   * events up to t apply as they come. The video export steps the lecture
+   * so, a frame at a time, with the clock stopped.
+   */
+  advanceTo(t: number): void {
+    while (this.applied + 1 < this.events.length && this.events[this.applied + 1]!.t <= t) this.apply(this.events[++this.applied]!, false)
+    this.time.value = t
+  }
+
   private loop(): void {
     cancelAnimationFrame(this.frame)
     const step = () => {
       this.clock.tick()
-      const t = this.clock.now()
-      while (this.applied + 1 < this.events.length && this.events[this.applied + 1]!.t <= t) this.apply(this.events[++this.applied]!, false)
-      this.time.value = t
+      this.advanceTo(this.clock.now())
       this.frame = this.clock.playing.value ? requestAnimationFrame(step) : 0
     }
     this.frame = requestAnimationFrame(step)

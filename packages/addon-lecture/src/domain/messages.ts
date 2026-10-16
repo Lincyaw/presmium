@@ -38,6 +38,8 @@ export interface LectureMessages {
     trying: string
     close: string
     synthetic: string
+    /** The AI-generated label with the engine's provider (N-08). */
+    syntheticBy: (provider: string) => string
     loading: string
     missing: (id: string) => string
     dropped: (count: number) => string
@@ -49,6 +51,26 @@ export interface LectureMessages {
     empty: string
     unavailable: string
     open: (id: string) => string
+  }
+  /** Working on a recorded lecture's words (P-132, P-133); the engines' providers are named (N-08). */
+  editor: {
+    region: string
+    transcribe: (provider: string) => string
+    transcribeConfirm: (id: string, provider: string) => string
+    transcribing: string
+    transcribed: (count: number) => string
+    voice: string
+    synthesize: (provider: string) => string
+    synthesizeConfirm: (provider: string, voice: string, count: number) => string
+    synthesizing: string
+    synthesized: string
+    local: string
+    confirm: string
+    cancel: string
+    edit: (id: string) => string
+    save: string
+    saving: string
+    failed: (reason: string) => string
   }
 }
 
@@ -89,6 +111,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       trying: '你正在自行操作，讲授已暂停',
       close: '关闭讲授',
       synthetic: 'AI 合成语音',
+      syntheticBy: provider => `AI 合成语音（${provider}）`,
       loading: '正在加载讲授…',
       missing: id => `找不到讲授 ${id}`,
       dropped: count => `讲义改动后有 ${count} 个操作失效，回放时略过`,
@@ -100,6 +123,25 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       empty: '这份讲义还没有讲授',
       unavailable: '读不到讲授列表',
       open: id => `播放讲授 ${id}`,
+    },
+    editor: {
+      region: '讲授的文字与语音',
+      transcribe: provider => `转写（${provider}）`,
+      transcribeConfirm: (id, provider) => `把讲授 ${id} 的录音发给 ${provider} 转写？转写由该服务计费。`,
+      transcribing: '正在转写…',
+      transcribed: count => `已转写 ${count} 句`,
+      voice: '音色',
+      synthesize: provider => `重新合成（${provider}）`,
+      synthesizeConfirm: (provider, voice, count) => `用 ${provider} 的音色“${voice}”重新合成这段讲授的 ${count} 句话？合成由该服务计费，结果由 AI 生成。`,
+      synthesizing: '正在合成…',
+      synthesized: '已重新合成',
+      local: '本机，不外发',
+      confirm: '确定',
+      cancel: '取消',
+      edit: id => `修改语音段 ${id}`,
+      save: '保存',
+      saving: '正在保存…',
+      failed: reason => `失败：${reason}`,
     },
   },
   'en': {
@@ -138,6 +180,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       trying: 'You are trying it yourself; the lecture is paused',
       close: 'Close the lecture',
       synthetic: 'AI-generated voice',
+      syntheticBy: provider => `AI-generated voice (${provider})`,
       loading: 'Loading the lecture…',
       missing: id => `Lecture ${id} not found`,
       dropped: count => `${count} actions no longer match the deck and are skipped`,
@@ -149,6 +192,25 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       empty: 'This deck has no lecture yet',
       unavailable: 'The lectures cannot be read',
       open: id => `Play lecture ${id}`,
+    },
+    editor: {
+      region: 'Words and voice of the lecture',
+      transcribe: provider => `Transcribe (${provider})`,
+      transcribeConfirm: (id, provider) => `Send the audio of lecture ${id} to ${provider} for transcription? The service charges for it.`,
+      transcribing: 'Transcribing…',
+      transcribed: count => `Transcribed ${count} sentences`,
+      voice: 'Voice',
+      synthesize: provider => `Say again (${provider})`,
+      synthesizeConfirm: (provider, voice, count) => `Say the ${count} sentences of this lecture again in the voice "${voice}" of ${provider}? The service charges for it; the result is AI-generated.`,
+      synthesizing: 'Synthesizing…',
+      synthesized: 'Said again',
+      local: 'on this machine, nothing sent',
+      confirm: 'OK',
+      cancel: 'Cancel',
+      edit: id => `Edit utterance ${id}`,
+      save: 'Save',
+      saving: 'Saving…',
+      failed: reason => `Failed: ${reason}`,
     },
   },
 }
