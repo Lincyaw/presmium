@@ -1,7 +1,8 @@
 // Compile-time recording of a WGSL compute shader (P-104, WP-75), with the real `presmium build`: the
 // run panel's shader runs in Playwright's Chromium on SwiftShader (the environment's `adapter`), so
 // any machine records the same; the recording's environment fingerprint names the browser and the
-// fallback adapter, and its timing is marked as CPU emulation.
+// fallback adapter, and its timing is marked as CPU emulation. The summary is in the deck's language
+// (`RunContext.lang`; the deck has none, so zh-CN).
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -46,7 +47,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 \`\`\`
 `
 
-it('records the shader\'s output in Chromium on SwiftShader, with a fingerprint that names the fallback adapter', async () => {
+it('records the shader\'s output in Chromium on SwiftShader, in the deck\'s language, with a fingerprint that names the fallback adapter', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-webgpu-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'lecture.md'), DECK)
@@ -58,7 +59,7 @@ it('records the shader\'s output in Chromium on SwiftShader, with a fingerprint 
   const panel = doc.sections[0]!.blocks[0]!.node as ComponentNode
   const run = (panel.children![0]!.node as CodeNode).outputs![0]!
   expect(run).toMatchObject({ ok: true, executorId: 'presmium.env.cpu' })
-  expect(run.stdout).toMatch(/^out: f32\[4\] = \[11, 22, 33, 44\]\ntime: [\d.e-]+ ms per dispatch \(median of 3; GPU timestamps; CPU emulation\)\nadapter: google swiftshader \(fallback adapter\)\n$/)
+  expect(run.stdout).toMatch(/^out: f32\[4\] = \[11, 22, 33, 44\]\n计时：每次派发 [\d.e-]+ ms（3 次的中位数；GPU 时间戳；CPU 模拟）\n适配器：google swiftshader（回退适配器）\n$/)
 
   const freeze = join(dir, '.presmium/freeze')
   const records = readdirSync(freeze).filter(file => file.endsWith('.json')).map(file => JSON.parse(readFileSync(join(freeze, file), 'utf8')) as { environment: string })

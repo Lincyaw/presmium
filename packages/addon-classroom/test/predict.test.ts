@@ -66,6 +66,6 @@ it('shows a predict as its question, its choices and what it reveals folded away
   expect(title).toEqual({ type: 'markdown', source: '## 合并三轮' })
   expect(rest).toEqual([])
   expect(predict?.type).toBe('markdown')
-  expect(predict?.source).toMatch(/^\*\*预测\*\*：合并三轮之后，词表中有几个新符号？\n\n1\.\s+1\n2\.\s+2\n3\.\s+3\n\n<details><summary>写下预测后展开<\/summary>\n\n三个：每一轮新增一个符号。\n\n每一轮只合并出现最多的那一对。\n\n<\/details>$/)
+  expect(predict?.source).toMatch(/^\*\*预测\*\*：合并三轮之后，词表中有几个新符号？\n\n1\.\s+1\n2\.\s+2\n3\.\s+3\n\n<details data-static="open"><summary>写下预测后展开<\/summary>\n\n三个：每一轮新增一个符号。\n\n每一轮只合并出现最多的那一对。\n\n<\/details>$/)
   expect(of('next').map(c => c.source).join('\n')).not.toContain('details')
 })

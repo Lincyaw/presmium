@@ -44,7 +44,7 @@ test('a compute shader runs in the browser and shows the sum and its timing, mar
   await expect(slide.locator('.pm-run-panel__stdout')).toContainText('CPU 模拟')
 })
 
-test('Python runs the same shader through presmium_gpu, with await and, having JSPI, without', async ({ page }) => {
+test('Python runs the same shader through presmium_gpu, with await and, having JSPI, without, within the same scale limits', async ({ page }) => {
   test.setTimeout(180_000)
   const awaited = await runCode(await webBlock(page, 'python', 'py-async'))
   await expect(awaited.locator('.pm-output__stdout')).toContainText(SUM, RUNTIME)
@@ -52,6 +52,10 @@ test('Python runs the same shader through presmium_gpu, with await and, having J
 
   const synchronous = await runCode(page.locator('.pm-block[data-block="py-sync"]'))
   await expect(synchronous.locator('.pm-output__stdout')).toHaveText('JSPI: True\n[11.0, 22.0, 33.0, 44.0]\n', RUNTIME)
+
+  // The scale limits of the run panel hold in Python too.
+  const limits = await runCode(page.locator('.pm-block[data-block="py-limits"]'))
+  await expect(limits.locator('.pm-output__stdout')).toHaveText('The buffers take 160000000 bytes, over the scale limit of 134217728 bytes\nrepeat is an integer from 1 to 1000\n', RUNTIME)
 })
 
 test('JavaScript multiplies 2×2 matrices with jax-js on WebGPU', async ({ page }) => {
@@ -70,7 +74,8 @@ test('without a GPU adapter, the shader shows its recorded output and why', asyn
     await expect(output).toHaveAttribute('data-source', 'recorded', RUNTIME)
     await expect(output.locator('.pm-run-panel__badge')).toHaveText('预录输出 · 没有可用的 GPU 适配器')
     await expect(output.locator('.pm-run-panel__stdout')).toContainText(SUM)
-    await expect(output.locator('.pm-run-panel__stdout')).toContainText(/^time: .* ms per dispatch/m)
+    // Recorded at compile time in the deck's language.
+    await expect(output.locator('.pm-run-panel__stdout')).toContainText(/^计时：每次派发 .* ms/m)
   } finally {
     await browser.close()
   }

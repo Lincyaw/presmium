@@ -64,6 +64,8 @@ export interface TrackHead {
   doc: string
   lang: string
   irHash: string
+  /** The hash of each section of the IR recorded on (`sectionHashes`). */
+  sections: Record<string, string>
   voice: Voice
   blocks: Record<string, TrackBlock>
 }
@@ -75,7 +77,7 @@ export function recordedTrack(head: TrackHead, recording: Recording): LectureTra
     id: head.id,
     doc: head.doc,
     lang: head.lang,
-    ir: { hash: head.irHash },
+    ir: { hash: head.irHash, sections: head.sections },
     voice: head.voice,
     ...recording.audio.length ? { audio: recording.audio } : {},
     ...recording.video.length ? { video: recording.video } : {},
@@ -102,6 +104,21 @@ export function sectionSpan(track: LectureTrack, section: string, end: number): 
   if (first === -1) return undefined
   const next = goes.slice(first + 1).find(e => e.data.section !== section)
   return [goes[first]!.t, next?.t ?? end]
+}
+
+/**
+ * The IR hashes of a track with one section recorded again: that section's
+ * of the new recording, the others' of the track (so `presmium check` still
+ * finds what drifted in them since); a track without section hashes, whose
+ * IR is no longer the deck's, gets none it does not know. The whole IR's
+ * hash is the new recording's only when every section's is.
+ */
+function splicedIr(track: LectureTrack, section: string, head: TrackHead): LectureTrack['ir'] {
+  const before = track.ir.sections ?? (track.ir.hash === head.irHash ? head.sections : {})
+  const unknown = Object.fromEntries(Object.keys(head.sections).filter(id => !(id in before)).map(id => [id, '']))
+  const sections = { ...unknown, ...before, ...section in head.sections ? { [section]: head.sections[section]! } : {} }
+  const current = Object.entries(sections).every(([id, hash]) => head.sections[id] === hash)
+  return { hash: current ? head.irHash : track.ir.hash, sections }
 }
 
 /**
@@ -132,7 +149,7 @@ export function spliceSection(track: LectureTrack, section: string, recording: R
   const unused = [...track.audio ?? [], ...track.video ?? []].map(s => s.src).filter(src => !kept.has(src))
   const next: LectureTrack = {
     ...track,
-    ir: { hash: head.irHash },
+    ir: splicedIr(track, section, head),
     ...audio.length ? { audio } : { audio: undefined },
     ...video.length ? { video } : { video: undefined },
     blocks: pruneBlocks({ ...track.blocks, ...head.blocks }, events),

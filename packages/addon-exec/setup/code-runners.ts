@@ -43,11 +43,19 @@ function outputs(result: RunResult): CodeRunnerOutput[] {
 }
 
 /**
+ * The languages of the runners: those the slides renderer writes as
+ * `{monaco-run}` (Python, JavaScript, TypeScript, and C, C++, Ruby, SQL for
+ * the WASI executor), with their usual aliases.
+ */
+const RUNNER_LANGS = ['python', 'py', 'python3', 'javascript', 'js', 'typescript', 'ts', 'c', 'cpp', 'c++', 'ruby', 'rb', 'sql']
+
+/**
  * Monaco Runner support (Slidev's `{monaco-run}` code blocks, which the slides
  * renderer writes for code with `:run: live` or `both`) through the
  * `executor` service, so a block runs on the same executors as in the web
  * form: Pyodide for Python, the script worker for JavaScript and TypeScript,
- * or the executor of its environment. `runnerOptions` may set `executor` and
+ * the WASI executor for C, C++, Ruby and SQL, or the executor of its
+ * environment. `runnerOptions` may set `executor` and
  * `session` (`:env:`, `:session:`, docs/ir.md 2.7), `timeout` (ms) and
  * `recorded` (output shown when the run fails or times out). Rich outputs
  * show as the runner's HTML.
@@ -64,5 +72,5 @@ function runner(lang: string): CodeRunner {
 }
 
 export default defineCodeRunnersSetup(() => Object.fromEntries(
-  ['python', 'py', 'python3', 'javascript', 'js', 'typescript', 'ts'].map(lang => [lang, runner(lang)]),
+  [...RUNNER_LANGS].map(lang => [lang, runner(lang)]),
 ))

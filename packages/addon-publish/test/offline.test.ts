@@ -1,6 +1,8 @@
 // Runs the real `presmium build --to slides` on a copy of ./fixtures/offline, which
 // uses this addon: the compile pass downloads a remote image whose URL has no
-// extension (as PlantUML's have), and the service worker precaches the build.
+// extension (as PlantUML's have), and the service worker precaches the build,
+// the WASI runtime of the deck's live Ruby code (a gzip archive among its files)
+// included.
 import { randomBytes } from 'node:crypto'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -12,7 +14,7 @@ import { bin, copyFixture, removeCopies } from './helpers.ts'
 
 afterAll(removeCopies)
 
-it('downloads the remote images of the deck and precaches them with the deck and the Pyodide runtime', async () => {
+it('downloads the remote images of the deck and precaches them with the deck, the Pyodide runtime and the WASI runtime', async () => {
   // A "remote" image on another origin, served without a file extension; noise keeps it
   // above the size Vite inlines, so the build has it as a file.
   const png = new PNG({ width: 64, height: 64 })
@@ -44,6 +46,8 @@ it('downloads the remote images of the deck and precaches them with the deck and
   const localImage = files.find(f => f.endsWith('.png') && readFileSync(join(dist, f)).equals(image))
 
   expect(readFileSync(join(dist, 'index.html'), 'utf8')).toContain('registerSW.js')
-  expect(precached).toEqual(expect.arrayContaining(['index.html', 'favicon.svg', 'pyodide/pyodide.asm.wasm', localImage]))
+  expect(precached).toEqual(expect.arrayContaining(['index.html', 'favicon.svg', 'pyodide/pyodide.asm.wasm', localImage, 'wasi/ruby-3.2.0.wasm', 'wasi/ruby-3.2.0.tar.gz']))
+  // The runtimes' licenses go with them.
+  expect(readFileSync(join(dist, 'wasi/LICENSES'), 'utf8')).toContain('Ruby 3.2.0')
   expect(files.filter(f => /\.(js|html)$/.test(f) && readFileSync(join(dist, f), 'utf8').includes(remote))).toEqual([])
 }, 180_000)

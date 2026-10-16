@@ -89,7 +89,10 @@ function flush() {
   const done = path
   path = undefined
   if (!done || !operations.value) return
-  operations.value.report({ type: 'point', data: { block: done.block, path: simplifyPath(done.points), ...done.line ? { line: done.line } : {} } })
+  const data = { block: done.block, path: simplifyPath(done.points), ...done.line ? { line: done.line } : {} }
+  // Reported once it ends (up to IDLE_MS after its last move), it happened from its first.
+  recorder.value?.pathStarted(data, done.from)
+  operations.value.report({ type: 'point', data })
 }
 
 function onPointer(event: PointerEvent) {

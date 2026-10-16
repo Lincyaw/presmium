@@ -73,6 +73,23 @@ export function irHash(doc: IRDocument): string {
   return fnv1a64([...playedBlocks(doc)].map(([key, block]) => `${key}\t${block.fp}`).join('\n'))
 }
 
+/** The hash of each section's played blocks, by section id, as `irHash` makes it of all of them. */
+export function sectionHashes(doc: IRDocument): Record<string, string> {
+  return Object.fromEntries(doc.sections.map(section => [section.id, irHash({ ...doc, sections: [section] })]))
+}
+
+/**
+ * Whether nothing a track refers to can have drifted in `doc`: each section
+ * it was recorded on has the hash it had then (a section recorded again, its
+ * own hash of that time); a track without section hashes, the whole IR's.
+ */
+export function unchanged(track: LectureTrack, doc: IRDocument): boolean {
+  const recorded = track.ir.sections
+  if (!recorded) return track.ir.hash === irHash(doc)
+  const now = sectionHashes(doc)
+  return Object.entries(recorded).every(([section, hash]) => now[section] === hash)
+}
+
 /** The blocks a list of events refers to, with their fingerprints in `doc`. */
 export function referencedBlocks(doc: IRDocument, events: readonly TrackEvent[]): Record<string, TrackBlock> {
   const blocks = playedBlocks(doc)

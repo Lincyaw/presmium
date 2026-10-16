@@ -2,7 +2,8 @@
 // a real classroom server (`presmium-classroom-server` on a free port). In the document view what a
 // `{predict}` reveals, the content of the step after it, stays hidden until the reader has saved a
 // prediction, which the browser keeps; the present view shows it at its step, as the room sees it,
-// without the narration it took in. In a classroom the learners' predictions reach the presenter's
+// without the narration it took in; so do the slides, the prompt before the form. In a classroom
+// the learners' predictions reach the presenter's
 // overview, and the page reports the classroom's summary, without names, to the Presmium server over
 // the control channel (the `STATUS` service that the MCP tool `get_classroom` reads): that test runs
 // on `presmium dev`, the static output has no server. The notebook form is checked in
@@ -10,8 +11,8 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
-import { buildFixture, openDevPage, startDev } from './fixtures/deck.ts'
+import type { Locator, Page } from '@playwright/test'
+import { buildFixture, openDevPage, openSlide, startDev } from './fixtures/deck.ts'
 import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
@@ -31,7 +32,7 @@ test.beforeAll(async () => {
   test.setTimeout(600_000)
   server = await startClassroomServer()
   deck = await buildFixture('predict', {
-    to: 'web',
+    to: 'web,slides',
     edit: (dir) => {
       const file = join(dir, 'lecture.md')
       writeFileSync(file, readFileSync(file, 'utf8').replace('ws://classroom.invalid', server.url))
@@ -45,7 +46,7 @@ test.afterAll(async () => {
 })
 
 test('the document view shows what a predict reveals once the reader has saved a choice, and again after a reload', async ({ page }) => {
-  await page.goto(deck.web)
+  await page.goto(`${deck.web}/`)
   const save = merge(page).getByRole('button', { name: '保存预测' })
   await expect(save).toBeDisabled()
   await expect(page.getByText(REVEALED)).toBeHidden()
@@ -74,8 +75,21 @@ test('the present view shows what a predict reveals at its step, without a predi
   await expect(stage.getByText(NARRATION)).toHaveCount(0)
 })
 
+test('in the slides, a predict\'s prompt stands between its question and its form, and what it reveals shows at its step', async ({ page }) => {
+  const REVEAL = '从字符开始，任何词都能切分，不会遇到词表之外的词。'
+  /** The click wrapper of what the predict reveals, which Slidev hides with a class until its step. */
+  const wrapper = (predict: Locator) => predict.locator('.pm-predict__reveal > div', { hasText: REVEAL })
+  const why = (await openSlide(page, deck, 'why', '从字符开始', '?clicks=0')).locator('.pm-predict')
+  const top = async (text: string) => (await why.getByText(text).boundingBox())!.y
+  expect(await top('为什么 BPE 从单个字符开始合并？')).toBeLessThan(await top('写一句话就好。'))
+  expect(await top('写一句话就好。')).toBeLessThan((await why.getByLabel('你的预测').boundingBox())!.y)
+  await expect(wrapper(why)).toHaveClass(/slidev-vclick-hidden/)
+  const shown = (await openSlide(page, deck, 'why', '从字符开始', '?clicks=1')).locator('.pm-predict')
+  await expect(wrapper(shown)).not.toHaveClass(/slidev-vclick-hidden/)
+})
+
 test('a predict without choices shows what it reveals once the reader has written a prediction and saved it', async ({ page }) => {
-  await page.goto(deck.web)
+  await page.goto(`${deck.web}/`)
   const why = predict(page, '为什么 BPE 从单个字符开始合并？')
   const revealed = page.getByText('从字符开始，任何词都能切分，不会遇到词表之外的词。')
   await expect(why.getByRole('button', { name: '保存预测' })).toBeDisabled()

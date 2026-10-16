@@ -83,3 +83,23 @@ export function chapters(events: readonly TimedEvent[], titles: (section: string
   }
   return list
 }
+
+/** A step of the lecture: where it moves to a step of a section. */
+export interface StepStop {
+  t: number
+  section: string
+  step: number
+}
+
+/** Every move to another section or step (`go`), in time order: where the player can jump by step. */
+export function stepStops(events: readonly TimedEvent[]): StepStop[] {
+  const list: StepStop[] = []
+  for (const event of events) {
+    const { section, step } = event.data
+    if (event.type !== 'go' || typeof section !== 'string') continue
+    const at = typeof step === 'number' && Number.isFinite(step) ? step : 0
+    const last = list.at(-1)
+    if (!last || last.section !== section || last.step !== at) list.push({ t: event.t, section, step: at })
+  }
+  return list
+}

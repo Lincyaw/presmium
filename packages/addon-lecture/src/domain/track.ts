@@ -68,8 +68,12 @@ export interface LectureTrack {
   doc: string
   /** Language of the utterances (BCP 47). */
   lang: string
-  /** Hash of the IR the lecture was recorded on (`irHash`). */
-  ir: { hash: string }
+  /**
+   * Hash of the IR the lecture was recorded on (`irHash`), and of each of its
+   * sections (`sectionHashes`); a section recorded again has the hash of its
+   * new recording, the others keep theirs (`presmium check` compares them).
+   */
+  ir: { hash: string, sections?: Record<string, string> }
   voice: Voice
   /** Recorded lectures: one audio segment per section. */
   audio?: MediaSegment[]
@@ -120,6 +124,14 @@ function segment(value: unknown): MediaSegment | undefined {
   return { section: value.section, start: value.start, src: value.src, duration: value.duration, ...typeof value.sha256 === 'string' ? { sha256: value.sha256 } : {} }
 }
 
+function irOf(value: unknown): LectureTrack['ir'] {
+  const hash = isRecord(value) && typeof value.hash === 'string' ? value.hash : ''
+  const sections = isRecord(value) && isRecord(value.sections)
+    ? Object.fromEntries(Object.entries(value.sections).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+    : undefined
+  return sections ? { hash, sections } : { hash }
+}
+
 function voice(value: unknown): Voice {
   if (isRecord(value) && value.kind === 'synthetic' && typeof value.engine === 'string' && typeof value.voice === 'string') {
     return { kind: 'synthetic', engine: value.engine, voice: value.voice, ...typeof value.model === 'string' ? { model: value.model } : {} }
@@ -159,7 +171,7 @@ export function parseTrack(value: unknown): { track?: LectureTrack, problems: st
       id: value.id,
       doc: typeof value.doc === 'string' ? value.doc : 'lecture.md',
       lang: typeof value.lang === 'string' ? value.lang : 'zh-CN',
-      ir: { hash: isRecord(value.ir) && typeof value.ir.hash === 'string' ? value.ir.hash : '' },
+      ir: irOf(value.ir),
       voice: voice(value.voice),
       ...audio?.length ? { audio } : {},
       ...video?.length ? { video } : {},

@@ -2,11 +2,12 @@
 // The lecture player over the present view (P-131): it drives the real page from the track (see
 // player.ts); play and pause, the time and a seek bar, the speed, captions in the lecture's
 // language or a translation, the transcript (a word or a sentence's time seeks to it), the
-// chapters, "try it" and "back to the lecture", and a label on a synthesized voice.
+// chapters with the steps of each section (one seeks to its time), "try it" and "back to the
+// lecture", and a label on a synthesized voice.
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { captionLanguages, chapters, clockText, LECTURE_ID, LECTURE_MESSAGES, trackDuration, utteranceAt } from '../domain/index.ts'
+import { captionLanguages, chapters, clockText, LECTURE_ID, LECTURE_MESSAGES, stepStops, trackDuration, utteranceAt } from '../domain/index.ts'
 import type { Utterance } from '../domain/index.ts'
 import { MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
@@ -63,6 +64,12 @@ const state = computed(() => (!player.value ? undefined : player.value.trying.va
 const titles = computed(() => new Map(viewer.doc.value.sections.map(s => [s.id, s.title])))
 const chapterList = computed(() => (player.value ? chapters(player.value.events, id => titles.value.get(id)) : []))
 const chapter = computed(() => chapterList.value.filter(c => c.t <= time.value).at(-1))
+/** The chapters, and after each section's the later steps the lecture goes to there, in time order. */
+const entries = computed(() => [
+  ...chapterList.value.map(c => ({ ...c, step: undefined })),
+  ...(player.value ? stepStops(player.value.events) : []).filter(s => s.step > 0).map(s => ({ ...s, title: t.value.player.step(s.step) })),
+].sort((a, b) => a.t - b.t))
+const entry = computed(() => entries.value.filter(e => e.t <= time.value).at(-1))
 const languages = computed(() => (player.value ? captionLanguages(player.value.track) : []))
 const current = computed(() => (player.value ? utteranceAt(player.value.track, time.value) : undefined))
 
@@ -121,8 +128,18 @@ function close() {
           </li>
         </ol>
         <ol v-else class="pm-lecture-chapters">
-          <li v-for="c in chapterList" :key="`${c.t}:${c.title}`" :aria-current="chapter === c ? 'true' : undefined">
-            <button type="button" class="pm-lecture-chapters__item" :data-section="c.section" @click="seekTo(c.t)">
+          <li v-for="c in entries" :key="`${c.t}:${c.title}`" :aria-current="entry === c ? 'true' : undefined">
+            <button
+              v-if="c.step !== undefined"
+              type="button"
+              class="pm-lecture-chapters__step"
+              :data-section="c.section"
+              :data-step="c.step"
+              @click="seekTo(c.t)"
+            >
+              <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
+            </button>
+            <button v-else type="button" class="pm-lecture-chapters__item" :data-section="c.section" @click="seekTo(c.t)">
               <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
             </button>
           </li>
@@ -285,7 +302,8 @@ function close() {
 .pm-lecture-word {
   cursor: pointer;
 }
-.pm-lecture-chapters__item {
+.pm-lecture-chapters__item,
+.pm-lecture-chapters__step {
   width: 100%;
   border: 0;
   background: none;
@@ -293,5 +311,8 @@ function close() {
   font: inherit;
   text-align: start;
   cursor: pointer;
+}
+.pm-lecture-chapters__step {
+  padding-inline-start: 1.5rem;
 }
 </style>

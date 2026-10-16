@@ -1,11 +1,17 @@
-// Lecture tracks (WP-77, P-90, P-130, P-131; docs/ir.md section 9) on e2e/fixtures/lecture.
+// Lecture tracks (WP-77, WP-79e2, P-90, P-130, P-131; docs/ir.md section 9) on e2e/fixtures/lecture.
 // Recording, under `presmium dev`: in the present view, with Chromium's fake microphone and camera
 // (the flags are set for this spec only), the presenter moves to the second section, steps twice,
-// points at the code and spotlights it (`s`); the track has `go`, `point` and `spot` events and
-// Ogg/Opus audio, and a camera's video only when the camera is on.
+// points at the code and spotlights it (`s`); the track has `go`, `point` (at the time the path
+// began) and `spot` events and Ogg/Opus audio, and a camera's video only when the camera is on; the
+// screen is asked for before the microphone and the camera.
+// The laser and the marker record `ink`, `h` a `hint`; the audio reaches the server every 5 s while
+// recording. One section recorded again replaces that section of the lecture, and `presmium check`
+// still reports what changed in the other sections since they were recorded.
 // Playback, of a static build (`--to web,lecture`) in a window of another size: the fixture's track
-// `lectures/demo` with utterances and an audio file (silence, written before the build).
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+// `lectures/demo` with utterances and an audio file (silence, written before the build), and the
+// same track without audio, which plays on the page's clock.
+import { spawnSync } from 'node:child_process'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -44,6 +50,23 @@ async function record(page: Page, act: () => Promise<void>): Promise<void> {
   await expect(recorder.getByRole('status')).toContainText('已保存', { timeout: 30_000 })
 }
 
+/** Records a new lecture; resolves with its id and track. */
+async function recordNew(page: Page, dir: string, act: () => Promise<void>): Promise<[string, Track]> {
+  const before = new Set(recorded(dir).keys())
+  await record(page, act)
+  const added = [...recorded(dir)].filter(([id]) => !before.has(id))
+  expect(added).toHaveLength(1)
+  return added[0]!
+}
+
+/** Drags the pointer from one point to another in steps, as a stroke. */
+async function stroke(page: Page, from: { x: number, y: number }, to: { x: number, y: number }): Promise<void> {
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  for (let k = 1; k <= 5; k++) await page.mouse.move(from.x + (to.x - from.x) * k / 5, from.y + (to.y - from.y) * k / 5)
+  await page.mouse.up()
+}
+
 test.describe('recording in the present view', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
   let dir: string
@@ -62,6 +85,14 @@ test.describe('recording in the present view', () => {
   test('records go, point and spot events with Ogg/Opus audio and no video', async ({ page }) => {
     await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const present = page.locator('.pm-present')
+    // The page times of the key presses and of the first move over the code, as the page's events have them.
+    await page.evaluate(() => {
+      const times = (window as unknown as { times: { keys: number[], move?: number } }).times = { keys: [] }
+      window.addEventListener('keydown', event => times.keys.push(event.timeStamp), true)
+      window.addEventListener('pointermove', (event) => {
+        if (!times.move && (event.target as Element).closest('.pm-block[data-block="merge-code"]')) times.move = event.timeStamp
+      }, true)
+    })
     const before = new Set(recorded(dir).keys())
     await record(page, async () => {
       await page.waitForTimeout(1200)
@@ -94,6 +125,12 @@ test.describe('recording in the present view', () => {
     // Times go up, from the start of the recording.
     const times = track.events.map(([t]) => t)
     expect(times).toEqual([...times].sort((a, b) => a - b))
+    // The pointer's path is reported once it has rested, but its event is at the time it began: as
+    // long after the move to step 2 as the first move over the code came after the third key press.
+    const pageTimes = await page.evaluate(() => (window as unknown as { times: { keys: number[], move: number } }).times)
+    const point = track.events.find(([, type]) => type === 'point')![0]
+    const step = track.events.find(([, type, data]) => type === 'go' && data.step === 2)![0]
+    expect(Math.abs((point - step) - (pageTimes.move - pageTimes.keys[2]!))).toBeLessThan(150)
 
     // One Ogg/Opus file per section, kept out of git; no video.
     expect(track.audio?.map(a => a.section)).toEqual(['intro', 'merge'])
@@ -106,6 +143,96 @@ test.describe('recording in the present view', () => {
     expect(track.video).toBeUndefined()
     expect(existsSync(join(dir, 'lectures', id, 'video'))).toBe(false)
     expect(readFileSync(join(dir, 'lectures', id, '.gitignore'), 'utf8')).toMatch(/^audio\/$/m)
+  })
+
+  test('records strokes of the laser and the marker as ink and a hint as hint, uploading the audio every 5 s while it records (P-90)', async ({ page }) => {
+    await openDevPage(page, `${dev.url}?view=present&section=merge`, page.getByRole('region', { name: '讲授录制' }))
+    const recorder = page.getByRole('region', { name: '讲授录制' })
+    const code = page.locator('.pm-present .pm-block[data-block="merge-code"]')
+    const lines = code.locator('.pm-code .line')
+    const before = new Set(readdirSync(join(dir, 'lectures')))
+    /** The bytes of audio the server has of the recording under way. */
+    const uploaded = () => readdirSync(join(dir, 'lectures')).filter(id => !before.has(id))
+      .flatMap(id => existsSync(join(dir, 'lectures', id, 'audio')) ? readdirSync(join(dir, 'lectures', id, 'audio')).map(file => statSync(join(dir, 'lectures', id, 'audio', file)).size) : [])
+      .reduce((sum, size) => sum + size, 0)
+    const [, track] = await recordNew(page, dir, async () => {
+      // The laser over lines 3 to 5 of the code; the marker over a box of it.
+      await recorder.getByRole('button', { name: '激光笔' }).click()
+      const [third, fifth] = [(await lines.nth(2).boundingBox())!, (await lines.nth(4).boundingBox())!]
+      await stroke(page, { x: third.x + 20, y: third.y + third.height / 2 }, { x: fifth.x + 60, y: fifth.y + fifth.height / 2 })
+      await recorder.getByRole('button', { name: '荧光笔' }).click()
+      const box = (await code.boundingBox())!
+      await stroke(page, { x: box.x + box.width * 0.6, y: box.y + box.height * 0.1 }, { x: box.x + box.width * 0.9, y: box.y + box.height * 0.3 })
+      await recorder.getByRole('button', { name: '荧光笔' }).click()
+      // A hint on the code, under the pointer.
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.keyboard.press('h')
+      // The audio reaches the server while the recording goes on.
+      await expect.poll(uploaded, { timeout: 15_000 }).toBeGreaterThan(0)
+    })
+    const inks = track.events.filter(([, type]) => type === 'ink').map(([, , data]) => data)
+    expect(inks).toEqual([
+      { block: 'merge/merge-code', tool: 'laser', lines: '3-5' },
+      { block: 'merge/merge-code', tool: 'marker', range: [expect.any(Number), expect.any(Number), expect.any(Number), expect.any(Number)] },
+    ])
+    expect(track.events.filter(([, type]) => type === 'hint').map(([, , data]) => data)).toEqual([{ block: 'merge/merge-code' }])
+    expect(track.audio?.[0]?.duration).toBeGreaterThan(5)
+  })
+
+  test('records one section again: the lecture keeps the other sections, and the check still reports what changed in them since (P-90, P-130)', async ({ page }) => {
+    await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
+    const present = page.locator('.pm-present')
+    const code = present.locator('.pm-block[data-block="merge-code"]')
+    const [id, first] = await recordNew(page, dir, async () => {
+      await page.waitForTimeout(1200)
+      await page.keyboard.press('ArrowRight')
+      await expect(present).toHaveAttribute('data-section', 'merge')
+      const box = (await code.boundingBox())!
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.keyboard.press('s')
+      await page.waitForTimeout(800)
+    })
+    const intro = first.audio!.find(a => a.section === 'intro')!
+    const ofMerge = (track: Track) => track.events.filter(([, , data]) => data.section === 'merge' || data.block === 'merge/merge-code')
+    const merge = ofMerge(first)
+
+    // The code changes after the recording; then the opening is recorded again, which ends on leaving it.
+    const file = join(dir, 'lecture.md')
+    const source = readFileSync(file, 'utf8')
+    writeFileSync(file, source.replace('    out = []', '    out = []  # merged ids'))
+    try {
+      await openDevPage(page, `${dev.url}?view=present&section=intro`, page.getByRole('region', { name: '讲授录制' }))
+      await page.keyboard.press('ArrowRight')
+      await expect(code.locator('.pm-code')).toContainText('# merged ids', { timeout: 30_000 })
+      await page.keyboard.press('ArrowLeft')
+      await expect(present).toHaveAttribute('data-section', 'intro')
+      const recorder = page.getByRole('region', { name: '讲授录制' })
+      await recorder.getByLabel('讲授').selectOption(id)
+      await recorder.getByRole('button', { name: '重录本节' }).click()
+      await expect(recorder).toHaveAttribute('data-state', 'recording')
+      await page.waitForTimeout(1500)
+      await page.keyboard.press('ArrowRight')
+      await expect(recorder.getByRole('status')).toContainText('已保存', { timeout: 30_000 })
+
+      const track = recorded(dir).get(id)!
+      // The opening's audio is the new recording's, the old file is gone; the section after it is as it
+      // was, moved as a whole by the difference in length.
+      const audio = track.audio!.find(a => a.section === 'intro')!
+      expect(audio.src).not.toBe(intro.src)
+      expect(existsSync(join(dir, 'lectures', id, intro.src))).toBe(false)
+      expect(existsSync(join(dir, 'lectures', id, audio.src))).toBe(true)
+      const kept = ofMerge(track)
+      expect(kept.map(([, type, data]) => [type, data])).toEqual(merge.map(([, type, data]) => [type, data]))
+      expect(kept.map(([t]) => t - kept[0]![0])).toEqual(merge.map(([t]) => t - merge[0]![0]))
+      expect(track.events.filter(([, type, data]) => type === 'go' && data.section === 'intro')).toHaveLength(1)
+
+      // The spotlight on the code was recorded before the code changed: the check says so.
+      const checked = spawnSync(process.execPath, [join(ROOT, 'packages/cli/bin/presmium.mjs'), 'check', '--json'], { cwd: dir, encoding: 'utf8' })
+      const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, message: string }[] }).findings.filter(f => f.checkId === 'presmium.lecture')
+      expect(findings.map(f => f.message)).toContainEqual(expect.stringMatching(new RegExp(`^lecture ${id} at .*: spot on merge/merge-code: the block changed since the recording \\(fuzzy\\)$`)))
+    } finally {
+      writeFileSync(file, source)
+    }
   })
 
   test('records the camera when it is on, and the track refers to the video (P-90)', async ({ page }) => {
@@ -124,6 +251,30 @@ test.describe('recording in the present view', () => {
     const bytes = readFileSync(join(dir, 'lectures', id, track.video![0]!.src))
     expect(bytes.subarray(0, 4).toString('hex')).toBe('1a45dfa3')
     expect(track.audio).toHaveLength(1)
+  })
+
+  test('records the screen too, asking for it before the microphone and the camera (P-90)', async ({ page }) => {
+    // The page's requests for media, in order; the screen is the fake camera, as headless Chromium shares no screen.
+    await page.addInitScript(() => {
+      const media = navigator.mediaDevices
+      const asked: string[] = (window as unknown as { asked: string[] }).asked = []
+      const user = media.getUserMedia.bind(media)
+      media.getUserMedia = (constraints) => {
+        asked.push(constraints?.audio ? 'microphone' : 'camera')
+        return user(constraints)
+      }
+      media.getDisplayMedia = () => {
+        asked.push('screen')
+        return user({ video: true })
+      }
+    })
+    await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
+    const recorder = page.getByRole('region', { name: '讲授录制' })
+    await recorder.getByLabel('摄像头').check()
+    await recorder.getByLabel('屏幕').check()
+    const [, track] = await recordNew(page, dir, () => page.waitForTimeout(2000))
+    expect(await page.evaluate(() => (window as unknown as { asked: string[] }).asked)).toEqual(['screen', 'microphone', 'camera'])
+    expect(track.video?.map(v => v.kind).sort()).toEqual(['camera', 'screen'])
   })
 })
 
@@ -157,12 +308,16 @@ test.describe('playback of a lecture track', () => {
     edit(dir) {
       mkdirSync(join(dir, 'lectures/demo/audio'))
       writeFileSync(join(dir, 'lectures/demo/audio/demo.wav'), silence(12))
+      // The same lecture without audio.
+      const { audio: _audio, ...silent } = JSON.parse(readFileSync(join(dir, 'lectures/demo/track.json'), 'utf8')) as Record<string, unknown>
+      mkdirSync(join(dir, 'lectures/silent'))
+      writeFileSync(join(dir, 'lectures/silent/track.json'), JSON.stringify({ ...silent, id: 'silent' }, null, 2))
     },
   })
 
-  /** Opens the lecture `demo` and resolves with its player. */
-  async function open(page: Page) {
-    await page.goto(`${deck().web}/?view=lecture&track=demo`)
+  /** Opens a lecture (`demo` by default) and resolves with its player. */
+  async function open(page: Page, track = 'demo') {
+    await page.goto(`${deck().web}/?view=lecture&track=${track}`)
     const player = page.getByRole('region', { name: '讲授回放' })
     await expect(player).toHaveAttribute('data-state', 'paused')
     return player
@@ -202,6 +357,28 @@ test.describe('playback of a lecture track', () => {
     await expect(present).toHaveAttribute('data-section', 'merge')
     await expect(present).toHaveAttribute('data-step', '1')
     expect(await time(page)).toBe(6100)
+  })
+
+  test('jumps to a step of a section (P-131)', async ({ page }) => {
+    const player = await open(page)
+    const present = page.locator('.pm-present')
+    await player.getByRole('button', { name: '章节' }).click()
+    const step = page.locator('.pm-lecture-chapters__step[data-section="merge"][data-step="2"]')
+    await expect(step).toHaveText('0:08 第 2 步')
+    await step.click()
+    await expect(present).toHaveAttribute('data-section', 'merge')
+    await expect(present).toHaveAttribute('data-step', '2')
+    expect(await time(page)).toBe(8000)
+    await expect(step.locator('..')).toHaveAttribute('aria-current', 'true')
+  })
+
+  test('a lecture without audio plays on the page\'s clock', async ({ page }) => {
+    const player = await open(page, 'silent')
+    await player.getByRole('button', { name: '播放' }).click()
+    const played = await page.evaluate(() => new Promise<number>(done => setTimeout(() => done(Number(document.querySelector('.pm-lecture-player')!.getAttribute('data-time'))), 1000)))
+    expect(Math.abs(played - 1000)).toBeLessThanOrEqual(300)
+    await player.getByRole('button', { name: '暂停' }).click()
+    await expect(player).toHaveAttribute('data-state', 'paused')
   })
 
   test('plays at twice the speed, with captions of the current utterance (P-131)', async ({ page }) => {

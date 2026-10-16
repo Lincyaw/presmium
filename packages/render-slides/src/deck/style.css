@@ -107,7 +107,9 @@
   inset: 0;
 }
 
-.slidev-layout .pm-button a {
+/* A {button} with a target is a link in a pm-button; one without, text styled alike. */
+.slidev-layout .pm-button a,
+.slidev-layout .pm-button--text {
   display: inline-block;
   padding: 0.15em 0.8em;
   border: 1px solid currentColor;

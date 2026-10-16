@@ -1,5 +1,6 @@
 // The remote environment of e2e/exec-remote.spec.ts: templates/env/compose/compose.yaml, run by
-// docker compose under a project name of WP-76, on a port of its range, with a token of its own.
+// docker compose under a project name of the work package, on a port of its range, with a token of
+// its own.
 import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { join } from 'node:path'

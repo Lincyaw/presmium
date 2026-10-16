@@ -6,7 +6,7 @@ plugins:
   - '@presmium/slidev-addon-lecture'
 renderers:
   web:
-    port: 4873
+    port: 4936
 ---
 
 (intro)=

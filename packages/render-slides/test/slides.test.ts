@@ -105,7 +105,7 @@ it('build --to slides leaves a Slidev deck that slidev export turns into a PDF w
   expect((await PDFDocument.load(readFileSync(pdf))).getPageCount()).toBe(10)
 }, 180_000)
 
-it('a PDF export shows the static fallback of interactive components, not their controls or run-time state', async () => {
+it('a PDF export shows the static fallback of interactive components, not their controls or run-time state; what a predict reveals shows open', async () => {
   const target = join(out, 'export')
   const built = await build(['build', '--to', 'slides', '--out', target], EXPORT_DECK)
   expect(built.code, built.output).toBe(0)
@@ -116,15 +116,20 @@ it('a PDF export shows the static fallback of interactive components, not their 
   const exported = await slidev(['export', '.presmium/slides/slides.md', '--wait', '2000', '--output', pdf], EXPORT_DECK)
   expect(exported.code, exported.output).toBe(0)
 
-  const [, panel, local, quiz] = await pdfText(pdf)
+  const [, panel, local, quiz, predict] = await pdfText(pdf)
   // The run panel and the local environment: their code, without run buttons or a missing dev server.
   expect(panel).toContain('print("panel fallback")')
   expect(local).toContain('print("local fallback")')
   // The quiz: its question and options, without a submit button.
   expect(quiz).toContain(normal('导出的测验显示什么？'))
   expect(quiz).toContain(normal('题目与选项'))
-  for (const text of [panel, local, quiz]) {
-    for (const live of ['运行', '提交', '开发服务器', '执行服务不可用']) expect(text).not.toContain(normal(live))
+  // The predict: its question and choices, and what it reveals shown, the output of its code recorded at compile time included.
+  expect(predict).toContain(normal('这段代码打印什么？'))
+  expect(predict).toContain(normal('打印 6：'))
+  expect(predict).toContain('print("sum:", sum([1, 2, 3]))')
+  expect(predict).toContain('sum: 6')
+  for (const text of [panel, local, quiz, predict]) {
+    for (const live of ['运行', '提交', '保存预测', '开发服务器', '执行服务不可用']) expect(text).not.toContain(normal(live))
   }
 }, 180_000)
 
@@ -154,7 +159,7 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
   // slides under their content hash (R-06): an image by its path from the root, to which Vite and Slidev's
   // image preloader add the base; a link, as HTML (Slidev's links are routes), and a component's prop with
   // the base. A URL with a malformed escape stays as it is.
-  expect(slides).toContain('![A dot](/e385aa54-dot.svg) <a href="/slides/003d456f-handout.pdf" target="_blank" rel="noopener">The handout</a> [A broken link](%E0%A4.pdf)')
+  expect(slides).toContain('![A dot](/e385aa54-dot.svg) <a href="/slides/003d456f-handout.pdf" target="_blank" rel="noopener">The handout</a> [A broken link](%E0%A4.pdf) <span class="pm-button pm-button--text">Soon</span>')
   expect(slides).toContain(`<FixtureClip :src='"/slides/7cb92485-clip.webm"' />`)
   // The notes are HTML as Slidev shows them, without Vite: an image there has the base too.
   expect(slides).toContain('![A dot in the notes](/slides/e385aa54-dot.svg)')
@@ -204,6 +209,8 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
     expect(handout.status()).toBe(200)
     expect(handout.frame().page()).toBe(tab)
     expect(page.url()).toBe(`${site.url}/slides/${media}`)
+    // A {button} without a target is drawn as a button, as one with a link is.
+    expect(await page.locator(`.slidev-page-${media} .pm-button--text`).evaluate(button => getComputedStyle(button).borderTopStyle)).toBe('solid')
     // The presenter view shows the notes, with their image.
     await page.goto(`${site.url}/slides/presenter/${media}`)
     const noted = page.locator('img[alt="A dot in the notes"]').first()

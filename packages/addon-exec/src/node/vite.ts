@@ -1,7 +1,7 @@
 import { createReadStream, readFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 /** The part of Vite's plugin interface used here; Vite itself is a dependency of the host, not of this package. */
 export interface PyodideRuntimePlugin {
@@ -51,6 +51,30 @@ export function pyodideRuntime(): PyodideRuntimePlugin {
       for (const file of Object.keys(FILES)) {
         this.emitFile({ type: 'asset', fileName: PYODIDE_DIR + file, source: readFileSync(join(dir, file)) })
       }
+    },
+  }
+}
+
+/** This package, as a deck depends on it. */
+const PACKAGE = '@presmium/slidev-addon-exec'
+
+/**
+ * Has the dev server pre-bundle `diff` (the run panel's comparison) when it
+ * starts: plugin components load lazily, and a dependency the dev server
+ * only meets then makes Vite optimize again and reload the page. Named
+ * through this package (Vite's `<package> > <dependency>`), the deck's
+ * dependency; where it is not found from the root, nothing changes.
+ */
+export function prebundled(): { name: string, config(config: { root?: string }): { optimizeDeps: { include: string[] } } | undefined } {
+  return {
+    name: 'presmium:exec-prebundle',
+    config(config) {
+      try {
+        createRequire(join(resolve(config.root ?? process.cwd()), 'package.json')).resolve(`${PACKAGE}/package.json`)
+      } catch {
+        return undefined
+      }
+      return { optimizeDeps: { include: [`${PACKAGE} > diff`] } }
     },
   }
 }

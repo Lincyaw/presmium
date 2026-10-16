@@ -134,6 +134,7 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     theme: local(theme),
     title: doc.meta.title,
     favicon: FAVICON,
+    ...typesSource(doc, gen.dir),
     ...slidev,
     htmlAttrs: { lang: deckLang(doc), ...typeof htmlAttrs === 'object' ? htmlAttrs : {} },
     addons: [...new Set(listed.filter((name): name is string => typeof name === 'string').map(name => addonPath(name, gen)))],
@@ -222,12 +223,19 @@ function blocks(list: IRBlock[], gen: Generation, notes: IRBlock[], owned: boole
   return out
 }
 
+/**
+ * A visual block, wrapped in the clicks of its step. The wrapper of a
+ * component's child is keyed by the child's block id, as the web form keys
+ * the child itself, so the component can tell what appears at a later step
+ * apart from the rest (a predict, what it reveals from its prompt).
+ */
 function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolean): string {
   const { node } = block
+  const key = owned ? ` key="${escapeHtml(block.id)}"` : ''
   if (node.type === 'markdown' && node.reveal === 'items') {
     // Item k at step at + k. Slidev reads an absolute click 0 as "the next click", so a list
     // whose first item shows from the start is placed relatively: our other clicks are absolute.
-    return `<v-clicks at="${block.at === 0 ? '+0' : block.at}">\n\n${md(node.mdast, block, gen)}\n\n</v-clicks>`
+    return `<v-clicks at="${block.at === 0 ? '+0' : block.at}"${key}>\n\n${md(node.mdast, block, gen)}\n\n</v-clicks>`
   }
   const content = node.type === 'markdown' ? md(node.mdast, block, gen)
     : node.type === 'code' ? code(node, block, gen, owned)
@@ -236,7 +244,7 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
   const click = block.until === undefined ? `v-click="${block.at}"`
     : block.at === 0 ? `v-click.hide="${block.until}"`
     : `v-click="[${block.at}, ${block.until}]"`
-  return `<div ${click}>\n\n${content}\n\n</div>`
+  return `<div ${click}${key}>\n\n${content}\n\n</div>`
 }
 
 /**
@@ -245,9 +253,11 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
  * published with the slides.
  */
 function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes = false): string {
-  const { mdast } = lowerMyst(verbatim(tree), {
+  const { mdast } = lowerMyst(buttons(verbatim(tree)), {
     footnotes: 'gfm',
     iframes: 'element',
+    // Cards, grids and tabs as HTML elements, laid out by the deck's styles (../deck/style.css).
+    cards: 'element',
     links: notes ? undefined : gen.links,
     urls: block ? (url, type) => asset(url, block, gen, type, notes) : undefined,
     // The presenter sees where a role without children stands, e.g. a cue (docs/ir.md 2.8).
@@ -262,6 +272,21 @@ function verbatim(node: MdastNode): MdastNode {
     return { type: 'html', value: `<span v-pre>${escapeHtml(node.value.replace(/[\\`*_[\]$~|]/g, '\\$&'))}</span>` }
   }
   return node.children ? { ...node, children: node.children.map(verbatim) } : node
+}
+
+/**
+ * A `{button}` without a target (a `span` of class `button`) as text styled
+ * as a button, as one with a link is (`pm-button`, ../deck/style.css).
+ */
+function buttons(node: MdastNode): MdastNode {
+  if (!node.children) return node
+  const button = (child: MdastNode) => child.type === 'span' && typeof child.class === 'string' && child.class.split(/\s+/).includes('button')
+  return {
+    ...node,
+    children: node.children.flatMap(child => button(child)
+      ? [{ type: 'html', value: '<span class="pm-button pm-button--text">' }, ...(child.children ?? []).map(buttons), { type: 'html', value: '</span>' }]
+      : [buttons(child)]),
+  }
 }
 
 /**
@@ -358,8 +383,29 @@ function originBar(node: CodeNode, at: number, locale: Locale): string {
   return `<div class="pm-code-origin"${bar.anchor ? ` data-anchor="${escapeHtml(bar.anchor)}"` : ''}>\n${parts.join('\n')}\n</div>`
 }
 
-/** Languages the slides run in a Monaco Runner (`{monaco-run}`): those of the execution plugin's code runners. */
-const RUNNER_LANGS = new Set(['python', 'javascript', 'typescript'])
+/**
+ * Languages the slides run in a Monaco Runner (`{monaco-run}`), by the name
+ * the execution plugin's code runners know them: Python, JavaScript and
+ * TypeScript, and C, C++, Ruby and SQL, which run on the executor of their
+ * language or environment (the WASI runtimes the slides publish).
+ */
+const RUNNER_LANGS: Record<string, string> = {
+  'python': 'python',
+  'javascript': 'javascript',
+  'typescript': 'typescript',
+  'c': 'c',
+  'cpp': 'cpp',
+  'c++': 'cpp',
+  'cc': 'cpp',
+  'cxx': 'cpp',
+  'ruby': 'ruby',
+  'rb': 'ruby',
+  'sql': 'sql',
+  'sqlite': 'sql',
+}
+
+/** The runner's name of a code block's language, if the slides run it. */
+const runnerLang = (lang: string): string | undefined => Object.hasOwn(RUNNER_LANGS, languageId(lang)) ? RUNNER_LANGS[languageId(lang)] : undefined
 /** Base64 longer than this is published as a file rather than written into the slide. */
 const INLINE_IMAGE = 16_384
 const IMAGE_TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif' }
@@ -429,7 +475,29 @@ const runnerKey = (section: string, block: string) => `${section}/${block}`
 
 /** Whether code runs in the slides' Monaco Runner (`monacoRun`). */
 function runsLive(node: CodeNode): boolean {
-  return Boolean(node.run && node.run.when !== 'compile' && node.echo !== false && !node.variants?.length && !node.highlight?.length && RUNNER_LANGS.has(languageId(node.lang)))
+  return Boolean(node.run && node.run.when !== 'compile' && node.echo !== false && !node.variants?.length && !node.highlight?.length && runnerLang(node.lang))
+}
+
+/** The packages a module imports by name (`import … from`, `export … from`, `import '…'`, `import('…')`), without their subpaths. */
+function importedPackages(code: string): string[] {
+  const names = [...code.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*(['"])([^'"\n]+)\1/g)].map(match => match[2]!)
+  return names
+    .filter(name => !/^[./]/.test(name) && !name.includes(':'))
+    .map(name => name.split('/').slice(0, name.startsWith('@') ? 2 : 1).join('/'))
+}
+
+/**
+ * Slidev looks up the types of the packages that live JavaScript and
+ * TypeScript code imports from the generated deck (`monacoTypesSource:
+ * local`), and fails the build for one it cannot find there: jax-js, for
+ * one, comes with the WebGPU plugin, not with the deck. The deck is then
+ * written with `monacoTypesSource: none`: the editor has no types, the code
+ * runs as before. `renderers.slides.monacoTypesSource` overrides it.
+ */
+function typesSource(doc: IRDocument, dir: string): Record<string, unknown> {
+  const scripts = doc.sections.flatMap(section => section.blocks).map(block => block.node)
+    .filter((node): node is CodeNode => node.type === 'code' && runsLive(node) && ['javascript', 'typescript'].includes(runnerLang(node.lang)!))
+  return scripts.some(node => importedPackages(node.value).some(name => !packageDir(name, dir))) ? { monacoTypesSource: 'none' } : {}
 }
 
 /**
@@ -461,7 +529,7 @@ function runnerOptions(doc: IRDocument): Record<string, unknown> {
 function monacoRun(node: CodeNode, block: IRBlock, gen: Generation): string {
   const run = node.run!
   const options = run.executor || run.session || run.timeoutMs ? `,runnerOptions:$slidev.configs.presmiumRuns['${runnerKey(gen.section, block.id).replace(/['\\]/g, '\\$&')}']` : ''
-  return fence(node.lang, node.value, ` {monaco-run} {autorun:false,height:'auto'${options}}`)
+  return fence(runnerLang(node.lang)!, node.value, ` {monaco-run} {autorun:false,height:'auto'${options}}`)
 }
 
 /**
@@ -540,8 +608,19 @@ function component(original: ComponentNode, block: IRBlock, gen: Generation, not
   // `v-slot:` rather than `#`: Markdown reads the tag as HTML only with attribute names it knows.
   const content = empty(node.fallback) && (node.layer === 'overlay' || !node.fallback)
     ? live
-    : `<PmStaticFallback>\n\n${live}\n\n<template v-slot:fallback>\n\n${md(node.fallback!, block, gen)}\n\n</template>\n</PmStaticFallback>`
+    : `<PmStaticFallback>\n\n${live}\n\n<template v-slot:fallback>\n\n${md(unfolded(node.fallback!), block, gen)}\n\n</template>\n</PmStaticFallback>`
   return `<PmBoundary name="${escapeHtml(node.name)}">\n\n${content}\n\n</PmBoundary>`
+}
+
+/**
+ * A fallback as an export shows it: nothing can be unfolded in a PDF or a
+ * PNG, so what the fallback folds away in a `<details>` marked
+ * `data-static="open"` (what a predict reveals, docs/ir.md 2.13) is written
+ * open; other folds stay closed (a quiz's answer).
+ */
+function unfolded(node: MdastNode): MdastNode {
+  if (node.type === 'html' && typeof node.value === 'string') return { ...node, value: node.value.replace(/<details(?=[^>]*\sdata-static="open")/g, '<details open') }
+  return node.children ? { ...node, children: node.children.map(unfolded) } : node
 }
 
 /**

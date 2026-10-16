@@ -66,9 +66,9 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 
 文稿的 `plugins` 加上 `@presmium/slidev-addon-lecture`（指针与聚光的重放还要 `@presmium/slidev-addon-guide`），要发布回放时 `renderers` 加上 `lecture: {}`（或 `presmium build --to web,lecture`）。
 
-- **录制**（只在 `presmium dev --to web` 与工作区服务中）：放映视图右上角的录制栏。点“录制”后浏览器要麦克风权限；翻页、推进步骤、指向代码块、按 `s` 聚光都记进讲授轨，点“停止”保存。可勾选“摄像头”“屏幕”同时录像。工具“激光笔”“荧光笔”在块上拖动画出（代码块按行），“清除标记”擦掉荧光笔。要重录某一节：在“讲授”中选已有的讲授，翻到那一节，点“重录本节”，离开这一节即停止并替换原来的这一节。离开放映视图会结束录制。
+- **录制**（只在 `presmium dev --to web` 与工作区服务中）：放映视图右上角的录制栏。点“录制”后浏览器先请求共享屏幕（勾选了“屏幕”时），再请求麦克风与摄像头权限；翻页、推进步骤、指向代码块、按 `s` 聚光、按 `h` 提示都记进讲授轨，点“停止”保存。录音每 5 秒上传一次。可勾选“摄像头”“屏幕”同时录像。工具“激光笔”“荧光笔”在块上拖动画出（代码块按行），“清除标记”擦掉荧光笔。要重录某一节：在“讲授”中选已有的讲授，翻到那一节，点“重录本节”，离开这一节即停止并替换原来的这一节（其他各节在录制之后的改动仍由 `presmium check` 报告）。离开放映视图会结束录制。
 - **文件**：每次录制在文稿目录写 `lectures/<日期>/track.json`（提交它）与 `audio/*.ogg`、`video/*.webm`（默认被该目录的 `.gitignore` 忽略；运营者设置 `settings.presmium.lecture.audio: lfs` 时交给 git LFS）。
-- **回放**：地址加 `?view=lecture&track=<ID>`，或在“视图”菜单中选“讲授”再挑一个。放映视图下方是播放栏：播放与暂停、进度、倍速、字幕（可选译文的语言）、逐字稿（点时间或某个字跳过去）、章节、“我来试试”（暂停后自己翻页或运行代码，点“回到讲授”恢复到讲授的画面）。合成的讲授显示“AI 合成语音”。讲义改动后失效的操作被略过并提示，`presmium check` 的 `presmium.lecture` 列出它们。
+- **回放**：地址加 `?view=lecture&track=<ID>`，或在“视图”菜单中选“讲授”再挑一个。放映视图下方是播放栏：播放与暂停、进度、倍速、字幕（可选译文的语言）、逐字稿（点时间或某个字跳过去）、章节（每一节下列出讲授走到的各步，点击跳到那一步）、“我来试试”（暂停后自己翻页或运行代码，点“回到讲授”恢复到讲授的画面）。合成的讲授显示“AI 合成语音”。讲义改动后失效的操作被略过并提示，`presmium check` 的 `presmium.lecture` 列出它们。
 - **静态站点**：`presmium build --to web,lecture` 把讲授发布在 `dist/lecture/`（含 `captions.<语言>.vtt`、`chapters.vtt`、`events.vtt`），网页从同一站点的 `../lecture/` 读取；分开部署时在头部写 `presmium: { presmium.lecture: { url: <地址> } }`。
 ### 由 agent 跳转（`presmium dev`）
 

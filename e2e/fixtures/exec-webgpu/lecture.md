@@ -9,8 +9,6 @@ renderers:
   web: {}
   slides:
     theme: default
-    # Slidev looks up the types of what live code imports; jax-js comes with the WebGPU plugin, not the deck.
-    monacoTypesSource: none
 ---
 
 # 浏览器 GPU 测试文稿
@@ -50,7 +48,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 (python)=
 ## Python 中的 GPU
 
-同一个着色器经 `presmium_gpu` 运行：先用 `await`，再用同步写法（需要 JSPI）。
+同一个着色器经 `presmium_gpu` 运行：先用 `await`，再用同步写法（需要 JSPI）；超过规模限制的缓冲区与重复次数在请求 GPU 之前就被拒绝。
 
 (py-async)=
 ```{code} python
@@ -92,6 +90,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 """
 print('JSPI:', gpu.can_run_sync())
 print(gpu.run_sync(SHADER, buffers={'a': [1, 2, 3, 4], 'b': [10, 20, 30, 40], 'out': {'size': 4}})['out'])
+```
+
+(py-limits)=
+```{code} python
+:run: live
+import presmium_gpu as gpu
+
+SHADER = "@group(0) @binding(0) var<storage, read_write> out: array<f32>; @compute @workgroup_size(1) fn main() {}"
+for options in ({'buffers': {'out': {'size': 40_000_000}}}, {'buffers': {'out': {'size': 4}}, 'repeat': 1001}):
+    try:
+        await gpu.run(SHADER, **options)
+    except ValueError as error:
+        print(error)
 ```
 
 (tensor)=

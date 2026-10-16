@@ -41,3 +41,19 @@ print("local fallback")
 - [ ] 一个按钮
 - [x] 题目与选项
 ```
+
+## 预测
+
+```{predict} 这段代码打印什么？
+:choices: 6, 9
+```
+
+:::{slide}
+:reveal:
+打印 6：
+
+```{code} python
+:run:
+print("sum:", sum([1, 2, 3]))
+```
+:::

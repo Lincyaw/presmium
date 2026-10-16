@@ -70,9 +70,9 @@ function save(): void {
 
 /**
  * The prompt or the revealed content among the children. The IR runtime renders each child as a
- * node keyed by its block id; a presentation leaves the narration to the presenter's notes. The
- * slides form gives its own nodes, the revealed content wrapped in its clicks: all of them follow
- * the form there.
+ * node keyed by its block id, the slides form the clicks that wrap the revealed content (the prompt
+ * shows from the start, unwrapped); a presentation leaves the narration to the presenter's notes.
+ * Children without those keys all follow the form.
  */
 function children(part: 'prompt' | 'reveal'): VNode[] {
   const nodes = slots.default?.() ?? []

@@ -1,11 +1,11 @@
-export { blockDrift, blockKey, blockOf, eventDrift, irHash, playedBlocks, referencedBlocks, trackBlock } from './drift.ts'
+export { blockDrift, blockKey, blockOf, eventDrift, irHash, playedBlocks, referencedBlocks, sectionHashes, trackBlock, unchanged } from './drift.ts'
 export type { BlockDrift, EventDrift, Grade } from './drift.ts'
 export { LECTURE_MESSAGES } from './messages.ts'
 export type { LectureMessages } from './messages.ts'
 export { recordedTrack, sectionSpan, simplifyPath, spliceSection } from './recording.ts'
 export type { PathPoint, Recording, TrackHead } from './recording.ts'
-export { anchorOf, chapters, lastIndexAt, timedEvents, utteranceAt, wordTime } from './timing.ts'
-export type { Chapter, TimedEvent } from './timing.ts'
+export { anchorOf, chapters, lastIndexAt, stepStops, timedEvents, utteranceAt, wordTime } from './timing.ts'
+export type { Chapter, StepStop, TimedEvent } from './timing.ts'
 export {
   clockText,
   eventLine,
