@@ -1,6 +1,6 @@
 // Test-only plugin: code blocks that step through line highlights ({stepcode}) or
 // versions ({morph}, each at its own lines and permalink, as a code reference gives them),
-// and an `echo` executor whose output is recorded at build time.
+// and an `echo` executor whose output is recorded at build time (`exit <n>` exits with code n).
 import type { PresmiumNodePlugin } from '@presmium/kernel'
 
 const lines = (spec: string) => spec.split(',').flatMap((part) => {
@@ -37,8 +37,10 @@ const plugin: PresmiumNodePlugin = {
   executors: [{
     id: 'fixture.echo',
     supports: lang => lang === 'echo',
+    // Code that says `exit <n>` exits with code n.
     async run(request) {
-      return { ok: true, stdout: `${request.code.toUpperCase()}\n`, stderr: '', exitCode: 0, durationMs: 1, timedOut: false, source: 'live', executorId: 'fixture.echo' }
+      const exitCode = Number(/^exit (\d+)$/m.exec(request.code)?.[1] ?? 0)
+      return { ok: exitCode === 0, stdout: `${request.code.toUpperCase()}\n`, stderr: '', exitCode, durationMs: 1, timedOut: false, source: 'live', executorId: 'fixture.echo' }
     },
   }],
 }

@@ -233,6 +233,17 @@ it('names the pass that leaves a malformed IR in a located presmium.ir error, in
   expect(stderr).toContain('hint: the IR is invalid after pass fixture.breaker.typeless of plugin fixture.breaker')
 })
 
+it('names the directive, not the first pass, when a directive writes a malformed IR (R-32)', async () => {
+  const dir = fixtures()
+  mkdirSync(join(dir, 'directive'))
+  writeFileSync(join(dir, 'directive/lecture.md'), '---\ntitle: Breaking\nplugins:\n  - ../addons/breaker\n---\n\n## First\n\nText.\n\n:::{typeless}\n:::\n')
+  const { code, stderr } = await presmium(dir, ['ir', 'directive'])
+  expect(code).toBe(1)
+  expect(stderr).toMatch(/directive\/lecture\.md:11 {2}error {2}block \S+ of section first: mdast > root\[0\] has a node without a type {2}\(presmium\.ir\)/)
+  expect(stderr).toContain('hint: the IR is invalid before the plugin passes: a directive wrote it')
+  expect(stderr).not.toContain('after pass')
+})
+
 it('reads the headmatter of an entry that starts with a byte order mark (R-36)', async () => {
   const dir = fixtures()
   mkdirSync(join(dir, 'bom'))

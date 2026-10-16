@@ -6,3 +6,5 @@
 
 :::{clip} ../files/clip.webm
 :::
+
+The notes show the dot too: ![A dot in the notes](../img/dot.svg)

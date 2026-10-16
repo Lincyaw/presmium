@@ -13,26 +13,18 @@
 import { existsSync, realpathSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, lowerMyst, nodeMdast } from '@presmium/kernel'
-import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, Locale, MdastNode, RenderContext } from '@presmium/kernel'
+import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, Locale, MdastNode, RenderContext, RunResult } from '@presmium/kernel'
+import { originParts, outputNotes } from '@presmium/viewer/domain'
+import type { OriginPart } from '@presmium/viewer/domain'
 import { stringify } from 'yaml'
 import { codeLang, escapeHtml, markdown } from './markdown.ts'
 
-/** What the generated deck says itself, in the deck's language. */
+/** What the generated deck says itself, in the deck's language; the origin bar of code says what the web form's does (`@presmium/viewer/domain`). */
 const MESSAGES = {
   'zh-CN': {
-    status: { moved: '已移动', fuzzy: '待确认', lost: '已失效' } as Record<string, string>,
-    workingTree: '工作区',
-    drifted: '已漂移',
-    pinned: '已锁定',
-    openInRepository: (file: string) => `在仓库中打开 ${file}`,
     webOnly: (name: string) => `组件 ${name} 只能在网页中查看。`,
   },
   'en': {
-    status: { moved: 'moved', fuzzy: 'to confirm', lost: 'lost' } as Record<string, string>,
-    workingTree: 'working tree',
-    drifted: 'drifted',
-    pinned: 'pinned',
-    openInRepository: (file: string) => `Open ${file} in the repository`,
     webOnly: (name: string) => `The component ${name} can only be viewed on the web.`,
   },
 } satisfies Record<Locale, unknown>
@@ -51,6 +43,8 @@ interface Generation {
   ctx: RenderContext
   /** Directory of the generated deck; relative paths are written against it. */
   dir: string
+  /** The deck's UI language. */
+  locale: Locale
   t: Messages
   assets: Map<string, string>
   /** URLs of the published files that links point to. */
@@ -79,7 +73,8 @@ const WEB_PACKAGE = '@presmium/web'
 
 /** `dir` is the directory of the generated deck. */
 export function slidevMarkdown(doc: IRDocument, ctx: RenderContext, dir: string): SlidevDeck {
-  const generation: Generation = { ctx, dir, t: MESSAGES[deckLocale(ctx.lang ?? deckLang(doc))], assets: new Map(), files: new Set(), links: slideLinks(doc) }
+  const locale = deckLocale(ctx.lang ?? deckLang(doc))
+  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc) }
   const markdown = doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, generation) : {}, generation)).join('\n')
   return { markdown, assets: generation.assets }
 }
@@ -239,7 +234,7 @@ function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes 
     footnotes: 'gfm',
     iframes: 'element',
     links: notes ? undefined : gen.links,
-    urls: block ? (url, type) => asset(url, block, gen, type) : undefined,
+    urls: block ? (url, type) => asset(url, block, gen, type, notes) : undefined,
   })
   return markdown(slidevNodes(mdast, gen))
 }
@@ -277,16 +272,18 @@ function slidevNodes(node: MdastNode, gen: Generation): MdastNode {
 /**
  * The URL of a local file a block names (`RenderContext.localAsset`), which
  * the slides publish at the root of the site; undefined keeps the URL. An
- * image is written as a path from the root, without the base: Vite resolves
- * it to the file in `public/` and adds the base, as Slidev's image preloader
- * does. A link or a component's prop is used as it is written, with the base.
+ * image in a slide is written as a path from the root, without the base:
+ * Vite resolves it to the file in `public/` and adds the base, as Slidev's
+ * image preloader does. A link, a component's prop and anything in the
+ * notes (`notes`: Slidev shows their HTML as it is, without Vite) are used
+ * as they are written, with the base.
  */
-function asset(url: string, block: IRBlock, gen: Generation, type: LinkedType | 'prop'): string | undefined {
+function asset(url: string, block: IRBlock, gen: Generation, type: LinkedType | 'prop', notes = false): string | undefined {
   const found = gen.ctx.localAsset(block.source, url)
   if (!found) return undefined
   gen.assets.set(found.name, found.file)
   const path = `${encodeURIComponent(found.name)}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
-  if (type === 'image') return `/${path}`
+  if (type === 'image' && !notes) return `/${path}`
   const published = `${gen.ctx.base}${path}`
   if (type === 'link') gen.files.add(published)
   return published
@@ -306,36 +303,51 @@ function link(className: string, href: string | undefined, text: string, attrs =
     : `<span class="${className}"${attrs}>${escapeHtml(text)}</span>`
 }
 
+/** A part of the origin bar (`originParts`), as HTML; `attrs` are written after its own. */
+function originPart(part: OriginPart, attrs = ''): string {
+  const own = [
+    part.title ? ` title="${escapeHtml(part.title)}"` : '',
+    part.status ? ` data-status="${part.status}"` : '',
+    part.drift ? ` data-drift="${part.drift}"` : '',
+  ].join('')
+  return link(`pm-code-origin__${part.kind}`, part.href, part.text, `${own}${attrs}`)
+}
+
 /**
- * Where the code comes from (`CodeNode.origin`), above the code: file and
- * lines linked to the repository (the link stays in exported PDFs), the
- * pinned commit or the commit of each version (the one on screen marked,
- * from `$clicks`), and whether pinned code drifted or the anchor moved. With
- * versions, the file, lines and link are those of the version on screen. The
- * web form shows the same bar. One HTML block: no blank line inside.
+ * Where the code comes from (`CodeNode.origin`), above the code: the parts
+ * the web form shows (`originParts` of @presmium/viewer), the file and lines
+ * linked to the repository (the link stays in exported PDFs), the pinned
+ * commit or the commit of each version, and a badge. With versions, the file
+ * part of the version on screen shows (from `$clicks`) and its commit is
+ * marked. One HTML block: no blank line inside.
  */
-function originBar(node: CodeNode, at: number, t: Messages): string {
-  const { origin } = node
-  if (!origin) return ''
-  const lines = (start: number, end = start) => end > start ? `${start}-${end}` : `${start}`
-  const title = ` title="${escapeHtml(origin.permalink ? t.openInRepository(origin.file) : origin.anchor)}"`
+function originBar(node: CodeNode, at: number, locale: Locale): string {
+  // A titled listing without an origin has its title on the code block (`fence`).
+  const bar = node.origin && originParts(node, undefined, locale)
+  if (!bar) return ''
   const variants = node.variants ?? []
   // Version k is on screen from step at + k (the first one from the start) until the next.
   const shown = `Math.min(Math.max($clicks - ${at}, 0), ${variants.length - 1})`
-  const file = (href: string | undefined, start: number, end?: number, attrs = '') =>
-    link('pm-code-origin__file', href, `${node.title ?? origin.file}:${lines(start, end)}`, `${title}${attrs}`)
-  const files = variants.length > 0 && variants.every(v => v.startLine !== undefined)
-    ? variants.map((variant, k) => file(variant.permalink, variant.startLine!, variant.endLine, ` v-show="${shown} === ${k}"`))
-    : [file(origin.permalink, origin.startLine, origin.endLine)]
-  const commits = variants.length
-    ? variants.map((variant, k) => link('pm-code-origin__variant', variant.permalink, variant.label, ` :data-active="${shown} === ${k} ? '' : undefined"`))
-    : [`<span class="pm-code-origin__commit"${origin.pin ? ` title="${origin.pin}"` : ''}>${origin.pin ? `@ ${origin.pin.slice(0, 7)}` : escapeHtml(t.workingTree)}</span>`]
-  const badge = t.status[origin.status]
-    ? `<span class="pm-code-origin__badge" data-status="${origin.status}">${escapeHtml(t.status[origin.status]!)}</span>`
-    : origin.pin && !variants.length && origin.drift
-      ? `<span class="pm-code-origin__badge" data-drift="${origin.drift}">${escapeHtml(origin.drift === 'drifted' ? t.drifted : t.pinned)}</span>`
-      : ''
-  return `<div class="pm-code-origin" data-anchor="${escapeHtml(origin.anchor)}">\n${[...files, ...commits, badge].filter(Boolean).join('\n')}\n</div>`
+  const parts = bar.parts.flatMap((part) => {
+    if (part.kind === 'file' && variants.length) {
+      return variants.map((_, k) => originPart(originParts(node, k, locale)!.parts[0]!, ` v-show="${shown} === ${k}"`))
+    }
+    if (part.kind === 'variant') {
+      const k = bar.parts.filter(p => p.kind === 'variant').indexOf(part)
+      return [originPart(part, ` :data-active="${shown} === ${k} ? '' : undefined"`)]
+    }
+    return [originPart(part)]
+  })
+  return `<div class="pm-code-origin"${bar.anchor ? ` data-anchor="${escapeHtml(bar.anchor)}"` : ''}>\n${parts.join('\n')}\n</div>`
+}
+
+/** A run's recorded output, with what it says about the run (`outputNotes`); empty when it has neither. */
+function output(run: RunResult, locale: Locale): string {
+  const text = [run.stdout, run.stderr].filter(Boolean).join('\n').replace(/\n$/, '')
+  const notes = outputNotes(run, locale)
+  if (!text && notes.length === 0) return ''
+  const parts = [text ? fence('text', text, '') : '', notes.length ? `<p class="pm-output__note">${escapeHtml(notes.join(' · '))}</p>` : '']
+  return `<div class="pm-output">\n\n${parts.filter(Boolean).join('\n\n')}\n\n</div>`
 }
 
 /**
@@ -356,8 +368,8 @@ function code(node: CodeNode, at: number, gen: Generation, owned: boolean): stri
   } else {
     out = fence(node.lang, node.value, `${title(node.title)}${node.highlight?.length ? ` ${stages(node.highlight)}` : ''}`)
   }
-  const outputs = owned ? [] : (node.outputs ?? []).map(run => [run.stdout, run.stderr].filter(Boolean).join('\n').replace(/\n$/, '')).filter(Boolean)
-  return [originBar(node, at, gen.t), out, ...outputs.map(text => `<div class="pm-output">\n\n${fence('text', text, '')}\n\n</div>`)].filter(Boolean).join('\n\n')
+  const outputs = owned ? [] : (node.outputs ?? []).map(run => output(run, gen.locale))
+  return [originBar(node, at, gen.locale), out, ...outputs].filter(Boolean).join('\n\n')
 }
 
 /** A component with its `assets` props set to the URLs of the files the slides publish. */

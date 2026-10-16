@@ -5,6 +5,7 @@ plugins:
 renderers:
   web:
     package: PACKAGES_DIR/web
+    base: /talks/web-diff/
 ---
 
 ## Notes

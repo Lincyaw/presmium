@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@presmium/kernel": "workspace:*",
+    "@presmium/viewer": "workspace:*",
     "@slidev/cli": "53.0.0",
     "@slidev/theme-default": "^0.25.0",
     "mdast-util-gfm": "^3.1.0",

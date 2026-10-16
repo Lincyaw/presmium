@@ -2,7 +2,7 @@
 // PDF, then the link check, or to PNG) on a git repository holding a copy of
 // ./fixtures/deck, whose first slide shows math.py through {code-ref}: the
 // permalink is generated; and on ./fixtures/export, four slides, the second with
-// a click, the third a quiz, which an export shows in its static form.
+// a click, the third a quiz, which an export shows in its static form; the deck sets a base for its slides.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, expect, it } from 'vitest'
@@ -44,6 +44,8 @@ it('exports PNG images, one per click step, the slide of a component in its stat
   expect(code, stderr).toBe(0)
   expect(JSON.parse(stdout)).toMatchObject({ format: 'png', pages: 5, links: [] })
   expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png', '003-01.png', '004-01.png'])
+  // The deck sets a base, but \`slidev export\` serves the Slidev deck at the root: the deck is written for it.
+  expect(readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')).toMatch(/<a href="\/[0-9a-f]{8}-notes\.txt" target="_blank" rel="noopener">the notes<\/a>/)
 }, 180_000)
 
 it('exports only the slides of a range', async () => {

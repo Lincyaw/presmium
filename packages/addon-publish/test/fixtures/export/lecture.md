@@ -6,6 +6,7 @@ plugins:
   - PACKAGES_DIR/addon-classroom
 renderers:
   slides:
+    base: talks/export
     theme: default
     fonts:
       provider: none
@@ -13,7 +14,9 @@ renderers:
 
 ## One
 
-The first slide.
+:::{slide}
+The first slide, with [the notes](notes.txt).
+:::
 
 ## Two
 

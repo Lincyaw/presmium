@@ -1,6 +1,7 @@
 /**
  * The web round of `presmium-diff` (P-53): builds the web form of a
- * compilation, serves it on a local port and captures, with the Chromium of
+ * compilation, serves it on a local port under its public base
+ * (`renderers.web.base`) and captures, with the Chromium of
  * `playwright-chromium` (which `slidev export` needs too, resolved from the
  * deck), every page in the document view (`<page>.png`, the whole page) and
  * every section in the present view (`present-<section>.png`).
@@ -27,11 +28,12 @@ const TYPES: Record<string, string> = {
   '.wasm': 'application/wasm',
 }
 
-/** A build directory served on a free local port, as a static host serves it. */
-async function serve(dir: string): Promise<{ url: string, close(): Promise<void> }> {
+/** A build directory served on a free local port under the public base it was built for (`/` or `/<path>/`), as a static host serves it. */
+async function serve(dir: string, base: string): Promise<{ url: string, close(): Promise<void> }> {
   const root = resolve(dir)
   const server = createServer((request, response) => {
-    let file = join(root, decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname))
+    const path = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname)
+    let file = path.startsWith(base) ? join(root, path.slice(base.length)) : join(root, '404.html')
     if (!file.startsWith(root + sep) && file !== root) file = root
     if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
     const found = existsSync(file)
@@ -79,20 +81,21 @@ export async function captureWeb(compilation: Compilation, out: string, dir: str
   const web = report.outputs.find(o => o.renderer === 'web')
   if (!web) return [`the web form was not built: ${report.findings.filter(f => f.severity === 'error').map(f => f.message).join('; ') || 'no web renderer'}`]
   await mkdir(dir, { recursive: true })
-  const server = await serve(web.outDir)
+  const server = await serve(web.outDir, web.base)
+  const site = `${server.url}${web.base}`
   const browser = await (await chromium(compilation.deckDir)).launch()
   try {
     // The same window, no service worker and no motion, so two builds of the same pages look the same.
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce', serviceWorkers: 'block' })
     const pages = (await readdir(web.outDir)).filter(file => file.endsWith('.html') && file !== '404.html').sort()
     for (const file of pages) {
-      await page.goto(`${server.url}/${file}`, { waitUntil: 'networkidle' })
+      await page.goto(`${site}${file}`, { waitUntil: 'networkidle' })
       await page.waitForSelector('.pm-section')
       await page.waitForTimeout(wait)
       await page.screenshot({ path: join(dir, `${file.slice(0, -'.html'.length)}.png`), fullPage: true })
     }
     for (const section of viewFor(compilation.doc, 'web').sections) {
-      await page.goto(`${server.url}/?view=present&section=${encodeURIComponent(section.id)}`, { waitUntil: 'networkidle' })
+      await page.goto(`${site}?view=present&section=${encodeURIComponent(section.id)}`, { waitUntil: 'networkidle' })
       await page.waitForSelector(`.pm-present[data-section=${JSON.stringify(section.id)}]`)
       await page.waitForTimeout(wait)
       await page.screenshot({ path: join(dir, `present-${section.id}.png`) })

@@ -28,11 +28,13 @@ export function hasForm(compilation: Compilation, id: string): boolean {
 /**
  * Has the slides renderer write the Slidev deck of a compilation to its work
  * directory, without building it (`prepare`): `slidev export` serves the deck
- * itself. Throws when the renderer is missing or fails.
+ * itself, at the root whatever base the slides are built for, so the deck is
+ * written for the root: the files it links and its components show are found
+ * there. Throws when the renderer is missing or fails.
  */
 export async function slidevDeck(compilation: Compilation): Promise<SlidesDeck> {
   // Nothing is written to the output directory.
-  const report = await prepare(compilation, { outDir: join(compilation.deckDir, 'dist'), to: ['slides'] })
+  const report = await prepare(compilation, { outDir: join(compilation.deckDir, 'dist'), to: ['slides'], base: '/' })
   const warnings = report.findings.filter(f => f.severity !== 'info').map(f => f.message)
   const slides = report.outputs.find(o => o.renderer === 'slides')
   if (!slides) {

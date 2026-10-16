@@ -19,6 +19,7 @@ import type {
   RunSpec,
   SourcePos,
 } from '@presmium/kernel'
+import { htmlTagNames } from 'html-tag-names'
 import { parse as parseYaml } from 'yaml'
 import { BODY, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
@@ -76,6 +77,9 @@ const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode'
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
 /** Dropped wherever they are: `outputs` is the output area MyST gives a `{code-cell}`, with a random id. */
 const DROPPED = new Set(['comment', 'mystTarget', 'outputs', BODY])
+/** The elements of HTML, which raw HTML may name; a tag that names none (`<reminder>`) is no markup. */
+const HTML_ELEMENTS = new Set(htmlTagNames)
+const TAG = /<\/?([A-Za-z][\w:.-]*)/g
 
 interface Scope {
   visual: boolean
@@ -157,7 +161,8 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
       continue
     }
     const role: BlockRole = scope.visual || !NARRATION.has(node.type) || onlyImages(node) ? 'visual' : 'narration'
-    push({ kind: node.type, role, span: 0, source, node: markdown([node], ctx) })
+    const block = markdown([node], ctx)
+    push({ kind: node.type, role, span: 0, source, node: role === 'narration' ? { ...block, mdast: { ...block.mdast, children: literalTags(block.mdast.children ?? []) } } : block })
   }
 }
 
@@ -304,8 +309,25 @@ function runSpec(lang: string, options: Record<string, string | true>, source: S
   return spec
 }
 
-function markdown(nodes: MdastNode[], ctx: BlockContext): IRNode {
+function markdown(nodes: MdastNode[], ctx: BlockContext): Extract<IRNode, { type: 'markdown' }> {
   return { type: 'markdown', mdast: { type: 'root', children: clean(nodes, ctx) } }
+}
+
+/**
+ * Inline raw HTML whose tags name no HTML element, such as the `<reminder>`
+ * of an agent's trace, as the text it is: in narration and in table cells
+ * such tags are words of the content rather than markup, and a renderer that
+ * compiles the HTML (the slides', as Vue templates) fails on one that is not
+ * closed (docs/coverage-agentic-se.md section 4).
+ */
+function literalTags(nodes: MdastNode[]): MdastNode[] {
+  return nodes.map((node) => {
+    if (node.type === 'html' && typeof node.value === 'string') {
+      const names = [...node.value.matchAll(TAG)].map(match => match[1]!.toLowerCase())
+      return names.length > 0 && names.every(name => !HTML_ELEMENTS.has(name)) ? { type: 'text', value: node.value } : node
+    }
+    return node.children ? { ...node, children: literalTags(node.children) } : node
+  })
 }
 
 /**
@@ -337,7 +359,9 @@ function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNo
       return []
     }
     const { position: _position, children, ...rest } = node
-    return [children ? { ...rest, children: clean(children, ctx, file) } as MdastNode : rest as MdastNode]
+    if (!children) return [rest as MdastNode]
+    const cleaned = clean(children, ctx, file)
+    return [{ ...rest, children: node.type === 'tableCell' ? literalTags(cleaned) : cleaned } as MdastNode]
   })
 }
 

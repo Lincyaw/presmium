@@ -56,7 +56,7 @@ it('with --install renders each commit with the dependencies of its own lockfile
   expect(shared.stderr).toContain('warning: changes outside the deck are not rendered from their commit: addon/style.css; --install renders each commit with its own dependencies')
 }, 360_000)
 
-// fixtures/web: a deck with the web form only, whose narration has a block for the web form.
+// fixtures/web: a deck with the web form only, under a base of its own (R-93), whose narration has a block for the web form.
 it('renders the web form of both commits, and lists the web page whose {only} web content changed (P-53)', async () => {
   const dir = repository('web')
   const lecture = join(dir, 'lecture.md')

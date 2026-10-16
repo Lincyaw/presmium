@@ -68,6 +68,11 @@ total = sum(xs)
 hello
 ```
 
+```{code} echo
+:run:
+exit 3
+```
+
 ## 其他
 
 :::{hints}

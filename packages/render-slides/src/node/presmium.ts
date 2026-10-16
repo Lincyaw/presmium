@@ -14,7 +14,8 @@ import { copyFile, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { IRDocument, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
+import { errorMessage, irBlocks, nodeMdast } from '@presmium/kernel'
+import type { IRDocument, MdastNode, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
 import { hasExtension, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
@@ -40,11 +41,16 @@ const plugin: PresmiumNodePlugin = {
       const dir = ctx.workDir
       await writeDeck(dir, ctx, slidevMarkdown(doc, ctx, dir))
       await rm(ctx.outDir, { recursive: true, force: true })
-      await slidev(['build', 'slides.md', '--out', ctx.outDir, ...base(ctx)], dir)
+      await slidev(['build', 'slides.md', '--out', ctx.outDir, ...base(ctx)], dir).catch((error: unknown) => {
+        throw located(error, doc, ctx)
+      })
       ctx.report({
         checkId: 'presmium.slides',
         severity: 'info',
-        message: `Slidev deck in ${SLIDEV_DIR}/slides.md; export it with \`slidev export ${SLIDEV_DIR}/slides.md\``,
+        // `slidev export` serves the deck at the root: a deck written for another base links its local files there.
+        message: ctx.base === '/'
+          ? `Slidev deck in ${SLIDEV_DIR}/slides.md; export it with \`slidev export ${SLIDEV_DIR}/slides.md\``
+          : `Slidev deck in ${SLIDEV_DIR}/slides.md, written for the base ${ctx.base}; \`slidev export\` serves it at the root, where the local files it links are not found: export with \`presmium-export\` (@presmium/slidev-addon-publish)`,
       })
       return { outDir: ctx.outDir, skipped: [] }
     },
@@ -70,6 +76,34 @@ const plugin: PresmiumNodePlugin = {
 }
 
 export default plugin
+
+/** Whether a tree holds raw HTML. */
+const hasHtml = (node: MdastNode): boolean => node.type === 'html' || (node.children ?? []).some(hasHtml)
+
+/**
+ * A failed `slidev build` that names a slide of the generated deck
+ * (`slides.md__slidev_<n>.md`, Slidev's module of slide n): the error is
+ * reported in the source, at the block of that section that holds raw HTML
+ * when only one does (Slidev compiles it as a Vue template), else at the
+ * section; the build fails with a short message. Other failures stay as
+ * they are.
+ */
+function located(error: unknown, doc: IRDocument, ctx: RenderContext): unknown {
+  const output = errorMessage(error)
+  const at = /slides\.md__slidev_(\d+)\.md(?::\d+(?::\d+)?)?\s*\n(?:\w*Error: )?([^\n]+)/.exec(output)
+  const section = at && doc.sections[Number(at[1]) - 1]
+  if (!at || !section) return error
+  const reason = at[2]!.replace(/^\w*Error: /, '').trim()
+  const raw = [...irBlocks(section.blocks)].filter(block => block.role === 'visual' && nodeMdast(block.node).some(hasHtml))
+  const source = raw.length === 1 ? raw[0]!.source : section.source
+  ctx.report({
+    checkId: 'presmium.slides',
+    severity: 'error',
+    message: `slide ${at[1]} (${section.title || section.id}) does not build: ${reason}`,
+    source: { file: source.file, line: source.line },
+  })
+  return new Error(`slidev build failed at slide ${at[1]}: ${reason}`)
+}
 
 /** The public base of the slides (`RenderContext.base`; C-13). */
 function base(ctx: RenderContext): string[] {

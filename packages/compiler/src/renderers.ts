@@ -37,6 +37,8 @@ export interface RendererOutput {
   outDir: string
   /** The renderer's work directory (`RenderContext.workDir`), e.g. the Slidev deck of the slides renderer. */
   workDir: string
+  /** The public base path the output is served under (`RenderContext.base`). */
+  base: string
   skipped: RenderOutput['skipped']
 }
 
@@ -140,7 +142,7 @@ export async function build(compilation: Compilation, options: { outDir: string,
       await mkdir(ctx.outDir, { recursive: true })
       const output = await renderer.build(view, ctx)
       const listed = new Set(output.skipped.map(s => `${s.section}#${s.block}`))
-      const result: RendererOutput = { renderer: renderer.id, outDir: output.outDir, workDir: ctx.workDir, skipped: [...output.skipped, ...unsupported.filter(s => !listed.has(`${s.section}#${s.block}`))] }
+      const result: RendererOutput = { renderer: renderer.id, outDir: output.outDir, workDir: ctx.workDir, base: ctx.base, skipped: [...output.skipped, ...unsupported.filter(s => !listed.has(`${s.section}#${s.block}`))] }
       return { result, reported }
     } catch (error) {
       reported.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`))
@@ -155,11 +157,15 @@ export async function build(compilation: Compilation, options: { outDir: string,
  * What `build` does short of building: each selected renderer that can
  * writes what it generates in its work directory (`Renderer.prepare`), e.g.
  * the Slidev deck that `slidev export` works on. `outDir` is where a build
- * would write.
+ * would write. `base` replaces the public base of every renderer, for a tool
+ * that serves what is prepared under a base of its own: `slidev export`
+ * serves the Slidev deck at the root (`/`).
  */
-export async function prepare(compilation: Compilation, options: { outDir: string, to?: string[] }): Promise<{ outputs: Omit<RendererOutput, 'skipped'>[], findings: Finding[] }> {
+export async function prepare(compilation: Compilation, options: { outDir: string, to?: string[], base?: string }): Promise<{ outputs: Omit<RendererOutput, 'skipped'>[], findings: Finding[] }> {
   const { selected, findings } = await selectRenderers(compilation, options.to)
   const run = runOf(compilation, selected, true)
+  const base = configuredBase(options.base)
+  if (base) for (const id of run.ids) run.bases.set(id, base)
   const outputs: Omit<RendererOutput, 'skipped'>[] = []
   for (const { renderer } of selected) {
     const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, findings)
@@ -169,7 +175,7 @@ export async function prepare(compilation: Compilation, options: { outDir: strin
     }
     try {
       await renderer.prepare(viewFor(compilation.doc, renderer.id), ctx)
-      outputs.push({ renderer: renderer.id, outDir: ctx.outDir, workDir: ctx.workDir })
+      outputs.push({ renderer: renderer.id, outDir: ctx.outDir, workDir: ctx.workDir, base: ctx.base })
     } catch (error) {
       findings.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`))
     }

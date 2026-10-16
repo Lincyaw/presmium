@@ -17,6 +17,7 @@ import { afterAll, expect, it } from 'vitest'
 const DECK = fileURLToPath(new URL('./fixtures/deck', import.meta.url))
 const EXPORT_DECK = fileURLToPath(new URL('./fixtures/export', import.meta.url))
 const MYST_DECK = fileURLToPath(new URL('./fixtures/myst', import.meta.url))
+const TRACE_DECK = fileURLToPath(new URL('./fixtures/trace', import.meta.url))
 const require = createRequire(import.meta.url)
 const SLIDEV = join(dirname(require.resolve('@slidev/cli/package.json')), 'bin/slidev.mjs')
 
@@ -92,6 +93,8 @@ it('build --to slides leaves a Slidev deck that slidev export turns into a PDF w
   const shown = 'Math.min(Math.max($clicks - 2, 0), 1)'
   expect(slides).toContain(`href="https://example.org/v1/sum.py#L1" target="_blank" rel="noopener" title="在仓库中打开 sum.py" v-show="${shown} === 0">sum.py:1</a>`)
   expect(slides).toContain(`href="https://example.org/v2/sum.py#L2" target="_blank" rel="noopener" title="在仓库中打开 sum.py" v-show="${shown} === 1">sum.py:2</a>`)
+  // The output of a run that failed says so, as in the web form.
+  expect(slides).toContain('```text\nEXIT 3\n```\n\n<p class="pm-output__note">退出码 3</p>')
 
   const pdf = join(out, 'deck.pdf')
   const exported = await slidev(['export', '.presmium/slides/slides.md', '--with-clicks', '--output', pdf])
@@ -153,6 +156,8 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
   // the base. A URL with a malformed escape stays as it is.
   expect(slides).toContain('![A dot](/e385aa54-dot.svg) <a href="/slides/003d456f-handout.pdf" target="_blank" rel="noopener">The handout</a> [A broken link](%E0%A4.pdf)')
   expect(slides).toContain(`<FixtureClip :src='"/slides/7cb92485-clip.webm"' />`)
+  // The notes are HTML as Slidev shows them, without Vite: an image there has the base too.
+  expect(slides).toContain('![A dot in the notes](/slides/e385aa54-dot.svg)')
   for (const file of ['e385aa54-dot.svg', '003d456f-handout.pdf', '7cb92485-clip.webm']) expect(existsSync(join(target, 'slides', file)), file).toBe(true)
   expect(notebook).toContain('![A dot](media/e385aa54-dot.svg) [The handout](media/003d456f-handout.pdf)')
 
@@ -199,9 +204,29 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
     expect(handout.status()).toBe(200)
     expect(handout.frame().page()).toBe(tab)
     expect(page.url()).toBe(`${site.url}/slides/${media}`)
+    // The presenter view shows the notes, with their image.
+    await page.goto(`${site.url}/slides/presenter/${media}`)
+    const noted = page.locator('img[alt="A dot in the notes"]').first()
+    await expect.poll(() => noted.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0)
     expect(failed).toEqual([])
   } finally {
     await browser.close()
     await site.close()
   }
 }, 240_000)
+
+it('shows tags that name no HTML element as text, and reports a slide that does not build at its block, not in the generated deck', async () => {
+  // An agent's trace in a table and in narration: its pseudo-XML tags are words, not markup (docs/coverage-agentic-se.md section 4).
+  const built = await build(['build', '--to', 'slides', '--out', join(out, 'trace')], TRACE_DECK)
+  expect(built.code, built.output).toBe(0)
+  const slides = readFileSync(join(TRACE_DECK, '.presmium/slides/slides.md'), 'utf8')
+  expect(slides).toMatch(/\| 1 +\| \\<reminder> keep the tests green \|/)
+  expect(slides).toContain('The trace says \\<system-reminder> before each request.')
+
+  // HTML that Slidev cannot compile as a Vue template: the error is at its block in the source.
+  const broken = await build(['build', '--to', 'slides', '--out', join(out, 'broken'), 'broken.md'], TRACE_DECK)
+  expect(broken.code).toBe(1)
+  const line = readFileSync(join(TRACE_DECK, 'broken.md'), 'utf8').split('\n').indexOf('Some text <span> not closed.') + 1
+  expect(broken.output).toContain(`broken.md:${line}  error  slide 3 (Broken) does not build: Element is missing end tag.`)
+  expect(broken.output).not.toContain('__slidev_')
+}, 180_000)

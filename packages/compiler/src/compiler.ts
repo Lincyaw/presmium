@@ -205,14 +205,15 @@ export class Compiler {
         report({ checkId: 'presmium.plugins', severity: 'error', message: `pass ${pass.name} of plugin ${pluginId(loaded)} failed: ${errorMessage(error)}`, source: at(loaded.name) })
       }
     }
-    // The IR is checked after each pass, so a pass that breaks it is named and nothing runs on a broken IR (R-32).
-    let invalid: Finding[] = []
-    for (const step of passes.filter(({ pass }) => pass.after !== 'execute')) {
+    // The IR is checked before the passes and after each, so what breaks it, a directive or a pass, is
+    // named and nothing runs on a broken IR (R-32).
+    const blame = (findings: Finding[], culprit: string): Finding[] => findings.map(finding => ({ ...finding, hint: culprit }))
+    let invalid = blame(validateIR(doc, this.entry), 'the IR is invalid before the plugin passes: a directive wrote it')
+    for (const step of invalid.length > 0 ? [] : passes.filter(({ pass }) => pass.after !== 'execute')) {
       await runPass(step)
       invalid = validateIR(doc, this.entry)
       if (invalid.length > 0) {
-        const culprit = `the IR is invalid after pass ${step.pass.name} of plugin ${pluginId(step.loaded)}`
-        invalid = invalid.map(finding => ({ ...finding, hint: culprit }))
+        invalid = blame(invalid, `the IR is invalid after pass ${step.pass.name} of plugin ${pluginId(step.loaded)}`)
         break
       }
     }
