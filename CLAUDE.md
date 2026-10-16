@@ -9,6 +9,7 @@
 - 领域模型（DDD）：`docs/domain-model.md`
 - 架构、契约、测试策略：`docs/architecture.md`
 - 工作分解与验收标准：`docs/wbs.md`
+- v0.7 新增范围（执行环境、智能体、工作区、讲授）的总体设计：`docs/design-v0.7.md`
 - 契约源码：`packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts`
 
 ## 约定
