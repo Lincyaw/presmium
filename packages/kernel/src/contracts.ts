@@ -398,8 +398,10 @@ export interface StoredItem<T> {
  * (e.g. `<quiz>:<participant>`, `<participant>:<question>`) and whose value
  * is an object that names them in `participant` or `author`. The `quizzes`
  * collection is the presenter's alone. A learner's write that breaks these
- * rules is dropped by the server and `put` does not report it, so a plugin
- * that stores learners' data must give it this shape.
+ * rules is dropped by the server, which closes that window's connection: the
+ * session plugin starts the window again from the classroom's document and
+ * tells the learner, but `put` itself does not report it, so a plugin that
+ * stores learners' data must give it this shape.
  */
 export interface ClassroomStore {
   list<T>(collection: string): StoredItem<T>[]

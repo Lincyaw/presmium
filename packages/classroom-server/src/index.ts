@@ -28,8 +28,12 @@
  * (`store:quizzes`, opening and closing them) and the presenter's
  * synchronized state (`sync:<channel>`) are the presenter's alone. A
  * connection proves its participant with `?participant=<id>&key=<key>`: the
- * first connection that names a participant binds the id to its key. Such an
- * update must also integrate at once: one with structs that wait for structs
+ * first connection that names a participant binds the id to its key. A Yjs
+ * client (the id of a document's structs) belongs to the writer that first
+ * wrote its structs, or that holds it in awareness: a learner's update with
+ * structs of another writer's client, such as the presenter's next ones,
+ * would make that writer's own update a duplicate that every document
+ * ignores, and is refused. Such an update must also integrate at once: one with structs that wait for structs
  * the room does not have (a gap in a client's clocks, an origin or a parent
  * not sent yet), or that deletes what the room does not have, would apply
  * later as part of what others write. An update that breaks these rules is
@@ -78,6 +82,16 @@ const MAX_ENTRY = 16 << 10
 class Room extends Y.Doc {
   /** Connections, each with the awareness client ids it controls. */
   readonly conns = new Map<WebSocket, Set<number>>()
+  /** Who writes through each connection (`writerKey`). */
+  readonly writers = new Map<WebSocket, string>()
+  /**
+   * Who wrote the structs of each Yjs client id (`writerKey`), from the first
+   * update that held one; the room's own client is the room's (''). A Yjs
+   * client's structs are identified by its id and a clock, so whoever writes
+   * the next clock of a client first makes that client's own write a
+   * duplicate, which every document ignores.
+   */
+  readonly authors = new Map<number, string>()
   /** Who is connected; a participant's own room has none. */
   readonly awareness?: awarenessProtocol.Awareness
   /** Archived: freed once its last connection has closed. */
@@ -91,6 +105,7 @@ class Room extends Y.Doc {
 
   constructor(name: string) {
     super({ gc: true })
+    this.authors.set(this.clientID, '')
     this.personal = name.includes('.')
     this.on('update', (update: Uint8Array) => {
       const encoder = encoding.createEncoder()
@@ -190,6 +205,24 @@ export interface ClassroomWriter {
   participant?: string
 }
 
+/** Who writes, as the room tells writers apart: the presenter's windows are one writer, each participant another. */
+function writerKey(writer: ClassroomWriter): string {
+  return writer.presenter ? 'presenter' : `participant:${writer.participant ?? ''}`
+}
+
+/** Who writes as a Yjs client: the writer of its structs so far, else of the connection that controls it in awareness. */
+function authorOf(room: Room, client: number): string | undefined {
+  const known = room.authors.get(client)
+  if (known !== undefined) return known
+  const controller = [...room.conns].find(([, clients]) => clients.has(client))?.[0]
+  return controller && room.writers.get(controller)
+}
+
+/** The Yjs client ids of an update's structs. */
+function structClients(update: Uint8Array): number[] {
+  return [...Y.parseUpdateMeta(update).from.keys()]
+}
+
 /** Why a change to entry `key` of the top-level map `name`, now `value` (undefined: deleted), is not the participant's to make; undefined when it is. */
 function entryRefusal(name: string, key: string | null, value: unknown, participant: string | undefined): string | undefined {
   if (!participant) return 'a write from a connection that proved no participant'
@@ -218,6 +251,10 @@ function pending(doc: Y.Doc): [structs: Uint8Array, deletions: Uint8Array] {
  * of what others write, out of reach of these rules.
  */
 function refusal(room: Room, update: Uint8Array, writer: ClassroomWriter): string | undefined {
+  // Structs of another writer's client, e.g. the presenter's next clock: the presenter's own
+  // write of that clock would then be ignored everywhere (P-60, P-61).
+  const own = writerKey(writer)
+  if (structClients(update).some(client => (authorOf(room, client) ?? own) !== own)) return 'an update in the name of another writer\'s client'
   const probe = new Y.Doc()
   Y.applyUpdate(probe, Y.encodeStateAsUpdate(room))
   const before = pending(probe)
@@ -308,6 +345,10 @@ function handle(room: Room, conn: WebSocket, data: Uint8Array, writer: Classroom
         conn.close(REFUSED_CLOSE_CODE, 'update refused')
         return
       }
+      // The writer of a client's first structs writes that client from then on (`Room.authors`),
+      // also for structs that wait in the room for others.
+      const key = writerKey(writer)
+      for (const client of structClients(update)) if (!room.authors.has(client)) room.authors.set(client, key)
     }
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, MESSAGE_SYNC)
@@ -445,6 +486,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
       if (sameKey(current.participants.get(participant), key)) writer.participant = participant
     }
     current.conns.set(conn, new Set())
+    current.writers.set(conn, writerKey(writer))
     conn.binaryType = 'arraybuffer'
     conn.on('message', (data: ArrayBuffer) => {
       try {
@@ -468,6 +510,7 @@ export async function startClassroomServer(options: ClassroomServerOptions = {})
       clearInterval(ping)
       const controlled = current.conns.get(conn)
       current.conns.delete(conn)
+      current.writers.delete(conn)
       if (current.archived) {
         if (current.conns.size === 0) current.destroy()
         return

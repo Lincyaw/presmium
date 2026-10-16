@@ -258,6 +258,44 @@ it('refuses a learner\'s update that would wait in the room, such as one deletin
   expect(presenter.doc.getMap('session').get('cursor')).toEqual({ slide: 3, step: 0 })
 })
 
+it('refuses a learner\'s structs in the name of the presenter\'s client, which would make the presenter\'s own write of that clock a duplicate that every document ignores (P-60, P-61)', async () => {
+  const presenter = await join('room-j', { claim: 'presenter-key' })
+  presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
+  const learner = await join('room-j', { participant: 'p1', key: 'p1-key' })
+  // The presenter has written nothing yet: the room knows its client from awareness only.
+  await expect.poll(() => learner.provider.awareness.getStates().has(presenter.doc.clientID)).toBe(true)
+  /** The learner's own answer, written as the presenter's client at the clock the presenter writes next. */
+  const forge = (choice: number) => {
+    const forged = new Y.Doc()
+    Y.applyUpdate(forged, Y.encodeStateAsUpdate(presenter.doc))
+    // After the update: a document that receives structs of its own client takes another.
+    forged.clientID = presenter.doc.clientID
+    const before = Y.encodeStateVector(forged)
+    forged.getMap('store:answers').set(...answer('q', 'p1', choice))
+    return updateMessage(Y.encodeStateAsUpdate(forged, before))
+  }
+  const first = await socket('room-j', { participant: 'p1', key: 'p1-key' })
+  const firstCode = closed(first)
+  first.send(forge(0))
+  expect(await firstCode).toBe(4403)
+
+  presenter.doc.getMap('session').set('status', 'active')
+  await expect.poll(() => learner.doc.getMap('session').get('status')).toBe('active')
+  const second = await socket('room-j', { participant: 'p1', key: 'p1-key' })
+  const secondCode = closed(second)
+  second.send(forge(1))
+  expect(await secondCode).toBe(4403)
+  expect(drops('room-j').map(d => d.reason)).toEqual(Array(2).fill('an update in the name of another writer\'s client'))
+
+  // The presenter's next writes count, for the learner and for a late joiner; the forged answers do not.
+  presenter.doc.getMap('store:quizzes').set('q', { open: true })
+  await expect.poll(() => learner.doc.getMap('store:quizzes').get('q')).toEqual({ open: true })
+  const late = await join('room-j')
+  expect(late.doc.getMap('session').get('status')).toBe('active')
+  expect(late.doc.getMap('store:quizzes').get('q')).toEqual({ open: true })
+  expect(late.doc.getMap('store:answers').toJSON()).toEqual({})
+})
+
 it('closes the connection of a refused update, and takes the learner\'s writes again once the client starts over', async () => {
   const presenter = await join('room-h', { claim: 'presenter-key' })
   const learner = await join('room-h', { participant: 'p1', key: 'p1-key' })
