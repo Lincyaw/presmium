@@ -16,7 +16,7 @@ import AskPanel from './AskPanel.vue'
 import AssistantToolbar from './AssistantToolbar.vue'
 import EditPanel from './EditPanel.vue'
 import { createAgentClient } from './agent.ts'
-import { agent, trackSelection } from './state.ts'
+import { agent, assistant as assistantClient, trackSelection } from './state.ts'
 
 let cleanup: Unsubscribe[] = []
 
@@ -34,6 +34,7 @@ export const assistantPlugin: PluginDefinition = {
     const assistant = createAgentClient(server)
     ctx.provide(AGENT, assistant.client)
     agent.value = assistant.client
+    assistantClient.value = assistant
     void assistant.refresh()
     const t = ASSISTANT_MESSAGES[currentLocale()]
     cleanup = [
@@ -48,6 +49,7 @@ export const assistantPlugin: PluginDefinition = {
     cleanup.forEach(stop => stop())
     cleanup = []
     agent.value = undefined
+    assistantClient.value = undefined
   },
 }
 

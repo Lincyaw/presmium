@@ -879,6 +879,7 @@ settings:                            # 插件的运营者设置，键为插件 I
     read: ['~/.local/lib']           # 进程沙箱中另外只读的路径
   presmium.assistant:
     review: required                 # 修改任务先审阅后提交（默认）；auto：直接全部接受并提交
+    reviewTimeoutMs: 1800000         # 等待审阅而没有页面跟随的修改任务在这之后回滚（默认 30 分钟）
     # command、tutor、provider 只用于替换随包的 DeepSeek Harness（LOCAL 模式），例如：
     # command: [claude-code-acp]
     # provider: Anthropic

@@ -1,6 +1,6 @@
 // Routes of a test plugin (packages/addon-deltabox/test/review.test.ts) that drive the change review of
 // the deck directory the way the assistant does: `open` takes CHANGE_REVIEW from the server's Node
-// services, the others act on the review it opened. Plain objects: tokens are compared by id, so the
+// services, the others (`restore`: back to before a step) act on the review it opened. Plain objects: tokens are compared by id, so the
 // fixture needs no package to compile.
 import { relative } from 'node:path'
 
@@ -40,6 +40,7 @@ export default {
       },
       'step': { handle: (request: Request) => answer(async () => review.step(((await request.json()) as { label: string }).label, 'edit')) },
       'diff': { handle: () => answer(async () => ({ changes: await review.diff(), steps: review.steps() })) },
+      'restore': { handle: (request: Request) => answer(async () => review.restoreTo(((await request.json()) as { step: string }).step)) },
       'accept': { handle: (request: Request) => answer(async () => ({ files: await review.accept(((await request.json()) as { reject: string[] }).reject) })) },
       'rollback': { handle: () => answer(async () => review.rollback()) },
     },

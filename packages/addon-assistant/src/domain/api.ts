@@ -1,10 +1,12 @@
 /**
  * The assistant's routes under `/__presmium/presmium.assistant/` (docs/architecture.md
  * 4.8, design-v0.7 5.3): `info` (what the member may ask, the provider and
- * the runtime), `tasks` (submit), `tasks/<id>/events` (SSE of `AgentEvent`),
- * `tasks/<id>/cancel`, `tasks/<id>/review` (the decision on a change task's
- * review), `revert` (undo a task's commit) and `excerpt` (lines of a source
- * file of the document, for an annotation).
+ * the runtime), `tasks` (submit; `GET`: the document's change task under
+ * way), `tasks/<id>/events` (SSE of `AgentEvent`), `tasks/<id>/cancel`,
+ * `tasks/<id>/review` (the decision on a change task's review),
+ * `tasks/<id>/restore` (back to before a step of it), `revert` (undo a
+ * task's commit) and `excerpt` (lines of a source file of the document, for
+ * an annotation).
  */
 import { isRecord } from '@presmium/kernel'
 import type { AgentContext, AgentTaskKind, AgentTaskRequest, Annotation, ReviewDecision, SourceRange } from '@presmium/kernel'
@@ -17,6 +19,22 @@ export interface AssistantInfo {
   runtime?: string
   /** The kinds of task this member may submit here. */
   kinds: AgentTaskKind[]
+}
+
+/** `GET tasks`: the document's change task under way or waiting for its review, to the member who sent it and to owners. */
+export interface PendingChange {
+  id: string
+  kind: AgentTaskKind
+  prompt: string
+  annotations?: Annotation[]
+  track?: string
+  /** Who sent it. */
+  member: { id: string, name: string }
+}
+
+/** `POST tasks/<id>/restore`. */
+export function restoreStepOf(body: unknown): string | undefined {
+  return isRecord(body) && typeof body.step === 'string' && body.step.length > 0 && body.step.length <= 200 ? body.step : undefined
 }
 
 /** `POST revert`: the commit of a task undone, or the files that conflict with later commits. */
@@ -109,4 +127,10 @@ export type ReviewMode = 'required' | 'auto'
 
 export function reviewMode(settings: Record<string, unknown>): ReviewMode {
   return settings.review === 'auto' ? 'auto' : 'required'
+}
+
+/** How long a review waits while no page follows it before it is rolled back (`settings.presmium.assistant.reviewTimeoutMs`; 30 minutes). */
+export function reviewTimeoutMs(settings: Record<string, unknown>): number {
+  const value = settings.reviewTimeoutMs
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 30 * 60_000
 }

@@ -53,6 +53,9 @@ const zh = {
     tool: (name: string) => `正在：${name}`,
     steps: (n: number) => `已记录 ${n} 步`,
     noStepChange: '没有改动',
+    restore: '回到这一步之前',
+    restoreLabel: (label: string) => `回到「${label}」之前`,
+    transcript: (track: string) => `转写回写：讲授轨 ${track}`,
     review: (engine: string) => `请审阅改动（审阅由 ${engine} 完成）`,
     kind: { added: '新建', modified: '修改', deleted: '删除' } satisfies Record<ReviewChangeKind, string>,
     binary: '二进制文件，不显示差异',
@@ -85,6 +88,10 @@ const zh = {
   noTrack: (track: string) => `这份文档没有讲授轨 ${track}（lectures/${track}/track.json）`,
   notReviewing: '这个任务没有等待审阅',
   rejectedNote: '修改没有被接受',
+  noRestore: '这个审阅不能回到某一步之前',
+  restoring: '正在回到某一步之前，请稍候',
+  reverting: '这份文档正在撤销一次修改，请稍后再试',
+  noDocument: '首页不是文档：任务要写明它的文档（AgentContext.document）',
 }
 
 type Messages = typeof zh
@@ -137,6 +144,9 @@ const en: Messages = {
     tool: name => `Now: ${name}`,
     steps: n => `${n} step${n === 1 ? '' : 's'} recorded`,
     noStepChange: 'no change',
+    restore: 'Back to before this step',
+    restoreLabel: label => `Back to before “${label}”`,
+    transcript: track => `Transcript write-back: lecture track ${track}`,
     review: engine => `Review the changes (reviewed through ${engine})`,
     kind: { added: 'new', modified: 'changed', deleted: 'deleted' },
     binary: 'binary file, no diff shown',
@@ -169,6 +179,10 @@ const en: Messages = {
   noTrack: track => `This document has no lecture track ${track} (lectures/${track}/track.json)`,
   notReviewing: 'This task is not waiting for a review',
   rejectedNote: 'The change was not accepted',
+  noRestore: 'This review cannot go back to before a step',
+  restoring: 'Going back to before a step: wait for it',
+  reverting: 'A change of this document is being undone: try again shortly',
+  noDocument: 'The home page is not a document: a task names its document (AgentContext.document)',
 }
 
 export type AssistantMessages = Messages

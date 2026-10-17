@@ -4,10 +4,12 @@
 // writes, which are in the deck directory (and recompiled) before anything is accepted; accepting with
 // a file rejected keeps the others and restores that one; rejecting all restores everything; a second
 // review of the same directory is refused. The changes are files only (deltabox lists directories too),
-// so what accepting returns can be committed. A `presmium dev` killed with its helpers leaves the review
-// behind, and the next one restores the deck directory when it starts.
+// so what accepting returns can be committed. Going back to before a step (`restoreTo`, P-115) leaves the
+// directory as the checkpoint before it had it. A review whose session faulted (its engine state removed
+// under it) rolls back from its own snapshot and frees the directory. A `presmium dev` killed with its
+// helpers leaves the review behind, and the next one restores the deck directory when it starts.
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -124,6 +126,60 @@ describe.skipIf(!host.ok)('change review through deltabox', () => {
     expect(existsSync(join(deck, 'figs/raw'))).toBe(false)
     expect(readFileSync(join(deck, 'figs/note.md'), 'utf8')).toBe('图\n')
     expect(existsSync(join(deck, 'old'))).toBe(false)
+  }, 60_000)
+
+  it('goes back to before a step: the deck directory as at the checkpoint before it, that step and the later ones dropped; the review goes on', async () => {
+    const root = (await call('open', {})).json.root as string
+    agentWrites(root, 'printf "\\n第一步。\\n" >> lecture.md')
+    const first = (await call('step', { label: '第一步' })).json
+    agentWrites(root, 'printf "第二步\\n" > second.md && printf "\\n第二步。\\n" >> lecture.md')
+    const second = (await call('step', { label: '第二步' })).json
+    agentWrites(root, 'printf "第三步\\n" > third.md')
+    await call('step', { label: '第三步' })
+
+    // Back to before the second step: the first step's line stays; the second's and the third's writes are gone.
+    expect((await call('restore', { step: second.id })).status).toBe(200)
+    expect(lecture()).toBe(`${LECTURE}\n第一步。\n`)
+    expect(existsSync(join(deck, 'second.md'))).toBe(false)
+    expect(existsSync(join(deck, 'third.md'))).toBe(false)
+    const diff = (await call('diff')).json
+    expect(diff.steps.map((s: { id: string }) => s.id)).toEqual([first.id])
+    expect(diff.changes.map((c: { path: string }) => c.path)).toEqual(['lecture.md'])
+
+    // The review goes on; back to before the first step is the deck directory as the review found it.
+    agentWrites(root, 'printf "又一步\\n" > again.md')
+    expect((await call('step', { label: '又一步' })).json.changes.map((c: { path: string }) => c.path)).toEqual(['again.md'])
+    expect((await call('restore', { step: first.id })).status).toBe(200)
+    expect(lecture()).toBe(LECTURE)
+    expect(existsSync(join(deck, 'again.md'))).toBe(false)
+    expect((await call('diff')).json).toMatchObject({ changes: [], steps: [] })
+    expect((await call('rollback', {})).status).toBe(200)
+  }, 60_000)
+
+  it('rolls a review whose session faulted back from its own snapshot, ends the session and frees the directory', async () => {
+    const root = (await call('open', {})).json.root as string
+    agentWrites(root, 'printf "\\n出错之前写的。\\n" >> lecture.md && printf "残留\\n" > faulted.md')
+    // The session faults: deltabox's engine state of it is gone, so its diff, checkpoints and abort fail.
+    const stateDir = join(state, 'presmium/deltabox')
+    const records = join(stateDir, 'presmium/sessions')
+    const session = readdirSync(records).map(name => JSON.parse(readFileSync(join(records, name), 'utf8')) as { session: string, kind: string, project: string })
+      .find(record => record.kind === 'review' && record.project === realpathSync(deck))!.session
+    rmSync(join(stateDir, session), { recursive: true, force: true })
+    expect((await call('diff')).status).toBe(409)
+
+    const rolled = await call('rollback', {})
+    expect(rolled.status, JSON.stringify(rolled.json)).toBe(200)
+    expect(lecture()).toBe(LECTURE)
+    expect(existsSync(join(deck, 'faulted.md'))).toBe(false)
+    expect(dev!.output()).toContain('restored from the review\'s snapshot')
+
+    // Nothing holds the directory: a new review opens and works.
+    const reopened = await call('open', {})
+    expect(reopened.status, JSON.stringify(reopened.json)).toBe(200)
+    agentWrites(reopened.json.root as string, 'printf "新的\\n" > fresh.md')
+    expect((await call('diff')).json.changes.map((c: { path: string }) => c.path)).toEqual(['fresh.md'])
+    expect((await call('rollback', {})).status).toBe(200)
+    expect(existsSync(join(deck, 'fresh.md'))).toBe(false)
   }, 60_000)
 
   it('restores the deck directory when presmium dev starts again after it was killed with its helpers during a review', async () => {

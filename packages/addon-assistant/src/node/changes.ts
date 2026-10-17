@@ -10,21 +10,28 @@
  * 3. Once the agent ended, its reports on the annotations become their
  *    `annotation` events; then, by `settings.presmium.assistant.review`, the
  *    sender reviews the changes (`review` event, `required`, the default)
- *    or they are accepted at once (`auto`).
+ *    or they are accepted at once (`auto`). While the review waits, the
+ *    sender may go back to before a step (`ChangeReview.restoreTo`; a new
+ *    `review` event follows); a review that no page follows for
+ *    `reviewTimeoutMs` (30 minutes by default) is rolled back.
  * 4. Accepting restores the rejected files from the snapshot and commits the
  *    rest through `REVISIONS` as one commit (with the writes outside the
  *    directory an owner allowed); a change of the workspace configuration
  *    (a single-deck repository's document directory holds it) needs an
- *    owner's `write` approval first, else it is rejected too. Rejecting all
- *    restores the directory as the task found it, without a commit.
+ *    owner's `write` approval first, else it is rejected too; a change in a
+ *    git directory (`.git/`, which deltabox's review lists) is always
+ *    rejected. Rejecting all restores the directory as the task found it,
+ *    without a commit.
  *
  * A task that fails or is cancelled, or is left waiting when the server
- * closes, is rolled back.
+ * closes, is rolled back; one a crashed server left is rolled back by the
+ * next (the git review's record, ./git-review.ts; deltabox's helper).
  */
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { realpathSync } from 'node:fs'
+import { isAbsolute, relative, sep } from 'node:path'
 import { deckLocale, errorMessage, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentTaskRequest, ApprovalRequest, ChangeReview, ChangeReviewService, ReviewChange, ReviewDecision, ServerContext } from '@presmium/kernel'
-import { annotationNotes, ASSISTANT_MESSAGES, commitMessage, explanationOf, reviewMode, WORKSPACE_CONFIG } from '../domain/index.ts'
+import { annotationNotes, ASSISTANT_MESSAGES, commitMessage, explanationOf, reviewMode, reviewTimeoutMs, WORKSPACE_CONFIG } from '../domain/index.ts'
 import { GIT_ENGINE, openGitReview } from './git-review.ts'
 import type { Task, Tasks } from './tasks.ts'
 
@@ -45,17 +52,51 @@ function within(path: string, dir: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
 }
 
-/** Waits for the sender's decision on the review it announces; an aborted task (cancelled, or the server closing) rejects all. */
+/**
+ * Waits for the sender's decision on the review it announces; an aborted
+ * task (cancelled, the server closing, or no page following it for the
+ * operator's time) rejects all. Meanwhile the sender may go back to before a
+ * step, announced as the review again; a decision waits for that to finish.
+ */
 function decision(run: ChangeRun, task: Task, engine: string, review: ChangeReview, changes: ReviewChange[]): Promise<ReviewDecision> {
+  const unattended = reviewTimeoutMs(run.ctx.settings)
   return new Promise((resolve) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let restoring: Promise<void> | undefined
     const decide = (value: ReviewDecision) => {
-      task.decide = undefined
-      resolve(value)
+      clearTimeout(timer)
+      task.decide = task.restore = task.attended = undefined
+      resolve(restoring ? restoring.then(() => value, () => value) : value)
     }
     if (task.abort.signal.aborted) return decide({ accept: false })
     task.abort.signal.addEventListener('abort', () => decide({ accept: false }), { once: true })
     task.decide = decide
+    if (review.restoreTo) {
+      task.restore = async (step: string) => {
+        if (restoring) throw new Error(ASSISTANT_MESSAGES[deckLocale(run.ctx.lang)].restoring)
+        restoring = (async () => {
+          await review.restoreTo!(step)
+          run.tasks.push(task, { type: 'review', engine, changes: await review.diff(), steps: [...review.steps()] })
+        })()
+        try {
+          await restoring
+        } finally {
+          restoring = undefined
+        }
+      }
+    }
+    // The review waits for a page: once none follows it, for the operator's time at most.
+    task.attended = () => {
+      clearTimeout(timer)
+      if (task.followers > 0) return
+      timer = setTimeout(() => {
+        run.ctx.log.info(`task ${task.id}: no page followed its review for ${Math.round(unattended / 1000)} s: rolled back`)
+        task.abort.abort()
+      }, unattended)
+      timer.unref?.()
+    }
     run.tasks.push(task, { type: 'review', engine, changes, steps: [...review.steps()] })
+    task.attended()
   })
 }
 
@@ -74,7 +115,9 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
       : await openGitReview({
         workspaceRoot: ctx.workspaceRoot,
         deckDir: ctx.deckDir,
+        task: task.id,
         onRestore: paths => ctx.log.warn(`task ${task.id}: the agent changed the git directory, put back: ${paths.join(', ')}`),
+        warn: message => ctx.log.warn(`task ${task.id}: ${message}`),
       })
   } catch (error) {
     return tasks.end(task, { type: 'error', message: t.noReview(errorMessage(error)) })
@@ -116,8 +159,12 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
       return
     }
     const reject = new Set<string>(decided.reject ?? [])
+    // As the review is now (the sender may have gone back to before a step).
+    const accepted = await review.diff()
+    // A git directory's files are never accepted (git runs what they say, and commits none of them): back as the task found them.
+    for (const change of accepted) if (change.path.split('/').some(part => part.toLowerCase() === '.git')) reject.add(change.path)
     // The workspace configuration is in the document directory of a single-deck repository only: an owner allows it first.
-    if (changes.some(change => change.path === WORKSPACE_CONFIG) && !reject.has(WORKSPACE_CONFIG)) {
+    if (accepted.some(change => change.path === WORKSPACE_CONFIG) && !reject.has(WORKSPACE_CONFIG)) {
       const allowed = await run.ask(task, { kind: 'write', scope: 'workspace', title: t.approval.config(WORKSPACE_CONFIG), from: `agent:${task.id}`, member: task.member.id })
       // Cancelled, or the server closing, while the owner was asked: rolled back, not committed.
       if (task.abort.signal.aborted) {
@@ -129,8 +176,8 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
     const kept = await review.accept([...reject])
     settled = true
     // The writes outside the directory owners allowed are not in the review: they are committed with it.
-    const root = resolve(ctx.workspaceRoot)
-    const outside = [...task.allowed ?? []].filter(path => within(path, root) && !within(path, resolve(ctx.deckDir))).map(path => relative(root, path).split(sep).join('/')).filter(path => path && !path.startsWith('.git/'))
+    const root = realpathSync(ctx.workspaceRoot)
+    const outside = [...task.allowed ?? []].filter(path => within(path, root) && !within(path, realpathSync(ctx.deckDir))).map(path => relative(root, path).split(sep).join('/')).filter(path => path && !path.startsWith('.git/'))
     const revision = await revisions!.commit({
       files: [...new Set([...kept, ...outside])],
       message: commitMessage(request, notes, explanationOf(text), locale),

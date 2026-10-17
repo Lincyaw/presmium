@@ -14,7 +14,11 @@
  * - a review: one session on a document directory, which an agent outside
  *   the sandbox writes through the session's view; the directory is copied
  *   (reflink where the file system has it) before the session starts, the
- *   snapshot that rejected files go back to after `commit`;
+ *   snapshot that rejected files go back to after `commit`; going back to
+ *   before a step aborts to the checkpoint before it. A session that faulted
+ *   (deltabox's `abort` fails) is rolled back from the snapshot instead: the
+ *   session's processes are ended, its view unmounted, the directory made
+ *   as the snapshot has it, and the directory is free again;
  * - runs: warm sessions on run directories of their own, network `deny_all`,
  *   the system's directories and the given paths read-only; the inputs are
  *   written through the session, the results read through it (a link out of
@@ -25,9 +29,10 @@
  * Each session is recorded in `<state>/presmium/sessions/` with this
  * process's pid and start time (./records.ts). A helper that starts recovers
  * the sessions of helpers that are gone: it kills deltabox's processes of
- * the session, aborts it (which restores the document directory) and stops
- * it. When its standard input closes (the plugin's process ended), the
- * helper rolls back its reviews, stops its sessions and exits.
+ * the session, aborts it (which restores the document directory; from the
+ * snapshot when the abort fails) and stops it. When its standard input
+ * closes (the plugin's process ended), the helper rolls back its reviews,
+ * stops its sessions and exits.
  */
 import { spawnSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
@@ -58,7 +63,7 @@ interface Box {
   checkpoint(session: string, label?: string): Promise<{ id: string }>
   diff(session: string, from?: string): Promise<{ changes: BoxChange[] }>
   commit(session: string): Promise<unknown>
-  abort(session: string): Promise<unknown>
+  abort(session: string, checkpoint?: string): Promise<unknown>
 }
 interface Lite {
   binaryPath(): string
@@ -124,6 +129,9 @@ function record(entry: Entry): void {
   writeFileSync(recordFile(entry.session), JSON.stringify({ ...entry, helper: SELF }))
 }
 
+/** deltabox's registry of a project's sessions, with its leases of the project: `projects/<sha-256 of the path>`. */
+const registry = (project: string) => join(STATE, 'projects', createHash('sha256').update(project).digest('hex').slice(0, 16))
+
 /**
  * Forgets a stopped session: its record, deltabox's state of it and its
  * runtime directory (that of the mount point, once nothing is mounted
@@ -135,7 +143,7 @@ function forget(entry: Entry): void {
   sweep(entry)
   rmSync(recordFile(entry.session), { force: true })
   rmSync(join(STATE, entry.session), { recursive: true, force: true })
-  if (entry.kind !== 'review') rmSync(join(STATE, 'projects', createHash('sha256').update(entry.project).digest('hex').slice(0, 16)), { recursive: true, force: true })
+  if (entry.kind !== 'review') rmSync(registry(entry.project), { recursive: true, force: true })
   const runtime = entry.mount && dirname(entry.mount)
   if (!runtime || basename(runtime) !== entry.session) return
   try {
@@ -229,11 +237,32 @@ function sweep(entry: Entry): void {
   const left = sessionProcesses(all, entry.session)
   if (left.length === 0) return
   kill([...left.flatMap(p => descendants(all, p.pid)), ...left].map(p => p.pid))
-  if (entry.mount) {
-    for (const command of ['fusermount3', 'fusermount']) {
-      if (spawnSync(command, ['-u', '-z', entry.mount], { stdio: 'ignore' }).status === 0) break
-    }
+  if (entry.mount) unmount(entry.mount)
+}
+
+function unmount(mount: string): void {
+  for (const command of ['fusermount3', 'fusermount']) {
+    if (spawnSync(command, ['-u', '-z', mount], { stdio: 'ignore' }).status === 0) break
   }
+}
+
+/**
+ * A review whose session deltabox cannot abort (it faulted): deltabox's
+ * processes of it ended, its view unmounted, the document directory made as
+ * the snapshot taken when the review opened has it, and deltabox's registry
+ * of the directory removed (the faulted session keeps its exclusive lease
+ * there), so the directory is free for the next review. The review's
+ * session was the directory's only one: deltabox leases it exclusively. Its
+ * stop comes first (it fails, but would write the registry again after).
+ */
+async function fromSnapshot(entry: Entry, it: Box): Promise<void> {
+  await it.stopSession(entry.session).catch(() => {})
+  const all = processes()
+  const own = sessionProcesses(all, entry.session)
+  kill([...own.flatMap(p => descendants(all, p.pid)), ...own].map(p => p.pid))
+  if (entry.mount) unmount(entry.mount)
+  mirror(entry.snapshot!, entry.project)
+  rmSync(registry(entry.project), { recursive: true, force: true })
 }
 
 /** The sessions of helpers that are gone: deltabox's processes killed, the session aborted (restoring a document directory) and stopped; returns the document directories restored. */
@@ -252,14 +281,21 @@ async function recover(): Promise<string[]> {
     const own = sessionProcesses(all, entry.session)
     kill([...own.flatMap(p => descendants(all, p.pid)), ...own].map(p => p.pid))
     let restored = false
+    let stopped = false
+    const it = box(entry.project)
     try {
-      const it = box(entry.project)
       await it.abort(entry.session)
       restored = true
-      await it.stopSession(entry.session)
     } catch (error) {
-      process.stderr.write(`recovering deltabox session ${entry.session} of ${entry.project}: ${message(error)}\n`)
+      // A session deltabox cannot abort any more: the document directory comes back from the snapshot.
+      if (entry.kind === 'review' && entry.snapshot && inside(entry.snapshot, SNAPSHOTS) && copyable(entry.snapshot)) {
+        await fromSnapshot(entry, it)
+        restored = stopped = true
+      } else {
+        process.stderr.write(`recovering deltabox session ${entry.session} of ${entry.project}: ${message(error)}\n`)
+      }
     }
+    if (!stopped) await it.stopSession(entry.session).catch(() => {})
     if (entry.kind !== 'review' && temporary(entry.project)) rmSync(entry.project, { recursive: true, force: true })
     // Without a restore the snapshot stays, for the operator to restore from.
     if (entry.snapshot && restored && inside(entry.snapshot, SNAPSHOTS)) rmSync(entry.snapshot, { recursive: true, force: true })
@@ -514,12 +550,47 @@ async function step(params: { session: string, from?: string, checkpoint: boolea
 }
 
 /** Ends a review: the session stopped and forgotten, the snapshot removed. */
-async function endReview(r: Review): Promise<void> {
+async function endReview(r: Review, stopped = false): Promise<void> {
   reviews.delete(r.session)
-  await r.box.stopSession(r.session).catch(() => {})
+  if (!stopped) await r.box.stopSession(r.session).catch(() => {})
   forget(r.entry)
   rmSync(r.snapshot, { recursive: true, force: true })
   reviewed.delete(r.project)
+}
+
+/** Whether two entries are alike: kind, mode, content or target (a directory is alike when it is one). */
+function alike(a: string, b: string): boolean {
+  try {
+    const [x, y] = [lstatSync(a), lstatSync(b)]
+    if (x.isSymbolicLink() || y.isSymbolicLink()) return x.isSymbolicLink() && y.isSymbolicLink() && readlinkSync(a) === readlinkSync(b)
+    if (x.isDirectory() || y.isDirectory()) return x.isDirectory() && y.isDirectory()
+    return x.isFile() && y.isFile() && (x.mode & 0o7777) === (y.mode & 0o7777) && x.size === y.size && readFileSync(a).equals(readFileSync(b))
+  } catch {
+    return false
+  }
+}
+
+/** Makes `target` as `source` has it: what source lacks is removed, what differs copied over. */
+function mirror(source: string, target: string): void {
+  const wanted = new Set(readdirSync(source).filter(name => copyable(join(source, name))))
+  for (const name of readdirSync(target)) {
+    if (!wanted.has(name)) rmSync(join(target, name), { recursive: true, force: true })
+  }
+  for (const name of wanted) {
+    const from = join(source, name)
+    const to = join(target, name)
+    if (!alike(from, to)) {
+      rmSync(to, { recursive: true, force: true })
+      const stat = lstatSync(from)
+      if (stat.isSymbolicLink()) symlinkSync(readlinkSync(from), to)
+      else if (stat.isDirectory()) mkdirSync(to)
+      else {
+        copyFileSync(from, to, constants.COPYFILE_FICLONE)
+        chmodSync(to, stat.mode & 0o7777)
+      }
+    }
+    if (lstatSync(from).isDirectory() && !lstatSync(to).isSymbolicLink()) mirror(from, to)
+  }
 }
 
 /** A path of the document directory back to the snapshot: copied from it, or deleted (with the directories the task made) when it has none. */
@@ -565,11 +636,30 @@ async function accept(params: { session: string, reject: string[] }): Promise<{ 
   return { files: changed.filter(path => !rejected(path)) }
 }
 
-async function rollback(params: { session: string }): Promise<Record<string, never>> {
+/** Back to the checkpoint before a step (or the session's start): the review goes on. */
+async function restoreTo(params: { session: string, checkpoint?: string }): Promise<Record<string, never>> {
   const r = review(params.session)
-  await r.box.abort(r.session)
-  await endReview(r)
+  await r.box.abort(r.session, params.checkpoint)
   return {}
+}
+
+/**
+ * Rejects all and ends the review. A session deltabox cannot abort (it
+ * faulted) is rolled back from the snapshot: its processes ended, its view
+ * unmounted, the directory made as the snapshot has it.
+ */
+async function rollback(params: { session: string }): Promise<{ fromSnapshot?: true }> {
+  const r = review(params.session)
+  let restored = false
+  try {
+    await r.box.abort(r.session)
+  } catch (error) {
+    process.stderr.write(`the deltabox session ${r.session} of ${r.project} did not abort (${message(error)}): restored from the review's snapshot\n`)
+    await fromSnapshot(r.entry, r.box)
+    restored = true
+  }
+  await endReview(r, restored)
+  return restored ? { fromSnapshot: true } : {}
 }
 
 // Serving ----------------------------------------------------------------------------------------------
@@ -584,6 +674,7 @@ const METHODS: Record<string, (params: never, id: number) => Promise<unknown>> =
   'review.step': step,
   'review.diff': async (params: { session: string }) => ({ changes: await fileChanges(review(params.session)) }),
   'review.accept': accept,
+  'review.restore': restoreTo,
   'review.rollback': rollback,
 }
 
@@ -594,10 +685,7 @@ function answer(line: object): void {
 /** Rolls back the reviews and stops the sessions of this helper, as the plugin's process ended. */
 async function shutdown(): Promise<void> {
   await Promise.all([
-    ...[...reviews.values()].map(async (r) => {
-      await r.box.abort(r.session).catch(() => {})
-      await endReview(r)
-    }),
+    ...[...reviews.values()].map(r => rollback({ session: r.session }).catch(() => {})),
     ...[...pools.values()].flatMap(pool => pool.sessions).map((slot) => {
       clearTimeout(slot.timer)
       killCommand(slot.session)

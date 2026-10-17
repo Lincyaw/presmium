@@ -1,5 +1,5 @@
-export { CHANGE_KINDS, MAX_ANNOTATIONS, reviewDecisionOf, reviewMode, taskRequestOf } from './api.ts'
-export type { AssistantInfo, RevertAnswer, ReviewMode } from './api.ts'
+export { CHANGE_KINDS, MAX_ANNOTATIONS, restoreStepOf, reviewDecisionOf, reviewMode, reviewTimeoutMs, taskRequestOf } from './api.ts'
+export type { AssistantInfo, PendingChange, RevertAnswer, ReviewMode } from './api.ts'
 export { annotationNotes, commitMessage, explanationOf, isDraft, WORKSPACE_CONFIG } from './changes.ts'
 export type { AnnotationNote } from './changes.ts'
 export { answerParts, citationsOf } from './citations.ts'

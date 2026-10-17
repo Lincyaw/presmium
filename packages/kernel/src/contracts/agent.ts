@@ -220,6 +220,13 @@ export interface ChangeReview {
   /** The changes of the whole task against the snapshot taken when it started. */
   diff(): Promise<ReviewChange[]>
   /**
+   * Back to before a step (P-115): the document directory as it was at the
+   * checkpoint before `stepId` (the snapshot for the first step); that step
+   * and the later ones are dropped from `steps()`. The review goes on. Optional:
+   * a review without it offers no return to a step.
+   */
+  restoreTo?(stepId: string): Promise<void>
+  /**
    * Accept: the changes stay in (with `on-commit`, are written to) the
    * document directory and the review ends; the files of `reject` go back to
    * the snapshot taken when the task started, those not in it (the task

@@ -11,11 +11,13 @@
 //   it if allowed, then says what it was told.
 //
 // A change task (WP-81) edits the files of its working directory, each write a tool call (`edit`), as
-// DeepSeek Harness does: within the directory without asking, outside it after a permission request.
+// DeepSeek Harness does: within the directory without asking, outside it (by its real path: a link in the
+// directory to another one leads outside) after a permission request.
 //
 // - annotations (`presmium-annotations:`): each annotated block's lines become the annotation's request,
 //   and the answer ends with a `presmium-annotation <id>: …` line for each;
-// - `#append <path> <text…>` (one a line): appends the text to the file (created if missing);
+// - `#append <path> <text…>` (one a line): appends the text to the file (created if missing); a line
+//   `#sleep <ms>` between two waits that long (the assistant records the step of the first meanwhile);
 // - a message with 新增一节: a new section at the end of the chapter the context's section lies in;
 // - a chat whose context names only the document (drafting): lecture.md is written in full, its
 //   headmatter kept;
@@ -24,8 +26,8 @@
 //
 // With SCRIPTED_AGENT_LOG it appends what it saw to that file, one JSON object a line: its environment,
 // `session/new`'s parameters, the tools it listed, the permission outcomes, `session/cancel`.
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import * as acp from '@agentclientprotocol/sdk'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
@@ -59,12 +61,25 @@ function readPrompt(prompt) {
 
 let calls = 0
 
+/** A path's real path: its nearest existing ancestor's, links resolved, and the rest after it. */
+function real(path) {
+  let rest = ''
+  for (let at = resolve(path); ; at = dirname(at)) {
+    try {
+      return join(realpathSync(at), rest)
+    } catch {
+      if (dirname(at) === at) return resolve(path)
+      rest = join(basename(at), rest)
+    }
+  }
+}
+
 /** Writes a file as a tool call of the agent: within the working directory at once, outside it once the client allows it. */
 async function edit(client, sessionId, cwd, path, content) {
   const file = resolve(cwd, path)
   const id = `edit-${++calls}`
   await tool(client, sessionId, { sessionUpdate: 'tool_call', toolCallId: id, title: `edit ${path}`, kind: 'edit', status: 'pending', rawInput: { file_path: file }, locations: [{ path: file }] })
-  const rel = relative(cwd, file)
+  const rel = relative(real(cwd), real(file))
   if (rel.startsWith('..') || isAbsolute(rel)) {
     const answer = await client.request(acp.methods.client.session.requestPermission, {
       sessionId,
@@ -112,7 +127,11 @@ async function change(client, sessionId, cwd, { question, context, annotations, 
     return `已把讲授轨 ${track} 的转写整理为第一节的讲解。`
   }
   const done = []
-  for (const [, path, text] of question.matchAll(/^#append (\S+) ?(.*)$/gm)) {
+  for (const [, command, path, text] of question.matchAll(/^#(append|sleep) (\S+) ?(.*)$/gm)) {
+    if (command === 'sleep') {
+      await new Promise(resolve => setTimeout(resolve, Number(path)))
+      continue
+    }
     const ok = await edit(client, sessionId, cwd, path, `${read(cwd, path)}${text}\n`)
     done.push(ok ? `appended to ${path}` : `permission: rejected (${path})`)
   }
