@@ -9,7 +9,7 @@ title: 第 1 周
 (w1-basics)=
 ## 第 1 周的基础
 
-基础的内容。
+基础的内容。下周再看[第 2 周的螺线](../week2/lecture.md#w2-spiral)。
 
 (w1-review)=
 # 第 1 周的复习

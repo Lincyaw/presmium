@@ -14,6 +14,8 @@ const strong = (value: string): MdastNode => ({ type: 'strong', children: [text(
 const strings = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : [])
 const html = (value: string): MdastNode => ({ type: 'html', value })
 const numbered = (items: string[]): MdastNode => ({ type: 'list', ordered: true, spread: false, children: items.map(item => ({ type: 'listItem', children: [paragraph(text(item))] })) })
+/** A quiz's options as the live quiz labels them, `A. …`, one paragraph each: the answer names them by letter. */
+const lettered = (items: string[]): MdastNode[] => items.map((item, i) => paragraph(text(`${optionLetter(i)}. ${item}`)))
 
 const joined = (value: unknown): string => (Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : '')
 
@@ -59,9 +61,9 @@ function after(node: ComponentNode, t: ClassroomMessages): MdastNode[] {
   const { props } = node
   switch (node.name) {
     case 'PmQuiz':
-      // The question with its options, the answer folded away.
+      // The question with its options, lettered as in the live quiz, the answer folded away.
       return [
-        numbered(strings(props.options)),
+        ...lettered(strings(props.options)),
         html(`<details><summary>${t.fallback.answer}</summary>${(props.answer as number[] ?? []).map(optionLetter).join(t.quiz.letters)}</details>`),
       ]
     case 'PmExercise':

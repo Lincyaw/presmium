@@ -1,7 +1,7 @@
 ---
 title: Course site
 lang: en
-translationOf: { entry: lecture.md, digest: 66fdc60d5499c3e3baa8b3185447b9e5a31e79b63b67332da928b79bdaad27bb }
+translationOf: { entry: lecture.md, digest: 66bc631c756bbe2f6f2cfbb5db81244d0e0c511f004ea00d1c52f340d83c8ee8 }
 ---
 
 # Course site

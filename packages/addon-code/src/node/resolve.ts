@@ -11,11 +11,17 @@
  * permalink of each version (`variants[k]`). The repository URL of the
  * permalinks is `:repo:`, else `presmium.code.repo` of the block's section
  * (its `{config}` over the headmatter), else the `origin` remote.
+ *
+ * The working tree is read with the compiler's reader (`PassContext.src`),
+ * which keeps to its read scope (SHARED `presmium serve`: the workspace's own
+ * files, not `.git/`, no link out of it, docs/architecture.md 10.2); commits
+ * with this addon's, which also reads submodules (P-12). An anchor never names
+ * a file in `.git`.
  */
 import { existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { docBlocks, errorMessage, isRenderable } from '@presmium/kernel'
-import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, ResolutionStatus, ResolvedLocation, Severity } from '@presmium/kernel'
+import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, ResolutionStatus, ResolvedLocation, Severity, SourceReader } from '@presmium/kernel'
 import { codeConfig, driftDiff, highlightSteps, permalink, repoWebUrl, splitTarget, toSnippet, unitRecord } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 import { codeRefs } from './directive.ts'
@@ -37,7 +43,8 @@ type Report = (checkId: string, severity: Severity, message: string, hint?: stri
 export const codeRefPass: IRPass = {
   name: 'presmium.code.resolve',
   async run(doc, ctx) {
-    const workspace = openWorkspace(ctx.workspaceRoot)
+    const own = openWorkspace(ctx.workspaceRoot)
+    const workspace: Workspace = { ...own, src: { read: (file, ref) => (ref === undefined ? ctx.src.read(file) : own.src.read(file, ref)) } }
     for (const { section, block } of docBlocks(doc)) {
       const spec = block.node.type === 'code' ? codeRefs.get(block.node) : undefined
       if (!spec) continue
@@ -74,6 +81,11 @@ async function lostMessage(anchor: AnchorString, message: string | undefined, wo
 async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string | undefined, workspace: Workspace, ctx: PassContext, report: Report): Promise<void> {
   const { anchor } = spec
   const fail = (message: string, hint?: string) => report('presmium.code.anchors', 'error', message, hint)
+  if (splitTarget(anchor)?.file.split(/[\\/]/).includes('.git')) {
+    fail(`anchor ${anchor} names a file in .git, which holds git's data, not code`, 'point the anchor at a file of the working tree')
+    node.origin!.status = 'lost'
+    return
+  }
 
   // Anchor health in the working tree, against the lock.
   const recorded = ctx.lock.anchors[anchor]

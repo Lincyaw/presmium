@@ -3,9 +3,10 @@
 // and an English translation; a workspace (e2e/fixtures/site/workspace) whose home page is one of its two
 // documents, with search and the doc footer across them. WP-81e2: a hidden directory is not published (and
 // presmium check says so); text of raw HTML that only looks like an attribute is not; the site of a workspace
-// says it leaves out a document's translation.
+// says it leaves out a document's translation. WP-89f: linked Markdown files are files, not pages (F-24); a link to
+// another document's lecture.md opens its page, and no build publishes a document's source (F-25).
 import { spawnSync } from 'node:child_process'
-import { cpSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -119,6 +120,20 @@ test.describe('a deck with a site shell, published files and a translation', () 
     expect(await download(page, await content.locator('video').getAttribute('poster'))).toEqual(readFileSync(join(site.dir, 'media/cover.png')))
   })
 
+  test('a linked Markdown template and the README of a linked directory are published as files, not built as pages (F-24)', async ({ page }) => {
+    // Their HTML-like placeholders (`<answer>`, `<placeholder>`) and `{{ x }}` would fail the build as Vue templates.
+    await page.goto(`${site.url}/web/start.html`)
+    const section = page.locator('.pm-section[data-section="starter"]')
+    expect(await download(page, await section.getByRole('link', { name: '报告模板', exact: true }).getAttribute('href'))).toEqual(readFileSync(join(site.dir, 'kit/report.md')))
+    await section.getByRole('link', { name: '实验工具包', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'kit/' })).toBeVisible()
+    expect(await download(page, await page.getByRole('link', { name: 'README.md' }).getAttribute('href'))).toEqual(readFileSync(join(site.dir, 'kit/README.md')))
+    // The only pages under media/ are the file listings of the directories.
+    const media = readdirSync(join(site.dir, 'dist/web/media'), { recursive: true, encoding: 'utf8' })
+    expect(media.filter(file => file.endsWith('.md')).length).toBeGreaterThanOrEqual(2)
+    expect(media.filter(file => file.endsWith('.html') && !/(?:^|\/)index\.html$/.test(file))).toEqual([])
+  })
+
   test('a local link that cannot be published is a warning on its line in the build report, once for the two forms; a hidden directory is not published', () => {
     const lines = readFileSync(join(site.dir, 'lecture.md'), 'utf8').split('\n')
     const line = (text: string) => lines.findIndex(own => own.includes(text)) + 1
@@ -189,6 +204,26 @@ test.describe('a workspace site', () => {
     await first.click()
     await expect(page).toHaveURL(`${site.url}/week2/#w2-shells`)
     await expect(page.locator('h2#w2-shells')).toBeInViewport()
+  })
+
+  test('a link to another document\'s lecture.md opens that document\'s page at the section; no document\'s source is published (F-25)', async ({ page }) => {
+    await page.goto(`${site.url}/week1/`)
+    const link = page.locator('.pm-section[data-section="w1-basics"]').getByRole('link', { name: '第 2 周的螺线' })
+    await expect(link).toHaveAttribute('href', '/week2/w2-more.html#w2-spiral')
+    await link.click()
+    await expect(page).toHaveURL(`${site.url}/week2/w2-more.html#w2-spiral`)
+    await expect(page.locator('h2#w2-spiral')).toBeInViewport()
+    expect(readdirSync(join(site.dir, 'dist'), { recursive: true, encoding: 'utf8' }).filter(file => file.endsWith('lecture.md'))).toEqual([])
+  })
+
+  test('the linking document built for students holds none of the linked document\'s teacher sentences, nor its source; the build says the link stays as written (F-25)', async () => {
+    const out = join(site.dir, 'student')
+    const report = await presmium(['build', 'week1', '--audience', 'student', '--to', 'web', '--out', out], site.dir)
+    expect(report).toMatch(/^week1\/lecture\.md:12 {2}warning {2}\.\.\/week2\/lecture\.md#w2-spiral is not published: it is the source of the document .*week2, which a workspace site links as its page; this build keeps the link as written {2}\(presmium\.links\)$/m)
+    const files = readdirSync(out, { recursive: true, encoding: 'utf8' })
+    expect(files.filter(file => file.endsWith('lecture.md'))).toEqual([])
+    const teacher = '先在黑板上画一条阿基米德螺线做对比'
+    expect(files.filter(file => statSync(join(out, file)).isFile() && readFileSync(join(out, file), 'utf8').includes(teacher))).toEqual([])
   })
 
   test('the next chapter after the first document\'s last chapter is the second document', async ({ page }) => {

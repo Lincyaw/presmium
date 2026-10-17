@@ -33,6 +33,13 @@ export function siteFiles(workDir: string) {
   }
 }
 
+/**
+ * What VitePress does not take as pages (`srcExclude`): the files of `public/`,
+ * which the deck links (a template with HTML-like placeholders, a `README.md`
+ * of a starter directory) and the deck's own `public/`, published as they are.
+ */
+export const SRC_EXCLUDE = ['public/**']
+
 /** Writes a file only when its content changes, so the dev server reloads only what changed. */
 export function write(file: string, content: string | Buffer): void {
   if (existsSync(file) && readFileSync(file).equals(Buffer.from(content))) return
@@ -231,6 +238,7 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>,
     cleanUrls: false,
     // Links in the prose may point to files that have no page in the web form.
     ignoreDeadLinks: true,
+    srcExclude: SRC_EXCLUDE,
     ...shell.site,
     themeConfig: { ...labels.themeConfig, ...shell.site.themeConfig as object },
   }

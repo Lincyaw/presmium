@@ -17,6 +17,7 @@ import { clientModules, nodeVitePlugins } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 import { writeServiceWorker } from './offline.ts'
 import { publishedDocument, publishedFile } from './publish.ts'
+import type { DocumentPage } from './publish.ts'
 import { siteFiles, write, writeSite } from './site.ts'
 import type { WorkspaceOptions } from './site.ts'
 import { buildSite, devSite } from './sites.ts'
@@ -41,6 +42,8 @@ export interface DocumentSite {
   workspace?: WorkspaceOptions
   /** Client modules of the whole site (the workspace's browser plugin), added to the document's. */
   extra?: ClientModules
+  /** Where a link to another document of the site goes (its page); none: the link stays as written. */
+  documentPage?: DocumentPage
   /** The file the site shell's options come from, to which a local `head.image` is relative (a workspace's configuration); default the deck's entry. */
   config?: string
 }
@@ -81,7 +84,7 @@ async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, doc
   // The plugins' Node entries are imported once; the components are listed at each write, so a dev server
   // registers one added to the deck while it runs.
   const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium, Boolean(document.workspace))
-  const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base)
+  const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base, document.documentPage)
   const image = headImage(doc, ctx, options, files.publicDir, document)
   // The translations (P-123) are read at each write: `presmium dev` compiles them again with the original.
   const site = (published: IRDocument) => writeSite(workDir, {

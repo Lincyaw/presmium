@@ -21,9 +21,12 @@
  * room claims it by connecting with `?claim=<key>`; connections that present
  * that key are the presenter's and may write anything. Any other connection
  * may write only its participant's own entries of the classroom store
- * (`store:<collection>`): the entry's key names the participant
- * (`<quiz>:<participant>`, `<participant>:<question>`, ...), its value says
- * so (`participant` or `author`) and is at most 16 KiB as JSON. The classroom
+ * (`store:<collection>`): the entry's key names the participant where its
+ * collection puts it, after the last `:` (`<quiz>:<participant>`, the item's
+ * id may hold `:` itself) or, for questions, before the first
+ * (`<participant>:<question>`); its value says so (`participant` or
+ * `author`) and is at most 16 KiB as JSON; an entry that names another
+ * participant (or the presenter's) is not changed nor deleted. The classroom
  * record (`session`, e.g. ending the classroom), the quizzes
  * (`store:quizzes`, opening and closing them) and the presenter's
  * synchronized state (`sync:<channel>`) are the presenter's alone. A
@@ -221,17 +224,49 @@ function structClients(update: Uint8Array): number[] {
   return [...Y.parseUpdateMeta(update).from.keys()]
 }
 
-/** Why a change to entry `key` of the top-level map `name`, now `value` (undefined: deleted), is not the participant's to make; undefined when it is. */
-function entryRefusal(name: string, key: string | null, value: unknown, participant: string | undefined): string | undefined {
+/** Collections whose keys start with their participant (`<participant>:<question>`); the others' end with it (`<quiz>:<participant>`). */
+const PARTICIPANT_FIRST = new Set(['store:questions'])
+
+/**
+ * Whether entry `key` of collection `name` is under `participant`: where the
+ * collection puts the participant, the part up to the first `:` or after the
+ * last one. A participant id has no `:` (`ROOM`), and an item id (a section
+ * id such as `sec:intro`) may have some, so the participant may be nowhere else.
+ */
+function ownKey(name: string, key: string, participant: string): boolean {
+  return PARTICIPANT_FIRST.has(name) ? key.slice(0, key.indexOf(':')) === participant : key.slice(key.lastIndexOf(':') + 1) === participant
+}
+
+/** Whether a value is a plain entry that names `participant` (`participant` or `author`). */
+function names(value: unknown, participant: string): boolean {
+  const entry = value as { participant?: unknown, author?: unknown } | null
+  return typeof entry === 'object' && entry !== null && !(entry instanceof Y.AbstractType) && (entry.participant === participant || entry.author === participant)
+}
+
+/**
+ * Why a change to entry `key` of the top-level map `name`, from `before` to
+ * `value` (undefined: none, deleted), is not the participant's to make;
+ * undefined when it is. An entry another participant (or the presenter) wrote
+ * stays theirs, whatever its key.
+ */
+function entryRefusal(name: string, key: string | null, before: unknown, value: unknown, participant: string | undefined): string | undefined {
   if (!participant) return 'a write from a connection that proved no participant'
   if (key === null || !name.startsWith('store:') || name === 'store:quizzes') return `a write to ${name}, which is the presenter's`
-  if (!key.split(':').includes(participant)) return `a write to ${name} under another participant's key`
+  if (!key.includes(':') || !ownKey(name, key, participant)) return `a write to ${name} under another participant's key`
+  if (before !== undefined && !names(before, participant)) return `a change to another participant's entry in ${name}`
   if (value === undefined) return undefined
-  const entry = value as { participant?: unknown, author?: unknown } | null
-  if (typeof entry !== 'object' || entry === null || entry instanceof Y.AbstractType || (entry.participant !== participant && entry.author !== participant)) {
-    return `a value in ${name} that does not name its participant`
+  if (!names(value, participant)) return `a value in ${name} that does not name its participant`
+  return JSON.stringify(value).length > MAX_ENTRY ? `a value in ${name} over ${MAX_ENTRY} bytes` : undefined
+}
+
+/** The value of entry `key` of the room's top-level map `name` before an update; a type of another kind holds no entries. */
+function entryBefore(room: Y.Doc, name: string, key: string | null): unknown {
+  if (key === null) return undefined
+  try {
+    return room.getMap(name).get(key)
+  } catch {
+    return undefined
   }
-  return JSON.stringify(entry).length > MAX_ENTRY ? `a value in ${name} over ${MAX_ENTRY} bytes` : undefined
 }
 
 /** What a document keeps pending: structs that wait for structs it lacks, and deletions of structs it lacks. */
@@ -265,7 +300,7 @@ function refusal(room: Room, update: Uint8Array, writer: ClassroomWriter): strin
     // A change inside a nested type has no top-level name: the plugins store plain values only.
     const name = [...probe.share].find(([, shared]) => shared === type)?.[0]
     for (const key of keys) {
-      refused ??= name === undefined ? 'a change inside a nested type' : entryRefusal(name, key, key === null ? undefined : probe.getMap(name).get(key), writer.participant)
+      refused ??= name === undefined ? 'a change inside a nested type' : entryRefusal(name, key, entryBefore(room, name, key), key === null ? undefined : probe.getMap(name).get(key), writer.participant)
     }
   }
   probe.destroy()
