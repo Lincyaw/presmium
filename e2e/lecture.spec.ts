@@ -9,8 +9,15 @@
 // still reports what changed in the other sections since they were recorded.
 // Playback, of a static build (`--to web,lecture`) in a window of another size: the fixture's track
 // `lectures/demo` with utterances and an audio file (silence, written before the build), and the
-// same track without audio, which plays on the page's clock.
+// same track without audio, which plays on the page's clock. Lectures written before the build: a transcript
+// of an English sentence and a Chinese one with punctuation, shown as written (P-131); English translations,
+// one made from an earlier text and marked stale (P-137); a synthesized voice whose label stays over a
+// spotlight on a block of a section whose id holds `.` and `:`; and one recorded before a block was relabeled
+// and another deleted, which follows the first and skips what was on the second (P-130).
+// The view menu offers the lecture view where the deck has lectures, and a web build of a deck without
+// lectures neither offers it nor asks for the lecture list (no 404).
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -85,9 +92,12 @@ test.describe('recording in the present view', () => {
   test('records go, point and spot events with Ogg/Opus audio and no video', async ({ page }) => {
     await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const present = page.locator('.pm-present')
+    // The server lists the deck's lectures, so the view menu offers the lecture view.
+    await expect(page.locator('select.pm-view-menu').first().locator('option[value="lecture"]')).toHaveCount(1)
     // The page times of the key presses and of the first move over the code, as the page's events have them.
     await page.evaluate(() => {
-      const times = (window as unknown as { times: { keys: number[], move?: number } }).times = { keys: [] }
+      const times: { keys: number[], move?: number } = { keys: [] }
+      ;(window as unknown as { times: typeof times }).times = times
       window.addEventListener('keydown', event => times.keys.push(event.timeStamp), true)
       window.addEventListener('pointermove', (event) => {
         if (!times.move && (event.target as Element).closest('.pm-block[data-block="merge-code"]')) times.move = event.timeStamp
@@ -278,6 +288,45 @@ test.describe('recording in the present view', () => {
   })
 })
 
+const sha256 = (text: string) => `sha256:${createHash('sha256').update(text).digest('hex')}`
+
+/** A recorded lecture of the fixture deck, without audio. */
+function lecture(id: string, fields: { utterances: unknown[], events: unknown[], voice?: unknown, blocks?: unknown }) {
+  return { track: 1, id, doc: 'lecture.md', lang: 'zh-CN', ir: { hash: '0' }, voice: { kind: 'recorded' }, blocks: {}, ...fields }
+}
+
+/** The lectures the playback tests write into the deck before it is built. */
+const TRACKS = [
+  // Words of an English sentence and of a Chinese one with punctuation (P-131).
+  lecture('words', {
+    utterances: [
+      { id: 'u1', t: 500, d: 2000, text: 'Now look at these lines, then we merge.', section: 'merge', step: 0, words: [[500, 200, 'Now'], [750, 200, 'look'], [1000, 150, 'at'], [1200, 200, 'these'], [1450, 200, 'lines'], [1700, 200, 'then'], [1950, 150, 'we'], [2150, 300, 'merge']] },
+      { id: 'u2', t: 3000, d: 2000, text: '开场白。我们用 GPU 来算。', section: 'merge', step: 0, words: [[3000, 200, '开'], [3200, 200, '场'], [3400, 200, '白'], [3700, 200, '我'], [3900, 200, '们'], [4100, 200, '用'], [4350, 300, 'GPU'], [4700, 200, '来'], [4900, 200, '算']] },
+    ],
+    events: [[0, 'go', { section: 'merge', step: 0, view: 'present' }]],
+  }),
+  // English translations, the second made from an earlier text of its sentence (P-137).
+  lecture('translated', {
+    utterances: [
+      { id: 'u1', t: 500, d: 1500, text: '我们先看开场', section: 'intro', step: 0, translations: { en: { text: 'First, the opening', source: sha256('我们先看开场') } } },
+      { id: 'u2', t: 2500, d: 1500, text: '再来看合并函数', section: 'intro', step: 0, translations: { en: { text: 'Then the merge function', source: sha256('再看合并函数') } } },
+    ],
+    events: [[0, 'go', { section: 'intro', step: 0, view: 'present' }]],
+  }),
+  // A synthesized voice, and a spotlight on a block of the section `part.two:x` (P-131, N-08).
+  lecture('said', {
+    voice: { kind: 'synthetic', engine: 'fake', voice: 'alpha', provider: 'Presmium fake' },
+    utterances: [{ id: 'u1', t: 600, d: 1500, text: '合成的讲解。', section: 'part.two:x', step: 0 }],
+    events: [[0, 'go', { section: 'part.two:x', step: 0, view: 'present' }], [500, 'spot', { block: 'part.two:x/part-code' }]],
+  }),
+  // Recorded when the merge code was labeled old-code (its content is the same), and on a block deleted since.
+  lecture('drift', {
+    blocks: { 'merge/old-code': { fp: 'ae0e1c225779dde0', lines: 11 }, 'merge/gone': { fp: '0000000000000000' } },
+    utterances: [{ id: 'u1', t: 1200, d: 1000, text: '看这段代码', section: 'merge', step: 0 }],
+    events: [[0, 'go', { section: 'merge', step: 0, view: 'present' }], [1000, 'spot', { block: 'merge/old-code' }], [1100, 'spot', { block: 'merge/gone' }]],
+  }),
+]
+
 /** A WAV of silence, as the fixture's lecture audio. */
 function silence(seconds: number, rate = 8000): Buffer {
   const data = Buffer.alloc(seconds * rate * 2)
@@ -312,6 +361,10 @@ test.describe('playback of a lecture track', () => {
       const { audio: _audio, ...silent } = JSON.parse(readFileSync(join(dir, 'lectures/demo/track.json'), 'utf8')) as Record<string, unknown>
       mkdirSync(join(dir, 'lectures/silent'))
       writeFileSync(join(dir, 'lectures/silent/track.json'), JSON.stringify({ ...silent, id: 'silent' }, null, 2))
+      for (const track of TRACKS) {
+        mkdirSync(join(dir, 'lectures', track.id))
+        writeFileSync(join(dir, 'lectures', track.id, 'track.json'), JSON.stringify(track, null, 2))
+      }
     },
   })
 
@@ -395,5 +448,82 @@ test.describe('playback of a lecture track', () => {
     await player.getByRole('button', { name: '逐字稿' }).click()
     await page.locator('.pm-lecture-transcript__item[data-utterance="u2"] .pm-lecture-transcript__time').click()
     await expect(page.locator('.pm-lecture-caption')).toHaveText('接着看合并函数')
+  })
+
+  test('shows each sentence of the transcript as written, its words in it; a word seeks to its time (P-131)', async ({ page }) => {
+    const player = await open(page, 'words')
+    await player.getByRole('button', { name: '逐字稿' }).click()
+    for (const u of TRACKS[0]!.utterances as { id: string, text: string }[]) {
+      expect(await page.locator(`.pm-lecture-transcript__item[data-utterance="${u.id}"] .pm-lecture-transcript__text`).textContent()).toBe(u.text)
+    }
+    await page.locator('.pm-lecture-transcript__item[data-utterance="u1"] .pm-lecture-word', { hasText: 'lines' }).click()
+    expect(await time(page)).toBe(1450)
+    await page.locator('.pm-lecture-transcript__item[data-utterance="u2"] .pm-lecture-word', { hasText: 'GPU' }).click()
+    expect(await time(page)).toBe(4350)
+  })
+
+  test('marks a translation made from an earlier text of its sentence as stale, in the transcript and the captions (P-137)', async ({ page }) => {
+    const player = await open(page, 'translated')
+    await player.getByLabel('字幕语言').selectOption('en')
+    await player.getByRole('button', { name: '字幕' }).click()
+    await player.getByRole('button', { name: '逐字稿' }).click()
+    const stale = page.locator('.pm-lecture-transcript__item[data-utterance="u2"]')
+    await expect(stale).toHaveAttribute('data-stale', 'true')
+    await expect(stale.getByRole('img', { name: '译文过期：原句在翻译之后改过' })).toBeVisible()
+    await expect(page.locator('.pm-lecture-transcript__item[data-utterance="u1"]')).not.toHaveAttribute('data-stale', /.*/)
+    await stale.locator('.pm-lecture-transcript__time').click()
+    await expect(page.locator('.pm-lecture-caption')).toHaveAttribute('data-stale', 'true')
+    await expect(page.locator('.pm-lecture-caption')).toContainText('Then the merge function')
+  })
+
+  test('keeps the AI label over a spotlight, which finds its block in a section whose id holds . and : (N-08, P-131)', async ({ page }) => {
+    const player = await open(page, 'said')
+    const present = page.locator('.pm-present')
+    await expect(present).toHaveAttribute('data-section', 'part.two:x')
+    await player.getByRole('button', { name: '逐字稿' }).click()
+    await page.locator('.pm-lecture-transcript__item[data-utterance="u1"] .pm-lecture-transcript__time').click()
+    await expect(page.locator('.driver-overlay')).toBeVisible()
+    await expect(present.locator('.pm-block[data-block="part-code"]')).toHaveClass(/driver-active-element/)
+    const label = player.locator('.pm-lecture-player__ai')
+    await expect(label).toHaveText('AI 合成语音（Presmium fake）')
+    // The dimming lets the pointer through; made to catch it, the point is on whatever lies on top.
+    await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
+    const box = (await label.boundingBox())!
+    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.className, [box.x + box.width / 2, box.y + box.height / 2])).toBe('pm-lecture-player__ai')
+  })
+
+  test('follows a block relabeled since the recording, and skips the actions on one deleted, saying so (P-130)', async ({ page }) => {
+    const player = await open(page, 'drift')
+    await expect(player.locator('.pm-lecture-player__notice')).toHaveText('讲义改动后有 1 个操作失效，回放时略过')
+    await player.getByRole('button', { name: '逐字稿' }).click()
+    await page.locator('.pm-lecture-transcript__item[data-utterance="u1"] .pm-lecture-transcript__time').click()
+    await expect(page.locator('.driver-overlay')).toBeVisible()
+    await expect(page.locator('.pm-present .pm-block[data-block="merge-code"]')).toHaveClass(/driver-active-element/)
+  })
+
+  test('offers the lecture view in the view menu (P-131)', async ({ page }) => {
+    await page.goto(`${deck().web}/`)
+    await expect(page.locator('select.pm-view-menu').first().locator('option[value="lecture"]')).toHaveText('讲授')
+  })
+})
+
+test.describe('a web build of a deck without lectures (P-131)', () => {
+  test.describe.configure({ mode: 'default' })
+  const deck = useFixture('lecture', { to: 'web', link: LINK, edit: dir => rmSync(join(dir, 'lectures'), { recursive: true, force: true }) })
+
+  test('offers no lecture view, and asks for no lecture list', async ({ page }) => {
+    const missing: string[] = []
+    page.on('response', (response) => {
+      if (response.status() === 404) missing.push(response.url())
+    })
+    page.on('console', (message) => {
+      if (message.type() === 'error') missing.push(message.text())
+    })
+    await page.goto(`${deck().web}/`)
+    const menu = page.locator('select.pm-view-menu').first()
+    await expect(menu.locator('option[value="present"]')).toHaveCount(1)
+    await expect(menu.locator('option[value="lecture"]')).toHaveCount(0)
+    await page.waitForLoadState('networkidle')
+    expect(missing.filter(what => /lecture|404/.test(what))).toEqual([])
   })
 })

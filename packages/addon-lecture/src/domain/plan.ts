@@ -9,11 +9,10 @@
  * those beyond). A paragraph is said in pieces, split at its `pause` cues.
  */
 import { irBlocks, isRecord } from '@presmium/kernel'
-import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos } from '@presmium/kernel'
+import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@presmium/kernel'
 import { blockKey } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
 import { duration, readCue, spokenText, TARGETED } from './narration.ts'
-import type { Span } from './words.ts'
 
 /** The renderer id of the lecture (`{only} lecture`), and of the form the lecture plays in. */
 const LECTURE = 'lecture'
@@ -34,7 +33,7 @@ export interface PlannedPiece {
   id?: string
   text: string
   spoken: string
-  spans: Span[]
+  spans: WordSpan[]
   cues: PlannedCue[]
   /** ms of silence after it (a `pause` cue). */
   pause?: number
@@ -119,6 +118,11 @@ function webSteps(section: IRSection): (step: number) => number {
   }
 }
 
+/** A value as a CSS string, e.g. of an attribute selector: a section id may hold any character but `)`. */
+function cssString(value: string): string {
+  return `"${value.replace(/["\\]/g, '\\$&').replace(/\n/g, '\\a ')}"`
+}
+
 /** The operation data of a cue on a block. */
 function cueData(name: CueCommand, arg: string, mark: CueMark, section: IRSection, block: IRBlock): Record<string, unknown> {
   const key = blockKey(section.id, block.id)
@@ -126,7 +130,7 @@ function cueData(name: CueCommand, arg: string, mark: CueMark, section: IRSectio
   switch (name) {
     case 'spot':
     case 'hint':
-      return mark.sel ? { selector: `[data-section="${section.id}"] .pm-block[data-block="${block.id}"] ${mark.sel}` } : { block: key, ...lines }
+      return mark.sel ? { selector: `[data-section=${cssString(section.id)}] .pm-block[data-block=${cssString(block.id)}] ${mark.sel}` } : { block: key, ...lines }
     case 'point': {
       const first = mark.lines ? Number(/\d+/.exec(mark.lines)?.[0]) : undefined
       return { block: key, path: [[0, 0.5, 0.5]], ...first ? { line: first } : {} }

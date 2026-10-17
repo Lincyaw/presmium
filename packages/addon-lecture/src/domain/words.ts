@@ -3,49 +3,18 @@
  * bound to a word (`at: [utterance, offset]`, the offset an index into the
  * utterance's words, or a character offset when it has none), so new text
  * or a new voice moves the event along. These functions find words in a
- * text, map the words an engine said (of the spoken text, with `{say}`
- * aliases) back to the written text, and keep the times of the words that
- * stay when a text is edited.
+ * text (as `splitWords` and `remapWords` of the kernel split and place
+ * them) and keep the times of the words that stay when a text is edited.
  */
+import { splitWords } from '@presmium/kernel'
+import type { SpeechWord } from '@presmium/kernel'
 import type { Utterance, Word } from './track.ts'
 
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u
-const LETTER = /[\p{L}\p{N}'’]/u
 
 /** Whether a character is written without spaces between words (Chinese, Japanese, Korean). */
 export function isCjk(char: string): boolean {
   return CJK.test(char)
-}
-
-/** A word of a text and where it is (UTF-16 offsets). */
-export interface TextWord {
-  text: string
-  start: number
-  end: number
-}
-
-/** The words of a text: each CJK character, each run of other letters and digits; spaces and punctuation are not words. */
-export function splitWords(text: string): TextWord[] {
-  const words: TextWord[] = []
-  let run: TextWord | undefined
-  let at = 0
-  for (const char of text) {
-    if (CJK.test(char)) {
-      if (run) words.push(run)
-      run = undefined
-      words.push({ text: char, start: at, end: at + char.length })
-    } else if (LETTER.test(char)) {
-      run ??= { text: '', start: at, end: at }
-      run.text += char
-      run.end = at + char.length
-    } else if (run) {
-      words.push(run)
-      run = undefined
-    }
-    at += char.length
-  }
-  if (run) words.push(run)
-  return words
 }
 
 /** Where each word is in `text`, looked for in order; undefined from the first one that is not found. */
@@ -63,67 +32,6 @@ export function locate(words: readonly string[], text: string): ({ start: number
     places.push({ start: index, end: at = index + word.length })
   }
   return places
-}
-
-/** A word an engine gave: seconds from the start of its audio. */
-export interface TimedWord {
-  text: string
-  start: number
-  end: number
-}
-
-/** A replacement of the written text in the spoken one (`{say}`): `from`–`to` spoken, `start`–`end` written. */
-export interface Span {
-  from: number
-  to: number
-  start: number
-  end: number
-}
-
-/** A word of the written text with its time, and where it is in the text when known. */
-export interface PlacedWord extends TimedWord {
-  offset?: number
-}
-
-/**
- * The words an engine said of the spoken text as words of the written one:
- * the words of a replacement become one word, its written form, from the
- * first one's start to the last one's end; the others are the same in both.
- * When a word is not found in the spoken text, the words are given as the
- * engine gave them, without places.
- */
-export function writtenWords(words: readonly TimedWord[], written: string, spoken: string, spans: readonly Span[]): PlacedWord[] {
-  const places = locate(words.map(w => w.text), spoken)
-  if (places.some(p => !p)) return words.map(w => ({ ...w }))
-  /** A place in the spoken text as a place in the written text. */
-  const writtenAt = (offset: number) => {
-    let shift = 0
-    for (const span of spans) {
-      if (offset < span.from) break
-      if (offset < span.to) return span.start
-      shift += (span.end - span.start) - (span.to - span.from)
-    }
-    return offset + shift
-  }
-  const result: PlacedWord[] = []
-  let group: { span: Span, word: PlacedWord } | undefined
-  words.forEach((word, i) => {
-    const { start, end } = places[i]!
-    const span = spans.find(s => start < s.to && end > s.from)
-    if (span && group?.span === span) {
-      group.word.end = Math.max(group.word.end, word.end)
-      return
-    }
-    group = undefined
-    if (span) {
-      const placed = { text: written.slice(span.start, span.end), start: word.start, end: word.end, offset: span.start }
-      group = { span, word: placed }
-      result.push(placed)
-    } else {
-      result.push({ ...word, offset: writtenAt(start) })
-    }
-  })
-  return result
 }
 
 /**
@@ -145,7 +53,7 @@ export function charOffset(text: string, offset: number): number {
 }
 
 /** The words of an utterance as the track holds them: ms, from `t`. */
-export function trackWords(words: readonly TimedWord[], t: number): Word[] {
+export function trackWords(words: readonly SpeechWord[], t: number): Word[] {
   return words.map(w => [Math.round(t + w.start * 1000), Math.max(0, Math.round((w.end - w.start) * 1000)), w.text])
 }
 

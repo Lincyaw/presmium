@@ -9,11 +9,14 @@
 // confirmation that names the provider the operator gives the engine now, N-08). A reader who opens
 // the synthesized lecture before an editor had it made is told so. For `presmium-lecture export`
 // (`&export`) it shows no controls and steps through the lecture on the exporter's call.
+// The transcript shows each sentence as written, its words (to seek to) in it; a translation made
+// from an earlier text of its sentence is marked stale (P-137). The player lies over the page's
+// effects, e.g. the dimming of a spotlight (`--pm-cue-z`): in a layer of its own over the page.
 import type { Operations } from '@presmium/host'
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { captionLanguages, chapters, CLIPS_DIR, clockText, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, trackDuration, utteranceAt } from '../domain/index.ts'
+import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
 import type { LectureTrack, Utterance } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
 import { ClipClock, MediaClock, SilentClock } from './clock.ts'
@@ -193,6 +196,21 @@ function text(u: Utterance): string {
   return lang && lang !== player.value?.track.lang ? u.translations?.[lang]?.text ?? u.text : u.text
 }
 
+/** `sha256:<hex>` of a text, as a translation records its original's (P-137). */
+async function digest(text: string): Promise<string> {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return `sha256:${[...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** The utterances whose translation into the language shown was made from another text (where the page can hash: a secure context). */
+const stale = shallowRef(new Set<string>())
+watch([player, language], async ([p, lang]) => {
+  stale.value = new Set()
+  if (!p || !lang || lang === p.track.lang || !globalThis.crypto?.subtle) return
+  const digests = new Map(await Promise.all(p.track.utterances.map(async u => [u.text, await digest(u.text)] as const)))
+  if (player.value === p && language.value === lang) stale.value = new Set(p.track.utterances.filter(u => isStale(u, lang, t => digests.get(t)!)).map(u => u.id))
+}, { immediate: true })
+
 function toggle() {
   const p = player.value
   if (!p) return
@@ -218,121 +236,140 @@ function close() {
 </script>
 
 <template>
-  <template v-if="playing">
-    <p v-if="status === 'loading'" class="pm-lecture-player__status">{{ t.player.loading }}</p>
-    <p v-else-if="status === 'missing' || status === 'not-yet'" class="pm-lecture-player__status" role="alert">
-      {{ status === 'not-yet' ? t.player.notYet : t.player.missing(playing) }}
-      <button type="button" class="pm-lecture-button" @click="close">{{ t.player.close }}</button>
-    </p>
-    <div
-      v-else-if="player && exporting"
-      class="pm-lecture-export"
-      :data-time="Math.round(time)"
-      :data-clip="current?.clip"
-    >
-      <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai">{{ synthetic }}</span>
-    </div>
-    <template v-else-if="player">
-      <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite">{{ text(current) }}</p>
-      <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
-        <TrackEditor v-if="panel === 'transcript' && editable && editing" :key="player.track.id" :track="player.track" :editing="editing" @changed="changed" />
-        <ol v-if="panel === 'transcript'" class="pm-lecture-transcript" :lang="language">
-          <li
-            v-for="u in player.track.utterances"
-            :key="u.id"
-            class="pm-lecture-transcript__item"
-            :data-utterance="u.id"
-            :aria-current="current?.id === u.id ? 'true' : undefined"
-          >
-            <button type="button" class="pm-lecture-transcript__time" :aria-label="t.player.jump(clockText(u.t))" @click="seekTo(u.t)">{{ clockText(u.t) }}</button>
-            <form v-if="editingUtterance === u.id" class="pm-lecture-transcript__edit" @submit.prevent="submitUtterance">
-              <input v-model="draft" type="text" :aria-label="t.editor.edit(u.id)" :disabled="saving">
-              <button type="submit" class="pm-lecture-button" :disabled="saving || confirmingEdit">{{ saving ? t.editor.saving : sayer ? t.editor.saveSay(sayer) : t.editor.save }}</button>
-              <button type="button" class="pm-lecture-button" :disabled="saving" @click="editingUtterance = undefined">{{ t.editor.cancel }}</button>
-              <div v-if="confirmingEdit && sayer" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="t.editor.saveSayConfirm(sayer)">
-                <p>{{ t.editor.saveSayConfirm(sayer) }}</p>
-                <button type="button" class="pm-lecture-button" @click="saveUtterance">{{ t.editor.confirm }}</button>
-                <button type="button" class="pm-lecture-button" @click="confirmingEdit = false">{{ t.editor.cancel }}</button>
-              </div>
-              <span v-if="editFailure" role="alert">{{ editFailure }}</span>
-            </form>
-            <template v-else>
-              <span v-if="u.words?.length && language === player.track.lang" class="pm-lecture-transcript__text">
-                <span v-for="(w, i) in u.words" :key="i" class="pm-lecture-word" @click="seekTo(w[0])">{{ w[2] }}</span>
-              </span>
-              <span v-else class="pm-lecture-transcript__text" @click="seekTo(u.t)">{{ text(u) }}</span>
-              <button v-if="editable && language === player.track.lang" type="button" class="pm-lecture-transcript__edit-button" :aria-label="t.editor.edit(u.id)" @click="edit(u)">✎</button>
-            </template>
-          </li>
-        </ol>
-        <ol v-else class="pm-lecture-chapters">
-          <li v-for="c in entries" :key="`${c.t}:${c.title}`" :aria-current="entry === c ? 'true' : undefined">
-            <button
-              v-if="c.step !== undefined"
-              type="button"
-              class="pm-lecture-chapters__step"
-              :data-section="c.section"
-              :data-step="c.step"
-              @click="seekTo(c.t)"
-            >
-              <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
-            </button>
-            <button v-else type="button" class="pm-lecture-chapters__item" :data-section="c.section" @click="seekTo(c.t)">
-              <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
-            </button>
-          </li>
-        </ol>
-      </aside>
-      <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)" :data-clip="current?.clip">
-        <p v-if="player.dropped > 0" class="pm-lecture-player__notice">{{ t.player.dropped(player.dropped) }}</p>
-        <p v-if="state === 'trying'" class="pm-lecture-player__notice">{{ t.player.trying }}</p>
-        <div class="pm-lecture-player__row">
-          <button type="button" class="pm-lecture-button pm-lecture-player__play" @click="toggle">{{ state === 'playing' ? t.player.pause : t.player.play }}</button>
-          <span class="pm-lecture-player__time">{{ t.player.time(clockText(time), clockText(player.duration)) }}</span>
-          <input
-            class="pm-lecture-player__seek"
-            type="range"
-            min="0"
-            :max="player.duration"
-            step="100"
-            :value="Math.round(time)"
-            :aria-label="t.player.seek"
-            @change="onSeek"
-          >
-          <span v-if="chapter" class="pm-lecture-player__chapter">{{ chapter.title }}</span>
-          <label class="pm-lecture-player__field">
-            {{ t.player.rate }}
-            <select :value="player.clock.rate.value" @change="onRate">
-              <option v-for="r in RATES" :key="r" :value="r">{{ r }}×</option>
-            </select>
-          </label>
-          <button type="button" class="pm-lecture-button" :aria-pressed="captions" @click="captions = !captions">{{ t.player.captions }}</button>
-          <label v-if="languages.length > 1" class="pm-lecture-player__field">
-            {{ t.player.language }}
-            <select v-model="language">
-              <option v-for="lang in languages" :key="lang" :value="lang">{{ lang }}</option>
-            </select>
-          </label>
-          <button type="button" class="pm-lecture-button" :aria-pressed="panel === 'transcript'" @click="panel = panel === 'transcript' ? undefined : 'transcript'">{{ t.player.transcript }}</button>
-          <button type="button" class="pm-lecture-button" :aria-pressed="panel === 'chapters'" @click="panel = panel === 'chapters' ? undefined : 'chapters'">{{ t.player.chapters }}</button>
-          <button v-if="state === 'trying'" type="button" class="pm-lecture-button pm-lecture-player__back" @click="player.back()">{{ t.player.back }}</button>
-          <button v-else type="button" class="pm-lecture-button pm-lecture-player__try" @click="player.tryIt()">{{ t.player.tryIt }}</button>
-          <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai">{{ synthetic }}</span>
-          <button type="button" class="pm-lecture-button" :aria-label="t.player.close" @click="close">×</button>
-        </div>
+  <Teleport v-if="playing" to="body">
+    <div class="pm-lecture-layer">
+      <p v-if="status === 'loading'" class="pm-lecture-player__status">{{ t.player.loading }}</p>
+      <p v-else-if="status === 'missing' || status === 'not-yet'" class="pm-lecture-player__status" role="alert">
+        {{ status === 'not-yet' ? t.player.notYet : t.player.missing(playing) }}
+        <button type="button" class="pm-lecture-button" @click="close">{{ t.player.close }}</button>
+      </p>
+      <div
+        v-else-if="player && exporting"
+        class="pm-lecture-export"
+        :data-time="Math.round(time)"
+        :data-clip="current?.clip"
+      >
+        <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai">{{ synthetic }}</span>
       </div>
-    </template>
-  </template>
+      <template v-else-if="player">
+        <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale">⚠</span></p>
+        <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
+          <TrackEditor v-if="panel === 'transcript' && editable && editing" :key="player.track.id" :track="player.track" :editing="editing" @changed="changed" />
+          <ol v-if="panel === 'transcript'" class="pm-lecture-transcript" :lang="language">
+            <li
+              v-for="u in player.track.utterances"
+              :key="u.id"
+              class="pm-lecture-transcript__item"
+              :data-utterance="u.id"
+              :data-stale="stale.has(u.id) ? 'true' : undefined"
+              :aria-current="current?.id === u.id ? 'true' : undefined"
+            >
+              <button type="button" class="pm-lecture-transcript__time" :aria-label="t.player.jump(clockText(u.t))" @click="seekTo(u.t)">{{ clockText(u.t) }}</button>
+              <form v-if="editingUtterance === u.id" class="pm-lecture-transcript__edit" @submit.prevent="submitUtterance">
+                <input v-model="draft" type="text" :aria-label="t.editor.edit(u.id)" :disabled="saving">
+                <button type="submit" class="pm-lecture-button" :disabled="saving || confirmingEdit">{{ saving ? t.editor.saving : sayer ? t.editor.saveSay(sayer) : t.editor.save }}</button>
+                <button type="button" class="pm-lecture-button" :disabled="saving" @click="editingUtterance = undefined">{{ t.editor.cancel }}</button>
+                <div v-if="confirmingEdit && sayer" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="t.editor.saveSayConfirm(sayer)">
+                  <p>{{ t.editor.saveSayConfirm(sayer) }}</p>
+                  <button type="button" class="pm-lecture-button" @click="saveUtterance">{{ t.editor.confirm }}</button>
+                  <button type="button" class="pm-lecture-button" @click="confirmingEdit = false">{{ t.editor.cancel }}</button>
+                </div>
+                <span v-if="editFailure" role="alert">{{ editFailure }}</span>
+              </form>
+              <template v-else>
+                <span v-if="language === player.track.lang && textPieces(u)" class="pm-lecture-transcript__text"><template v-for="(piece, i) in textPieces(u)" :key="i"><span v-if="piece.t !== undefined" class="pm-lecture-word" @click="seekTo(piece.t)">{{ piece.text }}</span><template v-else>{{ piece.text }}</template></template></span>
+                <span v-else class="pm-lecture-transcript__text" @click="seekTo(u.t)">{{ text(u) }}</span>
+                <span v-if="stale.has(u.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale">⚠</span>
+                <button v-if="editable && language === player.track.lang" type="button" class="pm-lecture-transcript__edit-button" :aria-label="t.editor.edit(u.id)" @click="edit(u)">✎</button>
+              </template>
+            </li>
+          </ol>
+          <ol v-else class="pm-lecture-chapters">
+            <li v-for="c in entries" :key="`${c.t}:${c.title}`" :aria-current="entry === c ? 'true' : undefined">
+              <button
+                v-if="c.step !== undefined"
+                type="button"
+                class="pm-lecture-chapters__step"
+                :data-section="c.section"
+                :data-step="c.step"
+                @click="seekTo(c.t)"
+              >
+                <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
+              </button>
+              <button v-else type="button" class="pm-lecture-chapters__item" :data-section="c.section" @click="seekTo(c.t)">
+                <span class="pm-lecture-chapters__time">{{ clockText(c.t) }}</span> {{ c.title }}
+              </button>
+            </li>
+          </ol>
+        </aside>
+        <div class="pm-lecture-player" role="region" :aria-label="t.player.region" :data-state="state" :data-time="Math.round(time)" :data-clip="current?.clip">
+          <p v-if="player.dropped > 0" class="pm-lecture-player__notice">{{ t.player.dropped(player.dropped) }}</p>
+          <p v-if="state === 'trying'" class="pm-lecture-player__notice">{{ t.player.trying }}</p>
+          <div class="pm-lecture-player__row">
+            <button type="button" class="pm-lecture-button pm-lecture-player__play" @click="toggle">{{ state === 'playing' ? t.player.pause : t.player.play }}</button>
+            <span class="pm-lecture-player__time">{{ t.player.time(clockText(time), clockText(player.duration)) }}</span>
+            <input
+              class="pm-lecture-player__seek"
+              type="range"
+              min="0"
+              :max="player.duration"
+              step="100"
+              :value="Math.round(time)"
+              :aria-label="t.player.seek"
+              @change="onSeek"
+            >
+            <span v-if="chapter" class="pm-lecture-player__chapter">{{ chapter.title }}</span>
+            <label class="pm-lecture-player__field">
+              {{ t.player.rate }}
+              <select :value="player.clock.rate.value" @change="onRate">
+                <option v-for="r in RATES" :key="r" :value="r">{{ r }}×</option>
+              </select>
+            </label>
+            <button type="button" class="pm-lecture-button" :aria-pressed="captions" @click="captions = !captions">{{ t.player.captions }}</button>
+            <label v-if="languages.length > 1" class="pm-lecture-player__field">
+              {{ t.player.language }}
+              <select v-model="language">
+                <option v-for="lang in languages" :key="lang" :value="lang">{{ lang }}</option>
+              </select>
+            </label>
+            <button type="button" class="pm-lecture-button" :aria-pressed="panel === 'transcript'" @click="panel = panel === 'transcript' ? undefined : 'transcript'">{{ t.player.transcript }}</button>
+            <button type="button" class="pm-lecture-button" :aria-pressed="panel === 'chapters'" @click="panel = panel === 'chapters' ? undefined : 'chapters'">{{ t.player.chapters }}</button>
+            <button v-if="state === 'trying'" type="button" class="pm-lecture-button pm-lecture-player__back" @click="player.back()">{{ t.player.back }}</button>
+            <button v-else type="button" class="pm-lecture-button pm-lecture-player__try" @click="player.tryIt()">{{ t.player.tryIt }}</button>
+            <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai">{{ synthetic }}</span>
+            <button type="button" class="pm-lecture-button" :aria-label="t.player.close" @click="close">×</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </Teleport>
 </template>
 
 <style>
+/*
+ * Over the present view and the page's effects on it (a spotlight's dimming, `--pm-cue-z`): a fixed
+ * layer of its own, which lets the pointer through but where the player is. Fixed and above the
+ * present view, it is part of the view's modal area (Tab reaches the player).
+ */
+.pm-lecture-layer {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--pm-cue-z, 1000) + 3);
+  pointer-events: none;
+}
+.pm-lecture-layer > * {
+  pointer-events: auto;
+}
+/* `presmium-lecture export` films the lecture without the present view's own controls. */
+html.pm-lecture-exporting .pm-present__bar {
+  display: none;
+}
 .pm-lecture-player,
 .pm-lecture-player__status {
   position: absolute;
   left: 0;
   right: 0;
   bottom: var(--pm-overlay-bar, 3rem);
-  z-index: 4;
   margin: 0;
   padding: 0.4rem 0.75rem;
   background: var(--vp-c-bg-soft, #f6f6f7);
@@ -388,7 +425,6 @@ function close() {
   position: absolute;
   left: 50%;
   bottom: calc(var(--pm-overlay-bar, 3rem) + 4.5rem);
-  z-index: 4;
   max-width: min(48rem, 90%);
   margin: 0;
   padding: 0.3rem 0.8rem;
@@ -404,7 +440,6 @@ function close() {
   top: 0.5rem;
   right: 0.5rem;
   bottom: calc(var(--pm-overlay-bar, 3rem) + 4rem);
-  z-index: 4;
   width: min(22rem, 40%);
   overflow: auto;
   padding: 0.5rem;
@@ -473,10 +508,14 @@ function close() {
   color: var(--vp-c-text-2, #555);
   cursor: pointer;
 }
+.pm-lecture-stale {
+  margin-inline-start: 0.35em;
+  color: #b45309;
+  cursor: help;
+}
 .pm-lecture-export {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  z-index: 4;
 }
 </style>

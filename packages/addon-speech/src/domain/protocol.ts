@@ -10,7 +10,10 @@
  * - `POST audio/speech/timestamps` (extension): `{ audio (base64), format,
  *   mime, duration, words, … }`, since no hosted speech interface gives times;
  * - `POST audio/transcriptions` (multipart: `file`, `engine`, `language`,
- *   `hints[]`): the `verbose_json` transcript with words.
+ *   `hints[]`): the `verbose_json` transcript with words;
+ * - `GET audio/consent?engine=&voice=` (extension): `{ ok: true }` when the
+ *   operator allows a cloned voice now, else 403 with the reason, which a
+ *   cache asks before it answers with a clip in that voice.
  *
  * Requests name the engine by id (`engine`); a request without one takes the
  * deck's default, else the first defined engine. Errors are `{ error }`.

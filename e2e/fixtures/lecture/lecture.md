@@ -6,7 +6,7 @@ plugins:
   - '@presmium/slidev-addon-lecture'
 renderers:
   web:
-    port: 4936
+    port: 5323
 ---
 
 (intro)=
@@ -50,3 +50,13 @@ def merge(ids, pair, idx):
 ## 结尾
 
 最后一节。
+
+(part.two:x)=
+## 第二部分
+
+章节 ID 带有 CSS 中有含义的字符（`.` 与 `:`）。
+
+(part-code)=
+```python
+total = sum(ids)
+```

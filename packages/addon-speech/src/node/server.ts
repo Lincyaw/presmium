@@ -13,7 +13,7 @@
  *   only), passed on to the gateway's route of the same name, which takes the
  *   service token only.
  */
-import { DOCUMENT_FILES } from '@presmium/kernel'
+import { DOCUMENT_FILES, gatewayFetch } from '@presmium/kernel'
 import type { GatewayAccess, Route, ServerContext, ServerContribution } from '@presmium/kernel'
 import { CONSENT_PATH, deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID } from '../domain/index.ts'
 import type { SpeechBackend } from './backend.ts'
@@ -24,18 +24,19 @@ import { DeckSpeech } from './deck.ts'
 import { gatewayBackend } from './remote.ts'
 import { protocolHandler } from './routes.ts'
 
+/** The largest request of the speech routes: a transcription's audio (OpenAI's own limit is 25 MB). */
+const MAX_AUDIO = 32 * 1024 * 1024
+
 /** The gateway's `consent/<engine>/<voice>` for an owner's request on the console, with serve's service token. */
 function sharedConsent(gateway: GatewayAccess): Route {
-  const base = `${gateway.url.replace(/\/+$/, '')}/${SPEECH_ID}/${CONSENT_PATH}`
   return {
     role: 'owner',
     async handle(request, ctx) {
       const path = ctx.rest.split('/').map(encodeURIComponent).join('/')
-      const response = await fetch(`${base}/${path}`, {
+      const response = await gatewayFetch(gateway, SPEECH_ID, `${CONSENT_PATH}/${path}`, {
         method: request.method,
-        headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         ...request.method === 'GET' || request.method === 'HEAD' ? {} : { body: await request.text() },
-        redirect: 'error',
       })
       return new Response(await response.text(), { status: response.status, headers: { 'Content-Type': response.headers.get('content-type') ?? 'application/json; charset=utf-8' } })
     },
@@ -57,7 +58,7 @@ export function speechServer(ctx: ServerContext): ServerContribution {
   const handle = protocolHandler(new DeckSpeech(inner, new SynthesisCache(ctx.deckDir, ctx.workspaceRoot, () => ctx.service(DOCUMENT_FILES)), deckSpeechConfig(ctx.config).config))
   return {
     routes: {
-      [`${PROTOCOL_PATH}/*`]: { role: 'editor', handle: (request, route) => handle(request, route.rest) },
+      [`${PROTOCOL_PATH}/*`]: { role: 'editor', maxBody: MAX_AUDIO, handle: (request, route) => handle(request, route.rest) },
       [`${CONSENT_PATH}/*`]: consent,
     },
   }

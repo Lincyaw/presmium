@@ -17,8 +17,8 @@ import type { LectureTrack } from '../domain/index.ts'
 import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
 import type { MadeClip, Unsaid } from './speak.ts'
-import { clipVoice, sameEngine, synthesizePlan, transcribeSegments } from './speak.ts'
-import { mediaFile, readTrack, trackDir, writeTrack } from './store.ts'
+import { audioBlob, clipVoice, sameEngine, synthesizePlan, transcribeSegments } from './speak.ts'
+import { mediaFile, readInDeck, readTrack, trackDir, writeTrack } from './store.ts'
 import type { DeckFiles } from './store.ts'
 
 /** The synthesis cache of a deck. */
@@ -64,7 +64,7 @@ export async function synthesizedLecture(doc: IRDocument, deckDir: string, speec
 /** The finding of an utterance that could not be said. */
 export function unsaidMessage(u: Unsaid): string {
   const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
-  return `lecture ${SCRIPT_TRACK}: 「${text}」 (section ${u.section}) is not in the synthesis cache and was not synthesized: ${u.reason}`
+  return `lecture ${SCRIPT_TRACK}: 「${text}」 (section ${u.section}) could not be said from the synthesis cache nor synthesized: ${u.reason}`
 }
 
 /** The deck's speech settings (`presmium.speech`): the engines it names for synthesis and transcription. */
@@ -99,7 +99,13 @@ export async function transcribeLecture(files: DeckFiles, deckDir: string, id: s
   if (!stored) throw new Error(`no lecture ${id}`)
   const engine = await transcriptionEngine(speech, doc)
   if (!engine) throw new Error('no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
-  const transcripts = await transcribeSegments(speech, stored.track.audio ?? [], segment => mediaFile(deckDir, id, segment.src), { engine: engine.id, lang: stored.track.lang }, signal)
+  // Each file read as it is opened, never through a link (the sandbox writes the directory, SHARED).
+  const audio = (segment: { src: string }) => {
+    const file = mediaFile(deckDir, id, segment.src)
+    const bytes = file && readInDeck(deckDir, file)
+    return file && bytes ? audioBlob(file, bytes) : undefined
+  }
+  const transcripts = await transcribeSegments(speech, stored.track.audio ?? [], audio, { engine: engine.id, lang: stored.track.lang }, signal)
   const { track, bound } = transcribedTrack(stored.track, transcripts)
   await writeTrack(files, deckDir, track)
   return { track, bound, provider: engine.provider }

@@ -87,7 +87,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
       findings.push({
         checkId: LECTURE_ID,
         severity: 'error',
-        message: `the lecture's 「${text}」 (section ${u.section}) is not in the synthesis cache, and no speech engine can synthesize it: ${errorMessage(error)}`,
+        message: `the lecture's 「${text}」 (section ${u.section}) cannot be said from the synthesis cache, and no speech engine can synthesize it: ${errorMessage(error)}`,
         source: u.source ? { file: u.source.file, line: u.source.line } : source,
         hint: 'define the engine of the voice (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER) and build once, then commit .presmium/speech/',
       })

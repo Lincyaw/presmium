@@ -5,7 +5,9 @@
  *
  *   index.json                      the lectures: id, language, voice, length, caption languages
  *   <id>/track.json                 the track
- *   <id>/audio/*, <id>/video/*      its local media
+ *   <id>/audio/*, <id>/video/*      its local media; under the operator's `url` policy
+ *                                   (`settings.presmium.lecture.audio`) none: the track
+ *                                   names them under that URL, where the operator puts them
  *   <id>/clips/*                    the synthesized clips of its utterances, from the synthesis cache
  *   <id>/captions.<lang>.vtt        the utterances and each translation (stale ones with a warning)
  *   <id>/chapters.vtt, events.vtt   chapters and the events as metadata
@@ -19,13 +21,15 @@
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { workspaceSettings } from '@presmium/compiler'
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
 import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, eventsVtt, formatTrack, LECTURE_ID, lectureVoice, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
 import { LECTURE_RENDERER, lectureConfig } from './plan.ts'
-import { mediaFile, readTrack, TRACK_FILE, trackIds } from './store.ts'
+import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
+import type { MediaPolicy } from './store.ts'
 
 /** The digest translations record of their original (P-137). */
 export const digest: Digest = text => `sha256:${createHash('sha256').update(text).digest('hex')}`
@@ -38,11 +42,13 @@ function utteranceLine(text: string, id: string): number | undefined {
   return from === -1 || at === -1 ? undefined : at + 1
 }
 
-function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext): void {
+function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, policy: MediaPolicy = { kind: 'ignore' }): void {
   const out = join(ctx.outDir, track.id)
   mkdirSync(out, { recursive: true })
-  writeFileSync(join(out, TRACK_FILE), formatTrack(track))
-  for (const segment of [...track.audio ?? [], ...track.video ?? []]) {
+  const audio = publishedMedia(track.audio, track.id, policy)
+  const video = publishedMedia(track.video, track.id, policy)
+  writeFileSync(join(out, TRACK_FILE), formatTrack({ ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }))
+  for (const segment of policy.kind === 'url' ? [] : [...track.audio ?? [], ...track.video ?? []]) {
     const source = mediaFile(ctx.deckDir, track.id, segment.src)
     if (!source) continue
     if (!existsSync(source)) {
@@ -112,6 +118,7 @@ export const lectureRenderer: Renderer = {
     const index: unknown[] = []
     const tracks: LectureTrack[] = []
     const synthesize = Boolean(lectureVoice(lectureConfig(doc)))
+    const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
     for (const id of trackIds(ctx.deckDir)) {
       if (synthesize && id === SCRIPT_TRACK) {
@@ -128,7 +135,7 @@ export const lectureRenderer: Renderer = {
       }
       if (!stored) continue
       const { track } = stored
-      publishTrack(track, stored.text, stored.file, doc, ctx)
+      publishTrack(track, stored.text, stored.file, doc, ctx, policy)
       index.push(summary(track))
       tracks.push(track)
     }

@@ -6,9 +6,11 @@
  * pronunciation lexicon to the text (words come back in the written form),
  * and labels the audio as AI-generated (./audio/label.ts).
  */
-import type { Logger, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
+import { remapWords } from '@presmium/kernel'
+import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
 import type { EngineDefinition } from '../domain/index.ts'
-import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak, writtenWords } from '../domain/index.ts'
+import type { SpokenText } from '../domain/index.ts'
+import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak } from '../domain/index.ts'
 import { audioMime, labelAudio } from './audio/label.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
 import { cacheKey } from './backend.ts'
@@ -17,6 +19,16 @@ import { engineAdapter } from './engines/index.ts'
 import type { EngineAdapter } from './engines/index.ts'
 import { speaks } from './engines/types.ts'
 import { SpeechError } from './errors.ts'
+
+/**
+ * The words an engine timed over the spoken text (the lexicon applied) as
+ * words of the written text (the kernel's `remapWords`): a replacement's
+ * words become its written form, without the spaces around it.
+ */
+function writtenWords(words: SpeechWord[], written: string, spoken: SpokenText): SpeechWord[] {
+  if (spoken.spans.length === 0) return words
+  return remapWords(words, written, spoken.text, spoken.spans).map(({ text, start, end }) => ({ text: text.trim(), start, end }))
+}
 
 export interface CoreOptions {
   /** The environment's variable names, which say what engines there are. */
@@ -119,6 +131,10 @@ export function speechCore(options: CoreOptions): SpeechCore {
       const engine = pick(request.engine)
       const audio = new Uint8Array(await request.audio.arrayBuffer())
       return adapter(engine).transcribe({ audio, mime: audioMime(audio, request.audio.type), lang: request.lang, hints: request.hints }, signal)
+    },
+
+    async consent(engine, voice) {
+      checkConsent(options.operatorDir, options.settings, engineId(engine), voice)
     },
 
     registerConsent(engine, voice, record) {

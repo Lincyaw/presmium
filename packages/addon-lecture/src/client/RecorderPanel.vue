@@ -3,18 +3,19 @@
 // new lecture or one section of an existing lecture again, with the camera and the screen if
 // wanted. While it records, the pointer over a block is reported as `point` (about 20 samples a
 // second, simplified); the laser and the marker draw on a block and report `ink`.
-import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
+import { blockAt, linesText, OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
+import type { BlockPoint } from '@presmium/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { clockText, LECTURE_ID, LECTURE_MESSAGES, simplifyPath } from '../domain/index.ts'
 import type { PathPoint } from '../domain/index.ts'
-import type { BlockPoint } from './blocks.ts'
-import { blockAt, linesText } from './blocks.ts'
 import { applyInk } from './marks.ts'
 import { LectureRecorder } from './recorder.ts'
 import { playing, useViewer } from './state.ts'
 
 defineProps<{ view: string }>()
 
+/** The present view, where the blocks pointed at are. */
+const PRESENT = '.pm-present'
 /** Pointer samples: at most one every 50 ms (20 a second). */
 const SAMPLE_MS = 50
 /** A path ends after this long without a move, or once it is this long. */
@@ -98,7 +99,7 @@ function flush() {
 function onPointer(event: PointerEvent) {
   if (!recording.value || event.timeStamp - sampled < SAMPLE_MS) return
   sampled = event.timeStamp
-  const at = blockAt(event.clientX, event.clientY, surface.value)
+  const at = blockAt(event.clientX, event.clientY, { skip: surface.value, within: PRESENT })
   if (!at || (path && path.block !== at.key)) flush()
   if (!at) return
   path ??= { block: at.key, from: event.timeStamp, points: [] }
@@ -115,7 +116,7 @@ const surface = shallowRef<HTMLElement>()
 let stroke: BlockPoint | undefined
 
 function onDown(event: PointerEvent) {
-  stroke = blockAt(event.clientX, event.clientY, surface.value)
+  stroke = blockAt(event.clientX, event.clientY, { skip: surface.value, within: PRESENT })
 }
 
 function onUp(event: PointerEvent) {
@@ -125,7 +126,7 @@ function onUp(event: PointerEvent) {
   const box = start.element.getBoundingClientRect()
   const end = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height }
   const clamp = (n: number) => Math.round(Math.max(0, Math.min(1, n)) * 1000) / 1000
-  const last = blockAt(event.clientX, event.clientY, surface.value)
+  const last = blockAt(event.clientX, event.clientY, { skip: surface.value, within: PRESENT })
   const lines = start.line && last?.key === start.key && last.line
     ? linesText(Array.from({ length: Math.abs(last.line - start.line) + 1 }, (_, k) => Math.min(start.line!, last.line!) + k))
     : undefined

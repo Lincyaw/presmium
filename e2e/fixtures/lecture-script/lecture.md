@@ -7,7 +7,7 @@ plugins:
   - '@presmium/slidev-addon-speech'
 renderers:
   web:
-    port: 4984
+    port: 5324
   lecture:
     voice: { engine: fake, voice: alpha }
 ---

@@ -8,7 +8,10 @@
 // `{only} lecture` narration is said and not shown; an engine that gives no word times has the cues timed by a
 // transcript of each clip (kept beside it), or, without a transcription, by the number of characters (WP-84,
 // through a front of the fake engine). `presmium dev` makes the synthesized lecture on demand, and an agent
-// reads its plan with the tool `lecture_preview` (MCP).
+// reads its plan with the tool `lecture_preview` (MCP); the paid tools `lecture_synthesize` and
+// `track_transcribe` ask first (a window of the control channel answers), and send the engine nothing when
+// refused. A `{say}` that ends a sentence is one word with the times the speech service gives a lexicon's
+// replacement there.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -297,9 +300,49 @@ describe('{only} lecture, and an engine without word times (P-134)', () => {
   }, 240_000)
 })
 
+/** A window of the control channel of `presmium dev` (as a page holds one): it answers the approvals it is asked. */
+async function controlWindow(server: string): Promise<{ approval(): Promise<string>, answer(id: string, allow: boolean): Promise<void>, close(): void }> {
+  const control = `${server}/__presmium/presmium.server/control`
+  const abort = new AbortController()
+  const response = await fetch(`${control}?window=lecture-test&document=`, { headers: { Accept: 'text/event-stream' }, signal: abort.signal })
+  expect(response.status).toBe(200)
+  const asked: string[] = []
+  void (async () => {
+    const decoder = new TextDecoder()
+    let buffer = ''
+    try {
+      for await (const chunk of response.body!) {
+        buffer += decoder.decode(chunk as Uint8Array, { stream: true })
+        for (let end = buffer.indexOf('\n\n'); end >= 0; end = buffer.indexOf('\n\n')) {
+          const block = buffer.slice(0, end)
+          buffer = buffer.slice(end + 2)
+          if (/^event: approval$/m.test(block)) asked.push((JSON.parse(/^data: (.*)$/m.exec(block)![1]!) as { id: string }).id)
+        }
+      }
+    } catch {
+      // Closed.
+    }
+  })()
+  return {
+    async approval() {
+      for (let waited = 0; asked.length === 0; waited += 100) {
+        if (waited > 30_000) throw new Error('no approval was asked')
+        await new Promise(done => setTimeout(done, 100))
+      }
+      return asked.shift()!
+    },
+    async answer(id, allow) {
+      const answered = await fetch(control, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'answer', id, allow }) })
+      expect(answered.status, await answered.text()).toBe(200)
+    },
+    close: () => abort.abort(),
+  }
+}
+
 describe('presmium dev', () => {
   let dir: string
   let dev: ChildProcess | undefined
+  let server: string
   afterAll(async () => {
     if (dev && dev.exitCode === null) {
       const exited = new Promise(done => dev!.once('exit', done))
@@ -312,7 +355,7 @@ describe('presmium dev', () => {
   it('makes the synthesized lecture on demand, and an agent reads its plan with lecture_preview', async () => {
     dir = deck(tmpdir(), VOICE, NARRATION)
     dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'notebook'], { cwd: dir, env: env(engine()), stdio: ['ignore', 'pipe', 'pipe'] })
-    const server = await new Promise<string>((done, fail) => {
+    server = await new Promise<string>((done, fail) => {
       let output = ''
       const read = (chunk: Buffer) => {
         output += chunk
@@ -345,6 +388,64 @@ describe('presmium dev', () => {
       ]])
     } finally {
       await client.close()
+    }
+  }, 240_000)
+
+  it('asks before lecture_synthesize and track_transcribe: refused, the engine gets no request; allowed, they synthesize and transcribe', async () => {
+    // A recorded lecture whose audio is the fake engine's clip of a sentence (which its transcription gives back).
+    const said = '录下来的一句讲解。'
+    const audio = Buffer.from(await (await fetch(`${fake.url}/audio/speech`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: said, voice: 'beta' }) })).arrayBuffer())
+    mkdirSync(join(dir, 'lectures/rec/audio'), { recursive: true })
+    writeFileSync(join(dir, 'lectures/rec/audio/intro.wav'), audio)
+    writeFileSync(join(dir, 'lectures/rec/track.json'), JSON.stringify({ track: 1, id: 'rec', doc: 'lecture.md', lang: 'zh-CN', ir: { hash: '' }, voice: { kind: 'recorded' }, audio: [{ section: 'intro', start: 0, src: 'audio/intro.wav', duration: 2 }], blocks: {}, utterances: [], events: [[0, 'go', { section: 'intro', step: 0 }]] }))
+    rmSync(join(dir, '.presmium/speech'), { recursive: true, force: true })
+    const asked = async (path: string) => ((await (await fetch(new URL('/requests', fake.url))).json()) as { requests: { method: string, path: string }[] }).requests.filter(r => r.method === 'POST' && r.path.startsWith(path)).length
+
+    const { mcp, token } = JSON.parse(readFileSync(join(dir, '.presmium/server.json'), 'utf8')) as { mcp: string, token: string }
+    const client = new Client({ name: 'presmium-test', version: '0.1.0' }, { versionNegotiation: { mode: 'auto' } })
+    await client.connect(new StreamableHTTPClientTransport(new URL(mcp), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }))
+    const window = await controlWindow(server)
+    /** Calls a paid tool and answers its approval; the tool's result as text, and whether it failed. */
+    const paid = async (name: string, args: Record<string, unknown>, allow: boolean) => {
+      const result = client.callTool({ name, arguments: args }) as Promise<{ isError?: boolean, content: { text: string }[] }>
+      await window.answer(await window.approval(), allow)
+      const { isError, content } = await result
+      return { failed: isError === true, text: content[0]!.text }
+    }
+    try {
+      for (const [name, args, path] of [['lecture_synthesize', {}, '/v1/audio/speech'], ['track_transcribe', { track: 'rec' }, '/v1/audio/transcriptions']] as const) {
+        const before = await asked(path)
+        const refused = await paid(name, args, false)
+        expect(refused, name).toEqual({ failed: true, text: expect.stringContaining('not allowed') })
+        expect(await asked(path), name).toBe(before)
+      }
+      const synthesized = await paid('lecture_synthesize', {}, true)
+      expect(synthesized.failed, synthesized.text).toBe(false)
+      expect(JSON.parse(synthesized.text)).toMatchObject({ track: 'script', utterances: 3 })
+      expect(await asked('/v1/audio/speech')).toBeGreaterThan(0)
+      const transcribed = await paid('track_transcribe', { track: 'rec' }, true)
+      expect(transcribed.failed, transcribed.text).toBe(false)
+      expect((JSON.parse(transcribed.text) as { utterances: { text: string }[] }).utterances.map(u => u.text)).toEqual([said])
+      expect((JSON.parse(readFileSync(join(dir, 'lectures/rec/track.json'), 'utf8')) as { utterances: { text: string }[] }).utterances.map(u => u.text)).toEqual([said])
+    } finally {
+      window.close()
+      await client.close()
+    }
+  }, 240_000)
+
+  it('says a {say} that ends the sentence as one word, timed as the speech service times a lexicon\'s replacement there', async () => {
+    const other = deck(tmpdir(), VOICE, '我们用 {say alias="B P E"}`BPE`')
+    try {
+      const built = await presmium(other, ['build', '--to', 'lecture'], engine())
+      expect(built.code, built.stdout + built.stderr).toBe(0)
+      const track = JSON.parse(readFileSync(join(other, 'dist/lecture/script/track.json'), 'utf8')) as Track
+      const u = track.utterances.find(item => item.text === '我们用 BPE')!
+      const lecture = u.words!.map(([t, d, text]) => [t - u.t, d, text])
+      const timed = await (await fetch(`${server}/__presmium/presmium.speech/v1/audio/speech/timestamps`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voice: 'alpha', input: '我们用 BPE', lang: 'zh-CN', lexicon: { BPE: 'B P E' } }) })).json() as { words: { text: string, start: number, end: number }[] }
+      expect(lecture).toEqual([[0, 220, '我'], [300, 220, '们'], [600, 220, '用'], [900, 340, 'BPE']])
+      expect(timed.words.map(w => [Math.round(w.start * 1000), Math.round((w.end - w.start) * 1000), w.text])).toEqual(lecture)
+    } finally {
+      rmSync(other, { recursive: true, force: true })
     }
   }, 240_000)
 })

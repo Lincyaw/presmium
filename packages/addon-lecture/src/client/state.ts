@@ -1,11 +1,14 @@
 /**
  * What the lecture plugin's views and layers share in the page: the viewer
  * (from the viewer plugin context, @presmium/viewer is used for its types
- * only) and the lecture being played, named by the page URL's `track`
- * parameter (`?view=lecture&track=<id>`), so a reload plays it again.
+ * only), whether the deck has lectures to offer, and the lecture being
+ * played, named by the page URL's `track` parameter
+ * (`?view=lecture&track=<id>`), so a reload plays it again.
  */
+import { useServer } from '@presmium/host'
 import type { Viewer, ViewerPluginContext } from '@presmium/viewer'
-import { shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
+import { LECTURE_ID } from '../domain/index.ts'
 
 let context: Pick<ViewerPluginContext, 'useViewer'> | undefined
 
@@ -17,6 +20,29 @@ export function setViewerContext(ctx: Pick<ViewerPluginContext, 'useViewer'>): v
 export function useViewer(): Viewer {
   if (!context) throw new Error('[presmium] the lecture viewer plugin is not installed')
   return context.useViewer()
+}
+
+/** The compiler's word (`presmium.lecture.lectures`): the deck has a lecture, recorded or said by a voice, or one published elsewhere. */
+const compiled = shallowRef(false)
+/** The server's list: under `presmium dev` and `presmium serve`, the lectures this member gets. */
+const listed = shallowRef<boolean>()
+
+/** Whether there are lectures to offer (the view menu has the lecture view only then, P-131): the server's list where a server serves the page, else the compiler's word. */
+export const offered = computed(() => (useServer().available ? listed.value === true : compiled.value))
+
+/** Takes the compiler's word, from the plugin's configuration; asks the server for its list once one serves the page. */
+export function offerLectures(config: Record<string, unknown>): void {
+  compiled.value = config.lectures === true
+}
+
+/** Asks the server for the lectures once one serves the page (the web form's view menu). */
+export function followLectures(): void {
+  watch(() => useServer().available, async (available) => {
+    if (!available) return
+    const response = await useServer().fetch(LECTURE_ID, 'tracks').catch(() => undefined)
+    const list: unknown = response?.ok ? await response.json().catch(() => []) : []
+    listed.value = Array.isArray(list) && list.length > 0
+  }, { immediate: true })
 }
 
 const PARAM = 'track'

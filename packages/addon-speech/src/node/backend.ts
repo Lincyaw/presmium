@@ -34,6 +34,13 @@ export interface SpeechBackend {
   voices(engine: string | undefined, lang?: string, signal?: AbortSignal): Promise<VoiceInfo[]>
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
+  /**
+   * Refuses (a `SpeechError` 403) a cloned voice the operator does not allow
+   * now, as a synthesis in it is refused (the setting and the consent record,
+   * ./consent.ts): a cache answers a clip in a cloned voice only after this
+   * (N-08, decision D-7), so a withdrawn consent stops its clips too.
+   */
+  consent(engine: string, voice: string, signal?: AbortSignal): Promise<void>
 }
 
 /**

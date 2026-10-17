@@ -2,8 +2,9 @@
 // The lecture panel of edit mode (P-136, P-137; the workspace's `EDIT_MODE`): the deck's recorded lectures, each
 // handed to the agent as "narration from the transcript" (a `transcript` task) or "translate" (a `chat` task on
 // its track), with the model's provider named (N-08). The tasks sent from here follow, newest first: progress,
-// the review of the changed files (accept or reject all), the commit and the undo of it. The assistant runs,
-// reviews and commits them (./writeback.ts); in the toolbar while edit mode is on, the panel beside the page.
+// the review of the changed files (accept or reject all), the commit and the undo of it. The agent service
+// (`AGENT`) runs, reviews, commits and undoes them (./writeback.ts); in the toolbar while edit mode is on, the
+// panel beside the page.
 import { EDIT_MODE, useLocale, useMessages, useServer, useService } from '@presmium/host'
 import { AGENT } from '@presmium/kernel'
 import { computed, ref, watch } from 'vue'
@@ -100,38 +101,38 @@ function translate(id: string): void {
             :aria-label="t.writeback.task"
             :data-task="w.id"
             :data-kind="w.kind"
-            :data-state="w.state"
+            :data-state="w.state.state"
           >
             <p class="pm-lecture-writeback__label">{{ w.label }}</p>
-            <template v-if="w.state === 'running'">
-              <p role="status">{{ w.tool ? t.writeback.tool(w.tool) : t.writeback.working }}</p>
-              <p v-if="w.steps" class="pm-lecture-writeback__note">{{ t.writeback.steps(w.steps) }}</p>
+            <template v-if="w.state.state === 'running'">
+              <p role="status">{{ w.state.tool ? t.writeback.tool(w.state.tool) : t.writeback.working }}</p>
+              <p v-if="w.state.steps.length" class="pm-lecture-writeback__note">{{ t.writeback.steps(w.state.steps.length) }}</p>
               <p class="pm-lecture-writeback__actions">
                 <button type="button" @click="w.task.cancel()">{{ t.writeback.cancel }}</button>
               </p>
             </template>
-            <template v-else-if="w.state === 'review' || w.state === 'deciding'">
-              <p>{{ t.writeback.review(w.engine ?? '') }}</p>
-              <details v-for="file in w.changes" :key="file.path" class="pm-lecture-writeback__change" :data-path="file.path">
+            <template v-else-if="w.state.state === 'review' || w.state.state === 'deciding'">
+              <p>{{ t.writeback.review(w.state.engine ?? '') }}</p>
+              <details v-for="file in w.state.changes" :key="file.path" class="pm-lecture-writeback__change" :data-path="file.path">
                 <summary><code>{{ file.path }}</code> +{{ file.added }} −{{ file.removed }}</summary>
                 <p v-if="file.binary">{{ t.writeback.binary }}</p>
                 <pre v-else-if="file.diff">{{ file.diff }}</pre>
               </details>
               <p class="pm-lecture-writeback__actions">
-                <button type="button" class="pm-lecture-writeback__accept" :disabled="w.state !== 'review'" @click="decide(w.id, true)">{{ t.writeback.accept }}</button>
-                <button type="button" class="pm-lecture-writeback__reject" :disabled="w.state !== 'review'" @click="decide(w.id, false)">{{ t.writeback.reject }}</button>
+                <button type="button" class="pm-lecture-writeback__accept" :disabled="w.state.state !== 'review'" @click="decide(w.id, true)">{{ t.writeback.accept }}</button>
+                <button type="button" class="pm-lecture-writeback__reject" :disabled="w.state.state !== 'review'" @click="decide(w.id, false)">{{ t.writeback.reject }}</button>
               </p>
             </template>
-            <template v-else-if="w.state === 'done'">
-              <p role="status">{{ w.revision ? t.writeback.committed(w.revision) : w.changes.length ? t.writeback.rejected : t.writeback.nothing }}</p>
-              <p v-if="w.revision && !w.reverted && !w.conflicts" class="pm-lecture-writeback__actions">
-                <button type="button" class="pm-lecture-writeback__revert" @click="revert(w.id, server)">{{ t.writeback.revert }}</button>
+            <template v-else-if="w.state.state === 'done'">
+              <p role="status">{{ w.state.revision ? t.writeback.committed(w.state.revision) : w.state.changes.length ? t.writeback.rejected : t.writeback.nothing }}</p>
+              <p v-if="w.state.revision && !w.reverted && !w.conflicts" class="pm-lecture-writeback__actions">
+                <button type="button" class="pm-lecture-writeback__revert" @click="revert(w.id)">{{ t.writeback.revert }}</button>
               </p>
               <p v-if="w.reverted" role="status">{{ t.writeback.reverted(w.reverted) }}</p>
               <p v-if="w.conflicts" role="alert">{{ t.writeback.conflicts(w.conflicts) }}</p>
               <p v-if="w.message" role="alert">{{ w.message }}</p>
             </template>
-            <p v-else role="alert">{{ t.writeback.failed(w.message ?? '') }}</p>
+            <p v-else role="alert">{{ t.writeback.failed(w.state.message ?? '') }}</p>
           </section>
         </template>
       </aside>
