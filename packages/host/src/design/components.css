@@ -527,10 +527,11 @@
 }
 
 /* A panel beside the activity bar, as tall as the window. */
+/* Beside the activity bar, or below it where it runs along the top (a phone): `--pm-drawer-top`, `-left`, `-bottom`. */
 .pm-ui-drawer {
   position: fixed;
   z-index: var(--pm-z-popover);
-  top: 0;
+  top: var(--pm-drawer-top, 0);
   bottom: var(--pm-drawer-bottom, 0);
   left: var(--pm-drawer-left, 0);
   display: flex;
@@ -597,7 +598,9 @@
   z-index: var(--pm-z-popover);
   display: grid;
   min-width: min(12rem, calc(100vw - 2rem));
+  max-height: 60vh;
   margin: 0;
+  overflow: auto;
   padding: var(--pm-space-1);
   border-radius: var(--pm-radius-control);
   list-style: none;
