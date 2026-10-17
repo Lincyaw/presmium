@@ -22,7 +22,7 @@
 | K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2（S 不阻塞 K；SHARED 模式在 S 通过前保持实验性） |
 | K2 | 先 WP-89b（串行），再并行 WP-89c、89d、89e、89f：第三轮验收审计的修复（`review-round3.md`） | K |
 | L0（v0.9） | 先 WP-92a 删除共享部署（串行），再并行 WP-92b 浏览器端读者问答、WP-89g K2 遗留与文档核对 | K2 |
-| L1（v0.9） | WP-95a 设计探索（已完成）；WP-95b 设计系统与应用外壳在 WP-92a 合并后开始，与 WP-92b、WP-89g 并行；再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题 | 95b：WP-92a；95c、95d：95b 与 L0 |
+| L1（v0.9） | WP-95a 设计探索（已完成）；WP-95b 设计系统与应用外壳在 WP-92a 合并后开始，与 WP-92b、WP-89g 并行（已完成）；再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题、WP-92c L0 遗留 | 95b：WP-92a；95c、95d、92c：95b 与 L0 |
 | L（M10） | 先 WP-93a 发布工程（串行），再并行 WP-93b 起步工具、WP-93c 文档与文档站 | L1 |
 | M（M11，1.1） | WP-94 hub 托管模板 | L |
 
@@ -1161,6 +1161,9 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 | 92b | 5361、5362 | 5363–5369 |
 | 89g | 5371、5372 | 5373–5379 |
 | 95b | 5381、5382 | 5383–5389 |
+| 92c | 5391、5392 | 5393–5399 |
+| 95c | 5431、5432 | 5433–5439 |
+| 95d | 5441、5442 | 5443–5449 |
 
 4180、4310、4790、5173 被验收者的试用环境占用，不要使用。
 
@@ -1347,6 +1350,8 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - WCAG AA（对比度用例）；
 - 现有用例通过。
 
+**L0 与 WP-95b 的结果（2026-10-17，验收者）**：WP-92a、92b、89g、95b 已合并。验收时留下的问题分给下面三个工作包：设计稿与界面的差距给 95c、95d，代码与文档的遗留给 92c。三者并行，拥有的路径互不重叠；需要改别人的路径时，把确切的改法写进交付报告。
+
 ### WP-95c 浏览器中的源码编辑（95b 之后，并行）
 
 **拥有**：
@@ -1370,6 +1375,17 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - 放弃未提交的修改后内容复原；
 - agent 修改审阅期间手动保存给出提示，不丢失任何一方的修改。
 
+**WP-95b 留下的、与编辑和外壳有关的差距**（截图与设计稿对比的结果）：
+
+- 编辑模式的顶栏按 `docs/design/edit.dc.html`：面包屑（工作区 / 文档）、文件标签（未保存的标记）、视图切换（文档、放映、幻灯片）、“提交 N 处修改”、AI 按钮；不再沿用 VitePress 的导航栏。编辑模式整体是占满窗口的应用布局，状态栏在窗口底部，文档的页脚（上一章、下一章）不出现在它下面；
+- 状态栏的编辑部分：分支与未提交数、语言（MyST）、编码、光标所在行；
+- 首页侧栏是文件树（可展开的目录，文件可以在源码编辑器中打开，`presmium.workspace.yaml` 也可以打开编辑）；
+- 启动台的搜索覆盖文档、章节与命令（新建文档、管理文档、模型设置、切换明暗等），与设计稿的提示一致；
+- 首页有一个 `h1`（工作区名），活动栏之前有“跳到内容”的链接；
+- 手机宽度下抽屉（修改历史、使用说明）不盖住顶部的活动栏。
+
+**拥有**另加：`packages/workspace/src/node/**` 中源码读写与提交的路由（`audience.ts`、`serve.ts` 除外，归 92c）、`packages/web/src/client/**` 与 `packages/web/src/node/sites.ts`、`packages/host/**`、`e2e/design.spec.ts`、`architecture.md` 第 5 节中编辑与外壳的小节、`docs/design/README.md`。
+
 ### WP-95d 插件界面与默认主题（95b 之后，并行）
 
 **拥有**：
@@ -1386,6 +1402,37 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - WCAG AA；
 - 示例讲义在两种形态中逐页截图，交给验收者对比；
 - 现有用例通过。
+
+**另加**：
+
+- 助手的界面：编辑模式中的 AI 面板停靠在 95c 分栏布局的右侧（经 95b 的工具栏槽位注册，不改工作区的客户端）；状态栏显示模型与它的来源（`info` 的 `source`）；首页的“由 AI 起草一份文档”卡片接到助手的 `AGENT`；
+- `EditPanel.vue` 的“缺少：…”按页面语言显示（服务端给的是英文的 `missing`，客户端按 `source` 与缺少的项给出中英文的说明），`e2e/assistant.spec.ts` 随之改；
+- 模型设置对话框：换了服务或地址之后，密钥必填（“已设置，留空则不变”只在服务与地址都没变时出现）；
+- `addon-exec/styles/index.css` 中运行面板的两条规则移进幻灯片主题；
+- 各插件改用 `line-strong` 的输入框边框与新的 `PmTabs`（自己渲染带标签的面板）。
+
+**拥有**：`packages/addon-*/src/client/**`、`packages/addon-*/components/**`、`packages/addon-*/styles/**`、`packages/addon-*/setup/**`、幻灯片渲染端的主题部分、`e2e/assistant.spec.ts` 中界面的断言、`architecture.md` 第 5 节中插件界面与幻灯片主题的小节。
+
+### WP-92c L0 遗留（与 95c、95d 并行）
+
+**拥有**：`docs/**`（`requirements.md`、`wbs.md`、`architecture.md` 第 5 节与 `docs/design/` 除外）、`packages/mcp/**`、`packages/server/**`、`packages/cli/**`、`packages/compiler/src/audience.ts` 与 `compiler.ts` 的注释、`packages/workspace/src/node/audience.ts` 与 `serve.ts`、`packages/addon-assistant/src/node/**` 与 `src/domain/**`、`packages/addon-lecture/src/node/**` 与 `src/domain/**`、`packages/kernel/src/contracts/agent.ts`、`templates/workspace/**`、`examples/workspace/**`、技能中与这些有关的段落。
+
+**条目**：
+
+1. **文档写入 WP-92b 的变化**（89g 留下了这些段落）：`architecture.md` 4.7、4.8（`AgentMode` 只有 `author`；没有 `question` 任务、`tutor` 模板、`PRESMIUM_AGENT_TUTOR_COMMAND`、`maxQuestions`、`questionTimeoutMs`；`AgentSessionOptions` 没有 `mode`，`AgentRuntime.provider` 可以没有；浏览器服务 `ASK`；路由 `settings`，模型设置文件在用户配置目录、0600，优先顺序：替换运行时、环境变量、页面设置；`info` 的 `source`、`missing`、`changes`、`home`；“AI 修改”在服务的每个页面上；启动时的状态行）、9.4（提示注入、提问的资源上限两行改写为浏览器端问答）、10.2（`get_position` 的步骤按调用方的编号，`navigate` 带 `trail`，`WindowPosition.trail`）、10.x 学生视图与 MCP 身份；`domain-model.md` 第 10、13 节；`ir.md` 2.11 与工作区配置一节（`command`、`tutor`、`provider` 的注释）；`README.md` 与 `examples/workspace/README.md` 中怎样提问、怎样配置模型。
+2. **WP-89g 留下的文档问题**：`domain-model.md` 中“学生视图”一行与第 10 节的不变量（serve 已没有读者成员，E-4）；课堂同步在 serve 中直接写文档目录的 `.presmium/classroom/`，不经 `DOCUMENT_FILES`：在文档中写明这个例外，或改为经它写。
+3. **删去残留的学生视图**（E-1）：MCP 的 `McpView`、`audience` 参数、`AgentToolContext.view` 与讲授插件 `plan.ts`、`tools.ts` 中为 `tutor` 令牌保留的分支都已用不到，删去；`ServerHost` 的 `DocumentView` 没有调用方传 `student` 时一并删去；注释中的 `tutor` 令牌（`compiler/src/audience.ts`、`compiler.ts`、`workspace/src/node/audience.ts`、`cli/src/host.ts`）改写；测试插件 `presmium-fixture-tutor` 改为签发 `author` 令牌并改名。
+4. **`presmium serve` 打印 MCP 地址**：serve 也签发一个进程级的令牌，像 dev 一样写进 0600 的状态文件，启动时打印 `mcp  <地址>/mcp`（并写明令牌在哪个文件）；首页“连接外部 agent”与使用说明随之写明。
+5. **模型设置的密钥不跟着换服务**：`settings` 的 `POST` 只在服务提供方与地址都没变时保留已存的密钥，否则要求新的密钥（缺少时 400）。用例覆盖两个方向。
+6. **助手在首页可见**：`templates/workspace` 与 `examples/workspace` 把助手列为运营者插件，使首页有“AI 修改”与模型设置，启动时打印助手的状态；单文档仓库中状态行在启动时打印（不等第一次打开文档）。
+7. **克隆音色的同意**（D-7）：录制讲授换音色后的片段（`tracks/<id>/clips/<key>`）与构建时 `publishTrack` 复制的片段，也按同意记录检查；撤回同意后它们不再给出、不再发布。用例覆盖路由与构建。
+8. **讲授片段的边界**（89g 验证者）：`presmium dev` 重新编译后，页面已加载的讲授片段不因 IR 换了而 404（按片段的键而不是最新的 IR 判断）；缓存文件被删时取片段只查不合成。
+
+**验收**：
+
+- 每条的用例或文档改动；
+- `git grep -n -i -E "tutor|maxQuestions|questionTimeoutMs|TUTOR_COMMAND" docs .agents README.md packages templates examples` 只剩历史文件（评审记录、`wbs.md`、`design-v0.7.md` 正文）；
+- 全部 Chromium 端到端用例通过（用本包的端口）。
 
 ## L 波次：开源发布 1.0（WP-93a 至 WP-93c；M10）
 
