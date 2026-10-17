@@ -4,15 +4,23 @@
   "lang": "python",
   "code": "for text in [\"low\", \"你好\"]:\n    data = text.encode(\"utf-8\")\n    print(f\"{text}：{len(text)} 个字符，{len(data)} 个字节 {list(data)}\")",
   "environment": "Python 3.13.12",
+  "revision": "runner 5cadcc15de4de559",
   "run": {
     "ok": true,
     "stdout": "low：3 个字符，3 个字节 [108, 111, 119]\n你好：2 个字符，6 个字节 [228, 189, 160, 229, 165, 189]\n",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 29,
+    "durationMs": 118,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
-    "cacheKey": "54f1820f084f757a8bc75a22333d9baee45b19e000001309ec2b830281e69f69"
+    "outputs": [
+      {
+        "output_type": "stream",
+        "name": "stdout",
+        "text": "low：3 个字符，3 个字节 [108, 111, 119]\n你好：2 个字符，6 个字节 [228, 189, 160, 229, 165, 189]\n"
+      }
+    ],
+    "cacheKey": "ad05306cb12b290e20f5db8e3d24893f5ae029b3779d75acb5485e784289c698"
   }
 }

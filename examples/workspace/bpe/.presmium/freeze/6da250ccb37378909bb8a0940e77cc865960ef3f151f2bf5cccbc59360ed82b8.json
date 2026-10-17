@@ -4,12 +4,13 @@
   "lang": "python",
   "code": "from IPython.display import Markdown\n\nrows = [\"| 顺序 | 合并的一对 | 新词元 | 编号 |\", \"| --- | --- | --- | --- |\"]\nfor order, ((a, b), new_id) in enumerate(merges.items(), start=1):\n    rows.append(f\"| {order} | `{vocab[a].decode()!r}` 和 `{vocab[b].decode()!r}` | `{vocab[new_id].decode()!r}` | {new_id} |\")\ndisplay(Markdown(\"\\n\".join(rows)))",
   "environment": "Python 3.13.12",
+  "revision": "runner 5cadcc15de4de559",
   "run": {
     "ok": true,
     "stdout": "",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 373,
+    "durationMs": 125,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -23,6 +24,6 @@
         "metadata": {}
       }
     ],
-    "cacheKey": "e3ce96d7a092fd2c8b352f72251a75f9641b40bd935b17da6284111c3588de29"
+    "cacheKey": "6da250ccb37378909bb8a0940e77cc865960ef3f151f2bf5cccbc59360ed82b8"
   }
 }
