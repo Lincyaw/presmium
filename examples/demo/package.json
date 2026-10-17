@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "presmium dev",
-    "build": "presmium build",
+    "build": "presmium build --to web,slides,notebook",
     "ir": "presmium ir",
     "check": "presmium check",
     "web:dev": "presmium dev --to web",
-    "web:build": "presmium build --to web"
+    "web:build": "presmium build --to web",
+    "lecture:build": "presmium build --to web,lecture"
   },
   "dependencies": {
     "@slidev/cli": "53.0.0",
@@ -21,7 +22,11 @@
     "@presmium/slidev-addon-code": "workspace:*",
     "@presmium/slidev-addon-exec": "workspace:*",
     "@presmium/slidev-addon-exec-local": "workspace:*",
+    "@presmium/slidev-addon-exec-wasi": "workspace:*",
+    "@presmium/slidev-addon-exec-webgpu": "workspace:*",
     "@presmium/slidev-addon-guide": "workspace:*",
+    "@presmium/slidev-addon-lecture": "workspace:*",
+    "@presmium/slidev-addon-speech": "workspace:*",
     "@presmium/slidev-addon-content": "workspace:*",
     "@presmium/slidev-addon-publish": "workspace:*",
     "@presmium/slidev-addon-session": "workspace:*",

@@ -153,7 +153,7 @@ print(sum(range(10)))
 - `:echo: false`（须有 `:run:`）：只显示输出，不显示代码与运行控件；只输出 Markdown（`text/markdown`）时按正文显示，用于从数据生成表格与列表。与 `:run: live` 同用时警告并按 `compile` 执行。
 - 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片。网页、幻灯片按类型显示（HTML 经清洗，幻灯片中放进沙箱 iframe），notebook 把输出原样写进单元格。
 - 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
-- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@presmium/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
+- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@presmium/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。C 中没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束：写成 `static int stats[256][256];` 或给初值。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
 - 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行（C 等语言要列出 `@presmium/slidev-addon-exec-wasi`），录制的输出显示在它下方。
 - 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
 

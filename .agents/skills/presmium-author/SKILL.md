@@ -17,6 +17,8 @@ Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再生成
 - 在仓库外试用：把示例文稿装好的依赖链接过来，`ln -s <仓库>/examples/demo/node_modules <文稿目录>/node_modules`，再运行 `<文稿目录>/node_modules/.bin/presmium <命令>`。
 - 两种情况都可以直接运行 `node <仓库>/packages/cli/bin/presmium.mjs <命令> <文稿目录>`。
 
+仓库中的示例可以照着写：`examples/demo` 是一份完整的讲义（BPE 分词），其中“延伸”一章 `pages/extend.md` 用到 WebAssembly 中的 C、WGSL 计算着色器、跨代码块的 Python 会话与只显示输出的表格、先预测再揭示、卡片与栅格、讲解中的 `{cue}` 与 `{say}`，`README.md` 写明构建、录制与讲授的合成；`examples/workspace` 是放着这份讲义与一份短文档的工作区，`README.md` 写明 `presmium serve` 的启动与体验步骤。
+
 `{code-ref}` 的锚点路径相对于文稿所在 git 仓库的根目录（不在 git 中时相对于文稿目录），锁定提交也要在这个仓库里，所以引用代码的文稿要放在被引用代码的 git 仓库中。按文稿目录写了路径时，`presmium check` 报文件不存在，并给出从仓库根目录起的写法。
 
 ## 2. 文稿头部
@@ -108,7 +110,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 ## 6. 媒介限定、排版提示、章节配置
 
 - `:::{only} web, notebook` 让内容只出现在列出的渲染端（`web`、`slides`、`notebook`）。拼错的 ID（如 `slide`）得到警告 `unknown renderer id`，否则内容会从所有形态中消失。只在某个渲染端出现的块所占的步骤，在其他渲染端中不存在。
-- `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: center`）。不要用 `two-cols` 这类需要 `::right::` 插槽的布局，MyST 写不出插槽，内容会全挤在左栏。
+- `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: center`；代码太长、一页放不下时用 `slides: { zoom: 0.75 }` 缩小这一页，Slidev 的代码运行器不会自己出现滚动条）。不要用 `two-cols` 这类需要 `::right::` 插槽的布局，MyST 写不出插槽，内容会全挤在左栏。
 - `:::{config}` 为插件提供只在本章节生效的配置（YAML，键为插件 ID）。读取章节配置的是 `presmium.exec.timeoutMs`（这一节代码在编译时与浏览器中的超时）与 `presmium.code.repo`（这一节 `{code-ref}` 永久链接的仓库）；其他选项只读全局配置。
 - 受众：任何指令加 `:audience: teacher` 让块只给教师（讲解段落用 `{only}` 包起来再加；嵌在另一个指令正文中或列表项中的指令，如 `{tab-set}` 中的一个 `{tab-item}`、`{grid}` 中的一张 `{card}`，也可以加），章节顶层的 `:::{audience} teacher` 让整节只给教师，`{include}` 加 `:audience: teacher` 让包含进来的全部内容（连同其中的章节）只给教师。`presmium build --audience student` 生成学生版并扫描产物中有没有被去掉的句子（`presmium.audience`）；`presmium serve` 中读者只看到学生版。`{include}` 加 `:audience: teacher` 而被引入的文件开出章节时，紧跟在 `{include}` 后面的内容属于那一节、同样只给教师（警告 `presmium.audience` `this content follows an {include} …`；它自己也只给教师时不警告）：在 `{include}` 之后先写一个标题。写法见 `references/directives.md` 的 `{audience}`。
 
@@ -126,13 +128,15 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件；不同文件可以都用 `[^1]`，每个文件的脚注各自从 1 编号。
 - 标签：标题前的 `(id)=` 给章节 ID；块前的 `(id)=` 或指令的 `:label: id` 给块 ID（章节内唯一）。`{question-box}` 的 `:target:` 和课堂笔记依赖块 ID；没有标签的块 ID 随前面插入同类块而变化。
 - 交叉引用：`` {ref}`merge` `` 引用章节（文字为章节标题），`{numref}`、`{eq}` 引用带标签的图、表、公式；自己写了文字的引用保留文字。目标不存在时警告 `presmium.references`。
-- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；目录中的隐藏文件与 `node_modules` 不随它发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告（`presmium check` 同样报告）；直接链接到一个文件时照常发布，不论它的名字（不要链接 `.env` 这样的文件）；含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
+- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；目录中的隐藏文件与 `node_modules` 不随它发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告（`presmium check` 同样报告）；直接链接到一个文件时照常发布，不论它的名字（不要链接 `.env` 这样的文件）；含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接，所以工作区中链接另一份文档要写它的目录（如“分词速览”中的 `[BPE 分词](../bpe/)`）：写成 `../bpe/lecture.md` 时网页把它当作文件发布，读者点开的是 404 页面。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
 
 ## 8. 插件指令
 
 指令一览、选项与最小示例见 `references/directives.md`。先确认提供该指令的包已写进 `plugins`。
 
 讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。录制过的讲授也能反过来写成讲解：工作区服务的编辑模式中“讲授回写”把转写交给 agent，按章节整理后替换讲解，录制时的操作成为相应位置的 `{cue}`（见 presmium-present 技能）；agent 经 MCP 工具 `track_narration` 读到逐字稿拼成的草稿与每一步讲解在源码中的位置。单独的讲授脚本中一段的问题（如 `{cue}` 的目标不存在），`presmium check` 报告在这一段所在的行。
+
+讲授渲染端可以只列在头部而不默认构建：`renderers` 写 `lecture: {}`（不写 `voice` 就不合成，`presmium check` 也不需要语音引擎），`package.json` 的构建脚本写 `presmium build --to web,slides,notebook`；配置好语音引擎后再写上 `voice`，用 `presmium build --to web,lecture` 合成。写了 `voice` 而既没有引擎、合成缓存中又缺少某句话时，`presmium check` 对每一句报错。示例讲义就这样做，见 `examples/demo/README.md`。``{cue}`pause 2s` `` 适合放在一个问题之后，给听的人留出想一想的时间。`{cue}` 在页面上不显示文字，它和前后的中文之间不要留空格（``最多？{cue}`pause 2s`选好答案``），否则网页与 notebook 中多出一个空格；后面紧接行内代码时留一个空格，免得两段反引号连在一起。
 
 文稿自己的组件：放在文稿目录的 `components/` 下（`StepBadge.vue`），用 `{component} StepBadge` 放进正文，两种形态都渲染。组件只能引用 `@presmium/host`、`@presmium/kernel` 与 vue，文稿的 `package.json` 要依赖 `@presmium/host`。
 
@@ -149,7 +153,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 - 编译时执行：`{code}`（或 MyST notebook 的 `{code-cell}`）加 `:run:`（或 `:run: compile`、`both`）、`{code-ref}` 加 `:run:`、`{run-panel}`（默认 `both`）。构建时用本机的 `python3`、`node` 执行（`py`、`python3`、`ipython` 都是 Python），输出写进 IR，所有媒介都显示；程序直接写标准输出（`process.stdout.write`、`console.dir`）也照常录制。
 - 浏览器中执行：`:run: live` 或 `both`。网页中的代码块有运行按钮；幻灯片中 Python、JavaScript、TypeScript 的这类代码块是 Monaco Runner，点运行按钮执行。浏览器中的 Python 由 Pyodide 执行，可离线；每次运行有自己的工作目录，一次运行写的文件、改的递归限制不影响下一次，与编译时一致。
-- C、C++、Ruby、SQL：列出 `@presmium/slidev-addon-exec-wasi` 后，编译时与网页中都在 WebAssembly 中用同一份运行时执行（构建机不需要工具链，网页离线可用）；有浏览器中运行的这类代码时，构建发布对应的运行时（C、C++ 约 52 MB）。见 `references/directives.md` 的 `{code}`。
+- C、C++、Ruby、SQL：列出 `@presmium/slidev-addon-exec-wasi` 后，编译时与网页中都在 WebAssembly 中用同一份运行时执行（构建机不需要工具链，网页离线可用）；有浏览器中运行的这类代码时，构建发布对应的运行时（C、C++ 约 52 MB）。C 的全局变量写成 `static` 或给初值：没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束，录制只有这个退出码。见 `references/directives.md` 的 `{code}`。
 - 运行环境：头部 `execute.environments` 声明具名环境（不含凭据；凭据只来自环境变量，如 `PRESMIUM_ENV_<名>_TOKEN`，头部中像凭据的值给出警告 `presmium.secrets`），代码块与 `{run-panel}`、`{code-ref}` 用 `:env: <名>` 选择。环境不可用时不改用别的执行器：有录制就显示录制。`presmium check --env` 连接每个声明的环境，连不上是错误。
 - 执行会话：同一 `:session:` 的代码块共享解释器（前一块定义、后一块使用），编译时改了其中一块整个会话重新执行；浏览器中每个页面各有一份，“重置会话”丢弃它。
 - 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象与 matplotlib 的图录制为富输出，各媒介按类型显示；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。
