@@ -1,7 +1,7 @@
 # Shared deployment with docker compose
 
 The layout of `docs/architecture.md` 10.5 (D13): the only layout a `presmium serve` with a login
-(SHARED mode) supports. Experimental until the security review of WP-91.
+(SHARED mode) supports, hardened and reviewed in WP-91 (`docs/architecture.md` 10.10).
 
 | Service | Runs | Networks | Holds |
 |---|---|---|---|
@@ -15,6 +15,31 @@ The layout of `docs/architecture.md` 10.5 (D13): the only layout a `presmium ser
 reaches the gateway only. The workspace volume belongs to serve; sandbox may write the document
 directories only (group `presmium-docs`, set by `init.sh`), never `.git/`, the workspace configuration or
 `node_modules/`.
+
+## What the layout guarantees
+
+Readers, editors, the agents they start and the decks' code are not trusted; the operator and the owners
+are. With this layout:
+
+- **serve writes nothing where sandbox may write.** Every file inside a document directory (a rejected
+  change put back, a recording of compile-time code, a new, copied or deleted document, the links a
+  rename rewrites, a revert) is written by agent-host as the sandbox's user, so a symbolic link the
+  sandbox planted there leads nowhere it could not write itself.
+- **serve's git reads nothing the sandbox wrote.** No system or global configuration, no attributes of
+  the documents (no filter, diff or merge driver they name runs), the repository found from the workspace
+  root (a `.git` planted in a document is never used). Git LFS for recorded media is configured by the
+  operator in `.git/config` and `.git/info/attributes`, not by a document's `.gitattributes`.
+- **Secrets stay where they are.** Third-party credentials are in the gateway only; serve, gateway and
+  agent-host read their tokens once, as root, from the secret files (a token in a variable makes them
+  refuse to start), then drop to their users. The site in the sandbox and the targets of plugin proxies
+  get none of a member's cookies or identity headers; a proxy to the gateway carries a token scoped to its
+  plugin, never serve's service token.
+- **The owner console is apart.** Owner routes and owner proxies are on the console's host name only;
+  the console takes requests from its own page only.
+- **Readers get the student view only**, and the site serves them none of the documents' sources.
+
+What remains is listed in `docs/architecture.md` 9.4 (processes of the sandbox's user see each other;
+deltabox, when enabled, covers compile-time code only; plugins' own writes in serve).
 
 ## Set up
 
@@ -43,8 +68,8 @@ From this directory, in a checkout of Presmium where `pnpm install` has run (the
 5. `docker compose up -d --build`
 
 Optional: `docker compose -f compose.yaml -f compose.deltabox.yaml up -d` gives sandbox what deltabox
-needs (FUSE, `SYS_ADMIN`, `SYS_PTRACE`, AppArmor unconfined) for the change review and the process
-sandbox; these weaken the container, so they are not the default.
+needs (FUSE, `SYS_ADMIN`, `SYS_PTRACE`, AppArmor unconfined; the image has `fusermount3`) for the process
+sandbox of compile-time code; these weaken the container, so they are not the default.
 
 ## Settings
 
@@ -57,4 +82,9 @@ sandbox; these weaken the container, so they are not the default.
 The operator's plugins are the packages installed in the image (`node_modules` at the workspace root
 links to them); list those the documents may use in `settings.presmium.workspace.plugins` (D14).
 
-`packages/workspace/test/deploy.test.ts` starts this template and checks the layout.
+`packages/workspace/test/deploy.test.ts` starts this template (with a login proxy of its own beside
+oauth2-proxy and a fake model service only the gateway reaches, `packages/workspace/test/fixtures/compose/`)
+and checks the layout and the guarantees above. Several checkouts may run it at once: the project and the
+image are named after `PRESMIUM_TEST_COMPOSE_PREFIX` and a random id, the ports and the edge subnet are
+`PRESMIUM_DEPLOY_PORT` (and the port after it) and `PRESMIUM_DEPLOY_EDGE`; `PRESMIUM_DEPLOY_KEEP=1` leaves
+the deployment up.

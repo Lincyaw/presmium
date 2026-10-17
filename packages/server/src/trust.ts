@@ -15,9 +15,13 @@ const CREDENTIAL = /(?:_KEY|_TOKEN|_SECRET|_PASSWORD|_APPID)$/i
 /**
  * A secret of the server: from the file `<name>_FILE` names (only root can
  * read it in the compose layout, so it never is in the environment), else
- * from the variable itself (tests, which run as an ordinary user).
+ * from the variable itself (tests, which run as an ordinary user). A
+ * process started as root to become another user (`filesOnly`) takes the
+ * file only: its secrets are read once, as root, before it drops its
+ * privileges, and are never in an environment (WP-91).
  */
-export function readSecret(env: NodeJS.ProcessEnv, name: string): string | undefined {
+export function readSecret(env: NodeJS.ProcessEnv, name: string, filesOnly = false): string | undefined {
+  if (filesOnly && env[name]) throw new Error(`${name} is set in the environment of a process started as root: give it as a file only root may read (${name}_FILE), which is read before the process becomes its user`)
   const file = env[`${name}_FILE`]
   if (file) {
     try {
@@ -47,15 +51,19 @@ export interface SharedSetup {
   consoleHost: string
 }
 
-/** SHARED mode's setup; throws naming what is missing or what must not be there. */
-export function sharedSetup(env: NodeJS.ProcessEnv): SharedSetup {
+/**
+ * SHARED mode's setup, read once (the server's three secrets with it);
+ * throws naming what is missing or what must not be there. `filesOnly`:
+ * started as root, the secrets come from their files only.
+ */
+export function sharedSetup(env: NodeJS.ProcessEnv, filesOnly = false): SharedSetup {
   const missing: string[] = []
   const need = (name: string, value: string | undefined) => {
     if (!value) missing.push(name)
     return value ?? ''
   }
-  const gateway = { url: need('PRESMIUM_GATEWAY_URL', env.PRESMIUM_GATEWAY_URL), token: need('PRESMIUM_GATEWAY_TOKEN', readSecret(env, 'PRESMIUM_GATEWAY_TOKEN')) }
-  const agentHost = { url: need('PRESMIUM_AGENT_HOST_URL', env.PRESMIUM_AGENT_HOST_URL), token: need('PRESMIUM_AGENT_HOST_TOKEN', readSecret(env, 'PRESMIUM_AGENT_HOST_TOKEN')) }
+  const gateway = { url: need('PRESMIUM_GATEWAY_URL', env.PRESMIUM_GATEWAY_URL), token: need('PRESMIUM_GATEWAY_TOKEN', readSecret(env, 'PRESMIUM_GATEWAY_TOKEN', filesOnly)) }
+  const agentHost = { url: need('PRESMIUM_AGENT_HOST_URL', env.PRESMIUM_AGENT_HOST_URL), token: need('PRESMIUM_AGENT_HOST_TOKEN', readSecret(env, 'PRESMIUM_AGENT_HOST_TOKEN', filesOnly)) }
   const consoleHost = need('PRESMIUM_CONSOLE_HOST', env.PRESMIUM_CONSOLE_HOST?.trim().toLowerCase())
   if (missing.length > 0) {
     throw new Error(`a presmium serve with a login is SHARED mode, which needs the gateway, agent-host and owner console (docs/architecture.md 10.1); missing: ${missing.join(', ')}`)
@@ -64,7 +72,7 @@ export function sharedSetup(env: NodeJS.ProcessEnv): SharedSetup {
   if (credentials.length > 0) {
     throw new Error(`SHARED mode keeps third-party credentials in the gateway only, but this environment has ${credentials.join(', ')}; remove them from serve's environment`)
   }
-  return { proxySecret: readSecret(env, 'PRESMIUM_PROXY_SECRET'), gateway, agentHost, consoleHost }
+  return { proxySecret: readSecret(env, 'PRESMIUM_PROXY_SECRET', filesOnly), gateway, agentHost, consoleHost }
 }
 
 /**

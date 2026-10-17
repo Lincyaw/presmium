@@ -14,7 +14,7 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join, relative } from 'node:path'
 import { build, Compiler, loadPlugins, operatorPlugins, pluginId } from '@presmium/compiler'
 import type { Compilation, CompilerOptions, LoadedPlugin } from '@presmium/compiler'
 import { AGENT_RUNTIME, CHANGE_REVIEW, errorMessage, isRecord, PROCESS_SANDBOX } from '@presmium/kernel'
@@ -24,6 +24,8 @@ import type { DocumentView } from '@presmium/server'
 import type { AgentHostInfo } from './agent-client.ts'
 import { listDocuments, readWorkspace } from './config.ts'
 import { STUDENT } from './audience.ts'
+import { runKey } from './execution.ts'
+import { copyDocument, emptyDocument, FilesError, fromTemplate, fromWire, relinkDocuments, shareTree, writeChanges } from './files.ts'
 import { homePlugins, servedPlugins, siteContext, webRenderer } from './site.ts'
 
 export interface AgentHostOptions {
@@ -61,6 +63,12 @@ class HttpError extends Error {
     super(message)
     this.status = status
   }
+}
+
+/** Whether `path` lies below `dir` (not `dir` itself). */
+function below(path: string, dir: string): boolean {
+  const rel = relative(dir, path)
+  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel)
 }
 
 /** `process.initgroups` (POSIX only; not in every version of Node's types). */
@@ -129,7 +137,8 @@ interface Site {
 export async function startAgentHost(options: AgentHostOptions): Promise<AgentHost> {
   const env = options.env ?? process.env
   const log = options.log ?? STDERR
-  const token = readSecret(env, 'PRESMIUM_AGENT_HOST_TOKEN')
+  // Read once; started as root, from its file only, before it becomes the sandbox's user (WP-91).
+  const token = readSecret(env, 'PRESMIUM_AGENT_HOST_TOKEN', Boolean(options.user) && process.getuid?.() === 0)
   if (!token) throw new Error('agent-host needs its token: set PRESMIUM_AGENT_HOST_TOKEN_FILE (or PRESMIUM_AGENT_HOST_TOKEN)')
   // Read: its children never get it, and from here on the process runs as the sandbox's user.
   if (env === process.env) {
@@ -150,6 +159,8 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
   // It never runs code on its own: what runs, serve asks for.
   const compilations = new Map<string, Promise<Compilation>>()
   const compilerOptions = (runAll: boolean, gateway?: GatewayAccess): CompilerOptions => ({
+    // The workspace root as serve has it: the sandbox may not read the repository, and a document's `.git` says nothing (WP-91).
+    workspaceRoot: root,
     settings: config.settings,
     trust: 'shared',
     policy: true,
@@ -240,6 +251,8 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
   // Agent sessions (the assistant's runtime registered here) and reviews (deltabox), by id.
   interface OpenSession {
     session: AgentSession
+    /** The agent's working directory. */
+    cwd: string
     /** The agent's permission requests waiting for serve's answer. */
     approvals: Map<string, (allow: boolean) => void>
     /** Those not yet sent to serve, as `approval` events of the running prompt. */
@@ -267,16 +280,61 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
 
     if (area === 'info' && method === 'GET') return send(res, 200, await describe())
 
+    // The files of the document directories, written as the sandbox (WP-91): serve writes none of them.
+    if (area === 'files' && id === undefined && method === 'POST') {
+      const input = await body(req)
+      if (!isRecord(input)) throw new HttpError(400, 'a JSON object')
+      const text = (value: unknown, name: string): string => {
+        if (typeof value !== 'string') throw new HttpError(400, `${name}: a string`)
+        return value
+      }
+      try {
+        switch (input.op) {
+          case 'write':
+            if (!Array.isArray(input.changes)) throw new HttpError(400, '{ op: write, changes }')
+            writeChanges(config, input.changes.map(fromWire))
+            return send(res, 204)
+          case 'template':
+            fromTemplate(config, text(input.dir, 'dir'), text(input.template, 'template'), text(input.title, 'title'))
+            return send(res, 204)
+          case 'copy':
+            copyDocument(config, text(input.from, 'from'), text(input.to, 'to'))
+            return send(res, 204)
+          case 'relink':
+            return send(res, 200, { changed: relinkDocuments(config, text(input.from, 'from'), text(input.to, 'to')) })
+          case 'empty':
+            emptyDocument(config, text(input.dir, 'dir'))
+            return send(res, 204)
+          default:
+            throw new HttpError(400, '{ op: write | template | copy | relink | empty, … }')
+        }
+      } catch (error) {
+        if (error instanceof FilesError) throw new HttpError(400, error.message)
+        throw error
+      }
+    }
+
     if (area === 'documents' && id !== undefined && method === 'POST') {
       const input = await body(req)
       if (!isRecord(input)) throw new HttpError(400, 'a JSON object')
       if (action === 'run') {
-        if (typeof input.executor !== 'string' || !isRecord(input.request)) throw new HttpError(400, '{ executor, request, env?, gateway? }')
+        if (typeof input.executor !== 'string' || !isRecord(input.request)) throw new HttpError(400, '{ executor, request, gateway? }')
         const { executor, compilation } = await executorOf(id, input.executor)
         const gateway = isRecord(input.gateway) && typeof input.gateway.url === 'string' && typeof input.gateway.token === 'string' ? input.gateway as unknown as GatewayAccess : undefined
-        // The environment is agent-host's own (the `serve` rules, here), not one serve sends.
+        // The environment is agent-host's own (the `serve` rules, here): in SHARED mode the one place `RunContext.env` is made.
         const result = await executor.run(input.request as unknown as RunRequest, undefined, { ...compilation.runContext, ...gateway ? { gateway } : {} })
         return send(res, 200, result)
+      }
+      if (action === 'record') {
+        // The runs serve lets happen (the owner allowed them, or `compile: trusted`), by their keys: compiled
+        // here, run and recorded in the document's execution cache by this process, as the sandbox (WP-91);
+        // serve records nothing. The others stay as the cache has them.
+        if (!Array.isArray(input.runs)) throw new HttpError(400, '{ runs, gateway? }')
+        const keys = new Set(input.runs.filter((key): key is string => typeof key === 'string'))
+        const gateway = isRecord(input.gateway) ? input.gateway as unknown as GatewayAccess : undefined
+        const compiler = new Compiler(entryOf(id), { ...compilerOptions(false, gateway), execution: { env: 'serve', admit: runs => runs.filter(run => keys.has(runKey(run))) } })
+        const { runs } = await compiler.compile()
+        return send(res, 200, { executed: runs.executed, refused: runs.refused.length })
       }
       if (action === 'end-session') {
         if (typeof input.executor !== 'string' || typeof input.session !== 'string') throw new HttpError(400, '{ executor, session }')
@@ -338,7 +396,7 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
         const input = await body(req)
         if (!isRecord(input) || typeof input.document !== 'string' || !isRecord(input.member) || typeof input.cwd !== 'string') throw new HttpError(400, '{ document, mode, member, cwd, mcp?, model? }')
         const runtime = await service(input.document, AGENT_RUNTIME)
-        const opened: OpenSession = { session: undefined as unknown as AgentSession, approvals: new Map(), unsent: [] }
+        const opened: OpenSession = { session: undefined as unknown as AgentSession, cwd: input.cwd, approvals: new Map(), unsent: [] }
         opened.session = await runtime.open({
           cwd: input.cwd,
           mode: input.mode === 'tutor' ? 'tutor' : 'author',
@@ -370,12 +428,21 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
             write({ type: 'approval', id: approval, request: asked })
           }
         }, 50)
+        // As the sandbox's user (compose), what the agent wrote for itself alone is given to the documents' group
+        // before serve hears of it: each completed tool call is a checkpoint serve's review reads (10.7).
+        const share = () => {
+          if (options.user && below(entry.cwd, root)) shareTree(entry.cwd)
+        }
         try {
-          for await (const event of entry.session.prompt(request as Parameters<AgentSession['prompt']>[0], controller.signal)) write(event)
+          for await (const event of entry.session.prompt(request as Parameters<AgentSession['prompt']>[0], controller.signal)) {
+            if (event.type === 'progress' && event.status === 'completed') share()
+            write(event)
+          }
         } catch (error) {
           write({ type: 'error', message: errorMessage(error) })
         } finally {
           clearInterval(flush)
+          share()
           res.end()
         }
         return

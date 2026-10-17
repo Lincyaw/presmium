@@ -7,9 +7,10 @@
 # `docker compose build` from this directory (compose.yaml names the context).
 FROM node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa
 
-# git for the workspace's history, Python for compile-time execution (the exec plugin's executor).
+# git for the workspace's history, Python for compile-time execution (the exec plugin's executor), fuse3's
+# fusermount3 for deltabox (compose.deltabox.yaml; without the override it is never used).
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends git python3 ca-certificates \
+  && apt-get install -y --no-install-recommends git python3 ca-certificates fuse3 \
   && rm -rf /var/lib/apt/lists/*
 
 # serve 1001 and sandbox 1003 share the group of the document directories, presmium-docs 1100;

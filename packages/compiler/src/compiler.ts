@@ -63,6 +63,15 @@ export interface CompilerOptions {
   policy?: boolean
   /** Only files whose real path lies in the workspace root, outside `.git/` (SHARED `presmium serve`). */
   scope?: boolean
+  /**
+   * The workspace root as the host knows it (`presmium serve` and agent-host,
+   * WP-91); default the top of the deck directory's git work tree. The host's
+   * answer does not depend on what lies in the deck directory: a `.git` planted
+   * there makes the deck no workspace of its own, its `node_modules` no place
+   * whence operator plugins load (D14), and agent-host, which may not read the
+   * repository, finds the same root as serve.
+   */
+  workspaceRoot?: string
   /** The directory from which Presmium's own packages installed with the CLI resolve (the renderers, `addon-deltabox`). */
   bundled?: string
   /** The LOCAL operator directory (`--operator-dir`); default `PRESMIUM_OPERATOR_DIR`, else the user's state directory. Ignored in SHARED mode. */
@@ -552,7 +561,7 @@ export class Compiler {
 
   /** The workspace of the deck: its root, settings, plugin sources and operator directory, found once. */
   async #openWorkspace(): Promise<Workspace> {
-    const root = await findWorkspaceRoot(this.deckDir)
+    const root = this.options.workspaceRoot ? resolve(this.options.workspaceRoot) : await findWorkspaceRoot(this.deckDir)
     const scope = this.options.scope ? new ReadScope(root) : undefined
     const read = this.options.settings ? { settings: this.options.settings } : workspaceSettings(root)
     const sources: PluginSources = { workspaceRoot: root, listed: operatorPlugins(read.settings), bundled: this.options.bundled, policy: this.options.policy }

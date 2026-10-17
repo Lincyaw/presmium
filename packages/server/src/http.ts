@@ -5,7 +5,7 @@
  */
 import { timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
-import type { IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } from 'node:http'
+import type { ClientRequest, IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { getRequestListener } from '@hono/node-server'
@@ -82,11 +82,21 @@ export interface ProxyTarget {
   headers?: Record<string, string>
   /** Request headers not passed on (lowercase), e.g. the caller's token or the login proxy's secret. */
   strip?: string[]
+  /** Response headers not passed back (lowercase), e.g. `set-cookie` of a target that may not set the member's cookies. */
+  stripResponse?: string[]
 }
+
+/** The response headers each proxied request leaves out. */
+const responseStrip = new WeakMap<IncomingMessage, string[]>()
 
 function prepare(req: IncomingMessage, to: ProxyTarget): void {
   req.url = to.path
   for (const name of to.strip ?? []) delete req.headers[name]
+  if (to.stripResponse?.length) responseStrip.set(req, to.stripResponse)
+}
+
+function stripped(headers: IncomingMessage['headers'], req: IncomingMessage): void {
+  for (const name of responseStrip.get(req) ?? []) delete headers[name]
 }
 
 /**
@@ -96,6 +106,11 @@ function prepare(req: IncomingMessage, to: ProxyTarget): void {
  */
 export function createProxy() {
   const proxy = createProxyServer({ ws: true, xfwd: false })
+  // A response's headers before they are passed back; a WebSocket's (its 101) before they are written.
+  proxy.on('proxyRes', (proxyRes: IncomingMessage, req: IncomingMessage) => stripped(proxyRes.headers, req))
+  proxy.on('proxyReqWs', (proxyReq: ClientRequest, req: IncomingMessage) => {
+    if (responseStrip.has(req)) proxyReq.prependListener('upgrade', (proxyRes: IncomingMessage) => stripped(proxyRes.headers, req))
+  })
   proxy.on('error', (error: Error, _req: unknown, res: unknown) => {
     const response = res as ServerResponse | Duplex | undefined
     if (response && 'writeHead' in response && !response.headersSent) {

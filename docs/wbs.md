@@ -18,7 +18,7 @@
 | I（M6、M8、M9） | 先 WP-73a 契约与服务端，再 WP-73b 环境、会话与富输出。之后两条线并行：执行与内容一线并行 WP-74 WebAssembly 后端、WP-75 浏览器 GPU 后端、WP-76 远端环境、部署模板与浏览器终端、WP-85 富内容增补（视频封面与字幕轨、卡片与栅格）、WP-88 先预测再揭示；讲授一线先并行 WP-77 讲授轨、录制与回放，WP-82 语音服务与 gateway 中的语音，再 WP-83 脚本化讲授、语音串联与导出视频 | H；WP-82 还要 WP-79（SHARED 模式的用例要 `presmium serve` 与 `presmium agent-host`） |
 | J（M7） | WP-73b 之后开始，与 I 的后半并行：先并行 WP-78 agent 环境（MCP）、WP-79 工作区服务、文档管理与共享部署；再并行 WP-80 agent 运行时接入与学习者问答、WP-90 修改审阅与进程沙箱（deltabox）；再并行 WP-81 批注修改、对话修改、修改审阅与修改历史，WP-84 转写回写讲义 | WP-73b；WP-80 还要 WP-88（同改课堂插件）；WP-90 还要 WP-79（它拥有 `packages/cli/package.json`，此前属于 WP-79）；WP-81 还要 WP-90（审阅的 deltabox 实现）；WP-84 还要 WP-80 与 WP-83（同改讲授插件） |
 | J2（M9） | 并行 WP-86 课程站点、WP-87 发布治理 | WP-79；WP-85（同改编译器的 MyST 设置与指令信息）；WP-87 还要 WP-78（读者的 MCP 令牌只读学生视图）；WP-87 与 WP-90 可能同时进行，`packages/cli/package.json` 属于 WP-90 |
-| S | WP-91 共享部署安全加固（SHARED 模式的威胁模型与专门的安全评审；完成前 SHARED 模式标为实验性） | J、J2 |
+| S | WP-91 共享部署安全加固（SHARED 模式的威胁模型与专门的安全评审；评审通过后去掉“实验性”标记） | J、J2 |
 | K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2（S 不阻塞 K；SHARED 模式在 S 通过前保持实验性） |
 
 ## 测试原则
@@ -904,6 +904,15 @@ WP-72 经四轮设计评审后，本机模式与整体架构定稿；共享部�
 - `RunContext.env` 的计算方唯一；serve 读取令牌文件的方式唯一（以 root 读取后降权，或由编排注入文件描述符）。
 - 所有者控制台的来源规则同时覆盖路由与代理。
 - 一轮独立的安全评审通过后，去掉“实验性”标记。
+
+**实际交付**：做法与理由写在 `architecture.md` 10.10 节，9.4 节按实测重写（另见 4.5、4.8、10.1 至 10.9 节与第 11 节标明 WP-91 之处）。
+
+1. serve 不写沙箱可写的目录：内核契约增加 `DOCUMENT_FILES`（`DocumentFiles.write(DocumentFileChange[])`，只增加），工作区登记它（LOCAL 本进程，SHARED 为 agent-host 的新接口 `POST /v1/files`，`src/node/files.ts`：链接被替换而不被跟随）；助手的 git 审阅经它回退与恢复（`git-review.ts`）；文档操作（`documents.ts`：serve 只新建空目录、改名、删除已清空的目录）与撤销（`revisions.ts`：`git merge-tree --merge-base` 算出撤销后的树，工作树有没提交的改动时报告冲突，文件经写入方写）都不再由 serve 写文档目录；编译时执行由 agent-host 执行并录制（`POST /v1/documents/<文档>/record`，`execution.ts` 的 `admit` 在 SHARED 中总是返回空）。工作区的 git 改为直接运行（不再经 simple-git，`git.ts`），SHARED 中与助手的 git 审阅一样隔离：没有系统与全局配置，工作树中的属性从空树读取（`GIT_ATTR_SOURCE`，git 2.42 起，更旧时拒绝启动），git 目录从工作区根目录找到并固定。
+2. 9.4 节按 compose 布局的实测重写：同 uid 的会话令牌（读得到、在会话期间有效、结束后 401）、agent-host 读不到、deltabox 覆盖到与覆盖不到的部分（镜像补装 `fuse3`，覆盖配置原先起不来）、插件在 serve 中的写入、嵌套的 `.git`、读者站点的范围。
+3. `RunContext.env` 只由执行代码的一方算出（SHARED 中 agent-host，serve 不再送 `env`）；serve 的三个秘密只在 `startServer` 中读一次（`PresmiumServer.agentHost`），以 root 启动时只接受 `_FILE`，agent-host 同样。
+4. 所有者控制台的来源规则覆盖路由与代理：所有者代理只在控制台上；控制台上的请求按 `Sec-Fetch-Site`、WebSocket 按 `Origin` 检查，另加 `Cross-Origin-Resource-Policy`；站点上来自别的源的 WebSocket 被拒绝。
+5. 评审中自己发现并处理的（不在原清单中）：插件代理的路径能以编码的 `..` 越出目标，而 `auth: proxy` 的环境代理带着 serve 的服务令牌到 gateway（读者可以签发令牌、以服务令牌调用任何路由），现在 serve 与 gateway 都拒绝这样的路径，到 gateway 的代理只带限定于目标插件的令牌；SHARED 中站点与代理收到成员的登录 Cookie（sandbox 中的数据加载器能截获所有者的会话），现在去掉凭据与身份、不传回 `Set-Cookie`；学生视图的站点经 Vite 的 `/@fs/…?raw` 给出整份源码（WP-87 记下的缺口），现在 serve 为读者挡住；文档目录中埋下 `.git` 文件就让 serve 的编译以文档目录为工作区根目录、加载其中与运营者插件同名的包（在 serve 中运行沙箱的代码），编译器增加 `CompilerOptions.workspaceRoot`（`packages/compiler/src/compiler.ts`，不在本工作包的归属中，只增加一个选项，交验收者确认），serve 与 agent-host 都给出；compose 中 agent-host 读不了 `.git/`，它的编译因此从来找不到运营者的插件，agent 写给自己的文件 serve 也读不了（agent-host 在每个工具调用之后把它们交给文档组）；读者能经 `GET revisions` 读修改历史（提交说明引用批注与对话），现在只给编辑者；编辑者能撤销任何提交，包括运营者对工作区配置的修改，现在改动文档之外的撤销只有所有者能做。
+6. 去掉“实验性”标记（本文、`architecture.md`、compose 的 README）。用例：`packages/server/test/server.test.ts`、`shared-gateway.test.ts`、`packages/workspace/test/deploy.test.ts`（compose 布局，另加测试用的登录代理与假模型服务，`test/fixtures/compose/`）；原有的 `documents.test.ts`、`cli/test/serve.test.ts`、`addon-assistant/test/shared.test.ts`、`e2e/assistant-edit.spec.ts`、`e2e/workspace.spec.ts` 照常通过。
 
 ### WP-89a 示例讲义与示例工作区（K 波次第一步，与 WP-91 并行）
 

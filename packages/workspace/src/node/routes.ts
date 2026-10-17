@@ -3,7 +3,7 @@
  * 10.2): the documents and their operations, the revision history and its
  * reverts, and the state of a document's compile-time execution with its
  * "request execution". The server checks the roles (`Route.role`): readers
- * list the documents; editors and owners change them.
+ * list the documents; editors and owners change them and read the history.
  */
 import { errorMessage, isRecord } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
@@ -74,8 +74,10 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         return json(await documents.apply(operation, ctx.member))
       }),
     },
+    // The history is the editors' (its messages quote annotations, prompts and the agent's explanations, which a
+    // reader, who sees the student view only, may not read; WP-91).
     revisions: {
-      role: 'reader',
+      role: 'editor',
       handle: (request, ctx) => answer(async () => {
         if (request.method !== 'GET') return problem(405, 'GET')
         if (!revisions) return json({ revisions: [] } satisfies RevisionsAnswer)

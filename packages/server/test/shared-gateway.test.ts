@@ -1,7 +1,9 @@
 // SHARED serve behind a real `presmium gateway` (D13, docs/architecture.md 10.3, 10.9): an agent's MCP
 // client reaches serve's /mcp through the gateway with its MCP token alone, without the login proxy; and a
 // plugin's proxy from serve to the gateway (an `auth: proxy` environment) works for a browser's request,
-// whose Origin serve leaves out, since the gateway takes no request that has one.
+// whose Origin serve leaves out, since the gateway takes no request that has one. The proxy carries a
+// token scoped to the plugin its target names, not serve's service token, and none of the member's
+// credentials; a path that would climb out of its target is refused by serve and by the gateway (WP-91).
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
@@ -62,14 +64,27 @@ it('lets an agent reach serve\'s /mcp through the gateway with its MCP token, an
   expect((await raw(`${serveUrl}/mcp`, { headers: as('owner@test', 'console.test', { Authorization: `Bearer ${issued.token}` }) })).status).toBe(404)
 })
 
-it('passes a browser\'s request through a plugin\'s proxy to the gateway without its Origin', async () => {
-  const page = await raw(`${serveUrl}/__presmium/fixture.server/gateway/fixture.gateway/grant`, {
+it('passes a browser\'s request through a plugin\'s proxy to the gateway without its Origin, with a token scoped to the plugin and no credential of the member\'s', async () => {
+  const page = await raw(`${serveUrl}/__presmium/fixture.server/gateway/grant`, {
     method: 'POST',
-    headers: as('reader@test', 'site.test', { 'Origin': 'http://site.test', 'Content-Type': 'application/json' }),
+    headers: as('reader@test', 'site.test', { 'Origin': 'http://site.test', 'Content-Type': 'application/json', 'Cookie': '_oauth2_proxy=member-session' }),
     body: '{}',
   })
   expect(page.status, page.text).toBe(200)
-  expect(page.json()).toMatchObject({ grant: { kind: 'service', plugins: ['fixture.gateway'] } })
+  expect(page.json()).toMatchObject({ grant: { kind: 'scoped', plugins: ['fixture.gateway'], purpose: 'proxy:fixture.gateway' }, cookie: null, member: null })
+  // The scoped token calls no route only the service token may call.
+  expect((await raw(`${serveUrl}/__presmium/fixture.server/gateway/service`, { headers: as('reader@test') })).status).toBe(403)
   // The gateway itself still refuses a request with an Origin.
   expect((await raw(`${gatewayUrl}/fixture.gateway/grant`, { headers: { Authorization: 'Bearer gateway-token', Origin: 'http://site.test' } })).status).toBe(403)
+})
+
+it('refuses a path that would climb out of the proxy\'s target, in serve and in the gateway', async () => {
+  // Through serve: an encoded separator, an encoded `..`; neither reaches the gateway's /tokens with any token.
+  for (const path of ['gateway/..%2F..%2Ftokens', 'gateway/%2e%2e%2ftokens', 'gateway/..%5C..%5Ctokens']) {
+    expect((await raw(`${serveUrl}/__presmium/fixture.server/${path}`, { method: 'POST', headers: as('reader@test', 'site.test', { 'Content-Type': 'application/json' }), body: '{"plugins":["fixture.gateway"],"purpose":"x"}' })).status, path).toBe(400)
+  }
+  // The gateway on its own: a `.` or `..` part, encoded or not, or an encoded separator.
+  for (const path of ['/fixture.gateway/%2e%2e/tokens', '/fixture.gateway/..%2Ftokens', '/fixture.gateway/./grant']) {
+    expect((await raw(`${gatewayUrl}${path}`, { headers: { Authorization: 'Bearer gateway-token' } })).status, path).toBe(400)
+  }
 })

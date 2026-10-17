@@ -129,11 +129,17 @@ export async function startGateway(options: GatewayOptions): Promise<Gateway> {
     return grant
   }
 
-  /** The checks every request passes: this machine's (or the given) host name, no `Origin`. */
+  /**
+   * The checks every request passes: this machine's (or the given) host name, no `Origin`, and a plain
+   * path: none of its parts `.` or `..`, encoded or not, and no encoded separator, so that what a route or
+   * a proxy gets is under it (WP-91).
+   */
   const checked = (req: IncomingMessage): Response | undefined => {
     const host = header(req.headers, 'host')
     if (!isLoopback(host) && !names.has(hostname(host))) return problem(403, `Host ${host ?? '(none)'} is not the gateway`)
     if (header(req.headers, 'origin') !== undefined) return problem(403, 'the gateway takes no request from a browser')
+    const path = (req.url ?? '/').split(/[?#]/)[0]!
+    if (!path.startsWith('/') || /%(?:2f|5c)|\\/i.test(path) || path.split('/').some(part => /^(?:\.|%2e){1,2}$/i.test(part))) return problem(400, 'not a plain path')
     return undefined
   }
 

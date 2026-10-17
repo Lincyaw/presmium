@@ -50,11 +50,20 @@ export const SERVER_PATH = '/__presmium/presmium.server'
 const PROXY_STRIP = ['x-presmium-proxy-secret']
 
 /**
+ * SHARED mode (WP-91): what the login proxy passes besides, which no proxy
+ * target and not the site (in agent-host, the sandbox) gets: the member's
+ * session cookie, the identity provider's tokens and the identity headers.
+ * A response of theirs sets no cookie in the member's browser either.
+ */
+const CREDENTIAL_STRIP = [...PROXY_STRIP, 'cookie', 'authorization', 'proxy-authorization', 'x-forwarded-user', 'x-forwarded-email', 'x-forwarded-preferred-username', 'x-forwarded-groups', 'x-forwarded-access-token', 'x-forwarded-id-token']
+const RESPONSE_STRIP = ['set-cookie']
+
+/**
  * Headers serve does not pass on to the gateway (a plugin's proxy to
  * `ServerContext.gateway`, e.g. a Jupyter environment of `auth: proxy`): the
  * gateway takes no request that carries the browser's `Origin` (10.9).
  */
-const GATEWAY_STRIP = [...PROXY_STRIP, 'origin']
+const GATEWAY_STRIP = [...CREDENTIAL_STRIP, 'origin']
 
 /** The MCP mount point and the paths under it. */
 function isMcp(path: string): boolean {
@@ -151,6 +160,8 @@ export interface PresmiumServer {
   serverHost?: ServerHost
   /** SHARED mode: the gateway access with serve's service token. */
   gateway?: GatewayAccess
+  /** SHARED mode: agent-host's address and token, read with the other secrets, once (the workspace's client). */
+  agentHost?: GatewayAccess
   close(): Promise<void>
 }
 
@@ -165,17 +176,35 @@ interface Mounted {
   contributions: Map<string, ServerContribution>
 }
 
-/** The plugin id and the path after it of `/__presmium/<plugin id>/<path>`. */
-function pluginPath(pathname: string): { plugin: string, path: string } | undefined {
+/**
+ * The plugin id and the path after it of `/__presmium/<plugin id>/<path>`:
+ * `path` decoded, `raw` as the request has it (what a proxy passes on), and
+ * `plain` false when a decoded part is `.` or `..` or the path holds an
+ * encoded separator, so that it could reach outside the route or the proxy's
+ * target (WP-91).
+ */
+function pluginPath(pathname: string): { plugin: string, path: string, raw: string, plain: boolean } | undefined {
   const match = /^\/__presmium\/([^/]+)\/?(.*)$/.exec(pathname)
   if (!match) return undefined
-  let path = match[2]!
+  const raw = match[2]!
+  let path = raw
+  let plain = !/%(?:2f|5c)/i.test(raw) && !raw.includes('\\')
   try {
-    path = decodeURIComponent(path)
+    path = decodeURIComponent(raw)
   } catch {
-    // Kept as written.
+    plain = false
   }
-  return { plugin: match[1]!, path }
+  if (path.split('/').some(part => part === '.' || part === '..')) plain = false
+  return { plugin: match[1]!, path, raw, plain }
+}
+
+/** The plugin a proxy to the gateway reaches: the first part of its target's path (`<gateway>/<plugin id>/…`). */
+function gatewayPlugin(target: string): string | undefined {
+  try {
+    return new URL(target).pathname.split('/').find(Boolean)
+  } catch {
+    return undefined
+  }
 }
 
 /** The route a path takes: an exact key, or the longest `<prefix>/*` key, with the rest. */
@@ -225,7 +254,9 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   if (options.mode === 'serve' && !login && !isLoopback(listenHost)) {
     throw new Error(`presmium serve listens on ${listenHost}, beyond this machine, only behind a login proxy: set PRESMIUM_PROXY_SECRET (or PRESMIUM_PROXY_SECRET_FILE) or --trust-proxy-from`)
   }
-  const shared: SharedSetup | undefined = login ? sharedSetup(env) : undefined
+  // The one place serve reads its secrets: once, before it drops privileges; started as root, from their files only (WP-91).
+  const asRoot = Boolean(options.user) && process.getuid?.() === 0
+  const shared: SharedSetup | undefined = login ? sharedSetup(env, asRoot) : undefined
   // The token files are read: from here on the process runs as the unprivileged user.
   dropPrivileges(options.user)
   const trust: TrustMode = shared ? 'shared' : 'local'
@@ -352,12 +383,21 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     const member: Member = { id, name: identity.name ?? identity.user ?? id, ...identity.email ? { email: identity.email } : {}, roles: roles.length ? roles : ['reader'] }
     const console = hostname(host) === consoleHost
     const method = (req.method ?? 'GET').toUpperCase()
-    if (method !== 'GET' && method !== 'HEAD') {
-      // State changes on the console come from the console's own page only (10.4); on the site, from the site.
-      if (console && (origin !== consoleHost || header(req.headers, CONSOLE_HEADER) !== '1')) {
+    const upgrade = header(req.headers, 'upgrade') !== undefined
+    if (console) {
+      // The console takes requests from its own page only (10.4, WP-91), for its routes and its proxies alike: a
+      // state change carries its Origin and `Presmium-Console`; a WebSocket its Origin; any other request that
+      // a browser marks (Sec-Fetch-Site) comes from the same origin, except the page itself, which a link may open.
+      const page = (method === 'GET' || method === 'HEAD') && new URL(req.url ?? '/', 'http://console').pathname === '/'
+      if (method !== 'GET' && method !== 'HEAD' && (origin !== consoleHost || header(req.headers, CONSOLE_HEADER) !== '1')) {
         return { status: 403, message: 'the owner console takes changes only from its own page' }
       }
-      if (!console && origin !== undefined && origin !== hostname(host)) return { status: 403, message: 'cross-origin request' }
+      if (upgrade && origin !== consoleHost) return { status: 403, message: 'the owner console takes WebSockets only from its own page' }
+      const site = header(req.headers, 'sec-fetch-site')
+      if (!page && site !== undefined && site !== 'same-origin') return { status: 403, message: 'the owner console takes requests only from its own page' }
+    } else if ((upgrade || (method !== 'GET' && method !== 'HEAD')) && origin !== undefined && origin !== hostname(host)) {
+      // State changes and WebSockets on the site come from the site.
+      return { status: 403, message: 'cross-origin request' }
     }
     return { member, console }
   }
@@ -377,13 +417,16 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     if (tokenOnly(req, path)) return { kind: 'fetch' }
     const auth = authenticate(req)
     if ('status' in auth) return refuse(auth)
+    const target = pluginPath(path)
+    // A route's or a proxy's path stays under it: no `.` or `..` part, no encoded separator (WP-91).
+    if (target && !target.plain) return refuse({ status: 400, message: 'a path with a . or .. part or an encoded separator' })
     if (auth.console) {
-      // The console has Presmium's page, its control channel and the owner routes; nothing of the site, no MCP.
-      if (path === '/' || path === CONSOLE_SCRIPT_PATH || path.startsWith(`${SERVER_PATH}/`) || pluginPath(path)) return { kind: 'fetch' }
+      // The console has Presmium's page, its control channel, the owner routes and owner proxies; nothing of the site, no MCP.
+      if (target && target.plugin !== 'presmium.server') return await proxyOf(target, documentOf(req.headers, url), auth, url.search) ?? { kind: 'fetch' }
+      if (path === '/' || path === CONSOLE_SCRIPT_PATH || target) return { kind: 'fetch' }
       return { kind: 'answer', response: new Response('not found', { status: 404, headers: CONSOLE_HEADERS }) }
     }
     if (isMcp(path)) return { kind: 'fetch' }
-    const target = pluginPath(path)
     if (target) {
       if (target.plugin === 'presmium.server') return { kind: 'fetch' }
       const proxy = await proxyOf(target, documentOf(req.headers, url), auth, url.search)
@@ -391,18 +434,60 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     }
     const forward = options.mode === 'serve' ? options.forward?.(auth.member) : undefined
     if (!forward) return { kind: 'answer', response: problem(404, 'not found') }
-    return { kind: 'proxy', to: { target: forward, path: req.url ?? '/', strip: PROXY_STRIP } }
+    // The site runs in agent-host, the sandbox, in SHARED mode: it gets no credential of the member's.
+    return { kind: 'proxy', to: { target: forward, path: req.url ?? '/', ...shared ? { strip: CREDENTIAL_STRIP, stripResponse: RESPONSE_STRIP } : { strip: PROXY_STRIP } } }
   }
 
-  /** A plugin's proxy for the path, when one matches and the member may use it. */
-  const proxyOf = async (target: { plugin: string, path: string }, dir: string, auth: Auth, search: string): Promise<Decision | undefined> => {
+  /**
+   * A plugin's proxy for the path, when one matches and the member may use it. In SHARED mode an owner
+   * proxy is on the owner console only, the others on the site only (as routes, 10.4); the target gets
+   * none of the member's credentials and sets no cookie; a proxy to the gateway carries a token scoped to
+   * the plugin its target names, never serve's service token (WP-91).
+   */
+  const proxyOf = async (target: { plugin: string, path: string, raw: string }, dir: string, auth: Auth, search: string): Promise<Decision | undefined> => {
     const contribution = (await mount(dir))?.contributions.get(target.plugin)
     const found = findProxy(contribution?.proxies, target.path)
     if (!found) return undefined
-    if (!hasRole(auth.member, found.spec.role ?? 'editor')) return refuse({ status: 403, message: `this proxy needs the role ${found.spec.role ?? 'editor'}` })
-    const gateway = shared && sameOrigin(found.spec.target, shared.gateway.url)
-    const to: ProxyTarget = { target: found.spec.target, path: `${found.rest || '/'}${search}`, headers: found.spec.headers, strip: gateway ? GATEWAY_STRIP : PROXY_STRIP }
-    return { kind: 'proxy', to }
+    const role = found.spec.role ?? 'editor'
+    if (shared && (role === 'owner') !== auth.console) return { kind: 'answer', response: auth.console ? new Response('not found', { status: 404, headers: CONSOLE_HEADERS }) : problem(404, 'not found') }
+    if (!hasRole(auth.member, role)) return refuse({ status: 403, message: `this proxy needs the role ${role}` })
+    // The rest of the path as the request has it (a plain path: its parts are the decoded path's).
+    const base = found.spec.path.split('/').filter(Boolean).length
+    const rest = target.raw.split('/').slice(base).join('/')
+    const path = `${rest ? `/${rest}` : found.rest || '/'}${search}`
+    if (!shared) return { kind: 'proxy', to: { target: found.spec.target, path, headers: found.spec.headers, strip: PROXY_STRIP } }
+    if (!sameOrigin(found.spec.target, shared.gateway.url)) {
+      return { kind: 'proxy', to: { target: found.spec.target, path, headers: found.spec.headers, strip: CREDENTIAL_STRIP, stripResponse: RESPONSE_STRIP } }
+    }
+    let token: string
+    try {
+      token = await proxyToken(gatewayPlugin(found.spec.target))
+    } catch (error) {
+      return refuse({ status: 502, message: `the gateway issued no token for this proxy: ${errorMessage(error)}` })
+    }
+    const headers = Object.fromEntries(Object.entries(found.spec.headers ?? {}).filter(([name]) => name.toLowerCase() !== 'authorization'))
+    return { kind: 'proxy', to: { target: found.spec.target, path, headers: { ...headers, authorization: `Bearer ${token}` }, strip: GATEWAY_STRIP, stripResponse: RESPONSE_STRIP } }
+  }
+
+  /** The tokens of the proxies to the gateway, one per plugin, issued with serve's service token and renewed before they expire. */
+  const proxyTokens = new Map<string, Promise<{ id: string, token: string, expires: number }>>()
+  const proxyToken = async (plugin: string | undefined): Promise<string> => {
+    const key = plugin ?? ''
+    const known = await proxyTokens.get(key)?.catch(() => undefined)
+    if (known && known.expires - Date.now() > 5 * 60_000) return known.token
+    const issuing = (async () => {
+      const gateway = shared!.gateway
+      const response = await fetch(`${gateway.url.replace(/\/+$/, '')}/tokens`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plugins: plugin ? [plugin] : [], purpose: `proxy:${plugin ?? ''}`, ttlSeconds: 3600 }),
+      })
+      if (!response.ok) throw new Error(`${response.status} ${await response.text()}`)
+      const body = (await response.json()) as { id: string, token: string, expires: string }
+      return { id: body.id, token: body.token, expires: Date.parse(body.expires) }
+    })()
+    proxyTokens.set(key, issuing)
+    return (await issuing).token
   }
 
   const decideUpgrade = async (req: IncomingMessage): Promise<{ to?: ProxyTarget, status?: number }> => {
@@ -525,6 +610,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     control,
     serverHost: options.serverHost,
     gateway: shared?.gateway,
+    agentHost: shared?.agentHost,
     async close() {
       // Waiting approvals are refused first, so the MCP calls that wait for them end.
       control.close()
@@ -536,6 +622,11 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       }
       proxy.close()
       await closeServer(server)
+      // The proxies' gateway tokens go with the server.
+      for (const issued of proxyTokens.values()) {
+        const known = await issued.catch(() => undefined)
+        if (known && shared) await fetch(`${shared.gateway.url.replace(/\/+$/, '')}/tokens/${encodeURIComponent(known.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${shared.gateway.token}` }, signal: AbortSignal.timeout(5000) }).catch(() => undefined)
+      }
     },
   }
 }

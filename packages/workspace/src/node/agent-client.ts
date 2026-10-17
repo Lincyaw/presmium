@@ -8,6 +8,8 @@
 import { errorMessage, isRecord } from '@presmium/kernel'
 import type { AgentEvent, AgentRuntime, AgentSession, ApprovalRequest, ChangeReview, ChangeReviewService, Finding, GatewayAccess, IRDocument, Logger, Member, ReviewChange, ReviewStep, RunRequest, RunResult, SiteSpec } from '@presmium/kernel'
 import type { DocumentView } from '@presmium/server'
+import { toWire } from './files.ts'
+import type { DocumentWriter } from './files.ts'
 import type { RemoteExecution } from './types.ts'
 
 /** What agent-host has (`GET /v1/info`). */
@@ -91,20 +93,57 @@ export class AgentHostClient {
     }
   }
 
-  /** The compiler's `remote` for a document: every run and end of session goes to agent-host. */
+  /**
+   * The compiler's `remote` for a document: every run and end of session goes to agent-host. The
+   * environment the compiler made here is not sent: agent-host makes the code's `RunContext.env` itself,
+   * the one place it is made in SHARED mode (WP-91).
+   */
   remote(document: string, plugins: (executor: string) => string[], member: () => Member | undefined): RemoteExecution {
     const path = `/v1/documents/${encodeURIComponent(document)}`
     return {
-      run: async (executor: string, request: RunRequest, env: Readonly<Record<string, string>>, signal?: AbortSignal): Promise<RunResult> => {
+      run: async (executor: string, request: RunRequest, _env: Readonly<Record<string, string>>, signal?: AbortSignal): Promise<RunResult> => {
         const token = await this.#scoped(plugins(executor), `run:${document}`, member())
         try {
-          return await this.#json<RunResult>('POST', `${path}/run`, { executor, request, env, ...token.access ? { gateway: token.access } : {} }, signal)
+          return await this.#json<RunResult>('POST', `${path}/run`, { executor, request, ...token.access ? { gateway: token.access } : {} }, signal)
         } finally {
           await token.revoke()
         }
       },
       endSession: async (executor: string, session: string): Promise<void> => {
         await this.#call('POST', `${path}/end-session`, { executor, session })
+      },
+    }
+  }
+
+  /**
+   * Runs and records there the runs of a document with these keys (`runKey`): agent-host compiles the
+   * document, runs them and writes their recordings in its execution cache as the sandbox (WP-91).
+   */
+  async record(document: string, runs: string[], plugins: string[], member?: Member): Promise<{ executed: number, refused: number }> {
+    const token = await this.#scoped(plugins, `record:${document}`, member)
+    try {
+      return await this.#json('POST', `/v1/documents/${encodeURIComponent(document)}/record`, { runs, ...token.access ? { gateway: token.access } : {} })
+    } finally {
+      await token.revoke()
+    }
+  }
+
+  /** The document writer: what is inside the document directories is written there, as the sandbox (WP-91). */
+  writer(): DocumentWriter {
+    const files = (body: Record<string, unknown>) => this.#call('POST', '/v1/files', body)
+    return {
+      write: async (changes) => {
+        await files({ op: 'write', changes: changes.map(toWire) })
+      },
+      template: async (dir, template, title) => {
+        await files({ op: 'template', dir, template, title })
+      },
+      copy: async (from, to) => {
+        await files({ op: 'copy', from, to })
+      },
+      relink: async (from, to) => ((await (await files({ op: 'relink', from, to })).json()) as { changed: string[] }).changed,
+      empty: async (dir) => {
+        await files({ op: 'empty', dir })
       },
     }
   }

@@ -3,24 +3,29 @@
  * a template, rename (the relative links of the other documents follow),
  * copy, delete. A document's identity is its directory; each operation is a
  * change of the source and one commit (`Presmium-Origin: document`).
+ *
+ * What is inside a document directory is written by the document writer
+ * (./files.ts): in SHARED mode agent-host, as the sandbox, since serve
+ * writes nothing where the sandbox may write (WP-91). serve itself only
+ * works in the directories around the documents, which are its own: it
+ * makes a new document directory (empty, given the documents' group, which
+ * the sandbox may then write), renames one, and removes one the writer
+ * emptied.
  */
-import { chmodSync, chownSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { chmodSync, chownSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { Member } from '@presmium/kernel'
 import type { DocumentOperation, OperationAnswer, WorkspaceDocument } from '../domain/api.ts'
-import { invalidDocumentDir, rewriteLinks, within } from '../domain/paths.ts'
+import { invalidDocumentDir, within } from '../domain/paths.ts'
 import { listDocuments, namedByPatterns } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
+import { templatesDir } from './files.ts'
+import type { DocumentWriter } from './files.ts'
 import type { Git } from './git.ts'
 import type { Revisions } from './revisions.ts'
 
-/** The document templates installed with Presmium (`templates/document/<name>/`). */
-export const BUILTIN_TEMPLATES = fileURLToPath(new URL('../../../../templates/document', import.meta.url))
+export { BUILTIN_TEMPLATES } from './files.ts'
 export const DEFAULT_TEMPLATE = 'default'
-
-/** Directories of a document that are not its source (outputs, caches, dependencies). */
-const NOT_SOURCE = new Set(['node_modules', 'dist', '.git'])
 
 /** An error with the HTTP status of the answer. */
 export class RequestError extends Error {
@@ -30,29 +35,6 @@ export class RequestError extends Error {
     this.status = status
   }
 }
-
-/** Files under `dir` (absolute), relative to it, outputs and caches left out (the anchor lock of `.presmium/` stays). */
-function sourceFiles(dir: string): string[] {
-  const out: string[] = []
-  const walk = (current: string) => {
-    for (const name of readdirSync(current).sort()) {
-      const path = join(current, name)
-      const rel = relative(dir, path)
-      if (NOT_SOURCE.has(name)) continue
-      if (name === '.presmium' && current === dir) {
-        const lock = join(path, 'anchors.lock.json')
-        if (existsSync(lock)) out.push(relative(dir, lock))
-        continue
-      }
-      if (statSync(path).isDirectory()) walk(path)
-      else out.push(rel)
-    }
-  }
-  if (existsSync(dir)) walk(dir)
-  return out
-}
-
-const posix = (path: string) => path.split(sep).join('/')
 
 /** The id of a group named in /etc/group; undefined when there is none. */
 export function groupId(name: string): number | undefined {
@@ -66,45 +48,38 @@ export function groupId(name: string): number | undefined {
 }
 
 /**
- * A document directory the sandbox may write (the compose layout, docs/architecture.md
- * 10.5): its group the shared group, directories setgid and group-writable, files group-writable.
+ * Makes a new, empty document directory: its parents are serve's (made as
+ * they are needed); with the documents' group (the compose layout,
+ * docs/architecture.md 10.5) it gets the group, setgid and group-writable,
+ * so the sandbox may write in it, and serve writes nothing in it from here on.
  */
-function share(dir: string, gid: number): void {
-  const walk = (path: string) => {
-    const stat = lstatSync(path)
-    if (stat.isSymbolicLink()) return
-    chownSync(path, -1, gid)
-    if (stat.isDirectory()) {
-      chmodSync(path, 0o2775)
-      for (const name of readdirSync(path)) walk(join(path, name))
-    } else {
-      chmodSync(path, (stat.mode & 0o777) | 0o660)
-    }
+export function makeDocumentDir(root: string, dir: string, group?: number): void {
+  const path = join(root, dir)
+  mkdirSync(dirname(path), { recursive: true })
+  mkdirSync(path)
+  if (group !== undefined) {
+    chownSync(path, -1, group)
+    chmodSync(path, 0o2775)
   }
-  walk(dir)
 }
 
 export class Documents {
   readonly config: WorkspaceConfig
   readonly #git: Git
   readonly #revisions: Revisions
+  readonly #writer: DocumentWriter
   /** Called after an operation changed the documents (the server's sessions and the site follow). */
   readonly #changed: (change: { removed: string[], added: string[] }) => void | Promise<void>
-
   /** The group of the document directories (`PRESMIUM_DOCUMENTS_GROUP` in the compose layout), given to those it makes. */
   readonly #group?: number
 
-  constructor(config: WorkspaceConfig, git: Git, revisions: Revisions, changed: (change: { removed: string[], added: string[] }) => void | Promise<void> = () => {}, group?: string) {
+  constructor(config: WorkspaceConfig, git: Git, revisions: Revisions, writer: DocumentWriter, changed: (change: { removed: string[], added: string[] }) => void | Promise<void> = () => {}, group?: number) {
     this.config = config
     this.#git = git
     this.#revisions = revisions
+    this.#writer = writer
     this.#changed = changed
-    this.#group = group ? groupId(group) : undefined
-  }
-
-  /** A directory the operation made: shared with the document group when there is one. */
-  #made(dir: string): void {
-    if (this.#group !== undefined) share(join(this.config.root, dir), this.#group)
+    this.#group = group
   }
 
   /** The documents now, as listed. */
@@ -114,7 +89,7 @@ export class Documents {
 
   /** The directory of the templates: the workspace's `templates`, else Presmium's. */
   get templatesDir(): string {
-    return this.config.templates ?? BUILTIN_TEMPLATES
+    return templatesDir(this.config)
   }
 
   templates(): string[] {
@@ -134,17 +109,43 @@ export class Documents {
     return answer
   }
 
+  /** A new document directory, made empty, then filled by the writer; on a failure it goes again. */
+  async #fill(dir: string, fill: () => Promise<void>): Promise<void> {
+    makeDocumentDir(this.config.root, dir, this.#group)
+    try {
+      await fill()
+    } catch (error) {
+      await this.#remove(dir).catch(() => undefined)
+      throw error
+    }
+  }
+
+  /** Removes a document directory: the writer empties it, then serve removes it (once more if something came meanwhile). */
+  async #remove(dir: string): Promise<void> {
+    for (let attempt = 0; ; attempt++) {
+      await this.#writer.empty(dir)
+      try {
+        rmdirSync(join(this.config.root, dir))
+        return
+      } catch (error) {
+        if (attempt > 0 || (error as NodeJS.ErrnoException).code !== 'ENOTEMPTY') throw new RequestError(409, `${dir} could not be removed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+  }
+
   async #apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
     const origin = { kind: 'document' as const, member }
-    const known = new Set(listDocuments(this.config).map(doc => doc.dir))
+    const known = listDocuments(this.config).map(doc => doc.dir)
     const existing = (dir: string) => {
-      if (!known.has(dir)) throw new RequestError(404, `no document ${JSON.stringify(dir)}`)
+      if (!known.includes(dir)) throw new RequestError(404, `no document ${JSON.stringify(dir)}`)
       return dir
     }
     const fresh = (dir: string) => {
       const invalid = invalidDocumentDir(dir)
       if (invalid) throw new RequestError(400, invalid)
       if (!namedByPatterns(this.config, dir)) throw new RequestError(400, `"${dir}" is not where the workspace configuration's documents are (${this.config.documents.join(', ')})`)
+      const holder = known.find(doc => doc !== '' && (within(dir, doc) || within(doc, dir)))
+      if (holder !== undefined) throw new RequestError(409, `${dir} would hold or be inside the document ${holder}`)
       if (existsSync(join(this.config.root, dir))) throw new RequestError(409, `${dir} exists already`)
       return dir
     }
@@ -152,16 +153,9 @@ export class Documents {
       case 'create': {
         const dir = fresh(operation.dir)
         const name = operation.template ?? (this.templates().includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : this.templates()[0])
-        const template = name ? join(this.templatesDir, name) : undefined
-        if (!template || name!.includes('/') || name!.startsWith('.') || !existsSync(template)) throw new RequestError(400, `no document template ${JSON.stringify(name ?? '')}`)
+        if (!name || !this.templates().includes(name)) throw new RequestError(400, `no document template ${JSON.stringify(name ?? '')}`)
         const title = operation.title?.trim() || dir.split('/').at(-1)!
-        for (const file of sourceFiles(template)) {
-          const target = join(this.config.root, dir, file)
-          mkdirSync(dirname(target), { recursive: true })
-          const content = readFileSync(join(template, file))
-          writeFileSync(target, file.endsWith('.md') ? content.toString('utf8').replaceAll('{{title}}', JSON.stringify(title).slice(1, -1)) : content)
-        }
-        this.#made(dir)
+        await this.#fill(dir, () => this.#writer.template(dir, name, title))
         const revision = await this.#revisions.commitNow([dir], `Create document ${dir}`, `Title: ${title}\nTemplate: ${name}`, origin)
         return { revision, dir }
       }
@@ -170,53 +164,24 @@ export class Documents {
         const to = fresh(operation.to)
         mkdirSync(dirname(join(this.config.root, to)), { recursive: true })
         renameSync(join(this.config.root, from), join(this.config.root, to))
-        this.#made(to)
-        const rewritten = this.#rewrite(from, to)
+        // The other documents' links (and the moved one's own) follow, written by the writer.
+        const rewritten = (await this.#writer.relink(from, to)).filter(path => !within(path, to))
         const revision = await this.#revisions.commitNow([from, to, ...rewritten], `Rename document ${from} to ${to}`, rewritten.length ? `Links rewritten in: ${rewritten.join(', ')}` : '', origin)
         return { revision, dir: to }
       }
       case 'copy': {
         const from = existing(operation.dir)
         const to = fresh(operation.to)
-        for (const file of sourceFiles(join(this.config.root, from))) {
-          const target = join(this.config.root, to, file)
-          mkdirSync(dirname(target), { recursive: true })
-          if (!file.endsWith('.md')) {
-            cpSync(join(this.config.root, from, file), target)
-            continue
-          }
-          // Links out of the copy point where they pointed from the original.
-          const text = readFileSync(join(this.config.root, from, file), 'utf8')
-          writeFileSync(target, rewriteLinks(text, posix(join(to, file)), posix(join(from, file)), from, to))
-        }
-        this.#made(to)
+        await this.#fill(to, () => this.#writer.copy(from, to))
         const revision = await this.#revisions.commitNow([to], `Copy document ${from} to ${to}`, '', origin)
         return { revision, dir: to }
       }
       case 'delete': {
         const dir = existing(operation.dir)
-        rmSync(join(this.config.root, dir), { recursive: true, force: true })
+        await this.#remove(dir)
         const revision = await this.#revisions.commitNow([dir], `Delete document ${dir}`, '', origin)
         return { revision }
       }
     }
-  }
-
-  /** Rewrites the relative links of every document's Markdown after `from` moved to `to`; returns the files changed (relative to the root). */
-  #rewrite(from: string, to: string): string[] {
-    const changed: string[] = []
-    for (const doc of listDocuments(this.config)) {
-      const dir = join(this.config.root, doc.dir)
-      for (const file of sourceFiles(dir).filter(name => name.endsWith('.md'))) {
-        const path = posix(join(doc.dir, file))
-        const was = within(path, to) ? `${from}${path.slice(to.length)}` : path
-        const text = readFileSync(join(dir, file), 'utf8')
-        const next = rewriteLinks(text, path, was, from, to)
-        if (next === text) continue
-        writeFileSync(join(dir, file), next)
-        if (!within(path, to)) changed.push(path)
-      }
-    }
-    return changed
   }
 }
