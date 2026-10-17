@@ -2,8 +2,8 @@
 // machine and its home page lists the two documents, the BPE document being the demo lecture
 // (sync.mjs --check); and the copy that try.mjs makes, a git repository of its own as a workspace is,
 // serves both documents with the operator's plugins: the new chapter's run panel and predict, the
-// short document's quiz, and no diagnostics. Both servers run without credentials (no model, no
-// speech engine), on free ports.
+// short document's quiz, and no diagnostics; the short document's link leads to the BPE document.
+// Both servers run without credentials (no model, no speech engine), on free ports.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -87,6 +87,11 @@ test('the copy that try.mjs makes serves both documents with their plugins', asy
 
     await openDevPage(page, `${server.url}/glance/`, page.locator('.pm-block[data-component="PmQuiz"]'))
     await expect(page.locator('.pm-diagnostics')).toHaveCount(0)
+
+    // The short document links to the BPE document (its directory), not to a file of it.
+    await page.locator('.pm-section[data-section="glance"] a', { hasText: 'BPE 分词' }).click()
+    await expect(page).toHaveURL(`${server.url}/bpe/`)
+    await expect(page.locator('.pm-section[data-section="cover"] h1')).toContainText('BPE 分词：从字节到词元', { timeout: 60_000 })
   } finally {
     await stop(server?.child)
     rmSync(dir, { recursive: true, force: true })

@@ -7,10 +7,11 @@ import { presmium } from './fixtures/deck.ts'
 import { SLIDES, WEB } from './urls.ts'
 
 // The demo lecture (examples/demo): it builds to the three media without warnings, as `pnpm demo:build`
-// does (its headmatter also lists the lecture renderer, which is not built by default: it needs a
-// speech engine), and its built web form and slides (`pnpm demo:build`, served on WEB and SLIDES) open
-// and page. The features are tested on fixture decks of their own; this spec only reads the lecture's
-// sections from its IR, and e2e/demo.spec.ts checks the lecture's own examples.
+// does (on another machine, but those of recordings made in another environment; its headmatter also
+// lists the lecture renderer, which is not built by default: it needs a speech engine), and its built
+// web form and slides (`pnpm demo:build`, served on WEB and SLIDES) open and page. The features are
+// tested on fixture decks of their own; this spec only reads the lecture's sections from its IR, and
+// e2e/demo.spec.ts checks the lecture's own examples.
 const DEMO = fileURLToPath(new URL('../examples/demo', import.meta.url))
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
@@ -19,13 +20,26 @@ async function sections(): Promise<Section[]> {
   return (await (await fetch(`${WEB}/ir.json`)).json() as { sections: Section[] }).sections
 }
 
+/**
+ * The one warning the build machine brings: the recordings in .presmium/freeze name the environment
+ * that made them (the Python version; the browser and the GPU of the shader), and a build in another
+ * environment reuses them with this warning (docs/ir.md section 4, examples/demo/README.md). In the
+ * environment that recorded them, the build has no warning at all.
+ */
+const RECORDED_ELSEWHERE = /\swarning\s+block \S+: its recorded output was made with "[^"]*", this build has "[^"]*"; the recording is reused/
+
 test('the lecture builds to the web, the slides and a notebook without warnings', async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'the build does not depend on the browser')
   test.setTimeout(600_000)
   const out = mkdtempSync(join(tmpdir(), 'presmium-demo-'))
   try {
     const report = await presmium(['build', '--to', 'web,slides,notebook', '--out', out], DEMO)
-    expect(report).toMatch(/^0 errors, 0 warnings\b/m)
+    expect(report).toMatch(/^0 errors, \d+ warnings\b/m)
+    const warnings = report.split('\n').filter(line => /^\S*\s{2}warning\s{2}/.test(line))
+    const elsewhere = warnings.filter(line => RECORDED_ELSEWHERE.test(line))
+    for (const line of elsewhere) test.info().annotations.push({ type: 'recorded elsewhere', description: line })
+    expect(warnings.filter(line => !elsewhere.includes(line))).toEqual([])
+    expect(report).toMatch(new RegExp(`^0 errors, ${elsewhere.length} warnings\\b`, 'm'))
     expect(existsSync(join(out, 'web/index.html'))).toBe(true)
     expect(existsSync(join(out, 'slides/index.html'))).toBe(true)
     const notebook = JSON.parse(readFileSync(join(out, 'notebook/lecture.ipynb'), 'utf8')) as { cells: { metadata: { presmium?: { section: string } } }[] }

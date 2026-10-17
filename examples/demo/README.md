@@ -29,11 +29,11 @@ pnpm exec sirv examples/demo/dist --single slides/index.html --port 8080
 - C：在 WebAssembly 中由随插件发布的 clang 编译、运行，构建机不需要 C 编译器；网页与幻灯片中点“运行”，浏览器下载同一个编译器（约 50 MB）再运行。
 - WGSL 计算着色器：在 Playwright 的 Chromium 中运行。有显卡时用显卡（现有的录制来自 RTX 5090），没有时用 CPU 模拟的 SwiftShader。浏览器没有 WebGPU 或没有可用的显卡时，面板显示这份录制并写明原因。
 
-录制记下了运行环境（Python 版本、浏览器与显卡）。在别的环境中构建时，代码没有改动就沿用录制，并给出警告 `recorded output was made with …`；要在本机重新运行，在头部写 `execute: { rerun: environment }`。
+录制记下了运行环境（Python 版本、Playwright 的 Chromium 版本与显卡）。在别的环境中构建时（例如 Python 3.12、没有 RTX 50 系列显卡的机器，或升级了 Playwright 之后），代码没有改动就沿用录制，并对每个这样的代码块给出警告 `recorded output was made with …`，所以 `pnpm demo:build` 只在录制它们的环境中没有警告；冒烟用例 `e2e/smoke.spec.ts` 只容许这一种警告。要在本机重新运行并替换录制，在头部写 `execute: { rerun: environment }`。
 
 ## 讲授：用火山引擎合成并回放
 
-讲解就是讲授的脚本：讲解中的 `{cue}` 在说到某个字时聚光一段代码、显示录制的输出或停顿，`{say}` 让 `BPE` 读作“B P E”。头部的 `renderers` 列出了讲授渲染端 `lecture`，但 `pnpm demo:build` 不构建它：合成要调用收费的语音服务，需要凭据。配置火山引擎后这样合成并回放：
+讲解就是讲授的脚本：讲解中的 `{cue}` 在说到某个字时聚光一段代码、显示录制的输出或停顿，`{say}` 让 `BPE` 读作“B P E”。头部的 `renderers` 列出了讲授渲染端 `lecture`，但 `pnpm demo:build` 不构建它：合成要调用收费的语音服务，需要凭据。所以默认构建的网页中，“视图”菜单的“讲授”只写着“这份讲义还没有讲授”。配置火山引擎后这样合成并回放：
 
 1. 在运行 `presmium` 的终端中设置火山引擎的 API Key（不要写进仓库）：
 

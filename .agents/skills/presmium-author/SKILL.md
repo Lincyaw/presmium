@@ -128,7 +128,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件；不同文件可以都用 `[^1]`，每个文件的脚注各自从 1 编号。
 - 标签：标题前的 `(id)=` 给章节 ID；块前的 `(id)=` 或指令的 `:label: id` 给块 ID（章节内唯一）。`{question-box}` 的 `:target:` 和课堂笔记依赖块 ID；没有标签的块 ID 随前面插入同类块而变化。
 - 交叉引用：`` {ref}`merge` `` 引用章节（文字为章节标题），`{numref}`、`{eq}` 引用带标签的图、表、公式；自己写了文字的引用保留文字。目标不存在时警告 `presmium.references`。
-- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；目录中的隐藏文件与 `node_modules` 不随它发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告（`presmium check` 同样报告）；直接链接到一个文件时照常发布，不论它的名字（不要链接 `.env` 这样的文件）；含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
+- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；目录中的隐藏文件与 `node_modules` 不随它发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告（`presmium check` 同样报告）；直接链接到一个文件时照常发布，不论它的名字（不要链接 `.env` 这样的文件）；含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接，所以工作区中链接另一份文档要写它的目录（如“分词速览”中的 `[BPE 分词](../bpe/)`）：写成 `../bpe/lecture.md` 时网页把它当作文件发布，读者点开的是 404 页面。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
 
 ## 8. 插件指令
 
@@ -136,7 +136,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。录制过的讲授也能反过来写成讲解：工作区服务的编辑模式中“讲授回写”把转写交给 agent，按章节整理后替换讲解，录制时的操作成为相应位置的 `{cue}`（见 presmium-present 技能）；agent 经 MCP 工具 `track_narration` 读到逐字稿拼成的草稿与每一步讲解在源码中的位置。单独的讲授脚本中一段的问题（如 `{cue}` 的目标不存在），`presmium check` 报告在这一段所在的行。
 
-讲授渲染端可以只列在头部而不默认构建：`renderers` 写 `lecture: {}`（不写 `voice` 就不合成，`presmium check` 也不需要语音引擎），`package.json` 的构建脚本写 `presmium build --to web,slides,notebook`；配置好语音引擎后再写上 `voice`，用 `presmium build --to web,lecture` 合成。写了 `voice` 而既没有引擎、合成缓存中又缺少某句话时，`presmium check` 对每一句报错。示例讲义就这样做，见 `examples/demo/README.md`。``{cue}`pause 2s` `` 适合放在一个问题之后，给听的人留出想一想的时间。
+讲授渲染端可以只列在头部而不默认构建：`renderers` 写 `lecture: {}`（不写 `voice` 就不合成，`presmium check` 也不需要语音引擎），`package.json` 的构建脚本写 `presmium build --to web,slides,notebook`；配置好语音引擎后再写上 `voice`，用 `presmium build --to web,lecture` 合成。写了 `voice` 而既没有引擎、合成缓存中又缺少某句话时，`presmium check` 对每一句报错。示例讲义就这样做，见 `examples/demo/README.md`。``{cue}`pause 2s` `` 适合放在一个问题之后，给听的人留出想一想的时间。`{cue}` 在页面上不显示文字，它和前后的中文之间不要留空格（``最多？{cue}`pause 2s`选好答案``），否则网页与 notebook 中多出一个空格；后面紧接行内代码时留一个空格，免得两段反引号连在一起。
 
 文稿自己的组件：放在文稿目录的 `components/` 下（`StepBadge.vue`），用 `{component} StepBadge` 放进正文，两种形态都渲染。组件只能引用 `@presmium/host`、`@presmium/kernel` 与 vue，文稿的 `package.json` 要依赖 `@presmium/host`。
 
