@@ -28,9 +28,10 @@ const { anchor, look, note, steps } = useCue(props, 'data-pm-spotlight', request
 
 <style>
 /* The page-level effect's layering is in src/client/spotlight.css. */
+/* A spotlight in place: the warning tone's frame, apart from the accent of what is selected (N-10). */
 [data-pm-spotlight='inline'] {
-  outline: 3px solid #f59e0b;
+  outline: 3px solid var(--pm-color-warn);
   outline-offset: 4px;
-  border-radius: 4px;
+  border-radius: var(--pm-radius-chip);
 }
 </style>

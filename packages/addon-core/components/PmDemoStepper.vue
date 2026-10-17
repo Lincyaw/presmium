@@ -31,7 +31,7 @@ function status(i: number): string {
 <style scoped>
 .pm-demo-stepper li[data-status='active'] {
   font-weight: 700;
-  color: #0ea5e9;
+  color: var(--pm-color-accent);
 }
 .pm-demo-stepper li[data-status='done'] {
   opacity: 0.6;

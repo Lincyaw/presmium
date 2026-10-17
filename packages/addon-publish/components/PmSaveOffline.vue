@@ -41,7 +41,7 @@ async function save() {
   <button
     v-if="state !== 'hidden'"
     type="button"
-    class="pm-save-offline"
+    class="pm-save-offline pm-ui-button pm-ui-button--small"
     :data-state="state"
     :disabled="state === 'saving' || state === 'saved'"
     @click="save"
@@ -51,18 +51,17 @@ async function save() {
 </template>
 
 <style>
+/* The host's button (N-10); once saved it says so, still legible. */
 .pm-save-offline {
-  padding: 0.2em 0.7em;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.85em;
-  cursor: pointer;
+  border-radius: var(--pm-radius-pill);
 }
 .pm-save-offline:disabled {
   cursor: default;
-  opacity: 0.8;
+  opacity: 1;
+}
+.pm-save-offline[data-state='saved'] {
+  border-color: var(--pm-color-ok);
+  background: var(--pm-color-ok-soft);
+  color: var(--pm-color-ok);
 }
 </style>

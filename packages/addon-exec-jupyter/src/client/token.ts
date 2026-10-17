@@ -41,42 +41,49 @@ export function tokenFor(name: string, origin: string): Promise<string | undefin
   return pending
 }
 
-/** A modal dialog with one password field. */
+/** An element of the token dialog, with the classes of the host's components. */
+function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string): HTMLElementTagNameMap[K] {
+  const node = document.createElement(tag)
+  if (className) node.className = className
+  if (text !== undefined) node.textContent = text
+  return node
+}
+
+/**
+ * A modal dialog with one password field, in the host's design (N-10): the header, field and buttons are the
+ * host's (`pm-ui-*`), the panel its tokens. The native `<dialog>` keeps it modal and in the middle of the window.
+ */
 function ask(name: string, origin: string): Promise<string | undefined> {
   const t = messages()
-  const dialog = document.createElement('dialog')
-  dialog.className = 'pm-jupyter-token'
+  const dialog = element('dialog', 'pm-jupyter-token pm-ui')
   dialog.setAttribute('aria-labelledby', 'pm-jupyter-token-title')
-  const form = document.createElement('form')
-  form.method = 'dialog'
-  const title = document.createElement('h2')
+  const header = element('div', 'pm-ui-dialog__header')
+  const title = element('h2', 'pm-ui-dialog__title', t.tokenTitle(name))
   title.id = 'pm-jupyter-token-title'
-  title.textContent = t.tokenTitle(name)
-  const help = document.createElement('p')
-  help.textContent = t.tokenHelp(origin)
-  const label = document.createElement('label')
-  label.textContent = t.tokenLabel
-  const input = document.createElement('input')
+  header.append(title)
+  const form = element('form', 'pm-ui-dialog__body')
+  form.method = 'dialog'
+  const help = element('p', '', t.tokenHelp(origin))
+  const label = element('label', 'pm-ui-field')
+  const input = element('input', 'pm-ui-input')
   input.type = 'password'
   input.name = 'token'
   input.autocomplete = 'off'
   input.required = true
-  label.append(input)
-  const buttons = document.createElement('div')
-  buttons.className = 'pm-jupyter-token__buttons'
-  const cancel = document.createElement('button')
+  label.append(element('span', 'pm-ui-field__label', t.tokenLabel), input)
+  const buttons = element('div', '')
+  const cancel = element('button', 'pm-ui-button', t.tokenCancel)
   cancel.type = 'button'
-  cancel.textContent = t.tokenCancel
-  const connect = document.createElement('button')
+  const connect = element('button', 'pm-ui-button pm-ui-button--primary', t.tokenConnect)
   connect.type = 'submit'
   connect.value = 'connect'
-  connect.textContent = t.tokenConnect
   buttons.append(cancel, connect)
-  form.append(title, help, label, buttons)
-  dialog.append(form)
-  Object.assign(dialog.style, { maxWidth: '28rem', padding: '1rem 1.25rem', borderRadius: '8px', border: '1px solid #8886', font: 'inherit' })
-  Object.assign(input.style, { display: 'block', width: '100%', margin: '0.25rem 0 0.75rem', font: 'inherit', padding: '0.25rem' })
-  Object.assign(buttons.style, { display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' })
+  form.append(help, label, buttons)
+  dialog.append(header, form)
+  Object.assign(dialog.style, { width: 'min(28rem, calc(100vw - 2rem))', padding: '0', border: '1px solid var(--pm-color-line)', borderRadius: 'var(--pm-radius-panel)', background: 'var(--pm-color-surface)', boxShadow: 'var(--pm-shadow-float)' })
+  Object.assign(form.style, { display: 'grid', gap: 'var(--pm-space-3)' })
+  help.style.margin = '0'
+  Object.assign(buttons.style, { display: 'flex', gap: 'var(--pm-space-2)', justifyContent: 'flex-end' })
   document.body.append(dialog)
   return new Promise((resolve) => {
     cancel.addEventListener('click', () => dialog.close(''))

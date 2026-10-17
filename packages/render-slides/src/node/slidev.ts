@@ -13,6 +13,7 @@
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, escapeHtml, languageId, lowerMyst, nodeMdast, publishedUrl, withProp } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, LocalAsset, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@presmium/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
@@ -60,6 +61,8 @@ interface Generation {
   section: string
   /** Whether code that runs live runs in the slides (`renderers.slides.liveCode`, default true). */
   live: boolean
+  /** The chapter of each section below one, by section id: the title its slide shows above its own. */
+  chapters: Map<string, string>
 }
 
 /**
@@ -67,7 +70,7 @@ interface Generation {
  * build downloads under the generated deck and refers to by a path from the
  * file system root, so the slides would depend on where the deck is checked out.
  */
-const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#0ea5e9"/></svg>')}`
+const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#0f5f5c"/></svg>')}`
 
 /** The deck's language: its `lang`, else the default; both forms put it in `<html lang>`. */
 export function deckLang(doc: IRDocument): string {
@@ -84,10 +87,17 @@ const RENDERER_KEYS = new Set(['package', 'base', 'port', 'liveCode'])
 /** Package of the web renderer, unless `renderers.web.package` names another. */
 const WEB_PACKAGE = '@presmium/web'
 
+/**
+ * Presmium's own Slidev theme, 书卷 (../../theme, docs/architecture.md 5.11): the
+ * slides' theme unless `renderers.slides.theme` names one (`default` is
+ * Slidev's).
+ */
+const THEME_DIR = fileURLToPath(new URL('../../theme', import.meta.url))
+
 /** `dir` is the directory of the generated deck. */
 export function slidevMarkdown(doc: IRDocument, ctx: RenderContext, dir: string): SlidevDeck {
   const locale = deckLocale(ctx.lang ?? deckLang(doc))
-  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc), section: '', live: ctx.config.liveCode !== false }
+  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc), section: '', live: ctx.config.liveCode !== false, chapters: chapters(doc) }
   const markdown = doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, generation) : {}, generation)).join('\n')
   return { markdown, assets: generation.assets }
 }
@@ -128,16 +138,34 @@ function slideLinks(doc: IRDocument): (label: string) => string | undefined {
   }
 }
 
+/**
+ * The chapter of each section: the title of the outermost section that holds
+ * it (a lower heading depth, not the cover's), as the slides of the theme show
+ * it above their title (`presmiumChapter`).
+ */
+function chapters(doc: IRDocument): Map<string, string> {
+  const found = new Map<string, string>()
+  let open: IRSection[] = []
+  for (const section of doc.sections) {
+    open = open.filter(outer => outer.depth < section.depth)
+    const chapter = open.find(outer => outer.depth >= 1 && outer.title)
+    if (chapter) found.set(section.id, chapter.title)
+    open.push(section)
+  }
+  return found
+}
+
 function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
   const { ctx } = gen
-  const { theme = 'default', addons = [], ...rest } = Object.fromEntries(Object.entries(ctx.config).filter(([key]) => !RENDERER_KEYS.has(key)))
-  // Local paths are relative to the deck; Slidev gets the theme's absolute.
+  const { theme, addons = [], ...rest } = Object.fromEntries(Object.entries(ctx.config).filter(([key]) => !RENDERER_KEYS.has(key)))
+  // Local paths are relative to the deck; Slidev gets the theme's absolute. By default Presmium's own
+  // theme, relative to the generated deck.
   const local = (name: unknown) => typeof name === 'string' && name.startsWith('.') ? resolve(ctx.deckDir, name) : name
   // Plugins are Slidev addons: their components, setups and layers load in the deck.
   const listed = [...doc.config.plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, ctx)]
   const { htmlAttrs, ...slidev } = rest
   return {
-    theme: local(theme),
+    theme: theme === undefined ? relativePath(gen.dir, THEME_DIR) : local(theme),
     title: doc.meta.title,
     favicon: FAVICON,
     ...typesSource(doc, gen),
@@ -167,8 +195,17 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
  */
 function addonPath(name: string, gen: Generation): string {
   const dir = gen.ctx.pluginDirs[name] ?? packageDir(name, gen.ctx.deckDir)
-  if (!dir) return name
-  const path = relative(dirname(gen.dir), dir).split('\\').join('/')
+  return dir ? relativePath(dirname(gen.dir), dir) : name
+}
+
+/**
+ * A directory as a path relative to `from`, starting with `.`, as Slidev
+ * takes a local addon (from the directory holding the deck) or theme (from
+ * the deck's own). Slidev puts the deck's configuration, the theme's name
+ * too, into the built slides, which hold no path of the machine (Principle 5).
+ */
+function relativePath(from: string, dir: string): string {
+  const path = relative(from, dir).split('\\').join('/')
   return path.startsWith('.') ? path : `./${path}`
 }
 
@@ -206,7 +243,8 @@ function formAddons(doc: IRDocument, ctx: RenderContext): string[] {
 function slide(section: IRSection, head: Record<string, unknown>, gen: Generation): string {
   gen.section = section.id
   const config = section.config ? { [section.index === 1 ? 'presmiumSection' : 'presmium']: gen.ctx.portable(section.config, gen.dir) } : {}
-  const frontmatter = { ...head, ...section.hints.slides, ...config }
+  const chapter = gen.chapters.get(section.id)
+  const frontmatter = { ...head, ...section.hints.slides, ...config, ...chapter ? { presmiumChapter: chapter } : {} }
   const notes: IRBlock[] = []
   const parts = section.title ? [md({ type: 'heading', depth: 1, children: [{ type: 'text', value: section.title }] }, undefined, gen)] : []
   parts.push(...blocks(section.blocks, gen, notes, false))

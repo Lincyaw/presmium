@@ -143,11 +143,12 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
         </template>
       </div>
       <div v-if="expanded && state === 'ready'" class="pm-step-run__stepper" role="group" :aria-label="t.stepper" @keydown.stop>
-        <button type="button" :aria-label="t.previousStep" :disabled="(frame?.step ?? 0) <= 0" @click="go((frame?.step ?? 0) - 1)">
+        <button type="button" class="pm-ui-button pm-ui-button--small" :aria-label="t.previousStep" :disabled="(frame?.step ?? 0) <= 0" @click="go((frame?.step ?? 0) - 1)">
           ◀
         </button>
         <input
           type="range"
+          class="pm-ui-checkbox"
           min="0"
           :max="last"
           :value="frame?.step ?? 0"
@@ -155,7 +156,7 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
           :aria-valuetext="t.stepOf(frame?.step ?? 0, last)"
           @input="go(Number(($event.target as HTMLInputElement).value))"
         >
-        <button type="button" :aria-label="t.nextStep" :disabled="(frame?.step ?? 0) >= last" @click="go((frame?.step ?? 0) + 1)">
+        <button type="button" class="pm-ui-button pm-ui-button--small" :aria-label="t.nextStep" :disabled="(frame?.step ?? 0) >= last" @click="go((frame?.step ?? 0) + 1)">
           ▶
         </button>
       </div>
@@ -167,11 +168,15 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
 
 <style scoped>
 .pm-step-run {
+  --pm-text-sm: 0.875em;
+
   display: grid;
   /* Code and output side by side where there is room; stacked where it is narrow (a phone),
      so the code keeps the full width. Sizes follow the slide's font size (N-05). */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: 0.75em;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
   font-size: 0.8em;
 }
 .pm-step-run__source {
@@ -184,34 +189,29 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
   display: inline-block;
   min-width: 100%;
 }
+/* The line just run: the selected tint and an accent rule, as edit mode marks a chosen line. */
 .pm-step-run__source :deep(.pm-step-run__line) {
-  background: rgba(14, 165, 233, 0.25);
-  box-shadow: inset 3px 0 #0ea5e9;
+  background: var(--pm-color-selected);
+  box-shadow: inset 3px 0 var(--pm-color-accent);
 }
 .pm-step-run__side {
   min-width: 0;
 }
 .pm-step-run__status {
-  margin-bottom: 0.35em;
-  opacity: 0.75;
+  margin-bottom: 0.4em;
+  color: var(--pm-color-muted);
 }
 .pm-step-run__warning {
-  color: #d97706;
+  color: var(--pm-color-warn);
 }
 .pm-step-run__stepper {
   display: flex;
   align-items: center;
   gap: 0.5em;
-  margin-bottom: 0.35em;
+  margin-bottom: 0.4em;
 }
-.pm-step-run__stepper button {
+.pm-step-run__stepper .pm-ui-button {
   min-width: 2.25em;
-  padding: 0.1em 0.5em;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25em;
-}
-.pm-step-run__stepper button:disabled {
-  opacity: 0.4;
 }
 .pm-step-run__stepper input {
   flex: 1;
@@ -222,10 +222,13 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
   min-height: 3em;
   max-height: 18em;
   overflow: auto;
-  padding: 0.35em 0.5em;
-  border-radius: 0.25em;
-  background: rgba(125, 125, 125, 0.12);
+  padding: 0.6em 0.9em;
+  border-radius: var(--pm-radius-panel);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
   font-size: 0.95em;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 </style>

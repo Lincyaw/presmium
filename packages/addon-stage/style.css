@@ -4,7 +4,7 @@
 }
 .slidev-layout :is(th, td) {
   padding: 0.25em 0.75em;
-  border-bottom: 1px solid rgba(125, 125, 125, 0.3);
+  border-bottom: 1px solid var(--pm-color-line);
 }
 .slidev-layout th {
   border-bottom-width: 2px;
@@ -19,28 +19,26 @@
   right: 3.5rem;
   bottom: 1rem;
   padding-top: 0.25rem;
-  border-top: 1px solid rgba(125, 125, 125, 0.3);
+  border-top: 1px solid var(--pm-color-line);
+  color: var(--pm-color-muted);
   font-size: 0.7em;
-  opacity: 0.8;
 }
 .slidev-layout .footnotes :is(ol, p) {
   margin: 0;
 }
 
-/* P-02 step notes: with [click] markers, the current step stands out and the others recede. */
+/* P-02 step notes: with [click] markers, the current step stands out (the selected tint and the accent's rule, as
+   a chosen line of edit mode) and the others recede to the muted tone. */
 .slidev-note-with-clicks :is(p, li) {
   padding: 0.15em 0.5em;
-  border-radius: 0.25rem;
+  border-radius: var(--pm-radius-chip);
 }
 .slidev-note-with-clicks :is(p, li):not(.slidev-note-fade, li p) {
-  background: rgba(139, 92, 246, 0.12);
-  box-shadow: inset 3px 0 0 #8b5cf6;
+  background: var(--pm-color-selected);
+  box-shadow: inset 3px 0 0 var(--pm-color-accent);
 }
 .slidev-note-with-clicks .slidev-note-fade {
-  color: rgba(136, 136, 136, 0.55);
-}
-.dark .slidev-note-with-clicks .slidev-note-fade {
-  color: rgba(161, 161, 161, 0.5);
+  color: var(--pm-color-muted);
 }
 
 /* P-03 audience screen: black screen, frozen frame, and the presenter's reminder. */
@@ -63,12 +61,14 @@
   right: 0.75rem;
   z-index: 50;
   padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
-  background: #111;
-  color: #fff;
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-ink);
+  color: var(--pm-color-bg);
+  font-family: var(--pm-font-sans);
   font-size: 0.9rem;
   pointer-events: none;
 }
 .pm-stage-badge[data-mode='frozen'] {
-  background: #2563eb;
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
 }

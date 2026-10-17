@@ -35,7 +35,7 @@ presmium:                       # 各插件的全局配置，键为插件 ID
   presmium.code: { repo: https://github.com/org/repo }
 renderers:                      # presmium build 默认构建的渲染端及其配置
   web: {}
-  slides: { theme: default }
+  slides: {}                    # 不写 theme 时是 Presmium 的“书卷”主题；theme: default 是 Slidev 的默认主题
   notebook: {}
 execute:                        # 可选：执行环境（第 10 节）
   env: box                      # 写了 :run: 而不写 :env: 的代码块的环境；不写时按语言选执行器
@@ -48,7 +48,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 - `plugins` 中没有列出的插件，其指令报错 `unknown directive`。总是列出 `@presmium/slidev-addon-core`（幻灯片形态的宿主适配，插件组件与静态导出靠它）；讲台功能（黑屏、冻结、圈画、脚注就近显示）来自 `@presmium/slidev-addon-stage`。
 - `lang` 是文稿语言的唯一来源：两种形态的 `<html lang>`、界面语言、编译时写进产物的文字（notebook 的说明等）都按它；渲染端不能另设语言。Presmium 只有中文与英文文本，其他语言（如 `fr`）的界面跟随浏览器的语言，再不行用英文。
-- `renderers.web`：`base`（站点路径）、`port`（开发服务器端口）；站点外壳（P-78）：`nav: [{ text, link }]`（顶部导航，`link` 为站内路径如 `/chapter2.html` 或完整地址，也可以 `{ text, items: [...] }` 成为下拉菜单）、`footer: { message, copyright }`（每页底部，可含行内 HTML）、`head: { description, image }`（页面的描述与 `og:title`、`og:description`、`og:image`；`image` 可以是文稿中的本地文件）、`sitemap: { hostname }`（生成 `sitemap.xml`，地址带上站点路径）。`renderers.slides`：Slidev 文稿头部的选项（如 `theme`、`routerMode`、`exportFilename`），另有 `base`、`port`、`addons`。`renderers.notebook`：`kernel`（默认 `python3`，与内核同语言的代码成为代码单元格）、`webUrl`（notebook 显示不了的组件链接到网页版；不写而同时构建网页时用相对链接 `../web/<页>#<章节>`）。任一渲染端都可以用 `package` 换成另一个包。
+- `renderers.web`：`base`（站点路径）、`port`（开发服务器端口）；站点外壳（P-78）：`nav: [{ text, link }]`（顶部导航，`link` 为站内路径如 `/chapter2.html` 或完整地址，也可以 `{ text, items: [...] }` 成为下拉菜单）、`footer: { message, copyright }`（每页底部，可含行内 HTML）、`head: { description, image }`（页面的描述与 `og:title`、`og:description`、`og:image`；`image` 可以是文稿中的本地文件）、`sitemap: { hostname }`（生成 `sitemap.xml`，地址带上站点路径）。`renderers.slides`：Slidev 文稿头部的选项（如 `theme`、`routerMode`、`exportFilename`），另有 `base`、`port`、`addons`。不写 `theme` 时幻灯片用 Presmium 的默认主题“书卷”：纸色底、衬线体的标题、标题上方强调色的小字是这一节所在的章（`#` 分章标题），底部是讲义标题、这一页的步骤条与页码，代码在 1280 px 宽的投影上不小于 18 px，按步骤高亮代码行时其余的行退为一种灰色（不是 Slidev 的半透明），仍然清楚可读，明暗两套随 Slidev 的暗色模式切换，插件组件用同一套颜色与控件；`theme: default` 是 Slidev 自己的默认主题，也可以写别的主题包或本地目录。`renderers.notebook`：`kernel`（默认 `python3`，与内核同语言的代码成为代码单元格）、`webUrl`（notebook 显示不了的组件链接到网页版；不写而同时构建网页时用相对链接 `../web/<页>#<章节>`）。任一渲染端都可以用 `package` 换成另一个包。
 - `base` 的默认值：同时构建网页与幻灯片、两者都不写 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体就是一个站点；只构建一种时为 `/`。
 - 不写 `renderers` 时构建全部已安装的渲染端。
 - 入口文件以 UTF-8 BOM 开头（Windows 记事本）也没关系。
@@ -214,7 +214,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 
 ### 由 agent 修改讲义（批注、对话、审阅与撤销）
 
-`presmium serve` 中（工作区是 git 仓库，编辑者或所有者），文稿的 `plugins` 列出助手时，工具栏的“AI 修改”进入编辑模式并打开“批注与对话”面板（“编辑”进入编辑模式时它也打开），不用接触源码：
+`presmium serve` 中（工作区是 git 仓库，编辑者或所有者），文稿的 `plugins` 列出助手时，工具栏的“AI 修改”进入编辑模式并打开“批注与对话”面板（“编辑”进入编辑模式时它也打开），面板停靠在编辑模式的右侧，再点“AI 修改”收起或展开它；状态栏显示模型与它的来源（环境变量、工作区配置或模型设置），点它打开模型设置，换了服务或地址时要重新填写密钥。不用接触源码：
 
 - **批注**：在页面上点选一个块（段落、代码、组件），面板显示它的源码摘录，写下要求后“添加批注”；可以攒几条再“发送 N 条批注”。每条批注随后显示“已处理”或“未能处理”与 agent 的说明。
 - **对话**：写一句要求（如“在本章末尾新增一节”）发送，自动带上当前章节、步骤与在讲义中选中的文字。

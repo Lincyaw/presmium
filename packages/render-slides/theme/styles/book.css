@@ -1,0 +1,307 @@
+/*
+ * Presmium's default slides theme, 书卷 (N-10; docs/design/slide.dc.html, docs/architecture.md 5.11). Paper, ink
+ * and a deep teal accent, from the host's tokens: the dark scheme is Slidev's `dark` class on <html>, which the
+ * tokens follow. Titles and the deck's text in the serif, code in the mono, controls in the sans of the host's
+ * components. Sizes are the slide's own px (a canvas 980 px wide): code at 14 px is 18 px or more once the slide
+ * fills a 1280 px wide screen (R-27). Everything is under `.slidev-layout`, so the presenter's own UI keeps
+ * Slidev's look.
+ */
+
+:root,
+html.dark {
+  --slidev-theme-primary: var(--pm-color-accent);
+  /* The theme's background, as Slidev names a theme's colours: the panels over the presenter view take it. */
+  --slidev-theme-background: var(--pm-color-surface);
+  --slidev-code-background: var(--pm-color-surface);
+  --slidev-code-foreground: var(--pm-color-ink);
+  --slidev-code-font-family: var(--pm-font-mono);
+  --slidev-code-font-size: 14px;
+  --slidev-code-line-height: 1.6;
+  --slidev-code-padding: 14px;
+  --slidev-code-radius: 10px;
+  --slidev-code-margin: 10px 0;
+  --slidev-code-tab-divider: var(--pm-color-line);
+  --slidev-code-tab-text-color: var(--pm-color-muted);
+  --slidev-code-tab-active-text-color: var(--pm-color-ink);
+  --slidev-code-tab-font-size: 12px;
+}
+
+/* Every layout, the theme's and Slidev's own (center, two-cols, ...): paper and ink. ----------------------- */
+
+.slidev-layout {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 40px 56px;
+  background: var(--pm-color-bg);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.slidev-layout :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 0.5em;
+  color: var(--pm-color-ink);
+  line-height: 1.2;
+}
+
+.slidev-layout h1 {
+  margin: 0 0 18px;
+  font-family: var(--pm-font-serif);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.005em;
+}
+
+.slidev-layout h2 {
+  font-family: var(--pm-font-serif);
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.slidev-layout h3 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.slidev-layout :is(h4, h5, h6) {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.slidev-layout p {
+  margin: 12px 0;
+}
+
+.slidev-layout :is(ul, ol) {
+  margin: 12px 0;
+  padding-left: 1.3em;
+}
+
+.slidev-layout ul {
+  list-style: disc;
+}
+
+.slidev-layout ol {
+  list-style: decimal;
+}
+
+.slidev-layout li {
+  margin: 4px 0;
+  padding-left: 0.2em;
+}
+
+.slidev-layout li::marker {
+  color: var(--pm-color-accent);
+}
+
+.slidev-layout :is(b, strong) {
+  font-weight: 600;
+}
+
+.slidev-layout a {
+  color: var(--pm-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.slidev-layout blockquote {
+  margin: 12px 0;
+  padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--pm-color-accent);
+  color: var(--pm-color-muted);
+}
+
+.slidev-layout blockquote > * {
+  margin: 4px 0;
+}
+
+.slidev-layout table {
+  width: 100%;
+  margin: 12px 0;
+  border-collapse: collapse;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+}
+
+.slidev-layout :is(th, td) {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--pm-color-line);
+  text-align: left;
+}
+
+.slidev-layout th {
+  border-bottom-color: var(--pm-color-line-strong);
+  color: var(--pm-color-muted);
+  font-weight: 600;
+}
+
+.slidev-layout kbd {
+  padding: 0 0.35em;
+  border: 1px solid var(--pm-color-line-strong);
+  border-radius: var(--pm-radius-chip);
+  font-family: var(--pm-font-mono);
+  font-size: 0.8em;
+}
+
+/* Code: a panel on the paper, its text 14 px (R-27); a word of code in the text, an accent chip. */
+.slidev-layout code {
+  font-family: var(--pm-font-mono);
+}
+
+.slidev-layout :not(pre) > code {
+  padding: 0.05em 0.35em;
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-accent-soft);
+  color: var(--pm-color-accent);
+  font-size: 0.9em;
+}
+
+.slidev-layout .slidev-code {
+  border: 1px solid var(--pm-color-line);
+}
+
+/* The lines a step leaves out of its highlight: one grey, without the syntax's colours, rather than Slidev's 30 %
+   opacity, so they recede and still read at 4.5:1 (WCAG AA, light and dark). */
+.slidev-layout .slidev-code .slidev-code-dishonored {
+  opacity: 1;
+}
+
+.slidev-layout .slidev-code .slidev-code-dishonored span {
+  color: color-mix(in srgb, var(--pm-color-ink) 62%, var(--pm-color-surface));
+}
+
+.slidev-layout .slidev-code-block-title,
+.slidev-layout .slidev-code-group-tabs {
+  border: 1px solid var(--pm-color-line);
+  border-bottom: 0;
+}
+
+/* The slides of the theme's layouts (layouts/*.vue) --------------------------------------------------------- */
+
+/* Room at the foot for the footer, which the content and a run panel's measure of its slide keep clear of. */
+.slidev-layout.pm-book {
+  position: relative;
+  padding: 34px 56px 46px;
+}
+
+/* Footnotes (the stage plugin sets them at the slide's foot) stand above the footer. */
+.slidev-layout.pm-book .footnotes {
+  right: 56px;
+  bottom: 40px;
+  left: 56px;
+}
+
+/* The deck's own text reads in the serif, as the web form's Markdown; components keep the sans of their controls. */
+.pm-book__content > :is(p, ul, ol, blockquote),
+.pm-book__content > .slidev-vclick-target > :is(p, ul, ol, blockquote) {
+  font-family: var(--pm-font-serif);
+}
+
+/* The chapter the slide belongs to, in small accent letters above its title, a rule beside it. */
+.pm-book__chapter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 10px;
+  color: var(--pm-color-accent);
+  font-family: var(--pm-font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+}
+
+.pm-book__chapter::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--pm-color-line);
+}
+
+/* The cover: the title large, low on the page, the subtitle in the serif below it. */
+.slidev-layout.pm-book--cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 96px;
+}
+
+.pm-book--cover h1 {
+  max-width: 85%;
+  margin-bottom: 18px;
+  font-size: 48px;
+  line-height: 1.12;
+}
+
+.pm-book--cover h1::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  margin-bottom: 22px;
+  border-radius: 2px;
+  background: var(--pm-color-accent);
+}
+
+.pm-book--cover .pm-book__content > :is(p, ul, ol) {
+  max-width: 80%;
+  color: var(--pm-color-muted);
+  font-size: 20px;
+}
+
+/* The foot: the deck's title, the slide's steps (each one done in the accent), the slide's number. */
+.pm-book-footer {
+  position: absolute;
+  right: 56px;
+  bottom: 16px;
+  left: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.pm-book-footer__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* As wide as its steps (`--steps`), up to 40 % of the foot; the segments narrow for a long one. */
+.pm-book-footer__steps {
+  display: flex;
+  flex: none;
+  gap: 5px;
+  width: min(calc(var(--steps, 1) * 22px - 5px), 40%);
+  margin-left: auto;
+}
+
+/* The steps to come are framed in `line-strong` (3:1 on the paper, WCAG 1.4.11), the done ones filled. */
+.pm-book-footer__steps > span {
+  flex: 1;
+  min-width: 2px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--pm-color-line-strong);
+}
+
+.pm-book-footer__steps > span[data-done] {
+  background: var(--pm-color-accent);
+}
+
+.pm-book-footer__page {
+  margin-left: auto;
+  font-family: var(--pm-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pm-book-footer__steps + .pm-book-footer__page {
+  margin-left: 0;
+}

@@ -48,24 +48,24 @@ function submit(): void {
     </p>
     <template v-else-if="snapshot.status === 'idle'">
       <p v-if="snapshot.rejoin" class="pm-session__actions">
-        <button type="button" :disabled="busy" :title="t.rejoinTitle" @click="run(s => s.rejoin())">
+        <button type="button" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="busy" :title="t.rejoinTitle" @click="run(s => s.rejoin())">
           {{ t.rejoin(snapshot.rejoin) }}
         </button>
       </p>
       <form class="pm-session__form" @submit.prevent="submit">
-        <input v-model="name" :aria-label="t.nickname" :placeholder="t.nickname" maxlength="40" required>
-        <button type="submit" :disabled="busy">
+        <input v-model="name" class="pm-ui-input" :aria-label="t.nickname" :placeholder="t.nickname" maxlength="40" required>
+        <button type="submit" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="busy">
           {{ snapshot.invitation ? t.join : t.create }}
         </button>
       </form>
     </template>
     <template v-else>
       <p>
-        {{ t.classroom }} <code class="pm-session__room">{{ snapshot.sessionId }}</code> · {{ snapshot.me?.name }}{{ presenter ? t.role.presenter : t.role.learner }}
+        {{ t.classroom }} <code class="pm-session__room pm-ui-code">{{ snapshot.sessionId }}</code> · {{ snapshot.me?.name }}{{ presenter ? t.role.presenter : t.role.learner }}
       </p>
       <template v-if="presenter && snapshot.status === 'active' && snapshot.joinUrl">
         <p class="pm-session__join">
-          {{ t.joinLink }}<a class="pm-session__link" :href="snapshot.joinUrl" target="_blank" rel="noopener">{{ snapshot.joinUrl }}</a>
+          {{ t.joinLink }}<a class="pm-session__link pm-ui-link" :href="snapshot.joinUrl" target="_blank" rel="noopener">{{ snapshot.joinUrl }}</a>
         </p>
         <p v-if="loopbackLink(snapshot.joinUrl)" class="pm-session__warning" role="note">
           {{ t.loopbackLink }}
@@ -73,7 +73,7 @@ function submit(): void {
         <!-- eslint-disable-next-line vue/no-v-html -- an SVG generated from the link -->
         <div class="pm-session__qr" role="img" :aria-label="t.qr" v-html="qr" />
       </template>
-      <p class="pm-session__label">
+      <p class="pm-session__label pm-ui-heading">
         {{ t.participantCount(snapshot.participants.length) }}
       </p>
       <ul class="pm-session__participants" :aria-label="t.participants">
@@ -82,13 +82,13 @@ function submit(): void {
         </li>
       </ul>
       <p class="pm-session__actions">
-        <button v-if="presenter && snapshot.status === 'active'" type="button" :disabled="busy" @click="run(s => s.end())">
+        <button v-if="presenter && snapshot.status === 'active'" type="button" class="pm-ui-button pm-ui-button--danger pm-ui-button--small" :disabled="busy" @click="run(s => s.end())">
           {{ t.end }}
         </button>
-        <button v-if="presenter && snapshot.status === 'ended' && !snapshot.archive" type="button" :disabled="busy" :title="t.archiveTitle" @click="run(s => s.archive())">
+        <button v-if="presenter && snapshot.status === 'ended' && !snapshot.archive" type="button" class="pm-ui-button pm-ui-button--small" :disabled="busy" :title="t.archiveTitle" @click="run(s => s.archive())">
           {{ t.archive }}
         </button>
-        <button type="button" @click="session?.leave()">
+        <button type="button" class="pm-ui-button pm-ui-button--small" @click="session?.leave()">
           {{ t.leaveClassroom }}
         </button>
       </p>
@@ -102,9 +102,11 @@ function submit(): void {
 <style scoped>
 .pm-session {
   display: grid;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  gap: 0.5rem;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: var(--pm-leading-ui);
 }
 .pm-session p {
   margin: 0;
@@ -113,37 +115,27 @@ function submit(): void {
   font-weight: 600;
 }
 .pm-session__hint {
-  opacity: 0.8;
+  color: var(--pm-color-muted);
 }
 .pm-session__form,
 .pm-session__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
-.pm-session input,
-.pm-session button {
-  padding: 0.15rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-.pm-session button {
-  cursor: pointer;
-}
-.pm-session button:disabled {
-  opacity: 0.5;
-  cursor: default;
+.pm-session__form .pm-ui-input {
+  flex: 1;
+  min-width: 8rem;
 }
 .pm-session__link {
   word-break: break-all;
 }
+/* A QR code reads dark on light whatever the scheme. */
 .pm-session__qr {
   width: 8rem;
   height: 8rem;
   padding: 0.25rem;
+  border-radius: var(--pm-radius-small);
   background: #fff;
   color: #000;
 }
@@ -152,15 +144,15 @@ function submit(): void {
   width: 100%;
   height: 100%;
 }
-.pm-session__label {
-  opacity: 0.8;
-}
 .pm-session__participants {
   margin: 0;
   padding-left: 1.2em;
 }
+.pm-session__participants span {
+  color: var(--pm-color-muted);
+}
 .pm-session__error,
 .pm-session__warning {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 </style>

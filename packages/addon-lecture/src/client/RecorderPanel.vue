@@ -167,19 +167,19 @@ onBeforeUnmount(() => {
       <template v-if="!busy">
         <label v-if="tracks.length" class="pm-lecture-recorder__field">
           {{ t.recorder.track }}
-          <select v-model="track">
+          <select v-model="track" class="pm-ui-select">
             <option value="">{{ t.recorder.newTrack }}</option>
             <option v-for="id in tracks" :key="id" :value="id">{{ id }}</option>
           </select>
         </label>
-        <label class="pm-lecture-recorder__field"><input v-model="camera" type="checkbox"> {{ t.recorder.camera }}</label>
-        <label class="pm-lecture-recorder__field"><input v-model="screen" type="checkbox"> {{ t.recorder.screen }}</label>
-        <button type="button" class="pm-lecture-button pm-lecture-recorder__record" @click="start">{{ track ? t.recorder.rerecord : t.recorder.record }}</button>
+        <label class="pm-lecture-recorder__field"><input v-model="camera" class="pm-ui-checkbox" type="checkbox"> {{ t.recorder.camera }}</label>
+        <label class="pm-lecture-recorder__field"><input v-model="screen" class="pm-ui-checkbox" type="checkbox"> {{ t.recorder.screen }}</label>
+        <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-ui-button--primary pm-lecture-recorder__record" @click="start">{{ track ? t.recorder.rerecord : t.recorder.record }}</button>
       </template>
-      <button v-else-if="recording" type="button" class="pm-lecture-button pm-lecture-recorder__stop" @click="stop">{{ t.recorder.stop }}</button>
-      <button type="button" class="pm-lecture-button" :aria-pressed="tool === 'laser'" @click="tool = tool === 'laser' ? undefined : 'laser'">{{ t.recorder.laser }}</button>
-      <button type="button" class="pm-lecture-button" :aria-pressed="tool === 'marker'" @click="tool = tool === 'marker' ? undefined : 'marker'">{{ t.recorder.marker }}</button>
-      <button type="button" class="pm-lecture-button" @click="clearMarks">{{ t.recorder.clear }}</button>
+      <button v-else-if="recording" type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-ui-button--danger pm-lecture-recorder__stop" @click="stop">{{ t.recorder.stop }}</button>
+      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="tool === 'laser'" @click="tool = tool === 'laser' ? undefined : 'laser'">{{ t.recorder.laser }}</button>
+      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="tool === 'marker'" @click="tool = tool === 'marker' ? undefined : 'marker'">{{ t.recorder.marker }}</button>
+      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="clearMarks">{{ t.recorder.clear }}</button>
     </div>
     <p v-if="status" class="pm-lecture-recorder__status" role="status">{{ status }}</p>
   </div>
@@ -191,12 +191,16 @@ onBeforeUnmount(() => {
   top: 0.5rem;
   right: 0.5rem;
   z-index: 5;
+  box-sizing: border-box;
   max-width: calc(100% - 1rem);
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--vp-c-divider, rgb(125 125 125 / 0.3));
-  border-radius: 0.4rem;
-  background: var(--vp-c-bg-soft, #f6f6f7);
-  font-size: 0.8rem;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
 }
 .pm-lecture-recorder__row {
   display: flex;
@@ -214,7 +218,7 @@ onBeforeUnmount(() => {
 }
 .pm-lecture-recorder[data-state='recording'] .pm-lecture-recorder__status::before {
   content: '● ';
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 .pm-lecture-surface {
   position: fixed;

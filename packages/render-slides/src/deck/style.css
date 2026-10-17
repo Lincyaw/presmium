@@ -1,4 +1,8 @@
-/* Styles of the generated Slidev deck (written next to its slides.md). */
+/*
+ * Styles of the generated Slidev deck (written next to its slides.md), whatever its theme: what the renderer writes
+ * itself (the origin of code, recorded outputs, cards and grids, the live code's runner) and the printed pages. Colours
+ * are the host's tokens (@presmium/host/design.css, which addon-core loads), so they follow the deck's dark mode.
+ */
 
 /* Where a code block comes from: file and lines, commits, drift. No faded text, so it keeps its contrast in every theme. */
 .slidev-layout .pm-code-origin {
@@ -26,19 +30,11 @@
   padding: 0 0.4em;
   border: 1px solid currentColor;
   border-radius: 999px;
-  color: #15803d;
+  color: var(--pm-color-ok);
 }
 
 .slidev-layout .pm-code-origin__badge:is([data-drift='drifted'], [data-status]) {
-  color: #b45309;
-}
-
-.dark .slidev-layout .pm-code-origin__badge {
-  color: #4ade80;
-}
-
-.dark .slidev-layout .pm-code-origin__badge:is([data-drift='drifted'], [data-status]) {
-  color: #fbbf24;
+  color: var(--pm-color-warn);
 }
 
 /* Rich outputs recorded at compile time (docs/ir.md 6.1): an image keeps to the slide; HTML (sanitized) in the slide's text, a table whole. */
@@ -61,7 +57,7 @@
 
 .slidev-layout .pm-output__html :is(th, td) {
   padding: 0.15em 0.6em;
-  border-bottom: 1px solid rgba(125, 125, 125, 0.35);
+  border-bottom: 1px solid var(--pm-color-line);
   text-align: right;
 }
 
@@ -82,8 +78,9 @@
   display: flex;
   flex-direction: column;
   padding: 0 0.75rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.5rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
   font-size: 0.85em;
 }
 
@@ -94,7 +91,7 @@
 .slidev-layout :is(.pm-card__header, .pm-card__footer) {
   margin: 0 -0.75rem;
   padding: 0 0.75rem;
-  background: rgba(125, 125, 125, 0.1);
+  background: var(--pm-color-sunk);
 }
 
 .slidev-layout .pm-card__footer {
@@ -138,6 +135,25 @@
 }
 
 /*
+ * The slides form's code that runs live is a Monaco Runner (`{monaco-run}`, the runners of the execution plugin):
+ * the editor grows with the code (`height: 'auto'`), and code longer than the slide would be cut at its edge or
+ * shrunk with the slide's `zoom`, below what a room reads (R-27). The editor keeps the slide's code size and stops
+ * at a height that leaves the slide room for its title and the output below, which stops too; longer code and
+ * output scroll. The output is the paper's sunk panel, as the run panel's.
+ */
+.slidev-layout .slidev-monaco-container-inner {
+  max-height: 15em;
+}
+
+.slidev-layout .slidev-runner-output {
+  max-height: 7.5em;
+  overflow: auto;
+  border-radius: var(--slidev-code-radius, 6px);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+}
+
+/*
  * The output area of code that runs live (the execution plugin's runners): before a run it shows
  * the recorded output under a badge, as the web form's run panel marks it, or how to run the code.
  */
@@ -145,9 +161,9 @@
   display: inline-block;
   margin-bottom: 0.25em;
   padding: 0 0.4em;
-  border-radius: 0.25em;
-  background: #f59e0b;
-  color: black;
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-warn-soft);
+  color: var(--pm-color-warn);
 }
 
 .slidev-layout .pm-run-image {
@@ -156,7 +172,7 @@
 }
 
 .slidev-layout :is(.pm-run-stderr, .pm-run-dropped) {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 
 .slidev-layout .pm-run-text {

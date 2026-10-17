@@ -28,13 +28,13 @@ function toggled(event: Event): void {
 <template>
   <span class="pm-classroom-toolbar">
     <template v-if="presenter">
-      <button type="button" :popovertarget="id" :aria-expanded="open" :title="t.toolbar.title">
-        {{ t.toolbar.button }}<span v-if="unanswered" class="pm-classroom-toolbar__badge" :aria-label="t.toolbar.unanswered(unanswered)">{{ unanswered }}</span>
+      <button type="button" class="pm-ui-button pm-ui-button--ghost pm-ui-button--small" :popovertarget="id" :aria-expanded="open" :title="t.toolbar.title">
+        {{ t.toolbar.button }}<span v-if="unanswered" class="pm-classroom-toolbar__badge pm-ui-badge pm-ui-badge--danger pm-ui-badge--pill" :aria-label="t.toolbar.unanswered(unanswered)">{{ unanswered }}</span>
       </button>
       <div :id="id" popover class="pm-classroom-popover" role="dialog" :aria-label="t.interaction" @toggle="toggled">
         <template v-if="open">
           <ClassroomPanel />
-          <button type="button" class="pm-classroom-popover__close" :popovertarget="id" popovertargetaction="hide">
+          <button type="button" class="pm-classroom-popover__close pm-ui-button pm-ui-button--small" :popovertarget="id" popovertargetaction="hide">
             {{ t.close }}
           </button>
         </template>
@@ -49,22 +49,11 @@ function toggled(event: Event): void {
   display: inline-flex;
   align-items: center;
 }
-.pm-classroom-toolbar > button {
-  margin-left: 0.5rem;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-}
 .pm-classroom-toolbar__badge {
-  display: inline-block;
-  min-width: 1.4em;
-  margin-left: 0.25rem;
-  padding: 0 0.3em;
-  border-radius: 999px;
-  background: #dc2626;
-  color: #fff;
-  text-align: center;
+  margin-left: 0.125rem;
 }
-/* The text wraps, whatever the toolbar around it sets. */
+/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. The text
+   wraps, whatever the toolbar around it sets. */
 .pm-classroom-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;
@@ -73,16 +62,17 @@ function toggled(event: Event): void {
   max-height: 75vh;
   margin: 0;
   overflow: auto;
-  padding: 0.75rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.375rem;
-  background: var(--vp-c-bg, var(--slidev-theme-background, #fff));
-  color: var(--vp-c-text-1, inherit);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: var(--pm-space-3) var(--pm-space-4);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
   white-space: normal;
   overflow-wrap: anywhere;
 }
 .pm-classroom-popover__close {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 </style>

@@ -30,13 +30,13 @@ function cited(): void {
 
 <template>
   <span v-if="shown" class="pm-assistant-toolbar">
-    <button type="button" :popovertarget="id" :aria-expanded="open" :title="t.toolbar.title">
+    <button type="button" class="pm-ui-button pm-ui-button--ghost pm-ui-button--small" :popovertarget="id" :aria-expanded="open" :title="t.toolbar.title">
       {{ t.toolbar.button }}
     </button>
-    <div :id="id" ref="popover" popover class="pm-assistant-popover" role="dialog" :aria-label="t.panel.title" @toggle="toggled">
+    <div :id="id" ref="popover" popover class="pm-assistant-popover pm-ui" role="dialog" :aria-label="t.panel.title" @toggle="toggled">
       <template v-if="open">
         <AskPanel @cited="cited" />
-        <button type="button" class="pm-assistant-popover__close" :popovertarget="id" popovertargetaction="hide">
+        <button type="button" class="pm-assistant-popover__close pm-ui-button pm-ui-button--small" :popovertarget="id" popovertargetaction="hide">
           {{ t.panel.close }}
         </button>
       </template>
@@ -49,22 +49,10 @@ function cited(): void {
   display: inline-flex;
   align-items: center;
 }
-.pm-assistant-toolbar > button,
 .pm-assistant-popover__close {
-  margin-left: 0.5rem;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  cursor: pointer;
+  margin-top: var(--pm-space-3);
 }
-.pm-assistant-popover__close {
-  margin: 0.5rem 0 0;
-}
+/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. */
 .pm-assistant-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;
@@ -73,12 +61,11 @@ function cited(): void {
   max-height: 80vh;
   margin: 0;
   overflow: auto;
-  padding: 0.75rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.375rem;
-  background: var(--vp-c-bg, var(--slidev-theme-background, #fff));
-  color: var(--vp-c-text-1, inherit);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: var(--pm-space-4);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-float);
   white-space: normal;
 }
 </style>

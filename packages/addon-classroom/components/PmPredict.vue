@@ -96,13 +96,13 @@ const Children = ({ part }: { part: 'prompt' | 'reveal' }) => children(part)
       <fieldset v-if="choices" class="pm-predict__choices" :disabled="saved !== undefined">
         <legend>{{ t.predict.yours }}</legend>
         <label v-for="(item, i) in choices" :key="i">
-          <input v-model="choice" type="radio" :name="name" :value="i">
+          <input v-model="choice" class="pm-ui-checkbox" type="radio" :name="name" :value="i">
           <span>{{ item }}</span>
         </label>
       </fieldset>
-      <textarea v-else v-model="text" :aria-label="t.predict.yours" :placeholder="t.predict.placeholder" rows="2" maxlength="500" :disabled="saved !== undefined" />
+      <textarea v-else v-model="text" class="pm-ui-textarea" :aria-label="t.predict.yours" :placeholder="t.predict.placeholder" rows="2" maxlength="500" :disabled="saved !== undefined" />
       <p v-if="!saved" class="pm-classroom-actions">
-        <button type="submit" :disabled="!ready">
+        <button type="submit" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="!ready">
           {{ t.predict.save }}
         </button>
       </p>
@@ -124,13 +124,15 @@ const Children = ({ part }: { part: 'prompt' | 'reveal' }) => children(part)
 
 <style scoped>
 .pm-predict__question {
+  font-family: var(--pm-font-serif);
+  font-size: 1.05em;
   font-weight: 600;
 }
 .pm-predict__choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem 1rem;
-  margin: 0.25rem 0;
+  gap: 0.4em 1.25em;
+  margin: 0.4em 0;
   padding: 0;
   border: 0;
 }
@@ -145,7 +147,12 @@ const Children = ({ part }: { part: 'prompt' | 'reveal' }) => children(part)
 .pm-predict__choices label {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.4em;
   cursor: pointer;
+}
+.pm-predict__reveal:not(:empty) {
+  margin-top: 0.5em;
+  padding-top: 0.5em;
+  border-top: 1px solid var(--pm-color-line);
 }
 </style>

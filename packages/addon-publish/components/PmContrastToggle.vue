@@ -14,8 +14,8 @@ const t = useMessages(MESSAGES)
   <button
     type="button"
     role="switch"
-    class="pm-contrast-toggle"
-    :class="{ 'pm-contrast-toggle--compact': compact }"
+    class="pm-contrast-toggle pm-ui-button pm-ui-button--small"
+    :class="{ 'pm-contrast-toggle--compact pm-ui-button--ghost': compact }"
     :aria-checked="enabled"
     :aria-label="t.highContrast"
     :title="t.highContrast"
@@ -27,21 +27,17 @@ const t = useMessages(MESSAGES)
 </template>
 
 <style>
+/* The host's button (N-10); on, it is the switch that is on, in the accent. */
 .pm-contrast-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4em;
-  padding: 0.2em 0.7em;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
+  border-radius: var(--pm-radius-pill);
 }
 .pm-contrast-toggle--compact {
-  padding: 0.25em 0.45em;
-  border-color: transparent;
+  padding-inline: 0.45em;
+}
+.pm-contrast-toggle[aria-checked='true'] {
+  border-color: var(--pm-color-accent);
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
 }
 .pm-contrast-toggle[aria-checked='true'] .pm-contrast-toggle__icon {
   transform: rotate(180deg);

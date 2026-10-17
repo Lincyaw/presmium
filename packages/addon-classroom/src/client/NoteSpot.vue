@@ -35,22 +35,22 @@ function add(): void {
 
 <template>
   <div class="pm-note-spot" :data-section="section" :data-block="block" :data-notes="notes.length">
-    <button type="button" class="pm-note-spot__toggle" :aria-expanded="open" :aria-label="t.notes.label(label)" :title="t.notes.label(label)" @click="open = !open">
-      {{ t.notes.button }}<span v-if="notes.length" class="pm-note-spot__count">{{ notes.length }}</span>
+    <button type="button" class="pm-note-spot__toggle pm-ui-button pm-ui-button--ghost pm-ui-button--small" :aria-expanded="open" :aria-label="t.notes.label(label)" :title="t.notes.label(label)" @click="open = !open">
+      {{ t.notes.button }}<span v-if="notes.length" class="pm-note-spot__count pm-ui-badge pm-ui-badge--accent">{{ notes.length }}</span>
     </button>
     <div v-if="open" class="pm-note-spot__panel">
       <ul v-if="notes.length" class="pm-note-spot__list" :aria-label="t.notes.mine">
         <li v-for="note in notes" :key="note.id">
           <span class="pm-note-spot__text">{{ note.value.text }}</span>
-          <button type="button" :aria-label="t.notes.removeLabel(note.value.text)" @click="store.remove(COLLECTIONS.notes, note.id)">
+          <button type="button" class="pm-ui-button pm-ui-button--ghost pm-ui-button--small" :aria-label="t.notes.removeLabel(note.value.text)" @click="store.remove(COLLECTIONS.notes, note.id)">
             {{ t.notes.remove }}
           </button>
         </li>
       </ul>
       <form @submit.prevent="add">
-        <textarea v-model="text" :aria-label="t.notes.new" rows="2" maxlength="2000" @keydown.stop />
+        <textarea v-model="text" class="pm-ui-textarea" :aria-label="t.notes.new" rows="2" maxlength="2000" @keydown.stop />
         <p class="pm-note-spot__actions">
-          <button type="submit" :disabled="!text.trim()">
+          <button type="submit" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="!text.trim()">
             {{ t.notes.save }}
           </button>
           <span class="pm-note-spot__where">{{ inClassroom ? t.notes.inClassroom : t.notes.inBrowser }}</span>
@@ -65,32 +65,31 @@ function add(): void {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
   font-size: 0.8rem;
-  line-height: 1.4;
+  line-height: 1.5;
 }
+/* The toggle reads quieter until it is used or the place has notes. */
 .pm-note-spot__toggle {
-  border-color: transparent;
-  color: var(--vp-c-text-2, inherit);
+  color: var(--pm-color-muted);
 }
-.pm-note-spot__toggle:hover,
-.pm-note-spot__toggle:focus-visible,
 .pm-note-spot__toggle[aria-expanded='true'],
 .pm-note-spot:not([data-notes='0']) .pm-note-spot__toggle {
-  border-color: rgba(125, 125, 125, 0.5);
-  color: inherit;
+  color: var(--pm-color-ink);
 }
 .pm-note-spot__count {
   margin-left: 0.25rem;
-  font-weight: 600;
 }
+/* A note is the reader's own: a slip of the warm tint on the paper. */
 .pm-note-spot__panel {
   box-sizing: border-box;
   width: 100%;
   margin-top: 0.25rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid rgba(125, 125, 125, 0.35);
-  border-radius: 0.375rem;
-  background: rgba(250, 204, 21, 0.08);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-warn-soft);
 }
 .pm-note-spot__list {
   margin: 0 0 0.3rem;
@@ -112,6 +111,6 @@ function add(): void {
   margin: 0.25rem 0 0;
 }
 .pm-note-spot__where {
-  color: var(--vp-c-text-2, inherit);
+  color: var(--pm-color-muted);
 }
 </style>

@@ -58,6 +58,8 @@ const tracks = computed(() => (props.kind === 'video' ? captionTracks(props.capt
 }
 .pm-media figcaption {
   margin-top: 0.4em;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
   font-size: 0.85em;
 }
 /* An animation gives way to its still image when the system asks for reduced motion. */

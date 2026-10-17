@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import { lowContrast } from './fixtures/contrast.ts'
 import { buildFixture, deckDir, openDevPage, startDev } from './fixtures/deck.ts'
 import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 import { dockerCompose, startHub, startJupyter } from './fixtures/exec-remote/jupyter.ts'
@@ -170,6 +171,9 @@ test.describe('static output, auth: prompt', () => {
     await where.locator('.pm-code-block__run button').first().click()
     const dialog = page.getByRole('dialog', { name: '环境 lab 的令牌' })
     await expect(dialog).toBeVisible()
+    // The host's field and buttons, at WCAG AA (N-10).
+    await expect(dialog.locator('input.pm-ui-input[name="token"]')).toBeVisible()
+    expect(await lowContrast(page, '.pm-jupyter-token')).toEqual([])
     await dialog.getByLabel('令牌').fill(jupyter!.token)
     await dialog.getByRole('button', { name: '连接' }).click()
     await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', KERNEL)

@@ -854,6 +854,9 @@ importers:
 
   packages/render-slides:
     dependencies:
+      '@presmium/host':
+        specifier: workspace:*
+        version: link:../host
       '@presmium/kernel':
         specifier: workspace:*
         version: link:../kernel

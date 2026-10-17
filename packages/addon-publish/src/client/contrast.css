@@ -31,6 +31,23 @@
   --vp-code-block-bg: var(--pm-contrast-bg);
 }
 
+/* The host's tokens (N-10), so its components and the plugins' panels outside the content are drawn alike; over the
+   dark tokens too, whichever stylesheet comes first. */
+:is(:root, :root.dark)[data-pm-contrast='high'] {
+  --pm-color-bg: var(--pm-contrast-bg);
+  --pm-color-surface: var(--pm-contrast-bg);
+  --pm-color-sunk: var(--pm-contrast-bg);
+  --pm-color-code: var(--pm-contrast-bg);
+  --pm-color-selected: var(--pm-contrast-bg);
+  --pm-color-accent-soft: var(--pm-contrast-bg);
+  --pm-color-ink: var(--pm-contrast-fg);
+  --pm-color-muted: var(--pm-contrast-fg);
+  --pm-color-line: var(--pm-contrast-border);
+  --pm-color-line-strong: var(--pm-contrast-border);
+  --pm-color-accent: var(--pm-contrast-link);
+  --pm-color-on-accent: var(--pm-contrast-bg);
+}
+
 :root.dark[data-pm-contrast='high'] {
   --pm-contrast-bg: #000000;
   --pm-contrast-fg: #ffffff;

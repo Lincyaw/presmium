@@ -56,7 +56,7 @@ const ScreenLayer: Component = defineComponent({
         return current === 'live' ? null : h('div', {
           'class': 'pm-stage-badge',
           'data-mode': current,
-          'style': { position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 10, padding: '0.25rem 0.75rem', borderRadius: '9999px', background: current === 'frozen' ? '#2563eb' : '#111', color: '#fff', fontSize: '0.9rem', pointerEvents: 'none' },
+          'style': { position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 10, padding: '0.25rem 0.75rem', borderRadius: 'var(--pm-radius-pill)', background: current === 'frozen' ? 'var(--pm-color-accent)' : 'var(--pm-color-ink)', color: current === 'frozen' ? 'var(--pm-color-on-accent)' : 'var(--pm-color-bg)', fontFamily: 'var(--pm-font-sans)', fontSize: '0.9rem', pointerEvents: 'none' },
         }, messages().badge[current])
       }
       return [

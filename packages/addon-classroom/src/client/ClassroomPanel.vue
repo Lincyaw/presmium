@@ -117,7 +117,7 @@ function sendAnswer(question: Question & { id: string }): void {
     </p>
     <template v-else>
       <section :aria-label="t.panel.questions">
-        <h4>{{ t.panel.open(open) }}</h4>
+        <h4 class="pm-ui-heading">{{ t.panel.open(open) }}</h4>
         <p v-if="!questionGroups.length" class="pm-classroom-status">
           {{ t.panel.none }}
         </p>
@@ -131,10 +131,10 @@ function sendAnswer(question: Question & { id: string }): void {
           <ul>
             <li v-for="q in group.questions" :key="q.id" :data-answered="q.answered ? '' : undefined">
               <strong>{{ q.name }}</strong>{{ t.colon }}{{ q.text }}
-              <button v-if="status === 'active'" type="button" @click="toggleAnswered(q)">
+              <button v-if="status === 'active'" type="button" class="pm-ui-button pm-ui-button--small" @click="toggleAnswered(q)">
                 {{ q.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
               </button>
-              <button v-if="status === 'active' && ai.provider.value && !q.reply && !ai.drafts.has(q.id)" type="button" class="pm-classroom-panel__ai" :title="t.questions.aiTitle(ai.provider.value)" @click="ai.answer(q.id, q)">
+              <button v-if="status === 'active' && ai.provider.value && !q.reply && !ai.drafts.has(q.id)" type="button" class="pm-classroom-panel__ai pm-ui-button pm-ui-button--small" :title="t.questions.aiTitle(ai.provider.value)" @click="ai.answer(q.id, q)">
                 {{ t.questions.ai(ai.provider.value) }}
               </button>
               <div v-if="ai.drafts.get(q.id)" class="pm-classroom-panel__draft" :data-state="ai.drafts.get(q.id)!.state">
@@ -153,10 +153,10 @@ function sendAnswer(question: Question & { id: string }): void {
                   {{ t.questions.aiFailed(ai.drafts.get(q.id)!.error ?? '') }}
                 </p>
                 <p class="pm-classroom-actions">
-                  <button v-if="ai.drafts.get(q.id)!.state === 'ready'" type="button" @click="sendAnswer(q)">
+                  <button v-if="ai.drafts.get(q.id)!.state === 'ready'" type="button" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" @click="sendAnswer(q)">
                     {{ t.questions.send }}
                   </button>
-                  <button type="button" @click="ai.discard(q.id)">
+                  <button type="button" class="pm-ui-button pm-ui-button--small" @click="ai.discard(q.id)">
                     {{ t.questions.discard }}
                   </button>
                 </p>
@@ -169,7 +169,7 @@ function sendAnswer(question: Question & { id: string }): void {
         </div>
       </section>
       <section v-if="pulses.length" :aria-label="t.panel.pulse">
-        <h4>{{ t.panel.pulse }}</h4>
+        <h4 class="pm-ui-heading">{{ t.panel.pulse }}</h4>
         <div v-for="pulse in pulses" :key="pulse.id" class="pm-classroom-panel__place" :data-pulse="pulse.id">
           <p class="pm-classroom-panel__where">
             {{ pulse.place }}
@@ -180,13 +180,13 @@ function sendAnswer(question: Question & { id: string }): void {
         </div>
       </section>
       <section v-if="quizRows.length" :aria-label="t.panel.quizzes">
-        <h4>{{ t.panel.quizzes }}</h4>
+        <h4 class="pm-ui-heading">{{ t.panel.quizzes }}</h4>
         <p v-for="quiz in quizRows" :key="quiz.id" class="pm-classroom-panel__place" :data-quiz="quiz.id">
           {{ quiz.text }}
         </p>
       </section>
       <section v-if="predicted.length" :aria-label="t.panel.predictions">
-        <h4>{{ t.panel.predictions }}</h4>
+        <h4 class="pm-ui-heading">{{ t.panel.predictions }}</h4>
         <div v-for="item in predicted" :key="item.id" class="pm-classroom-panel__place" :data-predict="item.id">
           <p class="pm-classroom-panel__where">
             {{ item.place }}
@@ -203,7 +203,7 @@ function sendAnswer(question: Question & { id: string }): void {
         </div>
       </section>
       <section v-if="exercises.length" :aria-label="t.panel.exercises">
-        <h4>{{ t.panel.exercises }}</h4>
+        <h4 class="pm-ui-heading">{{ t.panel.exercises }}</h4>
         <p v-for="exercise in exercises" :key="exercise.id" class="pm-classroom-panel__place" :data-exercise="exercise.id">
           {{ exercise.text }}
         </p>
@@ -218,36 +218,48 @@ function sendAnswer(question: Question & { id: string }): void {
 <style scoped>
 .pm-classroom-panel {
   display: grid;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  gap: 0.5rem;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
   text-align: left;
 }
-.pm-classroom-panel h4 {
-  margin: 0.25rem 0 0;
-  font-size: 0.85rem;
+.pm-classroom-panel section {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--pm-color-line);
+}
+.pm-classroom-panel section:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 .pm-classroom-panel p {
   margin: 0;
 }
 .pm-classroom-panel ul {
-  margin: 0.1rem 0 0.3rem;
+  margin: 0.15rem 0 0.35rem;
   padding-left: 1.2em;
 }
+.pm-classroom-panel li {
+  margin: 0.25rem 0;
+}
+.pm-classroom-panel li > .pm-ui-button {
+  margin-left: 0.35rem;
+}
 .pm-classroom-panel li[data-answered] {
-  color: var(--vp-c-text-2, inherit);
+  color: var(--pm-color-muted);
 }
 .pm-classroom-panel__where {
   font-weight: 600;
 }
-.pm-classroom-panel__draft,
-.pm-classroom-reply {
-  margin: 0.25rem 0;
-  padding-left: 0.5rem;
-  border-left: 3px solid rgba(125, 125, 125, 0.4);
+.pm-classroom-panel__draft {
+  margin: 0.35rem 0;
+  padding: 0.35rem 0.75rem;
+  border-left: 3px solid var(--pm-color-line-strong);
 }
-.pm-classroom-panel__answer,
-.pm-classroom-reply {
+.pm-classroom-panel__answer {
   white-space: pre-wrap;
 }
 </style>

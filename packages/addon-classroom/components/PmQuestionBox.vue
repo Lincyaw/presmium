@@ -59,9 +59,9 @@ function toggleAnswered(id: string, question: Question): void {
       <slot />
     </div>
     <form v-if="canAsk" class="pm-question-box__form" @submit.prevent="ask">
-      <textarea v-model="text" :aria-label="t.questions.question" rows="2" maxlength="500" :placeholder="t.questions.placeholder" @keydown.stop />
+      <textarea v-model="text" class="pm-ui-textarea" :aria-label="t.questions.question" rows="2" maxlength="500" :placeholder="t.questions.placeholder" @keydown.stop />
       <p class="pm-classroom-actions">
-        <button type="submit" :disabled="!text.trim()">
+        <button type="submit" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="!text.trim()">
           {{ t.questions.ask }}
         </button>
         <span class="pm-classroom-status">{{ t.questions.attachedTo(where) }}</span>
@@ -76,11 +76,11 @@ function toggleAnswered(id: string, question: Question): void {
     <ul v-if="shown.length" class="pm-question-box__list" :aria-label="presenter ? t.questions.here : t.questions.mine">
       <li v-for="item in shown" :key="item.id" :data-answered="item.value.answered ? '' : undefined">
         <span v-if="presenter" class="pm-question-box__name">{{ item.value.name }}{{ t.colon }}</span>{{ item.value.text }}
-        <span v-if="item.value.answered" class="pm-question-box__answered">{{ t.questions.answered }}</span>
+        <span v-if="item.value.answered" class="pm-question-box__answered pm-ui-badge pm-ui-badge--ok">{{ t.questions.answered }}</span>
         <p v-if="item.value.reply" class="pm-classroom-reply">
           {{ item.value.reply.provider ? t.questions.reply(item.value.reply.provider) : '' }}{{ item.value.reply.text }}
         </p>
-        <button v-if="presenter && status === 'active'" type="button" @click="toggleAnswered(item.id, item.value)">
+        <button v-if="presenter && status === 'active'" type="button" class="pm-ui-button pm-ui-button--small" @click="toggleAnswered(item.id, item.value)">
           {{ item.value.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
         </button>
       </li>
@@ -93,19 +93,19 @@ function toggleAnswered(id: string, question: Question): void {
 
 <style scoped>
 .pm-question-box__list {
-  margin: 0.25rem 0;
+  margin: 0.4em 0;
   padding-left: 1.2em;
 }
+.pm-question-box__list li {
+  margin: 0.35em 0;
+}
 .pm-question-box__list li[data-answered] {
-  color: var(--vp-c-text-2, inherit);
+  color: var(--pm-color-muted);
 }
 .pm-question-box__name {
   font-weight: 600;
 }
-.pm-classroom-reply {
-  margin: 0.25rem 0;
-  padding-left: 0.5rem;
-  border-left: 3px solid rgba(125, 125, 125, 0.4);
-  white-space: pre-wrap;
+.pm-question-box__answered {
+  margin-left: 0.5em;
 }
 </style>
