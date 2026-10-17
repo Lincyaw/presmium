@@ -1,0 +1,6 @@
+# The workspace of the agent-host build in packages/cli/test/audience.test.ts: its one document, course/,
+# is a copy of e2e/fixtures/publish-checks/translated; the operator lists its plugin and the web renderer (D14).
+title: 译本与受众
+settings:
+  presmium.workspace:
+    plugins: ['@presmium/slidev-addon-exec', '@presmium/web']

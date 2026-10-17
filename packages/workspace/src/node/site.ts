@@ -5,13 +5,11 @@
  * compiler loaded named by their directories, so the site loads exactly
  * those (in `presmium serve`, only what the plugin policy admitted, D14).
  */
-import { createHash } from 'node:crypto'
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DECK_ENTRY, loadPlugins, readFrontmatter, viewFor } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
-import { deckLocale } from '@presmium/kernel'
+import { DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@presmium/compiler'
+import type { Compilation, LoadedPlugin } from '@presmium/compiler'
 import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
 import type { WorkspaceDocument } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
@@ -55,19 +53,6 @@ export function siteSpec(config: WorkspaceConfig, documents: SiteDocument[]): Si
 /** URLs that name no local file. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 
-function inside(path: string, root: string): boolean {
-  const rel = relative(root, path)
-  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
-}
-
-/** As the compiler's `portable`: absolute paths in the workspace made relative to `from`. */
-function portable(value: unknown, from: string, root: string): unknown {
-  if (typeof value === 'string') return isAbsolute(value) && inside(value, root) ? relative(from, value).split(sep).join('/') || '.' : value
-  if (Array.isArray(value)) return value.map(item => portable(item, from, root))
-  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, portable(item, from, root)]))
-  return value
-}
-
 export interface SiteContextOptions {
   root: string
   outDir: string
@@ -75,6 +60,8 @@ export interface SiteContextOptions {
   workDir: string
   /** The site's own plugins (package name to directory): the workspace's browser plugin in `presmium serve`. */
   plugins?: Record<string, string>
+  /** The plugins of the home page only (package name to directory): the operator plugins in `presmium serve` (`homePlugins`). */
+  home?: Record<string, string>
   /** The address the dev site listens on (agent-host: the address serve reaches). */
   host?: string
   findings: Finding[]
@@ -91,7 +78,7 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     workspaceRoot: root,
     outDir: options.outDir,
     workDir: options.workDir,
-    config: options.host ? { host: options.host } : {},
+    config: { ...options.host ? { host: options.host } : {}, ...options.home ? { homePlugins: options.home } : {} },
     extensions: [],
     plugins: Object.keys(plugins),
     pluginDirs: plugins,
@@ -107,19 +94,6 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     },
   }
   return ctx
-}
-
-/** The line of a block's source that holds `text`, else the block's first line. */
-function lineOf(source: SourcePos, text: string): number {
-  try {
-    const lines = readFileSync(source.file, 'utf8').split(/\r?\n/)
-    for (let line = source.line; line <= Math.max(source.line, source.endLine ?? 0); line++) {
-      if (lines[line - 1]?.includes(text)) return line
-    }
-  } catch {
-    // The block's line.
-  }
-  return source.line
 }
 
 /** The deck a source file belongs to: the nearest directory above it with a `lecture.md`. */
@@ -164,75 +138,46 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
     return undefined
   }
   if (options.scoped && relative(root, real).split(sep)[0] === '.git') return undefined
-  if (stat.isFile()) return { file: target, name: `${createHash('sha256').update(readFileSync(target)).digest('hex').slice(0, 8)}-${basename(target)}` }
+  if (stat.isFile()) return { file: target, name: `${fileHash(target).slice(0, 8)}-${basename(target)}` }
   const deck = deckOf(source.file, options.root)
-  if (!stat.isDirectory() || !deck || target === deck || !inside(target, deck) || existsSync(join(target, DECK_ENTRY)) || lstatSync(target).isSymbolicLink()) return undefined
+  if (!deck || !publishesDirectory(target, deck)) return undefined
   const lang = readFrontmatter(readFileSync(join(deck, DECK_ENTRY), 'utf8')).lang
-  return publishedDirectory(target, join(options.workDir, 'files'), typeof lang === 'string' ? lang : undefined)
-}
-
-/** The files a published directory holds, relative to it: regular files, not hidden, not in `node_modules`, not through symbolic links. */
-function directoryFiles(dir: string, prefix = ''): string[] {
-  return readdirSync(join(dir, prefix), { withFileTypes: true })
-    .filter(entry => !entry.name.startsWith('.') && entry.name !== 'node_modules')
-    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-    .flatMap((entry) => {
-      const path = prefix ? `${prefix}/${entry.name}` : entry.name
-      return entry.isDirectory() ? directoryFiles(dir, path) : entry.isFile() ? [path] : []
-    })
-}
-
-/** What a file listing says, in the deck's language. */
-const LISTING = {
-  'zh-CN': { count: (n: number) => `${n} 个文件，点击下载`, files: '文件' },
-  'en': { count: (n: number) => `${n} file${n === 1 ? '' : 's'}; select one to download it`, files: 'Files' },
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return directoryAsset(target, deck, join(options.workDir, 'files'), typeof lang === 'string' ? lang : undefined, message => warn(`${url} is not published: ${message}`))
 }
 
 /**
- * A directory as it is published, as the compiler publishes one for a
- * deck: a copy of its files named `<hash>-<name>` with a file listing,
- * `index.html` (unless it has one of its own), prepared once in `stage`.
+ * The translations a document of the workspace at `root` declares, which
+ * the workspace site leaves out (`presmium.translations`, a warning at its
+ * headmatter): `SiteDocument` holds one IR per document, so its pages have
+ * no language menu; `presmium build` of the document alone publishes them
+ * (docs/ir.md 2.12).
  */
-function publishedDirectory(dir: string, stage: string, lang?: string): { file: string, name: string } {
-  const files = directoryFiles(dir)
-  const hash = createHash('sha256')
-  for (const file of files) hash.update(file).update('\0').update(readFileSync(join(dir, file))).update('\0')
-  const name = `${hash.digest('hex').slice(0, 8)}-${basename(dir)}`
-  const target = join(stage, name)
-  if (existsSync(target)) return { file: target, name }
-  const partial = `${target}.${process.pid}`
-  rmSync(partial, { recursive: true, force: true })
-  mkdirSync(partial, { recursive: true })
-  for (const file of files) cpSync(join(dir, file), join(partial, file))
-  if (!files.includes('index.html')) {
-    const t = LISTING[deckLocale(lang)]
-    const href = (file: string) => file.split('/').map(encodeURIComponent).join('/')
-    const items = files.map(file => `<li><a href="${escapeHtml(href(file))}" download>${escapeHtml(file)}</a> <small>${statSync(join(dir, file)).size} B</small></li>`)
-    writeFileSync(join(partial, 'index.html'), `<!doctype html>
-<html lang="${escapeHtml(lang ?? 'zh-CN')}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(basename(dir))}</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem}small{color:#666}</style></head>
-<body><h1>${escapeHtml(basename(dir))}/</h1><p>${escapeHtml(t.count(files.length))}</p>
-<ul aria-label="${escapeHtml(t.files)}">
-${items.join('\n')}
-</ul></body></html>
-`)
-  }
-  try {
-    renameSync(partial, target)
-  } catch {
-    rmSync(partial, { recursive: true, force: true })
-  }
-  return { file: target, name }
+export function untranslated(compilation: Compilation, root: string): Finding[] {
+  const { translations } = compilation.doc.config
+  if (!translations) return []
+  const text = readFileSync(compilation.entry, 'utf8')
+  return Object.entries(translations).map(([lang, entry]) => ({
+    checkId: 'presmium.translations',
+    severity: 'warning' as const,
+    message: `translation "${lang}" (${entry}) is not in the workspace site: a workspace site does not build the translations of its documents yet; build this document alone (presmium build ${relative(root, compilation.deckDir).split(sep).join('/') || '.'}) to publish it`,
+    source: { file: compilation.entry, line: frontmatterLine(text, entry) },
+  }))
 }
 
 /** The site's own plugins in `presmium serve`: the workspace's browser plugin (edit mode, the document operations, the history). */
 export function servedPlugins(): Record<string, string> {
   return { [WORKSPACE_PACKAGE]: WORKSPACE_PACKAGE_DIR }
+}
+
+/**
+ * The home page's own plugins in `presmium serve`: the operator plugins
+ * (`settings.presmium.workspace.plugins`, as the documents' compilers load
+ * them, D14), whose browser parts the home page loads, e.g. the assistant's
+ * `AGENT`, with which the new document form drafts a document. A document's
+ * pages load the plugins its deck lists.
+ */
+export function homePlugins(plugins: LoadedPlugin[]): Record<string, string> {
+  return Object.fromEntries(plugins.map(loaded => [loaded.name, loaded.dir]))
 }
 
 export { WORKSPACE_ID }

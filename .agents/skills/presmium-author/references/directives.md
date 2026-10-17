@@ -94,7 +94,9 @@ presmium.exec: { timeoutMs: 30000 }
 - `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（其余章节重新编号，步骤随之压缩），被去掉的代码不执行；构建后扫描写出的全部文件，被去掉的内容中 12 个字符以上的句子（学生内容自己也有的句子除外）出现在其中就是错误 `presmium.audience`，位置是被去掉的块，消息给出句子和文件（例如它经代码块的输出漏了进来）。
 - `presmium check --audience student` 按学生版编译后检查。
 - `presmium serve` 中读者（学习者）看到的页面、搜索索引与 AI 助手读到的内容都是学生版；编辑者与所有者看到全部。
-- 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；`{audience}` 或 `:audience:` 缺少受众名时报错（这时 `:audience:` 标的内容不给任何受众）。
+- 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；`{audience}` 或 `:audience:` 缺少受众名时报错，这时标的内容（`{audience}` 时整节）不给任何受众，只在不带受众的完整版中。
+- 带 `--audience` 的构建不报告被去掉的内容中的诊断（它们会说出那些内容），只给一条计数 `<n> findings are in the content left out for student`；不带 `--audience` 的 `presmium check` 列出它们。
+- 文稿的译本按同一受众编译，学生版的两种语言都没有教师内容。
 - 指向只给教师的章节的 `{ref}` 在学生版中没有目标（构建时警告 `target not found`），学生内容中不要引用教师章节。
 - 学生版的块 ID 与完整版相同，但章节序号与步骤重新编号：课堂跟随讲者时，讲者与学习者要用同一个版本。
 

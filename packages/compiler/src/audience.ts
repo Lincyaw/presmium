@@ -24,7 +24,7 @@ import { basename, extname, join, relative } from 'node:path'
 import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRNode, IRSection, MdastNode, SourcePos } from '@presmium/kernel'
 import { resolveReferences } from './references.ts'
-import { Parser } from './source.ts'
+import { Parser, sourceOf } from './source.ts'
 import type { ParsedFile } from './source.ts'
 
 /** A section or block left out for an audience. */
@@ -37,6 +37,18 @@ export interface Removed {
   blocks: IRBlock[]
   /** Nodes marked inside a block that stays (`source` is that block's): the diagnostics there stay. */
   nested?: boolean
+}
+
+/**
+ * Where the source marks content for some audiences: an `{include}` with
+ * `:audience:` (what it includes, or the error of one that failed), a
+ * directive with `:audience:` at any depth; with the audiences of the marks
+ * around it. A view for an audience the mark leaves out drops the findings
+ * located there (`audienceView`), also where the content gave no block.
+ */
+export interface AudienceMark {
+  source: SourcePos
+  audience: string[]
 }
 
 /** Content left out for an audience: where it is written, the audiences it is for, and its longer sentences. */
@@ -128,30 +140,82 @@ function scopeIncludes(nodes: MdastNode[]): MdastNode[] {
  * before the first heading stays in the scope, and each heading is followed
  * by a scope with `section`, which makes its section only for the scope's
  * audiences, and by the nodes of that section as they are.
+ *
+ * Content written after such a scope, before the next heading, joins the
+ * last section the scope opened, as MyST splices an include: `trailing` gets
+ * its first node and the audiences of that section, when the content is for
+ * more audiences than the section (a warning of the compiler).
  */
-export function liftScopes(nodes: MdastNode[], sectionDepth: number): MdastNode[] {
-  const lifted = (node: MdastNode) => node.type === AUDIENCE_SCOPE && (node.audience as string[]).length > 0 && holdsSection(node, sectionDepth)
-  if (!nodes.some(lifted)) return nodes
+export function liftScopes(nodes: MdastNode[], sectionDepth: number, trailing?: (node: MdastNode, audience: string[]) => void): MdastNode[] {
+  if (!nodes.some(node => lifted(node, sectionDepth))) return nodes
   const out: MdastNode[] = []
+  let section: string[] | undefined
   for (const node of nodes) {
-    if (lifted(node)) lift(node, node.audience as string[], sectionDepth, out)
-    else out.push(node)
+    if (lifted(node, sectionDepth)) {
+      section = lift(node, node.audience as string[], sectionDepth, out, trailing)
+      continue
+    }
+    if (opens(node, sectionDepth)) section = undefined
+    else if (section && wider(node, undefined, section)) {
+      trailing?.(node, section)
+      section = undefined
+    }
+    out.push(node)
   }
   return out
 }
 
+/** An audience scope that holds a heading opening a section: taken apart by `liftScopes`. */
+function lifted(node: MdastNode, depth: number): boolean {
+  return node.type === AUDIENCE_SCOPE && (node.audience as string[]).length > 0 && holdsSection(node, depth)
+}
+
+function opens(node: MdastNode, depth: number): boolean {
+  return node.type === 'heading' && Number(node.depth) <= depth
+}
+
 function holdsSection(scope: MdastNode, depth: number): boolean {
-  return (scope.children ?? []).some(node => (node.type === 'heading' && Number(node.depth) <= depth) || (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)))
+  return (scope.children ?? []).some(node => opens(node, depth) || (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)))
+}
+
+/** Nodes that give no content of a section: comments, labels, and the directives that only configure it. */
+const SETTINGS = new Set(['hints', 'config', 'audience'])
+
+/** The audiences a node marks itself for: those of an audience scope, or a directive's `:audience:`. */
+function ownAudience(node: MdastNode): string[] | undefined {
+  if (node.type === AUDIENCE_SCOPE) return node.section ? undefined : node.audience as string[]
+  const option = node.type === 'mystDirective' && isRecord(node.options) ? node.options.audience : undefined
+  return option === undefined ? undefined : audienceList(typeof option === 'string' ? option : '')
+}
+
+/** Whether `node`, content for `own` (none: everyone), is for an audience the section for `section` leaves out. */
+function wider(node: MdastNode, own: string[] | undefined, section: string[]): boolean {
+  if (node.type === 'comment' || node.type === 'mystTarget' || (node.type === 'mystDirective' && SETTINGS.has(String(node.name)))) return false
+  const marked = ownAudience(node)
+  const audience = marked ? within(own, marked) : own
+  return !audience || audience.some(name => !section.includes(name))
+}
+
+/** The audience marks of the source (`AudienceMark`), at any depth, each within those around it. */
+export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[], marks: AudienceMark[] = []): AudienceMark[] {
+  for (const node of nodes) {
+    const own = ownAudience(node)
+    const audience = own ? within(outer, own) : outer
+    if (own && node.position) marks.push({ source: sourceOf(node, entry), audience: audience! })
+    if (node.children?.length) audienceMarks(node.children, entry, audience, marks)
+  }
+  return marks
 }
 
 /**
  * Takes `scope` apart into `out`. The scope is the expansion's own node,
  * which knows the file and line of its `{include}`: it keeps what comes
- * before the first heading.
+ * before the first heading. Gives the audiences of the last section it opened.
  */
-function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNode[]): void {
+function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNode[], trailing?: (node: MdastNode, audience: string[]) => void): string[] {
   const before: MdastNode[] = []
   let opened = false
+  let last = audience
   const open = () => {
     if (!opened && before.length > 0) out.push(Object.assign(scope, { audience, children: before }))
     opened = true
@@ -159,24 +223,32 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
   for (const node of scope.children ?? []) {
     if (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)) {
       open()
-      lift(node, within(audience, node.audience as string[]), depth, out)
-    } else if (node.type === 'heading' && Number(node.depth) <= depth) {
+      last = lift(node, within(audience, node.audience as string[]), depth, out, trailing)
+    } else if (opens(node, depth)) {
       // A heading's label stays just before it, where the section takes it.
       const label = !opened && before.at(-1)?.type === 'mystTarget' ? before.pop() : undefined
       open()
       out.push(...label ? [label] : [], node, { type: AUDIENCE_SCOPE, audience, section: true })
+      last = audience
     } else {
+      if (opened && last !== audience && wider(node, audience, last)) {
+        trailing?.(node, last)
+        last = audience
+      }
       (opened ? out : before).push(node)
     }
   }
+  return last
 }
 
 /**
  * The document as `name` sees it: without the sections, blocks and nested
  * nodes whose audiences do not include it, nor the diagnostics located in
- * the sections and blocks left out; and what was left out.
+ * the sections and blocks left out or in the source `marks` that leave it
+ * out (`keeps` says which findings stay: they may name what was left out);
+ * and what was left out.
  */
-export function audienceView(doc: IRDocument, name: string): { doc: IRDocument, removed: Removed[] } {
+export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
   const removed: Removed[] = []
   const sections: IRSection[] = []
   for (const section of doc.sections) {
@@ -197,16 +269,36 @@ export function audienceView(doc: IRDocument, name: string): { doc: IRDocument, 
     const blocks = keep(section.blocks)
     sections.push(dropped ? compactSteps({ ...section, blocks }) : same(blocks, section.blocks) ? section : { ...section, blocks })
   }
-  if (removed.length === 0) return { doc, removed }
-  const inside = ({ source: at }: Finding) => removed.some(({ source, nested }) => !nested && at?.file === source.file && (at.line ?? 0) >= source.line && (at.line ?? 0) <= (source.endLine ?? source.line))
+  const marked = marks.filter(mark => !forAudience(mark.audience, name)).map(mark => mark.source)
+  if (removed.length === 0 && marked.length === 0) return { doc, removed, keeps: () => true }
+  const spans = [...leftOut(doc, name, removed), ...marked]
+  const keeps = ({ source: at }: Finding) => !at || !spans.some(span => at.file === span.file && (at.line ?? 0) >= span.line && (at.line ?? 0) <= (span.endLine ?? span.line))
   return {
     doc: {
       ...doc,
       sections: sections.map((section, i) => (section.index === i + 1 ? section : { ...section, index: i + 1 })),
-      diagnostics: doc.diagnostics.filter(finding => !inside(finding)),
+      diagnostics: doc.diagnostics.filter(keeps),
     },
     removed,
+    keeps,
   }
+}
+
+/**
+ * Where what a view for `name` leaves out is written: each block left out;
+ * each section left out from its heading to the next section in the same
+ * file (so a line that gave no block, such as an `{include}` that failed, is
+ * in it), and its blocks in other files.
+ */
+function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[] {
+  const spans: SourcePos[] = removed.filter(item => !item.nested && item.title === undefined).map(item => item.source)
+  doc.sections.forEach((section, i) => {
+    if (forAudience(section.audience, name)) return
+    const next = doc.sections.slice(i + 1).find(later => later.source.file === section.source.file)
+    spans.push({ file: section.source.file, line: section.source.line, endLine: next ? next.source.line - 1 : Number.MAX_SAFE_INTEGER })
+    for (const block of irBlocks(section.blocks)) if (block.source.file !== section.source.file) spans.push(block.source)
+  })
+  return spans
 }
 
 /**
@@ -218,8 +310,8 @@ export function audienceView(doc: IRDocument, name: string): { doc: IRDocument, 
  * for the audience; and without the blocks that still show a sentence of
  * what was left out (`withoutLeaks`).
  */
-export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>): IRDocument {
-  const { doc: view, removed } = audienceView(doc, name)
+export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>, marks: AudienceMark[] = []): IRDocument {
+  const { doc: view, removed } = audienceView(doc, name, marks)
   if (removed.length === 0) return view
   const own = detached(view, filled)
   resolveReferences(own, () => {})
@@ -239,12 +331,22 @@ export function emptyReferences(doc: IRDocument): WeakSet<object> {
 
 /** The longer sentences of what was left out of `kept`, but those its own content holds too. */
 export function withheld(removed: Removed[], kept: IRDocument): Withheld[] {
-  const own = kept.sections.flatMap(section => [section.title, ...[...irBlocks(section.blocks)].flatMap(blockTexts)])
-  const keptText = own.map(squash).join('\n')
+  const shown = ownText(kept)
   return removed.map(({ source, audience, title, blocks }) => {
     const texts = [...title ? [title] : [], ...blocks.flatMap(block => [...irBlocks([block])].flatMap(blockTexts))]
-    return { source, audience, sentences: [...new Set(texts.flatMap(sentences))].filter(sentence => !keptText.includes(sentence)) }
+    return { source, audience, sentences: [...new Set(texts.flatMap(sentences))].filter(sentence => !shown.includes(sentence)) }
   })
+}
+
+/** What was left out without the sentences one of `docs` holds in its own content (a translation keeps the same code). */
+export function unshown(left: Withheld[], docs: IRDocument[]): Withheld[] {
+  const shown = docs.map(ownText).join('\n')
+  return left.map(item => ({ ...item, sentences: item.sentences.filter(sentence => !shown.includes(sentence)) }))
+}
+
+/** The text of a document's own content, its titles, prose, code and component props: without recorded output. */
+function ownText(doc: IRDocument): string {
+  return doc.sections.flatMap(section => [section.title, ...[...irBlocks(section.blocks)].flatMap(blockTexts)]).map(squash).join('\n')
 }
 
 /**

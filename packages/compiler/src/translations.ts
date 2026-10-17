@@ -11,16 +11,16 @@
  * reported with the new digest, which the translator writes back once the
  * translation matches. `compileTranslations` compiles them for the web
  * renderer (`RenderContext.translations`) with the original's plugins and
- * renderer configuration.
+ * renderer configuration, and for the original's audience when it was
+ * compiled for one (P-55).
  */
 import { createHash } from 'node:crypto'
-import { readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { Finding, IRDocument } from '@presmium/kernel'
-import { stringify } from 'yaml'
-import type { Compilation, Compiler, CompilerOptions } from './compiler.ts'
+import type { AudienceCompilation, Compilation, Compiler, CompilerOptions } from './compiler.ts'
 import { readFrontmatter } from './source.ts'
 
 const CHECK_ID = 'presmium.translations'
@@ -49,12 +49,13 @@ export function translationFields(headmatter: Record<string, unknown>): Translat
 
 /**
  * Writes the translation fields into the IR, `config.translations` and
- * `meta.translationOf`, and checks the translations an original declares.
+ * `meta.translationOf`, and reports what is wrong with the translations an
+ * original declares (`report`, the compilation's findings).
  */
-export function applyTranslations(doc: IRDocument, fields: TranslationFields): void {
+export function applyTranslations(doc: IRDocument, fields: TranslationFields, report: (finding: Finding) => void): void {
   if (fields.translations) doc.config.translations = fields.translations
   if (fields.translationOf) doc.meta.translationOf = fields.translationOf
-  if (fields.translations) addDiagnostics(doc, staleTranslations(doc, fields.translations))
+  if (fields.translations) staleTranslations(doc, fields.translations).forEach(report)
 }
 
 /** A file's text as the digest reads it: without byte order mark and frontmatter, with `\n` line breaks and no trailing white space. */
@@ -135,61 +136,25 @@ function staleTranslations(doc: IRDocument, translations: Record<string, string>
   return findings
 }
 
-/** Findings ordered as the compiler orders its diagnostics: by file, then line. */
-function sorted(findings: Finding[]): Finding[] {
-  const file = (f: Finding) => f.source?.file ?? ''
-  const line = (f: Finding) => f.source?.line ?? 0
-  return findings.toSorted((a, b) => file(a) < file(b) ? -1 : file(a) > file(b) ? 1 : line(a) - line(b))
-}
-
-/**
- * Adds findings to the compilation's diagnostics. The compiler gathers its
- * findings in a list of its own and assigns `doc.diagnostics` once, at the
- * end of the compilation, and this module gets the IR only
- * (`applyTranslations(doc, fields)`): the findings join that assignment.
- */
-function addDiagnostics(doc: IRDocument, findings: Finding[]): void {
-  if (findings.length === 0) return
-  const diagnostics = doc.diagnostics
-  Object.defineProperty(doc, 'diagnostics', {
-    configurable: true,
-    enumerable: true,
-    get: () => diagnostics,
-    set(value: Finding[]) {
-      Object.defineProperty(doc, 'diagnostics', { value: sorted([...value, ...findings]), configurable: true, enumerable: true, writable: true })
-    },
-  })
-}
-
 /** A translation compiled for the web renderer. */
 export interface CompiledTranslation {
   lang: string
   doc: IRDocument
   /** The files it read, its entry first: a dev server watches them. */
   files: string[]
-}
-
-/** The compiler options of a compilation, as far as it records them: those of the translations' compilations. */
-function optionsOf(compilation: Compilation): CompilerOptions {
-  return {
-    settings: compilation.settings,
-    trust: compilation.trust,
-    policy: compilation.pluginSources.policy,
-    scope: Boolean(compilation.scope),
-    ...compilation.pluginSources.bundled ? { bundled: compilation.pluginSources.bundled } : {},
-    ...compilation.operatorDir ? { operatorDir: compilation.operatorDir } : {},
-  }
+  /** Set when compiled for the original's audience: what it left out, for the scan of a build. */
+  audience?: AudienceCompilation
 }
 
 /**
  * Compiles the translations the original declares (those that exist), each
- * with its own title, language and text and the original's plugins and
- * renderer configuration. The compiler reads a deck's configuration from its
- * entry's headmatter only, so each is compiled from an entry written for the
- * time of the compilation beside the original (the deck's plugins, public
- * files and components resolve from its directory), which includes the
- * translation: its blocks keep their own files and lines. `compilers` keeps
- * their compilers from one compilation of the original to the next (`presmium dev`).
+ * from its own entry file, with its own title, language and text and the
+ * original's plugins and renderer configuration (`CompilerOptions.headmatter`),
+ * as a file of the original's deck (`CompilerOptions.deckDir`: the deck's
+ * plugins, public files and components); with the original's compiler
+ * options, and for the audience the original was compiled for, or whose view
+ * it is (`Compilation.audience`). `compilers` keeps their compilers from one
+ * compilation of the original to the next (`presmium dev`).
  */
 export async function compileTranslations(compilation: Compilation, compilers = new Map<string, Compiler>()): Promise<{ translations: CompiledTranslation[], findings: Finding[] }> {
   const { doc, deckDir, frontmatter } = compilation
@@ -197,34 +162,27 @@ export async function compileTranslations(compilation: Compilation, compilers = 
   const findings: Finding[] = []
   // Imported when used: the compiler imports this module.
   const { Compiler } = await import('./compiler.ts')
+  const { audience: _audience, headmatter: _headmatter, deckDir: _deckDir, ...base } = compilation.options
+  const audience = compilation.audience?.name
   for (const [lang, entry] of Object.entries(doc.config.translations ?? {})) {
     const file = translationFile(deckDir, entry)
     if (!file) continue
-    const own = readFrontmatter(await readFile(file, 'utf8'))
-    const headmatter: Record<string, unknown> = { ...own, lang: typeof own.lang === 'string' && own.lang.trim() ? own.lang : lang }
-    delete headmatter.translations
-    for (const key of SHARED_KEYS) {
-      if (key in frontmatter) headmatter[key] = frontmatter[key]
-      else delete headmatter[key]
-    }
-    headmatter.title ??= doc.meta.title
-    const temporary = resolve(deckDir, `.presmium-translation.${lang.replace(/[^\w-]/g, '_')}.md`)
-    const include = relative(deckDir, file).split(sep).join('/')
-    writeFileSync(temporary, `---\n${stringify(headmatter)}---\n\n\`\`\`{include} ${include}\n\`\`\`\n`)
     try {
-      const compiler = compilers.get(temporary) ?? new Compiler(temporary, optionsOf(compilation))
-      compilers.set(temporary, compiler)
+      const own = readFrontmatter(await readFile(file, 'utf8'))
+      const headmatter: Record<string, unknown> = { translations: undefined }
+      for (const key of SHARED_KEYS) headmatter[key] = frontmatter[key]
+      if (!(typeof own.lang === 'string' && own.lang.trim())) headmatter.lang = lang
+      if (own.title === undefined) headmatter.title = doc.meta.title
+      const options: CompilerOptions = { ...base, headmatter, deckDir, ...audience ? { audience } : {} }
+      const known = compilers.get(file)
+      const same = known && JSON.stringify(known.options.headmatter) === JSON.stringify(headmatter) && known.options.audience === options.audience
+      const compiler = same ? known : new Compiler(file, options)
+      compilers.set(file, compiler)
       const translated = await compiler.compile()
-      translated.doc.meta.entry = file
-      translated.doc.diagnostics = translated.doc.diagnostics
-        .filter(f => !(f.source?.file === file && f.message === 'the frontmatter of an included file is ignored'))
-        .map(f => (f.source?.file === temporary ? { ...f, source: { file, line: 1 } } : f))
       findings.push(...translated.doc.diagnostics)
-      translations.push({ lang, doc: translated.doc, files: [file, ...translated.files.filter(f => f !== temporary && f !== file), ...translated.dependencies.files] })
+      translations.push({ lang, doc: translated.doc, files: [...new Set([...translated.files, ...translated.dependencies.files])], ...translated.audience ? { audience: translated.audience } : {} })
     } catch (error) {
       findings.push({ checkId: CHECK_ID, severity: 'error', message: `translation "${lang}" (${entry}) could not be compiled: ${errorMessage(error)}`, source: { file, line: 1 } })
-    } finally {
-      rmSync(temporary, { force: true })
     }
   }
   return { translations, findings }

@@ -4,6 +4,8 @@
  * @presmium/kernel, see ./slidev.ts).
  */
 import type { MdastNode } from '@presmium/kernel'
+import { parseFragment } from 'parse5'
+import type { DefaultTreeAdapterMap } from 'parse5'
 import { gfmToMarkdown } from 'mdast-util-gfm'
 import { toMarkdown } from 'mdast-util-to-markdown'
 import type { Options } from 'mdast-util-to-markdown'
@@ -32,12 +34,32 @@ export function escapeHtml(text: string): string {
 }
 
 /** The attributes of raw HTML whose URLs the slides publish (docs/ir.md 6.2). */
-const URL_ATTRIBUTES = /(\s(src|poster|href)\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi
+const URL_ATTRIBUTES = new Set(['src', 'poster', 'href'])
 
-/** Raw HTML with the URLs of its `src`, `poster` and `href` attributes mapped; `map` keeps a URL by giving undefined. */
+/**
+ * Raw HTML with the URLs of its `src`, `poster` and `href` attributes
+ * mapped; `map` keeps a URL by giving undefined. The attributes are found by
+ * parsing the HTML (parse5, as a browser parses a fragment), so text that
+ * only looks like one (`<code> href=x</code>`, a comment, a script) is not
+ * one; the rest of the HTML stays as written.
+ */
 export function mapHtmlUrls(html: string, map: (url: string, attribute: string) => string | undefined): string {
-  return html.replace(URL_ATTRIBUTES, (whole, prefix: string, attribute: string, double?: string, single?: string, bare?: string) => {
-    const mapped = map((double ?? single ?? bare ?? '').replace(/&amp;/g, '&'), attribute.toLowerCase())
-    return mapped === undefined ? whole : `${prefix}"${escapeHtml(mapped)}"`
-  })
+  const edits: { start: number, end: number, text: string }[] = []
+  const visit = (node: DefaultTreeAdapterMap['node']) => {
+    if ('attrs' in node) {
+      for (const { name, value } of node.attrs) {
+        const at = node.sourceCodeLocation?.attrs?.[name]
+        if (!URL_ATTRIBUTES.has(name) || !at) continue
+        const mapped = map(value, name)
+        if (mapped === undefined) continue
+        edits.push({ start: at.startOffset, end: at.endOffset, text: `${html.slice(at.startOffset, at.startOffset + name.length)}="${escapeHtml(mapped)}"` })
+      }
+    }
+    if ('childNodes' in node) node.childNodes.forEach(visit)
+    if ('content' in node) visit(node.content)
+  }
+  visit(parseFragment(html, { sourceCodeLocationInfo: true }))
+  let out = html
+  for (const { start, end, text } of edits.sort((a, b) => b.start - a.start)) out = out.slice(0, start) + text + out.slice(end)
+  return out
 }

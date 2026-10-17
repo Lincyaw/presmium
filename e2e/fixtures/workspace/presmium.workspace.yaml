@@ -4,4 +4,4 @@ members:
   editors: [editor@test]
 settings:
   presmium.workspace:
-    plugins: [presmium-fixture-workspace-probe]
+    plugins: [presmium-fixture-workspace-probe, presmium-fixture-workspace-home]

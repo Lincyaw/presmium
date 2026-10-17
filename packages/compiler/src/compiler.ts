@@ -11,7 +11,7 @@ import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
-import { audienceDocument, AudienceParser, audienceView, emptyReferences, liftScopes, scanOutputs, withheld } from './audience.ts'
+import { audienceDocument, audienceMarks, AudienceParser, audienceView, emptyReferences, liftScopes, scanOutputs, withheld } from './audience.ts'
 import type { Withheld } from './audience.ts'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective, PluginRole } from './blocks.ts'
@@ -29,7 +29,7 @@ import { resolveReferences } from './references.ts'
 import { splitSections } from './sections.ts'
 import { NodeServices, operatorDir, operatorPlugins, pluginLogger, workspaceSettings } from './settings.ts'
 import type { OperatorSettings } from './settings.ts'
-import { readFrontmatter, withoutBom } from './source.ts'
+import { readFrontmatter, sourceOf, withoutBom } from './source.ts'
 import type { Parser } from './source.ts'
 import { scheduleSteps } from './steps.ts'
 import { applyTranslations, translationFields } from './translations.ts'
@@ -79,6 +79,19 @@ export interface CompilerOptions {
    * removed before the plugin passes and compile-time execution.
    */
   audience?: string
+  /**
+   * Headmatter fields that replace those of the entry's own headmatter (a
+   * field set to undefined is removed): a translation is compiled with its
+   * original's plugins and renderer configuration (`compileTranslations`).
+   */
+  headmatter?: Record<string, unknown>
+  /**
+   * The deck directory, when the entry is not the deck's own `lecture.md`
+   * but another file in it or under it (a translation): the plugins, the
+   * public files, the components and the recordings are the deck's. Default:
+   * the entry's directory.
+   */
+  deckDir?: string
 }
 
 /** A compilation for an audience (`CompilerOptions.audience`, `Compilation.audienceOf`): what it left out, and the scan of a build for it. */
@@ -105,6 +118,8 @@ export interface DeclaredEnvironment {
 
 export interface Compilation {
   doc: IRDocument
+  /** The options it was compiled with (a translation is compiled with the same). */
+  options: CompilerOptions
   /** Every source file read, entry first. */
   files: string[]
   /**
@@ -216,7 +231,7 @@ export class Compiler {
 
   constructor(deck: string, options: CompilerOptions = {}) {
     this.entry = resolveEntry(deck)
-    this.deckDir = dirname(this.entry)
+    this.deckDir = options.deckDir ? resolve(options.deckDir) : dirname(this.entry)
     this.options = options
   }
 
@@ -232,7 +247,7 @@ export class Compiler {
     if (refused) report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(this.entry), source: { file: this.entry, line: 1 } })
     if (workspace.problem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.problem, source: { file: this.entry, line: 1 } })
     if (workspace.operatorProblem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.operatorProblem, source: { file: this.entry, line: 1 } })
-    const headmatter = readFrontmatter(text)
+    const headmatter = withHeadmatter(readFrontmatter(text), this.options.headmatter)
     const lang = typeof headmatter.lang === 'string' && headmatter.lang.trim() ? headmatter.lang.trim() : DEFAULT_LANG
     const dependencies = new Dependencies(workspaceRoot, this.#committed)
     const watch = (...files: string[]) => dependencies.watch(...files)
@@ -312,8 +327,18 @@ export class Compiler {
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(this.entry, extname(this.entry))
     const sectionDepth = Number.isInteger(depth) && (depth as number) >= 1 ? depth as number : 2
 
-    // Passes 2 to 5: sections, directives, roles, steps. The headings an `{include}` with `:audience:` holds still open sections.
-    const raw = splitSections(liftScopes(source.children, sectionDepth), { entry: this.entry, title, sectionDepth }, report)
+    // Passes 2 to 5: sections, directives, roles, steps. The headings an `{include}` with `:audience:` holds still open sections;
+    // what follows such an `{include}` before the next heading joins the last of them.
+    const lifted = liftScopes(source.children, sectionDepth, (node, audience) => report({
+      checkId: 'presmium.audience',
+      severity: 'warning',
+      message: `this content follows an {include} with :audience: whose file opens a section, so it is part of that section, which is only for ${audience.join(', ')}`,
+      hint: 'start a section of its own with a heading after the {include}, or move it before the {include}',
+      source: sourceOf(node, this.entry),
+    }))
+    // Where the source marks content for audiences: a view for another audience drops the findings there too.
+    const marks = audienceMarks(lifted, this.entry)
+    const raw = splitSections(lifted, { entry: this.entry, title, sectionDepth }, report)
     const rendererIds = new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []])
     const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
     const sections: IRSection[] = []
@@ -349,16 +374,24 @@ export class Compiler {
       sections,
       diagnostics: [],
     }
-    // For an audience: the other audiences' content goes before any pass, executor or renderer sees it (P-55).
+    // The translations, checked against the whole deck: a build for an audience follows the same digest.
+    applyTranslations(doc, translationFields(headmatter), report)
+    // For an audience: the other audiences' content goes before any pass, executor or renderer sees it (P-55);
+    // so do the findings located in it, which may name it (a file it includes, a role it uses), with a count left.
     let audience: AudienceCompilation | undefined
     if (this.options.audience) {
       const name = this.options.audience
-      const view = audienceView(doc, name)
+      const view = audienceView(doc, name, marks)
       doc.sections = view.doc.sections
       audience = audienceCompilation(name, withheld(view.removed, doc))
+      const left = findings.filter(finding => !view.keeps(finding))
+      findings.splice(0, findings.length, ...findings.filter(view.keeps))
+      if (left.length > 0) {
+        const severity = left.some(f => f.severity === 'error') ? 'error' : left.some(f => f.severity === 'warning') ? 'warning' : 'info'
+        report({ checkId: 'presmium.audience', severity, message: `${left.length} finding${left.length === 1 ? ' is' : 's are'} in the content left out for ${name}, not shown here: presmium check without --audience shows ${left.length === 1 ? 'it' : 'them'}`, source: { file: this.entry, line: 1 } })
+      }
     }
     checkRuns(doc, execute, report)
-    applyTranslations(doc, translationFields(headmatter))
 
     numberFootnotes(doc, source.files)
 
@@ -438,6 +471,7 @@ export class Compiler {
 
     return {
       doc,
+      options: this.options,
       files: source.files,
       dependencies: { files: dependencies.files, revisions: dependencies.revisions },
       runs,
@@ -462,7 +496,7 @@ export class Compiler {
       runContext,
       run: (node, signal) => this.#run(doc, node, executors, runContext, signal),
       ...audience ? { audience } : {},
-      forAudience: name => audienceDocument(doc, name, filled),
+      forAudience: name => audienceDocument(doc, name, filled, marks),
       audienceOf: (name) => {
         const view = audienceView(doc, name)
         return audienceCompilation(name, withheld(view.removed, view.doc))
@@ -547,15 +581,7 @@ export class Compiler {
     const plugins = [...operators.plugins, ...deck.plugins.filter(loaded => !dirs.has(loaded.dir))]
     const problems = [...operators.problems, ...deck.problems]
     const services = new NodeServices(this.options.services, this.options.reserved)
-    for (const loaded of plugins) {
-      const contribute = loaded.plugin?.services
-      if (!contribute) continue
-      try {
-        for (const message of services.add(pluginId(loaded), contribute.call(loaded.plugin, context(loaded)))) problems.push({ name: loaded.name, severity: 'warning', message })
-      } catch (error) {
-        problems.push({ name: loaded.name, severity: 'error', message: `plugin ${pluginId(loaded)}: services() failed: ${errorMessage(error)}` })
-      }
-    }
+    for (const loaded of plugins) addServices(services, loaded, context(loaded), problems)
     this.#plugins = { key, plugins, problems, services }
     return this.#plugins
   }
@@ -569,9 +595,64 @@ export class Compiler {
   }
 }
 
+/** Registers the Node services a plugin provides (`PresmiumNodePlugin.services`), its problems in `problems`. */
+function addServices(services: NodeServices, loaded: LoadedPlugin, context: NodeServiceContext, problems: PluginProblem[]): void {
+  const contribute = loaded.plugin?.services
+  if (!contribute) return
+  try {
+    for (const message of services.add(pluginId(loaded), contribute.call(loaded.plugin, context))) problems.push({ name: loaded.name, severity: 'warning', message })
+  } catch (error) {
+    problems.push({ name: loaded.name, severity: 'error', message: `plugin ${pluginId(loaded)}: services() failed: ${errorMessage(error)}` })
+  }
+}
+
+/**
+ * The operator plugins of the workspace at `root` (D14), loaded as the
+ * compiler of a document there loads them (`options` as its), with their
+ * Node services, for what is no document: the home page of `presmium serve`,
+ * whose server routes and browser parts are theirs too.
+ */
+export async function workspacePlugins(root: string, options: CompilerOptions = {}): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[], service<T>(token: ServiceToken<T>): T | undefined }> {
+  const settings = options.settings ?? workspaceSettings(root).settings
+  const { plugins, problems } = await loadOperatorPlugins({ workspaceRoot: root, listed: operatorPlugins(settings), bundled: options.bundled, policy: options.policy })
+  const trust = options.trust ?? 'local'
+  let operator: string | undefined
+  if (trust === 'local') {
+    try {
+      operator = operatorDir(root, options.operatorDir ?? process.env.PRESMIUM_OPERATOR_DIR)
+    } catch {
+      // The documents' compilations report it.
+    }
+  }
+  const services = new NodeServices(options.services, options.reserved)
+  for (const loaded of plugins) {
+    addServices(services, loaded, {
+      deckDir: root,
+      workspaceRoot: root,
+      config: {},
+      settings: settings[pluginId(loaded)] ?? {},
+      lang: DEFAULT_LANG,
+      trust,
+      secret: options.secret ?? (name => process.env[name]),
+      ...options.gateway ? { gateway: options.gateway } : {},
+      ...operator ? { operatorDir: operator } : {},
+      log: pluginLogger(pluginId(loaded)),
+    }, problems)
+  }
+  return { plugins, problems, service: token => services.get(token) }
+}
+
 /** What a view for the audience `name` left out, with its sentences (`left`), and the scan of a build of it. */
-function audienceCompilation(name: string, left: Withheld[]): AudienceCompilation {
+export function audienceCompilation(name: string, left: Withheld[]): AudienceCompilation {
   return { name, withheld: left, scan: (dir, paths, options = {}) => scanOutputs(left, paths ?? [dir], name, dir, options.quote) }
+}
+
+/** A headmatter with the fields of `replaced` in place of its own; a field `replaced` sets to undefined is removed. */
+function withHeadmatter(own: Record<string, unknown>, replaced?: Record<string, unknown>): Record<string, unknown> {
+  if (!replaced) return own
+  const merged = { ...own, ...replaced }
+  for (const [key, value] of Object.entries(replaced)) if (value === undefined) delete merged[key]
+  return merged
 }
 
 /** 1-based line of the first frontmatter line that mentions `text`; 1 when absent. */

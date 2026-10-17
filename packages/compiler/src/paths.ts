@@ -4,11 +4,11 @@
  * the same bytes wherever it is checked out; local files a block names are
  * published with the output under a name that holds their content hash.
  */
-import { createHash } from 'node:crypto'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { irBlocks } from '@presmium/kernel'
 import type { IRDocument, SourcePos } from '@presmium/kernel'
+import { fileHash } from './published.ts'
 
 /** URLs that name no local file: a scheme, protocol-relative, or a fragment. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
@@ -72,5 +72,5 @@ export function localAsset(deckDir: string, source: SourcePos, url: string): { f
   }
   const file = name.startsWith('/') ? join(deckDir, 'public', name) : resolve(dirname(source.file), name)
   if (!existsSync(file) || !statSync(file).isFile()) return undefined
-  return { file, name: `${createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8)}-${basename(file)}` }
+  return { file, name: `${fileHash(file).slice(0, 8)}-${basename(file)}` }
 }

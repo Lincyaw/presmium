@@ -4,11 +4,12 @@
 // operator only (D14). In SHARED mode serve runs none of the decks' code: the site's dev servers (and a
 // data loader of a deck's component) run in agent-host, whose process chain holds no secret; symbolic
 // links out of the workspace are not read; code without a recording runs by `settings.presmium.exec.compile`.
+// The home page has the operator plugins: their routes answer for it, and it loads their browser parts (WP-81e2).
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, SharedSetup } from './serve-helpers.ts'
-import { cleanEnv, descendants, eventStream, exited, FIXTURES, presmiumProcess, raw, remove, shared, waitFor, workspace } from './serve-helpers.ts'
+import { cleanEnv, descendants, eventStream, exited, FIXTURES, presmiumProcess, raw, remove, ROOT, shared, waitFor, workspace } from './serve-helpers.ts'
 
 describe('presmium serve on this machine (LOCAL)', () => {
   let dir: string
@@ -30,6 +31,36 @@ describe('presmium serve on this machine (LOCAL)', () => {
     const home = await raw(`${url}/`)
     expect(home.status).toBe(200)
     expect(home.text).toContain('<div id="app">')
+  }, 180_000)
+
+  it('serves the operator plugins on the home page: their route answers for document \'\' and finds no file of the workspace there, the home page loads their browser part', async () => {
+    const home = workspace('home', 'basic')
+    try {
+      const plugin = join(ROOT, 'e2e/fixtures/workspace/plugins/presmium-fixture-workspace-home')
+      cpSync(plugin, join(home, 'node_modules/presmium-fixture-workspace-home'), { recursive: true })
+      writeFileSync(join(home, 'presmium.workspace.yaml'), `${readFileSync(join(home, 'presmium.workspace.yaml'), 'utf8')}settings:\n  presmium.workspace:\n    plugins: [presmium-fixture-workspace-home]\n`)
+      const local = presmiumProcess(home, ['serve', '--port', '0'])
+      try {
+        const url = (await waitFor(local, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
+        const where = async (document: string) => (await raw(`${url}/__presmium/fixture.home/where`, { headers: { 'Presmium-Document': document } })).json()
+        // The home page is no document: the plugin's deck directory there holds none of the workspace's files.
+        expect(await where('')).toEqual({ document: '', sees: [] })
+        expect(await where('intro')).toEqual({ document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] })
+        // The home page's theme imports the plugin's browser part; a document's page does not (its deck does not list it).
+        const theme = await raw(`${url}/.vitepress/theme/index.ts`)
+        expect(theme.status, theme.text).toBe(200)
+        expect(theme.text).toContain('createSiteHomeTheme')
+        expect(theme.text).toContain('presmium-fixture-workspace-home/src/client/plugin.ts')
+        const page = await raw(`${url}/intro/.vitepress/theme/index.ts`)
+        expect(page.status, page.text).toBe(200)
+        expect(page.text).toContain('createPresmiumTheme')
+        expect(page.text).not.toContain('presmium-fixture-workspace-home')
+      } finally {
+        await local.stop()
+      }
+    } finally {
+      remove(home)
+    }
   }, 180_000)
 
   it('refuses to listen beyond this machine without a login proxy', async () => {

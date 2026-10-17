@@ -1,8 +1,11 @@
 // The course site (WP-86: P-78, P-79, P-123, P-122 增补), on sites the real `presmium build` makes in `beforeAll`.
 // A deck (e2e/fixtures/site/deck) with the site shell of `renderers.web`, local files its body and raw HTML link,
 // and an English translation; a workspace (e2e/fixtures/site/workspace) whose home page is one of its two
-// documents, with search and the doc footer across them.
-import { cpSync, readFileSync, rmSync } from 'node:fs'
+// documents, with search and the doc footer across them. WP-81e2: a hidden directory is not published (and
+// presmium check says so); text of raw HTML that only looks like an attribute is not; the site of a workspace
+// says it leaves out a document's translation.
+import { spawnSync } from 'node:child_process'
+import { cpSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -11,6 +14,7 @@ import type { IRDocument } from '../packages/kernel/src/ir.ts'
 import { deckDir, presmium, serve } from './fixtures/deck.ts'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures/site', import.meta.url))
+const PRESMIUM = fileURLToPath(new URL('../packages/cli/bin/presmium.mjs', import.meta.url))
 
 /** A built site: its directory, the build report and the server of its `dist/`. */
 interface Built {
@@ -115,9 +119,25 @@ test.describe('a deck with a site shell, published files and a translation', () 
     expect(await download(page, await content.locator('video').getAttribute('poster'))).toEqual(readFileSync(join(site.dir, 'media/cover.png')))
   })
 
-  test('a local link that cannot be published is a warning on its line in the build report', () => {
-    const line = readFileSync(join(site.dir, 'lecture.md'), 'utf8').split('\n').findIndex(text => text.includes('handouts/missing.pdf')) + 1
-    expect(site.report).toMatch(new RegExp(`^lecture\\.md:${line}  warning  handouts/missing\\.pdf is not published: there is no such file  \\(presmium\\.links\\)$`, 'm'))
+  test('a local link that cannot be published is a warning on its line in the build report, once for the two forms; a hidden directory is not published', () => {
+    const lines = readFileSync(join(site.dir, 'lecture.md'), 'utf8').split('\n')
+    const line = (text: string) => lines.findIndex(own => own.includes(text)) + 1
+    const missing = new RegExp(`^lecture\\.md:${line('handouts/missing.pdf')}  warning  handouts/missing\\.pdf is not published: there is no such file  \\(presmium\\.links\\)$`, 'gm')
+    expect(site.report.match(missing)).toHaveLength(1)
+    const hidden = new RegExp(`^lecture\\.md:${line('(.handouts/)')}  warning  \\.handouts/ is not published: hidden directories and node_modules are not published  \\(presmium\\.links\\)$`, 'gm')
+    expect(site.report.match(hidden)).toHaveLength(1)
+    for (const form of ['dist/web/media', 'dist/slides']) expect(readdirSync(join(site.dir, form), { recursive: true, encoding: 'utf8' }).filter(file => file.includes('answers.txt'))).toEqual([])
+    // presmium check says so too, on the same line (its broken links are errors: it exits 1).
+    const checked = spawnSync(process.execPath, [PRESMIUM, 'check', '--json'], { cwd: site.dir, encoding: 'utf8' })
+    const { findings } = JSON.parse(checked.stdout) as { findings: { checkId: string, message: string, source: { line: number } }[] }
+    expect(findings).toContainEqual(expect.objectContaining({ checkId: 'presmium.links', message: '.handouts/: hidden directories and node_modules are not published', source: expect.objectContaining({ line: line('(.handouts/)') }) }))
+    // Raw HTML is parsed: ` href=not-a-file.txt` in the text of a `<code>` is no attribute, so nothing is published for it.
+    expect(site.report).not.toContain('not-a-file.txt')
+  })
+
+  test('text in raw HTML that only looks like an attribute stays as written', async ({ page }) => {
+    await page.goto(`${site.url}/web/start.html`)
+    await expect(page.locator('.pm-section[data-section="practice"] code').filter({ hasText: 'not-a-file' })).toHaveText('href=not-a-file.txt')
   })
 
   test('switching a Chinese deck to English on its second chapter stays on the second chapter', async ({ page }) => {
@@ -145,6 +165,10 @@ test.describe('a workspace site', () => {
   })
   test.afterAll(async () => {
     await site?.close()
+  })
+
+  test('a document\'s translation is not in the workspace site, and the build says so at its headmatter', () => {
+    expect(site.report).toMatch(/^week2\/lecture\.md:3  warning  translation "en" \(lecture\.en\.md\) is not in the workspace site: a workspace site does not build the translations of its documents yet; build this document alone \(presmium build week2\) to publish it  \(presmium\.translations\)$/m)
   })
 
   test('the home page shows the document the configuration names', async ({ page }) => {

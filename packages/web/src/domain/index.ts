@@ -1,6 +1,5 @@
 export { formOptions, offlineEnabled, rendererConfig, siteShell, WEB_ID } from './config.ts'
 export type { FormOptions, NavItem, SiteShell, WebRendererConfig } from './config.ts'
-export { mapHtmlUrls } from './html.ts'
 export { SITE_LABELS, WEB_MESSAGES } from './messages.ts'
 export { IR_ENDPOINT, requested, samePage, SERVER_PROXY, SERVICE_WORKER, SLIDE_PARAM, slideUrl, SOURCE_ENDPOINT, urlPath, viewSearch, webUrl } from './links.ts'
 export type { Requested } from './links.ts'

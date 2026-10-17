@@ -11,10 +11,11 @@
  */
 import { execFile, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { irBlocks, isRecord } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, MdastNode, SourcePos } from '@presmium/kernel'
 import { BUILTIN_DIRECTIVES } from './blocks.ts'
+import { htmlAttributes, inside, publishesDirectory, unpublishedDirectory } from './published.ts'
 import { viewFor } from './renderers.ts'
 import { plainText, slugify, splitSections } from './sections.ts'
 import { Parser, readFrontmatter } from './source.ts'
@@ -32,9 +33,9 @@ export interface PublishInput {
 /** URLs with a scheme or protocol-relative: no local file. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i
 const EXTERNAL = /^https?:\/\//i
-/** The attributes of raw HTML that name a file or a place. */
-const ATTRIBUTES = /(?<![\w-])(href|src|poster)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+))/gi
-const IDS = /(?<![\w-])(?:id|name)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+))/gi
+/** The attributes of raw HTML that name a file or a place, and those that name a place. */
+const URL_ATTRIBUTES = new Set(['href', 'src', 'poster'])
+const ID_ATTRIBUTES = new Set(['id', 'name'])
 /** Nodes whose `url` names a file or a place: a card's `:link:` too (docs/ir.md 2.10). */
 const LINKED = new Set(['link', 'image', 'definition', 'card'])
 
@@ -88,7 +89,7 @@ function blockUrls(block: IRBlock): string[] {
   const walk = (mdast: MdastNode) => {
     if (LINKED.has(mdast.type) && typeof mdast.url === 'string') urls.push(mdast.url)
     if (mdast.type === 'html' && typeof mdast.value === 'string') {
-      for (const [, , ...values] of mdast.value.matchAll(ATTRIBUTES)) urls.push(values.find(v => v !== undefined)!)
+      for (const { value } of htmlAttributes(mdast.value, URL_ATTRIBUTES)) urls.push(value)
     }
     mdast.children?.forEach(walk)
   }
@@ -110,6 +111,8 @@ async function linkProblem(url: string, source: SourcePos, input: PublishInput, 
   const file = path.startsWith('/') ? join(input.deckDir, 'public', path) : resolve(dirname(source.file), path)
   if (!inside(file, input.workspaceRoot)) return `${path} lies outside the repository: it cannot be published`
   if (!existsSync(file)) return `${path}: no such file`
+  const hidden = publishesDirectory(file, input.deckDir) ? unpublishedDirectory(file, input.deckDir) : undefined
+  if (hidden) return `${path}: ${hidden}`
   if (!fragment) return undefined
   // A link into a document: the deck itself, or another document of the workspace.
   const entry = statSync(file).isDirectory() ? join(file, 'lecture.md') : file
@@ -140,7 +143,7 @@ function mdastAnchors(node: MdastNode, anchors: Set<string>): void {
   if (node.type === 'heading') anchors.add(slugify(plainText(node)))
   if (node.type === 'mystDirective' && isRecord(node.options) && typeof node.options.label === 'string') anchors.add(node.options.label)
   if (node.type === 'html' && typeof node.value === 'string') {
-    for (const [, ...values] of node.value.matchAll(IDS)) anchors.add(values.find(v => v !== undefined)!)
+    for (const { value } of htmlAttributes(node.value, ID_ATTRIBUTES)) if (value) anchors.add(value)
   }
   node.children?.forEach(child => mdastAnchors(child, anchors))
 }
@@ -227,9 +230,4 @@ function decode(text: string): string {
   } catch {
     return text
   }
-}
-
-function inside(path: string, root: string): boolean {
-  const rel = relative(root, path)
-  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }

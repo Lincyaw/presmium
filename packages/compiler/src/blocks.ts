@@ -242,7 +242,8 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
 
   if (name === 'audience') {
     const names = audienceList(arg)
-    if (names.length === 0) return fail('needs the audiences its section is for, e.g. {audience} teacher')
+    // Without names the section is for no audience (as `:audience:` without names): left out of every build and view for one.
+    if (names.length === 0) fail('needs the audiences its section is for, e.g. {audience} teacher; until it names them, the section is left out of every version for an audience')
     if (body.trim()) fail('takes no body: it marks its whole section; to mark part of a section, give a directive :audience:, e.g. an {only} around the paragraphs', 'warning')
     out.audience = out.audience ? out.audience.filter(a => names.includes(a)) : names
     return
