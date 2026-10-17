@@ -88,7 +88,7 @@ test('the copy that try.mjs makes serves both documents with their plugins', asy
     await openDevPage(page, `${server.url}/glance/`, page.locator('.pm-block[data-component="PmQuiz"]'))
     await expect(page.locator('.pm-diagnostics')).toHaveCount(0)
 
-    // The short document links to the BPE document (its directory), not to a file of it.
+    // The short document links to the BPE document by its entry file, which opens its page (F-25), not its source.
     await page.locator('.pm-section[data-section="glance"] a', { hasText: 'BPE 分词' }).click()
     await expect(page).toHaveURL(`${server.url}/bpe/`)
     await expect(page.locator('.pm-section[data-section="cover"] h1')).toContainText('BPE 分词：从字节到词元', { timeout: 60_000 })

@@ -58,6 +58,10 @@ int main(void) {
 (extend-gpu)=
 ## 在 GPU 上统计
 
+:::{hints}
+slides: { zoom: 0.6 }
+:::
+
 (gpu-pairs)=
 ```{run-panel} wgsl
 ---

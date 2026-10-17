@@ -7,8 +7,8 @@ import { SLIDES, WEB } from './urls.ts'
 // (`pnpm demo:build`, served on WEB and SLIDES): it opens in the web form and the slides; the C
 // program, recorded at build time in WebAssembly, runs in the browser with the same output; the
 // compute shader, recorded at build time on the GPU, finds the same pair on a WebGPU adapter in the
-// browser (SwiftShader, so that any machine has one); the predict shows its answer once the reader
-// has saved a choice; the table that the Python session wrote and the cards show.
+// browser (SwiftShader, so that any machine has one), and its slide shows it whole; the predict shows
+// its answer once the reader has saved a choice; the table that the Python session wrote and the cards show.
 const RUNTIME = { timeout: 120_000 }
 
 async function irDocument(page: Page): Promise<IRDocument> {
@@ -52,6 +52,20 @@ test('the chapter opens in the slides, the C program with the output recorded at
   await expect(page.locator(`.slidev-page-${index} .pm-output`)).toContainText('次数最多的一对 (97, 97) 就是 a a')
 })
 
+test('on its slide the compute shader shows whole, not cut off below (C-8)', async ({ page }) => {
+  // The run panel fills the slide's height in the slides form (WP-89e, F-19); with it, the section's `zoom`
+  // fits the 32 lines. The acceptor enables this case once 89e is merged.
+  test.fixme(true, 'needs WP-89e (F-19): before it the run panel keeps its code at 20em in the slides')
+  const doc = await irDocument(page)
+  const { index } = doc.sections.find(s => s.id === 'extend-gpu')!
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  await page.goto(`${SLIDES}/${index}`)
+  const code = page.locator(`.slidev-page-${index} .pm-run-panel__source pre`).first()
+  await expect(code).toBeVisible()
+  await expect(code).toContainText('best[2] = counts[top];')
+  expect(await code.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(0)
+})
+
 test('the C program runs in the browser and prints what the build recorded', async ({ page }) => {
   test.setTimeout(300_000)
   await page.goto(`${WEB}/extend.html`)
@@ -71,7 +85,7 @@ test('the C program runs in the browser and prints what the build recorded', asy
 test('on a WebGPU adapter, the compute shader finds the pair the build recorded on the GPU', async ({ playwright, page }) => {
   const doc = await irDocument(page)
   const block = doc.sections.flatMap(s => s.blocks).find(b => b.id === 'gpu-pairs')!
-  const recorded = String((block.node as { props: { compiledOutput: string } }).props.compiledOutput)
+  const recorded = String((block.node as unknown as { props: { compiledOutput: string } }).props.compiledOutput)
   expect(recorded.split('\n')[0]).toBe('best: u32[3] = [97, 97, 4]')
 
   // Chromium with SwiftShader, a WebGPU adapter on any machine (the default headless one has none).

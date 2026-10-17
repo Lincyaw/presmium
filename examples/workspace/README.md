@@ -19,7 +19,7 @@ node packages/cli/bin/presmium.mjs serve ~/presmium-example-workspace
 
 打开 <http://127.0.0.1:4310>，首页列出两份文档。服务只监听本机，你就是工作区的所有者，不需要登录。副本中还有 BPE 讲义引用的示例代码 `examples/sample-repo`，以及讲义锁定的几个提交，所以代码引用和它们的永久链接照常可用；`node_modules` 是指向本目录 `node_modules` 的链接。
 
-直接 `node packages/cli/bin/presmium.mjs serve examples/workspace` 也能启动并在首页列出两份文档，但这时 git 仓库的根目录是 Presmium 仓库：文档的插件在那里找不到，页面上的执行面板与预测会报告“unknown directive”，修改也会提交到 Presmium 仓库。所以请用副本。
+直接 `node packages/cli/bin/presmium.mjs serve examples/workspace` 也能启动，两份文档照常显示，但这时 git 仓库是 Presmium 仓库：文档管理、接受的修改与撤销都会提交到 Presmium 仓库。所以请用副本。
 
 ## 环境变量
 
