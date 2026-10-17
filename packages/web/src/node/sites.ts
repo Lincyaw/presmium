@@ -11,8 +11,12 @@
  *
  * Each document is the web form of its deck (its plugins, components and
  * search index) under its directory; the home page is one more VitePress
- * site at the base. `buildSite` builds them into one output directory.
- * `devSite` is a router: a request under `<base><dir>/` goes to the dev
+ * site at the base. `buildSite` builds them into one output directory: the
+ * home page and each document with its IR (`doc`); a host that builds the
+ * documents apart from the home page sets `ctx.config.home` to false, and one
+ * that serves the built pages with its server in front (`presmium serve`'s
+ * static site for readers) sets `ctx.config.served`, so the pages have the
+ * server as the dev site's do. `devSite` is a router: a request under `<base><dir>/` goes to the dev
  * server of that document, started on its first request with the IR
  * `compile` gives; any other path goes to the home page's dev server; the
  * HMR WebSockets follow the same paths. The documents of `SiteSpec` are read
@@ -319,10 +323,11 @@ function allowed(...dirs: (string | undefined)[]): string[] {
 export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput> {
   const extra = siteModules(ctx)
   const single = site.documents.length === 1 && site.documents[0]!.dir === ''
+  const served = ctx.config.served === true
   // The home page first: VitePress empties the directory it builds into, and the documents lie under it.
-  if (!single) {
+  if (!single && ctx.config.home !== false) {
     const work = join(ctx.workDir, 'home')
-    const root = writeHome(work, site, ctx, homeModules(ctx), false, [])
+    const root = writeHome(work, site, ctx, homeModules(ctx), served, [])
     const code = await vitepressBuild(root, ctx.outDir)
     if (code !== 0) throw new Error(`vitepress build of the home page exited with code ${code}`)
   }
@@ -332,7 +337,7 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<Ren
     const workDir = documentWorkDir(ctx, entry.dir)
     const dctx = documentContext(ctx, site, entry.dir, entry.doc, join(ctx.outDir, entry.dir), workDir)
     try {
-      await buildDocument(entry.doc, dctx, workDir, documentSite(ctx, site, entry.dir, extra, false, [], docs))
+      await buildDocument(entry.doc, dctx, workDir, documentSite(ctx, site, entry.dir, extra, served, [], docs))
     } catch (error) {
       throw new Error(`document ${entry.dir || '.'}: ${errorMessage(error)}`)
     }

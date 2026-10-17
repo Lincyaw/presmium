@@ -35,6 +35,15 @@ export interface WorkspaceMessages {
   executionPending: string
   close: string
   origin: Record<'agent' | 'document' | 'editor', string>
+  /** A reader's page while a new build of its document is coming (SHARED, D17): what it shows is a build behind. */
+  siteUpdating: string
+  siteUpdatingNote: string
+  /** A new build is in place: reloading shows it. */
+  siteUpdated: string
+  /** The page serve answers before the first build of a document is in place; it reloads itself. */
+  sitePreparing: string
+  /** The page serve answers when no build of a document succeeded yet. */
+  siteUnavailable: string
 }
 
 export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
@@ -69,6 +78,11 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     executionPending: '等待所有者确认执行',
     close: '关闭',
     origin: { agent: 'agent 修改', document: '文档操作', editor: '编辑' },
+    siteUpdating: '正在更新',
+    siteUpdatingNote: '这份文档有新的修改，正在构建阅读版本；完成后刷新即可看到。',
+    siteUpdated: '已更新，刷新查看',
+    sitePreparing: '正在更新：这份文档的阅读版本正在构建，完成后本页自动显示。',
+    siteUnavailable: '这份文档的阅读版本暂时没有构建成功，编辑者修改之后会再次构建。',
   },
   'en': {
     edit: 'Edit',
@@ -101,5 +115,10 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     executionPending: 'Waiting for the owner to allow the execution',
     close: 'Close',
     origin: { agent: 'agent change', document: 'document operation', editor: 'edit' },
+    siteUpdating: 'Updating',
+    siteUpdatingNote: 'This document changed; its reading version is being built. Reload once it is done to see it.',
+    siteUpdated: 'Updated: reload',
+    sitePreparing: 'Updating: the reading version of this document is being built; this page shows it once it is done.',
+    siteUnavailable: 'The reading version of this document could not be built yet; it is built again once an editor changes it.',
   },
 }

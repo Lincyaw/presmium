@@ -1,13 +1,14 @@
 /**
  * The workspace's toolbar entries: edit mode, the document operations of the
- * home page, the revision history, and "request execution". Each shows for
- * editors and owners only; the panels are plain, styled inline so the entries
- * need no style sheet in either form.
+ * home page, the revision history, and "request execution", each for editors
+ * and owners only; and for readers of the static site (SHARED, D17) whether a
+ * new build of the page's document is coming or in place. The panels are
+ * plain, styled inline so the entries need no style sheet in either form.
  */
 import { useMessages, useServer } from '@presmium/host'
 import type { AgentClient, AgentTask, ReviewChange, Revision } from '@presmium/kernel'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import type { DocumentOperation, DocumentsAnswer, ExecutionState, OperationAnswer, RevertAnswer, RevisionsAnswer, WorkspaceDocument } from '../domain/api.ts'
+import type { DocumentOperation, DocumentsAnswer, ExecutionState, OperationAnswer, RevertAnswer, RevisionsAnswer, SiteState, WorkspaceDocument } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
 import { WORKSPACE_MESSAGES } from '../domain/messages.ts'
@@ -85,6 +86,50 @@ export const EditToggle = defineComponent({
           'onClick': () => editing.value = !editing.value,
         }, editing.value ? t.value.leaveEdit : t.value.edit)
       : null)
+  },
+})
+
+/** How often a reader's page asks whether a new build of its document is coming or in place. */
+const SITE_POLL_MS = 10_000
+
+/**
+ * A reader's page of the static site (SHARED, D17): "updating" while a new build of its document is
+ * coming (what the page shows is a build behind), then a reload once the new build is in place.
+ * Nothing on the dev server's pages (editors and owners), which follow each change.
+ */
+export const SiteStatus = defineComponent({
+  name: 'PmWorkspaceSite',
+  setup() {
+    const t = useMessages(WORKSPACE_MESSAGES)
+    const state = shallowRef<SiteState>()
+    /** The build this page was loaded from (the first one it heard of). */
+    let loaded: string | undefined
+    let timer: ReturnType<typeof setInterval> | undefined
+    const look = async () => {
+      if (document.hidden) return
+      try {
+        const next = await call<SiteState>('site')
+        loaded ??= next.version
+        state.value = next
+        if (next.kind !== 'static' && timer !== undefined) clearInterval(timer)
+      } catch {
+        // Asked again at the next turn.
+      }
+    }
+    onMounted(() => {
+      void look()
+      timer = setInterval(() => void look(), SITE_POLL_MS)
+    })
+    onBeforeUnmount(() => clearInterval(timer))
+    return () => {
+      const now = state.value
+      if (now?.kind !== 'static') return null
+      if (now.updating) return h('span', { 'class': 'pm-workspace-site', 'data-state': 'updating', 'role': 'status', 'title': t.value.siteUpdatingNote }, t.value.siteUpdating)
+      if (now.version && loaded && now.version !== loaded) {
+        return h('button', { 'type': 'button', 'class': 'pm-workspace-site', 'data-state': 'updated', 'style': BUTTON, 'onClick': () => location.reload() }, t.value.siteUpdated)
+      }
+      return null
+    }
   },
 })
 

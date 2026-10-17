@@ -67,6 +67,10 @@ export interface SiteContextOptions {
   findings: Finding[]
   /** Files the site may publish: SHARED serve's read scope, also in agent-host (inside the workspace, not in `.git/`). */
   scoped?: boolean
+  /** A build whose pages serve answers with its server in front (the readers' static site, WP-91b). */
+  served?: boolean
+  /** A build of the documents only, without the home page (`buildSite`). */
+  documentsOnly?: boolean
 }
 
 /** The render context of the whole site; the web renderer makes each document's from it. */
@@ -78,7 +82,12 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     workspaceRoot: root,
     outDir: options.outDir,
     workDir: options.workDir,
-    config: { ...options.host ? { host: options.host } : {}, ...options.home ? { homePlugins: options.home } : {} },
+    config: {
+      ...options.host ? { host: options.host } : {},
+      ...options.home ? { homePlugins: options.home } : {},
+      ...options.served ? { served: true } : {},
+      ...options.documentsOnly ? { home: false } : {},
+    },
     extensions: [],
     plugins: Object.keys(plugins),
     pluginDirs: plugins,

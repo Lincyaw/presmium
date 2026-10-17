@@ -62,3 +62,17 @@ export interface ExecutionState {
   /** A compile approval of this document waits for the owner. */
   pending: boolean
 }
+
+/**
+ * `GET site` of a document (or of the home page, document ''): how the member's pages are made
+ * (docs/architecture.md 10.10). Editors and owners, and LOCAL mode, have the dev server, which follows
+ * each change (`live`); a reader in SHARED mode has the static site built for students (`static`, D17),
+ * which follows a change once a new build of the document is in place.
+ */
+export interface SiteState {
+  kind: 'live' | 'static'
+  /** A new build of the page's document is coming: a change is not yet in what the reader sees. */
+  updating?: boolean
+  /** The build served now; another once a new one is in place. */
+  version?: string
+}

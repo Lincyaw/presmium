@@ -2,12 +2,13 @@
  * The workspace's routes under `/__presmium/presmium.workspace/` (docs/architecture.md
  * 10.2): the documents and their operations, the revision history and its
  * reverts, and the state of a document's compile-time execution with its
- * "request execution". The server checks the roles (`Route.role`): readers
- * list the documents; editors and owners change them and read the history.
+ * "request execution", and how the member's site is made (a reader's static
+ * site may be a build behind, D17). The server checks the roles (`Route.role`):
+ * readers list the documents; editors and owners change them and read the history.
  */
 import { errorMessage, isRecord } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
-import type { DocumentOperation, DocumentsAnswer, ExecutionState, RevertAnswer, RevisionsAnswer } from '../domain/api.ts'
+import type { DocumentOperation, DocumentsAnswer, ExecutionState, RevertAnswer, RevisionsAnswer, SiteState } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { RequestError } from './documents.ts'
 import type { Documents } from './documents.ts'
@@ -21,6 +22,8 @@ export interface WorkspaceRoutes {
   execution?(document: string): ExecutionState | undefined
   /** An editor asks again to run the code of a document that did not run. */
   requestExecution?(document: string, member: Member): Promise<void> | void
+  /** How a member's pages of a document (or of the home page, '') are made; `live` when absent. */
+  site?(document: string, member: Member): SiteState
 }
 
 function json(data: unknown, status = 200): Response {
@@ -97,6 +100,13 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!isRecord(body) || typeof body.id !== 'string' || !/^[0-9a-f]{4,64}$/i.test(body.id)) return problem(400, '{ id: <commit> }')
         const result = await revisions.revert(body.id, ctx.member)
         return json(result satisfies RevertAnswer, result.ok ? 200 : 409)
+      }),
+    },
+    'site': {
+      role: 'reader',
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'GET') return problem(405, 'GET')
+        return json(options.site?.(ctx.document, ctx.member) ?? { kind: 'live' } satisfies SiteState)
       }),
     },
     'execution': {

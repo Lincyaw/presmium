@@ -11,6 +11,8 @@
  * agent-host (the sandbox), with scoped gateway tokens; code without a
  * recording runs by `settings.presmium.exec.compile`; serve reads only the
  * workspace's files (`ReadScope`) and refuses a single-deck repository.
+ * Readers get the static site built for students (D17, ./student-site.ts),
+ * never a dev server; editors and owners the dev servers.
  *
  * Both modes load only the operator's plugins (D14): the packages listed in
  * `settings.presmium.workspace.plugins`, installed at the workspace root.
@@ -26,7 +28,8 @@ import type { Finding, IRDocument, Logger, Member, ServiceToken, SiteSpec } from
 import { servedDocument, startServer } from '@presmium/server'
 import type { DocumentView, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
-import { rolesOf } from '../domain/members.ts'
+import type { SiteState } from '../domain/api.ts'
+import { mayEdit, rolesOf } from '../domain/members.ts'
 import { AgentHostClient } from './agent-client.ts'
 import { initGroups } from './agent-host.ts'
 import { STUDENT, viewDocument } from './audience.ts'
@@ -41,6 +44,7 @@ import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
 import type { WorkspaceRoutes } from './routes.ts'
 import { DocumentSession } from './session.ts'
+import { StudentSite } from './student-site.ts'
 import { homePlugins, servedPlugins, siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
 
 export interface ServeOptions {
@@ -228,6 +232,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
         requester.set(dir, member)
         approvals.requestAgain(sessionOf(dir))
       },
+      // A reader in SHARED mode has the static site built for students, which may be a build behind (D17).
+      site: (dir, member) => (shared && !mayEdit(member.roles) ? site?.status?.(dir) : undefined) ?? { kind: 'live' },
     }
     return { ...revisions ? { revisions } : {}, writer, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
   }
@@ -371,15 +377,25 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
   started()
 
-  // The site: in LOCAL mode this process's dev servers; in SHARED mode agent-host's, one per view.
-  const compileFor = (view: DocumentView, mayAsk: boolean) => async (dir: string): Promise<IRDocument> => {
-    const compilation = await sessionOf(dir).ready({ mayAsk })
-    return siteIR(compilation, viewDocument(compilation, view))
+  // The site: in LOCAL mode this process's dev servers; in SHARED mode agent-host's for editors and owners,
+  // and the readers' static site.
+  const compileFull = async (dir: string): Promise<IRDocument> => {
+    const compilation = await sessionOf(dir).ready({ mayAsk: true })
+    return siteIR(compilation, viewDocument(compilation, 'full'))
   }
   try {
     site = shared && agentHost
-      ? await remoteSites(agentHost, spec, root, compileFor, log)
-      : await localSite(root, spec, options.bundled, stateDir(root, env), compileFor('full', true), config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
+      ? await remoteSites(agentHost, spec, compileFull, new StudentSite({
+          client: agentHost,
+          spec,
+          root,
+          state: stateDir(root, env),
+          compile: dir => sessionOf(dir).ready({ mayAsk: false }),
+          latest: dir => sessions.get(dir)?.latest,
+          plugins: dir => sessions.get(dir)?.latest?.plugins.flatMap(loaded => (loaded.plugin?.gateway ? [pluginId(loaded)] : [])) ?? [],
+          log,
+        }), log)
+      : await localSite(root, spec, options.bundled, stateDir(root, env), compileFull, config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
   } catch (error) {
     await server.close()
     if (home) rmSync(home, { recursive: true, force: true })
@@ -403,6 +419,8 @@ interface SiteBackend {
   forward(view: DocumentView): string | undefined
   update(dir: string, compilation: Compilation): Promise<void> | void
   documentsChanged(removed: string[]): Promise<void>
+  /** How a reader's pages are now (SHARED: the static site). */
+  status?(dir: string): SiteState
   close(): Promise<void>
 }
 
@@ -422,24 +440,27 @@ async function localSite(root: string, spec: SiteSpec, bundled: string | undefin
   }
 }
 
-/** SHARED: a site per view in agent-host, each behind a router of serve's (see ./remote-site.ts). */
-async function remoteSites(client: AgentHostClient, spec: SiteSpec, root: string, compile: (view: DocumentView, mayAsk: boolean) => (dir: string) => Promise<IRDocument>, log: Logger): Promise<SiteBackend> {
-  const views = {
-    full: new RemoteSite(client, spec, 'full', compile('full', true), log, root),
-    student: new RemoteSite(client, spec, 'student', compile('student', false), log, root),
-  }
-  const urls = { full: await views.full.url(), student: await views.student.url() }
+/**
+ * SHARED: the editors' and owners' site, a dev server in agent-host behind a router of serve's (see
+ * ./remote-site.ts); the readers' site, static, built for students by agent-host and served by serve
+ * (see ./student-site.ts, D17).
+ */
+async function remoteSites(client: AgentHostClient, spec: SiteSpec, compile: (dir: string) => Promise<IRDocument>, student: StudentSite, log: Logger): Promise<SiteBackend> {
+  const full = new RemoteSite(client, spec, 'full', compile, log)
+  const urls = { full: await full.url(), student: await student.url() }
   return {
     forward: view => urls[view],
     async update(dir, compilation) {
-      await Promise.all((['full', 'student'] as const).map(view => views[view].update(dir, siteIR(compilation, viewDocument(compilation, view)))))
+      student.compiled(dir)
+      await full.update(dir, siteIR(compilation, viewDocument(compilation, 'full')))
     },
     async documentsChanged(removed) {
-      await Promise.all(Object.values(views).map(view => view.documentsChanged(removed)))
+      student.documentsChanged(removed)
+      await full.documentsChanged(removed)
     },
+    status: dir => student.status(dir),
     async close() {
-      await Promise.all(Object.values(views).map(view => view.close()))
+      await Promise.all([full.close(), student.close()])
     },
   }
 }
-

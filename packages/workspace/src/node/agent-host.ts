@@ -9,7 +9,7 @@
  * as serve (D14) and builds a Node service registry for each document.
  */
 import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
+import { createReadStream, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -26,7 +26,7 @@ import { listDocuments, readWorkspace } from './config.ts'
 import { STUDENT } from './audience.ts'
 import { runKey } from './execution.ts'
 import { copyDocument, emptyDocument, FilesError, fromTemplate, fromWire, relinkDocuments, shareTree, writeChanges } from './files.ts'
-import { homePlugins, servedPlugins, siteContext, webRenderer } from './site.ts'
+import { homePlugins, servedPlugins, siteContext, siteIR, webRenderer } from './site.ts'
 
 export interface AgentHostOptions {
   /** The workspace root (the shared volume, at the same path as in serve). */
@@ -125,6 +125,56 @@ export function becomeUser(user: string | undefined, files: readonly string[] = 
   process.setgid!(id)
   process.setuid!(id)
   assertUnreadable(files)
+}
+
+/** The largest piece of a file in one line of a build's stream (before base64). */
+const BUILD_CHUNK = 1 << 20
+
+/** The regular files under `dir`, relative to it (`/`-separated, sorted); links and other kinds are left out. */
+function filesUnder(dir: string, rel = ''): string[] {
+  return readdirSync(join(dir, rel), { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1)).flatMap((entry) => {
+    const path = rel ? `${rel}/${entry.name}` : entry.name
+    return entry.isDirectory() ? filesUnder(dir, path) : entry.isFile() ? [path] : []
+  })
+}
+
+/**
+ * A build of the readers' site as serve takes it (WP-91b), NDJSON: `{ wait: true }` every few seconds
+ * while it builds (no timeout of serve's ends the request), then each regular file under the directory
+ * `built` gives as `{ path, data }` (base64, a file's pieces in order), then `{ end: true, files, bytes }`;
+ * or `{ error }` once it failed.
+ */
+async function sendBuild(res: ServerResponse, built: Promise<string>): Promise<void> {
+  res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store' })
+  const line = (value: unknown) => new Promise<void>((resolve, reject) => {
+    if (res.destroyed) return reject(new Error('serve went away'))
+    if (res.write(`${JSON.stringify(value)}\n`)) return resolve()
+    const gone = () => reject(new Error('serve went away'))
+    res.once('close', gone).once('drain', () => {
+      res.off('close', gone)
+      resolve()
+    })
+  })
+  const waiting = setInterval(() => void line({ wait: true }).catch(() => undefined), 10_000)
+  try {
+    const dir = await built.finally(() => clearInterval(waiting))
+    let files = 0
+    let bytes = 0
+    for (const path of filesUnder(dir)) {
+      files++
+      let empty = true
+      for await (const chunk of createReadStream(join(dir, path), { highWaterMark: BUILD_CHUNK })) {
+        empty = false
+        bytes += (chunk as Buffer).length
+        await line({ path, data: (chunk as Buffer).toString('base64') })
+      }
+      if (empty) await line({ path, data: '' })
+    }
+    await line({ end: true, files, bytes })
+  } catch (error) {
+    await line({ error: errorMessage(error) }).catch(() => undefined)
+  }
+  res.end()
 }
 
 interface Site {
@@ -252,6 +302,33 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     return { id, port: site.port }
   }
 
+  // The readers' static site (SHARED, D17, WP-91b): a document built for the audience `student`, or the home page,
+  // into a directory of this process's own, its files then sent to serve, which serves them; one build at a time.
+  let studentBuilds: Promise<unknown> = Promise.resolve()
+  const buildStudent = async (out: string, spec: SiteSpec, dir: string | undefined, gateway: GatewayAccess | undefined): Promise<string> => {
+    const findings: Finding[] = []
+    const home = homePlugins((await operatorsOf()).filter(loaded => loaded.plugin?.operator === true))
+    // The work directory stays between builds of the same document: its generated project is reused.
+    const work = join(state, 'student', 'work', dir === undefined ? '_home' : encodeURIComponent(dir))
+    const ctx = siteContext({ root, outDir: out, workDir: work, plugins: servedPlugins(), home, findings, scoped: true, served: true, documentsOnly: dir !== undefined })
+    renderer ??= webRenderer(root, options.bundled)
+    renderer.catch(() => {
+      renderer = undefined
+    })
+    const documents = spec.documents.map(({ doc: _doc, ...document }) => document)
+    if (dir === undefined) {
+      await (await renderer).buildSite!({ ...spec, documents }, ctx)
+      return out
+    }
+    // Compiled for the audience (P-55): what is not for students goes before any pass, executor or renderer
+    // sees it, and no code runs that has no recording; what the build wrote is scanned for what was left out.
+    const compilation = await new Compiler(entryOf(dir), { ...compilerOptions(false, gateway), audience: STUDENT }).compile()
+    await (await renderer).buildSite!({ ...spec, documents: documents.map(document => (document.dir === dir ? { ...document, doc: siteIR(compilation) } : document)) }, ctx)
+    const leaks = await compilation.audience!.scan(join(out, dir), undefined, { quote: false })
+    if (leaks.length > 0) throw new Error(`the build holds content not for students: ${leaks.map(f => f.message).join('; ')}`)
+    return join(out, dir)
+  }
+
   // Agent sessions (the assistant's runtime registered here) and reviews (deltabox), by id.
   interface OpenSession {
     session: AgentSession
@@ -359,6 +436,23 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
         const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), ...to?.length ? { to } : {}, ...student ? { quote: false, scan: 'written' } : {} })
         return send(res, 200, { outputs: report.outputs.map(({ renderer: r, outDir }) => ({ renderer: r, outDir })), findings: report.findings })
       }
+    }
+
+    if (area === 'student-sites' && id === undefined && method === 'POST') {
+      const input = await body(req)
+      if (!isRecord(input) || !isRecord(input.site) || !Array.isArray(input.site.documents)) throw new HttpError(400, '{ site, document?, gateway? }')
+      const dir = typeof input.document === 'string' ? input.document : undefined
+      if (dir !== undefined) entryOf(dir)
+      const gateway = isRecord(input.gateway) ? input.gateway as unknown as GatewayAccess : undefined
+      const out = join(state, 'student', 'out', randomUUID())
+      const built = studentBuilds.then(() => buildStudent(out, input.site as unknown as SiteSpec, dir, gateway))
+      studentBuilds = built.catch(() => undefined)
+      try {
+        await sendBuild(res, built)
+      } finally {
+        rmSync(out, { recursive: true, force: true })
+      }
+      return
     }
 
     if (area === 'sites') {
