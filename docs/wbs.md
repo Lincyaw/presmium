@@ -1257,6 +1257,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - `docs/**`，`requirements.md` 与 `wbs.md` 除外，它们由验收者维护；
 - `packages/compiler/**`、`packages/viewer/**`、`packages/workspace/**`、`packages/addon-exec/**`、`packages/addon-publish/**`、`packages/addon-lecture/**`；
 - 技能中 92b 拥有的段落之外的部分（只为文档一致性改动，与 92b 改同一文件时只改不同的段落）；
+- `examples/demo/**`；
 - `e2e/lecture*.spec.ts`、`e2e/fixtures/lecture*/**`、`e2e/workspace.spec.ts`。
 
 **条目**：
@@ -1270,6 +1271,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - F-55，重做的标签：撤销一次撤销时，历史显示“重做「…」”或“Redo "…"”，不显示与撤销相同的标签。
 - D-8，Python 执行器：本地 Python 执行器的指纹包含运行脚本（`runner.py`）的摘要，已缓存的录制在下一次构建时按 D-8 更新。
 - 不稳定的用例改稳：F-18 的范围导出用例在超时后重试，与 `tall` 用例一致；`e2e/lecture-writeback.spec.ts` 在上一用例撤销后等编辑控件就绪。
+- N-05 与 R-27（WP-89e 验证者的发现）：网页放映视图中运行面板的参数输入与运行按钮继承代码的字号（现在 13.3 px，低于 18 px）；幻灯片中运行后输出栏占去一半宽度时，长代码行不被横向截断（自动换行或可横向滚动并有提示）；示例讲义 `extend-c`、`extend-train` 的 `zoom`（0.65、0.75）使代码低于 18 px，改为让代码在幻灯片中滚动或拆页，去掉这两个 `zoom`。验收者已决定 `extend-gpu` 不用 `zoom`，着色器在面板中滚动（`e2e/demo.spec.ts`）。
 - C-9 文档核对：K2 各组报告的作者与运营者可见的变化（`/tmp/claude-1000/-home-ddq-AoyangSpace-presmium/ad4777b2-3f0f-4adb-9e14-744177671948/scratchpad/k2-summaries.txt` 中各组的 “Doc-visible changes”“Behaviour changes for docs”），逐条核对 `docs/` 与技能是否写入，补齐。只关于共享部署的条目不写。宿主契约 `NavigationPosition.section` 的注释与 `ir.md` 2.11 一致。
 - 删除文档中的共享部署，位置见清单第 4 节：
   - `architecture.md`：第 2 节；4.2、4.5 至 4.10 节中的 gateway 与信任模式；第 7、8 节；9.4 节改为只有本机的残余风险；第 10 节删去 10.8 至 10.10，10.1、10.3、10.5 改写为本机与 hub 托管，其余删去共享部署的部分；第 11、12 节。
@@ -1302,7 +1304,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 **条目**：
 
 - P-140：Apache-2.0 的 `LICENSE` 与 `NOTICE`（列出再分发的第三方二进制与运行时及其许可证）；每个包的 `license` 字段与包内 `LICENSE`。
-- P-141：哪些包公开发布、哪些保持私有（测试替身、示例）写成表；公开的包去掉 `private`，补齐元数据；`exports` 与 `files` 只含发布所需（源码以 `.ts`、`.vue` 直接发布）；插件对 Presmium 的依赖改为 `peerDependencies`；changesets 初始化，所有公开包版本为 `1.0.0-rc.0`。
+- P-141：哪些包公开发布、哪些保持私有（测试替身、示例）写成表；每个包写 `engines.node`（与根目录一致，WP-89c 验证者指出 `packages/cli` 缺少）；公开的包去掉 `private`，补齐元数据；`exports` 与 `files` 只含发布所需（源码以 `.ts`、`.vue` 直接发布）；插件对 Presmium 的依赖改为 `peerDependencies`；changesets 初始化，所有公开包版本为 `1.0.0-rc.0`。
 - P-141 消费者安装测试：`pnpm -r pack` 打包，在单仓之外的临时目录中用 npm 安装压缩包，运行 `presmium check`、`presmium build`（web、slides、notebook）与 `presmium dev` 冒烟，并从压缩包安装一个第三方插件（WP-93b 的插件模板生成的项目，93b 合并前用一个测试插件）。
 - P-143 的加载器部分：插件的 `peerDependencies` 声明的 Presmium 版本不满足时，加载器给出诊断（`presmium check` 报告，构建不崩溃）。
 - P-146 的 CI：GitHub Actions 工作流（`pnpm test`、示例构建与检查、Chromium 端到端用例；完整套件与其他浏览器定时运行）；工作流文件用 `act` 或等价方式至少本地检查一次语法。
