@@ -1335,13 +1335,15 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 
 由用户选定一个方向，或组合几个方向。设计稿由验收者发布给用户；选定的方向与设计令牌写入 `architecture.md` 5.x。
 
+**结果（2026-10-17，由验收者完成）**：用户选定工作台的布局与编辑方式、书卷的样式。参考稿、布局与令牌在 `docs/design/`（`README.md`，`home.dc.html`、`edit.dc.html`、`slide.dc.html`）。WP-95b 把它们写入 `architecture.md` 5.x。
+
 ### WP-95b 设计系统与应用外壳（用户选定方向后，串行）
 
 **拥有**：
 
 - `packages/host/**`：设计令牌，作为 CSS 自定义属性，分明暗两套；通用组件；`useTheme`；
 - `packages/workspace/src/client/**`：首页、文档管理、修改历史、编辑开关；
-- 工具栏与网页形态的外壳（`packages/web/**` 的主题部分）；
+- 工具栏与网页形态的外壳（`packages/web/**` 的主题部分）：工作区的活动栏、侧栏、启动台首页与状态栏（`docs/design/home.dc.html`）；网页形态的阅读页用书卷的排版；
 - `architecture.md` 5.x。
 
 **验收**：
@@ -1355,7 +1357,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 
 **拥有**：
 
-- `packages/workspace/**` 中源码编辑的部分：块的“编辑源码”、“源码”面板、未提交修改的提交与放弃；
+- `packages/workspace/**` 中源码编辑的部分：编辑模式的左右分栏（源码编辑器与实时预览）、文件标签、问题面板、预览与源码的双向定位、未提交修改的提交与放弃（布局见 `docs/design/edit.dc.html`）；
 - 新依赖 CodeMirror 6；
 - `e2e/editing.spec.ts`。
 
