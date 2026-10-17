@@ -8,6 +8,7 @@
  * never rolled back by a review rejected after it.
  */
 import type { DocumentLockService } from '@presmium/kernel'
+import { lockKind } from '../domain/api.ts'
 
 export class DocumentLocks implements DocumentLockService {
   readonly #held = new Map<string, string>()
@@ -48,6 +49,7 @@ export class DocumentLocks implements DocumentLockService {
 
 /** Why a document is not to be changed now, for a 409 (`holder` as `claimAll` names it). */
 export function lockedMessage(document: string, holder: string): string {
-  const what = holder.startsWith('agent:') ? 'an agent\'s change task runs or waits for its review' : holder.endsWith(':revert') ? 'a change is being undone' : 'a document operation is under way'
+  const kind = lockKind(holder)
+  const what = kind === 'agent' ? 'an agent\'s change task runs or waits for its review' : kind === 'revert' ? 'a change is being undone' : 'a document operation is under way'
   return `${document || 'the document'} cannot change now: ${what} (${holder}); try again once it is done`
 }

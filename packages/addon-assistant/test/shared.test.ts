@@ -8,9 +8,10 @@
 // worth, and once the session ended its token is refused. Then D1, D2 (default `compile: approve`): an
 // editor's MCP token calls run_code through the gateway; the approval is on the owner console only, the
 // editor's answer is refused, the owner's allows it and the code runs in agent-host; with `compile: off`
-// there is no run_code.
-import { readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+// there is no run_code. An editor's agent's build goes to agent-host's state directory, outside the document,
+// and the MCP names it there (F-51).
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { fakeModel } from './fixtures/fake-model.ts'
@@ -24,7 +25,7 @@ members:
   editors: [editor@test]
 settings:
   presmium.workspace:
-    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-exec', 'presmium-fixture-runtime']
+    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-exec', 'presmium-fixture-runtime', '@presmium/render-notebook']
   # These cases check the process that runs the code (agent-host), not the process sandbox.
   presmium.deltabox:
     sandbox: false
@@ -106,9 +107,10 @@ beforeAll(async () => {
     '@presmium/slidev-addon-assistant': PACKAGE,
     '@presmium/slidev-addon-exec': join(ROOT, 'packages/addon-exec'),
     'presmium-fixture-runtime': join(FIXTURES, 'runtime-plugin'),
+    '@presmium/render-notebook': join(ROOT, 'packages/render-notebook'),
   })
   const state = join(dir, '..', `${dir.split('/').at(-1)}-state`)
-  agentHost = presmium(['agent-host', '--port', '0'], { cwd: dir, env: env({ XDG_STATE_HOME: state, PRESMIUM_AGENT_HOST_TOKEN: SECRETS.agentHost }) })
+  agentHost = presmium(['agent-host', '--port', '0'], { cwd: dir, env: env({ XDG_STATE_HOME: state, XDG_CACHE_HOME: join(state, 'cache'), PRESMIUM_AGENT_HOST_TOKEN: SECRETS.agentHost }) })
   agentHostUrl = agentHost.wait(/^agent-host {2}(http\S+)$/m).then(m => m[1]!)
   // serve names the gateway's address in its tokens, and the gateway serve's: their ports come first.
   const gatewayPort = await freePort()
@@ -182,17 +184,18 @@ describe('a reader\'s question in SHARED mode', () => {
   }, 300_000)
 })
 
-describe('run_code of an editor\'s agent in SHARED mode (D1, D2)', () => {
-  async function editorClient(): Promise<Client> {
-    const issued = await raw(`${serveUrl}/__presmium/fixture.runtime/token`, { method: 'POST', headers: as('editor@test') })
-    expect(issued.status, issued.text).toBe(200)
-    const { url, token } = issued.json<{ url: string, token: string }>()
-    expect(url).toBe(`${gatewayUrl}/mcp`)
-    const client = new Client({ name: 'editor-agent', version: '0.1.0' })
-    await client.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }))
-    return client
-  }
+/** An editor's agent's MCP client: its token from serve, to the gateway's MCP. */
+async function editorClient(): Promise<Client> {
+  const issued = await raw(`${serveUrl}/__presmium/fixture.runtime/token`, { method: 'POST', headers: as('editor@test') })
+  expect(issued.status, issued.text).toBe(200)
+  const { url, token } = issued.json<{ url: string, token: string }>()
+  expect(url).toBe(`${gatewayUrl}/mcp`)
+  const client = new Client({ name: 'editor-agent', version: '0.1.0' })
+  await client.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }))
+  return client
+}
 
+describe('run_code of an editor\'s agent in SHARED mode (D1, D2)', () => {
   it('compile: approve: only the owner console is asked; the editor\'s answer is refused; the owner allows it there and the code runs in agent-host', async () => {
     const console = await eventStream(`${serveUrl}/__presmium/presmium.server/control?window=console&console=1`, as('owner@test', 'console'))
     const ownerSite = await eventStream(`${serveUrl}/__presmium/presmium.server/control?window=owner&document=doc`, as('owner@test'))
@@ -239,6 +242,34 @@ describe('run_code of an editor\'s agent in SHARED mode (D1, D2)', () => {
       expect(tools.map(t => t.name)).not.toContain('run_code')
     } finally {
       await client.close()
+    }
+  }, 300_000)
+})
+
+describe('build of an editor\'s agent in SHARED mode (F-51)', () => {
+  it('builds in agent-host\'s state directory, outside the document, and names that directory', async () => {
+    const editorSite = await eventStream(`${serveUrl}/__presmium/presmium.server/control?window=editor&document=doc`, as('editor@test'))
+    const client = await editorClient()
+    try {
+      const built = client.callTool({ name: 'build', arguments: { to: ['notebook'] } })
+      // A build is the editor's to allow, on the site.
+      const asked = await editorSite.next('approval') as { id: string, request: Record<string, unknown> }
+      expect(asked.request).toMatchObject({ kind: 'operate', from: 'presmium.mcp' })
+      const answered = await raw(`${serveUrl}/__presmium/presmium.server/control`, { headers: as('editor@test'), json: { window: 'editor', type: 'answer', id: asked.id, allow: true } })
+      expect(answered.status, answered.text).toBe(200)
+
+      const result = await built
+      expect(result.isError, JSON.stringify(result.content)).toBeFalsy()
+      const { outputs } = JSON.parse((result.content as { text: string }[])[0]!.text) as { outputs: { renderer: string, outDir: string }[] }
+      expect(outputs.map(output => output.renderer)).toEqual(['notebook'])
+      // The MCP names the directory relative to the document: it is agent-host's, and the document has no dist/.
+      const outDir = resolve(dir, 'doc', outputs[0]!.outDir)
+      expect(outDir.startsWith(join(dir, '..', `${dir.split('/').at(-1)}-state`, 'cache', 'presmium/agent-host/builds/'))).toBe(true)
+      expect(existsSync(join(outDir, 'lecture.ipynb'))).toBe(true)
+      expect(existsSync(join(dir, 'doc/dist'))).toBe(false)
+    } finally {
+      await client.close()
+      editorSite.close()
     }
   }, 300_000)
 })

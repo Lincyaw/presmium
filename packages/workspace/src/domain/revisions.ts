@@ -3,9 +3,10 @@
  * summary line, a body, and trailers that say where a change came from, so
  * the history is filtered by them and needs no database of the server. A
  * document operation's `Presmium-Origin` names the operation and its
- * directories after `document` (`document rename guide manual`), so the
- * history panel labels it in the reader's language (N-07) while the commit's
- * summary stays as written; a revert's names those of the change it undoes.
+ * directories after `document` (`document rename guide manual`; a space or
+ * `%` in a directory percent-encoded, `week%201`), so the history panel
+ * labels it in the reader's language (N-07) while the commit's summary stays
+ * as written; a revert's names those of the change it undoes.
  */
 import type { Member, RevisionOrigin } from '@presmium/kernel/contracts'
 
@@ -16,7 +17,7 @@ const CO_AUTHOR = 'Co-authored-by'
 
 const ORIGINS = new Set<RevisionOrigin['kind']>(['agent', 'document', 'editor'])
 
-/** What a document operation did (P-121): the operation and its directories, which have no spaces. */
+/** What a document operation did (P-121): the operation and its directories. */
 export type RevisionOperation =
   | { op: 'create', dir: string }
   | { op: 'delete', dir: string }
@@ -32,11 +33,24 @@ export function memberAddress(member: Member): string {
   return `${clean(member.name) || clean(member.id)} <${clean(member.email ?? '') || `${clean(member.id).replace(/\s+/g, '-') || 'member'}@presmium.invalid`}>`
 }
 
+/**
+ * A directory as one word of `Presmium-Origin`: a listed document's directory may hold a space (a pattern
+ * matched `weeks/week 1`), so whitespace and `%` are percent-encoded; the rest stays readable.
+ */
+const word = (dir: string) => dir.replace(/[%\s]/gu, char => encodeURIComponent(char))
+function unword(text: string): string {
+  try {
+    return decodeURIComponent(text)
+  } catch {
+    return text
+  }
+}
+
 /** `Presmium-Origin`'s value: the kind, then a document operation and its directories. */
 function originValue(origin: CommitOrigin): string {
   const operation = origin.operation
   if (!operation) return origin.kind
-  return [origin.kind, operation.op, operation.dir, ...'to' in operation ? [operation.to] : []].join(' ')
+  return [origin.kind, operation.op, word(operation.dir), ...'to' in operation ? [word(operation.to)] : []].join(' ')
 }
 
 /** A commit message: the summary, the body, and the trailers of its origin (and of the reverted commit). */
@@ -64,7 +78,7 @@ export function trailers(message: string): Record<string, string[]> {
 
 /** The document operation a `Presmium-Origin` value names after its kind; undefined for none. */
 function operationOf(words: string[]): RevisionOperation | undefined {
-  const [op, dir, to] = words
+  const [op, dir, to] = [words[0], ...words.slice(1).map(unword)]
   if (!dir) return undefined
   if (op === 'create' || op === 'delete') return { op, dir }
   if (op === 'rename' && to) return { op, dir, to }

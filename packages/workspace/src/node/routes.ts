@@ -7,7 +7,8 @@
  * readers list the documents; editors and owners change them and read the history.
  *
  * An undo holds the locks of the documents its commit changed (`DOCUMENT_LOCKS`,
- * F-09): while an agent's change task holds one, it is refused with 409. Once
+ * F-09): while an agent's change task holds one, it is refused with 409, whose
+ * answer names the lock (`LockedAnswer`), as a document operation's does. Once
  * done, the documents it took away or brought back are told to the server and
  * the site, as a document operation's are (C-7, F-10).
  */
@@ -15,9 +16,8 @@ import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
 import type { DocumentOperation, DocumentsAnswer, ExecutionState, RevertAnswer, RevisionsAnswer, SiteState } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
-import { RequestError } from './documents.ts'
+import { lockedError, RequestError } from './documents.ts'
 import type { Documents, DocumentsChange } from './documents.ts'
-import { lockedMessage } from './locks.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
 
@@ -56,7 +56,7 @@ async function answer(work: () => Promise<Response>): Promise<Response> {
   try {
     return await work()
   } catch (error) {
-    if (error instanceof RequestError) return problem(error.status, error.message)
+    if (error instanceof RequestError) return json({ error: error.message, ...error.detail }, error.status)
     return problem(500, errorMessage(error))
   }
 }
@@ -109,7 +109,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!isRecord(body) || typeof body.id !== 'string' || !/^[0-9a-f]{4,64}$/i.test(body.id)) return problem(400, '{ id: <commit> }')
         // Not while an agent's change task of a document the commit changed runs or waits for its review (F-09).
         const claimed = locks?.claimAll(await revisions.documentsOf(body.id), 'revision:revert')
-        if (claimed && 'holder' in claimed) return problem(409, lockedMessage(claimed.document, claimed.holder))
+        if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
         try {
           const before = listed()
           const result = await revisions.revert(body.id, ctx.member)

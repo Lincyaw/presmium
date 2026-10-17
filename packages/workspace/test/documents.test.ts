@@ -4,7 +4,7 @@
 // reader's language, F-55), a rename rewrites the links of the other documents, a revert of a rename restores
 // the directory, a revert that conflicts with later commits changes nothing and names the files, and git runs
 // none of the repository's hooks. A copy keeps what of `.presmium/` belongs to the document, byte for byte,
-// and leaves out what is generated (F-52).
+// and leaves out what is generated (F-52). A directory with a space keeps its name in the history's label.
 import { randomBytes } from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -135,5 +135,17 @@ describe('document operations', () => {
     expect((await operate({ op: 'copy', dir: 'intro', to: 'intro-two' })).status).toBe(200)
     for (const [path, content] of Object.entries(kept)) expect(readFileSync(join(dir, 'intro-two', path)).equals(content), path).toBe(true)
     expect(existsSync(join(dir, 'intro-two/.presmium/web'))).toBe(false)
+  })
+
+  it('names a listed directory with a space whole in the history (its word of Presmium-Origin percent-encoded)', async () => {
+    // An author's document whose directory has a space: listed, so it may be deleted.
+    mkdirSync(join(dir, 'week 1'))
+    writeFileSync(join(dir, 'week 1/lecture.md'), '---\ntitle: 第一周\n---\n\n## 一\n')
+    git(dir, ['add', '-A'])
+    git(dir, ['commit', '-q', '-m', 'An author adds week 1'])
+    expect((await operate({ op: 'delete', dir: 'week 1' })).status).toBe(200)
+    expect(message(dir)).toMatch(/^Presmium-Origin: document delete week%201$/m)
+    const [latest] = (await raw(route('revisions'))).json<{ revisions: { operation?: Record<string, string> }[] }>().revisions
+    expect(latest!.operation).toEqual({ op: 'delete', dir: 'week 1' })
   })
 })

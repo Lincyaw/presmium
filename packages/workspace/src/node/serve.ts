@@ -23,9 +23,8 @@
  * approvals of the documents gone end, the server takes their contributions
  * down and those of the documents that came (`unmount`, F-40), the site's
  * list follows. A document's writers take its lock (`DOCUMENT_LOCKS`, F-09).
- * The MCP's builds go to serve's state directory in LOCAL mode, never into
- * the document (F-51); in SHARED mode agent-host builds into the document's
- * dist/, which the workspace's .gitignore keeps out of a review.
+ * The MCP's builds never go into the document (F-51): in LOCAL mode they go
+ * to serve's state directory, in SHARED mode to agent-host's.
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'

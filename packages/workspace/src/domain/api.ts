@@ -61,6 +61,24 @@ export interface RevisionsAnswer {
 export type RevertAnswer = { ok: true, revision: Revision } | { ok: false, conflicts: string[] }
 
 /**
+ * Who holds a document's lock (`DOCUMENT_LOCKS`, F-09), by the holder's name: an agent's change task
+ * (`agent:<task id>`), an undo (`…:revert`), or a document operation (`document:<op>`).
+ */
+export type LockKind = 'agent' | 'revert' | 'operation'
+export function lockKind(holder: string): LockKind {
+  return holder.startsWith('agent:') ? 'agent' : holder.endsWith(':revert') ? 'revert' : 'operation'
+}
+
+/**
+ * The 409 of a document operation or an undo while another writer holds a document it changes (F-09):
+ * the server's text, and the lock, which the panels say in the reader's language (N-07).
+ */
+export interface LockedAnswer {
+  error: string
+  locked: { document: string, holder: string }
+}
+
+/**
  * `GET execution` of a document (SHARED `presmium serve`, docs/architecture.md
  * 10.6): its code without a recording that has not run, and whether a
  * compile approval waits; `POST execution` asks again.

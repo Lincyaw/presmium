@@ -139,11 +139,14 @@ export class AgentHostClient {
     }
   }
 
-  /** Builds a document there (the deck's code and the server render of its components run in the sandbox). */
+  /**
+   * Builds a document there (the deck's code and the server render of its components run in the sandbox),
+   * into agent-host's state directory, outside the document (F-51); the outputs name where.
+   */
   async build(document: string, options: { to?: string[], view?: DocumentView, run: 'all' | 'none' }, plugins: string[], member?: Member): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }> {
     const token = await this.#scoped(plugins, `build:${document}`, member)
     try {
-      return await this.#json('POST', `/v1/documents/${encodeURIComponent(document)}/build`, { ...options, ...token.access ? { gateway: token.access } : {} })
+      return await this.#json('POST', `/v1/documents/${encodeURIComponent(document)}/build`, { ...options, into: 'state', ...token.access ? { gateway: token.access } : {} })
     } finally {
       await token.revoke()
     }

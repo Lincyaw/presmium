@@ -23,7 +23,8 @@
 // - The review kept by the server (WP-81e): a reloaded page takes it up and accepts it; back to before a step
 //   (P-115); a review no page follows is rolled back after the operator's time; one a crashed server left is
 //   rolled back when the document is served again; undoing a commit waits for the document's change task, and
-//   so do the workspace's rename of the document and its history's undo (409, the task's lock, F-09).
+//   so do the workspace's rename, copy and delete of the document and its history's undo (409, the task's
+//   lock, F-09; the history panel says so in the page's language).
 // - The bundled DeepSeek Harness (LOCAL) with the default settings, driven by a fake model, in a single-deck
 //   repository: its change tasks are reviewed with git even where deltabox's review is registered
 //   (architecture.md 9.5) and commit; what it writes in the repository's git directory is put back.
@@ -697,7 +698,7 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
     expect(existsSync(join(dir, 'intro/undo.md'))).toBe(false)
   })
 
-  test('while a change task waits for its review, the document\'s rename and the history\'s undo get 409; the review then rejects and accepts cleanly (F-09)', async () => {
+  test('while a change task waits for its review, the document\'s rename, copy and delete and the history\'s undo get 409, the panel saying so in the page\'s language; the review then rejects and accepts cleanly (F-09)', async ({ page }) => {
     const workspaceRoute = (document: string, path: string, json: unknown) => fetch(`${server.url}/__presmium/presmium.workspace/${path}`, {
       method: 'POST',
       headers: { 'Presmium-Document': encodeURIComponent(document), 'Content-Type': 'application/json' },
@@ -720,12 +721,23 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
       const pending = await submit(server, 'intro', chat(`#append lecture.md 等待审阅时的一行 ${accept}`))
       try {
         await next(pending.events, 'review')
-        // The document operation and the undo would commit or roll back under the task: refused.
-        const renamed = await workspaceRoute('', 'documents', { op: 'rename', dir: 'intro', to: 'intro-moved' })
-        expect(renamed.status).toBe(409)
-        expect((await renamed.json() as { error: string }).error).toContain(`agent:${pending.id}`)
-        expect((await workspaceRoute('intro', 'revisions/revert', { id: revision })).status).toBe(409)
-        expect(existsSync(join(dir, 'intro-moved'))).toBe(false)
+        // The document operations (the copy's source too) and the undo would commit or roll back under the task: refused.
+        for (const operation of [{ op: 'rename', dir: 'intro', to: 'intro-moved' }, { op: 'copy', dir: 'intro', to: 'intro-copied' }, { op: 'delete', dir: 'intro' }]) {
+          const refused = await workspaceRoute('', 'documents', operation)
+          expect(refused.status, operation.op).toBe(409)
+          expect(await refused.json()).toEqual({ error: expect.stringContaining(`agent:${pending.id}`), locked: { document: 'intro', holder: `agent:${pending.id}` } })
+        }
+        if (accept) {
+          expect((await workspaceRoute('intro', 'revisions/revert', { id: revision })).status).toBe(409)
+        } else {
+          // The history panel's undo, on the document's page: the panel says why in the page's language (N-07).
+          await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
+          await page.locator('.pm-workspace-history__toggle').filter({ visible: true }).click()
+          const history = page.getByRole('dialog', { name: '修改历史' })
+          await history.locator(`.pm-workspace-revision[data-revision="${revision}"] .pm-workspace-revision__revert`).click()
+          await expect(history.locator('.pm-workspace-history__message')).toHaveText('文档 intro 现在不能修改：agent 的修改任务正在进行或等待审阅，完成后再试。')
+        }
+        for (const made of ['intro-moved', 'intro-copied']) expect(existsSync(join(dir, made))).toBe(false)
         expect(existsSync(join(dir, 'intro/held.md'))).toBe(true)
         expect(commits(dir)).toHaveLength(before)
 

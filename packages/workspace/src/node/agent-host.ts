@@ -12,9 +12,10 @@
  * 32 at a time by default; more get 429, F-08). A `tutor` session (a
  * learner's question) runs in an empty directory of its own, made here and
  * removed with the session, never in a document (D-13). A prompt whose
- * caller went away is cancelled (F-53).
+ * caller went away is cancelled (F-53). serve's builds for the MCP go to
+ * this process's state directory, outside the document (F-51).
  */
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -176,6 +177,8 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
   const names = new Set([hostname(listenHost), ...(options.hostnames ?? []).map(name => hostname(name))])
   const state = join(env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'presmium', 'agent-host')
   mkdirSync(state, { recursive: true })
+  // The builds for the MCP are kept apart for each workspace (one machine may run several agent-hosts).
+  const workspaceKey = createHash('sha256').update(root).digest('hex').slice(0, 16)
   const maxSessions = sessionLimit(config.settings)
   mkdirSync(join(state, 'questions'), { recursive: true })
 
@@ -407,15 +410,17 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
       if (action === 'build') {
         // Code without a recording runs only when serve says so (`compile: trusted`); else the recordings stand.
         // The student view is compiled for the audience `student` (P-55): what it leaves out never runs; the scan
-        // reads what the build wrote (dist/ holds the whole deck's builds as well), and its reader asked for it,
-        // so it quotes nothing. Into the document's dist/, as the sandbox: the workspace's .gitignore keeps it
-        // out of an agent's review (F-51; templates/workspace/.gitignore, which compose's init puts in place).
+        // reads what the build wrote (the output directory holds the whole deck's builds as well), and its reader
+        // asked for it, so it quotes nothing. Into the document's dist/, as the sandbox; with `into: 'state'`
+        // (serve's builds for the MCP) into this process's state directory instead, outside the document, whose
+        // path the outputs name: an agent's build is no change of the source to review (F-51).
         const gateway = isRecord(input.gateway) ? input.gateway as unknown as GatewayAccess : undefined
         const view = input.view === 'student' ? 'student' : 'full'
         const compiler = new Compiler(entryOf(id), { ...compilerOptions(input.run === 'all', gateway), ...view === 'student' ? { audience: STUDENT } : {} })
         const compilation = await compiler.compile()
         const to = Array.isArray(input.to) ? input.to.filter((r): r is string => typeof r === 'string') : undefined
-        const report = await buildView(compilation, { ...to?.length ? { to } : {}, view })
+        const outDir = input.into === 'state' ? join(state, 'builds', workspaceKey, encodeURIComponent(id), view) : undefined
+        const report = await buildView(compilation, { ...to?.length ? { to } : {}, view, ...outDir ? { outDir } : {} })
         return send(res, 200, { outputs: report.outputs.map(({ renderer: r, outDir }) => ({ renderer: r, outDir })), findings: report.findings })
       }
     }

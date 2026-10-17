@@ -1,5 +1,6 @@
 /** What the workspace's browser plugin says, in each UI language (N-07). */
 import type { Locale } from '@presmium/kernel/contracts'
+import type { LockKind } from './api.ts'
 import type { RevisionOperation } from './revisions.ts'
 
 export interface WorkspaceMessages {
@@ -40,6 +41,8 @@ export interface WorkspaceMessages {
   operation(operation: RevisionOperation): string
   /** How the history names the undo of a change, named as `label`. */
   revertOf(label: string): string
+  /** A document operation or an undo refused while another writer holds the document (F-09); `document` '' is the root's. */
+  locked(document: string, by: LockKind): string
   /** A reader's page while a new build of its document is coming (SHARED, D17): what it shows is a build behind. */
   siteUpdating: string
   siteUpdatingNote: string
@@ -85,6 +88,7 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     origin: { agent: 'agent 修改', document: '文档操作', editor: '编辑' },
     operation: o => o.op === 'create' ? `新建文档 ${o.dir}` : o.op === 'delete' ? `删除文档 ${o.dir}` : o.op === 'rename' ? `重命名文档 ${o.dir} 为 ${o.to}` : `复制文档 ${o.dir} 为 ${o.to}`,
     revertOf: label => `撤销「${label}」`,
+    locked: (document, by) => `${document ? `文档 ${document} ` : '这份文档'}现在不能修改：${by === 'agent' ? 'agent 的修改任务正在进行或等待审阅' : by === 'revert' ? '一项修改正在撤销' : '一项文档操作正在进行'}，完成后再试。`,
     siteUpdating: '正在更新',
     siteUpdatingNote: '这份文档有新的修改，正在构建阅读版本；完成后刷新即可看到。',
     siteUpdated: '已更新，刷新查看',
@@ -124,6 +128,7 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     origin: { agent: 'agent change', document: 'document operation', editor: 'edit' },
     operation: o => o.op === 'create' ? `Create document ${o.dir}` : o.op === 'delete' ? `Delete document ${o.dir}` : o.op === 'rename' ? `Rename document ${o.dir} to ${o.to}` : `Copy document ${o.dir} to ${o.to}`,
     revertOf: label => `Revert "${label}"`,
+    locked: (document, by) => `${document ? `The document ${document}` : 'This document'} cannot change now: ${by === 'agent' ? 'an agent\'s change task runs or waits for its review' : by === 'revert' ? 'a change is being undone' : 'a document operation is under way'}. Try again once it is done.`,
     siteUpdating: 'Updating',
     siteUpdatingNote: 'This document changed; its reading version is being built. Reload once it is done to see it.',
     siteUpdated: 'Updated: reload',

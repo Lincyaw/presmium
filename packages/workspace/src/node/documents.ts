@@ -18,7 +18,7 @@
 import { chmodSync, chownSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { Member } from '@presmium/kernel'
-import type { DocumentOperation, OperationAnswer, WorkspaceDocument } from '../domain/api.ts'
+import type { DocumentOperation, LockedAnswer, OperationAnswer, WorkspaceDocument } from '../domain/api.ts'
 import { invalidDocumentDir, within } from '../domain/paths.ts'
 import type { CommitOrigin, RevisionOperation } from '../domain/revisions.ts'
 import { listDocuments, namedByPatterns } from './config.ts'
@@ -33,13 +33,20 @@ import type { Revisions } from './revisions.ts'
 export { BUILTIN_TEMPLATES } from './files.ts'
 export const DEFAULT_TEMPLATE = 'default'
 
-/** An error with the HTTP status of the answer. */
+/** An error with the HTTP status of the answer, and what the answer says beside its `error`. */
 export class RequestError extends Error {
   readonly status: number
-  constructor(status: number, message: string) {
+  readonly detail?: Record<string, unknown>
+  constructor(status: number, message: string, detail?: Record<string, unknown>) {
     super(message)
     this.status = status
+    this.detail = detail
   }
+}
+
+/** The 409 of a document whose lock another writer holds (F-09): the text, and the lock for the panels (N-07). */
+export function lockedError(document: string, holder: string): RequestError {
+  return new RequestError(409, lockedMessage(document, holder), { locked: { document, holder } } satisfies Omit<LockedAnswer, 'error'>)
 }
 
 /** The id of a group named in /etc/group; undefined when there is none. */
@@ -133,7 +140,7 @@ export class Documents {
   async apply(operation: DocumentOperation, member: Member): Promise<OperationAnswer> {
     if (this.config.single) throw new RequestError(409, 'this workspace is a single deck: it has no document operations')
     const claimed = this.#locks?.claimAll(touched(operation), `document:${operation.op}`)
-    if (claimed && 'holder' in claimed) throw new RequestError(409, lockedMessage(claimed.document, claimed.holder))
+    if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
     try {
       const answer = await this.#git.exclusive(() => this.#apply(operation, member))
       const added = operation.op === 'delete' ? [] : [answer.dir!]
