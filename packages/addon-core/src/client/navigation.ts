@@ -30,9 +30,9 @@ export function createSlidevNavigation(): Navigation {
       return { slide: currentSlideNo.value, step: clicks.value, ...section ? { section } : {} }
     }),
     go({ slide, step, section }) {
-      const named = section === undefined || !slides.value.some(route => sectionOf(route.meta.slide.frontmatter)) ? undefined : section
-      if (named === undefined) return void go(slide, step)
-      const target = slides.value.find(route => sectionOf(route.meta.slide.frontmatter) === named)
+      const sections = slides.value.map(route => ({ no: route.no, id: sectionOf((route.meta.slide as { frontmatter?: Record<string, unknown> } | undefined)?.frontmatter) }))
+      if (section === undefined || !sections.some(s => s.id)) return void go(slide, step)
+      const target = sections.find(s => s.id === section)
       if (target) void go(target.no, step)
     },
   }
