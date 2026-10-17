@@ -905,6 +905,23 @@ WP-72 经四轮设计评审后，本机模式与整体架构定稿；共享部�
 - 所有者控制台的来源规则同时覆盖路由与代理。
 - 一轮独立的安全评审通过后，去掉“实验性”标记。
 
+### WP-89a 示例讲义与示例工作区（K 波次第一步，与 WP-91 并行）
+
+**拥有**：`examples/**`、`e2e/smoke.spec.ts`、`e2e/demo*.spec.ts`（新）、`.agents/skills/**`（与示例相关的部分）。
+
+**交付**：
+
+- 示例讲义（BPE）增加一章“延伸”，用上 v0.7、v0.8 的功能，并保持讲义本身连贯、适合初学者：
+  - 执行环境：同一个统计相邻对的函数用 C 在 WebAssembly 中运行（`addon-exec-wasi`）；用 WGSL 计算着色器在 GPU 上统计字节对（`addon-exec-webgpu`，没有 WebGPU 时显示录制输出与原因）；Python 的 `:session:` 跨两个代码块（先训练、后编码），一个代码块以 `text/markdown` 输出表格并 `:echo: false`。
+  - `{predict}`：“下一次会合并哪一对？”，揭示后给出答案。
+  - 课程首页式的卡片与栅格（例如“延伸阅读”）。
+  - 讲解中加入 `{cue}` 与 `{say}`（如 `BPE` 的读法），讲授渲染端在文稿头部列出但默认不构建，文档写明配置火山引擎后如何合成并回放。
+- 示例工作区 `examples/workspace/`：`presmium.workspace.yaml` 与两份文档（BPE 讲义与一份短文档），用于体验 `presmium serve` 的文档管理、编辑模式、批注与对话（配置模型后）与修改审阅；README 写明本机启动命令与需要的环境变量（`DEEPSEEK_API_KEY` 等，不写入仓库）。
+- 示例讲义的冒烟用例：三种媒介都能构建，新增一章在网页与幻灯片中可以打开，C 代码块的录制输出与浏览器中运行一致。
+- 技能（presmium-author、presmium-present）补上示例中用到的写法与体验步骤。
+
+**验收**：`pnpm demo:check`、`pnpm demo:build` 无错误与警告；`e2e/smoke.spec.ts` 与新的示例用例通过；`presmium serve examples/workspace` 在本机启动，首页列出两份文档。
+
 ### WP-89 第三轮验收（K 波次）
 
 **交付**：对 v0.8 全部需求的独立验收审计与修复；示例讲义增加执行环境、问答与讲授回放的章节；技能更新；`architecture.md` 第 8 节的 v0.8 行照实更新；按实现核对 9.4 节的残余风险与 9.5 节的上游问题（提交上游与否由用户决定），在 compose 布局上运行一次 SHARED 模式的全部用例；WP-90 没有在 macOS 主机上做的先行验证在这里补做，结论决定 macOS 上是否登记 deltabox 的服务。
