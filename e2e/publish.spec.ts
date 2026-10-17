@@ -285,10 +285,7 @@ test.describe('web form, offline runtimes (D-6)', () => {
       .replace("  - '@presmium/slidev-addon-exec-wasi'\n", "  - '@presmium/slidev-addon-exec-wasi'\n  - '@presmium/slidev-addon-publish'\n")),
   })
 
-  // fixme: needs the web form's service worker of D-6 (packages/web/src/node/offline.ts, WP-89f or the
-  // acceptor): precache the shell and the content at install, cache `pyodide/`, `wasi/` and
-  // `presmium/jax-js/` on first use, and answer OFFLINE_MESSAGES. Enable this case once it is merged.
-  test.fixme('a first visit caches no C compiler; once saved for offline use, C runs offline (F-73)', async ({ page, context }) => {
+  test('a first visit caches no C compiler; once saved for offline use, C runs offline (F-73)', async ({ page, context }) => {
     test.setTimeout(300_000)
     await page.goto(`${wasi().web}/?section=c-program`)
     await controlled(page)

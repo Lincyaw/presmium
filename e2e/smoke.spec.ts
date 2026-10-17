@@ -56,9 +56,6 @@ test('the lecture builds to the web, the slides and a notebook without warnings'
 
 test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8)', async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
-  // The runner's output in the slides and the export of the lecture are WP-89e's fixes (F-18); the acceptor
-  // enables this case once 89e is merged.
-  test.fixme(true, 'needs WP-89e (F-18): the export of the demo lecture fails before it')
   test.setTimeout(900_000)
   const out = mkdtempSync(join(tmpdir(), 'presmium-demo-export-'))
   try {

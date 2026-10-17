@@ -49,21 +49,25 @@ test('the chapter opens in the slides, the C program with the output recorded at
     await expect(page.locator(`.slidev-page-${section.index} h1`)).toHaveText(section.title)
   }
   const index = doc.sections.find(s => s.id === 'extend-c')!.index
-  await expect(page.locator(`.slidev-page-${index} .pm-output`)).toContainText('次数最多的一对 (97, 97) 就是 a a')
+  // The runner shows the build's recording in its own output (WP-89e, F-18).
+  await expect(page.locator(`.slidev-page-${index} .slidev-runner-output`)).toContainText('次数最多的一对 (97, 97) 就是 a a')
 })
 
-test('on its slide the compute shader shows whole, not cut off below (C-8)', async ({ page }) => {
-  // The run panel fills the slide's height in the slides form (WP-89e, F-19); with it, the section's `zoom`
-  // fits the 32 lines. The acceptor enables this case once 89e is merged.
-  test.fixme(true, 'needs WP-89e (F-19): before it the run panel keeps its code at 20em in the slides')
+test('on its slide the compute shader stays legible, its run panel on the slide and the code scrolling (C-8, R-27)', async ({ page }) => {
+  // The run panel fills what is left of the slide (WP-89e, F-19). The acceptor chose R-27 over showing the
+  // whole shader: the code keeps a projection size (18 px or more) and scrolls in its panel.
   const doc = await irDocument(page)
   const { index } = doc.sections.find(s => s.id === 'extend-gpu')!
   await page.setViewportSize({ width: 1920, height: 1080 })
   await page.goto(`${SLIDES}/${index}`)
-  const code = page.locator(`.slidev-page-${index} .pm-run-panel__source pre`).first()
+  const slide = page.locator(`.slidev-page-${index}`)
+  const code = slide.locator('.pm-run-panel__source pre').first()
   await expect(code).toBeVisible()
   await expect(code).toContainText('best[2] = counts[top];')
-  expect(await code.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(0)
+  expect(await code.evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize) * (el.getBoundingClientRect().height / el.offsetHeight))).toBeGreaterThanOrEqual(18)
+  const bottom = (await slide.boundingBox())!
+  const run = (await slide.locator('.pm-run-panel__run').first().boundingBox())!
+  expect(run.y + run.height).toBeLessThanOrEqual(bottom.y + bottom.height)
 })
 
 test('the C program runs in the browser and prints what the build recorded', async ({ page }) => {
