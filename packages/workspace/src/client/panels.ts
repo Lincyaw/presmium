@@ -1,16 +1,18 @@
 /**
- * The workspace's toolbar entries: edit mode, the document operations of the
- * home page and the revision history, each for editors and owners only. The
- * panels are plain, styled inline so the entries need no style sheet in
- * either form.
+ * The workspace's entries in the shell (P-120, P-121, N-10): the edit
+ * switch of a document's page; on the home page the document operations
+ * (a button and a dialog), the agent's draft card, the latest changes, the
+ * usage guide; everywhere the revision history (an icon of the home page's
+ * activity bar) and the git status of the status bar. Each is for editors and
+ * owners only, drawn with the host's components and tokens.
  */
-import { currentLocale, useMessages, useServer } from '@presmium/host'
+import { currentLocale, PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmNotice, PmToolbarEntry, useMessages, useServer, useToolbarPlace } from '@presmium/host'
 import type { AgentClient, AgentTask, ReviewChange } from '@presmium/kernel'
-import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { DocumentOperation, DocumentsAnswer, HistoryRevision, LockedAnswer, OperationAnswer, RevertAnswer, RevisionsAnswer, WorkspaceDocument } from '../domain/api.ts'
 import { lockKind, WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
-import { WORKSPACE_MESSAGES } from '../domain/messages.ts'
+import { DOCS_SITE_URL, WORKSPACE_MESSAGES } from '../domain/messages.ts'
 import type { WorkspaceMessages } from '../domain/messages.ts'
 
 /** Whether the page shows edit mode (the `EDIT_MODE` service's state). */
@@ -25,28 +27,10 @@ export function setAgent(client: AgentClient | undefined): void {
 /** The window event after which the home page reads the documents again (see @presmium/web's home page). */
 const DOCUMENTS_EVENT = 'presmium:documents'
 
-const PANEL = {
-  position: 'absolute',
-  right: '0',
-  top: '100%',
-  zIndex: '1000',
-  minWidth: '22rem',
-  maxWidth: '32rem',
-  maxHeight: '70vh',
-  overflow: 'auto',
-  padding: '0.75rem',
-  background: 'var(--vp-c-bg, Canvas)',
-  color: 'var(--vp-c-text-1, CanvasText)',
-  border: '1px solid var(--vp-c-divider, GrayText)',
-  borderRadius: '6px',
-  boxShadow: '0 4px 16px rgb(0 0 0 / 0.15)',
-  fontSize: '0.875rem',
-  lineHeight: '1.4',
-  textAlign: 'start',
-} as const
-
-const BUTTON = { padding: '0 0.4rem', border: '1px solid var(--vp-c-divider, GrayText)', borderRadius: '4px', margin: '0 0.15rem' } as const
-const INPUT = { padding: '0.1rem 0.3rem', border: '1px solid var(--vp-c-divider, GrayText)', borderRadius: '4px', minWidth: '8rem' } as const
+/** The document dialog of the home page, which its button, its draft card and the dialog itself open and close. */
+const dialog = ref(false)
+/** The dialog opens at its form, with "draft with the agent" chosen (the draft card). */
+const draftChosen = ref(false)
 
 /** The member may edit (editors and owners). */
 function useEditor() {
@@ -83,12 +67,20 @@ function post<T>(path: string, body: unknown): Promise<T> {
   return call<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 }
 
-/** A toolbar button and the panel it opens. */
-function entry(name: string, open: { value: boolean }, label: string, panel: () => unknown) {
-  return h('span', { class: `pm-workspace-${name}`, style: { position: 'relative', display: 'inline-block' } }, [
-    h('button', { 'type': 'button', 'class': `pm-workspace-${name}__toggle`, 'aria-expanded': open.value ? 'true' : 'false', 'onClick': () => open.value = !open.value }, label),
-    open.value ? h('div', { 'class': `pm-workspace-${name}__panel`, 'role': 'dialog', 'aria-label': label, 'style': PANEL }, panel() as never) : null,
-  ])
+/** Calls `load` again whenever a plugin says the documents changed (an operation, an undo). */
+function onDocumentsChange(load: () => void): void {
+  onMounted(() => window.addEventListener(DOCUMENTS_EVENT, load))
+  onBeforeUnmount(() => window.removeEventListener(DOCUMENTS_EVENT, load))
+}
+
+/** A time as the home page says it: the hour today, else yesterday, else the date (N-07). */
+function shortTime(date: string): string {
+  const when = new Date(date)
+  const locale = currentLocale()
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(when).setHours(0, 0, 0, 0)) / 86_400_000)
+  if (days === 0) return when.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  if (days === 1) return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-1, 'day')
+  return when.toLocaleDateString(locale)
 }
 
 export const EditToggle = defineComponent({
@@ -97,25 +89,68 @@ export const EditToggle = defineComponent({
     const t = useMessages(WORKSPACE_MESSAGES)
     const editor = useEditor()
     return () => (editor.value
-      ? h('button', {
-          'type': 'button',
+      ? h(PmButton, {
           'class': 'pm-workspace-edit',
+          'small': true,
+          'icon': 'edit',
           'aria-pressed': editing.value ? 'true' : 'false',
           'onClick': () => editing.value = !editing.value,
-        }, editing.value ? t.value.leaveEdit : t.value.edit)
+        }, () => (editing.value ? t.value.leaveEdit : t.value.edit))
       : null)
   },
 })
 
+/** A commit's first line. */
+const summaryOf = (revision: HistoryRevision) => revision.message.split('\n')[0] ?? ''
+
+/** The subject an undo's commit quotes (`Revert "<subject>"`), unwrapped `times` times. */
+function unwrap(summary: string, times: number): string {
+  let subject = summary
+  for (let i = 0; i < times; i++) subject = /^Revert "(.*)"$/.exec(subject)?.[1] ?? subject
+  return subject
+}
+
 /**
- * How the history names a revision in the reader's language (N-07, F-55): a document operation by its
- * origin, an undo by what it undoes; others (an agent's commit, written in the deck's language) by their
- * summary. The commit's own summary stays as written.
+ * How many undos a revision is away from a change (F-55): 0 for a change, 1
+ * for its undo, 2 for the undo of that undo (a redo), and so on. The chain of
+ * `reverts` among the listed revisions says it; where it leaves the list, the
+ * nesting of the commit's subject does.
  */
-function revisionLabel(revision: HistoryRevision, t: WorkspaceMessages): string {
-  const summary = revision.message.split('\n')[0] ?? ''
-  if (revision.reverts) return t.revertOf(revision.operation ? t.operation(revision.operation) : /^Revert "(.*)"$/.exec(summary)?.[1] ?? summary)
-  return revision.operation ? t.operation(revision.operation) : summary
+function undoDepth(revision: HistoryRevision, find: (id: string) => HistoryRevision | undefined): number {
+  let depth = 0
+  for (let at = revision; at.reverts; depth++) {
+    const next = find(at.reverts)
+    if (!next) {
+      let nested = 0
+      for (let subject = summaryOf(at); /^Revert ".*"$/.test(subject); nested++) subject = unwrap(subject, 1)
+      return depth + Math.max(nested, 1)
+    }
+    at = next
+  }
+  return depth
+}
+
+/** The lookup of `undoDepth` among `revisions`, by full or abbreviated commit id. */
+function finder(revisions: HistoryRevision[]): (id: string) => HistoryRevision | undefined {
+  const byId = new Map(revisions.map(revision => [revision.id, revision]))
+  return id => byId.get(id) ?? revisions.find(revision => revision.id.startsWith(id) || id.startsWith(revision.id))
+}
+
+/**
+ * How the history names a revision in the reader's language (N-07, F-55): a document operation by its origin; an
+ * undo by what it undoes, a redo (the undo of an undo) as the redo of the change; others (an agent's commit,
+ * written in the deck's language) by their summary. The commit's own summary stays as written.
+ */
+function revisionLabel(revision: HistoryRevision, depth: number, t: WorkspaceMessages): string {
+  const change = revision.operation ? t.operation(revision.operation) : unwrap(summaryOf(revision), depth)
+  if (depth === 0) return change
+  return depth % 2 === 1 ? t.revertOf(change) : t.redoOf(change)
+}
+
+/** The tag of a revision's origin: the AI's changes stand out. */
+function originTag(revision: HistoryRevision, t: WorkspaceMessages) {
+  const kind = revision.origin.kind
+  return h(PmBadge, { class: 'pm-workspace-revision__origin', tone: kind === 'agent' ? 'accent' : 'outline', pill: true }, () => t.originTag[kind])
 }
 
 export const History = defineComponent({
@@ -137,42 +172,56 @@ export const History = defineComponent({
       message.value = undefined
       try {
         const result = await post<RevertAnswer>('revisions/revert', { id })
-        message.value = result.ok ? t.value.reverted : t.value.conflicts(result.conflicts)
+        message.value = result.ok ? undefined : t.value.conflicts(result.conflicts)
         window.dispatchEvent(new Event(DOCUMENTS_EVENT))
       } catch (error) {
         message.value = failure(error, t.value)
       }
       await load()
     }
-    const onChange = () => {
+    onDocumentsChange(() => {
       if (open.value) void load()
+    })
+    const item = (revision: HistoryRevision, find: (id: string) => HistoryRevision | undefined) => {
+      const depth = undoDepth(revision, find)
+      // An undo is undone by a redo; a change or a redo by an undo.
+      const undoes = depth % 2 === 1
+      return h('li', { 'key': revision.id, 'class': 'pm-workspace-revision', 'data-revision': revision.id, 'data-undo': depth === 0 ? undefined : undoes ? 'undo' : 'redo' }, [
+        h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 'var(--pm-space-2)' } }, [
+          originTag(revision, t.value),
+          h('div', { class: 'pm-workspace-revision__summary', style: { flex: 1, minWidth: 0, fontWeight: 500, overflowWrap: 'anywhere' } }, revisionLabel(revision, depth, t.value)),
+        ]),
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 'var(--pm-space-2)', marginTop: 'var(--pm-space-1)' } }, [
+          h('div', { class: 'pm-workspace-revision__meta', style: { flex: 1, minWidth: 0, color: 'var(--pm-color-muted)', fontSize: 'var(--pm-text-sm)' } }, [
+            `${t.value.origin[revision.origin.kind]} · `,
+            h('span', { title: revision.author }, revision.author.replace(/\s*<[^>]*>$/, '')),
+            ' · ',
+            h('time', { datetime: revision.date }, new Date(revision.date).toLocaleString(currentLocale())),
+          ]),
+          revision.revertedBy
+            ? h(PmBadge, { class: 'pm-workspace-revision__reverted' }, () => (undoes ? t.value.redone : t.value.reverted))
+            : h(PmButton, { class: 'pm-workspace-revision__revert', small: true, icon: undoes ? 'redo' : 'undo', onClick: () => void revert(revision.id) }, () => (undoes ? t.value.redo : t.value.revert)),
+        ]),
+      ])
     }
-    onMounted(() => window.addEventListener(DOCUMENTS_EVENT, onChange))
-    onBeforeUnmount(() => window.removeEventListener(DOCUMENTS_EVENT, onChange))
     return () => {
       if (!editor.value) return null
-      return entry('history', { get value() { return open.value }, set value(next) {
-        open.value = next
-        if (next) void load()
-      } }, t.value.history, () => [
-        message.value ? h('p', { class: 'pm-workspace-history__message', role: 'alert' }, message.value) : null,
+      const find = finder(revisions.value)
+      return h(PmToolbarEntry, {
+        'name': 'pm-workspace-history',
+        'icon': 'history',
+        'label': t.value.history,
+        'closeLabel': t.value.close,
+        'open': open.value,
+        'onUpdate:open': (next: boolean) => {
+          open.value = next
+          if (next) void load()
+        },
+      }, () => [
+        message.value ? h(PmNotice, { class: 'pm-workspace-history__message', tone: 'danger', role: 'alert' }, () => message.value) : null,
         revisions.value.length === 0
-          ? h('p', t.value.noRevisions)
-          : h('ul', { class: 'pm-workspace-history__list', style: { listStyle: 'none', padding: 0, margin: 0 } }, revisions.value.map(revision => h('li', {
-              'key': revision.id,
-              'class': 'pm-workspace-revision',
-              'data-revision': revision.id,
-              'style': { padding: '0.4rem 0', borderBottom: '1px solid var(--vp-c-divider, GrayText)' },
-            }, [
-              h('div', { class: 'pm-workspace-revision__summary', style: { fontWeight: 600 } }, revisionLabel(revision, t.value)),
-              h('div', { class: 'pm-workspace-revision__meta', style: { opacity: 0.75 } }, [
-                `${t.value.origin[revision.origin.kind]} · ${revision.author} · `,
-                h('time', { datetime: revision.date }, new Date(revision.date).toLocaleString(currentLocale())),
-              ]),
-              revision.revertedBy
-                ? h('span', { class: 'pm-workspace-revision__reverted' }, t.value.reverted)
-                : h('button', { type: 'button', class: 'pm-workspace-revision__revert', style: BUTTON, onClick: () => void revert(revision.id) }, t.value.revert),
-            ]))),
+          ? h(PmEmpty, { icon: 'history' }, () => t.value.noRevisions)
+          : h('ul', { class: 'pm-workspace-history__list pm-ui-list' }, revisions.value.map(revision => item(revision, find))),
       ])
     }
   },
@@ -194,12 +243,17 @@ function documentUrl(dir: string): string {
   return new URL(`${encodeURI(dir)}/`, location.href).href
 }
 
+/**
+ * The home page's document operations (P-121): the button of the dialog and
+ * "new document", and the dialog: a form that makes a document from a
+ * template or has the agent draft it, and the documents, each renamed,
+ * copied or deleted. Every operation is one commit.
+ */
 export const Documents = defineComponent({
   name: 'PmWorkspaceDocuments',
   setup() {
     const t = useMessages(WORKSPACE_MESSAGES)
     const editor = useEditor()
-    const open = ref(false)
     const answer = shallowRef<DocumentsAnswer>()
     const message = ref<string>()
     const busy = ref(false)
@@ -266,91 +320,254 @@ export const Documents = defineComponent({
         void follow(result.dir, agent.value!.submit({ kind: 'chat', prompt: request, context: { document: result.dir } }))
       })
     }
-    const field = (name: 'dir' | 'title' | 'request', label: string) => h('label', { style: { display: 'block', margin: '0.25rem 0' } }, [
-      `${label} `,
-      h(name === 'request' ? 'textarea' : 'input', {
-        name,
-        'value': form.value[name],
-        'style': INPUT,
-        'aria-label': label,
-        'onInput': (event: Event) => form.value[name] = (event.target as HTMLInputElement).value,
-      }),
-    ])
-    const onChange = () => {
-      if (open.value) void load()
-    }
-    onMounted(() => window.addEventListener(DOCUMENTS_EVENT, onChange))
-    onBeforeUnmount(() => window.removeEventListener(DOCUMENTS_EVENT, onChange))
-    const draftStatus = (current: Draft) => h('div', { 'class': 'pm-workspace-draft', 'data-state': current.state, 'role': 'status', 'style': { margin: '0.5rem 0' } }, current.state === 'failed'
+    // However it opens (its button, "new document", the draft card): the documents are read again, and the
+    // draft card's choice is taken, with the focus on the request (the dialog puts it on its first field).
+    watch(dialog, async (open) => {
+      if (!open) return
+      void load()
+      if (!draftChosen.value) return
+      draftChosen.value = false
+      form.value = { ...form.value, draft: true }
+      await nextTick()
+      await nextTick()
+      document.querySelector<HTMLElement>('.pm-workspace-documents__panel [name="request"]')?.focus()
+    }, { immediate: true })
+    const field = (name: 'dir' | 'title' | 'request', label: string) => h(PmField, { label }, () => h(name === 'request' ? 'textarea' : 'input', {
+      name,
+      'class': name === 'request' ? 'pm-ui-textarea' : 'pm-ui-input',
+      'rows': name === 'request' ? 3 : undefined,
+      'value': form.value[name],
+      'aria-label': label,
+      'onInput': (event: Event) => form.value[name] = (event.target as HTMLInputElement).value,
+    }))
+    onDocumentsChange(() => {
+      if (dialog.value) void load()
+    })
+    const draftStatus = (current: Draft) => h('div', { 'class': 'pm-workspace-draft', 'data-state': current.state, 'role': 'status', 'style': { display: 'grid', gap: 'var(--pm-space-2)', padding: 'var(--pm-space-3)', borderRadius: 'var(--pm-radius-control)', background: 'var(--pm-color-accent-soft)' } }, current.state === 'failed'
       ? [
-          h('p', { role: 'alert' }, t.value.draftFailed(current.note)),
-          h('a', { class: 'pm-workspace-draft__open', href: documentUrl(current.dir) }, t.value.openDocument(current.dir)),
+          h('p', { role: 'alert', style: { margin: 0 } }, t.value.draftFailed(current.note)),
+          h('a', { class: 'pm-workspace-draft__open pm-ui-link', href: documentUrl(current.dir) }, t.value.openDocument(current.dir)),
         ]
       : current.state === 'review'
         ? [
-            h('p', t.value.draftReview),
-            h('ul', { class: 'pm-workspace-draft__changes' }, (current.changes ?? []).map(change => h('li', { key: change.path }, `${change.path} (+${change.added} −${change.removed})`))),
-            h('button', { type: 'button', class: 'pm-workspace-draft__accept', style: BUTTON, onClick: () => review(true) }, t.value.accept),
-            h('button', { type: 'button', class: 'pm-workspace-draft__reject', style: BUTTON, onClick: () => review(false) }, t.value.reject),
+            h('p', { style: { margin: 0 } }, t.value.draftReview),
+            h('ul', { class: 'pm-workspace-draft__changes', style: { margin: 0, fontFamily: 'var(--pm-font-mono)', fontSize: 'var(--pm-text-sm)' } }, (current.changes ?? []).map(change => h('li', { key: change.path }, `${change.path} (+${change.added} −${change.removed})`))),
+            h('div', { style: { display: 'flex', gap: 'var(--pm-space-2)' } }, [
+              h(PmButton, { class: 'pm-workspace-draft__accept', variant: 'primary', small: true, onClick: () => review(true) }, () => t.value.accept),
+              h(PmButton, { class: 'pm-workspace-draft__reject', small: true, onClick: () => review(false) }, () => t.value.reject),
+            ]),
           ]
-        : [h('p', t.value.drafting(current.dir)), current.note ? h('p', { class: 'pm-workspace-draft__note', style: { opacity: 0.75 } }, current.note) : null])
+        : [
+            h('p', { style: { margin: 0 } }, t.value.drafting(current.dir)),
+            current.note ? h('p', { class: 'pm-workspace-draft__note', style: { margin: 0, color: 'var(--pm-color-muted)' } }, current.note) : null,
+          ])
+    const createForm = (known: DocumentsAnswer | undefined, canDraft: boolean) => h('form', {
+      class: 'pm-workspace-create',
+      style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(12rem, 1fr))', gap: 'var(--pm-space-3)', alignItems: 'end' },
+      onSubmit: (event: Event) => {
+        event.preventDefault()
+        create()
+      },
+    }, [
+      h('h3', { class: 'pm-ui-heading', style: { gridColumn: '1 / -1' } }, t.value.create),
+      field('dir', t.value.dir),
+      field('title', t.value.title),
+      (known?.templates.length ?? 0) > 1
+        ? h(PmField, { label: t.value.template }, () => h('select', {
+            name: 'template',
+            class: 'pm-ui-select',
+            value: form.value.template,
+            onChange: (event: Event) => form.value.template = (event.target as HTMLSelectElement).value,
+          }, known!.templates.map(name => h('option', { value: name }, name))))
+        : null,
+      // Drafting needs the assistant (WP-80); without one the option is not there.
+      canDraft
+        ? h('label', { class: 'pm-workspace-create__draft pm-ui-field pm-ui-field--inline', style: { gridColumn: '1 / -1' } }, [
+            h('input', { type: 'checkbox', name: 'draft', class: 'pm-ui-checkbox', checked: form.value.draft, onChange: (event: Event) => form.value.draft = (event.target as HTMLInputElement).checked }),
+            h('span', { class: 'pm-ui-field__label' }, ` ${t.value.draft(agent.value?.provider())}`),
+          ])
+        : null,
+      canDraft && form.value.draft ? h('div', { style: { gridColumn: '1 / -1', display: 'grid' } }, [field('request', t.value.draftRequest)]) : null,
+      h('div', { style: { gridColumn: '1 / -1' } }, [
+        h(PmButton, { type: 'submit', variant: 'primary', icon: 'plus', disabled: busy.value || agentDraft.value?.state === 'drafting' || agentDraft.value?.state === 'review' }, () => t.value.submit),
+      ]),
+    ])
+    const row = (doc: WorkspaceDocument) => h('li', { 'key': doc.dir, 'class': 'pm-workspace-document', 'data-document': doc.dir, 'style': { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--pm-space-2)' } }, [
+      h('div', { style: { flex: '1 1 12rem', minWidth: 0 } }, [
+        h('div', { style: { fontFamily: 'var(--pm-font-serif)', fontWeight: 600, fontSize: 'var(--pm-text-lg)' } }, doc.title),
+        h('div', { style: { color: 'var(--pm-color-muted)', fontFamily: 'var(--pm-font-mono)', fontSize: 'var(--pm-text-xs)' } }, `${doc.dir}/`),
+      ]),
+      h('input', {
+        'name': 'to',
+        'class': 'pm-ui-input',
+        'placeholder': t.value.to,
+        'aria-label': `${t.value.to} ${doc.dir}`,
+        'value': targets.value[doc.dir] ?? '',
+        'style': { flex: '0 1 9rem' },
+        'onInput': (event: Event) => targets.value = { ...targets.value, [doc.dir]: (event.target as HTMLInputElement).value },
+      }),
+      h(PmButton, { class: 'pm-workspace-document__rename', small: true, disabled: busy.value, onClick: () => void run({ op: 'rename', dir: doc.dir, to: (targets.value[doc.dir] ?? '').trim() }) }, () => t.value.rename),
+      h(PmButton, { class: 'pm-workspace-document__copy', small: true, disabled: busy.value, onClick: () => void run({ op: 'copy', dir: doc.dir, to: (targets.value[doc.dir] ?? '').trim() }) }, () => t.value.copy),
+      h(PmButton, { class: 'pm-workspace-document__delete', small: true, variant: 'danger', disabled: busy.value, onClick: () => {
+        if (window.confirm(t.value.confirmDelete(doc.dir))) void run({ op: 'delete', dir: doc.dir })
+      } }, () => t.value.remove),
+    ])
     return () => {
       if (!editor.value) return null
       const known = answer.value
       const canDraft = Boolean(agent.value?.available('chat'))
-      return entry('documents', { get value() { return open.value }, set value(next) {
-        open.value = next
-        if (next) void load()
-      } }, t.value.documents, () => [
-        h('form', { class: 'pm-workspace-create', onSubmit: (event: Event) => {
-          event.preventDefault()
-          create()
-        } }, [
-          h('h3', { style: { margin: '0 0 0.25rem', fontWeight: 600 } }, t.value.create),
-          field('dir', t.value.dir),
-          field('title', t.value.title),
-          (known?.templates.length ?? 0) > 1
-            ? h('label', { style: { display: 'block', margin: '0.25rem 0' } }, [`${t.value.template} `, h('select', {
-                name: 'template',
-                value: form.value.template,
-                onChange: (event: Event) => form.value.template = (event.target as HTMLSelectElement).value,
-              }, known!.templates.map(name => h('option', { value: name }, name)))])
-            : null,
-          // Drafting needs the assistant (WP-80); without one the option is not there.
-          canDraft
-            ? h('label', { class: 'pm-workspace-create__draft', style: { display: 'block', margin: '0.25rem 0' } }, [
-                h('input', { type: 'checkbox', name: 'draft', checked: form.value.draft, onChange: (event: Event) => form.value.draft = (event.target as HTMLInputElement).checked }),
-                ` ${t.value.draft(agent.value?.provider())}`,
-              ])
-            : null,
-          canDraft && form.value.draft ? field('request', t.value.draftRequest) : null,
-          h('button', { type: 'submit', disabled: busy.value || agentDraft.value?.state === 'drafting' || agentDraft.value?.state === 'review', style: BUTTON }, t.value.submit),
+      return h('span', { class: 'pm-workspace-documents', style: { display: 'inline-flex', gap: 'var(--pm-space-2)' } }, [
+        h(PmButton, {
+          'class': 'pm-workspace-documents__toggle',
+          'aria-expanded': dialog.value ? 'true' : 'false',
+          'onClick': () => dialog.value = !dialog.value,
+        }, () => t.value.documents),
+        h(PmButton, { class: 'pm-workspace-documents__new', variant: 'primary', icon: 'plus', onClick: () => dialog.value = true }, () => t.value.newDocument),
+        h(PmDialog, { 'open': dialog.value, 'label': t.value.documents, 'closeLabel': t.value.close, 'name': 'pm-workspace-documents', 'onUpdate:open': (open: boolean) => dialog.value = open }, () => [
+          h('div', { style: { display: 'grid', gap: 'var(--pm-space-5)' } }, [
+            createForm(known, canDraft),
+            agentDraft.value ? draftStatus(agentDraft.value) : null,
+            message.value ? h(PmNotice, { class: 'pm-workspace-documents__message', tone: 'danger', role: 'alert' }, () => message.value) : null,
+            h('section', { style: { display: 'grid', gap: 'var(--pm-space-2)' } }, [
+              h('h3', { class: 'pm-ui-heading' }, t.value.existing),
+              h('ul', { class: 'pm-workspace-documents__list pm-ui-list' }, (known?.documents ?? []).map(row)),
+            ]),
+          ]),
         ]),
-        agentDraft.value ? draftStatus(agentDraft.value) : null,
-        message.value ? h('p', { class: 'pm-workspace-documents__message', role: 'alert' }, message.value) : null,
-        h('ul', { class: 'pm-workspace-documents__list', style: { listStyle: 'none', padding: 0, margin: '0.5rem 0 0' } }, (known?.documents ?? []).map((doc: WorkspaceDocument) => h('li', {
-          'key': doc.dir,
-          'class': 'pm-workspace-document',
-          'data-document': doc.dir,
-          'style': { padding: '0.4rem 0', borderTop: '1px solid var(--vp-c-divider, GrayText)' },
-        }, [
-          h('div', { style: { fontWeight: 600 } }, `${doc.title} (${doc.dir})`),
-          h('input', {
-            'name': 'to',
-            'placeholder': t.value.to,
-            'aria-label': `${t.value.to} ${doc.dir}`,
-            'value': targets.value[doc.dir] ?? '',
-            'style': INPUT,
-            'onInput': (event: Event) => targets.value = { ...targets.value, [doc.dir]: (event.target as HTMLInputElement).value },
-          }),
-          h('button', { type: 'button', class: 'pm-workspace-document__rename', disabled: busy.value, style: BUTTON, onClick: () => void run({ op: 'rename', dir: doc.dir, to: (targets.value[doc.dir] ?? '').trim() }) }, t.value.rename),
-          h('button', { type: 'button', class: 'pm-workspace-document__copy', disabled: busy.value, style: BUTTON, onClick: () => void run({ op: 'copy', dir: doc.dir, to: (targets.value[doc.dir] ?? '').trim() }) }, t.value.copy),
-          h('button', { type: 'button', class: 'pm-workspace-document__delete', disabled: busy.value, style: BUTTON, onClick: () => {
-            if (window.confirm(t.value.confirmDelete(doc.dir))) void run({ op: 'delete', dir: doc.dir })
-          } }, t.value.remove),
-        ]))),
       ])
     }
   },
 })
 
+/** The dashed card beside the documents (the `create` slot): the agent drafts a new document, in the document dialog. */
+export const DraftCard = defineComponent({
+  name: 'PmWorkspaceDraftCard',
+  setup() {
+    const t = useMessages(WORKSPACE_MESSAGES)
+    const editor = useEditor()
+    return () => (editor.value && agent.value?.available('chat')
+      ? h('button', {
+          type: 'button',
+          class: 'pm-workspace-draft-card pm-ui-card pm-ui-card--dashed',
+          onClick: () => {
+            draftChosen.value = true
+            dialog.value = true
+          },
+        }, [
+          h('span', { style: { display: 'flex', alignItems: 'center', gap: 'var(--pm-space-2)', color: 'var(--pm-color-ink)', fontSize: '0.9375rem', fontWeight: 600 } }, [
+            h('span', { style: { color: 'var(--pm-color-accent)', display: 'inline-flex' } }, [h(PmIcon, { name: 'sparkle', size: 16 })]),
+            t.value.draftCard,
+          ]),
+          h('span', t.value.draftCardHint),
+        ])
+      : null)
+  },
+})
+
+/** The home page's card of the latest changes (the `home` slot), each tagged with its origin. */
+export const RecentChanges = defineComponent({
+  name: 'PmWorkspaceRecent',
+  setup() {
+    const t = useMessages(WORKSPACE_MESSAGES)
+    const editor = useEditor()
+    const revisions = shallowRef<HistoryRevision[]>([])
+    const load = async () => {
+      try {
+        revisions.value = (await call<RevisionsAnswer>('revisions?limit=12')).revisions
+      } catch {
+        revisions.value = []
+      }
+    }
+    onMounted(() => void load())
+    onDocumentsChange(() => void load())
+    return () => {
+      if (!editor.value) return null
+      const find = finder(revisions.value)
+      return h(PmCard, { class: 'pm-workspace-recent' }, () => [
+        h('h2', { class: 'pm-ui-heading' }, t.value.recent),
+        revisions.value.length === 0
+          ? h('p', { style: { margin: 0, color: 'var(--pm-color-muted)' } }, t.value.noRevisions)
+          : h('ul', { class: 'pm-ui-list', style: { display: 'grid', gap: 'var(--pm-space-2)', fontSize: '0.84375rem' } }, revisions.value.slice(0, 4).map(revision => h('li', {
+              key: revision.id,
+              style: { display: 'flex', alignItems: 'baseline', gap: 'var(--pm-space-2)', padding: 0, border: 0 },
+            }, [
+              originTag(revision, t.value),
+              h('span', { style: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, revisionLabel(revision, undoDepth(revision, find), t.value)),
+              h('time', { datetime: revision.date, style: { color: 'var(--pm-color-muted)', whiteSpace: 'nowrap' } }, shortTime(revision.date)),
+            ]))),
+      ])
+    }
+  },
+})
+
+/** What the status bar reads of the `documents` route: the branch and the uncommitted files, once the server names them. */
+type GitAnswer = DocumentsAnswer & { branch?: string, uncommitted?: number }
+
+/**
+ * The status bar's entry: the workspace's git repository, its branch and
+ * its files with changes not committed when the server names them
+ * (docs/design/README.md), else the time of its latest commit.
+ */
+export const GitStatus = defineComponent({
+  name: 'PmWorkspaceGit',
+  setup() {
+    const t = useMessages(WORKSPACE_MESSAGES)
+    const editor = useEditor()
+    const git = shallowRef<GitAnswer>()
+    const latest = ref<string>()
+    const load = async () => {
+      try {
+        const answer = await call<GitAnswer>('documents')
+        const [last] = answer.git && answer.branch === undefined ? (await call<RevisionsAnswer>('revisions?limit=1')).revisions : []
+        git.value = answer
+        latest.value = last?.date
+      } catch {
+        git.value = undefined
+      }
+    }
+    onMounted(() => void load())
+    onDocumentsChange(() => void load())
+    const text = (answer: GitAnswer) => {
+      if (!answer.git) return t.value.noGit
+      if (answer.branch !== undefined) return t.value.branch(answer.branch, answer.uncommitted ?? 0)
+      return t.value.git(latest.value && shortTime(latest.value))
+    }
+    return () => (editor.value && git.value
+      ? h('span', { class: 'pm-workspace-git', style: { display: 'inline-flex', alignItems: 'center', gap: 'var(--pm-space-1)' } }, [
+          h(PmIcon, { name: 'branch', size: 14 }),
+          text(git.value),
+        ])
+      : null)
+  },
+})
+
+/** The address of the MCP service of this server (`/mcp`, docs/architecture.md 10.2). */
+function mcpAddress(): string {
+  return `${location.origin}/mcp`
+}
+
+/**
+ * The usage guide of the home page (P-120): the document operations, edit
+ * mode, the AI's changes, the model settings, the history, an outside agent
+ * over MCP, and the documentation site.
+ */
+export const Guide = defineComponent({
+  name: 'PmWorkspaceGuide',
+  setup() {
+    const t = useMessages(WORKSPACE_MESSAGES)
+    const editor = useEditor()
+    const open = ref(false)
+    const place = useToolbarPlace()
+    return () => (editor.value
+      ? h(PmToolbarEntry, { 'name': 'pm-workspace-guide', 'icon': 'help', 'label': t.value.guide, 'closeLabel': t.value.close, 'open': open.value, 'onUpdate:open': (next: boolean) => open.value = next }, () => [
+          h('ol', { class: 'pm-ui-list', style: { counterReset: 'none', maxWidth: place === 'activity' ? undefined : '28rem' } }, t.value.guideTopics(mcpAddress()).map(topic => h('li', { key: topic.title }, [
+            h('h3', { style: { margin: '0 0 var(--pm-space-1)', fontSize: 'var(--pm-text-md)', fontWeight: 600 } }, topic.title),
+            h('p', { style: { margin: 0, color: 'var(--pm-color-muted)' } }, topic.text),
+          ]))),
+          DOCS_SITE_URL
+            ? h('p', { style: { margin: 'var(--pm-space-3) 0 0' } }, [h('a', { class: 'pm-ui-link', href: DOCS_SITE_URL, target: '_blank', rel: 'noopener' }, t.value.docsSite)])
+            : null,
+        ])
+      : null)
+  },
+})

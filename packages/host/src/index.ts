@@ -1,9 +1,36 @@
+// The design system (N-10): fonts, tokens and the shared components' classes, for every page that uses the host.
+import './design/design.css'
+
 export { trackAgentTask } from './agent.ts'
 export type { AgentTaskState } from './agent.ts'
 export { blockAt, blockElement, blockKey, codeLines, lineNumbers, linesText, positionSlide, splitBlockKey } from './blocks.ts'
 export type { BlockPoint } from './blocks.ts'
 export { componentErrors, PmBoundary } from './boundary.ts'
 export type { ComponentError } from './boundary.ts'
+export {
+  PmBadge,
+  PmButton,
+  PmCard,
+  PmDialog,
+  PmDrawer,
+  PmEmpty,
+  PmField,
+  PmIcon,
+  PmIconButton,
+  PmMenu,
+  PmNotice,
+  PmPopover,
+  PmSegmented,
+  PmTabs,
+  PmToolbarEntry,
+  provideToolbarPlace,
+  useToolbarPlace,
+} from './design/components.ts'
+export type { ButtonVariant, Choice, MenuItem, PopoverPlacement, Tone } from './design/components.ts'
+export { ICONS } from './design/icons.ts'
+export type { IconName } from './design/icons.ts'
+export { useTheme } from './design/theme.ts'
+export type { Theme } from './design/theme.ts'
 export {
   installHost,
   useCursor,
@@ -53,6 +80,8 @@ export type {
   SyncTransports,
   Toolbar,
   ToolbarItem,
+  ToolbarPlace,
+  ToolbarSlot,
   ViewRole,
 } from './types.ts'
 export { localeOf } from '@presmium/kernel/contracts'

@@ -6,6 +6,7 @@
 import type { Ref } from 'vue'
 import { defineService } from '@presmium/kernel/contracts'
 import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@presmium/kernel/contracts'
+import type { IconName } from './design/icons.ts'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
 
@@ -55,6 +56,13 @@ export interface HostAdapter {
   getService<T>(token: ServiceToken<T>): T | undefined
   /** Kernel start report, available after the kernel has started. */
   startReport(): StartReport | undefined
+  /**
+   * The host's own switch of the dark colour scheme (`useTheme`), e.g. the
+   * web form's appearance switch, so a change is remembered as the host's
+   * own. Without it `useTheme` sets the class `dark` of `<html>`. Must be
+   * called inside a component setup.
+   */
+  useDarkMode?(): Ref<boolean>
 }
 
 // ---------------------------------------------------------------------------
@@ -123,12 +131,34 @@ export const NAVIGATION = defineService<Navigation>('presmium.navigation')
 // Toolbar: controls plugins add to the host's toolbar.
 // ---------------------------------------------------------------------------
 
+/**
+ * Where an item belongs in a host's shell (docs/architecture.md 5.10). A
+ * page's toolbar (the web form's navigation bar, the slides' navigation
+ * controls) shows `tools` and `settings`; the workspace's home page shows
+ * `tools` with an icon in its activity bar and the others in its top bar,
+ * `settings` at the foot of the activity bar, `status` in its status bar,
+ * `home` as cards below the documents and `create` beside the document
+ * cards. Edit mode shows `status` in its status bar, `source` in the left
+ * pane of its split (the source editor) and `dock` in its right dock.
+ */
+export type ToolbarSlot = 'tools' | 'settings' | 'status' | 'home' | 'create' | 'source' | 'dock'
+
+/**
+ * Where an item's component is drawn now (`useToolbarPlace`): a page's
+ * toolbar, the activity bar, a status bar, the home page, a pane of edit mode.
+ */
+export type ToolbarPlace = 'bar' | 'activity' | 'status' | 'home' | 'pane'
+
 export interface ToolbarItem {
   id: string
   title: string
-  /** A Vue component, rendered inline in the toolbar. */
+  /** A Vue component, rendered inline in the toolbar (or the place of its `slot`). */
   component: unknown
   order?: number
+  /** Default `tools`. */
+  slot?: ToolbarSlot
+  /** A line icon of the host (`PmIcon`): with one, the home page shows a `tools` item in its activity bar. */
+  icon?: IconName
 }
 
 export interface Toolbar {

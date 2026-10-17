@@ -1,5 +1,5 @@
-import { createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmPresenterPanels, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium } from '@presmium/host'
-import type { ServerClient, SyncTransports } from '@presmium/host'
+import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium, TOOLBAR, useMessages, useService } from '@presmium/host'
+import type { ServerClient, SyncTransports, ToolbarItem, ToolbarSlot } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
@@ -7,9 +7,9 @@ import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
 import { applyUpdate } from '@presmium/viewer/domain'
 import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
-import DefaultTheme from 'vitepress/theme'
+import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, translationPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
@@ -154,6 +154,48 @@ function localizeHiddenLabels(): void {
   }
 }
 
+const bySlot = (slot: ToolbarSlot) => (item: ToolbarItem) => item.slot === slot
+
+/**
+ * Edit mode's frame (the workspace's `EDIT_MODE`, docs/architecture.md 5.10):
+ * while it is on, a status bar (the `status` items) and the panes of the
+ * split that plugins fill, the source at the left (`source`) and panels at
+ * the right (`dock`); the page between them is the preview. `<html>` has the
+ * classes `pm-editing`, `pm-edit-split` and `pm-edit-docked` meanwhile.
+ */
+const EditFrame = defineComponent({
+  name: 'PresmiumEditFrame',
+  setup() {
+    const t = useMessages(WEB_MESSAGES)
+    const edit = useService(EDIT_MODE)
+    const toolbar = useService(TOOLBAR)
+    const slots = shallowRef(new Set<ToolbarSlot>())
+    watchEffect((onCleanup) => {
+      const registry = toolbar.value
+      if (!registry) return
+      const update = () => {
+        slots.value = new Set(registry.list().map(item => item.slot ?? 'tools'))
+      }
+      update()
+      onCleanup(registry.subscribe(update))
+    })
+    const active = computed(() => Boolean(edit.value?.active.value))
+    const classes = () => ({ 'pm-editing': active.value, 'pm-edit-split': active.value && slots.value.has('source'), 'pm-edit-docked': active.value && slots.value.has('dock') })
+    // In the browser only: a server render has no document.
+    onMounted(() => watchEffect(() => {
+      for (const [name, on] of Object.entries(classes())) document.documentElement.classList.toggle(name, on)
+    }))
+    onBeforeUnmount(() => document.documentElement.classList.remove(...Object.keys(classes())))
+    return () => (active.value
+      ? [
+          slots.value.has('source') ? h('section', { 'class': 'pm-edit-source pm-ui', 'aria-label': t.value.sourcePane }, [h(PmToolbar, { place: 'pane', filter: bySlot('source') })]) : null,
+          slots.value.has('dock') ? h('aside', { 'class': 'pm-edit-dock pm-ui', 'aria-label': t.value.dockPane }, [h(PmToolbar, { place: 'pane', filter: bySlot('dock') })]) : null,
+          h('footer', { 'class': 'pm-edit-status pm-ui', 'aria-label': t.value.statusBar }, [h(PmToolbar, { place: 'status', filter: bySlot('status') })]),
+        ]
+      : null)
+  },
+})
+
 /** Base URL of the slides form: configured, else the `slides` directory next to the site; none without a slides form. Browser only. */
 const slidesBase = ref<string>()
 /** Settles when the viewer plugins are installed, so their views can be opened by `?view=`. */
@@ -194,7 +236,7 @@ const Layout = defineComponent({
     // In a workspace site, the navigation bar links the site's home page (the list of documents).
     const home = () => {
       const href = theme.value.presmium?.home
-      return href ? h('a', { class: 'pm-site-link', href }, WEB_MESSAGES[currentLocale()].documents) : null
+      return href ? h('a', { class: 'pm-site-link', href }, [h(PmIcon, { name: 'arrow-left', size: 14, strokeWidth: 2 }), WEB_MESSAGES[currentLocale()].documents]) : null
     }
     // The site shell's footer (P-78): the default theme shows its own on pages without a sidebar only, the
     // chapter pages have one. Its texts may hold inline HTML, as the default theme's.
@@ -216,6 +258,7 @@ const Layout = defineComponent({
       'layout-bottom': () => [
         h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayHost)]),
         viewer.view.value === 'presenter' ? h(PmPresenterPanels, { to: '.pm-presenter__side', docked: true }) : null,
+        h(EditFrame),
       ],
     })
   },

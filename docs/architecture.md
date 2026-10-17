@@ -1496,6 +1496,78 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 组件拥有的代码：组件的子块中的代码块（例如执行面板、分步执行、本地环境包着的代码）属于组件。两种形态都不给它们运行控件，也不显示它们的录制输出：网页由 IR 运行时实现，幻灯片渲染端把它们写成组件插槽中的普通代码块（照常做语言映射）。组件运行的代码由指令放在组件的属性中（如执行面板的 `code`），不从渲染后的 DOM 读回。
 
+### 5.10 设计系统（N-10）
+
+用户选定的设计（WP-95a，`docs/design/`）是工作台的布局与编辑方式、书卷的样式。`@presmium/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页的工作台、阅读页、编辑模式）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片默认主题的迁移是 WP-95d。
+
+**令牌**：CSS 自定义属性，在 `packages/host/src/design/tokens.css`。`:root` 为亮色；`<html>` 有 `dark` 类时为暗色（VitePress 的外观开关与 Slidev 的暗色模式都设这个类）。
+
+| 组 | 令牌 | 说明 |
+|---|---|---|
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `docs/design/README.md`，`line-strong` 对应其中的 `line2`。三处与参考稿不同：亮色的 `ok` 由 `#2F7D4F` 加深为 `#2B7449`，使它在 `ok-soft` 上达到 AA；`line-strong` 由亮 `#A39C8E`、暗 `#6F6A60` 加深为亮 `#8C8577`、暗 `#78736A`，使它在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11），行号仍用参考稿的取值（`gutter`）；`danger` 与 `danger-soft` 是新增的，`danger` 与 `del` 同色 |
+| 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
+| 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号（N-06） |
+| 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
+| 间距 | `--pm-space-1` 至 `--pm-space-10` | 4 px 网格 |
+| 圆角 | `--pm-radius-control`、`small`、`card`、`panel`、`chip`、`pill` | 8、6、12、14、4、999 px |
+| 阴影 | `--pm-shadow`、`--pm-shadow-float` | 只用于分段控件的选中项与浮层；不用渐变 |
+| 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-ease` | 系统要求减少动态效果时时长为 0（N-06） |
+| 外壳 | `--pm-activity-width`、`--pm-sidebar-width`、`--pm-statusbar-height`、`--pm-z-popover`、`--pm-z-dialog` | 工作台的列宽、状态栏高与浮层的层级 |
+
+**字体**：三种西文字体的拉丁子集随 `@presmium/host` 发布（Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载（N-03）。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。网页形态的主题改为扩展 `vitepress/theme-without-fonts`，不再打包 VitePress 的 Inter。
+
+**加载**：`@presmium/host` 的入口引入 `src/design/design.css`（字体、令牌与组件的类），用到宿主的页面都有它们；宿主之外的页面可以单独引入 `@presmium/host/design.css`。
+
+**通用组件**（`packages/host/src/design/components.ts`，样式在 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类）：
+
+| 组件 | 用途 |
+|---|---|
+| `PmIcon` | 线性图标（`ICONS`，24 px 网格，1.7 px 描边，不用 emoji） |
+| `PmButton` | 按钮：`primary`（墨色底、纸色字，主操作）、`accent`（打开的开关）、`ghost`、`danger`，可加 `small` 与 `icon`；`aria-pressed="true"` 的按钮显示为打开 |
+| `PmIconButton` | 只有图标的按钮，`label` 是它的可访问名称与提示 |
+| `PmField` | 带标签的输入、选择与文本框（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`，边框为 `line-strong`）；`inline` 用于复选框 |
+| `PmBadge` | 徽标：`accent`、`ok`、`warn`、`danger`、`outline`，`pill` 为圆端的来源标签 |
+| `PmCard` | 卡片：`interactive`（通向别处）、`dashed`（新建一样东西） |
+| `PmSegmented` | 分段控件：选中项凸起，边框为 `line-strong` |
+| `PmTabs` | 标签页与所选标签的面板（默认插槽，得到所选的 `value`；面板以它的标签为名）；方向键切换并移动焦点，到头时回到另一端 |
+| `PmPopover` | 依附于触发器的弹层；会超出窗口时横向移入，离窗口两侧 1 rem（如手机上 VitePress 导航屏中的工具栏项） |
+| `PmDrawer` | 活动栏旁、与窗口等高的面板 |
+| `PmDialog` | 对话框：不是模态的，页面仍可操作；移到文档末尾，不受工具栏的布局影响 |
+| `PmMenu` | 菜单：打开时焦点在第一项，方向键移动，到头时回到另一端；选中一项或按 Escape 后焦点回到按钮；同样留在窗口内 |
+| `PmEmpty` | 空状态 |
+| `PmNotice` | 提示，`status`，失败时为 `alert` |
+| `PmToolbarEntry` | 打开面板的工具栏项：在活动栏中是图标按钮与抽屉，在其他位置是带文字的按钮与弹层（状态栏中向上弹出） |
+
+弹层、抽屉、对话框与菜单按 Escape 关闭，焦点回到触发器；弹层、抽屉与菜单在外部按下时关闭，对话框不关。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
+
+`useTheme()` 给出当前是否为暗色与切换的方法。宿主适配可以提供 `HostAdapter.useDarkMode`（网页形态为 VitePress 的外观开关），这样切换被记住，与读者自己切换一样；没有时 `useTheme` 直接设 `<html>` 的 `dark` 类。
+
+**外壳中的位置**：工具栏项（`ToolbarItem`）可以声明 `slot` 与 `icon`。`PmToolbar` 按 `filter` 显示一处的项，并告诉它们所在的位置（`useToolbarPlace()`：`bar`、`activity`、`status`、`home`、`pane`）；`PmToolbarEntry` 据此选择样式。
+
+| `slot` | 页面的工具栏（网页的导航栏，幻灯片的导航控件） | 工作区首页（工作台） | 编辑模式 |
+|---|---|---|---|
+| `tools`（默认） | 显示 | 有 `icon` 的在活动栏，其余在启动台的顶栏 | 工具栏 |
+| `settings` | 显示 | 活动栏底部（使用说明、模型设置） | 工具栏 |
+| `status` | — | 状态栏 | 状态栏 |
+| `home` | — | 文档卡片下方的卡片（最近修改） | — |
+| `create` | — | 文档卡片之后（由 AI 起草一份文档） | — |
+| `source` | — | — | 左栏：源码编辑器（WP-95c） |
+| `dock` | — | — | 右侧停靠：AI 修改等面板 |
+
+**网页形态的外壳**（`packages/web/src/client`）：
+
+- **工作区首页**：`presmium serve` 与 `presmium dev` 中是工作台（`docs/design/home.dc.html`）。最左是活动栏：标志、文档、搜索，之后是插件的项，底部是 `settings` 的项。其次是工作区侧栏，列出文档目录与 `presmium.workspace.yaml`。中间是启动台：顶栏有搜索框（`Ctrl K` 聚焦，按标题、目录、说明与标签过滤）和 `tools` 中没有图标的项；其下是文档卡片，卡片有衬线标题、目录、语言、标签，站点数据带有说明、页数与检查结果时也显示它们；再下是 `home` 的卡片与“连接外部 agent（MCP）”的卡片（地址与复制按钮）。底部是状态栏：`status` 的项，右端是明暗切换。宽度小于 1024 px 时侧栏隐藏，小于 768 px 时活动栏横排在顶部，抽屉占满宽度。静态的工作区站点保留默认主题的页面（导航与页脚，P-78），文档同样显示为卡片。
+- **阅读页**：VitePress 的颜色与字体变量取自令牌，IR 运行时与插件跟随这些变量，因此也用书卷的颜色。标题与 Markdown 块用衬线体，阅读正文 17 px、行高 1.85；组件保持界面的无衬线体。
+- **编辑模式**（工作区的 `EDIT_MODE`）：`<html>` 有 `pm-editing` 类，底部是状态栏。有 `source` 项时为左右分栏：`pm-edit-split` 类，左栏宽 `--pm-edit-source-width`，章节侧栏让位，页面本身是右边的预览。有 `dock` 项时右侧停靠：`pm-edit-docked` 类，宽 `--pm-edit-dock-width`。宽度小于 960 px（VitePress 的侧栏收起的宽度）时两栏放不下，按参考稿换行的方式上下排列：源码在预览之上，停靠栏在预览之下，宽度占满，高 `--pm-edit-pane-height`（默认 60vh）。没有这些项时，编辑模式与以前一样，只多了状态栏。
+
+**工作区插件的项**（`packages/workspace/src/client`）：
+
+- 首页：“管理文档”与“新建文档”两个按钮，以及“管理文档”对话框（新建、由 agent 起草、重命名、复制、删除）；“由 AI 起草一份文档”的虚线卡片（`create`，有助手时）；“最近修改”卡片（`home`，来源标签 AI、编辑、文档）；使用说明（`settings`，P-120：管理文档、编辑模式、AI 修改、模型设置、修改历史、用 MCP 连接外部 agent，文档站发布后加上它的链接）。
+- 首页与文档页：修改历史（有图标，首页在活动栏，文档页在工具栏）。撤销显示为“撤销「…」”，撤销的撤销显示为“重做「…」”（F-55）；判断依据是列表中 `reverts` 的链，链出了列表时看提交标题的嵌套。撤销项的按钮是“重做”，被重做后标为“已重做”。状态栏中的 git 状态（`status`）。
+- 文档页：“编辑”开关，打开时为强调色。
+
+**验收**：`e2e/design.spec.ts`：工作台的各部分与字体（只从本站加载）、明暗切换、有助手时的虚线卡片、撤销与重做的标签、使用说明、编辑模式的状态栏与分栏的位置，测试插件在分栏中用的标签页、菜单与分段控件（键盘操作），手机宽度（390 px）下导航屏中的弹层留在屏幕内、编辑模式上下排列，以及明暗两套下首页、修改历史、对话框、使用说明、文档页与编辑模式的文字达到 WCAG AA、输入框与分段控件选中项的边框达到 3:1。测试插件（`e2e/fixtures/design/plugins`）还代替助手提供 `AGENT`，可以起草。
+
 ## 6. 示例文稿约定
 
 示例文稿 `examples/demo` 是一份面向初学者的完整讲义“BPE 分词：从字节到词元”：入口 `lecture.md`（MyST）写头部与封面，各章在 `pages/` 下（`tokens.md`、`idea.md`、`implement.md`、`encode.md`、`extend.md`、`wrapup.md`），引用的代码在 `examples/sample-repo/src/bpe.py`。讲义中不出现插件 ID、内部机制这类调试性文字。“延伸”一章（`extend.md`，WP-89a）用上 v0.7、v0.8 的写法，同时是讲义的一部分：同一个统计相邻对的函数用 C 在 WebAssembly 中运行，WGSL 计算着色器在 GPU 上统计字节对，Python 的会话跨三个代码块（先训练，再由只显示输出的代码块生成规则表，最后编码），“下一次合并哪一对？”的先预测再揭示，“延伸阅读”的卡片与栅格，讲解中的 `{cue}` 与 `{say}`。头部的 `renderers` 列出讲授渲染端 `lecture`（不写音色），`pnpm demo:build` 只构建网页、幻灯片与 notebook（`presmium build --to web,slides,notebook`），合成讲授的做法写在 `examples/demo/README.md`。示例工作区 `examples/workspace` 有两份文档：示例讲义的副本 `bpe/`（由 `sync.mjs` 从 `examples/demo` 复制，头部另外列出助手插件）与短文档 `glance/`，用于体验 `presmium serve`；工作区要是 git 仓库的根目录，`try.mjs` 把它复制成一个独立的仓库（带上 `examples/sample-repo` 与讲义锁定的提交，`node_modules` 链接到示例工作区安装的插件）。

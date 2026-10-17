@@ -1,0 +1,14 @@
+/*
+ * The Latin faces of the design (N-10), installed with Presmium from Fontsource (SIL Open Font License
+ * 1.1), never loaded from the network (N-03): IBM Plex Sans for the interface, Source Serif 4 for
+ * headings and reading text, IBM Plex Mono for code and meta information. Only their Latin subsets:
+ * Chinese text falls through to the system's fonts in the stacks of tokens.css.
+ */
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/source-serif-4/latin-400.css';
+@import '@fontsource/source-serif-4/latin-400-italic.css';
+@import '@fontsource/source-serif-4/latin-600.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';

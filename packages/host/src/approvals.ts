@@ -6,27 +6,10 @@
  */
 import type { PropType } from 'vue'
 import { defineComponent, h, ref, watch } from 'vue'
+import { PmButton, PmNotice, PmPopover } from './design/components.ts'
 import { useMessages } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
 import { approvals } from './server.ts'
-
-/** Inline, so the entry needs no style sheet of its own in either form. */
-const PANEL = {
-  position: 'absolute',
-  right: '0',
-  zIndex: '1000',
-  minWidth: '18rem',
-  maxWidth: '28rem',
-  padding: '0.75rem',
-  background: 'var(--vp-c-bg, Canvas)',
-  color: 'var(--vp-c-text-1, CanvasText)',
-  border: '1px solid var(--vp-c-divider, GrayText)',
-  borderRadius: '6px',
-  boxShadow: '0 4px 16px rgb(0 0 0 / 0.15)',
-  fontSize: '0.875rem',
-  lineHeight: '1.4',
-  textAlign: 'start',
-} as const
 
 export const PmApprovals = defineComponent({
   name: 'PmApprovals',
@@ -51,28 +34,33 @@ export const PmApprovals = defineComponent({
     return () => {
       const pending = approvals.pending.value
       if (pending.length === 0) return null
-      const children = [h('button', {
-        'type': 'button',
-        'class': 'pm-approvals__toggle',
-        'aria-expanded': open.value ? 'true' : 'false',
-        'onClick': () => open.value = !open.value,
-      }, t.value.approvals(pending.length))]
-      if (open.value) {
-        const at = props.placement === 'above' ? { bottom: '100%' } : { top: '100%' }
-        children.push(h('div', { 'class': 'pm-approvals__panel', 'role': 'dialog', 'aria-label': t.value.approvalsTitle, 'style': { ...PANEL, ...at } }, [
-          ...pending.map(({ id, request }) => h('div', { 'key': id, 'class': 'pm-approvals__item', 'data-approval': id }, [
-            h('p', { class: 'pm-approvals__title' }, request.title),
-            h('p', { class: 'pm-approvals__from' }, t.value.from(request.from)),
-            request.detail ? h('pre', { class: 'pm-approvals__detail', style: { whiteSpace: 'pre-wrap' } }, request.detail) : null,
-            h('div', { class: 'pm-approvals__actions', style: { display: 'flex', gap: '0.5rem' } }, [
-              h('button', { type: 'button', onClick: () => answer(id, true) }, t.value.allow),
-              h('button', { type: 'button', onClick: () => answer(id, false) }, t.value.deny),
+      return h(PmPopover, {
+        'open': open.value,
+        'label': t.value.approvalsTitle,
+        'name': 'pm-approvals',
+        'placement': props.placement === 'above' ? 'above-end' : 'below-end',
+        'onUpdate:open': (next: boolean) => open.value = next,
+      }, {
+        trigger: () => h(PmButton, {
+          'variant': 'accent',
+          'small': true,
+          'class': 'pm-approvals__toggle',
+          'aria-expanded': open.value ? 'true' : 'false',
+          'onClick': () => open.value = !open.value,
+        }, () => t.value.approvals(pending.length)),
+        default: () => [
+          ...pending.map(({ id, request }) => h('div', { 'key': id, 'class': 'pm-approvals__item', 'data-approval': id, 'style': { display: 'grid', gap: 'var(--pm-space-2)' } }, [
+            h('p', { class: 'pm-approvals__title', style: { margin: 0, fontWeight: 600 } }, request.title),
+            h('p', { class: 'pm-approvals__from', style: { margin: 0, color: 'var(--pm-color-muted)' } }, t.value.from(request.from)),
+            request.detail ? h('pre', { class: 'pm-approvals__detail pm-ui-code', style: { margin: 0, whiteSpace: 'pre-wrap' } }, request.detail) : null,
+            h('div', { class: 'pm-approvals__actions', style: { display: 'flex', gap: 'var(--pm-space-2)' } }, [
+              h(PmButton, { variant: 'primary', small: true, onClick: () => answer(id, true) }, () => t.value.allow),
+              h(PmButton, { small: true, onClick: () => answer(id, false) }, () => t.value.deny),
             ]),
           ])),
-          failed.value ? h('p', { class: 'pm-approvals__error', role: 'alert' }, failed.value) : null,
-        ]))
-      }
-      return h('span', { class: 'pm-approvals', style: { position: 'relative', display: 'inline-block' } }, children)
+          failed.value ? h(PmNotice, { class: 'pm-approvals__error', tone: 'danger' }, () => failed.value) : null,
+        ],
+      })
     }
   },
 })

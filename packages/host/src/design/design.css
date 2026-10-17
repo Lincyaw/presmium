@@ -1,0 +1,4 @@
+/* The host's design system (N-10): the fonts, the tokens and the shared components' classes. @presmium/host loads it; a page outside the hosts may import '@presmium/host/design.css'. */
+@import './fonts.css';
+@import './tokens.css';
+@import './components.css';

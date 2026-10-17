@@ -5,10 +5,14 @@
   "type": "module",
   "description": "Form-neutral host interface and composables used by all plugin components",
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/source-serif-4": "5.3.1",
     "@presmium/kernel": "workspace:*",
     "vue": "^3.5.42"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./design.css": "./src/design/design.css"
   }
 }
