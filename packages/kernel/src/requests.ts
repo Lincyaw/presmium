@@ -29,8 +29,7 @@ export function hostName(value: string): string {
 /**
  * Why a request may not use a local endpoint, or undefined when it may.
  * `allowedHosts` is the dev server's own setting: `true` (a site served under
- * any name, such as a SHARED site behind serve) skips the host check, a list
- * adds names to loopback.
+ * any name) skips the host check, a list adds names to loopback.
  */
 export function localRequestRefusal(headers: RequestHeaders, allowedHosts?: true | readonly string[]): string | undefined {
   if (first(headers['sec-fetch-site']) === 'cross-site') return 'cross-site request'

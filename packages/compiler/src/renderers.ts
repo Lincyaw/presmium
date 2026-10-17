@@ -25,7 +25,6 @@ import { directoryAsset, inside, lineOf, publishesDirectory } from './published.
 import { loadPlugin, pluginId } from './plugins.ts'
 import { compileTranslations } from './translations.ts'
 import type { CompiledTranslation } from './translations.ts'
-import { refusedFile } from './workspace.ts'
 
 /** Parent of the renderers' work directories in `build`, relative to the deck. */
 export const WORK_DIR = '.presmium'
@@ -596,16 +595,11 @@ function documentLink(compilation: Compilation, source: SourcePos, url: string):
  * repository the deck is in, cannot be published: a warning on its line. The
  * source of a document (`documentLink`) is never published: a single deck's
  * build keeps the link as written, with a warning (the workspace site links
- * the document's page). In SHARED `presmium serve` only the workspace's files
- * are read (docs/architecture.md 10.2).
+ * the document's page).
  */
 function publishedAsset(compilation: Compilation, source: SourcePos, url: string, report: (finding: Finding) => void): LocalAsset | undefined {
-  const { deckDir, workspaceRoot, scope } = compilation
+  const { deckDir, workspaceRoot } = compilation
   const warn = (message: string) => report({ checkId: 'presmium.links', severity: 'warning', message, source: { file: source.file, line: lineOf(source, url) } })
-  const refuse = (file: string) => {
-    report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(file), source: { file: source.file, line: source.line } })
-    return undefined
-  }
   // `/...` names a file of the deck's public/, or a path of the site.
   const target = localTarget(source, url)
   const found = localAsset(deckDir, source, url)
@@ -615,7 +609,6 @@ function publishedAsset(compilation: Compilation, source: SourcePos, url: string
     warn(`${url} is not published: it is the source of ${linked?.dir ? `the document ${linked.dir}` : 'a document'}, which a workspace site links as its page; this build keeps the link as written`)
     return undefined
   }
-  if (found && scope && !scope.allows(found.file)) return refuse(found.file)
   // A deck outside any git repository has no repository to keep its files in.
   if (found && !inside(found.file, workspaceRoot) && existsSync(join(workspaceRoot, '.git'))) {
     warn(`${url} is not published: the file lies outside the deck's repository`)
@@ -628,7 +621,6 @@ function publishedAsset(compilation: Compilation, source: SourcePos, url: string
     return undefined
   }
   if (!publishesDirectory(target, deckDir)) return undefined
-  if (scope && !scope.allows(target)) return refuse(target)
   const directory = directoryAsset(target, deckDir, join(deckDir, WORK_DIR, FILES_DIR), compilation.doc.meta.lang, message => warn(`${url} is not published: ${message}`))
   return directory && { ...directory, directory: true }
 }

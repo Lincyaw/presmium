@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The assistant (P-111, P-112; D11, D15): agent runtimes over ACP with DeepSeek Harness bundled, learners' questions, the classroom's AI answers and the gateway's model proxy",
+  "description": "The assistant (P-111, P-112; D11, D15): agent runtimes over ACP with DeepSeek Harness bundled, learners' questions and the classroom's AI answers",
   "keywords": [
     "slidev-addon",
     "slidev",

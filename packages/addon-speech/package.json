@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Speech (P-132, P-133): the speech gateway, the engines' adapters, the synthesis cache with the AI-generated label, consent records for cloned voices, and presmium-speech",
+  "description": "Speech (P-132, P-133): the speech protocol routes, the engines' adapters, the synthesis cache with the AI-generated label, consent records for cloned voices, and presmium-speech",
   "keywords": [
     "slidev-addon",
     "slidev",

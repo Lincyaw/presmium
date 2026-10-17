@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Server of presmium dev and presmium serve: plugin routes and proxies, login and roles, approvals, control channel, owner console; presmium gateway",
+  "description": "Server of presmium dev and presmium serve: plugin routes and proxies, approvals, control channel, MCP",
   "dependencies": {
     "@hono/node-server": "2.1.3",
     "@presmium/compiler": "workspace:*",

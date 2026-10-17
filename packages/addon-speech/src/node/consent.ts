@@ -3,9 +3,8 @@
  * operator allows them (`settings.presmium.speech.cloned: true`) and each
  * has its speaker's consent record at `<consentDir>/<engine>/<voice>.json`
  * of the operator directory (`consentDir` from the settings, default
- * `consent`). LOCAL mode's operator directory is outside every workspace,
- * the gateway's is mounted in the gateway only; records in a deck are never
- * read. The same check runs in `presmium` (LOCAL) and in the gateway.
+ * `consent`). The operator directory is outside every workspace; records in
+ * a deck are never read.
  */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'

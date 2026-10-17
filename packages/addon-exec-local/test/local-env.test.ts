@@ -1,13 +1,11 @@
 // Builds a MyST test deck that lives in a fresh git repository with a devcontainer definition
 // (`presmium build --to slides`), then starts the real `presmium dev` servers on it. Checks what
 // the compiler records (container output, environment archive) and what the plugin's routes answer
-// (`/__presmium/presmium.execLocal/`; runs are allowed with `--allow operate`); that the write-back is
-// gone (D-2); and, in `presmium serve` with a login proxy, that a reader may not run code. Container
-// cases are skipped (and reported as skipped) when no Docker daemon is available.
+// (`/__presmium/presmium.execLocal/`; runs are allowed with `--allow operate`); and that the write-back is
+// gone (D-2). Container cases are skipped (and reported as skipped) when no Docker daemon is available.
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
-import { request as httpRequest } from 'node:http'
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -273,87 +271,4 @@ describe('environment replicate (P-26)', () => {
     expect(served['README.md']).toMatch(/^# Environment exported by Presmium\n/)
     expect(served['.devcontainer/devcontainer.json']).toBe(DEFINITION)
   })
-})
-
-/** A request through the login proxy of a shared deployment: the Host, the proxy's secret and the member's email. */
-function proxied(url: string, headers: Record<string, string>, body?: unknown): Promise<{ status: number, text: string }> {
-  return new Promise((resolve, reject) => {
-    const data = body === undefined ? undefined : JSON.stringify(body)
-    const req = httpRequest(url, { method: data === undefined ? 'GET' : 'POST', headers: { ...headers, ...data === undefined ? {} : { 'Content-Type': 'application/json' } }, setHost: false }, (res) => {
-      let text = ''
-      res.setEncoding('utf8')
-      res.on('data', (chunk: string) => text += chunk)
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, text }))
-    })
-    req.on('error', reject)
-    if (data !== undefined) req.write(data)
-    req.end()
-  })
-}
-
-describe('presmium serve with a login proxy (SHARED)', () => {
-  const started: ChildProcess[] = []
-  let workspace = ''
-  let site = ''
-  const secret = `proxy-${Math.random().toString(36).slice(2)}`
-
-  /** A `presmium` process of the deployment, resolved with the address it prints. */
-  function deployment(args: string[], pattern: RegExp, env: Record<string, string>): Promise<string> {
-    const { NODE_ENV: _test, ...own } = process.env
-    const clean = Object.fromEntries(Object.entries(own).filter(([name]) => !name.startsWith('PRESMIUM_') && !/KEY|TOKEN|SECRET/.test(name)))
-    const child = spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd: workspace, env: { ...clean, ...env }, stdio: 'pipe' })
-    started.push(child)
-    return new Promise((resolve, reject) => {
-      let log = ''
-      const onData = (chunk: Buffer) => {
-        log += chunk.toString()
-        const url = pattern.exec(log)?.[1]
-        if (url) resolve(url)
-      }
-      child.stdout?.on('data', onData)
-      child.stderr?.on('data', onData)
-      child.on('exit', code => reject(new Error(`presmium ${args[0]} exited with ${code}:\n${log}`)))
-    })
-  }
-
-  beforeAll(async () => {
-    // A workspace of one document that lists the plugin, which the operator lists (SHARED loads no other).
-    workspace = mkdtempSync(join(SCRATCH, 'workspace-'))
-    mkdirSync(join(workspace, 'intro'))
-    mkdirSync(join(workspace, 'node_modules/@presmium'), { recursive: true })
-    symlinkSync(PACKAGE, join(workspace, 'node_modules/@presmium/slidev-addon-exec-local'), 'junction')
-    writeFileSync(join(workspace, '.gitignore'), 'node_modules/\n.presmium/\n')
-    writeFileSync(join(workspace, 'presmium.workspace.yaml'), 'title: 本地环境\nmembers:\n  owners: [owner@test]\n  editors: [editor@test]\nsettings:\n  presmium.workspace:\n    plugins: [\'@presmium/slidev-addon-exec-local\']\n')
-    writeFileSync(join(workspace, 'intro/lecture.md'), '---\ntitle: 导论\nplugins:\n  - \'@presmium/slidev-addon-exec-local\'\n---\n\n## 片段\n\nOne paragraph.\n')
-    for (const args of [['init', '-q', '-b', 'main'], ['add', '-A'], ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', 'commit', '-q', '-m', 'Initial commit']]) {
-      spawnSync('git', args, { cwd: workspace })
-    }
-    const [agentHost, gateway] = await Promise.all([
-      deployment(['agent-host', '--port', '0'], /^agent-host {2}(http\S+)$/m, { PRESMIUM_AGENT_HOST_TOKEN: 'agent-host-token' }),
-      deployment(['gateway', '--port', '0'], /^gateway {2}(http\S+)$/m, { PRESMIUM_GATEWAY_TOKEN: 'gateway-token' }),
-    ])
-    site = await deployment(['serve', '--port', '0'], /^serve {2}(http\S+)$/m, {
-      PRESMIUM_PROXY_SECRET: secret,
-      PRESMIUM_GATEWAY_URL: gateway,
-      PRESMIUM_GATEWAY_TOKEN: 'gateway-token',
-      PRESMIUM_AGENT_HOST_URL: agentHost,
-      PRESMIUM_AGENT_HOST_TOKEN: 'agent-host-token',
-      PRESMIUM_CONSOLE_HOST: 'console.test',
-    })
-  }, 240_000)
-
-  afterAll(async () => {
-    for (const child of started.reverse()) child.kill('SIGTERM')
-    await Promise.all(started.map(child => child.exitCode === null ? new Promise(done => child.once('exit', done)) : undefined))
-  }, 60_000)
-
-  it('gives a reader 403 on the routes, run among them; an editor reaches them', async () => {
-    const as = (email: string) => ({ 'Host': `site.test:${new URL(site).port}`, 'X-Presmium-Proxy-Secret': secret, 'X-Forwarded-Email': email, 'Presmium-Document': 'intro' })
-    const run = await proxied(`${site}${ROUTES}/run`, as('reader@test'), { lang: 'python', code: 'print(1)' })
-    expect(run.status, run.text).toBe(403)
-    expect((await proxied(`${site}${ROUTES}/status`, as('reader@test'))).status).toBe(403)
-    const status = await proxied(`${site}${ROUTES}/status`, as('editor@test'))
-    expect(status.status, status.text).toBe(200)
-    expect(JSON.parse(status.text)).toMatchObject({ connected: true })
-  }, 120_000)
 })

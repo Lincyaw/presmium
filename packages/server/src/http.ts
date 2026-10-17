@@ -1,11 +1,10 @@
 /**
- * What the server and the gateway share: the Node server whose handlers are
- * Fetch API functions (`@hono/node-server`), reverse proxies for HTTP and
- * WebSocket upgrades (`http-proxy-3`), and the small checks of requests.
+ * The server's HTTP: the Node server whose handlers are Fetch API functions
+ * (`@hono/node-server`), reverse proxies for HTTP and WebSocket upgrades
+ * (`http-proxy-3`), and the small checks of requests.
  */
-import { timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
-import type { ClientRequest, IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } from 'node:http'
+import type { IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { getRequestListener } from '@hono/node-server'
@@ -35,14 +34,6 @@ export function originHost(origin: string | null | undefined): string | undefine
   } catch {
     return ''
   }
-}
-
-/** Compares two secrets in constant time. */
-export function sameSecret(given: string | null | undefined, expected: string): boolean {
-  if (!given) return false
-  const a = Buffer.from(given)
-  const b = Buffer.from(expected)
-  return a.length === b.length && timingSafeEqual(a, b)
 }
 
 /** The bearer token of an `Authorization` header. */
@@ -122,23 +113,6 @@ export interface ProxyTarget {
   target: string
   path: string
   headers?: Record<string, string>
-  /** Request headers not passed on (lowercase), e.g. the caller's token or the login proxy's secret. */
-  strip?: string[]
-  /** Response headers not passed back (lowercase), e.g. `set-cookie` of a target that may not set the member's cookies. */
-  stripResponse?: string[]
-}
-
-/** The response headers each proxied request leaves out. */
-const responseStrip = new WeakMap<IncomingMessage, string[]>()
-
-function prepare(req: IncomingMessage, to: ProxyTarget): void {
-  req.url = to.path
-  for (const name of to.strip ?? []) delete req.headers[name]
-  if (to.stripResponse?.length) responseStrip.set(req, to.stripResponse)
-}
-
-function stripped(headers: IncomingMessage['headers'], req: IncomingMessage): void {
-  for (const name of responseStrip.get(req) ?? []) delete headers[name]
 }
 
 /**
@@ -148,11 +122,6 @@ function stripped(headers: IncomingMessage['headers'], req: IncomingMessage): vo
  */
 export function createProxy() {
   const proxy = createProxyServer({ ws: true, xfwd: false })
-  // A response's headers before they are passed back; a WebSocket's (its 101) before they are written.
-  proxy.on('proxyRes', (proxyRes: IncomingMessage, req: IncomingMessage) => stripped(proxyRes.headers, req))
-  proxy.on('proxyReqWs', (proxyReq: ClientRequest, req: IncomingMessage) => {
-    if (responseStrip.has(req)) proxyReq.prependListener('upgrade', (proxyRes: IncomingMessage) => stripped(proxyRes.headers, req))
-  })
   proxy.on('error', (error: Error, _req: unknown, res: unknown) => {
     const response = res as ServerResponse | Duplex | undefined
     if (response && 'writeHead' in response && !response.headersSent) {
@@ -164,11 +133,11 @@ export function createProxy() {
   })
   return {
     web(req: IncomingMessage, res: ServerResponse, to: ProxyTarget): void {
-      prepare(req, to)
+      req.url = to.path
       proxy.web(req, res, { target: to.target, headers: to.headers })
     },
     ws(req: IncomingMessage, socket: Duplex, head: Buffer, to: ProxyTarget): void {
-      prepare(req, to)
+      req.url = to.path
       proxy.ws(req, socket, head, { target: to.target, headers: to.headers })
     },
     close: () => proxy.close(),

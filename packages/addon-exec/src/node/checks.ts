@@ -82,8 +82,7 @@ function traceLength(code: string, args: Record<string, string>, maxEvents: numb
 export const stepsPass: IRPass = {
   name: 'presmium.exec.steps',
   async run(doc, ctx) {
-    // In SHARED mode the compiling process runs none of the deck's code.
-    if (ctx.trust === 'shared' || !pythonExecutor.supports('python')) return
+    if (!pythonExecutor.supports('python')) return
     const { maxTraceEvents } = execConfig(ctx.config)
     const sandbox = ctx.service?.(PROCESS_SANDBOX)
     for (const { section, block } of docBlocks(doc)) {

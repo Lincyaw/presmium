@@ -28,7 +28,6 @@
 // - The bundled DeepSeek Harness (LOCAL) with the default settings, driven by a fake model, in a single-deck
 //   repository: its change tasks are reviewed with git even where deltabox's review is registered
 //   (architecture.md 9.5) and commit; what it writes in the repository's git directory is put back.
-// - SHARED (N-08): see the last describe.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -38,7 +37,7 @@ import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 import { fakeModel } from '../packages/addon-assistant/test/fixtures/fake-model.ts'
 import type { FakeModel } from '../packages/addon-assistant/test/fixtures/fake-model.ts'
-import { eventStream, freePort, raw } from '../packages/addon-assistant/test/helpers.ts'
+import { eventStream } from '../packages/addon-assistant/test/helpers.ts'
 import type { EventStream } from '../packages/addon-assistant/test/helpers.ts'
 import { qualification } from '../packages/addon-deltabox/test/helpers.ts'
 import { openDevPage } from './fixtures/deck.ts'
@@ -390,11 +389,8 @@ test.describe('the review with git (D12), one task per document, a transcript, t
     test.setTimeout(300_000)
     // deltabox's review off: the assistant's own git review.
     dir = workspace('git', '  presmium.deltabox:\n    review: false\n')
-    // The notebook renderer, installed at the root and listed (D14), for the agent's build through MCP.
+    // The notebook renderer, installed at the root, for the agent's build through MCP.
     symlinkSync(join(ROOT, 'packages/render-notebook'), join(dir, 'node_modules/@presmium/render-notebook'), 'junction')
-    const config = join(dir, 'presmium.workspace.yaml')
-    writeFileSync(config, readFileSync(config, 'utf8').replace('plugins: [\'@presmium/slidev-addon-assistant\']', 'plugins: [\'@presmium/slidev-addon-assistant\', \'@presmium/render-notebook\']'))
-    git(dir, ['commit', '-q', '-am', 'The notebook renderer'])
     operator = mkdtempSync(join(ROOT, 'examples/demo/.presmium/e2e-assistant-edit-operator-'))
     server = await start()
   })
@@ -960,134 +956,5 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
     expect(existsSync(join(dir, 'planted'))).toBe(false)
     expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/hooks\/post-checkout/)
     expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/config/)
-  })
-})
-
-test.describe('SHARED (N-08): a write outside the document, of an editor\'s task, is the owner\'s on the console only', () => {
-  const SECRETS = { proxy: 'proxy-secret-81a', gateway: 'gateway-token-81b', agentHost: 'agent-host-token-81c', model: 'model-key-81d' }
-  let dir: string
-  let model: FakeModel
-  const children: ChildProcess[] = []
-  let serveUrl: string
-
-  /** The headers the login proxy adds for a member on the site's host name (or the owner console's). */
-  const as = (email: string, host: 'site' | 'console' = 'site') => ({
-    'Host': `${host}.test:${new URL(serveUrl).port}`,
-    'X-Presmium-Proxy-Secret': SECRETS.proxy,
-    'X-Forwarded-Email': email,
-    ...host === 'site' ? { 'Presmium-Document': 'intro' } : {},
-  })
-
-  /** `presmium <args>` in the workspace, resolving once it prints `pattern`. */
-  async function start(args: string[], env: Record<string, string>, pattern: RegExp): Promise<string> {
-    const child = spawn(process.execPath, [PRESMIUM, ...args], { cwd: dir, env: clean({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, ...env }), stdio: ['ignore', 'pipe', 'pipe'] })
-    children.unshift(child)
-    let output = ''
-    return new Promise((resolve, reject) => {
-      const check = () => {
-        const found = pattern.exec(output)
-        if (found) resolve(found[1]!)
-      }
-      child.stdout!.on('data', (chunk: Buffer) => {
-        output += chunk
-        check()
-      })
-      child.stderr!.on('data', (chunk: Buffer) => output += chunk)
-      child.once('exit', code => reject(new Error(`presmium ${args[0]} exited (${code}):\n${output}`)))
-    })
-  }
-
-  test.beforeAll(async () => {
-    test.setTimeout(300_000)
-    // The default settings: the assistant reviews DeepSeek Harness's changes with git in serve whether or not
-    // agent-host offers deltabox's review (its writes fault a deltabox-lite 0.1.1 session, architecture.md 9.5).
-    dir = workspace('shared')
-    const config = join(dir, 'presmium.workspace.yaml')
-    writeFileSync(config, `${readFileSync(config, 'utf8')}members:\n  owners: [owner@test]\n  editors: [editor@test]\n`)
-    git(dir, ['commit', '-q', '-am', 'Members'])
-    // DeepSeek Harness, driven by the model's script: it writes a note in the document, then reads the
-    // workspace configuration outside it and writes it, denied by its sandbox, then asks to write it anyway.
-    model = await fakeModel([
-      { tool: 'write', input: { file_path: 'notes.md', content: 'agent 的笔记\n' } },
-      { tool: 'read', input: { file_path: config } },
-      { tool: 'write', input: { file_path: config, content: 'title: 被改写\n' } },
-      { tool: 'write', input: { file_path: config, content: 'title: 被改写\n', sandbox_permissions: 'danger-full-access', justification: '需要改写工作区配置' } },
-      { text: '完毕：写了笔记；改写工作区配置被拒绝。' },
-    ])
-    const agentHost = await start(['agent-host', '--port', '0'], { PRESMIUM_AGENT_HOST_TOKEN: SECRETS.agentHost }, /^agent-host {2}(http\S+)$/m)
-    // serve is told the gateway's address before the gateway starts (it is told serve's): a port free now.
-    const gatewayPort = await freePort()
-    const gatewayUrl = `http://127.0.0.1:${gatewayPort}`
-    serveUrl = await start(['serve', '--port', '0'], {
-      PRESMIUM_PROXY_SECRET: SECRETS.proxy,
-      PRESMIUM_GATEWAY_URL: gatewayUrl,
-      PRESMIUM_GATEWAY_TOKEN: SECRETS.gateway,
-      PRESMIUM_AGENT_HOST_URL: agentHost,
-      PRESMIUM_AGENT_HOST_TOKEN: SECRETS.agentHost,
-      PRESMIUM_CONSOLE_HOST: 'console.test',
-    }, /^serve {2}(http\S+)$/m)
-    await start(['gateway', '.', '--serve', serveUrl, '--port', String(gatewayPort), '--operator-dir', `${dir}.operator`], {
-      PRESMIUM_GATEWAY_TOKEN: SECRETS.gateway,
-      PRESMIUM_MODEL_URL: model.url,
-      PRESMIUM_MODEL_KEY: SECRETS.model,
-      PRESMIUM_MODEL_PROVIDER: 'Test Provider',
-    }, /^gateway {2}(http\S+)$/m)
-  })
-  test.afterAll(async () => {
-    for (const child of children) {
-      if (child.exitCode !== null || child.signalCode !== null) continue
-      const exited = new Promise(done => child.once('exit', done))
-      child.kill('SIGTERM')
-      const timer = setTimeout(() => child.kill('SIGKILL'), 20_000)
-      await exited
-      clearTimeout(timer)
-    }
-    await model?.close()
-    for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.operator`]) if (path) rmSync(path, { recursive: true, force: true })
-  })
-
-  test('the write approval reaches the owner console only; the editor cannot answer it; refused, the file stays and the task\'s commit has the rest', async () => {
-    const config = readFileSync(join(dir, 'presmium.workspace.yaml'), 'utf8')
-    const ownerConsole = await eventStream(`${serveUrl}/__presmium/presmium.server/control?window=console&console=1`, as('owner@test', 'console'))
-    const ownerSite = await eventStream(`${serveUrl}/__presmium/presmium.server/control?window=owner&document=intro`, as('owner@test'))
-    const editorSite = await eventStream(`${serveUrl}/__presmium/presmium.server/control?window=editor&document=intro`, as('editor@test'))
-    try {
-      const info = await raw(`${serveUrl}/__presmium/presmium.assistant/info`, { headers: as('editor@test') })
-      expect(info.json()).toEqual({ provider: 'Test Provider', kinds: ['question', 'annotations', 'chat', 'transcript'] })
-      const submitted = await raw(`${serveUrl}/__presmium/presmium.assistant/tasks`, { headers: as('editor@test'), json: chat('改写笔记与工作区配置') })
-      expect(submitted.status, submitted.text).toBe(201)
-      const id = submitted.json<{ id: string }>().id
-      const events = await eventStream(`${serveUrl}/__presmium/presmium.assistant/tasks/${id}/events`, as('editor@test'))
-      try {
-        const asked = await ownerConsole.next('approval', 120_000) as { id: string, request: Record<string, unknown> }
-        expect(asked.request).toMatchObject({ kind: 'write', scope: 'workspace', from: `agent:${id}`, member: 'editor@test' })
-        expect(String(asked.request.title)).toContain('presmium.workspace.yaml')
-        // Neither the editor's page nor the owner's page on the site has it to answer.
-        expect(await ownerSite.next('pending')).toMatchObject({ count: 1 })
-        expect(editorSite.events.filter(e => e.event === 'approval')).toEqual([])
-        expect(ownerSite.events.filter(e => e.event === 'approval')).toEqual([])
-        const byEditor = await raw(`${serveUrl}/__presmium/presmium.server/control`, { headers: as('editor@test'), json: { window: 'editor', type: 'answer', id: asked.id, allow: true } })
-        expect(byEditor.status).toBe(403)
-        const byOwner = await raw(`${serveUrl}/__presmium/presmium.server/control`, {
-          headers: { ...as('owner@test', 'console'), 'Origin': `http://console.test:${new URL(serveUrl).port}`, 'Presmium-Console': '1' },
-          json: { window: 'console', type: 'answer', id: asked.id, allow: false },
-        })
-        expect(byOwner.status, byOwner.text).toBe(200)
-
-        const review = await next(events, 'review')
-        expect(review.engine).toBe('git')
-        expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/notes.md'])
-        const decided = await raw(`${serveUrl}/__presmium/presmium.assistant/tasks/${id}/review`, { headers: as('editor@test'), json: { accept: true } })
-        expect(decided.status, decided.text).toBe(204)
-        const done = await next(events, 'done')
-        expect(readFileSync(join(dir, 'presmium.workspace.yaml'), 'utf8')).toBe(config)
-        expect(filesOf(dir, done.revision)).toEqual(['intro/notes.md'])
-        expect(commits(dir)[0]!.trailers).toMatch(/^Co-authored-by: .*editor@test/m)
-      } finally {
-        events.close()
-      }
-    } finally {
-      for (const stream of [ownerConsole, ownerSite, editorSite]) stream.close()
-    }
   })
 })

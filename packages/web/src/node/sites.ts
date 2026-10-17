@@ -13,10 +13,8 @@
  * search index) under its directory; the home page is one more VitePress
  * site at the base. `buildSite` builds them into one output directory: the
  * home page and each document with its IR (`doc`); a host that builds the
- * documents apart from the home page sets `ctx.config.home` to false, and one
- * that serves the built pages with its server in front (`presmium serve`'s
- * static site for readers) sets `ctx.config.served`, so the pages have the
- * server as the dev site's do. `devSite` is a router: a request under `<base><dir>/` goes to the dev
+ * documents apart from the home page sets `ctx.config.home` to false.
+ * `devSite` is a router: a request under `<base><dir>/` goes to the dev
  * server of that document, started on its first request with the IR
  * `compile` gives; any other path goes to the home page's dev server; the
  * HMR WebSockets follow the same paths. The documents of `SiteSpec` are read
@@ -25,8 +23,7 @@
  *
  * A document's plugins are those its IR names (`config.plugins`): a host
  * gives the package directories the compiler loaded as absolute paths, so
- * the site loads exactly those (in `presmium serve`, only what the plugin
- * policy admitted, D14); a name is looked up in `ctx.pluginDirs`, then from
+ * the site loads exactly those; a name is looked up in `ctx.pluginDirs`, then from
  * the deck's directory. The site's own plugins (`ctx.plugins`, e.g. the
  * workspace's browser plugin) are added to every page; those of the home page
  * only (`ctx.config.homePlugins`, package name to directory: in `presmium
@@ -324,7 +321,7 @@ function documentSite(ctx: RenderContext, site: SiteSpec, dir: string, extra: Cl
   const single = site.documents.length === 1 && site.documents[0]!.dir === ''
   return {
     documentPage: documentPage(site, ctx.base, docs),
-    workspace: { document: dir, home: single ? base : listLink(site, ctx.base), endpoints: endpoints(base), served, anyHost: served && ctx.config.scoped === true, allow, ...siteLinks(site, ctx.base, dir, docs) },
+    workspace: { document: dir, home: single ? base : listLink(site, ctx.base), endpoints: endpoints(base), served, allow, ...siteLinks(site, ctx.base, dir, docs) },
     extra,
     config: join(ctx.workspaceRoot, WORKSPACE_FILE),
   }
@@ -379,7 +376,7 @@ const site = ${JSON.stringify(config, null, 2)}
 const data = JSON.parse(readFileSync(${JSON.stringify(dataFile)}, 'utf8'))
 site.title = data.title
 site.themeConfig.presmium = { home: true, documents: data.documents${target ? `, redirect: ${JSON.stringify(target)}, list: ${JSON.stringify(`${ctx.base}${LIST_PAGE}.html`)}` : ''}${served ? `, server: true, endpoint: ${JSON.stringify(`${ctx.base}${DOCUMENTS_ENDPOINT}`)}` : ''} }
-site.vite = { plugins: [presmiumReady()], resolve: { dedupe: ['vue'] }${served ? `, server: { ${ctx.config.scoped === true ? 'allowedHosts: true, ' : ''}fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
+site.vite = { plugins: [presmiumReady()], resolve: { dedupe: ['vue'] }${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
 ${sitemap}${shell.head ? OG_TITLE : ''}
 export default site
 `)
@@ -414,11 +411,10 @@ function allowed(...dirs: (string | undefined)[]): string[] {
 export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput> {
   const extra = siteModules(ctx)
   const single = site.documents.length === 1 && site.documents[0]!.dir === ''
-  const served = ctx.config.served === true
   // The home page first: VitePress empties the directory it builds into, and the documents lie under it.
   if (!single && ctx.config.home !== false) {
     const work = join(ctx.workDir, 'home')
-    const root = writeHome(work, site, ctx, homeModules(ctx), served, [])
+    const root = writeHome(work, site, ctx, homeModules(ctx), false, [])
     const code = await vitepressBuild(root, ctx.outDir)
     if (code !== 0) throw new Error(`vitepress build of the home page exited with code ${code}`)
   }
@@ -428,7 +424,7 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<Ren
     const workDir = documentWorkDir(ctx, entry.dir)
     const dctx = documentContext(ctx, site, entry.dir, entry.doc, join(ctx.outDir, entry.dir), workDir)
     try {
-      await buildDocument(entry.doc, dctx, workDir, documentSite(ctx, site, entry.dir, extra, served, [], docs))
+      await buildDocument(entry.doc, dctx, workDir, documentSite(ctx, site, entry.dir, extra, false, [], docs))
     } catch (error) {
       throw new Error(`document ${entry.dir || '.'}: ${errorMessage(error)}`)
     }
@@ -520,12 +516,10 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     }
   })
   const pathOf = (req: IncomingMessage) => new URL(req.url ?? '/', 'http://site').pathname
-  // In LOCAL serve the router and the documents' dev servers are reached through serve with a loopback Host;
-  // a page of another site (DNS rebinding, cross-site requests) is refused. SHARED sites (agent-host) are
-  // reached only through serve, which checks the Host in front, under the public name.
-  const anyHost = ctx.config.scoped === true
+  // The router and the documents' dev servers are reached through serve with a loopback Host; a page of
+  // another site (DNS rebinding, cross-site requests) is refused.
   const server = createServer((req, res) => {
-    const refused = anyHost ? undefined : localRequestRefusal(req.headers)
+    const refused = localRequestRefusal(req.headers)
     if (refused) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' })
       res.end(refused)
@@ -547,7 +541,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     )
   })
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-    if (!anyHost && localRequestRefusal(req.headers)) return socket.destroy()
+    if (localRequestRefusal(req.headers)) return socket.destroy()
     targetOf(pathOf(req)).then(
       port => proxy.ws(req, socket, head, { target: `http://${LOOPBACK}:${port}` }),
       () => socket.destroy(),

@@ -1,7 +1,6 @@
 /**
  * The engines the operator defines (docs/ir.md 2.1, docs/architecture.md
- * section 11), from the environment of the process that holds the
- * credentials (`presmium` in LOCAL mode, `presmium gateway` in SHARED mode):
+ * section 11), from the environment of the `presmium` process:
  *
  * - `volcengine`: address and provider fixed (火山引擎, Volcengine in
  *   English); `PRESMIUM_SPEECH_VOLCENGINE_KEY` and, for a key of the old

@@ -1,7 +1,7 @@
 import { isRecord } from '@presmium/kernel'
 import type { EnvironmentAuth, EnvironmentSpec } from '@presmium/kernel'
 
-/** The plugin's id: its routes are under `/__presmium/presmium.execJupyter/`, its gateway contribution under `/presmium.execJupyter/`. */
+/** The plugin's id: its routes are under `/__presmium/presmium.execJupyter/`. */
 export const EXEC_JUPYTER_ID = 'presmium.execJupyter'
 
 /** The provider kind it serves (`execute.environments.<name>.kind`). */
@@ -34,17 +34,10 @@ export function operatorVariables(name: string): { url: string, token: string } 
   return { url: `PRESMIUM_ENV_${key}_URL`, token: `PRESMIUM_ENV_${key}_TOKEN` }
 }
 
-/** The environment name of an operator's `PRESMIUM_ENV_<NAME>_URL`, as its proxy path names it; undefined for other variables. */
-export function environmentOfVariable(variable: string): string | undefined {
-  const match = /^PRESMIUM_ENV_([A-Z0-9_]+)_URL$/.exec(variable)
-  return match ? match[1]!.toLowerCase() : undefined
-}
-
 /**
  * The proxy path of an environment, under the plugin's mount point in the
- * server (`/__presmium/presmium.execJupyter/env/<name>/`) and in the gateway
- * (`/presmium.execJupyter/env/<name>/`): the operator's name in lower case,
- * so serve and the gateway agree on it.
+ * server (`/__presmium/presmium.execJupyter/env/<name>/`): the operator's
+ * name in lower case.
  */
 export function proxyPath(name: string): string {
   return `env/${envKey(name).toLowerCase()}`

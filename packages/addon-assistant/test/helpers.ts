@@ -4,9 +4,8 @@
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
-import { createServer, request as httpRequest } from 'node:http'
+import { request as httpRequest } from 'node:http'
 import type { IncomingMessage } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { AgentEvent } from '@presmium/kernel'
@@ -154,7 +153,7 @@ export function descendants(pid: number): { pid: number, cmdline: string }[] {
   return out
 }
 
-// SHARED mode on this machine ------------------------------------------------------------------------
+// Workspaces --------------------------------------------------------------------------------------------
 
 const WORK = join(ROOT, 'examples/demo/.presmium')
 
@@ -184,33 +183,6 @@ export function workspace(prefix: string, files: Record<string, string>, link: R
   git(dir, ['add', '-A'])
   git(dir, ['commit', '-q', '-m', 'Initial commit'])
   return dir
-}
-
-/** A port no process listens on now, for a server whose address another must know before it starts. */
-export async function freePort(): Promise<number> {
-  const server = createServer()
-  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
-  const { port } = server.address() as AddressInfo
-  await new Promise<void>(done => server.close(() => done()))
-  return port
-}
-
-export interface RawResponse { status: number, text: string, json<T = Record<string, any>>(): T }
-
-/** A request with any headers, `Host` included (which fetch cannot set). */
-export function raw(url: string, options: { method?: string, headers?: Record<string, string>, json?: unknown } = {}): Promise<RawResponse> {
-  return new Promise((resolve, reject) => {
-    const body = options.json === undefined ? undefined : JSON.stringify(options.json)
-    const headers: Record<string, string> = { ...options.headers, ...body === undefined ? {} : { 'Content-Type': 'application/json' } }
-    const req = httpRequest(url, { method: options.method ?? (body === undefined ? 'GET' : 'POST'), headers, setHost: !headers.Host }, (res) => {
-      let text = ''
-      res.setEncoding('utf8').on('data', (chunk: string) => text += chunk)
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, text, json: <T>() => JSON.parse(text) as T }))
-    })
-    req.on('error', reject)
-    if (body !== undefined) req.write(body)
-    req.end()
-  })
 }
 
 export interface EventStream {

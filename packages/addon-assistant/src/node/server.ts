@@ -2,9 +2,9 @@
  * The assistant's routes (design-v0.7 5.3, docs/architecture.md 4.8) under
  * `/__presmium/presmium.assistant/`:
  *
- * - `GET info`: the model's provider (known before any request: in LOCAL
- *   mode the runtime's, in SHARED mode the gateway's), the runtime's name
- *   once an agent started, the kinds of task this member may submit.
+ * - `GET info`: the model's provider (the runtime's, known before any
+ *   request), the runtime's name once an agent started, the kinds of task
+ *   this member may submit.
  * - `POST tasks`: a task (`AgentTaskRequest`, with the id the page drew);
  *   learners' questions run in `tutor` mode, at most
  *   `settings.presmium.assistant.maxQuestions` at a time (each member's and
@@ -29,8 +29,7 @@
  * Each task opens one agent session with the MCP token `MCP_ENDPOINT`
  * issues for the member and mode (revoked when the session closes). A
  * question's session runs in an empty directory of its own and reads the
- * deck only through MCP (D-13; in SHARED mode agent-host makes that directory
- * on its side); a question no page follows for
+ * deck only through MCP (D-13); a question no page follows for
  * `settings.presmium.assistant.questionTimeoutMs` (2 minutes) is cancelled.
  * A change task's session runs in its review's root. The agent's permission
  * requests of a question are refused, asking no one; those of a change task
@@ -45,7 +44,7 @@
  * document under the task; elsewhere the assistant keeps its own.
  *
  * A change task's review is `CHANGE_REVIEW`'s, except under the bundled
- * DeepSeek Harness (always in SHARED mode): its writes fault a deltabox-lite
+ * DeepSeek Harness: its writes fault a deltabox-lite
  * 0.1.1 review (a file it unlinks in the staging directory it made in the
  * session, docs/architecture.md 9.5), so its tasks use the assistant's git
  * review. A git review a crashed server left is rolled back when the
@@ -55,9 +54,9 @@ import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync }
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, eventStream, gatewayFetch, isRecord, json, MCP_ENDPOINT, problem, REVISIONS } from '@presmium/kernel'
+import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, eventStream, isRecord, json, MCP_ENDPOINT, problem, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentMode, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
-import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, questionLimits, questionTimeoutMs, restoreStepOf, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
+import { ASSISTANT_MESSAGES, CHANGE_KINDS, questionLimits, questionTimeoutMs, restoreStepOf, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
 import type { AssistantInfo, PendingChange, RevertAnswer } from '../domain/index.ts'
 import { runChange } from './changes.ts'
 import { recoverGitReview } from './git-review.ts'
@@ -93,11 +92,11 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
   /**
    * The workspace's home page, which presmium serve mounts at the workspace
    * root: not a document. The root is a document only in a single-deck
-   * repository (LOCAL, its deck entry there); where no change is committed
+   * repository (its deck entry there); where no change is committed
    * (presmium dev) the deck directory is always a document.
    */
   const home = resolve(ctx.deckDir) === resolve(ctx.workspaceRoot)
-    && (ctx.trust === 'shared' || (Boolean(ctx.service(REVISIONS)) && !existsSync(join(ctx.deckDir, DECK_ENTRY))))
+    && Boolean(ctx.service(REVISIONS)) && !existsSync(join(ctx.deckDir, DECK_ENTRY))
 
   /** The documents' locks: the workspace's where it provides them (`DOCUMENT_LOCKS`), else these. */
   const own = new Map<string, string>()
@@ -122,7 +121,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     recoverGitReview({
       workspaceRoot: ctx.workspaceRoot,
       deckDir: ctx.deckDir,
-      isolated: ctx.trust === 'shared',
       ...ctx.service(DOCUMENT_FILES) ? { files: ctx.service(DOCUMENT_FILES)! } : {},
       onRestore: paths => ctx.log.warn(`the git directory as a change task found it, put back: ${paths.join(', ')}`),
     }).then((found) => {
@@ -130,34 +128,11 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     }, (error: unknown) => ctx.log.warn(`the change task a crashed server left was not rolled back: ${errorMessage(error)}`))
   }
 
-  // The provider in SHARED mode is the gateway's (its environment has the model access): kept once it
-  // answers, asked again a minute after it did not.
-  let gatewayProvider: string | undefined
-  let providing: Promise<string | undefined> | undefined
-  let failed = -Infinity
-  const askGateway = async (gateway: NonNullable<ServerContext['gateway']>): Promise<string | undefined> => {
-    try {
-      const response = await gatewayFetch(gateway, ASSISTANT_ID, 'info')
-      const body = await response.json().catch(() => ({})) as { provider?: unknown }
-      if (response.ok && typeof body.provider === 'string') return gatewayProvider = body.provider
-      ctx.log.warn(`the gateway has no model access (${response.status}): the assistant is unavailable`)
-    } catch (error) {
-      ctx.log.warn(`the gateway did not say its model's provider: ${errorMessage(error)}`)
-    }
-    failed = Date.now()
-    return undefined
-  }
-  const provider = async (): Promise<string | undefined> => {
-    const runtime = ctx.service(AGENT_RUNTIME)
-    if (!runtime) return undefined
-    if (ctx.trust !== 'shared') return runtime.provider
-    if (gatewayProvider || !ctx.gateway) return gatewayProvider
-    if (!providing && Date.now() - failed >= 60_000) providing = askGateway(ctx.gateway).finally(() => providing = undefined)
-    return providing
-  }
+  /** The model's provider: the runtime's; none without a runtime. */
+  const provider = (): string | undefined => ctx.service(AGENT_RUNTIME)?.provider
 
-  /** Whether the agent is the bundled DeepSeek Harness: agent-host runs only it (SHARED); in LOCAL mode, unless replaced. */
-  const bundled = ctx.trust === 'shared' || runtimeChoice(name => ctx.secret(name), ctx.settings).kind === 'bundled'
+  /** Whether the agent is the bundled DeepSeek Harness, unless the operator replaced it. */
+  const bundled = runtimeChoice(name => ctx.secret(name), ctx.settings).kind === 'bundled'
   /** The change tasks' review service: none (the assistant's git review) under the bundled DeepSeek Harness. */
   const reviews = () => (bundled ? undefined : ctx.service(CHANGE_REVIEW))
   if (bundled && ctx.service(CHANGE_REVIEW) && !gitReviewed) {
@@ -167,11 +142,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
 
   if (!ctx.service(AGENT_RUNTIME) && !reported) {
     reported = true
-    const why = ctx.trust === 'shared' ? 'agent-host has no agent runtime' : (() => {
-      const choice = runtimeChoice(name => ctx.secret(name), ctx.settings)
-      return choice.kind === 'none' ? choice.missing : 'the bundled DeepSeek Harness is not installed'
-    })()
-    ctx.log.warn(`the assistant is unavailable: ${why}`)
+    const choice = runtimeChoice(name => ctx.secret(name), ctx.settings)
+    ctx.log.warn(`the assistant is unavailable: ${choice.kind === 'none' ? choice.missing : 'the bundled DeepSeek Harness is not installed'}`)
   }
 
   /**
@@ -179,7 +151,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
    * change tasks for editors and owners where the workspace commits them (`REVISIONS`, presmium serve).
    */
   const kinds = async (member: Member): Promise<AgentTaskKind[]> => {
-    if (!(await provider())) return []
+    if (!provider()) return []
     const changes = mayEdit(member) && ctx.service(REVISIONS) ? CHANGE_KINDS : []
     // The home page's tasks go to their documents: drafting a new one.
     return home ? changes : ['question', ...changes]
@@ -226,7 +198,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
       })
       if (!task.abort.signal.aborted) {
         for await (const event of opened.prompt(request, task.abort.signal)) {
-          // agent-host's transport passes its approval events on; this task announces its own (`ask`).
+          // A transport's approval events are not passed on; this task announces its own (`ask`).
           if (event.type === 'approval' || event.type === 'done') continue
           if (event.type === 'error') throw new Error(event.message)
           if (event.type === 'message') messages.push(event.text)
@@ -301,7 +273,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
         role: 'reader',
         async handle(_request, rc: RequestContext) {
           const runtime = ctx.service(AGENT_RUNTIME)
-          const found = await provider()
+          const found = provider()
           const info: AssistantInfo = { ...found ? { provider: found } : {}, ...found && runtime?.runtime ? { runtime: runtime.runtime } : {}, kinds: await kinds(rc.member) }
           return json(info)
         },

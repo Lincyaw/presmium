@@ -7,9 +7,9 @@
  * check, the build, the server and the agent tools plan alike. The server's
  * routes and the agent tools plan from the latest IR the deck compiled in
  * this process, which a pass keeps (`presmium dev` and `presmium serve`
- * compile before they serve): editors' and owners' from the whole IR,
- * readers' and `tutor` tokens' from its student view (P-55, D17), and they
- * get the students' part of each recorded lecture (`studentTrack`).
+ * compile before they serve): the routes from the whole IR, the agent tools
+ * of `tutor` tokens from its student view (P-55), which get the students'
+ * part of each recorded lecture (`studentTrack`).
  */
 import { resolve } from 'node:path'
 import { audienceView, STUDENT, viewFor } from '@presmium/compiler'

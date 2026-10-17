@@ -1,20 +1,17 @@
 // Audiences (WP-87, P-55, docs/ir.md 2.11): `presmium build --audience student` leaves the teacher's blocks and
 // sections out of every output, the directives nested in another's body or a list and an `{include}` with
 // `:audience:` among them, and scans what it wrote for their sentences; `presmium check --audience student` checks
-// the student version; in `presmium serve` (SHARED) readers see the student view: their pages, the IR module the
-// pages load, the search index and what a `tutor` MCP token reads, while editors see the whole deck.
-// WP-81e2: a deck's translations are compiled for the audience too, without a temporary file in the deck, and
-// scanned; `{audience}` without names fails closed; a student build keeps no finding of what it left out; content
-// after an `{include}` with `:audience:` that opens a section is a warning; agent-host builds the student view, as
-// `build`'s `audience` option does for presmium dev and serve (LOCAL); `presmium build --audience` scans the whole
-// output directory; serve (LOCAL) says the workspace site leaves a translation out.
+// the student version. WP-81e2: a deck's translations are compiled for the audience too, without a temporary file
+// in the deck, and scanned; `{audience}` without names fails closed; a student build keeps no finding of what it
+// left out; content after an `{include}` with `:audience:` that opens a section is a warning; `build`'s `audience`
+// option builds the student view for presmium dev and serve; `presmium build --audience` scans the whole output
+// directory; serve says the workspace site leaves a translation out.
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { build, Compiler } from '@presmium/compiler'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
-import type { SharedSetup } from './serve-helpers.ts'
-import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, ROOT, shared, waitFor, workspace } from './serve-helpers.ts'
+import { FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
 
 const DECK = join(ROOT, 'e2e/fixtures/publish-checks/audience')
 /** A Chinese deck and its English translation, each with a teacher's block and a teacher's section. */
@@ -124,73 +121,6 @@ async function mcp(url: string, host: string, token: string, method: string, par
   return JSON.parse(data) as Record<string, any>
 }
 
-describe('presmium serve with a login proxy (SHARED): readers see the student view', () => {
-  let dir: string
-  let setup: SharedSetup
-  beforeAll(async () => {
-    dir = workspace('audience', 'audience')
-    cpSync(join(FIXTURES, 'plugins/presmium-fixture-tutor'), join(dir, 'node_modules/presmium-fixture-tutor'), { recursive: true })
-    setup = await shared(dir)
-  }, 180_000)
-  afterAll(async () => {
-    await setup?.stop()
-    remove(dir)
-  }, 60_000)
-
-  it('gives a reader only the static site built for students (D17): no teacher\'s sentence in its pages and assets, no module of a dev server; an editor gets the live pages with all', async () => {
-    const reader = setup.as('reader@test')
-    const editor = setup.as('editor@test')
-    // Before its first build a reader gets the page that says the site is being updated (503); then the built page.
-    let page = await raw(`${setup.url}/course/`, { headers: reader })
-    for (let i = 0; page.status === 503 && i < 240; i++) {
-      expect(page.text).toContain('<meta http-equiv="refresh"')
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      page = await raw(`${setup.url}/course/`, { headers: reader })
-    }
-    expect(page.status, page.text).toBe(200)
-    expect(page.text).toContain('STUDENTVISIBLE')
-    // Every file the page links (scripts, styles, preloaded chunks), as the reader's browser loads them, then the search index they import.
-    const seen = new Map<string, string>()
-    const links = (text: string, from: string) => [...text.matchAll(/(?:src|href)="([^"#?]+\.(?:js|css|json))"|(?:import\(|from )["'](\.{0,2}\/[^"']+\.js)["']/g)]
-      .map(m => new URL(m[1] ?? m[2]!, new URL(from, 'http://site')).pathname)
-    const queue = links(page.text, '/course/')
-    while (queue.length > 0 && seen.size < 400) {
-      const path = queue.shift()!
-      if (seen.has(path)) continue
-      const asset = await raw(`${setup.url}${path}`, { headers: reader })
-      expect(asset.status, path).toBe(200)
-      seen.set(path, asset.text)
-      if (path.endsWith('.js')) queue.push(...links(asset.text, path))
-    }
-    expect([...seen.keys()].some(path => /localSearchIndex|search/i.test(path) || /studentvisible/i.test(seen.get(path)!)), 'the search index among the assets').toBe(true)
-    for (const text of [...TEACHER, 'tipkey58']) {
-      expect(page.text.toLowerCase(), text).not.toContain(text)
-      for (const [path, body] of seen) expect(body.toLowerCase(), `${text} in ${path}`).not.toContain(text)
-    }
-    // A reader's request for what only a dev server answers gets 404: its modules, files by path, sources.
-    for (const path of ['/course/@id/__x00__virtual:presmium/ir', '/course/@localSearchIndexroot', `/course/@fs${join(dir, 'course/lecture.md')}?raw`, `/course${join(dir, 'course/lecture.md')}?import&raw`, '/course/lecture.md?raw', '/course/@vite/client']) {
-      expect((await raw(`${setup.url}${path}`, { headers: reader })).status, path).toBe(404)
-    }
-    // The editor's page is the live one: its IR module and search index hold the teacher's content.
-    const full = await raw(`${setup.url}/course/@id/__x00__virtual:presmium/ir`, { headers: editor })
-    for (const text of ['TEACHERONLY42', 'GUIDEONLY17', 'TIPKEY58']) expect(full.text).toContain(text)
-    const editorIndex = await raw(`${setup.url}/course/@localSearchIndexroot`, { headers: editor })
-    expect(editorIndex.status, editorIndex.text).toBe(200)
-    for (const text of ['teacheronly42', 'guideonly17']) expect(editorIndex.text.toLowerCase()).toContain(text)
-
-    // The tutor token the test plugin's route issues for the reader (`MCP_ENDPOINT.issue(member, 'tutor')`).
-    const grant = await raw(`${setup.url}/__presmium/fixture.tutor/tutor`, { headers: { ...reader, 'Presmium-Document': 'course' } })
-    expect(grant.status, grant.text).toBe(200)
-    const { token } = grant.json<{ token: string }>()
-    const host = reader.Host!
-    await mcp(setup.url, host, token, 'initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'presmium-test', version: '0.1.0' } })
-    const section = await mcp(setup.url, host, token, 'tools/call', { name: 'get_section', arguments: { document: 'course', section: 'merge' } })
-    const text = JSON.stringify(section.result)
-    expect(text).toContain('STUDENTVISIBLE')
-    expect(text).not.toContain('TEACHERONLY42')
-  }, 300_000)
-})
-
 describe('a deck with a translation, for an audience', () => {
   const dirs: string[] = []
   afterAll(() => dirs.forEach(remove))
@@ -213,7 +143,7 @@ describe('a deck with a translation, for an audience', () => {
     expect(new Set(written)).toEqual(new Set(['student', '.presmium', 'node_modules']))
   }, 300_000)
 
-  it('builds the student view of a whole compilation as presmium dev and serve (LOCAL) do: neither language with the teacher\'s content; a leak is reported without its sentence', async () => {
+  it('builds the student view of a whole compilation as presmium dev and serve do: neither language with the teacher\'s content; a leak is reported without its sentence', async () => {
     const dir = deck(TRANSLATED)
     dirs.push(dir)
     appendFileSync(join(dir, 'lecture.en.md'), '\n```{code} python\n:run:\nprint("Note for teachers: unplug the network before the demo, " + "password TEACHEREN41.")\n```\n')
@@ -271,7 +201,7 @@ describe('the edges of audiences', () => {
   }, 300_000)
 })
 
-describe('presmium serve on this machine (LOCAL): a document with a translation', () => {
+describe('presmium serve: a document with a translation', () => {
   let dir: string | undefined
   afterAll(() => remove(dir))
 
@@ -297,29 +227,6 @@ describe('presmium serve on this machine (LOCAL): a document with a translation'
       expect(diagnostics).toContainEqual(expect.objectContaining({ severity: 'warning', check: 'presmium.translations', message: expect.stringContaining('translation "en" (lecture.en.md) is not in the workspace site') }))
     } finally {
       await local.stop()
-    }
-  }, 300_000)
-})
-
-describe('presmium agent-host builds the student view of a document (SHARED ServerHost.build)', () => {
-  let dir: string | undefined
-  afterAll(() => remove(dir))
-
-  it('leaves the teacher\'s content out of both languages of the build', async () => {
-    dir = workspace('translated', 'translated', { '@presmium/slidev-addon-exec': 'packages/addon-exec', '@presmium/web': 'packages/web' })
-    cpSync(TRANSLATED, join(dir, 'course'), { recursive: true })
-    const token = `agent-host-${Math.random().toString(36).slice(2, 10)}`
-    const host = presmiumProcess(dir, ['agent-host', '--port', '0'], cleanEnv({ PRESMIUM_AGENT_HOST_TOKEN: token }))
-    try {
-      const url = (await waitFor(host, /^agent-host {2}(http\S+)$/m))[1]!
-      const built = await raw(`${url}/v1/documents/course/build`, { headers: { Authorization: `Bearer ${token}` }, json: { view: 'student', to: ['web'], run: 'none' } })
-      expect(built.status, built.text).toBe(200)
-      expect(built.json<{ outputs: { renderer: string }[] }>().outputs.map(o => o.renderer), built.text).toEqual(['web'])
-      const out = join(dir, 'course/dist')
-      for (const text of TEACHER_BOTH) expect(holding(out, text), text).toEqual([])
-      expect(holding(join(out, 'web/en'), 'studenten').length).toBeGreaterThan(0)
-    } finally {
-      await host.stop()
     }
   }, 300_000)
 })

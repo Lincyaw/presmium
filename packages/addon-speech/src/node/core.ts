@@ -1,6 +1,5 @@
 /**
- * Speech with the engines of this process's environment: `presmium` in
- * LOCAL mode, `presmium gateway` in SHARED mode (D13). Picks the engine (an
+ * Speech with the engines of this process's environment. Picks the engine (an
  * engine the operator did not define gets no request), checks a cloned
  * voice's consent (./consent.ts) before synthesizing, applies the
  * pronunciation lexicon to the text (words come back in the written form),
@@ -36,7 +35,7 @@ export interface CoreOptions {
   secret(name: string): string | undefined
   /** `settings.presmium.speech` of the workspace configuration. */
   settings: Record<string, unknown>
-  /** Where consent records are (LOCAL: outside the workspace; the gateway's own). */
+  /** Where consent records are: the operator directory, outside the workspace. */
   operatorDir?: string
   log: Logger
 }
@@ -167,7 +166,7 @@ export function speechCore(options: CoreOptions): SpeechCore {
   }
 }
 
-/** Logs the engines that lack a variable, naming it, once when a server or the gateway starts. */
+/** Logs the engines that lack a variable, naming it, once when a server starts. */
 export async function reportEngines(core: SpeechBackend, log: Logger): Promise<void> {
   const { engines, unavailable } = await core.listing('en')
   if (engines.length) log.info(`speech engines: ${engines.map(engine => `${engine.id} (${engine.provider})`).join(', ')}`)

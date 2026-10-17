@@ -1,4 +1,4 @@
-// Smoke cases of the real engines (WP-82), through the speech gateway's routes of `presmium dev`: they run
+// Smoke cases of the real engines (WP-82), through the speech routes of `presmium dev`: they run
 // only with the test credentials in the environment, and say how to enable them otherwise.
 // - Volcengine (火山引擎): PRESMIUM_TEST_VOLCENGINE_KEY (and PRESMIUM_TEST_VOLCENGINE_APPID for a key of the
 //   old console): synthesis of a sentence that mixes Chinese and English, with times per character and the

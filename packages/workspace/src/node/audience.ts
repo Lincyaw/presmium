@@ -1,8 +1,7 @@
 /**
  * How each view of a document is compiled in `presmium serve` (D8, P-55,
- * docs/architecture.md 10.3): editors and owners see the `full` view, readers
- * (learners) and `tutor` tokens the `student` view: the document as the
- * audience `student` sees it, without the sections and blocks only for other
+ * docs/architecture.md 10.3): the author sees the `full` view, MCP's `tutor`
+ * tokens the `student` view: the document as the audience `student` sees it, without the sections and blocks only for other
  * audiences (`{audience} teacher`, `:audience: teacher`), its steps and
  * sections numbered again (`Compilation.forAudience`, WP-87). This file
  * alone decides it.

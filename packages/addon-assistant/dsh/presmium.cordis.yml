@@ -1,4 +1,4 @@
-# DeepSeek Harness patch for Presmium's author agent in LOCAL mode (D11, D15; docs/architecture.md 4.8).
+# DeepSeek Harness patch for Presmium's author agent (D11, D15; docs/architecture.md 4.8).
 # The assistant starts `dsh --profile acp --patch <this file>` with DSH_TELEMETRY_MODE=DISABLED and its own
 # DSH_HOME. The row ids are those of the pinned version (`dsh --profile acp --dump-default-config`);
 # packages/addon-assistant/test/dsh.test.ts checks them with `--dump-config`.

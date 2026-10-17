@@ -38,8 +38,8 @@ export function checkContext(compilation: Compilation): CheckContext {
  * crashing check, is located at the entry, on the headmatter line of its plugin.
  */
 export async function pluginChecks(compilation: Compilation, options: { externalLinks?: boolean } = {}): Promise<Finding[]> {
-  const { entry, scope } = compilation
-  const text = (scope ? await scope.read(entry) : await readFile(entry, 'utf8').catch(() => undefined)) ?? ''
+  const { entry } = compilation
+  const text = await readFile(entry, 'utf8').catch(() => '')
   const at = (name: string) => ({ file: entry, line: frontmatterLine(text, name) })
   const checks = new CheckRegistry()
   const places = new Map<string, Finding['source']>()

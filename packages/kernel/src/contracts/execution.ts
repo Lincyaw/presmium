@@ -4,7 +4,6 @@
  * the process sandbox, and named environments (P-100 to P-102).
  */
 import type { Logger, Unsubscribe } from '../contracts.ts'
-import type { GatewayAccess } from './server.ts'
 import { defineService } from './service.ts'
 
 export interface RunRequest {
@@ -66,13 +65,6 @@ export interface RunContext {
    * directory; without it they start the child process as before (10.6).
    */
   sandbox?: ProcessSandbox
-  /**
-   * SHARED mode: the gateway access agent-host gives this run (a scoped token
-   * serve issued, 4.7): executors that need third-party credentials (remote
-   * environments) connect through the gateway. Omitted in LOCAL mode, where
-   * credentials come from `EnvironmentContext.secret`.
-   */
-  gateway?: GatewayAccess
   /**
    * The deck's language (its headmatter's `lang`, `zh-CN` when it has none).
    * Text an executor writes into a recording itself, e.g. the summary of a
@@ -221,16 +213,9 @@ export interface EnvironmentContext {
   /**
    * The server's environment variables, e.g. `secret('PRESMIUM_ENV_GPU_TOKEN')`
    * and its pair `secret('PRESMIUM_ENV_GPU_URL')`; undefined when unset. A
-   * provider sends a credential only to the address of its pair. In SHARED
-   * mode neither serve nor agent-host has third-party credentials.
+   * provider sends a credential only to the address of its pair.
    */
   secret(name: string): string | undefined
-  /**
-   * SHARED mode, in serve: the gateway access (service token); `probe`
-   * reaches the environment through this plugin's proxy in the gateway.
-   * Omitted in agent-host (runs use `RunContext.gateway`) and in LOCAL mode.
-   */
-  gateway?: GatewayAccess
   log: Logger
 }
 

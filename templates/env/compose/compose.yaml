@@ -4,7 +4,7 @@
 #
 #   JUPYTER_TOKEN=$(openssl rand -hex 24) docker compose up -d
 #
-# then give the operator's pair to `presmium build`, `dev` or `gateway` (never to the deck):
+# then give the operator's pair to `presmium build`, `dev` or `serve` (never to the deck):
 #
 #   PRESMIUM_ENV_<NAME>_URL=http://127.0.0.1:8888/  PRESMIUM_ENV_<NAME>_TOKEN=$JUPYTER_TOKEN
 #

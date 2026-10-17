@@ -8,7 +8,7 @@
 // source, however the link escapes its name or a linked directory holds it, keeping the link as written with a
 // warning (F-25, C-4).
 import { spawnSync } from 'node:child_process'
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -57,25 +57,6 @@ it('reports a broken link, #nowhere, {csv-table} with :file: and a forbidden wor
     message: 'other/lecture.md#sooner: no section, block, label or heading of other/lecture.md has the id sooner',
     source: expect.objectContaining({ line: line('other/lecture.md#later') }),
   }))
-})
-
-it('under the read scope (SHARED serve), a link to another document behind a link out of the workspace tells nothing of that file', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'presmium-publish-scope-'))
-  const outside = mkdtempSync(join(tmpdir(), 'presmium-publish-outside-'))
-  copies.push(root, outside)
-  spawnSync('git', ['init', '-q', root])
-  mkdirSync(join(root, 'course'))
-  writeFileSync(join(outside, 'secret.md'), '---\ntitle: secret\n---\n\n(question-3-is-c)=\n## The answer is C\n\nSECRETBODY\n')
-  symlinkSync(join(outside, 'secret.md'), join(root, 'course', 'other.md'))
-  writeFileSync(join(root, 'course', 'lecture.md'), '---\ntitle: course\n---\n\n## One\n\nSee [the answer](other.md#question-3-is-c) and [the other](other.md#question-4-is-d).\n')
-  const { Compiler } = await import('@presmium/compiler')
-  const compilation = await new Compiler(join(root, 'course', 'lecture.md'), { scope: true, workspaceRoot: root }).compile()
-  const findings = await compilation.publishChecks()
-  const text = findings.map(f => f.message).join('\n')
-  // Both links are reported alike, as to a file that is not there: which headings the outside file has stays unknown.
-  expect(text).toContain('other.md: no such file')
-  expect(text).not.toMatch(/question-4-is-d: no section|has the id/)
-  expect(text).not.toContain('SECRETBODY')
 })
 
 /**

@@ -1,8 +1,7 @@
 /**
- * The speech gateway's protocol (../domain/protocol.ts) over a backend: the
- * routes `v1/*` of `presmium dev` and `presmium serve` (the deck's cache over
- * the engines of the process in LOCAL mode, over the gateway in SHARED mode)
- * and of `presmium gateway` (its engines). Answers carry no credential:
+ * The speech protocol (../domain/protocol.ts) over a backend: the routes
+ * `v1/*` of `presmium dev` and `presmium serve` (the deck's cache over the
+ * engines of the process). Answers carry no credential:
  * engines are called by the backend, never with the caller's headers.
  */
 import { json, problem } from '@presmium/kernel'
@@ -38,7 +37,7 @@ export function protocolHandler(backend: SpeechBackend): (request: Request, path
     const method = request.method.toUpperCase()
     try {
       if (path === 'engines' && method === 'GET') return json(await backend.listing(request.headers.get('accept-language') ?? undefined))
-      // Whether a cloned voice may be used now (the gateway's settings and consent records), for a cache's hit.
+      // Whether a cloned voice may be used now (the operator's settings and consent records), for a cache's hit.
       if (path === 'audio/consent' && method === 'GET') {
         const query = new URL(request.url).searchParams
         await backend.consent(query.get('engine') ?? '', query.get('voice') ?? '', query.get('recorded') !== '0', request.signal)

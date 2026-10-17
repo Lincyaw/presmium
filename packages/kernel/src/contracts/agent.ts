@@ -2,7 +2,7 @@
  * Agents (P-110 to P-114, P-136), change review (D12) and revision history
  * (P-115, P-121); docs/architecture.md 4.8 and 10.7.
  */
-import type { AgentMode, ApprovalRequest, GatewayAccess, McpAccess, Member } from './server.ts'
+import type { AgentMode, ApprovalRequest, McpAccess, Member } from './server.ts'
 import { defineService } from './service.ts'
 import type { ServiceToken } from './service.ts'
 
@@ -132,15 +132,6 @@ export interface AgentSessionOptions {
    * closes; omitted, the agent has no Presmium tools.
    */
   mcp?: McpAccess
-  /**
-   * SHARED mode: the model access, the gateway's Messages-compatible address
-   * (`<gateway>/presmium.assistant/model`) and the scoped token serve issued
-   * for this session; DeepSeek Harness gets them as `DEEPSEEK_BASE_URL` and
-   * `DEEPSEEK_API_KEY` and never the model service's key. Omitted in LOCAL
-   * mode: the runtime uses the model credentials the operator put in this
-   * process's environment.
-   */
-  model?: GatewayAccess
   /** The agent's own permission requests (ACP `session/request_permission`) are confirmed through it. */
   approve(request: ApprovalRequest): Promise<boolean>
 }
@@ -151,13 +142,12 @@ export interface AgentSession {
   close(): Promise<void>
 }
 
-/** In Node: drives an agent; the one implementation is the ACP client (in SHARED mode, in serve, the agent-host client). */
+/** In Node: drives an agent; the one implementation is the ACP client. The runtime uses the model credentials the operator put in this process's environment. */
 export interface AgentRuntime {
   /**
    * The model's service provider, known before starting: for the bundled
    * DeepSeek Harness from the operator's model access (`DeepSeek` for
-   * `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_PROVIDER`; in SHARED mode the
-   * gateway's); for a replacement runtime `settings.presmium.assistant.provider`
+   * `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_PROVIDER`); for a replacement runtime `settings.presmium.assistant.provider`
    * or `PRESMIUM_AGENT_PROVIDER`. Without one, `AGENT_RUNTIME` is not registered.
    */
   readonly provider: string
@@ -262,7 +252,7 @@ export interface ChangeReviewService {
   open(options: { document: string, task: string, member: Member }): Promise<ChangeReview>
 }
 
-/** Node service: `addon-deltabox` registers it where the host qualifies; in SHARED mode, in serve, the agent-host client (10.7, 10.8). */
+/** Node service: `addon-deltabox` registers it where the host qualifies (10.7). */
 export const CHANGE_REVIEW = defineService<ChangeReviewService>('presmium.changeReview')
 
 // Revision history (P-115, P-121) ----------------------------------------------------
@@ -336,10 +326,8 @@ export type DocumentFileChange =
   | { path: string, remove: true }
 
 /**
- * Writes files of document directories as the identity that may write them
- * (docs/architecture.md 10.7, WP-91): in SHARED mode agent-host, as the
- * sandbox's uid, since serve writes nothing where the sandbox may write; in
- * LOCAL mode this process. Every path lies in a document directory; a
+ * Writes files of document directories (docs/architecture.md 10.7, WP-91):
+ * the workspace's one way to change them, in this process. Every path lies in a document directory; a
  * symbolic link on the way is replaced, never followed; directories a
  * removal leaves empty go, up to the document directory.
  */

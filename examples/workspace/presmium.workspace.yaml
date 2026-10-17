@@ -5,20 +5,9 @@ site:
   footer: { message: Presmium 的示例工作区 }
 settings:
   presmium.workspace:
-    # The plugins the documents list, installed at the workspace root (package.json, and the link
-    # try.mjs makes): presmium serve loads only these.
+    # The operator plugins, which every document and the home page load (the assistant drafts a new
+    # document there). The plugins a document lists load as in `presmium dev`, from the packages installed
+    # at the workspace root (package.json, and the link try.mjs makes).
     plugins:
-      - '@presmium/slidev-addon-core'
-      - '@presmium/slidev-addon-stage'
-      - '@presmium/slidev-addon-code'
-      - '@presmium/slidev-addon-exec'
-      - '@presmium/slidev-addon-exec-wasi'
-      - '@presmium/slidev-addon-exec-webgpu'
-      - '@presmium/slidev-addon-guide'
-      - '@presmium/slidev-addon-content'
-      - '@presmium/slidev-addon-publish'
-      - '@presmium/slidev-addon-session'
-      - '@presmium/slidev-addon-classroom'
-      - '@presmium/slidev-addon-lecture'
       - '@presmium/slidev-addon-speech'
       - '@presmium/slidev-addon-assistant'

@@ -28,6 +28,6 @@ export function failedRun(executorId: string, stderr: string, durationMs = 0): R
 /**
  * Names of environment variables that hold credentials: `*_KEY`, `*_TOKEN`,
  * `*_SECRET`, `*_PASSWORD`, `*_APPID`. Code run under the `local` rules does
- * not see them, and a SHARED serve refuses to start with any (docs/architecture.md 4.6, 10.1).
+ * not see them (docs/architecture.md 4.6).
  */
 export const CREDENTIAL_VARIABLE = /_(?:KEY|TOKEN|SECRET|PASSWORD|APPID)$/i

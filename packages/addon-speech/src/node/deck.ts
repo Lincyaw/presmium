@@ -1,7 +1,7 @@
 /**
  * A deck's speech: its default engines (`presmium.speech.engine`,
- * `transcribe`) and its synthesis cache over the engines of this process
- * (LOCAL) or the gateway (SHARED). A synthesis looks in the cache first and
+ * `transcribe`) and its synthesis cache over the engines of this process.
+ * A synthesis looks in the cache first and
  * sends no synthesis to an engine on a hit, but asks first whether the
  * operator allows the clip's voice now if it is cloned (`consent`, D-7: by
  * the record's word or the engine's, as far as it is known); a miss is

@@ -26,7 +26,7 @@ import { readFrontmatter } from './source.ts'
 const CHECK_ID = 'presmium.translations'
 
 /** The headmatter keys a translation takes from its original: the plugins and the renderer configuration. */
-const SHARED_KEYS = ['plugins', 'presmium', 'renderers', 'execute', 'sectionDepth', 'checks']
+const ORIGINAL_KEYS = ['plugins', 'presmium', 'renderers', 'execute', 'sectionDepth', 'checks']
 
 export interface TranslationFields {
   translations?: Record<string, string>
@@ -170,7 +170,7 @@ export async function compileTranslations(compilation: Compilation, compilers = 
     try {
       const own = readFrontmatter(await readFile(file, 'utf8'))
       const headmatter: Record<string, unknown> = { translations: undefined }
-      for (const key of SHARED_KEYS) headmatter[key] = frontmatter[key]
+      for (const key of ORIGINAL_KEYS) headmatter[key] = frontmatter[key]
       if (!(typeof own.lang === 'string' && own.lang.trim())) headmatter.lang = lang
       if (own.title === undefined) headmatter.title = doc.meta.title
       const options: CompilerOptions = { ...base, headmatter, deckDir, ...audience ? { audience } : {} }

@@ -8,14 +8,11 @@
  * one an agent's change task holds is refused with 409 (F-09).
  *
  * What is inside a document directory is written by the document writer
- * (./files.ts): in SHARED mode agent-host, as the sandbox, since serve
- * writes nothing where the sandbox may write (WP-91). serve itself only
- * works in the directories around the documents, which are its own: it
- * makes a new document directory (empty, given the documents' group, which
- * the sandbox may then write), renames one, and removes one the writer
- * emptied.
+ * (./files.ts, WP-91). serve itself works in the directories around the
+ * documents: it makes a new document directory (empty), renames one, and
+ * removes one the writer emptied.
  */
-import { chmodSync, chownSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { Member } from '@presmium/kernel'
 import type { DocumentOperation, LockedAnswer, OperationAnswer, WorkspaceDocument } from '../domain/api.ts'
@@ -49,31 +46,11 @@ export function lockedError(document: string, holder: string): RequestError {
   return new RequestError(409, lockedMessage(document, holder), { locked: { document, holder } } satisfies Omit<LockedAnswer, 'error'>)
 }
 
-/** The id of a group named in /etc/group; undefined when there is none. */
-export function groupId(name: string): number | undefined {
-  if (/^\d+$/.test(name)) return Number(name)
-  try {
-    const line = readFileSync('/etc/group', 'utf8').split('\n').find(entry => entry.split(':')[0] === name)
-    return line ? Number(line.split(':')[2]) : undefined
-  } catch {
-    return undefined
-  }
-}
-
-/**
- * Makes a new, empty document directory: its parents are serve's (made as
- * they are needed); with the documents' group (the compose layout,
- * docs/architecture.md 10.5) it gets the group, setgid and group-writable,
- * so the sandbox may write in it, and serve writes nothing in it from here on.
- */
-export function makeDocumentDir(root: string, dir: string, group?: number): void {
+/** Makes a new, empty document directory, and its parents as they are needed. */
+export function makeDocumentDir(root: string, dir: string): void {
   const path = join(root, dir)
   mkdirSync(dirname(path), { recursive: true })
   mkdirSync(path)
-  if (group !== undefined) {
-    chownSync(path, -1, group)
-    chmodSync(path, 0o2775)
-  }
 }
 
 /** A change of the documents an operation or an undo made: those gone, and those there (again or new). */
@@ -89,8 +66,6 @@ export interface DocumentsOptions {
   writer: DocumentWriter
   /** Called after an operation changed the documents (the server's sessions and the site follow, C-7). */
   changed?: (change: DocumentsChange) => void | Promise<void>
-  /** The group of the document directories (`PRESMIUM_DOCUMENTS_GROUP` in the compose layout), given to those it makes. */
-  group?: number
   /** The documents' locks (`DOCUMENT_LOCKS`). */
   locks?: DocumentLocks
 }
@@ -106,7 +81,6 @@ export class Documents {
   readonly #revisions: Revisions
   readonly #writer: DocumentWriter
   readonly #changed: (change: DocumentsChange) => void | Promise<void>
-  readonly #group?: number
   readonly #locks?: DocumentLocks
 
   constructor(options: DocumentsOptions) {
@@ -115,7 +89,6 @@ export class Documents {
     this.#revisions = options.revisions
     this.#writer = options.writer
     this.#changed = options.changed ?? (() => {})
-    this.#group = options.group
     this.#locks = options.locks
   }
 
@@ -154,7 +127,7 @@ export class Documents {
 
   /** A new document directory, made empty, then filled by the writer; on a failure it goes again. */
   async #fill(dir: string, fill: () => Promise<void>): Promise<void> {
-    makeDocumentDir(this.config.root, dir, this.#group)
+    makeDocumentDir(this.config.root, dir)
     try {
       await fill()
     } catch (error) {

@@ -9,7 +9,6 @@ import type {
   AgentTool,
   ApprovalKind,
   ApprovalRequest,
-  ApprovalScope,
   Finding,
   IRDocument,
   Member,
@@ -44,7 +43,7 @@ export interface McpPosition {
   slide: number
   /** The section's id, when the window reports it (F-41): the same in every view. */
   section?: string
-  /** The view the window shows: the whole deck, or the student view (a reader's in SHARED mode); default `full`. */
+  /** The view the window shows: the whole deck, or the student view; default `full`. */
   audience?: McpView
   step: number
   /** The runtime view of the web form (`present`, `presenter`, ...); absent in the slides form. */
@@ -65,8 +64,6 @@ export interface McpPluginTools {
 export interface McpProcess {
   /** `presmium dev`, `presmium serve` or `presmium-mcp`: how a change of the source reaches the tools. */
   command: 'dev' | 'serve' | 'presmium-mcp'
-  /** SHARED mode: an operation may also wait for the owner console. */
-  shared?: boolean
 }
 
 export interface McpHost {
@@ -86,12 +83,6 @@ export interface McpHost {
   approve(request: ApprovalRequest, signal?: AbortSignal): Promise<boolean>
   /** Whether operations of this kind are offered at all: the tools of a kind whose policy is `off` are not listed (10.4). */
   offers(kind: ApprovalKind): boolean
-  /**
-   * The scope of `run_code`'s approval in a document, or `off` when the tool
-   * is not offered: `content` but in SHARED mode, where it follows
-   * `settings.presmium.exec.compile` (10.6). Default `content`.
-   */
-  runCode?(document: string): ApprovalScope | 'off'
   /**
    * The plugins' agent tools (`PresmiumNodePlugin.tools`) of a document, or
    * without one, of the documents the host has loaded (the first of a name).

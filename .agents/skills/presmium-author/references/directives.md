@@ -126,7 +126,7 @@ steps: [解析, 启动, 渲染]
 
 ### `{literalinclude}`
 
-以代码块显示一个文件（相对于当前文件），或其中几行；文件改动后重新编译。选项：`:language:`（默认按扩展名）、`:lines:`（如 `2, 4-6`）、`:start-line:`、`:end-line:`、`:start-after:`、`:end-before:`、`:start-at:`、`:end-at:`（按行号或按含某段文字的行截取，同 MyST）、`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`。文件不存在时报错。`presmium serve` 的共享部署中只读工作区之内的文件：指向工作区之外的符号链接不被读取，报错 `presmium.files`。
+以代码块显示一个文件（相对于当前文件），或其中几行；文件改动后重新编译。选项：`:language:`（默认按扩展名）、`:lines:`（如 `2, 4-6`）、`:start-line:`、`:end-line:`、`:start-after:`、`:end-before:`、`:start-at:`、`:end-at:`（按行号或按含某段文字的行截取，同 MyST）、`:caption:` 或 `:filename:`（标题）、`:emphasize-lines:`。文件不存在时报错。
 
 ````md
 ```{literalinclude} src/bpe.py

@@ -7,7 +7,7 @@
 
 import type { AgentTool } from './contracts/agent.ts'
 import type { EnvironmentProvider, EnvironmentSpec, Executor } from './contracts/execution.ts'
-import type { GatewayContext, GatewayContribution, NodeServiceContext, ServerContext, ServerContribution } from './contracts/server.ts'
+import type { NodeServiceContext, ServerContext, ServerContribution } from './contracts/server.ts'
 import { defineService } from './contracts/service.ts'
 import type { ServiceToken } from './contracts/service.ts'
 import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from './ir.ts'
@@ -307,8 +307,6 @@ export interface PresmiumNodePlugin {
   roles?: RoleSpec[]
   /** Agent tools, which the MCP service exposes as tools (docs/architecture.md 4.8). */
   tools?: AgentTool[]
-  /** Gateway contribution: mounted only in `presmium gateway`, the one place of third-party credentials (4.7, 10.9). */
-  gateway?(ctx: GatewayContext): GatewayContribution | Promise<GatewayContribution>
   /**
    * An operator plugin: listed in `settings.presmium.workspace.plugins`, it is
    * loaded for every document (every command) without the deck listing it in

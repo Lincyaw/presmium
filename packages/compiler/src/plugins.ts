@@ -30,20 +30,16 @@ export const DELTABOX_PACKAGE = '@presmium/slidev-addon-deltabox'
 const BUNDLED = new Set(['@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', DELTABOX_PACKAGE])
 
 /**
- * Where plugins come from (D14, docs/architecture.md 4.2, 10.2). `listed`
- * is the operator's list (`settings.presmium.workspace.plugins`), installed
- * at the workspace root; `bundled` the directory from which Presmium's own
- * packages installed with the CLI resolve. With `policy` (`presmium serve`,
- * gateway, agent-host) the deck's `plugins` and `renderers.<id>.package` load
- * only listed packages, or Presmium's own, found at the workspace root or
- * with the CLI: a relative path, or a package found only in the deck's
- * `node_modules`, is not loaded.
+ * Where plugins come from (docs/architecture.md 4.2, 10.2). `listed` is the
+ * operator's list (`settings.presmium.workspace.plugins`), installed at the
+ * workspace root; `bundled` the directory from which Presmium's own packages
+ * installed with the CLI resolve. The deck's `plugins` and
+ * `renderers.<id>.package` load from the deck's directory up, else with the CLI.
  */
 export interface PluginSources {
   workspaceRoot: string
   listed: string[]
   bundled?: string
-  policy?: boolean
 }
 
 const jiti = createJiti(import.meta.url)
@@ -54,28 +50,9 @@ const jiti = createJiti(import.meta.url)
  */
 export async function loadPlugin(name: string, deckDir: string, sources?: PluginSources): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
   const problem = (severity: Severity, message: string): PluginProblem => ({ name, severity, message })
-  if (sources?.policy) {
-    const refusal = refused(name, deckDir, sources)
-    if (refusal) return { problem: problem('error', refusal) }
-  }
-  const dir = sources?.policy
-    ? findPackageDir(name, resolve(sources.workspaceRoot), false) ?? bundledDir(name, sources)
-    : findPackageDir(name, resolve(deckDir)) ?? bundledDir(name, sources)
+  const dir = findPackageDir(name, resolve(deckDir)) ?? bundledDir(name, sources)
   if (!dir) return { problem: problem('error', `cannot load plugin "${name}": package not found from ${deckDir}`) }
   return loadFrom(name, dir, problem)
-}
-
-/** Why the plugin policy refuses a package of the deck; undefined when it may load. */
-function refused(name: string, deckDir: string, sources: PluginSources): string | undefined {
-  const rule = 'presmium serve loads only the packages the operator lists in settings.presmium.workspace.plugins, installed at the workspace root'
-  if (name.startsWith('.') || isAbsolute(name)) return `plugin "${name}" is not loaded: a path is not a package; ${rule}`
-  const own = BUNDLED.has(name) && bundledDir(name, sources)
-  if (!sources.listed.includes(name) && !own) return `plugin "${name}" is not loaded: it is not listed; ${rule}`
-  if (!own && !findPackageDir(name, resolve(sources.workspaceRoot), false)) {
-    const where = findPackageDir(name, resolve(deckDir)) ? 'it is found only from the deck directory' : 'it is not installed there'
-    return `plugin "${name}" is not loaded: ${where}; ${rule}`
-  }
-  return undefined
 }
 
 /** The directory of one of Presmium's own packages installed with the CLI. */
@@ -118,7 +95,7 @@ export async function loadPlugins(deckDir: string, names: string[], sources?: Pl
 }
 
 /**
- * The operator plugins of every deck (D14): those of the operator's list
+ * The operator plugins of every deck: those of the operator's list
  * that declare `operator: true`, in its order, found at the workspace root
  * (or with the CLI), then the deltabox plugin installed with the CLI, so an
  * implementation of the same token the operator lists comes first. The

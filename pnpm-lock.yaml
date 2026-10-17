@@ -1051,9 +1051,6 @@ importers:
       '@presmium/server':
         specifier: workspace:*
         version: link:../server
-      http-proxy-3:
-        specifier: 2.0.1
-        version: 2.0.1(supports-color@9.4.0)
       vue:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)

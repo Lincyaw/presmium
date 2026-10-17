@@ -137,7 +137,7 @@ export interface Child {
   stop(): Promise<void>
 }
 
-/** `presmium <args>` as a long-running process (`dev`, `gateway`). */
+/** `presmium <args>` as a long-running process (`dev`). */
 export function presmiumProcess(cwd: string, args: string[], env: NodeJS.ProcessEnv): Child {
   const child = spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''

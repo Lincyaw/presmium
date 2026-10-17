@@ -19,9 +19,6 @@ export interface HostMessages {
   deny: string
   /** Who asks for an approval. */
   from(who: string): string
-  /** Approvals that only the owner console answers (SHARED). */
-  inConsole(count: number): string
-  openConsole: string
 }
 
 export const HOST_MESSAGES: Catalog<HostMessages> = {
@@ -39,8 +36,6 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     allow: '允许',
     deny: '拒绝',
     from: who => `来自 ${who}`,
-    inConsole: count => `${count} 个确认在所有者控制台中等待`,
-    openConsole: '打开所有者控制台',
   },
   'en': {
     panels: 'Panels',
@@ -56,7 +51,5 @@ export const HOST_MESSAGES: Catalog<HostMessages> = {
     allow: 'Allow',
     deny: 'Deny',
     from: who => `from ${who}`,
-    inConsole: count => `${count} ${count === 1 ? 'approval waits' : 'approvals wait'} in the owner console`,
-    openConsole: 'Open the owner console',
   },
 }

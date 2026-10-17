@@ -1,7 +1,0 @@
-# The workspace of packages/workspace/test/agent-host.test.ts: its one operator plugin gives agent-host the
-# assistant's agent runtime with the scripted test agent; agent-host runs two agent sessions at most.
-title: agent-host 测试
-settings:
-  presmium.workspace:
-    plugins: [presmium-fixture-scripted-runtime]
-    maxAgentSessions: 2

@@ -1,15 +1,14 @@
 // Real processes for the tests of speech: `presmium` commands on test decks, the fake engine
-// (`presmium-speech fake`) as a process of its own (and a front of it whose voice list can fail), SHARED
-// mode's serve, gateway and agent-host on this machine, listeners that record what reaches them, requests
-// with the headers a login proxy adds (`Host` included, which fetch cannot set), a test plugin that calls
-// the Node SPEECH service (fixtures/speech-probe), and a reader of WAV chunks independent of the package.
-import { execFileSync, spawn } from 'node:child_process'
+// (`presmium-speech fake`) as a process of its own (and a front of it whose voice list can fail),
+// listeners that record what reaches them, a test plugin that calls the Node SPEECH service
+// (fixtures/speech-probe), and a reader of WAV chunks independent of the package.
+import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { createServer, request as httpRequest } from 'node:http'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PRESMIUM_BIN, run } from '@presmium/cli/testing'
 import type { Run } from '@presmium/cli/testing'
@@ -20,8 +19,6 @@ const SPEECH_BIN = join(PACKAGE, 'bin/presmium-speech.mjs')
 /** The test plugin whose routes `engines`, `synthesize` and `transcribe` call the Node SPEECH service. */
 export const PROBE = join(PACKAGE, 'test/fixtures/speech-probe')
 export const PROBE_NAME = 'presmium-fixture-speech-probe'
-/** Workspaces of SHARED mode go here (ignored by git), where VitePress and the renderers resolve from the demo's node_modules. */
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
 
 /** The test process's environment without Presmium's variables or credentials (a developer's machine may hold some) and Vitest's NODE_ENV. */
 export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
@@ -92,7 +89,7 @@ function started(child: ChildProcess): Child {
   }
 }
 
-/** `presmium <args>` left running (`dev`, `serve`, `gateway`, `agent-host`). */
+/** `presmium <args>` left running (`dev`). */
 export function presmiumProcess(cwd: string, args: string[], env: NodeJS.ProcessEnv): Child {
   return started(spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }))
 }
@@ -213,28 +210,6 @@ export async function listener(): Promise<{ url: string, received: string[], clo
   }
 }
 
-export interface RawResponse {
-  status: number
-  text: string
-  json<T = Record<string, unknown>>(): T
-}
-
-/** A request with exactly these headers (`Host` included). */
-export function raw(url: string, options: { method?: string, headers?: Record<string, string>, body?: string } = {}): Promise<RawResponse> {
-  return new Promise((resolve, reject) => {
-    const req = httpRequest(url, { method: options.method ?? 'GET', headers: options.headers, setHost: !options.headers?.Host, timeout: 120_000 }, (res) => {
-      let text = ''
-      res.setEncoding('utf8')
-      res.on('data', (chunk: string) => text += chunk)
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, text, json: <T>() => JSON.parse(text) as T }))
-    })
-    req.on('timeout', () => req.destroy(new Error(`timed out: ${url}`)))
-    req.on('error', reject)
-    if (options.body !== undefined) req.write(options.body)
-    req.end()
-  })
-}
-
 /** The deck's `presmium.speech` routes of a server. */
 export function speechUrl(server: string, path: string): string {
   return `${server.replace(/\/$/, '')}/__presmium/presmium.speech/${path}`
@@ -311,81 +286,4 @@ export function oggPackets(bytes: Buffer): Buffer[] {
     at += page.length
   }
   return packets
-}
-
-// SHARED mode ---------------------------------------------------------------------
-
-/** A workspace in examples/demo/.presmium with these files and the speech plugin and the test plugin installed at its root, committed. */
-export function workspace(prefix: string, files: Record<string, string>): string {
-  mkdirSync(WORK, { recursive: true })
-  const dir = mkdtempSync(join(WORK, `speech-${prefix}-`))
-  writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
-  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
-  for (const [path, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(dir, path)), { recursive: true })
-    writeFileSync(join(dir, path), text)
-  }
-  mkdirSync(join(dir, 'node_modules/@presmium'), { recursive: true })
-  symlinkSync(PACKAGE, join(dir, 'node_modules/@presmium/slidev-addon-speech'), 'junction')
-  symlinkSync(PROBE, join(dir, 'node_modules', PROBE_NAME), 'junction')
-  const git = (args: string[]) => execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', '-c', 'core.hooksPath=/dev/null', ...args], { cwd: dir })
-  git(['init', '-q', '-b', 'main'])
-  git(['add', '-A'])
-  git(['commit', '-q', '-m', 'Initial commit'])
-  return dir
-}
-
-export interface Shared {
-  serve: Child
-  gateway: Child
-  agentHost: Child
-  /** serve's address. */
-  url: string
-  /** The gateway's address and service token. */
-  gatewayUrl: string
-  gatewayToken: string
-  /** The headers a login proxy adds for a member on the site's host name (or the console's), for a document. */
-  as(email: string, host?: 'site' | 'console', extra?: Record<string, string>): Record<string, string>
-  stop(): Promise<void>
-}
-
-/**
- * SHARED mode on this machine: `presmium agent-host`, `presmium gateway` (with `gatewayEnv` and its
- * operator directory) and `presmium serve` with a login proxy's shared secret, each a process of its
- * own with its own token; serve's environment has no speech variable.
- */
-export async function shared(dir: string, operatorDir: string, gatewayEnv: Record<string, string>): Promise<Shared> {
-  const id = Math.random().toString(36).slice(2, 10)
-  const proxySecret = `proxy-${id}`
-  const gatewayToken = `gateway-${id}`
-  const agentHostToken = `agent-host-${id}`
-  const agentHost = presmiumProcess(dir, ['agent-host', '--port', '0'], cleanEnv({ PRESMIUM_AGENT_HOST_TOKEN: agentHostToken }))
-  const gateway = presmiumProcess(dir, ['gateway', '--port', '0', '--operator-dir', operatorDir], cleanEnv({ PRESMIUM_GATEWAY_TOKEN: gatewayToken, ...gatewayEnv }))
-  const [agentHostUrl, gatewayUrl] = await Promise.all([
-    waitFor(agentHost, /^agent-host {2}(http\S+)$/m).then(m => m[1]!),
-    waitFor(gateway, /^gateway {2}(http\S+)$/m).then(m => m[1]!),
-  ])
-  const serve = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({
-    PRESMIUM_PROXY_SECRET: proxySecret,
-    PRESMIUM_GATEWAY_URL: gatewayUrl,
-    PRESMIUM_GATEWAY_TOKEN: gatewayToken,
-    PRESMIUM_AGENT_HOST_URL: agentHostUrl,
-    PRESMIUM_AGENT_HOST_TOKEN: agentHostToken,
-    PRESMIUM_CONSOLE_HOST: 'console.test',
-  }))
-  const url = (await waitFor(serve, /^serve {2}(http\S+)$/m))[1]!
-  const port = new URL(url).port
-  return {
-    serve,
-    gateway,
-    agentHost,
-    url,
-    gatewayUrl,
-    gatewayToken,
-    as: (email, host = 'site', extra = {}) => ({ 'Host': `${host}.test:${port}`, 'X-Presmium-Proxy-Secret': proxySecret, 'X-Forwarded-Email': email, ...extra }),
-    async stop() {
-      await serve.stop()
-      await Promise.all([gateway.stop(), agentHost.stop()])
-    },
-  }
 }

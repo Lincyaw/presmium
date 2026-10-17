@@ -1,7 +1,7 @@
 // Real processes for the tests of the workspace: workspaces made in examples/demo/.presmium (ignored
 // by git), where VitePress and the plugins resolve from the demo's node_modules, as git repositories of
-// their own; the `presmium` command run as an author runs it; requests with the headers a browser or a
-// login proxy would send.
+// their own; the `presmium` command run as an author runs it; requests with the headers a browser
+// would send.
 import { execFile, execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -23,7 +23,7 @@ export function git(dir: string, args: string[]): string {
 
 /**
  * A new workspace: the files of `from` (a fixture directory) copied in, packages of the repository
- * linked into its node_modules by name (installed at the workspace root, D14), committed as one
+ * linked into its node_modules by name (installed at the workspace root), committed as one
  * initial commit.
  */
 export function workspace(prefix: string, from: string, link: Record<string, string> = {}): string {
