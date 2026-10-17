@@ -5,7 +5,7 @@
  * few seconds, each written at its byte position (the WebM muxer writes its
  * header last), then sends the track.
  *
- *   GET  tracks                                the lectures: id, length, voice, language
+ *   GET  tracks                                the lectures: id, length, voice, language, number of utterances
  *   GET  tracks/<id>                           track.json; `script`, the synthesized lecture, made on an editor's demand
  *   GET  tracks/<id>/<audio|video>/<file>      a media file, with ranges (seeking)
  *   GET  tracks/<id>/clips/<key>.<wav|ogg>     a synthesized clip, from the synthesis cache
@@ -21,7 +21,7 @@
  * Editors also work on a recorded lecture's words (WP-83), each change
  * written to its track.json, which comes back:
  *
- *   GET  speech                                the engines: transcription and synthesis, with providers and voices
+ *   GET  speech[?engine=<id>]                  the engines: transcription and synthesis (the deck's, or <id>), with providers and voices
  *   POST editing/<id>/transcribe               its audio transcribed: utterances, events bound to words
  *   PUT  editing/<id>/utterances/<u> { text }  an utterance's text corrected (said again in a synthetic voice)
  *   POST editing/<id>/synthesize { voice, engine? }   every utterance said again in a voice
@@ -317,7 +317,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           return json([...synthetic, ...trackIds(deckDir).filter(id => !(voice && id === SCRIPT_TRACK)).flatMap((id) => {
             try {
               const { track } = readTrack(deckDir, id)!
-              return [{ id, lang: track.lang, voice: track.voice, duration: trackDuration(track) }]
+              return [{ id, lang: track.lang, voice: track.voice, duration: trackDuration(track), utterances: track.utterances.length }]
             } catch {
               return []
             }
@@ -346,11 +346,13 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
         },
       },
       'speech': {
-        async handle() {
+        async handle(request) {
           try {
             const service = speech()
             const doc = latestDoc(deckDir)
-            const [transcribe, synthesize] = await Promise.all([transcriptionEngine(service, doc), synthesisEngineOf(service, doc)])
+            // `?engine=`: the synthesis engine of a voice (a synthetic track's), with its provider as the operator names it now (N-08).
+            const engine = new URL(request.url).searchParams.get('engine') || undefined
+            const [transcribe, synthesize] = await Promise.all([transcriptionEngine(service, doc), synthesisEngineOf(service, doc, engine)])
             const voices = synthesize ? await service.voices(synthesize.id, doc?.meta.lang).catch(() => []) : []
             const info = (e: typeof transcribe) => e && { engine: e.id, provider: e.provider, local: e.local }
             return json({ transcribe: info(transcribe), synthesize: synthesize && { ...info(synthesize), voices } })

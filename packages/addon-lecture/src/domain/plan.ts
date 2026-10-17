@@ -71,7 +71,11 @@ export interface LecturePlan {
   problems: PlanProblem[]
 }
 
-/** A separate script's paragraphs, by section id (`renderers.lecture.script`). */
+/**
+ * A separate script's paragraphs, by section id (`renderers.lecture.script`):
+ * `source` is the section's heading; a paragraph with its unist `position`
+ * has its own lines there.
+ */
 export type ScriptSections = Map<string, { paragraphs: MdastNode[], source?: SourcePos }[]>
 
 /** Whether the lecture says a narration block: none limited to other forms. */
@@ -245,6 +249,14 @@ function narration(section: IRSection): { block: IRBlock, target?: IRBlock }[] {
   return list
 }
 
+/** A script paragraph's own lines in its file (its unist `position`), else the place of its section. */
+function linesOf(node: MdastNode, section: SourcePos | undefined): SourcePos | undefined {
+  const position = node.position as { start?: { line?: unknown }, end?: { line?: unknown } } | undefined
+  const line = position?.start?.line
+  const end = position?.end?.line
+  return section && typeof line === 'number' ? { file: section.file, line, ...typeof end === 'number' ? { endLine: end } : {} } : section
+}
+
 /** The visual block shown at a step: the last one that appears there or before. */
 function stepTarget(section: IRSection, step: number): IRBlock | undefined {
   return section.blocks.filter(b => b.role === 'visual' && shown(b) && b.at <= step).at(-1)
@@ -261,9 +273,10 @@ export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePl
     const paragraphs: PlannedParagraph[] = []
     const fromScript = script?.get(section.id)
     if (fromScript) {
-      fromScript.forEach(({ paragraphs: nodes, source }) => nodes.forEach((node, k) => {
+      fromScript.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
         const step = Math.min(k, section.steps)
         const spoken = spokenText(node)
+        const source = linesOf(node, heading)
         const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, script: true, problems })
         paragraphs.push({ step, pieces: pieces(spoken, cues), ...source ? { source } : {} })
       }))

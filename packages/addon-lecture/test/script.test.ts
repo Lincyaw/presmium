@@ -4,11 +4,16 @@
 // the synthesis cache and times the cues by the fake engine's word times (220 ms a CJK character, 80 ms
 // between words); a second build asks the engine nothing; without the cache and the engine the build fails
 // and `presmium check` names the paragraphs. A separate script (`renderers.lecture.script`) replaces the
-// narration of its sections in the lecture only. `presmium dev` makes the synthesized lecture on demand, and
-// an agent reads its plan with the tool `lecture_preview` (MCP).
+// narration of its sections in the lecture only, and the check names the line of its paragraph with a problem.
+// `{only} lecture` narration is said and not shown; an engine that gives no word times has the cues timed by a
+// transcript of each clip (kept beside it), or, without a transcription, by the number of characters (WP-84,
+// through a front of the fake engine). `presmium dev` makes the synthesized lecture on demand, and an agent
+// reads its plan with the tool `lecture_preview` (MCP).
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -205,7 +210,91 @@ describe('a separate lecture script (P-134)', () => {
     const page = readdirSync(join(dir, 'dist/web')).filter(file => file.endsWith('.html')).map(file => readFileSync(join(dir, 'dist/web', file), 'utf8')).join('\n')
     expect(page).toContain('合并之后词表变大')
     expect(page).not.toContain('脚本第一段')
+
+    // A problem of a paragraph of the script is reported at that paragraph's line, not at the section's heading.
+    writeFileSync(join(dir, 'lecture.script.md'), '(merge)=\n## 合并\n\n脚本第一段先看代码。\n\n脚本第二段再看\n{cue to=nope}`spot` 结果。\n')
+    const checked = await presmium(dir, ['check', '--json'], engine())
+    const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, message: string, source?: { file: string, line?: number } }[] }).findings
+    expect(findings.filter(f => f.message.includes('nope')).map(f => [f.checkId, f.source?.file.split('/').at(-1), f.source?.line])).toEqual([['presmium.lecture', 'lecture.script.md', 6]])
   }, 300_000)
+})
+
+/**
+ * A front of the fake engine: its synthesis answers lose their word times (an engine of the OpenAI shape gives
+ * none); with `transcribe` false, it refuses transcriptions too.
+ */
+async function wordless(state: { transcribe: boolean }): Promise<{ url: string, close(): Promise<void> }> {
+  const upstream = new URL(fake.url)
+  const server = createServer((req, res) => {
+    const chunks: Buffer[] = []
+    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    req.on('end', async () => {
+      const path = req.url ?? '/'
+      if (path.endsWith('/audio/transcriptions') && !state.transcribe) {
+        res.writeHead(503, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: { message: 'no transcription here' } }))
+        return
+      }
+      const headers: Record<string, string> = {}
+      for (const name of ['authorization', 'content-type']) if (typeof req.headers[name] === 'string') headers[name] = req.headers[name]
+      const response = await fetch(new URL(path, upstream), { method: req.method, headers, ...req.method === 'GET' ? {} : { body: Buffer.concat(chunks) } })
+      let body = Buffer.from(await response.arrayBuffer())
+      if (path.endsWith('/audio/speech/timestamps') && response.ok) {
+        const { words: _words, ...answer } = JSON.parse(body.toString('utf8')) as Record<string, unknown>
+        body = Buffer.from(JSON.stringify(answer))
+      }
+      res.writeHead(response.status, { 'Content-Type': response.headers.get('content-type') ?? 'application/octet-stream' })
+      res.end(body)
+    })
+  })
+  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
+  return {
+    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/v1`,
+    close: () => new Promise((done) => {
+      server.close(() => done())
+      server.closeAllConnections()
+    }),
+  }
+}
+
+describe('{only} lecture, and an engine without word times (P-134)', () => {
+  let dir: string
+  let front: Awaited<ReturnType<typeof wordless>>
+  const state = { transcribe: true }
+  beforeAll(async () => {
+    front = await wordless(state)
+    dir = deck(tmpdir(), VOICE, '我们先看 {cue to=code-1 lines=2-3}`spot` 这两行。\n\n:::{only} lecture\n只在讲授中说的一句。\n:::\n\n:::{only} web\n只在网页上显示的一句。\n:::')
+  })
+  afterAll(async () => {
+    await front?.close()
+    if (dir) rmSync(dir, { recursive: true, force: true })
+  })
+  const build = async () => {
+    const built = await presmium(dir, ['build', '--to', 'lecture'], { PRESMIUM_SPEECH_FAKE_URL: front.url, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake' })
+    expect(built.code, built.stdout + built.stderr).toBe(0)
+    return JSON.parse(readFileSync(join(dir, 'dist/lecture/script/track.json'), 'utf8')) as Track
+  }
+
+  it('says {only} lecture narration and not {only} web; times the cues by a transcript of each clip, kept beside it, else by the characters', async () => {
+    // The words of each clip come from its transcript, kept beside it in the synthesis cache.
+    const aligned = await build()
+    expect(aligned.utterances.map(u => [u.section, u.text])).toEqual([['intro', '我们先看合并。'], ['merge', '我们先看这两行。'], ['merge', '只在讲授中说的一句。']])
+    for (const u of aligned.utterances) {
+      expect(u.words).toEqual(fakeWords(u.text, u.t))
+      expect(existsSync(join(dir, '.presmium/speech', u.clip.replace(/\.wav$/, '.align.json')))).toBe(true)
+    }
+    const said = aligned.utterances[1]!
+    expect(aligned.events.find(([, type]) => type === 'spot')).toEqual([said.words![4]![0], 'spot', { block: 'merge/code-1', lines: '2-3', at: [said.id, 4] }])
+
+    // Without a transcription either: no words, and the cue at its share of the characters (这 is the fifth of eight).
+    rmSync(join(dir, '.presmium/speech'), { recursive: true, force: true })
+    state.transcribe = false
+    const estimated = await build()
+    const again = estimated.utterances[1]!
+    expect(estimated.utterances.every(u => u.words === undefined)).toBe(true)
+    expect(readdirSync(join(dir, '.presmium/speech')).filter(file => file.endsWith('.align.json'))).toEqual([])
+    expect(estimated.events.find(([, type]) => type === 'spot')).toEqual([again.t + Math.round(again.d * 4 / 8), 'spot', { block: 'merge/code-1', lines: '2-3', at: [again.id, 4] }])
+  }, 240_000)
 })
 
 describe('presmium dev', () => {

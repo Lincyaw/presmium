@@ -857,6 +857,8 @@ WP-84 同时处理 WP-83 在 `packages/addon-lecture` 中的遗留：读者经 `
 
 **验收**：`e2e/lecture-writeback.spec.ts`（测试 agent）：把一段带语音段的测试讲授轨交给“整理为讲解”，源码中对应章节的讲解变为整理后的文字，`{cue}` 出现在绑定的位置，形成一个提交，撤销后复原；“生成译文”后讲授轨的语音段带英文译文，可以导出英文字幕。
 
+**实际交付**：讲授插件（`packages/addon-lecture`）：`src/domain/writeback.ts`（由事件写回提示标记、逐字稿拼成的讲解草稿、一步讲解在源码中的位置、要翻译的语音段与摘要）；agent 工具 `track_narration`、`track_translations`（`src/node/tools.ts`，只读）；编辑模式中的“讲授回写”面板（`src/client/WritebackPanel.vue`、`writeback.ts`，由内核插件 `src/client/plugin.ts` 登记在工具栏）：列出录制的讲授，写明模型的服务提供方，“整理为讲解”提交 `transcript` 任务，“生成译文”（选语言）提交上下文为讲授轨文件的 `chat` 任务，显示进度、审阅（全部接受或全部拒绝）、提交与“撤销这次修改”（助手的 `revert` 路由）；格式与请求见 `ir.md` 9.5 节，`architecture.md` 4.9 节“实际交付（WP-84）”。WP-83 的遗留：`GET tracks` 每项带语音段的数目；`GET speech?engine=`，合成音色的讲授中改一句时写明运营者现在给这个引擎的服务提供方；读者在编辑者打开之前播放 `script` 时显示“还没有生成”的提示；单独脚本中的段落带自己的行，诊断指向它。用例：`e2e/lecture-writeback.spec.ts`（测试工作区 `e2e/fixtures/lecture-writeback/`，端口 5053；测试 agent 是讲授插件的 `test/fixtures/writeback-agent.mjs`，经 MCP 调用两个工具；另一例为改一句时的服务提供方）、`packages/addon-lecture/test/script.test.ts`（`{only} lecture`、转写对齐与按字数估算，经假引擎之前去掉逐字时间、拒绝转写的一层；单独脚本的诊断行）、`test/reader.test.ts`（SHARED 中读者经 `tracks/script`：编辑者之前 409 且不向引擎请求，之后得到编辑者让合成的讲授）。新增开发依赖：`@agentclientprotocol/sdk` 1.8.0（讲授插件的测试 agent，与助手同一版本）。与设计不同之处：译文的 `chat` 任务把讲授轨的文件写在上下文的 `selection` 中（助手把上下文只有文档的 `chat` 当作起草）。
+
 ### WP-86 课程站点（M9，P-78、P-79、P-123，P-122 增补）
 
 **归属**：`packages/web/**`、`packages/workspace/**`（`src/node/audience.ts` 除外，它在本波次属于 WP-87）、`packages/render-slides/src/**`、`packages/render-notebook/src/**`、`packages/compiler/src/renderers.ts`、`packages/compiler/src/translations.ts`（WP-73a 建立并由 `compiler.ts` 调用；本工作包在其中加入译本的编译与过期检查，不改 `compiler.ts`，它在本波次属于 WP-87）、`e2e/site.spec.ts`、`e2e/fixtures/site/**`。

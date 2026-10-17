@@ -435,6 +435,9 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
+      '@agentclientprotocol/sdk':
+        specifier: 1.8.0
+        version: 1.8.0(zod@4.6.7)
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
