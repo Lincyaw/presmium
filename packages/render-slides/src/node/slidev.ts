@@ -11,17 +11,18 @@
  * open the file in a tab of its own.
  */
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, realpathSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, languageId, lowerMyst, nodeMdast, withProp } from '@presmium/kernel'
-import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, escapeHtml, languageId, lowerMyst, nodeMdast, publishedUrl, withProp } from '@presmium/kernel'
+import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, LocalAsset, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@presmium/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { gfmFromMarkdown } from 'mdast-util-gfm'
 import { gfm } from 'micromark-extension-gfm'
 import { originParts, outputNotes } from '@presmium/viewer/domain'
 import type { OriginPart } from '@presmium/viewer/domain'
 import { stringify } from 'yaml'
-import { codeLang, escapeHtml, mapHtmlUrls, markdown } from './markdown.ts'
+import { sanitizedHtml } from './html.ts'
+import { codeLang, markdown } from './markdown.ts'
 
 /** What the generated deck says itself, in the deck's language; the origin bar of code says what the web form's does (`@presmium/viewer/domain`). */
 const MESSAGES = {
@@ -38,8 +39,8 @@ type Messages = (typeof MESSAGES)[Locale]
 /** The generated deck: its Markdown and the local files it publishes, by published name. */
 export interface SlidevDeck {
   markdown: string
-  /** Published name (`<hash>-<name>`, at the root of the site) -> absolute path of the file. */
-  assets: Map<string, string>
+  /** Published name (`<hash>-<name>`, at the root of the site) -> the file (`RenderContext.localAsset`). */
+  assets: Map<string, LocalAsset>
 }
 
 /** One generation of the deck. */
@@ -50,13 +51,15 @@ interface Generation {
   /** The deck's UI language. */
   locale: Locale
   t: Messages
-  assets: Map<string, string>
+  assets: Map<string, LocalAsset>
   /** URLs of the published files that links point to. */
   files: Set<string>
   /** The slide route of a label in the deck, for links to it. */
   links: (label: string) => string | undefined
   /** The id of the section being written. */
   section: string
+  /** Whether code that runs live runs in the slides (`renderers.slides.liveCode`, default true). */
+  live: boolean
 }
 
 /**
@@ -71,8 +74,12 @@ export function deckLang(doc: IRDocument): string {
   return typeof doc.meta.lang === 'string' && doc.meta.lang ? doc.meta.lang : DEFAULT_LANG
 }
 
-/** Keys of `renderers.slides` that configure the renderer rather than the Slidev headmatter. */
-const RENDERER_KEYS = new Set(['package', 'base', 'port'])
+/**
+ * Keys of `renderers.slides` that configure the renderer rather than the
+ * Slidev headmatter. `liveCode: false` writes code that runs live as static
+ * code with its recorded output, as an export shows it (`presmium-export`).
+ */
+const RENDERER_KEYS = new Set(['package', 'base', 'port', 'liveCode'])
 
 /** Package of the web renderer, unless `renderers.web.package` names another. */
 const WEB_PACKAGE = '@presmium/web'
@@ -80,7 +87,7 @@ const WEB_PACKAGE = '@presmium/web'
 /** `dir` is the directory of the generated deck. */
 export function slidevMarkdown(doc: IRDocument, ctx: RenderContext, dir: string): SlidevDeck {
   const locale = deckLocale(ctx.lang ?? deckLang(doc))
-  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc), section: '' }
+  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc), section: '', live: ctx.config.liveCode !== false }
   const markdown = doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, generation) : {}, generation)).join('\n')
   return { markdown, assets: generation.assets }
 }
@@ -133,7 +140,7 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     theme: local(theme),
     title: doc.meta.title,
     favicon: FAVICON,
-    ...typesSource(doc, gen.dir),
+    ...typesSource(doc, gen),
     ...slidev,
     htmlAttrs: { lang: deckLang(doc), ...typeof htmlAttrs === 'object' ? htmlAttrs : {} },
     addons: [...new Set(listed.filter((name): name is string => typeof name === 'string').map(name => addonPath(name, gen)))],
@@ -144,7 +151,7 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     ...ctx.server ? { presmiumServer: true } : {},
     // The named environments, for addon-core to give the kernel (`HostStart.environments`).
     ...doc.config.execute?.environments ? { presmiumEnvironments: ctx.portable(doc.config.execute.environments, gen.dir) } : {},
-    ...runnerOptions(doc),
+    ...runnerOptions(doc, gen),
   }
 }
 
@@ -252,25 +259,19 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
  * published with the slides.
  */
 function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes = false): string {
-  // Vue resolves `src` and `poster` of a slide as it resolves an image's; an `href` is a link.
-  const published = block ? rawHtml(tree, (url, attribute) => asset(url, block, gen, attribute === 'href' ? 'link' : 'image', notes)) : tree
-  const { mdast } = lowerMyst(buttons(verbatim(published)), {
+  const { mdast } = lowerMyst(buttons(verbatim(tree)), {
     footnotes: 'gfm',
     iframes: 'element',
     // Cards, grids and tabs as HTML elements, laid out by the deck's styles (../deck/style.css).
     cards: 'element',
     links: notes ? undefined : gen.links,
     urls: block ? (url, type) => asset(url, block, gen, type, notes) : undefined,
+    // Raw HTML's too (docs/ir.md 6.2): Vue resolves `src` and `poster` of a slide as an image's; an `href` is a link.
+    htmlUrls: true,
     // The presenter sees where a role without children stands, e.g. a cue (docs/ir.md 2.8).
     roles: notes ? 'marks' : 'children',
   })
   return markdown(slidevNodes(mdast, gen))
-}
-
-/** Raw HTML with the local files its `src`, `poster` and `href` name published (docs/ir.md 6.2). */
-function rawHtml(node: MdastNode, map: (url: string, attribute: string) => string | undefined): MdastNode {
-  if (node.type === 'html' && typeof node.value === 'string') return { ...node, value: mapHtmlUrls(node.value, map) }
-  return node.children ? { ...node, children: node.children.map(child => rawHtml(child, map)) } : node
 }
 
 /** Slidev compiles slides as Vue templates: text with `{{` must not become an interpolation, nor its `$` math. */
@@ -330,12 +331,10 @@ function slidevNodes(node: MdastNode, gen: Generation): MdastNode {
 function asset(url: string, block: IRBlock, gen: Generation, type: LinkedType | 'prop', notes = false): string | undefined {
   const found = gen.ctx.localAsset(block.source, url)
   if (!found) return undefined
-  gen.assets.set(found.name, found.file)
+  gen.assets.set(found.name, found)
   // A directory opens at its file listing (docs/ir.md 6.2).
-  const listing = statSync(found.file).isDirectory() ? '/index.html' : ''
-  const path = `${encodeURIComponent(found.name)}${listing}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
-  if (type === 'image' && !notes) return `/${path}`
-  const published = `${gen.ctx.base}${path}`
+  if (type === 'image' && !notes) return publishedUrl(found, url, { prefix: '/' })
+  const published = publishedUrl(found, url, { prefix: gen.ctx.base })
   if (type === 'link') gen.files.add(published)
   return published
 }
@@ -435,7 +434,7 @@ function imageUrl(type: string, base64: string, gen: Generation): string {
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, data)
   }
-  gen.assets.set(name, file)
+  gen.assets.set(name, { file, name })
   return `${gen.ctx.base}${name}`
 }
 
@@ -447,8 +446,10 @@ function markdownOutput(text: string, block: IRBlock, gen: Generation): string {
 
 /**
  * A rich output in the slide (docs/ir.md 6.1): an image (`<img>`), Markdown
- * as Markdown, HTML in a sandboxed iframe without scripts, LaTeX as math,
- * other types and the streams as text.
+ * as Markdown, HTML sanitized as the web form does (./html.ts) and shown in
+ * the slide with the deck's styles, so it shows whole and in exports (one
+ * HTML block, which Vue does not compile: `v-pre`), LaTeX as math, other
+ * types and the streams as text.
  */
 function richOutput(output: RunOutput, block: IRBlock, gen: Generation): string {
   if (output.output_type === 'stream') return fence('text', plain(joined(output.text)).replace(/\n$/, ''), '')
@@ -458,7 +459,7 @@ function richOutput(output: RunOutput, block: IRBlock, gen: Generation): string 
   if (image) return `<img class="pm-output__image" alt="" src="${escapeHtml(imageUrl(image, joined(data[image]).replace(/\s/g, ''), gen))}">`
   if (data['image/svg+xml'] !== undefined) return `<img class="pm-output__image" alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(joined(data['image/svg+xml']))}">`
   if (data['text/markdown'] !== undefined) return markdownOutput(joined(data['text/markdown']), block, gen)
-  if (data['text/html'] !== undefined) return `<iframe class="pm-output__html" sandbox="" srcdoc="${escapeHtml(joined(data['text/html'])).replace(/\n/g, '&#10;')}"></iframe>`
+  if (data['text/html'] !== undefined) return `<div class="pm-output__html" v-pre>${sanitizedHtml(joined(data['text/html'])).replace(/\n\s*\n/g, '\n')}</div>`
   if (data['text/latex'] !== undefined) return `$$\n${joined(data['text/latex']).trim().replace(/^\$\$?|\$\$?$/g, '')}\n$$`
   const text = data['text/plain'] ?? data['application/json']
   return text === undefined ? '' : fence('text', plain(joined(text)).replace(/\n$/, ''), '')
@@ -483,9 +484,9 @@ function output(run: RunResult, block: IRBlock, gen: Generation, prose = false):
 /** The key of a block's runner options in the headmatter. */
 const runnerKey = (section: string, block: string) => `${section}/${block}`
 
-/** Whether code runs in the slides' Monaco Runner (`monacoRun`). */
-function runsLive(node: CodeNode): boolean {
-  return Boolean(node.run && node.run.when !== 'compile' && node.echo !== false && !node.variants?.length && !node.highlight?.length && runnerLang(node.lang))
+/** Whether code runs in the slides' Monaco Runner (`monacoRun`); an export's deck runs none (`renderers.slides.liveCode: false`). */
+function runsLive(node: CodeNode, gen: Generation): boolean {
+  return Boolean(gen.live && node.run && node.run.when !== 'compile' && node.echo !== false && !node.variants?.length && !node.highlight?.length && runnerLang(node.lang))
 }
 
 /** The packages a module imports by name (`import … from`, `export … from`, `import '…'`, `import('…')`), without their subpaths. */
@@ -504,26 +505,53 @@ function importedPackages(code: string): string[] {
  * written with `monacoTypesSource: none`: the editor has no types, the code
  * runs as before. `renderers.slides.monacoTypesSource` overrides it.
  */
-function typesSource(doc: IRDocument, dir: string): Record<string, unknown> {
+function typesSource(doc: IRDocument, gen: Generation): Record<string, unknown> {
   const scripts = doc.sections.flatMap(section => section.blocks).map(block => block.node)
-    .filter((node): node is CodeNode => node.type === 'code' && runsLive(node) && ['javascript', 'typescript'].includes(runnerLang(node.lang)!))
-  return scripts.some(node => importedPackages(node.value).some(name => !packageDir(name, dir))) ? { monacoTypesSource: 'none' } : {}
+    .filter((node): node is CodeNode => node.type === 'code' && runsLive(node, gen) && ['javascript', 'typescript'].includes(runnerLang(node.lang)!))
+  return scripts.some(node => importedPackages(node.value).some(name => !packageDir(name, gen.dir))) ? { monacoTypesSource: 'none' } : {}
 }
 
 /**
- * The runner options of the code that runs live with an executor or a
- * session, in the headmatter (`presmiumRuns`, by section and block): Slidev
- * reads a code block's props up to the first `}`, so they cannot be written
- * on the fence; the fence refers to them through `$slidev.configs`.
+ * A recording as the execution plugin's runner shows it (`recording` of the
+ * runner's options): what the run printed and its rich outputs, a large
+ * image published as a file and shown by its URL.
  */
-function runnerOptions(doc: IRDocument): Record<string, unknown> {
+function runnerRecording(run: RunResult, gen: Generation): Record<string, unknown> {
+  const outputs = run.outputs?.map((output): RunOutput => {
+    if (output.output_type !== 'display_data' && output.output_type !== 'execute_result') return output
+    const image = Object.keys(IMAGE_TYPES).find(type => output.data[type] !== undefined)
+    const base64 = image && joined(output.data[image]).replace(/\s/g, '')
+    if (!image || !base64 || base64.length <= INLINE_IMAGE) return output
+    return { ...output, data: { 'text/html': `<img class="pm-run-image" alt="" src="${escapeHtml(imageUrl(image, base64, gen))}">` } }
+  })
+  return { ok: run.ok, stdout: run.stdout, stderr: run.stderr, ...outputs ? { outputs } : {} }
+}
+
+/**
+ * The runner options of the code that runs live, in the headmatter
+ * (`presmiumRuns`, by section and block): its key, executor, session and
+ * timeout, and the output recorded at compile time, which the runner shows
+ * until the code is run. Slidev reads a code block's props up to the first
+ * `}`, so they cannot be written on the fence; the fence refers to them
+ * through `$slidev.configs`, an object that stays the same while the slide
+ * shows (the runner tells its first call by it).
+ */
+function runnerOptions(doc: IRDocument, gen: Generation): Record<string, unknown> {
   const runs: Record<string, Record<string, unknown>> = {}
   for (const section of doc.sections) {
     for (const block of section.blocks) {
       const { node } = block
-      if (node.type !== 'code' || !runsLive(node)) continue
+      if (node.type !== 'code' || !runsLive(node, gen)) continue
       const { executor, session, timeoutMs } = node.run!
-      if (executor || session || timeoutMs) runs[runnerKey(section.id, block.id)] = { ...executor ? { executor } : {}, ...session ? { session } : {}, ...timeoutMs ? { timeout: timeoutMs } : {} }
+      const recording = node.outputs?.at(-1)
+      const key = runnerKey(section.id, block.id)
+      runs[key] = {
+        block: key,
+        ...executor ? { executor } : {},
+        ...session ? { session } : {},
+        ...timeoutMs ? { timeout: timeoutMs } : {},
+        ...recording ? { recording: runnerRecording(recording, gen) } : {},
+      }
     }
   }
   return Object.keys(runs).length ? { presmiumRuns: runs } : {}
@@ -532,14 +560,14 @@ function runnerOptions(doc: IRDocument): Record<string, unknown> {
 /**
  * Code that also runs live (`:run: live` or `both`), as Slidev's Monaco
  * Runner: the execution plugin's code runners run it with the executor of
- * its environment and its session (`runnerOptions`); the recorded output
- * shows below it (docs/architecture.md 9.2). It runs on request, not when
- * the slide shows.
+ * its environment and its session (`runnerOptions`). Its output area is the
+ * code's one output: the runner is called once when the slide loads
+ * (`autorun: 'once'`), which shows the recorded output (docs/architecture.md
+ * 9.2); the code runs on request, not when the slide shows.
  */
 function monacoRun(node: CodeNode, block: IRBlock, gen: Generation): string {
-  const run = node.run!
-  const options = run.executor || run.session || run.timeoutMs ? `,runnerOptions:$slidev.configs.presmiumRuns['${runnerKey(gen.section, block.id).replace(/['\\]/g, '\\$&')}']` : ''
-  return fence(runnerLang(node.lang)!, node.value, ` {monaco-run} {autorun:false,height:'auto'${options}}`)
+  const options = `runnerOptions:$slidev.configs.presmiumRuns['${runnerKey(gen.section, block.id).replace(/['\\]/g, '\\$&')}']`
+  return fence(runnerLang(node.lang)!, node.value, ` {monaco-run} {autorun:'once',height:'auto',${options}}`)
 }
 
 /**
@@ -557,8 +585,9 @@ function code(node: CodeNode, block: IRBlock, gen: Generation, owned: boolean): 
     const runs = node.outputs ?? []
     const prose = runs.length > 0 && runs.every(r => r.outputs?.length && r.outputs.every(o => o.output_type !== 'stream' && o.output_type !== 'error' && o.data['text/markdown'] !== undefined))
     return runs.map(run => output(run, block, gen, prose)).filter(Boolean).join('\n\n')
-  } else if (!owned && runsLive(node)) {
-    out = monacoRun(node, block, gen)
+  } else if (!owned && runsLive(node, gen)) {
+    // The runner's output area shows the recorded output.
+    return [originBar(node, at, gen.locale), monacoRun(node, block, gen)].filter(Boolean).join('\n\n')
   } else if (node.variants?.length) {
     const steps = node.variants.map((variant, k) => {
       const lines = node.highlight?.[k]

@@ -86,9 +86,10 @@ export async function exportDeck(job: ExportJob): Promise<ExportResult> {
  * whatever the range (its print page reads the range before the route has
  * it); the pages of the other slides are removed. The slide of each page
  * follows from the slides view: the slides shown (not hidden or disabled),
- * one page each, or with clicks one page per step. Returns a warning when the
- * PDF does not have those pages (a component shows its static fallback in an
- * export, without its own steps).
+ * one page each, or with clicks one page per step. A PDF that does not have
+ * those pages fails the export (a slide that does not fit its page, a
+ * component's steps the export did not show), rather than a range that
+ * keeps other slides passing for it.
  */
 async function checkPages(file: string, compilation: Compilation, range: Set<number> | undefined, withClicks: boolean, wait: number): Promise<string[]> {
   const pages = (await pdfLinks(file)).length
@@ -100,7 +101,7 @@ async function checkPages(file: string, compilation: Compilation, range: Set<num
     .flatMap((section, i) => Array.from({ length: withClicks ? section.steps + 1 : 1 }, () => i + 1))
   const kept = steps.filter(slide => range.has(slide)).length
   if (pages === steps.length && kept < pages) await keepPages(file, i => range.has(steps[i]!))
-  else if (pages !== kept) return [`the PDF has ${pages} pages where the range has ${kept}; it is left as Slidev exported it`]
+  else if (pages !== kept) throw new Error(`the PDF has ${pages} pages where the range has ${kept} (${steps.length} for the whole deck); it cannot be cut to the range`)
   return []
 }
 

@@ -1,3 +1,5 @@
 export { CONTRAST_ATTRIBUTE, initHighContrast, useHighContrast } from './contrast.ts'
 export type { HighContrast } from './contrast.ts'
+export { offlineRuntimes, saveOffline } from './offline.ts'
+export type { OfflineRuntimes } from './offline.ts'
 export { publishPlugin } from './plugin.ts'

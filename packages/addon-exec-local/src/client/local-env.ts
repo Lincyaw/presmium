@@ -1,18 +1,20 @@
+import { useServer } from '@presmium/host'
 import { errorMessage, languageId } from '@presmium/kernel'
 import type { Executor, RunRequest, RunResult } from '@presmium/kernel'
-import { CONTAINER_EXECUTOR_ID, disconnected, ENDPOINT, failedContainerRun } from '../domain/index.ts'
-import type { CommitRequest, CommitResult, LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domain/index.ts'
-import { language, messages } from './messages.ts'
+import { CONTAINER_EXECUTOR_ID, disconnected, EXEC_LOCAL_ID, failedContainerRun } from '../domain/index.ts'
+import type { LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domain/index.ts'
+import { messages } from './messages.ts'
 
 export interface LocalEnv extends LocalEnvService {
   /** The container executor (P-22) for the `executor` router. */
   readonly executor: Executor
 }
 
+/** A POST to a route of the plugin (`useServer().fetch` sends the page's language); its error as an exception. */
 async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
-  const res = await fetch(`${ENDPOINT}/${path}`, {
+  const res = await useServer().fetch(EXEC_LOCAL_ID, path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'accept-language': language() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
     signal,
   })
@@ -24,19 +26,19 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
 }
 
 async function probe(): Promise<LocalEnvStatus> {
-  // Built decks and the web form have no dev server behind them.
-  if (!import.meta.env.DEV) return disconnected('devServerOnly')
+  // A static build has no Presmium server behind it.
+  if (!useServer().available) return disconnected('devServerOnly')
   try {
-    const res = await fetch(`${ENDPOINT}/status`)
+    const res = await useServer().fetch(EXEC_LOCAL_ID, 'status')
+    if (res.status === 403) return disconnected('notAllowed')
     if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return disconnected('noEndpoints')
     return await res.json() as LocalEnvStatus
-  }
-  catch {
+  } catch {
     return disconnected('unreachable')
   }
 }
 
-/** Client of the dev-server endpoints (see src/node/server.ts). */
+/** Client of the plugin's routes (see src/node/server.ts). */
 export function createLocalEnv(): LocalEnv {
   let status: Promise<LocalEnvStatus> | undefined
   let languages: string[] = []
@@ -51,13 +53,9 @@ export function createLocalEnv(): LocalEnv {
     async run(request: RunRequest, signal?: AbortSignal): Promise<RunResult> {
       try {
         return await (await post('run', request, signal)).json() as RunResult
-      }
-      catch (error) {
+      } catch (error) {
         return failedContainerRun(errorMessage(error))
       }
-    },
-    async commit(request: CommitRequest): Promise<CommitResult> {
-      return await (await post('commit', request)).json() as CommitResult
     },
     async replicate(request: ReplicateRequest): Promise<Blob> {
       return (await post('replicate', request)).blob()

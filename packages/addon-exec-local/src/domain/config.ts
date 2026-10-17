@@ -5,8 +5,8 @@ export const EXEC_LOCAL_ID = 'presmium.execLocal'
 
 export interface ExecLocalConfig {
   /**
-   * Folder that holds the devcontainer definition and the edited files, relative
-   * to the deck directory. Defaults to the git root of the deck.
+   * Folder that holds the devcontainer definition and the snippets' files,
+   * relative to the deck directory. Defaults to the workspace root.
    */
   workspace?: string
   /** Executor router priority of the container executor; higher wins over the browser executor. */
@@ -29,14 +29,4 @@ export function execLocalConfig(options: unknown): ExecLocalConfig {
     priority: typeof config.priority === 'number' ? config.priority : DEFAULT_PRIORITY,
     buildTimeoutMs: typeof buildTimeoutMs === 'number' && buildTimeoutMs > 0 ? buildTimeoutMs : DEFAULT_BUILD_TIMEOUT_MS,
   }
-}
-
-/**
- * The deck's local-environment options: the headmatter wins, otherwise the first
- * page frontmatter that sets them (a page may own the local-environment demo).
- */
-export function deckExecLocalConfig(headmatter: unknown, frontmatters: unknown[]): ExecLocalConfig {
-  const own = (matter: unknown) => isRecord(matter) && isRecord(matter.presmium) ? matter.presmium[EXEC_LOCAL_ID] : undefined
-  const found = [headmatter, ...frontmatters].map(own).find(isRecord)
-  return execLocalConfig(found)
 }

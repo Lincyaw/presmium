@@ -1,10 +1,13 @@
 // Builds a MyST test deck that lives in a fresh git repository with a devcontainer definition
 // (`presmium build --to slides`), then starts the real `presmium dev` servers on it. Checks what
-// the compiler records (container output, environment archive) and what the dev-server endpoints
-// answer. Container cases are skipped (and reported as skipped) when no Docker daemon is available.
+// the compiler records (container output, environment archive) and what the plugin's routes answer
+// (`/__presmium/presmium.execLocal/`; runs are allowed with `--allow operate`); that the write-back is
+// gone (D-2); and, in `presmium serve` with a login proxy, that a reader may not run code. Container
+// cases are skipped (and reported as skipped) when no Docker daemon is available.
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { request as httpRequest } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,10 +24,13 @@ const FIXTURE = join(PACKAGE, 'test/fixtures/repo')
 // container sees it as /workspaces/repo.
 const SCRATCH = mkdtempSync(join(tmpdir(), 'presmium-local-env-'))
 const REPO = join(SCRATCH, 'repo')
+// The temporary directory of the dev servers, where a run makes its directory.
+const TMP = join(SCRATCH, 'tmp')
 const DEFINITION = readFileSync(join(FIXTURE, '.devcontainer/devcontainer.json'), 'utf8')
-// Ports of WP-70d's range (docs: E2E ports); the dev servers of this file only.
-const SLIDES_PORT = 4743
-const WEB_PORT = 4744
+// Ports of WP-89e's range; the dev servers of this file only.
+const SLIDES_PORT = 5333
+const WEB_PORT = 5334
+const ROUTES = '/__presmium/presmium.execLocal'
 // Each run starts in a directory of its own; the workspace is read-only, its modules importable.
 const PYTHON_INFO = 'import os, sys\nprint(os.getcwd(), sys.version_info[:2])\nfrom src.greet import greet\nprint(greet("容器"))'
 const PYTHON_OUTPUT = '/presmium-run (3, 12)\n你好，Presmium\n你好，容器\n'
@@ -42,10 +48,10 @@ function git(...args: string[]): string {
 const servers: ChildProcess[] = []
 let ir: IRDocument
 
-/** `presmium dev --to <form>` on the test deck, resolved with the URL of its server. */
+/** `presmium dev --to <form>` on the test deck, runs allowed, resolved with the URL of its server. */
 function startDev(form: string): Promise<string> {
   const { NODE_ENV: _test, ...env } = process.env
-  const server = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', form], { cwd: REPO, env, stdio: 'pipe' })
+  const server = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', form, '--allow', 'operate'], { cwd: REPO, env: { ...env, TMPDIR: TMP }, stdio: 'pipe' })
   servers.push(server)
   return new Promise((resolve, reject) => {
     let log = ''
@@ -60,7 +66,7 @@ function startDev(form: string): Promise<string> {
   })
 }
 
-const post = (base: string, path: string, body: unknown, language?: string) => fetch(`${base}/__presmium/exec-local/${path}`, {
+const post = (base: string, path: string, body: unknown, language?: string) => fetch(`${base}${ROUTES}/${path}`, {
   method: 'POST',
   headers: { 'content-type': 'application/json', ...language ? { 'accept-language': language } : {} },
   body: JSON.stringify(body),
@@ -78,6 +84,7 @@ function archived(zip: Uint8Array): Record<string, string> {
 let slides = ''
 
 beforeAll(async () => {
+  mkdirSync(TMP)
   cpSync(FIXTURE, REPO, { recursive: true })
   const deck = join(REPO, 'lecture.md')
   writeFileSync(deck, readFileSync(deck, 'utf8')
@@ -144,13 +151,13 @@ describe('container executor (P-22)', () => {
   }, 180_000)
 
   it.skipIf(!docker)('is served by `presmium dev --to slides` (R-25)', async () => {
-    expect(await (await fetch(`${slides}/__presmium/exec-local/status`)).json()).toMatchObject({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json', git: true, languages: ['python'] })
+    expect(await (await fetch(`${slides}${ROUTES}/status`)).json()).toEqual({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json', languages: ['python'] })
     expect(await (await post(slides, 'run', { lang: 'python', code: PYTHON_INFO })).json()).toMatchObject({ ok: true, exitCode: 0, timedOut: false, stdout: PYTHON_OUTPUT })
   }, 180_000)
 
   it.skipIf(!docker)('is served by `presmium dev --to web` (R-25)', async () => {
     const web = await startDev('web')
-    expect(await (await fetch(`${web}/__presmium/exec-local/status`)).json()).toMatchObject({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json' })
+    expect(await (await fetch(`${web}${ROUTES}/status`)).json()).toMatchObject({ connected: true, docker: true, devcontainer: '.devcontainer/devcontainer.json' })
     expect(await (await post(web, 'run', { lang: 'python', code: PYTHON_INFO })).json()).toMatchObject({ ok: true, stdout: PYTHON_OUTPUT })
   }, 300_000)
 
@@ -192,15 +199,48 @@ describe('workspace (K-13, R-100)', () => {
     expect((JSON.parse(stdout) as { findings: unknown[] }).findings).toContainEqual(expect.objectContaining({
       checkId: 'presmium.execLocal.workspace',
       severity: 'error',
-      message: '{local-env} names the workspace other, but the deck\'s workspace is .: the snippet would run and be committed in .',
+      message: '{local-env} names the workspace other, but the deck\'s workspace is .: the snippet would run in .',
       source: { file: join(dir, 'lecture.md'), line: 14 },
     }))
   })
 })
 
+describe('the run directory (N-08)', () => {
+  it.skipIf(!docker)('lies in a private directory of the server\'s user while the code runs, and the request\'s files cannot take the place of the runner\'s input', async () => {
+    const running = post(slides, 'run', { lang: 'python', code: 'import time\ntime.sleep(4)\nprint("slept")' })
+    let modes: string[] = []
+    for (let i = 0; i < 200 && modes.length === 0; i++) {
+      await new Promise(done => setTimeout(done, 50))
+      modes = readdirSync(TMP).filter(name => name.startsWith('presmium-container-'))
+        .map(name => `${(statSync(join(TMP, name)).mode & 0o777).toString(8)} ${(statSync(join(TMP, name, 'run')).mode & 0o777).toString(8)}`)
+    }
+    expect(modes).toEqual(['700 777'])
+    expect(await (await running).json()).toMatchObject({ ok: true, stdout: 'slept\n' })
+    expect(readdirSync(TMP).filter(name => name.startsWith('presmium-container-'))).toEqual([])
+
+    // Nothing else can place a name in the run directory before the runner's input: it is created in the
+    // private directory above and written at once. The request's own file of that name stands for a link
+    // placed there in advance; the exclusive create refuses either.
+    const taken = await (await post(slides, 'run', { lang: 'python', code: 'print("never")', files: { '.presmium/request.json': '{"runs": []}' } })).json()
+    expect(taken).toMatchObject({ ok: false, exitCode: null, stdout: '' })
+    expect(taken.stderr).toContain('EEXIST')
+  }, 180_000)
+})
+
+describe('write-back (K-09, D-2)', () => {
+  it('is gone: no commit route, here or where the dev-server endpoints were; a request from another site is refused', async () => {
+    for (const path of [`${ROUTES}/commit`, '/__presmium/exec-local/commit']) {
+      const res = await fetch(`${slides}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ file: 'src/greet.py', content: 'print(1)\n' }) })
+      expect(res.status, path).toBe(404)
+    }
+    const foreign = await fetch(`${slides}${ROUTES}/status`, { headers: { 'Origin': 'https://attacker.example', 'Sec-Fetch-Site': 'cross-site' } })
+    expect(foreign.status).toBe(403)
+  })
+})
+
 describe('dev server (N-07)', () => {
   it('answers in the language the page asks for', async () => {
-    const ask = (language: string) => fetch(`${slides}/__presmium/exec-local/replicate`, {
+    const ask = (language: string) => fetch(`${slides}${ROUTES}/replicate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'accept-language': language },
       body: JSON.stringify({ file: '../outside.py', content: '' }),
@@ -233,4 +273,87 @@ describe('environment replicate (P-26)', () => {
     expect(served['README.md']).toMatch(/^# Environment exported by Presmium\n/)
     expect(served['.devcontainer/devcontainer.json']).toBe(DEFINITION)
   })
+})
+
+/** A request through the login proxy of a shared deployment: the Host, the proxy's secret and the member's email. */
+function proxied(url: string, headers: Record<string, string>, body?: unknown): Promise<{ status: number, text: string }> {
+  return new Promise((resolve, reject) => {
+    const data = body === undefined ? undefined : JSON.stringify(body)
+    const req = httpRequest(url, { method: data === undefined ? 'GET' : 'POST', headers: { ...headers, ...data === undefined ? {} : { 'Content-Type': 'application/json' } }, setHost: false }, (res) => {
+      let text = ''
+      res.setEncoding('utf8')
+      res.on('data', (chunk: string) => text += chunk)
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, text }))
+    })
+    req.on('error', reject)
+    if (data !== undefined) req.write(data)
+    req.end()
+  })
+}
+
+describe('presmium serve with a login proxy (SHARED)', () => {
+  const started: ChildProcess[] = []
+  let workspace = ''
+  let site = ''
+  const secret = `proxy-${Math.random().toString(36).slice(2)}`
+
+  /** A `presmium` process of the deployment, resolved with the address it prints. */
+  function deployment(args: string[], pattern: RegExp, env: Record<string, string>): Promise<string> {
+    const { NODE_ENV: _test, ...own } = process.env
+    const clean = Object.fromEntries(Object.entries(own).filter(([name]) => !name.startsWith('PRESMIUM_') && !/KEY|TOKEN|SECRET/.test(name)))
+    const child = spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd: workspace, env: { ...clean, ...env }, stdio: 'pipe' })
+    started.push(child)
+    return new Promise((resolve, reject) => {
+      let log = ''
+      const onData = (chunk: Buffer) => {
+        log += chunk.toString()
+        const url = pattern.exec(log)?.[1]
+        if (url) resolve(url)
+      }
+      child.stdout?.on('data', onData)
+      child.stderr?.on('data', onData)
+      child.on('exit', code => reject(new Error(`presmium ${args[0]} exited with ${code}:\n${log}`)))
+    })
+  }
+
+  beforeAll(async () => {
+    // A workspace of one document that lists the plugin, which the operator lists (SHARED loads no other).
+    workspace = mkdtempSync(join(SCRATCH, 'workspace-'))
+    mkdirSync(join(workspace, 'intro'))
+    mkdirSync(join(workspace, 'node_modules/@presmium'), { recursive: true })
+    symlinkSync(PACKAGE, join(workspace, 'node_modules/@presmium/slidev-addon-exec-local'), 'junction')
+    writeFileSync(join(workspace, '.gitignore'), 'node_modules/\n.presmium/\n')
+    writeFileSync(join(workspace, 'presmium.workspace.yaml'), 'title: 本地环境\nmembers:\n  owners: [owner@test]\n  editors: [editor@test]\nsettings:\n  presmium.workspace:\n    plugins: [\'@presmium/slidev-addon-exec-local\']\n')
+    writeFileSync(join(workspace, 'intro/lecture.md'), '---\ntitle: 导论\nplugins:\n  - \'@presmium/slidev-addon-exec-local\'\n---\n\n## 片段\n\nOne paragraph.\n')
+    for (const args of [['init', '-q', '-b', 'main'], ['add', '-A'], ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', 'commit', '-q', '-m', 'Initial commit']]) {
+      spawnSync('git', args, { cwd: workspace })
+    }
+    const [agentHost, gateway] = await Promise.all([
+      deployment(['agent-host', '--port', '0'], /^agent-host {2}(http\S+)$/m, { PRESMIUM_AGENT_HOST_TOKEN: 'agent-host-token' }),
+      deployment(['gateway', '--port', '0'], /^gateway {2}(http\S+)$/m, { PRESMIUM_GATEWAY_TOKEN: 'gateway-token' }),
+    ])
+    site = await deployment(['serve', '--port', '0'], /^serve {2}(http\S+)$/m, {
+      PRESMIUM_PROXY_SECRET: secret,
+      PRESMIUM_GATEWAY_URL: gateway,
+      PRESMIUM_GATEWAY_TOKEN: 'gateway-token',
+      PRESMIUM_AGENT_HOST_URL: agentHost,
+      PRESMIUM_AGENT_HOST_TOKEN: 'agent-host-token',
+      PRESMIUM_CONSOLE_HOST: 'console.test',
+    })
+  }, 240_000)
+
+  afterAll(async () => {
+    for (const child of started.reverse()) child.kill('SIGTERM')
+    await Promise.all(started.map(child => child.exitCode === null ? new Promise(done => child.once('exit', done)) : undefined))
+  }, 60_000)
+
+  it('gives a reader 403 on the routes, run among them; an editor reaches them', async () => {
+    const as = (email: string) => ({ 'Host': `site.test:${new URL(site).port}`, 'X-Presmium-Proxy-Secret': secret, 'X-Forwarded-Email': email, 'Presmium-Document': 'intro' })
+    const run = await proxied(`${site}${ROUTES}/run`, as('reader@test'), { lang: 'python', code: 'print(1)' })
+    expect(run.status, run.text).toBe(403)
+    expect((await proxied(`${site}${ROUTES}/status`, as('reader@test'))).status).toBe(403)
+    const status = await proxied(`${site}${ROUTES}/status`, as('editor@test'))
+    expect(status.status, status.text).toBe(200)
+    expect(JSON.parse(status.text)).toMatchObject({ connected: true })
+  }, 120_000)
 })

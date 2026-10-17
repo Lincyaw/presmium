@@ -1,11 +1,15 @@
 /**
  * Container executor (P-22), at compile time (`createContainerExecutor`) and
- * behind the dev-server endpoints (./server.ts). The Dev Containers CLI reads
+ * behind the plugin's routes (./server.ts). The Dev Containers CLI reads
  * the repository's devcontainer definition and builds its image (image,
  * Dockerfile, features); each run then starts a fresh container from that
  * image, without network, with the workspace mounted read-only where the CLI
  * would mount it and a new directory of the run's own, holding the request's
- * files, mounted read-write as its working directory.
+ * files, mounted read-write as its working directory. That directory is
+ * writable by any user, as the container's user may be anyone; it lies in a
+ * private directory (0700) of this user, so no other user of the machine
+ * reaches it, and the files Presmium writes there are created anew (never
+ * through a link).
  *
  * A request keeps the meaning of `RunRequest` (as in the browser and the
  * other compile-time executors): Python runs Presmium's runner
@@ -299,18 +303,33 @@ export function createContainerExecutor(id = CONTAINER_EXECUTOR_ID): ContainerEx
   }
 }
 
-/** A new directory for one run, writable by the container's user whatever its uid, holding the request's files. */
-function runDirectory(files: Record<string, string> | undefined): string {
-  const dir = mkdtempSync(join(tmpdir(), 'presmium-container-'))
-  chmodSync(dir, 0o777)
-  mkdirSync(join(dir, '.presmium'), { mode: 0o777 })
-  chmodSync(join(dir, '.presmium'), 0o777)
-  for (const [name, content] of Object.entries(files ?? {})) {
-    const file = join(dir, workspacePath(name))
-    mkdirSync(dirname(file), { recursive: true, mode: 0o777 })
-    writeFileSync(file, content, { mode: 0o666 })
+/**
+ * A new directory for one run (`dir`), writable by the container's user
+ * whatever its uid, holding the request's files; inside a private directory
+ * (`parent`, 0700), which is what is removed afterwards. The files are
+ * created anew: a name that is there already (`.presmium/request.json` among
+ * the request's files) fails the run rather than being written through.
+ */
+function runDirectory(files: Record<string, string> | undefined, runner?: unknown): { parent: string, dir: string } {
+  const parent = mkdtempSync(join(tmpdir(), 'presmium-container-'))
+  chmodSync(parent, 0o700)
+  const dir = join(parent, 'run')
+  try {
+    mkdirSync(join(dir, '.presmium'), { recursive: true })
+    chmodSync(dir, 0o777)
+    chmodSync(join(dir, '.presmium'), 0o777)
+    for (const [name, content] of Object.entries(files ?? {})) {
+      const file = join(dir, workspacePath(name))
+      mkdirSync(dirname(file), { recursive: true, mode: 0o777 })
+      writeFileSync(file, content, { mode: 0o666, flag: 'wx' })
+    }
+    // The Python runner's input, after the request's files: one of them of that name fails the run.
+    if (runner !== undefined) writeFileSync(join(dir, REQUEST_FILE), JSON.stringify(runner), { mode: 0o666, flag: 'wx' })
+  } catch (error) {
+    rmSync(parent, { recursive: true, force: true })
+    throw error
   }
-  return dir
+  return { parent, dir }
 }
 
 /** The Python runner's result, when it got to write it. */
@@ -336,23 +355,20 @@ export async function runInContainer(workspace: string, devcontainer: Devcontain
   catch (error) {
     return { ...failedContainerRun(text().buildFailed(errorMessage(error))), executorId }
   }
-  let dir: string
+  const python = lang === 'python'
+  let run: { parent: string, dir: string }
   try {
-    dir = runDirectory(request.files)
+    run = runDirectory(request.files, python ? { runs: [{ code: request.code, args: request.args ?? {}, stdin: request.stdin ?? '' }], path: [devcontainer.workspaceFolder] } : undefined)
   }
   catch (error) {
     return { ...failedContainerRun(errorMessage(error)), executorId }
   }
-  const python = lang === 'python'
+  const { parent, dir } = run
   const started = Date.now()
   const name = `presmium-run-${randomUUID()}`
   // The code gets the run's variables, but the host's paths; then the definition's own and, outside Python, the parameters.
   const passed = Object.fromEntries(Object.entries(ctx?.env ?? {}).filter(([key]) => !HOST_PATHS.has(key)))
   const env = { ...passed, ...devcontainer.env, ...python ? {} : request.args }
-  if (python) {
-    const input = { runs: [{ code: request.code, args: request.args ?? {}, stdin: request.stdin ?? '' }], path: [devcontainer.workspaceFolder] }
-    writeFileSync(join(dir, REQUEST_FILE), JSON.stringify(input), { mode: 0o666 })
-  }
   try {
     const result = await runProcess('docker', [
       'run', '--rm', '-i', '--init', '--network', 'none', '--name', name,
@@ -388,7 +404,7 @@ export async function runInContainer(workspace: string, devcontainer: Devcontain
   finally {
     // Files the container's user made may not be the host user's to remove.
     try {
-      rmSync(dir, { recursive: true, force: true })
+      rmSync(parent, { recursive: true, force: true })
     }
     catch {}
   }

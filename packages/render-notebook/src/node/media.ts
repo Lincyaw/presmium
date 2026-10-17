@@ -1,6 +1,8 @@
-import { cpSync, existsSync, rmSync, statSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { publishedUrl } from '@presmium/kernel'
 import type { RenderContext, SourcePos } from '@presmium/kernel'
+import { copyPublished } from '@presmium/kernel/node'
 
 /** Directory next to the notebook that holds the local files it shows or links. */
 export const MEDIA_DIR = 'media'
@@ -21,8 +23,7 @@ export function localMedia(ctx: RenderContext): (url: string, source: SourcePos)
   return (url, source) => {
     const found = ctx.localAsset(source, url)
     if (!found) return undefined
-    if (!existsSync(join(dir, found.name))) cpSync(found.file, join(dir, found.name), { recursive: true })
-    const directory = statSync(found.file).isDirectory() ? '/' : ''
-    return `${MEDIA_DIR}/${encodeURIComponent(found.name)}${directory}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
+    copyPublished(found, dir)
+    return publishedUrl(found, url, { prefix: `${MEDIA_DIR}/`, directoryIndex: '/' })
   }
 }

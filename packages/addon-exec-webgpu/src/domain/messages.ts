@@ -1,7 +1,7 @@
 /**
  * Text of the WebGPU backend in zh-CN and en (N-07): why a shader cannot run
- * (its recorded output shows instead), what is wrong with its `:params:`, and
- * the summary of a run. The browser follows the UI language
+ * (its recorded output shows instead), what is wrong with its `:params:`, the
+ * summary of a run, and how a run panel names the parameters (D-10). The browser follows the UI language
  * (`@presmium/host`); compile time records in the deck's language
  * (`RunContext.lang`), as other text written into the build output is.
  */
@@ -38,6 +38,9 @@ const zhCN = {
   time: (ms: string, samples: number, gpu: boolean, emulated: boolean) =>
     `计时：每次派发 ${ms} ms（${[samples > 1 ? `${samples} 次的中位数` : '', gpu ? 'GPU 时间戳' : '挂钟时间', emulated ? 'CPU 模拟' : ''].filter(Boolean).join('；')}）`,
   adapter: (name: string, fallback: boolean) => `适配器：${name}${fallback ? '（回退适配器）' : ''}`,
+  // How a run panel names the parameters, and the arguments of a run in its history.
+  labels: { buffers: '缓冲区', dispatch: '工作组数', entry: '入口函数', repeat: '重复次数', features: '所需特性' } as Record<string, string>,
+  values: (count: number) => `${count} 个值`,
 }
 
 export type WebgpuMessages = typeof zhCN
@@ -70,6 +73,8 @@ const en: WebgpuMessages = {
   time: (ms, samples, gpu, emulated) =>
     `time: ${ms} ms per dispatch (${[samples > 1 ? `median of ${samples}` : '', gpu ? 'GPU timestamps' : 'wall clock', emulated ? 'CPU emulation' : ''].filter(Boolean).join('; ')})`,
   adapter: (name, fallback) => `adapter: ${name}${fallback ? ' (fallback adapter)' : ''}`,
+  labels: { buffers: 'Buffer', dispatch: 'Workgroups', entry: 'Entry point', repeat: 'Repeat', features: 'Features' },
+  values: count => `${count} value${count === 1 ? '' : 's'}`,
 }
 
 export const MESSAGES: Record<Locale, WebgpuMessages> = { 'zh-CN': zhCN, en }

@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
@@ -21,11 +23,18 @@ async function openPublish(page: Page): Promise<Locator> {
  * the HTTP cache is cleared too; other engines have no such protocol and keep it (docs/browsers.md).
  */
 async function goOffline(page: Page, context: BrowserContext) {
+  // A busy machine makes the slides' worker take a while to precache the build, the runtimes included.
+  test.setTimeout(Math.max(test.info().timeout, 180_000))
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready
   })
   await context.setOffline(true)
   if (context.browser()?.browserType().name() === 'chromium') await (await context.newCDPSession(page)).send('Network.clearBrowserCache')
+}
+
+/** Waits until the page's service worker controls it: from then on the page's requests go through it. */
+async function controlled(page: Page) {
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
 }
 
 const loaded = (image: Locator) => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)
@@ -208,11 +217,15 @@ test.describe('web form', () => {
     await expect(page.locator('.pm-section[data-section="publish"]')).toContainText('def add(a, b):')
   })
 
-  test('offline, a web page still runs Python: the service worker keeps the Pyodide runtime (P-23, P-51)', async ({ page, context }) => {
+  test('offline, a web page still runs Python once it has run it: the service worker keeps the Pyodide runtime (P-23, P-51, D-6)', async ({ page, context }) => {
     await page.goto(`${deck().web}/classroom.html`)
+    const exercise = page.locator('.pm-section[data-section="classroom-exercise"] .pm-exercise')
+    // The web form's worker caches a runtime when a page first uses it (D-6): the first check, online.
+    await controlled(page)
+    await checkExercise(exercise)
     await goOffline(page, context)
     await page.reload()
-    await checkExercise(page.locator('.pm-section[data-section="classroom-exercise"] .pm-exercise'))
+    await checkExercise(exercise)
   })
 
   test('a page that places no switch of its own has the high-contrast switch in the navigation bar', async ({ page }) => {
@@ -225,11 +238,73 @@ test.describe('web form', () => {
     await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
   })
 
+  test.describe('every page', () => {
+    test.use({ serviceWorkers: 'block' })
+
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`in high contrast, every page of the web form reaches WCAG AA, the dimmed narration of a scrolling section included (${colorScheme}, F-72)`, async ({ page }) => {
+        test.setTimeout(240_000)
+        await page.emulateMedia({ colorScheme })
+        await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
+        const pages = readdirSync(join(deck().dir, 'dist/web')).filter(file => file.endsWith('.html') && file !== '404.html').sort()
+        expect(pages.length).toBeGreaterThan(3)
+        const failures: string[] = []
+        let dimmed = 0
+        for (const file of pages) {
+          await page.goto(`${deck().web}/${file}`, { waitUntil: 'networkidle' })
+          const content = page.locator('.vp-doc:not(.pm-overlay-views)')
+          await expect(content).toBeVisible()
+          await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
+          dimmed += await page.locator('.pm-section--scrolly > .pm-track .pm-block--narration.pm-hidden').count()
+          failures.push(...(await lowContrastTexts(content)).map(text => `${file}: ${text}`))
+        }
+        expect(dimmed).toBeGreaterThan(0)
+        expect(failures).toEqual([])
+      })
+    }
+  })
+
   test('the high-contrast switch of the publish section brings its text to AA', async ({ page }) => {
     await page.goto(`${deck().web}/publish.html`)
     const section = page.locator('.pm-section[data-section="publish"]')
     await section.getByRole('switch', { name: '高对比度' }).click()
     await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
     await expect.poll(() => lowContrastTexts(section)).toEqual([])
+  })
+})
+
+// A deck with C code that runs live (e2e/fixtures/exec-wasi) and this plugin's "save for offline use".
+// The web form's service worker caches the heavy runtimes on first use, and "save for offline use"
+// fetches them all (D-6, F-73). That worker is the web form's own (packages/web/src/node/offline.ts),
+// which answers this plugin's messages (OFFLINE_MESSAGES).
+test.describe('web form, offline runtimes (D-6)', () => {
+  const wasi = useFixture('exec-wasi', {
+    to: 'web',
+    link: { '@presmium/slidev-addon-exec-wasi': 'packages/addon-exec-wasi' },
+    edit: dir => writeFileSync(join(dir, 'lecture.md'), readFileSync(join(dir, 'lecture.md'), 'utf8')
+      .replace("  - '@presmium/slidev-addon-exec-wasi'\n", "  - '@presmium/slidev-addon-exec-wasi'\n  - '@presmium/slidev-addon-publish'\n")),
+  })
+
+  // fixme: needs the web form's service worker of D-6 (packages/web/src/node/offline.ts, WP-89f or the
+  // acceptor): precache the shell and the content at install, cache `pyodide/`, `wasi/` and
+  // `presmium/jax-js/` on first use, and answer OFFLINE_MESSAGES. Enable this case once it is merged.
+  test.fixme('a first visit caches no C compiler; once saved for offline use, C runs offline (F-73)', async ({ page, context }) => {
+    test.setTimeout(300_000)
+    await page.goto(`${wasi().web}/?section=c-program`)
+    await controlled(page)
+    const cached = () => page.evaluate(async () => (await Promise.all((await caches.keys()).map(async name => (await (await caches.open(name)).keys()).map(r => r.url)))).flat())
+    expect((await cached()).some(url => url.endsWith('/clang.wasm'))).toBe(false)
+    const save = page.locator('.pm-save-offline').filter({ visible: true }).first()
+    await expect(save).toHaveAttribute('data-state', 'offered')
+    await save.click()
+    await expect(save).toHaveAttribute('data-state', 'saved', { timeout: 120_000 })
+    expect((await cached()).some(url => url.endsWith('/clang.wasm'))).toBe(true)
+
+    await goOffline(page, context)
+    expect((await page.reload())?.fromServiceWorker()).toBe(true)
+    const block = page.locator('.pm-block[data-block="sum"]')
+    await block.locator('.pm-code-block__run button').first().click()
+    await expect(block.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', { timeout: 120_000 })
+    await expect(block.locator('.pm-output__stdout')).toHaveText('1 + 2 + ... + 100 = 5050')
   })
 })

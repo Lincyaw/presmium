@@ -33,3 +33,23 @@ def add(a, b):
 :::
 
 可视化差异：`pnpm --filter presmium-demo exec presmium-diff HEAD~1 HEAD`，报告写在 `.presmium/diff/report.md`。
+
+(publish-scrolly)=
+## 滚动叙事
+
+:::{hints}
+web: { layout: scrolly }
+:::
+
+:::{slide}
+**第一步**：滚动叙事的画面固定在一侧。
+:::
+
+第一步的讲解。读者滚动时，正在读的一步突出，其他步骤的讲解变淡；高对比度下变淡的讲解仍达到 WCAG AA。
+
+:::{slide}
+:reveal:
+**第二步**：随讲解出现。
+:::
+
+第二步的讲解。

@@ -5,6 +5,7 @@ import { terminalDirective, terminalPass } from './directive.ts'
 import { jupyterProvider } from './environments.ts'
 import { jupyterGateway } from './gateway.ts'
 import { jupyterServer } from './server.ts'
+import { prebundled, servicesInBrowserBuilds } from './vite.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -15,7 +16,9 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
  * environments, the gateway's proxies with the operator's credentials
  * (SHARED mode), and `{terminal}`. The browser side registers the same
  * environments' executors (src/client/plugin.ts) and draws the terminal
- * (components/PmTerminal.vue).
+ * (components/PmTerminal.vue); the Vite plugins of both forms
+ * (`vitePlugins`, ./vite.ts) keep the Jupyter client to its browser shim
+ * and pre-bundle it.
  */
 const plugin: PresmiumNodePlugin = {
   id: EXEC_JUPYTER_ID,
@@ -26,6 +29,7 @@ const plugin: PresmiumNodePlugin = {
   environments: { jupyter: jupyterProvider },
   server: jupyterServer,
   gateway: ctx => jupyterGateway(ctx),
+  vitePlugins: () => [servicesInBrowserBuilds(), prebundled()],
   rendererExtensions: {
     // A terminal has no place in a notebook (docs/ir.md 5.1).
     notebook: { components: { PmTerminal: () => [] } },

@@ -41,18 +41,28 @@
   color: #fbbf24;
 }
 
-/* Rich outputs recorded at compile time (docs/ir.md 6.1): an image keeps to the slide; HTML in a sandboxed frame. */
+/* Rich outputs recorded at compile time (docs/ir.md 6.1): an image keeps to the slide; HTML (sanitized) in the slide's text, a table whole. */
 .slidev-layout .pm-output__image {
   max-width: 100%;
   max-height: 60vh;
 }
 
 .slidev-layout .pm-output__html {
-  width: 100%;
-  min-height: 8rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.25rem;
-  background: white;
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 0.8em;
+}
+
+.slidev-layout .pm-output__html table {
+  margin: 0;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.slidev-layout .pm-output__html :is(th, td) {
+  padding: 0.15em 0.6em;
+  border-bottom: 1px solid rgba(125, 125, 125, 0.35);
+  text-align: right;
 }
 
 /*
@@ -122,7 +132,70 @@
   font-weight: 700;
 }
 
-/* The Monaco Runner's hint before the first run ("Click the play button…") is half transparent, below AA; readable instead. */
+/* The Monaco Runner's notes ("Running…") are half transparent, below AA; readable instead. */
 .slidev-layout .slidev-monaco-container .opacity-50 {
   opacity: 0.75;
+}
+
+/*
+ * The output area of code that runs live (the execution plugin's runners): before a run it shows
+ * the recorded output under a badge, as the web form's run panel marks it, or how to run the code.
+ */
+.slidev-layout .pm-run-recorded {
+  display: inline-block;
+  margin-bottom: 0.25em;
+  padding: 0 0.4em;
+  border-radius: 0.25em;
+  background: #f59e0b;
+  color: black;
+}
+
+.slidev-layout .pm-run-image {
+  max-width: 100%;
+  max-height: 50vh;
+}
+
+.slidev-layout :is(.pm-run-stderr, .pm-run-dropped) {
+  color: #dc2626;
+}
+
+.slidev-layout .pm-run-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/*
+ * Print and export (P-50): each slide keeps to its own page. A slide taller or wider than the page (a
+ * zoom, a long block) is cut at its edge; without the containment Chromium fits the page to it and
+ * shrinks every page of the PDF, and the rest of the slide runs on into the next page. The slides'
+ * container in Slidev's print page (`slidev export`), the one place this class is.
+ */
+.print-slide-container {
+  contain: strict;
+  overflow: clip !important;
+}
+
+/*
+ * Printed, the static form of a component that ends with an output (a run panel's code and the output
+ * recorded for it) keeps that output on the page when it is taller than its slide: the slide is a
+ * column, and the blocks before the output give way and are cut instead (N-05, F-19).
+ */
+.print-slide-container .slidev-layout:has(> .pm-static-fallback > .slidev-code-wrapper:last-child) {
+  display: flex;
+  flex-direction: column;
+}
+
+.print-slide-container .slidev-layout > .pm-static-fallback:has(> .slidev-code-wrapper:last-child) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.print-slide-container .pm-static-fallback:has(> .slidev-code-wrapper:last-child) > :not(:last-child) {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.print-slide-container .pm-static-fallback > .slidev-code-wrapper:last-child {
+  flex-shrink: 0;
 }

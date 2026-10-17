@@ -141,6 +141,27 @@ export interface Executor {
   fingerprint?(lang: string): string | Promise<string>
   /** Drops the state of a session (restarts or closes the interpreter or kernel); "reset session" and the end of a build call it. */
   endSession?(session: string): Promise<void>
+  /**
+   * How a run panel shows the parameters of `lang` this executor reads
+   * (`RunRequest.args`), in the page's UI language; browser executors only.
+   * Without it, or for a parameter it does not name, the panel shows the
+   * parameter's name and value (D-10).
+   */
+  params?(lang: string): ParamsDisplay | undefined
+}
+
+/** The parameters of an executor as a run panel shows them (`Executor.params`). */
+export interface ParamsDisplay {
+  /** By parameter name: its label, e.g. 缓冲区 for a shader's `buffers`. */
+  labels: Record<string, string>
+  /**
+   * Parameters whose value is a mapping, shown as one field per key, each
+   * labelled with the parameter's label and the key (a shader's buffers, by
+   * binding); the panel writes them back as a YAML flow mapping.
+   */
+  fields?: string[]
+  /** A run's arguments as its history shows them, instead of `name=value`. */
+  summary?(args: Record<string, string>): string
 }
 
 /** Routes requests to registered executors; higher priority wins. */

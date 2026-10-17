@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { useFixture } from './fixtures/deck.ts'
+import { openDevPage, startDev, useFixture } from './fixtures/deck.ts'
 
 // The zip library of the addon, which writes the archives.
 const { strFromU8, unzipSync } = createRequire(new URL('../packages/addon-exec-local/package.json', import.meta.url))('fflate') as {
@@ -11,9 +11,9 @@ const { strFromU8, unzipSync } = createRequire(new URL('../packages/addon-exec-l
 }
 
 // e2e/fixtures/exec-local, built by `presmium build`; its snippet belongs to the workspace next
-// to it. Running and committing need a dev server behind the deck (covered by
-// packages/addon-exec-local/test); a built deck shows the snippet and exports the environment
-// archived at compile time.
+// to it. Running needs a Presmium server behind the deck (covered by packages/addon-exec-local/test);
+// a built deck shows the snippet and exports the environment archived at compile time. Code edited
+// in the page is never written back (K-09, D-2): there is no commit, in a build or under `presmium dev`.
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-local')
 const DEFINITION = readFileSync(new URL('fixtures/exec-local/workspace/.devcontainer/devcontainer.json', import.meta.url), 'utf8')
@@ -47,4 +47,23 @@ test('the web form exports the environment of the snippet', async ({ page }) => 
   const env = page.locator('.pm-local-env').first()
   await expect(env.locator('pre')).toContainText('print(greet("Presmium"))')
   await expectExport(page, env)
+})
+
+test('under presmium dev the snippet runs and exports, and nothing writes it back: no commit button, no commit route (D-2)', async ({ page }) => {
+  test.setTimeout(300_000)
+  const dev = await startDev(deck().dir, 'slides')
+  try {
+    const env = page.locator('.pm-local-env').filter({ visible: true })
+    await openDevPage(page, `${dev.url.replace(/\/$/, '')}/${deck().slide('exec-local')}`, env.locator('[data-action="replicate"]'))
+    await expect(env).toHaveAttribute('data-state', 'connected')
+    await expect(env.locator('[data-action="run"]')).toHaveCount(1)
+    await expect(env.locator('[data-action="commit"]')).toHaveCount(0)
+    await expect(env).not.toContainText('提交')
+    for (const path of ['/__presmium/presmium.execLocal/commit', '/__presmium/exec-local/commit']) {
+      const res = await page.request.post(`${new URL(dev.url).origin}${path}`, { data: { file: 'src/greet.py', content: 'print(1)\n' } })
+      expect(res.status(), path).toBe(404)
+    }
+  } finally {
+    await dev.stop()
+  }
 })

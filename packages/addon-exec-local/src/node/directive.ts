@@ -7,9 +7,9 @@ export const requestedWorkspaces = new WeakMap<ComponentNode, string>()
 
 /**
  * ```` ```{local-env} python ```` with `:file:` (the snippet's path in the
- * workspace, where commits and exports put it) and `:workspace:` (the folder
- * holding the devcontainer definition, relative to the file of the directive;
- * by default `presmium.execLocal.workspace`, else the deck's git root).
+ * workspace, where exports put it) and `:workspace:` (the folder holding the
+ * devcontainer definition, relative to the file of the directive; by
+ * default `presmium.execLocal.workspace`, else the workspace root).
  * Becomes `<PmLocalEnv>` around the code block of its body.
  */
 export const localEnvDirective: DirectiveSpec = {

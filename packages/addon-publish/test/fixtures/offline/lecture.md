@@ -2,8 +2,11 @@
 title: Offline fixture
 plugins:
   - ADDON_DIR
+  - PACKAGES_DIR/addon-exec
   - PACKAGES_DIR/addon-exec-wasi
+  - PACKAGES_DIR/addon-exec-webgpu
 renderers:
+  web: {}
   slides:
     theme: default
     favicon: /favicon.svg
@@ -13,8 +16,9 @@ renderers:
 
 ## Offline
 
-The image is downloaded at compile time; `public/pyodide/` stands in for a bundled Pyodide runtime.
-The Ruby code runs in the browser, so the slides publish the Ruby runtime (WebAssembly and an archive).
+The image is downloaded at compile time. The forms publish the Pyodide runtime and jax-js (the
+execution and WebGPU plugins), and, since the Ruby code runs in the browser, the Ruby runtime
+(WebAssembly and an archive), each with its licenses.
 
 :::{slide}
 ![remote image](REMOTE_IMAGE)

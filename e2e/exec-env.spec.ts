@@ -18,10 +18,11 @@ async function openSection(page: Page, section: string, block: string) {
   return code
 }
 
+/** Runs `block`; a new page's first run loads the Python runtime first. */
 async function run(page: Page, block: string) {
   const code = page.locator(`.pm-block[data-block="${block}"]`)
   await code.locator('.pm-code-block__run button').first().click()
-  await expect(code.locator('.pm-outputs')).toHaveAttribute('data-source', /live|recorded/)
+  await expect(code.locator('.pm-outputs')).toHaveAttribute('data-source', /live|recorded/, RUNTIME)
   return code
 }
 
@@ -91,6 +92,8 @@ test('a Markdown table that hidden code prints shows as a table of the page, wit
 
 test('in the slides, Python code with :run: live runs in the Monaco Runner and shows its output', async ({ page }) => {
   const slide = await openSlide(page, deck(), 'slides-live', '幻灯片中的现场代码')
+  // Code with :run: live has no recording: until it runs, the runner says how to run it.
+  await expect(slide.locator('.slidev-runner-output .pm-run-hint')).toHaveText('按 ▶ 运行这段代码')
   await slide.getByRole('button', { name: 'Run code' }).click()
   await expect(slide.locator('.slidev-runner-output')).toHaveText('45', RUNTIME)
 })

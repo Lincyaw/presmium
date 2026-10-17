@@ -2,11 +2,11 @@ import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { environmentExecutor, isRecord, languageId } from '@presmium/kernel'
 import type { CodeNode, EnvironmentProvider, EnvironmentSpec, PresmiumNodePlugin } from '@presmium/kernel'
-import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
+import { EXEC_LOCAL_ID } from '../domain/index.ts'
 import { createContainerExecutor, dockerAvailable, findDefinition } from './container.ts'
 import { localEnvDirective } from './directive.ts'
 import { localEnvPass } from './pass.ts'
-import { localEnvServer } from './server.ts'
+import { localEnvRoutes } from './server.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -43,11 +43,11 @@ const devcontainer: EnvironmentProvider = {
 /**
  * The local environment (P-22, P-26): the `{local-env}` directive, the
  * container executor for compile-time execution (`:executor: presmium.container`
- * on a code block), the dev-server endpoints that run the edited snippet in
- * the container and commit it (./server.ts, for the dev servers of both
- * forms; Slidev also registers them from setup/vite-plugins.ts), and the
- * snippet as a notebook code cell when it is in the kernel's language; and
- * the provider of `kind: devcontainer` environments.
+ * on a code block), the routes that run the edited snippet in the container
+ * and export its environment (./server.ts, in `presmium dev` and `presmium
+ * serve`, for both forms), and the snippet as a notebook code cell when it
+ * is in the kernel's language; and the provider of `kind: devcontainer`
+ * environments. Code edited in the browser is never written back (K-09).
  */
 const plugin: PresmiumNodePlugin = {
   id: EXEC_LOCAL_ID,
@@ -57,10 +57,7 @@ const plugin: PresmiumNodePlugin = {
   passes: [localEnvPass(container)],
   executors: [container],
   environments: { devcontainer },
-  vitePlugins({ deckDir, config }) {
-    const { workspace, buildTimeoutMs } = execLocalConfig(config)
-    return [localEnvServer({ deckDir, workspace, buildTimeoutMs })]
-  },
+  server: localEnvRoutes,
   rendererExtensions: {
     notebook: {
       components: {

@@ -2,6 +2,7 @@
 // in the same shape as vite/client so the declarations merge when both are present.
 interface ImportMetaEnv {
   BASE_URL: string
+  DEV: boolean
 }
 
 interface ImportMeta {

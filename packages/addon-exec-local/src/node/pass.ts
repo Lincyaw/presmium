@@ -1,15 +1,14 @@
 /**
  * The workspace pass of the local environment. It settles the deck's
  * workspace (`presmium.execLocal.workspace` relative to the deck, else the
- * first `{local-env}` that names one, else the repository root) and
+ * first `{local-env}` that names one, else the workspace root) and
  * - binds the container executor to it for compile-time execution;
  * - writes it, relative to the deck, into the deck's configuration, so the
- *   dev-server endpoints (`vitePlugins` of ./presmium.ts, and
- *   setup/vite-plugins.ts in the generated Slidev deck) find it; the
- *   published forms carry no path of the build machine (K-13);
- * - reports a `{local-env}` that names another workspace: running and
- *   committing go through the deck's one workspace, so it would run in
- *   another image and commit to another repository than it exports;
+ *   routes (`server` of ./presmium.ts) find it; the published forms carry
+ *   no path of the build machine (K-13);
+ * - reports a `{local-env}` that names another workspace: running goes
+ *   through the deck's one workspace, so it would run in another image
+ *   than it exports;
  * - attaches to each `<PmLocalEnv>` its environment (P-26): the snippet and
  *   the devcontainer definition as a zip archive, downloadable from any build,
  *   with a README in the deck's language.
@@ -46,7 +45,7 @@ export function localEnvPass(container: ContainerExecutor): IRPass {
           ctx.report({
             checkId: 'presmium.execLocal.workspace',
             severity: 'error',
-            message: `{local-env} names the workspace ${named(dir)}, but the deck's workspace is ${named(workspace)}: the snippet would run and be committed in ${named(workspace)}`,
+            message: `{local-env} names the workspace ${named(dir)}, but the deck's workspace is ${named(workspace)}: the snippet would run in ${named(workspace)}`,
             hint: 'give every {local-env} of the deck the same :workspace:, or set presmium.execLocal.workspace',
             source: at,
           })

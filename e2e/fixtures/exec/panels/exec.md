@@ -17,6 +17,16 @@ for i in range(1, n + 1):
 
 参数 `n` 作为变量注入程序。修改 n 后点“重跑”，右侧对比最近两次运行：参数的变化与输出的逐行差异。勾选运行记录可以换成任意两次对比。运行记录只保存在当前视图，不写回文稿。
 
+(exec-params)=
+## 布尔参数
+
+```{run-panel} python
+:params: {verbose: false, n: 2}
+print("on" if verbose else "off", n * 21)
+```
+
+参数在程序中保持类型：YAML 的 `false` 是 Python 的 `False`，`2` 是整数，编译时录制与浏览器中运行都是这样。
+
 (exec-isolation)=
 ## 互不影响的运行
 
@@ -88,3 +98,15 @@ print("合计：", sum(squares))
 带 `:run:` 的代码在编译时由本机的 Python 执行，输出写入中间表示，随代码出现在网页、幻灯片与 notebook 中。结果按内容缓存在 `.presmium/freeze/`，代码不变就不再执行；缓存随文稿提交后，没有 Python 的机器也能构建出相同的输出。
 
 `:run: both` 还让网页中的代码块带上“运行”按钮：读者在浏览器中用 Pyodide 重新运行它，输出替换录制的结果。
+
+(exec-steps-declared)=
+## 声明的步数
+
+```{step-run} python
+:steps: 2
+a = 1
+b = a + 1
+print(b)
+```
+
+这段代码执行 3 行，却声明了 2 步：构建时报告这一点，演讲者视图中也有提示，观众看不到。

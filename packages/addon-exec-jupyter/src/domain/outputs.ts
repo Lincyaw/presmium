@@ -1,4 +1,4 @@
-import { isRecord } from '@presmium/kernel'
+import { isRecord, languageId } from '@presmium/kernel'
 import type { RunOutput } from '@presmium/kernel'
 
 /** ANSI escape sequences, which kernels put in tracebacks. */
@@ -99,14 +99,34 @@ function errorOutput(content: Record<string, unknown>): RunOutput {
 }
 
 /**
- * The run's parameters (`RunRequest.args`) as assignments run before the
- * code (docs/architecture.md 4.6): `name = "value"` with a JSON string
- * literal, which Python, Julia and R read alike. Names that are not
- * identifiers are left out.
+ * How a Python kernel reads a parameter back, as Presmium's runner does
+ * (`_pm_arg` of @presmium/kernel/runner.py): a Python literal, else JSON
+ * (`true`, `false`, `null`), else the string itself.
  */
-export function argumentsCode(args: Record<string, string> | undefined): string | undefined {
+const PYTHON_ARG = `def _pm_arg(raw):
+    import ast, json
+    try:
+        return ast.literal_eval(raw)
+    except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        pass
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError, RecursionError):
+        return raw`
+
+/**
+ * The run's parameters (`RunRequest.args`, strings) as assignments run
+ * before the code (docs/architecture.md 4.6), each value a JSON string
+ * literal, which Python, Julia and R read alike. A Python kernel reads them
+ * back as the runner does (`_pm_arg`, removed afterwards), so `n: 2` is the
+ * number 2 and `verbose: false` is False there too; other kernels get the
+ * strings. Names that are not identifiers are left out.
+ */
+export function argumentsCode(args: Record<string, string> | undefined, lang = ''): string | undefined {
+  const python = languageId(lang) === 'python'
   const lines = Object.entries(args ?? {})
     .filter(([name]) => /^[A-Za-z_]\w*$/.test(name))
-    .map(([name, value]) => `${name} = ${JSON.stringify(String(value))}`)
-  return lines.length ? lines.join('\n') : undefined
+    .map(([name, value]) => `${name} = ${python ? `_pm_arg(${JSON.stringify(String(value))})` : JSON.stringify(String(value))}`)
+  if (lines.length === 0) return undefined
+  return python ? [PYTHON_ARG, ...lines, 'del _pm_arg'].join('\n') : lines.join('\n')
 }

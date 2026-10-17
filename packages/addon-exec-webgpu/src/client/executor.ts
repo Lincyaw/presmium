@@ -1,7 +1,7 @@
 import { currentLocale } from '@presmium/host'
 import { failedRun } from '@presmium/kernel'
 import type { Executor, RunResult } from '@presmium/kernel'
-import { computeRequest, isWgsl, MESSAGES, programError, runResult } from '../domain/index.ts'
+import { computeRequest, isWgsl, MESSAGES, paramsSummary, programError, runResult } from '../domain/index.ts'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 /** How long a stopped worker may take to destroy its device before it is ended anyway. */
@@ -20,7 +20,9 @@ export type WebgpuExecutor = Executor & {
  * shader cannot run (no WebGPU, no adapter, a missing feature or limit, a lost
  * device, a timeout) the result is a run that did not happen (`exitCode`
  * null), and the recorded output shows with the reason; a shader WebGPU
- * rejects, or wrong `:params:`, is the program's own error.
+ * rejects, or wrong `:params:`, is the program's own error. A run panel
+ * names the parameters in the UI language, shows the buffers one field each
+ * and its history a summary of them (`params`, D-10).
  */
 export function createWebgpuExecutor(options: { id: string, timeoutMs: number }): WebgpuExecutor {
   const { id } = options
@@ -28,6 +30,11 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
   return {
     id,
     supports: isWgsl,
+    params(lang) {
+      if (!isWgsl(lang)) return undefined
+      const text = MESSAGES[currentLocale()]
+      return { labels: text.labels, fields: ['buffers'], summary: args => paramsSummary(args, text) }
+    },
     run(request, signal) {
       const text = MESSAGES[currentLocale()]
       const made = computeRequest(request.code, request.args, text)

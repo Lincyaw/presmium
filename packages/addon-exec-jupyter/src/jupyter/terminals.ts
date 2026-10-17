@@ -1,7 +1,8 @@
 /**
  * A terminal of a Jupyter Server (P-107), over the terminals API of
  * `@jupyterlab/services`: a new terminal on the server, its WebSocket
- * (`stdin`, `stdout`, `set_size` messages), shut down when closed.
+ * (`stdin`, `stdout`, `set_size` messages), shut down when closed, or when
+ * the page goes away (`abandon`).
  */
 import type { ServerConnection, Terminal } from '@jupyterlab/services'
 import type { TerminalEvents, TerminalSession } from '../domain/service.ts'
@@ -51,6 +52,10 @@ export async function openTerminal(settings: ServerConnection.ISettings, events:
       } catch {
         // Gone already.
       }
+      manager.dispose()
+    },
+    abandon() {
+      void ServerConnection.makeRequest(`${url}/${encodeURIComponent(connection.name)}`, { method: 'DELETE', keepalive: true }, settings).catch(() => {})
       manager.dispose()
     },
   }

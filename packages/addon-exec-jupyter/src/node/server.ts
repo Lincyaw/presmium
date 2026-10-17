@@ -14,6 +14,7 @@
  * the proxies. An environment that cannot be proxied answers its requests
  * with the reason.
  */
+import { problem } from '@presmium/kernel'
 import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@presmium/kernel'
 import { authOf, operatorConnection, proxyPath } from '../domain/index.ts'
 import type { Connection } from '../domain/index.ts'
@@ -72,7 +73,7 @@ export function jupyterServer(ctx: ServerContext): ServerContribution {
         const reason = found.reason
         routes[`${proxyPath(name)}/*`] = {
           role: 'reader',
-          handle: () => new Response(JSON.stringify({ error: reason }), { status: 502, headers: { 'Content-Type': 'application/json; charset=utf-8' } }),
+          handle: () => problem(502, reason),
         }
       }
       return routes

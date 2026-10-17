@@ -19,6 +19,14 @@ export const RUNTIME_DIR = 'wasi/'
  */
 export const DEFAULT_TIMEOUT_MS = 10_000
 
+/**
+ * The memory of a compile-time run's program, in MiB (a WebAssembly memory
+ * of at most this many 64 KiB pages times 16): past it the program's
+ * allocations fail, so a program that allocates without end does not take
+ * the build machine, or agent-host, with it (N-08).
+ */
+export const MEMORY_LIMIT_MB = 1024
+
 export interface ExecWasiConfig {
   /** How long a browser run waits for its runtime to download and compile before it fails (and shows its recorded output). */
   loadTimeoutMs: number

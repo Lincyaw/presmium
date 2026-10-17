@@ -9,6 +9,8 @@ renderers:
   web: {}
   slides:
     theme: default
+    # `presmium dev` in e2e/exec-local.spec.ts, in WP-89e's range; packages/addon-exec-local/test uses it too, never at the same time.
+    port: 5333
 ---
 
 # 本地环境测试文稿

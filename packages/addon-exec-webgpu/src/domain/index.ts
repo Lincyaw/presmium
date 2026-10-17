@@ -4,6 +4,6 @@ export { adapterChoice, DEFAULT_TIMEOUT_MS, EXEC_WEBGPU_ID, isWgsl, LIMITS, WEBG
 export type { AdapterChoice } from './config.ts'
 export { MESSAGES } from './messages.ts'
 export type { WebgpuMessages } from './messages.ts'
-export { computeRequest, declarations } from './params.ts'
+export { computeRequest, declarations, paramsSummary } from './params.ts'
 export { programError, runResult } from './result.ts'
 export { adapterName, bufferLine, failure, fingerprint, formatNumber, summary } from './summary.ts'

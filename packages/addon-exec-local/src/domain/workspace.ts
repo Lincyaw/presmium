@@ -35,12 +35,6 @@ export function workspacePath(file: string): string {
   return parts.join('/')
 }
 
-/** `presmium/edit-20261015-043720` (UTC). */
-export function defaultBranch(now: Date): string {
-  const stamp = now.toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15)
-  return `presmium/edit-${stamp}`
-}
-
 /** File name of the exported environment: `presmium-env-greet.zip` for `src/greet.py`. */
 export function archiveName(file: string): string {
   const name = file.split('/').pop() ?? file

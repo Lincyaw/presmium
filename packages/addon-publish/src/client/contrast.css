@@ -77,6 +77,11 @@
   opacity: 0.6 !important;
 }
 
+/* The narration of the other steps of a scrolling section (the web form's IR runtime), which it dims. */
+:root[data-pm-contrast='high'] .pm-section--scrolly > .pm-track .pm-block--narration.pm-hidden {
+  opacity: 0.6 !important;
+}
+
 :root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(a, a *) {
   color: var(--pm-contrast-link) !important;
 }
