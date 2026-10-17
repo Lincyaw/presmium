@@ -1176,6 +1176,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
   - 运营者插件（`settings.presmium.workspace.plugins`：首页的插件、deltabox）；
   - MCP `build` 照常用文稿能加载的渲染端。
 - **E-3 只监听本机。** `presmium serve` 只监听回环地址，非回环的 `--host` 拒绝，提示用 SSH 隧道或 hub 模板（WP-94）。登录相关的选项删除：`--trust-proxy-from`、`--user`、`gateway`、`agent-host`。
+  - **修订（用户反馈，2026-10-17）**：用户在局域网中的另一台设备上使用，所以 `presmium serve --host <地址>` 允许非回环地址。启动时警告没有登录，站点的 Host 检查接受这个地址与本机的名字。由 WP-89g 实现。WP-92a 按原来的 E-3 交付也可以，89g 再改。
 - **E-4 不再有成员。** 工作区配置的 `members` 删除，本机用户就是 `LOCAL_AUTHOR`（所有者）。
   - 保留：内核的 `Member`、`MemberRole`、`Route.role`、确认的范围与按范围分派（本机的确认照旧）。
   - 删除只为读者存在的分支：讲授路由的读者视图、MCP 中读者到学生视图的映射。MCP 的 tutor 视图归 WP-92b。
@@ -1247,6 +1248,14 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - P-112 按决定 E-9 实现。
 - MCP `get_position` 按调用者的版本换算步号（`trail`、`followedPlace`，WP-89f 的验证者发现）。
 - F-48 的静态构建用例断言页面没有任何控制台错误，不只过滤 presmium 与 assistant。
+- 模型设置（P-111，用户反馈：要能在前端配置）：工作区服务与 `presmium dev` 的页面有“模型设置”，在首页、编辑模式的“AI 修改”面板中都能打开。
+  - **字段**：服务提供方、地址（DeepSeek 预设，或 Messages 兼容的地址）、密钥、模型名。
+  - **保存**：由本机服务写到用户配置目录（`$XDG_CONFIG_HOME/presmium/` 下，权限 0600），不进工作区与文稿。
+  - **生效**：保存后助手的运行时按新设置重启，不重启服务。
+  - **页面**：页面只显示密钥是否已设置，不回显密钥。
+  - **优先级**：环境变量优先，页面写明当前生效的来源。
+  - 读者问答的浏览器端设置与它分开，界面风格一致。
+  - 用例：在页面中填写替身模型服务后，“AI 修改”的对话能完成一次修改；替身收到的是页面中填写的密钥。
 - 入口好找（用户反馈：不知道怎么触发 agent）：`presmium serve` 与 `presmium dev` 启动时打印助手的状态（可用：服务提供方与运行时；不可用：缺哪个环境变量）与 MCP 的地址；工作区首页与文档工具栏在助手不可用时也显示“AI 修改”入口，打开后写明要设置的环境变量并重启。
 - 改变作者或读者可见行为的，写进交付报告，由验收者写入文档。
 
@@ -1264,6 +1273,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 
 - `docs/**`，`requirements.md` 与 `wbs.md` 除外，它们由验收者维护；
 - `packages/compiler/**`、`packages/viewer/**`、`packages/workspace/**`、`packages/addon-exec/**`、`packages/addon-publish/**`、`packages/addon-lecture/**`；
+- `packages/server/src/auth.ts` 与 `packages/cli/src/cli.ts` 中 `serve` 的 `--host`（局域网访问）；
 - 技能中 92b 拥有的段落之外的部分（只为文档一致性改动，与 92b 改同一文件时只改不同的段落）；
 - `examples/demo/**`；
 - `e2e/lecture*.spec.ts`、`e2e/fixtures/lecture*/**`、`e2e/workspace.spec.ts`。
@@ -1279,6 +1289,15 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - F-55，重做的标签：撤销一次撤销时，历史显示“重做「…」”或“Redo "…"”，不显示与撤销相同的标签。
 - D-8，Python 执行器：本地 Python 执行器的指纹包含运行脚本（`runner.py`）的摘要，已缓存的录制在下一次构建时按 D-8 更新。
 - 不稳定的用例改稳：F-18 的范围导出用例在超时后重试，与 `tall` 用例一致；`e2e/lecture-writeback.spec.ts` 在上一用例撤销后等编辑控件就绪。
+- 局域网访问（决定 E-3 的修订）：`presmium serve --host <地址>`（如 `0.0.0.0`）允许非回环地址，启动时警告没有登录。站点的 Host 检查接受这个地址与本机的名字，同站的 Origin 检查照旧。用例：以本机的局域网地址打开首页与文档页，编辑模式与确认可用；另一站点的页面发来的请求仍被拒绝。验收者试用环境中临时的转发脚本随之不再需要。
+- 首页的使用说明（P-120，用户反馈：不知道怎么触发 agent）：工作区首页有“使用说明”，中英文，内容包括：
+  - 管理文档、修改历史与撤销；
+  - 编辑模式中的“AI 修改”：批注、对话、审阅；
+  - 模型设置；
+  - 读者的提问；
+  - 用 MCP 连接外部 agent（地址与令牌在哪里）。
+
+  文档站（WP-93c）发布后链接过去。
 - N-05 与 R-27（WP-89e 验证者的发现）：网页放映视图中运行面板的参数输入与运行按钮继承代码的字号（现在 13.3 px，低于 18 px）；幻灯片中运行后输出栏占去一半宽度时，长代码行不被横向截断（自动换行或可横向滚动并有提示）；示例讲义 `extend-c`、`extend-train` 的 `zoom`（0.65、0.75）使代码低于 18 px，改为让代码在幻灯片中滚动或拆页，去掉这两个 `zoom`。验收者已决定 `extend-gpu` 不用 `zoom`，着色器在面板中滚动（`e2e/demo.spec.ts`）。
 - C-9 文档核对：K2 各组报告的作者与运营者可见的变化（`/tmp/claude-1000/-home-ddq-AoyangSpace-presmium/ad4777b2-3f0f-4adb-9e14-744177671948/scratchpad/k2-summaries.txt` 中各组的 “Doc-visible changes”“Behaviour changes for docs”），逐条核对 `docs/` 与技能是否写入，补齐。只关于共享部署的条目不写。宿主契约 `NavigationPosition.section` 的注释与 `ir.md` 2.11 一致。
 - 删除文档中的共享部署，位置见清单第 4 节：
