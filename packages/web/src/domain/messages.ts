@@ -1,6 +1,6 @@
 import type { Locale } from '@presmium/kernel/contracts'
 
-/** What the web form says around the IR runtime, in each UI language (N-07). */
+/** What the web form says around the IR runtime and in its shell (the workbench, edit mode's top bar, the launcher), in each UI language (N-07). */
 export const WEB_MESSAGES = {
   'zh-CN': {
     viewMenu: '视图',
@@ -41,6 +41,24 @@ export const WEB_MESSAGES = {
     /** The panes of edit mode beside the page (docs/architecture.md 5.10). */
     sourcePane: '源码',
     dockPane: '编辑面板',
+    /** Edit mode's top bar (docs/design/edit.dc.html): its trail (workspace / document), the preview's views. */
+    editBar: '编辑',
+    trail: '位置',
+    previewView: '预览视图',
+    documentView: '文档',
+    presentView: '放映',
+    /** The launcher's search over documents, sections and commands: its box, its results and their groups. */
+    searchAll: '搜索文档、章节与命令',
+    results: '搜索结果',
+    groupDocuments: '文档',
+    groupSections: '章节',
+    groupCommands: '命令',
+    noResults: '没有找到',
+    /** The commands the shell itself has, and the workbench's link past its bars. */
+    toggleTheme: '切换明暗',
+    skipToContent: '跳到内容',
+    /** The close button of a drawer of the workbench (the files, where the side bar gives way). */
+    close: '关闭',
   },
   'en': {
     viewMenu: 'View',
@@ -74,6 +92,20 @@ export const WEB_MESSAGES = {
     copied: 'Copied',
     sourcePane: 'Source',
     dockPane: 'Editing panels',
+    editBar: 'Edit',
+    trail: 'Location',
+    previewView: 'Preview',
+    documentView: 'Document',
+    presentView: 'Present',
+    searchAll: 'Search documents, sections and commands',
+    results: 'Results',
+    groupDocuments: 'Documents',
+    groupSections: 'Sections',
+    groupCommands: 'Commands',
+    noResults: 'Nothing found',
+    toggleTheme: 'Switch light and dark',
+    skipToContent: 'Skip to content',
+    close: 'Close',
   },
 } satisfies Record<Locale, unknown>
 

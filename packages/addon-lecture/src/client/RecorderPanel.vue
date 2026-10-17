@@ -3,7 +3,7 @@
 // new lecture or one section of an existing lecture again, with the camera and the screen if
 // wanted. While it records, the pointer over a block is reported as `point` (about 20 samples a
 // second, simplified); the laser and the marker draw on a block and report `ink`.
-import { blockAt, linesText, OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
+import { blockAt, linesText, OPERATIONS, PmIcon, useMessages, useServer, useService } from '@presmium/host'
 import type { BlockPoint } from '@presmium/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { clockText, LECTURE_ID, LECTURE_MESSAGES, simplifyPath } from '../domain/index.ts'
@@ -181,7 +181,7 @@ onBeforeUnmount(() => {
       <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-pressed="tool === 'marker'" @click="tool = tool === 'marker' ? undefined : 'marker'">{{ t.recorder.marker }}</button>
       <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="clearMarks">{{ t.recorder.clear }}</button>
     </div>
-    <p v-if="status" class="pm-lecture-recorder__status" role="status">{{ status }}</p>
+    <p v-if="status" class="pm-lecture-recorder__status" role="status"><PmIcon v-if="recording" class="pm-lecture-recorder__dot" name="record" size="1.1em" :stroke-width="2" />{{ status }}</p>
   </div>
 </template>
 
@@ -216,8 +216,8 @@ onBeforeUnmount(() => {
 .pm-lecture-recorder__status {
   margin: 0.25rem 0 0;
 }
-.pm-lecture-recorder[data-state='recording'] .pm-lecture-recorder__status::before {
-  content: '● ';
+.pm-lecture-recorder__dot {
+  margin-inline-end: 0.35em;
   color: var(--pm-color-danger);
 }
 .pm-lecture-surface {

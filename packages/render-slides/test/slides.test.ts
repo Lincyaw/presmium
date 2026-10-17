@@ -265,7 +265,9 @@ it('gives code that runs live one output area, its runner\'s, which shows the re
     await page.goto(`${site.url}/slides/${slide('only-live')}`)
     const hint = page.locator(`.slidev-page-${slide('only-live')} .slidev-runner-output .pm-run-hint`)
     await hint.waitFor()
-    expect(await hint.innerText()).toBe('按 ▶ 运行这段代码')
+    // The run button is named by the host's play icon (N-10).
+    expect((await hint.innerText()).replace(/\s+/g, ' ')).toBe('按 运行这段代码')
+    expect(await hint.locator('svg.pm-ui-icon').count()).toBe(1)
     expect(await page.content()).not.toContain('Click the play button')
 
     await page.goto(`${site.url}/slides/${slide('table')}`)

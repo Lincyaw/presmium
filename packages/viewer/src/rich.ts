@@ -69,9 +69,55 @@ function loadMermaid(): Promise<Mermaid> {
 }
 
 /**
+ * The host's colours (its design tokens, docs/architecture.md 5.10) as
+ * Mermaid's theme variables, for its `base` theme: a diagram is drawn in the
+ * paper, ink and accent of the page, light or dark, and its labels reach
+ * WCAG AA (Mermaid's own dark theme draws an edge's label at 4.4:1).
+ * Undefined where the page has no tokens: Mermaid's own themes then.
+ */
+function tokenTheme(dark: boolean): Record<string, string | boolean> | undefined {
+  const style = getComputedStyle(document.documentElement)
+  const token = (name: string) => style.getPropertyValue(`--pm-color-${name}`).trim()
+  const [ink, muted, surface, sunk, line, accent, accentSoft, warn, warnSoft] = ['ink', 'muted', 'surface', 'sunk', 'line', 'accent', 'accent-soft', 'warn', 'warn-soft'].map(token)
+  if (!ink || !surface || !accent) return undefined
+  return {
+    darkMode: dark,
+    background: surface,
+    fontFamily: style.getPropertyValue('--pm-font-sans').trim() || 'sans-serif',
+    textColor: ink,
+    lineColor: muted!,
+    primaryColor: accentSoft!,
+    primaryTextColor: ink,
+    primaryBorderColor: accent,
+    secondaryColor: sunk!,
+    secondaryTextColor: ink,
+    secondaryBorderColor: line!,
+    tertiaryColor: surface,
+    tertiaryTextColor: ink,
+    tertiaryBorderColor: line!,
+    edgeLabelBackground: surface,
+    clusterBkg: sunk!,
+    clusterBorder: line!,
+    titleColor: ink,
+    noteBkgColor: warnSoft!,
+    noteTextColor: ink,
+    noteBorderColor: warn!,
+    actorBkg: accentSoft!,
+    actorBorder: accent,
+    actorTextColor: ink,
+    signalColor: ink,
+    signalTextColor: ink,
+    labelBoxBkgColor: sunk!,
+    labelTextColor: ink,
+    loopTextColor: ink,
+  }
+}
+
+/**
  * A Mermaid diagram, drawn in the browser (docs/ir.md section 8.1) in the
- * page's appearance, again when it changes. A flowchart keeps its natural
- * size, so its labels stay readable; a wide one scrolls sideways.
+ * page's appearance, again when it changes: the host's colours where the page
+ * has them (`tokenTheme`). A flowchart keeps its natural size, so its labels
+ * stay readable; a wide one scrolls sideways.
  */
 export const PmMermaid = defineComponent({
   name: 'PmMermaid',
@@ -85,12 +131,14 @@ export const PmMermaid = defineComponent({
       const id = ++latest
       try {
         const library = await loadMermaid()
-        const theme = dark.value ? 'dark' : 'default'
+        const variables = tokenTheme(dark.value)
+        const appearance = dark.value ? 'dark' : 'default'
+        const theme = variables ? 'base' : appearance
         // The configuration is global: set before each drawing, with the appearance of this one.
-        library.initialize({ startOnLoad: false, securityLevel: 'strict', theme, flowchart: { useMaxWidth: false } })
+        library.initialize({ startOnLoad: false, securityLevel: 'strict', theme, ...variables ? { themeVariables: variables } : {}, flowchart: { useMaxWidth: false } })
         const { svg } = await library.render(`pm-mermaid-${++diagrams}`, props.code)
         if (id !== latest) return
-        drawn.value = { svg, theme }
+        drawn.value = { svg, theme: appearance }
         failed.value = undefined
       } catch (error) {
         if (id === latest) failed.value = errorMessage(error)

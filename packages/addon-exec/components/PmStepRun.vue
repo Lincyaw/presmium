@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useHost, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@presmium/host'
+import { PmIcon, useHost, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@presmium/host'
 import type { StepState } from '@presmium/kernel'
 import type { Ref } from 'vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
@@ -144,7 +144,7 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
       </div>
       <div v-if="expanded && state === 'ready'" class="pm-step-run__stepper" role="group" :aria-label="t.stepper" @keydown.stop>
         <button type="button" class="pm-ui-button pm-ui-button--small" :aria-label="t.previousStep" :disabled="(frame?.step ?? 0) <= 0" @click="go((frame?.step ?? 0) - 1)">
-          ◀
+          <PmIcon name="chevron-left" size="1.1em" :stroke-width="2" />
         </button>
         <input
           type="range"
@@ -157,7 +157,7 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
           @input="go(Number(($event.target as HTMLInputElement).value))"
         >
         <button type="button" class="pm-ui-button pm-ui-button--small" :aria-label="t.nextStep" :disabled="(frame?.step ?? 0) >= last" @click="go((frame?.step ?? 0) + 1)">
-          ▶
+          <PmIcon name="chevron-right" size="1.1em" :stroke-width="2" />
         </button>
       </div>
       <pre class="pm-step-run__output">{{ trace?.error ?? frame?.output }}</pre>

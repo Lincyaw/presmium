@@ -1,6 +1,8 @@
 export { execPlugin } from './plugin.ts'
 export { messages, MESSAGES, useMessages } from './messages.ts'
 export type { ExecMessages } from './messages.ts'
+export { languageName, runPlace, seconds } from './place.ts'
+export type { RunPlace } from './place.ts'
 export { createPyodideExecutor } from './pyodide.ts'
 export { createScriptExecutor, SCRIPT_EXECUTOR_ID } from './script.ts'
 export type { PyodideExecutor, PyodideExecutorOptions } from './pyodide.ts'

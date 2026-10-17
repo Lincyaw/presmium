@@ -30,6 +30,7 @@ export const ICONS = {
   /** A branch: git. */
   'branch': [circle(6, 5, 2), circle(6, 19, 2), circle(18, 7, 2), path('M6 7v10M18 9c0 4-4 4-10 7')],
   'chevron-right': [path('m9 6 6 6-6 6')],
+  'chevron-left': [path('m15 6-6 6 6 6')],
   'chevron-down': [path('m6 9 6 6 6-6')],
   'folder': [path('M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z')],
   'undo': [path('M9 7 4 12l5 5'), path('M4 12h11a5 5 0 0 1 0 10h-3')],
@@ -42,9 +43,26 @@ export const ICONS = {
   'external': [path('M14 4h6v6M20 4l-9 9'), path('M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5')],
   'trash': [path('M4 7h16M10 11v6M14 11v6'), path('M6 7l1 13h10l1-13M9 7V4h6v3')],
   'play': [path('M7 4v16l13-8z')],
+  /** A triangle with a mark: a warning (e.g. a caption older than its script). */
+  'warning': [path('M12 3.5 2.5 20h19z'), path('M12 10v4.5'), path('M12 17.5v.01')],
+  /** A circle half drawn in: the high-contrast switch. */
+  'contrast': [circle(12, 12, 9), path('M12 17.5a5.5 5.5 0 0 0 0-11z')],
+  /** A ring round a dot: recording. */
+  'record': [circle(12, 12, 8), circle(12, 12, 3.5)],
   /** A plug: connecting an outside agent (MCP). */
   'plug': [path('M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4')],
   'arrow-left': [path('M19 12H5M11 6l-6 6 6 6')],
 } satisfies Record<string, Shape[]>
 
 export type IconName = keyof typeof ICONS
+
+/**
+ * An icon as SVG markup, for text that a framework renders as HTML (e.g. a
+ * code runner's output in the slides): `size` is a CSS length, `1em` follows
+ * the text. Hidden from assistive technology; the text around it says what it
+ * means.
+ */
+export function iconMarkup(name: IconName, size = '1em', strokeWidth = 1.7): string {
+  const shapes = ICONS[name].map(([tag, attrs]) => `<${tag} ${Object.entries(attrs).map(([key, value]) => `${key}="${value}"`).join(' ')}/>`).join('')
+  return `<svg class="pm-ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${shapes}</svg>`
+}

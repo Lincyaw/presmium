@@ -452,8 +452,10 @@ test.describe('untrusted output in the slides\' runner (F-20)', () => {
   test('an image output whose data is not base64 runs nothing and is dropped, saying why', async ({ page }) => {
     await page.goto(`${xss().slides}/${xss().slide('evil-image')}`)
     const slide = page.locator(`.slidev-page-${xss().slide('evil-image')}`)
-    // Until it runs, the runner says how to run the code (it has no recording), in the deck's language.
-    await expect(slide.locator('.slidev-runner-output .pm-run-hint')).toHaveText('按 ▶ 运行这段代码')
+    // Until it runs, the runner says how to run the code (it has no recording), in the deck's language, naming
+    // the run button by the host's play icon.
+    await expect(slide.locator('.slidev-runner-output .pm-run-hint')).toHaveText('按 运行这段代码')
+    await expect(slide.locator('.slidev-runner-output .pm-run-hint svg.pm-ui-icon')).toHaveCount(1)
     await page.evaluate(() => {
       (window as { fixtureXss?: number }).fixtureXss = 0
     })

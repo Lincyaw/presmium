@@ -17,7 +17,18 @@ const zhCN = {
   recordedBadge: (reason: string) => `预录输出 · ${reason}`,
   recordedLine: (reason: string) => `预录输出（${reason}）`,
   recordedOutput: '预录输出',
-  runHint: '按 ▶ 运行这段代码',
+  /** `icon` is the run button's icon, as SVG markup. */
+  runHint: (icon: string) => `按 ${icon} 运行这段代码`,
+  /** The run panel's bar: where its code runs (./place.ts). */
+  runsIn: {
+    browser: '浏览器中运行',
+    machine: '本机运行',
+    remote: (name: string) => `在远端环境 ${name} 中运行`,
+    environment: (name: string) => `在环境 ${name} 中运行`,
+  },
+  /** The label of a run's output, with its duration in seconds when it ran. */
+  output: '输出',
+  outputTook: (seconds: string) => `输出 · ${seconds} 秒`,
   droppedImage: '图片输出的数据不是 base64，未显示',
   gpuUnavailable: (detail: string) => (/no gpu adapter/i.test(detail) ? '没有可用的 GPU 适配器' : /no webgpu/i.test(detail) ? '浏览器没有 WebGPU' : `GPU 不可用：${detail}`),
   recorded: '预录',
@@ -57,7 +68,15 @@ const en: ExecMessages = {
   recordedBadge: reason => `Recorded output · ${reason}`,
   recordedLine: reason => `Recorded output (${reason})`,
   recordedOutput: 'Recorded output',
-  runHint: 'Press ▶ to run this code',
+  runHint: icon => `Press ${icon} to run this code`,
+  runsIn: {
+    browser: 'runs in the browser',
+    machine: 'runs on this machine',
+    remote: name => `runs in the remote environment ${name}`,
+    environment: name => `runs in the environment ${name}`,
+  },
+  output: 'Output',
+  outputTook: seconds => `Output · ${seconds} s`,
   droppedImage: 'The image output does not hold base64 data and is not shown',
   gpuUnavailable: detail => (/no gpu adapter/i.test(detail) ? 'No GPU adapter is available' : /no webgpu/i.test(detail) ? 'This browser has no WebGPU' : `The GPU is unavailable: ${detail}`),
   recorded: 'recorded',

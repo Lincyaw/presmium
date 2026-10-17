@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { PmIcon, useMessages } from '@presmium/host'
 import { useHighContrast } from '../src/client/contrast.ts'
 import { MESSAGES } from '../src/domain/index.ts'
 
@@ -21,7 +21,7 @@ const t = useMessages(MESSAGES)
     :title="t.highContrast"
     @click="toggle"
   >
-    <span class="pm-contrast-toggle__icon" aria-hidden="true">◐</span>
+    <PmIcon class="pm-contrast-toggle__icon" name="contrast" size="1.15em" :stroke-width="1.9" />
     <span v-if="!compact">{{ t.highContrastState(enabled) }}</span>
   </button>
 </template>

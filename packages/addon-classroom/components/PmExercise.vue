@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages, usePresentationMode, useService } from '@presmium/host'
+import { PmIcon, useMessages, usePresentationMode, useService } from '@presmium/host'
 import { EXECUTOR } from '@presmium/kernel'
 import { computed, ref, shallowRef } from 'vue'
 import { useClassroomStore, useCollection, useSession } from '../src/client/use.ts'
@@ -117,7 +117,7 @@ async function submit(): Promise<void> {
       </p>
       <ol class="pm-exercise__cases">
         <li v-for="item in report.cases" :key="item.line" :data-ok="item.ok">
-          <span aria-hidden="true">{{ item.ok ? '✓' : '✗' }}</span>
+          <PmIcon class="pm-exercise__mark" :name="item.ok ? 'check' : 'close'" size="1em" :stroke-width="2.2" />
           <code>{{ item.code }}</code>
           <p v-if="item.error" class="pm-exercise__error" :data-kind="item.error.kind">
             <strong>{{ item.error.kind }}</strong>{{ t.colon }}{{ describe(item.error) }}
@@ -175,10 +175,14 @@ async function submit(): Promise<void> {
   margin: 0.35em 0;
   padding-left: 1.2em;
 }
-.pm-exercise__cases li[data-ok='true'] > span {
+.pm-exercise__mark {
+  margin-inline-end: 0.3em;
+  vertical-align: -0.12em;
+}
+.pm-exercise__cases li[data-ok='true'] > .pm-exercise__mark {
   color: var(--pm-color-ok);
 }
-.pm-exercise__cases li[data-ok='false'] > span {
+.pm-exercise__cases li[data-ok='false'] > .pm-exercise__mark {
   color: var(--pm-color-danger);
 }
 .pm-exercise__error {

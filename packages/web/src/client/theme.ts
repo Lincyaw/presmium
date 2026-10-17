@@ -13,7 +13,6 @@ import { computed, defineAsyncComponent, defineComponent, h, nextTick, onBeforeU
 import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, translationPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
-import { SHELL_MESSAGES } from './messages.ts'
 import { PAGES, PresmiumPage, ViewMenu } from './page.ts'
 import './style.css'
 
@@ -195,7 +194,6 @@ const EditFrame = defineComponent({
   name: 'PresmiumEditFrame',
   setup() {
     const t = useMessages(WEB_MESSAGES)
-    const s = useMessages(SHELL_MESSAGES)
     const toolbar = useService(TOOLBAR)
     const viewer = useViewer()
     const theme = useTheme()
@@ -228,8 +226,8 @@ const EditFrame = defineComponent({
     const view = computed(() => (getView(viewer.view.value)?.kind === 'overlay' ? 'present' : 'document'))
     const setView = (next: string) => viewer.setView(next === 'present' ? 'present' : viewer.pageView.value)
     // Always there, shown in edit mode only: the navigation bar's toolbar moves into it when edit mode starts.
-    const bar = () => h('header', { 'class': 'pm-edit-bar pm-ui', 'aria-label': s.value.editBar, 'style': active.value ? undefined : { display: 'none' } }, [
-      h('nav', { 'class': 'pm-edit-bar__trail', 'aria-label': s.value.trail }, [
+    const bar = () => h('header', { 'class': 'pm-edit-bar pm-ui', 'aria-label': t.value.editBar, 'style': active.value ? undefined : { display: 'none' } }, [
+      h('nav', { 'class': 'pm-edit-bar__trail', 'aria-label': t.value.trail }, [
         h('a', { 'class': 'pm-edit-bar__logo', 'href': home.value ?? withBase('/'), 'aria-hidden': 'true', 'tabindex': -1 }, 'P'),
         home.value ? h('a', { class: 'pm-edit-bar__workspace', href: home.value }, workspaceTitle.value ?? t.value.documents) : null,
         home.value ? h('span', { 'class': 'pm-edit-bar__sep', 'aria-hidden': 'true' }, '/') : null,
@@ -237,9 +235,9 @@ const EditFrame = defineComponent({
       ]),
       h(PmToolbar, { class: 'pm-edit-bar__tabs', filter: bySlot('tabs') }),
       h('div', { class: 'pm-edit-bar__end' }, [
-        h(PmSegmented, { 'label': s.value.previewView, 'modelValue': view.value, 'options': [{ value: 'document', label: s.value.documentView }, { value: 'present', label: s.value.presentView }], 'onUpdate:modelValue': setView }),
+        h(PmSegmented, { 'label': t.value.previewView, 'modelValue': view.value, 'options': [{ value: 'document', label: t.value.documentView }, { value: 'present', label: t.value.presentView }], 'onUpdate:modelValue': setView }),
         slidesBase.value
-          ? h('a', { class: 'pm-ui-button pm-ui-button--ghost pm-ui-button--small pm-edit-bar__slides', href: slideUrl(slidesBase.value, config.value.presmium?.form ?? {}, viewer.section(viewer.position.value.section)?.index ?? 1, viewer.position.value.step), target: '_blank', rel: 'noopener' }, [h(PmIcon, { name: 'slides', size: 14, strokeWidth: 2 }), s.value.slides])
+          ? h('a', { class: 'pm-ui-button pm-ui-button--ghost pm-ui-button--small pm-edit-bar__slides', href: slideUrl(slidesBase.value, config.value.presmium?.form ?? {}, viewer.section(viewer.position.value.section)?.index ?? 1, viewer.position.value.step), target: '_blank', rel: 'noopener' }, [h(PmIcon, { name: 'slides', size: 14, strokeWidth: 2 }), t.value.slides])
           : null,
         // The navigation bar's toolbar comes here (see the layout).
         h('div', { id: EDIT_TOOLS, class: 'pm-edit-bar__tools' }),

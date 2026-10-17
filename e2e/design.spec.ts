@@ -1,8 +1,9 @@
 // The design system and the workbench (N-10, WP-95b, WP-95c; docs/architecture.md 5.10, 5.11, docs/design/):
 // `presmium serve` of a workspace (e2e/fixtures/design) on this machine. Its home page is the workbench: a link that
 // skips to the content, the activity bar, the workspace's name as the page's one heading and its file tree, the
-// launcher with its search (documents, their sections, commands) and the documents as cards in the serif of the
-// design, the agent's draft card (a test plugin stands in for the assistant), and the status bar; the fonts come with
+// launcher with its search (documents, their sections, commands; the cards stay as they are) and the documents as
+// cards in the serif of the design, the agent's draft card (a test plugin stands in for the assistant), and the status
+// bar; where the side bar gives way (a tablet, a phone) the activity bar opens the file tree in a drawer; the fonts come with
 // Presmium, and the dark scheme switches every token. The history names an undo and its redo (F-55); the usage guide
 // names its topics (P-120). On a document's page edit mode is an application filling the window
 // (docs/design/edit.dc.html): its top bar in the navigation bar's place (the trail, the open files, the preview's
@@ -11,14 +12,14 @@
 // window's foot; the pages' footers give way. On a phone the drawers open below the activity bar, a popover stays on
 // the screen and edit mode stacks its bar and panes round the preview. Every text reaches WCAG AA in light and dark,
 // and the borders of fields and of a chosen segment 3:1: the home page, its history, its document dialog and guide, a
-// document's page and edit mode.
+// document's page and edit mode (the check of e2e/fixtures/contrast.ts, which the plugins' specs use too).
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import { lowContrast } from './fixtures/contrast.ts'
 import { openDevPage } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -69,79 +70,6 @@ async function serveWorkspace(): Promise<{ dir: string, child: ChildProcess, url
   return { dir, child, url: `${url}/` }
 }
 
-/**
- * What under `scope` falls short of WCAG AA. Texts whose contrast with what is behind them is below 4.5:1, or 3:1 for
- * large text (24 px, or 18.66 px bold) (1.4.3); the background is every ancestor's background colour composited, the
- * text's colour with the opacity of its ancestors. And the borders that show what a control is or which one is
- * chosen, those of fields and of a chosen segment, below 3:1 against the control's background or what is around it
- * (1.4.11). Disabled controls are left out, as WCAG does.
- */
-function lowContrast(page: Page, scope = 'body'): Promise<string[]> {
-  return page.evaluate((selector) => {
-    const parse = (value: string): number[] => {
-      const srgb = /^color\(srgb ([\d.e-]+) ([\d.e-]+) ([\d.e-]+)(?: \/ ([\d.e-]+))?\)$/.exec(value)
-      if (srgb) return [Number(srgb[1]) * 255, Number(srgb[2]) * 255, Number(srgb[3]) * 255, srgb[4] === undefined ? 1 : Number(srgb[4])]
-      const parts = (/rgba?\(([^)]+)\)/.exec(value)?.[1] ?? '0 0 0 0').split(/[\s,/]+/).filter(Boolean).map(Number)
-      return [parts[0]!, parts[1]!, parts[2]!, parts[3] ?? 1]
-    }
-    const over = (top: number[], below: number[]) => [0, 1, 2].map(i => top[i]! * top[3]! + below[i]! * (1 - top[3]!)).concat(1)
-    const luminance = (c: number[]) => {
-      const [r, g, b] = c.slice(0, 3).map((v) => {
-        const s = v / 255
-        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
-      })
-      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
-    }
-    const ratio = (a: number[], b: number[]) => {
-      const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-      return (high! + 0.05) / (low! + 0.05)
-    }
-    /** An element's background over its ancestors', and the opacity it is drawn with. */
-    const backdrop = (element: Element) => {
-      let background = [255, 255, 255, 1]
-      let opacity = 1
-      const layers: number[][] = []
-      for (let at: Element | null = element; at; at = at.parentElement) {
-        const own = getComputedStyle(at)
-        opacity *= Number(own.opacity)
-        layers.push(parse(own.backgroundColor))
-      }
-      for (const layer of layers.reverse()) background = over(layer, background)
-      return { background, opacity }
-    }
-    const shown = (element: Element) => {
-      if (element.closest('[aria-hidden="true"], :disabled, [aria-disabled="true"]')) return false
-      if (!element.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false
-      const box = element.getBoundingClientRect()
-      return box.width > 1 && box.height > 1
-    }
-    const failures: string[] = []
-    for (const element of document.querySelectorAll<HTMLElement>(`${selector}, ${selector} *`)) {
-      const text = [...element.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent ?? '').join('').trim()
-      if (!text || !shown(element)) continue
-      const style = getComputedStyle(element)
-      const { background, opacity } = backdrop(element)
-      const color = parse(style.color)
-      const drawn = over([color[0]!, color[1]!, color[2]!, color[3]! * opacity], background)
-      const size = Number.parseFloat(style.fontSize)
-      const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700)
-      const value = ratio(drawn, background)
-      if (value < (large ? 3 : 4.5)) failures.push(`${text.slice(0, 40)} (${element.className || element.tagName}: ${value.toFixed(2)})`)
-    }
-    const bounded = '.pm-ui-input, .pm-ui-select, .pm-ui-textarea, .pm-ui-search, .pm-view-menu, .pm-ui-segmented__option[aria-pressed="true"]'
-    for (const element of document.querySelectorAll<HTMLElement>(`${selector} :is(${bounded})`)) {
-      if (!shown(element) || !element.parentElement) continue
-      const inside = backdrop(element)
-      const around = backdrop(element.parentElement).background
-      const border = parse(getComputedStyle(element).borderTopColor)
-      const drawn = over([border[0]!, border[1]!, border[2]!, border[3]! * inside.opacity], inside.background)
-      const value = Math.min(ratio(drawn, inside.background), ratio(drawn, around))
-      if (value < 3) failures.push(`border of ${element.id || element.className}: ${value.toFixed(2)}`)
-    }
-    return failures
-  }, scope)
-}
-
 test.describe('the design system and the workbench', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
   let served: Awaited<ReturnType<typeof serveWorkspace>> | undefined
@@ -178,18 +106,18 @@ test.describe('the design system and the workbench', () => {
     await expect(page.locator('.fixture-pane[data-slot="status"]')).toBeVisible()
     await expect(page.locator('.pm-workspace-documents__new')).toHaveText('新建文档')
 
-    // The cards: a serif title, the directory; the search (Ctrl K) filters them.
+    // The cards: a serif title, the directory. The search (Ctrl K) lists the document it finds under its box; the
+    // cards stay as they are.
     const notes = page.locator('.pm-site-home__document[data-document="notes"]')
     expect(await notes.locator('.pm-site-home__link').evaluate(el => getComputedStyle(el).fontFamily)).toMatch(/^"Source Serif 4"/)
     await expect(notes).toContainText('notes/')
     await page.keyboard.press('Control+k')
     await expect(page.getByRole('combobox', { name: '搜索文档、章节与命令' })).toBeFocused()
     await page.keyboard.type('随笔')
-    await expect(page.locator('.pm-site-home__document')).toHaveCount(1)
-    await expect(page.locator('.pm-site-home__document')).toHaveAttribute('data-document', 'essay')
+    await expect(page.getByRole('listbox', { name: '搜索结果' }).getByRole('group', { name: '文档' }).getByRole('option')).toHaveText([/^课后随笔/])
+    await expect(page.locator('.pm-site-home__document')).toHaveCount(2)
     await page.keyboard.press('Control+a')
     await page.keyboard.press('Backspace')
-    await expect(page.locator('.pm-site-home__document')).toHaveCount(2)
 
     // The Latin faces are Presmium's own files, from this server; none from the network (N-03).
     expect(await page.evaluate(async () => {
@@ -246,6 +174,8 @@ test.describe('the design system and the workbench', () => {
     await search.fill('BPE 怎样')
     const section = results.getByRole('group', { name: '章节' }).getByRole('option')
     await expect(section).toContainText(['BPE 怎样得到词元'], { timeout: 60_000 })
+    // A search for a section leaves the documents' cards as they are.
+    await expect(page.locator('.pm-site-home__document')).toHaveCount(2)
     await search.press('ArrowDown')
     await expect(section.first()).toHaveAttribute('aria-selected', 'true')
     await search.press('Enter')
@@ -400,6 +330,30 @@ test.describe('the design system and the workbench', () => {
     await expect(page.locator('.pm-edit-status')).toHaveCount(0)
     await expect(page.locator('.VPNav')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.className)).not.toMatch(/pm-edit/)
+  })
+
+  test('on a tablet and a phone, where the side bar gives way, the activity bar opens the file tree in a drawer', async ({ page }) => {
+    const activity = page.getByRole('navigation', { name: '活动' })
+    const drawer = page.getByRole('dialog', { name: '工作区文件' })
+    for (const [width, height] of [[900, 1000], [390, 844]] as const) {
+      await page.setViewportSize({ width, height })
+      await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="notes"]'))
+      await expect(page.getByRole('complementary', { name: '工作区文件' })).toHaveCount(0)
+      await activity.getByRole('button', { name: '工作区文件' }).click()
+      await expect(drawer.getByRole('navigation', { name: '文件' }).locator('[data-document="notes"]')).toBeVisible()
+      // Beside the activity bar on a tablet, below it on a phone; on the screen.
+      const [bar, box] = await Promise.all([activity.boundingBox(), drawer.boundingBox()])
+      if (width < 768) expect(box!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height - 1)
+      else expect(box!.x).toBeGreaterThanOrEqual(bar!.x + bar!.width - 1)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width + 0.5)
+      await page.keyboard.press('Escape')
+      await expect(drawer).toHaveCount(0)
+    }
+    // A file chosen in the drawer opens, and the drawer closes: the workspace's configuration, in the home page's editor.
+    await activity.getByRole('button', { name: '工作区文件' }).click()
+    await drawer.locator('[data-path="presmium.workspace.yaml"]').click()
+    await expect(drawer).toHaveCount(0)
+    await expect(page.locator('.pm-workbench__source').getByRole('textbox', { name: '源码' })).toContainText('title: 设计验收工作区')
   })
 
   test('on a phone the drawers open below the activity bar, a popover of the navigation screen stays on the screen, and edit mode stacks its bar and panes round the preview', async ({ page }) => {
