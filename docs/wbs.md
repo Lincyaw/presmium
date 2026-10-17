@@ -22,8 +22,8 @@
 | K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2（S 不阻塞 K；SHARED 模式在 S 通过前保持实验性） |
 | K2 | 先 WP-89b（串行），再并行 WP-89c、89d、89e、89f：第三轮验收审计的修复（`review-round3.md`） | K |
 | L0（v0.9） | 先 WP-92a 删除共享部署（串行），再并行 WP-92b 浏览器端读者问答、WP-89g K2 遗留与文档核对 | K2 |
-| L1（v0.9） | WP-95a 设计探索（已完成）；WP-95b 设计系统与应用外壳在 WP-92a 合并后开始，与 WP-92b、WP-89g 并行（已完成）；再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题、WP-92c L0 遗留 | 95b：WP-92a；95c、95d、92c：95b 与 L0 |
-| L（M10） | 先 WP-93a 发布工程（串行），再并行 WP-93b 起步工具、WP-93c 文档与文档站 | L1 |
+| L1（v0.9） | WP-95a 设计探索（已完成）；WP-95b 设计系统与应用外壳在 WP-92a 合并后开始，与 WP-92b、WP-89g 并行（已完成）；再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题、WP-92c L0 遗留（已完成）；再并行 WP-95e 界面遗留、WP-92d 服务端遗留（与 WP-93a 同时） | 95b：WP-92a；95c、95d、92c：95b 与 L0；95e、92d：95c、95d、92c |
+| L（M10） | 先 WP-93a 发布工程（与 WP-95e、92d 并行），再并行 WP-93b 起步工具、WP-93c 文档与文档站 | L1 的 95c、95d、92c；93b、93c 另等 95e、92d |
 | M（M11，1.1） | WP-94 hub 托管模板 | L |
 
 ## 测试原则
@@ -1164,6 +1164,8 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 | 92c | 5391、5392 | 5393–5399 |
 | 95c | 5431、5432 | 5433–5439 |
 | 95d | 5441、5442 | 5443–5449 |
+| 95e | 5461、5462 | 5463–5469 |
+| 92d | 5471、5472 | 5473–5479 |
 
 4180、4310、4790、5173 被验收者的试用环境占用，不要使用。
 
@@ -1434,6 +1436,49 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - `git grep -n -i -E "tutor|maxQuestions|questionTimeoutMs|TUTOR_COMMAND" docs .agents README.md packages templates examples` 只剩历史文件（评审记录、`wbs.md`、`design-v0.7.md` 正文）；
 - 全部 Chromium 端到端用例通过（用本包的端口）。
 
+### L1 的验收（2026-10-17，验收者）
+
+WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板改用设计令牌（95d 的补丁）、首页与使用说明写明 serve 的 MCP 令牌在哪里（92c）、示例工作区与示例讲义同步、几处文档措辞。接受的差异（写进 `docs/design/README.md` 的“与参考稿不同之处”）：
+
+- 工作区服务中编辑模式的视图切换只在文档有幻灯片形态的地址（`slidesUrl`）时出现“幻灯片”；
+- 问题面板显示诊断的 `hint` 文字，没有一键修正（结构化的修正需要扩充 `Finding` 契约，1.0 之后再定）。
+
+剩下的分给 WP-95e（界面）与 WP-92d（服务端），两者与 WP-93a 并行。
+
+### WP-95e 界面遗留（与 92d、93a 并行）
+
+**拥有**：`packages/workspace/src/client/**`、`packages/workspace/src/domain/messages.ts`、`packages/web/src/client/**`、`packages/web/src/domain/messages.ts`、`packages/host/**`、`packages/viewer/**`、`packages/addon-*/src/client/**`、`components/**`、`styles/**`、`setup/**`（`addon-assistant` 除外）、`packages/render-slides` 的主题与 `src/deck/style.css`、`packages/workspace/test/source.test.ts`（新）、`e2e/editing.spec.ts`、`e2e/design.spec.ts`、`e2e/plugin-ui.spec.ts`、`e2e/smoke.spec.ts`、`e2e/fixtures/contrast.ts`、`architecture.md` 第 5 节、`docs/design/README.md`。
+
+**条目**：
+
+1. 运行面板按 `docs/design/slide.dc.html`：顶栏写语言与在哪里运行（“Python · 浏览器中运行”），运行按钮在顶栏；输出面板带“输出 · <耗时>”（`RunRecord.durationMs`），幻灯片上宽度够时在代码旁边。网页与放映视图同样适用。
+2. 插件界面中的字形图标（`PmStepRun` 的 ◀ ▶、`PlayerPanel` 的 ⚠ ✎、`PmContrastToggle` 的 ◐、`PmExercise` 的 ✓ ✗、`RecorderPanel` 的 ●、执行插件提示文字中的 ▶）换成宿主的线性图标。
+3. 对比度：`PmDemoStepper` 已完成的步骤（4.40:1）、暗色下 Mermaid 的连线标签（4.43:1）达到 AA。
+4. 对比度检查只有一份：`e2e/design.spec.ts` 用 `e2e/fixtures/contrast.ts`。
+5. 首页的文件树在平板与手机宽度下也能打开（抽屉中）。
+6. 启动台搜索不清空文档卡片（搜索框与卡片筛选分开，或搜索章节时卡片照旧）。
+7. 合并或重新载入之后焦点回到编辑器，`Ctrl+S` 在源码面板中任何位置都保存。
+8. 外壳的文字（`packages/web/src/client/messages.ts` 的 `SHELL_MESSAGES`）并入网页的文本目录。
+9. 测试：源码路由的拒绝（路径穿越、符号链接、别的文档的文件、二进制、外来 `Origin`、过期的版本）各一个集成用例；编辑器“重新载入”与磁盘上的编辑器改动后的冲突各一个端到端用例。
+10. `e2e/smoke.spec.ts` 的 PDF 导出在全套运行中稳定通过（找出在负载下失败的原因：链接丢失或 Slidev 的页面未显示，而不是只加长超时）。
+
+**验收**：每条的用例或截图（1440 与 390，明暗）；全部 Chromium 端到端用例通过。
+
+### WP-92d 服务端遗留（与 95e、93a 并行）
+
+**拥有**：`packages/cli/**`、`packages/server/**`、`packages/workspace/src/node/**`、`packages/compiler/**`、`packages/addon-assistant/**`、`packages/addon-lecture/src/node/**`、`src/domain/**`、`test/**`、`packages/addon-classroom/src/domain/**`、`packages/kernel/src/contracts/**`、`e2e/assistant-edit.spec.ts`、`e2e/assistant.spec.ts`、`docs/**`（`requirements.md`、`wbs.md`、`architecture.md` 第 5 节、`docs/design/` 除外）、技能中与这些有关的段落。
+
+**条目**：
+
+1. P-124：`presmium dev` 也有浏览器中的源码编辑（挂上工作区的源码路由、`DOCUMENT_FILES`、文档锁与 `REVISIONS`，开发站点加载工作区的浏览器插件；文稿不在 git 仓库中时可以保存，不能提交）。
+2. 助手的 `info` 给出结构化的缺少项（代码与参数），浏览器按代码给出中英文说明，不再按英文句子匹配；每个分支一个用例。
+3. 修改审阅的 git 竞争（`e2e/assistant-edit.spec.ts:953` 在负载下失败：agent 写进 `.git/config` 的过滤器在审阅运行 git 时被执行）：审阅运行的 git 命令不读仓库的配置中能执行命令的项，或在恢复 git 目录与运行 git 之间没有空隙；用例在负载下稳定。
+4. 讲授的取得按 IR 保存（同一份 IR 的片段集合只存一次），页面已加载的讲授在别的窗口多次加载新 IR 之后仍能取得片段；`script.test.ts` 的两个用例互不依赖。
+5. 残留的学生视图：`compiler/src/host.ts` 的 `buildView` 的 `view: 'student'` 与它的注释、`compiler/src/renderers.ts`、`workspace/src/node/routes.ts`、`addon-classroom/src/domain/place.ts` 中的说法。
+6. 文档：92c 与 95c、95d 的变化在第 5 节之外需要的地方（`ir.md`、`domain-model.md`、技能）。
+
+**验收**：每条的用例；`git grep -n "student view\|学生视图" packages` 只剩学生版构建的说法；全部 Chromium 端到端用例通过。
+
 ## L 波次：开源发布 1.0（WP-93a 至 WP-93c；M10）
 
 需求见 `requirements.md` 6.15 节（P-140 至 P-146）与“定位与边界”。1.0 不加新功能。前置：L0 波次合并，`pnpm verify` 通过。
@@ -1442,7 +1487,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 
 端到端端口：93a 5401、5402（其他服务 5403–5409），93b 5411、5412，93c 5421、5422。
 
-### WP-93a 发布工程（L 波次第一步，串行）
+### WP-93a 发布工程（L 波次第一步，与 WP-95e、92d 并行）
 
 **拥有**：根目录文件（`LICENSE`、`NOTICE`、`package.json`、`pnpm-workspace.yaml`、`.npmrc`）、`packages/*/package.json`、各包的 `LICENSE`、`.changeset/**`、`.github/**`、`scripts/**`、`packages/compiler/src/plugins.ts`（插件加载）、`e2e/consumer.spec.ts` 与 `packages/cli/test/consumer.test.ts`（新）。
 
@@ -1452,6 +1497,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - P-141：哪些包公开发布、哪些保持私有（测试替身、示例）写成表；每个包写 `engines.node`（与根目录一致，WP-89c 验证者指出 `packages/cli` 缺少）；公开的包去掉 `private`，补齐元数据；`exports` 与 `files` 只含发布所需（源码以 `.ts`、`.vue` 直接发布）；插件对 Presmium 的依赖改为 `peerDependencies`；changesets 初始化，所有公开包版本为 `1.0.0-rc.0`。
 - P-141 消费者安装测试：`pnpm -r pack` 打包，在单仓之外的临时目录中用 npm 安装压缩包，运行 `presmium check`、`presmium build`（web、slides、notebook）与 `presmium dev` 冒烟，并从压缩包安装一个第三方插件（WP-93b 的插件模板生成的项目，93b 合并前用一个测试插件）。
 - P-143 的加载器部分：插件的 `peerDependencies` 声明的 Presmium 版本不满足时，加载器给出诊断（`presmium check` 报告，构建不崩溃）。
+- 字体：随站点打包的 IBM Plex Sans、IBM Plex Mono 与 Source Serif 4（Fontsource，SIL OFL 1.1）的许可证写进 `NOTICE`，构建产物中带上 OFL 的文本（WP-95b 验证者）。
 - P-146 的 CI：GitHub Actions 工作流（`pnpm test`、示例构建与检查、Chromium 端到端用例；完整套件与其他浏览器定时运行）；工作流文件用 `act` 或等价方式至少本地检查一次语法。
 
 **验收**：`pnpm -r publish --dry-run` 通过；消费者安装测试通过；不兼容插件的诊断用例通过；`pnpm verify` 通过。
