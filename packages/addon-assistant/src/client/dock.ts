@@ -21,7 +21,7 @@ export const panelWanted = ref(false)
 /** Edit mode is on. */
 export const editing = computed(() => presmiumService(EDIT_MODE)?.active.value ?? false)
 
-/** The page is a document whose changes the workspace commits (not the home page, not `presmium dev`). */
+/** The page is a document whose changes the workspace commits (not the home page, nor one in no git repository). */
 export const inDocument = computed(() => assistant.value?.info.value?.changes === true && !assistant.value.info.value.home)
 
 /** The agent may make changes here: annotations and chat. */

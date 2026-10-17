@@ -448,6 +448,32 @@ test.describe('the review with git (D12), one task per document, a transcript, t
     }
   })
 
+  test('the review\'s git reads none of the repository\'s configuration: a filter driver defined there never runs while the review runs git (WP-92d)', async () => {
+    // A filter driver in the repository's configuration (its git directory is at the workspace root, outside
+    // the document: no guard puts it back), named by the attributes the agent writes in the document.
+    const config = join(dir, '.git/config')
+    const kept = readFileSync(config, 'utf8')
+    writeFileSync(config, `${kept}[filter "planted"]\n\tclean = touch planted\n`)
+    try {
+      const { id, events } = await submit(server, 'intro', chat('#append .gitattributes * filter=planted\n#append notes.md 过滤驱动之下的一行'))
+      try {
+        const review = await next(events, 'review')
+        expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/.gitattributes', 'intro/notes.md'])
+        // Every step and the review's diff ran git over the attributes: the driver never ran.
+        expect(review.steps.length).toBeGreaterThan(1)
+        expect(existsSync(join(dir, 'planted'))).toBe(false)
+        expect((await call(server, 'intro', `tasks/${id}/review`, { accept: false })).status).toBe(204)
+        expect(await next(events, 'done')).toEqual({ type: 'done' })
+        expect(existsSync(join(dir, 'intro/.gitattributes'))).toBe(false)
+        expect(existsSync(join(dir, 'planted'))).toBe(false)
+      } finally {
+        events.close()
+      }
+    } finally {
+      writeFileSync(config, kept)
+    }
+  })
+
   test('a second change task of a document is refused while the first waits for its review; a transcript task through the tasks route is committed', async () => {
     const first = await submit(server, 'intro', chat('#append lecture.md 第一个任务的一行'))
     try {

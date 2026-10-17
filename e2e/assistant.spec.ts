@@ -1,8 +1,12 @@
 // The assistant in the pages of `presmium dev` (WP-80, WP-92b; P-111, P-112, N-08), without any model the
-// operator configured:
+// operator configured, for a deck git ignores (it is in examples/demo/.presmium):
 // - "AI changes" is in the toolbar all the same; its popover says AI changes are unavailable, what to set (the
 //   page's model settings, or the environment and a restart), what is missing in the page's language (the
-//   server says it in English), and that they are made in the workspace service; the model settings open from it.
+//   server gives its code), and that the changes are committed to a git repository, which this deck is not in;
+//   the model settings open from it.
+// - Edit mode (P-124, WP-92d): the deck's source opens in the browser; a paragraph picked in the preview opens
+//   its line, a sentence added there and saved shows in the page without a reload; out of git, the status bar
+//   says so and there is nothing to commit.
 // - In a classroom, a learner's question reaches the presenter's overview; its "AI answer" asks the
 //   presenter's own model service (the one the presenter filled in for the question panel; an
 //   OpenAI-compatible service on this machine here), naming its provider; the presenter sends the answer to
@@ -48,7 +52,7 @@ test.afterAll(async () => {
 /** A page of the dev server (its address ends with a slash). */
 const pageUrl = (path: string) => new URL(path, dev.url).href
 
-test('"AI changes" is in the toolbar without a model: it says what to set, that changes are made in the workspace service, and opens the model settings', async ({ page }) => {
+test('"AI changes" is in the toolbar without a model: it says what to set, that changes are committed to git, and opens the model settings', async ({ page }) => {
   await openDevPage(page, pageUrl('code.html'), page.locator('[data-section="merge"]'))
   await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
   const panel = page.getByRole('dialog', { name: 'AI 修改' })
@@ -57,12 +61,38 @@ test('"AI changes" is in the toolbar without a model: it says what to set, that 
   await expect(panel).toContainText('DEEPSEEK_API_KEY')
   await expect(panel).toContainText('缺少：模型服务（在“模型设置”中填写，或设置环境变量 DEEPSEEK_API_KEY')
   await expect(panel).not.toContainText('no model access')
-  await expect(panel).toContainText('AI 修改在工作区服务（presmium serve）中使用')
+  await expect(panel).toContainText('AI 修改要提交到 git：这份文稿不在 git 仓库中（或被 git 忽略）')
   await panel.getByRole('button', { name: '模型设置' }).click()
   const settings = page.getByRole('dialog', { name: '模型设置' })
   await expect(settings).toContainText('当前生效：没有配置')
   await expect(settings).toContainText('密钥（未设置）')
   await expect(settings).toContainText(`${dir}.config/presmium/assistant.json`)
+})
+
+test('edit mode: the deck\'s source opens in the browser, a sentence saved shows in the page without a reload; out of git, nothing is committed', async ({ page }) => {
+  const toggle = page.locator('.pm-workspace-edit').filter({ visible: true })
+  await openDevPage(page, pageUrl('code.html'), toggle)
+  await toggle.click()
+  const editor = page.getByRole('region', { name: '源码' }).getByRole('textbox', { name: '源码' })
+  await expect(editor).toContainText('每一轮合并出现次数最多的一对。')
+  await page.evaluate(() => (window as unknown as { unreloaded: boolean }).unreloaded = true)
+
+  // The paragraph picked in the preview: its line, the cursor on it; a sentence added at its end and saved.
+  await page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '每一轮合并出现次数最多的一对。' }).click()
+  const line = readFileSync(join(dir, 'lecture.md'), 'utf8').split('\n').findIndex(text => text.startsWith('每一轮合并')) + 1
+  const status = page.getByRole('contentinfo', { name: '状态栏' })
+  await expect(status.locator('.pm-workspace-cursor')).toHaveText(`MyST · UTF-8 · 第 ${line} 行`)
+  await editor.focus()
+  await page.keyboard.press('End')
+  await page.keyboard.type('开发中加的一句。')
+  await page.keyboard.press('Control+s')
+  await expect(page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '最多的一对。开发中加的一句。' })).toBeVisible()
+  expect(readFileSync(join(dir, 'lecture.md'), 'utf8')).toContain('每一轮合并出现次数最多的一对。开发中加的一句。\n')
+  expect(await page.evaluate(() => (window as unknown as { unreloaded?: boolean }).unreloaded === true)).toBe(true)
+
+  // Not in a git repository: the status bar says so, and there is nothing to commit.
+  await expect(status.locator('.pm-workspace-git')).toHaveText('不是 git 仓库')
+  await expect(page.getByRole('button', { name: /^提交 \d+ 处修改/ })).toHaveCount(0)
 })
 
 test('a learner\'s question reaches the presenter\'s overview; the presenter\'s own model service answers it, the presenter sends it, and the learner sees it', async ({ browser }) => {

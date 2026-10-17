@@ -5,9 +5,11 @@
 // get_section and answers citing it; the token is refused once the task ended; a write outside the document is
 // refused and the agent hears the refusal; cancelling a task reaches the agent as `session/cancel` and ends the
 // task's events; the credentials of the parent's environment never reach it; the routes' answers are not cached
-// (F-33); the assistant's status line comes when serve starts. Without model access or a replacement runtime, or with a replacement runtime but no provider, the
-// assistant is unavailable, says so when the process starts and in `info` (what to set), and starts nothing.
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+// (F-33); the assistant's status line comes when serve starts. Without model access or a replacement runtime,
+// with a part of the PRESMIUM_MODEL_* variables, with a replacement runtime but no provider, or with model access
+// but no bundled DeepSeek Harness, the assistant is unavailable, says so when the process starts and in `info`
+// (what to set, by its code and parameters), and starts nothing.
+import { cpSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -138,23 +140,41 @@ describe('the ACP client with the scripted agent', () => {
   }, 60_000)
 })
 
+/**
+ * The assistant without its bundled DeepSeek Harness: a copy of the package in `base` whose dependencies are
+ * the repository's, but for DeepSeek Harness.
+ */
+function withoutHarness(base: string): string {
+  const copy = join(base, 'assistant')
+  for (const part of ['src', 'dsh', 'package.json']) cpSync(join(PACKAGE, part), join(copy, part), { recursive: true })
+  for (const name of ['@presmium/kernel', '@presmium/host', '@agentclientprotocol/sdk', 'vue']) {
+    mkdirSync(dirname(join(copy, 'node_modules', name)), { recursive: true })
+    symlinkSync(realpathSync(join(PACKAGE, 'node_modules', name)), join(copy, 'node_modules', name), 'junction')
+  }
+  return copy
+}
+
 describe('without an agent runtime', () => {
-  const cases: [string, Record<string, string>, RegExp][] = [
-    ['neither model access nor a replacement runtime', {}, /the assistant is unavailable: no model access: fill in the model settings in the page, or set DEEPSEEK_API_KEY/],
-    ['a replacement runtime without a provider', { PRESMIUM_AGENT_COMMAND: AGENT_COMMAND }, /the assistant is unavailable: a replacement runtime .* needs its model's provider/],
+  // What `info` says is missing, by code (the page says it in its language), and what the process says on start.
+  const cases: [string, Record<string, string>, RegExp, Record<string, unknown>, ((base: string) => string)?][] = [
+    ['neither model access nor a replacement runtime', {}, /the assistant is unavailable: no model access: fill in the model settings in the page, or set DEEPSEEK_API_KEY/, { code: 'model' }],
+    ['a part of the PRESMIUM_MODEL_* variables', { PRESMIUM_MODEL_URL: 'http://127.0.0.1:9/v1' }, /the assistant is unavailable: no model access: .*\(PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY, PRESMIUM_MODEL_PROVIDER go together; PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER are missing\)/, { code: 'model', variables: ['PRESMIUM_MODEL_KEY', 'PRESMIUM_MODEL_PROVIDER'] }],
+    ['a replacement runtime without a provider', { PRESMIUM_AGENT_COMMAND: AGENT_COMMAND }, /the assistant is unavailable: a replacement runtime .* needs its model's provider/, { code: 'provider' }],
+    // No NODE_PATH: pnpm's, which the tests run with, finds the copy of DeepSeek Harness it hoisted.
+    ['model access, but the bundled DeepSeek Harness is not installed', { DEEPSEEK_API_KEY: 'key-not-used', NODE_PATH: '' }, /the assistant is unavailable: the bundled DeepSeek Harness is not installed/, { code: 'harness' }, withoutHarness],
   ]
-  for (const [name, extra, reason] of cases) {
+  for (const [name, extra, reason, missing, plugin] of cases) {
     it(`says what to set and starts nothing: ${name}`, async () => {
       const base = mkdtempSync(join(tmpdir(), 'presmium-acp-none-'))
       const log = join(base, 'agent.log')
       mkdirSync(join(base, 'deck'))
-      writeFileSync(join(base, 'deck', 'lecture.md'), LECTURE.replace('title: 助手测试\n', `title: 助手测试\nplugins:\n  - ${PACKAGE}\n`))
+      writeFileSync(join(base, 'deck', 'lecture.md'), LECTURE.replace('title: 助手测试\n', `title: 助手测试\nplugins:\n  - ${plugin?.(base) ?? PACKAGE}\n`))
       const { running, server } = await dev(join(base, 'deck'), env({ XDG_STATE_HOME: join(base, 'state'), XDG_CONFIG_HOME: join(base, 'config'), SCRIPTED_AGENT_LOG: log, ...extra }))
       try {
         await running.wait(reason, 10_000)
         const info = (await call(server, 'info')).json
         expect(info).toMatchObject({ kinds: [], changes: false })
-        expect(info.missing).toMatch(reason.source.includes('model access') ? /DEEPSEEK_API_KEY/ : /PRESMIUM_AGENT_PROVIDER/)
+        expect(info.missing).toEqual(missing)
         expect((await call(server, 'tasks', { json: chat('有人吗？') })).status).toBe(503)
         expect(descendants(running.child.pid!).filter(p => /scripted-agent|dsh/.test(p.cmdline))).toEqual([])
         expect(agentLog(log)).toEqual([])

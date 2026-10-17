@@ -15,6 +15,9 @@
  * owners, in the scope of the request's document (on the home page, every
  * document and the configuration). A commit or a discard holds the locks of
  * the documents it changes, as an undo does.
+ *
+ * In `presmium dev` (./dev.ts) every request is of the one deck
+ * (`WorkspaceRoutes.document`), and there are no document operations.
  */
 import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, RequestContext, Route, ServerContribution } from '@presmium/kernel'
@@ -35,6 +38,8 @@ export interface WorkspaceRoutes {
   locks?: DocumentLocks
   /** The documents an undo took away or brought back (the server's sessions and the site follow, C-7). */
   documentsChanged?(change: DocumentsChange): Promise<void> | void
+  /** `presmium dev`: the directory of its one deck, the document of every request (the server's is ''); no document operations. */
+  document?: string
 }
 
 const NO_GIT = 'the workspace is not a git repository: run git init in it to use the document operations and the history'
@@ -77,7 +82,9 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
   const { documents, revisions, locks } = options
   const listed = () => documents.list().map(doc => doc.dir)
   const source = new SourceFiles({ config: documents.config, writer: documents.writer, ...locks ? { locks } : {} })
-  const uncommitted = async (ctx: RequestContext) => (revisions ? await revisions.uncommittedFiles(source.roots(source.scope(ctx.document))) : [])
+  /** The scope of a request: its document's, or that of `presmium dev`'s deck. */
+  const scopeOf = (ctx: RequestContext) => source.scope(options.document ?? ctx.document)
+  const uncommitted = async (ctx: RequestContext) => (revisions ? await revisions.uncommittedFiles(source.roots(scopeOf(ctx))) : [])
   /** Runs `work` on the uncommitted files `body` names, holding the locks of their documents. */
   const onChanges = async (request: Request, ctx: RequestContext, holder: string, work: (paths: string[], member: Member, body: Record<string, unknown>) => Promise<Response>) => {
     if (request.method !== 'POST') return problem(405, 'POST')
@@ -98,9 +105,12 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       role: 'reader',
       handle: (request, ctx) => answer(async () => {
         if (request.method === 'GET') {
-          return json({ title: documents.config.title, documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), ...revisions ? await revisions.status() : {}, single: documents.config.single } satisfies DocumentsAnswer)
+          // The status bar counts the files of the page's scope not committed, as its changes list them.
+          const status = revisions ? await revisions.status(source.roots(scopeOf(ctx))) : {}
+          return json({ title: documents.config.title, documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), ...status, single: documents.config.single || options.document !== undefined } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problem(405, 'GET or POST')
+        if (options.document !== undefined) return problem(409, 'presmium dev serves one deck: the document operations are the workspace service\'s (presmium serve)')
         // Readers list the documents only.
         if (!ctx.member.roles.some(role => role === 'editor' || role === 'owner')) return problem(403, 'document operations need the role editor')
         if (!revisions) return problem(409, NO_GIT)
@@ -109,8 +119,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         return json(await documents.apply(operation, ctx.member))
       }),
     },
-    // The history is the editors' (its messages quote annotations, prompts and the agent's explanations, which a
-    // reader, who sees the student view only, may not read; WP-91).
+    // The history is the editors' (its messages quote annotations, prompts and the agent's explanations; WP-91).
     revisions: {
       role: 'editor',
       handle: (request, ctx) => answer(async () => {
@@ -118,8 +127,9 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!revisions) return json({ revisions: [] } satisfies RevisionsAnswer)
         const params = new URL(request.url).searchParams
         const limit = Number(params.get('limit'))
-        // A document's page lists its own changes; the home page (document '') all of them.
-        const document = params.get('document') ?? (ctx.document || undefined)
+        // A document's page lists its own changes; the home page (document '') all of them; a single deck its own
+        // (its directory may be one of a larger repository: presmium dev).
+        const document = params.get('document') ?? ((options.document ?? ctx.document) || (documents.config.single ? '.' : undefined))
         return json({ revisions: await revisions.history({ ...document ? { document } : {}, ...params.get('task') ? { task: params.get('task')! } : {}, ...Number.isInteger(limit) && limit > 0 ? { limit } : {} }) } satisfies RevisionsAnswer)
       }),
     },
@@ -147,7 +157,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       role: 'editor',
       handle: (request, ctx) => answer(async () => {
         if (request.method !== 'GET') return problem(405, 'GET')
-        return json(source.files(source.scope(ctx.document), ctx.member))
+        return json(source.files(scopeOf(ctx), ctx.member))
       }),
     },
     'source': {
@@ -155,7 +165,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       // The text as JSON, escaped: up to twice the file's size, and more.
       maxBody: MAX_SOURCE * 3,
       handle: (request, ctx) => answer(async () => {
-        const scope = source.scope(ctx.document)
+        const scope = scopeOf(ctx)
         if (request.method === 'GET') return json(source.read(scope, new URL(request.url).searchParams.get('path') ?? '', ctx.member))
         if (request.method !== 'POST') return problem(405, 'GET or POST')
         const body: unknown = await request.json().catch(() => undefined)

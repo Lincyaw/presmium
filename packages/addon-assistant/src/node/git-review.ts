@@ -9,16 +9,25 @@
  * with the snapshot. Rejected paths come back from the snapshot, and those it
  * does not have (the task's new files) are deleted; going back to before a
  * step does the same with the tree of the checkpoint before it. Files
- * `.gitignore` ignores are not reviewed (9.4). Every git command runs with
- * the repository's hooks, fsmonitor, external diff drivers and text
- * conversions off, takes paths literally (a file named `notes[1].md` is not
- * a glob), and is given the git directories the review found when it opened
- * (`GIT_DIR`, `GIT_COMMON_DIR`, `GIT_WORK_TREE`: a `.git/commondir` or a
- * `.git` file written meanwhile does not move it). When the document
- * directory holds the git directory (a
+ * `.gitignore` ignores are not reviewed (9.4).
+ *
+ * The review's git commands never read the repository's git directory but
+ * its object store: they run in a git directory of the review's own
+ * (`GIT_DIR`, in its temporary directory), with the repository's objects
+ * (`GIT_OBJECT_DIRECTORY`) and work tree (`GIT_WORK_TREE`), as the review
+ * found them when it opened. Its configuration has only what says how the
+ * work tree's files are read (file modes, links, case, line ends, the
+ * object format), taken from the repository's before the agent ran, and the
+ * repository's `info/exclude`: no hook, filter driver, external diff or
+ * text conversion of the repository's runs, whatever the agent writes in
+ * its configuration or attributes while the review runs git (and a
+ * `.git/commondir` or a `.git` file written meanwhile moves nothing). The
+ * commands also take paths literally (a file named `notes[1].md` is not a
+ * glob). When the document directory holds the git directory (a
  * single-deck repository), the git directory is put back as the task found
- * it before each of the review's steps (./git-guard.ts). One review per
- * document directory at a time; while it is open a record names its snapshot
+ * it before each of the review's steps (./git-guard.ts), for the git
+ * commands of the author and the workspace. One review per document
+ * directory at a time; while it is open a record names its snapshot
  * (./review-record.ts), so a server that crashed is rolled back by the next
  * one (`recoverGitReview`).
  *
@@ -29,7 +38,7 @@
  * How git runs is the kernel's (`gitConfigArgs`, `gitEnvironment`, F-06).
  */
 import { execFile } from 'node:child_process'
-import { mkdtempSync, readdirSync, realpathSync, rmdirSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@presmium/kernel'
@@ -87,13 +96,47 @@ async function gitDirsOf(root: string): Promise<GitDirs> {
   return { top: realpathSync(top), gitDir: realpathSync(gitDir), commonDir: realpathSync(resolve(root, commonDir)) }
 }
 
+/** What of the repository's configuration the review's own git directory takes (a POSIX regular expression of git's keys): how files are read, never a command. */
+const READING = '^(core\\.(filemode|symlinks|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|excludesfile)|extensions\\.objectformat)$'
+
+/** A configuration value as git's files quote it. */
+const quoted = (value: string) => `"${value.replace(/[\\"]/g, c => `\\${c}`).replace(/\n/g, '\\n')}"`
+
+/**
+ * The review's own git directory's configuration (./git-review.ts): the
+ * repository's settings of how the work tree's files are read, as the task
+ * found them (read before the agent runs, or once the guard put them back),
+ * and its `info/exclude`.
+ */
+async function readingOf(dirs: GitDirs): Promise<{ config: string, exclude?: string }> {
+  const listed = await text(dirs.top, ['config', '-z', '--get-regexp', READING], { GIT_DIR: dirs.gitDir, GIT_COMMON_DIR: dirs.commonDir }).catch(() => '')
+  const sections = new Map<string, string[]>()
+  for (const entry of listed.split('\0').filter(Boolean)) {
+    const at = entry.indexOf('\n')
+    const [key, value] = at < 0 ? [entry, 'true'] : [entry.slice(0, at), entry.slice(at + 1)]
+    const [section = '', name = ''] = key.split('.')
+    sections.set(section, [...sections.get(section) ?? [], `\t${name} = ${quoted(value)}`])
+  }
+  // An object format other than SHA-1 needs the repository format 1.
+  const version = sections.has('extensions') ? 1 : 0
+  const others = [...sections].filter(([section]) => section !== 'core').map(([section, lines]) => `[${section}]\n${lines.join('\n')}`)
+  const config = [`[core]\n\trepositoryformatversion = ${version}\n\tbare = false`, ...sections.get('core') ?? [], ...others].join('\n')
+  let exclude: string | undefined
+  try {
+    exclude = readFileSync(join(dirs.commonDir, 'info', 'exclude'), 'utf8')
+  } catch {
+    // None.
+  }
+  return { config: `${config}\n`, ...exclude ? { exclude } : {} }
+}
+
 /** The git commands of a review of one document directory: trees, their differences, and restoring paths from one. */
 class Trees {
   readonly #work = mkdtempSync(join(tmpdir(), 'presmium-review-'))
   #indexes = 0
   /** The document directory as git's pathspec, from the top of the work tree. */
   readonly #pathspec: string
-  /** The git directories, fixed for every command. */
+  /** The review's own git directory, the repository's objects and work tree, fixed for every command. */
   readonly #env: Record<string, string>
   /** Where restored files are written (the workspace's `DOCUMENT_FILES`); without it, git writes them here. */
   readonly #files?: DocumentFiles
@@ -101,12 +144,17 @@ class Trees {
   readonly deck: string
   readonly root: string
 
-  constructor(dirs: GitDirs, deck: string, root: string, options: { files?: DocumentFiles } = {}) {
+  constructor(dirs: GitDirs, deck: string, root: string, reading: { config: string, exclude?: string }, options: { files?: DocumentFiles } = {}) {
     this.top = dirs.top
     this.deck = deck
     this.root = root
     this.#pathspec = relative(dirs.top, deck).split(sep).join('/') || '.'
-    this.#env = { GIT_DIR: dirs.gitDir, GIT_COMMON_DIR: dirs.commonDir, GIT_WORK_TREE: dirs.top }
+    const own = join(this.#work, 'git')
+    for (const dir of ['refs', 'objects', 'info']) mkdirSync(join(own, dir), { recursive: true })
+    writeFileSync(join(own, 'HEAD'), 'ref: refs/heads/review\n')
+    writeFileSync(join(own, 'config'), reading.config)
+    if (reading.exclude !== undefined) writeFileSync(join(own, 'info', 'exclude'), reading.exclude)
+    this.#env = { GIT_DIR: own, GIT_OBJECT_DIRECTORY: join(dirs.commonDir, 'objects'), GIT_WORK_TREE: dirs.top }
     this.#files = options.files
   }
 
@@ -274,16 +322,18 @@ async function recover(deck: string, root: string, options: Omit<GitReviewOption
   const { onRestore } = options
   const record = readRecord(deck)
   if (!record || opened.has(deck) || holderRuns(record)) return undefined
-  const trees = new Trees(record.dirs, deck, root, options)
+  let trees: Trees | undefined
   try {
+    // The git directory as the task found it first: the review's own reads its configuration.
     if (record.guard) guarding(record.dirs.gitDir, deck, root, onRestore, guardGitDir(record.dirs.gitDir, record.guard)).restore()
+    trees = new Trees(record.dirs, deck, root, await readingOf(record.dirs), options)
     const paths = (await trees.compare(record.snapshot, await trees.tree())).map(change => change.path)
     await trees.restore(record.snapshot, paths)
     return { task: record.task, paths }
   } finally {
     // Tried once: a record that cannot be restored (its snapshot gone) does not hold the directory.
     removeRecord(deck)
-    trees.dispose()
+    trees?.dispose()
   }
 }
 
@@ -296,7 +346,8 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
   if (left) await recoverGitReview(options)
   const dirs = await gitDirsOf(root)
   const { guard, restore: guarded } = guarding(dirs.gitDir, deck, root, options.onRestore)
-  const trees = new Trees(dirs, deck, root, options)
+  // Read before the agent runs: how the repository reads its files, for the review's own git directory.
+  const trees = new Trees(dirs, deck, root, await readingOf(dirs), options)
 
   opened.add(deck)
   let snapshot: string

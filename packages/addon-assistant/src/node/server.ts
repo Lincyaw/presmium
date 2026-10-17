@@ -44,9 +44,10 @@
  *
  * A change task holds its document's lock (`DOCUMENT_LOCKS`, F-09) while it
  * runs and waits for its review, and an undo holds it while it runs: where
- * the workspace provides the locks (`presmium serve`) its document
- * operations and its history's undo take them too, so neither changes the
- * document under the task; elsewhere the assistant keeps its own.
+ * the workspace provides the locks (`presmium serve`, `presmium dev`) its
+ * document operations, its history's undo and the source editor's saves
+ * take them too, so none changes the document under the task; elsewhere the
+ * assistant keeps its own.
  *
  * A change task's review is `CHANGE_REVIEW`'s, except under the bundled
  * DeepSeek Harness: its writes fault a deltabox-lite
@@ -95,8 +96,9 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
   /**
    * The workspace's home page, which presmium serve mounts at the workspace
    * root: not a document. The root is a document only in a single-deck
-   * repository (its deck entry there); where no change is committed
-   * (presmium dev) the deck directory is always a document.
+   * repository, or a deck of presmium dev at its repository's root (its deck
+   * entry there); where no change is committed the deck directory is always
+   * a document.
    */
   const home = resolve(ctx.deckDir) === resolve(ctx.workspaceRoot)
     && Boolean(ctx.service(REVISIONS)) && !existsSync(join(ctx.deckDir, DECK_ENTRY))
@@ -148,7 +150,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return undefined
   }
 
-  /** The kinds this member may submit: change tasks, for editors and owners, while there is a runtime and the workspace commits them (`REVISIONS`, presmium serve). */
+  /** The kinds this member may submit: change tasks, for editors and owners, while there is a runtime and the workspace commits them (`REVISIONS`: a document in a git repository). */
   const kinds = (member: Member): AgentTaskKind[] => (provider() && mayEdit(member) && ctx.service(REVISIONS) ? CHANGE_KINDS : [])
 
   /** The model settings as the page shows them: in effect and saved, never the key. */
@@ -249,7 +251,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           const info: AssistantInfo = {
             ...found ? { provider: found, ...choice.kind !== 'none' ? { source: choice.source } : {} } : {},
             ...found && runtime?.runtime ? { runtime: runtime.runtime } : {},
-            ...!found ? { missing: choice.kind === 'none' ? choice.missing : t.notInstalled } : {},
+            ...!found ? { missing: choice.kind === 'none' ? choice.missing : { code: 'harness' } } : {},
             kinds: kinds(rc.member),
             changes: Boolean(ctx.service(REVISIONS)),
             ...home ? { home: true } : {},

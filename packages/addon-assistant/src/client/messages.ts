@@ -1,11 +1,11 @@
 /**
  * The page's own words of the assistant's panels besides ../domain/messages.ts
- * (N-07): what the server's `missing` says, in the page's language; the key
- * of the model settings once the service changed; the model in a status bar.
+ * (N-07): what is missing (the server's `missing`, a code with its
+ * parameters), in the page's language; the key of the model settings once the
+ * service changed; the model in a status bar.
  */
 import type { Locale } from '@presmium/kernel'
-
-const MODEL_VARIABLES = /PRESMIUM_MODEL_(?:URL|KEY|PROVIDER)/g
+import type { MissingItem } from '../domain/index.ts'
 
 const zh = {
   missing: {
@@ -50,18 +50,15 @@ const en: Messages = {
 export const CLIENT_MESSAGES: Record<Locale, Messages> = { 'zh-CN': zh, 'en': en }
 
 /**
- * What the server's `missing` (`AssistantInfo.missing`, in English) says, in
- * the page's language: the model service, the variables of a partial
- * `PRESMIUM_MODEL_*` triple, the provider of a replacement runtime, or the
- * bundled runtime that is not installed. Anything else as the server said it.
+ * What is missing (`AssistantInfo.missing`), in the page's language, by its
+ * code: the model service (with the variables a partial `PRESMIUM_MODEL_*`
+ * triple lacks), the provider of a replacement runtime, or the bundled
+ * runtime that is not installed.
  */
-export function missingText(missing: string, t: Messages): string {
-  if (/^no model access/i.test(missing)) {
-    const partial = /\(([^)]*go together[^)]*)\)/.exec(missing)?.[1]
-    const lacking = partial ? [...new Set(partial.split(';')[1]?.match(MODEL_VARIABLES) ?? [])] : []
-    return lacking.length ? t.missing.partial(lacking) : t.missing.model
+export function missingText(missing: MissingItem, t: Messages): string {
+  switch (missing.code) {
+    case 'model': return missing.variables?.length ? t.missing.partial(missing.variables) : t.missing.model
+    case 'provider': return t.missing.provider
+    case 'harness': return t.missing.harness
   }
-  if (/^a replacement runtime/i.test(missing)) return t.missing.provider
-  if (/DeepSeek Harness/.test(missing)) return t.missing.harness
-  return missing
 }

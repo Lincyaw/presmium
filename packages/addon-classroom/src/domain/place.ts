@@ -34,8 +34,8 @@ export function placeKey(place: Pick<Place, 'section' | 'block'>): string {
 export type SectionNumbers = Readonly<Record<string, number>>
 
 /**
- * The audience of the readers' build: the student view of `presmium serve`
- * and `presmium build --audience student` (docs/ir.md 2.11).
+ * The audience of the readers' build: the student build,
+ * `presmium build --audience student` (docs/ir.md 2.11).
  */
 export const READERS = 'student'
 

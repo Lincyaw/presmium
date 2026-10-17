@@ -174,8 +174,8 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
     const file = join(config, 'presmium', 'assistant.json')
     try {
       await running.wait(/the assistant is unavailable: no model access: fill in the model settings in the page/, 10_000)
-      expect((await call(server, 'info')).json).toMatchObject({ kinds: [], missing: expect.stringContaining('model settings') })
-      expect((await settings(server)).json).toEqual({ source: 'none', missing: expect.stringContaining('DEEPSEEK_API_KEY'), saved: { key: false }, file })
+      expect((await call(server, 'info')).json).toMatchObject({ kinds: [], missing: { code: 'model' } })
+      expect((await settings(server)).json).toEqual({ source: 'none', missing: { code: 'model' }, saved: { key: false }, file })
       // An address that is no URL, or one without its provider, is refused.
       expect((await settings(server, 'POST', { provider: 'Test Provider', url: 'not a url', key: 'k' })).status).toBe(400)
       expect((await settings(server, 'POST', { url: model.url, key: 'k' })).status).toBe(400)

@@ -20,8 +20,9 @@
  * checks a cloned voice's consent each time. A clip is given by its key, as
  * the speech service gives it from the cache now (`cachedClip`): never
  * synthesized, and refused once a cloned voice's consent is withdrawn (D-7,
- * F-57); a clip of `script` is one of a lecture taken lately (a page that
- * loaded it before the IR changed still plays it), a clip of a recorded
+ * F-57); a clip of `script` is one of the last few different lectures taken
+ * (each kept once: a page that loaded one before the IR changed still plays
+ * it, however often other windows take the latest), a clip of a recorded
  * lecture one its utterances say (said again in a synthetic voice). Files
  * are read as they are opened, never through a link nor waiting on a FIFO
  * (`openInDeck`).
@@ -47,7 +48,7 @@ import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
 import { deckFiles, freeMediaPath, mediaFile, mediaPolicy, newTrackId, openInDeck, publishedMedia, readTrack, sha256File, trackDir, trackIds, writeGitFiles, writeTrack } from './store.ts'
 
-/** How many takes of the synthesized lecture keep their clips given (a page plays the take it loaded). */
+/** How many different synthesized lectures keep their clips given (a page plays the one it loaded). */
 const TAKES = 8
 
 /** The largest chunk a recording uploads at once (and the body of its routes), and the largest media file. */
@@ -227,8 +228,14 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
   const lexicon = lexiconOf(ctx.config)
 
-  /** The clips of the synthesized lectures taken lately (one set a take, the last few IRs), by name: a page plays the one it loaded. */
-  const takes: Set<string>[] = []
+  /**
+   * The clips of the synthesized lectures taken lately, by name, one set a
+   * lecture: kept once however often a lecture is taken (by its clips: an IR
+   * taken again, or another that says the same), the last taken at the end,
+   * the `TAKES` latest kept. A page that loaded a lecture plays it while
+   * other windows take the latest many times.
+   */
+  const takes = new Map<string, Set<string>>()
   /** A take of the lecture in flight, which the requests of the same IR share. */
   let taking: { doc: IRDocument, made: Promise<LectureTrack> } | undefined
   /**
@@ -242,8 +249,11 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     const made = synthesizedLecture(doc, deckDir, speech(), undefined, { files }).then(({ deck, track, unsaid, clips }) => {
       if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
       if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
-      takes.push(new Set([...clips.values()].map(clip => clip.file)))
-      if (takes.length > TAKES) takes.shift()
+      const names = [...new Set([...clips.values()].map(clip => clip.file))].sort()
+      const key = names.join('\n')
+      takes.delete(key)
+      takes.set(key, new Set(names))
+      if (takes.size > TAKES) takes.delete(takes.keys().next().value!)
       return track
     })
     taking = { doc, made }
@@ -260,7 +270,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
    * withdrawn (D-7).
    */
   const clipRefusal = async (id: string, name: string): Promise<Response | undefined> => {
-    const said = id === SCRIPT_TRACK && voiced() ? takes.some(take => take.has(name)) : recorded(id)?.utterances.some(u => u.clip === name)
+    const said = id === SCRIPT_TRACK && voiced() ? [...takes.values()].some(take => take.has(name)) : recorded(id)?.utterances.some(u => u.clip === name)
     if (!said) return problem(404, `no clip ${name} in the lecture ${id}`)
     try {
       return (await cachedClip(speech(), name)) ? undefined : problem(404, `the clip ${name} is not in the synthesis cache`)

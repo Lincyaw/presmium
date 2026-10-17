@@ -1,11 +1,11 @@
 <script setup lang="ts">
 // "AI changes" (P-111, P-113 to P-115; the workspace's `EDIT_MODE`), in the toolbar of every page the workspace
-// service or `presmium dev` serves, available or not, so the author finds it. In a document of `presmium serve` the
-// agent may change, and the member may edit, it is the switch of the panel docked at the right of edit mode
-// (./EditDock.vue, ./dock.ts): it turns on edit mode and shows the panel, then hides and shows it, pressed while it
-// is shown (docs/design/edit.dc.html). Elsewhere (no model configured, the home page, `presmium dev`, a reader) it
-// opens what is needed and how AI changes are made, in the page's language, with the model settings
-// (./ModelSettings.vue).
+// service or `presmium dev` serves, available or not, so the author finds it. In a document the agent may change
+// (one in a git repository, which commits the changes), and the member may edit, it is the switch of the panel
+// docked at the right of edit mode (./EditDock.vue, ./dock.ts): it turns on edit mode and shows the panel, then
+// hides and shows it, pressed while it is shown (docs/design/edit.dc.html). Elsewhere (no model configured, the
+// home page, a document in no git repository, a reader) it opens what is needed and how AI changes are made, in the
+// page's language (what is missing by its code), with the model settings (./ModelSettings.vue).
 import { EDIT_MODE, PmButton, PmIcon, useMessages, useServer, useService } from '@presmium/host'
 import { computed, ref, useId } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -34,7 +34,7 @@ const status = computed(() => {
     ? [t.value.edit.available(now.provider, t.value.edit.source[now.source ?? 'environment'])]
     : [t.value.edit.unavailable, t.value.edit.howTo, ...now.missing ? [t.value.edit.missing(missingText(now.missing, c.value))] : []]
   if (now.home) return [...lines, t.value.edit.home]
-  if (!now.changes) return [...lines, t.value.edit.dev]
+  if (!now.changes) return [...lines, t.value.edit.noGit]
   if (now.provider && (!now.kinds.length || editMode.value?.allowed.value === false)) return [...lines, t.value.edit.notEditor]
   return lines
 })
