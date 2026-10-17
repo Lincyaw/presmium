@@ -1,0 +1,7 @@
+{
+  "name": "presmium-fixture-scripted-runtime",
+  "private": true,
+  "type": "module",
+  "description": "Test-only operator plugin of packages/workspace/test/agent-host.test.ts: the assistant's agent runtime with the scripted test agent",
+  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
+}

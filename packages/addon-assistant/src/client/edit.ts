@@ -4,14 +4,18 @@
  * say), and the change tasks sent from here, newest first: the one under way
  * with its progress and steps, the review it waits for (each file kept or
  * rejected, a return to before a step), then each task's commit and the undo
- * of that commit. Sending is the confirmation of the task's writes in the
- * document (N-08). A window that was reloaded, or another of the sender (or
- * an owner), takes up the document's change task under way (`resume`).
+ * of that commit (`AgentTask.revert`). What a task's events say is the host's
+ * `trackAgentTask` (C-3), as for every sender of change tasks. Sending is the
+ * confirmation of the task's writes in the document (N-08). A window that was
+ * reloaded, or another of the sender (or an owner), takes up the document's
+ * change task under way (`resume`).
  */
+import { trackAgentTask } from '@presmium/host'
+import type { AgentTaskState } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
-import type { AgentClient, AgentContext, AgentTask, Annotation, ReviewChange, ReviewStep, SourceRange } from '@presmium/kernel'
-import { computed, ref, shallowRef } from 'vue'
-import type { PendingChange, RevertAnswer } from '../domain/index.ts'
+import type { AgentClient, AgentContext, AgentTask, Annotation, SourceRange } from '@presmium/kernel'
+import { computed, ref, shallowRef, watch } from 'vue'
+import type { PendingChange } from '../domain/index.ts'
 import type { AssistantClient } from './agent.ts'
 
 /** A block of the page picked for an annotation. */
@@ -33,18 +37,12 @@ export interface ChangeState {
   /** What was sent: the message, or the number of annotations. */
   label: string
   task: AgentTask
-  state: 'running' | 'review' | 'deciding' | 'done' | 'failed'
-  /** The tool the agent is using. */
-  tool?: string
-  steps: ReviewStep[]
-  engine?: string
-  changes: ReviewChange[]
+  /** What its events say (`trackAgentTask`); `deciding` while the sender's decision or a return to a step goes. */
+  progress: AgentTaskState
   /** The files the sender rejects in the review. */
   rejected: string[]
-  /** The commit, once accepted. */
-  revision?: string
-  /** Why it failed (or why the review could not go back to a step). */
-  message?: string
+  /** Why the review could not go back to a step, or the undo did not happen. */
+  note?: string
   /** The undo of the commit: its revert, or the files that conflict. */
   reverted?: string
   conflicts?: string[]
@@ -53,8 +51,10 @@ export interface ChangeState {
 /** The change tasks sent from this window, newest first. */
 export const changes = ref<ChangeState[]>([])
 
+const UNDER_WAY = ['running', 'review', 'deciding']
+
 /** A change task of this window runs or waits for its review: another waits until it ends. */
-export const busy = computed(() => ['running', 'review', 'deciding'].includes(changes.value[0]?.state ?? ''))
+export const busy = computed(() => UNDER_WAY.includes(changes.value[0]?.progress.state ?? ''))
 
 /** The excerpt of a block's source, from the assistant's route (the document's own file). */
 export async function excerptOf(fetchRoute: (path: string) => Promise<Response>, source: SourceRange): Promise<string> {
@@ -83,38 +83,21 @@ export function removeAnnotation(id: string): void {
 
 const find = (id: string) => changes.value.find(change => change.id === id)
 
-/** Follows a change task's events into its state (and the annotations' statuses). */
-async function follow(id: string, task: AgentTask): Promise<void> {
-  try {
-    for await (const event of task.events) {
-      const now = find(id)
-      if (!now) return
-      if (event.type === 'progress') now.tool = event.status === 'running' ? event.tool ?? event.text : undefined
-      else if (event.type === 'step') now.steps.push(event.step)
-      else if (event.type === 'annotation') {
-        const annotation = annotations.value.find(a => a.id === event.id)
-        if (annotation) {
-          annotation.status = event.status
-          if (event.note !== undefined) annotation.note = event.note
-        }
-      } else if (event.type === 'review') {
-        // Again after a return to before a step: the changes and steps as they are now.
-        Object.assign(now, { state: 'review', engine: event.engine, changes: event.changes, steps: event.steps, rejected: [], tool: undefined, message: undefined })
-      } else if (event.type === 'done') {
-        Object.assign(now, { state: 'done', tool: undefined, ...event.revision ? { revision: event.revision } : {} })
-      } else if (event.type === 'error') {
-        Object.assign(now, { state: 'failed', tool: undefined, message: event.message })
-      }
-    }
-  } catch (error) {
-    const now = find(id)
-    if (now) Object.assign(now, { state: 'failed', message: errorMessage(error) })
-  }
-}
-
 function start(kind: ChangeState['kind'], label: string, task: AgentTask): void {
-  changes.value.unshift({ id: task.id, kind, label, task, state: 'running', steps: [], changes: [], rejected: [] })
-  void follow(task.id, task)
+  changes.value.unshift({ id: task.id, kind, label, task, progress: trackAgentTask(task).value, rejected: [] })
+  const now = find(task.id)!
+  // The annotations take the statuses and notes the task reports; a review shown again (after a return to a
+  // step) starts with every file kept. Until the task ends.
+  const stop = watch(() => [now.progress.state, now.progress.changes, now.progress.annotations] as const, ([state, _changes, reported], [, before]) => {
+    for (const [id, { status, note }] of Object.entries(reported)) {
+      const annotation = annotations.value.find(a => a.id === id)
+      if (!annotation) continue
+      annotation.status = status
+      if (note !== undefined) annotation.note = note
+    }
+    if (_changes !== before) Object.assign(now, { rejected: [], note: undefined })
+    if (state === 'done' || state === 'failed') stop()
+  }, { deep: true })
 }
 
 /** Sends the draft annotations as one `annotations` task. */
@@ -152,14 +135,18 @@ export async function resume(client: AssistantClient, labelOf: (change: PendingC
 /** Back to before a step of a task's review (P-115); the review comes again, as the task's event. */
 export async function restoreTo(id: string, step: string, fetchRoute: (path: string, init?: RequestInit) => Promise<Response>): Promise<void> {
   const now = find(id)
-  if (!now || now.state !== 'review') return
-  Object.assign(now, { state: 'deciding', message: undefined })
+  if (!now || now.progress.state !== 'review') return
+  now.progress.state = 'deciding'
+  now.note = undefined
   try {
     const response = await fetchRoute(`tasks/${encodeURIComponent(id)}/restore`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step }) })
     if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { error?: string }).error ?? `${response.status}`)
     await response.text()
   } catch (error) {
-    if ((now.state as ChangeState['state']) === 'deciding') Object.assign(now, { state: 'review', message: errorMessage(error) })
+    if (now.progress.state === 'deciding') {
+      now.progress.state = 'review'
+      now.note = errorMessage(error)
+    }
   }
 }
 
@@ -172,27 +159,26 @@ export function keep(id: string, path: string, kept: boolean): void {
 /** The sender's decision on a task's review: accept (without the rejected files), or reject all. */
 export async function decide(id: string, accept: boolean): Promise<void> {
   const now = find(id)
-  if (!now || now.state !== 'review') return
+  if (!now || now.progress.state !== 'review') return
   const reject = [...now.rejected]
-  now.state = 'deciding'
+  now.progress.state = 'deciding'
   try {
     await now.task.review(accept ? { accept: true, ...reject.length ? { reject } : {} } : { accept: false })
   } catch (error) {
-    Object.assign(now, { state: 'failed', message: errorMessage(error) })
+    Object.assign(now.progress, { state: 'failed', message: errorMessage(error) })
   }
 }
 
-/** Undoes the commit of a change task (`git revert`); conflicting files are reported. */
-export async function revert(id: string, fetchRoute: (path: string, init?: RequestInit) => Promise<Response>): Promise<void> {
+/** Undoes the commit of a change task (`AgentTask.revert`, `git revert`); conflicting files are reported. */
+export async function revert(id: string): Promise<void> {
   const now = find(id)
-  if (!now?.revision) return
+  if (!now?.progress.revision) return
+  now.note = undefined
   try {
-    const response = await fetchRoute('revert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task: now.id }) })
-    const answer = await response.json() as Partial<RevertAnswer> & { error?: string, revision?: string, conflicts?: string[] }
-    if (answer.ok && answer.revision) now.reverted = answer.revision
-    else if (answer.conflicts) now.conflicts = answer.conflicts
-    else now.message = answer.error ?? `${response.status}`
+    const result = await now.task.revert()
+    if (result.ok) now.reverted = result.revision
+    else now.conflicts = result.conflicts
   } catch (error) {
-    now.message = errorMessage(error)
+    now.note = errorMessage(error)
   }
 }

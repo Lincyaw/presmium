@@ -5,13 +5,14 @@
  * new build of the page's document is coming or in place. The panels are
  * plain, styled inline so the entries need no style sheet in either form.
  */
-import { useMessages, useServer } from '@presmium/host'
-import type { AgentClient, AgentTask, ReviewChange, Revision } from '@presmium/kernel'
+import { currentLocale, useMessages, useServer } from '@presmium/host'
+import type { AgentClient, AgentTask, ReviewChange } from '@presmium/kernel'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import type { DocumentOperation, DocumentsAnswer, ExecutionState, OperationAnswer, RevertAnswer, RevisionsAnswer, SiteState, WorkspaceDocument } from '../domain/api.ts'
-import { WORKSPACE_ID } from '../domain/api.ts'
+import type { DocumentOperation, DocumentsAnswer, ExecutionState, HistoryRevision, LockedAnswer, OperationAnswer, RevertAnswer, RevisionsAnswer, SiteState, WorkspaceDocument } from '../domain/api.ts'
+import { lockKind, WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
 import { WORKSPACE_MESSAGES } from '../domain/messages.ts'
+import type { WorkspaceMessages } from '../domain/messages.ts'
 
 /** Whether the page shows edit mode (the `EDIT_MODE` service's state). */
 export const editing = ref(false)
@@ -54,11 +55,29 @@ function useEditor() {
   return computed(() => server.available && mayEdit(server.member.value?.roles))
 }
 
+/** A refusal of the workspace's routes; `locked` when another writer holds a document it would change (409, F-09). */
+class RouteError extends Error {
+  readonly locked?: LockedAnswer['locked']
+  constructor(message: string, locked?: LockedAnswer['locked']) {
+    super(message)
+    this.locked = locked
+  }
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await useServer().fetch(WORKSPACE_ID, path, init)
-  const data = await response.json().catch(() => ({})) as T & { error?: string }
-  if (!response.ok && !(response.status === 409 && 'conflicts' in (data as object))) throw new Error(data.error ?? `${response.status}`)
+  const data = await response.json().catch(() => ({})) as T & { error?: string, locked?: LockedAnswer['locked'] }
+  if (!response.ok && !(response.status === 409 && 'conflicts' in (data as object))) {
+    const locked = typeof data.locked?.document === 'string' && typeof data.locked.holder === 'string' ? data.locked : undefined
+    throw new RouteError(data.error ?? `${response.status}`, locked)
+  }
   return data
+}
+
+/** What a panel says of a failure: a document's lock in the reader's language (N-07), else the server's text. */
+function failure(error: unknown, t: WorkspaceMessages): string {
+  if (error instanceof RouteError && error.locked) return t.locked(error.locked.document, lockKind(error.locked.holder))
+  return error instanceof Error ? error.message : String(error)
 }
 
 function post<T>(path: string, body: unknown): Promise<T> {
@@ -133,19 +152,30 @@ export const SiteStatus = defineComponent({
   },
 })
 
+/**
+ * How the history names a revision in the reader's language (N-07, F-55): a document operation by its
+ * origin, an undo by what it undoes; others (an agent's commit, written in the deck's language) by their
+ * summary. The commit's own summary stays as written.
+ */
+function revisionLabel(revision: HistoryRevision, t: WorkspaceMessages): string {
+  const summary = revision.message.split('\n')[0] ?? ''
+  if (revision.reverts) return t.revertOf(revision.operation ? t.operation(revision.operation) : /^Revert "(.*)"$/.exec(summary)?.[1] ?? summary)
+  return revision.operation ? t.operation(revision.operation) : summary
+}
+
 export const History = defineComponent({
   name: 'PmWorkspaceHistory',
   setup() {
     const t = useMessages(WORKSPACE_MESSAGES)
     const editor = useEditor()
     const open = ref(false)
-    const revisions = shallowRef<Revision[]>([])
+    const revisions = shallowRef<HistoryRevision[]>([])
     const message = ref<string>()
     const load = async () => {
       try {
         revisions.value = (await call<RevisionsAnswer>('revisions')).revisions
       } catch (error) {
-        message.value = error instanceof Error ? error.message : String(error)
+        message.value = failure(error, t.value)
       }
     }
     const revert = async (id: string) => {
@@ -155,7 +185,7 @@ export const History = defineComponent({
         message.value = result.ok ? t.value.reverted : t.value.conflicts(result.conflicts)
         window.dispatchEvent(new Event(DOCUMENTS_EVENT))
       } catch (error) {
-        message.value = error instanceof Error ? error.message : String(error)
+        message.value = failure(error, t.value)
       }
       await load()
     }
@@ -179,8 +209,11 @@ export const History = defineComponent({
               'data-revision': revision.id,
               'style': { padding: '0.4rem 0', borderBottom: '1px solid var(--vp-c-divider, GrayText)' },
             }, [
-              h('div', { class: 'pm-workspace-revision__summary', style: { fontWeight: 600 } }, revision.message.split('\n')[0]),
-              h('div', { class: 'pm-workspace-revision__meta', style: { opacity: 0.75 } }, `${t.value.origin[revision.origin.kind]} · ${revision.author} · ${new Date(revision.date).toLocaleString()}`),
+              h('div', { class: 'pm-workspace-revision__summary', style: { fontWeight: 600 } }, revisionLabel(revision, t.value)),
+              h('div', { class: 'pm-workspace-revision__meta', style: { opacity: 0.75 } }, [
+                `${t.value.origin[revision.origin.kind]} · ${revision.author} · `,
+                h('time', { datetime: revision.date }, new Date(revision.date).toLocaleString(currentLocale())),
+              ]),
               revision.revertedBy
                 ? h('span', { class: 'pm-workspace-revision__reverted' }, t.value.reverted)
                 : h('button', { type: 'button', class: 'pm-workspace-revision__revert', style: BUTTON, onClick: () => void revert(revision.id) }, t.value.revert),
@@ -251,7 +284,7 @@ export const Documents = defineComponent({
       try {
         answer.value = await call<DocumentsAnswer>('documents')
       } catch (error) {
-        message.value = error instanceof Error ? error.message : String(error)
+        message.value = failure(error, t.value)
       }
     }
     const run = async (operation: DocumentOperation, after?: (result: OperationAnswer) => void) => {
@@ -263,7 +296,7 @@ export const Documents = defineComponent({
         await load()
         after?.(result)
       } catch (error) {
-        message.value = error instanceof Error ? error.message : String(error)
+        message.value = failure(error, t.value)
       } finally {
         busy.value = false
       }

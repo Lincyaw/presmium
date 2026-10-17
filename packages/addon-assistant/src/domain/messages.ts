@@ -91,6 +91,9 @@ const zh = {
   noRestore: '这个审阅不能回到某一步之前',
   restoring: '正在回到某一步之前，请稍候',
   reverting: '这份文档正在撤销一次修改，请稍后再试',
+  operating: '这份文档正在进行文档操作（重命名、复制或删除），请稍后再试',
+  questions: (n: number) => `你已有 ${n} 个问题在回答中，请等其中一个完成后再问`,
+  allQuestions: '助手正忙：同时回答的问题已达上限，请稍后再问',
   noDocument: '首页不是文档：任务要写明它的文档（AgentContext.document）',
 }
 
@@ -182,6 +185,9 @@ const en: Messages = {
   noRestore: 'This review cannot go back to before a step',
   restoring: 'Going back to before a step: wait for it',
   reverting: 'A change of this document is being undone: try again shortly',
+  operating: 'This document is being renamed, copied or deleted: try again shortly',
+  questions: n => `You have ${n} questions being answered: ask again once one of them is done`,
+  allQuestions: 'The assistant is busy: it answers as many questions as it may at once; ask again shortly',
   noDocument: 'The home page is not a document: a task names its document (AgentContext.document)',
 }
 

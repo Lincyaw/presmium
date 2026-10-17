@@ -30,15 +30,19 @@
  * itself runs isolated from what the sandbox may write: no system or global
  * configuration, no attributes of the work tree (no filter or driver runs on
  * the documents' files), the git directory found from the workspace root
- * (a `.git` planted in the document directory is never used).
+ * (a `.git` planted in the document directory is never used), and a git too
+ * old for it is refused. How git runs is the kernel's (`gitConfigArgs`,
+ * `gitEnvironment`, F-06).
  */
-import { execFile } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { mkdtempSync, readdirSync, realpathSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { dirname, join, relative, resolve, sep } from 'node:path'
+import { gitConfigArgs, gitEnvironment, isolatedGitProblem } from '@presmium/kernel'
 import type { ChangeReview, DocumentFileChange, DocumentFiles, ReviewChange, ReviewChangeKind, ReviewStep } from '@presmium/kernel'
 import { guardGitDir } from './git-guard.ts'
 import type { GitGuard } from './git-guard.ts'
+import { inside as within } from './paths.ts'
 import { holderRuns, readRecord, removeRecord, SELF, writeRecord } from './review-record.ts'
 
 /** The engine's name, as the review event and the panel show it. */
@@ -51,30 +55,31 @@ const MAX_DIFF = 256 * 1024
 /** At most this many files get their diff text. */
 const MAX_DIFFS = 200
 
-const SAFE = ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', '-c', 'core.quotepath=false']
-/** SHARED mode: no global attributes, nothing done in submodules. */
-const ISOLATED = ['-c', 'core.attributesFile=/dev/null', '-c', 'submodule.recurse=false', '-c', 'diff.ignoreSubmodules=all']
 const DIFF = ['diff', '--no-renames', '--no-ext-diff', '--no-textconv', '--no-color']
-/** The empty tree, whence SHARED reads the work tree's attributes (`GIT_ATTR_SOURCE`): none. */
-const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 /** The document directories with a review open in this process. */
 const opened = new Set<string>()
 
-/** This process's environment without its `GIT_*` variables; isolated (SHARED) without system or global configuration and the work tree's attributes. */
-function environment(isolated: boolean): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const [name, value] of Object.entries(process.env)) if (value !== undefined && !/^GIT_/i.test(name)) env[name] = value
-  return isolated ? { ...env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_ATTR_NOSYSTEM: '1', GIT_ATTR_SOURCE: EMPTY_TREE } : env
+/** Why the git of this machine cannot run an isolated (SHARED) review, asked once; undefined when it can. */
+let isolatedGit: string | undefined | null = null
+function isolatedProblem(): string | undefined {
+  if (isolatedGit === null) {
+    try {
+      isolatedGit = isolatedGitProblem(execFileSync('git', ['version'], { encoding: 'utf8', env: gitEnvironment(process.env, true) }))
+    } catch (error) {
+      isolatedGit = `git did not run: ${error instanceof Error ? error.message : String(error)}`
+    }
+  }
+  return isolatedGit
 }
 
 function git(cwd: string, args: string[], env: Record<string, string> = {}, isolated = false): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    execFile('git', [...SAFE, ...isolated ? ISOLATED : [], ...args], {
+    execFile('git', [...gitConfigArgs(isolated), ...args], {
       cwd,
       encoding: 'buffer',
       maxBuffer: 256 << 20,
-      env: { ...environment(isolated), ...env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1', GIT_TERMINAL_PROMPT: '0' },
+      env: { ...gitEnvironment(process.env, isolated), ...env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1' },
     }, (error, stdout, stderr) => {
       if (error) reject(new Error(`git ${args[0]}: ${stderr.toString('utf8').trim() || error.message}`))
       else resolve(stdout)
@@ -99,12 +104,6 @@ export interface GitDirs {
 async function gitDirsOf(root: string, isolated: boolean): Promise<GitDirs> {
   const [top = '', gitDir = '', commonDir = ''] = (await text(root, ['rev-parse', '--show-toplevel', '--absolute-git-dir', '--git-common-dir'], {}, isolated)).split('\n')
   return { top: realpathSync(top), gitDir: realpathSync(gitDir), commonDir: realpathSync(resolve(root, commonDir)) }
-}
-
-/** Whether `path` is `dir` or below it. */
-function within(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
 }
 
 /** The git commands of a review of one document directory: trees, their differences, and restoring paths from one. */
@@ -319,6 +318,8 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
   const left = readRecord(deck)
   if (left && holderRuns(left)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way in another process (${left.pid})`)
   if (left) await recoverGitReview(options)
+  const problem = options.isolated ? isolatedProblem() : undefined
+  if (problem) throw new Error(problem)
   const dirs = await gitDirsOf(root, options.isolated ?? false)
   const { guard, restore: guarded } = guarding(dirs.gitDir, deck, root, options.onRestore)
   const trees = new Trees(dirs, deck, root, options)

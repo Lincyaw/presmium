@@ -3,6 +3,7 @@
  * 10.2): what the browser plugin sends and gets.
  */
 import type { Revision } from '@presmium/kernel/contracts'
+import type { RevisionOperation } from './revisions.ts'
 
 /** Plugin id of the workspace: its routes, its browser plugin and its operator settings (`settings.presmium.workspace`). */
 export const WORKSPACE_ID = 'presmium.workspace'
@@ -41,13 +42,41 @@ export interface OperationAnswer {
   dir?: string
 }
 
+/**
+ * A revision as the history lists it: the contract's, with what its labels
+ * need in the reader's language (N-07): the document operation its origin
+ * names (a revert's: that of the change it undoes), and the commit it reverts.
+ */
+export interface HistoryRevision extends Revision {
+  operation?: RevisionOperation
+  reverts?: string
+}
+
 /** `GET revisions?document=&task=&limit=`. */
 export interface RevisionsAnswer {
-  revisions: Revision[]
+  revisions: HistoryRevision[]
 }
 
 /** `POST revisions/revert` with `{ id }`: the revert, or the files in conflict (nothing changed). */
 export type RevertAnswer = { ok: true, revision: Revision } | { ok: false, conflicts: string[] }
+
+/**
+ * Who holds a document's lock (`DOCUMENT_LOCKS`, F-09), by the holder's name: an agent's change task
+ * (`agent:<task id>`), an undo (`…:revert`), or a document operation (`document:<op>`).
+ */
+export type LockKind = 'agent' | 'revert' | 'operation'
+export function lockKind(holder: string): LockKind {
+  return holder.startsWith('agent:') ? 'agent' : holder.endsWith(':revert') ? 'revert' : 'operation'
+}
+
+/**
+ * The 409 of a document operation or an undo while another writer holds a document it changes (F-09):
+ * the server's text, and the lock, which the panels say in the reader's language (N-07).
+ */
+export interface LockedAnswer {
+  error: string
+  locked: { document: string, holder: string }
+}
 
 /**
  * `GET execution` of a document (SHARED `presmium serve`, docs/architecture.md

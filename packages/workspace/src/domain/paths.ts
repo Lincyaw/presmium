@@ -39,6 +39,11 @@ export function joinPath(dir: string, path: string): string | undefined {
   return normalize(dir ? `${dir}/${path}` : path)
 }
 
+/** A relative path (`/` separators) that goes up out of its root: `..` or `../…`; a name such as `..notes.md` does not. */
+export function leavesRoot(path: string): boolean {
+  return path === '..' || path.startsWith('../')
+}
+
 /** `path` is `dir` or lies under it. */
 export function within(path: string, dir: string): boolean {
   return dir === '' || path === dir || path.startsWith(`${dir}/`)

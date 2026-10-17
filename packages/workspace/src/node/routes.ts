@@ -5,33 +5,36 @@
  * "request execution", and how the member's site is made (a reader's static
  * site may be a build behind, D17). The server checks the roles (`Route.role`):
  * readers list the documents; editors and owners change them and read the history.
+ *
+ * An undo holds the locks of the documents its commit changed (`DOCUMENT_LOCKS`,
+ * F-09): while an agent's change task holds one, it is refused with 409, whose
+ * answer names the lock (`LockedAnswer`), as a document operation's does. Once
+ * done, the documents it took away or brought back are told to the server and
+ * the site, as a document operation's are (C-7, F-10).
  */
-import { errorMessage, isRecord } from '@presmium/kernel'
+import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
 import type { DocumentOperation, DocumentsAnswer, ExecutionState, RevertAnswer, RevisionsAnswer, SiteState } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
-import { RequestError } from './documents.ts'
-import type { Documents } from './documents.ts'
+import { lockedError, RequestError } from './documents.ts'
+import type { Documents, DocumentsChange } from './documents.ts'
+import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
 
 export interface WorkspaceRoutes {
   documents: Documents
   /** Undefined when the workspace is not a git repository: the operations and the history answer 409. */
   revisions?: Revisions
+  /** The documents' locks (`DOCUMENT_LOCKS`); an undo takes them. */
+  locks?: DocumentLocks
+  /** The documents an undo took away or brought back (the server's sessions and the site follow, C-7). */
+  documentsChanged?(change: DocumentsChange): Promise<void> | void
   /** The execution state of a document; undefined in a host without compile-time execution. */
   execution?(document: string): ExecutionState | undefined
   /** An editor asks again to run the code of a document that did not run. */
   requestExecution?(document: string, member: Member): Promise<void> | void
   /** How a member's pages of a document (or of the home page, '') are made; `live` when absent. */
   site?(document: string, member: Member): SiteState
-}
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } })
-}
-
-function problem(status: number, message: string): Response {
-  return json({ error: message }, status)
 }
 
 const NO_GIT = 'the workspace is not a git repository: run git init in it to use the document operations and the history'
@@ -53,14 +56,20 @@ async function answer(work: () => Promise<Response>): Promise<Response> {
   try {
     return await work()
   } catch (error) {
-    if (error instanceof RequestError) return problem(error.status, error.message)
+    if (error instanceof RequestError) return json({ error: error.message, ...error.detail }, error.status)
     return problem(500, errorMessage(error))
   }
 }
 
+/** The documents that went and came between two listings. */
+function difference(before: string[], after: string[]): DocumentsChange {
+  return { removed: before.filter(dir => !after.includes(dir)), added: after.filter(dir => !before.includes(dir)) }
+}
+
 /** The server contribution of the workspace, mounted for every document (and for the home page, document ''). */
 export function workspaceContribution(options: WorkspaceRoutes): ServerContribution {
-  const { documents, revisions } = options
+  const { documents, revisions, locks } = options
+  const listed = () => documents.list().map(doc => doc.dir)
   const routes: Record<string, Route> = {
     documents: {
       role: 'reader',
@@ -98,8 +107,17 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!revisions) return problem(409, NO_GIT)
         const body: unknown = await request.json().catch(() => undefined)
         if (!isRecord(body) || typeof body.id !== 'string' || !/^[0-9a-f]{4,64}$/i.test(body.id)) return problem(400, '{ id: <commit> }')
-        const result = await revisions.revert(body.id, ctx.member)
-        return json(result satisfies RevertAnswer, result.ok ? 200 : 409)
+        // Not while an agent's change task of a document the commit changed runs or waits for its review (F-09).
+        const claimed = locks?.claimAll(await revisions.documentsOf(body.id), 'revision:revert')
+        if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+        try {
+          const before = listed()
+          const result = await revisions.revert(body.id, ctx.member)
+          if (result.ok) await options.documentsChanged?.(difference(before, listed()))
+          return json(result satisfies RevertAnswer, result.ok ? 200 : 409)
+        } finally {
+          claimed?.release()
+        }
       }),
     },
     'site': {

@@ -18,7 +18,7 @@
 import { realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { CHANGE_REVIEW, PROCESS_SANDBOX, docBlocks } from '@presmium/kernel'
 import type { IRPass, NodeServiceContext, PresmiumNodePlugin, ServiceToken } from '@presmium/kernel'
 import { helperFor, probe } from './client.ts'
@@ -73,7 +73,8 @@ function logOnce(ctx: NodeServiceContext, line: string): void {
 function availability(ctx: NodeServiceContext, settings: DeltaboxSettings): { ok: true, kind: string } | { ok: false, reason: string } {
   const t = messages(ctx.lang)
   const fromRoot = relative(real(ctx.workspaceRoot), real(settings.stateDir))
-  if (!fromRoot.startsWith('..') && !isAbsolute(fromRoot)) return { ok: false, reason: t.stateInside(settings.stateDir) }
+  // Inside the workspace root (a directory named `..state` is inside it, F-11).
+  if (fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot)) return { ok: false, reason: t.stateInside(settings.stateDir) }
   const found = probe(settings.stateDir, ctx.log)
   if (found.recovered?.length) logOnce(ctx, t.recovered(found.recovered))
   return found.ok ? { ok: true, kind: found.kind } : { ok: false, reason: t.unqualified(found) }

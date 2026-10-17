@@ -28,11 +28,12 @@
  * next (the git review's record, ./git-review.ts; deltabox's helper).
  */
 import { realpathSync } from 'node:fs'
-import { isAbsolute, relative, sep } from 'node:path'
+import { relative, sep } from 'node:path'
 import { deckLocale, DOCUMENT_FILES, errorMessage, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentTaskRequest, ApprovalRequest, ChangeReview, ChangeReviewService, ReviewChange, ReviewDecision, ServerContext } from '@presmium/kernel'
 import { annotationNotes, ASSISTANT_MESSAGES, commitMessage, explanationOf, reviewMode, reviewTimeoutMs, WORKSPACE_CONFIG } from '../domain/index.ts'
 import { GIT_ENGINE, openGitReview } from './git-review.ts'
+import { inside as within } from './paths.ts'
 import type { Task, Tasks } from './tasks.ts'
 
 export interface ChangeRun {
@@ -44,12 +45,6 @@ export interface ChangeRun {
   agent(task: Task, cwd: string, request: AgentTaskRequest, onEvent: (event: AgentEvent) => Promise<void>): Promise<string[]>
   /** Asks an approval for the task (announced to its page). */
   ask(task: Task, request: ApprovalRequest): Promise<boolean>
-}
-
-/** Whether `path` is `dir` or below it. */
-function within(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
 }
 
 /**

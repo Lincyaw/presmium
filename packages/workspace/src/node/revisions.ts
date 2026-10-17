@@ -13,13 +13,17 @@
  * directory the revert brings back is made by serve, which owns the
  * directories around the documents) and committed. A revert that would
  * change files outside the documents (the workspace configuration) is an
- * owner's only.
+ * owner's only. A revert names the document operation it undoes in its
+ * origin, so the history labels it (F-55).
  */
 import { lstatSync, mkdtempSync, readdirSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
-import type { DocumentFileChange, Member, RevertResult, Revision, RevisionOrigin, RevisionService } from '@presmium/kernel'
+import type { DocumentFileChange, Member, RevertResult, Revision, RevisionService } from '@presmium/kernel'
+import type { HistoryRevision } from '../domain/api.ts'
+import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/revisions.ts'
+import type { CommitOrigin } from '../domain/revisions.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { makeDocumentDir, RequestError } from './documents.ts'
 import { documentDirOf, writeChanges } from './files.ts'
@@ -46,19 +50,21 @@ function parseLog(output: string): LogEntry[] {
   })
 }
 
-/** The files a commit changed, both sides of a rename. */
-function revision(entry: LogEntry, revertedBy?: string): Revision | undefined {
+/** A commit with Presmium's trailers as the history lists it: the files it changed (both sides of a rename), what its labels need. */
+function revision(entry: LogEntry, revertedBy?: string): HistoryRevision | undefined {
   const origin = originOf(entry.message)
   if (!origin) return undefined
-  const { revert: _revert, coAuthor: _coAuthor, ...plain } = origin
+  const { revert, coAuthor: _coAuthor, operation, ...plain } = origin
   return {
     id: entry.id,
     message: entry.message,
     author: entry.author,
     date: entry.date,
-    origin: plain as RevisionOrigin,
+    origin: plain,
     files: entry.files,
     ...revertedBy ? { revertedBy } : {},
+    ...operation ? { operation } : {},
+    ...revert ? { reverts: revert } : {},
   }
 }
 
@@ -85,7 +91,7 @@ export class Revisions implements RevisionService {
     this.#files = files
   }
 
-  commit(change: { files: string[], message: string, origin: RevisionOrigin }): Promise<Revision | undefined> {
+  commit(change: { files: string[], message: string, origin: CommitOrigin }): Promise<Revision | undefined> {
     const [summary = '', ...body] = change.message.trim().split('\n')
     return this.#git.exclusive(() => this.commitNow(change.files, summary, body.join('\n'), change.origin))
   }
@@ -94,8 +100,8 @@ export class Revisions implements RevisionService {
    * Commits the changes of these paths (files or directories, relative to
    * the root) as one commit; for callers already holding the git queue.
    */
-  async commitNow(paths: string[], summary: string, body: string, origin: RevisionOrigin, revert?: string): Promise<Revision | undefined> {
-    const unique = [...new Set(paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !path.startsWith('..')))]
+  async commitNow(paths: string[], summary: string, body: string, origin: CommitOrigin, revert?: string): Promise<Revision | undefined> {
+    const unique = [...new Set(paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
     // A path that neither exists nor is tracked any more does not match; the others are staged.
     for (const path of unique) await this.#git.attempt(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
@@ -106,7 +112,7 @@ export class Revisions implements RevisionService {
     return this.#revision('HEAD')
   }
 
-  async history(filter: { document?: string, task?: string, limit?: number } = {}): Promise<Revision[]> {
+  async history(filter: { document?: string, task?: string, limit?: number } = {}): Promise<HistoryRevision[]> {
     const log = await this.#git.attempt(['log', FORMAT, '--name-only', '--no-renames', ...filter.document ? ['--', filter.document] : []], { GIT_LITERAL_PATHSPECS: '1' })
     if (!log.ok) return []
     const entries = parseLog(log.output)
@@ -144,11 +150,20 @@ export class Revisions implements RevisionService {
       if (blocked.length > 0) return { ok: false, conflicts: blocked }
       await this.#write(changes)
       const subject = target.message.split('\n')[0] ?? target.id
-      const kind = originOf(target.message)?.kind ?? 'editor'
-      const done = await this.commitNow(changes.map(change => change.path), `Revert "${subject}"`, `This reverts commit ${target.id}.`, { kind, member }, target.id)
+      const undone = originOf(target.message)
+      const origin: CommitOrigin = { kind: undone?.kind ?? 'editor', member, ...undone?.operation ? { operation: undone.operation } : {} }
+      const done = await this.commitNow(changes.map(change => change.path), `Revert "${subject}"`, `This reverts commit ${target.id}.`, origin, target.id)
       if (!done) throw new Error(`the revert of ${target.id} committed nothing`)
       return { ok: true, revision: done }
     })
+  }
+
+  /** The document directories a commit changed (both sides of a rename), as the configuration names them now; none for no commit. */
+  async documentsOf(id: string): Promise<string[]> {
+    const verified = await this.#git.attempt(['rev-parse', '--verify', '--quiet', `${id}^{commit}`])
+    if (!verified.ok) return []
+    const files = (await this.#git.raw(['show', '--no-renames', '--name-only', '-z', '--format=', verified.output.trim()])).split('\0').filter(Boolean).map(this.#fromTop)
+    return [...new Set(files.flatMap(file => documentDirOf(this.#files.config, file) ?? []))]
   }
 
   /** A path of git (from the top of the work tree) relative to the workspace root. */
@@ -161,7 +176,7 @@ export class Revisions implements RevisionService {
     for (let i = 0; i + 1 < fields.length; i += 2) {
       const [, mode = '', , oid = ''] = fields[i]!.slice(1).split(' ')
       const path = this.#fromTop(fields[i + 1]!)
-      if (path.startsWith('..')) throw new Error(`the revert changes ${fields[i + 1]}, outside the workspace`)
+      if (leavesRoot(path)) throw new Error(`the revert changes ${fields[i + 1]}, outside the workspace`)
       out.push({ path, mode, oid })
     }
     return out

@@ -5,6 +5,8 @@
 // data loader of a deck's component) run in agent-host, whose process chain holds no secret; symbolic
 // links out of the workspace are not read; code without a recording runs by `settings.presmium.exec.compile`.
 // The home page has the operator plugins: their routes answer for it, and it loads their browser parts (WP-81e2).
+// With PRESMIUM_DEBUG its server says more (F-35). A document deleted under serve has no plugin routes any more,
+// and made again with another configuration, its routes have that one (C-7, F-40).
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
@@ -24,9 +26,11 @@ describe('presmium serve on this machine (LOCAL)', () => {
   }, 60_000)
 
   it('starts with one command and prints its address; the site and the workspace answer there', async () => {
-    serve = presmiumProcess(dir, ['serve', '--port', '0'])
+    serve = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({ PRESMIUM_DEBUG: '1' }))
     const url = (await waitFor(serve, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
     expect(serve.output()).toMatch(/^mode {2}local$/m)
+    // Its server's debug lines, with PRESMIUM_DEBUG (F-35).
+    expect(serve.output()).toMatch(/\[presmium serve\] listening at http:\/\/127\.0\.0\.1:\d+, local mode/)
     const documents = await raw(`${url}/__presmium/presmium.workspace/documents`)
     expect(documents.json()).toMatchObject({ documents: [{ dir: 'intro', title: '导论' }], git: true, single: false })
     const home = await raw(`${url}/`)
@@ -78,6 +82,37 @@ describe('presmium serve on this machine (LOCAL)', () => {
       }
     } finally {
       remove(home)
+    }
+  }, 180_000)
+
+  it('takes a deleted document\'s plugin routes down; made again with another configuration, its routes have that one', async () => {
+    const changing = workspace('remount', 'basic')
+    try {
+      // An operator plugin whose route answers with the document's configuration of it.
+      const plugin = join(changing, 'node_modules/presmium-fixture-echo')
+      mkdirSync(plugin, { recursive: true })
+      writeFileSync(join(plugin, 'package.json'), JSON.stringify({ name: 'presmium-fixture-echo', private: true, type: 'module', exports: { './presmium': './presmium.ts' } }))
+      writeFileSync(join(plugin, 'presmium.ts'), `export default { id: 'fixture.echo', version: '0.1.0', kernel: '^0.1.0', server: ctx => ({ routes: { config: { role: 'reader', handle: () => Response.json(ctx.config) } } }) }\n`)
+      const deck = (color: string) => `---\ntitle: 导论\nplugins:\n  - presmium-fixture-echo\npresmium:\n  fixture.echo:\n    color: ${color}\n---\n\n# 导论\n`
+      writeFileSync(join(changing, 'intro/lecture.md'), deck('red'))
+      mkdirSync(join(changing, 'templates/blue'), { recursive: true })
+      writeFileSync(join(changing, 'templates/blue/lecture.md'), deck('blue'))
+      writeFileSync(join(changing, 'presmium.workspace.yaml'), `${readFileSync(join(changing, 'presmium.workspace.yaml'), 'utf8')}templates: templates\nsettings:\n  presmium.workspace:\n    plugins: [presmium-fixture-echo]\n`)
+      const local = presmiumProcess(changing, ['serve', '--port', '0'])
+      try {
+        const url = (await waitFor(local, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
+        const echo = () => raw(`${url}/__presmium/fixture.echo/config`, { headers: { 'Presmium-Document': 'intro' } })
+        const operate = (body: Record<string, unknown>) => raw(`${url}/__presmium/presmium.workspace/documents`, { json: body })
+        expect((await echo()).json()).toEqual({ color: 'red' })
+        expect((await operate({ op: 'delete', dir: 'intro' })).status).toBe(200)
+        expect((await echo()).status).toBe(404)
+        expect((await operate({ op: 'create', dir: 'intro', template: 'blue', title: '导论' })).status).toBe(200)
+        expect((await echo()).json()).toEqual({ color: 'blue' })
+      } finally {
+        await local.stop()
+      }
+    } finally {
+      remove(changing)
     }
   }, 180_000)
 

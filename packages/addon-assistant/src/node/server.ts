@@ -6,11 +6,12 @@
  *   mode the runtime's, in SHARED mode the gateway's), the runtime's name
  *   once an agent started, the kinds of task this member may submit.
  * - `POST tasks`: a task (`AgentTaskRequest`, with the id the page drew);
- *   learners' questions run in `tutor` mode; change tasks (editors and
- *   owners, where `REVISIONS` commits them) one per document at a time.
- *   `GET tasks`: the document's change task under way or waiting for its
- *   review, to the member who sent it and to owners (a page that was
- *   reloaded follows it again).
+ *   learners' questions run in `tutor` mode, at most
+ *   `settings.presmium.assistant.maxQuestions` at a time (each member's and
+ *   the service's; more get 429); change tasks (editors and owners, where
+ *   `REVISIONS` commits them) one per document at a time. `GET tasks`: the
+ *   document's change task under way or waiting for its review, to the
+ *   member who sent it and to owners (a page that was reloaded follows it again).
  * - `GET tasks/<id>/events`: its events (SSE, from the first), to the
  *   member who submitted it and owners; `POST tasks/<id>/cancel`;
  *   `POST tasks/<id>/review`: the decision on a change task's review;
@@ -25,13 +26,23 @@
  * and the tasks it sends (drafting a new document) go to their document's
  * routes.
  *
- * Each task opens one agent session (`cwd` the document directory, or the
- * review's root for a change task), with the MCP token `MCP_ENDPOINT`
- * issues for the member and mode (revoked when the session closes). The
- * agent's permission requests of a question are refused, asking no one;
- * those of a change task within its directory were confirmed by sending it,
- * the others go to `APPROVALS` with their scope. The terminal event (`done`
- * or `error`) comes once the session and its tokens are closed.
+ * Each task opens one agent session with the MCP token `MCP_ENDPOINT`
+ * issues for the member and mode (revoked when the session closes). A
+ * question's session runs in an empty directory of its own and reads the
+ * deck only through MCP (D-13; in SHARED mode agent-host makes that directory
+ * on its side); a question no page follows for
+ * `settings.presmium.assistant.questionTimeoutMs` (2 minutes) is cancelled.
+ * A change task's session runs in its review's root. The agent's permission
+ * requests of a question are refused, asking no one; those of a change task
+ * within its directory were confirmed by sending it, the others go to
+ * `APPROVALS` with their scope. The terminal event (`done` or `error`) comes
+ * once the session and its tokens are closed.
+ *
+ * A change task holds its document's lock (`DOCUMENT_LOCKS`, F-09) while it
+ * runs and waits for its review, and an undo holds it while it runs: where
+ * the workspace provides the locks (`presmium serve`) its document
+ * operations and its history's undo take them too, so neither changes the
+ * document under the task; elsewhere the assistant keeps its own.
  *
  * A change task's review is `CHANGE_REVIEW`'s, except under the bundled
  * DeepSeek Harness (always in SHARED mode): its writes fault a deltabox-lite
@@ -40,29 +51,23 @@
  * review. A git review a crashed server left is rolled back when the
  * document is served again.
  */
-import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, errorMessage, eventStream, isRecord, MCP_ENDPOINT, REVISIONS } from '@presmium/kernel'
+import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, eventStream, gatewayFetch, isRecord, json, MCP_ENDPOINT, problem, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentMode, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
-import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, restoreStepOf, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
+import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, questionLimits, questionTimeoutMs, restoreStepOf, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
 import type { AssistantInfo, PendingChange, RevertAnswer } from '../domain/index.ts'
 import { runChange } from './changes.ts'
 import { recoverGitReview } from './git-review.ts'
+import { inside } from './paths.ts'
 import type { AgentApproval } from './permissions.ts'
 import { Tasks } from './tasks.ts'
 import type { Task } from './tasks.ts'
 
-const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } })
-
 const isOwner = (member: Member) => member.roles.includes('owner')
 const mayEdit = (member: Member) => member.roles.some(role => role === 'editor' || role === 'owner')
-
-/** Whether `path` is `dir` or below it. */
-function within(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
-}
 
 /** The deck entry of a single-deck repository (the workspace's `DECK_ENTRY`). */
 const DECK_ENTRY = 'lecture.md'
@@ -74,14 +79,17 @@ const EXCERPT_CHARS = 4000
 let reported = false
 let gitReviewed = false
 
-/** A value of `changing` while a commit of the document is being undone. */
-const REVERTING = 'revert'
+/** The questions running in this process, by member, over every document (F-08). */
+const asking = new Map<string, number>()
+const questionsOf = (member: string) => asking.get(member) ?? 0
+const allQuestions = () => [...asking.values()].reduce((sum, n) => sum + n, 0)
+
+/** The prefix of an agent task's lock holder (`agent:<task id>`). */
+const AGENT_HOLDER = 'agent:'
 
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
   const tasks = new Tasks()
-  /** The change task of each document, while it runs or waits for its review; `REVERTING` while a commit is undone. */
-  const changing = new Map<string, string>()
   /**
    * The workspace's home page, which presmium serve mounts at the workspace
    * root: not a document. The root is a document only in a single-deck
@@ -90,6 +98,24 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
    */
   const home = resolve(ctx.deckDir) === resolve(ctx.workspaceRoot)
     && (ctx.trust === 'shared' || (Boolean(ctx.service(REVISIONS)) && !existsSync(join(ctx.deckDir, DECK_ENTRY))))
+
+  /** The documents' locks: the workspace's where it provides them (`DOCUMENT_LOCKS`), else these. */
+  const own = new Map<string, string>()
+  const claim = (document: string, holder: string): (() => void) | undefined => {
+    const locks = ctx.service(DOCUMENT_LOCKS)
+    if (locks) return locks.claim(document, holder)
+    if (own.has(document)) return undefined
+    own.set(document, holder)
+    return () => {
+      if (own.get(document) === holder) own.delete(document)
+    }
+  }
+  const holderOf = (document: string) => ctx.service(DOCUMENT_LOCKS)?.holder(document) ?? own.get(document)
+  /** Why the document takes no change now, by who holds its lock. */
+  const refusal = (document: string) => {
+    const holder = holderOf(document) ?? ''
+    return holder.startsWith(AGENT_HOLDER) ? t.busy : holder.endsWith(':revert') ? t.reverting : t.operating
+  }
 
   // A change task's git review that a crashed server left: the directory as the task found it.
   if (!home) {
@@ -107,11 +133,11 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
   // The provider in SHARED mode is the gateway's (its environment has the model access): kept once it
   // answers, asked again a minute after it did not.
   let gatewayProvider: string | undefined
-  let asking: Promise<string | undefined> | undefined
+  let providing: Promise<string | undefined> | undefined
   let failed = -Infinity
   const askGateway = async (gateway: NonNullable<ServerContext['gateway']>): Promise<string | undefined> => {
     try {
-      const response = await fetch(`${gateway.url.replace(/\/+$/, '')}/${ASSISTANT_ID}/info`, { headers: { Authorization: `Bearer ${gateway.token}` } })
+      const response = await gatewayFetch(gateway, ASSISTANT_ID, 'info')
       const body = await response.json().catch(() => ({})) as { provider?: unknown }
       if (response.ok && typeof body.provider === 'string') return gatewayProvider = body.provider
       ctx.log.warn(`the gateway has no model access (${response.status}): the assistant is unavailable`)
@@ -126,8 +152,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     if (!runtime) return undefined
     if (ctx.trust !== 'shared') return runtime.provider
     if (gatewayProvider || !ctx.gateway) return gatewayProvider
-    if (!asking && Date.now() - failed >= 60_000) asking = askGateway(ctx.gateway).finally(() => asking = undefined)
-    return asking
+    if (!providing && Date.now() - failed >= 60_000) providing = askGateway(ctx.gateway).finally(() => providing = undefined)
+    return providing
   }
 
   /** Whether the agent is the bundled DeepSeek Harness: agent-host runs only it (SHARED); in LOCAL mode, unless replaced. */
@@ -216,12 +242,38 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return messages
   }
 
+  /**
+   * A learner's question: in an empty directory of its own, never the document's (D-13), counted among the
+   * member's and the service's questions until it ends; cancelled once no page followed it for the operator's time.
+   */
   const question = async (task: Task, request: AgentTaskRequest): Promise<void> => {
+    const member = task.member.id
+    asking.set(member, questionsOf(member) + 1)
+    const unattended = questionTimeoutMs(ctx.settings)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    task.attended = () => {
+      clearTimeout(timer)
+      if (task.followers > 0 || task.ended) return
+      timer = setTimeout(() => {
+        ctx.log.info(`task ${task.id}: no page followed the question for ${Math.round(unattended / 1000)} s: cancelled`)
+        task.abort.abort()
+      }, unattended)
+      timer.unref?.()
+    }
+    task.attended()
+    const cwd = mkdtempSync(join(tmpdir(), 'presmium-question-'))
     let terminal: AgentEvent = { type: 'done' }
     try {
-      await session(task, ctx.deckDir, request, event => tasks.push(task, event))
+      await session(task, cwd, request, event => tasks.push(task, event))
     } catch (error) {
       terminal = { type: 'error', message: errorMessage(error) }
+    } finally {
+      clearTimeout(timer)
+      task.attended = undefined
+      rmSync(cwd, { recursive: true, force: true })
+      const left = questionsOf(member) - 1
+      if (left > 0) asking.set(member, left)
+      else asking.delete(member)
     }
     tasks.end(task, terminal)
   }
@@ -229,8 +281,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
   /** A task the member may follow: theirs, or any for owners. */
   const taskOf = (id: string, member: Member): Task | Response => {
     const task = tasks.get(id)
-    if (!task) return json({ error: 'no such task' }, 404)
-    if (task.member.id !== member.id && !isOwner(member)) return json({ error: 'not your task' }, 403)
+    if (!task) return problem(404, 'no such task')
+    if (task.member.id !== member.id && !isOwner(member)) return problem(403, 'not your task')
     return task
   }
 
@@ -238,9 +290,9 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
   const documentFile = (file: string): string | undefined => {
     const deck = realpathSync(ctx.deckDir)
     const path = resolve(deck, file)
-    if (!within(path, deck) || !existsSync(path)) return undefined
+    if (!inside(path, deck) || !existsSync(path)) return undefined
     const real = realpathSync(path)
-    return within(real, deck) && statSync(real).isFile() ? real : undefined
+    return inside(real, deck) && statSync(real).isFile() ? real : undefined
   }
 
   return {
@@ -259,7 +311,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
         async handle(request, rc: RequestContext) {
           if (request.method === 'GET') {
             // The change task under way, to its sender and owners: a reloaded page follows it again.
-            const task = tasks.get(changing.get(rc.document) ?? '')
+            const holder = holderOf(rc.document)
+            const task = holder?.startsWith(AGENT_HOLDER) ? tasks.get(holder.slice(AGENT_HOLDER.length)) : undefined
             const visible = task && !task.ended && task.request && (task.member.id === rc.member.id || isOwner(rc.member))
             const change: PendingChange | undefined = visible
               ? {
@@ -273,34 +326,36 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
               : undefined
             return json(change ? { change } : {})
           }
-          if (request.method !== 'POST') return json({ error: 'POST a task' }, 405)
-          if (home) return json({ error: t.noDocument }, 400)
+          if (request.method !== 'POST') return problem(405, 'POST a task')
+          if (home) return problem(400, t.noDocument)
           const parsed = taskRequestOf(await request.json().catch(() => undefined))
-          if (!parsed) return json({ error: 'a task request: { kind, prompt, context, annotations? (annotations), track? (transcript), id? }' }, 400)
+          if (!parsed) return problem(400, 'a task request: { kind, prompt, context, annotations? (annotations), track? (transcript), id? }')
           const { kind } = parsed.request
           const allowed = await kinds(rc.member)
-          if (!allowed.length) return json({ error: t.noRuntime }, 503)
-          if (CHANGE_KINDS.includes(kind) && !ctx.service(REVISIONS)) return json({ error: t.noChanges }, 501)
-          if (!allowed.includes(kind)) return json({ error: t.notAllowed }, 403)
+          if (!allowed.length) return problem(503, t.noRuntime)
+          if (CHANGE_KINDS.includes(kind) && !ctx.service(REVISIONS)) return problem(501, t.noChanges)
+          if (!allowed.includes(kind)) return problem(403, t.notAllowed)
           const id = parsed.id ?? randomUUID()
-          if (tasks.has(id)) return json({ error: 'a task with this id exists' }, 409)
+          if (tasks.has(id)) return problem(409, 'a task with this id exists')
           // The document is the one the request belongs to, whatever the page said.
           const document = rc.document
           const taskRequest: AgentTaskRequest = { ...parsed.request, context: { ...parsed.request.context, document } }
           if (kind === 'question') {
+            // Each question is an agent process and paid model calls: so many at a time (F-08).
+            const limits = questionLimits(ctx.settings)
+            if (questionsOf(rc.member.id) >= limits.member) return problem(429, t.questions(questionsOf(rc.member.id)))
+            if (allQuestions() >= limits.total) return problem(429, t.allQuestions)
             const task = tasks.create(id, rc.member, kind, document)
             task.run = question(task, taskRequest)
             return json({ id }, 201)
           }
-          // One change task per document: running, or waiting for its review; none while a commit is undone.
-          if (changing.has(document)) return json({ error: changing.get(document) === REVERTING ? t.reverting : t.busy }, 409)
-          if (kind === 'transcript' && !documentFile(join('lectures', taskRequest.track!, 'track.json'))) return json({ error: t.noTrack(taskRequest.track!) }, 400)
+          if (kind === 'transcript' && !documentFile(join('lectures', taskRequest.track!, 'track.json'))) return problem(400, t.noTrack(taskRequest.track!))
+          // One change task per document, running or waiting for its review; none while the document is operated on or a commit undone.
+          const release = claim(document, `${AGENT_HOLDER}${id}`)
+          if (!release) return problem(409, refusal(document))
           const task = tasks.create(id, rc.member, kind, document, taskRequest)
-          changing.set(document, id)
           const service = reviews()
-          task.run = runChange({ ctx, tasks, ...service ? { reviews: service } : {}, agent: session, ask }, task, taskRequest).finally(() => {
-            if (changing.get(document) === id) changing.delete(document)
-          })
+          task.run = runChange({ ctx, tasks, ...service ? { reviews: service } : {}, agent: session, ask }, task, taskRequest).finally(release)
           return json({ id }, 201)
         },
       },
@@ -317,60 +372,60 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           }
           if (action === 'review' && request.method === 'POST') {
             const decision = reviewDecisionOf(await request.json().catch(() => undefined))
-            if (!decision) return json({ error: 'a review decision: { accept: true, reject?: string[] } or { accept: false }' }, 400)
-            if (!found.decide) return json({ error: t.notReviewing }, 409)
+            if (!decision) return problem(400, 'a review decision: { accept: true, reject?: string[] } or { accept: false }')
+            if (!found.decide) return problem(409, t.notReviewing)
             found.decide(decision)
             return new Response(null, { status: 204 })
           }
           if (action === 'restore' && request.method === 'POST') {
             const step = restoreStepOf(await request.json().catch(() => undefined))
-            if (!step) return json({ error: 'back to before a step: { step }' }, 400)
-            if (!found.decide) return json({ error: t.notReviewing }, 409)
-            if (!found.restore) return json({ error: t.noRestore }, 501)
+            if (!step) return problem(400, 'back to before a step: { step }')
+            if (!found.decide) return problem(409, t.notReviewing)
+            if (!found.restore) return problem(501, t.noRestore)
             try {
               await found.restore(step)
             } catch (error) {
-              return json({ error: errorMessage(error) }, 409)
+              return problem(409, errorMessage(error))
             }
             return new Response(null, { status: 204 })
           }
-          return json({ error: 'GET tasks/<id>/events, POST tasks/<id>/cancel, tasks/<id>/review or tasks/<id>/restore' }, 404)
+          return problem(404, 'GET tasks/<id>/events, POST tasks/<id>/cancel, tasks/<id>/review or tasks/<id>/restore')
         },
       },
       'revert': {
         role: 'editor',
         async handle(request, rc: RequestContext) {
-          if (request.method !== 'POST') return json({ error: 'POST { task }' }, 405)
+          if (request.method !== 'POST') return problem(405, 'POST { task }')
           const body: unknown = await request.json().catch(() => undefined)
           const task = isRecord(body) && typeof body.task === 'string' ? body.task : undefined
           const revisions = ctx.service(REVISIONS)
-          if (!task) return json({ error: 'POST { task }' }, 400)
-          if (home) return json({ error: t.noDocument }, 400)
-          if (!revisions) return json({ error: t.noChanges }, 501)
+          if (!task) return problem(400, 'POST { task }')
+          if (home) return problem(400, t.noDocument)
+          if (!revisions) return problem(501, t.noChanges)
           // Not while a change task of the document runs or waits: its review would restore files over the undo.
           const document = rc.document
-          if (changing.has(document)) return json({ error: changing.get(document) === REVERTING ? t.reverting : t.busy }, 409)
-          changing.set(document, REVERTING)
+          const release = claim(document, 'assistant:revert')
+          if (!release) return problem(409, refusal(document))
           try {
             const revision = (await revisions.history({ task, ...document ? { document } : {} })).find(found => !found.revertedBy)
-            if (!revision) return json({ error: `no commit of task ${task} to undo in this document` }, 404)
+            if (!revision) return problem(404, `no commit of task ${task} to undo in this document`)
             const result = await revisions.revert(revision.id, rc.member)
             const answer: RevertAnswer = result.ok ? { ok: true, revision: result.revision.id } : { ok: false, conflicts: result.conflicts }
             return json(answer, result.ok ? 200 : 409)
           } finally {
-            if (changing.get(document) === REVERTING) changing.delete(document)
+            release()
           }
         },
       },
       'excerpt': {
         role: 'editor',
         async handle(request) {
-          if (home) return json({ error: t.noDocument }, 400)
+          if (home) return problem(400, t.noDocument)
           const params = new URL(request.url).searchParams
           const start = Number(params.get('start'))
           const end = Number(params.get('end') ?? start)
           const file = documentFile(params.get('file') ?? '')
-          if (!file || !Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) return json({ error: 'GET excerpt?file=<path in the document>&start=<line>&end=<line>' }, 400)
+          if (!file || !Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) return problem(400, 'GET excerpt?file=<path in the document>&start=<line>&end=<line>')
           const lines = readFileSync(file, 'utf8').split('\n').slice(start - 1, Math.min(end, start + EXCERPT_LINES - 1))
           return json({ text: lines.join('\n').slice(0, EXCERPT_CHARS) })
         },

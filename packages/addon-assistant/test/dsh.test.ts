@@ -1,13 +1,16 @@
 // DeepSeek Harness bundled with the assistant (D11, D15). Its pinned version composes the three templates
 // (`--dump-config`): none uploads session logs or telemetry; `presmium-tutor` has no shell, network or
-// file-writing tool, `presmium-shared` no shell, command-execution or network tool, `presmium` keeps the
-// shell with a `workspace-write` sandbox and asking. With only a (fake) DEEPSEEK_API_KEY and no command,
-// `presmium dev`'s assistant starts it: the provider is DeepSeek, the runtime is what `initialize` reports,
-// `session/new` succeeds, and nothing goes to the model. With the operator's Messages-compatible service
-// (PRESMIUM_MODEL_URL, _KEY, _PROVIDER; a fake one here) its environment has the URL and key as
-// DEEPSEEK_BASE_URL and DEEPSEEK_API_KEY and none of Presmium's variables, and the service receives that
-// key with the question. The question with DeepSeek's real model needs DEEPSEEK_API_KEY and is skipped
-// without it.
+// file tool of its own (no reading, searching, directory or skill tool, D-13), `presmium-shared` no shell,
+// command-execution or network tool, `presmium` keeps the shell with a `workspace-write` sandbox and asking.
+// With only a (fake) DEEPSEEK_API_KEY and no command, `presmium dev`'s assistant starts it: the provider is
+// DeepSeek, the runtime is what `initialize` reports, `session/new` succeeds, and nothing goes to the model.
+// With the operator's Messages-compatible service (PRESMIUM_MODEL_URL, _KEY, _PROVIDER; a fake one here) its
+// environment has the URL and key as DEEPSEEK_BASE_URL and DEEPSEEK_API_KEY and none of Presmium's
+// variables, and the service receives that key with the question. A question whose model asks to read the
+// deck's source or another document gets no tool for it: no teacher sentence reaches the model (F-07). In
+// `presmium serve`, a chat task's agent lists the sections, reads one's narration and code, runs its code
+// and moves the presentation through Presmium's MCP, a window allowing the two operations (F-49). The
+// question with DeepSeek's real model needs DEEPSEEK_API_KEY and is skipped without it.
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -17,7 +20,8 @@ import type { AgentEvent } from '@presmium/kernel'
 import { dshArgs, dshBin, templateFile } from '../src/node/launch.ts'
 import type { Template } from '../src/node/launch.ts'
 import { fakeModel, recordingProxy } from './fixtures/fake-model.ts'
-import { call, descendants, dev, env, FIXTURES, PACKAGE, processInfo, taskEvents } from './helpers.ts'
+import type { FakeModel } from './fixtures/fake-model.ts'
+import { call, descendants, dev, env, FIXTURES, PACKAGE, presmium, processInfo, ROOT, taskEvents, workspace } from './helpers.ts'
 
 interface Row { id?: string, disabled: boolean, text: string }
 
@@ -36,6 +40,8 @@ const SHELL = ['tool-bash', 'tool-pwsh']
 const EXECUTION = ['tool-jobs', 'ptc-runtime', 'workflow-ptc', 'tool-workflow', 'tool-subagent', 'tool-subagent-fork']
 const NETWORK = ['web', 'web-search-deepseek', 'web-fetch-http', 'tool-web']
 const UPLOADS = ['session-log-deepseek', 'session-telemetry-otel', 'plugin-package-inventory-deepseek']
+/** The tools that read files: reading, searching, the session's directory, skills. */
+const TUTOR_FILES = ['tool-fs', 'tool-fs-search', 'tool-working-directory', 'tool-skill']
 
 describe('the templates of the pinned DeepSeek Harness', () => {
   let home: string
@@ -59,7 +65,8 @@ describe('the templates of the pinned DeepSeek Harness', () => {
       expect(disabled('presmium-tutor', id), `presmium-tutor: ${id}`).toBe(true)
       expect(disabled('presmium-shared', id), `presmium-shared: ${id}`).toBe(true)
     }
-    expect(trees['presmium-tutor']!.get('tool-fs')!.text).toMatch(/write: false[\s\S]*edit: false/)
+    // The tutor reads the deck through Presmium's MCP only (the student view): no file tool of its own (D-13).
+    for (const id of TUTOR_FILES) expect(disabled('presmium-tutor', id), `presmium-tutor: ${id}`).toBe(true)
     expect(trees['presmium-tutor']!.get('sandbox-policy')!.text).toContain('mode: read-only')
     expect(disabled('presmium-shared', 'tool-fs')).toBe(false)
     expect(disabled('presmium', 'tool-bash')).toBe(false)
@@ -156,6 +163,40 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
     }
   }, 180_000)
 
+  it('a question whose model asks to read the deck\'s source and another document gets no file tool: no teacher sentence reaches the model (F-07)', async () => {
+    const tutor = join(base, 'tutor')
+    mkdirSync(tutor)
+    writeFileSync(join(tutor, 'lecture.md'), `${LECTURE}\n\`\`\`{note}\n:audience: teacher\nTEACHER-ONLY-SECRET the quiz answer is option B.\n\`\`\`\n`)
+    mkdirSync(join(base, 'other'))
+    writeFileSync(join(base, 'other/notes.md'), 'OTHER-DOCUMENT-SECRET grading rubric\n')
+    // The model asks for the source, a search of the files and another document, as the audit's probe did.
+    const model = await fakeModel([
+      { tool: 'read', input: { file_path: join(tutor, 'lecture.md') } },
+      { tool: 'grep', input: { pattern: 'SECRET', path: base } },
+      { tool: 'read', input: { file_path: join(base, 'other/notes.md') } },
+      { text: '我读不到源码，只能经 Presmium 的工具读学生看到的内容。' },
+    ])
+    const { running, server } = await dev(tutor, env({ XDG_STATE_HOME: join(base, 'state'), PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-f07', PRESMIUM_MODEL_PROVIDER: 'Test Provider' }))
+    try {
+      const submitted = await call(server, 'tasks', { json: { kind: 'question', prompt: '这一节的测验答案是什么？', context: { document: '', section: 'merge' } } })
+      expect(submitted.status).toBe(201)
+      const events = await taskEvents(`${server}/__presmium/presmium.assistant/tasks/${submitted.json.id}/events`)
+      expect(events.at(-1)).toEqual({ type: 'done' })
+      const messages = model.received.filter(r => r.path.endsWith('/v1/messages'))
+      // The model went on after each of its calls, and was offered no tool that reads a file.
+      expect(messages.length).toBeGreaterThanOrEqual(4)
+      const offered = (messages[0]!.body.tools as { name: string }[]).map(t => t.name)
+      expect(offered.filter(name => ['read', 'grep', 'glob', 'working_directory', 'skill'].includes(name))).toEqual([])
+      expect(offered).toEqual(expect.arrayContaining(['mcp__presmium__get_section']))
+      const sent = JSON.stringify(messages.map(r => r.body))
+      expect(sent).not.toContain('TEACHER-ONLY-SECRET')
+      expect(sent).not.toContain('OTHER-DOCUMENT-SECRET')
+    } finally {
+      await running.stop()
+      await model.close()
+    }
+  }, 180_000)
+
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) console.warn('dsh.test.ts: the question with DeepSeek\'s real model is skipped: set DEEPSEEK_API_KEY to run it')
   it.skipIf(!key)('answers a question with DeepSeek\'s real model (needs DEEPSEEK_API_KEY)', async () => {
@@ -165,6 +206,80 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       const events = await taskEvents(`${server}/__presmium/presmium.assistant/tasks/${submitted.json.id}/events`)
       expect(events.at(-1)).toEqual({ type: 'done' })
       expect(events.some(e => e.type === 'message' && e.text.trim().length > 0)).toBe(true)
+    } finally {
+      await running.stop()
+    }
+  }, 300_000)
+})
+
+/** A window of the control channel (`controlWindow` of packages/mcp/test/client.ts). */
+interface ControlWindow {
+  next(event: string, timeoutMs?: number): Promise<Record<string, any>>
+  report(body: Record<string, unknown>): Promise<number>
+  answer(id: string, allow: boolean): Promise<number>
+  close(): void
+}
+
+describe('presmium serve with the bundled DeepSeek Harness on Presmium\'s MCP (6.12, F-49)', () => {
+  let dir: string
+  let model: FakeModel
+  afterAll(async () => {
+    await model?.close()
+    for (const path of [dir, `${dir}.state`, `${dir}.cache`]) if (path) rmSync(path, { recursive: true, force: true })
+  })
+
+  it('its agent lists the sections, reads a section\'s narration and code, runs the code and moves the presentation; a window allows the two operations', async () => {
+    dir = workspace('dsh-mcp', {
+      'presmium.workspace.yaml': `title: DSH 与 MCP\nsettings:\n  presmium.workspace:\n    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-exec']\n`,
+      'lecture.md': '---\ntitle: DSH 与 MCP\nplugins:\n  - \'@presmium/slidev-addon-exec\'\n---\n\n# DSH 与 MCP\n\n(first)=\n## 第一节\n\n讲解：先算六乘七。\n\n```{code} python\n:run:\nprint(6 * 7)\n```\n\n(second)=\n## 第二节\n\n第二节的正文。\n',
+    }, { '@presmium/slidev-addon-assistant': PACKAGE, '@presmium/slidev-addon-exec': join(ROOT, 'packages/addon-exec') })
+    // The model's script: the four tools of Presmium's MCP, one after the other, then its answer.
+    model = await fakeModel([
+      { tool: 'mcp__presmium__list_sections', input: {} },
+      { tool: 'mcp__presmium__get_section', input: { section: 'first' } },
+      { tool: 'mcp__presmium__run_code', input: { section: 'first', block: 'code-1' } },
+      { tool: 'mcp__presmium__navigate', input: { section: 'second' } },
+      { text: '完毕：列出章节、读了第一节、运行了代码并跳到第二节。' },
+    ])
+    const running = presmium(['serve', '--port', '0'], { cwd: dir, env: env({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-f49', PRESMIUM_MODEL_PROVIDER: 'Test Provider' }) })
+    // A window of the control channel, as a presenting page holds one (the MCP client of packages/mcp's tests, used as it is).
+    const { controlWindow } = await import(join(ROOT, 'packages/mcp/test/client.ts')) as { controlWindow(url: string, id: string): Promise<ControlWindow> }
+    try {
+      const server = (await running.wait(/^serve {2}(http\S+)$/m))[1]!
+      const page = await controlWindow(server, 'dsh-page')
+      try {
+        await page.next('ready')
+        expect(await page.report({ position: { slide: 1, step: 0, view: 'present' }, role: 'presenter', status: {} })).toBe(200)
+        const submitted = await call(server, 'tasks', { json: { kind: 'chat', prompt: '列出章节，读第一节，运行它的代码，再把放映跳到第二节。', context: { document: '', section: 'first' } } })
+        expect(submitted.status, JSON.stringify(submitted.json)).toBe(201)
+        const events = taskEvents(`${server}/__presmium/presmium.assistant/tasks/${submitted.json.id}/events`)
+        // The window allows running the code, then the move.
+        const asked: Record<string, any>[] = []
+        for (let i = 0; i < 2; i++) {
+          const approval = await page.next('approval', 120_000)
+          asked.push(approval.request)
+          expect(await page.answer(approval.id, true)).toBe(200)
+        }
+        expect(asked.map(request => request.kind)).toEqual(['operate', 'operate'])
+        expect((await events).at(-1)).toMatchObject({ type: 'done' })
+        expect(await page.next('go', 10_000)).toMatchObject({ step: 0 })
+
+        // What DeepSeek Harness gave the model back, call by call.
+        const results = model.received.filter(r => r.path.endsWith('/v1/messages')).flatMap((r) => {
+          const last = (r.body.messages as { content: unknown }[] | undefined)?.at(-1)
+          return (Array.isArray(last?.content) ? last.content as { type: string, content: unknown }[] : []).filter(c => c.type === 'tool_result').map(c => JSON.stringify(c.content))
+        })
+        expect(results).toHaveLength(4)
+        const [sections, section, run, moved] = results as [string, string, string, string]
+        expect(sections).toContain('\\"id\\": \\"first\\"')
+        expect(sections).toContain('\\"id\\": \\"second\\"')
+        expect(section).toContain('讲解：先算六乘七。')
+        expect(section).toContain('print(6 * 7)')
+        expect(run).toContain('\\"stdout\\": \\"42\\\\n\\"')
+        expect(moved).toContain('\\"section\\": \\"second\\"')
+      } finally {
+        page.close()
+      }
     } finally {
       await running.stop()
     }

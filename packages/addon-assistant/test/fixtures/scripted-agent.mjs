@@ -18,6 +18,7 @@
 //   and the answer ends with a `presmium-annotation <id>: …` line for each;
 // - `#append <path> <text…>` (one a line): appends the text to the file (created if missing); a line
 //   `#sleep <ms>` between two waits that long (the assistant records the step of the first meanwhile);
+//   a line `#build <renderer,…>` builds the deck through Presmium's MCP (`build`), a tool call of its own;
 // - a message with 新增一节: a new section at the end of the chapter the context's section lies in;
 // - a chat whose context names only the document (drafting): lecture.md is written in full, its
 //   headmatter kept;
@@ -27,7 +28,7 @@
 // With SCRIPTED_AGENT_LOG it appends what it saw to that file, one JSON object a line: its environment,
 // `session/new`'s parameters, the tools it listed, the permission outcomes, `session/cancel`.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import * as acp from '@agentclientprotocol/sdk'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
@@ -80,7 +81,7 @@ async function edit(client, sessionId, cwd, path, content) {
   const id = `edit-${++calls}`
   await tool(client, sessionId, { sessionUpdate: 'tool_call', toolCallId: id, title: `edit ${path}`, kind: 'edit', status: 'pending', rawInput: { file_path: file }, locations: [{ path: file }] })
   const rel = relative(real(cwd), real(file))
-  if (rel.startsWith('..') || isAbsolute(rel)) {
+  if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
     const answer = await client.request(acp.methods.client.session.requestPermission, {
       sessionId,
       toolCall: { toolCallId: id },
@@ -101,8 +102,22 @@ async function edit(client, sessionId, cwd, path, content) {
 
 const read = (cwd, path) => (existsSync(resolve(cwd, path)) ? readFileSync(resolve(cwd, path), 'utf8') : '')
 
+/** Builds the deck through the session's MCP server (`build`), as a tool call; logs what it answered. */
+async function build(client, sessionId, servers, renderers) {
+  const id = `build-${++calls}`
+  await tool(client, sessionId, { sessionUpdate: 'tool_call', toolCallId: id, title: 'mcp__presmium__build', kind: 'other', status: 'in_progress', rawInput: { to: renderers } })
+  const mcp = await mcpClient(servers.find(s => s.type === 'http' || 'url' in s))
+  try {
+    const result = await mcp.callTool({ name: 'build', arguments: { to: renderers } })
+    log('build', { result: result.content?.[0]?.text, isError: Boolean(result.isError) })
+  } finally {
+    await mcp.close()
+  }
+  await tool(client, sessionId, { sessionUpdate: 'tool_call_update', toolCallId: id, status: 'completed' })
+}
+
 /** A change task: what the prompt asks, done in the working directory; resolves with the answer. */
-async function change(client, sessionId, cwd, { question, context, annotations, track }) {
+async function change(client, sessionId, { cwd, mcp }, { question, context, annotations, track }) {
   if (annotations) {
     const notes = []
     // From the last lines up, so the earlier annotations' lines stay where they were.
@@ -127,9 +142,14 @@ async function change(client, sessionId, cwd, { question, context, annotations, 
     return `已把讲授轨 ${track} 的转写整理为第一节的讲解。`
   }
   const done = []
-  for (const [, command, path, text] of question.matchAll(/^#(append|sleep) (\S+) ?(.*)$/gm)) {
+  for (const [, command, path, text] of question.matchAll(/^#(append|sleep|build) (\S+) ?(.*)$/gm)) {
     if (command === 'sleep') {
       await new Promise(resolve => setTimeout(resolve, Number(path)))
+      continue
+    }
+    if (command === 'build') {
+      await build(client, sessionId, mcp, path.split(','))
+      done.push(`built ${path}`)
       continue
     }
     const ok = await edit(client, sessionId, cwd, path, `${read(cwd, path)}${text}\n`)
@@ -198,7 +218,7 @@ const app = acp.agent({ name: 'scripted-agent' })
 
     const { change: changing, annotations, track } = readPrompt(params.prompt)
     if (changing && !question.includes('#write')) {
-      const answer = await change(client, params.sessionId, session.cwd, { question, context, annotations, track })
+      const answer = await change(client, params.sessionId, session, { question, context, annotations, track })
       await say(client, params.sessionId, answer)
       return { stopReason: 'end_turn' }
     }

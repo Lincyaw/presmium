@@ -41,15 +41,6 @@ export function dshBin(): string | undefined {
   }
 }
 
-/** The bundled DeepSeek Harness's version. */
-export function dshVersion(): string | undefined {
-  try {
-    return (JSON.parse(readFileSync(require.resolve('@deepseek-ai/dsh/package.json'), 'utf8')) as { version?: string }).version
-  } catch {
-    return undefined
-  }
-}
-
 /** The arguments of `node <bin>` for a session. */
 export function dshArgs(bin: string, template: Template): string[] {
   return [bin, '--profile', 'acp', '--patch', templateFile(template)]
