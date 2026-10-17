@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Shared kernel: contracts, service registry, anchors, checks",
   "dependencies": {
+    "parse5": "7.3.0",
     "semver": "^7.8.5"
   },
   "devDependencies": {
@@ -14,6 +15,7 @@
     ".": "./src/index.ts",
     "./contracts": "./src/contracts.ts",
     "./ir": "./src/ir.ts",
+    "./node": "./src/node/index.ts",
     "./reading": "./src/reading.ts",
     "./runner.py": "./src/runner.py"
   }

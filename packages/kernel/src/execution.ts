@@ -24,3 +24,10 @@ export function languageId(lang: string): string {
 export function failedRun(executorId: string, stderr: string, durationMs = 0): RunResult {
   return { ok: false, stdout: '', stderr, exitCode: null, durationMs, timedOut: false, source: 'live', executorId }
 }
+
+/**
+ * Names of environment variables that hold credentials: `*_KEY`, `*_TOKEN`,
+ * `*_SECRET`, `*_PASSWORD`, `*_APPID`. Code run under the `local` rules does
+ * not see them, and a SHARED serve refuses to start with any (docs/architecture.md 4.6, 10.1).
+ */
+export const CREDENTIAL_VARIABLE = /_(?:KEY|TOKEN|SECRET|PASSWORD|APPID)$/i

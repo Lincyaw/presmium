@@ -52,13 +52,6 @@ interface Scoped extends GatewayGrant {
   id: string
 }
 
-const STDERR: Logger = {
-  debug: () => {},
-  info: (...args) => console.error('[presmium gateway]', ...args),
-  warn: (...args) => console.error('[presmium gateway]', ...args),
-  error: (...args) => console.error('[presmium gateway]', ...args),
-}
-
 /** The route of a contribution for a path: an exact key, or the longest `<prefix>/*`. */
 function findRoute(routes: Record<string, GatewayRoute> | undefined, path: string): { route: GatewayRoute, rest: string } | undefined {
   if (!routes) return undefined
@@ -82,7 +75,8 @@ function findProxy(proxies: GatewayProxy[] | undefined, path: string): { spec: G
 
 export async function startGateway(options: GatewayOptions): Promise<Gateway> {
   const env = options.env ?? process.env
-  const log = options.log ?? STDERR
+  // On stderr; debug lines with PRESMIUM_DEBUG.
+  const log = options.log ?? pluginLogger('presmium gateway')
   const root = resolve(options.workspace)
   const listenHost = options.host ?? '127.0.0.1'
   const { settings, problem: unreadable } = workspaceSettings(root)

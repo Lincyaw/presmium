@@ -208,6 +208,27 @@ export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[
 }
 
 /**
+ * The blocks written inside a source mark that leaves audiences out get the
+ * mark's audiences (within their own): what such a directive holds belongs to
+ * its audiences even when it became a block of its own, e.g. a footnote
+ * definition written in a teacher's note (a safety net under the parser's
+ * placement, ./source.ts). A block that holds the mark (a tab set around a
+ * teacher's tab) is not inside it.
+ */
+export function markBlocks(sections: IRSection[], marks: AudienceMark[]): void {
+  if (marks.length === 0) return
+  for (const section of sections) {
+    for (const block of irBlocks(section.blocks)) {
+      const { file, line } = block.source
+      const end = block.source.endLine ?? line
+      for (const mark of marks) {
+        if (mark.source.file === file && mark.source.line <= line && end <= (mark.source.endLine ?? mark.source.line)) block.audience = within(block.audience, mark.audience)
+      }
+    }
+  }
+}
+
+/**
  * Takes `scope` apart into `out`. The scope is the expansion's own node,
  * which knows the file and line of its `{include}`: it keeps what comes
  * before the first heading. Gives the audiences of the last section it opened.

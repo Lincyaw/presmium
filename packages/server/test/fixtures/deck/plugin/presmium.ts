@@ -1,9 +1,10 @@
 // The server contribution of a test plugin (packages/server/test, e2e/server.spec.ts): its routes return
 // what the plugin's own Node service holds, the contexts the plugin got, the answer to an approval and an
-// MCP token for the member; in SHARED mode a proxy to the gateway, as a plugin with `auth: proxy` has.
-// Plain objects: tokens are compared by id, so the fixture needs no package to compile.
+// MCP token for the member, and the size of a body (with the default limit, and one of 16 MiB); in SHARED
+// mode a proxy to the gateway, as a plugin with `auth: proxy` has. Its contribution counts how often it
+// was closed. Plain objects: tokens are compared by id, so the fixture needs no package to compile.
 interface Context { config: Record<string, unknown>, settings: Record<string, unknown>, trust: string, operatorDir?: string, gateway?: { url: string, token: string }, secret(name: string): string | undefined, service(token: { id: string }): any }
-interface Request { url: string }
+interface Request { url: string, arrayBuffer(): Promise<ArrayBuffer> }
 interface RequestContext { member: { id: string, roles: string[] }, document: string, rest: string }
 
 const ECHO = { id: 'fixture.echo' }
@@ -11,6 +12,9 @@ const APPROVALS = { id: 'presmium.approvals' }
 const MCP_ENDPOINT = { id: 'presmium.mcpEndpoint' }
 
 const json = (data: unknown) => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })
+
+/** How many contributions of this process were closed (a document taken down, F-40): each document loads its copy of this module. */
+const counted = globalThis as { fixtureClosed?: number }
 
 export default {
   id: 'fixture.server',
@@ -43,6 +47,10 @@ export default {
         },
       },
       'echo/*': { role: 'reader', handle: (_: Request, r: RequestContext) => json({ rest: r.rest, document: r.document }) },
+      // The size of the body read: the server's default limit (1 MiB), and one route that takes 16 MiB.
+      'upload': { role: 'reader', handle: async (request: Request) => json({ bytes: (await request.arrayBuffer()).byteLength }) },
+      'upload-large': { role: 'reader', maxBody: 16 << 20, handle: async (request: Request) => json({ bytes: (await request.arrayBuffer()).byteLength }) },
+      'closed': { role: 'reader', handle: () => json({ closed: counted.fixtureClosed ?? 0 }) },
       // An `author` MCP token for the member who calls, as an agent session gets one (its `url` is the gateway's in SHARED mode).
       'mcp': {
         handle: (_: Request, r: RequestContext) => {
@@ -63,5 +71,8 @@ export default {
           ]
         : [],
     ],
+    close: () => {
+      counted.fixtureClosed = (counted.fixtureClosed ?? 0) + 1
+    },
   }),
 }

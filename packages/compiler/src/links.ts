@@ -12,10 +12,10 @@
 import { execFile, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
-import { irBlocks, isRecord } from '@presmium/kernel'
+import { htmlAttributes, irBlocks, isRecord } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, MdastNode, SourcePos } from '@presmium/kernel'
 import { BUILTIN_DIRECTIVES } from './blocks.ts'
-import { htmlAttributes, inside, publishesDirectory, unpublishedDirectory } from './published.ts'
+import { inside, publishesDirectory, unpublishedDirectory } from './published.ts'
 import { viewFor } from './renderers.ts'
 import { plainText, slugify, splitSections } from './sections.ts'
 import { Parser, readFrontmatter } from './source.ts'
@@ -179,7 +179,8 @@ async function sourceAnchors(entry: string, scope?: ReadScope): Promise<Set<stri
 
 /**
  * `presmium check --external-links`: lychee checks the external links when
- * it is installed (a warning for each that fails); without it, a note.
+ * it is installed (a warning for each that fails, on its own line); without
+ * it, a note.
  */
 async function externalLinks(urls: Map<string, SourcePos>, entry: string, line: LineFinder): Promise<Finding[]> {
   if (urls.size === 0) return []
@@ -187,8 +188,12 @@ async function externalLinks(urls: Map<string, SourcePos>, entry: string, line: 
   if (spawnSync('lychee', ['--version'], { stdio: 'ignore' }).error) {
     return [{ checkId: 'presmium.links', severity: 'info', message: `lychee is not installed: ${urls.size === 1 ? 'the external link was' : `the ${urls.size} external links were`} not checked (install lychee, https://lychee.cli.rs, to check them)`, source: at }]
   }
+  // The URLs on stdin, one per line: lychee checks each of them, where it would take a URL argument for a page to
+  // read and check the links of (F-44).
   const output = await new Promise<{ stdout: string, error?: Error }>((done) => {
-    execFile('lychee', ['--format', 'json', '--no-progress', '--', ...urls.keys()], { maxBuffer: 64 << 20 }, (error, stdout) => done({ stdout, ...error ? { error } : {} }))
+    const child = execFile('lychee', ['--format', 'json', '--no-progress', '-'], { maxBuffer: 64 << 20 }, (error, stdout) => done({ stdout, ...error ? { error } : {} }))
+    child.stdin?.on('error', () => {})
+    child.stdin?.end(`${[...urls.keys()].join('\n')}\n`)
   })
   let report: unknown
   try {

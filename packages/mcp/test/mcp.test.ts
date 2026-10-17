@@ -3,7 +3,10 @@
 // refused without a token, sees only read tools with a `tutor` token a plugin's route issued (and 401
 // once revoked, its subscription ended), and hears of a new position it subscribed to; `presmium-mcp`
 // lists the read tools on stdio and loads the packages installed with the deck's CLI.
-import { execFileSync, spawn } from 'node:child_process'
+// WP-89b: a window's position in the student view of a tutor token, found by its section (F-41); a plugin's
+// tool learns the view of the call (C-6); presmium-mcp checks as presmium check does, and its host compiles the
+// student view (F-03).
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -100,7 +103,7 @@ describe('presmium dev', () => {
     expect(tools.some(name => /write|edit/.test(name))).toBe(false)
 
     const { sections } = resultOf(await client.callTool({ name: 'list_sections', arguments: {} }))
-    expect(sections.map((s: { id: string }) => s.id)).toEqual(['mcp-测试文稿', 'merge', '第三节'])
+    expect(sections.map((s: { id: string }) => s.id)).toEqual(['mcp-测试文稿', 'merge', 'teacher', '第三节'])
 
     const section = resultOf(await client.callTool({ name: 'get_section', arguments: { section: 'merge' } }))
     expect(section.title).toBe('合并')
@@ -117,7 +120,7 @@ describe('presmium dev', () => {
     const plain = await client.readResource({ uri: 'presmium://sections/merge?x=1' })
     expect(JSON.parse((plain.contents[0] as { text: string }).text)).toMatchObject({ id: 'merge', title: '合并' })
     const deck = await client.readResource({ uri: 'presmium://deck?document=&x=1' })
-    expect(JSON.parse((deck.contents[0] as { text: string }).text)).toMatchObject({ title: 'MCP 测试文稿', sections: 3 })
+    expect(JSON.parse((deck.contents[0] as { text: string }).text)).toMatchObject({ title: 'MCP 测试文稿', sections: 4 })
 
     // The web form's index finds the section; a plugin's tool gets the caller.
     const found = resultOf(await client.callTool({ name: 'search', arguments: { query: '相邻对' } }))
@@ -190,13 +193,63 @@ describe('presmium dev', () => {
     const subscription = await client.listen({ resourceSubscriptions: ['presmium://position'] })
     expect(subscription.honoredFilter.resourceSubscriptions).toEqual(['presmium://position'])
 
-    expect(await page.report({ position: { slide: 3, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
+    expect(await page.report({ position: { slide: 4, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
     expect(await updated).toBe('presmium://position')
     const read = await client.readResource({ uri: 'presmium://position' })
     expect(JSON.parse((read.contents[0] as { text: string }).text).position).toMatchObject({ section: '第三节', step: 0, view: 'present' })
     await subscription.close()
   })
+
+  it('gives a tutor token the position of the presenting window in the student view: by section, null in a teacher\'s section (F-41)', async () => {
+    const page = await window('teaching')
+    const grant = await (await fetch(`${server}/__presmium/fixture.mcp/tutor`)).json() as { token: string }
+    const tutor = await connect(grant.token)
+    const where = async () => resultOf(await tutor.callTool({ name: 'get_position', arguments: {} })).position as Record<string, unknown>
+    // The teacher's window (the whole deck) on its third section, the teacher's: the student view has none of it.
+    expect(await page.report({ position: { slide: 3, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
+    expect(await where()).toMatchObject({ section: null, title: null })
+    // On the section after it, which the student view numbers 3: the same section, found by its id.
+    expect(await page.report({ position: { slide: 4, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
+    expect(await where()).toMatchObject({ section: '第三节', title: '第三节' })
+    // A window that names its section: that one, whatever its number.
+    expect(await page.report({ position: { slide: 2, step: 0, view: 'present', section: 'teacher' }, role: 'audience', status: {} })).toBe(200)
+    expect(await where()).toMatchObject({ section: null })
+    expect(await page.report({ position: { slide: 2, step: 0, view: 'present', section: 'merge' }, role: 'audience', status: {} })).toBe(200)
+    expect(await where()).toMatchObject({ section: 'merge' })
+    // A plugin's tool reads what the token may: the student view (C-6).
+    expect(resultOf(await tutor.callTool({ name: 'fixture_view', arguments: {} }))).toEqual({ view: 'student' })
+    expect(resultOf(await (await connect()).callTool({ name: 'fixture_view', arguments: {} }))).toEqual({ view: 'full' })
+  })
 })
+
+it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its line; its host compiles the student view (F-03)', async () => {
+  const dir = deck()
+  const client = new Client({ name: 'presmium-test', version: '0.1.0' })
+  try {
+    const checked = spawnSync(process.execPath, [PRESMIUM_BIN, 'check', '--json'], { cwd: dir, env: env(), encoding: 'utf8' })
+    const { findings } = JSON.parse(checked.stdout) as { findings: { checkId: string, severity: string, message: string, source: { file: string, line: number } }[] }
+    const plugin = findings.find(f => f.checkId === 'fixture.mcp.check')
+    // On the headmatter line that names the plugin.
+    expect(plugin?.source).toEqual({ file: join(dir, 'lecture.md'), line: 5 })
+
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [MCP_BIN, dir], env: env() as Record<string, string>, stderr: 'ignore' }))
+    const { diagnostics } = resultOf(await client.callTool({ name: 'get_diagnostics', arguments: {} })) as { diagnostics: { check: string, severity: string, message: string, file: string, line: number }[] }
+    const key = (f: { check: string, severity: string, message: string, file: string, line: number }) => `${f.check} ${f.severity} ${f.file}:${f.line} ${f.message}`
+    expect(diagnostics.map(key).sort()).toEqual(findings.map(f => key({ check: f.checkId, severity: f.severity, message: f.message, file: f.source.file.slice(dir.length + 1), line: f.source.line })).sort())
+    expect(diagnostics.map(f => f.check)).toContain('fixture.mcp.check')
+
+    // The student view of presmium-mcp's host: without the teacher's section.
+    const { compilerHost } = await import('../src/stdio.ts')
+    const host = compilerHost(join(dir, 'lecture.md'), [])
+    const student = (await host.compile('', 'student')).doc
+    expect(student.sections.map(s => s.id)).toEqual(['mcp-测试文稿', 'merge', '第三节'])
+    expect(JSON.stringify(student)).not.toContain('TEACHERNOTE27')
+    expect(JSON.stringify((await host.compile('', 'full')).doc)).toContain('TEACHERNOTE27')
+  } finally {
+    await client.close()
+    rmSync(dir, { recursive: true, force: true })
+  }
+}, 120_000)
 
 it('presmium-mcp lists the read tools on stdio, no operation without --allow operate, and loads what the CLI installs', async () => {
   const dir = deck()
@@ -215,7 +268,7 @@ it('presmium-mcp lists the read tools on stdio, no operation without --allow ope
     expect(client.getInstructions()).toContain('presmium-mcp compiles the deck again at the next call')
     expect(resultOf(await client.callTool({ name: 'fixture_bundled', arguments: {} }))).toEqual({ bundled: true })
     const info = resultOf(await client.callTool({ name: 'deck_info', arguments: {} }))
-    expect(info).toMatchObject({ title: 'MCP 测试文稿', sections: 3, entry: 'lecture.md' })
+    expect(info).toMatchObject({ title: 'MCP 测试文稿', sections: 4, entry: 'lecture.md' })
   } finally {
     await client.close()
     rmSync(dir, { recursive: true, force: true })

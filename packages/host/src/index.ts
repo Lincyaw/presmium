@@ -1,3 +1,7 @@
+export { trackAgentTask } from './agent.ts'
+export type { AgentTaskState } from './agent.ts'
+export { blockAt, blockElement, blockKey, codeLines, lineNumbers, linesText, positionSlide, splitBlockKey } from './blocks.ts'
+export type { BlockPoint } from './blocks.ts'
 export { componentErrors, PmBoundary } from './boundary.ts'
 export type { ComponentError } from './boundary.ts'
 export {

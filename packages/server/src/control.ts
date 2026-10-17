@@ -19,9 +19,12 @@ export const APPROVAL_TIMEOUT_MS = 50_000
 
 /** A position a window reports (the `navigation` service's). */
 export interface WindowPosition {
+  /** The section's number in the window's own view of the deck (a student build numbers its sections apart). */
   slide: number
   step: number
   view?: string
+  /** The section's id, the same in every view (D-4, F-41); forms that report it let a caller find it in its own view. */
+  section?: string
 }
 
 export interface WindowReport {
@@ -50,6 +53,11 @@ interface Pending {
   request: ApprovalRequest
   document: string
   settle(allow: boolean): void
+}
+
+/** A window of the present or presenter view, as it reported itself. */
+function presents(window: { report?: WindowReport }): boolean {
+  return window.report?.role === 'presenter' || window.report?.role === 'audience'
 }
 
 export function hasRole(member: Member, role: MemberRole): boolean {
@@ -169,14 +177,16 @@ export class Control {
 
   /**
    * The positions the windows last reported (of `member`, of one document,
-   * when given), newest first, the present and presenter windows before the
-   * others (MCP's `get_position`).
+   * when given), newest first, the present and presenter windows of editors
+   * and owners (and of `viewer`, who asks) before the others (MCP's
+   * `get_position`): a reader's window may say it presents, which counts for
+   * that reader only (F-38).
    */
-  positions(member?: Member, document?: string): { window: string, member: string, document: string, report: WindowReport }[] {
+  positions(member?: Member, document?: string, viewer?: Member): { window: string, member: string, roles: MemberRole[], document: string, report: WindowReport }[] {
     const all = [...this.#windows.values()].filter(w => w.report?.position && !w.console && (!member || w.member.id === member.id) && (document === undefined || w.document === document))
-    const rank = (w: Window) => (w.report?.role === 'presenter' || w.report?.role === 'audience' ? 0 : 1)
+    const rank = (w: Window) => (presents(w) && (hasRole(w.member, 'editor') || w.member.id === viewer?.id) ? 0 : 1)
     return all.sort((a, b) => rank(a) - rank(b) || b.report!.at - a.report!.at)
-      .map(w => ({ window: w.id, member: w.member.id, document: w.document, report: w.report! }))
+      .map(w => ({ window: w.id, member: w.member.id, roles: w.member.roles, document: w.document, report: w.report! }))
   }
 
   /** Sends `go` to the windows (of `member`, of one document, when given) of the present and presenter views, or to all of them when none presents. */
@@ -195,10 +205,18 @@ export class Control {
     return windows.length
   }
 
-  /** The plugins' status summaries the windows (of one document, when given) reported, the newest of each plugin. */
+  /**
+   * The plugins' status summaries the windows of editors and owners (of one
+   * document, when given) reported, each plugin's from the newest presenter
+   * window, else the newest window (F-38): a reader's page reports the
+   * classroom as it sees it, which is not the teacher's.
+   */
   status(document?: string): Record<string, unknown> {
     const out: Record<string, unknown> = {}
-    const windows = [...this.#windows.values()].filter(w => w.report?.status && (document === undefined || w.document === document)).sort((a, b) => a.report!.at - b.report!.at)
+    const rank = (w: Window) => (w.report?.role === 'presenter' ? 1 : 0)
+    const windows = [...this.#windows.values()]
+      .filter(w => w.report?.status && !w.console && hasRole(w.member, 'editor') && (document === undefined || w.document === document))
+      .sort((a, b) => rank(a) - rank(b) || a.report!.at - b.report!.at)
     for (const window of windows) Object.assign(out, window.report!.status)
     return out
   }

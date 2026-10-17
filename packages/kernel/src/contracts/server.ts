@@ -35,7 +35,26 @@ export interface Route {
    * origin of the owner console; on the workspace site's origin it is 404 (10.4).
    */
   role?: MemberRole
+  /**
+   * The largest request body it takes, in bytes; default 1 MiB (`MAX_BODY`).
+   * The server refuses a larger `Content-Length` before the handler runs,
+   * and ends a chunked body at the limit, with 413 (N-08).
+   */
+  maxBody?: number
   handle: RouteHandler
+}
+
+/** The request body a route takes unless it says otherwise (`Route.maxBody`): 1 MiB. */
+export const MAX_BODY = 1 << 20
+
+/** A JSON response, never cached. */
+export function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } })
+}
+
+/** An error response: `{ error: message }` as JSON. */
+export function problem(status: number, message: string): Response {
+  return json({ error: message }, status)
 }
 
 export interface ProxySpec {
@@ -258,6 +277,17 @@ export interface GatewayAccess {
   url: string
   /** `Authorization: Bearer` token: serve's service token, or a scoped token serve issued for a run, a build or an agent session. */
   token: string
+}
+
+/**
+ * A request to a plugin's contribution in the gateway (`<url>/<plugin>/<path>`)
+ * with the access's token; a redirect is an error, so the token never goes
+ * to another address.
+ */
+export function gatewayFetch(access: GatewayAccess, plugin: string, path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers)
+  headers.set('Authorization', `Bearer ${access.token}`)
+  return fetch(`${access.url.replace(/\/+$/, '')}/${plugin}/${path.replace(/^\/+/, '')}`, { ...init, headers, redirect: 'error' })
 }
 
 /** What a token grants; the gateway checks the token and gives this to the route. */

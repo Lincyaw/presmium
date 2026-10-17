@@ -1,7 +1,7 @@
 // The language server (P-80, P-81) driven over LSP on a MyST deck that references code in a
 // throwaway git repository; the deck is compiled by the real compiler with the code and
 // execution plugins.
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -220,3 +220,33 @@ it('answers at once about a file of a deck that is compiling again after a save 
   await server.connection.sendRequest(HoverRequest.type, { textDocument: { uri: slow }, position: { line: 7, character: 0 } })
   expect(Date.now() - started).toBeLessThan(200)
 }, 30_000)
+
+it('starts one presmium dev for a deck again after a start that failed, however often the preview is asked for (F-43)', async () => {
+  // First without a web renderer: presmium dev starts no web server, and the preview fails and stops it.
+  const entry = join(dir, 'again/lecture.md')
+  mkdirSync(join(dir, 'again'))
+  const text = (web: string) => `---\ntitle: Again\nrenderers:\n  web:\n    package: ${web}\n---\n\n## One\n\nText.\n`
+  writeFileSync(entry, text(join(dir, 'no-web-renderer')))
+  const again = pathToFileURL(entry).href
+  server.open(again, text(join(dir, 'no-web-renderer')))
+  await server.diagnostics(again)
+  await expect(server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } })).rejects.toThrow(/no web server/)
+  // The deck fixed, the preview starts while the first presmium dev is still on its way out; asked again, it is the same one.
+  writeFileSync(entry, text(pkg('web')))
+  const first = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } }) as Preview
+  const second = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } }) as Preview
+  expect(second.url).toBe(first.url)
+  expect(devProcesses(entry)).toHaveLength(1)
+}, 180_000)
+
+/** The `presmium dev` processes of this machine that run the deck `entry`. */
+function devProcesses(entry: string): string[] {
+  return readdirSync('/proc').filter(pid => /^\d+$/.test(pid)).flatMap((pid) => {
+    try {
+      const args = readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0')
+      return args.includes('dev') && args.includes(entry) ? [pid] : []
+    } catch {
+      return []
+    }
+  })
+}

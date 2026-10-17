@@ -9,6 +9,7 @@ import type { ClientRequest, IncomingHttpHeaders, IncomingMessage, Server, Serve
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { getRequestListener } from '@hono/node-server'
+import { json, problem } from '@presmium/kernel'
 import { createProxyServer } from 'http-proxy-3'
 
 /** Host names of this machine. */
@@ -50,12 +51,43 @@ export function bearer(value: string | null | undefined): string | undefined {
   return match?.[1]
 }
 
-export function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers } })
-}
+export { json, problem }
 
-export function problem(status: number, message: string): Response {
-  return json({ error: message }, status)
+/**
+ * The request with its body read, at most `limit` bytes (N-08, F-02): 413
+ * when its `Content-Length` says more, before reading anything, or once a
+ * body without one (chunked) passes the limit, whose reading then stops. The
+ * request a handler gets holds the body read, so it can read it as it likes.
+ */
+export async function limitBody(request: Request, limit: number): Promise<Request | Response> {
+  // The connection is not kept: the rest of the body is not read, and the next request must not wait behind it.
+  const tooLarge = () => json({ error: `the request body is larger than this route takes (${limit} bytes)` }, 413, { Connection: 'close' })
+  if (!request.body) return request
+  const declared = Number(request.headers.get('content-length') ?? Number.NaN)
+  if (declared > limit) {
+    await request.body.cancel().catch(() => undefined)
+    return tooLarge()
+  }
+  const chunks: Uint8Array[] = []
+  let size = 0
+  const reader = request.body.getReader()
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > limit) {
+      await reader.cancel().catch(() => undefined)
+      return tooLarge()
+    }
+    chunks.push(value)
+  }
+  const body = new Uint8Array(size)
+  let at = 0
+  for (const chunk of chunks) {
+    body.set(chunk, at)
+    at += chunk.byteLength
+  }
+  return new Request(request.url, { method: request.method, headers: request.headers, body, signal: request.signal })
 }
 
 /** A header of a Node request as one string. */

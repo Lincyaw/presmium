@@ -3,9 +3,9 @@
 // - the layout: .claude/skills links to ../.agents/skills and AGENTS.md to CLAUDE.md, so there is one copy;
 // - every skill has a SKILL.md whose frontmatter names it after its directory and describes it;
 // - the files a skill refers to under references/ exist;
-// - presmium-author's references/directives.md covers every directive the compiler and the plugins declare,
-//   collected as the compiler collects them: the built-in directives and the `directives` of each package's
-//   `./presmium` entry, loaded with jiti (the compiler's own loader);
+// - presmium-author's references/directives.md has a section (a `###` heading naming it) for every directive
+//   the compiler and the plugins declare, collected as the compiler collects them: the built-in directives and
+//   the `directives` of each package's `./presmium` entry, loaded with jiti (the compiler's own loader);
 // - every `presmium <command>` the skills mention is a command of the CLI, with options that command takes.
 import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
@@ -130,9 +130,10 @@ const reference = join(skillsDir, 'presmium-author/references/directives.md')
 if (!existsSync(reference)) {
   fail(`${relative(root, reference)} is missing`)
 } else {
-  const text = readFileSync(reference, 'utf8')
+  // Each directive has a section of its own: a `###` heading that names it, not only a mention in an example.
+  const headings = readFileSync(reference, 'utf8').split('\n').filter(line => line.startsWith('### '))
   for (const [name, source] of declared) {
-    if (!text.includes(`{${name}}`)) fail(`${relative(root, reference)} does not document {${name}} (declared by ${source})`)
+    if (!headings.some(line => line.includes(`\`{${name}}\``))) fail(`${relative(root, reference)} has no section for {${name}} (declared by ${source}): a heading such as ### \`{${name}}\``)
   }
 }
 

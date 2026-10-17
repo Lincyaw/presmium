@@ -1,10 +1,13 @@
 // `presmium gateway` (D13, docs/architecture.md 10.9): the operator's plugin's gateway routes behind
 // the service token and scoped tokens, the checks of Host and Origin, `/mcp` forwarded to serve, and
-// listening on this machine by default.
+// listening on this machine by default. serve's client of the gateway (`GatewayTokens`, `gatewayFetch`, F-29)
+// issues and revokes scoped tokens and follows no redirect.
 import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { connect } from 'node:net'
 import { networkInterfaces, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { gatewayFetch } from '@presmium/kernel'
+import { GatewayTokens } from '@presmium/server'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import type { Child } from './helpers.ts'
 import { cleanEnv, FIXTURES, listener, presmiumProcess, raw, remove, waitFor } from './helpers.ts'
@@ -96,4 +99,20 @@ it('issues scoped tokens that reach their plugins only, revokes them, and forwar
   expect(mcp.json()).toMatchObject({ listener: true, path: '/mcp' })
   expect(serve.requests.at(-1)).toMatchObject({ method: 'POST', path: '/mcp', body: '{"jsonrpc":"2.0"}' })
   expect(serve.requests.at(-1)!.headers.authorization).toBe('Bearer mcp-session-token')
+})
+
+it('serve\'s client issues a scoped token that reaches its plugin, revokes it, and follows no redirect with it', async () => {
+  const tokens = new GatewayTokens({ url, token: SERVICE })
+  const scoped = await tokens.issue({ plugins: ['fixture.gateway'], purpose: 'run:doc', member: 'editor@test' })
+  const granted = await gatewayFetch(scoped.access, 'fixture.gateway', 'grant')
+  expect(granted.status).toBe(200)
+  expect(await granted.json()).toMatchObject({ grant: { kind: 'scoped', plugins: ['fixture.gateway'], purpose: 'run:doc', member: 'editor@test' } })
+  // A redirect is an error: the token does not go to the other address.
+  await expect(gatewayFetch(scoped.access, 'fixture.gateway', 'moved')).rejects.toThrow()
+  // Kept under a key: the same token until it nears its end; revoked with the others kept.
+  const kept = await tokens.kept('doc\0fixture.gateway', { plugins: ['fixture.gateway'], purpose: 'proxy:fixture.gateway' })
+  expect((await tokens.kept('doc\0fixture.gateway', { plugins: ['fixture.gateway'], purpose: 'proxy:fixture.gateway' })).id).toBe(kept.id)
+  await scoped.revoke()
+  await tokens.revokeKept()
+  for (const token of [scoped, kept]) expect((await gatewayFetch(token.access, 'fixture.gateway', 'grant')).status).toBe(401)
 })

@@ -7,16 +7,17 @@
  * `--allow` names (`operate` gives `run_code` and `build`), and allowed then.
  * Like the CLI, it loads Presmium's own packages installed with the CLI (the
  * renderers and the operator plugin `addon-deltabox`): from the CLI's package
- * directory (`bundledDir`).
+ * directory. Its checks, runs and builds are those of every host (F-03):
+ * `Compilation.check`, `runBlock`, `buildView`; the student view is the
+ * compilation as the audience `student` sees it (P-55).
  */
-import { existsSync, realpathSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { CheckRegistry, errorMessage, irBlocks } from '@presmium/kernel'
-import type { ApprovalKind, Finding, Member } from '@presmium/kernel'
-import { build, Compiler, resolveEntry } from '@presmium/compiler'
+import { errorMessage } from '@presmium/kernel'
+import type { ApprovalKind, Member } from '@presmium/kernel'
+import { buildView, Compiler, findPackageDir, resolveEntry, runBlock, STUDENT } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
@@ -28,24 +29,6 @@ const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
 const CLI_PACKAGE = '@presmium/cli'
 
-/** The real directory of the package `name` in a `node_modules` from `from` upward. */
-function packageUp(name: string, from: string): string | undefined {
-  for (let dir = from; ; dir = dirname(dir)) {
-    const found = join(dir, 'node_modules', name)
-    if (existsSync(join(found, 'package.json'))) return realpathSync(found)
-    if (dirname(dir) === dir) return undefined
-  }
-}
-
-/**
- * Where Presmium's own packages installed with the CLI resolve from
- * (`CompilerOptions.bundled`), as for `presmium check`: the CLI's package
- * directory. The CLI is the deck's (installed in its project), else the one
- * this package was installed with; without one, this package's directory.
- */
-function bundledDir(deckDir: string): string {
-  return packageUp(CLI_PACKAGE, deckDir) ?? packageUp(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
-}
 
 const USAGE = `Usage: presmium-mcp [deck] [--allow <kinds>]
 
@@ -61,34 +44,12 @@ async function stamps(files: string[]): Promise<string> {
   return times.join(',')
 }
 
-/** The plugins' checks of a compilation and the publication checks (P-54), as `presmium check` runs them. */
-async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
-  const checks = new CheckRegistry()
-  const findings: Finding[] = []
-  for (const { name, plugin } of compilation.plugins) {
-    for (const check of plugin?.checks ?? []) {
-      try {
-        checks.register(check)
-      } catch (error) {
-        findings.push({ checkId: 'presmium.plugins', severity: 'error', message: `plugin "${name}": ${errorMessage(error)}` })
-      }
-    }
-  }
-  return [...findings, ...await checks.run({
-    deckDir: compilation.deckDir,
-    workspaceRoot: compilation.workspaceRoot,
-    headmatter: compilation.frontmatter,
-    src: compilation.src,
-    resolvers: compilation.resolvers,
-    lock: compilation.lock.toJSON(),
-    ir: compilation.doc,
-    service: compilation.service,
-  }), ...await compilation.publishChecks()]
-}
-
 /** The `McpHost` of one deck on the compiler. */
 export function compilerHost(entry: string, allow: readonly ApprovalKind[]): McpHost {
-  const compiler = new Compiler(entry, { bundled: bundledDir(dirname(entry)) })
+  // Where Presmium's own packages installed with the CLI resolve from (`CompilerOptions.bundled`), as for `presmium
+  // check`: the CLI's package directory, the deck's CLI, else the one this package was installed with, else this package.
+  const bundled = findPackageDir(CLI_PACKAGE, dirname(entry)) ?? findPackageDir(CLI_PACKAGE, OWN_DIR) ?? OWN_DIR
+  const compiler = new Compiler(entry, { bundled })
   let latest: { compilation: Compilation, files: string[], stamp: string } | undefined
   let queue = Promise.resolve()
   /** The current compilation: compiled again when a file it read changed (one compilation at a time). */
@@ -113,27 +74,20 @@ export function compilerHost(entry: string, allow: readonly ApprovalKind[]): Mcp
       const { doc } = await current()
       return [{ dir: '', title: doc.meta.title, lang: doc.meta.lang }]
     },
-    // The student view is the whole deck until audiences are compiled (WP-87).
-    async compile(document) {
-      const { doc } = await only(document)
+    async compile(document, view) {
+      const compilation = await only(document)
+      const doc = view === 'student' ? compilation.forAudience(STUDENT) : compilation.doc
       return { doc, diagnostics: doc.diagnostics }
     },
     async check(document) {
       const compilation = await only(document)
-      return [...compilation.doc.diagnostics, ...await pluginChecks(compilation)]
+      return [...compilation.doc.diagnostics, ...await compilation.check()]
     },
     async build(document, options) {
-      const compilation = await only(document)
-      const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: options.to })
+      const report = await buildView(await only(document), { to: options.to, view: options.view })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
-    async run(document, target, signal) {
-      const compilation = await only(document)
-      const section = compilation.doc.sections.find(s => s.id === target.section)
-      const block = section && [...irBlocks(section.blocks)].find(b => b.id === target.block)
-      if (!block || block.node.type !== 'code') throw new Error(`no code block ${target.section}/${target.block}`)
-      return compilation.run(block.node, signal)
-    },
+    run: async (document, target, signal) => runBlock(await only(document), target, signal),
     approve: async request => allow.includes(request.kind),
     offers: kind => allow.includes(kind),
     async tools() {

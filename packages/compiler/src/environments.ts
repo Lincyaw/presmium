@@ -7,7 +7,7 @@
  * headmatter holds no value that looks like a credential (`presmium.secrets`).
  */
 import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument } from '@presmium/kernel'
+import type { CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument } from '@presmium/kernel'
 
 const PREFIX = environmentExecutor('')
 
@@ -112,6 +112,38 @@ export function checkRuns(doc: IRDocument, execute: ExecuteConfig, report: (find
       else if (first !== where) fail(`session "${run.session}" runs in ${describe(first)} and here in ${describe(where)}; the blocks of a session share one environment`)
     }
   }
+}
+
+/**
+ * Every block that runs in a declared environment is in a language the
+ * environment declares (`languages`, P-100) and its executor takes. Otherwise
+ * an error on the block's line names the environment, its kind, its
+ * languages and the block's language; the environment may be the
+ * headmatter's `execute.env`, which the block did not name. An environment
+ * that declares none runs what its provider finds (`presmium check --env`).
+ */
+export function checkLanguages(doc: IRDocument, execute: ExecuteConfig, executors: readonly Executor[], report: (finding: Finding) => void): Set<CodeNode> {
+  const reported = new Set<CodeNode>()
+  for (const section of doc.sections) {
+    for (const block of irBlocks(section.blocks)) {
+      const run = block.node.type === 'code' ? block.node.run : undefined
+      const name = run?.executor?.startsWith(PREFIX) ? run.executor.slice(PREFIX.length) : undefined
+      const spec = name === undefined ? undefined : execute.environments?.[name]
+      const executor = spec?.languages?.length ? executors.find(e => e.id === run!.executor) : undefined
+      if (!run || !spec?.languages || !executor || executor.supports(run.lang)) continue
+      reported.add(block.node as CodeNode)
+      const runs = `runs ${spec.languages.join(', ')}, not ${run.lang}`
+      const fallback = execute.env === name ? ` (blocks that name none run in "${name}", the headmatter's execute.env)` : ''
+      report({
+        checkId: 'presmium.execute',
+        severity: 'error',
+        message: `environment "${name}" (${spec.kind}) ${runs}`,
+        hint: `name another environment with :env:${fallback}, or add ${run.lang} to the languages of "${name}"`,
+        source: { file: block.source.file, line: block.source.line },
+      })
+    }
+  }
+  return reported
 }
 
 function describe(executor: string): string {

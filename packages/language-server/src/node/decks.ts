@@ -5,7 +5,6 @@
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import { pluginChecks } from '@presmium/cli'
 import { Compiler, DECK_ENTRY, readFrontmatter } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 import { ANCHOR_LOCK_PATH, errorMessage } from '@presmium/kernel'
@@ -64,7 +63,7 @@ export class Deck {
   async #compileOnce(): Promise<void> {
     try {
       const compilation = await this.#compiler.compile()
-      this.findings = [...compilation.doc.diagnostics, ...await pluginChecks(compilation)]
+      this.findings = [...compilation.doc.diagnostics, ...await compilation.check()]
       this.compilation = compilation
     } catch (error) {
       this.findings = [{ checkId: 'presmium.compile', severity: 'error', message: errorMessage(error), source: { file: this.entry, line: 1 } }]

@@ -53,16 +53,20 @@ export class Previews {
 
   /** The base URL of the deck's web dev server, started on first use. */
   open(entry: string): Promise<string> {
-    let url = this.#urls.get(entry)
-    if (!url) {
-      url = this.#start(entry)
-      this.#urls.set(entry, url)
-      url.catch(() => this.#urls.delete(entry))
+    const known = this.#urls.get(entry)
+    if (known) return known
+    // Forgotten when it fails or its process ends, unless another start took its place meanwhile (F-43): a first
+    // `presmium dev` that timed out exits after the next one started.
+    const forget = () => {
+      if (this.#urls.get(entry) === url) this.#urls.delete(entry)
     }
+    const url: Promise<string> = this.#start(entry, forget)
+    this.#urls.set(entry, url)
+    url.catch(forget)
     return url
   }
 
-  #start(entry: string): Promise<string> {
+  #start(entry: string, forget: () => void): Promise<string> {
     const deckDir = dirname(entry)
     // Its own working directory, apart from a `presmium dev` the author runs.
     const args = [presmiumBin(deckDir), 'dev', entry, '--to', 'web', '--out', join(deckDir, PREVIEW_DIR)]
@@ -93,7 +97,7 @@ export class Previews {
       child.once('error', fail)
       child.once('exit', (code) => {
         this.#children.delete(child)
-        this.#urls.delete(entry)
+        forget()
         fail(new Error(`presmium dev exited with code ${code}`))
       })
     })

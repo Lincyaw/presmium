@@ -7,11 +7,11 @@ import { errorMessage } from '@presmium/kernel'
 import type { ApprovalKind, Finding, Severity } from '@presmium/kernel'
 import { build, Compiler, dev, operatorDir, resolveEntry } from '@presmium/compiler'
 import type { BuildReport, Compilation, RunStats } from '@presmium/compiler'
-import { readSecret, servedDocument, startGateway, startServer } from '@presmium/server'
+import { dropPrivileges, readSecret, servedDocument, startGateway, startServer } from '@presmium/server'
 import type { ApprovalPolicy } from '@presmium/server'
-import { becomeUser, buildWorkspace, isWorkspaceRoot, serveWorkspace, startAgentHost } from '@presmium/workspace'
+import { buildWorkspace, isWorkspaceRoot, serveWorkspace, startAgentHost } from '@presmium/workspace'
 import type { WorkspaceBuild } from '@presmium/workspace'
-import { pluginChecks, runCheck } from './check.ts'
+import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
 import { devHost } from './host.ts'
 
@@ -278,7 +278,7 @@ async function devDeck(command: Command): Promise<number> {
   let latest: Compilation | undefined
   const deckDir = dirname(command.entry)
   const approvals: Partial<Record<ApprovalKind, ApprovalPolicy>> = Object.fromEntries(command.allow.map(kind => [kind, 'allow']))
-  const host = devHost(() => latest, deckDir)
+  const host = devHost(() => latest)
   const server = await startServer({
     mode: 'dev',
     port: command.serverPort,
@@ -325,8 +325,8 @@ async function gateway(command: Command): Promise<number> {
   // Started as root to become its user, it takes its token from a file only (a variable would stay in its environment).
   const token = readSecret(process.env, 'PRESMIUM_GATEWAY_TOKEN', Boolean(command.user) && process.getuid?.() === 0)
   if (!token) throw new Error('the gateway needs its service token: set PRESMIUM_GATEWAY_TOKEN or PRESMIUM_GATEWAY_TOKEN_FILE')
-  // Started as root: the token file is read, then the process runs as the gateway's user.
-  becomeUser(command.user)
+  // Started as root: the token file is read, then the process runs as the gateway's user, which cannot read it.
+  dropPrivileges(command.user)
   const root = command.entry
   const started = await startGateway({
     workspace: root,
@@ -360,7 +360,7 @@ async function serve(command: Command): Promise<number> {
     user: command.user,
     ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
     bundled: BUNDLED,
-    check: pluginChecks,
+    check: compilation => compilation.check(),
   })
   process.stdout.write(`serve  ${started.url}\nmode  ${started.trust}\nworkspace  ${started.root}\n`)
   await new Promise<void>((done) => {

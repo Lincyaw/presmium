@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { ANCHOR_LOCK_PATH, CheckRegistry, errorMessage } from '@presmium/kernel'
-import type { AnchorString, CheckContext, Finding } from '@presmium/kernel'
-import { Compiler, frontmatterLine, sortFindings } from '@presmium/compiler'
+import { ANCHOR_LOCK_PATH, errorMessage } from '@presmium/kernel'
+import type { AnchorString, Finding } from '@presmium/kernel'
+import { checkContext, Compiler, frontmatterLine, sortFindings } from '@presmium/compiler'
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
 
 export interface CheckOptions {
@@ -53,40 +53,10 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
     compilation = await compiler.compile()
   }
 
-  findings.push(...await pluginChecks(compilation, { externalLinks: options.externalLinks }))
+  findings.push(...await compilation.check({ externalLinks: options.externalLinks }))
   if (options.environments) findings.push(...await probeEnvironments(compilation, entryText))
   const all = [...compilation.doc.diagnostics, ...findings].map(f => f.source ? f : { ...f, source: { file: compilation.entry, line: 1 } })
   return { entry: compilation.entry, findings: sortFindings(all), lock }
-}
-
-/**
- * The plugins' checks on a compilation, and the publication checks
- * (`presmium.links`, `presmium.forbid`, P-54), as `presmium check`, the
- * language server and the hosts of the server (`ServerHost.check`) run them.
- * A finding without a source, e.g. that of a crashing check, is located at
- * the entry, on the frontmatter line of its plugin.
- */
-export async function pluginChecks(compilation: Compilation, options: { externalLinks?: boolean } = {}): Promise<Finding[]> {
-  const text = await readFile(compilation.entry, 'utf8')
-  const at = (name: string) => ({ file: compilation.entry, line: frontmatterLine(text, name) })
-  const checks = new CheckRegistry()
-  const places = new Map<string, Finding['source']>()
-  const findings: Finding[] = []
-  for (const { name, plugin } of compilation.plugins) {
-    for (const check of plugin?.checks ?? []) {
-      try {
-        checks.register(check)
-        places.set(check.id, at(name))
-      } catch (error) {
-        findings.push({ checkId: 'presmium.plugins', severity: 'error', message: `plugin "${name}": ${errorMessage(error)}`, source: at(name) })
-      }
-    }
-  }
-  for (const finding of await checks.run(checkContext(compilation))) {
-    findings.push(finding.source ? finding : { ...finding, source: places.get(finding.checkId) ?? { file: compilation.entry, line: 1 } })
-  }
-  findings.push(...await compilation.publishChecks({ externalLinks: options.externalLinks }))
-  return findings
 }
 
 /**
@@ -106,19 +76,6 @@ export async function probeEnvironments(compilation: Compilation, text: string):
     if (reason) findings.push({ checkId: 'presmium.execute', severity: 'error', message: `environment "${name}" (${spec.kind}) is not reachable: ${reason}`, source: { file: compilation.entry, line: frontmatterLine(text, `${name}:`) } })
   }
   return findings
-}
-
-export function checkContext(compilation: Compilation): CheckContext {
-  return {
-    deckDir: compilation.deckDir,
-    workspaceRoot: compilation.workspaceRoot,
-    headmatter: compilation.frontmatter,
-    src: compilation.src,
-    resolvers: compilation.resolvers,
-    lock: compilation.lock.toJSON(),
-    ir: compilation.doc,
-    service: compilation.service,
-  }
 }
 
 async function updateLock(compilation: Compilation, onError: (plugin: string, error: unknown) => void): Promise<LockUpdate> {

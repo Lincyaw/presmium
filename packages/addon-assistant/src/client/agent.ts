@@ -7,13 +7,14 @@
  * once even when the stream reconnects (the server sends them from the
  * first), until `done` or `error`. A task whose context names a document
  * goes to that document's routes: the workspace's new-document form drafts
- * the document it created (P-121) from the home page. Besides the contract,
- * the page's own panels may ask for the document's change task under way
+ * the document it created (P-121) from the home page. A task's `revert`
+ * undoes its commit through its document's `revert` route. Besides the
+ * contract, the page's own panels may ask for the document's change task under way
  * (`pending`) and follow it again (`attach`), after the page was reloaded.
  */
 import { createServerClient } from '@presmium/host'
 import type { ServerClient } from '@presmium/host'
-import type { AgentClient, AgentEvent, AgentTask, AgentTaskKind, AgentTaskRequest, ReviewDecision } from '@presmium/kernel'
+import type { AgentClient, AgentEvent, AgentTask, AgentTaskKind, AgentTaskRequest, ReviewDecision, TaskRevertResult } from '@presmium/kernel'
 import { shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import { ASSISTANT_ID } from '../domain/index.ts'
@@ -129,6 +130,15 @@ export function createAgentClient(server: ServerClient): AssistantClient {
         const response = await after('review', decision)
         if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { error?: string }).error ?? `${response.status}`)
         await response.text()
+      },
+      // The undo of the task's commit, through the assistant's `revert` route of the task's document.
+      async revert(): Promise<TaskRevertResult> {
+        await posted
+        const response = await target.fetch(ASSISTANT_ID, 'revert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task: id }) })
+        const answer = await response.json().catch(() => ({})) as { ok?: boolean, revision?: string, conflicts?: string[], error?: string }
+        if (answer.ok === true && typeof answer.revision === 'string') return { ok: true, revision: answer.revision }
+        if (answer.ok === false && Array.isArray(answer.conflicts)) return { ok: false, conflicts: answer.conflicts }
+        throw new Error(answer.error ?? `${response.status}`)
       },
     }
   }

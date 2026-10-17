@@ -21,6 +21,14 @@ renderers:
 print(6 * 7)
 ```
 
+(teacher)=
+## 教师讲评
+
+:::{audience} teacher
+:::
+
+讲评时先问学生合并的顺序 TEACHERNOTE27。
+
 ## 第三节
 
 最后一节的正文。

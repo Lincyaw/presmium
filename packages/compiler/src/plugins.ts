@@ -164,7 +164,7 @@ export function pluginId(plugin: LoadedPlugin): string {
 }
 
 /** The package directory of `name` from `from`: a path relative to it, or found in `node_modules` up from it (only its own with `up` false). */
-function findPackageDir(name: string, from: string, up = true): string | undefined {
+export function findPackageDir(name: string, from: string, up = true): string | undefined {
   if (name.startsWith('.') || isAbsolute(name)) {
     const dir = resolve(from, name)
     return existsSync(join(dir, 'package.json')) ? dir : undefined

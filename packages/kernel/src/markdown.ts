@@ -6,9 +6,10 @@
  * and `$$`, roles such as {sub} and {kbd} inline HTML, a definition list a
  * list of bold terms. Cards, grids and tabs (P-46) keep their structure as
  * HTML elements, or become small headings over their content. A node with no
- * such form keeps its text and is listed as degraded. Pure: no dependencies,
+ * such form keeps its text and is listed as degraded. Pure (raw HTML is parsed with parse5),
  * the input is not changed.
  */
+import { escapeHtml as escape, mapHtmlUrls } from './html.ts'
 import type { MdastNode } from './ir.ts'
 
 /** Nodes that hold a URL, which `LowerOptions.urls` maps. */
@@ -23,6 +24,12 @@ export interface LowerOptions {
   links?: (label: string) => string | undefined
   /** The URL to write for the URL of an image, link or link definition (`type`); undefined keeps it. */
   urls?: (url: string, type: LinkedType) => string | undefined
+  /**
+   * `urls` maps the `src`, `poster` and `href` of raw HTML too (`mapHtmlUrls`):
+   * `src` and `poster` as an `image`, `href` as a `link`. Off by default, for
+   * the renderers that map raw HTML themselves before lowering.
+   */
+  htmlUrls?: boolean
   /** `gfm` keeps footnotes as GFM footnotes; `html` (default) writes `<sup>[n]</sup>`, with the footnote's `enumerator`. */
   footnotes?: 'gfm' | 'html'
   /** `element` writes an `{iframe}` as an `<iframe>`; `link` (default) as a link to the page, which is a degradation. */
@@ -89,7 +96,6 @@ const CONTENT = new Set(['image', 'table', 'code', 'iframe', 'mermaid'])
 const text = (value: string): MdastNode => ({ type: 'text', value })
 const html = (value: string): MdastNode => ({ type: 'html', value })
 const paragraph = (children: MdastNode[]): MdastNode => ({ type: 'paragraph', children })
-const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const capitalized = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
 
 interface Lowering {
@@ -161,6 +167,7 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
   if (fields) {
     const own: Record<string, unknown> = Object.fromEntries(fields.filter(key => node[key] != null).map(key => [key, node[key]]))
     if (LINKED.has(node.type) && typeof own.url === 'string') own.url = options.urls?.(own.url, node.type as LinkedType) ?? own.url
+    if (node.type === 'html' && typeof own.value === 'string') own.value = rawHtml(own.value, options)
     return [{ type: node.type, ...own, ...node.children ? { children: children() } : {} }]
   }
   switch (node.type) {
@@ -213,7 +220,7 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
       // JupyterLab draws Mermaid fences; other front ends show the source.
       return [{ type: 'code', lang: 'mermaid', value: node.value ?? '' }]
     case 'raw':
-      if (node.lang === 'html') return [html(String(node.value ?? ''))]
+      if (node.lang === 'html') return [html(rawHtml(String(node.value ?? ''), options))]
       break
     case 'iframe': {
       const src = String(node.src ?? '')
@@ -248,6 +255,12 @@ function lower(node: MdastNode, ctx: Lowering): MdastNode[] {
   }
   degraded.add(node.type)
   return node.children ? children() : typeof node.value === 'string' && node.value ? [text(node.value)] : []
+}
+
+/** Raw HTML with its URLs mapped by `urls` when `htmlUrls` asks for it. */
+function rawHtml(value: string, options: LowerOptions): string {
+  const { urls } = options
+  return options.htmlUrls && urls ? mapHtmlUrls(value, (url, attribute) => urls(url, attribute === 'href' ? 'link' : 'image')) : value
 }
 
 /** How cards, grids and tabs are written (`LowerOptions.cards`). */

@@ -13,11 +13,11 @@
 import { existsSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, IRSection, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@presmium/kernel'
+import type { ComponentNode, ComponentRenderer, DocumentLink, Finding, IRBlock, IRDocument, IRSection, LocalAsset, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@presmium/kernel'
 import { unshown } from './audience.ts'
-import { audienceCompilation } from './compiler.ts'
+import { audienceCompilation, DECK_ENTRY } from './compiler.ts'
 import type { AudienceCompilation, Compilation, Compiler } from './compiler.ts'
 import { revisionFiles } from './dependencies.ts'
 import { localAsset, portable, relativeIR } from './paths.ts'
@@ -530,6 +530,7 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     extensionFor: node => extensionOf(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),
     localAsset: (source, url) => publishedAsset(compilation, source, url, report),
+    documentLink: (source, url) => documentLink(compilation, source, url),
     report,
     service: compilation.service,
     ...server ? { server } : {},
@@ -550,20 +551,64 @@ const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 /** Directory of the deck's work directory where the directories it publishes are prepared (see `publishedDirectory`). */
 const FILES_DIR = 'files'
 
+/** The local path a URL names relative to a block's source file (decoded where it can be), or undefined for a remote URL, a `/...` path or none. */
+function localTarget(source: SourcePos, url: string): string | undefined {
+  if (REMOTE.test(url)) return undefined
+  const path = url.replace(/[?#].*$/s, '')
+  if (!path || path.startsWith('/')) return undefined
+  let name = path
+  try {
+    name = decodeURIComponent(path)
+  } catch {
+    // As written.
+  }
+  return resolve(dirname(source.file), name)
+}
+
+/**
+ * The document a block's URL links to (`RenderContext.documentLink`, docs/ir.md
+ * 6.2): a deck's entry file or its directory, in the workspace, with the
+ * URL's fragment. The deck's own entry is one too: its source is not published either.
+ */
+function documentLink(compilation: Compilation, source: SourcePos, url: string): DocumentLink | undefined {
+  const target = localTarget(source, url)
+  if (!target) return undefined
+  const dir = basename(target) === DECK_ENTRY && statSync(target, { throwIfNoEntry: false })?.isFile() ? dirname(target)
+    : statSync(target, { throwIfNoEntry: false })?.isDirectory() && existsSync(join(target, DECK_ENTRY)) ? target
+      : undefined
+  if (dir === undefined || !inside(dir, compilation.workspaceRoot)) return undefined
+  const hash = url.indexOf('#')
+  let fragment = hash < 0 ? '' : url.slice(hash + 1)
+  try {
+    fragment = decodeURIComponent(fragment)
+  } catch {
+    // As written.
+  }
+  return { dir: relative(compilation.workspaceRoot, dir).split(sep).join('/'), ...fragment ? { fragment } : {} }
+}
+
 /**
  * The local file a block's URL names, as the renderers publish it
  * (`RenderContext.localAsset`, docs/ir.md 6.2): a file in the repository,
  * or a directory strictly inside the deck that is not a deck itself (a link
  * to another document of a workspace stays a link), published with a file
  * listing. A relative reference to nothing, or to a file outside the git
- * repository the deck is in, cannot be published: a warning on its line. In SHARED
- * `presmium serve` only the workspace's files are read (docs/architecture.md 10.2).
+ * repository the deck is in, cannot be published: a warning on its line. The
+ * source of a document (`documentLink`) is never published: a single deck's
+ * build keeps the link as written, with a warning (the workspace site links
+ * the document's page). In SHARED `presmium serve` only the workspace's files
+ * are read (docs/architecture.md 10.2).
  */
-function publishedAsset(compilation: Compilation, source: SourcePos, url: string, report: (finding: Finding) => void): { file: string, name: string } | undefined {
+function publishedAsset(compilation: Compilation, source: SourcePos, url: string, report: (finding: Finding) => void): LocalAsset | undefined {
   const { deckDir, workspaceRoot, scope } = compilation
   const warn = (message: string) => report({ checkId: 'presmium.links', severity: 'warning', message, source: { file: source.file, line: lineOf(source, url) } })
   const refuse = (file: string) => {
     report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(file), source: { file: source.file, line: source.line } })
+    return undefined
+  }
+  const linked = documentLink(compilation, source, url)
+  if (linked && basename(url.replace(/[?#].*$/s, '')) === DECK_ENTRY) {
+    warn(`${url} is not published: it is the source of ${linked.dir ? `the document ${linked.dir}` : 'a document'}, which a workspace site links as its page; this build keeps the link as written`)
     return undefined
   }
   const found = localAsset(deckDir, source, url)
@@ -573,24 +618,18 @@ function publishedAsset(compilation: Compilation, source: SourcePos, url: string
     warn(`${url} is not published: the file lies outside the deck's repository`)
     return undefined
   }
-  if (found || REMOTE.test(url)) return found
-  const path = url.replace(/[?#].*$/s, '')
+  if (found) return { ...found, directory: false }
   // `/...` names a file of the deck's public/, or a path of the site.
-  if (!path || path.startsWith('/')) return undefined
-  let name = path
-  try {
-    name = decodeURIComponent(path)
-  } catch {
-    // As written.
-  }
-  const target = resolve(dirname(source.file), name)
+  const target = localTarget(source, url)
+  if (!target) return undefined
   if (!existsSync(target)) {
     warn(`${url} is not published: there is no such file`)
     return undefined
   }
   if (!publishesDirectory(target, deckDir)) return undefined
   if (scope && !scope.allows(target)) return refuse(target)
-  return directoryAsset(target, deckDir, join(deckDir, WORK_DIR, FILES_DIR), compilation.doc.meta.lang, message => warn(`${url} is not published: ${message}`))
+  const directory = directoryAsset(target, deckDir, join(deckDir, WORK_DIR, FILES_DIR), compilation.doc.meta.lang, message => warn(`${url} is not published: ${message}`))
+  return directory && { ...directory, directory: true }
 }
 
 function unsupportedBlocks(doc: IRDocument, renderer: Renderer, extensions: RendererExtension[]): RenderOutput['skipped'] {

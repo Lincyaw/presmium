@@ -50,3 +50,20 @@ it('check fails on code that names an undeclared environment, on its line; it wa
   const probed = await presmium(dir, ['check', '--env'])
   expect(probed.stdout).toMatch(/lecture\.md:7 {2}error {2}environment "box" \(devcontainer\) is not reachable: no devcontainer definition/)
 })
+
+const EXEC_WASI = fileURLToPath(new URL('../../addon-exec-wasi', import.meta.url))
+
+it('check says on a block\'s line that its environment does not run its language, the default environment too (F-45)', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'presmium-env-'))
+  dirs.push(dir)
+  writeFileSync(join(dir, 'lecture.md'), `---\ntitle: 环境的语言\nplugins:\n  - ${EXEC_WASI}\nexecute:\n  env: wasm\n  environments:\n    wasm: { kind: wasi, languages: [c] }\n---\n\n## 代码\n\n\`\`\`{code} ruby\n:run:\nputs 1\n\`\`\`\n\n\`\`\`{code} python\n:run:\n:env: wasm\nprint(1)\n\`\`\`\n`)
+  const result = await presmium(dir, ['check', '--json'])
+  expect(result.code, result.stdout + result.stderr).toBe(1)
+  const { findings } = JSON.parse(result.stdout) as { findings: { checkId: string, severity: string, message: string, hint?: string, source: { line: number } }[] }
+  // Said once, on the block: not also as a missing executor.
+  const execute = findings.filter(f => f.checkId === 'presmium.execute')
+  expect(execute).toEqual([
+    expect.objectContaining({ severity: 'error', message: 'environment "wasm" (wasi) runs c, not ruby', source: expect.objectContaining({ line: 13 }), hint: expect.stringContaining('execute.env') }),
+    expect.objectContaining({ severity: 'error', message: 'environment "wasm" (wasi) runs c, not python', source: expect.objectContaining({ line: 18 }) }),
+  ])
+})

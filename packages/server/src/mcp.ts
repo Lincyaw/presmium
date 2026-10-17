@@ -55,7 +55,10 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
   }
   const position = (entry: ReturnType<Control['positions']>[number]): McpPosition => {
     const { report } = entry
-    return { document: entry.document, member: entry.member, slide: report.position!.slide, step: report.position!.step, view: report.position!.view, role: report.role, at: report.at }
+    const { slide, step, view, section } = report.position!
+    // A reader's window shows the student view in SHARED mode (D17); the others the whole deck.
+    const audience = options.shared && !entry.roles.some(role => role === 'editor' || role === 'owner') ? 'student' : 'full'
+    return { document: entry.document, member: entry.member, slide, step, view, ...section === undefined ? {} : { section }, audience, role: report.role, at: report.at }
   }
   return {
     process: { command: options.command, shared: options.shared },
@@ -73,9 +76,9 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
       const doc = await options.mount(document)
       return toolsOf(doc ? [doc] : [], options.service)
     },
-    // The member's presenting windows first, then any window (10.4).
+    // The member's presenting windows first, then those of editors and owners, then any window (10.4, F-38).
     positions(document: string | undefined, member: Member) {
-      const all = control.positions(undefined, document)
+      const all = control.positions(undefined, document, member)
       const presenting = (w: typeof all[number]) => w.member === member.id && (w.report.role === 'presenter' || w.report.role === 'audience')
       return [...all.filter(presenting), ...all.filter(w => !presenting(w))].map(position)
     },

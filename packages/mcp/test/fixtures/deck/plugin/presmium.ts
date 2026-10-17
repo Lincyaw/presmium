@@ -1,6 +1,8 @@
 // The test plugin of packages/mcp/test: its routes issue a `tutor` MCP token for the member who calls
-// (`MCP_ENDPOINT.issue`) and revoke it, as the assistant does for an agent session; and it contributes
-// a read agent tool. Plain objects: tokens are compared by id, so the fixture needs no package.
+// (`MCP_ENDPOINT.issue`) and revoke it, as the assistant does for an agent session; it contributes read
+// agent tools (one says the view of the call), and a check whose finding names no source, which the hosts
+// locate on the plugin's line of the headmatter. Plain objects: tokens are compared by id, so the fixture
+// needs no package.
 interface Grant { url: string, token: string, revoke(): void }
 interface Context { service(token: { id: string }): any }
 interface RequestContext { member: { id: string, name: string, roles: string[] } }
@@ -40,5 +42,15 @@ export default {
       kind: 'read',
       run: async (input: { text: string }, ctx: { document: string, member: { id: string } }) => ({ echo: input.text, document: ctx.document, member: ctx.member.id }),
     },
+    {
+      name: 'fixture_view',
+      description: 'The view of the document the call may read',
+      input: { type: 'object', properties: {} },
+      kind: 'read',
+      run: async (_: unknown, ctx: { view: string }) => ({ view: ctx.view }),
+    },
+  ],
+  checks: [
+    { id: 'fixture.mcp.check', run: async () => [{ checkId: 'fixture.mcp.check', severity: 'warning', message: 'a finding of the plugin without a source' }] },
   ],
 }

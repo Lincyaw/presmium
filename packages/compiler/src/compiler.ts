@@ -11,17 +11,18 @@ import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
-import { audienceDocument, audienceMarks, AudienceParser, audienceView, emptyReferences, liftScopes, scanOutputs, withheld } from './audience.ts'
+import { audienceDocument, audienceMarks, AudienceParser, audienceView, emptyReferences, liftScopes, markBlocks, scanOutputs, withheld } from './audience.ts'
 import type { Withheld } from './audience.ts'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective, PluginRole } from './blocks.ts'
 import { Dependencies } from './dependencies.ts'
 import type { CommittedFiles, Revision } from './dependencies.ts'
-import { checkRuns, checkSecrets, environmentExecutors, environmentProviders, readExecute } from './environments.ts'
+import { checkLanguages, checkRuns, checkSecrets, environmentExecutors, environmentProviders, readExecute } from './environments.ts'
 import { executePass, FREEZE_DIR, FreezeCache, runEnvironment } from './execute.ts'
 import type { ExecutionOptions, RunStats } from './execute.ts'
 import { numberFootnotes } from './footnotes.ts'
 import { checkForbidden } from './forbid.ts'
+import { pluginChecks } from './host.ts'
 import { checkLinks } from './links.ts'
 import { DECK_PLUGIN, directoryComponents, loadOperatorPlugins, loadPlugins, pluginId } from './plugins.ts'
 import type { LoadedPlugin, PluginProblem, PluginSources } from './plugins.ts'
@@ -193,6 +194,12 @@ export interface Compilation {
    * `externalLinks`, lychee checks the external links when it is installed.
    */
   publishChecks(options?: { externalLinks?: boolean }): Promise<Finding[]>
+  /**
+   * The plugins' checks and the publication checks, as `presmium check`, the
+   * language server and the hosts run them (`ServerHost.check`); a finding of
+   * a check without a source is located on its plugin's headmatter line.
+   */
+  check(options?: { externalLinks?: boolean }): Promise<Finding[]>
 }
 
 export interface CompileOptions {
@@ -372,6 +379,9 @@ export class Compiler {
       })
     }
 
+    // What a directive for some audiences holds is for them, also where it became a block of its own (P-55).
+    markBlocks(sections, marks)
+
     const doc: IRDocument = {
       ir: IR_VERSION,
       meta: { ...rest, title, lang, entry: this.entry },
@@ -402,6 +412,7 @@ export class Compiler {
       }
     }
     checkRuns(doc, execute, report)
+    const unsupported = checkLanguages(doc, execute, executors, report)
 
     numberFootnotes(doc, source.files)
 
@@ -462,7 +473,7 @@ export class Compiler {
     if (invalid.length === 0) {
       filled = emptyReferences(doc)
       resolveReferences(doc, report)
-      runs = await executePass(doc, executors, cache, report, { ...this.options.execution, rerun: execute.rerun === 'environment', context: runContext })
+      runs = await executePass(doc, executors, cache, report, { ...this.options.execution, rerun: execute.rerun === 'environment', context: runContext, unsupported })
       for (const step of passes.filter(({ pass }) => pass.after === 'execute')) await runPass(step)
       // Pass 8: validation.
       invalid = validateIR(doc, this.entry)
@@ -480,7 +491,7 @@ export class Compiler {
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
     const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins), ...workspace.scope ? { scope: workspace.scope } : {} }
 
-    return {
+    const compilation: Compilation = {
       doc,
       options: this.options,
       files: source.files,
@@ -509,11 +520,13 @@ export class Compiler {
       ...audience ? { audience } : {},
       forAudience: name => audienceDocument(doc, name, filled, marks),
       audienceOf: (name) => {
-        const view = audienceView(doc, name)
+        const view = audienceView(doc, name, marks)
         return audienceCompilation(name, withheld(view.removed, view.doc))
       },
       publishChecks: async (checks = {}) => [...await checkLinks(publish, checks), ...checkForbidden(publish, headmatter)],
+      check: checks => pluginChecks(compilation, checks),
     }
+    return compilation
   }
 
   /**
@@ -556,7 +569,15 @@ export class Compiler {
     const session = run.session ? `run:${randomUUID()}` : undefined
     const requests = nodes.map(code => ({ ...request(code), ...session ? { session } : {} }))
     const remote = this.options.execution?.remote
-    const results = await Promise.all(requests.map(r => remote ? remote.run(executor.id, r, context.env, signal) : executor.run(r, signal, context)))
+    let results: RunResult[]
+    if (remote && session) {
+      // A remote run's requests may arrive in any order: the blocks of a session go one after the other (P-101).
+      results = []
+      for (const r of requests) results.push(await remote.run(executor.id, r, context.env, signal))
+    } else {
+      // An executor of this process queues the requests of a session in order.
+      results = await Promise.all(requests.map(r => remote ? remote.run(executor.id, r, context.env, signal) : executor.run(r, signal, context)))
+    }
     if (session) await (remote ? remote.endSession(executor.id, session) : executor.endSession?.(session))
     return results.at(-1)!
   }

@@ -418,9 +418,20 @@ export interface RenderContext {
    * file (`source.file`), or `/...` in the deck's `public/`; query and
    * fragment are ignored, escapes decoded (a malformed one is kept as it is).
    * `name` is the name to publish it under, `<first 8 hex of its content
-   * hash>-<file name>`. Undefined for a remote URL or no file.
+   * hash>-<file name>`. Undefined for a remote URL or no file, and for the
+   * source of a document (`documentLink`), which is not published.
    */
-  localAsset(source: SourcePos, url: string): { file: string, name: string } | undefined
+  localAsset(source: SourcePos, url: string): LocalAsset | undefined
+  /**
+   * The document a URL of a block links to (docs/ir.md 6.2): a document's
+   * entry file (`<document>/lecture.md`) or its directory, another document
+   * of the workspace or this one, with the URL's `#fragment` (a section id
+   * or a label there). Its source is never published: a workspace site links
+   * the document's page; a single deck's build keeps the link as written,
+   * with a `presmium.links` warning. Undefined for any other URL. Optional:
+   * hosts that make their own contexts may not have it.
+   */
+  documentLink?(source: SourcePos, url: string): DocumentLink | undefined
   report(finding: Finding): void
   /** As `PassContext.service`. */
   service?<T>(token: ServiceToken<T>): T | undefined
@@ -428,6 +439,24 @@ export interface RenderContext {
   translations?: { lang: string, doc: IRDocument }[]
   /** In `presmium dev`: the server's address, to which the dev servers proxy `/__presmium/`; omitted in builds. */
   server?: { url: string }
+}
+
+/** A local file a URL of a block names, as the renderers publish it (`RenderContext.localAsset`). */
+export interface LocalAsset {
+  /** Absolute path of the file, or of the directory to copy (a directory of the deck, prepared with its listing `index.html`). */
+  file: string
+  /** The name to publish it under: `<first 8 hex of its content hash>-<file name>`. */
+  name: string
+  /** `file` is a directory, whose URL opens its listing (`publishedUrl`). Hosts' own contexts may leave it out. */
+  directory?: boolean
+}
+
+/** A link to a document (`RenderContext.documentLink`). */
+export interface DocumentLink {
+  /** The document's directory, relative to the workspace root ('' for the root), as `SiteDocument.dir`. */
+  dir: string
+  /** The URL's fragment without `#`, decoded: a section id or a label of that document. */
+  fragment?: string
 }
 
 export interface RenderOutput {

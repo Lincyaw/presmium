@@ -304,8 +304,10 @@ function splitFrontmatter(text: string): { yaml?: string, body: string } {
 /**
  * The parser moves every footnote definition of a file to its end, with the
  * position of another one; only the definition's content keeps its true lines.
- * Each definition goes back where it is written, at the top level or into the
- * body of the `{slide}` or `{only}` that holds it, so it belongs to its section.
+ * Each definition goes back where it is written: at the top level, or into
+ * the directive, list or quote that holds it (the body of a `{slide}` or
+ * `{only}`, an admonition, a tab item, a dropdown, a card), so it belongs to
+ * its section and to the audience of what holds it (P-55).
  */
 function placeFootnotes(nodes: MdastNode[]): MdastNode[] {
   const placed = nodes.filter(node => node.type !== 'footnoteDefinition')
@@ -321,15 +323,33 @@ function placeFootnotes(nodes: MdastNode[]): MdastNode[] {
   return placed
 }
 
+/** Nodes whose children are inline content, never a footnote definition's place. */
+const INLINE = new Set(['paragraph', 'heading', 'tableCell', 'caption', 'admonitionTitle', 'cardTitle', 'summary', 'definitionTerm'])
+
 function insertAt(nodes: MdastNode[], node: MdastNode, line: number): void {
-  const directive = nodes.find((n) => {
-    const lines = n.type === 'mystDirective' ? lineOf(n) : undefined
-    return lines && lines.line < line && line <= lines.endLine
+  const holder = nodes.find((n) => {
+    const lines = lineOf(n)
+    return lines && lines.line < line && line <= lines.endLine && !INLINE.has(n.type) && n.children?.length
   })
-  const body = directive?.children?.find(c => c.type === BODY)
-  if (body?.children) return insertAt(body.children, node, line)
+  const inner = holder && contentOf(holder)
+  if (inner) return insertAt(inner, node, line)
   const after = nodes.findIndex(n => (lineOf(n)?.line ?? 0) > line)
   nodes.splice(after < 0 ? nodes.length : after, 0, node)
+}
+
+/**
+ * Where a node that holds a line keeps its content: a Presmium directive's
+ * body; the node a MyST directive made (an admonition, a tab item, a
+ * dropdown's `details`), which has no position of its own; a list's or a
+ * quote's children.
+ */
+function contentOf(holder: MdastNode): MdastNode[] | undefined {
+  const children = holder.children!
+  if (holder.type !== 'mystDirective') return children
+  const body = children.find(c => c.type === BODY)
+  if (body) return body.children
+  const [made] = children
+  return children.length === 1 && made && !lineOf(made) && made.children ? made.children : children
 }
 
 /** First and last line of a node's positioned descendants. */

@@ -6,7 +6,7 @@
 import { randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage, escapeHtml } from '@presmium/kernel'
 import { previewUrl } from '@presmium/language-server/domain'
 import { PREVIEW_REQUEST, SECTION_REQUEST } from '@presmium/language-server/protocol'
 import type { Preview, SectionAt } from '@presmium/language-server/protocol'
@@ -102,10 +102,6 @@ async function openPreview(client: LanguageClient): Promise<void> {
     clearTimeout(timer)
     follow.dispose()
   })
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&"<>]/g, c => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' })[c]!)
 }
 
 /** The preview page in the webview: the dev server in a frame, moved by `presmium:show` messages. */

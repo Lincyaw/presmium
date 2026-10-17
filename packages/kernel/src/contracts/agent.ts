@@ -89,7 +89,17 @@ export interface AgentTask {
   cancel(): void
   /** Answers the `review` event; only the member who started the task and owners may. */
   review(decision: ReviewDecision): Promise<void>
+  /**
+   * Undoes the task's commit once it is `done` (P-115): `git revert` through
+   * `REVISIONS`, or the files that conflict, nothing committed. Throws with
+   * the server's reason when it cannot (no commit of the task, a change task
+   * of the document under way).
+   */
+  revert(): Promise<TaskRevertResult>
 }
+
+/** The undo of a change task's commit (`AgentTask.revert`): the id of the commit that reverted it, or the files that conflict. */
+export type TaskRevertResult = { ok: true, revision: string } | { ok: false, conflicts: string[] }
 
 /** In the browser: a page submits tasks to the server's assistant. */
 export interface AgentClient {
@@ -163,6 +173,12 @@ export type AgentToolKind = 'read' | 'operate' | 'spend'
 export interface AgentToolContext {
   document: string
   member: Member
+  /**
+   * The view of the document the caller may read (P-55, D8): `student` for a
+   * `tutor` token and for readers, whose tools read only what learners see;
+   * `full` for the `author` tokens of editors and owners. MCP fills it.
+   */
+  view: 'full' | 'student'
   service<T>(token: ServiceToken<T>): T | undefined
   signal: AbortSignal
 }
@@ -283,6 +299,27 @@ export interface RevisionService {
 }
 
 export const REVISIONS = defineService<RevisionService>('presmium.revisions')
+
+// Locks of documents (F-09) -----------------------------------------------------------
+
+/**
+ * One writer of a document at a time: a document operation (rename, copy,
+ * delete), an undo of the history, or an agent's change task. A holder names
+ * itself, e.g. `agent:<task id>` or `document:rename`.
+ */
+export interface DocumentLockService {
+  /** Takes the document's lock for `holder`: the function that releases it, or undefined while another holds it. */
+  claim(document: string, holder: string): (() => void) | undefined
+  /** Who holds the document's lock; undefined when no one does. */
+  holder(document: string): string | undefined
+}
+
+/**
+ * Node service: `presmium serve` provides it (the workspace), and the document
+ * operations, the history's undo and the assistant's change tasks take their
+ * locks through it. Without it (`presmium dev`), the assistant keeps its own.
+ */
+export const DOCUMENT_LOCKS = defineService<DocumentLockService>('presmium.documentLocks')
 
 // Writing a document's files (WP-91) --------------------------------------------------
 

@@ -13,6 +13,7 @@ import type {
 } from './contracts.ts'
 import { errorMessage } from './errors.ts'
 import { createEventBus } from './events.ts'
+import { prefixed } from './logging.ts'
 import { ServiceRegistry } from './services.ts'
 
 export interface KernelOptions {
@@ -182,14 +183,4 @@ export class Kernel {
 
 function pluginConfig(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {}
-}
-
-function prefixed(log: Logger, id: string): Logger {
-  const tag = `[${id}]`
-  return {
-    debug: (...args) => log.debug(tag, ...args),
-    info: (...args) => log.info(tag, ...args),
-    warn: (...args) => log.warn(tag, ...args),
-    error: (...args) => log.error(tag, ...args),
-  }
 }

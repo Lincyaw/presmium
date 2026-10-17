@@ -125,7 +125,7 @@ export async function freePort(): Promise<number> {
 
 /** The `serve` mode host on a workspace; resolves with its first line (`{ url }` or `{ error }`) and the process. */
 export async function serveHost(env: Record<string, string>): Promise<{ host: Child, url?: string, error?: string }> {
-  const host = started(spawn(process.execPath, [join(FIXTURES, 'serve-host.ts')], { env: cleanEnv(env), stdio: ['ignore', 'pipe', 'pipe'] }))
+  const host = started(spawn(process.execPath, [join(FIXTURES, 'serve-host.ts')], { env: cleanEnv(env), stdio: ['pipe', 'pipe', 'pipe'] }))
   const line = (await waitFor(host, /^\{.*\}$/m, 120_000))[0]
   const result = JSON.parse(line) as { url?: string, error?: string }
   return { host, ...result }

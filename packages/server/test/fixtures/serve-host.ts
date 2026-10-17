@@ -3,9 +3,11 @@
 // workspace (WP-79) does, and reads them for MCP (the documents and their compiled IR; no checks,
 // builds or runs). Configured by the environment: SERVE_WORKSPACE (the workspace root), SERVE_ROLES
 // (JSON: email -> roles), SERVE_FORWARD (where the site's paths go), SERVE_HOST and SERVE_PORT. It
-// prints `{"url": ...}` once it listens, or `{"error": ...}` and exits 1.
+// prints `{"url": ...}` once it listens, or `{"error": ...}` and exits 1. A line `unmount <dir>` on its
+// stdin takes that document's contributions down (`PresmiumServer.unmount`), then it prints `{"unmounted": <dir>}`.
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { createInterface } from 'node:readline'
 import { Compiler } from '@presmium/compiler'
 import type { MemberRole } from '@presmium/kernel'
 import { servedDocument, startServer } from '@presmium/server'
@@ -48,11 +50,15 @@ try {
     approvalTimeoutMs: Number(process.env.SERVE_APPROVAL_TIMEOUT ?? 50_000),
     serverHost,
     async document(dir) {
-      if (!dir) return undefined
+      if (!dir || !existsSync(join(root, dir, 'lecture.md'))) return undefined
       return servedDocument(await compile(dir))
     },
   })
   process.stdout.write(`${JSON.stringify({ url: server.url, trust: server.trust })}\n`)
+  createInterface({ input: process.stdin }).on('line', (line) => {
+    const dir = /^unmount (.*)$/.exec(line)?.[1]
+    if (dir !== undefined) void server.unmount(dir).then(() => process.stdout.write(`${JSON.stringify({ unmounted: dir })}\n`))
+  })
   const stop = () => void server.close().then(() => process.exit(0))
   process.once('SIGTERM', stop)
   process.once('SIGINT', stop)

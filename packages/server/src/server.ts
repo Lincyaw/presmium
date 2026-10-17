@@ -16,7 +16,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
-import { APPROVALS, eventStream, isRecord, MCP_ENDPOINT, errorMessage } from '@presmium/kernel'
+import { APPROVALS, eventStream, isRecord, MAX_BODY, MCP_ENDPOINT, errorMessage, prefixed } from '@presmium/kernel'
 import type {
   AgentMode,
   ApprovalKind,
@@ -32,16 +32,23 @@ import type {
   ServiceToken,
   TrustMode,
 } from '@presmium/kernel'
+import { pluginLogger } from '@presmium/compiler'
 import { createPresmiumMcp } from '@presmium/mcp'
-import { CONSOLE_HEADER, CONSOLE_HEADERS, CONSOLE_SCRIPT, CONSOLE_SCRIPT_PATH, consolePage } from './console.ts'
+import { authenticator, LOCAL_AUTHOR } from './auth.ts'
+import type { Auth, Identity, Refusal } from './auth.ts'
+import { CONSOLE_HEADERS, CONSOLE_SCRIPT, CONSOLE_SCRIPT_PATH, consolePage } from './console.ts'
 import { Control, hasRole } from './control.ts'
 import type { ApprovalPolicy, WindowPosition } from './control.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
-import { bearer, closeServer, createProxy, header, hostname, isLoopback, json, listen, nodeServer, originHost, problem, sameSecret, urlHost } from './http.ts'
+import { bearer, closeServer, createProxy, header, hostname, isLoopback, json, limitBody, listen, nodeServer, problem, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
 import { serverMcpHost } from './mcp.ts'
-import { assertUnreadable, dropPrivileges, ownSecret, secretFiles, sharedSetup } from './trust.ts'
+import { GatewayTokens } from './tokens.ts'
+import { dropPrivileges, ownSecret, secretFiles, sharedSetup } from './trust.ts'
 import type { SharedSetup } from './trust.ts'
+
+export { LOCAL_AUTHOR }
+export type { Identity }
 
 /** The server's own routes. */
 export const SERVER_PATH = '/__presmium/presmium.server'
@@ -97,17 +104,6 @@ function endedBy(response: Response, signal: AbortSignal, done: () => void): Res
   return new Response(readable, { status: response.status, statusText: response.statusText, headers: response.headers })
 }
 
-/** The identity a login proxy passes (oauth2-proxy's headers). */
-export interface Identity {
-  user?: string
-  email?: string
-  name?: string
-  groups: string[]
-}
-
-/** The member who uses `presmium dev`, or a `presmium serve` without a login. */
-export const LOCAL_AUTHOR: Member = { id: 'local', name: 'local author', roles: ['owner'] }
-
 export interface ServerOptions {
   /** `dev`: one deck, this machine only. `serve`: a workspace, LOCAL without a login, SHARED with one. */
   mode: 'dev' | 'serve'
@@ -162,13 +158,14 @@ export interface PresmiumServer {
   gateway?: GatewayAccess
   /** SHARED mode: agent-host's address and token, read with the other secrets, once (the workspace's client). */
   agentHost?: GatewayAccess
+  /**
+   * Takes a document's server contributions down (F-40): their `close()`
+   * runs, the document is loaded again (with its configuration then) on its
+   * next request, and the gateway tokens of its proxies are revoked. The
+   * workspace calls it when a document is deleted, renamed or made again.
+   */
+  unmount(dir: string): Promise<void>
   close(): Promise<void>
-}
-
-interface Auth {
-  member: Member
-  /** The request came to the owner console's host name. */
-  console: boolean
 }
 
 interface Mounted {
@@ -238,17 +235,10 @@ function documentOf(headers: IncomingMessage['headers'], url: URL): string {
   }
 }
 
-/** The default logger: stderr, so a command's stdout stays its output. */
-const STDERR: Logger = {
-  debug: () => {},
-  info: (...args) => console.error('[presmium server]', ...args),
-  warn: (...args) => console.error('[presmium server]', ...args),
-  error: (...args) => console.error('[presmium server]', ...args),
-}
-
 export async function startServer(options: ServerOptions): Promise<PresmiumServer> {
   const env = options.env ?? process.env
-  const log = options.log ?? STDERR
+  // On stderr, so a command's stdout stays its output; debug lines with PRESMIUM_DEBUG.
+  const log = options.log ?? pluginLogger('presmium server')
   const listenHost = options.host ?? '127.0.0.1'
   const login = options.mode === 'serve' && Boolean(env.PRESMIUM_PROXY_SECRET || env.PRESMIUM_PROXY_SECRET_FILE || options.trustProxyFrom?.length)
   if (options.mode === 'serve' && !login && !isLoopback(listenHost)) {
@@ -258,11 +248,11 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const asRoot = Boolean(options.user) && process.getuid?.() === 0
   const shared: SharedSetup | undefined = login ? sharedSetup(env, asRoot) : undefined
   // The token files are read: from here on the process runs as the unprivileged user, which must not read them.
-  dropPrivileges(options.user)
-  if (asRoot) assertUnreadable(secretFiles(env))
+  dropPrivileges(options.user, secretFiles(env))
   const trust: TrustMode = shared ? 'shared' : 'local'
   const consoleHost = shared?.consoleHost
-  const trusted = new Set(options.trustProxyFrom ?? [])
+  /** The gateway tokens of the proxies to the gateway, one per document and plugin (WP-91). */
+  const gatewayTokens = shared ? new GatewayTokens(shared.gateway, log) : undefined
 
   const control = new Control({
     shared: Boolean(shared),
@@ -304,6 +294,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
         const doc = await options.document(dir)
         if (!doc) return undefined
         loaded.set(dir, doc)
+        log.debug(`mounting the server contributions of ${dir || 'the deck'}: ${doc.plugins.filter(p => p.plugin.server).map(p => p.id).join(', ') || 'none'}`)
         const contributions = new Map<string, ServerContribution>()
         for (const { id, plugin, config } of doc.plugins) {
           if (!plugin.server) continue
@@ -350,60 +341,10 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     service: <T>(token: ServiceToken<T>) => own.get(token.id) as T | undefined,
   }))
 
-  const auths = new WeakMap<IncomingMessage, Auth | { status: number, message: string }>()
   /** Who sent a request, and whether to the console; or why it is refused. */
-  const authenticate = (req: IncomingMessage): Auth | { status: number, message: string } => {
-    const known = auths.get(req)
-    if (known) return known
-    const result = identify(req)
-    auths.set(req, result)
-    return result
-  }
-  const identify = (req: IncomingMessage): Auth | { status: number, message: string } => {
-    const host = header(req.headers, 'host')
-    const origin = originHost(header(req.headers, 'origin'))
-    if (!shared) {
-      // LOCAL: this machine only, against DNS rebinding and other sites (10.3).
-      if (!isLoopback(host)) return { status: 403, message: `Host ${host ?? '(none)'} is not this machine` }
-      if (origin !== undefined && !isLoopback(origin)) return { status: 403, message: `Origin ${header(req.headers, 'origin')} is not this machine` }
-      return { member: LOCAL_AUTHOR, console: false }
-    }
-    // SHARED: only what the login proxy forwards.
-    const fromProxy = (shared.proxySecret && sameSecret(header(req.headers, 'x-presmium-proxy-secret'), shared.proxySecret))
-      || trusted.has((req.socket.remoteAddress ?? '').replace(/^::ffff:/, ''))
-    if (!fromProxy) return { status: 403, message: 'requests must come through the login proxy' }
-    const identity: Identity = {
-      user: header(req.headers, 'x-forwarded-user'),
-      email: header(req.headers, 'x-forwarded-email'),
-      name: header(req.headers, 'x-forwarded-preferred-username'),
-      groups: (header(req.headers, 'x-forwarded-groups') ?? '').split(',').map(group => group.trim()).filter(Boolean),
-    }
-    const id = identity.email ?? identity.user
-    if (!id) return { status: 401, message: 'the login proxy passed no identity' }
-    const roles = options.roles?.(identity) ?? []
-    const member: Member = { id, name: identity.name ?? identity.user ?? id, ...identity.email ? { email: identity.email } : {}, roles: roles.length ? roles : ['reader'] }
-    const console = hostname(host) === consoleHost
-    const method = (req.method ?? 'GET').toUpperCase()
-    const upgrade = header(req.headers, 'upgrade') !== undefined
-    if (console) {
-      // The console takes requests from its own page only (10.4, WP-91), for its routes and its proxies alike: a
-      // state change carries its Origin and `Presmium-Console`; a WebSocket its Origin; any other request that
-      // a browser marks (Sec-Fetch-Site) comes from the same origin, except the page itself, which a link may open.
-      const page = (method === 'GET' || method === 'HEAD') && new URL(req.url ?? '/', 'http://console').pathname === '/'
-      if (method !== 'GET' && method !== 'HEAD' && (origin !== consoleHost || header(req.headers, CONSOLE_HEADER) !== '1')) {
-        return { status: 403, message: 'the owner console takes changes only from its own page' }
-      }
-      if (upgrade && origin !== consoleHost) return { status: 403, message: 'the owner console takes WebSockets only from its own page' }
-      const site = header(req.headers, 'sec-fetch-site')
-      if (!page && site !== undefined && site !== 'same-origin') return { status: 403, message: 'the owner console takes requests only from its own page' }
-    } else if ((upgrade || (method !== 'GET' && method !== 'HEAD')) && origin !== undefined && origin !== hostname(host)) {
-      // State changes and WebSockets on the site come from the site.
-      return { status: 403, message: 'cross-origin request' }
-    }
-    return { member, console }
-  }
+  const authenticate = authenticator({ shared, trustProxyFrom: options.trustProxyFrom, roles: options.roles })
 
-  const refuse = (auth: { status: number, message: string }): Decision => ({ kind: 'answer', response: problem(auth.status, auth.message) })
+  const refuse = (auth: Refusal): Decision => ({ kind: 'answer', response: problem(auth.status, auth.message) })
 
   /**
    * SHARED: `/mcp` on the site's host names is authenticated by its MCP token
@@ -462,33 +403,13 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     }
     let token: string
     try {
-      token = await proxyToken(gatewayPlugin(found.spec.target))
+      const plugin = gatewayPlugin(found.spec.target)
+      token = (await gatewayTokens!.kept(`${dir}\0${plugin ?? ''}`, { plugins: plugin ? [plugin] : [], purpose: `proxy:${plugin ?? ''}` })).access.token
     } catch (error) {
       return refuse({ status: 502, message: `the gateway issued no token for this proxy: ${errorMessage(error)}` })
     }
     const headers = Object.fromEntries(Object.entries(found.spec.headers ?? {}).filter(([name]) => name.toLowerCase() !== 'authorization'))
     return { kind: 'proxy', to: { target: found.spec.target, path, headers: { ...headers, authorization: `Bearer ${token}` }, strip: GATEWAY_STRIP, stripResponse: RESPONSE_STRIP } }
-  }
-
-  /** The tokens of the proxies to the gateway, one per plugin, issued with serve's service token and renewed before they expire. */
-  const proxyTokens = new Map<string, Promise<{ id: string, token: string, expires: number }>>()
-  const proxyToken = async (plugin: string | undefined): Promise<string> => {
-    const key = plugin ?? ''
-    const known = await proxyTokens.get(key)?.catch(() => undefined)
-    if (known && known.expires - Date.now() > 5 * 60_000) return known.token
-    const issuing = (async () => {
-      const gateway = shared!.gateway
-      const response = await fetch(`${gateway.url.replace(/\/+$/, '')}/tokens`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plugins: plugin ? [plugin] : [], purpose: `proxy:${plugin ?? ''}`, ttlSeconds: 3600 }),
-      })
-      if (!response.ok) throw new Error(`${response.status} ${await response.text()}`)
-      const body = (await response.json()) as { id: string, token: string, expires: string }
-      return { id: body.id, token: body.token, expires: Date.parse(body.expires) }
-    })()
-    proxyTokens.set(key, issuing)
-    return (await issuing).token
   }
 
   const decideUpgrade = async (req: IncomingMessage): Promise<{ to?: ProxyTarget, status?: number }> => {
@@ -502,6 +423,9 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     const given = bearer(request.headers.get('authorization'))
     const access = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
     if (!access) return problem(401, 'MCP needs an Authorization: Bearer token')
+    const limited = await limitBody(request, MAX_BODY)
+    if (limited instanceof Response) return limited
+    request = limited
     const response = await (options.mcp ? options.mcp(request, access) : mcp!.fetch(request, access))
     if (given === token || !response.headers.get('content-type')?.startsWith('text/event-stream')) return response
     // Revoked while the request was answered: the stream ends at once.
@@ -522,7 +446,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     const consoleHeaders = auth.console ? CONSOLE_HEADERS : undefined
     if (auth.console && path === '/') {
       if (!hasRole(auth.member, 'owner')) return problem(403, 'the owner console is for owners')
-      return new Response(consolePage(header(req.headers, 'accept-language') ?? 'en'), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...CONSOLE_HEADERS } })
+      return new Response(consolePage(header(req.headers, 'accept-language')), { headers: { 'Content-Type': 'text/html; charset=utf-8', ...CONSOLE_HEADERS } })
     }
     if (auth.console && path === CONSOLE_SCRIPT_PATH) return new Response(CONSOLE_SCRIPT, { headers: { 'Content-Type': 'text/javascript; charset=utf-8', ...CONSOLE_HEADERS } })
     if (isMcp(path)) return serveMcp(request)
@@ -558,14 +482,16 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
         return eventStream(stream, request.signal)
       }
       if (request.method !== 'POST') return problem(405, 'GET or POST')
-      const body: unknown = await request.json().catch(() => undefined)
+      const limited = await limitBody(request, MAX_BODY)
+      if (limited instanceof Response) return limited
+      const body: unknown = await limited.json().catch(() => undefined)
       if (!isRecord(body)) return problem(400, 'a JSON object')
       if (body.type === 'answer' && typeof body.id === 'string') {
         const status = control.answer(body.id, body.allow === true, auth.member, auth.console)
         return status === 200 ? json({ ok: true }) : problem(status, status === 404 ? 'no such approval' : 'this member may not answer this approval here')
       }
       if (body.type === 'report' && typeof body.window === 'string') {
-        const position = isRecord(body.position) ? body.position as unknown as WindowPosition : undefined
+        const position = windowPosition(body.position)
         const ok = control.report(body.window, auth.member, { position, role: typeof body.role === 'string' ? body.role : undefined, status: isRecord(body.status) ? body.status : undefined })
         return ok ? json({ ok: true }) : problem(404, 'unknown window')
       }
@@ -583,8 +509,13 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     // Owner routes live on the owner console's origin only in SHARED mode, and the console has nothing else (10.4).
     if (shared && (role === 'owner') !== auth.console) return problem(404, 'not found')
     if (!hasRole(auth.member, role)) return problem(403, `this route needs the role ${role}`)
+    // The body is read before the route runs, at most as large as the route takes (N-08).
+    const limited = await limitBody(request, found.route.maxBody ?? MAX_BODY)
+    if (limited instanceof Response) return limited
     try {
-      return await found.route.handle(request, { member: auth.member, document, rest: found.rest })
+      const response = await found.route.handle(limited, { member: auth.member, document, rest: found.rest })
+      // What a route answers is the member's: not cached unless the route says how (F-33).
+      return response.headers.has('cache-control') ? response : withHeaders(response, { 'Cache-Control': 'no-store' })
     } catch (error) {
       log.error(`route ${target.plugin}/${target.path} failed: ${errorMessage(error)}`)
       return problem(500, errorMessage(error))
@@ -595,12 +526,21 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const server = nodeServer({ decide, decideUpgrade, fetch: handle, proxy })
   const port = await listen(server, options.port ?? (options.mode === 'dev' ? 0 : 4310), listenHost)
   url = `http://${urlHost(listenHost)}:${port}`
+  log.debug(`listening at ${url}, ${trust} mode`)
   if (token && options.stateFile) {
     mkdirSync(dirname(options.stateFile), { recursive: true })
     writeFileSync(options.stateFile, `${JSON.stringify({ url, mcp: `${url}/mcp`, token, pid: process.pid }, null, 2)}\n`, { mode: 0o600 })
     chmodSync(options.stateFile, 0o600)
   }
   if (shared) await greet(shared, log)
+
+  /** A mounted document's contributions closed (`close()`), with the gateway tokens of its proxies. */
+  const takeDown = async (dir: string, known: Promise<Mounted | undefined>) => {
+    for (const [id, contribution] of (await known.catch(() => undefined))?.contributions ?? []) {
+      await Promise.resolve(contribution.close?.()).catch((error: unknown) => log.error(`the contribution of ${id} failed to close: ${errorMessage(error)}`))
+    }
+    await gatewayTokens?.revokeKept(key => key.startsWith(`${dir}\0`))
+  }
 
   return {
     url,
@@ -612,22 +552,25 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     serverHost: options.serverHost,
     gateway: shared?.gateway,
     agentHost: shared?.agentHost,
+    async unmount(dir) {
+      const known = mounted.get(dir)
+      // The next request loads the document again, as it is then.
+      mounted.delete(dir)
+      loaded.delete(dir)
+      if (known) {
+        log.debug(`unmounting the server contributions of ${dir || 'the deck'}`)
+        await takeDown(dir, known)
+      }
+    },
     async close() {
       // Waiting approvals are refused first, so the MCP calls that wait for them end.
       control.close()
       await mcp?.close().catch((error: unknown) => log.error(`MCP failed to close: ${errorMessage(error)}`))
-      for (const known of mounted.values()) {
-        for (const contribution of (await known.catch(() => undefined))?.contributions.values() ?? []) {
-          await Promise.resolve(contribution.close?.()).catch((error: unknown) => log.error(`a contribution failed to close: ${errorMessage(error)}`))
-        }
-      }
+      for (const [dir, known] of mounted) await takeDown(dir, known)
       proxy.close()
       await closeServer(server)
       // The proxies' gateway tokens go with the server.
-      for (const issued of proxyTokens.values()) {
-        const known = await issued.catch(() => undefined)
-        if (known && shared) await fetch(`${shared.gateway.url.replace(/\/+$/, '')}/tokens/${encodeURIComponent(known.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${shared.gateway.token}` }, signal: AbortSignal.timeout(5000) }).catch(() => undefined)
-      }
+      await gatewayTokens?.revokeKept()
     },
   }
 }
@@ -669,12 +612,13 @@ async function greet(shared: SharedSetup, log: Logger): Promise<void> {
   ])
 }
 
-function prefixed(log: Logger, id: string): Logger {
-  const tag = `[${id}]`
+/** The position a window reports, as far as it is well formed: its section number and step, its view and section id. */
+function windowPosition(value: unknown): WindowPosition | undefined {
+  if (!isRecord(value) || typeof value.slide !== 'number' || typeof value.step !== 'number') return undefined
   return {
-    debug: (...args) => log.debug(tag, ...args),
-    info: (...args) => log.info(tag, ...args),
-    warn: (...args) => log.warn(tag, ...args),
-    error: (...args) => log.error(tag, ...args),
+    slide: value.slide,
+    step: value.step,
+    ...typeof value.view === 'string' ? { view: value.view } : {},
+    ...typeof value.section === 'string' ? { section: value.section } : {},
   }
 }

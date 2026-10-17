@@ -2,16 +2,14 @@
  * What the renderers publish of the local files a block names (docs/ir.md
  * 6.2), shared by a deck's build (`RenderContext.localAsset`, ./renderers.ts)
  * and the workspace site (@presmium/workspace): the content hash of a file,
- * a directory as its copy with a file listing, the line of a block that
- * holds a URL, and the URLs of raw HTML, found by parsing it as HTML.
+ * a directory as its copy with a file listing, and the line of a block that
+ * holds a URL.
  */
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join, relative, sep } from 'node:path'
-import { deckLocale } from '@presmium/kernel'
+import { deckLocale, escapeHtml } from '@presmium/kernel'
 import type { SourcePos } from '@presmium/kernel'
-import { parseFragment } from 'parse5'
-import type { DefaultTreeAdapterMap } from 'parse5'
 import { DECK_ENTRY } from './compiler.ts'
 import { inside } from './settings.ts'
 
@@ -72,10 +70,6 @@ function directoryFiles(dir: string, prefix = ''): string[] {
 const LISTING = {
   'zh-CN': { count: (n: number) => `${n} 个文件，点击下载`, files: '文件' },
   'en': { count: (n: number) => `${n} file${n === 1 ? '' : 's'}; select one to download it`, files: 'Files' },
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 /**
@@ -147,26 +141,4 @@ export function directoryAsset(target: string, deckDir: string, stage: string, l
     return undefined
   }
   return publishedDirectory(target, stage, lang)
-}
-
-/**
- * The values of the attributes `names` (lowercase) of the elements of raw
- * HTML, where each is written. The HTML is parsed (parse5, as a browser
- * parses a fragment), so text that only looks like an attribute
- * (`<code> href=x</code>`, a comment, the code of a script) is not one.
- */
-export function htmlAttributes(html: string, names: ReadonlySet<string>): { name: string, value: string, start: number, end: number }[] {
-  const found: { name: string, value: string, start: number, end: number }[] = []
-  const visit = (node: DefaultTreeAdapterMap['node']) => {
-    if ('attrs' in node) {
-      for (const { name, value } of node.attrs) {
-        const at = node.sourceCodeLocation?.attrs?.[name]
-        if (names.has(name) && at) found.push({ name, value, start: at.startOffset, end: at.endOffset })
-      }
-    }
-    if ('childNodes' in node) node.childNodes.forEach(visit)
-    if ('content' in node) visit(node.content)
-  }
-  visit(parseFragment(html, { sourceCodeLocationInfo: true }))
-  return found.sort((a, b) => a.start - b.start)
 }

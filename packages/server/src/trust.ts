@@ -4,13 +4,11 @@
  * tokens read from files only root can read, and dropping privileges.
  */
 import { accessSync, constants, readFileSync } from 'node:fs'
+import { CREDENTIAL_VARIABLE } from '@presmium/kernel'
 import type { GatewayAccess } from '@presmium/kernel'
 
 /** The server's own secrets: the gateway's service token, agent-host's token, the login proxy's shared secret. */
 export const OWN_SECRETS = ['PRESMIUM_GATEWAY_TOKEN', 'PRESMIUM_AGENT_HOST_TOKEN', 'PRESMIUM_PROXY_SECRET'] as const
-
-/** Names of variables that hold credentials (not Presmium's own). */
-const CREDENTIAL = /(?:_KEY|_TOKEN|_SECRET|_PASSWORD|_APPID)$/i
 
 /**
  * A secret of the server: from the file `<name>_FILE` names (only root can
@@ -40,7 +38,7 @@ export function ownSecret(name: string): boolean {
 
 /** Variables of `env` that look like third-party credentials: SHARED serve refuses to start with any (10.1). */
 export function credentialVariables(env: NodeJS.ProcessEnv): string[] {
-  return Object.keys(env).filter(name => env[name] && CREDENTIAL.test(name) && !ownSecret(name)).sort()
+  return Object.keys(env).filter(name => env[name] && CREDENTIAL_VARIABLE.test(name) && !ownSecret(name)).sort()
 }
 
 /** What SHARED mode needs, read from the environment (and the token files). */
@@ -77,14 +75,21 @@ export function sharedSetup(env: NodeJS.ProcessEnv, filesOnly = false): SharedSe
 
 /**
  * Started as root, becomes `user` (a name or a uid; its group of the same
- * name or number), after the token files were read: the process then can no
- * longer read them, and it is not dumpable. Without root, nothing changes.
+ * name or number) with the user's supplementary groups of `/etc/group` (the
+ * group that may write the document directories, docs/architecture.md 10.5),
+ * after the token files were read; then refuses to go on when it can still
+ * read one of `files` (by default those the environment names, `assertUnreadable`).
+ * The process is not dumpable then. Without root, nothing changes. The one
+ * way serve, the gateway and agent-host become their users (F-05).
  */
-export function dropPrivileges(user: string | undefined): void {
+export function dropPrivileges(user: string | undefined, files: readonly string[] = secretFiles(process.env)): void {
   if (!user || process.getuid?.() !== 0) return
   const id = /^\d+$/.test(user) ? Number(user) : user
+  // `process.initgroups` is POSIX only, and not in every version of Node's types.
+  ;(process as { initgroups?: (user: string | number, group: string | number) => void }).initgroups?.(id, id)
   process.setgid!(id)
   process.setuid!(id)
+  assertUnreadable(files)
 }
 
 /** The token files `env` names (`<name>_FILE` of each of `names`, by default Presmium's own secrets). */

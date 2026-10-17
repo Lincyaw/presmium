@@ -23,11 +23,11 @@
  * that the cache does not answer happen (`admit`), or run them elsewhere
  * (`remote`: SHARED `presmium serve` hands them to agent-host).
  */
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
+import { CREDENTIAL_VARIABLE, environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { CodeNode, Executor, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunCache, RunContext, RunOutput, RunRequest, RunResult } from '@presmium/kernel'
 import type { ReadScope } from './workspace.ts'
 
@@ -262,15 +262,17 @@ export interface ExecuteOptions extends ExecutionOptions {
   rerun?: boolean
   /** The context of every run. */
   context: RunContext
+  /** Code whose environment does not run its language, which the compiler reported already (`checkLanguages`). */
+  unsupported?: ReadonlySet<CodeNode>
 }
 
-const CREDENTIAL = /_(?:KEY|TOKEN|SECRET|PASSWORD)$/i
 const SERVE_ALLOWED = /^(?:PATH|LANG|LC_\w+|TZ|TMPDIR)$/
 
 /**
  * `RunContext.env` (docs/architecture.md 4.6): under the `local` rules the
  * process's environment without the variables that start with `PRESMIUM_` or
- * whose names end with `_KEY`, `_TOKEN`, `_SECRET`, `_PASSWORD`; under the
+ * name credentials (`CREDENTIAL_VARIABLE`: `_KEY`, `_TOKEN`, `_SECRET`,
+ * `_PASSWORD`, `_APPID` at the end); under the
  * `serve` rules only `PATH`, `LANG`, `LC_*`, `TZ`, `TMPDIR` and a temporary
  * `HOME` of the workspace. Both add the variables the operator lists in
  * `settings.presmium.exec.passEnv`, with this process's values.
@@ -279,7 +281,7 @@ export function runEnvironment(rules: 'local' | 'serve', passEnv: readonly strin
   const env: Record<string, string> = {}
   for (const [name, value] of Object.entries(source)) {
     if (value === undefined) continue
-    const kept = rules === 'serve' ? SERVE_ALLOWED.test(name) : !/^PRESMIUM_/i.test(name) && !CREDENTIAL.test(name)
+    const kept = rules === 'serve' ? SERVE_ALLOWED.test(name) : !/^PRESMIUM_/i.test(name) && !CREDENTIAL_VARIABLE.test(name)
     if (kept) env[name] = value
   }
   if (rules === 'serve') {
@@ -347,7 +349,8 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
       ? executors.find(e => e.id === run.executor && e.supports(run.lang))
       : executors.find(e => !e.id.startsWith(environmentExecutor('')) && e.supports(run.lang))
     if (!unit.executor) {
-      for (const item of unit.items) fromRecording(item, cache, stats, say, run.executor)
+      // An environment that does not run the block's language is an error of the compiler already (checkLanguages).
+      for (const item of unit.items) fromRecording(item, cache, stats, say, run.executor, undefined, options.unsupported?.has(item.node))
       continue
     }
     try {
@@ -400,17 +403,25 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
   }
 
   const sessions: [Executor, string][] = []
+  // The executors' sessions are this compilation's own (F-42): two documents compiled in one process (presmium
+  // serve, agent-host) that name the same session never share an interpreter. The deck's name stays in the
+  // requests, which the cache and the hosts' approvals key on.
+  const compile = `compile:${randomUUID()}`
   for (const unit of admitted) {
     const executor = unit.executor!
-    const run = (request: RunRequest) => options.remote
-      ? options.remote.run(executor.id, request, options.context.env)
-      : executor.run(request, undefined, options.context)
+    const session = unit.session && `${compile}:${unit.session}`
+    const run = (request: RunRequest) => {
+      const sent = session ? { ...request, session } : request
+      return options.remote ? options.remote.run(executor.id, sent, options.context.env) : executor.run(sent, undefined, options.context)
+    }
     try {
-      if (unit.session) {
-        // The session starts afresh; its blocks are sent together, and run in order.
-        await (options.remote ? options.remote.endSession(executor.id, unit.session) : executor.endSession?.(unit.session))
-        sessions.push([executor, unit.session])
-        const results = await Promise.all(unit.items.map(item => run(item.request)))
+      if (session) {
+        // The session starts afresh; its blocks run in order: an executor of this process queues them, a remote one gets them one by one.
+        await (options.remote ? options.remote.endSession(executor.id, session) : executor.endSession?.(session))
+        sessions.push([executor, session])
+        const results: RunResult[] = []
+        if (options.remote) for (const item of unit.items) results.push(await run(item.request))
+        else results.push(...await Promise.all(unit.items.map(item => run(item.request))))
         unit.items.forEach((item, i) => record(item, results[i]!, unit, cache, stats, say))
       } else {
         const item = unit.items[0]!
@@ -481,9 +492,10 @@ function record(item: Item, result: RunResult, unit: Unit, cache: FreezeCache, s
  * A block whose executor is missing or unavailable: the recording of the
  * same request by any executor, else nothing. A named environment's
  * executor is never replaced by another (docs/ir.md section 4), so a block
- * of an environment without recording is an error.
+ * of an environment without recording is an error; `reported` when the
+ * compiler said why already (the environment does not run its language).
  */
-function fromRecording(item: Item, cache: FreezeCache, stats: RunStats, say: Report, executor: string | undefined, failure?: string): void {
+function fromRecording(item: Item, cache: FreezeCache, stats: RunStats, say: Report, executor: string | undefined, failure?: string, reported = false): void {
   const recorded = cache.find(item.input)
   const which = executor ?? item.request.lang
   if (recorded) {
@@ -492,6 +504,7 @@ function fromRecording(item: Item, cache: FreezeCache, stats: RunStats, say: Rep
     if (failure) say('warning', `executor ${which} is unavailable (${failure}); block ${item.block.id} shows its recorded output`, item.block)
     return
   }
+  if (reported) return
   if (failure) return say('error', `executor ${which} failed on block ${item.block.id}: ${failure}`, item.block)
   const environment = executor?.startsWith(environmentExecutor(''))
   say(environment ? 'error' : 'warning', `no executor for ${which} and no recorded output in ${FREEZE_DIR}; block ${item.block.id} has no output`, item.block)

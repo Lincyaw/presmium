@@ -97,6 +97,12 @@ export const SYNC_TRANSPORTS = defineService<SyncTransports>('presmium.syncTrans
 export interface NavigationPosition extends Cursor {
   /** Runtime view showing it (the web form: 'document', 'scrolly', 'present', ...); absent in the slides form. */
   view?: string
+  /**
+   * The section's id (D-4): the same in the full and the student build,
+   * which number their sections apart. A form reports it with its position;
+   * `go` goes to it where the deck has it, else to `slide` (`positionSlide`).
+   */
+  section?: string
 }
 
 export interface Navigation {

@@ -43,7 +43,17 @@ const rules = [
     forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/|@presmium\/host)/.test(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
-  { name: 'kernel is framework-free', pkgs: ['kernel'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || nodeBuiltin(spec) },
+  // The kernel runs in the browser too; its Node helpers (`@presmium/kernel/node`) are in src/node, which the rest never imports.
+  {
+    name: 'kernel is framework-free',
+    pkgs: ['kernel'],
+    dirs: ['src'],
+    skip: ['node'],
+    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || nodeBuiltin(spec)
+      || (target(spec, file, pkgDir) !== undefined && !outside(target(spec, file, pkgDir), join('src', 'node'))),
+  },
+  { name: 'kernel/node is framework-free', pkgs: ['kernel'], dirs: ['src/node'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) },
+  { name: 'IR runtime is form-neutral', pkgs: ['viewer'], dirs: ['src'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
   { name: 'host is form-neutral', pkgs: ['host'], dirs: ['src'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
   { name: 'components use @presmium/host, not vitepress', dirs: ['components', 'src/client'], except: ['web'], forbid: spec => /^vitepress/.test(spec) },
   { name: 'components use @presmium/host, not @slidev/client', dirs: ['components', 'src/client'], except: ['addon-core'], forbid: spec => /^@slidev\/client(\/|$)/.test(spec) },
@@ -55,7 +65,7 @@ const rules = [
   { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/slidev-addon-/.test(spec) },
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
   // v0.8 (WP-73a): the server packages, the hosts plugins do not use, and the protocol adapters.
-  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) },
+  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || /^@presmium\/(viewer|web|host)(\/|$)/.test(spec) },
   { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/server(\/|$)/.test(spec) },
   { name: 'only the server uses mcp', pkgs: pkg => !['server', 'mcp'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/mcp(\/|$)/.test(spec) },
   { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/(server|mcp|workspace|web)(\/|$)/.test(spec) },

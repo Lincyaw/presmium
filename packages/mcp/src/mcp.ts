@@ -83,12 +83,23 @@ function operates(caller: McpCaller): boolean {
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 const int = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) ? value : undefined)
 
-/** The position the windows of a document (or of any) last reported, the caller's presenting ones first. */
+/**
+ * The position the windows of a document (or of any) last reported, the
+ * caller's presenting ones first, in the caller's view (F-41): the window's
+ * section by its id, which every view shares; a window that reports no id
+ * names its section by its number in its own view. A section the caller's
+ * view leaves out (a teacher's, for a `tutor` token) is null.
+ */
 async function position(call: Call, document?: string) {
   const found = call.host.positions?.(document, call.caller.member)[0]
   if (!found) return { position: null }
   const { doc } = await call.host.compile(found.document, call.view)
-  const section = doc.sections.find(s => s.index === found.slide)
+  let id = found.section
+  if (id === undefined) {
+    const shown = (found.audience ?? 'full') === call.view ? doc : (await call.host.compile(found.document, found.audience ?? 'full')).doc
+    id = shown.sections.find(s => s.index === found.slide)?.id
+  }
+  const section = id === undefined ? undefined : doc.sections.find(s => s.id === id)
   return {
     position: {
       document: found.document,
@@ -230,7 +241,8 @@ const TOOLS: ToolSpec[] = [
       const own = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id) ?? []
       if (own.length === 0) throw new Error('none of your windows shows the deck: open it first')
       await call.approve('operate', m => m.navigate(section.title, step))
-      const windows = call.host.navigate!(document, { slide: section.index, step }, call.caller.member)
+      // The section's id too: a window of another view (the student build) finds it by its id (D-4).
+      const windows = call.host.navigate!(document, { slide: section.index, step, section: section.id }, call.caller.member)
       if (windows === 0) throw new Error('none of your windows shows the deck')
       return { section: section.id, step, windows }
     },
@@ -520,7 +532,7 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
   if (found.kind !== 'read' && !(operates(call.caller) && call.host.offers(found.kind))) throw new Error(`${tool.name} is not offered to this token`)
   const { document: _document, ...input } = call.args
   if (found.kind !== 'read') await call.approve(found.kind, m => m.tool(found.name), { detail: JSON.stringify(input) })
-  return found.run(input, { document, member: call.caller.member, service: own.service, signal: call.signal })
+  return found.run(input, { document, member: call.caller.member, view: call.view, service: own.service, signal: call.signal })
 }
 
 async function resolveDocument(host: McpHost, named: string | undefined): Promise<string> {

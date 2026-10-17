@@ -23,8 +23,11 @@ const TRANSLATED = join(ROOT, 'e2e/fixtures/publish-checks/translated')
 const TEACHER_BOTH = ['teacherzh41', 'guidezh52', 'teacheren41', 'guideen52']
 /** What only the teacher's blocks and section hold (lowercase: the search index keeps its terms so). */
 const TEACHER = ['teacheronly42', 'guideonly17', 'answerkey99', 'demotips', '演示合并之前先断开网络', '这一节整节只给教师']
-/** What only the teacher's nested directives (a tab, a tip in a note, a card, code in a list item) and included file hold. */
-const NESTED = ['tabkey31', 'tipkey58', 'cardkey64', 'listkey72', 'includekey85', 'handbook23', '助教手册']
+/**
+ * What only the teacher's nested directives (a tab, a tip in a note, a card, code in a list item) and included file
+ * hold, and the footnotes written in a teacher's tab, note and dropdown (F-01).
+ */
+const NESTED = ['tabkey31', 'tipkey58', 'cardkey64', 'listkey72', 'includekey85', 'handbook23', '助教手册', 'tabfoot36', 'notefoot47', 'dropfoot53']
 
 /** A copy of the deck in examples/demo/.presmium, where its plugins, Slidev and VitePress resolve. */
 function deck(source = DECK): string {
@@ -70,6 +73,11 @@ describe('presmium build --audience student', () => {
     // The teacher's section is in neither the web form's contents nor the slides; the others are numbered again.
     const { sections } = JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as { sections: { title: string, index: number }[] }
     expect(sections.map(s => [s.index, s.title])).toEqual([[1, '受众测试'], [2, '合并规则'], [3, '练习']])
+    // The footnotes of the teacher's tab, note and dropdown belong to them, so the student version has no problem with them.
+    const checked = await presmium(dir, ['check', '--audience', 'student', '--json'])
+    expect(checked.code, checked.stdout + checked.stderr).toBe(0)
+    const { findings } = JSON.parse(checked.stdout) as { findings: { checkId: string, severity: string }[] }
+    expect(findings.filter(f => f.checkId === 'presmium.audience' || f.severity === 'error')).toEqual([])
   }, 300_000)
 
   it('fails when a sentence of a teacher\'s block reaches the build through a code block\'s output, at that block', async () => {

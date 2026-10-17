@@ -5,6 +5,8 @@
  * plain text, set with `textContent`. Its script is a file of its own, so
  * the page's policy allows no inline script; no other site may frame it.
  */
+import { deckLocale, escapeHtml } from '@presmium/kernel'
+import { CONSOLE_MESSAGES } from './messages.ts'
 
 /** Headers of every console response. */
 export const CONSOLE_HEADERS = {
@@ -22,28 +24,38 @@ export const CONSOLE_HEADER = 'Presmium-Console'
 
 export const CONSOLE_SCRIPT_PATH = '/__presmium/presmium.server/console.js'
 
-export function consolePage(lang: string): string {
-  const zh = lang.startsWith('zh')
+/**
+ * The console's page in the language of the owner's browser (its first
+ * `Accept-Language`, as `deckLocale` reads a language; N-07). Its script reads
+ * its words from the page (`#messages`), so it chooses no language itself.
+ */
+export function consolePage(acceptLanguage?: string): string {
+  const locale = deckLocale(acceptLanguage?.split(/[,;]/)[0]?.trim())
+  const t = CONSOLE_MESSAGES[locale]
+  const e = escapeHtml
+  // In a JSON script element `<` would end the element; escaped, it reads the same.
+  const words = JSON.stringify(t.script).replace(/</g, '\\u003c')
   return `<!doctype html>
-<html lang="${zh ? 'zh-CN' : 'en'}">
+<html lang="${locale}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${zh ? 'Presmium 所有者控制台' : 'Presmium owner console'}</title>
+<title>${e(t.title)}</title>
+<script type="application/json" id="messages">${words}</script>
 <script type="module" src="${CONSOLE_SCRIPT_PATH}"></script>
 </head>
 <body>
-<h1>${zh ? '所有者控制台' : 'Owner console'}</h1>
-<p id="state">${zh ? '连接中……' : 'Connecting…'}</p>
-<h2>${zh ? '待确认' : 'Approvals'}</h2>
+<h1>${e(t.heading)}</h1>
+<p id="state">${e(t.connecting)}</p>
+<h2>${e(t.approvals)}</h2>
 <ul id="approvals"></ul>
-<p id="none">${zh ? '没有待确认的操作。' : 'Nothing to approve.'}</p>
-<h2>${zh ? '所有者路由' : 'Owner routes'}</h2>
+<p id="none">${e(t.none)}</p>
+<h2>${e(t.routes)}</h2>
 <form id="send">
-<label>${zh ? '路由' : 'Route'} <select id="route"></select></label>
-<label>${zh ? '路径的其余部分' : 'Rest of the path'} <input id="rest" type="text"></label>
-<label>${zh ? '文件' : 'File'} <input id="file" type="file"></label>
-<button type="submit">${zh ? '发送' : 'Send'}</button>
+<label>${e(t.route)} <select id="route"></select></label>
+<label>${e(t.rest)} <input id="rest" type="text"></label>
+<label>${e(t.file)} <input id="file" type="file"></label>
+<button type="submit">${e(t.send)}</button>
 </form>
 <pre id="result"></pre>
 </body>
@@ -52,10 +64,7 @@ export function consolePage(lang: string): string {
 }
 
 /** The console's script: its own control channel, the approvals as text, and sending a file to an owner route. */
-export const CONSOLE_SCRIPT = `const zh = document.documentElement.lang.startsWith('zh')
-const t = zh
-  ? { allow: '允许', deny: '拒绝', from: '来自', member: '发起人', connected: '已连接', lost: '连接中断，正在重连……', done: '已回答' }
-  : { allow: 'Allow', deny: 'Deny', from: 'from', member: 'requested by', connected: 'Connected', lost: 'Disconnected, reconnecting…', done: 'Answered' }
+export const CONSOLE_SCRIPT = `const t = JSON.parse(document.getElementById('messages').textContent)
 const id = Math.random().toString(36).slice(2, 12)
 const list = document.getElementById('approvals')
 const none = document.getElementById('none')

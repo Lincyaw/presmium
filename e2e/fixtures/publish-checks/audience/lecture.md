@@ -38,9 +38,25 @@ print('ANSWERKEY99: 冲突的行号是十二')
 :::
 :::{tab-item} 教师
 :audience: teacher
-教师的选项卡：按三条标准评分 TABKEY31。
+教师的选项卡：按三条标准评分 TABKEY31，见脚注[^tab]。
+
+[^tab]: 选项卡的脚注写着评分细则 TABFOOT36。
 :::
 ::::
+
+:::{note}
+:audience: teacher
+教师的提示：先演示一次失败的合并，见脚注[^note]。
+
+[^note]: 提示的脚注写着失败的原因 NOTEFOOT47。
+:::
+
+:::{dropdown} 教师的折叠
+:audience: teacher
+折叠里是讲评的顺序，见脚注[^drop]。
+
+[^drop]: 折叠的脚注写着讲评的顺序 DROPFOOT53。
+:::
 
 :::::{note}
 合并之前先拉取最新的提交。
