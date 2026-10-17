@@ -1,6 +1,6 @@
 /**
  * `presmium build` at a workspace root (P-122, docs/ir.md section 7): every
- * document compiled (LOCAL: their own plugins, all code run), then the
+ * document compiled (their own plugins, all code run), then the
  * workspace site built by the web renderer into `<out>/web/`: the home page
  * lists the documents, each under `/<dir>/`. The site has no translations of
  * the documents (a warning for each a document declares).

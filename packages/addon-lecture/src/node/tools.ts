@@ -9,7 +9,7 @@
  * deck's Node service `LECTURE_DECK`, and plans from the latest IR (the
  * lecture renderer's view of it, as a build does): the whole deck for a call
  * of the `full` view, its student view and the students' part of a recorded
- * lecture for one of the `student` view (`tutor` tokens, readers; P-55).
+ * lecture for one of the `student` view (`tutor` tokens; P-55).
  * To write a recorded
  * lecture back (WP-84; P-136, P-137), the agent of the assistant's change
  * task reads its transcript as narration, with the cues in place and where

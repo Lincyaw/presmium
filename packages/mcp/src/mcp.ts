@@ -5,7 +5,7 @@
  * `classroom_start`, `classroom_end`, and the plugins' `operate` and `spend`
  * tools) only for `author` tokens of editors and owners, each confirmed
  * through the host's approvals (scope `content`, for the token's member)
- * first. `tutor` tokens and readers read the student view. No tool writes
+ * first. `tutor` tokens read the student view. No tool writes
  * files: agents edit the source with their own file tools.
  *
  * `createPresmiumMcp` serves it over HTTP (a fresh server per request, the
@@ -70,9 +70,9 @@ const BLOCK = { block: { type: 'string', description: 'The block id (get_section
 const rank: Record<MemberRole, number> = { reader: 0, editor: 1, owner: 2 }
 const hasRole = (member: Member, role: MemberRole) => member.roles.some(own => rank[own] >= rank[role])
 
-/** Readers and `tutor` tokens read the student view (D8). */
+/** `tutor` tokens read the student view (D8). */
 function viewOf(caller: McpCaller): McpView {
-  return caller.mode === 'tutor' || !hasRole(caller.member, 'editor') ? 'student' : 'full'
+  return caller.mode === 'tutor' ? 'student' : 'full'
 }
 
 /** Whether the caller may operate: an `author` token of an editor or owner. */
@@ -255,14 +255,12 @@ const TOOLS: ToolSpec[] = [
     kind: 'operate',
     run: async (call) => {
       const document = await call.document()
-      const scope = call.host.runCode?.(document) ?? 'content'
-      if (scope === 'off') throw new Error('running code is turned off here')
       const { doc } = await call.compiled()
       const section = findSection(doc, str(call.args.section) ?? '')
       const block = findBlock(section, str(call.args.block) ?? '')
       if (block.node.type !== 'code') throw new Error(`block ${block.id} of section ${section.id} is not code`)
       // The person allows everything the run sends: a block of a session runs after the session's blocks before it.
-      await call.approve('operate', m => m.run(section.title, block.id), { scope, detail: runPlan(doc, block.node) })
+      await call.approve('operate', m => m.run(section.title, block.id), { scope: 'content', detail: runPlan(doc, block.node) })
       return { section: section.id, block: block.id, ...runInfo(await call.host.run(document, { section: section.id, block: block.id }, call.signal)) }
     },
   },
@@ -376,8 +374,6 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
   const pages = Boolean(host.positions)
   const reads = tools.filter(tool => tool.kind === 'read').map(tool => tool.name)
   const operations = tools.filter(tool => tool.kind !== 'read').map(tool => tool.name)
-  // Only SHARED mode has an owner console, where approvals of workspace scope go (10.4).
-  const where = host.process?.shared ? 'in the page, or in the owner console' : 'in the page'
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
     `Read tools: ${reads.join(', ')}.`,
@@ -388,7 +384,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
       : operations.length === 0
         ? (pages ? 'No operation is offered here.' : 'No operation is offered: presmium-mcp offers the kinds of operation its --allow names.')
         : pages
-          ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (${where}), and fails when refused.`
+          ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
           : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
     `No tool writes files: edit the deck's source with your own file tools; ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
@@ -433,9 +429,7 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
   const only = documents.length === 1 ? documents[0]!.dir : undefined
 
   const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (operates(caller) && host.offers(kind))
-  // SHARED `compile: off` is a setting of the whole workspace (10.6): run_code is not listed when a document has it.
-  const runOff = documents.some(d => host.runCode?.(d.dir) === 'off')
-  const builtIn = TOOLS.filter(tool => offered(tool.kind) && supported(host, tool.name) && !(tool.name === 'run_code' && runOff))
+  const builtIn = TOOLS.filter(tool => offered(tool.kind) && supported(host, tool.name))
   // The plugins' tools: those of the one document, else of the documents the host has loaded.
   const plugins: AgentTool[] = []
   const names = new Set(TOOLS.map(tool => tool.name))

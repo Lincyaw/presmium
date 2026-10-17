@@ -147,8 +147,7 @@ export interface VoiceInfo {
    * A clone of someone's voice: synthesized only when the operator sets
    * `cloned: true` and the consent directory (`consentDir`, docs/ir.md section
    * 10) of the operator directory holds that person's consent record (N-08);
-   * records in the deck directory do not count. In SHARED mode the directory
-   * is in the gateway container only.
+   * records in the deck directory do not count.
    */
   cloned?: boolean
 }
@@ -175,10 +174,8 @@ export interface TranscriptionRequest {
 
 export interface SpeechService {
   /**
-   * The engines the operator defined and that are therefore available: in
-   * LOCAL mode, address and credentials paired in this process's environment;
-   * in SHARED mode they are in the gateway's environment only, and the list
-   * (with the providers) comes from the gateway.
+   * The engines the operator defined and that are therefore available:
+   * address and credentials paired in this process's environment.
    */
   engines(): Promise<SpeechEngineInfo[]>
   voices(engine: string, lang?: string): Promise<VoiceInfo[]>

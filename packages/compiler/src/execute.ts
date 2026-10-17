@@ -19,17 +19,14 @@
  *
  * Each run gets its `RunContext` (docs/architecture.md 4.6, 10.6): the
  * environment the code may see, cleaned of credentials, and the process
- * sandbox when a Node service provides one. The host may decide which runs
- * that the cache does not answer happen (`admit`), or run them elsewhere
- * (`remote`: SHARED `presmium serve` hands them to agent-host).
+ * sandbox when a Node service provides one.
  */
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { CREDENTIAL_VARIABLE, environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { CodeNode, Executor, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunCache, RunContext, RunOutput, RunRequest, RunResult } from '@presmium/kernel'
-import type { ReadScope } from './workspace.ts'
+import type { CodeNode, Executor, Finding, IRBlock, IRDocument, RecordedRun, RunCache, RunContext, RunOutput, RunRequest, RunResult } from '@presmium/kernel'
 
 /** Cache location relative to the deck directory. */
 export const FREEZE_DIR = '.presmium/freeze'
@@ -58,13 +55,10 @@ export class FreezeCache implements RunCache {
   readonly used = new Set<string>()
   /** File name -> record as stored (blobs referred to), read once when first needed (a lookup without an executor, or pruning). */
   #records?: Map<string, FreezeRecord>
-  /** The files it may read (SHARED `presmium serve`). */
-  readonly #scope?: ReadScope
 
-  constructor(dir: string, entry: string, scope?: ReadScope) {
+  constructor(dir: string, entry: string) {
     this.dir = dir
     this.entry = entry
-    this.#scope = scope
   }
 
   get(key: string): RecordedRun | undefined {
@@ -140,9 +134,8 @@ export class FreezeCache implements RunCache {
     return this.#records
   }
 
-  /** A file of the cache; in the read scope, the file read is the one checked (WP-91b). */
+  /** A file of the cache. */
   #text(file: string): string | undefined {
-    if (this.#scope) return this.#scope.readSync(file)
     try {
       return readFileSync(file, 'utf8')
     } catch {
@@ -214,36 +207,10 @@ function blobRefs(run: RecordedRun, into: Set<string>): void {
   }
 }
 
-/** A run the cache did not answer, as the host's `admit` sees it. */
-export interface PendingRun {
-  section: string
-  block: string
-  source: { file: string, line: number }
-  /** The executor that would run it. */
-  executor: string
-  request: RunRequest
-}
-
-/** Runs every run elsewhere instead of in this process (SHARED `presmium serve`: in agent-host, docs/architecture.md 10.8). */
-export interface RemoteExecution {
-  run(executor: string, request: RunRequest, env: Readonly<Record<string, string>>, signal?: AbortSignal): Promise<RunResult>
-  /** Ends an execution session of that executor. */
-  endSession(executor: string, session: string): Promise<void>
-}
-
 /** The execution options of the compiler (docs/architecture.md 4.6, 10.6), which the host gives; not a kernel contract. */
 export interface ExecutionOptions {
   /** The rules of `RunContext.env`: `local` (default; build, check, dev) or `serve` (an allowlist and a temporary `HOME` per workspace). */
   env?: 'local' | 'serve'
-  /**
-   * Decides which of the runs the cache does not answer happen, once per
-   * compilation, all of them at once; the others are not executed (their
-   * blocks show a recording made elsewhere or none) and are listed in
-   * `RunStats.refused`. A session runs only when all its runs are admitted.
-   */
-  admit?(runs: PendingRun[]): PendingRun[] | Promise<PendingRun[]>
-  /** Runs no executor in this process: every run and the end of every session go to it. */
-  remote?: RemoteExecution
 }
 
 export interface RunStats {
@@ -251,8 +218,6 @@ export interface RunStats {
   executed: number
   /** Code nodes answered from the cache. */
   cached: number
-  /** Runs the host's `admit` did not let happen. */
-  refused: PendingRun[]
   /** How the runs were isolated (`ProcessSandbox.kind`), when they ran in a process sandbox. */
   sandbox?: string
 }
@@ -318,7 +283,6 @@ function runHome(workspaceRoot: string, source: NodeJS.ProcessEnv): string {
 interface Item {
   node: CodeNode
   block: IRBlock
-  section: IRSection
   request: RunRequest
   input: string
   key?: string
@@ -335,7 +299,7 @@ interface Unit {
 type Report = (severity: Finding['severity'], message: string, block: IRBlock) => void
 
 export async function executePass(doc: IRDocument, executors: Executor[], cache: FreezeCache, report: (finding: Finding) => void, options: ExecuteOptions): Promise<RunStats> {
-  const stats: RunStats = { executed: 0, cached: 0, refused: [], ...options.context.sandbox && !options.remote ? { sandbox: options.context.sandbox.kind } : {} }
+  const stats: RunStats = { executed: 0, cached: 0, ...options.context.sandbox ? { sandbox: options.context.sandbox.kind } : {} }
   const say: Report = (severity, message, block) =>
     report({ checkId: 'presmium.execute', severity, message, source: { file: block.source.file, line: block.source.line } })
   const units = collect(doc, cache)
@@ -385,43 +349,21 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
     pending.push(unit)
   }
 
-  // The host decides which runs happen.
-  let admitted = pending
-  if (options.admit && pending.length > 0) {
-    const runs = new Map(pending.flatMap(unit => unit.items.map(item => [pendingRun(item, unit.executor!), unit] as const)))
-    const allowed = new Set(await options.admit([...runs.keys()]))
-    const refused = new Set([...runs].filter(([run]) => !allowed.has(run)).map(([, unit]) => unit))
-    admitted = pending.filter(unit => !refused.has(unit))
-    for (const unit of refused) {
-      for (const item of unit.items) {
-        stats.refused.push(pendingRun(item, unit.executor!))
-        const other = cache.recording(item.input)
-        if (other) item.node.outputs = [other.run]
-        say('info', `block ${item.block.id} was not executed: its code has no recording and running it was not allowed`, item.block)
-      }
-    }
-  }
-
   const sessions: [Executor, string][] = []
   // The executors' sessions are this compilation's own (F-42): two documents compiled in one process (presmium
-  // serve, agent-host) that name the same session never share an interpreter. The deck's name stays in the
-  // requests, which the cache and the hosts' approvals key on.
+  // serve) that name the same session never share an interpreter. The deck's name stays in the requests, which
+  // the cache and the hosts' approvals key on.
   const compile = `compile:${randomUUID()}`
-  for (const unit of admitted) {
+  for (const unit of pending) {
     const executor = unit.executor!
     const session = unit.session && `${compile}:${unit.session}`
-    const run = (request: RunRequest) => {
-      const sent = session ? { ...request, session } : request
-      return options.remote ? options.remote.run(executor.id, sent, options.context.env) : executor.run(sent, undefined, options.context)
-    }
+    const run = (request: RunRequest) => executor.run(session ? { ...request, session } : request, undefined, options.context)
     try {
       if (session) {
-        // The session starts afresh; its blocks run in order: an executor of this process queues them, a remote one gets them one by one.
-        await (options.remote ? options.remote.endSession(executor.id, session) : executor.endSession?.(session))
+        // The session starts afresh; its blocks run in order: the executor queues them.
+        await executor.endSession?.(session)
         sessions.push([executor, session])
-        const results: RunResult[] = []
-        if (options.remote) for (const item of unit.items) results.push(await run(item.request))
-        else results.push(...await Promise.all(unit.items.map(item => run(item.request))))
+        const results = await Promise.all(unit.items.map(item => run(item.request)))
         unit.items.forEach((item, i) => record(item, results[i]!, unit, cache, stats, say))
       } else {
         const item = unit.items[0]!
@@ -433,7 +375,7 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
   }
   // The end of the compilation ends the sessions it used.
   for (const [executor, session] of sessions) {
-    await (options.remote ? options.remote.endSession(executor.id, session) : executor.endSession?.(session))?.catch(() => {})
+    await executor.endSession?.(session)?.catch(() => {})
   }
   return stats
 }
@@ -455,7 +397,7 @@ function collect(doc: IRDocument, cache: FreezeCache): Unit[] {
       if (!run.session) {
         const input = hash(fields)
         cache.used.add(input)
-        units.push({ items: [{ node, block, section, request, input }], environment: '' })
+        units.push({ items: [{ node, block, request, input }], environment: '' })
         continue
       }
       // A session of the deck: `<entry>:<name>` for the executors.
@@ -469,14 +411,10 @@ function collect(doc: IRDocument, cache: FreezeCache): Unit[] {
       }
       const input = hash({ previous: unit.items.at(-1)?.input ?? session, ...fields })
       cache.used.add(input)
-      unit.items.push({ node, block, section, request, input })
+      unit.items.push({ node, block, request, input })
     }
   }
   return units
-}
-
-function pendingRun(item: Item, executor: Executor): PendingRun {
-  return { section: item.section.id, block: item.block.id, source: { file: item.block.source.file, line: item.block.source.line }, executor: executor.id, request: item.request }
 }
 
 function record(item: Item, result: RunResult, unit: Unit, cache: FreezeCache, stats: RunStats, say: Report): void {

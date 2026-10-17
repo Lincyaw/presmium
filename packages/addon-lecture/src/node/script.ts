@@ -62,7 +62,7 @@ export function readScript(deckDir: string, path: string): { sections: ScriptSec
   const file = isAbsolute(path) ? path : join(deckDir, path)
   const findings: Finding[] = []
   const sections: ScriptSections = new Map()
-  // A file of the deck, read as it is opened, never through a link (the sandbox writes the deck, SHARED).
+  // A file of the deck, read as it is opened, never through a link.
   const bytes = readInDeck(deckDir, file)
   if (!bytes) {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.script: ${path} is not a file of the deck` })

@@ -10,10 +10,10 @@
 import { isRecord } from '@presmium/kernel'
 import { howToDefine } from './engines.ts'
 
-/** The plugin's id: its routes are under `/__presmium/presmium.speech/`, its gateway contribution under `/presmium.speech/`. */
+/** The plugin's id: its routes are under `/__presmium/presmium.speech/`. */
 export const SPEECH_ID = 'presmium.speech'
 
-/** The speech gateway's protocol (the OpenAI audio API shape) under the plugin's mount point. */
+/** The speech protocol (the OpenAI audio API shape) under the plugin's mount point. */
 export const PROTOCOL_PATH = 'v1'
 
 /** The owner's route that registers a consent record: `consent/<engine>/<voice>`. */

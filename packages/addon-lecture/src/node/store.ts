@@ -17,9 +17,7 @@ import type { LectureTrack, MediaSegment } from '../domain/index.ts'
 
 /**
  * How the plugin writes files of its deck (absolute paths in it): through
- * the workspace's `DOCUMENT_FILES` when the host has one (`presmium serve`;
- * in SHARED mode agent-host writes them as the sandbox's user, so a link
- * the sandbox planted in the deck leads no write of serve's elsewhere,
+ * the workspace's `DOCUMENT_FILES` when the host has one (`presmium serve`,
  * WP-91), else in this process (`presmium dev`, `build`).
  */
 export interface DeckFiles {
@@ -120,12 +118,10 @@ function openedPath(fd: number, expected: string): string | undefined {
 
 /**
  * Opens a file of the deck to read when it is a regular file at that very
- * place, outside `.git`, with no link on the way from the deck directory:
- * what serve reads for readers lies in directories the sandbox may write
- * (SHARED), where a link, or one swapped in between a check and the read,
- * could lead to the git directory, the workspace's settings or another
- * document (WP-91b), and a FIFO would keep the open waiting, and serve with
- * it. The file checked is the one opened, by its descriptor. Undefined when
+ * place, outside `.git`, with no link on the way from the deck directory: a
+ * link, or one swapped in between a check and the read, could lead to the
+ * git directory, the workspace's settings or another document (WP-91b), and
+ * a FIFO would keep the open waiting, and serve with it. The file checked is the one opened, by its descriptor. Undefined when
  * it cannot be read so; the caller closes the descriptor.
  */
 export function openInDeck(deckDir: string, file: string): number | undefined {

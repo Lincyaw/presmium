@@ -8,10 +8,8 @@
  * the index or the work tree (`git merge-tree --merge-base`, WP-91): when it
  * conflicts with later commits, or with changes in the work tree that are not
  * committed, nothing changes and the files are reported; otherwise its files
- * are written through the document writer (in SHARED mode agent-host, as the
- * sandbox: serve writes nothing in the document directories; a document
- * directory the revert brings back is made by serve, which owns the
- * directories around the documents) and committed. A revert that would
+ * are written through the document writer (a document directory the revert
+ * brings back is made first) and committed. A revert that would
  * change files outside the documents (the workspace configuration) is an
  * owner's only. A revert names the document operation it undoes in its
  * origin, so the history labels it (F-55).
@@ -75,11 +73,10 @@ interface TreeFile {
   oid: string
 }
 
-/** Where the files of a revert are written: the configuration (which directories are documents), the writer, the documents' group. */
+/** Where the files of a revert are written: the configuration (which directories are documents) and the writer. */
 export interface RevisionFiles {
   config: WorkspaceConfig
   writer: DocumentWriter
-  group?: number
 }
 
 export class Revisions implements RevisionService {
@@ -208,9 +205,9 @@ export class Revisions implements RevisionService {
     }
   }
 
-  /** Writes the files as the tree has them: those in documents through the writer, the others (serve's own) here. */
+  /** Writes the files as the tree has them: those in documents through the writer, the others here. */
   async #write(files: TreeFile[]): Promise<void> {
-    const { config, writer, group } = this.#files
+    const { config, writer } = this.#files
     const changes: { change: DocumentFileChange, dir?: string }[] = []
     for (const file of files) {
       if (file.mode === '160000') throw new Error(`${file.path} is a submodule: not reverted`)
@@ -224,14 +221,14 @@ export class Revisions implements RevisionService {
       changes.push({ change, dir })
     }
     const inDocuments = changes.filter(({ dir }) => dir !== undefined)
-    // A document directory the revert brings back: made here, in the directories serve owns.
+    // A document directory the revert brings back: made here.
     for (const dir of new Set(inDocuments.filter(({ change }) => !('remove' in change)).map(({ dir }) => dir!))) {
-      if (!exists(join(config.root, dir))) makeDocumentDir(config.root, dir, group)
+      if (!exists(join(config.root, dir))) makeDocumentDir(config.root, dir)
     }
     if (inDocuments.length > 0) await writer.write(inDocuments.map(({ change }) => change))
     const outside = changes.filter(({ dir }) => dir === undefined).map(({ change }) => change)
     for (const { path } of outside) {
-      const open = writableByOthers(config.root, path, group)
+      const open = writableByOthers(config.root, path)
       if (open) throw new Error(`the revert would write ${path}, in ${open}, which more than serve may write`)
     }
     if (outside.length > 0) writeChanges(config, outside, true)
@@ -269,21 +266,19 @@ export class Revisions implements RevisionService {
 
 /**
  * The first directory on the way to `path` (relative to the root) that
- * others than its owner may write: anyone, or the documents' group (SHARED);
- * undefined when there is none.
+ * anyone may write; undefined when there is none.
  */
-function writableByOthers(root: string, path: string, group: number | undefined): string | undefined {
+function writableByOthers(root: string, path: string): string | undefined {
   const parts = path.split('/').slice(0, -1)
   for (let i = 0; i <= parts.length; i++) {
     const dir = parts.slice(0, i).join('/')
     let mode: number
-    let gid: number
     try {
-      ({ mode, gid } = lstatSync(join(root, dir)))
+      ({ mode } = lstatSync(join(root, dir)))
     } catch {
       return undefined
     }
-    if ((mode & 0o002) !== 0 || (group !== undefined && gid === group && (mode & 0o020) !== 0)) return dir || '.'
+    if ((mode & 0o002) !== 0) return dir || '.'
   }
   return undefined
 }

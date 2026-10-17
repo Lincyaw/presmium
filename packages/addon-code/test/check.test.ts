@@ -1,7 +1,7 @@
 // Runs the real `presmium check` CLI on a MyST deck that references code in a throwaway git
 // repository; the diagnostics come from the {code-ref} resolution pass of the compiler.
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -312,35 +312,15 @@ presmium.code: { repo: https://github.com/acme/elsewhere }
   ])
 })
 
-it('reads the working tree within the compiler\'s read scope: in SHARED serve a code reference through a link to .git/config, or naming .git, is unreadable and puts nothing of it in the IR (F-26)', async () => {
+it('refuses an anchor that names a file in .git, putting nothing of it in the IR, and reads the working tree\'s own files (F-26)', async () => {
   const repo = createRepo()
-  // A remote with a credential in its URL, as `.git/config` may hold; the sandbox plants a link to it in a document.
+  // A remote with a credential in its URL, as `.git/config` may hold.
   sh(repo.dir, 'git', ['remote', 'add', 'origin', 'https://probe-user:ghp_PROBESECRET0123456789@github.com/acme/shop.git'])
-  symlinkSync('../.git/config', join(repo.dir, 'deck/cfg.py'))
-  writeFileSync(repo.deck, `---
-plugins:
-  - ${ADDON}
----
-
-## Linked
-
-\`\`\`{code-ref} pattern:deck/cfg.py#$X
-\`\`\`
-
-## Named
-
-\`\`\`{code-ref} region:.git/config#core
-\`\`\`
-`)
-  // As SHARED `presmium serve` compiles a document (WP-91b): the read scope on, trust shared.
-  const compilation = await new Compiler(repo.deck, { scope: true, trust: 'shared', workspaceRoot: repo.dir, settings: {} }).compile()
+  writeFileSync(repo.deck, `---\nplugins:\n  - ${ADDON}\n---\n\n## Named\n\n\`\`\`{code-ref} region:.git/config#core\n\`\`\`\n`)
+  const compilation = await new Compiler(repo.deck, { workspaceRoot: repo.dir }).compile()
   expect(JSON.stringify(compilation.doc)).not.toContain('PROBESECRET')
   const errors = compilation.doc.diagnostics.filter(d => d.checkId === 'presmium.code.anchors' && d.severity === 'error').map(d => d.message)
-  expect(errors).toEqual([
-    expect.stringMatching(/^anchor pattern:deck\/cfg\.py#\$X is lost: /),
-    'anchor region:.git/config#core names a file in .git, which holds git\'s data, not code',
-  ])
-  // LOCAL (no read scope), the working tree's own files read as before.
+  expect(errors).toEqual(['anchor region:.git/config#core names a file in .git, which holds git\'s data, not code'])
   writeFileSync(repo.deck, `---\nplugins:\n  - ${ADDON}\n---\n\n## Live\n\n\`\`\`{code-ref} symbol:src/cart.ts#total\n\`\`\`\n`)
   const local = await new Compiler(repo.deck, { workspaceRoot: repo.dir }).compile()
   const code = [...docBlocks(local.doc)].map(({ block }) => block.node).find(node => node.type === 'code')

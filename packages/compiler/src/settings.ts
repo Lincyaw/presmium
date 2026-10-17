@@ -44,7 +44,7 @@ export function workspaceSettings(root: string): { settings: OperatorSettings, p
   return result
 }
 
-/** The packages the operator lists in `settings.presmium.workspace.plugins` (D14). */
+/** The packages the operator lists in `settings.presmium.workspace.plugins`. */
 export function operatorPlugins(settings: OperatorSettings): string[] {
   const list = settings['presmium.workspace']?.plugins
   return Array.isArray(list) ? list.filter((name): name is string => typeof name === 'string' && name.length > 0) : []
@@ -85,15 +85,12 @@ export function operatorDir(workspaceRoot: string, given = process.env.PRESMIUM_
 /**
  * Node services of a deck (docs/architecture.md 4.5): one implementation per
  * token. The host's services come first; a plugin's implementation of a
- * token already registered is ignored and reported, one of a token the host
- * keeps (`reserved`) is left out.
+ * token already registered is ignored and reported.
  */
 export class NodeServices {
   readonly #impls = new Map<string, { impl: unknown, owner: string }>()
-  readonly #reserved: Set<string>
 
-  constructor(host: [ServiceToken<unknown>, unknown][] = [], reserved: ServiceToken<unknown>[] = []) {
-    this.#reserved = new Set(reserved.map(token => token.id))
+  constructor(host: [ServiceToken<unknown>, unknown][] = []) {
     for (const [token, impl] of host) this.#impls.set(token.id, { impl, owner: 'host' })
   }
 
@@ -105,7 +102,6 @@ export class NodeServices {
         problems.push(`plugin ${owner}: services() gave an entry without a service token`)
         continue
       }
-      if (this.#reserved.has(token.id)) continue
       const known = this.#impls.get(token.id)
       if (known) {
         problems.push(`plugin ${owner}: ${token.id} is already provided by ${known.owner}; this implementation is ignored`)

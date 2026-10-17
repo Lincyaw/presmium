@@ -3,7 +3,7 @@
  * (`Renderer.buildSite`, `devSite`, docs/architecture.md 4.10): the site's
  * render context, and each document's IR with the plugin packages its
  * compiler loaded named by their directories, so the site loads exactly
- * those (in `presmium serve`, only what the plugin policy admitted, D14).
+ * those.
  */
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
@@ -56,21 +56,13 @@ const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 export interface SiteContextOptions {
   root: string
   outDir: string
-  /** Where the renderer keeps the projects it generates: outside the workspace in `presmium serve` and agent-host. */
+  /** Where the renderer keeps the projects it generates: outside the workspace in `presmium serve`. */
   workDir: string
   /** The site's own plugins (package name to directory): the workspace's browser plugin in `presmium serve`. */
   plugins?: Record<string, string>
   /** The plugins of the home page only (package name to directory): the operator plugins in `presmium serve` (`homePlugins`). */
   home?: Record<string, string>
-  /** The address the dev site listens on (agent-host: the address serve reaches). */
-  host?: string
   findings: Finding[]
-  /** Files the site may publish: SHARED serve's read scope, also in agent-host (inside the workspace, not in `.git/`). */
-  scoped?: boolean
-  /** A build whose pages serve answers with its server in front (the readers' static site, WP-91b). */
-  served?: boolean
-  /** A build of the documents only, without the home page (`buildSite`). */
-  documentsOnly?: boolean
 }
 
 /** The render context of the whole site; the web renderer makes each document's from it. */
@@ -82,14 +74,7 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     workspaceRoot: root,
     outDir: options.outDir,
     workDir: options.workDir,
-    // `scoped`: a SHARED site in agent-host, reached through serve under the public name (any Host).
-    config: {
-      ...options.host ? { host: options.host } : {},
-      ...options.home ? { homePlugins: options.home } : {},
-      ...options.served ? { served: true } : {},
-      ...options.documentsOnly ? { home: false } : {},
-      ...options.scoped ? { scoped: true } : {},
-    },
+    config: options.home ? { homePlugins: options.home } : {},
     extensions: [],
     plugins: Object.keys(plugins),
     pluginDirs: plugins,
@@ -122,8 +107,8 @@ function deckOf(file: string, root: string): string | undefined {
  * strictly inside the block's deck that is not a deck itself (a link to
  * another document stays a link), published with a file listing. A relative
  * reference to nothing, or to a file outside the workspace, cannot be
- * published: a warning on its line. SHARED: only the workspace's own files,
- * by their real path (a symbolic link out of it is not followed).
+ * published: a warning on its line. Only the workspace's own files, by their
+ * real path (a symbolic link out of it is not followed).
  */
 function publishedAsset(options: SiteContextOptions, source: SourcePos, url: string, report: (finding: Finding) => void): { file: string, name: string } | undefined {
   if (REMOTE.test(url)) return undefined
@@ -148,7 +133,6 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
     if (stat.isFile()) warn(`${url} is not published: the file lies outside the workspace`)
     return undefined
   }
-  if (options.scoped && relative(root, real).split(sep)[0] === '.git') return undefined
   if (stat.isFile()) return { file: target, name: `${fileHash(target).slice(0, 8)}-${basename(target)}` }
   const deck = deckOf(source.file, options.root)
   if (!deck || !publishesDirectory(target, deck)) return undefined
@@ -183,7 +167,7 @@ export function servedPlugins(): Record<string, string> {
 /**
  * The home page's own plugins in `presmium serve`: the operator plugins
  * (`settings.presmium.workspace.plugins`, as the documents' compilers load
- * them, D14), whose browser parts the home page loads, e.g. the assistant's
+ * them), whose browser parts the home page loads, e.g. the assistant's
  * `AGENT`, with which the new document form drafts a document. A document's
  * pages load the plugins its deck lists.
  */

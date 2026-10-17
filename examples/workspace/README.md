@@ -5,7 +5,7 @@
 - `bpe/`：示例讲义“BPE 分词”（`../demo` 的副本，头部另外列出了助手插件，编辑模式因此有“AI 修改”）；
 - `glance/`：一份短文档“分词速览”，三小节和一道测验，适合拿来试修改。
 
-`presmium.workspace.yaml` 写明站点的标题与页脚，以及 `presmium serve` 可以加载的插件（安装在本目录的 `node_modules` 中，见 `package.json`）。
+`presmium.workspace.yaml` 写明站点的标题与页脚，以及运营者插件（语音与助手，每份文档与首页都加载）。文档列出的插件与 `presmium dev` 一样，从本目录的 `node_modules` 加载（见 `package.json`）。
 
 ## 本机启动
 

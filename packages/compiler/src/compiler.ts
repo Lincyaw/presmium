@@ -9,7 +9,7 @@ import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
-import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
+import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
 import { audienceDocument, audienceMarks, AudienceParser, audienceView, emptyReferences, liftScopes, markBlocks, scanOutputs, withheld } from './audience.ts'
 import type { Withheld } from './audience.ts'
@@ -35,7 +35,7 @@ import type { Parser } from './source.ts'
 import { scheduleSteps } from './steps.ts'
 import { applyTranslations, translationFields } from './translations.ts'
 import { validateIR } from './validate.ts'
-import { createSourceReader, findWorkspaceRoot, ReadScope, refusedFile } from './workspace.ts'
+import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
 
 /** Entry file of a deck directory. */
 export const DECK_ENTRY = 'lecture.md'
@@ -48,40 +48,28 @@ const MYST_ROLES = new Set((defaultOptions.roles as unknown as { name: string, a
 
 /**
  * What the host that runs the compiler gives it (docs/architecture.md 4.6,
- * 10.2): `presmium dev`, `build`, `check` give little; `presmium serve`,
- * gateway and agent-host give the plugin policy, the read scope and their settings.
+ * 10.2): `presmium dev`, `build`, `check` give little; `presmium serve`
+ * gives the workspace root, its settings and the server's services.
  */
 export interface CompilerOptions {
   /** The operator's settings by plugin id; default: `settings` of the workspace root's `presmium.workspace.yaml`, read once per process. */
   settings?: OperatorSettings
-  /** The trust mode of the process; default `local`. */
-  trust?: TrustMode
   /** Node services the host provides (e.g. the server's `APPROVALS`, `MCP_ENDPOINT`); registered before the plugins'. */
   services?: [ServiceToken<unknown>, unknown][]
-  /** Tokens the host keeps (e.g. the agent-host clients in SHARED mode): the plugins' implementations of them are not registered. */
-  reserved?: ServiceToken<unknown>[]
-  /** Only operator-controlled plugins (D14): `presmium serve`, gateway and agent-host. */
-  policy?: boolean
-  /** Only files whose real path lies in the workspace root, outside `.git/` (SHARED `presmium serve`). */
-  scope?: boolean
   /**
-   * The workspace root as the host knows it (`presmium serve` and agent-host,
-   * WP-91); default the top of the deck directory's git work tree. The host's
-   * answer does not depend on what lies in the deck directory: a `.git` planted
-   * there makes the deck no workspace of its own, its `node_modules` no place
-   * whence operator plugins load (D14), and agent-host, which may not read the
-   * repository, finds the same root as serve.
+   * The workspace root as the host knows it (`presmium serve`, WP-91);
+   * default the top of the deck directory's git work tree. The host's answer
+   * does not depend on what lies in the deck directory: a `.git` there makes
+   * the deck no workspace of its own.
    */
   workspaceRoot?: string
   /** The directory from which Presmium's own packages installed with the CLI resolve (the renderers, `addon-deltabox`). */
   bundled?: string
-  /** The LOCAL operator directory (`--operator-dir`); default `PRESMIUM_OPERATOR_DIR`, else the user's state directory. Ignored in SHARED mode. */
+  /** The operator directory (`--operator-dir`); default `PRESMIUM_OPERATOR_DIR`, else the user's state directory. */
   operatorDir?: string
-  /** SHARED mode: the gateway access the plugins' Node services get (`NodeServiceContext.gateway`). */
-  gateway?: GatewayAccess
   /** The process's environment variables plugins may read (`secret`); default `process.env`. */
   secret?: (name: string) => string | undefined
-  /** How compile-time execution runs (docs/architecture.md 4.6, 10.6): the rules of `RunContext.env`, `admit`, `remote`. */
+  /** How compile-time execution runs (docs/architecture.md 4.6, 10.6): the rules of `RunContext.env`. */
   execution?: ExecutionOptions
   /**
    * Compile for this audience only (`presmium build --audience`, P-55): the
@@ -155,13 +143,10 @@ export interface Compilation {
   service<T>(token: ServiceToken<T>): T | undefined
   /** The operator's settings by plugin id (`presmium.workspace.yaml`, or the host's). */
   settings: OperatorSettings
-  trust: TrustMode
-  /** The LOCAL operator directory; absent in SHARED mode, or when the one given lies inside the workspace (an error). */
+  /** The operator directory; absent when the one given lies inside the workspace (an error). */
   operatorDir?: string
   /** Where the plugins came from, for the renderers' packages. */
   pluginSources: PluginSources
-  /** The read scope of SHARED `presmium serve`. */
-  scope?: ReadScope
   /** The headmatter's `execute` as far as it is well formed. */
   execute: ExecuteConfig
   /** The declared environments that a plugin provides. */
@@ -216,7 +201,6 @@ export function resolveEntry(deck: string): string {
 interface Workspace {
   root: string
   src: SourceReader
-  scope?: ReadScope
   settings: OperatorSettings
   /** Why the workspace configuration could not be read. */
   problem?: string
@@ -253,15 +237,12 @@ export class Compiler {
 
   async compile(options: CompileOptions = {}): Promise<Compilation> {
     const workspace = this.#workspace ??= await this.#openWorkspace()
-    const { root: workspaceRoot, src, scope, settings } = workspace
+    const { root: workspaceRoot, src, settings } = workspace
     const findings: Finding[] = []
     const report = (finding: Finding) => findings.push(finding)
-    // In the read scope the file read is the one checked, by its descriptor (WP-91b).
-    const read = scope ? (scope.allows(this.entry) ? await scope.read(this.entry) : undefined) : await readFile(this.entry, 'utf8').catch(() => undefined)
-    const refused = Boolean(scope?.refused.has(this.entry))
-    if (read === undefined && !refused) throw new Error(`${this.entry} not found`)
-    const text = withoutBom(read ?? '')
-    if (refused) report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(this.entry), source: { file: this.entry, line: 1 } })
+    const read = await readFile(this.entry, 'utf8').catch(() => undefined)
+    if (read === undefined) throw new Error(`${this.entry} not found`)
+    const text = withoutBom(read)
     if (workspace.problem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.problem, source: { file: this.entry, line: 1 } })
     if (workspace.operatorProblem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.operatorProblem, source: { file: this.entry, line: 1 } })
     const headmatter = withHeadmatter(readFrontmatter(text), this.options.headmatter)
@@ -282,9 +263,7 @@ export class Compiler {
       config: configOf(loaded),
       settings: settings[pluginId(loaded)] ?? {},
       lang,
-      trust: this.options.trust ?? 'local',
       secret: this.options.secret ?? (name => process.env[name]),
-      ...this.options.gateway ? { gateway: this.options.gateway } : {},
       ...workspace.operatorDir ? { operatorDir: workspace.operatorDir } : {},
       log: pluginLogger(pluginId(loaded)),
     }))
@@ -330,13 +309,12 @@ export class Compiler {
     for (const name of await directoryComponents(this.deckDir)) components.set(name, DECK_PLUGIN)
     // The declared environments: their executors run the blocks that name them (docs/ir.md 2.7).
     const secret = this.options.secret ?? (name => process.env[name])
-    const environmentContext: EnvironmentContext = { deckDir: this.deckDir, workspaceRoot, secret, ...this.options.gateway ? { gateway: this.options.gateway } : {}, log: pluginLogger('presmium.execute') }
+    const environmentContext: EnvironmentContext = { deckDir: this.deckDir, workspaceRoot, secret, log: pluginLogger('presmium.execute') }
     const declared = environmentProviders(execute, providers, report, at)
     executors.push(...await environmentExecutors(execute, declared, environmentContext, this.#environments, report, at))
 
     // Pass 1: parse and expand includes.
     const parser = this.#parserFor(directives, roles)
-    parser.scope = scope
     const source = await parser.expand(this.entry)
     findings.push(...source.findings)
     dependencies.watch(...source.missing)
@@ -420,11 +398,11 @@ export class Compiler {
     const lockFile = join(this.deckDir, ANCHOR_LOCK_PATH)
     let lock = AnchorLock.empty()
     try {
-      lock = AnchorLock.parse(scope ? await scope.read(lockFile) : await readFile(lockFile, 'utf8').catch(() => undefined))
+      lock = AnchorLock.parse(await readFile(lockFile, 'utf8').catch(() => undefined))
     } catch (error) {
       report({ checkId: 'presmium.lock', severity: 'error', message: errorMessage(error), source: { file: lockFile, line: 1 } })
     }
-    const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR), relative(this.deckDir, this.entry), scope)
+    const cache = new FreezeCache(join(this.deckDir, FREEZE_DIR), relative(this.deckDir, this.entry))
     const runContext = this.#runContext(workspaceRoot, settings, service, lang)
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
@@ -444,7 +422,6 @@ export class Compiler {
         report: finding => report({ ...finding, source: finding.source ?? at(loaded.name) }),
         watch,
         service,
-        trust: this.options.trust ?? 'local',
       }
       try {
         await pass.run(doc, pctx)
@@ -467,7 +444,7 @@ export class Compiler {
 
     // Cross-references take the text of their targets once every pass has shaped the IR;
     // pass 7, compile-time execution; then the plugin passes that work on its outputs.
-    let runs: RunStats = { executed: 0, cached: 0, refused: [] }
+    let runs: RunStats = { executed: 0, cached: 0 }
     // The references resolution fills in, which a view for an audience resolves again in itself.
     let filled = new WeakSet<object>()
     if (invalid.length === 0) {
@@ -479,17 +456,10 @@ export class Compiler {
       invalid = validateIR(doc, this.entry)
     }
     findings.push(...invalid)
-    // Files the read scope refused on the way (the source reader, the execution cache) are errors of the deck.
-    for (const file of scope?.refused ?? []) {
-      if (!findings.some(f => f.checkId === 'presmium.files' && f.message === refusedFile(file))) {
-        report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(file), source: { file: this.entry, line: 1 } })
-      }
-    }
-    scope?.refused.clear()
     doc.diagnostics = sortFindings(findings)
     // A build for an audience compiled only part of the deck: the recordings of the rest stay.
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
-    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins), ...workspace.scope ? { scope: workspace.scope } : {} }
+    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins) }
 
     const compilation: Compilation = {
       doc,
@@ -508,10 +478,8 @@ export class Compiler {
       components,
       service,
       settings,
-      trust: this.options.trust ?? 'local',
       operatorDir: workspace.operatorDir,
       pluginSources: workspace.sources,
-      scope,
       execute,
       environments: [...declared].map(([name, provider]) => ({ name, spec: execute.environments![name]!, provider, context: environmentContext })),
       executors,
@@ -532,8 +500,8 @@ export class Compiler {
   /**
    * The context of the runs of a compilation: the environment the code may
    * see (`execution.env` rules, with `settings.presmium.exec.passEnv`), the
-   * process sandbox when a Node service provides one, the gateway access and
-   * the deck's language.
+   * process sandbox when a Node service provides one, and the deck's
+   * language.
    */
   #runContext(workspaceRoot: string, settings: OperatorSettings, service: <T>(token: ServiceToken<T>) => T | undefined, lang: string): RunContext {
     const passEnv = stringList(settings['presmium.exec']?.passEnv)
@@ -541,7 +509,6 @@ export class Compiler {
     return {
       env: runEnvironment(this.options.execution?.env ?? 'local', passEnv, workspaceRoot),
       ...sandbox ? { sandbox } : {},
-      ...this.options.gateway ? { gateway: this.options.gateway } : {},
       lang,
     }
   }
@@ -568,33 +535,22 @@ export class Compiler {
     }
     const session = run.session ? `run:${randomUUID()}` : undefined
     const requests = nodes.map(code => ({ ...request(code), ...session ? { session } : {} }))
-    const remote = this.options.execution?.remote
-    let results: RunResult[]
-    if (remote && session) {
-      // A remote run's requests may arrive in any order: the blocks of a session go one after the other (P-101).
-      results = []
-      for (const r of requests) results.push(await remote.run(executor.id, r, context.env, signal))
-    } else {
-      // An executor of this process queues the requests of a session in order.
-      results = await Promise.all(requests.map(r => remote ? remote.run(executor.id, r, context.env, signal) : executor.run(r, signal, context)))
-    }
-    if (session) await (remote ? remote.endSession(executor.id, session) : executor.endSession?.(session))
+    // An executor queues the requests of a session in order.
+    const results = await Promise.all(requests.map(r => executor.run(r, signal, context)))
+    if (session) await executor.endSession?.(session)
     return results.at(-1)!
   }
 
   /** The workspace of the deck: its root, settings, plugin sources and operator directory, found once. */
   async #openWorkspace(): Promise<Workspace> {
     const root = this.options.workspaceRoot ? resolve(this.options.workspaceRoot) : await findWorkspaceRoot(this.deckDir)
-    const scope = this.options.scope ? new ReadScope(root) : undefined
     const read = this.options.settings ? { settings: this.options.settings } : workspaceSettings(root)
-    const sources: PluginSources = { workspaceRoot: root, listed: operatorPlugins(read.settings), bundled: this.options.bundled, policy: this.options.policy }
-    const workspace: Workspace = { root, src: createSourceReader(root, scope), scope, settings: read.settings, problem: read.problem, sources }
-    if ((this.options.trust ?? 'local') === 'local') {
-      try {
-        workspace.operatorDir = operatorDir(root, this.options.operatorDir ?? process.env.PRESMIUM_OPERATOR_DIR)
-      } catch (error) {
-        workspace.operatorProblem = errorMessage(error)
-      }
+    const sources: PluginSources = { workspaceRoot: root, listed: operatorPlugins(read.settings), bundled: this.options.bundled }
+    const workspace: Workspace = { root, src: createSourceReader(root), settings: read.settings, problem: read.problem, sources }
+    try {
+      workspace.operatorDir = operatorDir(root, this.options.operatorDir ?? process.env.PRESMIUM_OPERATOR_DIR)
+    } catch (error) {
+      workspace.operatorProblem = errorMessage(error)
     }
     return workspace
   }
@@ -612,7 +568,7 @@ export class Compiler {
     const dirs = new Set(operators.plugins.map(loaded => loaded.dir))
     const plugins = [...operators.plugins, ...deck.plugins.filter(loaded => !dirs.has(loaded.dir))]
     const problems = [...operators.problems, ...deck.problems]
-    const services = new NodeServices(this.options.services, this.options.reserved)
+    const services = new NodeServices(this.options.services)
     // A service a plugin makes may use the others (the host's `DOCUMENT_FILES`, WP-91) when it is called.
     for (const loaded of plugins) addServices(services, loaded, { ...context(loaded), service: token => services.get(token) }, problems)
     this.#plugins = { key, plugins, problems, services }
@@ -640,24 +596,21 @@ function addServices(services: NodeServices, loaded: LoadedPlugin, context: Node
 }
 
 /**
- * The operator plugins of the workspace at `root` (D14), loaded as the
+ * The operator plugins of the workspace at `root`, loaded as the
  * compiler of a document there loads them (`options` as its), with their
  * Node services, for what is no document: the home page of `presmium serve`,
  * whose server routes and browser parts are theirs too.
  */
 export async function workspacePlugins(root: string, options: CompilerOptions = {}): Promise<{ plugins: LoadedPlugin[], problems: PluginProblem[], service<T>(token: ServiceToken<T>): T | undefined }> {
   const settings = options.settings ?? workspaceSettings(root).settings
-  const { plugins, problems } = await loadOperatorPlugins({ workspaceRoot: root, listed: operatorPlugins(settings), bundled: options.bundled, policy: options.policy })
-  const trust = options.trust ?? 'local'
+  const { plugins, problems } = await loadOperatorPlugins({ workspaceRoot: root, listed: operatorPlugins(settings), bundled: options.bundled })
   let operator: string | undefined
-  if (trust === 'local') {
-    try {
-      operator = operatorDir(root, options.operatorDir ?? process.env.PRESMIUM_OPERATOR_DIR)
-    } catch {
-      // The documents' compilations report it.
-    }
+  try {
+    operator = operatorDir(root, options.operatorDir ?? process.env.PRESMIUM_OPERATOR_DIR)
+  } catch {
+    // The documents' compilations report it.
   }
-  const services = new NodeServices(options.services, options.reserved)
+  const services = new NodeServices(options.services)
   for (const loaded of plugins) {
     addServices(services, loaded, {
       deckDir: root,
@@ -665,9 +618,7 @@ export async function workspacePlugins(root: string, options: CompilerOptions = 
       config: {},
       settings: settings[pluginId(loaded)] ?? {},
       lang: DEFAULT_LANG,
-      trust,
       secret: options.secret ?? (name => process.env[name]),
-      ...options.gateway ? { gateway: options.gateway } : {},
       ...operator ? { operatorDir: operator } : {},
       service: token => services.get(token),
       log: pluginLogger(pluginId(loaded)),

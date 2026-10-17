@@ -2,11 +2,8 @@
  * The workspace's browser plugin (P-120, P-121, docs/domain-model.md section
  * 14), the site's own plugin in `presmium serve`: it provides `EDIT_MODE`
  * and adds to the toolbar, for editors and owners only, the edit entry
- * (document pages), the document operations (the home page), the revision
- * history with its reverts, and "request execution" when a document's code
- * did not run (SHARED, `compile: approve`). Readers see none of them; on the
- * static site built for them (SHARED, D17) they see whether a new build of
- * the page's document is coming or in place.
+ * (document pages), the document operations (the home page), and the
+ * revision history with its reverts.
  */
 import { EDIT_MODE, TOOLBAR, useServer } from '@presmium/host'
 import { AGENT } from '@presmium/kernel'
@@ -14,7 +11,7 @@ import type { AgentClient, PluginDefinition, Unsubscribe } from '@presmium/kerne
 import { computed, readonly } from 'vue'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
-import { Documents, EditToggle, editing, Execution, History, setAgent, SiteStatus } from './panels.ts'
+import { Documents, EditToggle, editing, History, setAgent } from './panels.ts'
 
 const unregister: Unsubscribe[] = []
 
@@ -45,9 +42,8 @@ export const workspacePlugin: PluginDefinition = {
     const home = ctx.config.home === true
     const items = home
       ? [{ id: `${WORKSPACE_ID}.documents`, title: 'documents', component: Documents, order: 8 }]
-      : [{ id: `${WORKSPACE_ID}.edit`, title: 'edit', component: EditToggle, order: 8 }, { id: `${WORKSPACE_ID}.execution`, title: 'execution', component: Execution, order: 7 }]
-    const site = { id: `${WORKSPACE_ID}.site`, title: 'site', component: SiteStatus, order: 6 }
-    for (const item of [site, ...items, { id: `${WORKSPACE_ID}.history`, title: 'history', component: History, order: 9 }]) unregister.push(toolbar.register(item))
+      : [{ id: `${WORKSPACE_ID}.edit`, title: 'edit', component: EditToggle, order: 8 }]
+    for (const item of [...items, { id: `${WORKSPACE_ID}.history`, title: 'history', component: History, order: 9 }]) unregister.push(toolbar.register(item))
   },
   dispose() {
     for (const off of unregister.splice(0)) off()

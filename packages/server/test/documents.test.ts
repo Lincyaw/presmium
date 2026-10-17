@@ -1,15 +1,15 @@
-// What serve does with the documents' contributions and the windows (WP-89b): a plugin route takes a body up to
-// its limit and refuses a larger one before keeping it, dropping the rest for a moment only (F-02); what a route
-// answers is not cached (F-33); a document taken down (`unmount`) has no routes, and made again it has its new
-// configuration (F-40); the classroom's summary and the position are the teachers', whatever a reader's page
-// reports, presenting or not (F-38); the owner console speaks the owner's browser's language, English for French (F-37).
+// What serve does with the documents' contributions (WP-89b): a plugin route takes a body up to its limit and
+// refuses a larger one before keeping it, dropping the rest for a moment only (F-02); what a route answers is not
+// cached (F-33); a document taken down (`unmount`) has no routes, and made again it has its new configuration
+// (F-40); the site's paths and a plugin's proxy reach their targets, and a path that climbs out of a proxy is
+// refused before any target sees it (WP-91).
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { request as httpRequest } from 'node:http'
 import { connect } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { Child, EventStream } from './helpers.ts'
-import { as, eventStream, FIXTURES, listener, raw, remove, serveHost, sharedEnv, waitFor, workspace } from './helpers.ts'
+import type { Child } from './helpers.ts'
+import { FIXTURES, listener, raw, remove, serveHost, waitFor, workspace } from './helpers.ts'
 
 const DECK = join(FIXTURES, 'deck')
 
@@ -63,19 +63,23 @@ function endless(url: string, chunked: boolean): Promise<{ status: string, ms: n
   })
 }
 
-describe('presmium serve on this machine (LOCAL): the documents\' routes', () => {
+describe('presmium serve: the documents\' routes and proxies', () => {
   let dir: string
   let host: Child
   let url: string
+  const listeners: Awaited<ReturnType<typeof listener>>[] = []
   beforeAll(async () => {
     dir = workspace('server-documents', { doc: DECK, other: DECK })
-    const started = await serveHost({ SERVE_WORKSPACE: dir })
+    listeners.push(...await Promise.all([listener(), listener()]))
+    const [site, upstream] = listeners as [Awaited<ReturnType<typeof listener>>, Awaited<ReturnType<typeof listener>>]
+    const started = await serveHost({ SERVE_WORKSPACE: dir, SERVE_FORWARD: site.url, FIXTURE_UPSTREAM_URL: upstream.url })
     if (!started.url) throw new Error(started.error)
     host = started.host
     url = started.url
   }, 120_000)
   afterAll(async () => {
     await host?.stop()
+    await Promise.all(listeners.map(l => l.close()))
     remove(dir)
   })
 
@@ -107,6 +111,20 @@ describe('presmium serve on this machine (LOCAL): the documents\' routes', () =>
     expect(JSON.parse(large.text)).toEqual({ bytes: 10 << 20 })
   }, 60_000)
 
+  it('forwards the site\'s paths and a plugin\'s proxy; refuses a path that climbs out of the proxy', async () => {
+    const [site, upstream] = listeners as [Awaited<ReturnType<typeof listener>>, Awaited<ReturnType<typeof listener>>]
+    expect((await raw(`${url}/doc/`)).json()).toMatchObject({ path: '/doc/' })
+    expect(site.requests.at(-1)!.path).toBe('/doc/')
+    const proxied = await raw(`${url}/__presmium/fixture.server/upstream/api/x?y=1`, { headers: { 'Presmium-Document': 'doc' } })
+    expect(proxied.json()).toMatchObject({ path: '/api/x?y=1' })
+    // `..` encoded, or an encoded separator: refused before any target sees it.
+    const before = upstream.requests.length
+    for (const path of ['upstream/..%2F..%2Fsecret', 'upstream/%2e%2e%2Fsecret', 'upstream/a%5C..%5Csecret']) {
+      expect((await raw(`${url}/__presmium/fixture.server/${path}`, { headers: { 'Presmium-Document': 'doc' } })).status, path).toBe(400)
+    }
+    expect(upstream.requests.length).toBe(before)
+  })
+
   it('takes a document\'s contributions down: its routes are gone, and made again it has its new configuration', async () => {
     expect((await route('doc', 'context')).json()).toMatchObject({ config: { greeting: '来自文稿' } })
     const unmount = async (document: string) => {
@@ -124,83 +142,4 @@ describe('presmium serve on this machine (LOCAL): the documents\' routes', () =>
     writeFileSync(entry, readFileSync(entry, 'utf8').replace('greeting: 来自文稿', 'greeting: 新的文稿'))
     expect((await route('doc', 'context')).json()).toMatchObject({ config: { greeting: '新的文稿' } })
   }, 60_000)
-})
-
-describe('presmium serve with a login (SHARED): the windows of readers and teachers, and the owner console', () => {
-  let dir: string
-  let host: Child
-  let url: string
-  const listeners: Awaited<ReturnType<typeof listener>>[] = []
-  const streams: EventStream[] = []
-  beforeAll(async () => {
-    dir = workspace('server-windows', { doc: DECK })
-    writeFileSync(join(dir, 'presmium.workspace.yaml'), readFileSync(join(DECK, 'presmium.workspace.yaml')))
-    listeners.push(...await Promise.all([listener(), listener(), listener()]))
-    const [gateway, agentHost, site] = listeners as [Awaited<ReturnType<typeof listener>>, ...Awaited<ReturnType<typeof listener>>[]]
-    const started = await serveHost(sharedEnv(dir, gateway.url, agentHost!.url, { SERVE_FORWARD: site!.url }))
-    if (!started.url) throw new Error(started.error)
-    host = started.host
-    url = started.url
-  }, 120_000)
-  afterAll(async () => {
-    streams.forEach(s => s.close())
-    await host?.stop()
-    await Promise.all(listeners.map(l => l.close()))
-    remove(dir)
-  })
-
-  const control = '/__presmium/presmium.server/control'
-  const window = async (id: string, email: string) => {
-    const stream = await eventStream(`${url}${control}?window=${id}`, as(email))
-    streams.push(stream)
-    await stream.next('ready')
-    return stream
-  }
-  const report = (id: string, email: string, body: Record<string, unknown>) =>
-    raw(`${url}${control}`, { method: 'POST', headers: { ...as(email), 'Content-Type': 'application/json' }, body: JSON.stringify({ window: id, type: 'report', ...body }) })
-  /** A JSON-RPC call of an MCP tool with a token, through `/mcp` on the site's host name. */
-  const tool = async (token: string, name: string): Promise<any> => {
-    const answer = await raw(`${url}/mcp`, {
-      method: 'POST',
-      headers: { 'Host': 'site.test', 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: { document: 'doc' } } }),
-    })
-    expect(answer.status, answer.text).toBe(200)
-    const data = answer.text.trimStart().startsWith('{') ? answer.text : answer.text.split('\n').filter(line => line.startsWith('data: ')).map(line => line.slice(6)).join('')
-    return JSON.parse(JSON.parse(data).result.content[0].text)
-  }
-
-  it('keeps the teacher\'s classroom summary and presenting position when a reader\'s page reports its own', async () => {
-    await window('teacher', 'owner@test')
-    expect((await report('teacher', 'owner@test', { position: { slide: 2, step: 0, view: 'present' }, role: 'presenter', status: { 'presmium.classroom': { status: 'live', learners: 3 } } })).status).toBe(200)
-    // A reader opens the page later: its page reports the classroom it sees, and says it presents.
-    await window('reader', 'reader@test')
-    expect((await report('reader', 'reader@test', { position: { slide: 1, step: 0, view: 'present' }, role: 'presenter', status: { 'presmium.classroom': { status: 'idle' } } })).status).toBe(200)
-
-    const { token } = (await raw(`${url}/__presmium/fixture.server/mcp`, { method: 'POST', headers: as('editor@test') })).json<{ token: string }>()
-    expect(await tool(token, 'get_classroom')).toEqual({ classroom: { 'presmium.classroom': { status: 'live', learners: 3 } } })
-    const { position } = await tool(token, 'get_position')
-    expect(position).toMatchObject({ section: '第二节', role: 'presenter' })
-
-    // The teacher stops presenting; a reader's page says again that it presents: the teacher's window comes first.
-    expect((await report('teacher', 'owner@test', { position: { slide: 2, step: 0, view: 'document' } })).status).toBe(200)
-    expect((await report('reader', 'reader@test', { position: { slide: 1, step: 0, view: 'present' }, role: 'presenter' })).status).toBe(200)
-    const { position: after } = await tool(token, 'get_position')
-    expect(after).toMatchObject({ section: '第二节', view: 'document' })
-    expect(after.role).toBeUndefined()
-  })
-
-  it('shows the owner console in the language of the owner\'s browser: English for French', async () => {
-    const page = (language: string) => raw(`${url}/`, { headers: as('owner@test', 'console.test', { 'Accept-Language': language }) })
-    const french = await page('fr-FR,fr;q=0.9')
-    expect(french.text).toContain('<html lang="en">')
-    expect(french.text).toContain('Owner console')
-    expect(french.text).toContain('"allow":"Allow"')
-    const chinese = await page('zh-CN,zh;q=0.9')
-    expect(chinese.text).toContain('<html lang="zh-CN">')
-    expect(chinese.text).toContain('所有者控制台')
-    // The script chooses no language: it reads the page's words.
-    const script = await raw(`${url}/__presmium/presmium.server/console.js`, { headers: as('owner@test', 'console.test') })
-    expect(script.text).not.toMatch(/startsWith\('zh'\)/)
-  })
 })

@@ -33,8 +33,6 @@ export interface WorkspaceMessages {
   remove: string
   to: string
   confirmDelete(dir: string): string
-  requestExecution(count: number): string
-  executionPending: string
   close: string
   origin: Record<'agent' | 'document' | 'editor', string>
   /** How the history names a document operation (its commit's summary stays as written, F-55). */
@@ -43,15 +41,6 @@ export interface WorkspaceMessages {
   revertOf(label: string): string
   /** A document operation or an undo refused while another writer holds the document (F-09); `document` '' is the root's. */
   locked(document: string, by: LockKind): string
-  /** A reader's page while a new build of its document is coming (SHARED, D17): what it shows is a build behind. */
-  siteUpdating: string
-  siteUpdatingNote: string
-  /** A new build is in place: reloading shows it. */
-  siteUpdated: string
-  /** The page serve answers before the first build of a document is in place; it reloads itself. */
-  sitePreparing: string
-  /** The page serve answers when no build of a document succeeded yet. */
-  siteUnavailable: string
 }
 
 export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
@@ -82,18 +71,11 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     remove: '删除',
     to: '新目录',
     confirmDelete: dir => `删除文档 ${dir}？之后可以在修改历史中撤销。`,
-    requestExecution: count => `请求执行（${count}）`,
-    executionPending: '等待所有者确认执行',
     close: '关闭',
     origin: { agent: 'agent 修改', document: '文档操作', editor: '编辑' },
     operation: o => o.op === 'create' ? `新建文档 ${o.dir}` : o.op === 'delete' ? `删除文档 ${o.dir}` : o.op === 'rename' ? `重命名文档 ${o.dir} 为 ${o.to}` : `复制文档 ${o.dir} 为 ${o.to}`,
     revertOf: label => `撤销「${label}」`,
     locked: (document, by) => `${document ? `文档 ${document} ` : '这份文档'}现在不能修改：${by === 'agent' ? 'agent 的修改任务正在进行或等待审阅' : by === 'revert' ? '一项修改正在撤销' : '一项文档操作正在进行'}，完成后再试。`,
-    siteUpdating: '正在更新',
-    siteUpdatingNote: '这份文档有新的修改，正在构建阅读版本；完成后刷新即可看到。',
-    siteUpdated: '已更新，刷新查看',
-    sitePreparing: '正在更新：这份文档的阅读版本正在构建，完成后本页自动显示。',
-    siteUnavailable: '这份文档的阅读版本暂时没有构建成功，编辑者修改之后会再次构建。',
   },
   'en': {
     edit: 'Edit',
@@ -122,17 +104,10 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     remove: 'Delete',
     to: 'New directory',
     confirmDelete: dir => `Delete the document ${dir}? The history can revert it.`,
-    requestExecution: count => `Request execution (${count})`,
-    executionPending: 'Waiting for the owner to allow the execution',
     close: 'Close',
     origin: { agent: 'agent change', document: 'document operation', editor: 'edit' },
     operation: o => o.op === 'create' ? `Create document ${o.dir}` : o.op === 'delete' ? `Delete document ${o.dir}` : o.op === 'rename' ? `Rename document ${o.dir} to ${o.to}` : `Copy document ${o.dir} to ${o.to}`,
     revertOf: label => `Revert "${label}"`,
     locked: (document, by) => `${document ? `The document ${document}` : 'This document'} cannot change now: ${by === 'agent' ? 'an agent\'s change task runs or waits for its review' : by === 'revert' ? 'a change is being undone' : 'a document operation is under way'}. Try again once it is done.`,
-    siteUpdating: 'Updating',
-    siteUpdatingNote: 'This document changed; its reading version is being built. Reload once it is done to see it.',
-    siteUpdated: 'Updated: reload',
-    sitePreparing: 'Updating: the reading version of this document is being built; this page shows it once it is done.',
-    siteUnavailable: 'The reading version of this document could not be built yet; it is built again once an editor changes it.',
   },
 }

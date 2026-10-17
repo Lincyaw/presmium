@@ -3,7 +3,7 @@
  * docs/architecture.md 4.8 and 10.7), the same rule for every kind:
  *
  * 1. Its review opens first: the review service the server chose
- *    (`CHANGE_REVIEW`: deltabox; in SHARED serve agent-host's), else the
+ *    (`CHANGE_REVIEW`: deltabox), else the
  *    assistant's git review (./git-review.ts). The agent's working directory
  *    is its `root`.
  * 2. Each tool call the agent completes is a checkpoint (`step` event).
@@ -111,8 +111,6 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
         workspaceRoot: ctx.workspaceRoot,
         deckDir: ctx.deckDir,
         task: task.id,
-        // SHARED: git isolated from what the sandbox may write; restores written by the workspace (agent-host, as the sandbox; WP-91).
-        isolated: ctx.trust === 'shared',
         ...ctx.service(DOCUMENT_FILES) ? { files: ctx.service(DOCUMENT_FILES)! } : {},
         onRestore: paths => ctx.log.warn(`task ${task.id}: the agent changed the git directory, put back: ${paths.join(', ')}`),
         warn: message => ctx.log.warn(`task ${task.id}: ${message}`),

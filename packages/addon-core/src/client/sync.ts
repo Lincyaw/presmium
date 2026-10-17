@@ -8,7 +8,7 @@ type SlidevSync = Parameters<typeof addSyncMethod>[0]
 type State = Record<string, unknown>
 
 /** Slidev's channels of the navigation (`<title> - shared`) and of the drawings (`<title> - drawings`). */
-const SHARED = ' - shared'
+const NAVIGATION = ' - shared'
 const DRAWINGS = ' - drawings'
 
 /**
@@ -19,7 +19,7 @@ const DRAWINGS = ' - drawings'
  * drawings there.
  */
 function translation(channel: string, sections: () => SlideSections): { out(state: State): State, in(patch: State): State } {
-  if (channel.endsWith(SHARED)) return { out: state => sharedOut(state, sections()), in: sharedReceiver(sections) }
+  if (channel.endsWith(NAVIGATION)) return { out: state => sharedOut(state, sections()), in: sharedReceiver(sections) }
   if (channel.endsWith(DRAWINGS)) return { out: state => drawingsOut(state, sections()), in: patch => drawingsIn(patch, sections()) }
   return { out: state => state, in: patch => patch }
 }

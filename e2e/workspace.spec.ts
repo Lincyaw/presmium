@@ -1,22 +1,17 @@
-// The workspace in the browser (WP-79, P-120, P-121): a shared deployment on this machine (`presmium serve`
-// with a login proxy's secret, `presmium gateway`, `presmium agent-host`), with a test login proxy per member
-// that adds the secret and the member's identity, as oauth2-proxy would. An editor creates, renames, copies and
-// deletes documents on the home page, and the history shows the four commits; without an assistant the new
-// document form has no "draft with the agent"; a reader sees no edit entry; in edit mode the mark of a role
-// without children shows; a `{literalinclude}` shows a file of the workspace but not one a symbolic link out
-// of it names; with an assistant (a stand-in of the `AGENT` service), a drafted document opens once the
-// draft is committed; the home page loads the operator plugins' browser parts and serves their routes
-// (WP-81e2), which a document's page loads only when its deck lists the plugin; there their routes find
-// none of the workspace's files. The history names the operations in the workspace's language. On this
-// machine (LOCAL): a rename undone from the history brings the directory back on the home page and its page
-// shows, a creation undone takes it away, a document made on disk shows after the next request (F-10); the
-// history's labels and dates are zh-CN's, or English's in an English workspace (F-55).
+// The workspace in the browser (WP-79, P-120, P-121): `presmium serve` on this machine, the one member the local
+// author. The author creates, renames, copies and deletes documents on the home page, and the history shows the
+// four commits; without an assistant the new document form has no "draft with the agent"; the home page loads the
+// operator plugins' browser parts and serves their routes (WP-81e2), which a document's page loads only when its
+// deck lists the plugin; there their routes find none of the workspace's files; in edit mode the mark of a role
+// without children shows; a `{literalinclude}` shows a file of the workspace, and the file a symbolic link names
+// outside it, as `presmium dev` and `presmium build` do; with an assistant (a stand-in of the `AGENT` service), a
+// drafted document opens once the draft is committed (E-7). The history names the operations in the workspace's
+// language. A rename undone from the history brings the directory back on the home page and its page shows, a
+// creation undone takes it away, a document made on disk shows after the next request (F-10); the history's
+// labels and dates are zh-CN's, or English's in an English workspace (F-55).
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { createServer, request } from 'node:http'
-import type { Server } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -27,8 +22,6 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/workspace')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 
-// The site's host name and the owner console's lead to this machine.
-test.use({ launchOptions: { args: ['--host-resolver-rules=MAP site.test 127.0.0.1, MAP console.test 127.0.0.1'] } })
 
 /** The stand-in of the assistant's `AGENT` client in the page: one drafting task, whose events the test sends. */
 interface DraftAgent {
@@ -80,96 +73,64 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
   clearTimeout(timer)
 }
 
-/** A login proxy for one member: the `Host` kept, the shared secret and the member's email added (WebSockets too). */
-async function loginProxy(target: string, secret: string, email: string): Promise<{ port: number, server: Server }> {
-  const upstream = new URL(target)
-  const headersOf = (headers: Record<string, unknown>) => ({ ...headers, 'x-presmium-proxy-secret': secret, 'x-forwarded-email': email })
-  const server = createServer((req, res) => {
-    const forwarded = request({ host: upstream.hostname, port: upstream.port, method: req.method, path: req.url, headers: headersOf(req.headers) }, (answer) => {
-      res.writeHead(answer.statusCode ?? 502, answer.headers)
-      answer.pipe(res)
-    })
-    forwarded.on('error', () => res.destroy())
-    req.pipe(forwarded)
-  })
-  server.on('upgrade', (req, socket, head) => {
-    const forwarded = request({ host: upstream.hostname, port: upstream.port, method: req.method, path: req.url, headers: headersOf(req.headers) })
-    forwarded.on('upgrade', (answer, upstreamSocket, upstreamHead) => {
-      socket.write(`HTTP/1.1 101 Switching Protocols\r\n${Object.entries(answer.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n')}\r\n\r\n`)
-      if (upstreamHead.length) socket.write(upstreamHead)
-      if (head.length) upstreamSocket.write(head)
-      upstreamSocket.pipe(socket).pipe(upstreamSocket)
-    })
-    forwarded.on('error', () => socket.destroy())
-    forwarded.end()
-  })
-  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
-  return { port: (server.address() as AddressInfo).port, server }
+/** What the file outside each workspace copy holds, which a symbolic link in its document `intro` names. */
+const SENTINEL = `outside-${Math.random().toString(36).slice(2)}`
+
+/**
+ * A workspace from the fixture (its operator plugins installed at the root), `edit`ed, as a git repository of its
+ * own; `intro/secret.txt` is a symbolic link to a file outside it (`<dir>.outside/secret.txt`).
+ */
+function workspaceCopy(prefix: string, edit: (dir: string) => void = () => {}): string {
+  const work = join(ROOT, 'examples/demo/.presmium')
+  mkdirSync(work, { recursive: true })
+  const dir = mkdtempSync(join(work, `e2e-workspace-${prefix}-`))
+  cpSync(FIXTURE, dir, { recursive: true })
+  for (const name of ['presmium-fixture-workspace-probe', 'presmium-fixture-workspace-home']) cpSync(join(FIXTURE, 'plugins', name), join(dir, 'node_modules', name), { recursive: true })
+  rmSync(join(dir, 'plugins'), { recursive: true, force: true })
+  mkdirSync(`${dir}.outside`)
+  writeFileSync(`${dir}.outside/secret.txt`, `${SENTINEL}\n`)
+  symlinkSync(`${dir}.outside/secret.txt`, join(dir, 'intro/secret.txt'))
+  writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
+  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
+  edit(dir)
+  const git = (args: string[]) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
+  git(['init', '-q', '-b', 'main'])
+  git(['add', '-A'])
+  git(['commit', '-q', '-m', 'Initial commit'])
+  return dir
 }
 
-test.describe('the workspace in the browser (SHARED)', () => {
+/** `presmium serve` of a workspace on this machine, with state and cache directories of its own: its home page. */
+async function serveLocal(dir: string, children: ChildProcess[]): Promise<string> {
+  const started = await start(dir, ['serve', '--port', '0'], clean({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache` }), /^serve {2}(http\S+)$/m)
+  children.push(started.child)
+  return `${started.match}/`
+}
+
+/** Stops the servers and removes the workspaces with their state, cache and outside directories. */
+async function cleanUp(children: ChildProcess[], dirs: string[]): Promise<void> {
+  for (const child of children) await stop(child)
+  for (const dir of dirs) for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.outside`]) rmSync(path, { recursive: true, force: true })
+}
+
+test.describe('the workspace in the browser', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
-  const SENTINEL = `sentinel-${Math.random().toString(36).slice(2)}`
-  let dir: string
-  let outside: string
+  const dirs: string[] = []
   const children: ChildProcess[] = []
-  const servers: Server[] = []
-  let editor: number
-  let reader: number
+  let home: string
 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
-    const work = join(ROOT, 'examples/demo/.presmium')
-    mkdirSync(work, { recursive: true })
-    dir = mkdtempSync(join(work, 'e2e-workspace-'))
-    cpSync(FIXTURE, dir, { recursive: true })
-    // A symbolic link in a document to a file outside the workspace, which a `{literalinclude}` names.
-    outside = mkdtempSync(join(work, 'e2e-outside-'))
-    writeFileSync(join(outside, 'secret.txt'), `${SENTINEL}\n`)
-    symlinkSync(join(outside, 'secret.txt'), join(dir, 'intro/secret.txt'))
-    // The operator's plugins, installed at the workspace root (D14).
-    for (const name of ['presmium-fixture-workspace-probe', 'presmium-fixture-workspace-home']) cpSync(join(FIXTURE, 'plugins', name), join(dir, 'node_modules', name), { recursive: true })
-    rmSync(join(dir, 'plugins'), { recursive: true, force: true })
-    writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
-    writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
-    const git = (args: string[]) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
-    git(['init', '-q', '-b', 'main'])
-    git(['add', '-A'])
-    git(['commit', '-q', '-m', 'Initial commit'])
-
-    const id = Math.random().toString(36).slice(2, 10)
-    const secret = `proxy-${id}`
-    const agentHost = await start(dir, ['agent-host', '--port', '0'], clean({ PRESMIUM_AGENT_HOST_TOKEN: `agent-host-${id}` }), /^agent-host {2}(http\S+)$/m)
-    children.push(agentHost.child)
-    const gateway = await start(dir, ['gateway', '--port', '0'], clean({ PRESMIUM_GATEWAY_TOKEN: `gateway-${id}` }), /^gateway {2}(http\S+)$/m)
-    children.push(gateway.child)
-    const serve = await start(dir, ['serve', '--port', '0'], clean({
-      PRESMIUM_PROXY_SECRET: secret,
-      PRESMIUM_GATEWAY_URL: gateway.match,
-      PRESMIUM_GATEWAY_TOKEN: `gateway-${id}`,
-      PRESMIUM_AGENT_HOST_URL: agentHost.match,
-      PRESMIUM_AGENT_HOST_TOKEN: `agent-host-${id}`,
-      PRESMIUM_CONSOLE_HOST: 'console.test',
-    }), /^serve {2}(http\S+)$/m)
-    children.unshift(serve.child)
-    const proxies = await Promise.all([loginProxy(serve.match, secret, 'editor@test'), loginProxy(serve.match, secret, 'reader@test')])
-    servers.push(...proxies.map(proxy => proxy.server))
-    editor = proxies[0].port
-    reader = proxies[1].port
+    const dir = workspaceCopy('browser')
+    dirs.push(dir)
+    home = await serveLocal(dir, children)
   })
 
   test.afterAll(async () => {
-    for (const child of children) await stop(child)
-    for (const server of servers) {
-      server.closeAllConnections()
-      await new Promise(done => server.close(done))
-    }
-    if (dir) rmSync(dir, { recursive: true, force: true })
-    if (outside) rmSync(outside, { recursive: true, force: true })
+    await cleanUp(children, dirs)
   })
 
-  test('an editor creates, renames, copies and deletes documents; the history shows the four commits; no agent draft without an assistant', async ({ page }) => {
-    const home = `http://site.test:${editor}/`
+  test('the author creates, renames, copies and deletes documents; the history shows the four commits; no agent draft without an assistant', async ({ page }) => {
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
     await page.locator('.pm-workspace-documents__toggle').click()
     const panel = page.getByRole('dialog', { name: '管理文档' })
@@ -212,20 +173,8 @@ test.describe('the workspace in the browser (SHARED)', () => {
     ])
   })
 
-  test('a reader sees no edit entry, on the home page nor on a document', async ({ page }) => {
-    await openDevPage(page, `http://site.test:${reader}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await expect(page.locator('.pm-toolbar--bar')).toBeAttached()
-    await expect(page.locator('.pm-workspace-documents__toggle')).toHaveCount(0)
-    await expect(page.locator('.pm-workspace-history__toggle')).toHaveCount(0)
-    await openDevPage(page, `http://site.test:${reader}/intro/`, page.locator('.pm-section[data-section="导论"]'))
-    await expect(page.locator('.pm-toolbar--bar')).toBeAttached()
-    await expect(page.locator('.pm-workspace-edit')).toHaveCount(0)
-    // An editor's page of the same document has the entry.
-    await openDevPage(page, `http://site.test:${editor}/intro/`, page.locator('.pm-workspace-edit'))
-  })
-
   test('the home page loads the operator plugins\' browser parts and their routes answer for it; a document\'s page loads its deck\'s plugins', async ({ page }) => {
-    await openDevPage(page, `http://site.test:${reader}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
     await expect(page.locator('html')).toHaveAttribute('data-fixture-home', 'loaded')
     // The operator plugin's route on the home page (document ''), as on a document's; the home page is no
     // document: the plugin's deck directory there holds none of the workspace's files (its git directory either).
@@ -236,13 +185,13 @@ test.describe('the workspace in the browser (SHARED)', () => {
     expect(await where('')).toEqual({ status: 200, body: { document: '', sees: [] } })
     expect(await where('intro')).toEqual({ status: 200, body: { document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] } })
     // The deck of intro does not list it: its page does not load its browser part.
-    await openDevPage(page, `http://site.test:${reader}/intro/`, page.locator('.pm-section[data-section="导论"]'))
+    await openDevPage(page, `${home}intro/`, page.locator('.pm-section[data-section="导论"]'))
     await expect(page.locator('.pm-toolbar--bar')).toBeAttached()
     await expect(page.locator('html')).not.toHaveAttribute('data-fixture-home', 'loaded')
   })
 
   test('in edit mode the mark of a role without children shows; out of it, it does not', async ({ page }) => {
-    await openDevPage(page, `http://site.test:${editor}/intro/`, page.locator('.pm-workspace-edit'))
+    await openDevPage(page, `${home}intro/`, page.locator('.pm-workspace-edit'))
     const narration = page.locator('.pm-section[data-section="导论"] .pm-block--narration')
     await expect(narration).toContainText('可见的角色')
     await expect(page.locator('.pm-role-mark')).toHaveCount(0)
@@ -253,17 +202,14 @@ test.describe('the workspace in the browser (SHARED)', () => {
     await expect(page.locator('.pm-role-mark')).toHaveCount(0)
   })
 
-  test('a {literalinclude} shows a file of the workspace as code, and nothing of a symbolic link out of it', async ({ page }) => {
+  test('a {literalinclude} shows a file of the workspace as code, and the file a symbolic link names outside it, as presmium dev does', async ({ page }) => {
     const section = page.locator('.pm-section[data-section="code"]')
-    await openDevPage(page, `http://site.test:${editor}/intro/`, section)
+    await openDevPage(page, `${home}intro/`, section)
     await expect(section.locator('pre').first()).toContainText('print("在工作区之内")')
-    await expect(section).not.toContainText('引入的代码')
-    await expect(page.locator('body')).not.toContainText(SENTINEL)
-    // The compilation refused to read it, and says so; the sentinel is nowhere in the IR.
+    await expect(section.locator('pre').nth(1)).toContainText(SENTINEL)
     const ir = await page.evaluate(async () => (await fetch('/intro/@presmium/ir')).text())
-    expect(ir).not.toContain(SENTINEL)
-    const { doc } = JSON.parse(ir) as { doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }
-    expect(doc.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ checkId: 'presmium.files', severity: 'error', message: expect.stringContaining('intro/secret.txt') })]))
+    const { doc } = JSON.parse(ir) as { doc: { diagnostics: { checkId: string, severity: string }[] } }
+    expect(doc.diagnostics.filter(d => d.severity === 'error')).toEqual([])
   })
 
   test('with an assistant, a document the agent drafts opens once the draft is committed, after its review', async ({ page }) => {
@@ -310,13 +256,11 @@ test.describe('the workspace in the browser (SHARED)', () => {
       window.draftAgent = agent
     })
     await page.route('**/packages/workspace/src/client/plugin.ts*', async (route) => {
-      // Fetched from the test process, where site.test does not resolve: the login proxy's own address.
-      const response = await route.fetch({ url: route.request().url().replace('//site.test:', '//127.0.0.1:') })
+      const response = await route.fetch()
       const agentPlugin = `export const fixtureAgent = { manifest: { id: 'fixture.agent', version: '0.1.0', kernel: '^0.1.0', provides: [{ id: 'presmium.agent' }] }, setup(ctx) { ctx.provide({ id: 'presmium.agent' }, window.draftAgent.client) } }`
       await route.fulfill({ response, body: `${await response.text()}\n${agentPlugin}\n` })
     })
 
-    const home = `http://site.test:${editor}/`
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
     await page.locator('.pm-workspace-documents__toggle').click()
     const panel = page.getByRole('dialog', { name: '管理文档' })
@@ -345,44 +289,22 @@ test.describe('the workspace in the browser (SHARED)', () => {
   })
 })
 
-/** A workspace from the fixture (its operator plugins installed at the root), `edit`ed, as a git repository of its own. */
-function workspaceCopy(prefix: string, edit: (dir: string) => void = () => {}): string {
-  const work = join(ROOT, 'examples/demo/.presmium')
-  mkdirSync(work, { recursive: true })
-  const dir = mkdtempSync(join(work, `e2e-workspace-${prefix}-`))
-  cpSync(FIXTURE, dir, { recursive: true })
-  for (const name of ['presmium-fixture-workspace-probe', 'presmium-fixture-workspace-home']) cpSync(join(FIXTURE, 'plugins', name), join(dir, 'node_modules', name), { recursive: true })
-  rmSync(join(dir, 'plugins'), { recursive: true, force: true })
-  // The symbolic link the SHARED describe adds is not there: a {literalinclude} of it is an error here.
-  writeFileSync(join(dir, 'intro/lecture.md'), readFileSync(join(dir, 'intro/lecture.md'), 'utf8').replace(/```\{literalinclude\} secret\.txt\n```\n?/, ''))
-  writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
-  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
-  edit(dir)
-  const git = (args: string[]) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
-  git(['init', '-q', '-b', 'main'])
-  git(['add', '-A'])
-  git(['commit', '-q', '-m', 'Initial commit'])
-  return dir
-}
-
-test.describe('the workspace on this machine (LOCAL): the history\'s undo, and documents made on disk, follow on the home page (F-10); the history in the workspace\'s language (F-55)', () => {
+test.describe('the history\'s undo, and documents made on disk, follow on the home page (F-10); the history in the workspace\'s language (F-55)', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
   const dirs: string[] = []
   /** The home page of each workspace served. */
   const homes: string[] = []
   const children: ChildProcess[] = []
 
-  /** `presmium serve` on this machine of a workspace: its home page. */
-  async function serveLocal(dir: string): Promise<string> {
-    const started = await start(dir, ['serve', '--port', '0'], clean({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache` }), /^serve {2}(http\S+)$/m)
-    children.push(started.child)
-    homes.push(`${started.match}/`)
-    return `${started.match}/`
+  /** `presmium serve` of a workspace: its home page, kept for the case after. */
+  async function serve(dir: string): Promise<string> {
+    const home = await serveLocal(dir, children)
+    homes.push(home)
+    return home
   }
 
   test.afterAll(async () => {
-    for (const child of children) await stop(child)
-    for (const dir of dirs) for (const path of [dir, `${dir}.state`, `${dir}.cache`]) rmSync(path, { recursive: true, force: true })
+    await cleanUp(children, dirs)
   })
 
   /** The history panel, opened on the home page. */
@@ -394,7 +316,7 @@ test.describe('the workspace on this machine (LOCAL): the history\'s undo, and d
   test('a rename undone from the history brings the directory back on the home page, its page shows; a creation undone takes it away; labels and dates in zh-CN', async ({ page }) => {
     const dir = workspaceCopy('local')
     dirs.push(dir)
-    const home = await serveLocal(dir)
+    const home = await serve(dir)
     const listed = page.locator('.pm-site-home__document')
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
 
@@ -453,7 +375,7 @@ test.describe('the workspace on this machine (LOCAL): the history\'s undo, and d
       writeFileSync(join(copy, 'intro/lecture.md'), readFileSync(join(copy, 'intro/lecture.md'), 'utf8').replace('title: 导论\n', 'title: Introduction\nlang: en\n'))
     })
     dirs.push(dir)
-    const home = await serveLocal(dir)
+    const home = await serve(dir)
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
     await page.locator('.pm-workspace-documents__toggle').click()
     const documents = page.getByRole('dialog', { name: 'Documents' })

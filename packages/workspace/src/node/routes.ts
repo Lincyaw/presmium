@@ -1,10 +1,8 @@
 /**
  * The workspace's routes under `/__presmium/presmium.workspace/` (docs/architecture.md
- * 10.2): the documents and their operations, the revision history and its
- * reverts, and the state of a document's compile-time execution with its
- * "request execution", and how the member's site is made (a reader's static
- * site may be a build behind, D17). The server checks the roles (`Route.role`):
- * readers list the documents; editors and owners change them and read the history.
+ * 10.2): the documents and their operations, and the revision history and
+ * its reverts. The server checks the roles (`Route.role`): readers list the
+ * documents; editors and owners change them and read the history.
  *
  * An undo holds the locks of the documents its commit changed (`DOCUMENT_LOCKS`,
  * F-09): while an agent's change task holds one, it is refused with 409, whose
@@ -13,8 +11,8 @@
  * the site, as a document operation's are (C-7, F-10).
  */
 import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
-import type { Member, PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
-import type { DocumentOperation, DocumentsAnswer, ExecutionState, RevertAnswer, RevisionsAnswer, SiteState } from '../domain/api.ts'
+import type { PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
+import type { DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { lockedError, RequestError } from './documents.ts'
 import type { Documents, DocumentsChange } from './documents.ts'
@@ -29,12 +27,6 @@ export interface WorkspaceRoutes {
   locks?: DocumentLocks
   /** The documents an undo took away or brought back (the server's sessions and the site follow, C-7). */
   documentsChanged?(change: DocumentsChange): Promise<void> | void
-  /** The execution state of a document; undefined in a host without compile-time execution. */
-  execution?(document: string): ExecutionState | undefined
-  /** An editor asks again to run the code of a document that did not run. */
-  requestExecution?(document: string, member: Member): Promise<void> | void
-  /** How a member's pages of a document (or of the home page, '') are made; `live` when absent. */
-  site?(document: string, member: Member): SiteState
 }
 
 const NO_GIT = 'the workspace is not a git repository: run git init in it to use the document operations and the history'
@@ -118,23 +110,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         } finally {
           claimed?.release()
         }
-      }),
-    },
-    'site': {
-      role: 'reader',
-      handle: (request, ctx) => answer(async () => {
-        if (request.method !== 'GET') return problem(405, 'GET')
-        return json(options.site?.(ctx.document, ctx.member) ?? { kind: 'live' } satisfies SiteState)
-      }),
-    },
-    'execution': {
-      role: 'editor',
-      handle: (request, ctx) => answer(async () => {
-        if (request.method === 'GET') return json(options.execution?.(ctx.document) ?? { mode: 'local', notRun: [], pending: false })
-        if (request.method !== 'POST') return problem(405, 'GET or POST')
-        if (!options.requestExecution) return problem(404, 'this host has no compile-time execution to ask for')
-        await options.requestExecution(ctx.document, ctx.member)
-        return json(options.execution?.(ctx.document) ?? { mode: 'local', notRun: [], pending: false })
       }),
     },
   }

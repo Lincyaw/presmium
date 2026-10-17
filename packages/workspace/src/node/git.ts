@@ -3,20 +3,12 @@
  * kernel says Presmium runs git (`gitConfigArgs`, `gitEnvironment`): the
  * repository's hooks and fsmonitor off, so no script of the repository runs
  * when the workspace commits or reverts; commits are not signed. One
- * operation at a time per workspace: the index is shared.
- *
- * In SHARED mode (`isolated`, WP-91) git reads nothing the sandbox could
- * have written and no configuration but the repository's own (no filter,
- * diff or merge driver a document names), the git directory and work tree
- * fixed as found from the workspace root when the server started (a `.git`
- * planted in a document directory is never discovered). serve only reads
- * the work tree; what a revert writes there goes through `DOCUMENT_FILES`
- * (./revisions.ts).
+ * operation at a time per workspace: the index is shared. What a revert
+ * writes in the work tree goes through `DOCUMENT_FILES` (./revisions.ts).
  */
 import { execFile, execFileSync } from 'node:child_process'
 import { realpathSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { gitConfigArgs, gitEnvironment, isolatedGitProblem } from '@presmium/kernel'
+import { gitConfigArgs, gitEnvironment } from '@presmium/kernel'
 
 /** A git command's end: its status, its output as bytes and its errors. */
 export interface GitResult {
@@ -27,28 +19,19 @@ export interface GitResult {
 
 export class Git {
   readonly root: string
-  readonly isolated: boolean
-  /** The work tree's top and the git directory, as found from the root (real paths). */
+  /** The work tree's top, as found from the root (a real path). */
   readonly top: string
-  readonly gitDir: string
   #queue: Promise<unknown> = Promise.resolve()
 
-  constructor(root: string, isolated = false) {
+  constructor(root: string) {
     this.root = root
-    this.isolated = isolated
-    const found = execFileSync('git', [...gitConfigArgs(false), 'rev-parse', '--show-toplevel', '--absolute-git-dir'], { cwd: root, encoding: 'utf8', env: gitEnvironment(process.env, isolated) }).trim().split('\n')
-    this.top = realpathSync(found[0]!)
-    this.gitDir = realpathSync(resolve(root, found[1]!))
-    if (isolated) {
-      const problem = isolatedGitProblem(execFileSync('git', ['version'], { encoding: 'utf8', env: gitEnvironment(process.env, true) }))
-      if (problem) throw new Error(problem)
-    }
+    this.top = realpathSync(execFileSync('git', [...gitConfigArgs(), 'rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8', env: gitEnvironment(process.env) }).trim())
   }
 
   /** Whether the root is a git work tree (the editing features need one). */
   static isRepository(root: string): boolean {
     try {
-      return execFileSync('git', [...gitConfigArgs(false), 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: gitEnvironment(process.env, false) }).trim() === 'true'
+      return execFileSync('git', [...gitConfigArgs(), 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: gitEnvironment(process.env) }).trim() === 'true'
     } catch {
       return false
     }
@@ -57,11 +40,11 @@ export class Git {
   /** `git <args>` at the root, with these further variables (e.g. a temporary index), resolving with its end. */
   run(command: string[], env: Record<string, string> = {}): Promise<GitResult> {
     return new Promise((done) => {
-      execFile('git', [...gitConfigArgs(this.isolated), ...command], {
+      execFile('git', [...gitConfigArgs(), ...command], {
         cwd: this.root,
         encoding: 'buffer',
         maxBuffer: 1 << 30,
-        env: { ...gitEnvironment(process.env, this.isolated, { gitDir: this.gitDir, top: this.top }), ...env },
+        env: { ...gitEnvironment(process.env), ...env },
       }, (error, stdout, stderr) => {
         const code = !error ? 0 : typeof error.code === 'number' ? error.code : 1
         done({ code, stdout, stderr: stderr.toString('utf8') })

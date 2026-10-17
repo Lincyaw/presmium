@@ -40,7 +40,7 @@ execute:
     lab: { kind: jupyter, auth: proxy, image: 'quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a' }
 ```
 
-运营者在持有凭据的进程的环境中成对给出地址与令牌（LOCAL 模式为 `presmium build`、`check`、`dev` 与 `serve`，SHARED 模式为 `presmium gateway`）：
+运营者在运行 `presmium build`、`check`、`dev` 或 `serve` 的进程的环境中成对给出地址与令牌：
 
 ```sh
 PRESMIUM_ENV_LAB_URL=http://127.0.0.1:8888/ PRESMIUM_ENV_LAB_TOKEN=$JUPYTER_TOKEN presmium dev

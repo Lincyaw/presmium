@@ -13,7 +13,6 @@ import type { ApprovalKind } from '@presmium/kernel'
 import type { ApprovalPolicy } from '@presmium/server'
 import { parse as parseYaml } from 'yaml'
 import type { WorkspaceDocument } from '../domain/api.ts'
-import type { MembersConfig } from '../domain/members.ts'
 import { matchesPattern, patternSegments } from '../domain/paths.ts'
 
 /** The documents of a workspace without `documents` in its configuration. */
@@ -36,7 +35,6 @@ export interface WorkspaceConfig {
   single: boolean
   /** `site`: the options of the site shell, and `home`. */
   site: Record<string, unknown>
-  members: MembersConfig
   approvals: Partial<Record<ApprovalKind, ApprovalPolicy>>
   /** `templates`: the directory of the document templates (absolute); undefined for the templates installed with Presmium. */
   templates?: string
@@ -62,7 +60,6 @@ export function readWorkspace(root: string): WorkspaceConfig {
   }
   const declared = strings(data.documents)
   const single = declared.length === 0 && existsSync(join(dir, DECK_ENTRY))
-  const members = isRecord(data.members) ? data.members : {}
   const approvals = isRecord(data.approvals) ? data.approvals : {}
   const settings = isRecord(data.settings) ? data.settings : {}
   return {
@@ -71,7 +68,6 @@ export function readWorkspace(root: string): WorkspaceConfig {
     documents: single ? [DECK_ENTRY] : declared.length > 0 ? declared : DEFAULT_DOCUMENTS,
     single,
     site: isRecord(data.site) ? data.site : {},
-    members: { owners: strings(members.owners), editors: strings(members.editors) },
     approvals: Object.fromEntries(KINDS.flatMap(kind => (POLICIES.has(approvals[kind] as ApprovalPolicy) ? [[kind, approvals[kind] as ApprovalPolicy]] : []))),
     ...typeof data.templates === 'string' && data.templates.trim() ? { templates: resolve(dir, data.templates.trim()) } : {},
     settings: Object.fromEntries(Object.entries(settings).map(([id, value]) => [id, isRecord(value) ? value : {}])),

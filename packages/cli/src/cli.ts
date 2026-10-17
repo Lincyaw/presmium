@@ -5,11 +5,11 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@presmium/kernel'
 import type { ApprovalKind, Finding, Severity } from '@presmium/kernel'
-import { build, Compiler, dev, operatorDir, resolveEntry } from '@presmium/compiler'
+import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
 import type { BuildReport, Compilation, RunStats } from '@presmium/compiler'
-import { dropPrivileges, readSecret, servedDocument, startGateway, startServer } from '@presmium/server'
+import { servedDocument, startServer } from '@presmium/server'
 import type { ApprovalPolicy } from '@presmium/server'
-import { buildWorkspace, isWorkspaceRoot, serveWorkspace, startAgentHost } from '@presmium/workspace'
+import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
 import type { WorkspaceBuild } from '@presmium/workspace'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
@@ -17,7 +17,7 @@ import { devHost } from './host.ts'
 
 /**
  * The CLI's package directory: Presmium's own packages installed with the
- * CLI (the renderers, `addon-deltabox`) resolve from here (D14, docs/architecture.md 10.6).
+ * CLI (the renderers, `addon-deltabox`) resolve from here (docs/architecture.md 10.6).
  */
 export const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 
@@ -45,32 +45,12 @@ Commands:
           --env           also connect to the environments of execute.environments
           --audience <name>  check the deck as compiled for this audience
           --external-links   also check the external links, with lychee when it is installed
-  serve   the workspace service (the argument is the workspace root, or a deck): the workspace
-          site, edit mode, the documents and their history, the plugins' routes; with a login
-          proxy (PRESMIUM_PROXY_SECRET, PRESMIUM_PROXY_SECRET_FILE or --trust-proxy-from) it is
-          a shared deployment, which needs PRESMIUM_GATEWAY_URL, PRESMIUM_AGENT_HOST_URL, their
-          tokens and PRESMIUM_CONSOLE_HOST
+  serve   the workspace service for you on this machine (the argument is the workspace root, or
+          a deck): the workspace site, edit mode, the documents and their history, the plugins'
+          routes; it listens on this machine only (from elsewhere, forward its port over SSH)
           --port <n>      port (default: 4310)
-          --host <addr>   address (default: 127.0.0.1; another one needs a login proxy)
-          --trust-proxy-from <addrs>  addresses whose requests come from the login proxy
-          --user <user>   started as root: the user to become once the token files are read
+          --host <addr>   an address of this machine (default: 127.0.0.1)
           --operator-dir <dir>  the operator directory (default: the user's state directory)
-  gateway  the gateway of a shared deployment (the argument is the workspace root):
-          the operator's plugins' gateway routes, scoped tokens, /mcp forwarded to serve;
-          its service token is PRESMIUM_GATEWAY_TOKEN (or PRESMIUM_GATEWAY_TOKEN_FILE)
-          --operator-dir <dir>  the operator directory (default: the user's state directory)
-          --serve <url>   serve's address, where /mcp goes
-          --port <n>      port (default: 4320)
-          --host <addr>   address (default: 127.0.0.1)
-          --hostname <names>  host names it answers to besides this machine's (compose: gateway)
-          --user <user>   started as root: the user to become once the token file is read
-  agent-host  the sandbox side of a shared deployment (the argument is the workspace root):
-          compile-time execution, builds, the workspace site's dev servers, agent sessions;
-          its token is PRESMIUM_AGENT_HOST_TOKEN (or PRESMIUM_AGENT_HOST_TOKEN_FILE)
-          --port <n>      port (default: 4330)
-          --host <addr>   address (default: 127.0.0.1)
-          --hostname <names>  host names it answers to besides this machine's (compose: sandbox)
-          --user <user>   started as root: the user to become once the token file is read
 
   -h, --help   show this help
 
@@ -81,9 +61,7 @@ const OPTIONS = {
   'dev': ['to', 'out', 'server-port', 'allow'],
   'ir': ['out'],
   'check': ['json', 'update-lock', 'env', 'audience', 'external-links'],
-  'serve': ['port', 'host', 'trust-proxy-from', 'user', 'operator-dir'],
-  'gateway': ['operator-dir', 'serve', 'port', 'host', 'hostname', 'user'],
-  'agent-host': ['port', 'host', 'hostname', 'user'],
+  'serve': ['port', 'host', 'operator-dir'],
 } as const
 
 type Name = keyof typeof OPTIONS
@@ -92,7 +70,7 @@ const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 
 interface Command {
   name: Name
-  /** The deck's entry file; for `gateway`, the workspace root. */
+  /** The deck's entry file; for `serve`, the workspace root or deck directory. */
   entry: string
   /** `build` at a workspace root: the workspace site. */
   workspace?: string
@@ -109,12 +87,8 @@ interface Command {
   serverPort?: number
   allow: ApprovalKind[]
   operatorDir?: string
-  serve?: string
   port?: number
   host?: string
-  trustProxyFrom?: string[]
-  user?: string
-  hostnames?: string[]
 }
 
 /** Runs `presmium <argv>` and returns the exit code. */
@@ -137,8 +111,6 @@ export async function main(argv: string[]): Promise<number> {
       case 'build': return await buildDeck(command)
       case 'dev': return await devDeck(command)
       case 'serve': return await serve(command)
-      case 'gateway': return await gateway(command)
-      case 'agent-host': return await agentHost(command)
     }
   } catch (error) {
     process.stderr.write(`presmium: ${errorMessage(error)}\n`)
@@ -161,12 +133,8 @@ function parseCommand(argv: string[]): Command | 'help' {
       'server-port': { type: 'string' },
       'allow': { type: 'string' },
       'operator-dir': { type: 'string' },
-      'serve': { type: 'string' },
       'port': { type: 'string' },
       'host': { type: 'string' },
-      'hostname': { type: 'string' },
-      'trust-proxy-from': { type: 'string' },
-      'user': { type: 'string' },
       'help': { type: 'boolean', short: 'h', default: false },
     },
   })
@@ -184,8 +152,8 @@ function parseCommand(argv: string[]): Command | 'help' {
   if (workspace && values.audience !== undefined) throw new Error('--audience does not apply to a workspace yet: build each document for its audience')
   const audience = values.audience?.trim()
   if (values.audience !== undefined && !/^[\w.-]+$/.test(audience ?? '')) throw new Error(`--audience takes the name of an audience, e.g. student, not "${values.audience}"`)
-  // gateway, agent-host and serve take a directory: the workspace root (serve: or a deck directory).
-  const directory = name === 'gateway' || name === 'agent-host' || name === 'serve'
+  // serve takes a directory: the workspace root, or a deck directory.
+  const directory = name === 'serve'
   const entry = directory || workspace ? resolve(deck) : resolveEntry(deck)
   if (!existsSync(entry) || (directory && !statSync(entry).isDirectory())) throw new Error(`${entry} not found`)
   const to = values.to?.split(',').map(id => id.trim()).filter(Boolean)
@@ -207,18 +175,9 @@ function parseCommand(argv: string[]): Command | 'help' {
     serverPort: port(values['server-port'], '--server-port'),
     allow: allow as ApprovalKind[],
     operatorDir: values['operator-dir'],
-    serve: values.serve,
     port: port(values.port, '--port'),
     host: values.host,
-    trustProxyFrom: list(values['trust-proxy-from']),
-    user: values.user,
-    hostnames: list(values.hostname),
   }
-}
-
-function list(value: string | undefined): string[] | undefined {
-  const items = value?.split(',').map(item => item.trim()).filter(Boolean)
-  return items?.length ? items : undefined
 }
 
 function port(value: string | undefined, option: string): number | undefined {
@@ -270,7 +229,7 @@ async function buildDeck(command: Command): Promise<number> {
 }
 
 /**
- * `presmium dev`: the Presmium server (this machine only, LOCAL mode) with
+ * `presmium dev`: the Presmium server (this machine only) with
  * the plugins' server contributions, then the renderers' dev servers, which
  * proxy `/__presmium/` to it (docs/architecture.md 10.1, 10.2).
  */
@@ -320,68 +279,20 @@ async function devDeck(command: Command): Promise<number> {
   return 0
 }
 
-/** `presmium gateway`: the gateway of a shared deployment, until stopped (docs/architecture.md 10.9). */
-async function gateway(command: Command): Promise<number> {
-  // Started as root to become its user, it takes its token from a file only (a variable would stay in its environment).
-  const token = readSecret(process.env, 'PRESMIUM_GATEWAY_TOKEN', Boolean(command.user) && process.getuid?.() === 0)
-  if (!token) throw new Error('the gateway needs its service token: set PRESMIUM_GATEWAY_TOKEN or PRESMIUM_GATEWAY_TOKEN_FILE')
-  // Started as root: the token file is read, then the process runs as the gateway's user, which cannot read it.
-  dropPrivileges(command.user)
-  const root = command.entry
-  const started = await startGateway({
-    workspace: root,
-    operatorDir: command.operatorDir ? resolve(command.operatorDir) : operatorDir(root),
-    serve: command.serve,
-    port: command.port,
-    host: command.host,
-    ...command.hostnames ? { hostnames: command.hostnames } : {},
-    token,
-    bundled: BUNDLED,
-  })
-  process.stdout.write(`gateway  ${started.url}\nplugins  ${started.plugins.join(', ') || '(none)'}\n`)
-  await new Promise<void>((done) => {
-    process.once('SIGINT', done)
-    process.once('SIGTERM', done)
-  })
-  await started.close()
-  return 0
-}
-
 /**
- * `presmium serve`: the workspace service, until stopped (docs/architecture.md
- * section 10). Prints its address and trust mode.
+ * `presmium serve`: the workspace service, on this machine, until stopped
+ * (docs/architecture.md section 10). Prints its address and the workspace.
  */
 async function serve(command: Command): Promise<number> {
   const started = await serveWorkspace({
     dir: command.entry,
     host: command.host,
     port: command.port,
-    trustProxyFrom: command.trustProxyFrom,
-    user: command.user,
     ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
     bundled: BUNDLED,
     check: compilation => compilation.check(),
   })
-  process.stdout.write(`serve  ${started.url}\nmode  ${started.trust}\nworkspace  ${started.root}\n`)
-  await new Promise<void>((done) => {
-    process.once('SIGINT', done)
-    process.once('SIGTERM', done)
-  })
-  await started.close()
-  return 0
-}
-
-/** `presmium agent-host`: the sandbox side of a shared deployment, until stopped (docs/architecture.md 10.8). */
-async function agentHost(command: Command): Promise<number> {
-  const started = await startAgentHost({
-    root: command.entry,
-    host: command.host,
-    port: command.port,
-    ...command.hostnames ? { hostnames: command.hostnames } : {},
-    user: command.user,
-    bundled: BUNDLED,
-  })
-  process.stdout.write(`agent-host  ${started.url}\n`)
+  process.stdout.write(`serve  ${started.url}\nworkspace  ${started.root}\n`)
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
     process.once('SIGTERM', done)
@@ -445,7 +356,6 @@ function buildText(report: BuildReport, runs: RunStats, audience?: string, cwd =
     for (const s of skipped) out.push(`    ${s.section}#${s.block}: ${s.reason}`)
   }
   if (runs.executed + runs.cached > 0) out.push(`code runs: ${runs.executed} executed, ${runs.cached} from cache${runs.sandbox && runs.executed > 0 ? `, isolated by ${runs.sandbox}` : ''}`)
-  if (runs.refused.length > 0) out.push(`code runs not allowed: ${runs.refused.map(run => `${run.section}#${run.block}`).join(', ')}`)
   out.push(summary(report.findings))
   return `${out.join('\n')}\n`
 }

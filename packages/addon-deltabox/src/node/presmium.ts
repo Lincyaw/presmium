@@ -58,7 +58,7 @@ const real = (path: string) => {
   }
 }
 
-/** Why each deck's compile-time code runs without the process sandbox (LOCAL mode), for its build report. */
+/** Why each deck's compile-time code runs without the process sandbox, for its build report. */
 const unsandboxed = new Map<string, string>()
 /** Startup log lines already written by this process. */
 const logged = new Set<string>()
@@ -95,7 +95,7 @@ function services(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][] {
   }
   if (noSandbox) logOnce(ctx, t.noSandbox(noSandbox))
   if (noReview) logOnce(ctx, t.noReview(noReview))
-  if (noSandbox && ctx.trust === 'local') unsandboxed.set(ctx.deckDir, noSandbox)
+  if (noSandbox) unsandboxed.set(ctx.deckDir, noSandbox)
   else unsandboxed.delete(ctx.deckDir)
   return entries
 }

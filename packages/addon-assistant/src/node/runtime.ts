@@ -35,7 +35,7 @@ export interface AcpRuntimeOptions {
   launch(options: AgentSessionOptions): Promise<Launch>
   /** The deck's language: the prompt asks for answers in it; approvals are worded in it. */
   lang?: string
-  /** Refused outright (LOCAL). */
+  /** Refused outright. */
   operatorDir?: string
   log: Logger
 }

@@ -1,7 +1,7 @@
-// DeepSeek Harness bundled with the assistant (D11, D15). Its pinned version composes the three templates
+// DeepSeek Harness bundled with the assistant (D11, D15). Its pinned version composes the two templates
 // (`--dump-config`): none uploads session logs or telemetry; `presmium-tutor` has no shell, network or
-// file tool of its own (no reading, searching, directory or skill tool, D-13), `presmium-shared` no shell,
-// command-execution or network tool, `presmium` keeps the shell with a `workspace-write` sandbox and asking.
+// file tool of its own (no reading, searching, directory or skill tool, D-13), `presmium` keeps the shell
+// with a `workspace-write` sandbox and asking.
 // With only a (fake) DEEPSEEK_API_KEY and no command, `presmium dev`'s assistant starts it: the provider is
 // DeepSeek, the runtime is what `initialize` reports, `session/new` succeeds, and nothing goes to the model.
 // With the operator's Messages-compatible service (PRESMIUM_MODEL_URL, _KEY, _PROVIDER; a fake one here) its
@@ -50,9 +50,9 @@ describe('the templates of the pinned DeepSeek Harness', () => {
   })
   afterAll(() => rmSync(home, { recursive: true, force: true }))
 
-  it('turn off the session-log upload and telemetry; the tutor reads only, the shared author has no shell, command execution or network, the local author keeps the shell in workspace-write and asks', () => {
+  it('turn off the session-log upload and telemetry; the tutor reads only, the author keeps the shell in workspace-write and asks', () => {
     expect(dshBin()).toBeDefined()
-    const trees = Object.fromEntries((['presmium', 'presmium-shared', 'presmium-tutor'] as Template[]).map(t => [t, dump(t, home)]))
+    const trees = Object.fromEntries((['presmium', 'presmium-tutor'] as Template[]).map(t => [t, dump(t, home)]))
     const disabled = (t: Template, id: string) => {
       const row = trees[t]!.get(id)
       expect(row, `${t}: row ${id} (the template names a row the pinned version lacks?)`).toBeDefined()
@@ -61,14 +61,10 @@ describe('the templates of the pinned DeepSeek Harness', () => {
     for (const t of Object.keys(trees) as Template[]) {
       for (const id of UPLOADS) expect(disabled(t, id), `${t}: ${id}`).toBe(true)
     }
-    for (const id of [...SHELL, ...EXECUTION, ...NETWORK]) {
-      expect(disabled('presmium-tutor', id), `presmium-tutor: ${id}`).toBe(true)
-      expect(disabled('presmium-shared', id), `presmium-shared: ${id}`).toBe(true)
-    }
+    for (const id of [...SHELL, ...EXECUTION, ...NETWORK]) expect(disabled('presmium-tutor', id), `presmium-tutor: ${id}`).toBe(true)
     // The tutor reads the deck through Presmium's MCP only (the student view): no file tool of its own (D-13).
     for (const id of TUTOR_FILES) expect(disabled('presmium-tutor', id), `presmium-tutor: ${id}`).toBe(true)
     expect(trees['presmium-tutor']!.get('sandbox-policy')!.text).toContain('mode: read-only')
-    expect(disabled('presmium-shared', 'tool-fs')).toBe(false)
     expect(disabled('presmium', 'tool-bash')).toBe(false)
     expect(trees.presmium!.get('sandbox-policy')!.text).toContain('mode: workspace-write')
     expect(trees.presmium!.get('approval')!.text).toContain('policy: ask')

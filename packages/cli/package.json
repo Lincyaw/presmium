@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "presmium build | dev | ir | check | serve | gateway | agent-host",
+  "description": "presmium build | dev | ir | check | serve",
   "dependencies": {
     "@presmium/compiler": "workspace:*",
     "@presmium/kernel": "workspace:*",

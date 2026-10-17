@@ -1,4 +1,4 @@
-// Operator plugins (D14, docs/architecture.md 4.2): a plugin the workspace configuration lists in
+// Operator plugins (docs/architecture.md 4.2): a plugin the workspace configuration lists in
 // `settings.presmium.workspace.plugins` and that declares `operator: true` is loaded for every deck,
 // whose `plugins` need not name it: its pass runs and its Node service, made with the operator's
 // settings, is there. A listed plugin that is no operator plugin, and an unlisted one, are not loaded.

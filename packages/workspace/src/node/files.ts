@@ -1,10 +1,7 @@
 /**
  * Writing in a workspace's document directories (WP-91, docs/architecture.md
- * 10.7): the one way the workspace changes what is inside them. In LOCAL
- * mode this process writes; in SHARED mode agent-host does, as the
- * sandbox's uid (`DocumentWriter` over its `/v1/files`), so serve writes
- * nothing where the sandbox may write, and a link the sandbox planted leads
- * nowhere the sandbox could not write itself.
+ * 10.7): the one way the workspace changes what is inside them, written by
+ * this process.
  *
  * A path is relative to the workspace root and lies in a document directory:
  * a directory the configuration's patterns name, there as a real directory
@@ -17,7 +14,7 @@
  * templates take regular files and links, never what a link points to.
  */
 import { randomBytes } from 'node:crypto'
-import { chmodSync, chownSync, closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
+import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
 import type { Stats } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -191,7 +188,7 @@ function writeAt(parent: string, target: string, content: Uint8Array, at: number
  * Writes changes of document directories (`DOCUMENT_FILES`). With
  * `outside`, a path in no document directory is written too, relative to the
  * root: serve's own files (a revert of an allowed write outside the
- * documents); never what agent-host is asked.
+ * documents).
  */
 export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChange[], outside = false): void {
   // Every path is checked before anything is written.
@@ -293,37 +290,7 @@ export function emptyDocument(config: WorkspaceConfig, dir: string): void {
   for (const name of readdirSync(path)) rmSync(join(path, name), { recursive: true, force: true })
 }
 
-/**
- * The files and directories under `dir` that this process owns, given the
- * group of `dir` and made readable and writable for it (directories setgid
- * too), links not followed: agent-host's agent writes some files for its
- * owner alone (DeepSeek Harness's atomic writes, made elsewhere and renamed
- * in), which serve, in the documents' group, must read to review and commit
- * them (the compose layout, docs/architecture.md 10.5).
- */
-export function shareTree(dir: string): void {
-  const uid = process.getuid?.()
-  const gid = stat(dir)?.gid
-  if (gid === undefined) return
-  const visit = (path: string, top: boolean) => {
-    const found = stat(path)
-    if (!found || found.isSymbolicLink()) return
-    const mine = found.uid === uid
-    try {
-      if (mine && !top && (found.isDirectory() || found.isFile())) {
-        if (found.gid !== gid) chownSync(path, -1, gid)
-        const wanted = found.isDirectory() ? 0o2070 : 0o060
-        if ((found.mode & wanted) !== wanted) chmodSync(path, (found.mode & 0o7777) | wanted)
-      }
-      if (found.isDirectory()) for (const name of readdirSync(path)) if (name !== '.git') visit(join(path, name), false)
-    } catch {
-      // Gone meanwhile, or not ours to change: the next time.
-    }
-  }
-  visit(dir, true)
-}
-
-/** The writer in this process (LOCAL mode, and agent-host's own). */
+/** The writer in this process. */
 export function localWriter(config: WorkspaceConfig): DocumentWriter {
   return {
     write: async changes => writeChanges(config, changes),
@@ -332,21 +299,4 @@ export function localWriter(config: WorkspaceConfig): DocumentWriter {
     relink: async (from, to) => relinkDocuments(config, from, to),
     empty: async dir => emptyDocument(config, dir),
   }
-}
-
-/** A change as JSON (`/v1/files`): the content in base64. */
-export type WireChange = { path: string, content: string, executable?: boolean, at?: number } | { path: string, link: string } | { path: string, remove: true }
-
-export function toWire(change: DocumentFileChange): WireChange {
-  if ('content' in change) return { path: change.path, content: Buffer.from(change.content).toString('base64'), ...change.executable ? { executable: true } : {}, ...change.at !== undefined ? { at: change.at } : {} }
-  return change
-}
-
-export function fromWire(value: unknown): DocumentFileChange {
-  const change = value as Record<string, unknown> | null
-  if (!change || typeof change !== 'object' || typeof change.path !== 'string') throw new FilesError('a change: { path, content | link | remove }')
-  if (change.remove === true) return { path: change.path, remove: true }
-  if (typeof change.link === 'string') return { path: change.path, link: change.link }
-  if (typeof change.content === 'string') return { path: change.path, content: Buffer.from(change.content, 'base64'), ...change.executable === true ? { executable: true } : {}, ...typeof change.at === 'number' ? { at: change.at } : {} }
-  throw new FilesError(`a change of ${change.path} without content, link or remove`)
 }

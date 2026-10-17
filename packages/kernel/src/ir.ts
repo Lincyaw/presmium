@@ -15,7 +15,6 @@ import type {
   RunResult,
   ServiceToken,
   SourceReader,
-  TrustMode,
 } from './contracts.ts'
 
 export const IR_VERSION = 1
@@ -339,12 +338,6 @@ export interface PassContext {
   watch(...files: string[]): void
   /** Node services (docs/architecture.md 4.6); the compiler always gives it, optional for compatibility (a plugin writes `ctx.service?.(SPEECH)`). */
   service?<T>(token: ServiceToken<T>): T | undefined
-  /**
-   * The trust mode of the process that compiles (as `NodeServiceContext.trust`):
-   * in SHARED mode a pass fetches no address a document names (serve and
-   * agent-host reach internal services only, 10.5). Undefined means LOCAL.
-   */
-  trust?: TrustMode
 }
 
 export interface IRPass {

@@ -156,8 +156,6 @@ export interface WorkspaceOptions {
   served?: boolean
   /** Directories the dev server may serve files of (Vite's `server.fs.allow`). */
   allow?: string[]
-  /** Answer any Host: only the SHARED sites in agent-host, whose Host is the public name (serve checks it in front). */
-  anyHost?: boolean
   /**
    * The chapters before the document's first page and after its last one: in
    * the documents before and after it in the site (P-122), their links
@@ -257,7 +255,7 @@ site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.
   // A document of a workspace site: its directory and endpoints; in `presmium serve` its server is in front.
   const inWorkspace = workspace ? `
 Object.assign(site.themeConfig.presmium, ${JSON.stringify({ document: workspace.document, home: workspace.home, ir: workspace.endpoints.ir, ...workspace.served ? { server: true } : {} })})
-${workspace.served ? `site.vite.server = { ${workspace.anyHost ? 'allowedHosts: true, ' : ''}fs: { allow: ${JSON.stringify(workspace.allow ?? [])} } }
+${workspace.served ? `site.vite.server = { fs: { allow: ${JSON.stringify(workspace.allow ?? [])} } }
 ` : ''}` : ''
   return `${GENERATED}
 import { readFileSync } from 'node:fs'

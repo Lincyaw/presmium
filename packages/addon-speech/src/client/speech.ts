@@ -1,9 +1,8 @@
 /**
- * The browser's `SPEECH` (docs/architecture.md 4.8): the speech gateway's
- * routes of the server that serves the page (`/__presmium/presmium.speech/v1/…`;
- * in SHARED mode serve passes them on to the gateway). The page never holds
- * a credential and never calls an engine itself. A static page has no
- * gateway: every call rejects, saying so.
+ * The browser's `SPEECH` (docs/architecture.md 4.8): the speech protocol's
+ * routes of the server that serves the page (`/__presmium/presmium.speech/v1/…`).
+ * The page never holds a credential and never calls an engine itself. A
+ * static page has no server: every call rejects, saying so.
  */
 import { useServer } from '@presmium/host'
 import type { SpeechService, Synthesis } from '@presmium/kernel'
@@ -22,10 +21,10 @@ export function browserSpeech(config: Record<string, unknown>): SpeechService {
   const defaults = deckSpeechConfig(config).config
   const server = useServer()
   const call = async <T>(path: string, init?: RequestInit): Promise<T> => {
-    if (!server.available) throw new Error('speech needs presmium dev or presmium serve: a static page has no speech gateway')
+    if (!server.available) throw new Error('speech needs presmium dev or presmium serve: a static page has no speech service')
     const response = await server.fetch(SPEECH_ID, `${PROTOCOL_PATH}/${path}`, init)
     const body = await response.json().catch(() => undefined) as (T & { error?: string }) | undefined
-    if (!response.ok) throw new Error(body?.error ?? `the speech gateway answered ${response.status}`)
+    if (!response.ok) throw new Error(body?.error ?? `the speech service answered ${response.status}`)
     return body as T
   }
 

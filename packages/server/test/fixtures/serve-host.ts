@@ -1,26 +1,24 @@
 // A `serve` mode host for the tests of the server (packages/server/test, e2e/server.spec.ts): it
 // starts the real server on a workspace whose documents it compiles with the real compiler, as the
 // workspace (WP-79) does, and reads them for MCP (the documents and their compiled IR; no checks,
-// builds or runs). Configured by the environment: SERVE_WORKSPACE (the workspace root), SERVE_ROLES
-// (JSON: email -> roles), SERVE_FORWARD (where the site's paths go), SERVE_HOST and SERVE_PORT. It
+// builds or runs). Configured by the environment: SERVE_WORKSPACE (the workspace root), SERVE_FORWARD
+// (where the site's paths go), SERVE_HOST and SERVE_PORT. It
 // prints `{"url": ...}` once it listens, or `{"error": ...}` and exits 1. A line `unmount <dir>` on its
 // stdin takes that document's contributions down (`PresmiumServer.unmount`), then it prints `{"unmounted": <dir>}`.
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { Compiler } from '@presmium/compiler'
-import type { MemberRole } from '@presmium/kernel'
 import { servedDocument, startServer } from '@presmium/server'
 import type { ServerHost } from '@presmium/server'
 
 const root = process.env.SERVE_WORKSPACE ?? process.cwd()
-const roles = JSON.parse(process.env.SERVE_ROLES ?? '{}') as Record<string, MemberRole[]>
 const compilers = new Map<string, Compiler>()
 
 /** The compilation of a document directory, one compiler each. */
 function compile(dir: string) {
   let compiler = compilers.get(dir)
-  if (!compiler) compilers.set(dir, compiler = new Compiler(join(root, dir), { trust: 'shared' }))
+  if (!compiler) compilers.set(dir, compiler = new Compiler(join(root, dir)))
   return compiler.compile()
 }
 
@@ -44,8 +42,6 @@ try {
     mode: 'serve',
     host: process.env.SERVE_HOST ?? '127.0.0.1',
     port: Number(process.env.SERVE_PORT ?? 0),
-    trustProxyFrom: process.env.SERVE_TRUST_FROM ? [process.env.SERVE_TRUST_FROM] : undefined,
-    roles: identity => roles[identity.email ?? ''] ?? [],
     forward: () => process.env.SERVE_FORWARD || undefined,
     approvalTimeoutMs: Number(process.env.SERVE_APPROVAL_TIMEOUT ?? 50_000),
     serverHost,
@@ -54,7 +50,7 @@ try {
       return servedDocument(await compile(dir))
     },
   })
-  process.stdout.write(`${JSON.stringify({ url: server.url, trust: server.trust })}\n`)
+  process.stdout.write(`${JSON.stringify({ url: server.url })}\n`)
   createInterface({ input: process.stdin }).on('line', (line) => {
     const dir = /^unmount (.*)$/.exec(line)?.[1]
     if (dir !== undefined) void server.unmount(dir).then(() => process.stdout.write(`${JSON.stringify({ unmounted: dir })}\n`))

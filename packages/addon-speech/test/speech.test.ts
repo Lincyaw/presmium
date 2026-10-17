@@ -1,4 +1,4 @@
-// Speech with the deterministic fake engine (WP-82, P-132, P-133, N-08), through the speech gateway's routes
+// Speech with the deterministic fake engine (WP-82, P-132, P-133, N-08), through the speech routes
 // of `presmium dev` (`/__presmium/presmium.speech/v1/…`, the path the browser's SPEECH uses), which call the
 // engines of dev's environment and keep the deck's synthesis cache, and through the Node SPEECH service (the
 // test plugin's routes, fixtures/speech-probe). The fake engine is a process of its own, defined like any
@@ -208,7 +208,7 @@ describe('presmium dev with the fake engine defined', () => {
   }, 60_000)
 })
 
-describe('cloned voices in LOCAL mode', () => {
+describe('cloned voices', () => {
   let dir: string
   let operator: string
   const record = { speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'a'.repeat(64) }

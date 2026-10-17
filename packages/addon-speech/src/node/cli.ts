@@ -1,9 +1,7 @@
 /**
  * `presmium-speech` (docs/architecture.md section 7): `fake`, the
  * deterministic fake engine; `consent`, the operator's registration of a
- * cloned voice's consent record in the operator directory (in SHARED mode
- * run in the gateway container with its `--operator-dir`). The standalone
- * speech gateway of earlier designs is `presmium gateway` now.
+ * cloned voice's consent record in the operator directory.
  */
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'

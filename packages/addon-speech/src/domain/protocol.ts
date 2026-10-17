@@ -1,7 +1,6 @@
 /**
- * The speech gateway's protocol (docs/design-v0.7.md 7.4): the OpenAI audio
- * API shape under `v1/`, which the browser, the Node service in SHARED mode
- * and the engines of that shape speak:
+ * The speech protocol (docs/design-v0.7.md 7.4): the OpenAI audio API shape
+ * under `v1/`, which the browser and the engines of that shape speak:
  *
  * - `GET engines`: the defined engines with their providers, and the
  *   unavailable ones with the reason;

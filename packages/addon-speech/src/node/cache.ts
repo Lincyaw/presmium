@@ -4,8 +4,7 @@
  * re-encoded) with `<key>.json` (words, duration, format, engine, the same
  * AI-generated label), and `.presmium/speech.lock.json`, the keys the deck
  * used with the sha256 of their audio. In `presmium serve` the workspace's
- * `DOCUMENT_FILES` writes it (in SHARED mode agent-host, as the sandbox, so
- * no link the sandbox planted leads serve's writes elsewhere, WP-91).
+ * `DOCUMENT_FILES` writes it (WP-91).
  */
 import { createHash, randomBytes } from 'node:crypto'
 import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'

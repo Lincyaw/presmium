@@ -19,7 +19,6 @@ import { inside, publishesDirectory, unpublishedDirectory } from './published.ts
 import { viewFor } from './renderers.ts'
 import { plainText, slugify, splitSections } from './sections.ts'
 import { Parser, readFrontmatter } from './source.ts'
-import type { ReadScope } from './workspace.ts'
 
 /** What the publication checks read of a compilation. */
 export interface PublishInput {
@@ -29,8 +28,6 @@ export interface PublishInput {
   workspaceRoot: string
   /** The renderers whose views are checked. */
   renderers: string[]
-  /** The files the checks may read (SHARED `presmium serve`): another document's source, a link's target, lines for the findings. */
-  scope?: ReadScope
 }
 
 /** URLs with a scheme or protocol-relative: no local file. */
@@ -74,7 +71,7 @@ export async function checkLinks(input: PublishInput, options: { externalLinks?:
       }
     }
   }
-  const line = lineFinder(input.scope)
+  const line = lineFinder()
   const findings = [...problems.values()].map(({ source, url, message, renderers }): Finding => ({
     checkId: 'presmium.links',
     severity: 'error',
@@ -113,8 +110,7 @@ async function linkProblem(url: string, source: SourcePos, input: PublishInput, 
   if (!path) return fragment && !anchors.has(fragment) ? `#${fragment} is no section, block, label or heading of the deck` : undefined
   const file = path.startsWith('/') ? join(input.deckDir, 'public', path) : resolve(dirname(source.file), path)
   if (!inside(file, input.workspaceRoot)) return `${path} lies outside the repository: it cannot be published`
-  // In the read scope a target behind a link out of the workspace (or a FIFO, a device) is as good as missing.
-  if (!existsSync(file) || (input.scope && !statSync(file).isDirectory() && !input.scope.allows(file))) return `${path}: no such file`
+  if (!existsSync(file)) return `${path}: no such file`
   const hidden = publishesDirectory(file, input.deckDir) ? unpublishedDirectory(file, input.deckDir) : undefined
   if (hidden) return `${path}: ${hidden}`
   if (!fragment) return undefined
@@ -122,8 +118,7 @@ async function linkProblem(url: string, source: SourcePos, input: PublishInput, 
   const entry = statSync(file).isDirectory() ? join(file, 'lecture.md') : file
   if (extname(entry) !== '.md' || !existsSync(entry)) return undefined
   if (entry === input.entry) return anchors.has(fragment) ? undefined : `${path}#${fragment}: #${fragment} is no section, block, label or heading of the deck`
-  if (input.scope && !input.scope.allows(entry)) return `${path}: no such file`
-  if (!documents.has(entry)) documents.set(entry, sourceAnchors(entry, input.scope))
+  if (!documents.has(entry)) documents.set(entry, sourceAnchors(entry))
   return (await documents.get(entry)!).has(fragment) ? undefined : `${path}#${fragment}: no section, block, label or heading of ${relative(input.workspaceRoot, entry).split(sep).join('/')} has the id ${fragment}`
 }
 
@@ -158,14 +153,12 @@ function mdastAnchors(node: MdastNode, anchors: Set<string>): void {
  * splits it (its includes expanded): section ids, labels and headings. Its
  * plugins are not loaded: their directives give no places here.
  */
-async function sourceAnchors(entry: string, scope?: ReadScope): Promise<Set<string>> {
+async function sourceAnchors(entry: string): Promise<Set<string>> {
   const anchors = new Set<string>()
   try {
     const parser = new Parser(new Map([...BUILTIN_DIRECTIVES]))
-    if (scope) parser.scope = scope
     const { children } = await parser.expand(entry)
-    const text = scope ? scope.readSync(entry) : readFileSync(entry, 'utf8')
-    if (text === undefined) return anchors
+    const text = readFileSync(entry, 'utf8')
     const headmatter = readFrontmatter(text)
     const depth = Number.isInteger(headmatter.sectionDepth) && (headmatter.sectionDepth as number) >= 1 ? headmatter.sectionDepth as number : 2
     const title = typeof headmatter.title === 'string' ? headmatter.title : basename(dirname(entry))
@@ -218,13 +211,13 @@ function needles(url: string): string[] {
 /** Finds the line of a block's source that holds one of `needles` (its first line when none does); reads each file once. */
 export type LineFinder = (source: SourcePos, needles: string[]) => number
 
-export function lineFinder(scope?: ReadScope): LineFinder {
+export function lineFinder(): LineFinder {
   const files = new Map<string, string[]>()
   return (source, needles) => {
     let lines = files.get(source.file)
     if (!lines) {
       try {
-        lines = (scope ? scope.readSync(source.file) ?? '' : readFileSync(source.file, 'utf8')).split(/\r?\n/)
+        lines = readFileSync(source.file, 'utf8').split(/\r?\n/)
       } catch {
         lines = []
       }

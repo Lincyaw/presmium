@@ -99,7 +99,7 @@ export async function transcribeLecture(files: DeckFiles, deckDir: string, id: s
   if (!stored) throw new Error(`no lecture ${id}`)
   const engine = await transcriptionEngine(speech, doc)
   if (!engine) throw new Error('no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
-  // Each file read as it is opened, never through a link (the sandbox writes the directory, SHARED).
+  // Each file read as it is opened, never through a link.
   const audio = (segment: { src: string }) => {
     const file = mediaFile(deckDir, id, segment.src)
     const bytes = file && readInDeck(deckDir, file)

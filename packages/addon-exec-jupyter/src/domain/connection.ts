@@ -1,13 +1,11 @@
-import type { EnvironmentSpec, GatewayAccess } from '@presmium/kernel'
-import { authOf, baseUrl, EXEC_JUPYTER_ID, operatorVariables, originOf, proxyPath } from './config.ts'
+import type { EnvironmentSpec } from '@presmium/kernel'
+import { authOf, baseUrl, operatorVariables, originOf } from './config.ts'
 
 /** Where to reach a Jupyter Server, and the headers every request and WebSocket handshake carries (the credentials). */
 export interface Connection {
   /** The server's base URL, ending with `/`. */
   url: string
   headers: Record<string, string>
-  /** SHARED mode: the gateway whose proxy `url` is; requests go through `gatewayFetch`, which follows no redirect. */
-  gateway?: GatewayAccess
 }
 
 /**
@@ -25,8 +23,6 @@ export type OperatorConnection =
 export interface OperatorSide {
   /** The process's environment variables (`EnvironmentContext.secret`, `ServerContext.secret`). */
   secret(name: string): string | undefined
-  /** SHARED mode: the gateway, which holds the operator's pair; its proxy for the environment is the connection. */
-  gateway?: GatewayAccess
 }
 
 /**
@@ -36,10 +32,7 @@ export interface OperatorSide {
  * `PRESMIUM_ENV_<NAME>_URL` and `PRESMIUM_ENV_<NAME>_TOKEN`; the token goes
  * to that address only. Without the address nothing connects and no token
  * is sent; a deck `url` of another origin is a mismatch, and nothing
- * connects either; there is no generic fallback variable. In SHARED mode the
- * pair is in the gateway only, and the connection is the gateway's proxy for
- * the environment, with the gateway token (the deck's `url` cannot lead the
- * gateway elsewhere). `hub` is reserved.
+ * connects either; there is no generic fallback variable. `hub` is reserved.
  */
 export function operatorConnection(name: string, spec: EnvironmentSpec, side: OperatorSide): OperatorConnection {
   const auth = authOf(spec)
@@ -48,9 +41,6 @@ export function operatorConnection(name: string, spec: EnvironmentSpec, side: Op
     const url = typeof spec.url === 'string' ? spec.url : undefined
     if (!originOf(url)) return { unavailable: 'auth: none connects to the deck\'s url, which is missing or not an http(s) address' }
     return { connection: { url: baseUrl(url!), headers: {} } }
-  }
-  if (side.gateway) {
-    return { connection: { url: `${side.gateway.url.replace(/\/+$/, '')}/${EXEC_JUPYTER_ID}/${proxyPath(name)}/`, headers: { Authorization: `Bearer ${side.gateway.token}` }, gateway: side.gateway } }
   }
   const variables = operatorVariables(name)
   const url = side.secret(variables.url)

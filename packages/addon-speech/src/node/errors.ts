@@ -1,6 +1,6 @@
 import { problem } from '@presmium/kernel'
 
-/** An error of the speech service with the HTTP status the gateway answers it with. */
+/** An error of the speech service with the HTTP status the speech routes answer it with. */
 export class SpeechError extends Error {
   readonly status: number
 
@@ -19,11 +19,10 @@ export function failure(error: unknown): Response {
 }
 
 /**
- * The error of a gateway's or engine's answer: its `{ error }` (a string, or
- * the OpenAI shape's `{ message }`), else its text. An engine's failure is
- * 502 whatever its status; the gateway's status is passed on (`own`).
+ * The error of an engine's answer: its `{ error }` (a string, or the OpenAI
+ * shape's `{ message }`), else its text; 502 whatever its status.
  */
-export async function answerError(response: Response, what: string, own = false): Promise<SpeechError> {
+export async function answerError(response: Response, what: string): Promise<SpeechError> {
   const text = await response.text().catch(() => '')
   let message = text.slice(0, 500)
   try {
@@ -33,6 +32,5 @@ export async function answerError(response: Response, what: string, own = false)
   } catch {
     // Not JSON: the text.
   }
-  if (own) return new SpeechError(response.status, message || `${what} answered ${response.status}`)
   return new SpeechError(502, `${what} answered ${response.status}${message ? `: ${message}` : ''}`)
 }

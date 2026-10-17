@@ -2,12 +2,10 @@
  * The server's proxy of `auth: proxy` environments (P-105): under
  * `/__presmium/presmium.execJupyter/env/<name>/` the browser reaches the
  * environment's Jupyter Server, HTTP and WebSocket, and the server adds the
- * credentials, which the page never sees. LOCAL mode: the target is the
- * operator's `PRESMIUM_ENV_<NAME>_URL`, with `PRESMIUM_ENV_<NAME>_TOKEN`;
- * a deck whose `url` names another origin gets no proxy. SHARED mode: the
- * target is the gateway's proxy of the environment, with serve's gateway
- * token (serve has no third-party credential). Learners use it: the role
- * is `reader`.
+ * credentials, which the page never sees: the target is the operator's
+ * `PRESMIUM_ENV_<NAME>_URL`, with `PRESMIUM_ENV_<NAME>_TOKEN`; a deck whose
+ * `url` names another origin gets no proxy. Learners use it: the role is
+ * `reader`.
  *
  * The proxies follow the environments the compiler last declared for the
  * deck (./environments.ts), so a recompilation that changes them changes
@@ -24,12 +22,11 @@ import { declaredEnvironments } from './environments.ts'
  * The request headers the proxy sets: the credentials, and the target's own
  * `Host` and `Origin`, as a client of the server (a hosted server behind a
  * name-based proxy needs its host; the Jupyter Server checks a WebSocket's
- * origin against it). Lower case, so they replace the browser's. The
- * gateway takes no `Origin` at all: towards it only `Host` is set.
+ * origin against it). Lower case, so they replace the browser's.
  */
-export function proxyHeaders(connection: Connection, gateway = false): Record<string, string> {
+export function proxyHeaders(connection: Connection): Record<string, string> {
   const target = new URL(connection.url)
-  const headers: Record<string, string> = gateway ? { host: target.host } : { host: target.host, origin: target.origin }
+  const headers: Record<string, string> = { host: target.host, origin: target.origin }
   for (const [name, value] of Object.entries(connection.headers)) headers[name.toLowerCase()] = value
   return headers
 }
@@ -51,9 +48,9 @@ export function jupyterServer(ctx: ServerContext): ServerContribution {
     return found
   }
   const mount = (name: string, spec: EnvironmentSpec): Mount => {
-    const resolved = operatorConnection(name, spec, { secret: name => ctx.secret(name), gateway: ctx.gateway })
+    const resolved = operatorConnection(name, spec, { secret: name => ctx.secret(name) })
     if ('connection' in resolved) {
-      return { proxy: { path: proxyPath(name), target: resolved.connection.url, headers: proxyHeaders(resolved.connection, Boolean(ctx.gateway)), role: 'reader' } }
+      return { proxy: { path: proxyPath(name), target: resolved.connection.url, headers: proxyHeaders(resolved.connection), role: 'reader' } }
     }
     const reason = `environment "${name}": ${'unavailable' in resolved ? resolved.unavailable : resolved.mismatch}`
     if (!reported.has(reason)) {

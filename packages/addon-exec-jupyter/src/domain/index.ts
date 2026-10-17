@@ -5,7 +5,6 @@ export {
   DEFAULT_TERMINAL_ROWS,
   DEFAULT_TIMEOUT_MS,
   envKey,
-  environmentOfVariable,
   EXEC_JUPYTER_ID,
   JUPYTER_KIND,
   jupyterEnvironments,

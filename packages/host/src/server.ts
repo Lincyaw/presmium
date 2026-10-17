@@ -106,21 +106,17 @@ export interface PendingApproval {
   request: ApprovalRequest
 }
 
-/** What the toolbar shows: the approvals to answer here, and those to answer in the owner console (SHARED). */
+/** What the toolbar shows: the approvals to answer here. */
 export interface ApprovalState {
   pending: Ref<PendingApproval[]>
-  /** Approvals waiting in the owner console, with its address; this window cannot answer them. */
-  elsewhere: Ref<{ count: number, console?: string } | undefined>
   answer(id: string, allow: boolean): Promise<void>
 }
 
 const pending = shallowRef<PendingApproval[]>([])
-const elsewhere = shallowRef<{ count: number, console?: string }>()
 let answering: (id: string, allow: boolean) => Promise<void> = async () => {}
 
 export const approvals: ApprovalState = {
   pending,
-  elsewhere,
   answer: (id, allow) => answering(id, allow),
 }
 
@@ -171,9 +167,6 @@ export function connectControl(client: ServerClient, host: {
   on<{ id: string }>('settled', (settled) => {
     pending.value = pending.value.filter(p => p.id !== settled.id)
   })
-  on<{ count: number, console?: string }>('pending', (summary) => {
-    elsewhere.value = summary.count > 0 ? summary : undefined
-  })
   on<NavigationPosition>('go', position => navigation.go(position))
   on<{ action: 'start' | 'end', name?: string }>('session', ({ action, name }) => {
     const session = host.service(SESSION)
@@ -218,6 +211,5 @@ export function connectControl(client: ServerClient, host: {
     clearInterval(timer)
     source.close()
     pending.value = []
-    elsewhere.value = undefined
   }
 }

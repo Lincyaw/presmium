@@ -14,8 +14,6 @@ import { tabDirectives } from 'myst-ext-tabs'
 import { mystParse } from 'myst-parser'
 import { includeDirectiveTransform } from 'myst-transforms'
 import { parse as parseYaml } from 'yaml'
-import { refusedFile } from './workspace.ts'
-import type { ReadScope } from './workspace.ts'
 
 /** Child that a registered directive leaves in place of its body. */
 export const BODY = 'presmiumDirectiveBody'
@@ -81,8 +79,6 @@ export class Parser {
   readonly #specs: object[]
   readonly #roles: object[]
   readonly #cache = new Map<string, ParsedFile>()
-  /** The files it may read (SHARED `presmium serve`); all when absent. */
-  scope?: ReadScope
 
   /**
    * `directives` maps each Presmium directive name to whether its body is
@@ -119,8 +115,7 @@ export class Parser {
 
   /** Reads and parses a file; unchanged files come from the cache. Undefined when unreadable. */
   async read(file: string): Promise<ParsedFile | undefined> {
-    // In the read scope, the file read is the one checked (WP-91b).
-    const read = this.scope ? await this.scope.read(file) : await readFile(file, 'utf8').catch(() => undefined)
+    const read = await readFile(file, 'utf8').catch(() => undefined)
     if (read === undefined) return undefined
     const text = withoutBom(read)
     const cached = this.#cache.get(file)
@@ -203,15 +198,7 @@ export class Parser {
     if (!arg) return fail('{include} needs a file argument')
     const target = resolve(dirname(file), arg)
     if (stack.includes(target)) return fail(`{include} ${arg} includes itself`)
-    if (this.scope && !this.scope.allows(target)) {
-      out.findings.push({ checkId: 'presmium.files', severity: 'error', message: refusedFile(target), source })
-      return []
-    }
     const parsed = await this.read(target)
-    if (!parsed && this.scope?.refused.has(target)) {
-      out.findings.push({ checkId: 'presmium.files', severity: 'error', message: refusedFile(target), source })
-      return []
-    }
     if (!parsed) {
       // Watched all the same: the author may be about to create it.
       if (!out.missing.includes(target)) out.missing.push(target)
@@ -229,22 +216,20 @@ export class Parser {
    * `{literalinclude}` (and an `{include}` with `:literal:` or `:lang:`): the
    * file's text as code, cut by its options (`:lines:`, `:start-after:`, ...)
    * as MyST's include transform does. The file is read like an `{include}`d
-   * one, under the read scope: a symbolic link out of the workspace is refused.
+   * one.
    */
   async #literal(node: MdastNode, file: string, out: Expansion): Promise<MdastNode[]> {
     const source = { file, line: lineOf(node)?.line ?? 1 }
     const name = `{${String(node.name)}}`
-    const fail = (message: string, checkId = 'presmium.parse') => {
-      out.findings.push({ checkId, severity: 'error', message, source })
+    const fail = (message: string) => {
+      out.findings.push({ checkId: 'presmium.parse', severity: 'error', message, source })
       return []
     }
     const include = structuredClone(node.children!.find(child => child.type === 'include')!)
     const arg = typeof include.file === 'string' ? include.file.trim() : ''
     if (!arg) return fail(`${name} needs a file argument`)
     const target = resolve(dirname(file), arg)
-    if (this.scope && !this.scope.allows(target)) return fail(refusedFile(target), 'presmium.files')
-    const text = this.scope ? await this.scope.read(target) : await readFile(target, 'utf8').catch(() => undefined)
-    if (text === undefined && this.scope?.refused.has(target)) return fail(refusedFile(target), 'presmium.files')
+    const text = await readFile(target, 'utf8').catch(() => undefined)
     if (text === undefined) {
       if (!out.missing.includes(target)) out.missing.push(target)
       return fail(`${name} ${arg}: file not found`)

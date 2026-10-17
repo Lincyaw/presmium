@@ -47,7 +47,7 @@ export interface MadeClip extends Clip {
   provider?: string
 }
 
-/** A JSON file of the synthesis cache (which the sandbox may write, SHARED: read as `readRegular` reads); undefined when it is no such file. */
+/** A JSON file of the synthesis cache (read as `readRegular` reads); undefined when it is no such file. */
 function cacheJson(file: string): Record<string, unknown> | undefined {
   try {
     const value: unknown = JSON.parse(readRegular(file)?.toString('utf8') ?? '')

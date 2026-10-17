@@ -3,8 +3,7 @@
  * section 14, "按需编译"): its compiler, compiled when it is first asked for,
  * then again whenever what its IR depends on changes (the source, the files
  * directives and passes read). Compilations run one at a time; a change
- * during one makes one more. Who asked for a compilation travels with it, so
- * the host's `admit` knows whether it may ask the owner to run new code.
+ * during one makes one more.
  */
 import { existsSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
@@ -13,21 +12,13 @@ import type { Compilation, Compiler } from '@presmium/compiler'
 import { errorMessage } from '@presmium/kernel'
 import type { Logger } from '@presmium/kernel'
 
-/** Who asked for a compilation: an editor or owner (or a change of the source) may make it ask to run new code; a reader may not. */
-export interface Trigger {
-  mayAsk: boolean
-}
-
 export class DocumentSession {
   readonly dir: string
   readonly compiler: Compiler
-  /** The trigger of the compilation running now. */
-  trigger: Trigger = { mayAsk: false }
   #latest?: Compilation
   #first?: Promise<Compilation>
   #running: Promise<unknown> = Promise.resolve()
   #queued?: Promise<Compilation>
-  #queuedTrigger?: Trigger
   readonly #listeners = new Set<(compilation: Compilation) => void | Promise<void>>()
   readonly #watchers = new Map<string, FSWatcher>()
   #relevant = new Map<string, Set<string>>()
@@ -42,10 +33,10 @@ export class DocumentSession {
   }
 
   /** The compilation now: the first one is made on the first call. */
-  ready(trigger: Trigger = { mayAsk: false }): Promise<Compilation> {
+  ready(): Promise<Compilation> {
     if (this.#latest) return Promise.resolve(this.#latest)
     if (!this.#first) {
-      const first = this.recompile(trigger)
+      const first = this.recompile()
       // A first compilation that failed (an unreadable entry) is tried again on the next call.
       first.catch(() => {
         if (this.#first === first) this.#first = undefined
@@ -65,14 +56,11 @@ export class DocumentSession {
     return () => this.#listeners.delete(listener)
   }
 
-  /** Compiles again after the compilation running now; at most one waits, and the triggers of those asked for meanwhile join (any may ask). */
-  recompile(trigger: Trigger): Promise<Compilation> {
-    this.#queuedTrigger = { mayAsk: Boolean(this.#queuedTrigger?.mayAsk || trigger.mayAsk) }
+  /** Compiles again after the compilation running now; at most one waits. */
+  recompile(): Promise<Compilation> {
     if (this.#queued) return this.#queued
     const next = this.#running.then(async () => {
       this.#queued = undefined
-      this.trigger = this.#queuedTrigger ?? { mayAsk: false }
-      this.#queuedTrigger = undefined
       const started = Date.now()
       const compilation = await this.compiler.compile()
       this.#latest = compilation
@@ -99,7 +87,7 @@ export class DocumentSession {
     this.#listeners.clear()
   }
 
-  /** Watches the directories of the files the compilation read; a change compiles again (a change of the source may ask to run new code). */
+  /** Watches the directories of the files the compilation read; a change compiles again. */
   #watch(compilation: Compilation, started: number): void {
     if (this.#closed) return
     const files = new Set([...compilation.files, ...compilation.dependencies.files])
@@ -140,6 +128,6 @@ export class DocumentSession {
   #changed(): void {
     if (this.#closed) return
     clearTimeout(this.#timer)
-    this.#timer = setTimeout(() => void this.recompile({ mayAsk: true }).catch(() => undefined), 50)
+    this.#timer = setTimeout(() => void this.recompile().catch(() => undefined), 50)
   }
 }

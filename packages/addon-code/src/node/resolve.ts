@@ -12,11 +12,9 @@
  * permalinks is `:repo:`, else `presmium.code.repo` of the block's section
  * (its `{config}` over the headmatter), else the `origin` remote.
  *
- * The working tree is read with the compiler's reader (`PassContext.src`),
- * which keeps to its read scope (SHARED `presmium serve`: the workspace's own
- * files, not `.git/`, no link out of it, docs/architecture.md 10.2); commits
- * with this addon's, which also reads submodules (P-12). An anchor never names
- * a file in `.git`.
+ * The working tree is read with the compiler's reader (`PassContext.src`);
+ * commits with this addon's, which also reads submodules (P-12). An anchor
+ * never names a file in `.git`.
  */
 import { existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'

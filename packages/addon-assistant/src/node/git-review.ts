@@ -24,21 +24,15 @@
  *
  * Where the workspace writes the document files (`DOCUMENT_FILES`, WP-91),
  * restoring goes through it: the review reads the snapshot's files from git
- * and the workspace writes them (in SHARED mode agent-host, as the sandbox,
- * so serve writes nothing in the document directory and a link planted there
- * leads nowhere the sandbox could not write itself). In SHARED mode git
- * itself runs isolated from what the sandbox may write: no system or global
- * configuration, no attributes of the work tree (no filter or driver runs on
- * the documents' files), the git directory found from the workspace root
- * (a `.git` planted in the document directory is never used), and a git too
- * old for it is refused. How git runs is the kernel's (`gitConfigArgs`,
- * `gitEnvironment`, F-06).
+ * and the workspace writes them. The git directory is found from the
+ * workspace root (a `.git` planted in the document directory is never used).
+ * How git runs is the kernel's (`gitConfigArgs`, `gitEnvironment`, F-06).
  */
-import { execFile, execFileSync } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { mkdtempSync, readdirSync, realpathSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import { gitConfigArgs, gitEnvironment, isolatedGitProblem } from '@presmium/kernel'
+import { gitConfigArgs, gitEnvironment } from '@presmium/kernel'
 import type { ChangeReview, DocumentFileChange, DocumentFiles, ReviewChange, ReviewChangeKind, ReviewStep } from '@presmium/kernel'
 import { guardGitDir } from './git-guard.ts'
 import type { GitGuard } from './git-guard.ts'
@@ -60,26 +54,13 @@ const DIFF = ['diff', '--no-renames', '--no-ext-diff', '--no-textconv', '--no-co
 /** The document directories with a review open in this process. */
 const opened = new Set<string>()
 
-/** Why the git of this machine cannot run an isolated (SHARED) review, asked once; undefined when it can. */
-let isolatedGit: string | undefined | null = null
-function isolatedProblem(): string | undefined {
-  if (isolatedGit === null) {
-    try {
-      isolatedGit = isolatedGitProblem(execFileSync('git', ['version'], { encoding: 'utf8', env: gitEnvironment(process.env, true) }))
-    } catch (error) {
-      isolatedGit = `git did not run: ${error instanceof Error ? error.message : String(error)}`
-    }
-  }
-  return isolatedGit
-}
-
-function git(cwd: string, args: string[], env: Record<string, string> = {}, isolated = false): Promise<Buffer> {
+function git(cwd: string, args: string[], env: Record<string, string> = {}): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    execFile('git', [...gitConfigArgs(isolated), ...args], {
+    execFile('git', [...gitConfigArgs(), ...args], {
       cwd,
       encoding: 'buffer',
       maxBuffer: 256 << 20,
-      env: { ...gitEnvironment(process.env, isolated), ...env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1' },
+      env: { ...gitEnvironment(process.env), ...env, GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1' },
     }, (error, stdout, stderr) => {
       if (error) reject(new Error(`git ${args[0]}: ${stderr.toString('utf8').trim() || error.message}`))
       else resolve(stdout)
@@ -87,7 +68,7 @@ function git(cwd: string, args: string[], env: Record<string, string> = {}, isol
   })
 }
 
-const text = async (cwd: string, args: string[], env?: Record<string, string>, isolated?: boolean) => (await git(cwd, args, env, isolated)).toString('utf8')
+const text = async (cwd: string, args: string[], env?: Record<string, string>) => (await git(cwd, args, env)).toString('utf8')
 
 /** The git directories of a work tree, as the review found them. */
 export interface GitDirs {
@@ -98,11 +79,11 @@ export interface GitDirs {
 
 /**
  * The git directories of the workspace (real paths), found from its root, not
- * from the document directory: a `.git` the agent or the sandbox put in the
+ * from the document directory: a `.git` the agent put in the
  * document directory is no repository of the review's.
  */
-async function gitDirsOf(root: string, isolated: boolean): Promise<GitDirs> {
-  const [top = '', gitDir = '', commonDir = ''] = (await text(root, ['rev-parse', '--show-toplevel', '--absolute-git-dir', '--git-common-dir'], {}, isolated)).split('\n')
+async function gitDirsOf(root: string): Promise<GitDirs> {
+  const [top = '', gitDir = '', commonDir = ''] = (await text(root, ['rev-parse', '--show-toplevel', '--absolute-git-dir', '--git-common-dir'])).split('\n')
   return { top: realpathSync(top), gitDir: realpathSync(gitDir), commonDir: realpathSync(resolve(root, commonDir)) }
 }
 
@@ -114,26 +95,23 @@ class Trees {
   readonly #pathspec: string
   /** The git directories, fixed for every command. */
   readonly #env: Record<string, string>
-  /** SHARED mode: git isolated from what the sandbox may write. */
-  readonly #isolated: boolean
   /** Where restored files are written (the workspace's `DOCUMENT_FILES`); without it, git writes them here. */
   readonly #files?: DocumentFiles
   readonly top: string
   readonly deck: string
   readonly root: string
 
-  constructor(dirs: GitDirs, deck: string, root: string, options: { isolated?: boolean, files?: DocumentFiles } = {}) {
+  constructor(dirs: GitDirs, deck: string, root: string, options: { files?: DocumentFiles } = {}) {
     this.top = dirs.top
     this.deck = deck
     this.root = root
     this.#pathspec = relative(dirs.top, deck).split(sep).join('/') || '.'
     this.#env = { GIT_DIR: dirs.gitDir, GIT_COMMON_DIR: dirs.commonDir, GIT_WORK_TREE: dirs.top }
-    this.#isolated = options.isolated ?? false
     this.#files = options.files
   }
 
   #git(args: string[], index?: string): Promise<Buffer> {
-    return git(this.top, args, { ...this.#env, ...index ? { GIT_INDEX_FILE: index } : {} }, this.#isolated)
+    return git(this.top, args, { ...this.#env, ...index ? { GIT_INDEX_FILE: index } : {} })
   }
 
   async #text(args: string[], index?: string): Promise<string> {
@@ -256,8 +234,6 @@ export interface GitReviewOptions {
   onRestore?: (paths: string[]) => void
   /** Told what the review could not do but goes on without (its record not written). */
   warn?: (message: string) => void
-  /** SHARED mode: git isolated from what the sandbox may write (WP-91). */
-  isolated?: boolean
   /** The workspace's writer of document files (`DOCUMENT_FILES`): restores go through it. */
   files?: DocumentFiles
 }
@@ -318,9 +294,7 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
   const left = readRecord(deck)
   if (left && holderRuns(left)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way in another process (${left.pid})`)
   if (left) await recoverGitReview(options)
-  const problem = options.isolated ? isolatedProblem() : undefined
-  if (problem) throw new Error(problem)
-  const dirs = await gitDirsOf(root, options.isolated ?? false)
+  const dirs = await gitDirsOf(root)
   const { guard, restore: guarded } = guarding(dirs.gitDir, deck, root, options.onRestore)
   const trees = new Trees(dirs, deck, root, options)
 

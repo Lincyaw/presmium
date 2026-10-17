@@ -24,12 +24,11 @@ function images(node: MdastNode, found: MdastNode[] = []): MdastNode[] {
   return found
 }
 
-/** The local copy of `url` in `dir`, which holds `existing`: downloaded unless an earlier compilation did (or `shared`). */
-async function localCopy(url: string, dir: string, existing: readonly string[], shared: boolean): Promise<string> {
+/** The local copy of `url` in `dir`, which holds `existing`: downloaded unless an earlier compilation did. */
+async function localCopy(url: string, dir: string, existing: readonly string[]): Promise<string> {
   const name = createHash('sha256').update(url).digest('hex').slice(0, 16)
   const found = existing.find(file => file.startsWith(`${name}.`))
   if (found) return join(dir, found)
-  if (shared) throw new Error('a shared deployment fetches no address a document names')
   const before = failed.get(url)
   if (before !== undefined) throw new Error(before)
   try {
@@ -54,9 +53,7 @@ async function localCopy(url: string, dir: string, existing: readonly string[], 
  * Runs after the passes that create images. The images download at once,
  * each URL once; an image that cannot be downloaded stays remote, with a
  * warning, and is not tried again while the process runs. Downloads the deck
- * no longer uses are removed. In SHARED mode (WP-91) only the copies already
- * there are used: serve and agent-host fetch no address a document names,
- * and serve writes nothing in a document directory.
+ * no longer uses are removed.
  */
 export const remoteAssetsPass: IRPass = {
   name: 'remote-assets',
@@ -73,8 +70,7 @@ export const remoteAssetsPass: IRPass = {
     const existing = existsSync(dir) ? await readdir(dir) : []
     const urls = [...new Set(remote.map(({ node }) => node.url as string))]
     const copies = new Map(urls.map((url, i) => [url, i]))
-    const shared = ctx.trust === 'shared'
-    const settled = await Promise.allSettled(urls.map(url => localCopy(url, dir, existing, shared)))
+    const settled = await Promise.allSettled(urls.map(url => localCopy(url, dir, existing)))
     const used = new Set<string>()
     // In the order of the blocks, as the diagnostics were before.
     for (const { node, block } of remote) {
@@ -92,7 +88,6 @@ export const remoteAssetsPass: IRPass = {
         })
       }
     }
-    if (shared) return
     for (const file of existing) {
       if (DOWNLOAD.test(file) && !used.has(file)) await rm(join(dir, file), { force: true })
     }

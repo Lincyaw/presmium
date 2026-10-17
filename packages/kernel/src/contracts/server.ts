@@ -1,8 +1,7 @@
 /**
  * The server (docs/architecture.md 4.7, section 10): what plugins contribute
- * to `presmium dev` and `presmium serve` and to `presmium gateway`, members
- * and roles, approvals, MCP access, and the contexts plugins get on the Node
- * side. Route handlers use the Fetch API, so no server framework appears here.
+ * to `presmium dev` and `presmium serve`, members and roles, approvals, MCP
+ * access, and the contexts plugins get on the Node side. Route handlers use the Fetch API, so no server framework appears here.
  */
 import type { Logger } from '../contracts.ts'
 import { defineService } from './service.ts'
@@ -29,11 +28,7 @@ export interface RequestContext {
 export type RouteHandler = (request: Request, ctx: RequestContext) => Response | Promise<Response>
 
 export interface Route {
-  /**
-   * The lowest role that may call it, default `editor`; routes learners may
-   * use say `reader`. In SHARED mode an `owner` route is mounted only on the
-   * origin of the owner console; on the workspace site's origin it is 404 (10.4).
-   */
+  /** The lowest role that may call it, default `editor`; routes learners may use say `reader`. */
   role?: MemberRole
   /**
    * The largest request body it takes, in bytes; default 1 MiB (`MAX_BODY`).
@@ -75,15 +70,6 @@ export interface ServerContribution {
   close?(): void | Promise<void>
 }
 
-/**
- * Trust mode (D13, 10.1). `local`: `presmium dev`, `build`, `check` and a
- * `presmium serve` that listens on this machine only, without a login; the
- * one user is the operator, and the executed code and the agent are trusted
- * as that user. `shared`: `presmium serve` with a login, supported only in
- * the repository's compose layout (serve, gateway and sandbox containers).
- */
-export type TrustMode = 'local' | 'shared'
-
 export interface ServerContext {
   deckDir: string
   workspaceRoot: string
@@ -92,15 +78,11 @@ export interface ServerContext {
   /** The operator's settings for this plugin, as `NodeServiceContext.settings`; never from the deck. */
   settings: Record<string, unknown>
   lang?: string
-  /** As `NodeServiceContext.trust`. */
-  trust: TrustMode
-  /** Node services: the plugins' `services`, the server's `APPROVALS` and `MCP_ENDPOINT`, the workspace's `REVISIONS` (in SHARED mode also the agent-host clients). */
+  /** Node services: the plugins' `services`, the server's `APPROVALS` and `MCP_ENDPOINT`, the workspace's `REVISIONS`. */
   service<T>(token: ServiceToken<T>): T | undefined
-  /** The server process's environment variables, as `NodeServiceContext.secret`; no third-party credentials in SHARED mode. */
+  /** The server process's environment variables, as `NodeServiceContext.secret`. */
   secret(name: string): string | undefined
-  /** SHARED mode: the gateway access (serve's service token), e.g. as the target of a remote environment's proxy; omitted in LOCAL mode. */
-  gateway?: GatewayAccess
-  /** As `NodeServiceContext.operatorDir`: the absolute operator directory in LOCAL mode; omitted in SHARED mode. */
+  /** As `NodeServiceContext.operatorDir`: the absolute operator directory. */
   operatorDir?: string
   log: Logger
 }
@@ -117,27 +99,16 @@ export interface NodeServiceContext {
    */
   settings: Record<string, unknown>
   lang?: string
-  /** The trust mode of the process (4.7, 10.1). */
-  trust: TrustMode
   /**
-   * The process's environment variables (credentials in LOCAL mode, and
-   * operator settings such as `PRESMIUM_AGENT_COMMAND`); undefined when
-   * unset. In SHARED mode the environments of serve and agent-host hold no
-   * third-party credentials.
+   * The process's environment variables (credentials, and operator settings
+   * such as `PRESMIUM_AGENT_COMMAND`); undefined when unset.
    */
   secret(name: string): string | undefined
   /**
-   * SHARED mode: the gateway access, in serve the service token, in
-   * agent-host the scoped token serve issued for this build or run; services
-   * that need third-party credentials (speech) call this plugin's
-   * contribution in the gateway through it. Omitted in LOCAL mode.
-   */
-  gateway?: GatewayAccess
-  /**
-   * LOCAL mode: the absolute operator directory (consent records and other
-   * operator data, 10.5): in the user's state directory, by workspace,
-   * outside any workspace and document directory. Omitted in SHARED mode:
-   * the operator directory is in the gateway only (`GatewayContext.operatorDir`).
+   * The absolute operator directory (consent records and other operator
+   * data, 10.5): in the user's state directory, by workspace, outside any
+   * workspace and document directory; omitted when the one given lies inside
+   * the workspace.
    */
   operatorDir?: string
   /**
@@ -159,10 +130,8 @@ export type ApprovalKind = 'operate' | 'spend' | 'write' | 'agent'
  * operating and paid tools of MCP); it goes to `member`. `workspace`: the
  * workspace configuration `presmium.workspace.yaml` (members, approval
  * policy, operator settings), consent records, any path outside the
- * document directory, the agent's shell and network permission requests,
- * and in SHARED mode running code an editor or the agent wrote (compile-time
- * execution without a recording; MCP's `run_code` with `compile: approve`,
- * 10.6); it goes to the owners only.
+ * document directory, the agent's shell and network permission requests; it
+ * goes to the owners only.
  */
 export type ApprovalScope = 'content' | 'workspace'
 
@@ -246,11 +215,7 @@ export type AgentMode = 'author' | 'tutor'
 
 /** What an agent session uses to reach this process's MCP endpoint. */
 export interface McpAccess {
-  /**
-   * This process's `/mcp`: in LOCAL mode the server's local address (the
-   * agent's child process runs on the same machine); in SHARED mode the
-   * gateway's forwarding `/mcp` (the sandbox's network reaches the gateway only, 10.9).
-   */
+  /** This process's `/mcp`: the server's local address (the agent's child process runs on the same machine). */
   url: string
   /** `Authorization: Bearer` token bound to a member and a mode; it decides which tools there are. */
   token: string
@@ -268,74 +233,3 @@ export interface McpEndpoint {
 
 /** Node service, provided by the server where it mounts `/mcp` (`presmium dev` and `presmium serve`); none in `presmium build`. */
 export const MCP_ENDPOINT = defineService<McpEndpoint>('presmium.mcpEndpoint')
-
-// Gateway (D13, 10.9) ---------------------------------------------------------------
-
-/** Access to the gateway: a plugin's routes lie under `<url>/<plugin id>/`. */
-export interface GatewayAccess {
-  /** The gateway's internal address (in compose, serve and sandbox both use it, e.g. `http://gateway:4320`). */
-  url: string
-  /** `Authorization: Bearer` token: serve's service token, or a scoped token serve issued for a run, a build or an agent session. */
-  token: string
-}
-
-/**
- * A request to a plugin's contribution in the gateway (`<url>/<plugin>/<path>`)
- * with the access's token; a redirect is an error, so the token never goes
- * to another address.
- */
-export function gatewayFetch(access: GatewayAccess, plugin: string, path: string, init: RequestInit = {}): Promise<Response> {
-  const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bearer ${access.token}`)
-  return fetch(`${access.url.replace(/\/+$/, '')}/${plugin}/${path.replace(/^\/+/, '')}`, { ...init, headers, redirect: 'error' })
-}
-
-/** What a token grants; the gateway checks the token and gives this to the route. */
-export interface GatewayGrant {
-  /** `service`: serve's service token; `scoped`: a scoped token. */
-  kind: 'service' | 'scoped'
-  /** Plugin ids a scoped token may reach (the service token reaches all). */
-  plugins: string[]
-  /** What it was issued for, e.g. `agent:<task id>`, `run:<document>`; written to the gateway's log. */
-  purpose: string
-  /** The member it acts for. */
-  member?: string
-  /** ISO 8601; once expired or revoked, requests get 401. */
-  expires: string
-}
-
-export interface GatewayRequestContext {
-  grant: GatewayGrant
-  /** The path after the route key in a `/*` route. */
-  rest: string
-}
-
-export interface GatewayRoute {
-  /** Takes serve's service token only (e.g. an owner registering a consent record); by default scoped tokens that include this plugin are taken too. */
-  service?: boolean
-  handle(request: Request, ctx: GatewayRequestContext): Response | Promise<Response>
-}
-
-export interface GatewayProxy {
-  /** Mounted under `<url>/<plugin id>/<path>/`; HTTP and WebSocket are both forwarded. */
-  path: string
-  target: string
-  /** Request headers added when forwarding (third-party credentials); the caller never sees them. */
-  headers?: Record<string, string>
-}
-
-export interface GatewayContribution {
-  routes?: Record<string, GatewayRoute>
-  proxies?: GatewayProxy[]
-  close?(): void | Promise<void>
-}
-
-export interface GatewayContext {
-  /** The operator's settings for this plugin: `settings.<plugin id>` of the workspace configuration `presmium.workspace.yaml`, read when the gateway starts. */
-  settings: Record<string, unknown>
-  /** The gateway process's environment variables: in SHARED mode the only place of third-party credentials. */
-  secret(name: string): string | undefined
-  /** The operator directory (consent records and other operator data): mounted in the gateway container only, out of reach of decks, agents and executed code. */
-  operatorDir: string
-  log: Logger
-}

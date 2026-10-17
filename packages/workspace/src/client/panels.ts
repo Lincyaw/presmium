@@ -1,14 +1,13 @@
 /**
  * The workspace's toolbar entries: edit mode, the document operations of the
- * home page, the revision history, and "request execution", each for editors
- * and owners only; and for readers of the static site (SHARED, D17) whether a
- * new build of the page's document is coming or in place. The panels are
- * plain, styled inline so the entries need no style sheet in either form.
+ * home page and the revision history, each for editors and owners only. The
+ * panels are plain, styled inline so the entries need no style sheet in
+ * either form.
  */
 import { currentLocale, useMessages, useServer } from '@presmium/host'
 import type { AgentClient, AgentTask, ReviewChange } from '@presmium/kernel'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import type { DocumentOperation, DocumentsAnswer, ExecutionState, HistoryRevision, LockedAnswer, OperationAnswer, RevertAnswer, RevisionsAnswer, SiteState, WorkspaceDocument } from '../domain/api.ts'
+import type { DocumentOperation, DocumentsAnswer, HistoryRevision, LockedAnswer, OperationAnswer, RevertAnswer, RevisionsAnswer, WorkspaceDocument } from '../domain/api.ts'
 import { lockKind, WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
 import { WORKSPACE_MESSAGES } from '../domain/messages.ts'
@@ -105,50 +104,6 @@ export const EditToggle = defineComponent({
           'onClick': () => editing.value = !editing.value,
         }, editing.value ? t.value.leaveEdit : t.value.edit)
       : null)
-  },
-})
-
-/** How often a reader's page asks whether a new build of its document is coming or in place. */
-const SITE_POLL_MS = 10_000
-
-/**
- * A reader's page of the static site (SHARED, D17): "updating" while a new build of its document is
- * coming (what the page shows is a build behind), then a reload once the new build is in place.
- * Nothing on the dev server's pages (editors and owners), which follow each change.
- */
-export const SiteStatus = defineComponent({
-  name: 'PmWorkspaceSite',
-  setup() {
-    const t = useMessages(WORKSPACE_MESSAGES)
-    const state = shallowRef<SiteState>()
-    /** The build this page was loaded from (the first one it heard of). */
-    let loaded: string | undefined
-    let timer: ReturnType<typeof setInterval> | undefined
-    const look = async () => {
-      if (document.hidden) return
-      try {
-        const next = await call<SiteState>('site')
-        loaded ??= next.version
-        state.value = next
-        if (next.kind !== 'static' && timer !== undefined) clearInterval(timer)
-      } catch {
-        // Asked again at the next turn.
-      }
-    }
-    onMounted(() => {
-      void look()
-      timer = setInterval(() => void look(), SITE_POLL_MS)
-    })
-    onBeforeUnmount(() => clearInterval(timer))
-    return () => {
-      const now = state.value
-      if (now?.kind !== 'static') return null
-      if (now.updating) return h('span', { 'class': 'pm-workspace-site', 'data-state': 'updating', 'role': 'status', 'title': t.value.siteUpdatingNote }, t.value.siteUpdating)
-      if (now.version && loaded && now.version !== loaded) {
-        return h('button', { 'type': 'button', 'class': 'pm-workspace-site', 'data-state': 'updated', 'style': BUTTON, 'onClick': () => location.reload() }, t.value.siteUpdated)
-      }
-      return null
-    }
   },
 })
 
@@ -399,36 +354,3 @@ export const Documents = defineComponent({
   },
 })
 
-/** "Request execution": a document's code that did not run, asked for again (SHARED, `compile: approve`). */
-export const Execution = defineComponent({
-  name: 'PmWorkspaceExecution',
-  setup() {
-    const t = useMessages(WORKSPACE_MESSAGES)
-    const editor = useEditor()
-    const state = shallowRef<ExecutionState>()
-    let timer: ReturnType<typeof setInterval> | undefined
-    const load = async () => {
-      if (!editor.value) return
-      state.value = await call<ExecutionState>('execution').catch(() => undefined)
-      // Only `compile: approve` leaves code to ask for again; elsewhere there is nothing to follow.
-      if (state.value && state.value.mode !== 'approve') clearInterval(timer)
-    }
-    onMounted(() => {
-      void load()
-      timer = setInterval(() => void load(), 5000)
-    })
-    onBeforeUnmount(() => clearInterval(timer))
-    return () => {
-      const now = state.value
-      if (!editor.value || !now || now.mode !== 'approve' || now.notRun.length === 0) return null
-      if (now.pending) return h('span', { class: 'pm-workspace-execution pm-workspace-execution--pending' }, t.value.executionPending)
-      return h('button', {
-        type: 'button',
-        class: 'pm-workspace-execution',
-        onClick: async () => {
-          state.value = await post<ExecutionState>('execution', {}).catch(() => state.value)
-        },
-      }, t.value.requestExecution(now.notRun.length))
-    }
-  },
-})

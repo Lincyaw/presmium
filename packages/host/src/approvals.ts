@@ -1,9 +1,8 @@
 /**
  * The approvals entry of the toolbar (docs/architecture.md 10.4): shown only
  * while approvals wait for this window, with what each one asks, who asks,
- * and Allow and Deny. In SHARED mode an owner's site window only learns how
- * many wait in the owner console, and links to it. The web form's present
- * and presenter views, which cover the toolbar, show it in their control bars.
+ * and Allow and Deny. The web form's present and presenter views, which cover
+ * the toolbar, show it in their control bars.
  */
 import type { PropType } from 'vue'
 import { defineComponent, h, ref, watch } from 'vue'
@@ -40,7 +39,7 @@ export const PmApprovals = defineComponent({
     const open = ref(false)
     const failed = ref<string>()
     // Once nothing waits, the entry goes away; it shows closed when the next approval comes.
-    watch(() => approvals.pending.value.length + (approvals.elsewhere.value?.count ?? 0), (count) => {
+    watch(() => approvals.pending.value.length, (count) => {
       if (count === 0) open.value = false
     })
     const answer = (id: string, allow: boolean) => {
@@ -51,14 +50,13 @@ export const PmApprovals = defineComponent({
     }
     return () => {
       const pending = approvals.pending.value
-      const elsewhere = approvals.elsewhere.value
-      if (pending.length === 0 && !elsewhere) return null
+      if (pending.length === 0) return null
       const children = [h('button', {
         'type': 'button',
         'class': 'pm-approvals__toggle',
         'aria-expanded': open.value ? 'true' : 'false',
         'onClick': () => open.value = !open.value,
-      }, t.value.approvals(pending.length + (elsewhere?.count ?? 0)))]
+      }, t.value.approvals(pending.length))]
       if (open.value) {
         const at = props.placement === 'above' ? { bottom: '100%' } : { top: '100%' }
         children.push(h('div', { 'class': 'pm-approvals__panel', 'role': 'dialog', 'aria-label': t.value.approvalsTitle, 'style': { ...PANEL, ...at } }, [
@@ -71,12 +69,6 @@ export const PmApprovals = defineComponent({
               h('button', { type: 'button', onClick: () => answer(id, false) }, t.value.deny),
             ]),
           ])),
-          elsewhere
-            ? h('p', { class: 'pm-approvals__elsewhere' }, [
-                t.value.inConsole(elsewhere.count),
-                elsewhere.console ? [' ', h('a', { href: elsewhere.console, target: '_blank', rel: 'noopener' }, t.value.openConsole)] : null,
-              ])
-            : null,
           failed.value ? h('p', { class: 'pm-approvals__error', role: 'alert' }, failed.value) : null,
         ]))
       }

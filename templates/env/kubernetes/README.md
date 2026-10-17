@@ -127,4 +127,4 @@ spec:
     shutdownPolicy: Delete
 ```
 
-按 agent-sandbox 的文档把沙箱的 8888 端口暴露给运行 `presmium build` 或 `presmium gateway` 的进程，再把地址与令牌作为 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN` 给它。用 NetworkPolicy 只允许这些进程连接沙箱。
+按 agent-sandbox 的文档把沙箱的 8888 端口暴露给运行 `presmium build`、`dev` 或 `serve` 的进程，再把地址与令牌作为 `PRESMIUM_ENV_<名>_URL`、`PRESMIUM_ENV_<名>_TOKEN` 给它。用 NetworkPolicy 只允许这些进程连接沙箱。

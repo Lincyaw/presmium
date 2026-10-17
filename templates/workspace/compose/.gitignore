@@ -1,5 +1,0 @@
-# The operator's files of a deployment (README.md): never committed, never in the image (Dockerfile.dockerignore).
-.env
-*.env
-secrets/
-seed/
