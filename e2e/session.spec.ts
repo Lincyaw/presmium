@@ -403,6 +403,14 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-cover')
     for (let i = 0; i < 5; i++) await presenter.keyboard.press('ArrowRight')
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
+    // A teachers' section after the students' own: the learner stays in the nearest section before it that the
+    // learner's build has, the students' own, not the nearest one every build has (the rules).
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-answers')
+    await learner.waitForTimeout(1000)
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
+    await presenter.keyboard.press('ArrowLeft')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-ask')
 
     // The learner asks in the section their build numbers 3, one for students that both builds have; the
     // presenter's overview numbers it 4.
@@ -471,9 +479,13 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await expect(slide(learner, '提问')).toBeVisible()
     await expect(strokes).toHaveCount(0)
     await expect(badge(learner)).toContainText('正在跟随主讲')
+    // The teachers' section after it: the learner stays on the students' own slide, the nearest of the learner's build.
+    await presenter.keyboard.press('ArrowRight')
+    await expect(presenter).toHaveURL(/\/presenter\/5(\?|$)/)
+    await learner.waitForTimeout(1500)
+    await expect(learner).toHaveURL(/\/3(\?|$)/)
     // Straight back to the teacher's section: the learner goes to the nearest slide before it, the cover.
-    await presenter.keyboard.press('ArrowUp')
-    await presenter.keyboard.press('ArrowUp')
+    for (let i = 0; i < 3; i++) await presenter.keyboard.press('ArrowUp')
     await expect(presenter).toHaveURL(/\/presenter\/2(\?|$)/)
     await expect(learner).toHaveURL(/\/1(\?|$)/)
     await close()

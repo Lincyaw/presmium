@@ -122,6 +122,8 @@ presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clic
 
 课堂需要文稿的 `plugins` 中有 `@presmium/slidev-addon-session` 与 `@presmium/slidev-addon-classroom`（练习的校验另需 `@presmium/slidev-addon-exec`），以及一台课堂服务。
 
+`presmium dev` 与 `presmium serve` 自带课堂服务：文稿头部没有写 `presmium.session.server` 时，页面经服务自己的端口开课（`/__presmium/presmium.session/sync`），不必另起进程。学生在局域网中加入时，用 `presmium serve --host 0.0.0.0` 启动，按它打印的局域网地址（`network  http://…`）打开讲义再开课，加入链接与课堂同步都走这个地址；没有登录，同一网络中到得了这个端口的人都能以你的身份使用工作区，只在信任的网络中这样做。发布到静态托管的讲义才需要下面单独的课堂服务。
+
 ### 启动课堂服务
 
 ```sh
@@ -176,9 +178,9 @@ presmium:
 | `presmium.lecture` `the en translation of … is stale` | 原文改过，重新翻译那一句 |
 | 讲授列表中没有 `script`，或播放它时“找不到讲授” | 头部 `renderers.lecture.voice` 写明音色，`plugins` 列出 `@presmium/slidev-addon-speech`；构建时定义了引擎，或合成缓存中有全部片段（`presmium check` 的 `presmium.lecture` 逐句指出缺少的） |
 | 逐字稿中没有“转写”按钮 | 只在 `presmium dev` 与工作区服务中、编辑者可见；运营者要定义能转写的语音引擎，文稿 `plugins` 要有 `@presmium/slidev-addon-speech` |
-| 播放 `script` 时提示“还没有生成” | 读者在编辑者打开它之前播放由讲解合成的讲授：合成要计费，只有编辑者的请求让服务端合成；请编辑者打开一次，或构建时合成并提交合成缓存 |
+| 播放 `script` 时提示“还没有生成” | 服务端还说不出由讲解合成的讲授（缓存缺片段又没有能合成的引擎），或克隆音色的同意已撤回；定义引擎后再打开，或构建时合成并提交合成缓存 |
 | 编辑模式中没有“讲授回写”，或面板说不能交给 agent | 只在工作区服务中、编辑者可见；文稿 `plugins` 要有 `@presmium/slidev-addon-assistant` 与 `@presmium/slidev-addon-lecture`，运营者把它们列在 `settings.presmium.workspace.plugins` 中并配置了模型（或替换的运行时） |
-| 没有课堂入口，或开发中显示“未连接” | 配置 `presmium.session.server`、启动课堂服务，重新构建 |
+| 没有课堂入口，或开发中显示“未连接” | 静态构建：配置 `presmium.session.server`、启动课堂服务，重新构建；`presmium dev` 与 `presmium serve` 中不必配置，确认文稿 `plugins` 有会话插件 |
 | 学生打不开加入链接 | 主讲用局域网地址打开讲义，课堂服务地址也用局域网地址（服务启动时打印） |
 | 主讲的标签页关掉了 | 同一浏览器重新打开讲义，在课堂面板中以主讲身份回到课堂 |
 | 断网后不能放映 | 联网时先把该形态完整打开一次 |

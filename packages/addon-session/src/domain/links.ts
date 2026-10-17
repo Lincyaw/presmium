@@ -41,7 +41,8 @@ export function roomId(random: Uint8Array): string {
   return [...random].map(byte => ALPHABET[byte % ALPHABET.length]).join('')
 }
 
-/** The classroom server's HTTP endpoint that archives a classroom: `POST <server>/archive/<room>`, the presenter's key as body. */
-export function archiveUrl(server: string, room: string): string {
-  return `${server.replace(/^ws(s?):/, 'http$1:')}/archive/${encodeURIComponent(room)}`
+/** The classroom server's HTTP endpoint that archives a classroom: `POST <server>/archive/<room>`, the presenter's key as body; with the server's parameters. */
+export function archiveUrl(server: string, room: string, params: Record<string, string> = {}): string {
+  const query = new URLSearchParams(params).toString()
+  return `${server.replace(/^ws(s?):/, 'http$1:')}/archive/${encodeURIComponent(room)}${query ? `?${query}` : ''}`
 }

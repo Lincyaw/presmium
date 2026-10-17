@@ -220,6 +220,19 @@ function fieldSize(value: string | undefined): number {
   max-height: var(--pm-run-room);
   overflow: auto;
 }
+/* Projected, a line too long for the code's half of the panel (the output beside it after a run) wraps
+   rather than being cut at its edge; the parameters and the run button read at the code's size, as form
+   controls take no size of their own from the page (R-27, N-05). */
+.pm-run-panel--present .pm-run-panel__source :deep(:is(pre, code)) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pm-run-panel--present .pm-run-panel__form {
+  font-size: 1.25em;
+}
+.pm-run-panel--present .pm-run-panel__form :is(input, button) {
+  font-size: inherit;
+}
 .pm-run-panel__form {
   display: flex;
   flex-wrap: wrap;

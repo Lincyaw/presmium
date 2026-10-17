@@ -8,10 +8,15 @@
 // drafted document opens once the draft is committed (E-7). The history names the operations in the workspace's
 // language. A rename undone from the history brings the directory back on the home page and its page shows, a
 // creation undone takes it away, a document made on disk shows after the next request (F-10); the history's
-// labels and dates are zh-CN's, or English's in an English workspace (F-55).
+// labels and dates are zh-CN's, or English's in an English workspace (F-55). With `--host 0.0.0.0`, another
+// device of the local network uses the workspace at the machine's address, edit mode and approvals included,
+// while another site's requests are refused; a deck that names no classroom server has its classroom synced
+// on serve's own port, where a learner on that device joins and follows (E-3 revised, one port).
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { request } from 'node:http'
+import { networkInterfaces } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -286,6 +291,120 @@ test.describe('the workspace in the browser', () => {
     await draft.getByRole('button', { name: '接受' }).click()
     await expect(page).toHaveURL(`${home}week5/`)
     expect(decisions).toEqual([{ accept: true }])
+  })
+})
+
+/** An IPv4 address of this machine on a network (not the loopback), where another device reaches it. */
+const NETWORK = Object.values(networkInterfaces()).flatMap(entries => entries ?? []).find(entry => entry.family === 'IPv4' && !entry.internal)?.address
+
+/** A request of another site's page to `url`: its `Origin` names that site. */
+function crossSite(url: string, path: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const { hostname, port } = new URL(url)
+    const sent = request({ host: hostname, port, path, method: 'POST', headers: { 'Origin': 'http://attacker.example', 'Presmium-Document': 'intro', 'Content-Type': 'application/json' } }, (res) => {
+      res.resume()
+      resolve(res.statusCode!)
+    })
+    sent.on('error', reject)
+    sent.end('{}')
+  })
+}
+
+/** A document whose deck lists the session plugin and names no classroom server. */
+const CLASS = `---
+title: 课堂
+plugins:
+  - '@presmium/slidev-addon-session'
+---
+
+(class-one)=
+# 第一节
+
+第一节的内容。
+
+(class-two)=
+## 第二节
+
+第二节的内容。
+`
+
+test.describe('presmium serve on the local network (E-3, revised), with the classroom sync on its own port', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180_000 })
+  test.skip(!NETWORK, 'this machine has no network address besides the loopback')
+  const dirs: string[] = []
+  const children: ChildProcess[] = []
+  /** The home page at the loopback, and at the machine's network address. */
+  let local: string
+  let lan: string
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    const dir = workspaceCopy('network', (copy) => {
+      mkdirSync(join(copy, 'class'))
+      writeFileSync(join(copy, 'class/lecture.md'), CLASS)
+    })
+    dirs.push(dir)
+    const started = await start(dir, ['serve', '--host', '0.0.0.0', '--port', '0'], clean({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache` }), /^serve {2}(http\S+)$/m)
+    children.push(started.child)
+    local = `${started.match}/`
+    lan = `http://${NETWORK}:${new URL(started.match).port}/`
+  })
+
+  test.afterAll(async () => {
+    await cleanUp(children, dirs)
+  })
+
+  test('another device opens the home page and a document at the machine\'s address; edit mode and approvals work there; another site\'s request is still refused', async ({ page }) => {
+    await openDevPage(page, lan, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await openDevPage(page, `${lan}intro/`, page.locator('.pm-section[data-section="导论"]'))
+    await page.locator('.pm-workspace-edit').click()
+    await expect(page.locator('.pm-workspace-edit')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('.pm-section[data-section="导论"] .pm-role-mark')).toHaveText('〔probe hidden〕')
+
+    // A route that asks for approval, answered in this window's toolbar.
+    const asked = page.evaluate(async () => (await fetch('/__presmium/fixture.home/approve', { method: 'POST', headers: { 'Presmium-Document': 'intro' } })).json() as Promise<{ allowed: boolean }>)
+    const entry = page.locator('.pm-approvals__toggle')
+    await expect(entry).toHaveText('待确认 1')
+    await entry.click()
+    const dialog = page.getByRole('dialog', { name: '待确认的操作' })
+    await expect(dialog.locator('.pm-approvals__title')).toHaveText('局域网中的确认')
+    await dialog.getByRole('button', { name: '允许' }).click()
+    expect(await asked).toEqual({ allowed: true })
+
+    // A page of another site, at either address, is refused.
+    for (const at of [lan, local]) expect(await crossSite(at, '/__presmium/fixture.home/approve')).toBe(403)
+    await expect(entry).toHaveCount(0)
+  })
+
+  test('a presenter opens a classroom and a learner on another device joins and follows, through serve\'s own port, with no classroom server of its own', async ({ browser }) => {
+    const contexts = await Promise.all([browser.newContext(), browser.newContext()])
+    const [presenter, learner] = await Promise.all(contexts.map(context => context.newPage())) as [Page, Page]
+    const sockets: string[] = []
+    learner.on('websocket', socket => sockets.push(socket.url()))
+    try {
+      await openDevPage(presenter, `${local}class/`, presenter.locator('.pm-section[data-section="class-one"]'))
+      await presenter.getByRole('button', { name: /^课堂/ }).click()
+      const panel = presenter.getByRole('dialog', { name: '课堂' })
+      await panel.getByLabel('昵称').fill('王老师')
+      await panel.getByRole('button', { name: '创建课堂' }).click()
+      await expect(panel.getByRole('status')).toHaveText('课堂进行中，你是主讲')
+      const room = new URL((await panel.locator('.pm-session__link').getAttribute('href'))!).searchParams.get('room')!
+
+      await openDevPage(learner, `${lan}class/?room=${room}&name=${encodeURIComponent('小明')}`, learner.locator('.pm-section[data-section="class-one"]'))
+      const badge = learner.getByRole('region', { name: '课堂状态' })
+      await expect(badge).toContainText('正在跟随主讲')
+      await panel.getByRole('button', { name: '关闭' }).click()
+      await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
+      const present = (page: Page) => page.getByRole('region', { name: '放映' })
+      await expect(present(learner)).toHaveAttribute('data-section', 'class-one')
+      await presenter.keyboard.press('ArrowRight')
+      await expect(present(presenter)).toHaveAttribute('data-section', 'class-two')
+      await expect(present(learner)).toHaveAttribute('data-section', 'class-two')
+      // The learner's classroom goes through serve, at the address the learner opened.
+      expect(sockets.some(url => url.startsWith(`ws://${NETWORK}:${new URL(lan).port}/__presmium/presmium.session/sync/${room}?`))).toBe(true)
+    } finally {
+      await Promise.all(contexts.map(context => context.close()))
+    }
   })
 })
 

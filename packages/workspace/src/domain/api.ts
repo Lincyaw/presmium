@@ -45,11 +45,15 @@ export interface OperationAnswer {
 /**
  * A revision as the history lists it: the contract's, with what its labels
  * need in the reader's language (N-07): the document operation its origin
- * names (a revert's: that of the change it undoes), and the commit it reverts.
+ * names (a revert's: that of the change it undoes), the commit it reverts,
+ * and whether that revert redoes (F-55): the commit it reverts undid a
+ * change (a revert of a redo undoes again).
  */
 export interface HistoryRevision extends Revision {
   operation?: RevisionOperation
   reverts?: string
+  /** A revert of an undo: it brings the undone change back. */
+  redo?: true
 }
 
 /** `GET revisions?document=&task=&limit=`. */

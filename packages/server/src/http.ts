@@ -11,14 +11,19 @@ import { getRequestListener } from '@hono/node-server'
 import { json, problem } from '@presmium/kernel'
 import { createProxyServer } from 'http-proxy-3'
 
-/** Host names of this machine. */
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1'])
+/** Host names of this machine's loopback, as `hostname` gives them. */
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])
 
-/** The host name of a `Host` header or a URL's host, lowercase, without the port. */
+/**
+ * The host name of a `Host` header, a URL's host or an address to listen on,
+ * lowercase, without the port; an IPv6 address in brackets (a bare one, as
+ * `::1`, has no port: its colons are the address's).
+ */
 export function hostname(host: string | null | undefined): string {
   if (!host) return ''
   const value = host.trim().toLowerCase()
   if (value.startsWith('[')) return value.slice(0, value.indexOf(']') + 1)
+  if (value.indexOf(':') !== value.lastIndexOf(':')) return `[${value}]`
   return value.replace(/:\d+$/, '')
 }
 

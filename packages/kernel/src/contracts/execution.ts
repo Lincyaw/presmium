@@ -131,6 +131,14 @@ export interface Executor {
    * image digest). Part of the compile-time execution cache key; '' when omitted.
    */
   fingerprint?(lang: string): string | Promise<string>
+  /**
+   * The version of the executor's own code that shapes its outputs for
+   * `lang`, e.g. a digest of the script it runs code with (`runner.py`).
+   * Part of the cache key with `fingerprint`; unlike a recording of another
+   * environment, which is reused, one made by another revision is out of
+   * date: where the executor runs, the code runs again (D-8). Omitted: ''.
+   */
+  revision?(lang: string): string | Promise<string>
   /** Drops the state of a session (restarts or closes the interpreter or kernel); "reset session" and the end of a build call it. */
   endSession?(session: string): Promise<void>
   /**

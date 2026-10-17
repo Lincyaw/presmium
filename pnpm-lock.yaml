@@ -589,6 +589,9 @@ importers:
 
   packages/addon-session:
     dependencies:
+      '@presmium/classroom-server':
+        specifier: workspace:*
+        version: link:../classroom-server
       '@presmium/host':
         specifier: workspace:*
         version: link:../host
@@ -608,9 +611,6 @@ importers:
         specifier: ^13.6.33
         version: 13.6.33
     devDependencies:
-      '@presmium/classroom-server':
-        specifier: workspace:*
-        version: link:../classroom-server
       '@presmium/cli':
         specifier: workspace:*
         version: link:../cli

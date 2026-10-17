@@ -118,8 +118,16 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
   /** The lecture panel on the document's page, in edit mode. */
   async function lecturePanel(page: Page) {
     await openDevPage(page, `${url}/intro/`, page.locator('[data-section="merge"]').first())
-    await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
-    await page.getByRole('button', { name: '讲授回写' }).click()
+    // After the previous case's undo the site may still be taking the document back in, which renders the
+    // page's controls again: edit mode is on once its control stays pressed and the entry shows.
+    const edit = page.locator('.pm-workspace-edit').filter({ visible: true })
+    const entry = page.getByRole('button', { name: '讲授回写' })
+    await expect(async () => {
+      if (await edit.getAttribute('aria-pressed', { timeout: 5_000 }) !== 'true') await edit.click({ timeout: 5_000 })
+      await expect(edit).toHaveAttribute('aria-pressed', 'true', { timeout: 2_000 })
+      await expect(entry).toBeVisible({ timeout: 2_000 })
+    }).toPass({ timeout: 60_000 })
+    await entry.click()
     const panel = page.getByRole('complementary', { name: '讲授回写' })
     await expect(panel).toBeVisible()
     return panel

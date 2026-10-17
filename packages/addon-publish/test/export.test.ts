@@ -53,9 +53,19 @@ it('exports PNG images, one per click step, the slide of a component in its stat
   expect(readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')).toMatch(/<a href="\/[0-9a-f]{8}-notes\.txt" target="_blank" rel="noopener">the notes<\/a>/)
 }, 180_000)
 
+/**
+ * `presmium-export`, once more when the first run failed for the machine's load: a deck's first export may find
+ * Vite still optimizing the plugins' dependencies, and a busy machine then outlasts the print page's wait; the
+ * export fails saying so (exit 2), and once more, with them optimized, is the remedy.
+ */
+async function exported(dir: string, ...args: string[]): Promise<Awaited<ReturnType<typeof bin>>> {
+  const first = await bin('presmium-export', dir, ...args)
+  return first.code === 2 && /Timeout|before the page showed/.test(first.stderr) ? bin('presmium-export', dir, ...args) : first
+}
+
 it('exports only the slides of a range', async () => {
   const dir = copyFixture('export')
-  const { code, stdout, stderr } = await bin('presmium-export', dir, '--range', '1-3', '--output', 'part.pdf', '--json')
+  const { code, stdout, stderr } = await exported(dir, '--range', '1-3', '--output', 'part.pdf', '--json')
   expect(code, stderr).toBe(0)
   expect(JSON.parse(stdout)).toMatchObject({ format: 'pdf', pages: 3 })
   expect((await pdfLinks(join(dir, 'part.pdf'))).length).toBe(3)
@@ -103,10 +113,7 @@ async function pdfText(file: string): Promise<string[]> {
 
 it('exports a page per slide: code that runs live is static code with its recorded output, once; a slide taller than its page is cut, not the others shrunk, and a run panel\'s keeps its output; a range exports its slides only (F-18, F-19)', async () => {
   const dir = copyFixture('tall')
-  let whole = await bin('presmium-export', dir, '--output', 'tall.pdf', '--json')
-  // A deck's first export may find Vite still optimizing the execution plugin's dependencies, and a busy
-  // machine then outlasts the print page's wait; the export fails saying so (exit 2), and once more is the remedy.
-  if (whole.code === 2 && /Timeout|before the page showed/.test(whole.stderr)) whole = await bin('presmium-export', dir, '--output', 'tall.pdf', '--json')
+  const whole = await exported(dir, '--output', 'tall.pdf', '--json')
   expect(whole.code, whole.stderr).toBe(0)
   expect(JSON.parse(whole.stdout)).toMatchObject({ pages: 5 })
   // The export's deck writes the code as an export shows it: no Monaco runner.
@@ -121,7 +128,7 @@ it('exports a page per slide: code that runs live is static code with its record
   // A run panel's code longer than its slide gives way to the output recorded for it.
   expect(panel).toContain('PANEL-OUTPUT 42')
 
-  const part = await bin('presmium-export', dir, '--range', '3-4', '--output', 'part.pdf', '--json')
+  const part = await exported(dir, '--range', '3-4', '--output', 'part.pdf', '--json')
   expect(part.code, part.stderr).toBe(0)
   expect(await pdfText(join(dir, 'part.pdf'))).toEqual(['After one', 'After two'])
 }, 240_000)

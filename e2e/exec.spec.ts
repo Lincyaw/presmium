@@ -249,6 +249,9 @@ test.describe('in the present view at 1920x1080', () => {
     })
   }
 
+  /** The size of an element's text on the screen, in px. */
+  const textSize = (element: Locator) => element.evaluate((el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().width / el.offsetWidth)
+
   test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut, across or down (R-27, F-19)', async ({ page }) => {
     for (const [id, selector] of [['exec-panel', '.pm-run-panel'], ['exec-steps', '.pm-step-run']] as const) {
       await page.goto(`${panels().web}/exec.html?view=present&section=${id}`)
@@ -258,6 +261,13 @@ test.describe('in the present view at 1920x1080', () => {
       expect(size, id).toBeGreaterThanOrEqual(18)
       expect(cut, id).toBeLessThanOrEqual(0)
       expect(hidden, id).toBeLessThanOrEqual(0)
+    }
+    // The run panel's parameter and run button read at the code's size, not the page's form controls' (N-05).
+    const present = page.getByRole('region', { name: '放映' })
+    await page.goto(`${panels().web}/exec.html?view=present&section=exec-panel`)
+    for (const control of [present.locator('.pm-run-panel__param input').first(), present.locator('.pm-run-panel__run')]) {
+      await expect(control).toBeVisible()
+      expect(await textSize(control)).toBeGreaterThanOrEqual(18)
     }
     // The slides show a run panel's code whole too, as a column with the controls below.
     const slide = await openSlide(page, 'exec-panel', '执行面板')
@@ -294,6 +304,10 @@ test.describe('in the present view at 1920x1080', () => {
     await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('[\'s\', \'low\', \'est\'] [115, 260, 257]\n', RUNTIME)
     expect(await within(panel.locator('.pm-run-panel__side'), slide)).toBe(true)
     expect(await within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
+    // The output beside the code takes half the width: the code's long lines wrap there, none is cut across (R-27).
+    shown = await code(slide, '.pm-run-panel')
+    expect(shown.size).toBeGreaterThanOrEqual(18)
+    expect(shown.cut).toBeLessThanOrEqual(0)
   })
 
   test('a stepwise run steps forward and back with the present view (R-109)', async ({ page }) => {

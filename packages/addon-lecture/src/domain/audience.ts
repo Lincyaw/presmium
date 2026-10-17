@@ -11,7 +11,7 @@
  */
 import { irBlocks, isRecord } from '@presmium/kernel'
 import type { IRBlock, IRDocument, IRSection, TrackEvent } from '@presmium/kernel'
-import { blockDrift, blockKey, blockOf } from './drift.ts'
+import { blockDrift, blockKey, blockOf, irHash, sectionHashes } from './drift.ts'
 import { anchorOf, timedEvents } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance } from './track.ts'
 
@@ -249,6 +249,45 @@ export function audienceTrack(track: LectureTrack, whole: IRDocument, left: Left
     section: id => places.has(id),
     media: id => places.whole(id),
   })
+}
+
+/**
+ * A recorded lecture as a version for an audience (`view`, its IR: the
+ * students') publishes it (F-13, P-55): what was said, the audio and the
+ * video only of the sections the version has as they were recorded, by the
+ * hash of each section the track keeps (`track.ir.sections`, `sectionHashes`
+ * of the web form's blocks). A section whose hash is not the version's
+ * lost something since (content for another audience, or content moved into
+ * a section only for another audience after the recording), and what was
+ * said or shown there may have been it: its utterances, its media and its
+ * events but the moves go. It fails closed: a track without the hashes of
+ * its sections keeps them only when the hash of the whole IR is the
+ * version's. Undefined when nothing is left; the track itself when nothing
+ * changed.
+ */
+export function recordedSections(track: LectureTrack, view: IRDocument): LectureTrack | undefined {
+  const now = sectionHashes(view)
+  const recorded = track.ir.sections
+  const whole = recorded === undefined && track.ir.hash === irHash(view)
+  const same = (section: string | undefined) => section !== undefined && (whole || (recorded?.[section] !== undefined && recorded[section] === now[section]))
+  const moves = timedEvents(track).filter(event => event.type === 'go' && typeof event.data.section === 'string')
+  const sectionAt = (t: number) => {
+    const section = moves.filter(move => move.t <= t).at(-1)?.data.section
+    return typeof section === 'string' ? section : undefined
+  }
+  const utterances = track.utterances.filter(u => same(u.section ?? sectionAt(u.t)))
+  const said = new Set(utterances.map(u => u.id))
+  const events = track.events.filter(([t, type, data]) => {
+    if (type === 'go') return true
+    const anchor = anchorOf(data)
+    return same(sectionAt(t)) && !(anchor && !said.has(anchor[0]))
+  })
+  const media = <T extends MediaSegment>(segments: T[] | undefined) => segments?.filter(segment => same(segment.section))
+  const audio = media(track.audio)
+  const video = media(track.video)
+  if (utterances.length === track.utterances.length && events.length === track.events.length && audio?.length === track.audio?.length && video?.length === track.video?.length) return track
+  if (utterances.length === 0 && !audio?.length && !video?.length) return undefined
+  return { ...track, ...audio ? { audio } : {}, ...video ? { video } : {}, utterances, events }
 }
 
 /**

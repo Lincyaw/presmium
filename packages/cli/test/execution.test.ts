@@ -37,9 +37,14 @@ it('runs compile-time code without the credentials of the environment, VOLC_APPI
 }, 60_000)
 
 it('gives each compilation its own interpreter for a session: another document of the process sees none of its names, nor its failure', async () => {
-  // a's session keeps its name a while; b looks for it meanwhile.
-  const a = deck([':run:\n:session: main\nimport time\nsecret_of_a = "A-ONLY-VALUE"\ntime.sleep(3)', ':run:\n:session: main\nraise RuntimeError("A fails")'])
-  const b = deck([':run:\n:session: main\nimport time\ntime.sleep(1)\nprint(globals().get("secret_of_a"))'])
+  // a's session holds its name until b has looked for it, and b looks only once a has it: the two runs overlap
+  // whatever the machine's load (the compiler's own API runs the code without a sandbox, so they meet in files).
+  const meet = mkdtempSync(join(tmpdir(), 'presmium-execution-meet-'))
+  dirs.push(meet)
+  const wait = (name: string) => `for _ in range(600):\n    if os.path.exists(${JSON.stringify(join(meet, name))}): break\n    time.sleep(0.05)\nelse:\n    raise TimeoutError(${JSON.stringify(name)})`
+  const mark = (name: string) => `open(${JSON.stringify(join(meet, name))}, "w").close()`
+  const a = deck([`:run:\n:session: main\nimport os, time\nsecret_of_a = "A-ONLY-VALUE"\n${mark('a-has-it')}\n${wait('b-looked')}`, ':run:\n:session: main\nraise RuntimeError("A fails")'])
+  const b = deck([`:run:\n:session: main\nimport os, time\n${wait('a-has-it')}\nprint(globals().get("secret_of_a"))\n${mark('b-looked')}`])
   // Compiled at the same time, as presmium serve compiles the documents of a workspace.
   const compile = (dir: string) => new Compiler(join(dir, 'lecture.md')).compile()
   const [first, second] = await Promise.all([compile(a), compile(b)])

@@ -41,14 +41,13 @@ export interface SynthesizedLecture {
 
 /**
  * The deck's lecture said with its voice (`doc`: the lecture renderer's view
- * of the IR, `lectureView`). With `lookup`, a clip without word times is not
- * transcribed to align it (see `SpeakOptions`).
+ * of the IR, `lectureView`); `files` writes what is kept beside the clips.
  */
-export async function synthesizedLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { lookup?: boolean, files?: DeckFiles } = {}): Promise<SynthesizedLecture> {
+export async function synthesizedLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { files?: DeckFiles } = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc, deckDir)
   const clips = new Map<string, MadeClip>()
   if (!deck.voice) return { deck, clips, unsaid: [] }
-  const made = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, ...options.lookup ? { lookup: true } : {}, ...options.files ? { files: options.files } : {} }, signal)
+  const made = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, ...options.files ? { files: options.files } : {} }, signal)
   if (made.unsaid.length > 0) return { deck, clips: made.clips, unsaid: made.unsaid }
   const track = scriptTrack(deck.plan, made.clips, {
     id: SCRIPT_TRACK,

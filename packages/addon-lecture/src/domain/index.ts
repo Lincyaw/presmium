@@ -1,4 +1,4 @@
-export { audienceTrack, deckTrack, leavesNothing, leftOut, viewPlaces } from './audience.ts'
+export { audienceTrack, deckTrack, leavesNothing, leftOut, recordedSections, viewPlaces } from './audience.ts'
 export type { LeftOut, ViewPlaces } from './audience.ts'
 export { blockDrift, blockKey, blockOf, eventDrift, irHash, playedBlocks, referencedBlocks, sectionHashes, trackBlock, unchanged } from './drift.ts'
 export type { BlockDrift, EventDrift, Grade } from './drift.ts'

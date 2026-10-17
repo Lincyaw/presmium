@@ -1,0 +1,14 @@
+/*
+ * The slides form's code that runs live is a Monaco Runner (`{monaco-run}`, the runners of
+ * setup/code-runners.ts): the editor grows with the code (`height: 'auto'`), and code longer than
+ * the slide would be cut at its edge or shrunk with the slide's `zoom`, below what a room reads
+ * (R-27). The editor keeps the slide's code size and stops at a height that leaves the slide room
+ * for its title and the output below, which stops too; longer code and output scroll.
+ */
+.slidev-layout .slidev-monaco-container-inner {
+  max-height: 15em;
+}
+.slidev-layout .slidev-runner-output {
+  max-height: 7.5em;
+  overflow: auto;
+}

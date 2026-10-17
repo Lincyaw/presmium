@@ -15,10 +15,6 @@
 (extend-c)=
 ## 用 C 统计相邻对
 
-:::{hints}
-slides: { zoom: 0.65 }
-:::
-
 (c-pairs)=
 ```{code} c
 :run: both
@@ -111,10 +107,6 @@ GPU 有成千上万个小核心，擅长把同一件简单的事同时做很多�
 
 (extend-train)=
 ## 先训练
-
-:::{hints}
-slides: { zoom: 0.75 }
-:::
 
 (train)=
 ```{code} python
