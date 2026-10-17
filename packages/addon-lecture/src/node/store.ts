@@ -8,9 +8,48 @@
 import { createHash } from 'node:crypto'
 import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
-import { join, relative, sep } from 'node:path'
+import { dirname, join, relative, sep } from 'node:path'
+import type { DocumentFiles } from '@presmium/kernel'
 import { formatTrack, LECTURES_DIR, parseTrack, TRACK_ID } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
+
+/**
+ * How the plugin writes files of its deck (absolute paths in it): through
+ * the workspace's `DOCUMENT_FILES` when the host has one (`presmium serve`;
+ * in SHARED mode agent-host writes them as the sandbox's user, so a link
+ * the sandbox planted in the deck leads no write of serve's elsewhere,
+ * WP-91), else in this process (`presmium dev`, `build`).
+ */
+export interface DeckFiles {
+  /** Writes the file; with `at`, the bytes at that position of it (no gap). */
+  write(file: string, content: string | Uint8Array, at?: number): Promise<void>
+  remove(file: string): Promise<void>
+}
+
+export function deckFiles(workspaceRoot: string, documentFiles: () => DocumentFiles | undefined): DeckFiles {
+  const path = (file: string) => relative(workspaceRoot, file).split(sep).join('/')
+  const bytes = (content: string | Uint8Array) => (typeof content === 'string' ? Buffer.from(content) : content)
+  return {
+    async write(file, content, at) {
+      const files = documentFiles()
+      if (files) return files.write([{ path: path(file), content: bytes(content), ...at !== undefined ? { at } : {} }])
+      mkdirSync(dirname(file), { recursive: true })
+      if (at === undefined) return writeFileSync(file, content)
+      const handle = await open(file, existsSync(file) ? 'r+' : 'w+')
+      try {
+        const data = bytes(content)
+        await handle.write(data, 0, data.byteLength, at)
+      } finally {
+        await handle.close()
+      }
+    },
+    async remove(file) {
+      const files = documentFiles()
+      if (files) return files.write([{ path: path(file), remove: true }])
+      rmSync(file, { force: true })
+    },
+  }
+}
 
 export const TRACK_FILE = 'track.json'
 
@@ -63,12 +102,11 @@ export function trackIds(deckDir: string): string[] {
     .sort()
 }
 
-export function writeTrack(deckDir: string, track: LectureTrack): string {
+export async function writeTrack(files: DeckFiles, deckDir: string, track: LectureTrack): Promise<string> {
   const dir = trackDir(deckDir, track.id)
   if (!dir) throw new Error(`invalid lecture id ${track.id}`)
-  mkdirSync(dir, { recursive: true })
   const file = join(dir, TRACK_FILE)
-  writeFileSync(file, formatTrack(track))
+  await files.write(file, formatTrack(track))
   return file
 }
 
@@ -90,17 +128,6 @@ export function freeMediaPath(deckDir: string, id: string, folder: 'audio' | 'vi
   return path
 }
 
-/** Writes `bytes` at `position` of a media file, creating it (and its folder) when needed. */
-export async function writeAt(file: string, position: number, bytes: Uint8Array): Promise<void> {
-  mkdirSync(join(file, '..'), { recursive: true })
-  const handle = await open(file, existsSync(file) ? 'r+' : 'w+')
-  try {
-    await handle.write(bytes, 0, bytes.byteLength, position)
-  } finally {
-    await handle.close()
-  }
-}
-
 /** The sha256 of a file, read as a stream (recordings can be large). */
 export async function sha256File(file: string): Promise<string> {
   const hash = createHash('sha256')
@@ -119,13 +146,12 @@ export function mediaPolicy(settings: Record<string, unknown>): MediaPolicy {
 }
 
 /** The git files of a track's directory that keep its media out of git, or hand it to LFS. */
-export function writeGitFiles(dir: string, policy: MediaPolicy): void {
-  mkdirSync(dir, { recursive: true })
+export async function writeGitFiles(files: DeckFiles, dir: string, policy: MediaPolicy): Promise<void> {
   if (policy.kind === 'lfs') {
-    writeFileSync(join(dir, '.gitattributes'), 'audio/** filter=lfs diff=lfs merge=lfs -text\nvideo/** filter=lfs diff=lfs merge=lfs -text\n')
-    rmSync(join(dir, '.gitignore'), { force: true })
+    await files.write(join(dir, '.gitattributes'), 'audio/** filter=lfs diff=lfs merge=lfs -text\nvideo/** filter=lfs diff=lfs merge=lfs -text\n')
+    await files.remove(join(dir, '.gitignore'))
     return
   }
   const why = policy.kind === 'url' ? `published under ${policy.prefix}` : 'kept on this machine'
-  writeFileSync(join(dir, '.gitignore'), `# Recorded audio and video are ${why} (settings.presmium.lecture.audio).\naudio/\nvideo/\n`)
+  await files.write(join(dir, '.gitignore'), `# Recorded audio and video are ${why} (settings.presmium.lecture.audio).\naudio/\nvideo/\n`)
 }

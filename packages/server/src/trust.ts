@@ -3,7 +3,7 @@
  * SHARED mode's requirements, its refusal of third-party credentials, the
  * tokens read from files only root can read, and dropping privileges.
  */
-import { readFileSync } from 'node:fs'
+import { accessSync, constants, readFileSync } from 'node:fs'
 import type { GatewayAccess } from '@presmium/kernel'
 
 /** The server's own secrets: the gateway's service token, agent-host's token, the login proxy's shared secret. */
@@ -85,4 +85,27 @@ export function dropPrivileges(user: string | undefined): void {
   const id = /^\d+$/.test(user) ? Number(user) : user
   process.setgid!(id)
   process.setuid!(id)
+}
+
+/** The token files `env` names (`<name>_FILE` of each of `names`, by default Presmium's own secrets). */
+export function secretFiles(env: NodeJS.ProcessEnv, names: readonly string[] = OWN_SECRETS): string[] {
+  return names.flatMap(name => (env[`${name}_FILE`] ? [env[`${name}_FILE`]!] : []))
+}
+
+/**
+ * After a process started as root became its user: the token files it read
+ * must be root's alone, or anything running as that user (in the sandbox,
+ * the decks' code) could read them later. A file of the operator's that
+ * keeps the owner of the host (compose's file secrets do) is readable when
+ * that owner is the service's uid. Throws naming the file (WP-91).
+ */
+export function assertUnreadable(files: readonly string[]): void {
+  for (const file of files) {
+    try {
+      accessSync(file, constants.R_OK)
+    } catch {
+      continue
+    }
+    throw new Error(`${file} can be read by the user this process became (uid ${process.getuid?.()}): a token file must be root's alone (chown 0:0 and chmod 600 it, docs/architecture.md 10.5)`)
+  }
 }

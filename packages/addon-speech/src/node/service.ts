@@ -6,6 +6,7 @@
  * synthesis goes through the deck's cache, and `audio` is the path of the
  * file in it.
  */
+import { DOCUMENT_FILES } from '@presmium/kernel'
 import type { NodeServiceContext, SpeechService } from '@presmium/kernel'
 import { deckSpeechConfig } from '../domain/index.ts'
 import { SynthesisCache } from './cache.ts'
@@ -17,7 +18,8 @@ export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
   const inner = ctx.gateway
     ? gatewayBackend(ctx.gateway)
     : speechCore({ names: () => Object.keys(process.env), secret: name => ctx.secret(name), settings: ctx.settings, operatorDir: ctx.operatorDir, log: ctx.log })
-  const deck = new DeckSpeech(inner, new SynthesisCache(ctx.deckDir), deckSpeechConfig(ctx.config).config)
+  // Written through the workspace's writer in `presmium serve` (WP-91).
+  const deck = new DeckSpeech(inner, new SynthesisCache(ctx.deckDir, ctx.workspaceRoot, () => ctx.service?.(DOCUMENT_FILES)), deckSpeechConfig(ctx.config).config)
   return {
     async engines() {
       return (await deck.listing(ctx.lang)).engines.map(({ model: _model, transcribeModel: _transcribe, ...info }) => info)

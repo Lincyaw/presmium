@@ -29,7 +29,7 @@ const plugin: PresmiumNodePlugin = {
   server: lectureServer,
   roles: [cueRole, sayRole],
   passes: [keepPass],
-  services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir }]],
+  services: ctx => [[LECTURE_DECK, { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }]],
   tools: lectureTools,
 }
 

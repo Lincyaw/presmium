@@ -120,11 +120,11 @@ export interface RawResponse {
   json<T = Record<string, unknown>>(): T
 }
 
-/** A request with exactly these headers (`Host` included); a JSON body when `json` is given. */
-export function raw(url: string, options: { method?: string, headers?: Record<string, string>, json?: unknown, timeoutMs?: number } = {}): Promise<RawResponse> {
+/** A request with exactly these headers (`Host` included); a JSON body when `json` is given, else `body` as it is. */
+export function raw(url: string, options: { method?: string, headers?: Record<string, string>, json?: unknown, body?: Uint8Array, timeoutMs?: number } = {}): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
-    const body = options.json === undefined ? undefined : JSON.stringify(options.json)
-    const headers = { ...options.headers, ...body === undefined ? {} : { 'Content-Type': 'application/json' } }
+    const body = options.json === undefined ? options.body : JSON.stringify(options.json)
+    const headers = { ...options.headers, ...options.json === undefined ? {} : { 'Content-Type': 'application/json' } }
     const req = httpRequest(url, { method: options.method ?? (body === undefined ? 'GET' : 'POST'), headers, setHost: !headers.Host, timeout: options.timeoutMs ?? 300_000 }, (res) => {
       let text = ''
       res.setEncoding('utf8')

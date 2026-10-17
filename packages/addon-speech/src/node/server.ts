@@ -13,6 +13,7 @@
  *   only), passed on to the gateway's route of the same name, which takes the
  *   service token only.
  */
+import { DOCUMENT_FILES } from '@presmium/kernel'
 import type { GatewayAccess, Route, ServerContext, ServerContribution } from '@presmium/kernel'
 import { CONSENT_PATH, deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID } from '../domain/index.ts'
 import type { SpeechBackend } from './backend.ts'
@@ -53,7 +54,7 @@ export function speechServer(ctx: ServerContext): ServerContribution {
     inner = core
     consent = { role: 'owner', handle: (request, route) => consentRoute(request, route.rest, (engine, voice, record) => core.registerConsent(engine, voice, record)) }
   }
-  const handle = protocolHandler(new DeckSpeech(inner, new SynthesisCache(ctx.deckDir), deckSpeechConfig(ctx.config).config))
+  const handle = protocolHandler(new DeckSpeech(inner, new SynthesisCache(ctx.deckDir, ctx.workspaceRoot, () => ctx.service(DOCUMENT_FILES)), deckSpeechConfig(ctx.config).config))
   return {
     routes: {
       [`${PROTOCOL_PATH}/*`]: { role: 'editor', handle: (request, route) => handle(request, route.rest) },

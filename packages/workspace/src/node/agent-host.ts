@@ -19,7 +19,7 @@ import { build, Compiler, loadPlugins, operatorPlugins, pluginId } from '@presmi
 import type { Compilation, CompilerOptions, LoadedPlugin } from '@presmium/compiler'
 import { AGENT_RUNTIME, CHANGE_REVIEW, errorMessage, isRecord, PROCESS_SANDBOX } from '@presmium/kernel'
 import type { AgentEvent, AgentSession, ApprovalRequest, ChangeReview, Finding, GatewayAccess, IRDocument, Logger, Member, NodeServiceContext, RunRequest, ServiceToken, SiteDevServer, SiteSpec } from '@presmium/kernel'
-import { readSecret } from '@presmium/server'
+import { assertUnreadable, readSecret, secretFiles } from '@presmium/server'
 import type { DocumentView } from '@presmium/server'
 import type { AgentHostInfo } from './agent-client.ts'
 import { listDocuments, readWorkspace } from './config.ts'
@@ -114,14 +114,17 @@ function send(res: ServerResponse, status: number, data?: unknown): void {
 
 /**
  * As the server's: started as root, becomes `user` with its supplementary
- * groups (the group that may write the document directories, docs/architecture.md 10.5).
+ * groups (the group that may write the document directories, docs/architecture.md 10.5),
+ * then refuses to go on when it can read a token file it read as root
+ * (`files`, by default those the environment names, WP-91).
  */
-export function becomeUser(user: string | undefined): void {
+export function becomeUser(user: string | undefined, files: readonly string[] = secretFiles(process.env)): void {
   if (!user || process.getuid?.() !== 0) return
   const id = /^\d+$/.test(user) ? Number(user) : user
   initGroups(id)
   process.setgid!(id)
   process.setuid!(id)
+  assertUnreadable(files)
 }
 
 interface Site {
@@ -140,12 +143,13 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
   // Read once; started as root, from its file only, before it becomes the sandbox's user (WP-91).
   const token = readSecret(env, 'PRESMIUM_AGENT_HOST_TOKEN', Boolean(options.user) && process.getuid?.() === 0)
   if (!token) throw new Error('agent-host needs its token: set PRESMIUM_AGENT_HOST_TOKEN_FILE (or PRESMIUM_AGENT_HOST_TOKEN)')
-  // Read: its children never get it, and from here on the process runs as the sandbox's user.
+  const files = secretFiles(env, ['PRESMIUM_AGENT_HOST_TOKEN'])
+  // Read: its children never get it, and from here on the process runs as the sandbox's user, which must not read the file.
   if (env === process.env) {
     delete process.env.PRESMIUM_AGENT_HOST_TOKEN
     delete process.env.PRESMIUM_AGENT_HOST_TOKEN_FILE
   }
-  becomeUser(options.user)
+  becomeUser(options.user, files)
   // The sandbox's files stay writable for the document group (serve commits and reverts them, docs/architecture.md 10.5).
   if (options.user) process.umask(0o002)
   const config = readWorkspace(options.root)

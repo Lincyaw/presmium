@@ -1,7 +1,8 @@
 # Shared deployment with docker compose
 
 The layout of `docs/architecture.md` 10.5 (D13): the only layout a `presmium serve` with a login
-(SHARED mode) supports, hardened and reviewed in WP-91 (`docs/architecture.md` 10.10).
+(SHARED mode) supports, hardened in WP-91 (`docs/architecture.md` 10.10). Experimental until the
+independent security review of WP-91 passes; serve says so when it starts.
 
 | Service | Runs | Networks | Holds |
 |---|---|---|---|
@@ -23,40 +24,53 @@ are. With this layout:
 
 - **serve writes nothing where sandbox may write.** Every file inside a document directory (a rejected
   change put back, a recording of compile-time code, a new, copied or deleted document, the links a
-  rename rewrites, a revert) is written by agent-host as the sandbox's user, so a symbolic link the
-  sandbox planted there leads nowhere it could not write itself.
+  rename rewrites, a revert, and what Presmium's plugins write there from serve: a recorded lecture, the
+  synthesis cache) is written by agent-host as the sandbox's user, so a symbolic link the sandbox planted
+  there leads nowhere it could not write itself. serve fetches no address a document names (remote
+  images of an offline deck are used only where a copy is there already).
 - **serve's git reads nothing the sandbox wrote.** No system or global configuration, no attributes of
   the documents (no filter, diff or merge driver they name runs), the repository found from the workspace
   root (a `.git` planted in a document is never used). Git LFS for recorded media is configured by the
   operator in `.git/config` and `.git/info/attributes`, not by a document's `.gitattributes`.
-- **Secrets stay where they are.** Third-party credentials are in the gateway only; serve, gateway and
-  agent-host read their tokens once, as root, from the secret files (a token in a variable makes them
-  refuse to start), then drop to their users. The site in the sandbox and the targets of plugin proxies
+- **Secrets stay where they are.** Third-party credentials are in the gateway only, and none of your
+  files beside compose.yaml (`.env`, `oauth2-proxy.env`, `secrets/`, `seed/`) is in the image: it takes
+  only what it runs from the checkout (`Dockerfile.dockerignore` is an allow-list; `.gitignore` keeps
+  those files out of git). serve, gateway and agent-host read their tokens once, as root, from the secret
+  files (a token in a variable makes them refuse to start), then drop to their users, and refuse to go on
+  if that user can still read a token file. The site in the sandbox and the targets of plugin proxies
   get none of a member's cookies or identity headers; a proxy to the gateway carries a token scoped to its
   plugin, never serve's service token.
 - **The owner console is apart.** Owner routes and owner proxies are on the console's host name only;
   the console takes requests from its own page only.
-- **Readers get the student view only**, and the site serves them none of the documents' sources.
+- **Readers get the student view only**, and the site serves them only the files its pages load: in a
+  document, what is under `components/` and `src/` (keep nothing for teachers alone there); of the
+  installation, the dependencies and the packages' `src/` (not `src/node/`), `components/` and `media/`.
+  Never a document's Markdown, its data files or solutions, the configuration or anything else of the
+  image.
 
-What remains is listed in `docs/architecture.md` 9.4 (processes of the sandbox's user see each other;
-deltabox, when enabled, covers compile-time code only; plugins' own writes in serve).
+What remains is listed in `docs/architecture.md` 9.4 (processes of the sandbox's user see each other and
+the agents' session records; deltabox, when enabled, covers compile-time code only; plugins you add that
+write in serve themselves).
 
 ## Set up
 
-From this directory, in a checkout of Presmium where `pnpm install` has run (the image copies it):
+From this directory, in a checkout of Presmium where `pnpm install` has run (the image copies what it
+runs from it):
 
 1. **The workspace.** Put a workspace in `./seed` (or point `PRESMIUM_SEED` at one): a
    `presmium.workspace.yaml` with `members` and `settings`, and documents in subdirectories (a
    `lecture.md` at the root is refused). The `init` service copies it into the `workspace` volume
    once and makes it a git repository if it is none; later the volume is the workspace.
 2. **Tokens.** Files only root may read, which serve, gateway and sandbox read as root before they
-   become their users:
+   become their users. Compose keeps the owner and mode of the host's file, so make them root's (an
+   owner that is a service's uid, 1001 to 1004, could read them; the services refuse to start then):
 
    ```sh
    mkdir -p secrets
    openssl rand -hex 32 > secrets/gateway_token
    openssl rand -hex 32 > secrets/agent_host_token
-   chmod 600 secrets/*
+   sudo chown 0:0 secrets/*
+   sudo chmod 600 secrets/*
    ```
 
 3. **The login.** `cp oauth2-proxy.env.example oauth2-proxy.env` and fill in the identity provider.

@@ -40,7 +40,7 @@ import type { ServedDocument, ServerHost } from './host.ts'
 import { bearer, closeServer, createProxy, header, hostname, isLoopback, json, listen, nodeServer, originHost, problem, sameSecret, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
 import { serverMcpHost } from './mcp.ts'
-import { dropPrivileges, ownSecret, sharedSetup } from './trust.ts'
+import { assertUnreadable, dropPrivileges, ownSecret, secretFiles, sharedSetup } from './trust.ts'
 import type { SharedSetup } from './trust.ts'
 
 /** The server's own routes. */
@@ -257,8 +257,9 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   // The one place serve reads its secrets: once, before it drops privileges; started as root, from their files only (WP-91).
   const asRoot = Boolean(options.user) && process.getuid?.() === 0
   const shared: SharedSetup | undefined = login ? sharedSetup(env, asRoot) : undefined
-  // The token files are read: from here on the process runs as the unprivileged user.
+  // The token files are read: from here on the process runs as the unprivileged user, which must not read them.
   dropPrivileges(options.user)
+  if (asRoot) assertUnreadable(secretFiles(env))
   const trust: TrustMode = shared ? 'shared' : 'local'
   const consoleHost = shared?.consoleHost
   const trusted = new Set(options.trustProxyFrom ?? [])

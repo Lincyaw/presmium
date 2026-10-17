@@ -469,6 +469,8 @@ export interface NodeServiceContext {
    * 在任何工作区与文档目录之外。SHARED 模式中省略：运营者目录只在 gateway 中（`GatewayContext.operatorDir`）
    */
   operatorDir?: string
+  /** 调用时文稿的 Node 端服务（宿主的，如工作区的 `DOCUMENT_FILES`，与插件的）；可选只是为了兼容（WP-91） */
+  service?<T>(token: ServiceToken<T>): T | undefined
   log: Logger
 }
 
@@ -1206,9 +1208,13 @@ export const REVISIONS = defineService<RevisionService>('presmium.revisions')
 
 // 写文档的文件（WP-91）---------------------------------------------------------
 
-/** 文档目录中一个文件将成为的样子：内容、符号链接，或删除。路径相对于工作区根目录 */
+/**
+ * 文档目录中一个文件将成为的样子：内容、符号链接，或删除。路径相对于工作区根目录。
+ * 有 `at` 时内容写在文件的这个字节位置，文件的其他字节不变（分段上传的录制）；文件不在时新建，
+ * 那里是链接时先换成空文件
+ */
 export type DocumentFileChange =
-  | { path: string, content: Uint8Array, executable?: boolean }
+  | { path: string, content: Uint8Array, executable?: boolean, at?: number }
   | { path: string, link: string }
   | { path: string, remove: true }
 
@@ -1221,7 +1227,10 @@ export interface DocumentFiles {
   write(changes: DocumentFileChange[]): Promise<void>
 }
 
-/** Node 端服务：`presmium serve`（两种模式）中由工作区登记 */
+/**
+ * Node 端服务：`presmium serve`（两种模式）中由工作区登记。插件写自己文稿的文件时，宿主有它就经它写
+ * （`ServerContext.service`、`NodeServiceContext.service`、`PassContext.service`），没有时（`presmium dev`、`build`）才在本进程中写
+ */
 export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFiles')
 ```
 
@@ -1391,6 +1400,8 @@ export interface PassContext {
   // ……已有字段……
   /** Node 端服务；编译器总是提供，可选只是为了兼容（插件写 `ctx.service?.(SPEECH)`） */
   service?<T>(token: ServiceToken<T>): T | undefined
+  /** 编译所在进程的信任模式（同 `NodeServiceContext.trust`）：SHARED 中编译步骤不取文稿指名的地址；没有时为 LOCAL（WP-91） */
+  trust?: TrustMode
 }
 
 export interface RenderContext {
@@ -1735,6 +1746,8 @@ v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下是计划�
 
 ### 9.4 残余风险（D13、D16）
 
+> 共享部署（SHARED 模式与 compose 模板）在 WP-91 的独立安全评审通过之前是实验性的；文档与 SHARED 的 serve 的启动日志都写明。
+
 两种信任模式（10.1 节）的措施之后仍然存在的风险。这里写明哪些秘密是拿得到的，第 11 节的措施不声称挡住它们。
 
 LOCAL 模式（`presmium dev`、`build`、`check` 与只监听本机、没有登录的 `presmium serve`）：唯一的用户就是运营者，下列代码都以这个用户的 uid 运行，能读写这个用户能读写的一切，清理环境变量只挡住无意的泄露：
@@ -1750,18 +1763,19 @@ LOCAL 模式（`presmium dev`、`build`、`check` 与只监听本机、没有登
 
 此外，任务进行中作者对同一文档目录的改动：git 实现以整个文档目录与快照比较，作者的改动出现在审阅的差异中，与 agent 的改动一起被接受或拒绝；deltabox（cbcow-through）只记录经视图的写入，作者直接写文档目录的改动不在差异中，全部拒绝（`abort`）之后仍然保留，但拒绝某个文件时从任务开始时的快照恢复，会覆盖作者对这个文件的改动；作者与 agent 改同一个文件时结果没有保证（deltabox 不支持这种竞争）。macOS 上的审阅与进程沙箱还没有实测，先行验证通过之前不启用（10.7 节）。
 
-SHARED 模式（compose 布局，经 WP-91 加固，10.10 节）：第三方凭据只在 gateway 中。serve 与 gateway 中不运行由文稿决定的代码：编译时执行、构建与工作区站点的开发服务器（Vite 在 Node 中加载的模块，如 VitePress 的数据加载器）都在 sandbox 中（10.2 节）；serve 只把文档当作数据读取，不向沙箱可写的目录写入任何内容（审阅的回退与恢复、编译时执行的录制、文档操作与撤销都由 agent-host 以 sandbox 的 uid 写入，沙箱埋下的符号链接只通向它本来就能写的地方），它的 git 不读系统与全局配置与工作树中的属性；它自己的令牌只在以 root 启动时取自只有 root 可读的文件、读取一次，降权后不在它的环境中（10.1 节），serve 的 uid 能读的文件里也没有秘密（10.5 节），所以文档目录中的符号链接即使让 serve 读到别处的文件，也读不到秘密；编译器另外只读真实路径在工作区之内的文件（10.2 节），工作区根目录由宿主给出，文档目录中埋下的 `.git` 不改变它。下表经 compose 布局实测（WP-91，`packages/workspace/test/deploy.test.ts` 与一次启用 deltabox 覆盖配置的测量）。仍然存在的风险：
+SHARED 模式（compose 布局，经 WP-91 加固，10.10 节）：第三方凭据只在 gateway 中，镜像中也没有运营者的文件（`.env`、`oauth2-proxy.env`、`secrets/`、`seed/` 不在构建上下文中）。serve 与 gateway 中不运行由文稿决定的代码：编译时执行、构建与工作区站点的开发服务器（Vite 在 Node 中加载的模块，如 VitePress 的数据加载器）都在 sandbox 中（10.2 节）；serve 只把文档当作数据读取，不向沙箱可写的目录写入任何内容（审阅的回退与恢复、编译时执行的录制、文档操作与撤销，以及 Presmium 的插件在 serve 中的写入（讲授的录制与讲授轨、合成缓存）都经 `DOCUMENT_FILES` 由 agent-host 以 sandbox 的 uid 写入，沙箱埋下的符号链接只通向它本来就能写的地方），也不取文稿指名的地址（离线发布的远程图片只用已有的副本），它的 git 不读系统与全局配置与工作树中的属性；它自己的令牌只在以 root 启动时取自只有 root 可读的文件、读取一次（降权后它的用户还读得到这些文件时拒绝启动），降权后不在它的环境中（10.1 节），serve 的 uid 能读的文件里也没有秘密（10.5 节），所以文档目录中的符号链接即使让 serve 读到别处的文件，也读不到秘密；编译器另外只读真实路径在工作区之内的文件（10.2 节），工作区根目录由宿主给出，文档目录中埋下的 `.git` 不改变它。下表经 compose 布局实测：`packages/workspace/test/deploy.test.ts` 每次运行默认布局；标明 deltabox 覆盖配置的部分是 WP-91 开发时（2026-10）在 Linux 主机（Ubuntu 24.04、内核 7.0、Docker 29.3，Yama `ptrace_scope` 为 1）上以 `docker compose -f compose.yaml -f compose.deltabox.yaml` 手工测量的一次，没有自动的用例，deltabox、镜像或主机变化后要重新测量。仍然存在的风险：
 
 | 风险 | 说明与限度 |
 |---|---|
 | sandbox 容器中的同 uid 进程互相可见 | 被执行的代码（`run_code`、编译时的代码）以 sandbox 的 uid 运行，能读同一容器中每个 DeepSeek Harness 进程的环境，也就是全部进行中的会话（包括其他成员与所有者的会话）的模型令牌：拿到它就能以那个会话的名义经 gateway 的模型代理调用模型，直到会话结束、令牌作废（实测：会话等待模型时，sandbox 中另一个进程从 `/proc/<pid>/environ` 读到 `DEEPSEEK_API_KEY`，以它调用 gateway 的模型代理得到 200，会话结束后 401）。内核允许读同 uid 进程的内存时（主机的 Yama `ptrace_scope` 为 0；Ubuntu 默认为 1，只允许读自己的后代，被执行的代码不是 DeepSeek Harness 的后代），还能读到这些会话的 MCP 令牌，包括所有者的：以它可以读全部文档，并以所有者的名义发出 `content` 范围的确认请求（所有者仍要回答；`workspace` 范围的确认只在控制台上回答）。agent-host 自己的令牌读不到：它以 root 启动、读取只有 root 可读的令牌文件后降权，降权后的进程不可转储（内核的 `fs.suid_dumpable` 不为 1 时；实测读 `/proc/1/environ` 被拒绝） |
-| deltabox 覆盖不到的部分 | 启用 deltabox 的覆盖配置时，只有编译时执行与 `run_code` 的代码在进程沙箱中（实测：只看得到自己的两个进程，解析不了 `gateway`，写不了文档目录与 `/tmp`）。下列仍以 sandbox 的 uid 直接在容器中运行，看得到彼此与上一行所说的会话进程，网络到得了 gateway，能写全部文档目录：DeepSeek Harness 本身（它的文件工具在 SHARED 中不经 deltabox；随包的它的写入使 deltabox-lite 0.1.1 的审阅出错，9.5 节，所以修改审阅总是 serve 中的 git 审阅）、工作区站点的开发服务器（文稿组件引用的数据加载器在其中运行）与构建中的服务端渲染。没有覆盖配置时，编译时的代码与 `run_code` 也是这样 |
+| deltabox 覆盖不到的部分 | 启用 deltabox 的覆盖配置时，只有编译时执行与 `run_code` 的代码在进程沙箱中（上面所说的手工测量：只看得到自己的两个进程，解析不了 `gateway`，写不了文档目录与 `/tmp`）。下列仍以 sandbox 的 uid 直接在容器中运行，看得到彼此与上一行所说的会话进程，网络到得了 gateway，能写全部文档目录：DeepSeek Harness 本身（它的文件工具在 SHARED 中不经 deltabox；随包的它的写入使 deltabox-lite 0.1.1 的审阅出错，9.5 节，所以修改审阅总是 serve 中的 git 审阅）、工作区站点的开发服务器（文稿组件引用的数据加载器在其中运行）与构建中的服务端渲染。没有覆盖配置时，编译时的代码与 `run_code` 也是这样 |
 | sandbox 能写全部文档目录 | 没有 deltabox 的覆盖配置时，编译时的代码与 `run_code` 能改动任何文档的目录。目标文档没有进行中的修改任务时，改动作为未提交的改动留在工作树里，下一个任务开始时进入它的快照；有进行中的任务时，git 实现以整个文档目录与快照比较，别的成员的代码写入的文件会出现在这个任务的审阅中，发起人接受时以发起人的名义提交：逐个文件查看差异是唯一的关口。agent 的文件工具以任务的文档目录为根目录，写到外面要所有者确认 |
 | agent 写进被 `.gitignore` 忽略的路径 | git 实现的审阅不含被忽略的文件（如文稿目录的 `node_modules/`）。serve、gateway 与 agent-host 都不从文稿目录加载插件（D14），这些文件不在服务端运行；工作区站点的开发服务器会把组件引用的包打包进页面，组件本身的改动仍在审阅中 |
 | 文稿的组件与原始 HTML 在阅读者的浏览器中以工作区站点的源运行 | 编辑者（或 agent）写的组件在其他成员打开该文档时，能以那位成员的身份调用站点上的路由：提交修改任务、接受或拒绝审阅、回答 `content` 范围的确认、撤销修改，提交的署名因此可能被冒用。所有者独有的操作不在这个源上：`workspace` 范围的确认、所有者路由（如登记同意记录）与所有者代理只在所有者控制台的源上（10.4、10.10 节），那里不显示文稿的任何内容，站点上的组件读不到它的响应，也发不出它接受的请求。站点的开发服务器（在 sandbox 中，数据加载器在其中运行）收不到成员的登录 Cookie 与身份，也不能设置 Cookie（10.10 节） |
-| 插件在 serve 中的路由与编译步骤写文档目录 | serve 自己的写入都经 agent-host（10.10 节），但插件的代码在 serve 中直接写 `ServerContext.deckDir`：讲授插件保存录制的媒体与 `track.json`（`lectures/<ID>/`，固定的文件名与媒体扩展名，按字节位置写入），语音插件写合成缓存（`.presmium/speech/`，先检查真实路径在文稿之内）与 `speech.lock.json`。沙箱在检查与写入之间把这些位置换成符号链接时，写入的是 serve 能写的文件（如 `.git/` 或工作区根目录中同名的文件）；文件名不由沙箱决定，内容来自编辑者的上传或合成的音频。它们改为经 `DOCUMENT_FILES` 之前列为残余风险 |
+| agent 会话的记录 | 随包的 DeepSeek Harness 把每个会话的记录（提示、回答与工具的输出，包括读者的提问）存在 sandbox 的状态目录中（`~/.local/state/presmium/dsh/`），以 sandbox 的 uid 运行的任何代码（编译时的代码、`run_code`、站点的数据加载器）都读得到全部成员的这些记录。实测（WP-91 的评审）其中没有令牌。记录不按会话分开，也不在会话结束后删除 |
+| 运营者插件在 serve 中自己写文件 | Presmium 的插件在 serve 中写文稿目录都经 `DOCUMENT_FILES`（讲授插件的录制、讲授轨与逐字对齐，语音插件的合成缓存与 `speech.lock.json`，10.10 节），SHARED 中不下载文稿指名的远程图片。插件契约要求这样做（`DOCUMENT_FILES`），但插件的代码在 serve 中运行，运营者另装的插件若直接写 `ServerContext.deckDir`，沙箱埋下的链接就能把这样的写入引到 serve 能写的文件；运营者的插件是运营者信任的代码（D14） |
 | 沙箱在文档目录中埋下嵌套的 `.git` | serve 的 git 从不把它当作仓库（git 目录固定），也不读它的配置（实测：嵌套仓库的配置与属性定义的过滤器没有运行），编译器也不把它当作工作区（10.10 节）。一个有效的嵌套仓库（有自己的提交）在审阅与提交中只作为一个子模块链接（gitlink）出现，其中的文件像被忽略的文件一样不在审阅之中；拒绝时它被删除，撤销遇到它时报错 |
-| 读者站点的源码 | 学生视图的站点不给工作区中的 Markdown、配置、执行缓存、讲授与产物（10.10 节）；文稿组件的模块与它们引用的文件读者照样取得（同运行它们一样），编辑者写进组件里的教师内容因此对读者可见 |
+| 读者站点的源码 | 学生视图的站点经 Vite 的 `/@fs/` 只给读者学生视图的页面加载的文件（白名单，10.10 节）：文档目录中只有 `components/` 与 `src/`（不含 `src/node/`）之下的文件，工作区根目录的 `node_modules/`，Presmium 的安装与插件中只有依赖与浏览器部分；按请求的路径与它的真实路径各查一次。文档的 Markdown、数据文件、答案、配置、执行缓存、讲授与产物都不给。组件的模块与它们引用的文件读者照样取得（同运行它们一样），编辑者写进组件目录里的教师内容（或沙箱的代码复制到那里的文件）因此对读者可见 |
 | 审阅之前的改动对读者可见 | git 实现与 Linux 上的 deltabox（cbcow-through）下，agent 的改动在接受之前已在文档目录中，编辑者的页面随之更新（P-113），读者的站点也会显示；被拒绝时撤回 |
 | deltabox 覆盖配置削弱 sandbox 容器 | cbcow 模式（审阅与进程沙箱都用它）需要 `/dev/fuse`、`SYS_ADMIN` 与 `apparmor:unconfined`；在会话中执行命令（进程沙箱）另需 `SYS_PTRACE`（Docker 的 seccomp 只在有它时允许 `pidfd_getfd`）。默认的 compose 布局不加这些权限，只有运营者启用覆盖配置时才加。镜像中为它装的 `fusermount3` 是 setuid 的（deltabox 以它挂载 FUSE）；默认布局中没有 `/dev/fuse`，它什么也挂载不了 |
 | gateway 持有全部第三方凭据 | gateway 只加载运营者的插件，不运行文稿的代码；工作区的数据卷以只读挂载，它只读取工作区配置与根目录的插件，不读文档；它被攻破就失去全部凭据。经 serve 到达它的浏览器请求只带限定于目标插件的令牌（10.10 节）；serve 的服务令牌在 serve 中，serve 被攻破时它可以签发任何令牌 |
@@ -1919,7 +1933,7 @@ presmium serve（SHARED，compose 布局）
   - **镜像**：三个服务用同一个镜像（Ubuntu 24.04 或 Debian trixie 为基础，满足 deltabox-lite 对 glibc 2.39 的要求），其中装有 Presmium（含随 CLI 安装的 `addon-deltabox`）、DeepSeek Harness 与运营者的插件；文档目录中的 `node_modules` 不被加载（D14）。
   - **deltabox 的覆盖配置** `compose.deltabox.yaml`（可选）：给 `sandbox` 加 `devices: [/dev/fuse]`、`cap_add: [SYS_ADMIN, SYS_PTRACE]` 与 `security_opt: [apparmor:unconfined]`，agent-host 中默认加载的 `addon-deltabox` 因此能登记审阅与进程沙箱；这些权限削弱外层的容器（9.4 节），所以默认不加。
   - 课堂服务与 `templates/env/compose/` 共用覆盖配置的 Jupyter 环境照旧；远端 Jupyter 的令牌只在 gateway 中。
-  - **实现（WP-79）**：`templates/workspace/compose/`（`compose.yaml`、`compose.deltabox.yaml`、`Dockerfile`、`init.sh`、`env.example`、`oauth2-proxy.env.example`、`README.md`）。镜像基于 `node:22-trixie-slim`（固定摘要），另装 Python 与 git，用户 `serve` 1001、`gateway` 1002、`sandbox` 1003、`classroom` 1004，`serve` 与 `sandbox` 在组 `presmium-docs`（1100）中；构建上下文是已 `pnpm install` 的检出，运营者的插件就是镜像中装好的包，`init.sh` 把工作区根目录的 `node_modules` 链接到它们。一次性的 `init` 服务以 root 准备数据卷：从 `./seed` 复制工作区（数据卷为空时）、必要时 `git init`，并设置上面的权限；工作区根目录本身有 `lecture.md` 时失败。serve、gateway 与 sandbox 都以 root 启动、读取 compose 的文件型 `secrets`（主机上 0600 的文件，容器中只有 root 可读）后降为各自的用户（gateway 也有 `--user`）。oauth2-proxy 由它在 `edge` 上的固定地址被信任（`--trust-proxy-from`；它只能经 alpha 配置加固定的请求头，所以模板不用共享密钥），serve 只监听它在 `edge` 上的固定地址（`PRESMIUM_EDGE`，默认 `172.31.79`），gateway 与 agent-host 以 `--hostname gateway`、`sandbox` 接受经服务名的请求。serve 新建、复制、重命名的文档目录交给 `PRESMIUM_DOCUMENTS_GROUP`（`presmium-docs`），setgid 并组可写。`packages/workspace/test/deploy.test.ts` 启动这个模板检查上述布局。
+  - **实现（WP-79）**：`templates/workspace/compose/`（`compose.yaml`、`compose.deltabox.yaml`、`Dockerfile`、`init.sh`、`env.example`、`oauth2-proxy.env.example`、`README.md`）。镜像基于 `node:22-trixie-slim`（固定摘要），另装 Python 与 git，用户 `serve` 1001、`gateway` 1002、`sandbox` 1003、`classroom` 1004，`serve` 与 `sandbox` 在组 `presmium-docs`（1100）中；构建上下文是已 `pnpm install` 的检出（只取白名单中的部分，运营者放在模板目录中的文件不在其中，10.10 节），运营者的插件就是镜像中装好的包，`init.sh` 把工作区根目录的 `node_modules` 链接到它们。一次性的 `init` 服务以 root 准备数据卷：从 `./seed` 复制工作区（数据卷为空时）、必要时 `git init`，并设置上面的权限；工作区根目录本身有 `lecture.md` 时失败。serve、gateway 与 sandbox 都以 root 启动、读取 compose 的文件型 `secrets`（主机上属于 root、0600 的文件；容器中保留主机的属主与权限，降权后还读得到时拒绝启动，10.10 节）后降为各自的用户（gateway 也有 `--user`）。oauth2-proxy 由它在 `edge` 上的固定地址被信任（`--trust-proxy-from`；它只能经 alpha 配置加固定的请求头，所以模板不用共享密钥），serve 只监听它在 `edge` 上的固定地址（`PRESMIUM_EDGE`，默认 `172.31.79`），gateway 与 agent-host 以 `--hostname gateway`、`sandbox` 接受经服务名的请求。serve 新建、复制、重命名的文档目录交给 `PRESMIUM_DOCUMENTS_GROUP`（`presmium-docs`），setgid 并组可写。`packages/workspace/test/deploy.test.ts` 启动这个模板检查上述布局。
 - **Kubernetes**：`templates/workspace/kubernetes/README.md` 与 `templates/env/kubernetes/README.md` 只给文档与清单片段（工作区：按 compose 布局的三个容器、不同的 uid、只允许 sandbox 连 gateway 的 NetworkPolicy、带 oauth2-proxy 的入口（站点与控制台两个主机名）与仓库的 PVC；远端环境：Zero to JupyterHub 的 `values.yaml` 片段，按 CPU、GPU、MIG 划分的配置，gVisor 的 `runtimeClassName`，回收设置，以及 agent-sandbox 的模板），不维护 Helm chart。工作区的 Kubernetes 文档是按同一布局的参考，不经测试，SHARED 模式支持的只有 compose 布局。集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书、身份提供方由用户负责。
 - 静态构建产物仍可发布到任意静态托管。
 
@@ -2028,15 +2042,16 @@ serve 为每个 agent 会话向 gateway 签发一个只含 `presmium.assistant` 
 | 修改审阅的回退与恢复（全部拒绝、拒绝某些文件、回到某一步之前、关闭与取消任务、崩溃后的恢复） | serve 中的 git 审阅（10.7 节）只读工作树、只写 `.git/` 与系统临时目录中的临时索引；要写回的文件从 git 读出（`cat-file`），经工作区登记的 `DOCUMENT_FILES`（4.8 节，内核契约的增补）交给 agent-host 的 `POST /v1/files` 写入（`presmium dev` 中没有这个服务，git 照旧 `checkout-index`） |
 | 编译时执行的录制 | serve 的编译从不执行，也从不录制：它的 `admit` 总是返回空，可以执行的代码（`trusted` 的全部，`approve` 中所有者允许的）交给 agent-host 的 `POST /v1/documents/<文档>/record`，agent-host 以同样的键编译这份文档、执行并写下录制，serve 随后重新编译，从执行缓存中取用（10.6 节）。同一段代码只交出一次，超时（不录制）的不会反复执行；编辑者的“请求执行”再交一次 |
 | 文档的新建、复制、删除，重命名时改写其他文档的链接 | serve 在它的目录中新建空的文档目录（给文档组、setgid 与组可写，此后不再往里写）、改名、删除已清空的目录；模板的文件、复制的文件（链接照原样复制为链接，不复制它指向的内容）、改写的 Markdown（跳过符号链接）与清空目录都由 agent-host 进行 |
+| 插件在 serve 中的写入（评审中发现，WP-91） | 讲授插件的录制（按字节位置分段上传的媒体、`track.json`、录制目录的 `.gitignore` 或 `.gitattributes`、替换掉的媒体的删除）、转写与改句后的讲授轨、合成片段的逐字对齐（`<键>.align.json`），语音插件的合成缓存与 `speech.lock.json`：插件从 `ServerContext.service`、`AgentToolContext.service` 或 `NodeServiceContext.service`（只增加）取得 `DOCUMENT_FILES` 并经它写入，按字节位置的写入是变更的 `at`（只增加）；没有这个服务时（`presmium dev`、`build`）照旧在本进程中写。离线发布的远程图片（`addon-publish` 的编译步骤）在 SHARED 中不下载、不删除，只用已有的副本（`PassContext.trust`，只增加）：serve 不取文稿指名的地址（它在 `edge` 与 `agents` 上，连得到内部的服务），也不写文档目录。这几个插件（`packages/addon-lecture`、`addon-speech`、`addon-publish`）与编译器给出这两个字段的两行不在本工作包的归属中，由验收者确认 |
 | 撤销（`git revert`） | serve 以 `git merge-tree --write-tree --merge-base` 算出撤销后的树，不碰索引与工作树；与之后的提交冲突、或涉及的文件在工作树中有没有提交的改动（含被换成链接）时什么也不写，报告这些文件；否则文档目录中的文件经 `DOCUMENT_FILES` 写入（需要重新出现的文档目录由 serve 新建），文档之外的文件（所有者允许、随任务提交过的）由 serve 写，但它们所在的目录有别人能写时拒绝。会改动文档之外的文件（如工作区配置）的撤销只有所有者能做，编辑者得到 403（撤销接受任何提交，原先编辑者可以撤销运营者对成员与设置的修改） |
 
-`DOCUMENT_FILES` 的写入（`src/node/files.ts`，两种模式共用；LOCAL 在本进程中）：路径相对于工作区根目录，必须在配置的模式所指的文档目录之内，任何一段都不是 `.git`，从根目录到文档目录的每一段都是真实的目录；文档目录之内，挡路的文件或链接换成目录，文件写在旁边再改名替换（链接被替换而不被跟随），删除后清掉变空的目录。agent-host 中它以 sandbox 的 uid 运行，所以即使在检查与写入之间被换了链接，写入也到不了 serve 的文件。
+`DOCUMENT_FILES` 的写入（`src/node/files.ts`，两种模式共用；LOCAL 在本进程中）：路径相对于工作区根目录，必须在配置的模式所指的文档目录之内，任何一段都不是 `.git`，从根目录到文档目录的每一段都是真实的目录；文档目录之内，挡路的文件或链接换成目录，文件写在旁边再改名替换（链接被替换而不被跟随），按位置的写入（`at`）以不跟随链接的方式打开那里的文件（是链接或别的东西时先换成空文件，不留空洞），删除后清掉变空的目录。agent-host 中它以 sandbox 的 uid 运行，所以即使在检查与写入之间被换了链接，写入也到不了 serve 的文件。
 
 **serve 的 git 在隔离的配置下运行**（`packages/workspace/src/node/git.ts`、助手的 `git-review.ts`，SHARED 模式）：`GIT_CONFIG_NOSYSTEM=1`、`GIT_CONFIG_GLOBAL=/dev/null`（不读系统与全局配置）；工作树中的属性从空树读取（`GIT_ATTR_SOURCE`，git 2.42 起；另 `GIT_ATTR_NOSYSTEM=1`、`core.attributesFile=/dev/null`），所以文档里的 `.gitattributes` 指名的过滤器、diff 与合并驱动都不运行；钩子与 fsmonitor 照旧关闭；git 目录与工作树在 serve 启动时从工作区根目录找到并固定（`GIT_DIR`、`GIT_WORK_TREE`；审阅从根目录而不是文档目录找），文档目录中埋下的 `.git` 从不被当成仓库；进程继承的 `GIT_*` 变量都去掉。仓库自己的 `.git/config` 与 `info/attributes` 照常读取：它们只有 serve 能写，是运营者的配置（例如在那里配置 Git LFS）。工作树中的 `.gitattributes` 因此在 SHARED 中不起作用：讲授插件为 `lfs` 写的 `.gitattributes` 要换成运营者在 `.git/info/attributes` 中的配置。git 低于 2.42 时 SHARED 的 serve 拒绝启动。
 
 **`RunContext.env` 的计算方唯一**：SHARED 中被执行的代码看到的环境只由 agent-host（它的编译器，按 `serve` 规则）算出；serve 发往 agent-host 的运行请求不带环境（`remote` 的 `env` 参数被忽略）。LOCAL 中由执行代码的 `presmium` 进程算出。
 
-**serve 读取令牌文件的方式唯一**：三个秘密在 `startServer` 中由 `sharedSetup` 读取一次（工作区的客户端从 `PresmiumServer.agentHost` 取得 agent-host 的访问，不再自己读），随后降权；以 root 启动（给出 `--user`）时只接受 `_FILE`，同名的环境变量在场时拒绝启动，所以 compose 中秘密从不在任何环境中。agent-host 同样。不以 root 启动的测试照旧可以用环境变量。
+**serve 读取令牌文件的方式唯一**：三个秘密在 `startServer` 中由 `sharedSetup` 读取一次（工作区的客户端从 `PresmiumServer.agentHost` 取得 agent-host 的访问，不再自己读），随后降权；以 root 启动（给出 `--user`）时只接受 `_FILE`，同名的环境变量在场时拒绝启动，所以 compose 中秘密从不在任何环境中。agent-host 同样。不以 root 启动的测试照旧可以用环境变量。compose 的文件型 `secrets` 保留主机文件的属主与权限，主机上的属主恰好是服务的 uid 时（例如运营者的 uid 是 1003），降权后的进程与以它运行的代码就读得到令牌文件：serve、agent-host 与 gateway 降权之后检查自己读过的令牌文件，还读得到时拒绝启动（`assertUnreadable`，`packages/server/src/trust.ts`；gateway 与 agent-host 经 `becomeUser`），README 要求令牌文件属于 root（`chown 0:0`、`chmod 600`）。
 
 **所有者控制台的来源规则同时覆盖路由与代理**：`ProxySpec.role` 为 `owner` 的代理同所有者路由一样只挂在控制台的主机名上（站点上 404），其他代理不在控制台上；控制台上除页面本身（`/`，可以从站点的链接打开）以外的请求，浏览器标出 `Sec-Fetch-Site` 时必须是 `same-origin`，改变状态的请求另要控制台的 `Origin` 与 `Presmium-Console`，WebSocket 必须带控制台的 `Origin`；控制台的响应另带 `Cross-Origin-Resource-Policy: same-origin`。站点上的 WebSocket 同改变状态的请求一样，`Origin` 不是站点时得到 403。
 
@@ -2044,15 +2059,17 @@ serve 为每个 agent 会话向 gateway 签发一个只含 `presmium.assistant` 
 
 **修改历史只给编辑者与所有者**：`GET revisions` 原先读者也能调用，而提交说明引用批注、对话的要求与 agent 的说明，可能含有只给教师的内容；现在它同撤销一样要编辑者（页面上的修改历史本来只给编辑者显示）。
 
-**读者站点不给源码**：学生视图的站点开发服务器能经 Vite 的 `/@fs/`（与 `/@id/`）提供 `server.fs.allow` 中的文件，包括文档的整份 Markdown（含只给教师的内容）。serve 为学生视图转发之前拒绝（404）指向工作区之内的这类请求中的 Markdown、YAML、notebook 与文本文件、目录本身，以及 `.git/`、`.presmium/`（执行缓存）、`lectures/`、`dist/` 中的任何文件；只接受 `GET` 与 `HEAD`，不接受带片段（`#`）的请求。文稿组件的模块照常提供。
+**读者站点只给页面加载的文件**：学生视图的站点开发服务器能经 Vite 的 `/@fs/`（与 `/@id/`）提供 `server.fs.allow` 中的文件：文档目录（含文档的整份 Markdown、只给教师的 `{literalinclude}` 引入的答案与数据文件）、Presmium 的安装（镜像中的 `/opt/presmium`）与插件目录。serve 为学生视图转发之前按白名单检查这类请求所指的文件（`studentRefusal`，`packages/workspace/src/node/remote-site.ts`），请求的路径与它的真实路径都要在白名单中，否则 404：工作区之内只有文档目录的 `components/` 与 `src/`（不含 `src/node/`，站点按这两个约定加载文稿的组件与浏览器部分，以及它们在旁边引用的文件）和工作区根目录的 `node_modules/`（运营者装的包，D14）；工作区之外只有依赖（路径中有 `node_modules`）与包（最近的有 `package.json` 的目录）的浏览器部分：`src/`（不含 `src/node/`）、`components/`、`media/`、顶层的 `.vue` 与 `.css`。任何一段是 `.git` 的都不给。`/@id/` 之后不是路径的标识（虚拟模块、裸导入）照常转发，相对的标识拒绝。只接受 `GET` 与 `HEAD`，不接受带片段（`#`）的请求。白名单按 `e2e/workspace.spec.ts` 中读者打开文档与首页时页面实际请求的文件核对过（全部在白名单中）。
+
+**镜像中没有运营者的文件**：README 让运营者在 `templates/workspace/compose/` 中放 `.env`（第三方凭据）、`oauth2-proxy.env`（登录代理的密钥）、`secrets/` 与 `seed/`，而镜像原先以整个检出为构建上下文、`COPY . /opt/presmium`，这些文件因此进了镜像，sandbox 的 uid 读得到，读者也能经站点的 `/@fs/` 读到（评审实测）。现在 `Dockerfile.dockerignore` 是白名单（`package.json`、`pnpm-workspace.yaml`、`node_modules/`、`packages/`（不含测试与产物）、`examples/demo/node_modules/`、`templates/document/`、`init.sh`），`Dockerfile` 也只逐项复制这些，模板目录另有 `.gitignore` 忽略这四样。
 
 **工作区根目录由宿主给出**：编译器原先以文档目录中 `git rev-parse --show-toplevel` 的结果为工作区根目录，失败时就是文档目录本身。沙箱在文档目录中放一个 git 读不了的 `.git` 文件，就让 serve 的编译把文档目录当作工作区根目录，从那里的 `node_modules` 加载与运营者插件同名的包，也就是在 serve 中运行沙箱的代码（实测）；agent-host 读不了 `.git/`，在 compose 布局中总是如此，所以那里的编译从来找不到运营者的插件。编译器增加选项 `CompilerOptions.workspaceRoot`（`packages/compiler/src/compiler.ts`，只增加；不在本工作包的归属中，由验收者确认），serve 与 agent-host 都给出配置中的根目录。
 
 **agent 写给自己的文件**：随包的 DeepSeek Harness 以只有自己可读写的权限原子地写文件（在别处写好再改名进来，组也不是文档组），serve 在文档组中读不了它们，审阅因此失败。agent-host 在 agent 的每个工具调用完成之后与提示结束时（在 serve 收到事件之前），把会话工作目录中属于 sandbox 的文件与目录交给该目录的组、加上组的读写（目录另加 setgid），不跟随链接（`shareTree`）。
 
-**deltabox 的覆盖配置**：镜像原先没有 `fusermount3`，覆盖配置下 deltabox 也起不来；镜像现在装有 `fuse3`。实测启用覆盖配置后，编译时的代码只看得到自己的进程、解析不了 `gateway`、写不了文档目录与 `/tmp`；它覆盖不到的部分写在 9.4 节。
+**deltabox 的覆盖配置**：镜像原先没有 `fusermount3`，覆盖配置下 deltabox 也起不来；镜像现在装有 `fuse3`。启用覆盖配置后手工测量过一次（9.4 节写明何时、在哪里）：编译时的代码只看得到自己的进程、解析不了 `gateway`、写不了文档目录与 `/tmp`；它覆盖不到的部分写在 9.4 节。`deploy.test.ts` 只运行默认布局。
 
-**用例**：`packages/server/test/server.test.ts`（站点与代理得不到成员的凭据、不能设 Cookie，越出目标的路径被拒绝；所有者代理只在控制台上，控制台对路由与代理的来源规则）、`shared-gateway.test.ts`（以 gateway 为目标的代理带限定于目标插件的令牌，调用不了只收服务令牌的路由；serve 与 gateway 拒绝越出的路径）；`packages/workspace/test/documents.test.ts`（LOCAL 的文档操作与以 `merge-tree` 实现的撤销）；`packages/workspace/test/deploy.test.ts`（compose 布局，另加测试用的登录代理（`test/fixtures/compose/`）与只有 gateway 连得到的假模型服务，随包的 DeepSeek Harness 在 sandbox 中运行：任务等待审阅时 sandbox 把文件换成指向 `.git/config` 与工作区配置的链接、写入指名运营者过滤器的属性，全部拒绝、回到某一步之前与取消任务都替换链接、两个文件不变、过滤器没有运行、写回的文件属于 sandbox 的 uid；9.4 节的同 uid 风险如所写；文档操作与撤销由 sandbox 写入、不跟随链接；编译时的代码由 agent-host 执行并录制，执行缓存是指向 `.git/` 的链接时什么也写不进去；文档中埋下的 `.git` 与 `node_modules` 不改变工作区根目录，serve 与 agent-host 都不加载其中的包；读者经站点取不到源码与修改历史，编辑者取得到源码；serve 以 root 启动时拒绝环境变量中的令牌）。同一台机器上可以同时运行多份：项目与镜像按 `PRESMIUM_TEST_COMPOSE_PREFIX` 与每次的随机名命名，端口与 `edge` 子网可以由 `PRESMIUM_DEPLOY_PORT`、`PRESMIUM_DEPLOY_EDGE` 指定，`PRESMIUM_DEPLOY_KEEP=1` 留下部署以便查看。
+**用例**：`packages/server/test/server.test.ts`（站点与代理得不到成员的凭据、不能设 Cookie，越出目标的路径被拒绝；所有者代理只在控制台上，控制台对路由与代理的来源规则）、`shared-gateway.test.ts`（以 gateway 为目标的代理带限定于目标插件的令牌，调用不了只收服务令牌的路由；serve 与 gateway 拒绝越出的路径）；`packages/workspace/test/documents.test.ts`（LOCAL 的文档操作与以 `merge-tree` 实现的撤销）；`packages/workspace/test/deploy.test.ts`（compose 布局，另加测试用的登录代理（`test/fixtures/compose/`）与只有 gateway 连得到的假模型服务，随包的 DeepSeek Harness 在 sandbox 中运行：任务等待审阅时 sandbox 把文件换成指向 `.git/config` 与工作区配置的链接、写入指名运营者过滤器的属性，全部拒绝、回到某一步之前与取消任务都替换链接、两个文件不变、过滤器没有运行、写回的文件属于 sandbox 的 uid；9.4 节的同 uid 风险如所写；文档操作与撤销由 sandbox 写入、不跟随链接；编译时的代码由 agent-host 执行并录制，执行缓存是指向 `.git/` 的链接时什么也写不进去；文档中埋下的 `.git` 与 `node_modules` 不改变工作区根目录，serve 与 agent-host 都不加载其中的包；读者经站点取不到 Markdown、答案、数据文件、指向它们的链接、配置与安装中的非浏览器文件，取得到文稿的组件与 Presmium 的浏览器代码，也取不到修改历史，编辑者取得到源码；讲授插件的录制在录制目录、媒体文件与讲授轨被换成指向 `.git/` 的链接时由 sandbox 写入、`.git/` 不变，serve 不取文稿中远程图片的地址（测试的登录代理兼作 `edge` 上的探针）；模板目录中埋下的运营者文件不在镜像中，sandbox 与读者都读不到；serve 以 root 启动时拒绝环境变量中的令牌与降权后仍读得到的令牌文件）。同一台机器上可以同时运行多份：项目与镜像按 `PRESMIUM_TEST_COMPOSE_PREFIX` 与每次的随机名命名，端口与 `edge` 子网可以由 `PRESMIUM_DEPLOY_PORT`、`PRESMIUM_DEPLOY_EDGE` 指定，`PRESMIUM_DEPLOY_KEEP=1` 留下部署以便查看。
 
 ## 11. 安全（N-08）
 

@@ -41,7 +41,7 @@ export class DeckSpeech implements SpeechBackend {
     // No engine at all: the inner service says so, and asks none.
     if (!engine) return this.#write(await this.#inner.synthesize(request, signal), request)
     const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
-    const hit = this.cache.find(key)
+    const hit = await this.cache.find(key)
     if (hit) {
       const { record, file } = hit
       const result: SynthesisResult = {
@@ -63,8 +63,8 @@ export class DeckSpeech implements SpeechBackend {
     return this.#write(await this.#inner.synthesize({ ...request, engine }, signal), request)
   }
 
-  #write(result: SynthesisResult, request: SynthesisRequest): { result: SynthesisResult, file: string } {
-    return { result, file: this.cache.write(result, request).file }
+  async #write(result: SynthesisResult, request: SynthesisRequest): Promise<{ result: SynthesisResult, file: string }> {
+    return { result, file: (await this.cache.write(result, request)).file }
   }
 
   async synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult> {

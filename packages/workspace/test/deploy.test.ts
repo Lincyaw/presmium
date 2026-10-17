@@ -14,13 +14,17 @@
 // review, going back to before a step and cancelling the task replace the links, change neither file and
 // run no filter. The document operations and a revert are written by agent-host, as the sandbox, and follow
 // no link; compile-time code is run and recorded by agent-host, and a link of the execution cache leads
-// nowhere; a reader's site serves no source; serve started as root takes its secrets from files only.
+// nowhere; a plugin's writes in serve (a lecture recorded) go through agent-host too, over the sandbox's
+// links, and serve fetches no address a document names; a reader's site serves only what the student view's
+// pages load (no Markdown, no data file, nothing of the installation but its browser code); the operator's
+// files beside compose.yaml never reach the image; serve started as root takes its secrets from files only,
+// and none the user it becomes can read.
 //
 // Needs Docker with compose (and the network for the base image's packages); skipped without it. Several
 // checkouts may run it at once: the project and image are named per run (PRESMIUM_TEST_COMPOSE_PREFIX),
 // the ports and the edge subnet can be set (PRESMIUM_DEPLOY_PORT, PRESMIUM_DEPLOY_EDGE).
 import { execFile, spawnSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -45,6 +49,10 @@ const CREDENTIAL = `deploy-credential-${id}`
 const MODEL_KEY = `model-key-${id}`
 const TOKENS = { gateway_token: `gateway-${id}`, agent_host_token: `agent-host-${id}` }
 const TEACHER = `TEACHERONLY${id}`
+/** The operator's files beside compose.yaml in the checkout, as the README has them made (each with this marker). */
+const TEMPLATE = join(ROOT, 'templates/workspace/compose')
+const OPERATOR = `OPERATORONLY${id}`
+const PLANTED = [`.env`, `deploy-${id}.env`, `secrets/deploy-${id}`, `seed/deploy-${id}/lecture.md`]
 
 const CONFIG = `title: 部署测试
 # The other documents' links follow a rename; a link to this file in a document is no document's: [笔记](../notes/lecture.md)
@@ -53,7 +61,7 @@ members:
   editors: [editor@test]
 settings:
   presmium.workspace:
-    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-exec']
+    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-exec', '@presmium/slidev-addon-lecture', '@presmium/slidev-addon-publish']
   presmium.exec:
     compile: trusted
 `
@@ -81,7 +89,22 @@ print('RECORDED BY', os.getuid())
 只给教师：${TEACHER}。
 `
 
+/** A document with the lecture plugin, and the publish plugin with a remote image at the test's probe (on `edge`, where serve is). */
+const TALK = `---
+title: 讲授
+plugins:
+  - '@presmium/slidev-addon-lecture'
+  - '@presmium/slidev-addon-publish'
+---
+
+# 讲授
+
+![探针](http://${EDGE}.12:8080/__probe/${id}.png)
+`
+
 let dir: string
+/** The operator's files this test planted in the checkout (removed afterwards). */
+const planted: string[] = []
 const compose = (args: string[], timeoutMs = 600_000): Promise<{ code: number, stdout: string, stderr: string }> => new Promise((resolve) => {
   execFile('docker', ['compose', '-p', PROJECT, '-f', COMPOSE, '-f', TEST_COMPOSE, '--project-directory', dir, ...args], {
     env: { ...process.env, PRESMIUM_SOURCE: ROOT, PRESMIUM_IMAGE: IMAGE, PRESMIUM_TEST_FIXTURES: join(FIXTURES, 'compose'), PRESMIUM_LOGIN_PORT: String(LOGIN), PRESMIUM_EDGE: EDGE },
@@ -99,8 +122,8 @@ const hashes = async (...paths: string[]) => (await exec('serve', ['sha256sum', 
 const reaches = async (service: string, url: string) => (await exec(service, ['node', '-e', `fetch(${JSON.stringify(url)}, { signal: AbortSignal.timeout(5000) }).then(() => process.exit(0), () => process.exit(3))`])).code === 0
 
 /** A request through the test's login proxy, as a member, on the site's host name. */
-function route(member: string, path: string, options: { json?: unknown, document?: string } = {}): Promise<RawResponse> {
-  return raw(`http://127.0.0.1:${LOGIN}${path}`, { json: options.json, headers: { 'Host': `site.test:${LOGIN}`, 'X-Test-Member': member, ...options.document ? { 'Presmium-Document': options.document } : {} } })
+function route(member: string, path: string, options: { json?: unknown, body?: Uint8Array, method?: string, document?: string } = {}): Promise<RawResponse> {
+  return raw(`http://127.0.0.1:${LOGIN}${path}`, { json: options.json, body: options.body, method: options.method, headers: { 'Host': `site.test:${LOGIN}`, 'X-Test-Member': member, ...options.document ? { 'Presmium-Document': options.document } : {} } })
 }
 
 /** The events of a task (SSE) as a page follows them. */
@@ -191,6 +214,23 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
       writeFileSync(join(dir, 'seed', doc, 'lecture.md'), LECTURE(doc === 'course' ? '课程' : doc === 'other' ? '另一份' : '笔记'))
     }
     writeFileSync(join(dir, 'seed/presmium.workspace.yaml'), CONFIG)
+    // What only teachers see beside the course's source (a solution, data), and a component of the deck's.
+    writeFileSync(join(dir, 'seed/course/solution.py'), `# ${TEACHER}\n`)
+    writeFileSync(join(dir, 'seed/course/answers.json'), `{ "answer": "${TEACHER}" }\n`)
+    mkdirSync(join(dir, 'seed/course/components'))
+    writeFileSync(join(dir, 'seed/course/components/Probe.vue'), '<template><span>probe</span></template>\n')
+    mkdirSync(join(dir, 'seed/talk'))
+    writeFileSync(join(dir, 'seed/talk/lecture.md'), TALK)
+    // The operator's files where the README has them made, in the checkout the image is built from (an
+    // existing .env is the operator's own, and stays).
+    for (const file of PLANTED) {
+      const path = join(TEMPLATE, file)
+      if (existsSync(path)) continue
+      for (const top of ['secrets', 'seed']) if (file.startsWith(`${top}/`) && !existsSync(join(TEMPLATE, top))) planted.push(join(TEMPLATE, top))
+      mkdirSync(join(path, '..'), { recursive: true })
+      writeFileSync(path, `PLANTED=${OPERATOR}\n`)
+      planted.push(path)
+    }
     // The packages the template links at the root (the demo's, as init.sh does), and the assistant.
     const demo = join(ROOT, 'examples/demo/node_modules')
     for (const name of readdirSync(demo).filter(name => !name.startsWith('.'))) {
@@ -200,6 +240,7 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
       }
     }
     symlinkSync('/opt/presmium/packages/addon-assistant', join(dir, 'seed/node_modules/@presmium/slidev-addon-assistant'))
+    symlinkSync('/opt/presmium/packages/addon-lecture', join(dir, 'seed/node_modules/@presmium/slidev-addon-lecture'))
     writeFileSync(join(dir, 'seed/.gitignore'), 'node_modules\ndist\n.presmium\n')
     const up = await compose(['up', '-d', '--build'], 1_200_000)
     if (up.code !== 0) throw new Error(`docker compose up failed:\n${up.stdout}\n${up.stderr}`)
@@ -216,6 +257,7 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
   }, 1_500_000)
 
   afterAll(async () => {
+    for (const path of planted.reverse()) rmSync(path, { recursive: true, force: true })
     // PRESMIUM_DEPLOY_KEEP=1 leaves the deployment up to look at (docker compose -p <project> logs).
     if (process.env.PRESMIUM_DEPLOY_KEEP === '1') return console.warn(`[presmium] the deployment ${PROJECT} stays up in ${dir}`)
     if (dir) {
@@ -260,6 +302,20 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
       expect(await reaches('sandbox', 'http://serve:4310/')).toBe(false)
       expect(await reaches('sandbox', `http://${EDGE}.11:4310/`)).toBe(false)
       expect(await reaches('sandbox', 'http://gateway:4320/info')).toBe(true)
+    })
+
+    it('keeps the operator\'s files beside compose.yaml out of the image: neither the sandbox nor a reader reads them', async () => {
+      // Only init.sh of the template's directory is in the image, as root sees it.
+      expect((await exec('serve', ['ls', '-A', '/opt/presmium/templates/workspace/compose'], 'root')).stdout.trim()).toBe('init.sh')
+      expect((await exec('serve', ['ls', '-A', '/opt/presmium'], 'root')).stdout.trim().split('\n').sort()).toEqual(['examples', 'node_modules', 'package.json', 'packages', 'pnpm-workspace.yaml', 'templates'])
+      for (const file of PLANTED) {
+        const read = await asSandbox(`cat /opt/presmium/templates/workspace/compose/${file}`)
+        expect(read.code, file).not.toBe(0)
+        expect(read.stdout).not.toContain(OPERATOR)
+        const reader = await route('reader@test', `/course/@fs/opt/presmium/templates/workspace/compose/${file}?raw`)
+        expect(reader.status, file).toBe(404)
+        expect(reader.text).not.toContain(OPERATOR)
+      }
     })
 
     it('lets sandbox write a document directory and nothing else of the workspace, nor read agent-host\'s environment', async () => {
@@ -422,25 +478,74 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
       for (const service of ['serve', 'sandbox']) expect((await exec(service, ['test', '-e', '/tmp/planted-plugin-ran'])).code, service).not.toBe(0)
     }, 300_000)
 
-    it('serves a reader no source through the site\'s dev server nor the history, an editor the whole document', async () => {
+    it('serves a reader only what the student view\'s pages load through the site\'s dev server, nor the history; an editor the whole document', async () => {
       const path = '/course/@fs/workspace/course/lecture.md?raw'
       expect((await route('reader@test', '/course/')).status).toBe(200)
       const reader = await route('reader@test', path)
       expect(reader.status).toBe(404)
       expect(reader.text).not.toContain(TEACHER)
-      expect((await route('reader@test', '/course/@fs/workspace/presmium.workspace.yaml?raw')).status).toBe(404)
+      // Neither the configuration, nor a file only the teachers' parts include (a solution, data), nor a link to one.
+      expect((await asSandbox('ln -sfn /workspace/course/solution.py /workspace/course/components/Answer.js')).code).toBe(0)
+      for (const file of ['presmium.workspace.yaml', 'course/solution.py', 'course/answers.json', 'course/components/Answer.js', 'course/components/x&/../../solution.py']) {
+        const answer = await route('reader@test', `/course/@fs/workspace/${file}?raw`)
+        expect(answer.status, file).toBeGreaterThanOrEqual(400)
+        expect(answer.text).not.toContain(TEACHER)
+      }
+      // Nor what is no browser code of the installation; a component of the deck and Presmium's browser code it does.
+      for (const file of ['/opt/presmium/package.json', '/opt/presmium/packages/workspace/src/node/files.ts', '/opt/presmium/packages/cli/bin/presmium.mjs']) {
+        expect((await route('reader@test', `/course/@fs${file}?raw`)).status, file).toBe(404)
+      }
+      expect((await route('reader@test', '/course/@fs/workspace/course/components/Probe.vue?raw')).status).toBe(200)
+      expect((await route('reader@test', '/course/@fs/opt/presmium/packages/viewer/src/viewer.ts')).status).toBe(200)
+      expect((await asSandbox('rm /workspace/course/components/Answer.js')).code).toBe(0)
       const editor = await route('editor@test', path)
       expect(editor.status).toBe(200)
       expect(editor.text).toContain(TEACHER)
+      expect((await route('editor@test', '/course/@fs/workspace/course/solution.py?raw')).text).toContain(TEACHER)
       // Nor the history, whose messages quote what editors asked of the agent.
       expect((await route('reader@test', '/__presmium/presmium.workspace/revisions')).status).toBe(403)
     }, 300_000)
 
-    it('takes serve\'s secrets from files only when it starts as root', async () => {
+    it('has a plugin\'s writes in serve made by agent-host, following none of the sandbox\'s links: a lecture recorded; serve fetches no address a document names', async () => {
+      const before = await hashes(...PROTECTED)
+      const listing = (await exec('serve', ['ls', '-a', '/workspace/.git'], 'root')).stdout
+      const lecture = (rest: string, options: { json?: unknown, body?: Uint8Array, method?: string } = {}) => route('editor@test', `/__presmium/presmium.lecture/${rest}`, { ...options, document: 'talk' })
+      // The lectures' directory is a link to the git directory: the recording's git files go in a directory of its own.
+      expect((await asSandbox('ln -sfn /workspace/.git /workspace/talk/lectures')).code).toBe(0)
+      const started = await lecture('recordings', { json: {} })
+      expect(started.status, started.text).toBe(200)
+      const track = started.json<{ id: string }>().id
+      expect((await exec('serve', ['stat', '-c', '%F', '/workspace/talk/lectures'])).stdout.trim()).toBe('directory')
+      // The media file is a link to .git/config, the track one to a new file in the git directory, when serve writes them.
+      const media = await lecture(`recordings/${track}/media`, { json: { folder: 'audio', section: 'intro', ext: 'ogg' } })
+      expect(media.status, media.text).toBe(200)
+      const src = media.json<{ src: string }>().src
+      expect((await asSandbox(`mkdir -p /workspace/talk/lectures/${track}/audio && ln -sfn /workspace/.git/config /workspace/talk/lectures/${track}/${src} && ln -sfn /workspace/.git/planted-track.json /workspace/talk/lectures/${track}/track.json`)).code).toBe(0)
+      const chunk = await lecture(`recordings/${track}/files/${src}?at=0`, { method: 'PUT', body: new TextEncoder().encode('OggS recorded') })
+      expect(chunk.status, chunk.text).toBe(200)
+      const head = { doc: 'lecture.md', irHash: 'x', lang: 'zh-CN', sections: {}, voice: { kind: 'recorded' }, blocks: {} }
+      const finished = await lecture(`recordings/${track}/finish`, { json: { head, recording: { events: [], audio: [], video: [], utterances: [], duration: 1000 } } })
+      expect(finished.status, finished.text).toBe(200)
+      expect(await hashes(...PROTECTED)).toBe(before)
+      expect((await exec('serve', ['ls', '-a', '/workspace/.git'], 'root')).stdout).toBe(listing)
+      const files = (await exec('serve', ['stat', '-c', '%u %F', `/workspace/talk/lectures/${track}/${src}`, `/workspace/talk/lectures/${track}/track.json`])).stdout.trim().split('\n')
+      expect(files).toEqual(['1003 regular file', '1003 regular file'])
+      expect((await exec('serve', ['cat', `/workspace/talk/lectures/${track}/${src}`])).stdout).toBe('OggS recorded')
+      // The page compiled in serve (and its site in agent-host) with a remote image at the probe: nothing fetched it.
+      expect((await route('editor@test', '/talk/')).status).toBe(200)
+      expect((await raw(`http://127.0.0.1:${LOGIN}/__probes`)).json<string[]>()).toEqual([])
+      expect((await exec('serve', ['test', '-e', '/workspace/talk/.presmium/assets'])).code).not.toBe(0)
+    }, 300_000)
+
+    it('takes serve\'s secrets from files only when it starts as root, and only files the user it becomes cannot read', async () => {
       // A second serve in serve's container, as compose starts it (root, to become serve), with a token in a variable too.
       const run = await compose(['exec', '-T', '-u', 'root', '-e', 'PRESMIUM_GATEWAY_TOKEN=plain-variable', 'serve', 'presmium', 'serve', '/workspace', '--host', '127.0.0.1', '--port', '4399', '--trust-proxy-from', '127.0.0.2', '--user', 'serve'], 120_000)
       expect(run.code).not.toBe(0)
       expect(`${run.stdout}${run.stderr}`).toMatch(/PRESMIUM_GATEWAY_TOKEN is set in the environment of a process started as root/)
+      // A token file the user it becomes can read (a host file owned by serve's uid): refused once it became that user.
+      const readable = await compose(['exec', '-T', '-u', 'root', 'serve', 'sh', '-c', 'cp /run/secrets/gateway_token /tmp/gateway_token && chown serve /tmp/gateway_token && chmod 600 /tmp/gateway_token && PRESMIUM_GATEWAY_TOKEN_FILE=/tmp/gateway_token exec presmium serve /workspace --host 127.0.0.1 --port 4398 --trust-proxy-from 127.0.0.2 --user serve'], 120_000)
+      expect(readable.code).not.toBe(0)
+      expect(`${readable.stdout}${readable.stderr}`).toMatch(/\/tmp\/gateway_token can be read by the user this process became/)
     }, 300_000)
   })
 })

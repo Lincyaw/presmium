@@ -348,6 +348,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   // Read: the secrets leave this process's environment, so no child process inherits them.
   if (env === process.env) for (const name of Object.keys(process.env)) if (isOwnSecret(name)) delete process.env[name]
   shared = server.trust === 'shared'
+  if (shared) log.warn('SHARED mode (a presmium serve with a login) is experimental until the security review of the shared deployment passes (docs/architecture.md 9.4)')
   services = server.services
   gateway = server.gateway
   // agent-host's access, read with the server's other secrets, once (as root, before it dropped privileges).

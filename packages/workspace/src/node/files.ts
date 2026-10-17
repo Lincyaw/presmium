@@ -11,11 +11,13 @@
  * (no link on the way from the root); no part of it is `.git`. Inside the
  * document directory, a link or a file where a directory belongs is
  * replaced by the directory; a file is written beside its place and renamed
- * over it, so a link at its place is replaced rather than followed. Copies
- * and templates take regular files and links, never what a link points to.
+ * over it, so a link at its place is replaced rather than followed (a piece
+ * written at a position goes into the file there, opened without following
+ * a link; a link in its place becomes an empty file first). Copies and
+ * templates take regular files and links, never what a link points to.
  */
 import { randomBytes } from 'node:crypto'
-import { chmodSync, chownSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, chownSync, closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
 import type { Stats } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -164,7 +166,25 @@ function apply(root: string, base: string, change: DocumentFileChange): void {
     replace(parent, target, temporary => symlinkSync(change.link, temporary))
     return
   }
+  if (change.at !== undefined) {
+    writeAt(parent, target, change.content, change.at)
+    return
+  }
   replace(parent, target, temporary => writeFileSync(temporary, change.content, { flag: 'wx', mode: change.executable ? 0o777 : 0o666 }))
+}
+
+/** Writes `content` at byte `at` of the file `target` (no gap): anything but a file in its place becomes an empty file first. */
+function writeAt(parent: string, target: string, content: Uint8Array, at: number): void {
+  if (!Number.isSafeInteger(at) || at < 0) throw new FilesError(`not a position in a file: ${at}`)
+  if (!stat(target)?.isFile()) replace(parent, target, temporary => writeFileSync(temporary, '', { flag: 'wx', mode: 0o666 }))
+  const fd = openSync(target, constants.O_WRONLY | constants.O_NOFOLLOW)
+  try {
+    const size = fstatSync(fd).size
+    if (at > size) throw new FilesError(`position ${at} is past the end of the file (${size} bytes)`)
+    writeSync(fd, content, 0, content.byteLength, at)
+  } finally {
+    closeSync(fd)
+  }
 }
 
 /**
@@ -310,10 +330,10 @@ export function localWriter(config: WorkspaceConfig): DocumentWriter {
 }
 
 /** A change as JSON (`/v1/files`): the content in base64. */
-export type WireChange = { path: string, content: string, executable?: boolean } | { path: string, link: string } | { path: string, remove: true }
+export type WireChange = { path: string, content: string, executable?: boolean, at?: number } | { path: string, link: string } | { path: string, remove: true }
 
 export function toWire(change: DocumentFileChange): WireChange {
-  if ('content' in change) return { path: change.path, content: Buffer.from(change.content).toString('base64'), ...change.executable ? { executable: true } : {} }
+  if ('content' in change) return { path: change.path, content: Buffer.from(change.content).toString('base64'), ...change.executable ? { executable: true } : {}, ...change.at !== undefined ? { at: change.at } : {} }
   return change
 }
 
@@ -322,6 +342,6 @@ export function fromWire(value: unknown): DocumentFileChange {
   if (!change || typeof change !== 'object' || typeof change.path !== 'string') throw new FilesError('a change: { path, content | link | remove }')
   if (change.remove === true) return { path: change.path, remove: true }
   if (typeof change.link === 'string') return { path: change.path, link: change.link }
-  if (typeof change.content === 'string') return { path: change.path, content: Buffer.from(change.content, 'base64'), ...change.executable === true ? { executable: true } : {} }
+  if (typeof change.content === 'string') return { path: change.path, content: Buffer.from(change.content, 'base64'), ...change.executable === true ? { executable: true } : {}, ...typeof change.at === 'number' ? { at: change.at } : {} }
   throw new FilesError(`a change of ${change.path} without content, link or remove`)
 }

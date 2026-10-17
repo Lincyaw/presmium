@@ -432,6 +432,7 @@ export class Compiler {
         report: finding => report({ ...finding, source: finding.source ?? at(loaded.name) }),
         watch,
         service,
+        trust: this.options.trust ?? 'local',
       }
       try {
         await pass.run(doc, pctx)
@@ -590,7 +591,8 @@ export class Compiler {
     const plugins = [...operators.plugins, ...deck.plugins.filter(loaded => !dirs.has(loaded.dir))]
     const problems = [...operators.problems, ...deck.problems]
     const services = new NodeServices(this.options.services, this.options.reserved)
-    for (const loaded of plugins) addServices(services, loaded, context(loaded), problems)
+    // A service a plugin makes may use the others (the host's `DOCUMENT_FILES`, WP-91) when it is called.
+    for (const loaded of plugins) addServices(services, loaded, { ...context(loaded), service: token => services.get(token) }, problems)
     this.#plugins = { key, plugins, problems, services }
     return this.#plugins
   }
@@ -645,6 +647,7 @@ export async function workspacePlugins(root: string, options: CompilerOptions = 
       secret: options.secret ?? (name => process.env[name]),
       ...options.gateway ? { gateway: options.gateway } : {},
       ...operator ? { operatorDir: operator } : {},
+      service: token => services.get(token),
       log: pluginLogger(pluginId(loaded)),
     }, problems)
   }
