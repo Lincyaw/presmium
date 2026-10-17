@@ -24,7 +24,7 @@ import { basename, extname, join, relative } from 'node:path'
 import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRNode, IRSection, MdastNode, SourcePos } from '@presmium/kernel'
 import { resolveReferences } from './references.ts'
-import { Parser } from './source.ts'
+import { Parser, sourceOf } from './source.ts'
 import type { ParsedFile } from './source.ts'
 
 /** A section or block left out for an audience. */
@@ -37,6 +37,18 @@ export interface Removed {
   blocks: IRBlock[]
   /** Nodes marked inside a block that stays (`source` is that block's): the diagnostics there stay. */
   nested?: boolean
+}
+
+/**
+ * Where the source marks content for some audiences: an `{include}` with
+ * `:audience:` (what it includes, or the error of one that failed), a
+ * directive with `:audience:` at any depth; with the audiences of the marks
+ * around it. A view for an audience the mark leaves out drops the findings
+ * located there (`audienceView`), also where the content gave no block.
+ */
+export interface AudienceMark {
+  source: SourcePos
+  audience: string[]
 }
 
 /** Content left out for an audience: where it is written, the audiences it is for, and its longer sentences. */
@@ -169,11 +181,30 @@ function holdsSection(scope: MdastNode, depth: number): boolean {
 /** Nodes that give no content of a section: comments, labels, and the directives that only configure it. */
 const SETTINGS = new Set(['hints', 'config', 'audience'])
 
+/** The audiences a node marks itself for: those of an audience scope, or a directive's `:audience:`. */
+function ownAudience(node: MdastNode): string[] | undefined {
+  if (node.type === AUDIENCE_SCOPE) return node.section ? undefined : node.audience as string[]
+  const option = node.type === 'mystDirective' && isRecord(node.options) ? node.options.audience : undefined
+  return option === undefined ? undefined : audienceList(typeof option === 'string' ? option : '')
+}
+
 /** Whether `node`, content for `own` (none: everyone), is for an audience the section for `section` leaves out. */
 function wider(node: MdastNode, own: string[] | undefined, section: string[]): boolean {
   if (node.type === 'comment' || node.type === 'mystTarget' || (node.type === 'mystDirective' && SETTINGS.has(String(node.name)))) return false
-  const audience = node.type === AUDIENCE_SCOPE ? within(own, node.audience as string[]) : own
+  const marked = ownAudience(node)
+  const audience = marked ? within(own, marked) : own
   return !audience || audience.some(name => !section.includes(name))
+}
+
+/** The audience marks of the source (`AudienceMark`), at any depth, each within those around it. */
+export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[], marks: AudienceMark[] = []): AudienceMark[] {
+  for (const node of nodes) {
+    const own = ownAudience(node)
+    const audience = own ? within(outer, own) : outer
+    if (own && node.position) marks.push({ source: sourceOf(node, entry), audience: audience! })
+    if (node.children?.length) audienceMarks(node.children, entry, audience, marks)
+  }
+  return marks
 }
 
 /**
@@ -213,10 +244,11 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
 /**
  * The document as `name` sees it: without the sections, blocks and nested
  * nodes whose audiences do not include it, nor the diagnostics located in
- * the sections and blocks left out (`keeps` says which findings stay: they
- * may name what was left out); and what was left out.
+ * the sections and blocks left out or in the source `marks` that leave it
+ * out (`keeps` says which findings stay: they may name what was left out);
+ * and what was left out.
  */
-export function audienceView(doc: IRDocument, name: string): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
+export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
   const removed: Removed[] = []
   const sections: IRSection[] = []
   for (const section of doc.sections) {
@@ -237,8 +269,9 @@ export function audienceView(doc: IRDocument, name: string): { doc: IRDocument, 
     const blocks = keep(section.blocks)
     sections.push(dropped ? compactSteps({ ...section, blocks }) : same(blocks, section.blocks) ? section : { ...section, blocks })
   }
-  if (removed.length === 0) return { doc, removed, keeps: () => true }
-  const spans = leftOut(doc, name, removed)
+  const marked = marks.filter(mark => !forAudience(mark.audience, name)).map(mark => mark.source)
+  if (removed.length === 0 && marked.length === 0) return { doc, removed, keeps: () => true }
+  const spans = [...leftOut(doc, name, removed), ...marked]
   const keeps = ({ source: at }: Finding) => !at || !spans.some(span => at.file === span.file && (at.line ?? 0) >= span.line && (at.line ?? 0) <= (span.endLine ?? span.line))
   return {
     doc: {
@@ -277,8 +310,8 @@ function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[]
  * for the audience; and without the blocks that still show a sentence of
  * what was left out (`withoutLeaks`).
  */
-export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>): IRDocument {
-  const { doc: view, removed } = audienceView(doc, name)
+export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>, marks: AudienceMark[] = []): IRDocument {
+  const { doc: view, removed } = audienceView(doc, name, marks)
   if (removed.length === 0) return view
   const own = detached(view, filled)
   resolveReferences(own, () => {})

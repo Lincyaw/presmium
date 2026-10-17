@@ -262,7 +262,8 @@ async function buildDeck(command: Command): Promise<number> {
   }
   const compilation = await new Compiler(command.entry, { bundled: BUNDLED, ...command.audience ? { audience: command.audience } : {} }).compile({ pruneCache: true })
   const outDir = resolve(command.out ?? join(compilation.deckDir, 'dist'))
-  // For an audience, the build scans the files it wrote for what was left out (P-55).
+  // For an audience, the build scans every file of the output directory for what was left out (P-55): a renderer's
+  // directory a build of the whole deck left there would be published with it.
   const report = await build(compilation, { outDir, to: command.to })
   process.stdout.write(buildText(report, compilation.runs, compilation.audience?.name))
   return exitCode(report.findings)

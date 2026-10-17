@@ -11,7 +11,7 @@ import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@presmium/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, GatewayAccess, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader, TrustMode } from '@presmium/kernel'
 import { defaultOptions } from 'myst-parser'
-import { audienceDocument, AudienceParser, audienceView, emptyReferences, liftScopes, scanOutputs, withheld } from './audience.ts'
+import { audienceDocument, audienceMarks, AudienceParser, audienceView, emptyReferences, liftScopes, scanOutputs, withheld } from './audience.ts'
 import type { Withheld } from './audience.ts'
 import { BUILTIN_DIRECTIVES, sectionBlocks } from './blocks.ts'
 import type { PluginDirective, PluginRole } from './blocks.ts'
@@ -336,6 +336,8 @@ export class Compiler {
       hint: 'start a section of its own with a heading after the {include}, or move it before the {include}',
       source: sourceOf(node, this.entry),
     }))
+    // Where the source marks content for audiences: a view for another audience drops the findings there too.
+    const marks = audienceMarks(lifted, this.entry)
     const raw = splitSections(lifted, { entry: this.entry, title, sectionDepth }, report)
     const rendererIds = new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []])
     const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
@@ -379,7 +381,7 @@ export class Compiler {
     let audience: AudienceCompilation | undefined
     if (this.options.audience) {
       const name = this.options.audience
-      const view = audienceView(doc, name)
+      const view = audienceView(doc, name, marks)
       doc.sections = view.doc.sections
       audience = audienceCompilation(name, withheld(view.removed, doc))
       const left = findings.filter(finding => !view.keeps(finding))
@@ -494,7 +496,7 @@ export class Compiler {
       runContext,
       run: (node, signal) => this.#run(doc, node, executors, runContext, signal),
       ...audience ? { audience } : {},
-      forAudience: name => audienceDocument(doc, name, filled),
+      forAudience: name => audienceDocument(doc, name, filled, marks),
       audienceOf: (name) => {
         const view = audienceView(doc, name)
         return audienceCompilation(name, withheld(view.removed, view.doc))

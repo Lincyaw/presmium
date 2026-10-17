@@ -286,14 +286,15 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
       }
       if (action === 'build') {
         // Code without a recording runs only when serve says so (`compile: trusted`); else the recordings stand.
-        // The student view is compiled for the audience `student` (P-55): what it leaves out never runs; its
-        // reader asked for it, so the scan of what the build wrote quotes nothing.
+        // The student view is compiled for the audience `student` (P-55): what it leaves out never runs; the scan
+        // reads what the build wrote (dist/ holds the whole deck's builds as well), and its reader asked for it,
+        // so it quotes nothing.
         const gateway = isRecord(input.gateway) ? input.gateway as unknown as GatewayAccess : undefined
         const student = input.view === 'student'
         const compiler = new Compiler(entryOf(id), { ...compilerOptions(input.run === 'all', gateway), ...student ? { audience: STUDENT } : {} })
         const compilation = await compiler.compile()
         const to = Array.isArray(input.to) ? input.to.filter((r): r is string => typeof r === 'string') : undefined
-        const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), ...to?.length ? { to } : {}, ...student ? { quote: false } : {} })
+        const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), ...to?.length ? { to } : {}, ...student ? { quote: false, scan: 'written' } : {} })
         return send(res, 200, { outputs: report.outputs.map(({ renderer: r, outDir }) => ({ renderer: r, outDir })), findings: report.findings })
       }
     }

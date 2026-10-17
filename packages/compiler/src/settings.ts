@@ -50,7 +50,8 @@ export function operatorPlugins(settings: OperatorSettings): string[] {
   return Array.isArray(list) ? list.filter((name): name is string => typeof name === 'string' && name.length > 0) : []
 }
 
-function inside(path: string, root: string): boolean {
+/** Whether `path` is `root` or lies under it. */
+export function inside(path: string, root: string): boolean {
   const rel = relative(root, path)
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
 }

@@ -11,6 +11,19 @@ renderers:
 
 每个人都能看到这一节，关键词 PUBLICTEXT。
 
+```{include} instructor/secret-answers.md
+:audience: teacher
+```
+
+::::{note}
+公开的提示，每个人都能看到。
+
+:::{tip}
+:audience: teacher
+教师的提示 HIDDENTIP36 用到 {hiddenrole}`x` 这个角色。
+:::
+::::
+
 ## 没写受众的一节
 
 :::{audience}
@@ -33,6 +46,11 @@ renderers:
 ```{include} part.md
 :audience: teacher
 ```
+
+:::{only} web
+:audience: teacher
+助教在网页上看的补充 ONLYKEY29。
+:::
 
 这一段写在引入之后，本来是给所有人看的 AFTERKEY74。
 

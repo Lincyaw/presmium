@@ -6,7 +6,8 @@
 // without children shows; a `{literalinclude}` shows a file of the workspace but not one a symbolic link out
 // of it names; with an assistant (a stand-in of the `AGENT` service), a drafted document opens once the
 // draft is committed; the home page loads the operator plugins' browser parts and serves their routes
-// (WP-81e2), which a document's page loads only when its deck lists the plugin.
+// (WP-81e2), which a document's page loads only when its deck lists the plugin; there their routes find
+// none of the workspace's files.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -221,13 +222,14 @@ test.describe('the workspace in the browser (SHARED)', () => {
   test('the home page loads the operator plugins\' browser parts and their routes answer for it; a document\'s page loads its deck\'s plugins', async ({ page }) => {
     await openDevPage(page, `http://site.test:${reader}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
     await expect(page.locator('html')).toHaveAttribute('data-fixture-home', 'loaded')
-    // The operator plugin's route on the home page (document ''), as on a document's.
+    // The operator plugin's route on the home page (document ''), as on a document's; the home page is no
+    // document: the plugin's deck directory there holds none of the workspace's files (its git directory either).
     const where = (document: string) => page.evaluate(async (dir) => {
       const response = await fetch('/__presmium/fixture.home/where', { headers: { 'Presmium-Document': dir } })
       return { status: response.status, body: await response.json() as unknown }
     }, document)
-    expect(await where('')).toEqual({ status: 200, body: { document: '' } })
-    expect(await where('intro')).toEqual({ status: 200, body: { document: 'intro' } })
+    expect(await where('')).toEqual({ status: 200, body: { document: '', sees: [] } })
+    expect(await where('intro')).toEqual({ status: 200, body: { document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] } })
     // The deck of intro does not list it: its page does not load its browser part.
     await openDevPage(page, `http://site.test:${reader}/intro/`, page.locator('.pm-section[data-section="导论"]'))
     await expect(page.locator('.pm-toolbar--bar')).toBeAttached()

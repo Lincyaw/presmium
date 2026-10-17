@@ -16,8 +16,8 @@
  * `settings.presmium.workspace.plugins`, installed at the workspace root.
  */
 import { createHash } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { build, Compiler, loadPlugins, pluginId, workspacePlugins } from '@presmium/compiler'
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
@@ -244,8 +244,9 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
         // Code without a recording runs in the build only when `compile: trusted`; allowed code has its recording already.
         return agentHost.build(document, { ...buildOptions.to ? { to: buildOptions.to } : {}, view: buildOptions.view ?? 'full', run: mode === 'trusted' ? 'all' : 'none' }, plugins, requester.get(document))
       }
-      // The student view as `presmium build --audience student` builds it (P-55); its reader asked for it, so the scan quotes nothing.
-      const student = buildOptions.view === 'student' ? { audience: STUDENT, quote: false } : {}
+      // The student view as `presmium build --audience student` builds it (P-55), the files it wrote scanned (dist/ holds
+      // the whole deck's builds as well); its reader asked for it, so the scan quotes nothing.
+      const student = buildOptions.view === 'student' ? { audience: STUDENT, quote: false, scan: 'written' as const } : {}
       const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: buildOptions.to, ...student })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
@@ -261,14 +262,20 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   /**
    * The home page as the server serves it: the workspace's routes and those of the operator plugins
    * (`settings.presmium.workspace.plugins`, e.g. the assistant's, D14), with their Node services as a
-   * document's compilation has them (the host's first).
+   * document's compilation has them (the host's first). The home page is no document: the plugins'
+   * routes get an empty directory of serve's, outside the workspace, as its deck directory and
+   * workspace root (`home`), so no route of theirs reads or changes a file of the workspace there
+   * (the documents are the workspace's routes' to list and create).
    */
   let operators: ReturnType<typeof workspacePlugins> | undefined
-  // Loaded once the server runs and the mode is known (SHARED: agent-host's services in place of the plugins').
+  let home: string | undefined
+  // Loaded once the server runs and the mode is known (SHARED: agent-host's services in place of the plugins'),
+  // as the user serve becomes.
   let started!: () => void
   const ready = new Promise<void>(resolve => started = resolve)
   const operatorsOf = async () => {
     await ready
+    home ??= mkdtempSync(join(tmpdir(), 'presmium-home-'))
     return operators ??= workspacePlugins(root, pluginOptions(''))
   }
   const homeDocument = async (): Promise<ServedDocument> => {
@@ -276,8 +283,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     for (const problem of loaded.problems) log.warn(`the home page: ${problem.message}`)
     const own = (token: ServiceToken<unknown>) => [...services, ...hostServices].find(([known]) => known.id === token.id)?.[1]
     return {
-      deckDir: root,
-      workspaceRoot: root,
+      deckDir: home!,
+      workspaceRoot: home!,
       plugins: [plugin(), ...loaded.plugins.flatMap(({ plugin: node }) => (node ? [{ id: node.id, plugin: node, config: {} }] : []))],
       service: <T>(token: ServiceToken<T>) => (own(token) ?? loaded.service(token)) as T | undefined,
       settings: config.settings,
@@ -353,6 +360,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       : await localSite(root, spec, options.bundled, stateDir(root, env), compileFor('full', true), config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
   } catch (error) {
     await server.close()
+    if (home) rmSync(home, { recursive: true, force: true })
     throw error
   }
 
@@ -364,6 +372,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       for (const session of sessions.values()) session.close()
       await site?.close()
       await server.close()
+      if (home) rmSync(home, { recursive: true, force: true })
     },
   }
 }

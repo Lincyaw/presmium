@@ -35,8 +35,9 @@ export function devHost(latest: () => Compilation | undefined, deckDir: string):
     async build(document, options = {}) {
       const compilation = current(document)
       // The student view, as `presmium build --audience student` builds it: its translations too, and the files it
-      // wrote scanned for what it leaves out; one who reads the student view asked for it, so the findings do not quote it.
-      const student = options.view === 'student' ? { audience: 'student', quote: false } : {}
+      // wrote scanned for what it leaves out (dist/ holds the whole deck's builds as well); one who reads the student
+      // view asked for it, so the findings do not quote it.
+      const student = options.view === 'student' ? { audience: 'student', quote: false, scan: 'written' as const } : {}
       const report = await build(compilation, { outDir: join(deckDir, 'dist'), to: options.to, ...student })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },

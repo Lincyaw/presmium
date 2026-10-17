@@ -145,15 +145,24 @@ export interface BuildOptions {
   audience?: string
   /** For an audience: whether the scan's findings quote the sentences they found (default true); not for findings the audience reads. */
   quote?: boolean
+  /**
+   * For an audience: what the scan reads. `outDir` (default, `presmium
+   * build --audience`): every file of the output directory, which a build of
+   * the whole deck may have written before (the default `dist/` of both), so
+   * a renderer's directory this build did not write fails it too.
+   * `written`: only what this build wrote, the IR and each renderer's
+   * directory (a host's build of the student view, beside the whole deck's).
+   */
+  scan?: 'outDir' | 'written'
 }
 
 /**
  * Writes `<outDir>/ir.json` (with paths relative to the deck, `relativeIR`)
  * and runs the selected renderers, each into `<outDir>/<id>`. They write
  * directories of their own, so they run at the same time; the report lists
- * them in the order selected. A build for an audience then scans what it
- * wrote, the IR and each renderer's directory, for the sentences of what the
- * audience's version left out, of the deck or of a translation (`presmium.audience`).
+ * them in the order selected. A build for an audience then scans the output
+ * directory (`BuildOptions.scan`) for the sentences of what the audience's
+ * version left out, of the deck or of a translation (`presmium.audience`).
  */
 export async function build(whole: Compilation, options: BuildOptions): Promise<BuildReport> {
   const compilation = options.audience && options.audience !== whole.audience?.name
@@ -186,7 +195,8 @@ export async function build(whole: Compilation, options: BuildOptions): Promise<
   const outputs = results.flatMap(({ result }) => result ? [result] : [])
   if (compilation.audience) {
     const scan = audienceScan(compilation.audience, translated.translations, doc)
-    findings.push(...await scan.scan(options.outDir, [ir, ...outputs.map(output => output.outDir)], { quote: options.quote ?? true }))
+    const paths = options.scan === 'written' ? [ir, ...outputs.map(output => output.outDir)] : undefined
+    findings.push(...await scan.scan(options.outDir, paths, { quote: options.quote ?? true }))
   }
   // Each renderer reports the local references it cannot publish: a reference is reported once.
   return { ir, outputs, findings: unique([...doc.diagnostics, ...findings, ...results.flatMap(({ reported }) => reported)]) }

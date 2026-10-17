@@ -33,7 +33,7 @@ describe('presmium serve on this machine (LOCAL)', () => {
     expect(home.text).toContain('<div id="app">')
   }, 180_000)
 
-  it('serves the operator plugins on the home page: their route answers for document \'\', the home page loads their browser part', async () => {
+  it('serves the operator plugins on the home page: their route answers for document \'\' and finds no file of the workspace there, the home page loads their browser part', async () => {
     const home = workspace('home', 'basic')
     try {
       const plugin = join(ROOT, 'e2e/fixtures/workspace/plugins/presmium-fixture-workspace-home')
@@ -43,8 +43,9 @@ describe('presmium serve on this machine (LOCAL)', () => {
       try {
         const url = (await waitFor(local, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
         const where = async (document: string) => (await raw(`${url}/__presmium/fixture.home/where`, { headers: { 'Presmium-Document': document } })).json()
-        expect(await where('')).toEqual({ document: '' })
-        expect(await where('intro')).toEqual({ document: 'intro' })
+        // The home page is no document: the plugin's deck directory there holds none of the workspace's files.
+        expect(await where('')).toEqual({ document: '', sees: [] })
+        expect(await where('intro')).toEqual({ document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] })
         // The home page's theme imports the plugin's browser part; a document's page does not (its deck does not list it).
         const theme = await raw(`${url}/.vitepress/theme/index.ts`)
         expect(theme.status, theme.text).toBe(200)

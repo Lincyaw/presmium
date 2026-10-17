@@ -7,18 +7,15 @@
  */
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { basename, isAbsolute, join, relative, sep } from 'node:path'
+import { basename, join, relative, sep } from 'node:path'
 import { deckLocale } from '@presmium/kernel'
 import type { SourcePos } from '@presmium/kernel'
 import { parseFragment } from 'parse5'
 import type { DefaultTreeAdapterMap } from 'parse5'
 import { DECK_ENTRY } from './compiler.ts'
+import { inside } from './settings.ts'
 
-/** Whether `path` is `dir` or lies under it. */
-export function inside(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
-}
+export { inside }
 
 /** The line of a block's source that holds `text`, else the block's first line. */
 export function lineOf(source: SourcePos, text: string): number {
@@ -33,16 +30,25 @@ export function lineOf(source: SourcePos, text: string): number {
   return source.line
 }
 
-/** The sha256 of each file read, while its size and modification time stay the same. */
-const hashes = new Map<string, { size: number, mtimeMs: number, hash: string }>()
+/** The sha256 of each file read (one per path), while its size, inode and times stay the same. */
+const hashes = new Map<string, { stamp: string, hash: string }>()
 
-/** The sha256 (hex) of a file's content; read again only once its size or modification time changed. */
+/**
+ * A file changed less than this long before it is hashed may change again
+ * within its timestamps' granularity, its size the same: its hash is not
+ * kept (as git treats a racily clean entry).
+ */
+const RACY_MS = 2000
+
+/** The sha256 (hex) of a file's content; read again once its size, inode, modification or change time changed. */
 export function fileHash(file: string): string {
-  const { size, mtimeMs } = statSync(file)
+  const stat = statSync(file, { bigint: true })
+  const stamp = `${stat.size}:${stat.ino}:${stat.mtimeNs}:${stat.ctimeNs}`
   const known = hashes.get(file)
-  if (known && known.size === size && known.mtimeMs === mtimeMs) return known.hash
+  if (known?.stamp === stamp) return known.hash
   const hash = createHash('sha256').update(readFileSync(file)).digest('hex')
-  hashes.set(file, { size, mtimeMs, hash })
+  if (Date.now() - Number(stat.ctimeMs) > RACY_MS && Date.now() - Number(stat.mtimeMs) > RACY_MS) hashes.set(file, { stamp, hash })
+  else hashes.delete(file)
   return hash
 }
 
