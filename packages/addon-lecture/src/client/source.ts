@@ -30,7 +30,14 @@ function summaries(value: unknown): LectureSummary[] {
   return Array.isArray(value) ? value.filter((v): v is LectureSummary => isRecord(v) && typeof v.id === 'string') : []
 }
 
+/**
+ * The server makes the synthesized lecture (`script`) on an editor's request
+ * only (synthesis is paid): a reader asking before that gets 409.
+ */
+export class NotYetSynthesized extends Error {}
+
 async function trackOf(response: Response): Promise<LectureTrack | undefined> {
+  if (response.status === 409) throw new NotYetSynthesized(await response.text())
   if (!response.ok) return undefined
   return parseTrack(await response.json()).track
 }
@@ -63,7 +70,8 @@ export interface SpeechChoices {
 
 /** Work on a recorded lecture's words (editors, `presmium dev` and `presmium serve`); each call gives the track written. */
 export interface LectureEditing {
-  speech(): Promise<SpeechChoices>
+  /** The deck's engines; with `engine`, that engine as the synthesis engine (a synthetic track's, with its provider now). */
+  speech(engine?: string): Promise<SpeechChoices>
   transcribe(id: string): Promise<LectureTrack>
   editUtterance(id: string, utterance: string, text: string): Promise<LectureTrack>
   synthesize(id: string, voice: string, engine?: string): Promise<LectureTrack>
@@ -87,7 +95,7 @@ export function serverEditing(server: ServerClient): LectureEditing {
   const send = (path: string, method: string, body: unknown = {}) => server.fetch(LECTURE_ID, path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   const at = (id: string) => `editing/${encodeURIComponent(id)}`
   return {
-    speech: async () => (await answer(server.fetch(LECTURE_ID, 'speech'))) as SpeechChoices,
+    speech: async engine => (await answer(server.fetch(LECTURE_ID, engine ? `speech?engine=${encodeURIComponent(engine)}` : 'speech'))) as SpeechChoices,
     transcribe: id => changed(send(`${at(id)}/transcribe`, 'POST')),
     editUtterance: (id, utterance, text) => changed(send(`${at(id)}/utterances/${encodeURIComponent(utterance)}`, 'PUT', { text })),
     synthesize: (id, voice, engine) => changed(send(`${at(id)}/synthesize`, 'POST', { voice, ...engine ? { engine } : {} })),

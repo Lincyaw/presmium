@@ -1,0 +1,6 @@
+# The workspace of e2e/lecture-writeback.spec.ts: the operator's plugins, the assistant, the lecture and the
+# speech plugins, are installed at the workspace root (the spec links them).
+title: 讲授回写
+settings:
+  presmium.workspace:
+    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-lecture', '@presmium/slidev-addon-speech']

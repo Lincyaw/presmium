@@ -132,7 +132,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 指令一览、选项与最小示例见 `references/directives.md`。先确认提供该指令的包已写进 `plugins`。
 
-讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。
+讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。录制过的讲授也能反过来写成讲解：工作区服务的编辑模式中“讲授回写”把转写交给 agent，按章节整理后替换讲解，录制时的操作成为相应位置的 `{cue}`（见 presmium-present 技能）；agent 经 MCP 工具 `track_narration` 读到逐字稿拼成的草稿与每一步讲解在源码中的位置。单独的讲授脚本中一段的问题（如 `{cue}` 的目标不存在），`presmium check` 报告在这一段所在的行。
 
 文稿自己的组件：放在文稿目录的 `components/` 下（`StepBadge.vue`），用 `{component} StepBadge` 放进正文，两种形态都渲染。组件只能引用 `@presmium/host`、`@presmium/kernel` 与 vue，文稿的 `package.json` 要依赖 `@presmium/host`。
 

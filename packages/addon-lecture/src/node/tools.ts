@@ -7,14 +7,21 @@
  * the transcription engine's provider). MCP asks for approval of the paid
  * ones (`spend`) before calling them. A tool reaches its deck through the
  * deck's Node service `LECTURE_DECK`, and plans from the latest IR (the
- * lecture renderer's view of it, as a build does).
+ * lecture renderer's view of it, as a build does). To write a recorded
+ * lecture back (WP-84; P-136, P-137), the agent of the assistant's change
+ * task reads its transcript as narration, with the cues in place and where
+ * each step's narration is (`track_narration`), and the sentences to
+ * translate with the digest each translation records (`track_translations`).
  */
+import { isAbsolute, relative, resolve } from 'node:path'
 import { defineService, SPEECH } from '@presmium/kernel'
-import type { AgentTool, AgentToolContext, IRDocument, SpeechService } from '@presmium/kernel'
-import { SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
-import type { LecturePlan } from '../domain/index.ts'
+import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@presmium/kernel'
+import { LECTURES_DIR, narrationDraft, narrationPlace, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
+import type { LecturePlan, LectureTrack } from '../domain/index.ts'
 import { synthesizedLecture, transcribeLecture, unsaidMessage } from './lecture.ts'
 import { deckPlan, latestView } from './plan.ts'
+import { digest } from './renderer.ts'
+import { readTrack, TRACK_FILE, trackDir } from './store.ts'
 
 /** The deck of a document, for the tools: a Node service of the lecture plugin. */
 export interface LectureDeck {
@@ -109,4 +116,54 @@ export const trackTranscribe: AgentTool = {
   },
 }
 
-export const lectureTools: AgentTool[] = [lecturePreview, lectureSynthesize, trackTranscribe]
+/** A recorded lecture of the deck, by the tool input's `track`. */
+function storedTrack(deckDir: string, input: Record<string, unknown>): LectureTrack {
+  if (typeof input.track !== 'string' || !input.track) throw new Error('track: the lecture id is required')
+  const found = trackDir(deckDir, input.track) ? readTrack(deckDir, input.track) : undefined
+  if (!found) throw new Error(`no lecture ${input.track} (lectures/${input.track}/${TRACK_FILE})`)
+  return found.track
+}
+
+const TRACK_INPUT = { track: { type: 'string', description: 'The lecture id (a directory of lectures/)' } }
+
+export const trackNarration: AgentTool = {
+  name: 'track_narration',
+  description: 'A recorded lecture\'s transcript as narration, to write it back into the deck (P-136): per section and step, the sentences said there joined (draft), with a {cue …}`…` role before the word each action of the lecture (spotlight, pointer, next step, run …) was bound to; and where that step\'s narration is in the source (narration: file and lines of its paragraphs; for a step without narration, the on-screen block it follows: after). Reads only.',
+  input: { type: 'object', properties: { ...TRACK_INPUT, section: { type: 'string', description: 'Only this section id' } }, required: ['track'] },
+  kind: 'read',
+  async run(input, ctx) {
+    const { deckDir, doc } = deckOf(ctx)
+    const track = storedTrack(deckDir, input)
+    const draft = narrationDraft(track, typeof input.section === 'string' ? input.section : undefined)
+    const { plan } = deckPlan(doc, deckDir)
+    const file = (range: SourceRange): SourceRange => ({ ...range, file: relative(deckDir, isAbsolute(range.file) ? range.file : resolve(deckDir, range.file)) })
+    return {
+      track: track.id,
+      lang: track.lang,
+      sections: draft.sections.map(s => ({
+        section: s.section,
+        title: doc.sections.find(own => own.id === s.section)?.title ?? '(the deck has no such section now)',
+        steps: s.steps.map((step) => {
+          const place = narrationPlace(doc, plan, s.section, step.step)
+          return { ...step, narration: place.narration.map(file), ...place.after ? { after: { ...file(place.after), block: place.after.block } } : {} }
+        }),
+      })),
+      ...draft.skipped ? { skipped: `${draft.skipped} actions bound to words have no {cue}` } : {},
+    }
+  },
+}
+
+export const trackTranslations: AgentTool = {
+  name: 'track_translations',
+  description: 'The sentences (utterances) of a recorded lecture to translate (P-137): each with its id, text and source, the digest of the text that its translation records; with the translation into lang it has, if any, and whether that is stale. Write a translation into the utterance\'s line of lectures/<track>/track.json as "translations": { "<lang>": { "text": "…", "source": "<source>" } }. Reads only.',
+  input: { type: 'object', properties: { ...TRACK_INPUT, lang: { type: 'string', description: 'The language to translate into (BCP 47), e.g. en' } }, required: ['track', 'lang'] },
+  kind: 'read',
+  async run(input, ctx) {
+    const { deckDir } = deckOf(ctx)
+    const track = storedTrack(deckDir, input)
+    if (typeof input.lang !== 'string' || !input.lang) throw new Error('lang: the language to translate into is required')
+    return { track: track.id, file: `${LECTURES_DIR}/${track.id}/${TRACK_FILE}`, lang: track.lang, into: input.lang, utterances: translationItems(track, input.lang, digest) }
+  },
+}
+
+export const lectureTools: AgentTool[] = [lecturePreview, lectureSynthesize, trackTranscribe, trackNarration, trackTranslations]

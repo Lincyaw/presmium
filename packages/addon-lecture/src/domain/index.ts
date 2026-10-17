@@ -35,3 +35,5 @@ export { captionLanguages, captionsVtt, chaptersVtt, eventsVtt, isStale, vttTime
 export type { Captions, Digest } from './vtt.ts'
 export { charOffset, isCjk, locate, realign, splitWords, trackWords, wordIndexAt, writtenWords } from './words.ts'
 export type { PlacedWord, Span, TextWord, TimedWord } from './words.ts'
+export { cueFor, narrationDraft, narrationPlace, translationItems } from './writeback.ts'
+export type { DraftSection, DraftStep, NarrationDraft, NarrationPlace, TranslationItem } from './writeback.ts'

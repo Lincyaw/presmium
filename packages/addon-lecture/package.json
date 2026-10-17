@@ -28,6 +28,7 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
+    "@agentclientprotocol/sdk": "1.8.0",
     "@modelcontextprotocol/client": "2.3.1",
     "@presmium/cli": "workspace:*",
     "@presmium/viewer": "workspace:*",

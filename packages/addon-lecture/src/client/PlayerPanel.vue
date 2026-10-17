@@ -6,8 +6,9 @@
 // lecture", and a label on a synthesized voice, which plays its utterances' clips. Editors under
 // `presmium dev` and `presmium serve` work on a recorded lecture's words here (TrackEditor.vue, and
 // an utterance's text in the transcript; in a synthetic voice saving it says it again, after a
-// confirmation that names the provider, N-08). For `presmium-lecture export` (`&export`) it shows no
-// controls and steps through the lecture on the exporter's call.
+// confirmation that names the provider the operator gives the engine now, N-08). A reader who opens
+// the synthesized lecture before an editor had it made is told so. For `presmium-lecture export`
+// (`&export`) it shows no controls and steps through the lecture on the exporter's call.
 import type { Operations } from '@presmium/host'
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
@@ -18,7 +19,7 @@ import type { ClockMedia, TrackClock } from './clock.ts'
 import { ClipClock, MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
 import type { LectureSource } from './source.ts'
-import { serverEditing, serverSource, staticBase, staticSource } from './source.ts'
+import { NotYetSynthesized, serverEditing, serverSource, staticBase, staticSource } from './source.ts'
 import { exporting, play, playing, useViewer } from './state.ts'
 import TrackEditor from './TrackEditor.vue'
 
@@ -31,7 +32,7 @@ const viewer = useViewer()
 const server = useServer()
 const operations = useService(OPERATIONS)
 const player = shallowRef<LecturePlayer>()
-const status = ref<'loading' | 'missing' | 'ready'>()
+const status = ref<'loading' | 'missing' | 'not-yet' | 'ready'>()
 const captions = ref(false)
 const language = ref<string>()
 const panel = ref<'transcript' | 'chapters'>()
@@ -77,10 +78,14 @@ watch([playing, operations], async ([id, ops]) => {
   if (!id || !ops) return
   status.value = 'loading'
   const source = lectureSource()
-  const track = await source.track(id).catch(() => undefined)
+  let notYet = false
+  const track = await source.track(id).catch((error: unknown) => {
+    notYet = error instanceof NotYetSynthesized
+    return undefined
+  })
   if (load !== loading) return
   if (!track) {
-    status.value = 'missing'
+    status.value = notYet ? 'not-yet' : 'missing'
     return
   }
   await start(track, source, ops, load)
@@ -113,10 +118,21 @@ const editingUtterance = ref<string>()
 const draft = ref('')
 const saving = ref(false)
 const editFailure = ref<string>()
-/** A synthetic voice says a corrected sentence again: its provider, asked first (N-08). */
+/** The engine of a synthetic voice; its provider as the operator names it now (N-08), asked from the server. */
+const engine = computed(() => {
+  const v = player.value?.track.voice
+  return editable.value && v?.kind === 'synthetic' ? v.engine : undefined
+})
+const engineProvider = ref<string>()
+watch(engine, async (id) => {
+  engineProvider.value = undefined
+  const choice = id && editing.value ? await editing.value.speech(id).catch(() => undefined) : undefined
+  if (id === engine.value) engineProvider.value = choice?.synthesize?.provider
+}, { immediate: true })
+/** A synthetic voice says a corrected sentence again: its provider, asked first (N-08); the track's when the engine is gone. */
 const sayer = computed(() => {
   const v = player.value?.track.voice
-  return v?.kind === 'synthetic' ? v.provider || v.engine : undefined
+  return v?.kind === 'synthetic' ? engineProvider.value || v.provider || v.engine : undefined
 })
 const confirmingEdit = ref(false)
 
@@ -204,8 +220,8 @@ function close() {
 <template>
   <template v-if="playing">
     <p v-if="status === 'loading'" class="pm-lecture-player__status">{{ t.player.loading }}</p>
-    <p v-else-if="status === 'missing'" class="pm-lecture-player__status" role="alert">
-      {{ t.player.missing(playing) }}
+    <p v-else-if="status === 'missing' || status === 'not-yet'" class="pm-lecture-player__status" role="alert">
+      {{ status === 'not-yet' ? t.player.notYet : t.player.missing(playing) }}
       <button type="button" class="pm-lecture-button" @click="close">{{ t.player.close }}</button>
     </p>
     <div
