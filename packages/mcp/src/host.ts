@@ -106,5 +106,6 @@ export interface McpHost {
   /** Sends `go` to the windows of a document that show it (the member's presenting ones first); returns how many. */
   navigate?(document: string, position: { slide: number, step: number, view?: string }, member: Member): number
   /** Starts or ends the classroom in the windows of a document's present and presenter views; returns how many. */
-  session?(document: string, action: 'start' | 'end', name?: string): number
+  /** Starts or ends the classroom in the presenting windows of `member` (only theirs: content scope covers the caller's own sessions). */
+  session?(document: string, action: 'start' | 'end', name: string | undefined, member: Member): number
 }

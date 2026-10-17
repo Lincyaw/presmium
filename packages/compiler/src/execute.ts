@@ -24,8 +24,8 @@
  * (`remote`: SHARED `presmium serve` hands them to agent-host).
  */
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { CodeNode, Executor, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunCache, RunContext, RunOutput, RunRequest, RunResult } from '@presmium/kernel'
@@ -283,15 +283,33 @@ export function runEnvironment(rules: 'local' | 'serve', passEnv: readonly strin
     if (kept) env[name] = value
   }
   if (rules === 'serve') {
-    const home = join(tmpdir(), `presmium-home-${createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 16)}`)
-    mkdirSync(home, { recursive: true })
-    env.HOME = home
+    env.HOME = runHome(workspaceRoot, source)
+    // Python's per-user site directory would load code from that HOME on every run.
+    env.PYTHONNOUSERSITE = '1'
   }
   for (const name of passEnv) {
     const value = source[name]
     if (value !== undefined) env[name] = value
   }
   return env
+}
+
+/**
+ * The `HOME` of runs under the `serve` rules: a directory of the workspace in
+ * this user's state directory (not the shared temporary directory, where
+ * another local user could create it first or put a link there), created
+ * 0700 and refused unless it is this user's own directory.
+ */
+function runHome(workspaceRoot: string, source: NodeJS.ProcessEnv): string {
+  const state = source.XDG_STATE_HOME || join(homedir(), '.local', 'state')
+  const home = join(state, 'presmium', 'run-home', createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 16))
+  mkdirSync(home, { recursive: true, mode: 0o700 })
+  const stat = lstatSync(home)
+  const uid = process.getuid?.()
+  if (!stat.isDirectory() || (uid !== undefined && stat.uid !== uid) || (stat.mode & 0o077) !== 0) {
+    throw new Error(`the run HOME ${home} is not a private directory of this user`)
+  }
+  return home
 }
 
 /** A code node to run at compile time, with its request and the hash of it (`input`). */

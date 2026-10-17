@@ -11,7 +11,7 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { basename, dirname, relative, resolve, sep } from 'node:path'
-import { errorMessage, isRecord } from '@presmium/kernel'
+import { errorMessage, isRecord, localRequestRefusal } from '@presmium/kernel'
 import type { RunRequest } from '@presmium/kernel'
 import { ENDPOINT, failedContainerRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
@@ -27,7 +27,7 @@ type Middleware = (req: IncomingMessage, res: ServerResponse, next: (error?: unk
 export interface DevServerPlugin {
   name: string
   apply: 'serve'
-  configureServer(server: { middlewares: { use(path: string, handler: Middleware): unknown } }): void
+  configureServer(server: { config?: { server?: { allowedHosts?: true | string[] } }, middlewares: { use(path: string, handler: Middleware): unknown } }): void
 }
 
 export interface LocalEnvServerOptions {
@@ -138,6 +138,10 @@ export function localEnvServer(options: LocalEnvServerOptions): DevServerPlugin 
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(ENDPOINT, (req, res) => {
+        // These endpoints run code and commit: refuse other sites' pages (DNS rebinding, cross-site requests),
+        // since they run before Vite's own host and CORS checks.
+        const refused = localRequestRefusal(req.headers, server.config?.server?.allowedHosts)
+        if (refused) return sendJson(res, 403, { error: refused })
         // Each request is answered in the language the page asks for.
         inLanguage(req.headers['accept-language'], () => resolveWorkspace().then(dir => handle(dir, options, req, res)))
           .catch((error: unknown) => {

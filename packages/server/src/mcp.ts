@@ -82,6 +82,6 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     watchPositions: listener => control.watch(listener),
     classroom: document => control.status(document),
     navigate: (document, to, member) => control.go(to, member, document),
-    session: (document, action, name) => control.session(action, name, document),
+    session: (document, action, name, member) => control.session(action, name, document, member),
   }
 }

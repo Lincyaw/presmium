@@ -35,7 +35,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import MiniSearch from 'minisearch'
-import { tokenize } from '@presmium/kernel'
+import { localRequestRefusal, tokenize } from '@presmium/kernel'
 import { IR_ENDPOINT, SOURCE_ENDPOINT } from '../domain/links.ts'
 
 export const IR_MODULE = 'virtual:presmium/ir'
@@ -63,13 +63,14 @@ export type DevMessage =
   /** The translations changed, the original did not: pages loaded later get them. */
   | { type: 'presmium:translations' }
 
-interface Request { url?: string }
+interface Request { url?: string, method?: string, headers: Record<string, string | string[] | undefined> }
 interface Response { statusCode: number, setHeader(name: string, value: string): void, end(body?: string): void }
 
 interface Module { id: string | null }
 
 /** The part of Vite's dev server the plugin uses. */
 interface DevServer {
+  config: { server: { allowedHosts?: true | string[] } }
   httpServer: { once(event: 'listening' | 'close', listener: () => void): unknown, address(): AddressInfo | string | null } | null
   middlewares: { use(path: string, handler: (req: Request, res: Response) => void): unknown }
   moduleGraph: {
@@ -174,7 +175,17 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
       }
       process.on('message', receive)
       server.httpServer?.once('close', () => process.off('message', receive))
-      server.middlewares.use(endpoints.ir, (_req, res) => {
+      // These run before Vite's host and CORS checks: refuse other sites' pages (DNS rebinding, cross-site requests).
+      const refused = (req: { headers: Record<string, string | string[] | undefined> }, res: { statusCode: number, end(body?: string): void }) => {
+        const reason = localRequestRefusal(req.headers, server.config.server.allowedHosts)
+        if (reason) {
+          res.statusCode = 403
+          res.end(reason)
+        }
+        return reason !== undefined
+      }
+      server.middlewares.use(endpoints.ir, (req, res) => {
+        if (refused(req, res)) return
         const json = readFileSync(irFile, 'utf8')
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
@@ -182,6 +193,13 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
         res.end(`{"revision":${JSON.stringify(revisionOf(json))},"doc":${json}}`)
       })
       server.middlewares.use(endpoints.source, (req, res) => {
+        if (refused(req, res)) return
+        // Opening the editor is a POST with Presmium's own header, which a page of another site cannot send without CORS.
+        if (req.method !== 'POST' || req.headers['presmium-request'] !== 'source') {
+          res.statusCode = 405
+          res.end()
+          return
+        }
         const params = new URL(req.url ?? '', 'http://localhost').searchParams
         const file = params.get('file')
         const line = Number(params.get('line'))

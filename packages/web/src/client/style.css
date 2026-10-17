@@ -138,6 +138,11 @@ body {
   margin: 1rem 0 0;
 }
 
+/* Apart from the navigation bar's own controls (e.g. the appearance switch) before it. */
+.pm-toolbar--bar {
+  margin-inline-start: 0.75rem;
+}
+
 @media (max-width: 767px) {
   .pm-view-menu--bar,
   .pm-toolbar--bar {

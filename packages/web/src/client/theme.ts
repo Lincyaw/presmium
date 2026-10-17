@@ -301,7 +301,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         diagnostics: import.meta.env.DEV,
         // The dev server of `presmium dev` opens the file in the author's editor (K-11); a workspace site's has no editor.
         openSource: import.meta.env.DEV && presmium.document === undefined
-          ? source => void fetch(`${SOURCE_ENDPOINT}?file=${encodeURIComponent(source.file)}&line=${source.line}`)
+          ? source => void fetch(`${SOURCE_ENDPOINT}?file=${encodeURIComponent(source.file)}&line=${source.line}`, { method: 'POST', headers: { 'Presmium-Request': 'source' } })
           : undefined,
         navigate: position => void router.go(pageOf(position)),
         openPresenter(position) {

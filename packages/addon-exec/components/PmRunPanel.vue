@@ -77,6 +77,11 @@ function describe(record: RunRecord): string {
 }
 
 const SIGN = { same: ' ', added: '+', removed: '-' } as const
+
+/** The width of a parameter's field in characters: its value's, between 8 and 60. */
+function fieldSize(value: string | undefined): number {
+  return Math.min(60, Math.max(8, (value ?? '').length + 1))
+}
 </script>
 
 <template>
@@ -90,7 +95,7 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
       <form class="pm-run-panel__form" @submit.prevent="run">
         <label v-for="(_, name) in args" :key="name" class="pm-run-panel__param">
           <span>{{ name }}</span>
-          <input v-model="args[name]" :name="name" spellcheck="false" autocomplete="off">
+          <input v-model="args[name]" :name="name" :size="fieldSize(args[name])" spellcheck="false" autocomplete="off">
         </label>
         <button type="submit" class="pm-run-panel__run" :disabled="running || !executor">
           {{ running ? t.running : history.length ? t.rerun : t.run }}
@@ -142,6 +147,10 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
 .pm-run-panel__side {
   min-width: 0;
 }
+.pm-run-panel__source {
+  /* The code keeps the size of the deck's other code blocks; only the controls and output are smaller. */
+  font-size: 1.25em;
+}
 .pm-run-panel__source :deep(pre) {
   margin: 0;
   max-height: 20em;
@@ -159,8 +168,13 @@ const SIGN = { same: ' ', added: '+', removed: '-' } as const
   align-items: center;
   gap: 0.25em;
 }
+.pm-run-panel__param {
+  max-width: 100%;
+}
 .pm-run-panel__param input {
-  width: 7.5em;
+  /* As wide as its value (the size attribute), within the panel: a shader's buffers are a long JSON value. */
+  min-width: 7.5em;
+  max-width: 100%;
   padding: 0.1em 0.35em;
   border: 1px solid rgba(125, 125, 125, 0.5);
   border-radius: 0.25em;

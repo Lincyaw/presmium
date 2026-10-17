@@ -24,7 +24,7 @@
 // checkouts may run it at once: the project and image are named per run (PRESMIUM_TEST_COMPOSE_PREFIX),
 // the ports and the edge subnet can be set (PRESMIUM_DEPLOY_PORT, PRESMIUM_DEPLOY_EDGE).
 import { execFile, spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -239,8 +239,16 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
         symlinkSync(`/opt/presmium/examples/demo/node_modules/${entry}`, join(dir, 'seed/node_modules', entry))
       }
     }
-    symlinkSync('/opt/presmium/packages/addon-assistant', join(dir, 'seed/node_modules/@presmium/slidev-addon-assistant'))
-    symlinkSync('/opt/presmium/packages/addon-lecture', join(dir, 'seed/node_modules/@presmium/slidev-addon-lecture'))
+    // The assistant and the lecture plugin, unless the demo already depends on them.
+    for (const [name, pkg] of [['slidev-addon-assistant', 'addon-assistant'], ['slidev-addon-lecture', 'addon-lecture']]) {
+      const link = join(dir, 'seed/node_modules/@presmium', name)
+      // The links point into the image (/opt/presmium), so look at the link itself, not at what it points to.
+      try {
+        lstatSync(link)
+      } catch {
+        symlinkSync(`/opt/presmium/packages/${pkg}`, link)
+      }
+    }
     writeFileSync(join(dir, 'seed/.gitignore'), 'node_modules\ndist\n.presmium\n')
     const up = await compose(['up', '-d', '--build'], 1_200_000)
     if (up.code !== 0) throw new Error(`docker compose up failed:\n${up.stdout}\n${up.stderr}`)

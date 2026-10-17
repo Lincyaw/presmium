@@ -82,11 +82,13 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     workspaceRoot: root,
     outDir: options.outDir,
     workDir: options.workDir,
+    // `scoped`: a SHARED site in agent-host, reached through serve under the public name (any Host).
     config: {
       ...options.host ? { host: options.host } : {},
       ...options.home ? { homePlugins: options.home } : {},
       ...options.served ? { served: true } : {},
       ...options.documentsOnly ? { home: false } : {},
+      ...options.scoped ? { scoped: true } : {},
     },
     extensions: [],
     plugins: Object.keys(plugins),

@@ -6,6 +6,7 @@
 // links out of the workspace are not read; code without a recording runs by `settings.presmium.exec.compile`.
 // The home page has the operator plugins: their routes answer for it, and it loads their browser parts (WP-81e2).
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, SharedSetup } from './serve-helpers.ts'
@@ -31,6 +32,23 @@ describe('presmium serve on this machine (LOCAL)', () => {
     const home = await raw(`${url}/`)
     expect(home.status).toBe(200)
     expect(home.text).toContain('<div id="app">')
+
+    // The site's own dev router (a port of its own on this machine) refuses other sites' pages: a rebound
+    // host name and a cross-site request get 403, whatever path they ask for; serve's loopback Host passes.
+    const router = (await waitFor(serve, /dev router is at (http:\/\/127\.0\.0\.1:\d+)/))[1]!
+    const port = Number(new URL(router).port)
+    const ask = (headers: Record<string, string>, path = '/@presmium/documents.json') => new Promise<number>((done, fail) => {
+      const req = httpRequest({ host: '127.0.0.1', port, path, headers }, (res) => {
+        res.resume()
+        done(res.statusCode!)
+      })
+      req.on('error', fail)
+      req.end()
+    })
+    expect(await ask({ Host: 'rebind.attacker.example' })).toBe(403)
+    expect(await ask({ Host: 'rebind.attacker.example' }, '/intro/@presmium/ir')).toBe(403)
+    expect(await ask({ 'Host': `127.0.0.1:${port}`, 'Sec-Fetch-Site': 'cross-site' })).toBe(403)
+    expect(await ask({ Host: `127.0.0.1:${port}` })).not.toBe(403)
   }, 180_000)
 
   it('serves the operator plugins on the home page: their route answers for document \'\' and finds no file of the workspace there, the home page loads their browser part', async () => {
@@ -338,9 +356,10 @@ describe('compile-time execution in presmium serve (N-08, settings.presmium.exec
     expect((await answer(again.id, true)).status).toBe(200)
     const [run] = await until(() => recordings(dir).length > 0 ? recordings(dir) : undefined)
     expect(run!.parent).toContain('agent-host')
-    // The allowlist, and the matplotlib backend the runner itself sets while it runs.
-    expect(Object.keys(run!.env).filter(name => !/^(?:PATH|LANG|LC_\w+|TZ|TMPDIR|HOME|MPLBACKEND)$/.test(name))).toEqual([])
-    expect(run!.env.HOME).toMatch(/presmium-home-[0-9a-f]{16}$/)
+    // The allowlist, PYTHONNOUSERSITE (no per-user site directory), and the matplotlib backend the runner itself sets while it runs.
+    expect(Object.keys(run!.env).filter(name => !/^(?:PATH|LANG|LC_\w+|TZ|TMPDIR|HOME|PYTHONNOUSERSITE|MPLBACKEND)$/.test(name))).toEqual([])
+    // A private directory of this user's state directory, not the shared /tmp.
+    expect(run!.env.HOME).toMatch(/\/presmium\/run-home\/[0-9a-f]{16}$/)
     expect(JSON.stringify(run!.env)).not.toContain(setup.secrets.proxySecret)
     expect(JSON.stringify(run!.env)).not.toContain(setup.secrets.agentHostToken)
     expect(Object.keys(run!.env)).not.toContain('PRESMIUM_PROXY_SECRET')
@@ -382,6 +401,6 @@ describe('compile-time execution in presmium serve (N-08, settings.presmium.exec
     expect((await raw(`${url}/code/`)).status).toBe(200)
     const [run] = await until(() => recordings(dir).length > 0 ? recordings(dir) : undefined)
     expect(run!.parent).toMatch(/presmium\.mjs serve/)
-    expect(run!.env.HOME).toMatch(/presmium-home-[0-9a-f]{16}$/)
+    expect(run!.env.HOME).toMatch(/\/presmium\/run-home\/[0-9a-f]{16}$/)
   }, 300_000)
 })

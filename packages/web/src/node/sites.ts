@@ -40,7 +40,7 @@ import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEFAULT_LANG, deckLocale, errorMessage } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, errorMessage, localRequestRefusal } from '@presmium/kernel'
 import type { IRDocument, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec } from '@presmium/kernel'
 import { createProxyServer } from 'http-proxy-3'
 import { pageLink, searchDocuments, siteShell, SITE_LABELS, toPages, urlPath } from '../domain/index.ts'
@@ -234,7 +234,7 @@ function documentSite(ctx: RenderContext, site: SiteSpec, dir: string, extra: Cl
   const base = documentBase(ctx.base, dir)
   const single = site.documents.length === 1 && site.documents[0]!.dir === ''
   return {
-    workspace: { document: dir, home: single ? base : listLink(site, ctx.base), endpoints: endpoints(base), served, allow, ...siteLinks(site, ctx.base, dir, docs) },
+    workspace: { document: dir, home: single ? base : listLink(site, ctx.base), endpoints: endpoints(base), served, anyHost: served && ctx.config.scoped === true, allow, ...siteLinks(site, ctx.base, dir, docs) },
     extra,
     config: join(ctx.workspaceRoot, WORKSPACE_FILE),
   }
@@ -288,7 +288,7 @@ const site = ${JSON.stringify(config, null, 2)}
 const data = JSON.parse(readFileSync(${JSON.stringify(dataFile)}, 'utf8'))
 site.title = data.title
 site.themeConfig.presmium = { home: true, documents: data.documents${target ? `, redirect: ${JSON.stringify(target)}, list: ${JSON.stringify(`${ctx.base}${LIST_PAGE}.html`)}` : ''}${served ? `, server: true, endpoint: ${JSON.stringify(`${ctx.base}${DOCUMENTS_ENDPOINT}`)}` : ''} }
-site.vite = { plugins: [presmiumReady()], resolve: { dedupe: ['vue'] }${served ? `, server: { allowedHosts: true, fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
+site.vite = { plugins: [presmiumReady()], resolve: { dedupe: ['vue'] }${served ? `, server: { ${ctx.config.scoped === true ? 'allowedHosts: true, ' : ''}fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
 ${sitemap}${shell.head ? OG_TITLE : ''}
 export default site
 `)
@@ -429,7 +429,17 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     }
   })
   const pathOf = (req: IncomingMessage) => new URL(req.url ?? '/', 'http://site').pathname
+  // In LOCAL serve the router and the documents' dev servers are reached through serve with a loopback Host;
+  // a page of another site (DNS rebinding, cross-site requests) is refused. SHARED sites (agent-host) are
+  // reached only through serve, which checks the Host in front, under the public name.
+  const anyHost = ctx.config.scoped === true
   const server = createServer((req, res) => {
+    const refused = anyHost ? undefined : localRequestRefusal(req.headers)
+    if (refused) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end(refused)
+      return
+    }
     const path = pathOf(req)
     if (path === `${base}${DOCUMENTS_ENDPOINT}`) {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
@@ -446,6 +456,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     )
   })
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
+    if (!anyHost && localRequestRefusal(req.headers)) return socket.destroy()
     targetOf(pathOf(req)).then(
       port => proxy.ws(req, socket, head, { target: `http://${LOOPBACK}:${port}` }),
       () => socket.destroy(),
