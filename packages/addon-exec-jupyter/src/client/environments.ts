@@ -20,6 +20,7 @@ import { currentLocale, useServer } from '@presmium/host'
 import type { ServerConnection } from '@jupyterlab/services'
 import { authOf, baseUrl, EXEC_JUPYTER_ID, kernelOf, languagesOf, originOf, proxyPath } from '../domain/index.ts'
 import type { JupyterEnvironments } from '../domain/index.ts'
+import type { TerminalSession } from '../domain/service.ts'
 import { createKernels, services } from '../jupyter/kernels.ts'
 import type { Kernels } from '../jupyter/kernels.ts'
 import { openTerminal } from '../jupyter/terminals.ts'
@@ -29,6 +30,7 @@ import { forgetToken, tokenFor } from './token.ts'
 export interface RemoteEnvironments {
   service: JupyterEnvironments
   executors: Executor[]
+  /** Shuts down the page's kernels and its open terminals (ir.md 2.7: leaving the page closes them). */
   dispose(): void
 }
 
@@ -52,8 +54,17 @@ async function hubUser(url: string, token: string): Promise<string> {
   return encodeURIComponent(user.name)
 }
 
+/** Image types whose data is base64; anything else in it is dropped (an attribute value is never closed by it). */
+const IMAGES = ['image/png', 'image/jpeg', 'image/gif']
+const BASE64 = /^[A-Za-z0-9+/=\s]*$/
+const badImage = (data: Record<string, unknown>) => IMAGES.some(type => data[type] !== undefined && (typeof data[type] !== 'string' || !BASE64.test(data[type])))
+
+/**
+ * A kernel's outputs as the page may show them (section 11, untrusted rich
+ * output): HTML and SVG sanitized, an image whose data is not base64 left out.
+ */
 async function sanitized(result: RunResult): Promise<RunResult> {
-  if (!result.outputs?.some(output => 'data' in output && (typeof output.data['text/html'] === 'string' || typeof output.data['image/svg+xml'] === 'string'))) return result
+  if (!result.outputs?.some(output => 'data' in output && (typeof output.data['text/html'] === 'string' || typeof output.data['image/svg+xml'] === 'string' || badImage(output.data)))) return result
   const { default: DOMPurify } = await import('dompurify')
   return {
     ...result,
@@ -62,6 +73,9 @@ async function sanitized(result: RunResult): Promise<RunResult> {
       const data = { ...output.data }
       if (typeof data['text/html'] === 'string') data['text/html'] = DOMPurify.sanitize(data['text/html'])
       if (typeof data['image/svg+xml'] === 'string') data['image/svg+xml'] = DOMPurify.sanitize(data['image/svg+xml'], { USE_PROFILES: { svg: true, svgFilters: true } })
+      for (const type of IMAGES) {
+        if (data[type] !== undefined && (typeof data[type] !== 'string' || !BASE64.test(data[type]))) delete data[type]
+      }
       return { ...output, data }
     }),
   }
@@ -135,6 +149,8 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     forgetToken(name)
   }
 
+  /** The terminals open on the servers, which `dispose` shuts down: the page going away unmounts no component. */
+  const terminals = new Set<TerminalSession>()
   const pools: Kernels[] = []
   const executors = Object.entries(environments).map(([name, spec]): Executor => {
     const kernels = createKernels({
@@ -169,7 +185,15 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
       async openTerminal(name, events) {
         const connection = await settingsFor(name)
         try {
-          return await openTerminal(connection, events)
+          const session = await openTerminal(connection, events)
+          terminals.add(session)
+          return {
+            ...session,
+            close: () => {
+              terminals.delete(session)
+              return session.close()
+            },
+          }
         } catch (error) {
           const status = (error as { response?: { status?: number } }).response?.status
           if (status === 401 || status === 403) {
@@ -182,6 +206,8 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     },
     dispose() {
       pools.forEach(kernels => kernels.dispose())
+      terminals.forEach(session => session.abandon())
+      terminals.clear()
       settings.clear()
     },
   }

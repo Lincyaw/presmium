@@ -5,6 +5,8 @@ export interface TerminalSession {
   send(data: string): void
   resize(rows: number, columns: number): void
   close(): Promise<void>
+  /** Shuts it down as the page goes away: one request that outlives the page (`keepalive`), nothing waited for. */
+  abandon(): void
 }
 
 export interface TerminalEvents {

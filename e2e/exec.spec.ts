@@ -90,6 +90,32 @@ test('opening the stepwise slide at a step shows the same as stepping there', as
   await expect(back.locator('.pm-step-run__output')).toHaveText('n=1 total=1\nn=2 total=3\nn=3 total=6\ndone\n')
 })
 
+test('a run panel\'s parameters keep their types: a YAML false is False, at compile time and in Pyodide (F-17)', async ({ page }) => {
+  interface Block { node: { type: string, name?: string, children?: Block[], outputs?: { stdout: string }[] } }
+  const blocks = (list: Block[]): Block[] => list.flatMap(block => [block, ...blocks(block.node.children ?? [])])
+  const ir = JSON.parse(readFileSync(join(panels().dir, 'dist/ir.json'), 'utf8')) as { sections: { id: string, blocks: Block[] }[] }
+  const code = blocks(ir.sections.find(section => section.id === 'exec-params')!.blocks).find(block => block.node.type === 'code')
+  expect(code?.node.outputs?.map(run => run.stdout)).toEqual(['off 42\n'])
+
+  await page.goto(`${panels().web}/exec.html#exec-params`)
+  const panel = page.locator('.pm-section[data-section="exec-params"] .pm-run-panel')
+  await panel.locator('.pm-run-panel__run').click()
+  await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
+  await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('off 42\n')
+})
+
+test('a stepwise run whose :steps: is not the lines its code executes says so in the presenter view, not to the audience (F-67)', async ({ page }) => {
+  const run = (await openSlide(page, 'exec-steps-declared', '声明的步数')).locator('.pm-step-run')
+  await expect(run).toHaveAttribute('data-state', 'ready', RUNTIME)
+  await expect(run.locator('.pm-step-run__status')).toContainText('第 0 / 3 步')
+  await expect(run.locator('.pm-step-run__warning')).toHaveCount(0)
+
+  await page.goto(`${panels().slides}/presenter/${panels().slide('exec-steps-declared')}`)
+  const presenter = page.locator('.pm-step-run').filter({ visible: true }).first()
+  await expect(presenter).toHaveAttribute('data-state', 'ready', RUNTIME)
+  await expect(presenter.locator('.pm-step-run__warning')).toHaveText('steps 声明为 2，实际执行 3 行')
+})
+
 test('a run that times out shows the recorded output, marked as recorded', async ({ page }) => {
   const panel = await openPanel(page, 'exec-fallback', '预录输出回退')
   await panel.locator('.pm-run-panel__run').click()
@@ -101,9 +127,17 @@ test('a run that times out shows the recorded output, marked as recorded', async
 
 const COMPILED = '平方： [1, 4, 9, 16, 25]\n合计： 55'
 
-test('output recorded at compile time is shown with its code in the slides', async ({ page }) => {
+test('in the slides, code that also runs live has one output area, its runner\'s: the recording until it runs, marked as recorded (F-18)', async ({ page }) => {
   const slide = await openSlide(page, 'exec-compile', '编译时执行')
-  await expect(slide.locator('.pm-output')).toContainText(COMPILED)
+  const output = slide.locator('.slidev-runner-output')
+  const lines = output.locator('.output-line')
+  await expect(output.locator('.pm-run-recorded')).toHaveText('预录输出')
+  await expect(lines).toHaveText(['预录输出', ...COMPILED.split('\n')])
+  await expect(slide.locator('.pm-output')).toHaveCount(0)
+  await expect(slide).not.toContainText('Click the play button')
+  await slide.getByRole('button', { name: 'Run code' }).click()
+  await expect(output.locator('.pm-run-recorded')).toHaveCount(0, RUNTIME)
+  await expect(lines).toHaveText(COMPILED.split('\n'))
 })
 
 test('output recorded at compile time is shown with its code in the web form', async ({ page }) => {
@@ -205,25 +239,30 @@ test('a page restored from the back-forward cache keeps one Python runtime (R-10
 test.describe('in the present view at 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } })
 
-  /** The size of the code's text on the screen, in px, and how much of a line is cut. */
+  /** The size of the code's text on the screen, in px, and how much of a line (`cut`) and of its lines (`hidden`) is cut. */
   async function code(present: Locator, selector: string) {
     const pre = present.locator(`${selector} pre`).first()
     await expect(pre).toBeVisible()
     return pre.evaluate((el: HTMLElement) => {
       const scale = el.getBoundingClientRect().width / el.offsetWidth
-      return { size: Number.parseFloat(getComputedStyle(el.querySelector('code') ?? el).fontSize) * scale, cut: el.scrollWidth - el.clientWidth }
+      return { size: Number.parseFloat(getComputedStyle(el.querySelector('code') ?? el).fontSize) * scale, cut: el.scrollWidth - el.clientWidth, hidden: el.scrollHeight - el.clientHeight }
     })
   }
 
-  test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut (R-27)', async ({ page }) => {
+  test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut, across or down (R-27, F-19)', async ({ page }) => {
     for (const [id, selector] of [['exec-panel', '.pm-run-panel'], ['exec-steps', '.pm-step-run']] as const) {
       await page.goto(`${panels().web}/exec.html?view=present&section=${id}`)
       const present = page.getByRole('region', { name: '放映' })
       await expect(present).toHaveAttribute('data-section', id)
-      const { size, cut } = await code(present, selector)
+      const { size, cut, hidden } = await code(present, selector)
       expect(size, id).toBeGreaterThanOrEqual(18)
       expect(cut, id).toBeLessThanOrEqual(0)
+      expect(hidden, id).toBeLessThanOrEqual(0)
     }
+    // The slides show a run panel's code whole too, as a column with the controls below.
+    const slide = await openSlide(page, 'exec-panel', '执行面板')
+    expect((await code(slide, '.pm-run-panel')).hidden).toBeLessThanOrEqual(0)
+    await expect(slide.locator('.pm-run-panel')).toHaveClass(/pm-run-panel--present/)
   })
 
   test('a stepwise run steps forward and back with the present view (R-109)', async ({ page }) => {
@@ -353,5 +392,30 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
     await expect(live.locator('.pm-output__stdout')).toHaveText('RUN IN THE BROWSER\n')
     await expect(live.locator('.pm-output')).toHaveAttribute('data-executor', 'js-worker')
     await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// e2e/fixtures/exec/xss: a test plugin's executor of Python, over Pyodide, gives an image output whose
+// data is a quote and an event handler (section 11, untrusted rich output)
+// ---------------------------------------------------------------------------
+
+test.describe('untrusted output in the slides\' runner (F-20)', () => {
+  // The test plugin imports @presmium/host, which the demo does not depend on.
+  const xss = useFixture('exec/xss', { to: 'slides', link: { '@presmium/host': 'packages/host' } })
+
+  test('an image output whose data is not base64 runs nothing and is dropped, saying why', async ({ page }) => {
+    await page.goto(`${xss().slides}/${xss().slide('evil-image')}`)
+    const slide = page.locator(`.slidev-page-${xss().slide('evil-image')}`)
+    // Until it runs, the runner says how to run the code (it has no recording), in the deck's language.
+    await expect(slide.locator('.slidev-runner-output .pm-run-hint')).toHaveText('按 ▶ 运行这段代码')
+    await page.evaluate(() => {
+      (window as { fixtureXss?: number }).fixtureXss = 0
+    })
+    await slide.getByRole('button', { name: 'Run code' }).click()
+    await expect(slide.locator('.slidev-runner-output .pm-run-dropped')).toHaveText('图片输出的数据不是 base64，未显示')
+    await expect(slide.locator('.slidev-runner-output img')).toHaveCount(0)
+    await page.waitForTimeout(500)
+    expect(await page.evaluate(() => (window as { fixtureXss?: number }).fixtureXss)).toBe(0)
   })
 })

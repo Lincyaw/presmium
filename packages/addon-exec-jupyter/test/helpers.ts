@@ -16,7 +16,7 @@ import type { Run } from '@presmium/cli/testing'
 
 export const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 export const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
-const COMPOSE = fileURLToPath(new URL('../../../templates/env/compose/compose.yaml', import.meta.url))
+export const COMPOSE_DIR = fileURLToPath(new URL('../../../templates/env/compose', import.meta.url))
 
 /** Whether Docker with docker compose answers. */
 export const dockerCompose = spawnSync('docker', ['compose', 'version'], { stdio: 'ignore' }).status === 0
@@ -35,14 +35,15 @@ export function presmium(cwd: string, args: string[], extra: Record<string, stri
   return run(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env: cleanEnv(extra) })
 }
 
-/** A deck in a new temporary directory: `lecture.md` with the plugin and the notebook renderer named by their paths. */
-export function testDeck(prefix: string, headmatter: string, body: string): string {
+/** A deck in a new temporary directory: `lecture.md` with the plugin (and `plugins`, e.g. the execution plugin) and the notebook renderer named by their paths. */
+export function testDeck(prefix: string, headmatter: string, body: string, plugins: string[] = []): string {
   const dir = mkdtempSync(join(tmpdir(), `presmium-${prefix}-`))
   writeFileSync(join(dir, 'lecture.md'), [
     '---',
     'title: 远端环境测试文稿',
     'plugins:',
     `  - ${PACKAGE}`,
+    ...plugins.map(plugin => `  - ${plugin}`),
     'renderers:',
     `  notebook: { package: ${join(PACKAGES, 'render-notebook')} }`,
     headmatter.trim(),
@@ -64,17 +65,25 @@ export interface Jupyter {
   stop(): void
 }
 
-function compose(project: string, args: string[], env: Record<string, string>): void {
-  const result = spawnSync('docker', ['compose', '-p', project, '-f', COMPOSE, ...args], { env: { ...process.env, ...env }, encoding: 'utf8', timeout: 600_000 })
+/** `docker compose` with the template and the overlays (`compose.gpu.yaml`, ...); its output, or an error with it. */
+export function compose(project: string, args: string[], env: Record<string, string>, overlays: string[] = []): string {
+  const files = ['compose.yaml', ...overlays].flatMap(file => ['-f', join(COMPOSE_DIR, file)])
+  const result = spawnSync('docker', ['compose', '-p', project, ...files, ...args], { env: { ...process.env, ...env }, encoding: 'utf8', timeout: 600_000 })
   if (result.status !== 0) throw new Error(`docker compose ${args.join(' ')} failed:\n${result.stdout}${result.stderr}`)
+  return result.stdout
 }
 
-/** templates/env/compose/compose.yaml under a project name of WP-76, on `port`, with a token of its own; waits until healthy. */
-export function startJupyter(project: string, port: number): Jupyter {
+/** templates/env/compose/compose.yaml (with `overlays`) under a project name of the work package, on `port`, with a token of its own; waits until healthy. */
+export function startJupyter(project: string, port: number, overlays: string[] = []): Jupyter {
   const env = { JUPYTER_TOKEN: randomBytes(24).toString('hex'), JUPYTER_PORT: String(port) }
-  compose(project, ['up', '-d', '--wait'], env)
-  return { url: `http://127.0.0.1:${port}/`, token: env.JUPYTER_TOKEN, stop: () => compose(project, ['down', '--volumes', '--timeout', '5'], env) }
+  compose(project, ['up', '-d', '--wait'], env, overlays)
+  return { url: `http://127.0.0.1:${port}/`, token: env.JUPYTER_TOKEN, stop: () => void compose(project, ['down', '--volumes', '--timeout', '5'], env, overlays) }
 }
+
+/** Whether the host has an NVIDIA GPU for containers (the NVIDIA Container Toolkit registers its devices with Docker). */
+export const nvidiaGpu = dockerCompose
+  && spawnSync('nvidia-smi', ['-L'], { stdio: 'ignore' }).status === 0
+  && spawnSync('docker', ['info'], { encoding: 'utf8' }).stdout.includes('nvidia.com/gpu')
 
 export interface Received {
   method: string

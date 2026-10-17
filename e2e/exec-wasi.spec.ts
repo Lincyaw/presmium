@@ -48,10 +48,13 @@ test('a C program runs in the browser with the output recorded at compile time, 
 test('in the slides, the C program runs live in its Monaco runner; the runtimes\' licenses are published with both forms', async ({ page }) => {
   test.setTimeout(300_000)
   const slide = await openSlide(page, deck(), 'c-program', 'C 程序')
-  // The output recorded at compile time shows below the runner.
-  await expect(slide.locator('.pm-output')).toHaveText('1 + 2 + ... + 100 = 5050')
+  // The runner's output area shows the output recorded at compile time until the code runs.
+  const output = slide.locator('.slidev-runner-output')
+  await expect(output.locator('.pm-run-recorded')).toHaveText('预录输出')
+  await expect(output).toContainText('1 + 2 + ... + 100 = 5050')
+  await expect(slide.locator('.pm-output')).toHaveCount(0)
   await slide.getByRole('button', { name: 'Run code' }).click()
-  await expect(slide.locator('.slidev-runner-output')).toHaveText('1 + 2 + ... + 100 = 5050', RUNTIME)
+  await expect(output).toHaveText('1 + 2 + ... + 100 = 5050', RUNTIME)
 
   for (const form of [deck().slides, deck().web]) {
     const licenses = await page.request.get(`${form}/wasi/LICENSES`)

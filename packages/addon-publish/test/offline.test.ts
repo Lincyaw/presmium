@@ -1,8 +1,10 @@
-// Runs the real `presmium build --to slides` on a copy of ./fixtures/offline, which
+// Runs the real `presmium build --to web,slides` on a copy of ./fixtures/offline, which
 // uses this addon: the compile pass downloads a remote image whose URL has no
-// extension (as PlantUML's have), and the service worker precaches the build,
+// extension (as PlantUML's have), and the slides' service worker precaches the build,
 // the WASI runtime of the deck's live Ruby code (a gzip archive among its files)
-// included.
+// included. Both forms publish the runtimes they redistribute with their licenses
+// (5.4): Pyodide's (`pyodide/LICENSES`), jax-js's (`presmium/jax-js/LICENSE`) and
+// the WASI runtimes' (`wasi/LICENSES`), which their service workers precache.
 import { randomBytes } from 'node:crypto'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -14,7 +16,7 @@ import { bin, copyFixture, removeCopies } from './helpers.ts'
 
 afterAll(removeCopies)
 
-it('downloads the remote images of the deck and precaches them with the deck, the Pyodide runtime and the WASI runtime', async () => {
+it('downloads the remote images of the deck and precaches them with the deck, the Pyodide runtime and the WASI runtime, the runtimes\' licenses with them', async () => {
   // A "remote" image on another origin, served without a file extension; noise keeps it
   // above the size Vite inlines, so the build has it as a file.
   const png = new PNG({ width: 64, height: 64 })
@@ -28,7 +30,7 @@ it('downloads the remote images of the deck and precaches them with the deck, th
   writeFileSync(join(dir, 'lecture.md'), readFileSync(join(dir, 'lecture.md'), 'utf8').replace('REMOTE_IMAGE', remote))
   let result
   try {
-    result = await bin('presmium', dir, 'build', '--to', 'slides', '--out', 'dist')
+    result = await bin('presmium', dir, 'build', '--to', 'web,slides', '--out', 'dist')
   } finally {
     server.close()
   }
@@ -47,7 +49,18 @@ it('downloads the remote images of the deck and precaches them with the deck, th
 
   expect(readFileSync(join(dist, 'index.html'), 'utf8')).toContain('registerSW.js')
   expect(precached).toEqual(expect.arrayContaining(['index.html', 'favicon.svg', 'pyodide/pyodide.asm.wasm', localImage, 'wasi/ruby-3.2.0.wasm', 'wasi/ruby-3.2.0.tar.gz']))
-  // The runtimes' licenses go with them.
-  expect(readFileSync(join(dist, 'wasi/LICENSES'), 'utf8')).toContain('Ruby 3.2.0')
+  // The runtimes' licenses go with them, in both forms, and are precached with them (F-16).
+  const LICENSES = ['pyodide/LICENSES', 'presmium/jax-js/LICENSE', 'wasi/LICENSES']
+  expect(precached).toEqual(expect.arrayContaining(LICENSES))
+  const web = join(dir, 'dist/web')
+  const webPrecached = JSON.parse(/^const URLS = (.*)$/m.exec(readFileSync(join(web, 'presmium-sw.js'), 'utf8'))![1]!) as string[]
+  expect(webPrecached).toEqual(expect.arrayContaining(LICENSES.map(file => `/web/${file}`)))
+  for (const form of [dist, web]) {
+    expect(readFileSync(join(form, 'wasi/LICENSES'), 'utf8')).toContain('Ruby 3.2.0')
+    const pyodide = readFileSync(join(form, 'pyodide/LICENSES'), 'utf8')
+    expect(pyodide).toContain('Mozilla Public License Version 2.0')
+    expect(pyodide).toContain('PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2')
+    expect(readFileSync(join(form, 'presmium/jax-js/LICENSE'), 'utf8')).toMatch(/^MIT License\n/)
+  }
   expect(files.filter(f => /\.(js|html)$/.test(f) && readFileSync(join(dist, f), 'utf8').includes(remote))).toEqual([])
 }, 180_000)

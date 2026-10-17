@@ -209,7 +209,7 @@ export function createKernels(options: KernelsOptions): Kernels {
       return failure(error, started)
     }
     const timeoutMs = request.timeoutMs && request.timeoutMs > 0 ? request.timeoutMs : DEFAULT_TIMEOUT_MS
-    const preamble = argumentsCode(request.args)
+    const preamble = argumentsCode(request.args, request.lang)
     const collector = new OutputCollector()
     let status: string
     let timedOut = false

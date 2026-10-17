@@ -13,7 +13,6 @@
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
-    "./vite": "./src/node/vite.ts",
     "./package.json": "./package.json"
   },
   "slidev": {},

@@ -3,10 +3,11 @@
 # loads it into Pyodide in the browser and runs it with the local python3 at compile time, the
 # local environment plugin runs it in the container. The kernel itself never reads it.
 #
-# A run gives the parameters as variables (literals keep their type), the request's stdin to the
-# program and its files in the working directory. Its result is JSON: the text streams
-# `stdout` and `stderr`, the exit code, and the rich outputs in nbformat form (`outputs`: the
-# streams in order, what `display()` shows, matplotlib figures, the error), docs/ir.md 6.1.
+# A run gives the parameters as variables (read back by `_pm_arg`: literals keep their type), the
+# request's stdin to the program and its files in the working directory. Its result is JSON: the
+# text streams `stdout` and `stderr`, the exit code, and the rich outputs in nbformat form
+# (`outputs`: the streams in order, what `display()` shows, matplotlib figures, the value of a
+# last expression as Jupyter shows it, the error), docs/ir.md 6.1.
 #
 # Without a session every run gets fresh globals, and what it changes in the interpreter is undone
 # afterwards (_PmIsolation), so one run in the browser's long-lived interpreter cannot affect the
@@ -58,8 +59,8 @@ class _PmOutputs:
         else:
             self.items.append({'output_type': 'stream', 'name': name, 'text': text})
 
-    def display(self, data):
-        self.items.append({'output_type': 'display_data', 'data': data, 'metadata': {}})
+    def display(self, data, kind='display_data'):
+        self.items.append({'output_type': kind, 'data': data, 'metadata': {}})
 
     def error(self, etype, value, tb):
         text = ''.join(traceback.format_exception(etype, value, tb))
@@ -294,6 +295,23 @@ class _PmIsolation:
         return False
 
 
+def _pm_arg(raw):
+    """
+    A parameter as the program gets it (`RunRequest.args` are strings, docs/architecture.md 4.6): a
+    Python literal (`10`, `0.5`, `'hi'`, `[1, 2]`, `False`), else JSON (`true`, `false`, `null`, a
+    mapping written as JSON), else the string itself. The Jupyter environments read parameters back
+    with the same rule (addon-exec-jupyter's `argumentsCode`).
+    """
+    try:
+        return ast.literal_eval(raw)
+    except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
+        pass
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError, RecursionError):
+        return raw
+
+
 def _pm_prepare(code, args_json, stdin, files_json, scope):
     for path, content in json.loads(files_json).items():
         folder = os.path.dirname(path)
@@ -305,13 +323,28 @@ def _pm_prepare(code, args_json, stdin, files_json, scope):
     linecache.cache[_PM_FILE] = (len(code), None, code.splitlines(True), _PM_FILE)
     scope.setdefault('__name__', '__main__')
     scope.setdefault('display', display)
-    # Arguments that read as Python literals (10, 0.5, [1, 2]) keep their type; others stay strings.
     for name, raw in json.loads(args_json).items():
-        try:
-            scope[name] = ast.literal_eval(raw)
-        except (ValueError, SyntaxError, TypeError, MemoryError, RecursionError):
-            scope[name] = raw
+        scope[name] = _pm_arg(raw)
     return compile(code, _PM_FILE, 'exec')
+
+
+def _pm_split(code, flags=0):
+    """
+    The code as Jupyter runs it (docs/ir.md 6.1): its statements, and apart the last one when it is
+    an expression, whose value is the run's `execute_result` (`_pm_result`); `(program, None)`
+    without one, or when a `;` ends the code, which hides the value as in Jupyter.
+    """
+    tree = ast.parse(code, _PM_FILE)
+    if not tree.body or not isinstance(tree.body[-1], ast.Expr) or code.rstrip().endswith(';'):
+        return compile(tree, _PM_FILE, 'exec', flags=flags), None
+    last = ast.Expression(tree.body.pop().value)
+    return compile(tree, _PM_FILE, 'exec', flags=flags), compile(last, _PM_FILE, 'eval', flags=flags)
+
+
+def _pm_result(outputs, value):
+    """The value of the last expression as an `execute_result`, with the MIME bundle `display` shows; None shows nothing."""
+    if value is not None:
+        outputs.display({mime: _pm_value(item) for mime, item in _pm_bundle(value).items()}, 'execute_result')
 
 
 def _pm_user_traceback():
@@ -347,7 +380,11 @@ def _pm_run(code, args_json, stdin, files_json, _max_events, session_name=None, 
     try:
         with _PmIsolation(dir, session), contextlib.redirect_stdout(_PmStream(outputs, 'stdout')), contextlib.redirect_stderr(_PmStream(outputs, 'stderr')):
             try:
-                exec(_pm_prepare(code, args_json, stdin, files_json, scope), scope)
+                _pm_prepare(code, args_json, stdin, files_json, scope)
+                program, last = _pm_split(code)
+                exec(program, scope)
+                if last is not None:
+                    _pm_result(outputs, eval(last, scope))
                 _pm_figures()
             except SystemExit as e:
                 exit_code = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)

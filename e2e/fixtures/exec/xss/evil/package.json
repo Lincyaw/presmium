@@ -1,0 +1,16 @@
+{
+  "name": "presmium-fixture-evil",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/exec.spec.ts: an executor of Python whose image output's data closes the attribute it is written into",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

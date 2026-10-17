@@ -1,3 +1,5 @@
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { BrowserContext, Locator, Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
@@ -223,6 +225,54 @@ test.describe('web form', () => {
     await toggle.click()
     await expect(toggle).toHaveAttribute('aria-checked', 'true')
     await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
+  })
+
+  test.describe('every page', () => {
+    test.use({ serviceWorkers: 'block' })
+
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`in high contrast, every page of the web form reaches WCAG AA, the dimmed narration of a scrolling section included (${colorScheme}, F-72)`, async ({ page }) => {
+        test.setTimeout(240_000)
+        await page.emulateMedia({ colorScheme })
+        await page.addInitScript(() => localStorage.setItem('presmium.publish.contrast', 'high'))
+        const pages = readdirSync(join(deck().dir, 'dist/web')).filter(file => file.endsWith('.html') && file !== '404.html').sort()
+        expect(pages.length).toBeGreaterThan(3)
+        const failures: string[] = []
+        let dimmed = 0
+        for (const file of pages) {
+          await page.goto(`${deck().web}/${file}`, { waitUntil: 'networkidle' })
+          const content = page.locator('.vp-doc:not(.pm-overlay-views)')
+          await expect(content).toBeVisible()
+          await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
+          dimmed += await page.locator('.pm-section--scrolly > .pm-track .pm-block--narration.pm-hidden').count()
+          failures.push(...(await lowContrastTexts(content)).map(text => `${file}: ${text}`))
+        }
+        expect(dimmed).toBeGreaterThan(0)
+        expect(failures).toEqual([])
+      })
+    }
+  })
+
+  // The web form's service worker caches the heavy runtimes on first use, and "save for offline use"
+  // fetches them all (D-6). That worker is the web form's own (packages/web/src/node/offline.ts), which
+  // answers the messages of addon-publish (OFFLINE_MESSAGES).
+  test.fixme('a first visit caches no C compiler; once saved for offline use, C runs offline (F-73)', async ({ page, context }) => {
+    // fixme: needs the web form's service worker of D-6 (packages/web/src/node/offline.ts, WP-89f or the acceptor):
+    // precache the shell and the content at install, cache `pyodide/`, `wasi/` and `presmium/jax-js/` on
+    // first use, and answer OFFLINE_MESSAGES. Enable this case once it is merged.
+    await page.goto(`${deck().web}/exec.html`)
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready
+    })
+    const cached = () => page.evaluate(async () => (await Promise.all((await caches.keys()).map(async name => (await (await caches.open(name)).keys()).map(r => r.url)))).flat())
+    expect((await cached()).some(url => url.endsWith('/clang.wasm'))).toBe(false)
+    const save = page.locator('.pm-save-offline').filter({ visible: true }).first()
+    await expect(save).toHaveAttribute('data-state', 'offered')
+    await save.click()
+    await expect(save).toHaveAttribute('data-state', 'saved', { timeout: 120_000 })
+    expect((await cached()).some(url => url.endsWith('/clang.wasm'))).toBe(true)
+    await goOffline(page, context)
+    await page.reload()
   })
 
   test('the high-contrast switch of the publish section brings its text to AA', async ({ page }) => {

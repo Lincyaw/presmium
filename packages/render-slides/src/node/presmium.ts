@@ -10,12 +10,13 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { copyFile, cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { errorMessage, irBlocks, nodeMdast } from '@presmium/kernel'
-import type { IRDocument, MdastNode, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { errorMessage, irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
+import type { IRDocument, LocalAsset, MdastNode, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
+import { copyPublished } from '@presmium/kernel/node'
 import { hasExtension, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
@@ -35,11 +36,11 @@ const plugin: PresmiumNodePlugin = {
     site: true,
     support: (node, extensions) => node.type === 'component' && !node.plugin && !hasExtension(node, extensions) ? 'degraded' : 'full',
     async prepare(doc, ctx) {
-      await writeDeck(ctx.workDir, ctx, slidevMarkdown(doc, ctx, ctx.workDir))
+      await writeDeck(ctx.workDir, ctx, slidevMarkdown(doc, ctx, ctx.workDir), doc)
     },
     async build(doc, ctx) {
       const dir = ctx.workDir
-      await writeDeck(dir, ctx, slidevMarkdown(doc, ctx, dir))
+      await writeDeck(dir, ctx, slidevMarkdown(doc, ctx, dir), doc)
       await rm(ctx.outDir, { recursive: true, force: true })
       await slidev(['build', 'slides.md', '--out', ctx.outDir, ...base(ctx)], dir).catch((error: unknown) => {
         throw located(error, doc, ctx)
@@ -57,7 +58,7 @@ const plugin: PresmiumNodePlugin = {
     async dev(doc, ctx) {
       // In dev the work directory is the dev output directory, so a build does not disturb it.
       const dir = ctx.workDir
-      await writeDeck(dir, ctx, slidevMarkdown(doc, ctx, dir))
+      await writeDeck(dir, ctx, slidevMarkdown(doc, ctx, dir), doc)
       const port = Number(ctx.config.port)
       const server = await slidevDev(dir, [...Number.isInteger(port) && port > 0 ? ['--port', String(port)] : [], ...base(ctx)])
       return {
@@ -120,10 +121,10 @@ function base(ctx: RenderContext): string[] {
  * package, so a `slidev export` would otherwise disturb any other Slidev dev
  * server running.
  */
-async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck): Promise<void> {
+async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc: IRDocument): Promise<void> {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '*\n')
-  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx))
+  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium)))
   await copyFile(STYLE, join(dir, 'style.css'))
   await rm(join(dir, 'public'), { recursive: true, force: true })
   await mkdir(join(dir, 'public'))
@@ -135,14 +136,58 @@ async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck): Pro
   await writeFile(join(dir, 'slides.md'), deck.markdown)
 }
 
+/** A plugin's Node entry (`./presmium`) that adds Vite plugins (`PresmiumNodePlugin.vitePlugins`), with the plugin's configuration. */
+interface VitePluginsEntry {
+  /** Absolute path of the entry. */
+  file: string
+  config: Record<string, unknown>
+}
+
+/** The Node entry (`./presmium`) of the plugin package in `dir`, if it has one. */
+async function nodeEntry(dir: string): Promise<string | undefined> {
+  const manifest: unknown = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8').catch(() => '{}'))
+  const exports = isRecord(manifest) ? manifest.exports : undefined
+  const entry = isRecord(exports) ? exports['./presmium'] : undefined
+  return typeof entry === 'string' ? resolve(dir, entry) : undefined
+}
+
 /**
- * The generated deck's `vite.config.ts` (Slidev merges it with its own): a
- * Vite cache of its own and, in `presmium dev`, the paths of `/__presmium/`
- * proxied to the Presmium server, WebSockets too (docs/architecture.md 10.1).
+ * The plugins whose Node entry adds Vite plugins, with their configuration
+ * (`presmium.<id>`), in the order of the deck's plugins. The compiler's
+ * `ctx.vitePlugins` says whether any does; Slidev runs Vite in a process of
+ * its own, where the generated deck's configuration imports these entries
+ * and calls their `vitePlugins`, as the web form's does (architecture 4.2).
  */
-function viteConfig(ctx: RenderContext): string {
-  const proxy = ctx.server ? `, server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } } }` : ''
-  return `export default { cacheDir: 'node_modules/.vite'${proxy} }\n`
+async function vitePluginEntries(ctx: RenderContext, presmium: Record<string, unknown>): Promise<VitePluginsEntry[]> {
+  if (ctx.vitePlugins.length === 0) return []
+  const entries: VitePluginsEntry[] = []
+  for (const name of ctx.plugins) {
+    const dir = ctx.pluginDirs[name]
+    const file = dir && await nodeEntry(dir)
+    if (!file) continue
+    // The compiler has loaded the module already: this is the same one.
+    const plugin = (await import(pathToFileURL(file).href).catch(() => ({}))).default as PresmiumNodePlugin | undefined
+    if (typeof plugin?.vitePlugins !== 'function') continue
+    const config = presmium[plugin.id]
+    entries.push({ file, config: isRecord(config) ? config : {} })
+  }
+  return entries
+}
+
+/**
+ * The generated deck's `vite.config.ts` (Slidev merges it with its own,
+ * vendor/docs/slidev/custom/config-vite.md): a Vite cache of its own; the
+ * Vite plugins of the deck's plugins (`vitePlugins` of their Node entries,
+ * with their configuration), the one way a plugin adds Vite plugins to
+ * either form; and, in `presmium dev`, the paths of `/__presmium/` proxied
+ * to the Presmium server, WebSockets too (docs/architecture.md 10.1).
+ */
+function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[]): string {
+  const imports = entries.map(({ file }, i) => `import plugin${i} from ${JSON.stringify(file)}\n`).join('')
+  const deck = JSON.stringify({ deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot })
+  const plugins = entries.map(({ config }, i) => `    ...(plugin${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(config)} }) ?? []),\n`).join('')
+  const proxy = ctx.server ? `  server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } } },\n` : ''
+  return `${imports}\nconst deck = ${deck}\n\nexport default {\n  cacheDir: 'node_modules/.vite',\n  plugins: [\n${plugins}  ],\n${proxy}}\n`
 }
 
 /**
@@ -150,10 +195,8 @@ function viteConfig(ctx: RenderContext): string {
  * directory with its file listing); their names hold their content hash, so
  * a copy is never stale.
  */
-async function publish(dir: string, assets: Map<string, string>): Promise<void> {
-  for (const [name, file] of assets) {
-    if (!existsSync(join(dir, 'public', name))) await cp(file, join(dir, 'public', name), { recursive: true })
-  }
+async function publish(dir: string, assets: Map<string, LocalAsset>): Promise<void> {
+  for (const found of assets.values()) copyPublished(found, join(dir, 'public'))
 }
 
 function slidevBin(): string {

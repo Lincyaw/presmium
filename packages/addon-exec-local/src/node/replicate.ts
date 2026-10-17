@@ -7,11 +7,22 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { languageId } from '@presmium/kernel'
 import { strToU8, zipSync } from 'fflate'
-import { archiveName } from '../domain/index.ts'
+import { archiveName, workspacePath } from '../domain/index.ts'
 import type { ReplicateRequest } from '../domain/index.ts'
 import { definitionRunners } from './container.ts'
-import { requirePath } from './http.ts'
 import { text } from './messages.ts'
+
+/** A path of a request that leaves the workspace; the routes answer it with 400. */
+export class PathError extends Error {}
+
+/** A workspace-relative path from a request (`PathError` when it leaves the workspace). */
+export function requirePath(file: string): string {
+  try {
+    return workspacePath(file)
+  } catch {
+    throw new PathError(text().outsideWorkspace(file))
+  }
+}
 
 /** Files of the definition: the whole `.devcontainer/` folder, or a root `.devcontainer.json` alone. */
 function definitionFiles(workspace: string, configFile: string): string[] {

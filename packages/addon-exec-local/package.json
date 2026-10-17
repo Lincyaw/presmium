@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Local environment: container executor, write-back, environment replicate (P-22, P-25, P-26)",
+  "description": "Local environment: container executor, environment replicate (P-22, P-26)",
   "keywords": [
     "slidev-addon",
     "slidev",
@@ -22,7 +22,6 @@
     "@presmium/kernel": "workspace:*",
     "fflate": "^0.8.3",
     "jsonc-parser": "^3.3.1",
-    "simple-git": "^4.0.2",
     "vue": "^3.5.42"
   },
   "devDependencies": {

@@ -20,6 +20,7 @@
  * The run panel passes each value of `:params:` as a string (YAML; JSON for
  * lists and mappings), as learners edit them in its form.
  */
+import { isRecord } from '@presmium/kernel'
 import { parse } from 'yaml'
 import type { ComputeBuffer, ComputeRequest, ScalarType } from './compute.ts'
 import { LIMITS } from './config.ts'
@@ -62,7 +63,6 @@ export function declarations(code: string): Declaration[] {
 }
 
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
-const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
 const positive = (value: unknown, max = Infinity): value is number => Number.isInteger(value) && (value as number) >= 1 && (value as number) <= max
 
 /** Bytes a buffer takes on the GPU (as the compute core allocates it). */
@@ -96,6 +96,40 @@ function buffer(declaration: Declaration, spec: unknown, text: WebgpuMessages): 
     ...fill !== undefined ? { fill: fill as number } : {},
     read: read ?? declaration.access === 'read_write',
   }
+}
+
+/** The number of values a buffer's specification gives it (its data or size), if it gives one. */
+function valueCount(spec: unknown): number | undefined {
+  const fields = Array.isArray(spec) ? { data: spec } : spec
+  if (!isRecord(fields)) return undefined
+  const counted = [Array.isArray(fields.data) ? fields.data.length : 0, positive(fields.size) ? fields.size : 0]
+  return Math.max(...counted) || undefined
+}
+
+/**
+ * A run's arguments as a run panel's history shows them (D-10): each buffer
+ * with its number of values, then the other parameters by their labels, e.g.
+ * `缓冲区 text：11 个值，best：3 个值 · 重复次数 10`.
+ */
+export function paramsSummary(args: Record<string, string>, text: WebgpuMessages): string {
+  const read = (raw: string): unknown => {
+    try {
+      return parse(raw)
+    } catch {
+      return raw
+    }
+  }
+  return Object.entries(args).map(([name, raw]) => {
+    const label = text.labels[name] ?? name
+    const value = read(raw)
+    if (name === 'buffers' && isRecord(value)) {
+      return `${label} ${Object.entries(value).map(([buffer, spec]) => {
+        const count = valueCount(spec)
+        return count === undefined ? buffer : `${buffer}: ${text.values(count)}`
+      }).join(', ')}`
+    }
+    return `${label} ${typeof value === 'string' ? value : JSON.stringify(value)}`
+  }).join(' · ')
 }
 
 /**

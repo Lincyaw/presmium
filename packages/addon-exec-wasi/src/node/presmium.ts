@@ -34,9 +34,8 @@ const wasi: EnvironmentProvider = {
  * WASI binaries, in a worker in the browser (src/client) and in a worker
  * thread at compile time (./executor.ts), so the build machine needs no
  * toolchain and the recording matches a live run. The forms publish the
- * runtimes the deck's live code needs (./pass.ts, ./vite.ts; the slides form
- * through setup/vite-plugins.ts), which the web form's service worker
- * precaches for offline use. Environments of `kind: wasi` select it by name.
+ * runtimes the deck's live code needs (./pass.ts, and the Vite plugin of
+ * `vitePlugins`, ./vite.ts), which the service worker caches for offline use. Environments of `kind: wasi` select it by name.
  */
 const plugin: PresmiumNodePlugin = {
   id: EXEC_WASI_ID,

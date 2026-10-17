@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
- * A code snippet backed by the local environment: run it in the devcontainer
- * image (P-22), commit the edited code to a new branch (P-25), or export it
- * with the devcontainer definition (P-26). The code block in the default
- * slot shows the snippet, the `code` prop holds it. Running and committing
- * need a dev server behind the deck; the export also works in any build, from
- * the archive made at compile time.
+ * A code snippet backed by the local environment: run it, edited or not, in
+ * the devcontainer image (P-22), or export it with the devcontainer
+ * definition (P-26). The code block in the default slot shows the snippet,
+ * the `code` prop holds it. Running needs a Presmium server behind the deck
+ * (`presmium dev` or `presmium serve`) and an editor; the export also works
+ * in any build, from the archive made at compile time. Edits stay in the
+ * page: nothing is written back (K-09).
  */
 import { useService, useStartReport } from '@presmium/host'
 import { errorMessage, languageId } from '@presmium/kernel'
@@ -13,10 +14,10 @@ import type { RunResult } from '@presmium/kernel'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useMessages } from '../src/client/messages.ts'
 import { archiveName, disconnected, LOCAL_ENV } from '../src/domain/index.ts'
-import type { CommitResult, LocalEnvStatus } from '../src/domain/index.ts'
+import type { LocalEnvStatus } from '../src/domain/index.ts'
 
 const props = withDefaults(defineProps<{
-  /** File of the snippet, relative to the workspace; target of commits and exports. */
+  /** File of the snippet, relative to the workspace; where exports put it. */
   file: string
   lang?: string
   /** The snippet; the wrapped code block shows it. */
@@ -41,7 +42,6 @@ const editing = ref(false)
 const draft = ref('')
 const busy = ref<string>()
 const output = shallowRef<RunResult>()
-const committed = shallowRef<CommitResult>()
 const error = ref<string>()
 
 const state = computed(() => !status.value ? 'pending' : status.value.connected ? 'connected' : 'disconnected')
@@ -50,7 +50,7 @@ const notice = computed(() => {
   const current = status.value
   if (!current) return t.value.connecting
   if (!current.connected) return current.reason && t.value[current.reason]
-  const missing = [!current.docker && t.value.noDocker, !current.devcontainer && t.value.noDefinition, !current.git && t.value.noGit].filter(Boolean)
+  const missing = [!current.docker && t.value.noDocker, !current.devcontainer && t.value.noDefinition].filter(Boolean)
   return missing.length ? missing.join(t.value.separator) : undefined
 })
 const connected = computed(() => !!status.value?.connected)
@@ -85,10 +85,6 @@ async function act<T>(name: string, task: (service: NonNullable<typeof env.value
 
 async function run() {
   output.value = await act('run', service => service.run({ lang: props.lang, code: currentCode() })) ?? output.value
-}
-
-async function commit() {
-  committed.value = await act('commit', service => service.commit({ file: props.file, content: currentCode() })) ?? committed.value
 }
 
 /** The archive made at compile time, for builds without a dev server. */
@@ -135,9 +131,6 @@ async function replicate() {
         <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
           {{ busy === 'run' ? t.running : t.runInContainer }}
         </button>
-        <button type="button" data-action="commit" :disabled="!status?.git || !!busy" @click="commit">
-          {{ t.commit }}
-        </button>
       </template>
       <button type="button" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
         {{ t.replicate }}
@@ -147,9 +140,6 @@ async function replicate() {
       {{ notice }}
     </p>
     <pre v-if="output" class="pm-local-env__output" :data-ok="output.ok">{{ output.stdout }}{{ output.stderr }}{{ output.timedOut ? t.timedOut : '' }}</pre>
-    <p v-if="committed" class="pm-local-env__commit" :data-branch="committed.branch">
-      {{ t.committedTo }} <code>{{ committed.branch }}</code>{{ t.committedFrom(committed.commit.slice(0, 7), committed.baseBranch) }}
-    </p>
     <p v-if="error" class="pm-local-env__error" role="alert">
       {{ error }}
     </p>
@@ -210,7 +200,6 @@ async function replicate() {
 .pm-local-env__output[data-ok='false'] {
   color: #b91c1c;
 }
-.pm-local-env__commit,
 .pm-local-env__error {
   margin: 0;
 }

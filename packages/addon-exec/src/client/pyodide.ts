@@ -33,7 +33,9 @@ type Outcome<T> =
  * request starts a fresh one. `dispose()`,
  * called when the kernel stops (page hidden, hot update), terminates the
  * worker, so a page restored from the back-forward cache does not keep a
- * second runtime alive.
+ * second runtime alive. Code whose shader cannot run here (`presmium_gpu`
+ * raises `GPUUnavailable`: no WebGPU, no adapter) did not run rather than
+ * fail: the result says why, and what was recorded shows (P-24, P-104).
  */
 export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideExecutor {
   const id = 'pyodide'
@@ -102,6 +104,8 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
       const outcome = await send<RunOutput>('run', request, signal)
       if (!outcome.ok) return { ...failedRun(id, outcome.error, outcome.durationMs), timedOut: outcome.timedOut }
       const { stdout, stderr, exitCode, outputs } = outcome.value
+      const unavailable = outputs?.find(output => output.output_type === 'error' && output.ename === 'GPUUnavailable')
+      if (unavailable?.output_type === 'error') return { ...failedRun(id, messages().gpuUnavailable(unavailable.evalue), outcome.durationMs), stdout }
       return { ok: exitCode === 0, stdout, stderr, exitCode, durationMs: outcome.durationMs, timedOut: false, source: 'live', executorId: id, ...outputs ? { outputs } : {} }
     },
     async endSession(session) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useHost, usePresentationMode, useSectionConfig, useService, useStartReport } from '@presmium/host'
+import { useHost, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@presmium/host'
 import type { StepState } from '@presmium/kernel'
 import type { Ref } from 'vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
@@ -46,6 +46,10 @@ const trace = shallowRef<Trace>()
 const count = computed(() => props.steps ?? trace.value?.events.length ?? 0)
 const traced = computed(() => (trace.value?.error === undefined ? trace.value?.events.length : undefined))
 const mismatch = computed(() => props.steps !== undefined && traced.value !== undefined && traced.value !== props.steps)
+// What `:steps:` should be is for the author (the build reports it too, presmium.exec): the presenter
+// view and the dev server say it, the audience and readers see only the steps.
+const role = useViewRole()
+const authoring = computed(() => role.value === 'presenter' || import.meta.env.DEV)
 
 // Each step mark reports whether its step has been reached; marks are consecutive, so the step is how many are.
 const marks = shallowReactive(new Map<number, Readonly<Ref<StepState>>>())
@@ -130,10 +134,10 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
         </template>
         <template v-else>
           {{ t.stepOf(frame?.step ?? 0, traced ?? 0) }}{{ frame?.line ? t.atLine(frame.line) : '' }}{{ trace?.truncated ? t.truncated : '' }}
-          <div v-if="mismatch" class="pm-step-run__warning">
+          <div v-if="authoring && mismatch" class="pm-step-run__warning">
             {{ t.stepsMismatch(steps ?? 0, traced ?? 0) }}
           </div>
-          <div v-else-if="steps === undefined" class="pm-step-run__warning">
+          <div v-else-if="authoring && steps === undefined" class="pm-step-run__warning">
             {{ t.stepsMissing(traced ?? 0) }}
           </div>
         </template>

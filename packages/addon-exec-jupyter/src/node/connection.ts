@@ -2,12 +2,16 @@
  * The Node side's connection to a Jupyter Server: `@jupyterlab/services`
  * settings whose HTTP requests and WebSocket handshakes (the `ws` package,
  * which sends headers) carry the connection's headers, so the token is
- * never in a URL.
+ * never in a URL. Through the gateway (SHARED mode) the requests are the
+ * kernel's `gatewayFetch`, which follows no redirect: the token never goes
+ * to another address.
  */
+import { gatewayFetch } from '@presmium/kernel'
 import type { ServerConnection } from '@jupyterlab/services'
 import WebSocket from 'ws'
 import type { ClientOptions } from 'ws'
 import type { Connection } from '../domain/connection.ts'
+import { EXEC_JUPYTER_ID } from '../domain/index.ts'
 import { services } from '../jupyter/kernels.ts'
 
 let quiet = false
@@ -42,11 +46,20 @@ export async function nodeSettings(connection: Connection): Promise<ServerConnec
     token: '',
     appendToken: false,
     WebSocket: HeaderSocket as unknown as typeof globalThis.WebSocket,
-    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input, init)
       for (const [name, value] of Object.entries(headers)) request.headers.set(name, value)
+      const gateway = connection.gateway && `${connection.gateway.url.replace(/\/+$/, '')}/${EXEC_JUPYTER_ID}/`
+      const sent = gateway && request.url.startsWith(gateway)
+        ? gatewayFetch(connection.gateway!, EXEC_JUPYTER_ID, request.url.slice(gateway.length), {
+            method: request.method,
+            headers: request.headers,
+            body: ['GET', 'HEAD'].includes(request.method) ? undefined : await request.arrayBuffer(),
+            signal: request.signal,
+          })
+        : fetch(request)
       // Node's `fetch failed` names its cause (ECONNREFUSED, ENOTFOUND) only there; the services keep the message.
-      return fetch(request).catch((error: unknown) => {
+      return sent.catch((error: unknown) => {
         const cause = (error as { cause?: { code?: unknown, message?: unknown } }).cause
         const detail = typeof cause?.code === 'string' ? cause.code : typeof cause?.message === 'string' ? cause.message : undefined
         throw detail && error instanceof Error ? new TypeError(`${error.message} (${detail})`) : error

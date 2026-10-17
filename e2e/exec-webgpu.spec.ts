@@ -6,7 +6,8 @@ import { openSlide, useFixture } from './fixtures/deck.ts'
 // panel, recorded at build time in Playwright's Chromium; the same shader from Python through
 // `presmium_gpu`; and jax-js in JavaScript. Chromium runs with SwiftShader (docs/architecture.md
 // section 7), so the GPU is a fallback adapter and timings are CPU emulation; one test starts the
-// default headless Chromium, which has no GPU adapter, to see the recorded output and the reason.
+// default headless Chromium, which has no GPU adapter, to see the recorded output and the reason; and
+// where Chromium finds a GPU through Vulkan, the shader and jax-js run on it (skipped otherwise).
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-webgpu', { link: { '@presmium/slidev-addon-exec-webgpu': 'packages/addon-exec-webgpu' } })
 test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })
@@ -25,6 +26,19 @@ async function runCode(code: Locator): Promise<Locator> {
   await expect(code.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', RUNTIME)
   return code.locator('.pm-output')
 }
+
+test('the panel names the shader\'s parameters for learners: a field per buffer, and its history sums the arguments up (D-10)', async ({ page }) => {
+  const panel = (await webBlock(page, 'shader', 'add')).locator('.pm-run-panel')
+  await expect(panel.locator('.pm-run-panel__run')).toBeEnabled()
+  const labels = panel.locator('.pm-run-panel__param > span')
+  await expect(labels).toHaveText(['缓冲区 a', '缓冲区 b', '缓冲区 out', '工作组数', '重复次数'])
+  await expect(panel.locator('input[name="buffers.out"]')).toHaveValue('{"size":4}')
+  await panel.locator('input[name="buffers.a"]').fill('[2, 3, 4, 5]')
+  await panel.locator('.pm-run-panel__run').click()
+  await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
+  await expect(panel.locator('.pm-run-panel__stdout')).toContainText('out: f32[4] = [12, 23, 34, 45]')
+  await expect(panel.locator('.pm-run-panel__history li')).toContainText(/#1 缓冲区 a: 4 个值, b: 4 个值, out: 4 个值 · 工作组数 1 · 重复次数 5 · 成功 · \d+ ms/)
+})
 
 test('a compute shader runs in the browser and shows the sum and its timing, marked as CPU emulation, in both forms', async ({ page }) => {
   const panel = (await webBlock(page, 'shader', 'add')).locator('.pm-run-panel')
@@ -76,6 +90,43 @@ test('without a GPU adapter, the shader shows its recorded output and why', asyn
     await expect(output.locator('.pm-run-panel__stdout')).toContainText(SUM)
     // Recorded at compile time in the deck's language.
     await expect(output.locator('.pm-run-panel__stdout')).toContainText(/^计时：每次派发 .* ms/m)
+
+    // Python code whose shader cannot run here did not run: it says why, without a traceback (P-24, F-70).
+    const python = await webBlock(page, 'python', 'py-async')
+    await python.locator('.pm-code-block__run button').first().click()
+    await expect(python.locator('.pm-outputs')).toContainText('没有可用的 GPU 适配器', RUNTIME)
+    await expect(python.locator('.pm-outputs')).not.toContainText('Traceback')
+    await expect(python.locator('.pm-outputs')).not.toContainText('GPUUnavailable')
+  } finally {
+    await browser.close()
+  }
+})
+
+/** Chromium's flags for the GPU through Vulkan, as the recorder starts it (`adapter: gpu`). */
+const VULKAN = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-angle=vulkan']
+
+test('on the GPU that Chromium finds through Vulkan, the shader and jax-js run on it (P-104; skipped without one)', async ({ playwright }) => {
+  test.setTimeout(180_000)
+  const browser = await playwright.chromium.launch({ args: VULKAN })
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${deck().web}/?section=shader`)
+    const adapter = await page.evaluate(async () => {
+      const found = await (navigator as Navigator & { gpu?: { requestAdapter(): Promise<{ info: { vendor: string, isFallbackAdapter: boolean } } | null> } }).gpu?.requestAdapter()
+      return found && !found.info.isFallbackAdapter ? found.info.vendor : undefined
+    })
+    test.skip(!adapter, 'Chromium finds no GPU through Vulkan (--enable-features=Vulkan): run it on a machine with a GPU and its Vulkan driver')
+    const panel = page.locator('.pm-block[data-block="add"] .pm-run-panel')
+    await panel.locator('.pm-run-panel__run').click()
+    const stdout = panel.locator('.pm-run-panel__stdout')
+    await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
+    await expect(stdout).toContainText(SUM)
+    await expect(stdout).toContainText(`适配器：${adapter}`)
+    await expect(stdout).not.toContainText('CPU 模拟')
+
+    await page.goto(`${deck().web}/?section=tensor`)
+    const output = await runCode(page.locator('.pm-block[data-block="matmul"]'))
+    await expect(output.locator('.pm-output__stdout')).toHaveText('webgpu [[19,22],[43,50]]\n', RUNTIME)
   } finally {
     await browser.close()
   }

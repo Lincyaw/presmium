@@ -18,6 +18,7 @@ const DECK = fileURLToPath(new URL('./fixtures/deck', import.meta.url))
 const EXPORT_DECK = fileURLToPath(new URL('./fixtures/export', import.meta.url))
 const MYST_DECK = fileURLToPath(new URL('./fixtures/myst', import.meta.url))
 const TRACE_DECK = fileURLToPath(new URL('./fixtures/trace', import.meta.url))
+const LIVE_DECK = fileURLToPath(new URL('./fixtures/live', import.meta.url))
 const require = createRequire(import.meta.url)
 const SLIDEV = join(dirname(require.resolve('@slidev/cli/package.json')), 'bin/slidev.mjs')
 
@@ -237,3 +238,57 @@ it('shows tags that name no HTML element as text, and reports a slide that does 
   expect(broken.output).toContain(`broken.md:${line}  error  slide 3 (Broken) does not build: Element is missing end tag.`)
   expect(broken.output).not.toContain('__slidev_')
 }, 180_000)
+
+it('gives code that runs live one output area, its runner\'s, which shows the recording until the code runs; shows an HTML table whole, sanitized, in the slide and its export (F-18, F-65)', async () => {
+  const target = join(out, 'live')
+  const built = await build(['build', '--to', 'slides', '--out', target], LIVE_DECK)
+  expect(built.code, built.output).toBe(0)
+  const slides = readFileSync(join(LIVE_DECK, '.presmium/slides/slides.md'), 'utf8')
+  // The recording is the runner's (its options in the headmatter), not a block below it.
+  expect(slides).toContain("```python {monaco-run} {autorun:'once',height:'auto',runnerOptions:$slidev.configs.presmiumRuns['live/code-1']}")
+  expect(slides).not.toContain('```text\nLIVE-RECORDED 42\n```')
+  // HTML output: sanitized (no script), one block Vue leaves as it is.
+  const html = /<div class="pm-output__html" v-pre>(.*)<\/div>/.exec(slides)?.[1]
+  expect(html).toMatch(/^<table>/)
+  expect(html).not.toMatch(/<script|<style/)
+
+  const { sections } = JSON.parse(readFileSync(join(target, 'ir.json'), 'utf8')) as { sections: { id: string, index: number }[] }
+  const slide = (id: string) => sections.find(s => s.id === id)!.index
+  const site = await serveSite(target)
+  const browser = await chromium.launch()
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${site.url}/slides/${slide('live')}`)
+    const runner = page.locator(`.slidev-page-${slide('live')} .slidev-runner-output`)
+    await runner.locator('.pm-run-recorded').waitFor()
+    expect(await runner.innerText()).toBe('预录输出\nLIVE-RECORDED 42')
+    await page.goto(`${site.url}/slides/${slide('only-live')}`)
+    const hint = page.locator(`.slidev-page-${slide('only-live')} .slidev-runner-output .pm-run-hint`)
+    await hint.waitFor()
+    expect(await hint.innerText()).toBe('按 ▶ 运行这段代码')
+    expect(await page.content()).not.toContain('Click the play button')
+
+    await page.goto(`${site.url}/slides/${slide('table')}`)
+    const layout = page.locator(`.slidev-page-${slide('table')} .slidev-layout`)
+    const rows = layout.locator('.pm-output__html tbody tr')
+    await rows.last().waitFor()
+    expect(await rows.count()).toBe(12)
+    const [box, last] = await Promise.all([layout.boundingBox(), rows.last().boundingBox()])
+    expect(last!.y + last!.height).toBeLessThanOrEqual(box!.y + box!.height)
+    expect(await page.evaluate(() => (window as { fixtureScript?: number }).fixtureScript)).toBeUndefined()
+  } finally {
+    await browser.close()
+    await site.close()
+  }
+
+  const pdf = join(target, 'table.pdf')
+  const exportTable = () => slidev(['export', '.presmium/slides/slides.md', '--range', String(slide('table')), '--output', pdf], LIVE_DECK)
+  let exported = await exportTable()
+  // The deck's first export may find Vite still optimizing the execution plugin's dependencies, which a
+  // busy machine makes outlast the print page's wait: once more, with the dependencies optimized.
+  if (exported.code !== 0 && /Timeout/.test(exported.output)) exported = await exportTable()
+  expect(exported.code, exported.output).toBe(0)
+  const text = (await pdfText(pdf)).join('\n')
+  expect(text).toContain('row 0')
+  expect(text).toContain('row 11')
+}, 240_000)

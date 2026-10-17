@@ -6,6 +6,8 @@ export interface Connection {
   /** The server's base URL, ending with `/`. */
   url: string
   headers: Record<string, string>
+  /** SHARED mode: the gateway whose proxy `url` is; requests go through `gatewayFetch`, which follows no redirect. */
+  gateway?: GatewayAccess
 }
 
 /**
@@ -48,7 +50,7 @@ export function operatorConnection(name: string, spec: EnvironmentSpec, side: Op
     return { connection: { url: baseUrl(url!), headers: {} } }
   }
   if (side.gateway) {
-    return { connection: { url: `${side.gateway.url.replace(/\/+$/, '')}/${EXEC_JUPYTER_ID}/${proxyPath(name)}/`, headers: { Authorization: `Bearer ${side.gateway.token}` } } }
+    return { connection: { url: `${side.gateway.url.replace(/\/+$/, '')}/${EXEC_JUPYTER_ID}/${proxyPath(name)}/`, headers: { Authorization: `Bearer ${side.gateway.token}` }, gateway: side.gateway } }
   }
   const variables = operatorVariables(name)
   const url = side.secret(variables.url)

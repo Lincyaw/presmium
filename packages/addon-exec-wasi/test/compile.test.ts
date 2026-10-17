@@ -1,13 +1,17 @@
 // Compile-time execution on the WASI binaries (P-103, WP-74), with the real `presmium build` on a
-// machine without a toolchain: the build's PATH is an empty directory, so no cc, ruby or sqlite3
+// machine without a toolchain: the build's PATH holds nothing but the FUSE helpers the process sandbox
+// mounts with (deltabox, where the host qualifies), so no cc, ruby or sqlite3
 // can run, yet the C program (and the C++, Ruby and SQL blocks) are recorded. The recording names
 // the runtime by the hash of its binaries, which a second build from scratch computes alike. The
-// program's environment is the build's, cleaned of credentials (docs/architecture.md 10.6).
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+// program's environment is the build's, cleaned of credentials (docs/architecture.md 10.6). A run is a
+// process of its own, whose program's memory has a limit: one that allocates without end fails, and the
+// compiling process does not grow with it (N-08).
+import { spawn, spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
+import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
 import type { CodeNode, IRDocument } from '@presmium/kernel'
 import { afterAll, expect, it } from 'vitest'
 
@@ -83,7 +87,7 @@ int main(void) { puts("in the environment"); return 0; }
 ${FENCE}
 `
 
-/** Builds the deck in `dir` with the build machine's PATH an empty directory; the outputs by block, and the recordings' fingerprints. */
+/** Builds the deck in `dir` with the build machine's PATH `path`; the outputs by block, and the recordings' fingerprints. */
 async function build(dir: string, path: string) {
   const result = await presmium(dir, ['build'], { PATH: path, FIXTURE_PLAIN: 'visible', FIXTURE_API_TOKEN: 'hidden' })
   expect(result.code, result.stdout + result.stderr).toBe(0)
@@ -99,6 +103,10 @@ it('records C, C++, Ruby and SQL without a toolchain on the build machine, under
   dirs.push(dir)
   const empty = join(dir, 'no-toolchain')
   mkdirSync(empty)
+  for (const helper of ['fusermount3', 'fusermount']) {
+    const found = spawnSync('sh', ['-c', `command -v ${helper}`], { encoding: 'utf8' }).stdout.trim()
+    if (found) symlinkSync(found, join(empty, helper))
+  }
   writeFileSync(join(dir, 'lecture.md'), DECK)
 
   const first = await build(dir, empty)
@@ -122,4 +130,65 @@ it('records C, C++, Ruby and SQL without a toolchain on the build machine, under
   expect(second.environments).toEqual(first.environments)
   expect(second.runs.sum!.cacheKey).toBe(first.runs.sum!.cacheKey)
   expect(second.runs.sum!.stdout).toBe(first.runs.sum!.stdout)
-})
+}, 180_000)
+
+/** The peak resident memory of a process (`VmHWM`), in MiB, while it lives. */
+function peakMemory(pid: number): number {
+  try {
+    return Number(/^VmHWM:\s+(\d+) kB$/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1] ?? 0) / 1024
+  } catch {
+    return 0
+  }
+}
+
+it('stops a program\'s memory at its limit, in a process of its own: the program fails, saying why, and the compiling process does not grow with it (N-08)', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'presmium-wasi-memory-'))
+  dirs.push(dir)
+  writeFileSync(join(dir, 'lecture.md'), `---
+plugins:
+  - ${ADDON}
+---
+
+## 内存
+
+${FENCE}{code} c
+:run:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+  size_t total = 0, ones = 0;
+  for (;;) {
+    char *block = malloc(64 << 20);
+    if (!block) {
+      fprintf(stderr, "out of memory after %zu MiB\\n", total);
+      return 1;
+    }
+    memset(block, 1, 64 << 20);
+    ones += block[total];
+    total += 64;
+    if (total >= 3072) break;
+  }
+  printf("allocated %zu MiB, %zu ones\\n", total, ones);
+  return 0;
+}
+${FENCE}
+`)
+  // \`presmium ir\` compiles and runs the code, nothing more; its own peak memory, sampled while it runs.
+  const { NODE_ENV: _test, ...env } = process.env
+  const child = spawn(process.execPath, [PRESMIUM_BIN, 'ir', '--out', 'ir.json'], { cwd: dir, env, stdio: 'ignore' })
+  let peak = 0
+  const sampler = setInterval(() => peak = Math.max(peak, peakMemory(child.pid!)), 20)
+  const code = await new Promise<number | null>(done => child.once('exit', done))
+  clearInterval(sampler)
+  expect(code).toBe(0)
+  const doc = JSON.parse(readFileSync(join(dir, 'ir.json'), 'utf8')) as IRDocument
+  const run = (doc.sections[0]!.blocks[0]!.node as CodeNode).outputs![0]!
+  expect(run).toMatchObject({ ok: false, exitCode: 1, stdout: '' })
+  const failed = /^out of memory after (\d+) MiB\n$/.exec(run.stderr)
+  expect(failed, run.stderr).not.toBeNull()
+  expect(Number(failed![1])).toBeLessThan(1024)
+  expect(peak).toBeGreaterThan(0)
+  expect(peak).toBeLessThan(1024)
+}, 120_000)

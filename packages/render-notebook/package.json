@@ -11,7 +11,6 @@
   "dependencies": {
     "@presmium/kernel": "workspace:*",
     "myst-to-md": "^1.0.17",
-    "parse5": "7.3.0",
     "vfile": "^5.3.7"
   },
   "devDependencies": {
