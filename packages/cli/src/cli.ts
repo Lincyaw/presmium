@@ -322,7 +322,8 @@ async function devDeck(command: Command): Promise<number> {
 
 /** `presmium gateway`: the gateway of a shared deployment, until stopped (docs/architecture.md 10.9). */
 async function gateway(command: Command): Promise<number> {
-  const token = readSecret(process.env, 'PRESMIUM_GATEWAY_TOKEN')
+  // Started as root to become its user, it takes its token from a file only (a variable would stay in its environment).
+  const token = readSecret(process.env, 'PRESMIUM_GATEWAY_TOKEN', Boolean(command.user) && process.getuid?.() === 0)
   if (!token) throw new Error('the gateway needs its service token: set PRESMIUM_GATEWAY_TOKEN or PRESMIUM_GATEWAY_TOKEN_FILE')
   // Started as root: the token file is read, then the process runs as the gateway's user.
   becomeUser(command.user)

@@ -140,10 +140,21 @@ export class FreezeCache implements RunCache {
     return this.#records
   }
 
-  #read(file: string): FreezeRecord | undefined {
-    if (this.#scope && !this.#scope.allows(join(this.dir, file))) return undefined
+  /** A file of the cache; in the read scope, the file read is the one checked (WP-91b). */
+  #text(file: string): string | undefined {
+    if (this.#scope) return this.#scope.readSync(file)
     try {
-      const data: unknown = JSON.parse(readFileSync(join(this.dir, file), 'utf8'))
+      return readFileSync(file, 'utf8')
+    } catch {
+      return undefined
+    }
+  }
+
+  #read(file: string): FreezeRecord | undefined {
+    const text = this.#text(join(this.dir, file))
+    if (text === undefined) return undefined
+    try {
+      const data: unknown = JSON.parse(text)
       return isRecord(data) && isRecord(data.run) ? data as unknown as FreezeRecord : undefined
     } catch {
       return undefined
@@ -178,13 +189,7 @@ export class FreezeCache implements RunCache {
     if (!run.outputs) return run
     return { ...run, outputs: run.outputs.map(output => mapData(output, (value) => {
       if (!isRecord(value) || typeof value[BLOB_REF] !== 'string') return value
-      const file = join(this.dir, BLOBS, value[BLOB_REF].replace(/[^0-9a-f]/g, ''))
-      if (this.#scope && !this.#scope.allows(file)) return undefined
-      try {
-        return readFileSync(file, 'utf8')
-      } catch {
-        return undefined
-      }
+      return this.#text(join(this.dir, BLOBS, value[BLOB_REF].replace(/[^0-9a-f]/g, '')))
     })) }
   }
 }

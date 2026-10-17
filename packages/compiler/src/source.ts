@@ -119,7 +119,8 @@ export class Parser {
 
   /** Reads and parses a file; unchanged files come from the cache. Undefined when unreadable. */
   async read(file: string): Promise<ParsedFile | undefined> {
-    const read = await readFile(file, 'utf8').catch(() => undefined)
+    // In the read scope, the file read is the one checked (WP-91b).
+    const read = this.scope ? await this.scope.read(file) : await readFile(file, 'utf8').catch(() => undefined)
     if (read === undefined) return undefined
     const text = withoutBom(read)
     const cached = this.#cache.get(file)
@@ -207,6 +208,10 @@ export class Parser {
       return []
     }
     const parsed = await this.read(target)
+    if (!parsed && this.scope?.refused.has(target)) {
+      out.findings.push({ checkId: 'presmium.files', severity: 'error', message: refusedFile(target), source })
+      return []
+    }
     if (!parsed) {
       // Watched all the same: the author may be about to create it.
       if (!out.missing.includes(target)) out.missing.push(target)
@@ -238,7 +243,8 @@ export class Parser {
     if (!arg) return fail(`${name} needs a file argument`)
     const target = resolve(dirname(file), arg)
     if (this.scope && !this.scope.allows(target)) return fail(refusedFile(target), 'presmium.files')
-    const text = await readFile(target, 'utf8').catch(() => undefined)
+    const text = this.scope ? await this.scope.read(target) : await readFile(target, 'utf8').catch(() => undefined)
+    if (text === undefined && this.scope?.refused.has(target)) return fail(refusedFile(target), 'presmium.files')
     if (text === undefined) {
       if (!out.missing.includes(target)) out.missing.push(target)
       return fail(`${name} ${arg}: file not found`)

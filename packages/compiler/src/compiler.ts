@@ -249,10 +249,11 @@ export class Compiler {
     const { root: workspaceRoot, src, scope, settings } = workspace
     const findings: Finding[] = []
     const report = (finding: Finding) => findings.push(finding)
-    const refused = scope && !scope.allows(this.entry)
-    const text = refused ? '' : withoutBom(await readFile(this.entry, 'utf8').catch(() => {
-      throw new Error(`${this.entry} not found`)
-    }))
+    // In the read scope the file read is the one checked, by its descriptor (WP-91b).
+    const read = scope ? (scope.allows(this.entry) ? await scope.read(this.entry) : undefined) : await readFile(this.entry, 'utf8').catch(() => undefined)
+    const refused = Boolean(scope?.refused.has(this.entry))
+    if (read === undefined && !refused) throw new Error(`${this.entry} not found`)
+    const text = withoutBom(read ?? '')
     if (refused) report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(this.entry), source: { file: this.entry, line: 1 } })
     if (workspace.problem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.problem, source: { file: this.entry, line: 1 } })
     if (workspace.operatorProblem) report({ checkId: 'presmium.workspace', severity: 'error', message: workspace.operatorProblem, source: { file: this.entry, line: 1 } })
@@ -408,7 +409,7 @@ export class Compiler {
     const lockFile = join(this.deckDir, ANCHOR_LOCK_PATH)
     let lock = AnchorLock.empty()
     try {
-      lock = AnchorLock.parse(await readFile(lockFile, 'utf8').catch(() => undefined))
+      lock = AnchorLock.parse(scope ? await scope.read(lockFile) : await readFile(lockFile, 'utf8').catch(() => undefined))
     } catch (error) {
       report({ checkId: 'presmium.lock', severity: 'error', message: errorMessage(error), source: { file: lockFile, line: 1 } })
     }
@@ -477,7 +478,7 @@ export class Compiler {
     doc.diagnostics = sortFindings(findings)
     // A build for an audience compiled only part of the deck: the recordings of the rest stay.
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
-    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins) }
+    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins), ...workspace.scope ? { scope: workspace.scope } : {} }
 
     return {
       doc,

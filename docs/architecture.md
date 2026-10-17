@@ -1746,7 +1746,7 @@ v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下是计划�
 
 ### 9.4 残余风险（D13、D16）
 
-> 共享部署（SHARED 模式与 compose 模板）在 WP-91 的独立安全评审通过之前是实验性的；文档与 SHARED 的 serve 的启动日志都写明。
+> 共享部署（SHARED 模式与 compose 模板）在独立安全评审通过之前是实验性的；文档与 SHARED 的 serve 的启动日志都写明。WP-91b（D17）由验收者在子代理用量中断期间完成，它的独立安全评审在用量恢复后进行（`wbs.md` 最终验收的待办）。
 
 两种信任模式（10.1 节）的措施之后仍然存在的风险。这里写明哪些秘密是拿得到的，第 11 节的措施不声称挡住它们。
 
@@ -1775,7 +1775,7 @@ SHARED 模式（compose 布局，经 WP-91 加固，10.10 节）：第三方凭�
 | agent 会话的记录 | 随包的 DeepSeek Harness 把每个会话的记录（提示、回答与工具的输出，包括读者的提问）存在 sandbox 的状态目录中（`~/.local/state/presmium/dsh/`），以 sandbox 的 uid 运行的任何代码（编译时的代码、`run_code`、站点的数据加载器）都读得到全部成员的这些记录。实测（WP-91 的评审）其中没有令牌。记录不按会话分开，也不在会话结束后删除 |
 | 运营者插件在 serve 中自己写文件 | Presmium 的插件在 serve 中写文稿目录都经 `DOCUMENT_FILES`（讲授插件的录制、讲授轨与逐字对齐，语音插件的合成缓存与 `speech.lock.json`，10.10 节），SHARED 中不下载文稿指名的远程图片。插件契约要求这样做（`DOCUMENT_FILES`），但插件的代码在 serve 中运行，运营者另装的插件若直接写 `ServerContext.deckDir`，沙箱埋下的链接就能把这样的写入引到 serve 能写的文件；运营者的插件是运营者信任的代码（D14） |
 | 沙箱在文档目录中埋下嵌套的 `.git` | serve 的 git 从不把它当作仓库（git 目录固定），也不读它的配置（实测：嵌套仓库的配置与属性定义的过滤器没有运行），编译器也不把它当作工作区（10.10 节）。一个有效的嵌套仓库（有自己的提交）在审阅与提交中只作为一个子模块链接（gitlink）出现，其中的文件像被忽略的文件一样不在审阅之中；拒绝时它被删除，撤销遇到它时报错 |
-| 读者站点的源码 | 学生视图的站点经 Vite 的 `/@fs/` 只给读者学生视图的页面加载的文件（白名单，10.10 节）：文档目录中只有 `components/` 与 `src/`（不含 `src/node/`）之下的文件，工作区根目录的 `node_modules/`，Presmium 的安装与插件中只有依赖与浏览器部分；按请求的路径与它的真实路径各查一次。文档的 Markdown、数据文件、答案、配置、执行缓存、讲授与产物都不给。组件的模块与它们引用的文件读者照样取得（同运行它们一样），编辑者写进组件目录里的教师内容（或沙箱的代码复制到那里的文件）因此对读者可见 |
+| 读者站点的源码 | WP-91b（D17）起读者只得到为学生构建的静态站点（10.10 节）：serve 自己的静态文件服务只回答 `GET`、`HEAD` 与构建出的文件，没有开发服务器的模块、`/@fs/`、源码与 WebSocket；开发服务器只给编辑者与所有者。读者看到的内容比编辑者晚一次构建（第一次构建前是一页“正在更新”）。组件的源码不再给读者，组件以构建后的产物运行 |
 | 审阅之前的改动对读者可见 | git 实现与 Linux 上的 deltabox（cbcow-through）下，agent 的改动在接受之前已在文档目录中，编辑者的页面随之更新（P-113），读者的站点也会显示；被拒绝时撤回 |
 | deltabox 覆盖配置削弱 sandbox 容器 | cbcow 模式（审阅与进程沙箱都用它）需要 `/dev/fuse`、`SYS_ADMIN` 与 `apparmor:unconfined`；在会话中执行命令（进程沙箱）另需 `SYS_PTRACE`（Docker 的 seccomp 只在有它时允许 `pidfd_getfd`）。默认的 compose 布局不加这些权限，只有运营者启用覆盖配置时才加。镜像中为它装的 `fusermount3` 是 setuid 的（deltabox 以它挂载 FUSE）；默认布局中没有 `/dev/fuse`，它什么也挂载不了 |
 | gateway 持有全部第三方凭据 | gateway 只加载运营者的插件，不运行文稿的代码；工作区的数据卷以只读挂载，它只读取工作区配置与根目录的插件，不读文档；它被攻破就失去全部凭据。经 serve 到达它的浏览器请求只带限定于目标插件的令牌（10.10 节）；serve 的服务令牌在 serve 中，serve 被攻破时它可以签发任何令牌 |
@@ -2059,7 +2059,7 @@ serve 为每个 agent 会话向 gateway 签发一个只含 `presmium.assistant` 
 
 **修改历史只给编辑者与所有者**：`GET revisions` 原先读者也能调用，而提交说明引用批注、对话的要求与 agent 的说明，可能含有只给教师的内容；现在它同撤销一样要编辑者（页面上的修改历史本来只给编辑者显示）。
 
-**读者站点只给页面加载的文件**：学生视图的站点开发服务器能经 Vite 的 `/@fs/`（与 `/@id/`）提供 `server.fs.allow` 中的文件：文档目录（含文档的整份 Markdown、只给教师的 `{literalinclude}` 引入的答案与数据文件）、Presmium 的安装（镜像中的 `/opt/presmium`）与插件目录。serve 为学生视图转发之前按白名单检查这类请求所指的文件（`studentRefusal`，`packages/workspace/src/node/remote-site.ts`），请求的路径与它的真实路径都要在白名单中，否则 404：工作区之内只有文档目录的 `components/` 与 `src/`（不含 `src/node/`，站点按这两个约定加载文稿的组件与浏览器部分，以及它们在旁边引用的文件）和工作区根目录的 `node_modules/`（运营者装的包，D14）；工作区之外只有依赖（路径中有 `node_modules`）与包（最近的有 `package.json` 的目录）的浏览器部分：`src/`（不含 `src/node/`）、`components/`、`media/`、顶层的 `.vue` 与 `.css`。任何一段是 `.git` 的都不给。`/@id/` 之后不是路径的标识（虚拟模块、裸导入）照常转发，相对的标识拒绝。只接受 `GET` 与 `HEAD`，不接受带片段（`#`）的请求。白名单按 `e2e/workspace.spec.ts` 中读者打开文档与首页时页面实际请求的文件核对过（全部在白名单中）。
+**读者只得到静态的学生站点（WP-91b，D17）**：WP-91 的第二轮安全评审仍在开发服务器的允许列表上找到绕过（在文档的基址之后直接写绝对路径，例如 `…/solution.py?import&raw`），补丁式的列表无法覆盖开发服务器的全部解析方式。因此读者（学生视图）从不经过开发服务器：serve 在读者第一次请求一份文档（或首页）时请 agent-host 以受众 `student` 构建它的网页（`AgentHostClient.studentSite`，构建在沙箱中进行），把收到的文件写进 serve 自己的目录（只有 serve 写那里），以 serve 自己的编译对它做泄漏扫描（不含给学生的内容之外的句子），通过后作为当前版本；之后文档目录或它的编译读过的文件变化时去抖（安静 2 秒，最长 15 秒）重建，一次只构建一个；构建失败时继续服务上一版并记录日志。读者的请求由 serve 本机的一个静态文件服务回答（`packages/workspace/src/node/student-site.ts`）：只接受 `GET` 与 `HEAD`，路径的每一段只解码一次、不接受 `.`、`..`、分隔符与 NUL，只给构建目录中的普通文件（打开时不跟随链接），没有 WebSocket；第一次构建完成之前，页面路径得到一页“正在更新”（503，自动刷新），其他路径（资源、`@id`、`@fs`、`?raw`、`?import` 等）得到 404。上一版构建保留到下一次构建完成之后，供已经打开的页面加载其带哈希的资源。编辑者与所有者仍经开发服务器看到实时页面。
 
 **镜像中没有运营者的文件**：README 让运营者在 `templates/workspace/compose/` 中放 `.env`（第三方凭据）、`oauth2-proxy.env`（登录代理的密钥）、`secrets/` 与 `seed/`，而镜像原先以整个检出为构建上下文、`COPY . /opt/presmium`，这些文件因此进了镜像，sandbox 的 uid 读得到，读者也能经站点的 `/@fs/` 读到（评审实测）。现在 `Dockerfile.dockerignore` 是白名单（`package.json`、`pnpm-workspace.yaml`、`node_modules/`、`packages/`（不含测试与产物）、`examples/demo/node_modules/`、`templates/document/`、`init.sh`），`Dockerfile` 也只逐项复制这些，模板目录另有 `.gitignore` 忽略这四样。
 

@@ -158,6 +158,29 @@ export class AgentHostClient {
     }
   }
 
+  /**
+   * Builds the readers' static site of a document there, for the audience `student` (or, without a
+   * document, the home page; WP-91b), and hands each file's content to `write` as it comes, a file's
+   * pieces in order. Resolves once the whole build came; rejects when it failed or came only in part.
+   */
+  async studentSite(site: SiteSpec, document: string | undefined, plugins: string[], write: (path: string, chunk: Buffer) => void, signal?: AbortSignal): Promise<{ files: number, bytes: number }> {
+    const token = await this.#scoped(plugins, `student:${document ?? ''}`)
+    try {
+      const response = await this.#call('POST', '/v1/student-sites', { site: bareSpec(site), ...document === undefined ? {} : { document }, ...token.access ? { gateway: token.access } : {} }, signal)
+      for await (const line of lines(response)) {
+        const value: unknown = JSON.parse(line)
+        if (!isRecord(value) || value.wait === true) continue
+        if (typeof value.error === 'string') throw new Error(value.error)
+        if (value.end === true) return { files: Number(value.files), bytes: Number(value.bytes) }
+        if (typeof value.path !== 'string' || typeof value.data !== 'string') throw new Error('a line of the build is no file')
+        write(value.path, Buffer.from(value.data, 'base64'))
+      }
+      throw new Error('the build ended before all of it came')
+    } finally {
+      await token.revoke()
+    }
+  }
+
   /** Starts a workspace site's dev server there; returns its id and port (on agent-host's address). */
   createSite(site: SiteSpec, view: DocumentView): Promise<{ id: string, port: number }> {
     return this.#json('POST', '/v1/sites', { site: bareSpec(site), view })
@@ -246,6 +269,25 @@ export class AgentHostClient {
           },
         }
       },
+    }
+  }
+}
+
+/** The lines of a response, as they come. */
+async function* lines(response: Response): AsyncIterable<string> {
+  const reader = response.body?.getReader()
+  if (!reader) return
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let end: number
+    while ((end = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, end)
+      buffer = buffer.slice(end + 1)
+      if (line) yield line
     }
   }
 }
