@@ -976,9 +976,9 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 待办（用量恢复后）：
 
 1. WP-91b 读者的静态学生站点：由验收者完成（见下方 WP-91b 的实际交付），待独立安全评审后去掉 SHARED 模式的“实验性”。
-2. 重跑最终审计的 7 个需求验收代理与插件代码评审（`presmium-final-audit` 工作流脚本），汇总并修复。
+2. 重跑最终审计的 7 个需求验收代理与插件代码评审（`presmium-final-audit` 工作流脚本），汇总并修复：已完成审计，见 `docs/review-round3.md`。修复见下文 K2 波次。
 3. 核心评审中只影响 SHARED 模式的问题（锚点锁与链接检查的读取、`ReadScope` 的竞态与 FIFO）已在 WP-91b 中修复。
-4. 简化评审的 20 条（跨包重复：原始 HTML 地址改写三份、降权三份、git 加固两份、路径包含判断多份等），作为一个整理工作包。
+4. 简化评审的 20 条（跨包重复：原始 HTML 地址改写三份、降权三份、git 加固两份、路径包含判断多份等），作为一个整理工作包：并入 K2 波次（review-round3.md 的 F-03 至 F-06、F-11、F-15、F-21 至 F-23、F-28 至 F-37、F-54）。
 5. 界面小问题：WGSL 代码块字号偏小、`buffers` 参数输入框过窄；工作区首页导航右侧的“管理文档”“修改历史”与明暗切换之间没有间距；没有课堂时笔记点在高负载下出现较晚。
 
 ### WP-89 第三轮验收（K 波次）
@@ -986,3 +986,133 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 **交付**：对 v0.8 全部需求的独立验收审计与修复；示例讲义增加执行环境、问答与讲授回放的章节；技能更新；`architecture.md` 第 8 节的 v0.8 行照实更新；按实现核对 9.4 节的残余风险与 9.5 节的上游问题（提交上游与否由用户决定），在 compose 布局上运行一次 SHARED 模式的全部用例；WP-90 没有在 macOS 主机上做的先行验证在这里补做，结论决定 macOS 上是否登记 deltabox 的服务。
 
 **验收**：审计报告中的主要缺口全部关闭；`pnpm verify` 通过；需要外部条件（Docker、GPU、凭据）的用例在具备条件的机器上运行过一次并记录结果。
+
+## K2 波次：第三轮验收审计的修复（WP-89b 至 WP-89f）
+
+第三轮验收审计（评审对象 `main` 8be929d）的修复清单在 `docs/review-round3.md`：
+
+- 86 项，其中 27 项主要，编号 F-01 至 F-86；
+- 组间约定 C-1 至 C-10；
+- 决定 D-1 至 D-13，以及文末“验收者的决定”。
+
+每项的“问题”“证据”“修法与验收”都写在那里，工作包按它实现。修法中提到的探针脚本在 `/tmp/claude-1000/-home-ddq-AoyangSpace-presmium/ad4777b2-3f0f-4adb-9e14-744177671948/scratchpad/final-audit/` 的各报告子目录中，可以直接运行或改写成测试。
+
+顺序：
+
+1. WP-89b 先在 main 上完成并合并，它提供各组共用的函数与契约增补。
+2. WP-89c、89d、89e、89f 从合并了 89b 的 main 分出，在各自的工作树中并行实现，拥有的路径互不相交。
+3. 合并顺序为 89c → 89d → 89e → 89f。
+
+端到端端口（`PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT`）：
+
+| 工作包 | 端口 |
+|---|---|
+| 89b | 5301、5302 |
+| 89c | 5311、5312 |
+| 89d | 5321、5322 |
+| 89e | 5331、5332 |
+| 89f | 5341、5342 |
+
+其余需要端口的服务各在自己的段内取（89b 5303–5309，依此类推）。4180、4310、4790、5173 被验收者的试用环境占用，不要使用。
+
+对所有工作包的共同要求：
+
+- 每项都实现修法，并写出“修法与验收”中的用例；
+- 改变作者或运营者可见行为的，在交付报告中写明，由 89f 或验收者写入文档（C-9）；
+- 不改动不属于自己的路径，需要时写进交付报告。
+
+### WP-89b 内核、宿主、编译器、服务器与 MCP（K2 波次第一步，串行）
+
+**拥有**：
+
+- `packages/kernel/**`（`src/runner.py` 除外）、`packages/host/**`、`packages/compiler/**`、`packages/cli/**`、`packages/server/**`、`packages/mcp/**`、`packages/language-server/**`、`packages/vscode/**`、`scripts/**`；
+- `packages/addon-assistant/src/client/agent.ts`，只为实现 `AgentTask.revert`；
+- `e2e/core.spec.ts`、`e2e/mcp.spec.ts`、`e2e/preview.spec.ts`、`e2e/server.spec.ts`、`e2e/fixtures/{core,host,mcp,server,plugins,publish-checks}/**`。
+
+**条目**：F-01 至 F-06（主要），F-28 至 F-47。
+
+**交付的接口**：C-2、C-3、C-4、C-5、C-6，以及 C-7 中的 `PresmiumServer.unmount`。
+
+- 采用 D-4：`NavigationPosition.section?` 与按章节 ID 定位。
+- `AgentTask.revert` 同时在助手的浏览器客户端中实现（见 review-round3.md 文末对约定的调整）。
+- 共用函数先在本包中启用，并删除本组拥有的副本。其他组的副本由各组迁移，本包不改。
+
+**验收**：
+
+- 各条目的用例通过；
+- `pnpm test`、`pnpm demo:build` 通过；
+- `e2e/core.spec.ts`、`e2e/server.spec.ts`、`e2e/mcp.spec.ts`、`e2e/preview.spec.ts` 通过；
+- 其他组的现有用例不因本包的契约变化而失败（契约增补兼容旧的使用方）。
+
+### WP-89c 工作区与助手（K2 波次第二步，并行）
+
+**拥有**：`packages/workspace/**`、`packages/addon-assistant/**`、`packages/addon-deltabox/**`、`templates/workspace/**`、`templates/document/**`、根目录 `package.json`、`e2e/assistant.spec.ts`、`e2e/assistant-edit.spec.ts`、`e2e/workspace.spec.ts`、`e2e/fixtures/{assistant,assistant-edit,workspace}/**`。
+
+**条目**：F-07 至 F-11（主要），F-48 至 F-55。
+
+- F-07、F-08 按 D-13 实现。
+- 迁移到 C-2、C-3、C-4、C-5 的共用函数，删除本组的副本。
+- 提供 C-6 的 `DOCUMENT_LOCKS`，实现 C-7 的唯一入口 `documentsChanged`。
+- `AgentTask.revert` 已由 89b 实现，编辑面板改用 `trackAgentTask` 与 `task.revert()`。
+
+**验收**：
+
+- 各条目的用例通过；
+- `pnpm test`、`pnpm demo:build` 通过；
+- `e2e/assistant*.spec.ts`、`e2e/workspace.spec.ts`、`e2e/demo-workspace.spec.ts` 通过；
+- `packages/workspace/test/deploy.test.ts`（compose）通过，本机有 Docker 时必须运行。
+
+### WP-89d 讲授与语音（K2 波次第二步，并行）
+
+**拥有**：`packages/addon-lecture/**`、`packages/addon-speech/**`、`e2e/lecture.spec.ts`、`e2e/lecture-script.spec.ts`、`e2e/lecture-writeback.spec.ts`、`e2e/fixtures/{lecture,lecture-script,lecture-writeback}/**`。
+
+**条目**：F-12 至 F-15（主要），F-56 至 F-63。
+
+- F-57 按 D-7 实现，F-63 按 D-9 实现。
+- F-12 的竞态重放写在 `packages/workspace/test/deploy.test.ts` 中。该文件归 89c，所以改写在本包的 `test/` 中：用 compose 或本机的真实进程重放 `security-shared/p3-race*.sh`，覆盖媒体与片段两个路由。
+- 迁移到 C-2、C-3、C-4、C-5 的共用函数。
+
+**验收**：
+
+- 各条目的用例通过；
+- `pnpm test`、`pnpm demo:build` 通过；
+- `e2e/lecture*.spec.ts` 通过；
+- 竞态重放 3000 次请求，没有一次泄漏。
+
+### WP-89e 执行、幻灯片、notebook 与发布（K2 波次第二步，并行）
+
+**拥有**：`packages/addon-exec/**`、`packages/addon-exec-jupyter/**`、`packages/addon-exec-local/**`、`packages/addon-exec-wasi/**`、`packages/addon-exec-webgpu/**`、`packages/render-slides/**`、`packages/render-notebook/**`、`packages/addon-publish/**`、`packages/kernel/src/runner.py`、`templates/env/**`、`e2e/exec*.spec.ts`、`e2e/publish.spec.ts`、`e2e/fixtures/{exec,exec-env,exec-local,exec-remote,exec-wasi,exec-webgpu,publish}/**`。
+
+**条目**：F-16 至 F-23（主要），F-64 至 F-76。
+
+- F-22 按 D-2 删除 P-25 回写。
+- F-64、F-66、F-73、F-74 分别按 D-8、D-5、D-6、D-10 实现。
+- 迁移到 C-2、C-4 的共用函数。
+
+**验收**：
+
+- 各条目的用例通过；
+- `pnpm test`、`pnpm demo:build` 通过；
+- `e2e/exec*.spec.ts`、`e2e/publish.spec.ts` 通过；
+- 示例讲义用 `presmium-export` 导出 PDF 成功。
+
+### WP-89f 网页、IR 运行时、课堂、内容、文档与示例（K2 波次第二步，并行，最后合并）
+
+**拥有**：
+
+- 包：`packages/web/**`、`packages/viewer/**`、`packages/addon-classroom/**`、`packages/addon-session/**`、`packages/classroom-server/**`、`packages/addon-code/**`、`packages/addon-content/**`、`packages/addon-guide/**`、`packages/addon-stage/**`、`packages/addon-core/**`；
+- 文档、技能与示例：`docs/**`、`.agents/skills/**`、`examples/**`、`CLAUDE.md`；
+- 测试：`playwright.config.ts`、`e2e/fixtures/deck.ts`、`e2e/urls.ts`、`e2e/{web,viewer,site,classroom,session,predict,perf,smoke,demo,demo-workspace,code,content,guide,stage}.spec.ts`、`e2e/fixtures/{web,viewer,site,session,predict,code,content,guide,stage}/**`。
+
+**条目**：F-24 至 F-27（主要），F-77 至 F-86。
+
+- F-85 按 D-4 实现。
+- F-86 写入 D-3、D-11、D-12 与 C-9 列出的文档变化，包括 89b 已合并的变化。其他组的变化按 C-9 的预期写入，合并后由验收者核对。
+- C-8 中依赖 89e 的部分（示例讲义的 `zoom`、`e2e/smoke.spec.ts` 中的 PDF 导出、示例讲义列出助手、删除读取 `vite.config.ts` 的部分）先写好，在本工作树中可以标记为待合并后启用（`test.fixme` 并写明原因）。验收者在合并 89e 之后启用它们。
+
+**验收**：
+
+- 各条目的用例通过；
+- `pnpm test`、`pnpm demo:build`、`pnpm demo:check` 通过；
+- 本组拥有的 e2e 用例通过；
+- 文档与代码一致（`scripts/check-skills.mjs` 通过）。
