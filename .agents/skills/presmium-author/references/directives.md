@@ -93,7 +93,7 @@ presmium.exec: { timeoutMs: 30000 }
 - 不带受众的内容对所有受众可见；不带 `--audience` 的构建包含全部内容。
 - `presmium build --audience student` 编译时去掉受众不含 `student` 的章节与块（其余章节重新编号，步骤随之压缩），被去掉的代码不执行；构建后扫描写出的全部文件，被去掉的内容中 12 个字符以上的句子（学生内容自己也有的句子除外）出现在其中就是错误 `presmium.audience`，位置是被去掉的块，消息给出句子和文件（例如它经代码块的输出漏了进来）。
 - `presmium check --audience student` 按学生版编译后检查。
-- `presmium serve` 中读者（学习者）看到的页面、搜索索引与 AI 助手读到的内容都是学生版；编辑者与所有者看到全部。
+- 学习者得到学生版的构建（`presmium build --audience student`，发布为静态站点）；`presmium serve` 只供你自己使用，看到全部内容。学生版发布录制的讲授时，只保留录制之后内容没有变化的章节（教师段落所在的章节、录制后有内容移入教师章节的章节，其讲话与音视频不发布）。
 - 写了正文时警告 `takes no body`（正文被忽略，不会只给教师）；`{audience}` 或 `:audience:` 缺少受众名时报错，这时标的内容（`{audience}` 时整节）不给任何受众，只在不带受众的完整版中。
 - 带 `--audience` 的构建不报告被去掉的内容中的诊断（它们会说出那些内容），只给一条计数 `<n> findings are in the content left out for student`；不带 `--audience` 的 `presmium check` 列出它们。
 - 文稿的译本按同一受众编译，学生版的两种语言都没有教师内容。
@@ -472,7 +472,7 @@ markmap:
 
 ## 课堂 `presmium.classroom`（`@presmium/slidev-addon-classroom`）
 
-课堂组件需要会话插件 `@presmium/slidev-addon-session`（文稿头部写 `presmium.session.server`，见 presmium-present 技能）；`{exercise}` 的校验另需执行插件 `@presmium/slidev-addon-exec`。
+课堂组件需要会话插件 `@presmium/slidev-addon-session`（`presmium dev` 与 `presmium serve` 自带课堂同步；发布到静态托管时文稿头部写 `presmium.session.server`，见 presmium-present 技能）；`{exercise}` 的校验另需执行插件 `@presmium/slidev-addon-exec`。
 
 ### `{quiz}`
 

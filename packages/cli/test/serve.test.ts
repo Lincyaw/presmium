@@ -1,6 +1,6 @@
 // `presmium serve` (WP-79, docs/architecture.md section 10): one command starts the workspace service for the
-// one user on this machine, and it listens on this machine only: another `--host` is refused, pointing to an SSH
-// tunnel or a workspace per person (E-3). The home page has the operator plugins: their routes answer for it, and
+// one user on this machine, on the loopback; with `--host` on the local network too, for that user's other
+// devices, saying there is no login (E-3, revised). The home page has the operator plugins: their routes answer for it, and
 // it loads their browser parts (WP-81e2). A document loads the plugins its deck lists, as in `presmium dev` (E-2).
 // With PRESMIUM_DEBUG its server says more (F-35). A document deleted under serve has no plugin routes any more,
 // and made again with another configuration, its routes have that one (C-7, F-40). Compile-time code runs in
@@ -8,9 +8,10 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
+import { networkAddresses } from '@presmium/server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child } from './serve-helpers.ts'
-import { cleanEnv, exited, FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
+import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
 
 describe('presmium serve on this machine', () => {
   let dir: string
@@ -114,18 +115,21 @@ describe('presmium serve on this machine', () => {
     }
   }, 180_000)
 
-  it('refuses to listen beyond this machine, pointing to an SSH tunnel or a workspace per person (E-3)', async () => {
-    for (const host of ['0.0.0.0', '192.0.2.10']) {
-      const refused = presmiumProcess(dir, ['serve', '--host', host, '--port', '0'])
-      expect(await exited(refused), host).toBe(2)
-      expect(refused.output()).toContain(`presmium serve listens on this machine only, not on ${host}`)
-      expect(refused.output()).toMatch(/forward its port over SSH \(ssh -L 4310:127\.0\.0\.1:4310/)
-      expect(refused.output()).toContain('the hub template')
+  it('listens on the local network with --host, saying there is no login, and on a name of this machine (E-3, revised)', async () => {
+    const network = presmiumProcess(dir, ['serve', '--host', '0.0.0.0', '--port', '0'])
+    try {
+      // Its own address is a loopback one; another device reaches it at the machine's addresses on the network.
+      const port = (await waitFor(network, /^serve {2}http:\/\/127\.0\.0\.1:(\d+)$/m))[1]!
+      await waitFor(network, /with no login: anyone who reaches port \d+ uses this workspace as you/)
+      if (networkAddresses().length > 0) expect(network.output()).toContain(`network  http://${networkAddresses()[0]}:${port}/`)
+    } finally {
+      await network.stop()
     }
-    // A name of this machine is taken.
+    // A name of this machine is taken, and says nothing of the network.
     const local = presmiumProcess(dir, ['serve', '--host', 'localhost', '--port', '0'])
     try {
       await waitFor(local, /^serve {2}http:\/\/localhost:\d+$/m)
+      expect(local.output()).not.toContain('no login')
     } finally {
       await local.stop()
     }

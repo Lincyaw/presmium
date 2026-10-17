@@ -9,7 +9,7 @@
 | 内核 Kernel | `@presmium/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约，以及插件共用的服务契约 | K-07、K-08、K-10、K-16、K-17 |
 | 编译 Compilation | `@presmium/compiler`、`@presmium/cli` | 解析 MyST 源码、执行编译步骤与行内角色、编译时执行与缓存（含执行会话）、受众筛选、生成 IR、运行检查 | K-01、K-02、K-11、K-16、K-17、K-19 |
 | 渲染 Rendering | `@presmium/viewer`、`@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图；站点外壳、文件发布与译本；工作区站点 | K-18、K-20、P-70 至 P-79、P-123 |
-| 宿主适配 Host | `@presmium/host`、`@presmium/slidev-addon-core`、`@presmium/web`、`@presmium/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、登录与权限、操作确认、控制通道、信任模式；gateway（共享部署中持有第三方凭据） | K-04 至 K-07、N-08 |
+| 宿主适配 Host | `@presmium/host`、`@presmium/slidev-addon-core`、`@presmium/web`、`@presmium/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 | K-04 至 K-07、N-08 |
 | 讲台 Stage | `@presmium/slidev-addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 | P-01 至 P-04 |
 | 代码引用 CodeRef | `@presmium/slidev-addon-code` | 引用、锁定、漂移、跳转、分步高亮、多版本 | P-10 至 P-16 |
 | 代码执行 Execution | `@presmium/slidev-addon-exec`、`@presmium/slidev-addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 | P-20 至 P-24、P-26 |
@@ -20,8 +20,8 @@
 | 课堂 Classroom | `@presmium/slidev-addon-session`、`@presmium/slidev-addon-classroom`、`@presmium/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 | P-60 至 P-68 |
 | 编辑 Editing | `@presmium/language-server`、`presmium-vscode` | 编辑器中的诊断、跳转、悬停、补全，编辑器与预览同步 | P-80、P-81 |
 | 智能体 Agent | `@presmium/mcp`、`@presmium/slidev-addon-assistant`、`@presmium/slidev-addon-deltabox` | agent 环境（MCP）、agent 运行时（ACP，默认随包的 DeepSeek Harness）、学习者问答、批注修改、对话修改、修改审阅；编译时执行的进程沙箱（deltabox 实现） | P-110 至 P-114、N-08 |
-| 工作区 Workspace | `@presmium/workspace` | 工作区服务、文档管理、修改历史与撤销、成员、工作区站点、编辑模式；共享部署中的 agent-host | P-115、P-120 至 P-122、N-09 |
-| 讲授 Lecture（含语音 Speech） | `@presmium/slidev-addon-lecture`、`@presmium/slidev-addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音网关、引擎、合成缓存、字幕译文 | P-90、P-130 至 P-137 |
+| 工作区 Workspace | `@presmium/workspace` | 工作区服务、文档管理、修改历史与撤销（重做）、工作区站点、编辑模式 | P-115、P-120 至 P-122、N-09 |
+| 讲授 Lecture（含语音 Speech） | `@presmium/slidev-addon-lecture`、`@presmium/slidev-addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音服务（语音协议 `v1/*`）、引擎、合成缓存、字幕译文 | P-90、P-130 至 P-137 |
 
 网页形态的站点外壳、文件发布与译本（P-78、P-79、P-123）属于渲染上下文，见第 9 节；工作区站点的组织（P-122）属于工作区，网页渲染端负责构建它。
 
@@ -40,7 +40,7 @@
                          │                   └──────────────┘                        │
      讲台 代码引用 代码执行 执行环境 引导 富内容 发布 课堂 讲授                编辑 智能体 工作区
                                 │                         │                         │      │
-              外部：Jupyter Server（防腐层）  外部：语音服务（语音网关）   外部：ACP agent · git
+              外部：Jupyter Server（防腐层）  外部：语音服务（语音协议）   外部：ACP agent · git
 ```
 
 - **内核是共享内核**：所有上下文只依赖内核的契约，彼此之间不直接依赖。多个插件共用的业务服务契约（`executor`、`session`、`classroomStore`，v0.8 起还有 `speech`、`agent`、`agentRuntime`、`revisions`、`approvals`、`mcpEndpoint` 与操作词汇 `TrackEvent`）也放在内核包中，因为提供方与使用方是不同的插件（`architecture.md` 4.5 节）。
@@ -57,11 +57,10 @@ v0.8 新增的上下文之间的关系：
 | 智能体 | 外部 agent | 开放主机服务：MCP 工具与资源，任何 MCP 客户端都可以用 | `@presmium/mcp` |
 | 外部 ACP agent | 智能体 | 防腐层：ACP 客户端，默认的 agent 是随包的 DeepSeek Harness | `AGENT_RUNTIME` |
 | 外部 deltabox-lite | 智能体、执行 | 防腐层：`addon-deltabox` 经 Node 绑定实现修改审阅与进程沙箱 | `CHANGE_REVIEW`、`PROCESS_SANDBOX` |
-| 服务端的 gateway | 智能体、语音、执行环境 | 宿主：共享部署中唯一持有第三方凭据的进程，挂载插件的 gateway 贡献，签发限定令牌 | `GatewayContribution`、`GatewayAccess` |
 | 工作区 | 智能体、讲授 | 客户与供应商：修改提交为 git 提交，撤销即 `git revert` | `REVISIONS` |
 | 智能体 | 工作区、讲授、课堂 | 客户与供应商：文档起草、转写回写、课堂中的 AI 回答 | `AGENT`、`AGENT_RUNTIME` |
 | 语音（讲授的一部分） | 讲授、智能体 | 客户与供应商：转写与合成 | `SPEECH` |
-| 外部语音服务 | 语音 | 防腐层：语音网关的适配器，对内只有 OpenAI 音频接口的形态 | `addon-speech` |
+| 外部语音服务 | 语音 | 防腐层：语音插件的引擎适配器，对内只有 OpenAI 音频接口的形态（语音协议） | `addon-speech` |
 | 外部 Jupyter Server | 执行环境 | 防腐层：Jupyter 内核协议的客户端 | `addon-exec-jupyter` |
 | 宿主适配 | 讲授、引导、代码执行 | 共享内核：插件报告操作，讲授录制并重放 | `OPERATIONS`、`TrackEvent` |
 | 服务端（宿主适配） | 执行环境、语音、智能体、工作区、讲授 | 宿主：挂载服务端贡献，处理身份、权限、凭据、运营者设置与确认；为 agent 会话签发 MCP 令牌 | `ServerContribution`、`ServerContext.settings`、`APPROVALS`、`MCP_ENDPOINT`、`useServer` |
@@ -179,7 +178,7 @@ v0.8 新增的上下文之间的关系：
 | 演讲者面板 | `PresenterPanel` | 只在演讲者视图中显示的全局图层 | 放映视图的演讲者窗口中显示 |
 | 工具栏 | `ToolbarItem` | 导航栏中的控件 | 顶部导航栏与手机导航菜单中的控件 |
 | 操作 | `Operations`（`OPERATIONS`）、`Operation` | 服务同样存在；幻灯片形态不录制讲授，导航不报告 | IR 运行时报告 `go`，执行插件报告 `run`，引导插件报告 `spot`、`hint`；讲授插件录制与重放 |
-| 服务端访问 | `useServer()`、`ServerClient` | `presmium dev` 中可用（开发服务器代理 `/__presmium/`）；静态产物中 `available` 为 false | 同左；`presmium serve` 中另带登录的成员 |
+| 服务端访问 | `useServer()`、`ServerClient` | `presmium dev` 中可用（开发服务器代理 `/__presmium/`）；静态产物中 `available` 为 false | 同左；`presmium serve` 中同样（成员是本机作者） |
 | 状态摘要 | `StatusRegistry`（`STATUS`） | 插件登记的 JSON 摘要（如课堂的作答统计），经控制通道送到服务端，供 agent 读取 | 同左 |
 | 编辑模式 | `EditMode`（`EDIT_MODE`） | 无（幻灯片形态不编辑） | 工作区的浏览器插件提供：进入与离开编辑模式，只有编辑者与所有者可以进入 |
 
@@ -189,49 +188,47 @@ v0.8 新增的上下文之间的关系：
 
 ## 4A. 服务端
 
-`@presmium/server` 是宿主适配在 Node 端的对应物：`presmium dev` 与 `presmium serve` 进程中唯一的 HTTP 服务。它挂载插件的服务端贡献，统一处理身份、权限、凭据与确认（`architecture.md` 第 10 节）。部署分两种信任模式，模式决定谁受信任、秘密在哪个进程中。
+`@presmium/server` 是宿主适配在 Node 端的对应物：`presmium dev` 与 `presmium serve` 进程中唯一的 HTTP 服务。它挂载插件的服务端贡献，统一处理请求来源、凭据与确认（`architecture.md` 第 10 节）。服务端只供运行它的那个用户使用（`requirements.md` 的“定位与边界”）：被执行的代码与 agent 以这个用户的身份受信任，措施是纵深防御，没有登录；多人使用时每人一个工作区（hub 托管模板）。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 服务端 | `@presmium/server` 的 `startServer` | 插件的路由与代理、MCP 端点、控制通道；`presmium dev` 中只监听本机，渲染端的开发服务器把 `/__presmium/` 代理到它；`presmium serve` 中它是唯一对外的端口 |
+| 服务端 | `@presmium/server` 的 `startServer` | 插件的路由与代理、MCP 端点、控制通道；`presmium dev` 中只监听本机，渲染端的开发服务器把 `/__presmium/` 代理到它；`presmium serve` 中它是唯一的端口，默认只监听本机，`--host` 时也在局域网上 |
 | 服务端贡献 | `ServerContribution` | 插件挂在 `/__presmium/<插件 ID>/` 下的路由 `Route` 与反向代理 `ProxySpec`，各自声明所需的最低角色 |
 | 服务端上下文 | `ServerContext` | 插件创建服务端贡献时得到的文稿目录、配置、Node 端服务与凭据 |
 | 请求上下文 | `RequestContext` | 发起请求的成员、请求所属的文档、路由之后的路径 |
-| 成员 | `Member` | 登录身份：ID、名字、角色 `MemberRole`（`reader` 读者、`editor` 编辑者、`owner` 所有者）；`presmium dev` 中是本机作者，角色为所有者 |
-| 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂；SHARED 模式中执行没有录制的编译时代码）、`spend`（计费的语音调用）、`write`（agent 写入当前文档目录之外，或改动工作区配置）、`agent`（agent 自身的权限请求） |
-| 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content`（发起成员自己的文档与会话：任务的文档目录中的文件、MCP 的操作类与计费类工具）发给发起任务的成员；`workspace`（工作区配置、成员、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求、SHARED 模式中执行没有录制的代码，以及 `compile: approve` 时 MCP 的 `run_code`）只发给所有者；没有标明时按 `workspace` |
+| 成员 | `Member` | 发起请求的人：ID、名字、角色 `MemberRole`（`reader` 读者、`editor` 编辑者、`owner` 所有者）；`presmium dev` 与 `presmium serve` 中都是本机作者 `LOCAL_AUTHOR`，角色为所有者（决定 E-4 保留角色的契约，工作区配置不再列出成员） |
+| 局域网访问 | `presmium serve --host <地址>` | 同一个用户在局域网中的其他设备上使用服务：请求的 `Host` 与 `Origin` 另可以是监听的地址与本机的名字；没有登录，到得了端口的设备都是本机作者，启动时警告（决定 E-3 的修订） |
+| 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂）、`spend`（计费的语音调用）、`write`（agent 写入当前文档目录之外，或改动工作区配置）、`agent`（agent 自身的权限请求） |
+| 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content`（发起成员自己的文档与会话：任务的文档目录中的文件、MCP 的操作类与计费类工具）发给发起任务的成员；`workspace`（工作区配置、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求）只发给所有者；没有标明时按 `workspace` |
 | 确认策略 | `presmium dev --allow`、`presmium.workspace.yaml` 的 `approvals` | 每种确认取 `off`（不提供这类操作）、`ask`（默认）或 `allow`（不询问） |
 | 执行的环境变量 | `RunContext.env` | 编译时执行的代码能得到的全部环境变量：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与像凭据的变量，`serve` 中只有允许列表；都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量 |
-| 信任模式 | `TrustMode`（`local`、`shared`） | LOCAL：`presmium dev`、`build`、`check` 与只监听本机、没有登录的 `presmium serve`，唯一的用户就是运营者，被执行的代码与 agent 以他的身份受信任，措施只是纵深防御；SHARED：带登录的 `presmium serve`，只支持随仓库的 compose 布局（serve、gateway、sandbox 三个容器，uid 各不相同；文档在工作区根目录的子目录中），编辑者与 agent 写的代码不受信任，所有者独有的操作在所有者控制台上 |
-| gateway | `presmium gateway`；插件的 `GatewayContribution` | SHARED 模式中唯一持有第三方凭据（模型、语音、远端环境）与运营者数据（同意记录、服务提供方的名字）的进程；挂载插件的 gateway 贡献，签发绑定会话或运行、有期限的限定令牌，把 `/mcp` 转发到 serve |
-| agent-host | `presmium agent-host` | SHARED 模式中 sandbox 容器里的进程：助手的 ACP 客户端与 DeepSeek Harness、全部编译时执行与构建、工作区站点的开发服务器、deltabox 的审阅会话；没有秘密，网络只到 gateway；serve 经认证的 HTTP/SSE 接口调用它，LOCAL 模式中同样的契约在 serve 进程中运行 |
-| 所有者控制台 | serve 在 `PRESMIUM_CONSOLE_HOST` 上的源 | SHARED 模式中所有者独有的操作所在的源：`workspace` 范围的确认、所有者路由（如登记同意记录）；只有 Presmium 自己的页面，不显示文稿的任何内容，只接受来自自己的源的改变状态的请求。工作区站点的源上运行着文稿的组件，那里没有这些操作 |
-| 运营者插件 | `settings.presmium.workspace.plugins`；`PresmiumNodePlugin.operator` | 运营者安装在工作区根目录、列在设置中的插件包；`presmium serve`、gateway 与 agent-host 只加载它们（另加随 CLI 安装的渲染端与 `addon-deltabox`），声明了 `operator` 的每份文档都加载；文稿目录中的插件与渲染端包只在 LOCAL 的 `presmium dev`、`build`、`check` 中加载 |
-| 编译时执行的策略 | `settings.presmium.exec` 的 `compile` | SHARED 模式中没有录制的代码怎样执行：`approve`（默认，所有者确认后在 agent-host 中执行）、`trusted`（直接在 agent-host 中执行）、`off`（不执行，显示录制输出或降级内容）。MCP 的 `run_code` 与 `build` 同一规则。LOCAL 模式中全部执行 |
+| 运营者插件 | `settings.presmium.workspace.plugins`；`PresmiumNodePlugin.operator` | 运营者安装在工作区根目录、列在设置中的插件包，声明了 `operator` 的每份文档与工作区首页都加载；文稿列出的插件与渲染端包在所有命令中照常加载（决定 E-2） |
 | 进程沙箱 | `ProcessSandbox`（`PROCESS_SANDBOX`） | 编译时执行的子进程在其中运行：网络拒绝，看不到其他进程与 Unix 套接字，只能写运行目录；随 CLI 安装的 `addon-deltabox` 在主机满足条件时提供（默认启用，Linux） |
 | 控制通道 | 服务端内置的 `/__presmium/presmium.server/control` | 页面向服务端报告位置与状态摘要，接收跳转、开关课堂与确认请求 |
-| 凭据 | `ServerContext.secret(name)`、`GatewayContext.secret(name)` | 只来自持有凭据的进程的环境变量的密钥（LOCAL 为 `presmium` 进程，SHARED 为 gateway）；与它要发往的地址成对给出（如 `PRESMIUM_ENV_<名>_TOKEN` 与 `PRESMIUM_ENV_<名>_URL`）。SHARED 模式中 serve 与 agent-host 经 `GatewayAccess` 调用 gateway，不持有凭据 |
-| 运营者设置 | `ServerContext.settings`、`NodeServiceContext.settings`、`GatewayContext.settings` | 运营者给插件的设置：工作区配置 `presmium.workspace.yaml` 的 `settings.<插件 ID>`，如工作区的插件列表、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行的策略、录音的去处、是否允许克隆音色、同意记录的目录；与文稿配置 `config` 不同，文稿与 agent 改不了正在运行的设置 |
-| 运营者目录 | LOCAL：用户状态目录中按工作区区分的 `presmium/operator/<工作区标识>/`（`NodeServiceContext.operatorDir`、`ServerContext.operatorDir`）；SHARED：gateway 的 `--operator-dir`（`GatewayContext.operatorDir`） | 运营者的数据（同意记录目录 `consent/`），在任何工作区与文档目录之外，不属于任何文档：不进入提交；agent 对它的权限请求一律拒绝。SHARED 模式中它只挂在 gateway 容器中，文稿、agent 与被执行的代码都访问不到 |
+| 凭据 | `ServerContext.secret(name)` | 只来自 `presmium` 进程的环境变量的密钥；与它要发往的地址成对给出（如 `PRESMIUM_ENV_<名>_TOKEN` 与 `PRESMIUM_ENV_<名>_URL`） |
+| 运营者设置 | `ServerContext.settings`、`NodeServiceContext.settings` | 运营者给插件的设置：工作区配置 `presmium.workspace.yaml` 的 `settings.<插件 ID>`，如工作区的插件列表、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量、录音的去处、是否允许克隆音色、同意记录的目录；与文稿配置 `config` 不同，文稿与 agent 改不了正在运行的设置 |
+| 运营者目录 | 用户状态目录中按工作区区分的 `presmium/operator/<工作区标识>/`（`NodeServiceContext.operatorDir`、`ServerContext.operatorDir`） | 运营者的数据（同意记录目录 `consent/`），在任何工作区与文档目录之外，不属于任何文档：不进入提交；agent 对它的权限请求一律拒绝 |
 | MCP 访问 | `McpEndpoint`（`MCP_ENDPOINT`）、`McpAccess` | 服务端为一个 agent 会话签发的 `/mcp` 地址与令牌，令牌绑定成员与模式，会话关闭时作废 |
+| 课堂同步 | 会话插件的服务端贡献，`/__presmium/presmium.session/sync` | 服务端自己的端口上的课堂服务（与 `presmium-classroom-server` 同一协议）；文稿没有写课堂服务时，页面连到这里（WP-89g） |
 
 不变量：
 
-- 凭据只在服务端：不写入文稿、IR、构建产物与浏览器；浏览器经服务端的代理访问需要凭据的服务。SHARED 模式中第三方凭据只在 gateway 中：serve 的环境中有第三方凭据时拒绝启动，sandbox 中只有限定令牌。
-- **SHARED 模式中由文稿决定的代码只在 sandbox 中运行**：编译时与 `run_code` 执行的代码、构建（含服务端渲染文稿的组件）、工作区站点的开发服务器（Vite 在 Node 中加载的模块，如 VitePress 的数据加载器）、agent 与它的工具都在 agent-host 中；serve 与 gateway 只加载运营者插件，不加载文稿相对路径或文稿目录 `node_modules` 中的插件与渲染端包（错误级诊断）；serve 只把文档当作数据读取，它的环境与它能读的文件中没有秘密，编译器另外不读真实路径在工作区之外的文件。
-- **LOCAL 模式不声称隔离同一 uid 的代码**：被执行的代码与 agent 能读这个用户能读的一切（包括 `presmium` 进程的 `/proc/<pid>/environ`），措施是纵深防御（清理过的环境、可用时的进程沙箱、确认与审阅），残余风险写在 `architecture.md` 9.4 节。
-- 默认只监听本机，并校验 `Host` 与 `Origin`；部署时只接受经登录代理转发的请求（共享密钥或固定的来源地址），成员与角色来自代理传来的身份。
-- 身份、角色与本机的检查在挂载点完成；插件的路由只声明所需的最低角色，不各自实现。
+- 凭据只在服务端：不写入文稿、IR、构建产物与浏览器；浏览器经服务端的代理访问需要凭据的服务。
+- **不声称隔离同一 uid 的代码**：被执行的代码与 agent 能读这个用户能读的一切（包括 `presmium` 进程的 `/proc/<pid>/environ`），措施是纵深防御（清理过的环境、可用时的进程沙箱、确认与审阅），残余风险写在 `architecture.md` 9.4 节。
+- 默认只监听本机，并校验 `Host` 与 `Origin`；`presmium serve --host` 时另接受监听的地址与本机的名字，其他站点的页面照旧被拒绝。
+- 本机的检查与角色在挂载点完成；插件的路由只声明所需的最低角色，不各自实现。
 - 确认的关口在服务端：任何 agent 运行时、任何 MCP 客户端调用操作类工具，都经同一个 `Approvals`，换用其他运行时同样生效。
-- 确认策略不来自文稿：文稿是内容，不能关闭确认；`allow` 只能由本机作者在命令行或工作区所有者在工作区配置中设置。
-- **确认按范围分发**：`workspace` 范围的确认只有所有者能回答；编辑者不能批准自己的 agent 改动工作区配置、写入文档目录之外或使用 shell 与网络。SHARED 模式中这些确认与所有者路由只在所有者控制台的源上，工作区站点上运行的文稿组件不能以所有者的身份完成它们。
+- 确认策略不来自文稿：文稿是内容，不能关闭确认；`allow` 只能由本机作者在命令行或工作区配置中设置。
+- **确认按范围分发**：`workspace` 范围的确认只有所有者（本机作者）能回答。
 - **文稿不决定凭据的去向**：凭据只发往运营者为它给出的地址；文稿只用名字选择环境与引擎，文稿中的地址与运营者的地址不同源时不连接。
-- **编译时执行的代码经自己的环境拿不到凭据**：他们写的代码在编译时只得到 `RunContext.env`，执行器不读进程的环境（打印全部环境变量的代码因此不会把凭据写进录制）。SHARED 模式中这些代码在 agent-host 中运行，没有录制的按 `settings.presmium.exec.compile` 执行（默认经所有者确认，同一段代码不重复请求），MCP 的 `run_code` 与 `build` 也一样（`approve` 时 `run_code` 只由所有者确认）；LOCAL 模式中全部执行，可用时经进程沙箱（`architecture.md` 10.6 节）。
+- **编译时执行的代码经自己的环境拿不到凭据**：他们写的代码在编译时只得到 `RunContext.env`，执行器不读进程的环境（打印全部环境变量的代码因此不会把凭据写进录制）；全部执行，可用时经进程沙箱（`architecture.md` 10.6 节）。
 - 运营者设置在进程启动时读取一次；改动要等运营者重启才生效。
 
-**服务端（聚合根，每个进程一个）**：挂载的贡献、成员的会话、待回答的确认与签发的 MCP 令牌；令牌与确认都只在这个进程中有效。**gateway（聚合根，SHARED 中一个）**：挂载的 gateway 贡献与签发的限定令牌；限定令牌只在 gateway 的内存中，过期、作废或重启后失效。
+**服务端（聚合根，每个进程一个）**：挂载的贡献、待回答的确认与签发的 MCP 令牌；令牌与确认都只在这个进程中有效。
 
 规划中的领域事件：`ApprovalRequested`、`ApprovalDecided`（目前以控制通道上的消息体现）。
+
+v0.9 删除了多人共用一个服务端的部署（决定 E-1 至 E-8）：信任模式、持有凭据的另一个进程与它的限定令牌、运行文稿代码的另一个进程、只给所有者的控制台与编译时执行的放行策略都已不在，记录见 `requirements.md` 附录 B。
 
 ## 5. 代码引用
 
@@ -373,7 +370,7 @@ v0.8 新增的上下文之间的关系：
 - 视觉差异超过阈值的页必须列入报告；导出的 PDF 中，幻灯片显示的每个链接（包括代码的永久链接）都必须仍是链接，丢失的链接带源码位置报告。
 - 发布检查按每个渲染端的视图进行：只出现在某个媒介中的链接只在该媒介中检查。
 - 不带受众的内容对所有受众可见；学生版的 IR 与全部产物（页面、搜索索引、`ir.json`、幻灯片备注、notebook）中都没有被筛掉的内容。
-- `presmium serve` 中角色为读者的成员只看到学生视图（页面、IR、搜索索引与 MCP），编辑者与所有者看到全部内容；`tutor` 模式的 agent 只读学生视图。
+- 学习者得到学生版的构建（`presmium build --audience student`）；`tutor` 模式的 agent 只读学生视图。学生版发布的录制讲授只保留摘要与录制时相同的章节（第 15 节，WP-89g）。
 
 ## 11. 编辑
 
@@ -396,7 +393,8 @@ v0.8 新增的上下文之间的关系：
 | 默认环境 | `ExecuteConfig.env` | 有 `:run:` 而不写 `:env:` 的代码块所用的环境；省略或为保留名 `browser` 时按语言路由（v0.7 的行为） |
 | 环境提供方 | `EnvironmentProvider`（`PresmiumNodePlugin.environments`） | 插件按 `kind` 为声明的环境创建 Node 端执行器，并可探测环境是否可达；浏览器端由同一插件为同类环境登记执行器 |
 | 环境执行器 | `environmentExecutor(name)` | 具名环境的执行器 ID `presmium.env.<名>`，即代码块的 `RunSpec.executor` |
-| 环境指纹 | `Executor.fingerprint` | 运行时的身份，进入编译时执行的缓存键：Jupyter 为镜像摘要、内核规格哈希与内核报告的版本；WASI 为运行时二进制的哈希；WebGPU 为浏览器与显卡适配器的描述 |
+| 环境指纹 | `Executor.fingerprint` | 运行时的身份，进入编译时执行的缓存键：Jupyter 为镜像摘要、内核规格哈希与内核报告的版本；WASI 为运行时二进制的哈希；WebGPU 为浏览器与显卡适配器的描述；本地 Python 为解释器的版本 |
+| 执行器的修订 | `Executor.revision` | 执行器自己影响输出的代码的修订（本地 Python 为运行器 `runner.py` 的摘要），与环境指纹一起进入缓存键；另一修订的录制已过时，执行器可用时重新执行（决定 D-8，WP-89g） |
 | 凭据方式 | `EnvironmentAuth` | `env`（构建机的环境变量，编译时）、`proxy`（服务端代理代加，浏览器拿不到）、`prompt`（学习者粘贴自己的令牌，用于静态站点）、`hub`（以后由课堂服务充当 JupyterHub 的 OAuth 客户端）、`none`；`env` 与 `proxy` 的令牌只发往运营者在同一对环境变量中给出的地址（`PRESMIUM_ENV_<名>_URL`） |
 | 执行会话 | `RunSpec.session`、`RunRequest.session` | 共享解释器状态的一组运行；浏览器中按（页面实例，学习者）隔离，编译时按代码块在文稿中出现的顺序执行 |
 | 重置会话 | `Executor.endSession` | 丢弃会话的状态：重启或关闭解释器、内核 |
@@ -419,7 +417,7 @@ v0.8 新增的上下文之间的关系：
 2. **环境不可用时不悄悄换环境**：指定的执行器没有登记、缺凭据、不可达或超时，运行失败，由 P-24 显示录制输出与原因，不改到别的执行器上运行。
 3. **会话代码块的缓存键包含前序代码**：同一会话中第 i 个代码块的键是第 i−1 个的键加上本块的输入、执行器与环境指纹；有一块未命中时，整个会话从头重新执行并重新录制。
 4. 同一会话的代码块使用同一个环境；在一个会话中混用环境是错误。
-5. 文稿与 IR 不含凭据；`presmium check` 对文稿头部中像凭据的字段告警。文稿中的地址不决定凭据的去向：服务端的令牌只发往运营者给出的地址，与文稿的 `url` 不同源时不连接（N-08）。编译时执行的代码只得到清理过的环境变量（`RunContext.env`，4A 节），执行器不读进程的环境，所以代码不会经自己的环境把服务端的凭据带进录制、IR 与产物；有意读取其他进程信息的代码按信任模式处理（4A 节）：SHARED 模式中它在没有凭据的 sandbox 中运行，LOCAL 模式中这是残余风险。
+5. 文稿与 IR 不含凭据；`presmium check` 对文稿头部中像凭据的字段告警。文稿中的地址不决定凭据的去向：服务端的令牌只发往运营者给出的地址，与文稿的 `url` 不同源时不连接（N-08）。编译时执行的代码只得到清理过的环境变量（`RunContext.env`，4A 节），执行器不读进程的环境，所以代码不会经自己的环境把服务端的凭据带进录制、IR 与产物；有意读取其他进程信息的代码只由可用时的进程沙箱挡住，是残余风险（4A 节）。
 6. 远端与现场运行返回的 HTML 不可信：先清洗再显示。
 7. 编译时与浏览器中尽量使用同一份运行时（同一个 WASI 二进制；WebGPU 在 Chromium 中录制），录制输出与现场输出一致；用 CPU 模拟的 GPU 计时标明为模拟。
 
@@ -437,9 +435,9 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | agent 工具 | MCP 工具；插件贡献的 `AgentTool` | 读取类（`read`）、操作类（`operate`，需要确认）、计费类（`spend`，需要确认）；插件可以贡献工具，如讲授插件的 `lecture_preview` |
 | agent 资源 | `presmium://…` | 与读取类工具对应的只读资源；放映位置的资源可以订阅更新 |
 | agent 运行时 | `AgentRuntime`（`AGENT_RUNTIME`，Node） | 驱动一个 agent：打开会话、提交任务、接收事件、取消、关闭；唯一的实现是 ACP 客户端 |
-| 运行时模式 | `AgentMode`（`AgentSessionOptions.mode`） | `author`（作者，可以写源码；LOCAL 模式用配置模板 `presmium`，保留 shell；SHARED 模式用 `presmium-shared`，没有 shell、命令执行与联网工具）或 `tutor`（学习者问答，只读，配置模板 `presmium-tutor`） |
-| 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`；`AgentSessionOptions.model` | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。LOCAL 模式中它得到 `DEEPSEEK_API_KEY`，或由 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 改名而来的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY`（不带其他 `PRESMIUM_` 变量）；SHARED 模式中这些变量只在 gateway 中，agent 只得到 gateway 上的地址与这个会话的限定令牌 |
-| 替换的运行时 | `PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` | 运营者给出的其他 ACP agent（Claude、Codex、Gemini 的适配），只在 LOCAL 模式中替换默认的运行时 |
+| 运行时模式 | `AgentMode`（`AgentSessionOptions.mode`） | `author`（作者，可以写源码；配置模板 `presmium`，保留 shell）或 `tutor`（学习者问答，只读，配置模板 `presmium-tutor`） |
+| 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。它得到 `DEEPSEEK_API_KEY`，或由 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 改名而来的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY`（不带其他 `PRESMIUM_` 变量） |
+| 替换的运行时 | `PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` | 运营者给出的其他 ACP agent（Claude、Codex、Gemini 的适配），替换默认的运行时 |
 | 模型提供方 | `AgentRuntime.provider`、`AgentClient.provider()` | 回答问题、修改文稿的模型属于哪家服务，界面据此标明（N-08）；来自运营者的配置（模型访问；替换的运行时取 `settings.presmium.assistant.provider` 或 `PRESMIUM_AGENT_PROVIDER`），在任何请求之前就已知 |
 | 运行时名字 | `AgentRuntime.runtime`、`AgentClient.runtime()` | agent 在 ACP `initialize` 中报告的名字与版本（如 DeepSeek Harness），与模型提供方分开显示 |
 | 会话的 MCP 访问 | `AgentSessionOptions.mcp`（`McpAccess`） | 服务端为这个会话签发的 `/mcp` 地址与令牌（4A 节），写进 ACP `session/new` 的 `mcpServers` |
@@ -461,7 +459,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 
 不变量：
 
-- **只写源码，不碰产物**：agent 只修改工作区中的源码，工作目录是任务的文档目录（审阅的 `root`）；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许（SHARED 模式中在所有者控制台上）。agent 对运营者目录的权限请求一律拒绝；运营者目录在任何工作区与文档目录之外（4A 节），agent 的文件工具不经请求写不到它。
+- **只写源码，不碰产物**：agent 只修改工作区中的源码，工作目录是任务的文档目录（审阅的 `root`）；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许。agent 对运营者目录的权限请求一律拒绝；运营者目录在任何工作区与文档目录之外（4A 节），agent 的文件工具不经请求写不到它。
 - **一文档一任务**：同一文档同一时间只有一个修改任务（由修改审阅的标识保证）；问答不受限制。
 - **先审阅后提交**（D12）：`review: required` 时修改任务结束后等发起人的决定；被拒绝的文件恢复为任务开始时的内容，任务新建的文件删除；全部拒绝时文档目录回到任务开始时的状态。审阅以文件为单位；待审阅时可以回到某一步之前（那一步与之后的各步作废）。修改任务待审阅或进行中时，同一文档的撤销被拒绝（撤销与审阅的恢复不能交错）。
 - **每批一提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），说明列出批注、对话摘要或讲授轨 ID，与 agent 的解释，尾注带 `Presmium-Task: <任务 ID>` 与发起人；接受之后的撤销是 `git revert`。
@@ -470,7 +468,6 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - **MCP 不提供写文件的工具**：agent 用自己的文件工具修改源码，服务随即重新编译并推送。
 - 回答中的引用位置必须对应 IR 中的章节、步骤或块；无法解析的引用不显示为链接。
 - 模型访问、替换的启动命令与模型的服务提供方不来自文稿，只来自环境变量或工作区配置的运营者设置；没有模型访问（也没有带服务提供方的替换运行时）时不启动任何 agent，问题与源码不发给任何模型服务。
-- **SHARED 模式中 agent 不持有秘密**（D13、D15）：DeepSeek Harness 在 sandbox 容器中由 agent-host 启动，经 gateway 访问模型，只拿到绑定会话、有期限的令牌；作者的 agent 没有 shell、命令执行与联网工具，代码只经 MCP 的 `run_code` 执行。
 - 提问与对话的界面标明运营者配置的模型服务提供方，运行时的名字另行显示。
 - `tutor` 模式只读学生视图（第 10 节），学习者的问答不会引用只给教师的内容。
 - agent 经 MCP 能做什么由服务端签发给它的令牌决定（成员与模式），会话结束令牌即作废。
@@ -483,13 +480,13 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、成员、确认策略与插件的运营者设置 `settings`（如工作区的插件列表、修改的审阅） |
+| 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、确认策略与插件的运营者设置 `settings`（如工作区的插件列表、修改的审阅） |
 | 文档 | `Document` | 一份文稿：目录（身份）、入口文件、标题、语言、标签，取自它的头部 |
 | 文档操作 | `DocumentOperation` | 新建（从模板，或由 agent 起草）、重命名、复制、删除 |
 | 文档模板 | `templates/document/<名>/` | 新建文档时复制的目录 |
 | 修改 | `Revision` | 一个提交及其来源 `RevisionOrigin`：agent 任务、文档操作、作者在编辑器中的提交 |
-| 修改历史 | `RevisionService`（`REVISIONS`，Node） | 提交、按文档或任务列出修改、撤销（`git revert`） |
-| 成员 | `Member`（4A 节） | 登录身份与角色：读者、编辑者、所有者，来自登录代理或工作区配置 |
+| 修改历史 | `RevisionService`（`REVISIONS`，Node） | 提交、按文档或任务列出修改、撤销（`git revert`）；撤销一次撤销是重做（`HistoryRevision.redo`，WP-89g），历史面板按它标为“重做” |
+| 成员 | `Member`（4A 节） | 本机作者（所有者）；工作区服务只供运行它的那个用户使用，没有登录与成员的配置 |
 | 编辑模式 | `EditMode`（`EDIT_MODE`） | 页面上的编辑状态：批注、对话、文档操作与修改历史在其中可用 |
 | 工作区站点 | `SiteSpec`、`Renderer.buildSite` | 多份文档组成的网站：首页（文档列表，或指定为一份文稿）、每份文档在 `/<文档目录>/` 下、跨文稿搜索与前后导航 |
 
@@ -500,10 +497,10 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - **文档的身份是目录**：重命名就是移动目录，同时改写其他文档中指向它的相对链接；文档目录中的锚点锁文件随目录移动。
 - **文档操作即提交**：新建、重命名、复制、删除都是对源码目录的修改，各形成一个提交（来源 `document`）。
 - **撤销即 `git revert`**：有冲突时报告冲突的文件，不强行撤销，工作树保持原样。
-- **编辑按角色**：读者只能阅读与提问，看到的是学生视图（第 10 节）；编辑者可以进入编辑模式、修改与撤销；所有者另管工作区设置，并且只有所有者能回答 `workspace` 范围的确认（4A 节）。
-- **按需编译**：只编译正在被访问的文档并监听它的源码；其他文档只读取头部，用于列表。没有录制的编译时代码按 `settings.presmium.exec.compile` 执行（4A 节）。
-- **运营者目录不属于文档**：运营者目录在工作区之外（LOCAL 模式中在用户的状态目录中，SHARED 模式中在 gateway 容器中），其中的文件从不进入提交。
-- **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor；SHARED 的 compose 布局中只有 serve 能写 `.git/` 与工作区根目录，sandbox 只能写文档目录（文档目录必须是工作区根目录的子目录，SHARED 模式不支持单份文稿的仓库）。
+- **编辑按角色**：本机作者是所有者，可以进入编辑模式、修改与撤销，管工作区设置并回答 `workspace` 范围的确认（4A 节）；学习者得到的是学生版的构建（第 10 节）。
+- **按需编译**：只编译正在被访问的文档并监听它的源码；其他文档只读取头部，用于列表。编译时的代码全部执行（4A 节）。
+- **运营者目录不属于文档**：运营者目录在工作区之外的用户状态目录中，其中的文件从不进入提交。
+- **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor。
 - 浏览器不直接修改渲染结果；一切修改都落在源码上（原则 6）。
 
 服务：`REVISIONS`（Node）、`EDIT_MODE`（浏览器）。
@@ -541,6 +538,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - **漂移**：块指纹或 IR 哈希不一致时，检查项 `presmium.lecture` 按 exact、moved、fuzzy、lost 分级报告（同锚点）；回放丢弃失效的事件并提示。需要长期回放的块应写标签，生成的 `<kind>-<n>` ID 会随插入而移动。
 - 录音默认只保存在本地，不提交（去处由运营者设置 `settings.presmium.lecture.audio` 决定）；只有对某一段讲授显式执行“转写”时才发给语音服务，转写的入口标明服务提供方。默认不录视频；可选的摄像头与屏幕录像同录音一样保存在本地。
 - 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明（语音服务把关）。
+- **受众的版本按章节摘要失败即关闭**（P-55，WP-89g）：讲授轨记下录制时每一节的摘要（`LectureTrack.ir.sections`）。为某个受众发布时（学生版的构建与学生视图，IR 带 `meta.audience`），只保留摘要与这个版本中同一节的摘要相同的章节里说的话、音频与录像；摘要不同说明这一节在录制之后少了内容，声音与画面可能说出它。
 - 译文记录它所依据的原文摘要；原文改动后译文标记为过期，导出时提示。
 - 实际（WP-83）：讲授计划在 `addon-lecture` 的 `src/domain/plan.ts`，由讲解（或单独的脚本）得到，合成的讲授的 ID 是 `script`；一个语音段合成的片段记在 `Utterance.clip`（合成缓存中的文件），`ClipClock` 播放它们。换音色重新合成时每个语音段保持它的时刻，只在前一段的新片段更长时后移，所以没有字锚的事件时刻不变、有字锚的随字移动。
 
@@ -548,14 +546,14 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音网关，Node 端直接调用引擎 |
+| 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音插件的路由（语音协议），Node 端直接调用引擎 |
 | 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
 | 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
-| 同意记录 | `ConsentRecord`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`），只由所有者经服务端（SHARED 模式中只在所有者控制台的源上）或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
-| 语音网关 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；只有网关接触服务提供方 |
+| 同意记录 | `ConsentRecord`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；运营者目录在工作区之外的用户状态目录中），只由所有者经服务端或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
+| 语音协议 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；浏览器经它使用语音，只有服务端接触服务提供方；只给编辑者，请求体至多 32 MiB（转写的录音，WP-89d） |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |
-| 合成缓存 | `.presmium/speech/<键>.<扩展名>`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、音色、语言、语速、风格、文字、应用读音词典之后要说的文字）的 sha256 缓存，随文稿提交；模型写在 `<键>.json` 中，不进入键（SHARED 模式中只有 gateway 知道它，WP-82）；音频保留引擎返回的格式（通常是 Ogg/Opus，假引擎为 WAV） |
+| 合成缓存 | `.presmium/speech/<键>.<扩展名>`、`<键>.json`，`.presmium/speech.lock.json` | 按规范化的（引擎、音色、语言、语速、风格、文字、应用读音词典之后要说的文字）的 sha256 缓存，随文稿提交；模型写在 `<键>.json` 中，不进入键（命中时不问引擎用的模型，WP-82）；音频保留引擎返回的格式（通常是 Ogg/Opus，假引擎为 WAV） |
 
 **合成缓存（聚合根）**：按键存放的合成结果与 `speech.lock.json`；键由规范化的请求决定，同一个键的内容不再改变。**同意记录**是另一个聚合，按（引擎，音色）标识。
 
@@ -564,7 +562,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - 合成缓存保证可复现（原则 5）：命中缓存的段落从不重新合成，全部命中的构建不向引擎发出请求；构建只为缺失的段落调用引擎并写入缓存（同编译时执行的录制，K-19）；缓存缺失又没有可用的引擎时，构建与 `presmium check` 报错并指出是哪些段落；改一段只重新合成一段。
 - 凭据只在服务端，并且只发往运营者为它给出的地址；文稿只写引擎与音色的名字，不写地址与凭据的变量名。
 - 文字发给第三方语音服务须由运营者定义引擎、文稿选用它；没有定义引擎时不发出任何请求。
-- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且运营者目录的同意记录目录中有该音色的记录时可以合成；语音服务在合成前检查，Node 端与语音网关是同一个关口（SHARED 模式中关口在 gateway 中）。文稿目录中的记录被忽略。SHARED 模式中运营者目录只挂在 gateway 容器中，能编辑文稿的人、agent 与被执行的代码都写不进去，登记只在所有者控制台的源上，站点上运行的文稿组件不能以所有者的身份登记；LOCAL 模式中它在工作区之外的用户状态目录中，agent 对它的权限请求一律拒绝，同一 uid 的代码绕过工具写它是残余风险（`architecture.md` 9.4 节）。
+- 克隆音色只在运营者开启（`settings.presmium.speech.cloned`）且运营者目录的同意记录目录中有该音色的记录时可以合成；语音服务在合成前检查，合成缓存命中时同样检查（决定 D-7），Node 端与语音协议的路由是同一个关口；同意撤回之后，服务端的讲授路由也不再给出已合成的讲授与片段（WP-89g）。文稿目录中的记录被忽略。运营者目录在工作区之外的用户状态目录中，agent 对它的权限请求一律拒绝，同一 uid 的代码绕过工具写它是残余风险（`architecture.md` 9.4 节）。
 - 转写与合成的入口标明引擎的服务提供方，名字来自运营者的配置，在任何请求之前就已知。
 - 合成的音频与它的 `<键>.json` 带 AI 生成的标识与 GB 45438 的元数据，由语音服务在写入缓存时加入（不重新编码，任何引擎都一样）；播放合成的讲授时界面显示“AI 合成语音”。
 
