@@ -129,7 +129,7 @@ export async function resume(client: AssistantClient, labelOf: (change: PendingC
   for (const annotation of change.annotations ?? []) {
     if (!annotations.value.some(a => a.id === annotation.id)) annotations.value.push({ ...annotation, status: 'sent' })
   }
-  start(change.kind === 'question' ? 'chat' : change.kind, labelOf(change), client.attach(change.id))
+  start(change.kind, labelOf(change), client.attach(change.id))
 }
 
 /** Back to before a step of a task's review (P-115); the review comes again, as the task's event. */

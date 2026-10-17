@@ -121,6 +121,9 @@ function sendAnswer(question: Question & { id: string }): void {
         <p v-if="!questionGroups.length" class="pm-classroom-status">
           {{ t.panel.none }}
         </p>
+        <p v-else-if="status === 'active' && ai.offered.value && !ai.provider.value" class="pm-classroom-status pm-classroom-panel__ai-setup">
+          {{ t.questions.aiSetup }}
+        </p>
         <div v-for="group in questionGroups" :key="group.place" class="pm-classroom-panel__place" :data-section="group.section" :data-block="group.block">
           <p class="pm-classroom-panel__where">
             {{ group.place }}

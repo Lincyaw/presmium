@@ -1,7 +1,7 @@
-// Change tasks of the assistant (WP-81; P-113 to P-115, P-121, P-136's tasks; D12): `presmium serve` on this
-// machine (LOCAL) with the scripted test agent as the operator's replacement runtime (provider "Test
-// Provider"), in workspaces copied from e2e/fixtures/assistant-edit (the assistant installed at the root,
-// documents from its template), each a git repository of its own.
+// Change tasks of the assistant (WP-81; P-113 to P-115, P-121, P-136's tasks; D12): `presmium serve` with the
+// scripted test agent as the operator's replacement runtime (provider "Test Provider"), in workspaces copied
+// from e2e/fixtures/assistant-edit (the assistant installed at the root, documents from its template), each a
+// git repository of its own.
 //
 // - In the browser (6.13's flow): a document created on the home page; in edit mode the annotation and chat
 //   panels name the provider; two annotations change two places, the page follows without a reload, the
@@ -25,12 +25,17 @@
 //   rolled back when the document is served again; undoing a commit waits for the document's change task, and
 //   so do the workspace's rename, copy and delete of the document and its history's undo (409, the task's
 //   lock, F-09; the history panel says so in the page's language).
-// - The bundled DeepSeek Harness (LOCAL) with the default settings, driven by a fake model, in a single-deck
+// - The bundled DeepSeek Harness with the default settings, driven by a fake model, in a single-deck
 //   repository: its change tasks are reviewed with git even where deltabox's review is registered
 //   (architecture.md 9.5) and commit; what it writes in the repository's git directory is put back.
+// - The model settings in the page (WP-92b, P-111): without any model, "AI changes" is on the home page and
+//   says what to set; the settings filled in there (a Messages-compatible fake model, its provider, a key and
+//   a model) apply at once: the chat of a document's "AI changes" completes a change with the bundled
+//   DeepSeek Harness, and the model receives the key and model of the page; the page shows only that a key
+//   is set.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -107,7 +112,7 @@ async function serve(dir: string, extra: Record<string, string> = {}, runtime: '
   const scripted: Record<string, string> = runtime === 'scripted' ? { PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider', SCRIPTED_AGENT_LOG: `${dir}.agent.log` } : {}
   const child = spawn(process.execPath, [PRESMIUM, 'serve', '--port', '0'], {
     cwd: dir,
-    env: clean({ ...scripted, XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, ...extra }),
+    env: clean({ ...scripted, XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, XDG_CONFIG_HOME: `${dir}.config`, ...extra }),
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   let output = ''
@@ -212,7 +217,7 @@ const deltabox = qualification()
 
 test.describe.configure({ mode: 'serial', timeout: 240_000 })
 
-test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () => {
+test.describe('in the browser: annotations, chat, review and undo', () => {
   let dir: string
   let server: Serve
 
@@ -344,7 +349,7 @@ test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () =
     // The home page loads the operator's plugins; the assistant's `info` answers there (the kinds it may send
     // to a document), and the home page itself takes no task: the draft goes to the new document's routes.
     const home = await call(server, '', 'info')
-    expect(home.json).toEqual({ provider: 'Test Provider', kinds: ['annotations', 'chat', 'transcript'] })
+    expect(home.json).toEqual({ provider: 'Test Provider', source: 'environment', kinds: ['annotations', 'chat', 'transcript'], changes: true, home: true })
     expect((await call(server, '', 'tasks', chat('#append lecture.md 首页不是文档'))).status).toBe(400)
     const before = commits(dir).length
     await openDevPage(page, `${server.url}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
@@ -379,7 +384,7 @@ test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () =
 })
 
 
-test.describe('the review with git (D12), one task per document, a transcript, the operator directory (LOCAL)', () => {
+test.describe('the review with git (D12), one task per document, a transcript, the operator directory', () => {
   let dir: string
   let server: Serve
   let operator: string
@@ -450,8 +455,8 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       const second = await call(server, 'intro', 'tasks', chat('#append lecture.md 第二个任务的一行'))
       expect(second.status).toBe(409)
       expect(second.json.error).toBe('这份文档已有一个进行中或等待审阅的修改任务，请先完成它')
-      // A question is no change task: it is taken.
-      expect((await call(server, 'intro', 'tasks', { kind: 'question', prompt: '合并的是哪一对？', context: { document: '' } })).status).toBe(201)
+      // Questions are no task of the server's any more (P-112: the reader's own model answers them in the page).
+      expect((await call(server, 'intro', 'tasks', { kind: 'question', prompt: '合并的是哪一对？', context: { document: '' } })).status).toBe(400)
       expect((await call(server, 'intro', `tasks/${first.id}/review`, { accept: false })).status).toBe(204)
       await next(first.events, 'done')
     } finally {
@@ -464,7 +469,7 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       const review = await next(events, 'review')
       expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/lecture.md'])
       expect(lecture()).toContain('据讲授轨 demo 整理的讲解：合并的是出现最多的一对，每轮一次。')
-      // The agent was given the request (found by its text: the question above may still be running, and log after it).
+      // The agent was given the request.
       expect(agentLog(dir).some(e => e.event === 'session/prompt' && e.question === '按章节把整理后的逐字稿写成讲解')).toBe(true)
       expect((await call(server, 'intro', `tasks/${id}/review`, { accept: true })).status).toBe(204)
       const done = await next(events, 'done')
@@ -590,7 +595,7 @@ test.describe('the review with git (D12), one task per document, a transcript, t
   })
 })
 
-test.describe('the review kept by the server: a reload, a step undone, no page, a crash, an undo meanwhile (LOCAL)', () => {
+test.describe('the review kept by the server: a reload, a step undone, no page, a crash, an undo meanwhile', () => {
   /** How long a review no page follows waits before it is rolled back, once the operator set it (the default is 30 minutes). */
   const UNATTENDED_MS = 3000
   let dir: string
@@ -803,7 +808,7 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
   })
 })
 
-test.describe('a single-deck repository: the workspace configuration in the review needs the owner (LOCAL)', () => {
+test.describe('a single-deck repository: the workspace configuration in the review needs the owner', () => {
   let dir: string
   let server: Serve
   const CONFIG = `title: 单份文稿
@@ -856,7 +861,7 @@ settings:
   })
 })
 
-test.describe('a single-deck repository with the git review: the git directory as the task found it (LOCAL)', () => {
+test.describe('a single-deck repository with the git review: the git directory as the task found it', () => {
   let dir: string
   let server: Serve
 
@@ -879,7 +884,7 @@ test.describe('a single-deck repository with the git review: the git directory a
   })
 })
 
-test.describe('the bundled DeepSeek Harness with the default settings, in a single-deck repository (LOCAL)', () => {
+test.describe('the bundled DeepSeek Harness with the default settings, in a single-deck repository', () => {
   let dir: string
   let server: Serve
   let model: FakeModel
@@ -956,5 +961,78 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
     expect(existsSync(join(dir, 'planted'))).toBe(false)
     expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/hooks\/post-checkout/)
     expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/config/)
+  })
+})
+
+test.describe('the model settings in the page: the bundled DeepSeek Harness with what was filled in there (P-111)', () => {
+  let dir: string
+  let server: Serve
+  let model: FakeModel
+
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    dir = workspace('settings')
+    // DeepSeek Harness, driven by the model's script: a note, then its answer.
+    model = await fakeModel([
+      { tool: 'write', input: { file_path: 'notes.md', content: '页面设置的模型写的笔记\n' } },
+      { text: '完毕：写了笔记。' },
+    ])
+    // No model access in the environment.
+    server = await serve(dir, {}, 'bundled')
+  })
+  test.afterAll(async () => {
+    await server?.stop()
+    await model?.close()
+    for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.config`]) if (path) rmSync(path, { recursive: true, force: true })
+  })
+
+  test('"AI changes" on the home page says what to set; the settings saved there apply at once: a document\'s chat completes a change, and the model receives the page\'s key and model', async ({ page }) => {
+    await openDevPage(page, `${server.url}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
+    const status = page.getByRole('complementary', { name: 'AI 修改' })
+    await expect(status).toContainText('AI 修改不可用：没有配置模型。')
+    await expect(status).toContainText('DEEPSEEK_API_KEY')
+    await expect(status).toContainText('进入编辑模式后点选内容写批注')
+    await status.getByRole('button', { name: '模型设置' }).click()
+    const settings = page.getByRole('dialog', { name: '模型设置' })
+    await expect(settings).toContainText('当前生效：没有配置')
+    await settings.locator('select[name="service"]').selectOption('custom')
+    await settings.locator('input[name="provider"]').fill('Page Provider')
+    await settings.locator('input[name="url"]').fill(model.url)
+    await settings.locator('input[name="key"]').fill('page-key-92b')
+    await settings.locator('input[name="model"]').fill('page-model')
+    await settings.getByRole('button', { name: '保存' }).click()
+    await expect(settings.locator('.pm-assistant-model__saved')).toHaveText('已保存')
+    await expect(settings).toContainText('当前生效：这里的设置（Page Provider）')
+    // The page has no key back, only that one is set.
+    await expect(settings).toContainText('密钥（已设置，留空则不变）')
+    await expect(settings.locator('input[name="key"]')).toHaveValue('')
+    expect(await page.content()).not.toContain('page-key-92b')
+    // Saved in the user's configuration directory, readable by the user only; not in the workspace.
+    expect(statSync(join(`${dir}.config`, 'presmium/assistant.json')).mode & 0o777).toBe(0o600)
+    expect(git(dir, ['status', '--porcelain', '--untracked-files=all'])).toBe('')
+    await settings.getByRole('button', { name: '关闭' }).click()
+    await expect(status).toContainText('AI 修改由 Page Provider 的模型完成（来自模型设置）')
+
+    // A document's "AI changes" turns edit mode on; its chat completes a change with the page's settings, no restart.
+    await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
+    await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
+    const panel = page.getByRole('complementary', { name: '批注与对话' })
+    const chatPanel = panel.getByRole('region', { name: '对话' })
+    await expect(chatPanel.locator('.pm-assistant-edit__provider')).toHaveText('修改由 Page Provider 的模型完成')
+    await chatPanel.getByLabel('消息').fill('写一份笔记')
+    await chatPanel.getByRole('button', { name: '发送' }).click()
+    const task = panel.getByRole('region', { name: '修改任务' }).first()
+    await expect(task).toHaveAttribute('data-state', 'review', { timeout: 90_000 })
+    await expect(task.locator('.pm-assistant-change[data-path="intro/notes.md"]')).toBeVisible()
+    await task.getByRole('button', { name: '全部接受' }).click()
+    await expect(task.locator('.pm-assistant-edit__outcome')).toContainText('已提交')
+    expect(readFileSync(join(dir, 'intro/notes.md'), 'utf8')).toBe('页面设置的模型写的笔记\n')
+    const asked = model.received.filter(r => r.path.endsWith('/v1/messages'))
+    expect(asked.length).toBeGreaterThanOrEqual(2)
+    for (const received of asked) {
+      expect(received.headers['x-api-key']).toBe('page-key-92b')
+      expect(received.body.model).toBe('page-model')
+    }
   })
 })

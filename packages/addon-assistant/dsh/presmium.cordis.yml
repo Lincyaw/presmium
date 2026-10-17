@@ -20,3 +20,10 @@
 - id: approval
   config:
     policy: ask
+
+# The model: the one the operator named in the page's model settings (DSH_PRESMIUM_MODEL, which the
+# assistant sets), else the pinned version's default for ACP sessions.
+- id: acp
+  config:
+    provider: deepseek-official
+    model: !!js process.env.DSH_PRESMIUM_MODEL || 'deepseek-v4-flash'

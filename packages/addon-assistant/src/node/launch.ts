@@ -11,37 +11,41 @@ import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { AgentMode } from '@presmium/kernel'
 import type { ModelAccess } from '../domain/index.ts'
 
 const require = createRequire(import.meta.url)
 
-/** The DeepSeek Harness patches of this package (`dsh/`). */
-export type Template = 'presmium' | 'presmium-tutor'
+/** The DeepSeek Harness patch of this package (`dsh/`). */
+export type Template = 'presmium'
 
-export function templateFile(template: Template): string {
+export function templateFile(template: Template = 'presmium'): string {
   return fileURLToPath(new URL(`../../dsh/${template}.cordis.yml`, import.meta.url))
 }
 
-/** The template of a session: the author's, or the tutor's read-only one. */
-export function templateOf(mode: AgentMode): Template {
-  return mode === 'tutor' ? 'presmium-tutor' : 'presmium'
-}
-
-/** The bundled DeepSeek Harness's launcher (`bin.dsh`), resolved from this package; undefined when it is not installed. */
-export function dshBin(): string | undefined {
+/** The bundled DeepSeek Harness's package manifest; undefined when it is not installed. */
+function dshManifest(): { file: string, bin?: string | Record<string, string>, version?: string } | undefined {
   try {
-    const manifest = require.resolve('@deepseek-ai/dsh/package.json')
-    const { bin } = JSON.parse(readFileSync(manifest, 'utf8')) as { bin?: string | Record<string, string> }
-    const file = typeof bin === 'string' ? bin : bin?.dsh
-    return file ? join(dirname(manifest), file) : undefined
+    const file = require.resolve('@deepseek-ai/dsh/package.json')
+    return { file, ...JSON.parse(readFileSync(file, 'utf8')) as { bin?: string | Record<string, string>, version?: string } }
   } catch {
     return undefined
   }
 }
 
+/** The bundled DeepSeek Harness's launcher (`bin.dsh`), resolved from this package; undefined when it is not installed. */
+export function dshBin(): string | undefined {
+  const manifest = dshManifest()
+  const file = typeof manifest?.bin === 'string' ? manifest.bin : manifest?.bin?.dsh
+  return manifest && file ? join(dirname(manifest.file), file) : undefined
+}
+
+/** The bundled DeepSeek Harness's version, for the start-up line. */
+export function dshVersion(): string | undefined {
+  return dshManifest()?.version
+}
+
 /** The arguments of `node <bin>` for a session. */
-export function dshArgs(bin: string, template: Template): string[] {
+export function dshArgs(bin: string, template: Template = 'presmium'): string[] {
   return [bin, '--profile', 'acp', '--patch', templateFile(template)]
 }
 
@@ -69,12 +73,17 @@ export function replacementEnv(env: NodeJS.ProcessEnv): Record<string, string> {
   return inherited(env, NEVER)
 }
 
+/** The variable the template reads the model's name from (`dsh/presmium.cordis.yml`). */
+export const MODEL_VARIABLE = 'DSH_PRESMIUM_MODEL'
+
 /**
- * The bundled DeepSeek Harness's environment. `DEEPSEEK_API_KEY`
- * goes as it is, without a base URL (DeepSeek's official address only);
- * the operator's `PRESMIUM_MODEL_URL` and `PRESMIUM_MODEL_KEY` become
+ * The bundled DeepSeek Harness's environment. A DeepSeek key goes as it
+ * is, without a base URL (DeepSeek's official address only); a
+ * Messages-compatible service's address and key (`PRESMIUM_MODEL_URL` and
+ * `PRESMIUM_MODEL_KEY`, or the page's model settings) become
  * `DEEPSEEK_BASE_URL` and `DEEPSEEK_API_KEY`, and the web search's address
  * (`DEEPSEEK_SEARCH_BASE_URL`, which takes the same key) is that service too.
+ * The model's name, when one is set, goes to the template.
  */
 export function localEnv(env: NodeJS.ProcessEnv, access: ModelAccess): Record<string, string> {
   const out = inherited(env, NOT_BUNDLED)
@@ -83,6 +92,7 @@ export function localEnv(env: NodeJS.ProcessEnv, access: ModelAccess): Record<st
     out.DEEPSEEK_SEARCH_BASE_URL = `${access.url.replace(/\/+$/, '').replace(/\/v1$/, '')}/v1`
   }
   out.DEEPSEEK_API_KEY = access.key
+  if (access.model) out[MODEL_VARIABLE] = access.model
   out.DSH_TELEMETRY_MODE = 'DISABLED'
   out.DSH_HOME = dshHome(env)
   return out

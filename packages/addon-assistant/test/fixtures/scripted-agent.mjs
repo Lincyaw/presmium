@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 // The deterministic test agent (WP-80): a real ACP agent over stdio (@agentclientprotocol/sdk), started by
-// the assistant as a replacement runtime (PRESMIUM_AGENT_COMMAND, PRESMIUM_AGENT_TUTOR_COMMAND). What it
-// does follows the question:
+// the assistant as a replacement runtime (PRESMIUM_AGENT_COMMAND). What it does follows the request:
 //
-// - by default it lists the tools of the Presmium MCP server it was given (`session/new`'s mcpServers),
+// - `#read`: it lists the tools of the Presmium MCP server it was given (`session/new`'s mcpServers),
 //   calls get_section for the section of the context (or the one `#cite <section>` names) and answers
 //   with a citation of it;
 // - `#wait`: it waits until the client sends `session/cancel`;
 // - `#write <file>`: it asks permission to write <file> (relative to its working directory) and writes
 //   it if allowed, then says what it was told.
 //
-// A change task (WP-81) edits the files of its working directory, each write a tool call (`edit`), as
-// DeepSeek Harness does: within the directory without asking, outside it (by its real path: a link in the
-// directory to another one leads outside) after a permission request.
+// Otherwise a change task (WP-81) edits the files of its working directory, each write a tool call
+// (`edit`), as DeepSeek Harness does: within the directory without asking, outside it (by its real path: a
+// link in the directory to another one leads outside) after a permission request.
 //
 // - annotations (`presmium-annotations:`): each annotated block's lines become the annotation's request,
 //   and the answer ends with a `presmium-annotation <id>: …` line for each;
@@ -217,7 +216,7 @@ const app = acp.agent({ name: 'scripted-agent' })
     }
 
     const { change: changing, annotations, track } = readPrompt(params.prompt)
-    if (changing && !question.includes('#write')) {
+    if (changing && !question.includes('#write') && !question.includes('#read')) {
       const answer = await change(client, params.sessionId, session, { question, context, annotations, track })
       await say(client, params.sessionId, answer)
       return { stopReason: 'end_turn' }

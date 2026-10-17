@@ -1,7 +1,9 @@
 // Routes of a test plugin (packages/addon-assistant/test): `open` opens a session of the server's
 // AGENT_RUNTIME for the deck directory without prompting it and answers with the runtime's provider and
-// name, `close` closes it; `token` issues an MCP token for the member through MCP_ENDPOINT (`author`
-// mode). Plain objects: tokens are compared by id, so the fixture needs no package to compile.
+// name, `close` closes it; `prompt` opens one, sends it a chat request (`{ prompt }`) and answers with the
+// agent's messages, its permission requests refused; `token` issues an MCP token for the member through
+// MCP_ENDPOINT (`author` mode). Plain objects: tokens are compared by id, so the fixture needs no package
+// to compile.
 interface Context { deckDir: string, service(token: { id: string }): any }
 interface RequestContext { member: { id: string, name: string, roles: string[] } }
 
@@ -24,7 +26,7 @@ export default {
           const runtime = ctx.service(AGENT_RUNTIME)
           if (!runtime) return json({ error: 'no AGENT_RUNTIME' }, 404)
           try {
-            session = await runtime.open({ cwd: ctx.deckDir, mode: 'tutor', member: rc.member, approve: async () => false })
+            session = await runtime.open({ cwd: ctx.deckDir, member: rc.member, approve: async () => false })
             return json({ provider: runtime.provider, runtime: runtime.runtime })
           } catch (error) {
             return json({ error: error instanceof Error ? error.message : String(error) }, 500)
@@ -36,6 +38,26 @@ export default {
           await session?.close()
           session = undefined
           return json({})
+        },
+      },
+      prompt: {
+        async handle(request: Request, rc: RequestContext) {
+          const runtime = ctx.service(AGENT_RUNTIME)
+          const { prompt } = await request.json() as { prompt: string }
+          const messages: string[] = []
+          let opened: any
+          try {
+            opened = await runtime.open({ cwd: ctx.deckDir, member: rc.member, approve: async () => false })
+            for await (const event of opened.prompt({ kind: 'chat', prompt, context: { document: '' } })) {
+              if (event.type === 'error') throw new Error(event.message)
+              if (event.type === 'message') messages.push(event.text)
+            }
+            return json({ messages, provider: runtime.provider, runtime: runtime.runtime })
+          } catch (error) {
+            return json({ error: error instanceof Error ? error.message : String(error) }, 500)
+          } finally {
+            await opened?.close()
+          }
         },
       },
       token: {

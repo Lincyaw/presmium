@@ -1,11 +1,14 @@
 <script setup lang="ts">
-// Edit mode's agent panel (P-113 to P-115; the workspace's `EDIT_MODE`): annotations of the blocks the author
-// clicks (with the block's source and an excerpt of it), sent as one batch; a chat with the agent that takes
-// where the author is (section, step, selection); both name the model's provider (N-08). The change tasks sent
-// from this window follow, newest first: the one under way shows its steps, then its review file by file (each
-// kept or rejected, a unified diff for text, a return to before each step); each committed one can be undone.
-// The document's change task this member sent before the page was reloaded (or, for owners, anyone's) is taken
-// up again. In the toolbar while edit mode is on; the panel opens beside the page.
+// "AI changes" (P-111, P-113 to P-115; the workspace's `EDIT_MODE`), in the toolbar of every page the
+// workspace service or `presmium dev` serves, available or not, so the author finds it. On a document of
+// `presmium serve` it turns on edit mode and opens the agent panel beside the page: annotations of the blocks
+// the author clicks (with the block's source and an excerpt of it), sent as one batch; a chat with the agent
+// that takes where the author is (section, step, selection); both name the model's provider (N-08). The change
+// tasks sent from this window follow, newest first: the one under way shows its steps, then its review file by
+// file (each kept or rejected, a unified diff for text, a return to before each step); each committed one can
+// be undone. The document's change task this member sent before the page was reloaded (or, for owners,
+// anyone's) is taken up again. Elsewhere (no model configured, the home page, `presmium dev`) the panel says
+// what is needed and how AI changes are made. The model settings open from it (./ModelSettings.vue).
 import { blockAt, blockElement, blockKey, EDIT_MODE, splitBlockKey, useMessages, useServer, useService } from '@presmium/host'
 import type { AgentContext } from '@presmium/kernel'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
@@ -13,6 +16,7 @@ import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import type { PendingChange } from '../domain/index.ts'
 import ChangeTask from './ChangeTask.vue'
 import { addAnnotation, annotations, busy, changes, excerptOf, picked, removeAnnotation, resume, sendAnnotations, sendChat } from './edit.ts'
+import ModelSettings from './ModelSettings.vue'
 import { agent, assistant, selected, useNavigator } from './state.ts'
 
 const t = useMessages(ASSISTANT_MESSAGES)
@@ -20,9 +24,34 @@ const editMode = useService(EDIT_MODE)
 const server = useServer()
 const navigator = useNavigator()
 const active = computed(() => editMode.value?.active.value ?? false)
-const open = ref(true)
+const open = ref(false)
 const canChange = computed(() => (agent.value?.available('annotations') ?? false) && (agent.value?.available('chat') ?? false))
 const provider = computed(() => agent.value?.provider())
+const info = computed(() => assistant.value?.info.value)
+/** A document whose changes the workspace commits (not the home page, not `presmium dev`). */
+const inDocument = computed(() => info.value?.changes === true && !info.value.home)
+/** The change panel: edit mode is on in a document, and the agent may change it. */
+const changing = computed(() => inDocument.value && active.value && canChange.value)
+/** Why there is no change panel here, and what to do. */
+const status = computed(() => {
+  const now = info.value
+  if (!now) return []
+  const lines = now.provider
+    ? [t.value.edit.available(now.provider, t.value.edit.source[now.source ?? 'environment'])]
+    : [t.value.edit.unavailable, t.value.edit.howTo, ...now.missing ? [t.value.edit.missing(now.missing)] : []]
+  if (now.home) return [...lines, t.value.edit.home]
+  if (!now.changes) return [...lines, t.value.edit.dev]
+  if (now.provider && (!now.kinds.length || editMode.value?.allowed.value === false)) return [...lines, t.value.edit.notEditor]
+  return lines
+})
+
+/** The toolbar's button: turns on edit mode in a document the author may edit, and shows the panel. */
+function toggle(): void {
+  const mode = editMode.value
+  if (!open.value && inDocument.value && mode?.allowed.value && !mode.active.value) mode.enter()
+  open.value = !open.value
+}
+
 const drafts = computed(() => annotations.value.filter(a => a.status === 'draft'))
 /** The task under way (or waiting for its review) goes first; the ended ones last. */
 const current = computed(() => (busy.value ? changes.value.slice(0, 1) : []))
@@ -73,9 +102,13 @@ const labelOf = (change: PendingChange) => change.kind === 'annotations'
   : change.kind === 'transcript' ? t.value.edit.transcript(change.track ?? '') : change.prompt
 
 const listener = (event: MouseEvent) => void pick(event)
-watch([active, canChange], ([on, can]) => {
+// Edit mode turned on shows the panel; turned off hides it.
+watch(active, (on) => {
+  open.value = on
+})
+watch(changing, (on) => {
   document.removeEventListener('click', listener, true)
-  if (on && can) {
+  if (on) {
     document.addEventListener('click', listener, true)
     // The change task under way when the page was loaded (a reload during its review).
     if (assistant.value) void resume(assistant.value, labelOf)
@@ -119,21 +152,26 @@ function chat(): void {
 </script>
 
 <template>
-  <span v-if="active" class="pm-assistant-edit-toolbar">
-    <button type="button" :aria-expanded="open" @click="open = !open">
+  <span v-if="server.available" class="pm-assistant-edit-toolbar">
+    <button type="button" class="pm-assistant-edit__toggle" :aria-expanded="open" @click="toggle">
       {{ t.edit.toggle }}
     </button>
     <Teleport to="body">
-      <aside v-if="open" class="pm-assistant-edit" :aria-label="t.edit.title">
+      <aside v-if="open" class="pm-assistant-edit" :aria-label="changing ? t.edit.title : t.edit.toggle">
         <header class="pm-assistant-edit__header">
-          <h2>{{ t.edit.title }}</h2>
-          <button type="button" @click="open = false">
-            {{ t.edit.close }}
-          </button>
+          <h2>{{ changing ? t.edit.title : t.edit.toggle }}</h2>
+          <span class="pm-assistant-edit__tools">
+            <ModelSettings />
+            <button type="button" @click="open = false">
+              {{ t.edit.close }}
+            </button>
+          </span>
         </header>
-        <p v-if="!canChange" class="pm-assistant-edit__unavailable">
-          {{ t.edit.unavailable }}
-        </p>
+        <section v-if="!changing" class="pm-assistant-edit__status" role="status">
+          <p v-for="(line, i) in status" :key="i">
+            {{ line }}
+          </p>
+        </section>
         <template v-else>
           <ChangeTask v-for="change in current" :key="change.id" :change="change" />
           <section class="pm-assistant-edit__annotations" :aria-label="t.edit.annotations">
@@ -266,6 +304,10 @@ function chat(): void {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.pm-assistant-edit__tools {
+  display: inline-flex;
+  gap: 0.35rem;
 }
 .pm-assistant-edit textarea {
   box-sizing: border-box;

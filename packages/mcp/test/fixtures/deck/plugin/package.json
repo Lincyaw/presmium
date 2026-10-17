@@ -2,7 +2,7 @@
   "name": "presmium-fixture-mcp",
   "private": true,
   "type": "module",
-  "description": "Test-only plugin of packages/mcp/test: routes that issue and revoke a tutor MCP token, and an agent tool",
+  "description": "Test-only plugin of packages/mcp/test: routes that issue and revoke an MCP token, and an agent tool",
   "exports": {
     "./presmium": "./presmium.ts",
     "./package.json": "./package.json"

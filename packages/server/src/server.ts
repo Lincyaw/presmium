@@ -476,10 +476,12 @@ function withHeaders(response: Response, headers: Record<string, string>): Respo
 /** The position a window reports, as far as it is well formed: its section number and step, its view and section id. */
 function windowPosition(value: unknown): WindowPosition | undefined {
   if (!isRecord(value) || typeof value.slide !== 'number' || typeof value.step !== 'number') return undefined
+  const { trail } = value
   return {
     slide: value.slide,
     step: value.step,
     ...typeof value.view === 'string' ? { view: value.view } : {},
     ...typeof value.section === 'string' ? { section: value.section } : {},
+    ...Array.isArray(trail) && trail.length <= 10_000 && trail.every(key => typeof key === 'string') ? { trail: trail as string[] } : {},
   }
 }

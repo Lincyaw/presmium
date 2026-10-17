@@ -190,19 +190,21 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 
 ### 页面中的 AI 助手
 
-文稿的 `plugins` 加上 `@presmium/slidev-addon-assistant` 后，`presmium dev` 与 `presmium serve` 的页面有“提问”（网页导航栏；幻灯片与网页的演讲者视图在 Presmium 面板中）：读者问当前一节，或先在讲义中选中一段文字（如代码）再问，回答中的引用点了就跳到那一节。面板在提问之前写明模型的服务提供方，回答之后另写明运行时。问题只读：agent 用只读的 `tutor` 模式（只有读取类 MCP 工具，读学生视图），它的权限请求一律被拒绝。课堂中主讲的“互动”总览里每个提问有“AI 回答（服务提供方）”，主讲确认后发给课堂。静态构建的产物中没有这些。
+文稿的 `plugins` 加上 `@presmium/slidev-addon-assistant` 后，页面有“提问”（网页导航栏；幻灯片与网页的演讲者视图在 Presmium 面板中），静态构建的产物（包括 `--audience student` 的学生版站点）同样有：读者问当前一节，或先在讲义中选中一段文字（如代码）再问，回答流式显示，其中的引用点了就跳到那一节。回答来自读者自己填写的模型服务：OpenAI 兼容的 Chat Completions 接口的地址（如 `https://api.deepseek.com/v1`）、密钥与模型名，只保存在他的浏览器中（本站点的存储；同一站点的脚本能读到密钥，面板写明这一点）。问题连同当前一节的讲解与块的文字、选中的内容和章节目录（供引用）从浏览器直接发给该服务，不经过站点的服务端，费用由读者自己承担；学生版站点的内容本来就不含教师专用的部分，发出去的也不含。没有填写时面板说明这些并请读者填写；填写后面板在提问之前写明服务（地址的主机名）与模型。幻灯片形态没有 IR，问题带的是当前页的文字，引用只到这一页。
 
-助手只在运营者配置了模型访问时可用，设置写在运行 `presmium` 的环境中，不写在文稿里：
+课堂中主讲的“互动”总览里每个提问有“AI 回答（服务提供方）”：用主讲自己在“提问”面板中填写的模型服务，在主讲的浏览器中生成，主讲确认后发给课堂（引用变成纯文字）；没有填写时总览提示先去填写。学生自己不接触模型。
+
+`presmium serve` 与 `presmium dev` 的工具栏总有“AI 修改”（工作区首页也有）：修改讲义用的 agent（下一节）不可用时，打开它写明缺少什么。它的模型服务在其中的“模型设置”里填写：服务（DeepSeek 的官方地址，或 Messages 兼容的地址与它的服务提供方）、密钥、模型名（留空用默认模型）。设置由本机服务保存在用户配置目录中只有本人可读的文件里（`$XDG_CONFIG_HOME/presmium/assistant.json`，默认在 `~/.config/presmium/`），不写入工作区与文稿；保存后下一个修改任务即用新设置，不必重启；页面只显示密钥是否已设置，不回显它；只有工作区的所有者能查看与修改。它与读者提问的设置是分开的两份。也可以写在运行 `presmium` 的环境中，环境优先于页面的设置（页面写明当前生效的来源），改了要重启：
 
 - `DEEPSEEK_API_KEY`：随包的 DeepSeek Harness 访问 DeepSeek 的官方地址（服务提供方 DeepSeek）；
 - 或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER` 三者：运营者的 Messages 兼容服务，优先于前者；
-- 或替换的运行时（只在本机）：`PRESMIUM_AGENT_COMMAND`（问答另可用 `PRESMIUM_AGENT_TUTOR_COMMAND`）是一个 ACP agent 的命令行，同时要有 `PRESMIUM_AGENT_PROVIDER`；也可以写在工作区配置的 `settings.presmium.assistant` 的 `command`、`tutor`、`provider` 中。
+- 或替换的运行时（只在本机）：`PRESMIUM_AGENT_COMMAND` 是一个 ACP agent 的命令行，同时要有 `PRESMIUM_AGENT_PROVIDER`；也可以写在工作区配置的 `settings.presmium.assistant` 的 `command`、`provider` 中，它优先于模型设置。
 
-都没有时助手不可用，不启动任何进程，`presmium dev` 的日志说明缺少哪项设置。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录）后每份文档的服务端都有它，页面上的面板仍要文稿的 `plugins` 列出它。
+都没有时助手不可用，不启动任何进程。启动时（单份文稿的仓库在第一次打开文档时）日志写明助手是否可用：服务提供方、运行时与设置的来源，或缺少哪项设置；`presmium dev` 另打印 MCP 的地址。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录）后每份文档的服务端都有它，页面上的面板仍要文稿的 `plugins` 列出它。
 
 ### 由 agent 修改讲义（批注、对话、审阅与撤销）
 
-`presmium serve` 中（工作区是 git 仓库，编辑者或所有者），文稿的 `plugins` 列出助手时，工具栏“编辑”进入编辑模式后有“AI 修改”面板，不用接触源码：
+`presmium serve` 中（工作区是 git 仓库，编辑者或所有者），文稿的 `plugins` 列出助手时，工具栏的“AI 修改”进入编辑模式并打开“批注与对话”面板（“编辑”进入编辑模式时它也打开），不用接触源码：
 
 - **批注**：在页面上点选一个块（段落、代码、组件），面板显示它的源码摘录，写下要求后“添加批注”；可以攒几条再“发送 N 条批注”。每条批注随后显示“已处理”或“未能处理”与 agent 的说明。
 - **对话**：写一句要求（如“在本章末尾新增一节”）发送，自动带上当前章节、步骤与在讲义中选中的文字。

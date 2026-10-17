@@ -1,26 +1,30 @@
 <script setup lang="ts">
-// The question panel (P-112): it names the model's provider before anything is asked, and the runtime
-// once an agent answered (N-08); a question goes with the current section, or with the text the reader
-// selected in the deck; answers list the places they cite as links that move the page there.
+// The question panel (P-112, decision E-9): until the reader filled in a model service of his own it says how
+// questions are answered and asks for it (./AskSettings.vue); then it names the service's provider and model
+// before anything is asked (N-08). A question goes with the current section, or with the text the reader
+// selected in the deck; the answer streams in, and the places it cites are links that move the page there.
 import { useMessages } from '@presmium/host'
 import type { AgentContext, Citation } from '@presmium/kernel'
 import { computed, ref } from 'vue'
-import { answerParts, ASSISTANT_MESSAGES } from '../domain/index.ts'
-import { agent, ask, exchanges, selected, useNavigator } from './state.ts'
+import { answerParts, askProvider, ASSISTANT_MESSAGES } from '../domain/index.ts'
+import { askSettings } from './ask.ts'
+import AskSettings from './AskSettings.vue'
+import { ask, asker, exchanges, navigation, selected, showCitation, useNavigator } from './state.ts'
 
 const emit = defineEmits<{ cited: [] }>()
 
 const t = useMessages(ASSISTANT_MESSAGES)
 const navigator = useNavigator()
 const text = ref('')
-const available = computed(() => agent.value?.available('question') ?? false)
-const provider = computed(() => agent.value?.provider())
-const runtime = computed(() => agent.value?.runtime())
+const changing = ref(false)
 const running = computed(() => exchanges.value.some(e => e.state === 'running'))
+const service = computed(() => askSettings.value && { provider: askProvider(askSettings.value.url), model: askSettings.value.model })
+/** Citations move the page where it can be moved: the IR runtime, or the host's navigation. */
+const follows = computed(() => Boolean(navigator ?? navigation.value))
 
 /** The place the question is about: the selection's section, else the page's. */
 const place = computed(() => {
-  const position = navigator?.position()
+  const position = navigator?.position() ?? navigation.value?.position.value
   const section = selected.value?.section ?? position?.section
   return section ? { section, step: position?.section === section ? position.step : undefined, title: navigator?.title(section) ?? section } : undefined
 })
@@ -31,7 +35,7 @@ const excerpt = computed(() => {
 
 function submit(): void {
   const question = text.value.trim()
-  const client = agent.value
+  const client = asker.value
   if (!question || !client) return
   const context: AgentContext = {
     document: '',
@@ -50,52 +54,55 @@ function drop(): void {
 }
 
 function go(citation: Citation): void {
-  navigator?.show(citation)
+  showCitation(citation)
   emit('cited')
 }
 </script>
 
 <template>
   <div class="pm-assistant">
-    <p class="pm-assistant__provider">
-      {{ provider ? t.panel.provider(provider) : t.panel.unavailable }}
-    </p>
-    <p v-if="provider && runtime" class="pm-assistant__runtime">
-      {{ t.panel.runtime(runtime) }}
-    </p>
-    <form v-if="available" class="pm-assistant__form" @submit.prevent="submit">
-      <p v-if="selected" class="pm-assistant__selection">
-        <span>{{ t.panel.selection }}</span>
-        <code>{{ excerpt }}</code>
-        <button type="button" @click="drop">
-          {{ t.panel.dropSelection }}
+    <AskSettings v-if="!service || changing" @done="changing = false" />
+    <template v-else>
+      <p class="pm-assistant__provider">
+        <span>{{ t.panel.provider(service.provider, service.model) }}</span>
+        <button type="button" class="pm-assistant__service" @click="changing = true">
+          {{ t.panel.service }}
         </button>
       </p>
-      <p v-if="place" class="pm-assistant__where">
-        {{ t.panel.at(place.title) }}
-      </p>
-      <textarea v-model="text" :aria-label="t.panel.question" :placeholder="t.panel.placeholder" rows="3" maxlength="2000" @keydown.stop />
-      <p class="pm-assistant__actions">
-        <button type="submit" :disabled="!text.trim() || running">
-          {{ t.panel.ask }}
-        </button>
-      </p>
-    </form>
+      <form class="pm-assistant__form" @submit.prevent="submit">
+        <p v-if="selected" class="pm-assistant__selection">
+          <span>{{ t.panel.selection }}</span>
+          <code>{{ excerpt }}</code>
+          <button type="button" @click="drop">
+            {{ t.panel.dropSelection }}
+          </button>
+        </p>
+        <p v-if="place" class="pm-assistant__where">
+          {{ t.panel.at(place.title) }}
+        </p>
+        <textarea v-model="text" :aria-label="t.panel.question" :placeholder="t.panel.placeholder" rows="3" maxlength="2000" @keydown.stop />
+        <p class="pm-assistant__actions">
+          <button type="submit" :disabled="!text.trim() || running">
+            {{ t.panel.ask }}
+          </button>
+        </p>
+      </form>
+    </template>
     <ol v-if="exchanges.length" class="pm-assistant__answers" :aria-label="t.panel.answers">
       <li v-for="exchange in exchanges" :key="exchange.id" :data-state="exchange.state">
         <p class="pm-assistant__question">
           {{ exchange.question }}
         </p>
-        <p v-for="(answer, i) in exchange.answers" :key="i" class="pm-assistant__answer">
-          <template v-for="(part, j) in answerParts(answer)" :key="j">
-            <button v-if="part.citation && navigator" type="button" class="pm-assistant__cite" :data-section="part.citation.section" :title="t.panel.cite(part.text)" @click="go(part.citation)">
+        <p v-if="exchange.answer" class="pm-assistant__answer">
+          <template v-for="(part, j) in answerParts(exchange.answer)" :key="j">
+            <button v-if="part.citation && follows" type="button" class="pm-assistant__cite" :data-section="part.citation.section" :title="t.panel.cite(part.text)" @click="go(part.citation)">
               {{ part.text }}
             </button>
             <span v-else>{{ part.text }}</span>
           </template>
         </p>
         <p v-if="exchange.state === 'running'" class="pm-assistant__status" role="status">
-          {{ exchange.tool ? t.panel.tool(exchange.tool) : t.panel.answering }}
+          {{ t.panel.answering }}
           <button type="button" @click="exchange.cancel()">
             {{ t.panel.cancel }}
           </button>
@@ -125,10 +132,16 @@ function go(citation: Citation): void {
   margin: 0;
 }
 .pm-assistant__provider,
-.pm-assistant__runtime,
 .pm-assistant__where,
 .pm-assistant__status {
   color: var(--vp-c-text-2, inherit);
+}
+.pm-assistant__provider {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
 }
 .pm-assistant__selection {
   display: flex;
