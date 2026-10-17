@@ -1274,6 +1274,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - `docs/**`，`requirements.md` 与 `wbs.md` 除外，它们由验收者维护；
 - `packages/compiler/**`、`packages/viewer/**`、`packages/workspace/**`、`packages/addon-exec/**`、`packages/addon-publish/**`、`packages/addon-lecture/**`；
 - `packages/server/src/auth.ts` 与 `packages/cli/src/cli.ts` 中 `serve` 的 `--host`（局域网访问）；
+- `packages/classroom-server/**`、`packages/addon-session/**`（课堂同步挂进服务）；
 - 技能中 92b 拥有的段落之外的部分（只为文档一致性改动，与 92b 改同一文件时只改不同的段落）；
 - `examples/demo/**`；
 - `e2e/lecture*.spec.ts`、`e2e/fixtures/lecture*/**`、`e2e/workspace.spec.ts`。
@@ -1290,6 +1291,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - D-8，Python 执行器：本地 Python 执行器的指纹包含运行脚本（`runner.py`）的摘要，已缓存的录制在下一次构建时按 D-8 更新。
 - 不稳定的用例改稳：F-18 的范围导出用例在超时后重试，与 `tall` 用例一致；`e2e/lecture-writeback.spec.ts` 在上一用例撤销后等编辑控件就绪。
 - 局域网访问（决定 E-3 的修订）：`presmium serve --host <地址>`（如 `0.0.0.0`）允许非回环地址，启动时警告没有登录。站点的 Host 检查接受这个地址与本机的名字，同站的 Origin 检查照旧。用例：以本机的局域网地址打开首页与文档页，编辑模式与确认可用；另一站点的页面发来的请求仍被拒绝。验收者试用环境中临时的转发脚本随之不再需要。
+- 一个端口（用户反馈：为什么要这么多端口）：`presmium serve` 与 `presmium dev` 在自己的端口上同时提供课堂同步（与 `presmium-classroom-server` 相同的协议，挂在服务的一个路径下）。文稿没有设置 `presmium.session.server` 时，页面连到当前服务的这个路径。单独的课堂服务保留给发布到静态托管的站点。用例：在 `presmium serve` 中不另起进程，主讲开课、学习者加入并跟随。
 - 首页的使用说明（P-120，用户反馈：不知道怎么触发 agent）：工作区首页有“使用说明”，中英文，内容包括：
   - 管理文档、修改历史与撤销；
   - 编辑模式中的“AI 修改”：批注、对话、审阅；
