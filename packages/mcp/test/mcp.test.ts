@@ -145,6 +145,20 @@ describe('presmium dev', () => {
     expect(resultOf(denied)).toContain('not allowed')
   })
 
+  it('run_code shows in its approval everything the run sends: the session\'s blocks before the one named, then it', async () => {
+    const page = await window('session-runner')
+    const client = await connect()
+    const blocks = (await resultOf(await client.callTool({ name: 'get_section', arguments: { section: '第三节' } }))).blocks.filter((b: { kind: string }) => b.kind === 'code')
+    const last = blocks.at(-1).id
+    const running = client.callTool({ name: 'run_code', arguments: { section: '第三节', block: last } })
+    const asked = await page.next('approval')
+    expect(asked.request.detail).toContain('x = 6')
+    expect(asked.request.detail).toContain('print(x * 7)')
+    expect(asked.request.detail.indexOf('x = 6')).toBeLessThan(asked.request.detail.indexOf('print(x * 7)'))
+    expect(await page.answer(asked.id, true)).toBe(200)
+    expect(resultOf(await running)).toMatchObject({ ok: true, stdout: '42\n' })
+  })
+
   it('a tutor token a plugin\'s route issued sees no operate tool, and gets 401 once revoked, which ends its subscription', async () => {
     const grant = await (await fetch(`${server}/__presmium/fixture.mcp/tutor`)).json() as { url: string, token: string }
     expect(grant.url).toBe(`${server}/mcp`)

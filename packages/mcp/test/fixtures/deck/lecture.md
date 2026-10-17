@@ -24,3 +24,15 @@ print(6 * 7)
 ## 第三节
 
 最后一节的正文。
+
+```{code} python
+:run:
+:session: s
+x = 6
+```
+
+```{code} python
+:run:
+:session: s
+print(x * 7)
+```

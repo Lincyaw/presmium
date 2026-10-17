@@ -12,7 +12,6 @@
  */
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, realpathSync, statSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, languageId, lowerMyst, nodeMdast, withProp } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@presmium/kernel'
@@ -430,7 +429,8 @@ function imageUrl(type: string, base64: string, gen: Generation): string {
   const data = Buffer.from(base64, 'base64')
   const hash = createHash('sha256').update(data).digest('hex')
   const name = `${hash.slice(0, 8)}-output.${IMAGE_TYPES[type]}`
-  const file = join(tmpdir(), 'presmium-outputs', `${hash}.${IMAGE_TYPES[type]}`)
+  // In the renderer's own work directory, not the shared temporary one where another user could put a file first.
+  const file = join(gen.ctx.workDir, 'outputs', `${hash}.${IMAGE_TYPES[type]}`)
   if (!existsSync(file)) {
     mkdirSync(dirname(file), { recursive: true })
     writeFileSync(file, data)

@@ -188,9 +188,9 @@ export class Control {
     return targets.length
   }
 
-  /** Starts or ends the classroom in the windows (of one document, when given) of the present and presenter views. */
-  session(action: 'start' | 'end', name?: string, document?: string): number {
-    const windows = [...this.#windows.values()].filter(w => !w.console && (document === undefined || w.document === document) && (w.report?.role === 'presenter' || w.report?.role === 'audience'))
+  /** Starts or ends the classroom in the windows (of `member` and of one document, when given) of the present and presenter views. */
+  session(action: 'start' | 'end', name?: string, document?: string, member?: Member): number {
+    const windows = [...this.#windows.values()].filter(w => !w.console && (!member || w.member.id === member.id) && (document === undefined || w.document === document) && (w.report?.role === 'presenter' || w.report?.role === 'audience'))
     for (const window of windows) window.send('session', { action, name })
     return windows.length
   }

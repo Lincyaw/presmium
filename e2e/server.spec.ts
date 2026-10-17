@@ -57,6 +57,31 @@ test.describe('presmium dev', () => {
       await expect(entry).toHaveCount(0)
     }
   })
+
+  test('the dev server\'s own endpoints refuse other sites\' pages: a rebound host name, a cross-site request, a plain GET to open the editor', async () => {
+    const send = (path: string, headers: Record<string, string>, method = 'GET') => new Promise<{ status: number, body: string }>((done, fail) => {
+      const url = new URL(path, dev.url)
+      const req = request({ host: url.hostname, port: url.port, path: url.pathname + url.search, method, headers }, (res) => {
+        let body = ''
+        res.on('data', (chunk: Buffer) => (body += chunk))
+        res.on('end', () => done({ status: res.statusCode!, body }))
+      })
+      req.on('error', fail)
+      req.end()
+    })
+    const local = `${new URL(dev.url).host}`
+    // The page's own requests still work.
+    expect((await send('/__presmium/ir', { Host: local })).status).toBe(200)
+    // DNS rebinding: a name of another site that resolves to this machine.
+    const rebound = await send('/__presmium/ir', { Host: 'rebind.attacker.example' })
+    expect(rebound.status).toBe(403)
+    expect(rebound.body).not.toContain('"doc"')
+    // A cross-site request (an image or a form of another site) to this machine.
+    expect((await send('/__presmium/ir', { 'Host': local, 'Sec-Fetch-Site': 'cross-site' })).status).toBe(403)
+    // Opening the editor takes a POST with Presmium's header, which another site's page cannot send.
+    expect((await send('/__presmium/source?file=lecture.md&line=1', { Host: local })).status).toBe(405)
+    expect((await send('/__presmium/source?file=lecture.md&line=1', { 'Host': local, 'Sec-Fetch-Site': 'cross-site' }, 'POST')).status).toBe(403)
+  })
 })
 
 test.describe('static output', () => {

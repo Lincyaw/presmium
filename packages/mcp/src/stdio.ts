@@ -61,7 +61,7 @@ async function stamps(files: string[]): Promise<string> {
   return times.join(',')
 }
 
-/** The plugins' checks of a compilation, as `presmium check` runs them. */
+/** The plugins' checks of a compilation and the publication checks (P-54), as `presmium check` runs them. */
 async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
   const checks = new CheckRegistry()
   const findings: Finding[] = []
@@ -83,7 +83,7 @@ async function pluginChecks(compilation: Compilation): Promise<Finding[]> {
     lock: compilation.lock.toJSON(),
     ir: compilation.doc,
     service: compilation.service,
-  })]
+  }), ...await compilation.publishChecks()]
 }
 
 /** The `McpHost` of one deck on the compiler. */

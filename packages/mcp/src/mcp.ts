@@ -16,8 +16,8 @@
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { deckLocale, errorMessage, isRecord } from '@presmium/kernel'
-import type { AgentTool, ApprovalKind, ApprovalScope, Finding, IRDocument, Member, MemberRole } from '@presmium/kernel'
+import { deckLocale, docBlocks, errorMessage, isRecord } from '@presmium/kernel'
+import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, Finding, IRDocument, Member, MemberRole } from '@presmium/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess, McpView } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
@@ -249,7 +249,8 @@ const TOOLS: ToolSpec[] = [
       const section = findSection(doc, str(call.args.section) ?? '')
       const block = findBlock(section, str(call.args.block) ?? '')
       if (block.node.type !== 'code') throw new Error(`block ${block.id} of section ${section.id} is not code`)
-      await call.approve('operate', m => m.run(section.title, block.id), { scope, detail: block.node.value })
+      // The person allows everything the run sends: a block of a session runs after the session's blocks before it.
+      await call.approve('operate', m => m.run(section.title, block.id), { scope, detail: runPlan(doc, block.node) })
       return { section: section.id, block: block.id, ...runInfo(await call.host.run(document, { section: section.id, block: block.id }, call.signal)) }
     },
   },
@@ -288,11 +289,36 @@ const TOOLS: ToolSpec[] = [
 
 async function classroom(call: Call, action: 'start' | 'end') {
   const document = await call.document()
-  const presenting = call.host.positions?.(document, call.caller.member).filter(p => p.role === 'presenter' || p.role === 'audience') ?? []
-  if (presenting.length === 0) throw new Error('no window presents the deck: open its present or presenter view first')
+  // Only the caller's own presenting windows: an agent acts on its member's classroom, not on another member's.
+  const presenting = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id && (p.role === 'presenter' || p.role === 'audience')) ?? []
+  if (presenting.length === 0) throw new Error('none of your windows presents the deck: open its present or presenter view first')
   const name = str(call.args.name) ?? ''
   await call.approve('operate', m => (action === 'start' ? m.classroomStart(name) : m.classroomEnd))
-  return { classroom: action, windows: call.host.session!(document, action, name || undefined) }
+  return { classroom: action, windows: call.host.session!(document, action, name || undefined, call.caller.member) }
+}
+
+/**
+ * What running a code block sends, for its approval: the block, after the
+ * compile-time blocks of its `:session:` before it (as `Compilation.run`
+ * sends them), each with its parameters and standard input.
+ */
+function runPlan(doc: IRDocument, node: CodeNode): string {
+  const nodes: { id: string, code: CodeNode }[] = []
+  const session = node.run?.session
+  for (const { block } of docBlocks(doc)) {
+    if (block.node === node) {
+      nodes.push({ id: block.id, code: node })
+      break
+    }
+    if (session && block.node.type === 'code' && block.node.run?.session === session && block.node.run.when !== 'live') nodes.push({ id: block.id, code: block.node })
+  }
+  const one = ({ id, code }: { id: string, code: CodeNode }) => [
+    nodes.length > 1 ? `# ${id}` : '',
+    code.run?.args && Object.keys(code.run.args).length ? `# args: ${JSON.stringify(code.run.args)}` : '',
+    code.run?.stdin !== undefined ? `# stdin: ${JSON.stringify(code.run.stdin)}` : '',
+    code.value,
+  ].filter(Boolean).join('\n')
+  return nodes.map(one).join('\n\n')
 }
 
 /** Whether the host can do what a tool needs. */

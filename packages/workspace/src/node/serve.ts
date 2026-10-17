@@ -414,6 +414,7 @@ async function localSite(root: string, spec: SiteSpec, bundled: string | undefin
   const ctx = siteContext({ root, outDir: work, workDir: work, plugins: servedPlugins(), home, findings })
   const dev = await renderer.devSite!(spec, ctx, compile)
   const origin = new URL(dev.url).origin
+  log.info(`the workspace site's dev router is at ${origin} (this machine only; pages reach it through serve)`)
   return {
     forward: () => origin,
     update: (dir, compilation) => dev.update(dir, siteIR(compilation, viewDocument(compilation, 'full'))).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
