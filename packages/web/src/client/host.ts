@@ -1,9 +1,9 @@
 import { presmiumReport, presmiumService } from '@presmium/host'
-import type { HostAdapter, Navigation, SharedStates, ViewRole } from '@presmium/host'
+import type { HostAdapter, Navigation, NavigationPosition, SharedStates, ViewRole } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
-import type { PresentationMode } from '@presmium/kernel'
-import { FINAL_STEP, getView, useSectionContext } from '@presmium/viewer'
-import type { Viewer } from '@presmium/viewer'
+import type { IRSection, PresentationMode } from '@presmium/kernel'
+import { backSection, FINAL_STEP, followedPlace, getView, stepKeys, stepTrail, useSectionContext } from '@presmium/viewer'
+import type { FollowAnchor, StepKeys, Viewer } from '@presmium/viewer'
 import { computed, readonly, ref } from 'vue'
 
 export interface ViewerHostOptions {
@@ -68,25 +68,48 @@ export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): Ho
 
 /**
  * The `navigation` service of the web form: the IR runtime's section (by its
- * number, as the slides form counts slides, and by its id), step and view.
- * Moving switches the view first, unless it is hidden (the presenter window),
- * then shows the position, going to its page if needed. A position goes to
- * its section by the section's id (D-4, F-85): the full and the student build
- * number their sections apart; a section this build does not have (one for
- * another audience) leaves the window where it is. A position without an id
- * goes by the number.
+ * number, as the slides form counts slides), step and view, and the position
+ * by ids (D-4, F-85): the section's id, the keys of the steps reached in it,
+ * and for a section only some audiences have, the section to go back to
+ * (`FollowAnchor`). Moving switches the view first, unless it is hidden (the
+ * presenter window), then shows the position, going to its page if needed. A
+ * position with a section id goes by ids (`followedPlace`): the full and the
+ * student build number their sections and steps apart; a section this build
+ * lacks goes to the end of the one to go back to, or nowhere. A position
+ * without an id goes by the numbers.
  */
 export function createViewerNavigation(viewer: Viewer): Navigation {
+  const keys = new WeakMap<IRSection, StepKeys>()
+  const keysOf = (section: IRSection) => {
+    let known = keys.get(section)
+    if (!known) keys.set(section, known = stepKeys(section))
+    return known
+  }
   return {
-    position: computed(() => {
-      const { section, step } = viewer.position.value
-      return { slide: viewer.section(section)?.index ?? 1, step, view: viewer.view.value, section }
+    position: computed((): NavigationPosition & FollowAnchor => {
+      const { section: id, step } = viewer.position.value
+      const section = viewer.section(id)
+      const back = backSection(viewer.doc.value.sections, id)
+      return {
+        slide: section?.index ?? 1,
+        step,
+        view: viewer.view.value,
+        section: id,
+        ...section ? { trail: stepTrail(keysOf(section), step) } : {},
+        ...back ? { back } : {},
+      }
     }),
-    go({ slide, step, view, section: id }) {
+    go(position: NavigationPosition & FollowAnchor) {
+      const { slide, step, view, section: id } = position
       const target = view === undefined ? undefined : getView(view)
       if (target && !target.hidden) viewer.setView(target.id)
-      const section = id === undefined ? viewer.doc.value.sections.find(s => s.index === slide) : viewer.section(id)
-      if (section) viewer.show({ section: section.id, step })
+      const place = id === undefined
+        ? { section: viewer.doc.value.sections.find(s => s.index === slide)?.id, step }
+        : followedPlace(position, other => {
+            const section = viewer.section(other)
+            return section && keysOf(section)
+          })
+      if (place?.section !== undefined) viewer.show({ section: place.section, step: place.step })
     },
   }
 }

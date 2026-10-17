@@ -563,7 +563,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 
 | 插件包 | 插件 ID | 作用 |
 |---|---|---|
-| `@presmium/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件；编译步骤把每节的 ID 写进它那张幻灯片的 frontmatter（`presmiumId`，课堂按它在完整版与学生版之间跟随，`{hints}` 中不要用这个键） |
+| `@presmium/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件；编译步骤把每节的 ID、它的各步的键与要回退到的章节写进它那张幻灯片的 frontmatter（`presmiumId`、`presmiumSteps`、`presmiumBack`，课堂按它们在完整版与学生版之间跟随，`{hints}` 中不要用这些键） |
 | `@presmium/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `footnotes` 把脚注定义放到引用它的块旁 |
 | `@presmium/slidev-addon-publish` | `presmium.publish` | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
 | `@presmium/slidev-addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |

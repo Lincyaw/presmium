@@ -259,9 +259,14 @@ function entryRefusal(name: string, key: string | null, before: unknown, value: 
   return JSON.stringify(value).length > MAX_ENTRY ? `a value in ${name} over ${MAX_ENTRY} bytes` : undefined
 }
 
-/** The value of entry `key` of the room's top-level map `name` before an update; a type of another kind holds no entries. */
+/**
+ * The value of entry `key` of the room's top-level map `name` before an
+ * update; a type of another kind holds no entries. A name the room does not
+ * have yet holds none either, and stays out of the room: `getMap` would add
+ * it, also for an update the room then refuses (F-27).
+ */
 function entryBefore(room: Y.Doc, name: string, key: string | null): unknown {
-  if (key === null) return undefined
+  if (key === null || !room.share.has(name)) return undefined
   try {
     return room.getMap(name).get(key)
   } catch {

@@ -24,7 +24,7 @@ export type { CheckCase, CheckError, CheckReport, ExerciseSummary, Submission } 
 export { isAnswer, isNote, isPrediction, isPulseVote, isQuestion, isQuizState, isSavedPrediction, isSubmission } from './guards.ts'
 export { notesAt } from './notes.ts'
 export type { Note } from './notes.ts'
-export { isLabel, latestPerParticipant, placeIndex, placeKey, placeText, sectionNumbers } from './place.ts'
+export { isLabel, latestPerParticipant, placeIndex, placeKey, placeText, READERS, readersHave, sectionNumbers } from './place.ts'
 export type { Place, SectionNumbers } from './place.ts'
 export { MESSAGES } from './messages.ts'
 export type { ClassroomMessages } from './messages.ts'

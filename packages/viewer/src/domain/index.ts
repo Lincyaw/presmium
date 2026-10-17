@@ -1,5 +1,7 @@
 export { clickVisible, resolveClicks } from './clicks.ts'
 export type { ClickRange, ClickSpec } from './clicks.ts'
+export { backSection, followedPlace, stepKeys, stepTrail, trailStep } from './follow.ts'
+export type { FollowAnchor, StepKeys } from './follow.ts'
 export { applyUpdate, diffDocuments, sectionDiagnostics } from './live.ts'
 export type { LiveUpdate } from './live.ts'
 export { VIEWER_MESSAGES } from './messages.ts'

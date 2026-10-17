@@ -1,6 +1,6 @@
 import type { SyncTransports } from '@presmium/host'
 import { addSyncMethod } from '@slidev/client'
-import { drawingsIn, drawingsOut, sharedOut, sharedReceiver } from '../domain/index.ts'
+import { drawingsIn, drawingsOut, sharedOut, sharedReceiver, slideSections } from '../domain/index.ts'
 import type { SlideSections } from '../domain/index.ts'
 import { sharedStates } from './shared.ts'
 
@@ -13,9 +13,10 @@ const DRAWINGS = ' - drawings'
 
 /**
  * How a channel's state goes out to a transport and comes in from it. What
- * Slidev keys by slide number goes by section (D-4): the full and the
- * student build number their slides apart, so a learner of one follows a
- * presenter of the other to the same slide, and sees the drawings there.
+ * Slidev keys by slide number and click goes by ids (D-4): the full and the
+ * student build number their slides and clicks apart, so a learner of one
+ * follows a presenter of the other to the same slide and click, and sees the
+ * drawings there.
  */
 function translation(channel: string, sections: () => SlideSections): { out(state: State): State, in(patch: State): State } {
   if (channel.endsWith(SHARED)) return { out: state => sharedOut(state, sections()), in: sharedReceiver(sections) }
@@ -31,7 +32,8 @@ function translation(channel: string, sections: () => SlideSections): { out(stat
  * (`useSlideSections`); without them states go by slide number.
  */
 export function createSyncTransports(sections?: () => SlideSections): SyncTransports {
-  const slides = sections ?? (() => ({ named: false, idOf: () => undefined, noOf: () => undefined }))
+  const none = slideSections([])
+  const slides = sections ?? (() => none)
   return {
     add(transport) {
       let attached = true

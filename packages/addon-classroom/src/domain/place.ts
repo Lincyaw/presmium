@@ -27,10 +27,22 @@ export function placeKey(place: Pick<Place, 'section' | 'block'>): string {
  * (D-4, F-85): `classroom-places` writes them to the plugin's configuration
  * as `sections`. A learner writes a place as the learner's build numbers it,
  * and the student build numbers its sections apart from the full one, so the
- * overview numbers places by their section's id. Sections for some audiences
- * only are not listed: no build names a section another build leaves out.
+ * overview numbers places by their section's id. Sections that the readers'
+ * build (`READERS`) leaves out are not listed, so no build names a section
+ * a reader's build lacks.
  */
 export type SectionNumbers = Readonly<Record<string, number>>
+
+/**
+ * The audience of the readers' build: the student view of `presmium serve`
+ * and `presmium build --audience student` (docs/ir.md 2.11).
+ */
+export const READERS = 'student'
+
+/** Whether the readers' build has a section: one for every audience, or for theirs among others. */
+export function readersHave(section: { audience?: readonly string[] }): boolean {
+  return !section.audience?.length || section.audience.includes(READERS)
+}
 
 /** The section numbers of the plugin's configuration; none in a deck compiled without them. */
 export function sectionNumbers(config: Record<string, unknown> | undefined): SectionNumbers {

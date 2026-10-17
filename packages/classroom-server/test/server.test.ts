@@ -369,17 +369,26 @@ it('keeps the presenter\'s client, known from awareness only, as the presenter\'
   expect(drops('room-k')).toHaveLength(2)
 })
 
-it('closes the connection of a refused update, and takes the learner\'s writes again once the client starts over', async () => {
+it('closes the connection of a refused update, leaves nothing of it in the room, and takes the learner\'s writes again once the client starts over (F-27)', async () => {
   const presenter = await join('room-h', { claim: 'presenter-key' })
   const learner = await join('room-h', { participant: 'p1', key: 'p1-key' })
   const code = providerClosed(learner.provider)
   learner.doc.getMap('store:quizzes').set('q', { open: true })
   expect(await code).toBe(4403)
+  // A refused update under a name the room does not have: checking it adds no such type to the room.
+  const other = await join('room-h', { participant: 'p1', key: 'p1-key' })
+  const otherCode = providerClosed(other.provider)
+  other.doc.getMap('store:p1-junk').set('x', 1)
+  expect(await otherCode).toBe(4403)
   // As the session plugin does: a new document, connected again with the same participant.
   const again = await join('room-h', { participant: 'p1', key: 'p1-key' })
   again.doc.getMap('store:answers').set(...answer('q', 'p1', 1))
   await expect.poll(() => presenter.doc.getMap('store:answers').get('q:p1')).toEqual({ quiz: 'q', participant: 'p1', choice: [1] })
   expect(presenter.doc.getMap('store:quizzes').toJSON()).toEqual({})
+  // The archive holds every top-level type of the room: only what was written.
+  const response = await fetch(`${url.replace(/^ws/, 'http')}/archive/room-h`, { method: 'POST', body: 'presenter-key' })
+  const { file } = await response.json() as { file: string }
+  expect(Object.keys(JSON.parse(readFileSync(joinPath(deck, file), 'utf8')).document).sort()).toEqual(['session', 'store:answers'])
 })
 
 it('takes awareness states only for a connection\'s own clients, naming the participant it proved (P-60)', async () => {
