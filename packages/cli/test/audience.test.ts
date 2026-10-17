@@ -4,7 +4,7 @@
 // the student version. WP-81e2: a deck's translations are compiled for the audience too, without a temporary file
 // in the deck, and scanned; `{audience}` without names fails closed; a student build keeps no finding of what it
 // left out; content after an `{include}` with `:audience:` that opens a section is a warning; `build`'s `audience`
-// option builds the student view for presmium dev and serve; `presmium build --audience` scans the whole output
+// option builds a whole compilation for the audience; `presmium build --audience` scans the whole output
 // directory; serve says the workspace site leaves a translation out.
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -143,11 +143,11 @@ describe('a deck with a translation, for an audience', () => {
     expect(new Set(written)).toEqual(new Set(['student', '.presmium', 'node_modules']))
   }, 300_000)
 
-  it('builds the student view of a whole compilation as presmium dev and serve do: neither language with the teacher\'s content; a leak is reported without its sentence', async () => {
+  it('builds a whole compilation for the audience (the build\'s audience option): neither language with the teacher\'s content; a leak is reported without its sentence', async () => {
     const dir = deck(TRANSLATED)
     dirs.push(dir)
     appendFileSync(join(dir, 'lecture.en.md'), '\n```{code} python\n:run:\nprint("Note for teachers: unplug the network before the demo, " + "password TEACHEREN41.")\n```\n')
-    // `ServerHost.build` with `view: 'student'`: the compilation of the whole deck, built for the audience.
+    // The compilation of the whole deck, built for the audience.
     const compilation = await new Compiler(join(dir, 'lecture.md'), { bundled: join(ROOT, 'packages/cli') }).compile()
     const out = join(dir, 'dist')
     const report = await build(compilation, { outDir: out, to: ['web'], audience: 'student', quote: false, scan: 'written' })
@@ -208,16 +208,16 @@ describe('presmium serve: a document with a translation', () => {
   it('says in the diagnostics that the workspace site leaves the translation out', async () => {
     dir = workspace('translated-local', 'translated', { '@presmium/slidev-addon-exec': 'packages/addon-exec', '@presmium/web': 'packages/web' })
     cpSync(TRANSLATED, join(dir, 'course'), { recursive: true })
-    // The test plugin's route issues an MCP token (a `tutor` one: the student view) to read the diagnostics with.
-    cpSync(join(FIXTURES, 'plugins/presmium-fixture-tutor'), join(dir, 'node_modules/presmium-fixture-tutor'), { recursive: true })
+    // The test plugin's route issues an MCP token to read the diagnostics with.
+    cpSync(join(FIXTURES, 'plugins/presmium-fixture-token'), join(dir, 'node_modules/presmium-fixture-token'), { recursive: true })
     const config = join(dir, 'presmium.workspace.yaml')
-    writeFileSync(config, readFileSync(config, 'utf8').replace('\'@presmium/web\']', '\'@presmium/web\', presmium-fixture-tutor]'))
+    writeFileSync(config, readFileSync(config, 'utf8').replace('\'@presmium/web\']', '\'@presmium/web\', presmium-fixture-token]'))
     const entry = join(dir, 'course/lecture.md')
-    writeFileSync(entry, readFileSync(entry, 'utf8').replace('plugins:\n', 'plugins:\n  - presmium-fixture-tutor\n'))
+    writeFileSync(entry, readFileSync(entry, 'utf8').replace('plugins:\n', 'plugins:\n  - presmium-fixture-token\n'))
     const local = presmiumProcess(dir, ['serve', '--port', '0'])
     try {
       const url = (await waitFor(local, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
-      const grant = await raw(`${url}/__presmium/fixture.tutor/tutor`, { headers: { 'Presmium-Document': 'course' } })
+      const grant = await raw(`${url}/__presmium/fixture.token/token`, { headers: { 'Presmium-Document': 'course' } })
       expect(grant.status, grant.text).toBe(200)
       const { token } = grant.json<{ token: string }>()
       const host = new URL(url).host

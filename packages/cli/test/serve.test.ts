@@ -4,8 +4,9 @@
 // it loads their browser parts (WP-81e2). A document loads the plugins its deck lists, as in `presmium dev` (E-2).
 // With PRESMIUM_DEBUG its server says more (F-35). A document deleted under serve has no plugin routes any more,
 // and made again with another configuration, its routes have that one (C-7, F-40). Compile-time code runs in
-// serve without asking, with the `serve` rules of its environment (N-08).
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+// serve without asking, with the `serve` rules of its environment (N-08). It prints its MCP endpoint and the
+// file (0600, outside the workspace) that holds the process's token for it, as `presmium dev` does (WP-92c).
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { networkAddresses } from '@presmium/server'
@@ -28,6 +29,19 @@ describe('presmium serve on this machine', () => {
     serve = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({ PRESMIUM_DEBUG: '1' }))
     const url = (await waitFor(serve, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
     expect(serve.output()).toMatch(/^workspace {2}\S+$/m)
+    // The MCP endpoint, and the file that holds the process's token: readable by the user only, outside the workspace.
+    const [, endpoint, stateFile] = await waitFor(serve, /^mcp {2}(http:\/\/127\.0\.0\.1:\d+\/mcp) \(its token is in (.+)\)$/m)
+    expect(endpoint).toBe(`${url}/mcp`)
+    expect(stateFile!.startsWith(dir)).toBe(false)
+    expect(statSync(stateFile!).mode & 0o777).toBe(0o600)
+    const state = JSON.parse(readFileSync(stateFile!, 'utf8')) as { mcp: string, token: string }
+    expect(state.mcp).toBe(endpoint)
+    const initialize = { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'presmium-test', version: '0.1.0' } } }
+    const accept = { Accept: 'application/json, text/event-stream' }
+    expect((await raw(endpoint!, { headers: accept, json: initialize })).status).toBe(401)
+    const initialized = await raw(endpoint!, { headers: { ...accept, Authorization: `Bearer ${state.token}` }, json: initialize })
+    expect(initialized.status, initialized.text).toBe(200)
+    expect(initialized.text).toContain('"serverInfo"')
     // Its server's debug lines, with PRESMIUM_DEBUG (F-35).
     expect(serve.output()).toMatch(/\[presmium serve\] listening at http:\/\/127\.0\.0\.1:\d+/)
     const documents = await raw(`${url}/__presmium/presmium.workspace/documents`)

@@ -4,6 +4,6 @@
  * server uses it, which mounts it at `/mcp` (section 3). `presmium-mcp` serves
  * it on stdio over the compiler.
  */
-export type { McpCaller, McpDocument, McpHost, McpPluginTools, McpPosition, McpProcess, McpView } from './host.ts'
+export type { McpCaller, McpDocument, McpHost, McpPluginTools, McpPosition, McpProcess } from './host.ts'
 export { createPresmiumMcp, MCP_VERSION, OPERATE_TOOLS, POSITION_URI, presmiumServer, READ_TOOLS, serveMcpStdio } from './mcp.ts'
 export type { PresmiumMcp } from './mcp.ts'

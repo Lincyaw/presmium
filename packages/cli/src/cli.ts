@@ -283,7 +283,8 @@ async function devDeck(command: Command): Promise<number> {
 
 /**
  * `presmium serve`: the workspace service, on this machine, until stopped
- * (docs/architecture.md section 10). Prints its address and the workspace.
+ * (docs/architecture.md section 10). Prints its address, the workspace and
+ * the MCP endpoint with the file that holds its token.
  */
 async function serve(command: Command): Promise<number> {
   const started = await serveWorkspace({
@@ -294,7 +295,7 @@ async function serve(command: Command): Promise<number> {
     bundled: BUNDLED,
     check: compilation => compilation.check(),
   })
-  process.stdout.write(`serve  ${started.url}\n${networkLines(command.host, started.url)}workspace  ${started.root}\n`)
+  process.stdout.write(`serve  ${started.url}\n${networkLines(command.host, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url} (its token is in ${started.mcp.stateFile})\n`)
   if (command.host && !isLoopback(command.host)) {
     process.stderr.write(`presmium serve: listening on ${command.host}, on the local network, with no login: anyone who reaches port ${new URL(started.url).port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.\n`)
   }

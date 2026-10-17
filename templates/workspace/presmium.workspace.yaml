@@ -7,6 +7,9 @@ site: {}                            # the site shell: nav, footer, head, sitemap
 approvals: { operate: ask, spend: ask, write: ask, agent: ask }
 settings:                           # the plugins' operator settings, by plugin id; never in a deck
   presmium.workspace:
-    plugins: []                     # operator plugins, installed here: every document and the home page load them
+    # The operator plugins, installed at this root (e.g. pnpm add @presmium/slidev-addon-assistant): every
+    # document and the home page load them. The assistant gives "AI 修改" and the model settings on the home page
+    # and on every document, and says at start-up whether it is available and with what.
+    plugins: ['@presmium/slidev-addon-assistant']
   # presmium.assistant:
   #   review: required                       # agent changes wait for the author's review (auto: committed at once)

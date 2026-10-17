@@ -47,9 +47,6 @@ export function servedDocument(compilation: Compilation): ServedDocument {
   }
 }
 
-/** A view of a document: the whole deck, or only what its audience `student` may see (P-55; the same as `full` until WP-87). */
-export type DocumentView = 'full' | 'student'
-
 /** A document of the host, as listed (P-120). */
 export interface HostDocument {
   /** Its directory, relative to the workspace root; '' for the deck of `presmium dev`. */
@@ -61,14 +58,14 @@ export interface HostDocument {
 
 /**
  * The host process's operations (10.2): the documents, their compiled IR
- * with diagnostics by view, the checks, a build, and a run of one code
+ * (the whole deck) with diagnostics, the checks, a build, and a run of one code
  * block (MCP's `run_code`). Builds and runs use the execution options of
  * the host's compiler (10.6).
  */
 export interface ServerHost {
   documents(): Promise<HostDocument[]>
-  compile(document: string, view?: DocumentView): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
+  compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
   check(document: string): Promise<Finding[]>
-  build(document: string, options?: { to?: string[], view?: DocumentView }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
+  build(document: string, options?: { to?: string[] }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
   run(document: string, target: { section: string, block: string }, signal?: AbortSignal): Promise<RunResult>
 }

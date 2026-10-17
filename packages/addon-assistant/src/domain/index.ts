@@ -6,7 +6,7 @@ export { annotationNotes, commitMessage, explanationOf, isDraft, WORKSPACE_CONFI
 export type { AnnotationNote } from './changes.ts'
 export { answerParts, citationsOf } from './citations.ts'
 export type { AnswerPart } from './citations.ts'
-export { ASSISTANT_ID, choiceProvider, DEEPSEEK_PROVIDER, modelAccess, modelSettingsOf, modelSettingsProblem, runtimeChoice, savedAccess, splitCommand } from './config.ts'
+export { ASSISTANT_ID, choiceProvider, DEEPSEEK_PROVIDER, modelAccess, modelSettingsOf, modelSettingsProblem, runtimeChoice, sameService, savedAccess, splitCommand } from './config.ts'
 export type { ModelAccess, ModelSettings, ModelSettingsView, RuntimeChoice, RuntimeSource } from './config.ts'
 export { ASSISTANT_MESSAGES } from './messages.ts'
 export type { AssistantMessages } from './messages.ts'

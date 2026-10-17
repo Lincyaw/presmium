@@ -28,9 +28,8 @@ import type { Compilation, CompilerOptions } from '@presmium/compiler'
 import { DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@presmium/kernel'
 import type { Finding, IRDocument, Logger, ServiceToken, SiteSpec } from '@presmium/kernel'
 import { servedDocument, startServer } from '@presmium/server'
-import type { DocumentView, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
+import type { PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
-import { viewDocument } from './audience.ts'
 import { listDocuments, readWorkspace } from './config.ts'
 import { Documents, RequestError } from './documents.ts'
 import type { DocumentsChange } from './documents.ts'
@@ -65,13 +64,15 @@ export interface ServeOptions {
 export interface WorkspaceServer {
   url: string
   root: string
+  /** The MCP endpoint (`<url>/mcp`) and the state file (mode 0600, outside the workspace) that holds the process's token for it. */
+  mcp: { url: string, stateFile: string }
   close(): Promise<void>
 }
 
 /** How often, at most, a request of the site looks for documents made or taken away on disk. */
 const DISK_LOOK_MS = 1000
 
-/** Where serve keeps what it generates for a workspace (the site's projects, the MCP's builds): outside the workspace. */
+/** Where serve keeps what it generates for a workspace (the site's projects, the MCP's builds, the MCP token): outside the workspace. */
 function stateDir(root: string, env: NodeJS.ProcessEnv): string {
   const base = env.XDG_CACHE_HOME || join(homedir(), '.cache')
   const dir = join(base, 'presmium', 'serve', createHash('sha256').update(root).digest('hex').slice(0, 16))
@@ -184,10 +185,9 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     async documents() {
       return docs().map(({ entry: _entry, ...doc }) => doc)
     },
-    async compile(document, view: DocumentView = 'full') {
+    async compile(document) {
       await ready
-      const compilation = await sessionOf(document).ready()
-      const doc = viewDocument(compilation, view)
+      const { doc } = await sessionOf(document).ready()
       return { doc, diagnostics: doc.diagnostics }
     },
     async check(document) {
@@ -198,10 +198,9 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     async build(document, buildOptions = {}) {
       await ready
       const compilation = await sessionOf(document).ready()
-      const view = buildOptions.view ?? 'full'
       // Into serve's state directory, not the document: an agent's build is no change of the source to review (F-51).
-      const outDir = join(stateDir(root, env), 'builds', encodeURIComponent(document) || '_', view)
-      const report = await buildView(compilation, { to: buildOptions.to, view, outDir })
+      const outDir = join(stateDir(root, env), 'builds', encodeURIComponent(document) || '_')
+      const report = await buildView(compilation, { to: buildOptions.to, outDir })
       return { outputs: report.outputs.map(({ renderer, outDir: written }) => ({ renderer, outDir: written })), findings: report.findings }
     },
     async run(document, target, signal) {
@@ -240,10 +239,13 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     }
   }
 
+  // The process's MCP token for the author's outside agents, as `presmium dev` writes it: here outside the workspace.
+  const stateFile = join(stateDir(root, env), 'server.json')
   server = await startServer({
     mode: 'serve',
     host: options.host,
     port: options.port,
+    stateFile,
     forward: () => {
       lookAtDisk()
       return site?.forward()
@@ -274,11 +276,14 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   ]
 
   started()
+  // A single-deck repository compiles its document at once, as `presmium dev` does: its plugins load and say
+  // what they say when they start (the assistant's status), without waiting for the first page.
+  if (config.single) for (const { dir } of docs()) void sessionOf(dir).ready().catch(() => undefined)
 
   // The site: this process's dev servers.
   const compileFull = async (dir: string): Promise<IRDocument> => {
     const compilation = await sessionOf(dir).ready()
-    return siteIR(compilation, viewDocument(compilation, 'full'))
+    return siteIR(compilation)
   }
   try {
     site = await localSite(root, spec, options.bundled, stateDir(root, env), compileFull, config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
@@ -291,6 +296,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   return {
     url: running.url,
     root,
+    mcp: { url: `${running.url}/mcp`, stateFile },
     async close() {
       for (const session of sessions.values()) session.close()
       await site?.close()
@@ -318,7 +324,7 @@ async function localSite(root: string, spec: SiteSpec, bundled: string | undefin
   log.info(`the workspace site's dev router is at ${origin} (this machine only; pages reach it through serve)`)
   return {
     forward: () => origin,
-    update: (dir, compilation) => dev.update(dir, siteIR(compilation, viewDocument(compilation, 'full'))).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
+    update: (dir, compilation) => dev.update(dir, siteIR(compilation)).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
     // The dev site reads the list at each request: the documents no longer listed close there.
     documentsChanged: async () => {},
     close: () => dev.close(),

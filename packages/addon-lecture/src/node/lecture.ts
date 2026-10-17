@@ -9,9 +9,9 @@
  */
 import { randomBytes } from 'node:crypto'
 import { renameSync, writeFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { basename, join, relative } from 'node:path'
 import { isRecord } from '@presmium/kernel'
-import type { IRDocument, SpeechEngineInfo, SpeechService } from '@presmium/kernel'
+import type { IRDocument, SpeechEngineInfo, SpeechService, Synthesis } from '@presmium/kernel'
 import { CLIP_FILE, irHash, referencedBlocks, SCRIPT_TRACK, scriptTrack, sectionHashes, transcribedTrack } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 import type { DeckPlan } from './plan.ts'
@@ -29,6 +29,20 @@ export function speechDir(deckDir: string): string {
 /** The file of a clip in the deck's synthesis cache; undefined for a name that is no clip. */
 export function clipFile(deckDir: string, name: string): string | undefined {
   return CLIP_FILE.test(name) ? join(speechDir(deckDir), name) : undefined
+}
+
+/**
+ * A clip of the deck's synthesis cache by its file name, as the speech
+ * service gives it now (`SpeechService.cached`, D-7): only while its voice
+ * may be used (a cloned voice's consent), without asking an engine to
+ * synthesize. Undefined when the cache does not have it; rejects when its
+ * voice may not be used, or the service cannot look a clip up.
+ */
+export async function cachedClip(speech: SpeechService, name: string, signal?: AbortSignal): Promise<Synthesis | undefined> {
+  if (!CLIP_FILE.test(name)) return undefined
+  if (!speech.cached) throw new Error('the speech service cannot look a clip up in its cache')
+  const found = await speech.cached(name.replace(/\.\w+$/, ''), signal)
+  return found && typeof found.audio === 'string' && basename(found.audio) === name ? found : undefined
 }
 
 export interface SynthesizedLecture {

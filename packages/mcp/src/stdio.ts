@@ -8,8 +8,7 @@
  * Like the CLI, it loads Presmium's own packages installed with the CLI (the
  * renderers and the operator plugin `addon-deltabox`): from the CLI's package
  * directory. Its checks, runs and builds are those of every host (F-03):
- * `Compilation.check`, `runBlock`, `buildView`; the student view is the
- * compilation as the audience `student` sees it (P-55).
+ * `Compilation.check`, `runBlock`, `buildView`.
  */
 import { stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
@@ -17,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@presmium/kernel'
 import type { ApprovalKind, Member } from '@presmium/kernel'
-import { buildView, Compiler, findPackageDir, resolveEntry, runBlock, STUDENT } from '@presmium/compiler'
+import { buildView, Compiler, findPackageDir, resolveEntry, runBlock } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
@@ -74,9 +73,8 @@ export function compilerHost(entry: string, allow: readonly ApprovalKind[]): Mcp
       const { doc } = await current()
       return [{ dir: '', title: doc.meta.title, lang: doc.meta.lang }]
     },
-    async compile(document, view) {
-      const compilation = await only(document)
-      const doc = view === 'student' ? compilation.forAudience(STUDENT) : compilation.doc
+    async compile(document) {
+      const { doc } = await only(document)
       return { doc, diagnostics: doc.diagnostics }
     },
     async check(document) {
@@ -84,7 +82,7 @@ export function compilerHost(entry: string, allow: readonly ApprovalKind[]): Mcp
       return [...compilation.doc.diagnostics, ...await compilation.check()]
     },
     async build(document, options) {
-      const report = await buildView(await only(document), { to: options.to, view: options.view })
+      const report = await buildView(await only(document), { to: options.to })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
     run: async (document, target, signal) => runBlock(await only(document), target, signal),

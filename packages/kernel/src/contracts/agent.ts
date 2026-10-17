@@ -191,12 +191,6 @@ export type AgentToolKind = 'read' | 'operate' | 'spend'
 export interface AgentToolContext {
   document: string
   member: Member
-  /**
-   * The view of the document the caller may read (P-55, D8). MCP fills it:
-   * `full`, the whole document, for every token since v0.9 (no token reads
-   * the `student` view any more).
-   */
-  view: 'full' | 'student'
   service<T>(token: ServiceToken<T>): T | undefined
   signal: AbortSignal
 }

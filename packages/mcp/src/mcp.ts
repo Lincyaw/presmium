@@ -19,7 +19,7 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { deckLocale, docBlocks, errorMessage, isRecord, stepKeys, stepTrail, trailStep } from '@presmium/kernel'
 import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, Finding, IRDocument, Member, MemberRole } from '@presmium/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
-import type { McpCaller, McpHost, McpProcess, McpView } from './host.ts'
+import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 
@@ -41,12 +41,11 @@ type Args = Record<string, unknown>
 interface Call {
   host: McpHost
   caller: McpCaller
-  view: McpView
   args: Args
   signal: AbortSignal
   /** The document the call names, or the only one. */
   document(): Promise<string>
-  /** The document compiled in the caller's view. */
+  /** The document compiled (the whole deck). */
   compiled(): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
   /** Asks for an approval in the deck's language; throws when it is refused. */
   approve(kind: ApprovalKind, title: (messages: McpMessages) => string, options?: { scope?: ApprovalScope, detail?: string }): Promise<void>
@@ -70,9 +69,6 @@ const BLOCK = { block: { type: 'string', description: 'The block id (get_section
 const rank: Record<MemberRole, number> = { reader: 0, editor: 1, owner: 2 }
 const hasRole = (member: Member, role: MemberRole) => member.roles.some(own => rank[own] >= rank[role])
 
-/** The view every token reads: the whole deck (v0.9 removed the `tutor` tokens, which read the student view). */
-const VIEW: McpView = 'full'
-
 /** Whether the caller may operate: a token of an editor or owner. */
 function operates(caller: McpCaller): boolean {
   return hasRole(caller.member, 'editor')
@@ -83,23 +79,19 @@ const int = (value: unknown) => (typeof value === 'number' && Number.isInteger(v
 
 /**
  * The position the windows of a document (or of any) last reported, the
- * caller's presenting ones first, in the caller's view (F-41, F-85): the
- * window's section by its id, which every view shares; a window that reports
- * no id names its section by its number in its own view. The step is the
- * caller's too: a window of another numbering (the slides form, whose
- * blocks only for other renderers take no step; a student build) reports
- * the keys of the steps it has reached (`trail`), and the step is the last
- * of the caller's that they reach. A section the caller's view lacks is null.
+ * caller's presenting ones first, in the whole deck (F-41, F-85): the
+ * window's section by its id; a window that reports no id names its section
+ * by its number. The step is in the whole deck's numbering: a window of
+ * another numbering (the slides form, whose blocks only for other renderers
+ * take no step) reports the keys of the steps it has reached (`trail`), and
+ * the step is the last of the whole deck's that they reach. A section the
+ * deck no longer has is null.
  */
 async function position(call: Call, document?: string) {
   const found = call.host.positions?.(document, call.caller.member)[0]
   if (!found) return { position: null }
-  const { doc } = await call.host.compile(found.document, call.view)
-  let id = found.section
-  if (id === undefined) {
-    const shown = (found.audience ?? 'full') === call.view ? doc : (await call.host.compile(found.document, found.audience ?? 'full')).doc
-    id = shown.sections.find(s => s.index === found.slide)?.id
-  }
+  const { doc } = await call.host.compile(found.document)
+  const id = found.section ?? doc.sections.find(s => s.index === found.slide)?.id
   const section = id === undefined ? undefined : doc.sections.find(s => s.id === id)
   const keys = section && found.trail ? stepKeys(section) : undefined
   // A trail this numbering has up to the step is one of the same numbering: the step stands.
@@ -200,10 +192,8 @@ const TOOLS: ToolSpec[] = [
     properties: { ...DOCUMENT },
     kind: 'read',
     run: async (call) => {
-      const { doc, diagnostics } = await call.compiled()
-      // The checks read the whole deck: the student view keeps to its own compilation.
-      const findings = call.view === 'full' ? await call.host.check(await call.document()) : diagnostics
-      return { diagnostics: diagnosticsOf(doc, findings) }
+      const { doc } = await call.compiled()
+      return { diagnostics: diagnosticsOf(doc, await call.host.check(await call.document())) }
     },
   },
   {
@@ -279,7 +269,7 @@ const TOOLS: ToolSpec[] = [
       const to = Array.isArray(call.args.to) ? call.args.to.filter((id): id is string => typeof id === 'string') : undefined
       await call.approve('operate', m => m.build(to?.join(', ') || m.allRenderers))
       const { doc } = await call.compiled()
-      const report = await call.host.build(document, { to, view: call.view })
+      const report = await call.host.build(document, { to })
       return {
         outputs: report.outputs.map(o => ({ renderer: o.renderer, outDir: place(doc, { file: o.outDir, line: 1 }).file })),
         diagnostics: diagnosticsOf(doc, report.findings),
@@ -429,7 +419,6 @@ function argsOf(variables: Variables): Args {
 
 /** The MCP server for one caller: the tools and resources its token may use. */
 export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<McpServer> {
-  const view = VIEW
   const documents = await host.documents().catch(() => [])
   const only = documents.length === 1 ? documents[0]!.dir : undefined
 
@@ -455,11 +444,10 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
     const self: Call = {
       host,
       caller,
-      view,
       args,
       signal,
       document: () => document ??= resolveDocument(host, str(args.document)),
-      compiled: () => compiled ??= self.document().then(dir => host.compile(dir, view)),
+      compiled: () => compiled ??= self.document().then(dir => host.compile(dir)),
       async approve(kind, title, options = {}) {
         const { doc } = await self.compiled()
         const messages = MCP_MESSAGES[deckLocale(doc.meta.lang)]
@@ -531,7 +519,7 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
   if (found.kind !== 'read' && !(operates(call.caller) && call.host.offers(found.kind))) throw new Error(`${tool.name} is not offered to this token`)
   const { document: _document, ...input } = call.args
   if (found.kind !== 'read') await call.approve(found.kind, m => m.tool(found.name), { detail: JSON.stringify(input) })
-  return found.run(input, { document, member: call.caller.member, view: call.view, service: own.service, signal: call.signal })
+  return found.run(input, { document, member: call.caller.member, service: own.service, signal: call.signal })
 }
 
 async function resolveDocument(host: McpHost, named: string | undefined): Promise<string> {

@@ -1,7 +1,8 @@
 // The lecture's routes read the deck's files as they open them (WP-89d, F-12; `openInDeck` in src/node/store.ts),
 // under the real `presmium dev`: a symbolic link in place of a medium or a clip gives 404, never what it names
 // (here a file outside the deck); a FIFO in place of a track, a medium or a clip is not listed or gives 404 at
-// once, and the server goes on answering, as it does not wait for a writer.
+// once, and the server goes on answering, as it does not wait for a writer. A clip is given as the speech
+// service gives it from its cache by its key (WP-92c), only when the lecture's utterances say it.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { closeSync, constants, mkdirSync, mkdtempSync, openSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -14,6 +15,7 @@ import { formatTrack } from '../src/domain/index.ts'
 import type { LectureTrack } from '../src/domain/index.ts'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
+const SPEECH = fileURLToPath(new URL('../../addon-speech', import.meta.url))
 const CLIP = `${'c'.repeat(32)}.wav`
 const OTHER_CLIP = `${'d'.repeat(32)}.wav`
 const SECRET = 'NOT-FOR-THE-ROUTES'
@@ -27,8 +29,17 @@ const TRACK: LectureTrack = {
   voice: { kind: 'recorded' },
   audio: [{ section: 'intro', start: 0, src: 'audio/intro.ogg', duration: 1 }, { section: 'intro', start: 1, src: 'audio/linked.ogg', duration: 1 }],
   blocks: {},
-  utterances: [{ id: 'u1', t: 0, d: 500, text: '一句。', section: 'intro', step: 0, clip: CLIP }],
+  utterances: [
+    { id: 'u1', t: 0, d: 500, text: '一句。', section: 'intro', step: 0, clip: CLIP },
+    { id: 'u2', t: 500, d: 500, text: '又一句。', section: 'intro', step: 0, clip: OTHER_CLIP },
+  ],
   events: [[0, 'go', { section: 'intro', step: 0 }]],
+}
+
+/** A clip's record in the synthesis cache, as the speech service writes it. */
+function cacheRecord(clip: string): string {
+  const key = clip.slice(0, 32)
+  return JSON.stringify({ key, audio: clip, mime: 'audio/wav', duration: 0.5, engine: 'fake', model: 'fake', voice: 'alpha', provider: 'Presmium fake', cloned: false, lang: 'zh-CN', text: '一句。', synthetic: true, AIGC: {}, sha256: '0'.repeat(64) })
 }
 
 let dir: string
@@ -42,10 +53,12 @@ beforeAll(async () => {
   outside = mkdtempSync(join(tmpdir(), 'presmium-lecture-outside-'))
   writeFileSync(join(outside, 'secret.txt'), SECRET)
   const files: Record<string, string> = {
-    'lecture.md': `---\nplugins:\n  - ${ADDON}\n---\n\n(intro)=\n# 开场\n\n一句。\n`,
+    'lecture.md': `---\nplugins:\n  - ${ADDON}\n  - ${SPEECH}\n---\n\n(intro)=\n# 开场\n\n一句。\n`,
     'lectures/rec/track.json': formatTrack(TRACK),
     'lectures/rec/audio/intro.ogg': 'OggIntro',
     [`.presmium/speech/${CLIP}`]: 'CLIP',
+    // The record the synthesis cache keeps beside each clip (docs/ir.md 9.1); the other clip's names the same key.
+    ...Object.fromEntries([CLIP, OTHER_CLIP].map(clip => [`.presmium/speech/${clip.slice(0, 32)}.json`, cacheRecord(clip)])),
   }
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
@@ -96,6 +109,8 @@ async function get(path: string): Promise<{ status: number, text: string }> {
 it('gives 404 for a link in place of a medium or a clip, and for a FIFO in place of one, which it does not list as a track; it answers on', async () => {
   expect(await get('tracks/rec/audio/intro.ogg')).toEqual({ status: 200, text: 'OggIntro' })
   expect(await get(`tracks/rec/clips/${CLIP}`)).toEqual({ status: 200, text: 'CLIP' })
+  // A clip of the cache that the lecture does not say is not given.
+  expect((await get(`tracks/other/clips/${CLIP}`)).status).toBe(404)
   for (const path of ['tracks/rec/audio/linked.ogg', `tracks/rec/clips/${OTHER_CLIP}`]) {
     const linked = await get(path)
     expect(linked.status, path).toBe(404)

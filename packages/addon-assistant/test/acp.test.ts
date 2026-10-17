@@ -5,7 +5,7 @@
 // get_section and answers citing it; the token is refused once the task ended; a write outside the document is
 // refused and the agent hears the refusal; cancelling a task reaches the agent as `session/cancel` and ends the
 // task's events; the credentials of the parent's environment never reach it; the routes' answers are not cached
-// (F-33). Without model access or a replacement runtime, or with a replacement runtime but no provider, the
+// (F-33); the assistant's status line comes when serve starts. Without model access or a replacement runtime, or with a replacement runtime but no provider, the
 // assistant is unavailable, says so when the process starts and in `info` (what to set), and starts nothing.
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -81,10 +81,11 @@ describe('the ACP client with the scripted agent', () => {
   })
 
   it('gives the agent this process\'s /mcp with a token it lists the tools with, refused once the task ended; the answer cites the section get_section read; no credential of the parent reaches it', async () => {
+    // Said when serve starts, before any request opened the document (a single-deck repository compiles it at
+    // once, WP-92c): the replacement runtime, from the environment.
+    await running!.wait(/the assistant is available: provider Test Provider, the replacement runtime \S+ \(from PRESMIUM_AGENT_COMMAND\)/, 60_000)
     const before = await call(server, 'info')
     expect(before.json).toEqual({ provider: 'Test Provider', source: 'environment', kinds: ['annotations', 'chat', 'transcript'], changes: true })
-    // Said once the plugins loaded (a single-deck repository's, with its document): the replacement runtime, from the environment.
-    await running!.wait(/the assistant is available: provider Test Provider, the replacement runtime \S+ \(from PRESMIUM_AGENT_COMMAND\)/, 10_000)
 
     const progress: AgentEvent[] = []
     const { events } = await submit(server, chat('#read 这段代码做什么？'), event => event.type === 'progress' && progress.push(event))

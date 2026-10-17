@@ -88,7 +88,11 @@ export interface ServerOptions {
   forward?(): string | undefined
   /** The operator directory (`ServerContext.operatorDir`). */
   operatorDir?: string
-  /** `dev`: where the per-process token is written (`<deck>/.presmium/server.json`, mode 0600). */
+  /**
+   * Where the per-process MCP token is written with the address (mode 0600):
+   * `<deck>/.presmium/server.json` in `dev`, `server.json` of serve's state
+   * directory (outside the workspace) in `serve`.
+   */
   stateFile?: string
   /**
    * Another MCP service behind `/mcp`; by default `@presmium/mcp` over the
@@ -106,8 +110,8 @@ export interface PresmiumServer {
   /** The server's address, e.g. `http://127.0.0.1:43123`. */
   url: string
   port: number
-  /** `dev`: the per-process MCP token (also in `stateFile`). */
-  token?: string
+  /** The per-process MCP token (also in `stateFile`), for the local author's outside agents. */
+  token: string
   /** The server's Node services (`APPROVALS`, `MCP_ENDPOINT`), for the compiler of the documents (`CompilerOptions.services`). */
   services: [ServiceToken<unknown>, unknown][]
   control: Control
@@ -206,7 +210,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     policy: options.approvals ?? {},
     timeoutMs: options.approvalTimeoutMs,
   })
-  const token = options.mode === 'dev' ? randomBytes(24).toString('base64url') : undefined
+  // The process's own MCP token, for the local author's outside agents (Claude Code, Codex): in the state file only.
+  const token = randomBytes(24).toString('base64url')
   const mcpTokens = new Map<string, { member: Member, mode: AgentMode }>()
   /** The open responses of each issued token (subscription streams), ended when it is revoked. */
   const mcpStreams = new Map<string, Set<AbortController>>()
@@ -419,7 +424,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const port = await listen(server, options.port ?? (options.mode === 'dev' ? 0 : 4310), listenHost)
   url = `http://${urlHost(listenHost)}:${port}`
   log.debug(`listening at ${url}`)
-  if (token && options.stateFile) {
+  if (options.stateFile) {
     mkdirSync(dirname(options.stateFile), { recursive: true })
     writeFileSync(options.stateFile, `${JSON.stringify({ url, mcp: `${url}/mcp`, token, pid: process.pid }, null, 2)}\n`, { mode: 0o600 })
     chmodSync(options.stateFile, 0o600)

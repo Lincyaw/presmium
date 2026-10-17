@@ -13,16 +13,17 @@
  *   <id>/chapters.vtt, events.vtt   chapters and the events as metadata
  *
  * A recorded lecture is published as the build's view of the deck has it
- * (P-55): a host's build of the student view of the whole deck's
- * compilation publishes the students' part of it (`studentTrack`); any other
- * build leaves out what was said and done in the sections its deck does not
+ * (P-55): without what was said and done in the sections its deck does not
  * have (`deckTrack`), such as the teachers' in `presmium build --audience
  * student`, whose compilation left the teachers' content out before any
  * pass. A build for an audience (the IR says which, `meta.audience`) then
  * publishes what was said, heard and shown only in the sections it has as
  * they were recorded (`recordedSections`, F-13): a section that lost a
  * teachers' block, or whose content moved into a teachers' section after the
- * recording, has another hash than the one the track recorded.
+ * recording, has another hash than the one the track recorded. Its clips (a
+ * recorded lecture said again in a synthetic voice) are published as the
+ * speech service gives them by their keys (`cachedClip`): a lecture with a
+ * clip in a cloned voice whose consent was withdrawn is not published (D-7).
  *
  * With a voice (`renderers.lecture.voice`), it also says the deck's lecture
  * plan through `SPEECH` (WP-83): `script/`, the synthesized lecture. Clips
@@ -35,11 +36,11 @@ import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@presmium/compiler'
 import { errorMessage, SPEECH } from '@presmium/kernel'
-import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, recordedSections, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import type { IRDocument, RenderContext, Renderer, SpeechService } from '@presmium/kernel'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, LECTURE_ID, lectureVoice, recordedSections, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
-import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
-import { latestDoc, LECTURE_RENDERER, lectureConfig, lectureView, studentTrack, viewOfWhole } from './plan.ts'
+import { cachedClip, clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
+import { latestDoc, LECTURE_RENDERER, lectureConfig } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
@@ -54,7 +55,11 @@ function utteranceLine(text: string, id: string): number | undefined {
   return from === -1 || at === -1 ? undefined : at + 1
 }
 
-function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, policy: MediaPolicy = { kind: 'ignore' }): void {
+/** The clips a lecture's utterances say. */
+const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
+
+/** Publishes a lecture: its track, its media, the clips of `clips` (the others play silent), captions, chapters and events. */
+function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, clips: ReadonlySet<string>, policy: MediaPolicy = { kind: 'ignore' }): void {
   const out = join(ctx.outDir, track.id)
   mkdirSync(out, { recursive: true })
   const audio = publishedMedia(track.audio, track.id, policy)
@@ -70,9 +75,9 @@ function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDo
     mkdirSync(dirname(join(out, segment.src)), { recursive: true })
     copyFileSync(source, join(out, segment.src))
   }
-  for (const clip of new Set(track.utterances.flatMap(u => u.clip ?? []))) {
+  for (const clip of clipsOf(track)) {
     const source = clipFile(ctx.deckDir, clip)
-    if (!source || !existsSync(source)) {
+    if (!source || !clips.has(clip) || !existsSync(source)) {
       ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lecture ${track.id}: the clip ${clip} is not in the synthesis cache; its utterance plays silent`, source: { file } })
       continue
     }
@@ -112,7 +117,8 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   }
   if (!made.track) return false
   const text = formatTrack(made.track)
-  publishTrack(made.track, text, doc.meta.entry, doc, ctx)
+  // Its clips were said through the speech service in this build, which checked their voices.
+  publishTrack(made.track, text, doc.meta.entry, doc, ctx, clipsOf(made.track))
   index.push(summary(made.track))
   tracks.push(made.track)
   return true
@@ -120,27 +126,39 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
 
 /**
  * A recorded lecture as the build publishes it, `doc` being the build's view
- * of the deck: the students' part of it when the deck compiled whole (the
- * latest IR of this entry, which the passes kept) and the view leaves some
- * of it out (a host builds the student view only), the view then planning
- * a separate script as written for the whole deck; else without the
- * sections `doc` does not have, and, for an audience, without what the
- * sections that changed since the recording had (`recordedSections`).
+ * of the deck: without the sections `doc` does not have, and, for an
+ * audience, without what the sections that changed since the recording had
+ * (`recordedSections`).
  */
 function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack) => LectureTrack | undefined {
   const latest = latestDoc(deckDir)
-  const whole = latest?.meta.entry === doc.meta.entry ? latest : undefined
-  if (whole && !leavesNothing(leftOut(lectureView(whole), doc))) {
-    viewOfWhole(doc, lectureView(whole))
-    return track => studentTrack(track, whole)
-  }
-  // The IR as compiled for the audience, all of its forms' blocks (the lecture renderer's view lacks the web form's own).
-  const own = whole ?? doc
+  // The IR as compiled (the latest of this entry, which the passes kept), all of its forms' blocks (the lecture renderer's view lacks the web form's own).
+  const own = latest?.meta.entry === doc.meta.entry ? latest : doc
   if (typeof own.meta.audience === 'string') return (track) => {
     const kept = deckTrack(track, own)
     return kept && recordedSections(kept, own)
   }
   return track => deckTrack(track, own)
+}
+
+/**
+ * The clips of a recorded lecture the build may publish: those the speech
+ * service gives by their keys now (`cachedClip`; the others, not in the
+ * synthesis cache, play silent); `refused` says why one may not be given (a
+ * cloned voice whose consent was withdrawn, D-7), and then the lecture is not
+ * published.
+ */
+async function recordedClips(track: LectureTrack, speech: SpeechService | undefined): Promise<{ clips: Set<string>, refused?: string }> {
+  const clips = new Set<string>()
+  for (const clip of clipsOf(track)) {
+    if (!speech) return { clips, refused: 'its clips are given through the speech service, which checks a cloned voice\'s consent, and no plugin provides it; add @presmium/slidev-addon-speech to plugins' }
+    try {
+      if (await cachedClip(speech, clip)) clips.add(clip)
+    } catch (error) {
+      return { clips, refused: `the clip ${clip} may not be published: ${errorMessage(error)}` }
+    }
+  }
+  return { clips }
 }
 
 function summary(track: LectureTrack) {
@@ -176,7 +194,12 @@ export const lectureRenderer: Renderer = {
       tracks.push(stored.track)
       const track = published(stored.track)
       if (!track) continue
-      publishTrack(track, stored.text, stored.file, doc, ctx, policy)
+      const { clips, refused } = await recordedClips(track, ctx.service?.(SPEECH))
+      if (refused) {
+        ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `lecture ${id} is not published: ${refused}`, source: { file: stored.file } })
+        continue
+      }
+      publishTrack(track, stored.text, stored.file, doc, ctx, clips, policy)
       index.push(summary(track))
     }
     mkdirSync(ctx.outDir, { recursive: true })

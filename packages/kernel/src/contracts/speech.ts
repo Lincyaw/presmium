@@ -187,6 +187,15 @@ export interface SpeechService {
    * setting or a valid consent record.
    */
   synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<Synthesis>
+  /**
+   * A clip of the synthesis cache by its key, as a hit of `synthesize` gives
+   * it: only while its voice may be used now (a cloned voice needs the
+   * setting and a valid consent record, D-7). Asks no engine to synthesize:
+   * undefined when the cache does not have the key; rejects when the voice
+   * may not be used. The Node service has it (the lecture's clips, served
+   * and published by their keys).
+   */
+  cached?(key: string, signal?: AbortSignal): Promise<Synthesis | undefined>
   transcribe(request: TranscriptionRequest, signal?: AbortSignal): Promise<Transcript>
 }
 

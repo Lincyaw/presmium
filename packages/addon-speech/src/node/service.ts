@@ -2,7 +2,8 @@
  * The Node `SPEECH` service (docs/architecture.md 4.8) of a deck, which the
  * lecture plugin's renderer, checks and agent tools use: it calls the
  * engines of this process's environment directly. Synthesis goes through
- * the deck's cache, and `audio` is the path of the file in it.
+ * the deck's cache, and `audio` is the path of the file in it; `cached`
+ * gives a clip of the cache by its key, its voice checked as on a hit.
  */
 import { DOCUMENT_FILES } from '@presmium/kernel'
 import type { NodeServiceContext, SpeechService } from '@presmium/kernel'
@@ -31,6 +32,24 @@ export function nodeSpeech(ctx: NodeServiceContext): SpeechService {
         engine: result.engine,
         model: result.model,
         voice: result.voice,
+        synthetic: true,
+      }
+    },
+    // A clip by its key, its voice checked as on a hit (D-7); no engine is asked to synthesize.
+    async cached(key, signal) {
+      const hit = await deck.cache.find(key)
+      if (!hit) return undefined
+      const { record, file } = hit
+      await deck.consent(record.engine, record.voice, record.cloned === true, signal)
+      return {
+        audio: file,
+        mime: record.mime,
+        duration: record.duration,
+        ...record.words ? { words: record.words } : {},
+        key,
+        engine: record.engine,
+        model: record.model,
+        voice: record.voice,
         synthetic: true,
       }
     },

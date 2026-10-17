@@ -10,7 +10,9 @@
  *   settings of the page (P-111): which are in effect and where from, and
  *   those the page saved, without the key (only whether one is set);
  *   saving writes them to the user's configuration directory
- *   (./model-settings.ts), and the next agent session uses them.
+ *   (./model-settings.ts), and the next agent session uses them. Saved
+ *   without a key, they keep the saved key only for the same service and
+ *   address; otherwise a key is required (400).
  * - `POST tasks`: a change task (`AgentTaskRequest`, with the id the page
  *   drew), for editors and owners where `REVISIONS` commits them, one per
  *   document at a time. `GET tasks`: the document's change task under way
@@ -58,7 +60,7 @@ import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, eventStream, isRecord, json, MCP_ENDPOINT, problem, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
-import { ASSISTANT_MESSAGES, CHANGE_KINDS, modelSettingsOf, modelSettingsProblem, restoreStepOf, reviewDecisionOf, taskRequestOf } from '../domain/index.ts'
+import { ASSISTANT_MESSAGES, CHANGE_KINDS, modelSettingsOf, modelSettingsProblem, restoreStepOf, reviewDecisionOf, sameService, taskRequestOf } from '../domain/index.ts'
 import type { AssistantInfo, ModelSettingsView, PendingChange, RevertAnswer } from '../domain/index.ts'
 import { runChange } from './changes.ts'
 import { recoverGitReview } from './git-review.ts'
@@ -267,8 +269,11 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           if (request.method === 'POST') {
             const given = modelSettingsOf(await request.json().catch(() => undefined))
             if (!given) return problem(400, 'model settings: { provider?, url?, key?, model? }')
-            // No key given: the one saved stays (the page never has it).
-            const kept = given.key ? undefined : readModelSettings(file)?.key
+            // No key given: the one saved stays (the page never has it), only for the same service and address,
+            // so a key never goes to another service; otherwise a key is needed.
+            const saved = readModelSettings(file)
+            const kept = given.key || !saved?.key || !sameService(saved, given) ? undefined : saved.key
+            if (!given.key && !kept) return problem(400, saved?.key ? 'the service or its address changed: give its key (the saved key is not sent to another service)' : 'model settings: the key is required')
             const settings = { ...given, ...kept ? { key: kept } : {} }
             const why = modelSettingsProblem(settings)
             if (why) return problem(400, why)
