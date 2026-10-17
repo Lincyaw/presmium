@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { irBlocks, withProp } from '@presmium/kernel'
 import type { IRBlock, IRDocument, MdastNode, RenderContext, SourcePos } from '@presmium/kernel'
 import katex from 'katex'
-import { mapHtmlUrls } from '../domain/html.ts'
+import { mapHtmlUrls } from './html.ts'
 import { urlPath } from '../domain/index.ts'
 
 /** Directory of the site's `public/` where the deck's local files are copied. */

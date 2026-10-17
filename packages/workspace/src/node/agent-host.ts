@@ -16,14 +16,15 @@ import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { build, Compiler, loadPlugins, operatorPlugins, pluginId } from '@presmium/compiler'
-import type { Compilation, CompilerOptions } from '@presmium/compiler'
+import type { Compilation, CompilerOptions, LoadedPlugin } from '@presmium/compiler'
 import { AGENT_RUNTIME, CHANGE_REVIEW, errorMessage, isRecord, PROCESS_SANDBOX } from '@presmium/kernel'
 import type { AgentEvent, AgentSession, ApprovalRequest, ChangeReview, Finding, GatewayAccess, IRDocument, Logger, Member, NodeServiceContext, RunRequest, ServiceToken, SiteDevServer, SiteSpec } from '@presmium/kernel'
 import { readSecret } from '@presmium/server'
 import type { DocumentView } from '@presmium/server'
 import type { AgentHostInfo } from './agent-client.ts'
 import { listDocuments, readWorkspace } from './config.ts'
-import { servedPlugins, siteContext, webRenderer } from './site.ts'
+import { STUDENT } from './audience.ts'
+import { homePlugins, servedPlugins, siteContext, webRenderer } from './site.ts'
 
 export interface AgentHostOptions {
   /** The workspace root (the shared volume, at the same path as in serve). */
@@ -184,11 +185,17 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     return { executor, compilation }
   }
 
+  // The operator plugins (D14), loaded once: their services, and their browser parts on the sites' home pages.
+  let operators: Promise<LoadedPlugin[]> | undefined
+  const operatorsOf = () => operators ??= (async () => {
+    const listed = operatorPlugins(config.settings)
+    return (await loadPlugins(root, listed, { workspaceRoot: root, listed, bundled: options.bundled, policy: true })).plugins
+  })()
+
   // What agent-host has: the services its operator plugins register (asked once).
   let info: Promise<AgentHostInfo> | undefined
   const describe = () => info ??= (async () => {
-    const listed = operatorPlugins(config.settings)
-    const { plugins } = await loadPlugins(root, listed, { workspaceRoot: root, listed, bundled: options.bundled, policy: true })
+    const plugins = await operatorsOf()
     const found: AgentHostInfo = {}
     for (const loaded of plugins) {
       const contribute = loaded.plugin?.services
@@ -214,7 +221,7 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     const id = randomUUID()
     const work = join(state, 'sites', id)
     const findings: Finding[] = []
-    const ctx = siteContext({ root, outDir: work, workDir: work, plugins: servedPlugins(), host: listenHost, findings, scoped: true })
+    const ctx = siteContext({ root, outDir: work, workDir: work, plugins: servedPlugins(), home: homePlugins((await operatorsOf()).filter(loaded => loaded.plugin?.operator === true)), host: listenHost, findings, scoped: true })
     const site: Site = { view, spec, dev: undefined as unknown as SiteDevServer, port: 0, docs: new Map(), waiting: new Map() }
     // Loaded on the first site; one that failed to load is tried again with the next.
     renderer ??= webRenderer(root, options.bundled)
@@ -279,11 +286,14 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
       }
       if (action === 'build') {
         // Code without a recording runs only when serve says so (`compile: trusted`); else the recordings stand.
+        // The student view is compiled for the audience `student` (P-55): what it leaves out never runs; its
+        // reader asked for it, so the scan of what the build wrote quotes nothing.
         const gateway = isRecord(input.gateway) ? input.gateway as unknown as GatewayAccess : undefined
-        const compiler = new Compiler(entryOf(id), compilerOptions(input.run === 'all', gateway))
+        const student = input.view === 'student'
+        const compiler = new Compiler(entryOf(id), { ...compilerOptions(input.run === 'all', gateway), ...student ? { audience: STUDENT } : {} })
         const compilation = await compiler.compile()
         const to = Array.isArray(input.to) ? input.to.filter((r): r is string => typeof r === 'string') : undefined
-        const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), ...to?.length ? { to } : {} })
+        const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), ...to?.length ? { to } : {}, ...student ? { quote: false } : {} })
         return send(res, 200, { outputs: report.outputs.map(({ renderer: r, outDir }) => ({ renderer: r, outDir })), findings: report.findings })
       }
     }

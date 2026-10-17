@@ -3,25 +3,32 @@
 // `:audience:` among them, and scans what it wrote for their sentences; `presmium check --audience student` checks
 // the student version; in `presmium serve` (SHARED) readers see the student view: their pages, the IR module the
 // pages load, the search index and what a `tutor` MCP token reads, while editors see the whole deck.
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+// WP-81e2: a deck's translations are compiled for the audience too, without a temporary file in the deck, and
+// scanned; `{audience}` without names fails closed; a student build keeps no finding of what it left out; content
+// after an `{include}` with `:audience:` that opens a section is a warning; agent-host builds the student view.
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
 import type { SharedSetup } from './serve-helpers.ts'
-import { FIXTURES, raw, remove, ROOT, shared, workspace } from './serve-helpers.ts'
+import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, ROOT, shared, waitFor, workspace } from './serve-helpers.ts'
 
 const DECK = join(ROOT, 'e2e/fixtures/publish-checks/audience')
+/** A Chinese deck and its English translation, each with a teacher's block and a teacher's section. */
+const TRANSLATED = join(ROOT, 'e2e/fixtures/publish-checks/translated')
+/** What only the teacher's content of the two languages holds (lowercase, as the search index keeps it). */
+const TEACHER_BOTH = ['teacherzh41', 'guidezh52', 'teacheren41', 'guideen52']
 /** What only the teacher's blocks and section hold (lowercase: the search index keeps its terms so). */
 const TEACHER = ['teacheronly42', 'guideonly17', 'answerkey99', 'demotips', '演示合并之前先断开网络', '这一节整节只给教师']
 /** What only the teacher's nested directives (a tab, a tip in a note, a card, code in a list item) and included file hold. */
 const NESTED = ['tabkey31', 'tipkey58', 'cardkey64', 'listkey72', 'includekey85', 'handbook23', '助教手册']
 
 /** A copy of the deck in examples/demo/.presmium, where its plugins, Slidev and VitePress resolve. */
-function deck(): string {
+function deck(source = DECK): string {
   const work = join(ROOT, 'examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, 'audience-'))
-  cpSync(DECK, dir, { recursive: true })
+  cpSync(source, dir, { recursive: true })
   writeFileSync(join(dir, '.gitignore'), '*\n')
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
   return dir
@@ -142,5 +149,89 @@ describe('presmium serve with a login proxy (SHARED): readers see the student vi
     const text = JSON.stringify(section.result)
     expect(text).toContain('STUDENTVISIBLE')
     expect(text).not.toContain('TEACHERONLY42')
+  }, 300_000)
+})
+
+describe('a deck with a translation, for an audience', () => {
+  const dirs: string[] = []
+  afterAll(() => dirs.forEach(remove))
+
+  it('builds neither language with the teacher\'s content, and compiles the translation without writing a file in the deck', async () => {
+    const dir = deck(TRANSLATED)
+    dirs.push(dir)
+    // Every name written in the deck directory while it builds.
+    const written: string[] = []
+    const watcher = watch(dir, (_event, name) => name && written.push(name))
+    const built = await presmium(dir, ['build', '--audience', 'student', '--out', 'student'])
+    watcher.close()
+    expect(built.code, built.stdout + built.stderr).toBe(0)
+    const out = join(dir, 'student')
+    for (const text of TEACHER_BOTH) expect(holding(out, text), text).toEqual([])
+    // Both languages are built: the English pages under /en/ with the English student's content.
+    expect(holding(join(out, 'web/en'), 'studenten').length).toBeGreaterThan(0)
+    expect(holding(join(out, 'web'), 'studentzh').length).toBeGreaterThan(0)
+    expect(written.filter(name => name.startsWith('.presmium-translation'))).toEqual([])
+    expect(new Set(written)).toEqual(new Set(['student', '.presmium', 'node_modules']))
+  }, 300_000)
+
+  it('scans the translation\'s output too: a teacher\'s sentence a code block of the translation prints is an error at its block', async () => {
+    const dir = deck(TRANSLATED)
+    dirs.push(dir)
+    appendFileSync(join(dir, 'lecture.en.md'), '\n```{code} python\n:run:\nprint("Note for teachers: unplug the network before the demo, " + "password TEACHEREN41.")\n```\n')
+    const built = await presmium(dir, ['build', '--audience', 'student', '--to', 'web', '--out', 'student'])
+    expect(built.code).toBe(1)
+    const line = readFileSync(join(dir, 'lecture.en.md'), 'utf8').split('\n').findIndex(text => text.startsWith('Note for teachers')) + 1
+    expect(built.stdout).toMatch(new RegExp(`^lecture\\.en\\.md:${line} {2}error {2}content only for teacher is in the build for student: "Note for teachers: [^"]*TEACHEREN41\\." in web/[^ ]+ {2}\\(presmium\\.audience\\)$`, 'm'))
+  }, 300_000)
+})
+
+describe('the edges of audiences', () => {
+  const dirs: string[] = []
+  afterAll(() => dirs.forEach(remove))
+
+  it('{audience} without names leaves its section out with an error; the student build keeps no finding of what it left out, only their number; content after an {include} that opens a teacher\'s section is a warning', async () => {
+    const dir = deck(join(ROOT, 'e2e/fixtures/publish-checks/audience-edges'))
+    dirs.push(dir)
+    const lines = readFileSync(join(dir, 'lecture.md'), 'utf8').split('\n')
+    const at = (text: string) => lines.findIndex(line => line.includes(text)) + 1
+    const checked = await presmium(dir, ['check', '--json'])
+    const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, severity: string, message: string, source: { line: number } }[] }).findings
+    expect(findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ checkId: 'presmium.directive', severity: 'error', message: expect.stringContaining('{audience}: needs the audiences'), source: expect.objectContaining({ line: at(':::{audience}') }) }),
+      expect.objectContaining({ checkId: 'presmium.audience', severity: 'warning', message: expect.stringContaining('follows an {include} with :audience:'), source: expect.objectContaining({ line: at('AFTERKEY74') }) }),
+      expect.objectContaining({ message: expect.stringContaining('{secretrole}') }),
+      expect.objectContaining({ message: expect.stringContaining('solutions-final-exam.md') }),
+    ]))
+
+    const built = await presmium(dir, ['build', '--audience', 'student', '--to', 'web', '--out', 'student'])
+    expect(built.code).toBe(1)
+    const out = join(dir, 'student')
+    for (const text of ['nonamekey63', 'partkey85', 'secretrole', 'solutions-final-exam']) expect(holding(out, text), text).toEqual([])
+    expect(holding(out, 'publictext').length).toBeGreaterThan(0)
+    const { diagnostics } = JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as { diagnostics: { checkId: string, message: string }[] }
+    expect(diagnostics).toEqual([expect.objectContaining({ checkId: 'presmium.audience', message: expect.stringMatching(/^4 findings are in the content left out for student/) })])
+  }, 300_000)
+})
+
+describe('presmium agent-host builds the student view of a document (SHARED ServerHost.build)', () => {
+  let dir: string | undefined
+  afterAll(() => remove(dir))
+
+  it('leaves the teacher\'s content out of both languages of the build', async () => {
+    dir = workspace('translated', 'translated', { '@presmium/slidev-addon-exec': 'packages/addon-exec', '@presmium/web': 'packages/web' })
+    cpSync(TRANSLATED, join(dir, 'course'), { recursive: true })
+    const token = `agent-host-${Math.random().toString(36).slice(2, 10)}`
+    const host = presmiumProcess(dir, ['agent-host', '--port', '0'], cleanEnv({ PRESMIUM_AGENT_HOST_TOKEN: token }))
+    try {
+      const url = (await waitFor(host, /^agent-host {2}(http\S+)$/m))[1]!
+      const built = await raw(`${url}/v1/documents/course/build`, { headers: { Authorization: `Bearer ${token}` }, json: { view: 'student', to: ['web'], run: 'none' } })
+      expect(built.status, built.text).toBe(200)
+      expect(built.json<{ outputs: { renderer: string }[] }>().outputs.map(o => o.renderer), built.text).toEqual(['web'])
+      const out = join(dir, 'course/dist')
+      for (const text of TEACHER_BOTH) expect(holding(out, text), text).toEqual([])
+      expect(holding(join(out, 'web/en'), 'studenten').length).toBeGreaterThan(0)
+    } finally {
+      await host.stop()
+    }
   }, 300_000)
 })

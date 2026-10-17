@@ -19,7 +19,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { build, Compiler, loadPlugins, pluginId } from '@presmium/compiler'
+import { build, Compiler, loadPlugins, pluginId, workspacePlugins } from '@presmium/compiler'
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
 import { AGENT_RUNTIME, CHANGE_REVIEW, errorMessage, irBlocks, REVISIONS } from '@presmium/kernel'
 import type { Finding, IRDocument, Logger, Member, ServiceToken, SiteSpec } from '@presmium/kernel'
@@ -29,7 +29,7 @@ import { WORKSPACE_ID } from '../domain/api.ts'
 import { rolesOf } from '../domain/members.ts'
 import { AgentHostClient } from './agent-client.ts'
 import { initGroups } from './agent-host.ts'
-import { viewDocument } from './audience.ts'
+import { STUDENT, viewDocument } from './audience.ts'
 import { listDocuments, readWorkspace } from './config.ts'
 import { Documents, RequestError } from './documents.ts'
 import { CompileApprovals, compileMode } from './execution.ts'
@@ -39,7 +39,7 @@ import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
 import type { WorkspaceRoutes } from './routes.ts'
 import { DocumentSession } from './session.ts'
-import { servedPlugins, siteContext, siteDocument, siteIR, siteSpec, webRenderer } from './site.ts'
+import { homePlugins, servedPlugins, siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
 
 export interface ServeOptions {
   /** The workspace root, or a deck directory (a workspace of one document). */
@@ -126,7 +126,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     if (!document) throw new RequestError(404, `no document ${JSON.stringify(dir)}`)
     const session: DocumentSession = new DocumentSession(dir, new Compiler(join(root, document.entry), compilerOptions(dir, () => session)), log)
     session.onCompile(async (compilation) => {
-      for (const finding of await rendererPackages(compilation)) {
+      // The site has no translations of its documents: said where the document declares them.
+      for (const finding of [...await rendererPackages(compilation), ...untranslated(compilation, root)]) {
         if (!compilation.doc.diagnostics.some(f => f.message === finding.message)) compilation.doc.diagnostics.push(finding)
       }
     })
@@ -138,6 +139,20 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     return session
   }
 
+  /** How a document's plugins are loaded (D14) and what their Node services get; also the home page's (`dir` ''). */
+  const pluginOptions = (dir: string): CompilerOptions => ({
+    settings: config.settings,
+    trust: shared ? 'shared' : 'local',
+    services: [...services, ...hostServices, ...agentServices(dir)],
+    reserved: shared ? [AGENT_RUNTIME, CHANGE_REVIEW] : [],
+    policy: true,
+    scope: shared,
+    bundled: options.bundled,
+    ...!shared && options.operatorDir ? { operatorDir: options.operatorDir } : {},
+    ...gateway ? { gateway } : {},
+    secret: name => (isOwnSecret(name) ? undefined : env[name]),
+  })
+
   const compilerOptions = (dir: string, session: () => DocumentSession): CompilerOptions => {
     const pluginsOf = (executor: string): string[] => {
       const compilation = session().latest
@@ -147,16 +162,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       return [owner, provider].flatMap(loaded => (loaded ? [pluginId(loaded)] : []))
     }
     return {
-      settings: config.settings,
-      trust: shared ? 'shared' : 'local',
-      services: [...services, ...hostServices, ...agentServices(dir)],
-      reserved: shared ? [AGENT_RUNTIME, CHANGE_REVIEW] : [],
-      policy: true,
-      scope: shared,
-      bundled: options.bundled,
-      ...!shared && options.operatorDir ? { operatorDir: options.operatorDir } : {},
-      ...gateway ? { gateway } : {},
-      secret: name => (isOwnSecret(name) ? undefined : env[name]),
+      ...pluginOptions(dir),
       execution: shared && agentHost
         ? {
             env: 'serve',
@@ -238,7 +244,9 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
         // Code without a recording runs in the build only when `compile: trusted`; allowed code has its recording already.
         return agentHost.build(document, { ...buildOptions.to ? { to: buildOptions.to } : {}, view: buildOptions.view ?? 'full', run: mode === 'trusted' ? 'all' : 'none' }, plugins, requester.get(document))
       }
-      const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: buildOptions.to })
+      // The student view as `presmium build --audience student` builds it (P-55); its reader asked for it, so the scan quotes nothing.
+      const student = buildOptions.view === 'student' ? { audience: STUDENT, quote: false } : {}
+      const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: buildOptions.to, ...student })
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
     async run(document, target, signal) {
@@ -250,14 +258,32 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     },
   }
 
-  const homeDocument = (): ServedDocument => ({
-    deckDir: root,
-    workspaceRoot: root,
-    plugins: [plugin()],
-    service: <T>(token: ServiceToken<T>) => [...services, ...hostServices].find(([own]) => own.id === token.id)?.[1] as T | undefined,
-    settings: config.settings,
-    ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
-  })
+  /**
+   * The home page as the server serves it: the workspace's routes and those of the operator plugins
+   * (`settings.presmium.workspace.plugins`, e.g. the assistant's, D14), with their Node services as a
+   * document's compilation has them (the host's first).
+   */
+  let operators: ReturnType<typeof workspacePlugins> | undefined
+  // Loaded once the server runs and the mode is known (SHARED: agent-host's services in place of the plugins').
+  let started!: () => void
+  const ready = new Promise<void>(resolve => started = resolve)
+  const operatorsOf = async () => {
+    await ready
+    return operators ??= workspacePlugins(root, pluginOptions(''))
+  }
+  const homeDocument = async (): Promise<ServedDocument> => {
+    const loaded = await operatorsOf()
+    for (const problem of loaded.problems) log.warn(`the home page: ${problem.message}`)
+    const own = (token: ServiceToken<unknown>) => [...services, ...hostServices].find(([known]) => known.id === token.id)?.[1]
+    return {
+      deckDir: root,
+      workspaceRoot: root,
+      plugins: [plugin(), ...loaded.plugins.flatMap(({ plugin: node }) => (node ? [{ id: node.id, plugin: node, config: {} }] : []))],
+      service: <T>(token: ServiceToken<T>) => (own(token) ?? loaded.service(token)) as T | undefined,
+      settings: config.settings,
+      ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
+    }
+  }
 
   // The approvals of the workspace configuration; in SHARED mode with `compile: approve`, `operate: allow`
   // would let any operate approval pass, the compile approval among them, which only `compile` decides.
@@ -290,7 +316,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     ...options.approvalTimeoutMs ? { approvalTimeoutMs: options.approvalTimeoutMs } : {},
     log,
     async document(dir) {
-      if (dir === '' && !config.single) return homeDocument()
+      if (dir === '' && !config.single) return await homeDocument()
       if (!docs().some(doc => doc.dir === dir)) return undefined
       const compilation = await sessionOf(dir).ready()
       const served = servedDocument(compilation)
@@ -314,6 +340,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     })
   }
 
+  started()
+
   // The site: in LOCAL mode this process's dev servers; in SHARED mode agent-host's, one per view.
   const compileFor = (view: DocumentView, mayAsk: boolean) => async (dir: string): Promise<IRDocument> => {
     const compilation = await sessionOf(dir).ready({ mayAsk })
@@ -322,7 +350,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   try {
     site = shared && agentHost
       ? await remoteSites(agentHost, spec, compileFor, log)
-      : await localSite(root, spec, options.bundled, stateDir(root, env), compileFor('full', true), log)
+      : await localSite(root, spec, options.bundled, stateDir(root, env), compileFor('full', true), config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
   } catch (error) {
     await server.close()
     throw error
@@ -348,11 +376,11 @@ interface SiteBackend {
 }
 
 /** LOCAL: the web renderer's dev site in this process; the one member is the owner (full view). */
-async function localSite(root: string, spec: SiteSpec, bundled: string | undefined, state: string, compile: (dir: string) => Promise<IRDocument>, log: Logger): Promise<SiteBackend> {
+async function localSite(root: string, spec: SiteSpec, bundled: string | undefined, state: string, compile: (dir: string) => Promise<IRDocument>, home: Record<string, string>, log: Logger): Promise<SiteBackend> {
   const renderer = await webRenderer(root, bundled)
   const findings: Finding[] = []
   const work = join(state, 'site', 'full')
-  const ctx = siteContext({ root, outDir: work, workDir: work, plugins: servedPlugins(), findings })
+  const ctx = siteContext({ root, outDir: work, workDir: work, plugins: servedPlugins(), home, findings })
   const dev = await renderer.devSite!(spec, ctx, compile)
   const origin = new URL(dev.url).origin
   return {

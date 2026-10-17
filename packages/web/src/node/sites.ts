@@ -24,7 +24,10 @@
  * the site loads exactly those (in `presmium serve`, only what the plugin
  * policy admitted, D14); a name is looked up in `ctx.pluginDirs`, then from
  * the deck's directory. The site's own plugins (`ctx.plugins`, e.g. the
- * workspace's browser plugin) are added to every page.
+ * workspace's browser plugin) are added to every page; those of the home page
+ * only (`ctx.config.homePlugins`, package name to directory: in `presmium
+ * serve` the operator plugins, e.g. the assistant's `AGENT` for drafting a
+ * document) to the home page.
  */
 import { existsSync, mkdirSync, realpathSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -127,6 +130,20 @@ function presmiumRoot(): string {
 function siteModules(ctx: RenderContext): ClientModules {
   const { components, plugins, viewers } = clientModules({ ...ctx, deckDir: join(ctx.workDir, 'site-plugins') }, [])
   return { components, plugins, viewers, vite: [], nodeVite: [] }
+}
+
+/** The plugins of the home page only (`ctx.config.homePlugins`): package name to directory. */
+function homePluginDirs(ctx: RenderContext): Record<string, string> {
+  const { homePlugins } = ctx.config
+  if (!homePlugins || typeof homePlugins !== 'object') return {}
+  return Object.fromEntries(Object.entries(homePlugins).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && existsSync(entry[1])))
+}
+
+/** The home page's client modules: the site's own, then those of its own plugins (`homePluginDirs`), each once. */
+function homeModules(ctx: RenderContext): ClientModules {
+  const own = homePluginDirs(ctx)
+  const names = Object.keys(own).filter(name => !Object.values(ctx.pluginDirs).includes(own[name]!))
+  return siteModules({ ...ctx, plugins: [...ctx.plugins, ...names], pluginDirs: { ...ctx.pluginDirs, ...own } })
 }
 
 /**
@@ -305,7 +322,7 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<Ren
   // The home page first: VitePress empties the directory it builds into, and the documents lie under it.
   if (!single) {
     const work = join(ctx.workDir, 'home')
-    const root = writeHome(work, site, ctx, extra, false, [])
+    const root = writeHome(work, site, ctx, homeModules(ctx), false, [])
     const code = await vitepressBuild(root, ctx.outDir)
     if (code !== 0) throw new Error(`vitepress build of the home page exited with code ${code}`)
   }
@@ -360,7 +377,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     if (home) return home
     home = (async () => {
       const work = join(ctx.workDir, 'home')
-      const root = writeHome(work, site, ctx, extra, true, allowed(join(work, 'site'), ...shared))
+      const root = writeHome(work, site, ctx, homeModules(ctx), true, allowed(join(work, 'site'), ...shared, ...Object.values(homePluginDirs(ctx))))
       const server = await vitepressDev(root, 0, () => {}, { host: LOOPBACK, signal: stopping.signal })
       return { port: server.port, close: () => server.close() }
     })()

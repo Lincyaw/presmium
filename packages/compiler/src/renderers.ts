@@ -10,17 +10,18 @@
  * 6.2): files, and directories inside the deck as a file listing; a local
  * reference that cannot be published is a warning on its line.
  */
-import { createHash } from 'node:crypto'
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, watch, writeFileSync } from 'node:fs'
+import { existsSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { deckLocale, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
+import { basename, dirname, join, resolve } from 'node:path'
+import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { ComponentNode, ComponentRenderer, Finding, IRBlock, IRDocument, IRSection, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@presmium/kernel'
-import { DECK_ENTRY } from './compiler.ts'
-import type { Compilation, Compiler } from './compiler.ts'
+import { unshown } from './audience.ts'
+import { audienceCompilation } from './compiler.ts'
+import type { AudienceCompilation, Compilation, Compiler } from './compiler.ts'
 import { revisionFiles } from './dependencies.ts'
 import { localAsset, portable, relativeIR } from './paths.ts'
+import { directoryAsset, inside, lineOf, publishesDirectory } from './published.ts'
 import { loadPlugin, pluginId } from './plugins.ts'
 import { compileTranslations } from './translations.ts'
 import type { CompiledTranslation } from './translations.ts'
@@ -131,13 +132,33 @@ function runOf(compilation: Compilation, selected: InstalledRenderer[], shared: 
   }
 }
 
+export interface BuildOptions {
+  outDir: string
+  to?: string[]
+  /**
+   * Build the version for this audience (P-55) of a compilation of the
+   * whole deck: its view for the audience (`Compilation.forAudience`), with
+   * the translations compiled for it; the student view of a host's
+   * `ServerHost.build`. A compilation for an audience
+   * (`CompilerOptions.audience`) builds its own.
+   */
+  audience?: string
+  /** For an audience: whether the scan's findings quote the sentences they found (default true); not for findings the audience reads. */
+  quote?: boolean
+}
+
 /**
  * Writes `<outDir>/ir.json` (with paths relative to the deck, `relativeIR`)
  * and runs the selected renderers, each into `<outDir>/<id>`. They write
  * directories of their own, so they run at the same time; the report lists
- * them in the order selected.
+ * them in the order selected. A build for an audience then scans what it
+ * wrote, the IR and each renderer's directory, for the sentences of what the
+ * audience's version left out, of the deck or of a translation (`presmium.audience`).
  */
-export async function build(compilation: Compilation, options: { outDir: string, to?: string[] }): Promise<BuildReport> {
+export async function build(whole: Compilation, options: BuildOptions): Promise<BuildReport> {
+  const compilation = options.audience && options.audience !== whole.audience?.name
+    ? { ...whole, doc: whole.forAudience(options.audience), audience: whole.audienceOf(options.audience) }
+    : whole
   const { doc } = compilation
   const ir = await writeIR(relativeIR(doc, compilation.deckDir, compilation.workspaceRoot), options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
@@ -163,8 +184,23 @@ export async function build(compilation: Compilation, options: { outDir: string,
     }
   }))
   const outputs = results.flatMap(({ result }) => result ? [result] : [])
+  if (compilation.audience) {
+    const scan = audienceScan(compilation.audience, translated.translations, doc)
+    findings.push(...await scan.scan(options.outDir, [ir, ...outputs.map(output => output.outDir)], { quote: options.quote ?? true }))
+  }
   // Each renderer reports the local references it cannot publish: a reference is reported once.
   return { ir, outputs, findings: unique([...doc.diagnostics, ...findings, ...results.flatMap(({ reported }) => reported)]) }
+}
+
+/**
+ * The scan of a build for an audience: the sentences the deck's version for
+ * it left out and those its translations' versions left out, but those any
+ * of the versions shows (code is the same in every language).
+ */
+function audienceScan(audience: AudienceCompilation, translations: CompiledTranslation[], doc: IRDocument): AudienceCompilation {
+  const kept = [doc, ...translations.map(translation => translation.doc)]
+  const left = [audience, ...translations.flatMap(translation => (translation.audience ? [translation.audience] : []))].flatMap(own => own.withheld)
+  return audienceCompilation(audience.name, unshown(left, kept))
 }
 
 /** The renderer that gets the translations (`RenderContext.translations`). */
@@ -504,24 +540,6 @@ const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 /** Directory of the deck's work directory where the directories it publishes are prepared (see `publishedDirectory`). */
 const FILES_DIR = 'files'
 
-function inside(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
-}
-
-/** The line of a block's source that holds `text`, else the block's first line. */
-function lineOf(source: SourcePos, text: string): number {
-  try {
-    const lines = readFileSync(source.file, 'utf8').split(/\r?\n/)
-    for (let line = source.line; line <= Math.max(source.line, source.endLine ?? 0); line++) {
-      if (lines[line - 1]?.includes(text)) return line
-    }
-  } catch {
-    // The block's line.
-  }
-  return source.line
-}
-
 /**
  * The local file a block's URL names, as the renderers publish it
  * (`RenderContext.localAsset`, docs/ir.md 6.2): a file in the repository,
@@ -556,77 +574,13 @@ function publishedAsset(compilation: Compilation, source: SourcePos, url: string
     // As written.
   }
   const target = resolve(dirname(source.file), name)
-  const stat = lstatSync(target, { throwIfNoEntry: false })
-  if (!stat) {
+  if (!existsSync(target)) {
     warn(`${url} is not published: there is no such file`)
     return undefined
   }
-  if (!stat.isDirectory() || target === deckDir || !inside(target, deckDir) || existsSync(join(target, DECK_ENTRY))) return undefined
+  if (!publishesDirectory(target, deckDir)) return undefined
   if (scope && !scope.allows(target)) return refuse(target)
-  return publishedDirectory(target, join(deckDir, WORK_DIR, FILES_DIR), compilation.doc.meta.lang)
-}
-
-/** The files a published directory holds, relative to it: regular files, not hidden, not in `node_modules`, not through symbolic links. */
-function directoryFiles(dir: string, prefix = ''): string[] {
-  return readdirSync(join(dir, prefix), { withFileTypes: true })
-    .filter(entry => !entry.name.startsWith('.') && entry.name !== 'node_modules')
-    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-    .flatMap((entry) => {
-      const path = prefix ? `${prefix}/${entry.name}` : entry.name
-      return entry.isDirectory() ? directoryFiles(dir, path) : entry.isFile() ? [path] : []
-    })
-}
-
-/** What a file listing says, in the deck's language. */
-const LISTING = {
-  'zh-CN': { count: (n: number) => `${n} 个文件，点击下载`, files: '文件' },
-  'en': { count: (n: number) => `${n} file${n === 1 ? '' : 's'}; select one to download it`, files: 'Files' },
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-
-/**
- * A directory as it is published: a copy of its files named `<hash>-<name>`
- * (the hash of their paths and contents) with a file listing, `index.html`,
- * from which each file downloads (unless the directory has an `index.html`
- * of its own). The copy is prepared once, in `stage`; the renderers publish
- * it as they publish a file.
- */
-function publishedDirectory(dir: string, stage: string, lang?: string): { file: string, name: string } {
-  const files = directoryFiles(dir)
-  const hash = createHash('sha256')
-  for (const file of files) hash.update(file).update('\0').update(readFileSync(join(dir, file))).update('\0')
-  const name = `${hash.digest('hex').slice(0, 8)}-${basename(dir)}`
-  const target = join(stage, name)
-  if (existsSync(target)) return { file: target, name }
-  // Prepared beside it, then renamed: a build stopped halfway leaves no partial copy under the name.
-  const partial = `${target}.${process.pid}`
-  rmSync(partial, { recursive: true, force: true })
-  mkdirSync(partial, { recursive: true })
-  for (const file of files) cpSync(join(dir, file), join(partial, file))
-  if (!files.includes('index.html')) {
-    const t = LISTING[deckLocale(lang)]
-    const href = (file: string) => file.split('/').map(encodeURIComponent).join('/')
-    const items = files.map(file => `<li><a href="${escapeHtml(href(file))}" download>${escapeHtml(file)}</a> <small>${statSync(join(dir, file)).size} B</small></li>`)
-    writeFileSync(join(partial, 'index.html'), `<!doctype html>
-<html lang="${escapeHtml(lang ?? 'zh-CN')}">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(basename(dir))}</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:48rem;margin:2rem auto;padding:0 1rem}small{color:#666}</style></head>
-<body><h1>${escapeHtml(basename(dir))}/</h1><p>${escapeHtml(t.count(files.length))}</p>
-<ul aria-label="${escapeHtml(t.files)}">
-${items.join('\n')}
-</ul></body></html>
-`)
-  }
-  try {
-    renameSync(partial, target)
-  } catch {
-    // Another build prepared it meanwhile.
-    rmSync(partial, { recursive: true, force: true })
-  }
-  return { file: target, name }
+  return directoryAsset(target, deckDir, join(deckDir, WORK_DIR, FILES_DIR), compilation.doc.meta.lang, message => warn(`${url} is not published: ${message}`))
 }
 
 function unsupportedBlocks(doc: IRDocument, renderer: Renderer, extensions: RendererExtension[]): RenderOutput['skipped'] {

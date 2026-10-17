@@ -50,7 +50,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - `base` 的默认值：同时构建网页与幻灯片、两者都不写 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体就是一个站点；只构建一种时为 `/`。
 - 不写 `renderers` 时构建全部已安装的渲染端。
 - 入口文件以 UTF-8 BOM 开头（Windows 记事本）也没关系。
-- 译本（P-123）：原文头部写 `translations: { en: lecture.en.md }`（语言到同一目录中的另一个入口文件）。译本自己的头部只写 `title`、`lang` 与 `translationOf: { entry: lecture.md, digest: <摘要> }`，插件与渲染端配置取自原文；章节标签与原文相同（原文没有写标签的章节，译本照原文由标题生成的 ID 写上标签），语言菜单才能停在同一章。`presmium build` 把译本放在网页的 `/<语言>/` 下（幻灯片与 notebook 只有原文）。原文改动后 `presmium check` 警告译本过期（`presmium.translations`，位置在译本的 `digest` 一行）并给出新的摘要：核对译文后把它写回 `digest`。新写的译本先随便写一个摘要，检查会给出正确的。
+- 译本（P-123）：原文头部写 `translations: { en: lecture.en.md }`（语言到同一目录中的另一个入口文件）。译本自己的头部只写 `title`、`lang` 与 `translationOf: { entry: lecture.md, digest: <摘要> }`，插件与渲染端配置取自原文；章节标签与原文相同（原文没有写标签的章节，译本照原文由标题生成的 ID 写上标签），语言菜单才能停在同一章。`presmium build` 把译本放在网页的 `/<语言>/` 下（幻灯片与 notebook 只有原文）。原文改动后 `presmium check` 警告译本过期（`presmium.translations`，位置在译本的 `digest` 一行）并给出新的摘要：核对译文后把它写回 `digest`。新写的译本先随便写一个摘要，检查会给出正确的（摘要要写成 64 位十六进制的字符串，全是数字的摘要被 YAML 读成数字）。译本同样可以写 `:audience:` 与 `{audience}`：`presmium build --audience student` 的两种语言都去掉教师内容，扫描也查译本的。工作区站点（在工作区根目录 `presmium build`、`presmium serve`）还不发布译本，声明了译本的文档得到警告 `presmium.translations`，要发布译本就单独构建这份文档。
 
 ## 3. 章节
 
@@ -110,7 +110,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - `:::{only} web, notebook` 让内容只出现在列出的渲染端（`web`、`slides`、`notebook`）。拼错的 ID（如 `slide`）得到警告 `unknown renderer id`，否则内容会从所有形态中消失。只在某个渲染端出现的块所占的步骤，在其他渲染端中不存在。
 - `:::{hints}` 的正文是按渲染端分组的 YAML：`web: { layout: scrolly }` 让这一节在网页中用滚动叙事版式；`slides:` 下的键写进这一页的 Slidev frontmatter（如 `layout: center`）。不要用 `two-cols` 这类需要 `::right::` 插槽的布局，MyST 写不出插槽，内容会全挤在左栏。
 - `:::{config}` 为插件提供只在本章节生效的配置（YAML，键为插件 ID）。读取章节配置的是 `presmium.exec.timeoutMs`（这一节代码在编译时与浏览器中的超时）与 `presmium.code.repo`（这一节 `{code-ref}` 永久链接的仓库）；其他选项只读全局配置。
-- 受众：任何指令加 `:audience: teacher` 让块只给教师（讲解段落用 `{only}` 包起来再加；嵌在另一个指令正文中或列表项中的指令，如 `{tab-set}` 中的一个 `{tab-item}`、`{grid}` 中的一张 `{card}`，也可以加），章节顶层的 `:::{audience} teacher` 让整节只给教师，`{include}` 加 `:audience: teacher` 让包含进来的全部内容（连同其中的章节）只给教师。`presmium build --audience student` 生成学生版并扫描产物中有没有被去掉的句子（`presmium.audience`）；`presmium serve` 中读者只看到学生版。写法见 `references/directives.md` 的 `{audience}`。
+- 受众：任何指令加 `:audience: teacher` 让块只给教师（讲解段落用 `{only}` 包起来再加；嵌在另一个指令正文中或列表项中的指令，如 `{tab-set}` 中的一个 `{tab-item}`、`{grid}` 中的一张 `{card}`，也可以加），章节顶层的 `:::{audience} teacher` 让整节只给教师，`{include}` 加 `:audience: teacher` 让包含进来的全部内容（连同其中的章节）只给教师。`presmium build --audience student` 生成学生版并扫描产物中有没有被去掉的句子（`presmium.audience`）；`presmium serve` 中读者只看到学生版。`{include}` 加 `:audience: teacher` 而被引入的文件开出章节时，紧跟在 `{include}` 后面的内容属于那一节、同样只给教师（警告 `presmium.audience` `this content follows an {include} …`）：在 `{include}` 之后先写一个标题。写法见 `references/directives.md` 的 `{audience}`。
 
 ## 6.1 发布检查
 
@@ -126,7 +126,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件；不同文件可以都用 `[^1]`，每个文件的脚注各自从 1 编号。
 - 标签：标题前的 `(id)=` 给章节 ID；块前的 `(id)=` 或指令的 `:label: id` 给块 ID（章节内唯一）。`{question-box}` 的 `:target:` 和课堂笔记依赖块 ID；没有标签的块 ID 随前面插入同类块而变化。
 - 交叉引用：`` {ref}`merge` `` 引用章节（文字为章节标题），`{numref}`、`{eq}` 引用带标签的图、表、公式；自己写了文字的引用保留文字。目标不存在时警告 `presmium.references`。
-- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；隐藏文件与 `node_modules` 不发布，含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
+- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；隐藏文件与 `node_modules` 不发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告；含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
 
 ## 8. 插件指令
 
@@ -246,6 +246,10 @@ agent 只写文档目录：写到目录之外（如工作区的其他文档）�
 | `presmium.links` `… is not published: there is no such file`（构建报告） | 路径相对于写链接的文件；改正路径或补上文件 |
 | `presmium.links` `… is not published: the file lies outside the deck's repository`（工作区站点中为 `outside the workspace`） | 把文件放进文稿所在的仓库（工作区） |
 | `presmium.translations` `translation "en" (…) is out of date` | 核对译本与原文的差异，把消息中的新摘要写进译本头部 `translationOf.digest` |
+| `presmium.translations` `translation "en" (…) is not in the workspace site` | 工作区站点还不发布译本：要发布就单独构建这份文档（`presmium build <文档目录>`） |
+| `presmium.links` `… is not published: hidden directories and node_modules are not published` | 把要发布的文件放进一个普通目录再链接它 |
+| `presmium.audience` `this content follows an {include} with :audience: whose file opens a section …` | 在 `{include}` 之后写一个标题另开一节，或把这段内容移到 `{include}` 之前 |
+| `presmium.audience` `<n> findings are in the content left out for student, not shown here` | 被去掉的教师内容中有问题：运行不带 `--audience` 的 `presmium check` 查看并改正 |
 | `presmium.classroom` `{quiz} needs at least two options` | 选项写成任务列表 `- [ ]`、`- [x]` |
 
 ## 13. 提交哪些文件

@@ -39,6 +39,10 @@ renderers:
 
 [缺失的讲义](handouts/missing.pdf)无法发布。
 
+[隐藏的目录](.handouts/)不发布。
+
+<p>原始 HTML 中的文字 <code> href=not-a-file.txt</code> 不是属性。</p>
+
 (chapter2)=
 # 第二章 深入
 

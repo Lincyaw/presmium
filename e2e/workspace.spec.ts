@@ -5,7 +5,8 @@
 // document form has no "draft with the agent"; a reader sees no edit entry; in edit mode the mark of a role
 // without children shows; a `{literalinclude}` shows a file of the workspace but not one a symbolic link out
 // of it names; with an assistant (a stand-in of the `AGENT` service), a drafted document opens once the
-// draft is committed.
+// draft is committed; the home page loads the operator plugins' browser parts and serves their routes
+// (WP-81e2), which a document's page loads only when its deck lists the plugin.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -121,8 +122,8 @@ test.describe('the workspace in the browser (SHARED)', () => {
     outside = mkdtempSync(join(work, 'e2e-outside-'))
     writeFileSync(join(outside, 'secret.txt'), `${SENTINEL}\n`)
     symlinkSync(join(outside, 'secret.txt'), join(dir, 'intro/secret.txt'))
-    // The operator's plugin, installed at the workspace root (D14).
-    cpSync(join(FIXTURE, 'plugins/presmium-fixture-workspace-probe'), join(dir, 'node_modules/presmium-fixture-workspace-probe'), { recursive: true })
+    // The operator's plugins, installed at the workspace root (D14).
+    for (const name of ['presmium-fixture-workspace-probe', 'presmium-fixture-workspace-home']) cpSync(join(FIXTURE, 'plugins', name), join(dir, 'node_modules', name), { recursive: true })
     rmSync(join(dir, 'plugins'), { recursive: true, force: true })
     writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
     writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
@@ -215,6 +216,22 @@ test.describe('the workspace in the browser (SHARED)', () => {
     await expect(page.locator('.pm-workspace-edit')).toHaveCount(0)
     // An editor's page of the same document has the entry.
     await openDevPage(page, `http://site.test:${editor}/intro/`, page.locator('.pm-workspace-edit'))
+  })
+
+  test('the home page loads the operator plugins\' browser parts and their routes answer for it; a document\'s page loads its deck\'s plugins', async ({ page }) => {
+    await openDevPage(page, `http://site.test:${reader}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await expect(page.locator('html')).toHaveAttribute('data-fixture-home', 'loaded')
+    // The operator plugin's route on the home page (document ''), as on a document's.
+    const where = (document: string) => page.evaluate(async (dir) => {
+      const response = await fetch('/__presmium/fixture.home/where', { headers: { 'Presmium-Document': dir } })
+      return { status: response.status, body: await response.json() as unknown }
+    }, document)
+    expect(await where('')).toEqual({ status: 200, body: { document: '' } })
+    expect(await where('intro')).toEqual({ status: 200, body: { document: 'intro' } })
+    // The deck of intro does not list it: its page does not load its browser part.
+    await openDevPage(page, `http://site.test:${reader}/intro/`, page.locator('.pm-section[data-section="导论"]'))
+    await expect(page.locator('.pm-toolbar--bar')).toBeAttached()
+    await expect(page.locator('html')).not.toHaveAttribute('data-fixture-home', 'loaded')
   })
 
   test('in edit mode the mark of a role without children shows; out of it, it does not', async ({ page }) => {

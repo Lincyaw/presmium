@@ -1,5 +1,6 @@
 ---
 title: 第 2 周
+translations: { en: lecture.en.md }
 ---
 
 # 第 2 周
