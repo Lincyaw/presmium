@@ -210,7 +210,7 @@ export function eventStream(events: AsyncIterable<{ event?: string, data: unknow
 
 // MCP access ----------------------------------------------------------------------
 
-/** The mode an MCP token is issued for: `author`, which may write the source (v0.9 removed the read-only `tutor`). */
+/** The mode an MCP token is issued for: `author`, which may write the source; every token reads the whole deck. */
 export type AgentMode = 'author'
 
 /** What an agent session uses to reach this process's MCP endpoint. */

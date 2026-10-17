@@ -22,9 +22,6 @@ export interface McpCaller {
   mode: AgentMode
 }
 
-/** A view of a document: the whole deck, or what its audience `student` may see (P-55). */
-export type McpView = 'full' | 'student'
-
 /** A document of the host (P-120). */
 export interface McpDocument {
   /** Its directory, relative to the workspace root; '' for the deck of `presmium dev` and `presmium-mcp`. */
@@ -39,12 +36,10 @@ export interface McpPosition {
   document: string
   /** The id of the member whose window it is. */
   member: string
-  /** 1-based section number (`Cursor.slide`), in the window's own view (`audience`). */
+  /** 1-based section number (`Cursor.slide`). */
   slide: number
-  /** The section's id, when the window reports it (F-41): the same in every view. */
+  /** The section's id, when the window reports it (F-41). */
   section?: string
-  /** The view the window shows: the whole deck, or the student view; default `full`. */
-  audience?: McpView
   /** The step, in the window's own numbering. */
   step: number
   /**
@@ -77,10 +72,11 @@ export interface McpHost {
   /** The process that serves MCP; omitted, the instructions describe it in general terms. */
   process?: McpProcess
   documents(): Promise<McpDocument[]>
-  compile(document: string, view: McpView): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
-  /** The compilation's diagnostics and the plugins' checks (the full view). */
+  /** The document compiled: the whole deck. */
+  compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
+  /** The compilation's diagnostics and the plugins' checks. */
   check(document: string): Promise<Finding[]>
-  build(document: string, options: { to?: string[], view?: McpView }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
+  build(document: string, options: { to?: string[] }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
   /** Runs one code block now with the host's executors and execution options, recordings neither read nor written. */
   run(document: string, target: { section: string, block: string }, signal?: AbortSignal): Promise<RunResult>
   /**
@@ -107,7 +103,6 @@ export interface McpHost {
   classroom?(document: string): Record<string, unknown>
   /** Sends `go` to the windows of a document that show it (the member's presenting ones first); returns how many. */
   navigate?(document: string, position: { slide: number, step: number, view?: string, section?: string, trail?: string[] }, member: Member): number
-  /** Starts or ends the classroom in the windows of a document's present and presenter views; returns how many. */
   /** Starts or ends the classroom in the presenting windows of `member` (only theirs: content scope covers the caller's own sessions). */
   session?(document: string, action: 'start' | 'end', name: string | undefined, member: Member): number
 }

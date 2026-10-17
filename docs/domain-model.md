@@ -208,7 +208,7 @@ v0.8 新增的上下文之间的关系：
 | 凭据 | `ServerContext.secret(name)` | 只来自 `presmium` 进程的环境变量的密钥；与它要发往的地址成对给出（如 `PRESMIUM_ENV_<名>_TOKEN` 与 `PRESMIUM_ENV_<名>_URL`） |
 | 运营者设置 | `ServerContext.settings`、`NodeServiceContext.settings` | 运营者给插件的设置：工作区配置 `presmium.workspace.yaml` 的 `settings.<插件 ID>`，如工作区的插件列表、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量、录音的去处、是否允许克隆音色、同意记录的目录；与文稿配置 `config` 不同，文稿与 agent 改不了正在运行的设置 |
 | 运营者目录 | 用户状态目录中按工作区区分的 `presmium/operator/<工作区标识>/`（`NodeServiceContext.operatorDir`、`ServerContext.operatorDir`） | 运营者的数据（同意记录目录 `consent/`），在任何工作区与文档目录之外，不属于任何文档：不进入提交；agent 对它的权限请求一律拒绝 |
-| MCP 访问 | `McpEndpoint`（`MCP_ENDPOINT`）、`McpAccess` | 服务端为一个 agent 会话签发的 `/mcp` 地址与令牌，令牌绑定成员与模式，会话关闭时作废 |
+| MCP 访问 | `McpEndpoint`（`MCP_ENDPOINT`）、`McpAccess` | 服务端为一个 agent 会话签发的 `/mcp` 地址与令牌，令牌绑定成员与模式，会话关闭时作废；`presmium dev` 与 `presmium serve` 另有每个进程的令牌，供本机作者的外部 agent（Claude Code、Codex 等），只写在 0600 的状态文件中，启动时打印这个文件的位置（WP-92c） |
 | 课堂同步 | 会话插件的服务端贡献，`/__presmium/presmium.session/sync` | 服务端自己的端口上的课堂服务（与 `presmium-classroom-server` 同一协议）；文稿没有写课堂服务时，页面连到这里（WP-89g） |
 
 不变量：
@@ -362,7 +362,7 @@ v0.9 删除了多人共用一个服务端的部署（决定 E-1 至 E-8）：信
 | 发布检查 | 检查项 `presmium.links`、`presmium.directive`、`presmium.forbid` | 各媒介中无法解析的本地链接与 `#片段`、MyST 指令错误、文稿头部 `checks.forbid` 中正则的命中（P-54） |
 | 受众 | `IRBlock.audience`、`IRSection.audience` | 只给某些受众（如 `teacher`）的块与章节（P-55） |
 | 学生版 | `presmium build --audience student` | 只含不带受众或受众包含 `student` 的内容的构建 |
-| 学生视图 | `ServerHost` 的 `student` 视图 | `presmium serve` 中读者（学习者）看到的文稿，以及读者与 `tutor` 令牌经 MCP 读到的文稿：与学生版同样筛选 |
+| 完整编译的学生版 | `Compilation.forAudience('student')`、`build` 的 `audience` 选项 | 在完整编译的文稿上做与学生版同样的筛选，并按泄漏扫描的句子再去掉块；服务端与 MCP 不给出它（`presmium serve` 只供本机作者使用，决定 E-4） |
 | 泄漏检查 | 检查项 `presmium.audience` | 带 `--audience` 构建后扫描产物，发现被筛掉的内容的文字即报错 |
 
 不变量：
@@ -370,7 +370,7 @@ v0.9 删除了多人共用一个服务端的部署（决定 E-1 至 E-8）：信
 - 视觉差异超过阈值的页必须列入报告；导出的 PDF 中，幻灯片显示的每个链接（包括代码的永久链接）都必须仍是链接，丢失的链接带源码位置报告。
 - 发布检查按每个渲染端的视图进行：只出现在某个媒介中的链接只在该媒介中检查。
 - 不带受众的内容对所有受众可见；学生版的 IR 与全部产物（页面、搜索索引、`ir.json`、幻灯片备注、notebook）中都没有被筛掉的内容。
-- 学习者得到学生版的构建（`presmium build --audience student`）；`tutor` 模式的 agent 只读学生视图。学生版发布的录制讲授只保留摘要与录制时相同的章节（第 15 节，WP-89g）。
+- 学习者得到学生版的构建（`presmium build --audience student`），发布为静态站点（决定 E-7）；服务端只有本机作者一个成员，没有读者看到的视图，MCP 的每个令牌都读完整的文稿（决定 E-4）。读者问答的上下文取自学生版页面中的 IR，所以回答不会引用只给教师的内容（第 13 节）。学生版发布的录制讲授只保留摘要与录制时相同的章节（第 15 节，WP-89g）。
 
 ## 11. 编辑
 
@@ -427,7 +427,7 @@ v0.9 删除了多人共用一个服务端的部署（决定 E-1 至 E-8）：信
 
 ## 13. 智能体
 
-Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与状态，也能操作它；agent 的修改落在源码上，经发起人审阅后每批成为一个提交（原则 6）。agent 运行时默认是随包的 DeepSeek Harness（助手插件的依赖，运营者配置了模型访问就自动启动），经 ACP 驱动，可以替换。
+Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与状态，也能操作它；agent 的修改落在源码上，经发起人审阅后每批成为一个提交（原则 6）。agent 运行时默认是随包的 DeepSeek Harness（助手插件的依赖，运营者配置了模型访问就自动启动），经 ACP 驱动，可以替换。读者的提问不经这里：页面直接问读者自己填写的模型服务（`ASK`，决定 E-9）。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
@@ -435,13 +435,16 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | agent 工具 | MCP 工具；插件贡献的 `AgentTool` | 读取类（`read`）、操作类（`operate`，需要确认）、计费类（`spend`，需要确认）；插件可以贡献工具，如讲授插件的 `lecture_preview` |
 | agent 资源 | `presmium://…` | 与读取类工具对应的只读资源；放映位置的资源可以订阅更新 |
 | agent 运行时 | `AgentRuntime`（`AGENT_RUNTIME`，Node） | 驱动一个 agent：打开会话、提交任务、接收事件、取消、关闭；唯一的实现是 ACP 客户端 |
-| 运行时模式 | `AgentMode`（`AgentSessionOptions.mode`） | `author`（作者，可以写源码；配置模板 `presmium`，保留 shell）或 `tutor`（学习者问答，只读，配置模板 `presmium-tutor`） |
-| 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。它得到 `DEEPSEEK_API_KEY`，或由 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 改名而来的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY`（不带其他 `PRESMIUM_` 变量） |
+| 令牌模式 | `AgentMode`（`MCP_ENDPOINT.issue(member, mode)`） | 只有 `author`：作者的 agent，可以写源码（配置模板 `presmium`，保留 shell）；每个令牌都读完整的文稿 |
+| 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`；页面的模型设置 | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。它得到 `DEEPSEEK_API_KEY`，或由 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 改名而来的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY`（不带其他 `PRESMIUM_` 变量）。环境变量没有时可以在页面的“模型设置”中填写 |
+| 模型设置 | 助手的 `settings` 路由，`$XDG_CONFIG_HOME/presmium/assistant.json` | 运营者在页面中填写的服务提供方、地址、密钥与模型名，保存在用户配置目录中只有本人可读的文件里（0600），不进工作区与文稿；保存后下一个会话即用；页面只显示密钥是否已设置 |
+| 生效的来源 | `RuntimeSource`（`info` 与 `settings` 的 `source`） | 替换的运行时（环境变量或工作区设置）、环境变量中的模型访问、页面的模型设置，按此优先；都没有时为 `none`，并给出缺少的设置（`missing`） |
+| 读者的模型服务 | `AskClient`（`ASK`，浏览器） | 读者自己填写的 OpenAI 兼容服务（地址、密钥、模型名），只保存在他的浏览器中；页面直接请求它，不经站点的服务端 |
 | 替换的运行时 | `PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` | 运营者给出的其他 ACP agent（Claude、Codex、Gemini 的适配），替换默认的运行时 |
-| 模型提供方 | `AgentRuntime.provider`、`AgentClient.provider()` | 回答问题、修改文稿的模型属于哪家服务，界面据此标明（N-08）；来自运营者的配置（模型访问；替换的运行时取 `settings.presmium.assistant.provider` 或 `PRESMIUM_AGENT_PROVIDER`），在任何请求之前就已知 |
+| 模型提供方 | `AgentRuntime.provider`、`AgentClient.provider()`；`AskClient.provider()` | 修改文稿的模型属于哪家服务，界面据此标明（N-08）；来自运营者的配置（模型访问或页面的模型设置；替换的运行时取 `settings.presmium.assistant.provider` 或 `PRESMIUM_AGENT_PROVIDER`），在任何请求之前就已知。读者的提问面板标明读者自己填写的服务（地址的主机） |
 | 运行时名字 | `AgentRuntime.runtime`、`AgentClient.runtime()` | agent 在 ACP `initialize` 中报告的名字与版本（如 DeepSeek Harness），与模型提供方分开显示 |
 | 会话的 MCP 访问 | `AgentSessionOptions.mcp`（`McpAccess`） | 服务端为这个会话签发的 `/mcp` 地址与令牌（4A 节），写进 ACP `session/new` 的 `mcpServers` |
-| 任务 | `AgentTaskRequest`、`AgentTask` | 一次交给 agent 的工作，种类 `AgentTaskKind`：`question` 问答、`annotations` 一批批注、`chat` 一轮对话、`transcript` 转写回写 |
+| 任务 | `AgentTaskRequest`、`AgentTask` | 一次交给 agent 的修改，种类 `AgentTaskKind`：`annotations` 一批批注、`chat` 一轮对话（也用于起草新文档）、`transcript` 转写回写 |
 | 上下文 | `AgentContext` | 任务所在的文档、章节、步骤、块、选中内容与源码位置 |
 | 任务事件 | `AgentEvent` | 进度、回答（带引用位置）、确认请求、批注的处理结果、检查点、待审阅、完成（带提交）、错误 |
 | 修改审阅 | `ChangeReview`（`CHANGE_REVIEW`，Node）；助手内置的 git 实现 | 一个修改任务从开始到接受或拒绝：任务开始时的快照、agent 的工作目录 `root`、每个工具调用之后的检查点 `ReviewStep`、相对于快照的改动 `ReviewChange` |
@@ -452,6 +455,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 引用位置 | `Citation` | 回答中可以点击跳转的位置：章节、步骤、块 |
 | 批注 | `Annotation` | 目标（章节 ID、块 ID、源码文件与行区间、摘录）与要求；状态 `AnnotationStatus`：草稿、已发送、已处理、未能处理 |
 | 浏览器端助手 | `AgentClient`（`AGENT`，浏览器） | 页面向服务端的助手提交任务并接收事件 |
+| 读者问答 | `AskClient.ask` | 读者就文稿提问：页面带上当前章节的文字、选中的内容与章节目录，流式显示回答，引用的章节可以点击（P-112） |
 
 **任务（聚合根）**：种类、发起成员、文档、上下文、批注、事件流与产生的修改；修改任务经 ID 引用它的审阅（下一个聚合）。批注是任务内的实体，状态只由任务事件推进。修改任务（`annotations`、`chat`、`transcript`，以及起草新文档的 `chat`）由助手按同一条规则处理；工作区的新建表单、编辑模式的面板与讲授面板只构造请求。
 
@@ -460,19 +464,19 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 不变量：
 
 - **只写源码，不碰产物**：agent 只修改工作区中的源码，工作目录是任务的文档目录（审阅的 `root`）；写入超出当前文档目录或改动工作区配置时需要确认（`write`，`workspace` 范围，只有所有者能允许，发起任务的编辑者不能）；agent 的 shell 与网络权限请求同样只由所有者允许。agent 对运营者目录的权限请求一律拒绝；运营者目录在任何工作区与文档目录之外（4A 节），agent 的文件工具不经请求写不到它。
-- **一文档一任务**：同一文档同一时间只有一个修改任务（由修改审阅的标识保证）；问答不受限制。
+- **一文档一任务**：同一文档同一时间只有一个修改任务（由修改审阅的标识保证）。
 - **先审阅后提交**（D12）：`review: required` 时修改任务结束后等发起人的决定；被拒绝的文件恢复为任务开始时的内容，任务新建的文件删除；全部拒绝时文档目录回到任务开始时的状态。审阅以文件为单位；待审阅时可以回到某一步之前（那一步与之后的各步作废）。修改任务待审阅或进行中时，同一文档的撤销被拒绝（撤销与审阅的恢复不能交错）。
 - **每批一提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），说明列出批注、对话摘要或讲授轨 ID，与 agent 的解释，尾注带 `Presmium-Task: <任务 ID>` 与发起人；接受之后的撤销是 `git revert`。
-- **学习者只读**：`question` 任务使用 `tutor` 运行时，没有写文件、shell、网络与操作类工具；学习者不直接接触作者的 agent。
+- **学习者不接触 agent**：读者的提问在他的浏览器中发往他自己填写的服务，回答只是文字与跳转的链接；学习者不接触作者的 agent、服务端与运营者的模型。读者的密钥只保存在他的浏览器中，不发往站点的服务端，面板写明同一站点的脚本能读到它。
 - **发送即确认**：编辑模式中发送一批批注或一条对话消息，就是对这次任务的写入的确认（N-08）；操作类、计费类工具与 agent 自身的权限请求仍逐次确认。
 - **MCP 不提供写文件的工具**：agent 用自己的文件工具修改源码，服务随即重新编译并推送。
 - 回答中的引用位置必须对应 IR 中的章节、步骤或块；无法解析的引用不显示为链接。
-- 模型访问、替换的启动命令与模型的服务提供方不来自文稿，只来自环境变量或工作区配置的运营者设置；没有模型访问（也没有带服务提供方的替换运行时）时不启动任何 agent，问题与源码不发给任何模型服务。
-- 提问与对话的界面标明运营者配置的模型服务提供方，运行时的名字另行显示。
-- `tutor` 模式只读学生视图（第 10 节），学习者的问答不会引用只给教师的内容。
-- agent 经 MCP 能做什么由服务端签发给它的令牌决定（成员与模式），会话结束令牌即作废。
+- 模型访问、替换的启动命令与模型的服务提供方不来自文稿，只来自环境变量、工作区配置的运营者设置或页面的模型设置（用户配置目录中）；环境变量优先于页面的设置。没有模型访问（也没有带服务提供方的替换运行时）时不启动任何 agent，源码不发给任何模型服务。页面的模型设置不带密钥保存时，已存的密钥只在服务提供方与地址都没变时保留，一个服务的密钥不发往另一个服务。
+- 批注与对话的界面标明运营者配置的模型服务提供方，运行时的名字另行显示；读者的提问面板标明读者自己填写的服务。
+- 读者问答的上下文取自读者页面中的 IR；学生版站点的 IR 没有只给教师的内容，所以回答不会引用它（第 10 节）。
+- agent 经 MCP 能做什么由服务端签发给它的令牌决定（成员的角色），会话结束令牌即作废；本机作者的外部 agent 用进程的令牌，它只在 0600 的状态文件中（4A 节）。
 
-服务：`AGENT`（浏览器）、`AGENT_RUNTIME`、`CHANGE_REVIEW`、`PROCESS_SANDBOX`（Node）；MCP 是对外的开放主机服务。
+服务：`AGENT`、`ASK`（浏览器）、`AGENT_RUNTIME`、`CHANGE_REVIEW`、`PROCESS_SANDBOX`（Node）；MCP 是对外的开放主机服务。
 
 领域事件：任务事件 `AgentEvent` 是真实的事件流（服务端以 SSE 推给页面）；规划中的名字 `AgentTaskSubmitted`、`AgentTaskCompleted`、`AnnotationResolved`、`ReviewRequested`（`review` 事件）、`ReviewDecided`（`AgentTask.review`）与之对应。
 
@@ -537,8 +541,8 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - 时刻 t 的画面是 t 之前事件的折叠 `state(t) = fold(events ≤ t)`：跳转精确、可逆；回放者应用事件时宿主处于重放状态，插件不把重放当作用户操作报告。
 - **漂移**：块指纹或 IR 哈希不一致时，检查项 `presmium.lecture` 按 exact、moved、fuzzy、lost 分级报告（同锚点）；回放丢弃失效的事件并提示。需要长期回放的块应写标签，生成的 `<kind>-<n>` ID 会随插入而移动。
 - 录音默认只保存在本地，不提交（去处由运营者设置 `settings.presmium.lecture.audio` 决定）；只有对某一段讲授显式执行“转写”时才发给语音服务，转写的入口标明服务提供方。默认不录视频；可选的摄像头与屏幕录像同录音一样保存在本地。
-- 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明（语音服务把关）。
-- **受众的版本按章节摘要失败即关闭**（P-55，WP-89g）：讲授轨记下录制时每一节的摘要（`LectureTrack.ir.sections`）。为某个受众发布时（学生版的构建与学生视图，IR 带 `meta.audience`），只保留摘要与这个版本中同一节的摘要相同的章节里说的话、音频与录像；摘要不同说明这一节在录制之后少了内容，声音与画面可能说出它。
+- 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明（语音服务把关）。同意撤回之后，服务端不再给出、构建不再发布这个音色的片段，合成的讲授与换成这个音色的录制讲授都一样：片段按它在合成缓存中的键给出，每次由语音服务检查音色，从不为此重新合成（`SpeechService.cached`，D-7，WP-92c）。
+- **受众的版本按章节摘要失败即关闭**（P-55，WP-89g）：讲授轨记下录制时每一节的摘要（`LectureTrack.ir.sections`）。为某个受众发布时（学生版的构建，IR 带 `meta.audience`），只保留摘要与这个版本中同一节的摘要相同的章节里说的话、音频与录像；摘要不同说明这一节在录制之后少了内容，声音与画面可能说出它。
 - 译文记录它所依据的原文摘要；原文改动后译文标记为过期，导出时提示。
 - 实际（WP-83）：讲授计划在 `addon-lecture` 的 `src/domain/plan.ts`，由讲解（或单独的脚本）得到，合成的讲授的 ID 是 `script`；一个语音段合成的片段记在 `Utterance.clip`（合成缓存中的文件），`ClipClock` 播放它们。换音色重新合成时每个语音段保持它的时刻，只在前一段的新片段更长时后移，所以没有字锚的事件时刻不变、有字锚的随字移动。
 

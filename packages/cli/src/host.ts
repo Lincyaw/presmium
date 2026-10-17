@@ -1,10 +1,9 @@
 /**
  * The `ServerHost` of `presmium dev` (docs/architecture.md 10.2): its one
  * document is the deck, as the dev loop last compiled it; checks, builds and
- * runs of a code block work on that compilation, with its executors. The
- * student view is that compilation as the audience `student` sees it (P-55).
+ * runs of a code block work on that compilation, with its executors.
  */
-import { buildView, runBlock, STUDENT } from '@presmium/compiler'
+import { buildView, runBlock } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 import type { ServerHost } from '@presmium/server'
 
@@ -19,10 +18,8 @@ export function devHost(latest: () => Compilation | undefined): ServerHost {
       const compilation = latest()
       return compilation ? [{ dir: '', title: compilation.doc.meta.title, lang: compilation.doc.meta.lang }] : []
     },
-    async compile(document, view = 'full') {
-      // The student view (`tutor` tokens, P-55): the deck as the audience `student` sees it.
-      const compilation = current(document)
-      const doc = view === 'student' ? compilation.forAudience(STUDENT) : compilation.doc
+    async compile(document) {
+      const { doc } = current(document)
       return { doc, diagnostics: doc.diagnostics }
     },
     async check(document) {

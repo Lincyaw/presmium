@@ -103,6 +103,17 @@ export function modelSettingsProblem(settings: ModelSettings): string | undefine
   return undefined
 }
 
+/**
+ * Whether two of the page's model settings name the same service: the same
+ * address (none: DeepSeek's official one) and provider. A saved key stays
+ * when the page saves the settings again without one only then, so it never
+ * goes to another service (P-111, N-08).
+ */
+export function sameService(a: ModelSettings, b: ModelSettings): boolean {
+  const service = (s: ModelSettings) => [s.url ?? '', s.provider ?? (s.url ? '' : DEEPSEEK_PROVIDER)].join('\n')
+  return service(a) === service(b)
+}
+
 /** The model access of the page's settings; undefined until a key is saved. */
 export function savedAccess(settings: ModelSettings | undefined): ModelAccess | undefined {
   if (!settings?.key || modelSettingsProblem(settings)) return undefined

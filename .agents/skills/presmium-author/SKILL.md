@@ -175,7 +175,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium ir [deck]` | 把 IR 输出到标准输出（诊断在标准错误）；`--out <file>` 写到文件 |
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录，`--audience student` 只构建学生版并扫描产物（第 6 节） |
 | `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口 |
-| `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式，首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。只供运行它的你使用，默认只监听本机（`--port`，默认 4310）；`--host 0.0.0.0`（或本机的某个局域网地址）让你在局域网中的其他设备上打开它，启动时打印每个局域网地址，并警告没有登录：同一网络中到得了这个端口的人都能以你的身份修改与运行；也可以用 SSH 转发端口（`ssh -L 4310:127.0.0.1:4310 <主机>`）；多人使用时每人一个工作区。修改历史中撤销一次撤销标为重做 |
+| `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式，首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。只供运行它的你使用，默认只监听本机（`--port`，默认 4310）；`--host 0.0.0.0`（或本机的某个局域网地址）让你在局域网中的其他设备上打开它，启动时打印每个局域网地址，并警告没有登录：同一网络中到得了这个端口的人都能以你的身份修改与运行；也可以用 SSH 转发端口（`ssh -L 4310:127.0.0.1:4310 <主机>`）；多人使用时每人一个工作区。修改历史中撤销一次撤销标为重做。启动时另打印 MCP 的地址与令牌所在的文件（外部 agent 用它连接，见下文），以及助手的状态 |
 | `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下；每份文档的搜索框也搜得到其他文档，第一页与最后一页的上一章、下一章接到配置顺序中前后的文档。工作区配置的 `site` 有与 `renderers.web` 相同的 `nav`（链接从站点根写起，如 `/week1/`）、`footer`、`head`、`sitemap`（整个站点一个 `sitemap.xml`），`home: <文档目录>` 让首页转到那份文档（文档列表在 `documents.html`）；在文档目录中执行则只构建这一份 |
 
 常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。多份文档组成的课程用工作区：`presmium serve` 编辑与预览，`presmium build` 在根目录构建整个站点。`presmium serve` 与 `presmium dev` 一样加载文稿 `plugins` 列出的插件；运营者在 `settings.presmium.workspace.plugins` 中列出、装在工作区根目录的运营者插件（如助手、语音）每份文档与首页都加载。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
@@ -184,7 +184,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：读取类工具 `list_documents`、`deck_info`、`list_sections`、`get_section`（讲解与上屏内容）、`get_step`、`search`、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`（相对于文稿目录的文件与行），以及放映中的 `get_position`、`get_classroom`；操作类 `navigate`、`run_code`、`build`、`classroom_start`、`classroom_end` 要在页面工具栏的“待确认”中允许。没有写文件的工具：agent 用自己的文件工具改源码，`presmium dev` 随即重新编译。
 
-- `presmium dev` 运行时：MCP 的地址（`mcp  http://127.0.0.1:<端口>/mcp`）与令牌在 `.presmium/server.json`，agent 以 HTTP 方式连接，请求头 `Authorization: Bearer <令牌>`。
+- `presmium dev` 与 `presmium serve` 运行时：启动时打印 `mcp  <地址>/mcp (its token is in <文件>)`，令牌在这个只有你能读的文件里（`presmium dev` 是 `.presmium/server.json`，`presmium serve` 在工作区之外的缓存目录中），每次启动更换；agent 以 HTTP 方式连接，请求头 `Authorization: Bearer <令牌>`，例如 `claude mcp add --transport http presmium <地址>/mcp --header "Authorization: Bearer <令牌>"`。
 - 不启动服务端时：`node <仓库>/packages/mcp/bin/presmium-mcp.mjs <文稿目录>` 以 stdio 提供读取类工具；加 `--allow operate` 另提供并直接允许 `run_code` 与 `build`。网页形态的放映视图与演讲者视图在自己的控制条中显示确认入口（“待确认”），放映时在那里允许或拒绝。
 - 同样的数据也是只读资源（`presmium://sections`、`presmium://sections/{section}` 等，服务说明列出它们）。有多份文档时，工具以 `document` 指定文档，资源在 URI 后加 `?document=<文档目录>`。`navigate` 只移动自己打开的窗口：自己没有窗口显示文稿时直接返回错误，不询问。
 
@@ -194,13 +194,13 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 
 课堂中主讲的“互动”总览里每个提问有“AI 回答（服务提供方）”：用主讲自己在“提问”面板中填写的模型服务，在主讲的浏览器中生成，主讲确认后发给课堂（引用变成纯文字）；没有填写时总览提示先去填写。学生自己不接触模型。
 
-`presmium serve` 与 `presmium dev` 的工具栏总有“AI 修改”（工作区首页也有）：修改讲义用的 agent（下一节）不可用时，打开它写明缺少什么。它的模型服务在其中的“模型设置”里填写：服务（DeepSeek 的官方地址，或 Messages 兼容的地址与它的服务提供方）、密钥、模型名（留空用默认模型）。设置由本机服务保存在用户配置目录中只有本人可读的文件里（`$XDG_CONFIG_HOME/presmium/assistant.json`，默认在 `~/.config/presmium/`），不写入工作区与文稿；保存后下一个修改任务即用新设置，不必重启；页面只显示密钥是否已设置，不回显它；只有工作区的所有者能查看与修改。它与读者提问的设置是分开的两份。也可以写在运行 `presmium` 的环境中，环境优先于页面的设置（页面写明当前生效的来源），改了要重启：
+`presmium serve` 与 `presmium dev` 的工具栏总有“AI 修改”（工作区首页也有）：修改讲义用的 agent（下一节）不可用时，打开它写明缺少什么。它的模型服务在其中的“模型设置”里填写：服务（DeepSeek 的官方地址，或 Messages 兼容的地址与它的服务提供方）、密钥、模型名（留空用默认模型）。设置由本机服务保存在用户配置目录中只有本人可读的文件里（`$XDG_CONFIG_HOME/presmium/assistant.json`，默认在 `~/.config/presmium/`），不写入工作区与文稿；保存后下一个修改任务即用新设置，不必重启；页面只显示密钥是否已设置，不回显它；换了服务或地址时要重新填写密钥（已存的密钥只给原来的服务）；只有工作区的所有者能查看与修改。它与读者提问的设置是分开的两份。也可以写在运行 `presmium` 的环境中，环境优先于页面的设置（页面写明当前生效的来源），改了要重启：
 
 - `DEEPSEEK_API_KEY`：随包的 DeepSeek Harness 访问 DeepSeek 的官方地址（服务提供方 DeepSeek）；
 - 或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER` 三者：运营者的 Messages 兼容服务，优先于前者；
 - 或替换的运行时（只在本机）：`PRESMIUM_AGENT_COMMAND` 是一个 ACP agent 的命令行，同时要有 `PRESMIUM_AGENT_PROVIDER`；也可以写在工作区配置的 `settings.presmium.assistant` 的 `command`、`provider` 中，它优先于模型设置。
 
-都没有时助手不可用，不启动任何进程。启动时（单份文稿的仓库在第一次打开文档时）日志写明助手是否可用：服务提供方、运行时与设置的来源，或缺少哪项设置；`presmium dev` 另打印 MCP 的地址。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录）后每份文档的服务端都有它，页面上的面板仍要文稿的 `plugins` 列出它。
+都没有时助手不可用，不启动任何进程。启动时日志写明助手是否可用：服务提供方、运行时与设置的来源，或缺少哪项设置（单份文稿的仓库也在启动时，它的文档在启动时就编译）；`presmium dev` 与 `presmium serve` 另打印 MCP 的地址与令牌所在的文件。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录；`templates/workspace` 的配置已列出它）后每份文档的服务端与首页都有它，首页因此有“AI 修改”与模型设置，`presmium serve` 启动时打印它的状态；页面上的提问面板仍要文稿的 `plugins` 列出它。
 
 ### 由 agent 修改讲义（批注、对话、审阅与撤销）
 
@@ -232,7 +232,7 @@ agent 只写文档目录：写到目录之外（如工作区的其他文档）�
 | `presmium.directive` `{csv-table}: required body not provided …; {csv-table} takes no :file:` | MyST 指令写错了（这里 `{csv-table}` 不读文件）：按 MyST 的写法改正，如把表格写进正文 |
 | `presmium.links` `x: no such file` 或 `#x is no section, block, label or heading of the deck` | 改正路径（相对于写它的文件）或片段；`(in slides)` 表示只有幻灯片中的链接出错，例如它指向只在网页中出现的块 |
 | `presmium.forbid` `"…" matches … of checks.forbid` | 删掉命中的文字（内部编号、未发布内容的名字），或改头部的 `checks.forbid` |
-| `presmium.audience` `the block shows content only for teacher (written at <文件>:<行>); it is left out of the view for student` | `presmium serve` 的学生视图中，这个块（多半是代码的录制输出）含有教师内容的句子，所以读者看不到这个块：同下一行处理 |
+| `presmium.audience` `the block shows content only for teacher (written at <文件>:<行>); it is left out of the view for student` | 完整编译之后为学生构建（编译器的 `build` 的 `audience` 选项）时，这个块（多半是代码的录制输出）含有教师内容的句子，所以学生版没有这个块：同下一行处理 |
 | `presmium.audience` `content only for teacher is in the build for student: "…" in <文件>` | 被去掉的教师内容又进了学生版（多半经代码块的输出或另一个文件）：在来源处删掉，或给那个块也加 `:audience: teacher`。文件在这次没有构建的渲染端目录中（例如完整构建留下的 `dist/notebook/`）时，删去那个目录或用 `--out` 换一个输出目录：扫描读输出目录中的每个文件 |
 | `presmium.execLocal.workspace` `{local-env} names the workspace …` | 一份文稿只有一个工作区：各 `{local-env}` 写同一个 `:workspace:`，或设置 `presmium.execLocal.workspace` |
 | `presmium.code.anchors` `moved` 或 `needs confirmation` | 确认位置后运行 `presmium check --update-lock` |

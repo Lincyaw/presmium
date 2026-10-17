@@ -7,12 +7,12 @@
 // environment has the URL and key as DEEPSEEK_BASE_URL and DEEPSEEK_API_KEY and none of Presmium's
 // variables, and the service receives that key with the request. The page's model settings (P-111), saved
 // through the assistant's route while the process runs, go to the user's configuration directory (0600, the
-// key never answered back), and the next session's service receives their key and model; the environment
-// comes first. In `presmium serve`, a chat task's agent lists the sections, reads one's narration and code,
+// key never answered back), and the next session's service receives their key and model; saved without a
+// key, they keep the saved one only for the same service and address (WP-92c); the environment comes first. In `presmium serve`, a chat task's agent lists the sections, reads one's narration and code,
 // runs its code and moves the presentation through Presmium's MCP, a window allowing the two operations
 // (F-49). The request to DeepSeek's real model needs DEEPSEEK_API_KEY and is skipped without it.
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -194,6 +194,16 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       expect(model.received[0]!.body.model).toBe('page-model-1')
       // Saved again without a key: the key stays.
       expect((await settings(server, 'POST', { provider: 'Test Provider', url: model.url, model: 'page-model-2' })).json.saved).toEqual({ provider: 'Test Provider', url: model.url, model: 'page-model-2', key: true })
+      // Another service without a key: refused, so the saved key never goes to it; both ways (WP-92c).
+      const refused = await settings(server, 'POST', { model: 'deepseek-chat' })
+      expect(refused.status, refused.text).toBe(400)
+      expect(refused.text).toContain('give its key')
+      expect((await settings(server, 'POST', { provider: 'Test Provider', url: `${model.url}/other`, model: 'page-model-2' })).status).toBe(400)
+      expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({ provider: 'Test Provider', url: model.url, key: 'page-key-7f1' })
+      expect((await settings(server, 'POST', { model: 'deepseek-chat', key: 'deepseek-page-key' })).json).toMatchObject({ source: 'page', provider: 'DeepSeek', saved: { model: 'deepseek-chat', key: true } })
+      expect((await settings(server, 'POST', { provider: 'Test Provider', url: model.url, model: 'page-model-2' })).status).toBe(400)
+      expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ model: 'deepseek-chat', key: 'deepseek-page-key' })
+      expect((await settings(server, 'POST', { provider: 'Test Provider', url: model.url, key: 'page-key-7f1', model: 'page-model-2' })).status).toBe(200)
     } finally {
       await running.stop()
       await model.close()

@@ -40,12 +40,12 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
   const position = (entry: ReturnType<Control['positions']>[number]): McpPosition => {
     const { report } = entry
     const { slide, step, view, section, trail } = report.position!
-    return { document: entry.document, member: entry.member, slide, step, view, ...section === undefined ? {} : { section }, ...trail ? { trail } : {}, audience: 'full', role: report.role, at: report.at }
+    return { document: entry.document, member: entry.member, slide, step, view, ...section === undefined ? {} : { section }, ...trail ? { trail } : {}, role: report.role, at: report.at }
   }
   return {
     process: { command: options.command },
     documents: () => host().documents(),
-    compile: (document, view) => host().compile(document, view),
+    compile: document => host().compile(document),
     check: document => host().check(document),
     build: (document, build) => host().build(document, build),
     run: (document, target, signal) => host().run(document, target, signal),

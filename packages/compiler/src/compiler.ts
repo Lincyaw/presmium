@@ -167,8 +167,8 @@ export interface Compilation {
    * The document as an audience sees it (P-55): without the sections, blocks
    * and nested nodes for other audiences, steps and sections numbered again,
    * cross-references resolved in it, and without the blocks that still show
-   * a sentence of what was left out (an error in its diagnostics); the
-   * student view of `presmium serve` and of `tutor` tokens.
+   * a sentence of what was left out (an error in its diagnostics); what a
+   * build of this compilation for that audience builds (`build`'s `audience`).
    */
   forAudience(name: string): IRDocument
   /** What `forAudience(name)` leaves out, and the scan of a build of it. */

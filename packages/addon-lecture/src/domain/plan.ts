@@ -271,20 +271,17 @@ function stepTarget(section: IRSection, step: number): IRBlock | undefined {
 
 /**
  * The plan of a document (or of the lecture renderer's view of it), with a
- * separate script's sections over its narration; `place` gives the step of
- * `doc` of a script's k-th paragraph of a section, undefined for one not
- * said (a view's, `viewPlaces`). Utterance ids are given in the order of
- * the lecture.
+ * separate script's sections over its narration, the k-th paragraph of a
+ * section at its step k. Utterance ids are given in the order of the lecture.
  */
-export function lecturePlan(doc: IRDocument, script?: ScriptSections, place?: (section: string, paragraph: number) => number | undefined): LecturePlan {
+export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePlan {
   const problems: PlanProblem[] = []
   const sections: PlannedSection[] = doc.sections.map((section) => {
     const paragraphs: PlannedParagraph[] = []
     const fromScript = script?.get(section.id)
     if (fromScript) {
       fromScript.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
-        const step = place ? place(section.id, k) : Math.min(k, section.steps)
-        if (step === undefined) return
+        const step = Math.min(k, section.steps)
         const spoken = spokenText(node)
         const source = linesOf(node, heading)
         const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, script: true, problems })

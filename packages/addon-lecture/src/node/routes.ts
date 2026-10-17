@@ -17,10 +17,14 @@
  * The lectures are those of the whole deck: `script` said from the plan of
  * the latest IR, taken anew on each request from the synthesis cache (the
  * engine synthesizes only what the cache lacks), so the speech service
- * checks a cloned voice's consent each time; a clip of `script` is one of
- * the lecture last taken, said again from the cache before it is given, so a
- * consent withdrawn since stops it (D-7, F-57). Files are read as they are
- * opened, never through a link nor waiting on a FIFO (`openInDeck`).
+ * checks a cloned voice's consent each time. A clip is given by its key, as
+ * the speech service gives it from the cache now (`cachedClip`): never
+ * synthesized, and refused once a cloned voice's consent is withdrawn (D-7,
+ * F-57); a clip of `script` is one of a lecture taken lately (a page that
+ * loaded it before the IR changed still plays it), a clip of a recorded
+ * lecture one its utterances say (said again in a synthetic voice). Files
+ * are read as they are opened, never through a link nor waiting on a FIFO
+ * (`openInDeck`).
  *
  * The author also works on a recorded lecture's words (WP-83), each change
  * written to its track.json, which comes back:
@@ -34,14 +38,17 @@ import { closeSync, createReadStream, existsSync, fstatSync, statSync } from 'no
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
 import { DOCUMENT_FILES, errorMessage, isRecord, json, problem, SPEECH } from '@presmium/kernel'
-import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService, WordSpan } from '@presmium/kernel'
-import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, plannedUtterances, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
+import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
+import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
-import { clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, transcriptionEngine, unsaidMessage } from './lecture.ts'
+import { cachedClip, clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, transcriptionEngine, unsaidMessage } from './lecture.ts'
 import { latestDoc, latestView, lectureConfig } from './plan.ts'
-import type { MadeClip, SpeakOptions } from './speak.ts'
+import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
 import { deckFiles, freeMediaPath, mediaFile, mediaPolicy, newTrackId, openInDeck, publishedMedia, readTrack, sha256File, trackDir, trackIds, writeGitFiles, writeTrack } from './store.ts'
+
+/** How many takes of the synthesized lecture keep their clips given (a page plays the take it loaded). */
+const TAKES = 8
 
 /** The largest chunk a recording uploads at once (and the body of its routes), and the largest media file. */
 const MAX_CHUNK = 64 * 1024 * 1024
@@ -220,8 +227,8 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
   const lexicon = lexiconOf(ctx.config)
 
-  /** The synthesized lecture last taken: its IR, and for each of its clips what it says and how, to say it again. */
-  let taken: { doc: IRDocument, said: Map<string, { text: string, spoken: string, spans: WordSpan[] }>, options: SpeakOptions } | undefined
+  /** The clips of the synthesized lectures taken lately (one set a take, the last few IRs), by name: a page plays the one it loaded. */
+  const takes: Set<string>[] = []
   /** A take of the lecture in flight, which the requests of the same IR share. */
   let taking: { doc: IRDocument, made: Promise<LectureTrack> } | undefined
   /**
@@ -234,12 +241,9 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     if (taking?.doc === doc) return taking.made
     const made = synthesizedLecture(doc, deckDir, speech(), undefined, { files }).then(({ deck, track, unsaid, clips }) => {
       if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
-      if (!track) {
-        if (taken?.doc === doc) taken = undefined
-        throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
-      }
-      const said = new Map(plannedUtterances(deck.plan).flatMap(u => (clips.has(u.id) ? [[clips.get(u.id)!.file, u] as const] : [])))
-      taken = { doc, said, options: { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, lookup: true, files } }
+      if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
+      takes.push(new Set([...clips.values()].map(clip => clip.file)))
+      if (takes.length > TAKES) takes.shift()
       return track
     })
     taking = { doc, made }
@@ -249,14 +253,17 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     made.then(done, done)
     return made
   }
-  /** A clip of the synthesized lecture last taken, said again from the cache: why it may not be given (a consent withdrawn since), if it may not. */
-  const scriptClip = async (name: string): Promise<Response | undefined> => {
-    const known = taken && taken.doc === latestView(deckDir) ? taken : undefined
-    const said = known?.said.get(name)
-    if (!known || !said) return problem(404, `no clip ${name} in the lecture ${SCRIPT_TRACK}`)
+  /**
+   * Why a clip of a lecture may not be given, if it may not: `script`'s must be one of a lecture taken
+   * lately, a recorded lecture's one its utterances say; then the speech service gives it by its key from
+   * the cache (no synthesis: a clip the cache lost is 404), refusing a cloned voice whose consent was
+   * withdrawn (D-7).
+   */
+  const clipRefusal = async (id: string, name: string): Promise<Response | undefined> => {
+    const said = id === SCRIPT_TRACK && voiced() ? takes.some(take => take.has(name)) : recorded(id)?.utterances.some(u => u.clip === name)
+    if (!said) return problem(404, `no clip ${name} in the lecture ${id}`)
     try {
-      await synthesizeClip(speech(), said, known.options)
-      return undefined
+      return (await cachedClip(speech(), name)) ? undefined : problem(404, `the clip ${name} is not in the synthesis cache`)
     } catch (error) {
       if (error instanceof Refusal) return problem(error.status, error.message)
       return problem(403, `the clip ${name} may not be given: ${errorMessage(error)}`)
@@ -337,12 +344,11 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     },
   }
 
-  /** A file of a lecture: a clip of the synthesis cache (of `script`: one it says still, D-7), or a media file of its directory. */
+  /** A file of a lecture: a clip of the synthesis cache it says (its voice allowed now, D-7), or a media file of its directory. */
   const lectureFile = async (id: string, path: string[], request: Request): Promise<Response> => {
     if (path[0] === CLIPS_DIR && path.length === 2) {
       const name = decoded(path.slice(1))
-      const refused = id === SCRIPT_TRACK && voiced() ? await scriptClip(name) : undefined
-      return refused ?? serveFile(deckDir, clipFile(deckDir, name), request)
+      return await clipRefusal(id, name) ?? serveFile(deckDir, clipFile(deckDir, name), request)
     }
     return serveFile(deckDir, mediaFile(deckDir, id, decoded(path)), request)
   }

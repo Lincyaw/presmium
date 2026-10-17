@@ -3,8 +3,8 @@
 // refused without a token, gets 401 with a token a plugin's route issued once it is revoked (its
 // subscription ended), and hears of a new position it subscribed to; `presmium-mcp` lists the read tools
 // on stdio and loads the packages installed with the deck's CLI.
-// WP-89b: a window's position found by its section (F-41); a plugin's tool learns the view of the call
-// (C-6); presmium-mcp checks as presmium check does, and its host compiles the student view (F-03).
+// WP-89b: a window's position found by its section (F-41); presmium-mcp checks as presmium check does
+// (F-03). WP-92c: every token reads the whole deck, teachers' content included (no student view).
 // WP-92b: get_position gives the step in the whole deck's numbering, by the keys of the steps a window of
 // another numbering reports (F-85), and navigate sends the windows those keys.
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
@@ -221,12 +221,10 @@ describe('presmium dev', () => {
     expect(await page.answer((await page.next('approval')).id, true)).toBe(200)
     expect(await page.next('go')).toMatchObject({ section: '第三节', step: 2, trail: [notebookOnly.id, shared.id] })
     expect((await moving).isError).toBeFalsy()
-    // A plugin's tool reads the whole deck (C-6): no token reads the student view any more.
-    expect(resultOf(await client.callTool({ name: 'fixture_view', arguments: {} }))).toEqual({ view: 'full' })
   })
 })
 
-it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its line; its host compiles the student view (F-03)', async () => {
+it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its line; its host compiles the whole deck (F-03)', async () => {
   const dir = deck()
   const client = new Client({ name: 'presmium-test', version: '0.1.0' })
   try {
@@ -242,13 +240,12 @@ it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its lin
     expect(diagnostics.map(key).sort()).toEqual(findings.map(f => key({ check: f.checkId, severity: f.severity, message: f.message, file: f.source.file.slice(dir.length + 1), line: f.source.line })).sort())
     expect(diagnostics.map(f => f.check)).toContain('fixture.mcp.check')
 
-    // The student view of presmium-mcp's host: without the teacher's section.
+    // presmium-mcp's host compiles the whole deck for the editor's agent: the teacher's section too.
     const { compilerHost } = await import('../src/stdio.ts')
     const host = compilerHost(join(dir, 'lecture.md'), [])
-    const student = (await host.compile('', 'student')).doc
-    expect(student.sections.map(s => s.id)).toEqual(['mcp-测试文稿', 'merge', '第三节'])
-    expect(JSON.stringify(student)).not.toContain('TEACHERNOTE27')
-    expect(JSON.stringify((await host.compile('', 'full')).doc)).toContain('TEACHERNOTE27')
+    const { doc } = await host.compile('')
+    expect(doc.sections.map(s => s.id)).toContain('teacher')
+    expect(JSON.stringify(doc)).toContain('TEACHERNOTE27')
   } finally {
     await client.close()
     rmSync(dir, { recursive: true, force: true })

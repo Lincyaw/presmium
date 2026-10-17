@@ -4,8 +4,8 @@
  * (`CompilerOptions.audience`, `presmium build --audience`) leaves the other
  * audiences' content out before the plugin passes and compile-time execution,
  * so no pass, executor or renderer gets it; `audienceDocument` gives the same
- * view of a document already compiled (`Compilation.forAudience`, the student
- * view of `presmium serve`). Block ids stay those of the whole document; the
+ * view of a document already compiled (`Compilation.forAudience`, which a
+ * build of a whole compilation for an audience builds). Block ids stay those of the whole document; the
  * steps left are numbered again and the sections numbered again.
  *
  * In the source, `:audience:` on a directive inside another directive's body
@@ -381,7 +381,7 @@ function ownText(doc: IRDocument): string {
  * Every file under the `paths` a build wrote that holds a sentence of the
  * content left out for `audience`: an error located at the content left out,
  * naming the file relative to `base`, and the sentence unless `quote` is
- * false (findings the audience itself gets, e.g. a `tutor` token's build).
+ * false (findings the audience itself may read).
  */
 export async function scanOutputs(left: Withheld[], paths: string[], audience: string, base: string, quote = true): Promise<Finding[]> {
   const wanted = left.filter(item => item.sentences.length > 0)

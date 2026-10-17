@@ -1,138 +1,15 @@
 /**
- * A recorded lecture as an audience sees the deck (P-55 × P-131): a view of
- * the deck for an audience (the students') leaves out sections and blocks,
- * so its lecture leaves out what was said and done with them, and plays on
- * the steps the view numbers. It fails closed: a section's audio and video
- * go when the view leaves anything of the section out (the camera and the
- * screen saw it, the voice may have said it); what was said and done at a
- * step where something left out is shown or said goes too; and so does what
- * the view cannot place (a section or a block the deck no longer has, as
- * after a teachers' section was relabeled since the recording).
+ * A recorded lecture as a build publishes it (P-55 × P-131): without what
+ * was said and done in the sections the built deck does not have
+ * (`deckTrack`), and in a version for an audience (the students') only in
+ * the sections that version has as they were recorded (`recordedSections`,
+ * F-13). It fails closed: what it cannot place goes, and so do the audio
+ * and video of a section that lost something since the recording.
  */
-import { irBlocks, isRecord } from '@presmium/kernel'
-import type { IRBlock, IRDocument, IRSection, TrackEvent } from '@presmium/kernel'
-import { blockDrift, blockKey, blockOf, irHash, sectionHashes } from './drift.ts'
+import type { IRDocument, TrackEvent } from '@presmium/kernel'
+import { blockDrift, blockOf, irHash, sectionHashes } from './drift.ts'
 import { anchorOf, timedEvents } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance } from './track.ts'
-
-/** What a view of a document leaves out of it: section ids, and blocks by key (`blockKey`). */
-export interface LeftOut {
-  sections: ReadonlySet<string>
-  blocks: ReadonlySet<string>
-  /** The blocks it keeps with something inside left out: a node for other audiences, or the text of a reference to what it leaves out. */
-  inside: ReadonlySet<string>
-}
-
-/** What of a block's own content a view may leave out of it: its nodes marked for audiences, and its references that say their target's text. */
-function withheldParts(block: IRBlock): number {
-  let count = 0
-  const visit = (value: unknown): void => {
-    if (Array.isArray(value)) return value.forEach(visit)
-    if (!isRecord(value)) return
-    if (isRecord(value.data) && Array.isArray(value.data.audience)) count++
-    if (value.type === 'crossReference' && Array.isArray(value.children) && value.children.length > 0) count++
-    for (const [key, item] of Object.entries(value)) if (key !== 'position') visit(item)
-  }
-  const { node } = block
-  if (node.type === 'markdown') visit(node.mdast)
-  else if (node.type === 'component') visit([node.props, node.fallback])
-  return count
-}
-
-const lefts = new WeakMap<IRDocument, { view: IRDocument, left: LeftOut }>()
-
-/** What `view` leaves out of `whole`: the sections and blocks of `whole` it does not have, and those it has with less inside. */
-export function leftOut(whole: IRDocument, view: IRDocument): LeftOut {
-  const known = lefts.get(whole)
-  if (known?.view === view) return known.left
-  const shown = new Map(view.sections.map(section => [section.id, new Map([...irBlocks(section.blocks)].map(block => [block.id, block]))]))
-  const sections = new Set<string>()
-  const blocks = new Set<string>()
-  const inside = new Set<string>()
-  for (const section of whole.sections) {
-    const kept = shown.get(section.id)
-    if (!kept) sections.add(section.id)
-    for (const block of irBlocks(section.blocks)) {
-      const own = kept?.get(block.id)
-      if (!own) blocks.add(blockKey(section.id, block.id))
-      else if (own !== block && withheldParts(own) < withheldParts(block)) inside.add(blockKey(section.id, block.id))
-    }
-  }
-  const left = { sections, blocks, inside }
-  lefts.set(whole, { view, left })
-  return left
-}
-
-/** Whether a view leaves nothing out. */
-export function leavesNothing(left: LeftOut): boolean {
-  return left.sections.size === 0 && left.blocks.size === 0 && left.inside.size === 0
-}
-
-/**
- * The steps of a section as its view numbers them, the view keeping the
- * blocks `kept` (as the compiler's view renumbers the steps no visual block
- * takes any more); undefined for a step the view does not have.
- */
-function viewSteps(section: IRSection, kept: ReadonlySet<string>): (step: number) => number | undefined {
-  const blocks = [...irBlocks(section.blocks)]
-  if (blocks.every(block => kept.has(block.id))) return step => step
-  const used = new Set([0])
-  for (const block of blocks) {
-    if (block.role !== 'visual' || !kept.has(block.id)) continue
-    for (let step = block.at; step <= block.at + (block.span ?? 0); step++) used.add(step)
-    if (block.until !== undefined) used.add(block.until)
-  }
-  if (used.size > section.steps) return step => step
-  const steps: (number | undefined)[] = []
-  for (let step = 0, n = -1; step <= section.steps; step++) steps.push(used.has(step) ? ++n : undefined)
-  return step => steps[Math.min(step, section.steps)]
-}
-
-/** The steps a block is seen or heard at: a visual block from its step until it goes (the section's end when it stays), narration at its step. */
-function shownAt(block: IRBlock, last: number): number[] {
-  const from = Math.min(block.at, last)
-  const to = block.role === 'visual' ? Math.min(block.until === undefined ? last : block.until - 1, last) : from
-  return Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i)
-}
-
-/** Where the places of a document are in a view of it. */
-export interface ViewPlaces {
-  /**
-   * The view's number of step `step` of section `section` of the whole
-   * document (steps past the last are the last); undefined when the view
-   * does not have that section or step, or leaves out something seen or
-   * heard at that step.
-   */
-  step(section: string, step: number): number | undefined
-  /** Whether the view has the section. */
-  has(section: string): boolean
-  /** Whether the view has the section and leaves nothing of it out. */
-  whole(section: string): boolean
-}
-
-/** The places of `whole` in its view that leaves out `left`. */
-export function viewPlaces(whole: IRDocument, left: LeftOut): ViewPlaces {
-  const steps = new Map<string, (step: number) => number | undefined>()
-  const touched = new Set<string>()
-  for (const section of whole.sections) {
-    if (left.sections.has(section.id)) continue
-    const blocks = [...irBlocks(section.blocks)]
-    const gone = (block: IRBlock) => left.blocks.has(blockKey(section.id, block.id))
-    const hidden = new Set<number>()
-    for (const block of blocks) {
-      if (!gone(block) && !left.inside.has(blockKey(section.id, block.id))) continue
-      touched.add(section.id)
-      for (const step of shownAt(block, section.steps)) hidden.add(step)
-    }
-    const number = viewSteps(section, new Set(blocks.filter(block => !gone(block)).map(block => block.id)))
-    steps.set(section.id, step => (hidden.has(Math.min(step, section.steps)) ? undefined : number(step)))
-  }
-  return {
-    step: (section, step) => steps.get(section)?.(step),
-    has: section => steps.has(section),
-    whole: section => steps.has(section) && !touched.has(section),
-  }
-}
 
 /** How a lecture is cut to a view: where its things are in the view, and which sections and recordings it keeps. */
 interface Cut {
@@ -223,32 +100,6 @@ function cut(track: LectureTrack, view: Cut): LectureTrack | undefined {
     utterances,
     events,
   }
-}
-
-/**
- * The lecture as the audience of a view of `whole` (leaving out `left`) gets
- * it, `whole` numbering its steps as the lecture was recorded (the web
- * form's): only what was said and done in the sections the view has, at the
- * steps it has where it leaves out nothing seen or heard (numbered as it
- * numbers them), and on the blocks it has (a block moved since the
- * recording is found by its content); the audio and video of a section only
- * when nothing of it was left out. What it cannot place (a section or a
- * block the deck no longer has, a moment before the first move) is left
- * out. Undefined when nothing is left.
- */
-export function audienceTrack(track: LectureTrack, whole: IRDocument, left: LeftOut): LectureTrack | undefined {
-  const places = viewPlaces(whole, left)
-  const drift = blockDrift(track, whole)
-  return cut(track, {
-    place: (section, step) => (section === undefined ? undefined : places.step(section, step)),
-    block(key, placed) {
-      const found = drift.get(key)
-      const now = found && found.grade !== 'lost' ? found.to ?? key : undefined
-      return placed && now !== undefined && places.has(now.slice(0, now.lastIndexOf('/'))) && !left.blocks.has(now)
-    },
-    section: id => places.has(id),
-    media: id => places.whole(id),
-  })
 }
 
 /**
