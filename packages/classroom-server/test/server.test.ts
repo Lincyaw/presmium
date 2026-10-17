@@ -206,6 +206,46 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s entr
   expect(late.doc.getMap('store:quizzes').toJSON()).toEqual({ 's/quiz': { open: true } })
 })
 
+it('finds the participant where its collection puts it in the key: a learner whose id is a part of a section id cannot overwrite nor delete another learner\'s answer, and is told so (F-27)', async () => {
+  const presenter = await join('room-sec', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
+  const alice = await join('room-sec', { participant: 'alice', key: 'alice-key' })
+  presenter.doc.getMap('session').set('status', 'active')
+  await expect.poll(() => alice.doc.getMap('session').get('status')).toBe('active')
+  // Item ids are placeKeys, `<section>/<block>`, and a section id is often a MyST label such as `sec:intro`.
+  alice.doc.getMap('store:answers').set(...answer('sec:intro/quiz-1', 'alice', 1))
+  alice.doc.getMap('store:questions').set('alice:q1', { author: 'alice', text: '为什么？' })
+  await expect.poll(() => presenter.doc.getMap('store:questions').has('alice:q1')).toBe(true)
+  const own = presenter.doc.getMap('store:answers').get('sec:intro/quiz-1:alice')
+
+  // `sec` connects, writes its own answer, then tries alice's: an answer in its own name, a deletion,
+  // and a question under alice's key. Each from a connection of its own, which the server closes (4403:
+  // the session plugin starts again from the room and tells the learner).
+  const sec = await join('room-sec', { participant: 'sec', key: 'sec-key' })
+  sec.doc.getMap('store:answers').set(...answer('sec:intro/quiz-1', 'sec', 2))
+  await expect.poll(() => presenter.doc.getMap('store:answers').has('sec:intro/quiz-1:sec')).toBe(true)
+  // An entry under sec's key that names someone else (here the presenter's) stays theirs too.
+  presenter.doc.getMap('store:pulse').set('sec:intro/pulse-1:sec', { pulse: 'sec:intro/pulse-1', participant: 'alice', level: 1 })
+  await expect.poll(() => sec.doc.getMap('store:pulse').has('sec:intro/pulse-1:sec')).toBe(true)
+  const tries = await Promise.all([1, 2, 3, 4].map(() => join('room-sec', { participant: 'sec', key: 'sec-key' })))
+  const closes = tries.map(t => providerClosed(t.provider))
+  tries[0]!.doc.getMap('store:answers').set('sec:intro/quiz-1:alice', { quiz: 'sec:intro/quiz-1', participant: 'sec', choice: [3] })
+  tries[1]!.doc.getMap('store:answers').delete('sec:intro/quiz-1:alice')
+  tries[2]!.doc.getMap('store:questions').set('alice:q1', { author: 'sec', text: '改掉' })
+  tries[3]!.doc.getMap('store:pulse').delete('sec:intro/pulse-1:sec')
+  expect(await Promise.all(closes)).toEqual([4403, 4403, 4403, 4403])
+  expect(drops('room-sec').map(d => [d.writer.participant, d.reason]).sort()).toEqual([
+    ['sec', 'a change to another participant\'s entry in store:pulse'],
+    ['sec', 'a write to store:answers under another participant\'s key'],
+    ['sec', 'a write to store:answers under another participant\'s key'],
+    ['sec', 'a write to store:questions under another participant\'s key'],
+  ])
+
+  // Alice's entries are as she wrote them, for everyone.
+  const late = await join('room-sec')
+  expect(late.doc.getMap('store:answers').get('sec:intro/quiz-1:alice')).toEqual(own)
+  expect(late.doc.getMap('store:questions').get('alice:q1')).toEqual({ author: 'alice', text: '为什么？' })
+})
+
 /**
  * An update with one struct of a client of its own that sets `value` right after the struct of
  * `client` at `clock`, encoded as Yjs does (version 1): a forged client can send it before
@@ -329,17 +369,26 @@ it('keeps the presenter\'s client, known from awareness only, as the presenter\'
   expect(drops('room-k')).toHaveLength(2)
 })
 
-it('closes the connection of a refused update, and takes the learner\'s writes again once the client starts over', async () => {
+it('closes the connection of a refused update, leaves nothing of it in the room, and takes the learner\'s writes again once the client starts over (F-27)', async () => {
   const presenter = await join('room-h', { claim: 'presenter-key' })
   const learner = await join('room-h', { participant: 'p1', key: 'p1-key' })
   const code = providerClosed(learner.provider)
   learner.doc.getMap('store:quizzes').set('q', { open: true })
   expect(await code).toBe(4403)
+  // A refused update under a name the room does not have: checking it adds no such type to the room.
+  const other = await join('room-h', { participant: 'p1', key: 'p1-key' })
+  const otherCode = providerClosed(other.provider)
+  other.doc.getMap('store:p1-junk').set('x', 1)
+  expect(await otherCode).toBe(4403)
   // As the session plugin does: a new document, connected again with the same participant.
   const again = await join('room-h', { participant: 'p1', key: 'p1-key' })
   again.doc.getMap('store:answers').set(...answer('q', 'p1', 1))
   await expect.poll(() => presenter.doc.getMap('store:answers').get('q:p1')).toEqual({ quiz: 'q', participant: 'p1', choice: [1] })
   expect(presenter.doc.getMap('store:quizzes').toJSON()).toEqual({})
+  // The archive holds every top-level type of the room: only what was written.
+  const response = await fetch(`${url.replace(/^ws/, 'http')}/archive/room-h`, { method: 'POST', body: 'presenter-key' })
+  const { file } = await response.json() as { file: string }
+  expect(Object.keys(JSON.parse(readFileSync(joinPath(deck, file), 'utf8')).document).sort()).toEqual(['session', 'store:answers'])
 })
 
 it('takes awareness states only for a connection\'s own clients, naming the participant it proved (P-60)', async () => {

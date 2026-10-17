@@ -32,25 +32,31 @@
  * only (`ctx.config.homePlugins`, package name to directory: in `presmium
  * serve` the operator plugins, e.g. the assistant's `AGENT` for drafting a
  * document) to the home page.
+ *
+ * A link of a document to another document's entry file or directory
+ * (`../bpe/lecture.md#extend-c`, `RenderContext.documentLink`, C-4) goes to
+ * that document's page of the section or label its fragment names
+ * (`/bpe/extend.html#extend-c`); a document's source is never published.
  */
-import { existsSync, mkdirSync, realpathSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, realpathSync, rmSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
-import { dirname, isAbsolute, join, relative, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEFAULT_LANG, deckLocale, errorMessage, localRequestRefusal } from '@presmium/kernel'
-import type { IRDocument, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, localRequestRefusal, nodeMdast } from '@presmium/kernel'
+import type { DocumentLink, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
 import { createProxyServer } from 'http-proxy-3'
-import { pageLink, searchDocuments, siteShell, SITE_LABELS, toPages, urlPath } from '../domain/index.ts'
+import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, urlPath } from '../domain/index.ts'
 import type { Neighbour, SearchDocument } from '../domain/index.ts'
 import { clientModules } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 import { publishedFile } from './publish.ts'
+import type { DocumentPage } from './publish.ts'
 import { buildDocument, devDocument } from './renderer.ts'
 import type { DocumentDevServer, DocumentSite } from './renderer.ts'
-import { linkDependencies, OG_TITLE, write } from './site.ts'
+import { linkDependencies, OG_TITLE, SRC_EXCLUDE, write } from './site.ts'
 import type { WorkspaceOptions } from './site.ts'
 import { vitepressBuild, vitepressDev } from './vitepress.ts'
 
@@ -65,6 +71,10 @@ export const DOCUMENTS_ENDPOINT = '@presmium/documents.json'
 const LIST_PAGE = 'documents'
 /** The workspace's configuration at its root, to which the site's local `head.image` is relative. */
 const WORKSPACE_FILE = 'presmium.workspace.yaml'
+/** A document's entry file in its directory. */
+const DECK_ENTRY = 'lecture.md'
+/** URLs that name no file: a scheme, protocol-relative, or a fragment. */
+const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 /** The options of the workspace's `site` that make the site shell (P-78). */
 const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap']
 
@@ -150,11 +160,84 @@ function homeModules(ctx: RenderContext): ClientModules {
   return siteModules({ ...ctx, plugins: [...ctx.plugins, ...names], pluginDirs: { ...ctx.pluginDirs, ...own } })
 }
 
+/** A URL escape decoded; a malformed one stays as written. */
+function decoded(text: string): string {
+  try {
+    return decodeURIComponent(text)
+  } catch {
+    return text
+  }
+}
+
+/**
+ * The document of the workspace a block's URL links to (`RenderContext.documentLink`,
+ * C-4): a document's entry file or its directory, by its real path, with the
+ * URL's fragment. The site's context gives it when its host does; else it is
+ * found here as the compiler finds it: the workspace's site context
+ * (`siteContext` of @presmium/workspace, which `presmium build` and `serve`
+ * use for a workspace) gives neither `documentLink` nor the compiler's guard
+ * against publishing a document's source, so this copy and the guard in
+ * `documentContext` stay until it does.
+ */
+function documentLinkOf(ctx: RenderContext): (source: SourcePos, url: string) => DocumentLink | undefined {
+  if (ctx.documentLink) return (source, url) => ctx.documentLink!(source, url)
+  return (source, url) => {
+    const path = url.replace(/[?#].*$/s, '')
+    if (REMOTE.test(url) || !path || path.startsWith('/')) return undefined
+    let target: string
+    try {
+      target = realpathSync(resolve(dirname(source.file), decoded(path)))
+    } catch {
+      return undefined
+    }
+    const stat = statSync(target)
+    const dir = stat.isFile() && basename(target) === DECK_ENTRY ? dirname(target) : stat.isDirectory() && existsSync(join(target, DECK_ENTRY)) ? target : undefined
+    const rel = dir === undefined ? undefined : relative(realpathSync(ctx.workspaceRoot), dir)
+    if (rel === undefined || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined
+    const hash = url.indexOf('#')
+    const fragment = hash < 0 ? '' : decoded(url.slice(hash + 1))
+    return { dir: rel.split(sep).join('/'), ...fragment ? { fragment } : {} }
+  }
+}
+
+/** The section of a document that holds a label (a block's id, a figure's or an equation's). */
+function labelSection(doc: IRDocument, label: string): string | undefined {
+  const named = (node: MdastNode): boolean => node.identifier === label || node.label === label || Boolean(node.children?.some(named))
+  for (const { section, block } of docBlocks(doc)) {
+    if (block.id === label || nodeMdast(block.node).some(named)) return section.id
+  }
+  return undefined
+}
+
+/**
+ * Where a link to a document of the site goes (F-25): that document's page of
+ * the section its fragment names (at the section, unless it opens the page),
+ * or of the section holding the label, at the label; its first page without a
+ * fragment. A document not compiled yet (a dev site) is linked at its
+ * directory; one that is not in the site keeps the link as written.
+ */
+function documentPage(site: SiteSpec, base: string, docs: Map<string, IRDocument>): DocumentPage {
+  return ({ dir, fragment }) => {
+    if (!site.documents.some(entry => entry.dir === dir)) return undefined
+    const root = documentBase(base, dir)
+    const anchor = fragment ? `#${encodeURIComponent(fragment)}` : ''
+    const doc = docs.get(dir)
+    if (!doc || !fragment) return `${root}${anchor}`
+    // Site-relative links of the document's sections: `/`, `/extend.html`, `/extend.html#extend-c`.
+    const links = sectionLinks(toPages(doc))
+    if (links[fragment]) return `${root}${links[fragment].slice(1)}`
+    const section = labelSection(doc, fragment)
+    return `${root}${(section ? links[section]!.split('#')[0]! : '/').slice(1)}${anchor}`
+  }
+}
+
 /**
  * The render context of one document of the site: its deck directory, its
- * plugins, its base under the site's, and `/…` URLs found in its own `public/`.
+ * plugins, its base under the site's, `/…` URLs found in its own `public/`,
+ * and its links to documents, whose sources are not published.
  */
 function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: IRDocument, outDir: string, workDir: string): RenderContext {
+  const documentLink = documentLinkOf(ctx)
   const deckDir = join(ctx.workspaceRoot, dir)
   const pluginDirs: Record<string, string> = {}
   for (const name of doc.config.plugins) {
@@ -174,8 +257,14 @@ function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: I
     base: documentBase(ctx.base, dir),
     vitePlugins: [],
     translations: undefined,
+    documentLink,
     localAsset(source, url) {
-      if (!url.startsWith('/') || url.startsWith('//')) return ctx.localAsset(source, url)
+      if (documentLink(source, url)) return undefined
+      if (!url.startsWith('/') || url.startsWith('//')) {
+        const found = ctx.localAsset(source, url)
+        // A document's source under another name (a link to its entry file) is not published either.
+        return found && basename(realpathSync(found.file)) === DECK_ENTRY ? undefined : found
+      }
       // `/…` is the deck's own public/: named relative to the block's file, which the site's context resolves.
       // Another `/…` is a path of the site, not a file to publish.
       const path = url.replace(/[?#].*$/s, '')
@@ -234,6 +323,7 @@ function documentSite(ctx: RenderContext, site: SiteSpec, dir: string, extra: Cl
   const base = documentBase(ctx.base, dir)
   const single = site.documents.length === 1 && site.documents[0]!.dir === ''
   return {
+    documentPage: documentPage(site, ctx.base, docs),
     workspace: { document: dir, home: single ? base : listLink(site, ctx.base), endpoints: endpoints(base), served, anyHost: served && ctx.config.scoped === true, allow, ...siteLinks(site, ctx.base, dir, docs) },
     extra,
     config: join(ctx.workspaceRoot, WORKSPACE_FILE),
@@ -275,6 +365,7 @@ function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules:
     base: ctx.base,
     cleanUrls: false,
     ignoreDeadLinks: true,
+    srcExclude: SRC_EXCLUDE,
     ...shell.head?.description ? { description: shell.head.description } : {},
     head,
     themeConfig: { ...labels.themeConfig, ...shell.nav ? { nav: shell.nav } : {}, ...shell.footer ? { footer: shell.footer } : {} },

@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -9,10 +10,13 @@ import { SLIDES, WEB } from './urls.ts'
 // The demo lecture (examples/demo): it builds to the three media without warnings, as `pnpm demo:build`
 // does (on another machine, but those of recordings made in another environment; its headmatter also
 // lists the lecture renderer, which is not built by default: it needs a speech engine), and its built
-// web form and slides (`pnpm demo:build`, served on WEB and SLIDES) open and page. The features are
+// web form and slides (`pnpm demo:build`, served on WEB and SLIDES) open and page, and its slides export to
+// a PDF, a page a slide (C-8; enabled once WP-89e is merged). The features are
 // tested on fixture decks of their own; this spec only reads the lecture's sections from its IR, and
 // e2e/demo.spec.ts checks the lecture's own examples.
 const DEMO = fileURLToPath(new URL('../examples/demo', import.meta.url))
+/** `presmium-export` of the publishing plugin, which the lecture lists. */
+const EXPORT = fileURLToPath(new URL('../packages/addon-publish/bin/presmium-export.mjs', import.meta.url))
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
 
@@ -45,6 +49,26 @@ test('the lecture builds to the web, the slides and a notebook without warnings'
     const notebook = JSON.parse(readFileSync(join(out, 'notebook/lecture.ipynb'), 'utf8')) as { cells: { metadata: { presmium?: { section: string } } }[] }
     const ids = (await sections()).map(section => section.id)
     expect(new Set(notebook.cells.map(cell => cell.metadata.presmium?.section))).toEqual(new Set(ids))
+  } finally {
+    rmSync(out, { recursive: true, force: true })
+  }
+})
+
+test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8)', async ({ browserName }) => {
+  test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
+  // The runner's output in the slides and the export of the lecture are WP-89e's fixes (F-18); the acceptor
+  // enables this case once 89e is merged.
+  test.fixme(true, 'needs WP-89e (F-18): the export of the demo lecture fails before it')
+  test.setTimeout(900_000)
+  const out = mkdtempSync(join(tmpdir(), 'presmium-demo-export-'))
+  try {
+    const exported = spawnSync(process.execPath, [EXPORT, DEMO, '--output', join(out, 'demo.pdf'), '--json'], { cwd: DEMO, encoding: 'utf8', timeout: 840_000 })
+    expect(exported.status, exported.stderr).toBe(0)
+    const report = JSON.parse(exported.stdout) as { format: string, pages: number, links: { url: string, pages: number[] }[] }
+    expect(report.format).toBe('pdf')
+    expect(report.pages).toBe((await sections()).length)
+    expect(report.links.filter(link => link.pages.length === 0)).toEqual([])
+    expect(readFileSync(join(out, 'demo.pdf')).subarray(0, 5).toString()).toBe('%PDF-')
   } finally {
     rmSync(out, { recursive: true, force: true })
   }

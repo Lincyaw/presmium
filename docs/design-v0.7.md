@@ -505,7 +505,6 @@ interface SpeechService {
 | `openai-compatible` | 按地址接入 | Groq（免费转写，每天 8 小时，带逐词时间）、OpenAI、自建的 Speaches、Kokoro-FastAPI 等 |
 | `azure` | 可选 | 免费档的合成支持书签与中文词边界，适合开发时测试合成 |
 | `fake` | CI | 真实的 HTTP 服务，同一协议；逐字时间确定（中文每字 220 ms 等），合成的音频中嵌入文字，合成再转写可以精确往返 |
-| `webspeech` | 浏览器预览 | 不能导出音频，只用于编辑时试听 |
 
 - **合成缓存**（原则 5）：键是规范化的（引擎、模型、音色、语言、语速、风格、读音词典哈希、要说的文字）的 sha256；文件为 `.presmium/speech/<键>.ogg` 与 `<键>.json`（逐字时间、时长、引擎信息、AI 生成标识），`speech.lock` 列出文稿用到的键与音频哈希。缓存随文稿提交（Opus 约 24 kbps，一小时约 11 MB）或用 LFS。构建只读缓存；缓存缺失又没有密钥时，`presmium check` 报错并指出是哪些段落。改一段只重新合成一段。
 
@@ -699,7 +698,7 @@ Kubernetes 只给文档与示例清单片段，不维护 Helm chart。
 - **`DEEPSEEK_BASE_URL` 指向别处时的请求**：`POST <DEEPSEEK_BASE_URL>/v1/messages`，`stream: true`，请求体有 `model`（默认 `deepseek-v4-flash`）、`messages`、`max_tokens`、`thinking`、`output_config`、`system`、`tools`；密钥只在 `x-api-key` 中，没有 `Authorization`。gateway 只认 `Authorization: Bearer`，所以 SHARED 中 agent-host 为每个会话起一个本机回环上的转发，把 `x-api-key` 改为 `Authorization`（`architecture.md` 4.8 节）。Anthropic 格式的 SSE（`message_start`、`content_block_*`、`message_delta`、`message_stop`，文字或 `tool_use`）即可应答，提交的消息以一整段 `agent_message_chunk` 到达，工具调用以 `tool_call`（`kind` 一律 `other`，`rawInput` 是输入）与 `tool_call_update` 到达。
 - **其他会把凭据带走的地方**：网页搜索 `web-search-deepseek` 带着 `DEEPSEEK_API_KEY`（同时以 `x-api-key` 与 `Authorization`）访问自己的地址（默认 DeepSeek 的官方地址，只读 `DEEPSEEK_SEARCH_BASE_URL`，不看 `DEEPSEEK_BASE_URL`），所以 LOCAL 中用 `PRESMIUM_MODEL_*` 时助手另把 `DEEPSEEK_SEARCH_BASE_URL` 设为运营者服务的 `/v1`。`$DSH_HOME/.credentials.yaml` 中存储的凭据先于环境变量，`$DSH_HOME/cordis.patch.yml` 在 profile 之上生效，所以助手给 DeepSeek Harness 一个 Presmium 自己的 `DSH_HOME`。出站请求遵守 `HTTPS_PROXY`（本机回环除外），测试以此确认只有假密钥时没有请求发出。
 - **启动与其他**：第一次在一个 `DSH_HOME` 中启动时初始化 `profiles/acp`，之后 `initialize` 约 0.6 秒、`session/new` 约 0.1 秒（含连接 MCP 服务）；`initialize` 的 `agentInfo` 是 `{ name: 'deepseek-harness-acp', version: '0.0.1' }`（ACP 桥的版本，不是 DeepSeek Harness 的）；它声明 `sessionCapabilities.close`。`--patch` 的路径要写绝对路径（相对路径相对于进程的 `cwd`，而 `cwd` 是会话的目录）。安装脚本（`node-pty`、`koffi`、`@deepseek-ai/dsh-subprocess-local` 等）不运行时 Linux 上 ACP、shell 与文件工具照常（`node-pty` 有随包的预编译二进制）；整个依赖约 860 MB（npm 安装）。
-- **Node 22.19**：本机 Node 22.22.1；`@deepseek-ai/dsh` 的 `package.json` 没有声明 `engines`，22.19 的要求出自它的文档（`docs/development.md`）。根目录的 `engines`（`>=22.18`）提高到 `>=22.19` 由验收者在合并时修改（交付报告中提出）。
+- **Node 22.19**：本机 Node 22.22.1；`@deepseek-ai/dsh` 的 `package.json` 没有声明 `engines`，22.19 的要求出自它的文档（`docs/development.md`）。根目录的 `engines`（`>=22.18`）提高到 `>=22.19` 由验收者在合并时修改（交付报告中提出）；K2 波次（WP-89c）把根目录、`@presmium/cli` 与助手插件的 `engines.node` 都设为 `>=22.19`。
 
 **WP-87 开始时的验证（2026-10-16，myst-parser 1.7.4、VitePress 1.6.4、Slidev 53.0.0）**的结论：
 

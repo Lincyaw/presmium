@@ -238,9 +238,9 @@ v0.8 新增的上下文之间的关系：
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 代码引用 | `CodeRefSpec` | `{code-ref}` 的声明：锚点、可选的锁定提交（`pin`）、逐步高亮的单元（`steps`）、版本（`variants`）、仓库网址 |
-| 代码来源 | `CodeRefOrigin`（扩展 IR 的 `CodeOrigin`） | 解析后的文件与行区间、锁定提交 `pin`、永久链接 `permalink`、解析状态、逻辑单元 `units`、漂移状态 `drift` |
+| 代码来源 | `CodeOrigin`（IR 的 `CodeNode.origin`） | 解析后的文件与行区间、锁定提交 `pin`、永久链接 `permalink`、解析状态、逻辑单元 `units`、漂移状态 `drift` |
 | 逻辑单元 | `Region` | 被嵌套 `#region` 标记出的子区间，用于分步高亮 |
-| 代码版本 | `CodeRefVariant`（扩展 IR 的 `CodeVariant`） | 同一代码块在某个提交的版本，逐步切换 |
+| 代码版本 | `CodeVariant`（IR 的 `CodeNode.variants`） | 同一代码块在某个提交的版本，逐步切换 |
 
 不变量：
 
@@ -305,7 +305,8 @@ v0.8 新增的上下文之间的关系：
 | 课堂会话 | `SessionSnapshot` | 课堂 ID、状态 `SessionStatus`（未开始、进行中、已结束）、当前参与者 |
 | 参与者 | `Participant` | ID、昵称、角色 `Role`（`presenter` 主讲、`learner` 学习者） |
 | 跟随模式 | `FollowMode` | `follow` 跟随主讲或 `free` 自主浏览 |
-| 位置 | `Place` | 课堂组件所在的章节与块 |
+| 主讲的位置 | `Position`（会话记录的 `cursor`） | 章节序号、步骤、视图，以及按 ID 的位置：章节 ID、已到达的步骤的键 `trail`（块 ID）、只给部分受众的章节要回退到的章节 `back`；学习者按它们在自己的版本中定位，所以完整版的主讲与学生版的学习者到同一节的同一步（决定 D-4） |
+| 位置 | `Place` | 课堂组件所在的章节与块；总览按本窗口版本的章节序号（`SectionNumbers`，按章节 ID）编号，不用写入者版本的序号 |
 | 测验 | `QuizSource`（题目与答案）、`QuizState`（开放与关闭） | 页内客观题 |
 | 作答 | `Answer` | 参与者对测验的一次作答，每人每题只计最后一次 |
 | 练习 | `ExerciseSource` | 题面、起始代码、校验用例 |
@@ -323,7 +324,7 @@ v0.8 新增的上下文之间的关系：
 - 统计只统计每位参与者的最后一次作答或投票。
 - 揭示内容在读者保存预测之前不显示；投在全班面前的放映画面按步骤显示。预测保存在本机（`SavedPrediction`，保存后不能修改），课堂中学习者的预测另写入 `predictions` 集合（`Prediction`，键含参与者 ID），主讲看到分布（`PredictionTally`，每人只计最后一次）。
 
-信任模型：课堂服务（`@presmium/classroom-server`）面向课堂自己的网络，不验证参与者身份，拿到加入链接的人都能连接。主讲人的权利由服务端强制：创建课堂的窗口连接时声明房间密钥（`?claim=<key>`），只有持有该密钥的连接可以写入课堂状态与测验的开放状态、归档课堂；学习者只能写入自己参与者 ID 下的作答。学习者的私有笔记在各自的房间中。
+信任模型：课堂服务（`@presmium/classroom-server`）面向课堂自己的网络，不验证参与者身份，拿到加入链接的人都能连接。主讲人的权利由服务端强制：创建课堂的窗口连接时声明房间密钥（`?claim=<key>`），只有持有该密钥的连接可以写入课堂状态与测验的开放状态、归档课堂；学习者只能写入自己参与者 ID 下的作答：服务端在键中按集合找参与者 ID 的位置（作答等在最后一段，提问在第一段），不在键的其他位置找，键上已属于他人的条目不能改写或删除（WP-89f）。学习者的私有笔记在各自的房间中。
 
 服务：`session`（当前参与者、角色、课堂状态）、`classroomStore`（共享文档的读写）。课堂插件向宿主的 `STATUS` 登记不含学习者身份的汇总 `ClassroomSummary`（参与人数、作答、预测与理解度的分布、练习的提交与通过人数、未回答的问题数；不含昵称、参与者 ID 与学习者写下的文字），agent 经 MCP 读取。
 
@@ -522,7 +523,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 字锚 | `UtteranceAnchor`（事件数据的 `at`） | 把事件绑定到语音段的第几个字；改文字、换音色后按新的逐字时间重新计算事件时刻 |
 | 块指纹 | `LectureTrack.blocks` | 被事件引用的块的内容指纹，用于漂移检查 |
 | 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；录制的讲授用媒体元素（`MediaClock`），合成的讲授用按已知偏移排列的片段（`ClipClock`），只有字幕时用 `SilentClock` |
-| 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色要有同意记录 `VoiceConsent`（见下文“语音”） |
+| 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色要有同意记录 `ConsentRecord`（见下文“语音”） |
 | 讲授计划 | `LecturePlan` | `lecture` 渲染端从 IR 得到的每一步要说的文字与提示标记 |
 | 提示标记 | `{cue}` 角色 | 讲解中的行内标记：说到此处时推进一步、聚光、提示、指点、点击、运行、圈画、停顿或标记章节 |
 | 读音 | `{say}` 角色、头部的读音词典 | 显示一种写法，读出另一种 |
@@ -548,9 +549,9 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 语音服务 | `SpeechService`（`SPEECH`） | 转写与合成；浏览器端经语音网关，Node 端直接调用引擎 |
-| 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）、`webspeech`（浏览器试听，只用本机音色，不能导出；它不给音频，所以不是 `SPEECH` 的引擎，由浏览器端的 `previewWebSpeech` 提供，WP-82）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
+| 引擎 | `SpeechEngineInfo` | `volcengine`（默认的生产引擎）、OpenAI 音频接口形态的引擎（按地址接入，如 Groq、OpenAI、自建服务）、`fake`（CI）；其他服务以后作为新的适配器加入。`provider` 是服务提供方的名字，界面据此标明；它来自运营者的配置（火山引擎为“火山引擎”，英文界面为 Volcengine） |
 | 引擎定义 | 环境变量 `PRESMIUM_SPEECH_<ID>_URL`、`PRESMIUM_SPEECH_<ID>_PROVIDER`、可选的 `PRESMIUM_SPEECH_<ID>_KEY` | 运营者在服务端给出的引擎：地址、服务提供方的名字与凭据，凭据只发往同一组中的地址（火山引擎的地址与名字固定在适配器中，只给凭据）；缺少地址或服务提供方时引擎不可用；文稿只用 ID 选择引擎 |
-| 同意记录 | `VoiceConsent`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`），只由所有者经服务端（SHARED 模式中只在所有者控制台的源上）或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
+| 同意记录 | `ConsentRecord`；`<consentDir>/<引擎>/<音色>.json` | 克隆音色的本人同意：说话人、范围、日期、同意声明录音的 sha256。放在运营者目录中的 `consentDir`（`settings.presmium.speech.consentDir`，默认 `consent`；LOCAL 模式的运营者目录在工作区之外的用户状态目录中，SHARED 模式是 gateway 的 `--operator-dir`），只由所有者经服务端（SHARED 模式中只在所有者控制台的源上）或运营者用 `presmium-speech consent` 登记，不随文稿提交 |
 | 语音网关 | `addon-speech` 的服务端贡献 `/__presmium/presmium.speech/v1/` | Presmium 与语音之间唯一的协议：OpenAI 音频接口的形态，加上返回逐词时间的 `/audio/speech/timestamps`；只有网关接触服务提供方 |
 | 合成 | `Synthesis` | 音频、时长、逐字时间、缓存键与引擎信息；`synthetic: true` |
 | 转写 | `Transcript` | 语言、时长、文字、带逐字时间的语音片段 |

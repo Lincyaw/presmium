@@ -5,11 +5,22 @@
  */
 import type { Participant, SessionStatus } from '@presmium/kernel'
 
-/** A place in the deck, as the hosts' navigation service gives it: section (slide) number, step, view. */
+/**
+ * A place in the deck, as the hosts' navigation service gives it: section
+ * (slide) number, step, view, and the place by ids (D-4, F-85): the full and
+ * the student build number their sections and steps apart, so a learner of
+ * one follows a presenter of the other by the section's id, the keys of the
+ * steps reached in it (`trail`) and, for a section only some audiences have,
+ * the section to go back to (`back`), which the hosts' navigation resolves in
+ * the learner's own build.
+ */
 export interface Position {
   slide: number
   step: number
   view?: string
+  section?: string
+  trail?: string[]
+  back?: string
 }
 
 /** A learner follows the presenter, or browses on their own. */
@@ -45,12 +56,14 @@ export function ended(now: number): SessionRecord {
 }
 
 export function samePosition(a: Position | undefined, b: Position | undefined): boolean {
-  return a?.slide === b?.slide && a?.step === b?.step && a?.view === b?.view
+  return a?.slide === b?.slide && a?.step === b?.step && a?.view === b?.view && a?.section === b?.section
+    && a?.trail?.join('\n') === b?.trail?.join('\n') && a?.back === b?.back
 }
 
-/** A position as the record keeps it: no other fields, no empty view. */
+/** A position as the record keeps it: no other fields, no empty view, section or section to go back to. */
 export function cursorOf(position: Position): Position {
-  return { slide: position.slide, step: position.step, ...position.view ? { view: position.view } : {} }
+  const { slide, step, view, section, trail, back } = position
+  return { slide, step, ...view ? { view } : {}, ...section ? { section } : {}, ...trail ? { trail: [...trail] } : {}, ...back ? { back } : {} }
 }
 
 /** Where a learner should be now: the presenter's position while following an active classroom. */

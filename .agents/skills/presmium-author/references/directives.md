@@ -151,7 +151,7 @@ print(sum(range(10)))
 - `:env:` 选运行环境：头部 `execute.environments` 中的名字（编译为执行器 `presmium.env.<名>`），或保留名 `browser`（按语言选执行器）；不写时取头部的 `execute.env`。与 `:executor:` 同时写是错误；未声明的环境是错误，诊断在代码块的行上。
 - `:session:` 会话名：同一会话的代码块共享解释器（前一块定义的变量后一块能用）。编译时按文稿中的顺序在同一个解释器中运行，改了其中一块整个会话重新执行；浏览器中每个页面、每个学习者各有一份，代码块旁的“重置会话”丢弃它。同一会话的块须在同一环境。
 - `:echo: false`（须有 `:run:`）：只显示输出，不显示代码与运行控件；只输出 Markdown（`text/markdown`）时按正文显示，用于从数据生成表格与列表。与 `:run: live` 同用时警告并按 `compile` 执行。
-- 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片。网页、幻灯片按类型显示（HTML 经清洗，幻灯片中放进沙箱 iframe），notebook 把输出原样写进单元格。
+- 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片（matplotlib 要装在运行代码的环境中：浏览器中的 Python 只有标准库，导入其他模块的 `live`、`both` 代码块得到 `presmium check` 的警告，改用 `:run: compile` 或只用标准库）。最后一条语句是表达式时，它的值（不为 `None`）像在 Jupyter 中一样显示为输出。网页、幻灯片按类型显示（HTML 经清洗，幻灯片中放进沙箱 iframe），notebook 把输出原样写进单元格。
 - 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
 - C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@presmium/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。C 中没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束：写成 `static int stats[256][256];` 或给初值。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
 - 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行（C 等语言要列出 `@presmium/slidev-addon-exec-wasi`），录制的输出显示在它下方。
@@ -314,7 +314,7 @@ print("hello")
 ```
 ````
 
-生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与开发服务器（`presmium dev`，网页与幻灯片都可以）；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
+生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与 Presmium 的服务端（`presmium dev` 或 `presmium serve`，网页与幻灯片都可以；运行与环境复刻是插件 `presmium.execLocal` 的服务端路由，编辑者可用，运行先经 `operate` 确认，WP-89e 起）；面板上没有把代码提交回仓库的按钮（P-25 已移出范围）；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
 
 ## 浏览器 GPU `presmium.execWebgpu`（`@presmium/slidev-addon-exec-webgpu`）
 
@@ -487,7 +487,7 @@ BPE 每一轮合并哪一对？
 ```
 ````
 
-生成 `PmQuiz`；少于两个选项或没有正确项时报错。notebook 中为题干与选项，答案折叠。
+生成 `PmQuiz`；少于两个选项或没有正确项时报错。notebook 与导出的静态形式中为题干与按字母标注的选项（`A. …`，与现场测验相同），答案折叠，以字母给出。
 
 ### `{exercise}`
 
@@ -563,7 +563,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 
 | 插件包 | 插件 ID | 作用 |
 |---|---|---|
-| `@presmium/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件 |
+| `@presmium/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件；编译步骤把每节的 ID、它的各步的键与要回退到的章节写进它那张幻灯片的 frontmatter（`presmiumId`、`presmiumSteps`、`presmiumBack`，课堂按它们在完整版与学生版之间跟随，`{hints}` 中不要用这些键） |
 | `@presmium/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `footnotes` 把脚注定义放到引用它的块旁 |
 | `@presmium/slidev-addon-publish` | `presmium.publish` | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
 | `@presmium/slidev-addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |

@@ -30,6 +30,9 @@ const GRAMMARS: Record<string, Loader> = import.meta.env.SSR ? {} : {
   rust: () => import('shiki/langs/rust.mjs'),
   go: () => import('shiki/langs/go.mjs'),
   java: () => import('shiki/langs/java.mjs'),
+  // The GPU's shaders and exec-wasi's Ruby, as the slides form highlights them.
+  wgsl: () => import('shiki/langs/wgsl.mjs'),
+  ruby: () => import('shiki/langs/ruby.mjs'),
 }
 
 /** Grammar names of languages besides those `languageId` of the kernel resolves. */
@@ -43,6 +46,7 @@ const ALIASES: Record<string, string> = {
   md: 'markdown',
   'c++': 'cpp',
   rs: 'rust',
+  rb: 'ruby',
 }
 
 export const THEMES = { light: 'github-light', dark: 'github-dark' } as const

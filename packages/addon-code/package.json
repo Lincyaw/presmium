@@ -23,6 +23,7 @@
     "simple-git": "^4.0.2"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*"
+    "@presmium/cli": "workspace:*",
+    "@presmium/compiler": "workspace:*"
   }
 }

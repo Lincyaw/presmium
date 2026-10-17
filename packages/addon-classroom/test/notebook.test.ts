@@ -142,7 +142,9 @@ it('shows a quiz as a question list and an exercise as code cells; live-only com
   expect(rest).toEqual([])
   expect(quiz?.type).toBe('markdown')
   expect(quiz?.source).toContain('BPE 每一轮合并哪一对相邻符号？')
-  expect(quiz?.source).toMatch(/1\.\s+最先出现的一对\n2\.\s+出现次数最多的一对/)
+  // The options are lettered as the answer names them, as in the live quiz (F-78).
+  expect(quiz?.source).toMatch(/A\. 最先出现的一对\n\nB\. 出现次数最多的一对/)
+  expect(quiz?.source).not.toMatch(/^1\.\s/m)
   expect(quiz?.source).toContain('<details><summary>答案</summary>B</details>')
 
   expect(of('exercise').slice(1)).toEqual([
@@ -170,8 +172,8 @@ it('writes an exercise\'s prompt as the deck\'s Markdown, its local image copied
 
   const [quiz] = of('quiz')
   expect(quiz?.source).toContain('- [x] an example in a fence is no option')
-  expect(quiz?.source).toMatch(/1\.\s+the first\n2\.\s+the second\n/)
-  expect(quiz?.source).not.toMatch(/3\.\s/)
+  expect(quiz?.source).toMatch(/A\. the first\n\nB\. the second\n/)
+  expect(quiz?.source).not.toMatch(/C\.\s/)
   expect(quiz?.source).toContain('<details><summary>Answer</summary>B</details>')
 
   // The pulse's default question, written at compile time.

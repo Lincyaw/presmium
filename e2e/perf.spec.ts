@@ -12,7 +12,9 @@ import type { BuiltDeck } from './fixtures/exec/deck.ts'
 // its key press. Times are taken in the page: from navigation start, and from the
 // keydown's timeStamp to the first animation frame that shows the new state. The frame
 // rate of N-02 is taken while things move: the guidance cursor of e2e/fixtures/guide in the
-// web form's present view, and page turns of the slides.
+// web form's present view, and page turns of the slides. The browser's own Event Timing of a key press
+// (to the next paint, layout included) is checked on slides with a Monaco runner, a flowchart and a
+// mind map (e2e/fixtures/content/heavy, F-83).
 
 const SECTIONS = 100
 
@@ -55,6 +57,8 @@ let site: Awaited<ReturnType<typeof serve>>
 let slides = ''
 let web = ''
 let guide: FixtureDeck
+/** Slides with a Monaco runner, a flowchart and a mind map (e2e/fixtures/content/heavy). */
+let heavy: FixtureDeck
 
 test.describe.configure({ mode: 'serial' })
 
@@ -68,12 +72,14 @@ test.beforeAll(async () => {
   slides = `${site.url}/slides`
   web = `${site.url}/web`
   guide = await buildFixture('guide')
+  heavy = await buildFixture('content/heavy', { to: 'slides' })
 })
 
 test.afterAll(async () => {
   await site?.close()
   deck?.remove()
   await guide?.close()
+  await heavy?.close()
 })
 
 /** Milliseconds from navigation start to the first frame in which `selector` is visible, in a fresh context. */
@@ -137,6 +143,39 @@ test('a slides click, a slides page turn and a step of the web present view rend
 
   test.info().annotations.push({ type: 'step render (ms)', description: JSON.stringify({ click, turn, step }) })
   for (const [action, ms] of Object.entries({ click, turn, step })) expect(ms, action).toBeLessThan(100)
+})
+
+test('on slides with a Monaco runner, a flowchart and a mind map, a key press is painted within 100 ms, as the browser times it (N-02, F-83)', async ({ page }) => {
+  // The Event Timing API times an event from its timestamp to the next paint after its handlers ran,
+  // layout and painting included; entries of 16 ms and more are kept.
+  await page.addInitScript(() => {
+    const keys: { duration: number, slide: string }[] = []
+    Object.assign(window, { pmKeys: keys })
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.name === 'keydown') keys.push({ duration: entry.duration, slide: location.pathname })
+      }
+    }).observe({ type: 'event', durationThreshold: 16, buffered: true } as PerformanceObserverInit)
+  })
+  await page.goto(`${heavy.slides}/1`)
+  await expect(page.locator('.slidev-page-1 .slidev-layout h1')).toBeVisible()
+  const last = heavy.doc.sections.length
+  // Each slide and each of its clicks, once the slide has drawn its editor, diagram or map.
+  const drawn: Record<string, string> = { 'heavy-runner': '.monaco-editor', 'heavy-flow': 'svg', 'heavy-map': 'svg' }
+  for (let no = 1; no <= last; no++) {
+    const section = heavy.doc.sections[no - 1]!
+    const slide = page.locator(`.slidev-page-${no}`)
+    await expect(slide).toBeVisible()
+    if (drawn[section.id]) await expect(slide.locator(drawn[section.id]!).first()).toBeVisible({ timeout: 30_000 })
+    await page.waitForTimeout(300)
+    for (let click = 0; click <= section.steps && no < last; click++) {
+      await page.keyboard.press('ArrowRight')
+      await page.waitForTimeout(300)
+    }
+  }
+  const keys = await page.evaluate(() => (window as { pmKeys?: { duration: number, slide: string }[] }).pmKeys!)
+  test.info().annotations.push({ type: 'keydown to paint (ms, 16 and over)', description: JSON.stringify(keys) })
+  for (const key of keys) expect(key.duration, `a key press on ${key.slide}`).toBeLessThan(100)
 })
 
 /** Milliseconds between the animation frames while `act` runs. */

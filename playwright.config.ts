@@ -51,6 +51,9 @@ const others = (process.env.PRESMIUM_E2E_BROWSERS ?? 'firefox,webkit').split(','
 export default defineConfig({
   testDir: 'e2e',
   timeout: 60_000,
+  // Several checkouts run their specs on one machine at once (PRESMIUM_E2E_*_PORT); under that
+  // load a window's update can take longer than Playwright's default 5 s to show.
+  expect: { timeout: 10_000 },
   fullyParallel: true,
   reporter: [['list']],
   use: { trace: 'retain-on-failure' },

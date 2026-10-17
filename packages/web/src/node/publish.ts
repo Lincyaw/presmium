@@ -1,10 +1,9 @@
-import { cpSync, existsSync, statSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import { join } from 'node:path'
-import { irBlocks, withProp } from '@presmium/kernel'
-import type { IRBlock, IRDocument, MdastNode, RenderContext, SourcePos } from '@presmium/kernel'
+import { irBlocks, mapHtmlUrls, publishedUrl, withProp } from '@presmium/kernel'
+import type { DocumentLink, IRBlock, IRDocument, LocalAsset, MdastNode, RenderContext, SourcePos } from '@presmium/kernel'
+import { copyPublished } from '@presmium/kernel/node'
 import katex from 'katex'
-import { mapHtmlUrls } from './html.ts'
-import { urlPath } from '../domain/index.ts'
 
 /** Directory of the site's `public/` where the deck's local files are copied. */
 export const MEDIA = 'media'
@@ -12,13 +11,10 @@ export const MEDIA = 'media'
 /** Nodes whose URL may name a local file: a card's `:link:` too (docs/ir.md 2.10). */
 const LINKED = new Set(['image', 'link', 'definition', 'card'])
 
-/** A local file a URL names, with the size and time it had when its name was hashed; or a directory, published with its file listing. */
-interface Asset {
-  file: string
-  name: string
+/** A published file (`RenderContext.localAsset`) with the size and time it had when its name was hashed. */
+interface Asset extends LocalAsset {
   size: number
   mtimeMs: number
-  directory: boolean
 }
 
 /**
@@ -35,12 +31,13 @@ function localAsset(ctx: RenderContext, source: SourcePos, url: string): Asset |
   const now = known && statSync(known.file, { throwIfNoEntry: false })
   if (known && now && now.size === known.size && now.mtimeMs === known.mtimeMs) return known
   const found = ctx.localAsset(source, url)
-  const stat = found && statSync(found.file)
+  const stat = found && statSync(found.file, { throwIfNoEntry: false })
   if (!found || !stat) {
     assets.delete(key)
     return undefined
   }
-  const asset = { ...found, size: stat.size, mtimeMs: stat.mtimeMs, directory: stat.isDirectory() }
+  // A host's own context may not say whether it found a directory.
+  const asset = { ...found, size: stat.size, mtimeMs: stat.mtimeMs, directory: found.directory ?? stat.isDirectory() }
   if (asset.directory) assets.delete(key)
   else assets.set(key, asset)
   return asset
@@ -61,16 +58,24 @@ function renderMath(tex: string, display: boolean): string {
 }
 
 /**
+ * Where a link to another document of a workspace site goes (C-4, F-25): the
+ * page of that document's section, with the URL's fragment. Undefined keeps
+ * the link as written: a single deck's build has no page of another document.
+ */
+export type DocumentPage = (link: DocumentLink) => string | undefined
+
+/**
  * The document as the web site publishes it: source paths and paths in the
  * plugin configuration relative to the deck (no local paths in a public
  * site); the local files that images, links, link definitions, cards, the
  * `src`, `poster` and `href` of raw HTML and the `assets` of components name
  * copied to `<publicDir>/media/` under their published names
- * (`RenderContext.localAsset`; a directory with its file listing, which the
- * URL opens), their URLs rewritten under the site base; and math rendered by
- * KaTeX, so the static pages show it.
+ * (`RenderContext.localAsset`, `publishedUrl`; a directory with its file
+ * listing, which the URL opens); a link to another document
+ * (`RenderContext.documentLink`) to its page when `documentPage` knows it,
+ * never to its source; and math rendered by KaTeX, so the static pages show it.
  */
-export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string): IRDocument {
+export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string, documentPage?: DocumentPage): IRDocument {
   const { deckDir } = ctx
   const copy = structuredClone(doc)
   const media = join(publicDir, MEDIA)
@@ -78,12 +83,13 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
     pos.file = ctx.portable(pos.file, deckDir) as string
   }
   const publish = (url: string, source: SourcePos): string | undefined => {
+    const linked = documentPage && ctx.documentLink?.(source, url)
+    if (linked) return documentPage(linked)
     const asset = localAsset(ctx, source, url)
     if (!asset) return undefined
-    const target = join(media, asset.name)
     // The name holds the content hash: an existing copy is up to date, and a dev server sees no change.
-    if (!existsSync(target)) cpSync(asset.file, target, { recursive: true })
-    return `${base}${MEDIA}/${urlPath(asset.name)}${asset.directory ? '/index.html' : ''}${/[?#].*$/s.exec(url)?.[0] ?? ''}`
+    copyPublished(asset, media)
+    return publishedUrl(asset, url, { prefix: `${base}${MEDIA}/` })
   }
   const mdast = (node: MdastNode, source: SourcePos) => {
     if (LINKED.has(node.type) && typeof node.url === 'string') node.url = publish(node.url, source) ?? node.url
@@ -125,7 +131,6 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
 export function publishedFile(ctx: RenderContext, publicDir: string, base: string, source: SourcePos, url: string): string | undefined {
   const asset = localAsset(ctx, source, url)
   if (!asset || asset.directory) return undefined
-  const target = join(publicDir, MEDIA, asset.name)
-  if (!existsSync(target)) cpSync(asset.file, target)
-  return `${base}${MEDIA}/${urlPath(asset.name)}`
+  copyPublished(asset, join(publicDir, MEDIA))
+  return publishedUrl(asset, url, { prefix: `${base}${MEDIA}/` })
 }

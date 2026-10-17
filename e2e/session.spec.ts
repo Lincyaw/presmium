@@ -330,3 +330,152 @@ test.describe('a classroom', () => {
     await close()
   })
 })
+
+test.describe('a classroom across the full and the student build (D-4)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 90_000 })
+  let classroom: Awaited<ReturnType<typeof startClassroomServer>>
+  let archives: string
+  let full: FixtureDeck
+  let student: FixtureDeck
+
+  test.beforeAll(async () => {
+    test.setTimeout(600_000)
+    archives = mkdtempSync(join(tmpdir(), 'presmium-e2e-session-audience-'))
+    classroom = await startClassroomServer(archives)
+    const server = (dir: string) => {
+      const file = join(dir, 'lecture.md')
+      writeFileSync(file, readFileSync(file, 'utf8').replace('renderers:\n', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:\n`))
+    }
+    ;[full, student] = await Promise.all([
+      buildFixture('session/audience', { edit: server }),
+      buildFixture('session/audience', { audience: 'student', edit: server }),
+    ])
+  })
+
+  test.afterAll(async () => {
+    await Promise.all([full?.close(), student?.close()])
+    classroom?.child.kill('SIGTERM')
+    if (archives) rmSync(archives, { recursive: true, force: true })
+  })
+
+  test('a learner of the student build follows the presenter of the full build to the same section, and the overview numbers the learner\'s places as the presenter\'s build does (F-85)', async ({ browser }) => {
+    // The teacher's section comes first, so the two builds number the sections after it apart.
+    expect([full.slide('follow-rules'), student.slide('follow-rules')]).toEqual([3, 2])
+    const { presenter, learner, close } = await people(browser)
+    await presenter.goto(`${full.web}/`)
+    const { panel, room } = await create(presenter)
+    await learner.goto(`${student.web}/?room=${room}&name=${encodeURIComponent('小明')}`)
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+
+    // The presenter presents the cover, the teacher's section, then the rules: the learner, whose build
+    // has no teacher's section, goes to the nearest section before it, the cover, and then shows the rules.
+    await panel.getByRole('button', { name: '关闭' }).click()
+    await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-cover')
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-plan')
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-rules')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-rules')
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+
+    // The rules' first step is the teacher's: the presenter's steps 1 to 3 are the learner's 0 to 2, found by
+    // the blocks each step shows, so the learner never shows a point the presenter has not reached.
+    const point = (page: Page, text: string) => present(page).getByText(text)
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(presenter)).toHaveAttribute('data-step', '1')
+    await expect(point(presenter, '教师提示')).toBeVisible()
+    await learner.waitForTimeout(1000)
+    await expect(present(learner)).toHaveAttribute('data-step', '0')
+    for (const step of [1, 2]) {
+      await presenter.keyboard.press('ArrowRight')
+      await expect(present(presenter)).toHaveAttribute('data-step', String(step + 1))
+      await expect(present(learner)).toHaveAttribute('data-step', String(step))
+      await expect(point(learner, '第一步')).toBeVisible()
+      await expect(point(learner, '第二步')).toBeVisible({ visible: step === 2 })
+    }
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
+
+    // The presenter goes back through the rules to the teacher's section: the learner, again, to the cover.
+    for (let i = 0; i < 5; i++) await presenter.keyboard.press('ArrowLeft')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-plan')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-cover')
+    for (let i = 0; i < 5; i++) await presenter.keyboard.press('ArrowRight')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
+
+    // The learner asks in the section their build numbers 3, one for students that both builds have; the
+    // presenter's overview numbers it 4.
+    await badge(learner).getByRole('button', { name: '自主浏览' }).click()
+    await present(learner).getByRole('button', { name: '退出放映' }).click()
+    const box = learner.locator('.pm-question-box')
+    await box.getByLabel('问题').fill('平手时先合并哪一对？')
+    await box.getByRole('button', { name: '提问' }).click()
+    await expect(box.getByRole('list', { name: '我的提问' })).toContainText('平手时先合并哪一对？')
+    await presenter.keyboard.press('Escape')
+    await presenter.getByRole('button', { name: /^互动/ }).click()
+    const overview = presenter.getByRole('dialog', { name: '课堂互动' })
+    expect([full.slide('follow-ask'), student.slide('follow-ask')]).toEqual([4, 3])
+    await expect(overview.getByRole('region', { name: '提问' }).locator('.pm-classroom-panel__where')).toHaveText('第 4 节 · 提问')
+    await close()
+  })
+
+  test('in the slides form too, a learner of the student build follows the presenter of the full build to the same slide by its section, and sees the presenter\'s drawings there (F-85)', async ({ browser }) => {
+    const { presenter, learner, close } = await people(browser)
+    const slide = (page: Page, heading: string) => page.locator('.slidev-page').getByRole('heading', { name: heading })
+    await presenter.goto(`${full.slides}/presenter/1`)
+    await presenter.locator('.pm-presenter-panels summary').click()
+    const panel = presenter.locator('[data-panel="presmium.session"]')
+    await panel.getByLabel('昵称').fill('王老师')
+    await panel.getByRole('button', { name: '创建课堂' }).click()
+    const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
+    await learner.goto(`${student.slides}/?room=${new URL(link).searchParams.get('room')}&name=${encodeURIComponent('小明')}`)
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+    await expect(slide(learner, '跟随与受众')).toBeVisible()
+
+    // The teacher's section is the presenter's slide 2 and no slide of the learner's: the learner stays
+    // on the cover, the nearest slide before it (Slidev's own state names slide 2, the learner's rules,
+    // but goes by section).
+    await presenter.keyboard.press('ArrowRight')
+    await expect(presenter).toHaveURL(/\/presenter\/2(\?|$)/)
+    await learner.waitForTimeout(1500)
+    await expect(learner).toHaveURL(/\/1(\?|$)/)
+    // The rules: the presenter's slide 3 is the learner's slide 2.
+    await presenter.keyboard.press('ArrowRight')
+    await expect(learner).toHaveURL(/\/2(\?|$)/)
+    await expect(slide(learner, '合并规则')).toBeVisible()
+    // The presenter's drawing on the rules shows on the learner's rules, and not on the learner's slide 3.
+    await presenter.getByTitle('Show drawing toolbar').click()
+    const box = (await presenter.locator('.slidev-slide-content').first().boundingBox())!
+    await presenter.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.7)
+    await presenter.mouse.down()
+    for (let i = 1; i <= 10; i++) await presenter.mouse.move(box.x + box.width * (0.3 + i * 0.03), box.y + box.height * 0.7 - i * 4)
+    await presenter.mouse.up()
+    const strokes = learner.locator('.slidev-slide-content > svg path')
+    await expect(strokes).not.toHaveCount(0)
+    // The rules' first click shows the teacher's point: the presenter's clicks 1 to 3 are the learner's 0 to 2,
+    // found by the blocks each click shows (Slidev's own state names the presenter's clicks).
+    const clicks = (n: number) => new RegExp(`/2\\?(.*&)?clicks=${n}(&|$)`)
+    await presenter.keyboard.press('ArrowRight')
+    await expect(presenter).toHaveURL(/\/presenter\/3\?(.*&)?clicks=1(&|$)/)
+    await learner.waitForTimeout(1000)
+    await expect(learner).not.toHaveURL(/clicks=[1-9]/)
+    for (const n of [1, 2]) {
+      await presenter.keyboard.press('ArrowRight')
+      await expect(presenter).toHaveURL(new RegExp(`/presenter/3\\?(.*&)?clicks=${n + 1}(&|$)`))
+      await expect(learner).toHaveURL(clicks(n))
+    }
+    // The question box: the presenter's slide 4, the learner's 3.
+    await presenter.keyboard.press('ArrowRight')
+    await expect(learner).toHaveURL(/\/3(\?|$)/)
+    await expect(slide(learner, '提问')).toBeVisible()
+    await expect(strokes).toHaveCount(0)
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+    // Straight back to the teacher's section: the learner goes to the nearest slide before it, the cover.
+    await presenter.keyboard.press('ArrowUp')
+    await presenter.keyboard.press('ArrowUp')
+    await expect(presenter).toHaveURL(/\/presenter\/2(\?|$)/)
+    await expect(learner).toHaveURL(/\/1(\?|$)/)
+    await close()
+  })
+})

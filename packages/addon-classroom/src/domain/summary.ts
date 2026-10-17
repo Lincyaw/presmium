@@ -7,8 +7,8 @@
  */
 import type { Participant, SessionStatus } from '@presmium/kernel'
 import type { Submission } from './exercise.ts'
-import { latestPerParticipant, placeKey } from './place.ts'
-import type { Place } from './place.ts'
+import { latestPerParticipant, placeIndex, placeKey } from './place.ts'
+import type { Place, SectionNumbers } from './place.ts'
 import type { Prediction } from './predict.ts'
 import { predictionTally } from './predict.ts'
 import type { PulseVote } from './pulse.ts'
@@ -41,16 +41,15 @@ export interface SummaryInput {
   predictions: Prediction[]
   votes: PulseVote[]
   submissions: Submission[]
-}
-
-const where = (place: Place): Where => ({ id: placeKey(place), section: place.section, block: place.block, title: place.title, index: place.index })
-
-/** The last item of each id in `items`, in deck order. */
-function byPlace<T extends Place>(items: T[], id: (item: T) => string): T[] {
-  return [...new Map(items.map(item => [id(item), item])).values()].sort((a, b) => a.index - b.index)
+  /** The section numbers of the reporting window's build, by id: places are numbered by them. */
+  numbers?: SectionNumbers
 }
 
 export function classroomSummary(input: SummaryInput): ClassroomSummary {
+  const where = (place: Place): Where => ({ id: placeKey(place), section: place.section, block: place.block, title: place.title, index: placeIndex(place, input.numbers) })
+  /** The last item of each id in `items`, in deck order. */
+  const byPlace = <T extends Place>(items: T[], id: (item: T) => string): T[] =>
+    [...new Map(items.map(item => [id(item), item])).values()].sort((a, b) => placeIndex(a, input.numbers) - placeIndex(b, input.numbers))
   return {
     status: input.status,
     learners: input.participants.filter(p => p.role === 'learner').length,

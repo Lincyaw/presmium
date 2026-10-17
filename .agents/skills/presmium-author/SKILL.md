@@ -118,7 +118,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 `presmium check` 在每个渲染端的视图中检查（只出现在某个媒介中的内容只在该媒介中检查，只在部分媒介中出错时消息末尾写 `(in slides)` 等）：
 
-- `presmium.links`：链接、图片、卡片的 `:link:`、组件的本地文件与原始 HTML 的 `href`、`src`、`poster` 指向的本地文件不存在或在仓库之外；`#片段` 不是本文稿的章节 ID、块 ID、标签或标题；`其他文档/lecture.md#片段` 指向的文档没有这个片段。
+- `presmium.links`：链接、图片、卡片的 `:link:`、组件的本地文件与原始 HTML 的 `href`、`src`、`poster` 指向的本地文件不存在或在仓库之外；`#片段` 不是本文稿的章节 ID、块 ID、标签或标题；`其他文档/lecture.md#片段` 指向的文档没有这个片段；单份文稿的构建中，指向另一份文档的入口文件的链接保留原样（警告 `… is not published: it is the source of the document …`，工作区站点链接它的页面）。
 - `presmium.directive`：MyST 指令与角色的错误（myst-parser 无法应用的指令，如带 `:file:` 的 `{csv-table}`），错误级；消息写出该指令不接受的选项。
 - `presmium.forbid`：头部 `checks: { forbid: ['T-\d{3}', 'instructor/'] }` 中的正则（JavaScript 语法）在标题、讲解、上屏内容、链接目标、代码与录制输出中的命中。
 - `presmium check --external-links`：本机装有 lychee 时检查外部链接（失败是警告），没有时给出一条信息级提示。
@@ -128,7 +128,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 多文件文稿：用 `{include}` 指令引入其他文件（路径相对于当前文件，写法见 `references/directives.md`）；被引入文件的 frontmatter 被忽略。脚注的引用与定义须在同一文件；不同文件可以都用 `[^1]`，每个文件的脚注各自从 1 编号。
 - 标签：标题前的 `(id)=` 给章节 ID；块前的 `(id)=` 或指令的 `:label: id` 给块 ID（章节内唯一）。`{question-box}` 的 `:target:` 和课堂笔记依赖块 ID；没有标签的块 ID 随前面插入同类块而变化。
 - 交叉引用：`` {ref}`merge` `` 引用章节（文字为章节标题），`{numref}`、`{eq}` 引用带标签的图、表、公式；自己写了文字的引用保留文字。目标不存在时警告 `presmium.references`。
-- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；目录中的隐藏文件与 `node_modules` 不随它发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告（`presmium check` 同样报告）；直接链接到一个文件时照常发布，不论它的名字（不要链接 `.env` 这样的文件）；含 `lecture.md` 的目录（工作区中的另一份文档）仍是普通链接，所以工作区中链接另一份文档要写它的目录（如“分词速览”中的 `[BPE 分词](../bpe/)`）：写成 `../bpe/lecture.md` 时网页把它当作文件发布，读者点开的是 404 页面。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
+- 发布的文件（P-79）：正文链接、图片、原始 HTML 的 `src`、`poster`、`href` 指向的本地文件（相对于所在的源文件，或 `/...` 指文稿的 `public/`）随三种媒介一同发布，名字带内容哈希。链接到文稿目录中的一个子目录（如 `[起始代码](starter/)`）时，网页与幻灯片发布它的文件和一个文件清单页（每个文件可以下载），notebook 把目录复制到 `media/`；目录中的隐藏文件与 `node_modules` 不随它发布，链接指向隐藏目录或 `node_modules`（或其中的目录）时整个不发布并警告（`presmium check` 同样报告）；直接链接到一个文件时照常发布，不论它的名字（不要链接 `.env` 这样的文件）；链接到的 Markdown 文件（模板、起始目录中的 `README.md`）也按原样发布、可以下载，其中像 HTML 的占位（`<answer>`）与 `{{ x }}` 不影响构建。工作区中链接另一份文档写它的入口文件或目录，可以带章节 ID 或标签作片段（如 `[延伸](../bpe/lecture.md#extend-c)`、`[BPE 分词](../bpe/)`）：工作区站点（在工作区根目录 `presmium build`、`presmium serve`）把它改写为那份文档对应的页面（`/bpe/extend.html#extend-c`）；单独构建这份文稿时链接保留原样，构建报告在该行给出警告 `presmium.links`。任何构建都不发布另一份文档的源码，学生版也带不出它的教师内容。原始 HTML 按 HTML 解析，只有元素真正的属性被当作地址（`<code> href=x</code>` 中的文字不是）。相对路径指向不存在的文件、或文件在文稿所在的 git 仓库之外时不发布，构建报告在该行给出警告 `presmium.links`。幻灯片上的链接与文件只有放在上屏内容（如 `{slide}`）中才显示在页面上。
 
 ## 8. 插件指令
 
@@ -156,7 +156,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - C、C++、Ruby、SQL：列出 `@presmium/slidev-addon-exec-wasi` 后，编译时与网页中都在 WebAssembly 中用同一份运行时执行（构建机不需要工具链，网页离线可用）；有浏览器中运行的这类代码时，构建发布对应的运行时（C、C++ 约 52 MB）。C 的全局变量写成 `static` 或给初值：没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束，录制只有这个退出码。见 `references/directives.md` 的 `{code}`。
 - 运行环境：头部 `execute.environments` 声明具名环境（不含凭据；凭据只来自环境变量，如 `PRESMIUM_ENV_<名>_TOKEN`，头部中像凭据的值给出警告 `presmium.secrets`），代码块与 `{run-panel}`、`{code-ref}` 用 `:env: <名>` 选择。环境不可用时不改用别的执行器：有录制就显示录制。`presmium check --env` 连接每个声明的环境，连不上是错误。
 - 执行会话：同一 `:session:` 的代码块共享解释器（前一块定义、后一块使用），编译时改了其中一块整个会话重新执行；浏览器中每个页面各有一份，“重置会话”丢弃它。
-- 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象与 matplotlib 的图录制为富输出，各媒介按类型显示；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。
+- 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象、matplotlib 的图与最后一个表达式的值录制为富输出，各媒介按类型显示（浏览器中的 Python 只有标准库：用到 numpy、matplotlib 等的代码块写 `:run: compile`，否则 `presmium check` 警告）；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。
 - 编译时执行的代码只得到清理过的环境变量：去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量（运营者可在工作区配置的 `settings.presmium.exec.passEnv` 中列出要传入的变量）。打印环境变量的代码因此不会把凭据写进录制与产物。
 - 进程沙箱：在满足条件的 Linux 主机上（glibc 2.39 以上、FUSE 与 Landlock），编译时的 Python 与 JavaScript 默认在 deltabox 中运行（构建报告写 `isolated by deltabox cbcow-through`）：不能联网（本机地址也不行），只能写自己的运行目录，只读得到系统目录、文稿目录与解释器的安装目录，`HOME` 是临时目录，代码启动的后台进程在这次运行结束时被结束。代码要读别处的文件（例如 `~/.local` 中的 Python 包、数据目录）时，运营者在工作区配置的 `settings.presmium.deltabox.read` 中列出；`settings.presmium.deltabox.sandbox: false` 关闭沙箱（构建报告写明没有沙箱的原因）。
 - 组件里的代码（执行面板、分步执行、本地环境包着的代码块）由组件运行，不另显示运行按钮与录制输出。

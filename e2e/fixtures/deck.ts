@@ -149,6 +149,8 @@ export interface FixtureOptions {
   edit?: (dir: string) => void
   /** Renderers to build, as `--to` takes them. */
   to?: string
+  /** Builds the view of this audience (`presmium build --audience`, P-55), e.g. the student build. */
+  audience?: string
   /** Packages linked into the deck's node_modules (see `deckDir`). */
   link?: Record<string, string>
   /**
@@ -189,7 +191,7 @@ export async function buildFixture(name: string, options: FixtureOptions = {}): 
     cpSync(join(FIXTURES, name), dir, { recursive: true })
     for (const path of options.with ?? []) cpSync(join(FIXTURES, path), join(dir, path), { recursive: true })
     options.edit?.(dir)
-    await presmium(['build', '--to', options.to ?? 'web,slides'], dir)
+    await presmium(['build', '--to', options.to ?? 'web,slides', ...options.audience ? ['--audience', options.audience] : []], dir)
   } catch (error) {
     rmSync(dir, { recursive: true, force: true })
     throw error

@@ -126,6 +126,9 @@ const zh = {
   notes: {
     button: '笔记',
     label: (what: string) => `笔记：${what}`,
+    /** A block of a table or a listing only, named after its section and its kind. */
+    blockOf: (section: string, kind: string) => `${section} · ${kind}`,
+    kinds: { table: '表格', code: '代码' },
     mine: '我的笔记',
     remove: '删除',
     removeLabel: (text: string) => `删除笔记：${text}`,
@@ -268,6 +271,8 @@ const en: ClassroomMessages = {
   notes: {
     button: 'Notes',
     label: what => `Notes: ${what}`,
+    blockOf: (section, kind) => `${section} · ${kind}`,
+    kinds: { table: 'table', code: 'code' },
     mine: 'My notes',
     remove: 'Delete',
     removeLabel: text => `Delete note: ${text}`,

@@ -1,6 +1,6 @@
-import { deckLocale, docBlocks } from '@presmium/kernel'
+import { deckLocale, docBlocks, isRecord } from '@presmium/kernel'
 import type { IRBlock, IRPass, IRSection } from '@presmium/kernel'
-import { CLASSROOM_ID, isLabel, MESSAGES } from '../domain/index.ts'
+import { CLASSROOM_ID, isLabel, MESSAGES, readersHave } from '../domain/index.ts'
 import type { Place } from '../domain/index.ts'
 import { fallbackOf } from './fallbacks.ts'
 
@@ -36,12 +36,20 @@ function labelled(lines: readonly string[], from: number, at: number, id: string
  * question box's `:target:` must name a block of its section. A label in
  * the form of a generated id (`step-2`)
  * counts as generated, so it takes no notes and is not named in the
- * presenter's lists; the pass warns about such labels.
+ * presenter's lists; the pass warns about such labels. The numbers of the
+ * sections the readers' build has (`readersHave`) go to the plugin's configuration by id
+ * (`sections`, `SectionNumbers`), so a window numbers the places learners
+ * write as its own build does (D-4).
  */
 export const placesPass: IRPass = {
   name: 'classroom-places',
   async run(doc, ctx) {
     const t = MESSAGES[deckLocale(ctx.lang)]
+    const own = doc.config.presmium[CLASSROOM_ID]
+    doc.config.presmium[CLASSROOM_ID] = {
+      ...isRecord(own) ? own : {},
+      sections: Object.fromEntries(doc.sections.filter(readersHave).map(section => [section.id, section.index])),
+    }
     const sources = new Map<string, Promise<string[]>>()
     const linesOf = (file: string) => {
       let lines = sources.get(file)

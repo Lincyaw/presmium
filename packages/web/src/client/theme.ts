@@ -135,16 +135,22 @@ function slidesIcon() {
 }
 
 /**
- * The labels that the default theme gives its sidebar and doc footer for
- * assistive technology, in the deck's language: its configuration has no
- * option for them (R-72), so they are set once a page has rendered. They are
- * found by the ids the theme gives them (docs/architecture.md 9.1).
+ * The labels that the default theme gives its sidebar, doc footer and the
+ * navigation bar's menu buttons for assistive technology, in the deck's
+ * language: its configuration has no option for them (R-72, F-79), so they
+ * are set once a page has rendered. They are found by the ids and classes the
+ * theme gives them (docs/architecture.md 9.1).
  */
 function localizeHiddenLabels(): void {
   const t = WEB_MESSAGES[currentLocale()]
   for (const [id, text] of [['sidebar-aria-label', t.sidebarNav], ['doc-footer-aria-label', t.pager]] as const) {
     const label = document.getElementById(id)
     if (label && label.textContent !== text) label.textContent = text
+  }
+  for (const [selector, text] of [['.VPNavBarHamburger', t.mobileNav], ['.VPNavBarExtra > button', t.extraNav]] as const) {
+    for (const button of document.querySelectorAll(selector)) {
+      if (button.getAttribute('aria-label') !== text) button.setAttribute('aria-label', text)
+    }
   }
 }
 
@@ -221,18 +227,29 @@ const Layout = defineComponent({
  * `base` revision; a page that holds another one (it loaded while the deck
  * was compiling, or missed updates while disconnected) gets the current
  * document instead, as it does whenever it connects. `follow` gets the
- * original as it is then.
+ * original as it is then. The answer to such a request is dropped when an
+ * update was applied after it was asked, or the answer to a later request
+ * (F-84): the server may have answered before it wrote that update's
+ * document, and every later update comes over the WebSocket, in order.
  */
 function followDevServer(original: () => IRDocument, revision: string | undefined, endpoint: string, follow: (doc: IRDocument) => void): void {
   const hot = import.meta.hot
   if (!hot) return
   let current = revision
+  /** Updates applied from the WebSocket. */
+  let updates = 0
+  /** Requests for the current document made, and the latest one whose answer was applied. */
+  let asked = 0
+  let answered = 0
   const fetchCurrent = async () => {
+    const request = ++asked
+    const since = updates
     try {
       const response = await fetch(endpoint, { cache: 'no-store' })
       if (!response.ok) return
       const { revision: latest, doc } = await response.json() as { revision: string, doc: IRDocument }
-      if (latest === current) return
+      if (updates !== since || request < answered || latest === current) return
+      answered = request
       current = latest
       follow(doc)
     } catch (error) {
@@ -245,6 +262,7 @@ function followDevServer(original: () => IRDocument, revision: string | undefine
       return
     }
     current = next
+    updates++
     follow(applyUpdate(original(), update))
   })
   hot.on('vite:ws:connect', () => void fetchCurrent())

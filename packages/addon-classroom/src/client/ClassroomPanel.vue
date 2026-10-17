@@ -3,9 +3,10 @@
 // toolbar: questions by place (P-66), the understanding pulse (P-67), quizzes (P-64), predictions
 // (P-68) and exercises (P-65). Entries without the shape their collection has are left out
 // (`../domain/guards.ts`).
-import { useMessages } from '@presmium/host'
+import { useMessages, useSectionConfig } from '@presmium/host'
 import { computed } from 'vue'
 import {
+  CLASSROOM_ID,
   COLLECTIONS,
   countedAnswers,
   distribution,
@@ -16,9 +17,11 @@ import {
   isQuizState,
   isSubmission,
   MESSAGES,
+  placeIndex,
   placeText,
   predictionTally,
   questionsByPlace,
+  sectionNumbers,
   summarize,
   summaryText,
   tally,
@@ -41,9 +44,12 @@ const { failure, write } = useWrite()
 const t = useMessages(MESSAGES)
 const ai = useAiAnswers()
 
-const byPlace = <T extends { index: number }>(items: T[]) => [...items].sort((a, b) => a.index - b.index)
+// Places as this window's build numbers its sections, by their ids (D-4): a learner's build may number them apart.
+const config = useSectionConfig(CLASSROOM_ID)
+const numbers = computed(() => sectionNumbers(config.value))
+const byPlace = <T extends { section: string, index: number }>(items: T[]) => [...items].sort((a, b) => placeIndex(a, numbers.value) - placeIndex(b, numbers.value))
 
-const questionGroups = computed(() => questionsByPlace(questions.value.map(({ id, value }) => ({ ...value, id })), t.value))
+const questionGroups = computed(() => questionsByPlace(questions.value.map(({ id, value }) => ({ ...value, id })), t.value, numbers.value))
 const open = computed(() => questions.value.filter(({ value }) => !value.answered).length)
 
 const pulses = computed(() => {
@@ -53,7 +59,7 @@ const pulses = computed(() => {
     const counts = distribution(vote.pulse, vote.levels.length, votes.value.map(item => item.value))
     return {
       id: vote.pulse,
-      place: placeText(vote, t.value),
+      place: placeText(vote, t.value, numbers.value),
       levels: vote.levels.map((level, i) => `${level} ${t.value.people(counts[i]!)}`).join(t.value.panel.levels),
     }
   })
@@ -61,7 +67,7 @@ const pulses = computed(() => {
 
 const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ ...value, id }))).map((quiz) => {
   const result = tally(quiz.options.length, quiz.answer, countedAnswers(quiz.id, quiz, answers.value.map(item => item.value)))
-  return { id: quiz.id, text: t.value.panel.quiz(placeText(quiz, t.value), quiz.open, result.respondents, result.correct) }
+  return { id: quiz.id, text: t.value.panel.quiz(placeText(quiz, t.value, numbers.value), quiz.open, result.respondents, result.correct) }
 }))
 
 // How the class predicted: per choice, or the written predictions without their authors.
@@ -72,7 +78,7 @@ const predicted = computed(() => {
     const result = predictionTally(prediction.predict, prediction.choices?.length ?? 0, predictions.value.map(item => item.value))
     return {
       id: prediction.predict,
-      place: t.value.panel.predicted(placeText(prediction, t.value), result.respondents),
+      place: t.value.panel.predicted(placeText(prediction, t.value, numbers.value), result.respondents),
       question: prediction.question,
       choices: (prediction.choices ?? []).map((choice, i) => ({ choice, count: result.counts[i]! })),
       texts: result.texts,
@@ -85,7 +91,7 @@ const exercises = computed(() => {
   for (const { value } of submissions.value) groups.set(value.exercise, [...groups.get(value.exercise) ?? [], value])
   return byPlace([...groups.values()].map(group => ({ ...group[0]!, summary: summarize(group) }))).map(({ summary, ...first }) => ({
     id: first.exercise,
-    text: t.value.panel.exercise(placeText(first, t.value), summaryText(summary, t.value)),
+    text: t.value.panel.exercise(placeText(first, t.value, numbers.value), summaryText(summary, t.value)),
   }))
 })
 

@@ -527,6 +527,44 @@ test.describe('narration a pass moved into a component (e2e/fixtures/viewer/pred
   })
 })
 
+test.describe('steps in the web form (e2e/fixtures/viewer/steps)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  let site: FixtureDeck
+  test.beforeAll(async () => {
+    test.setTimeout(300_000)
+    site = await buildFixture('viewer/steps', { to: 'web' })
+  })
+  test.afterAll(() => site?.close())
+
+  test('the present view shows a step the same, whether it opens at the step or steps there from step 0 (K-04, F-77)', async ({ page }) => {
+    const present = page.getByRole('region', { name: '放映' })
+    const { steps } = site.doc.sections.find(s => s.id === 'walk')!
+    /** The present view's markup at `step`, once it no longer changes (the highlighter and the component load late). */
+    const settledAt = async (step: number) => {
+      await expect(present).toHaveAttribute('data-step', String(step))
+      await expect(present.locator('.pm-demo-stepper')).toBeAttached()
+      if (step === steps) await expect(present.locator('.pm-code[data-lang="python"] .line span').first()).toBeVisible()
+      let last = ''
+      await expect.poll(async () => {
+        const now = await present.innerHTML()
+        const same = now === last
+        last = now
+        return same
+      }, { intervals: [300] }).toBe(true)
+      return last
+    }
+    // A step of the stepper, and the last, where the code shows highlighted.
+    for (const step of [3, steps]) {
+      await page.goto(`${site.web}/?view=present&section=walk&step=${step}`)
+      const jumped = await settledAt(step)
+      await page.goto(`${site.web}/?view=present&section=walk&step=0`)
+      await settledAt(0)
+      for (let i = 0; i < step; i++) await page.keyboard.press('ArrowRight')
+      expect(await settledAt(step), `step ${step}`).toBe(jumped)
+    }
+  })
+})
+
 test.describe('tags of an agent\'s trace beside inline SVG and MathML (e2e/fixtures/viewer/tags)', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let site: FixtureDeck
@@ -660,7 +698,8 @@ async function restingScroll(page: Page): Promise<number> {
 }
 
 test.describe('presmium dev', () => {
-  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  // A dev page may take `openDevPage`'s whole 120 s to be ready on a loaded machine; the case's own steps come after.
+  test.describe.configure({ mode: 'serial', timeout: 240_000 })
   let dev: Awaited<ReturnType<typeof devDeck>>
   test.beforeAll(async () => {
     test.setTimeout(180_000)
@@ -712,6 +751,41 @@ test.describe('presmium dev', () => {
     await expect(menu(page)).toHaveValue('scrolly')
     await expect(scrolly).toHaveAttribute('data-step', '2')
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before)
+  })
+
+  test('a page whose request for the current document is answered before two edits, and arrives after them, shows the second edit (F-84)', async ({ page }) => {
+    await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
+    const scrolly = page.locator('.pm-section[data-section="scrolly"]')
+    // The dev server answers the page's requests for the current document (when it loads and connects) at
+    // once; the answers reach the page only after the two edits came over the WebSocket.
+    let release!: () => void
+    const held = new Promise<void>((done) => {
+      release = done
+    })
+    let answered = 0
+    let delivered = 0
+    await page.route(/\/__presmium\/ir(?:\?|$)/, async (route) => {
+      const response = await route.fetch()
+      answered++
+      await held
+      await route.fulfill({ response })
+      delivered++
+    })
+    await page.reload()
+    await expect(scrolly).toBeVisible()
+    await expect.poll(() => answered).toBeGreaterThan(0)
+    // Words of this run, so the test can be repeated on the same server (`--repeat-each`).
+    const [first, second] = [1, 2].map(n => `第二步，第 ${n} 次改动 ${test.info().repeatEachIndex}-${Date.now()}`)
+    edit(/第二步，[^。]*/, first!)
+    await expect(scrolly).toContainText(first!)
+    edit(first!, second!)
+    await expect(scrolly).toContainText(second!)
+    release()
+    await expect.poll(() => delivered).toBe(answered)
+    // The late answers named an older document: the page keeps the latest.
+    await page.waitForTimeout(500)
+    await expect(scrolly).toContainText(second!)
+    await page.unrouteAll({ behavior: 'ignoreErrors' })
   })
 
   test('a section, or a block with Alt+click, opens its source in the editor', async ({ page }) => {

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, sep } from 'node:path'
 import { SERVICE_WORKER, urlPath } from '../domain/index.ts'
+import { MEDIA } from './publish.ts'
 
 /**
  * The service worker precaches every file of the build, so a page loaded once
@@ -84,7 +85,8 @@ export function writeServiceWorker(outDir: string, base: string): void {
   const list = files(outDir)
   const hash = createHash('sha256')
   for (const file of list) hash.update(file).update(readFileSync(join(outDir, file)))
-  // As pages ask for them: a `#` or `?` in a file name is part of the name.
-  const urls = list.map(file => base + urlPath(file.split(sep).join('/')))
+  // As pages ask for them: the published files by `publishedUrl` (each name a URL component), the build's own as
+  // browsers write paths; a `#` or `?` in a name is part of it.
+  const urls = list.map(file => file.split(sep)).map(parts => base + (parts[0] === MEDIA ? parts.map(encodeURIComponent).join('/') : urlPath(parts.join('/'))))
   writeFileSync(join(outDir, SERVICE_WORKER), source(`presmium-web-${hash.digest('hex').slice(0, 12)}`, urls, base))
 }

@@ -30,6 +30,7 @@ renderers:
 :::{slide}
 - [起始代码](starter/main.py)
 - [整个起始目录](starter/)
+- [实验工具包](kit/)与其中的[报告模板](kit/report.md)
 
 <video controls poster="media/cover.png"><source src="media/clip.webm" type="video/webm"></video>
 :::
