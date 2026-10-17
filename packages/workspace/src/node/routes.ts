@@ -9,15 +9,23 @@
  * answer names the lock (`LockedAnswer`), as a document operation's does. Once
  * done, the documents it took away or brought back are told to the server and
  * the site, as a document operation's are (C-7, F-10).
+ *
+ * The source editor's routes (P-124, ./source.ts): `files`, `source` (read
+ * and save), and `changes` with its `commit` and `discard`, for editors and
+ * owners, in the scope of the request's document (on the home page, every
+ * document and the configuration). A commit or a discard holds the locks of
+ * the documents it changes, as an undo does.
  */
 import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
-import type { PresmiumNodePlugin, Route, ServerContribution } from '@presmium/kernel'
-import type { DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer } from '../domain/api.ts'
+import type { Member, PresmiumNodePlugin, RequestContext, Route, ServerContribution } from '@presmium/kernel'
+import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer, SavedAnswer } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { lockedError, RequestError } from './documents.ts'
 import type { Documents, DocumentsChange } from './documents.ts'
+import { documentDirOf } from './files.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
+import { MAX_SOURCE, SourceFiles } from './source.ts'
 
 export interface WorkspaceRoutes {
   documents: Documents
@@ -58,16 +66,39 @@ function difference(before: string[], after: string[]): DocumentsChange {
   return { removed: before.filter(dir => !after.includes(dir)), added: after.filter(dir => !before.includes(dir)) }
 }
 
+/** The paths a commit or a discard of the editor takes: those asked for among the files not committed, else all of them. */
+function chosenPaths(body: unknown, uncommitted: string[]): string[] {
+  const asked = isRecord(body) && Array.isArray(body.paths) ? body.paths.filter((path): path is string => typeof path === 'string') : undefined
+  return asked ? uncommitted.filter(path => asked.includes(path)) : uncommitted
+}
+
 /** The server contribution of the workspace, mounted for every document (and for the home page, document ''). */
 export function workspaceContribution(options: WorkspaceRoutes): ServerContribution {
   const { documents, revisions, locks } = options
   const listed = () => documents.list().map(doc => doc.dir)
+  const source = new SourceFiles({ config: documents.config, writer: documents.writer, ...locks ? { locks } : {} })
+  const uncommitted = async (ctx: RequestContext) => (revisions ? await revisions.uncommittedFiles(source.roots(source.scope(ctx.document))) : [])
+  /** Runs `work` on the uncommitted files `body` names, holding the locks of their documents. */
+  const onChanges = async (request: Request, ctx: RequestContext, holder: string, work: (paths: string[], member: Member, body: Record<string, unknown>) => Promise<Response>) => {
+    if (request.method !== 'POST') return problem(405, 'POST')
+    if (!revisions) return problem(409, NO_GIT)
+    const body: unknown = await request.json().catch(() => ({}))
+    const paths = chosenPaths(body, (await uncommitted(ctx)).map(file => file.path))
+    if (paths.length === 0) return problem(409, 'no changes to take: every file is as committed')
+    const claimed = locks?.claimAll(paths.flatMap(path => documentDirOf(documents.config, path) ?? []), holder)
+    if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
+    try {
+      return await work(paths, ctx.member, isRecord(body) ? body : {})
+    } finally {
+      claimed?.release()
+    }
+  }
   const routes: Record<string, Route> = {
     documents: {
       role: 'reader',
       handle: (request, ctx) => answer(async () => {
         if (request.method === 'GET') {
-          return json({ documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), ...revisions ? await revisions.status() : {}, single: documents.config.single } satisfies DocumentsAnswer)
+          return json({ title: documents.config.title, documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), ...revisions ? await revisions.status() : {}, single: documents.config.single } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problem(405, 'GET or POST')
         // Readers list the documents only.
@@ -111,6 +142,52 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
           claimed?.release()
         }
       }),
+    },
+    'files': {
+      role: 'editor',
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'GET') return problem(405, 'GET')
+        return json(source.files(source.scope(ctx.document), ctx.member))
+      }),
+    },
+    'source': {
+      role: 'editor',
+      // The text as JSON, escaped: up to twice the file's size, and more.
+      maxBody: MAX_SOURCE * 3,
+      handle: (request, ctx) => answer(async () => {
+        const scope = source.scope(ctx.document)
+        if (request.method === 'GET') return json(source.read(scope, new URL(request.url).searchParams.get('path') ?? '', ctx.member))
+        if (request.method !== 'POST') return problem(405, 'GET or POST')
+        const body: unknown = await request.json().catch(() => undefined)
+        if (!isRecord(body) || typeof body.path !== 'string' || typeof body.content !== 'string' || typeof body.base !== 'string') return problem(400, '{ path, content, base: <the version opened> }')
+        return json({ version: await source.save(scope, body.path, body.content, body.base, ctx.member) } satisfies SavedAnswer)
+      }),
+    },
+    'changes': {
+      role: 'editor',
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'GET') return problem(405, 'GET')
+        return json({ files: await uncommitted(ctx) } satisfies ChangesAnswer)
+      }),
+    },
+    'changes/commit': {
+      role: 'editor',
+      handle: (request, ctx) => answer(() => onChanges(request, ctx, 'editor:commit', async (paths, member, body) => {
+        const message = typeof body.message === 'string' ? body.message.trim().slice(0, 4000) : ''
+        if (!message) return problem(400, '{ message: what the change is, paths? }')
+        const revision = await revisions!.commit({ files: paths, message, origin: { kind: 'editor', member } })
+        return json({ ...revision ? { revision } : {}, paths } satisfies CommitAnswer)
+      })),
+    },
+    'changes/discard': {
+      role: 'editor',
+      handle: (request, ctx) => answer(() => onChanges(request, ctx, 'editor:discard', async (paths) => {
+        const before = listed()
+        await revisions!.discard(paths)
+        // A document that was new goes with its files; one brought back by deleted files comes again.
+        await options.documentsChanged?.(difference(before, listed()))
+        return json({ paths } satisfies CommitAnswer)
+      })),
     },
   }
   return { routes }

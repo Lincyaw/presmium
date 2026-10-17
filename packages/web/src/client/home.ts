@@ -2,24 +2,28 @@
  * The home page of a workspace site (P-122): the documents, as cards, with a
  * search box and their tags, each linking to its pages. In `presmium serve`
  * (and `presmium dev`) the page has the server and is a workbench (N-10,
- * docs/design/home.dc.html): the activity bar, the workspace's files, the
- * launcher with its search (Ctrl K) and the status bar, around the cards. It
- * starts the host (the toolbar, the server's client, the approvals) and the
- * site's plugins, e.g. the workspace's browser plugin, whose entries fill the
- * places of the workbench (`ToolbarItem.slot`); the list follows the server
- * (re-read when a plugin says the documents changed, the window event
- * `presmium:documents`). A static site keeps the default theme's page, with
- * the same cards.
+ * docs/design/home.dc.html): the activity bar (after a link that skips to
+ * the content), the workspace's files (its name as the page's heading, and
+ * the tree of the `files` slot), the launcher with its search (Ctrl K) over
+ * the documents, their sections and the commands, and the status bar, around
+ * the cards. It starts the host (the toolbar, the server's client, the
+ * approvals) and the site's plugins, e.g. the workspace's browser plugin,
+ * whose entries fill the places of the workbench (`ToolbarItem.slot`); while
+ * its editor is open (`EDIT_MODE`), the launcher's place shows it (`tabs`,
+ * `source`). The list follows the server (re-read when a plugin says the
+ * documents changed, the window event `presmium:documents`). A static site
+ * keeps the default theme's page, with the same cards.
  */
-import { createServerClient, createSharedStates, currentLocale, installHost, PmButton, PmCard, PmEmpty, PmIcon, PmIconButton, pluginsOf, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, startHost, useMessages, useTheme } from '@presmium/host'
-import type { HostAdapter, Navigation, ToolbarItem } from '@presmium/host'
+import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, PmButton, PmCard, PmEmpty, PmIcon, PmIconButton, pluginsOf, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, startHost, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
+import type { HostAdapter, Navigation, ToolbarItem, ToolbarSlot } from '@presmium/host'
 import { FINAL_STEP } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
 import { Content, inBrowser, useData } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { InjectionKey } from 'vue'
-import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, readonly, ref, shallowRef } from 'vue'
+import { computed, defineComponent, h, inject, nextTick, onBeforeUnmount, onMounted, provide, readonly, ref, shallowRef, watchEffect } from 'vue'
 import { samePage, WEB_MESSAGES } from '../domain/index.ts'
+import { SHELL_MESSAGES } from './messages.ts'
 import './style.css'
 
 export interface SiteHomeInput {
@@ -30,7 +34,7 @@ export interface SiteHomeInput {
 /**
  * A document as the home page lists it (see ../node/sites.ts). A card shows
  * the description, the number of pages and the result of the checks when
- * the list has them.
+ * the list has them; the launcher's search finds its sections.
  */
 interface HomeDocument {
   dir: string
@@ -41,6 +45,7 @@ interface HomeDocument {
   description?: string
   pages?: number
   problems?: { errors: number, warnings: number }
+  sections?: { id: string, title: string, href: string }[]
 }
 
 /** The event a plugin sends after it changed the documents, so the list is read again. */
@@ -56,26 +61,54 @@ const query = ref('')
 /** The cards are in the workbench, whose bar has the search box. */
 const IN_WORKBENCH: InjectionKey<boolean> = Symbol('presmium.workbench')
 
+/** The server's live list of the documents (`presmium serve`), once a page found it. */
+let endpoint: string | undefined
+/** Reads the list again; with `compile`, the documents not compiled yet compile (their sections), and it is read until they are. */
+async function refresh(compile = false): Promise<void> {
+  if (!endpoint) return
+  for (let tries = 0; tries < 60; tries++) {
+    try {
+      const response = await fetch(`${endpoint}${compile ? '?compile=1' : ''}`, { cache: 'no-store' })
+      if (!response.ok) return
+      const answer = (await response.json()) as { documents: HomeDocument[], compiling?: boolean }
+      served.value = answer.documents
+      if (!compile || !answer.compiling) return
+    } catch (error) {
+      console.warn('[presmium] could not read the documents of the site', error)
+      return
+    }
+    await new Promise(done => setTimeout(done, 1000))
+  }
+}
+
 /** The documents of the site, following the server in `presmium serve`. Must be called inside a component setup. */
 function useDocuments() {
   const { theme } = useData()
   const options = computed(() => theme.value.presmium ?? {})
   onMounted(() => {
-    const endpoint = options.value.endpoint as string | undefined
-    if (!endpoint || served.value) return
-    const refresh = async () => {
-      try {
-        const response = await fetch(endpoint, { cache: 'no-store' })
-        if (response.ok) served.value = ((await response.json()) as { documents: HomeDocument[] }).documents
-      } catch (error) {
-        console.warn('[presmium] could not read the documents of the site', error)
-      }
-    }
+    if (endpoint || !options.value.endpoint) return
+    endpoint = options.value.endpoint as string
     served.value = options.value.documents ?? []
     void refresh()
     window.addEventListener(DOCUMENTS_EVENT, () => void refresh())
   })
   return computed<HomeDocument[]>(() => served.value ?? options.value.documents ?? [])
+}
+
+/** The slots the toolbar's items fill now. Must be called inside a component setup. */
+function useFilledSlots() {
+  const toolbar = useService(TOOLBAR)
+  const slots = shallowRef(new Set<ToolbarSlot>())
+  watchEffect((onCleanup) => {
+    const registry = toolbar.value
+    if (!registry) return
+    const update = () => {
+      slots.value = new Set(registry.list().map(item => item.slot ?? 'tools'))
+    }
+    update()
+    onCleanup(registry.subscribe(update))
+  })
+  return slots
 }
 
 /** The items of a place of the workbench (`ToolbarItem.slot`). */
@@ -150,6 +183,155 @@ const SearchBox = defineComponent({
       }),
       h('kbd', { class: 'pm-ui-kbd' }, 'Ctrl K'),
     ])
+  },
+})
+
+/** One result of the launcher's search. */
+interface Found {
+  id: string
+  group: 'documents' | 'sections' | 'commands'
+  label: string
+  detail?: string
+  run(): void
+}
+
+/** Whether a text holds every word of the query. */
+const matches = (text: string, words: string[]) => words.every(word => text.toLowerCase().includes(word))
+
+/**
+ * The commands of the home page: each item of the toolbar drawn on it that
+ * opens something (its first control, pressed), under its title; and the
+ * appearance switch.
+ */
+function commands(items: ToolbarItem[], toggleTheme: { label: string, run(): void }): Found[] {
+  const found: Found[] = []
+  for (const item of items) {
+    if (item.slot && !['tools', 'settings', 'create'].includes(item.slot)) continue
+    const control = document.querySelector<HTMLElement>(`[data-toolbar-item="${CSS.escape(item.id)}"]`)
+    const target = control?.matches('button, a[href]') ? control : control?.querySelector<HTMLElement>('button, a[href]')
+    if (target) found.push({ id: `command:${item.id}`, group: 'commands', label: item.title, run: () => target.click() })
+  }
+  found.push({ id: 'command:theme', group: 'commands', label: toggleTheme.label, run: toggleTheme.run })
+  return found
+}
+
+/**
+ * The launcher's search (Ctrl K, ⌘ K): the documents, their sections and the
+ * commands it finds, as a list under the box (arrow keys, Enter); the
+ * documents' cards are filtered too. Opened, it has the documents not
+ * compiled yet compiled, so their sections are found.
+ */
+const LauncherSearch = defineComponent({
+  name: 'PresmiumLauncherSearch',
+  setup() {
+    const s = useMessages(SHELL_MESSAGES)
+    const documents = useDocuments()
+    const toolbar = useService(TOOLBAR)
+    const theme = useTheme()
+    const input = ref<HTMLInputElement>()
+    const open = ref(false)
+    const active = ref(0)
+    let outlined = false
+    const results = computed((): Found[] => {
+      const words = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+      if (words.length === 0) return []
+      const docs = documents.value.filter(doc => matches(`${doc.title} ${doc.dir} ${doc.description ?? ''} ${(doc.tags ?? []).join(' ')}`, words))
+        .slice(0, 8).map((doc): Found => ({ id: `document:${doc.dir}`, group: 'documents', label: doc.title, detail: `${doc.dir}/`, run: () => location.assign(doc.href) }))
+      const sections = documents.value.flatMap(doc => (doc.sections ?? []).filter(section => matches(section.title, words))
+        .map((section): Found => ({ id: `section:${doc.dir}:${section.id}`, group: 'sections', label: section.title, detail: doc.title, run: () => location.assign(section.href) }))).slice(0, 12)
+      const found = commands(toolbar.value?.list() ?? [], { label: s.value.toggleTheme, run: theme.toggle }).filter(command => matches(command.label, words)).slice(0, 8)
+      return [...docs, ...sections, ...found]
+    })
+    const choose = (found: Found | undefined) => {
+      if (!found) return
+      open.value = false
+      found.run()
+    }
+    const onFocus = () => {
+      open.value = true
+      if (outlined) return
+      outlined = true
+      void refresh(true)
+    }
+    const onKeydown = (event: KeyboardEvent) => {
+      const count = results.value.length
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        open.value = true
+        if (count) active.value = (active.value + (event.key === 'ArrowDown' ? 1 : -1) + count) % count
+      } else if (event.key === 'Enter') {
+        event.preventDefault()
+        choose(results.value[active.value])
+      } else if (event.key === 'Escape' && open.value) {
+        event.stopPropagation()
+        open.value = false
+      }
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        input.value?.focus()
+      }
+    }
+    onMounted(() => window.addEventListener('keydown', onKey))
+    onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+    const optionId = (index: number) => `pm-launcher-option-${index}`
+    const groups: Found['group'][] = ['documents', 'sections', 'commands']
+    const groupLabel = (group: Found['group']) => (group === 'documents' ? s.value.groupDocuments : group === 'sections' ? s.value.groupSections : s.value.groupCommands)
+    return () => {
+      const list = results.value
+      if (active.value >= list.length) active.value = 0
+      const expanded = open.value && query.value.trim() !== ''
+      return h('div', { class: 'pm-launcher', onFocusout: (event: FocusEvent) => {
+        if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) open.value = false
+      } }, [
+        h('label', { class: 'pm-ui-search pm-site-home__search-box' }, [
+          h(PmIcon, { name: 'search', size: 15, strokeWidth: 1.8 }),
+          h('input', {
+            'ref': input,
+            'class': 'pm-site-home__search',
+            'type': 'text',
+            'role': 'combobox',
+            'value': query.value,
+            'placeholder': s.value.searchAll,
+            'aria-label': s.value.searchAll,
+            'aria-autocomplete': 'list',
+            'aria-expanded': expanded ? 'true' : 'false',
+            'aria-controls': 'pm-launcher-results',
+            'aria-activedescendant': expanded && list.length ? optionId(active.value) : undefined,
+            'onInput': (event: Event) => {
+              query.value = (event.target as HTMLInputElement).value
+              active.value = 0
+              open.value = true
+            },
+            'onFocus': onFocus,
+            'onKeydown': onKeydown,
+          }),
+          h('kbd', { class: 'pm-ui-kbd' }, 'Ctrl K'),
+        ]),
+        expanded
+          ? h('div', { id: 'pm-launcher-results', class: 'pm-launcher__results', role: 'listbox', 'aria-label': s.value.results }, list.length === 0
+              ? [h('p', { class: 'pm-launcher__none' }, s.value.noResults)]
+              : groups.flatMap((group) => {
+                  const members = list.map((found, index) => ({ found, index })).filter(({ found }) => found.group === group)
+                  return members.length === 0
+                    ? []
+                    : [h('div', { 'role': 'group', 'aria-label': groupLabel(group), 'class': 'pm-launcher__group' }, [
+                        h('p', { 'class': 'pm-launcher__heading', 'aria-hidden': 'true' }, groupLabel(group)),
+                        ...members.map(({ found, index }) => h('div', {
+                          'id': optionId(index),
+                          'role': 'option',
+                          'class': 'pm-launcher__option',
+                          'data-result': found.id,
+                          'aria-selected': index === active.value ? 'true' : 'false',
+                          'onMousedown': (event: MouseEvent) => event.preventDefault(),
+                          'onClick': () => choose(found),
+                          'onMouseenter': () => active.value = index,
+                        }, [h('span', found.label), found.detail ? h('span', { class: 'pm-launcher__detail' }, found.detail) : null])),
+                      ])]
+                })) : null,
+      ])
+    }
   },
 })
 
@@ -230,23 +412,34 @@ function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): Hos
 }
 
 /** The workspace's files in the side bar: each document's directory (its pages), and the workspace's configuration. */
+/**
+ * The workspace's side bar: its name (the page's heading where the side bar
+ * shows), and its files: the tree a plugin gives (`files`), else the
+ * documents' directories and the configuration.
+ */
 const Files = defineComponent({
   name: 'PresmiumWorkspaceFiles',
   setup() {
     const { site } = useData()
     const documents = useDocuments()
+    const filled = useFilledSlots()
     const t = useMessages(WEB_MESSAGES)
     return () => h('aside', { 'class': 'pm-workbench__files', 'aria-label': t.value.files }, [
-      h('p', { class: 'pm-workbench__name' }, site.value.title),
-      h('ul', { class: 'pm-workbench__tree', role: 'list' }, [
-        ...documents.value.map(doc => h('li', { key: doc.dir }, [
-          h('a', { class: 'pm-workbench__file', href: doc.href, title: doc.title }, [h(PmIcon, { name: 'folder', size: 15 }), `${doc.dir}/`]),
-        ])),
-        h('li', [h('span', { class: 'pm-workbench__file pm-workbench__file--plain' }, [h(PmIcon, { name: 'document', size: 15 }), 'presmium.workspace.yaml'])]),
-      ]),
+      h('h1', { class: 'pm-workbench__name' }, site.value.title),
+      filled.value.has('files')
+        ? h(PmToolbar, { class: 'pm-workbench__tree-items', place: 'home', filter: bySlot('files') })
+        : h('ul', { class: 'pm-workbench__tree', role: 'list' }, [
+            ...documents.value.map(doc => h('li', { key: doc.dir }, [
+              h('a', { class: 'pm-workbench__file', href: doc.href, title: doc.title }, [h(PmIcon, { name: 'folder', size: 15 }), `${doc.dir}/`]),
+            ])),
+            h('li', [h('span', { class: 'pm-workbench__file pm-workbench__file--plain' }, [h(PmIcon, { name: 'document', size: 15 }), 'presmium.workspace.yaml'])]),
+          ]),
     ])
   },
 })
+
+/** The id of the workbench's content, where the link that skips the bars goes. */
+const CONTENT_ID = 'pm-workbench-content'
 
 /** The workbench of a served home page (docs/design/home.dc.html). */
 const Workbench = defineComponent({
@@ -254,16 +447,27 @@ const Workbench = defineComponent({
   setup() {
     provide(IN_WORKBENCH, true)
     const t = useMessages(WEB_MESSAGES)
+    const s = useMessages(SHELL_MESSAGES)
     const theme = useTheme()
+    const { site } = useData()
+    const edit = useService(EDIT_MODE)
+    const editing = computed(() => Boolean(edit.value?.active.value))
     const focusSearch = () => document.querySelector<HTMLInputElement>('.pm-workbench .pm-site-home__search')?.focus()
-    const toDocuments = () => {
+    const toDocuments = async () => {
+      edit.value?.leave()
+      await nextTick()
       document.querySelector('.pm-workbench__main')?.scrollTo({ top: 0 })
       document.querySelector<HTMLElement>('.pm-site-home__link')?.focus()
     }
+    const skip = (event: Event) => {
+      event.preventDefault()
+      document.getElementById(CONTENT_ID)?.focus()
+    }
     return () => h('div', { class: 'pm-workbench pm-ui' }, [
+      h('a', { class: 'pm-skip-link', href: `#${CONTENT_ID}`, onClick: skip }, s.value.skipToContent),
       h('nav', { 'class': 'pm-workbench__activity', 'aria-label': t.value.activity }, [
         h('div', { 'class': 'pm-workbench__logo', 'aria-hidden': 'true' }, 'P'),
-        h(PmIconButton, { 'icon': 'document', 'label': t.value.documentsHeading, 'aria-pressed': 'true', 'onClick': toDocuments }),
+        h(PmIconButton, { 'icon': 'document', 'label': t.value.documentsHeading, 'aria-pressed': editing.value ? 'false' : 'true', 'onClick': () => void toDocuments() }),
         h(PmIconButton, { icon: 'search', label: t.value.search, onClick: focusSearch }),
         h(PmToolbar, { place: 'activity', filter: (item: ToolbarItem) => inTools(item) && Boolean(item.icon) }),
         h('div', { class: 'pm-workbench__activity-end' }, [h(PmToolbar, { place: 'activity', filter: bySlot('settings') })]),
@@ -272,10 +476,17 @@ const Workbench = defineComponent({
       h('div', { class: 'pm-workbench__main' }, [
         h('header', { class: 'pm-workbench__bar' }, [
           h('span', { class: 'pm-workbench__title' }, t.value.launcher),
-          h(SearchBox),
+          // Where the side bar gives way, the workspace's name heads the page here.
+          h('h1', { class: 'pm-workbench__heading' }, site.value.title),
+          h(LauncherSearch),
           h('div', { class: 'pm-workbench__actions' }, [h(PmToolbar, { filter: (item: ToolbarItem) => inTools(item) && !item.icon })]),
         ]),
-        h('main', { class: 'pm-workbench__content' }, [h(Content)]),
+        h('main', { id: CONTENT_ID, class: 'pm-workbench__content', tabindex: -1 }, editing.value
+          ? [h('section', { 'class': 'pm-workbench__source', 'aria-label': t.value.sourcePane }, [
+              h('div', { class: 'pm-workbench__tabs' }, [h(PmToolbar, { filter: bySlot('tabs') })]),
+              h('div', { class: 'pm-workbench__editor' }, [h(PmToolbar, { place: 'pane', filter: bySlot('source') })]),
+            ])]
+          : [h(Content)]),
         h('footer', { 'class': 'pm-workbench__status', 'aria-label': t.value.statusBar }, [
           h(PmToolbar, { place: 'status', filter: bySlot('status') }),
           h('button', {

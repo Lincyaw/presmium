@@ -1,13 +1,17 @@
-// The design system and the workbench (N-10, WP-95b; docs/architecture.md 5.10, docs/design/): `presmium serve`
-// of a workspace (e2e/fixtures/design) on this machine. Its home page is the workbench: the activity bar, the
-// workspace's files, the launcher with its search and the documents as cards in the serif of the design, the
-// agent's draft card (a test plugin stands in for the assistant), and the status bar; the fonts come with Presmium,
-// and the dark scheme switches every token. The history names an undo and its redo (F-55); the usage guide names its
-// topics (P-120). On a document's page edit mode shows its status bar and the panes a plugin puts in its split (the
-// test plugin fills them with the host's tabs, menu and segmented control, used by keyboard); on a phone the panes
-// stack and a popover stays on the screen. Every text reaches WCAG AA in light and dark, and the borders of fields
-// and of a chosen segment 3:1: the home page, its history, its document dialog and guide, a document's page and edit
-// mode.
+// The design system and the workbench (N-10, WP-95b, WP-95c; docs/architecture.md 5.10, 5.11, docs/design/):
+// `presmium serve` of a workspace (e2e/fixtures/design) on this machine. Its home page is the workbench: a link that
+// skips to the content, the activity bar, the workspace's name as the page's one heading and its file tree, the
+// launcher with its search (documents, their sections, commands) and the documents as cards in the serif of the
+// design, the agent's draft card (a test plugin stands in for the assistant), and the status bar; the fonts come with
+// Presmium, and the dark scheme switches every token. The history names an undo and its redo (F-55); the usage guide
+// names its topics (P-120). On a document's page edit mode is an application filling the window
+// (docs/design/edit.dc.html): its top bar in the navigation bar's place (the trail, the open files, the preview's
+// views, the toolbar), the source editor at the left, the preview, the dock a plugin fills (the test plugin, with the
+// host's tabs, menu and segmented control, used by keyboard) and the status bar with the editor's line at the
+// window's foot; the pages' footers give way. On a phone the drawers open below the activity bar, a popover stays on
+// the screen and edit mode stacks its bar and panes round the preview. Every text reaches WCAG AA in light and dark,
+// and the borders of fields and of a chosen segment 3:1: the home page, its history, its document dialog and guide, a
+// document's page and edit mode.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -179,7 +183,7 @@ test.describe('the design system and the workbench', () => {
     expect(await notes.locator('.pm-site-home__link').evaluate(el => getComputedStyle(el).fontFamily)).toMatch(/^"Source Serif 4"/)
     await expect(notes).toContainText('notes/')
     await page.keyboard.press('Control+k')
-    await expect(page.getByRole('searchbox', { name: '搜索文档' })).toBeFocused()
+    await expect(page.getByRole('combobox', { name: '搜索文档、章节与命令' })).toBeFocused()
     await page.keyboard.type('随笔')
     await expect(page.locator('.pm-site-home__document')).toHaveCount(1)
     await expect(page.locator('.pm-site-home__document')).toHaveAttribute('data-document', 'essay')
@@ -207,6 +211,46 @@ test.describe('the design system and the workbench', () => {
     await page.getByRole('button', { name: '切换到浅色模式' }).click()
     await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
     expect(await page.locator('.pm-workbench').evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(247, 245, 240)')
+  })
+
+  test('the home page has one heading and a link past its bars; the launcher finds documents, their sections and commands', async ({ page }) => {
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="notes"]'))
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('设计验收工作区')
+    // The first Tab reaches the link past the activity bar and the side bar; it leads to the content.
+    await page.keyboard.press('Tab')
+    const skip = page.getByRole('link', { name: '跳到内容' })
+    await expect(skip).toBeFocused()
+    await expect(skip).toBeInViewport()
+    await page.keyboard.press('Enter')
+    await expect(page.locator('#pm-workbench-content')).toBeFocused()
+
+    // A command: chosen by the keyboard, it does what its item does.
+    const search = page.getByRole('combobox', { name: '搜索文档、章节与命令' })
+    const results = page.getByRole('listbox', { name: '搜索结果' })
+    await search.fill('新建')
+    await expect(results.getByRole('group', { name: '命令' }).getByRole('option')).toHaveText(['新建文档'])
+    await search.press('Enter')
+    const documents = page.getByRole('dialog', { name: '管理文档' })
+    await expect(documents).toBeVisible()
+    await documents.getByRole('button', { name: '关闭' }).click()
+    await search.fill('明暗')
+    await search.press('Enter')
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+    await search.fill('明暗')
+    await search.press('Enter')
+    await expect(page.locator('html')).not.toHaveClass(/\bdark\b/)
+
+    // A document by its title, and a section of one (its documents compile once the search is used).
+    await search.fill('随笔')
+    await expect(results.getByRole('group', { name: '文档' }).getByRole('option')).toContainText(['课后随笔'])
+    await search.fill('BPE 怎样')
+    const section = results.getByRole('group', { name: '章节' }).getByRole('option')
+    await expect(section).toContainText(['BPE 怎样得到词元'], { timeout: 60_000 })
+    await search.press('ArrowDown')
+    await expect(section.first()).toHaveAttribute('aria-selected', 'true')
+    await search.press('Enter')
+    await page.waitForURL(/\/notes\/#bpe$/)
+    await expect(page.locator('.pm-section[data-section="bpe"]')).toBeVisible()
   })
 
   test('with an assistant that may draft, the dashed card beside the documents opens the dialog at the request', async ({ page }) => {
@@ -267,7 +311,7 @@ test.describe('the design system and the workbench', () => {
     await expect(guide).toContainText(`${new URL(home).origin}/mcp`)
   })
 
-  test('edit mode shows its status bar, and the panes a plugin puts in its split', async ({ page }) => {
+  test('edit mode is an application filling the window: its top bar, the source editor, the preview, the dock and the status bar', async ({ page }) => {
     await openDevPage(page, `${home}notes/`, page.locator('.pm-workspace-edit').filter({ visible: true }))
     const edit = page.locator('.pm-workspace-edit').filter({ visible: true })
     await expect(page.locator('.pm-edit-status')).toHaveCount(0)
@@ -275,19 +319,48 @@ test.describe('the design system and the workbench', () => {
     await expect(edit).toHaveAttribute('aria-pressed', 'true')
     await expect(edit).toHaveText('退出编辑')
     expect(await page.evaluate(() => ['pm-editing', 'pm-edit-split', 'pm-edit-docked'].map(name => document.documentElement.classList.contains(name)))).toEqual([true, true, true])
-    await expect(page.getByRole('region', { name: '源码' }).locator('.fixture-pane[data-slot="source"]')).toBeVisible()
+
+    // The top bar in the navigation bar's place (docs/design/edit.dc.html): the trail, the open file, the preview's
+    // views, the toolbar.
+    const bar = page.getByRole('banner', { name: '编辑' })
+    const trail = bar.getByRole('navigation', { name: '位置' })
+    await expect(trail.getByRole('link', { name: '设计验收工作区' })).toBeVisible()
+    await expect(trail.locator('[aria-current="page"]')).toHaveText('分词笔记')
+    await expect(page.locator('.VPNav')).toBeHidden()
+    await expect(bar.getByRole('tablist', { name: '打开的文件' }).getByRole('tab', { name: /^lecture\.md/ })).toHaveAttribute('aria-selected', 'true')
+    const views = bar.getByRole('group', { name: '预览视图' })
+    await expect(views.getByRole('button', { name: '文档' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(bar.locator('.pm-workspace-history__toggle')).toBeVisible()
+    // The source editor at the left, the dock a plugin fills at the right, the editor's place in the status bar.
+    await expect(page.getByRole('region', { name: '源码' }).getByRole('textbox', { name: '源码' })).toContainText('title: 分词笔记')
     await expect(page.getByRole('complementary', { name: '编辑面板' }).locator('.fixture-pane[data-slot="dock"]')).toBeVisible()
     const status = page.getByRole('contentinfo', { name: '状态栏' })
     await expect(status.locator('.pm-workspace-git')).toHaveText(/^(git|main)\b/)
+    await expect(status.locator('.pm-workspace-cursor')).toHaveText(/^MyST · UTF-8 · 第 \d+ 行$/)
     await expect(status.locator('.fixture-pane[data-slot="status"]')).toBeVisible()
-    // The page is the preview between the panes.
-    const [source, content, dock] = await Promise.all(['.pm-edit-source', '.VPDoc', '.pm-edit-dock'].map(selector => page.locator(selector).boundingBox()))
+    // They fill the window, the page between the panes is the preview, and the pages' footers give way.
+    const viewport = page.viewportSize()!
+    const [top, source, content, dock, foot] = await Promise.all([bar, page.locator('.pm-edit-source'), page.locator('.VPDoc'), page.locator('.pm-edit-dock'), status].map(async pane => (await pane.boundingBox())!))
+    expect([top!.x, top!.y, top!.width]).toEqual([0, 0, viewport.width])
+    expect(foot!.y + foot!.height).toBeCloseTo(viewport.height, 0)
+    expect(source!.y).toBeCloseTo(top!.height, 0)
+    expect(source!.y + source!.height).toBeCloseTo(foot!.y, 0)
     expect(content!.x).toBeGreaterThanOrEqual(source!.x + source!.width)
     expect(content!.x + content!.width).toBeLessThanOrEqual(dock!.x + 1)
+    await expect(page.locator('.VPDocFooter')).toBeHidden()
+    // The present view shows in the preview's place.
+    await views.getByRole('button', { name: '放映' }).click()
+    await expect(views.getByRole('button', { name: '放映' })).toHaveAttribute('aria-pressed', 'true')
+    const present = (await page.locator('.pm-present').boundingBox())!
+    expect(present.x).toBeCloseTo(source!.x + source!.width, 0)
+    expect(present.x + present.width).toBeCloseTo(dock!.x, 0)
+    await views.getByRole('button', { name: '文档' }).click()
+    await expect(page.locator('.pm-present')).toHaveCount(0)
 
     // The host's components in the panes, as a plugin uses them. Tabs: the arrow keys choose and focus, round the
     // ends; the panel is the chosen tab's, labelled by it.
-    const tabs = page.getByRole('complementary', { name: '编辑面板' }).getByRole('tablist', { name: 'AI 修改' })
+    const pane = page.getByRole('complementary', { name: '编辑面板' })
+    const tabs = pane.getByRole('tablist', { name: 'AI 修改' })
     await tabs.getByRole('tab', { name: '对话' }).click()
     await page.keyboard.press('ArrowRight')
     const diff = tabs.getByRole('tab', { name: '差异' })
@@ -301,13 +374,12 @@ test.describe('the design system and the workbench', () => {
     await expect(tabs.getByRole('tab', { name: '记录' })).toBeFocused()
     await expect(page.getByRole('tabpanel', { name: '记录' })).toHaveText('fixture log')
     // A menu: it opens at its first item, the arrow keys move round it, Escape and a choice give the focus back.
-    const pane = page.getByRole('region', { name: '源码' })
-    const more = pane.getByRole('button', { name: '源码操作' })
+    const more = pane.getByRole('button', { name: '面板操作' })
     await more.click()
-    const menu = pane.getByRole('menu', { name: '源码操作' })
+    const menu = pane.getByRole('menu', { name: '面板操作' })
     await expect(menu.getByRole('menuitem', { name: '格式化' })).toBeFocused()
     await page.keyboard.press('ArrowUp')
-    await expect(menu.getByRole('menuitem', { name: '关闭文件' })).toBeFocused()
+    await expect(menu.getByRole('menuitem', { name: '关闭面板' })).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(menu).toHaveCount(0)
     await expect(more).toBeFocused()
@@ -319,20 +391,32 @@ test.describe('the design system and the workbench', () => {
     await expect(pane.locator('.fixture-chosen')).toHaveText('wrap')
     await expect(more).toBeFocused()
     // A segmented control: one option pressed.
-    const views = pane.getByRole('group', { name: '预览视图' })
-    await views.getByRole('button', { name: '放映' }).click()
-    await expect(views.getByRole('button', { name: '放映' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(views.getByRole('button', { name: '文档' })).toHaveAttribute('aria-pressed', 'false')
+    const segments = pane.getByRole('group', { name: '面板视图' })
+    await segments.getByRole('button', { name: '放映' }).click()
+    await expect(segments.getByRole('button', { name: '放映' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(segments.getByRole('button', { name: '文档' })).toHaveAttribute('aria-pressed', 'false')
 
     await edit.click()
     await expect(page.locator('.pm-edit-status')).toHaveCount(0)
+    await expect(page.locator('.VPNav')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.className)).not.toMatch(/pm-edit/)
   })
 
-  test('on a phone a popover of the navigation screen stays on the screen, and edit mode stacks its panes round the preview', async ({ page }) => {
+  test('on a phone the drawers open below the activity bar, a popover of the navigation screen stays on the screen, and edit mode stacks its bar and panes round the preview', async ({ page }) => {
     page.on('dialog', dialog => void dialog.accept())
     await page.setViewportSize({ width: 390, height: 844 })
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="notes"]'))
+    // The activity bar runs along the top; a drawer opens below it, which stays in view and usable.
+    const activity = page.getByRole('navigation', { name: '活动' })
+    await activity.getByRole('button', { name: '使用说明' }).click()
+    const guide = page.getByRole('dialog', { name: '使用说明' })
+    const [bar, drawer] = await Promise.all([activity.boundingBox(), guide.boundingBox()])
+    expect(drawer!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height - 1)
+    await activity.getByRole('button', { name: '修改历史' }).click()
+    await expect(page.getByRole('dialog', { name: '修改历史' })).toBeVisible()
+    await expect(guide).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
     await page.locator('.pm-workspace-documents__toggle').click()
     const documents = page.getByRole('dialog', { name: '管理文档' })
     const notes = documents.locator('.pm-workspace-document[data-document="notes"]')
@@ -355,10 +439,11 @@ test.describe('the design system and the workbench', () => {
     await page.keyboard.press('Escape')
     await expect(history).toHaveCount(0)
 
-    // Edit mode: the source above the preview, the dock below it, each the width of the screen.
+    // Edit mode (the navigation screen closes): its bar, the source above the preview, the dock below it, each the
+    // width of the screen; the page scrolls.
     await screen.locator('.pm-workspace-edit').click()
-    await page.locator('.VPNavBarHamburger').click()
-    const [source, content, dock] = await Promise.all([
+    const [top, source, content, dock] = await Promise.all([
+      page.getByRole('banner', { name: '编辑' }),
       page.getByRole('region', { name: '源码' }),
       page.locator('.VPDoc'),
       page.getByRole('complementary', { name: '编辑面板' }),
@@ -366,9 +451,12 @@ test.describe('the design system and the workbench', () => {
       await expect(pane).toBeVisible()
       return (await pane.boundingBox())!
     }))
-    for (const box of [source!, content!, dock!]) expect([box.x, box.width]).toEqual([0, 390])
+    for (const box of [top!, source!, content!, dock!]) expect([box.x, box.width]).toEqual([0, 390])
+    expect(top!.y + top!.height).toBeLessThanOrEqual(source!.y + 1)
     expect(source!.y + source!.height).toBeLessThanOrEqual(content!.y + 1)
     expect(content!.y + content!.height).toBeLessThanOrEqual(dock!.y + 1)
+    await expect(page.locator('.VPNavScreen')).toHaveCount(0)
+    expect(await page.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe('hidden')
   })
 
   for (const colorScheme of ['light', 'dark'] as const) {
@@ -393,11 +481,21 @@ test.describe('the design system and the workbench', () => {
       await page.keyboard.press('Escape')
       await page.locator('.pm-workspace-guide__toggle').click()
       expect(await lowContrast(page)).toEqual([])
+      await page.keyboard.press('Escape')
+      // The launcher's results, and the file tree open at a document.
+      await page.getByRole('navigation', { name: '文件' }).locator('[data-document="notes"]').click()
+      await page.getByRole('combobox', { name: '搜索文档、章节与命令' }).fill('文档')
+      await expect(page.getByRole('listbox', { name: '搜索结果' }).getByRole('option').first()).toBeVisible()
+      expect(await lowContrast(page)).toEqual([])
 
       await openDevPage(page, `${home}notes/`, page.locator('.pm-workspace-edit').filter({ visible: true }))
       expect(await lowContrast(page)).toEqual([])
       await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
       await expect(page.locator('.pm-edit-status')).toBeVisible()
+      // The source editor with its highlighted MyST, a block picked in the preview, and the problems panel.
+      await expect(page.getByRole('region', { name: '源码' }).getByRole('textbox', { name: '源码' })).toContainText('title: 分词笔记')
+      await page.locator('.pm-section[data-section] .pm-block--markdown').first().click()
+      await expect(page.locator('.cm-line.pm-cm-picked').first()).toBeVisible()
       expect(await lowContrast(page)).toEqual([])
     })
   }

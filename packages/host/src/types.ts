@@ -138,11 +138,15 @@ export const NAVIGATION = defineService<Navigation>('presmium.navigation')
  * controls) shows `tools` and `settings`; the workspace's home page shows
  * `tools` with an icon in its activity bar and the others in its top bar,
  * `settings` at the foot of the activity bar, `status` in its status bar,
- * `home` as cards below the documents and `create` beside the document
- * cards. Edit mode shows `status` in its status bar, `source` in the left
- * pane of its split (the source editor) and `dock` in its right dock.
+ * `home` as cards below the documents, `create` beside the document cards
+ * and `files` in its side bar (the file tree). Edit mode shows `tools` and
+ * `settings` at the end of its top bar, `tabs` in it after the document's
+ * name (the open files), `status` in its status bar, `source` in the left
+ * pane of its split (the source editor) and `dock` in its right dock; the
+ * home page shows `tabs` and `source` in place of the launcher while its
+ * editor is open (the workspace's `EDIT_MODE`).
  */
-export type ToolbarSlot = 'tools' | 'settings' | 'status' | 'home' | 'create' | 'source' | 'dock'
+export type ToolbarSlot = 'tools' | 'settings' | 'status' | 'home' | 'create' | 'files' | 'tabs' | 'source' | 'dock'
 
 /**
  * Where an item's component is drawn now (`useToolbarPlace`): a page's

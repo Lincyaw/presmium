@@ -10,7 +10,7 @@
   /* Colours (docs/design/README.md). Text colours reach WCAG AA (4.5:1) on bg, surface and sunk, and each
      tone on its soft background: `ok` is a shade darker than the reference (#2f7d4f) for AA on `ok-soft`.
      `line-strong`, the border of fields and of a chosen segment, reaches 3:1 on bg, surface and sunk
-     (WCAG 1.4.11): a shade darker than the reference's `line2` (#a39c8e), which line numbers keep (`gutter`). */
+     (WCAG 1.4.11): a shade darker than the reference's `line2` (#a39c8e), kept as `gutter` (the source editor's line numbers are `muted`, for AA). */
   --pm-color-bg: #f7f5f0;
   --pm-color-surface: #ffffff;
   --pm-color-sunk: #efebe3;

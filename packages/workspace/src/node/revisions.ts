@@ -14,12 +14,16 @@
  * owner's only. A revert names the document operation it undoes in its
  * origin, so the history labels it (F-55); the history says which reverts
  * redo: those of an undo.
+ *
+ * The source editor (P-124) lists the files with changes not committed,
+ * which are committed with the author's message (`editor`) or discarded:
+ * written back as the last commit has them, through the document writer.
  */
-import { lstatSync, mkdtempSync, readdirSync, rmdirSync, rmSync } from 'node:fs'
+import { lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
 import type { DocumentFileChange, Member, RevertResult, Revision, RevisionService } from '@presmium/kernel'
-import type { HistoryRevision } from '../domain/api.ts'
+import type { HistoryRevision, UncommittedFile } from '../domain/api.ts'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/revisions.ts'
 import type { CommitOrigin } from '../domain/revisions.ts'
@@ -143,6 +147,42 @@ export class Revisions implements RevisionService {
     const branch = await this.#git.attempt(['symbolic-ref', '--quiet', '--short', 'HEAD'])
     const changes = await this.#git.attempt(['status', '--porcelain', '-z', '--no-renames', '--untracked-files=all'])
     return { ...branch.ok ? { branch: branch.output.trim() } : {}, uncommitted: changes.ok ? changes.output.split('\0').filter(Boolean).length : 0 }
+  }
+
+  /** The files under these paths (relative to the root; '' for the root) whose work tree differs from the last commit, with their lines added and removed. */
+  async uncommittedFiles(paths: string[]): Promise<UncommittedFile[]> {
+    const specs = paths.map(path => path || '.')
+    const status = await this.#git.attempt(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
+    if (!status.ok) return []
+    const counts = new Map<string, [number, number]>()
+    const numstat = await this.#git.attempt(['diff', '--numstat', '-z', '--no-renames', 'HEAD', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
+    if (numstat.ok) {
+      for (const entry of numstat.output.split('\0').filter(Boolean)) {
+        const [added = '-', removed = '-', path = ''] = entry.split('\t')
+        if (added !== '-') counts.set(this.#fromTop(path), [Number(added), Number(removed)])
+      }
+    }
+    return status.output.split('\0').filter(Boolean).map((entry): UncommittedFile => {
+      const code = entry.slice(0, 2)
+      const path = this.#fromTop(entry.slice(3))
+      const kind = code.includes('D') ? 'deleted' : code === '??' || code[0] === 'A' ? 'added' : 'modified'
+      const counted = counts.get(path) ?? (kind === 'added' ? lineCount(join(this.#files.config.root, path)) : undefined)
+      return { path, kind, ...counted ? { added: counted[0], removed: counted[1] } : {} }
+    }).sort((a, b) => a.path.localeCompare(b.path))
+  }
+
+  /** Writes these files (relative to the root) back as the last commit has them; those it does not have go. */
+  discard(paths: string[]): Promise<void> {
+    return this.#git.exclusive(async () => {
+      const files: TreeFile[] = []
+      for (const path of paths) {
+        const listed = await this.#git.attempt(['ls-tree', '-z', 'HEAD', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
+        const [meta = '', named] = (listed.ok ? listed.output.split('\0')[0] ?? '' : '').split('\t')
+        const [mode = '', , oid = ''] = meta.split(' ')
+        files.push(named && mode ? { path, mode, oid } : { path, mode: '000000', oid: '' })
+      }
+      await this.#write(files)
+    })
   }
 
   async history(filter: { document?: string, task?: string, limit?: number } = {}): Promise<HistoryRevision[]> {
@@ -318,6 +358,18 @@ function writableByOthers(root: string, path: string): string | undefined {
     if ((mode & 0o002) !== 0) return dir || '.'
   }
   return undefined
+}
+
+/** The lines of a new text file, as `git diff --numstat` counts them; undefined for one that is not text. */
+function lineCount(path: string): [number, number] | undefined {
+  try {
+    const bytes = readFileSync(path)
+    if (bytes.includes(0)) return undefined
+    const text = bytes.toString('utf8')
+    return [text === '' ? 0 : text.split('\n').length - (text.endsWith('\n') ? 1 : 0), 0]
+  } catch {
+    return undefined
+  }
 }
 
 function exists(path: string): boolean {

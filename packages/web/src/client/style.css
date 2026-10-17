@@ -410,6 +410,7 @@ html.pm-presenting {
   --pm-drawer-left: var(--pm-activity-width);
   --pm-drawer-bottom: var(--pm-statusbar-height);
 
+  position: relative;
   display: grid;
   grid-template-columns: var(--pm-activity-width) var(--pm-sidebar-width) minmax(0, 1fr);
   height: 100vh;
@@ -483,14 +484,39 @@ html.pm-presenting {
   text-decoration: none;
 }
 
-a.pm-workbench__file:hover {
+:is(a, button).pm-workbench__file:hover {
   background: var(--pm-color-accent-soft);
   color: var(--pm-color-accent);
 }
 
-a.pm-workbench__file:focus-visible {
+:is(a, button).pm-workbench__file:focus-visible {
   outline: 2px solid var(--pm-color-accent);
   outline-offset: -2px;
+}
+
+/* The link past the activity bar and the side bar, shown when the keyboard reaches it (WCAG 2.4.1). */
+.pm-skip-link {
+  position: absolute;
+  z-index: var(--pm-z-dialog);
+  top: var(--pm-space-2);
+  left: var(--pm-space-2);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-ink);
+  color: var(--pm-color-bg);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.pm-skip-link:focus {
+  transform: none;
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 2px;
+}
+
+.pm-workbench__content:focus {
+  outline: none;
 }
 
 .pm-workbench__file--plain {
@@ -518,7 +544,20 @@ a.pm-workbench__file:focus-visible {
   font-weight: 600;
 }
 
-.pm-workbench__bar > .pm-site-home__search-box {
+/* The workspace's name heads the page in the side bar; where the side bar gives way, in the bar. */
+.pm-workbench__heading {
+  display: none;
+  margin: 0 var(--pm-space-4) 0 0;
+  overflow: hidden;
+  font-family: var(--pm-font-serif);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: var(--pm-leading-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-workbench__bar > .pm-launcher {
   flex: 1 1 15rem;
   max-width: 24rem;
 }
@@ -530,6 +569,92 @@ a.pm-workbench__file:focus-visible {
 
 .pm-workbench__content {
   overflow: auto;
+}
+
+/* The launcher's search: what it finds, under the box. */
+.pm-launcher {
+  position: relative;
+}
+
+.pm-launcher > .pm-site-home__search-box {
+  width: 100%;
+}
+
+.pm-launcher__results {
+  position: absolute;
+  z-index: var(--pm-z-popover);
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  max-height: min(28rem, 70vh);
+  overflow: auto;
+  padding: var(--pm-space-1);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-float);
+  color: var(--pm-color-ink);
+}
+
+.pm-launcher__heading {
+  margin: var(--pm-space-2) var(--pm-space-2) var(--pm-space-1);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  font-weight: 600;
+  letter-spacing: var(--pm-tracking-label);
+}
+
+.pm-launcher__option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pm-space-2);
+  padding: 6px var(--pm-space-2);
+  border-radius: var(--pm-radius-small);
+  cursor: pointer;
+}
+
+.pm-launcher__option[aria-selected='true'] {
+  background: var(--pm-color-selected);
+  box-shadow: inset 2px 0 0 var(--pm-color-accent);
+}
+
+.pm-launcher__detail {
+  overflow: hidden;
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-launcher__none {
+  margin: 0;
+  padding: var(--pm-space-2);
+  color: var(--pm-color-muted);
+}
+
+/* The home page's editor (the workspace's configuration) in the launcher's place. */
+.pm-workbench__content:has(> .pm-workbench__source) {
+  overflow: hidden;
+}
+
+.pm-workbench__source {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--pm-color-code);
+}
+
+.pm-workbench__tabs {
+  padding: var(--pm-space-2) var(--pm-space-6);
+  border-bottom: 1px solid var(--pm-color-line);
+  background: var(--pm-color-bg);
+}
+
+.pm-workbench__editor {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 .pm-workbench__content > div > .pm-site-home {
@@ -578,21 +703,38 @@ a.pm-workbench__file:focus-visible {
   .pm-workbench__files {
     display: none;
   }
+
+  .pm-workbench__title {
+    display: none;
+  }
+
+  .pm-workbench__heading {
+    display: block;
+  }
 }
 
+/* On a phone the drawers open below the activity bar, which stays in view. */
 @media (max-width: 767px) {
   .pm-workbench {
     --pm-drawer-left: 0px;
+    --pm-activity-height: 3.375rem;
+    --pm-drawer-top: var(--pm-activity-height);
 
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
   }
 
   .pm-workbench__activity {
+    box-sizing: border-box;
     flex-direction: row;
+    height: var(--pm-activity-height);
     padding: 6px var(--pm-space-3);
     border-right: 0;
     border-bottom: 1px solid var(--pm-color-line);
+  }
+
+  .pm-workbench__heading {
+    flex: 1 1 100%;
   }
 
   .pm-workbench__activity .pm-toolbar[data-place='activity'] {
@@ -612,12 +754,12 @@ a.pm-workbench__file:focus-visible {
     padding: 10px var(--pm-space-4);
   }
 
-  .pm-workbench__title {
-    display: none;
+  .pm-workbench__bar > .pm-launcher {
+    max-width: none;
   }
 
-  .pm-workbench__bar > .pm-site-home__search-box {
-    max-width: none;
+  .pm-workbench__tabs {
+    padding: var(--pm-space-2) var(--pm-space-4);
   }
 
   .pm-site-home--workbench {
@@ -625,9 +767,123 @@ a.pm-workbench__file:focus-visible {
   }
 }
 
-/* Edit mode (the workspace's `EDIT_MODE`): its status bar, and the panes of its split (docs/architecture.md
-   5.10), which plugins fill (`source`: the source editor at the left, `dock`: panels at the right); narrower
-   than the split, they stack as docs/design/edit.dc.html wraps. ---------------------------------------------- */
+/* Edit mode (the workspace's `EDIT_MODE`, docs/architecture.md 5.10, 5.11; docs/design/edit.dc.html): an
+   application filling the window. Its top bar takes the navigation bar's place; the panes of its split, which
+   plugins fill (`source`: the source editor at the left, `dock`: panels at the right), stand beside the page,
+   which is the preview; the status bar is at the window's foot. The chapters' sidebar, the local navigation
+   and the pages' footers give way. Narrower than the split, the bar wraps and the panes stack round the
+   preview as the reference wraps. ------------------------------------------------------------------------- */
+
+html.pm-editing {
+  --pm-edit-bar-height: 3.0625rem;
+  --pm-edit-source: var(--pm-edit-source-width, clamp(20rem, 32vw, 40rem));
+  --vp-nav-height: var(--pm-edit-bar-height);
+}
+
+html.pm-editing :is(.VPNav, .VPLocalNav, .VPSidebar, .VPFooter, .VPDocFooter, .pm-site-footer) {
+  display: none !important;
+}
+
+html.pm-editing .VPContent {
+  padding-bottom: var(--pm-statusbar-height);
+  background: var(--pm-color-surface);
+}
+
+.pm-edit-bar {
+  position: fixed;
+  z-index: calc(var(--vp-z-index-local-nav, 32) + 20);
+  top: 0;
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--pm-edit-bar-height);
+  padding: 0 var(--pm-space-4);
+  border-bottom: 1px solid var(--pm-color-line);
+  background: var(--pm-color-bg);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-edit-bar__trail {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 34%;
+}
+
+.pm-edit-bar__logo {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--pm-color-ink);
+  color: var(--pm-color-bg);
+  font-family: var(--pm-font-serif);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pm-edit-bar__workspace,
+.pm-edit-bar__document {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-edit-bar__workspace {
+  color: var(--pm-color-muted);
+  text-decoration: none;
+}
+
+.pm-edit-bar__workspace:hover {
+  color: var(--pm-color-accent);
+}
+
+.pm-edit-bar__workspace:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 2px;
+}
+
+.pm-edit-bar__sep {
+  color: var(--pm-color-line-strong);
+}
+
+.pm-edit-bar__document {
+  font-weight: 600;
+}
+
+.pm-edit-bar__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: var(--pm-space-3);
+}
+
+.pm-edit-bar__end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--pm-space-2);
+  margin-left: auto;
+}
+
+.pm-edit-bar__tools {
+  display: flex;
+  align-items: center;
+}
+
+.pm-toolbar--edit {
+  flex-wrap: wrap;
+}
 
 .pm-edit-status {
   position: fixed;
@@ -648,16 +904,30 @@ a.pm-workbench__file:focus-visible {
   font-size: var(--pm-text-xs);
 }
 
-html.pm-editing .VPContent,
-html.pm-editing .VPFooter {
-  padding-bottom: var(--pm-statusbar-height);
+.pm-edit-status__theme {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--pm-radius-chip);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pm-edit-status__theme:hover {
+  color: var(--pm-color-ink);
+}
+
+.pm-edit-status__theme:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
 }
 
 .pm-edit-source,
 .pm-edit-dock {
   position: fixed;
   z-index: calc(var(--vp-z-index-local-nav, 32) + 5);
-  top: var(--vp-nav-height);
+  top: var(--pm-edit-bar-height);
   bottom: var(--pm-statusbar-height);
   display: flex;
   flex-direction: column;
@@ -667,10 +937,11 @@ html.pm-editing .VPFooter {
 }
 
 .pm-edit-source {
-  --pm-edit-pane: var(--pm-edit-source-width, clamp(20rem, 36vw, 40rem));
+  --pm-edit-pane: var(--pm-edit-source);
 
   left: 0;
   width: var(--pm-edit-pane);
+  overflow: hidden;
   border-right: 1px solid var(--pm-color-line);
 }
 
@@ -683,16 +954,11 @@ html.pm-editing .VPFooter {
   background: var(--pm-color-bg);
 }
 
-/* The page is the preview beside the panes: the chapters' sidebar gives way to the source. */
+/* The page is the preview beside the panes; the present view shows in its place. */
 @media (min-width: 960px) {
-  html.pm-edit-split .VPSidebar,
-  html.pm-edit-split .VPLocalNav {
-    display: none;
-  }
-
   html.pm-edit-split .VPContent.has-sidebar,
   html.pm-edit-split .VPContent {
-    padding-left: var(--pm-edit-source-width, clamp(20rem, 36vw, 40rem));
+    padding-left: var(--pm-edit-source);
   }
 
   html.pm-edit-docked .VPContent.has-sidebar,
@@ -708,11 +974,65 @@ html.pm-editing .VPFooter {
   html:is(.pm-edit-split, .pm-edit-docked) .VPDoc .aside {
     display: none;
   }
+
+  /* The preview's text starts at its left, as the reference's does, rather than centred. */
+  html:is(.pm-edit-split, .pm-edit-docked) .VPDoc {
+    padding-left: 2.75rem;
+  }
+
+  html:is(.pm-edit-split, .pm-edit-docked) .VPDoc :is(.container, .content, .content-container) {
+    margin-left: 0;
+  }
+
+  /* The present view shows in the preview's place, under the bar and the panes (it makes what is not above it
+     inert), under the panels plugins float over the page. */
+  html.pm-editing .pm-present {
+    z-index: calc(var(--vp-z-index-local-nav, 32) + 4);
+    top: var(--pm-edit-bar-height);
+    bottom: var(--pm-statusbar-height);
+  }
+
+  html.pm-edit-split .pm-present {
+    left: var(--pm-edit-source);
+  }
+
+  html.pm-edit-docked .pm-present {
+    right: var(--pm-edit-dock-width, 22rem);
+  }
 }
 
-/* Without room for the split (a tablet, a phone): the source above the preview, the dock below it, each as
-   tall as `--pm-edit-pane-height` (the panes and the page are items of the default theme's layout, a column). */
+/* Without room for the split (a tablet, a phone): the bar wraps at the top; the source above the preview, the
+   dock below it, each as tall as `--pm-edit-pane-height` (the bar, the panes and the page are items of the
+   default theme's layout, a column). */
 @media (max-width: 959px) {
+  html.pm-editing {
+    --vp-nav-height: 0px;
+  }
+
+  .pm-edit-bar {
+    position: static;
+    order: -1;
+    flex-wrap: wrap;
+    height: auto;
+    padding: var(--pm-space-2) var(--pm-space-4);
+  }
+
+  .pm-edit-bar__trail {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+
+  .pm-edit-bar__tabs {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
+  .pm-edit-bar__end {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+
   .pm-edit-source,
   .pm-edit-dock {
     position: static;
@@ -727,8 +1047,7 @@ html.pm-editing .VPFooter {
     border-bottom: 1px solid var(--pm-color-line);
   }
 
-  html.pm-editing .VPContent,
-  html.pm-editing .VPFooter {
+  html.pm-editing .VPContent {
     order: 2;
   }
 

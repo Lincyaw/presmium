@@ -92,6 +92,16 @@ export class Documents {
     this.#locks = options.locks
   }
 
+  /** The writer of the documents' files (`DOCUMENT_FILES`), which the source editor's saves go through too. */
+  get writer(): DocumentWriter {
+    return this.#writer
+  }
+
+  /** The documents' locks, when the host gives them. */
+  get locks(): DocumentLocks | undefined {
+    return this.#locks
+  }
+
   /** The documents now, as listed. */
   list(): WorkspaceDocument[] {
     return listDocuments(this.config).map(({ entry: _entry, ...document }) => document)

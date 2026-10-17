@@ -3,29 +3,28 @@
  * switch of a document's page; on the home page the document operations
  * (a button and a dialog), the agent's draft card, the latest changes, the
  * usage guide; everywhere the revision history (an icon of the home page's
- * activity bar) and the git status of the status bar. Each is for editors and
- * owners only, drawn with the host's components and tokens.
+ * activity bar), with the changes not committed at its head, and the git
+ * status of the status bar. Each is for editors and owners only, drawn with
+ * the host's components and tokens.
  */
 import { currentLocale, PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmNotice, PmToolbarEntry, useMessages, useServer, useToolbarPlace } from '@presmium/host'
 import type { AgentClient, AgentTask, ReviewChange } from '@presmium/kernel'
-import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import type { DocumentOperation, DocumentsAnswer, HistoryRevision, LockedAnswer, OperationAnswer, RevertAnswer, RevisionsAnswer, WorkspaceDocument } from '../domain/api.ts'
-import { lockKind, WORKSPACE_ID } from '../domain/api.ts'
+import { computed, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import type { DocumentOperation, DocumentsAnswer, HistoryRevision, OperationAnswer, RevertAnswer, RevisionsAnswer, WorkspaceDocument } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
 import { DOCS_SITE_URL, WORKSPACE_MESSAGES } from '../domain/messages.ts'
 import type { WorkspaceMessages } from '../domain/messages.ts'
+import { Uncommitted } from './editing.ts'
+import { call, documentsChanged, failure, onDocumentsChange, post } from './routes.ts'
+import { editing, loadUncommitted, uncommitted } from './source.ts'
 
-/** Whether the page shows edit mode (the `EDIT_MODE` service's state). */
-export const editing = ref(false)
+export { editing }
 
 /** The assistant's client, when the assistant plugin provides one (WP-80): drafting a new document needs it. */
 const agent = shallowRef<AgentClient>()
 export function setAgent(client: AgentClient | undefined): void {
   agent.value = client
 }
-
-/** The window event after which the home page reads the documents again (see @presmium/web's home page). */
-const DOCUMENTS_EVENT = 'presmium:documents'
 
 /** The document dialog of the home page, which its button, its draft card and the dialog itself open and close. */
 const dialog = ref(false)
@@ -36,41 +35,6 @@ const draftChosen = ref(false)
 function useEditor() {
   const server = useServer()
   return computed(() => server.available && mayEdit(server.member.value?.roles))
-}
-
-/** A refusal of the workspace's routes; `locked` when another writer holds a document it would change (409, F-09). */
-class RouteError extends Error {
-  readonly locked?: LockedAnswer['locked']
-  constructor(message: string, locked?: LockedAnswer['locked']) {
-    super(message)
-    this.locked = locked
-  }
-}
-
-async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await useServer().fetch(WORKSPACE_ID, path, init)
-  const data = await response.json().catch(() => ({})) as T & { error?: string, locked?: LockedAnswer['locked'] }
-  if (!response.ok && !(response.status === 409 && 'conflicts' in (data as object))) {
-    const locked = typeof data.locked?.document === 'string' && typeof data.locked.holder === 'string' ? data.locked : undefined
-    throw new RouteError(data.error ?? `${response.status}`, locked)
-  }
-  return data
-}
-
-/** What a panel says of a failure: a document's lock in the reader's language (N-07), else the server's text. */
-function failure(error: unknown, t: WorkspaceMessages): string {
-  if (error instanceof RouteError && error.locked) return t.locked(error.locked.document, lockKind(error.locked.holder))
-  return error instanceof Error ? error.message : String(error)
-}
-
-function post<T>(path: string, body: unknown): Promise<T> {
-  return call<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-}
-
-/** Calls `load` again whenever a plugin says the documents changed (an operation, an undo). */
-function onDocumentsChange(load: () => void): void {
-  onMounted(() => window.addEventListener(DOCUMENTS_EVENT, load))
-  onBeforeUnmount(() => window.removeEventListener(DOCUMENTS_EVENT, load))
 }
 
 /** A time as the home page says it: the hour today, else yesterday, else the date (N-07). */
@@ -173,7 +137,7 @@ export const History = defineComponent({
       try {
         const result = await post<RevertAnswer>('revisions/revert', { id })
         message.value = result.ok ? undefined : t.value.conflicts(result.conflicts)
-        window.dispatchEvent(new Event(DOCUMENTS_EVENT))
+        documentsChanged()
       } catch (error) {
         message.value = failure(error, t.value)
       }
@@ -182,6 +146,7 @@ export const History = defineComponent({
     onDocumentsChange(() => {
       if (open.value) void load()
     })
+    onMounted(() => void loadUncommitted())
     const item = (revision: HistoryRevision, find: (id: string) => HistoryRevision | undefined) => {
       const depth = undoDepth(revision, find)
       // An undo is undone by a redo; a change or a redo by an undo.
@@ -215,10 +180,12 @@ export const History = defineComponent({
         'open': open.value,
         'onUpdate:open': (next: boolean) => {
           open.value = next
-          if (next) void load()
+          if (next) void Promise.all([load(), loadUncommitted()])
         },
       }, () => [
         message.value ? h(PmNotice, { class: 'pm-workspace-history__message', tone: 'danger', role: 'alert' }, () => message.value) : null,
+        // The changes not committed head the history (P-124): committed, they are its newest item.
+        uncommitted.value.length > 0 ? h('div', { style: { marginBottom: 'var(--pm-space-4)', paddingBottom: 'var(--pm-space-4)', borderBottom: '1px solid var(--pm-color-line)' } }, [h(Uncommitted, { heading: true })]) : null,
         revisions.value.length === 0
           ? h(PmEmpty, { icon: 'history' }, () => t.value.noRevisions)
           : h('ul', { class: 'pm-workspace-history__list pm-ui-list' }, revisions.value.map(revision => item(revision, find))),
@@ -301,7 +268,7 @@ export const Documents = defineComponent({
       message.value = undefined
       try {
         const result = await post<OperationAnswer>('documents', operation)
-        window.dispatchEvent(new Event(DOCUMENTS_EVENT))
+        documentsChanged()
         await load()
         after?.(result)
       } catch (error) {
@@ -422,7 +389,6 @@ export const Documents = defineComponent({
           'aria-expanded': dialog.value ? 'true' : 'false',
           'onClick': () => dialog.value = !dialog.value,
         }, () => t.value.documents),
-        h(PmButton, { class: 'pm-workspace-documents__new', variant: 'primary', icon: 'plus', onClick: () => dialog.value = true }, () => t.value.newDocument),
         h(PmDialog, { 'open': dialog.value, 'label': t.value.documents, 'closeLabel': t.value.close, 'name': 'pm-workspace-documents', 'onUpdate:open': (open: boolean) => dialog.value = open }, () => [
           h('div', { style: { display: 'grid', gap: 'var(--pm-space-5)' } }, [
             createForm(known, canDraft),
@@ -436,6 +402,16 @@ export const Documents = defineComponent({
         ]),
       ])
     }
+  },
+})
+
+/** The home page's main action, an item of its own (the launcher's search finds it): the document dialog at its form. */
+export const NewDocument = defineComponent({
+  name: 'PmWorkspaceNewDocument',
+  setup() {
+    const t = useMessages(WORKSPACE_MESSAGES)
+    const editor = useEditor()
+    return () => (editor.value ? h(PmButton, { class: 'pm-workspace-documents__new', variant: 'primary', icon: 'plus', onClick: () => dialog.value = true }, () => t.value.newDocument) : null)
   },
 })
 

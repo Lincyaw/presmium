@@ -19,7 +19,11 @@
  * `compile` gives; any other path goes to the home page's dev server; the
  * HMR WebSockets follow the same paths. The documents of `SiteSpec` are read
  * at each request, so a host that adds or removes one in that list (and
- * calls `update` for a new one) changes the site without restarting it.
+ * calls `update` for a new one) changes the site without restarting it. The
+ * home page's live list (`DOCUMENTS_ENDPOINT`) gives what each compiled
+ * document's card shows, and its sections for the launcher's search; asked
+ * with `?compile=1`, the documents not compiled yet compile in the
+ * background, one at a time, and the list says so meanwhile (`compiling`).
  *
  * A document's plugins are those its IR names (`config.plugins`): a host
  * gives the package directories the compiler loaded as absolute paths, so
@@ -101,6 +105,8 @@ export interface HomeDocument {
   description?: string
   pages?: number
   problems?: { errors: number, warnings: number }
+  /** Once the document is compiled: its sections with a title, each linked, which the launcher's search finds. */
+  sections?: { id: string, title: string, href: string }[]
 }
 
 /** The base of a document's pages. */
@@ -115,15 +121,18 @@ function endpoints(base: string): WorkspaceOptions['endpoints'] {
 
 /** The documents as the home page lists them; `compiled` holds the IR of documents compiled since the site started (dev). */
 function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMap<string, IRDocument> = new Map()): HomeDocument[] {
-  return site.documents.map(({ dir, title, lang, tags, doc }) => ({ dir, title, ...lang ? { lang } : {}, ...tags?.length ? { tags } : {}, href: documentBase(base, dir), ...cardOf(compiled.get(dir) ?? doc) }))
+  return site.documents.map(({ dir, title, lang, tags, doc }) => ({ dir, title, ...lang ? { lang } : {}, ...tags?.length ? { tags } : {}, href: documentBase(base, dir), ...cardOf(compiled.get(dir) ?? doc, documentBase(base, dir)) }))
 }
 
-/** What a document's card shows of its IR: the headmatter's `description`, the number of pages, the findings by severity. */
-function cardOf(doc: IRDocument | undefined): Pick<HomeDocument, 'description' | 'pages' | 'problems'> {
+/** What a document's card shows of its IR: the headmatter's `description`, the number of pages, the findings by severity; and its sections, linked under `root`. */
+function cardOf(doc: IRDocument | undefined, root: string): Pick<HomeDocument, 'description' | 'pages' | 'problems' | 'sections'> {
   if (!doc) return {}
   const description = typeof doc.meta.description === 'string' ? doc.meta.description.trim() : ''
   const count = (severity: Finding['severity']) => doc.diagnostics.filter(finding => finding.severity === severity).length
-  return { ...description ? { description } : {}, pages: toPages(doc).length, problems: { errors: count('error'), warnings: count('warning') } }
+  const pages = toPages(doc)
+  const links = sectionLinks(pages)
+  const sections = doc.sections.flatMap(section => (section.title && links[section.id] ? [{ id: section.id, title: section.title, href: `${root}${links[section.id]!.slice(1)}` }] : []))
+  return { ...description ? { description } : {}, pages: pages.length, problems: { errors: count('error'), warnings: count('warning') }, sections }
 }
 
 /** The package directory of `name`, found in `node_modules` up from `from`. */
@@ -150,10 +159,14 @@ function presmiumRoot(): string {
   return outermost ?? own
 }
 
-/** The site's own client modules (`ctx.plugins`, without a deck of their own): the same for every page. */
+/**
+ * The site's own client modules (`ctx.plugins`, without a deck of their own):
+ * the same for every page, with their `vite.config.ts` (e.g. the workspace's,
+ * whose source editor's dependencies are not optimized).
+ */
 function siteModules(ctx: RenderContext): ClientModules {
-  const { components, plugins, viewers } = clientModules({ ...ctx, deckDir: join(ctx.workDir, 'site-plugins') }, [])
-  return { components, plugins, viewers, vite: [], nodeVite: [] }
+  const { components, plugins, viewers, vite } = clientModules({ ...ctx, deckDir: join(ctx.workDir, 'site-plugins') }, [])
+  return { components, plugins, viewers, vite, nodeVite: [] }
 }
 
 /** The plugins of the home page only (`ctx.config.homePlugins`): package name to directory. */
@@ -381,15 +394,17 @@ function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules:
     themeConfig: { ...labels.themeConfig, ...shell.nav ? { nav: shell.nav } : {}, ...shell.footer ? { footer: shell.footer } : {} },
   }
   const sitemap = shell.sitemap ? `site.sitemap = { hostname: ${JSON.stringify(`${shell.sitemap.hostname}${ctx.base}`)}, transformItems: items => [...items, ...data.sitemap.map(url => ({ url }))] }\n` : ''
+  // The Vite plugins of the site's own plugins (their `vite.config.ts`), as a document's site has them.
+  const vite = modules.vite.map((file, i) => `import vite${i} from ${JSON.stringify(file)}\n`).join('')
   write(join(root, '.vitepress/config.mjs'), `${GENERATED}
 import { readFileSync } from 'node:fs'
 import { presmiumReady } from ${JSON.stringify(VITE_PLUGIN)}
-
+${vite}
 const site = ${JSON.stringify(config, null, 2)}
 const data = JSON.parse(readFileSync(${JSON.stringify(dataFile)}, 'utf8'))
 site.title = data.title
 site.themeConfig.presmium = { home: true, documents: data.documents${target ? `, redirect: ${JSON.stringify(target)}, list: ${JSON.stringify(`${ctx.base}${LIST_PAGE}.html`)}` : ''}${served ? `, server: true, endpoint: ${JSON.stringify(`${ctx.base}${DOCUMENTS_ENDPOINT}`)}` : ''} }
-site.vite = { plugins: [presmiumReady()], resolve: { dedupe: ['vue'] }${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
+site.vite = { plugins: [presmiumReady(), ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])], resolve: { dedupe: ['vue'] }${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
 ${sitemap}${shell.head ? OG_TITLE : ''}
 export default site
 `)
@@ -518,6 +533,29 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     return (await startHome()).port
   }
 
+  /** The documents compiling for the home page's list, one at a time: a compilation may run the deck's code. */
+  const compiling = new Set<string>()
+  const compileListed = () => {
+    const waiting = site.documents.map(doc => doc.dir).filter(dir => !latest.has(dir) && !compiling.has(dir))
+    if (waiting.length === 0) return
+    for (const dir of waiting) compiling.add(dir)
+    void (async () => {
+      for (const dir of waiting) {
+        try {
+          // The host's `update` keeps the IR (`latest`); a document gone meanwhile is not compiled.
+          if (!closed && site.documents.some(doc => doc.dir === dir)) {
+            const doc = await compile(dir)
+            if (site.documents.some(entry => entry.dir === dir)) latest.set(dir, doc)
+          }
+        } catch {
+          // Its card stays without what the compilation tells; its page says why.
+        } finally {
+          compiling.delete(dir)
+        }
+      }
+    })()
+  }
+
   const proxy = createProxyServer({ ws: true, xfwd: false })
   proxy.on('error', (error: Error, _req: unknown, res: unknown) => {
     const response = res as ServerResponse | Duplex | undefined
@@ -540,8 +578,10 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     }
     const path = pathOf(req)
     if (path === `${base}${DOCUMENTS_ENDPOINT}`) {
+      // `?compile=1` (the launcher's search): the documents not compiled yet compile, so their sections are listed.
+      if (new URL(req.url ?? '/', 'http://site').searchParams.get('compile') === '1') compileListed()
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
-      res.end(JSON.stringify({ title: site.title, documents: homeDocuments(site, base, latest) }))
+      res.end(JSON.stringify({ title: site.title, documents: homeDocuments(site, base, latest), ...compiling.size > 0 ? { compiling: true } : {} }))
       return
     }
     targetOf(path).then(

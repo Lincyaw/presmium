@@ -1,4 +1,4 @@
-import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium, TOOLBAR, useMessages, useService } from '@presmium/host'
+import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmSegmented, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
 import type { ServerClient, SyncTransports, ToolbarItem, ToolbarSlot } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
@@ -9,10 +9,11 @@ import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, Teleport, watch, watchEffect } from 'vue'
 import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, translationPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
+import { SHELL_MESSAGES } from './messages.ts'
 import { PAGES, PresmiumPage, ViewMenu } from './page.ts'
 import './style.css'
 
@@ -156,19 +157,49 @@ function localizeHiddenLabels(): void {
 
 const bySlot = (slot: ToolbarSlot) => (item: ToolbarItem) => item.slot === slot
 
+/** The place of edit mode's top bar that the navigation bar's toolbar moves to. */
+const EDIT_TOOLS = 'pm-edit-tools'
+
+/** Whether the workspace's edit mode is on. Must be called inside a component setup. */
+function useEditing() {
+  const edit = useService(EDIT_MODE)
+  return computed(() => Boolean(edit.value?.active.value))
+}
+
+/** The title of the workspace whose document this page is, from its home page's list (`presmium serve`). */
+const workspaceTitle = ref<string>()
+async function readWorkspaceTitle(home: string): Promise<void> {
+  if (workspaceTitle.value !== undefined) return
+  try {
+    const response = await fetch(new URL('@presmium/documents.json', new URL(home, location.href)), { cache: 'no-store' })
+    if (response.ok) workspaceTitle.value = ((await response.json()) as { title?: string }).title
+  } catch {
+    // The trail names the documents' list instead.
+  }
+}
+
 /**
- * Edit mode's frame (the workspace's `EDIT_MODE`, docs/architecture.md 5.10):
- * while it is on, a status bar (the `status` items) and the panes of the
- * split that plugins fill, the source at the left (`source`) and panels at
- * the right (`dock`); the page between them is the preview. `<html>` has the
- * classes `pm-editing`, `pm-edit-split` and `pm-edit-docked` meanwhile.
+ * Edit mode's frame (the workspace's `EDIT_MODE`, docs/architecture.md 5.10,
+ * 5.11; docs/design/edit.dc.html): an application filling the window. Its top
+ * bar takes the navigation bar's place: the trail (workspace / document), the
+ * open files (`tabs`), the preview's views (document, present, and the slides
+ * where the deck has them) and the toolbar (`tools` and `settings`). Below
+ * it, the panes of the split that plugins fill, the source at the left
+ * (`source`) and panels at the right (`dock`), with the page between them as
+ * the preview; the status bar (`status`, and the appearance switch) is at the
+ * window's foot, and the chapters' sidebar and the pages' footers give way.
+ * `<html>` has the classes `pm-editing`, `pm-edit-split` and `pm-edit-docked`
+ * meanwhile.
  */
 const EditFrame = defineComponent({
   name: 'PresmiumEditFrame',
   setup() {
     const t = useMessages(WEB_MESSAGES)
-    const edit = useService(EDIT_MODE)
+    const s = useMessages(SHELL_MESSAGES)
     const toolbar = useService(TOOLBAR)
+    const viewer = useViewer()
+    const theme = useTheme()
+    const { site, theme: config } = useData()
     const slots = shallowRef(new Set<ToolbarSlot>())
     watchEffect((onCleanup) => {
       const registry = toolbar.value
@@ -179,20 +210,60 @@ const EditFrame = defineComponent({
       update()
       onCleanup(registry.subscribe(update))
     })
-    const active = computed(() => Boolean(edit.value?.active.value))
+    const active = useEditing()
+    // A page a server serves may have edit mode (the workspace's plugin, in `presmium serve`); static output has none.
+    // The bar is there from the start, so the navigation bar's toolbar always finds it.
+    const editable = computed(() => Boolean(config.value.presmium?.server))
+    const home = computed(() => config.value.presmium?.home as string | undefined)
     const classes = () => ({ 'pm-editing': active.value, 'pm-edit-split': active.value && slots.value.has('source'), 'pm-edit-docked': active.value && slots.value.has('dock') })
-    // In the browser only: a server render has no document.
+    // In the browser only: a server render has no document. The navigation bar gives way to the top bar: its
+    // screen (a phone's menu, which locks the page's scrolling while open) closes first.
     onMounted(() => watchEffect(() => {
+      if (active.value) document.querySelector<HTMLElement>('.VPNavBarHamburger.active')?.click()
       for (const [name, on] of Object.entries(classes())) document.documentElement.classList.toggle(name, on)
+      if (active.value && home.value && config.value.presmium?.server) void readWorkspaceTitle(home.value)
     }))
     onBeforeUnmount(() => document.documentElement.classList.remove(...Object.keys(classes())))
-    return () => (active.value
-      ? [
+    /** The preview's view: the page, or the present view over it. */
+    const view = computed(() => (getView(viewer.view.value)?.kind === 'overlay' ? 'present' : 'document'))
+    const setView = (next: string) => viewer.setView(next === 'present' ? 'present' : viewer.pageView.value)
+    // Always there, shown in edit mode only: the navigation bar's toolbar moves into it when edit mode starts.
+    const bar = () => h('header', { 'class': 'pm-edit-bar pm-ui', 'aria-label': s.value.editBar, 'style': active.value ? undefined : { display: 'none' } }, [
+      h('nav', { 'class': 'pm-edit-bar__trail', 'aria-label': s.value.trail }, [
+        h('a', { 'class': 'pm-edit-bar__logo', 'href': home.value ?? withBase('/'), 'aria-hidden': 'true', 'tabindex': -1 }, 'P'),
+        home.value ? h('a', { class: 'pm-edit-bar__workspace', href: home.value }, workspaceTitle.value ?? t.value.documents) : null,
+        home.value ? h('span', { 'class': 'pm-edit-bar__sep', 'aria-hidden': 'true' }, '/') : null,
+        h('span', { 'class': 'pm-edit-bar__document', 'aria-current': 'page' }, site.value.title),
+      ]),
+      h(PmToolbar, { class: 'pm-edit-bar__tabs', filter: bySlot('tabs') }),
+      h('div', { class: 'pm-edit-bar__end' }, [
+        h(PmSegmented, { 'label': s.value.previewView, 'modelValue': view.value, 'options': [{ value: 'document', label: s.value.documentView }, { value: 'present', label: s.value.presentView }], 'onUpdate:modelValue': setView }),
+        slidesBase.value
+          ? h('a', { class: 'pm-ui-button pm-ui-button--ghost pm-ui-button--small pm-edit-bar__slides', href: slideUrl(slidesBase.value, config.value.presmium?.form ?? {}, viewer.section(viewer.position.value.section)?.index ?? 1, viewer.position.value.step), target: '_blank', rel: 'noopener' }, [h(PmIcon, { name: 'slides', size: 14, strokeWidth: 2 }), s.value.slides])
+          : null,
+        // The navigation bar's toolbar comes here (see the layout).
+        h('div', { id: EDIT_TOOLS, class: 'pm-edit-bar__tools' }),
+      ]),
+    ])
+    return () => [
+      editable.value ? bar() : null,
+      ...active.value
+        ? [
           slots.value.has('source') ? h('section', { 'class': 'pm-edit-source pm-ui', 'aria-label': t.value.sourcePane }, [h(PmToolbar, { place: 'pane', filter: bySlot('source') })]) : null,
           slots.value.has('dock') ? h('aside', { 'class': 'pm-edit-dock pm-ui', 'aria-label': t.value.dockPane }, [h(PmToolbar, { place: 'pane', filter: bySlot('dock') })]) : null,
-          h('footer', { 'class': 'pm-edit-status pm-ui', 'aria-label': t.value.statusBar }, [h(PmToolbar, { place: 'status', filter: bySlot('status') })]),
+          h('footer', { 'class': 'pm-edit-status pm-ui', 'aria-label': t.value.statusBar }, [
+            h(PmToolbar, { place: 'status', filter: bySlot('status') }),
+            h('button', {
+              'type': 'button',
+              'class': 'pm-edit-status__theme',
+              'aria-label': theme.dark.value ? t.value.toLight : t.value.toDark,
+              'title': theme.dark.value ? t.value.toLight : t.value.toDark,
+              'onClick': theme.toggle,
+            }, [h(PmIcon, { name: theme.dark.value ? 'sun' : 'moon', size: 14 })]),
+          ]),
         ]
-      : null)
+        : [],
+    ]
   },
 })
 
@@ -248,11 +319,15 @@ const Layout = defineComponent({
         copyright ? h('p', { class: 'pm-site-footer__copyright', innerHTML: copyright }) : null,
       ])
     }
+    // In edit mode the navigation bar's toolbar moves into edit mode's top bar, which takes the bar's place: the
+    // same items, so what they hold (an open panel, a watch of edit mode) stays.
+    const editing = useEditing()
+    const toolbar = () => h(Teleport, { to: `#${EDIT_TOOLS}`, defer: true, disabled: !editing.value }, [h(PmToolbar, { class: editing.value ? 'pm-toolbar--edit' : 'pm-toolbar--bar' })])
     return () => h(DefaultTheme.Layout, null, {
       // On phones the view menu and the toolbar items move to the navigation screen (the menu), as VitePress
       // does with its links, so the bar keeps the width of the screen.
-      'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
-      'nav-screen-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
+      'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), toolbar()],
+      'nav-screen-content-after': () => (editing.value ? [] : [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })]),
       'doc-after': footer,
       // Overlay views get the typography of the page body.
       'layout-bottom': () => [

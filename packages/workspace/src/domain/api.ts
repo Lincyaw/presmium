@@ -19,6 +19,8 @@ export interface WorkspaceDocument {
 
 /** `GET documents`. */
 export interface DocumentsAnswer {
+  /** The workspace's title (its configuration's `title`, else its directory's name). */
+  title: string
   documents: WorkspaceDocument[]
   /** Names of the document templates. */
   templates: string[]
@@ -86,3 +88,70 @@ export interface LockedAnswer {
   locked: { document: string, holder: string }
 }
 
+
+// Editing the source in the browser (P-124, docs/architecture.md 5.11) ----------------------------------
+
+/** The configuration at the workspace root, which the home page's file tree opens too (an owner's file). */
+export const WORKSPACE_FILE = 'presmium.workspace.yaml'
+
+/** A file the source editor lists: its path relative to the workspace root; a binary one is listed, not opened. */
+export interface SourceFile {
+  path: string
+  binary?: true
+}
+
+/**
+ * `GET files`: the files of the request's document (on the home page, of
+ * every document, and the workspace's configuration), its directory, and
+ * whether the list stopped at its limit.
+ */
+export interface FilesAnswer {
+  /** The request's document directory ('' on the home page, and for a single-deck repository's root). */
+  document: string
+  /** The page is the home page of a workspace: no document of its own. */
+  home: boolean
+  /** On the home page: the documents' directories, which its file tree shows as folders. */
+  documents?: string[]
+  files: SourceFile[]
+  truncated?: true
+}
+
+/** `GET source?path=`: a text file as it is on disk, and its version (a hash of its bytes). */
+export interface SourceAnswer {
+  path: string
+  content: string
+  version: string
+}
+
+/** `POST source` with `{ path, content, base }`, `base` the version the editor opened: the version written. */
+export interface SavedAnswer {
+  version: string
+}
+
+/** The 409 of a save whose file changed on disk since the editor opened it (an agent, another editor): what is there now. */
+export interface ConflictAnswer {
+  error: string
+  conflict: { version: string, content: string }
+}
+
+export type UncommittedKind = 'added' | 'modified' | 'deleted'
+
+/** A file with changes not committed, against the last commit: lines added and removed (none for a binary file). */
+export interface UncommittedFile {
+  path: string
+  kind: UncommittedKind
+  added?: number
+  removed?: number
+}
+
+/** `GET changes`: the request's document's files with changes not committed (on the home page, every document's and the configuration). */
+export interface ChangesAnswer {
+  files: UncommittedFile[]
+}
+
+/** `POST changes/commit` with `{ message, paths? }`: one commit (`Presmium-Origin: editor`); `POST changes/discard` with `{ paths? }`: the files as committed. */
+export interface CommitAnswer {
+  revision?: Revision
+  /** The files the commit or the discard took. */
+  paths: string[]
+}
