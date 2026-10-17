@@ -25,7 +25,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^4.0.0
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.5)(happy-dom@20.14.6)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.5)(happy-dom@20.14.6)(jsdom@29.1.1)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
 
   examples/demo:
     dependencies:
@@ -874,7 +874,7 @@ importers:
         version: 3.4.17
       jsdom:
         specifier: 29.1.1
-        version: 29.1.1(@noble/hashes@2.4.0)
+        version: 29.1.1
       mdast-util-from-markdown:
         specifier: 2.1.0
         version: 2.1.0(supports-color@9.4.0)
@@ -15572,9 +15572,7 @@ snapshots:
 
   '@eslint-community/regexpp@4.12.2': {}
 
-  '@exodus/bytes@1.16.0(@noble/hashes@2.4.0)':
-    optionalDependencies:
-      '@noble/hashes': 2.4.0
+  '@exodus/bytes@1.16.0': {}
 
   '@fix-webm-duration/fix@1.0.1':
     dependencies:
@@ -18984,10 +18982,10 @@ snapshots:
 
   data-uri-to-buffer@4.0.1: {}
 
-  data-urls@7.0.0(@noble/hashes@2.4.0):
+  data-urls@7.0.0:
     dependencies:
       whatwg-mimetype: 5.0.0
-      whatwg-url: 16.0.1(@noble/hashes@2.4.0)
+      whatwg-url: 16.0.1
     transitivePeerDependencies:
       - '@noble/hashes'
 
@@ -19939,9 +19937,9 @@ snapshots:
 
   hookified@2.2.0: {}
 
-  html-encoding-sniffer@6.0.0(@noble/hashes@2.4.0):
+  html-encoding-sniffer@6.0.0:
     dependencies:
-      '@exodus/bytes': 1.16.0(@noble/hashes@2.4.0)
+      '@exodus/bytes': 1.16.0
     transitivePeerDependencies:
       - '@noble/hashes'
 
@@ -20273,17 +20271,17 @@ snapshots:
 
   jsbi@4.3.2: {}
 
-  jsdom@29.1.1(@noble/hashes@2.4.0):
+  jsdom@29.1.1:
     dependencies:
       '@asamuzakjp/css-color': 5.1.11
       '@asamuzakjp/dom-selector': 7.1.1
       '@bramus/specificity': 2.4.3
       '@csstools/css-syntax-patches-for-csstree': 1.1.15(css-tree@3.2.1)
-      '@exodus/bytes': 1.16.0(@noble/hashes@2.4.0)
+      '@exodus/bytes': 1.16.0
       css-tree: 3.2.1
-      data-urls: 7.0.0(@noble/hashes@2.4.0)
+      data-urls: 7.0.0
       decimal.js: 10.6.0
-      html-encoding-sniffer: 6.0.0(@noble/hashes@2.4.0)
+      html-encoding-sniffer: 6.0.0
       is-potential-custom-element-name: 1.0.1
       lru-cache: 11.5.3
       parse5: 8.0.1
@@ -20294,7 +20292,7 @@ snapshots:
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
-      whatwg-url: 16.0.1(@noble/hashes@2.4.0)
+      whatwg-url: 16.0.1
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - '@noble/hashes'
@@ -23289,7 +23287,7 @@ snapshots:
       - typescript
       - universal-cookie
 
-  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.5)(happy-dom@20.14.6)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)):
+  vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.5)(happy-dom@20.14.6)(jsdom@29.1.1)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)):
     dependencies:
       '@vitest/expect': 4.1.11
       '@vitest/mocker': 4.1.11(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
@@ -23315,7 +23313,7 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       '@types/node': 22.20.5
       happy-dom: 20.14.6
-      jsdom: 29.1.1(@noble/hashes@2.4.0)
+      jsdom: 29.1.1
     transitivePeerDependencies:
       - msw
 
@@ -23407,9 +23405,9 @@ snapshots:
 
   whatwg-mimetype@5.0.0: {}
 
-  whatwg-url@16.0.1(@noble/hashes@2.4.0):
+  whatwg-url@16.0.1:
     dependencies:
-      '@exodus/bytes': 1.16.0(@noble/hashes@2.4.0)
+      '@exodus/bytes': 1.16.0
       tr46: 6.0.0
       webidl-conversions: 8.0.1
     transitivePeerDependencies:

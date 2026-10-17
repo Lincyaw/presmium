@@ -53,6 +53,19 @@ def get_stats(ids):
 
 每一步显示一条，代码在幻灯片上不小于 18 px。
 
+(emphasis)=
+## 强调一行
+
+```{code} python
+:emphasize-lines: 3
+# 统计之后，选出次数最多的一对
+stats = get_stats([1, 2, 1, 2])
+best = max(stats, key=stats.get)
+print("best:", best, 256)
+```
+
+强调的一行之外，其余的行退为灰色，仍然清楚可读。
+
 (quiz)=
 ## 小测验
 

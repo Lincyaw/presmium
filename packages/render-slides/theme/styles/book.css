@@ -10,6 +10,8 @@
 :root,
 html.dark {
   --slidev-theme-primary: var(--pm-color-accent);
+  /* The theme's background, as Slidev names a theme's colours: the panels over the presenter view take it. */
+  --slidev-theme-background: var(--pm-color-surface);
   --slidev-code-background: var(--pm-color-surface);
   --slidev-code-foreground: var(--pm-color-ink);
   --slidev-code-font-family: var(--pm-font-mono);
@@ -158,6 +160,16 @@ html.dark {
 
 .slidev-layout .slidev-code {
   border: 1px solid var(--pm-color-line);
+}
+
+/* The lines a step leaves out of its highlight: one grey, without the syntax's colours, rather than Slidev's 30 %
+   opacity, so they recede and still read at 4.5:1 (WCAG AA, light and dark). */
+.slidev-layout .slidev-code .slidev-code-dishonored {
+  opacity: 1;
+}
+
+.slidev-layout .slidev-code .slidev-code-dishonored span {
+  color: color-mix(in srgb, var(--pm-color-ink) 62%, var(--pm-color-surface));
 }
 
 .slidev-layout .slidev-code-block-title,

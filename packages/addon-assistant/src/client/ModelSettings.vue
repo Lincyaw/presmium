@@ -158,9 +158,14 @@ defineExpose({ open })
 
 <style>
 /* The dialog moves to the end of the document (PmDialog): these rules are not scoped to the opener. */
+/* A long word (the file's path, a variable's name) breaks rather than widening the dialog past a phone's screen. */
 .pm-assistant-model__form {
   display: grid;
   gap: var(--pm-space-3);
+  overflow-wrap: anywhere;
+}
+.pm-assistant-model__form > * {
+  min-width: 0;
 }
 .pm-assistant-model__form p {
   margin: 0;

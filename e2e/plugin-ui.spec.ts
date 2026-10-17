@@ -4,22 +4,24 @@
 //   in small accent letters above it, at the foot the deck's title, the slide's steps and its number; code of 18 px
 //   or more on a 1280 px projection; light and dark. The cover has its own layout.
 // - The plugins' components (quiz, predict, run panel, exercise, classroom) use the host's controls, in both forms:
-//   every text reaches WCAG AA and every field's border 3:1, light and dark, on the slides and in the web form, and
-//   the reader's question panel too (e2e/fixtures/plugin-ui, built).
+//   every text reaches WCAG AA and every field's border 3:1, light and dark, on the slides (the lines a code's
+//   highlight leaves out too), in the presenter view's panels with a classroom, and in the web form, and the
+//   reader's question panel too (e2e/fixtures/plugin-ui, built).
 // - In a workspace served on this machine, with the assistant as the operator's plugin and the scripted agent as its
 //   runtime (e2e/fixtures/plugin-ui-workspace): the AI changes dock at the right of edit mode, switched by the
 //   toolbar's "AI 修改"; the status bars name the model and where it comes from, and open the model settings, where
-//   a key is asked for again once the service or its address changed; the home page's card drafts a document with
-//   the assistant's agent.
+//   a key is asked for again once the service or its address changed, and which keep to a phone's screen; the home
+//   page's card drafts a document with the assistant's agent.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { lowContrast } from './fixtures/contrast.ts'
 import { openDevPage, useFixture } from './fixtures/deck.ts'
+import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
@@ -36,7 +38,21 @@ async function scheme(page: Page, dark: boolean): Promise<void> {
 
 test.describe('a deck built with the default theme', () => {
   test.describe.configure({ mode: 'default', timeout: 120_000 })
-  const deck = useFixture('plugin-ui', { link: ASSISTANT })
+  // A classroom server, which the deck names: the presenter view shows the classroom's panels.
+  let classroom: Awaited<ReturnType<typeof startClassroomServer>> | undefined
+  test.beforeAll(async () => {
+    classroom = await startClassroomServer()
+  })
+  test.afterAll(() => {
+    classroom?.child.kill('SIGTERM')
+  })
+  const deck = useFixture('plugin-ui', {
+    link: ASSISTANT,
+    edit: (dir) => {
+      const file = join(dir, 'lecture.md')
+      writeFileSync(file, readFileSync(file, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom!.url}\nrenderers:`))
+    },
+  })
 
   test('its slides are 书卷: the chapter above the serif title, the foot with the deck, the steps and the number, code of 18 px or more', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 })
@@ -78,6 +94,23 @@ test.describe('a deck built with the default theme', () => {
       // Slidev's reset leaves the host's filled buttons filled.
       await page.goto(`${deck().slides}/${deck().slide('run')}`)
       await expect(page.locator('.pm-run-panel__run').first()).toHaveCSS('background-color', dark ? 'rgb(237, 234, 227)' : 'rgb(28, 27, 25)')
+    })
+
+    test(`the presenter view's panels, the classroom's controls among them, reach WCAG AA, their fields 3:1 (${dark ? 'dark' : 'light'})`, async ({ page }) => {
+      await scheme(page, dark)
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.goto(`${deck().slides}/presenter/${deck().slide('merge')}`)
+      const panels = page.locator('.pm-presenter-panels')
+      await panels.locator('summary').click()
+      const session = panels.locator('[data-panel="presmium.session"]')
+      await expect(session.getByLabel('昵称')).toBeVisible()
+      await expect(panels.locator('[data-panel="presmium.classroom"]')).toBeVisible()
+      expect(await lowContrast(page, '.pm-presenter-panels')).toEqual([])
+      // With a classroom: its link, the participants and the classroom's figures.
+      await session.getByLabel('昵称').fill('王老师')
+      await session.getByRole('button', { name: '创建课堂' }).click()
+      await expect(session.getByRole('img', { name: '加入课堂的二维码' }).locator('svg')).toBeVisible()
+      expect(await lowContrast(page, '.pm-presenter-panels')).toEqual([])
     })
 
     test(`in the web form the components and the question panel reach WCAG AA, their fields 3:1 (${dark ? 'dark' : 'light'})`, async ({ page }) => {
@@ -224,5 +257,14 @@ test.describe('the assistant in a workspace served on this machine', () => {
     await settings.locator('select[name="service"]').selectOption('deepseek')
     await expect(key).toHaveAttribute('required', '')
     expect(await lowContrast(page, '.pm-assistant-model__panel')).toEqual([])
+
+    // On a phone the dialog keeps to the screen: the file's path (a long one here) wraps, the fields fit.
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(settings.locator('.pm-assistant-model__note').last()).toContainText('assistant.json')
+    const body = settings.locator('.pm-ui-dialog__body')
+    expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
+    const [panel, field] = await Promise.all([settings.boundingBox(), key.boundingBox()])
+    expect(panel!.x + panel!.width).toBeLessThanOrEqual(390)
+    expect(field!.x + field!.width).toBeLessThanOrEqual(panel!.x + panel!.width)
   })
 })
