@@ -6,14 +6,16 @@
  * other forms is shown and not said. A separate script
  * (`renderers.lecture.script`) replaces the narration of the sections it
  * has: its k-th paragraph of a section belongs to step k (the last step for
- * those beyond). A paragraph is said in pieces, split at its `pause` cues.
+ * those beyond), of the whole deck in a view that leaves some of it out
+ * (where the paragraph of a step the view does not have, or where it leaves
+ * out something seen or heard, is not said). A paragraph is said in pieces,
+ * split at its `pause` cues.
  */
 import { irBlocks, isRecord } from '@presmium/kernel'
-import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos } from '@presmium/kernel'
+import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@presmium/kernel'
 import { blockKey } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
 import { duration, readCue, spokenText, TARGETED } from './narration.ts'
-import type { Span } from './words.ts'
 
 /** The renderer id of the lecture (`{only} lecture`), and of the form the lecture plays in. */
 const LECTURE = 'lecture'
@@ -34,7 +36,7 @@ export interface PlannedPiece {
   id?: string
   text: string
   spoken: string
-  spans: Span[]
+  spans: WordSpan[]
   cues: PlannedCue[]
   /** ms of silence after it (a `pause` cue). */
   pause?: number
@@ -119,6 +121,11 @@ function webSteps(section: IRSection): (step: number) => number {
   }
 }
 
+/** A value as a CSS string, e.g. of an attribute selector: a section id may hold any character but `)`. */
+function cssString(value: string): string {
+  return `"${value.replace(/["\\]/g, '\\$&').replace(/\n/g, '\\a ')}"`
+}
+
 /** The operation data of a cue on a block. */
 function cueData(name: CueCommand, arg: string, mark: CueMark, section: IRSection, block: IRBlock): Record<string, unknown> {
   const key = blockKey(section.id, block.id)
@@ -126,7 +133,7 @@ function cueData(name: CueCommand, arg: string, mark: CueMark, section: IRSectio
   switch (name) {
     case 'spot':
     case 'hint':
-      return mark.sel ? { selector: `[data-section="${section.id}"] .pm-block[data-block="${block.id}"] ${mark.sel}` } : { block: key, ...lines }
+      return mark.sel ? { selector: `[data-section=${cssString(section.id)}] .pm-block[data-block=${cssString(block.id)}] ${mark.sel}` } : { block: key, ...lines }
     case 'point': {
       const first = mark.lines ? Number(/\d+/.exec(mark.lines)?.[0]) : undefined
       return { block: key, path: [[0, 0.5, 0.5]], ...first ? { line: first } : {} }
@@ -264,17 +271,20 @@ function stepTarget(section: IRSection, step: number): IRBlock | undefined {
 
 /**
  * The plan of a document (or of the lecture renderer's view of it), with a
- * separate script's sections over its narration. Utterance ids are given in
- * the order of the lecture.
+ * separate script's sections over its narration; `place` gives the step of
+ * `doc` of a script's k-th paragraph of a section, undefined for one not
+ * said (a view's, `viewPlaces`). Utterance ids are given in the order of
+ * the lecture.
  */
-export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePlan {
+export function lecturePlan(doc: IRDocument, script?: ScriptSections, place?: (section: string, paragraph: number) => number | undefined): LecturePlan {
   const problems: PlanProblem[] = []
   const sections: PlannedSection[] = doc.sections.map((section) => {
     const paragraphs: PlannedParagraph[] = []
     const fromScript = script?.get(section.id)
     if (fromScript) {
       fromScript.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
-        const step = Math.min(k, section.steps)
+        const step = place ? place(section.id, k) : Math.min(k, section.steps)
+        if (step === undefined) return
         const spoken = spokenText(node)
         const source = linesOf(node, heading)
         const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, script: true, problems })

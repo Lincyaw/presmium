@@ -8,5 +8,5 @@ export { engineId, engineIds, engineInfo, engineVariable, FAKE, howToDefine, ope
 export type { EngineDefinition, EngineKind, UnavailableEngine } from './engines.ts'
 export { speechBody, synthesisRequestOf, transcriptOf } from './protocol.ts'
 export type { EngineListing, ListedEngine, SpeechBody, TimedSpeech, TranscriptionAnswer, VoiceListing } from './protocol.ts'
-export { applyLexicon, fakeWords, oneSegment, speak, splitWords, wordsIntoSegments, writtenWords } from './words.ts'
+export { applyLexicon, fakeWords, oneSegment, speak, wordsIntoSegments } from './words.ts'
 export type { SpokenText } from './words.ts'

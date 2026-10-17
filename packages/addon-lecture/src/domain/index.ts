@@ -1,3 +1,5 @@
+export { audienceTrack, deckTrack, leavesNothing, leftOut, viewPlaces } from './audience.ts'
+export type { LeftOut, ViewPlaces } from './audience.ts'
 export { blockDrift, blockKey, blockOf, eventDrift, irHash, playedBlocks, referencedBlocks, sectionHashes, trackBlock, unchanged } from './drift.ts'
 export type { BlockDrift, EventDrift, Grade } from './drift.ts'
 export { bindEvents, editUtterance, resynthesizedTrack, transcribedTrack } from './editing.ts'
@@ -12,8 +14,8 @@ export { recordedTrack, sectionSpan, simplifyPath, spliceSection } from './recor
 export { scriptTrack } from './synthesis.ts'
 export type { Clip, ScriptHead } from './synthesis.ts'
 export type { PathPoint, Recording, TrackHead } from './recording.ts'
-export { anchorOf, chapters, lastIndexAt, stepStops, timedEvents, utteranceAt, wordTime } from './timing.ts'
-export type { Chapter, StepStop, TimedEvent } from './timing.ts'
+export { anchorOf, chapters, lastIndexAt, stepStops, textPieces, timedEvents, utteranceAt, wordTime } from './timing.ts'
+export type { Chapter, StepStop, TextPiece, TimedEvent } from './timing.ts'
 export {
   CLIP_FILE,
   CLIPS_DIR,
@@ -33,7 +35,6 @@ export {
 export type { LectureTrack, MediaSegment, TrackBlock, Translation, Utterance, VideoSegment, Voice, Word } from './track.ts'
 export { captionLanguages, captionsVtt, chaptersVtt, eventsVtt, isStale, vttTime } from './vtt.ts'
 export type { Captions, Digest } from './vtt.ts'
-export { charOffset, isCjk, locate, realign, splitWords, trackWords, wordIndexAt, writtenWords } from './words.ts'
-export type { PlacedWord, Span, TextWord, TimedWord } from './words.ts'
+export { charOffset, isCjk, locate, realign, trackWords, wordIndexAt } from './words.ts'
 export { cueFor, narrationDraft, narrationPlace, translationItems } from './writeback.ts'
 export type { DraftSection, DraftStep, NarrationDraft, NarrationPlace, TranslationItem } from './writeback.ts'

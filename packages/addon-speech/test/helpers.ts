@@ -271,6 +271,48 @@ export function wavInfo(bytes: Buffer): { info: Record<string, string>, chunks: 
   return { info, chunks }
 }
 
+const OGG_CRC = (() => {
+  const table = new Uint32Array(256)
+  for (let i = 0; i < 256; i++) {
+    let r = i << 24
+    for (let j = 0; j < 8; j++) r = r & 0x80000000 ? (r << 1) ^ 0x04c11db7 : r << 1
+    table[i] = r >>> 0
+  }
+  return table
+})()
+
+/**
+ * The packets of an Ogg file, read without the package's code: each page's checksum and sequence number are
+ * checked (a decoder refuses a page that fails them), and its packets put together from their lacing.
+ */
+export function oggPackets(bytes: Buffer): Buffer[] {
+  const packets: Buffer[] = []
+  let pending: Buffer[] = []
+  for (let at = 0, sequence = 0; at < bytes.length; sequence++) {
+    if (bytes.toString('latin1', at, at + 4) !== 'OggS') throw new Error(`no Ogg page at byte ${at}`)
+    const count = bytes[at + 26]!
+    const lacing = [...bytes.subarray(at + 27, at + 27 + count)]
+    const page = Buffer.from(bytes.subarray(at, at + 27 + count + lacing.reduce((n, s) => n + s, 0)))
+    const stored = page.readUInt32LE(22)
+    page.writeUInt32LE(0, 22)
+    let crc = 0
+    for (const byte of page) crc = ((crc << 8) ^ OGG_CRC[((crc >>> 24) ^ byte) & 0xff]!) >>> 0
+    if (crc !== stored) throw new Error(`Ogg page ${sequence}: its checksum is wrong`)
+    if (page.readUInt32LE(18) !== sequence) throw new Error(`Ogg page ${sequence} is numbered ${page.readUInt32LE(18)}`)
+    let offset = 27 + count
+    for (const size of lacing) {
+      pending.push(page.subarray(offset, offset + size))
+      offset += size
+      if (size < 255) {
+        packets.push(Buffer.concat(pending))
+        pending = []
+      }
+    }
+    at += page.length
+  }
+  return packets
+}
+
 // SHARED mode ---------------------------------------------------------------------
 
 /** A workspace in examples/demo/.presmium with these files and the speech plugin and the test plugin installed at its root, committed. */

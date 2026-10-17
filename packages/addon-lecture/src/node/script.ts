@@ -6,12 +6,12 @@
  * inline roles: `{cue …}` and `{say …}`. It is read as CommonMark, the
  * roles found as their text followed by the content in backticks.
  */
-import { existsSync, readFileSync } from 'node:fs'
-import { isAbsolute, join, relative } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { LECTURE_ID } from '../domain/index.ts'
 import type { ScriptSections } from '../domain/index.ts'
+import { readInDeck } from './store.ts'
 
 /** Blocks that are narration in a script. */
 const NARRATION = new Set(['paragraph', 'list', 'blockquote'])
@@ -62,11 +62,13 @@ export function readScript(deckDir: string, path: string): { sections: ScriptSec
   const file = isAbsolute(path) ? path : join(deckDir, path)
   const findings: Finding[] = []
   const sections: ScriptSections = new Map()
-  if (relative(deckDir, file).startsWith('..') || !existsSync(file)) {
+  // A file of the deck, read as it is opened, never through a link (the sandbox writes the deck, SHARED).
+  const bytes = readInDeck(deckDir, file)
+  if (!bytes) {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.script: ${path} is not a file of the deck` })
     return { sections, file, findings }
   }
-  const tree = fromMarkdown(withoutFrontmatter(readFileSync(file, 'utf8'))) as unknown as MdastNode
+  const tree = fromMarkdown(withoutFrontmatter(bytes.toString('utf8'))) as unknown as MdastNode
   let label: string | undefined
   let current: { paragraphs: MdastNode[], source?: SourcePos } | undefined
   for (const node of tree.children ?? []) {

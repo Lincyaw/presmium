@@ -5,10 +5,22 @@
  *
  *   index.json                      the lectures: id, language, voice, length, caption languages
  *   <id>/track.json                 the track
- *   <id>/audio/*, <id>/video/*      its local media
+ *   <id>/audio/*, <id>/video/*      its local media; under the operator's `url` policy
+ *                                   (`settings.presmium.lecture.audio`) none: the track
+ *                                   names them under that URL, where the operator puts them
  *   <id>/clips/*                    the synthesized clips of its utterances, from the synthesis cache
  *   <id>/captions.<lang>.vtt        the utterances and each translation (stale ones with a warning)
  *   <id>/chapters.vtt, events.vtt   chapters and the events as metadata
+ *
+ * A recorded lecture is published as the build's view of the deck has it
+ * (P-55): a host's build of the student view of the whole deck's
+ * compilation publishes the students' part of it (`studentTrack`, as readers
+ * get it from the server); any other build leaves out what was said and
+ * done in the sections its deck does not have (`deckTrack`), such as the
+ * teachers' in `presmium build --audience student`, whose compilation left
+ * the teachers' content out before any pass: the blocks it left out of the
+ * sections it keeps are not known here, so what was said and shown with them
+ * stays (the build's scan reports what repeats their sentences).
  *
  * With a voice (`renderers.lecture.voice`), it also says the deck's lecture
  * plan through `SPEECH` (WP-83): `script/`, the synthesized lecture. Clips
@@ -19,13 +31,15 @@
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { workspaceSettings } from '@presmium/compiler'
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, eventsVtt, formatTrack, LECTURE_ID, lectureVoice, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
-import { LECTURE_RENDERER, lectureConfig } from './plan.ts'
-import { mediaFile, readTrack, TRACK_FILE, trackIds } from './store.ts'
+import { latestDoc, LECTURE_RENDERER, lectureConfig, lectureView, studentTrack, viewOfWhole } from './plan.ts'
+import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
+import type { MediaPolicy } from './store.ts'
 
 /** The digest translations record of their original (P-137). */
 export const digest: Digest = text => `sha256:${createHash('sha256').update(text).digest('hex')}`
@@ -38,11 +52,13 @@ function utteranceLine(text: string, id: string): number | undefined {
   return from === -1 || at === -1 ? undefined : at + 1
 }
 
-function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext): void {
+function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, policy: MediaPolicy = { kind: 'ignore' }): void {
   const out = join(ctx.outDir, track.id)
   mkdirSync(out, { recursive: true })
-  writeFileSync(join(out, TRACK_FILE), formatTrack(track))
-  for (const segment of [...track.audio ?? [], ...track.video ?? []]) {
+  const audio = publishedMedia(track.audio, track.id, policy)
+  const video = publishedMedia(track.video, track.id, policy)
+  writeFileSync(join(out, TRACK_FILE), formatTrack({ ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }))
+  for (const segment of policy.kind === 'url' ? [] : [...track.audio ?? [], ...track.video ?? []]) {
     const source = mediaFile(ctx.deckDir, track.id, segment.src)
     if (!source) continue
     if (!existsSync(source)) {
@@ -100,6 +116,24 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   return true
 }
 
+/**
+ * A recorded lecture as the build publishes it, `doc` being the build's view
+ * of the deck: the students' part of it when the deck compiled whole (the
+ * latest IR of this entry, which the passes kept) and the view leaves some
+ * of it out (a host builds the student view only), the view then planning
+ * a separate script as written for the whole deck; else without the
+ * sections `doc` does not have.
+ */
+function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack) => LectureTrack | undefined {
+  const latest = latestDoc(deckDir)
+  const whole = latest?.meta.entry === doc.meta.entry ? latest : undefined
+  if (whole && !leavesNothing(leftOut(lectureView(whole), doc))) {
+    viewOfWhole(doc, lectureView(whole))
+    return track => studentTrack(track, whole)
+  }
+  return track => deckTrack(track, whole ?? doc)
+}
+
 function summary(track: LectureTrack) {
   return { id: track.id, lang: track.lang, voice: track.voice, duration: trackDuration(track), captions: captionLanguages(track) }
 }
@@ -112,6 +146,8 @@ export const lectureRenderer: Renderer = {
     const index: unknown[] = []
     const tracks: LectureTrack[] = []
     const synthesize = Boolean(lectureVoice(lectureConfig(doc)))
+    const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
+    const published = publishedTrack(doc, ctx.deckDir)
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
     for (const id of trackIds(ctx.deckDir)) {
       if (synthesize && id === SCRIPT_TRACK) {
@@ -127,10 +163,12 @@ export const lectureRenderer: Renderer = {
         continue
       }
       if (!stored) continue
-      const { track } = stored
-      publishTrack(track, stored.text, stored.file, doc, ctx)
+      // The lock keeps the keys of the whole lecture: what this build leaves out is said in others.
+      tracks.push(stored.track)
+      const track = published(stored.track)
+      if (!track) continue
+      publishTrack(track, stored.text, stored.file, doc, ctx, policy)
       index.push(summary(track))
-      tracks.push(track)
     }
     mkdirSync(ctx.outDir, { recursive: true })
     writeFileSync(join(ctx.outDir, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)

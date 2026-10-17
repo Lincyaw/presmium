@@ -9,7 +9,7 @@
  * `{ clear: true }`. Marker strokes stay until cleared; laser strokes fade.
  */
 import type { PathPoint } from '../domain/index.ts'
-import { blockElement, codeLines, lineNumbers } from './blocks.ts'
+import { blockElement, codeLines, lineNumbers } from '@presmium/host'
 
 /** How long a laser stroke shows, ms. */
 const LASER_MS = 1500

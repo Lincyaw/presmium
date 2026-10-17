@@ -28,8 +28,8 @@ const FIXTURE = join(ROOT, 'e2e/fixtures/lecture-writeback')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const AGENT = join(ROOT, 'packages/addon-lecture/test/fixtures/writeback-agent.mjs')
 const PLUGINS = { 'slidev-addon-assistant': 'packages/addon-assistant', 'slidev-addon-lecture': 'packages/addon-lecture', 'slidev-addon-speech': 'packages/addon-speech' }
-/** This work package's ports (WP-84: 5051 to 5059). */
-const PORT = 5053
+/** serve's port: `PRESMIUM_E2E_WRITEBACK_PORT`, else a free one, so the spec runs beside others. */
+const PORT = Number(process.env.PRESMIUM_E2E_WRITEBACK_PORT ?? 0)
 
 test.describe.configure({ mode: 'serial', timeout: 240_000 })
 
@@ -85,8 +85,8 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
         PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`,
         PRESMIUM_AGENT_PROVIDER: 'Test Provider',
         WRITEBACK_AGENT_LOG: `${dir}.agent.log`,
-        // An engine the operator defines (nothing is synthesized here): its provider is what the player names.
-        PRESMIUM_SPEECH_FAKE_URL: `http://127.0.0.1:${PORT + 6}/v1`,
+        // An engine the operator defines (nothing is synthesized here, nothing listens there): its provider is what the player names.
+        PRESMIUM_SPEECH_FAKE_URL: 'http://127.0.0.1:9/v1',
         PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake',
         XDG_STATE_HOME: `${dir}.state`,
         XDG_CACHE_HOME: `${dir}.cache`,

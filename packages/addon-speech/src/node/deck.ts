@@ -2,9 +2,11 @@
  * A deck's speech: its default engines (`presmium.speech.engine`,
  * `transcribe`) and its synthesis cache over the engines of this process
  * (LOCAL) or the gateway (SHARED). A synthesis looks in the cache first and
- * sends no request on a hit; a miss is synthesized and written to the cache.
+ * sends no synthesis to an engine on a hit, but asks first whether the
+ * operator allows the clip's voice now if it is cloned (`consent`, D-7: by
+ * the record's word or the engine's, as far as it is known); a miss is
+ * synthesized and written to the cache.
  */
-import { readFileSync } from 'node:fs'
 import type { SynthesisRequest, TranscriptionRequest } from '@presmium/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon } from '../domain/index.ts'
@@ -43,9 +45,10 @@ export class DeckSpeech implements SpeechBackend {
     const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
     const hit = await this.cache.find(key)
     if (hit) {
-      const { record, file } = hit
+      const { record, file, audio } = hit
+      await this.#inner.consent(record.engine, record.voice, record.cloned === true, signal)
       const result: SynthesisResult = {
-        audio: new Uint8Array(readFileSync(file)),
+        audio: new Uint8Array(audio),
         mime: record.mime,
         ext: record.audio.split('.').at(-1)!,
         duration: record.duration,
@@ -69,6 +72,10 @@ export class DeckSpeech implements SpeechBackend {
 
   async synthesize(request: SynthesisRequest, signal?: AbortSignal): Promise<SynthesisResult> {
     return (await this.cached(request, signal)).result
+  }
+
+  consent(engine: string, voice: string, recorded: boolean, signal?: AbortSignal): Promise<void> {
+    return this.#inner.consent(engine, voice, recorded, signal)
   }
 
   transcribe(request: TranscriptionRequest, signal?: AbortSignal) {

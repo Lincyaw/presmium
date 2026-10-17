@@ -11,14 +11,11 @@
  * parts (docs/design-v0.7.md section 11). A synthesized voice is labeled in
  * the file's metadata (`AIGC`), as its clips are.
  */
-import { createReadStream, existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { open } from 'node:fs/promises'
-import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
-import type { AddressInfo } from 'node:net'
-import { dirname, extname, join, resolve, sep } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { build, Compiler } from '@presmium/compiler'
+import { dirname, join, resolve } from 'node:path'
+import { build, Compiler, playwrightChromium, serveDirectory } from '@presmium/compiler'
 import { CLIPS_DIR, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 
@@ -42,24 +39,6 @@ export interface ExportResult {
   /** ms. */
   duration: number
   warnings: string[]
-}
-
-const TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript',
-  '.mjs': 'text/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.woff2': 'font/woff2',
-  '.wasm': 'application/wasm',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
-  '.webm': 'video/webm',
-  '.m4a': 'audio/mp4',
-  '.mp4': 'video/mp4',
 }
 
 /**
@@ -142,39 +121,6 @@ window.presmiumEncoder = {
 window.presmiumEncoderReady = true
 </script>`
 
-/** Serves the build's output under its paths, and the encoder page and Mediabunny under `/__export/`. */
-async function serve(root: string): Promise<{ url: string, close(): Promise<void> }> {
-  const require = createRequire(import.meta.url)
-  // Its CommonJS entry is in dist/bundles, beside the browser's ES module bundle.
-  const mediabunny = join(dirname(require.resolve('mediabunny')), 'mediabunny.min.mjs')
-  const server = createServer((request, response) => {
-    const path = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname)
-    if (path === '/__export/encoder.html') {
-      response.writeHead(200, { 'Content-Type': TYPES['.html']! })
-      response.end(ENCODER)
-      return
-    }
-    let file = path === '/__export/mediabunny.mjs' ? mediabunny : join(root, path)
-    if (file !== mediabunny && !file.startsWith(root + sep) && file !== root) file = root
-    if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
-    if (!existsSync(file)) {
-      response.writeHead(404)
-      response.end()
-      return
-    }
-    response.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' })
-    createReadStream(file).pipe(response)
-  })
-  await new Promise<void>(done => server.listen(0, '127.0.0.1', done))
-  return {
-    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-    close: () => new Promise((done) => {
-      server.close(() => done())
-      server.closeAllConnections()
-    }),
-  }
-}
-
 /** What the two pages offer the exporter (`window` of the player in export mode, and of the encoder page). */
 interface Hooks {
   presmiumLecture: { duration: number, advance(t: number): Promise<void> }
@@ -195,19 +141,6 @@ interface Chromium {
     newContext(options: Record<string, unknown>): Promise<{ newPage(): Promise<Page> }>
     close(): Promise<void>
   }>
-}
-
-/** Playwright's Chromium: the deck's playwright-chromium (as `slidev export` uses it), else this package's. */
-async function chromium(deckDir: string): Promise<Chromium> {
-  for (const from of [join(deckDir, 'package.json'), import.meta.url]) {
-    try {
-      const entry = createRequire(from).resolve('playwright-chromium')
-      return (await import(pathToFileURL(entry).href) as { chromium: Chromium }).chromium
-    } catch {
-      // Not there; the next one.
-    }
-  }
-  throw new Error('the lecture is played with playwright-chromium; install it (pnpm exec playwright install chromium for its browser)')
 }
 
 /** The lecture's audio at its times: a synthesized voice's clips, else the recorded files (local ones). */
@@ -243,8 +176,16 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.webm`))
     mkdirSync(dirname(file), { recursive: true })
 
-    const server = await serve(work)
-    const browser = await (await chromium(deckDir)).launch()
+    // The build's output under its paths, and the encoder page and Mediabunny's browser bundle (beside its CommonJS entry) under `/__export/`.
+    const mediabunny = join(dirname(createRequire(import.meta.url).resolve('mediabunny')), 'mediabunny.min.mjs')
+    const server = await serveDirectory(work, {
+      extra: {
+        '/__export/encoder.html': { body: ENCODER, type: 'text/html; charset=utf-8' },
+        '/__export/mediabunny.mjs': { file: mediabunny, type: 'text/javascript' },
+      },
+    })
+    // The deck's playwright-chromium (as `slidev export` uses it), else this package's.
+    const browser = await (await playwrightChromium<Chromium>(deckDir, import.meta.url)).launch()
     const handle = await open(file, 'w')
     try {
       const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, reducedMotion: 'reduce', serviceWorkers: 'block' })

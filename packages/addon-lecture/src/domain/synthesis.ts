@@ -8,19 +8,18 @@
  * word times, else by the words of a transcript of the clip, else by an
  * estimate from the number of characters.
  */
-import type { TrackEvent } from '@presmium/kernel'
+import type { TrackEvent, WrittenWord } from '@presmium/kernel'
 import type { LecturePlan, PlannedCue } from './plan.ts'
 import { wordTime } from './timing.ts'
 import type { LectureTrack, TrackBlock, Utterance, Voice } from './track.ts'
 import { sortEvents, TRACK_VERSION } from './track.ts'
-import type { PlacedWord } from './words.ts'
 import { charOffset, trackWords, wordIndexAt } from './words.ts'
 
 /** A synthesized clip of an utterance: its file in the synthesis cache, length (s) and words of the shown text (s, from its start). */
 export interface Clip {
   file: string
   duration: number
-  words?: PlacedWord[]
+  words?: WrittenWord[]
 }
 
 export interface ScriptHead {
@@ -34,7 +33,7 @@ export interface ScriptHead {
 }
 
 /** The anchor of a place of an utterance's text: the word it sits before, or a character offset without words. */
-function anchorAt(utterance: Utterance, words: readonly PlacedWord[] | undefined, offset: number): number {
+function anchorAt(utterance: Utterance, words: readonly WrittenWord[] | undefined, offset: number): number {
   return words?.length ? wordIndexAt(words, offset, utterance.text.length) : charOffset(utterance.text, offset)
 }
 

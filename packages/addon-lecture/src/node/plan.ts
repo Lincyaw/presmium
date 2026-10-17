@@ -7,14 +7,18 @@
  * check, the build, the server and the agent tools plan alike. The server's
  * routes and the agent tools plan from the latest IR the deck compiled in
  * this process, which a pass keeps (`presmium dev` and `presmium serve`
- * compile before they serve).
+ * compile before they serve): editors' and owners' from the whole IR,
+ * readers' and `tutor` tokens' from its student view (P-55, D17), and they
+ * get the students' part of each recorded lecture (`studentTrack`).
  */
-import { viewFor } from '@presmium/compiler'
-import { isRecord } from '@presmium/kernel'
-import type { Finding, IRDocument, IRPass } from '@presmium/kernel'
-import { LECTURE_ID, lectureGap, lecturePlan, lectureVoice, lexiconOf } from '../domain/index.ts'
-import type { LecturePlan, LectureVoice } from '../domain/index.ts'
+import { resolve } from 'node:path'
+import { audienceView, STUDENT, viewFor } from '@presmium/compiler'
+import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
+import type { Finding, IRBlock, IRDocument, IRPass, MdastNode } from '@presmium/kernel'
+import { audienceTrack, LECTURE_ID, lectureGap, lecturePlan, lectureVoice, leftOut, lexiconOf, viewPlaces } from '../domain/index.ts'
+import type { LecturePlan, LectureTrack, LectureVoice } from '../domain/index.ts'
 import { readScript } from './script.ts'
+import { trackIds } from './store.ts'
 
 export interface DeckPlan {
   plan: LecturePlan
@@ -30,12 +34,94 @@ export interface DeckPlan {
 /** The id of the lecture plugin's renderer. */
 export const LECTURE_RENDERER = 'lecture'
 
+/** Which view of a deck a caller gets: the whole IR (editors, owners), or the student view (readers, `tutor` tokens). */
+export type DeckView = 'full' | 'student'
+
+/** The renderer a recorded lecture is made and played in (its steps are that form's). */
+const PLAYER_RENDERER = 'web'
+
 const views = new WeakMap<IRDocument, IRDocument>()
+const webViews = new WeakMap<IRDocument, IRDocument>()
+const students = new WeakMap<IRDocument, IRDocument>()
+/** The lecture view of the whole IR that a lecture view leaving some of it out was made from (`viewOfWhole`). */
+const wholes = new WeakMap<IRDocument, IRDocument>()
 
 /** The view of a document the `lecture` renderer gets in a build (`viewFor`): the same object for the same IR. */
 export function lectureView(doc: IRDocument): IRDocument {
   let view = views.get(doc)
   if (!view) views.set(doc, view = viewFor(doc, LECTURE_RENDERER))
+  return view
+}
+
+/** The web form's view of a document, where a lecture is recorded and played: the same object for the same IR. */
+function webView(doc: IRDocument): IRDocument {
+  let view = webViews.get(doc)
+  if (!view) webViews.set(doc, view = viewFor(doc, PLAYER_RENDERER))
+  return view
+}
+
+/**
+ * Says that `view`, a lecture view, is one of `whole` (the lecture view of
+ * the whole IR) that leaves some of it out, so a separate script written for
+ * the whole deck is planned by the steps it was written for (`deckPlan`).
+ */
+export function viewOfWhole(view: IRDocument, whole: IRDocument): void {
+  if (view !== whole) wholes.set(view, whole)
+}
+
+/**
+ * A view's blocks without the text the whole document filled into the
+ * cross-references to what the view leaves out: a reference to a teacher's
+ * section said its title (the compiler's own student view resolves them
+ * again; this view of an IR already compiled empties them).
+ */
+function withoutOutsideReferences(view: IRDocument): IRDocument {
+  const targets = new Set<string>()
+  const add = (name: unknown) => typeof name === 'string' && targets.add(name.toLowerCase())
+  const collect = (node: MdastNode) => {
+    if (node.type !== 'crossReference') add(node.identifier)
+    node.children?.forEach(collect)
+  }
+  for (const section of view.sections) {
+    add(section.id)
+    for (const block of irBlocks(section.blocks)) {
+      add(block.id)
+      nodeMdast(block.node).forEach(collect)
+    }
+  }
+  const outside = (node: MdastNode) => node.type === 'crossReference' && Boolean(node.children?.length) && !targets.has(String(node.identifier ?? node.label ?? '').toLowerCase())
+  const clean = (node: MdastNode): MdastNode => {
+    if (outside(node)) {
+      const { children: _children, ...written } = node
+      return written
+    }
+    if (!node.children) return node
+    const children = node.children.map(clean)
+    return children.every((child, i) => child === node.children![i]) ? node : { ...node, children }
+  }
+  const blocks = (list: IRBlock[]): IRBlock[] => list.map((block) => {
+    const { node } = block
+    if (node.type === 'markdown') {
+      const mdast = clean(node.mdast)
+      return mdast === node.mdast ? block : { ...block, node: { ...node, mdast } }
+    }
+    if (node.type !== 'component') return block
+    const fallback = node.fallback && clean(node.fallback)
+    const children = node.children && blocks(node.children)
+    const same = !children || children.every((child, i) => child === node.children![i])
+    if (fallback === node.fallback && same) return block
+    return { ...block, node: { ...node, ...fallback ? { fallback } : {}, ...children ? { children } : {} } }
+  })
+  return { ...view, sections: view.sections.map(section => ({ ...section, blocks: blocks(section.blocks) })) }
+}
+
+/** The student view of a document (the compiler's `audienceView`, P-55), its references to what it leaves out emptied: the same object for the same IR. */
+export function studentView(doc: IRDocument): IRDocument {
+  let view = students.get(doc)
+  if (!view) {
+    const { doc: own, removed } = audienceView(doc, STUDENT)
+    students.set(doc, view = removed.length === 0 ? doc : withoutOutsideReferences(own))
+  }
   return view
 }
 
@@ -55,7 +141,10 @@ export function deckPlan(doc: IRDocument, deckDir: string): DeckPlan {
     findings.push(...read.findings)
     script = read.sections
   }
-  const plan = lecturePlan(doc, script)
+  // A view's script paragraphs at the steps of the whole deck they were written for, as the view has them.
+  const whole = script && wholes.get(doc)
+  const places = whole ? viewPlaces(whole, leftOut(whole, doc)) : undefined
+  const plan = lecturePlan(doc, script, places && ((section, paragraph) => places.step(section, paragraph)))
   findings.push(...plan.problems.filter(p => !p.compiled).map((p): Finding => ({ checkId: LECTURE_ID, severity: 'warning', message: p.message, ...p.source ? { source: { file: p.source.file, line: p.source.line } } : {} })))
   const own = doc.config.presmium[LECTURE_ID]
   const voice = lectureVoice(config)
@@ -66,23 +155,58 @@ export function deckPlan(doc: IRDocument, deckDir: string): DeckPlan {
 /** The latest IR each deck (by directory) compiled in this process. */
 const latest = new Map<string, IRDocument>()
 
-/** The latest IR of a deck compiled in this process; undefined before its first compilation. */
-export function latestDoc(deckDir: string): IRDocument | undefined {
-  return latest.get(deckDir)
-}
-
-/** The lecture renderer's view of the latest IR of a deck (what a build would plan from). */
-export function latestView(deckDir: string): IRDocument | undefined {
+/** The latest IR of a deck compiled in this process, whole or its student view; undefined before its first compilation. */
+export function latestDoc(deckDir: string, view: DeckView = 'full'): IRDocument | undefined {
   const doc = latest.get(deckDir)
-  return doc && lectureView(doc)
+  return doc && (view === 'student' ? studentView(doc) : doc)
 }
 
-/** Keeps each compiled IR, with the recorded outputs (after compile-time execution) for `run` cues. */
+/** The lecture renderer's view of the latest IR of a deck (what a build would plan from), whole or its student view. */
+export function latestView(deckDir: string, view: DeckView = 'full'): IRDocument | undefined {
+  const doc = latest.get(deckDir)
+  if (!doc) return undefined
+  const whole = lectureView(doc)
+  if (view === 'full') return whole
+  const student = lectureView(studentView(doc))
+  viewOfWhole(student, whole)
+  return student
+}
+
+/**
+ * A recorded lecture as the students get it (P-55): the part of it their
+ * view of `whole` (an IR compiled whole) keeps, cut in the web form where it
+ * was recorded and is played (`audienceTrack`, failing closed); undefined
+ * when nothing of it is left.
+ */
+export function studentTrack(track: LectureTrack, whole: IRDocument): LectureTrack | undefined {
+  const recorded = webView(whole)
+  return audienceTrack(track, recorded, leftOut(recorded, webView(studentView(whole))))
+}
+
+/**
+ * Keeps each compiled IR of the deck (not those of its translations, which
+ * compile as files of its directory), with the recorded outputs (after
+ * compile-time execution) for `run` cues; and says in
+ * `presmium.lecture.lectures` whether the deck publishes lectures, so a
+ * static web form offers its lecture view only then (P-131): lectures
+ * published elsewhere (`presmium.lecture.url`), or a voice that says its plan
+ * or a recorded lecture where the deck's build runs the lecture renderer (it
+ * names it among its `renderers`, or names none: the build then runs every
+ * renderer installed, as the web form's link to the slides assumes).
+ */
 export const keepPass: IRPass = {
   name: 'presmium.lecture.keep',
   after: 'execute',
   order: 1000,
   run(doc, ctx) {
-    latest.set(ctx.deckDir, doc)
+    const kept = latest.get(ctx.deckDir)
+    const translation = Boolean(doc.meta.translationOf) || Object.values(kept?.config.translations ?? {}).some(entry => resolve(ctx.deckDir, entry) === doc.meta.entry)
+    if (!translation) latest.set(ctx.deckDir, doc)
+    const own = isRecord(doc.config.presmium[LECTURE_ID]) ? doc.config.presmium[LECTURE_ID] as Record<string, unknown> : {}
+    const renderers = Object.keys(doc.config.renderers)
+    const built = renderers.length === 0 || renderers.includes(LECTURE_RENDERER)
+    const lectures = typeof own.url === 'string' || (built && (Boolean(lectureVoice(lectureConfig(doc))) || trackIds(ctx.deckDir).length > 0))
+    // A copy: the configuration may be the headmatter's own object.
+    doc.config.presmium = { ...doc.config.presmium, [LECTURE_ID]: { ...own, lectures } }
   },
 }

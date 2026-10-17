@@ -3,15 +3,17 @@
  * `lectures/<id>/` with its `track.json` (committed) and its audio and video
  * (`audio/`, `video/`), which by the operator's `settings.presmium.lecture.audio`
  * stay out of git (`ignore`, the default), go to git LFS (`lfs`), or are
- * published under an external URL (a prefix), still ignored here.
+ * published under an external URL (a prefix), still ignored here. The track
+ * names its media by their paths in its directory; the prefix applies where
+ * the lecture is published (`publishedMedia`).
  */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { closeSync, constants, createReadStream, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
-import { dirname, join, relative, sep } from 'node:path'
+import { dirname, isAbsolute, join, relative, sep } from 'node:path'
 import type { DocumentFiles } from '@presmium/kernel'
 import { formatTrack, LECTURES_DIR, parseTrack, TRACK_ID } from '../domain/index.ts'
-import type { LectureTrack } from '../domain/index.ts'
+import type { LectureTrack, MediaSegment } from '../domain/index.ts'
 
 /**
  * How the plugin writes files of its deck (absolute paths in it): through
@@ -81,19 +83,85 @@ export interface StoredTrack {
   problems: string[]
 }
 
-/**
- * Whether `file` is a regular file inside the deck once its links are
- * resolved: what serve reads for readers lies in directories the sandbox may
- * write (SHARED), where a link could point at the git directory, the
- * workspace's settings or another document (WP-91b).
- */
-export function insideDeck(deckDir: string, file: string): boolean {
+/** How a file is opened to be read: not through a link at its name, nor waiting for a writer of a FIFO (`O_NONBLOCK`, as the compiler's reads). */
+const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0)
+
+/** The bytes of a regular file, opened as `OPEN_FLAGS` says; undefined for any other (a link, a FIFO, a directory) or none. */
+export function readRegular(file: string): Buffer | undefined {
+  let fd: number
   try {
-    const real = realpathSync(file)
-    const deck = realpathSync(deckDir)
-    return (real === deck || real.startsWith(`${deck}${sep}`)) && !real.split(sep).includes('.git') && statSync(real).isFile()
+    fd = openSync(file, OPEN_FLAGS)
   } catch {
-    return false
+    return undefined
+  }
+  try {
+    return fstatSync(fd).isFile() ? readFileSync(fd) : undefined
+  } catch {
+    return undefined
+  } finally {
+    closeSync(fd)
+  }
+}
+
+/** The path a descriptor has open: by `/proc/self/fd` (Linux); elsewhere `expected` when its real path is it and it is the same file. */
+function openedPath(fd: number, expected: string): string | undefined {
+  try {
+    return readlinkSync(`/proc/self/fd/${fd}`)
+  } catch {
+    try {
+      const opened = fstatSync(fd)
+      const now = statSync(expected)
+      return realpathSync(expected) === expected && now.dev === opened.dev && now.ino === opened.ino ? expected : undefined
+    } catch {
+      return undefined
+    }
+  }
+}
+
+/**
+ * Opens a file of the deck to read when it is a regular file at that very
+ * place, outside `.git`, with no link on the way from the deck directory:
+ * what serve reads for readers lies in directories the sandbox may write
+ * (SHARED), where a link, or one swapped in between a check and the read,
+ * could lead to the git directory, the workspace's settings or another
+ * document (WP-91b), and a FIFO would keep the open waiting, and serve with
+ * it. The file checked is the one opened, by its descriptor. Undefined when
+ * it cannot be read so; the caller closes the descriptor.
+ */
+export function openInDeck(deckDir: string, file: string): number | undefined {
+  let expected: string
+  try {
+    const rel = relative(deckDir, file)
+    if (!rel || rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel) || rel.split(sep).includes('.git')) return undefined
+    expected = join(realpathSync(deckDir), rel)
+  } catch {
+    return undefined
+  }
+  let fd: number
+  try {
+    fd = openSync(file, OPEN_FLAGS)
+  } catch {
+    return undefined
+  }
+  try {
+    if (fstatSync(fd).isFile() && openedPath(fd, expected) === expected) return fd
+  } catch {
+    // Not read.
+  }
+  closeSync(fd)
+  return undefined
+}
+
+/** The bytes of a file of the deck, as `openInDeck` opens it; undefined when it cannot be read so. */
+export function readInDeck(deckDir: string, file: string): Buffer | undefined {
+  const fd = openInDeck(deckDir, file)
+  if (fd === undefined) return undefined
+  try {
+    return readFileSync(fd)
+  } catch {
+    return undefined
+  } finally {
+    closeSync(fd)
   }
 }
 
@@ -101,8 +169,9 @@ export function insideDeck(deckDir: string, file: string): boolean {
 export function readTrack(deckDir: string, id: string): StoredTrack | undefined {
   const dir = trackDir(deckDir, id)
   const file = dir && join(dir, TRACK_FILE)
-  if (!file || !existsSync(file) || !insideDeck(deckDir, file)) return undefined
-  const text = readFileSync(file, 'utf8')
+  const bytes = file ? readInDeck(deckDir, file) : undefined
+  if (!file || !bytes) return undefined
+  const text = bytes.toString('utf8')
   const { track, problems } = parseTrack(JSON.parse(text))
   if (!track) throw new Error(`${relative(deckDir, file)}: ${problems.join('; ')}`)
   return { track, text, file, problems }
@@ -144,10 +213,12 @@ export function freeMediaPath(deckDir: string, id: string, folder: 'audio' | 'vi
   return path
 }
 
-/** The sha256 of a file, read as a stream (recordings can be large). */
-export async function sha256File(file: string): Promise<string> {
+/** The sha256 of a file of the deck, read as a stream from the file `openInDeck` opens (recordings can be large); undefined when it cannot be read so. */
+export async function sha256File(deckDir: string, file: string): Promise<string | undefined> {
+  const fd = openInDeck(deckDir, file)
+  if (fd === undefined) return undefined
   const hash = createHash('sha256')
-  for await (const chunk of createReadStream(file)) hash.update(chunk as Buffer)
+  for await (const chunk of createReadStream('', { fd })) hash.update(chunk as Buffer)
   return hash.digest('hex')
 }
 
@@ -159,6 +230,17 @@ export function mediaPolicy(settings: Record<string, unknown>): MediaPolicy {
   if (audio === 'lfs') return { kind: 'lfs' }
   if (typeof audio === 'string' && /^https?:\/\//.test(audio)) return { kind: 'url', prefix: audio.endsWith('/') ? audio : `${audio}/` }
   return { kind: 'ignore' }
+}
+
+/**
+ * The media of a track as a published lecture names them: under the external
+ * URL of the `url` policy, `<prefix><id>/<path>`, where the operator puts the
+ * files; those `local` says are here (the files of this machine) keep their
+ * paths. The track itself keeps the paths (docs/ir.md 9.1).
+ */
+export function publishedMedia<T extends MediaSegment>(segments: T[] | undefined, id: string, policy: MediaPolicy, local: (segment: T) => boolean = () => false): T[] | undefined {
+  if (!segments || policy.kind !== 'url') return segments
+  return segments.map(segment => (/^[a-z][a-z\d+.-]*:/i.test(segment.src) || local(segment) ? segment : { ...segment, src: `${policy.prefix}${id}/${segment.src}` }))
 }
 
 /** The git files of a track's directory that keep its media out of git, or hand it to LFS. */

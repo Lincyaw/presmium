@@ -7,16 +7,16 @@
  * the engines, their providers and the consent gate are the gateway's, the
  * synthesis cache is the deck's (./deck.ts).
  */
+import { gatewayFetch } from '@presmium/kernel'
 import type { GatewayAccess, TranscriptionRequest } from '@presmium/kernel'
 import type { EngineListing, TimedSpeech, TranscriptionAnswer, VoiceListing } from '../domain/index.ts'
 import { PROTOCOL_PATH, SPEECH_ID, speechBody, transcriptOf } from '../domain/index.ts'
 import type { SpeechBackend } from './backend.ts'
-import { answerError } from './errors.ts'
+import { answerError, SpeechError } from './errors.ts'
 
 export function gatewayBackend(access: GatewayAccess): SpeechBackend {
-  const base = `${access.url.replace(/\/+$/, '')}/${SPEECH_ID}/${PROTOCOL_PATH}`
   const call = async <T>(path: string, init: RequestInit = {}, signal?: AbortSignal): Promise<T> => {
-    const response = await fetch(`${base}/${path}`, { ...init, headers: { ...init.headers as Record<string, string>, Authorization: `Bearer ${access.token}` }, redirect: 'error', signal })
+    const response = await gatewayFetch(access, SPEECH_ID, `${PROTOCOL_PATH}/${path}`, { ...init, signal })
     if (!response.ok) throw await answerError(response, 'the gateway', true)
     return await response.json() as T
   }
@@ -46,6 +46,14 @@ export function gatewayBackend(access: GatewayAccess): SpeechBackend {
         cloned: timed.cloned,
         key: timed.key,
         AIGC: timed.AIGC,
+      }
+    },
+    async consent(engine, voice, recorded, signal) {
+      try {
+        await call(`audio/consent?${new URLSearchParams({ engine, voice, recorded: recorded ? '1' : '0' })}`, {}, signal)
+      } catch (error) {
+        // A voice its record does not call cloned is refused only by the gateway's answer, not when it cannot give one.
+        if (recorded || (error instanceof SpeechError && error.status === 403)) throw error
       }
     },
     async transcribe(request: TranscriptionRequest, signal) {

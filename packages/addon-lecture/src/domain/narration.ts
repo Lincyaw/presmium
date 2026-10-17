@@ -7,9 +7,8 @@
  * CJK characters is no space.
  */
 import { isRecord } from '@presmium/kernel'
-import type { MdastNode } from '@presmium/kernel'
+import type { MdastNode, WordSpan } from '@presmium/kernel'
 import { LECTURE_ID } from './track.ts'
-import type { Span } from './words.ts'
 import { isCjk } from './words.ts'
 
 /** A `{cue}` in a text: its command and options, at a place of the shown text (UTF-16 offset). */
@@ -27,7 +26,7 @@ export interface SpokenText {
   text: string
   /** The text as spoken: `{say}` aliases in place of what they show. */
   spoken: string
-  spans: Span[]
+  spans: WordSpan[]
   cues: CueMark[]
 }
 
@@ -44,7 +43,7 @@ function text(value: unknown): string | undefined {
 class Builder {
   text = ''
   spoken = ''
-  readonly spans: Span[] = []
+  readonly spans: WordSpan[] = []
   readonly cues: CueMark[] = []
   private pending: 'space' | 'line' | undefined
 

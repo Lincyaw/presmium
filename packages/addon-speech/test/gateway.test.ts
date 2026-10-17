@@ -3,7 +3,7 @@
 // the Node SPEECH of the test plugin, fixtures/speech-probe) through the document's synthesis cache over the
 // gateway, which alone calls the engine and checks consent records. And a deck cannot define an engine:
 // `engines.x` with an address and a variable of a credential is an error and leads nowhere (N-08).
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Fake, Shared } from './helpers.ts'
@@ -120,6 +120,14 @@ describe('speech through serve and the gateway (SHARED)', () => {
     const allowed = await synthesize('cloned-lin')
     expect(allowed.status, allowed.text).toBe(200)
     expect(allowed.json()).toMatchObject({ voice: 'cloned-lin', cloned: true })
+
+    // The record withdrawn from the gateway's operator directory: serve's cache has the clip, and asks the gateway first (D-7).
+    const before = (await fake.requests()).length
+    rmSync(join(operator, 'consent/fake/cloned-lin.json'))
+    const withdrawn = await synthesize('cloned-lin')
+    expect(withdrawn.status).toBe(403)
+    expect(withdrawn.json<{ error: string }>().error).toContain(`${join(operator, 'consent/fake/cloned-lin.json')} is missing`)
+    expect((await fake.requests()).length).toBe(before)
   }, 120_000)
 
   it('gives a scoped token without presmium.speech no speech route of the gateway', async () => {

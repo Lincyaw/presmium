@@ -50,6 +50,33 @@ export function timedEvents(track: LectureTrack): TimedEvent[] {
     .sort((a, b) => a.t - b.t || a.index - b.index)
 }
 
+/** A piece of an utterance's text as the transcript shows it: a word, with its time, or the text between words. */
+export interface TextPiece {
+  text: string
+  /** A word's start, ms. */
+  t?: number
+}
+
+/**
+ * An utterance's text in pieces (P-131): its words where they are in it, in
+ * order, and the spaces and punctuation between them; undefined without
+ * word times, or when a word is not found in the text (the text alone then).
+ */
+export function textPieces(utterance: Utterance): TextPiece[] | undefined {
+  if (!utterance.words?.length) return undefined
+  const pieces: TextPiece[] = []
+  let at = 0
+  for (const [t, , word] of utterance.words) {
+    const index = word ? utterance.text.indexOf(word, at) : -1
+    if (index < 0) return undefined
+    if (index > at) pieces.push({ text: utterance.text.slice(at, index) })
+    pieces.push({ text: word, t })
+    at = index + word.length
+  }
+  if (at < utterance.text.length) pieces.push({ text: utterance.text.slice(at) })
+  return pieces
+}
+
 /** The utterance being said at time t, if any. */
 export function utteranceAt(track: LectureTrack, t: number): Utterance | undefined {
   return track.utterances.find(u => u.t <= t && t < u.t + u.d)

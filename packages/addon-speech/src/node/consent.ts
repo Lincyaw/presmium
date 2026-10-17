@@ -9,6 +9,7 @@
  */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { json, problem } from '@presmium/kernel'
 import { consentPath, consentProblem, DEFAULT_CONSENT_DIR, safeName } from '../domain/index.ts'
 import { SpeechError } from './errors.ts'
 
@@ -68,20 +69,19 @@ export function writeConsent(operatorDir: string | undefined, settings: Record<s
 
 /** The route `consent/<engine>/<voice>`: the request's body (JSON) is the record. */
 export async function consentRoute(request: Request, rest: string, register: (engine: string, voice: string, record: unknown) => string): Promise<Response> {
-  const answer = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } })
-  if (request.method !== 'POST' && request.method !== 'PUT') return answer({ error: 'POST the consent record (JSON) to consent/<engine>/<voice>' }, 405)
+  if (request.method !== 'POST' && request.method !== 'PUT') return problem(405, 'POST the consent record (JSON) to consent/<engine>/<voice>')
   const [engine, voice, ...more] = rest.split('/').filter(Boolean)
-  if (!engine || !voice || more.length) return answer({ error: 'the route is consent/<engine>/<voice>' }, 404)
+  if (!engine || !voice || more.length) return problem(404, 'the route is consent/<engine>/<voice>')
   let record: unknown
   try {
     record = JSON.parse(await request.text())
   } catch {
-    return answer({ error: 'the body is the consent record as JSON { speaker, scope, date, statementSha256 }' }, 400)
+    return problem(400, 'the body is the consent record as JSON { speaker, scope, date, statementSha256 }')
   }
   try {
     register(engine, voice, record)
-    return answer({ engine, voice, registered: consentPath(engine, voice) })
+    return json({ engine, voice, registered: consentPath(engine, voice) })
   } catch (error) {
-    return answer({ error: error instanceof Error ? error.message : String(error) }, error instanceof SpeechError ? error.status : 500)
+    return problem(error instanceof SpeechError ? error.status : 500, error instanceof Error ? error.message : String(error))
   }
 }

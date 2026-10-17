@@ -1,19 +1,25 @@
 // Lecture tracks with the real CLI (WP-77, docs/ir.md section 9): `presmium check` reports the events
 // of a recorded lecture whose block is gone, with their time (P-130); `presmium build --to lecture`
 // exports captions in the track's language and in a translation, and marks a translation whose
-// original changed since as stale (P-137).
+// original changed since as stale (P-137). The operator's media policies (`settings.presmium.lecture.audio`,
+// P-130, P-132): under `presmium dev` with the fake speech engine (a process of its own), a lecture recorded
+// through the routes keeps its media's paths, is transcribed and played back from this machine, and its build
+// names the media under the external URL of the `url` policy; `lfs` hands the media to git LFS and publishes them.
+import { spawn } from 'node:child_process'
+import type { ChildProcess } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { IRDocument } from '@presmium/kernel'
-import { presmium } from '@presmium/cli/testing'
+import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { formatTrack, irHash, referencedBlocks } from '../src/domain/index.ts'
 import type { LectureTrack } from '../src/domain/index.ts'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
+const SPEECH = fileURLToPath(new URL('../../addon-speech', import.meta.url))
 const CODE = '(merge-code)=\n```python\ndef merge(ids, pair, idx):\n    out = []\n    return out\n```'
 
 const deck = (code: string) => `---
@@ -130,4 +136,128 @@ describe('presmium build --to lecture (P-137)', () => {
     expect(english).toContain('NOTE stale: the original of u2 changed after it was translated\n\nu2\n00:00:03.200 --> 00:00:05.600\nThen the merge function')
     expect(readFileSync(join(out, 'demo/captions.zh-CN.vtt'), 'utf8')).toContain('再来看合并函数')
   }, 180_000)
+})
+
+/** The environment without Presmium's variables (a developer's machine may define engines), plus `extra`. */
+function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env }
+  delete env.NODE_ENV
+  for (const name of Object.keys(env)) if (name.startsWith('PRESMIUM_')) delete env[name]
+  return { ...env, ...extra }
+}
+
+/** A process of its own and the address it prints (the first match of `pattern`). */
+async function started(args: string[], cwd: string, env: NodeJS.ProcessEnv, pattern: RegExp): Promise<{ child: ChildProcess, url: string }> {
+  const child = spawn(process.execPath, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
+  const url = await new Promise<string>((done, fail) => {
+    let output = ''
+    const read = (chunk: Buffer) => {
+      output += chunk
+      const match = pattern.exec(output)
+      if (match) done(match[1]!)
+    }
+    child.stdout!.on('data', read)
+    child.stderr!.on('data', read)
+    child.once('exit', code => fail(new Error(`${args.join(' ')} exited (${code}): ${output}`)))
+  })
+  return { child, url }
+}
+
+async function stop(child: ChildProcess | undefined): Promise<void> {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  const exited = new Promise(done => child.once('exit', done))
+  child.kill('SIGTERM')
+  await exited
+}
+
+describe('the operator\'s media policies (settings.presmium.lecture.audio, P-130)', () => {
+  const PREFIX = 'https://media.example.test/lectures/'
+  const SAID = '开场的录音讲解。'
+  let fake: { child: ChildProcess, url: string } | undefined
+  let dev: ChildProcess | undefined
+  const dirs: string[] = []
+
+  /** A deck with the lecture and speech plugins, the operator's media policy, and one section. */
+  const policyDeck = (audio: string) => {
+    const dir = mkdtempSync(join(tmpdir(), 'presmium-lecture-media-'))
+    dirs.push(dir)
+    writeFileSync(join(dir, 'presmium.workspace.yaml'), `settings:\n  presmium.lecture:\n    audio: ${audio}\n`)
+    writeFileSync(join(dir, 'lecture.md'), `---\ntitle: 媒体策略\nplugins:\n  - ${ADDON}\n  - ${SPEECH}\n---\n\n(intro)=\n# 开场\n\n开场。\n`)
+    return dir
+  }
+
+  beforeAll(async () => {
+    fake = await started([join(SPEECH, 'bin/presmium-speech.mjs'), 'fake', '--port', '0'], tmpdir(), clean(), /^fake {2}(http\S+)$/m)
+  }, 60_000)
+
+  afterAll(async () => {
+    await stop(dev)
+    await stop(fake?.child)
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
+  })
+
+  /** Records a lecture of one section through the routes of `presmium dev`; its audio is the fake engine's clip of `SAID`. */
+  async function record(server: string): Promise<{ id: string, src: string, bytes: Buffer }> {
+    const route = (path: string, init?: RequestInit) => fetch(`${server}/__presmium/presmium.lecture/${path}`, init)
+    const post = (path: string, body: unknown) => route(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const { id } = await (await post('recordings', {})).json() as { id: string }
+    const { src } = await (await post(`recordings/${id}/media`, { folder: 'audio', section: 'intro', ext: 'ogg' })).json() as { src: string }
+    const speech = await fetch(`${fake!.url}/audio/speech`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: SAID, voice: 'alpha' }) })
+    const bytes = Buffer.from(await speech.arrayBuffer())
+    expect((await route(`recordings/${id}/files/${src}?at=0`, { method: 'PUT', body: bytes })).status).toBe(200)
+    const finished = await post(`recordings/${id}/finish`, {
+      head: { doc: 'lecture.md', irHash: 'x', lang: 'zh-CN', sections: {}, voice: { kind: 'recorded' }, blocks: {} },
+      recording: { events: [[0, 'go', { section: 'intro', step: 0 }]], audio: [{ section: 'intro', start: 0, src, duration: 2 }], video: [], utterances: [], duration: 2000 },
+    })
+    expect(finished.status, await finished.clone().text()).toBe(200)
+    return { id, src, bytes }
+  }
+
+  it('url: the track keeps its media\'s paths, transcribed and played from this machine; the build names them under the URL', async () => {
+    const dir = policyDeck(PREFIX)
+    const server = await started([PRESMIUM_BIN, 'dev', '--to', 'notebook'], dir, clean({ PRESMIUM_SPEECH_FAKE_URL: fake!.url, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake' }), /^server {2}(http\S+)$/m)
+    dev = server.child
+    const route = (path: string, init?: RequestInit) => fetch(`${server.url}/__presmium/presmium.lecture/${path}`, init)
+    const { id, src, bytes } = await record(server.url)
+    expect(src).toBe('audio/intro.ogg')
+    const stored = () => JSON.parse(readFileSync(join(dir, 'lectures', id, 'track.json'), 'utf8')) as { audio: { src: string }[], utterances: { text: string }[] }
+    expect(stored().audio.map(a => a.src)).toEqual([src])
+    expect(readFileSync(join(dir, 'lectures', id, '.gitignore'), 'utf8')).toContain(`published under ${PREFIX}`)
+
+    // Transcribed from the file on this machine, and played back from it.
+    const transcribed = await route(`editing/${id}/transcribe`, { method: 'POST' })
+    expect(transcribed.status, await transcribed.clone().text()).toBe(200)
+    expect(stored().utterances.map(u => u.text)).toEqual([SAID])
+    const served = async () => ((await (await route(`tracks/${id}`)).json()) as { audio: { src: string }[] }).audio.map(a => a.src)
+    expect(await served()).toEqual([src])
+    const played = await route(`tracks/${id}/${src}`)
+    expect(played.status).toBe(200)
+    expect(Buffer.from(await played.arrayBuffer()).equals(bytes)).toBe(true)
+
+    // Published under the external URL, where the operator puts the file: the build does not copy it.
+    const built = await presmium(dir, ['build', '--to', 'lecture'])
+    expect(built.code, built.stdout + built.stderr).toBe(0)
+    const published = JSON.parse(readFileSync(join(dir, 'dist/lecture', id, 'track.json'), 'utf8')) as { audio: { src: string }[] }
+    expect(published.audio.map(a => a.src)).toEqual([`${PREFIX}${id}/${src}`])
+    expect(existsSync(join(dir, 'dist/lecture', id, src))).toBe(false)
+
+    // A checkout without the file: the route names it under the URL too.
+    rmSync(join(dir, 'lectures', id, src))
+    expect(await served()).toEqual([`${PREFIX}${id}/${src}`])
+    await stop(dev)
+  }, 240_000)
+
+  it('lfs: the media go to git LFS, and the build publishes them beside the track', async () => {
+    const dir = policyDeck('lfs')
+    const server = await started([PRESMIUM_BIN, 'dev', '--to', 'notebook'], dir, clean(), /^server {2}(http\S+)$/m)
+    dev = server.child
+    const { id, src, bytes } = await record(server.url)
+    await stop(dev)
+    expect(readFileSync(join(dir, 'lectures', id, '.gitattributes'), 'utf8')).toBe('audio/** filter=lfs diff=lfs merge=lfs -text\nvideo/** filter=lfs diff=lfs merge=lfs -text\n')
+    expect(existsSync(join(dir, 'lectures', id, '.gitignore'))).toBe(false)
+    const built = await presmium(dir, ['build', '--to', 'lecture'])
+    expect(built.code, built.stdout + built.stderr).toBe(0)
+    expect((JSON.parse(readFileSync(join(dir, 'dist/lecture', id, 'track.json'), 'utf8')) as { audio: { src: string }[] }).audio.map(a => a.src)).toEqual([src])
+    expect(readFileSync(join(dir, 'dist/lecture', id, src)).equals(bytes)).toBe(true)
+  }, 240_000)
 })

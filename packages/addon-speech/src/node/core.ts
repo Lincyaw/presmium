@@ -6,9 +6,11 @@
  * pronunciation lexicon to the text (words come back in the written form),
  * and labels the audio as AI-generated (./audio/label.ts).
  */
-import type { Logger, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
+import { remapWords } from '@presmium/kernel'
+import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
 import type { EngineDefinition } from '../domain/index.ts'
-import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak, writtenWords } from '../domain/index.ts'
+import type { SpokenText } from '../domain/index.ts'
+import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak } from '../domain/index.ts'
 import { audioMime, labelAudio } from './audio/label.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'
 import { cacheKey } from './backend.ts'
@@ -17,6 +19,16 @@ import { engineAdapter } from './engines/index.ts'
 import type { EngineAdapter } from './engines/index.ts'
 import { speaks } from './engines/types.ts'
 import { SpeechError } from './errors.ts'
+
+/**
+ * The words an engine timed over the spoken text (the lexicon applied) as
+ * words of the written text (the kernel's `remapWords`): a replacement's
+ * words become its written form, without the spaces around it.
+ */
+function writtenWords(words: SpeechWord[], written: string, spoken: SpokenText): SpeechWord[] {
+  if (spoken.spans.length === 0) return words
+  return remapWords(words, written, spoken.text, spoken.spans).map(({ text, start, end }) => ({ text: text.trim(), start, end }))
+}
 
 export interface CoreOptions {
   /** The environment's variable names, which say what engines there are. */
@@ -48,10 +60,17 @@ export function speechCore(options: CoreOptions): SpeechCore {
    * fails the synthesis too: whether its voice is cloned cannot be known.
    */
   const lists = new Map<string, Promise<VoiceInfo[]>>()
+  /** The lists this process has got, which tell a cache's hit whether its voice is cloned (`consent`). */
+  const known = new Map<string, VoiceInfo[]>()
+  /** The engines whose list a cache's hit could not get: their hits are not held up asking again. */
+  const unlisted = new Set<string>()
   const allVoices = (engine: EngineDefinition) => {
     let list = lists.get(engine.id)
     if (!list) {
-      list = adapter(engine).voices(undefined, AbortSignal.timeout(30_000)).catch((error: unknown) => {
+      list = adapter(engine).voices(undefined, AbortSignal.timeout(30_000)).then((voices) => {
+        known.set(engine.id, voices)
+        return voices
+      }, (error: unknown) => {
         lists.delete(engine.id)
         throw new SpeechError(502, `the voices of speech engine "${engine.id}" are not known, so a cloned voice cannot be told: ${error instanceof Error ? error.message : String(error)}`)
       })
@@ -119,6 +138,25 @@ export function speechCore(options: CoreOptions): SpeechCore {
       const engine = pick(request.engine)
       const audio = new Uint8Array(await request.audio.arrayBuffer())
       return adapter(engine).transcribe({ audio, mime: audioMime(audio, request.audio.type), lang: request.lang, hints: request.hints }, signal)
+    },
+
+    async consent(engine, voice, recorded) {
+      if (!recorded) {
+        // Not cloned by the record's word: by the engine's, its adapter's or its list of voices (asked once per process,
+        // a hit sends it no synthesis); the record's word stands only for an engine not defined here or that cannot list them.
+        const defined = engines().engines.find(own => own.id === engineId(engine))
+        if (!defined) return
+        if (adapter(defined).cloned?.(voice) !== true) {
+          const voices = known.get(defined.id) ?? (unlisted.has(defined.id)
+            ? []
+            : await allVoices(defined).catch(() => {
+              unlisted.add(defined.id)
+              return []
+            }))
+          if (!voices.some(own => own.id === voice && own.cloned === true)) return
+        }
+      }
+      checkConsent(options.operatorDir, options.settings, engineId(engine), voice)
     },
 
     registerConsent(engine, voice, record) {

@@ -45,6 +45,8 @@ export interface LectureMessages {
     /** A reader opens the synthesized lecture before an editor had it made (synthesis is paid). */
     notYet: string
     dropped: (count: number) => string
+    /** A translation made from an earlier text of its sentence (P-137). */
+    stale: string
     jump: (time: string) => string
     step: (step: number) => string
   }
@@ -158,6 +160,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       missing: id => `找不到讲授 ${id}`,
       notYet: '这段由讲解合成的讲授还没有生成：合成要计费，所以编辑者打开它时才合成，请稍后再来',
       dropped: count => `讲义改动后有 ${count} 个操作失效，回放时略过`,
+      stale: '译文过期：原句在翻译之后改过',
       jump: time => `跳到 ${time}`,
       step: step => `第 ${step} 步`,
     },
@@ -274,6 +277,7 @@ export const LECTURE_MESSAGES: Record<Locale, LectureMessages> = {
       missing: id => `Lecture ${id} not found`,
       notYet: 'This lecture synthesized from the narration has not been made yet: synthesis is paid, so it is made when an editor opens it. Come back later',
       dropped: count => `${count} actions no longer match the deck and are skipped`,
+      stale: 'Outdated translation: the sentence changed after it was translated',
       jump: time => `Go to ${time}`,
       step: step => `Step ${step}`,
     },

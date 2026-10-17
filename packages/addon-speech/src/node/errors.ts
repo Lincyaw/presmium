@@ -1,3 +1,5 @@
+import { problem } from '@presmium/kernel'
+
 /** An error of the speech service with the HTTP status the gateway answers it with. */
 export class SpeechError extends Error {
   readonly status: number
@@ -9,16 +11,11 @@ export class SpeechError extends Error {
   }
 }
 
-/** A JSON answer. */
-export function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } })
-}
-
 /** `{ error }` with the status of a `SpeechError`, else 502 (an engine failed). */
 export function failure(error: unknown): Response {
-  if (error instanceof SpeechError) return json({ error: error.message }, error.status)
-  if (error instanceof Error && error.name === 'AbortError') return json({ error: 'aborted' }, 499)
-  return json({ error: error instanceof Error ? error.message : String(error) }, 502)
+  if (error instanceof SpeechError) return problem(error.status, error.message)
+  if (error instanceof Error && error.name === 'AbortError') return problem(499, 'aborted')
+  return problem(502, error instanceof Error ? error.message : String(error))
 }
 
 /**
