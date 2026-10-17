@@ -6,10 +6,12 @@
 // changes. The layer reads the notes once and gives each spot those of its place. A block's spot
 // shows while the reader points at the block or focuses in it, while it is open and while the block
 // has notes, so a section shows one notes button; it is named after the block's first words, not
-// its label. Until then it is transparent, not hidden, so keyboard users reach it with Tab. The
-// slides form has no such markup, and no notes.
+// its label, and a block of a table or a listing, whose cells or lines would run together, after
+// its section and its kind ("下一次合并哪一对？ · 表格", N-06). Until then it is transparent, not
+// hidden, so keyboard users reach it with Tab. The slides form has no such markup, and no notes.
+import { useMessages } from '@presmium/host'
 import { computed, onBeforeUnmount, onMounted, shallowRef } from 'vue'
-import { COLLECTIONS, isLabel, isNote, notesAt } from '../domain/index.ts'
+import { COLLECTIONS, isLabel, isNote, MESSAGES, notesAt } from '../domain/index.ts'
 import NoteSpot from './NoteSpot.vue'
 import { useCollection, useNotes } from './use.ts'
 
@@ -24,6 +26,7 @@ interface Spot {
 /** Characters of a block's text that name its notes. */
 const LABEL_LENGTH = 20
 
+const t = useMessages(MESSAGES)
 const { store, inClassroom } = useNotes()
 const notes = useCollection(() => store.value, COLLECTIONS.notes, isNote)
 /** The notes of each place, by spot key. */
@@ -50,13 +53,24 @@ function slotIn(parent: HTMLElement, kind: 'section' | 'block', after?: Element 
   return slot
 }
 
-/** The first words of a block, without the layer's own slot (nor the comments Vue marks fragments with). */
-function blockLabel(block: HTMLElement): string {
-  const text = [...block.childNodes]
-    .filter(node => node.nodeType === Node.TEXT_NODE || (node instanceof Element && !node.classList.contains('pm-note-slot')))
+/** What a block shows besides words, whose text would run together in a name: a table, a listing. */
+const KINDS = [['table', 'table'], ['pre', 'code']] as const
+
+/**
+ * The name of a block's notes: its first words, without the layer's own slot (nor the comments Vue
+ * marks fragments with) and without the cells of a table or the lines of a listing, which would run
+ * together; a block of such content only is named after its section and its kind.
+ */
+function blockLabel(block: HTMLElement, section: string): string {
+  const copy = block.cloneNode(true) as HTMLElement
+  copy.querySelectorAll(`${KINDS.map(([selector]) => selector).join(', ')}, .pm-note-slot`).forEach(element => element.remove())
+  const text = [...copy.childNodes]
+    .filter(node => node.nodeType === Node.TEXT_NODE || node instanceof Element)
     .map(node => node.textContent ?? '').join(' ').replace(/\s+/g, ' ').trim()
   const chars = [...text]
-  return chars.length > LABEL_LENGTH ? `${chars.slice(0, LABEL_LENGTH).join('')}…` : text
+  if (chars.length > 0) return chars.length > LABEL_LENGTH ? `${chars.slice(0, LABEL_LENGTH).join('')}…` : text
+  const kind = KINDS.find(([selector]) => block.querySelector(selector))?.[1]
+  return kind ? t.value.notes.blockOf(section, t.value.notes.kinds[kind]) : section
 }
 
 function scan(): void {
@@ -72,7 +86,7 @@ function scan(): void {
       const blockId = block.dataset.block!
       // The blocks inside a component are not the section's.
       if (!isLabel(blockId) || block.parentElement?.closest('.pm-block')) continue
-      found.push({ key: `${id}/${blockId}`, slot: slotIn(block, 'block'), section: id, block: blockId, label: blockLabel(block) || label })
+      found.push({ key: `${id}/${blockId}`, slot: slotIn(block, 'block'), section: id, block: blockId, label: blockLabel(block, label) })
     }
   }
   const before = spots.value

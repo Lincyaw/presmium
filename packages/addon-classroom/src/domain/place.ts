@@ -22,9 +22,31 @@ export function placeKey(place: Pick<Place, 'section' | 'block'>): string {
   return `${place.section}/${place.block}`
 }
 
+/**
+ * The numbers of the sections in this window's own build, by section id
+ * (D-4, F-85): `classroom-places` writes them to the plugin's configuration
+ * as `sections`. A learner writes a place as the learner's build numbers it,
+ * and the student build numbers its sections apart from the full one, so the
+ * overview numbers places by their section's id. Sections for some audiences
+ * only are not listed: no build names a section another build leaves out.
+ */
+export type SectionNumbers = Readonly<Record<string, number>>
+
+/** The section numbers of the plugin's configuration; none in a deck compiled without them. */
+export function sectionNumbers(config: Record<string, unknown> | undefined): SectionNumbers {
+  const sections = config?.sections
+  if (typeof sections !== 'object' || sections === null || Array.isArray(sections)) return {}
+  return Object.fromEntries(Object.entries(sections).filter((entry): entry is [string, number] => Number.isInteger(entry[1])))
+}
+
+/** The number of a place's section in this window's build, else as its writer's build numbered it. */
+export function placeIndex(place: { section: string, index: number }, numbers: SectionNumbers = {}): number {
+  return numbers[place.section] ?? place.index
+}
+
 /** `第 3 节 · 标题`, with the block when it has a label (a generated id means nothing to a reader). */
-export function placeText(place: { index: number, title: string, block?: string }, t: ClassroomMessages): string {
-  return t.place(place.index, place.title, place.block && isLabel(place.block) ? place.block : undefined)
+export function placeText(place: { section: string, index: number, title: string, block?: string }, t: ClassroomMessages, numbers?: SectionNumbers): string {
+  return t.place(placeIndex(place, numbers), place.title, place.block && isLabel(place.block) ? place.block : undefined)
 }
 
 /**

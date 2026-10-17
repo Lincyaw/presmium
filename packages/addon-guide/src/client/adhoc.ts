@@ -7,8 +7,10 @@
  * without a target turns the cue off. A cue lasts while the position stays
  * in its section and step (`span` more steps), so the picture at any time is
  * a function of the operations before it, whether they were made, replayed
- * in order or replayed at once (a seek).
+ * in order or replayed at once (a seek). Blocks and code lines are found as
+ * `@presmium/host` finds them (`blockElement`, `codeLines`, `lineNumbers`).
  */
+import { blockElement, codeLines, lineNumbers } from '@presmium/host'
 import type { Navigation } from '@presmium/host'
 import { watch } from 'vue'
 import type { CueRequest, ShowCue } from './cue.ts'
@@ -38,32 +40,9 @@ function visible(elements: Iterable<HTMLElement>): HTMLElement | undefined {
   return undefined
 }
 
-/** The element of block `<section>/<block>` the audience sees: the present view's, else a page view's. */
-export function blockElement(key: string): HTMLElement | undefined {
-  const cut = key.lastIndexOf('/')
-  if (cut <= 0) return undefined
-  const [section, block] = [key.slice(0, cut), key.slice(cut + 1)]
-  return visible(document.querySelectorAll<HTMLElement>(`[data-section="${CSS.escape(section)}"] .pm-block[data-block="${CSS.escape(block)}"]`))
-}
-
-/** The block under a point of the page, as its key; undefined outside blocks. */
-export function blockAt(x: number, y: number): string | undefined {
-  const block = document.elementFromPoint(x, y)?.closest<HTMLElement>('.pm-block[data-block]')
-  const section = block?.closest<HTMLElement>('[data-section]')?.dataset.section
-  return block && section ? `${section}/${block.dataset.block}` : undefined
-}
-
-/** The numbers a `lines` value names. */
-function lineNumbers(lines: string): number[] {
-  return lines.split(/[\s,]+/).flatMap((part) => {
-    const [from, to = from] = part.split('-').map(Number)
-    return Number.isInteger(from) && Number.isInteger(to) && from! > 0 ? Array.from({ length: Math.max(0, to! - from! + 1) }, (_, k) => from! + k) : []
-  })
-}
-
 /** The box of code lines in a block: from the first line named to the last, as wide as the listing. */
 function linesBox(block: HTMLElement, lines: string): DOMRect | undefined {
-  const rows = [...block.querySelectorAll<HTMLElement>('.pm-code .line')]
+  const rows = codeLines(block)
   const named = lineNumbers(lines).map(n => rows[n - 1]).filter((row): row is HTMLElement => Boolean(row))
   if (named.length === 0) return undefined
   const code = block.querySelector('.pm-code')!.getBoundingClientRect()

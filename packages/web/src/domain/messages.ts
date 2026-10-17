@@ -11,6 +11,9 @@ export const WEB_MESSAGES = {
     /** The hidden labels of the default theme's sidebar and doc footer, which its configuration has no option for. */
     sidebarNav: '侧边栏导航',
     pager: '翻页',
+    /** The buttons of the navigation bar that open the navigation screen (phones) and the extra menu (tablets): "mobile navigation", "extra navigation". */
+    mobileNav: '打开导航菜单',
+    extraNav: '更多导航',
     /** The link of a workspace site's pages to its home page. */
     documents: '文档列表',
     /** The home page of a workspace site. */
@@ -26,6 +29,8 @@ export const WEB_MESSAGES = {
     readOnWeb: 'Read on the web',
     sidebarNav: 'Sidebar Navigation',
     pager: 'Pager',
+    mobileNav: 'mobile navigation',
+    extraNav: 'extra navigation',
     documents: 'Documents',
     searchDocuments: 'Search the documents',
     tags: 'Tags',
@@ -39,8 +44,9 @@ export const WEB_MESSAGES = {
  * language: every label its configuration documents; English ones are
  * VitePress's own. The doc footer links the chapters before and after a
  * page. VitePress has no option for the hidden labels of its sidebar
- * ("Sidebar Navigation") and doc footer ("Pager"): the theme sets them in
- * the browser (`WEB_MESSAGES`).
+ * ("Sidebar Navigation") and doc footer ("Pager"), nor for those of the
+ * navigation bar's menu buttons ("mobile navigation", "extra navigation"):
+ * the theme sets them in the browser (`WEB_MESSAGES`).
  */
 export const SITE_LABELS = {
   'zh-CN': {

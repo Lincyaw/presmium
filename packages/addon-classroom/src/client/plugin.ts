@@ -1,7 +1,7 @@
 import { currentLocale, STATUS, TOOLBAR } from '@presmium/host'
 import { CLASSROOM_STORE, EXECUTOR, PRESENTER_PANELS, SESSION } from '@presmium/kernel'
 import type { ClassroomStore, PluginDefinition, Unsubscribe } from '@presmium/kernel'
-import { CLASSROOM_ID, classroomSummary, COLLECTIONS, isAnswer, isPrediction, isPulseVote, isQuestion, isQuizState, isSubmission, MESSAGES } from '../domain/index.ts'
+import { CLASSROOM_ID, classroomSummary, COLLECTIONS, isAnswer, isPrediction, isPulseVote, isQuestion, isQuizState, isSubmission, MESSAGES, sectionNumbers } from '../domain/index.ts'
 import type { ClassroomSummary } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'
 import ClassroomToolbar from './ClassroomToolbar.vue'
@@ -45,6 +45,7 @@ export const classroomPlugin: PluginDefinition = {
         predictions: values(store, COLLECTIONS.predictions, isPrediction),
         votes: values(store, COLLECTIONS.pulse, isPulseVote),
         submissions: values(store, COLLECTIONS.submissions, isSubmission),
+        numbers: sectionNumbers(ctx.config),
       })
     }
     cleanup = [

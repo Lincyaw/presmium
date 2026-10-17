@@ -1,3 +1,4 @@
+import { escapeHtml } from '@presmium/kernel'
 import type { MdastNode } from '@presmium/kernel'
 
 /**
@@ -104,8 +105,6 @@ export function languageName(lang: string, locale: string): string {
 export function captionTracks(captions: Record<string, string> | undefined, chosen: string | undefined, locale: string): CaptionTrack[] {
   return Object.entries(captions ?? {}).map(([srclang, src]) => ({ srclang, src, label: languageName(srclang, locale), default: srclang === chosen }))
 }
-
-const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 /** HTML attributes: a value, or the name alone for `true`. */
 function htmlAttributes(attrs: Record<string, string | number | true | undefined>): string {

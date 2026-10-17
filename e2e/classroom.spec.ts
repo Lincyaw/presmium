@@ -62,6 +62,15 @@ ${session}renderers:
 
 \`\`\`{include} pages/classroom.md
 \`\`\`
+
+(classroom-table)=
+## 下一次合并哪一对？
+
+(pair-ids)=
+| 顺序 | 合并的一对 | 新词元编号 |
+|---|---|---|
+| 1 | \`'e'\` 和 \`'s'\` | 256 |
+| 2 | \`'es'\` 和 \`'t'\` | 257 |
 `)
 }
 
@@ -125,6 +134,10 @@ test.describe('without a classroom', () => {
     await expect(noteSpot(page, 'classroom-quiz')).toHaveAttribute('data-notes', '1')
     await expect(block.locator('.pm-note-spot__count')).toHaveText('1')
     await expect.poll(() => shown(block)).toBe(true)
+
+    // A table's cells would run together: its block's notes are named after its section and its kind (F-82).
+    await page.goto(`${web.url}/?section=classroom-table`)
+    await expect(noteSpot(page, 'classroom-table', 'pair-ids').getByRole('button')).toHaveAccessibleName('笔记：下一次合并哪一对？ · 表格')
   })
 })
 

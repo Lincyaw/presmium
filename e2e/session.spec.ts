@@ -330,3 +330,69 @@ test.describe('a classroom', () => {
     await close()
   })
 })
+
+test.describe('a classroom across the full and the student build (D-4)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 90_000 })
+  let classroom: Awaited<ReturnType<typeof startClassroomServer>>
+  let archives: string
+  let full: FixtureDeck
+  let student: FixtureDeck
+
+  test.beforeAll(async () => {
+    test.setTimeout(600_000)
+    archives = mkdtempSync(join(tmpdir(), 'presmium-e2e-session-audience-'))
+    classroom = await startClassroomServer(archives)
+    const server = (dir: string) => {
+      const file = join(dir, 'lecture.md')
+      writeFileSync(file, readFileSync(file, 'utf8').replace('renderers:\n', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:\n`))
+    }
+    ;[full, student] = await Promise.all([
+      buildFixture('session/audience', { to: 'web', edit: server }),
+      buildFixture('session/audience', { to: 'web', audience: 'student', edit: server }),
+    ])
+  })
+
+  test.afterAll(async () => {
+    await Promise.all([full?.close(), student?.close()])
+    classroom?.child.kill('SIGTERM')
+    if (archives) rmSync(archives, { recursive: true, force: true })
+  })
+
+  test('a learner of the student build follows the presenter of the full build to the same section, and the overview numbers the learner\'s places as the presenter\'s build does (F-85)', async ({ browser }) => {
+    // The teacher's section comes first, so the two builds number the sections after it apart.
+    expect([full.slide('follow-rules'), student.slide('follow-rules')]).toEqual([3, 2])
+    const { presenter, learner, close } = await people(browser)
+    await presenter.goto(`${full.web}/`)
+    const { panel, room } = await create(presenter)
+    await learner.goto(`${student.web}/?room=${room}&name=${encodeURIComponent('小明')}`)
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+
+    // The presenter presents the cover, the teacher's section, then the rules: the learner, whose build
+    // has no teacher's section, stays on the cover until the rules, and then shows that same section.
+    await panel.getByRole('button', { name: '关闭' }).click()
+    await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-cover')
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-plan')
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(presenter)).toHaveAttribute('data-section', 'follow-rules')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-rules')
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+    await presenter.keyboard.press('ArrowRight')
+    await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
+
+    // The learner asks in the section their build numbers 3; the presenter's overview numbers it 4.
+    await badge(learner).getByRole('button', { name: '自主浏览' }).click()
+    await present(learner).getByRole('button', { name: '退出放映' }).click()
+    const box = learner.locator('.pm-question-box')
+    await box.getByLabel('问题').fill('平手时先合并哪一对？')
+    await box.getByRole('button', { name: '提问' }).click()
+    await expect(box.getByRole('list', { name: '我的提问' })).toContainText('平手时先合并哪一对？')
+    await presenter.keyboard.press('Escape')
+    await presenter.getByRole('button', { name: /^互动/ }).click()
+    const overview = presenter.getByRole('dialog', { name: '课堂互动' })
+    expect([full.slide('follow-ask'), student.slide('follow-ask')]).toEqual([4, 3])
+    await expect(overview.getByRole('region', { name: '提问' }).locator('.pm-classroom-panel__where')).toHaveText('第 4 节 · 提问')
+    await close()
+  })
+})

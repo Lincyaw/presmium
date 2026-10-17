@@ -291,6 +291,26 @@
   font-size: clamp(0.65rem, (100cqi - 2 * var(--pm-code-pad) - 2px) / (var(--pm-code-columns, 40) * 0.62), 0.875rem);
 }
 
+/*
+ * A table of a page view that is wider than its column scrolls sideways in its own block, as a listing
+ * does, rather than squeezing its columns (N-05, phones): inline code in it stays on one line with its
+ * spaces (a token such as `est ` keeps its trailing space), and a heading does not break between its
+ * characters.
+ */
+.pm-view table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.pm-view :is(th, td) code {
+  white-space: pre;
+}
+
+.pm-view th {
+  white-space: nowrap;
+}
+
 /* A table on the stage keeps its cells on one line and scrolls sideways when wider than the stage. */
 .pm-stage table {
   font-size: 0.875em;

@@ -68,20 +68,24 @@ export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): Ho
 
 /**
  * The `navigation` service of the web form: the IR runtime's section (by its
- * number, as the slides form counts slides), step and view. Moving switches
- * the view first, unless it is hidden (the presenter window), then shows the
- * position, going to its page if needed.
+ * number, as the slides form counts slides, and by its id), step and view.
+ * Moving switches the view first, unless it is hidden (the presenter window),
+ * then shows the position, going to its page if needed. A position goes to
+ * its section by the section's id (D-4, F-85): the full and the student build
+ * number their sections apart; a section this build does not have (one for
+ * another audience) leaves the window where it is. A position without an id
+ * goes by the number.
  */
 export function createViewerNavigation(viewer: Viewer): Navigation {
   return {
     position: computed(() => {
       const { section, step } = viewer.position.value
-      return { slide: viewer.section(section)?.index ?? 1, step, view: viewer.view.value }
+      return { slide: viewer.section(section)?.index ?? 1, step, view: viewer.view.value, section }
     }),
-    go({ slide, step, view }) {
+    go({ slide, step, view, section: id }) {
       const target = view === undefined ? undefined : getView(view)
       if (target && !target.hidden) viewer.setView(target.id)
-      const section = viewer.doc.value.sections.find(s => s.index === slide)
+      const section = id === undefined ? viewer.doc.value.sections.find(s => s.index === slide) : viewer.section(id)
       if (section) viewer.show({ section: section.id, step })
     },
   }

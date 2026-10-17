@@ -103,6 +103,30 @@ console.log('合计：', squares.reduce((a, b) => a + b, 0))
 (wide-content)=
 # 第三章 宽内容
 
+(highlight)=
+## 着色器、Ruby 与表格中的代码
+
+```wgsl
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+  counts[id.x] = counts[id.x] + 1u;
+}
+```
+
+```ruby
+pairs = tokens.each_cons(2).tally
+puts pairs.max_by { |_, n| n }.first.join
+```
+
+| 顺序 | 合并的一对 | 新词元编号 |
+|---|---|---|
+| 1 | `'e' 's'` | `256` |
+| 2 | `'es' 't'` | `257` |
+| 3 | `'l' 'o'`、`'lo' 'w'` | `258`、`259` |
+| 4 | `est `、`newest ` | `260` |
+
+网页中的着色器与 Ruby 代码同样高亮；手机上表格中的行内代码不在词元内部断开。
+
 (wide)=
 ## 宽代码与宽表格
 

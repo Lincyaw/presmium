@@ -133,7 +133,7 @@ test.describe('the reading fixture deck', () => {
     { path: '/web/', title: '网页阅读测试文稿', sections: ['cover'] },
     { path: '/web/basics.html', title: '阅读页面', sections: ['reading', 'scrolly'] },
     { path: '/web/advanced.html', title: '第二章 进阶', sections: ['advanced', 'stepper', 'steps', 'panel', 'live-code'] },
-    { path: '/web/wide-content.html', title: '第三章 宽内容', sections: ['wide-content', 'wide'] },
+    { path: '/web/wide-content.html', title: '第三章 宽内容', sections: ['wide-content', 'highlight', 'wide'] },
   ]
 
   test.beforeAll(async () => {
@@ -275,6 +275,35 @@ test.describe('the reading fixture deck', () => {
       el.scrollLeft = el.scrollWidth
     })
     await expect.poll(() => long.evaluate(el => Math.round(el.scrollLeft + el.clientWidth) >= el.scrollWidth - 1)).toBe(true)
+  })
+
+  test('WGSL shaders and Ruby are highlighted as the slides highlight them (F-80)', async ({ page }) => {
+    await page.goto(deck.web('wide-content.html'))
+    for (const lang of ['wgsl', 'ruby']) {
+      const tokens = page.locator(`.pm-section[data-section="highlight"] .pm-code[data-lang="${lang}"] .line span`)
+      await expect(tokens.first()).toBeVisible()
+      // Shiki's tokens, each with its theme's colour: more than one colour in the listing.
+      await expect.poll(async () => new Set(await tokens.evaluateAll(spans => spans.map(span => getComputedStyle(span).color))).size, { message: lang }).toBeGreaterThan(2)
+    }
+  })
+
+  test('on a phone a table keeps each piece of inline code on one line and scrolls in its own block, not the page (F-81)', async ({ browser }) => {
+    const context = await phone(browser)
+    const page = await context.newPage()
+    await page.goto(deck.web('wide-content.html'))
+    const table = page.locator('.pm-section[data-section="highlight"] table')
+    await expect(table.locator('code')).toHaveCount(11)
+    // One line box per piece of code: `est ` keeps its space, `'e' 's'` is not broken inside.
+    expect(await table.locator('code').evaluateAll(codes => codes.map(code => code.getClientRects().length))).toEqual(Array(11).fill(1))
+    // A heading on one line too, not a character per line.
+    expect(await table.locator('th').evaluateAll(cells => cells.map((cell) => {
+      const range = document.createRange()
+      range.selectNodeContents(cell)
+      return new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size
+    }))).toEqual([1, 1, 1])
+    expect(await table.evaluate(el => getComputedStyle(el).overflowX)).toBe('auto')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    await context.close()
   })
 
   test('a Chinese keyword is found within 300 ms and opens its section', async ({ page }) => {
@@ -546,11 +575,15 @@ test.describe('the reading fixture deck', () => {
     const keys = page.locator('.VPLocalSearchBox')
     for (const label of ['回车键', '上箭头', '下箭头', 'Esc 键']) await expect(keys.getByLabel(label, { exact: true })).toBeAttached()
     await page.keyboard.press('Escape')
-    // On a phone: the menu of the sidebar and the link back to the top.
+    // The navigation bar's menu buttons, which VitePress names in English only (F-79).
+    await expect(page.locator('.VPNavBarHamburger')).toHaveAttribute('aria-label', '打开导航菜单')
+    await expect(page.locator('.VPNavBarExtra > button')).toHaveAttribute('aria-label', '更多导航')
+    // On a phone: the menu of the sidebar, the navigation menu and the link back to the top.
     const context = await phone(browser)
     const mobile = await context.newPage()
     await mobile.goto(deck.web('basics.html'))
     await expect(mobile.getByRole('button', { name: '目录' })).toBeVisible()
+    await expect(mobile.getByRole('button', { name: '打开导航菜单' })).toBeVisible()
     await expect(mobile.getByRole('button', { name: '本页大纲' })).toBeVisible()
     await context.close()
 

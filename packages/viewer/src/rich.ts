@@ -9,16 +9,12 @@
  */
 import { EDIT_MODE, useService } from '@presmium/host'
 import type { EditMode } from '@presmium/host'
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage, escapeHtml } from '@presmium/kernel'
 import 'katex/dist/katex.min.css'
 import type { ComputedRef } from 'vue'
 import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
 import { useSectionContext } from './context.ts'
 import { useDark } from './dark.ts'
-
-function escape(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
 
 /** A promise that never settles: what a library load gives in a server render. */
 const never = <T>() => new Promise<T>(() => {})
@@ -55,7 +51,7 @@ export const PmMath = defineComponent({
       return h(props.display ? 'div' : 'span', {
         'class': ['pm-math', props.display ? 'pm-math--display' : 'pm-math--inline'],
         'data-rendered': html ? '' : undefined,
-        'innerHTML': html ?? escape(props.tex),
+        'innerHTML': html ?? escapeHtml(props.tex),
       })
     }
   },
@@ -107,7 +103,7 @@ export const PmMermaid = defineComponent({
       'data-rendered': drawn.value ? '' : undefined,
       'data-theme': drawn.value?.theme,
       'title': failed.value,
-      'innerHTML': drawn.value?.svg ?? `<pre>${escape(props.code)}</pre>`,
+      'innerHTML': drawn.value?.svg ?? `<pre>${escapeHtml(props.code)}</pre>`,
     })
   },
 })

@@ -5,11 +5,17 @@
  */
 import type { Participant, SessionStatus } from '@presmium/kernel'
 
-/** A place in the deck, as the hosts' navigation service gives it: section (slide) number, step, view. */
+/**
+ * A place in the deck, as the hosts' navigation service gives it: section
+ * (slide) number, step, view, and the section's id (D-4): the presenter's
+ * build and a learner's (the student build) number their sections apart, so
+ * a learner follows the presenter to the section of that id.
+ */
 export interface Position {
   slide: number
   step: number
   view?: string
+  section?: string
 }
 
 /** A learner follows the presenter, or browses on their own. */
@@ -45,12 +51,12 @@ export function ended(now: number): SessionRecord {
 }
 
 export function samePosition(a: Position | undefined, b: Position | undefined): boolean {
-  return a?.slide === b?.slide && a?.step === b?.step && a?.view === b?.view
+  return a?.slide === b?.slide && a?.step === b?.step && a?.view === b?.view && a?.section === b?.section
 }
 
-/** A position as the record keeps it: no other fields, no empty view. */
+/** A position as the record keeps it: no other fields, no empty view or section. */
 export function cursorOf(position: Position): Position {
-  return { slide: position.slide, step: position.step, ...position.view ? { view: position.view } : {} }
+  return { slide: position.slide, step: position.step, ...position.view ? { view: position.view } : {}, ...position.section ? { section: position.section } : {} }
 }
 
 /** Where a learner should be now: the presenter's position while following an active classroom. */

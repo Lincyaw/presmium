@@ -5,9 +5,9 @@
  * is reported as the operation `spot` or `hint` (docs/ir.md 9.2), so a
  * lecture recording keeps it and its player shows it again.
  */
-import { OPERATIONS, presmiumService } from '@presmium/host'
+import { blockAt, OPERATIONS, presmiumService } from '@presmium/host'
 import type { AdhocCues } from './adhoc.ts'
-import { blockAt, hints, spots } from './adhoc.ts'
+import { hints, spots } from './adhoc.ts'
 
 /** What the guide uses of the viewer plugin context (`ViewerPluginContext` of @presmium/viewer). */
 export interface GuideViewerContext {
@@ -18,7 +18,7 @@ export interface GuideViewerContext {
 let pointer: { x: number, y: number } | undefined
 
 function toggle(type: 'spot' | 'hint', cues: AdhocCues): boolean {
-  const block = pointer && blockAt(pointer.x, pointer.y)
+  const block = pointer && blockAt(pointer.x, pointer.y)?.key
   if (!block) return false
   const data = cues.showing({ block }) ? {} : { block }
   cues.apply(data)
