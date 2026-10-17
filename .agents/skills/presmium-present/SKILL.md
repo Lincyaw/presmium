@@ -1,6 +1,6 @@
 ---
 name: presmium-present
-description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档），讲授的录制与回放（放映视图中录音、摄像头、聚光 s、激光笔与荧光笔，lectures/<id>/track.json，?view=lecture&track=<id> 的回放、倍速、字幕、逐字稿、我来试试；由讲解合成的讲授 script、录制讲授的转写与修改、换音色重新合成、编辑模式中把转写交给 agent 整理为讲解或生成译文、presmium-lecture export 导出 WebM 视频）。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server, recording a lecture and playing it back, a lecture synthesized from the narration, transcribing and correcting a recorded lecture, writing a transcript back as narration or translating it with the agent, exporting a lecture video."
+description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档），讲授的录制与回放（放映视图中录音、摄像头、聚光 s、激光笔与荧光笔，lectures/<id>/track.json，?view=lecture&track=<id> 的回放、倍速、字幕、逐字稿、我来试试；由讲解合成的讲授 script、录制讲授的转写与修改、换音色重新合成、编辑模式中把转写交给 agent 整理为讲解或生成译文、presmium-lecture export 导出 WebM 视频）；示例讲义 examples/demo 与示例工作区 examples/workspace 的体验步骤。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server, recording a lecture and playing it back, a lecture synthesized from the narration, transcribing and correcting a recorded lecture, writing a transcript back as narration or translating it with the agent, exporting a lecture video, trying the example lecture and the example workspace."
 ---
 
 # 用 Presmium 放映与授课
@@ -153,7 +153,15 @@ presmium:
 8. 学生的笔记（网页形态中章节与带标签的块旁的“笔记”按钮）只有自己看得到。
 9. 下课：主讲点“结束课堂”，再点“归档课堂”。归档把课堂记录写到课堂服务 `--deck` 目录下的 `.presmium/classroom/<课堂号>.json`，并从服务中释放课堂；归档后不能再加入或写入。学生的个人笔记不进归档。归档文件被仓库的 `.gitignore` 忽略（`.presmium/` 中只有缓存、锁定文件、标注与资源随文稿提交），要保留就自行备份。
 
-## 9. 常见问题
+## 9. 体验示例讲义与示例工作区
+
+仓库中的示例讲义 `examples/demo`（BPE 分词）与示例工作区 `examples/workspace` 可以用来走一遍放映、授课与编辑。详细的命令在两个目录的 `README.md` 中。
+
+- **示例讲义**：在仓库根目录 `pnpm demo:build`，再 `pnpm exec sirv examples/demo/dist --single slides/index.html`，网页在 `/web/`，幻灯片在 `/slides/`。“延伸”一章（网页的 `extend.html`）：C 程序点“运行”在浏览器里编译、运行（第一次下载约 50 MB 的编译器），输出与构建时的录制相同；GPU 着色器在支持 WebGPU 的浏览器中用显卡运行，否则显示构建时录制的结果与原因；先运行“先训练”的代码块，再运行“再编码”的，体会同一会话的变量；在“下一次合并哪一对？”写下预测并保存，答案才出现。
+- **讲授的合成与回放**：示例讲义的头部列出了讲授渲染端，但 `pnpm demo:build` 不构建它。在环境变量中设置火山引擎的 `PRESMIUM_SPEECH_VOLCENGINE_KEY`，把头部的 `lecture: {}` 改为 `lecture: { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }`，`presmium build --to web,lecture` 合成讲授，服务 `dist/` 后打开 `/web/?view=lecture&track=script` 播放：说到 `{cue}` 处的字时聚光代码、显示录制的输出、停顿，`BPE` 读作“B P E”。提交 `.presmium/speech/` 与 `.presmium/speech.lock.json` 后，别人构建不再需要凭据。
+- **示例工作区**：工作区要是一个 git 仓库的根目录，所以先 `node examples/workspace/try.mjs ~/presmium-example-workspace` 把它复制成独立的仓库（带上讲义引用的示例代码与锁定的提交），再 `node packages/cli/bin/presmium.mjs serve ~/presmium-example-workspace`，打开 `http://127.0.0.1:4310`。首页列出两份文档；“管理文档”新建、复制、重命名、删除，“修改历史”撤销。设置 `DEEPSEEK_API_KEY`（或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）后，打开“分词速览”，工具栏“编辑”进入编辑模式，在“AI 修改”中点选一段写批注或写一句对话，agent 改完后逐个文件审阅、接受或拒绝，接受的改动成为一个提交并可撤销（写法见 presmium-author 技能的“由 agent 修改讲义”）。凭据只放在启动服务的终端的环境变量中，不写进仓库。
+
+## 10. 常见问题
 
 | 现象 | 处理 |
 |---|---|

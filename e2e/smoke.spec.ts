@@ -6,9 +6,11 @@ import { expect, test } from '@playwright/test'
 import { presmium } from './fixtures/deck.ts'
 import { SLIDES, WEB } from './urls.ts'
 
-// The demo lecture (examples/demo): it builds to every medium without warnings, and its built web
-// form and slides (`pnpm demo:build`, served on WEB and SLIDES) open and page. The features are
-// tested on fixture decks of their own; this spec only reads the lecture's sections from its IR.
+// The demo lecture (examples/demo): it builds to the three media without warnings, as `pnpm demo:build`
+// does (its headmatter also lists the lecture renderer, which is not built by default: it needs a
+// speech engine), and its built web form and slides (`pnpm demo:build`, served on WEB and SLIDES) open
+// and page. The features are tested on fixture decks of their own; this spec only reads the lecture's
+// sections from its IR, and e2e/demo.spec.ts checks the lecture's own examples.
 const DEMO = fileURLToPath(new URL('../examples/demo', import.meta.url))
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
@@ -22,7 +24,7 @@ test('the lecture builds to the web, the slides and a notebook without warnings'
   test.setTimeout(600_000)
   const out = mkdtempSync(join(tmpdir(), 'presmium-demo-'))
   try {
-    const report = await presmium(['build', '--out', out], DEMO)
+    const report = await presmium(['build', '--to', 'web,slides,notebook', '--out', out], DEMO)
     expect(report).toMatch(/^0 errors, 0 warnings\b/m)
     expect(existsSync(join(out, 'web/index.html'))).toBe(true)
     expect(existsSync(join(out, 'slides/index.html'))).toBe(true)
