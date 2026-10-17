@@ -231,12 +231,20 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.agent.log`]) if (path) rmSync(path, { recursive: true, force: true })
   })
 
-  /** The edit panel on a document's page, in edit mode. */
+  /**
+   * The edit panel on a document's page, in edit mode. Edit mode loads modules of its own (the source editor,
+   * the panel): the first time, the document's dev server may optimize a dependency it finds then and reload
+   * the page, later under load. So edit mode is entered once and the requests waited for, then the page is
+   * visited again and edit mode entered on it.
+   */
   async function editPanel(page: Page, document: string) {
-    await openDevPage(page, `${server.url}/${document}/`, page.locator('[data-section]').first())
-    await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
     const panel = page.getByRole('region', { name: '批注与对话' })
-    await expect(panel).toBeVisible()
+    for (let visit = 0; visit < 2; visit++) {
+      await openDevPage(page, `${server.url}/${document}/`, page.locator('[data-section]').first())
+      await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
+      await expect(panel).toBeVisible({ timeout: 30_000 })
+      await page.waitForLoadState('networkidle')
+    }
     return panel
   }
 

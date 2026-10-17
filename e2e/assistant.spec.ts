@@ -71,10 +71,15 @@ test('"AI changes" is in the toolbar without a model: it says what to set, that 
 
 test('edit mode: the deck\'s source opens in the browser, a sentence saved shows in the page without a reload; out of git, nothing is committed', async ({ page }) => {
   const toggle = page.locator('.pm-workspace-edit').filter({ visible: true })
-  await openDevPage(page, pageUrl('code.html'), toggle)
-  await toggle.click()
   const editor = page.getByRole('region', { name: '源码' }).getByRole('textbox', { name: '源码' })
-  await expect(editor).toContainText('每一轮合并出现次数最多的一对。')
+  // Edit mode loads modules of its own: the first time, the dev server may optimize a dependency it finds then and
+  // reload the page; so it is entered once and its requests waited for, then the page is visited again.
+  for (let visit = 0; visit < 2; visit++) {
+    await openDevPage(page, pageUrl('code.html'), toggle)
+    await toggle.click()
+    await expect(editor).toContainText('每一轮合并出现次数最多的一对。', { timeout: 30_000 })
+    await page.waitForLoadState('networkidle')
+  }
   await page.evaluate(() => (window as unknown as { unreloaded: boolean }).unreloaded = true)
 
   // The paragraph picked in the preview: its line, the cursor on it; a sentence added at its end and saved.
