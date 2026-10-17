@@ -108,7 +108,8 @@ export interface NavigationPosition extends Cursor {
   /**
    * The section's id (D-4): the same in the full and the student build,
    * which number their sections apart. A form reports it with its position;
-   * `go` goes to it where the deck has it, else to `slide` (`positionSlide`).
+   * `go` goes to it where the deck has it, else to the last step of `back`
+   * (FollowAnchor), staying put when neither; never by slide number.
    */
   section?: string
 }

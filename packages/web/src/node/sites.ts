@@ -43,7 +43,7 @@ import type { Duplex } from 'node:stream'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, localRequestRefusal, nodeMdast } from '@presmium/kernel'
-import type { DocumentLink, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
+import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
 import { createProxyServer } from 'http-proxy-3'
 import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, urlPath } from '../domain/index.ts'
 import type { Neighbour, SearchDocument } from '../domain/index.ts'
@@ -97,6 +97,10 @@ export interface HomeDocument {
   lang?: string
   tags?: string[]
   href: string
+  /** Once the document is compiled: its headmatter's `description`, its number of pages and its findings (the card shows them). */
+  description?: string
+  pages?: number
+  problems?: { errors: number, warnings: number }
 }
 
 /** The base of a document's pages. */
@@ -109,8 +113,17 @@ function endpoints(base: string): WorkspaceOptions['endpoints'] {
   return { ir: `${base}@presmium/ir`, source: `${base}@presmium/source` }
 }
 
-function homeDocuments(site: SiteSpec, base: string): HomeDocument[] {
-  return site.documents.map(({ dir, title, lang, tags }) => ({ dir, title, ...lang ? { lang } : {}, ...tags?.length ? { tags } : {}, href: documentBase(base, dir) }))
+/** The documents as the home page lists them; `compiled` holds the IR of documents compiled since the site started (dev). */
+function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMap<string, IRDocument> = new Map()): HomeDocument[] {
+  return site.documents.map(({ dir, title, lang, tags, doc }) => ({ dir, title, ...lang ? { lang } : {}, ...tags?.length ? { tags } : {}, href: documentBase(base, dir), ...cardOf(compiled.get(dir) ?? doc) }))
+}
+
+/** What a document's card shows of its IR: the headmatter's `description`, the number of pages, the findings by severity. */
+function cardOf(doc: IRDocument | undefined): Pick<HomeDocument, 'description' | 'pages' | 'problems'> {
+  if (!doc) return {}
+  const description = typeof doc.meta.description === 'string' ? doc.meta.description.trim() : ''
+  const count = (severity: Finding['severity']) => doc.diagnostics.filter(finding => finding.severity === severity).length
+  return { ...description ? { description } : {}, pages: toPages(doc).length, problems: { errors: count('error'), warnings: count('warning') } }
 }
 
 /** The package directory of `name`, found in `node_modules` up from `from`. */
@@ -528,7 +541,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     const path = pathOf(req)
     if (path === `${base}${DOCUMENTS_ENDPOINT}`) {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
-      res.end(JSON.stringify({ title: site.title, documents: homeDocuments(site, base) }))
+      res.end(JSON.stringify({ title: site.title, documents: homeDocuments(site, base, latest) }))
       return
     }
     targetOf(path).then(

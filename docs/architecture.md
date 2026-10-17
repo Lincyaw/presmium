@@ -1411,7 +1411,7 @@ export interface Renderer {
 |---|---|---|---|
 | `src/client/plugin.ts` | 默认导出内核插件定义 `PluginDefinition`：提供的服务与启动时的初始化 | 插件包的 `setup/main.ts` 导入它，调用 `registerPresmiumPlugin`（`@presmium/host`） | `web` 渲染端导入 `plugins` 中每个包的这个文件并注册 |
 | `components/*.vue` | 组件，文件名即组件名，对应 `component` 节点的 `name` | Slidev 自动注册 | `web` 渲染端按文件名注册到 IR 运行时；文稿自己的 `components/` 覆盖同名组件 |
-| `./presmium` 的 `vitePlugins` | 开发服务器的端点等 Vite 插件（4.2 节） | 幻灯片渲染端生成的 Slidev 项目不加入它们，插件包用 Slidev 的 `setup/vite-plugins.ts` 注册（薄适配） | `web` 渲染端在 VitePress 的开发与构建中加入 |
+| `./presmium` 的 `vitePlugins` | 开发服务器的端点等 Vite 插件（4.2 节） | 幻灯片渲染端写进生成的 Slidev 项目的 `vite.config.ts`（WP-89e） | `web` 渲染端在 VitePress 的开发与构建中加入 |
 
 文稿自己的组件：文稿目录下的 `components/*.vue` 由编译器以插件 ID `deck` 登记（与网页的规则相同），`{component}` 可以使用它们，`presmium check` 与编辑器不再报告“没有插件注册该组件”，补全中也有它们；幻灯片渲染端把这个目录链接到生成的 Slidev 项目的 `components/`（Slidev 文档化的目录），组件在幻灯片中照常渲染并保留内部步骤。这些组件同插件组件一样只能引用 `@presmium/host`、`@presmium/kernel` 与 vue；文稿目录要能解析 `@presmium/host`，所以文稿的 `package.json` 要依赖它（否则网页构建报 Rollup 无法解析）。
 | `src/client/viewer.ts` | 默认导出视图插件 `ViewerPlugin`（类型来自 `@presmium/viewer`） | 不使用 | `web` 渲染端在 IR 运行时启动前调用一次 |
@@ -1753,7 +1753,7 @@ v0.8 新增需求的验证由各工作包写入（`wbs.md`），以下按 WP-73a
 
 | 代码 | 拿得到什么 | 已有的纵深防御 |
 |---|---|---|
-| 编译时执行的代码（没有进程沙箱时） | `presmium` 进程与 agent 进程的 `/proc/<pid>/environ`：`DEEPSEEK_API_KEY` 或 `PRESMIUM_MODEL_KEY`、`PRESMIUM_SPEECH_<ID>_KEY`、`PRESMIUM_ENV_<名>_TOKEN`、设置了的 `PRESMIUM_PROXY_SECRET`；`~/.ssh`、`~/.config` 等用户文件；Docker 的套接字（用户在 `docker` 组中时等于 root）与 D-Bus 会话总线；任意网络；运营者目录（可以伪造同意记录）；任何文档目录 | `RunContext.env` 只有清理过的变量；主机满足条件时（Linux，10.6 节）默认经进程沙箱运行：看不到沙箱外的进程与 Unix 套接字，网络全部拒绝，只能写运行目录。进程沙箱中 `/tmp` 仍可读（deltabox 固定允许），文稿目录、解释器的安装目录与执行器的包所在的最外层 `node_modules` 只读；代码留下的子进程（含以 `setsid` 离开进程组的）在运行结束、超时或中止时被结束；既改了工作目录又不再持有命令输出的分离进程除外，它留在沙箱中直到自己退出 |
+| 编译时执行的代码（没有进程沙箱时） | `presmium` 进程与 agent 进程的 `/proc/<pid>/environ`：`DEEPSEEK_API_KEY` 或 `PRESMIUM_MODEL_KEY`、`PRESMIUM_SPEECH_<ID>_KEY`、`PRESMIUM_ENV_<名>_TOKEN`；`~/.ssh`、`~/.config` 等用户文件；Docker 的套接字（用户在 `docker` 组中时等于 root）与 D-Bus 会话总线；任意网络；运营者目录（可以伪造同意记录）；任何文档目录 | `RunContext.env` 只有清理过的变量；主机满足条件时（Linux，10.6 节）默认经进程沙箱运行：看不到沙箱外的进程与 Unix 套接字，网络全部拒绝，只能写运行目录。进程沙箱中 `/tmp` 仍可读（deltabox 固定允许），文稿目录、解释器的安装目录与执行器的包所在的最外层 `node_modules` 只读；代码留下的子进程（含以 `setsid` 离开进程组的）在运行结束、超时或中止时被结束；既改了工作目录又不再持有命令输出的分离进程除外，它留在沙箱中直到自己退出 |
 | agent（DeepSeek Harness）与它的 shell 命令 | 同上：DeepSeek Harness 的沙箱只管文件的写入（`workspace-write`），不隐藏进程与网络，`workspace-write` 另允许写它的临时区域（Linux 上 `/tmp` 之下的路径，不询问，WP-80 的先行验证）；agent 自己的环境中有模型的密钥 | 写到工作目录之外、shell 与网络的权限请求经所有者（本机用户）确认；修改经审阅后才提交，可以全部或逐个文件拒绝 |
 | agent 写进被 `.gitignore` 忽略的路径 | git 实现的审阅不含被忽略的文件：agent 写进文稿目录的 `node_modules/` 或 `.presmium/` 中工作目录的文件不出现在差异中，拒绝时也不恢复；`presmium dev` 加载文稿目录 `node_modules` 中的插件，这样写入的包在下一次启动时在 `presmium` 进程中运行 | 无（agent 本来就有 shell，能直接做同样的事） |
 | 文稿声明的本地容器（`kind: devcontainer`） | 容器定义来自文稿，可以挂载主机的任意路径或以特权运行，等于用户的 Docker 权限 | 命令行只得到 `RunContext.env` 与 Docker 客户端的变量；不经进程沙箱（要用 Docker 的套接字） |
@@ -1803,7 +1803,7 @@ WP-81 遇到的一处（没有提交）：
 
 v0.9 删除了多人共用一个服务端的部署（决定 E-1 至 E-8，WP-92a）：登录与成员的配置、信任模式、持有第三方凭据与运行文稿代码的另外两个进程、容器编排的工作区模板与只给所有者的控制台都已不在。记录见 `requirements.md` 附录 B、`design-v0.7.md` 与 `review-round3.md`。
 
-**局域网访问**（决定 E-3 的修订，WP-89g）：`presmium serve` 默认只监听本机（`127.0.0.1`）。`--host <地址>`（`0.0.0.0`、`::` 或本机某个网卡的地址）让同一个用户在局域网中的其他设备上使用它：启动时在标准输出的 `serve  <地址>` 之后为每个局域网地址打印 `network  http://<地址>:<端口>/`，并在标准错误警告没有登录（任何到得了这个端口的人都以本机作者的身份使用工作区，9.4 节）；请求的 `Host` 与 `Origin` 另可以是这个地址（`0.0.0.0`、`::` 时为本机每个网卡的地址）与本机的名字（`os.hostname()` 与 `<名字>.local`），其他名字与其他站点的页面照旧被拒绝（10.3 节）。服务自己的地址（`serve` 一行，`PresmiumServer.url`）仍是本机回环的地址。`presmium dev` 只监听本机，没有 `--host`。从别处使用也可以经 SSH 转发端口（`ssh -L <端口>:127.0.0.1:<端口> <本机>`）。
+**局域网访问**（决定 E-3 的修订，WP-89g）：`presmium serve` 默认只监听本机（`127.0.0.1`）。`--host <地址>`（`0.0.0.0`、`::` 或本机某个网卡的地址）让同一个用户在局域网中的其他设备上使用它：启动时在标准输出的 `serve  <地址>` 之后为每个局域网地址打印 `network  http://<地址>:<端口>/`，并在标准错误警告没有登录（任何到得了这个端口的人都以本机作者的身份使用工作区，9.4 节）；请求的 `Host` 与 `Origin` 另可以是这个地址（`0.0.0.0`、`::` 时为本机每个网卡的地址）与本机的名字（`os.hostname()` 与 `<名字>.local`），其他名字与其他站点的页面照旧被拒绝（10.3 节）。服务自己的地址（`serve` 一行，`PresmiumServer.url`）在 `0.0.0.0`、`::` 时是本机回环的地址，给出某个网卡的地址时就是那个地址。`presmium dev` 只监听本机，没有 `--host`。从别处使用也可以经 SSH 转发端口（`ssh -L <端口>:127.0.0.1:<端口> <本机>`）。
 
 | 进程 | 作用 | 何时需要 |
 |---|---|---|

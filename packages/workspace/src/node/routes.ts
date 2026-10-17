@@ -67,7 +67,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       role: 'reader',
       handle: (request, ctx) => answer(async () => {
         if (request.method === 'GET') {
-          return json({ documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), single: documents.config.single } satisfies DocumentsAnswer)
+          return json({ documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), ...revisions ? await revisions.status() : {}, single: documents.config.single } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problem(405, 'GET or POST')
         // Readers list the documents only.

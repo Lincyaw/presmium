@@ -138,6 +138,13 @@ export class Revisions implements RevisionService {
     return this.#revision('HEAD')
   }
 
+  /** The branch checked out (none when HEAD is detached) and the number of files with changes not committed. */
+  async status(): Promise<{ branch?: string, uncommitted: number }> {
+    const branch = await this.#git.attempt(['symbolic-ref', '--quiet', '--short', 'HEAD'])
+    const changes = await this.#git.attempt(['status', '--porcelain', '-z', '--no-renames', '--untracked-files=all'])
+    return { ...branch.ok ? { branch: branch.output.trim() } : {}, uncommitted: changes.ok ? changes.output.split('\0').filter(Boolean).length : 0 }
+  }
+
   async history(filter: { document?: string, task?: string, limit?: number } = {}): Promise<HistoryRevision[]> {
     const log = await this.#git.attempt(['log', FORMAT, '--name-only', '--no-renames', ...filter.document ? ['--', filter.document] : []], { GIT_LITERAL_PATHSPECS: '1' })
     if (!log.ok) return []

@@ -24,6 +24,10 @@ export interface DocumentsAnswer {
   templates: string[]
   /** The workspace is a git repository: the document operations and the history work. */
   git: boolean
+  /** The branch checked out (none when HEAD is detached, or without git); the status bar shows it. */
+  branch?: string
+  /** With git: the files with changes not committed (`git status`), which the status bar counts. */
+  uncommitted?: number
   /** The workspace root is the one document (a single-deck repository): no document operations. */
   single: boolean
 }

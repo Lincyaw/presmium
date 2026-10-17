@@ -138,6 +138,7 @@ export default plugin
 - 绘制在其他内容之上、自身不占版面的浮层组件，由指令把节点标为 `layer: 'overlay'`（例如引导插件的 `{cursor}`），渲染端不给它单独的位置。
 - 全部展开的文档视图（`useHost().useStep()` 为无穷大）中，有内部步骤的组件可以给读者自己的步进控件；视觉状态是（章节步骤，本地步骤）的纯函数（`docs/architecture.md` 5.3 节，范例 `packages/addon-exec/components/PmStepRun.vue`）。
 - 持有 Worker、定时器等资源的服务在插件的 `dispose` 中释放：页面从往返缓存恢复时内核会再次启动插件。
+- 样式与控件用设计系统（`docs/architecture.md` 5.10 节）：颜色、字体、间距、圆角与阴影只用 `@presmium/host` 的令牌（`var(--pm-color-ink)`、`var(--pm-color-muted)`、`var(--pm-color-accent)`、`var(--pm-font-sans)`、`var(--pm-space-3)`、`var(--pm-radius-control)` 等），不写死颜色，暗色随令牌切换；按钮、输入框、徽标、卡片、分段控件、标签页、弹层、抽屉、对话框、菜单、空状态与提示用 `PmButton`、`PmIconButton`、`PmField`（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`）、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`，图标用 `PmIcon`（`ICONS` 中的名字），不用 emoji；也可以直接用 `pm-ui-*` 类。文字对背景达到 WCAG AA，标识输入框与选中状态的边框对相邻颜色达到 3:1（用 `line-strong`），`e2e/design.spec.ts` 的 `lowContrast` 两项都查。
 
 ## 6. 浏览器端注册
 
@@ -155,6 +156,7 @@ export default plugin
     })
     ```
 
+- 工具栏项：`ctx.tryGet(TOOLBAR)?.register({ id, title, component, order?, slot?, icon? })`，在 `dispose` 中取消。`slot` 决定它在外壳中的位置（`docs/architecture.md` 5.10 节的表）：`tools`（默认，页面的工具栏；有 `icon` 时在工作区首页的活动栏）、`settings`（活动栏底部，如使用说明与模型设置）、`status`（状态栏）、`home`（首页文档卡片下方的卡片）、`create`（文档卡片之后）、`source` 与 `dock`（编辑模式的左栏与右侧停靠）。组件用 `useToolbarPlace()` 得知自己画在哪里（`bar`、`activity`、`status`、`home`、`pane`）；打开面板的项用 `PmToolbarEntry`（`name`、`label`、`closeLabel`、`icon`、`v-model:open`），它在活动栏中是图标按钮与抽屉，在其他位置是带文字的按钮与弹层（弹层留在窗口内）。范例：`packages/workspace/src/client/panels.ts`（修改历史、使用说明）、`e2e/fixtures/design/plugins/presmium-fixture-design-panes`（编辑模式的各栏、标签页、菜单、分段控件）。
 - `components/*.vue`：幻灯片形态由 Slidev 自动注册；网页形态由 `@presmium/web` 按文件名注册（文稿自己的 `components/` 覆盖同名组件；文稿自己的组件以插件 ID `deck` 登记）。
 - 讲授能录下、回放的操作（`docs/ir.md` 9.2 节）：用户做了一件值得重放的事时 `presmiumService(OPERATIONS)?.report({ type, data })`（数据以章节、块 `<章节>/<块>` 与相对坐标为坐标，不用像素）；在内核插件的 `setup` 中 `ctx.tryGet(OPERATIONS)?.onReplay(type, { apply(data, seeking), clear() })` 登记重放，`dispose` 中取消。视觉状态要是“此前的操作”的函数：依次重放与跳转后的一次折叠（`clear()` 后以 `seeking` 为 true 重放）必须得到同一画面。范例：`packages/addon-guide/src/client/adhoc.ts`（`spot`、`hint`）、`packages/addon-lecture/src/client/marks.ts`（`point`、`ink`）。
 - `src/client/viewer.ts`（只用于网页形态）默认导出视图插件 `(ctx) => void`；`ctx` 有 `registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`。只以类型方式引用 `@presmium/viewer`（`import type { ViewerPlugin } from '@presmium/viewer'`）。范例：`packages/addon-stage/src/client/viewer.ts`（动作与图层）、`packages/viewer/test/fixtures/plugin-deck/plugin/src/client/viewer.ts`（视图）。
