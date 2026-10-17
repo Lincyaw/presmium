@@ -12,3 +12,26 @@
 body .driver-popover.pm-spotlight-popover {
   z-index: calc(var(--pm-cue-z, 1) + 1);
 }
+
+/* driver.js's popovers of a spotlight or a hint, drawn as the host's (N-10): a panel that floats. */
+body .driver-popover:is(.pm-spotlight-popover, .pm-hint-popover) {
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
+}
+body .driver-popover:is(.pm-spotlight-popover, .pm-hint-popover) .driver-popover-title {
+  font-family: var(--pm-font-serif);
+  font-weight: 600;
+}
+body .driver-popover:is(.pm-spotlight-popover, .pm-hint-popover) .driver-popover-description {
+  color: var(--pm-color-ink);
+}
+body .driver-popover:is(.pm-spotlight-popover, .pm-hint-popover) .driver-popover-arrow {
+  border-color: var(--pm-color-surface);
+}
+body .driver-popover:is(.pm-spotlight-popover, .pm-hint-popover) .driver-popover-close-btn {
+  color: var(--pm-color-muted);
+}

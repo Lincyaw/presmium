@@ -20,8 +20,7 @@ presmium:
     repo: https://github.com/presmium/presmium
 renderers:
   web: {}
-  slides:
-    theme: default
+  slides: {}
   notebook: {}
   # 讲授：把讲解合成为语音讲授。默认不构建（`pnpm demo:build` 只构建上面三种）；配置火山引擎后
   # 写上音色，例如 { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }，

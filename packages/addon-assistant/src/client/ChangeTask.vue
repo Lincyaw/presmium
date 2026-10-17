@@ -2,7 +2,7 @@
 // One change task in the edit panel: its progress and steps while the agent works, its review file by file
 // (each kept or rejected; a unified diff for text, binary files only named) with a return to before each step
 // (P-115), its commit and the undo of it. What its events say is `change.progress` (the host's `trackAgentTask`).
-import { useMessages, useServer } from '@presmium/host'
+import { PmButton, useMessages, useServer } from '@presmium/host'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import { decide, keep, restoreTo, revert } from './edit.ts'
 import type { ChangeState } from './edit.ts'
@@ -12,11 +12,21 @@ defineProps<{ change: ChangeState }>()
 const t = useMessages(ASSISTANT_MESSAGES)
 const server = useServer()
 const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, path, init)
+
+/** A unified diff's lines, each with its kind: added, removed, a hunk's header, or context. */
+function diffLines(diff: string): { text: string, kind: 'add' | 'del' | 'hunk' | 'same' }[] {
+  return diff.replace(/\n$/, '').split('\n').map(text => ({
+    text,
+    kind: text.startsWith('@@') ? 'hunk' : text.startsWith('+') && !text.startsWith('+++') ? 'add' : text.startsWith('-') && !text.startsWith('---') ? 'del' : 'same',
+  }))
+}
 </script>
 
 <template>
   <section class="pm-assistant-edit__task" :aria-label="t.edit.task" :data-task="change.id" :data-state="change.progress.state">
-    <h3>{{ t.edit.task }}</h3>
+    <h3 class="pm-ui-heading">
+      {{ t.edit.task }}
+    </h3>
     <p class="pm-assistant-edit__label">
       {{ change.label }}
     </p>
@@ -28,9 +38,9 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
         {{ t.edit.steps(change.progress.steps.length) }}
       </p>
       <p class="pm-assistant-edit__actions">
-        <button type="button" @click="change.task.cancel()">
+        <PmButton small @click="change.task.cancel()">
           {{ t.edit.cancel }}
-        </button>
+        </PmButton>
       </p>
     </template>
     <template v-else-if="change.progress.state === 'review' || change.progress.state === 'deciding'">
@@ -42,7 +52,7 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
         <ol>
           <li v-for="step in change.progress.steps" :key="step.id" :data-step="step.id">
             {{ step.label }}: {{ step.changes.map(c => c.path).join(', ') || t.edit.noStepChange }}
-            <button type="button" class="pm-assistant-edit__restore" :aria-label="t.edit.restoreLabel(step.label)" :disabled="change.progress.state !== 'review'" @click="restoreTo(change.id, step.id, route)">
+            <button type="button" class="pm-assistant-edit__restore pm-ui-button pm-ui-button--ghost pm-ui-button--small" :aria-label="t.edit.restoreLabel(step.label)" :disabled="change.progress.state !== 'review'" @click="restoreTo(change.id, step.id, route)">
               {{ t.edit.restore }}
             </button>
           </li>
@@ -51,13 +61,13 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
       <ul class="pm-assistant-edit__changes">
         <li v-for="file in change.progress.changes" :key="file.path" class="pm-assistant-change" :data-path="file.path" :data-kind="file.kind">
           <label>
-            <input type="checkbox" :checked="!change.rejected.includes(file.path)" :aria-label="`${t.edit.keep} ${file.path}`" :disabled="change.progress.state !== 'review'" @change="keep(change.id, file.path, ($event.target as HTMLInputElement).checked)">
+            <input type="checkbox" class="pm-ui-checkbox" :checked="!change.rejected.includes(file.path)" :aria-label="`${t.edit.keep} ${file.path}`" :disabled="change.progress.state !== 'review'" @change="keep(change.id, file.path, ($event.target as HTMLInputElement).checked)">
             <code>{{ file.path }}</code> {{ t.edit.kind[file.kind] }} +{{ file.added }} −{{ file.removed }}
           </label>
           <p v-if="file.binary" class="pm-assistant-change__binary">
             {{ t.edit.binary }}
           </p>
-          <pre v-else-if="file.diff" class="pm-assistant-change__diff">{{ file.diff }}</pre>
+          <pre v-else-if="file.diff" class="pm-assistant-change__diff"><span v-for="(line, i) in diffLines(file.diff)" :key="i" :data-kind="line.kind">{{ line.text }}{{ '\n' }}</span></pre>
           <p v-else class="pm-assistant-change__binary">
             {{ t.edit.noDiff }}
           </p>
@@ -67,10 +77,10 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
         {{ change.note }}
       </p>
       <p class="pm-assistant-edit__actions">
-        <button type="button" class="pm-assistant-edit__accept" :disabled="change.progress.state !== 'review'" @click="decide(change.id, true)">
+        <button type="button" class="pm-assistant-edit__accept pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="change.progress.state !== 'review'" @click="decide(change.id, true)">
           {{ change.rejected.length ? t.edit.acceptSome(change.rejected.length) : t.edit.acceptAll }}
         </button>
-        <button type="button" class="pm-assistant-edit__reject" :disabled="change.progress.state !== 'review'" @click="decide(change.id, false)">
+        <button type="button" class="pm-assistant-edit__reject pm-ui-button pm-ui-button--small" :disabled="change.progress.state !== 'review'" @click="decide(change.id, false)">
           {{ t.edit.rejectAll }}
         </button>
       </p>
@@ -80,7 +90,7 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
         {{ change.progress.revision ? t.edit.committed(change.progress.revision) : change.progress.changes.length ? t.edit.rejected : t.edit.nothing }}
       </p>
       <p v-if="change.progress.revision && !change.reverted && !change.conflicts" class="pm-assistant-edit__actions">
-        <button type="button" class="pm-assistant-edit__revert" @click="revert(change.id)">
+        <button type="button" class="pm-assistant-edit__revert pm-ui-button pm-ui-button--small" @click="revert(change.id)">
           {{ t.edit.revert }}
         </button>
       </p>
@@ -101,70 +111,86 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
 </template>
 
 <style scoped>
+/* A change task in the dock: a card on the paper; its review's diffs in the colours of added and removed lines. */
 .pm-assistant-edit__task {
   display: grid;
-  gap: 0.35rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(125, 125, 125, 0.3);
+  gap: var(--pm-space-2);
+  padding: var(--pm-space-3);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
 }
 .pm-assistant-edit__task p,
 .pm-assistant-edit__task h3 {
   margin: 0;
 }
-.pm-assistant-edit__task h3 {
-  font-size: 0.9rem;
-}
-.pm-assistant-edit__task button {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-.pm-assistant-edit__task button:disabled {
-  border-style: dashed;
-  cursor: not-allowed;
-}
 .pm-assistant-edit__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--pm-space-2);
 }
 .pm-assistant-edit__steps ol {
-  margin: 0.2rem 0;
+  margin: var(--pm-space-1) 0;
   padding-left: 1.2em;
 }
 .pm-assistant-edit__steps li {
-  margin: 0.15rem 0;
+  margin: var(--pm-space-1) 0;
+}
+.pm-assistant-edit__steps summary {
+  cursor: pointer;
 }
 .pm-assistant-edit__restore {
-  margin-left: 0.35rem;
+  margin-left: var(--pm-space-1);
 }
 .pm-assistant-edit__steps,
-.pm-assistant-edit__label {
-  color: var(--vp-c-text-2, inherit);
+.pm-assistant-edit__label,
+.pm-assistant-edit__engine {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
 }
 .pm-assistant-edit__changes {
   display: grid;
-  gap: 0.3rem;
+  gap: var(--pm-space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
+.pm-assistant-change label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pm-space-1) var(--pm-space-2);
+}
+.pm-assistant-change code {
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-sm);
+}
+.pm-assistant-change__binary {
+  color: var(--pm-color-muted);
+}
 .pm-assistant-change__diff {
   max-height: 16rem;
-  margin: 0.2rem 0;
+  margin: var(--pm-space-1) 0 0;
   overflow: auto;
-  padding: 0.3rem;
-  background: rgba(125, 125, 125, 0.1);
-  font-size: 0.75rem;
+  padding: var(--pm-space-2);
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-code);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+  line-height: 1.7;
   white-space: pre;
+}
+.pm-assistant-change__diff [data-kind='add'] {
+  color: var(--pm-color-add);
+}
+.pm-assistant-change__diff [data-kind='del'] {
+  color: var(--pm-color-del);
+}
+.pm-assistant-change__diff [data-kind='hunk'] {
+  color: var(--pm-color-muted);
 }
 .pm-assistant-edit__error,
 .pm-assistant-edit__conflicts {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 </style>

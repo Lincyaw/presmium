@@ -139,15 +139,16 @@ function fieldSize(value: string | undefined): number {
           <template v-if="split(name)">
             <label v-for="(__, key) in fields[name]" :key="`${name}.${key}`" class="pm-run-panel__param">
               <span>{{ label(name) }} <code>{{ key }}</code></span>
-              <input v-model="fields[name]![key]" :name="`${name}.${key}`" :size="fieldSize(fields[name]![key])" spellcheck="false" autocomplete="off">
+              <input v-model="fields[name]![key]" class="pm-ui-input" :name="`${name}.${key}`" :size="fieldSize(fields[name]![key])" spellcheck="false" autocomplete="off">
             </label>
           </template>
           <label v-else class="pm-run-panel__param">
             <span>{{ label(name) }}</span>
-            <input v-model="args[name]" :name="name" :size="fieldSize(args[name])" spellcheck="false" autocomplete="off">
+            <input v-model="args[name]" class="pm-ui-input" :name="name" :size="fieldSize(args[name])" spellcheck="false" autocomplete="off">
           </label>
         </template>
-        <button type="submit" class="pm-run-panel__run" :disabled="running || !executor">
+        <button type="submit" class="pm-run-panel__run pm-ui-button pm-ui-button--primary" :disabled="running || !executor">
+          <svg class="pm-ui-icon" width="0.75em" height="0.75em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
           {{ running ? t.running : history.length ? t.rerun : t.run }}
         </button>
         <span v-if="!executor && report" class="pm-run-panel__hint">{{ t.unavailable }}</span>
@@ -156,7 +157,7 @@ function fieldSize(value: string | undefined): number {
     <!-- Until the first run there is nothing to show beside the code, which keeps the full width. -->
     <div v-if="latest || history.length" class="pm-run-panel__side">
       <div v-if="latest" class="pm-run-panel__output" :data-source="latest.result.source" :data-ok="latest.result.ok">
-        <div v-if="reason" class="pm-run-panel__badge">
+        <div v-if="reason" class="pm-run-panel__badge pm-ui-badge pm-ui-badge--warn">
           {{ t.recordedBadge(reason) }}
         </div>
         <pre class="pm-run-panel__stdout">{{ latest.result.stdout }}</pre>
@@ -165,7 +166,7 @@ function fieldSize(value: string | undefined): number {
       <ol v-if="history.length" class="pm-run-panel__history">
         <li v-for="record in history" :key="record.id" :data-run="record.id">
           <label>
-            <input type="checkbox" :checked="selected.includes(record.id)" @change="select(record.id)">
+            <input type="checkbox" class="pm-ui-checkbox" :checked="selected.includes(record.id)" @change="select(record.id)">
             #{{ record.id }} {{ describe(record) }}
           </label>
         </li>
@@ -184,13 +185,20 @@ function fieldSize(value: string | undefined): number {
 </template>
 
 <style scoped>
+/* The run panel in 书卷 (N-10, docs/design/slide.dc.html): the code, its parameters and the ink run button below
+   it; the output in the paper's sunk panel beside it. Sizes follow the font size of the slide, which the present
+   view scales with the screen (N-05); the host's controls follow it too. */
 .pm-run-panel {
+  --pm-text-sm: 0.875em;
+  --pm-text-md: 1em;
+
   display: grid;
   /* Code and output side by side where there is room (a slide); in a narrow place (a board in
-     the document view, a phone) they stack, so the code keeps the full width. Sizes follow the
-     font size of the slide, which the present view scales with the screen (N-05). */
+     the document view, a phone) they stack, so the code keeps the full width. */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   gap: 0.75em;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
   font-size: 0.8em;
 }
 .pm-run-panel__main,
@@ -237,65 +245,59 @@ function fieldSize(value: string | undefined): number {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5em;
-  margin-top: 0.5em;
+  gap: 0.5em 0.75em;
+  margin-top: 0.6em;
 }
 .pm-run-panel__param {
   display: inline-flex;
   align-items: center;
-  gap: 0.25em;
-}
-.pm-run-panel__param {
+  gap: 0.4em;
   max-width: 100%;
+  color: var(--pm-color-muted);
+}
+.pm-run-panel__param code {
+  color: var(--pm-color-ink);
 }
 .pm-run-panel__param input {
   /* As wide as its value (the size attribute), within the panel: a shader's buffers are a long JSON value. */
   min-width: 7.5em;
   max-width: 100%;
-  padding: 0.1em 0.35em;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25em;
-  background: transparent;
-  font-family: var(--slidev-code-font-family, monospace);
+  min-height: 0;
+  padding: 0.2em 0.5em;
+  font-family: var(--pm-font-mono);
 }
 .pm-run-panel__run {
-  padding: 0.15em 0.75em;
-  border-radius: 0.25em;
-  background: #0ea5e9;
-  color: white;
-}
-.pm-run-panel__run:disabled {
-  opacity: 0.6;
+  min-height: 0;
+  padding: 0.3em 1em;
 }
 .pm-run-panel__hint {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 .pm-run-panel__side {
   display: flex;
   flex-direction: column;
   gap: 0.5em;
 }
+.pm-run-panel__output {
+  padding: 0.75em 1em;
+  border-radius: var(--pm-radius-panel);
+  background: var(--pm-color-sunk);
+}
 .pm-run-panel__side pre {
   margin: 0;
-  padding: 0.35em 0.5em;
   max-height: 8em;
   overflow: auto;
-  border-radius: 0.25em;
-  background: rgba(125, 125, 125, 0.12);
-  font-size: 0.95em;
+  font-family: var(--pm-font-mono);
+  font-size: 1.1em;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 .pm-run-panel__badge {
-  display: inline-block;
-  margin-bottom: 0.25em;
-  padding: 0 0.4em;
-  border-radius: 0.25em;
-  background: #f59e0b;
-  color: black;
-  font-size: 0.875em;
+  margin-bottom: 0.5em;
+  white-space: normal;
 }
 .pm-run-panel__stderr {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 .pm-run-panel__history {
   margin: 0;
@@ -303,21 +305,33 @@ function fieldSize(value: string | undefined): number {
   list-style: none;
   max-height: 6.5em;
   overflow: auto;
+  color: var(--pm-color-muted);
+}
+.pm-run-panel__history label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.pm-run-panel__compare {
+  padding: 0.6em 0.9em;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
 }
 .pm-run-panel__compare-title {
   font-weight: 600;
 }
 .pm-run-panel__side .pm-run-panel__diff {
   max-height: 11em;
+  font-size: 0.95em;
 }
 .pm-run-panel__diff span {
   display: block;
 }
 .pm-run-panel__diff span[data-kind='added'] {
-  color: #16a34a;
+  color: var(--pm-color-add);
 }
 .pm-run-panel__diff span[data-kind='removed'] {
-  color: #dc2626;
+  color: var(--pm-color-del);
   text-decoration: line-through;
 }
 </style>

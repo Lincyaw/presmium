@@ -14,13 +14,13 @@ const reduced = usePrefersReducedMotion()
 <style scoped>
 .pm-demo-animated {
   height: 0.75rem;
-  border-radius: 999px;
-  background: rgba(125, 125, 125, 0.2);
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-sunk);
   overflow: hidden;
 }
 .pm-demo-animated__bar {
   height: 100%;
-  background: #0ea5e9;
+  background: var(--pm-color-accent);
   transform-origin: left;
 }
 .pm-demo-animated__bar--animate {

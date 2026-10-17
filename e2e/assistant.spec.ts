@@ -1,8 +1,8 @@
 // The assistant in the pages of `presmium dev` (WP-80, WP-92b; P-111, P-112, N-08), without any model the
 // operator configured:
-// - "AI changes" is in the toolbar all the same; its panel says AI changes are unavailable, what to set (the
-//   page's model settings, or the environment and a restart), and that they are made in the workspace
-//   service; the model settings open from it.
+// - "AI changes" is in the toolbar all the same; its popover says AI changes are unavailable, what to set (the
+//   page's model settings, or the environment and a restart), what is missing in the page's language (the
+//   server says it in English), and that they are made in the workspace service; the model settings open from it.
 // - In a classroom, a learner's question reaches the presenter's overview; its "AI answer" asks the
 //   presenter's own model service (the one the presenter filled in for the question panel; an
 //   OpenAI-compatible service on this machine here), naming its provider; the presenter sends the answer to
@@ -51,11 +51,12 @@ const pageUrl = (path: string) => new URL(path, dev.url).href
 test('"AI changes" is in the toolbar without a model: it says what to set, that changes are made in the workspace service, and opens the model settings', async ({ page }) => {
   await openDevPage(page, pageUrl('code.html'), page.locator('[data-section="merge"]'))
   await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
-  const panel = page.getByRole('complementary', { name: 'AI 修改' })
+  const panel = page.getByRole('dialog', { name: 'AI 修改' })
   await expect(panel).toContainText('AI 修改不可用：没有配置模型。')
   await expect(panel).toContainText('在“模型设置”中填写模型服务')
   await expect(panel).toContainText('DEEPSEEK_API_KEY')
-  await expect(panel).toContainText('缺少：no model access')
+  await expect(panel).toContainText('缺少：模型服务（在“模型设置”中填写，或设置环境变量 DEEPSEEK_API_KEY')
+  await expect(panel).not.toContainText('no model access')
   await expect(panel).toContainText('AI 修改在工作区服务（presmium serve）中使用')
   await panel.getByRole('button', { name: '模型设置' }).click()
   const settings = page.getByRole('dialog', { name: '模型设置' })

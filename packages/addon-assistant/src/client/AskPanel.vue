@@ -3,7 +3,7 @@
 // questions are answered and asks for it (./AskSettings.vue); then it names the service's provider and model
 // before anything is asked (N-08). A question goes with the current section, or with the text the reader
 // selected in the deck; the answer streams in, and the places it cites are links that move the page there.
-import { useMessages } from '@presmium/host'
+import { PmButton, useMessages } from '@presmium/host'
 import type { AgentContext, Citation } from '@presmium/kernel'
 import { computed, ref } from 'vue'
 import { answerParts, askProvider, ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -65,26 +65,26 @@ function go(citation: Citation): void {
     <template v-else>
       <p class="pm-assistant__provider">
         <span>{{ t.panel.provider(service.provider, service.model) }}</span>
-        <button type="button" class="pm-assistant__service" @click="changing = true">
+        <PmButton class="pm-assistant__service" variant="ghost" small icon="sliders" @click="changing = true">
           {{ t.panel.service }}
-        </button>
+        </PmButton>
       </p>
       <form class="pm-assistant__form" @submit.prevent="submit">
         <p v-if="selected" class="pm-assistant__selection">
           <span>{{ t.panel.selection }}</span>
-          <code>{{ excerpt }}</code>
-          <button type="button" @click="drop">
+          <code class="pm-ui-code">{{ excerpt }}</code>
+          <PmButton variant="ghost" small @click="drop">
             {{ t.panel.dropSelection }}
-          </button>
+          </PmButton>
         </p>
         <p v-if="place" class="pm-assistant__where">
           {{ t.panel.at(place.title) }}
         </p>
-        <textarea v-model="text" :aria-label="t.panel.question" :placeholder="t.panel.placeholder" rows="3" maxlength="2000" @keydown.stop />
+        <textarea v-model="text" class="pm-ui-textarea" :aria-label="t.panel.question" :placeholder="t.panel.placeholder" rows="3" maxlength="2000" @keydown.stop />
         <p class="pm-assistant__actions">
-          <button type="submit" :disabled="!text.trim() || running">
+          <PmButton type="submit" variant="primary" small :disabled="!text.trim() || running">
             {{ t.panel.ask }}
-          </button>
+          </PmButton>
         </p>
       </form>
     </template>
@@ -103,9 +103,9 @@ function go(citation: Citation): void {
         </p>
         <p v-if="exchange.state === 'running'" class="pm-assistant__status" role="status">
           {{ t.panel.answering }}
-          <button type="button" @click="exchange.cancel()">
+          <PmButton variant="ghost" small @click="exchange.cancel()">
             {{ t.panel.cancel }}
-          </button>
+          </PmButton>
         </p>
         <p v-else-if="exchange.cancelled" class="pm-assistant__status">
           {{ t.panel.cancelled }}
@@ -121,9 +121,11 @@ function go(citation: Citation): void {
 <style scoped>
 .pm-assistant {
   display: grid;
-  gap: 0.4rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  gap: var(--pm-space-3);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: var(--pm-leading-ui);
   text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -134,63 +136,82 @@ function go(citation: Citation): void {
 .pm-assistant__provider,
 .pm-assistant__where,
 .pm-assistant__status {
-  color: var(--vp-c-text-2, inherit);
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
 }
 .pm-assistant__provider {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.35rem;
+  gap: var(--pm-space-2);
+}
+.pm-assistant__form {
+  display: grid;
+  gap: var(--pm-space-2);
 }
 .pm-assistant__selection {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem;
+  align-items: center;
+  gap: var(--pm-space-2);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-selected);
 }
 .pm-assistant__selection code {
   max-width: 100%;
   white-space: pre-wrap;
 }
 .pm-assistant textarea {
-  box-sizing: border-box;
   width: 100%;
-  font: inherit;
 }
-.pm-assistant button {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.pm-assistant button:disabled {
-  border-style: dashed;
-  cursor: not-allowed;
+.pm-assistant__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 .pm-assistant__answers {
+  display: grid;
+  gap: var(--pm-space-3);
   margin: 0;
-  padding-left: 1.2em;
+  padding: 0;
+  list-style: none;
 }
 .pm-assistant__answers > li {
-  margin: 0.4rem 0;
+  display: grid;
+  gap: var(--pm-space-2);
 }
+/* The question as the reader's own bubble, the answer as the reading text below it (docs/design/edit.dc.html). */
 .pm-assistant__question {
-  font-weight: 600;
+  justify-self: end;
+  max-width: 85%;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-accent-soft);
+  font-weight: 500;
 }
 .pm-assistant__answer {
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-lg);
+  line-height: 1.7;
   white-space: pre-wrap;
 }
-.pm-assistant .pm-assistant__cite {
-  padding: 0 0.2rem;
-  border: none;
-  color: var(--vp-c-brand-1, #3451b2);
+.pm-assistant__cite {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pm-color-accent);
+  font: inherit;
   text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.pm-assistant__cite:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 2px;
 }
 .pm-assistant__error {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 </style>

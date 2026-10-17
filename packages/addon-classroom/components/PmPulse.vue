@@ -50,7 +50,7 @@ function vote(level: number): void {
     </p>
     <slot />
     <p v-if="canVote" class="pm-classroom-actions" role="group" :aria-label="question">
-      <button v-for="(level, i) in levels" :key="i" type="button" :aria-pressed="mine?.level === i" @click="vote(i)">
+      <button v-for="(level, i) in levels" :key="i" type="button" class="pm-ui-button pm-ui-button--small" :aria-pressed="mine?.level === i" @click="vote(i)">
         {{ level }}
       </button>
     </p>
@@ -74,12 +74,8 @@ function vote(level: number): void {
 .pm-pulse__question {
   font-weight: 600;
 }
-.pm-pulse button[aria-pressed='true'] {
-  border-color: #2563eb;
-  background: rgba(37, 99, 235, 0.15);
-}
 .pm-pulse__distribution {
-  margin: 0.25rem 0;
+  margin: 0.4em 0;
   padding: 0;
   list-style: none;
 }
@@ -92,8 +88,8 @@ function vote(level: number): void {
 .pm-pulse__bar {
   height: 0.6em;
   min-width: 1px;
-  border-radius: 0.2em;
-  background: #2563eb;
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-accent);
 }
 .pm-pulse__count {
   text-align: right;

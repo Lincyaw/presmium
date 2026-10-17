@@ -235,7 +235,7 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
   async function editPanel(page: Page, document: string) {
     await openDevPage(page, `${server.url}/${document}/`, page.locator('[data-section]').first())
     await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
-    const panel = page.getByRole('complementary', { name: '批注与对话' })
+    const panel = page.getByRole('region', { name: '批注与对话' })
     await expect(panel).toBeVisible()
     return panel
   }
@@ -618,7 +618,7 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
   async function editPanel(page: Page) {
     await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
     await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
-    const panel = page.getByRole('complementary', { name: '批注与对话' })
+    const panel = page.getByRole('region', { name: '批注与对话' })
     await expect(panel).toBeVisible()
     return panel
   }
@@ -989,7 +989,7 @@ test.describe('the model settings in the page: the bundled DeepSeek Harness with
   test('"AI changes" on the home page says what to set; the settings saved there apply at once: a document\'s chat completes a change, and the model receives the page\'s key and model', async ({ page }) => {
     await openDevPage(page, `${server.url}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
     await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
-    const status = page.getByRole('complementary', { name: 'AI 修改' })
+    const status = page.getByRole('dialog', { name: 'AI 修改' })
     await expect(status).toContainText('AI 修改不可用：没有配置模型。')
     await expect(status).toContainText('DEEPSEEK_API_KEY')
     await expect(status).toContainText('进入编辑模式后点选内容写批注')
@@ -1012,12 +1012,14 @@ test.describe('the model settings in the page: the bundled DeepSeek Harness with
     expect(statSync(join(`${dir}.config`, 'presmium/assistant.json')).mode & 0o777).toBe(0o600)
     expect(git(dir, ['status', '--porcelain', '--untracked-files=all'])).toBe('')
     await settings.getByRole('button', { name: '关闭' }).click()
+    // The dialog took the place of the popover, which says now where the model comes from.
+    await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
     await expect(status).toContainText('AI 修改由 Page Provider 的模型完成（来自模型设置）')
 
     // A document's "AI changes" turns edit mode on; its chat completes a change with the page's settings, no restart.
     await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
     await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
-    const panel = page.getByRole('complementary', { name: '批注与对话' })
+    const panel = page.getByRole('region', { name: '批注与对话' })
     const chatPanel = panel.getByRole('region', { name: '对话' })
     await expect(chatPanel.locator('.pm-assistant-edit__provider')).toHaveText('修改由 Page Provider 的模型完成')
     await chatPanel.getByLabel('消息').fill('写一份笔记')

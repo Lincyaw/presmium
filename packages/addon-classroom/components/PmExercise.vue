@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages, useService } from '@presmium/host'
+import { useMessages, usePresentationMode, useService } from '@presmium/host'
 import { EXECUTOR } from '@presmium/kernel'
 import { computed, ref, shallowRef } from 'vue'
 import { useClassroomStore, useCollection, useSession } from '../src/client/use.ts'
@@ -22,6 +22,8 @@ const props = withDefaults(defineProps<{
 }>(), { lang: 'python', starter: '', checks: '' })
 
 const executor = useService(EXECUTOR)
+// On a slide (and in the present view) the code shows fewer lines and scrolls, so the card keeps to the slide (N-05).
+const rows = usePresentationMode() === 'slides' ? 8 : 12
 const t = useMessages(MESSAGES)
 const { me, status, joined, presenter } = useSession()
 const store = useClassroomStore()
@@ -85,11 +87,11 @@ async function submit(): Promise<void> {
     <form @submit.prevent="submit">
       <textarea
         v-model="code"
-        class="pm-exercise__code"
+        class="pm-exercise__code pm-ui-textarea"
         :aria-label="t.exercise.code"
         spellcheck="false"
         autocomplete="off"
-        :rows="Math.min(12, code.split('\n').length + 1)"
+        :rows="Math.min(rows, code.split('\n').length + 1)"
         @keydown.stop
       />
       <details class="pm-exercise__checks">
@@ -97,7 +99,7 @@ async function submit(): Promise<void> {
         <pre>{{ checks }}</pre>
       </details>
       <p class="pm-classroom-actions">
-        <button type="submit" :disabled="running || !executor">
+        <button type="submit" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="running || !executor">
           {{ running ? t.exercise.checking : t.exercise.submit }}
         </button>
         <span v-if="!executor" class="pm-classroom-error">{{ t.exercise.noExecutor }}</span>
@@ -132,39 +134,52 @@ async function submit(): Promise<void> {
 
 <style scoped>
 .pm-exercise__code {
-  min-height: 4rem;
-  padding: 0.35rem 0.5rem;
+  min-height: 4em;
+  padding: 0.4em 0.75em;
+  background: var(--pm-color-code);
+  font-family: var(--pm-font-mono);
   font-size: 0.85em;
   line-height: 1.4;
-  resize: vertical;
+}
+.pm-exercise__checks {
+  margin: 0.4em 0;
+  color: var(--pm-color-muted);
+}
+.pm-exercise__checks summary {
+  cursor: pointer;
 }
 .pm-exercise__checks pre,
 .pm-exercise__output {
-  margin: 0.25rem 0;
-  padding: 0.35rem 0.5rem;
-  max-height: 8rem;
+  margin: 0.35em 0;
+  padding: 0.5em 0.75em;
+  max-height: 8em;
   overflow: auto;
-  border-radius: 0.25rem;
-  background: rgba(125, 125, 125, 0.12);
-  font-size: 0.8em;
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
+  font-size: 0.85em;
   white-space: pre-wrap;
 }
 .pm-exercise__verdict {
   font-weight: 600;
 }
 .pm-exercise__verdict[data-status='passed'] {
-  color: #16a34a;
+  color: var(--pm-color-ok);
 }
 .pm-exercise__verdict[data-status='failed'],
 .pm-exercise__verdict[data-status='error'] {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 .pm-exercise__cases {
-  margin: 0.25rem 0;
+  margin: 0.35em 0;
   padding-left: 1.2em;
 }
+.pm-exercise__cases li[data-ok='true'] > span {
+  color: var(--pm-color-ok);
+}
 .pm-exercise__cases li[data-ok='false'] > span {
-  color: #dc2626;
+  color: var(--pm-color-danger);
 }
 .pm-exercise__error {
   font-size: 0.9em;

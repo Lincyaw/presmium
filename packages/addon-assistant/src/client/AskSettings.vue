@@ -3,7 +3,7 @@
 // site's browser storage, which the site's scripts can read), then the address, key and model of an
 // OpenAI-compatible Chat Completions service. Shown in the question panel until it is filled in, and when the
 // reader changes it.
-import { useMessages } from '@presmium/host'
+import { PmButton, PmField, PmNotice, useMessages } from '@presmium/host'
 import { ref } from 'vue'
 import { ASSISTANT_MESSAGES, askUrlValid } from '../domain/index.ts'
 import { askSettings, saveAskSettings } from './ask.ts'
@@ -33,38 +33,37 @@ function clear(): void {
 
 <template>
   <form class="pm-assistant-settings" :aria-label="t.ask.title" @submit.prevent="save">
-    <h3>{{ t.ask.title }}</h3>
+    <h3 class="pm-assistant-settings__title">
+      {{ t.ask.title }}
+    </h3>
     <p class="pm-assistant-settings__intro">
       {{ t.ask.intro }}
     </p>
-    <p class="pm-assistant-settings__storage" role="note">
+    <PmNotice class="pm-assistant-settings__storage" tone="warn" role="note">
       {{ t.ask.storage }}
-    </p>
-    <label>
-      <span>{{ t.ask.url }}</span>
-      <input v-model="url" name="url" type="url" required :placeholder="t.ask.urlPlaceholder" autocomplete="off" spellcheck="false" @keydown.stop>
-    </label>
-    <label>
-      <span>{{ t.ask.key }}</span>
-      <input v-model="key" name="key" type="password" required autocomplete="off" spellcheck="false" @keydown.stop>
-    </label>
-    <label>
-      <span>{{ t.ask.model }}</span>
-      <input v-model="model" name="model" type="text" required :placeholder="t.ask.modelPlaceholder" autocomplete="off" spellcheck="false" @keydown.stop>
-    </label>
+    </PmNotice>
+    <PmField :label="t.ask.url">
+      <input v-model="url" class="pm-ui-input" name="url" type="url" required :placeholder="t.ask.urlPlaceholder" autocomplete="off" spellcheck="false" @keydown.stop>
+    </PmField>
+    <PmField :label="t.ask.key">
+      <input v-model="key" class="pm-ui-input" name="key" type="password" required autocomplete="off" spellcheck="false" @keydown.stop>
+    </PmField>
+    <PmField :label="t.ask.model">
+      <input v-model="model" class="pm-ui-input" name="model" type="text" required :placeholder="t.ask.modelPlaceholder" autocomplete="off" spellcheck="false" @keydown.stop>
+    </PmField>
     <p v-if="problem" class="pm-assistant-settings__problem" role="alert">
       {{ problem }}
     </p>
     <p class="pm-assistant-settings__actions">
-      <button type="submit">
+      <PmButton type="submit" variant="primary" small>
         {{ t.ask.save }}
-      </button>
-      <button v-if="askSettings" type="button" @click="emit('done')">
+      </PmButton>
+      <PmButton v-if="askSettings" small @click="emit('done')">
         {{ t.ask.cancel }}
-      </button>
-      <button v-if="askSettings" type="button" @click="clear">
+      </PmButton>
+      <PmButton v-if="askSettings" variant="danger" small @click="clear">
         {{ t.ask.clear }}
-      </button>
+      </PmButton>
     </p>
   </form>
 </template>
@@ -72,45 +71,27 @@ function clear(): void {
 <style scoped>
 .pm-assistant-settings {
   display: grid;
-  gap: 0.4rem;
+  gap: var(--pm-space-3);
 }
-.pm-assistant-settings h3 {
+.pm-assistant-settings p {
   margin: 0;
-  font-size: 0.9rem;
 }
-.pm-assistant-settings__intro,
-.pm-assistant-settings__storage {
-  color: var(--vp-c-text-2, inherit);
+.pm-assistant-settings__title {
+  margin: 0;
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+  font-weight: 600;
+  line-height: var(--pm-leading-tight);
 }
-.pm-assistant-settings label {
-  display: grid;
-  gap: 0.15rem;
+.pm-assistant-settings__intro {
+  color: var(--pm-color-muted);
 }
 .pm-assistant-settings__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--pm-space-2);
 }
 .pm-assistant-settings__problem {
-  color: #dc2626;
-}
-.pm-assistant-settings button {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.pm-assistant-settings input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0.15rem 0.3rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
+  color: var(--pm-color-danger);
 }
 </style>

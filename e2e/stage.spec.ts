@@ -49,8 +49,9 @@ test('presenter notes highlight the current step and fade the others', async ({ 
   // One paragraph of narration per step: the narration of the list binds to its items' steps.
   const step = (n: number) => notes.locator(':scope > p').nth(n)
   await expect(notes.locator(':scope > p')).toHaveCount(3)
-  const highlighted = 'rgba(139, 92, 246, 0.12)'
-  const faded = 'rgba(136, 136, 136, 0.55)'
+  // The host's tokens (N-10): the selected tint for the current step, the muted tone for the others.
+  const highlighted = 'rgb(234, 243, 241)'
+  const faded = 'rgb(92, 88, 79)'
 
   await expect(step(0)).toHaveCSS('background-color', highlighted)
   await expect(step(1)).toHaveCSS('color', faded)

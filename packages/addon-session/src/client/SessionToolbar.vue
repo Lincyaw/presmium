@@ -25,19 +25,19 @@ function toggled(event: Event): void {
   <span v-if="snapshot" class="pm-session-toolbar">
     <button
       type="button"
-      class="pm-session-toolbar__button"
+      class="pm-session-toolbar__button pm-ui-button pm-ui-button--ghost pm-ui-button--small"
       :popovertarget="id"
       :title="statusText(snapshot, t)"
       :aria-expanded="open"
       :data-status="snapshot.status"
     >
-      <span class="pm-session-toolbar__dot" :data-connection="snapshot.server ? snapshot.connection : 'none'" aria-hidden="true" />
+      <span class="pm-session-toolbar__dot pm-ui-dot" :data-connection="snapshot.server ? snapshot.connection : 'none'" aria-hidden="true" />
       {{ t.classroom }}<span class="pm-session-toolbar__state">{{ shortStatus(snapshot, t) }}</span>
     </button>
     <div :id="id" popover class="pm-session-popover" role="dialog" :aria-label="t.classroom" @toggle="toggled">
       <template v-if="open">
         <SessionPanel />
-        <button type="button" class="pm-session-popover__close" :popovertarget="id" popovertargetaction="hide">
+        <button type="button" class="pm-session-popover__close pm-ui-button pm-ui-button--small" :popovertarget="id" popovertargetaction="hide">
           {{ t.close }}
         </button>
       </template>
@@ -54,35 +54,23 @@ function toggled(event: Event): void {
   align-items: center;
 }
 .pm-session-toolbar__button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: 0.5rem;
-  padding: 0.125rem 0.4rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font-size: 0.8125rem;
-  white-space: nowrap;
-  cursor: pointer;
+  gap: 0.375rem;
 }
 .pm-session-toolbar__state {
-  opacity: 0.75;
+  color: var(--pm-color-muted);
 }
+/* The connection: off without a server or link, the warning tone while it connects, the success tone once it is. */
 .pm-session-toolbar__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: #9ca3af;
+  background: var(--pm-color-line-strong);
 }
 .pm-session-toolbar__dot[data-connection='connected'] {
-  background: #16a34a;
+  background: var(--pm-color-ok);
 }
 .pm-session-toolbar__dot[data-connection='connecting'] {
-  background: #f59e0b;
+  background: var(--pm-color-warn);
 }
-/* The text wraps, whatever the toolbar around it sets. */
+/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. The text
+   wraps, whatever the toolbar around it sets. */
 .pm-session-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;
@@ -91,24 +79,18 @@ function toggled(event: Event): void {
   max-height: 75vh;
   margin: 0;
   overflow: auto;
-  padding: 0.75rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.375rem;
-  background: var(--vp-c-bg, var(--slidev-theme-background, #fff));
-  color: var(--vp-c-text-1, inherit);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: var(--pm-space-3) var(--pm-space-4);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
   text-align: left;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 .pm-session-popover__close {
-  margin-top: 0.5rem;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
+  margin-top: 0.75rem;
 }
 </style>

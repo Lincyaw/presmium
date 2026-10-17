@@ -112,7 +112,7 @@ function setOpen(next: boolean): void {
           :data-correct="revealed && answer.includes(i) ? '' : undefined"
         >
           <label>
-            <input :type="multiple ? 'checkbox' : 'radio'" :name="name" :checked="choice.includes(i)" :disabled="!canAnswer" @change="toggle(i)">
+            <input class="pm-ui-checkbox" :type="multiple ? 'checkbox' : 'radio'" :name="name" :checked="choice.includes(i)" :disabled="!canAnswer" @change="toggle(i)">
             <span class="pm-quiz__letter">{{ optionLetter(i) }}</span>
             <span>{{ option }}</span>
           </label>
@@ -120,14 +120,14 @@ function setOpen(next: boolean): void {
         </li>
       </ol>
       <p class="pm-classroom-actions">
-        <button v-if="!presenter" type="submit" :disabled="!canAnswer || choice.length === 0">
+        <button v-if="!presenter" type="submit" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" :disabled="!canAnswer || choice.length === 0">
           {{ t.quiz.submit }}
         </button>
         <template v-if="presenter && status === 'active'">
-          <button v-if="!open" type="button" @click="setOpen(true)">
+          <button v-if="!open" type="button" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" @click="setOpen(true)">
             {{ t.quiz.openButton }}
           </button>
-          <button v-else type="button" @click="setOpen(false)">
+          <button v-else type="button" class="pm-ui-button pm-ui-button--small" @click="setOpen(false)">
             {{ t.quiz.closeButton }}
           </button>
         </template>
@@ -150,7 +150,9 @@ function setOpen(next: boolean): void {
 
 <style scoped>
 .pm-quiz__options {
-  margin: 0.5rem 0;
+  display: grid;
+  gap: 0.4em;
+  margin: 0.6em 0;
   padding: 0;
   list-style: none;
 }
@@ -158,23 +160,30 @@ function setOpen(next: boolean): void {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.2rem 0;
-  padding: 0.2rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.3);
-  border-radius: 0.25rem;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0.35em 0.75em;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
 }
 .pm-quiz__option label {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5em;
   cursor: pointer;
 }
+/* The right options once revealed: framed and tinted in the success colour, the letter too. */
 .pm-quiz__option[data-correct] {
-  border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.1);
+  border-color: var(--pm-color-ok);
+  background: var(--pm-color-ok-soft);
+}
+.pm-quiz__option[data-correct] .pm-quiz__letter {
+  color: var(--pm-color-ok);
 }
 .pm-quiz__letter {
+  color: var(--pm-color-accent);
+  font-family: var(--pm-font-mono);
   font-weight: 600;
 }
 .pm-quiz__count {

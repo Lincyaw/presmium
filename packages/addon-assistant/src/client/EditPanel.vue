@@ -1,367 +1,152 @@
 <script setup lang="ts">
-// "AI changes" (P-111, P-113 to P-115; the workspace's `EDIT_MODE`), in the toolbar of every page the
-// workspace service or `presmium dev` serves, available or not, so the author finds it. On a document of
-// `presmium serve` it turns on edit mode and opens the agent panel beside the page: annotations of the blocks
-// the author clicks (with the block's source and an excerpt of it), sent as one batch; a chat with the agent
-// that takes where the author is (section, step, selection); both name the model's provider (N-08). The change
-// tasks sent from this window follow, newest first: the one under way shows its steps, then its review file by
-// file (each kept or rejected, a unified diff for text, a return to before each step); each committed one can
-// be undone. The document's change task this member sent before the page was reloaded (or, for owners,
-// anyone's) is taken up again. Elsewhere (no model configured, the home page, `presmium dev`) the panel says
-// what is needed and how AI changes are made. The model settings open from it (./ModelSettings.vue).
-import { blockAt, blockElement, blockKey, EDIT_MODE, splitBlockKey, useMessages, useServer, useService } from '@presmium/host'
-import type { AgentContext } from '@presmium/kernel'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
-import type { PendingChange } from '../domain/index.ts'
-import ChangeTask from './ChangeTask.vue'
-import { addAnnotation, annotations, busy, changes, excerptOf, picked, removeAnnotation, resume, sendAnnotations, sendChat } from './edit.ts'
+// "AI changes" (P-111, P-113 to P-115; the workspace's `EDIT_MODE`), in the toolbar of every page the workspace
+// service or `presmium dev` serves, available or not, so the author finds it. In a document of `presmium serve` the
+// agent may change, and the member may edit, it is the switch of the panel docked at the right of edit mode
+// (./EditDock.vue, ./dock.ts): it turns on edit mode and shows the panel, then hides and shows it, pressed while it
+// is shown (docs/design/edit.dc.html). Elsewhere (no model configured, the home page, `presmium dev`, a reader) it
+// opens what is needed and how AI changes are made, in the page's language, with the model settings
+// (./ModelSettings.vue).
+import { EDIT_MODE, PmButton, PmIcon, useMessages, useServer, useService } from '@presmium/host'
+import { computed, ref, useId } from 'vue'
+import { ASSISTANT_MESSAGES } from '../domain/index.ts'
+import { canChange, docked, inDocument, panelWanted } from './dock.ts'
+import { CLIENT_MESSAGES, missingText } from './messages.ts'
 import ModelSettings from './ModelSettings.vue'
-import { agent, assistant, selected, useNavigator } from './state.ts'
+import { assistant } from './state.ts'
 
 const t = useMessages(ASSISTANT_MESSAGES)
+const c = useMessages(CLIENT_MESSAGES)
 const editMode = useService(EDIT_MODE)
 const server = useServer()
-const navigator = useNavigator()
-const active = computed(() => editMode.value?.active.value ?? false)
+const id = useId()
 const open = ref(false)
-const canChange = computed(() => (agent.value?.available('annotations') ?? false) && (agent.value?.available('chat') ?? false))
-const provider = computed(() => agent.value?.provider())
+const popover = ref<HTMLElement>()
+const settings = ref<InstanceType<typeof ModelSettings>>()
 const info = computed(() => assistant.value?.info.value)
-/** A document whose changes the workspace commits (not the home page, not `presmium dev`). */
-const inDocument = computed(() => info.value?.changes === true && !info.value.home)
-/** The change panel: edit mode is on in a document, and the agent may change it. */
-const changing = computed(() => inDocument.value && active.value && canChange.value)
+/** The button switches the docked panel: a document the agent may change, which this member may edit. */
+const switches = computed(() => inDocument.value && canChange.value && editMode.value?.allowed.value === true)
+
 /** Why there is no change panel here, and what to do. */
 const status = computed(() => {
   const now = info.value
   if (!now) return []
   const lines = now.provider
     ? [t.value.edit.available(now.provider, t.value.edit.source[now.source ?? 'environment'])]
-    : [t.value.edit.unavailable, t.value.edit.howTo, ...now.missing ? [t.value.edit.missing(now.missing)] : []]
+    : [t.value.edit.unavailable, t.value.edit.howTo, ...now.missing ? [t.value.edit.missing(missingText(now.missing, c.value))] : []]
   if (now.home) return [...lines, t.value.edit.home]
   if (!now.changes) return [...lines, t.value.edit.dev]
   if (now.provider && (!now.kinds.length || editMode.value?.allowed.value === false)) return [...lines, t.value.edit.notEditor]
   return lines
 })
 
-/** The toolbar's button: turns on edit mode in a document the author may edit, and shows the panel. */
+/** The switch: turns on edit mode and shows the panel, or hides and shows it. */
 function toggle(): void {
+  if (!switches.value) return
   const mode = editMode.value
-  if (!open.value && inDocument.value && mode?.allowed.value && !mode.active.value) mode.enter()
-  open.value = !open.value
-}
-
-const drafts = computed(() => annotations.value.filter(a => a.status === 'draft'))
-/** The task under way (or waiting for its review) goes first; the ended ones last. */
-const current = computed(() => (busy.value ? changes.value.slice(0, 1) : []))
-const past = computed(() => (busy.value ? changes.value.slice(1) : changes.value))
-const request = ref('')
-const message = ref('')
-
-const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, path, init)
-
-/** The section and step the author is at, and the selected text, for a chat message. */
-const where = computed(() => {
-  const position = navigator?.position()
-  const section = selected.value?.section ?? position?.section
-  return section ? { section, step: position?.section === section ? position.step : undefined, title: navigator?.title(section) ?? section } : undefined
-})
-
-/**
- * A click on a block of the page picks it for an annotation (not on links, buttons or fields, not in the
- * panel): the block seen under the pointer, by the host's one rule of what is seen (`blockAt`).
- */
-async function pick(event: MouseEvent): Promise<void> {
-  const target = event.target instanceof Element ? event.target : undefined
-  if (!target || !navigator || target.closest('.pm-assistant-edit, a, button, input, textarea, select, label, summary, [contenteditable]')) return
-  if (!document.getSelection()?.isCollapsed) return
-  const [section, id] = splitBlockKey(blockAt(event.clientX, event.clientY)?.key ?? '') ?? []
-  if (!section || !id) return
-  const block = navigator.block(section, id)
-  if (!block) return
-  const source = { file: block.source.file, startLine: block.source.line, endLine: block.source.endLine ?? block.source.line }
-  const label = `${navigator.title(section) ?? section} · ${id}`
-  picked.value = { section, block: id, source, label, excerpt: '' }
-  open.value = true
-  const excerpt = await excerptOf(route, source)
-  if (picked.value?.block === id && picked.value.section === section) picked.value = { ...picked.value, excerpt }
-}
-
-/** The picked block is outlined on the page. */
-function outline(): void {
-  for (const element of document.querySelectorAll('.pm-assistant-picked')) element.classList.remove('pm-assistant-picked')
-  const now = picked.value
-  if (!now) return
-  blockElement(blockKey(now.section, now.block))?.classList.add('pm-assistant-picked')
-}
-
-/** How a change task taken up again is named: as when it was sent. */
-const labelOf = (change: PendingChange) => change.kind === 'annotations'
-  ? t.value.edit.send(change.annotations?.length ?? 0)
-  : change.kind === 'transcript' ? t.value.edit.transcript(change.track ?? '') : change.prompt
-
-const listener = (event: MouseEvent) => void pick(event)
-// Edit mode turned on shows the panel; turned off hides it.
-watch(active, (on) => {
-  open.value = on
-})
-watch(changing, (on) => {
-  document.removeEventListener('click', listener, true)
-  if (on) {
-    document.addEventListener('click', listener, true)
-    // The change task under way when the page was loaded (a reload during its review).
-    if (assistant.value) void resume(assistant.value, labelOf)
-  } else {
-    picked.value = undefined
+  if (mode && !mode.active.value) {
+    mode.enter()
+    panelWanted.value = true
+    return
   }
-}, { immediate: true })
-watch(picked, outline)
-onBeforeUnmount(() => {
-  document.removeEventListener('click', listener, true)
-  picked.value = undefined
-  outline()
-})
-
-function add(): void {
-  addAnnotation(request.value)
-  request.value = ''
+  panelWanted.value = !panelWanted.value
 }
 
-function send(): void {
-  if (agent.value) sendAnnotations(agent.value, t.value.edit.send(drafts.value.length))
+function toggled(event: Event): void {
+  open.value = (event as ToggleEvent).newState === 'open'
 }
 
-function chat(): void {
-  const client = agent.value
-  if (!client || busy.value || !message.value.trim()) return
-  const place = where.value
-  const source = place && navigator?.source(place.section)
-  const context: AgentContext = {
-    document: '',
-    ...place ? { section: place.section } : {},
-    ...place?.step !== undefined ? { step: place.step } : {},
-    ...selected.value?.block ? { block: selected.value.block } : {},
-    ...selected.value ? { selection: selected.value.text } : {},
-    ...source ? { source: { file: source.file, startLine: source.line, endLine: source.endLine ?? source.line } } : {},
-  }
-  sendChat(client, message.value, context)
-  message.value = ''
-  selected.value = undefined
+/** The model settings take the place of the popover, which stays above everything else (the top layer). */
+function openSettings(): void {
+  popover.value?.hidePopover()
+  void settings.value?.open()
 }
 </script>
 
 <template>
   <span v-if="server.available" class="pm-assistant-edit-toolbar">
-    <button type="button" class="pm-assistant-edit__toggle" :aria-expanded="open" @click="toggle">
-      {{ t.edit.toggle }}
+    <button
+      v-if="switches"
+      type="button"
+      class="pm-assistant-edit__toggle pm-ui-button pm-ui-button--small"
+      :aria-pressed="docked ? 'true' : 'false'"
+      @click="toggle"
+    >
+      <PmIcon name="sparkle" :size="14" :stroke-width="2" />{{ t.edit.toggle }}
     </button>
-    <Teleport to="body">
-      <aside v-if="open" class="pm-assistant-edit" :aria-label="changing ? t.edit.title : t.edit.toggle">
-        <header class="pm-assistant-edit__header">
-          <h2>{{ changing ? t.edit.title : t.edit.toggle }}</h2>
-          <span class="pm-assistant-edit__tools">
-            <ModelSettings />
-            <button type="button" @click="open = false">
+    <template v-else>
+      <button type="button" class="pm-assistant-edit__toggle pm-ui-button pm-ui-button--ghost pm-ui-button--small" :popovertarget="id" :aria-expanded="open">
+        <PmIcon name="sparkle" :size="14" :stroke-width="2" />{{ t.edit.toggle }}
+      </button>
+      <div :id="id" ref="popover" popover class="pm-assistant-edit-popover pm-ui" role="dialog" :aria-label="t.edit.toggle" @toggle="toggled">
+        <template v-if="open">
+          <h2 class="pm-assistant-edit-popover__title">
+            {{ t.edit.toggle }}
+          </h2>
+          <section class="pm-assistant-edit-popover__status" role="status">
+            <p v-for="(line, i) in status" :key="i">
+              {{ line }}
+            </p>
+          </section>
+          <p class="pm-assistant-edit-popover__actions">
+            <PmButton variant="primary" small icon="sliders" @click="openSettings">
+              {{ t.edit.settings }}
+            </PmButton>
+            <button type="button" class="pm-ui-button pm-ui-button--small" :popovertarget="id" popovertargetaction="hide">
               {{ t.edit.close }}
             </button>
-          </span>
-        </header>
-        <section v-if="!changing" class="pm-assistant-edit__status" role="status">
-          <p v-for="(line, i) in status" :key="i">
-            {{ line }}
           </p>
-        </section>
-        <template v-else>
-          <ChangeTask v-for="change in current" :key="change.id" :change="change" />
-          <section class="pm-assistant-edit__annotations" :aria-label="t.edit.annotations">
-            <h3>{{ t.edit.annotations }}</h3>
-            <form v-if="picked" class="pm-assistant-edit__pick" @submit.prevent="add">
-              <p>{{ t.edit.picked(picked.label) }}</p>
-              <pre v-if="picked.excerpt" class="pm-assistant-edit__excerpt">{{ picked.excerpt }}</pre>
-              <textarea v-model="request" :aria-label="t.edit.request" :placeholder="t.edit.requestPlaceholder" rows="2" maxlength="4000" @keydown.stop />
-              <p class="pm-assistant-edit__actions">
-                <button type="submit" :disabled="!request.trim()">
-                  {{ t.edit.add }}
-                </button>
-                <button type="button" @click="picked = undefined">
-                  {{ t.edit.discard }}
-                </button>
-              </p>
-            </form>
-            <p v-else class="pm-assistant-edit__hint">
-              {{ t.edit.pick }}
-            </p>
-            <ol v-if="annotations.length" class="pm-assistant-edit__list" :aria-label="t.edit.annotations">
-              <li v-for="a in annotations" :key="a.id" class="pm-assistant-annotation" :data-annotation="a.id" :data-status="a.status">
-                <p class="pm-assistant-annotation__where">
-                  {{ a.source.file }}:{{ a.source.startLine }} · <span class="pm-assistant-annotation__status">{{ t.edit.status[a.status] }}</span>
-                </p>
-                <p class="pm-assistant-annotation__request">
-                  {{ a.request }}
-                </p>
-                <p v-if="a.note" class="pm-assistant-annotation__note">
-                  {{ a.note }}
-                </p>
-                <button v-if="a.status === 'draft'" type="button" @click="removeAnnotation(a.id)">
-                  {{ t.edit.remove }}
-                </button>
-              </li>
-            </ol>
-            <p class="pm-assistant-edit__provider">
-              {{ provider ? t.edit.provider(provider) : t.edit.unavailable }}
-            </p>
-            <p v-if="drafts.length" class="pm-assistant-edit__actions">
-              <button type="button" class="pm-assistant-edit__send" :disabled="busy" @click="send">
-                {{ t.edit.send(drafts.length) }}
-              </button>
-            </p>
-          </section>
-
-          <section class="pm-assistant-edit__chat" :aria-label="t.edit.chat">
-            <h3>{{ t.edit.chat }}</h3>
-            <p class="pm-assistant-edit__provider">
-              {{ provider ? t.edit.provider(provider) : t.edit.unavailable }}
-            </p>
-            <p v-if="where" class="pm-assistant-edit__context">
-              {{ t.edit.context(where.title) }}
-            </p>
-            <form @submit.prevent="chat">
-              <textarea v-model="message" :aria-label="t.edit.message" :placeholder="t.edit.chatPlaceholder" rows="3" maxlength="4000" @keydown.stop />
-              <p class="pm-assistant-edit__actions">
-                <button type="submit" :disabled="!message.trim() || busy">
-                  {{ t.edit.sendChat }}
-                </button>
-              </p>
-            </form>
-          </section>
-
-          <ChangeTask v-for="change in past" :key="change.id" :change="change" />
         </template>
-      </aside>
-    </Teleport>
+      </div>
+    </template>
+    <ModelSettings ref="settings" />
   </span>
 </template>
 
 <style scoped>
-.pm-assistant-edit-toolbar > button,
-.pm-assistant-edit button {
-  padding: 0.1rem 0.5rem;
-  border: 1px solid rgba(125, 125, 125, 0.5);
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-.pm-assistant-edit-toolbar > button {
-  margin-left: 0.5rem;
-  white-space: nowrap;
-}
-.pm-assistant-edit button:disabled {
-  border-style: dashed;
-  cursor: not-allowed;
-}
-.pm-assistant-edit {
-  position: fixed;
-  inset: 4.5rem 1rem 1rem auto;
-  z-index: 60;
-  box-sizing: border-box;
-  display: grid;
-  align-content: start;
-  gap: 0.6rem;
-  width: min(26rem, calc(100vw - 2rem));
-  overflow: auto;
-  padding: 0.75rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.375rem;
-  background: var(--vp-c-bg, var(--slidev-theme-background, #fff));
-  color: var(--vp-c-text-1, inherit);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  text-align: left;
-}
-.pm-assistant-edit p,
-.pm-assistant-edit h2,
-.pm-assistant-edit h3 {
-  margin: 0;
-}
-.pm-assistant-edit h2 {
-  font-size: 1rem;
-}
-.pm-assistant-edit h3 {
-  font-size: 0.9rem;
-}
-.pm-assistant-edit section {
-  display: grid;
-  gap: 0.35rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(125, 125, 125, 0.3);
-}
-.pm-assistant-edit__header {
-  display: flex;
-  justify-content: space-between;
+.pm-assistant-edit-toolbar {
+  display: inline-flex;
   align-items: center;
 }
-.pm-assistant-edit__tools {
-  display: inline-flex;
-  gap: 0.35rem;
-}
-.pm-assistant-edit textarea {
+/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. */
+.pm-assistant-edit-popover {
+  position: fixed;
+  inset: 4.5rem 1rem auto auto;
   box-sizing: border-box;
-  width: 100%;
-  font: inherit;
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: 80vh;
+  margin: 0;
+  overflow: auto;
+  padding: var(--pm-space-4);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-float);
+  text-align: left;
+  white-space: normal;
 }
-.pm-assistant-edit__actions {
+.pm-assistant-edit-popover__title {
+  margin: 0 0 var(--pm-space-2);
+  padding: 0;
+  border: 0;
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+  font-weight: 600;
+  line-height: var(--pm-leading-tight);
+}
+.pm-assistant-edit-popover__status {
+  display: grid;
+  gap: var(--pm-space-2);
+}
+.pm-assistant-edit-popover__status p {
+  margin: 0;
+}
+.pm-assistant-edit-popover__status p:first-child {
+  font-weight: 600;
+}
+.pm-assistant-edit-popover__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.pm-assistant-edit__provider,
-.pm-assistant-edit__hint,
-.pm-assistant-edit__context,
-.pm-assistant-annotation__where {
-  color: var(--vp-c-text-2, inherit);
-}
-.pm-assistant-edit__list {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.pm-assistant-annotation {
-  padding-left: 0.5rem;
-  border-left: 3px solid rgba(125, 125, 125, 0.4);
-}
-.pm-assistant-annotation[data-status='done'] {
-  border-left-color: #15803d;
-}
-.pm-assistant-annotation[data-status='failed'] {
-  border-left-color: #dc2626;
-}
-.pm-assistant-edit__excerpt {
-  max-height: 8rem;
-  margin: 0.2rem 0;
-  overflow: auto;
-  padding: 0.3rem;
-  background: rgba(125, 125, 125, 0.1);
-  font-size: 0.75rem;
-  white-space: pre;
-}
-.pm-assistant-annotation[data-status='done'] .pm-assistant-annotation__status {
-  color: #15803d;
-}
-.pm-assistant-annotation[data-status='failed'] .pm-assistant-annotation__status {
-  color: #dc2626;
-}
-</style>
-
-<style>
-.pm-assistant-picked {
-  outline: 2px solid var(--vp-c-brand-1, #3451b2);
-  outline-offset: 2px;
+  gap: var(--pm-space-2);
+  margin: var(--pm-space-4) 0 0;
 }
 </style>

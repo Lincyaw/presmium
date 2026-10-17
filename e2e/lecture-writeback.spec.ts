@@ -128,7 +128,7 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
       await expect(entry).toBeVisible({ timeout: 2_000 })
     }).toPass({ timeout: 60_000 })
     await entry.click()
-    const panel = page.getByRole('complementary', { name: '讲授回写' })
+    const panel = page.getByRole('region', { name: '讲授回写' })
     await expect(panel).toBeVisible()
     return panel
   }

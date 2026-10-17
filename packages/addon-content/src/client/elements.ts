@@ -19,18 +19,19 @@ const DemoCounter = defineCustomElement({
       h('output', count.value),
     ])
   },
-  // The shadow root keeps the page's CSS out; the colors of the high-contrast mode (P-52) come in as variables.
+  // The shadow root keeps the page's CSS out; the host's tokens (N-10) and the colors of the high-contrast mode (P-52)
+  // come in as variables.
   styles: [`
     button {
       font: inherit;
       padding: 0.4em 1em;
-      border: 1px solid var(--pm-contrast-border, #0ea5e9);
-      border-radius: 0.4em;
+      border: 1px solid var(--pm-contrast-border, var(--pm-color-line-strong, currentColor));
+      border-radius: var(--pm-radius-control, 0.4em);
       background: transparent;
       color: inherit;
       cursor: pointer;
     }
-    output { font-weight: 700; color: var(--pm-contrast-fg, #0ea5e9); }
+    output { font-weight: 700; color: var(--pm-contrast-fg, var(--pm-color-accent, inherit)); }
   `],
 })
 

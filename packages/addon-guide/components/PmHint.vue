@@ -28,19 +28,20 @@ const { anchor, look, note, steps } = useCue(props, 'data-pm-hint', requestHint)
 
 <style>
 /* The beacons' size and layering are in src/client/hints.css. */
+/* A hint in place: the accent's ring, widening and fading (N-10). */
 [data-pm-hint='inline'] {
-  outline: 2px solid #818cf8;
+  outline: 2px solid var(--pm-color-accent);
   outline-offset: 3px;
   animation: pm-hint-ring 1.8s ease-out infinite;
 }
 @keyframes pm-hint-ring {
   from {
     outline-offset: 2px;
-    outline-color: rgb(129 140 248 / 0.9);
+    outline-color: var(--pm-color-accent);
   }
   to {
     outline-offset: 10px;
-    outline-color: rgb(129 140 248 / 0);
+    outline-color: transparent;
   }
 }
 @media (prefers-reduced-motion: reduce) {

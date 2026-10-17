@@ -66,7 +66,7 @@ async function confirm() {
       <button
         v-if="choices?.transcribe && track.audio?.length"
         type="button"
-        class="pm-lecture-button pm-lecture-editor__transcribe"
+        class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-editor__transcribe"
         :disabled="busy"
         @click="asking = 'transcribe'"
       >
@@ -75,19 +75,19 @@ async function confirm() {
       <template v-if="choices?.synthesize && track.utterances.length">
         <label class="pm-lecture-player__field">
           {{ t.editor.voice }}
-          <select v-model="voice" :disabled="busy">
+          <select v-model="voice" class="pm-ui-select" :disabled="busy">
             <option v-for="v in choices.synthesize.voices" :key="v.id" :value="v.id">{{ v.label }}</option>
           </select>
         </label>
-        <button type="button" class="pm-lecture-button pm-lecture-editor__synthesize" :disabled="busy || !voice" @click="asking = 'synthesize'">
+        <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-editor__synthesize" :disabled="busy || !voice" @click="asking = 'synthesize'">
           {{ t.editor.synthesize(choices.synthesize.provider) }}
         </button>
       </template>
     </div>
     <div v-if="asking" class="pm-lecture-editor__confirm" role="alertdialog" :aria-label="question">
       <p>{{ question }}</p>
-      <button type="button" class="pm-lecture-button" @click="confirm">{{ t.editor.confirm }}</button>
-      <button type="button" class="pm-lecture-button" @click="asking = undefined">{{ t.editor.cancel }}</button>
+      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="confirm">{{ t.editor.confirm }}</button>
+      <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="asking = undefined">{{ t.editor.cancel }}</button>
     </div>
     <p v-if="status" class="pm-lecture-editor__status" role="status">{{ status }}</p>
     <p v-if="failure" class="pm-lecture-editor__status" role="alert">{{ failure }}</p>
@@ -98,7 +98,7 @@ async function confirm() {
 .pm-lecture-editor {
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--vp-c-divider, rgb(125 125 125 / 0.3));
+  border-bottom: 1px solid var(--pm-color-line);
 }
 .pm-lecture-editor__row {
   display: flex;
@@ -108,10 +108,10 @@ async function confirm() {
 }
 .pm-lecture-editor__confirm {
   margin-top: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid var(--vp-c-brand-1, #3451b2);
-  border-radius: 0.3rem;
-  background: var(--vp-c-bg-soft, #f6f6f7);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border: 1px solid var(--pm-color-accent);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-accent-soft);
 }
 .pm-lecture-editor__confirm p,
 .pm-lecture-editor__status {

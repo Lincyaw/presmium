@@ -89,7 +89,7 @@ onBeforeUnmount(close)
   <div class="pm-terminal" :data-env="env" :data-state="unavailable ? 'unavailable' : state">
     <div class="pm-terminal__bar">
       <span class="pm-terminal__title">{{ t.terminal(env) }}</span>
-      <button v-if="!unavailable && (state === 'idle' || state === 'closed' || state === 'failed')" type="button" class="pm-terminal__open" :disabled="!environments" @click="open">
+      <button v-if="!unavailable && (state === 'idle' || state === 'closed' || state === 'failed')" type="button" class="pm-terminal__open pm-ui-button pm-ui-button--small" :disabled="!environments" @click="open">
         {{ state === 'idle' ? t.terminalOpen : t.terminalReconnect }}
       </button>
       <span v-if="state === 'connecting'" class="pm-terminal__status">{{ t.terminalConnecting }}</span>
@@ -102,41 +102,43 @@ onBeforeUnmount(close)
 </template>
 
 <style scoped>
+/* A terminal in 书卷 (N-10): a panel framed like the deck's code, its bar the sunk paper, the screen the terminal's
+   own (xterm.js draws its text on its own black). */
 .pm-terminal {
+  --pm-text-sm: 0.875em;
+
   margin: 0.75rem 0;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-  border-radius: 6px;
   overflow: hidden;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-panel);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
   text-align: left;
 }
 .pm-terminal__bar {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.35rem 0.75rem;
+  padding: 0.4rem 0.9rem;
+  border-bottom: 1px solid var(--pm-color-line);
+  background: var(--pm-color-sunk);
   font-size: 0.85em;
-  background: color-mix(in srgb, currentColor 6%, transparent);
 }
 .pm-terminal__title {
-  font-weight: 600;
+  font-family: var(--pm-font-mono);
+  font-weight: 500;
 }
-.pm-terminal__open {
-  margin-left: auto;
-  padding: 0.1rem 0.6rem;
-  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-  border-radius: 4px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
+.pm-terminal__open,
 .pm-terminal__status {
   margin-left: auto;
-  opacity: 0.75;
+}
+.pm-terminal__status {
+  color: var(--pm-color-muted);
 }
 .pm-terminal__note {
   margin: 0;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.9em;
 }
 .pm-terminal__screen {

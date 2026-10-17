@@ -499,7 +499,7 @@ test.describe('playback of a lecture track', () => {
     // The dimming lets the pointer through; made to catch it, the point is on whatever lies on top.
     await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
     const box = (await label.boundingBox())!
-    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.className, [box.x + box.width / 2, box.y + box.height / 2])).toBe('pm-lecture-player__ai')
+    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.classList.contains('pm-lecture-player__ai'), [box.x + box.width / 2, box.y + box.height / 2])).toBe(true)
   })
 
   test('follows a block relabeled since the recording, and skips the actions on one deleted, saying so (P-130)', async ({ page }) => {

@@ -43,12 +43,12 @@ onMounted(async () => {
     <p v-else-if="lectures && lectures.length === 0">{{ t.list.empty }}</p>
     <ul v-else-if="lectures" class="pm-lecture-view__list">
       <li v-for="lecture in lectures" :key="lecture.id">
-        <button type="button" class="pm-lecture-button" :aria-label="t.list.open(lecture.id)" @click="open(lecture.id)">
+        <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-label="t.list.open(lecture.id)" @click="open(lecture.id)">
           {{ lecture.id }}<template v-if="lecture.duration"> · {{ clockText(lecture.duration) }}</template>
         </button>
       </li>
     </ul>
-    <button type="button" class="pm-lecture-button" @click="viewer.setView(viewer.pageView.value)">{{ t.player.close }}</button>
+    <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="viewer.setView(viewer.pageView.value)">{{ t.player.close }}</button>
   </div>
 </template>
 
@@ -59,7 +59,14 @@ onMounted(async () => {
   z-index: calc(var(--vp-z-index-local-nav, 32) + 100);
   overflow: auto;
   padding: 2rem;
-  background: var(--vp-c-bg, #fff);
+  background: var(--pm-color-bg);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+}
+.pm-lecture-view h1 {
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-display);
+  font-weight: 600;
 }
 .pm-lecture-view__list {
   display: grid;

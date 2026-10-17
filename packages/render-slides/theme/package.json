@@ -1,0 +1,24 @@
+{
+  "name": "@presmium/slidev-theme-book",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Presmium's default Slidev theme, 书卷 (docs/design/slide.dc.html): the slides renderer writes it into the deck when renderers.slides names no theme",
+  "keywords": [
+    "slidev-theme",
+    "slidev"
+  ],
+  "engines": {
+    "slidev": ">=53.0.0"
+  },
+  "slidev": {
+    "colorSchema": "both",
+    "defaults": {
+      "fonts": {
+        "sans": "IBM Plex Sans",
+        "serif": "Source Serif 4",
+        "mono": "IBM Plex Mono",
+        "provider": "none"
+      }
+    }
+  }
+}

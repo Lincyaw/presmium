@@ -7,8 +7,10 @@
  * `presmium dev` or `presmium serve` serves the page it also provides
  * `AGENT` (the client of the server's assistant, ./agent.ts) and adds "AI
  * changes" to the toolbar (./EditPanel.vue): in the workspace's edit mode
- * the panel of annotations and chat, elsewhere what is needed for it, and
- * the model settings. Static output has no server: there `AGENT` is a
+ * the switch of the panel of annotations and chat, docked at the right of
+ * the split (./EditDock.vue, ./dock.ts), elsewhere what is needed for it, and
+ * the model settings; the model and where it comes from in the status bars
+ * (./ModelStatus.vue). Static output has no server: there `AGENT` is a
  * client that is never available (F-48). The text the reader selects in the
  * deck goes with a question or a chat message.
  */
@@ -19,8 +21,11 @@ import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'
 import AssistantToolbar from './AssistantToolbar.vue'
 import EditPanel from './EditPanel.vue'
+import ModelStatus from './ModelStatus.vue'
 import { createAgentClient } from './agent.ts'
 import { createAskClient } from './ask.ts'
+import { dockPanel } from './dock.ts'
+import { CLIENT_MESSAGES } from './messages.ts'
 import { agent, asker, assistant as assistantClient, navigation, trackSelection } from './state.ts'
 
 let cleanup: Unsubscribe[] = []
@@ -74,9 +79,12 @@ export const assistantPlugin: PluginDefinition = {
     }
     const t = ASSISTANT_MESSAGES[currentLocale()]
     const toolbar = ctx.tryGet(TOOLBAR)
+    const served = server.available ? toolbar : undefined
     cleanup = [
       toolbar?.register({ id: ASSISTANT_ID, title: t.toolbar.title, component: AssistantToolbar, order: 15 }),
-      server.available ? toolbar?.register({ id: `${ASSISTANT_ID}.edit`, title: t.edit.toggle, component: EditPanel, order: 16 }) : undefined,
+      served?.register({ id: `${ASSISTANT_ID}.edit`, title: t.edit.toggle, component: EditPanel, order: 16 }),
+      served?.register({ id: `${ASSISTANT_ID}.model`, title: CLIENT_MESSAGES[currentLocale()].status.title, component: ModelStatus, slot: 'status', order: 20 }),
+      served && dockPanel(served, t.edit.title),
       ctx.tryGet(PRESENTER_PANELS)?.register({ id: ASSISTANT_ID, title: t.panel.title, component: AskPanel, order: 15 }),
       typeof document === 'undefined' ? undefined : trackSelection(),
     ].filter(stop => stop !== undefined)

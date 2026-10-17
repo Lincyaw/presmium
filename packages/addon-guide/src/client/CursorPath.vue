@@ -88,6 +88,7 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
   position: absolute;
   left: -2px;
   top: -2px;
+  /* A pointer as the system draws one, white with a dark edge, on any slide. */
   fill: #fff;
   stroke: #111;
   stroke-width: 1.5;
@@ -101,7 +102,7 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 3px solid #0ea5e9;
+  border: 3px solid var(--pm-color-accent);
   opacity: 0;
 }
 .pm-cursor[data-action='hover'] .pm-cursor__ring {
@@ -131,11 +132,11 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
 
 <style>
 [data-pm-cursor='hover'] {
-  outline: 2px dashed #0ea5e9;
+  outline: 2px dashed var(--pm-color-accent);
   outline-offset: 3px;
 }
 [data-pm-cursor='click'] {
-  outline: 2px solid #0ea5e9;
+  outline: 2px solid var(--pm-color-accent);
   outline-offset: 3px;
 }
 </style>

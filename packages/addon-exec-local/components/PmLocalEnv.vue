@@ -110,7 +110,7 @@ async function replicate() {
   <section class="pm-local-env" :data-state="state">
     <header class="pm-local-env__header">
       <code>{{ file }}</code>
-      <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge">{{ t.container(status?.devcontainer ?? devcontainer ?? '') }}</span>
+      <span v-if="status?.devcontainer ?? devcontainer" class="pm-local-env__badge pm-ui-badge">{{ t.container(status?.devcontainer ?? devcontainer ?? '') }}</span>
     </header>
     <div v-show="!editing" class="pm-local-env__source">
       <slot />
@@ -118,21 +118,21 @@ async function replicate() {
     <textarea
       v-if="editing"
       v-model="draft"
-      class="pm-local-env__editor"
+      class="pm-local-env__editor pm-ui-textarea"
       spellcheck="false"
       :aria-label="t.editFile(file)"
       @keydown.stop
     />
     <div v-if="connected || archive" class="pm-local-env__actions">
       <template v-if="connected">
-        <button v-if="!editing" type="button" data-action="edit" @click="edit">
+        <button v-if="!editing" type="button" class="pm-ui-button pm-ui-button--small" data-action="edit" @click="edit">
           {{ t.edit }}
         </button>
-        <button type="button" data-action="run" :disabled="!canRun || !!busy" @click="run">
+        <button type="button" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" data-action="run" :disabled="!canRun || !!busy" @click="run">
           {{ busy === 'run' ? t.running : t.runInContainer }}
         </button>
       </template>
-      <button type="button" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
+      <button type="button" class="pm-ui-button pm-ui-button--small" data-action="replicate" :disabled="!canExport || !!busy" @click="replicate">
         {{ t.replicate }}
       </button>
     </div>
@@ -147,63 +147,54 @@ async function replicate() {
 </template>
 
 <style scoped>
+/* An environment's file (N-10): its name and container as a header, the file, the host's controls, the output in
+   the sunk panel. Sizes follow the slide's font (N-05). */
 .pm-local-env {
+  --pm-text-xs: 0.75em;
+  --pm-text-sm: 0.875em;
+
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.5em;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: 0.85em;
 }
 .pm-local-env__header {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.75em;
   align-items: baseline;
 }
-.pm-local-env__badge {
-  opacity: 0.7;
-}
 .pm-local-env__editor {
-  min-height: 8rem;
-  padding: 0.5rem;
-  font-family: var(--slidev-code-font-family, ui-monospace, monospace);
-  font-size: 0.8rem;
-  color: inherit;
-  background: rgba(128, 128, 128, 0.08);
-  border: 1px solid rgba(128, 128, 128, 0.4);
-  border-radius: 4px;
-  resize: vertical;
+  min-height: 8em;
+  padding: 0.5em 0.75em;
+  background: var(--pm-color-code);
+  font-family: var(--pm-font-mono);
+  font-size: 0.95em;
 }
 .pm-local-env__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.pm-local-env__actions button {
-  padding: 0.2rem 0.75rem;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-}
-.pm-local-env__actions button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  gap: 0.5em;
 }
 .pm-local-env__notice {
   margin: 0;
-  opacity: 0.7;
+  color: var(--pm-color-muted);
 }
 .pm-local-env__output {
   margin: 0;
-  padding: 0.5rem;
+  padding: 0.6em 0.9em;
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-mono);
   white-space: pre-wrap;
-  background: rgba(128, 128, 128, 0.12);
-  border-radius: 4px;
 }
-.pm-local-env__output[data-ok='false'] {
-  color: #b91c1c;
+.pm-local-env__output[data-ok='false'],
+.pm-local-env__error {
+  color: var(--pm-color-danger);
 }
 .pm-local-env__error {
   margin: 0;
-}
-.pm-local-env__error {
-  color: #b91c1c;
 }
 </style>
