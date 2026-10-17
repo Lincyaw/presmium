@@ -256,9 +256,10 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     expect(read(id).audio?.map(a => a.section)).toEqual(['intro', 'merge'])
 
     // Transcribe: the entry and its confirmation name the provider.
+    // The dev server renders the lecture view's page for the first time: it may take a while under load.
     await page.goto(`${dev!.url}?view=lecture&track=${id}`)
     const player = page.getByRole('region', { name: '讲授回放' })
-    await expect(player).toHaveAttribute('data-state', 'paused')
+    await expect(player).toHaveAttribute('data-state', 'paused', { timeout: 60_000 })
     await player.getByRole('button', { name: '逐字稿' }).click()
     const editor = page.getByRole('group', { name: '讲授的文字与语音' })
     await editor.getByRole('button', { name: `转写（${PROVIDER}）` }).click()

@@ -12,6 +12,13 @@
  *   <id>/captions.<lang>.vtt        the utterances and each translation (stale ones with a warning)
  *   <id>/chapters.vtt, events.vtt   chapters and the events as metadata
  *
+ * A recorded lecture is published as the build's view of the deck has it
+ * (P-55): a build for an audience of the whole deck's compilation (a host's
+ * build of the student view) publishes what the audience gets of it
+ * (`audienceTrack`, as readers get it from the server); any build leaves out
+ * what was said and done in the sections its deck does not have, such as the
+ * teachers' in `presmium build --audience student` (`deckTrack`).
+ *
  * With a voice (`renderers.lecture.voice`), it also says the deck's lecture
  * plan through `SPEECH` (WP-83): `script/`, the synthesized lecture. Clips
  * the synthesis cache has are not synthesized again; a clip it lacks with no
@@ -24,10 +31,10 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@presmium/compiler'
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, eventsVtt, formatTrack, LECTURE_ID, lectureVoice, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { audienceTrack, captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
-import { LECTURE_RENDERER, lectureConfig } from './plan.ts'
+import { latestDoc, LECTURE_RENDERER, lectureConfig, lectureView } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
@@ -106,6 +113,20 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   return true
 }
 
+/**
+ * A recorded lecture as the build publishes it, `doc` being the build's view
+ * of the deck: the audience's part of it when the deck compiled whole (the
+ * latest IR of this entry, which the passes kept) and the view leaves some
+ * of it out; else without the sections `doc` does not have.
+ */
+function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack) => LectureTrack | undefined {
+  const latest = latestDoc(deckDir)
+  const whole = latest?.meta.entry === doc.meta.entry ? latest : undefined
+  const left = whole && leftOut(lectureView(whole), doc)
+  if (whole && left && !leavesNothing(left)) return track => audienceTrack(track, whole, left)
+  return track => deckTrack(track, whole ?? doc)
+}
+
 function summary(track: LectureTrack) {
   return { id: track.id, lang: track.lang, voice: track.voice, duration: trackDuration(track), captions: captionLanguages(track) }
 }
@@ -120,6 +141,7 @@ export const lectureRenderer: Renderer = {
     const synthesize = Boolean(lectureVoice(lectureConfig(doc)))
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
     let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
+    const published = publishedTrack(doc, ctx.deckDir)
     for (const id of trackIds(ctx.deckDir)) {
       if (synthesize && id === SCRIPT_TRACK) {
         ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lectures/${SCRIPT_TRACK} is not published: ${SCRIPT_TRACK} is the id of the synthesized lecture` })
@@ -134,10 +156,12 @@ export const lectureRenderer: Renderer = {
         continue
       }
       if (!stored) continue
-      const { track } = stored
+      // The lock keeps the keys of the whole lecture: what this build leaves out is said in others.
+      tracks.push(stored.track)
+      const track = published(stored.track)
+      if (!track) continue
       publishTrack(track, stored.text, stored.file, doc, ctx, policy)
       index.push(summary(track))
-      tracks.push(track)
     }
     mkdirSync(ctx.outDir, { recursive: true })
     writeFileSync(join(ctx.outDir, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)

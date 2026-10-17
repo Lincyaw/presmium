@@ -10,6 +10,7 @@
  * compile before they serve): editors' and owners' from the whole IR,
  * readers' and `tutor` tokens' from its student view (P-55, D17).
  */
+import { resolve } from 'node:path'
 import { audienceView, STUDENT, viewFor } from '@presmium/compiler'
 import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRPass, MdastNode } from '@presmium/kernel'
@@ -141,20 +142,28 @@ export function latestView(deckDir: string, view: DeckView = 'full'): IRDocument
 }
 
 /**
- * Keeps each compiled IR, with the recorded outputs (after compile-time
- * execution) for `run` cues; and says in `presmium.lecture.lectures` whether
- * the deck has lectures (a recorded one, a voice that says its plan, or
- * lectures published elsewhere, `presmium.lecture.url`), so a static web form
- * offers its lecture view only then (P-131).
+ * Keeps each compiled IR of the deck (not those of its translations, which
+ * compile as files of its directory), with the recorded outputs (after
+ * compile-time execution) for `run` cues; and says in
+ * `presmium.lecture.lectures` whether the deck publishes lectures, so a
+ * static web form offers its lecture view only then (P-131): lectures
+ * published elsewhere (`presmium.lecture.url`), or a voice that says its plan
+ * or a recorded lecture where the deck's build runs the lecture renderer (it
+ * names it among its `renderers`, or names none: the build then runs every
+ * renderer installed, as the web form's link to the slides assumes).
  */
 export const keepPass: IRPass = {
   name: 'presmium.lecture.keep',
   after: 'execute',
   order: 1000,
   run(doc, ctx) {
-    latest.set(ctx.deckDir, doc)
+    const kept = latest.get(ctx.deckDir)
+    const translation = Boolean(doc.meta.translationOf) || Object.values(kept?.config.translations ?? {}).some(entry => resolve(ctx.deckDir, entry) === doc.meta.entry)
+    if (!translation) latest.set(ctx.deckDir, doc)
     const own = isRecord(doc.config.presmium[LECTURE_ID]) ? doc.config.presmium[LECTURE_ID] as Record<string, unknown> : {}
-    const lectures = typeof own.url === 'string' || Boolean(lectureVoice(lectureConfig(doc))) || trackIds(ctx.deckDir).length > 0
+    const renderers = Object.keys(doc.config.renderers)
+    const built = renderers.length === 0 || renderers.includes(LECTURE_RENDERER)
+    const lectures = typeof own.url === 'string' || (built && (Boolean(lectureVoice(lectureConfig(doc))) || trackIds(ctx.deckDir).length > 0))
     // A copy: the configuration may be the headmatter's own object.
     doc.config.presmium = { ...doc.config.presmium, [LECTURE_ID]: { ...own, lectures } }
   },

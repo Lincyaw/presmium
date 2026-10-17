@@ -16,7 +16,7 @@ import type { Operations } from '@presmium/host'
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
+import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, sha256Hex, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
 import type { LectureTrack, Utterance } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
 import { ClipClock, MediaClock, SilentClock } from './clock.ts'
@@ -197,19 +197,15 @@ function text(u: Utterance): string {
 }
 
 /** `sha256:<hex>` of a text, as a translation records its original's (P-137). */
-async function digest(text: string): Promise<string> {
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
-  return `sha256:${[...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('')}`
-}
+const digest = (text: string) => `sha256:${sha256Hex(text)}`
 
-/** The utterances whose translation into the language shown was made from another text (where the page can hash: a secure context). */
-const stale = shallowRef(new Set<string>())
-watch([player, language], async ([p, lang]) => {
-  stale.value = new Set()
-  if (!p || !lang || lang === p.track.lang || !globalThis.crypto?.subtle) return
-  const digests = new Map(await Promise.all(p.track.utterances.map(async u => [u.text, await digest(u.text)] as const)))
-  if (player.value === p && language.value === lang) stale.value = new Set(p.track.utterances.filter(u => isStale(u, lang, t => digests.get(t)!)).map(u => u.id))
-}, { immediate: true })
+/** The utterances whose translation into the language shown was made from another text. */
+const stale = computed(() => {
+  const p = player.value
+  const lang = language.value
+  if (!p || !lang || lang === p.track.lang) return new Set<string>()
+  return new Set(p.track.utterances.filter(u => isStale(u, lang, digest)).map(u => u.id))
+})
 
 function toggle() {
   const p = player.value

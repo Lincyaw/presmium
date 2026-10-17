@@ -22,7 +22,7 @@ export function useViewer(): Viewer {
   return context.useViewer()
 }
 
-/** The compiler's word (`presmium.lecture.lectures`): the deck has a lecture, recorded or said by a voice, or one published elsewhere. */
+/** The compiler's word (`presmium.lecture.lectures`): the deck publishes lectures, recorded or said by a voice, here or elsewhere. */
 const compiled = shallowRef(false)
 /** The server's list: under `presmium dev` and `presmium serve`, the lectures this member gets. */
 const listed = shallowRef<boolean>()
@@ -35,13 +35,19 @@ export function offerLectures(config: Record<string, unknown>): void {
   compiled.value = config.lectures === true
 }
 
+/** Asks the server for its list of lectures again (after a recording); nothing where no server serves the page. */
+export async function refreshLectures(): Promise<void> {
+  const server = useServer()
+  if (!server.available) return
+  const response = await server.fetch(LECTURE_ID, 'tracks').catch(() => undefined)
+  const list: unknown = response?.ok ? await response.json().catch(() => []) : []
+  listed.value = Array.isArray(list) && list.length > 0
+}
+
 /** Asks the server for the lectures once one serves the page (the web form's view menu). */
 export function followLectures(): void {
-  watch(() => useServer().available, async (available) => {
-    if (!available) return
-    const response = await useServer().fetch(LECTURE_ID, 'tracks').catch(() => undefined)
-    const list: unknown = response?.ok ? await response.json().catch(() => []) : []
-    listed.value = Array.isArray(list) && list.length > 0
+  watch(() => useServer().available, (available) => {
+    if (available) void refreshLectures()
   }, { immediate: true })
 }
 

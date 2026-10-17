@@ -2,19 +2,21 @@
 // `presmium serve` behind a login proxy's secret, `presmium gateway` with the fake speech engine
 // (`presmium-speech fake`, a process of its own) and `presmium agent-host`. The document `talk` has teacher-only
 // narration, a teacher-only section, a reference to that section in the students' narration, and a recorded
-// lecture `rec` that goes there, with its audio and synthesized clips; `ghost` names a voice of an engine
-// nobody defined.
+// lecture `rec` that goes there, with its audio and synthesized clips; `renamed` was recorded when that section
+// was labeled `solutions`, so the deck has no such section now; `ghost` names a voice of an engine nobody defined.
 // - Synthesis is paid, so a reader's request for `tracks/script` before any editor's is refused (409) and asks
 //   the engine for nothing; an editor's request has the whole deck's made, then the students'; the reader gets
 //   the students', and the engine no new request.
 // - Nothing only teachers see reaches a reader: not through `tracks`, `tracks/script`, `tracks/rec`, its clips
-//   and media, an error, nor the plugin's reading tools with a `tutor` token (MCP).
+//   and media, an error, nor the plugin's reading tools with a `tutor` token (MCP); nor what was said in a
+//   section the deck no longer has (`renamed`): what cannot be placed in the student view is left out.
 // - The media and clip routes open the file they check: while the sandbox swaps the file for a link to the
 //   workspace's `.git/config` and back (security-shared/p3-race*.sh), 3000 requests to each get the file or
-//   404, never the link's target.
-import { execFileSync, spawn } from 'node:child_process'
+//   404 (both seen), never the link's target.
+// - `presmium build --audience student --to lecture` publishes the students' part of each recorded lecture.
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -34,7 +36,7 @@ const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.me
 const STUDENT_CLIP = `${'c'.repeat(32)}.wav`
 const TEACHER_CLIP = `${'b'.repeat(32)}.wav`
 /** What only teachers see, and what of it the reader's lectures must not hold. */
-const TEACHER = ['只给教师看的讲解', '期末考试的第三题', '教师指南', '第三题的答案', 'OggTeacherAudio', 'TEACHER-CLIP']
+const TEACHER = ['只给教师看的讲解', '期末考试的第三题', '教师指南', '第三题的答案', 'OggTeacherAudio', 'TEACHER-CLIP', 'RENAMED-SECRET', 'OggRenamedTeacher']
 
 const DECK = `---
 title: 讲授
@@ -88,6 +90,27 @@ const REC: LectureTrack = {
   events: [
     [0, 'go', { section: 'intro', step: 0, view: 'present' }],
     [4000, 'go', { section: 'guide', step: 0, view: 'present' }],
+  ],
+}
+
+/** Recorded when the teachers' section was labeled `solutions`: what was said there repeats the deck's text. */
+const RENAMED: LectureTrack = {
+  ...REC,
+  id: 'renamed',
+  audio: [
+    { section: 'intro', start: 0, src: 'audio/intro.ogg', duration: 4 },
+    { section: 'solutions', start: 4, src: 'audio/solutions.ogg', duration: 4 },
+  ],
+  utterances: [
+    { id: 'u1', t: 500, d: 2000, text: '开场的另一段录音。', section: 'intro', step: 0 },
+    { id: 'u2', t: 4500, d: 2000, text: 'RENAMED-SECRET 整节只给教师：期末考试的第三题就是这个例子。', section: 'solutions', step: 0 },
+    // Said in the teachers' section without a section of its own: placed by the move before it.
+    { id: 'u3', t: 6600, d: 1000, text: 'RENAMED-SECRET 第三题的答案。' },
+  ],
+  events: [
+    [0, 'go', { section: 'intro', step: 0, view: 'present' }],
+    [4000, 'go', { section: 'solutions', step: 0, view: 'present' }],
+    [6800, 'mark', { label: 'RENAMED-SECRET' }],
   ],
 }
 
@@ -170,6 +193,9 @@ describe('a reader\'s lectures (SHARED)', () => {
       'talk/lectures/rec/track.json': formatTrack(REC),
       'talk/lectures/rec/audio/intro.ogg': 'OggStudentAudio',
       'talk/lectures/rec/audio/guide.ogg': 'OggTeacherAudio',
+      'talk/lectures/renamed/track.json': formatTrack(RENAMED),
+      'talk/lectures/renamed/audio/intro.ogg': 'OggRenamedIntro',
+      'talk/lectures/renamed/audio/solutions.ogg': 'OggRenamedTeacher',
       [`talk/.presmium/speech/${STUDENT_CLIP}`]: 'STUDENT-CLIP',
       [`talk/.presmium/speech/${TEACHER_CLIP}`]: 'TEACHER-CLIP',
       'ghost/lecture.md': '---\ntitle: 幽灵\nplugins:\n  - "@presmium/slidev-addon-lecture"\n  - "@presmium/slidev-addon-speech"\nrenderers:\n  lecture:\n    voice: { engine: ghost, voice: alpha }\n---\n\n(intro)=\n# 幽灵\n\n没有引擎读得出的这一句讲解。\n',
@@ -223,7 +249,11 @@ describe('a reader\'s lectures (SHARED)', () => {
   it('refuses a reader before an editor had it made, asking the engine nothing; then gives the reader the students\' lecture without a new request', async () => {
     const listed = await as('reader@test', 'tracks')
     expect(listed.status, `${listed.text}\n${running[0]!.output()}`).toBe(200)
-    expect(JSON.parse(listed.text)).toEqual([expect.objectContaining({ id: 'script', voice: expect.objectContaining({ kind: 'synthetic' }) }), expect.objectContaining({ id: 'rec', utterances: 1 })])
+    expect(JSON.parse(listed.text)).toEqual([
+      expect.objectContaining({ id: 'script', voice: expect.objectContaining({ kind: 'synthetic' }) }),
+      expect.objectContaining({ id: 'rec', utterances: 1 }),
+      expect.objectContaining({ id: 'renamed', utterances: 1 }),
+    ])
 
     const refused = await as('reader@test', 'tracks/script')
     expect(refused.status, refused.text).toBe(409)
@@ -265,6 +295,13 @@ describe('a reader\'s lectures (SHARED)', () => {
     expect((await answer(`tracks/rec/clips/${TEACHER_CLIP}`)).status).toBe(404)
     expect((await answer('tracks/rec/audio/guide.ogg')).status).toBe(404)
     expect((await answer('tracks/nothing')).status).toBe(404)
+    // A section the deck no longer has: what was said and done there, and its audio, are left out.
+    const renamed = JSON.parse((await answer('tracks/renamed')).text) as LectureTrack
+    expect(renamed.utterances.map(u => u.text)).toEqual(['开场的另一段录音。'])
+    expect(renamed.events).toEqual([[0, 'go', { section: 'intro', step: 0, view: 'present' }]])
+    expect(renamed.audio).toEqual([expect.objectContaining({ section: 'intro', src: 'audio/intro.ogg' })])
+    expect(await answer('tracks/renamed/audio/intro.ogg')).toEqual({ status: 200, text: 'OggRenamedIntro' })
+    expect((await answer('tracks/renamed/audio/solutions.ogg')).status).toBe(404)
     // No engine says the voice of `ghost`: the reader is told it cannot play, without the sentence.
     const ghost = await answer('tracks/script', 'ghost')
     expect(ghost.status, ghost.text).toBe(502)
@@ -295,36 +332,76 @@ describe('a reader\'s lectures (SHARED)', () => {
       await call('tools/call', { name: 'lecture_preview', arguments: { document: 'talk' } }),
       await call('tools/call', { name: 'track_narration', arguments: { document: 'talk', track: 'rec' } }),
       await call('tools/call', { name: 'track_translations', arguments: { document: 'talk', track: 'rec', lang: 'en' } }),
+      await call('tools/call', { name: 'track_narration', arguments: { document: 'talk', track: 'renamed' } }),
+      await call('tools/call', { name: 'track_translations', arguments: { document: 'talk', track: 'renamed', lang: 'en' } }),
     ]
     expect(tools[0]).toContain('读者听到的讲授')
     expect(tools[1]).toContain('开场的录音讲解')
     expect(tools[2]).toContain('开场的录音讲解')
+    expect(tools[3]).toContain('开场的另一段录音')
+    expect(tools[4]).toContain('开场的另一段录音')
     for (const text of TEACHER) expect(tools.join('\n'), text).not.toContain(text)
+  }, 180_000)
+
+  it('publishes the students\' part of each recorded lecture in a build for them (P-55)', async () => {
+    const out = mkdtempSync(join(tmpdir(), 'presmium-lecture-student-'))
+    try {
+      const built = spawnSync(process.execPath, [PRESMIUM_BIN, 'build', '--audience', 'student', '--to', 'lecture', '--out', out], {
+        cwd: join(dir, 'talk'),
+        env: env({ PRESMIUM_SPEECH_FAKE_URL: fake, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake', PRESMIUM_OPERATOR_DIR: operator }),
+        encoding: 'utf8',
+        timeout: 150_000,
+      })
+      expect(built.status, `${built.stdout}\n${built.stderr}`).toBe(0)
+      const published = (id: string) => JSON.parse(readFileSync(join(out, 'lecture', id, 'track.json'), 'utf8')) as LectureTrack
+      expect(published('rec').utterances.map(u => u.text)).toEqual(['开场的录音讲解。'])
+      expect(published('renamed').utterances.map(u => u.text)).toEqual(['开场的另一段录音。'])
+      expect(published('renamed').audio).toEqual([expect.objectContaining({ section: 'intro' })])
+      expect(readFileSync(join(out, 'lecture/rec/audio/intro.ogg'), 'utf8')).toBe('OggStudentAudio')
+      expect(existsSync(join(out, 'lecture/rec/audio/guide.ogg'))).toBe(false)
+      expect(existsSync(join(out, 'lecture/renamed/audio/solutions.ogg'))).toBe(false)
+      expect(existsSync(join(out, 'lecture/rec/clips', TEACHER_CLIP))).toBe(false)
+      const files = readdirSync(out, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile()).map(entry => join(entry.parentPath, entry.name))
+      const text = files.map(file => readFileSync(file, 'utf8')).join('\n')
+      for (const secret of TEACHER) expect(text, secret).not.toContain(secret)
+    } finally {
+      rmSync(out, { recursive: true, force: true })
+    }
   }, 180_000)
 
   it('serves the media and clip routes from the file it opened: a link swapped in gives 404, never its target', async () => {
     const secret = join(dir, '.git/config')
-    const flip = (file: string, real: string) => spawn(process.execPath, ['-e', `
-      const { renameSync, rmSync, symlinkSync, writeFileSync } = require('node:fs')
-      const [file, real, secret] = process.argv.slice(1)
-      for (;;) {
-        writeFileSync(file + '.real', real)
-        renameSync(file + '.real', file)
-        rmSync(file + '.link', { force: true })
-        symlinkSync(secret, file + '.link')
-        renameSync(file + '.link', file)
-      }`, file, real, secret], { stdio: 'ignore' })
+    // Swaps the file for the link and back for as long as it runs; says `swapping` once it has swapped both ways.
+    const flip = async (file: string, real: string) => {
+      const child = spawn(process.execPath, ['-e', `
+        const { renameSync, rmSync, symlinkSync, writeFileSync } = require('node:fs')
+        const [file, real, secret] = process.argv.slice(1)
+        for (let n = 0; ; n++) {
+          writeFileSync(file + '.real', real)
+          renameSync(file + '.real', file)
+          rmSync(file + '.link', { force: true })
+          symlinkSync(secret, file + '.link')
+          renameSync(file + '.link', file)
+          if (n === 0) process.stdout.write('swapping\\n')
+        }`, file, real, secret], { stdio: ['ignore', 'pipe', 'ignore'] })
+      await new Promise<void>((resolve, reject) => {
+        child.stdout!.once('data', () => resolve())
+        child.once('exit', code => reject(new Error(`the swapping process exited (${code})`)))
+      })
+      return child
+    }
     const routes = [
       { path: 'tracks/rec/audio/intro.ogg', file: join(dir, 'talk/lectures/rec/audio/intro.ogg'), real: 'OggStudentAudio' },
       { path: `tracks/rec/clips/${STUDENT_CLIP}`, file: join(dir, 'talk/.presmium/speech', STUDENT_CLIP), real: 'STUDENT-CLIP' },
     ]
     for (const route of routes) {
-      const flipper = flip(route.file, route.real)
+      const flipper = await flip(route.file, route.real)
       const seen = new Map<string, number>()
       try {
         let sent = 0
+        // 3000 requests, and more until one came while the link was there (the race was run), up to 30000.
         await Promise.all(Array.from({ length: 6 }, async () => {
-          while (sent < 3000) {
+          while (sent < 3000 || (!seen.has('404') && sent < 30_000)) {
             sent++
             const got = await as('reader@test', route.path)
             const what = got.status === 200 ? got.text : String(got.status)
@@ -337,6 +414,7 @@ describe('a reader\'s lectures (SHARED)', () => {
       // The file, or 404 while the link is there: nothing else, the link's target least of all.
       expect([...seen.keys()].filter(what => what !== '404' && what !== route.real), route.path).toEqual([])
       expect(seen.get(route.real), route.path).toBeGreaterThan(0)
+      expect(seen.get('404'), route.path).toBeGreaterThan(0)
       expect([...seen.values()].reduce((a, b) => a + b), route.path).toBeGreaterThanOrEqual(3000)
     }
   }, 300_000)

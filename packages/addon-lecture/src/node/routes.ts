@@ -17,8 +17,9 @@
  * Editors and owners get the lectures of the whole deck; readers those of
  * its student view (P-55, D17): `script` said from the student view's plan,
  * a recorded lecture without what was said and done in the sections and
- * blocks the view leaves out (`viewTrack`), and only the clips and media of
- * what they get. What a reader is told of a failure quotes nothing said.
+ * blocks the view leaves out or does not have (`viewTrack`: a section
+ * relabeled since the recording is left out too), and only the clips and
+ * media of what they get. What a reader is told of a failure quotes nothing said.
  * Files are read as they are opened, never through a link (`openInDeck`).
  *
  * Synthesis is paid, so only an editor's request makes `script` with the

@@ -7,7 +7,7 @@
 // operator registers a cloned voice's consent with `presmium-speech consent`.
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
@@ -276,6 +276,15 @@ describe('cloned voices in LOCAL mode', () => {
       const withdrawn = await clone(started.server)
       expect(withdrawn.status).toBe(403)
       expect(withdrawn.json().error).toContain(`${join(operator, 'consent/fake/cloned-lin.json')} is missing`)
+      // Nor does an editor's word in the deck's cache record make it another voice: the engine lists it as cloned.
+      const cache = join(dir, '.presmium/speech')
+      for (const name of readdirSync(cache).filter(file => file.endsWith('.json'))) {
+        const cached = JSON.parse(readFileSync(join(cache, name), 'utf8')) as Record<string, unknown>
+        if (cached.voice === 'cloned-lin') writeFileSync(join(cache, name), JSON.stringify({ ...cached, cloned: false }))
+      }
+      const edited = await clone(started.server)
+      expect(edited.status).toBe(403)
+      expect(edited.json().error).toContain(`${join(operator, 'consent/fake/cloned-lin.json')} is missing`)
       expect((await fake.requests()).length).toBe(before)
     } finally {
       await started.dev.stop()

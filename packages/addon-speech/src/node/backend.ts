@@ -37,10 +37,14 @@ export interface SpeechBackend {
   /**
    * Refuses (a `SpeechError` 403) a cloned voice the operator does not allow
    * now, as a synthesis in it is refused (the setting and the consent record,
-   * ./consent.ts): a cache answers a clip in a cloned voice only after this
-   * (N-08, decision D-7), so a withdrawn consent stops its clips too.
+   * ./consent.ts): a cache answers a clip only after this (N-08, decision
+   * D-7), so a withdrawn consent stops the clips of the voice too. The voice
+   * is cloned when its cache record says so (`recorded`), or when its engine,
+   * defined here, says so without being asked (its adapter, or the list of
+   * voices this process has got): the record is the deck's, which an editor
+   * may change, and a hit asks no engine.
    */
-  consent(engine: string, voice: string, signal?: AbortSignal): Promise<void>
+  consent(engine: string, voice: string, recorded: boolean, signal?: AbortSignal): Promise<void>
 }
 
 /**

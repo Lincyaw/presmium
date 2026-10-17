@@ -14,8 +14,10 @@
 // one made from an earlier text and marked stale (P-137); a synthesized voice whose label stays over a
 // spotlight on a block of a section whose id holds `.` and `:`; and one recorded before a block was relabeled
 // and another deleted, which follows the first and skips what was on the second (P-130).
-// The view menu offers the lecture view where the deck has lectures, and a web build of a deck without
-// lectures neither offers it nor asks for the lecture list (no 404).
+// The view menu offers the lecture view where the deck publishes lectures: under `presmium dev` once the
+// first is recorded; in a build whose deck names the lecture renderer among its renderers. A web build of a
+// deck whose renderers are the web form's alone neither offers it nor asks for the lecture list (no 404),
+// though the deck has a recorded lecture. In the present view, Tab reaches the player that lies over it.
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -82,6 +84,8 @@ test.describe('recording in the present view', () => {
     test.setTimeout(300_000)
     dir = deckDir('lecture-dev', LINK)
     cpSync(FIXTURE, dir, { recursive: true })
+    // No lecture yet: the first test records the first.
+    rmSync(join(dir, 'lectures/demo'), { recursive: true, force: true })
     dev = await startDev(dir, 'web')
   })
   test.afterAll(async () => {
@@ -92,8 +96,9 @@ test.describe('recording in the present view', () => {
   test('records go, point and spot events with Ogg/Opus audio and no video', async ({ page }) => {
     await openDevPage(page, `${dev.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const present = page.locator('.pm-present')
-    // The server lists the deck's lectures, so the view menu offers the lecture view.
-    await expect(page.locator('select.pm-view-menu').first().locator('option[value="lecture"]')).toHaveCount(1)
+    // The server lists no lecture yet, so the view menu does not offer the lecture view.
+    const lectureView = page.locator('select.pm-view-menu').first().locator('option[value="lecture"]')
+    await expect(lectureView).toHaveCount(0)
     // The page times of the key presses and of the first move over the code, as the page's events have them.
     await page.evaluate(() => {
       const times: { keys: number[], move?: number } = { keys: [] }
@@ -127,6 +132,8 @@ test.describe('recording in the present view', () => {
     const added = [...recorded(dir)].filter(([id]) => !before.has(id))
     expect(added).toHaveLength(1)
     const [id, track] = added[0]!
+    // Once it is saved, the server lists it: the view menu offers the lecture view.
+    await expect(lectureView).toHaveCount(1)
     const types = new Set(track.events.map(([, type]) => type))
     expect([...types]).toEqual(expect.arrayContaining(['go', 'point', 'spot']))
     expect(track.events.filter(([, type]) => type === 'go').map(([, , data]) => [data.section, data.step])).toEqual(expect.arrayContaining([['intro', 0], ['merge', 0], ['merge', 1], ['merge', 2]]))
@@ -355,6 +362,9 @@ test.describe('playback of a lecture track', () => {
     link: LINK,
     bases: true,
     edit(dir) {
+      // The deck publishes its lectures: it names the lecture renderer among its renderers.
+      const entry = join(dir, 'lecture.md')
+      writeFileSync(entry, readFileSync(entry, 'utf8').replace('renderers:\n', 'renderers:\n  lecture: {}\n'))
       mkdirSync(join(dir, 'lectures/demo/audio'))
       writeFileSync(join(dir, 'lectures/demo/audio/demo.wav'), silence(12))
       // The same lecture without audio.
@@ -501,15 +511,30 @@ test.describe('playback of a lecture track', () => {
     await expect(page.locator('.pm-present .pm-block[data-block="merge-code"]')).toHaveClass(/driver-active-element/)
   })
 
+  test('reaches the player with Tab, a lecture chosen from the list (N-06, P-131)', async ({ page }) => {
+    await page.goto(`${deck().web}/?view=lecture`)
+    await page.getByRole('button', { name: '播放讲授 demo' }).click()
+    const player = page.getByRole('region', { name: '讲授回放' })
+    await expect(player).toHaveAttribute('data-state', 'paused')
+    // Tab cycles through the present view and what lies over it, the player among them.
+    let reached = false
+    for (let n = 0; n < 40 && !reached; n++) {
+      await page.keyboard.press('Tab')
+      reached = await player.evaluate(region => region.contains(document.activeElement))
+    }
+    expect(reached).toBe(true)
+  })
+
   test('offers the lecture view in the view menu (P-131)', async ({ page }) => {
     await page.goto(`${deck().web}/`)
     await expect(page.locator('select.pm-view-menu').first().locator('option[value="lecture"]')).toHaveText('讲授')
   })
 })
 
-test.describe('a web build of a deck without lectures (P-131)', () => {
+test.describe('a web build of a deck whose renderers are the web form\'s alone (P-131)', () => {
   test.describe.configure({ mode: 'default' })
-  const deck = useFixture('lecture', { to: 'web', link: LINK, edit: dir => rmSync(join(dir, 'lectures'), { recursive: true, force: true }) })
+  // The fixture names only `web` among its renderers, and has a recorded lecture (lectures/demo).
+  const deck = useFixture('lecture', { to: 'web', link: LINK })
 
   test('offers no lecture view, and asks for no lecture list', async ({ page }) => {
     const missing: string[] = []

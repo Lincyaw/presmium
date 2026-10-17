@@ -10,7 +10,7 @@ import { clockText, LECTURE_ID, LECTURE_MESSAGES, simplifyPath } from '../domain
 import type { PathPoint } from '../domain/index.ts'
 import { applyInk } from './marks.ts'
 import { LectureRecorder } from './recorder.ts'
-import { playing, useViewer } from './state.ts'
+import { playing, refreshLectures, useViewer } from './state.ts'
 
 defineProps<{ view: string }>()
 
@@ -65,7 +65,8 @@ async function start() {
 
 async function stop() {
   await recorder.value?.stop()
-  await loadTracks()
+  // The view menu offers the lecture view once the deck has one.
+  await Promise.all([loadTracks(), refreshLectures()])
 }
 
 const status = computed(() => {

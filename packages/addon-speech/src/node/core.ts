@@ -60,10 +60,15 @@ export function speechCore(options: CoreOptions): SpeechCore {
    * fails the synthesis too: whether its voice is cloned cannot be known.
    */
   const lists = new Map<string, Promise<VoiceInfo[]>>()
+  /** The lists this process has got, which tell a cache's hit whether its voice is cloned without asking (`consent`). */
+  const known = new Map<string, VoiceInfo[]>()
   const allVoices = (engine: EngineDefinition) => {
     let list = lists.get(engine.id)
     if (!list) {
-      list = adapter(engine).voices(undefined, AbortSignal.timeout(30_000)).catch((error: unknown) => {
+      list = adapter(engine).voices(undefined, AbortSignal.timeout(30_000)).then((voices) => {
+        known.set(engine.id, voices)
+        return voices
+      }, (error: unknown) => {
         lists.delete(engine.id)
         throw new SpeechError(502, `the voices of speech engine "${engine.id}" are not known, so a cloned voice cannot be told: ${error instanceof Error ? error.message : String(error)}`)
       })
@@ -133,7 +138,13 @@ export function speechCore(options: CoreOptions): SpeechCore {
       return adapter(engine).transcribe({ audio, mime: audioMime(audio, request.audio.type), lang: request.lang, hints: request.hints }, signal)
     },
 
-    async consent(engine, voice) {
+    async consent(engine, voice, recorded) {
+      if (!recorded) {
+        // Not cloned by the record's word: by the engine's where it is known without asking (a hit asks no engine), else the record stands.
+        const defined = engines().engines.find(own => own.id === engineId(engine))
+        const cloned = defined && (adapter(defined).cloned?.(voice) === true || known.get(defined.id)?.some(own => own.id === voice && own.cloned === true) === true)
+        if (!cloned) return
+      }
       checkConsent(options.operatorDir, options.settings, engineId(engine), voice)
     },
 

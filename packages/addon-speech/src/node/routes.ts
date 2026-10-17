@@ -41,7 +41,7 @@ export function protocolHandler(backend: SpeechBackend): (request: Request, path
       // Whether a cloned voice may be used now (the gateway's settings and consent records), for a cache's hit.
       if (path === 'audio/consent' && method === 'GET') {
         const query = new URL(request.url).searchParams
-        await backend.consent(query.get('engine') ?? '', query.get('voice') ?? '', request.signal)
+        await backend.consent(query.get('engine') ?? '', query.get('voice') ?? '', query.get('recorded') !== '0', request.signal)
         return json({ ok: true })
       }
       if (path === 'audio/voices' && method === 'GET') {

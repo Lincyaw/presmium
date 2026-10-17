@@ -12,7 +12,7 @@ import type { GatewayAccess, TranscriptionRequest } from '@presmium/kernel'
 import type { EngineListing, TimedSpeech, TranscriptionAnswer, VoiceListing } from '../domain/index.ts'
 import { PROTOCOL_PATH, SPEECH_ID, speechBody, transcriptOf } from '../domain/index.ts'
 import type { SpeechBackend } from './backend.ts'
-import { answerError } from './errors.ts'
+import { answerError, SpeechError } from './errors.ts'
 
 export function gatewayBackend(access: GatewayAccess): SpeechBackend {
   const call = async <T>(path: string, init: RequestInit = {}, signal?: AbortSignal): Promise<T> => {
@@ -48,8 +48,13 @@ export function gatewayBackend(access: GatewayAccess): SpeechBackend {
         AIGC: timed.AIGC,
       }
     },
-    async consent(engine, voice, signal) {
-      await call(`audio/consent?${new URLSearchParams({ engine, voice })}`, {}, signal)
+    async consent(engine, voice, recorded, signal) {
+      try {
+        await call(`audio/consent?${new URLSearchParams({ engine, voice, recorded: recorded ? '1' : '0' })}`, {}, signal)
+      } catch (error) {
+        // A voice its record does not call cloned is refused only by the gateway's answer, not when it cannot give one.
+        if (recorded || (error instanceof SpeechError && error.status === 403)) throw error
+      }
     },
     async transcribe(request: TranscriptionRequest, signal) {
       const form = new FormData()
