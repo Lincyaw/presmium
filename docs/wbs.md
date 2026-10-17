@@ -1134,6 +1134,13 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - F-86 与 C-9：architecture 第 8 节（K-09、K-13 指向正确的用例，v0.8 的表按交付照实列出）、第 12 节（删去过时的两行，再分发运行时的许可证文件）、领域模型术语表、需求 5.3、原则 2 与附录 B（决定 D-3），以及 K2 波次各组的作者与运营者可见的变化（`documentLink`、`Route.maxBody`、控制通道的章节 ID、`DOCUMENT_LOCKS`、`AgentTask.revert`、`AgentToolContext.view`、lychee、tutor、`maxQuestions`、MCP `build` 的输出位置、`engines`、讲授的学生视图、媒体地址前缀、讲授视图的出现条件、许可证、参数读回、决定 D-2、D-5、D-6、D-8、D-9、D-11、D-12）。其他组的部分按 C-9 与 `review-round3.md` 的条目写成，合并后由验收者核对。
 - 用例：`e2e/site.spec.ts`（F-24、F-25）、`addon-code/test/check.test.ts`（F-26）、`classroom-server/test/server.test.ts`（F-27）、`e2e/viewer.spec.ts`（F-77、F-84）、`addon-classroom/test/notebook.test.ts`（F-78）、`e2e/web.spec.ts`（F-79、F-80、F-81）、`e2e/classroom.spec.ts`（F-82）、`e2e/perf.spec.ts`（F-83）、`e2e/session.spec.ts`（F-85，网页与幻灯片两种形态，以 `buildFixture` 新的 `audience` 选项构建学生版；章节中教师专用的一步在前时学习者的步号，主讲直接回到教师章节时学习者到之前最近的章节，只给学生的章节的总览序号）。
 
+### K2 波次的合并与验证（2026-10-17）
+
+- 合并顺序 89c → 89d → 89f → 89e（89e 最后结束；89f 的 C-8 待启用用例在 89e 合并后由验收者启用）。89c、89e、89f 通过验证；89d 的第三轮验证仍有两项主要问题（F-13 录制后讲义改动时学生版讲授的媒体、F-57 同意撤回后已合成片段的缓存），都在 SHARED 的读者路径上复现，本机与学生版构建中仍需要的部分转入 WP-89g。
+- 验收者在合并时完成：F-73 的网页 service worker（89e 交出的补丁，按 89f 的发布地址改写合并），启用 `e2e/smoke.spec.ts` 的 PDF 导出与 `e2e/demo.spec.ts` 的着色器用例；决定 R-27 优先于“着色器整张可见”：`extend-gpu` 去掉 `zoom`，代码保持 18 px 以上，在面板中滚动。
+- 完整验证（main 2232ec5）：`pnpm test` 290 通过、3 跳过；示例构建与检查 0 错误；Playwright 308 通过（Chromium 全部用例与其他浏览器的冒烟用例），性能用例 4 通过。
+- 各组的遗留与验证者的次要发现：见 WP-89g 的条目。
+
 ## L0 波次：删除共享部署与浏览器端读者问答（WP-92a、WP-92b、WP-89g；v0.9）
 
 需求见 `requirements.md` 的“定位与边界”、N-08、N-09、P-112、P-120 与附录 B“v0.9 相对 v0.8”。工作区服务只供运行它的那个用户在本机使用，共享部署（SHARED 模式）整体删除；读者问答改为浏览器端，由读者自己填写模型服务。
