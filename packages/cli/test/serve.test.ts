@@ -356,9 +356,10 @@ describe('compile-time execution in presmium serve (N-08, settings.presmium.exec
     expect((await answer(again.id, true)).status).toBe(200)
     const [run] = await until(() => recordings(dir).length > 0 ? recordings(dir) : undefined)
     expect(run!.parent).toContain('agent-host')
-    // The allowlist, and the matplotlib backend the runner itself sets while it runs.
-    expect(Object.keys(run!.env).filter(name => !/^(?:PATH|LANG|LC_\w+|TZ|TMPDIR|HOME|MPLBACKEND)$/.test(name))).toEqual([])
-    expect(run!.env.HOME).toMatch(/presmium-home-[0-9a-f]{16}$/)
+    // The allowlist, PYTHONNOUSERSITE (no per-user site directory), and the matplotlib backend the runner itself sets while it runs.
+    expect(Object.keys(run!.env).filter(name => !/^(?:PATH|LANG|LC_\w+|TZ|TMPDIR|HOME|PYTHONNOUSERSITE|MPLBACKEND)$/.test(name))).toEqual([])
+    // A private directory of this user's state directory, not the shared /tmp.
+    expect(run!.env.HOME).toMatch(/\/presmium\/run-home\/[0-9a-f]{16}$/)
     expect(JSON.stringify(run!.env)).not.toContain(setup.secrets.proxySecret)
     expect(JSON.stringify(run!.env)).not.toContain(setup.secrets.agentHostToken)
     expect(Object.keys(run!.env)).not.toContain('PRESMIUM_PROXY_SECRET')
@@ -400,6 +401,6 @@ describe('compile-time execution in presmium serve (N-08, settings.presmium.exec
     expect((await raw(`${url}/code/`)).status).toBe(200)
     const [run] = await until(() => recordings(dir).length > 0 ? recordings(dir) : undefined)
     expect(run!.parent).toMatch(/presmium\.mjs serve/)
-    expect(run!.env.HOME).toMatch(/presmium-home-[0-9a-f]{16}$/)
+    expect(run!.env.HOME).toMatch(/\/presmium\/run-home\/[0-9a-f]{16}$/)
   }, 300_000)
 })
