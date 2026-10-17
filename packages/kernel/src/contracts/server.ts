@@ -210,8 +210,8 @@ export function eventStream(events: AsyncIterable<{ event?: string, data: unknow
 
 // MCP access ----------------------------------------------------------------------
 
-/** The agent runtime's mode: `author` may write the source; `tutor` reads only and has no operating tools. */
-export type AgentMode = 'author' | 'tutor'
+/** The mode an MCP token is issued for: `author`, which may write the source (v0.9 removed the read-only `tutor`). */
+export type AgentMode = 'author'
 
 /** What an agent session uses to reach this process's MCP endpoint. */
 export interface McpAccess {
@@ -227,7 +227,7 @@ export interface McpGrant extends McpAccess {
 }
 
 export interface McpEndpoint {
-  /** Issues a token for a member and a mode: a `tutor` token sees the reading tools only. */
+  /** Issues a token for a member and a mode; the member's roles decide which tools there are. */
   issue(member: Member, mode: AgentMode): McpGrant
 }
 

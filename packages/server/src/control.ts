@@ -23,6 +23,8 @@ export interface WindowPosition {
   view?: string
   /** The section's id, the same in every view (D-4, F-41); forms that report it let a caller find it in its own view. */
   section?: string
+  /** The keys of the steps reached in the section (F-85): a caller of another numbering finds the step in its own. */
+  trail?: string[]
 }
 
 export interface WindowReport {

@@ -1,8 +1,8 @@
 /**
  * What the assistant sends the agent (ACP `session/prompt`): how to read the
- * deck (the Presmium MCP tools), how to cite, the context of the request as
- * one JSON line (`presmium-context:`), and the request itself. A change task
- * says what to change and where: the annotations as one JSON line
+ * deck (the Presmium MCP tools), the context of the request as one JSON line
+ * (`presmium-context:`), and the request itself. A change task says what to
+ * change and where: the annotations as one JSON line
  * (`presmium-annotations:`) with the report line expected for each, a
  * lecture track with its file, or the author's message.
  */
@@ -17,12 +17,10 @@ export const ANNOTATIONS_MARKER = 'presmium-annotations:'
 const LANGUAGES: Record<string, string> = { zh: 'Simplified Chinese (zh-CN)', en: 'English' }
 
 /** The language to answer in: the deck's. */
-function language(lang: string | undefined): string {
+export function language(lang: string | undefined): string {
   const tag = lang?.trim() || 'zh-CN'
   return LANGUAGES[tag.toLowerCase().split('-')[0]!] ?? tag
 }
-
-const CITE = 'When your answer relies on a place in the document, link it as [its title](presmium://sections/<section id>), or [its title](presmium://sections/<section id>/steps/<step>) for one step, with the ids the tools give; the reader can follow these links.'
 
 /** The context the page gave, without empty fields. */
 function context(value: AgentContext): string {
@@ -63,14 +61,6 @@ function changeLines(request: AgentTaskRequest, lang: string | undefined): strin
 
 /** The prompt of a task, in the deck's language `lang`. */
 export function promptText(request: AgentTaskRequest, lang?: string): string {
-  const lines = request.kind === 'question'
-    ? [
-        'A reader asks a question about the course document (a Presmium deck) in your working directory.',
-        'Read the document through the Presmium MCP tools (list_sections, get_section, get_step, search, get_code_ref, get_outputs, locate_source) and answer from it. Do not change any file and do not run anything.',
-        CITE,
-        `Answer in ${language(lang)}, briefly.`,
-      ]
-    : changeLines(request, lang)
   const track = request.kind === 'transcript' && request.track ? [`track: ${request.track} (lectures/${request.track}/track.json)`] : []
-  return [...lines, '', context(request.context), ...track, '', request.kind === 'question' ? 'Question:' : 'Request:', request.prompt].join('\n')
+  return [...changeLines(request, lang), '', context(request.context), ...track, '', 'Request:', request.prompt].join('\n')
 }

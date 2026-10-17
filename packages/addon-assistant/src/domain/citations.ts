@@ -1,6 +1,7 @@
 /**
- * Citations (P-112): the agent links the places its answer relies on as
- * Markdown links to the MCP resources of the deck,
+ * Citations (P-112): a model links the places its answer relies on as
+ * Markdown links to the MCP resources of the deck (a reader's question, the
+ * agent's messages),
  * `[label](presmium://sections/<section>)` or
  * `[label](presmium://sections/<section>/steps/<step>)`, optionally with
  * `#<block>`. The answer keeps them; the panel shows each as a link that

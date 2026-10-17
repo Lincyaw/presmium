@@ -23,11 +23,11 @@ node packages/cli/bin/presmium.mjs serve ~/presmium-example-workspace
 
 ## 环境变量
 
-模型与语音的凭据只放在启动 `presmium serve` 的终端的环境变量中，不写进仓库，也不写进工作区的任何文件：
+模型与语音的凭据只放在启动 `presmium serve` 的终端的环境变量中，不写进仓库，也不写进工作区的任何文件。模型也可以在页面工具栏“AI 修改”的“模型设置”中填写（保存在用户配置目录中只有你能读的文件里，保存后即生效；环境变量优先）：
 
 | 变量 | 作用 |
 |---|---|
-| `DEEPSEEK_API_KEY` | 编辑模式的“AI 修改”（批注、对话）、新建文档时“由 agent 起草”、讲义中的“提问”：随 Presmium 安装的 DeepSeek Harness 用它访问 DeepSeek |
+| `DEEPSEEK_API_KEY` | 编辑模式的“AI 修改”（批注、对话）、新建文档时“由 agent 起草”：随 Presmium 安装的 DeepSeek Harness 用它访问 DeepSeek。讲义中的“提问”不用它：读者在“提问”面板中填写自己的模型服务（OpenAI 兼容的地址、密钥与模型名，只保存在他的浏览器中） |
 | `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` | 改用自己的 Messages 兼容服务（三个都要设置，优先于 `DEEPSEEK_API_KEY`） |
 | `PRESMIUM_SPEECH_VOLCENGINE_KEY` | 火山引擎的语音：由讲解合成讲授（文档头部要选音色，见 `../demo/README.md`）、转写录制的讲授 |
 
@@ -36,7 +36,7 @@ export DEEPSEEK_API_KEY=<你的密钥>
 node packages/cli/bin/presmium.mjs serve ~/presmium-example-workspace
 ```
 
-没有设置模型时，其他功能照常可用，“AI 修改”面板说明运营者没有配置模型，启动日志也写明缺少哪项设置。
+没有设置模型时，其他功能照常可用，“AI 修改”面板说明没有配置模型、可以在“模型设置”中填写或设置哪些环境变量，启动日志也写明缺少哪项设置。
 
 ## 体验步骤
 

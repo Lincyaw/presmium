@@ -1,11 +1,14 @@
 /**
- * The question panel's state in this window, shared by its places (the
- * toolbar's popover, the presenter panels): the `AGENT` client, the text
- * the reader selected in the deck (with its section and block), the
- * questions asked here and their answers, and how a citation moves the page
- * (the IR runtime's viewer in the web form, ./viewer.ts).
+ * The assistant's state in this window, shared by its places (the toolbar's
+ * popovers, the presenter panels, edit mode): the `AGENT` client of the
+ * server's assistant, the `ASK` client of the reader's own model service,
+ * the text the reader selected in the deck (with its section and block), the
+ * questions asked here and their answers, and how the page shows a place
+ * (the IR runtime's viewer in the web form, ./viewer.ts; the host's
+ * navigation in the slides form).
  */
-import type { AgentClient, AgentContext, Citation, IRBlock, SourcePos } from '@presmium/kernel'
+import type { Navigation } from '@presmium/host'
+import type { AgentClient, AgentContext, AskClient, Citation, IRBlock, IRDocument, SourcePos } from '@presmium/kernel'
 import { errorMessage } from '@presmium/kernel'
 import { ref, shallowRef } from 'vue'
 import type { AssistantClient } from './agent.ts'
@@ -13,9 +16,15 @@ import type { AssistantClient } from './agent.ts'
 export const agent = shallowRef<AgentClient>()
 /** The same client with what the page's own panels use besides the contract (a change task under way, after a reload). */
 export const assistant = shallowRef<AssistantClient>()
+/** The reader's own model service (`ASK`). */
+export const asker = shallowRef<AskClient>()
+/** The host's navigation (both forms): where the window is, and moving it; the slides form has nothing else. */
+export const navigation = shallowRef<Navigation>()
 
 /** How the page shows a place of the deck; set where the IR runtime runs. */
 export interface Navigator {
+  /** The document the page shows (the student build's for a student site). */
+  doc(): IRDocument
   /** The current section and step. */
   position(): { section: string, step: number } | undefined
   /** The section's title. */
@@ -28,18 +37,34 @@ export interface Navigator {
 }
 
 let navigator: (() => Navigator | undefined) | undefined
+/** The navigator once a component of this window found it: the viewer is the app's, one a page. */
+let found: Navigator | undefined
 
 export function setNavigator(get: () => Navigator | undefined): void {
   navigator = get
+  found = undefined
 }
 
-/** The navigator, inside a component setup; undefined in the slides form. */
+/** The navigator, inside a component setup (the first one remembers it); undefined in the slides form. */
 export function useNavigator(): Navigator | undefined {
   try {
-    return navigator?.()
+    return found ??= navigator?.()
   } catch {
     return undefined
   }
+}
+
+/** The navigator a component of this window found, outside a component setup (a classroom's AI answer). */
+export function currentNavigator(): Navigator | undefined {
+  return found
+}
+
+/** Moves the page to a citation: by the IR runtime, else by the host's navigation (the slides form: to its section's slide). */
+export function showCitation(citation: Citation): void {
+  const nav = found
+  if (nav) return nav.show(citation)
+  const go = navigation.value
+  if (go) go.go({ slide: go.position.value.slide, step: citation.step ?? 0, section: citation.section })
 }
 
 /** What the reader selected in the deck. */
@@ -59,10 +84,12 @@ export function trackSelection(): () => void {
     const text = selection.toString().trim()
     const node = selection.getRangeAt(0).commonAncestorContainer
     const element = node instanceof Element ? node : node.parentElement
-    const section = element?.closest<HTMLElement>('[data-section]')
-    if (!text || !section || element?.closest('.pm-assistant')) return
+    if (!text || element?.closest('.pm-assistant')) return
+    // The web form marks its sections; the slides form's page is the current section.
+    const section = element?.closest<HTMLElement>('[data-section]')?.dataset.section ?? (element?.closest('.slidev-page') ? navigation.value?.position.value.section : undefined)
+    if (!section) return
     const block = element?.closest<HTMLElement>('[data-block]')
-    selected.value = { text: text.slice(0, 4000), section: section.dataset.section, ...block?.dataset.block ? { block: block.dataset.block } : {} }
+    selected.value = { text: text.slice(0, 4000), section, ...block?.dataset.block ? { block: block.dataset.block } : {} }
   }
   document.addEventListener('selectionchange', update)
   return () => document.removeEventListener('selectionchange', update)
@@ -70,11 +97,10 @@ export function trackSelection(): () => void {
 
 /** A question asked in this window and what came back. */
 export interface Exchange {
-  id: string
+  id: number
   question: string
-  answers: string[]
-  /** The tool the agent is using. */
-  tool?: string
+  /** The answer so far. */
+  answer: string
   state: 'running' | 'done' | 'failed'
   error?: string
   /** The reader cancelled it. */
@@ -83,29 +109,27 @@ export interface Exchange {
 }
 
 export const exchanges = ref<Exchange[]>([])
+let asked = 0
 
-/** Asks a question; its answers arrive in `exchanges`. */
-export function ask(client: AgentClient, question: string, context: AgentContext): void {
-  const task = client.submit({ kind: 'question', prompt: question, context })
-  exchanges.value.unshift({ id: task.id, question, answers: [], state: 'running', cancel: () => {
+/** Asks a question; its answer streams into `exchanges`. */
+export function ask(client: AskClient, question: string, context: AgentContext): void {
+  const stop = new AbortController()
+  exchanges.value.unshift({ id: ++asked, question, answer: '', state: 'running', cancel: () => {
     exchange.cancelled = true
-    task.cancel()
+    stop.abort()
   } })
   const exchange = exchanges.value[0]!
   void (async () => {
     try {
-      for await (const event of task.events) {
-        if (event.type === 'message') exchange.answers.push(event.text)
-        else if (event.type === 'progress') exchange.tool = event.status === 'running' ? event.tool ?? event.text : undefined
-        else if (event.type === 'error') {
-          exchange.state = 'failed'
-          exchange.error = event.message
-        } else if (event.type === 'done') exchange.state = 'done'
-      }
+      for await (const piece of client.ask(question, context, stop.signal)) exchange.answer += piece
+      exchange.state = 'done'
     } catch (error) {
+      if (stop.signal.aborted) {
+        exchange.state = 'done'
+        return
+      }
       exchange.state = 'failed'
       exchange.error = errorMessage(error)
     }
-    if (exchange.state === 'running') exchange.state = 'done'
   })()
 }

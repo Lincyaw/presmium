@@ -1,8 +1,9 @@
 /**
  * The assistant's routes under `/__presmium/presmium.assistant/` (docs/architecture.md
  * 4.8, design-v0.7 5.3): `info` (what the member may ask, the provider and
- * the runtime), `tasks` (submit; `GET`: the document's change task under
- * way), `tasks/<id>/events` (SSE of `AgentEvent`), `tasks/<id>/cancel`,
+ * the runtime), `settings` (the page's model settings, P-111), `tasks`
+ * (submit; `GET`: the document's change task under way),
+ * `tasks/<id>/events` (SSE of `AgentEvent`), `tasks/<id>/cancel`,
  * `tasks/<id>/review` (the decision on a change task's review),
  * `tasks/<id>/restore` (back to before a step of it), `revert` (undo a
  * task's commit) and `excerpt` (lines of a source file of the document, for
@@ -10,6 +11,7 @@
  */
 import { isRecord } from '@presmium/kernel'
 import type { AgentContext, AgentTaskKind, AgentTaskRequest, Annotation, ReviewDecision, SourceRange } from '@presmium/kernel'
+import type { RuntimeSource } from './config.ts'
 
 /** `GET info`. */
 export interface AssistantInfo {
@@ -17,8 +19,16 @@ export interface AssistantInfo {
   provider?: string
   /** Name and version the agent reported, once one started. */
   runtime?: string
+  /** Where the model comes from: the environment, the workspace's configuration, the page's model settings. */
+  source?: RuntimeSource
+  /** What the operator should set, while the assistant is unavailable. */
+  missing?: string
   /** The kinds of task this member may submit here. */
   kinds: AgentTaskKind[]
+  /** The page is the workspace's home page, no document: its tasks go to the documents. */
+  home?: boolean
+  /** Change tasks are committed here (`presmium serve`); not in `presmium dev`. */
+  changes: boolean
 }
 
 /** `GET tasks`: the document's change task under way or waiting for its review, to the member who sent it and to owners. */
@@ -40,9 +50,7 @@ export function restoreStepOf(body: unknown): string | undefined {
 /** `POST revert`: the commit of a task undone, or the files that conflict with later commits. */
 export type RevertAnswer = { ok: true, revision: string } | { ok: false, conflicts: string[] }
 
-const KINDS: AgentTaskKind[] = ['question', 'annotations', 'chat', 'transcript']
-
-/** Kinds that change the source (P-113, P-114, P-136; drafting a new document is a `chat`). */
+/** The kinds of task, all of them change the source (P-113, P-114, P-136; drafting a new document is a `chat`). */
 export const CHANGE_KINDS: AgentTaskKind[] = ['annotations', 'chat', 'transcript']
 
 /** At most this many annotations go in one task. */
@@ -87,7 +95,7 @@ function annotationOf(value: unknown): Annotation | undefined {
 
 /** The body of `POST tasks`: a task request, and the id the page drew for it. */
 export function taskRequestOf(body: unknown): { id?: string, request: AgentTaskRequest } | undefined {
-  if (!isRecord(body) || !KINDS.includes(body.kind as AgentTaskKind)) return undefined
+  if (!isRecord(body) || !CHANGE_KINDS.includes(body.kind as AgentTaskKind)) return undefined
   const kind = body.kind as AgentTaskKind
   const prompt = str(body.prompt) ?? ''
   const context = contextOf(body.context)
@@ -133,23 +141,4 @@ export function reviewMode(settings: Record<string, unknown>): ReviewMode {
 export function reviewTimeoutMs(settings: Record<string, unknown>): number {
   const value = settings.reviewTimeoutMs
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 30 * 60_000
-}
-
-const count = (value: unknown, otherwise: number) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : otherwise)
-
-/**
- * How many learners' questions run at a time (`settings.presmium.assistant.maxQuestions`, D-13, F-08):
- * `{ member, total }`, each member's and the service's, 2 and 16 by default; a number is each member's.
- */
-export function questionLimits(settings: Record<string, unknown>): { member: number, total: number } {
-  const value = settings.maxQuestions
-  if (typeof value === 'number') return { member: count(value, 2), total: 16 }
-  const given = isRecord(value) ? value : {}
-  return { member: count(given.member, 2), total: count(given.total, 16) }
-}
-
-/** How long a question no page follows runs before it is cancelled (`settings.presmium.assistant.questionTimeoutMs`; 2 minutes, D-13). */
-export function questionTimeoutMs(settings: Record<string, unknown>): number {
-  const value = settings.questionTimeoutMs
-  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 2 * 60_000
 }

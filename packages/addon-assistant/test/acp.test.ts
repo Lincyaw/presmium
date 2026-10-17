@@ -1,26 +1,25 @@
-// The ACP client (WP-80, docs/architecture.md 4.8) in `presmium dev`, with the scripted test agent as the
-// replacement runtime (PRESMIUM_AGENT_COMMAND): `session/new` gets this process's /mcp and a token
-// MCP_ENDPOINT issued, with which the agent lists the tools, and an empty directory of the question's own,
-// never the deck (D-13); the token is refused once the task ended; the agent reads the section through
-// get_section and answers citing it; a refused permission request reaches it as a refusal; cancelling a task
-// reaches it as `session/cancel` and ends the task's events; the credentials of the parent's environment
-// never reach it; the routes' answers are not cached (F-33). A member has two questions at a time at most
-// (`maxQuestions`, F-08): the third gets 429; a question no page follows (its page closed, or never opened)
-// is cancelled once the operator's time passed, and the member may ask again. Without model access or a
-// replacement runtime, or with a replacement runtime but no provider, questions are unavailable and nothing starts.
+// The ACP client (WP-80, docs/architecture.md 4.8) in `presmium serve`, with the scripted test agent as the
+// replacement runtime (PRESMIUM_AGENT_COMMAND), in a single-deck repository whose change tasks commit at once
+// (`review: auto`) and whose writes outside a document are off: a chat task's `session/new` gets this process's
+// /mcp and a token MCP_ENDPOINT issued, with which the agent lists the tools, reads the section through
+// get_section and answers citing it; the token is refused once the task ended; a write outside the document is
+// refused and the agent hears the refusal; cancelling a task reaches the agent as `session/cancel` and ends the
+// task's events; the credentials of the parent's environment never reach it; the routes' answers are not cached
+// (F-33). Without model access or a replacement runtime, or with a replacement runtime but no provider, the
+// assistant is unavailable, says so when the process starts and in `info` (what to set), and starts nothing.
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { AgentEvent } from '@presmium/kernel'
-import { AGENT_COMMAND, agentLog, call, descendants, dev, env, PACKAGE, taskEvents } from './helpers.ts'
+import { AGENT_COMMAND, agentLog, call, descendants, dev, env, PACKAGE, presmium, taskEvents, workspace } from './helpers.ts'
 import type { Running } from './helpers.ts'
 
 const LECTURE = `---
 title: 助手测试
-plugins:
-  - ${PACKAGE}
 ---
+
+# 助手测试
 
 (merge)=
 ## 合并规则
@@ -37,10 +36,10 @@ pairs = count(tokens)
 更多内容。
 `
 
-const question = (prompt: string, section = 'merge') => ({ kind: 'question', prompt, context: { document: '', section } })
+const chat = (prompt: string, section = 'merge') => ({ kind: 'chat', prompt, context: { document: '', section } })
 
 /** Submits a task and follows its events to the end. */
-async function ask(server: string, body: Record<string, unknown>, onEvent?: (event: AgentEvent) => void): Promise<{ id: string, events: AgentEvent[] }> {
+async function submit(server: string, body: Record<string, unknown>, onEvent?: (event: AgentEvent) => void): Promise<{ id: string, events: AgentEvent[] }> {
   const submitted = await call(server, 'tasks', { json: body })
   expect(submitted.status, JSON.stringify(submitted.json)).toBe(201)
   const id = submitted.json.id as string
@@ -48,64 +47,60 @@ async function ask(server: string, body: Record<string, unknown>, onEvent?: (eve
 }
 
 describe('the ACP client with the scripted agent', () => {
-  let base: string
-  let deck: string
+  let dir: string
   let log: string
   let running: Running | undefined
   let server: string
 
-  /** How long a question no page follows runs, as the operator set it here (2 minutes by default). */
-  const UNATTENDED_MS = 8000
-
   beforeAll(async () => {
-    base = mkdtempSync(join(tmpdir(), 'presmium-acp-'))
-    deck = join(base, 'deck')
-    log = join(base, 'agent.log')
-    mkdirSync(deck)
-    writeFileSync(join(deck, 'lecture.md'), LECTURE)
-    // The operator's settings (the deck directory is the workspace root here): each member's two questions at a time, as by default.
-    writeFileSync(join(deck, 'presmium.workspace.yaml'), `settings:\n  presmium.assistant:\n    maxQuestions: { member: 2, total: 16 }\n    questionTimeoutMs: ${UNATTENDED_MS}\n`)
-    ;({ running, server } = await dev(deck, env({
-      XDG_STATE_HOME: join(base, 'state'),
-      PRESMIUM_AGENT_COMMAND: AGENT_COMMAND,
-      PRESMIUM_AGENT_PROVIDER: 'Test Provider',
-      SCRIPTED_AGENT_LOG: log,
-      // Credentials of the parent that the agent must not see.
-      PRESMIUM_PROXY_SECRET: 'proxy-secret-1f3a',
-      PRESMIUM_SPEECH_VOLCENGINE_APPID: 'speech-appid-7c2e',
-      PRESMIUM_SPEECH_TEST_KEY: 'speech-key-9d41',
-      DEEPSEEK_BASE_URL: 'http://127.0.0.1:9/elsewhere',
-    })))
+    dir = workspace('acp', {
+      'presmium.workspace.yaml': `title: 助手测试\napprovals: { write: off }\nsettings:\n  presmium.workspace:\n    plugins: ['@presmium/slidev-addon-assistant']\n  presmium.assistant:\n    review: auto\n`,
+      'lecture.md': LECTURE,
+    }, { '@presmium/slidev-addon-assistant': PACKAGE })
+    log = `${dir}.agent.log`
+    running = presmium(['serve', '--port', '0'], {
+      cwd: dir,
+      env: env({
+        XDG_STATE_HOME: `${dir}.state`,
+        XDG_CACHE_HOME: `${dir}.cache`,
+        XDG_CONFIG_HOME: `${dir}.config`,
+        PRESMIUM_AGENT_COMMAND: AGENT_COMMAND,
+        PRESMIUM_AGENT_PROVIDER: 'Test Provider',
+        SCRIPTED_AGENT_LOG: log,
+        // Credentials of the parent that the agent must not see.
+        PRESMIUM_SPEECH_VOLCENGINE_APPID: 'speech-appid-7c2e',
+        PRESMIUM_SPEECH_TEST_KEY: 'speech-key-9d41',
+        DEEPSEEK_BASE_URL: 'http://127.0.0.1:9/elsewhere',
+      }),
+    })
+    server = (await running.wait(/^serve {2}(http\S+)$/m))[1]!
   }, 180_000)
   afterAll(async () => {
     await running?.stop()
-    rmSync(base, { recursive: true, force: true })
+    for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.config`, log]) if (path) rmSync(path, { recursive: true, force: true })
   })
 
   it('gives the agent this process\'s /mcp with a token it lists the tools with, refused once the task ended; the answer cites the section get_section read; no credential of the parent reaches it', async () => {
     const before = await call(server, 'info')
-    expect(before.json).toEqual({ provider: 'Test Provider', kinds: ['question'] })
+    expect(before.json).toEqual({ provider: 'Test Provider', source: 'environment', kinds: ['annotations', 'chat', 'transcript'], changes: true })
+    // Said once the plugins loaded (a single-deck repository's, with its document): the replacement runtime, from the environment.
+    await running!.wait(/the assistant is available: provider Test Provider, the replacement runtime \S+ \(from PRESMIUM_AGENT_COMMAND\)/, 10_000)
 
     const progress: AgentEvent[] = []
-    const { events } = await ask(server, question('这段代码做什么？'), event => event.type === 'progress' && progress.push(event))
+    const { events } = await submit(server, chat('#read 这段代码做什么？'), event => event.type === 'progress' && progress.push(event))
     expect(events.at(-1)).toEqual({ type: 'done' })
     const answer = events.find(e => e.type === 'message') as Extract<AgentEvent, { type: 'message' }>
     expect(answer.text).toContain('[合并规则](presmium://sections/merge)')
     expect(answer.citations).toEqual([{ label: '合并规则', section: 'merge' }])
     expect(progress.map(e => (e as { status?: string }).status)).toEqual(['running', 'completed'])
 
-    // session/new: this process's /mcp and a bearer token; the agent listed the tools with it (a tutor token: reading only).
-    // Its directory is an empty one of the question's own, gone with the task: the agent reads the deck through MCP only.
+    // session/new: this process's /mcp and a bearer token; the agent listed the tools with it, the operate tools among them.
     const opened = agentLog(log).find(e => e.event === 'session/new')!
-    expect(opened.cwd).not.toBe(deck)
-    expect(opened.cwd).toMatch(/\/presmium-question-[^/]+$/)
-    expect(existsSync(opened.cwd)).toBe(false)
     const [mcp] = opened.mcpServers as { type: string, url: string, headers: { name: string, value: string }[] }[]
     expect(mcp).toMatchObject({ type: 'http', url: `${server}/mcp` })
     const token = /^Bearer (\S+)$/.exec(mcp!.headers.find(h => h.name === 'Authorization')!.value)![1]!
     const tools = agentLog(log).find(e => e.event === 'tools')!.names as string[]
-    expect(tools).toEqual(expect.arrayContaining(['get_section', 'list_sections', 'search']))
-    expect(tools).not.toContain('run_code')
+    expect(tools).toEqual(expect.arrayContaining(['get_section', 'list_sections', 'search', 'run_code']))
     // The task ended: its token is refused.
     const after = await fetch(`${server}/mcp`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }) })
     expect(after.status).toBe(401)
@@ -113,25 +108,25 @@ describe('the ACP client with the scripted agent', () => {
     // The agent's environment: none of Presmium's variables, no credential of the parent, no model address.
     const { env: seen } = agentLog(log).find(e => e.event === 'start')!
     expect(Object.keys(seen).filter(name => name.startsWith('PRESMIUM_'))).toEqual([])
-    expect(JSON.stringify(seen)).not.toContain('proxy-secret-1f3a')
     expect(JSON.stringify(seen)).not.toContain('speech-appid-7c2e')
     expect(JSON.stringify(seen)).not.toContain('speech-key-9d41')
     expect(seen.DEEPSEEK_BASE_URL).toBeUndefined()
 
     // Once an agent started, the panel names its runtime besides the provider; what the routes answer is not cached.
-    expect((await call(server, 'info')).json).toEqual({ provider: 'Test Provider', runtime: 'Scripted Agent 1.0.0', kinds: ['question'] })
+    expect((await call(server, 'info')).json).toMatchObject({ provider: 'Test Provider', runtime: 'Scripted Agent 1.0.0' })
     expect((await fetch(`${server}/__presmium/presmium.assistant/info`)).headers.get('cache-control')).toBe('no-store')
   }, 120_000)
 
-  it('refuses the agent\'s permission request of a question, and the agent hears the refusal', async () => {
-    const { events } = await ask(server, question('#write notes.md'))
+  it('refuses the agent\'s request to write outside the document, and the agent hears the refusal', async () => {
+    const outside = join(dirname(dir), `${dir.split('/').at(-1)}-outside.md`)
+    const { events } = await submit(server, chat(`#write ../${outside.split('/').at(-1)}`))
     expect(events.filter(e => e.type === 'message').map(e => (e as { text: string }).text)).toEqual(['permission: rejected'])
     expect(agentLog(log).filter(e => e.event === 'permission').at(-1)).toMatchObject({ allowed: false })
-    expect(existsSync(join(deck, 'notes.md'))).toBe(false)
+    expect(existsSync(outside)).toBe(false)
   }, 60_000)
 
   it('sends session/cancel when a running task is cancelled, and the task\'s events end', async () => {
-    const submitted = await call(server, 'tasks', { json: question('#wait') })
+    const submitted = await call(server, 'tasks', { json: chat('#wait') })
     const id = submitted.json.id as string
     const events = taskEvents(`${server}/__presmium/presmium.assistant/tasks/${id}/events`)
     // The agent got the prompt and waits.
@@ -140,46 +135,26 @@ describe('the ACP client with the scripted agent', () => {
     expect((await events).at(-1)).toEqual({ type: 'done' })
     expect(agentLog(log).some(e => e.event === 'session/cancel')).toBe(true)
   }, 60_000)
-
-  it('takes a member\'s two questions at a time: the third gets 429; one whose page closed, and one no page followed, are cancelled in the operator\'s time', async () => {
-    const cancelled = () => agentLog(log).filter(e => e.event === 'session/cancel').length
-    const before = cancelled()
-    const first = await call(server, 'tasks', { json: question('#wait') })
-    const second = await call(server, 'tasks', { json: question('#wait') })
-    expect([first.status, second.status]).toEqual([201, 201])
-    // A page follows the first, then closes; no page follows the second.
-    const page = new AbortController()
-    const followed = await fetch(`${server}/__presmium/presmium.assistant/tasks/${first.json.id}/events`, { headers: { Accept: 'text/event-stream' }, signal: page.signal })
-    expect(followed.status).toBe(200)
-    const third = await call(server, 'tasks', { json: question('第三个问题') })
-    expect(third.status).toBe(429)
-    expect(third.json.error).toBe('你已有 2 个问题在回答中，请等其中一个完成后再问')
-    await expect.poll(() => agentLog(log).filter(e => e.event === 'session/prompt' && e.question === '#wait').length, { timeout: 30_000 }).toBeGreaterThanOrEqual(3)
-    page.abort()
-    // Both cancelled, the agent told: their events end, and the member may ask again.
-    await expect.poll(cancelled, { timeout: UNATTENDED_MS + 30_000 }).toBe(before + 2)
-    for (const id of [first.json.id, second.json.id]) expect((await taskEvents(`${server}/__presmium/presmium.assistant/tasks/${id}/events`)).at(-1)).toEqual({ type: 'done' })
-    const again = await ask(server, question('现在可以问了吗？'))
-    expect(again.events.at(-1)).toEqual({ type: 'done' })
-  }, 120_000)
 })
 
 describe('without an agent runtime', () => {
   const cases: [string, Record<string, string>, RegExp][] = [
-    ['neither model access nor a replacement runtime', {}, /the assistant is unavailable: no model access: set DEEPSEEK_API_KEY/],
+    ['neither model access nor a replacement runtime', {}, /the assistant is unavailable: no model access: fill in the model settings in the page, or set DEEPSEEK_API_KEY/],
     ['a replacement runtime without a provider', { PRESMIUM_AGENT_COMMAND: AGENT_COMMAND }, /the assistant is unavailable: a replacement runtime .* needs its model's provider/],
   ]
   for (const [name, extra, reason] of cases) {
-    it(`questions are unavailable and nothing starts: ${name}`, async () => {
+    it(`says what to set and starts nothing: ${name}`, async () => {
       const base = mkdtempSync(join(tmpdir(), 'presmium-acp-none-'))
       const log = join(base, 'agent.log')
       mkdirSync(join(base, 'deck'))
-      writeFileSync(join(base, 'deck', 'lecture.md'), LECTURE)
-      const { running, server } = await dev(join(base, 'deck'), env({ XDG_STATE_HOME: join(base, 'state'), SCRIPTED_AGENT_LOG: log, ...extra }))
+      writeFileSync(join(base, 'deck', 'lecture.md'), LECTURE.replace('title: 助手测试\n', `title: 助手测试\nplugins:\n  - ${PACKAGE}\n`))
+      const { running, server } = await dev(join(base, 'deck'), env({ XDG_STATE_HOME: join(base, 'state'), XDG_CONFIG_HOME: join(base, 'config'), SCRIPTED_AGENT_LOG: log, ...extra }))
       try {
-        expect((await call(server, 'info')).json).toEqual({ kinds: [] })
-        expect((await call(server, 'tasks', { json: question('有人吗？') })).status).toBe(503)
         await running.wait(reason, 10_000)
+        const info = (await call(server, 'info')).json
+        expect(info).toMatchObject({ kinds: [], changes: false })
+        expect(info.missing).toMatch(reason.source.includes('model access') ? /DEEPSEEK_API_KEY/ : /PRESMIUM_AGENT_PROVIDER/)
+        expect((await call(server, 'tasks', { json: chat('有人吗？') })).status).toBe(503)
         expect(descendants(running.child.pid!).filter(p => /scripted-agent|dsh/.test(p.cmdline))).toEqual([])
         expect(agentLog(log)).toEqual([])
       } finally {

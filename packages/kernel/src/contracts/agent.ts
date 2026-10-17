@@ -1,8 +1,8 @@
 /**
- * Agents (P-110 to P-114, P-136), change review (D12) and revision history
- * (P-115, P-121); docs/architecture.md 4.8 and 10.7.
+ * Agents (P-110 to P-114, P-136), readers' questions (P-112), change review
+ * (D12) and revision history (P-115, P-121); docs/architecture.md 4.8 and 10.7.
  */
-import type { AgentMode, ApprovalRequest, McpAccess, Member } from './server.ts'
+import type { ApprovalRequest, McpAccess, Member } from './server.ts'
 import { defineService } from './service.ts'
 import type { ServiceToken } from './service.ts'
 
@@ -21,12 +21,12 @@ export interface AgentContext {
 }
 
 /**
- * `question` reads only; the others are change tasks (`chat` also drafts new
- * documents), which the assistant handles by one rule: one task per
- * document, one commit through `REVISIONS` at its end, revertible, writes out
- * of scope confirmed.
+ * The change tasks (`chat` also drafts new documents), which the assistant
+ * handles by one rule: one task per document, one commit through `REVISIONS`
+ * at its end, revertible, writes out of scope confirmed. Readers' questions
+ * are no task of the server's: the page asks the reader's own model (`ASK`).
  */
-export type AgentTaskKind = 'question' | 'annotations' | 'chat' | 'transcript'
+export type AgentTaskKind = 'annotations' | 'chat' | 'transcript'
 
 export type AnnotationStatus = 'draft' | 'sent' | 'done' | 'failed'
 
@@ -46,7 +46,7 @@ export interface Annotation {
 
 export interface AgentTaskRequest {
   kind: AgentTaskKind
-  /** The question, the chat message or the overall request. */
+  /** The chat message or the overall request. */
   prompt: string
   context: AgentContext
   /** The annotations of an `annotations` task. */
@@ -105,7 +105,7 @@ export type TaskRevertResult = { ok: true, revision: string } | { ok: false, con
 export interface AgentClient {
   /** The server has an agent runtime (the operator configured model access, or a replacement runtime) and the member may submit tasks of this kind. */
   available(kind: AgentTaskKind): boolean
-  /** The model's service provider, e.g. `DeepSeek`, from the operator's settings; the question and chat panels show it (N-08). Undefined when unavailable. */
+  /** The model's service provider, e.g. `DeepSeek`, from the operator's settings; the change panels show it (N-08). Undefined when unavailable. */
   provider(): string | undefined
   /** Name and version of the agent runtime (`AgentRuntime.runtime`), shown apart from the provider; undefined before the agent started. */
   runtime(): string | undefined
@@ -114,21 +114,42 @@ export interface AgentClient {
 
 export const AGENT = defineService<AgentClient>('presmium.agent')
 
+/**
+ * In the browser: the model service a reader filled in for himself (P-112,
+ * decision E-9), asked from the page directly, never through the site's
+ * server: an OpenAI-compatible Chat Completions service, its address, key
+ * and model kept in this site's browser storage. The assistant provides it
+ * in every page, static output included; the classroom's "AI answer" asks
+ * the presenter's own.
+ */
+export interface AskClient {
+  /** The service's provider as the panels name it (N-08), from its address; undefined until the reader filled it in. */
+  provider(): string | undefined
+  /**
+   * Asks about the deck: the context is the place (`section`, `step`,
+   * `block`, the selected text), with which the page adds what it shows
+   * there (the section's text, the table of contents). Yields the answer as
+   * it streams, piece by piece, its citations as `[label](presmium://sections/<id>)`;
+   * throws with the service's reason; ends when `signal` aborts.
+   */
+  ask(question: string, context: AgentContext, signal?: AbortSignal): AsyncIterable<string>
+}
+
+export const ASK = defineService<AskClient>('presmium.ask')
+
 export interface AgentSessionOptions {
   /**
    * The `cwd` of ACP `session/new`, also the root the agent's file tools may
-   * write: `ChangeReview.root` for a change task (the document directory, or
-   * its deltabox view); the document directory for a question. Writing
-   * outside it goes through the agent's permission request, of `workspace` scope.
+   * write: `ChangeReview.root` (the document directory, or its deltabox
+   * view). Writing outside it goes through the agent's permission request,
+   * of `workspace` scope.
    */
   cwd: string
-  /** `author` may write the source; `tutor` reads only and has no operating tools. */
-  mode: AgentMode
   member: Member
   /**
    * Presmium's MCP service, written to `mcpServers` of ACP `session/new`
    * (HTTP, with an `Authorization` header). The caller gets it from
-   * `MCP_ENDPOINT.issue(member, mode)` and revokes it when the session
+   * `MCP_ENDPOINT.issue(member, 'author')` and revokes it when the session
    * closes; omitted, the agent has no Presmium tools.
    */
   mcp?: McpAccess
@@ -142,15 +163,22 @@ export interface AgentSession {
   close(): Promise<void>
 }
 
-/** In Node: drives an agent; the one implementation is the ACP client. The runtime uses the model credentials the operator put in this process's environment. */
+/**
+ * In Node: drives an agent; the one implementation is the ACP client. The
+ * runtime uses the model credentials the operator gave: in this process's
+ * environment, or in the page's model settings (P-111), which apply to the
+ * next session without a restart.
+ */
 export interface AgentRuntime {
   /**
    * The model's service provider, known before starting: for the bundled
    * DeepSeek Harness from the operator's model access (`DeepSeek` for
-   * `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_PROVIDER`); for a replacement runtime `settings.presmium.assistant.provider`
-   * or `PRESMIUM_AGENT_PROVIDER`. Without one, `AGENT_RUNTIME` is not registered.
+   * `DEEPSEEK_API_KEY`, `PRESMIUM_MODEL_PROVIDER`, or the page's model
+   * settings); for a replacement runtime `settings.presmium.assistant.provider`
+   * or `PRESMIUM_AGENT_PROVIDER`. Undefined while the operator configured
+   * neither: `open` then fails.
    */
-  readonly provider: string
+  readonly provider: string | undefined
   /** Name and version the agent reports in ACP `initialize` (`agentInfo`, e.g. `DeepSeek Harness 0.2.0`); undefined before the first agent started. */
   readonly runtime?: string
   open(options: AgentSessionOptions): Promise<AgentSession>
@@ -164,9 +192,9 @@ export interface AgentToolContext {
   document: string
   member: Member
   /**
-   * The view of the document the caller may read (P-55, D8): `student` for a
-   * `tutor` token and for readers, whose tools read only what learners see;
-   * `full` for the `author` tokens of editors and owners. MCP fills it.
+   * The view of the document the caller may read (P-55, D8). MCP fills it:
+   * `full`, the whole document, for every token since v0.9 (no token reads
+   * the `student` view any more).
    */
   view: 'full' | 'student'
   service<T>(token: ServiceToken<T>): T | undefined

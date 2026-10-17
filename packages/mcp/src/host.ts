@@ -16,7 +16,7 @@ import type {
   ServiceToken,
 } from '@presmium/kernel'
 
-/** Who calls, as the token the request carries says: the member and the mode it was issued for. */
+/** Who calls, as the token the request carries says: the member and the mode it was issued for (`author`). */
 export interface McpCaller {
   member: Member
   mode: AgentMode
@@ -45,7 +45,14 @@ export interface McpPosition {
   section?: string
   /** The view the window shows: the whole deck, or the student view; default `full`. */
   audience?: McpView
+  /** The step, in the window's own numbering. */
   step: number
+  /**
+   * The keys of the steps the window has reached in its section (F-85, `stepTrail`
+   * of `@presmium/kernel`), when it reports them: the step in another numbering
+   * is the last whose keys they reach.
+   */
+  trail?: string[]
   /** The runtime view of the web form (`present`, `presenter`, ...); absent in the slides form. */
   view?: string
   /** The view role the window reported: `presenter`, `audience` or `reader`. */
@@ -99,7 +106,7 @@ export interface McpHost {
   /** The status summaries the pages of a document reported (`STATUS`), by plugin id. */
   classroom?(document: string): Record<string, unknown>
   /** Sends `go` to the windows of a document that show it (the member's presenting ones first); returns how many. */
-  navigate?(document: string, position: { slide: number, step: number, view?: string, section?: string }, member: Member): number
+  navigate?(document: string, position: { slide: number, step: number, view?: string, section?: string, trail?: string[] }, member: Member): number
   /** Starts or ends the classroom in the windows of a document's present and presenter views; returns how many. */
   /** Starts or ends the classroom in the presenting windows of `member` (only theirs: content scope covers the caller's own sessions). */
   session?(document: string, action: 'start' | 'end', name: string | undefined, member: Member): number

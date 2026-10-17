@@ -1,4 +1,4 @@
-// The test plugin of packages/mcp/test: its routes issue a `tutor` MCP token for the member who calls
+// The test plugin of packages/mcp/test: its routes issue an MCP token for the member who calls
 // (`MCP_ENDPOINT.issue`) and revoke it, as the assistant does for an agent session; it contributes read
 // agent tools (one says the view of the call), and a check whose finding names no source, which the hosts
 // locate on the plugin's line of the headmatter. Plain objects: tokens are compared by id, so the fixture
@@ -18,10 +18,10 @@ export default {
   kernel: '^0.1.0',
   server: (ctx: Context) => ({
     routes: {
-      tutor: {
+      token: {
         role: 'reader',
         handle: (_: Request, r: RequestContext) => {
-          grant = ctx.service(MCP_ENDPOINT).issue(r.member, 'tutor') as Grant
+          grant = ctx.service(MCP_ENDPOINT).issue(r.member, 'author') as Grant
           return json({ url: grant.url, token: grant.token })
         },
       },

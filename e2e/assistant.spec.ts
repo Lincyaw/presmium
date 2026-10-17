@@ -1,113 +1,83 @@
-// The assistant in the page (WP-80, P-112, N-08) under `presmium dev`, with the scripted test agent as the
-// operator's replacement runtime (provider "Test Provider"): a reader selects code in the web form and asks
-// about it; the panel names the provider before the question and the runtime after the answer, and the
-// answer's citation moves the page to the section it names. A question runs in `tutor` mode, where the
-// agent's attempt to write a file is refused and the file stays. In a classroom, a learner's question
-// reaches the presenter's overview, whose "AI answer" the presenter sends to the classroom, and the learner
-// sees it. The static build of a deck that lists the assistant (no server): no console error, the start report
-// says the assistant started, and nothing offers to ask (F-48).
+// The assistant in the pages of `presmium dev` (WP-80, WP-92b; P-111, P-112, N-08), without any model the
+// operator configured:
+// - "AI changes" is in the toolbar all the same; its panel says AI changes are unavailable, what to set (the
+//   page's model settings, or the environment and a restart), and that they are made in the workspace
+//   service; the model settings open from it.
+// - In a classroom, a learner's question reaches the presenter's overview; its "AI answer" asks the
+//   presenter's own model service (the one the presenter filled in for the question panel; an
+//   OpenAI-compatible service on this machine here), naming its provider; the presenter sends the answer to
+//   the classroom, and the learner sees it, its citation as plain text.
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { buildFixture, deckDir, openDevPage, startDev } from './fixtures/deck.ts'
-import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
+import { chatStub, questionOf } from './fixtures/assistant/openai.ts'
+import type { ChatStub } from './fixtures/assistant/openai.ts'
+import { deckDir, openDevPage, startDev } from './fixtures/deck.ts'
+import type { DevServer } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
-const FIXTURE = fileURLToPath(new URL('./fixtures/assistant', import.meta.url))
-const AGENT = fileURLToPath(new URL('../packages/addon-assistant/test/fixtures/scripted-agent.mjs', import.meta.url))
+const FIXTURE = fileURLToPath(new URL('./fixtures/assistant/lecture.md', import.meta.url))
 
 test.describe.configure({ mode: 'serial', timeout: 180_000 })
 
 let dir: string
-let log: string
 let dev: DevServer
 let classroom: Awaited<ReturnType<typeof startClassroomServer>>
+let model: ChatStub
 
 test.beforeAll(async () => {
   test.setTimeout(300_000)
   dir = deckDir('assistant', { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' })
-  cpSync(FIXTURE, dir, { recursive: true })
+  cpSync(FIXTURE, join(dir, 'lecture.md'))
   classroom = await startClassroomServer(dir)
   const lecture = join(dir, 'lecture.md')
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:`))
-  log = `${dir}.agent.log`
-  const command = `${process.execPath} ${AGENT}`
-  dev = await startDev(dir, 'web', { PRESMIUM_AGENT_COMMAND: command, PRESMIUM_AGENT_TUTOR_COMMAND: command, PRESMIUM_AGENT_PROVIDER: 'Test Provider', SCRIPTED_AGENT_LOG: log })
+  model = await chatStub(request => ['这段代码在', `[合并规则](presmium://sections/merge)中讲解：问题是「${questionOf(request)}」。`])
+  // No model of the operator's: no model variable, and a configuration directory of its own.
+  dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '', PRESMIUM_AGENT_COMMAND: '' })
 })
 test.afterAll(async () => {
   await dev?.stop()
+  await model?.close()
   classroom?.child.kill('SIGTERM')
-  if (dir) rmSync(dir, { recursive: true, force: true })
-  if (log) rmSync(log, { force: true })
+  for (const path of [dir, `${dir}.config`]) if (path) rmSync(path, { recursive: true, force: true })
 })
 
 /** A page of the dev server (its address ends with a slash). */
 const pageUrl = (path: string) => new URL(path, dev.url).href
 
-/** What the test agent was asked last. */
-function lastPrompt(): { question: string, context: Record<string, unknown> } {
-  return readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line) as { event: string, question: string, context: Record<string, unknown> }).filter(e => e.event === 'session/prompt').at(-1)!
-}
-
-/** The toolbar's question panel, opened. */
-async function openPanel(page: Page) {
-  await page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' }).click()
-  const panel = page.getByRole('dialog', { name: '向 AI 提问' })
-  await expect(panel).toBeVisible()
-  return panel
-}
-
-test('a reader asks about selected code: the provider shows before the question, the runtime after the answer, whose citation moves the page there', async ({ page }) => {
+test('"AI changes" is in the toolbar without a model: it says what to set, that changes are made in the workspace service, and opens the model settings', async ({ page }) => {
   await openDevPage(page, pageUrl('code.html'), page.locator('[data-section="merge"]'))
-  // The reader selects the code of the section.
-  await page.locator('[data-section="merge"] pre').first().evaluate((pre) => {
-    const range = document.createRange()
-    range.selectNodeContents(pre)
-    document.getSelection()!.removeAllRanges()
-    document.getSelection()!.addRange(range)
-  })
-  const panel = await openPanel(page)
-  await expect(panel.locator('.pm-assistant__provider')).toHaveText('回答由 Test Provider 的模型生成')
-  await expect(panel.locator('.pm-assistant__runtime')).toHaveCount(0)
-  await expect(panel.locator('.pm-assistant__selection code')).toContainText('def merge(tokens, pair):')
-
-  await panel.getByLabel('问题').fill('这段代码做什么？#cite later-section')
-  await panel.getByRole('button', { name: '提问', exact: true }).click()
-  const answers = panel.getByRole('list', { name: '回答' })
-  const citation = answers.getByRole('button', { name: '进阶内容' })
-  await expect(citation).toBeVisible({ timeout: 30_000 })
-  await expect(answers.locator('.pm-assistant__answer')).toContainText('问题是「这段代码做什么？#cite later-section」')
-  await expect(panel.locator('.pm-assistant__runtime')).toHaveText('运行时：Scripted Agent 1.0.0')
-  // The agent got the selection, its section and its block.
-  const asked = lastPrompt()
-  expect(asked.context).toMatchObject({ section: 'merge' })
-  expect(asked.context.selection).toContain('def merge(tokens, pair):')
-  expect(asked.context.block).toBeTruthy()
-
-  await citation.click()
-  await expect(panel).toBeHidden()
-  await expect(page).toHaveURL(/\/later\.html/)
-  // The section itself (the classroom's note spot carries the section id too).
-  await expect(page.locator('section.pm-section[data-section="later-section"]')).toBeInViewport()
+  await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
+  const panel = page.getByRole('complementary', { name: 'AI 修改' })
+  await expect(panel).toContainText('AI 修改不可用：没有配置模型。')
+  await expect(panel).toContainText('在“模型设置”中填写模型服务')
+  await expect(panel).toContainText('DEEPSEEK_API_KEY')
+  await expect(panel).toContainText('缺少：no model access')
+  await expect(panel).toContainText('AI 修改在工作区服务（presmium serve）中使用')
+  await panel.getByRole('button', { name: '模型设置' }).click()
+  const settings = page.getByRole('dialog', { name: '模型设置' })
+  await expect(settings).toContainText('当前生效：没有配置')
+  await expect(settings).toContainText('密钥（未设置）')
+  await expect(settings).toContainText(`${dir}.config/presmium/assistant.json`)
 })
 
-test('in tutor mode the agent\'s attempt to write a file is refused, and the file stays', async ({ page }) => {
-  const before = readFileSync(join(dir, 'lecture.md'), 'utf8')
-  await openDevPage(page, pageUrl('code.html'), page.locator('[data-section="merge"]'))
-  const panel = await openPanel(page)
-  await panel.getByLabel('问题').fill('#write lecture.md')
-  await panel.getByRole('button', { name: '提问', exact: true }).click()
-  await expect(panel.getByRole('list', { name: '回答' }).locator('.pm-assistant__answer').first()).toHaveText('permission: rejected', { timeout: 30_000 })
-  expect(readFileSync(join(dir, 'lecture.md'), 'utf8')).toBe(before)
-})
-
-test('a learner\'s question reaches the presenter\'s overview; the presenter sends the AI\'s answer, and the learner sees it', async ({ browser }) => {
+test('a learner\'s question reaches the presenter\'s overview; the presenter\'s own model service answers it, the presenter sends it, and the learner sees it', async ({ browser }) => {
   const contexts = await Promise.all([browser.newContext(), browser.newContext()])
   const [presenter, learner] = await Promise.all(contexts.map(context => context.newPage())) as [Page, Page]
   try {
     await openDevPage(presenter, pageUrl('code.html'), presenter.locator('[data-section="merge"]'))
+    // The presenter's own model service, filled in once in the question panel.
+    await presenter.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' }).click()
+    const ask = presenter.getByRole('dialog', { name: '向 AI 提问' })
+    await ask.getByLabel('地址').fill(model.url)
+    await ask.getByLabel('密钥').fill('presenter-key-51c')
+    await ask.getByLabel('模型名').fill('stub-model')
+    await ask.getByRole('button', { name: '保存' }).click()
+    await ask.getByRole('button', { name: '关闭' }).click()
+
     await presenter.getByRole('button', { name: /^课堂/ }).click()
     const session = presenter.getByRole('dialog', { name: '课堂' })
     await session.getByLabel('昵称').fill('王老师')
@@ -124,45 +94,23 @@ test('a learner\'s question reaches the presenter\'s overview; the presenter sen
     await box.getByRole('button', { name: '提问' }).click()
     await expect(box.getByRole('list', { name: '我的提问' })).toContainText('为什么先统计次数？')
 
+    const provider = new URL(model.url).host
     await presenter.getByRole('button', { name: /^互动/ }).click()
     const overview = presenter.getByRole('dialog', { name: '课堂互动' })
     const question = overview.getByRole('region', { name: '提问' }).getByRole('listitem').filter({ hasText: '为什么先统计次数？' })
-    await question.getByRole('button', { name: 'AI 回答（Test Provider）' }).click()
+    await question.getByRole('button', { name: `AI 回答（${provider}）` }).click()
     await expect(question.locator('.pm-classroom-panel__answer')).toContainText('问题是「为什么先统计次数？」', { timeout: 30_000 })
     await question.getByRole('button', { name: '发给课堂' }).click()
-    await expect(question.locator('.pm-classroom-reply')).toContainText('AI 回答（Test Provider）：')
+    await expect(question.locator('.pm-classroom-reply')).toContainText(`AI 回答（${provider}）：`)
+    // The presenter's browser asked the presenter's service, with the question's section.
+    const asked = model.received.find(r => r.method === 'POST')!
+    expect(asked.headers.authorization).toBe('Bearer presenter-key-51c')
+    expect(asked.body.messages![0]!.content).toContain('(id questions')
 
     // The learner gets the answer, its citation as plain text.
     const reply = box.getByRole('list', { name: '我的提问' }).locator('.pm-classroom-reply')
-    await expect(reply).toContainText('AI 回答（Test Provider）：这段代码在课堂提问中讲解：问题是「为什么先统计次数？」。')
+    await expect(reply).toContainText(`AI 回答（${provider}）：这段代码在合并规则中讲解：问题是「为什么先统计次数？」。`)
   } finally {
     await Promise.all(contexts.map(context => context.close()))
-  }
-})
-
-test('the static build of a deck that lists the assistant: no console error, the assistant started, nothing offers to ask', async ({ page }) => {
-  test.setTimeout(600_000)
-  let deck: FixtureDeck | undefined
-  try {
-    deck = await buildFixture('assistant', {
-      to: 'web',
-      link: { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' },
-      // The assistant alone: the static output a reader of D17 gets, with no server to ask.
-      edit: dir => writeFileSync(join(dir, 'lecture.md'), '---\ntitle: 静态的助手\nplugins:\n  - \'@presmium/slidev-addon-assistant\'\n---\n\n# 静态的助手\n\n(merge)=\n## 合并规则\n\n每一轮合并出现次数最多的一对。\n'),
-    })
-    const errors: string[] = []
-    page.on('console', message => message.type() === 'error' && errors.push(message.text()))
-    page.on('pageerror', error => errors.push(error.message))
-    await page.goto(`${deck.web}/?view=presenter&section=merge`)
-    await expect(page.locator('[data-section="merge"]').first()).toBeVisible()
-    await page.locator('.pm-presenter-panels summary').click()
-    await expect(page.locator('.pm-start-report [data-plugin="presmium.assistant"]')).toHaveAttribute('data-status', 'started')
-    await expect(page.getByRole('button', { name: '提问' })).toHaveCount(0)
-    await page.goto(`${deck.web}/`)
-    await expect(page.locator('[data-section="merge"]').first()).toBeVisible()
-    await expect(page.locator('.pm-assistant-toolbar')).toHaveCount(0)
-    expect(errors.filter(text => /presmium|assistant/i.test(text))).toEqual([])
-  } finally {
-    await deck?.close()
   }
 })

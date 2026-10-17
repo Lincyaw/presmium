@@ -9,4 +9,4 @@ settings:                           # the plugins' operator settings, by plugin 
   presmium.workspace:
     plugins: []                     # operator plugins, installed here: every document and the home page load them
   # presmium.assistant:
-  #   maxQuestions: { member: 2, total: 16 }   # learners' questions at a time, each member's and the service's (more get 429)
+  #   review: required                       # agent changes wait for the author's review (auto: committed at once)

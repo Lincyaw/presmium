@@ -1,14 +1,14 @@
 /**
- * AI answers to the classroom's questions (P-112, design-v0.7 5.4): where a
- * Presmium server's assistant serves the presenter's window (`AGENT`), the
- * question list offers an "AI answer" naming the model's provider (N-08).
- * The answer is a draft in the presenter's window until the presenter sends
- * it to the classroom, as the question's `reply`; learners never reach the
- * agent themselves.
+ * AI answers to the classroom's questions (P-112, decision E-9): where the
+ * assistant runs in the presenter's window, the question list offers an "AI
+ * answer" naming the provider (N-08) of the presenter's own model service
+ * (`ASK`, the one the presenter filled in for the question panel, asked from
+ * the presenter's browser). The answer is a draft in the presenter's window
+ * until the presenter sends it to the classroom, as the question's `reply`;
+ * learners never reach the model themselves.
  */
 import { useService } from '@presmium/host'
-import { AGENT, errorMessage } from '@presmium/kernel'
-import type { AgentTask } from '@presmium/kernel'
+import { ASK, errorMessage } from '@presmium/kernel'
 import { computed, reactive } from 'vue'
 import type { Question } from '../domain/index.ts'
 
@@ -17,34 +17,34 @@ export interface Draft {
   text: string
   error?: string
   provider?: string
-  task: AgentTask
+  stop: AbortController
 }
 
 /** An answer's citations of the deck (`[label](presmium://…)`) as their labels: the classroom gets plain text. */
 const plain = (text: string) => text.replace(/\[([^\]\n]+)\]\(presmium:\/\/[^)\s]+\)/g, '$1').trim()
 
 export function useAiAnswers() {
-  const agent = useService(AGENT)
-  /** The provider, while the assistant answers questions here. */
-  const provider = computed(() => (agent.value?.available('question') ? agent.value.provider() : undefined))
+  const ask = useService(ASK)
+  /** The assistant runs here: it offers AI answers once the presenter filled in a model service. */
+  const offered = computed(() => Boolean(ask.value))
+  /** The provider, once the presenter filled in a model service here. */
+  const provider = computed(() => ask.value?.provider())
   const drafts = reactive(new Map<string, Draft>())
 
   function answer(id: string, question: Question): void {
-    const client = agent.value
+    const client = ask.value
     if (!client || drafts.has(id)) return
-    const task = client.submit({ kind: 'question', prompt: question.text, context: { document: '', section: question.section, ...question.block ? { block: question.block } : {} } })
-    drafts.set(id, { state: 'running', text: '', provider: client.provider(), task })
+    const stop = new AbortController()
+    drafts.set(id, { state: 'running', text: '', provider: client.provider(), stop })
     const draft = drafts.get(id)!
     void (async () => {
-      const texts: string[] = []
+      let text = ''
       try {
-        for await (const event of task.events) {
-          if (event.type === 'message') texts.push(plain(event.text))
-          else if (event.type === 'error') throw new Error(event.message)
-        }
-        draft.text = texts.filter(Boolean).join('\n\n')
+        for await (const piece of client.ask(question.text, { document: '', section: question.section, ...question.block ? { block: question.block } : {} }, stop.signal)) text += piece
+        draft.text = plain(text)
         draft.state = draft.text ? 'ready' : 'failed'
       } catch (error) {
+        if (stop.signal.aborted) return
         draft.state = 'failed'
         draft.error = errorMessage(error)
       }
@@ -52,9 +52,9 @@ export function useAiAnswers() {
   }
 
   function discard(id: string): void {
-    drafts.get(id)?.task.cancel()
+    drafts.get(id)?.stop.abort()
     drafts.delete(id)
   }
 
-  return { provider, drafts, answer, discard }
+  return { offered, provider, drafts, answer, discard }
 }

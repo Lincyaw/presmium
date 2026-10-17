@@ -1,11 +1,12 @@
 // The agent environment (WP-78, P-110): an MCP SDK client connects to `/mcp` of `presmium dev` on a
 // test deck, reads its sections and code, runs a code block once the control channel allows it, is
-// refused without a token, sees only read tools with a `tutor` token a plugin's route issued (and 401
-// once revoked, its subscription ended), and hears of a new position it subscribed to; `presmium-mcp`
-// lists the read tools on stdio and loads the packages installed with the deck's CLI.
-// WP-89b: a window's position in the student view of a tutor token, found by its section (F-41); a plugin's
-// tool learns the view of the call (C-6); presmium-mcp checks as presmium check does, and its host compiles the
-// student view (F-03).
+// refused without a token, gets 401 with a token a plugin's route issued once it is revoked (its
+// subscription ended), and hears of a new position it subscribed to; `presmium-mcp` lists the read tools
+// on stdio and loads the packages installed with the deck's CLI.
+// WP-89b: a window's position found by its section (F-41); a plugin's tool learns the view of the call
+// (C-6); presmium-mcp checks as presmium check does, and its host compiles the student view (F-03).
+// WP-92b: get_position gives the step in the whole deck's numbering, by the keys of the steps a window of
+// another numbering reports (F-85), and navigate sends the windows those keys.
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -162,18 +163,15 @@ describe('presmium dev', () => {
     expect(resultOf(await running)).toMatchObject({ ok: true, stdout: '42\n' })
   })
 
-  it('a tutor token a plugin\'s route issued sees no operate tool, and gets 401 once revoked, which ends its subscription', async () => {
-    const grant = await (await fetch(`${server}/__presmium/fixture.mcp/tutor`)).json() as { url: string, token: string }
+  it('a token a plugin\'s route issued gets 401 once revoked, which ends its subscription', async () => {
+    const grant = await (await fetch(`${server}/__presmium/fixture.mcp/token`)).json() as { url: string, token: string }
     expect(grant.url).toBe(`${server}/mcp`)
-    const tutor = await connect(grant.token)
-    const tools = await names(tutor)
-    expect(tools).toEqual(expect.arrayContaining(READ))
-    expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
-    expect(tutor.getInstructions()).toContain('reads only')
+    const issued = await connect(grant.token)
+    expect(await names(issued)).toEqual(expect.arrayContaining([...READ, ...OPERATE]))
     // Its subscription stream carries the updates while the token is valid.
-    const updated = new Promise<string>(resolve => tutor.setNotificationHandler('notifications/resources/updated', n => resolve(n.params.uri)))
-    const subscription = await tutor.listen({ resourceSubscriptions: ['presmium://position'] })
-    const page = await window('tutor-page')
+    const updated = new Promise<string>(resolve => issued.setNotificationHandler('notifications/resources/updated', n => resolve(n.params.uri)))
+    const subscription = await issued.listen({ resourceSubscriptions: ['presmium://position'] })
+    const page = await window('issued-page')
     expect(await page.report({ position: { slide: 2, step: 0, view: 'document' }, role: 'reader', status: {} })).toBe(200)
     expect(await updated).toBe('presmium://position')
     const open = await Promise.race([subscription.closed, new Promise(done => setTimeout(() => done('open'), 300))])
@@ -200,25 +198,31 @@ describe('presmium dev', () => {
     await subscription.close()
   })
 
-  it('gives a tutor token the position of the presenting window in the student view: by section, null in a teacher\'s section (F-41)', async () => {
+  it('gives the position of the presenting window by its section, the step in the whole deck\'s numbering by the keys a window of another numbering reports; navigate sends those keys (F-41, F-85)', async () => {
     const page = await window('teaching')
-    const grant = await (await fetch(`${server}/__presmium/fixture.mcp/tutor`)).json() as { token: string }
-    const tutor = await connect(grant.token)
-    const where = async () => resultOf(await tutor.callTool({ name: 'get_position', arguments: {} })).position as Record<string, unknown>
-    // The teacher's window (the whole deck) on its third section, the teacher's: the student view has none of it.
-    expect(await page.report({ position: { slide: 3, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
-    expect(await where()).toMatchObject({ section: null, title: null })
-    // On the section after it, which the student view numbers 3: the same section, found by its id.
-    expect(await page.report({ position: { slide: 4, step: 0, view: 'present' }, role: 'audience', status: {} })).toBe(200)
-    expect(await where()).toMatchObject({ section: '第三节', title: '第三节' })
-    // A window that names its section: that one, whatever its number.
+    const client = await connect()
+    const where = async () => resultOf(await client.callTool({ name: 'get_position', arguments: {} })).position as Record<string, unknown>
+    // A window that names its section: that one, whatever its number; its step as it says, without keys.
     expect(await page.report({ position: { slide: 2, step: 0, view: 'present', section: 'teacher' }, role: 'audience', status: {} })).toBe(200)
-    expect(await where()).toMatchObject({ section: null })
-    expect(await page.report({ position: { slide: 2, step: 0, view: 'present', section: 'merge' }, role: 'audience', status: {} })).toBe(200)
-    expect(await where()).toMatchObject({ section: 'merge' })
-    // A plugin's tool reads what the token may: the student view (C-6).
-    expect(resultOf(await tutor.callTool({ name: 'fixture_view', arguments: {} }))).toEqual({ view: 'student' })
-    expect(resultOf(await (await connect()).callTool({ name: 'fixture_view', arguments: {} }))).toEqual({ view: 'full' })
+    expect(await where()).toMatchObject({ section: 'teacher', title: '教师讲评', step: 0 })
+    // 第三节's reveals: one for the notebook only (step 1 of the whole deck), then one every form has (step 2).
+    const { blocks } = resultOf(await client.callTool({ name: 'get_section', arguments: { section: '第三节' } })) as { blocks: { id: string, at: number, only?: string[] }[] }
+    const notebookOnly = blocks.find(b => b.only?.includes('notebook'))!
+    const shared = blocks.find(b => b.at === 2 && !b.only)!
+    expect(notebookOnly.at).toBe(1)
+    // The web and slides forms have no step for the notebook's block: their step 1 shows the shared reveal, step 2 of the whole deck.
+    expect(await page.report({ position: { slide: 4, step: 1, view: 'present', section: '第三节', trail: [shared.id] }, role: 'audience', status: {} })).toBe(200)
+    expect(await where()).toMatchObject({ section: '第三节', step: 2, steps: 2 })
+    // A window of the whole deck's numbering keeps its step.
+    expect(await page.report({ position: { slide: 4, step: 1, view: 'present', section: '第三节', trail: [notebookOnly.id] }, role: 'audience', status: {} })).toBe(200)
+    expect(await where()).toMatchObject({ section: '第三节', step: 1 })
+    // navigate names the step by the keys reached too, so a window of another numbering finds it.
+    const moving = client.callTool({ name: 'navigate', arguments: { section: '第三节', step: 2 } })
+    expect(await page.answer((await page.next('approval')).id, true)).toBe(200)
+    expect(await page.next('go')).toMatchObject({ section: '第三节', step: 2, trail: [notebookOnly.id, shared.id] })
+    expect((await moving).isError).toBeFalsy()
+    // A plugin's tool reads the whole deck (C-6): no token reads the student view any more.
+    expect(resultOf(await client.callTool({ name: 'fixture_view', arguments: {} }))).toEqual({ view: 'full' })
   })
 })
 

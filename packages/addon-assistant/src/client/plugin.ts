@@ -1,23 +1,27 @@
 /**
- * The assistant in the page (P-112 to P-114; docs/architecture.md 4.8),
+ * The assistant in the page (P-111 to P-114; docs/architecture.md 4.8),
  * registered by `setup/main.ts` in the slides form and by the web renderer
- * in the web form. Where `presmium dev` or `presmium serve` serves the page
- * it provides `AGENT` (the client of the server's assistant, ./agent.ts) and
- * adds the question panel to the toolbar and to the presenter panels, and,
- * in the workspace's edit mode, the panel of annotations and chat
- * (./EditPanel.vue). Static output has no server: there `AGENT` is a client
- * that is never available, and nothing shows (F-48). The text the reader
- * selects in the deck goes with a question or a chat message.
+ * in the web form. Every page has the question panel, in the toolbar and in
+ * the presenter panels, and `ASK`, the reader's own model service, which it
+ * asks from the browser (P-112, ./ask.ts): static output too. Where
+ * `presmium dev` or `presmium serve` serves the page it also provides
+ * `AGENT` (the client of the server's assistant, ./agent.ts) and adds "AI
+ * changes" to the toolbar (./EditPanel.vue): in the workspace's edit mode
+ * the panel of annotations and chat, elsewhere what is needed for it, and
+ * the model settings. Static output has no server: there `AGENT` is a
+ * client that is never available (F-48). The text the reader selects in the
+ * deck goes with a question or a chat message.
  */
-import { currentLocale, TOOLBAR, useServer } from '@presmium/host'
-import { AGENT, PRESENTER_PANELS } from '@presmium/kernel'
+import { currentLocale, NAVIGATION, TOOLBAR, useServer } from '@presmium/host'
+import { AGENT, ASK, PRESENTER_PANELS } from '@presmium/kernel'
 import type { AgentClient, PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'
 import AssistantToolbar from './AssistantToolbar.vue'
 import EditPanel from './EditPanel.vue'
 import { createAgentClient } from './agent.ts'
-import { agent, assistant as assistantClient, trackSelection } from './state.ts'
+import { createAskClient } from './ask.ts'
+import { agent, asker, assistant as assistantClient, navigation, trackSelection } from './state.ts'
 
 let cleanup: Unsubscribe[] = []
 
@@ -27,7 +31,7 @@ const unavailable: AgentClient = {
   provider: () => undefined,
   runtime: () => undefined,
   submit(request) {
-    const message = ASSISTANT_MESSAGES[currentLocale()].panel.unavailable
+    const message = ASSISTANT_MESSAGES[currentLocale()].noRuntime
     return {
       id: `${request.kind}-unavailable`,
       events: (async function* () {
@@ -49,26 +53,30 @@ export const assistantPlugin: PluginDefinition = {
     id: ASSISTANT_ID,
     version: '0.1.0',
     kernel: '^0.1.0',
-    provides: [AGENT],
-    requires: [{ token: TOOLBAR, optional: true }, { token: PRESENTER_PANELS, optional: true }],
+    provides: [AGENT, ASK],
+    requires: [{ token: TOOLBAR, optional: true }, { token: PRESENTER_PANELS, optional: true }, { token: NAVIGATION, optional: true }],
   },
   setup(ctx) {
+    navigation.value = ctx.tryGet(NAVIGATION)
+    const ask = createAskClient(() => navigation.value, () => ASSISTANT_MESSAGES[currentLocale()].ask.missing)
+    ctx.provide(ASK, ask)
+    asker.value = ask
     const server = useServer()
-    if (!server.available) {
+    if (server.available) {
+      const client = createAgentClient(server)
+      ctx.provide(AGENT, client.client)
+      agent.value = client.client
+      assistantClient.value = client
+      void client.refresh()
+    } else {
       // Declared, so provided: its users see an assistant that is not there.
       ctx.provide(AGENT, unavailable)
-      return
     }
-    const assistant = createAgentClient(server)
-    ctx.provide(AGENT, assistant.client)
-    agent.value = assistant.client
-    assistantClient.value = assistant
-    void assistant.refresh()
     const t = ASSISTANT_MESSAGES[currentLocale()]
+    const toolbar = ctx.tryGet(TOOLBAR)
     cleanup = [
-      ctx.tryGet(TOOLBAR)?.register({ id: ASSISTANT_ID, title: t.toolbar.title, component: AssistantToolbar, order: 15 }),
-      // Shown in the workspace's edit mode only (`EDIT_MODE`, which the workspace's plugin provides after this one starts).
-      ctx.tryGet(TOOLBAR)?.register({ id: `${ASSISTANT_ID}.edit`, title: t.edit.title, component: EditPanel, order: 16 }),
+      toolbar?.register({ id: ASSISTANT_ID, title: t.toolbar.title, component: AssistantToolbar, order: 15 }),
+      server.available ? toolbar?.register({ id: `${ASSISTANT_ID}.edit`, title: t.edit.toggle, component: EditPanel, order: 16 }) : undefined,
       ctx.tryGet(PRESENTER_PANELS)?.register({ id: ASSISTANT_ID, title: t.panel.title, component: AskPanel, order: 15 }),
       typeof document === 'undefined' ? undefined : trackSelection(),
     ].filter(stop => stop !== undefined)
@@ -77,7 +85,9 @@ export const assistantPlugin: PluginDefinition = {
     cleanup.forEach(stop => stop())
     cleanup = []
     agent.value = undefined
+    asker.value = undefined
     assistantClient.value = undefined
+    navigation.value = undefined
   },
 }
 

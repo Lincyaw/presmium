@@ -44,3 +44,15 @@ x = 6
 :session: s
 print(x * 7)
 ```
+
+::::{only} notebook
+:::{slide}
+:reveal:
+只在 notebook 中出现的一步。
+:::
+::::
+
+:::{slide}
+:reveal:
+两种形态都有的一步。
+:::

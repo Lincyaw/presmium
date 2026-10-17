@@ -3,9 +3,9 @@
  * tools, the same data as read-only resources, and instructions. Read tools
  * for every token; operate tools (`navigate`, `run_code`, `build`,
  * `classroom_start`, `classroom_end`, and the plugins' `operate` and `spend`
- * tools) only for `author` tokens of editors and owners, each confirmed
- * through the host's approvals (scope `content`, for the token's member)
- * first. `tutor` tokens read the student view. No tool writes
+ * tools) only for the tokens of editors and owners, each confirmed through
+ * the host's approvals (scope `content`, for the token's member) first.
+ * Every token reads the whole deck (the `full` view). No tool writes
  * files: agents edit the source with their own file tools.
  *
  * `createPresmiumMcp` serves it over HTTP (a fresh server per request, the
@@ -16,7 +16,7 @@
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
-import { deckLocale, docBlocks, errorMessage, isRecord } from '@presmium/kernel'
+import { deckLocale, docBlocks, errorMessage, isRecord, stepKeys, stepTrail, trailStep } from '@presmium/kernel'
 import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, Finding, IRDocument, Member, MemberRole } from '@presmium/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
 import type { McpCaller, McpHost, McpProcess, McpView } from './host.ts'
@@ -32,7 +32,7 @@ export const READ_TOOLS = [
   'get_code_ref', 'get_outputs', 'get_diagnostics', 'locate_source', 'get_position', 'get_classroom',
 ] as const
 
-/** The operate tools, for `author` tokens of editors and owners. */
+/** The operate tools, for the tokens of editors and owners. */
 export const OPERATE_TOOLS = ['navigate', 'run_code', 'build', 'classroom_start', 'classroom_end'] as const
 
 type Args = Record<string, unknown>
@@ -70,14 +70,12 @@ const BLOCK = { block: { type: 'string', description: 'The block id (get_section
 const rank: Record<MemberRole, number> = { reader: 0, editor: 1, owner: 2 }
 const hasRole = (member: Member, role: MemberRole) => member.roles.some(own => rank[own] >= rank[role])
 
-/** `tutor` tokens read the student view (D8). */
-function viewOf(caller: McpCaller): McpView {
-  return caller.mode === 'tutor' ? 'student' : 'full'
-}
+/** The view every token reads: the whole deck (v0.9 removed the `tutor` tokens, which read the student view). */
+const VIEW: McpView = 'full'
 
-/** Whether the caller may operate: an `author` token of an editor or owner. */
+/** Whether the caller may operate: a token of an editor or owner. */
 function operates(caller: McpCaller): boolean {
-  return caller.mode === 'author' && hasRole(caller.member, 'editor')
+  return hasRole(caller.member, 'editor')
 }
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
@@ -85,10 +83,13 @@ const int = (value: unknown) => (typeof value === 'number' && Number.isInteger(v
 
 /**
  * The position the windows of a document (or of any) last reported, the
- * caller's presenting ones first, in the caller's view (F-41): the window's
- * section by its id, which every view shares; a window that reports no id
- * names its section by its number in its own view. A section the caller's
- * view leaves out (a teacher's, for a `tutor` token) is null.
+ * caller's presenting ones first, in the caller's view (F-41, F-85): the
+ * window's section by its id, which every view shares; a window that reports
+ * no id names its section by its number in its own view. The step is the
+ * caller's too: a window of another numbering (the slides form, whose
+ * blocks only for other renderers take no step; a student build) reports
+ * the keys of the steps it has reached (`trail`), and the step is the last
+ * of the caller's that they reach. A section the caller's view lacks is null.
  */
 async function position(call: Call, document?: string) {
   const found = call.host.positions?.(document, call.caller.member)[0]
@@ -100,12 +101,15 @@ async function position(call: Call, document?: string) {
     id = shown.sections.find(s => s.index === found.slide)?.id
   }
   const section = id === undefined ? undefined : doc.sections.find(s => s.id === id)
+  const keys = section && found.trail ? stepKeys(section) : undefined
+  // A trail this numbering has up to the step is one of the same numbering: the step stands.
+  const step = keys && stepTrail(keys, found.step).join('\n') !== found.trail!.join('\n') ? trailStep(keys, found.trail!) : found.step
   return {
     position: {
       document: found.document,
       section: section?.id ?? null,
       title: section?.title ?? null,
-      step: found.step,
+      step,
       steps: section?.steps ?? null,
       ...found.view ? { view: found.view } : {},
       ...found.role ? { role: found.role } : {},
@@ -241,8 +245,9 @@ const TOOLS: ToolSpec[] = [
       const own = call.host.positions?.(document, call.caller.member).filter(p => p.member === call.caller.member.id) ?? []
       if (own.length === 0) throw new Error('none of your windows shows the deck: open it first')
       await call.approve('operate', m => m.navigate(section.title, step))
-      // The section's id too: a window of another view (the student build) finds it by its id (D-4).
-      const windows = call.host.navigate!(document, { slide: section.index, step, section: section.id }, call.caller.member)
+      // The section's id and the keys of the steps reached too: a window of another numbering (the slides
+      // form, the student build) finds the place in its own (D-4, F-85).
+      const windows = call.host.navigate!(document, { slide: section.index, step, section: section.id, trail: stepTrail(stepKeys(section), step) }, call.caller.member)
       if (windows === 0) throw new Error('none of your windows shows the deck')
       return { section: section.id, step, windows }
     },
@@ -380,7 +385,7 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
     `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics, presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}${host.classroom ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>).`,
     'Sections are named by id (list_sections); steps count from 0. Paths are relative to the deck directory.',
     !operates(caller)
-      ? 'This token reads only, and sees what learners see.'
+      ? 'This token reads only.'
       : operations.length === 0
         ? (pages ? 'No operation is offered here.' : 'No operation is offered: presmium-mcp offers the kinds of operation its --allow names.')
         : pages
@@ -424,7 +429,7 @@ function argsOf(variables: Variables): Args {
 
 /** The MCP server for one caller: the tools and resources its token may use. */
 export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<McpServer> {
-  const view = viewOf(caller)
+  const view = VIEW
   const documents = await host.documents().catch(() => [])
   const only = documents.length === 1 ? documents[0]!.dir : undefined
 

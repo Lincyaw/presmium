@@ -1,14 +1,19 @@
 /**
- * Which agent runtime the operator configured (D11, docs/architecture.md
- * 4.8), from the process's environment and the operator's settings
- * (`settings.presmium.assistant`), never from the deck. The bundled DeepSeek
- * Harness runs when there is model access: `DEEPSEEK_API_KEY` (provider
- * `DeepSeek`), or the three `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and
- * `PRESMIUM_MODEL_PROVIDER` together, which come first. A replacement
- * runtime (`PRESMIUM_AGENT_COMMAND`, `PRESMIUM_AGENT_TUTOR_COMMAND`, or the
- * settings `command` and `tutor`) replaces it and needs a
- * provider of its own (`PRESMIUM_AGENT_PROVIDER` or `provider`). Without
- * either, the assistant is unavailable and starts nothing.
+ * Which agent runtime the operator configured (D11, P-111, docs/architecture.md
+ * 4.8), never from the deck. In this order:
+ *
+ * 1. a replacement runtime: `PRESMIUM_AGENT_COMMAND`, or the setting
+ *    `command` of `settings.presmium.assistant`, with its provider
+ *    (`PRESMIUM_AGENT_PROVIDER` or the setting `provider`); it uses its own credentials;
+ * 2. the bundled DeepSeek Harness with the model access of the environment:
+ *    the three `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and
+ *    `PRESMIUM_MODEL_PROVIDER` together, else `DEEPSEEK_API_KEY` (provider `DeepSeek`);
+ * 3. the bundled DeepSeek Harness with the model settings the operator saved
+ *    in the page (`ModelSettings`, in the user's configuration directory).
+ *
+ * The environment comes first, so a page cannot override what the operator
+ * started the process with. Without any of them the assistant is unavailable
+ * and starts nothing.
  */
 export const ASSISTANT_ID = 'presmium.assistant'
 
@@ -16,24 +21,95 @@ export const ASSISTANT_ID = 'presmium.assistant'
 export const DEEPSEEK_PROVIDER = 'DeepSeek'
 
 export type ModelAccess =
-  /** `DEEPSEEK_API_KEY`: DeepSeek's official address only. */
-  | { kind: 'deepseek', provider: string, key: string }
+  /** DeepSeek's official address only. */
+  | { kind: 'deepseek', provider: string, key: string, model?: string }
   /** The operator's Messages-compatible service: its key goes to its URL only. */
-  | { kind: 'custom', provider: string, url: string, key: string }
+  | { kind: 'custom', provider: string, url: string, key: string, model?: string }
+
+/**
+ * The model settings of the page (P-111), as saved: no `url` is DeepSeek's
+ * official address (provider `DeepSeek` unless named), a `url` a
+ * Messages-compatible service whose provider is named. `model` is the
+ * model's name; without it DeepSeek Harness's default.
+ */
+export interface ModelSettings {
+  provider?: string
+  url?: string
+  key?: string
+  model?: string
+}
+
+/** What the page shows of the model settings (`GET settings`): never the key, only whether it is set. */
+export interface ModelSettingsView {
+  /** Where the assistant's model comes from now. */
+  source: RuntimeSource | 'none'
+  /** The provider in effect. */
+  provider?: string
+  /** The environment variables or settings in effect, by name. */
+  from?: string[]
+  /** What is missing, when nothing is in effect. */
+  missing?: string
+  /** What the page saved. */
+  saved: { provider?: string, url?: string, model?: string, key: boolean }
+  /** The file the page's settings are saved in. */
+  file: string
+}
+
+/** Where a runtime choice comes from: the environment, the workspace's configuration, the page's model settings. */
+export type RuntimeSource = 'environment' | 'workspace' | 'page'
 
 type Secret = (name: string) => string | undefined
 
 const MODEL_VARIABLES = ['PRESMIUM_MODEL_URL', 'PRESMIUM_MODEL_KEY', 'PRESMIUM_MODEL_PROVIDER'] as const
 
-/** The operator's model access; `problem` says what is incomplete (a partial `PRESMIUM_MODEL_*` triple). */
-export function modelAccess(secret: Secret): { access?: ModelAccess, problem?: string } {
+const text = (value: unknown, max = 2000) => (typeof value === 'string' && value.trim() && value.length <= max ? value.trim() : undefined)
+
+/** The environment's model access; `problem` says what is incomplete (a partial `PRESMIUM_MODEL_*` triple). */
+export function modelAccess(secret: Secret): { access?: ModelAccess, from?: string[], problem?: string } {
   const [url, key, provider] = MODEL_VARIABLES.map(name => secret(name)?.trim() || undefined)
-  if (url && key && provider) return { access: { kind: 'custom', provider, url, key } }
+  if (url && key && provider) return { access: { kind: 'custom', provider, url, key }, from: [...MODEL_VARIABLES] }
   const missing = MODEL_VARIABLES.filter((_, i) => ![url, key, provider][i])
   const problem = missing.length < MODEL_VARIABLES.length ? `${MODEL_VARIABLES.join(', ')} go together; ${missing.join(' and ')} ${missing.length > 1 ? 'are' : 'is'} missing` : undefined
   const deepseek = secret('DEEPSEEK_API_KEY')?.trim()
-  if (deepseek) return { access: { kind: 'deepseek', provider: DEEPSEEK_PROVIDER, key: deepseek }, ...problem ? { problem } : {} }
+  if (deepseek) return { access: { kind: 'deepseek', provider: DEEPSEEK_PROVIDER, key: deepseek }, from: ['DEEPSEEK_API_KEY'], ...problem ? { problem } : {} }
   return problem ? { problem } : {}
+}
+
+/** The page's model settings from what was saved; undefined for anything else. */
+export function modelSettingsOf(value: unknown): ModelSettings | undefined {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
+  const given = value as Record<string, unknown>
+  const settings: ModelSettings = {}
+  for (const name of ['provider', 'url', 'key', 'model'] as const) {
+    const found = text(given[name])
+    if (found) settings[name] = found
+  }
+  return settings
+}
+
+/** Why the page's model settings cannot be saved as they are (in English; the page checks the same first). */
+export function modelSettingsProblem(settings: ModelSettings): string | undefined {
+  if (settings.url !== undefined) {
+    let url: URL
+    try {
+      url = new URL(settings.url)
+    } catch {
+      return 'the address is not a URL'
+    }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return 'the address is not an http(s) URL'
+    if (!settings.provider) return 'a Messages-compatible address needs its provider\'s name'
+  }
+  if (settings.model !== undefined && !/^[\w.:/@+-]{1,200}$/.test(settings.model)) return 'the model\'s name has characters a model id does not'
+  return undefined
+}
+
+/** The model access of the page's settings; undefined until a key is saved. */
+export function savedAccess(settings: ModelSettings | undefined): ModelAccess | undefined {
+  if (!settings?.key || modelSettingsProblem(settings)) return undefined
+  const model = settings.model ? { model: settings.model } : {}
+  return settings.url
+    ? { kind: 'custom', provider: settings.provider!, url: settings.url, key: settings.key, ...model }
+    : { kind: 'deepseek', provider: settings.provider ?? DEEPSEEK_PROVIDER, key: settings.key, ...model }
 }
 
 /** An argument vector from a command line: words split at spaces, quotes kept together (no shell). */
@@ -74,23 +150,30 @@ function commandOf(value: unknown): string[] | undefined {
 }
 
 export type RuntimeChoice =
-  /** A replacement runtime: the operator's commands, its provider; it uses its own credentials. */
-  | { kind: 'replacement', provider: string, author: string[], tutor: string[] }
+  /** A replacement runtime: the operator's command, its provider; it uses its own credentials. */
+  | { kind: 'replacement', provider: string, command: string[], source: RuntimeSource, from: string[] }
   /** The bundled DeepSeek Harness with the operator's model access. */
-  | { kind: 'bundled', access: ModelAccess, problem?: string }
+  | { kind: 'bundled', access: ModelAccess, source: RuntimeSource, from: string[], problem?: string }
   /** No runtime: `missing` says which settings are needed. */
   | { kind: 'none', missing: string }
 
-/** The operator's choice (`settings` is `settings.presmium.assistant`). */
-export function runtimeChoice(secret: Secret, settings: Record<string, unknown>): RuntimeChoice {
-  const author = commandOf(secret('PRESMIUM_AGENT_COMMAND')) ?? commandOf(settings.command)
-  const tutor = commandOf(secret('PRESMIUM_AGENT_TUTOR_COMMAND')) ?? commandOf(settings.tutor)
-  if (author || tutor) {
+/** The operator's choice (`settings` is `settings.presmium.assistant`, `saved` the page's model settings). */
+export function runtimeChoice(secret: Secret, settings: Record<string, unknown>, saved?: ModelSettings): RuntimeChoice {
+  const fromEnv = commandOf(secret('PRESMIUM_AGENT_COMMAND'))
+  const command = fromEnv ?? commandOf(settings.command)
+  if (command) {
     const provider = (typeof settings.provider === 'string' && settings.provider.trim()) || secret('PRESMIUM_AGENT_PROVIDER')?.trim()
-    if (!provider) return { kind: 'none', missing: 'a replacement runtime (PRESMIUM_AGENT_COMMAND, PRESMIUM_AGENT_TUTOR_COMMAND or settings.presmium.assistant.command, tutor) needs its model\'s provider: PRESMIUM_AGENT_PROVIDER or settings.presmium.assistant.provider' }
-    return { kind: 'replacement', provider, author: (author ?? tutor)!, tutor: (tutor ?? author)! }
+    if (!provider) return { kind: 'none', missing: 'a replacement runtime (PRESMIUM_AGENT_COMMAND or settings.presmium.assistant.command) needs its model\'s provider: PRESMIUM_AGENT_PROVIDER or settings.presmium.assistant.provider' }
+    return { kind: 'replacement', provider, command, source: fromEnv ? 'environment' : 'workspace', from: fromEnv ? ['PRESMIUM_AGENT_COMMAND'] : ['settings.presmium.assistant.command'] }
   }
-  const { access, problem } = modelAccess(secret)
-  if (access) return { kind: 'bundled', access, ...problem ? { problem } : {} }
-  return { kind: 'none', missing: `no model access: set DEEPSEEK_API_KEY, or PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER${problem ? ` (${problem})` : ''}; or a replacement runtime with PRESMIUM_AGENT_COMMAND and PRESMIUM_AGENT_PROVIDER` }
+  const { access, from, problem } = modelAccess(secret)
+  if (access) return { kind: 'bundled', access, source: 'environment', from: from!, ...problem ? { problem } : {} }
+  const page = savedAccess(saved)
+  if (page) return { kind: 'bundled', access: page, source: 'page', from: [] }
+  return { kind: 'none', missing: `no model access: fill in the model settings in the page, or set DEEPSEEK_API_KEY, or PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER${problem ? ` (${problem})` : ''} and restart; or a replacement runtime with PRESMIUM_AGENT_COMMAND and PRESMIUM_AGENT_PROVIDER` }
+}
+
+/** The provider a choice names; undefined for none. */
+export function choiceProvider(choice: RuntimeChoice): string | undefined {
+  return choice.kind === 'none' ? undefined : choice.kind === 'replacement' ? choice.provider : choice.access.provider
 }
