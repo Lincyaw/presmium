@@ -21,9 +21,9 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { build, Compiler, loadPlugins, pluginId, workspacePlugins } from '@presmium/compiler'
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
-import { AGENT_RUNTIME, CHANGE_REVIEW, errorMessage, irBlocks, REVISIONS } from '@presmium/kernel'
+import { AGENT_RUNTIME, CHANGE_REVIEW, DOCUMENT_FILES, errorMessage, irBlocks, REVISIONS } from '@presmium/kernel'
 import type { Finding, IRDocument, Logger, Member, ServiceToken, SiteSpec } from '@presmium/kernel'
-import { servedDocument, sharedSetup, startServer } from '@presmium/server'
+import { servedDocument, startServer } from '@presmium/server'
 import type { DocumentView, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { rolesOf } from '../domain/members.ts'
@@ -31,8 +31,10 @@ import { AgentHostClient } from './agent-client.ts'
 import { initGroups } from './agent-host.ts'
 import { STUDENT, viewDocument } from './audience.ts'
 import { listDocuments, readWorkspace } from './config.ts'
-import { Documents, RequestError } from './documents.ts'
-import { CompileApprovals, compileMode } from './execution.ts'
+import { Documents, groupId, RequestError } from './documents.ts'
+import { CompileApprovals, compileMode, runKey } from './execution.ts'
+import { localWriter } from './files.ts'
+import type { DocumentWriter } from './files.ts'
 import { Git } from './git.ts'
 import { RemoteSite } from './remote-site.ts'
 import { Revisions } from './revisions.ts'
@@ -141,6 +143,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
   /** How a document's plugins are loaded (D14) and what their Node services get; also the home page's (`dir` ''). */
   const pluginOptions = (dir: string): CompilerOptions => ({
+    // The workspace root as the configuration says, never as a document directory's git says (WP-91).
+    workspaceRoot: root,
     settings: config.settings,
     trust: shared ? 'shared' : 'local',
     services: [...services, ...hostServices, ...agentServices(dir)],
@@ -153,25 +157,27 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     secret: name => (isOwnSecret(name) ? undefined : env[name]),
   })
 
-  const compilerOptions = (dir: string, session: () => DocumentSession): CompilerOptions => {
-    const pluginsOf = (executor: string): string[] => {
-      const compilation = session().latest
-      const owner = compilation?.plugins.find(loaded => loaded.plugin?.executors?.some(e => e.id === executor))
-      const environment = executor.startsWith('presmium.env.') ? compilation?.execute.environments?.[executor.slice('presmium.env.'.length)] : undefined
-      const provider = environment && compilation?.plugins.find(loaded => loaded.plugin?.environments?.[environment.kind])
-      return [owner, provider].flatMap(loaded => (loaded ? [pluginId(loaded)] : []))
-    }
-    return {
-      ...pluginOptions(dir),
-      execution: shared && agentHost
-        ? {
-            env: 'serve',
-            remote: agentHost.remote(dir, pluginsOf, () => requester.get(dir)),
-            ...mode === 'trusted' ? {} : { admit: approvals!.admit(session, () => session().latest?.doc.meta.title ?? dir, () => session().latest?.doc.meta.lang, () => requester.get(dir)) },
-          }
-        : { env: 'serve' },
-    }
+  /** The plugins a run of a document needs at the gateway: the executor's, and the provider of its environment. */
+  const pluginsOf = (dir: string, executor: string): string[] => {
+    const compilation = sessions.get(dir)?.latest
+    const owner = compilation?.plugins.find(loaded => loaded.plugin?.executors?.some(e => e.id === executor))
+    const environment = executor.startsWith('presmium.env.') ? compilation?.execute.environments?.[executor.slice('presmium.env.'.length)] : undefined
+    const provider = environment && compilation?.plugins.find(loaded => loaded.plugin?.environments?.[environment.kind])
+    return [owner, provider].flatMap(loaded => (loaded ? [pluginId(loaded)] : []))
   }
+
+  // SHARED: nothing runs in serve's compilations; `admit` hands what may run to agent-host, which records it (WP-91).
+  // `remote` is for `ServerHost.run` (MCP's run_code), which records nothing.
+  const compilerOptions = (dir: string, session: () => DocumentSession): CompilerOptions => ({
+    ...pluginOptions(dir),
+    execution: shared && agentHost
+      ? {
+          env: 'serve',
+          remote: agentHost.remote(dir, executor => pluginsOf(dir, executor), () => requester.get(dir)),
+          admit: approvals!.admit(session, () => session().latest?.doc.meta.title ?? dir, () => session().latest?.doc.meta.lang, () => requester.get(dir)),
+        }
+      : { env: 'serve' },
+  })
 
   /** In SHARED mode the agent runtime and the deltabox review are agent-host's, behind tokens the host keeps. */
   let agentInfo: Awaited<ReturnType<AgentHostClient['info']>> = {}
@@ -193,14 +199,18 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   }
 
   /**
-   * The repository, its history, the document operations and the workspace's routes: made once the
-   * server runs, as the user serve becomes (git refuses a repository another user owns).
+   * The repository, its history, the document writer, the document operations and the workspace's
+   * routes: made once the server runs and the mode is known, as the user serve becomes (git refuses a
+   * repository another user owns). In SHARED mode git runs isolated from what the sandbox may write,
+   * and what is inside the document directories is written by agent-host, as the sandbox (WP-91).
    */
-  const workspaceOf = (): { revisions?: Revisions, plugin: ServedPlugin } => {
-    const git = Git.isRepository(root) ? new Git(root) : undefined
+  const workspaceOf = (): { revisions?: Revisions, writer: DocumentWriter, plugin: ServedPlugin } => {
+    const writer = shared && agentHost ? agentHost.writer() : localWriter(config)
+    const group = env.PRESMIUM_DOCUMENTS_GROUP ? groupId(env.PRESMIUM_DOCUMENTS_GROUP) : undefined
+    const git = Git.isRepository(root) ? new Git(root, shared) : undefined
     if (!git) log.warn(`${root} is not a git repository: editing, the document operations and the history are not available (run git init)`)
-    const revisions = git ? new Revisions(git) : undefined
-    const documents = new Documents(config, git!, revisions!, async ({ removed }) => {
+    const revisions = git ? new Revisions(git, { config, writer, ...group !== undefined ? { group } : {} }) : undefined
+    const documents = new Documents(config, git!, revisions!, writer, async ({ removed }) => {
       for (const dir of removed) {
         sessions.get(dir)?.close()
         sessions.delete(dir)
@@ -208,7 +218,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       }
       const changed = refreshSpec()
       await site?.documentsChanged([...new Set([...removed, ...changed.removed])])
-    }, env.PRESMIUM_DOCUMENTS_GROUP)
+    }, group)
     const routes: WorkspaceRoutes = {
       documents,
       ...revisions ? { revisions } : {},
@@ -219,25 +229,32 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
         approvals.requestAgain(sessionOf(dir))
       },
     }
-    return { ...revisions ? { revisions } : {}, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
+    return { ...revisions ? { revisions } : {}, writer, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
   }
   let workspace: ReturnType<typeof workspaceOf> | undefined
-  const plugin = (): ServedPlugin => (workspace ??= workspaceOf()).plugin
+  const plugin = (): ServedPlugin => workspace!.plugin
+
+  // Set once the server runs and the mode is known: no document compiles, and no route answers, before.
+  let started!: () => void
+  const ready = new Promise<void>(resolve => started = resolve)
 
   const serverHost: ServerHost = {
     async documents() {
       return docs().map(({ entry: _entry, ...doc }) => doc)
     },
     async compile(document, view: DocumentView = 'full') {
+      await ready
       const compilation = await sessionOf(document).ready({ mayAsk: view === 'full' })
       const doc = viewDocument(compilation, view)
       return { doc, diagnostics: doc.diagnostics }
     },
     async check(document) {
+      await ready
       const compilation = await sessionOf(document).ready()
       return [...compilation.doc.diagnostics, ...await options.check?.(compilation) ?? []]
     },
     async build(document, buildOptions = {}) {
+      await ready
       const compilation = await sessionOf(document).ready()
       if (shared && agentHost) {
         const plugins = compilation.plugins.flatMap(loaded => (loaded.plugin?.gateway ? [pluginId(loaded)] : []))
@@ -251,6 +268,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
     },
     async run(document, target, signal) {
+      await ready
       const compilation = await sessionOf(document).ready()
       const section = compilation.doc.sections.find(s => s.id === target.section)
       const block = section && [...irBlocks(section.blocks)].find(b => b.id === target.block)
@@ -271,8 +289,6 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let home: string | undefined
   // Loaded once the server runs and the mode is known (SHARED: agent-host's services in place of the plugins'),
   // as the user serve becomes.
-  let started!: () => void
-  const ready = new Promise<void>(resolve => started = resolve)
   const operatorsOf = async () => {
     await ready
     home ??= mkdtempSync(join(tmpdir(), 'presmium-home-'))
@@ -300,8 +316,6 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     policy.operate = 'ask'
   }
 
-  // SHARED: read here as well (token files only root can read; the server drops privileges once it read them).
-  const setup = login ? sharedSetup(env) : undefined
   // Started as root: the user's own groups come along (the group of the document directories, 10.5).
   if (options.user && process.getuid?.() === 0) {
     const id = /^\d+$/.test(options.user) ? Number(options.user) : options.user
@@ -323,6 +337,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     ...options.approvalTimeoutMs ? { approvalTimeoutMs: options.approvalTimeoutMs } : {},
     log,
     async document(dir) {
+      await ready
       if (dir === '' && !config.single) return await homeDocument()
       if (!docs().some(doc => doc.dir === dir)) return undefined
       const compilation = await sessionOf(dir).ready()
@@ -333,15 +348,22 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   // Read: the secrets leave this process's environment, so no child process inherits them.
   if (env === process.env) for (const name of Object.keys(process.env)) if (isOwnSecret(name)) delete process.env[name]
   shared = server.trust === 'shared'
+  if (shared) log.warn('SHARED mode (a presmium serve with a login) is experimental until the security review of the shared deployment passes (docs/architecture.md 9.4)')
   services = server.services
   gateway = server.gateway
+  // agent-host's access, read with the server's other secrets, once (as root, before it dropped privileges).
+  if (shared) agentHost = new AgentHostClient(server.agentHost!, gateway, log)
   // Now as serve's user (the server dropped privileges once it read the token files).
-  workspace ??= workspaceOf()
-  hostServices = workspace.revisions ? [[REVISIONS, workspace.revisions]] : []
+  workspace = workspaceOf()
+  hostServices = [...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [], [DOCUMENT_FILES, workspace.writer]]
   if (shared) {
-    approvals = new CompileApprovals(mode, () => server.control.approvals, log)
-    agentHost = new AgentHostClient(setup!.agentHost, gateway, log)
-    agentInfo = await agentHost.info().catch((error: unknown) => {
+    const client = agentHost!
+    approvals = new CompileApprovals(mode, () => server.control.approvals, async (dir, runs, member) => {
+      const plugins = [...new Set(runs.flatMap(run => pluginsOf(dir, run.executor)))]
+      const done = await client.record(dir, runs.map(runKey), plugins, member)
+      log.info(`agent-host ran and recorded ${done.executed} of ${runs.length} code block${runs.length === 1 ? '' : 's'} of ${dir || '.'}`)
+    }, log)
+    agentInfo = await client.info().catch((error: unknown) => {
       log.warn(`agent-host did not say what it has: ${errorMessage(error)}`)
       return {}
     })
@@ -356,7 +378,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   }
   try {
     site = shared && agentHost
-      ? await remoteSites(agentHost, spec, compileFor, log)
+      ? await remoteSites(agentHost, spec, root, compileFor, log)
       : await localSite(root, spec, options.bundled, stateDir(root, env), compileFor('full', true), config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
   } catch (error) {
     await server.close()
@@ -401,10 +423,10 @@ async function localSite(root: string, spec: SiteSpec, bundled: string | undefin
 }
 
 /** SHARED: a site per view in agent-host, each behind a router of serve's (see ./remote-site.ts). */
-async function remoteSites(client: AgentHostClient, spec: SiteSpec, compile: (view: DocumentView, mayAsk: boolean) => (dir: string) => Promise<IRDocument>, log: Logger): Promise<SiteBackend> {
+async function remoteSites(client: AgentHostClient, spec: SiteSpec, root: string, compile: (view: DocumentView, mayAsk: boolean) => (dir: string) => Promise<IRDocument>, log: Logger): Promise<SiteBackend> {
   const views = {
-    full: new RemoteSite(client, spec, 'full', compile('full', true), log),
-    student: new RemoteSite(client, spec, 'student', compile('student', false), log),
+    full: new RemoteSite(client, spec, 'full', compile('full', true), log, root),
+    student: new RemoteSite(client, spec, 'student', compile('student', false), log, root),
   }
   const urls = { full: await views.full.url(), student: await views.student.url() }
   return {

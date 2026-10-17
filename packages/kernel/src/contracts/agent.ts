@@ -283,3 +283,37 @@ export interface RevisionService {
 }
 
 export const REVISIONS = defineService<RevisionService>('presmium.revisions')
+
+// Writing a document's files (WP-91) --------------------------------------------------
+
+/**
+ * A file of a document directory as it is to be: its content, a symbolic
+ * link, or gone. Paths are relative to the workspace root. With `at`, the
+ * content is written at that byte position of the file, whose other bytes
+ * stay (a recording uploaded in pieces); the file is made when it is not
+ * there, and a link in its place is replaced by an empty file first.
+ */
+export type DocumentFileChange =
+  | { path: string, content: Uint8Array, executable?: boolean, at?: number }
+  | { path: string, link: string }
+  | { path: string, remove: true }
+
+/**
+ * Writes files of document directories as the identity that may write them
+ * (docs/architecture.md 10.7, WP-91): in SHARED mode agent-host, as the
+ * sandbox's uid, since serve writes nothing where the sandbox may write; in
+ * LOCAL mode this process. Every path lies in a document directory; a
+ * symbolic link on the way is replaced, never followed; directories a
+ * removal leaves empty go, up to the document directory.
+ */
+export interface DocumentFiles {
+  write(changes: DocumentFileChange[]): Promise<void>
+}
+
+/**
+ * Node service: the workspace registers it in `presmium serve` (both modes).
+ * Plugins write the files of their deck through it when the host has it
+ * (`ServerContext.service`, `NodeServiceContext.service`, `PassContext.service`),
+ * and in this process only without it (`presmium dev`, `build`).
+ */
+export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFiles')

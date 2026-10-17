@@ -29,7 +29,7 @@
  */
 import { realpathSync } from 'node:fs'
 import { isAbsolute, relative, sep } from 'node:path'
-import { deckLocale, errorMessage, REVISIONS } from '@presmium/kernel'
+import { deckLocale, DOCUMENT_FILES, errorMessage, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentTaskRequest, ApprovalRequest, ChangeReview, ChangeReviewService, ReviewChange, ReviewDecision, ServerContext } from '@presmium/kernel'
 import { annotationNotes, ASSISTANT_MESSAGES, commitMessage, explanationOf, reviewMode, reviewTimeoutMs, WORKSPACE_CONFIG } from '../domain/index.ts'
 import { GIT_ENGINE, openGitReview } from './git-review.ts'
@@ -116,6 +116,9 @@ export async function runChange(run: ChangeRun, task: Task, request: AgentTaskRe
         workspaceRoot: ctx.workspaceRoot,
         deckDir: ctx.deckDir,
         task: task.id,
+        // SHARED: git isolated from what the sandbox may write; restores written by the workspace (agent-host, as the sandbox; WP-91).
+        isolated: ctx.trust === 'shared',
+        ...ctx.service(DOCUMENT_FILES) ? { files: ctx.service(DOCUMENT_FILES)! } : {},
         onRestore: paths => ctx.log.warn(`task ${task.id}: the agent changed the git directory, put back: ${paths.join(', ')}`),
         warn: message => ctx.log.warn(`task ${task.id}: ${message}`),
       })

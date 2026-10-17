@@ -905,6 +905,23 @@ WP-72 经四轮设计评审后，本机模式与整体架构定稿；共享部�
 - 所有者控制台的来源规则同时覆盖路由与代理。
 - 一轮独立的安全评审通过后，去掉“实验性”标记。
 
+**实际交付**：做法与理由写在 `architecture.md` 10.10 节，9.4 节按实测重写（另见 4.5、4.8、10.1 至 10.9 节与第 11 节标明 WP-91 之处）。
+
+1. serve 不写沙箱可写的目录：内核契约增加 `DOCUMENT_FILES`（`DocumentFiles.write(DocumentFileChange[])`，只增加），工作区登记它（LOCAL 本进程，SHARED 为 agent-host 的新接口 `POST /v1/files`，`src/node/files.ts`：链接被替换而不被跟随）；助手的 git 审阅经它回退与恢复（`git-review.ts`）；文档操作（`documents.ts`：serve 只新建空目录、改名、删除已清空的目录）与撤销（`revisions.ts`：`git merge-tree --merge-base` 算出撤销后的树，工作树有没提交的改动时报告冲突，文件经写入方写）都不再由 serve 写文档目录；编译时执行由 agent-host 执行并录制（`POST /v1/documents/<文档>/record`，`execution.ts` 的 `admit` 在 SHARED 中总是返回空）。工作区的 git 改为直接运行（`git.ts`，不再经 simple-git：撤销要以字节读出文件内容（`cat-file`）、每条命令另加变量（临时索引 `GIT_INDEX_FILE`）、以退出码判断 `merge-tree` 的冲突，SHARED 中每条命令的环境要从头构造（去掉继承的 `GIT_*`，加上 `GIT_CONFIG_NOSYSTEM`、`GIT_ATTR_SOURCE`、固定的 `GIT_DIR`），simple-git 只给文本输出、按实例设环境，这些各要绕过一次，直接运行只要几行），SHARED 中与助手的 git 审阅一样隔离：没有系统与全局配置，工作树中的属性从空树读取（`GIT_ATTR_SOURCE`，git 2.42 起，更旧时拒绝启动），git 目录从工作区根目录找到并固定。
+2. 9.4 节按 compose 布局的实测重写：同 uid 的会话令牌（读得到、在会话期间有效、结束后 401）、agent-host 读不到、deltabox 覆盖到与覆盖不到的部分（镜像补装 `fuse3`，覆盖配置原先起不来；这部分是一次手工测量，9.4 节写明何时、在哪里，没有自动的用例）、会话记录对 sandbox 的 uid 可读、运营者另装的插件在 serve 中自己写文件、嵌套的 `.git`、读者站点的范围。
+3. `RunContext.env` 只由执行代码的一方算出（SHARED 中 agent-host，serve 不再送 `env`）；serve 的三个秘密只在 `startServer` 中读一次（`PresmiumServer.agentHost`），以 root 启动时只接受 `_FILE`，agent-host 同样；降权之后还读得到令牌文件时（compose 的文件型 secrets 保留主机的属主，属主可能正是服务的 uid）serve、agent-host 与 gateway 拒绝启动（`assertUnreadable`，gateway 经 `becomeUser`），README 要求令牌文件属于 root。
+4. 所有者控制台的来源规则覆盖路由与代理：所有者代理只在控制台上；控制台上的请求按 `Sec-Fetch-Site`、WebSocket 按 `Origin` 检查，另加 `Cross-Origin-Resource-Policy`；站点上来自别的源的 WebSocket 被拒绝。
+5. 开发中自己发现并处理的（不在原清单中）：插件代理的路径能以编码的 `..` 越出目标，而 `auth: proxy` 的环境代理带着 serve 的服务令牌到 gateway（读者可以签发令牌、以服务令牌调用任何路由），现在 serve 与 gateway 都拒绝这样的路径，到 gateway 的代理只带限定于目标插件的令牌；SHARED 中站点与代理收到成员的登录 Cookie（sandbox 中的数据加载器能截获所有者的会话），现在去掉凭据与身份、不传回 `Set-Cookie`；学生视图的站点经 Vite 的 `/@fs/…?raw` 给出整份源码（WP-87 记下的缺口），serve 为读者挡住（评审之后改为白名单，见第 6 项）；文档目录中埋下 `.git` 文件就让 serve 的编译以文档目录为工作区根目录、加载其中与运营者插件同名的包（在 serve 中运行沙箱的代码），编译器增加 `CompilerOptions.workspaceRoot`，serve 与 agent-host 都给出；compose 中 agent-host 读不了 `.git/`，它的编译因此从来找不到运营者的插件，agent 写给自己的文件 serve 也读不了（agent-host 在每个工具调用之后把它们交给文档组）；读者能经 `GET revisions` 读修改历史（提交说明引用批注与对话），现在只给编辑者；编辑者能撤销任何提交，包括运营者对工作区配置的修改，现在改动文档之外的撤销只有所有者能做。
+6. 第一轮独立安全评审的发现与处理：
+   - 镜像以整个检出为构建上下文，运营者放在模板目录中的 `.env`、`oauth2-proxy.env`、`secrets/`、`seed/` 进了镜像，sandbox 的 uid 与读者（经站点的 `/@fs/`）都读得到：`Dockerfile.dockerignore` 改为白名单，`Dockerfile` 只逐项复制镜像运行所需的部分，模板目录增加 `.gitignore`。
+   - 读者站点原先按黑名单只挡工作区中的 Markdown 等，答案、数据文件与 Presmium 安装中的任何文件照样给出：改为白名单（`remote-site.ts` 的 `studentRefusal`：文档的 `components/`、`src/`，工作区根目录的 `node_modules/`，依赖与包的浏览器部分；请求的路径与真实路径都查），按 `e2e/workspace.spec.ts` 中读者页面实际的请求核对。
+   - 插件在 serve 中仍直接写文档目录（讲授插件的录制、讲授轨、逐字对齐，语音插件的合成缓存与锁定文件），离线发布的编译步骤在 serve 中下载文稿指名的地址：插件改为经 `DOCUMENT_FILES` 写（契约只增加：`DocumentFileChange` 的 `at`（按位置写入，分段上传）、`NodeServiceContext.service`），SHARED 中不下载远程图片（`PassContext.trust`，只增加）。
+   - 会话记录对 sandbox 的 uid 可读、令牌文件的属主、deltabox 覆盖配置的测量方式写进 9.4 节或照上处理。
+7. “实验性”标记保留（本文、`architecture.md` 9.4 节、compose 的 README，SHARED 的 serve 启动时的日志），一轮独立的安全评审通过后再去掉。
+8. 不在本工作包归属中的改动（只增加，交验收者确认）：`packages/compiler/src/compiler.ts`（`CompilerOptions.workspaceRoot`；给出 `NodeServiceContext.service` 与 `PassContext.trust`）、`packages/addon-lecture`（`store.ts` 的 `DeckFiles`，路由、agent 工具、转写与逐字对齐经它写）、`packages/addon-speech`（`cache.ts` 经 `DOCUMENT_FILES` 写合成缓存）、`packages/addon-publish`（`assets.ts` 在 SHARED 中不下载），以及内核契约（`contracts/agent.ts`、`contracts/server.ts`、`ir.ts`）。
+
+用例：`packages/server/test/server.test.ts`、`shared-gateway.test.ts`、`packages/workspace/test/deploy.test.ts`（compose 布局，另加测试用的登录代理（兼作 `edge` 上的探针）与假模型服务，`test/fixtures/compose/`；评审之后增加：模板目录中埋下的运营者文件不在镜像中、sandbox 与读者都读不到；读者取不到答案、数据文件、指向它们的链接与安装中的非浏览器文件，取得到组件与浏览器代码；讲授的录制在录制目录、媒体与讲授轨被换成指向 `.git/` 的链接时由 sandbox 写入、`.git/` 不变，serve 不取远程图片的地址；降权后仍读得到的令牌文件让 serve 拒绝启动）；原有的 `documents.test.ts`、`cli/test/serve.test.ts`、`addon-assistant/test/shared.test.ts`、`addon-lecture/test/reader.test.ts`、`addon-speech/test/gateway.test.ts`（SHARED 中的合成缓存经 agent-host 写入）、`e2e/assistant-edit.spec.ts`、`e2e/workspace.spec.ts`、`e2e/lecture*.spec.ts` 照常通过。
+
 ### WP-89a 示例讲义与示例工作区（K 波次第一步，与 WP-91 并行）
 
 **拥有**：`examples/**`、`e2e/smoke.spec.ts`、`e2e/demo*.spec.ts`（新）、`.agents/skills/**`（与示例相关的部分）。

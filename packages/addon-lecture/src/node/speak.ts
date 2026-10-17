@@ -13,6 +13,7 @@ import { errorMessage, isRecord } from '@presmium/kernel'
 import type { SpeechService, SpeechWord, SynthesisRequest } from '@presmium/kernel'
 import { plannedUtterances, writtenWords } from '../domain/index.ts'
 import type { Clip, LecturePlan, LectureVoice, MediaSegment, PlacedWord, SegmentTranscript, Span, Voice } from '../domain/index.ts'
+import type { DeckFiles } from './store.ts'
 
 /** An engine id as the operator's variables name it: case and `-` or `_` do not matter. */
 export function sameEngine(a: string, b: string): boolean {
@@ -31,6 +32,8 @@ export interface SpeakOptions {
    * engine can synthesize the voice.)
    */
   lookup?: boolean
+  /** How the words kept beside a clip are written (`presmium serve`: the workspace's writer, WP-91); without it, here. */
+  files?: DeckFiles
 }
 
 /** A synthesized clip, with what made it. */
@@ -61,7 +64,7 @@ export function audioBlob(file: string): Blob {
 }
 
 /** The words of a clip without word times: a transcript of it, kept beside it (`<key>.align.json`); undefined when none can be made (or `lookup` and none is kept). */
-async function alignedWords(speech: SpeechService, file: string, key: string, lang: string, lookup: boolean, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
+async function alignedWords(speech: SpeechService, file: string, key: string, lang: string, lookup: boolean, files: DeckFiles | undefined, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
   const kept = join(dirname(file), `${key}.align.json`)
   if (/^[0-9a-f]{32}$/.test(key) && existsSync(kept)) {
     try {
@@ -76,9 +79,14 @@ async function alignedWords(speech: SpeechService, file: string, key: string, la
     const transcript = await speech.transcribe({ audio: audioBlob(file), lang }, signal)
     const words = transcript.segments.flatMap(s => s.words)
     if (words.length === 0) return undefined
-    const temporary = `${kept}.${process.pid}.tmp`
-    writeFileSync(temporary, `${JSON.stringify({ key, words }, null, 2)}\n`)
-    renameSync(temporary, kept)
+    const text = `${JSON.stringify({ key, words }, null, 2)}\n`
+    if (files) {
+      await files.write(kept, text)
+    } else {
+      const temporary = `${kept}.${process.pid}.tmp`
+      writeFileSync(temporary, text)
+      renameSync(temporary, kept)
+    }
     return words
   } catch {
     return undefined
@@ -99,7 +107,7 @@ export async function synthesizeClip(speech: SpeechService, said: { text: string
   }
   const synthesis = await speech.synthesize(request, signal)
   if (typeof synthesis.audio !== 'string') throw new Error('the Node speech service gave no file of its cache')
-  const engineWords = synthesis.words?.length ? synthesis.words : await alignedWords(speech, synthesis.audio, synthesis.key, options.lang, Boolean(options.lookup), signal)
+  const engineWords = synthesis.words?.length ? synthesis.words : await alignedWords(speech, synthesis.audio, synthesis.key, options.lang, Boolean(options.lookup), options.files, signal)
   const words: PlacedWord[] | undefined = engineWords && writtenWords(engineWords, said.text, said.spoken, said.spans)
   const provider = record(synthesis.audio)?.provider
   return {

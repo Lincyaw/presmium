@@ -14,28 +14,31 @@
  * translate with the digest each translation records (`track_translations`).
  */
 import { isAbsolute, relative, resolve } from 'node:path'
-import { defineService, SPEECH } from '@presmium/kernel'
+import { defineService, DOCUMENT_FILES, SPEECH } from '@presmium/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@presmium/kernel'
 import { LECTURES_DIR, narrationDraft, narrationPlace, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack } from '../domain/index.ts'
 import { synthesizedLecture, transcribeLecture, unsaidMessage } from './lecture.ts'
 import { deckPlan, latestView } from './plan.ts'
 import { digest } from './renderer.ts'
-import { readTrack, TRACK_FILE, trackDir } from './store.ts'
+import { deckFiles, readTrack, TRACK_FILE, trackDir } from './store.ts'
+import type { DeckFiles } from './store.ts'
 
 /** The deck of a document, for the tools: a Node service of the lecture plugin. */
 export interface LectureDeck {
   deckDir: string
+  workspaceRoot: string
 }
 
 export const LECTURE_DECK = defineService<LectureDeck>('presmium.lecture.deck')
 
-function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument } {
+function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument, files: DeckFiles } {
   const deck = ctx.service(LECTURE_DECK)
   if (!deck) throw new Error('this document does not use the lecture plugin')
   const doc = latestView(deck.deckDir)
   if (!doc) throw new Error('the document has not compiled yet')
-  return { deckDir: deck.deckDir, doc }
+  // Written through the workspace's writer in `presmium serve` (WP-91).
+  return { deckDir: deck.deckDir, doc, files: deckFiles(deck.workspaceRoot, () => ctx.service(DOCUMENT_FILES)) }
 }
 
 function speechOf(ctx: AgentToolContext): SpeechService {
@@ -88,8 +91,8 @@ export const lectureSynthesize: AgentTool = {
   input: { type: 'object', properties: {} },
   kind: 'spend',
   async run(_input, ctx) {
-    const { deckDir, doc } = deckOf(ctx)
-    const made = await synthesizedLecture(doc, deckDir, speechOf(ctx), ctx.signal)
+    const { deckDir, doc, files } = deckOf(ctx)
+    const made = await synthesizedLecture(doc, deckDir, speechOf(ctx), ctx.signal, { files })
     if (!made.deck.voice) throw new Error('renderers.lecture.voice names no voice: the deck has no synthesized lecture')
     if (!made.track) throw new Error(made.unsaid.map(unsaidMessage).join('\n'))
     return {
@@ -109,9 +112,9 @@ export const trackTranscribe: AgentTool = {
   input: { type: 'object', properties: { track: { type: 'string', description: 'The lecture id (a directory of lectures/)' } }, required: ['track'] },
   kind: 'spend',
   async run(input, ctx) {
-    const { deckDir, doc } = deckOf(ctx)
+    const { deckDir, doc, files } = deckOf(ctx)
     if (typeof input.track !== 'string' || !input.track) throw new Error('track: the lecture id is required')
-    const { track, bound, provider } = await transcribeLecture(deckDir, input.track, speechOf(ctx), doc, ctx.signal)
+    const { track, bound, provider } = await transcribeLecture(files, deckDir, input.track, speechOf(ctx), doc, ctx.signal)
     return { track: track.id, provider, utterances: track.utterances.map(u => ({ id: u.id, section: u.section, t: u.t, text: u.text })), bound }
   },
 }

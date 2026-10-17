@@ -121,6 +121,12 @@ export interface NodeServiceContext {
    * the operator directory is in the gateway only (`GatewayContext.operatorDir`).
    */
   operatorDir?: string
+  /**
+   * The deck's Node services when called (the host's, e.g. the workspace's
+   * `DOCUMENT_FILES`, and the plugins'); optional for compatibility (a plugin
+   * writes `ctx.service?.(DOCUMENT_FILES)`).
+   */
+  service?<T>(token: ServiceToken<T>): T | undefined
   log: Logger
 }
 

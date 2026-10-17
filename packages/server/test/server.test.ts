@@ -1,8 +1,10 @@
 // The server (WP-73a, docs/architecture.md section 10): `presmium dev` mounts a test plugin's routes,
 // which the web dev server proxies, and keeps other machines and sites out; the `serve` mode with a
 // login (SHARED) takes members from the login proxy, dispatches approvals by scope, keeps the owner's
-// operations on the owner console, reads its tokens from files and refuses to start without the
-// gateway, agent-host and console, or with third-party credentials.
+// operations on the owner console (routes and proxies, with the console's origin rule, WP-91), passes
+// none of the member's credentials to the site or a proxy's target, reads its tokens from files (from
+// files only when started as root) and refuses to start without the gateway, agent-host and console, or
+// with third-party credentials.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -165,6 +167,76 @@ describe('presmium serve with a login (SHARED)', () => {
     expect(home.text).not.toContain('服务端测试文稿')
     // No MCP on the console.
     expect((await raw(`${url}/mcp`, { headers: as('owner@test', 'console.test') })).status).toBe(404)
+  })
+})
+
+describe('SHARED: what the site and the proxies get, and the owner console\'s rule for routes and proxies (WP-91)', () => {
+  let dir: string
+  let host: Child
+  let url: string
+  const listeners: Awaited<ReturnType<typeof listener>>[] = []
+  beforeAll(async () => {
+    dir = workspace('server-proxies', { doc: DECK })
+    writeFileSync(join(dir, 'presmium.workspace.yaml'), readFileSync(join(DECK, 'presmium.workspace.yaml')))
+    listeners.push(...await Promise.all([listener(), listener(), listener(), listener()]))
+    const [gateway, agentHost, site, upstream] = listeners as [Awaited<ReturnType<typeof listener>>, ...Awaited<ReturnType<typeof listener>>[]]
+    const started = await serveHost(sharedEnv(dir, gateway.url, agentHost!.url, { SERVE_FORWARD: site!.url, FIXTURE_UPSTREAM_URL: upstream!.url }))
+    if (!started.url) throw new Error(started.error)
+    host = started.host
+    url = started.url
+  }, 120_000)
+  afterAll(async () => {
+    await host?.stop()
+    await Promise.all(listeners.map(l => l.close()))
+    remove(dir)
+  })
+
+  const CREDENTIALS = { 'Cookie': '_oauth2_proxy=member-session', 'Authorization': 'Bearer id-token-of-the-login', 'X-Forwarded-Access-Token': 'access-token-of-the-login' }
+
+  it('passes none of the member\'s credentials to the site or a proxy\'s target, and none of their cookies back; refuses a path that climbs out', async () => {
+    const site = listeners[2]!
+    const upstream = listeners[3]!
+    const page = await raw(`${url}/doc/`, { headers: as('reader@test', 'site.test', CREDENTIALS) })
+    expect(page.status).toBe(200)
+    expect(page.headers['set-cookie']).toBeUndefined()
+    const proxied = await raw(`${url}/__presmium/fixture.server/upstream/api/x?y=1`, { headers: as('reader@test', 'site.test', CREDENTIALS) })
+    expect(proxied.json()).toMatchObject({ path: '/api/x?y=1' })
+    expect(proxied.headers['set-cookie']).toBeUndefined()
+    for (const request of [site.requests.at(-1)!, upstream.requests.at(-1)!]) {
+      for (const name of ['cookie', 'authorization', 'x-forwarded-access-token', 'x-forwarded-email', 'x-presmium-proxy-secret']) expect(request.headers[name], name).toBeUndefined()
+    }
+    // `..` encoded, or an encoded separator: refused before any target sees it.
+    const before = upstream.requests.length
+    for (const path of ['upstream/..%2F..%2Fsecret', 'upstream/%2e%2e%2Fsecret', 'upstream/a%5C..%5Csecret']) {
+      expect((await raw(`${url}/__presmium/fixture.server/${path}`, { headers: as('reader@test') })).status, path).toBe(400)
+    }
+    expect(upstream.requests.length).toBe(before)
+  })
+
+  it('mounts owner proxies on the console only, where they keep the console\'s origin rule as its routes do', async () => {
+    const upstream = listeners[3]!
+    const proxy = `${url}/__presmium/fixture.server/owner-upstream/x`
+    // Not on the site, for an owner either; not for an editor on the console.
+    expect((await raw(proxy, { headers: as('owner@test') })).status).toBe(404)
+    expect((await raw(proxy, { headers: as('editor@test', 'console.test') })).status).toBe(403)
+    // A reader's proxy is not on the console.
+    expect((await raw(`${url}/__presmium/fixture.server/upstream/x`, { headers: as('owner@test', 'console.test') })).status).toBe(404)
+    const before = upstream.requests.length
+    expect((await raw(proxy, { headers: as('owner@test', 'console.test', { 'Sec-Fetch-Site': 'same-origin' }) })).status).toBe(200)
+    expect(upstream.requests.length).toBe(before + 1)
+    // A page of the site (same site, another origin): its loads, changes and WebSockets are refused, as for the console's routes.
+    const fromSite = { 'Sec-Fetch-Site': 'same-site', 'Origin': 'http://site.test' }
+    expect((await raw(proxy, { headers: as('owner@test', 'console.test', { 'Sec-Fetch-Site': 'same-site' }) })).status).toBe(403)
+    expect((await raw(proxy, { method: 'POST', headers: as('owner@test', 'console.test', { ...fromSite, 'Presmium-Console': '1' }), body: '{}' })).status).toBe(403)
+    expect((await raw(proxy, { headers: as('owner@test', 'console.test', { ...fromSite, Connection: 'Upgrade', Upgrade: 'websocket' }) })).status).toBe(403)
+    expect((await raw(`${url}/__presmium/fixture.server/owner`, { headers: as('owner@test', 'console.test', { 'Sec-Fetch-Site': 'same-site' }) })).status).toBe(403)
+    expect(upstream.requests.length).toBe(before + 1)
+    // The console page itself opens from a link of the site; its responses are for its own origin only.
+    const home = await raw(`${url}/`, { headers: as('owner@test', 'console.test', { 'Sec-Fetch-Site': 'same-site' }) })
+    expect(home.status).toBe(200)
+    expect(home.headers['cross-origin-resource-policy']).toBe('same-origin')
+    // On the site, a WebSocket from another origin is refused too.
+    expect((await raw(`${url}/doc/`, { headers: as('reader@test', 'site.test', { Origin: 'http://evil.example', Connection: 'Upgrade', Upgrade: 'websocket' }) })).status).toBe(403)
   })
 })
 

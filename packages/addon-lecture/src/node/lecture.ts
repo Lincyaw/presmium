@@ -19,6 +19,7 @@ import { deckPlan } from './plan.ts'
 import type { MadeClip, Unsaid } from './speak.ts'
 import { clipVoice, sameEngine, synthesizePlan, transcribeSegments } from './speak.ts'
 import { mediaFile, readTrack, trackDir, writeTrack } from './store.ts'
+import type { DeckFiles } from './store.ts'
 
 /** The synthesis cache of a deck. */
 export function speechDir(deckDir: string): string {
@@ -43,11 +44,11 @@ export interface SynthesizedLecture {
  * of the IR, `lectureView`). With `lookup`, a clip without word times is not
  * transcribed to align it (see `SpeakOptions`).
  */
-export async function synthesizedLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { lookup?: boolean } = {}): Promise<SynthesizedLecture> {
+export async function synthesizedLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { lookup?: boolean, files?: DeckFiles } = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc, deckDir)
   const clips = new Map<string, MadeClip>()
   if (!deck.voice) return { deck, clips, unsaid: [] }
-  const made = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, ...options.lookup ? { lookup: true } : {} }, signal)
+  const made = await synthesizePlan(speech, deck.plan, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, ...options.lookup ? { lookup: true } : {}, ...options.files ? { files: options.files } : {} }, signal)
   if (made.unsaid.length > 0) return { deck, clips: made.clips, unsaid: made.unsaid }
   const track = scriptTrack(deck.plan, made.clips, {
     id: SCRIPT_TRACK,
@@ -93,14 +94,14 @@ export async function synthesisEngineOf(speech: SpeechService, doc: IRDocument |
  * transcription engine and writes it: its utterances, and its events bound
  * to their words. Throws when there is no such lecture or engine.
  */
-export async function transcribeLecture(deckDir: string, id: string, speech: SpeechService, doc: IRDocument | undefined, signal?: AbortSignal): Promise<{ track: LectureTrack, bound: number, provider: string }> {
+export async function transcribeLecture(files: DeckFiles, deckDir: string, id: string, speech: SpeechService, doc: IRDocument | undefined, signal?: AbortSignal): Promise<{ track: LectureTrack, bound: number, provider: string }> {
   const stored = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
   if (!stored) throw new Error(`no lecture ${id}`)
   const engine = await transcriptionEngine(speech, doc)
   if (!engine) throw new Error('no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
   const transcripts = await transcribeSegments(speech, stored.track.audio ?? [], segment => mediaFile(deckDir, id, segment.src), { engine: engine.id, lang: stored.track.lang }, signal)
   const { track, bound } = transcribedTrack(stored.track, transcripts)
-  writeTrack(deckDir, track)
+  await writeTrack(files, deckDir, track)
   return { track, bound, provider: engine.provider }
 }
 

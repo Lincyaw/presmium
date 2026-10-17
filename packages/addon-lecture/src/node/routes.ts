@@ -26,10 +26,10 @@
  *   PUT  editing/<id>/utterances/<u> { text }  an utterance's text corrected (said again in a synthetic voice)
  *   POST editing/<id>/synthesize { voice, engine? }   every utterance said again in a voice
  */
-import { createReadStream, existsSync, rmSync, statSync } from 'node:fs'
+import { createReadStream, existsSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
-import { errorMessage, isRecord, SPEECH } from '@presmium/kernel'
+import { DOCUMENT_FILES, errorMessage, isRecord, SPEECH } from '@presmium/kernel'
 import type { IRDocument, Member, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
 import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
@@ -37,7 +37,7 @@ import { clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, tra
 import { latestDoc, latestView, lectureConfig } from './plan.ts'
 import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
-import { freeMediaPath, mediaFile, mediaPolicy, newTrackId, readTrack, sha256File, trackDir, trackIds, writeAt, writeGitFiles, writeTrack } from './store.ts'
+import { deckFiles, freeMediaPath, mediaFile, mediaPolicy, newTrackId, readTrack, sha256File, trackDir, trackIds, writeGitFiles, writeTrack } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
 /** The largest chunk a recording uploads at once, and the largest media file. */
@@ -133,6 +133,8 @@ function readHead(value: unknown, id: string): TrackHead | undefined {
 export function lectureServer(ctx: ServerContext): ServerContribution {
   const { deckDir } = ctx
   const policy = mediaPolicy(ctx.settings)
+  // Written through the workspace's writer in `presmium serve` (in SHARED mode by agent-host, as the sandbox; WP-91).
+  const files = deckFiles(ctx.workspaceRoot, () => ctx.service(DOCUMENT_FILES))
 
   const finish = async (id: string, request: Request): Promise<Response> => {
     const body: unknown = await request.json().catch(() => undefined)
@@ -150,12 +152,12 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
       const external = policy.kind === 'url' ? `${policy.prefix}${id}/` : undefined
       for (const src of spliced.unused) {
         const file = mediaFile(deckDir, id, external && src.startsWith(external) ? src.slice(external.length) : src)
-        if (file) rmSync(file, { force: true })
+        if (file) await files.remove(file)
       }
     } else {
       track = recordedTrack(head, media)
     }
-    writeTrack(deckDir, track)
+    await writeTrack(files, deckDir, track)
     ctx.log.info(`lecture ${id}: ${track.events.length} events, ${(trackDuration(track) / 1000).toFixed(1)} s`)
     return json({ id, track })
   }
@@ -183,7 +185,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           if (at > size) return problem(400, `?at=${at} is past the end of the file (${size} bytes)`)
           const bytes = new Uint8Array(await request.arrayBuffer())
           if (bytes.byteLength > MAX_CHUNK || at + bytes.byteLength > MAX_FILE) return problem(413, 'chunk too large')
-          await writeAt(file, at, bytes)
+          await files.write(file, bytes, at)
           return json({ written: bytes.byteLength })
         }
         if (action === 'finish' && request.method === 'POST') return await finish(id, request)
@@ -209,7 +211,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   const lexicon = lexiconOf(ctx.config)
 
   /** The deck's synthesized lecture: with `lookup`, from the cache alone (no clip transcribed to align it). */
-  const synthesize = (doc: IRDocument, lookup: boolean): Promise<LectureTrack> => synthesizedLecture(doc, deckDir, speech(), undefined, { lookup }).then(({ deck, track, unsaid }) => {
+  const synthesize = (doc: IRDocument, lookup: boolean): Promise<LectureTrack> => synthesizedLecture(doc, deckDir, speech(), undefined, { lookup, files }).then(({ deck, track, unsaid }) => {
     if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
     if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
     return track
@@ -255,8 +257,8 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     if (!found) throw new Refusal(404, `no lecture ${id}`)
     return found.track
   }
-  const save = (track: LectureTrack, extra: Record<string, unknown> = {}) => {
-    writeTrack(deckDir, track)
+  const save = async (track: LectureTrack, extra: Record<string, unknown> = {}) => {
+    await writeTrack(files, deckDir, track)
     return json({ ...extra, track })
   }
   /** The track with its utterances (those of `only`, else all) said again in `voice`. */
@@ -264,7 +266,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     const clips = new Map<string, MadeClip>()
     for (const u of track.utterances) {
       if (only && u.id !== only) continue
-      clips.set(u.id, await synthesizeClip(speech(), { text: u.text, spoken: u.text, spans: [] }, { voice, lang: track.lang, ...lexicon ? { lexicon } : {} }))
+      clips.set(u.id, await synthesizeClip(speech(), { text: u.text, spoken: u.text, spans: [] }, { voice, lang: track.lang, ...lexicon ? { lexicon } : {}, files }))
     }
     const said: Voice = clips.size ? clipVoice(clips.values(), voice) : track.voice
     return resynthesizedTrack(track, clips, said)
@@ -277,7 +279,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
         const track = stored(id)
         if (action === 'transcribe' && request.method === 'POST') {
           if (!(await transcriptionEngine(speech(), latestDoc(deckDir)))) throw new Refusal(503, 'no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
-          const { track: transcribed, bound, provider } = await transcribeLecture(deckDir, track.id, speech(), latestDoc(deckDir), request.signal)
+          const { track: transcribed, bound, provider } = await transcribeLecture(files, deckDir, track.id, speech(), latestDoc(deckDir), request.signal)
           ctx.log.info(`lecture ${id}: transcribed by ${provider}, ${transcribed.utterances.length} utterances, ${bound} events bound to words`)
           return json({ provider, bound, track: transcribed })
         }
@@ -288,14 +290,14 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           if (!edited) throw new Refusal(404, `lecture ${id} has no utterance ${decoded(path)}`)
           // A synthetic voice says the new text at once.
           const { voice } = track
-          return save(voice.kind === 'synthetic' ? await resynthesize(edited, { engine: voice.engine, voice: voice.voice }, decoded(path)) : edited)
+          return await save(voice.kind === 'synthetic' ? await resynthesize(edited, { engine: voice.engine, voice: voice.voice }, decoded(path)) : edited)
         }
         if (action === 'synthesize' && request.method === 'POST') {
           const body: unknown = await request.json().catch(() => undefined)
           if (!isRecord(body) || typeof body.voice !== 'string' || !body.voice) throw new Refusal(400, 'expected { voice, engine? }')
           if (track.utterances.length === 0) throw new Refusal(409, `lecture ${id} has no utterances to say: transcribe it first`)
           const engine = typeof body.engine === 'string' && body.engine ? body.engine : undefined
-          return save(await resynthesize(track, { ...engine ? { engine } : {}, voice: body.voice }))
+          return await save(await resynthesize(track, { ...engine ? { engine } : {}, voice: body.voice }))
         }
         return problem(404, 'unknown editing action')
       } catch (error) {
@@ -369,7 +371,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           const existing = isRecord(body) && typeof body.track === 'string' ? body.track : undefined
           if (existing && !readTrack(deckDir, existing)) return problem(404, `no lecture ${existing}`)
           const id = existing ?? newTrackId(deckDir)
-          writeGitFiles(trackDir(deckDir, id)!, policy)
+          await writeGitFiles(files, trackDir(deckDir, id)!, policy)
           return json({ id })
         },
       },

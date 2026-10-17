@@ -10,6 +10,8 @@
 export const CONSOLE_HEADERS = {
   'Content-Security-Policy': `default-src 'self'; frame-ancestors 'none'`,
   'Cross-Origin-Opener-Policy': 'same-origin',
+  // No page of the site (or any other origin) embeds a console response, not even as an image or a script.
+  'Cross-Origin-Resource-Policy': 'same-origin',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',
   'Cache-Control': 'no-store',

@@ -11,7 +11,7 @@ export default {
   kernel: '^0.1.0',
   gateway: (ctx: GatewayContext) => ({
     routes: {
-      grant: { handle: (_: Request, r: { grant: unknown }) => json({ grant: r.grant, upstream: Boolean(ctx.secret('TEST_UPSTREAM_KEY')), settings: ctx.settings, operatorDir: ctx.operatorDir }) },
+      grant: { handle: (request: Request, r: { grant: unknown }) => json({ grant: r.grant, upstream: Boolean(ctx.secret('TEST_UPSTREAM_KEY')), settings: ctx.settings, operatorDir: ctx.operatorDir, cookie: request.headers.get('cookie'), member: request.headers.get('x-forwarded-email') }) },
       service: { service: true, handle: () => json({ ok: true }) },
     },
   }),

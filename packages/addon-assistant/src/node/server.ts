@@ -43,7 +43,7 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, errorMessage, eventStream, isRecord, MCP_ENDPOINT, REVISIONS } from '@presmium/kernel'
+import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, errorMessage, eventStream, isRecord, MCP_ENDPOINT, REVISIONS } from '@presmium/kernel'
 import type { AgentEvent, AgentMode, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES, CHANGE_KINDS, restoreStepOf, reviewDecisionOf, runtimeChoice, taskRequestOf } from '../domain/index.ts'
 import type { AssistantInfo, PendingChange, RevertAnswer } from '../domain/index.ts'
@@ -96,6 +96,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     recoverGitReview({
       workspaceRoot: ctx.workspaceRoot,
       deckDir: ctx.deckDir,
+      isolated: ctx.trust === 'shared',
+      ...ctx.service(DOCUMENT_FILES) ? { files: ctx.service(DOCUMENT_FILES)! } : {},
       onRestore: paths => ctx.log.warn(`the git directory as a change task found it, put back: ${paths.join(', ')}`),
     }).then((found) => {
       if (found) ctx.log.warn(`task ${found.task} was waiting for its review when the server ended: rolled back (${found.paths.join(', ') || 'no change'})`)

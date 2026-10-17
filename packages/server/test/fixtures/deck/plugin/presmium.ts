@@ -51,9 +51,17 @@ export default {
         },
       },
     },
-    // The gateway's routes with serve's service token, as a plugin's proxy to an `auth: proxy` environment.
-    proxies: ctx.gateway
-      ? [{ path: 'gateway', target: ctx.gateway.url, role: 'reader', headers: { Authorization: `Bearer ${ctx.gateway.token}`, Host: new URL(ctx.gateway.url).host } }]
-      : [],
+    proxies: [
+      // The gateway plugin's routes with serve's service token, as a plugin's proxy to an `auth: proxy` environment
+      // has (serve passes a token scoped to that plugin instead, WP-91).
+      ...ctx.gateway ? [{ path: 'gateway', target: `${ctx.gateway.url}/fixture.gateway/`, role: 'reader', headers: { Authorization: `Bearer ${ctx.gateway.token}`, Host: new URL(ctx.gateway.url).host } }] : [],
+      // A listener of the test's, for readers on the site and for owners on the console.
+      ...ctx.secret('FIXTURE_UPSTREAM_URL')
+        ? [
+            { path: 'upstream', target: ctx.secret('FIXTURE_UPSTREAM_URL')!, role: 'reader' },
+            { path: 'owner-upstream', target: ctx.secret('FIXTURE_UPSTREAM_URL')!, role: 'owner' },
+          ]
+        : [],
+    ],
   }),
 }

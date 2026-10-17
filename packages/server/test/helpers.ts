@@ -138,10 +138,12 @@ export interface RawResponse {
   json<T = Record<string, unknown>>(): T
 }
 
-/** A request with exactly these headers (`Host` included). */
+/** A request with exactly these headers (`Host` included), and its path as written (no `.` or `..` part resolved). */
 export function raw(url: string, options: { method?: string, headers?: Record<string, string>, body?: string } = {}): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
-    const req = httpRequest(url, { method: options.method ?? 'GET', headers: options.headers, setHost: !options.headers?.Host && !options.headers?.host }, (res) => {
+    const { protocol, hostname, port } = new URL(url)
+    const path = /^[a-z]+:\/\/[^/]+(\/.*)?$/i.exec(url)?.[1] ?? '/'
+    const req = httpRequest({ protocol, hostname, port, path, method: options.method ?? 'GET', headers: options.headers, setHost: !options.headers?.Host && !options.headers?.host }, (res) => {
       let text = ''
       res.setEncoding('utf8')
       res.on('data', (chunk: string) => text += chunk)
@@ -219,7 +221,7 @@ export function eventStream(url: string, headers: Record<string, string> = {}): 
   })
 }
 
-/** A listener that records the requests it gets and answers each with JSON naming its path. */
+/** A listener that records the requests it gets and answers each with JSON naming its path (and a cookie, which serve's SHARED proxies do not pass back). */
 export async function listener(): Promise<{ url: string, requests: { method: string, path: string, headers: IncomingHttpHeaders, body: string }[], close(): Promise<void> }> {
   const requests: { method: string, path: string, headers: IncomingHttpHeaders, body: string }[] = []
   const server = createServer((req, res) => {
@@ -227,7 +229,7 @@ export async function listener(): Promise<{ url: string, requests: { method: str
     req.on('data', (chunk: Buffer) => body += chunk)
     req.on('end', () => {
       requests.push({ method: req.method ?? 'GET', path: req.url ?? '/', headers: req.headers, body })
-      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': 'upstream=set-by-the-target; Path=/' })
       res.end(JSON.stringify({ listener: true, path: req.url }))
     })
   })

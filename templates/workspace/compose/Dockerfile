@@ -3,13 +3,16 @@
 # need (2.39 or later; node:22-bookworm is too old).
 #
 # The build context is a checkout of Presmium in which `pnpm install` has run; its node_modules is copied
-# as it is (see Dockerfile.dockerignore), with the operator's plugins among its packages. Build it with
-# `docker compose build` from this directory (compose.yaml names the context).
+# as it is, with the operator's plugins among its packages. Only what the image runs is copied (and only
+# that is in the context, Dockerfile.dockerignore): the operator's .env, oauth2-proxy.env, secrets/ and
+# seed/ beside compose.yaml never are. Build it with `docker compose build` from this directory
+# (compose.yaml names the context).
 FROM node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa
 
-# git for the workspace's history, Python for compile-time execution (the exec plugin's executor).
+# git for the workspace's history, Python for compile-time execution (the exec plugin's executor), fuse3's
+# fusermount3 for deltabox (compose.deltabox.yaml; without the override it is never used).
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends git python3 ca-certificates \
+  && apt-get install -y --no-install-recommends git python3 ca-certificates fuse3 \
   && rm -rf /var/lib/apt/lists/*
 
 # serve 1001 and sandbox 1003 share the group of the document directories, presmium-docs 1100;
@@ -20,7 +23,12 @@ RUN groupadd -g 1100 presmium-docs \
   && useradd -u 1003 -U -m -G presmium-docs -s /usr/sbin/nologin sandbox \
   && useradd -u 1004 -U -m -s /usr/sbin/nologin classroom
 
-COPY --chown=root:root . /opt/presmium
+COPY --chown=root:root package.json pnpm-workspace.yaml /opt/presmium/
+COPY --chown=root:root node_modules /opt/presmium/node_modules
+COPY --chown=root:root packages /opt/presmium/packages
+COPY --chown=root:root examples/demo/node_modules /opt/presmium/examples/demo/node_modules
+COPY --chown=root:root templates/document /opt/presmium/templates/document
+COPY --chown=root:root templates/workspace/compose/init.sh /opt/presmium/templates/workspace/compose/init.sh
 RUN ln -s /opt/presmium/packages/cli/bin/presmium.mjs /usr/local/bin/presmium \
   && ln -s /opt/presmium/packages/classroom-server/bin/server.mjs /usr/local/bin/presmium-classroom-server \
   && chmod 0755 /opt/presmium/templates/workspace/compose/init.sh
