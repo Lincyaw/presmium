@@ -207,20 +207,25 @@ export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChang
   for (const { change, base } of targets) if (!('remove' in change)) apply(config.root, base, change)
 }
 
-/** The source files of a directory (absolute), relative to it: regular files and links, outputs and caches left out (the anchor lock of `.presmium/` stays). */
+/**
+ * What of a document's `.presmium/` is its content, as the repository's `.gitignore` keeps it (F-52): the
+ * recordings (`freeze/`), drawings, assets, the synthesized speech and its lock, the anchor lock. The rest
+ * there is generated (the renderers' projects) and not copied.
+ */
+const DECK_CONTENT = new Set(['freeze', 'drawings', 'assets', 'speech', 'speech.lock.json', 'anchors.lock.json'])
+
+/** The source files of a directory (absolute), relative to it: regular files and links, outputs and caches left out (of `.presmium/`, only its content). */
 function sourceEntries(dir: string): { path: string, link?: string, executable?: boolean }[] {
   const out: { path: string, link?: string, executable?: boolean }[] = []
   const walk = (current: string, rel: string) => {
     for (const name of readdirSync(current).sort()) {
       if (NOT_SOURCE.has(name)) continue
+      // The document's own `.presmium/`: its content only.
+      if (rel === '.presmium' && !DECK_CONTENT.has(name)) continue
       const path = join(current, name)
       const entry = rel ? `${rel}/${name}` : name
       const found = stat(path)
       if (!found) continue
-      if (name === '.presmium' && !rel) {
-        if (stat(join(path, 'anchors.lock.json'))?.isFile()) out.push({ path: `${name}/anchors.lock.json` })
-        continue
-      }
       if (found.isSymbolicLink()) out.push({ path: entry, link: readlinkSync(path) })
       else if (found.isDirectory()) walk(path, entry)
       else if (found.isFile()) out.push({ path: entry, executable: (found.mode & 0o111) !== 0 })

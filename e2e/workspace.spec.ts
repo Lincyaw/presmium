@@ -7,16 +7,20 @@
 // of it names; with an assistant (a stand-in of the `AGENT` service), a drafted document opens once the
 // draft is committed; the home page loads the operator plugins' browser parts and serves their routes
 // (WP-81e2), which a document's page loads only when its deck lists the plugin; there their routes find
-// none of the workspace's files.
+// none of the workspace's files. The history names the operations in the workspace's language. On this
+// machine (LOCAL): a rename undone from the history brings the directory back on the home page and its page
+// shows, a creation undone takes it away, a document made on disk shows after the next request (F-10); the
+// history's labels and dates are zh-CN's, or English's in an English workspace (F-55).
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createServer, request } from 'node:http'
 import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { openDevPage } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -196,14 +200,15 @@ test.describe('the workspace in the browser (SHARED)', () => {
     await expect(copy).toHaveCount(0)
     await expect(page.locator('.pm-site-home__document')).toHaveCount(2)
 
+    // The history names each operation in the workspace's language (the commits' summaries stay English, F-55).
     await page.locator('.pm-workspace-history__toggle').click()
     const history = page.getByRole('dialog', { name: '修改历史' })
     await expect(history.locator('.pm-workspace-revision')).toHaveCount(4)
     await expect(history.locator('.pm-workspace-revision__summary')).toHaveText([
-      'Delete document intro-copy',
-      'Copy document intro to intro-copy',
-      'Rename document week3 to week4',
-      'Create document week3',
+      '删除文档 intro-copy',
+      '复制文档 intro 为 intro-copy',
+      '重命名文档 week3 为 week4',
+      '新建文档 week3',
     ])
   })
 
@@ -337,5 +342,133 @@ test.describe('the workspace in the browser (SHARED)', () => {
     await draft.getByRole('button', { name: '接受' }).click()
     await expect(page).toHaveURL(`${home}week5/`)
     expect(decisions).toEqual([{ accept: true }])
+  })
+})
+
+/** A workspace from the fixture (its operator plugins installed at the root), `edit`ed, as a git repository of its own. */
+function workspaceCopy(prefix: string, edit: (dir: string) => void = () => {}): string {
+  const work = join(ROOT, 'examples/demo/.presmium')
+  mkdirSync(work, { recursive: true })
+  const dir = mkdtempSync(join(work, `e2e-workspace-${prefix}-`))
+  cpSync(FIXTURE, dir, { recursive: true })
+  for (const name of ['presmium-fixture-workspace-probe', 'presmium-fixture-workspace-home']) cpSync(join(FIXTURE, 'plugins', name), join(dir, 'node_modules', name), { recursive: true })
+  rmSync(join(dir, 'plugins'), { recursive: true, force: true })
+  // The symbolic link the SHARED describe adds is not there: a {literalinclude} of it is an error here.
+  writeFileSync(join(dir, 'intro/lecture.md'), readFileSync(join(dir, 'intro/lecture.md'), 'utf8').replace(/```\{literalinclude\} secret\.txt\n```\n?/, ''))
+  writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
+  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
+  edit(dir)
+  const git = (args: string[]) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
+  git(['init', '-q', '-b', 'main'])
+  git(['add', '-A'])
+  git(['commit', '-q', '-m', 'Initial commit'])
+  return dir
+}
+
+test.describe('the workspace on this machine (LOCAL): the history\'s undo, and documents made on disk, follow on the home page (F-10); the history in the workspace\'s language (F-55)', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180_000 })
+  const dirs: string[] = []
+  /** The home page of each workspace served. */
+  const homes: string[] = []
+  const children: ChildProcess[] = []
+
+  /** `presmium serve` on this machine of a workspace: its home page. */
+  async function serveLocal(dir: string): Promise<string> {
+    const started = await start(dir, ['serve', '--port', '0'], clean({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache` }), /^serve {2}(http\S+)$/m)
+    children.push(started.child)
+    homes.push(`${started.match}/`)
+    return `${started.match}/`
+  }
+
+  test.afterAll(async () => {
+    for (const child of children) await stop(child)
+    for (const dir of dirs) for (const path of [dir, `${dir}.state`, `${dir}.cache`]) rmSync(path, { recursive: true, force: true })
+  })
+
+  /** The history panel, opened on the home page. */
+  async function openHistory(page: Page) {
+    await page.locator('.pm-workspace-history__toggle').click()
+    return page.getByRole('dialog', { name: /^(修改历史|History)$/ })
+  }
+
+  test('a rename undone from the history brings the directory back on the home page, its page shows; a creation undone takes it away; labels and dates in zh-CN', async ({ page }) => {
+    const dir = workspaceCopy('local')
+    dirs.push(dir)
+    const home = await serveLocal(dir)
+    const listed = page.locator('.pm-site-home__document')
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
+
+    // Renamed, then undone from the history.
+    await page.locator('.pm-workspace-documents__toggle').click()
+    const documents = page.getByRole('dialog', { name: '管理文档' })
+    const intro = documents.locator('.pm-workspace-document[data-document="intro"]')
+    await intro.locator('input[name="to"]').fill('intro2')
+    await intro.getByRole('button', { name: '重命名' }).click()
+    await expect(page.locator('.pm-site-home__document[data-document="intro2"]')).toBeVisible()
+    await page.locator('.pm-workspace-documents__toggle').click()
+    const history = await openHistory(page)
+    const renamed = history.locator('.pm-workspace-revision').first()
+    await expect(renamed.locator('.pm-workspace-revision__summary')).toHaveText('重命名文档 intro 为 intro2')
+    // The date as zh-CN writes it, e.g. 2026/10/17 12:30:05.
+    await expect(renamed.locator('.pm-workspace-revision__meta time')).toHaveText(/^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{2}:\d{2}$/)
+    await renamed.getByRole('button', { name: '撤销' }).click()
+    await expect(history.locator('.pm-workspace-revision').first().locator('.pm-workspace-revision__summary')).toHaveText('撤销「重命名文档 intro 为 intro2」')
+    await expect(page.locator('.pm-site-home__document[data-document="intro"]')).toBeVisible()
+    await expect(page.locator('.pm-site-home__document[data-document="intro2"]')).toHaveCount(0)
+    await openDevPage(page, `${home}intro/`, page.locator('.pm-section[data-section="导论"]'))
+
+    // Created, then undone: the home page lists it no more.
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await page.locator('.pm-workspace-documents__toggle').click()
+    await documents.locator('input[name="dir"]').fill('week9')
+    await documents.locator('input[name="title"]').fill('第九周')
+    await documents.getByRole('button', { name: '新建', exact: true }).click()
+    await expect(page.locator('.pm-site-home__document[data-document="week9"]')).toBeVisible()
+    await page.locator('.pm-workspace-documents__toggle').click()
+    const again = await openHistory(page)
+    const created = again.locator('.pm-workspace-revision').first()
+    await expect(created.locator('.pm-workspace-revision__summary')).toHaveText('新建文档 week9')
+    await created.getByRole('button', { name: '撤销' }).click()
+    await expect(page.locator('.pm-site-home__document[data-document="week9"]')).toHaveCount(0)
+    await page.reload()
+    await expect(page.locator('.pm-site-home__document[data-document="intro"]')).toBeVisible()
+    await expect(listed).toHaveCount(1)
+  })
+
+  test('a document made on disk shows on the home page once the site is asked again, and its page shows', async ({ page }) => {
+    const [dir, home] = [dirs[0]!, homes[0]!]
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
+    // An author makes it in an editor, or a git pull brings it.
+    mkdirSync(join(dir, 'week7'))
+    writeFileSync(join(dir, 'week7/lecture.md'), '---\ntitle: 第七周\n---\n\n# 第七周\n\n作者在编辑器中新建的文档。\n')
+    await expect(async () => {
+      await page.goto(home)
+      await expect(page.locator('.pm-site-home__document[data-document="week7"]')).toContainText('第七周', { timeout: 5_000 })
+    }).toPass({ timeout: 60_000 })
+    await openDevPage(page, `${home}week7/`, page.locator('[data-section]').getByText('作者在编辑器中新建的文档。'))
+  })
+
+  test('in a workspace whose documents are English, the history speaks English', async ({ page }) => {
+    const dir = workspaceCopy('english', (copy) => {
+      writeFileSync(join(copy, 'intro/lecture.md'), readFileSync(join(copy, 'intro/lecture.md'), 'utf8').replace('title: 导论\n', 'title: Introduction\nlang: en\n'))
+    })
+    dirs.push(dir)
+    const home = await serveLocal(dir)
+    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
+    await page.locator('.pm-workspace-documents__toggle').click()
+    const documents = page.getByRole('dialog', { name: 'Documents' })
+    const intro = documents.locator('.pm-workspace-document[data-document="intro"]')
+    await intro.locator('input[name="to"]').fill('intro-copy')
+    await intro.getByRole('button', { name: 'Copy' }).click()
+    await expect(page.locator('.pm-site-home__document[data-document="intro-copy"]')).toBeVisible()
+    await page.locator('.pm-workspace-documents__toggle').click()
+    const history = await openHistory(page)
+    const copied = history.locator('.pm-workspace-revision').first()
+    await expect(copied.locator('.pm-workspace-revision__summary')).toHaveText('Copy document intro to intro-copy')
+    await expect(copied.locator('.pm-workspace-revision__meta')).toContainText('document operation')
+    // The date as en writes it, e.g. 10/17/2026, 12:30:05 PM.
+    await expect(copied.locator('.pm-workspace-revision__meta time')).toHaveText(/^\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2}\s[AP]M$/)
+    await copied.getByRole('button', { name: 'Revert' }).click()
+    await expect(history.locator('.pm-workspace-revision').first().locator('.pm-workspace-revision__summary')).toHaveText('Revert "Copy document intro to intro-copy"')
   })
 })

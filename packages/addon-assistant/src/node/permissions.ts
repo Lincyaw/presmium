@@ -14,10 +14,11 @@
  * not make a file there `content`.
  */
 import { realpathSync } from 'node:fs'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { deckLocale, isRecord } from '@presmium/kernel'
 import type { ApprovalRequest } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
+import { inside as within } from './paths.ts'
 
 /** What the agent announced of a tool call. */
 export interface ToolCallInfo {
@@ -36,12 +37,6 @@ export type AgentApproval = ApprovalRequest & { path?: string }
 export type Classified = { refuse: string } | { request: AgentApproval }
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined)
-
-/** Whether `path` is `dir` or below it. */
-function within(path: string, dir: string): boolean {
-  const rel = relative(resolve(dir), resolve(path))
-  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
-}
 
 /** The real path of `path`: that of its nearest existing ancestor (links resolved), with the rest of the path after it. */
 export function realPath(path: string): string {

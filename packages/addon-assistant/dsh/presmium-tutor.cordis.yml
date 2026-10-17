@@ -1,9 +1,9 @@
-# DeepSeek Harness patch for Presmium's tutor (learners' questions, both modes; D15, docs/architecture.md
-# 4.8): read only. No shell, no command execution, no network, no tool that writes a file; the sandbox is
-# read-only, and the assistant refuses every permission request of a question. The agent reads the deck
-# through Presmium's MCP tools (a `tutor` token: the reading tools, the student view) and its own read
-# and search tools. The row ids are those of the pinned version; packages/addon-assistant/test/dsh.test.ts
-# checks them with `--dump-config`.
+# DeepSeek Harness patch for Presmium's tutor (learners' questions, both modes; D15, D-13, docs/architecture.md
+# 4.8): no file tool of its own, no shell, no command execution, no network; the sandbox is read-only, the
+# session's directory is an empty one of its own, and the assistant refuses every permission request of a
+# question. The agent reads the deck only through Presmium's MCP tools (a `tutor` token: the reading tools,
+# the student view), never its source: no file reading, search, directory or skill tool. The row ids are
+# those of the pinned version; packages/addon-assistant/test/dsh.test.ts checks them with `--dump-config`.
 
 # No session-log upload, no session telemetry, no plugin inventory sent with requests.
 - id: session-log-deepseek
@@ -21,11 +21,15 @@
   config:
     policy: ask
 
-# Reading only: no write or edit tool.
+# No file tool: reading the source would show what learners may not see (teacher blocks, answers, other documents).
 - id: tool-fs
-  config:
-    write: false
-    edit: false
+  disabled: true
+- id: tool-fs-search
+  disabled: true
+- id: tool-working-directory
+  disabled: true
+- id: tool-skill
+  disabled: true
 
 # Shell (the sandbox backends stay: the permission presets need them, and nothing runs through them).
 - id: tool-bash

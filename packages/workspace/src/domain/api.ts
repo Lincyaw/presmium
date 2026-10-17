@@ -3,6 +3,7 @@
  * 10.2): what the browser plugin sends and gets.
  */
 import type { Revision } from '@presmium/kernel/contracts'
+import type { RevisionOperation } from './revisions.ts'
 
 /** Plugin id of the workspace: its routes, its browser plugin and its operator settings (`settings.presmium.workspace`). */
 export const WORKSPACE_ID = 'presmium.workspace'
@@ -41,9 +42,19 @@ export interface OperationAnswer {
   dir?: string
 }
 
+/**
+ * A revision as the history lists it: the contract's, with what its labels
+ * need in the reader's language (N-07): the document operation its origin
+ * names (a revert's: that of the change it undoes), and the commit it reverts.
+ */
+export interface HistoryRevision extends Revision {
+  operation?: RevisionOperation
+  reverts?: string
+}
+
 /** `GET revisions?document=&task=&limit=`. */
 export interface RevisionsAnswer {
-  revisions: Revision[]
+  revisions: HistoryRevision[]
 }
 
 /** `POST revisions/revert` with `{ id }`: the revert, or the files in conflict (nothing changed). */

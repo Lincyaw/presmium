@@ -9,6 +9,7 @@
 !examples/demo/node_modules
 !templates/document
 !templates/workspace/compose/init.sh
+!templates/workspace/.gitignore
 # node_modules stays whole (its packages' own dist/ directories are their code); Presmium's packages
 # without their tests and outputs.
 packages/*/test

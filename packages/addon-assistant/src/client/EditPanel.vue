@@ -6,7 +6,7 @@
 // kept or rejected, a unified diff for text, a return to before each step); each committed one can be undone.
 // The document's change task this member sent before the page was reloaded (or, for owners, anyone's) is taken
 // up again. In the toolbar while edit mode is on; the panel opens beside the page.
-import { EDIT_MODE, useMessages, useServer, useService } from '@presmium/host'
+import { blockAt, blockElement, blockKey, EDIT_MODE, splitBlockKey, useMessages, useServer, useService } from '@presmium/host'
 import type { AgentContext } from '@presmium/kernel'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -39,15 +39,16 @@ const where = computed(() => {
   return section ? { section, step: position?.section === section ? position.step : undefined, title: navigator?.title(section) ?? section } : undefined
 })
 
-/** A click on a block of the page picks it for an annotation (not on links, buttons or fields, not in the panel). */
+/**
+ * A click on a block of the page picks it for an annotation (not on links, buttons or fields, not in the
+ * panel): the block seen under the pointer, by the host's one rule of what is seen (`blockAt`).
+ */
 async function pick(event: MouseEvent): Promise<void> {
   const target = event.target instanceof Element ? event.target : undefined
   if (!target || !navigator || target.closest('.pm-assistant-edit, a, button, input, textarea, select, label, summary, [contenteditable]')) return
   if (!document.getSelection()?.isCollapsed) return
-  const element = target.closest<HTMLElement>('[data-block]')
-  const section = element?.closest<HTMLElement>('[data-section]')?.dataset.section
-  const id = element?.dataset.block
-  if (!element || !section || !id) return
+  const [section, id] = splitBlockKey(blockAt(event.clientX, event.clientY)?.key ?? '') ?? []
+  if (!section || !id) return
   const block = navigator.block(section, id)
   if (!block) return
   const source = { file: block.source.file, startLine: block.source.line, endLine: block.source.endLine ?? block.source.line }
@@ -63,7 +64,7 @@ function outline(): void {
   for (const element of document.querySelectorAll('.pm-assistant-picked')) element.classList.remove('pm-assistant-picked')
   const now = picked.value
   if (!now) return
-  document.querySelector(`[data-section="${CSS.escape(now.section)}"] [data-block="${CSS.escape(now.block)}"]`)?.classList.add('pm-assistant-picked')
+  blockElement(blockKey(now.section, now.block))?.classList.add('pm-assistant-picked')
 }
 
 /** How a change task taken up again is named: as when it was sent. */

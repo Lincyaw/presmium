@@ -2,8 +2,10 @@
 # Prepares the volumes of the compose layout (docs/architecture.md 10.5), as root, before the other
 # services start; a workspace already prepared keeps its content and gets its permissions again.
 #
-# - The workspace: the seed (/seed) copied in when the volume is empty, made a git repository when it
-#   is none; the operator's packages at its root (node_modules: the packages installed in the image).
+# - The workspace: the seed (/seed) copied in when the volume is empty, with the template's .gitignore
+#   when it has none (what is generated stays out of the history and of an agent's review), made a git
+#   repository when it is none; the operator's packages at its root (node_modules: the packages
+#   installed in the image).
 # - Permissions: the repository belongs to serve; .git only serve may read and write (sandbox cannot
 #   change git's configuration); the root's files (presmium.workspace.yaml, package.json,
 #   node_modules) sandbox may only read; every document directory (the directory of a lecture.md
@@ -15,6 +17,9 @@ W=/workspace
 
 if [ -d /seed ] && [ -z "$(ls -A "$W")" ]; then
   cp -a /seed/. "$W/"
+  if [ ! -e "$W/.gitignore" ]; then
+    cp /opt/presmium/templates/workspace/.gitignore "$W/.gitignore"
+  fi
 fi
 if [ ! -e "$W/node_modules" ]; then
   # The packages installed in the image, the operator's plugins among them (D14: installed at the workspace root).

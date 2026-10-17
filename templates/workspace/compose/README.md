@@ -59,8 +59,11 @@ runs from it):
 
 1. **The workspace.** Put a workspace in `./seed` (or point `PRESMIUM_SEED` at one): a
    `presmium.workspace.yaml` with `members` and `settings`, and documents in subdirectories (a
-   `lecture.md` at the root is refused). The `init` service copies it into the `workspace` volume
-   once and makes it a git repository if it is none; later the volume is the workspace.
+   `lecture.md` at the root is refused), and the `.gitignore` of `templates/workspace/` at its root
+   (what is generated, such as the decks' working projects, stays out of the history and out of an
+   agent's review). The `init` service copies it into the `workspace` volume once (with that
+   `.gitignore` when the seed has none) and makes it a git repository if it is none; later the volume
+   is the workspace.
 2. **Tokens.** Files only root may read, which serve, gateway and sandbox read as root before they
    become their users. Compose keeps the owner and mode of the host's file, so make them root's (an
    owner that is a service's uid, 1001 to 1004, could read them; the services refuse to start then):

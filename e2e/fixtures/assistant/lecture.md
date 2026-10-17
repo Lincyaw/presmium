@@ -6,7 +6,7 @@ plugins:
   - '@presmium/slidev-addon-assistant'
 renderers:
   web:
-    port: 4963
+    port: 5313
 ---
 
 # 助手端到端测试文稿

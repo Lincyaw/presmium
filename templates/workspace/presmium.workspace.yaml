@@ -1,5 +1,6 @@
-# A workspace (docs/ir.md section 10): copy this file to the root of a git repository whose documents
-# are its subdirectories, each with a lecture.md. Then `presmium serve` there, or `presmium build`.
+# A workspace (docs/ir.md section 10): copy this file, and the .gitignore beside it, to the root of a git
+# repository whose documents are its subdirectories, each with a lecture.md. Then `presmium serve` there,
+# or `presmium build`.
 title: 课程名称
 documents: ['*/lecture.md']         # where the documents are, in this order; default '*/lecture.md'
 site: {}                            # the site shell: nav, footer, head, sitemap (as renderers.web)
@@ -12,3 +13,5 @@ settings:                           # the plugins' operator settings, by plugin 
     plugins: []                     # the packages presmium serve, gateway and agent-host may load (D14), installed here
   presmium.exec:
     compile: approve                # shared deployments: code without a recording runs once the owner allows it
+  # presmium.assistant:
+  #   maxQuestions: { member: 2, total: 16 }   # learners' questions at a time, each member's and the service's (more get 429)

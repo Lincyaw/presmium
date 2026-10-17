@@ -16,29 +16,40 @@
  *
  * Both modes load only the operator's plugins (D14): the packages listed in
  * `settings.presmium.workspace.plugins`, installed at the workspace root.
+ *
+ * The documents change in one place (`documentsChanged`, C-7): after a
+ * document operation, an undo of the history, or a document made or taken
+ * away on disk (seen at the next request of the site, F-10), the sessions and
+ * approvals of the documents gone end, the server takes their contributions
+ * down and those of the documents that came (`unmount`, F-40), the site's
+ * list follows. A document's writers take its lock (`DOCUMENT_LOCKS`, F-09).
+ * The MCP's builds go to serve's state directory in LOCAL mode, never into
+ * the document (F-51); in SHARED mode agent-host builds into the document's
+ * dist/, which the workspace's .gitignore keeps out of a review.
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { build, Compiler, loadPlugins, pluginId, workspacePlugins } from '@presmium/compiler'
+import { buildView, Compiler, loadPlugins, pluginId, pluginLogger, runBlock, workspacePlugins } from '@presmium/compiler'
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
-import { AGENT_RUNTIME, CHANGE_REVIEW, DOCUMENT_FILES, errorMessage, irBlocks, REVISIONS } from '@presmium/kernel'
+import { AGENT_RUNTIME, CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@presmium/kernel'
 import type { Finding, IRDocument, Logger, Member, ServiceToken, SiteSpec } from '@presmium/kernel'
 import { servedDocument, startServer } from '@presmium/server'
-import type { DocumentView, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
+import type { DocumentView, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import type { SiteState } from '../domain/api.ts'
 import { mayEdit, rolesOf } from '../domain/members.ts'
 import { AgentHostClient } from './agent-client.ts'
-import { initGroups } from './agent-host.ts'
-import { STUDENT, viewDocument } from './audience.ts'
+import { viewDocument } from './audience.ts'
 import { listDocuments, readWorkspace } from './config.ts'
 import { Documents, groupId, RequestError } from './documents.ts'
+import type { DocumentsChange } from './documents.ts'
 import { CompileApprovals, compileMode, runKey } from './execution.ts'
 import { localWriter } from './files.ts'
 import type { DocumentWriter } from './files.ts'
 import { Git } from './git.ts'
+import { DocumentLocks } from './locks.ts'
 import { RemoteSite } from './remote-site.ts'
 import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
@@ -61,7 +72,7 @@ export interface ServeOptions {
   operatorDir?: string
   /** Where Presmium's own packages installed with the CLI resolve from. */
   bundled?: string
-  /** The plugins' checks of a compilation (the CLI's `presmium check`), for `ServerHost.check`. */
+  /** The plugins' checks of a compilation, for `ServerHost.check`; by default `Compilation.check()`, as `presmium check` runs them. */
   check?(compilation: Compilation): Promise<Finding[]>
   env?: NodeJS.ProcessEnv
   approvalTimeoutMs?: number
@@ -78,14 +89,10 @@ export interface WorkspaceServer {
 const OWN_SECRETS = ['PRESMIUM_GATEWAY_TOKEN', 'PRESMIUM_AGENT_HOST_TOKEN', 'PRESMIUM_PROXY_SECRET']
 const isOwnSecret = (name: string) => OWN_SECRETS.some(own => name === own || name === `${own}_FILE`)
 
-const STDERR: Logger = {
-  debug: () => {},
-  info: (...args) => console.error('[presmium serve]', ...args),
-  warn: (...args) => console.error('[presmium serve]', ...args),
-  error: (...args) => console.error('[presmium serve]', ...args),
-}
+/** How often, at most, a request of the site looks for documents made or taken away on disk. */
+const DISK_LOOK_MS = 1000
 
-/** Where serve keeps what it generates for a workspace (the LOCAL site's projects): outside the workspace. */
+/** Where serve keeps what it generates for a workspace (the LOCAL site's projects, the MCP's builds): outside the workspace. */
 function stateDir(root: string, env: NodeJS.ProcessEnv): string {
   const base = env.XDG_CACHE_HOME || join(homedir(), '.cache')
   const dir = join(base, 'presmium', 'serve', createHash('sha256').update(root).digest('hex').slice(0, 16))
@@ -103,7 +110,7 @@ async function rendererPackages(compilation: Compilation): Promise<Finding[]> {
 
 export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceServer> {
   const env = options.env ?? process.env
-  const log = options.log ?? STDERR
+  const log = options.log ?? pluginLogger('presmium serve')
   const config = readWorkspace(options.dir)
   const { root } = config
   const login = Boolean(env.PRESMIUM_PROXY_SECRET || env.PRESMIUM_PROXY_SECRET_FILE || options.trustProxyFrom?.length)
@@ -113,6 +120,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   }
   const sessions = new Map<string, DocumentSession>()
   const mode = compileMode(config.settings)
+  const locks = new DocumentLocks()
+  const check = options.check ?? (compilation => compilation.check())
 
   // Set once the server is up: the compilers need its services, the server needs the documents.
   let shared = false
@@ -122,6 +131,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   let hostServices: [ServiceToken<unknown>, unknown][] = []
   let approvals: CompileApprovals | undefined
   let site: SiteBackend | undefined
+  let server: PresmiumServer | undefined
   /** The member a document's compilation acts for (who opened it), for the approval's requester. */
   const requester = new Map<string, Member>()
 
@@ -195,11 +205,41 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
   /** The documents the site lists, kept in place: the site reads it at each request. */
   const spec: SiteSpec = siteSpec(config, docs().map(doc => siteDocument(doc)))
-  const refreshSpec = (): { removed: string[] } => {
+  const refreshSpec = (): DocumentsChange => {
     const now = docs()
     const before = spec.documents.map(doc => doc.dir)
     spec.documents.splice(0, spec.documents.length, ...now.map(doc => siteDocument(doc)))
-    return { removed: before.filter(dir => !now.some(doc => doc.dir === dir)) }
+    return { removed: before.filter(dir => !now.some(doc => doc.dir === dir)), added: now.map(doc => doc.dir).filter(dir => !before.includes(dir)) }
+  }
+
+  /**
+   * The one way the documents change (C-7): the documents gone end their sessions and approvals; the
+   * server takes down the contributions of those gone and of those that came (a document made again
+   * gets its configuration then, F-40); the site's list follows (F-10). The list changes before the
+   * first wait, so the request that told of the change sees it.
+   */
+  const documentsChanged = async (change: DocumentsChange): Promise<void> => {
+    for (const dir of change.removed) {
+      sessions.get(dir)?.close()
+      sessions.delete(dir)
+      approvals?.forget(dir)
+      requester.delete(dir)
+    }
+    const listed = refreshSpec()
+    const removed = [...new Set([...change.removed, ...listed.removed])]
+    for (const dir of new Set([...removed, ...change.added, ...listed.added])) await server?.unmount(dir)
+    await site?.documentsChanged(removed)
+  }
+
+  /** Documents made or taken away on disk (an editor, a git pull): seen at a request of the site, at most once a second. */
+  let lookedAt = 0
+  const lookAtDisk = (): void => {
+    if (Date.now() - lookedAt < DISK_LOOK_MS) return
+    lookedAt = Date.now()
+    const now = docs().map(doc => doc.dir)
+    const known = spec.documents.map(doc => doc.dir)
+    const change = { removed: known.filter(dir => !now.includes(dir)), added: now.filter(dir => !known.includes(dir)) }
+    if (change.removed.length || change.added.length) void documentsChanged(change).catch((error: unknown) => log.warn(`the documents on disk changed, but the site did not follow: ${errorMessage(error)}`))
   }
 
   /**
@@ -214,18 +254,12 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     const git = Git.isRepository(root) ? new Git(root, shared) : undefined
     if (!git) log.warn(`${root} is not a git repository: editing, the document operations and the history are not available (run git init)`)
     const revisions = git ? new Revisions(git, { config, writer, ...group !== undefined ? { group } : {} }) : undefined
-    const documents = new Documents(config, git!, revisions!, writer, async ({ removed }) => {
-      for (const dir of removed) {
-        sessions.get(dir)?.close()
-        sessions.delete(dir)
-        approvals?.forget(dir)
-      }
-      const changed = refreshSpec()
-      await site?.documentsChanged([...new Set([...removed, ...changed.removed])])
-    }, group)
+    const documents = new Documents({ config, git: git!, revisions: revisions!, writer, changed: documentsChanged, ...group !== undefined ? { group } : {}, locks })
     const routes: WorkspaceRoutes = {
       documents,
       ...revisions ? { revisions } : {},
+      locks,
+      documentsChanged,
       execution: dir => approvals?.state(dir, !shared) ?? { mode: 'local', notRun: [], pending: false },
       requestExecution(dir, member) {
         if (!approvals) return
@@ -257,29 +291,25 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     async check(document) {
       await ready
       const compilation = await sessionOf(document).ready()
-      return [...compilation.doc.diagnostics, ...await options.check?.(compilation) ?? []]
+      return [...compilation.doc.diagnostics, ...await check(compilation)]
     },
     async build(document, buildOptions = {}) {
       await ready
       const compilation = await sessionOf(document).ready()
+      const view = buildOptions.view ?? 'full'
       if (shared && agentHost) {
         const plugins = compilation.plugins.flatMap(loaded => (loaded.plugin?.gateway ? [pluginId(loaded)] : []))
         // Code without a recording runs in the build only when `compile: trusted`; allowed code has its recording already.
-        return agentHost.build(document, { ...buildOptions.to ? { to: buildOptions.to } : {}, view: buildOptions.view ?? 'full', run: mode === 'trusted' ? 'all' : 'none' }, plugins, requester.get(document))
+        return agentHost.build(document, { ...buildOptions.to ? { to: buildOptions.to } : {}, view, run: mode === 'trusted' ? 'all' : 'none' }, plugins, requester.get(document))
       }
-      // The student view as `presmium build --audience student` builds it (P-55), the files it wrote scanned (dist/ holds
-      // the whole deck's builds as well); its reader asked for it, so the scan quotes nothing.
-      const student = buildOptions.view === 'student' ? { audience: STUDENT, quote: false, scan: 'written' as const } : {}
-      const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), to: buildOptions.to, ...student })
-      return { outputs: report.outputs.map(({ renderer, outDir }) => ({ renderer, outDir })), findings: report.findings }
+      // Into serve's state directory, not the document: an agent's build is no change of the source to review (F-51).
+      const outDir = join(stateDir(root, env), 'builds', encodeURIComponent(document) || '_', view)
+      const report = await buildView(compilation, { to: buildOptions.to, view, outDir })
+      return { outputs: report.outputs.map(({ renderer, outDir: written }) => ({ renderer, outDir: written })), findings: report.findings }
     },
     async run(document, target, signal) {
       await ready
-      const compilation = await sessionOf(document).ready()
-      const section = compilation.doc.sections.find(s => s.id === target.section)
-      const block = section && [...irBlocks(section.blocks)].find(b => b.id === target.block)
-      if (!block || block.node.type !== 'code') throw new Error(`no code block ${target.section}/${target.block}`)
-      return compilation.run(block.node, signal)
+      return runBlock(await sessionOf(document).ready(), target, signal)
     },
   }
 
@@ -322,18 +352,17 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     policy.operate = 'ask'
   }
 
-  // Started as root: the user's own groups come along (the group of the document directories, 10.5).
-  if (options.user && process.getuid?.() === 0) {
-    const id = /^\d+$/.test(options.user) ? Number(options.user) : options.user
-    initGroups(id)
-  }
-  const server = await startServer({
+  // Started as root, the server becomes `user` with its groups (the group of the document directories, 10.5).
+  server = await startServer({
     mode: 'serve',
     host: options.host,
     port: options.port,
     trustProxyFrom: options.trustProxyFrom,
     roles: identity => rolesOf(identity, config.members),
-    forward: member => site?.forward(member.roles.some(role => role === 'editor' || role === 'owner') ? 'full' : 'student'),
+    forward: (member) => {
+      lookAtDisk()
+      return site?.forward(member.roles.some(role => role === 'editor' || role === 'owner') ? 'full' : 'student')
+    },
     settings: config.settings,
     approvals: policy,
     ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
@@ -351,20 +380,25 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       return { ...served, plugins: [plugin(), ...served.plugins] }
     },
   })
+  const running = server
   // Read: the secrets leave this process's environment, so no child process inherits them.
   if (env === process.env) for (const name of Object.keys(process.env)) if (isOwnSecret(name)) delete process.env[name]
-  shared = server.trust === 'shared'
+  shared = running.trust === 'shared'
   if (shared) log.warn('SHARED mode (a presmium serve with a login) is experimental until the security review of the shared deployment passes (docs/architecture.md 9.4)')
-  services = server.services
-  gateway = server.gateway
+  services = running.services
+  gateway = running.gateway
   // agent-host's access, read with the server's other secrets, once (as root, before it dropped privileges).
-  if (shared) agentHost = new AgentHostClient(server.agentHost!, gateway, log)
+  if (shared) agentHost = new AgentHostClient(running.agentHost!, gateway, log)
   // Now as serve's user (the server dropped privileges once it read the token files).
   workspace = workspaceOf()
-  hostServices = [...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [], [DOCUMENT_FILES, workspace.writer]]
+  hostServices = [
+    ...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [],
+    [DOCUMENT_FILES, workspace.writer],
+    [DOCUMENT_LOCKS, locks],
+  ]
   if (shared) {
     const client = agentHost!
-    approvals = new CompileApprovals(mode, () => server.control.approvals, async (dir, runs, member) => {
+    approvals = new CompileApprovals(mode, () => running.control.approvals, async (dir, runs, member) => {
       const plugins = [...new Set(runs.flatMap(run => pluginsOf(dir, run.executor)))]
       const done = await client.record(dir, runs.map(runKey), plugins, member)
       log.info(`agent-host ran and recorded ${done.executed} of ${runs.length} code block${runs.length === 1 ? '' : 's'} of ${dir || '.'}`)
@@ -397,19 +431,19 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
         }), log)
       : await localSite(root, spec, options.bundled, stateDir(root, env), compileFull, config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
   } catch (error) {
-    await server.close()
+    await running.close()
     if (home) rmSync(home, { recursive: true, force: true })
     throw error
   }
 
   return {
-    url: server.url,
-    trust: server.trust,
+    url: running.url,
+    trust: running.trust,
     root,
     async close() {
       for (const session of sessions.values()) session.close()
       await site?.close()
-      await server.close()
+      await running.close()
       if (home) rmSync(home, { recursive: true, force: true })
     },
   }
@@ -436,6 +470,7 @@ async function localSite(root: string, spec: SiteSpec, bundled: string | undefin
   return {
     forward: () => origin,
     update: (dir, compilation) => dev.update(dir, siteIR(compilation, viewDocument(compilation, 'full'))).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
+    // The dev site reads the list at each request: the documents no longer listed close there.
     documentsChanged: async () => {},
     close: () => dev.close(),
   }

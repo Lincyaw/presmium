@@ -5,12 +5,13 @@
  * it provides `AGENT` (the client of the server's assistant, ./agent.ts) and
  * adds the question panel to the toolbar and to the presenter panels, and,
  * in the workspace's edit mode, the panel of annotations and chat
- * (./EditPanel.vue); static output has none. The text the reader selects in
- * the deck goes with a question or a chat message.
+ * (./EditPanel.vue). Static output has no server: there `AGENT` is a client
+ * that is never available, and nothing shows (F-48). The text the reader
+ * selects in the deck goes with a question or a chat message.
  */
 import { currentLocale, TOOLBAR, useServer } from '@presmium/host'
 import { AGENT, PRESENTER_PANELS } from '@presmium/kernel'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import type { AgentClient, PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'
 import AssistantToolbar from './AssistantToolbar.vue'
@@ -19,6 +20,29 @@ import { createAgentClient } from './agent.ts'
 import { agent, assistant as assistantClient, trackSelection } from './state.ts'
 
 let cleanup: Unsubscribe[] = []
+
+/** `AGENT` where no server serves the page (static output): no kind is available, a task ends at once with why. */
+const unavailable: AgentClient = {
+  available: () => false,
+  provider: () => undefined,
+  runtime: () => undefined,
+  submit(request) {
+    const message = ASSISTANT_MESSAGES[currentLocale()].panel.unavailable
+    return {
+      id: `${request.kind}-unavailable`,
+      events: (async function* () {
+        yield { type: 'error' as const, message }
+      })(),
+      cancel() {},
+      review: async () => {
+        throw new Error(message)
+      },
+      revert: async () => {
+        throw new Error(message)
+      },
+    }
+  },
+}
 
 export const assistantPlugin: PluginDefinition = {
   manifest: {
@@ -30,7 +54,11 @@ export const assistantPlugin: PluginDefinition = {
   },
   setup(ctx) {
     const server = useServer()
-    if (!server.available) return
+    if (!server.available) {
+      // Declared, so provided: its users see an assistant that is not there.
+      ctx.provide(AGENT, unavailable)
+      return
+    }
     const assistant = createAgentClient(server)
     ctx.provide(AGENT, assistant.client)
     agent.value = assistant.client

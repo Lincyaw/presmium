@@ -29,6 +29,7 @@ COPY --chown=root:root packages /opt/presmium/packages
 COPY --chown=root:root examples/demo/node_modules /opt/presmium/examples/demo/node_modules
 COPY --chown=root:root templates/document /opt/presmium/templates/document
 COPY --chown=root:root templates/workspace/compose/init.sh /opt/presmium/templates/workspace/compose/init.sh
+COPY --chown=root:root templates/workspace/.gitignore /opt/presmium/templates/workspace/.gitignore
 RUN ln -s /opt/presmium/packages/cli/bin/presmium.mjs /usr/local/bin/presmium \
   && ln -s /opt/presmium/packages/classroom-server/bin/server.mjs /usr/local/bin/presmium-classroom-server \
   && chmod 0755 /opt/presmium/templates/workspace/compose/init.sh

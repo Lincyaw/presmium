@@ -4,15 +4,15 @@
  * token only as `Authorization: Bearer` (10.9). The relay, on this machine's
  * loopback, forwards the adapter's Messages requests under the gateway's
  * model proxy with the key it was given (the session's scoped token) as the
- * bearer token. It holds no credential of its own: a request without a key
- * reaches nothing.
+ * bearer token (`gatewayFetch`). It holds no credential of its own: a request
+ * without a key reaches nothing.
  */
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { Readable } from 'node:stream'
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage, gatewayFetch } from '@presmium/kernel'
 import type { GatewayAccess } from '@presmium/kernel'
-import { MODEL_PATH } from '../domain/index.ts'
+import { ASSISTANT_ID, MODEL_PATH } from '../domain/index.ts'
 
 /** Request headers a Messages request keeps on its way. */
 const KEPT = ['content-type', 'accept', 'anthropic-version', 'anthropic-beta']
@@ -24,20 +24,21 @@ export interface ModelRelay {
 }
 
 export async function modelRelay(gateway: GatewayAccess): Promise<ModelRelay> {
-  const target = gateway.url.replace(/\/+$/, '')
   const server = createServer((req, res) => {
     const key = req.headers['x-api-key']
     if (typeof key !== 'string' || !key || !(req.url ?? '').startsWith(`/${MODEL_PATH}/`)) {
       res.writeHead(404).end()
       return
     }
-    const headers: Record<string, string> = { authorization: `Bearer ${key}` }
+    const headers: Record<string, string> = {}
     for (const name of KEPT) {
       const value = req.headers[name]
       if (typeof value === 'string') headers[name] = value
     }
     const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : Readable.toWeb(req) as ReadableStream<Uint8Array>
-    fetch(`${target}${req.url}`, { method: req.method, headers, redirect: 'error', ...body ? { body, duplex: 'half' } as RequestInit : {} })
+    // The path after the assistant's own, under the gateway: `model/v1/messages`, with its query.
+    const path = req.url!.slice(`/${ASSISTANT_ID}/`.length)
+    gatewayFetch({ url: gateway.url, token: key }, ASSISTANT_ID, path, { method: req.method, headers, ...body ? { body, duplex: 'half' } as RequestInit : {} })
       .then((response) => {
         const type = response.headers.get('content-type')
         res.writeHead(response.status, type ? { 'content-type': type } : {})

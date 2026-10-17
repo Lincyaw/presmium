@@ -9,7 +9,8 @@
 //   notes; a chat message adds a section; undoing the annotations' commit brings both places back.
 // - D12 with the git review (deltabox's review off): a file rejected in the review comes back as the task
 //   found it (uncommitted changes too) and the commit has the rest; rejecting all leaves the directory as it
-//   was, without a commit; with `review: auto` the task commits at once.
+//   was, without a commit; with `review: auto` the task commits at once; the agent's build through MCP goes
+//   outside the document and is not in the review (F-51).
 // - D12 with deltabox (where the host qualifies): the panel names deltabox, the agent works in the session's
 //   view, and a rejected file comes back as the task found it (uncommitted changes too).
 // - P-121: the home page's new-document form drafts the document with the agent, reviewed in the form (the
@@ -21,7 +22,8 @@
 //   through `.git/commondir` is put back before the review runs git.
 // - The review kept by the server (WP-81e): a reloaded page takes it up and accepts it; back to before a step
 //   (P-115); a review no page follows is rolled back after the operator's time; one a crashed server left is
-//   rolled back when the document is served again; undoing a commit waits for the document's change task.
+//   rolled back when the document is served again; undoing a commit waits for the document's change task, and
+//   so do the workspace's rename of the document and its history's undo (409, the task's lock, F-09).
 // - The bundled DeepSeek Harness (LOCAL) with the default settings, driven by a fake model, in a single-deck
 //   repository: its change tasks are reviewed with git even where deltabox's review is registered
 //   (architecture.md 9.5) and commit; what it writes in the repository's git directory is put back.
@@ -35,7 +37,7 @@ import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 import { fakeModel } from '../packages/addon-assistant/test/fixtures/fake-model.ts'
 import type { FakeModel } from '../packages/addon-assistant/test/fixtures/fake-model.ts'
-import { eventStream, raw } from '../packages/addon-assistant/test/helpers.ts'
+import { eventStream, freePort, raw } from '../packages/addon-assistant/test/helpers.ts'
 import type { EventStream } from '../packages/addon-assistant/test/helpers.ts'
 import { qualification } from '../packages/addon-deltabox/test/helpers.ts'
 import { openDevPage } from './fixtures/deck.ts'
@@ -45,8 +47,6 @@ const FIXTURE = join(ROOT, 'e2e/fixtures/assistant-edit')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const AGENT = join(ROOT, 'packages/addon-assistant/test/fixtures/scripted-agent.mjs')
 const ASSISTANT = join(ROOT, 'packages/addon-assistant')
-/** This work package's ports (WP-81: 4971 to 4979; WP-81e: 5033 to 5039). */
-const PORTS = { browser: 4973, git: 4974, single: 4975, shared: 4976, gateway: 4977, dsh: 4978, kept: 5033, singleGit: 5034 }
 
 /** The test's environment without Vitest's or Presmium's variables or credentials, then `extra`. */
 function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
@@ -103,9 +103,9 @@ interface Serve {
 }
 
 /** `presmium serve` of a workspace, with the scripted agent as the replacement runtime (or, `bundled`, without one). */
-async function serve(dir: string, port: number, extra: Record<string, string> = {}, runtime: 'scripted' | 'bundled' = 'scripted'): Promise<Serve> {
+async function serve(dir: string, extra: Record<string, string> = {}, runtime: 'scripted' | 'bundled' = 'scripted'): Promise<Serve> {
   const scripted: Record<string, string> = runtime === 'scripted' ? { PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider', SCRIPTED_AGENT_LOG: `${dir}.agent.log` } : {}
-  const child = spawn(process.execPath, [PRESMIUM, 'serve', '--port', String(port)], {
+  const child = spawn(process.execPath, [PRESMIUM, 'serve', '--port', '0'], {
     cwd: dir,
     env: clean({ ...scripted, XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, ...extra }),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -219,7 +219,7 @@ test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () =
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     dir = workspace('browser')
-    server = await serve(dir, PORTS.browser)
+    server = await serve(dir)
   })
   test.afterAll(async () => {
     await server?.stop()
@@ -370,7 +370,7 @@ test.describe('in the browser: annotations, chat, review and undo (LOCAL)', () =
     // First the document's creation, then the draft.
     const [drafted, created] = commits(dir)
     expect(commits(dir)).toHaveLength(before + 2)
-    expect(created!.trailers).toMatch(/^Presmium-Origin: document$/m)
+    expect(created!.trailers).toMatch(/^Presmium-Origin: document create week6$/m)
     expect(drafted!.trailers).toMatch(/^Presmium-Origin: agent$/m)
     expect(drafted!.trailers).toMatch(/^Presmium-Task: \S+$/m)
     expect(drafted!.subject).toBe('起草：写一节关于上下文窗口的讲义')
@@ -383,12 +383,17 @@ test.describe('the review with git (D12), one task per document, a transcript, t
   let dir: string
   let server: Serve
   let operator: string
-  const start = () => serve(dir, PORTS.git, { PRESMIUM_OPERATOR_DIR: operator })
+  const start = () => serve(dir, { PRESMIUM_OPERATOR_DIR: operator })
 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     // deltabox's review off: the assistant's own git review.
     dir = workspace('git', '  presmium.deltabox:\n    review: false\n')
+    // The notebook renderer, installed at the root and listed (D14), for the agent's build through MCP.
+    symlinkSync(join(ROOT, 'packages/render-notebook'), join(dir, 'node_modules/@presmium/render-notebook'), 'junction')
+    const config = join(dir, 'presmium.workspace.yaml')
+    writeFileSync(config, readFileSync(config, 'utf8').replace('plugins: [\'@presmium/slidev-addon-assistant\']', 'plugins: [\'@presmium/slidev-addon-assistant\', \'@presmium/render-notebook\']'))
+    git(dir, ['commit', '-q', '-am', 'The notebook renderer'])
     operator = mkdtempSync(join(ROOT, 'examples/demo/.presmium/e2e-assistant-edit-operator-'))
     server = await start()
   })
@@ -448,7 +453,7 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       const second = await call(server, 'intro', 'tasks', chat('#append lecture.md 第二个任务的一行'))
       expect(second.status).toBe(409)
       expect(second.json.error).toBe('这份文档已有一个进行中或等待审阅的修改任务，请先完成它')
-      // Questions are not limited.
+      // A question is no change task: it is taken.
       expect((await call(server, 'intro', 'tasks', { kind: 'question', prompt: '合并的是哪一对？', context: { document: '' } })).status).toBe(201)
       expect((await call(server, 'intro', `tasks/${first.id}/review`, { accept: false })).status).toBe(204)
       await next(first.events, 'done')
@@ -462,9 +467,8 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       const review = await next(events, 'review')
       expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/lecture.md'])
       expect(lecture()).toContain('据讲授轨 demo 整理的讲解：合并的是出现最多的一对，每轮一次。')
-      // The agent was given the track and its file.
-      const asked = agentLog(dir).filter(e => e.event === 'session/prompt').at(-1)!
-      expect(asked.question).toBe('按章节把整理后的逐字稿写成讲解')
+      // The agent was given the request (found by its text: the question above may still be running, and log after it).
+      expect(agentLog(dir).some(e => e.event === 'session/prompt' && e.question === '按章节把整理后的逐字稿写成讲解')).toBe(true)
       expect((await call(server, 'intro', `tasks/${id}/review`, { accept: true })).status).toBe(204)
       const done = await next(events, 'done')
       expect(commits(dir)).toHaveLength(before + 1)
@@ -540,6 +544,29 @@ test.describe('the review with git (D12), one task per document, a transcript, t
     }
   })
 
+  test('the agent\'s build through MCP is no change of the document: the review lists only the source it wrote (F-51)', async () => {
+    const window = await eventStream(`${server.url}/__presmium/presmium.server/control?window=build&document=intro`)
+    const { id, events } = await submit(server, 'intro', chat('#append notes.md 构建之前写的一行\n#build notebook'))
+    try {
+      // The build is an operation the member allows.
+      const asked = await window.next('approval', 60_000) as { id: string, request: Record<string, unknown> }
+      expect(asked.request).toMatchObject({ kind: 'operate', from: 'presmium.mcp' })
+      await fetch(`${server.url}/__presmium/presmium.server/control`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ window: 'build', type: 'answer', id: asked.id, allow: true }) })
+      const review = await next(events, 'review')
+      expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/notes.md'])
+      // It built, outside the document.
+      const built = agentLog(dir).filter(e => e.event === 'build').at(-1)!
+      expect(built.isError, built.result).toBe(false)
+      expect((JSON.parse(built.result as string) as { outputs: { renderer: string }[] }).outputs.map(output => output.renderer)).toEqual(['notebook'])
+      expect(existsSync(join(dir, 'intro/dist'))).toBe(false)
+      expect((await call(server, 'intro', `tasks/${id}/review`, { accept: false })).status).toBe(204)
+      await next(events, 'done')
+    } finally {
+      events.close()
+      window.close()
+    }
+  })
+
   test('a review still waiting when the process ends is rejected; with review: auto a change task commits at once, without a review', async () => {
     const found = lecture()
     const before = commits(dir).length
@@ -571,7 +598,7 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
   const UNATTENDED_MS = 3000
   let dir: string
   let server: Serve
-  const start = () => serve(dir, PORTS.kept)
+  const start = () => serve(dir)
 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
@@ -670,6 +697,58 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
     expect(existsSync(join(dir, 'intro/undo.md'))).toBe(false)
   })
 
+  test('while a change task waits for its review, the document\'s rename and the history\'s undo get 409; the review then rejects and accepts cleanly (F-09)', async () => {
+    const workspaceRoute = (document: string, path: string, json: unknown) => fetch(`${server.url}/__presmium/presmium.workspace/${path}`, {
+      method: 'POST',
+      headers: { 'Presmium-Document': encodeURIComponent(document), 'Content-Type': 'application/json' },
+      body: JSON.stringify(json),
+    })
+    // A commit of the document the history could undo.
+    const committed = await submit(server, 'intro', chat('#append held.md 之后要撤销的一行'))
+    let revision: string
+    try {
+      await next(committed.events, 'review')
+      expect((await call(server, 'intro', `tasks/${committed.id}/review`, { accept: true })).status).toBe(204)
+      revision = (await next(committed.events, 'done')).revision as string
+    } finally {
+      committed.events.close()
+    }
+
+    for (const accept of [false, true]) {
+      const found = lecture()
+      const before = commits(dir).length
+      const pending = await submit(server, 'intro', chat(`#append lecture.md 等待审阅时的一行 ${accept}`))
+      try {
+        await next(pending.events, 'review')
+        // The document operation and the undo would commit or roll back under the task: refused.
+        const renamed = await workspaceRoute('', 'documents', { op: 'rename', dir: 'intro', to: 'intro-moved' })
+        expect(renamed.status).toBe(409)
+        expect((await renamed.json() as { error: string }).error).toContain(`agent:${pending.id}`)
+        expect((await workspaceRoute('intro', 'revisions/revert', { id: revision })).status).toBe(409)
+        expect(existsSync(join(dir, 'intro-moved'))).toBe(false)
+        expect(existsSync(join(dir, 'intro/held.md'))).toBe(true)
+        expect(commits(dir)).toHaveLength(before)
+
+        expect((await call(server, 'intro', `tasks/${pending.id}/review`, { accept })).status).toBe(204)
+        const done = await next(pending.events, 'done')
+        if (accept) {
+          expect(filesOf(dir, done.revision)).toEqual(['intro/lecture.md'])
+          expect(commits(dir)).toHaveLength(before + 1)
+        } else {
+          expect(lecture()).toBe(found)
+          expect(commits(dir)).toHaveLength(before)
+        }
+        expect(git(dir, ['status', '--porcelain', '--', 'intro'])).toBe('')
+      } finally {
+        pending.events.close()
+      }
+    }
+    // Once the review ended, the undo goes through.
+    const undone = await workspaceRoute('intro', 'revisions/revert', { id: revision })
+    expect(undone.status, await undone.clone().text()).toBe(200)
+    expect(existsSync(join(dir, 'intro/held.md'))).toBe(false)
+  })
+
   test('a review no page follows is rolled back after the operator\'s time, and the document takes a change task again', async () => {
     // The operator's time, short here: read when the server starts.
     await server.stop()
@@ -731,7 +810,7 @@ settings:
       'presmium.workspace.yaml': CONFIG,
       'lecture.md': '---\ntitle: 单份文稿\n---\n\n# 引言\n\n## 第一节\n\n开始时的内容。\n',
     })
-    server = await serve(dir, PORTS.single)
+    server = await serve(dir)
   })
   test.afterAll(async () => {
     await server?.stop()
@@ -779,7 +858,7 @@ test.describe('a single-deck repository with the git review: the git directory a
       'presmium.workspace.yaml': `title: 单份文稿\nsettings:\n  presmium.workspace:\n    plugins: ['@presmium/slidev-addon-assistant']\n  presmium.deltabox:\n    review: false\n`,
       'lecture.md': '---\ntitle: 单份文稿\n---\n\n# 引言\n\n## 第一节\n\n开始时的内容。\n',
     })
-    server = await serve(dir, PORTS.singleGit)
+    server = await serve(dir)
   })
   test.afterAll(async () => {
     await server?.stop()
@@ -820,7 +899,7 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
       { tool: 'write', input: { file_path: 'remarks.md', content: '第三个任务的备注\n' } },
       { text: '完毕：写了备注。' },
     ])
-    server = await serve(dir, PORTS.dsh, { PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-81e', PRESMIUM_MODEL_PROVIDER: 'Test Provider' }, 'bundled')
+    server = await serve(dir, { PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-81e', PRESMIUM_MODEL_PROVIDER: 'Test Provider' }, 'bundled')
   })
   test.afterAll(async () => {
     await server?.stop()
@@ -881,7 +960,7 @@ test.describe('SHARED (N-08): a write outside the document, of an editor\'s task
 
   /** The headers the login proxy adds for a member on the site's host name (or the owner console's). */
   const as = (email: string, host: 'site' | 'console' = 'site') => ({
-    'Host': `${host}.test:${PORTS.shared}`,
+    'Host': `${host}.test:${new URL(serveUrl).port}`,
     'X-Presmium-Proxy-Secret': SECRETS.proxy,
     'X-Forwarded-Email': email,
     ...host === 'site' ? { 'Presmium-Document': 'intro' } : {},
@@ -924,8 +1003,10 @@ test.describe('SHARED (N-08): a write outside the document, of an editor\'s task
       { text: '完毕：写了笔记；改写工作区配置被拒绝。' },
     ])
     const agentHost = await start(['agent-host', '--port', '0'], { PRESMIUM_AGENT_HOST_TOKEN: SECRETS.agentHost }, /^agent-host {2}(http\S+)$/m)
-    const gatewayUrl = `http://127.0.0.1:${PORTS.gateway}`
-    serveUrl = await start(['serve', '--port', String(PORTS.shared)], {
+    // serve is told the gateway's address before the gateway starts (it is told serve's): a port free now.
+    const gatewayPort = await freePort()
+    const gatewayUrl = `http://127.0.0.1:${gatewayPort}`
+    serveUrl = await start(['serve', '--port', '0'], {
       PRESMIUM_PROXY_SECRET: SECRETS.proxy,
       PRESMIUM_GATEWAY_URL: gatewayUrl,
       PRESMIUM_GATEWAY_TOKEN: SECRETS.gateway,
@@ -933,7 +1014,7 @@ test.describe('SHARED (N-08): a write outside the document, of an editor\'s task
       PRESMIUM_AGENT_HOST_TOKEN: SECRETS.agentHost,
       PRESMIUM_CONSOLE_HOST: 'console.test',
     }, /^serve {2}(http\S+)$/m)
-    await start(['gateway', '.', '--serve', serveUrl, '--port', String(PORTS.gateway), '--operator-dir', `${dir}.operator`], {
+    await start(['gateway', '.', '--serve', serveUrl, '--port', String(gatewayPort), '--operator-dir', `${dir}.operator`], {
       PRESMIUM_GATEWAY_TOKEN: SECRETS.gateway,
       PRESMIUM_MODEL_URL: model.url,
       PRESMIUM_MODEL_KEY: SECRETS.model,
@@ -976,7 +1057,7 @@ test.describe('SHARED (N-08): a write outside the document, of an editor\'s task
         const byEditor = await raw(`${serveUrl}/__presmium/presmium.server/control`, { headers: as('editor@test'), json: { window: 'editor', type: 'answer', id: asked.id, allow: true } })
         expect(byEditor.status).toBe(403)
         const byOwner = await raw(`${serveUrl}/__presmium/presmium.server/control`, {
-          headers: { ...as('owner@test', 'console'), 'Origin': `http://console.test:${PORTS.shared}`, 'Presmium-Console': '1' },
+          headers: { ...as('owner@test', 'console'), 'Origin': `http://console.test:${new URL(serveUrl).port}`, 'Presmium-Console': '1' },
           json: { window: 'console', type: 'answer', id: asked.id, allow: false },
         })
         expect(byOwner.status, byOwner.text).toBe(200)

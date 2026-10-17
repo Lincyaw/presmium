@@ -16,6 +16,9 @@
     "./package.json": "./package.json"
   },
   "slidev": {},
+  "engines": {
+    "node": ">=22.19"
+  },
   "dependencies": {
     "@agentclientprotocol/sdk": "1.8.0",
     "@deepseek-ai/dsh": "0.2.1-alpha.4",

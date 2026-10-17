@@ -7,23 +7,28 @@
  * environment, so its children never get it. serve calls it over HTTP/SSE
  * with that token; it never calls serve. It loads the same operator plugins
  * as serve (D14) and builds a Node service registry for each document.
+ *
+ * Agent sessions are limited (`settings.presmium.workspace.maxAgentSessions`,
+ * 32 at a time by default; more get 429, F-08). A `tutor` session (a
+ * learner's question) runs in an empty directory of its own, made here and
+ * removed with the session, never in a document (D-13). A prompt whose
+ * caller went away is cancelled (F-53).
  */
-import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { createReadStream, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { createReadStream, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
-import { isAbsolute, join, relative } from 'node:path'
-import { build, Compiler, loadPlugins, operatorPlugins, pluginId } from '@presmium/compiler'
+import { join } from 'node:path'
+import { buildView, Compiler, inside, loadPlugins, operatorPlugins, pluginId, pluginLogger, STUDENT } from '@presmium/compiler'
 import type { Compilation, CompilerOptions, LoadedPlugin } from '@presmium/compiler'
 import { AGENT_RUNTIME, CHANGE_REVIEW, errorMessage, isRecord, PROCESS_SANDBOX } from '@presmium/kernel'
 import type { AgentEvent, AgentSession, ApprovalRequest, ChangeReview, Finding, GatewayAccess, IRDocument, Logger, Member, NodeServiceContext, RunRequest, ServiceToken, SiteDevServer, SiteSpec } from '@presmium/kernel'
-import { assertUnreadable, readSecret, secretFiles } from '@presmium/server'
+import { bearer, dropPrivileges, hostname, isLoopback, readSecret, sameSecret, secretFiles } from '@presmium/server'
 import type { DocumentView } from '@presmium/server'
 import type { AgentHostInfo } from './agent-client.ts'
 import { listDocuments, readWorkspace } from './config.ts'
-import { STUDENT } from './audience.ts'
 import { runKey } from './execution.ts'
 import { copyDocument, emptyDocument, FilesError, fromTemplate, fromWire, relinkDocuments, shareTree, writeChanges } from './files.ts'
 import { homePlugins, servedPlugins, siteContext, siteIR, webRenderer } from './site.ts'
@@ -50,12 +55,8 @@ export interface AgentHost {
   close(): Promise<void>
 }
 
-const STDERR: Logger = {
-  debug: () => {},
-  info: (...args) => console.error('[presmium agent-host]', ...args),
-  warn: (...args) => console.error('[presmium agent-host]', ...args),
-  error: (...args) => console.error('[presmium agent-host]', ...args),
-}
+/** At most this many agent sessions at a time unless the operator says otherwise (`settings.presmium.workspace.maxAgentSessions`). */
+const MAX_SESSIONS = 32
 
 class HttpError extends Error {
   readonly status: number
@@ -65,30 +66,10 @@ class HttpError extends Error {
   }
 }
 
-/** Whether `path` lies below `dir` (not `dir` itself). */
-function below(path: string, dir: string): boolean {
-  const rel = relative(dir, path)
-  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel)
-}
-
-/** `process.initgroups` (POSIX only; not in every version of Node's types). */
-export function initGroups(user: string | number): void {
-  (process as { initgroups?: (user: string | number, group: string | number) => void }).initgroups?.(user, user)
-}
-
-function hostnameOf(host: string | undefined): string {
-  const value = (host ?? '').trim().toLowerCase()
-  if (value.startsWith('[')) return value.slice(0, value.indexOf(']') + 1)
-  return value.replace(/:\d+$/, '')
-}
-
-const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1'])
-
-function sameSecret(given: string | undefined, expected: string): boolean {
-  if (!given) return false
-  const a = Buffer.from(given)
-  const b = Buffer.from(expected)
-  return a.length === b.length && timingSafeEqual(a, b)
+/** The operator's limit of agent sessions at a time. */
+function sessionLimit(settings: Record<string, Record<string, unknown>>): number {
+  const value = settings['presmium.workspace']?.maxAgentSessions
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : MAX_SESSIONS
 }
 
 async function body(req: IncomingMessage): Promise<unknown> {
@@ -110,21 +91,6 @@ function send(res: ServerResponse, status: number, data?: unknown): void {
   }
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
   res.end(JSON.stringify(data))
-}
-
-/**
- * As the server's: started as root, becomes `user` with its supplementary
- * groups (the group that may write the document directories, docs/architecture.md 10.5),
- * then refuses to go on when it can read a token file it read as root
- * (`files`, by default those the environment names, WP-91).
- */
-export function becomeUser(user: string | undefined, files: readonly string[] = secretFiles(process.env)): void {
-  if (!user || process.getuid?.() !== 0) return
-  const id = /^\d+$/.test(user) ? Number(user) : user
-  initGroups(id)
-  process.setgid!(id)
-  process.setuid!(id)
-  assertUnreadable(files)
 }
 
 /** The largest piece of a file in one line of a build's stream (before base64). */
@@ -189,7 +155,7 @@ interface Site {
 
 export async function startAgentHost(options: AgentHostOptions): Promise<AgentHost> {
   const env = options.env ?? process.env
-  const log = options.log ?? STDERR
+  const log = options.log ?? pluginLogger('presmium agent-host')
   // Read once; started as root, from its file only, before it becomes the sandbox's user (WP-91).
   const token = readSecret(env, 'PRESMIUM_AGENT_HOST_TOKEN', Boolean(options.user) && process.getuid?.() === 0)
   if (!token) throw new Error('agent-host needs its token: set PRESMIUM_AGENT_HOST_TOKEN_FILE (or PRESMIUM_AGENT_HOST_TOKEN)')
@@ -199,15 +165,19 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     delete process.env.PRESMIUM_AGENT_HOST_TOKEN
     delete process.env.PRESMIUM_AGENT_HOST_TOKEN_FILE
   }
-  becomeUser(options.user, files)
+  // As the server does: with the user's groups (the group that may write the document directories, 10.5), then
+  // refusing to go on while it can read its token file.
+  dropPrivileges(options.user, files)
   // The sandbox's files stay writable for the document group (serve commits and reverts them, docs/architecture.md 10.5).
   if (options.user) process.umask(0o002)
   const config = readWorkspace(options.root)
   const { root } = config
   const listenHost = options.host ?? '127.0.0.1'
-  const names = new Set([hostnameOf(listenHost), ...(options.hostnames ?? []).map(hostnameOf)])
+  const names = new Set([hostname(listenHost), ...(options.hostnames ?? []).map(name => hostname(name))])
   const state = join(env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'presmium', 'agent-host')
   mkdirSync(state, { recursive: true })
+  const maxSessions = sessionLimit(config.settings)
+  mkdirSync(join(state, 'questions'), { recursive: true })
 
   // Each document's compiler here: its plugins (the operator's, D14), its Node services and executors.
   // It never runs code on its own: what runs, serve asks for.
@@ -334,6 +304,8 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     session: AgentSession
     /** The agent's working directory. */
     cwd: string
+    /** A `tutor` session's own empty directory, removed with it. */
+    own?: string
     /** The agent's permission requests waiting for serve's answer. */
     approvals: Map<string, (allow: boolean) => void>
     /** Those not yet sent to serve, as `approval` events of the running prompt. */
@@ -348,11 +320,20 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     return impl
   }
 
+  /** Ends a session: its waiting permission requests refused, the agent closed, a `tutor` session's directory removed. */
+  const closeSession = async (entry: OpenSession): Promise<void> => {
+    for (const resolve of entry.approvals.values()) resolve(false)
+    try {
+      await entry.session.close()
+    } finally {
+      if (entry.own) rmSync(entry.own, { recursive: true, force: true })
+    }
+  }
+
   const handle = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-    if (!LOOPBACK.has(hostnameOf(req.headers.host)) && !names.has(hostnameOf(req.headers.host))) throw new HttpError(403, `Host ${req.headers.host ?? '(none)'} is not agent-host`)
+    if (!isLoopback(req.headers.host) && !names.has(hostname(req.headers.host))) throw new HttpError(403, `Host ${req.headers.host ?? '(none)'} is not agent-host`)
     if (req.headers.origin !== undefined) throw new HttpError(403, 'agent-host takes no request from a browser')
-    const given = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? '')?.[1]
-    if (!sameSecret(given, token)) throw new HttpError(401, 'a valid token is needed')
+    if (!sameSecret(bearer(req.headers.authorization), token)) throw new HttpError(401, 'a valid token is needed')
     const url = new URL(req.url ?? '/', 'http://agent-host')
     const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent)
     const method = req.method ?? 'GET'
@@ -427,13 +408,14 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
         // Code without a recording runs only when serve says so (`compile: trusted`); else the recordings stand.
         // The student view is compiled for the audience `student` (P-55): what it leaves out never runs; the scan
         // reads what the build wrote (dist/ holds the whole deck's builds as well), and its reader asked for it,
-        // so it quotes nothing.
+        // so it quotes nothing. Into the document's dist/, as the sandbox: the workspace's .gitignore keeps it
+        // out of an agent's review (F-51; templates/workspace/.gitignore, which compose's init puts in place).
         const gateway = isRecord(input.gateway) ? input.gateway as unknown as GatewayAccess : undefined
-        const student = input.view === 'student'
-        const compiler = new Compiler(entryOf(id), { ...compilerOptions(input.run === 'all', gateway), ...student ? { audience: STUDENT } : {} })
+        const view = input.view === 'student' ? 'student' : 'full'
+        const compiler = new Compiler(entryOf(id), { ...compilerOptions(input.run === 'all', gateway), ...view === 'student' ? { audience: STUDENT } : {} })
         const compilation = await compiler.compile()
         const to = Array.isArray(input.to) ? input.to.filter((r): r is string => typeof r === 'string') : undefined
-        const report = await build(compilation, { outDir: join(compilation.deckDir, 'dist'), ...to?.length ? { to } : {}, ...student ? { quote: false, scan: 'written' } : {} })
+        const report = await buildView(compilation, { ...to?.length ? { to } : {}, view })
         return send(res, 200, { outputs: report.outputs.map(({ renderer: r, outDir }) => ({ renderer: r, outDir })), findings: report.findings })
       }
     }
@@ -493,33 +475,50 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
       if (id === undefined && method === 'POST') {
         const input = await body(req)
         if (!isRecord(input) || typeof input.document !== 'string' || !isRecord(input.member) || typeof input.cwd !== 'string') throw new HttpError(400, '{ document, mode, member, cwd, mcp?, model? }')
+        if (sessions.size >= maxSessions) throw new HttpError(429, `agent-host runs ${maxSessions} agent sessions at most (settings.presmium.workspace.maxAgentSessions): try again once one ended`)
         const runtime = await service(input.document, AGENT_RUNTIME)
-        const opened: OpenSession = { session: undefined as unknown as AgentSession, cwd: input.cwd, approvals: new Map(), unsent: [] }
-        opened.session = await runtime.open({
-          cwd: input.cwd,
-          mode: input.mode === 'tutor' ? 'tutor' : 'author',
-          member: input.member as unknown as Member,
-          ...isRecord(input.mcp) ? { mcp: input.mcp as { url: string, token: string } } : {},
-          ...isRecord(input.model) ? { model: input.model as unknown as GatewayAccess } : {},
-          // The agent's permission requests go back to serve as `approval` events and wait for its answer.
-          approve: request => new Promise<boolean>((resolve) => {
-            const approval = randomUUID()
-            opened.approvals.set(approval, resolve)
-            opened.unsent.push({ id: approval, request })
-          }),
-        })
+        const mode = input.mode === 'tutor' ? 'tutor' : 'author'
+        // A learner's question reads the student view through MCP only: it runs in an empty directory of its own (D-13).
+        const own = mode === 'tutor' ? mkdtempSync(join(state, 'questions', 'q-')) : undefined
+        const opened: OpenSession = { session: undefined as unknown as AgentSession, cwd: own ?? input.cwd, ...own ? { own } : {}, approvals: new Map(), unsent: [] }
+        // Counted while it opens: the limit holds for sessions asked for at once.
         const sessionId = randomUUID()
         sessions.set(sessionId, opened)
+        try {
+          opened.session = await runtime.open({
+            cwd: opened.cwd,
+            mode,
+            member: input.member as unknown as Member,
+            ...isRecord(input.mcp) ? { mcp: input.mcp as { url: string, token: string } } : {},
+            ...isRecord(input.model) ? { model: input.model as unknown as GatewayAccess } : {},
+            // The agent's permission requests go back to serve as `approval` events and wait for its answer.
+            approve: request => new Promise<boolean>((resolve) => {
+              const approval = randomUUID()
+              opened.approvals.set(approval, resolve)
+              opened.unsent.push({ id: approval, request })
+            }),
+          })
+        } catch (error) {
+          sessions.delete(sessionId)
+          if (own) rmSync(own, { recursive: true, force: true })
+          throw error
+        }
         return send(res, 201, { id: sessionId })
       }
       const entry = id === undefined ? undefined : sessions.get(id)
-      if (!entry) throw new HttpError(404, 'no such session')
+      if (!entry?.session) throw new HttpError(404, 'no such session')
       if (action === 'prompt' && method === 'POST') {
         const request = await body(req)
+        // serve went away (the task was cancelled, or serve ended): the agent is told (`session/cancel`). The request's
+        // own `close` came when its body was read; the response's comes when the connection ends before it did (F-53).
         const controller = new AbortController()
-        req.once('close', () => controller.abort())
+        res.once('close', () => {
+          if (!res.writableEnded) controller.abort()
+        })
         res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store' })
-        const write = (event: AgentEvent) => res.write(`data: ${JSON.stringify(event)}\n\n`)
+        const write = (event: AgentEvent) => {
+          if (!res.destroyed) res.write(`data: ${JSON.stringify(event)}\n\n`)
+        }
         const flush = setInterval(() => {
           while (entry.unsent.length > 0) {
             const { id: approval, request: asked } = entry.unsent.shift()!
@@ -529,7 +528,7 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
         // As the sandbox's user (compose), what the agent wrote for itself alone is given to the documents' group
         // before serve hears of it: each completed tool call is a checkpoint serve's review reads (10.7).
         const share = () => {
-          if (options.user && below(entry.cwd, root)) shareTree(entry.cwd)
+          if (options.user && entry.cwd !== root && inside(entry.cwd, root)) shareTree(entry.cwd)
         }
         try {
           for await (const event of entry.session.prompt(request as Parameters<AgentSession['prompt']>[0], controller.signal)) {
@@ -542,6 +541,7 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
           clearInterval(flush)
           share()
           res.end()
+          log.debug(`session ${id}: the prompt ended${controller.signal.aborted ? ', its caller gone' : ''}`)
         }
         return
       }
@@ -559,8 +559,7 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
       }
       if (action === undefined && method === 'DELETE') {
         sessions.delete(id!)
-        for (const resolve of entry.approvals.values()) resolve(false)
-        await entry.session.close()
+        await closeSession(entry)
         return send(res, 204)
       }
     }
@@ -615,7 +614,7 @@ export async function startAgentHost(options: AgentHostOptions): Promise<AgentHo
     url: `http://${shown}:${port}`,
     port,
     async close() {
-      for (const { session } of sessions.values()) await session.close().catch(() => undefined)
+      for (const entry of sessions.values()) if (entry.session) await closeSession(entry).catch(() => undefined)
       for (const review of reviews.values()) await review.close().catch(() => undefined)
       for (const site of sites.values()) await site.dev.close().catch(() => undefined)
       await new Promise<void>((done) => {

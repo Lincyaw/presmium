@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // One change task in the edit panel: its progress and steps while the agent works, its review file by file
 // (each kept or rejected; a unified diff for text, binary files only named) with a return to before each step
-// (P-115), its commit and the undo of it.
+// (P-115), its commit and the undo of it. What its events say is `change.progress` (the host's `trackAgentTask`).
 import { useMessages, useServer } from '@presmium/host'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import { decide, keep, restoreTo, revert } from './edit.ts'
@@ -15,17 +15,17 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
 </script>
 
 <template>
-  <section class="pm-assistant-edit__task" :aria-label="t.edit.task" :data-task="change.id" :data-state="change.state">
+  <section class="pm-assistant-edit__task" :aria-label="t.edit.task" :data-task="change.id" :data-state="change.progress.state">
     <h3>{{ t.edit.task }}</h3>
     <p class="pm-assistant-edit__label">
       {{ change.label }}
     </p>
-    <template v-if="change.state === 'running'">
+    <template v-if="change.progress.state === 'running'">
       <p role="status">
-        {{ change.tool ? t.edit.tool(change.tool) : t.edit.working }}
+        {{ change.progress.tool ? t.edit.tool(change.progress.tool) : t.edit.working }}
       </p>
-      <p v-if="change.steps.length" class="pm-assistant-edit__steps">
-        {{ t.edit.steps(change.steps.length) }}
+      <p v-if="change.progress.steps.length" class="pm-assistant-edit__steps">
+        {{ t.edit.steps(change.progress.steps.length) }}
       </p>
       <p class="pm-assistant-edit__actions">
         <button type="button" @click="change.task.cancel()">
@@ -33,25 +33,25 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
         </button>
       </p>
     </template>
-    <template v-else-if="change.state === 'review' || change.state === 'deciding'">
+    <template v-else-if="change.progress.state === 'review' || change.progress.state === 'deciding'">
       <p class="pm-assistant-edit__engine">
-        {{ t.edit.review(change.engine ?? '') }}
+        {{ t.edit.review(change.progress.engine ?? '') }}
       </p>
-      <details v-if="change.steps.length" class="pm-assistant-edit__steps">
-        <summary>{{ t.edit.steps(change.steps.length) }}</summary>
+      <details v-if="change.progress.steps.length" class="pm-assistant-edit__steps">
+        <summary>{{ t.edit.steps(change.progress.steps.length) }}</summary>
         <ol>
-          <li v-for="step in change.steps" :key="step.id" :data-step="step.id">
+          <li v-for="step in change.progress.steps" :key="step.id" :data-step="step.id">
             {{ step.label }}: {{ step.changes.map(c => c.path).join(', ') || t.edit.noStepChange }}
-            <button type="button" class="pm-assistant-edit__restore" :aria-label="t.edit.restoreLabel(step.label)" :disabled="change.state !== 'review'" @click="restoreTo(change.id, step.id, route)">
+            <button type="button" class="pm-assistant-edit__restore" :aria-label="t.edit.restoreLabel(step.label)" :disabled="change.progress.state !== 'review'" @click="restoreTo(change.id, step.id, route)">
               {{ t.edit.restore }}
             </button>
           </li>
         </ol>
       </details>
       <ul class="pm-assistant-edit__changes">
-        <li v-for="file in change.changes" :key="file.path" class="pm-assistant-change" :data-path="file.path" :data-kind="file.kind">
+        <li v-for="file in change.progress.changes" :key="file.path" class="pm-assistant-change" :data-path="file.path" :data-kind="file.kind">
           <label>
-            <input type="checkbox" :checked="!change.rejected.includes(file.path)" :aria-label="`${t.edit.keep} ${file.path}`" :disabled="change.state !== 'review'" @change="keep(change.id, file.path, ($event.target as HTMLInputElement).checked)">
+            <input type="checkbox" :checked="!change.rejected.includes(file.path)" :aria-label="`${t.edit.keep} ${file.path}`" :disabled="change.progress.state !== 'review'" @change="keep(change.id, file.path, ($event.target as HTMLInputElement).checked)">
             <code>{{ file.path }}</code> {{ t.edit.kind[file.kind] }} +{{ file.added }} −{{ file.removed }}
           </label>
           <p v-if="file.binary" class="pm-assistant-change__binary">
@@ -63,24 +63,24 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
           </p>
         </li>
       </ul>
-      <p v-if="change.message" class="pm-assistant-edit__error" role="alert">
-        {{ change.message }}
+      <p v-if="change.note" class="pm-assistant-edit__error" role="alert">
+        {{ change.note }}
       </p>
       <p class="pm-assistant-edit__actions">
-        <button type="button" class="pm-assistant-edit__accept" :disabled="change.state !== 'review'" @click="decide(change.id, true)">
+        <button type="button" class="pm-assistant-edit__accept" :disabled="change.progress.state !== 'review'" @click="decide(change.id, true)">
           {{ change.rejected.length ? t.edit.acceptSome(change.rejected.length) : t.edit.acceptAll }}
         </button>
-        <button type="button" class="pm-assistant-edit__reject" :disabled="change.state !== 'review'" @click="decide(change.id, false)">
+        <button type="button" class="pm-assistant-edit__reject" :disabled="change.progress.state !== 'review'" @click="decide(change.id, false)">
           {{ t.edit.rejectAll }}
         </button>
       </p>
     </template>
-    <template v-else-if="change.state === 'done'">
+    <template v-else-if="change.progress.state === 'done'">
       <p class="pm-assistant-edit__outcome" role="status">
-        {{ change.revision ? t.edit.committed(change.revision) : change.changes.length ? t.edit.rejected : t.edit.nothing }}
+        {{ change.progress.revision ? t.edit.committed(change.progress.revision) : change.progress.changes.length ? t.edit.rejected : t.edit.nothing }}
       </p>
-      <p v-if="change.revision && !change.reverted && !change.conflicts" class="pm-assistant-edit__actions">
-        <button type="button" class="pm-assistant-edit__revert" @click="revert(change.id, route)">
+      <p v-if="change.progress.revision && !change.reverted && !change.conflicts" class="pm-assistant-edit__actions">
+        <button type="button" class="pm-assistant-edit__revert" @click="revert(change.id)">
           {{ t.edit.revert }}
         </button>
       </p>
@@ -90,12 +90,12 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
       <p v-if="change.conflicts" class="pm-assistant-edit__conflicts" role="alert">
         {{ t.edit.conflicts(change.conflicts) }}
       </p>
-      <p v-if="change.message" class="pm-assistant-edit__error" role="alert">
-        {{ change.message }}
+      <p v-if="change.note" class="pm-assistant-edit__error" role="alert">
+        {{ change.note }}
       </p>
     </template>
     <p v-else class="pm-assistant-edit__error" role="alert">
-      {{ t.edit.failed(change.message ?? '') }}
+      {{ t.edit.failed(change.progress.message ?? '') }}
     </p>
   </section>
 </template>

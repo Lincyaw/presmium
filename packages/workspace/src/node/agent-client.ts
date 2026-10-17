@@ -7,6 +7,7 @@
  */
 import { errorMessage, isRecord } from '@presmium/kernel'
 import type { AgentEvent, AgentRuntime, AgentSession, ApprovalRequest, ChangeReview, ChangeReviewService, Finding, GatewayAccess, IRDocument, Logger, Member, ReviewChange, ReviewStep, RunRequest, RunResult, SiteSpec } from '@presmium/kernel'
+import { GatewayTokens } from '@presmium/server'
 import type { DocumentView } from '@presmium/server'
 import { toWire } from './files.ts'
 import type { DocumentWriter } from './files.ts'
@@ -30,13 +31,14 @@ export function bareSpec(site: SiteSpec): SiteSpec {
 export class AgentHostClient {
   readonly url: string
   readonly #token: string
-  readonly #gateway?: GatewayAccess
+  /** serve's scoped gateway tokens (`GatewayTokens`, F-29); none without a gateway. */
+  readonly #tokens?: GatewayTokens
   readonly #log: Logger
 
   constructor(access: GatewayAccess, gateway: GatewayAccess | undefined, log: Logger) {
     this.url = access.url.replace(/\/+$/, '')
     this.#token = access.token
-    this.#gateway = gateway
+    this.#tokens = gateway ? new GatewayTokens(gateway, log) : undefined
     this.#log = log
   }
 
@@ -46,6 +48,8 @@ export class AgentHostClient {
       headers: { 'Authorization': `Bearer ${this.#token}`, ...body === undefined ? {} : { 'Content-Type': 'application/json' } },
       ...body === undefined ? {} : { body: JSON.stringify(body) },
       ...signal ? { signal } : {},
+      // The token goes to agent-host only.
+      redirect: 'error',
     })
     if (!response.ok) {
       const text = await response.text().catch(() => '')
@@ -71,22 +75,9 @@ export class AgentHostClient {
 
   /** A scoped gateway token for one run, build or session; revoked by the function returned with it. */
   async #scoped(plugins: string[], purpose: string, member?: Member): Promise<{ access?: GatewayAccess, revoke(): Promise<void> }> {
-    const gateway = this.#gateway
-    if (!gateway) return { revoke: async () => {} }
+    if (!this.#tokens) return { revoke: async () => {} }
     try {
-      const response = await fetch(`${gateway.url.replace(/\/+$/, '')}/tokens`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${gateway.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plugins, purpose, ...member ? { member: member.id } : {}, ttlSeconds: 3600 }),
-      })
-      if (!response.ok) throw new Error(`${response.status} ${await response.text()}`)
-      const { id, token } = (await response.json()) as { id: string, token: string }
-      return {
-        access: { url: gateway.url, token },
-        revoke: async () => {
-          await fetch(`${gateway.url.replace(/\/+$/, '')}/tokens/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${gateway.token}` } }).catch(() => undefined)
-        },
-      }
+      return await this.#tokens.issue({ plugins, purpose, ...member ? { member: member.id } : {} })
     } catch (error) {
       this.#log.warn(`no scoped gateway token for ${purpose}: ${errorMessage(error)}`)
       return { revoke: async () => {} }

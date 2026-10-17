@@ -5,13 +5,14 @@
  * new build of the page's document is coming or in place. The panels are
  * plain, styled inline so the entries need no style sheet in either form.
  */
-import { useMessages, useServer } from '@presmium/host'
-import type { AgentClient, AgentTask, ReviewChange, Revision } from '@presmium/kernel'
+import { currentLocale, useMessages, useServer } from '@presmium/host'
+import type { AgentClient, AgentTask, ReviewChange } from '@presmium/kernel'
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import type { DocumentOperation, DocumentsAnswer, ExecutionState, OperationAnswer, RevertAnswer, RevisionsAnswer, SiteState, WorkspaceDocument } from '../domain/api.ts'
+import type { DocumentOperation, DocumentsAnswer, ExecutionState, HistoryRevision, OperationAnswer, RevertAnswer, RevisionsAnswer, SiteState, WorkspaceDocument } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
 import { WORKSPACE_MESSAGES } from '../domain/messages.ts'
+import type { WorkspaceMessages } from '../domain/messages.ts'
 
 /** Whether the page shows edit mode (the `EDIT_MODE` service's state). */
 export const editing = ref(false)
@@ -133,13 +134,24 @@ export const SiteStatus = defineComponent({
   },
 })
 
+/**
+ * How the history names a revision in the reader's language (N-07, F-55): a document operation by its
+ * origin, an undo by what it undoes; others (an agent's commit, written in the deck's language) by their
+ * summary. The commit's own summary stays as written.
+ */
+function revisionLabel(revision: HistoryRevision, t: WorkspaceMessages): string {
+  const summary = revision.message.split('\n')[0] ?? ''
+  if (revision.reverts) return t.revertOf(revision.operation ? t.operation(revision.operation) : /^Revert "(.*)"$/.exec(summary)?.[1] ?? summary)
+  return revision.operation ? t.operation(revision.operation) : summary
+}
+
 export const History = defineComponent({
   name: 'PmWorkspaceHistory',
   setup() {
     const t = useMessages(WORKSPACE_MESSAGES)
     const editor = useEditor()
     const open = ref(false)
-    const revisions = shallowRef<Revision[]>([])
+    const revisions = shallowRef<HistoryRevision[]>([])
     const message = ref<string>()
     const load = async () => {
       try {
@@ -179,8 +191,11 @@ export const History = defineComponent({
               'data-revision': revision.id,
               'style': { padding: '0.4rem 0', borderBottom: '1px solid var(--vp-c-divider, GrayText)' },
             }, [
-              h('div', { class: 'pm-workspace-revision__summary', style: { fontWeight: 600 } }, revision.message.split('\n')[0]),
-              h('div', { class: 'pm-workspace-revision__meta', style: { opacity: 0.75 } }, `${t.value.origin[revision.origin.kind]} · ${revision.author} · ${new Date(revision.date).toLocaleString()}`),
+              h('div', { class: 'pm-workspace-revision__summary', style: { fontWeight: 600 } }, revisionLabel(revision, t.value)),
+              h('div', { class: 'pm-workspace-revision__meta', style: { opacity: 0.75 } }, [
+                `${t.value.origin[revision.origin.kind]} · ${revision.author} · `,
+                h('time', { datetime: revision.date }, new Date(revision.date).toLocaleString(currentLocale())),
+              ]),
               revision.revertedBy
                 ? h('span', { class: 'pm-workspace-revision__reverted' }, t.value.reverted)
                 : h('button', { type: 'button', class: 'pm-workspace-revision__revert', style: BUTTON, onClick: () => void revert(revision.id) }, t.value.revert),

@@ -134,3 +134,22 @@ export function reviewTimeoutMs(settings: Record<string, unknown>): number {
   const value = settings.reviewTimeoutMs
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 30 * 60_000
 }
+
+const count = (value: unknown, otherwise: number) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : otherwise)
+
+/**
+ * How many learners' questions run at a time (`settings.presmium.assistant.maxQuestions`, D-13, F-08):
+ * `{ member, total }`, each member's and the service's, 2 and 16 by default; a number is each member's.
+ */
+export function questionLimits(settings: Record<string, unknown>): { member: number, total: number } {
+  const value = settings.maxQuestions
+  if (typeof value === 'number') return { member: count(value, 2), total: 16 }
+  const given = isRecord(value) ? value : {}
+  return { member: count(given.member, 2), total: count(given.total, 16) }
+}
+
+/** How long a question no page follows runs before it is cancelled (`settings.presmium.assistant.questionTimeoutMs`; 2 minutes, D-13). */
+export function questionTimeoutMs(settings: Record<string, unknown>): number {
+  const value = settings.questionTimeoutMs
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 2 * 60_000
+}

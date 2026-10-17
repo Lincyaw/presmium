@@ -1,0 +1,14 @@
+# A workspace's .gitignore (F-51): copy it to the workspace root beside presmium.workspace.yaml. What is
+# generated or installed stays out of the history and out of an agent's review; what belongs to a
+# document stays in.
+node_modules
+dist/
+# Deck working directories: only these files of .presmium/ belong to a document (recordings, drawings,
+# assets, synthesized speech and the locks); the rest there is generated.
+**/.presmium/*
+!**/.presmium/freeze/
+!**/.presmium/anchors.lock.json
+!**/.presmium/drawings/
+!**/.presmium/assets/
+!**/.presmium/speech/
+!**/.presmium/speech.lock.json

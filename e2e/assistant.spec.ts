@@ -4,14 +4,15 @@
 // answer's citation moves the page to the section it names. A question runs in `tutor` mode, where the
 // agent's attempt to write a file is refused and the file stays. In a classroom, a learner's question
 // reaches the presenter's overview, whose "AI answer" the presenter sends to the classroom, and the learner
-// sees it.
+// sees it. The static build of a deck that lists the assistant (no server): no console error, the start report
+// says the assistant started, and nothing offers to ask (F-48).
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
-import { deckDir, openDevPage, startDev } from './fixtures/deck.ts'
-import type { DevServer } from './fixtures/deck.ts'
+import { buildFixture, deckDir, openDevPage, startDev } from './fixtures/deck.ts'
+import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/assistant', import.meta.url))
@@ -136,5 +137,32 @@ test('a learner\'s question reaches the presenter\'s overview; the presenter sen
     await expect(reply).toContainText('AI 回答（Test Provider）：这段代码在课堂提问中讲解：问题是「为什么先统计次数？」。')
   } finally {
     await Promise.all(contexts.map(context => context.close()))
+  }
+})
+
+test('the static build of a deck that lists the assistant: no console error, the assistant started, nothing offers to ask', async ({ page }) => {
+  test.setTimeout(600_000)
+  let deck: FixtureDeck | undefined
+  try {
+    deck = await buildFixture('assistant', {
+      to: 'web',
+      link: { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' },
+      // The assistant alone: the static output a reader of D17 gets, with no server to ask.
+      edit: dir => writeFileSync(join(dir, 'lecture.md'), '---\ntitle: 静态的助手\nplugins:\n  - \'@presmium/slidev-addon-assistant\'\n---\n\n# 静态的助手\n\n(merge)=\n## 合并规则\n\n每一轮合并出现次数最多的一对。\n'),
+    })
+    const errors: string[] = []
+    page.on('console', message => message.type() === 'error' && errors.push(message.text()))
+    page.on('pageerror', error => errors.push(error.message))
+    await page.goto(`${deck.web}/?view=presenter&section=merge`)
+    await expect(page.locator('[data-section="merge"]').first()).toBeVisible()
+    await page.locator('.pm-presenter-panels summary').click()
+    await expect(page.locator('.pm-start-report [data-plugin="presmium.assistant"]')).toHaveAttribute('data-status', 'started')
+    await expect(page.getByRole('button', { name: '提问' })).toHaveCount(0)
+    await page.goto(`${deck.web}/`)
+    await expect(page.locator('[data-section="merge"]').first()).toBeVisible()
+    await expect(page.locator('.pm-assistant-toolbar')).toHaveCount(0)
+    expect(errors.filter(text => /presmium|assistant/i.test(text))).toEqual([])
+  } finally {
+    await deck?.close()
   }
 })

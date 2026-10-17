@@ -7,15 +7,10 @@
  * sections numbered again (`Compilation.forAudience`, WP-87). This file
  * alone decides it.
  */
+import { STUDENT } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
 import type { IRDocument } from '@presmium/kernel'
 import type { DocumentView } from '@presmium/server'
-
-/** The views of a document, in the order the server forwards to them. */
-export const VIEWS: readonly DocumentView[] = ['full', 'student']
-
-/** The audience the student view is compiled for. */
-export const STUDENT = 'student'
 
 /** The IR a view of a compiled document shows. */
 export function viewDocument(compilation: Compilation, view: DocumentView): IRDocument {
