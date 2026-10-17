@@ -1,6 +1,7 @@
 # A workspace (docs/ir.md section 10): copy this file, and the .gitignore beside it, to the root of a git
-# repository whose documents are its subdirectories, each with a lecture.md. Then `presmium serve` there,
-# or `presmium build`.
+# repository whose documents are its subdirectories, each with a lecture.md. Install the operator plugins
+# listed below at that root (pnpm add @presmium/slidev-addon-assistant), or remove them from the list. Then
+# `presmium serve` there, or `presmium build`.
 title: 课程名称
 documents: ['*/lecture.md']         # where the documents are, in this order; default '*/lecture.md'
 site: {}                            # the site shell: nav, footer, head, sitemap (as renderers.web)

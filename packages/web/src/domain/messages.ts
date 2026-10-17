@@ -35,7 +35,7 @@ export const WEB_MESSAGES = {
     warnings: (count: number) => `${count} 个警告`,
     errors: (count: number) => `${count} 个错误`,
     mcp: '连接外部 agent（MCP）',
-    mcpHint: 'Claude Code、Codex 等用它读讲义、运行代码、跳转放映。',
+    mcpHint: 'Claude Code、Codex 等用它读讲义、运行代码、跳转放映；令牌在 presmium serve 启动时打印的文件中（Authorization: Bearer）。',
     copy: '复制',
     copied: '已复制',
     /** The panes of edit mode beside the page (docs/architecture.md 5.10). */
@@ -69,7 +69,7 @@ export const WEB_MESSAGES = {
     warnings: (count: number) => `${count} ${count === 1 ? 'warning' : 'warnings'}`,
     errors: (count: number) => `${count} ${count === 1 ? 'error' : 'errors'}`,
     mcp: 'Connect an outside agent (MCP)',
-    mcpHint: 'Claude Code, Codex and other agents use it to read the lectures, run code and move the slides.',
+    mcpHint: 'Claude Code, Codex and other agents use it to read the lectures, run code and move the slides; its token is in the file presmium serve prints when it starts (Authorization: Bearer).',
     copy: 'Copy',
     copied: 'Copied',
     sourcePane: 'Source',

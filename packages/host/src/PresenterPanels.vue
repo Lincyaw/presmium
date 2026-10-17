@@ -63,12 +63,13 @@ const problems = computed(() => {
   max-height: 50vh;
   overflow: auto;
   padding: 0.25rem 0.75rem;
-  border: 1px solid rgba(125, 125, 125, 0.4);
-  border-radius: 0.375rem;
-  background: var(--slidev-theme-background, var(--vp-c-bg, #fff));
-  color: inherit;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-small);
+  /* The host's tokens, which follow the dark scheme of either form, whatever the deck's theme (N-10). */
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
   font-size: 0.8rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--pm-shadow-float);
 }
 .pm-presenter-panels--docked {
   position: static;
@@ -85,9 +86,9 @@ summary {
   display: inline-block;
   min-width: 1.4em;
   padding: 0 0.3em;
-  border-radius: 999px;
-  background: #dc2626;
-  color: #fff;
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-danger);
+  color: var(--pm-color-surface);
   text-align: center;
 }
 h3 {
