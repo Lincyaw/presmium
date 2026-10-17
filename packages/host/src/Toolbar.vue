@@ -34,6 +34,6 @@ watchEffect((onCleanup) => {
 .pm-toolbar {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.75rem;
 }
 </style>
