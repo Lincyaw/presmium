@@ -18,10 +18,11 @@ async function openSection(page: Page, section: string, block: string) {
   return code
 }
 
+/** Runs `block`; a new page's first run loads the Python runtime first. */
 async function run(page: Page, block: string) {
   const code = page.locator(`.pm-block[data-block="${block}"]`)
   await code.locator('.pm-code-block__run button').first().click()
-  await expect(code.locator('.pm-outputs')).toHaveAttribute('data-source', /live|recorded/)
+  await expect(code.locator('.pm-outputs')).toHaveAttribute('data-source', /live|recorded/, RUNTIME)
   return code
 }
 
