@@ -17,9 +17,12 @@
  * Cue steps count from the block (docs/ir.md 2.4): both renderers give the
  * component its block's `at` as step scope.
  */
+import { createRequire } from 'node:module'
 import { deckLocale } from '@presmium/kernel'
 import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@presmium/kernel'
 import { CUE_MESSAGES, GUIDE_ID, parseCursorPath, planCursorPath } from '../domain/index.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 function component(name: string, props: Record<string, unknown>, fallback: MdastNode): ComponentNode {
   const defined = Object.fromEntries(Object.entries(props).filter(([, value]) => value !== undefined))
@@ -66,7 +69,7 @@ function cue(name: string, tag: string): DirectiveSpec {
 
 const plugin: PresmiumNodePlugin = {
   id: GUIDE_ID,
-  version: '0.1.0',
+  version,
   kernel: '^0.1.0',
   directives: [cursor, cue('spotlight', 'PmSpotlight'), cue('hint', 'PmHint')],
 }

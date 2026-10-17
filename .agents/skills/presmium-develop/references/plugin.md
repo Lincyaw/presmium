@@ -20,21 +20,32 @@ packages/addon-poll/
 ```json
 {
   "name": "@presmium/slidev-addon-poll",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: polls",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/presmium/presmium.git", "directory": "packages/addon-poll" },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-poll#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": ["slidev-addon", "slidev", "presmium"],
+  "type": "module",
+  "engines": { "node": ">=22.19" },
+  "publishConfig": { "access": "public" },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": ["components", "setup", "src"],
   "slidev": {},
-  "dependencies": { "@presmium/kernel": "workspace:*", "@presmium/host": "workspace:*", "vue": "^3.5.42" },
-  "devDependencies": { "@presmium/cli": "workspace:*", "@slidev/client": "53.0.0", "@slidev/types": "53.0.0" }
+  "dependencies": { "vue": "^3.5.42" },
+  "peerDependencies": { "@presmium/host": "workspace:^", "@presmium/kernel": "workspace:^" },
+  "devDependencies": { "@presmium/cli": "workspace:*", "@presmium/host": "workspace:*", "@presmium/kernel": "workspace:*", "@slidev/client": "53.0.0", "@slidev/types": "53.0.0" }
 }
 ```
+
+- 版本与其他公开包相同（changesets 的固定组）；`engines.node` 与根目录一致。对 `@presmium/kernel`、`host`、`viewer`、`compiler` 的依赖是对等依赖：插件与应用共用一份（宿主的注入键、服务令牌），发布时 `workspace:^` 成为 `^<版本>`；同名的开发依赖让工作区为本包的测试链接它们。对等依赖不满足的插件，加载器在 `presmium check` 与构建中报告，不加载它。
+- 复制根目录的 `LICENSE` 到包中，在 `.changeset/README.md` 的表中加一行；`files` 只列发布的目录与文件（不含 `test/`）。`scripts/check-packages.mjs` 检查这些。
 
 - 源码以 `.ts`、`.vue` 发布，不预编译；相对导入写 `.ts` 扩展名。
 - 加包或依赖后在仓库根目录运行 `pnpm install`，并提交 `pnpm-lock.yaml`。

@@ -16,6 +16,7 @@ Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再生成
 - 在仓库内：仿照 `examples/demo/package.json` 在 `examples/<名字>/` 建一个工作区包（依赖写 `workspace:*`），在仓库根目录运行 `pnpm install`。之后在文稿目录运行 `pnpm exec presmium <命令>`。
 - 在仓库外试用：把示例文稿装好的依赖链接过来，`ln -s <仓库>/examples/demo/node_modules <文稿目录>/node_modules`，再运行 `<文稿目录>/node_modules/.bin/presmium <命令>`。
 - 两种情况都可以直接运行 `node <仓库>/packages/cli/bin/presmium.mjs <命令> <文稿目录>`。
+- 像从 npm 安装那样试用（发布前）：在仓库根目录运行 `pnpm consumer <目录>`，它把各包打成压缩包，在 `<目录>` 中用 npm 安装（CLI、三个渲染端、`@presmium/slidev-addon-core` 与一个示例插件），之后在那里运行 `npx presmium <命令>`。发布后：`npm install -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook`，再加上文稿 `plugins` 中的插件包。
 
 仓库中的示例可以照着写：`examples/demo` 是一份完整的讲义（BPE 分词），其中“延伸”一章 `pages/extend.md` 用到 WebAssembly 中的 C、WGSL 计算着色器、跨代码块的 Python 会话与只显示输出的表格、先预测再揭示、卡片与栅格、讲解中的 `{cue}` 与 `{say}`，`README.md` 写明构建、录制与讲授的合成；`examples/workspace` 是放着这份讲义与一份短文档的工作区，`README.md` 写明 `presmium serve` 的启动与体验步骤。
 

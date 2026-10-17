@@ -1,9 +1,37 @@
 {
   "name": "@presmium/mcp",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's agent environment: a document's tools and resources over MCP, and presmium-mcp over stdio",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/mcp#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "mcp",
+    "agent"
+  ],
   "type": "module",
-  "description": "The agent environment: the deck as MCP tools and resources (createPresmiumMcp over the McpHost it declares), and presmium-mcp over stdio",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "presmium-mcp": "./bin/presmium-mcp.mjs"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
     "@presmium/compiler": "workspace:*",
@@ -13,11 +41,5 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "2.3.1"
-  },
-  "bin": {
-    "presmium-mcp": "./bin/presmium-mcp.mjs"
-  },
-  "exports": {
-    ".": "./src/index.ts"
   }
 }

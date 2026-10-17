@@ -1,15 +1,25 @@
 {
   "name": "@presmium/kernel",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Shared kernel: contracts, service registry, anchors, checks",
-  "dependencies": {
-    "parse5": "7.3.0",
-    "semver": "^7.8.5"
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's shared kernel: the IR and plugin contracts, the service registry, anchors and checks",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/kernel"
   },
-  "devDependencies": {
-    "@types/semver": "^7.8.0"
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/kernel#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "ir"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -18,5 +28,15 @@
     "./node": "./src/node/index.ts",
     "./reading": "./src/reading.ts",
     "./runner.py": "./src/runner.py"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "parse5": "7.3.0",
+    "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.8.0"
   }
 }

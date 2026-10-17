@@ -1,32 +1,54 @@
 {
   "name": "@presmium/slidev-addon-session",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Session and network sync (P-60..P-62)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: classroom sessions, sync across devices, and following the presenter",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-session"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-session#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "components",
+    "setup",
+    "src"
+  ],
   "slidev": {},
   "dependencies": {
     "@presmium/classroom-server": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "yjs": "^13.6.33",
-    "y-websocket": "^3.1.0",
     "uqr": "^0.1.3",
-    "vue": "^3.5.42"
+    "vue": "^3.5.42",
+    "y-websocket": "^3.1.0",
+    "yjs": "^13.6.33"
+  },
+  "peerDependencies": {
+    "@presmium/host": "workspace:^",
+    "@presmium/kernel": "workspace:^"
   },
   "devDependencies": {
     "@presmium/cli": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
     "@slidev/client": "53.0.0",
     "@slidev/types": "53.0.0"
   }

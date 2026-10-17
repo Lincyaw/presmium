@@ -1,14 +1,27 @@
 {
   "name": "@presmium/slidev-addon-content",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Rich content (P-40..P-43)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: rich content: diagrams, mind maps, media, and web components",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-content"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-content#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
@@ -16,17 +29,28 @@
     "./media/*": "./media/*",
     "./package.json": "./package.json"
   },
+  "files": [
+    "components",
+    "media",
+    "setup",
+    "src",
+    "vite.config.ts"
+  ],
   "slidev": {},
   "dependencies": {
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
     "markmap-lib": "^0.18.12",
     "markmap-view": "^0.18.12",
     "plantuml-encoder": "^1.4.0",
     "vue": "^3.5.42"
   },
+  "peerDependencies": {
+    "@presmium/host": "workspace:^",
+    "@presmium/kernel": "workspace:^"
+  },
   "devDependencies": {
     "@presmium/cli": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
     "@slidev/client": "53.0.0",
     "@slidev/types": "53.0.0"
   }

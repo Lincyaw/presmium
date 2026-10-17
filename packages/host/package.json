@@ -1,18 +1,39 @@
 {
   "name": "@presmium/host",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's host interface for plugin components in every form: step state, services, interface text, and the design system (tokens, components, fonts)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/host"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/host#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "vue",
+    "design-system"
+  ],
   "type": "module",
-  "description": "Form-neutral host interface and composables used by all plugin components",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./design.css": "./src/design/design.css"
+  },
+  "files": [
+    "src"
+  ],
   "dependencies": {
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fontsource/source-serif-4": "5.3.1",
     "@presmium/kernel": "workspace:*",
     "vue": "^3.5.42"
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./design.css": "./src/design/design.css"
   }
 }

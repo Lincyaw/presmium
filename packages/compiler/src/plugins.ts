@@ -1,9 +1,11 @@
-import { existsSync, realpathSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { errorMessage, isRecord, kernelIncompatibility } from '@presmium/kernel'
 import type { PresmiumNodePlugin, Severity } from '@presmium/kernel'
 import { createJiti } from 'jiti'
+import { satisfies, validRange } from 'semver'
 
 /** Package export that holds a plugin's Node entry (docs/architecture.md section 3). */
 export const NODE_PLUGIN_EXPORT = './presmium'
@@ -60,9 +62,58 @@ function bundledDir(name: string, sources?: PluginSources): string | undefined {
   return sources?.bundled && BUNDLED.has(name) ? findPackageDir(name, sources.bundled) : undefined
 }
 
+/** The fields of a plugin's `package.json` the loader reads. */
+interface PluginPackage {
+  name?: unknown
+  version?: unknown
+  exports?: Record<string, unknown>
+  peerDependencies?: Record<string, unknown>
+}
+
+/** The scope of Presmium's packages, which a plugin names as peer dependencies with the versions it supports (P-143). */
+const PRESMIUM_SCOPE = '@presmium/'
+
+/** This package's directory, where the Presmium the compiler runs with resolves. */
+const COMPILER_DIR = fileURLToPath(new URL('..', import.meta.url))
+const COMPILER_PACKAGE = JSON.parse(readFileSync(join(COMPILER_DIR, 'package.json'), 'utf8')) as { name: string, version: string }
+
+/**
+ * Why the installed Presmium does not satisfy a plugin's peer dependencies on
+ * Presmium's packages (`peerDependencies`, P-143); undefined when it does. Each
+ * is the package the plugin's imports get: found from the plugin's directory,
+ * else the one the compiler runs with. One that is not installed is left to
+ * the plugin's import (an optional peer may well be missing), and so is a
+ * range with a protocol (`workspace:^` of a plugin in Presmium's own workspace).
+ */
+function peerIncompatibility(pkg: PluginPackage, dir: string): string | undefined {
+  const problems: string[] = []
+  for (const [dependency, range] of Object.entries(pkg.peerDependencies ?? {})) {
+    if (!dependency.startsWith(PRESMIUM_SCOPE) || typeof range !== 'string' || /^[a-z]+:/i.test(range)) continue
+    const installed = installedVersion(dependency, dir)
+    if (installed === undefined) continue
+    if (validRange(range) === null) problems.push(`its peer dependency ${dependency} has an invalid range "${range}"`)
+    else if (!satisfies(installed, range, { includePrerelease: true })) problems.push(`it needs ${dependency} ${range} (peerDependencies), and ${installed} is installed`)
+  }
+  return problems.length > 0 ? problems.join('; ') : undefined
+}
+
+/** The version of Presmium's package `name` that code in `dir` imports, else the one the compiler runs with. */
+function installedVersion(name: string, dir: string): string | undefined {
+  const found = findPackageDir(name, dir) ?? (name === COMPILER_PACKAGE.name ? COMPILER_DIR : findPackageDir(name, COMPILER_DIR))
+  if (!found) return undefined
+  const { version } = JSON.parse(readFileSync(join(found, 'package.json'), 'utf8')) as { version?: unknown }
+  return typeof version === 'string' ? version : undefined
+}
+
 async function loadFrom(name: string, dir: string, problem: (severity: Severity, message: string) => PluginProblem): Promise<{ loaded?: LoadedPlugin, problem?: PluginProblem }> {
   try {
-    const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8')) as { exports?: Record<string, unknown> }
+    const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8')) as PluginPackage
+    // A plugin for another Presmium is not loaded, nor imported (P-143): its import alone may fail.
+    const peers = peerIncompatibility(pkg, dir)
+    if (peers) {
+      const label = typeof pkg.name === 'string' ? ` (${pkg.name}${typeof pkg.version === 'string' ? ` ${pkg.version}` : ''})` : ''
+      return { problem: problem('error', `plugin "${name}"${label} is not loaded: ${peers}`) }
+    }
     const target = exportTarget(pkg.exports?.[NODE_PLUGIN_EXPORT])
     if (!target) return { loaded: { name, dir } }
     const file = join(dir, target)

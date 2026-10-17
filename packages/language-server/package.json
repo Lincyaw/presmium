@@ -1,9 +1,27 @@
 {
   "name": "@presmium/language-server",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "Language server for Presmium documents: diagnostics, anchor definitions and hovers, completion and preview sync",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/language-server"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/language-server#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "lsp",
+    "language-server"
+  ],
   "type": "module",
-  "description": "Language server for Presmium decks (P-80, P-81): diagnostics, anchor definitions and hovers, completion, preview sync",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "presmium-language-server": "./bin/presmium-language-server.mjs"
   },
@@ -12,6 +30,10 @@
     "./protocol": "./src/domain/protocol.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "bin",
+    "src"
+  ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },

@@ -1,29 +1,48 @@
 {
   "name": "@presmium/slidev-addon-code",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Code references (P-10..P-16)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: code references into a git repository: region and syntax anchors, locked commits, links, drift checks and step highlights",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-code"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-code#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "src"
+  ],
   "slidev": {},
   "dependencies": {
     "@ast-grep/lang-python": "^0.0.6",
     "@ast-grep/napi": "^0.50.0",
-    "@presmium/kernel": "workspace:*",
     "diff": "^9.0.0",
     "simple-git": "^4.0.2"
   },
+  "peerDependencies": {
+    "@presmium/kernel": "workspace:^"
+  },
   "devDependencies": {
     "@presmium/cli": "workspace:*",
-    "@presmium/compiler": "workspace:*"
+    "@presmium/compiler": "workspace:*",
+    "@presmium/kernel": "workspace:*"
   }
 }

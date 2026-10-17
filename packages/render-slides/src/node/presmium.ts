@@ -16,7 +16,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { errorMessage, irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { IRDocument, LocalAsset, MdastNode, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
-import { copyPublished } from '@presmium/kernel/node'
+import { copyPublished, FONT_LICENSE, fontLicense, installedDependencies, TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
 import { hasExtension, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
@@ -24,6 +24,8 @@ import type { SlidevDeck } from './slidev.ts'
 export const SLIDEV_DIR = '.presmium/slides'
 
 const STYLE = fileURLToPath(new URL('../deck/style.css', import.meta.url))
+/** The packages whose browser code the slides load, besides the deck's plugins (addons). */
+const BROWSER_PACKAGES = ['@presmium/web', '@presmium/viewer', '@presmium/host', '@presmium/kernel']
 const require = createRequire(import.meta.url)
 const { version } = require('../../package.json') as { version: string }
 
@@ -124,13 +126,20 @@ function base(ctx: RenderContext): string[] {
 async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc: IRDocument): Promise<void> {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '*\n')
-  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium)))
+  const include = installedDependencies([...BROWSER_PACKAGES, ...doc.config.plugins], dir)
+  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium), include))
   await copyFile(STYLE, join(dir, 'style.css'))
   await rm(join(dir, 'public'), { recursive: true, force: true })
   await mkdir(join(dir, 'public'))
   const shared = join(ctx.deckDir, 'public')
   for (const entry of await readdir(shared).catch(() => [])) await symlink(join(shared, entry), join(dir, 'public', entry), 'junction')
   await publish(dir, deck.assets)
+  // The fonts the design system bundles go with their license (NOTICE), unless the deck's own `public/` has the path.
+  const license = join(dir, 'public', FONT_LICENSE)
+  if (!existsSync(join(dir, 'public', FONT_LICENSE.split('/')[0]!))) {
+    await mkdir(dirname(license), { recursive: true })
+    await writeFile(license, fontLicense(import.meta.url))
+  }
   await rm(join(dir, 'components'), { recursive: true, force: true })
   if (existsSync(join(ctx.deckDir, 'components'))) await symlink(join(ctx.deckDir, 'components'), join(dir, 'components'), 'junction')
   await writeFile(join(dir, 'slides.md'), deck.markdown)
@@ -180,14 +189,17 @@ async function vitePluginEntries(ctx: RenderContext, presmium: Record<string, un
  * Vite plugins of the deck's plugins (`vitePlugins` of their Node entries,
  * with their configuration), the one way a plugin adds Vite plugins to
  * either form; and, in `presmium dev`, the paths of `/__presmium/` proxied
- * to the Presmium server, WebSockets too (docs/architecture.md 10.1).
+ * to the Presmium server, WebSockets too (docs/architecture.md 10.1); for the
+ * Presmium packages installed under node_modules, as from npm, the browser
+ * dependencies the dev server pre-bundles (`installedDependencies`).
  */
-function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[]): string {
+function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[], include: string[]): string {
   const imports = entries.map(({ file }, i) => `import plugin${i} from ${JSON.stringify(file)}\n`).join('')
   const deck = JSON.stringify({ deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot })
   const plugins = entries.map(({ config }, i) => `    ...(plugin${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(config)} }) ?? []),\n`).join('')
   const proxy = ctx.server ? `  server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } } },\n` : ''
-  return `${imports}\nconst deck = ${deck}\n\nexport default {\n  cacheDir: 'node_modules/.vite',\n  plugins: [\n${plugins}  ],\n${proxy}}\n`
+  const optimize = include.length > 0 ? `  optimizeDeps: { include: ${JSON.stringify(include)} },\n` : ''
+  return `${imports}\nconst deck = ${deck}\n\nexport default {\n  cacheDir: 'node_modules/.vite',\n  plugins: [\n${plugins}  ],\n${proxy}${optimize}}\n`
 }
 
 /**
@@ -216,7 +228,7 @@ class SlidevError extends Error {
 /** Runs the `slidev` command of @slidev/cli in `cwd`; rejects with a `SlidevError` when it fails. */
 function slidev(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [slidevBin(), ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(process.execPath, [...TYPESCRIPT_IMPORT, slidevBin(), ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
     let output = ''
     child.stdout.on('data', (chunk: Buffer) => output += chunk)
     child.stderr.on('data', (chunk: Buffer) => output += chunk)
@@ -227,7 +239,7 @@ function slidev(args: string[], cwd: string): Promise<void> {
 
 /** `slidev slides.md` in `dir`; resolves with the URL it serves once it listens (Slidev takes the next free port). */
 function slidevDev(dir: string, args: string[]): Promise<{ url: string, close(): Promise<void> }> {
-  const child: ChildProcess = spawn(process.execPath, [slidevBin(), 'slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
+  const child: ChildProcess = spawn(process.execPath, [...TYPESCRIPT_IMPORT, slidevBin(), 'slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const close = async () => {
     if (child.exitCode === null) child.kill('SIGTERM')
