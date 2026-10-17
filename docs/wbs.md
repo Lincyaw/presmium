@@ -22,7 +22,7 @@
 | K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2（S 不阻塞 K；SHARED 模式在 S 通过前保持实验性） |
 | K2 | 先 WP-89b（串行），再并行 WP-89c、89d、89e、89f：第三轮验收审计的修复（`review-round3.md`） | K |
 | L0（v0.9） | 先 WP-92a 删除共享部署（串行），再并行 WP-92b 浏览器端读者问答、WP-89g K2 遗留与文档核对 | K2 |
-| L1（v0.9） | WP-95a 设计探索（只有设计稿，与 L0 并行）；用户选定方向后先 WP-95b 设计系统与应用外壳（串行），再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题 | L0；95b 还要用户选定设计方向 |
+| L1（v0.9） | WP-95a 设计探索（已完成）；WP-95b 设计系统与应用外壳在 WP-92a 合并后开始，与 WP-92b、WP-89g 并行；再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题 | 95b：WP-92a；95c、95d：95b 与 L0 |
 | L（M10） | 先 WP-93a 发布工程（串行），再并行 WP-93b 起步工具、WP-93c 文档与文档站 | L1 |
 | M（M11，1.1） | WP-94 hub 托管模板 | L |
 
@@ -1273,7 +1273,7 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 **拥有**：
 
 - `docs/**`，`requirements.md` 与 `wbs.md` 除外，它们由验收者维护；
-- `packages/compiler/**`、`packages/viewer/**`、`packages/workspace/**`、`packages/addon-exec/**`、`packages/addon-publish/**`、`packages/addon-lecture/**`；
+- `packages/compiler/**`、`packages/viewer/**`、`packages/workspace/**`（`src/client/**` 与 `src/domain/messages.ts` 除外，归 95b）、`packages/addon-exec/**`、`packages/addon-publish/**`、`packages/addon-lecture/**`；
 - `packages/server/src/auth.ts` 与 `packages/cli/src/cli.ts` 中 `serve` 的 `--host`（局域网访问）；
 - `packages/classroom-server/**`、`packages/addon-session/**`（课堂同步挂进服务）；
 - 技能中 92b 拥有的段落之外的部分（只为文档一致性改动，与 92b 改同一文件时只改不同的段落）；
@@ -1288,19 +1288,12 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - F-57 与 D-7，克隆音色：本机讲授路由按（IR，音色）缓存的已合成片段，在同意记录撤回后不再提供；每次取用时检查同意，或同意变化时清空缓存。
 - F-85，学生版 IR 不留旧的步骤键：`forAudience` 构建的学生视图不带完整版本写入的 `hints.slides.presmiumSteps`、`presmiumBack`（删除或在学生视图中重算），学生版的 `ir.json` 不出现教师专用块的标签。
 - F-85，回退章节：`backSection` 回退到学习者版本中有的、之前最近的章节，包括只给学生的章节。同时修订 `ir.md` 2.11。`{predict}` 之后紧跟教师专用 `:reveal:` 的情形，能简单修正就修正，否则写为已知限制。
-- F-55，重做的标签：撤销一次撤销时，历史显示“重做「…」”或“Redo "…"”，不显示与撤销相同的标签。
+- F-55，重做的标签：服务端在修订记录中区分撤销与重做（`reverts` 指向的提交本身是撤销时为重做）；历史面板的标签由 WP-95b 显示。
 - D-8，Python 执行器：本地 Python 执行器的指纹包含运行脚本（`runner.py`）的摘要，已缓存的录制在下一次构建时按 D-8 更新。
 - 不稳定的用例改稳：F-18 的范围导出用例在超时后重试，与 `tall` 用例一致；`e2e/lecture-writeback.spec.ts` 在上一用例撤销后等编辑控件就绪。
 - 局域网访问（决定 E-3 的修订）：`presmium serve --host <地址>`（如 `0.0.0.0`）允许非回环地址，启动时警告没有登录。站点的 Host 检查接受这个地址与本机的名字，同站的 Origin 检查照旧。用例：以本机的局域网地址打开首页与文档页，编辑模式与确认可用；另一站点的页面发来的请求仍被拒绝。验收者试用环境中临时的转发脚本随之不再需要。
 - 一个端口（用户反馈：为什么要这么多端口）：`presmium serve` 与 `presmium dev` 在自己的端口上同时提供课堂同步（与 `presmium-classroom-server` 相同的协议，挂在服务的一个路径下）。文稿没有设置 `presmium.session.server` 时，页面连到当前服务的这个路径。单独的课堂服务保留给发布到静态托管的站点。用例：在 `presmium serve` 中不另起进程，主讲开课、学习者加入并跟随。
-- 首页的使用说明（P-120，用户反馈：不知道怎么触发 agent）：工作区首页有“使用说明”，中英文，内容包括：
-  - 管理文档、修改历史与撤销；
-  - 编辑模式中的“AI 修改”：批注、对话、审阅；
-  - 模型设置；
-  - 读者的提问；
-  - 用 MCP 连接外部 agent（地址与令牌在哪里）。
-
-  文档站（WP-93c）发布后链接过去。
+- 首页的使用说明移到 WP-95b，与首页的改版一起做。
 - N-05 与 R-27（WP-89e 验证者的发现）：网页放映视图中运行面板的参数输入与运行按钮继承代码的字号（现在 13.3 px，低于 18 px）；幻灯片中运行后输出栏占去一半宽度时，长代码行不被横向截断（自动换行或可横向滚动并有提示）；示例讲义 `extend-c`、`extend-train` 的 `zoom`（0.65、0.75）使代码低于 18 px，改为让代码在幻灯片中滚动或拆页，去掉这两个 `zoom`。验收者已决定 `extend-gpu` 不用 `zoom`，着色器在面板中滚动（`e2e/demo.spec.ts`）。
 - C-9 文档核对：K2 各组报告的作者与运营者可见的变化（`/tmp/claude-1000/-home-ddq-AoyangSpace-presmium/ad4777b2-3f0f-4adb-9e14-744177671948/scratchpad/k2-summaries.txt` 中各组的 “Doc-visible changes”“Behaviour changes for docs”），逐条核对 `docs/` 与技能是否写入，补齐。只关于共享部署的条目不写。宿主契约 `NavigationPosition.section` 的注释与 `ir.md` 2.11 一致。
 - 删除文档中的共享部署，位置见清单第 4 节：
@@ -1337,12 +1330,12 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 
 **结果（2026-10-17，由验收者完成）**：用户选定工作台的布局与编辑方式、书卷的样式。参考稿、布局与令牌在 `docs/design/`（`README.md`，`home.dc.html`、`edit.dc.html`、`slide.dc.html`）。WP-95b 把它们写入 `architecture.md` 5.x。
 
-### WP-95b 设计系统与应用外壳（用户选定方向后，串行）
+### WP-95b 设计系统与应用外壳（WP-92a 合并后，与 92b、89g 并行）
 
 **拥有**：
 
 - `packages/host/**`：设计令牌，作为 CSS 自定义属性，分明暗两套；通用组件；`useTheme`；
-- `packages/workspace/src/client/**`：首页、文档管理、修改历史、编辑开关；
+- `packages/workspace/src/client/**` 与 `packages/workspace/src/domain/messages.ts`：首页、文档管理、修改历史、编辑开关；首页的使用说明（原在 89g）；F-55 重做的标签（原在 89g）；
 - 工具栏与网页形态的外壳（`packages/web/**` 的主题部分）：工作区的活动栏、侧栏、启动台首页与状态栏（`docs/design/home.dc.html`）；网页形态的阅读页用书卷的排版；
 - `architecture.md` 5.x。
 
