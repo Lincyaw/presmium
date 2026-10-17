@@ -1,17 +1,21 @@
 import type { Navigation } from '@presmium/host'
 import { useNav } from '@slidev/client'
 import { computed } from 'vue'
+import { sectionOf, slideSections } from '../domain/index.ts'
+import type { SlideSections } from '../domain/index.ts'
 
 /**
- * The frontmatter key that names a slide's section (D-4): the slides renderer
- * writes each section's id there; the full and the student build number
- * their slides apart, the ids are the same.
+ * The deck's slides and the sections they name (`presmiumId` in each slide's
+ * frontmatter, D-4), as Slidev's navigation lists them. Must be called in a
+ * component setup (the root setup).
  */
-const SECTION_KEY = 'presmiumId'
-
-function sectionOf(frontmatter: Record<string, unknown> | undefined): string | undefined {
-  const id = frontmatter?.[SECTION_KEY]
-  return typeof id === 'string' && id ? id : undefined
+export function useSlideSections(): () => SlideSections {
+  const { slides } = useNav()
+  const sections = computed(() => slideSections(slides.value.map(route => ({
+    no: route.no,
+    id: sectionOf((route.meta.slide as { frontmatter?: Record<string, unknown> } | undefined)?.frontmatter),
+  }))))
+  return () => sections.value
 }
 
 /**
@@ -22,18 +26,18 @@ function sectionOf(frontmatter: Record<string, unknown> | undefined): string | u
  * position without a section, or a deck whose slides name none, moves by the
  * slide's number. Must be called in a component setup (the root setup).
  */
-export function createSlidevNavigation(): Navigation {
-  const { currentSlideNo, clicks, currentFrontmatter, go, slides } = useNav()
+export function createSlidevNavigation(sections = useSlideSections()): Navigation {
+  const { currentSlideNo, clicks, currentFrontmatter, go } = useNav()
   return {
     position: computed(() => {
       const section = sectionOf(currentFrontmatter.value)
       return { slide: currentSlideNo.value, step: clicks.value, ...section ? { section } : {} }
     }),
     go({ slide, step, section }) {
-      const sections = slides.value.map(route => ({ no: route.no, id: sectionOf((route.meta.slide as { frontmatter?: Record<string, unknown> } | undefined)?.frontmatter) }))
-      if (section === undefined || !sections.some(s => s.id)) return void go(slide, step)
-      const target = sections.find(s => s.id === section)
-      if (target) void go(target.no, step)
+      const own = sections()
+      if (section === undefined || !own.named) return void go(slide, step)
+      const target = own.noOf(section)
+      if (target !== undefined) void go(target, step)
     },
   }
 }

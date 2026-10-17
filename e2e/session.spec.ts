@@ -347,8 +347,8 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
       writeFileSync(file, readFileSync(file, 'utf8').replace('renderers:\n', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:\n`))
     }
     ;[full, student] = await Promise.all([
-      buildFixture('session/audience', { to: 'web', edit: server }),
-      buildFixture('session/audience', { to: 'web', audience: 'student', edit: server }),
+      buildFixture('session/audience', { edit: server }),
+      buildFixture('session/audience', { audience: 'student', edit: server }),
     ])
   })
 
@@ -393,6 +393,47 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     const overview = presenter.getByRole('dialog', { name: '课堂互动' })
     expect([full.slide('follow-ask'), student.slide('follow-ask')]).toEqual([4, 3])
     await expect(overview.getByRole('region', { name: '提问' }).locator('.pm-classroom-panel__where')).toHaveText('第 4 节 · 提问')
+    await close()
+  })
+
+  test('in the slides form too, a learner of the student build follows the presenter of the full build to the same slide by its section, and sees the presenter\'s drawings there (F-85)', async ({ browser }) => {
+    const { presenter, learner, close } = await people(browser)
+    const slide = (page: Page, heading: string) => page.locator('.slidev-page').getByRole('heading', { name: heading })
+    await presenter.goto(`${full.slides}/presenter/1`)
+    await presenter.locator('.pm-presenter-panels summary').click()
+    const panel = presenter.locator('[data-panel="presmium.session"]')
+    await panel.getByLabel('昵称').fill('王老师')
+    await panel.getByRole('button', { name: '创建课堂' }).click()
+    const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
+    await learner.goto(`${student.slides}/?room=${new URL(link).searchParams.get('room')}&name=${encodeURIComponent('小明')}`)
+    await expect(badge(learner)).toContainText('正在跟随主讲')
+    await expect(slide(learner, '跟随与受众')).toBeVisible()
+
+    // The teacher's section is the presenter's slide 2 and no slide of the learner's: the learner stays
+    // on the cover (Slidev's own state names slide 2, the learner's rules, but goes by section).
+    await presenter.keyboard.press('ArrowRight')
+    await expect(presenter).toHaveURL(/\/presenter\/2(\?|$)/)
+    await learner.waitForTimeout(1500)
+    await expect(learner).toHaveURL(/\/1(\?|$)/)
+    // The rules: the presenter's slide 3 is the learner's slide 2.
+    await presenter.keyboard.press('ArrowRight')
+    await expect(learner).toHaveURL(/\/2(\?|$)/)
+    await expect(slide(learner, '合并规则')).toBeVisible()
+    // The presenter's drawing on the rules shows on the learner's rules, and not on the learner's slide 3.
+    await presenter.getByTitle('Show drawing toolbar').click()
+    const box = (await presenter.locator('.slidev-slide-content').first().boundingBox())!
+    await presenter.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.7)
+    await presenter.mouse.down()
+    for (let i = 1; i <= 10; i++) await presenter.mouse.move(box.x + box.width * (0.3 + i * 0.03), box.y + box.height * 0.7 - i * 4)
+    await presenter.mouse.up()
+    const strokes = learner.locator('.slidev-slide-content > svg path')
+    await expect(strokes).not.toHaveCount(0)
+    // The question box: the presenter's slide 4, the learner's 3.
+    await presenter.keyboard.press('ArrowRight')
+    await expect(learner).toHaveURL(/\/3(\?|$)/)
+    await expect(slide(learner, '提问')).toBeVisible()
+    await expect(strokes).toHaveCount(0)
+    await expect(badge(learner)).toContainText('正在跟随主讲')
     await close()
   })
 })

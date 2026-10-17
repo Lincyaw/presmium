@@ -7,13 +7,15 @@ plugins:
   - '@presmium/slidev-addon-classroom'
 renderers:
   web: {}
+  slides:
+    theme: default
 ---
 
 (follow-cover)=
 # 跟随与受众
 
 :::{slide}
-e2e/session.spec.ts 的测试文稿（D-4，F-85）：主讲用完整构建，学习者用学生构建。
+e2e/session.spec.ts 的测试文稿（D-4，F-85）：主讲用完整构建，学习者用学生构建，网页与幻灯片两种形态。
 :::
 
 教师专用的一节在前，所以两种构建给章节的序号不同；学习者按章节 ID 跟随主讲。

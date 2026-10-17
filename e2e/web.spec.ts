@@ -697,6 +697,8 @@ test.describe('the fixture deck in the web form', () => {
   })
 
   test('the plugins start in the web form as in the slides: the start reports agree', async ({ page }) => {
+    // Two presenter windows, one of each form, load one after the other.
+    test.setTimeout(120_000)
     // The start report is a presenter panel in both forms: the presenter window of the web form, the presenter view of the slides.
     const plugins = async () => {
       await page.locator('.pm-presenter-panels summary').click()

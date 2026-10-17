@@ -32,10 +32,15 @@ export interface AdhocCue {
 /** How often a cue looks for its target again, which a page layout or a move may have changed. */
 const REFRESH_MS = 250
 
-/** Visible elements of the page that are not under a modal view (the present view makes the page under it inert). */
+/**
+ * The first element a selector cue names that the audience sees, by the rule
+ * `blockElement` follows for blocks: not under a modal view (`[inert]`, as
+ * the present view makes the page under it), not hidden at the current step
+ * (`.pm-hidden`), laid out.
+ */
 function visible(elements: Iterable<HTMLElement>): HTMLElement | undefined {
   for (const el of elements) {
-    if (!el.closest('[inert]') && el.getClientRects().length > 0) return el
+    if (!el.closest('[inert], .pm-hidden') && el.getClientRects().length > 0) return el
   }
   return undefined
 }

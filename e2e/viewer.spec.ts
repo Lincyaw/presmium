@@ -698,7 +698,8 @@ async function restingScroll(page: Page): Promise<number> {
 }
 
 test.describe('presmium dev', () => {
-  test.describe.configure({ mode: 'serial', timeout: 120_000 })
+  // A dev page may take `openDevPage`'s whole 120 s to be ready on a loaded machine; the case's own steps come after.
+  test.describe.configure({ mode: 'serial', timeout: 240_000 })
   let dev: Awaited<ReturnType<typeof devDeck>>
   test.beforeAll(async () => {
     test.setTimeout(180_000)

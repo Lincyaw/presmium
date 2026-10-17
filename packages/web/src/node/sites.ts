@@ -173,7 +173,11 @@ function decoded(text: string): string {
  * The document of the workspace a block's URL links to (`RenderContext.documentLink`,
  * C-4): a document's entry file or its directory, by its real path, with the
  * URL's fragment. The site's context gives it when its host does; else it is
- * found here as the compiler finds it.
+ * found here as the compiler finds it: the workspace's site context
+ * (`siteContext` of @presmium/workspace, which `presmium build` and `serve`
+ * use for a workspace) gives neither `documentLink` nor the compiler's guard
+ * against publishing a document's source, so this copy and the guard in
+ * `documentContext` stay until it does.
  */
 function documentLinkOf(ctx: RenderContext): (source: SourcePos, url: string) => DocumentLink | undefined {
   if (ctx.documentLink) return (source, url) => ctx.documentLink!(source, url)
