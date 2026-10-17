@@ -488,7 +488,14 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
 
     it('serves a reader only what the student view\'s pages load through the site\'s dev server, nor the history; an editor the whole document', async () => {
       const path = '/course/@fs/workspace/course/lecture.md?raw'
-      expect((await route('reader@test', '/course/')).status).toBe(200)
+      // A reader's page is the static site built for students (D17): the page that says it is being updated until the first build.
+      let page = await route('reader@test', '/course/')
+      for (let i = 0; page.status === 503 && i < 240; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        page = await route('reader@test', '/course/')
+      }
+      expect(page.status, page.text).toBe(200)
+      expect(page.text).not.toContain(TEACHER)
       const reader = await route('reader@test', path)
       expect(reader.status).toBe(404)
       expect(reader.text).not.toContain(TEACHER)
@@ -503,8 +510,15 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
       for (const file of ['/opt/presmium/package.json', '/opt/presmium/packages/workspace/src/node/files.ts', '/opt/presmium/packages/cli/bin/presmium.mjs']) {
         expect((await route('reader@test', `/course/@fs${file}?raw`)).status, file).toBe(404)
       }
-      expect((await route('reader@test', '/course/@fs/workspace/course/components/Probe.vue?raw')).status).toBe(200)
-      expect((await route('reader@test', '/course/@fs/opt/presmium/packages/viewer/src/viewer.ts')).status).toBe(200)
+      // No source at all reaches a reader, not even the deck's component or Presmium's browser code: only the built files.
+      expect((await route('reader@test', '/course/@fs/workspace/course/components/Probe.vue?raw')).status).toBe(404)
+      expect((await route('reader@test', '/course/@fs/opt/presmium/packages/viewer/src/viewer.ts')).status).toBe(404)
+      // Nor an absolute path given directly after the document's base (WP-91's second review), nor a module of a dev server.
+      for (const probe of ['/course/workspace/course/solution.py?import&raw', '/course/workspace/course/answers.json?import', '/course/workspace/course/lecture.md?import&raw', '/course/@id/__x00__virtual:presmium/ir', '/course/@vite/client', '/course/lecture.md?raw', '/course/%2e%2e/presmium.workspace.yaml', '/course/%252e%252e/presmium.workspace.yaml']) {
+        const answer = await route('reader@test', probe)
+        expect(answer.status, probe).toBe(404)
+        expect(answer.text, probe).not.toContain(TEACHER)
+      }
       expect((await asSandbox('rm /workspace/course/components/Answer.js')).code).toBe(0)
       const editor = await route('editor@test', path)
       expect(editor.status).toBe(200)
@@ -539,6 +553,11 @@ describe.skipIf(!docker)('a shared deployment on the compose template', () => {
       const files = (await exec('serve', ['stat', '-c', '%u %F', `/workspace/talk/lectures/${track}/${src}`, `/workspace/talk/lectures/${track}/track.json`])).stdout.trim().split('\n')
       expect(files).toEqual(['1003 regular file', '1003 regular file'])
       expect((await exec('serve', ['cat', `/workspace/talk/lectures/${track}/${src}`])).stdout).toBe('OggS recorded')
+      // A reader reads no file through a link the sandbox puts among the lecture's files (WP-91b).
+      expect((await asSandbox(`ln -sfn /workspace/.git/config /workspace/talk/lectures/${track}/audio/planted.ogg`)).code).toBe(0)
+      const planted = await route('reader@test', `/__presmium/presmium.lecture/tracks/${track}/audio/planted.ogg`, { document: 'talk' })
+      expect(planted.status).toBe(404)
+      expect(planted.text).not.toContain('[core]')
       // The page compiled in serve (and its site in agent-host) with a remote image at the probe: nothing fetched it.
       expect((await route('editor@test', '/talk/')).status).toBe(200)
       expect((await raw(`http://127.0.0.1:${LOGIN}/__probes`)).json<string[]>()).toEqual([])

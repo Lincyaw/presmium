@@ -135,6 +135,15 @@ export function pathParts(pathname: string): string[] | undefined {
   return parts
 }
 
+/** Whether a request is for a page of a site (a directory's index, an `.html` file, a page without its extension), not for a file or a module. */
+function pageLike(rest: string[], target: string): boolean {
+  const query = target.includes('?') ? target.slice(target.indexOf('?') + 1) : ''
+  if (/(?:^|&)(?:raw|import|url|inline|worker|direct)(?:[=&]|$)/.test(query)) return false
+  if (rest.some(part => part.startsWith('@') || part.startsWith('__'))) return false
+  const last = rest.at(-1) ?? ''
+  return last === '' || last.endsWith('.html') || !last.includes('.')
+}
+
 /** A regular file of a build at `parts` (a directory's `index.html`, a page without its `.html`); undefined for none. */
 function buildFile(dir: string, parts: string[]): string | undefined {
   const names = parts.at(-1) === '' ? [...parts.slice(0, -1), 'index.html'] : parts
@@ -462,7 +471,9 @@ export class StudentSite {
     }
     this.#ask(entry)
     const [current, before] = entry.builds
-    if (!current) return this.#pending(req, res, dir, entry)
+    // Before the first build only a page gets the page that says it is being updated; an asset, a dev server's
+    // module (`@id`, `@fs`, `?raw`, ...) or any other file is not there.
+    if (!current) return pageLike(rest, target) ? this.#pending(req, res, dir, entry) : notFound(res)
     const file = buildFile(current.dir, rest) ?? (before && rest[0] === 'assets' ? buildFile(before.dir, rest) : undefined)
     if (file) return sendFile(req, res, file)
     const missing = buildFile(current.dir, ['404.html'])

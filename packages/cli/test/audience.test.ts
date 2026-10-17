@@ -129,23 +129,41 @@ describe('presmium serve with a login proxy (SHARED): readers see the student vi
     remove(dir)
   }, 60_000)
 
-  it('gives a reader\'s page, IR module and search index no teacher\'s sentence, an editor\'s all; a reader\'s tutor token reads the student view', async () => {
+  it('gives a reader only the static site built for students (D17): no teacher\'s sentence in its pages and assets, no module of a dev server; an editor gets the live pages with all', async () => {
     const reader = setup.as('reader@test')
     const editor = setup.as('editor@test')
-    const page = await raw(`${setup.url}/course/`, { headers: reader })
-    expect(page.status).toBe(200)
-    // The module of the IR the page loads (`virtual:presmium/ir`), and the search index, as the reader's browser asks for them.
-    const module = await raw(`${setup.url}/course/@id/__x00__virtual:presmium/ir`, { headers: reader })
-    expect(module.status, module.text).toBe(200)
-    expect(module.text).toContain('STUDENTVISIBLE')
-    const index = await raw(`${setup.url}/course/@localSearchIndexroot`, { headers: reader })
-    expect(index.status, index.text).toBe(200)
-    expect(index.text.toLowerCase()).toContain('studentvisible')
-    // The nested tip too; and a student's {ref} to the teacher's section does not take its title ("现场演示要点 DEMOTIPS").
-    for (const text of [...TEACHER, 'tipkey58']) {
-      for (const answer of [page, module, index]) expect(answer.text.toLowerCase(), text).not.toContain(text)
+    // Before its first build a reader gets the page that says the site is being updated (503); then the built page.
+    let page = await raw(`${setup.url}/course/`, { headers: reader })
+    for (let i = 0; page.status === 503 && i < 240; i++) {
+      expect(page.text).toContain('<meta http-equiv="refresh"')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      page = await raw(`${setup.url}/course/`, { headers: reader })
     }
-    // The editor's page is the same shell; what it shows, its IR module and search index, holds the teacher's content.
+    expect(page.status, page.text).toBe(200)
+    expect(page.text).toContain('STUDENTVISIBLE')
+    // Every file the page links (scripts, styles, preloaded chunks), as the reader's browser loads them, then the search index they import.
+    const seen = new Map<string, string>()
+    const links = (text: string, from: string) => [...text.matchAll(/(?:src|href)="([^"#?]+\.(?:js|css|json))"|(?:import\(|from )["'](\.{0,2}\/[^"']+\.js)["']/g)]
+      .map(m => new URL(m[1] ?? m[2]!, new URL(from, 'http://site')).pathname)
+    const queue = links(page.text, '/course/')
+    while (queue.length > 0 && seen.size < 400) {
+      const path = queue.shift()!
+      if (seen.has(path)) continue
+      const asset = await raw(`${setup.url}${path}`, { headers: reader })
+      expect(asset.status, path).toBe(200)
+      seen.set(path, asset.text)
+      if (path.endsWith('.js')) queue.push(...links(asset.text, path))
+    }
+    expect([...seen.keys()].some(path => /localSearchIndex|search/i.test(path) || /studentvisible/i.test(seen.get(path)!)), 'the search index among the assets').toBe(true)
+    for (const text of [...TEACHER, 'tipkey58']) {
+      expect(page.text.toLowerCase(), text).not.toContain(text)
+      for (const [path, body] of seen) expect(body.toLowerCase(), `${text} in ${path}`).not.toContain(text)
+    }
+    // A reader's request for what only a dev server answers gets 404: its modules, files by path, sources.
+    for (const path of ['/course/@id/__x00__virtual:presmium/ir', '/course/@localSearchIndexroot', `/course/@fs${join(dir, 'course/lecture.md')}?raw`, `/course${join(dir, 'course/lecture.md')}?import&raw`, '/course/lecture.md?raw', '/course/@vite/client']) {
+      expect((await raw(`${setup.url}${path}`, { headers: reader })).status, path).toBe(404)
+    }
+    // The editor's page is the live one: its IR module and search index hold the teacher's content.
     const full = await raw(`${setup.url}/course/@id/__x00__virtual:presmium/ir`, { headers: editor })
     for (const text of ['TEACHERONLY42', 'GUIDEONLY17', 'TIPKEY58']) expect(full.text).toContain(text)
     const editorIndex = await raw(`${setup.url}/course/@localSearchIndexroot`, { headers: editor })

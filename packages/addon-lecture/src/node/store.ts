@@ -6,7 +6,7 @@
  * published under an external URL (a prefix), still ignored here.
  */
 import { createHash } from 'node:crypto'
-import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { dirname, join, relative, sep } from 'node:path'
 import type { DocumentFiles } from '@presmium/kernel'
@@ -81,11 +81,27 @@ export interface StoredTrack {
   problems: string[]
 }
 
+/**
+ * Whether `file` is a regular file inside the deck once its links are
+ * resolved: what serve reads for readers lies in directories the sandbox may
+ * write (SHARED), where a link could point at the git directory, the
+ * workspace's settings or another document (WP-91b).
+ */
+export function insideDeck(deckDir: string, file: string): boolean {
+  try {
+    const real = realpathSync(file)
+    const deck = realpathSync(deckDir)
+    return (real === deck || real.startsWith(`${deck}${sep}`)) && !real.split(sep).includes('.git') && statSync(real).isFile()
+  } catch {
+    return false
+  }
+}
+
 /** Track `id` as stored; undefined when there is none. Throws on a file that is no track. */
 export function readTrack(deckDir: string, id: string): StoredTrack | undefined {
   const dir = trackDir(deckDir, id)
   const file = dir && join(dir, TRACK_FILE)
-  if (!file || !existsSync(file)) return undefined
+  if (!file || !existsSync(file) || !insideDeck(deckDir, file)) return undefined
   const text = readFileSync(file, 'utf8')
   const { track, problems } = parseTrack(JSON.parse(text))
   if (!track) throw new Error(`${relative(deckDir, file)}: ${problems.join('; ')}`)

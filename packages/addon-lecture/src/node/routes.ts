@@ -37,7 +37,7 @@ import { clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, tra
 import { latestDoc, latestView, lectureConfig } from './plan.ts'
 import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
-import { deckFiles, freeMediaPath, mediaFile, mediaPolicy, newTrackId, readTrack, sha256File, trackDir, trackIds, writeGitFiles, writeTrack } from './store.ts'
+import { deckFiles, freeMediaPath, insideDeck, mediaFile, mediaPolicy, newTrackId, readTrack, sha256File, trackDir, trackIds, writeGitFiles, writeTrack } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
 /** The largest chunk a recording uploads at once, and the largest media file. */
@@ -338,13 +338,13 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
             }
             if (path[0] === CLIPS_DIR && path.length === 2) {
               const clip = clipFile(deckDir, decoded(path.slice(1)))
-              return clip && existsSync(clip) ? serveFile(clip, request) : problem(404, 'no such clip')
+              return clip && existsSync(clip) && insideDeck(deckDir, clip) ? serveFile(clip, request) : problem(404, 'no such clip')
             }
           } catch (error) {
             return error instanceof Refusal ? problem(error.status, error.message) : problem(500, errorMessage(error))
           }
           const file = mediaFile(deckDir, id, decoded(path))
-          return file && existsSync(file) ? serveFile(file, request) : problem(404, 'no such file')
+          return file && existsSync(file) && insideDeck(deckDir, file) ? serveFile(file, request) : problem(404, 'no such file')
         },
       },
       'speech': {

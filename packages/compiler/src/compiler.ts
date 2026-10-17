@@ -478,7 +478,7 @@ export class Compiler {
     doc.diagnostics = sortFindings(findings)
     // A build for an audience compiled only part of the deck: the recordings of the rest stay.
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
-    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins) }
+    const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins), ...workspace.scope ? { scope: workspace.scope } : {} }
 
     return {
       doc,
