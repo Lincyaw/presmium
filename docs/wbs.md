@@ -840,7 +840,7 @@ WP-81、WP-83、WP-86、WP-87 合并后（main 7ccc6b5）验证遗留的问题�
 **WP-81e2 编译与站点**（拥有 `packages/compiler`、`packages/cli`、`packages/web`、`packages/workspace`、`packages/render-*`、`e2e/site.spec.ts`、`e2e/workspace*.spec.ts`、`e2e/fixtures/publish-checks/**` 及相关夹具）：
 
 1. 译本按受众编译：`--audience student` 与 `presmium serve` 的学生视图中，译本同样去掉教师内容；用例（含教师章节的中文文稿与英文译本，学生版两种语言都没有教师内容）。
-2. `{audience}` 没有受众名时只给教师（失败即关闭），并报错；被删除章节的诊断不留在学生版的 IR 中；`{include}` 带受众且被引入的文件开启章节时，其后的内容不被误归为教师内容（或给出诊断）。
+2. `{audience}` 没有受众名时不给任何受众（失败即关闭，比“只给教师”更严；验收者决定），并报错；被删除章节的诊断不留在学生版的 IR 中；`{include}` 带受众且被引入的文件开启章节时，其后的内容不被误归为教师内容（或给出诊断）。
 3. 工作区的 `ServerHost.build` 遵守 `student` 视图。
 4. 发布目录时不发布隐藏文件与目录、`node_modules`；目录发布的哈希按文件缓存；原始 HTML 的地址改写只匹配真正的属性（用 HTML 解析，不用正则）。
 5. 译本编译不在作者的文稿目录中写临时文件；不再用诊断数组的访问器替换来合并过期诊断；工作区站点中声明译本的文档要么生成语言切换，要么给出诊断。
