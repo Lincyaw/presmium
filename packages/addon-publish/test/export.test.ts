@@ -75,6 +75,15 @@ it('fails, rather than pass for the slides, when slidev export captures the prin
   expect(readdirSync(join(dir, 'pages')).sort()).toEqual(['001-01.png', '002-01.png', '002-02.png'])
 }, 180_000)
 
+it('fails when the PDF does not have the pages of the range, rather than pass for them with other pages (F-18)', async () => {
+  const dir = copyFixture('late')
+  // Captured before the app shows a slide, the PDF has one blank page: the range's slide has two, with its click.
+  const { code, stdout, stderr } = await bin('presmium-export', dir, '--with-clicks', '--range', '2', '--output', 'part.pdf', '--json')
+  expect(code, stderr).toBe(2)
+  expect(stdout).toBe('')
+  expect(stderr).toContain('presmium-export: the PDF has 1 pages where the range has 2 (3 for the whole deck); it cannot be cut to the range')
+}, 180_000)
+
 /** The text of each page of a PDF. */
 async function pdfText(file: string): Promise<string[]> {
   const pdf = await getDocument({ data: new Uint8Array(readFileSync(file)) }).promise

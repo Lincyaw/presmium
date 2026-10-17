@@ -1,7 +1,7 @@
 /**
  * The workspace pass of the local environment. It settles the deck's
  * workspace (`presmium.execLocal.workspace` relative to the deck, else the
- * first `{local-env}` that names one, else the repository root) and
+ * first `{local-env}` that names one, else the workspace root) and
  * - binds the container executor to it for compile-time execution;
  * - writes it, relative to the deck, into the deck's configuration, so the
  *   routes (`server` of ./presmium.ts) find it; the published forms carry

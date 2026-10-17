@@ -1,5 +1,6 @@
 import { escapeHtml, EXECUTOR, isRecord } from '@presmium/kernel'
 import type { RunOutput, RunResult } from '@presmium/kernel'
+import { useNav } from '@slidev/client'
 import type { CodeRunner, CodeRunnerOutput } from '@slidev/types'
 import { defineCodeRunnersSetup } from '@slidev/types'
 import DOMPurify from 'dompurify'
@@ -64,10 +65,20 @@ function recorded(recording: Recording, why?: string): CodeRunnerOutput[] {
 
 /**
  * The runners' options already shown once: a runner's first call, when its
- * slide loads (`autorun: 'once'`, and in print mode), shows the recording;
- * it runs the code only when asked (the run button).
+ * slide loads (`autorun: 'once'`), shows the recording; it runs the code
+ * only when asked (the run button). A printed slide (`slidev export`, the
+ * browser exporter) always shows the recording: printing with clicks draws
+ * the slide once per click, each a runner of its own with the same options.
  */
 const shown = new WeakSet<object>()
+
+function showsRecording(options: Record<string, unknown>): boolean {
+  if (typeof options.block !== 'string') return false
+  if (useNav().isPrintMode.value) return true
+  if (shown.has(options)) return false
+  shown.add(options)
+  return true
+}
 
 /**
  * The languages of the runners: those the slides renderer writes as
@@ -93,10 +104,7 @@ const RUNNER_LANGS = ['python', 'py', 'python3', 'javascript', 'js', 'typescript
 function runner(lang: string): CodeRunner {
   return async (code, { options }) => {
     const recording = recordingOf(options)
-    if (typeof options.block === 'string' && !shown.has(options)) {
-      shown.add(options)
-      return recording ? recorded(recording) : [{ text: messages().runHint, class: 'pm-run-hint' }]
-    }
+    if (showsRecording(options)) return recording ? recorded(recording) : [{ text: messages().runHint, class: 'pm-run-hint' }]
     const executor = await whenService(EXECUTOR)
     if (!executor) return recording ? recorded(recording, messages().unavailable) : [{ error: messages().unavailable }]
     const text = (key: string) => (typeof options[key] === 'string' && options[key] ? options[key] as string : undefined)

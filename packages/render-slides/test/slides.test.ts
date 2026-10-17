@@ -239,7 +239,7 @@ it('shows tags that name no HTML element as text, and reports a slide that does 
   expect(broken.output).not.toContain('__slidev_')
 }, 180_000)
 
-it('gives code that runs live one output area, its runner\'s, which shows the recording until the code runs; shows an HTML table whole, sanitized, in the slide and its export (F-18, F-65)', async () => {
+it('gives code that runs live one output area, its runner\'s, which shows the recording until the code runs and on every printed page; shows an HTML table whole, sanitized, in the slide and its export (F-18, F-65)', async () => {
   const target = join(out, 'live')
   const built = await build(['build', '--to', 'slides', '--out', target], LIVE_DECK)
   expect(built.code, built.output).toBe(0)
@@ -281,14 +281,24 @@ it('gives code that runs live one output area, its runner\'s, which shows the re
     await site.close()
   }
 
+  // Printed with clicks, a slide is drawn once per click, each a runner of its own: every one shows the
+  // recording (made on Linux), none runs the code (in Pyodide, sys.platform is emscripten).
   const pdf = join(target, 'table.pdf')
-  const exportTable = () => slidev(['export', '.presmium/slides/slides.md', '--range', String(slide('table')), '--output', pdf], LIVE_DECK)
+  const exportTable = () => slidev(['export', '.presmium/slides/slides.md', '--range', `${slide('table')},${slide('printed')}`, '--with-clicks', '--output', pdf], LIVE_DECK)
   let exported = await exportTable()
   // The deck's first export may find Vite still optimizing the execution plugin's dependencies, which a
   // busy machine makes outlast the print page's wait: once more, with the dependencies optimized.
   if (exported.code !== 0 && /Timeout/.test(exported.output)) exported = await exportTable()
   expect(exported.code, exported.output).toBe(0)
-  const text = (await pdfText(pdf)).join('\n')
+  const pages = await pdfText(pdf)
+  const text = pages.join('\n')
   expect(text).toContain('row 0')
   expect(text).toContain('row 11')
-}, 240_000)
+  const printed = pages.filter(page => page.includes('PRINTED'))
+  expect(printed).toHaveLength(2)
+  for (const page of printed) {
+    expect(page).toContain('预录输出')
+    expect(page).toContain('PRINTED linux')
+  }
+  expect(text).not.toContain('emscripten')
+}, 300_000)

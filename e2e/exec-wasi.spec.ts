@@ -5,7 +5,7 @@ import { openSlide, useFixture } from './fixtures/deck.ts'
 // e2e/fixtures/exec-wasi, built by `presmium build` (WP-74, P-103): a C program that the build
 // records on the WASI binaries in Node, and that the page compiles with the same clang and runs in
 // a worker. The runtime files are published with each form, with their licenses, and the web
-// form's service worker precaches them, so a page loaded once runs the program offline. In the
+// form's service worker keeps them, so a page that has run the program once runs it offline. In the
 // slides the program runs in Slidev's Monaco runner (WP-79e2). The deck's plugin is linked in,
 // since the demo does not depend on it. The first run downloads clang (some 50 MB).
 test.describe.configure({ mode: 'default' })
@@ -34,10 +34,12 @@ test('a C program runs in the browser with the output recorded at compile time, 
   await expect(block.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
   const recorded = await block.locator('.pm-output__stdout').textContent()
   expect(recorded).toBe('1 + 2 + ... + 100 = 5050\n')
+  // The first run goes through the service worker, which keeps the runtime it fetches (D-6).
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null)
   expect(await run(block)).toBe(recorded)
 
-  // Offline once the service worker has precached the build, the HTTP cache cleared: the page and
-  // the runtime come from the service worker, and a fresh worker compiles and runs the program.
+  // Offline, the HTTP cache cleared: the page and the runtime come from the service worker, and a
+  // fresh worker compiles and runs the program.
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
   await context.setOffline(true)
   await (await context.newCDPSession(page)).send('Network.clearBrowserCache')

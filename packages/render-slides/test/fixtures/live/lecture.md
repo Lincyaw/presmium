@@ -37,3 +37,17 @@ from IPython.display import HTML
 rows = "".join(f"<tr><td>row {i}</td><td>{i * i}</td></tr>" for i in range(12))
 display(HTML(f"<style scoped>.dataframe td {{ color: red }}</style><table><thead><tr><th>name</th><th>square</th></tr></thead><tbody>{rows}</tbody></table><script>window.fixtureScript = 1</script>"))
 ```
+
+(printed)=
+## 逐步出现
+
+```{code} python
+:run: both
+import sys
+print("PRINTED", sys.platform)
+```
+
+:::{slide}
+:reveal:
+第二步
+:::

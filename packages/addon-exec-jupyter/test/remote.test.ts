@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import type { CodeNode, ComponentNode, IRDocument } from '@presmium/kernel'
 import { docBlocks } from '@presmium/kernel'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { jupyterProvider } from '../src/node/environments.ts'
+import plugin from '../src/node/presmium.ts'
 import type { Jupyter } from './helpers.ts'
 import { closedPort, compose, dockerCompose, nvidiaGpu, PACKAGES, presmium, remove, startJupyter, testDeck } from './helpers.ts'
 
@@ -143,8 +143,11 @@ print("after", round(time.time() - started) < 30)
     expect((await runs.json() as { content: unknown[] }).content).toEqual([])
   }, 300_000)
 
+  // No block of a deck sends files to an environment: the Executor contract's callers do (a classroom
+  // exercise's check sends the learner's code and the checks as files). So the case calls the plugin's
+  // environment provider as the compiler does, from the entry it loads (`./presmium`).
   it('puts a run\'s files in its working directory, where the code reads them', async () => {
-    const executor = await jupyterProvider.create('remote', { kind: 'jupyter' }, {
+    const executor = await plugin.environments!.jupyter!.create('remote', { kind: 'jupyter' }, {
       deckDir: dir,
       workspaceRoot: dir,
       secret: name => (env() as Record<string, string>)[name],

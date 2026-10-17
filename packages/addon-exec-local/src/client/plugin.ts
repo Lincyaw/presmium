@@ -22,7 +22,7 @@ const plugin: PluginDefinition = {
     kernel: '^0.1.0',
     provides: [LOCAL_ENV],
     requires: [{ token: EXECUTOR, optional: true }],
-    capabilities: ['exec', 'fs', 'git'],
+    capabilities: ['exec', 'fs'],
   },
   setup(ctx) {
     const env = createLocalEnv()

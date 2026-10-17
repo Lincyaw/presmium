@@ -3,10 +3,12 @@
  * "Save for offline use" in the toolbar (D-6): where the page's service
  * worker caches the heavy runtimes on first use (the web form's), it fetches
  * them all now, so code runs offline before it has run once. Shown only
- * when the service worker offers it; once they are saved it says so.
+ * when the service worker offers it; once they are saved it says so. On a
+ * first visit the page has no service worker yet when this mounts: it asks
+ * again once one controls the page.
  */
 import { useMessages } from '@presmium/host'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { offlineRuntimes, saveOffline } from '../src/client/offline.ts'
 import { MESSAGES } from '../src/domain/index.ts'
 
@@ -14,12 +16,20 @@ const t = useMessages(MESSAGES)
 const state = ref<'hidden' | 'offered' | 'saving' | 'saved' | 'failed'>('hidden')
 const megabytes = ref(0)
 
-onMounted(async () => {
+async function ask() {
+  if (state.value !== 'hidden') return
   const runtimes = await offlineRuntimes()
-  if (!runtimes || runtimes.bytes === 0) return
+  if (!runtimes || runtimes.bytes === 0 || state.value !== 'hidden') return
   megabytes.value = Math.max(1, Math.round(runtimes.bytes / 2 ** 20))
   state.value = runtimes.saved ? 'saved' : 'offered'
+}
+
+const workers = typeof navigator === 'undefined' ? undefined : navigator.serviceWorker
+onMounted(() => {
+  workers?.addEventListener('controllerchange', ask)
+  void ask()
 })
+onUnmounted(() => workers?.removeEventListener('controllerchange', ask))
 
 async function save() {
   state.value = 'saving'

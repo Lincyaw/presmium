@@ -218,6 +218,9 @@ describe('the run directory (N-08)', () => {
     expect(await (await running).json()).toMatchObject({ ok: true, stdout: 'slept\n' })
     expect(readdirSync(TMP).filter(name => name.startsWith('presmium-container-'))).toEqual([])
 
+    // Nothing else can place a name in the run directory before the runner's input: it is created in the
+    // private directory above and written at once. The request's own file of that name stands for a link
+    // placed there in advance; the exclusive create refuses either.
     const taken = await (await post(slides, 'run', { lang: 'python', code: 'print("never")', files: { '.presmium/request.json': '{"runs": []}' } })).json()
     expect(taken).toMatchObject({ ok: false, exitCode: null, stdout: '' })
     expect(taken.stderr).toContain('EEXIST')
