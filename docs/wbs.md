@@ -20,6 +20,10 @@
 | J2（M9） | 并行 WP-86 课程站点、WP-87 发布治理 | WP-79；WP-85（同改编译器的 MyST 设置与指令信息）；WP-87 还要 WP-78（读者的 MCP 令牌只读学生视图）；WP-87 与 WP-90 可能同时进行，`packages/cli/package.json` 属于 WP-90 |
 | S | WP-91 共享部署安全加固（SHARED 模式的威胁模型与专门的安全评审；完成前 SHARED 模式标为实验性） | J、J2 |
 | K | WP-89 第三轮验收审计、示例讲义与技能更新 | I、J、J2（S 不阻塞 K；SHARED 模式在 S 通过前保持实验性） |
+| K2 | 先 WP-89b（串行），再并行 WP-89c、89d、89e、89f：第三轮验收审计的修复（`review-round3.md`） | K |
+| L0（v0.9） | 先 WP-92a 删除共享部署（串行），再并行 WP-92b 浏览器端读者问答、WP-89g K2 遗留与文档核对 | K2 |
+| L（M10） | 先 WP-93a 发布工程（串行），再并行 WP-93b 起步工具、WP-93c 文档与文档站 | L0 |
+| M（M11，1.1） | WP-94 hub 托管模板 | L |
 
 ## 测试原则
 
@@ -1129,3 +1133,209 @@ WP-91 的第二轮安全评审仍在读者站点上找到绕过：读者经 Vite
 - C-8：示例讲义的 `extend-gpu` 加 `slides: { zoom: 0.6 }`；`e2e/demo.spec.ts` 的着色器整张可见与 `e2e/smoke.spec.ts` 的 PDF 导出写成 `test.fixme`，待 WP-89e 合并后由验收者启用并按实际效果调整 `zoom`；示例讲义列出助手（待 F-48）与删除 `addons.ts` 读取包根 `vite.config.ts` 的部分（待 F-21）留给合并后。
 - F-86 与 C-9：architecture 第 8 节（K-09、K-13 指向正确的用例，v0.8 的表按交付照实列出）、第 12 节（删去过时的两行，再分发运行时的许可证文件）、领域模型术语表、需求 5.3、原则 2 与附录 B（决定 D-3），以及 K2 波次各组的作者与运营者可见的变化（`documentLink`、`Route.maxBody`、控制通道的章节 ID、`DOCUMENT_LOCKS`、`AgentTask.revert`、`AgentToolContext.view`、lychee、tutor、`maxQuestions`、MCP `build` 的输出位置、`engines`、讲授的学生视图、媒体地址前缀、讲授视图的出现条件、许可证、参数读回、决定 D-2、D-5、D-6、D-8、D-9、D-11、D-12）。其他组的部分按 C-9 与 `review-round3.md` 的条目写成，合并后由验收者核对。
 - 用例：`e2e/site.spec.ts`（F-24、F-25）、`addon-code/test/check.test.ts`（F-26）、`classroom-server/test/server.test.ts`（F-27）、`e2e/viewer.spec.ts`（F-77、F-84）、`addon-classroom/test/notebook.test.ts`（F-78）、`e2e/web.spec.ts`（F-79、F-80、F-81）、`e2e/classroom.spec.ts`（F-82）、`e2e/perf.spec.ts`（F-83）、`e2e/session.spec.ts`（F-85，网页与幻灯片两种形态，以 `buildFixture` 新的 `audience` 选项构建学生版；章节中教师专用的一步在前时学习者的步号，主讲直接回到教师章节时学习者到之前最近的章节，只给学生的章节的总览序号）。
+
+## L0 波次：删除共享部署与浏览器端读者问答（WP-92a、WP-92b、WP-89g；v0.9）
+
+需求见 `requirements.md` 的“定位与边界”、N-08、N-09、P-112、P-120 与附录 B“v0.9 相对 v0.8”。工作区服务只供运行它的那个用户在本机使用，共享部署（SHARED 模式）整体删除；读者问答改为浏览器端，由读者自己填写模型服务。
+
+共享部署代码的清单（按包列出整文件删除、部分删除与不改的文件，删除顺序，现有问答的实现，文档位置，以及本机模式悄悄依赖的地方）在 `/tmp/claude-1000/-home-ddq-AoyangSpace-presmium/ad4777b2-3f0f-4adb-9e14-744177671948/scratchpad/shared-inventory.md`。工作包按它实现，并自行核对。
+
+顺序：
+
+1. WP-92a 在 main 上完成并合并（串行）。
+2. WP-92b 与 WP-89g 从合并了 92a 的 main 分出，在各自的工作树中并行实现。
+
+端口：
+
+| 工作包 | 端到端端口 | 其他服务 |
+|---|---|---|
+| 92a | 5351、5352 | 5353–5359 |
+| 92b | 5361、5362 | 5363–5369 |
+| 89g | 5371、5372 | 5373–5379 |
+
+4180、4310、4790、5173 被验收者的试用环境占用，不要使用。
+
+### 验收者的决定（E-1 至 E-9）
+
+- **E-1 契约可以删减。** 1.0 之前，内核与宿主契约中只为共享部署存在的部分直接删除，不标 `@deprecated`。包括：
+  - `Gateway*` 类型与 `gatewayFetch`；
+  - `TrustMode` 与各处的 `trust`；
+  - `ServerContext.gateway`、`NodeServiceContext.gateway`、`RunContext.gateway`、`EnvironmentContext.gateway`；
+  - `PresmiumNodePlugin.gateway`、`PassContext.trust`、`AgentSessionOptions.model`；
+  - git 的隔离配置函数。
+
+  1.0 之后按 P-143 的语义化版本承诺。
+- **E-2 删除 D14。** “工作区服务只加载运营者插件”的策略取消：`presmium serve` 加载文稿列出的插件，与 `presmium dev` 相同。保留的部分：
+  - 运营者插件（`settings.presmium.workspace.plugins`：首页的插件、deltabox）；
+  - MCP `build` 照常用文稿能加载的渲染端。
+- **E-3 只监听本机。** `presmium serve` 只监听回环地址，非回环的 `--host` 拒绝，提示用 SSH 隧道或 hub 模板（WP-94）。登录相关的选项删除：`--trust-proxy-from`、`--user`、`gateway`、`agent-host`。
+- **E-4 不再有成员。** 工作区配置的 `members` 删除，本机用户就是 `LOCAL_AUTHOR`（所有者）。
+  - 保留：内核的 `Member`、`MemberRole`、`Route.role`、确认的范围与按范围分派（本机的确认照旧）。
+  - 删除只为读者存在的分支：讲授路由的读者视图、MCP 中读者到学生视图的映射。MCP 的 tutor 视图归 WP-92b。
+- **E-5 删除只为共享部署存在的机制。** 包括：
+  - 所有者控制台与宿主确认的 `elsewhere`；
+  - 工作区的 `CompileApprovals` 与 `/execution`、`/site` 路由及其面板；
+  - 编译器的 `admit` 与 `RunStats.refused`，以及经 agent-host 的远端执行；
+  - 文档组（`PRESMIUM_DOCUMENTS_GROUP`）、隔离的 git、`ReadScope` 与各处的 `scope`；
+  - web 的 `scoped`、`anyHost` 与 `buildSite` 的 `served`。
+
+  名字像共享部署、但本机在用的保留：
+  - `env: 'serve'` 的运行规则；
+  - `devSite` 的 `served`；
+  - 语音的 `v1/*` 协议（文档中称为“语音网关的协议”）；
+  - `DOCUMENT_FILES` 与 `localWriter`、`DOCUMENT_LOCKS`、`loadOperatorPlugins`；
+  - 以 `CREDENTIAL_VARIABLE` 清理环境变量，deltabox 的进程沙箱。
+- **E-6 插件只按本机行为。** 插件中按 `ctx.trust` 的判断改为无条件的本机行为（deltabox、发布的资源、助手）。
+- **E-7 移植覆盖。** 只由共享部署的用例覆盖的功能，先移植为本机用例再删除：
+  - 浏览器中的文档操作：新建、重命名、复制、删除，首页的运营者插件，`{literalinclude}` 经符号链接指向工作区之外，agent 起草的文档；
+  - `presmium build --audience student --to lecture` 发布学生版讲授；
+  - 语音的本机引擎用例。
+
+  学生版构建（`--audience student`）保留，是读者得到内容的途径。
+- **E-8 设计文档不改写。** `design-v0.7.md` 已冻结，不改写。在文首加一段说明：共享部署与服务端读者问答的部分在 v0.9 作废，见 `requirements.md` 附录 B。
+- **E-9 读者问答在浏览器中完成。** P-112 仍由助手插件提供，复用现有的提问界面（`AskPanel`、工具栏、选区与章节上下文、`answerParts` 的引用链接）。后端换成浏览器直接请求读者填写的模型服务：
+  - **接口**：OpenAI 兼容的 Chat Completions，流式。
+  - **设置**：地址、密钥、模型名保存在本站点的浏览器存储中，界面提示同一站点的脚本能读到密钥。
+  - **上下文**：从页面中的 IR 取，包括当前章节的讲解与块的文字、选中的内容，以及章节目录（标题与 ID），供回答引用；学生版站点的 IR 本来就不含教师内容。
+  - **服务端**：没有服务端也能用（静态站点）。密钥不发往站点的服务端。
+  - **课堂**：主讲窗口的“AI 回答”用主讲自己的设置。
+  - **幻灯片形态**：宿主给不出 IR 时用当前页面的文字作上下文，引用只到页。
+  - **删除服务端的问答**：`question` 任务、tutor 的 dsh 模板、`PRESMIUM_AGENT_TUTOR_COMMAND` 与 `settings.tutor`、`maxQuestions`、`questionTimeoutMs`、MCP 的 tutor 令牌与视图；`AgentMode 'tutor'` 与 `AgentTaskKind 'question'` 不再使用时也删除。
+  - **不变**：本机的写作助手（对话、批注修改、审阅）。
+
+### WP-92a 删除共享部署（L0 波次第一步，串行）
+
+**拥有**：除下列路径之外的全部代码、测试、模板、示例与技能（`.agents/skills/**`、`CLAUDE.md`，`scripts/check-skills.mjs` 要求技能与 CLI 同步）：
+
+- 读者问答的服务端路径（`addon-assistant` 的 `question` 分支、tutor 模板与 `presmium-fixture-tutor`、`tutor-token` 夹具、`e2e/assistant.spec.ts` 的问答用例）：留给 92b，本包保持它在本机可用；
+- `docs/**`：留给 89g。
+
+**条目**：清单中的全部删除，按清单第 2 节的顺序（插件先，内核契约最后），按决定 E-1 至 E-8。
+
+- 删除 `templates/workspace/compose`、`templates/workspace/kubernetes`。
+- 去掉 `templates/env` 中“SHARED 模式为 `presmium gateway`”的句子。
+- 改写 `examples/workspace` 中关于 D14 的说法。
+- 改写技能中的服务与部署部分。
+
+**验收**：
+
+- 清单列出的共享部署代码、选项与用例都已删除：`git grep -n -E "gateway|agent-host|trust-proxy|SHARED|ReadScope|owner console"` 只剩清单第 1 节中标为“不改”的命中，交付报告逐条说明；
+- 按 E-7 移植的本机用例通过；
+- `pnpm test`、`pnpm demo:build`、`pnpm demo:check` 通过；
+- 全部 Chromium 端到端用例通过（用本包的端口）。
+
+### WP-92b 浏览器端读者问答（L0 波次第二步，并行）
+
+**拥有**：
+
+- `packages/addon-assistant/**`、`packages/mcp/**`；
+- `packages/addon-classroom/src/client/ai.ts` 与课堂面板中“AI 回答”的部分；
+- 内核中 `AgentMode`、`AgentTaskKind`、`AgentSessionOptions` 的删减；
+- 把 `mcp/src/deck.ts` 中纯 IR 的查询函数移到内核的浏览器可用模块（如需要）；
+- `e2e/assistant.spec.ts`、`e2e/fixtures/assistant/**`、新的 `e2e/ask.spec.ts` 与本机的 OpenAI 兼容替身（带 CORS）；
+- 技能中讲读者问答与课堂“AI 回答”的段落（`presmium-author`、`presmium-present`）。
+
+**条目**：
+
+- P-112 按决定 E-9 实现。
+- MCP `get_position` 按调用者的版本换算步号（`trail`、`followedPlace`，WP-89f 的验证者发现）。
+- F-48 的静态构建用例断言页面没有任何控制台错误，不只过滤 presmium 与 assistant。
+- 改变作者或读者可见行为的，写进交付报告，由验收者写入文档。
+
+**验收**：
+
+- 读者在静态学生版站点（`presmium build --audience student`，由 `sirv` 一类的静态服务提供）中填写替身的地址与密钥，选中一段代码提问；回答流式显示，引用的位置可以点击跳转。
+- 替身收到的上下文含选中的内容与当前章节，不含教师内容；站点的服务端没有收到任何带密钥的请求。
+- 没有填写时显示设置说明。
+- 课堂中主讲用自己的设置生成“AI 回答”并确认后，学生看到回复。
+- 本机写作助手的现有用例照常通过；`pnpm test` 通过；本组拥有的端到端用例通过。
+
+### WP-89g K2 遗留与文档核对（L0 波次第二步，并行）
+
+**拥有**：
+
+- `docs/**`，`requirements.md` 与 `wbs.md` 除外，它们由验收者维护；
+- `packages/compiler/**`、`packages/viewer/**`、`packages/workspace/**`、`packages/addon-exec/**`、`packages/addon-publish/**`、`packages/addon-lecture/**`；
+- 技能中 92b 拥有的段落之外的部分（只为文档一致性改动，与 92b 改同一文件时只改不同的段落）；
+- `e2e/lecture*.spec.ts`、`e2e/fixtures/lecture*/**`、`e2e/workspace.spec.ts`。
+
+**条目**：
+
+- F-13 与 P-55，学生版讲授：讲授轨记录了录制时各章节的摘要（`track.ir.sections`）。学生版构建与学生视图拿它与学生版 IR 的章节摘要比较，不同的章节不发布音频、屏幕视频与语音段，失败即关闭。这同时处理录制之后讲义改动、内容移入教师章节的情形。用例：
+  - 教师专用段落在 `intro` 中；
+  - 录制后把提示移入教师章节。
+- F-57 与 D-7，克隆音色：本机讲授路由按（IR，音色）缓存的已合成片段，在同意记录撤回后不再提供；每次取用时检查同意，或同意变化时清空缓存。
+- F-85，学生版 IR 不留旧的步骤键：`forAudience` 构建的学生视图不带完整版本写入的 `hints.slides.presmiumSteps`、`presmiumBack`（删除或在学生视图中重算），学生版的 `ir.json` 不出现教师专用块的标签。
+- F-85，回退章节：`backSection` 回退到学习者版本中有的、之前最近的章节，包括只给学生的章节。同时修订 `ir.md` 2.11。`{predict}` 之后紧跟教师专用 `:reveal:` 的情形，能简单修正就修正，否则写为已知限制。
+- F-55，重做的标签：撤销一次撤销时，历史显示“重做「…」”或“Redo "…"”，不显示与撤销相同的标签。
+- D-8，Python 执行器：本地 Python 执行器的指纹包含运行脚本（`runner.py`）的摘要，已缓存的录制在下一次构建时按 D-8 更新。
+- 不稳定的用例改稳：F-18 的范围导出用例在超时后重试，与 `tall` 用例一致；`e2e/lecture-writeback.spec.ts` 在上一用例撤销后等编辑控件就绪。
+- C-9 文档核对：K2 各组报告的作者与运营者可见的变化（`/tmp/claude-1000/-home-ddq-AoyangSpace-presmium/ad4777b2-3f0f-4adb-9e14-744177671948/scratchpad/k2-summaries.txt` 中各组的 “Doc-visible changes”“Behaviour changes for docs”），逐条核对 `docs/` 与技能是否写入，补齐。只关于共享部署的条目不写。宿主契约 `NavigationPosition.section` 的注释与 `ir.md` 2.11 一致。
+- 删除文档中的共享部署，位置见清单第 4 节：
+  - `architecture.md`：第 2 节；4.2、4.5 至 4.10 节中的 gateway 与信任模式；第 7、8 节；9.4 节改为只有本机的残余风险；第 10 节删去 10.8 至 10.10，10.1、10.3、10.5 改写为本机与 hub 托管，其余删去共享部署的部分；第 11、12 节。
+  - `ir.md`：2.1、2.11、4、5、6.3、7、9、10 节。
+  - `domain-model.md`：1、2、4A、12 至 15 节。
+  - `design-v0.7.md`：文首说明（E-8）。
+
+  文档写的是 92a 合并后的代码。
+
+**验收**：
+
+- 各条目的用例通过；
+- `pnpm test`、`pnpm demo:build`、`pnpm demo:check` 通过；
+- 本组拥有的端到端用例通过；
+- `git grep -n -i -E "SHARED|gateway|agent-host|所有者控制台|共享部署" docs .agents CLAUDE.md` 只剩历史记录：附录 B、`review-round3.md`、`wbs.md` 的已完成工作包、`design-v0.7.md` 正文；
+- `scripts/check-skills.mjs` 通过。
+
+## L 波次：开源发布 1.0（WP-93a 至 WP-93c；M10）
+
+需求见 `requirements.md` 6.15 节（P-140 至 P-146）与“定位与边界”。1.0 不加新功能。前置：L0 波次合并，`pnpm verify` 通过。
+
+需要用户操作的步骤不由工作包完成，只列成清单写进交付报告：在 GitHub 创建仓库并设置远端、创建 npm 组织 `@presmium` 与发布令牌、实际发布（`changeset publish`）。工作包只做到 `pnpm -r publish --dry-run` 通过。
+
+端到端端口：93a 5401、5402（其他服务 5403–5409），93b 5411、5412，93c 5421、5422。
+
+### WP-93a 发布工程（L 波次第一步，串行）
+
+**拥有**：根目录文件（`LICENSE`、`NOTICE`、`package.json`、`pnpm-workspace.yaml`、`.npmrc`）、`packages/*/package.json`、各包的 `LICENSE`、`.changeset/**`、`.github/**`、`scripts/**`、`packages/compiler/src/plugins.ts`（插件加载）、`e2e/consumer.spec.ts` 与 `packages/cli/test/consumer.test.ts`（新）。
+
+**条目**：
+
+- P-140：Apache-2.0 的 `LICENSE` 与 `NOTICE`（列出再分发的第三方二进制与运行时及其许可证）；每个包的 `license` 字段与包内 `LICENSE`。
+- P-141：哪些包公开发布、哪些保持私有（测试替身、示例）写成表；公开的包去掉 `private`，补齐元数据；`exports` 与 `files` 只含发布所需（源码以 `.ts`、`.vue` 直接发布）；插件对 Presmium 的依赖改为 `peerDependencies`；changesets 初始化，所有公开包版本为 `1.0.0-rc.0`。
+- P-141 消费者安装测试：`pnpm -r pack` 打包，在单仓之外的临时目录中用 npm 安装压缩包，运行 `presmium check`、`presmium build`（web、slides、notebook）与 `presmium dev` 冒烟，并从压缩包安装一个第三方插件（WP-93b 的插件模板生成的项目，93b 合并前用一个测试插件）。
+- P-143 的加载器部分：插件的 `peerDependencies` 声明的 Presmium 版本不满足时，加载器给出诊断（`presmium check` 报告，构建不崩溃）。
+- P-146 的 CI：GitHub Actions 工作流（`pnpm test`、示例构建与检查、Chromium 端到端用例；完整套件与其他浏览器定时运行）；工作流文件用 `act` 或等价方式至少本地检查一次语法。
+
+**验收**：`pnpm -r publish --dry-run` 通过；消费者安装测试通过；不兼容插件的诊断用例通过；`pnpm verify` 通过。
+
+### WP-93b 起步工具（L 波次第二步，并行）
+
+**拥有**：`packages/create-presmium/**`（新）、`templates/plugin/**`（新）、`templates/document/**`、`templates/workspace/**`、`e2e/create.spec.ts` 与 `packages/create-presmium/test/**`（新）。
+
+**条目**：P-142。`npm create presmium@latest` 交互地或以参数选择讲义、工作区、插件三种项目；插件模板含一个两种形态共用的组件、一个指令、一个服务端路由、中英文文本与一个能运行的集成测试，遵守 CLAUDE.md 的分层与测试约定；生成的项目带 `.agents/skills` 中适合作者或插件开发者的技能副本或链接说明。
+
+**验收**：在单仓之外的临时目录中，用 WP-93a 的打包结果生成三种项目，各自 `presmium check` 无问题、构建通过，插件项目的集成测试通过，插件被一份讲义加载后在网页与幻灯片中显示。
+
+### WP-93c 文档与文档站（L 波次第二步，并行）
+
+**拥有**：`site/**`（新，文档工作区）、各包的 `README.md`、根目录 `README.md`、`CONTRIBUTING.md`、`SECURITY.md`、`typedoc.json`、`docs/api.md`（新，P-143 的公开接口列表）、`packages/kernel/src/contracts.ts` 中 `SiteDocument` 的译本字段、`packages/web/src/node/sites.ts`、`packages/workspace/src/node/site.ts`、`e2e/docs-site.spec.ts`（新）。
+
+**条目**：
+
+- P-143 的文档部分：公开接口与实验性接口的列表，语义化版本的承诺范围，`IR_VERSION` 与插件声明的兼容规则。
+- P-144：作者指南与插件开发指南，中文与英文；接口参考由 TypeDoc 生成。
+- P-145：文档站是一个 Presmium 工作区，中英双语；实现工作区站点中的译本（P-123，决定 D-11 推迟的部分：`SiteDocument` 带译本，工作区站点生成语言切换，`presmium.translations` 的警告去掉）；构建时运行发布检查（失效链接）。
+- P-146 的文档部分：README、CONTRIBUTING、SECURITY（报告方式；信任模型摘要：本机单用户，不做多用户隔离）。
+
+**验收**：文档站构建无失效链接，两种语言都有完整目录；工作区站点的译本用例通过（`e2e/docs-site.spec.ts` 与现有 `e2e/site.spec.ts`）；`scripts/check-skills.mjs` 通过。
+
+## M 波次：hub 托管模板（WP-94；M11，1.1）
+
+### WP-94 hub 托管模板
+
+**拥有**：`templates/hub/**`（新）、`packages/server/**` 中路径前缀的支持、`packages/cli/src/cli.ts` 的 `serve --base-path`、`e2e/hub.spec.ts`（新）。
+
+**条目**：P-147。JupyterHub + DockerSpawner（另给 KubeSpawner 的参考配置）为每个用户启动自己的工作台：jupyter-server-proxy（独立模式）或 jhsingle-native-proxy 把 `presmium serve` 作为单用户应用；内存与 CPU 限额，jupyterhub-idle-culler 空闲回收；LiteLLM 的虚拟密钥按人设预算与速率限额，工作台的模型地址指向它；`presmium serve` 支持在 `/user/<名字>/` 前缀下运行（页面、接口、WebSocket、开发服务器的 HMR）；语音凭据由一个小代理持有，或由用户自己填写。
+
+**验收**：两个用户经 hub 登录，各自的工作台能新建文档、预览、用助手修改；互相看不到对方的文件；一个用户的模型预算用完后被拒绝，另一个不受影响；空闲的工作台被回收后重新登录可以继续。
