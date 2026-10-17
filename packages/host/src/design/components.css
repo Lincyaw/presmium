@@ -1,0 +1,694 @@
+/*
+ * The shared components of the host (N-10, docs/architecture.md 5.10), drawn with the tokens only:
+ * buttons, fields, cards, badges, segmented controls, tabs, popovers, dialogs, menus, lists, empty
+ * states and notices. The Vue components of components.ts render these classes; a plugin may use the
+ * classes on its own elements too. Every class starts with `pm-ui-`.
+ */
+
+.pm-ui {
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-icon {
+  flex: none;
+  vertical-align: middle;
+}
+
+/* Buttons ------------------------------------------------------------------------------------------ */
+
+.pm-ui-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pm-space-2);
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--pm-duration-fast) var(--pm-ease), border-color var(--pm-duration-fast) var(--pm-ease), color var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-ui-button:hover {
+  border-color: var(--pm-color-line-strong);
+  background: var(--pm-color-sunk);
+}
+
+/* The main action: ink, with paper-coloured text. */
+.pm-ui-button--primary {
+  border-color: var(--pm-color-ink);
+  background: var(--pm-color-ink);
+  color: var(--pm-color-bg);
+}
+
+.pm-ui-button--primary:hover {
+  border-color: var(--pm-color-ink);
+  background: color-mix(in srgb, var(--pm-color-ink) 86%, var(--pm-color-bg));
+}
+
+/* A switch that is on (the AI panel, edit mode), or an accent action. */
+.pm-ui-button--accent,
+.pm-ui-button[aria-pressed='true'] {
+  border-color: var(--pm-color-accent);
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
+}
+
+.pm-ui-button--accent:hover,
+.pm-ui-button[aria-pressed='true']:hover {
+  border-color: var(--pm-color-accent);
+  background: color-mix(in srgb, var(--pm-color-accent) 88%, var(--pm-color-ink));
+}
+
+.pm-ui-button--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.pm-ui-button--ghost:hover {
+  border-color: transparent;
+}
+
+.pm-ui-button--danger {
+  color: var(--pm-color-danger);
+}
+
+.pm-ui-button--danger:hover {
+  border-color: var(--pm-color-danger);
+  background: var(--pm-color-danger-soft);
+}
+
+.pm-ui-button--small {
+  min-height: 1.625rem;
+  padding: 0.0625rem 0.625rem;
+  border-radius: var(--pm-radius-small);
+  font-size: var(--pm-text-sm);
+}
+
+.pm-ui-button:disabled,
+.pm-ui-button[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pm-ui-icon-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pm-radius-control);
+  background: transparent;
+  color: var(--pm-color-muted);
+  cursor: pointer;
+  transition: background-color var(--pm-duration-fast) var(--pm-ease), color var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-ui-icon-button--small {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--pm-radius-small);
+}
+
+.pm-ui-icon-button:hover {
+  background: color-mix(in srgb, var(--pm-color-surface) 70%, transparent);
+  color: var(--pm-color-ink);
+}
+
+.pm-ui-icon-button[aria-pressed='true'],
+.pm-ui-icon-button[aria-expanded='true'] {
+  background: var(--pm-color-surface);
+  color: var(--pm-color-accent);
+  box-shadow: var(--pm-shadow);
+}
+
+/* Every control of the design shows where the keyboard focus is (N-06). */
+:is(.pm-ui-button, .pm-ui-icon-button, .pm-ui-segmented__option, .pm-ui-tab, .pm-ui-menu__item, .pm-ui-link):focus-visible,
+:is(.pm-ui-input, .pm-ui-select, .pm-ui-textarea):focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 2px;
+}
+
+.pm-ui-link {
+  color: var(--pm-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Fields ------------------------------------------------------------------------------------------- */
+
+.pm-ui-field {
+  display: grid;
+  gap: var(--pm-space-1);
+  min-width: 0;
+}
+
+.pm-ui-field__label {
+  color: var(--pm-color-muted);
+  font-size: var(--pm-text-sm);
+  font-weight: 500;
+}
+
+.pm-ui-field--inline {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+}
+
+.pm-ui-field--inline .pm-ui-field__label {
+  color: var(--pm-color-ink);
+  font-size: var(--pm-text-md);
+}
+
+.pm-ui-input,
+.pm-ui-select,
+.pm-ui-textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.3125rem 0.625rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  line-height: 1.4;
+}
+
+.pm-ui-input::placeholder,
+.pm-ui-textarea::placeholder {
+  color: var(--pm-color-muted);
+  opacity: 1;
+}
+
+.pm-ui-input:hover,
+.pm-ui-select:hover,
+.pm-ui-textarea:hover {
+  border-color: var(--pm-color-line-strong);
+}
+
+.pm-ui-input:focus,
+.pm-ui-select:focus,
+.pm-ui-textarea:focus {
+  border-color: var(--pm-color-accent);
+}
+
+.pm-ui-textarea {
+  resize: vertical;
+}
+
+.pm-ui-checkbox {
+  accent-color: var(--pm-color-accent);
+}
+
+/* A search box: its icon, the field and the key that focuses it. */
+.pm-ui-search {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  min-width: 0;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-muted);
+}
+
+.pm-ui-search:focus-within {
+  border-color: var(--pm-color-accent);
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 2px;
+}
+
+.pm-ui-search > input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--pm-color-ink);
+  font: inherit;
+}
+
+.pm-ui-search > input::placeholder {
+  color: var(--pm-color-muted);
+  opacity: 1;
+}
+
+.pm-ui-kbd {
+  padding: 0 0.3125rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-chip);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+  white-space: nowrap;
+}
+
+/* Cards, badges, status dots ----------------------------------------------------------------------- */
+
+.pm-ui-card {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-3);
+  min-width: 0;
+  padding: 1.125rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+}
+
+.pm-ui-card--dashed {
+  border-style: dashed;
+  border-color: var(--pm-color-line-strong);
+  background: transparent;
+  color: var(--pm-color-muted);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pm-ui-card--interactive {
+  transition: border-color var(--pm-duration-fast) var(--pm-ease);
+}
+
+.pm-ui-card--interactive:hover,
+.pm-ui-card--dashed:hover {
+  border-color: var(--pm-color-accent);
+}
+
+.pm-ui-card--interactive:focus-within,
+.pm-ui-card--dashed:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 2px;
+}
+
+.pm-ui-card__title {
+  margin: 0;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* A small label above a card's or a section's content (文档, 最近修改). */
+.pm-ui-heading {
+  margin: 0;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  font-weight: 600;
+  letter-spacing: var(--pm-tracking-label);
+  line-height: var(--pm-leading-ui);
+}
+
+.pm-ui-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.pm-ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pm-space-1);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.pm-ui-badge--accent {
+  background: var(--pm-color-accent-soft);
+  color: var(--pm-color-accent);
+}
+
+.pm-ui-badge--ok {
+  background: var(--pm-color-ok-soft);
+  color: var(--pm-color-ok);
+}
+
+.pm-ui-badge--warn {
+  background: var(--pm-color-warn-soft);
+  color: var(--pm-color-warn);
+}
+
+.pm-ui-badge--danger {
+  background: var(--pm-color-danger-soft);
+  color: var(--pm-color-danger);
+}
+
+/* A label with round ends (the source of a change: AI, 编辑, 文档). */
+.pm-ui-badge--pill {
+  padding: 0 0.5rem;
+  border-radius: var(--pm-radius-pill);
+  font-family: var(--pm-font-sans);
+  font-weight: 500;
+}
+
+.pm-ui-badge--outline {
+  border: 1px solid var(--pm-color-line);
+  background: transparent;
+  color: var(--pm-color-ink);
+}
+
+.pm-ui-dot {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pm-color-ok);
+}
+
+.pm-ui-dot--warn {
+  background: var(--pm-color-warn);
+}
+
+.pm-ui-dot--off {
+  background: var(--pm-color-line-strong);
+}
+
+/* Segmented controls and tabs ---------------------------------------------------------------------- */
+
+.pm-ui-segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-sunk);
+}
+
+.pm-ui-segmented__option {
+  margin: 0;
+  padding: 0.25rem 0.625rem;
+  border: 0;
+  border-radius: var(--pm-radius-small);
+  background: transparent;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.pm-ui-segmented__option[aria-pressed='true'] {
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow);
+}
+
+.pm-ui-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pm-space-4);
+  border-bottom: 1px solid var(--pm-color-line);
+}
+
+.pm-ui-tab {
+  margin: 0 0 -1px;
+  padding: var(--pm-space-1) 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  cursor: pointer;
+}
+
+.pm-ui-tab[aria-selected='true'] {
+  border-bottom-color: var(--pm-color-accent);
+  color: var(--pm-color-ink);
+  font-weight: 600;
+}
+
+/* What floats: popovers, drawers, dialogs, menus --------------------------------------------------- */
+
+.pm-ui-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pm-ui-popover,
+.pm-ui-drawer,
+.pm-ui-dialog,
+.pm-ui-menu {
+  box-sizing: border-box;
+  border: 1px solid var(--pm-color-line);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  box-shadow: var(--pm-shadow-float);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-md);
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: var(--pm-leading-ui);
+  text-align: start;
+  white-space: normal;
+}
+
+.pm-ui-popover {
+  position: absolute;
+  z-index: var(--pm-z-popover);
+  width: max-content;
+  min-width: 18rem;
+  max-width: min(32rem, calc(100vw - 2rem));
+  max-height: 70vh;
+  overflow: auto;
+  padding: var(--pm-space-3);
+  border-radius: var(--pm-radius-card);
+}
+
+.pm-ui-popover--below-end {
+  top: calc(100% + 6px);
+  right: 0;
+}
+
+.pm-ui-popover--below-start {
+  top: calc(100% + 6px);
+  left: 0;
+}
+
+.pm-ui-popover--above-end {
+  bottom: calc(100% + 6px);
+  right: 0;
+}
+
+.pm-ui-popover--above-start {
+  bottom: calc(100% + 6px);
+  left: 0;
+}
+
+/* A panel beside the activity bar, as tall as the window. */
+.pm-ui-drawer {
+  position: fixed;
+  z-index: var(--pm-z-popover);
+  top: 0;
+  bottom: var(--pm-drawer-bottom, 0);
+  left: var(--pm-drawer-left, 0);
+  display: flex;
+  flex-direction: column;
+  width: min(25rem, calc(100vw - var(--pm-drawer-left, 0px)));
+  overflow: hidden;
+  border-width: 0 1px 0 0;
+}
+
+.pm-ui-drawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--pm-space-3) var(--pm-space-4);
+}
+
+.pm-ui-dialog {
+  position: fixed;
+  z-index: var(--pm-z-dialog);
+  top: max(4vh, 3.5rem);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: calc(100vh - max(4vh, 3.5rem) - 2rem);
+  overflow: hidden;
+  border-radius: var(--pm-radius-panel);
+  transform: translateX(-50%);
+}
+
+.pm-ui-dialog__header,
+.pm-ui-drawer__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--pm-space-2);
+  padding: var(--pm-space-3) var(--pm-space-4);
+  border-bottom: 1px solid var(--pm-color-line);
+}
+
+.pm-ui-dialog__title,
+.pm-ui-drawer__title {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+  font-weight: 600;
+  letter-spacing: normal;
+  line-height: var(--pm-leading-tight);
+}
+
+.pm-ui-dialog__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--pm-space-4);
+}
+
+.pm-ui-menu {
+  position: absolute;
+  z-index: var(--pm-z-popover);
+  display: grid;
+  min-width: 12rem;
+  margin: 0;
+  padding: var(--pm-space-1);
+  border-radius: var(--pm-radius-control);
+  list-style: none;
+}
+
+.pm-ui-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  width: 100%;
+  margin: 0;
+  padding: 0.375rem 0.625rem;
+  border: 0;
+  border-radius: var(--pm-radius-small);
+  background: transparent;
+  color: var(--pm-color-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pm-ui-menu__item:hover,
+.pm-ui-menu__item:focus {
+  background: var(--pm-color-sunk);
+}
+
+.pm-ui-menu__item--danger {
+  color: var(--pm-color-danger);
+}
+
+/* Lists, empty states, notices --------------------------------------------------------------------- */
+
+.pm-ui-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pm-ui-list > li {
+  margin: 0;
+  padding: var(--pm-space-3) 0;
+  border-top: 1px solid var(--pm-color-line);
+}
+
+.pm-ui-list > li:first-child {
+  border-top: 0;
+}
+
+.pm-ui-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--pm-space-2);
+  margin: 0;
+  padding: var(--pm-space-6) var(--pm-space-4);
+  color: var(--pm-color-muted);
+  text-align: center;
+}
+
+.pm-ui-empty__title {
+  margin: 0;
+  color: var(--pm-color-ink);
+  font-weight: 600;
+}
+
+.pm-ui-notice {
+  margin: 0;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-ink);
+  font-size: var(--pm-text-sm);
+}
+
+.pm-ui-notice--ok {
+  background: var(--pm-color-ok-soft);
+}
+
+.pm-ui-notice--warn {
+  background: var(--pm-color-warn-soft);
+}
+
+.pm-ui-notice--danger {
+  background: var(--pm-color-danger-soft);
+}
+
+.pm-ui-notice--accent {
+  background: var(--pm-color-accent-soft);
+}
+
+.pm-ui-code {
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--pm-radius-chip);
+  background: var(--pm-color-sunk);
+  font-family: var(--pm-font-mono);
+  font-size: 0.9em;
+}
+
+/* Content only a screen reader reads. */
+.pm-ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

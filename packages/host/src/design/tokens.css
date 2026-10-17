@@ -1,0 +1,130 @@
+/*
+ * Presmium's design tokens (N-10, docs/architecture.md 5.10; the chosen design in docs/design/): the
+ * colours of "书卷" (paper, ink, a deep teal accent), the fonts, sizes, spacing, radii, the one shadow
+ * and the motion of every Presmium screen and default theme. Light on :root; dark where the host puts
+ * the class `dark` on <html> (VitePress's appearance switch, Slidev's dark mode).
+ */
+:root {
+  color-scheme: light;
+
+  /* Colours (docs/design/README.md). Text colours reach WCAG AA (4.5:1) on bg, surface and sunk, and each
+     tone on its soft background: `ok` is a shade darker than the reference (#2f7d4f) for AA on `ok-soft`. */
+  --pm-color-bg: #f7f5f0;
+  --pm-color-surface: #ffffff;
+  --pm-color-sunk: #efebe3;
+  --pm-color-code: #fbfaf7;
+  --pm-color-ink: #1c1b19;
+  --pm-color-muted: #5c584f;
+  --pm-color-line: #e3ded3;
+  --pm-color-line-strong: #a39c8e;
+  --pm-color-accent: #0f5f5c;
+  --pm-color-accent-soft: #e2eeec;
+  --pm-color-on-accent: #ffffff;
+  --pm-color-selected: #eaf3f1;
+  --pm-color-ok: #2b7449;
+  --pm-color-ok-soft: #e3f0e6;
+  --pm-color-warn: #9a5b13;
+  --pm-color-warn-soft: #f7ebda;
+  --pm-color-danger: #a3321c;
+  --pm-color-danger-soft: #f8e5df;
+  --pm-color-add: #2f6b3a;
+  --pm-color-del: #a3321c;
+  /* Source code: line numbers, keys, strings, keywords. */
+  --pm-color-gutter: #a39c8e;
+  --pm-color-syntax-key: #7a3e8e;
+  --pm-color-syntax-string: #2f6b3a;
+  --pm-color-syntax-keyword: #8a3b12;
+
+  /* Fonts: the Latin faces ship with Presmium (fonts.css); Chinese uses the system's. */
+  --pm-font-sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', system-ui, sans-serif;
+  --pm-font-serif: 'Source Serif 4', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Noto Serif SC', 'SimSun', serif;
+  --pm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
+
+  /* Sizes in rem, so they follow the reader's font size (N-06): 12, 13, 14 (the UI), 16, 17 (reading), 20, 32 px. */
+  --pm-text-xs: 0.75rem;
+  --pm-text-sm: 0.8125rem;
+  --pm-text-md: 0.875rem;
+  --pm-text-lg: 1rem;
+  --pm-text-reading: 1.0625rem;
+  --pm-text-title: 1.25rem;
+  --pm-text-display: 2rem;
+  --pm-leading-tight: 1.25;
+  --pm-leading-ui: 1.6;
+  --pm-leading-reading: 1.85;
+  --pm-tracking-label: 0.06em;
+
+  /* Spacing: a 4 px grid. */
+  --pm-space-1: 0.25rem;
+  --pm-space-2: 0.5rem;
+  --pm-space-3: 0.75rem;
+  --pm-space-4: 1rem;
+  --pm-space-5: 1.25rem;
+  --pm-space-6: 1.5rem;
+  --pm-space-8: 2rem;
+  --pm-space-10: 2.5rem;
+
+  /* Radii: controls, cards, panels on slides, chips, pills. */
+  --pm-radius-control: 8px;
+  --pm-radius-small: 6px;
+  --pm-radius-card: 12px;
+  --pm-radius-panel: 14px;
+  --pm-radius-chip: 4px;
+  --pm-radius-pill: 999px;
+
+  /* The one shadow: the selected item of a segmented control, and what floats (popovers, dialogs). No gradients. */
+  --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  /* Motion; none for readers who ask for less (N-06, see the media query below). */
+  --pm-duration-fast: 120ms;
+  --pm-duration: 200ms;
+  --pm-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* The workbench (docs/design/home.dc.html): its columns and bars. */
+  --pm-activity-width: 56px;
+  --pm-sidebar-width: 252px;
+  --pm-statusbar-height: 1.75rem;
+
+  /* Layers above the page: popovers, then dialogs. */
+  --pm-z-popover: 1000;
+  --pm-z-dialog: 1100;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --pm-color-bg: #161614;
+  --pm-color-surface: #1f1e1b;
+  --pm-color-sunk: #2a2925;
+  --pm-color-code: #1a1917;
+  --pm-color-ink: #edeae3;
+  --pm-color-muted: #a9a498;
+  --pm-color-line: #33312c;
+  --pm-color-line-strong: #6f6a60;
+  --pm-color-accent: #6fc1b9;
+  --pm-color-accent-soft: #1d3330;
+  --pm-color-on-accent: #0e1f1d;
+  --pm-color-selected: #1b2b29;
+  --pm-color-ok: #5cc08a;
+  --pm-color-ok-soft: #1b2e22;
+  --pm-color-warn: #e3a659;
+  --pm-color-warn-soft: #3a2c19;
+  --pm-color-danger: #ee9a86;
+  --pm-color-danger-soft: #3a211b;
+  --pm-color-add: #8fd3a0;
+  --pm-color-del: #ee9a86;
+  --pm-color-gutter: #6f6a60;
+  --pm-color-syntax-key: #d3a3e3;
+  --pm-color-syntax-string: #9ccb8f;
+  --pm-color-syntax-keyword: #e59a6b;
+
+  --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
+  --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.32), 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --pm-duration-fast: 0ms;
+    --pm-duration: 0ms;
+  }
+}

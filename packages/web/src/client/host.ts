@@ -4,6 +4,7 @@ import { isRecord } from '@presmium/kernel'
 import type { IRSection, PresentationMode } from '@presmium/kernel'
 import { backSection, FINAL_STEP, followedPlace, getView, stepKeys, stepTrail, useSectionContext } from '@presmium/viewer'
 import type { FollowAnchor, StepKeys, Viewer } from '@presmium/viewer'
+import { useData } from 'vitepress'
 import { computed, readonly, ref } from 'vue'
 
 export interface ViewerHostOptions {
@@ -63,6 +64,8 @@ export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): Ho
     useSharedState: options.shared.sharedState,
     getService: presmiumService,
     startReport: presmiumReport,
+    // The appearance switch of the navigation bar, so `useTheme` changes it as the reader would.
+    useDarkMode: () => useData().isDark,
   }
 }
 

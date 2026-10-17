@@ -1,4 +1,53 @@
-/* Web form on VitePress; the IR runtime brings its own styles. */
+/*
+ * Web form on VitePress; the IR runtime brings its own styles. The default theme draws with the design's
+ * tokens (@presmium/host, docs/architecture.md 5.10): its variables are set from them, so the IR runtime and
+ * the plugins, which follow VitePress's variables, get the same colours. Pages read in the style "书卷":
+ * paper, ink, serif headings and reading text. The variables are set once: the tokens change with the dark
+ * scheme. Their selector stays as weak as VitePress's own, so the high-contrast theme (P-52) still wins.
+ */
+
+:root {
+  --vp-font-family-base: var(--pm-font-sans);
+  --vp-font-family-mono: var(--pm-font-mono);
+
+  --vp-c-bg: var(--pm-color-bg);
+  --vp-c-bg-alt: var(--pm-color-sunk);
+  --vp-c-bg-elv: var(--pm-color-surface);
+  --vp-c-bg-soft: var(--pm-color-sunk);
+  --vp-c-text-1: var(--pm-color-ink);
+  --vp-c-text-2: var(--pm-color-muted);
+  --vp-c-text-3: var(--pm-color-muted);
+  --vp-c-border: var(--pm-color-line-strong);
+  --vp-c-divider: var(--pm-color-line);
+  --vp-c-gutter: var(--pm-color-line);
+
+  --vp-c-brand-1: var(--pm-color-accent);
+  --vp-c-brand-2: color-mix(in srgb, var(--pm-color-accent) 88%, var(--pm-color-ink));
+  --vp-c-brand-3: var(--pm-color-accent);
+  --vp-c-brand-soft: var(--pm-color-accent-soft);
+  --vp-c-tip-1: var(--pm-color-accent);
+  --vp-c-tip-soft: var(--pm-color-accent-soft);
+  --vp-c-success-1: var(--pm-color-ok);
+  --vp-c-success-soft: var(--pm-color-ok-soft);
+  --vp-c-warning-1: var(--pm-color-warn);
+  --vp-c-warning-soft: var(--pm-color-warn-soft);
+  --vp-c-danger-1: var(--pm-color-danger);
+  --vp-c-danger-soft: var(--pm-color-danger-soft);
+  --vp-c-default-soft: var(--pm-color-sunk);
+
+  --vp-code-color: var(--pm-color-ink);
+  --vp-code-bg: var(--pm-color-sunk);
+  --vp-code-block-bg: var(--pm-color-code);
+  --vp-code-copy-code-bg: var(--pm-color-surface);
+  --vp-code-line-highlight-color: var(--pm-color-selected);
+
+  --vp-nav-bg-color: var(--pm-color-bg);
+  --vp-sidebar-bg-color: var(--pm-color-bg);
+  --vp-local-search-bg: var(--pm-color-bg);
+  --vp-local-search-result-bg: var(--pm-color-surface);
+  --vp-local-search-highlight-bg: var(--pm-color-accent);
+  --vp-local-search-highlight-text: var(--pm-color-on-accent);
+}
 
 /* The reader's default font size applies (N-06); VitePress sets 16px on html and body. */
 html {
@@ -7,6 +56,32 @@ html {
 
 body {
   font-size: 1rem;
+}
+
+/* Reading text and headings in the serif of the design; components keep the interface's sans. */
+.vp-doc .pm-block--markdown,
+.vp-doc .pm-section__title,
+.vp-doc .pm-section :is(h1, h2, h3, h4) {
+  font-family: var(--pm-font-serif);
+}
+
+.vp-doc .pm-block--markdown {
+  font-size: var(--pm-text-reading);
+  line-height: var(--pm-leading-reading);
+}
+
+.vp-doc .pm-block--markdown :is(code, pre, kbd) {
+  font-family: var(--pm-font-mono);
+}
+
+.vp-doc .pm-section :is(h1, h2, h3, h4) {
+  font-weight: 600;
+  letter-spacing: normal;
+  line-height: var(--pm-leading-tight);
+}
+
+.vp-doc a {
+  text-underline-offset: 2px;
 }
 
 /* Headings follow the reader's font size too, and stay above the body text (N-06). VitePress gives the
@@ -65,6 +140,12 @@ body {
   white-space: nowrap;
 }
 
+/* The deck's title in the navigation bar, as the design's headings. */
+.VPNavBarTitle a.title {
+  font-family: var(--pm-font-serif);
+  font-weight: 600;
+}
+
 /* The sidebar is a tree of chapters with their sections indented below (see `sidebar`): chapters stand out.
    VitePress has no option for it; the class is its own (e2e/web.spec.ts checks the weight). */
 .VPSidebarItem.level-1 > .item .text {
@@ -103,6 +184,7 @@ body {
   border: 1px solid var(--vp-c-divider);
   border-radius: 999px;
   color: var(--vp-c-text-2);
+  font-family: var(--pm-font-sans);
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: normal;
@@ -122,20 +204,26 @@ body {
   color: var(--vp-c-brand-1);
 }
 
+/* The view menu: a select of the design. */
 .pm-view-menu {
   margin-left: 0.5rem;
-  padding: 0.125rem 0.25rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 0.25rem;
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
-  font-size: 0.8125rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
 }
 
 /* The view menu and plugins' toolbar items (@presmium/host): in the navigation bar, on phones in the navigation screen. */
 .pm-view-menu--screen,
 .pm-toolbar--screen {
   margin: 1rem 0 0;
+}
+
+.pm-toolbar--screen {
+  flex-wrap: wrap;
 }
 
 /* Apart from the navigation bar's own controls (e.g. the appearance switch) before it. */
@@ -167,94 +255,458 @@ html.pm-presenting {
   --pm-cue-z: calc(var(--vp-z-index-local-nav, 32) + 101);
 }
 
-/* A workspace site (P-122): the link of a document's pages to the home page, and the home page's list. */
+/* A workspace site (P-122): the link of a document's pages to the home page. */
 .pm-site-link {
   display: inline-flex;
   align-items: center;
+  gap: var(--pm-space-1);
   margin-left: 0.75rem;
-  font-size: 14px;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-control);
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-sans);
+  font-size: var(--pm-text-sm);
   font-weight: 500;
-  color: var(--vp-c-text-1);
   white-space: nowrap;
 }
 
 .pm-site-link:hover {
-  color: var(--vp-c-brand-1);
+  border-color: var(--pm-color-accent);
+  color: var(--pm-color-accent);
 }
 
+/* The home page of a workspace site: the documents as cards (docs/design/home.dc.html). ------------------ */
+
 .pm-site-home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-8);
   margin: 0 auto;
-  max-width: 48rem;
-  padding: 2rem 0;
+  max-width: 69rem;
+  padding: var(--pm-space-8) 0 var(--pm-space-10);
+}
+
+.pm-site-home--workbench {
+  margin: 0;
+  padding: var(--pm-space-8);
 }
 
 .pm-site-home__title {
-  font-size: 2rem;
-  line-height: 1.25;
+  margin: 0;
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-display);
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  line-height: var(--pm-leading-tight);
+}
+
+.pm-site-home__section {
+  display: grid;
+  gap: var(--pm-space-4);
 }
 
 .pm-site-home__filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: var(--pm-space-3);
 }
 
-.pm-site-home__search {
-  flex: 1 1 16rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  background: var(--vp-c-bg-soft);
+.pm-site-home__filters > .pm-ui-heading {
+  margin-right: auto;
+}
+
+.pm-site-home__search-box {
+  flex: 1 1 15rem;
+  max-width: 24rem;
 }
 
 .pm-site-home__tags {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
 }
 
-.pm-site-home__tag,
-.pm-site-home__badge {
-  padding: 0.1rem 0.6rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 999px;
-  font-size: 0.85rem;
-}
-
-.pm-site-home__tag[aria-pressed='true'] {
-  border-color: var(--vp-c-brand-1);
-  color: var(--vp-c-brand-1);
+/* The cards and what plugins put beside them (`create`, e.g. the agent's draft) share one grid. */
+.pm-site-home__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+  gap: var(--pm-space-4);
 }
 
 .pm-site-home__documents {
-  list-style: none;
-  padding: 0;
+  display: contents;
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pm-site-home__empty {
+  grid-column: 1 / -1;
 }
 
 .pm-site-home__document {
+  gap: var(--pm-space-3);
+  margin: 0;
+}
+
+/* The title is the card's link; the whole card leads to the document. */
+.pm-site-home__link {
+  color: var(--pm-color-ink);
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.pm-site-home__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.pm-site-home__link:hover {
+  color: var(--pm-color-accent);
+}
+
+.pm-site-home__link:focus-visible {
+  outline: none;
+}
+
+.pm-site-home__description,
+.pm-site-home__hint {
+  margin: 0;
+  color: var(--pm-color-muted);
+}
+
+.pm-site-home__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: var(--pm-space-4);
+}
+
+.pm-site-home__address {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--pm-radius-small);
+  background: var(--pm-color-sunk);
+}
+
+.pm-site-home__address > code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The workbench of a served home page: activity bar, files, launcher, status bar. -------------------------- */
+
+.pm-workbench {
+  --pm-drawer-left: var(--pm-activity-width);
+  --pm-drawer-bottom: var(--pm-statusbar-height);
+
+  display: grid;
+  grid-template-columns: var(--pm-activity-width) var(--pm-sidebar-width) minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  background: var(--pm-color-bg);
+}
+
+.pm-workbench__activity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--pm-space-3) 0;
+  border-right: 1px solid var(--pm-color-line);
+  background: var(--pm-color-sunk);
+}
+
+.pm-workbench__activity-end {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+}
+
+.pm-workbench__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 10px;
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-ink);
+  color: var(--pm-color-bg);
+  font-family: var(--pm-font-serif);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.pm-workbench__files {
+  overflow: auto;
+  padding: var(--pm-space-4) 10px;
+  border-right: 1px solid var(--pm-color-line);
+}
+
+.pm-workbench__name {
+  margin: 0;
+  padding: 0 6px var(--pm-space-3);
+  font-family: var(--pm-font-serif);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: var(--pm-leading-tight);
+}
+
+.pm-workbench__tree {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-sm);
+}
+
+.pm-workbench__file {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  padding: 5px 8px;
+  border-radius: var(--pm-radius-small);
+  color: var(--pm-color-ink);
+  text-decoration: none;
+}
+
+a.pm-workbench__file:hover {
+  background: var(--pm-color-accent-soft);
+  color: var(--pm-color-accent);
+}
+
+a.pm-workbench__file:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: -2px;
+}
+
+.pm-workbench__file--plain {
+  color: var(--pm-color-muted);
+}
+
+.pm-workbench__main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.pm-workbench__bar {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--vp-c-divider);
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--pm-space-6);
+  border-bottom: 1px solid var(--pm-color-line);
 }
 
-.pm-site-home__link {
-  font-size: 1.1rem;
+.pm-workbench__title {
+  margin-right: var(--pm-space-4);
   font-weight: 600;
-  color: var(--vp-c-brand-1);
 }
 
-.pm-site-home__dir {
-  color: var(--vp-c-text-3);
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.85rem;
+.pm-workbench__bar > .pm-site-home__search-box {
+  flex: 1 1 15rem;
+  max-width: 24rem;
+}
+
+.pm-workbench__actions {
+  display: flex;
+  margin-left: auto;
+}
+
+.pm-workbench__content {
+  overflow: auto;
+}
+
+.pm-workbench__content > div > .pm-site-home {
+  max-width: 69rem;
+}
+
+.pm-workbench__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.125rem;
+  min-height: var(--pm-statusbar-height);
+  padding: 0 var(--pm-space-4);
+  border-top: 1px solid var(--pm-color-line);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+}
+
+.pm-workbench__theme {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--pm-radius-chip);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pm-workbench__theme:hover {
+  color: var(--pm-color-ink);
+}
+
+.pm-workbench__theme:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+}
+
+/* On a tablet the files go; on a phone the activity bar runs along the top (N-05). */
+@media (max-width: 1023px) {
+  .pm-workbench {
+    grid-template-columns: var(--pm-activity-width) minmax(0, 1fr);
+  }
+
+  .pm-workbench__files {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .pm-workbench {
+    --pm-drawer-left: 0px;
+
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pm-workbench__activity {
+    flex-direction: row;
+    padding: 6px var(--pm-space-3);
+    border-right: 0;
+    border-bottom: 1px solid var(--pm-color-line);
+  }
+
+  .pm-workbench__activity .pm-toolbar[data-place='activity'] {
+    flex-direction: row;
+  }
+
+  .pm-workbench__activity-end {
+    flex-direction: row;
+    margin: 0 0 0 auto;
+  }
+
+  .pm-workbench__logo {
+    margin: 0 6px 0 0;
+  }
+
+  .pm-workbench__bar {
+    padding: 10px var(--pm-space-4);
+  }
+
+  .pm-workbench__title {
+    display: none;
+  }
+
+  .pm-workbench__bar > .pm-site-home__search-box {
+    max-width: none;
+  }
+
+  .pm-site-home--workbench {
+    padding: var(--pm-space-5) var(--pm-space-4);
+  }
+}
+
+/* Edit mode (the workspace's `EDIT_MODE`): its status bar, and the panes of its split (docs/architecture.md
+   5.10), which plugins fill (`source`: the source editor at the left, `dock`: panels at the right). ------- */
+
+.pm-edit-status {
+  position: fixed;
+  z-index: calc(var(--vp-z-index-local-nav, 32) + 10);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.125rem;
+  min-height: var(--pm-statusbar-height);
+  padding: 0 var(--pm-space-4);
+  border-top: 1px solid var(--pm-color-line);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+}
+
+html.pm-editing .VPContent,
+html.pm-editing .VPFooter {
+  padding-bottom: var(--pm-statusbar-height);
+}
+
+.pm-edit-source,
+.pm-edit-dock {
+  position: fixed;
+  z-index: calc(var(--vp-z-index-local-nav, 32) + 5);
+  top: var(--vp-nav-height);
+  bottom: var(--pm-statusbar-height);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: var(--pm-color-code);
+  font-family: var(--pm-font-sans);
+}
+
+.pm-edit-source {
+  --pm-edit-pane: var(--pm-edit-source-width, clamp(20rem, 36vw, 40rem));
+
+  left: 0;
+  width: var(--pm-edit-pane);
+  border-right: 1px solid var(--pm-color-line);
+}
+
+.pm-edit-dock {
+  --pm-edit-pane: var(--pm-edit-dock-width, 22rem);
+
+  right: 0;
+  width: var(--pm-edit-pane);
+  border-left: 1px solid var(--pm-color-line);
+  background: var(--pm-color-bg);
+}
+
+/* The page is the preview beside the panes: the chapters' sidebar gives way to the source. */
+@media (min-width: 960px) {
+  html.pm-edit-split .VPSidebar,
+  html.pm-edit-split .VPLocalNav {
+    display: none;
+  }
+
+  html.pm-edit-split .VPContent.has-sidebar,
+  html.pm-edit-split .VPContent {
+    padding-left: var(--pm-edit-source-width, clamp(20rem, 36vw, 40rem));
+  }
+
+  html.pm-edit-docked .VPContent.has-sidebar,
+  html.pm-edit-docked .VPContent {
+    padding-right: var(--pm-edit-dock-width, 22rem);
+  }
+
+  /* The preview is narrower than a page: the text takes the width there is, the outline gives way. */
+  html:is(.pm-edit-split, .pm-edit-docked) .VPDoc .content {
+    min-width: 0;
+  }
+
+  html:is(.pm-edit-split, .pm-edit-docked) .VPDoc .aside {
+    display: none;
+  }
 }
 
 /* The site shell's footer under a chapter page (P-78), as the default theme's footer looks. */
