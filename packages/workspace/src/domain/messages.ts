@@ -71,6 +71,8 @@ export interface WorkspaceMessages {
   recent: string
   /** The status bar: the workspace's git repository, and the time of its latest change. */
   git(latest: string | undefined): string
+  /** The status bar, when the server names them: the branch and the number of files with changes not committed. */
+  branch(name: string, uncommitted: number): string
   noGit: string
   /** The usage guide of the home page (P-120): its title, its topics (`mcp` is the MCP address) and the documentation site. */
   guide: string
@@ -121,6 +123,7 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     locked: (document, by) => `${document ? `文档 ${document} ` : '这份文档'}现在不能修改：${by === 'agent' ? 'agent 的修改任务正在进行或等待审阅' : by === 'revert' ? '一项修改正在撤销' : '一项文档操作正在进行'}，完成后再试。`,
     recent: '最近修改',
     git: latest => `git${latest ? ` · 最近提交 ${latest}` : ''}`,
+    branch: (name, uncommitted) => `${name}${uncommitted ? ` · ${uncommitted} 处未提交` : ''}`,
     noGit: '不是 git 仓库',
     guide: '使用说明',
     guideTopics: mcp => [
@@ -175,6 +178,7 @@ export const WORKSPACE_MESSAGES: Record<Locale, WorkspaceMessages> = {
     locked: (document, by) => `${document ? `The document ${document}` : 'This document'} cannot change now: ${by === 'agent' ? 'an agent\'s change task runs or waits for its review' : by === 'revert' ? 'a change is being undone' : 'a document operation is under way'}. Try again once it is done.`,
     recent: 'Recent changes',
     git: latest => `git${latest ? ` · last commit ${latest}` : ''}`,
+    branch: (name, uncommitted) => `${name}${uncommitted ? ` · ${uncommitted} uncommitted` : ''}`,
     noGit: 'not a git repository',
     guide: 'How to use',
     guideTopics: mcp => [

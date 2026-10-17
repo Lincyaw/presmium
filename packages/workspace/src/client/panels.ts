@@ -500,18 +500,26 @@ export const RecentChanges = defineComponent({
   },
 })
 
-/** The status bar's entry: the workspace's git repository and its latest commit. */
+/** What the status bar reads of the `documents` route: the branch and the uncommitted files, once the server names them. */
+type GitAnswer = DocumentsAnswer & { branch?: string, uncommitted?: number }
+
+/**
+ * The status bar's entry: the workspace's git repository, its branch and
+ * its files with changes not committed when the server names them
+ * (docs/design/README.md), else the time of its latest commit.
+ */
 export const GitStatus = defineComponent({
   name: 'PmWorkspaceGit',
   setup() {
     const t = useMessages(WORKSPACE_MESSAGES)
     const editor = useEditor()
-    const git = ref<boolean>()
+    const git = shallowRef<GitAnswer>()
     const latest = ref<string>()
     const load = async () => {
       try {
-        git.value = (await call<DocumentsAnswer>('documents')).git
-        const [last] = git.value ? (await call<RevisionsAnswer>('revisions?limit=1')).revisions : []
+        const answer = await call<GitAnswer>('documents')
+        const [last] = answer.git && answer.branch === undefined ? (await call<RevisionsAnswer>('revisions?limit=1')).revisions : []
+        git.value = answer
         latest.value = last?.date
       } catch {
         git.value = undefined
@@ -519,10 +527,15 @@ export const GitStatus = defineComponent({
     }
     onMounted(() => void load())
     onDocumentsChange(() => void load())
-    return () => (editor.value && git.value !== undefined
+    const text = (answer: GitAnswer) => {
+      if (!answer.git) return t.value.noGit
+      if (answer.branch !== undefined) return t.value.branch(answer.branch, answer.uncommitted ?? 0)
+      return t.value.git(latest.value && shortTime(latest.value))
+    }
+    return () => (editor.value && git.value
       ? h('span', { class: 'pm-workspace-git', style: { display: 'inline-flex', alignItems: 'center', gap: 'var(--pm-space-1)' } }, [
           h(PmIcon, { name: 'branch', size: 14 }),
-          git.value ? t.value.git(latest.value && shortTime(latest.value)) : t.value.noGit,
+          text(git.value),
         ])
       : null)
   },

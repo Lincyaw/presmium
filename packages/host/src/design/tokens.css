@@ -8,7 +8,9 @@
   color-scheme: light;
 
   /* Colours (docs/design/README.md). Text colours reach WCAG AA (4.5:1) on bg, surface and sunk, and each
-     tone on its soft background: `ok` is a shade darker than the reference (#2f7d4f) for AA on `ok-soft`. */
+     tone on its soft background: `ok` is a shade darker than the reference (#2f7d4f) for AA on `ok-soft`.
+     `line-strong`, the border of fields and of a chosen segment, reaches 3:1 on bg, surface and sunk
+     (WCAG 1.4.11): a shade darker than the reference's `line2` (#a39c8e), which line numbers keep (`gutter`). */
   --pm-color-bg: #f7f5f0;
   --pm-color-surface: #ffffff;
   --pm-color-sunk: #efebe3;
@@ -16,7 +18,7 @@
   --pm-color-ink: #1c1b19;
   --pm-color-muted: #5c584f;
   --pm-color-line: #e3ded3;
-  --pm-color-line-strong: #a39c8e;
+  --pm-color-line-strong: #8c8577;
   --pm-color-accent: #0f5f5c;
   --pm-color-accent-soft: #e2eeec;
   --pm-color-on-accent: #ffffff;
@@ -100,7 +102,7 @@
   --pm-color-ink: #edeae3;
   --pm-color-muted: #a9a498;
   --pm-color-line: #33312c;
-  --pm-color-line-strong: #6f6a60;
+  --pm-color-line-strong: #78736a;
   --pm-color-accent: #6fc1b9;
   --pm-color-accent-soft: #1d3330;
   --pm-color-on-accent: #0e1f1d;

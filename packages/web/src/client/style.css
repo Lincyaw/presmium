@@ -204,11 +204,11 @@ body {
   color: var(--vp-c-brand-1);
 }
 
-/* The view menu: a select of the design. */
+/* The view menu: a select of the design, framed as its fields are (WCAG 1.4.11). */
 .pm-view-menu {
   margin-left: 0.5rem;
   padding: 0.25rem 0.5rem;
-  border: 1px solid var(--pm-color-line);
+  border: 1px solid var(--pm-color-line-strong);
   border-radius: var(--pm-radius-control);
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
@@ -626,7 +626,8 @@ a.pm-workbench__file:focus-visible {
 }
 
 /* Edit mode (the workspace's `EDIT_MODE`): its status bar, and the panes of its split (docs/architecture.md
-   5.10), which plugins fill (`source`: the source editor at the left, `dock`: panels at the right). ------- */
+   5.10), which plugins fill (`source`: the source editor at the left, `dock`: panels at the right); narrower
+   than the split, they stack as docs/design/edit.dc.html wraps. ---------------------------------------------- */
 
 .pm-edit-status {
   position: fixed;
@@ -706,6 +707,36 @@ html.pm-editing .VPFooter {
 
   html:is(.pm-edit-split, .pm-edit-docked) .VPDoc .aside {
     display: none;
+  }
+}
+
+/* Without room for the split (a tablet, a phone): the source above the preview, the dock below it, each as
+   tall as `--pm-edit-pane-height` (the panes and the page are items of the default theme's layout, a column). */
+@media (max-width: 959px) {
+  .pm-edit-source,
+  .pm-edit-dock {
+    position: static;
+    flex: none;
+    width: auto;
+    height: var(--pm-edit-pane-height, 60vh);
+  }
+
+  .pm-edit-source {
+    order: 1;
+    border-right: 0;
+    border-bottom: 1px solid var(--pm-color-line);
+  }
+
+  html.pm-editing .VPContent,
+  html.pm-editing .VPFooter {
+    order: 2;
+  }
+
+  .pm-edit-dock {
+    order: 3;
+    margin-bottom: var(--pm-statusbar-height);
+    border-left: 0;
+    border-top: 1px solid var(--pm-color-line);
   }
 }
 

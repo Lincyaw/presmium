@@ -1605,7 +1605,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `docs/design/README.md`，`line-strong` 即其中的 `line2`。两处与参考稿不同：亮色的 `ok` 由 `#2F7D4F` 加深为 `#2B7449`，使它在 `ok-soft` 上达到 AA；`danger` 与 `danger-soft` 是新增的，`danger` 与 `del` 同色 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `docs/design/README.md`，`line-strong` 对应其中的 `line2`。三处与参考稿不同：亮色的 `ok` 由 `#2F7D4F` 加深为 `#2B7449`，使它在 `ok-soft` 上达到 AA；`line-strong` 由亮 `#A39C8E`、暗 `#6F6A60` 加深为亮 `#8C8577`、暗 `#78736A`，使它在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11），行号仍用参考稿的取值（`gutter`）；`danger` 与 `danger-soft` 是新增的，`danger` 与 `del` 同色 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号（N-06） |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
@@ -1626,20 +1626,20 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | `PmIcon` | 线性图标（`ICONS`，24 px 网格，1.7 px 描边，不用 emoji） |
 | `PmButton` | 按钮：`primary`（墨色底、纸色字，主操作）、`accent`（打开的开关）、`ghost`、`danger`，可加 `small` 与 `icon`；`aria-pressed="true"` 的按钮显示为打开 |
 | `PmIconButton` | 只有图标的按钮，`label` 是它的可访问名称与提示 |
-| `PmField` | 带标签的输入、选择与文本框（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`）；`inline` 用于复选框 |
+| `PmField` | 带标签的输入、选择与文本框（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`，边框为 `line-strong`）；`inline` 用于复选框 |
 | `PmBadge` | 徽标：`accent`、`ok`、`warn`、`danger`、`outline`，`pill` 为圆端的来源标签 |
 | `PmCard` | 卡片：`interactive`（通向别处）、`dashed`（新建一样东西） |
-| `PmSegmented` | 分段控件 |
-| `PmTabs` | 标签页，方向键切换 |
-| `PmPopover` | 依附于触发器的弹层 |
+| `PmSegmented` | 分段控件：选中项凸起，边框为 `line-strong` |
+| `PmTabs` | 标签页与所选标签的面板（默认插槽，得到所选的 `value`；面板以它的标签为名）；方向键切换并移动焦点，到头时回到另一端 |
+| `PmPopover` | 依附于触发器的弹层；会超出窗口时横向移入，离窗口两侧 1 rem（如手机上 VitePress 导航屏中的工具栏项） |
 | `PmDrawer` | 活动栏旁、与窗口等高的面板 |
 | `PmDialog` | 对话框：不是模态的，页面仍可操作；移到文档末尾，不受工具栏的布局影响 |
-| `PmMenu` | 菜单，方向键移动 |
+| `PmMenu` | 菜单：打开时焦点在第一项，方向键移动，到头时回到另一端；选中一项或按 Escape 后焦点回到按钮；同样留在窗口内 |
 | `PmEmpty` | 空状态 |
 | `PmNotice` | 提示，`status`，失败时为 `alert` |
 | `PmToolbarEntry` | 打开面板的工具栏项：在活动栏中是图标按钮与抽屉，在其他位置是带文字的按钮与弹层（状态栏中向上弹出） |
 
-弹层、抽屉、对话框与菜单按 Escape 关闭，焦点回到触发器；弹层、抽屉与菜单在外部按下时关闭，对话框不关。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
+弹层、抽屉、对话框与菜单按 Escape 关闭，焦点回到触发器；弹层、抽屉与菜单在外部按下时关闭，对话框不关。文字对背景达到 WCAG AA（1.4.3）；标识控件与状态的图形达到 3:1（1.4.11）：输入框与搜索框由边框标识，分段控件的选中项由边框标识，都用 `line-strong`；按钮由文字标识，边框可以用 `line`；复选框由浏览器绘制，颜色取 `accent`。另有 `pm-ui-search`（搜索框）、`pm-ui-kbd`、`pm-ui-heading`（卡片与分区的小标题）、`pm-ui-list`、`pm-ui-dot`（状态点）、`pm-ui-code`、`pm-ui-link` 等类。
 
 `useTheme()` 给出当前是否为暗色与切换的方法。宿主适配可以提供 `HostAdapter.useDarkMode`（网页形态为 VitePress 的外观开关），这样切换被记住，与读者自己切换一样；没有时 `useTheme` 直接设 `<html>` 的 `dark` 类。
 
@@ -1659,7 +1659,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 - **工作区首页**：`presmium serve` 与 `presmium dev` 中是工作台（`docs/design/home.dc.html`）。最左是活动栏：标志、文档、搜索，之后是插件的项，底部是 `settings` 的项。其次是工作区侧栏，列出文档目录与 `presmium.workspace.yaml`。中间是启动台：顶栏有搜索框（`Ctrl K` 聚焦，按标题、目录、说明与标签过滤）和 `tools` 中没有图标的项；其下是文档卡片，卡片有衬线标题、目录、语言、标签，站点数据带有说明、页数与检查结果时也显示它们；再下是 `home` 的卡片与“连接外部 agent（MCP）”的卡片（地址与复制按钮）。底部是状态栏：`status` 的项，右端是明暗切换。宽度小于 1024 px 时侧栏隐藏，小于 768 px 时活动栏横排在顶部，抽屉占满宽度。静态的工作区站点保留默认主题的页面（导航与页脚，P-78），文档同样显示为卡片。
 - **阅读页**：VitePress 的颜色与字体变量取自令牌，IR 运行时与插件跟随这些变量，因此也用书卷的颜色。标题与 Markdown 块用衬线体，阅读正文 17 px、行高 1.85；组件保持界面的无衬线体。
-- **编辑模式**（工作区的 `EDIT_MODE`）：`<html>` 有 `pm-editing` 类，底部是状态栏。有 `source` 项时为左右分栏：`pm-edit-split` 类，左栏宽 `--pm-edit-source-width`，章节侧栏让位，页面本身是右边的预览。有 `dock` 项时右侧停靠：`pm-edit-docked` 类，宽 `--pm-edit-dock-width`。没有这些项时，编辑模式与以前一样，只多了状态栏。
+- **编辑模式**（工作区的 `EDIT_MODE`）：`<html>` 有 `pm-editing` 类，底部是状态栏。有 `source` 项时为左右分栏：`pm-edit-split` 类，左栏宽 `--pm-edit-source-width`，章节侧栏让位，页面本身是右边的预览。有 `dock` 项时右侧停靠：`pm-edit-docked` 类，宽 `--pm-edit-dock-width`。宽度小于 960 px（VitePress 的侧栏收起的宽度）时两栏放不下，按参考稿换行的方式上下排列：源码在预览之上，停靠栏在预览之下，宽度占满，高 `--pm-edit-pane-height`（默认 60vh）。没有这些项时，编辑模式与以前一样，只多了状态栏。
 
 **工作区插件的项**（`packages/workspace/src/client`）：
 
@@ -1667,7 +1667,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 - 首页与文档页：修改历史（有图标，首页在活动栏，文档页在工具栏）。撤销显示为“撤销「…」”，撤销的撤销显示为“重做「…」”（F-55）；判断依据是列表中 `reverts` 的链，链出了列表时看提交标题的嵌套。撤销项的按钮是“重做”，被重做后标为“已重做”。状态栏中的 git 状态（`status`）。
 - 文档页：“编辑”开关，打开时为强调色。
 
-**验收**：`e2e/design.spec.ts`：工作台的各部分与字体（只从本站加载）、明暗切换、撤销与重做的标签、使用说明、编辑模式的状态栏与分栏的位置，以及明暗两套下首页、修改历史、对话框、使用说明、文档页与编辑模式的文字全部达到 WCAG AA。
+**验收**：`e2e/design.spec.ts`：工作台的各部分与字体（只从本站加载）、明暗切换、有助手时的虚线卡片、撤销与重做的标签、使用说明、编辑模式的状态栏与分栏的位置，测试插件在分栏中用的标签页、菜单与分段控件（键盘操作），手机宽度（390 px）下导航屏中的弹层留在屏幕内、编辑模式上下排列，以及明暗两套下首页、修改历史、对话框、使用说明、文档页与编辑模式的文字达到 WCAG AA、输入框与分段控件选中项的边框达到 3:1。测试插件（`e2e/fixtures/design/plugins`）还代替助手提供 `AGENT`，可以起草。
 
 ## 6. 示例文稿约定
 

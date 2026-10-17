@@ -151,8 +151,8 @@ export const PmSegmented = defineComponent({
 let ids = 0
 
 /**
- * Tabs: the tab list; the caller shows the chosen tab's panel, giving it the
- * id `panelId(value)` and the role `tabpanel`. Arrow keys move between tabs.
+ * Tabs: the tab list, and the chosen tab's panel (the default slot, given the
+ * chosen `value`), labelled by its tab. Arrow keys move between tabs.
  */
 export const PmTabs = defineComponent({
   name: 'PmTabs',
@@ -162,34 +162,40 @@ export const PmTabs = defineComponent({
     label: { type: String, required: true },
   },
   emits: ['update:modelValue'],
-  setup(props, { emit, expose }) {
+  setup(props, { emit, slots }) {
     const prefix = `pm-ui-tabs-${++ids}`
     const list = ref<HTMLElement>()
+    const tabId = (value: string) => `${prefix}-tab-${value}`
     const panelId = (value: string) => `${prefix}-panel-${value}`
-    expose({ panelId })
     const move = (event: KeyboardEvent) => {
       const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
       if (!step) return
+      event.preventDefault()
       const index = props.tabs.findIndex(tab => tab.value === props.modelValue)
       const next = props.tabs[(index + step + props.tabs.length) % props.tabs.length]
       if (!next) return
       emit('update:modelValue', next.value)
       void nextTick(() => list.value?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus())
     }
-    return () => h('div', { 'ref': list, 'class': 'pm-ui-tabs', 'role': 'tablist', 'aria-label': props.label, 'onKeydown': move }, props.tabs.map((tab) => {
-      const selected = tab.value === props.modelValue
-      return h('button', {
-        'key': tab.value,
-        'type': 'button',
-        'role': 'tab',
-        'class': 'pm-ui-tab',
-        'id': `${prefix}-tab-${tab.value}`,
-        'aria-selected': selected ? 'true' : 'false',
-        'aria-controls': panelId(tab.value),
-        'tabindex': selected ? 0 : -1,
-        'onClick': () => emit('update:modelValue', tab.value),
-      }, tab.label)
-    }))
+    return () => h('div', { class: 'pm-ui-tabset' }, [
+      h('div', { 'ref': list, 'class': 'pm-ui-tabs', 'role': 'tablist', 'aria-label': props.label, 'onKeydown': move }, props.tabs.map((tab) => {
+        const selected = tab.value === props.modelValue
+        return h('button', {
+          'key': tab.value,
+          'type': 'button',
+          'role': 'tab',
+          'class': 'pm-ui-tab',
+          'id': tabId(tab.value),
+          'aria-selected': selected ? 'true' : 'false',
+          'aria-controls': selected && slots.default ? panelId(tab.value) : undefined,
+          'tabindex': selected ? 0 : -1,
+          'onClick': () => emit('update:modelValue', tab.value),
+        }, tab.label)
+      })),
+      slots.default
+        ? h('div', { 'class': 'pm-ui-tabpanel', 'role': 'tabpanel', 'id': panelId(props.modelValue), 'aria-labelledby': tabId(props.modelValue), 'tabindex': 0 }, slots.default({ value: props.modelValue }))
+        : null,
+    ])
   },
 })
 
@@ -223,12 +229,46 @@ function useDismiss(open: () => boolean, close: () => void, root: () => HTMLElem
   })
 }
 
+/**
+ * Keeps a floating panel inside the window, 1 rem from its sides: a panel
+ * that would leave it (its trigger near an edge, a phone's narrow screen,
+ * e.g. VitePress's navigation screen) moves sideways. It follows the window
+ * and the panel's size, which its content changes as it loads.
+ */
+function useInView(panel: () => HTMLElement | undefined): void {
+  let observer: ResizeObserver | undefined
+  const place = () => {
+    const element = panel()
+    if (!element) return
+    element.style.translate = ''
+    const box = element.getBoundingClientRect()
+    const margin = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+    const width = document.documentElement.clientWidth
+    let shift = box.right > width - margin ? width - margin - box.right : 0
+    if (box.left + shift < margin) shift = margin - box.left
+    if (shift) element.style.translate = `${Math.round(shift)}px 0`
+  }
+  watch(panel, (element) => {
+    observer?.disconnect()
+    observer = undefined
+    if (!element || typeof ResizeObserver === 'undefined') return
+    observer = new ResizeObserver(place)
+    observer.observe(element)
+  }, { flush: 'post' })
+  onMounted(() => window.addEventListener('resize', place))
+  onBeforeUnmount(() => {
+    observer?.disconnect()
+    window.removeEventListener('resize', place)
+  })
+}
+
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 
 /**
  * A panel that floats by its trigger (the `trigger` slot), labelled `label`,
- * with the default slot's content; Escape and a press outside close it.
- * `name` prefixes the classes of the wrapper and the panel (`<name>__panel`).
+ * with the default slot's content, inside the window; Escape and a press
+ * outside close it. `name` prefixes the classes of the wrapper and the panel
+ * (`<name>__panel`).
  */
 export const PmPopover = defineComponent({
   name: 'PmPopover',
@@ -241,11 +281,13 @@ export const PmPopover = defineComponent({
   emits: ['update:open'],
   setup(props, { emit, slots }) {
     const root = ref<HTMLElement>()
+    const panel = ref<HTMLElement>()
     useDismiss(() => props.open, () => emit('update:open', false), () => root.value)
+    useInView(() => panel.value)
     return () => h('span', { ref: root, class: ['pm-ui-anchor', props.name] }, [
       slots.trigger?.(),
       props.open
-        ? h('div', { 'class': ['pm-ui-popover', `pm-ui-popover--${props.placement}`, props.name && `${props.name}__panel`], 'role': 'dialog', 'aria-label': props.label }, slots.default?.())
+        ? h('div', { 'ref': panel, 'class': ['pm-ui-popover', `pm-ui-popover--${props.placement}`, props.name && `${props.name}__panel`], 'role': 'dialog', 'aria-label': props.label }, slots.default?.())
         : null,
     ])
   },
@@ -345,7 +387,8 @@ export interface MenuItem {
 
 /**
  * A menu behind an icon button (`more` by default): arrow keys move between
- * its items, Enter chooses one (`select` with its id), Escape closes it.
+ * its items, Enter chooses one (`select` with its id), Escape closes it; the
+ * focus goes back to the button.
  */
 export const PmMenu = defineComponent({
   name: 'PmMenu',
@@ -359,8 +402,10 @@ export const PmMenu = defineComponent({
   setup(props, { emit }) {
     const open = ref(false)
     const root = ref<HTMLElement>()
+    const list = ref<HTMLElement>()
     const close = () => open.value = false
     useDismiss(() => open.value, close, () => root.value)
+    useInView(() => list.value)
     const items = () => [...(root.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])]
     const focusAt = (index: number) => {
       const all = items()
@@ -385,7 +430,7 @@ export const PmMenu = defineComponent({
     return () => h('span', { ref: root, class: 'pm-ui-anchor', onKeydown: onKey }, [
       h(PmIconButton, { 'icon': props.icon, 'label': props.label, 'small': true, 'aria-haspopup': 'menu', 'aria-expanded': open.value ? 'true' : 'false', 'onClick': toggle }),
       open.value
-        ? h('ul', { 'class': ['pm-ui-menu', `pm-ui-popover--${props.placement}`], 'role': 'menu', 'aria-label': props.label }, props.items.map(item => h('li', { key: item.id, role: 'none' }, [
+        ? h('ul', { 'ref': list, 'class': ['pm-ui-menu', `pm-ui-popover--${props.placement}`], 'role': 'menu', 'aria-label': props.label }, props.items.map(item => h('li', { key: item.id, role: 'none' }, [
             h('button', {
               'type': 'button',
               'role': 'menuitem',
@@ -394,6 +439,7 @@ export const PmMenu = defineComponent({
               'tabindex': -1,
               'onClick': () => {
                 close()
+                root.value?.querySelector<HTMLElement>('button')?.focus()
                 emit('select', item.id)
               },
             }, [item.icon ? h(PmIcon, { name: item.icon, size: 16 }) : null, item.label]),
