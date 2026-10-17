@@ -3,7 +3,7 @@ import { usePresentationMode, useSectionConfig, useService, useStartReport } fro
 import { EXECUTOR, isRecord } from '@presmium/kernel'
 import type { ParamsDisplay } from '@presmium/kernel'
 import { computed, reactive, ref, shallowRef } from 'vue'
-import { useMessages } from '../src/client/index.ts'
+import { useMessages, useSlideRoom } from '../src/client/index.ts'
 import { appendRun, compareRuns, configuredTimeout, defaultPair, EXEC_ID, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'
 import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 
@@ -13,7 +13,7 @@ import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 // not happen (no runtime, no GPU adapter, a timeout) shows the output recorded
 // at compile time, with the reason. Any language an executor runs (e.g. `wgsl`);
 // its executor may name the parameters for learners (`Executor.params`, D-10).
-// In the slides and the present view the code shows whole (N-05).
+// In the slides and the present view it keeps to the slide (N-05).
 const props = withDefaults(defineProps<{
   lang?: string
   /** The code to run; the wrapped code block shows it. */
@@ -42,6 +42,17 @@ const fields = reactive(Object.fromEntries(Object.entries(props.params ?? {})
   .filter(([, value]) => isRecord(value))
   .map(([name, value]) => [name, stringArgs(value as Record<string, unknown>)])))
 const presenting = usePresentationMode() === 'slides'
+const root = shallowRef<HTMLElement>()
+// In a slide: the room below the panel's top, and what of it the code has.
+const room = ref<{ panel: number, code: number }>()
+useSlideRoom(root, presenting, (panel) => {
+  const main = root.value?.querySelector<HTMLElement>('.pm-run-panel__main')
+  const pre = main?.querySelector<HTMLElement>('.pm-run-panel__source pre')
+  if (!main || !pre) return
+  // The controls below the code keep their height; the code takes the rest.
+  const code = panel - (main.offsetHeight - pre.offsetHeight)
+  if (room.value?.panel !== panel || room.value.code !== code) room.value = { panel, code }
+})
 const history = shallowRef<RunHistory>([])
 const running = ref(false)
 // The runs being compared; each new run selects the last two.
@@ -109,7 +120,14 @@ function fieldSize(value: string | undefined): number {
 </script>
 
 <template>
-  <div class="pm-run-panel" :class="{ 'pm-run-panel--present': presenting }" :data-state="running ? 'running' : latest ? 'done' : 'idle'" :data-runs="history.length">
+  <div
+    ref="root"
+    class="pm-run-panel"
+    :class="{ 'pm-run-panel--present': presenting }"
+    :style="room && { '--pm-run-room': `${room.panel}px`, '--pm-run-code': `${room.code}px` }"
+    :data-state="running ? 'running' : latest ? 'done' : 'idle'"
+    :data-runs="history.length"
+  >
     <div class="pm-run-panel__main">
       <div class="pm-run-panel__source">
         <slot>
@@ -188,18 +206,19 @@ function fieldSize(value: string | undefined): number {
   max-height: 20em;
   overflow: auto;
 }
-/* In the slides and the present view (projected) the code is not cut to 20em: the panel is a column
-   whose code takes the height there is, the controls and the output after it (N-05, F-19). */
-.pm-run-panel--present .pm-run-panel__main {
-  display: flex;
-  flex-direction: column;
-}
-.pm-run-panel--present .pm-run-panel__source {
-  flex: 1;
-  min-height: 0;
+/* In the slides and the present view (projected) the panel keeps to the room below its top on the
+   slide: the code takes what the controls leave and scrolls only when it is longer, the output
+   beside it scrolls in that height. Its size stays the slide's, which a long panel would otherwise
+   push off the slide or (the present view) shrink (N-05, F-19). */
+.pm-run-panel--present {
+  align-items: start;
 }
 .pm-run-panel--present .pm-run-panel__source :deep(pre) {
-  max-height: none;
+  max-height: max(var(--pm-run-code, 20em), 6em);
+}
+.pm-run-panel--present .pm-run-panel__side {
+  max-height: var(--pm-run-room);
+  overflow: auto;
 }
 .pm-run-panel__form {
   display: flex;

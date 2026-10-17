@@ -265,6 +265,37 @@ test.describe('in the present view at 1920x1080', () => {
     await expect(slide.locator('.pm-run-panel')).toHaveClass(/pm-run-panel--present/)
   })
 
+  /** Whether `inner` lies within the height of `outer` on the screen. */
+  async function within(inner: Locator, outer: Locator) {
+    const [a, b] = await Promise.all([inner.boundingBox(), outer.boundingBox()])
+    return Boolean(a && b && a.y >= b.y - 1 && a.y + a.height <= b.y + b.height + 1)
+  }
+
+  test('a run panel longer than the slide keeps its controls and output on the slide; its code keeps the size and scrolls (N-05, F-19)', async ({ page }) => {
+    // The present view of the web form shrinks a slide that does not fit its frame: the panel fits instead.
+    await page.goto(`${panels().web}/exec.html?view=present&section=exec-long`)
+    const present = page.getByRole('region', { name: '放映' })
+    await expect(present).toHaveAttribute('data-section', 'exec-long')
+    const frame = present.locator('.pm-present__slide')
+    await expect.poll(() => within(present.locator('.pm-run-panel__run'), frame)).toBe(true)
+    let shown = await code(present, '.pm-run-panel')
+    expect(shown.size).toBeGreaterThanOrEqual(18)
+    expect(shown.hidden).toBeGreaterThan(0)
+
+    // The slides cut a slide at its edge: the parameters, the run button and the output stay above it.
+    const slide = await openSlide(page, 'exec-long', '长代码的面板')
+    const panel = slide.locator('.pm-run-panel')
+    await expect.poll(() => within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
+    expect(await within(panel.locator('input[name="text"]'), slide)).toBe(true)
+    shown = await code(slide, '.pm-run-panel')
+    expect(shown.size).toBeGreaterThanOrEqual(18)
+    expect(shown.hidden).toBeGreaterThan(0)
+    await panel.locator('.pm-run-panel__run').click()
+    await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('[\'s\', \'low\', \'est\'] [115, 260, 257]\n', RUNTIME)
+    expect(await within(panel.locator('.pm-run-panel__side'), slide)).toBe(true)
+    expect(await within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
+  })
+
   test('a stepwise run steps forward and back with the present view (R-109)', async ({ page }) => {
     await page.goto(`${panels().web}/exec.html?view=present&section=exec-steps`)
     const present = page.getByRole('region', { name: '放映' })

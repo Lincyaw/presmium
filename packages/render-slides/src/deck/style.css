@@ -174,3 +174,28 @@
   contain: strict;
   overflow: clip !important;
 }
+
+/*
+ * Printed, the static form of a component that ends with an output (a run panel's code and the output
+ * recorded for it) keeps that output on the page when it is taller than its slide: the slide is a
+ * column, and the blocks before the output give way and are cut instead (N-05, F-19).
+ */
+.print-slide-container .slidev-layout:has(> .pm-static-fallback > .slidev-code-wrapper:last-child) {
+  display: flex;
+  flex-direction: column;
+}
+
+.print-slide-container .slidev-layout > .pm-static-fallback:has(> .slidev-code-wrapper:last-child) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.print-slide-container .pm-static-fallback:has(> .slidev-code-wrapper:last-child) > :not(:last-child) {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.print-slide-container .pm-static-fallback > .slidev-code-wrapper:last-child {
+  flex-shrink: 0;
+}
