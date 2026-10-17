@@ -560,6 +560,7 @@ K2 波次的补充（WP-89e 的交付，C-9，由 WP-89g 核对写入）：
 - **放映中的执行面板**（F-19）：幻灯片与放映视图中面板的代码占满幻灯片的剩余高度，较长时在面板中滚动，参数、运行按钮与输出留在幻灯片上。WP-89g：放映中参数与运行按钮的字号与代码相同（网页的表单控件不再取浏览器的 13.3 px），输出在代码旁边占去一半宽度时，过长的代码行在面板中换行而不被截断（R-27、N-05）；幻灯片中现场代码的 Monaco 运行器（执行插件的 `styles/index.css`）在编辑器高过 15em 时于其中滚动，输出区高过 7.5em 时滚动，所以长代码不再靠幻灯片的 `zoom` 缩小（示例讲义的 `extend-c`、`extend-train` 去掉了 `zoom`）。
 - **导出**（F-18）：`presmium-export` 与 `presmium-diff` 写的导出文稿带渲染端选项 `renderers.slides.liveCode: false`：可运行的代码写成静态的高亮代码加录制输出，不写 `{monaco-run}`；打印时每张幻灯片裁到自己的页面，一张溢出的幻灯片不再缩小整份 PDF；`--range` 的页数与 PDF 不符时以 2 退出（此前只是警告）。打印模式下的现场代码在每一页（含点击的各步）显示录制的输出。
 - **本地环境插件**（F-22、F-23、F-76，决定 D-2）：回写（P-25）删去，没有提交按钮与路由，状态中不再有 `git`；端点改为服务端路由 `/__presmium/presmium.execLocal/{status,run,replicate}`，只给编辑者，运行先经 `operate` 确认（测试与 `presmium dev` 用 `--allow operate`）；默认的工作区是工作区根目录而不是 git 的根目录；容器的运行目录在一个私有（0700）的父目录中，文件以独占方式新建，从不经链接。插件只声明 `exec` 与 `fs` 两种能力。
+- **高对比度**（F-72）：高对比度开关把滚动叙事中淡化的讲解的不透明度提到 0.6，网页的放映与滚动叙事视图同样达到 AA（`e2e/publish.spec.ts`）。
 - **离开页面时关闭 Jupyter 终端**（F-68）；**浏览器中没有 GPU**（F-70）：Pyodide 中抛出 `GPUUnavailable` 的 Python 按没能进行的运行处理，说明“没有可用的 GPU 适配器”，不显示回溯。
 - **离线**（F-73，决定 D-6）：网页的 Service Worker 安装时只预缓存外壳与内容；`pyodide/`、`wasi/` 与 `presmium/jax-js/`（许可证文件除外）放在自己的缓存 `presmium-web-runtimes-<哈希>` 中，第一次使用时缓存、之后优先取缓存，运行时不变的构建之间保留；发布插件的工具栏“保存以便离线使用”（`OFFLINE_MESSAGES`：`presmium:offline-runtimes`、`presmium:save-offline`）在 Service Worker 应答之后出现，一次下载全部运行时。幻灯片照旧预缓存全部文件。
 
