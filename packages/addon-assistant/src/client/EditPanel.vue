@@ -3,15 +3,17 @@
 // clicks (with the block's source and an excerpt of it), sent as one batch; a chat with the agent that takes
 // where the author is (section, step, selection); both name the model's provider (N-08). The change tasks sent
 // from this window follow, newest first: the one under way shows its steps, then its review file by file (each
-// kept or rejected, a unified diff for text); each committed one can be undone. In the toolbar while edit mode
-// is on; the panel opens beside the page.
+// kept or rejected, a unified diff for text, a return to before each step); each committed one can be undone.
+// The document's change task this member sent before the page was reloaded (or, for owners, anyone's) is taken
+// up again. In the toolbar while edit mode is on; the panel opens beside the page.
 import { EDIT_MODE, useMessages, useServer, useService } from '@presmium/host'
 import type { AgentContext } from '@presmium/kernel'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
+import type { PendingChange } from '../domain/index.ts'
 import ChangeTask from './ChangeTask.vue'
-import { addAnnotation, annotations, busy, changes, excerptOf, picked, removeAnnotation, sendAnnotations, sendChat } from './edit.ts'
-import { agent, selected, useNavigator } from './state.ts'
+import { addAnnotation, annotations, busy, changes, excerptOf, picked, removeAnnotation, resume, sendAnnotations, sendChat } from './edit.ts'
+import { agent, assistant, selected, useNavigator } from './state.ts'
 
 const t = useMessages(ASSISTANT_MESSAGES)
 const editMode = useService(EDIT_MODE)
@@ -64,11 +66,21 @@ function outline(): void {
   document.querySelector(`[data-section="${CSS.escape(now.section)}"] [data-block="${CSS.escape(now.block)}"]`)?.classList.add('pm-assistant-picked')
 }
 
+/** How a change task taken up again is named: as when it was sent. */
+const labelOf = (change: PendingChange) => change.kind === 'annotations'
+  ? t.value.edit.send(change.annotations?.length ?? 0)
+  : change.kind === 'transcript' ? t.value.edit.transcript(change.track ?? '') : change.prompt
+
 const listener = (event: MouseEvent) => void pick(event)
 watch([active, canChange], ([on, can]) => {
   document.removeEventListener('click', listener, true)
-  if (on && can) document.addEventListener('click', listener, true)
-  else picked.value = undefined
+  if (on && can) {
+    document.addEventListener('click', listener, true)
+    // The change task under way when the page was loaded (a reload during its review).
+    if (assistant.value) void resume(assistant.value, labelOf)
+  } else {
+    picked.value = undefined
+  }
 }, { immediate: true })
 watch(picked, outline)
 onBeforeUnmount(() => {

@@ -88,7 +88,8 @@ test('a reader asks about selected code: the provider shows before the question,
   await citation.click()
   await expect(panel).toBeHidden()
   await expect(page).toHaveURL(/\/later\.html/)
-  await expect(page.locator('[data-section="later-section"]')).toBeInViewport()
+  // The section itself (the classroom's note spot carries the section id too).
+  await expect(page.locator('section.pm-section[data-section="later-section"]')).toBeInViewport()
 })
 
 test('in tutor mode the agent\'s attempt to write a file is refused, and the file stays', async ({ page }) => {

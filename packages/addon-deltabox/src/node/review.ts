@@ -4,10 +4,12 @@
  * The agent works in the session's view (`root`), so its writes reach the
  * document directory at once (the preview follows them) and are journaled.
  * Each step is a checkpoint and the changes since the previous one (at most
- * 100; later steps join the last); accepting commits everything, then the
- * rejected files go back to the snapshot taken when the review opened;
- * rejecting all aborts. Paths are relative to the workspace root here and to
- * the document directory in the helper.
+ * 100; later steps join the last); going back to before a step aborts to the
+ * checkpoint before it; accepting commits everything, then the rejected
+ * files go back to the snapshot taken when the review opened; rejecting all
+ * aborts (a session that faulted is rolled back from that snapshot by the
+ * helper, which frees the directory). Paths are relative to the workspace
+ * root here and to the document directory in the helper.
  */
 import { realpathSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
@@ -114,6 +116,16 @@ class DeltaboxReview implements ChangeReview {
     this.#live()
     const { changes } = await this.#helper.call<{ changes: BoxChange[] }>('review.diff', { session: this.#session })
     return changes.map(c => this.#change(c))
+  }
+
+  /** Back to the checkpoint before the step (the session's start for the first): deltabox aborts to it, the review goes on. */
+  async restoreTo(stepId: string): Promise<void> {
+    this.#live()
+    const at = this.#steps.findIndex(step => step.id === stepId)
+    if (at < 0) throw new Error(`no step ${stepId} in this review`)
+    await this.#helper.call('review.restore', { session: this.#session, ...at > 0 ? { checkpoint: this.#checkpoints[at - 1] } : {} })
+    this.#steps.splice(at)
+    this.#checkpoints.splice(at)
   }
 
   async accept(reject: string[] = []): Promise<string[]> {

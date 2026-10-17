@@ -8,9 +8,13 @@
  * the document directory holds the repository's, whose configuration and
  * hooks git runs, and no review shows it); a file elsewhere, a shell command,
  * the network or any other tool is `workspace` (owners only); the operator
- * directory is refused outright, asking no one.
+ * directory is refused outright, asking no one. Where a path is is decided
+ * by its real path (its nearest existing directory with the links in it
+ * resolved): a link in the document directory to a directory elsewhere does
+ * not make a file there `content`.
  */
-import { isAbsolute, relative, resolve, sep } from 'node:path'
+import { realpathSync } from 'node:fs'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { deckLocale, isRecord } from '@presmium/kernel'
 import type { ApprovalRequest } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -39,6 +43,19 @@ function within(path: string, dir: string): boolean {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
 }
 
+/** The real path of `path`: that of its nearest existing ancestor (links resolved), with the rest of the path after it. */
+export function realPath(path: string): string {
+  let rest = ''
+  for (let at = resolve(path); ; at = dirname(at)) {
+    try {
+      return join(realpathSync(at), rest)
+    } catch {
+      if (dirname(at) === at) return resolve(path)
+      rest = join(basename(at), rest)
+    }
+  }
+}
+
 export function classify(call: ToolCallInfo, where: { cwd: string, operatorDir?: string, lang?: string, member?: string }): Classified {
   const t = ASSISTANT_MESSAGES[deckLocale(where.lang)].approval
   const name = text(call.title) ?? 'tool'
@@ -51,10 +68,12 @@ export function classify(call: ToolCallInfo, where: { cwd: string, operatorDir?:
   const target = call.locations?.find(location => text(location.path))?.path ?? text(input.file_path) ?? text(input.path) ?? text(input.notebook_path)
   if (target) {
     const path = resolve(where.cwd, target)
-    if (where.operatorDir && within(path, where.operatorDir)) return { refuse: `${path} is in the operator directory` }
+    const real = realPath(path)
+    if (where.operatorDir && (within(path, where.operatorDir) || within(real, realPath(where.operatorDir)))) return { refuse: `${path} is in the operator directory` }
     if (!shell && !network) {
-      const content = within(path, where.cwd) && !relative(resolve(where.cwd), path).split(sep).some(part => part.toLowerCase() === '.git')
-      return { request: { ...base, kind: 'write', scope: content ? 'content' : 'workspace', title: t.write(path), path, ...detail(justification) ? { detail: detail(justification) } : {} } }
+      const cwd = realPath(where.cwd)
+      const content = within(path, where.cwd) && within(real, cwd) && !relative(cwd, real).split(sep).some(part => part.toLowerCase() === '.git')
+      return { request: { ...base, kind: 'write', scope: content ? 'content' : 'workspace', title: t.write(real), path: real, ...detail(justification) ? { detail: detail(justification) } : {} } }
     }
   }
   if (shell) return { request: { ...base, kind: 'agent', scope: 'workspace', title: t.shell, detail: detail(text(input.command), justification) } }

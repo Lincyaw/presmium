@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // One change task in the edit panel: its progress and steps while the agent works, its review file by file
-// (each kept or rejected; a unified diff for text, binary files only named), its commit and the undo of it.
+// (each kept or rejected; a unified diff for text, binary files only named) with a return to before each step
+// (P-115), its commit and the undo of it.
 import { useMessages, useServer } from '@presmium/host'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
-import { decide, keep, revert } from './edit.ts'
+import { decide, keep, restoreTo, revert } from './edit.ts'
 import type { ChangeState } from './edit.ts'
 
 defineProps<{ change: ChangeState }>()
@@ -41,6 +42,9 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
         <ol>
           <li v-for="step in change.steps" :key="step.id" :data-step="step.id">
             {{ step.label }}: {{ step.changes.map(c => c.path).join(', ') || t.edit.noStepChange }}
+            <button type="button" class="pm-assistant-edit__restore" :aria-label="t.edit.restoreLabel(step.label)" :disabled="change.state !== 'review'" @click="restoreTo(change.id, step.id, route)">
+              {{ t.edit.restore }}
+            </button>
           </li>
         </ol>
       </details>
@@ -59,6 +63,9 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
           </p>
         </li>
       </ul>
+      <p v-if="change.message" class="pm-assistant-edit__error" role="alert">
+        {{ change.message }}
+      </p>
       <p class="pm-assistant-edit__actions">
         <button type="button" class="pm-assistant-edit__accept" :disabled="change.state !== 'review'" @click="decide(change.id, true)">
           {{ change.rejected.length ? t.edit.acceptSome(change.rejected.length) : t.edit.acceptAll }}
@@ -129,6 +136,12 @@ const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, p
 .pm-assistant-edit__steps ol {
   margin: 0.2rem 0;
   padding-left: 1.2em;
+}
+.pm-assistant-edit__steps li {
+  margin: 0.15rem 0;
+}
+.pm-assistant-edit__restore {
+  margin-left: 0.35rem;
 }
 .pm-assistant-edit__steps,
 .pm-assistant-edit__label {

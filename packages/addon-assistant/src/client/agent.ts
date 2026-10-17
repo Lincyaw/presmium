@@ -7,7 +7,9 @@
  * once even when the stream reconnects (the server sends them from the
  * first), until `done` or `error`. A task whose context names a document
  * goes to that document's routes: the workspace's new-document form drafts
- * the document it created (P-121) from the home page.
+ * the document it created (P-121) from the home page. Besides the contract,
+ * the page's own panels may ask for the document's change task under way
+ * (`pending`) and follow it again (`attach`), after the page was reloaded.
  */
 import { createServerClient } from '@presmium/host'
 import type { ServerClient } from '@presmium/host'
@@ -15,12 +17,16 @@ import type { AgentClient, AgentEvent, AgentTask, AgentTaskKind, AgentTaskReques
 import { shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import { ASSISTANT_ID } from '../domain/index.ts'
-import type { AssistantInfo } from '../domain/index.ts'
+import type { AssistantInfo, PendingChange } from '../domain/index.ts'
 
 export interface AssistantClient {
   client: AgentClient
   info: Readonly<ShallowRef<AssistantInfo | undefined>>
   refresh(): Promise<void>
+  /** The page's document's change task under way or waiting for its review, when this member sent it or owns the workspace. */
+  pending(): Promise<PendingChange | undefined>
+  /** A task submitted before (by this page before it was reloaded, or another): its events from the first, its cancel and review. */
+  attach(id: string): AgentTask
 }
 
 const terminal = (event: AgentEvent) => event.type === 'done' || event.type === 'error'
@@ -98,6 +104,34 @@ export function createAgentClient(server: ServerClient): AssistantClient {
       // The server is gone; what was known stays.
     }
   }
+  /** A task of `target` whose submission is `posted` (an accepted one for a task submitted before). */
+  const task = (target: ServerClient, id: string, posted: Promise<Response>): AgentTask => {
+    const events: AsyncIterable<AgentEvent> = {
+      async* [Symbol.asyncIterator]() {
+        try {
+          yield* follow(target, id, posted)
+        } finally {
+          void refresh()
+        }
+      },
+    }
+    const after = (path: string, body?: unknown) => posted.then(() => target.fetch(ASSISTANT_ID, `tasks/${encodeURIComponent(id)}/${path}`, {
+      method: 'POST',
+      ...body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    }))
+    return {
+      id,
+      events,
+      cancel() {
+        void after('cancel').then(response => response.text()).catch(() => undefined)
+      },
+      async review(decision: ReviewDecision) {
+        const response = await after('review', decision)
+        if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { error?: string }).error ?? `${response.status}`)
+        await response.text()
+      },
+    }
+  }
   const client: AgentClient = {
     available: (kind: AgentTaskKind) => info.value?.kinds.includes(kind) ?? false,
     provider: () => info.value?.provider,
@@ -105,33 +139,17 @@ export function createAgentClient(server: ServerClient): AssistantClient {
     submit(request: AgentTaskRequest): AgentTask {
       const id = taskId()
       const target = serverOf(server, request.context.document || undefined)
-      const posted = target.fetch(ASSISTANT_ID, 'tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...request, id }) })
-      const events: AsyncIterable<AgentEvent> = {
-        async* [Symbol.asyncIterator]() {
-          try {
-            yield* follow(target, id, posted)
-          } finally {
-            void refresh()
-          }
-        },
-      }
-      const after = (path: string, body?: unknown) => posted.then(() => target.fetch(ASSISTANT_ID, `tasks/${encodeURIComponent(id)}/${path}`, {
-        method: 'POST',
-        ...body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
-      }))
-      return {
-        id,
-        events,
-        cancel() {
-          void after('cancel').then(response => response.text()).catch(() => undefined)
-        },
-        async review(decision: ReviewDecision) {
-          const response = await after('review', decision)
-          if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { error?: string }).error ?? `${response.status}`)
-          await response.text()
-        },
-      }
+      return task(target, id, target.fetch(ASSISTANT_ID, 'tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...request, id }) }))
     },
   }
-  return { client, info, refresh }
+  const pending = async (): Promise<PendingChange | undefined> => {
+    try {
+      const response = await server.fetch(ASSISTANT_ID, 'tasks')
+      const body = await response.json().catch(() => ({})) as { change?: PendingChange }
+      return response.ok ? body.change : undefined
+    } catch {
+      return undefined
+    }
+  }
+  return { client, info, refresh, pending, attach: id => task(server, id, Promise.resolve(new Response(null, { status: 200 }))) }
 }

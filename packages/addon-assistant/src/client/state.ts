@@ -8,8 +8,11 @@
 import type { AgentClient, AgentContext, Citation, IRBlock, SourcePos } from '@presmium/kernel'
 import { errorMessage } from '@presmium/kernel'
 import { ref, shallowRef } from 'vue'
+import type { AssistantClient } from './agent.ts'
 
 export const agent = shallowRef<AgentClient>()
+/** The same client with what the page's own panels use besides the contract (a change task under way, after a reload). */
+export const assistant = shallowRef<AssistantClient>()
 
 /** How the page shows a place of the deck; set where the IR runtime runs. */
 export interface Navigator {
