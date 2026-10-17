@@ -12,11 +12,13 @@
 // The transcript shows each sentence as written, its words (to seek to) in it; a translation made
 // from an earlier text of its sentence is marked stale (P-137). The player lies over the page's
 // effects, e.g. the dimming of a spotlight (`--pm-cue-z`): in a layer of its own over the page.
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import type { Operations } from '@presmium/host'
 import { OPERATIONS, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
-import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, sha256Hex, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
+import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
 import type { LectureTrack, Utterance } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
 import { ClipClock, MediaClock, SilentClock } from './clock.ts'
@@ -196,8 +198,8 @@ function text(u: Utterance): string {
   return lang && lang !== player.value?.track.lang ? u.translations?.[lang]?.text ?? u.text : u.text
 }
 
-/** `sha256:<hex>` of a text, as a translation records its original's (P-137). */
-const digest = (text: string) => `sha256:${sha256Hex(text)}`
+/** `sha256:<hex>` of a text, as a translation records its original's (P-137); `@noble/hashes`, since a page served over plain http from another machine has no `crypto.subtle`. */
+const digest = (text: string) => `sha256:${bytesToHex(sha256(utf8ToBytes(text)))}`
 
 /** The utterances whose translation into the language shown was made from another text. */
 const stale = computed(() => {

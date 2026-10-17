@@ -6,7 +6,10 @@
  * other forms is shown and not said. A separate script
  * (`renderers.lecture.script`) replaces the narration of the sections it
  * has: its k-th paragraph of a section belongs to step k (the last step for
- * those beyond). A paragraph is said in pieces, split at its `pause` cues.
+ * those beyond), of the whole deck in a view that leaves some of it out
+ * (where the paragraph of a step the view does not have, or where it leaves
+ * out something seen or heard, is not said). A paragraph is said in pieces,
+ * split at its `pause` cues.
  */
 import { irBlocks, isRecord } from '@presmium/kernel'
 import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@presmium/kernel'
@@ -268,17 +271,20 @@ function stepTarget(section: IRSection, step: number): IRBlock | undefined {
 
 /**
  * The plan of a document (or of the lecture renderer's view of it), with a
- * separate script's sections over its narration. Utterance ids are given in
- * the order of the lecture.
+ * separate script's sections over its narration; `place` gives the step of
+ * `doc` of a script's k-th paragraph of a section, undefined for one not
+ * said (a view's, `viewPlaces`). Utterance ids are given in the order of
+ * the lecture.
  */
-export function lecturePlan(doc: IRDocument, script?: ScriptSections): LecturePlan {
+export function lecturePlan(doc: IRDocument, script?: ScriptSections, place?: (section: string, paragraph: number) => number | undefined): LecturePlan {
   const problems: PlanProblem[] = []
   const sections: PlannedSection[] = doc.sections.map((section) => {
     const paragraphs: PlannedParagraph[] = []
     const fromScript = script?.get(section.id)
     if (fromScript) {
       fromScript.forEach(({ paragraphs: nodes, source: heading }) => nodes.forEach((node, k) => {
-        const step = Math.min(k, section.steps)
+        const step = place ? place(section.id, k) : Math.min(k, section.steps)
+        if (step === undefined) return
         const spoken = spokenText(node)
         const source = linesOf(node, heading)
         const cues = planCues(spoken, { doc, section, target: stepTarget(section, step), source, script: true, problems })

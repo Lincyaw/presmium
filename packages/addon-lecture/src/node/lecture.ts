@@ -8,7 +8,7 @@
  * its lectures use in `.presmium/speech.lock.json` and drops the others.
  */
 import { randomBytes } from 'node:crypto'
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { renameSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { isRecord } from '@presmium/kernel'
 import type { IRDocument, SpeechEngineInfo, SpeechService } from '@presmium/kernel'
@@ -18,7 +18,7 @@ import type { DeckPlan } from './plan.ts'
 import { deckPlan } from './plan.ts'
 import type { MadeClip, Unsaid } from './speak.ts'
 import { audioBlob, clipVoice, sameEngine, synthesizePlan, transcribeSegments } from './speak.ts'
-import { mediaFile, readInDeck, readTrack, trackDir, writeTrack } from './store.ts'
+import { mediaFile, readInDeck, readRegular, readTrack, trackDir, writeTrack } from './store.ts'
 import type { DeckFiles } from './store.ts'
 
 /** The synthesis cache of a deck. */
@@ -124,10 +124,11 @@ export function clipKeys(tracks: Iterable<LectureTrack>): Set<string> {
  */
 export function pruneLock(deckDir: string, used: ReadonlySet<string>): number {
   const file = join(deckDir, '.presmium', 'speech.lock.json')
-  if (!existsSync(file)) return 0
+  const text = readRegular(file)?.toString('utf8')
+  if (text === undefined) return 0
   let synthesis: Record<string, unknown>
   try {
-    const lock: unknown = JSON.parse(readFileSync(file, 'utf8'))
+    const lock: unknown = JSON.parse(text)
     if (!isRecord(lock) || !isRecord(lock.synthesis)) return 0
     synthesis = lock.synthesis
   } catch {

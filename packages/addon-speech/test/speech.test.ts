@@ -289,6 +289,17 @@ describe('cloned voices in LOCAL mode', () => {
     } finally {
       await started.dev.stop()
     }
+    // Nor in a process that has not listed the engine's voices yet: the hit asks for the list (no synthesis), which says cloned.
+    started = await dev(dir, env())
+    try {
+      const before = (await fake.requests()).length
+      const fresh = await clone(started.server)
+      expect(fresh.status).toBe(403)
+      expect(fresh.json().error).toContain(`${join(operator, 'consent/fake/cloned-lin.json')} is missing`)
+      expect((await fake.requests()).slice(before).map(r => `${r.method} ${r.path}`)).toEqual(['GET /v1/audio/voices'])
+    } finally {
+      await started.dev.stop()
+    }
   }, 300_000)
 })
 

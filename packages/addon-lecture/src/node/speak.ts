@@ -7,13 +7,14 @@
  * transcript of the clip, kept beside the clip in the synthesis cache
  * (`<key>.align.json`), so a build without engines gives the same lecture.
  */
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { renameSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { errorMessage, isRecord, remapWords } from '@presmium/kernel'
 import type { SpeechService, SpeechWord, SynthesisRequest, WordSpan, WrittenWord } from '@presmium/kernel'
 import { plannedUtterances } from '../domain/index.ts'
 import type { Clip, LecturePlan, LectureVoice, MediaSegment, SegmentTranscript, Voice } from '../domain/index.ts'
 import type { DeckFiles } from './store.ts'
+import { readRegular } from './store.ts'
 
 /** An engine id as the operator's variables name it: case and `-` or `_` do not matter. */
 export function sameEngine(a: string, b: string): boolean {
@@ -46,37 +47,37 @@ export interface MadeClip extends Clip {
   provider?: string
 }
 
-/** The record of a clip in the synthesis cache (docs/ir.md 9.1), when it is there. */
-function record(file: string): Record<string, unknown> | undefined {
+/** A JSON file of the synthesis cache (which the sandbox may write, SHARED: read as `readRegular` reads); undefined when it is no such file. */
+function cacheJson(file: string): Record<string, unknown> | undefined {
   try {
-    const value: unknown = JSON.parse(readFileSync(join(dirname(file), `${basename(file).replace(/\.\w+$/, '')}.json`), 'utf8'))
+    const value: unknown = JSON.parse(readRegular(file)?.toString('utf8') ?? '')
     return isRecord(value) ? value : undefined
   } catch {
     return undefined
   }
 }
 
+/** The record of a clip in the synthesis cache (docs/ir.md 9.1), when it is there. */
+function record(file: string): Record<string, unknown> | undefined {
+  return cacheJson(join(dirname(file), `${basename(file).replace(/\.\w+$/, '')}.json`))
+}
+
 const MIME: Record<string, string> = { wav: 'audio/wav', ogg: 'audio/ogg', opus: 'audio/ogg', webm: 'audio/webm', mp4: 'audio/mp4', m4a: 'audio/mp4' }
 
-/** A file (or its bytes, read already) as the Blob a transcription takes. */
-export function audioBlob(file: string, bytes: Uint8Array = readFileSync(file)): Blob {
+/** A file's bytes, read already, as the Blob a transcription takes. */
+export function audioBlob(file: string, bytes: Uint8Array): Blob {
   return new Blob([new Uint8Array(bytes)], { type: MIME[file.split('.').at(-1) ?? ''] ?? 'application/octet-stream' })
 }
 
 /** The words of a clip without word times: a transcript of it, kept beside it (`<key>.align.json`); undefined when none can be made (or `lookup` and none is kept). */
 async function alignedWords(speech: SpeechService, file: string, key: string, lang: string, lookup: boolean, files: DeckFiles | undefined, signal?: AbortSignal): Promise<SpeechWord[] | undefined> {
   const kept = join(dirname(file), `${key}.align.json`)
-  if (/^[0-9a-f]{32}$/.test(key) && existsSync(kept)) {
-    try {
-      const value: unknown = JSON.parse(readFileSync(kept, 'utf8'))
-      if (isRecord(value) && Array.isArray(value.words)) return value.words as SpeechWord[]
-    } catch {
-      // Made again below.
-    }
-  }
-  if (lookup) return undefined
+  const value = /^[0-9a-f]{32}$/.test(key) ? cacheJson(kept) : undefined
+  if (Array.isArray(value?.words)) return value.words as SpeechWord[]
+  const bytes = lookup ? undefined : readRegular(file)
+  if (!bytes) return undefined
   try {
-    const transcript = await speech.transcribe({ audio: audioBlob(file), lang }, signal)
+    const transcript = await speech.transcribe({ audio: audioBlob(file, bytes), lang }, signal)
     const words = transcript.segments.flatMap(s => s.words)
     if (words.length === 0) return undefined
     const text = `${JSON.stringify({ key, words }, null, 2)}\n`

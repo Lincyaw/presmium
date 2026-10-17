@@ -2,7 +2,8 @@
 // engine (`presmium-speech fake`, a process of its own, defined as engine `fake` like any engine; it lists the
 // requests it got): `presmium build --to lecture` says each paragraph of narration once through SPEECH into
 // the synthesis cache and times the cues by the fake engine's word times (220 ms a CJK character, 80 ms
-// between words); a second build asks the engine nothing; without the cache and the engine the build fails
+// between words); a second build has the engine synthesize nothing (it asks for its list of voices only, which
+// says whether a clip's voice is cloned, review-round3 F-57); without the cache and the engine the build fails
 // and `presmium check` names the paragraphs. A separate script (`renderers.lecture.script`) replaces the
 // narration of its sections in the lecture only, and the check names the line of its paragraph with a problem.
 // `{only} lecture` narration is said and not shown; an engine that gives no word times has the cues timed by a
@@ -53,8 +54,9 @@ async function syntheses(): Promise<number> {
   const { requests } = await (await fetch(new URL('/requests', fake.url))).json() as { requests: { method: string, path: string }[] }
   return requests.filter(r => r.method === 'POST' && r.path.startsWith('/v1/audio/speech')).length
 }
-async function requests(): Promise<number> {
-  return ((await (await fetch(new URL('/requests', fake.url))).json()) as { requests: unknown[] }).requests.length
+/** The fake engine's requests so far, as `<method> <path>`. */
+async function requests(): Promise<string[]> {
+  return ((await (await fetch(new URL('/requests', fake.url))).json()) as { requests: { method: string, path: string }[] }).requests.map(r => `${r.method} ${r.path}`)
 }
 
 beforeAll(async () => {
@@ -129,7 +131,7 @@ describe('presmium build --to lecture (P-134)', () => {
     if (dir) rmSync(dir, { recursive: true, force: true })
   })
 
-  it('synthesizes each paragraph once into the cache, timed by the engine\'s words; a second build asks nothing; without cache and engine, build and check name the paragraphs', async () => {
+  it('synthesizes each paragraph once into the cache, timed by the engine\'s words; a second build synthesizes nothing; without cache and engine, build and check name the paragraphs', async () => {
     const asked = await syntheses()
     const built = await presmium(dir, ['build', '--to', 'lecture'], engine())
     expect(built.code, built.stdout + built.stderr).toBe(0)
@@ -162,11 +164,11 @@ describe('presmium build --to lecture (P-134)', () => {
     expect(Object.keys(lock.synthesis).sort()).toEqual(track.utterances.map(u => u.clip.slice(0, -'.wav'.length)).sort())
     expect(readFileSync(join(out, 'captions.zh-CN.vtt'), 'utf8')).toBe('WEBVTT\n\nu1\n00:00:00.000 --> 00:00:01.720\n我们先看合并。\n\nu2\n00:00:02.220 --> 00:00:05.140\n我们先看这两行，再合并。\n\nu3\n00:00:05.640 --> 00:00:07.960\n合并之后词表变大。\n')
 
-    // Again: every clip is in the cache, so the engine gets no request at all.
-    const before = await requests()
+    // Again: every clip is in the cache, so the engine synthesizes nothing; it is asked for its voices only (once).
+    const before = (await requests()).length
     const again = await presmium(dir, ['build', '--to', 'lecture'], engine())
     expect(again.code, again.stdout + again.stderr).toBe(0)
-    expect(await requests()).toBe(before)
+    expect((await requests()).slice(before)).toEqual(['GET /v1/audio/voices'])
     expect(JSON.parse(readFileSync(join(out, 'track.json'), 'utf8'))).toEqual(track)
 
     // Without the cache and without an engine: the build fails and the check names each paragraph.
@@ -178,7 +180,7 @@ describe('presmium build --to lecture (P-134)', () => {
     expect(checked.code).toBe(1)
     const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, severity: string, message: string }[] }).findings.filter(f => f.checkId === 'presmium.lecture')
     expect(findings.map(f => [f.severity, /「(.*)」/.exec(f.message)?.[1]])).toEqual(track.utterances.map(u => ['error', u.text]))
-    expect(await requests()).toBe(before)
+    expect((await requests()).slice(before)).toEqual(['GET /v1/audio/voices'])
   }, 240_000)
 })
 

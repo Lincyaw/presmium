@@ -60,8 +60,10 @@ export function speechCore(options: CoreOptions): SpeechCore {
    * fails the synthesis too: whether its voice is cloned cannot be known.
    */
   const lists = new Map<string, Promise<VoiceInfo[]>>()
-  /** The lists this process has got, which tell a cache's hit whether its voice is cloned without asking (`consent`). */
+  /** The lists this process has got, which tell a cache's hit whether its voice is cloned (`consent`). */
   const known = new Map<string, VoiceInfo[]>()
+  /** The engines whose list a cache's hit could not get: their hits are not held up asking again. */
+  const unlisted = new Set<string>()
   const allVoices = (engine: EngineDefinition) => {
     let list = lists.get(engine.id)
     if (!list) {
@@ -140,10 +142,19 @@ export function speechCore(options: CoreOptions): SpeechCore {
 
     async consent(engine, voice, recorded) {
       if (!recorded) {
-        // Not cloned by the record's word: by the engine's where it is known without asking (a hit asks no engine), else the record stands.
+        // Not cloned by the record's word: by the engine's, its adapter's or its list of voices (asked once per process,
+        // a hit sends it no synthesis); the record's word stands only for an engine not defined here or that cannot list them.
         const defined = engines().engines.find(own => own.id === engineId(engine))
-        const cloned = defined && (adapter(defined).cloned?.(voice) === true || known.get(defined.id)?.some(own => own.id === voice && own.cloned === true) === true)
-        if (!cloned) return
+        if (!defined) return
+        if (adapter(defined).cloned?.(voice) !== true) {
+          const voices = known.get(defined.id) ?? (unlisted.has(defined.id)
+            ? []
+            : await allVoices(defined).catch(() => {
+              unlisted.add(defined.id)
+              return []
+            }))
+          if (!voices.some(own => own.id === voice && own.cloned === true)) return
+        }
       }
       checkConsent(options.operatorDir, options.settings, engineId(engine), voice)
     },

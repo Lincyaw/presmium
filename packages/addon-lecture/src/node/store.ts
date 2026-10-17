@@ -83,7 +83,25 @@ export interface StoredTrack {
   problems: string[]
 }
 
-const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0)
+/** How a file is opened to be read: not through a link at its name, nor waiting for a writer of a FIFO (`O_NONBLOCK`, as the compiler's reads). */
+const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0)
+
+/** The bytes of a regular file, opened as `OPEN_FLAGS` says; undefined for any other (a link, a FIFO, a directory) or none. */
+export function readRegular(file: string): Buffer | undefined {
+  let fd: number
+  try {
+    fd = openSync(file, OPEN_FLAGS)
+  } catch {
+    return undefined
+  }
+  try {
+    return fstatSync(fd).isFile() ? readFileSync(fd) : undefined
+  } catch {
+    return undefined
+  } finally {
+    closeSync(fd)
+  }
+}
 
 /** The path a descriptor has open: by `/proc/self/fd` (Linux); elsewhere `expected` when its real path is it and it is the same file. */
 function openedPath(fd: number, expected: string): string | undefined {
@@ -106,8 +124,9 @@ function openedPath(fd: number, expected: string): string | undefined {
  * what serve reads for readers lies in directories the sandbox may write
  * (SHARED), where a link, or one swapped in between a check and the read,
  * could lead to the git directory, the workspace's settings or another
- * document (WP-91b). The file checked is the one opened, by its descriptor.
- * Undefined when it cannot be read so; the caller closes the descriptor.
+ * document (WP-91b), and a FIFO would keep the open waiting, and serve with
+ * it. The file checked is the one opened, by its descriptor. Undefined when
+ * it cannot be read so; the caller closes the descriptor.
  */
 export function openInDeck(deckDir: string, file: string): number | undefined {
   let expected: string
@@ -194,10 +213,12 @@ export function freeMediaPath(deckDir: string, id: string, folder: 'audio' | 'vi
   return path
 }
 
-/** The sha256 of a file, read as a stream (recordings can be large). */
-export async function sha256File(file: string): Promise<string> {
+/** The sha256 of a file of the deck, read as a stream from the file `openInDeck` opens (recordings can be large); undefined when it cannot be read so. */
+export async function sha256File(deckDir: string, file: string): Promise<string | undefined> {
+  const fd = openInDeck(deckDir, file)
+  if (fd === undefined) return undefined
   const hash = createHash('sha256')
-  for await (const chunk of createReadStream(file)) hash.update(chunk as Buffer)
+  for await (const chunk of createReadStream('', { fd })) hash.update(chunk as Buffer)
   return hash.digest('hex')
 }
 

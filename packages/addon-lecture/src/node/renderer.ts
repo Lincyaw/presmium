@@ -13,11 +13,14 @@
  *   <id>/chapters.vtt, events.vtt   chapters and the events as metadata
  *
  * A recorded lecture is published as the build's view of the deck has it
- * (P-55): a build for an audience of the whole deck's compilation (a host's
- * build of the student view) publishes what the audience gets of it
- * (`audienceTrack`, as readers get it from the server); any build leaves out
- * what was said and done in the sections its deck does not have, such as the
- * teachers' in `presmium build --audience student` (`deckTrack`).
+ * (P-55): a host's build of the student view of the whole deck's
+ * compilation publishes the students' part of it (`studentTrack`, as readers
+ * get it from the server); any other build leaves out what was said and
+ * done in the sections its deck does not have (`deckTrack`), such as the
+ * teachers' in `presmium build --audience student`, whose compilation left
+ * the teachers' content out before any pass: the blocks it left out of the
+ * sections it keeps are not known here, so what was said and shown with them
+ * stays (the build's scan reports what repeats their sentences).
  *
  * With a voice (`renderers.lecture.voice`), it also says the deck's lecture
  * plan through `SPEECH` (WP-83): `script/`, the synthesized lecture. Clips
@@ -31,10 +34,10 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@presmium/compiler'
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
-import { audienceTrack, captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
-import { latestDoc, LECTURE_RENDERER, lectureConfig, lectureView } from './plan.ts'
+import { latestDoc, LECTURE_RENDERER, lectureConfig, lectureView, studentTrack, viewOfWhole } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
@@ -115,15 +118,19 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
 
 /**
  * A recorded lecture as the build publishes it, `doc` being the build's view
- * of the deck: the audience's part of it when the deck compiled whole (the
+ * of the deck: the students' part of it when the deck compiled whole (the
  * latest IR of this entry, which the passes kept) and the view leaves some
- * of it out; else without the sections `doc` does not have.
+ * of it out (a host builds the student view only), the view then planning
+ * a separate script as written for the whole deck; else without the
+ * sections `doc` does not have.
  */
 function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack) => LectureTrack | undefined {
   const latest = latestDoc(deckDir)
   const whole = latest?.meta.entry === doc.meta.entry ? latest : undefined
-  const left = whole && leftOut(lectureView(whole), doc)
-  if (whole && left && !leavesNothing(left)) return track => audienceTrack(track, whole, left)
+  if (whole && !leavesNothing(leftOut(lectureView(whole), doc))) {
+    viewOfWhole(doc, lectureView(whole))
+    return track => studentTrack(track, whole)
+  }
   return track => deckTrack(track, whole ?? doc)
 }
 
@@ -140,8 +147,8 @@ export const lectureRenderer: Renderer = {
     const tracks: LectureTrack[] = []
     const synthesize = Boolean(lectureVoice(lectureConfig(doc)))
     const policy = mediaPolicy(workspaceSettings(ctx.workspaceRoot).settings[LECTURE_ID] ?? {})
-    let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
     const published = publishedTrack(doc, ctx.deckDir)
+    let complete = !synthesize || await publishSynthesized(doc, ctx, index, tracks)
     for (const id of trackIds(ctx.deckDir)) {
       if (synthesize && id === SCRIPT_TRACK) {
         ctx.report({ checkId: LECTURE_ID, severity: 'warning', message: `lectures/${SCRIPT_TRACK} is not published: ${SCRIPT_TRACK} is the id of the synthesized lecture` })

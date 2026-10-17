@@ -8,7 +8,7 @@
  * no link the sandbox planted leads serve's writes elsewhere, WP-91).
  */
 import { createHash, randomBytes } from 'node:crypto'
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
+import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import type { DocumentFiles, SpeechWord } from '@presmium/kernel'
 import { isRecord } from '@presmium/kernel'
@@ -38,6 +38,26 @@ export interface CacheRecord {
 interface LockFile {
   version: 1
   synthesis: Record<string, { audio: string, sha256: string }>
+}
+
+/** How a file of the cache is opened to be read: not through a link at its name, nor waiting for a writer of a FIFO. */
+const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0)
+
+/** A regular file's bytes, opened as `OPEN_FLAGS` says (the checked file is the one read); undefined for anything else. */
+function readRegular(file: string): Buffer | undefined {
+  let fd: number
+  try {
+    fd = openSync(file, OPEN_FLAGS)
+  } catch {
+    return undefined
+  }
+  try {
+    return fstatSync(fd).isFile() ? readFileSync(fd) : undefined
+  } catch {
+    return undefined
+  } finally {
+    closeSync(fd)
+  }
 }
 
 /** Writes beside `file` and renames over it, so a link at `file` is replaced rather than followed. */
@@ -79,25 +99,26 @@ export class SynthesisCache {
   }
 
   /**
-   * The record and audio file of a key, when both are there. The record is
-   * committed with the deck and may be edited by anyone who edits the deck, so
-   * nothing in it can point elsewhere: the audio must be `<key>.wav` or
-   * `<key>.ogg`, and the cache directory, the record and the audio must be
-   * real files inside the deck, not symbolic links.
+   * The record, audio file and audio of a key, when both are there. The
+   * record is committed with the deck and may be edited by anyone who edits
+   * the deck, so nothing in it can point elsewhere: the audio must be
+   * `<key>.wav` or `<key>.ogg`, and the cache directory, the record and the
+   * audio must be regular files inside the deck, not symbolic links nor
+   * FIFOs, each checked as it is read (`readRegular`).
    */
-  async find(key: string): Promise<{ record: CacheRecord, file: string } | undefined> {
+  async find(key: string): Promise<{ record: CacheRecord, file: string, audio: Buffer } | undefined> {
     if (!/^[0-9a-f]{32}$/.test(key)) return undefined
-    let found: { record: CacheRecord, file: string }
+    let found: { record: CacheRecord, file: string, audio: Buffer }
     try {
       if (!this.#contained()) return undefined
-      const json = join(this.dir, `${key}.json`)
-      if (!lstatSync(json).isFile()) return undefined
-      const record = JSON.parse(readFileSync(json, 'utf8')) as CacheRecord
+      const json = readRegular(join(this.dir, `${key}.json`))
+      const record = json && JSON.parse(json.toString('utf8')) as CacheRecord
       if (!isRecord(record) || record.key !== key || typeof record.audio !== 'string') return undefined
       if (record.audio !== `${key}.wav` && record.audio !== `${key}.ogg`) return undefined
       const file = join(this.dir, record.audio)
-      if (!existsSync(file) || !lstatSync(file).isFile()) return undefined
-      found = { record, file }
+      const audio = readRegular(file)
+      if (!audio) return undefined
+      found = { record, file, audio }
     } catch {
       return undefined
     }
@@ -140,7 +161,7 @@ export class SynthesisCache {
   async #lock(key: string, record: CacheRecord): Promise<void> {
     let lock: LockFile = { version: 1, synthesis: {} }
     try {
-      const read: unknown = JSON.parse(readFileSync(this.lockFile, 'utf8'))
+      const read: unknown = JSON.parse(readRegular(this.lockFile)?.toString('utf8') ?? '')
       if (isRecord(read) && isRecord(read.synthesis)) lock = read as unknown as LockFile
     } catch {
       // None yet.

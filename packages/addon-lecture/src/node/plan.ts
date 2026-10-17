@@ -8,14 +8,15 @@
  * routes and the agent tools plan from the latest IR the deck compiled in
  * this process, which a pass keeps (`presmium dev` and `presmium serve`
  * compile before they serve): editors' and owners' from the whole IR,
- * readers' and `tutor` tokens' from its student view (P-55, D17).
+ * readers' and `tutor` tokens' from its student view (P-55, D17), and they
+ * get the students' part of each recorded lecture (`studentTrack`).
  */
 import { resolve } from 'node:path'
 import { audienceView, STUDENT, viewFor } from '@presmium/compiler'
 import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRPass, MdastNode } from '@presmium/kernel'
-import { LECTURE_ID, lectureGap, lecturePlan, lectureVoice, lexiconOf } from '../domain/index.ts'
-import type { LecturePlan, LectureVoice } from '../domain/index.ts'
+import { audienceTrack, LECTURE_ID, lectureGap, lecturePlan, lectureVoice, leftOut, lexiconOf, viewPlaces } from '../domain/index.ts'
+import type { LecturePlan, LectureTrack, LectureVoice } from '../domain/index.ts'
 import { readScript } from './script.ts'
 import { trackIds } from './store.ts'
 
@@ -36,14 +37,36 @@ export const LECTURE_RENDERER = 'lecture'
 /** Which view of a deck a caller gets: the whole IR (editors, owners), or the student view (readers, `tutor` tokens). */
 export type DeckView = 'full' | 'student'
 
+/** The renderer a recorded lecture is made and played in (its steps are that form's). */
+const PLAYER_RENDERER = 'web'
+
 const views = new WeakMap<IRDocument, IRDocument>()
+const webViews = new WeakMap<IRDocument, IRDocument>()
 const students = new WeakMap<IRDocument, IRDocument>()
+/** The lecture view of the whole IR that a lecture view leaving some of it out was made from (`viewOfWhole`). */
+const wholes = new WeakMap<IRDocument, IRDocument>()
 
 /** The view of a document the `lecture` renderer gets in a build (`viewFor`): the same object for the same IR. */
 export function lectureView(doc: IRDocument): IRDocument {
   let view = views.get(doc)
   if (!view) views.set(doc, view = viewFor(doc, LECTURE_RENDERER))
   return view
+}
+
+/** The web form's view of a document, where a lecture is recorded and played: the same object for the same IR. */
+function webView(doc: IRDocument): IRDocument {
+  let view = webViews.get(doc)
+  if (!view) webViews.set(doc, view = viewFor(doc, PLAYER_RENDERER))
+  return view
+}
+
+/**
+ * Says that `view`, a lecture view, is one of `whole` (the lecture view of
+ * the whole IR) that leaves some of it out, so a separate script written for
+ * the whole deck is planned by the steps it was written for (`deckPlan`).
+ */
+export function viewOfWhole(view: IRDocument, whole: IRDocument): void {
+  if (view !== whole) wholes.set(view, whole)
 }
 
 /**
@@ -118,7 +141,10 @@ export function deckPlan(doc: IRDocument, deckDir: string): DeckPlan {
     findings.push(...read.findings)
     script = read.sections
   }
-  const plan = lecturePlan(doc, script)
+  // A view's script paragraphs at the steps of the whole deck they were written for, as the view has them.
+  const whole = script && wholes.get(doc)
+  const places = whole ? viewPlaces(whole, leftOut(whole, doc)) : undefined
+  const plan = lecturePlan(doc, script, places && ((section, paragraph) => places.step(section, paragraph)))
   findings.push(...plan.problems.filter(p => !p.compiled).map((p): Finding => ({ checkId: LECTURE_ID, severity: 'warning', message: p.message, ...p.source ? { source: { file: p.source.file, line: p.source.line } } : {} })))
   const own = doc.config.presmium[LECTURE_ID]
   const voice = lectureVoice(config)
@@ -137,8 +163,24 @@ export function latestDoc(deckDir: string, view: DeckView = 'full'): IRDocument 
 
 /** The lecture renderer's view of the latest IR of a deck (what a build would plan from), whole or its student view. */
 export function latestView(deckDir: string, view: DeckView = 'full'): IRDocument | undefined {
-  const doc = latestDoc(deckDir, view)
-  return doc && lectureView(doc)
+  const doc = latest.get(deckDir)
+  if (!doc) return undefined
+  const whole = lectureView(doc)
+  if (view === 'full') return whole
+  const student = lectureView(studentView(doc))
+  viewOfWhole(student, whole)
+  return student
+}
+
+/**
+ * A recorded lecture as the students get it (P-55): the part of it their
+ * view of `whole` (an IR compiled whole) keeps, cut in the web form where it
+ * was recorded and is played (`audienceTrack`, failing closed); undefined
+ * when nothing of it is left.
+ */
+export function studentTrack(track: LectureTrack, whole: IRDocument): LectureTrack | undefined {
+  const recorded = webView(whole)
+  return audienceTrack(track, recorded, leftOut(recorded, webView(studentView(whole))))
 }
 
 /**

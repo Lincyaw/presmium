@@ -15,17 +15,21 @@
  *   POST recordings/<id>/finish  { head, recording, section? }    writes track.json: { id, track }
  *
  * Editors and owners get the lectures of the whole deck; readers those of
- * its student view (P-55, D17): `script` said from the student view's plan,
- * a recorded lecture without what was said and done in the sections and
- * blocks the view leaves out or does not have (`viewTrack`: a section
- * relabeled since the recording is left out too), and only the clips and
- * media of what they get. What a reader is told of a failure quotes nothing said.
- * Files are read as they are opened, never through a link (`openInDeck`).
+ * its student view (P-55, D17): `script` said from the plan of the latest
+ * IR's student view, the students' part of a recorded lecture
+ * (`studentTrack`: without the sections the view leaves out or the deck no
+ * longer has, without what was said and done at a step where something left
+ * out is seen or heard, and without the audio and video of a section the
+ * view leaves anything out of), and only the clips and media of what they
+ * get. What a reader is told of a failure quotes nothing said. Files are
+ * read as they are opened, never through a link nor waiting on a FIFO
+ * (`openInDeck`).
  *
  * Synthesis is paid, so only an editor's request makes `script` with the
  * engine (the whole deck's, then the students' from the same clips): a
- * reader gets the one made for the latest IR, else what the cache alone
- * gives when no engine can synthesize the voice, else the last one made.
+ * reader gets the students' lecture of the latest IR said with the clips
+ * this process said for editors (when an engine could say more), or from
+ * the cache alone (when none can), else 409 until an editor opens it.
  *
  * Editors also work on a recorded lecture's words (WP-83), each change
  * written to its track.json, which comes back:
@@ -39,11 +43,11 @@ import { closeSync, createReadStream, existsSync, fstatSync, statSync } from 'no
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
 import { DOCUMENT_FILES, errorMessage, isRecord, json, problem, SPEECH } from '@presmium/kernel'
-import type { IRDocument, Member, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
-import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration, viewTrack } from '../domain/index.ts'
+import type { IRDocument, Member, Route, ServerContext, ServerContribution, SpeechService, Synthesis, SynthesisRequest } from '@presmium/kernel'
+import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
 import { clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, transcriptionEngine, unsaidMessage } from './lecture.ts'
-import { latestDoc, latestView, lectureConfig } from './plan.ts'
+import { latestDoc, latestView, lectureConfig, studentTrack } from './plan.ts'
 import type { DeckView } from './plan.ts'
 import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
@@ -113,7 +117,7 @@ function serveFile(deckDir: string, file: string | undefined, request: Request):
 function hashed<T extends MediaSegment>(deckDir: string, id: string, segments: T[]): Promise<T[]> {
   return Promise.all(segments.map(async (segment) => {
     const file = mediaFile(deckDir, id, segment.src)
-    const sha256 = file && existsSync(file) ? await sha256File(file) : undefined
+    const sha256 = file && await sha256File(deckDir, file)
     return { ...segment, ...sha256 ? { sha256 } : {} }
   }))
 }
@@ -238,27 +242,51 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
   const lexicon = lexiconOf(ctx.config)
 
+  /**
+   * The clips this process said for editors' requests, by request: what a
+   * reader's request is said with when an engine could say more (synthesis
+   * is paid, and a reader's request never has an engine synthesize).
+   */
+  const said = new Map<string, Synthesis>()
+  const request = (r: SynthesisRequest) => JSON.stringify([r.engine ?? '', r.voice, r.lang, r.rate ?? 1, r.style ?? '', r.text, r.lexicon ?? {}])
+  /** The speech service of an editor's request, which keeps what it said. */
+  const spending = (service: SpeechService): SpeechService => ({
+    engines: () => service.engines(),
+    voices: (engine, lang) => service.voices(engine, lang),
+    transcribe: (r, signal) => service.transcribe(r, signal),
+    async synthesize(r, signal) {
+      const synthesis = await service.synthesize(r, signal)
+      said.set(request(r), synthesis)
+      return synthesis
+    },
+  })
+  /** The speech service of a reader's request: the clips said before (`said`) that the cache still has, nothing else. */
+  const sparing = (service: SpeechService): SpeechService => ({
+    ...spending(service),
+    async synthesize(r) {
+      const synthesis = said.get(request(r))
+      if (typeof synthesis?.audio !== 'string' || !existsSync(synthesis.audio)) throw new Error('not said for an editor yet')
+      return synthesis
+    },
+  })
+
   /** The deck's synthesized lecture: with `lookup`, from the cache alone (no clip transcribed to align it). */
-  const synthesize = (doc: IRDocument, lookup: boolean): Promise<LectureTrack> => synthesizedLecture(doc, deckDir, speech(), undefined, { lookup, files }).then(({ deck, track, unsaid }) => {
+  const synthesize = (doc: IRDocument, service: SpeechService, lookup: boolean): Promise<LectureTrack> => synthesizedLecture(doc, deckDir, service, undefined, { lookup, files }).then(({ deck, track, unsaid }) => {
     if (!deck.voice) throw new Refusal(404, `no lecture ${SCRIPT_TRACK}: renderers.lecture.voice names no voice`)
     if (!track) throw new Refusal(502, unsaid.map(unsaidMessage).join('\n'))
     return track
   })
-  /** Each view's synthesized lecture of the latest IR, made once per IR (a lookup-made one serves lookups only), and the last one made. */
+  /** Each view's synthesized lecture, made once per IR (one made for a reader serves readers only). */
   const synthesized = new Map<DeckView, { doc: IRDocument, made: Promise<LectureTrack>, lookup: boolean }>()
-  const last = new Map<DeckView, LectureTrack>()
-  const made = (view: DeckView, doc: IRDocument, lookup: boolean): Promise<LectureTrack> => {
+  /** Each view's synthesized lecture as made, with the IR it was made of: whose clips its members may have. */
+  const ready = new Map<DeckView, { doc: IRDocument, track: LectureTrack }>()
+  const made = (view: DeckView, doc: IRDocument, service: SpeechService, lookup: boolean): Promise<LectureTrack> => {
     // The student view of a deck that leaves nothing out is the whole deck: one lecture serves both.
     const known = [synthesized.get(view), ...synthesized.values()].find(entry => entry?.doc === doc && (!entry.lookup || lookup))
-    if (known) {
-      synthesized.set(view, known)
-      void known.made.then(track => last.set(view, track), () => {})
-      return known.made
-    }
-    const making = synthesize(doc, lookup)
-    synthesized.set(view, { doc, made: making, lookup })
+    const making = known?.made ?? synthesize(doc, service, lookup)
+    synthesized.set(view, known ?? { doc, made: making, lookup })
     making.then((track) => {
-      last.set(view, track)
+      if (synthesized.get(view)?.made === making) ready.set(view, { doc, track })
     }, () => {
       if (synthesized.get(view)?.made === making) synthesized.delete(view)
     })
@@ -267,24 +295,21 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   const scriptTrack = async (view: DeckView): Promise<LectureTrack> => {
     const doc = compiled(view)
     if (view === 'full') {
-      const track = await made('full', doc, false)
+      const track = await made('full', doc, spending(speech()), false)
       // The students' lecture, said with the same clips (the cache has them now), so readers get it without spending.
-      void made('student', compiled('student'), false).catch(() => {})
+      void made('student', compiled('student'), spending(speech()), false).catch(() => {})
       return track
     }
-    // A reader's request spends nothing: the cache alone when no engine can synthesize the voice (each clip a lookup).
+    // A reader gets the students' lecture of the latest IR (P-55) and spends nothing: said with the clips said for editors
+    // when an engine could make more, else from the cache alone; when it cannot be, an editor's request has it made.
     const entry = synthesized.get('student')
     if (entry?.doc === doc) return entry.made
-    if (!(await synthesisEngineOf(speech(), doc, voiced()?.engine))) {
-      try {
-        return await made('student', doc, true)
-      } catch (error) {
-        if (!last.has('student')) throw error
-      }
+    const engine = await synthesisEngineOf(speech(), doc, voiced()?.engine)
+    try {
+      return await made('student', doc, engine ? sparing(speech()) : speech(), true)
+    } catch (error) {
+      throw engine ? new Refusal(409, readerMessage(409)) : error
     }
-    const kept = last.get('student')
-    if (kept) return kept
-    throw new Refusal(409, readerMessage(409))
   }
   /** The voice the deck names, so `script` is its synthesized lecture. */
   const voiced = () => {
@@ -295,11 +320,15 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   const recorded = (id: string, view: DeckView): LectureTrack | undefined => {
     const found = trackDir(deckDir, id) ? readTrack(deckDir, id)?.track : undefined
     if (!found || view === 'full') return found
-    const [whole, student] = [latestDoc(deckDir), latestDoc(deckDir, 'student')]
-    return whole && student ? viewTrack(found, whole, student) : undefined
+    const whole = latestDoc(deckDir)
+    return whole ? studentTrack(found, whole) : undefined
   }
-  /** The lecture a view gets: `script` as made last (none before), or a recorded one. */
-  const offered = (id: string, view: DeckView): LectureTrack | undefined => (id === SCRIPT_TRACK && voiced() ? last.get(view) : recorded(id, view))
+  /** The lecture a view gets: `script` as made last of the latest IR (none before), or a recorded one. */
+  const offered = (id: string, view: DeckView): LectureTrack | undefined => {
+    if (id !== SCRIPT_TRACK || !voiced()) return recorded(id, view)
+    const kept = ready.get(view)
+    return kept && kept.doc === latestView(deckDir, view) ? kept.track : undefined
+  }
   /** A track as it is served: media this machine lacks under the external URL of the `url` policy (docs/ir.md 9.1). */
   const served = (track: LectureTrack): LectureTrack => {
     const local = (segment: MediaSegment) => {

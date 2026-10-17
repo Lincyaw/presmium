@@ -19,10 +19,10 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 import { defineService, DOCUMENT_FILES, SPEECH } from '@presmium/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@presmium/kernel'
-import { LECTURES_DIR, narrationDraft, narrationPlace, SCRIPT_TRACK, trackDuration, translationItems, viewTrack } from '../domain/index.ts'
+import { LECTURES_DIR, narrationDraft, narrationPlace, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack } from '../domain/index.ts'
 import { synthesizedLecture, transcribeLecture, unsaidMessage } from './lecture.ts'
-import { deckPlan, latestDoc, latestView } from './plan.ts'
+import { deckPlan, latestDoc, latestView, studentTrack } from './plan.ts'
 import type { DeckView } from './plan.ts'
 import { digest } from './renderer.ts'
 import { deckFiles, readTrack, TRACK_FILE, trackDir } from './store.ts'
@@ -126,11 +126,11 @@ export const trackTranscribe: AgentTool = {
   },
 }
 
-/** A recorded lecture as the view of the call has it: the students' part of it for the student view (`viewTrack`). */
+/** A recorded lecture as the view of the call has it: the students' part of it for the student view (`studentTrack`). */
 function shown(deckDir: string, track: LectureTrack, view: DeckView): LectureTrack | undefined {
   if (view === 'full') return track
-  const [whole, student] = [latestDoc(deckDir), latestDoc(deckDir, 'student')]
-  return whole && student ? viewTrack(track, whole, student) : undefined
+  const whole = latestDoc(deckDir)
+  return whole ? studentTrack(track, whole) : undefined
 }
 
 /** A recorded lecture of the deck, by the tool input's `track`, as the view of the call has it. */

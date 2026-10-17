@@ -40,9 +40,11 @@ export interface SpeechBackend {
    * ./consent.ts): a cache answers a clip only after this (N-08, decision
    * D-7), so a withdrawn consent stops the clips of the voice too. The voice
    * is cloned when its cache record says so (`recorded`), or when its engine,
-   * defined here, says so without being asked (its adapter, or the list of
-   * voices this process has got): the record is the deck's, which an editor
-   * may change, and a hit asks no engine.
+   * defined here, says so: its adapter, or its list of voices, which a hit
+   * asks for once per process (it sends no synthesis). The record is the
+   * deck's, which an editor may change: its word that the voice is not
+   * cloned stands only for an engine not defined here or that cannot list
+   * its voices.
    */
   consent(engine: string, voice: string, recorded: boolean, signal?: AbortSignal): Promise<void>
 }

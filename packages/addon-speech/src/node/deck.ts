@@ -7,7 +7,6 @@
  * the record's word or the engine's, as far as it is known); a miss is
  * synthesized and written to the cache.
  */
-import { readFileSync } from 'node:fs'
 import type { SynthesisRequest, TranscriptionRequest } from '@presmium/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon } from '../domain/index.ts'
@@ -46,10 +45,10 @@ export class DeckSpeech implements SpeechBackend {
     const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
     const hit = await this.cache.find(key)
     if (hit) {
-      const { record, file } = hit
+      const { record, file, audio } = hit
       await this.#inner.consent(record.engine, record.voice, record.cloned === true, signal)
       const result: SynthesisResult = {
-        audio: new Uint8Array(readFileSync(file)),
+        audio: new Uint8Array(audio),
         mime: record.mime,
         ext: record.audio.split('.').at(-1)!,
         duration: record.duration,
