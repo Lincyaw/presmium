@@ -10,7 +10,7 @@
  * 6.2): files, and directories inside the deck as a file listing; a local
  * reference that cannot be published is a warning on its line.
  */
-import { existsSync, statSync, watch } from 'node:fs'
+import { existsSync, realpathSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
@@ -606,12 +606,15 @@ function publishedAsset(compilation: Compilation, source: SourcePos, url: string
     report({ checkId: 'presmium.files', severity: 'error', message: refusedFile(file), source: { file: source.file, line: source.line } })
     return undefined
   }
-  const linked = documentLink(compilation, source, url)
-  if (linked && basename(url.replace(/[?#].*$/s, '')) === DECK_ENTRY) {
-    warn(`${url} is not published: it is the source of ${linked.dir ? `the document ${linked.dir}` : 'a document'}, which a workspace site links as its page; this build keeps the link as written`)
+  // `/...` names a file of the deck's public/, or a path of the site.
+  const target = localTarget(source, url)
+  const found = localAsset(deckDir, source, url)
+  // A document's source under whatever escapes the URL writes (it is read decoded) or name a link gives it.
+  if (found && target && basename(realpathSync(found.file)) === DECK_ENTRY) {
+    const linked = documentLink(compilation, source, url)
+    warn(`${url} is not published: it is the source of ${linked?.dir ? `the document ${linked.dir}` : 'a document'}, which a workspace site links as its page; this build keeps the link as written`)
     return undefined
   }
-  const found = localAsset(deckDir, source, url)
   if (found && scope && !scope.allows(found.file)) return refuse(found.file)
   // A deck outside any git repository has no repository to keep its files in.
   if (found && !inside(found.file, workspaceRoot) && existsSync(join(workspaceRoot, '.git'))) {
@@ -619,8 +622,6 @@ function publishedAsset(compilation: Compilation, source: SourcePos, url: string
     return undefined
   }
   if (found) return { ...found, directory: false }
-  // `/...` names a file of the deck's public/, or a path of the site.
-  const target = localTarget(source, url)
   if (!target) return undefined
   if (!existsSync(target)) {
     warn(`${url} is not published: there is no such file`)

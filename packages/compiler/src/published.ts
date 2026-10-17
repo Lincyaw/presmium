@@ -55,14 +55,18 @@ function unpublished(name: string): boolean {
   return name.startsWith('.') || name === 'node_modules'
 }
 
-/** The files a published directory holds, relative to it: regular files, not hidden, not in `node_modules`, not through symbolic links. */
+/**
+ * The files a published directory holds, relative to it: regular files, not hidden, not in `node_modules`, not
+ * through symbolic links, and none of a document inside it (its source is never published, F-25).
+ */
 function directoryFiles(dir: string, prefix = ''): string[] {
   return readdirSync(join(dir, prefix), { withFileTypes: true })
     .filter(entry => !unpublished(entry.name))
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
     .flatMap((entry) => {
       const path = prefix ? `${prefix}/${entry.name}` : entry.name
-      return entry.isDirectory() ? directoryFiles(dir, path) : entry.isFile() ? [path] : []
+      if (entry.isDirectory()) return existsSync(join(dir, path, DECK_ENTRY)) ? [] : directoryFiles(dir, path)
+      return entry.isFile() ? [path] : []
     })
 }
 

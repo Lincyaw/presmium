@@ -1,11 +1,12 @@
 // What serve does with the documents' contributions and the windows (WP-89b): a plugin route takes a body up to
-// its limit and refuses a larger one before reading it (F-02); what a route answers is not cached (F-33); a
-// document taken down (`unmount`) has no routes, and made again it has its new configuration (F-40); the
-// classroom's summary and the presenting position are the teachers', whatever a reader's page reports (F-38);
-// the owner console speaks the owner's browser's language, English for French (F-37).
+// its limit and refuses a larger one before keeping it, dropping the rest for a moment only (F-02); what a route
+// answers is not cached (F-33); a document taken down (`unmount`) has no routes, and made again it has its new
+// configuration (F-40); the classroom's summary and the position are the teachers', whatever a reader's page
+// reports, presenting or not (F-38); the owner console speaks the owner's browser's language, English for French (F-37).
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { request as httpRequest } from 'node:http'
+import { connect } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, EventStream } from './helpers.ts'
 import { as, eventStream, FIXTURES, listener, raw, remove, serveHost, sharedEnv, waitFor, workspace } from './helpers.ts'
@@ -29,10 +30,36 @@ function post(url: string, size: number, chunked: boolean): Promise<{ status: nu
       res.on('data', (chunk: string) => text += chunk)
       res.on('end', () => resolve({ status: res.statusCode ?? 0, text }))
     })
-    // The server may answer and close before it took the whole body.
     req.on('error', reject)
     for (let at = 0; at < size; at += 64 * 1024) req.write(body.subarray(at, at + 64 * 1024))
     req.end()
+  })
+}
+
+/**
+ * A POST whose body never ends, with a `Content-Length` too large or chunked: the answer's status line, and how
+ * long the server reads before it ends the connection (-1 when it still reads after 10 seconds).
+ */
+function endless(url: string, chunked: boolean): Promise<{ status: string, ms: number }> {
+  return new Promise((resolve) => {
+    const { hostname, port } = new URL(url)
+    const socket = connect(Number(port), hostname)
+    const started = Date.now()
+    let answer = ''
+    socket.on('data', (data: Buffer) => answer += data)
+    socket.on('error', () => undefined)
+    socket.write(`POST /__presmium/fixture.server/upload HTTP/1.1\r\nHost: ${hostname}:${port}\r\nPresmium-Document: doc\r\n${chunked ? 'Transfer-Encoding: chunked' : 'Content-Length: 100000000000'}\r\n\r\n`)
+    const data = Buffer.alloc(64 * 1024, 120)
+    const piece = chunked ? Buffer.concat([Buffer.from(`${data.length.toString(16)}\r\n`), data, Buffer.from('\r\n')]) : data
+    const writing = setInterval(() => socket.writable && socket.write(piece), 1)
+    const done = (ms: number) => {
+      clearInterval(writing)
+      clearTimeout(timer)
+      socket.destroy()
+      resolve({ status: answer.split('\r\n')[0], ms })
+    }
+    const timer = setTimeout(() => done(-1), 10_000)
+    socket.once('close', () => done(Date.now() - started))
   })
 }
 
@@ -66,6 +93,13 @@ describe('presmium serve on this machine (LOCAL): the documents\' routes', () =>
       expect(refused.status, `chunked: ${chunked}`).toBe(413)
     }
     expect(rss(pid) - before).toBeLessThan(50 << 20)
+    // What a client still sends is read and dropped (so it reads the 413 rather than a reset connection), for a moment only.
+    for (const chunked of [false, true]) {
+      const { status, ms } = await endless(url, chunked)
+      expect(status, `chunked: ${chunked}`).toBe('HTTP/1.1 413 Payload Too Large')
+      expect(ms, `chunked: ${chunked}`).toBeGreaterThan(0)
+      expect(ms, `chunked: ${chunked}`).toBeLessThan(5_000)
+    }
     // Below the default limit, and a route that takes 16 MiB.
     expect(JSON.parse((await post(`${url}/__presmium/fixture.server/upload`, 512 << 10, true)).text)).toEqual({ bytes: 512 << 10 })
     const large = await post(`${url}/__presmium/fixture.server/upload-large`, 10 << 20, false)
@@ -147,6 +181,13 @@ describe('presmium serve with a login (SHARED): the windows of readers and teach
     expect(await tool(token, 'get_classroom')).toEqual({ classroom: { 'presmium.classroom': { status: 'live', learners: 3 } } })
     const { position } = await tool(token, 'get_position')
     expect(position).toMatchObject({ section: '第二节', role: 'presenter' })
+
+    // The teacher stops presenting; a reader's page says again that it presents: the teacher's window comes first.
+    expect((await report('teacher', 'owner@test', { position: { slide: 2, step: 0, view: 'document' } })).status).toBe(200)
+    expect((await report('reader', 'reader@test', { position: { slide: 1, step: 0, view: 'present' }, role: 'presenter' })).status).toBe(200)
+    const { position: after } = await tool(token, 'get_position')
+    expect(after).toMatchObject({ section: '第二节', view: 'document' })
+    expect(after.role).toBeUndefined()
   })
 
   it('shows the owner console in the language of the owner\'s browser: English for French', async () => {

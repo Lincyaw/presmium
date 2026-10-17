@@ -599,7 +599,8 @@ function withHeaders(response: Response, headers: Record<string, string> | undef
 async function greet(shared: SharedSetup, log: Logger): Promise<void> {
   const ask = async (name: string, url: string, token: string) => {
     try {
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) })
+      // The token goes to this address only: a redirect is not followed.
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, redirect: 'error', signal: AbortSignal.timeout(5000) })
       if (response.ok) log.info(`${name} answers at ${url}`)
       else log.warn(`${name} at ${url} answered ${response.status}`)
     } catch (error) {

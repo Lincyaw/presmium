@@ -5,7 +5,8 @@
 // lychee, `--external-links` says so.
 // WP-89b: lychee checks each external URL itself, given on its stdin, so a dead link is reported on its own line
 // and the links of a page that works are not checked (F-44); a single deck's build publishes no document's
-// source, keeping the link as written with a warning (F-25, C-4).
+// source, however the link escapes its name or a linked directory holds it, keeping the link as written with a
+// warning (F-25, C-4).
 import { spawnSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -144,10 +145,18 @@ it('publishes no document\'s source in a single deck\'s build: the link to anoth
   copies.push(dir)
   cpSync(DECK, dir, { recursive: true })
   writeFileSync(join(dir, '.gitignore'), '*\n')
+  // The same source with its name escaped, and a directory of handouts that holds another document.
+  writeFileSync(join(dir, 'lecture.md'), `${readFileSync(join(dir, 'lecture.md'), 'utf8')}\n## 资料\n\n又见 [另一份](other/lecture%2Emd#later)，[讲义资料](handouts/)。\n`)
+  mkdirSync(join(dir, 'handouts/nested'), { recursive: true })
+  writeFileSync(join(dir, 'handouts/sheet.txt'), 'sheet\n')
+  writeFileSync(join(dir, 'handouts/nested/lecture.md'), '---\ntitle: 嵌套\n---\n\n## 一节\n\n:::{notes}\nNESTEDSECRET\n:::\n')
   const built = await presmium(dir, ['build', '--to', 'notebook'])
   expect(built.stdout).toMatch(/lecture\.md:22 {2}warning {2}other\/lecture\.md#later is not published: it is the source of the document \S*other, which a workspace site links as its page/)
+  expect(built.stdout).toMatch(/warning {2}other\/lecture%2Emd#later is not published: it is the source of the document \S*other/)
   const notebook = readFileSync(join(dir, 'dist/notebook/lecture.ipynb'), 'utf8')
   expect(notebook).toContain('other/lecture.md#later')
   const media = join(dir, 'dist/notebook/media')
-  expect(existsSync(media) ? readdirSync(media).filter(name => name.endsWith('lecture.md')) : []).toEqual([])
+  const published = existsSync(media) ? readdirSync(media, { recursive: true, encoding: 'utf8' }) : []
+  expect(published.some(name => name.endsWith('sheet.txt'))).toBe(true)
+  expect(published.filter(name => name.endsWith('lecture.md'))).toEqual([])
 }, 120_000)

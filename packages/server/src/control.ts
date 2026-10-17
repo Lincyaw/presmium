@@ -177,14 +177,15 @@ export class Control {
 
   /**
    * The positions the windows last reported (of `member`, of one document,
-   * when given), newest first, the present and presenter windows of editors
-   * and owners (and of `viewer`, who asks) before the others (MCP's
-   * `get_position`): a reader's window may say it presents, which counts for
-   * that reader only (F-38).
+   * when given), newest first: the present and presenter windows of editors
+   * and owners (and of `viewer`, who asks), then their other windows, then
+   * the others (MCP's `get_position`). A reader's window may say it
+   * presents, which counts for that reader only (F-38).
    */
   positions(member?: Member, document?: string, viewer?: Member): { window: string, member: string, roles: MemberRole[], document: string, report: WindowReport }[] {
     const all = [...this.#windows.values()].filter(w => w.report?.position && !w.console && (!member || w.member.id === member.id) && (document === undefined || w.document === document))
-    const rank = (w: Window) => (presents(w) && (hasRole(w.member, 'editor') || w.member.id === viewer?.id) ? 0 : 1)
+    const trusted = (w: Window) => hasRole(w.member, 'editor') || w.member.id === viewer?.id
+    const rank = (w: Window) => (!trusted(w) ? 2 : presents(w) ? 0 : 1)
     return all.sort((a, b) => rank(a) - rank(b) || b.report!.at - a.report!.at)
       .map(w => ({ window: w.id, member: w.member.id, roles: w.member.roles, document: w.document, report: w.report! }))
   }

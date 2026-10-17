@@ -56,18 +56,21 @@ export { json, problem }
 /**
  * The request with its body read, at most `limit` bytes (N-08, F-02): 413
  * when its `Content-Length` says more, before reading anything, or once a
- * body without one (chunked) passes the limit, whose reading then stops. The
- * request a handler gets holds the body read, so it can read it as it likes.
+ * body without one (chunked) passes the limit. The request a handler gets
+ * holds the body read, so it can read it as it likes.
+ *
+ * What the client still sends after a 413 is read and dropped, never kept:
+ * a server that closed at once would reset a connection whose sender is
+ * still writing, and the client would see the reset instead of the answer
+ * (RFC 9112, 9.6). The Node adapter ends such a connection after a moment
+ * (its `autoCleanupIncoming`), so a body sent on and on is not read for long.
  */
 export async function limitBody(request: Request, limit: number): Promise<Request | Response> {
-  // The connection is not kept: the rest of the body is not read, and the next request must not wait behind it.
-  const tooLarge = () => json({ error: `the request body is larger than this route takes (${limit} bytes)` }, 413, { Connection: 'close' })
-  if (!request.body) return request
+  const tooLarge = () => json({ error: `the request body is larger than this route takes (${limit} bytes)` }, 413)
+  // Before the body is touched: Node then reads and drops it on its own once the answer is sent.
   const declared = Number(request.headers.get('content-length') ?? Number.NaN)
-  if (declared > limit) {
-    await request.body.cancel().catch(() => undefined)
-    return tooLarge()
-  }
+  if (declared > limit) return tooLarge()
+  if (!request.body) return request
   const chunks: Uint8Array[] = []
   let size = 0
   const reader = request.body.getReader()
@@ -76,7 +79,7 @@ export async function limitBody(request: Request, limit: number): Promise<Reques
     if (done) break
     size += value.byteLength
     if (size > limit) {
-      await reader.cancel().catch(() => undefined)
+      void drop(reader)
       return tooLarge()
     }
     chunks.push(value)
@@ -88,6 +91,13 @@ export async function limitBody(request: Request, limit: number): Promise<Reques
     at += chunk.byteLength
   }
   return new Request(request.url, { method: request.method, headers: request.headers, body, signal: request.signal })
+}
+
+/** Reads the rest of a refused body and keeps none of it, until it ends or the connection does. */
+async function drop(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<void> {
+  try {
+    while (!(await reader.read()).done) { /* dropped */ }
+  } catch { /* the connection ended */ }
 }
 
 /** A header of a Node request as one string. */
