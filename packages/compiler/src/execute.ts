@@ -8,7 +8,9 @@
  * the same code made in another environment (e.g. another interpreter
  * version) is reused with a warning, so everyone who builds the deck gets the
  * same output; the headmatter `execute: { rerun: environment }` runs such
- * code again and replaces the recording. `presmium build` prunes the
+ * code again and replaces the recording. One made by another revision of the
+ * executor's own code (`Executor.revision`, a digest of the Python runner) is
+ * out of date: the code runs again where the executor runs (D-8). `presmium build` prunes the
  * recordings of code that is no longer in the deck, and the blobs no
  * recording refers to.
  *
@@ -45,6 +47,8 @@ interface FreezeRecord {
   code?: string
   /** Fingerprint of the runtime that made the recording (`Executor.fingerprint`). */
   environment?: string
+  /** The revision of the executor's code that made it (`Executor.revision`); absent for none. */
+  revision?: string
   run: RecordedRun
 }
 
@@ -71,13 +75,13 @@ export class FreezeCache implements RunCache {
   }
 
   /** Stores a run with the request it answers, in place of the recordings of the same request in other environments. */
-  record(key: string, input: string, request: RunRequest, run: RecordedRun, environment: string): void {
+  record(key: string, input: string, request: RunRequest, run: RecordedRun, environment: string, revision = ''): void {
     for (const [file, record] of this.#all()) {
       if (record.input !== input || file === `${key}.json`) continue
       rmSync(join(this.dir, file), { force: true })
       this.#records?.delete(file)
     }
-    this.#write(key, { input, entry: this.entry, lang: request.lang, code: request.code, environment, run })
+    this.#write(key, { input, entry: this.entry, lang: request.lang, code: request.code, environment, ...revision ? { revision } : {}, run })
   }
 
   /** A recording of the same request by any executor, for builds without the runtime. */
@@ -86,9 +90,9 @@ export class FreezeCache implements RunCache {
   }
 
   /** The record of a recording of the same request by any executor, in any environment. */
-  recording(input: string): { run: RecordedRun, environment?: string } | undefined {
+  recording(input: string): { run: RecordedRun, environment?: string, revision: string } | undefined {
     for (const record of this.#all().values()) {
-      if (record.input === input) return { run: this.#restore(record.run), environment: record.environment }
+      if (record.input === input) return { run: this.#restore(record.run), environment: record.environment, revision: record.revision ?? '' }
     }
     return undefined
   }
@@ -294,6 +298,8 @@ interface Unit {
   items: Item[]
   executor?: Executor
   environment: string
+  /** `Executor.revision`; '' for none. */
+  revision?: string
 }
 
 type Report = (severity: Finding['severity'], message: string, block: IRBlock) => void
@@ -319,13 +325,16 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
     }
     try {
       unit.environment = await unit.executor.fingerprint?.(run.lang) ?? ''
+      unit.revision = await unit.executor.revision?.(run.lang) ?? ''
     } catch (error) {
       for (const item of unit.items) fromRecording(item, cache, stats, say, run.executor, errorMessage(error))
       continue
     }
     let previous = unit.session
     for (const item of unit.items) {
-      item.key = hash(unit.session ? { previous, input: item.input, executor: unit.executor.id, environment: unit.environment } : { input: item.input, executor: unit.executor.id, environment: unit.environment })
+      // The revision only when there is one: the keys of the executors without it stay what they were.
+      const made = { executor: unit.executor.id, environment: unit.environment, ...unit.revision ? { revision: unit.revision } : {} }
+      item.key = hash(unit.session ? { previous, input: item.input, ...made } : { input: item.input, ...made })
       previous = item.key
     }
     const cached = unit.items.map(item => cache.get(item.key!))
@@ -334,8 +343,8 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
       stats.cached += unit.items.length
       continue
     }
-    // Recorded for the same code, but by another runtime: the output everyone else gets.
-    const others = options.rerun ? [] : unit.items.map(item => cache.recording(item.input))
+    // Recorded for the same code, but by another runtime: the output everyone else gets; not one an older revision made.
+    const others = options.rerun ? [] : unit.items.map(item => cache.recording(item.input)).map(other => (other?.revision === unit.revision ? other : undefined))
     if (others.length > 0 && others.every(Boolean)) {
       unit.items.forEach((item, i) => {
         const other = others[i]!
@@ -422,7 +431,7 @@ function record(item: Item, result: RunResult, unit: Unit, cache: FreezeCache, s
   item.node.outputs = [recorded]
   stats.executed++
   // A timeout depends on the machine, not on the code; it is not recorded.
-  if (!result.timedOut) cache.record(item.key!, item.input, item.request, recorded, unit.environment)
+  if (!result.timedOut) cache.record(item.key!, item.input, item.request, recorded, unit.environment, unit.revision)
   if (!result.ok) say('warning', `block ${item.block.id} exited with ${result.timedOut ? 'a timeout' : result.exitCode === null ? `no exit code: ${result.stderr.trim().split('\n')[0]}` : `code ${result.exitCode}`}`, item.block)
 }
 

@@ -24,7 +24,7 @@ export interface FollowAnchor {
   section?: string
   /** The keys of the steps the position has reached in it (`stepTrail`). */
   trail?: string[]
-  /** For a section only some audiences have: the nearest earlier section that every build has (`backSection`). */
+  /** For a section only some audiences have: the nearest earlier section a build without it has (`backSection`). */
   back?: string
 }
 
@@ -74,15 +74,24 @@ export function trailStep(keys: StepKeys, trail: readonly string[]): number {
   return 0
 }
 
+/** The audience of the learners' build (`presmium build --audience student`), whose windows follow a presenter's. */
+const LEARNERS = 'student'
+
 /**
  * Where a window whose build lacks section `id` (one only for some
- * audiences) goes instead: the nearest earlier section with no `audience`,
- * which every build has. Undefined for a section every build has.
+ * audiences) goes instead: the nearest earlier section its build has. For a
+ * section the learners' build lacks (a teachers' one), that is the nearest
+ * earlier section with no `audience` or one for the learners, a section only
+ * for them included (F-85); for a section only some audiences have, the
+ * learners among them, the nearest earlier one every build has. Undefined
+ * for a section every build has.
  */
 export function backSection(sections: readonly Pick<IRSection, 'id' | 'audience'>[], id: string): string | undefined {
   const at = sections.findIndex(section => section.id === id)
-  if (!sections[at]?.audience?.length) return undefined
-  return sections.slice(0, at).findLast(section => !section.audience?.length)?.id
+  const audience = sections[at]?.audience
+  if (!audience?.length) return undefined
+  const learners = !audience.includes(LEARNERS)
+  return sections.slice(0, at).findLast(section => !section.audience?.length || (learners && section.audience.includes(LEARNERS)))?.id
 }
 
 /**

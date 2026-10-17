@@ -17,6 +17,7 @@
   },
   "slidev": {},
   "dependencies": {
+    "@presmium/classroom-server": "workspace:*",
     "@presmium/kernel": "workspace:*",
     "@presmium/host": "workspace:*",
     "yjs": "^13.6.33",
@@ -25,7 +26,6 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
-    "@presmium/classroom-server": "workspace:*",
     "@presmium/cli": "workspace:*",
     "@slidev/client": "53.0.0",
     "@slidev/types": "53.0.0"

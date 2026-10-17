@@ -2,7 +2,7 @@
 // the workspace's routes of a real `presmium serve` on a real git repository: each operation is one commit
 // whose `Presmium-Origin` trailer names the operation and its directories (the history labels it in the
 // reader's language, F-55), a rename rewrites the links of the other documents, a revert of a rename restores
-// the directory, a revert that conflicts with later commits changes nothing and names the files, and git runs
+// the directory (a revert of that undo redoes it, and the history says so), a revert that conflicts with later commits changes nothing and names the files, and git runs
 // none of the repository's hooks. A copy keeps what of `.presmium/` belongs to the document, byte for byte,
 // and leaves out what is generated (F-52). A directory with a space keeps its name in the history's label.
 import { randomBytes } from 'node:crypto'
@@ -97,6 +97,22 @@ describe('document operations', () => {
     expect(readFileSync(join(dir, 'intro/lecture.md'), 'utf8')).toContain('[指南](../guide/lecture.md)')
     expect(message(dir)).toMatch(new RegExp(`^Revert "Rename document guide to manual"\\n\\nThis reverts commit ${rename}\\.\\n\\nPresmium-Origin: document rename guide manual\\nPresmium-Revert: ${rename}`, 'm'))
     expect(existsSync(join(dir, 'hook-ran'))).toBe(false)
+
+    // Reverting the undo redoes the rename, and reverting the redo undoes it again: the history tells them apart (F-55).
+    const undo = git(dir, ['rev-parse', 'HEAD']).trim()
+    expect((await raw(route('revisions/revert'), { json: { id: undo } })).status).toBe(200)
+    expect(existsSync(join(dir, 'manual/lecture.md'))).toBe(true)
+    const redo = git(dir, ['rev-parse', 'HEAD']).trim()
+    expect((await raw(route('revisions/revert'), { json: { id: redo } })).status).toBe(200)
+    expect(existsSync(join(dir, 'guide/lecture.md'))).toBe(true)
+    const again = git(dir, ['rev-parse', 'HEAD']).trim()
+    const labels = (await raw(route('revisions'))).json<{ revisions: { id: string, reverts?: string, redo?: boolean, operation?: Record<string, string> }[] }>().revisions.slice(0, 4)
+    expect(labels.map(r => [r.id, r.reverts, r.redo, r.operation?.op])).toEqual([
+      [again, redo, undefined, 'rename'],
+      [redo, undo, true, 'rename'],
+      [undo, rename, undefined, 'rename'],
+      [expect.any(String), undefined, undefined, 'delete'],
+    ])
   })
 
   it('reports the files a revert conflicts with, and leaves the work tree as it was', async () => {

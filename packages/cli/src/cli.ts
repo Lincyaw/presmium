@@ -7,7 +7,7 @@ import { errorMessage } from '@presmium/kernel'
 import type { ApprovalKind, Finding, Severity } from '@presmium/kernel'
 import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
 import type { BuildReport, Compilation, RunStats } from '@presmium/compiler'
-import { servedDocument, startServer } from '@presmium/server'
+import { anyAddress, isLoopback, networkAddresses, servedDocument, startServer } from '@presmium/server'
 import type { ApprovalPolicy } from '@presmium/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
 import type { WorkspaceBuild } from '@presmium/workspace'
@@ -47,9 +47,11 @@ Commands:
           --external-links   also check the external links, with lychee when it is installed
   serve   the workspace service for you on this machine (the argument is the workspace root, or
           a deck): the workspace site, edit mode, the documents and their history, the plugins'
-          routes; it listens on this machine only (from elsewhere, forward its port over SSH)
+          routes, the classroom sync; without --host it listens on this machine only
           --port <n>      port (default: 4310)
-          --host <addr>   an address of this machine (default: 127.0.0.1)
+          --host <addr>   address to listen on (default: 127.0.0.1); 0.0.0.0 or an address on the
+                          local network opens it to your other devices there, with no login:
+                          whoever reaches the port works as you
           --operator-dir <dir>  the operator directory (default: the user's state directory)
 
   -h, --help   show this help
@@ -292,13 +294,24 @@ async function serve(command: Command): Promise<number> {
     bundled: BUNDLED,
     check: compilation => compilation.check(),
   })
-  process.stdout.write(`serve  ${started.url}\nworkspace  ${started.root}\n`)
+  process.stdout.write(`serve  ${started.url}\n${networkLines(command.host, started.url)}workspace  ${started.root}\n`)
+  if (command.host && !isLoopback(command.host)) {
+    process.stderr.write(`presmium serve: listening on ${command.host}, on the local network, with no login: anyone who reaches port ${new URL(started.url).port} uses this workspace as you (edits, runs code, approves). Use it on a network you trust; without --host it listens on this machine only.\n`)
+  }
   await new Promise<void>((done) => {
     process.once('SIGINT', done)
     process.once('SIGTERM', done)
   })
   await started.close()
   return 0
+}
+
+/** `network  <url>` for each address of the local network a `--host` of every interface (or that address) is reached at. */
+function networkLines(host: string | undefined, url: string): string {
+  if (!host || isLoopback(host)) return ''
+  const { port } = new URL(url)
+  const addresses = anyAddress(host) ? networkAddresses() : [host.includes(':') && !host.startsWith('[') ? `[${host}]` : host]
+  return addresses.map(address => `network  http://${address}:${port}/\n`).join('')
 }
 
 function exitCode(findings: Finding[]): number {

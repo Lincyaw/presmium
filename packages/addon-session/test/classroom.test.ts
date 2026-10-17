@@ -45,10 +45,10 @@ it('a join abandoned while the server was down leaves the classroom created afte
   }
 }, 15_000)
 
-it('presmium check tells how to set up a classroom server when the deck names none', async () => {
+it('presmium check tells how to set up a classroom server for a published deck when the deck names none', async () => {
   writeFileSync(join(dir, 'lecture.md'), `---\nplugins:\n  - ${ADDON}\n---\n\n# Deck\n\nText.\n`)
   const { code, stdout } = await presmium(dir, ['check'])
   expect(code, stdout).toBe(0)
-  expect(stdout).toMatch(/lecture\.md:\d+ +info +no classroom server: the deck works alone, and its build shows no classroom +\(presmium\.session\)/)
-  expect(stdout).toContain('hint: start presmium-classroom-server')
+  expect(stdout).toMatch(/lecture\.md:\d+ +info +no classroom server: presmium dev and presmium serve sync the classroom on their own port; a build shows no classroom +\(presmium\.session\)/)
+  expect(stdout).toContain('hint: for a published deck, start presmium-classroom-server')
 })

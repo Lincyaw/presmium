@@ -15,7 +15,7 @@ import { resolve } from 'node:path'
 import { audienceView, STUDENT, viewFor } from '@presmium/compiler'
 import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRPass, MdastNode } from '@presmium/kernel'
-import { audienceTrack, LECTURE_ID, lectureGap, lecturePlan, lectureVoice, leftOut, lexiconOf, viewPlaces } from '../domain/index.ts'
+import { audienceTrack, LECTURE_ID, lectureGap, lecturePlan, lectureVoice, leftOut, lexiconOf, recordedSections, viewPlaces } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack, LectureVoice } from '../domain/index.ts'
 import { readScript } from './script.ts'
 import { trackIds } from './store.ts'
@@ -175,12 +175,15 @@ export function latestView(deckDir: string, view: DeckView = 'full'): IRDocument
 /**
  * A recorded lecture as the students get it (P-55): the part of it their
  * view of `whole` (an IR compiled whole) keeps, cut in the web form where it
- * was recorded and is played (`audienceTrack`, failing closed); undefined
- * when nothing of it is left.
+ * was recorded and is played (`audienceTrack`, failing closed), and only in
+ * the sections their view has as they were recorded (`recordedSections`,
+ * F-13); undefined when nothing of it is left.
  */
 export function studentTrack(track: LectureTrack, whole: IRDocument): LectureTrack | undefined {
   const recorded = webView(whole)
-  return audienceTrack(track, recorded, leftOut(recorded, webView(studentView(whole))))
+  const student = webView(studentView(whole))
+  const cut = audienceTrack(track, recorded, leftOut(recorded, student))
+  return cut && recordedSections(cut, student)
 }
 
 /**

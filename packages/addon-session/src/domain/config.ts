@@ -1,6 +1,24 @@
 /** Plugin id; the deck configures it as `presmium: { presmium.session: { server } }`. */
 export const SESSION_ID = 'presmium.session'
 
+/**
+ * Where `presmium dev` and `presmium serve` sync the classroom on their own
+ * port: `/__presmium/presmium.session/<SYNC_PATH>/<room>`, the classroom
+ * server's protocol; the route `classroom` says it for a page's document.
+ */
+export const SYNC_PATH = 'sync'
+
+/** The answer of the route `classroom`: the path of the sync, and the document a page names there (`?document=`). */
+export interface LocalClassroom {
+  path: string
+  document: string
+}
+
+/** The classroom server of a page's own server, from the route's answer: its WebSocket URL at the page's host, and the parameters it takes. */
+export function localServer(answer: LocalClassroom, page: { protocol: string, host: string }): { server: string, params: Record<string, string> } {
+  return { server: `${page.protocol === 'https:' ? 'wss:' : 'ws:'}//${page.host}${answer.path}`, params: { document: answer.document } }
+}
+
 export interface SessionConfig {
   /** WebSocket URL of the classroom server; none: the deck works alone and the session cannot connect. */
   server?: string

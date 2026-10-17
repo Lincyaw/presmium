@@ -14,13 +14,15 @@
  *
  * A recorded lecture is published as the build's view of the deck has it
  * (P-55): a host's build of the student view of the whole deck's
- * compilation publishes the students' part of it (`studentTrack`, as readers
- * get it from the server); any other build leaves out what was said and
- * done in the sections its deck does not have (`deckTrack`), such as the
- * teachers' in `presmium build --audience student`, whose compilation left
- * the teachers' content out before any pass: the blocks it left out of the
- * sections it keeps are not known here, so what was said and shown with them
- * stays (the build's scan reports what repeats their sentences).
+ * compilation publishes the students' part of it (`studentTrack`); any other
+ * build leaves out what was said and done in the sections its deck does not
+ * have (`deckTrack`), such as the teachers' in `presmium build --audience
+ * student`, whose compilation left the teachers' content out before any
+ * pass. A build for an audience (the IR says which, `meta.audience`) then
+ * publishes what was said, heard and shown only in the sections it has as
+ * they were recorded (`recordedSections`, F-13): a section that lost a
+ * teachers' block, or whose content moved into a teachers' section after the
+ * recording, has another hash than the one the track recorded.
  *
  * With a voice (`renderers.lecture.voice`), it also says the deck's lecture
  * plan through `SPEECH` (WP-83): `script/`, the synthesized lecture. Clips
@@ -34,7 +36,7 @@ import { dirname, join } from 'node:path'
 import { workspaceSettings } from '@presmium/compiler'
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { IRDocument, RenderContext, Renderer } from '@presmium/kernel'
-import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
+import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, leavesNothing, LECTURE_ID, lectureVoice, leftOut, recordedSections, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
 import { latestDoc, LECTURE_RENDERER, lectureConfig, lectureView, studentTrack, viewOfWhole } from './plan.ts'
@@ -122,7 +124,8 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
  * latest IR of this entry, which the passes kept) and the view leaves some
  * of it out (a host builds the student view only), the view then planning
  * a separate script as written for the whole deck; else without the
- * sections `doc` does not have.
+ * sections `doc` does not have, and, for an audience, without what the
+ * sections that changed since the recording had (`recordedSections`).
  */
 function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack) => LectureTrack | undefined {
   const latest = latestDoc(deckDir)
@@ -131,7 +134,13 @@ function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack)
     viewOfWhole(doc, lectureView(whole))
     return track => studentTrack(track, whole)
   }
-  return track => deckTrack(track, whole ?? doc)
+  // The IR as compiled for the audience, all of its forms' blocks (the lecture renderer's view lacks the web form's own).
+  const own = whole ?? doc
+  if (typeof own.meta.audience === 'string') return (track) => {
+    const kept = deckTrack(track, own)
+    return kept && recordedSections(kept, own)
+  }
+  return track => deckTrack(track, own)
 }
 
 function summary(track: LectureTrack) {

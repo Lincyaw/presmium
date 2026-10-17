@@ -381,6 +381,9 @@ export class Compiler {
       const name = this.options.audience
       const view = audienceView(doc, name, marks)
       doc.sections = view.doc.sections
+      // The IR says which audience it is for: a plugin that holds what was made of the whole deck (a lecture
+      // recorded on it) gives this one only what it can show is still its own (F-13).
+      doc.meta.audience = name
       audience = audienceCompilation(name, withheld(view.removed, doc))
       const left = findings.filter(finding => !view.keeps(finding))
       findings.splice(0, findings.length, ...findings.filter(view.keeps))

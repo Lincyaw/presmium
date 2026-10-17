@@ -38,8 +38,10 @@ import type { ClassroomSession, ClassroomSnapshot, FollowMode, Position, Session
 import { channel, collection, endSession, publishCursor, readSession, sessionMap, startSession, writeChannel } from './document.ts'
 
 export interface ClassroomOptions {
-  /** WebSocket URL of the classroom server; none: creating and joining fail. */
+  /** WebSocket URL of the classroom server; none (until `serve` gives one): creating and joining fail. */
   server?: string
+  /** Query parameters every request to the classroom server carries, e.g. the document a page's own server serves (`?document=`). */
+  params?: Record<string, string>
   /** This window's position; without it nobody follows. */
   navigation?: Navigation
   /** The deck's base URL, for join links. */
@@ -59,6 +61,8 @@ export interface Classroom {
   transport: SyncTransport
   /** Joins the classroom of a join link (`?room=&name=`), or the one this tab was in before a reload. */
   resume(search: string): Promise<void>
+  /** Uses this classroom server from now on (the page's own server's, found after the classroom was made); before any classroom is entered. */
+  serve(server: string, params?: Record<string, string>): void
   dispose(): void
 }
 
@@ -159,7 +163,9 @@ function documentStore(doc: () => Y.Doc, checkWrite: () => void): { store: Class
 }
 
 export function createClassroom(options: ClassroomOptions): Classroom {
-  const { server, navigation } = options
+  const { navigation } = options
+  let server = options.server
+  let params = options.params ?? {}
   let doc = new Y.Doc()
   let personalDoc = new Y.Doc()
   let provider: WebsocketProvider | undefined
@@ -249,7 +255,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   })
   // The participant's own room is connected when the store is first used in a classroom.
   const personal = documentStore(() => {
-    if (membership && server && !personalProvider) personalProvider = new WebsocketProvider(server, `${membership.room}.${membership.key}`, personalDoc)
+    if (membership && server && !personalProvider) personalProvider = new WebsocketProvider(server, `${membership.room}.${membership.key}`, personalDoc, { params })
     return personalDoc
   }, () => {})
 
@@ -373,7 +379,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     const { room, me, key, claim } = next
     const fresh = new Y.Doc()
     // Every update goes through the classroom server, which checks who may write it.
-    const connecting = new WebsocketProvider(server, room, fresh, { disableBc: true, params: { participant: me.id, key, ...claim ? { claim } : {} } })
+    const connecting = new WebsocketProvider(server, room, fresh, { disableBc: true, params: { ...params, participant: me.id, key, ...claim ? { claim } : {} } })
     const current = () => provider === connecting
     provider = connecting
     membership = { server, room, me, key, ...claim ? { claim } : {} }
@@ -484,7 +490,7 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       const { errors } = messages()
       if (!membership || role() !== 'presenter') throw new Error(errors.onlyPresenterArchives)
       const { server: at, room, claim } = membership
-      const response = await fetch(archiveUrl(at, room), { method: 'POST', body: claim ?? '' })
+      const response = await fetch(archiveUrl(at, room, params), { method: 'POST', body: claim ?? '' })
         .catch(() => { throw new Error(errors.unreachable(at)) })
       const result = await response.json().catch(() => ({})) as { file?: string }
       // The classroom server's statuses: not the creator's key, no such room, archived before.
@@ -575,6 +581,12 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       } catch {
         // Reported in the snapshot.
       }
+    },
+    serve(found, given = {}) {
+      if (membership) return
+      server = found
+      params = given
+      notify()
     },
     dispose() {
       stopPublishing()

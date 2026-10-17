@@ -12,7 +12,8 @@
 // reads its plan with the tool `lecture_preview` (MCP); the paid tools `lecture_synthesize` and
 // `track_transcribe` ask first (a window of the control channel answers), and send the engine nothing when
 // refused. A `{say}` that ends a sentence is one word with the times the speech service gives a lexicon's
-// replacement there.
+// replacement there. In a cloned voice, `presmium dev` gives the synthesized lecture and its clips only while
+// the consent holds: each request says them again from the cache, and the speech service checks it (D-7, F-57).
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -449,5 +450,67 @@ describe('presmium dev', () => {
     } finally {
       rmSync(other, { recursive: true, force: true })
     }
+  }, 240_000)
+})
+
+describe('presmium dev with a cloned voice (D-7, F-57)', () => {
+  let dir: string
+  let operator: string
+  let dev: ChildProcess | undefined
+  afterAll(async () => {
+    if (dev && dev.exitCode === null) {
+      const exited = new Promise(done => dev!.once('exit', done))
+      dev.kill('SIGTERM')
+      await exited
+    }
+    for (const path of [dir, operator]) if (path) rmSync(path, { recursive: true, force: true })
+  })
+
+  it('gives the synthesized lecture and its clips while the consent holds, and neither once it is withdrawn, though the cache has them', async () => {
+    dir = deck(tmpdir(), '  lecture:\n    voice: { engine: fake, voice: cloned-lin }', '合并之后词表变大。')
+    operator = mkdtempSync(join(tmpdir(), 'presmium-lecture-consent-'))
+    // The operator allows cloned voices and has the speaker's consent, outside the workspace.
+    writeFileSync(join(dir, 'presmium.workspace.yaml'), 'settings:\n  presmium.speech:\n    cloned: true\n')
+    const consent = join(operator, 'consent/fake/cloned-lin.json')
+    mkdirSync(join(operator, 'consent/fake'), { recursive: true })
+    writeFileSync(consent, JSON.stringify({ speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'a'.repeat(64) }))
+    dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'notebook'], { cwd: dir, env: env({ ...engine(), PRESMIUM_OPERATOR_DIR: operator }), stdio: ['ignore', 'pipe', 'pipe'] })
+    const server = await new Promise<string>((done, fail) => {
+      let output = ''
+      const read = (chunk: Buffer) => {
+        output += chunk
+        const match = /^server {2}(http\S+)$/m.exec(output)
+        if (match) done(match[1]!)
+      }
+      dev!.stdout!.on('data', read)
+      dev!.stderr!.on('data', read)
+      dev!.once('exit', code => fail(new Error(`presmium dev exited (${code}): ${output}`)))
+    })
+    const route = (path: string) => fetch(`${server}/__presmium/presmium.lecture/${path}`)
+    const taken = await route('tracks/script')
+    expect(taken.status, await taken.clone().text()).toBe(200)
+    const track = await taken.json() as Track
+    expect(track.voice).toMatchObject({ kind: 'synthetic', voice: 'cloned-lin' })
+    const clips = track.utterances.map(u => u.clip)
+    expect(clips.length).toBeGreaterThan(0)
+    for (const clip of clips) expect((await route(`tracks/script/clips/${clip}`)).status).toBe(200)
+    // A clip that is none of the lecture's is not given.
+    expect((await route(`tracks/script/clips/${'f'.repeat(32)}.wav`)).status).toBe(404)
+
+    // The consent withdrawn: each clip, said again from the cache, is refused; so is the lecture, after which it
+    // has no clips to give. The engine synthesizes nothing.
+    const asked = await syntheses()
+    rmSync(consent)
+    for (const clip of clips) {
+      const clipRefused = await route(`tracks/script/clips/${clip}`)
+      expect(clipRefused.status).toBe(403)
+      expect(await clipRefused.text()).toContain(`${consent} is missing`)
+    }
+    const refused = await route('tracks/script')
+    expect(refused.status).toBe(502)
+    expect(await refused.text()).toContain(`${consent} is missing`)
+    for (const clip of clips) expect((await route(`tracks/script/clips/${clip}`)).status).toBe(404)
+    expect(await syntheses()).toBe(asked)
+    for (const clip of clips) expect(existsSync(join(dir, '.presmium/speech', clip))).toBe(true)
   }, 240_000)
 })

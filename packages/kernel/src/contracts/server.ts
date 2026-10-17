@@ -128,8 +128,8 @@ export type ApprovalKind = 'operate' | 'spend' | 'write' | 'agent'
  * Who may answer an approval (10.4). `content`: only the requesting member's
  * own document and sessions (files in the task's document directory, the
  * operating and paid tools of MCP); it goes to `member`. `workspace`: the
- * workspace configuration `presmium.workspace.yaml` (members, approval
- * policy, operator settings), consent records, any path outside the
+ * workspace configuration `presmium.workspace.yaml` (approval policy,
+ * operator settings), consent records, any path outside the
  * document directory, the agent's shell and network permission requests; it
  * goes to the owners only.
  */

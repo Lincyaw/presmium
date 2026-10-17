@@ -272,6 +272,8 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
 export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
   const removed: Removed[] = []
   const sections: IRSection[] = []
+  /** The sections whose steps the view numbers again. */
+  const compacted = new Set<string>()
   for (const section of doc.sections) {
     if (!forAudience(section.audience, name)) {
       removed.push({ source: section.source, audience: section.audience!, title: section.title, blocks: section.blocks })
@@ -288,10 +290,13 @@ export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[
       return [node === block.node ? block : { ...block, node }]
     })
     const blocks = keep(section.blocks)
+    if (dropped) compacted.add(section.id)
     sections.push(dropped ? compactSteps({ ...section, blocks }) : same(blocks, section.blocks) ? section : { ...section, blocks })
   }
   const marked = marks.filter(mark => !forAudience(mark.audience, name)).map(mark => mark.source)
   if (removed.length === 0 && marked.length === 0) return { doc, removed, keeps: () => true }
+  const kept = new Set(sections.map(section => section.id))
+  sections.forEach((section, i) => sections[i] = withViewKeys(section, kept, compacted.has(section.id)))
   const spans = [...leftOut(doc, name, removed), ...marked]
   const keeps = ({ source: at }: Finding) => !at || !spans.some(span => at.file === span.file && (at.line ?? 0) >= span.line && (at.line ?? 0) <= (span.endLine ?? span.line))
   return {
@@ -332,7 +337,9 @@ function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[]
  * what was left out (`withoutLeaks`).
  */
 export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>, marks: AudienceMark[] = []): IRDocument {
-  const { doc: view, removed } = audienceView(doc, name, marks)
+  const { doc: found, removed } = audienceView(doc, name, marks)
+  // The view says which audience it is for (`meta.audience`), as a compilation for it does.
+  const view = { ...found, meta: { ...found.meta, audience: name } }
   if (removed.length === 0) return view
   const own = detached(view, filled)
   resolveReferences(own, () => {})
@@ -517,6 +524,47 @@ function withoutLeaks(view: IRDocument, removed: Removed[], name: string): IRDoc
  * steps left are numbered again, and narration of a step left out goes with
  * the step before it (as `viewFor` does for the blocks of other renderers).
  */
+/** The keys of the slides form's following (docs/ir.md 2.11) that the core plugin's pass `slide-sections` writes into `hints.slides`. */
+const STEPS_KEY = 'presmiumSteps'
+const BACK_KEY = 'presmiumBack'
+
+/**
+ * A section of a view for an audience with the slides form's keys of
+ * following as the view has them (F-85): what the core plugin's pass wrote
+ * of the whole document into `hints.slides` (a view of a document compiled
+ * whole, `Compilation.forAudience`, runs no pass) would name what the view
+ * leaves out and number its steps as the whole document does. In a section
+ * the view left something out of (`compacted`), each step's keys (`<block>`,
+ * `<block>+<k>`, `<block>-`, a component's child `<component>/<child>`) keep
+ * those of the blocks it has, and the steps left without any are closed up,
+ * as `compactSteps` closes up the steps no block takes any more; the section
+ * to go back to stays when the view has it.
+ */
+function withViewKeys(section: IRSection, sections: ReadonlySet<string>, compacted: boolean): IRSection {
+  const hints = section.hints.slides
+  const back = isRecord(hints) && typeof hints[BACK_KEY] === 'string' && !sections.has(hints[BACK_KEY])
+  if (!isRecord(hints) || (!(compacted && STEPS_KEY in hints) && !back)) return section
+  const paths = new Set<string>()
+  const visit = (blocks: readonly IRBlock[], prefix: string) => {
+    for (const block of blocks) {
+      paths.add(prefix + block.id)
+      if (block.node.type === 'component' && block.node.children) visit(block.node.children, `${prefix}${block.id}/`)
+    }
+  }
+  visit(section.blocks, '')
+  const has = (key: string) => paths.has(key) || paths.has(key.replace(/\+\d+$/, '')) || (key.endsWith('-') && paths.has(key.slice(0, -1)))
+  const own: Record<string, unknown> = { ...hints }
+  const steps = hints[STEPS_KEY]
+  if (compacted && Array.isArray(steps)) {
+    const left = steps.map(keys => (Array.isArray(keys) ? keys.filter(key => typeof key === 'string' && has(key)) : []))
+    const closed = left.filter((keys, i) => i === 0 || keys.length > 0)
+    if (closed.length > 1) own[STEPS_KEY] = closed
+    else delete own[STEPS_KEY]
+  }
+  if (back) delete own[BACK_KEY]
+  return { ...section, hints: { ...section.hints, slides: own } }
+}
+
 function compactSteps(section: IRSection): IRSection {
   const used = new Set([0])
   for (const block of irBlocks(section.blocks)) {

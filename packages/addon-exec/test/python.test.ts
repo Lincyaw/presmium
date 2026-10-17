@@ -2,8 +2,8 @@
 // git: the value of a last expression is the run's `execute_result`, as in Jupyter (D-8), in the IR (which
 // the web form shows), the slides and the notebook; `presmium check` warns of Python for the browser that
 // imports what the browser lacks (D-5); both warn of a stepwise run whose `:steps:` is not the number of
-// lines its code executes, at the directive.
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+// lines its code executes, at the directive. A recording an older runner made runs again (D-8).
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -70,6 +70,40 @@ ${FENCE}
   expect(notebook.cells.find(cell => cell.cell_type === 'code')?.outputs).toEqual([
     expect.objectContaining({ output_type: 'execute_result', data: { 'text/plain': ['{\'a\': 3, \'b\': 1}'] }, execution_count: 1 }),
   ])
+}, 180_000)
+
+it('runs again the recordings an older runner made, where python3 runs (D-8): the runner\'s digest is part of the key', async () => {
+  const dir = deck(`
+## 旧的录制
+
+${FENCE}{code} python
+:run:
+counts = {'a': 3}
+counts
+${FENCE}
+`)
+  expect((await presmium(dir, ['build', '--to', 'notebook'])).code).toBe(0)
+  const freeze = join(dir, '.presmium/freeze')
+  const [file] = readdirSync(freeze).filter(name => name.endsWith('.json'))
+  const record = JSON.parse(readFileSync(join(freeze, file!), 'utf8')) as { revision?: string, environment: string, run: { outputs: unknown[] } }
+  expect(record.revision).toMatch(/^runner [0-9a-f]{16}$/)
+  expect(record.environment).toMatch(/^Python 3\./)
+  // The recording as a runner before D-8 left it: no revision, no value of the last expression, under its old key.
+  rmSync(join(freeze, file!))
+  const { revision: _revision, ...old } = record
+  writeFileSync(join(freeze, `${'0'.repeat(64)}.json`), JSON.stringify({ ...old, run: { ...old.run, outputs: [] } }))
+
+  const built = await presmium(dir, ['build', '--to', 'notebook'])
+  expect(built.code, built.stdout + built.stderr).toBe(0)
+  expect(built.stdout).toMatch(/1 executed/)
+  expect(built.stdout + built.stderr).not.toContain('the recording is reused')
+  const doc = JSON.parse(readFileSync(join(dir, 'dist/ir.json'), 'utf8')) as IRDocument
+  expect((doc.sections[0]!.blocks[0]!.node as CodeNode).outputs![0]!.outputs).toEqual([{ output_type: 'execute_result', data: { 'text/plain': '{\'a\': 3}' }, metadata: {} }])
+  expect(readdirSync(freeze).filter(name => name.endsWith('.json'))).toEqual([file])
+
+  // A third build runs nothing: the recording is this runner's.
+  const again = await presmium(dir, ['build', '--to', 'notebook'])
+  expect(again.stdout).toMatch(/0 executed/)
 }, 180_000)
 
 it('warns, in presmium check, of Python for the browser that imports what the browser lacks, at its block', async () => {

@@ -3,9 +3,11 @@
  * section 10): the plugins' contributions under `/__presmium/<plugin id>/`,
  * the handshake and control channel under `/__presmium/presmium.server/`,
  * the MCP mount point `/mcp`, and in `serve` mode the rest forwarded to the
- * workspace site. It listens on this machine only and serves the one user
- * there: `Host` and `Origin` must name this machine, and the one member is
- * the local author (owner).
+ * workspace site. It serves the one user of this machine: `Host` and
+ * `Origin` must name this machine, and the one member is the local author
+ * (owner). `presmium dev` listens on the loopback only; `presmium serve`
+ * there by default, or on the local network with `--host` (E-3, revised),
+ * for the user's other devices, without a login.
  */
 import { randomBytes, randomUUID } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
@@ -26,7 +28,7 @@ import type {
 } from '@presmium/kernel'
 import { pluginLogger } from '@presmium/compiler'
 import { createPresmiumMcp } from '@presmium/mcp'
-import { authenticate, LOCAL_AUTHOR } from './auth.ts'
+import { authenticate, LOCAL_AUTHOR, machineHosts } from './auth.ts'
 import type { Refusal } from './auth.ts'
 import { Control, hasRole } from './control.ts'
 import type { ApprovalPolicy, WindowPosition } from './control.ts'
@@ -66,7 +68,11 @@ function endedBy(response: Response, signal: AbortSignal, done: () => void): Res
 export interface ServerOptions {
   /** `dev`: one deck. `serve`: a workspace. */
   mode: 'dev' | 'serve'
-  /** Listening address, an address of this machine; default `127.0.0.1`. */
+  /**
+   * Listening address, an address of this machine; default `127.0.0.1`. In
+   * `serve`, one on the local network too (`0.0.0.0`, `::` or an interface's
+   * address): requests may then name that address and the machine's name.
+   */
   host?: string
   /** Default: a free port in `dev`, 4310 in `serve`. */
   port?: number
@@ -175,14 +181,15 @@ function documentOf(headers: IncomingMessage['headers'], url: URL): string {
 }
 
 /**
- * Why the server does not listen on `host`: it serves the one user of this
- * machine (docs/requirements.md, 定位与边界); undefined for an address of this
- * machine.
+ * Why the server does not listen on `host`: `presmium dev` serves the one
+ * user of this machine (docs/requirements.md, 定位与边界); `presmium serve`
+ * may listen on the local network too, for that user's other devices
+ * (decision E-3, revised). Undefined when it may.
  */
-function remoteHost(mode: ServerOptions['mode'], host: string): string | undefined {
-  // `::1` as a listening address is written without brackets.
-  if (isLoopback(host.includes(':') && !host.startsWith('[') ? `[${host}]` : host)) return undefined
-  return `presmium ${mode} listens on this machine only, not on ${host}: it serves the one user who runs it. To use it from another machine, forward its port over SSH (ssh -L 4310:127.0.0.1:4310 <this machine>); for several people, give each one a workspace of their own (the hub template)`
+function remoteHost(mode: ServerOptions['mode'], host: string, port: number | undefined): string | undefined {
+  if (mode === 'serve' || isLoopback(host)) return undefined
+  const at = port || 'its port'
+  return `presmium ${mode} listens on this machine only, not on ${host}: it serves the one user who runs it. To use it from another machine, forward its port over SSH (ssh -L ${at}:127.0.0.1:${at} <this machine>), or use presmium serve --host`
 }
 
 export async function startServer(options: ServerOptions): Promise<PresmiumServer> {
@@ -190,8 +197,10 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   // On stderr, so a command's stdout stays its output; debug lines with PRESMIUM_DEBUG.
   const log = options.log ?? pluginLogger('presmium server')
   const listenHost = options.host ?? '127.0.0.1'
-  const refused = remoteHost(options.mode, listenHost)
+  const refused = remoteHost(options.mode, listenHost, options.port)
   if (refused) throw new Error(refused)
+  /** The host names of this machine that requests may give: on the local network, its address and name too. */
+  const local = machineHosts(listenHost)
 
   const control = new Control({
     policy: options.approvals ?? {},
@@ -276,7 +285,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   const members = new WeakMap<IncomingMessage, Member | Refusal>()
   const memberOf = (req: IncomingMessage): Member | Refusal => {
     let found = members.get(req)
-    if (!found) members.set(req, found = authenticate(req))
+    if (!found) members.set(req, found = authenticate(req, local))
     return found
   }
 
@@ -298,7 +307,12 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     }
     const forward = options.mode === 'serve' ? options.forward?.() : undefined
     if (!forward) return { kind: 'answer', response: problem(404, 'not found') }
-    return { kind: 'proxy', to: { target: forward, path: req.url ?? '/' } }
+    // The site's servers take requests of this machine's pages only (loopback names): a request of
+    // another device on the local network, which this server let in, reaches them under the site's own name.
+    const site = new URL(forward)
+    const lan = !isLoopback(header(req.headers, 'host'))
+    const headers = lan ? { host: site.host, ...header(req.headers, 'origin') ? { origin: site.origin } : {} } : undefined
+    return { kind: 'proxy', to: { target: forward, path: req.url ?? '/', ...headers ? { headers } : {} } }
   }
 
   /** A plugin's proxy for the path, when one matches and the member may use it. */

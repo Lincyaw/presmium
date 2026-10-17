@@ -12,7 +12,8 @@
  * brings back is made first) and committed. A revert that would
  * change files outside the documents (the workspace configuration) is an
  * owner's only. A revert names the document operation it undoes in its
- * origin, so the history labels it (F-55).
+ * origin, so the history labels it (F-55); the history says which reverts
+ * redo: those of an undo.
  */
 import { lstatSync, mkdtempSync, readdirSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -48,8 +49,35 @@ function parseLog(output: string): LogEntry[] {
   })
 }
 
+/** The commit a commit message reverts: Presmium's trailer, or the line of `git revert`. */
+function revertedOf(message: string): string | undefined {
+  return originOf(message)?.revert ?? /This reverts commit ([0-9a-f]{7,64})/.exec(message)?.[1]
+}
+
+/**
+ * Whether a commit of the log redoes (F-55): it reverts an undo, a revert
+ * that does not redo itself. A commit the log does not hold counts as a
+ * change, so a revert of it undoes.
+ */
+function redoes(entries: LogEntry[]): (entry: LogEntry) => boolean {
+  const find = (id: string) => entries.find(entry => entry.id === id || (id.length >= 7 && entry.id.startsWith(id)))
+  const known = new Map<string, boolean>()
+  const redo = (entry: LogEntry): boolean => {
+    let found = known.get(entry.id)
+    if (found !== undefined) return found
+    // Undecided while it is being decided: a cycle (which git's history cannot hold) ends here.
+    known.set(entry.id, false)
+    const reverted = revertedOf(entry.message)
+    const target = reverted === undefined ? undefined : find(reverted)
+    found = target !== undefined && revertedOf(target.message) !== undefined && !redo(target)
+    known.set(entry.id, found)
+    return found
+  }
+  return redo
+}
+
 /** A commit with Presmium's trailers as the history lists it: the files it changed (both sides of a rename), what its labels need. */
-function revision(entry: LogEntry, revertedBy?: string): HistoryRevision | undefined {
+function revision(entry: LogEntry, revertedBy?: string, redo = false): HistoryRevision | undefined {
   const origin = originOf(entry.message)
   if (!origin) return undefined
   const { revert, coAuthor: _coAuthor, operation, ...plain } = origin
@@ -63,6 +91,7 @@ function revision(entry: LogEntry, revertedBy?: string): HistoryRevision | undef
     ...revertedBy ? { revertedBy } : {},
     ...operation ? { operation } : {},
     ...revert ? { reverts: revert } : {},
+    ...revert && redo ? { redo: true as const } : {},
   }
 }
 
@@ -115,11 +144,12 @@ export class Revisions implements RevisionService {
     const entries = parseLog(log.output)
     const revertedBy = new Map<string, string>()
     for (const entry of entries) {
-      const reverted = originOf(entry.message)?.revert ?? /This reverts commit ([0-9a-f]{7,64})/.exec(entry.message)?.[1]
+      const reverted = revertedOf(entry.message)
       if (reverted && !revertedBy.has(reverted)) revertedBy.set(reverted, entry.id)
     }
+    const redo = redoes(entries)
     const revisions = entries.flatMap((entry) => {
-      const found = revision(entry, revertedBy.get(entry.id))
+      const found = revision(entry, revertedBy.get(entry.id), redo(entry))
       return found && (!filter.task || found.origin.task === filter.task) ? [found] : []
     })
     return filter.limit ? revisions.slice(0, filter.limit) : revisions
