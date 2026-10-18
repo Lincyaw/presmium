@@ -1546,12 +1546,12 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **决定（G-1 至 G-9，用户确认）**：
 
-- G-1：核心（编译器、IR、渲染端、viewer、CLI、静态产物）离开模型也能工作，不引用 `@deepseek-ai/*`。产物（网页、幻灯片、notebook、讲授）与工作台分离：改动源码的归工作台，不改动源码的（放映、讲者视图、课堂、运行代码、读者用自己的模型问答、放映中的讲授录制）归产物。产物保持 Vue，只向工作台暴露锚点（`data-section`、`data-block`、`data-step`），经预览协议嵌入工作台。
+- G-1：核心（编译器、IR、渲染端、IR 运行时、CLI、静态产物）离开模型也能工作，不引用 `@deepseek-ai/*`。产物（网页、幻灯片、notebook、讲授）与工作台分离：改动源码的归工作台，不改动源码的（放映、演讲者视图、课堂、运行代码、读者用自己的模型问答、放映中的讲授录制）归产物。产物保持 Vue，只向工作台暴露锚点（`data-section`、`data-block`、`data-step`），经预览协议嵌入工作台。
 - G-2：工作台用 React 写成 dsh 的客户端插件；Presmium 的根布局插件替换 dsh 自带的布局，按 `docs/design` 的工作台排布（活动栏、文件树、源码与预览、问题与修改历史），dsh 的对话、确认卡片与修改卡片停靠在右侧；面板同时能挂在 dsh 自带的布局中，作为退路。
 - G-3：工作台中的 agent 只用 dsh，模型在 dsh 的模型设置中选。外部 agent（Claude Code、Codex 等）经 MCP 接入，是一等入口：一张工具表（从 `@presmium/mcp` 导出）两个适配器（MCP 与 dsh 工具），新工具两边都有，一致性测试断言两边的工具清单相同。ACP 的替换运行时（`PRESMIUM_AGENT_COMMAND`）随旧工作台在 96g 删去。
 - G-4：浏览器中的源码编辑只在新工作台（`presmium studio`，可以不配模型）中；`presmium dev` 回到实时预览加“在编辑器中打开”，`presmium serve` 只剩文档列表与产物；WP-92d 的 dev 编辑模式随旧工作台删去。
 - G-5：先只做网页形态；桌面客户端推迟，不排工作包，设计只保留可能（同一批客户端插件）。
-- G-6：1.0 照常发布，现有工作台（`presmium serve` 的界面、`@presmium/workspace` 的浏览器部分、助手插件的面板、`EDIT_MODE`）标为实验性，不在语义化版本的承诺之内。
+- G-6：1.0 照常发布，旧工作台（`presmium serve` 的界面、`@presmium/workspace` 的浏览器部分、助手插件的面板、`EDIT_MODE`）标为实验性，不在语义化版本的承诺之内。
 - G-7：对 dsh 上游的请求只记录在设计文档中，不提交（与此前 deltabox 的决定相同）。
 - G-8：焦点上下文：源码编辑器中的选中、网页预览与幻灯片预览中的点选统一为一种 `Focus`（落到源码的一段，加上文档、节、块、步骤），一种交互（参考 dsh-annotate），一种发送方式；MCP 另有 `presmium://focus` 与 `get_focus`。
 - G-9：dsh 精确锁定一个版本；只有 `@presmium/dsh` 与 `@presmium/studio` 引用 dsh（分层检查保证）；每次升级 dsh 单独作为一个工作包，先过升级闸门。
@@ -1566,7 +1566,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 - 把草稿目录中的 `DESIGN.md`、`FOCUS.md` 与 `REPORT.md` 的结论定稿为 `docs/design-dsh.md`：目标与 G-1 至 G-9、三层结构、包结构与分层规则、预览协议 v1 的精确定义（消息、来源校验、只在开发服务器中）、工作区服务的接口、bundle（工具、确认语义的映射、上下文与技能、profile 补丁与隐私默认值）、工作台（根布局、面板、退路布局、窄屏、主题与品牌）、焦点上下文（G-8）、MCP 与 dsh 的工具一致（G-3）、没有模型与没有 dsh 时可用什么、版本与升级闸门、从旧工作台迁移、上游请求（只记录，G-7）。
 - 在 `docs/wbs.md` 中写出 96a 至 96g 每个工作包的拥有、条目、验收与用例（以报告 5.5 节为底稿，按 G-1 至 G-9 修订：96e 包含焦点上下文；96b 包含工具一致性测试与 MCP 的 `presmium://focus`；不排桌面）；端口 96a 5611–5619，96b 5621–5629，96c 5631–5639，96d 5641–5649，96e 5651–5659，96f 5661–5669，96g 5671–5679。
-- `requirements.md`：工作台的条目改为新形态；1.0 中现有工作台为实验性（G-6）；新增焦点上下文与工具一致的需求。
+- `requirements.md`：工作台的条目改为新形态；1.0 中旧工作台为实验性（G-6）；新增焦点上下文与工具一致的需求。
 
 **验收**：验收者对照 G-1 至 G-9 逐条核对；文档之间一致（同一个东西一个名字）；`scripts/check-skills.mjs` 通过。没有代码与用例。
 
@@ -1578,7 +1578,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 - **归属**：同一步中并行的工作包，拥有的路径互不重叠；先后执行的工作包可以拥有同一路径。“包名/**”指整个包，列出文件时只拥有这些文件。
 - **契约只增加**：96a 写 `packages/kernel/src/contracts/preview.ts` 与 `RenderContext.preview`，96b 写 `Focus`（`contracts/agent.ts`）与会话令牌（`contracts/server.ts`）。之后的工作包发现契约不够用时，在交付报告中提出，由验收者决定（只能增加）。只为旧工作台存在的契约（`EDIT_MODE`、工作台的槽位、`AGENT`、`AGENT_RUNTIME`）只由 96g 删去。
-- **共享文件**不计入独占归属，各工作包只改与自己有关的部分，后合并的变基并解决冲突：`docs/*.md`（交付时把实际的实现写进 `architecture.md` 第 13 节，把 `design-dsh.md` 第 17 节中自己那几项的结论写回）；`.changeset/README.md`（各自新包的一行）；`pnpm-lock.yaml`；`e2e/fixtures/deck.ts`（只增加导出）；`.agents/skills/**`（命令或作者可见的行为变化时）。
+- **共享文件**不计入独占归属，各工作包只改与自己有关的部分，后合并的变基并解决冲突：`docs/*.md`（交付时把实际的实现写进 `architecture.md` 第 13 节，把 `design-dsh.md` 第 17 节中自己那几项的结论写回）；`.changeset/README.md`（各自新包的一行）；`pnpm-lock.yaml`；`e2e/fixtures/deck.ts`（只增加导出与可选参数，如 `startDev` 的选项）；`.agents/skills/**`（命令或作者可见的行为变化时）。
 - **根目录的配置**（`package.json`、`vitest.config.ts`、`playwright.config.ts`、`pnpm-workspace.yaml`）不属于任何工作包；需要改动时（例如单独运行升级闸门的脚本、dsh 的依赖需要的 `allowBuilds`）在交付报告中提出，由验收者在合并时修改。
 - **dsh 的版本**由 96b 锁定，之后的工作包都用这个版本，不升级（G-9）；旧工作台的助手插件保留自己的固定版本到 96g。
 - **旧工作台只修缺陷**，不加功能。
@@ -1689,16 +1689,17 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - 假模型在一份文档的会话中改 `lecture.md`：审阅打开，锁持有到审阅结束，期间编辑器的保存得到 409；
 - 两个 turn 累加进一次审阅；接受形成一个提交，尾注带会话与 turn；拒绝一个文件后它恢复为快照；撤销后内容复原；
 - 重启 dsh 宿主后审阅仍在，可以接受；
+- 回到某个检查点后，文件是那次工具调用之前的内容（P-115）；撤销之后会话收到一条标明来源的消息；没有页面跟随时，`reviewTimeoutMs` 到期后审阅回滚；
 - agent 经工具构建之后，构建产物不在审阅与 dsh 的修改卡片中；
 - 旧工作台的修改任务用例照常通过（经服务的审阅）。
 
-**用例**：`packages/dsh/test/turns.test.ts`（打开与锁、多个 turn、接受与尾注、拒绝与撤销、重启、构建）；`packages/workspace/test/review.test.ts`（路由与旧记录）。
+**用例**：`packages/dsh/test/turns.test.ts`（打开与锁、多个 turn、接受与尾注、拒绝与撤销、回到检查点、撤销后的消息、超时回滚、重启、构建）；`packages/workspace/test/review.test.ts`（路由与旧记录）。
 
 ### WP-96d 工作台的外壳（React；第二步，96a、96b 之后，与 96c、96f 并行）
 
 **需求**：P-124、P-125，N-10 的工作台部分；`design-dsh.md` 第 7 节，6.6 节中界面的行，第 12 节第 3 组。
 
-**拥有**：`packages/design/**`（新）；`packages/host/src/design/**` 与 `packages/host/package.json`（改为引用 design）；`packages/workbench/**`（新；`src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**` 归 96e）；`packages/dsh/src/client/**`、`packages/dsh/build/**`、`packages/dsh/package.json`、`packages/dsh/cordis.patch.yml`、`packages/dsh/profile.patch.yml`；`e2e/workbench.spec.ts`、`e2e/fixtures/workbench/**`（新）、`e2e/fixtures/contrast.ts`。
+**拥有**：`packages/design/**`（新）；`packages/host/src/design/**` 与 `packages/host/package.json`（改为引用 design）；`packages/workbench/**`（新；`src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**` 归 96e）；`packages/dsh/src/client/**`、`packages/dsh/src/node/workbench.ts`（新，`presmium-workbench` 行的宿主部分：`tapIndex` 设网页标题与图标）、`packages/dsh/build/**`、`packages/dsh/package.json`、`packages/dsh/cordis.patch.yml`、`packages/dsh/profile.patch.yml`；`e2e/workbench.spec.ts`、`e2e/fixtures/workbench/**`（新）、`e2e/fixtures/contrast.ts`。
 
 **条目**：
 
@@ -1721,10 +1722,11 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - 磁盘上的编辑器在打开之后改了文件：没改过的直接更新，改过的保存时提示合并或重新载入；
 - 明暗两套中，工作台的面板与映射后的 dsh 面板的文字达到 WCAG AA；
 - 品牌（`design-dsh.md` 7.5 节，C3）：en-US 与 zh-CN 两种界面语言下，品牌槽位、网页标题与图标、首次使用提示、对话首页的标语是 Presmium 的，首页、对话、会话侧栏与设置中没有 DeepSeek 的品牌与文案（插件管理中的包名、模型设置中作为服务提供方的名字除外）；设置与插件页中没有账号、DeepSeek 搜索服务、插件市场与实验插件的入口；
+- 首页的文档管理（P-121）：从模板新建、改名、复制、删除各一次，各形成一个提交，文档卡片随之更新；
 - 关掉根布局插件后，同一批面板在 dsh 自带布局中可用；
 - 产物（网页与幻灯片）的现有用例照常通过。
 
-**用例**（`e2e/workbench.spec.ts`，用 96b 的 harness 启动）：启动审计；两种宽度；保存与预览更新；双向定位与问题面板；外部改动与合并；对比度；品牌（两种界面语言）；退路布局。
+**用例**（`e2e/workbench.spec.ts`，用 96b 的 harness 启动）：启动审计；两种宽度；保存与预览更新；双向定位与问题面板；外部改动与合并；对比度；品牌（两种界面语言）；文档管理；退路布局。
 
 ### WP-96f `presmium studio`（第二步，96a、96b 之后，与 96c、96d 并行）
 
@@ -1758,7 +1760,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **需求**：P-113、P-114、P-116，P-136 在工作台中的部分，P-111 的模型状态，P-124 中未提交的修改（提交与放弃），6.13 节验收的第二条；`design-dsh.md` 第 8 节，7.3 节中归 96e 的面板，第 10 节，第 12 节第 4 组。
 
-**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新）；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）。
+**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新），以及 `packages/workbench/src/index.ts` 与 `package.json` 中这些面板的导出与依赖；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）。
 
 **条目**：
 
@@ -1773,7 +1775,8 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 **验收**：
 
 - 源码编辑器中选中几行加入对话，发出的文字带文件、行范围、所在的节与块，摘录取自文件；
-- 网页预览中点选两个块，各写一句要求，一次发送；假模型收到两处焦点并修改，两条批注标为已处理；审阅中接受；一次撤销恢复原样；
+- 网页预览中点选两个块，各写一句要求，一次发送；假模型收到两处焦点并修改，两条批注标为已处理；在工作台的审阅面板中拒绝一个文件、接受其余，形成一个提交（`requirements.md` 6.12 节验收的第二条）；一次撤销恢复原样；
+- 一个策略为 `ask` 的操作（运行代码）经 dsh 的确认卡片批准后执行，卡片上的说明用文稿的语言（M12）；拒绝时不执行；
 - 幻灯片预览中点选，焦点带步骤；
 - 改动源码使块的 ID 移动后，标记跟到新位置；删掉那一段后，标记显示已失效；
 - 外部 agent 经 MCP 读 `presmium://focus`，得到与 dsh 会话中相同的焦点；
@@ -1792,7 +1795,8 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 **拥有**：
 
 - `packages/web/src/client/**` 中工作台与编辑模式的部分、`packages/web/src/node/sites.ts`；
-- `packages/workspace/src/client/**`（删去）、`packages/workspace/src/node/**`（`deckEditing`、`servedPlugins`；无界面成为唯一的模式）；
+- `packages/workspace/src/client/**`（删去）、`packages/workspace/src/node/**`（`deckEditing`、`servedPlugins`；无界面成为唯一的模式）、`packages/workspace/package.json`（删去 `./client` 出口与只为浏览器部分的依赖：CodeMirror、vue）、`packages/workspace/vite.config.ts`（删去）；
+- `e2e/workspace.spec.ts`（旧首页与编辑模式的断言改为测服务的路由，或移到 96d 的文档管理用例）、`packages/cli/test/serve.test.ts`（首页加载运营者插件浏览器部分的一例）与 `e2e/fixtures/workspace/plugins/presmium-fixture-workspace-home/**`；
 - `packages/addon-assistant/**`（删去工作台的面板、ACP 运行时、`dsh/` 模板，以及对 dsh 与 ACP SDK 的依赖；保留读者问答）；
 - `packages/addon-lecture/src/client/**` 中回写的部分；`packages/addon-lecture/package.json`（删去对 `@agentclientprotocol/sdk` 的开发依赖）与 `packages/addon-lecture/test/fixtures/writeback-agent.mjs`（ACP 的测试 agent，删去）；
 - `packages/host/src/types.ts`、`packages/host/src/index.ts`、`packages/kernel/src/contracts/agent.ts`（只为旧工作台存在的契约）；`packages/kernel/src/contracts/server.ts` 中 `secret` 的说明（不再以 `PRESMIUM_AGENT_COMMAND` 为例）；
@@ -1807,13 +1811,13 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 2. 删去 ACP 的替换运行时：`AGENT_RUNTIME` 的实现与契约、`PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` 与 `provider`、ACP 的两个测试 agent（助手插件的 `scripted-agent.mjs`、讲授插件的 `writeback-agent.mjs`）与两个包对 `@agentclientprotocol/sdk` 的依赖；助手插件只剩读者问答。
 3. `presmium serve` 只剩工作区服务加产物，`presmium dev` 只剩实时预览加“在编辑器中打开”（13.4 节）；`--headless` 保留且不再有作用。
 4. 13.3 节第 19 行的用例改为测新工作台（编辑、设计、AI 修改、讲授回写），或删去只为旧工作台存在的断言。
-5. 文档与技能：`presmium-author`、`presmium-develop`（含 `references/testing.md`）、`presmium-present` 中关于编辑模式、“AI 修改”与替换运行时的段落改为指向工作台；`architecture.md` 中旧工作台的说明删去（第 3 节中 ACP SDK 的分层规则，4.6 节契约摘录中 `secret` 的例子，4.8 节的 `AGENT`、`AGENT_RUNTIME` 与助手插件的运行时、启动与流程，第 5、10 节，第 7 节的 ACP 测试 agent，第 12 节依赖表中 `@agentclientprotocol/sdk` 一行删去，DeepSeek Harness 一行改为只属于 `dsh` 与 `studio`），第 13.6 节改为删除的记录；`domain-model.md` 第 13 节中 `AgentRuntime`、`AgentClient`、生效的来源与替换的运行时几行删去；`ir.md` 第 10 节助手的模型访问一段删去替换运行时；`requirements.md` 的“定位与边界”去掉旧工作台。删除的记录用描述的名字（“ACP 的替换运行时”），不写环境变量与包名，修订的原文只留在附录 B 与 `design-dsh.md` 中。
+5. 文档与技能：`presmium-author`、`presmium-develop`（含 `references/testing.md`）、`presmium-present` 中关于编辑模式、“AI 修改”与替换运行时的段落改为指向工作台；`architecture.md` 中旧工作台的说明删去（第 3 节中 ACP SDK 的分层规则，4.6 节契约摘录中 `secret` 的例子，4.8 节的 `AGENT`、`AGENT_RUNTIME` 与助手插件的运行时、启动与流程，第 5、10 节，第 7 节的 ACP 测试 agent，第 12 节依赖表中 `@agentclientprotocol/sdk` 一行删去，DeepSeek Harness 一行改为只属于 `dsh` 与 `studio`），第 13.6 节改为删除的记录；`domain-model.md` 第 13 节中 `AgentRuntime`、`AgentClient`、生效的来源与替换的运行时几行删去；`ir.md` 第 10 节助手的模型访问一段删去替换运行时；`requirements.md` 的“定位与边界”去掉旧工作台，N-08 中“在工作区服务与 `presmium dev` 的页面中填写模型凭据”一句改为工作台的模型设置；`docs/api.md` 的实验性清单中删去已不存在的旧工作台接口；`domain-model.md` 第 13 节中经 ACP `initialize` 得到的“模型提供方”“运行时名字”“会话的 MCP 访问”几行与 `AgentRuntime.provider` 一并删去。删除的记录用描述的名字（“ACP 的替换运行时”），不写环境变量与包名，修订的原文只留在附录 B 与 `design-dsh.md` 中。
 
 **验收**：
 
 - `git grep -n EDIT_MODE packages` 没有结果；
-- `git grep -n -E "PRESMIUM_AGENT_COMMAND|@agentclientprotocol" -- packages e2e scripts .agents '*README.md'` 没有结果（`--` 之后的路径不存在时不报错）；
-- `git grep -n -E "PRESMIUM_AGENT_COMMAND|@agentclientprotocol" -- docs` 只剩历史记录：评审记录、`wbs.md`、`design-v0.7.md`、`design-dsh.md` 与 `requirements.md` 的附录 B；
+- `git grep -n -E "PRESMIUM_AGENT_COMMAND|PRESMIUM_AGENT_PROVIDER|@agentclientprotocol" -- packages e2e scripts .agents '*README.md'` 没有结果（`--` 之后的路径不存在时不报错）；
+- `git grep -n -E "PRESMIUM_AGENT_COMMAND|PRESMIUM_AGENT_PROVIDER|@agentclientprotocol" -- docs` 只剩历史记录：评审记录、`wbs.md`、`design-v0.7.md`、`design-dsh.md` 与 `requirements.md` 的附录 B；
 - 分层检查没有白名单，`@deepseek-ai/*` 只在 `dsh` 与 `studio` 中；
 - `pnpm verify` 通过，升级闸门的五组都通过。
 

@@ -501,7 +501,7 @@ Presmium 作为 agent 的环境：agent 能读取文稿的全部内容与状态�
 | P-122 | 工作区构建 | 一次构建整个工作区，生成包含全部文档的网站（文档列表与每份文档的网页）；也可以只构建一份文档；v0.8：工作区首页可以指定为一份文稿；跨文稿全文搜索；文稿之间的前后导航（M9） | 定制 | P-70 |
 | P-123 | 译本 | 文稿声明译本（例如 `translations: { en: lecture.en.md }`），网页可以切换语言；译本记录原文摘要，原文改动后 `presmium check` 报告译本过期（M9） | 定制 | VitePress `locales` |
 | P-124 | 浏览器中的源码编辑（v0.9；N 波次修订） | 只在工作台（`presmium studio`，P-125，可以不配模型）中，作者不经 agent 也能直接改源码；`presmium dev` 是实时预览加“在编辑器中打开”，`presmium serve` 没有编辑界面（N 波次修订：原为“工作区服务与 `presmium dev` 的编辑模式中”）。工作台中是左右分栏：左边是源码编辑器，打开文档目录中的文件，有 MyST 高亮，编译诊断标在行上，下方的问题面板列出它们，`Ctrl+S` 保存；右边是实时预览。在预览中点选一个块，源码跳到它的行，在源码中移动，预览跟随（用户选定“工作台”的编辑方式，`docs/design/`）；保存即写文件，预览实时更新；没有提交的修改在“修改历史”中列出，写一句说明后提交，或放弃；与 agent 的修改审阅共存（任务开始时没有提交的修改照常保留）；文件在打开之后被 agent 或磁盘上的编辑器改过时，没有改动的直接换成新内容，改过的提示合并或重新载入 | 定制 | CodeMirror 6（MIT）、K-11、P-115 |
-| P-125 | 工作台（N 波次） | `presmium studio [目录]` 一条命令启动，用户只拿到一个网址；工作台是 DeepSeek Harness 的一个定制发行版：Presmium 的 bundle 装进 Presmium 自己的 DeepSeek Harness 配置（profile），不 fork、不打补丁；布局按选定的设计（`docs/design/`：活动栏、文件树、源码与预览、问题、修改历史），DeepSeek Harness 的对话、确认卡片与修改卡片停靠在右侧，会话、模型设置、终端与 jobs 用它自己的界面；同一批面板也能挂在 DeepSeek Harness 自带的布局中，作为退路；产物经预览协议嵌入（网页与幻灯片，只传章节、块与步骤的 ID），预览来自工作区服务，与工作台不同源；390 px 宽时每个面板都能到达；界面中英文；品牌是 Presmium 的；先只做网页，桌面客户端推迟 | 定制 | DeepSeek Harness（MIT）、React 18（由它的外壳提供）、CodeMirror 6 |
+| P-125 | 工作台（N 波次） | `presmium studio [目录]` 一条命令启动，用户只拿到一个网址；工作台是 DeepSeek Harness 的一个定制发行版：Presmium 的 bundle 装进 Presmium 自己的 DeepSeek Harness 配置（profile），不 fork、不打补丁；布局按选定的设计（`docs/design/`：活动栏、文件树、源码与预览、问题、修改历史），DeepSeek Harness 的对话、确认卡片与修改卡片停靠在右侧，会话、模型设置、终端与 jobs 用它自己的界面；同一批面板也能挂在 dsh 自带布局中，作为退路；产物经预览协议嵌入（网页与幻灯片，只传章节、块与步骤的 ID），预览来自工作区服务，与工作台不同源；390 px 宽时每个面板都能到达；界面中英文；品牌是 Presmium 的；先只做网页，桌面客户端推迟 | 定制 | DeepSeek Harness（MIT）、React 18（由它的外壳提供）、CodeMirror 6 |
 
 **验收**：
 

@@ -34,6 +34,7 @@
 | 升级闸门 | 每次升级 dsh 之前必须通过的五组集成用例（第 12 节） |
 | 服务令牌 | studio 的启动器（或自己启动服务的 bundle）为一次启动生成的随机值，bundle 用它访问工作区服务的路由（5.3 节） |
 | 会话令牌 | 为一个 dsh 会话签发的 MCP 令牌，模式为“主机已确认”：经它调用的操作类工具不再向页面窗口请求确认，因为 dsh 已按 Presmium 的策略决定过（5.3 节） |
+| Host API | dsh 宿主经 HTTP 给页面的接口：`/connect` 或浏览器 cookie，`POST /api/<端点>`（带 JSON Schema 的描述符），`/api/remote.mux` 事件流；工作台自己发起会话与提示时用它（S3） |
 | 焦点 | 用户指向的一处（`Focus`）：落到源码的一段，带上它在文稿中的位置（文档、节、块、步骤）。焦点加一句要求与处理状态是一条批注 |
 
 ## 决定（G-1 至 G-9，用户确认）
@@ -614,7 +615,7 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 | 16 | `packages/web/src/node/vite.ts` 的 `source` 端点，`packages/web/src/client/theme.ts` 的 `openSource` | `presmium dev` 中从预览打开作者自己的编辑器（K-11） | 产物的开发功能，保留；在预览协议中对应 `picked` |
 | 17 | `packages/workspace/src/node/source.ts`、`routes.ts` 等 | 文件、源码、未提交的修改、提交、放弃、文档、修改历史的路由 | 服务，保留；96a 写成工作区服务的接口 |
 | 18 | `packages/addon-assistant/src/node/`（ACP 运行时、任务、设置、`git-review.ts`、`review-record.ts`）、`packages/addon-assistant/dsh/` | 旧工作台的 agent 服务端 | 审阅在 96c 移进工作区服务；ACP 运行时与 dsh 模板在 96g 删去（G-3） |
-| 19 | `e2e/editing.spec.ts`、`e2e/design.spec.ts`、`e2e/assistant.spec.ts` 与 `e2e/assistant-edit.spec.ts` 中编辑的部分、`e2e/plugin-ui.spec.ts` 中工作区的部分、`e2e/lecture-writeback.spec.ts`、`packages/cli/test/dev-editing.test.ts` | 旧工作台的用例 | 96g 改为测新工作台；`packages/workspace/test/source.test.ts`（路由）保留 |
+| 19 | `e2e/editing.spec.ts`、`e2e/design.spec.ts`、`e2e/assistant.spec.ts` 与 `e2e/assistant-edit.spec.ts` 中编辑的部分、`e2e/plugin-ui.spec.ts` 中工作区的部分、`e2e/lecture-writeback.spec.ts`、`e2e/workspace.spec.ts`（旧首页的文档管理与修改历史，约 40 个旧界面的选择器，以及局域网中“编辑模式与确认”一例）、`packages/cli/test/serve.test.ts` 中“首页加载运营者插件的浏览器部分”一例、`packages/cli/test/dev-editing.test.ts` | 旧工作台的用例 | 96g 改为测新工作台；`packages/workspace/test/source.test.ts`（路由）保留 |
 
 ### 13.4 96g 之后三条命令的分工
 
