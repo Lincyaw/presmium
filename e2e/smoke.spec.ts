@@ -34,8 +34,9 @@ const DEMO_DECK = { lock: 'examples/demo/.presmium/slides' }
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
 
+/** The sections of the built lecture's IR (`pnpm demo:build`), read from the build rather than from the server WEB serves. */
 async function sections(): Promise<Section[]> {
-  return (await (await fetch(`${WEB}/ir.json`)).json() as { sections: Section[] }).sections
+  return (JSON.parse(readFileSync(join(DEMO, 'dist/web/ir.json'), 'utf8')) as { sections: Section[] }).sections
 }
 
 /**
