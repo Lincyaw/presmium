@@ -314,7 +314,7 @@ print("hello")
 ```
 ````
 
-生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与 Presmium 的服务端（`presmium dev` 或 `presmium serve`，网页与幻灯片都可以；运行与环境复刻是插件 `presmium.execLocal` 的服务端路由，编辑者可用，运行先经 `operate` 确认，WP-89e 起）；面板上没有把代码提交回仓库的按钮（P-25 已移出范围）；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
+生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与 Presmium 的服务端（`presmium dev` 或 `presmium serve`，网页与幻灯片都可以；运行与环境复刻是插件 `presmium.execLocal` 的服务端路由，编辑者可用，运行先经 `operate` 确认）；面板上没有把代码提交回仓库的按钮；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
 
 ## 浏览器 GPU `presmium.execWebgpu`（`@presmium/slidev-addon-exec-webgpu`）
 
@@ -542,7 +542,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 
 ### `{predict}`
 
-先预测再揭示（P-68）。参数为问题（必填）；正文为补充说明。选项：`:choices:`（string，至少两个，逗号分隔；省略时学习者写一段文字）。揭示内容是 `{predict}` 之后的下一步出现的全部内容：用 `:reveal:` 让它在下一步出现（通常是带 `:reveal:` 的 `{slide}`），这一步的讲解也算在内。
+先预测再揭示。参数为问题（必填）；正文为补充说明。选项：`:choices:`（string，至少两个，逗号分隔；省略时学习者写一段文字）。揭示内容是 `{predict}` 之后的下一步出现的全部内容：用 `:reveal:` 让它在下一步出现（通常是带 `:reveal:` 的 `{slide}`），这一步的讲解也算在内。
 
 ````md
 :::{predict} 合并三轮之后，词表中有几个新符号？

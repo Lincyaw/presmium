@@ -1,6 +1,6 @@
 # 版本与发布
 
-Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录（P-141）。公开的包（`@presmium/*` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
+Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录。公开的包（`@presmium/*` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
 
 ## 哪些包发布
 
@@ -69,10 +69,11 @@ pnpm changeset          # 选包与升级类型（patch、minor、major），写
 
 `1.0.0-rc.0` 已经写在各包中，第一次发布从第 2 步开始。
 
-## 第一次发布前由用户完成的步骤
+## 仓库与账号
 
-这些步骤需要账号与凭据，不由开发流程完成：
+GitHub 仓库是 `Lincyaw/presmium`（远端 `origin`，与各包的 `repository` 一致）；Actions 运行 `.github/workflows/ci.yml`，`.github/workflows/pages.yml` 把示例发布到 GitHub Pages（<https://lincyaw.github.io/presmium/>）。
 
-- GitHub 仓库 `Lincyaw/presmium`（与各包 `repository` 一致）已创建并推送（2026-10-18，远端 `origin`）；Actions 运行 `.github/workflows/ci.yml`，`.github/workflows/pages.yml` 把示例发布到 GitHub Pages（<https://lincyaw.github.io/presmium/>）。
+下面的步骤需要账号与凭据，由维护者完成，不由开发流程完成：
+
 - 在 npm 创建组织 `@presmium`，为发布者创建令牌（或登录 `npm login`）；在 CI 中发布时把令牌存为仓库的 secret。
 - 实际发布：`pnpm changeset publish`（见上）。

@@ -32,7 +32,7 @@ The framework documentation the code is written against is fetched with `pnpm do
 ## Tests
 
 - **Integration tests only.** Tests run the real CLI, build real outputs, start real servers and open real browsers. No unit tests of single functions, and no mocks of Slidev or VitePress.
-- **Few cases.** One or two cases per acceptance criterion.
+- **Few cases.** One or two cases per behavior.
 - **Where.** End-to-end tests are `e2e/<context>.spec.ts`; tests that need no browser are `packages/<pkg>/test/*.test.ts`. A spec that needs a document of its own keeps it in `e2e/fixtures/<group>/` and builds it in `beforeAll` with the real `presmium build`.
 
 ## Layering

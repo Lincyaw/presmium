@@ -40,13 +40,13 @@ The 1.0 packages are release candidates (`1.0.0-rc.*`) until the first release.
 
 ### The local workbench (preview)
 
-`presmium serve` starts a workbench on your machine for a workspace of documents: a live site, editing the source in the browser, managing documents, the history of changes, and changes by an AI agent that you review before they are committed. It is for one user on their own machine. Its browser interface is a preview and will change: a new workbench, separate from the outputs, is being designed. The `presmium serve` command and the workspace configuration file stay; see [docs/api.md](docs/api.md) for what is stable.
+`presmium serve` starts a workbench on your machine for a workspace of documents: a live site, editing the source in the browser, managing documents, the history of changes, and changes by an AI agent that you review before they are committed. It is for one user on their own machine. Its browser interface is a preview and will be replaced by a new workbench, separate from the outputs. The `presmium serve` command and the workspace configuration file stay; see [docs/api.md](docs/api.md) for what is stable.
 
 ## Documentation
 
 - The documentation site, in Chinese and English, is a Presmium workspace in [site/](site/): the [author guide](site/guide/lecture.en.md), the [plugin guide](site/plugins/lecture.en.md) and [interfaces and versions](site/reference/lecture.en.md). Build it with `pnpm --filter presmium-docs build` (it also generates the API reference with TypeDoc).
 - [docs/api.md](docs/api.md): the public and experimental interfaces and the version rules (semver, `IR_VERSION`, `KERNEL_VERSION`, plugins' peer dependencies).
-- The design documents in [docs/](docs/) (requirements, IR, domain model, architecture) are in Chinese.
+- The design documents in [docs/](docs/) (IR, domain model, architecture, the workbench) are in Chinese.
 - Each package's README says what it is for; [.changeset/README.md](.changeset/README.md) lists every package.
 
 ## Contributing, security, license

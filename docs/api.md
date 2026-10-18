@@ -1,4 +1,4 @@
-# 公开接口与版本规则（P-143）
+# 公开接口与版本规则
 
 本文列出 Presmium 1.x 按语义化版本承诺稳定的接口（公开接口，第 2 节）、不在承诺之内的接口（实验性接口与内部接口，第 3、4 节），以及包、IR 与插件契约各自的版本规则。接口的签名以源码为准（`packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts` 等），接口参考由 TypeDoc 从源码生成（根目录的 `typedoc.json`，文档站的 `/api/`）。本文与源码不一致时以源码为准，并把不一致当作缺陷报告。
 
@@ -30,7 +30,7 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 
 ### 1.3 `KERNEL_VERSION` 与插件的 `kernel`
 
-`KERNEL_VERSION` 是插件契约的版本（决定 F-1），与包的版本分开：契约包括 `@presmium/kernel` 的插件接口（`PluginDefinition`、`PluginManifest`、`PresmiumNodePlugin`、`DirectiveSpec`、`IRPass`、`Renderer`、`RenderContext`、`Check`、服务令牌与它们的接口）和 `@presmium/host` 给组件的接口（第 2.4 节）。
+`KERNEL_VERSION` 是插件契约的版本，与包的版本分开：契约包括 `@presmium/kernel` 的插件接口（`PluginDefinition`、`PluginManifest`、`PresmiumNodePlugin`、`DirectiveSpec`、`IRPass`、`Renderer`、`RenderContext`、`Check`、服务令牌与它们的接口）和 `@presmium/host` 给组件的接口（第 2.4 节）。
 
 - 插件在 Node 端入口（`PresmiumNodePlugin.kernel`）与浏览器端插件清单（`PluginManifest.kernel`）中声明兼容的范围，1.x 的插件写 `kernel: '^1.0.0'`；`version` 写自己 `package.json` 的版本。
 - 范围不包含 `KERNEL_VERSION` 的插件不被加载：编译器报告 `presmium.plugins` 的诊断（`presmium check` 与构建都不崩溃），幻灯片不把它作为 Slidev 插件，浏览器中的内核不启动它并在启动报告中写明原因。
@@ -97,14 +97,13 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 
 ## 3. 实验性接口
 
-以下接口标为实验性，不在 1.x 的语义化版本承诺之内：它们属于本机工作台的浏览器端，新工作台会取代它们。它们可以在次版本中改变或删除，变更记录写明；插件不要依赖它们，依赖时在自己的 `peerDependencies` 中写确切的版本。
+以下接口标为实验性，不在 1.x 的语义化版本承诺之内：最后一项是还在定型的新工作台，其余属于本机工作台的浏览器端，新工作台会取代它们。它们可以在次版本中改变或删除，变更记录写明；插件不要依赖它们，依赖时在自己的 `peerDependencies` 中写确切的版本。
 
 - `@presmium/workspace` 的浏览器端：`@presmium/workspace/client`（工作台的浏览器插件：编辑模式、浏览器中的源码编辑、文档管理、修改历史、文件树）、`@presmium/workspace/domain`，以及它为这些界面提供的路由（`/__presmium/presmium.workspace/` 下的 `documents`、`files`、`source`、`changes`、`revisions` 等）。
 - `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE` 与 `EditMode`；工具栏的槽位 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock`（`ToolbarSlot` 中 `tools`、`settings` 以外的值）与位置（`ToolbarPlace`、`useToolbarPlace`、`provideToolbarPlace`；`PmToolbarEntry` 在活动栏中的形态）；`trackAgentTask` 与 `AgentTaskState`。
 - 网页渲染端的工作台：`presmium serve` 与 `presmium dev` 中首页的工作台（活动栏、文件树、启动台、状态栏）、编辑模式的外壳、窗口事件 `presmium:documents` 与首页的文档列表接口 `@presmium/documents.json`。静态站点的首页与页面是公开的产物（第 2.1 节）。
 - 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`、`ReviewDecision`、`TaskRevertResult`），`@presmium/slidev-addon-assistant` 的“AI 修改”面板、停靠面板、模型设置界面与路由 `info`、`settings`、`tasks/*`、`revert`、`excerpt`，`@presmium/slidev-addon-lecture` 编辑模式中的“讲授回写”面板。修改任务的请求与事件（`AgentTaskRequest`、`AgentTaskKind`、`AgentContext`、`Annotation`、`AnnotationStatus`、`AgentEvent`、`Citation`）同时是 Node 端 `AGENT_RUNTIME` 的会话（`AgentSession.prompt`）与 `ASK` 的类型，随它们公开。读者问答（`ASK` 与提问面板）是产物的一部分，是公开接口。
-
-- N 波次的工作台（`docs/design-dsh.md`）：`@presmium/workbench`（工作台的 React 面板、状态与工作区服务的客户端，0.x）的全部导出；`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁、`./launch`，`@presmium/studio`（0.x：`presmium studio` 与 `presmium-studio` 命令，以及 `main`、`startStudio` 等导出） 与预编译的客户端部分 `./client`（以及它的路由 `/api/presmium/workbench`），服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`；契约 `Focus`、`FocusReport`、`McpIssueOptions` 随新工作台定型，在 1.0 中同样是实验性的。
+- 新工作台（`docs/design-dsh.md`）：`@presmium/workbench`（工作台的 React 面板、状态与工作区服务的客户端，0.x）的全部导出；`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁、`./launch`，`@presmium/studio`（0.x：`presmium studio` 与 `presmium-studio` 命令，以及 `main`、`startStudio` 等导出）与预编译的客户端部分 `./client`（以及它的路由 `/api/presmium/workbench`），服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`；契约 `Focus`、`FocusReport`、`McpIssueOptions` 随新工作台定型，在 1.0 中同样是实验性的。
 
 本节的 TypeScript 声明在源码中带 TSDoc 标签 `@experimental`，接口参考（`/api/`）中显示为 Experimental；只有一部分是实验性的声明（`ToolbarSlot`、`PmToolbarEntry`）在说明中写明是哪一部分，`@presmium/workspace` 的 `./client` 与 `./domain` 在入口文件的说明中标注。界面、路由与窗口事件没有声明可以标注，以本节的列表为准；标注与本节不一致时同样以本节为准。
 

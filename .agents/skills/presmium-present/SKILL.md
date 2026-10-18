@@ -94,7 +94,7 @@ presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clic
 
 - 默认导出 PDF，写到 `<文稿>/slides-export.pdf`（`renderers.slides.exportFilename` 改文件名）；`--format png` 每页一张图片。`--with-clicks` 把每一步展开为一页，`--range` 只导出列出的页。
 - PDF 导出后检查幻灯片上的每个链接（包括代码的永久链接）在 PDF 中仍是链接，有丢失时退出码为 1；PNG 中的链接无法检查，报告会说明。
-- 可运行的代码在导出中写成高亮的代码加构建时的输出，每张幻灯片只有一个输出区；每张幻灯片一页，一张过高的幻灯片不缩小整份 PDF；`--range` 导出的页数与范围不符时以 2 退出（WP-89e 起）。
+- 可运行的代码在导出中写成高亮的代码加构建时的输出，每张幻灯片只有一个输出区；每张幻灯片一页，一张过高的幻灯片不缩小整份 PDF；`--range` 导出的页数与范围不符时以 2 退出。
 - 导出中插件组件显示静态降级内容（例如执行面板显示先给参数赋值的代码与构建时的输出，没有时用 `:recorded:`）。
 - `slidev export` 在打印页的网络空闲后、再等 `--wait` 毫秒（默认 1000）截图。文稿列出发布插件时，打印页在显示全部幻灯片之后才让网络空闲，模块载入失败时（机器的网络变化、Vite 重新打包依赖）重新载入，最多等 `--timeout` 毫秒（默认 120000）。没有列出发布插件的文稿在机器繁忙时可能截到还没显示全部幻灯片的页面：导出缺少某张幻灯片时 `presmium-export` 报错退出（退出码 2），再导出一次或加大 `--wait` 即可。
 - 也可以在 `<文稿>/.presmium/slides/` 中直接运行 `slidev export`（构建报告给出这个路径）。`slidev export` 总在根路径服务文稿，而构建写出的文稿按幻灯片的站点路径引用本地文件：幻灯片的 `base` 不是 `/` 时（包括同时构建两种形态的默认 `/slides/`），链接到的文件与媒体组件的文件在导出中找不到，这时用 `presmium-export`，它为导出另写一份以 `/` 为站点路径的文稿。
@@ -105,7 +105,7 @@ presmium-export [文稿目录] [--format pdf|png] [--output <file>] [--with-clic
 
 ## 6. 离线
 
-- 网页形态生成 Service Worker（`presmium-sw.js`），第一次打开时预缓存全部页面与搜索索引；执行用的运行时（Pyodide、C 的工具链、jax-js）较大，在第一次运行代码时缓存，或在页面上选“保存以离线使用”时一并取得（WP-89e 起）。幻灯片形态（讲者的机器）需要 `@presmium/slidev-addon-publish` 才有离线缓存，第一次打开时缓存全部文件，包括运行时。
+- 网页形态生成 Service Worker（`presmium-sw.js`），第一次打开时预缓存全部页面与搜索索引；执行用的运行时（Pyodide、C 的工具链、jax-js）较大，在第一次运行代码时缓存，或在页面上选“保存以离线使用”时一并取得。幻灯片形态（讲者的机器）需要 `@presmium/slidev-addon-publish` 才有离线缓存，第一次打开时缓存全部文件，包括运行时。
 - 做法：联网时把要用的形态完整打开一次（等页面加载完）；网页形态要离线运行代码时，先运行一次代码或选“保存以离线使用”。之后断网也能放映、搜索、运行代码。
 - 远程图片在编译时下载到 `.presmium/assets/`（发布插件），随文稿提交。
 - 文稿头部 `presmium: { presmium.publish: { offline: false } }` 关闭两种形态的离线缓存。
@@ -161,7 +161,7 @@ presmium:
 仓库中的示例讲义 `examples/demo`（BPE 分词）与示例工作区 `examples/workspace` 可以用来走一遍放映、授课与编辑。详细的命令在两个目录的 `README.md` 中。
 
 - **示例讲义**：在仓库根目录 `pnpm demo:build`，再 `pnpm exec sirv examples/demo/dist --single slides/index.html`，网页在 `/web/`，幻灯片在 `/slides/`。“延伸”一章（网页的 `extend.html`）：C 程序点“运行”在浏览器里编译、运行（第一次下载约 50 MB 的编译器），输出与构建时的录制相同；GPU 着色器在支持 WebGPU 的浏览器中用显卡运行，否则显示构建时录制的结果与原因；先运行“先训练”的代码块，再运行“再编码”的，体会同一会话的变量；在“下一次合并哪一对？”写下预测并保存，答案才出现。
-- **讲授的合成与回放**：示例讲义的头部列出了讲授渲染端，但 `pnpm demo:build` 不构建它，所以默认构建的网页中没有讲授（WP-89d 起“视图”菜单中也没有“讲授”，之前它只写着“这份讲义还没有讲授”）。在环境变量中设置火山引擎的 `PRESMIUM_SPEECH_VOLCENGINE_KEY`，把头部的 `lecture: {}` 改为 `lecture: { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }`，`presmium build --to web,lecture` 合成讲授，服务 `dist/` 后打开 `/web/?view=lecture&track=script` 播放：说到 `{cue}` 处的字时聚光代码、显示录制的输出、停顿，`BPE` 读作“B P E”。提交 `.presmium/speech/` 与 `.presmium/speech.lock.json` 后，别人构建不再需要凭据。
+- **讲授的合成与回放**：示例讲义的头部列出了讲授渲染端，但 `pnpm demo:build` 不构建它，所以默认构建的网页中没有讲授（“视图”菜单中也没有“讲授”）。在环境变量中设置火山引擎的 `PRESMIUM_SPEECH_VOLCENGINE_KEY`，把头部的 `lecture: {}` 改为 `lecture: { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }`，`presmium build --to web,lecture` 合成讲授，服务 `dist/` 后打开 `/web/?view=lecture&track=script` 播放：说到 `{cue}` 处的字时聚光代码、显示录制的输出、停顿，`BPE` 读作“B P E”。提交 `.presmium/speech/` 与 `.presmium/speech.lock.json` 后，别人构建不再需要凭据。
 - **示例工作区**：工作区要是一个 git 仓库的根目录，所以先 `node examples/workspace/try.mjs ~/presmium-example-workspace` 把它复制成独立的仓库（带上讲义引用的示例代码与锁定的提交），再 `node packages/cli/bin/presmium.mjs serve ~/presmium-example-workspace`，打开 `http://127.0.0.1:4310`。首页列出两份文档；“管理文档”新建、复制、重命名、删除，“修改历史”撤销。在工具栏“AI 修改”的“模型设置”中填写模型服务（或启动前设置 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）后，打开“分词速览”，工具栏“编辑”进入编辑模式，在“AI 修改”中点选一段写批注或写一句对话，agent 改完后逐个文件审阅、接受或拒绝，接受的改动成为一个提交并可撤销（写法见 presmium-author 技能的“由 agent 修改讲义”）。凭据只在启动服务的终端的环境变量中，或在用户配置目录中只有本人可读的模型设置里，不写进仓库。
 
 ## 10. 常见问题
