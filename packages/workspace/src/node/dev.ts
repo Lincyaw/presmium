@@ -15,7 +15,9 @@
  * it, the editor's root is the deck directory, which is not the compiler's
  * workspace root: there the plugins write their files themselves, as
  * without the workspace (no `DOCUMENT_FILES`), and so they do when the deck
- * directory was given through a symbolic link inside a repository.
+ * directory was given through a symbolic link inside a repository. Where
+ * the changes are committed, the assistant's change tasks are reviewed with
+ * the workspace's git review (`GIT_REVIEW`, ./review/reviews.ts).
  *
  * What is generated in the deck's `.presmium/` (the MCP token of
  * `presmium dev`, `.presmium/server.json`, among it) the editor neither
@@ -24,9 +26,9 @@
  */
 import { realpathSync } from 'node:fs'
 import { basename, dirname, relative, resolve, sep } from 'node:path'
-import { DECK_ENTRY } from '@presmium/compiler'
+import { DECK_ENTRY, pluginLogger } from '@presmium/compiler'
 import { DOCUMENT_FILES, DOCUMENT_LOCKS, REVISIONS } from '@presmium/kernel'
-import type { DocumentLockService, ServiceToken } from '@presmium/kernel'
+import type { ChangeReviewService, DocumentLockService, ServiceToken } from '@presmium/kernel'
 import type { ServedPlugin } from '@presmium/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import type { WorkspaceConfig } from './config.ts'
@@ -34,6 +36,7 @@ import { Documents } from './documents.ts'
 import { localWriter } from './files.ts'
 import { Git } from './git.ts'
 import { DocumentLocks } from './locks.ts'
+import { GIT_REVIEW, Reviews } from './review/reviews.ts'
 import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
 import { servedPlugins } from './site.ts'
@@ -85,10 +88,16 @@ export function deckEditing(entry: string): DeckEditing {
   const revisions = git ? new Revisions(git, { config, writer }) : undefined
   const documents = new Documents({ config, git: git!, revisions: revisions!, writer, locks })
   const plugin = workspacePlugin({ documents, ...revisions ? { revisions } : {}, locks, document })
+  // The git review for the assistant's change tasks (`GIT_REVIEW`; the deck is its document ''), and a
+  // crashed process's task rolled back now. A session's review that serve left waits for serve.
+  const reviews = revisions ? new Reviews({ config, revisions, locks, ...shared ? { files: writer } : {}, log: pluginLogger('presmium dev') }) : undefined
+  if (reviews) void reviews.recover([document], { resume: false })
+  const gitReview: ChangeReviewService | undefined = reviews && { engine: reviews.service.engine, open: options => reviews.service.open({ ...options, document: options.document || document }) }
   return {
     plugin: { id: WORKSPACE_ID, plugin, config: {} },
     services: [
       ...revisions ? [[REVISIONS, revisions] as [ServiceToken<unknown>, unknown]] : [],
+      ...gitReview ? [[GIT_REVIEW, gitReview] as [ServiceToken<unknown>, unknown]] : [],
       // Only where the editor's root is the compiler's workspace root (see above).
       ...shared ? [[DOCUMENT_FILES, writer] as [ServiceToken<unknown>, unknown]] : [],
       [DOCUMENT_LOCKS, deckLocks],

@@ -27,6 +27,13 @@
  * the preview agent for the workbench's origins (`--preview-origin`). With
  * `PRESMIUM_SERVICE_TOKEN` in its environment the workspace's routes ask
  * for that token.
+ *
+ * In a git repository the service reviews agents' changes
+ * (./review/reviews.ts, WP-96c): the reviews of DeepSeek Harness sessions
+ * through its routes, and the git review as `CHANGE_REVIEW` where no plugin
+ * (deltabox) registers one, and as `GIT_REVIEW` for the assistant. When it
+ * starts, it resumes the sessions' reviews a process left and rolls back a
+ * crashed process's change task.
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -34,7 +41,7 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildView, Compiler, pluginLogger, runBlock, workspacePlugins } from '@presmium/compiler'
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
-import { DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@presmium/kernel'
+import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@presmium/kernel'
 import type { Finding, IRDocument, Logger, ServiceToken, SiteSpec } from '@presmium/kernel'
 import { servedDocument, startServer } from '@presmium/server'
 import type { PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
@@ -48,6 +55,7 @@ import { localWriter } from './files.ts'
 import type { DocumentWriter } from './files.ts'
 import { Git } from './git.ts'
 import { DocumentLocks } from './locks.ts'
+import { GIT_REVIEW, Reviews } from './review/reviews.ts'
 import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
 import type { WorkspaceRoutes } from './routes.ts'
@@ -184,15 +192,16 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     if (change.removed.length || change.added.length) void documentsChanged(change).catch((error: unknown) => log.warn(`the documents on disk changed, but the site did not follow: ${errorMessage(error)}`))
   }
 
-  /** The repository, its history, the document writer, the document operations and the workspace's routes. */
-  const workspaceOf = (): { revisions?: Revisions, writer: DocumentWriter, plugin: ServedPlugin } => {
+  /** The repository, its history and reviews, the document writer, the document operations and the workspace's routes. */
+  const workspaceOf = (): { revisions?: Revisions, reviews?: Reviews, writer: DocumentWriter, plugin: ServedPlugin } => {
     const writer = localWriter(config)
     const git = Git.isRepository(root) ? new Git(root) : undefined
     if (!git) log.warn(`${root} is not a git repository: editing, the document operations and the history are not available (run git init)`)
     const revisions = git ? new Revisions(git, { config, writer }) : undefined
+    const reviews = revisions ? new Reviews({ config, revisions, locks, files: writer, log }) : undefined
     const documents = new Documents({ config, git: git!, revisions: revisions!, writer, changed: documentsChanged, locks })
-    const routes: WorkspaceRoutes = { documents, ...revisions ? { revisions } : {}, locks, documentsChanged, ...service ? { service } : {}, ...token ? { token } : {} }
-    return { ...revisions ? { revisions } : {}, writer, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
+    const routes: WorkspaceRoutes = { documents, ...revisions ? { revisions } : {}, locks, documentsChanged, ...service ? { service } : {}, ...token ? { token } : {}, ...reviews ? { reviews } : {} }
+    return { ...revisions ? { revisions } : {}, ...reviews ? { reviews } : {}, writer, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
   }
   let workspace: ReturnType<typeof workspaceOf> | undefined
   const plugin = (): ServedPlugin => workspace!.plugin
@@ -284,7 +293,10 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       if (!docs().some(doc => doc.dir === dir)) return undefined
       const compilation = await sessionOf(dir).ready()
       const served = servedDocument(compilation)
-      return { ...served, plugins: [plugin(), ...served.plugins] }
+      // The workspace's git review is `CHANGE_REVIEW` where no plugin (deltabox) registers one.
+      const reviews = workspace?.reviews
+      const service = <T>(token: ServiceToken<T>) => served.service(token) ?? (reviews && token.id === CHANGE_REVIEW.id ? reviews.service as T : undefined)
+      return { ...served, service, plugins: [plugin(), ...served.plugins] }
     },
   })
   const running = server
@@ -293,9 +305,13 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   workspace = workspaceOf()
   hostServices = [
     ...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [],
+    ...workspace.reviews ? [[GIT_REVIEW, workspace.reviews.service] as [ServiceToken<unknown>, unknown]] : [],
     [DOCUMENT_FILES, workspace.writer],
     [DOCUMENT_LOCKS, locks],
   ]
+  // Before anything answers: the sessions' reviews a process left wait for their authors again, a crashed
+  // process's change task is rolled back.
+  await workspace.reviews?.recover(docs().map(doc => doc.dir))
 
   started()
   // A single-deck repository compiles its document at once, as `presmium dev` does: its plugins load and say
@@ -323,6 +339,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     root,
     mcp: { url: `${running.url}/mcp`, stateFile },
     async close() {
+      // The sessions' reviews stay for the next process (their records).
+      workspace?.reviews?.close()
       for (const session of sessions.values()) session.close()
       await service?.close()
       await site?.close()

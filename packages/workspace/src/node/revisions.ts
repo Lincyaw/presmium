@@ -1,8 +1,9 @@
 /**
  * The revision history (`REVISIONS`, P-115, docs/architecture.md 4.8): each
  * change of the source is one commit whose trailers say where it came from
- * (`Presmium-Origin`, `Presmium-Task`, `Co-authored-by`); the history is the
- * commits with those trailers.
+ * (`Presmium-Origin`, `Presmium-Task`, `Co-authored-by`; a DeepSeek Harness
+ * session's review adds `Presmium-Session` and `Presmium-Turn`,
+ * ./review/reviews.ts); the history is the commits with those trailers.
  *
  * A revert is git's three-way merge of the commit undone, computed without
  * the index or the work tree (`git merge-tree --merge-base`, WP-91): when it
@@ -121,23 +122,24 @@ export class Revisions implements RevisionService {
     this.#files = files
   }
 
-  commit(change: { files: string[], message: string, origin: CommitOrigin }): Promise<Revision | undefined> {
+  /** `trailers`: more trailers, before `Co-authored-by` (a session's review: `Presmium-Session`, `Presmium-Turn`). */
+  commit(change: { files: string[], message: string, origin: CommitOrigin, trailers?: [string, string][] }): Promise<Revision | undefined> {
     const [summary = '', ...body] = change.message.trim().split('\n')
-    return this.#git.exclusive(() => this.commitNow(change.files, summary, body.join('\n'), change.origin))
+    return this.#git.exclusive(() => this.commitNow(change.files, summary, body.join('\n'), change.origin, undefined, change.trailers))
   }
 
   /**
    * Commits the changes of these paths (files or directories, relative to
    * the root) as one commit; for callers already holding the git queue.
    */
-  async commitNow(paths: string[], summary: string, body: string, origin: CommitOrigin, revert?: string): Promise<Revision | undefined> {
+  async commitNow(paths: string[], summary: string, body: string, origin: CommitOrigin, revert?: string, more: [string, string][] = []): Promise<Revision | undefined> {
     const unique = [...new Set(paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
     // A path that neither exists nor is tracked any more does not match; the others are staged.
     for (const path of unique) await this.#git.attempt(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
     const staged = (await this.#git.raw(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
     if (!staged) return undefined
-    const message = commitMessage(summary, body, origin, revert)
+    const message = withTrailers(commitMessage(summary, body, origin, revert), more)
     await this.#git.raw([...await this.#identity(), 'commit', '-q', '--no-verify', '-m', message, ...this.#author(origin.member), '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })
     return this.#revision('HEAD')
   }
@@ -230,6 +232,18 @@ export class Revisions implements RevisionService {
       if (!done) throw new Error(`the revert of ${target.id} committed nothing`)
       return { ok: true, revision: done }
     })
+  }
+
+  /** A commit's full message; undefined for no commit. */
+  async messageOf(id: string): Promise<string | undefined> {
+    const shown = await this.#git.attempt(['show', '-s', '--format=%B', `${id}^{commit}`])
+    return shown.ok ? shown.output : undefined
+  }
+
+  /** The files a commit changed (relative to the root); none for no commit. */
+  async filesOf(id: string): Promise<string[]> {
+    const shown = await this.#git.attempt(['show', '--no-renames', '--name-only', '-z', '--format=', `${id}^{commit}`])
+    return shown.ok ? shown.output.split('\0').filter(Boolean).map(this.#fromTop) : []
   }
 
   /** The document directories a commit changed (both sides of a rename), as the configuration names them now; none for no commit. */
@@ -348,6 +362,15 @@ export class Revisions implements RevisionService {
     const email = await this.#git.attempt(['config', 'user.email'])
     return email.ok && email.output.trim() ? [] : ['-c', 'user.name=Presmium', '-c', 'user.email=presmium@presmium.invalid']
   }
+}
+
+/** A commit message with more trailers in its trailers' paragraph, before its `Co-authored-by`. */
+function withTrailers(message: string, more: [string, string][]): string {
+  if (more.length === 0) return message
+  const lines = message.trimEnd().split('\n')
+  const at = lines.at(-1)?.startsWith('Co-authored-by: ') ? lines.length - 1 : lines.length
+  lines.splice(at, 0, ...more.map(([key, value]) => `${key}: ${value.replace(/\s+/g, ' ').trim()}`))
+  return `${lines.join('\n')}\n`
 }
 
 /**
