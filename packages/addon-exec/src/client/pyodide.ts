@@ -99,6 +99,7 @@ export function createPyodideExecutor(options: PyodideExecutorOptions): PyodideE
 
   return {
     id,
+    runsIn: 'browser',
     supports: isPython,
     async run(request, signal): Promise<RunResult> {
       const outcome = await send<RunOutput>('run', request, signal)

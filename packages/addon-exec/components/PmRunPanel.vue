@@ -78,7 +78,8 @@ const display = computed((): ParamsDisplay | undefined => routed.value?.params?.
  * router would run it. Nothing for an executor that does not say.
  */
 const where = computed(() => {
-  const place = runPlace(latest.value?.result.executorId ?? props.executor ?? routed.value?.id)
+  const id = latest.value?.result.executorId ?? props.executor ?? routed.value?.id
+  const place = runPlace(id, id === routed.value?.id ? routed.value : executor.value?.list().find(e => e.id === id))
   if (!place) return undefined
   const said = t.value.runsIn
   return place.kind === 'browser' || place.kind === 'machine' ? said[place.kind] : said[place.kind](place.name)

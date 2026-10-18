@@ -1,15 +1,13 @@
 /**
  * What a run panel's bar says of its code (N-10, docs/design/slide.dc.html:
  * "Python · 浏览器中运行"): the language's name, and where the executor that
- * runs it runs code. The executors of Presmium's own plugins are known by
- * their ids (an executor says nothing of where it runs, `Executor` in
- * @presmium/kernel); a named environment (`:env:`, docs/ir.md 2.7) by the
+ * runs it runs code (`Executor.runsIn` in @presmium/kernel); a named
+ * environment (`:env:`, docs/ir.md 2.7) whose executor does not say, by the
  * `kind` the deck declares for it. Another executor's place is not said.
  */
 import { environmentExecutor } from '@presmium/kernel'
-import type { EnvironmentSpec } from '@presmium/kernel'
+import type { EnvironmentSpec, Executor } from '@presmium/kernel'
 import { shallowRef } from 'vue'
-import { SCRIPT_EXECUTOR_ID } from './script.ts'
 
 /** Where code runs: in the page, on the machine of the server (`presmium dev`, `presmium serve`), in a remote environment, or in a named environment of another kind. */
 export type RunPlace =
@@ -21,24 +19,19 @@ export type RunPlace =
 /** The deck's named environments (`execute.environments`), as the kernel gave them to this plugin. */
 export const environments = shallowRef<Readonly<Record<string, EnvironmentSpec>>>({})
 
-/** Executors that run code in the page: Pyodide and the script worker (this plugin's), the WASI and WebGPU plugins'. */
-const IN_BROWSER = new Set(['pyodide', SCRIPT_EXECUTOR_ID, 'presmium.wasi', 'presmium.webgpu'])
-/** The local plugin's executor: the server runs the code on its machine. */
-const ON_MACHINE = new Set(['presmium.container'])
-/** Environment kinds by where they run code. */
+/** Environment kinds by where they run code, for an environment whose executor has not registered or does not say. */
 const KINDS: Record<string, RunPlace['kind']> = { wasi: 'browser', webgpu: 'browser', devcontainer: 'machine', jupyter: 'remote' }
 
-export function runPlace(executorId: string | undefined): RunPlace | undefined {
+/** Where the executor `executorId` (`executor`, when the router has it) runs code. */
+export function runPlace(executorId: string | undefined, executor?: Executor): RunPlace | undefined {
   if (!executorId) return undefined
   const prefix = environmentExecutor('')
   if (executorId.startsWith(prefix)) {
     const name = executorId.slice(prefix.length)
-    const kind = KINDS[environments.value[name]?.kind ?? ''] ?? 'environment'
+    const kind = executor?.runsIn ?? KINDS[environments.value[name]?.kind ?? ''] ?? 'environment'
     return kind === 'browser' || kind === 'machine' ? { kind } : { kind, name }
   }
-  if (IN_BROWSER.has(executorId)) return { kind: 'browser' }
-  if (ON_MACHINE.has(executorId)) return { kind: 'machine' }
-  return undefined
+  return executor?.runsIn ? { kind: executor.runsIn } : undefined
 }
 
 const NAMES: Record<string, string> = {

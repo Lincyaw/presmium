@@ -1,5 +1,5 @@
 /**
- * Where the AI changes are in edit mode (N-10, docs/architecture.md 5.11): the
+ * Where the AI changes are in edit mode (N-10, docs/architecture.md 5.12): the
  * panel docks at the right of edit mode's split, as an item of the toolbar's
  * `dock` slot (./EditDock.vue), registered while it is shown, so the shell
  * gives the dock its room only then. It is shown while edit mode is on in a

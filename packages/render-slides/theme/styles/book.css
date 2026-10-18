@@ -1,5 +1,5 @@
 /*
- * Presmium's default slides theme, 书卷 (N-10; docs/design/slide.dc.html, docs/architecture.md 5.11). Paper, ink
+ * Presmium's default slides theme, 书卷 (N-10; docs/design/slide.dc.html, docs/architecture.md 5.12). Paper, ink
  * and a deep teal accent, from the host's tokens: the dark scheme is Slidev's `dark` class on <html>, which the
  * tokens follow. Titles and the deck's text in the serif, code in the mono, controls in the sans of the host's
  * components. Sizes are the slide's own px (a canvas 980 px wide): code at 14 px is 18 px or more once the slide

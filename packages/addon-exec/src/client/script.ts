@@ -22,6 +22,7 @@ export function createScriptExecutor(options: { timeoutMs: number }): Executor {
   const id = SCRIPT_EXECUTOR_ID
   return {
     id,
+    runsIn: 'browser',
     supports: isScript,
     run(request, signal) {
       return new Promise<RunResult>((resolve) => {
