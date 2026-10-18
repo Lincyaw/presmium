@@ -61,16 +61,24 @@ const running = ref(false)
 // The runs being compared; each new run selects the last two.
 const selected = ref<number[]>([])
 
-/** The executor that runs this code: its environment's, else the one the router chooses for its language. */
+/**
+ * The executor that runs this code: its environment's, else the one the router chooses for its language. The
+ * router's list is not reactive (an executor registers, or stops supporting a language, later): asked again after
+ * each run.
+ */
 const routed = computed(() => {
+  void history.value
   const executors = executor.value?.list() ?? []
   return props.executor ? executors.find(e => e.id === props.executor) : executors.find(e => e.supports(props.lang))
 })
 /** How the executor that runs this code shows its parameters, if it says. */
 const display = computed((): ParamsDisplay | undefined => routed.value?.params?.(props.lang))
-/** Where the code runs, as the bar says it (./src/client/place.ts); nothing for an executor that does not say. */
+/**
+ * Where the code runs, as the bar says it (./src/client/place.ts): once it has run, where it ran; before, where the
+ * router would run it. Nothing for an executor that does not say.
+ */
 const where = computed(() => {
-  const place = runPlace(props.executor ?? routed.value?.id ?? latest.value?.result.executorId)
+  const place = runPlace(latest.value?.result.executorId ?? props.executor ?? routed.value?.id)
   if (!place) return undefined
   const said = t.value.runsIn
   return place.kind === 'browser' || place.kind === 'machine' ? said[place.kind] : said[place.kind](place.name)

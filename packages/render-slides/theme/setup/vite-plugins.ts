@@ -2,8 +2,8 @@
 // Plugins based on Slide data"). Vite pre-bundles the packages it finds from its entries; Slidev's entry is its
 // client, which reaches the addons' setups and components only through virtual modules that Vite's scan does not
 // follow. Without this, the packages the addons import (yjs, driver.js, markmap-view, ...) are found while the first
-// page loads, bundled in rounds, and the page is reloaded after a round: a deck's first `slidev export` under load
-// then prints a page that is reloading (its links lost, or its body hidden until the export times out). The setups
+// page loads, bundled in rounds, and the page is reloaded after a round (an export's print page too, which then loads
+// again: addon-publish's setup/print.ts). The setups
 // that run in the page, the components and the layouts of every root (the deck's, the theme's, the addons') are
 // entries too, so those packages are bundled at once, when the server starts. The default export is the setup
 // function; `defineVitePluginsSetup` would only type it.

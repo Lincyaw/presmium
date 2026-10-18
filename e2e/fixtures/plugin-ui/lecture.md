@@ -98,6 +98,16 @@ for i in range(num_merges):
     print("合并第", i + 1, "轮")
 ```
 
+(trace)=
+## 逐行执行
+
+```{step-run} python
+:steps: 3
+a = 1
+b = a + 1
+print(b)
+```
+
 (exercise)=
 ## 动手：合并一对
 

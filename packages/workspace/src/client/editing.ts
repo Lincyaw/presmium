@@ -35,7 +35,7 @@ function languageOf(path: string): string {
   return path.split('.').at(-1)?.toUpperCase() ?? ''
 }
 
-const SEVERITY_ICON: Record<Finding['severity'], string> = { error: '●', warning: '▲', info: '○' }
+const SEVERITY_ICON = { error: 'error', warning: 'warning', info: 'info' } as const satisfies Record<Finding['severity'], string>
 const severityColor = (severity: Finding['severity']) => (severity === 'error' ? 'var(--pm-color-danger)' : severity === 'warning' ? 'var(--pm-color-warn)' : 'var(--pm-color-accent)')
 
 /**
@@ -263,7 +263,7 @@ export const SourcePane = defineComponent({
               'style': { display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 'var(--pm-space-2)', width: '100%', padding: '2px 4px', border: 0, borderRadius: 'var(--pm-radius-small)', background: 'transparent', color: 'var(--pm-color-ink)', font: 'inherit', textAlign: 'start', cursor: 'pointer' },
               'onClick': () => void openFile(path, line ? { line } : undefined),
             }, [
-              h('span', { 'aria-hidden': 'true', 'style': { color: severityColor(finding.severity) } }, SEVERITY_ICON[finding.severity]),
+              h(PmIcon, { class: 'pm-source__problem-icon', name: SEVERITY_ICON[finding.severity], size: 14, style: { flex: 'none', alignSelf: 'center', color: severityColor(finding.severity) } }),
               h('span', { class: 'pm-source__problem-place', style: { fontFamily: 'var(--pm-font-mono)', color: 'var(--pm-color-muted)' } }, `${shortName(path)}${line ? `:${line}` : ''}`),
               h('span', { class: 'pm-source__problem-message' }, finding.message),
               finding.hint ? h('span', { style: { color: 'var(--pm-color-muted)' } }, finding.hint) : null,

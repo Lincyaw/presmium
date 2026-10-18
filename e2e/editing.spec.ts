@@ -132,6 +132,9 @@ test.describe('editing the source in the browser', () => {
     const problem = problems.locator('.pm-source__problem').filter({ hasText: 'unknown directive' })
     const more = readFileSync(join(served!.dir, 'notes/pages/more.md'), 'utf8').split('\n').findIndex(text => text.startsWith(':::{nosuch}')) + 1
     await expect(problem.locator('.pm-source__problem-place')).toHaveText(`pages/more.md:${more}`)
+    // Its severity is the host's line icon, not a glyph.
+    await expect(problem.locator('svg.pm-source__problem-icon')).toHaveCount(1)
+    await expect(problem).not.toContainText(/[●▲○]/)
     await problem.click()
     await expect(page.getByRole('tablist', { name: '打开的文件' }).getByRole('tab', { name: /^pages\/more\.md/ })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.pm-workspace-cursor')).toHaveText(`MyST · UTF-8 · 第 ${more} 行`)

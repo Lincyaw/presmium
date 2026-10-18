@@ -1,0 +1,43 @@
+<body>
+  <script>
+    // A page in print mode keeps its network busy until it shows every slide, and is reloaded when its modules fail
+    // to load: setup/print.ts says why, and names the request and the events this repeats.
+    (() => {
+      if (!new URLSearchParams(location.search).has('print')) return
+      let held = true
+      let request
+      const pend = () => {
+        if (!held) return
+        request = new AbortController()
+        // An answer comes from a server other than `slidev export`'s (a built deck, the dev server): nothing to hold.
+        fetch('@presmium/print-pending', { signal: request.signal, cache: 'no-store' }).then(() => { held = false }, () => setTimeout(pend, 50))
+      }
+      const release = () => {
+        held = false
+        request.abort()
+      }
+      const reload = (why) => {
+        if (!held) return
+        let reloads = 0
+        try {
+          reloads = Number(sessionStorage.getItem('presmium:print-reloads')) || 0
+          sessionStorage.setItem('presmium:print-reloads', String(reloads + 1))
+        } catch {}
+        if (reloads < 3) {
+          console.warn(`presmium: ${why}; the print page is reloaded`)
+          location.reload()
+        } else {
+          console.error(`presmium: ${why}, after ${reloads} reloads of the print page`)
+          release()
+        }
+      }
+      addEventListener('presmium:print-ready', release)
+      addEventListener('presmium:print-failed', event => reload(event.detail))
+      addEventListener('error', (event) => {
+        const script = event.target
+        if (script instanceof HTMLScriptElement && script.type === 'module') reload(`${script.src} did not load`)
+      }, true)
+      pend()
+    })()
+  </script>
+</body>

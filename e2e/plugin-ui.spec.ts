@@ -162,9 +162,16 @@ test.describe('a deck built with the default theme', () => {
     await expect(page.getByRole('region', { name: '放映' }).locator('.pm-run-panel__where')).toHaveText('Python · 浏览器中运行')
   })
 
-  test('the plugins draw the host\'s line icons, not glyphs: the exercise\'s marks, the high-contrast switch', async ({ page }) => {
+  test('the plugins draw the host\'s line icons, not glyphs: the exercise\'s marks, the high-contrast switch, the step buttons of a traced run', async ({ page }) => {
     test.setTimeout(240_000)
     await page.goto(`${deck().web}/basics.html`)
+    // The document form traces the code once the block nears the viewport.
+    const traced = page.locator('.pm-section[data-section="trace"] .pm-step-run')
+    await traced.scrollIntoViewIfNeeded()
+    const stepper = traced.locator('.pm-step-run__stepper')
+    await expect(stepper).toBeVisible(RUNTIME)
+    await expect(stepper.locator('button svg.pm-ui-icon')).toHaveCount(2)
+    expect(await stepper.textContent()).not.toMatch(/[◀▶]/)
     const exercise = page.locator('.pm-section[data-section="exercise"] .pm-exercise')
     await exercise.getByRole('button', { name: '提交' }).click()
     const cases = exercise.locator('.pm-exercise__cases li')

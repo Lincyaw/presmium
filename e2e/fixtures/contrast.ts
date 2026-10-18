@@ -10,7 +10,7 @@ import type { Page } from '@playwright/test'
  * chosen segment, below 3:1 against the control's background or what is around it (1.4.11). Disabled controls are left out,
  * as WCAG does, and so is text a slide hides until its step, and what is inside `except` (another part's own
  * colours, e.g. the web form's highlighting of code). Open shadow roots are looked into (the slides draw a Mermaid
- * diagram in one).
+ * diagram in one); SVG text is measured with its fill.
  */
 export function lowContrast(page: Page, scope = 'body', except?: string): Promise<string[]> {
   return page.evaluate(([selector, skip]) => {
@@ -75,14 +75,15 @@ export function lowContrast(page: Page, scope = 'body', except?: string): Promis
       if (!text || !shown(element)) continue
       const style = getComputedStyle(element)
       const { background, opacity } = backdrop(element)
-      const color = parse(style.color)
+      // SVG text is drawn with its fill (the labels of a diagram drawn without HTML).
+      const color = parse(element instanceof SVGElement && /^(rgb|color)/.test(style.fill) ? style.fill : style.color)
       const drawn = over([color[0]!, color[1]!, color[2]!, color[3]! * opacity], background)
       // On a slide the px are the slide's, scaled to the screen.
       const scale = element.getBoundingClientRect().height / (element.offsetHeight || element.getBoundingClientRect().height) || 1
       const size = Number.parseFloat(style.fontSize) * scale
       const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700)
       const value = ratio(drawn, background)
-      if (value < (large ? 3 : 4.5)) failures.push(`${text.slice(0, 40)} (${element.className || element.tagName}: ${value.toFixed(2)})`)
+      if (value < (large ? 3 : 4.5)) failures.push(`${text.slice(0, 40)} (${element.getAttribute('class') || element.tagName}: ${value.toFixed(2)})`)
     }
     const bounded = '.pm-ui-input, .pm-ui-select, .pm-ui-textarea, .pm-ui-search, .pm-view-menu, .pm-ui-segmented__option[aria-pressed="true"]'
     for (const element of document.querySelectorAll<HTMLElement>(`${selector} :is(${bounded})`)) {

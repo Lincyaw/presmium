@@ -1514,6 +1514,12 @@ N-07 要求界面文本有中文与英文：
 
 PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示交互界面：幻灯片宿主在打印模式（`useStaticRender()` 为 true）下把带 `fallback` 的组件换成降级内容。插件负责让降级内容完整：执行面板的降级内容是先给参数赋值的代码，加上编译时的输出（构建时没有执行、执行失败或超时的用 `:recorded:` 的录制输出），由执行插件在编译时执行之后的步骤（`after: 'execute'`）写入。notebook 渲染端有自己的扩展时用扩展，否则使用 `fallback`（`ir.md` 第 6 节）。
 
+打印页自己说明何时可以截图（发布插件的 `setup/print.ts`、`setup/root.ts` 与 `index.html`）。`slidev export` 等打印页的网络空闲 500 毫秒（`--wait-until networkidle`），再等它此时在页面上找到的东西（加载中的幻灯片、Mermaid），再等 `--wait` 毫秒后截图。
+
+- 机器繁忙时，浏览器还在执行页面的模块、应用还没挂载，网络已经空闲：导出找不到要等的东西，打印出空白页（链接丢失）。所以打印模式（`?print`）的页面从一开始就保持一个请求不结束，直到每张幻灯片的组件都已加载（`SlideRoute.load`）、页面显示了它们；这个请求只有 `slidev export` 的服务器（插件的 Vite 插件，只在 `export` 模式加入）不回答，别处（构建产物、开发服务器）一回答页面就不再保持。等待的上限是导出自己的 `--timeout`（`presmium-export` 默认 120 秒）。
+- 页面的请求可能失败：主机的网络变化时（别的进程启动 Docker 容器）Chromium 以 `net::ERR_NETWORK_CHANGED` 中止进行中的请求，Vite 重新打包依赖后对旧的请求回答 “Outdated Optimize Dep”。入口的模块载入失败时应用不会启动，导出等不到页面的 `body`（Slidev 固定等 30 秒）；某张幻灯片载入失败时打印出它的错误页。所以入口的模块或某张幻灯片载入失败时页面重新载入，最多三次。
+- 只对列出发布插件的文稿生效；`e2e/smoke.spec.ts` 用测试文稿 `e2e/fixtures/print` 检查两种情形（插件让应用在模块加载后停 5 秒，并让页面对它的一个模块的第一次请求失败）。
+
 ### 5.9 浮层组件与组件拥有的代码
 
 在页面上绘制在其他内容之上、自身不占版面的组件（例如引导的光标），由指令把组件节点标为 `layer: 'overlay'`。渲染端不给它单独的位置：网页的文档视图把浮层块放在板书之外，不会出现空卡片，服务端渲染与首帧的版面也不跳动；幻灯片渲染端不给没有降级内容的浮层组件写空的 `PmStaticFallback`。
@@ -1644,10 +1650,10 @@ WP-95d 把插件的界面与幻灯片的默认主题改为 5.10 节的设计系�
 - 工具栏的弹层用浏览器自己的 `popover`，在顶层，不被幻灯片的导航栏裁掉。它画成宿主的浮层：`surface` 底、`line` 边框、卡片圆角与 `shadow-float`。
 - 幻灯片形态中，Slidev 的重置样式（Tailwind 的 preflight）把 `button`、`[type=button]`、`[type=submit]` 设为透明。它的特异性与宿主的类相同，又排在其后，所以 `addon-core` 的 `style.css` 为 `pm-ui-button` 的各种状态补回填充。
 - 远端环境的令牌对话框（`auth: prompt`，`addon-exec-jupyter` 的 `token.ts`）是浏览器的模态 `<dialog>`，保留模态与居中；标题栏、字段与按钮用宿主的 `pm-ui-dialog__*`、`pm-ui-field`、`pm-ui-input`、`pm-ui-button` 类，面板的底色、边框、圆角与阴影取令牌。
-- 图标是宿主的线性图标（`PmIcon`）：分步执行的上一步、下一步，讲授的过时字幕与改写，高对比度开关，练习每条检查的对错，录制中的标记；幻灯片代码运行器的提示“按 [运行图标] 运行这段代码”用 `iconMarkup`。插件界面中没有 ◀ ▶ ⚠ ✎ ◐ ✓ ✗ ● 这类字形。
+- 图标是宿主的线性图标（`PmIcon`）：分步执行的上一步、下一步，讲授的过时字幕与改写，高对比度开关，练习每条检查的对错，录制中的标记，源码面板中问题的严重程度（`error`、`warning`、`info`）；幻灯片代码运行器的提示“按 [运行图标] 运行这段代码”用 `iconMarkup`。插件与工作区的界面中没有 ◀ ▶ ⚠ ✎ ◐ ✓ ✗ ● ▲ ○ 这类字形。
 - 状态靠颜色而不靠不透明度区分，以保持 AA：核心插件的演示步进组件中已完成的步骤用 `muted`（原来 0.6 的不透明度只有 4.4:1）。
 
-**运行面板**（`addon-exec` 的 `PmRunPanel.vue`，`docs/design/slide.dc.html`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉（幻灯片的 `--slidev-code-margin`、`--slidev-code-radius` 设为 0）。在哪里运行由执行器决定（`src/client/place.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；别的插件的执行器只写语言（`Executor` 契约没有说明位置的字段）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
+**运行面板**（`addon-exec` 的 `PmRunPanel.vue`，`docs/design/slide.dc.html`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉（幻灯片的 `--slidev-code-margin`、`--slidev-code-radius` 设为 0）。在哪里运行由执行器决定（`src/client/place.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；别的插件的执行器只写语言（`Executor` 契约没有说明位置的字段，所以 Presmium 自己的执行器按 ID 列出）。运行之前写路由器会选的执行器，运行之后写实际运行的（`RunResult.executorId`）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
 
 **图表**：网页与放映视图中的 Mermaid（IR 运行时的 `PmMermaid`）用 Mermaid 的 `base` 主题，主题变量取宿主的令牌（纸、墨、强调色，明暗随页面），连线标签在 `surface` 上用 `ink`；页面没有令牌时用 Mermaid 自己的 `default`、`dark`。书卷的幻灯片中 Slidev 画图（在 shadow root 中），主题的 `setup/mermaid.ts` 用 Mermaid 的 `themeCSS` 让连线标签取令牌（令牌经 shadow root 继承，随暗色切换）；Mermaid 自己的暗色主题把标签画在 4.4:1，达不到 AA。
 
@@ -1672,7 +1678,7 @@ WP-95d 把插件的界面与幻灯片的默认主题改为 5.10 节的设计系�
 - `cover` 版式：标题大而靠下，上方一条强调色的短线；底部只有页码。Slidev 的其他内置版式（`center`、`two-cols` 等）取同一套颜色与字体。
 - 代码按步骤高亮行时（`{code-ref}` 的 `:steps:`、`:emphasize-lines:`），Slidev 把其余的行设为 30% 的不透明度，对比度只有 1.6 至 2.5:1。书卷改为把这些行统一画成墨色与 `surface` 按 62% 混合的灰色，不带语法颜色：亮色约 4.8:1，暗色约 6.1:1，达到 AA，同时仍比高亮的行淡。
 - 主题把 `--slidev-theme-background`（Slidev 以 `--slidev-theme-*` 命名主题的颜色）设为 `surface`，供画在幻灯片之外的界面取用：宿主的演讲者面板（`PresenterPanels.vue`）以它为底色，因此书卷的演讲者视图中面板随暗色切换。面板改为直接用令牌后（交给 WP-95c），任何主题下都是如此。
-- `setup/vite-plugins.ts` 把每个根目录（文稿、主题与插件）在页面中运行的 setup（`main`、`code-runners`、`mermaid` 等，不含 `vite-plugins` 这类在 Node 中运行的）、`components/` 与 `layouts/` 加进 Vite 的 `optimizeDeps.entries`。Slidev 的入口只经虚拟模块到达插件的 setup 与组件，Vite 的扫描不跟进去，插件引用的包（yjs、driver.js、markmap-view 等）于是在第一个页面加载时才被发现，分几轮打包，每一轮之后重新载入页面：文稿的第一次 `slidev export`（依赖缓存为空，如新的检出）在负载下打印到正在重新载入的页面，PDF 丢失链接或页面一直隐藏到导出超时。加进入口后它们在服务器启动时一次打包。插件装在 `node_modules` 中时 Vite 的入口不含那里的文件，这时仍是旧的行为（渲染端为生成的文稿写的 `vite.config.ts` 可以列出插件的这些目录，交给以后的工作包）。
+- `setup/vite-plugins.ts` 把每个根目录（文稿、主题与插件）在页面中运行的 setup（`main`、`code-runners`、`mermaid` 等，不含 `vite-plugins` 这类在 Node 中运行的）、`components/` 与 `layouts/` 加进 Vite 的 `optimizeDeps.entries`。Slidev 的入口只经虚拟模块到达插件的 setup 与组件，Vite 的扫描不跟进去，插件引用的包（yjs、driver.js、markmap-view 等）于是在第一个页面加载时才被发现，分几轮打包，每一轮之后重新载入页面（打印页因此也会重新载入，见 5.8 节）。加进入口后它们在服务器启动时一次打包。插件装在 `node_modules` 中时 Vite 的入口不含那里的文件，这时仍是旧的行为（渲染端为生成的文稿写的 `vite.config.ts` 可以列出插件的这些目录，交给以后的工作包）。
 - 生成的文稿自己的样式 `src/deck/style.css`（代码的来源、录制的输出、卡片与栅格、现场代码的运行器、打印）不论主题都写进文稿，颜色同样用令牌。运行器（Monaco Runner）的编辑器高过 15em、输出高过 7.5em 时在其中滚动；这两条规则原在执行插件的 `styles/index.css`。
 
 **验收**：`e2e/plugin-ui.spec.ts`（测试文稿 `e2e/fixtures/plugin-ui`，工作区 `e2e/fixtures/plugin-ui-workspace`）：
@@ -1680,10 +1686,10 @@ WP-95d 把插件的界面与幻灯片的默认主题改为 5.10 节的设计系�
 - 书卷的幻灯片：纸色底、衬线标题、章名、步骤条、页码、代码的字号与封面；
 - 每一页的文字（插件组件、按步骤高亮之外的代码行、演示步进组件已完成的步骤与 Mermaid 的连线标签在内）在明暗两套下达到 WCAG AA，输入框的边框达到 3:1；演讲者视图的面板（课堂会话与课堂互动，创建课堂前后）、网页形态中的组件、图表与提问面板同样；
 - 运行面板：顶栏写“Python · 浏览器中运行”并有运行按钮，在代码之上；运行后输出写“输出 · <秒数> 秒”，在幻灯片上位于代码旁边；网页与放映视图中的顶栏相同；
-- 练习的对错标记与高对比度开关是宿主的线性图标，没有字形；
+- 练习的对错标记、高对比度开关与分步执行的上一步、下一步是宿主的线性图标，没有字形（源码面板中问题的严重程度见 `e2e/editing.spec.ts`）；
 - 工作区中，“AI 修改”停靠与收起面板，状态栏显示模型与来源，模型设置中换了服务或地址后密钥必填、在手机宽度下不超出屏幕，首页的卡片由 agent 起草。
 
-`e2e/exec-remote.spec.ts` 另外检查令牌对话框用宿主的字段并达到 AA（需要 Docker）。`e2e/smoke.spec.ts` 的 PDF 导出与示例讲义的构建写同一个 `.presmium/slides`，用 Playwright 的测试锁（`lock`）不同时运行。主机的网络在打印页加载时变化（别的用例启动 Docker 的网络或容器、IPv6 地址更新）时，Chromium 以 `net::ERR_NETWORK_CHANGED` 中止进行中的请求，打印页载入不了模块（每一页都是 “Failed to fetch dynamically imported module”），导出得到没有幻灯片内容的 PDF（链接丢失）或等不到页面的 `body`（Slidev 固定等 30 秒，不受 `--timeout` 影响）；所以这个用例失败时再试（最多两次，Playwright 报告为 flaky），与 `presmium-export` 让作者再导出一次相同。
+`e2e/exec-remote.spec.ts` 另外检查令牌对话框用宿主的字段并达到 AA（需要 Docker）。`e2e/smoke.spec.ts` 的 PDF 导出与示例讲义的构建写同一个 `.presmium/slides`，用 Playwright 的测试锁（`lock`）不同时运行。这个导出在全套运行的负载下曾失败（空白的 PDF 丢失链接，或等不到页面的 `body`），原因与改法见 5.8 节：打印页在网络空闲时还没挂载应用，或页面的请求因主机的网络变化而失败；不靠重试。
 
 示例讲义两种形态的逐页截图交验收者对比。
 

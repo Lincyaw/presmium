@@ -45,6 +45,10 @@ export const ICONS = {
   'play': [path('M7 4v16l13-8z')],
   /** A triangle with a mark: a warning (e.g. a caption older than its script). */
   'warning': [path('M12 3.5 2.5 20h19z'), path('M12 10v4.5'), path('M12 17.5v.01')],
+  /** A circle with a cross: an error (e.g. a problem of the source). */
+  'error': [circle(12, 12, 9), path('m9 9 6 6M15 9l-6 6')],
+  /** A circle with an i: a note. */
+  'info': [circle(12, 12, 9), path('M12 11v5.5'), path('M12 7.5v.01')],
   /** A circle half drawn in: the high-contrast switch. */
   'contrast': [circle(12, 12, 9), path('M12 17.5a5.5 5.5 0 0 0 0-11z')],
   /** A ring round a dot: recording. */
