@@ -23,7 +23,7 @@ const t = useMessages({ 'zh-CN': { done: '完成' }, 'en': { done: 'Done' } })
 </template>
 ```
 
-Components get everything through this package, never from `@slidev/*` or `vitepress`, so both forms render them. It also provides the design system: the `--pm-*` tokens, the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1).
+Components get everything through this package, never from `@slidev/*` or `vitepress`, so both forms render them. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in Vue, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@presmium/design`, which it loads into every page.
 
 ## Experimental parts
 

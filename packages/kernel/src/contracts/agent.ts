@@ -336,13 +336,13 @@ export interface ChangeReview {
 }
 
 export interface ChangeReviewService {
-  /** The implementation's name, which the UI shows, e.g. `deltabox` (the git implementation is the assistant's own, not behind this token). */
+  /** The implementation's name, which the UI shows: `deltabox`, or the workspace service's git review. */
   readonly engine: string
   /** Starts the review of a change task and records the snapshot of its start; at most one per document directory at a time. */
   open(options: { document: string, task: string, member: Member }): Promise<ChangeReview>
 }
 
-/** Node service: `addon-deltabox` registers it where the host qualifies (10.7). */
+/** Node service: `addon-deltabox` registers it where the host qualifies (10.7); elsewhere, in a git repository, `presmium serve` registers its own git review (WP-96c). */
 export const CHANGE_REVIEW = defineService<ChangeReviewService>('presmium.changeReview')
 
 // Revision history (P-115, P-121) ----------------------------------------------------

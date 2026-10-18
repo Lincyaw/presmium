@@ -27,8 +27,8 @@ export {
   useToolbarPlace,
 } from './design/components.ts'
 export type { ButtonVariant, Choice, MenuItem, PopoverPlacement, Tone } from './design/components.ts'
-export { iconMarkup, ICONS } from './design/icons.ts'
-export type { IconName } from './design/icons.ts'
+export { iconMarkup, ICONS } from '@presmium/design'
+export type { IconName } from '@presmium/design'
 export { useTheme } from './design/theme.ts'
 export type { Theme } from './design/theme.ts'
 export {

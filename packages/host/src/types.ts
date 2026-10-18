@@ -6,7 +6,7 @@
 import type { Ref } from 'vue'
 import { defineService } from '@presmium/kernel/contracts'
 import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@presmium/kernel/contracts'
-import type { IconName } from './design/icons.ts'
+import type { IconName } from '@presmium/design'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
 

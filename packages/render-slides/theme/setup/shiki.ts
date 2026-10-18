@@ -1,4 +1,4 @@
-// The colours of code in 书卷: the host's syntax tokens (`--pm-color-syntax-*`, packages/host/src/design/tokens.css)
+// The colours of code in 书卷: the host's syntax tokens (`--pm-color-syntax-*`, packages/design/src/tokens.css)
 // as Shiki themes, light and dark, which Slidev's Monaco editors take too. Shiki and Monaco need the colours
 // themselves, not the custom properties; each reaches WCAG AA on the code's panel (`surface`). The default export
 // is the setup function of vendor/docs/slidev/custom/config-highlighter.md (`defineShikiSetup` only types it).

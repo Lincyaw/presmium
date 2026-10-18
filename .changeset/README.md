@@ -9,7 +9,8 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | 包 | 发布到 | 说明 |
 |---|---|---|
 | `@presmium/kernel` | npm | 共享内核：IR 与插件契约、服务注册、锚点、检查 |
-| `@presmium/host` | npm | 插件组件的宿主接口与设计系统（令牌、组件、字体） |
+| `@presmium/host` | npm | 插件组件的宿主接口与设计系统的 Vue 组件 |
+| `@presmium/design` | npm | 设计系统：令牌、`pm-ui-*` 的类、字体与图标，产物与工作台共用，没有框架（`docs/design-dsh.md` 3.1 节） |
 | `@presmium/compiler` | npm | MyST 到 IR、插件加载、编译时执行、检查与渲染端调度 |
 | `@presmium/cli` | npm | `presmium` 命令；`./testing` 供插件的集成测试运行 CLI |
 | `@presmium/viewer` | npm | IR 运行时 |
@@ -38,8 +39,9 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@presmium/slidev-addon-deltabox` | npm | 插件：修改审阅与进程沙箱（随 CLI 安装） |
 | `@presmium/slidev-addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@presmium/slidev-addon-speech` | npm | 插件：语音服务 |
-| `@presmium/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节），技能在打包时从 `.agents/skills` 复制 |
+| `@presmium/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能在打包时从 `.agents/skills` 复制，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
 | `@presmium/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；`@presmium/cli` 装了它时转交；0.x、实验性，版本号不随统一版本 |
+| `@presmium/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@presmium/dsh` 的客户端部分打包使用 |
 | `create-presmium` | npm | `npm create presmium@latest`：新建讲义、工作区或插件项目（不在 `@presmium` 作用域中：`npm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，见包内 `templates/README.md`） |
 | `presmium-vscode` | 否 | VS Code 扩展：预打包为 `.vsix`，发布到扩展市场，不发布到 npm |
 | `presmium-demo` | 否 | 示例讲义（`examples/demo`） |

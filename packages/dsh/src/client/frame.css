@@ -1,0 +1,362 @@
+/*
+ * The root layout of the workbench (docs/design-dsh.md 7.2 and 7.7): the grid of the activity bar, the side panel,
+ * the centre, the right dock's track and the docked conversation over the status bar; below 768 px the activity bar
+ * runs along the top and one view fills the width. DeepSeek Harness's own panels draw themselves in their cells.
+ */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+.pmw-frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'activity side centre rightbar dock'
+    'status status status status status'
+    'bottom bottom bottom bottom bottom';
+  height: 100%;
+  overflow: hidden;
+  background: var(--pm-color-bg);
+  color: var(--pm-color-ink);
+}
+
+.pmw-frame__skip {
+  position: absolute;
+  z-index: 30;
+  top: 4px;
+  left: 4px;
+  padding: var(--pm-space-2) var(--pm-space-3);
+  border-radius: var(--pm-radius-control);
+  background: var(--pm-color-surface);
+  color: var(--pm-color-accent);
+  transform: translateY(-200%);
+}
+
+.pmw-frame__skip:focus {
+  transform: none;
+}
+
+/* The activity bar */
+
+.pmw-activity {
+  grid-area: activity;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pm-space-1);
+  padding: var(--pm-space-2) 0;
+  border-right: 1px solid var(--pm-color-line);
+  background: var(--pm-color-sunk);
+}
+
+.pmw-activity__logo {
+  display: flex;
+  margin-bottom: var(--pm-space-2);
+}
+
+.pmw-activity__end {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-1);
+  margin-top: auto;
+}
+
+.pmw-activity__button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pm-radius-control);
+  background: none;
+  color: var(--pm-color-muted);
+  cursor: pointer;
+}
+
+.pmw-activity__button:hover {
+  background: color-mix(in srgb, var(--pm-color-ink) 6%, transparent);
+  color: var(--pm-color-ink);
+}
+
+.pmw-activity__button[aria-pressed='true'] {
+  background: var(--pm-color-surface);
+  box-shadow: inset 2px 0 0 var(--pm-color-accent);
+  color: var(--pm-color-accent);
+}
+
+.pmw-activity__button:focus-visible {
+  outline: 2px solid var(--pm-color-accent);
+  outline-offset: 1px;
+}
+
+/* The side panel: Presmium's file tree, or DeepSeek Harness's sidebar */
+
+.pmw-frame__side,
+.pmw-frame__sidebar {
+  grid-area: side;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--pm-color-line);
+  background: var(--pm-color-bg);
+}
+
+.pmw-frame__sidebar {
+  overflow: hidden;
+  background: var(--dsw-specific-sidebar-fill, var(--pm-color-sunk));
+}
+
+.pmw-frame__side:not([data-shown]),
+.pmw-frame__side[data-content='sessions'],
+.pmw-frame__sidebar:not([data-shown]) {
+  display: none;
+}
+
+.pmw-frame__side-files[hidden] {
+  display: none;
+}
+
+/* Below 1024 px the side panel opens over the centre. */
+.pmw-frame[data-collapsed]:not([data-narrow]) .pmw-frame__side[data-shown],
+.pmw-frame[data-collapsed]:not([data-narrow]) .pmw-frame__sidebar[data-shown] {
+  position: absolute;
+  z-index: 12;
+  top: 0;
+  bottom: var(--pm-statusbar-height);
+  left: 48px;
+  width: min(280px, calc(100% - 96px));
+  box-shadow: var(--pm-shadow-float);
+}
+
+.pmw-frame__centre {
+  grid-area: centre;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--pm-color-bg);
+}
+
+.pmw-frame__centre[hidden] {
+  display: none;
+}
+
+.pmw-frame__centre > .pmw-home {
+  height: 100%;
+}
+
+.pmw-frame__panel {
+  height: 100%;
+  overflow: auto;
+}
+
+.pmw-frame__rightbar {
+  position: relative;
+  grid-area: rightbar;
+  min-width: 0;
+  overflow: visible;
+}
+
+.pmw-frame__dock {
+  grid-area: dock;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--pm-color-line);
+  background: var(--dsw-alias-bg-base, var(--pm-color-bg));
+}
+
+.pmw-frame__dock > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.pmw-frame__status {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-4);
+  min-height: var(--pm-statusbar-height);
+  padding: 0 var(--pm-space-3);
+  overflow: hidden;
+  border-top: 1px solid var(--pm-color-line);
+  background: var(--pm-color-sunk);
+  color: var(--pm-color-muted);
+  font-family: var(--pm-font-mono);
+  font-size: var(--pm-text-xs);
+}
+
+.pmw-frame__bottom {
+  grid-area: bottom;
+  min-width: 0;
+}
+
+.pmw-frame__bottom:empty {
+  display: none;
+}
+
+.pmw-frame__overlay {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pmw-frame__overlay > * {
+  pointer-events: auto;
+}
+
+.pmw-frame__handle {
+  position: absolute;
+  z-index: 11;
+  top: 0;
+  bottom: var(--pm-statusbar-height);
+  width: 8px;
+  margin-left: -4px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.pmw-frame__handle:hover,
+.pmw-frame__handle:active {
+  background: linear-gradient(to right, transparent 3px, var(--pm-color-accent) 3px, var(--pm-color-accent) 5px, transparent 5px);
+}
+
+/* Narrow screens: the activity bar along the top, one view at a time */
+
+.pmw-frame[data-narrow] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'activity'
+    'centre'
+    'status'
+    'bottom';
+}
+
+.pmw-frame[data-narrow] .pmw-activity {
+  flex-direction: row;
+  justify-content: space-between;
+  padding: var(--pm-space-1) var(--pm-space-2);
+  overflow-x: auto;
+  border-right: 0;
+  border-bottom: 1px solid var(--pm-color-line);
+}
+
+.pmw-frame[data-narrow] .pmw-activity__logo {
+  margin: 0 var(--pm-space-1) 0 0;
+}
+
+.pmw-frame[data-narrow] .pmw-activity__end {
+  flex-direction: row;
+  margin: 0;
+}
+
+.pmw-frame[data-narrow] .pmw-activity__button[aria-pressed='true'] {
+  box-shadow: inset 0 -2px 0 var(--pm-color-accent);
+}
+
+.pmw-frame[data-narrow] .pmw-frame__sidebar,
+.pmw-frame[data-narrow] .pmw-frame__dock,
+.pmw-frame[data-narrow] .pmw-frame__rightbar {
+  grid-area: centre;
+  border: 0;
+}
+
+.pmw-frame[data-narrow] .pmw-frame__dock:not([data-shown]) {
+  display: none;
+}
+
+.pmw-frame[data-narrow] .pmw-frame__rightbar {
+  pointer-events: none;
+}
+
+.pmw-frame[data-narrow] .pmw-frame__rightbar > * {
+  pointer-events: auto;
+}
+
+.pmw-frame[data-narrow] .pmw-frame__status {
+  gap: var(--pm-space-2);
+}
+
+/* The brand in DeepSeek Harness's places and the first-use notice */
+
+.pmw-logo {
+  flex: none;
+  display: block;
+}
+
+.pmw-brand-name {
+  font-family: var(--pm-font-sans);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.pmw-welcome {
+  position: fixed;
+  z-index: var(--pm-z-dialog);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--pm-space-4);
+  background: rgba(28, 27, 25, 0.32);
+}
+
+.pmw-welcome__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-3);
+  max-width: 30rem;
+  padding: var(--pm-space-6);
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-card);
+  background: var(--pm-color-surface);
+  box-shadow: var(--pm-shadow-float);
+}
+
+.pmw-welcome__title {
+  margin: 0;
+  font-family: var(--pm-font-serif);
+  font-size: var(--pm-text-title);
+}
+
+.pmw-welcome__card p {
+  margin: 0;
+  line-height: var(--pm-leading-ui);
+}
+
+.pmw-welcome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--pm-space-2);
+}
+
+/* The Plugins page offers no experimental bundles and no plugin market (7.5): the group is hidden. */
+[data-plugin-group='extensions'] {
+  display: none !important;
+}
+
+/* The fallback: Presmium's panels in DeepSeek Harness's own layout (7.2). */
+.pmw-fallback {
+  height: 100%;
+  overflow: auto;
+  background: var(--pm-color-bg);
+}
+
+.pmw-fallback__doc {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  height: 100%;
+}
+
+.pmw-fallback__tab {
+  height: 100%;
+  overflow: hidden;
+}

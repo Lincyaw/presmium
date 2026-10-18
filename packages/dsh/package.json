@@ -1,7 +1,7 @@
 {
   "name": "@presmium/dsh",
   "version": "0.1.0",
-  "description": "Presmium's bundle for DeepSeek Harness: the workbench's host side (Presmium's tools, approvals, document context, skills and routes) for presmium studio (experimental)",
+  "description": "Presmium's bundle for DeepSeek Harness: the workbench of presmium studio, its host side (Presmium's tools, approvals, document context, skills and routes) and its client side (the root layout and the workbench's panels, precompiled) (experimental)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -25,6 +25,8 @@
     "access": "public"
   },
   "exports": {
+    ".": "./rows/workbench.mjs",
+    "./client": "./build/dist/client.js",
     "./service": "./rows/service.mjs",
     "./workspaces": "./rows/workspaces.mjs",
     "./tools": "./rows/tools.mjs",
@@ -38,6 +40,7 @@
   },
   "files": [
     "rows",
+    "build",
     "src",
     "skills",
     "cordis.patch.yml",
@@ -48,6 +51,16 @@
     "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-theme",
+        "@deepseek-ai/dsh-client-shortcuts"
+      ]
     }
   },
   "presmium": {
@@ -56,12 +69,12 @@
       "presmium-present"
     ],
     "generated": [
-      "skills"
+      "skills",
+      "build/dist"
     ]
   },
   "scripts": {
-    "prepack": "node scripts/copy-skills.mjs",
-    "postpack": "node scripts/copy-skills.mjs --remove"
+    "prepack": "node build/client.mjs && node scripts/copy-skills.mjs"
   },
   "dependencies": {
     "@presmium/cli": "workspace:*",
@@ -73,6 +86,11 @@
     "@deepseek-ai/dsh": "0.2.1-alpha.4"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh": "0.2.1-alpha.4"
+    "@deepseek-ai/dsh": "0.2.1-alpha.4",
+    "@presmium/design": "workspace:*",
+    "@presmium/workbench": "workspace:*",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7",
+    "esbuild": "0.25.12"
   }
 }

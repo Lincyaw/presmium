@@ -1,0 +1,5 @@
+# The workspace of e2e/workbench.spec.ts (WP-96d): two documents, one with an included page whose unknown directive is
+# a problem of its compilation.
+title: 工作台用例
+documents:
+  - lectures/*/lecture.md

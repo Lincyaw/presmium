@@ -1,9 +1,12 @@
 /**
  * The line icons of the design (N-10, docs/design/): 24 px boxes, drawn with
- * the current colour at a 1.7 px stroke; no emoji. `PmIcon` draws them.
+ * the current colour at a 1.7 px stroke; no emoji. `PmIcon` draws them, the
+ * Vue one of `@presmium/host` in the outputs and the React one of
+ * `@presmium/workbench` in the workbench.
  */
 
-type Shape = ['path', { d: string }] | ['circle', { cx: number, cy: number, r: number }] | ['rect', { x: number, y: number, width: number, height: number, rx: number }]
+/** One shape of an icon: an SVG element's name and its attributes. */
+export type Shape = ['path', { d: string }] | ['circle', { cx: number, cy: number, r: number }] | ['rect', { x: number, y: number, width: number, height: number, rx: number }]
 
 const path = (d: string): Shape => ['path', { d }]
 const circle = (cx: number, cy: number, r: number): Shape => ['circle', { cx, cy, r }]

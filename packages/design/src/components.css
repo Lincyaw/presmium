@@ -1,8 +1,9 @@
 /*
- * The shared components of the host (N-10, docs/architecture.md 5.10), drawn with the tokens only:
+ * The shared components of the design (N-10, docs/architecture.md 5.10), drawn with the tokens only:
  * buttons, fields, cards, badges, segmented controls, tabs, popovers, dialogs, menus, lists, empty
- * states and notices. The Vue components of components.ts render these classes; a plugin may use the
- * classes on its own elements too. Every class starts with `pm-ui-`.
+ * states and notices. The Vue components of @presmium/host (the outputs) and the React components of
+ * @presmium/workbench (the workbench) render these classes; a plugin may use the classes on its own
+ * elements too. Every class starts with `pm-ui-`.
  */
 
 .pm-ui {

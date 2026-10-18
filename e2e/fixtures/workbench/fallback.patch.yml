@@ -1,0 +1,4 @@
+# e2e/workbench.spec.ts: DeepSeek Harness's own layout on again (after Presmium's web patch turned it off), so the
+# workbench falls back to it (docs/design-dsh.md 7.2).
+- id: ui-layout
+  disabled: false

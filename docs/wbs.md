@@ -1571,7 +1571,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - G-8：焦点上下文：源码编辑器中的选中、网页预览与幻灯片预览中的点选统一为一种 `Focus`（落到源码的一段，加上文档、节、块、步骤），一种交互（参考 dsh-annotate），一种发送方式；MCP 另有 `presmium://focus` 与 `get_focus`。
 - G-9：dsh 精确锁定一个版本；只有 `@presmium/dsh` 与 `@presmium/studio` 引用 dsh（分层检查保证）；每次升级 dsh 单独作为一个工作包，先过升级闸门。
 
-顺序：WP-96（只改文档）与 WP-93b、93c 并行；96a 起在 93b、93c 合并之后。96a ‖ 96b → 96c ‖ 96d ‖ 96f → 96e → 96g。WP-94（hub）排在 96f 之后。
+顺序：WP-96（只改文档）与 WP-93b、93c 并行；96a 起在 93b、93c 合并之后。96a ‖ 96b → 96c ‖ 96d ‖ 96f → 96e ‖ 96h ‖ 93d → 96g。WP-94（hub）排在 96f 之后。（96h 是第二步的收尾，验收者 2026-10-18 加；93d 在 96a 之后、与第三步并行。）
 
 ### WP-96 N 波次的设计（只改文档）
 
@@ -1715,6 +1715,8 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **用例**：`packages/dsh/test/turns.test.ts`（打开与锁、多个 turn、接受与尾注、拒绝与撤销、回到检查点、撤销后的消息、超时回滚、重启、构建）；`packages/workspace/test/review.test.ts`（路由与旧记录）。
 
+**结果（验收者，2026-10-18）**：已合并（一轮验收通过）。审阅移进工作区服务（`packages/workspace/src/node/review/`），git 实现从助手移来；`presmium-turns` 让一个会话的各个 turn 进同一次审阅，接受即提交，尾注带 `Presmium-Session` 与 `Presmium-Turn`，撤销后会话收到标明来源的消息；dsh 宿主重启后审阅仍在。设计文档 17.2 节记下结论（一次审阅跨越会话的全部 turn；dsh 的修改卡片按 turn 显示，不含构建产物，宿主重启后消失而审阅仍在）。验收者把内核中 `CHANGE_REVIEW` 的注释改为现状（没有 deltabox 时由服务的 git 审阅登记）。接受的偏离：`GIT_REVIEW`（`presmium.workspace.gitReview`）只为助手随包的 dsh 存在，在服务与助手中各定义一次，96g 删去。留给 96h：`presmium-turns` 在会话没有接上服务时不经审阅就写（应先等接上，接不上就让工具调用失败）；dsh 宿主在一个 turn 中途退出而服务仍在时，审阅停在“进行中”，不按 `reviewTimeoutMs` 回滚；`review: auto`、锁被别人持有时 dsh 的工具调用、幻灯片启动失败时 `GET preview` 只给网页，这三处没有用例。留给 96e：审阅的回答类型（`ReviewView` 等）从 `@presmium/workspace` 导出；只有 headless 或 acp 的 dsh 而没有工作台时，审阅一直持有锁到有人处理或超时（工作台的审阅面板处理它）。
+
 ### WP-96d 工作台的外壳（React；第二步，96a、96b 之后，与 96c、96f 并行）
 
 **需求**：P-124、P-125，N-10 的工作台部分；`design-dsh.md` 第 7 节，6.6 节中界面的行，第 12 节第 3 组。
@@ -1749,6 +1751,8 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **用例**（`e2e/workbench.spec.ts`，用 96b 的 harness 启动）：启动审计；两种宽度；保存与预览更新；双向定位与问题面板；外部改动与合并；对比度；品牌（两种界面语言）；文档管理；退路布局。
 
+**结果（验收者，2026-10-18）**：已合并（一轮验收通过）。`@presmium/design`（令牌、类、字体与图标，1.x，随统一版本）从 `@presmium/host` 移出，产物外观不变；`@presmium/workbench`（0.x）是 React 的面板与工作区服务的客户端；`@presmium/dsh` 的客户端部分是根布局与主题、品牌，`presmium-workbench` 行设网页标题与图标。启动审计、两种宽度、保存与预览、双向定位、外部改动与合并、对比度、两种界面语言的品牌、文档管理、退路布局都有用例（`e2e/workbench.spec.ts`）。设计文档 17.4 节记下结论（`ui-layout` 在关掉 bundle 后不回来；客户端包不能带静态文件，字体以 data URL 内联；dsh 不允许网页在 Linux 上用 Mod+Alt 组合键）。接受的偏离：界面的行写在 `packages/dsh/web.patch.yml`（它们只在网页载体上存在），不在 profile 补丁中；验收者另把 `scripts/copy-skills.mjs` 改为打包前只更新有变化的技能、打包后保留副本（几个测试同时打包这个包时，一方删掉了另一方正在读的文件），并改了 `render-slides` 中 `shiki.ts` 指向令牌文件的注释。留给 96e：活动栏（`Frame.tsx`）加上 96e 的面板；帮助文本说“Mod+Alt+B 切换侧栏”，Linux 的网页上没有这个键。留给 96h：React 组件的键盘与可访问性（`PmMenu`、`PmTabs` 的键盘用例；启动器结果的方向键；文件树的树形键盘导航；源码标签页中的关闭按钮不在 tablist 中；分栏拖动柄可以聚焦与用键调整；首次使用提示的焦点管理）；对比度用例覆盖 dsh 的设置、右侧坞（Review、文件）与插件页；工作台的用例断言测试目录之外没有写入；页面标题跟随会话、预览跟随暗色、预览面板的幻灯片形态、768 至 1024 px 的布局有用例；`fontLicense` 读 `@presmium/design` 的依赖，`@presmium/host` 去掉三个 `@fontsource` 依赖；bundle 自己启动服务时传入 dsh 网页的源（`--preview-origin`），否则没有 studio 时预览显示不出来。
+
 ### WP-96f `presmium studio`（第二步，96a、96b 之后，与 96c、96d 并行）
 
 **需求**：P-125 的启动与发行；`design-dsh.md` 第 11 节。
@@ -1777,11 +1781,13 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **用例**（`packages/studio/test/studio.test.ts`）：消费者安装与一个网址；全新的 home；外来 `Origin`；局域网；`kill -9`；环境变量中的模型。
 
-### WP-96e 工作台中的 AI、焦点与讲授（第三步，96c、96d 之后）
+**结果（验收者，2026-10-18）**：已合并（一轮验收通过）。`@presmium/studio`（0.x）的 `presmium studio [目录]` 只打印一个网址：生成服务令牌，启动 `presmium serve --headless --preview-origin <dsh 的源>` 与带 bundle 的 dsh，在看门狗下监管进程组；模型来自环境变量，或第一次启动时在终端中确认导入 `assistant.json`；`--host` 时 dsh 与服务都只监听局域网地址（dsh 只接受一个 `--host`）。消费者安装测试加上了 studio（`pnpm consumer --studio`）。设计文档 17.3 节记下结论（启动令牌只能从标准输出读到）。验收者在 `CLAUDE.md` 的命令中加上 `presmium studio` 与 `pnpm consumer --studio`。留给 96h：导入 `assistant.json` 与“没装 `@presmium/studio`”的提示没有用例；导入了第三方地址之后，作者在 dsh 的模型设置中存的 DeepSeek 密钥也会发往那个地址，在 17.3 节写明；设计文档 2.2 节与 11.4 节关于 `--host` 的措辞改为“只监听局域网地址”。
+
+### WP-96e 工作台中的 AI、焦点与讲授（第三步，96c、96d 之后，与 96h、93d 并行）
 
 **需求**：P-113、P-114、P-116，P-136 在工作台中的部分，P-111 的模型状态，P-124 中未提交的修改（提交与放弃），6.13 节验收的第二条；`design-dsh.md` 第 8 节，7.3 节中归 96e 的面板，第 10 节，第 12 节第 4 组。
 
-**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新），以及 `packages/workbench/src/index.ts` 与 `package.json` 中这些面板的导出与依赖；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）；`packages/dsh/src/node/context.ts`、`packages/mcp/test/**` 中焦点的用例、`packages/render-slides/src/node/**` 中块锚点的部分。
+**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新），以及 `packages/workbench/src/index.ts` 与 `package.json` 中这些面板的导出与依赖；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）；`packages/dsh/src/node/context.ts`、`packages/mcp/test/**` 中焦点的用例、`packages/render-slides/src/node/**` 中块锚点的部分；`packages/workspace/src/index.ts`（审阅类型的导出）；`packages/workbench/src/panels/Source.tsx`、`Preview.tsx`（焦点的两个入口，与 96h 不重叠）。
 
 **条目**：
 
@@ -1793,6 +1799,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 6. 升级闸门第 4 组：工作台调用的 Host API 端点的 schema 比对。
 7. 先行验证：`design-dsh.md` 第 17 节第 2、3、4 项。
 8. （96a、96b 遗留）不属于任何文档的会话不得到 Presmium 的指南与上下文（`packages/dsh/src/node/context.ts` 现在用宿主范围的 `systemPrompt.section`）；`presmium://focus` 的订阅（`resources/updated`）与 `presmium-mcp`（stdio）的 `get_focus` 有用例；幻灯片中组件内部的子块与原始 HTML 块也有块锚点，点选落到子块，与网页一致。
+9. （96c、96d 遗留）活动栏（`packages/dsh/src/client/Frame.tsx`）加上本包的面板；帮助文本中侧栏的快捷键按平台说明（Linux 的网页上没有 Mod+Alt+B）；审阅面板用的回答类型从 `@presmium/workspace` 导出（`packages/workspace/src/index.ts`）；可访问性：源码标签页的关闭按钮移出 tablist，分栏拖动柄可以聚焦并用方向键调整，首次使用提示打开时焦点进入、关闭时回到原处。
 
 **验收**：
 
@@ -1809,6 +1816,25 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - Host API 的 schema 比对通过。
 
 **用例**：`e2e/workbench-ai.spec.ts`，上面的验收各一例（静态产物一条由 `packages/cli/test/preview.test.ts` 覆盖）；`packages/dsh/test/hostapi.test.ts`（schema 比对）。
+
+### WP-96h 第二步的收尾（第三步，与 96e、93d 并行）
+
+验收者 2026-10-18 在合并 96c、96d、96f 时加：三份验收报告中不阻塞合并、但应补上的问题。
+
+**需求**：P-115、P-124、P-125 与 N-06、N-10（可访问性）中第二步已实现部分的缺口；`design-dsh.md` 7.5、7.7、11 节。
+
+**拥有**：`packages/dsh/src/node/turns/**`、`packages/dsh/src/node/service.ts`、`packages/dsh/test/turns.test.ts`；`packages/workspace/src/node/review/**`、`packages/workspace/src/node/service.ts`（`GET preview`）、`packages/workspace/test/review.test.ts`；`packages/workbench/src/components.tsx`、`src/panels/Home.tsx`、`src/panels/Files.tsx`；`e2e/workbench.spec.ts`、`e2e/fixtures/workbench/**`、`packages/dsh/test/workspaces.test.ts`；`packages/studio/**`；`packages/kernel/src/node/index.ts`（`fontLicense`）、`packages/host/package.json`。端口 5681–5689。
+
+**条目**：
+
+1. 审阅（96c）：`presmium-turns` 先等会话接上服务，接不上时让写文件的工具调用失败（不经审阅不写）；dsh 宿主在 turn 中途退出而服务仍在时，审阅回到可以超时回滚的状态；`review: auto`、锁被别人持有时 dsh 的工具调用失败并说明、幻灯片启动失败时 `GET preview` 只给网页，各一个用例。
+2. bundle 自己启动服务时传入 dsh 网页的源（`--preview-origin`），没有 studio 时工作台的预览也能显示（96d 发现，设计文档 17.4 节）。
+3. 可访问性（96d，`design-dsh.md` 7.5、7.7 节）：React 的 `PmMenu`、`PmTabs` 与旧的 Vue 版一样有键盘用例；启动器结果可用方向键选择；文件树有树形的键盘导航。（源码标签页、分栏拖动柄与首次使用提示的部分在 96e 拥有的文件中，归 96e。）
+4. 用例的覆盖（96d）：对比度用例覆盖 dsh 的设置、右侧坞（Review、文件）与插件页；工作台的用例断言测试目录之外没有写入；页面标题跟随当前会话；预览跟随暗色；预览面板切到幻灯片形态并在其中点选；768 至 1024 px 的布局。
+5. 字体许可（96d）：`fontLicense` 读 `@presmium/design` 的依赖，`@presmium/host` 去掉三个 `@fontsource` 依赖，站点与消费者安装中的字体许可照旧。
+6. studio（96f）：导入 `assistant.json`（终端中确认、终端之外只提示）与“没装 `@presmium/studio`”的提示各一个用例；`design-dsh.md` 17.3 节写明导入第三方地址后 dsh 模型设置中的密钥也发往那里；2.2 节与 11.4 节关于 `--host` 的措辞与实现一致。
+
+**验收**：每一条的用例通过；`pnpm test` 与工作台、预览协议、助手的端到端用例照常通过；`scripts/check-skills.mjs` 通过。
 
 ### WP-96g 移除旧工作台（第四步，96e、96f 之后）
 
