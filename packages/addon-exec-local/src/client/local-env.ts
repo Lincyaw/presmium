@@ -63,6 +63,7 @@ export function createLocalEnv(): LocalEnv {
   }
   const executor: Executor = {
     id: CONTAINER_EXECUTOR_ID,
+    runsIn: 'machine',
     // Languages are known once the status probe has answered; until then the router falls back.
     supports: lang => languages.includes(languageId(lang)),
     run: (request, signal) => service.run(request, signal),

@@ -88,7 +88,7 @@ const RENDERER_KEYS = new Set(['package', 'base', 'port', 'liveCode'])
 const WEB_PACKAGE = '@presmium/web'
 
 /**
- * Presmium's own Slidev theme, 书卷 (../../theme, docs/architecture.md 5.11): the
+ * Presmium's own Slidev theme, 书卷 (../../theme, docs/architecture.md 5.12): the
  * slides' theme unless `renderers.slides.theme` names one (`default` is
  * Slidev's).
  */

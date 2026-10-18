@@ -480,6 +480,9 @@ test.describe('playback of a lecture track', () => {
     const stale = page.locator('.pm-lecture-transcript__item[data-utterance="u2"]')
     await expect(stale).toHaveAttribute('data-stale', 'true')
     await expect(stale.getByRole('img', { name: '译文过期：原句在翻译之后改过' })).toBeVisible()
+    // The mark is the host's line icon, not a glyph (N-10).
+    await expect(stale.getByRole('img', { name: '译文过期：原句在翻译之后改过' }).locator('svg.pm-ui-icon')).toHaveCount(1)
+    await expect(stale).not.toContainText('⚠')
     await expect(page.locator('.pm-lecture-transcript__item[data-utterance="u1"]')).not.toHaveAttribute('data-stale', /.*/)
     await stale.locator('.pm-lecture-transcript__time').click()
     await expect(page.locator('.pm-lecture-caption')).toHaveAttribute('data-stale', 'true')

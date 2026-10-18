@@ -1,6 +1,6 @@
 /**
  * The lecture panel docks at the right of edit mode's split (N-10,
- * docs/architecture.md 5.11), below the AI changes, as an item of the
+ * docs/architecture.md 5.12), below the AI changes, as an item of the
  * toolbar's `dock` slot (./WritebackDock.vue), registered while edit mode is
  * on and the author asked for it (./WritebackPanel.vue, the toolbar's switch),
  * so the shell gives the dock its room only then.

@@ -29,6 +29,7 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
   const running = new Set<Worker>()
   return {
     id,
+    runsIn: 'browser',
     supports: isWgsl,
     params(lang) {
       if (!isWgsl(lang)) return undefined

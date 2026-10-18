@@ -1,4 +1,4 @@
-// The plugins' UIs and the slides' default theme in the design of N-10 (WP-95d; docs/architecture.md 5.11,
+// The plugins' UIs and the slides' default theme in the design of N-10 (WP-95d; docs/architecture.md 5.12,
 // docs/design/slide.dc.html, edit.dc.html):
 // - The slides of a deck that names no theme are 书卷: paper and ink, the title in the serif, the section's chapter
 //   in small accent letters above it, at the foot the deck's title, the slide's steps and its number; code of 18 px

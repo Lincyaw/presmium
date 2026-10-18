@@ -9,6 +9,8 @@
       let held = true
       let reloading = false
       let request
+      // Reloads of this page; a page that became ready gives the next one (a per-slide export) its own budget.
+      const reloadsKey = `presmium:print-reloads:${location.pathname}${location.search}${location.hash}`
       const show = () => {
         held = false
         body.style.visibility = ''
@@ -28,8 +30,8 @@
         reloading = true
         let reloads = 0
         try {
-          reloads = Number(sessionStorage.getItem('presmium:print-reloads')) || 0
-          sessionStorage.setItem('presmium:print-reloads', String(reloads + 1))
+          reloads = Number(sessionStorage.getItem(reloadsKey)) || 0
+          sessionStorage.setItem(reloadsKey, String(reloads + 1))
         } catch {}
         if (reloads >= 3) {
           console.error(`presmium: ${why}, after ${reloads} reloads of the print page`)
@@ -42,7 +44,12 @@
         location.reload()
       }
       body.style.visibility = 'hidden'
-      addEventListener('presmium:print-ready', release)
+      addEventListener('presmium:print-ready', () => {
+        try {
+          sessionStorage.removeItem(reloadsKey)
+        } catch {}
+        release()
+      })
       addEventListener('presmium:print-failed', event => void reload(event.detail))
       addEventListener('error', (event) => {
         const script = event.target

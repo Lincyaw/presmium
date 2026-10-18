@@ -92,6 +92,7 @@ export function createWasiRunner(options: WasiRunnerOptions): WasiRunner {
   return {
     executor: (id, languages) => ({
       id,
+      runsIn: 'browser',
       supports: lang => runsLanguage(lang, languages),
       run: (request, signal) => send(id, request, signal),
     }),

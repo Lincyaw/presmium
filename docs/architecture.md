@@ -558,6 +558,7 @@ export interface HostStart {
 K2 波次的补充（WP-89e 的交付，C-9，由 WP-89g 核对写入）：
 
 - **一条 Vite 通道**（F-21）：插件只经 `./presmium` 入口的 `vitePlugins` 加入 Vite 插件；网页渲染端在 VitePress 的开发与构建中加入，幻灯片渲染端写进生成文稿的 `vite.config.ts`。执行插件、Jupyter 与 WebGPU 插件包根目录的 `vite.config.ts` 与 `setup/vite-plugins.ts` 已删除，网页渲染端也不再读插件包根目录的 `vite.config.ts`。
+- **执行器在哪里运行**（N-10）：`Executor` 另有可选的 `runsIn?: 'browser' | 'machine'`，执行面板的顶栏据此写“浏览器中运行”或“本机运行”，没有时只写语言（5.12 节的运行面板）。
 - **执行面板的参数显示**（F-74，决定 D-10）：`Executor` 另有可选的 `params?(lang): ParamsDisplay | undefined`（浏览器端的执行器），`ParamsDisplay` 为 `{ labels: Record<string, string>; fields?: string[]; summary?(args): string }`：面板按它显示参数的标签（按界面语言），映射类型的参数每个键一个输入框（写回为 YAML 的流式映射），运行记录显示摘要而不是 JSON；没有它或没有命名的参数显示名字与值。WebGPU 执行器给出缓冲区、工作组数、入口函数、重复次数与所需特性。
 - **浏览器中的 Python 只有标准库**（F-66，决定 D-5）：`presmium check` 对在浏览器中运行（`:run: live` 或 `both`）的 Python 代码块、执行面板与分步执行中导入标准库之外的模块给出警告 `presmium.exec`；`pyodide`、`js`、`IPython`、`presmium_gpu` 允许，带 `:env:` 的块不检查。
 - **分步执行的步数**（F-67）：`presmium build` 与 `presmium check` 在 `:steps:` 与追踪得到的执行行数不同时，在指令处警告（追踪在进程沙箱中运行）；组件的提示只在演讲者视图与开发服务器中显示。
@@ -1539,7 +1540,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 5.10 设计系统（N-10）
 
-用户选定的设计（WP-95a，`docs/design/`）是工作台的布局与编辑方式、书卷的样式。`@presmium/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页的工作台、阅读页、编辑模式）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.11 节。
+用户选定的设计（WP-95a，`docs/design/`）是工作台的布局与编辑方式、书卷的样式。`@presmium/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页的工作台、阅读页、编辑模式）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.12 节。
 
 **令牌**：CSS 自定义属性，在 `packages/host/src/design/tokens.css`。`:root` 为亮色；`<html>` 有 `dark` 类时为暗色（VitePress 的外观开关与 Slidev 的暗色模式都设这个类）。
 
@@ -1649,7 +1650,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 **验收**：`e2e/editing.spec.ts`（`e2e/fixtures/editing`，助手与脚本化的测试 agent）：点选一段，源码跳到它的行；改一个词保存，页面不刷新即更新；问题面板列出诊断并在行上标出，光标在被包含的文件中移动时预览换到它所在的页并标出该块，编辑器保留焦点；新增一节保存，目录随之更新；未提交的修改在修改历史顶部，写一句说明提交后历史中出现这一项，可以撤销；放弃后内容复原；agent 的修改等待审阅时保存给出提示，审阅之后合并保留双方的修改；磁盘上的编辑器在打开之后改了文件：保存给出提示，重新载入换成磁盘的内容，或合并保留双方的修改，之后焦点回到编辑器，在问题面板中按 `Ctrl S` 也保存；首页的文件树在编辑模式中打开文档的文件，在首页的编辑器中打开 `presmium.workspace.yaml`。路由的拒绝由 `packages/workspace/test/source.test.ts` 对真实的 `presmium serve` 检查：范围之外的路径（400）、经符号链接的文件、别的文档的文件与工作区配置（403）、二进制与非 UTF-8 的文件（415）、别的站点的 `Origin`（403）、过期的版本（409，带磁盘上的内容与版本），都不写入。
 
 
-### 5.11 插件界面与幻灯片的默认主题（N-10）
+### 5.12 插件界面与幻灯片的默认主题（N-10）
 
 WP-95d 把插件的界面与幻灯片的默认主题改为 5.10 节的设计系统，参考稿是 `docs/design/edit.dc.html` 与 `slide.dc.html`；WP-95e 按参考稿改了运行面板，把插件中的字形换成宿主的图标，补齐了两处对比度。
 
@@ -1664,7 +1665,7 @@ WP-95d 把插件的界面与幻灯片的默认主题改为 5.10 节的设计系�
 - 图标是宿主的线性图标（`PmIcon`）：分步执行的上一步、下一步，讲授的过时字幕与改写，高对比度开关，练习每条检查的对错，录制中的标记，源码面板中问题的严重程度（`error`、`warning`、`info`）；幻灯片代码运行器的提示“按 [运行图标] 运行这段代码”用 `iconMarkup`。插件与工作区的界面中没有 ◀ ▶ ⚠ ✎ ◐ ✓ ✗ ● ▲ ○ 这类字形。
 - 状态靠颜色而不靠不透明度区分，以保持 AA：核心插件的演示步进组件中已完成的步骤用 `muted`（原来 0.6 的不透明度只有 4.4:1）。
 
-**运行面板**（`addon-exec` 的 `PmRunPanel.vue`，`docs/design/slide.dc.html`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉（幻灯片的 `--slidev-code-margin`、`--slidev-code-radius` 设为 0）。在哪里运行由执行器决定（`src/client/place.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；别的插件的执行器只写语言（`Executor` 契约没有说明位置的字段，所以 Presmium 自己的执行器按 ID 列出）。运行之前写路由器会选的执行器，运行之后写实际运行的（`RunResult.executorId`）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
+**运行面板**（`addon-exec` 的 `PmRunPanel.vue`，`docs/design/slide.dc.html`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉（幻灯片的 `--slidev-code-margin`、`--slidev-code-radius` 设为 0）。在哪里运行由执行器自己说明（`Executor.runsIn`：`'browser'` 或 `'machine'`，可选；`src/client/place.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境的执行器没有说明（或还没有登记）时按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；没有说明的执行器只写语言。运行之前写路由器会选的执行器，运行之后写实际运行的（`RunResult.executorId`）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
 
 **图表**：网页与放映视图中的 Mermaid（IR 运行时的 `PmMermaid`）用 Mermaid 的 `base` 主题，主题变量取宿主的令牌（纸、墨、强调色，明暗随页面），连线标签在 `surface` 上用 `ink`；页面没有令牌时用 Mermaid 自己的 `default`、`dark`。书卷的幻灯片中 Slidev 画图（在 shadow root 中），主题的 `setup/mermaid.ts` 用 Mermaid 的 `themeCSS` 让连线标签取令牌（令牌经 shadow root 继承，随暗色切换）；Mermaid 自己的暗色主题把标签画在 4.4:1，达不到 AA。
 

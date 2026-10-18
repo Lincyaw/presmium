@@ -57,7 +57,7 @@ execute: { rerun: environment } # 可选：另一运行环境的执行录制重�
 | 渲染端 | 选项 |
 |---|---|
 | `web` | `base`（站点路径）、`port`（开发服务器端口） |
-| `slides` | `base`、`port`；其余选项写进生成的 Slidev 文稿头部，如 `theme`（不写时是随渲染端安装的“书卷”主题 `packages/render-slides/theme/`，`architecture.md` 5.11 节；`default` 等是 Slidev 的主题）、`routerMode`（`hash` 时页地址为 `/#/<页号>`）、`exportFilename`、`addons`。每一页的头部另有 `presmiumChapter`（这一页所在的章，主题把它写在标题上方，WP-95d） |
+| `slides` | `base`、`port`；其余选项写进生成的 Slidev 文稿头部，如 `theme`（不写时是随渲染端安装的“书卷”主题 `packages/render-slides/theme/`，`architecture.md` 5.12 节；`default` 等是 Slidev 的主题）、`routerMode`（`hash` 时页地址为 `/#/<页号>`）、`exportFilename`、`addons`。每一页的头部另有 `presmiumChapter`（这一页所在的章，主题把它写在标题上方，WP-95d） |
 | `notebook` | `kernel`：内核名（默认 `python3`），或 `{ name, language, display_name }`，与内核同语言的代码成为代码单元格；`webUrl`：网页版的地址，notebook 显示不了的组件附上指向它的链接 |
 | `web`（v0.8，P-78） | `nav`：顶部导航，`[{ text, link }]`（VitePress `themeConfig.nav` 的形状）；`footer`：`{ message, copyright }`；`head`：`{ description, image }`，写成页面的 `description` 与 OG 元数据（`og:title`、`og:description`、`og:image`）；`sitemap`：`{ hostname }`，生成 `sitemap.xml` |
 | `lecture`（v0.8，讲授插件提供） | `voice`：`{ engine, voice, rate, style }`，写了 `voice` 才合成讲义的讲授（WP-83：合成要花钱，所以要显式选用音色；`engine` 省略时用 `presmium.speech.engine`）；`script`：单独的讲授脚本文件（2.9 节）；`gap`：一步说完之后推进前的停顿，默认 `500ms`（毫秒数或 `800ms`、`1.5s`）。`lecture` 是站点渲染端：与网页一同构建时输出在 `dist/lecture/`，网页的讲授视图从 `../lecture/` 读取 |

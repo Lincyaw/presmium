@@ -119,6 +119,11 @@ export const PROCESS_SANDBOX = defineService<ProcessSandbox>('presmium.processSa
 
 export interface Executor {
   readonly id: string
+  /**
+   * Where the executor runs code, for a run panel's bar ("Python · 浏览器中运行"): in the page, or on the machine
+   * of the server (`presmium dev`, `presmium serve`). Omitted: the bar names only the language.
+   */
+  readonly runsIn?: 'browser' | 'machine'
   supports(lang: string): boolean
   /**
    * `ctx` is given by the compiler at compile time; old implementations and
