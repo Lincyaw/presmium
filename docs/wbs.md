@@ -1509,17 +1509,25 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - 编译器拒绝的插件（`kernel` 或对等依赖不满足）不再作为幻灯片的 Slidev 插件（`render-slides/src/node/slidev.ts` 的 `addonNames`，与网页一致），用例在 `packages/render-slides/test/deck.test.ts`。
 - 留给 WP-93b：只安装 `@presmium/cli` 不带渲染端，生成的项目要列出 CLI、渲染端与用到的官方插件（同 `scripts/consumer.ts`）；`create-presmium` 的压缩包只能带自己目录中的模板。留给 WP-93c：工作区首页的字体许可证与 `optimizeDeps`（93a 已在 `sites.ts` 中补上，93c 核对）、`docs/api.md` 的版本规则（`IR_VERSION`、`KERNEL_VERSION`、`peerDependencies`）、各包 README 与 `homepage`。
 
+**WP-95e 的结果（验收者，2026-10-18）**：已合并（两轮验收）。PDF 导出在负载下失败的原因是 `slidev export` 在打印页的网络空闲时就开始等幻灯片，而模块还在执行、应用还没挂载（找到的幻灯片为零，打印出空白页），以及请求因主机网络变化失败后页面停在隐藏状态；发布插件的打印页闸门（`packages/addon-publish/index.html` 与 `setup/print.ts`）让网络保持忙碌、正文隐藏到每一页都显示，模块加载失败时等服务器应答后重新载入，冒烟用例去掉了重试。验收者在合并后：
+
+- 执行器自己说明在哪里运行（`Executor.runsIn`：`'browser'` 或 `'machine'`，可选），运行面板的顶栏读它，不再列出别的插件的执行器 ID；第三方的执行器也能说明。
+- 每个打印页有自己的重新载入次数，就绪后清零（逐页导出在一个标签页中多次跳转）。
+- 讲授的过期译文标记有断言（线性图标，不是字形）；`architecture.md` 的第二个 5.11 改为 5.12（插件界面与幻灯片的默认主题）。
+- 仓库自己的源码没有类型错误（`tsc -p tsconfig.json` 只剩 `@slidev/client` 发布的源码中的）。
+- 留着：打印页闸门只对列出发布插件的文稿生效（`presmium-export` 的 `late` 用例的文稿没有列出）；`e2e/publish.spec.ts` 的高对比度用例仍有自己的对比度计算。
+
 ### WP-93b 起步工具（L 波次第二步，并行）
 
 **拥有**：`packages/create-presmium/**`（新）、`templates/plugin/**`（新）、`packages/workspace/templates/document/**`（文档模板随 `@presmium/workspace` 发布，WP-93a 从 `templates/document/` 移来）、`templates/workspace/**`、`e2e/create.spec.ts` 与 `packages/create-presmium/test/**`（新）。
 
-**条目**：P-142。`npm create presmium@latest` 交互地或以参数选择讲义、工作区、插件三种项目；插件模板含一个两种形态共用的组件、一个指令、一个服务端路由、中英文文本与一个能运行的集成测试，遵守 CLAUDE.md 的分层与测试约定；生成的项目带 `.agents/skills` 中适合作者或插件开发者的技能副本或链接说明。
+**条目**：P-142（另见上文“WP-93a 与 WP-92d 的结果”中留给 93b 的两点）。`npm create presmium@latest` 交互地或以参数选择讲义、工作区、插件三种项目；插件模板含一个两种形态共用的组件、一个指令、一个服务端路由、中英文文本与一个能运行的集成测试，遵守 CLAUDE.md 的分层与测试约定；生成的项目带 `.agents/skills` 中适合作者或插件开发者的技能副本或链接说明。
 
 **验收**：在单仓之外的临时目录中，用 WP-93a 的打包结果生成三种项目，各自 `presmium check` 无问题、构建通过，插件项目的集成测试通过，插件被一份讲义加载后在网页与幻灯片中显示。
 
 ### WP-93c 文档与文档站（L 波次第二步，并行）
 
-**拥有**：`site/**`（新，文档工作区）、各包的 `README.md`、根目录 `README.md`、`CONTRIBUTING.md`、`SECURITY.md`、`typedoc.json`、`docs/api.md`（新，P-143 的公开接口列表）、`packages/kernel/src/contracts.ts` 中 `SiteDocument` 的译本字段、`packages/web/src/node/sites.ts`、`packages/workspace/src/node/site.ts`、`e2e/docs-site.spec.ts`（新）。
+**拥有**：`site/**`（新，文档工作区）、各包的 `README.md`、根目录 `README.md`、`CONTRIBUTING.md`、`SECURITY.md`、`typedoc.json`、`docs/api.md`（新，P-143 的公开接口列表）、`packages/kernel/src/ir.ts` 中 `SiteDocument` 的译本字段、`packages/web/src/node/sites.ts`、`packages/workspace/src/node/site.ts`、`packages/workspace/src/domain/messages.ts` 中的 `DOCS_SITE_URL`、`.github/workflows/docs.yml`（新，构建并发布文档站到 GitHub Pages）、`e2e/docs-site.spec.ts`（新）。
 
 **条目**：
 
@@ -1527,6 +1535,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - P-144：作者指南与插件开发指南，中文与英文；接口参考由 TypeDoc 生成。
 - P-145：文档站是一个 Presmium 工作区，中英双语；实现工作区站点中的译本（P-123，决定 D-11 推迟的部分：`SiteDocument` 带译本，工作区站点生成语言切换，`presmium.translations` 的警告去掉）；构建时运行发布检查（失效链接）。
 - P-146 的文档部分：README、CONTRIBUTING、SECURITY（报告方式；信任模型摘要：本机单用户，不做多用户隔离）。
+- 文档站的地址：与 WP-93a 写进各包的 `repository`（`github.com/presmium/presmium`）一致，GitHub Pages 的 `https://presmium.github.io/presmium/`；`DOCS_SITE_URL` 设为它，首页的使用说明因此链接到文档站。仓库或组织的名字不同时要改的地方列进用户步骤的清单。
 
 **验收**：文档站构建无失效链接，两种语言都有完整目录；工作区站点的译本用例通过（`e2e/docs-site.spec.ts` 与现有 `e2e/site.spec.ts`）；`scripts/check-skills.mjs` 通过。
 
