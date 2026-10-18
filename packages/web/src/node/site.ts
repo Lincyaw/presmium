@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { deckLocale } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
-import { FONT_LICENSE, fontLicense, packageOf, preBundle } from '@presmium/kernel/node'
+import { FONT_LICENSE, fontLicense, optimizeDeps, packageOf } from '@presmium/kernel/node'
 import { formOptions, neighbour, pageMarkdown, searchDocuments, SERVER_PROXY, sidebar, SITE_LABELS, toPages, translationPages } from '../domain/index.ts'
 import type { FormOptions, NavItem, Neighbour, SearchDocument, SiteShell, WebPage, WebRendererConfig } from '../domain/index.ts'
 import type { ClientModules } from './addons.ts'
@@ -84,7 +84,7 @@ export function linkDependencies(root: string): void {
 }
 
 /**
- * The packages whose browser code a site loads, for `preBundle`: this one,
+ * The packages whose browser code a site loads, for `optimizeDeps`: this one,
  * and those of the client modules (the plugins'; the deck's own components
  * are in no package, or in the deck's project).
  */
@@ -239,7 +239,7 @@ function shellConfig(shell: SiteShell, base: string, image: string | undefined, 
 /** The generated configuration's code that writes each page's title into its `og:title` (a build hook). */
 export const OG_TITLE = `site.transformHead = ({ title }) => [['meta', { property: 'og:title', content: title }]]\n`
 
-function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths, workspace: WorkspaceOptions | undefined, image: string | undefined, include: string[]): string {
+function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths, workspace: WorkspaceOptions | undefined, image: string | undefined, optimize: { include: string[], exclude: string[] }): string {
   // The labels of the default theme and its search box are in the deck's language.
   const labels = SITE_LABELS[deckLocale(options.lang)]
   const shell = shellConfig(options.shell, options.base, image, workspace)
@@ -300,9 +300,10 @@ site.vite = {
     presmiumIR(${JSON.stringify(files.ir)}, ${JSON.stringify(files.searchDocuments)}, ${workspace ? JSON.stringify(workspace.endpoints) : 'undefined'}, locales),
     ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? []),${nodePlugins.map(plugin => `\n    ${plugin},`).join('')}
   ],
-  resolve: { dedupe: ['vue'] },${include.length > 0 ? `
-  // The browser dependencies of the Presmium packages installed under node_modules, as from npm.
-  optimizeDeps: { include: ${JSON.stringify(include)} },` : ''}
+  resolve: { dedupe: ['vue'] },${optimize.exclude.length > 0 ? `
+  // The Presmium packages installed under node_modules, as from npm: their browser dependencies
+  // pre-bundled, themselves never (the pages load their source).
+  optimizeDeps: ${JSON.stringify(optimize)},` : ''}
 }
 ${server}${inWorkspace}${shell.ogTitle ? OG_TITLE : ''}
 // Local search over the IR text of each section: titles, narration, prose and code. The index is
@@ -417,8 +418,8 @@ export function writeSite(workDir: string, input: SiteInput): void {
   write(files.site, JSON.stringify(siteData(doc, options, translations, workspace)))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(files.root)
-  const include = preBundle(files.root, browserPackages(modules))
-  write(join(files.root, '.vitepress/config.mjs'), config(options, files, modules, input.deck, workspace, input.image, include))
+  const optimize = optimizeDeps(files.root, browserPackages(modules))
+  write(join(files.root, '.vitepress/config.mjs'), config(options, files, modules, input.deck, workspace, input.image, optimize))
   write(join(files.root, '.vitepress/theme/index.ts'), theme())
   write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))
   const depth = depthOf(workspace?.document ?? '')

@@ -1,5 +1,7 @@
 ---
 title: "{{title}}"
+plugins:
+  - '@presmium/slidev-addon-core'   # 幻灯片形态的宿主适配：插件的组件与导出靠它
 ---
 
 # 引言

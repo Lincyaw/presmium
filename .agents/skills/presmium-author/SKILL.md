@@ -13,6 +13,7 @@ Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再生成
 
 文稿是一个目录，入口为 `lecture.md`（也可以把入口文件直接交给命令）。Presmium 的包没有发布到 npm，插件与渲染端从文稿目录向上查找 `node_modules` 来加载，所以文稿要能找到这个仓库安装好的包：
 
+- 新建一个项目（发布后）：`npm create presmium@latest` 逐项询问（讲义、工作区还是插件，目录，标题），也可以用参数：`npm create presmium@latest my-lecture -- --type lecture --title 分词入门`（`--type workspace` 是工作区，`--type plugin --name <包名>` 是插件，`--no-git` 不运行 `git init`）。讲义项目有从文档模板来的 `lecture.md`（`plugins` 已列出 `@presmium/slidev-addon-core`）、列出 CLI、三个渲染端与 `@presmium/slidev-addon-core` 的 `package.json`（版本与 create-presmium 相同；只装 `@presmium/cli` 没有渲染端）、`.gitignore`、`AGENTS.md`（`CLAUDE.md` 链接到它）与本技能和 presmium-present 的副本（`.agents/skills`，`.claude/skills` 链接到它）；工作区项目另有 `presmium.workspace.yaml`、第一份文档 `intro/lecture.md` 与助手插件。之后 `npm install`，`npm run dev`（工作区 `npm run serve`）。
 - 在仓库内：仿照 `examples/demo/package.json` 在 `examples/<名字>/` 建一个工作区包（依赖写 `workspace:*`），在仓库根目录运行 `pnpm install`。之后在文稿目录运行 `pnpm exec presmium <命令>`。
 - 在仓库外试用：把示例文稿装好的依赖链接过来，`ln -s <仓库>/examples/demo/node_modules <文稿目录>/node_modules`，再运行 `<文稿目录>/node_modules/.bin/presmium <命令>`。
 - 两种情况都可以直接运行 `node <仓库>/packages/cli/bin/presmium.mjs <命令> <文稿目录>`。

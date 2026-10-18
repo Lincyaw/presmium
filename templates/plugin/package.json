@@ -1,0 +1,49 @@
+{
+  "name": "{{name}}",
+  "version": "0.1.0",
+  "description": "A Presmium plugin: the {greeting} directive, its component in the web page and the slides, and a server route",
+  "type": "module",
+  "keywords": [
+    "presmium",
+    "presmium-plugin",
+    "slidev-addon",
+    "slidev"
+  ],
+  "engines": {
+    "node": ">=22.19"
+  },
+  "exports": {
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "components",
+    "src"
+  ],
+  "slidev": {},
+  "scripts": {
+    "test": "vitest run",
+    "check": "presmium check example",
+    "build": "presmium build example",
+    "dev": "presmium dev example --to web,slides"
+  },
+  "peerDependencies": {
+    "@presmium/compiler": "^{{version}}",
+    "@presmium/host": "^{{version}}",
+    "@presmium/kernel": "^{{version}}",
+    "@presmium/viewer": "^{{version}}",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@presmium/cli": "^{{version}}",
+    "@presmium/host": "^{{version}}",
+    "@presmium/kernel": "^{{version}}",
+    "@presmium/render-notebook": "^{{version}}",
+    "@presmium/render-slides": "^{{version}}",
+    "@presmium/slidev-addon-core": "^{{version}}",
+    "@presmium/web": "^{{version}}",
+    "@types/node": "^22.19.0",
+    "vitest": "^5.0.0",
+    "vue": "^3.5.0"
+  }
+}

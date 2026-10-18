@@ -13,6 +13,8 @@ const root = new URL('..', import.meta.url).pathname
 const REPOSITORY = 'git+https://github.com/presmium/presmium.git'
 /** Presmium's packages a plugin uses from the application, one copy for all: peers, never dependencies. */
 const SHARED = new Set(['@presmium/kernel', '@presmium/host', '@presmium/viewer', '@presmium/compiler'])
+/** The one public package outside the scope: `npm create presmium` runs the package `create-presmium` (P-142). */
+const UNSCOPED = new Set(['create-presmium'])
 
 const read = file => JSON.parse(readFileSync(join(root, file), 'utf8'))
 const rootPackage = read('package.json')
@@ -42,7 +44,7 @@ for (const dir of workspaces) {
     continue
   }
   if (row && row !== 'npm') problems.push(`${at}: published, but the table says "${row}"`)
-  if (!pkg.name.startsWith('@presmium/')) problems.push(`${at}: a public package is named @presmium/*`)
+  if (!pkg.name.startsWith('@presmium/') && !UNSCOPED.has(pkg.name)) problems.push(`${at}: a public package is named @presmium/*`)
   versions.add(pkg.version)
   if (pkg.license !== 'Apache-2.0') problems.push(`${at}: license is ${JSON.stringify(pkg.license)}, not "Apache-2.0"`)
   if (!existsSync(join(root, dir, 'LICENSE')) || readFileSync(join(root, dir, 'LICENSE'), 'utf8') !== license) problems.push(`${at}: its LICENSE is not the root's`)

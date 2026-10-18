@@ -1,6 +1,6 @@
 # 版本与发布
 
-Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录（P-141）。公开的包是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
+Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录（P-141）。公开的包（`@presmium/*` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
 
 ## 哪些包发布
 
@@ -38,6 +38,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@presmium/slidev-addon-deltabox` | npm | 插件：修改审阅与进程沙箱（随 CLI 安装） |
 | `@presmium/slidev-addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@presmium/slidev-addon-speech` | npm | 插件：语音服务 |
+| `create-presmium` | npm | `npm create presmium@latest`：新建讲义、工作区或插件项目（不在 `@presmium` 作用域中：`npm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，见包内 `templates/README.md`） |
 | `presmium-vscode` | 否 | VS Code 扩展：预打包为 `.vsix`，发布到扩展市场，不发布到 npm |
 | `presmium-demo` | 否 | 示例讲义（`examples/demo`） |
 | `presmium-example-workspace` | 否 | 示例工作区（`examples/workspace`） |
