@@ -21,6 +21,9 @@ const TRACE_DECK = fileURLToPath(new URL('./fixtures/trace', import.meta.url))
 const LIVE_DECK = fileURLToPath(new URL('./fixtures/live', import.meta.url))
 const require = createRequire(import.meta.url)
 const SLIDEV = join(dirname(require.resolve('@slidev/cli/package.json')), 'bin/slidev.mjs')
+// Slidev's `--wait` before an export prints: on a busy or small machine (a 2-core CI runner) the slides load late,
+// still "Loading slide..." with no clicks counted after 2 s. It waits once, after the print page loads.
+const EXPORT_WAIT = ['--wait', '10000']
 
 const out = mkdtempSync(join(tmpdir(), 'presmium-slides-'))
 afterAll(() => rmSync(out, { recursive: true, force: true }))
@@ -98,7 +101,7 @@ it('build --to slides leaves a Slidev deck that slidev export turns into a PDF w
   expect(slides).toContain('```text\nEXIT 3\n```\n\n<p class="pm-output__note">退出码 3</p>')
 
   const pdf = join(out, 'deck.pdf')
-  const exported = await slidev(['export', '.presmium/slides/slides.md', '--with-clicks', '--output', pdf])
+  const exported = await slidev(['export', '.presmium/slides/slides.md', '--with-clicks', ...EXPORT_WAIT, '--output', pdf])
   expect(exported.code, exported.output).toBe(0)
   // Every step of every section is a page: list items, a revealed block, highlight stages, code versions.
   const { sections } = JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as { sections: { steps: number }[] }
@@ -113,9 +116,7 @@ it('a PDF export shows the static fallback of interactive components, not their 
   // The base the deck sets, as a path from the root.
   expect(readFileSync(join(target, 'slides/index.html'), 'utf8')).toMatch(/src="\/talks\/export\/assets\/index-/)
   const pdf = join(target, 'export.pdf')
-  // The slides of plugin components load late on a busy machine (a 2-core CI runner still showed "Loading slide..."
-  // after 2 s); the export waits for them once, before it prints (Slidev's `--wait`).
-  const exported = await slidev(['export', '.presmium/slides/slides.md', '--wait', '10000', '--output', pdf], EXPORT_DECK)
+  const exported = await slidev(['export', '.presmium/slides/slides.md', ...EXPORT_WAIT, '--output', pdf], EXPORT_DECK)
   expect(exported.code, exported.output).toBe(0)
 
   const [, panel, local, quiz, predict] = await pdfText(pdf)
@@ -288,7 +289,7 @@ it('gives code that runs live one output area, its runner\'s, which shows the re
   // Printed with clicks, a slide is drawn once per click, each a runner of its own: every one shows the
   // recording (made on Linux), none runs the code (in Pyodide, sys.platform is emscripten).
   const pdf = join(target, 'table.pdf')
-  const exportTable = () => slidev(['export', '.presmium/slides/slides.md', '--range', `${slide('table')},${slide('printed')}`, '--with-clicks', '--output', pdf], LIVE_DECK)
+  const exportTable = () => slidev(['export', '.presmium/slides/slides.md', '--range', `${slide('table')},${slide('printed')}`, '--with-clicks', ...EXPORT_WAIT, '--output', pdf], LIVE_DECK)
   let exported = await exportTable()
   // The deck's first export may find Vite still optimizing the execution plugin's dependencies, which a
   // busy machine makes outlast the print page's wait: once more, with the dependencies optimized.
