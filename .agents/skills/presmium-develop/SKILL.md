@@ -9,6 +9,8 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 
 写讲义见 presmium-author 技能，放映与课堂见 presmium-present 技能。
 
+N 波次（基于 DeepSeek Harness 的工作台）的设计在 `docs/design-dsh.md`，工作包在 `docs/wbs.md` 的 N 波次。在它完成之前，旧工作台（`presmium serve` 的界面、`presmium dev` 的编辑模式、助手与讲授插件中属于工作台的面板）只修缺陷，不加功能。
+
 ## 1. 包与限界上下文
 
 | 上下文 | 包（`packages/`） | 职责 |

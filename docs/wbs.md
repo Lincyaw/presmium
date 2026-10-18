@@ -24,7 +24,8 @@
 | L0（v0.9） | 先 WP-92a 删除共享部署（串行），再并行 WP-92b 浏览器端读者问答、WP-89g K2 遗留与文档核对 | K2 |
 | L1（v0.9） | WP-95a 设计探索（已完成）；WP-95b 设计系统与应用外壳在 WP-92a 合并后开始，与 WP-92b、WP-89g 并行（已完成）；再并行 WP-95c 浏览器中的源码编辑、WP-95d 插件界面与默认主题、WP-92c L0 遗留（已完成）；再并行 WP-95e 界面遗留、WP-92d 服务端遗留（与 WP-93a 同时） | 95b：WP-92a；95c、95d、92c：95b 与 L0；95e、92d：95c、95d、92c |
 | L（M10） | 先 WP-93a 发布工程（与 WP-95e、92d 并行），再并行 WP-93b 起步工具、WP-93c 文档与文档站 | L1 的 95c、95d、92c；93b、93c 另等 95e、92d |
-| M（M11，1.1） | WP-94 hub 托管模板 | L |
+| N（M12） | WP-96 设计（只改文档，与 WP-93b、93c 并行）；先并行 WP-96a 产物与工作台解耦、WP-96b bundle 的骨架；再并行 WP-96c 会话与审阅、WP-96d 工作台的外壳、WP-96f `presmium studio`；再 WP-96e 工作台中的 AI、焦点与讲授；最后 WP-96g 移除旧工作台 | WP-96：L 的 93a；96a、96b：93b、93c 合并 |
+| M（M11，1.1） | WP-94 hub 托管模板 | L；N 的 96f（hub 启动 `presmium studio`） |
 
 ## 测试原则
 
@@ -1569,7 +1570,255 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **验收**：验收者对照 G-1 至 G-9 逐条核对；文档之间一致（同一个东西一个名字）；`scripts/check-skills.mjs` 通过。没有代码与用例。
 
+**结果**：`docs/design-dsh.md`（新）；`requirements.md` 的“定位与边界”、术语、N-08、N-10、6.12 与 6.13 节（P-111、P-113 至 P-115 修订，P-116、P-117 新增；P-120、P-124 修订，P-125 新增）、P-147、M12 与附录 B 的修订记录；`architecture.md` 第 1、2、3 节，4.8、5.10 至 5.12、7、8、9.1、9.5、10.1、10.2、10.4、10.7、12 节的说明，新增第 13 节“工作台与 dsh”；`domain-model.md` 第 1、2、13、14 节的说明，新增第 16 节“工作台与 dsh”（概念对照、`Focus`）；本波次 96a 至 96g 的条目（下文）。
+
+### N 波次的约定
+
+- **归属**：同一步中并行的工作包，拥有的路径互不重叠；先后执行的工作包可以拥有同一路径。“包名/**”指整个包，列出文件时只拥有这些文件。
+- **契约只增加**：96a 写 `packages/kernel/src/contracts/preview.ts` 与 `RenderContext.preview`，96b 写 `Focus`（`contracts/agent.ts`）与会话令牌（`contracts/server.ts`）。之后的工作包发现契约不够用时，在交付报告中提出，由验收者决定（只能增加）。只为旧工作台存在的契约（`EDIT_MODE`、工作台的槽位、`AGENT`、`AGENT_RUNTIME`）只由 96g 删去。
+- **共享文件**不计入独占归属，各工作包只改与自己有关的部分，后合并的变基并解决冲突：`docs/*.md`（交付时把实际的实现写进 `architecture.md` 第 13 节，把 `design-dsh.md` 第 17 节中自己那几项的结论写回）；`.changeset/README.md`（各自新包的一行）；`pnpm-lock.yaml`；`e2e/fixtures/deck.ts`（只增加导出）；`.agents/skills/**`（命令或作者可见的行为变化时）。
+- **根目录的配置**（`package.json`、`vitest.config.ts`、`playwright.config.ts`、`pnpm-workspace.yaml`）不属于任何工作包；需要改动时（例如单独运行升级闸门的脚本、dsh 的依赖需要的 `allowBuilds`）在交付报告中提出，由验收者在合并时修改。
+- **dsh 的版本**由 96b 锁定，之后的工作包都用这个版本，不升级（G-9）；旧工作台的助手插件保留自己的固定版本到 96g。
+- **旧工作台只修缺陷**，不加功能。
+- **测试**：只写集成测试（`design-dsh.md` 第 15 节）。模型用 `@presmium/cli/testing` 的假模型（96b 从助手插件的测试移来）；启动带 bundle 的 dsh 用 `packages/dsh/test/harness.ts`（96b 写，端到端用例也用它）；每个用例用自己的 `DSH_HOME` 与 `HOME`，并断言测试目录之外没有写入；升级闸门的用例名带 `[gate]`（Vitest）或标签 `@gate`（Playwright）。
+- **端口**：每个工作包用自己的段；`PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 取段的前两个，其余服务在段内取。4180、4310、4790、5173 被验收者的试用环境占用，不要使用。
+
+| 工作包 | 端口 |
+|---|---|
+| 96a | 5611–5619 |
+| 96b | 5621–5629 |
+| 96c | 5631–5639 |
+| 96d | 5641–5649 |
+| 96e | 5651–5659 |
+| 96f | 5661–5669 |
+| 96g | 5671–5679 |
+
+- **先行验证**：工作包开始时先做 `design-dsh.md` 第 17 节中属于自己的原型；结论否定设计时先报告，不自行改设计。
+
+### WP-96a 产物与工作台解耦：预览协议与工作区服务的接口（第一步，与 96b 并行）
+
+**需求**：P-116 的产物一侧，P-120，P-124 中 `presmium dev` 的部分；`design-dsh.md` 第 4、5 节（5.3 节的会话令牌除外），13.3 节第 1 至 3、6、10 行。
+
+**拥有**：
+
+- `packages/kernel/src/contracts/preview.ts`（新）、`packages/kernel/src/contracts.ts` 中导出它的一行、`packages/kernel/src/ir.ts` 的 `RenderContext.preview`；
+- `packages/web/**`：网页的预览代理 `src/client/preview.ts`（新）与加载它的地方，无界面模式下的首页，`src/node/**`；
+- 幻灯片的预览代理：`packages/addon-core/src/client/**` 与 `packages/addon-core/setup/**`；`packages/render-slides/src/**`（块级锚点、预览标志）；
+- `packages/viewer/src/rich.ts`、`packages/compiler/src/renderers.ts`；
+- `packages/workspace/src/node/**`、`packages/cli/src/cli.ts`；
+- `e2e/preview-protocol.spec.ts`、`e2e/fixtures/preview-protocol/**`、`packages/workspace/test/service.test.ts`、`packages/cli/test/preview.test.ts`（新）；旧工作台的用例中启动 `presmium dev` 编辑模式的地方（`packages/cli/test/dev-editing.test.ts`、`e2e/assistant.spec.ts`）。
+
+**条目**：
+
+1. 预览协议 v1（`design-dsh.md` 第 4 节）：契约；网页与幻灯片的预览代理，实现全部消息；幻灯片生成的文稿给每个块写 `.pm-block[data-block]`，章节写 `data-section`；代理只在 `RenderContext.preview` 给出允许的来源、地址带 nonce、页面在 iframe 中时启动，双向核对来源与 nonce，未知的消息忽略。
+2. 工作区服务的接口（第 5 节）：`ir`、`ir/events`、`preview`、`build`、`check` 路由；`presmium serve --headless`（不加载工作区与运营者插件的浏览器部分，首页是文档卡片，开发服务器带预览代理，预览页面带 `frame-ancestors`）与 `--preview-origin <源>`（可重复）；设置了 `PRESMIUM_SERVICE_TOKEN` 时，工作区的路由要求 `Authorization: Bearer <服务令牌>`。
+3. `presmium dev` 默认不加载编辑模式，`--edit` 保留到 96g；旧工作台的用例中启动 dev 编辑模式的地方加上 `--edit`。
+4. `PmRoleMark` 不再判断 `EDIT_MODE`：作者用的标记由页面上的一个开关决定，预览代理按 `marks` 设它，旧工作台的编辑模式进入时也设它（到 96g）。
+5. 先行验证：`design-dsh.md` 第 17 节第 1 项的服务一侧（`ir/events` 的推送经 bundle 转发时能否流式，与 96b 一起试）。
+
+**验收**：
+
+- 一个不用任何框架的测试宿主页面（`e2e/fixtures/preview-protocol/` 中的普通 HTML，由测试在允许的来源上提供）经预览协议驱动网页与幻灯片两种形态：`ready` 之后每种消息都生效（跳转、高亮、点选得到 `picked`、编号标记、选中文字得到 `selection`、作者用的标记、明暗、位置报告、保存源码后的 `updated`、插件出错时的 `report`），幻灯片的位置与点选带 `trail` 与步骤；
+- 来源不在允许的列表中、nonce 不对、页面不在 iframe 中时，代理不启动或不回应；
+- 网页与幻灯片的静态构建中没有预览代理的代码；
+- 无界面模式：页面中没有工作区与运营者插件的浏览器模块，首页是文档卡片；工作区的路由没有服务令牌时 401；预览页面带 `frame-ancestors`；新路由的回答（`ir` 的修订号与诊断、保存后 `ir/events` 的推送、`preview` 的地址、`build` 写在文档目录之外、`check` 的诊断）；
+- `presmium dev` 不加 `--edit` 时页面没有编辑模式，加了照旧；旧工作台的全部用例通过。
+
+**用例**：
+
+- `e2e/preview-protocol.spec.ts`：网页一例、幻灯片一例（各自走完全部消息），来源与 nonce 不符一例；
+- `packages/workspace/test/service.test.ts`：无界面模式的页面与首页；新路由；服务令牌；`frame-ancestors`；
+- `packages/cli/test/preview.test.ts`：扫描网页与幻灯片的静态产物；`presmium dev` 不加 `--edit` 时没有编辑模式。
+
+### WP-96b bundle 的骨架、工具一致与升级闸门（第一步，与 96a 并行）
+
+**需求**：P-111、P-117，P-116 的 MCP 一侧；`design-dsh.md` 第 3、6、9 节，5.3、8.2、8.6、12 节（第 1、2 组）。
+
+**拥有**：
+
+- `packages/dsh/**`（新；`src/client/**`、`build/**` 归 96d，`src/node/turns/**` 由本包声明为空的行与入口、归 96c 实现）；
+- `packages/mcp/**`、`packages/server/**`；
+- `packages/kernel/src/contracts/agent.ts`、`packages/kernel/src/contracts/server.ts`；
+- `packages/cli/src/testing.ts` 与 `packages/cli/src/fake-model.ts`（新：假模型从 `packages/addon-assistant/test/fixtures/fake-model.ts` 移来），`packages/addon-assistant/test/**` 与 `e2e/assistant-edit.spec.ts` 中引入它的地方；
+- `scripts/check-layering.mjs`、`scripts/check-skills.mjs`、`scripts/check-packages.mjs`。
+
+**条目**：
+
+1. 包的形态（6.1 节）：`dsh.bundle`；`engines.dsh` 与精确的对等依赖，锁定开工时最新的 0.2.x 预发布版或正式版；每行一个 ESM 入口，用 jiti 加载 `src/node/` 的源码；按载体拆分补丁；技能副本与 `check-skills` 的核对；`profile.patch.yml` 的隐私、技能、第一次使用、沙箱与 persona 部分（6.6 节）。
+2. 宿主部分的行（6.2 节）：`presmium-service`（环境中有服务的地址与令牌时用它，否则自己以 `presmium serve` 启动并监管，进程组加父进程退出的看门狗）、`presmium-workspaces`（每份文档的目录登记为 dsh 工作区，`documentsDirectory` 指向 Presmium 的状态目录）、`presmium-tools`、`presmium-policy`（6.3 节）、`presmium-context`（6.4 节，按会话的目录）、`presmium-skills`、`presmium-routes`（`/api/presmium/*` 的精确路径转发到工作区服务与服务端，带服务令牌）、`presmium-turns`（只声明）。
+3. 工具一致（第 9 节）：`@presmium/mcp` 导出工具表、按文档列出工具的函数与 MCP 客户端一侧；服务端的 `presmium.server/tokens` 与会话令牌（主机已确认的模式，`MCP_ENDPOINT.issue` 的第三个参数）。
+4. 焦点的服务端与 MCP 一侧（8.2、8.6 节）：`Focus`、`Annotation.focus`、`AgentContext.focus`；`presmium.server/focus` 的报告、换算与保存；资源 `presmium://focus`（可订阅）与工具 `get_focus`；bundle 的上下文带上焦点。
+5. 分层规则与白名单（3.2 节）；`check-packages` 对 0.x 包与预编译的客户端部分的例外。
+6. 升级闸门的第 1、2 组（第 12 节）；`packages/dsh/test/harness.ts`：在临时的 `DSH_HOME` 与 `HOME` 中启动锁定的 dsh 与 bundle（headless 与 web 载体）。
+7. 先行验证：`design-dsh.md` 第 17 节第 1、5、9、10、11、12 项。
+
+**验收**：
+
+- `--dump-config` 中有 bundle 的全部行与关掉的隐私行；headless 与 acp 载体启动时没有“未激活”的警告；
+- headless 的假模型运行中，Presmium 的工具按策略执行：`ask` 经确认（headless 没有回答者即拒绝），`off` 的工具不在提供给模型的工具中，`allow` 在完全访问模式下也执行，写运营者目录在完全访问模式下也被拒绝；
+- 模型请求中没有 `dsh_session_log` 与 `dsh_plugin_packages`；`HOME` 的 `.agents/skills` 中放一个技能，技能目录中只有 Presmium 的技能；测试目录之外没有写入（没有 `~/Documents`）；
+- 两份文档的两个会话各自得到自己的文稿上下文；
+- 工具一致：同一份文档、同一组设置下，MCP `tools/list` 的名字与输入 schema 等于提供给模型的 `presmium__*` 工具（去掉前缀），含测试插件的一个 `AgentTool`；
+- 报告一个焦点后，`presmium://focus`、`get_focus` 与会话上下文中的焦点相同，摘录取自文件；
+- `engines.dsh` 不满足时拒绝安装；
+- `kill -9` dsh 宿主后，不留下工作区服务与开发服务器的进程。
+
+**用例**（`packages/dsh/test/`）：`config.test.ts`（行 ID、载体、版本不满足时拒绝）；`policy.test.ts`（四种情况）；`privacy.test.ts`（请求体、技能目录、测试目录之外没有写入）；`context.test.ts`（两份文档）；`parity.test.ts`（工具与焦点）；`service.test.ts`（`kill -9`）。
+
+### WP-96c 会话、审阅与修改历史（第二步，96a、96b 之后，与 96d、96f 并行）
+
+**需求**：P-115（N 波次的增补）；`design-dsh.md` 6.5 节，13.3 节第 18 行中审阅的部分。
+
+**拥有**：`packages/dsh/src/node/turns/**`；`packages/workspace/src/node/**`（审阅移进 `review/**`，路由登记）；`packages/addon-assistant/src/node/**` 与 `test/**`（改用服务的审阅）；`packages/workspace/test/review.test.ts`、`packages/dsh/test/turns.test.ts`（新）。
+
+**条目**：
+
+1. 审阅移进工作区服务：git 实现（`git-review.ts`、`review-record.ts`）从助手插件移来，没有 deltabox 时由服务登记 `CHANGE_REVIEW`；`review` 路由（5.1 节）；旧的审阅记录照常读取。旧工作台的助手改用服务的审阅，两个工作台共存。
+2. `presmium-turns`：会话第一次调用写文件的工具或 shell 之前打开审阅并持有锁（持有者 `agent:<会话>`）；每个工具调用完成时记检查点；后面的 turn 累加进同一次审阅；`review: auto` 时每个 turn 结束提交。
+3. 接受即提交，尾注另带 `Presmium-Session` 与 `Presmium-Turn`；拒绝；回到检查点；撤销后给会话发一条标明来源的消息。
+4. 审阅记录在 dsh 宿主重启后仍在；没有页面跟随时按 `reviewTimeoutMs` 回滚。
+5. 先行验证：`design-dsh.md` 第 17 节第 4 项的服务一侧。
+
+**验收**：
+
+- 假模型在一份文档的会话中改 `lecture.md`：审阅打开，锁持有到审阅结束，期间编辑器的保存得到 409；
+- 两个 turn 累加进一次审阅；接受形成一个提交，尾注带会话与 turn；拒绝一个文件后它恢复为快照；撤销后内容复原；
+- 重启 dsh 宿主后审阅仍在，可以接受；
+- agent 经工具构建之后，构建产物不在审阅与 dsh 的修改卡片中；
+- 旧工作台的修改任务用例照常通过（经服务的审阅）。
+
+**用例**：`packages/dsh/test/turns.test.ts`（打开与锁、多个 turn、接受与尾注、拒绝与撤销、重启、构建）；`packages/workspace/test/review.test.ts`（路由与旧记录）。
+
+### WP-96d 工作台的外壳（React；第二步，96a、96b 之后，与 96c、96f 并行）
+
+**需求**：P-124、P-125，N-10 的工作台部分；`design-dsh.md` 第 7 节，6.6 节中界面的行，第 12 节第 3 组。
+
+**拥有**：`packages/design/**`（新）；`packages/host/src/design/**` 与 `packages/host/package.json`（改为引用 design）；`packages/workbench/**`（新；`src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**` 归 96e）；`packages/dsh/src/client/**`、`packages/dsh/build/**`、`packages/dsh/package.json`、`packages/dsh/cordis.patch.yml`、`packages/dsh/profile.patch.yml`；`e2e/workbench.spec.ts`、`e2e/fixtures/workbench/**`（新）、`e2e/fixtures/contrast.ts`。
+
+**条目**：
+
+1. `@presmium/design`：令牌、类、字体与图标从 `packages/host/src/design/` 移出，产物的外观不变。
+2. 根布局插件（7.2 节）：6 个子槽位；重新提供 `ctx.layout`、`usePanelInfo` 与主题呈现；`Mod+B`、跟随会话的文档标题、拖动柄、`canShow`。
+3. 退路：关掉根布局插件、打开 `ui-layout` 时，面板作为右侧坞的标签页与 `main` 的全局面板。
+4. 面板（7.3 节中归 96d 的）：首页、文件树、源码编辑器（CodeMirror 6、三方合并、`ir/events` 中改过的文件）、问题、预览面板（预览协议的工作台一侧，双向定位）、状态项；React 版的通用组件（7.5 节）。
+5. 主题与品牌（7.5 节）：补齐 dsh 用到的 76 个别名令牌的映射、字体、暗色与 `appearance`、品牌槽位、首次使用提示、en-US 与 zh-CN 的语言包、`tapIndex`；profile 补丁中界面的行。
+6. 界面语言（7.6 节）；窄屏与可访问性（7.7 节）。
+7. 客户端包的构建（7.8 节）：esbuild 与生成工厂格式的插件，外部依赖是外壳的模块表。
+8. 升级闸门第 3 组：启动审计。
+9. 先行验证：`design-dsh.md` 第 17 节第 1 项的工作台一侧、第 6、8 项。
+
+**验收**：
+
+- 启动审计通过（`root` 的子槽位、`ctx.layout` 的成员、品牌与首次使用提示的槽位、令牌名、模块表的键，页面没有错误）；
+- 1440 与 390 两种宽度下，活动栏、文件树、编辑器、问题、预览，以及 dsh 的对话、会话、设置、Review 与文件都能到达并使用；
+- 在文件树中打开文件、改一个词保存，预览不刷新页面即更新；
+- 在预览中点选一块，编辑器到它的行；在编辑器中移动光标，预览高亮对应的块；问题面板列出诊断，点一项到那一行；
+- 磁盘上的编辑器在打开之后改了文件：没改过的直接更新，改过的保存时提示合并或重新载入；
+- 明暗两套中，工作台的面板与映射后的 dsh 面板的文字达到 WCAG AA；
+- 关掉根布局插件后，同一批面板在 dsh 自带布局中可用；
+- 产物（网页与幻灯片）的现有用例照常通过。
+
+**用例**（`e2e/workbench.spec.ts`，用 96b 的 harness 启动）：启动审计；两种宽度；保存与预览更新；双向定位与问题面板；外部改动与合并；对比度；退路布局。
+
+### WP-96f `presmium studio`（第二步，96a、96b 之后，与 96c、96d 并行）
+
+**需求**：P-125 的启动与发行；`design-dsh.md` 第 11 节。
+
+**拥有**：`packages/studio/**`（新）、`packages/cli/src/cli.ts`（`studio` 的转交）、`scripts/consumer.ts`（打包并安装 studio）。
+
+**条目**：
+
+1. `presmium studio [目录] [--port <端口>] [--host <地址>]`；`@presmium/cli` 转交，没装时说明怎样安装。
+2. 在 `DSH_HOME`（`$XDG_STATE_HOME/presmium/studio`）中组装 profile `presmium-studio`，把 bundle 链接进它的 `node_modules`。
+3. 启动顺序（11.2 节）：生成服务令牌，启动 `presmium serve --headless --preview-origin <dsh 的源>`，启动 dsh 并传入 profile 补丁，等文档的工作区登记好，打印一个网址。
+4. 进程监管：进程组与父进程退出的看门狗。
+5. 启动令牌的交接（`design-dsh.md` 第 17 节第 7 项）。
+6. 模型：环境变量的映射；第一次启动时提示导入 `assistant.json`。
+7. 局域网：`--host` 时 dsh 用 `--host` 与 `--trusted-host`，工作区服务也监听这个地址，`--preview-origin` 另加局域网的源，启动时警告没有登录。
+8. 消费者安装测试中加上 studio（P-141）。
+
+**验收**：
+
+- 在单仓之外用打包的结果安装，`presmium studio <目录>` 只打印一个网址，打开后是工作台；
+- 全新的 `HOME` 与 `DSH_HOME` 中，第一个会话就在文档目录中运行，没有 `~/Documents`；
+- 外来 `Origin` 的请求得到 403；
+- `--host` 时用局域网地址可以使用（本机没有局域网地址时跳过并说明）；
+- `kill -9` 启动器后不留下任何进程；
+- 环境变量中的模型地址与密钥被 dsh 使用（假模型收到请求）。
+
+**用例**（`packages/studio/test/studio.test.ts`）：消费者安装与一个网址；全新的 home；外来 `Origin`；局域网；`kill -9`；环境变量中的模型。
+
+### WP-96e 工作台中的 AI、焦点与讲授（第三步，96c、96d 之后）
+
+**需求**：P-113、P-114、P-116，P-136 在工作台中的部分，P-111 的模型状态；`design-dsh.md` 第 8 节，7.3 节中归 96e 的面板，第 10 节，第 12 节第 4 组。
+
+**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新）；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）。
+
+**条目**：
+
+1. 焦点上下文（第 8 节）：三个入口、点选的交互、标记跟着块走、两种发送、批注的状态与它关联的提交、发给 agent 的文字、源码改动之后的重新定位、按文档与对话保存；没有选中时带上当前位置。
+2. 由 AI 起草：先按模板新建文档，再在它的目录中开会话。
+3. 审阅面板（服务的 `review`）与它和 dsh 修改卡片的关系；修改历史与未提交的修改；撤销。
+4. 讲授回写：在讲授面板中选一条讲授轨，在新会话中回写，形成一个可以撤销的修改。
+5. 模型状态；没有模型时 Presmium 自己的说明与设置入口（第 10 节）。
+6. 升级闸门第 4 组：工作台调用的 Host API 端点的 schema 比对。
+7. 先行验证：`design-dsh.md` 第 17 节第 2、3、4 项。
+
+**验收**：
+
+- 源码编辑器中选中几行加入对话，发出的文字带文件、行范围、所在的节与块，摘录取自文件；
+- 网页预览中点选两个块，各写一句要求，一次发送；假模型收到两处焦点并修改，两条批注标为已完成；审阅中接受；一次撤销恢复原样；
+- 幻灯片预览中点选，焦点带步骤；
+- 改动源码使块的 ID 移动后，标记跟到新位置；删掉那一段后，标记显示已失效；
+- 外部 agent 经 MCP 读 `presmium://focus`，得到与 dsh 会话中相同的焦点；
+- 静态构建的产物中没有点选的代码（96a 的扫描覆盖点选模式的代码）；
+- 由 AI 起草一份新文档：新建文档的提交与起草的修改各一个，都可以撤销；
+- 讲授回写成为一个可以撤销的修改；
+- 没有模型时，对话处显示 Presmium 的说明与设置入口，不显示 `MISSING_CREDENTIAL`；
+- Host API 的 schema 比对通过。
+
+**用例**：`e2e/workbench-ai.spec.ts`，上面的验收各一例（静态产物一条由 `packages/cli/test/preview.test.ts` 覆盖）；`packages/dsh/test/hostapi.test.ts`（schema 比对）。
+
+### WP-96g 移除旧工作台（第四步，96e、96f 之后）
+
+**需求**：G-3、G-4、G-6 的收尾；`design-dsh.md` 13.3、13.4 节。
+
+**拥有**：
+
+- `packages/web/src/client/**` 中工作台与编辑模式的部分、`packages/web/src/node/sites.ts`；
+- `packages/workspace/src/client/**`（删去）、`packages/workspace/src/node/**`（`deckEditing`、`servedPlugins`；无界面成为唯一的模式）；
+- `packages/addon-assistant/**`（删去工作台的面板、ACP 运行时、`dsh/` 模板，以及对 dsh 与 ACP SDK 的依赖；保留读者问答）；
+- `packages/addon-lecture/src/client/**` 中回写的部分；
+- `packages/host/src/types.ts`、`packages/host/src/index.ts`、`packages/kernel/src/contracts/agent.ts`（只为旧工作台存在的契约）；
+- `packages/compiler/src/renderers.ts`（`sitePlugins`）、`packages/viewer/src/rich.ts`、`packages/cli/src/cli.ts`（`dev --edit`）；
+- `scripts/check-layering.mjs`（清空白名单；`@deepseek-ai/*` 不再允许在 `addon-assistant` 中；删去 `@agentclientprotocol/sdk` 的规则）；
+- `design-dsh.md` 13.3 节第 19 行的用例；
+- `examples/workspace/**`、`templates/workspace/**`、`docs/**`（评审记录与 `design-v0.7.md` 的正文除外）、`.agents/skills/**`、根目录与各包的 `README.md` 中关于旧工作台的段落。
+
+**条目**：
+
+1. 删去 `design-dsh.md` 13.3 节的耦合（第 13、15、16、17 行保留），清空分层检查的白名单。
+2. 删去 ACP 的替换运行时：`AGENT_RUNTIME` 的实现与契约、`PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` 与 `provider`、ACP 的测试 agent；助手插件只剩读者问答。
+3. `presmium serve` 只剩工作区服务加产物，`presmium dev` 只剩实时预览加“在编辑器中打开”（13.4 节）；`--headless` 保留且不再有作用。
+4. 13.3 节第 19 行的用例改为测新工作台（编辑、设计、AI 修改、讲授回写），或删去只为旧工作台存在的断言。
+5. 文档与技能：`presmium-author`、`presmium-develop`、`presmium-present` 中关于编辑模式与“AI 修改”的段落改为指向工作台；`architecture.md` 第 5、10 节中旧工作台的说明删去，第 13.6 节改为删除的记录；`requirements.md` 的“定位与边界”去掉旧工作台。
+
+**验收**：
+
+- `git grep -n EDIT_MODE packages` 没有结果；
+- `git grep -n -E "PRESMIUM_AGENT_COMMAND|@agentclientprotocol" packages docs .agents README.md` 只剩历史文件（评审记录、`wbs.md`、`design-v0.7.md`、`design-dsh.md`）；
+- 分层检查没有白名单，`@deepseek-ai/*` 只在 `dsh` 与 `studio` 中；
+- `pnpm verify` 通过，升级闸门的五组都通过。
+
+**用例**：改写后的 `e2e/editing.spec.ts`、`e2e/design.spec.ts`、`e2e/assistant-edit.spec.ts`、`e2e/lecture-writeback.spec.ts`（在 `presmium studio` 中）；`pnpm verify`。
+
+### N 波次的验收（验收者）
+
+合并与复核；同步文档与技能；在有条件的机器上跑一遍完整的升级闸门；对照 G-1 至 G-9 逐条核对。验收：`pnpm verify` 与升级闸门都通过。
+
 ## M 波次：hub 托管模板（WP-94；M11，1.1）
+
+WP-94 排在 WP-96f 之后：hub 为每个用户启动 `presmium studio`，不再启动 `presmium serve`，LiteLLM 的地址填进 DeepSeek Harness 的模型设置，路径前缀用 dsh 的 `--public-url` 与 `--trusted-host`（`design-dsh.md` 11.5 节）。下面的拥有与条目写于 N 波次之前，开工时按此修订（studio 与工作区服务在前缀下运行、预览的源）。
 
 ### WP-94 hub 托管模板
 
