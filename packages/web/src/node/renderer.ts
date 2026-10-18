@@ -95,6 +95,7 @@ async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, doc
     workspace: document.workspace,
     translations: (ctx.translations ?? []).map(({ lang, doc: translated }) => ({ lang, doc: publish(translated) })),
     image,
+    ...ctx.preview ? { preview: ctx.preview } : {},
   })
   return { options, files, publish, site }
 }

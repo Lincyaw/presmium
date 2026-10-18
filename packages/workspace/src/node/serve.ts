@@ -18,6 +18,15 @@
  * list follows. A document's writers take its lock (`DOCUMENT_LOCKS`, F-09).
  * The MCP's builds never go into the document (F-51): they go to serve's
  * state directory.
+ *
+ * The workspace service's interface for a workbench (./service.ts,
+ * docs/design-dsh.md section 5) is in the workspace's routes. Headless
+ * (`--headless`, what `presmium studio` starts), the pages load neither the
+ * workspace's browser plugin nor the operator plugins' browser parts, the
+ * home page is the documents' cards, and the documents' dev servers have
+ * the preview agent for the workbench's origins (`--preview-origin`). With
+ * `PRESMIUM_SERVICE_TOKEN` in its environment the workspace's routes ask
+ * for that token.
  */
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -31,6 +40,8 @@ import { servedDocument, startServer } from '@presmium/server'
 import type { PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@presmium/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { listDocuments, readWorkspace } from './config.ts'
+import { workspaceService } from './service.ts'
+import type { Service } from './service.ts'
 import { Documents, RequestError } from './documents.ts'
 import type { DocumentsChange } from './documents.ts'
 import { localWriter } from './files.ts'
@@ -56,6 +67,10 @@ export interface ServeOptions {
   bundled?: string
   /** The plugins' checks of a compilation, for `ServerHost.check`; by default `Compilation.check()`, as `presmium check` runs them. */
   check?(compilation: Compilation): Promise<Finding[]>
+  /** `--headless`: the service without its interface, for a workbench; its pages are previews. */
+  headless?: boolean
+  /** `--preview-origin`: the workbench's origins, to which the previews' agent talks (headless). */
+  previewOrigins?: string[]
   env?: NodeJS.ProcessEnv
   approvalTimeoutMs?: number
   log?: Logger
@@ -89,12 +104,15 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const sessions = new Map<string, DocumentSession>()
   const locks = new DocumentLocks()
   const check = options.check ?? (compilation => compilation.check())
+  const token = env.PRESMIUM_SERVICE_TOKEN || undefined
+  const preview = options.headless ? { origins: options.previewOrigins ?? [] } : undefined
 
   // Set once the server is up: the compilers need its services, the server needs the documents.
   let services: [ServiceToken<unknown>, unknown][] = []
   let hostServices: [ServiceToken<unknown>, unknown][] = []
   let site: SiteBackend | undefined
   let server: PresmiumServer | undefined
+  let service: Service | undefined
 
   const sessionOf = (dir: string): DocumentSession => {
     const known = sessions.get(dir)
@@ -109,7 +127,8 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       }
     })
     // Not awaited: the site may be starting this document's dev server from the compilation that calls it.
-    session.onCompile((compilation) => {
+    session.onCompile((compilation, changed) => {
+      service?.compiled(dir, compilation, changed)
       void Promise.resolve(site?.update(dir, compilation)).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`))
     })
     sessions.set(dir, session)
@@ -151,6 +170,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     const removed = [...new Set([...change.removed, ...listed.removed])]
     for (const dir of new Set([...removed, ...change.added, ...listed.added])) await server?.unmount(dir)
     await site?.documentsChanged(removed)
+    await service?.removed(removed)
   }
 
   /** Documents made or taken away on disk (an editor, a git pull): seen at a request of the site, at most once a second. */
@@ -171,7 +191,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     if (!git) log.warn(`${root} is not a git repository: editing, the document operations and the history are not available (run git init)`)
     const revisions = git ? new Revisions(git, { config, writer }) : undefined
     const documents = new Documents({ config, git: git!, revisions: revisions!, writer, changed: documentsChanged, locks })
-    const routes: WorkspaceRoutes = { documents, ...revisions ? { revisions } : {}, locks, documentsChanged }
+    const routes: WorkspaceRoutes = { documents, ...revisions ? { revisions } : {}, locks, documentsChanged, ...service ? { service } : {}, ...token ? { token } : {} }
     return { ...revisions ? { revisions } : {}, writer, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
   }
   let workspace: ReturnType<typeof workspaceOf> | undefined
@@ -269,6 +289,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   services = running.services
+  service = workspaceService({ root, sessionOf, serverHost, url: () => running.url, ...preview ? { preview } : {}, stateDir: stateDir(root, env), log })
   workspace = workspaceOf()
   hostServices = [
     ...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [],
@@ -284,11 +305,14 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   // The site: this process's dev servers.
   const compileFull = async (dir: string): Promise<IRDocument> => {
     const compilation = await sessionOf(dir).ready()
-    return siteIR(compilation)
+    return service!.siteDoc(compilation, siteIR(compilation))
   }
   try {
-    site = await localSite(root, spec, options.bundled, stateDir(root, env), compileFull, config.single ? {} : homePlugins((await operatorsOf()).plugins), log)
+    // Headless, the pages have neither the workspace's browser plugin nor the operator plugins' browser parts.
+    const home = config.single || options.headless ? {} : homePlugins((await operatorsOf()).plugins)
+    site = await localSite({ root, spec, bundled: options.bundled, state: stateDir(root, env), compile: compileFull, siteDoc: (compilation, doc) => service!.siteDoc(compilation, doc), plugins: options.headless ? {} : servedPlugins(), home, preview, log })
   } catch (error) {
+    await service?.close()
     await running.close()
     if (home) rmSync(home, { recursive: true, force: true })
     throw error
@@ -300,6 +324,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     mcp: { url: `${running.url}/mcp`, stateFile },
     async close() {
       for (const session of sessions.values()) session.close()
+      await service?.close()
       await site?.close()
       await running.close()
       if (home) rmSync(home, { recursive: true, force: true })
@@ -314,18 +339,37 @@ interface SiteBackend {
   close(): Promise<void>
 }
 
+interface LocalSiteOptions {
+  root: string
+  spec: SiteSpec
+  bundled?: string
+  state: string
+  compile(dir: string): Promise<IRDocument>
+  /** A document's IR as the site's dev server gets it (with its revision for the previews). */
+  siteDoc(compilation: Compilation, doc: IRDocument): IRDocument
+  /** The site's own plugins (`servedPlugins`); none headless. */
+  plugins: Record<string, string>
+  /** The home page's plugins (`homePlugins`); none headless. */
+  home: Record<string, string>
+  /** Headless: the pages are previews for these origins (`RenderContext.preview`). */
+  preview?: { origins: string[] }
+  log: Logger
+}
+
 /** The web renderer's dev site in this process; the one member is the owner (full view). */
-async function localSite(root: string, spec: SiteSpec, bundled: string | undefined, state: string, compile: (dir: string) => Promise<IRDocument>, home: Record<string, string>, log: Logger): Promise<SiteBackend> {
-  const renderer = await webRenderer(root, bundled)
+async function localSite(options: LocalSiteOptions): Promise<SiteBackend> {
+  const { root, spec, log } = options
+  const renderer = await webRenderer(root, options.bundled)
   const findings: Finding[] = []
-  const work = join(state, 'site', 'full')
-  const ctx = siteContext({ root, outDir: work, workDir: work, plugins: servedPlugins(), home, findings })
-  const dev = await renderer.devSite!(spec, ctx, compile)
+  const work = join(options.state, 'site', 'full')
+  const ctx = siteContext({ root, outDir: work, workDir: work, plugins: options.plugins, home: options.home, findings })
+  if (options.preview) ctx.preview = options.preview
+  const dev = await renderer.devSite!(spec, ctx, options.compile)
   const origin = new URL(dev.url).origin
   log.info(`the workspace site's dev router is at ${origin} (this machine only; pages reach it through serve)`)
   return {
     forward: () => origin,
-    update: (dir, compilation) => dev.update(dir, siteIR(compilation)).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
+    update: (dir, compilation) => dev.update(dir, options.siteDoc(compilation, siteIR(compilation))).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
     // The dev site reads the list at each request: the documents no longer listed close there.
     documentsChanged: async () => {},
     close: () => dev.close(),

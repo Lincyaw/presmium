@@ -675,7 +675,7 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 
 | # | 问题 | 不成立时 | 工作包 |
 |---|---|---|---|
-| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧） |
+| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧）。服务一侧成立（96a，运行）：`GET ir/events` 是服务端直接流出的 SSE（`eventStream`，不缓冲），连接后先发当前的修订号，保存源码后一条新事件随即到达（`packages/workspace/test/service.test.ts`）；bundle 的转发由 96b 试 |
 | 2 | 面板怎样发起会话：在页面中带 cookie 调 Host API，还是用客户端运行时的会话服务 | — | 96e |
 | 3 | 批注怎样进入对话：`conversation.composer` 槽位中的托盘，还是直接发 `session/prompt` | — | 96e |
 | 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e |

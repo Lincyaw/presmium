@@ -32,13 +32,14 @@ Commands:
           --out <dir>     output directory (default: <deck>/dist)
           --audience <name>  only the content for this audience (e.g. student); then every file
                           written is scanned for the sentences of the content left out
-  dev     compile, start the Presmium server and the renderers' dev servers, recompile on save;
-          the web form has edit mode (the source in the browser; its changes are committed
-          where the deck is in a git repository)
+  dev     compile, start the Presmium server and the renderers' dev servers, recompile on save
           --to <ids>      renderers to run, comma-separated
           --out <dir>     working directory (default: <deck>/.presmium/dev)
           --server-port <n>  port of the Presmium server (default: a free port)
           --allow <kinds>    approvals given without asking: operate, spend, write, agent
+          --edit          the web form has edit mode (experimental, until the workbench of presmium
+                          studio replaces it): the source in the browser, its changes committed where
+                          the deck is in a git repository
   ir      print the IR as JSON
           --out <file>    write it to a file instead
   check   compile and run the plugins' checks
@@ -55,6 +56,13 @@ Commands:
                           local network opens it to your other devices there, with no login:
                           whoever reaches the port works as you
           --operator-dir <dir>  the operator directory (default: the user's state directory)
+          --headless      the workspace service without its interface, for a workbench (presmium
+                          studio starts it so): the home page is the documents' cards, the pages
+                          load no workspace or operator plugin, and the documents' dev servers have
+                          the preview agent; with PRESMIUM_SERVICE_TOKEN set, the workspace's routes
+                          ask for it (Authorization: Bearer)
+          --preview-origin <origin>  (with --headless, repeatable) the origin of a workbench whose
+                          pages embed the previews, e.g. http://127.0.0.1:4320
 
   -h, --help   show this help
 
@@ -62,10 +70,10 @@ Exit codes: 0 no errors, 1 error findings, 2 usage or internal error.`
 
 const OPTIONS = {
   'build': ['to', 'out', 'audience'],
-  'dev': ['to', 'out', 'server-port', 'allow'],
+  'dev': ['to', 'out', 'server-port', 'allow', 'edit'],
   'ir': ['out'],
   'check': ['json', 'update-lock', 'env', 'audience', 'external-links'],
-  'serve': ['port', 'host', 'operator-dir'],
+  'serve': ['port', 'host', 'operator-dir', 'headless', 'preview-origin'],
 } as const
 
 type Name = keyof typeof OPTIONS
@@ -93,6 +101,12 @@ interface Command {
   operatorDir?: string
   port?: number
   host?: string
+  /** `dev --edit`: the web form's edit mode (until WP-96g). */
+  edit: boolean
+  /** `serve --headless`: the service without its interface, for a workbench. */
+  headless: boolean
+  /** `serve --preview-origin`: the workbench's origins. */
+  previewOrigins: string[]
 }
 
 /** Runs `presmium <argv>` and returns the exit code. */
@@ -139,6 +153,9 @@ function parseCommand(argv: string[]): Command | 'help' {
       'operator-dir': { type: 'string' },
       'port': { type: 'string' },
       'host': { type: 'string' },
+      'edit': { type: 'boolean', default: false },
+      'headless': { type: 'boolean', default: false },
+      'preview-origin': { type: 'string', multiple: true },
       'help': { type: 'boolean', short: 'h', default: false },
     },
   })
@@ -165,6 +182,10 @@ function parseCommand(argv: string[]): Command | 'help' {
   const allow = values.allow?.split(',').map(kind => kind.trim()).filter(Boolean) ?? []
   const unknown = allow.find(kind => !(KINDS as string[]).includes(kind))
   if (unknown) throw new Error(`--allow takes ${KINDS.join(', ')}, not "${unknown}"`)
+  const previewOrigins = values['preview-origin'] ?? []
+  if (previewOrigins.length > 0 && !values.headless) throw new Error('--preview-origin goes with --headless')
+  const notOrigin = previewOrigins.find(origin => !isOrigin(origin))
+  if (notOrigin !== undefined) throw new Error(`--preview-origin takes an origin such as http://127.0.0.1:4320, not "${notOrigin}"`)
   return {
     name: name as Name,
     entry,
@@ -181,6 +202,19 @@ function parseCommand(argv: string[]): Command | 'help' {
     operatorDir: values['operator-dir'],
     port: port(values.port, '--port'),
     host: values.host,
+    edit: values.edit,
+    headless: values.headless,
+    previewOrigins,
+  }
+}
+
+/** Whether a value is an origin: `http(s)://<host>[:<port>]`, nothing after it. */
+function isOrigin(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return /^https?:$/.test(url.protocol) && url.origin === value
+  } catch {
+    return false
   }
 }
 
@@ -237,11 +271,13 @@ const TOKEN_IGNORE = '**/.presmium/server.json'
 
 /**
  * `presmium dev`: the Presmium server (this machine only) with
- * the plugins' server contributions and the workspace's edit mode for the
+ * the plugins' server contributions and the workspace's routes for the
  * deck (P-124: the source editor's routes, the document writer, its lock
  * and, in a git repository, its history), then the renderers' dev servers,
- * which proxy `/__presmium/` to it; the web form's loads the workspace's
- * browser plugin (docs/architecture.md 10.1, 10.2).
+ * which proxy `/__presmium/` to it (docs/architecture.md 10.1, 10.2). With
+ * `--edit` the web form's loads the workspace's browser plugin, edit mode
+ * (experimental; WP-96g removes it with the option, G-4); without it the
+ * page is the live preview, and loads no preview agent either.
  */
 async function devDeck(command: Command): Promise<number> {
   let latest: Compilation | undefined
@@ -261,8 +297,9 @@ async function devDeck(command: Command): Promise<number> {
     },
     stateFile: join(deckDir, '.presmium', 'server.json'),
   })
-  if (!editing.git) process.stderr.write(`presmium dev: ${editing.root} is not in a git repository, or git ignores it: edit mode saves, but commits nothing and has no history (git init there to commit, with the line ${TOKEN_IGNORE} in .gitignore)\n`)
-  else if (!editing.tokenIgnored) process.stderr.write(`presmium dev: git does not ignore .presmium/server.json, this process's MCP token: add the line ${TOKEN_IGNORE} to .gitignore (edit mode never commits it, git add would)\n`)
+  if (!editing.git) {
+    if (command.edit) process.stderr.write(`presmium dev: ${editing.root} is not in a git repository, or git ignores it: edit mode saves, but commits nothing and has no history (git init there to commit, with the line ${TOKEN_IGNORE} in .gitignore)\n`)
+  } else if (!editing.tokenIgnored) process.stderr.write(`presmium dev: git does not ignore .presmium/server.json, this process's MCP token: add the line ${TOKEN_IGNORE} to .gitignore (edit mode never commits it, git add would)\n`)
   const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: [...server.services, ...editing.services] })
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })
@@ -273,7 +310,7 @@ async function devDeck(command: Command): Promise<number> {
       outDir,
       to: command.to,
       server: { url: server.url },
-      sitePlugins: editing.sitePlugins,
+      ...command.edit ? { sitePlugins: editing.sitePlugins } : {},
       onCompile(compilation, findings) {
         latest = compilation
         const lines = findingLines(findings)
@@ -310,6 +347,7 @@ async function serve(command: Command): Promise<number> {
     ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
     bundled: BUNDLED,
     check: compilation => compilation.check(),
+    ...command.headless ? { headless: true, previewOrigins: command.previewOrigins } : {},
   })
   process.stdout.write(`serve  ${started.url}\n${networkLines(command.host, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url} (its token is in ${started.mcp.stateFile})\n`)
   if (command.host && !isLoopback(command.host)) {

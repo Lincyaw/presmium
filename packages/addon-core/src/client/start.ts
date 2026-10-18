@@ -16,8 +16,10 @@ import { createSyncTransports } from './sync.ts'
 export function startSlidevPresmium(): void {
   const config = presmiumConfig(configs)
   pluginsOf(clientPlugin, config).forEach(registerPresmiumPlugin)
-  // The slides renderer marks the deck that `presmium dev` serves, whose dev server proxies `/__presmium/` to the server.
-  const server = (configs as { presmiumServer?: unknown }).presmiumServer === true ? createServerClient() : undefined
+  // The slides renderer marks the deck that `presmium dev` serves, whose dev server proxies `/__presmium/` to the server;
+  // a preview of the workspace service names its document (`presmiumDocument`), whose routes its requests reach.
+  const { presmiumServer, presmiumDocument } = configs as { presmiumServer?: unknown, presmiumDocument?: unknown }
+  const server = presmiumServer === true ? createServerClient(typeof presmiumDocument === 'string' ? { document: presmiumDocument } : {}) : undefined
   // The slides renderer writes the deck's named environments into the headmatter (the IR's `config.execute.environments`).
   const environments = presmiumEnvironments(configs)
   // The slides by section (D-4): the navigation and the synchronized state go by section between builds.

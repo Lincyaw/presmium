@@ -432,6 +432,15 @@ export interface RenderContext {
   translations?: { lang: string, doc: IRDocument }[]
   /** In `presmium dev`: the server's address, to which the dev servers proxy `/__presmium/`; omitted in builds. */
   server?: { url: string }
+  /**
+   * In the dev servers the workspace service starts (`presmium serve
+   * --headless`, docs/design-dsh.md section 4): their pages load the agent of
+   * the preview protocol (`startPreviewAgent`), which talks only to a parent
+   * page of these origins (none: it never starts), and they may be framed by
+   * those origins only (`Content-Security-Policy: frame-ancestors`). Omitted
+   * in builds and in `presmium dev`, whose pages have no agent.
+   */
+  preview?: { origins: string[] }
 }
 
 /** A local file a URL of a block names, as the renderers publish it (`RenderContext.localAsset`). */

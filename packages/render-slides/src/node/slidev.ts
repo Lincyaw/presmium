@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, escapeHtml, languageId, lowerMyst, nodeMdast, publishedUrl, withProp } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, escapeHtml, languageId, lowerMyst, nodeMdast, publishedUrl, roleMark, withProp } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, LocalAsset, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@presmium/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { gfmFromMarkdown } from 'mdast-util-gfm'
@@ -174,12 +174,19 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     presmium: ctx.portable(doc.config.presmium, gen.dir),
     // Slidev's dev server has an MCP endpoint that edits the generated deck; agents edit the source (principle 6).
     mcp: false,
-    // In `presmium dev` the Presmium server serves the slides too (`/__presmium/`, proxied in vite.config.ts).
-    ...ctx.server ? { presmiumServer: true } : {},
+    // In `presmium dev` the Presmium server serves the slides too (`/__presmium/`, proxied in vite.config.ts); a
+    // preview of the workspace service (docs/design-dsh.md 4.2) is on the service's origin, and names its document.
+    ...ctx.server || ctx.preview ? { presmiumServer: true } : {},
+    ...ctx.preview ? { presmiumDocument: previewDocument(ctx) } : {},
     // The named environments, for addon-core to give the kernel (`HostStart.environments`).
     ...doc.config.execute?.environments ? { presmiumEnvironments: ctx.portable(doc.config.execute.environments, gen.dir) } : {},
     ...runnerOptions(doc, gen),
   }
+}
+
+/** The document of a preview: the deck's directory, relative to the workspace root (the workspace service's compilers have its root). */
+export function previewDocument(ctx: RenderContext): string {
+  return relative(ctx.workspaceRoot, ctx.deckDir).split('\\').join('/')
 }
 
 /**
@@ -288,24 +295,47 @@ function blocks(list: IRBlock[], gen: Generation, notes: IRBlock[], owned: boole
  * A visual block, wrapped in the clicks of its step. The wrapper of a
  * component's child is keyed by the child's block id, as the web form keys
  * the child itself, so the component can tell what appears at a later step
- * apart from the rest (a predict, what it reveals from its prompt).
+ * apart from the rest (a predict, what it reveals from its prompt). A block
+ * of the slide itself is in its anchor (docs/design-dsh.md 4.4), as the web
+ * form's blocks: `.pm-block[data-block]`, with its section (`data-section`)
+ * and the step it appears at (`data-step`), around its clicks, for the
+ * preview protocol and the plugins that point at a block; a block that is
+ * not content where it stands has none (`unanchored`).
  */
 function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolean): string {
   const { node } = block
   const key = owned ? ` key="${escapeHtml(block.id)}"` : ''
+  const wrap = (content: string) => (owned || unanchored(block) ? content : `<div class="pm-block" data-block="${escapeHtml(block.id)}" data-section="${escapeHtml(gen.section)}" data-step="${block.at}">\n\n${content}\n\n</div>`)
   if (node.type === 'markdown' && node.reveal === 'items') {
     // Item k at step at + k. Slidev reads an absolute click 0 as "the next click", so a list
     // whose first item shows from the start is placed relatively: our other clicks are absolute.
-    return `<v-clicks at="${block.at === 0 ? '+0' : block.at}"${key}>\n\n${md(node.mdast, block, gen)}\n\n</v-clicks>`
+    return wrap(`<v-clicks at="${block.at === 0 ? '+0' : block.at}"${key}>\n\n${md(node.mdast, block, gen)}\n\n</v-clicks>`)
   }
   const content = node.type === 'markdown' ? md(node.mdast, block, gen)
     : node.type === 'code' ? code(node, block, gen, owned)
     : scoped(component(node, block, gen, notes), block.at)
-  if (block.at === 0 && block.until === undefined) return content
+  if (block.at === 0 && block.until === undefined) return wrap(content)
   const click = block.until === undefined ? `v-click="${block.at}"`
     : block.at === 0 ? `v-click.hide="${block.until}"`
     : `v-click="[${block.at}, ${block.until}]"`
-  return `<div ${click}${key}>\n\n${content}\n\n</div>`
+  return wrap(`<div ${click}${key}>\n\n${content}\n\n</div>`)
+}
+
+/** What a block may be made of and still be no content where it stands. */
+const NOT_CONTENT = new Set(['html', 'footnoteDefinition', 'definition'])
+
+/**
+ * Whether a block is no content where it stands, so it has no anchor: raw
+ * HTML only, which may open or close an element that the slide's next blocks
+ * are in (a `<div style=…>` before them, its `</div>` after them), which an
+ * anchor around it would close at once; footnote and link definitions, which
+ * Slidev shows elsewhere or not at all.
+ */
+function unanchored(block: IRBlock): boolean {
+  const { node } = block
+  if (node.type !== 'markdown') return false
+  const children = node.mdast.type === 'root' ? node.mdast.children ?? [] : [node.mdast]
+  return children.length > 0 && children.every(child => NOT_CONTENT.has(child.type))
 }
 
 /**
@@ -314,7 +344,7 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
  * published with the slides.
  */
 function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes = false): string {
-  const { mdast } = lowerMyst(buttons(verbatim(tree)), {
+  const { mdast } = lowerMyst(buttons(verbatim(gen.ctx.preview && !notes ? authorMarks(tree) : tree)), {
     footnotes: 'gfm',
     iframes: 'element',
     // Cards, grids and tabs as HTML elements, laid out by the deck's styles (../deck/style.css).
@@ -327,6 +357,18 @@ function md(tree: MdastNode, block: IRBlock | undefined, gen: Generation, notes 
     roles: notes ? 'marks' : 'children',
   })
   return markdown(slidevNodes(mdast, gen))
+}
+
+/**
+ * Where a role without children stands on a slide of a preview (a `{cue}`,
+ * `RenderContext.preview`): an empty mark that shows `〔<name> <value>〕` only
+ * while the page shows the author's marks (the class `AUTHOR_MARKS_CLASS` of
+ * `<html>`, the preview protocol's `marks`; ../deck/style.css), as the web
+ * form's `PmRoleMark` does. Elsewhere only the notes show the marks, as text.
+ */
+function authorMarks(node: MdastNode): MdastNode {
+  if (node.type === 'presmiumRole' && !node.children?.length) return { type: 'html', value: `<span class="pm-role-mark" data-mark="${escapeHtml(roleMark(node))}"></span>` }
+  return node.children ? { ...node, children: node.children.map(authorMarks) } : node
 }
 
 /** Slidev compiles slides as Vue templates: text with `{{` must not become an interpolation, nor its `$` math. */

@@ -72,7 +72,7 @@ interface Module { id: string | null }
 interface DevServer {
   config: { server: { allowedHosts?: true | string[] } }
   httpServer: { once(event: 'listening' | 'close', listener: () => void): unknown, address(): AddressInfo | string | null } | null
-  middlewares: { use(path: string, handler: (req: Request, res: Response) => void): unknown }
+  middlewares: { use(path: string, handler: (req: Request, res: Response, next?: () => void) => void): unknown }
   moduleGraph: {
     getModuleById(id: string): Module | undefined
     invalidateModule(module: Module, seen?: Set<Module>, timestamp?: number, isHmr?: boolean): void
@@ -98,6 +98,23 @@ function searchIndex(documentsFile: string): string {
 /** The file of a translation beside the original's (`ir.json` -> `ir.en.json`), as ./site.ts writes it. */
 function localeFile(file: string, lang: string): string {
   return file.replace(/\.json$/, `.${lang}.json`)
+}
+
+/**
+ * The Vite plugin of a preview's dev server (`RenderContext.preview`): every
+ * response, the pages VitePress serves too, has the preview's
+ * `Content-Security-Policy` (`frame-ancestors`, docs/design-dsh.md 4.5).
+ */
+export function presmiumFrame(policy: string) {
+  return {
+    name: 'presmium:frame',
+    configureServer(server: DevServer) {
+      server.middlewares.use('/', (_req, res, next) => {
+        res.setHeader('Content-Security-Policy', policy)
+        next?.()
+      })
+    },
+  }
 }
 
 /** The Vite plugin of a project without an IR (a workspace site's home page): it tells the parent process once the dev server listens. */

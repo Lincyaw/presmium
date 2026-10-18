@@ -1,0 +1,16 @@
+{
+  "name": "presmium-fixture-preview",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of e2e/preview-protocol.spec.ts: a role without children (an author's mark) and a kernel plugin that fails to start",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

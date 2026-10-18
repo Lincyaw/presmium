@@ -25,6 +25,10 @@
  * with `?compile=1`, the documents not compiled yet compile in the
  * background, one at a time, and the list says so meanwhile (`compiling`).
  *
+ * A site whose dev servers have previews (`RenderContext.preview`, the
+ * workspace service without its interface) gives each document's the
+ * preview agent, and its home page is the documents' cards, as when built.
+ *
  * A document's plugins are those its IR names (`config.plugins`): a host
  * gives the package directories the compiler loaded as absolute paths, so
  * the site loads exactly those; a name is looked up in `ctx.pluginDirs`, then from
@@ -428,9 +432,11 @@ function sitemapPages(site: SiteSpec): string[] {
  * dev, the list comes from the router. With a home document, `index.md`
  * leads to it (a refresh in the page's head, and the theme in the browser)
  * and the list is `documents.md`. The site shell as on every page, and the
- * site's sitemap.
+ * site's sitemap. `served`: the page has the server (the workbench of
+ * `presmium serve`); a dev server's (`allow`) without it shows the
+ * documents' cards, as the built site does.
  */
-function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules: ClientModules, served: boolean, allow: string[]): string {
+function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules: ClientModules, served: boolean, allow?: string[]): string {
   const root = join(workDir, 'site')
   const lang = typeof site.config.lang === 'string' ? site.config.lang : site.documents.find(doc => doc.lang)?.lang ?? ctx.lang ?? DEFAULT_LANG
   const labels = SITE_LABELS[deckLocale(lang)]
@@ -494,7 +500,7 @@ if (data.locales.length > 0) {
     site.locales[locale.lang] = { label: locale.label, lang: locale.lang, title: locale.title, themeConfig: { ...locale.themeConfig, presmium } }
   }
 }
-site.vite = { plugins: [presmiumReady(), ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])], resolve: { dedupe: ['vue'] }${optimize.include.length + optimize.exclude.length > 0 ? `, optimizeDeps: ${JSON.stringify(optimize)}` : ''}${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
+site.vite = { plugins: [presmiumReady(), ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])], resolve: { dedupe: ['vue'] }${optimize.include.length + optimize.exclude.length > 0 ? `, optimizeDeps: ${JSON.stringify(optimize)}` : ''}${allow ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
 ${sitemap}${shell.head ? OG_TITLE : ''}
 export default site
 `)
@@ -549,7 +555,7 @@ export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<Ren
   // The home page first: VitePress empties the directory it builds into, and the documents lie under it.
   if (!single && ctx.config.home !== false) {
     const work = join(ctx.workDir, 'home')
-    const root = writeHome(work, site, ctx, homeModules(ctx), false, [])
+    const root = writeHome(work, site, ctx, homeModules(ctx), false)
     const code = await vitepressBuild(root, ctx.outDir)
     if (code !== 0) throw new Error(`vitepress build of the home page exited with code ${code}`)
   }
@@ -604,7 +610,8 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     if (home) return home
     home = (async () => {
       const work = join(ctx.workDir, 'home')
-      const root = writeHome(work, site, ctx, homeModules(ctx), true, allowed(join(work, 'site'), ...shared, ...Object.values(homePluginDirs(ctx))))
+      // The site of previews (the workspace service without its interface): its home page is the documents' cards.
+      const root = writeHome(work, site, ctx, homeModules(ctx), !ctx.preview, allowed(join(work, 'site'), ...shared, ...Object.values(homePluginDirs(ctx))))
       const server = await vitepressDev(root, 0, () => {}, { host: LOOPBACK, signal: stopping.signal })
       return { port: server.port, close: () => server.close() }
     })()

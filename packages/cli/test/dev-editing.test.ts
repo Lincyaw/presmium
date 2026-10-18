@@ -34,10 +34,10 @@ afterAll(async () => {
 
 type Route = (path: string, body?: unknown) => Promise<{ status: number, json: any }>
 
-/** `presmium dev` of the deck in `dir` (no renderer's dev server; `entry` there), its state outside it: the routes of a plugin, once it compiled. */
+/** `presmium dev --edit` of the deck in `dir` (no renderer's dev server; `entry` there), its state outside it: the routes of a plugin, once it compiled. */
 async function dev(dir: string, state: string, entry?: string): Promise<{ child: Child, route: Route, assistant: Route }> {
   const env = cleanEnv({ XDG_STATE_HOME: join(state, 'state'), XDG_CONFIG_HOME: join(state, 'config'), PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider' })
-  const child = presmiumProcess(dir, ['dev', ...entry ? [entry] : [], '--to', 'notebook'], env)
+  const child = presmiumProcess(dir, ['dev', ...entry ? [entry] : [], '--to', 'notebook', '--edit'], env)
   running.push(child)
   const server = (await waitFor(child, /^server {2}(http\S+)$/m))[1]!
   await waitFor(child, /^watching;/m)
