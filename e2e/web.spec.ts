@@ -656,6 +656,24 @@ test.describe('the fixture deck in the web form', () => {
     await expect(remote.locator('output')).toHaveText('5')
   })
 
+  test('the view menu stays a select, and where the browser lets its list be styled the list is drawn like the design system\'s menu', async ({ page }) => {
+    await page.goto(site())
+    const menu = page.getByRole('combobox', { name: 'View' })
+    test.skip(!(await menu.evaluate(() => CSS.supports('appearance', 'base-select'))), 'this browser shows the system\'s list')
+    const look = await menu.evaluate((select) => {
+      const picker = getComputedStyle(select, '::picker(select)')
+      return { appearance: picker.appearance, radius: picker.borderRadius, shadow: picker.boxShadow !== 'none', control: getComputedStyle(document.documentElement).getPropertyValue('--pm-radius-control').trim() }
+    })
+    expect(look).toMatchObject({ appearance: 'base-select', radius: look.control, shadow: true })
+    // The list is the page's, not the system's: its options show on the page and take a click.
+    await menu.click()
+    const other = page.getByRole('option').nth(1)
+    await expect(other).toBeVisible()
+    const value = await other.getAttribute('value')
+    await other.click()
+    await expect(menu).toHaveValue(value!)
+  })
+
   test('an en-US deck sets <html lang> and speaks English: the VitePress chrome, the links to the slides, the start report', async ({ page }) => {
     await page.goto(site())
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')

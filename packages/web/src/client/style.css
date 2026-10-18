@@ -205,6 +205,9 @@ body {
 }
 
 /* The view menu: a select of the design, framed as its fields are (WCAG 1.4.11). */
+/* The view menu is a native select (keyboard, screen readers, the tests' combobox). Where the browser lets its
+   list be styled (`appearance: base-select`, Chromium), the button and the list look like the design system's
+   menu (`.pm-ui-menu`); elsewhere the list is the system's. */
 .pm-view-menu {
   margin-left: 0.5rem;
   padding: 0.25rem 0.5rem;
@@ -214,6 +217,68 @@ body {
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
   font-size: var(--pm-text-sm);
+  cursor: pointer;
+}
+
+@supports (appearance: base-select) {
+  .pm-view-menu,
+  .pm-view-menu::picker(select) {
+    appearance: base-select;
+  }
+
+  .pm-view-menu {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding-inline: 0.625rem 0.5rem;
+  }
+
+  .pm-view-menu:hover {
+    background: var(--pm-color-sunk);
+  }
+
+  .pm-view-menu::picker-icon {
+    content: '';
+    width: 0.875rem;
+    height: 0.875rem;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: rotate 0.15s;
+  }
+
+  .pm-view-menu:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  .pm-view-menu::picker(select) {
+    margin-block: 6px;
+    padding: var(--pm-space-1);
+    border: 1px solid var(--pm-color-line);
+    border-radius: var(--pm-radius-control);
+    background: var(--pm-color-surface);
+    color: var(--pm-color-ink);
+    box-shadow: var(--pm-shadow-float);
+  }
+
+  .pm-view-menu option {
+    gap: var(--pm-space-2);
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--pm-radius-small);
+    font-family: var(--pm-font-sans);
+    font-size: var(--pm-text-sm);
+    cursor: pointer;
+  }
+
+  .pm-view-menu option:hover,
+  .pm-view-menu option:focus-visible {
+    background: var(--pm-color-sunk);
+    outline: none;
+  }
+
+  .pm-view-menu option:checked {
+    color: var(--pm-color-accent);
+    font-weight: 600;
+  }
 }
 
 /* The view menu and plugins' toolbar items (@presmium/host): in the navigation bar, on phones in the navigation screen. */
