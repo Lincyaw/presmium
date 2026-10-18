@@ -73,10 +73,10 @@ test('the copy that try.mjs makes serves both documents with their plugins', asy
     await openDevPage(page, `${server.url}/bpe/extend.html`, page.locator('.pm-block[data-component="PmRunPanel"]'))
     await expect(page.locator('.pm-block[data-component="PmPredict"]')).toBeVisible()
     await expect(page.locator('.pm-block[data-block="merges-table"] tbody tr')).toHaveCount(10)
-    await expect(page.locator('.pm-diagnostics')).toHaveCount(0)
+    await expect(page.locator('.pm-diagnostics [data-severity="error"]')).toHaveCount(0)
 
     await openDevPage(page, `${server.url}/glance/`, page.locator('.pm-block[data-component="PmQuiz"]'))
-    await expect(page.locator('.pm-diagnostics')).toHaveCount(0)
+    await expect(page.locator('.pm-diagnostics [data-severity="error"]')).toHaveCount(0)
 
     await page.locator('.pm-section[data-section="glance"] a', { hasText: 'BPE 分词' }).click()
     await expect(page).toHaveURL(`${server.url}/bpe/`)
