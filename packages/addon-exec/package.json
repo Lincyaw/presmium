@@ -1,24 +1,42 @@
 {
   "name": "@presmium/slidev-addon-exec",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Browser execution (P-20, P-21, P-23, P-24)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: run panels for code, step-by-step execution and recorded outputs; Python in the browser with Pyodide",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-exec"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-exec#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "LICENSES",
+    "components",
+    "setup",
+    "src"
+  ],
   "slidev": {},
   "dependencies": {
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@slidev/types": "53.0.0",
     "diff": "^9.0.0",
     "dompurify": "3.4.17",
     "pyodide": "^314.0.7",
@@ -26,9 +44,14 @@
     "vue": "^3.5.42",
     "yaml": "^2.9.1"
   },
+  "peerDependencies": {
+    "@presmium/host": "workspace:^",
+    "@presmium/kernel": "workspace:^"
+  },
   "devDependencies": {
     "@presmium/cli": "workspace:*",
-    "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0"
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@slidev/client": "53.0.0"
   }
 }

@@ -1,0 +1,26 @@
+{
+  "name": "presmium-plugin-hello",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A third-party Presmium plugin for the consumer install (P-141): a directive and a component of both forms",
+  "license": "Apache-2.0",
+  "type": "module",
+  "keywords": [
+    "presmium",
+    "slidev-addon"
+  ],
+  "exports": {
+    "./presmium": "./src/node/presmium.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "components",
+    "src"
+  ],
+  "slidev": {},
+  "peerDependencies": {
+    "@presmium/host": "^1.0.0-rc.0",
+    "@presmium/kernel": "^1.0.0-rc.0",
+    "vue": "^3.5.0"
+  }
+}

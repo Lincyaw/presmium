@@ -1,14 +1,27 @@
 {
   "name": "@presmium/slidev-addon-lecture",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Lecture tracks: recording, playback, scripted lectures with speech, the lecture renderer and video export (P-90, P-130 to P-135, P-137)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: lecture tracks: recording, playback, scripted lectures with speech, and video export (presmium-lecture)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-lecture"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-lecture#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "presmium-lecture": "./bin/presmium-lecture.mjs"
   },
@@ -17,30 +30,37 @@
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "bin",
+    "src"
+  ],
   "slidev": {},
   "dependencies": {
     "@noble/hashes": "2.4.0",
-    "@presmium/compiler": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
     "jiti": "^2.7.0",
     "mdast-util-from-markdown": "2.1.0",
     "mediabunny": "1.61.3",
     "vue": "^3.5.42"
   },
-  "devDependencies": {
-    "@agentclientprotocol/sdk": "1.8.0",
-    "@modelcontextprotocol/client": "2.3.1",
-    "@presmium/cli": "workspace:*",
-    "@presmium/viewer": "workspace:*",
-    "playwright-chromium": "1.64.1"
-  },
   "peerDependencies": {
+    "@presmium/compiler": "workspace:^",
+    "@presmium/host": "workspace:^",
+    "@presmium/kernel": "workspace:^",
     "playwright-chromium": "^1.40.0"
   },
   "peerDependenciesMeta": {
     "playwright-chromium": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "@agentclientprotocol/sdk": "1.8.0",
+    "@modelcontextprotocol/client": "2.3.1",
+    "@presmium/cli": "workspace:*",
+    "@presmium/compiler": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/viewer": "workspace:*",
+    "playwright-chromium": "1.64.1"
   }
 }

@@ -1,29 +1,51 @@
 {
   "name": "@presmium/slidev-addon-classroom",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Classroom features (P-63..P-68)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: classroom features: anchored notes, quizzes, checked exercises, questions, feedback, and predict-then-reveal",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-classroom"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-classroom#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "components",
+    "setup",
+    "src"
+  ],
   "slidev": {},
   "dependencies": {
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@slidev/types": "53.0.0",
     "vue": "^3.5.42"
+  },
+  "peerDependencies": {
+    "@presmium/host": "workspace:^",
+    "@presmium/kernel": "workspace:^"
   },
   "devDependencies": {
     "@presmium/cli": "workspace:*",
-    "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0"
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@slidev/client": "53.0.0"
   }
 }

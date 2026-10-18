@@ -1,15 +1,37 @@
 {
   "name": "@presmium/workspace",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's workspace service (presmium serve): documents, editing in the browser, revision history and the workspace site",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/workspace"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/workspace#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "workspace",
+    "editor"
+  ],
   "type": "module",
-  "description": "Workspace service presmium serve: documents, revision history (REVISIONS), edit mode, the workspace site; workspace builds",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/plugin.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "src",
+    "vite.config.ts"
+  ],
   "dependencies": {
     "@codemirror/commands": "6.11.1",
     "@codemirror/lang-markdown": "6.5.2",

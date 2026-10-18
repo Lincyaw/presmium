@@ -1,10 +1,15 @@
-/** Runs the VitePress command line, the documented interface of VitePress. */
+/**
+ * Runs the VitePress command line, the documented interface of VitePress, in
+ * a process that loads Presmium's TypeScript also when it is installed under
+ * node_modules (`TYPESCRIPT_IMPORT`): the site's config imports it.
+ */
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
+import { TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
 import type { DevMessage } from './vite.ts'
 
 function bin(): string {
@@ -20,7 +25,7 @@ function bin(): string {
  */
 export function vitepressBuild(root: string, outDir: string): Promise<number> {
   return new Promise((done) => {
-    const child = spawn(process.execPath, [bin(), 'build', root, '--outDir', outDir], { stdio: ['ignore', 2, 2] })
+    const child = spawn(process.execPath, [...TYPESCRIPT_IMPORT, bin(), 'build', root, '--outDir', outDir], { stdio: ['ignore', 2, 2] })
     child.on('exit', code => done(code ?? 1))
     child.on('error', () => done(1))
   })
@@ -51,7 +56,7 @@ export interface DevProcess {
  */
 export async function vitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void, options: { host?: string, signal?: AbortSignal } = {}): Promise<DevProcess> {
   const listen = port === 0 ? await freePort(options.host ?? '127.0.0.1') : port
-  const args = [bin(), 'dev', root, ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
+  const args = [...TYPESCRIPT_IMPORT, bin(), 'dev', root, ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
   const child: ChildProcess = spawn(process.execPath, args, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const stop = () => {

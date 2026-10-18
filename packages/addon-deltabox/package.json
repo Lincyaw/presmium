@@ -1,19 +1,40 @@
 {
   "name": "@presmium/slidev-addon-deltabox",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Change review and process sandbox through deltabox (D12, D13); an operator plugin installed with the CLI",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: change review and a process sandbox through deltabox; installed with the CLI",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-deltabox"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-deltabox#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "src"
+  ],
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
     "deltabox-lite": "0.1.1",
     "jiti": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@presmium/kernel": "workspace:^"
+  },
+  "devDependencies": {
+    "@presmium/kernel": "workspace:*"
   }
 }

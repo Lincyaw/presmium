@@ -90,20 +90,24 @@ const plugin: PresmiumNodePlugin = {
 | 命令 | 作用 |
 |---|---|
 | `pnpm install` | 安装依赖；加包、改依赖或合并后锁文件冲突时运行 |
-| `pnpm test` | 分层检查、技能检查（`scripts/check-skills.mjs`）、插件声明检查（`scripts/check-plugins.mjs`）与 Vitest 集成测试（`packages/<pkg>/test/`） |
+| `pnpm test` | 分层检查、技能检查（`scripts/check-skills.mjs`）、插件声明检查（`scripts/check-plugins.mjs`）、包的发布检查（`scripts/check-packages.mjs`）与 Vitest 集成测试（`packages/<pkg>/test/`，其中有消费者安装测试 `packages/cli/test/consumer.test.ts`） |
 | `pnpm demo:check`、`pnpm demo:build`、`pnpm demo:ir` | 示例文稿的 `presmium check`、`presmium build`（产物在 `examples/demo/dist/<渲染端>/`）、`presmium ir` |
 | `pnpm e2e` | Playwright 端到端测试（先 `pnpm demo:build`）；`PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口，`PRESMIUM_E2E_BROWSERS` 指定冒烟用例的其他浏览器（默认 `firefox,webkit`，未安装或无法启动的跳过并提示） |
 | `pnpm exec playwright test e2e/perf.spec.ts --no-deps` | 单独运行性能用例 |
 | `pnpm verify` | 以上全部 |
 | `pnpm docs:fetch` | 拉取框架文档到 `vendor/docs/slidev`、`vendor/docs/vitepress`（`vendor/` 不入库） |
+| `pnpm changeset` | 为改动了公开包的提交写变更记录（`.changeset/`；发布流程见 `.changeset/README.md`） |
+| `pnpm release:check` | `pnpm -r publish --dry-run --no-git-checks`：按发布的样子打包每个公开的包，不上传 |
+| `pnpm consumer [<目录>]` | 在单仓之外做一个消费者项目：打包全部公开的包，用 npm 从压缩包安装，带上 `e2e/fixtures/consumer` 的文稿与第三方插件（`scripts/consumer.ts`） |
 
-`pnpm test` 中的 `scripts/check-skills.mjs` 检查：`.claude/skills` 是指向 `../.agents/skills` 的软链接、`AGENTS.md` 是指向 `CLAUDE.md` 的软链接；每个技能的 frontmatter（`name` 与目录同名、`description` 非空）；编译器内置指令与各包 `./presmium` 入口声明的指令在 `presmium-author/references/directives.md` 中各有一个参考小节标题（`` ### `{名字}` ``，只在示例中出现不算）；技能中出现的 `presmium <命令>` 及其选项是 CLI 真有的。改了指令或 CLI 后同步更新技能。`scripts/check-plugins.mjs` 检查每个导出 `./presmium` 的包都声明了 `version`（与 `package.json` 一致）和当前内核满足的 `kernel` 范围。
+`pnpm test` 中的 `scripts/check-skills.mjs` 检查：`.claude/skills` 是指向 `../.agents/skills` 的软链接、`AGENTS.md` 是指向 `CLAUDE.md` 的软链接；每个技能的 frontmatter（`name` 与目录同名、`description` 非空）；编译器内置指令与各包 `./presmium` 入口声明的指令在 `presmium-author/references/directives.md` 中各有一个参考小节标题（`` ### `{名字}` ``，只在示例中出现不算）；技能中出现的 `presmium <命令>` 及其选项是 CLI 真有的。改了指令或 CLI 后同步更新技能。`scripts/check-plugins.mjs` 检查每个导出 `./presmium` 的包都声明了 `version`（与 `package.json` 一致）和当前内核满足的 `kernel` 范围。`scripts/check-packages.mjs` 检查每个工作区包都在 `.changeset/README.md` 的表中（公开或私有）；公开的包有 Apache-2.0 的 `license` 与包内 `LICENSE`（根目录的副本）、同一个版本（changesets 的固定组）、根目录的 `engines.node`、完整的元数据与 `publishConfig.access: public`，`files` 存在并包含 `exports`、`bin` 指向的文件；插件对 `@presmium/kernel`、`host`、`viewer`、`compiler` 的依赖是对等依赖 `workspace:^`（另在 `devDependencies` 写 `workspace:*`）。
 
 ## 8. 依赖与源码
 
 - 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用 Slidev 或 VitePress 的内部路径。查框架接口先读 `vendor/docs/slidev`、`vendor/docs/vitepress`（缺失时 `pnpm docs:fetch`），不读框架的编译产物。仍在使用的未文档化接口及守护它们的用例列在 `docs/architecture.md` 9.1 节，升级框架前先跑这些用例。
 - 版本固定：Slidev 53.0.0、VitePress 1.6.4，由 `pnpm-lock.yaml` 锁定。不引入 AGPL 依赖；跨设备功能只用课堂的同步通道。
-- 源码以 `.ts`、`.vue` 直接发布，不预编译（CLI 通过 jiti 加载）；相对导入写 `.ts` 扩展名。只有 `vscode` 预打包。
+- 源码以 `.ts`、`.vue` 直接发布，不预编译（CLI 通过 jiti 加载）；相对导入写 `.ts` 扩展名，只用可擦除的语法（`erasableSyntaxOnly`）。只有 `vscode` 预打包。从 npm 安装时包在 `node_modules` 中：Node 不去掉那里的类型标注，渲染端以 `@presmium/kernel/node` 的 `TYPESCRIPT_IMPORT` 启动 VitePress 与 Slidev（它们加载配置时导入插件的 TypeScript）；Vite 不预构建 `node_modules` 中的包自己的依赖，两种形态（工作区站点的首页也是）的配置由 `preBundle` 列出这些包的浏览器代码导入的依赖（`optimizeDeps.include`，从网页与幻灯片的渲染端和插件的包目录出发，跟随其中导入的 Presmium 包），并把这些包链接进 Vite 项目的 `node_modules`：`presmium serve` 的站点在它的状态目录中、`presmium dev --out` 可以在任何地方，Vite 从项目的根目录找这些包。消费者安装测试（`packages/cli/test/consumer.test.ts`、`e2e/consumer.spec.ts`，含 `serve` 与输出在项目之外的 `dev`）守护这两点。
+- 发布（P-140、P-141）：公开的包以 Apache-2.0 发布到 npm 的 `@presmium`，版本由 changesets 管理（固定组，1.0 的预发布标签 `rc`）；哪些包公开、哪些私有、发布步骤见 `.changeset/README.md`。新增的包加进那张表，带上根目录 `LICENSE` 的副本与 `files`；插件对 Presmium 的依赖写成对等依赖（加载器在对等依赖不满足时报告并不加载插件，`presmium.plugins`）。改动了公开包时运行 `pnpm changeset`。
 - 界面文本：每个包维护自己的 zh-CN 与 en 文本（位置自定，如 `src/domain/messages.ts`）。浏览器端一律经 `@presmium/host`：组件中 `useMessages(CATALOG)`，组件外 `CATALOG[currentLocale()]`；不要自己判断语言或观察 `<html lang>`。编译时写入产物的文本用指令、编译步骤、渲染上下文的 `lang` 与 `deckLocale(lang)`（`@presmium/kernel`）。
 
 ## 9. 提交

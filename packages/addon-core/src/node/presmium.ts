@@ -1,6 +1,9 @@
+import { createRequire } from 'node:module'
 import type { IRPass, PresmiumNodePlugin } from '@presmium/kernel'
 import { backSection, stepKeys } from '@presmium/viewer/domain'
 import { BACK_KEY, SECTION_KEY, STEPS_KEY } from '../domain/index.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 /** The slides form's renderer, whose view of a section gives its slide's clicks. */
 const SLIDES = 'slides'
@@ -32,6 +35,6 @@ const slideSectionsPass: IRPass = {
 }
 
 /** The host adapter adds no resolvers, checks or Markdown transforms; its one pass names the slides' places. */
-const plugin: PresmiumNodePlugin = { id: 'presmium.core', version: '0.1.0', kernel: '^0.1.0', passes: [slideSectionsPass] }
+const plugin: PresmiumNodePlugin = { id: 'presmium.core', version, kernel: '^0.1.0', passes: [slideSectionsPass] }
 
 export default plugin

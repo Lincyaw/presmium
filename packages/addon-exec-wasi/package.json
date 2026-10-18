@@ -1,30 +1,52 @@
 {
   "name": "@presmium/slidev-addon-exec-wasi",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "WebAssembly execution: C, C++, Ruby and SQLite programs in the browser and at compile time, on the same WASI binaries (P-103)",
+  "version": "1.0.0-rc.0",
+  "description": "Presmium plugin: run C, C++, Ruby and SQLite programs in WebAssembly, in the browser and at build time",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/addon-exec-wasi"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/addon-exec-wasi#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
   "keywords": [
     "slidev-addon",
     "slidev",
     "presmium"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./domain": "./src/domain/index.ts",
     "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "LICENSES",
+    "setup",
+    "src"
+  ],
   "slidev": {},
   "dependencies": {
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
     "@runno/sandbox": "0.10.2",
-    "@runno/wasi": "0.10.0"
+    "@runno/wasi": "0.10.0",
+    "@slidev/types": "53.0.0"
+  },
+  "peerDependencies": {
+    "@presmium/host": "workspace:^",
+    "@presmium/kernel": "workspace:^"
   },
   "devDependencies": {
     "@presmium/cli": "workspace:*",
-    "@presmium/render-notebook": "workspace:*",
-    "@slidev/types": "53.0.0"
+    "@presmium/host": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/render-notebook": "workspace:*"
   }
 }

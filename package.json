@@ -1,26 +1,35 @@
 {
   "name": "presmium-monorepo",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git"
+  },
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "engines": {
     "node": ">=22.19"
   },
   "scripts": {
-    "test": "node scripts/check-layering.mjs && node scripts/check-skills.mjs && node scripts/check-plugins.mjs && vitest run --passWithNoTests",
+    "test": "node scripts/check-layering.mjs && node scripts/check-skills.mjs && node scripts/check-plugins.mjs && node scripts/check-packages.mjs && vitest run --passWithNoTests",
     "demo:build": "pnpm --filter presmium-demo build",
     "demo:check": "pnpm --filter presmium-demo check",
     "demo:ir": "pnpm --filter presmium-demo ir",
     "e2e": "playwright test",
     "verify": "pnpm test && pnpm demo:check && pnpm demo:build && pnpm e2e",
-    "docs:fetch": "./scripts/fetch-docs.sh"
+    "docs:fetch": "./scripts/fetch-docs.sh",
+    "changeset": "changeset",
+    "release:check": "pnpm -r publish --dry-run --no-git-checks",
+    "consumer": "node scripts/consumer.ts"
   },
   "devDependencies": {
+    "@changesets/cli": "3.0.3",
     "@playwright/test": "1.64.1",
     "@types/node": "^22.19.0",
+    "@vitejs/plugin-vue": "^6.0.9",
     "sirv-cli": "^3.0.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.0.0",
-    "@vitejs/plugin-vue": "^6.0.9"
+    "vitest": "^4.0.0"
   }
 }

@@ -1,9 +1,37 @@
 {
   "name": "@presmium/classroom-server",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's classroom sync server: y-websocket rooms",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/classroom-server"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/classroom-server#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "yjs",
+    "classroom"
+  ],
   "type": "module",
-  "description": "y-websocket room server",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "presmium-classroom-server": "./bin/server.mjs"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
   "scripts": {
     "start": "node bin/server.mjs"
   },
@@ -14,12 +42,6 @@
     "ws": "^8.22.0",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.33"
-  },
-  "bin": {
-    "presmium-classroom-server": "./bin/server.mjs"
-  },
-  "exports": {
-    ".": "./src/index.ts"
   },
   "devDependencies": {
     "@types/ws": "^8.18.2",

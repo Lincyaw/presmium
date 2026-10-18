@@ -1,0 +1,97 @@
+# P-146: on every push to main and every pull request, the structure checks and integration tests
+# (`pnpm test`, the consumer install among them), the demo's check and build, the end-to-end tests in
+# Chromium and a dry run of the release. Every night, and when started by hand, the full suite
+# (`pnpm verify`): the smoke tests in Firefox and WebKit too, and the timing tests.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # The ports of the demo's two forms in the end-to-end tests (e2e/urls.ts).
+  PRESMIUM_E2E_SLIDES_PORT: '4173'
+  PRESMIUM_E2E_WEB_PORT: '4174'
+
+jobs:
+  test:
+    name: Tests, demo and Chromium end-to-end
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The code references of the demo and the tests read the repository's history.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python for compile-time execution and the notebook tests
+        run: python -m pip install nbformat nbclient ipykernel
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test
+      - run: pnpm demo:check
+      - run: pnpm demo:build
+      - name: End-to-end tests in Chromium
+        run: pnpm exec playwright test --project chromium
+        env:
+          PRESMIUM_E2E_BROWSERS: ''
+      - name: Release dry run (pnpm -r publish --dry-run)
+        run: pnpm release:check
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+  full:
+    name: Full suite (pnpm verify)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python for compile-time execution and the notebook tests
+        run: python -m pip install nbformat nbclient ipykernel
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: pnpm verify (tests, demo, every end-to-end test, the smoke tests in Firefox and WebKit, timings)
+        run: pnpm verify
+        env:
+          PRESMIUM_E2E_BROWSERS: firefox,webkit
+      - run: pnpm release:check
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-full
+          path: test-results/
+          retention-days: 7

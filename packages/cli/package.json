@@ -1,16 +1,27 @@
 {
   "name": "@presmium/cli",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "The presmium command: build, dev, ir, check and serve for Presmium documents",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/cli#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "cli",
+    "myst",
+    "slides"
+  ],
   "type": "module",
-  "description": "presmium build | dev | ir | check | serve",
-  "dependencies": {
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/server": "workspace:*",
-    "@presmium/slidev-addon-deltabox": "workspace:*",
-    "@presmium/workspace": "workspace:*",
-    "jiti": "^2.7.0"
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "bin": {
     "presmium": "./bin/presmium.mjs"
@@ -18,5 +29,17 @@
   "exports": {
     ".": "./src/index.ts",
     "./testing": "./src/testing.ts"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "dependencies": {
+    "@presmium/compiler": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/server": "workspace:*",
+    "@presmium/slidev-addon-deltabox": "workspace:*",
+    "@presmium/workspace": "workspace:*",
+    "jiti": "^2.7.0"
   }
 }

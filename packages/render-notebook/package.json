@@ -1,28 +1,51 @@
 {
   "name": "@presmium/render-notebook",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0-rc.0",
+  "description": "Presmium's notebook renderer: writes the IR as a Jupyter notebook (nbformat 4)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/render-notebook"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/render-notebook#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "jupyter",
+    "notebook",
+    "renderer"
+  ],
   "type": "module",
-  "description": "Notebook renderer: IR to Jupyter .ipynb (nbformat 4)",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     "./presmium": "./src/node/presmium.ts",
     "./package.json": "./package.json"
   },
+  "files": [
+    "src"
+  ],
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
     "myst-to-md": "^1.0.17",
     "vfile": "^5.3.7"
   },
-  "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/web": "workspace:*"
-  },
   "peerDependencies": {
-    "@presmium/web": "workspace:*"
+    "@presmium/kernel": "workspace:^",
+    "@presmium/web": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@presmium/web": {
       "optional": true
     }
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/web": "workspace:*"
   }
 }

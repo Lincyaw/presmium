@@ -3,6 +3,7 @@ import { readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Compiler, DECK_ENTRY, prepare, viewFor } from '@presmium/compiler'
 import type { Compilation } from '@presmium/compiler'
+import { TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
 import { exportedSlides, missingSlides, parseRange } from '../domain/index.ts'
 import { run } from './process.ts'
 
@@ -120,7 +121,9 @@ export async function slidevExport(deck: SlidesDeck, job: SlidevExport): Promise
   if (job.dark) args.push('--dark')
   // The images of an earlier export would stay beside the new ones.
   if (job.format === 'png') await Promise.all((await images(job.output)).map(file => rm(join(job.output, file))))
-  await run(deck.dir, 'slidev', args, job.env)
+  // Slidev imports the deck's Vite plugins, Presmium's TypeScript under node_modules as installed from npm (TYPESCRIPT_IMPORT).
+  const nodeOptions = [job.env?.NODE_OPTIONS ?? process.env.NODE_OPTIONS, ...TYPESCRIPT_IMPORT].filter(Boolean).join(' ')
+  await run(deck.dir, 'slidev', args, { ...job.env, NODE_OPTIONS: nodeOptions })
   if (job.format === 'pdf') return []
 
   // Slidev exports the images of the slides of the range only.
