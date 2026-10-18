@@ -20,7 +20,7 @@
 | 端到端 | `pnpm e2e` | Playwright；先 `pnpm demo:build` |
 | 全部 | `pnpm verify` | 以上依次执行 |
 
-消费者安装（P-141）：`scripts/consumer.ts` 的 `consumerProject` 用 pnpm 打包全部公开的包、用 npm 打包 `e2e/fixtures/consumer/plugin`（第三方插件），在系统临时目录中用 npm 从压缩包安装（第一次要从 npm 下载依赖，之后用 npm 的缓存），复制 `e2e/fixtures/consumer/deck` 的文稿；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、`build`（三种形态）、`dev` 与不兼容插件的诊断，`e2e/consumer.spec.ts` 在浏览器中看插件的组件。两者各装一次，约一两分钟。开发服务器的端口写在项目的 `renderers.<id>.port` 中（被占用时取下一个空闲端口）。
+消费者安装（P-141）：`scripts/consumer.ts` 的 `consumerProject` 用 pnpm 打包全部公开的包、用 npm 打包 `e2e/fixtures/consumer/plugin`（第三方插件），在系统临时目录中用 npm 从压缩包安装（第一次要从 npm 下载依赖，之后用 npm 的缓存），复制 `e2e/fixtures/consumer/deck` 的文稿；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、`build`（三种形态）、`dev`、工作区的 `serve`（`XDG_CACHE_HOME` 指向项目之外的临时目录，站点因而在项目之外）与不兼容插件的诊断，`e2e/consumer.spec.ts` 在浏览器中看插件的组件（构建的两种形态、输出在项目之外的 `dev`、`serve` 的首页与文档）。两者各装一次，约一两分钟。开发服务器的端口写在项目的 `renderers.<id>.port` 中（被占用时取下一个空闲端口）。
 
 只跑一个文件：`pnpm exec vitest run packages/addon-code/test/check.test.ts`、`pnpm exec playwright test e2e/guide.spec.ts --project chromium`；只跑一个项目：`pnpm exec vitest run --project export`。
 

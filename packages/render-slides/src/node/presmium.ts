@@ -9,23 +9,23 @@
  */
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { copyFile, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { errorMessage, irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { IRDocument, LocalAsset, MdastNode, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
-import { copyPublished, FONT_LICENSE, fontLicense, installedDependencies, TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
-import { hasExtension, slidevMarkdown } from './slidev.ts'
+import { copyPublished, FONT_LICENSE, fontLicense, preBundle, TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
+import { addonDirs, hasExtension, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
 /** Directory of the generated Slidev deck, relative to the deck directory. */
 export const SLIDEV_DIR = '.presmium/slides'
 
 const STYLE = fileURLToPath(new URL('../deck/style.css', import.meta.url))
-/** The packages whose browser code the slides load, besides the deck's plugins (addons). */
-const BROWSER_PACKAGES = ['@presmium/web', '@presmium/viewer', '@presmium/host', '@presmium/kernel']
+/** This package, whose default theme the slides load. */
+const PACKAGE_DIR = fileURLToPath(new URL('../..', import.meta.url))
 const require = createRequire(import.meta.url)
 const { version } = require('../../package.json') as { version: string }
 
@@ -126,8 +126,9 @@ function base(ctx: RenderContext): string[] {
 async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc: IRDocument): Promise<void> {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '*\n')
-  const include = installedDependencies([...BROWSER_PACKAGES, ...doc.config.plugins], dir)
-  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium), include))
+  const packages = [PACKAGE_DIR, ...addonDirs(doc, ctx)]
+  const include = preBundle(dir, packages)
+  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium), include, allowed(ctx, packages)))
   await copyFile(STYLE, join(dir, 'style.css'))
   await rm(join(dir, 'public'), { recursive: true, force: true })
   await mkdir(join(dir, 'public'))
@@ -184,20 +185,37 @@ async function vitePluginEntries(ctx: RenderContext, presmium: Record<string, un
 }
 
 /**
+ * What the dev server may serve besides Slidev's own roots (`server.fs.allow`):
+ * the deck (its linked `components/`), and the node_modules directories where
+ * the theme and the addons are installed, as from npm, with what they import
+ * (the fonts of @presmium/host). Slidev allows the project of the generated
+ * deck, which `presmium dev --out` may put outside the deck's project.
+ */
+function allowed(ctx: RenderContext, packages: string[]): string[] {
+  const installed = packages.flatMap((dir) => {
+    const parts = realpathSync(dir).split(sep)
+    const at = parts.indexOf('node_modules')
+    return at < 0 ? [] : [parts.slice(0, at + 1).join(sep)]
+  })
+  return [...new Set([ctx.deckDir, ...installed])]
+}
+
+/**
  * The generated deck's `vite.config.ts` (Slidev merges it with its own,
  * vendor/docs/slidev/custom/config-vite.md): a Vite cache of its own; the
  * Vite plugins of the deck's plugins (`vitePlugins` of their Node entries,
  * with their configuration), the one way a plugin adds Vite plugins to
  * either form; and, in `presmium dev`, the paths of `/__presmium/` proxied
- * to the Presmium server, WebSockets too (docs/architecture.md 10.1); for the
- * Presmium packages installed under node_modules, as from npm, the browser
- * dependencies the dev server pre-bundles (`installedDependencies`).
+ * to the Presmium server, WebSockets too (docs/architecture.md 10.1), and
+ * the directories it may serve (`allow`); for the Presmium packages
+ * installed under node_modules, as from npm, the browser dependencies the
+ * dev server pre-bundles (`preBundle`).
  */
-function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[], include: string[]): string {
+function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[], include: string[], allow: string[]): string {
   const imports = entries.map(({ file }, i) => `import plugin${i} from ${JSON.stringify(file)}\n`).join('')
   const deck = JSON.stringify({ deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot })
   const plugins = entries.map(({ config }, i) => `    ...(plugin${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(config)} }) ?? []),\n`).join('')
-  const proxy = ctx.server ? `  server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } } },\n` : ''
+  const proxy = ctx.server ? `  server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } }, fs: { allow: ${JSON.stringify(allow)} } },\n` : ''
   const optimize = include.length > 0 ? `  optimizeDeps: { include: ${JSON.stringify(include)} },\n` : ''
   return `${imports}\nconst deck = ${deck}\n\nexport default {\n  cacheDir: 'node_modules/.vite',\n  plugins: [\n${plugins}  ],\n${proxy}${optimize}}\n`
 }

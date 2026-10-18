@@ -36,6 +36,7 @@
   "slidev": {},
   "dependencies": {
     "@jupyterlab/services": "7.6.4",
+    "@slidev/types": "53.0.0",
     "@xterm/addon-fit": "0.11.0",
     "@xterm/xterm": "6.0.0",
     "dompurify": "3.4.17",
@@ -51,7 +52,6 @@
     "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
     "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0",
     "@types/ws": "8.18.2"
   }
 }

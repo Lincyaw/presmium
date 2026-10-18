@@ -41,6 +41,7 @@
   ],
   "slidev": {},
   "dependencies": {
+    "@slidev/types": "53.0.0",
     "jiti": "^2.7.0",
     "pdf-lib": "^1.17.1",
     "pixelmatch": "^8.0.0",
@@ -65,7 +66,6 @@
     "@slidev/cli": "53.0.0",
     "@slidev/client": "53.0.0",
     "@slidev/theme-default": "^0.25.0",
-    "@slidev/types": "53.0.0",
     "@types/pngjs": "^6.0.5",
     "pdfjs-dist": "5.7.284",
     "playwright-chromium": "1.64.1"

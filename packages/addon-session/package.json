@@ -36,6 +36,7 @@
   "slidev": {},
   "dependencies": {
     "@presmium/classroom-server": "workspace:*",
+    "@slidev/types": "53.0.0",
     "uqr": "^0.1.3",
     "vue": "^3.5.42",
     "y-websocket": "^3.1.0",
@@ -49,7 +50,6 @@
     "@presmium/cli": "workspace:*",
     "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
-    "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0"
+    "@slidev/client": "53.0.0"
   }
 }

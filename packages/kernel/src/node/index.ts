@@ -3,9 +3,10 @@
  * compiler and the hosts share that needs Node's own modules; the browser
  * never loads it (scripts/check-layering.mjs).
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync } from 'node:fs'
 import { createRequire, findPackageJSON } from 'node:module'
-import { dirname, join, resolve, sep } from 'node:path'
+import { dirname, join, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { LocalAsset } from '../ir.ts'
 
 /**
@@ -26,19 +27,31 @@ export function copyPublished(found: LocalAsset, dir: string): string {
 export const FONT_LICENSE = 'presmium/fonts/LICENSE'
 
 /**
+ * Each face's copyright, as NOTICE gives it, by Fontsource package: the
+ * license file of @fontsource/source-serif-4 names "Google Inc." only.
+ */
+const FONT_COPYRIGHTS: Record<string, string> = {
+  '@fontsource/ibm-plex-mono': 'IBM Plex Mono: Copyright 2017 IBM Corp. All rights reserved.',
+  '@fontsource/ibm-plex-sans': 'IBM Plex Sans: Copyright 2019 IBM Corp. All rights reserved.',
+  '@fontsource/source-serif-4': 'Source Serif 4: Copyright 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name \'Source\'.',
+}
+
+/**
  * The license of the faces @presmium/host bundles into every site (SIL Open
- * Font License 1.1, with each face's copyright, NOTICE): the license files of
- * the Fontsource packages it depends on, found from `from` (a renderer's
- * module), one after the other.
+ * Font License 1.1, NOTICE): for each Fontsource package it depends on, found
+ * from `from` (a renderer's module), the face's copyright and the package's
+ * license file, one after the other.
  */
 export function fontLicense(from: string | URL): string {
   const manifest = findPackageJSON('@presmium/host', from)
   if (!manifest) throw new Error('@presmium/host is not installed')
   const { dependencies = {} } = JSON.parse(readFileSync(manifest, 'utf8')) as { dependencies?: Record<string, string> }
   const require = createRequire(manifest)
-  const files = Object.keys(dependencies).filter(name => name.startsWith('@fontsource/')).sort()
-    .map(name => `${name}\n\n${readFileSync(require.resolve(`${name}/LICENSE`), 'utf8').trim()}\n`)
-  return [`The fonts of this site, from Fontsource, with their licenses (SIL Open Font License 1.1).\n`, ...files].join(`\n${'='.repeat(78)}\n\n`)
+  const files = Object.keys(dependencies).filter(name => name.startsWith('@fontsource/')).sort().map((name) => {
+    const copyright = FONT_COPYRIGHTS[name] ? `${FONT_COPYRIGHTS[name]}\n\n` : ''
+    return `${name}\n\n${copyright}${readFileSync(require.resolve(`${name}/LICENSE`), 'utf8').trim()}\n`
+  })
+  return [`The fonts of this site, from Fontsource, with their copyrights and licenses (SIL Open Font License 1.1).\n`, ...files].join(`\n${'='.repeat(78)}\n\n`)
 }
 
 /**
@@ -49,8 +62,10 @@ export function fontLicense(from: string | URL): string {
  */
 export const TYPESCRIPT_IMPORT: readonly string[] = ['--import', new URL('./strip-types.mjs', import.meta.url).href]
 
-/** Packages a framework provides itself (one Vue for the page) or that are Presmium's own: never pre-bundled through a plugin. */
-const PROVIDED = /^(?:vue|@vue\/.*|vitepress|@slidev\/.*|@presmium\/.*)$/
+/** Packages a framework provides itself (one Vue for the page): never pre-bundled through a plugin. */
+const PROVIDED = /^(?:vue|@vue\/.*|vitepress|@slidev\/.*)$/
+/** Presmium's packages: followed into, never pre-bundled. */
+const PRESMIUM = /^@presmium\//
 /** A module's static and dynamic imports of packages, type-only imports aside. */
 const IMPORT = /(?:^|\n)\s*(?:import|export)(?!\s+type\b)[^'"`;]*?\bfrom\s*['"]([^'"./][^'"]*)['"]|(?:^|\n)\s*import\s*['"]([^'"./][^'"]*)['"]|\bimport\(\s*['"]([^'"./][^'"]*)['"]\s*\)/g
 const SOURCE = /\.(?:[cm]?[jt]s|vue)$/
@@ -60,48 +75,84 @@ const STYLE = /\.(?:css|scss|sass|less|styl)$/
 const NOT_BROWSER = new Set(['node', 'bin', 'test', 'fixtures', 'node_modules'])
 
 /**
- * What a Vite dev server pre-bundles for Presmium's packages and plugins that
- * are installed under node_modules, as from npm (`optimizeDeps.include`,
- * P-141). Vite does not look into the imports of a dependency, and such a
- * package is one: the CommonJS packages its browser code imports (semver;
- * debug, under micromark) would reach the browser unconverted. For each
- * package of `names` found from `root` in a node_modules directory, the
- * imports of its browser files (all but `node/`, `bin/` and tests) that name
- * one of its own `dependencies`, in Vite's nested form `<package> > <import>`.
- * A package linked from Presmium's workspace is a source that Vite scans
- * itself, and a plugin named by its path is not found: none for them.
+ * Prepares a Vite dev server whose project lies in `root` for the packages
+ * installed under node_modules, as from npm, whose browser code it loads
+ * (P-141), and returns what it pre-bundles (`optimizeDeps.include`). Vite
+ * does not look into the imports of a dependency, and such a package is
+ * one: the CommonJS packages its browser code imports (semver; debug, under
+ * micromark) would reach the browser unconverted. `packages` are the
+ * directories of the packages the pages load (the renderer's own, the
+ * deck's plugins); the Presmium packages their browser code imports come
+ * with them. For each one under node_modules, the imports of its browser
+ * files (all but `node/`, `bin/` and tests) that name one of its own
+ * dependencies, in Vite's nested form `<package> > <import>`. Vite finds
+ * `<package>` from `root`, which may lie outside the project (`presmium
+ * serve` keeps its sites in its state directory, `presmium dev --out`
+ * anywhere): each such package is linked into `root/node_modules`. A
+ * package linked from Presmium's workspace is a source that Vite scans
+ * itself, and so is a deck's own directory: nothing for them.
  */
-export function installedDependencies(names: Iterable<string>, root: string): string[] {
+export function preBundle(root: string, packages: Iterable<string>): string[] {
   const include = new Set<string>()
-  for (const name of names) {
-    const dir = name.startsWith('.') || name.startsWith('/') ? undefined : installedDir(name, root)
-    if (dir) for (const specifier of dependencyImports(dir)) include.add(`${name} > ${specifier}`)
+  const seen = new Set<string>()
+  const visit = (dir: string): void => {
+    const real = realpathSync(dir)
+    if (seen.has(real) || !real.split(sep).includes('node_modules')) return
+    seen.add(real)
+    const { name, imports, presmium } = browserDependencies(real)
+    if (imports.length > 0) linkPackage(root, name, real)
+    for (const specifier of imports) include.add(`${name} > ${specifier}`)
+    for (const dependency of presmium) {
+      const manifest = findPackageJSON(dependency, pathToFileURL(join(real, 'package.json')))
+      if (manifest) visit(dirname(manifest))
+    }
   }
+  for (const dir of packages) if (existsSync(join(dir, 'package.json'))) visit(dir)
   return [...include].sort()
 }
 
-/** The browser imports of the installed package in `dir` that name its own dependencies; a package does not change while a server runs. */
-const imports = new Map<string, string[]>()
-function dependencyImports(dir: string): string[] {
-  let found = imports.get(dir)
-  if (!found) {
-    const { dependencies = {} } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { dependencies?: Record<string, string> }
-    found = [...browserImports(dir)].filter(specifier => Object.hasOwn(dependencies, packageName(specifier)) && !PROVIDED.test(packageName(specifier)) && !STYLE.test(specifier))
-    imports.set(dir, found)
-  }
-  return found
+/** The directory of the package that holds `file`, by its nearest `package.json`. */
+export function packageOf(file: string): string | undefined {
+  const manifest = findPackageJSON(pathToFileURL(file))
+  return manifest && dirname(manifest)
 }
 
-/** The real directory of the package `name` found from `from` up, when it lies under node_modules. */
-function installedDir(name: string, from: string): string | undefined {
-  for (let d = resolve(from); ; d = dirname(d)) {
-    const dir = join(d, 'node_modules', name)
-    if (existsSync(join(dir, 'package.json'))) {
-      const real = realpathSync(dir)
-      return real.split(sep).includes('node_modules') ? real : undefined
+/** Links the package in `dir` into `root/node_modules` under its name; a link there to another directory is replaced. */
+function linkPackage(root: string, name: string, dir: string): void {
+  const link = join(root, 'node_modules', name)
+  const stat = lstatSync(link, { throwIfNoEntry: false })
+  if (stat?.isSymbolicLink() && readlinkSync(link) === dir) return
+  if (stat && !stat.isSymbolicLink()) return
+  rmSync(link, { force: true })
+  mkdirSync(dirname(link), { recursive: true })
+  symlinkSync(dir, link, 'junction')
+}
+
+interface BrowserDependencies {
+  name: string
+  /** Imports that name one of its dependencies, Presmium's and the frameworks' aside: what Vite pre-bundles. */
+  imports: string[]
+  /** Presmium's packages it imports, among its dependencies and peers. */
+  presmium: string[]
+}
+
+/** What the browser files of the installed package in `dir` import of its dependencies; a package does not change while a server runs. */
+const dependencies = new Map<string, BrowserDependencies>()
+function browserDependencies(dir: string): BrowserDependencies {
+  let found = dependencies.get(dir)
+  if (!found) {
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name: string, dependencies?: Record<string, string>, peerDependencies?: Record<string, string> }
+    const own = (specifier: string) => Object.hasOwn(pkg.dependencies ?? {}, packageName(specifier))
+    const specifiers = [...browserImports(dir)]
+    found = {
+      name: pkg.name,
+      imports: specifiers.filter(specifier => own(specifier) && !PROVIDED.test(packageName(specifier)) && !PRESMIUM.test(specifier) && !STYLE.test(specifier)),
+      presmium: [...new Set(specifiers.filter(specifier => PRESMIUM.test(specifier)).map(packageName))]
+        .filter(name => Object.hasOwn({ ...pkg.dependencies, ...pkg.peerDependencies }, name)),
     }
-    if (dirname(d) === d) return undefined
+    dependencies.set(dir, found)
   }
+  return found
 }
 
 /** The packages and package paths the browser files under `dir` import. */

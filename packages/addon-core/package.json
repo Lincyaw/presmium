@@ -38,6 +38,7 @@
   ],
   "slidev": {},
   "dependencies": {
+    "@slidev/types": "53.0.0",
     "vue": "^3.5.42"
   },
   "peerDependencies": {
@@ -49,7 +50,6 @@
     "@presmium/host": "workspace:*",
     "@presmium/kernel": "workspace:*",
     "@presmium/viewer": "workspace:*",
-    "@slidev/client": "53.0.0",
-    "@slidev/types": "53.0.0"
+    "@slidev/client": "53.0.0"
   }
 }

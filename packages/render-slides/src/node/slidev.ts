@@ -157,12 +157,11 @@ function chapters(doc: IRDocument): Map<string, string> {
 
 function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
   const { ctx } = gen
-  const { theme, addons = [], ...rest } = Object.fromEntries(Object.entries(ctx.config).filter(([key]) => !RENDERER_KEYS.has(key)))
+  // The addons are the deck's (`addonNames`).
+  const { theme, ...rest } = Object.fromEntries(Object.entries(ctx.config).filter(([key]) => !RENDERER_KEYS.has(key) && key !== 'addons'))
   // Local paths are relative to the deck; Slidev gets the theme's absolute. By default Presmium's own
   // theme, relative to the generated deck.
   const local = (name: unknown) => typeof name === 'string' && name.startsWith('.') ? resolve(ctx.deckDir, name) : name
-  // Plugins are Slidev addons: their components, setups and layers load in the deck.
-  const listed = [...doc.config.plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, ctx)]
   const { htmlAttrs, ...slidev } = rest
   return {
     theme: theme === undefined ? relativePath(gen.dir, THEME_DIR) : local(theme),
@@ -171,7 +170,7 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     ...typesSource(doc, gen),
     ...slidev,
     htmlAttrs: { lang: deckLang(doc), ...typeof htmlAttrs === 'object' ? htmlAttrs : {} },
-    addons: [...new Set(listed.filter((name): name is string => typeof name === 'string').map(name => addonPath(name, gen)))],
+    addons: [...new Set(addonNames(doc, ctx).map(name => addonPath(name, gen)))],
     presmium: ctx.portable(doc.config.presmium, gen.dir),
     // Slidev's dev server has an MCP endpoint that edits the generated deck; agents edit the source (principle 6).
     mcp: false,
@@ -181,6 +180,18 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
     ...doc.config.execute?.environments ? { presmiumEnvironments: ctx.portable(doc.config.execute.environments, gen.dir) } : {},
     ...runnerOptions(doc, gen),
   }
+}
+
+/** The deck's Slidev addons: its plugins, the addons `renderers.slides.addons` names, and the web form's package (`formAddons`). */
+function addonNames(doc: IRDocument, ctx: RenderContext): string[] {
+  const { addons } = ctx.config
+  const listed = [...doc.config.plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, ctx)]
+  return listed.filter((name): name is string => typeof name === 'string')
+}
+
+/** The package directories of the deck's addons that are found (`addonPath`). */
+export function addonDirs(doc: IRDocument, ctx: RenderContext): string[] {
+  return addonNames(doc, ctx).flatMap(name => ctx.pluginDirs[name] ?? packageDir(name, ctx.deckDir) ?? [])
 }
 
 /**
