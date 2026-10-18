@@ -77,6 +77,10 @@ export class PresmiumService {
   #documents: { at: number, list: Promise<WorkspaceDocument[]> } | undefined
   readonly #opening = new Map<string, Promise<PresmiumSession | undefined>>()
   readonly #open = new Map<string, PresmiumSession>()
+  readonly #refreshing = new Map<string, Promise<PresmiumSession | undefined>>()
+  readonly #selectionVersions = new Map<string, number>()
+  readonly #selectionListeners = new Map<string, { before(): Promise<void>, after(): Promise<void> }>()
+  readonly #selected = new Map<string, string | null>()
   #closed = false
 
   constructor(ctx: DshContext, config: Config, log: DshLogger) {
@@ -177,7 +181,9 @@ export class PresmiumService {
   async #attach(agent: DshAgent): Promise<PresmiumSession | undefined> {
     const { root } = await this.ready
     const id = agent.session.id
-    const document = documentAt(root, this.directoryOf(agent), await this.documents())
+    const documents = await this.documents()
+    const selected = this.#selected.get(id)
+    const document = selected === undefined ? documentAt(root, this.directoryOf(agent), documents) : documents.find(doc => doc.dir === selected)
     if (!document) return undefined
     const grant = await this.#json<{ url: string, token: string }>('/__presmium/presmium.server/tokens', { body: { document: document.dir, session: id } })
     const client = await connectPresmiumMcp(grant.url, grant.token)
@@ -186,11 +192,51 @@ export class PresmiumService {
     return session
   }
 
+  async selectDocument(id: string, document: string | null): Promise<void> {
+    if (document !== null && !(await this.documents()).some(doc => doc.dir === document)) throw new Error('Unknown Presmium document')
+    const version = (this.#selectionVersions.get(id) ?? 0) + 1
+    this.#selectionVersions.set(id, version)
+    const listener = this.#selectionListeners.get(id)
+    await listener?.before()
+    if (this.#selectionVersions.get(id) !== version) return
+    this.#selected.set(id, document)
+    await listener?.after()
+  }
+
+  watchSelection(id: string, listener: { before(): Promise<void>, after(): Promise<void> }): () => void {
+    this.#selectionListeners.set(id, listener)
+    return () => { if (this.#selectionListeners.get(id) === listener) this.#selectionListeners.delete(id) }
+  }
+
+  refresh(agent: DshAgent): Promise<PresmiumSession | undefined> {
+    const id = agent.session.id
+    let pending = this.#refreshing.get(id)
+    if (!pending) {
+      pending = this.#refresh(agent).finally(() => this.#refreshing.delete(id))
+      this.#refreshing.set(id, pending)
+    }
+    return pending
+  }
+
+  async #refresh(agent: DshAgent): Promise<PresmiumSession | undefined> {
+    const id = agent.session.id
+    const selected = this.#selected.get(id)
+    const current = await this.attach(agent)
+    if (selected === undefined || current?.document.dir === selected || (!current && selected === null)) return current
+    await this.detach(id, false)
+    return this.attach(agent)
+  }
+
   session(agent: DshAgent | undefined): PresmiumSession | undefined {
     return agent ? this.#open.get(agent.session.id) : undefined
   }
 
-  async detach(id: string): Promise<void> {
+  async detach(id: string, forget = true): Promise<void> {
+    if (forget) {
+      this.#selectionVersions.delete(id)
+      this.#selected.delete(id)
+      this.#selectionListeners.delete(id)
+    }
     const session = this.#open.get(id)
     this.#open.delete(id)
     this.#opening.delete(id)
@@ -204,6 +250,9 @@ export class PresmiumService {
     for (const session of this.#open.values()) await session.client.close().catch(() => undefined)
     this.#open.clear()
     this.#opening.clear()
+    this.#selected.clear()
+    this.#selectionVersions.clear()
+    this.#selectionListeners.clear()
     if (this.#child) {
       this.#child.kill('SIGTERM')
       return

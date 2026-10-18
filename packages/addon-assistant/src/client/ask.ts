@@ -1,3 +1,4 @@
+import { EventSourceParserStream } from 'eventsource-parser/stream'
 import type { Navigation } from '@presmium/host'
 import type { AgentContext, AskClient } from '@presmium/kernel'
 import { shallowRef } from 'vue'
@@ -50,26 +51,18 @@ function placeOf(context: AgentContext, navigation: Navigation | undefined): Ask
   }
 }
 
-async function* streamed(body: ReadableStream<Uint8Array>): AsyncIterable<string> {
-  const reader = body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
+async function* streamed(body: ReadableStream<Uint8Array<ArrayBuffer>>): AsyncIterable<string> {
+  const reader = body.pipeThrough(new TextDecoderStream()).pipeThrough(new EventSourceParserStream()).getReader()
   try {
     for (;;) {
       const { value, done } = await reader.read()
       if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      let end: number
-      while ((end = buffer.indexOf('\n')) >= 0) {
-        const piece = chunkText(buffer.slice(0, end).trim())
-        buffer = buffer.slice(end + 1)
-        if (piece === null) return
-        if (piece) yield piece
-      }
+      const piece = chunkText(`data: ${value.data}`)
+      if (piece === null) return
+      if (piece) yield piece
     }
-    const last = chunkText(buffer.trim())
-    if (last) yield last
   } finally {
+    await reader.cancel().catch(() => {})
     reader.releaseLock()
   }
 }

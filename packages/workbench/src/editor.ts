@@ -16,6 +16,7 @@ export interface EditorOptions {
   save(): void
   changed(path: string, text: string): void
   moved(line: number): void
+  selected?(selection: { startLine: number, endLine: number, text: string }): void
 }
 
 export interface Problem {
@@ -120,6 +121,14 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
     if (!current) return
     if (update.docChanged) options.changed(current, update.state.doc.toString())
     if (update.docChanged || update.selectionSet) options.moved(update.state.doc.lineAt(update.state.selection.main.head).number)
+    const selection = update.state.selection.main
+    if (update.view.hasFocus && update.selectionSet && !selection.empty) {
+      options.selected?.({
+        startLine: update.state.doc.lineAt(selection.from).number,
+        endLine: update.state.doc.lineAt(Math.max(selection.from, selection.to - 1)).number,
+        text: update.state.sliceDoc(selection.from, selection.to),
+      })
+    }
   })
   const extensions = (path: string): Extension => [
     lineNumbers(),

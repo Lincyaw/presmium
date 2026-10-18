@@ -197,4 +197,4 @@ rendererExtensions: {
 
 - 集成测试：`packages/addon-poll/test/*.test.ts`，在临时目录写一份文稿，`plugins` 写本包的绝对路径，用 `@presmium/cli/testing` 的 `presmium(cwd, args)` 真正运行 CLI 构建，检查产物（范例 `packages/addon-exec/test/compile.test.ts`）。
 - 端到端：测试文稿放 `e2e/fixtures/poll/`，用例 `e2e/poll.spec.ts` 用 `useFixture('poll')` 在 `beforeAll` 中构建（见 `references/testing.md`）。两种形态各测一遍。
-- 文档：`docs/ir.md` 5.1 节、`docs/architecture.md` 第 8 节的需求覆盖表、`.agents/skills/presmium-author/references/directives.md`。
+- 文档：新指令写入 `docs/ir.md` 的指令表与 `.agents/skills/presmium-author/references/directives.md`；面向使用者的写法同步 `site/plugins/lecture.md`。第三方插件项目则更新自己的使用示例与接口说明。

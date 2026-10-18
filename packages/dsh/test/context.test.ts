@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FIXTURES, testHome, turns } from './harness.ts'
 import type { HostApi, Service, TestHome, Web, Workspace } from './harness.ts'
 
-const documentContext = (body: Record<string, any>) => /<presmium-document>([\s\S]*?)<\/presmium-document>/.exec(JSON.stringify(body.messages))?.[1] ?? ''
+const documentContext = (body: Record<string, any>) => [...JSON.stringify(body.messages).matchAll(/<presmium-document>([\s\S]*?)<\/presmium-document>/g)].at(-1)?.[1] ?? ''
 
 describe('[gate] each session\'s own document on the web carrier', () => {
   let home: TestHome
@@ -24,7 +24,14 @@ describe('[gate] each session\'s own document on the web carrier', () => {
       'lectures/beta/lecture.md': '---\ntitle: 文稿乙\nlang: en\n---\n\n# 文稿乙\n\n(beta-one)=\n## 乙的一节\n\n乙的正文。\n',
     }, { 'presmium-fixture-dsh': join(FIXTURES, 'plugin') })
     service = await home.serve(ws.dir)
-    model = await fakeModel([{ text: '好。' }, { text: '好。' }])
+    model = await fakeModel([
+      { text: '好。' }, { text: '好。' },
+      { tool: 'read', input: { file_path: 'lectures/beta/lecture.md' } },
+      { tool: 'write', input: { file_path: 'shared-notes.md', content: '工作区共享笔记\n' } },
+      { text: '工作区的文件已读写。' },
+      { tool: 'presmium__list_sections', input: {} },
+      { text: '现在是乙。' },
+    ])
     web = await home.web(ws.dir, 5623, { model, env: service.env })
     api = await web.api()
   }, 240_000)
@@ -57,14 +64,39 @@ describe('[gate] each session\'s own document on the web carrier', () => {
     expect(tools('beta')).toContain('presmium__list_sections')
   }, 180_000)
 
-  it('[gate] the documents\' directories are workspaces from the start: no first-use workspace, nothing under ~/Documents', async () => {
-    const registered = await api.call<{ workspace: { title: string }, created: boolean }>('workspace/create', { request: { path: join(ws.dir, 'lectures', 'alpha') } })
-    expect(registered).toMatchObject({ workspace: { title: '文稿甲' }, created: false })
+  it('[gate] registers the workspace root without creating a first-use directory', async () => {
+    const registered = await api.call<{ workspace: { title: string }, created: boolean }>('workspace/create', { request: { path: ws.dir } })
+    expect(registered.created).toBe(false)
     expect(await api.call('workspace/initializeDefault', {})).toBeUndefined()
     expect(existsSync(join(home.home, 'Documents'))).toBe(false)
     expect(existsSync(join(home.dshHome, 'documents'))).toBe(false)
     expect(home.homeEntries()).toEqual([])
   }, 60_000)
+
+  it('keeps one session at the root while its selected document changes and reads and writes across the workspace', async () => {
+    const { sessionId } = await api.call<{ sessionId: string }>('session/create', { request: { cwd: ws.dir } })
+    const select = (document: string) => api.fetch('/api/presmium/context', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: sessionId, document }),
+    })
+    const prompt = () => api.call('session/prompt', { request: { requestId: randomUUID(), sessionId, mode: 'queue', content: [{ type: 'text', text: '按当前文稿处理。' }] } })
+    expect((await select('lectures/alpha')).status).toBe(200)
+    await prompt()
+    await expect.poll(() => existsSync(join(ws.dir, 'shared-notes.md')), { timeout: 90_000 }).toBe(true)
+    await expect.poll(() => turns(model).length, { timeout: 90_000 }).toBe(5)
+    expect(ws.read('shared-notes.md')).toBe('工作区共享笔记\n')
+    expect((await select('lectures/beta')).status).toBe(200)
+    await prompt()
+    await expect.poll(() => turns(model).length, { timeout: 90_000 }).toBe(7)
+    const requests = model.received.filter(r => r.headers['x-deepseek-harness-session-id'] === sessionId && Array.isArray(r.body.tools))
+    const first = requests[0]!.body
+    const last = requests.at(-1)!.body
+    expect(documentContext(first)).toContain('lectures/alpha')
+    expect(documentContext(last)).toContain('lectures/beta')
+    expect(documentContext(last)).toContain('beta-one')
+    expect(last.tools.map((tool: { name: string }) => tool.name)).not.toContain('presmium__fixture_note')
+    expect(JSON.stringify(last.messages)).toContain(ws.dir)
+    expect(new Set(requests.map(r => r.headers['x-deepseek-harness-session-id'])).size).toBe(1)
+  }, 240_000)
 
   it('the page reaches the workspace service at /api/presmium/*, with the host\'s cookie only', async () => {
     const listed = await api.fetch('/api/presmium/documents')

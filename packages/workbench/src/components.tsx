@@ -1,15 +1,19 @@
 import { ICONS } from '@presmium/design'
 import type { IconName } from '@presmium/design'
-import { createPortal } from 'react-dom'
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import type { ButtonHTMLAttributes, KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import * as Popover from '@radix-ui/react-popover'
+import * as Tabs from '@radix-ui/react-tabs'
+import * as ToggleGroup from '@radix-ui/react-toggle-group'
+import { createElement, forwardRef } from 'react'
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 const cls = (...names: (string | false | undefined | null)[]) => names.filter(Boolean).join(' ')
 
 export function PmIcon({ name, size = 20, strokeWidth = 1.7 }: { name: IconName, size?: number | string, strokeWidth?: number }) {
   return (
     <svg className="pm-ui-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {ICONS[name].map(([tag, attrs], i) => (tag === 'path' ? <path key={i} {...attrs} /> : tag === 'circle' ? <circle key={i} {...attrs} /> : <rect key={i} {...attrs} />))}
+      {ICONS[name].map(([tag, attrs], i) => createElement(tag, { key: i, ...attrs }))}
     </svg>
   )
 }
@@ -18,22 +22,22 @@ export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger
 
 type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & { type?: 'button' | 'submit' | 'reset' }
 
-export function PmButton({ variant = 'default', small, icon, type = 'button', className, children, ...rest }: ButtonProps & { variant?: ButtonVariant, small?: boolean, icon?: IconName }) {
+export const PmButton = forwardRef<HTMLButtonElement, ButtonProps & { variant?: ButtonVariant, small?: boolean, icon?: IconName }>(function PmButton({ variant = 'default', small, icon, type = 'button', className, children, ...rest }, ref) {
   return (
-    <button type={type} className={cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, small && 'pm-ui-button--small', className)} {...rest}>
+    <button ref={ref} type={type} className={cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, small && 'pm-ui-button--small', className)} {...rest}>
       {icon && <PmIcon name={icon} size={small ? 14 : 16} strokeWidth={2} />}
       {children}
     </button>
   )
-}
+})
 
-export function PmIconButton({ icon, label, small, className, ...rest }: ButtonProps & { icon: IconName, label: string, small?: boolean }) {
+export const PmIconButton = forwardRef<HTMLButtonElement, ButtonProps & { icon: IconName, label: string, small?: boolean }>(function PmIconButton({ icon, label, small, className, ...rest }, ref) {
   return (
-    <button type="button" className={cls('pm-ui-icon-button', small && 'pm-ui-icon-button--small', className)} aria-label={label} title={label} {...rest}>
+    <button ref={ref} type="button" className={cls('pm-ui-icon-button', small && 'pm-ui-icon-button--small', className)} aria-label={label} title={label} {...rest}>
       <PmIcon name={icon} size={small ? 16 : 20} />
     </button>
   )
-}
+})
 
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
 
@@ -60,147 +64,72 @@ export interface Choice<T extends string = string> {
 
 export function PmSegmented<T extends string>({ value, options, label, onChange }: { value: T, options: Choice<T>[], label: string, onChange(value: T): void }) {
   return (
-    <div className="pm-ui-segmented" role="group" aria-label={label}>
-      {options.map(option => (
-        <button key={option.value} type="button" className="pm-ui-segmented__option" aria-pressed={option.value === value} onClick={() => onChange(option.value)}>{option.label}</button>
-      ))}
-    </div>
+    <ToggleGroup.Root type="single" value={value} onValueChange={next => { if (next) onChange(next as T) }} className="pm-ui-segmented" aria-label={label}>
+      {options.map(option => <ToggleGroup.Item key={option.value} value={option.value} className="pm-ui-segmented__option">{option.label}</ToggleGroup.Item>)}
+    </ToggleGroup.Root>
   )
 }
 
 export function PmTabs<T extends string>({ value, tabs, label, onChange, children }: { value: T, tabs: Choice<T>[], label: string, onChange(value: T): void, children?: ReactNode }) {
-  const prefix = useId()
-  const list = useRef<HTMLDivElement>(null)
-  const move = (event: ReactKeyboardEvent) => {
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
-    if (!step) return
-    event.preventDefault()
-    const index = tabs.findIndex(tab => tab.value === value)
-    const next = tabs[(index + step + tabs.length) % tabs.length]
-    if (!next) return
-    onChange(next.value)
-    requestAnimationFrame(() => list.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus())
-  }
   return (
-    <div className="pm-ui-tabset">
-      <div ref={list} className="pm-ui-tabs" role="tablist" aria-label={label} onKeyDown={move}>
-        {tabs.map(tab => (
-          <button key={tab.value} type="button" role="tab" className="pm-ui-tab" id={`${prefix}-tab-${tab.value}`} aria-selected={tab.value === value} aria-controls={tab.value === value && children ? `${prefix}-panel-${tab.value}` : undefined} tabIndex={tab.value === value ? 0 : -1} onClick={() => onChange(tab.value)}>{tab.label}</button>
-        ))}
-      </div>
-      {children && <div className="pm-ui-tabpanel" role="tabpanel" id={`${prefix}-panel-${value}`} aria-labelledby={`${prefix}-tab-${value}`} tabIndex={0}>{children}</div>}
-    </div>
+    <Tabs.Root value={value} onValueChange={next => onChange(next as T)} className="pm-ui-tabset">
+      <Tabs.List className="pm-ui-tabs" aria-label={label}>
+        {tabs.map(tab => <Tabs.Trigger key={tab.value} value={tab.value} className="pm-ui-tab">{tab.label}</Tabs.Trigger>)}
+      </Tabs.List>
+      {children && <Tabs.Content value={value} className="pm-ui-tabpanel">{children}</Tabs.Content>}
+    </Tabs.Root>
   )
 }
 
-function useDismiss(open: boolean, close: () => void, root: RefObject<HTMLElement | null>, dialog = false): void {
-  const latest = useRef(close)
-  latest.current = close
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (event: PointerEvent) => {
-      if (dialog) return
-      const target = event.target as Node | null
-      if (target && root.current?.contains(target)) return
-      latest.current()
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      const within = root.current?.contains(document.activeElement)
-      latest.current()
-      if (!dialog && (within || document.activeElement === document.body)) root.current?.querySelector<HTMLElement>('button, [href], input, select, textarea')?.focus()
-    }
-    document.addEventListener('pointerdown', onPointer, true)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer, true)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, dialog, root])
-}
-
-function useInView(panel: RefObject<HTMLElement | null>, open: boolean): void {
-  useLayoutEffect(() => {
-    const element = panel.current
-    if (!open || !element) return
-    const place = () => {
-      element.style.translate = ''
-      const box = element.getBoundingClientRect()
-      const margin = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-      const width = document.documentElement.clientWidth
-      let shift = box.right > width - margin ? width - margin - box.right : 0
-      if (box.left + shift < margin) shift = margin - box.left
-      if (shift) element.style.translate = `${Math.round(shift)}px 0`
-    }
-    place()
-    const observer = new ResizeObserver(place)
-    observer.observe(element)
-    window.addEventListener('resize', place)
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', place)
-    }
-  }, [open, panel])
-}
-
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
+const placementOf = (placement: PopoverPlacement) => ({ side: placement.startsWith('above') ? 'top' as const : 'bottom' as const, align: placement.endsWith('start') ? 'start' as const : 'end' as const })
 
 export function PmPopover({ open, label, placement = 'below-end', name, trigger, onClose, children }: { open: boolean, label: string, placement?: PopoverPlacement, name?: string, trigger: ReactNode, onClose(): void, children?: ReactNode }) {
-  const root = useRef<HTMLSpanElement>(null)
-  const panel = useRef<HTMLDivElement>(null)
-  useDismiss(open, onClose, root)
-  useInView(panel, open)
   return (
-    <span ref={root} className={cls('pm-ui-anchor', name)}>
-      {trigger}
-      {open && <div ref={panel} className={cls('pm-ui-popover', `pm-ui-popover--${placement}`, name && `${name}__panel`)} role="dialog" aria-label={label}>{children}</div>}
-    </span>
+    <Popover.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
+      <Popover.Anchor asChild><span className={cls('pm-ui-anchor', name)}>{trigger}</span></Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content className={cls('pm-ui-popover', 'pmw-overlay', name && `${name}__panel`)} aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16}>
+          {children}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   )
 }
 
 export function PmDrawer({ open, label, closeLabel, name, trigger, onClose, children }: { open: boolean, label: string, closeLabel: string, name?: string, trigger?: ReactNode, onClose(): void, children?: ReactNode }) {
-  const root = useRef<HTMLSpanElement>(null)
-  useDismiss(open, onClose, root)
   return (
-    <span ref={root} className={cls('pm-ui-anchor', name)}>
+    <Dialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
       {trigger}
-      {open && (
-        <div className={cls('pm-ui-drawer', name && `${name}__panel`)} role="dialog" aria-label={label}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="pmw-dialog-overlay" />
+        <Dialog.Content className={cls('pm-ui-drawer', name && `${name}__panel`)} aria-describedby={undefined}>
           <div className="pm-ui-drawer__header">
-            <h2 className="pm-ui-drawer__title">{label}</h2>
-            <PmIconButton icon="close" label={closeLabel} small onClick={onClose} />
+            <Dialog.Title className="pm-ui-drawer__title">{label}</Dialog.Title>
+            <Dialog.Close asChild><PmIconButton icon="close" label={closeLabel} small /></Dialog.Close>
           </div>
           <div className="pm-ui-drawer__body">{children}</div>
-        </div>
-      )}
-    </span>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
 export function PmDialog({ open, label, closeLabel, name, actions, onClose, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, onClose(): void, children?: ReactNode }) {
-  const panel = useRef<HTMLDivElement>(null)
-  const id = useId()
-  useDismiss(open, onClose, panel, true)
-  useEffect(() => {
-    if (!open) return
-    const before = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
-    const first = panel.current?.querySelector<HTMLElement>('.pm-ui-dialog__body :is(input, select, textarea, button, [href])')
-    ;(first ?? panel.current)?.focus()
-    return () => {
-      if (before?.isConnected) before.focus()
-    }
-  }, [open])
-  if (!open) return null
-  return createPortal(
-    <div ref={panel} className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} role="dialog" aria-labelledby={id} tabIndex={-1}>
-      <div className="pm-ui-dialog__header">
-        <h2 id={id} className="pm-ui-dialog__title">{label}</h2>
-        {actions}
-        <PmIconButton icon="close" label={closeLabel} small onClick={onClose} />
-      </div>
-      <div className="pm-ui-dialog__body">{children}</div>
-    </div>,
-    document.body,
+  return (
+    <Dialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="pmw-dialog-overlay" />
+        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} aria-describedby={undefined}>
+          <div className="pm-ui-dialog__header">
+            <Dialog.Title className="pm-ui-dialog__title">{label}</Dialog.Title>
+            {actions}
+            <Dialog.Close asChild><PmIconButton icon="close" label={closeLabel} small /></Dialog.Close>
+          </div>
+          <div className="pm-ui-dialog__body">{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -213,54 +142,19 @@ export interface MenuItem {
 }
 
 export function PmMenu({ label, items, icon = 'more', placement = 'below-end', onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, onSelect(id: string): void }) {
-  const [open, setOpen] = useState(false)
-  const root = useRef<HTMLSpanElement>(null)
-  const list = useRef<HTMLUListElement>(null)
-  useDismiss(open, () => setOpen(false), root)
-  useInView(list, open)
-  const items_ = () => [...(root.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])]
-  const focusAt = (index: number) => {
-    const all = items_()
-    all[(index + all.length) % all.length]?.focus()
-  }
-  useEffect(() => {
-    if (open) focusAt(0)
-  }, [open])
-  const onKey = (event: ReactKeyboardEvent) => {
-    const at = items_().indexOf(document.activeElement as HTMLElement)
-    if (event.key === 'ArrowDown') focusAt(at + 1)
-    else if (event.key === 'ArrowUp') focusAt(at - 1)
-    else if (event.key === 'Tab') return setOpen(false)
-    else return
-    event.preventDefault()
-  }
   return (
-    <span ref={root} className="pm-ui-anchor" onKeyDown={onKey}>
-      <PmIconButton icon={icon} label={label} small aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} />
-      {open && (
-        <ul ref={list} className={cls('pm-ui-menu', `pm-ui-popover--${placement}`)} role="menu" aria-label={label}>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild><PmIconButton icon={icon} label={label} small /></DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content className="pm-ui-menu pmw-overlay" aria-label={label} {...placementOf(placement)} sideOffset={6} collisionPadding={16}>
           {items.map(item => (
-            <li key={item.id} role="none">
-              <button
-                type="button"
-                role="menuitem"
-                className={cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger')}
-                disabled={item.disabled}
-                tabIndex={-1}
-                onClick={() => {
-                  setOpen(false)
-                  root.current?.querySelector<HTMLElement>('button')?.focus()
-                  onSelect(item.id)
-                }}
-              >
-                {item.icon && <PmIcon name={item.icon} size={16} />}
-                {item.label}
-              </button>
-            </li>
+            <DropdownMenu.Item key={item.id} className={cls('pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger')} disabled={item.disabled} onSelect={() => onSelect(item.id)}>
+              {item.icon && <PmIcon name={item.icon} size={16} />}{item.label}
+            </DropdownMenu.Item>
           ))}
-        </ul>
-      )}
-    </span>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }
 

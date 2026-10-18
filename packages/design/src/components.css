@@ -481,26 +481,6 @@
   border-radius: var(--pm-radius-card);
 }
 
-.pm-ui-popover--below-end {
-  top: calc(100% + 6px);
-  right: 0;
-}
-
-.pm-ui-popover--below-start {
-  top: calc(100% + 6px);
-  left: 0;
-}
-
-.pm-ui-popover--above-end {
-  bottom: calc(100% + 6px);
-  right: 0;
-}
-
-.pm-ui-popover--above-start {
-  bottom: calc(100% + 6px);
-  left: 0;
-}
-
 .pm-ui-drawer {
   position: fixed;
   z-index: var(--pm-z-popover);
@@ -579,6 +559,13 @@
   list-style: none;
 }
 
+/* Reka positions the outer wrapper; the content participates in its layout. */
+.pm-ui-floating {
+  position: relative;
+  inset: auto;
+  max-height: min(70vh, var(--reka-popper-available-height, 70vh));
+}
+
 .pm-ui-menu__item {
   display: flex;
   align-items: center;
@@ -596,7 +583,8 @@
 }
 
 .pm-ui-menu__item:hover,
-.pm-ui-menu__item:focus {
+.pm-ui-menu__item:focus,
+.pm-ui-menu__item[data-highlighted] {
   background: var(--pm-color-sunk);
 }
 

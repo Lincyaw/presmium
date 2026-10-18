@@ -49,20 +49,20 @@ export class SourceFiles {
 
   roots(scope: Scope): string[] {
     if (!scope.home) return [scope.document]
-    return [...listDocuments(this.#config).map(doc => doc.dir), WORKSPACE_FILE]
+    return ['']
   }
 
   allows(scope: Scope, path: string, member: Member): boolean {
     if (path === WORKSPACE_FILE) return (scope.home || (this.#config.single && scope.document === '')) && member.roles.includes('owner')
     const dir = documentDirOf(this.#config, path)
-    if (dir === undefined) return false
+    if (dir === undefined) return scope.home && member.roles.includes('owner')
     return scope.home ? listDocuments(this.#config).some(doc => doc.dir === dir) : dir === scope.document
   }
 
   files(scope: Scope, member: Member): FilesAnswer {
     const files: SourceFile[] = []
     let truncated = false
-    const walk = (dir: string, owner: string) => {
+    const walk = (dir: string, owner: string | undefined) => {
       let names: string[]
       try {
         names = readdirSync(join(this.#config.root, dir)).sort()
@@ -85,10 +85,8 @@ export class SourceFiles {
         }
       }
     }
-    for (const root of this.roots(scope)) {
-      if (root !== WORKSPACE_FILE) walk(root, root)
-      else if (this.allows(scope, root, member) && lstatSync(join(this.#config.root, root), { throwIfNoEntry: false })?.isFile()) files.push({ path: root })
-    }
+    for (const root of scope.home ? listDocuments(this.#config).map(doc => doc.dir) : [scope.document]) walk(root, root)
+    if (scope.home && member.roles.includes('owner')) walk('', undefined)
     const documents = scope.home ? listDocuments(this.#config).map(doc => doc.dir) : undefined
     return { document: scope.document, home: scope.home, ...documents ? { documents } : {}, files, ...truncated ? { truncated: true as const } : {} }
   }

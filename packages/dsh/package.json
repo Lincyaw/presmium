@@ -87,10 +87,14 @@
   },
   "devDependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4",
+    "@deepseek-ai/dsh-util-workspace-path": "0.2.1-alpha.4",
     "@presmium/design": "workspace:*",
     "@presmium/workbench": "workspace:*",
     "@types/react": "18.3.28",
     "@types/react-dom": "18.3.7",
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-resizable-panels": "^4.14.5"
   }
 }

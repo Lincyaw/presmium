@@ -34,7 +34,7 @@ const CORS = {
 /** The question of a request: its last user message. */
 export const questionOf = (request: ChatRequest) => request.body.messages?.findLast(m => m.role === 'user')?.content ?? ''
 
-export async function chatStub(answer: (request: ChatRequest) => string[]): Promise<ChatStub> {
+export async function chatStub(answer: (request: ChatRequest) => string[], options: { multiline?: boolean } = {}): Promise<ChatStub> {
   const received: ChatRequest[] = []
   let held: Promise<void> | undefined
   let release = () => {}
@@ -59,7 +59,10 @@ export async function chatStub(answer: (request: ChatRequest) => string[]): Prom
         return
       }
       const [first = '', ...rest] = answer(request)
-      const piece = (content: string) => `data: ${JSON.stringify({ id: 'chatcmpl-stub', object: 'chat.completion.chunk', model: body.model, choices: [{ index: 0, delta: { content } }] })}\n\n`
+      const piece = (content: string) => {
+        const data = JSON.stringify({ id: 'chatcmpl-stub', object: 'chat.completion.chunk', model: body.model, choices: [{ index: 0, delta: { content } }] })
+        return options.multiline ? `: heartbeat\rdata: ${data.replace(',"choices":', ',\rdata: "choices":')}\r\r` : `data: ${data}\n\n`
+      }
       res.writeHead(200, { ...CORS, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store' })
       res.write(piece(first))
       await held

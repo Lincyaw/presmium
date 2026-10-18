@@ -1,7 +1,7 @@
 import { PmButton, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import { useEffect, useSyncExternalStore } from 'react'
-import { createPortal } from 'react-dom'
+import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { BRAND_LANGUAGES, BRAND_SLOTS, ONBOARDING } from './contract.ts'
 import { BRAND_COPY, FRAME_MESSAGES } from './messages.ts'
 import type { FrameMessages } from './messages.ts'
@@ -44,10 +44,10 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
     }
     complete?.()
   }
-  return createPortal(
-    <WorkbenchProvider workbench={workbench}>
-      <div className="pmw-welcome" role="dialog" aria-modal="true" aria-labelledby="pmw-welcome-title" data-pmw-welcome="">
-        <div className="pmw-welcome__card pm-ui">
+  return (
+    <WorkbenchProvider workbench={workbench} protectChanges={false}>
+      <Modal open title={t.welcomeTitle} onClose={done} headless>
+        <div className="pmw-welcome__card pm-ui" data-pmw-welcome="">
           <Logo size={40} />
           <h2 id="pmw-welcome-title" className="pmw-welcome__title">{t.welcomeTitle}</h2>
           <p>{t.welcome}</p>
@@ -63,9 +63,8 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
             <PmButton variant="primary" onClick={done}>{t.start}</PmButton>
           </div>
         </div>
-      </div>
-    </WorkbenchProvider>,
-    document.body,
+      </Modal>
+    </WorkbenchProvider>
   )
 }
 

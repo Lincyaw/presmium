@@ -17,6 +17,8 @@
 
 - id: ui-layout
   disabled: true
+- id: ui-sidebar
+  disabled: true
 - id: ui-brand-official
   disabled: true
 - id: ui-settings-account

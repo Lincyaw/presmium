@@ -1,3 +1,13 @@
+declare module '@deepseek-ai/dsh-client-ui-primitives' {
+  export const Modal: import('react').ComponentType<{
+    open: boolean
+    title: string
+    onClose(): void
+    headless: true
+    children?: import('react').ReactNode
+  }>
+}
+
 declare module '@deepseek-ai/dsh-client-store' {
   export interface StoreInstance<S, A> {
     actions: A
@@ -32,7 +42,7 @@ interface DshSlotOptions {
 }
 
 interface DshSlotEntry {
-  options: { key?: string, id?: string }
+  options: { key?: string, id?: string, label?: string | (() => string) }
 }
 
 interface DshSlots {
@@ -81,9 +91,20 @@ interface DshSidebarRightTabs {
     kind: string
     priority?: 'extension' | 'builtin' | 'fallback'
     keepMounted?: boolean
+    patterns?: readonly string[]
+    canOpen?(address: string): boolean
     title: (address?: string) => string
     guide?: { id: string, order?: number, title: () => string, description?: () => string }[]
   }): () => void
+}
+
+interface DshSourceTabProps {
+  useTabInfo(): { tab: {
+    contentId: string
+    visible: boolean
+    navigation: { revision: number, params?: { line?: unknown } }
+    actions: { close(): void }
+  } }
 }
 
 interface DshClientContext {
@@ -96,7 +117,11 @@ interface DshClientContext {
   locale: DshLocale
   shortcuts: DshShortcuts
   sidebarRightTabs: DshSidebarRightTabs
+  sidebarRight: { active(): { id: string, kind: string, contentId: string } | undefined, close(id: string): void, isExpanded(): boolean, toggleExpanded(): void }
   layout: { selectPanel(id: string | null): void }
+  sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }> }
+  uiWorkspace: { openWorkspace(id: string): Promise<void>, startSession(id?: string): void }
+  workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
 }
 
 interface Window {

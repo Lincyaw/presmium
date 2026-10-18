@@ -22,9 +22,22 @@ function definition(session: PresmiumSession, tool: ListedTool): DshToolDefiniti
 }
 
 export function apply(ctx: DshContext): void {
+  const selections = new WeakMap<DshAgent, () => void>()
+  const registered = new WeakMap<DshAgent, { session?: PresmiumSession, dispose: (() => void)[] }>()
+  const sync = async (agent: DshAgent) => {
+    const session = await ctx.presmium.refresh(agent)
+    const previous = registered.get(agent)
+    if (previous && previous.session === session) return
+    for (const dispose of previous?.dispose ?? []) dispose()
+    registered.set(agent, { session, dispose: session?.tools.map(tool => agent.ctx.tools.register(definition(session, tool))) ?? [] })
+  }
   ctx.on('agent/created', async ({ agent }: { agent: DshAgent }) => {
-    const session = await ctx.presmium.attach(agent)
-    if (!session) return
-    for (const tool of session.tools) agent.ctx.tools.register(definition(session, tool))
+    await sync(agent)
+    selections.set(agent, ctx.presmium.watchSelection(agent.session.id, { before: () => agent.whenIdle(), after: () => sync(agent) }))
+  })
+  ctx.on('agent/disposed', ({ agent }: { agent: DshAgent }) => { selections.get(agent)?.(); selections.delete(agent) })
+  ctx.on('agent/pre-step', async ({ agent }: { agent: DshAgent }, next: () => Promise<unknown>) => {
+    await sync(agent)
+    return next()
   })
 }

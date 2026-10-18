@@ -212,7 +212,7 @@ function close() {
 </script>
 
 <template>
-  <Teleport v-if="playing" to="body">
+  <template v-if="playing">
     <div class="pm-lecture-layer">
       <p v-if="status === 'loading'" class="pm-lecture-player__status">{{ t.player.loading }}</p>
       <p v-else-if="status === 'missing' || status === 'not-yet'" class="pm-lecture-player__status" role="alert">
@@ -320,7 +320,7 @@ function close() {
         </div>
       </template>
     </div>
-  </Teleport>
+  </template>
 </template>
 
 <style>

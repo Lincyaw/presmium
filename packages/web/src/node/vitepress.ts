@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import type { ChildProcess } from 'node:child_process'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -15,7 +16,7 @@ function bin(): string {
 
 export function vitepressBuild(root: string, outDir: string): Promise<number> {
   return new Promise((done) => {
-    const child = spawn(process.execPath, [...TYPESCRIPT_IMPORT, bin(), 'build', root, '--outDir', outDir], { stdio: ['ignore', 2, 2] })
+    const child = spawn(process.execPath, [...TYPESCRIPT_IMPORT, bin(), 'build', realpathSync(root), '--outDir', outDir], { stdio: ['ignore', 2, 2] })
     child.on('exit', code => done(code ?? 1))
     child.on('error', () => done(1))
   })
@@ -40,7 +41,7 @@ export interface DevProcess {
 
 export async function vitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void, options: { host?: string, signal?: AbortSignal } = {}): Promise<DevProcess> {
   const listen = port === 0 ? await freePort(options.host ?? '127.0.0.1') : port
-  const args = [...TYPESCRIPT_IMPORT, bin(), 'dev', root, ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
+  const args = [...TYPESCRIPT_IMPORT, bin(), 'dev', realpathSync(root), ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
   const child: ChildProcess = spawn(process.execPath, args, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'] })
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const stop = () => {

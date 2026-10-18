@@ -1,4 +1,5 @@
-import type { Finding, PreviewAnchor, PreviewCommand, PreviewReport } from '@presmium/kernel'
+import { stepKeys, trailStep } from '@presmium/kernel'
+import type { Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewReport } from '@presmium/kernel'
 import type { DocumentOperation, DocumentsAnswer, FilesAnswer, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, SourceAnswer } from './api.ts'
 import { mergeTexts } from './merge.ts'
 import type { MergeLabels } from './merge.ts'
@@ -9,6 +10,7 @@ import type { WorkspaceClient } from './service.ts'
 export type Locale = 'zh-CN' | 'en'
 
 export type PreviewView = 'web' | 'slides'
+export type DocumentLayout = 'preview' | 'split' | 'source'
 
 export type FileNotice =
   | { kind: 'changed', version: string, content: string }
@@ -58,6 +60,13 @@ export interface WorkbenchState {
   shown?: string
   issues: PageIssue[]
   picking: boolean
+  layout: DocumentLayout
+  focus: FocusReport[]
+  focusPending: boolean
+  focusFailure?: string
+  leaving?: string[]
+  leaveSaving: boolean
+  leaveFailed: boolean
 }
 
 export interface EditorBridge {
@@ -87,6 +96,9 @@ export class Workbench {
   #revealed = 0
   #highlightTimer?: ReturnType<typeof setTimeout>
   #highlight: PreviewAnchor | null = null
+  #focusVersion = 0
+  #focusWriting: Promise<void> = Promise.resolve()
+  #leave?: () => void | Promise<void>
 
   constructor(options: { client?: WorkspaceClient, locale?: Locale, dark?: boolean } = {}) {
     this.client = options.client ?? workspaceClient()
@@ -98,6 +110,11 @@ export class Workbench {
       view: 'web',
       issues: [],
       picking: false,
+      layout: 'preview',
+      focus: [],
+      focusPending: false,
+      leaveSaving: false,
+      leaveFailed: false,
     }
   }
 
@@ -152,16 +169,32 @@ export class Workbench {
 
   async openDocument(dir: string): Promise<void> {
     if (this.#state.document === dir) return
+    if (this.#deferLeave(this.#state.open, () => this.#openDocument(dir))) return
+    await this.#openDocument(dir)
+  }
+
+  async #openDocument(dir: string): Promise<void> {
     this.#stopEvents?.()
-    this.#set({ document: dir, files: undefined, ir: undefined, open: [], active: undefined, line: 1, reveal: undefined, preview: undefined, previewFailure: undefined, shown: undefined, issues: [] })
+    this.#set({ document: dir, files: undefined, ir: undefined, open: [], active: undefined, line: 1, reveal: undefined, preview: undefined, previewFailure: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined })
+    if (dir === '' && this.#state.documents?.single === false) {
+      this.#stopEvents = undefined
+      this.#set({ layout: 'source' })
+      await Promise.all([this.#readFiles(dir), this.#readStatus(dir)])
+      return
+    }
     this.#stopEvents = this.client.events(dir, event => void this.#compiled(dir, event), () => void this.#readIr(dir))
-    await Promise.all([this.#readFiles(dir), this.#readIr(dir), this.#readPreview(dir), this.#readStatus(dir)])
+    await Promise.all([this.#readFiles(dir), this.#readIr(dir), this.#readPreview(dir), this.#readStatus(dir), this.#readFocus(dir)])
   }
 
   closeDocument(): void {
+    if (this.#deferLeave(this.#state.open, () => this.#closeDocument())) return
+    this.#closeDocument()
+  }
+
+  #closeDocument(): void {
     this.#stopEvents?.()
     this.#stopEvents = undefined
-    this.#set({ document: undefined, files: undefined, ir: undefined, open: [], active: undefined, reveal: undefined, preview: undefined, shown: undefined, issues: [] })
+    this.#set({ document: undefined, files: undefined, ir: undefined, open: [], active: undefined, reveal: undefined, preview: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined })
     void this.loadDocuments()
   }
 
@@ -169,6 +202,15 @@ export class Workbench {
     try {
       const files = await this.client.files(dir)
       if (this.#state.document === dir) this.#set({ files })
+    } catch {
+    }
+  }
+
+  async #readFocus(dir: string): Promise<void> {
+    const version = this.#focusVersion
+    try {
+      const answer = await this.client.focus(dir)
+      if (this.#state.document === dir && version === this.#focusVersion) this.#set({ focus: answer.focus ?? [] })
     } catch {
     }
   }
@@ -232,17 +274,59 @@ export class Workbench {
         this.#set({ openFailure: message(error) })
         return false
       }
+      if (document !== this.#state.document) return false
       if (!this.#file(path)) this.#set({ open: [...this.#state.open, { path, base: answer.content, version: answer.version, dirty: false }] })
     }
-    this.#set({ active: path, openFailure: undefined, ...at ? { reveal: { path, ...at, seq: ++this.#revealed } } : {} })
+    this.#set({ active: path, openFailure: undefined, ...this.#state.layout === 'preview' ? { layout: 'split' as const } : {}, ...at ? { reveal: { path, ...at, seq: ++this.#revealed } } : {} })
     return true
   }
 
+  async openSource(document: string, path: string, at?: Omit<Reveal, 'path' | 'seq'>): Promise<void> {
+    const open = async () => {
+      if (document !== this.#state.document) await this.#openDocument(document)
+      if (document !== this.#state.document) return
+      if (this.#file(path)) await this.checkDisk([path])
+      await this.openFile(path, at ?? { line: this.#state.active === path ? this.#state.line : 1 })
+      this.#editor?.focus?.()
+    }
+    if (document !== this.#state.document && this.#deferLeave(this.#state.open, open)) return
+    await open()
+  }
+
   closeFile(path: string): void {
+    if (this.#deferLeave(this.#state.open.filter(file => file.path === path), () => this.#closeFile(path))) return
+    this.#closeFile(path)
+  }
+
+  #closeFile(path: string): void {
     const index = this.#state.open.findIndex(file => file.path === path)
     if (index < 0) return
     const open = this.#state.open.filter(file => file.path !== path)
     this.#set({ open, ...this.#state.active === path ? { active: open[Math.min(index, open.length - 1)]?.path } : {} })
+  }
+
+  #deferLeave(files: OpenFile[], leave: () => void | Promise<void>): boolean {
+    const dirty = files.filter(file => file.dirty).map(file => file.path)
+    if (!dirty.length) return false
+    this.#leave = leave
+    this.#set({ leaving: dirty, leaveSaving: false, leaveFailed: false })
+    return true
+  }
+
+  async resolveLeave(choice: 'save' | 'discard' | 'cancel'): Promise<void> {
+    if (this.#state.leaveSaving) return
+    const leave = this.#leave
+    if (choice === 'save') {
+      this.#set({ leaveSaving: true, leaveFailed: false })
+      for (const path of this.#state.leaving ?? []) await this.save(path)
+      if (this.#state.leaving?.some(path => this.#file(path)?.dirty)) {
+        this.#set({ leaveSaving: false, leaveFailed: true })
+        return
+      }
+    }
+    this.#leave = undefined
+    this.#set({ leaving: undefined, leaveSaving: false, leaveFailed: false })
+    if (choice !== 'cancel') await leave?.()
   }
 
   showFile(path: string): void {
@@ -263,6 +347,7 @@ export class Workbench {
     try {
       const { version } = await this.client.save(document, file.path, text, file.version)
       this.#update(file.path, { base: text, version, dirty: this.textOf(file.path) !== text, notice: undefined })
+      void this.#readStatus(document)
     } catch (error) {
       const answer = error instanceof ServiceError ? error.answer : undefined
       if (answer?.locked) this.#update(file.path, { notice: { kind: 'locked', holder: answer.locked.holder } })
@@ -345,6 +430,36 @@ export class Workbench {
     this.#set({ view })
   }
 
+  setLayout(layout: DocumentLayout): void {
+    this.#set({ layout })
+  }
+
+  selectSource(selection: { startLine: number, endLine: number, text: string }): void {
+    const { active, document } = this.#state
+    if (!active || document === undefined) return
+    if (document === '' && this.#state.documents?.single === false) return
+    const prefix = document ? `${document}/` : ''
+    if (prefix && !active.startsWith(prefix)) return
+    this.setFocus([{ id: 'selection', from: 'source', source: { file: active.slice(prefix.length), startLine: selection.startLine, endLine: selection.endLine }, quote: selection.text.slice(0, 2000) }])
+  }
+
+  setFocus(focus: FocusReport[]): void {
+    const document = this.#state.document
+    if (document === undefined) return
+    const version = ++this.#focusVersion
+    this.#set({ focus, focusPending: true, focusFailure: undefined })
+    this.#broadcast({ type: 'pins', targets: focus.flatMap(item => item.section && item.block ? [{ id: item.id, section: item.section, block: item.block, label: '1' }] : []) })
+    this.#focusWriting = this.#focusWriting.then(async () => {
+      if (version !== this.#focusVersion) return
+      try {
+        const answer = await this.client.focus(document, focus)
+        if (version === this.#focusVersion && document === this.#state.document) this.#set({ focus: answer.focus ?? [], focusPending: false })
+      } catch (error) {
+        if (version === this.#focusVersion && document === this.#state.document) this.#set({ focusPending: false, focusFailure: message(error) })
+      }
+    })
+  }
+
   setPicking(picking: boolean): void {
     this.#set({ picking })
     this.#broadcast({ type: 'pick', on: picking })
@@ -367,7 +482,15 @@ export class Workbench {
         this.#set({ shown: report.revision })
         break
       case 'picked':
-        void this.revealPlace(report.section, report.block)
+        {
+          const section = this.#state.ir?.doc.sections.find(section => section.id === report.section)
+          const step = section && report.trail ? trailStep(stepKeys(section), report.trail) : report.step
+          this.setFocus([{ id: 'selection', from: this.#state.view, section: report.section, ...report.block ? { block: report.block } : {}, ...step === undefined ? {} : { step } }])
+          if (this.#state.layout !== 'preview') void this.revealPlace(report.section, report.block)
+        }
+        break
+      case 'selection':
+        if (report.selection?.text.trim()) this.setFocus([{ id: 'selection', from: this.#state.view, section: report.selection.section, ...report.selection.block ? { block: report.selection.block } : {}, quote: report.selection.text.slice(0, 2000) }])
         break
       case 'report':
         if (!this.#state.issues.some(issue => issue.message === report.message && issue.plugin === report.plugin)) {

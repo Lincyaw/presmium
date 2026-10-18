@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Command } from 'cmdk'
+import { useEffect, useRef, useState } from 'react'
 import type { DocumentOperation, WorkspaceDocument } from '../api.ts'
 import { PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
@@ -166,41 +167,28 @@ function Search({ documents, onCreate }: { documents: WorkspaceDocument[], onCre
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-  const found = useMemo(() => {
-    const words = query.trim().toLowerCase()
-    if (!words) return undefined
-    return {
-      documents: documents.filter(doc => `${doc.title} ${doc.dir}`.toLowerCase().includes(words)),
-      commands: [{ id: 'create', label: t.newDocument }].filter(command => command.label.toLowerCase().includes(words)),
-    }
-  }, [query, documents, t])
   return (
-    <div className="pmw-search">
+    <Command className="pmw-search" label={t.search}>
       <label className="pm-ui-search">
         <PmIcon name="search" size={15} strokeWidth={1.8} />
-        <input ref={input} type="search" value={query} aria-label={t.search} placeholder={`${t.search}（${t.searchHint}）`} onChange={event => setQuery(event.target.value)} />
+        <Command.Input ref={input} value={query} aria-label={t.search} placeholder={`${t.search}（${t.searchHint}）`} onValueChange={setQuery} onKeyDown={event => { if (event.key === 'Escape') setQuery('') }} />
       </label>
-      {found && (
-        <div className="pmw-search__results" role="listbox" aria-label={t.search}>
-          {found.documents.length + found.commands.length === 0 && <p className="pmw-muted">{t.noMatch}</p>}
-          {found.documents.length > 0 && <p className="pmw-search__group">{t.documents}</p>}
-          {found.documents.map(doc => (
-            <button key={doc.dir} type="button" role="option" aria-selected="false" className="pmw-search__item" onClick={() => void workbench.openDocument(doc.dir)}>
-              <PmIcon name="document" size={15} />
-              {doc.title}
-              <span className="pmw-muted">{doc.dir}</span>
-            </button>
-          ))}
-          {found.commands.length > 0 && <p className="pmw-search__group">{t.commands}</p>}
-          {found.commands.map(command => (
-            <button key={command.id} type="button" role="option" aria-selected="false" className="pmw-search__item" onClick={onCreate}>
-              <PmIcon name="plus" size={15} />
-              {command.label}
-            </button>
-          ))}
-        </div>
+      {query.trim() && (
+        <Command.List className="pmw-search__results" aria-label={t.search}>
+          <Command.Empty className="pmw-muted">{t.noMatch}</Command.Empty>
+          <Command.Group heading={t.documents}>
+            {documents.map(doc => (
+              <Command.Item key={doc.dir} value={`${doc.title} ${doc.dir}`} className="pmw-search__item" onSelect={() => { setQuery(''); void workbench.openDocument(doc.dir) }}>
+                <PmIcon name="document" size={15} />{doc.title}<span className="pmw-muted">{doc.dir}</span>
+              </Command.Item>
+            ))}
+          </Command.Group>
+          <Command.Group heading={t.commands}>
+            <Command.Item value={t.newDocument} className="pmw-search__item" onSelect={() => { setQuery(''); onCreate() }}><PmIcon name="plus" size={15} />{t.newDocument}</Command.Item>
+          </Command.Group>
+        </Command.List>
       )}
-    </div>
+    </Command>
   )
 }
 

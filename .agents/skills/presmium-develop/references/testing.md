@@ -1,117 +1,77 @@
-# 测试
+# 验证用户能完成的行为
 
-出处：`docs/architecture.md` 第 7 节、`CLAUDE.md`。
+先写清触发操作与期望结果，再选最低成本、但真实经过相关边界的测试。只写集成测试，不写单元测试，不 mock Slidev、VitePress 等宿主框架；每个行为一到两个用例。
 
-## 原则
+## 按失败发生的位置选用例
 
-- 只写集成测试，不写单元测试：真正运行 CLI、构建产物、启动服务、打开浏览器；不对单个函数做隔离测试，不用 mock 替代宿主框架（Slidev、VitePress）。
-- 每个行为一到两个用例，不穷举边界情况。
-- 不经过浏览器的集成测试放 `packages/<pkg>/test/*.test.ts`；端到端测试放 `e2e/<ctx>.spec.ts`。
-- 需要专用文稿的端到端用例把文稿放在 `e2e/fixtures/<组>/`，在 `beforeAll` 中用真实的 `presmium build` 构建。用例不依赖示例文稿 `examples/demo` 的内容。
-
-## 层级与命令
-
-| 层级 | 命令 | 内容 |
+| 要验证的变化 | 测什么 | 从哪里开始 |
 |---|---|---|
-| 结构检查 | `pnpm test` | `scripts/check-layering.mjs`（分层）、`scripts/check-skills.mjs`（技能与代码一致）、`scripts/check-plugins.mjs`（Node 插件的 `version` 与 `kernel`）、`scripts/check-packages.mjs`（包的发布元数据，`.changeset/README.md` 的表） |
-| 集成 | `pnpm test` | Vitest：`packages/*/test/**/*.test.ts`，Node 环境，单个用例超时 30 秒。运行 `slidev export` 的三个文件（`render-slides/test/slides.test.ts`、`addon-publish/test/export.test.ts`、`diff.test.ts`）是 `export` 项目，在其他用例（`integration` 项目）之后运行：`slidev export` 等浏览器空闲后打印，机器被构建占满时会在页面就绪前截图或超时（`presmium-export` 与 `presmium-diff` 这时报错退出，不会把缺页的导出当作成功） |
-| 检查 | `pnpm demo:check` | 示例文稿 `presmium check` 无错误 |
-| 构建 | `pnpm demo:build` | 示例文稿生成网页、幻灯片、notebook，产物在 `examples/demo/dist/<渲染端>/` |
-| 端到端 | `pnpm e2e` | Playwright；先 `pnpm demo:build` |
-| 全部 | `pnpm verify` | 以上依次执行 |
+| 指令、步骤、诊断、录制缓存 | 用真实 CLI 处理文稿，检查 IR、诊断或产物 | `packages/cli/test/ir.test.ts`、`packages/addon-exec/test/compile.test.ts` |
+| 组件显示、键盘与步骤回退 | 构建后在浏览器执行操作，比较用户能看到的状态 | `e2e/guide.spec.ts` |
+| 保存后更新预览 | 起开发服务，编辑文件，检查内容与当前位置 | `e2e/viewer.spec.ts`、`e2e/workbench.spec.ts` |
+| 学生版、译本、文件发布 | 构建对应版本，读回实际写出的文件 | `packages/cli/test/audience.test.ts`、`e2e/site.spec.ts` |
+| 服务端路由、确认、MCP | 启动服务，从真实客户端请求并检查响应和副作用 | `packages/server/test/`、`packages/mcp/test/` |
+| 包加载、对等依赖、安装路径 | 在单仓之外安装后运行 | `packages/cli/test/consumer.test.ts`、`e2e/consumer.spec.ts` |
+| dsh 集成与升级 | 按受影响边界选择升级闸门 | `docs/design-dsh.md` 的版本与测试部分 |
 
-消费者安装：`scripts/consumer.ts` 的 `consumerProject` 用 pnpm 打包全部公开的包与 `e2e/fixtures/consumer/plugin`（第三方插件），在系统临时目录中写 `pnpm-workspace.yaml`（根目录的 `allowBuilds`，`overrides` 把每个公开的包指向它的压缩包）与只依赖 `presmium` 和第三方插件的 `package.json`，`pnpm install`（严格的布局：项目的 `node_modules` 中只有这两个包），复制 `e2e/fixtures/consumer/deck` 的文稿；`installedDir(project, name)` 是 `presmium` 的依赖的目录。`packages/cli/test/consumer.test.ts` 在其中运行 `check`、`build`（三种形态）、`dev`、工作区的 `serve`（`XDG_CACHE_HOME` 指向项目之外的临时目录，站点因而在项目之外）、不兼容插件的诊断，在一个什么都没装的空目录中 `presmium new` 之后 `check` 与 `build`，以及转交给项目里装的 `presmium`（替身）；`e2e/consumer.spec.ts` 在浏览器中看插件的组件（构建的两种形态、输出在项目之外的 `dev`、`serve` 的首页与文档）。两者各装一次，约一两分钟。开发服务器的端口写在项目的 `renderers.<id>.port` 中（被占用时取下一个空闲端口）。
+断言用户关心的结果，例如“后退后恢复原画面”“学生产物不含教师内容”。避免只断言某个内部函数被调用，或让测试逐行复述实现。
 
-起步工具同样在单仓之外、不经注册表：`packages/create-presmium/test/create.test.ts` 用 `scripts/consumer.ts` 的 `packAll` 打包（测试不从包外导入，在子进程中调用 consumer.ts 的函数），以 `pnpm --package=<create-presmium 的压缩包> dlx create-presmium …`（`pnpm create presmium` 的做法）在临时目录中新建讲义（从标准输入回答提问）、工作区（参数，英文界面，标题含 `$`）与插件（在终端中回答提问：util-linux 的 `script`），再把各项目 `package.json` 中有压缩包的依赖指向压缩包、在项目的 `pnpm-workspace.yaml` 后加上 `overrides`，`pnpm install`；然后检查 create-presmium 的压缩包中的模板与源逐个文件相同、生成的文件（版本、技能副本、链接、`git init`），每个项目 `presmium check` 无问题、构建通过，插件项目的 `pnpm test`（它自己的集成测试）通过。`e2e/create.spec.ts` 把插件项目用 pnpm 打包、装进一份新建的讲义，在浏览器中看组件在构建的网页与幻灯片中显示，`presmium dev`（端口 5413）中经插件的服务端路由挥手；插件项目自己的 `pnpm dev`（示例以目录 `..` 指定插件，在 `node_modules` 之外；端口 5415、5416）在网页与幻灯片中显示组件。
+## CLI 集成测试怎样写
 
-只跑一个文件：`pnpm exec vitest run packages/addon-code/test/check.test.ts`、`pnpm exec playwright test e2e/guide.spec.ts --project chromium`；只跑一个项目：`pnpm exec vitest run --project export`。
+不需要浏览器的用例放在 `packages/<包>/test/*.test.ts`。把最小文稿写进临时目录，插件用绝对路径，渲染端可用 `renderers.<id>.package` 指向包目录。
 
-## Vitest 集成测试的写法
+`@presmium/cli/testing` 的 `presmium(cwd, args, env?)` 真正启动 CLI，返回 `{ code, stdout, stderr }`。先断言退出码，并把标准输出与标准错误作为失败信息；再读回 IR 或产物验证结果。该辅助工具去掉测试进程的 `NODE_ENV=test`，避免构建模式与使用者不同。
 
-在临时目录写一份文稿，插件用绝对路径列出（编译器接受相对于文稿的路径与绝对路径，也在 `node_modules` 中查找包名），渲染端用 `renderers.<id>.package` 指到包目录，然后用 `@presmium/cli/testing` 的 `presmium(cwd, args, env?)` 真正运行 CLI（包的 `devDependencies` 加 `"@presmium/cli": "workspace:*"`）。它去掉 Vitest 设置的 `NODE_ENV=test`，构建与作者的一样；结果为 `{ code, stdout, stderr }`，不论退出码：
-
-```ts
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
-import { expect, it } from 'vitest'
-
-const ADDON = fileURLToPath(new URL('..', import.meta.url))
-const NOTEBOOK = fileURLToPath(new URL('../../render-notebook', import.meta.url))
-
-it('writes the poll as a list in the notebook', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'presmium-poll-'))
-  writeFileSync(join(dir, 'lecture.md'), `---\nplugins:\n  - ${ADDON}\nrenderers:\n  notebook:\n    package: ${NOTEBOOK}\n---\n\n## 投票\n\n\`\`\`{poll} 喜欢哪种？\n甲\n乙\n\`\`\`\n`)
-  const { code, stdout, stderr } = await presmium(dir, ['build', '--to', 'notebook'])
-  expect(code, stdout + stderr).toBe(0)
-  const notebook = JSON.parse(readFileSync(join(dir, 'dist/notebook/lecture.ipynb'), 'utf8'))
-  expect(JSON.stringify(notebook.cells)).toContain('甲')
-})
-```
-
-需要开发服务器时，以子进程运行 `presmium dev`（`PRESMIUM_BIN` 也从 `@presmium/cli/testing` 导出），从输出的 `<渲染端>  <地址>` 一行取地址，结束时按 PID 停止它（范例 `packages/addon-exec-local/test/local-env.test.ts`）。
-
-完整的范例：`packages/addon-exec/test/compile.test.ts`、`packages/cli/test/build.test.ts`（测试用插件在 `packages/cli/test/fixtures/addons/`）。
-
-需要外部条件（Docker、GPU、凭据）的用例在条件不满足时跳过并打印原因与启用方法（`describe.skipIf`、`test.skip`），容器与 compose 项目用自己的名字（不与别的用例、别的检出重名）与自己的端口，结束时只停自己启动的。远端环境的用例用 `templates/env/compose/compose.yaml` 起一台真实的 Jupyter Server（`docker compose -p <项目> up -d --wait`，`JUPYTER_TOKEN`、`JUPYTER_PORT`；范例 `packages/addon-exec-jupyter/test/helpers.ts`、`e2e/fixtures/exec-remote/jupyter.ts`）；不需要 Docker 的凭据用例用记下全部请求的监听器代替环境。
-
-服务端的用例（`packages/server/test/`）：`presmium dev` 打印 `server  <地址>` 一行，`/__presmium/<插件 ID>/` 也可以经渲染端开发服务器的地址访问；要设置 `Host` 等浏览器不让 `fetch` 设置的请求头时用 `node:http`（`packages/server/test/helpers.ts` 的 `raw`、`eventStream`）。`serve` 模式由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 以子进程启动（Node 直接运行 TS），环境变量给出工作区、站点的地址与端口；子进程的环境去掉开发者机器上像凭据的变量。需要自己的工作区根目录（`presmium.workspace.yaml`）的文稿放在 `examples/demo/.presmium/` 中并 `git init`，否则工作区根目录是整个仓库。
-
-MCP 的用例（`packages/mcp/test/`、`e2e/mcp.spec.ts`）：`packages/mcp/test/client.ts` 的 `connectMcp(url, token)` 是 MCP SDK 的客户端（以 `versionNegotiation: { mode: 'auto' }` 连接，订阅 `presmium://position` 要用 2026-07-28 的协议），`resultOf` 取工具结果中的 JSON，`controlWindow(server, id)` 是控制通道的一个窗口（报告位置、回答确认），端到端用例按相对路径引用它。`presmium dev` 的每进程令牌与 `/mcp` 的地址在 `<文稿>/.presmium/server.json`；只要服务端时用 `presmium dev --to notebook`，不启动 VitePress。`mcp` 与 `server` 的测试都按路径运行 CLI 的可执行文件，不把 `@presmium/cli` 列为开发依赖（`cli → server → mcp`，互相依赖时 pnpm 的符号链接成环）。
-
-语音的用例（`packages/addon-speech/test/`）：假引擎 `presmium-speech fake --port 0` 是自己的进程（`helpers.ts` 的 `startFake()`），打印 `fake  <地址>`，测试以 `PRESMIUM_SPEECH_FAKE_URL=<地址>`、`PRESMIUM_SPEECH_FAKE_PROVIDER` 与可选的 `_KEY` 把它定义为引擎 `fake`（同真实引擎的配置路径）；它的 `GET /requests` 列出收到的请求（方法、路径、`Authorization`），用例按前后的条数验证缓存命中不发请求、凭据只到引擎。音色有 `alpha`、`beta` 与克隆音色 `cloned-lin`；合成的 WAV 在 `pmfk` 块中带文字与音色，转写原样读回。经 `presmium dev --to notebook` 的 `/__presmium/presmium.speech/v1/…` 调用语音（浏览器端 `SPEECH` 的路径）；克隆音色的用例以 `PRESMIUM_OPERATOR_DIR` 把运营者目录放到工作区之外的临时目录，改 `presmium.workspace.yaml` 后要重启 `presmium dev`（设置只在启动时读取）。Node 端 `SPEECH` 由测试插件 `test/fixtures/speech-probe` 的路由（`/__presmium/fixture.speechProbe/engines`、`synthesize`、`transcribe`，`helpers.ts` 的 `probeUrl()`）从服务端的 Node 服务中取用，列在测试文稿的 `plugins` 中（`testDeck(…, [PROBE])`）；要让引擎的某个回答失败时，用 `front(fake)` 在假引擎之前加一层（`failVoices` 次音色列表答 503），把 `PRESMIUM_SPEECH_FAKE_URL` 指向它。真实引擎的冒烟用例只在有 `PRESMIUM_TEST_VOLCENGINE_KEY`、`PRESMIUM_TEST_GROQ_KEY` 时运行。
-
-讲授合成的用例（`packages/addon-lecture/test/script.test.ts`、`video.test.ts`）同样自己起 `presmium-speech fake`（按路径运行 `packages/addon-speech/bin/presmium-speech.mjs`，测试不引用另一个包的代码），测试文稿的 `plugins` 按路径列出讲授与语音两个插件，并写 `renderers.lecture.voice: { engine: fake, voice: alpha }`；运行 `presmium` 时去掉环境中全部 `PRESMIUM_` 变量再只给假引擎的两个，“没有引擎”的用例就是不给它们。假引擎的逐字时间是确定的（中文每字 220 毫秒、字间 80 毫秒），用例据此写出讲授轨的确切时刻。要构建网页形态的文稿放在 `examples/demo/.presmium/` 中（VitePress 在那里解析），只构建 `lecture` 的放在系统临时目录。agent 工具经 `presmium dev` 的 `/mcp`（令牌在文稿的 `.presmium/server.json`）以 `@modelcontextprotocol/client` 调用。`presmium-lecture export` 用 Playwright 的 Chromium，结果以 Mediabunny 在 Node 中读回（轨道、编码、时长与标签，不解码）。端到端的 `e2e/lecture-script.spec.ts` 中录制的 Ogg/Opus 假引擎读不回（它只认自己的 WAV），所以用例在假引擎之前加一层，按顺序以固定的转写回答对录音的转写请求，其余请求原样转给假引擎。同样的一层也用来模拟别的引擎（`script.test.ts`）：去掉合成回答中的逐字时间（OpenAI 形态的引擎不给），或拒绝转写，以测转写对齐与按字数估算。`presmium serve` 与 `presmium dev` 一样加载文稿 `plugins` 列出的插件（按路径，或装在工作区根目录的 `node_modules` 中）。学生版构建发布的讲授（`student.test.ts`）以 `presmium build --audience student --to lecture` 在系统临时目录中构建，并扫描写出的每个文件。
-
-工作区的端到端用例（`e2e/workspace.spec.ts`）在本机启动 `presmium serve`，每个工作区副本一个进程，`XDG_STATE_HOME`、`XDG_CACHE_HOME` 指到副本旁的目录：首页与文档页、局域网中的访问与确认、经 serve 的端口的课堂同步。
-
-DeepSeek Harness 的 bundle 的用例（`packages/dsh/test/`）运行锁定版本的真实 dsh（经 `@presmium/dsh/launch` 的 `dshBin()` 从本包找到，不用根目录的 `.bin`）与 bundle，不 mock dsh。`test/harness.ts`（工作台的端到端用例也用它）：`testHome(prefix)` 给一个临时目录，`HOME`、`XDG_*`、`DSH_HOME` 都在其中，环境去掉 `NODE_ENV`、`PORT` 与 Presmium、dsh、模型的变量；`profile(carrier)` 写 profile 并链接 bundle，`dump(carrier)` 是加上启动器补丁的 `--dump-config`（`rowsOf` 按行 ID 读），`headless(cwd, prompt, { model, env, patches })`、`acp(cwd)`（发 `initialize`）、`web(cwd, port, { model })`（`api()` 以启动令牌换 cookie，`call(endpoint, args)` 调 Host API 如 `session/create { request: { cwd } }`、`session/prompt`，`fetch(path)` 带 cookie），`serve(root)` 以服务令牌启动 `presmium serve`（`env` 交给 dsh：`PRESMIUM_SERVICE_URL`、`_TOKEN`、`PRESMIUM_WORKSPACE`；`mcpToken()` 读进程自己的 MCP 令牌），`homeEntries()` 供断言测试目录之外没有写入（没有 `Documents`）；`workspace(prefix, files, link)` 在 `examples/demo/.presmium/` 中建自己的 git 仓库（dsh 的项目根是它，否则会扫到本仓库的 `.agents/skills`）。`turns(model)` 是假模型收到的 agent 请求（看 `tools`、`system`、`messages` 中的 `<presmium-document>`、技能目录），`toolResults(model)` 是交回模型的工具结果；会话由请求头 `x-deepseek-harness-session-id` 区分。完全访问模式用 `test/fixtures/full-access.patch.yml` 模拟（页面中的权限预设）。升级闸门第 1、2 组的用例名带 `[gate]`：`pnpm exec vitest run packages/dsh -t '\[gate\]'`。web 载体用各用例固定、互不重复的端口（现有的在 5623 到 5648 之间，不与端到端那一对端口 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 相同），其余服务取空闲端口；用例结束时 `close()` 结束它起的全部进程。会话的多个 turn 用 web 载体：`session/create` 之后每次 `session/prompt` 是一个 turn，等 turn 结束看工作区服务的 `GET review`（`running` 为假、`turns.to` 是这个 turn）；假模型的脚本按请求的顺序跨会话连续消费，所以一个 web 宿主的会话依次运行。注入会话、等下一步才读到的消息在 `session/projections` 的 `inbox` 中可见；dsh 的修改卡片是 `/api/changes.summary?sessionId=&seq=`（`seq` 是 `workspace/changes` 事件的序号，没有的序号 404）。审阅的路由的用例（`packages/workspace/test/review.test.ts`）不起 dsh，由测试在路由的调用之间直接写文件。
-
-工作台的端到端用例（`e2e/workbench.spec.ts`）以 studio 的方式启动：`e2e/fixtures/workbench/studio.ts` 的 `startStudio({ port, model?, patches? })` 在 harness 的测试目录中建 `e2e/fixtures/workbench/workspace` 的工作区，以服务令牌启动 `presmium serve --preview-origin <dsh 的源>`，再启动带这个服务的 web 载体；`open(page)` 经启动地址拿到 cookie（先在浏览器中记下首次使用提示已读，`{ welcome: true }` 时保留它）。dsh 的面板按 `data-pmw-slot`（`sidebar`、`main:conversation`、`rightbar`）找，按钮按 dsh 的中文或英文名（用例用 `zh-CN`）。升级闸门第 3 组（启动审计）与退路布局带标签 `@gate`：`pnpm exec playwright test e2e/workbench.spec.ts --grep @gate`；审计读锁定版本的客户端包，在 `e2e/fixtures/workbench/audit.ts`。客户端包在 dsh 启动时按需构建（源码较新时），改了 `packages/workbench` 或 `packages/dsh/src/client` 不用手工构建。
-
-## 端到端测试
-
-`playwright.config.ts`：
-
-- 项目 `chromium` 运行全部用例（除性能用例）；`PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）列出的浏览器只运行 `e2e/smoke.spec.ts`。没有安装或在本机无法启动的浏览器被跳过，配置文件打印原因与安装命令；浏览器用 `pnpm exec playwright install firefox webkit` 安装，WebKit 缺系统库时在 Playwright 的 Docker 镜像中运行（`docs/browsers.md`）。
-- 项目 `perf`（`e2e/perf.spec.ts`）依赖 `chromium`，在全部 Chromium 用例之后运行。单独运行它要加 `--no-deps`：`pnpm exec playwright test e2e/perf.spec.ts --no-deps`，否则先跑全部 Chromium 用例。
-- 示例文稿的产物 `examples/demo/dist` 是一个站点（同时构建两种形态的默认 `base`：网页在 `/web/`，幻灯片在 `/slides/`），由 sirv 服务（`--single slides/index.html`，幻灯片的页地址回落到幻灯片首页）在 `PRESMIUM_E2E_SLIDES_PORT`（默认 4173）与 `PRESMIUM_E2E_WEB_PORT`（默认 4174）；`e2e/urls.ts` 的 `SLIDES`、`WEB` 是两种形态的地址。`reuseExistingServer: false`：端口被占用时报错，不复用别处的服务，免得测到另一个检出的产物。并行工作时每个检出用自己的一对端口。
-- 幻灯片地址 `/<页号>?clicks=<步骤>`，演讲者视图 `/presenter/<页号>`；网页用 `?section=<章节 ID>&step=<n>&view=<视图>` 定位。
-- WebGPU：默认的无头 Chromium 有 `navigator.gpu` 而没有适配器（验证回退）；`test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })` 得到 SwiftShader（回退适配器，有 `timestamp-query`）。`test.use` 的 `launchOptions` 也是 `playwright.chromium.launch()` 的默认值，要默认参数的浏览器时写 `launch({ args: [] })`（范例 `e2e/exec-webgpu.spec.ts`）。不在示例文稿依赖中的插件包用 `useFixture` 的 `link` 链接进测试文稿。
-
-### 测试文稿
-
-`e2e/fixtures/<组>/lecture.md`（加上它 `{include}` 的文件）。`e2e/fixtures/deck.ts` 提供：
-
-| 名称 | 作用 |
-|---|---|
-| `useFixture(name, options?)` | 在 `beforeAll` 中构建并服务 `e2e/fixtures/<name>`，`afterAll` 中关闭并删除；返回取得 `FixtureDeck` 的函数。配合 `test.describe.configure({ mode: 'default' })`，文稿只构建一次 |
-| `buildFixture(name, options?)` | 同上，手动调用：把文稿复制到 `examples/demo/.presmium/e2e-<name>-XXXX`（插件、Slidev、VitePress 从示例文稿的依赖中解析；目录不入库），写入它自己的 `package.json`（独立的 Vite 缓存），运行 `presmium build --to <to ?? 'web,slides'>`，在空闲端口上服务产物：两种形态的 `base` 都不是 `/` 时（同时构建的默认 `/web/`、`/slides/`）把 `dist/` 作为一个站点服务，否则分别服务 `dist/web` 与 `dist/slides` |
-| `FixtureOptions` | `with`（另外复制的 `e2e/fixtures` 下的路径）、`edit(dir)`（构建前修改副本）、`to`（渲染端）、`audience`（构建这个受众的版本，如 `student`：完整版与学生版之间的用例，范例 `e2e/session.spec.ts` 的课堂跟随） |
-| `FixtureDeck` | `dir`、`web`、`slides`（地址）、`slide(id)`（章节 ID → 页号）、`close()` |
-| `serve(dir, single?)`、`presmium(args, cwd)` | 服务目录（`single` 为 `'/slides/'` 时该路径下不存在的地址回落到 `slides/index.html`：同时构建两种形态的 `dist/` 用 `serve(join(dir, 'dist'), '/slides/')`）、运行 CLI |
-| `deckDir`、`startDev`、`openSlide`，`buildFixture` 的 `link` 与 `bases` 选项 | 测试文稿的目录、启动 `presmium dev` 并等待地址、按章节 ID 与标题打开幻灯片等共用的辅助 |
+示例模式：
 
 ```ts
-import { expect, test } from '@playwright/test'
-import { useFixture } from './fixtures/deck.ts'
-
-test.describe.configure({ mode: 'default' })
-const deck = useFixture('poll')
-
-test('a vote shows in both forms', async ({ page }) => {
-  await page.goto(`${deck().web}/?section=poll&view=present`)
-  // ...
-  await page.goto(`${deck().slides}/${deck().slide('poll')}?clicks=0`)
-})
+const result = await presmium(dir, ['build', '--to', 'notebook'])
+expect(result.code, result.stdout + result.stderr).toBe(0)
+const notebook = JSON.parse(readFileSync(join(dir, 'dist/notebook/lecture.ipynb'), 'utf8'))
+expect(JSON.stringify(notebook.cells)).toContain('预期的降级内容')
 ```
 
-其他组的辅助：`e2e/fixtures/plugins/decks.ts`（`startClassroomServer(deck?)` 在空闲端口启动真实的课堂服务，`writeDeck`、`build`）、`e2e/fixtures/exec/deck.ts`、`e2e/fixtures/core/deck.ts`、`e2e/fixtures/web/deck.ts`。
+需要给包增加 `@presmium/cli` 开发依赖时先检查依赖方向。`mcp`、`server` 的测试直接启动 CLI 可执行文件，避免 `cli → server → mcp` 的链接成环。
 
-## 注意
+## 浏览器用例怎样准备文稿
 
-- 端到端用例测的是构建产物：改了源码要先重新构建（`pnpm demo:build`，或由 `useFixture` 构建）。手工起的静态服务器在重新构建后要重启，sirv 启动时就缓存了文件列表。
-- 不复用别人起的 e2e 服务器，也不要停掉它们；只停自己按 PID 记下的进程。
-- 浏览器语言与界面语言：英文界面的用例用 `lang: en-US` 的测试文稿（如 `e2e/fixtures/core/deck`、`e2e/fixtures/viewer/en`）。
+专用文稿放在 `e2e/fixtures/<组>/`，用例放在 `e2e/<组>.spec.ts`。从 `./fixtures/deck.ts` 导入 `useFixture`，它在 `beforeAll` 构建并服务文稿，在 `afterAll` 清理。用例使用 `test.describe.configure({ mode: 'default' })`，让同组文稿只构建一次。
+
+`useFixture(name, options?)` 返回取得文稿的函数；`deck().web`、`deck().slides` 是地址，`deck().slide(id)` 用稳定的章节标签找页号。需要手动控制生命周期时用同文件的 `buildFixture` 并调用 `close()`。
+
+按任务选择选项：
+
+- `to`：只构建需要的媒介。
+- `audience`：构建指定受众，例如学生版。
+- `edit(dir)`：修改复制后的文稿，不改公共样例。
+- `with`：带上额外 fixture 文件。
+- `link`：给文稿链接示例项目依赖中没有的插件；具体形状读辅助工具的类型。
+
+组件跨网页与幻灯片共用时，两边都走关键操作。步骤相关的功能至少验证前进后退或直接跳转所得的状态一致。静态降级用实际 notebook、PDF 或浏览器打印产物验证。
+
+## 外部条件和进程
+
+用例启动自己的服务、临时目录与端口，记录 PID 并在结束时关闭。不复用、不停止其他任务的服务器，不用 `pkill -f` 或 `killall`。
+
+浏览器端口通过 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 区分并行检出。静态服务器重建后要重启；运行中的开发服务则应由被测试的实时更新机制处理。
+
+工作台用例另设 `PRESMIUM_E2E_STUDIO_PORT_OFFSET`，给各 Studio 端口加同一个偏移量，避免与其他任务的 Harness 服务冲突。
+
+需要 Docker、GPU、凭据时，缺少条件就明确跳过并说明原因。复用已有的启动辅助，避免在测试中建立第二套协议：
+
+- 远端内核：`packages/addon-exec-jupyter/test/helpers.ts`、`e2e/fixtures/exec-remote/jupyter.ts`。
+- 语音：`packages/addon-speech/test/helpers.ts` 的假引擎，经真实服务端口使用；固定输出用于验证缓存、转写与合成流程。
+- 课堂：`e2e/fixtures/plugins/decks.ts` 的课堂服务辅助，用独立浏览器身份验证主讲与学生。
+- dsh：`packages/dsh/test/harness.ts`，每个用例自己的目录与脚本化模型。
+
+## 运行与判断
+
+先运行改动对应的文件，例如 `pnpm exec vitest run packages/cli/test/ir.test.ts` 或 `pnpm exec playwright test e2e/guide.spec.ts --project chromium`。
+
+`pnpm test` 包含结构检查与 Vitest。PDF 导出相关文件在 `export` 项目，排在其他集成测试之后；单独运行用 `pnpm exec vitest run --project export`，避免同时大量构建导致截图时机不稳定。
+
+端到端前先构建示例 `pnpm demo:build`，专用文稿由 fixture 自己构建。`pnpm e2e` 的完整 Chromium 用例之外，Firefox、WebKit 默认只跑冒烟；缺少浏览器或系统条件会提示跳过。报告时区分通过、跳过与未运行。
+
+性能用例排在其他 Chromium 用例之后；单独运行用 `pnpm exec playwright test e2e/perf.spec.ts --no-deps`，否则会先运行 Chromium 全套。
+
+全部验证用 `pnpm verify`。通过后说明验证覆盖的用户行为；还有未验证的外部条件时明确保留限制。

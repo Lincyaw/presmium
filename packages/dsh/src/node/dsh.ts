@@ -14,6 +14,7 @@ export interface DshSession {
 export interface DshAgent {
   readonly session: DshSession
   readonly ctx: DshContext
+  whenIdle(): Promise<void>
 }
 
 export interface DshToolExecution {

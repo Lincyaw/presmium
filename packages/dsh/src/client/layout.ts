@@ -27,6 +27,7 @@ export interface LayoutState {
     sideExpanded: boolean
     side: number
     dock: number
+    dockOpen: boolean
     rightbar: number | null
     rightbarShown: boolean
     rightbarTrack: boolean
@@ -46,6 +47,7 @@ export function createLayoutStore() {
         sideExpanded: false,
         side: SIDE_DEFAULT,
         dock: DOCK_DEFAULT,
+        dockOpen: true,
         rightbar: null,
         rightbarShown: false,
         rightbarTrack: false,
@@ -64,9 +66,16 @@ export function createLayoutStore() {
       setViewportWidth: (d: LayoutState, width: number) => {
         if ((d.layoutInfo.viewportWidth < SIDE_COLLAPSE) !== (width < SIDE_COLLAPSE)) d.layoutInfo.sideExpanded = false
         d.layoutInfo.viewportWidth = width
+        if (d.layoutInfo.rightbarTrack && width - ACTIVITY - d.layoutInfo.side - (d.layoutInfo.dockOpen ? d.layoutInfo.dock : 0) - CENTER_MIN - 24 < RIGHTBAR_MIN) {
+          d.layoutInfo.sideOpen = false
+          d.layoutInfo.sideExpanded = false
+        }
       },
       toggleSidebar: (d: LayoutState) => {
-        if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = !d.layoutInfo.sideExpanded
+        if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
+          d.layoutInfo.sideExpanded = !d.layoutInfo.sideExpanded
+          if (d.layoutInfo.sideExpanded) d.layoutInfo.dockOpen = false
+        }
         else d.layoutInfo.sideOpen = !d.layoutInfo.sideOpen
       },
       setSide: (d: LayoutState, px: number) => {
@@ -75,10 +84,23 @@ export function createLayoutStore() {
       setDock: (d: LayoutState, px: number) => {
         d.layoutInfo.dock = clamp(px, DOCK_MIN, Math.min(DOCK_MAX, d.layoutInfo.viewportWidth * 0.5))
       },
+      setDockOpen: (d: LayoutState, open: boolean) => {
+        d.layoutInfo.dockOpen = open
+        if (open && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
+      },
+      toggleConversation: (d: LayoutState) => {
+        d.layoutInfo.dockOpen = !d.layoutInfo.dockOpen
+        if (d.layoutInfo.dockOpen && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
+      },
       setRightbar: (d: LayoutState, px: number) => {
         d.layoutInfo.rightbar = clamp(px, RIGHTBAR_MIN, Math.max(RIGHTBAR_MIN, d.layoutInfo.viewportWidth * RIGHTBAR_MAX_RATIO))
       },
       openRightbar: (d: LayoutState, track: boolean, fullscreen: boolean) => {
+        if (track && d.layoutInfo.viewportWidth - ACTIVITY - d.layoutInfo.side - (d.layoutInfo.dockOpen ? d.layoutInfo.dock : 0) - CENTER_MIN - 24 < RIGHTBAR_MIN) {
+          d.layoutInfo.sideOpen = false
+          d.layoutInfo.sideExpanded = false
+        }
+        if (track && d.layoutInfo.viewportWidth - ACTIVITY - (d.layoutInfo.dockOpen ? d.layoutInfo.dock : 0) - CENTER_MIN - 16 < RIGHTBAR_MIN) d.layoutInfo.dockOpen = false
         d.layoutInfo.rightbar ??= Math.max(RIGHTBAR_MIN, Math.round(d.layoutInfo.viewportWidth * RIGHTBAR_DEFAULT_RATIO * 0.6))
         d.layoutInfo.rightbarShown = true
         d.layoutInfo.rightbarTrack = track
@@ -93,7 +115,10 @@ export function createLayoutStore() {
         if (d.layoutInfo.activity === activity && d.layoutInfo.viewportWidth >= SIDE_COLLAPSE) d.layoutInfo.sideOpen = !d.layoutInfo.sideOpen
         else d.layoutInfo.sideOpen = true
         d.layoutInfo.activity = activity
-        if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = d.layoutInfo.viewportWidth >= NARROW
+        if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
+          d.layoutInfo.sideExpanded = d.layoutInfo.viewportWidth >= NARROW
+          if (d.layoutInfo.sideExpanded) d.layoutInfo.dockOpen = false
+        }
         d.layoutInfo.view = activity
       },
       show: (d: LayoutState, view: NarrowView) => {

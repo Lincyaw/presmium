@@ -1,0 +1,83 @@
+import { expect, test } from '@playwright/test'
+import { useFixture } from './fixtures/deck.ts'
+
+test.describe('shared Vue interactions', () => {
+  test.describe.configure({ mode: 'default', timeout: 180_000 })
+  const deck = useFixture('ui-primitives', { link: { '@presmium/host': 'packages/host' } })
+
+  for (const form of ['web', 'slides'] as const) {
+    test(`${form}: nested overlays dismiss one layer and return focus; menus and tabs work with the keyboard`, async ({ page }, testInfo) => {
+      if (form === 'web') await page.setViewportSize({ width: 390, height: 740 })
+      await page.goto(form === 'web' ? deck().web : `${deck().slides}/1`)
+      const fixture = page.locator('.fixture-primitives:visible')
+      const opener = fixture.getByRole('button', { name: '打开弹窗' })
+      await opener.click()
+      const dialog = page.getByRole('dialog', { name: '设置弹窗', exact: true })
+      await expect(dialog).toBeVisible()
+      for (let i = 0; i < 5; i++) {
+        await page.keyboard.press('Tab')
+        expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true)
+      }
+      const more = dialog.getByRole('button', { name: '更多设置' })
+      await more.click()
+      const popover = page.getByRole('dialog', { name: '更多设置', exact: true })
+      await expect(popover.getByRole('button', { name: '浮层操作' })).toBeFocused()
+      const box = (await popover.boundingBox())!
+      expect(box.x).toBeGreaterThanOrEqual(0)
+      expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width)
+      expect(await popover.getByRole('button', { name: '浮层操作' }).evaluate(el => {
+        const box = el.getBoundingClientRect()
+        return el.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2))
+      })).toBe(true)
+      await page.screenshot({ path: testInfo.outputPath('nested-overlays.png') })
+      await page.keyboard.press('Escape')
+      await expect(popover).toHaveCount(0)
+      await expect(dialog).toBeVisible()
+      await expect(more).toBeFocused()
+      await more.click()
+      await expect(popover).toBeVisible()
+      await dialog.getByRole('textbox', { name: '姓名' }).click()
+      await expect(popover).toHaveCount(0)
+      await expect(dialog.getByRole('textbox', { name: '姓名' })).toBeFocused()
+      await page.keyboard.press('Escape')
+      await expect(dialog).toHaveCount(0)
+      await expect(opener).toBeFocused()
+      await fixture.getByRole('button', { name: '打开抽屉' }).click()
+      await expect(page.getByRole('dialog', { name: '文稿抽屉' })).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(fixture.getByRole('button', { name: '打开抽屉' })).toBeFocused()
+
+      await fixture.getByRole('button', { name: '文稿菜单' }).focus()
+      await page.keyboard.press('ArrowDown')
+      await expect(page.getByRole('menuitem', { name: '复制', exact: true })).toBeFocused()
+      await page.keyboard.press('End')
+      await page.keyboard.press('Enter')
+      await expect(fixture.getByRole('status')).toHaveText('delete')
+      const tabs = fixture.getByRole('tablist', { name: '内容标签' })
+      await tabs.getByRole('tab', { name: '第一项' }).focus()
+      await page.keyboard.press('End')
+      await expect(fixture.getByRole('tabpanel')).toHaveText('第二项内容')
+      await page.keyboard.press('Home')
+      await expect(fixture.getByRole('tabpanel')).toHaveText('第一项内容')
+      const choices = fixture.getByRole('group', { name: '显示方式' })
+      await choices.getByRole('button', { name: '第一项' }).focus()
+      await page.keyboard.press('ArrowRight')
+      await page.keyboard.press('Space')
+      await expect(choices.getByRole('button', { name: '第二项' })).toHaveAttribute('aria-pressed', 'true')
+      if (form === 'web') {
+        await page.setViewportSize({ width: 1280, height: 800 })
+        await page.getByRole('combobox', { name: '视图' }).filter({ visible: true }).selectOption('present')
+        const present = page.getByRole('region', { name: '放映' })
+        const overlayOpener = present.getByRole('button', { name: '打开弹窗' })
+        await overlayOpener.click()
+        await expect(dialog).toBeVisible()
+        await page.keyboard.press('Escape')
+        await expect(dialog).toHaveCount(0)
+        await expect(present).toBeVisible()
+        await expect(overlayOpener).toBeFocused()
+        await page.keyboard.press('Escape')
+        await expect(present).toHaveCount(0)
+      }
+    })
+  }
+})

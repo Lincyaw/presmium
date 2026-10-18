@@ -45,6 +45,7 @@
     "mermaid": "12.2.0",
     "micromark-extension-gfm": "3.0.0",
     "property-information": "7.2.0",
+    "reka-ui": "2.11.0",
     "shiki": "4.5.0",
     "vue": "^3.5.42"
   },

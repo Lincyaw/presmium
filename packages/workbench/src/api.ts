@@ -1,4 +1,4 @@
-import type { Finding, IRDocument } from '@presmium/kernel'
+import type { Finding, Focus, IRDocument } from '@presmium/kernel'
 
 export interface WorkspaceDocument {
   dir: string
@@ -81,4 +81,11 @@ export interface ErrorAnswer {
 
 export interface WorkbenchAnswer {
   mcp: string
+  root?: string
+}
+
+export interface FocusAnswer {
+  document?: string
+  focus: Focus[] | null
+  reported?: string
 }

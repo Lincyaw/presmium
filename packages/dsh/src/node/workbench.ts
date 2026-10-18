@@ -19,12 +19,25 @@ interface WebServer {
 export function apply(ctx: DshContext & { webServer: WebServer }): void {
   ctx.effect(() => ctx.webServer.tapIndex(brandIndex))
   ctx.connection.fetch.register({
+    path: '/api/presmium/context', methods: ['POST'], requestBody: 'buffered',
+    async fetch(request) {
+      const body = await request.json().catch(() => null) as { session?: unknown, document?: unknown } | null
+      if (!body || typeof body.session !== 'string' || !body.session || (body.document !== null && typeof body.document !== 'string')) return new Response('Invalid context', { status: 400 })
+      try {
+        await ctx.presmium.selectDocument(body.session, body.document)
+        return Response.json({ session: body.session, document: body.document })
+      } catch {
+        return new Response('Unknown document', { status: 400 })
+      }
+    },
+  })
+  ctx.connection.fetch.register({
     path: '/api/presmium/workbench',
     methods: ['GET'],
     requestBody: 'buffered',
     async fetch() {
-      const { url } = await ctx.presmium.ready
-      return new Response(JSON.stringify({ mcp: `${url}/mcp` }), { headers: { 'Content-Type': 'application/json' } })
+      const { url, root } = await ctx.presmium.ready
+      return new Response(JSON.stringify({ mcp: `${url}/mcp`, root }), { headers: { 'Content-Type': 'application/json' } })
     },
   })
 }

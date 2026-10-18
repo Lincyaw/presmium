@@ -1,8 +1,9 @@
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import type { MdastNode } from '@presmium/kernel'
 import type { Element, ElementContent, Properties } from 'hast'
 import type { Handler, State } from 'mdast-util-to-hast'
 import type { PropType, VNodeChild } from 'vue'
-import { defineComponent, h, reactive, ref, useId, watch } from 'vue'
+import { defineComponent, h, reactive, ref, watch } from 'vue'
 
 const WIDTHS = ['xs', 'sm', 'md', 'lg'] as const
 
@@ -98,20 +99,12 @@ export function tabEntries(set: Element, render: (nodes: ElementContent[]) => VN
 
 const synced = reactive({ key: undefined as string | undefined, choices: 0 })
 
-const MOVES: Record<string, (k: number, n: number) => number> = {
-  ArrowRight: (k, n) => (k + 1) % n,
-  ArrowLeft: (k, n) => (k - 1 + n) % n,
-  Home: () => 0,
-  End: (_, n) => n - 1,
-}
-
 export const TabSetView = defineComponent({
   name: 'PmTabSet',
   props: {
     tabs: { type: Array as PropType<TabEntry[]>, required: true },
   },
   setup(props) {
-    const id = useId()
     const withKey = (key?: string) => (key ? props.tabs.findIndex(tab => tab.sync === key) : -1)
     const active = ref([withKey(synced.key), props.tabs.findIndex(tab => tab.selected), 0].find(k => k >= 0)!)
     watch(() => synced.choices, () => {
@@ -126,36 +119,12 @@ export const TabSetView = defineComponent({
         synced.choices++
       }
     }
-    const tabId = (k: number) => `${id}-tab-${k}`
-    const panelId = (k: number) => `${id}-panel-${k}`
-    const onKeydown = (event: KeyboardEvent) => {
-      const move = MOVES[event.key]
-      if (!move) return
-      event.preventDefault()
-      const k = move(active.value, props.tabs.length)
-      choose(k)
-      document.getElementById(tabId(k))?.focus()
-    }
-    return () => h('div', {}, [
-      h('div', { class: 'pm-tabs__list', role: 'tablist' }, props.tabs.map((tab, k) => h('button', {
-        'type': 'button',
-        'role': 'tab',
-        'class': 'pm-tabs__tab',
-        'id': tabId(k),
-        'aria-selected': k === active.value ? 'true' : 'false',
-        'aria-controls': panelId(k),
-        'tabindex': k === active.value ? 0 : -1,
-        'onClick': () => choose(k),
-        onKeydown,
-      }, tab.title))),
-      ...props.tabs.map((tab, k) => h('div', {
-        'class': 'pm-tabs__panel',
-        'role': 'tabpanel',
-        'id': panelId(k),
-        'aria-labelledby': tabId(k),
-        'tabindex': 0,
-        'hidden': k !== active.value,
-      }, tab.content())),
+    return () => h(TabsRoot, { modelValue: String(active.value), 'onUpdate:modelValue': value => choose(Number(value)) }, () => [
+      h(TabsList, { class: 'pm-tabs__list' }, () => props.tabs.map((tab, k) =>
+        h(TabsTrigger, { key: k, value: String(k), class: 'pm-tabs__tab' }, () => tab.title))),
+      ...props.tabs.map((tab, k) => h(TabsContent, {
+        key: k, value: String(k), class: 'pm-tabs__panel', forceMount: true, hidden: k !== active.value, tabindex: 0,
+      }, tab.content)),
     ])
   },
 })

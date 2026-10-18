@@ -410,7 +410,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
         const doc = latest.get(dir) ?? await compile(dir)
         latest.set(dir, doc)
         const workDir = documentWorkDir(ctx, dir)
-        mkdirSync(workDir, { recursive: true })
+        mkdirSync(join(workDir, 'site'), { recursive: true })
         const dctx = documentContext(ctx, site, dir, doc, workDir, workDir)
         const allow = allowed(join(workDir, 'site'), dctx.deckDir, ...Object.values(dctx.pluginDirs), ...shared)
         const document = documentSite(ctx, site, dir, extra, true, allow, latest)
@@ -427,6 +427,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
     if (home) return home
     home = (async () => {
       const work = join(ctx.workDir, 'home')
+      mkdirSync(join(work, 'site'), { recursive: true })
       const root = writeHome(work, site, ctx, siteModules(ctx), allowed(join(work, 'site'), ...shared))
       const server = await vitepressDev(root, 0, () => {}, { host: LOOPBACK, signal: stopping.signal })
       return { port: server.port, close: () => server.close() }

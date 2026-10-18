@@ -9,9 +9,10 @@ body,
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto;
   grid-template-areas:
-    'activity side centre rightbar dock'
-    'status status status status status'
-    'bottom bottom bottom bottom bottom';
+    'activity panels'
+    'status status'
+    'bottom bottom';
+  grid-template-columns: 48px minmax(0, 1fr);
   height: 100%;
   overflow: hidden;
   background: var(--pm-color-bg);
@@ -111,17 +112,6 @@ body,
   display: none;
 }
 
-.pmw-frame[data-collapsed]:not([data-narrow]) .pmw-frame__side[data-shown],
-.pmw-frame[data-collapsed]:not([data-narrow]) .pmw-frame__sidebar[data-shown] {
-  position: absolute;
-  z-index: 12;
-  top: 0;
-  bottom: var(--pm-statusbar-height);
-  left: 48px;
-  width: min(280px, calc(100% - 96px));
-  box-shadow: var(--pm-shadow-float);
-}
-
 .pmw-frame__centre {
   grid-area: centre;
   min-width: 0;
@@ -166,6 +156,13 @@ body,
   min-height: 0;
 }
 
+.pmw-frame__dock[hidden] { display: none; }
+.pmw-chat-actions { display: flex; align-items: center; gap: var(--pm-space-1); }
+.pmw-history { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--pm-color-ink); }
+.pmw-history__header { display: flex; align-items: center; justify-content: space-between; gap: var(--pm-space-2); padding: var(--pm-space-2) var(--pm-space-3); border-bottom: 1px solid var(--pm-color-line); }
+.pmw-history__header h2 { margin: 0; font-size: var(--pm-text-sm); font-weight: 600; }
+.pmw-history__browser { flex: 1; min-height: 0; overflow: hidden; }
+
 .pmw-frame__status {
   grid-area: status;
   display: flex;
@@ -201,28 +198,19 @@ body,
   pointer-events: auto;
 }
 
-.pmw-frame__handle {
-  position: absolute;
-  z-index: 11;
-  top: 0;
-  bottom: var(--pm-statusbar-height);
-  width: 8px;
-  margin-left: -4px;
-  cursor: col-resize;
-  touch-action: none;
-}
-
-.pmw-frame__handle:hover,
-.pmw-frame__handle:active {
-  background: linear-gradient(to right, transparent 3px, var(--pm-color-accent) 3px, var(--pm-color-accent) 5px, transparent 5px);
-}
+.pmw-frame__panels { grid-area: panels; min-width: 0; min-height: 0; }
+.pmw-frame__side-panel { display: grid; }
+.pmw-frame__side-panel > * { grid-area: 1 / 1; }
+.pmw-frame__side, .pmw-frame__sidebar, .pmw-frame__centre, .pmw-frame__dock, .pmw-frame__rightbar { height: 100%; }
+.pmw-frame__handle { width: 8px; z-index: 11; background: var(--pm-color-line); }
+.pmw-frame__handle:hover, .pmw-frame__handle:focus-visible { background: var(--pm-color-accent); }
 
 .pmw-frame[data-narrow] {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   grid-template-areas:
     'activity'
-    'centre'
+    'panels'
     'status'
     'bottom';
 }
@@ -283,26 +271,12 @@ body,
   letter-spacing: 0.01em;
 }
 
-.pmw-welcome {
-  position: fixed;
-  z-index: var(--pm-z-dialog);
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: var(--pm-space-4);
-  background: rgba(28, 27, 25, 0.32);
-}
-
 .pmw-welcome__card {
   display: flex;
   flex-direction: column;
   gap: var(--pm-space-3);
   max-width: 30rem;
   padding: var(--pm-space-6);
-  border: 1px solid var(--pm-color-line);
-  border-radius: var(--pm-radius-card);
-  background: var(--pm-color-surface);
-  box-shadow: var(--pm-shadow-float);
 }
 
 .pmw-welcome__title {
@@ -343,3 +317,15 @@ body,
   height: 100%;
   overflow: hidden;
 }
+
+.pmw-frame[data-narrow] .pmw-frame__panels { display: block !important; }
+.pmw-frame[data-narrow] .pmw-frame__panels > [data-panel] { width: 100%; height: 100%; }
+.pmw-frame__panels > [hidden] { display: none !important; }
+.pmw-frame[data-narrow] .pmw-frame__sidebar[data-shown] { height: 100%; }
+
+.pmw-frame__rightbar-overlay { position: absolute; top: 0; bottom: var(--pm-statusbar-height); height: auto; z-index: 13; pointer-events: none; }
+.pmw-frame__rightbar-track { height: 100%; width: 100%; }
+.pmw-frame__rightbar-overlay [data-sidebar-right-session]:has([data-pmw-source-route]) { opacity: 0; }
+.pmw-frame__rightbar-overlay [data-sidebar-right-session]:not([data-sidebar-right-open]) [data-dockkit-host='dock'] { transition: none; }
+.pmw-frame__document { height: 100%; min-width: 0; min-height: 0; }
+.pmw-frame__document[hidden] { display: none; }

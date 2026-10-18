@@ -142,10 +142,10 @@ packages/addon-<ctx>/
 
 - **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*`、`addon-core`、各插件的 `src/client` 与 `components`）不引用 `@presmium/workbench`。
 - **dsh 只在一处**：`@deepseek-ai/*` 只出现在 `packages/dsh` 与 `packages/studio` 中。
-- **面板不认识宿主**：`@presmium/workbench` 不引用 vue、`@presmium/host` 与 `@deepseek-ai/*`；`@presmium/design` 不引用任何包。
+- **面板不认识宿主**：`@presmium/workbench` 不引用 vue、`@presmium/host` 与 `@deepseek-ai/*`；`@presmium/design` 只允许引用无框架的 Lucide 图标节点，不引用 UI 框架或业务包。
 - **mcp 的使用者**：“只有 server 使用 mcp”放宽为“server 与 dsh 使用 mcp”；`@modelcontextprotocol/*` 仍只在 `mcp` 中，bundle 经 `@presmium/mcp` 导出的客户端一侧使用 MCP。
 
-`check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio`、`the workbench's panels know no host`、`the design system uses no package`、`outputs do not use the workbench` 检查模块引用；另一项检查不看引用：各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh` 与 `studio` 中。`check-packages.mjs` 让 `@presmium/workbench`、`@presmium/dsh`、`@presmium/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@presmium/dsh` 的 `skills` 与预编译的客户端）。
+`check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio`、`the workbench's panels know no host`、`the design system only uses framework-free icons`、`outputs do not use the workbench` 检查模块引用；另一项检查不看引用：各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh` 与 `studio` 中。`check-packages.mjs` 让 `@presmium/workbench`、`@presmium/dsh`、`@presmium/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@presmium/dsh` 的 `skills` 与预编译的客户端）。
 
 `package.json` 的 `exports`：
 
@@ -1369,6 +1369,10 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 ### 5.10 设计系统
 
 > **工作台**：令牌、`pm-ui-*` 的类、字体与图标在 `@presmium/design`（`packages/design/src/`；`@presmium/host` 引用它，Vue 组件与 `useTheme` 留在 `host`），工作台的 React 面板（`@presmium/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。
+
+产物的 Vue 通用交互同样由依赖实现：`@presmium/host` 的弹窗、抽屉、菜单、浮层、标签页和分段切换封装 Reka UI；查看器的内容标签页与放映焦点围栏也使用 Reka UI。文稿标签的 `sync` 联动、放映时背景页面的禁用与步骤导航由 Presmium 维护，播放面板与放映画面处在同一个焦点范围，各自保留独立的视觉层级。主题观察通过 VueUse 统一到宿主，图标由 Lucide 提供，`@presmium/design` 保留语义名称与框架无关的节点和 HTML 接口。读者问答的 SSE 事件边界由 eventsource-parser 解析，文稿上下文和回答内容仍由问答插件维护。
+
+工作台的通用交互由依赖实现：Radix Primitives 提供弹窗、菜单、浮层、标签页与分段切换，cmdk 提供命令搜索，React Arborist 提供文件树，react-resizable-panels 提供分栏与鼠标、键盘调整。`Pm*` 只封装样式与业务回调；源码编辑使用 CodeMirror 6，首次欢迎在 dsh 适配层直接复用 Harness 的 `Modal`。文档操作、源码版本冲突、编译、审阅与预览协议仍由 Presmium 维护。
 
 用户选定的设计（`docs/design/`）是工作台的布局与编辑方式、书卷的样式。`@presmium/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页、阅读页）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.12 节。
 

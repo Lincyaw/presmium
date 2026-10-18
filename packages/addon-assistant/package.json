@@ -35,6 +35,7 @@
   "slidev": {},
   "dependencies": {
     "@slidev/types": "53.0.0",
+    "eventsource-parser": "4.1.2",
     "vue": "^3.5.42"
   },
   "peerDependencies": {

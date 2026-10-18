@@ -1,3 +1,4 @@
+import { FocusScope } from 'reka-ui'
 import { PmApprovals } from '@presmium/host'
 import { blockText, sectionNarration } from '@presmium/kernel'
 import type { IRSection } from '@presmium/kernel'
@@ -30,7 +31,7 @@ export const BUILTIN_ACTIONS: readonly ViewerAction[] = [
 ]
 
 function typing(target: EventTarget | null): boolean {
-  return Boolean((target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]'))
+  return Boolean((target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable], [role="dialog"], [role="menu"], [role="tablist"], [role="slider"]'))
 }
 
 function useActions(viewer: Viewer, view: string): void {
@@ -52,60 +53,28 @@ function useActions(viewer: Viewer, view: string): void {
   })
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
-
-function focusables(within: readonly Element[]): HTMLElement[] {
-  return within
-    .flatMap(el => [...el.querySelectorAll<HTMLElement>(FOCUSABLE)])
-    .filter(el => !el.closest('[inert]') && (el.checkVisibility ? el.checkVisibility({ visibilityProperty: true }) : el.getClientRects().length > 0))
-    .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
-}
-
+// The page stays mounted to preserve its scroll position; only the overlay is interactive.
 function useModal(root: Readonly<Ref<HTMLElement | undefined>>): void {
-  let opener: Element | null = null
-  let above: Element[] = []
   const inert: Element[] = []
-  const onTab = (event: KeyboardEvent) => {
-    if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey || !root.value) return
-    const items = focusables([root.value, ...above])
-    const active = document.activeElement as HTMLElement | null
-    const at = active ? items.indexOf(active) : -1
-    const target = event.shiftKey
-      ? (at <= 0 ? items.at(-1) : undefined)
-      : (at === -1 || at === items.length - 1 ? items[0] : undefined)
-    if (!items.length || target) {
-      event.preventDefault()
-      target?.focus()
-    }
-  }
   onMounted(() => {
-    opener = document.activeElement
-    const el = root.value
+    const el = root.value?.closest('[data-pm-overlay-scope]')
     if (!el) return
-    const z = Number(getComputedStyle(el).zIndex) || 0
-    const isAbove = (other: Element) => {
-      const style = getComputedStyle(other)
-      return style.position === 'fixed' && (Number(style.zIndex) || 0) > z
-    }
     for (let node: Element = el; node.parentElement && node !== document.body; node = node.parentElement) {
       for (const sibling of node.parentElement.children) {
         if (sibling === node || sibling.hasAttribute('inert') || ['SCRIPT', 'STYLE', 'LINK'].includes(sibling.tagName)) continue
-        if (isAbove(sibling)) {
-          above.push(sibling)
-          continue
-        }
         sibling.setAttribute('inert', '')
         inert.push(sibling)
       }
     }
-    document.addEventListener('keydown', onTab)
   })
-  onBeforeUnmount(() => {
-    document.removeEventListener('keydown', onTab)
-    inert.splice(0).forEach(el => el.removeAttribute('inert'))
-    above = []
-    if (opener instanceof HTMLElement && opener.isConnected && opener !== document.body) opener.focus({ preventScroll: true })
-  })
+  onBeforeUnmount(() => inert.splice(0).forEach(el => el.removeAttribute('inert')))
+}
+
+function focusScope(root: Readonly<Ref<HTMLElement | undefined>>) {
+  return { 'data-pm-overlay-scope': '', style: { display: 'contents' }, loop: true, trapped: true, onMountAutoFocus: (event: Event) => {
+    event.preventDefault()
+    root.value?.focus({ preventScroll: true })
+  } }
 }
 
 interface Fitted {
@@ -223,7 +192,6 @@ export const PresentView = defineComponent({
     useModal(root)
     onMounted(() => {
       window.addEventListener('keydown', onOverviewKey, { capture: true })
-      root.value?.focus()
     })
     onBeforeUnmount(() => {
       window.removeEventListener('keydown', onOverviewKey, { capture: true })
@@ -244,7 +212,7 @@ export const PresentView = defineComponent({
       if (!current) return null
       const t = messages()
       const { sections } = viewer.doc.value
-      return h('div', {
+      return h(FocusScope, focusScope(root), () => [h('div', {
         'ref': root,
         'class': 'pm-present',
         'role': 'region',
@@ -285,8 +253,7 @@ export const PresentView = defineComponent({
           button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
           h(PmApprovals, { placement: 'above' }),
         ]),
-        ...layers('present'),
-      ])
+      ]), ...layers('present')])
     }
   },
 })
@@ -328,7 +295,7 @@ export const PresenterView = defineComponent({
       if (!current) return null
       const t = messages()
       const notes = sectionNarration(current)
-      return h('div', { 'ref': root, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step.value }, [
+      return h(FocusScope, focusScope(root), () => [h('div', { 'ref': root, 'tabindex': -1, 'class': 'pm-presenter', 'data-section': current.id, 'data-step': step.value }, [
         h('div', { ref: bar, class: 'pm-presenter__bar' }, [
           h('strong', { class: 'pm-presenter__title' }, `${current.index}. ${current.title}`),
           current.steps > 0 ? h('span', { class: 'pm-presenter__counter' }, t.presenter.step(step.value, current.steps)) : null,
@@ -354,8 +321,7 @@ export const PresenterView = defineComponent({
             h('p', { class: 'pm-presenter__next' }, upcoming.value),
           ]),
         ]),
-        ...layers('presenter'),
-      ])
+      ]), ...layers('presenter')])
     }
   },
 })

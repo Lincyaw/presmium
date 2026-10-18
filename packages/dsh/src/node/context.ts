@@ -6,7 +6,7 @@ export const inject = ['presmium', 'systemPrompt']
 
 export const GUIDE = [
   'This is a Presmium workspace: lecture documents written in MyST Markdown, each in a directory of its own, which Presmium compiles to an intermediate representation and renders as a web page, slides and a notebook.',
-  'Your working directory is one document\'s directory: edit its source with your file tools. The presmium__* tools read the compiled document (its sections, steps, code, outputs and diagnostics) and operate it (run a code block, build, move the presentation); they ask the author first where Presmium\'s approval policy says so.',
+  'Your working directory is the workspace root and stays the same when the author switches documents. You can read and write files throughout this workspace; resolve document paths relative to this root. The presmium__* tools read the compiled document (its sections, steps, code, outputs and diagnostics) and operate it (run a code block, build, move the presentation); they ask the author first where Presmium\'s approval policy says so.',
   'Load the presmium-author skill before you write MyST directives. The <presmium-document> context says where the document and the author are, and what the author points at (focus): start from there.',
   'Your changes are reviewed by the author before they are committed; do not commit them yourself.',
 ].join('\n')
@@ -26,7 +26,7 @@ async function read(session: PresmiumSession, tool: string): Promise<any> {
 export async function snapshot(session: PresmiumSession): Promise<string> {
   const [info, listed, position, focus] = await Promise.all(['deck_info', 'list_sections', 'get_position', 'get_focus'].map(tool => read(session, tool)))
   const where = session.document.dir || '.'
-  const lines = [`Document ${JSON.stringify(where)} (relative to the workspace root; your working directory): "${info?.title ?? session.document.title}"${info?.lang ? `, language ${info.lang}` : ''}${info?.entry ? `, entry ${info.entry}` : ''}.`]
+  const lines = [`Document ${JSON.stringify(where)} (path relative to the workspace root; working directory remains the workspace root): "${info?.title ?? session.document.title}"${info?.lang ? `, language ${info.lang}` : ''}${info?.entry ? `, entry ${info.entry}` : ''}.`]
   if (info?.diagnostics) lines.push(`Diagnostics: ${info.diagnostics.errors} errors, ${info.diagnostics.warnings} warnings (presmium__get_diagnostics lists them).`)
   if (listed?.sections) lines.push('Sections (id: title):', ...(listed.sections as { id: string, title: string }[]).map(s => `- ${s.id}: ${s.title}`))
   const at = position?.position
@@ -39,15 +39,13 @@ export function apply(ctx: DshContext): void {
   ctx.systemPrompt.section({ name: 'presmium:guide', order: ORDER, interpolate: false, text: GUIDE })
   const latest = new Map<string, string>()
   const refresh = async (agent: DshAgent) => {
-    const session = ctx.presmium.session(agent)
-    if (session) latest.set(session.id, await snapshot(session).catch(() => latest.get(session.id) ?? ''))
+    const session = await ctx.presmium.refresh(agent)
+    latest.set(agent.session.id, `Workspace root: ${JSON.stringify((await ctx.presmium.ready).root)}.\n` + (session ? await snapshot(session).catch(() => '') : '<presmium-document>No document selected. Work from the workspace root.</presmium-document>'))
   }
 
   ctx.on('agent/created', async ({ agent }: { agent: DshAgent }) => {
-    const session = await ctx.presmium.attach(agent)
-    if (!session) return
     await refresh(agent)
-    agent.ctx.systemPrompt.context({ name: 'presmium:document', order: ORDER, interpolate: false, text: () => latest.get(session.id) ?? '' })
+    agent.ctx.systemPrompt.context({ name: 'presmium:document', order: ORDER, interpolate: false, text: () => latest.get(agent.session.id) ?? '' })
   })
   ctx.on('agent/pre-step', async (payload: { agent: DshAgent }, next: () => Promise<unknown>) => {
     await refresh(payload.agent)

@@ -235,10 +235,10 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 行 | 载体 | 作用 | dsh 接口 |
 |---|---|---|---|
 | `presmium-service` | 全部 | 给出工作区服务的地址与服务令牌：启动环境中带着它们时（studio）直接用，否则自己启动 `presmium serve` 并监管它。服务在自己的进程组中，父进程退出时随之结束 | `ctx.effect` |
-| `presmium-workspaces` | web | 把每份文档的目录登记为 dsh 工作区，新建、改名、删除文档时同步改名或归档；工作区根不登记。`ctx.workspaceRegistry` 只在 web 的组合中有；headless 与 acp 的会话就在 dsh 启动的目录中 | `ctx.workspaceRegistry` |
-| `presmium-tools` | 全部 | 第 9 节的 dsh 适配器：会话创建时把它所属文档的工具登记为 `presmium__<名字>` | `agent/created`、`agent.ctx.tools.register`、`defineTool` |
+| `presmium-workspaces` | web | 只把启动时的工作区根目录登记为 dsh 工作区；文稿是其中的内容，不各自登记。`ctx.workspaceRegistry` 只在 web 的组合中有；headless 与 acp 的会话就在 dsh 启动的目录中 | `ctx.workspaceRegistry` |
+| `presmium-tools` | 全部 | 第 9 节的 dsh 适配器：按当前选中的文稿登记工具，每一步前更新为 `presmium__<名字>` | `agent/created`、`agent.ctx.tools.register`、`defineTool` |
 | `presmium-policy` | 全部 | 确认的映射（6.3 节） | `tools/pre-execute`、`ctx.tools.guard`、`approval/request` |
-| `presmium-context` | 全部 | 指南放进 system 消息；文稿快照与焦点按会话的目录取得，每一步之前重读（6.4 节） | `ctx.systemPrompt.section`、`context`、`agent/pre-step` |
+| `presmium-context` | 全部 | 指南放进 system 消息；文稿快照与焦点按界面选中的文稿取得，每一步之前重读（6.4 节） | `ctx.systemPrompt.section`、`context`、`agent/pre-step` |
 | `presmium-skills` | 全部 | 登记 `presmium-author` 等技能 | `ctx.skills.register` |
 | `presmium-turns` | 全部 | 第一次写文件之前取锁并打开审阅，每个工具调用之后记检查点，接受时提交；撤销后通知会话（6.5 节） | `tools/execute`、turn 事件、`workspace/changes`、`Agent.inject` |
 | `presmium-routes` | web | 把 `/api/presmium/*` 转到工作区服务与服务端（精确路径，必须在 `/api` 下），流式的回答原样返回 | `ctx.connection.fetch.register`、`admit()` |
@@ -246,7 +246,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 客户端的行是包名本身：dsh 的模块系统只把名字是整包名（`@presmium/dsh`）的 Loader 行当作客户端的来源，`@presmium/dsh/<行>` 这样的子路径不算，一个包也只能有一个这样的行。所以 `presmium-workbench` 行的 `name` 是 `@presmium/dsh`。
 
-每一行都按**会话的目录**解析它所属的文档，不按 `process.cwd()`：dsh 的网页宿主是多工作区的，每个会话的工作目录是它所属的工作区，按 `process.cwd()` 解析时，跑在 dsh 默认工作区里的会话会拿到描述文稿的上下文，却找不到文稿。会话的目录不是任何文档目录时，bundle 不为它提供 Presmium 的工具与上下文。
+网页中的会话固定在启动时的工作区根目录，文件读写与沙箱边界覆盖整个工作区。打开、关闭或切换文稿不切换 Harness workspace、会话或 cwd；客户端经认证路由 `POST /api/presmium/context` 将 `{ session, document }`（关闭文稿时 `document: null`）交给适配器。当前文稿只决定文稿工具、快照和焦点；会话空闲后更新工具登记与 MCP 会话，每一步前重读快照，运行中的工具调用保留原来的文稿。headless 与 acp 未显式选择文稿时仍按会话目录匹配，兼容从单篇文稿目录启动的用法。
 
 ### 6.3 确认的映射
 
@@ -255,8 +255,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 种类的策略为 `off` | 不登记对应的工具，与 MCP 不列出它的做法一致 |
 | 策略为 `allow` | `tools/pre-execute` 直接返回 allow，不经回答者：经回答者放行的调用在完全访问模式下会被 dsh 的回答者拒绝 |
 | 策略为 `ask`（默认） | pre-execute 返回 ask，`displayReason` 写 Presmium 按文稿语言给出的说明（如“构建文稿（web）”）与简短的摘要（哪一节、哪一块），由 dsh 的确认卡片回答；授权只一次有效 |
-| `content` 范围：文档目录中的写入 | 会话的目录就是文档目录，`workspace-write` 沙箱不询问；发送任务就是对这些写入的确认 |
-| `workspace` 范围：shell、网络与文档目录之外的写入 | dsh 的沙箱与策略询问；文件工具写到会话目录之外时，bundle 也返回 ask，运营者目录除外 |
+| `content` 范围：工作区目录中的写入 | 会话固定在工作区根目录，`workspace-write` 允许整个工作区内的文件读写；文稿切换不收缩这个范围 |
+| `workspace` 范围：shell、网络与工作区目录之外的写入 | dsh 的沙箱与策略询问；文件工具写到会话目录之外时，bundle 也返回 ask，运营者目录除外 |
 | 运营者目录 | `ctx.tools.guard` 拒绝，文件不会写出，完全访问模式（确认策略 `never`）下也成立。guard 先于 pre-execute 的监听者执行；pre-execute 对这些调用返回 ask 时，拒绝会来自回答者而不是 guard，所以 policy 把运营者目录中的路径留给 guard |
 | 完全访问模式（`danger-full-access`） | 允许用户选择；界面说明 Presmium 的 `ask` 在这个模式下会被拒绝，`allow` 与 guard 照旧生效 |
 | 工作区服务自己的 `APPROVALS` | 会话令牌是主机已确认的，服务不再把确认发往页面窗口 |
@@ -269,12 +269,12 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 ### 6.4 文稿上下文与技能
 
 - **指南**：一段固定的说明放进 system 消息：这是一个 Presmium 工作区，怎样用工具与技能，修改先审阅再提交。web 载体中 Presmium 的角色也由它说明（6.6 节的 persona）。
-- **文稿快照**：每个会话按自己的目录找到文档。快照包含标题、语言、入口文件、章节（ID 与标题）、诊断数、当前位置与当前的焦点（8.6 节）。dsh 的提供者接口是同步的；bundle 在每一步之前（`agent/pre-step`）经 MCP 重读快照，不另维护缓存：读取类调用只要几毫秒（第 9 节），快照也就总是新的。快照以 user 角色写进会话日志，所以“模型看得到的都会记下来”不需要另做。上下文与工具一样登记在 agent 的作用域中。
+- **文稿快照**：网页会话按界面选中的文稿获取上下文，会话工作目录始终是工作区根目录；未选择文稿时明确告知模型。快照包含标题、语言、入口文件、章节（ID 与标题）、诊断数、当前位置与当前的焦点（8.6 节）。dsh 的提供者接口是同步的；bundle 在每一步之前（`agent/pre-step`）经 MCP 重读快照，不另维护缓存：读取类调用只要几毫秒（第 9 节），快照也就总是新的。快照以 user 角色写进会话日志，所以“模型看得到的都会记下来”不需要另做。上下文与工具一样登记在 agent 的作用域中。
 - **技能**：在运行时登记（`ctx.skills.register`）。skill-filesystem 的 `agentsHome` 固定到 Presmium 状态目录中的空目录，用户的 `~/.agents/skills` 不进入技能目录；文稿项目自己的 `.agents/skills` 保留，它是作者自己的材料。项目中的同名技能会覆盖 bundle 的那份，这一点写进技能的说明。
 
 ### 6.5 turn、审阅与提交
 
-文档目录对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交，撤销用 `git revert`。
+整个工作区对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交，撤销用 `git revert`。
 
 1. **开始**：会话第一次调用会写文件的工具（文件工具与 shell）时，bundle 在 `tools/execute` 中为文档打开审阅（`POST review/open`，持有者 `agent:<会话>`）。它在确认之后、工具执行之前运行，被拒绝或被策略否决的调用不打开审阅，也不持有锁。审阅从这时持有文档的锁；锁被别人持有时这次调用以原因失败，什么也没写。打开是幂等的（同一会话得到同一个审阅），所以每次写入之前都问一次服务，宿主不必记住审阅是否还开着。审阅用 git 实现，快照包含当时还没提交的修改。
 2. **进行中**：编辑器保存得到 409，并提示 AI 的修改在等待审阅；后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
@@ -296,9 +296,11 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - **第一次使用**：工作区控制器的 `documentsDirectory` 指向 Presmium 的状态目录，并在启动时登记好文档的工作区。两者都做到，第一次使用就不会在 `~/Documents` 下建目录。
 - **沙箱**：`workspace-write`，确认策略为 ask。
 - **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体的 4 个 agent 预设（`preset-standard` 等）各在自己的配置中带一个 `persona` 行，补丁只能按 ID 找到顶层与 group 中的行，所以不换：web 中 Presmium 的角色由 `presmium-context` 的指南说明，编程 agent 的 `harness-dev-context` 行关掉，预设自己的“You are a coding agent powered by …”仍在。
-- **界面**（`web.patch.yml`）：关掉 `ui-layout`（由根布局插件替换；退路模式下重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）与 `ui-settings-session-log`（上传会话日志的设置）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
+- **界面**（`web.patch.yml`）：关掉 `ui-layout` 与 `ui-sidebar`（由 Presmium 的根布局与导航外壳替换；退路模式下同时重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）与 `ui-settings-session-log`（上传会话日志的设置）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
 
 ## 7. 工作台
+
+日常阅读默认只显示预览，文档顶部提供“预览”“并排”“源码”三种显示方式。切换显示方式保留编辑器的未保存内容与预览状态。右侧对话可以从活动栏或对话栏的关闭按钮收起，再从活动栏恢复，收起保留对话草稿。
 
 ### 7.1 包与依赖
 
@@ -315,6 +317,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 根布局插件声明 `root`，子槽位与 ui-layout 相同：`sidebar`、键控的 `main`（保留键 `conversation`）、`rightbar`、`shell.bottom`、`shell.overlay`、`shell.leading`。dsh 自己的插件因此不改就能挂上。只能整个替换 ui-layout：外壳只渲染 `root` 一个槽位，子槽位只能声明一次，`renderSlot` 只渲染调用者自己声明的子槽位。
 
+导航外壳也只保留一套。`chrome.tsx` 占据 `sidebar` 并声明会话浏览器、设置等公开子槽位，直接渲染 Harness 的 `sidebar.workspaces`；设置的原生控制器保持挂载，由活动栏的唯一设置按钮打开。根布局另声明 `sidebar.panellist`，将插件、自动化任务等全局入口放在活动栏底部，与设置同列，点击后在中央打开对应全局面板；再次点击返回文稿，保留编辑草稿。历史侧栏只显示工作区和会话，不再重复品牌、新建按钮、全局工具和设置入口。原生 `ui-sidebar` 因此关闭，避免同一子槽位被两个所有者声明。
+
 根布局插件还要重新提供：
 
 - `ctx.layout`：`panelInfo`、`selectPanel`、`beginNavigation`、`toggleSidebar`、`openRightbar`、`closeRightbar`（ui-layout 的 README 写明了它们的行为）；
@@ -328,7 +332,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 | 区域 | 内容 |
 |---|---|
-| 活动栏（最左） | 标志、文档、文件、搜索、会话（dsh 的 `sidebar` 内容）、修改历史、讲授；底部是设置（dsh 的设置与模型设置）与使用说明 |
+| 活动栏（最左） | 标志、文档、文件、会话与对话；底部是插件、自动化任务、设置（dsh 的设置与模型设置）与使用说明 |
 | 侧栏 | 活动栏所选的内容：文件树，或 dsh 的会话与工作区 |
 | 中央 | 首页时是启动台；打开文件时左边是文件标签与源码编辑器、下方是问题面板，右边是预览，也可以只看其中一个。dsh 的全局面板（插件、自动任务）也显示在这里 |
 | 右侧坞（`rightbar`） | dsh 的文件、终端、Review、浏览器等标签页，以及 Presmium 的审阅 |
@@ -336,16 +340,28 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 状态栏 | Presmium 的状态项（git、语言、编码、光标所在行、模型）与 `shell.bottom` |
 | 浮层（`shell.overlay`） | 对话框与设置 |
 
-**退路**：根布局与退路是同一个客户端部分。dsh 的启动图中有 `ui-layout` 时（关掉 `presmium-workbench` 的根布局部分并重新打开 `ui-layout`），它不占据 `root`，得到 dsh 自带布局：对话居中，Presmium 的预览、源码与审阅作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页作为 `main` 的全局面板。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
+打开讲义默认显示预览，顶部可切换源码、并排或预览。面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留编辑器和预览实例；收起对话保留未发送的草稿。关闭文件、返回文档列表或切换文档时，若有未保存的修改，先选择保存、放弃或取消；保存失败时保留当前文档。刷新与关闭页面使用浏览器的未保存提示。`WorkbenchProvider` 默认提供这层保护；同一工作台的辅助面板使用 `protectChanges={false}`，避免重复对话框。
+
+新建、历史与收起对话放在 Harness 常驻头部的 `conversation.header.leading` 槽位，桌面与窄屏一致；不在对话外面再加一层标题栏。通过 `ctx.uiWorkspace.startSession(workspaceId)` 在启动的工作区中新建，复用 Harness 的会话与草稿管理；不操作隐藏的侧栏按钮。当前文稿、编辑草稿与选中内容保持，新会话仍取得当前文稿上下文。
+
+对话头部的 `conversation.session.header.corner` 用空组件替换，去掉原生右侧栏的展开按钮。文件引用统一进入中央编辑器；修改审阅、媒体等专用预览仍可按内容打开辅助栏。退路模式保留原生布局与入口。
+
+**退路**：根布局与退路是同一个客户端部分。重新打开 `ui-layout` 与 `ui-sidebar` 后，它不占据 `root` 或 `sidebar`，得到 dsh 自带布局：对话居中，Presmium 的预览与审阅作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页与文档编辑器作为 `main` 的全局面板。文件引用仍回到同一个文档编辑器，不再另设源码坞标签。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
 
 **在插件管理中关掉 `@presmium/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到工作区：首页在 `documents` 得到 404 时说明“`@presmium/dsh` 在‘插件’页中被关掉了，从‘会话’打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
 
 ### 7.3 面板
 
+源码只在中央编辑器中打开。dsh 对话中的文件名与代码行引用、工作区文件列表，经过公开的 `sidebarRightTabs` 资源解析接口转到同一个编辑器；`source.tsx` 复用 `@deepseek-ai/dsh-util-workspace-path` 解码文件地址，并保留行号、未保存修改与已有标签。恢复的旧 `text` 标签通过 `sidebar.right.tab.document.actions` 同样转到编辑器。图片、PDF、Office、表格与 HTML 继续使用 dsh 的专用预览，修改审阅仍在审阅面板中。
+
+转到中央编辑器时，在布局效果中移除临时文件标签并明确收起原生查看栏，再选择中央面板；只关闭标签不足以收起已有其他标签的查看栏。原生文件树、终端等标签保留，用户显式打开辅助栏时仍可继续使用。
+
+工作区根目录的文本文件也可以编辑：在文档 `''` 的工作区范围中，所有者可读写工作区内的常规文本文件，仍经过版本、大小、符号链接与路径检查；文档范围只编辑其自己的文件。根目录文件没有讲义 IR、预览与讲义焦点，打开它时会话的讲义上下文清空。窄屏切换聊天与源码只隐藏文档面板，保留编辑器实例与草稿。
+
 | 面板 | 数据来源 |
 |---|---|
 | 首页：文档卡片、新建与管理、启动台搜索、MCP 卡片 | `documents`；MCP 卡片的地址来自 `/api/presmium/workbench`（6.2 节） |
-| 由 AI 起草 | 先按模板新建文档（`POST documents`，一个提交），再在新文档目录的 dsh 会话中起草 |
+| 由 AI 起草 | 先按模板新建文档（`POST documents`，一个提交），再在根目录的同一 dsh 会话中起草新文档 |
 | 文件树 | `files` |
 | 源码编辑器与文件标签 | `source`（版本、409、锁）；IR 的诊断；`ir/events` 中改过的文件 |
 | 问题 | IR 的诊断 |
@@ -356,13 +372,13 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 讲授回写 | 讲授插件的路由；回写时新建 dsh 会话 |
 | 状态项 | git 状态、光标；模型来自 dsh 的设置 |
 
-起草新文档在新文档的目录中进行：工作区根不登记为 dsh 工作区，所以每个 agent 会话的工作目录、沙箱的根与审阅的根都是同一个文档目录。
+起草新文档时，会话仍在工作区根目录中，使用相对根目录的文稿路径。文稿级审阅只收集对应文稿的变化，Harness 的文件工具与变更记录仍覆盖整个工作区。
 
 `ir/events` 在页面中以 `EventSource` 读 `/api/presmium/ir/events?document=`（同源，带 dsh 的 cookie）。保存或文件在磁盘上被改之后，事件随即到达，工作台读新的 IR（诊断），并把事件列出的、打开着的文件与磁盘比较。连接断开时 `EventSource` 自己重连，期间读一次 IR；不按秒轮询。
 
 ### 7.4 复用的 dsh 插件与关掉的行
 
-直接复用：对话、确认卡片（在 `conversation.composer` 中）、修改卡片与 Review 标签页、会话与工作区的侧栏、设置与模型设置、终端、文件、jobs、计划、插件管理（可用范围受 6.6 节限制）。
+直接复用：对话、确认卡片（在 `conversation.composer` 中）、修改卡片与 Review 标签页、会话与工作区浏览器、设置与模型设置、终端、文件、jobs、计划、插件管理（可用范围受 6.6 节限制）。侧栏与对话头部通过公开槽位组合，不嵌套第二套导航外壳。
 
 Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`；`settings.onboarding` 中的 `welcome-notice`（优先级 -1，替换首次使用的提示）。
 
@@ -373,7 +389,7 @@ Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.br
 ### 7.5 设计系统、主题与品牌
 
 - **共用的一层**：`@presmium/design`，产物中的 Vue 组件与工作台中的 React 组件用同一层令牌与 `pm-ui-*` 的类。
-- **React 版的通用组件**在 `@presmium/workbench`：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。重复的只有行为（焦点、菜单与标签页的键盘操作、弹层的位置），按 `architecture.md` 5.10 节；对比度与键盘的用例对两份都运行。
+- **React 版的通用组件**在 `@presmium/workbench`：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。工作台搜索用 cmdk，文件树用 React Arborist（只读目录操作，打开与选择文件），分栏用 react-resizable-panels。源码编辑继续使用 CodeMirror 6，文本合并继续使用 node-diff3。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
 - **dsh 的令牌**：`ctx.theme.overrideTokens` 把 dsh 用到的 76 个 `--dsw-*` 别名令牌（dsh 共用到 125 个变量）映射到书卷的取值，明暗两套。字体经 `--dsh-font-family-*` 设为 IBM Plex Sans 与 IBM Plex Mono，用户自己选的字体优先。dsh 写死的颜色、圆角、字号与 CSS module 的类不去覆盖：检查以 WCAG AA 与截图为准，不要求和书卷一致。
 - **暗色**：工作台在 `<html>` 上设 `dark` 类，`--pm-*` 与 `--dsw-*` 一起切换，再经预览协议的 `appearance` 让产物跟随。
 - **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline` 与 `hero.preview`，其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@presmium/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。
@@ -386,7 +402,8 @@ Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.br
 
 ### 7.7 窄屏与可访问性
 
-- 宽度小于 1024 px 时侧栏收起；小于 768 px 时活动栏横排在顶部，侧栏、右侧坞与对话都放进占满宽度的抽屉或视图。
+- 宽度小于 1024 px 时侧栏默认收起；手动打开时占用分栏空间，并收起对话，保留草稿。辅助栏空间不足时先收起左侧导航，再按需要收起对话。小于 768 px 时活动栏横排在顶部，侧栏、右侧坞与对话使用占满宽度的视图。
+- 辅助栏跟随 `react-resizable-panels` 分配的实际轨道边界，不按偏好宽度估算坐标；全屏时锚定整个工作台。程序控制的折叠不回写成用户拖动，避免面板反复展开；空的辅助栏容器不截获点击。
 - 390 px 时 dsh 的每个面板都能从活动栏到达，包括会话、设置、Review 与文件。
 - 文字对比度达到 WCAG AA，控件边框达到 3:1。
 
@@ -435,6 +452,8 @@ export interface Focus {
 - 没有选中任何东西时，**当前位置**（文档、节、步骤、形态）是一种被动的焦点，对话时自动带上，不需要用户操作。
 
 ### 8.3 三个入口与一种交互
+
+当前实现自动把源码中的非空选区、预览中的文字选区与点选块报告到服务端的焦点接口。文档顶部显示当前关注内容及同步状态；焦点在转到聊天输入框时保留，作者可以明确清除。预览模式中点选块不打开源码；并排或源码模式中同时定位源码。下列批注托盘、快捷键、多条批注与发送方式是进一步的交互设计，不能据此宣称当前版本已经提供。
 
 | 入口 | 怎么指 | 得到 |
 |---|---|---|
@@ -521,7 +540,7 @@ export interface Focus {
 4. 等 dsh 在标准输出打印 `dsh web: <网址>`。
 5. 打印一个网址。
 
-启动令牌只能从 dsh 的标准输出读取：每个 dsh 进程自己生成启动令牌，只经 `dsh-web-app` 中的两处带出，`printUrl` 打印的 `dsh web: <网址>` 一行，与 `openBrowser` 交给浏览器的同一个网址（宿主的连接服务另有 `authenticatedUrl(baseUrl)`，只在类型声明中，README 没有写，不用）。`dsh-web-app` 的 README 把这一行写成供监管者使用的就绪信号：加载树安定、启动审计通过之后才打印。`presmium-workspaces` 在激活时登记文档的工作区，所以读到这一行时工作区已经登记好，启动器不另外查询。用户在 profile 自己的补丁中把 `printUrl` 设为 `false` 时启动器等不到这一行，3 分钟后报错并给出日志的位置。
+启动令牌只能从 dsh 的标准输出读取：每个 dsh 进程自己生成启动令牌，只经 `dsh-web-app` 中的两处带出，`printUrl` 打印的 `dsh web: <网址>` 一行，与 `openBrowser` 交给浏览器的同一个网址（宿主的连接服务另有 `authenticatedUrl(baseUrl)`，只在类型声明中，README 没有写，不用）。`dsh-web-app` 的 README 把这一行写成供监管者使用的就绪信号：加载树安定、启动审计通过之后才打印。`presmium-workspaces` 在激活时登记根工作区，所以读到这一行时工作区已经登记好，启动器不另外查询。用户在 profile 自己的补丁中把 `printUrl` 设为 `false` 时启动器等不到这一行，3 分钟后报错并给出日志的位置。
 
 两个进程的输出写进 `$DSH_HOME/presmium-studio.log`；启动器的标准输出只有 `studio  <网址>` 一行，警告（局域网没有登录、`PRESMIUM_MODEL_*` 不全）在标准错误。
 

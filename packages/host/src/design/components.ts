@@ -1,10 +1,20 @@
 import type { InjectionKey, PropType, VNode } from 'vue'
-import { defineComponent, h, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, Teleport, watch } from 'vue'
+import { defineComponent, cloneVNode, h, inject, provide, ref, useId } from 'vue'
+import { DialogClose, DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot, TabsContent, TabsList, TabsRoot, TabsTrigger, ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
 import type { ToolbarPlace } from '../types.ts'
 import { ICONS } from '@presmium/design'
 import type { IconName } from '@presmium/design'
 
 const PLACE: InjectionKey<ToolbarPlace> = Symbol('presmium.toolbarPlace')
+const OVERLAY_Z: InjectionKey<string> = Symbol('presmium.overlayZ')
+
+function overlayStyle(kind: 'popover' | 'dialog') {
+  const parent = inject(OVERLAY_Z, undefined)
+  const zIndex = parent ? `calc(${parent} + 1)` : `var(--pm-z-${kind})`
+  provide(OVERLAY_Z, zIndex)
+  return { zIndex }
+}
+
 
 /** @experimental */
 export function useToolbarPlace(): ToolbarPlace {
@@ -126,17 +136,14 @@ export const PmSegmented = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    return () => h('div', { 'class': 'pm-ui-segmented', 'role': 'group', 'aria-label': props.label }, props.options.map(option => h('button', {
-      'key': option.value,
-      'type': 'button',
-      'class': 'pm-ui-segmented__option',
-      'aria-pressed': option.value === props.modelValue ? 'true' : 'false',
-      'onClick': () => emit('update:modelValue', option.value),
-    }, option.label)))
+    return () => h(ToggleGroupRoot, {
+      'type': 'single', 'class': 'pm-ui-segmented', 'aria-label': props.label, 'modelValue': props.modelValue,
+      'onUpdate:modelValue': value => { if (typeof value === 'string' && value) emit('update:modelValue', value) },
+    }, () => props.options.map(option => h(ToggleGroupItem, {
+      key: option.value, value: option.value, class: 'pm-ui-segmented__option',
+    }, () => option.label)))
   },
 })
-
-let ids = 0
 
 export const PmTabs = defineComponent({
   name: 'PmTabs',
@@ -147,94 +154,22 @@ export const PmTabs = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit, slots }) {
-    const prefix = `pm-ui-tabs-${++ids}`
-    const list = ref<HTMLElement>()
-    const tabId = (value: string) => `${prefix}-tab-${value}`
-    const panelId = (value: string) => `${prefix}-panel-${value}`
-    const move = (event: KeyboardEvent) => {
-      const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
-      if (!step) return
-      event.preventDefault()
-      const index = props.tabs.findIndex(tab => tab.value === props.modelValue)
-      const next = props.tabs[(index + step + props.tabs.length) % props.tabs.length]
-      if (!next) return
-      emit('update:modelValue', next.value)
-      void nextTick(() => list.value?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus())
-    }
-    return () => h('div', { class: 'pm-ui-tabset' }, [
-      h('div', { 'ref': list, 'class': 'pm-ui-tabs', 'role': 'tablist', 'aria-label': props.label, 'onKeydown': move }, props.tabs.map((tab) => {
-        const selected = tab.value === props.modelValue
-        return h('button', {
-          'key': tab.value,
-          'type': 'button',
-          'role': 'tab',
-          'class': 'pm-ui-tab',
-          'id': tabId(tab.value),
-          'aria-selected': selected ? 'true' : 'false',
-          'aria-controls': selected && slots.default ? panelId(tab.value) : undefined,
-          'tabindex': selected ? 0 : -1,
-          'onClick': () => emit('update:modelValue', tab.value),
-        }, tab.label)
-      })),
-      slots.default
-        ? h('div', { 'class': 'pm-ui-tabpanel', 'role': 'tabpanel', 'id': panelId(props.modelValue), 'aria-labelledby': tabId(props.modelValue), 'tabindex': 0 }, slots.default({ value: props.modelValue }))
-        : null,
+    return () => h(TabsRoot, {
+      'class': 'pm-ui-tabset', 'modelValue': props.modelValue,
+      'onUpdate:modelValue': value => emit('update:modelValue', String(value)),
+    }, () => [
+      h(TabsList, { class: 'pm-ui-tabs', 'aria-label': props.label }, () => props.tabs.map(tab =>
+        h(TabsTrigger, { key: tab.value, value: tab.value, class: 'pm-ui-tab' }, () => tab.label))),
+      slots.default ? h(TabsContent, { key: props.modelValue, value: props.modelValue, class: 'pm-ui-tabpanel', tabindex: 0 }, () => slots.default?.({ value: props.modelValue })) : null,
     ])
   },
 })
 
-function useDismiss(open: () => boolean, close: () => void, root: () => HTMLElement | undefined, dialog = false): void {
-  const outside = !dialog
-  const onPointer = (event: PointerEvent) => {
-    if (!outside || !open()) return
-    const target = event.target as Node | null
-    if (target && root()?.contains(target)) return
-    close()
-  }
-  const onKey = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || !open()) return
-    const within = root()?.contains(document.activeElement)
-    close()
-    if (!dialog && (within || document.activeElement === document.body)) root()?.querySelector<HTMLElement>('button, [href], input, select, textarea')?.focus()
-  }
-  onMounted(() => {
-    document.addEventListener('pointerdown', onPointer, true)
-    document.addEventListener('keydown', onKey)
-  })
-  onBeforeUnmount(() => {
-    document.removeEventListener('pointerdown', onPointer, true)
-    document.removeEventListener('keydown', onKey)
-  })
-}
-
-function useInView(panel: () => HTMLElement | undefined): void {
-  let observer: ResizeObserver | undefined
-  const place = () => {
-    const element = panel()
-    if (!element) return
-    element.style.translate = ''
-    const box = element.getBoundingClientRect()
-    const margin = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-    const width = document.documentElement.clientWidth
-    let shift = box.right > width - margin ? width - margin - box.right : 0
-    if (box.left + shift < margin) shift = margin - box.left
-    if (shift) element.style.translate = `${Math.round(shift)}px 0`
-  }
-  watch(panel, (element) => {
-    observer?.disconnect()
-    observer = undefined
-    if (!element || typeof ResizeObserver === 'undefined') return
-    observer = new ResizeObserver(place)
-    observer.observe(element)
-  }, { flush: 'post' })
-  onMounted(() => window.addEventListener('resize', place))
-  onBeforeUnmount(() => {
-    observer?.disconnect()
-    window.removeEventListener('resize', place)
-  })
-}
-
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
+
+function placement(value: PopoverPlacement) {
+  return { side: value.startsWith('above') ? 'top' as const : 'bottom' as const, align: value.endsWith('start') ? 'start' as const : 'end' as const, sideOffset: 6, collisionPadding: 16 }
+}
 
 export const PmPopover = defineComponent({
   name: 'PmPopover',
@@ -246,92 +181,66 @@ export const PmPopover = defineComponent({
   },
   emits: ['update:open'],
   setup(props, { emit, slots }) {
-    const root = ref<HTMLElement>()
-    const panel = ref<HTMLElement>()
-    useDismiss(() => props.open, () => emit('update:open', false), () => root.value)
-    useInView(() => panel.value)
-    return () => h('span', { ref: root, class: ['pm-ui-anchor', props.name] }, [
-      slots.trigger?.(),
-      props.open
-        ? h('div', { 'ref': panel, 'class': ['pm-ui-popover', `pm-ui-popover--${props.placement}`, props.name && `${props.name}__panel`], 'role': 'dialog', 'aria-label': props.label }, slots.default?.())
-        : null,
+    const style = overlayStyle('popover')
+    const anchor = ref<HTMLElement>()
+    const id = useId()
+    let outside = false
+    return () => h(PopoverRoot, { 'open': props.open, 'onUpdate:open': value => emit('update:open', value) }, () => [
+      h(PopoverAnchor, { asChild: true }, () => h('span', { ref: anchor, class: ['pm-ui-anchor', props.name] }, slots.trigger?.().map(node => cloneVNode(node, {
+        'aria-haspopup': 'dialog', 'aria-expanded': props.open, 'aria-controls': props.open ? id : undefined,
+      })))),
+      h(PopoverPortal, {}, () => h(PopoverContent, {
+        ...placement(props.placement), 'id': id, style,
+        onOpenAutoFocus: () => { outside = false },
+        onInteractOutside: () => { outside = true },
+        onCloseAutoFocus: (event: Event) => { event.preventDefault(); if (!outside) anchor.value?.querySelector<HTMLElement>('button, [href]')?.focus() },
+        'class': ['pm-ui-popover', 'pm-ui-floating', 'pm-ui', props.name && `${props.name}__panel`], 'aria-label': props.label,
+      }, slots.default)),
     ])
   },
 })
 
-export const PmDrawer = defineComponent({
-  name: 'PmDrawer',
-  props: {
-    open: Boolean,
-    label: { type: String, required: true },
-    closeLabel: { type: String, required: true },
-    name: String,
-  },
-  emits: ['update:open'],
-  setup(props, { emit, slots }) {
-    const root = ref<HTMLElement>()
-    const close = () => emit('update:open', false)
-    useDismiss(() => props.open, close, () => root.value)
-    return () => h('span', { ref: root, class: ['pm-ui-anchor', props.name] }, [
-      slots.trigger?.(),
-      props.open
-        ? h('div', { 'class': ['pm-ui-drawer', props.name && `${props.name}__panel`], 'role': 'dialog', 'aria-label': props.label }, [
-            h('div', { class: 'pm-ui-drawer__header' }, [
-              h('h2', { class: 'pm-ui-drawer__title' }, props.label),
-              h(PmIconButton, { icon: 'close', label: props.closeLabel, small: true, onClick: close }),
-            ]),
-            h('div', { class: 'pm-ui-drawer__body' }, slots.default?.()),
-          ])
-        : null,
-    ])
-  },
-})
+const dialogProps = {
+  open: Boolean,
+  label: { type: String, required: true },
+  closeLabel: { type: String, required: true },
+  name: String,
+} as const
 
-export const PmDialog = defineComponent({
-  name: 'PmDialog',
-  props: {
-    open: Boolean,
-    label: { type: String, required: true },
-    closeLabel: { type: String, required: true },
-    name: String,
-  },
-  emits: ['update:open'],
-  setup(props, { emit, slots }) {
-    const panel = ref<HTMLElement>()
-    const id = `pm-ui-dialog-${++ids}`
-    let before: HTMLElement | undefined
-    const close = () => emit('update:open', false)
-    useDismiss(() => props.open, close, () => panel.value, true)
-    watch(() => props.open, async (open) => {
-      if (typeof document === 'undefined') return
-      if (!open) {
-        if (before?.isConnected) before.focus()
-        before = undefined
-        return
-      }
-      before = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
-      await nextTick()
-      const first = panel.value?.querySelector<HTMLElement>('.pm-ui-dialog__body :is(input, select, textarea, button, [href])')
-      ;(first ?? panel.value)?.focus()
-    }, { immediate: true })
-    return () => (props.open
-      ? h(Teleport, { to: 'body' }, h('div', {
-          'ref': panel,
-          'class': ['pm-ui-dialog', 'pm-ui', props.name && `${props.name}__panel`],
-          'role': 'dialog',
-          'aria-labelledby': id,
-          'tabindex': -1,
-        }, [
-          h('div', { class: 'pm-ui-dialog__header' }, [
-            h('h2', { id, class: 'pm-ui-dialog__title' }, props.label),
+function dialogComponent(drawer: boolean) {
+  return defineComponent({
+    name: drawer ? 'PmDrawer' : 'PmDialog',
+    props: dialogProps,
+    emits: ['update:open'],
+    setup(props, { emit, slots }) {
+      const style = overlayStyle(drawer ? 'popover' : 'dialog')
+      const kind = drawer ? 'pm-ui-drawer' : 'pm-ui-dialog'
+      let opener: HTMLElement | undefined
+      return () => h(DialogRoot, { 'open': props.open, 'onUpdate:open': value => emit('update:open', value) }, () => [
+        slots.trigger ? h(DialogTrigger, { asChild: true }, slots.trigger) : null,
+        h(DialogPortal, {}, () => h(DialogContent, {
+          'class': [kind, 'pm-ui', props.name && `${props.name}__panel`], 'style': style, 'aria-describedby': undefined,
+          onOpenAutoFocus: () => { opener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined },
+          onCloseAutoFocus: (event: Event) => {
+            if (slots.trigger || !opener?.isConnected) return
+            event.preventDefault()
+            opener.focus()
+          },
+        }, () => [
+          h('div', { class: `${kind}__header` }, [
+            h(DialogTitle, { as: 'h2', class: `${kind}__title` }, () => props.label),
             slots.actions?.(),
-            h(PmIconButton, { icon: 'close', label: props.closeLabel, small: true, onClick: close }),
+            h(DialogClose, { asChild: true }, () => h(PmIconButton, { icon: 'close', label: props.closeLabel, small: true })),
           ]),
-          h('div', { class: 'pm-ui-dialog__body' }, slots.default?.()),
-        ]))
-      : null)
-  },
-})
+          h('div', { class: `${kind}__body` }, slots.default?.()),
+        ])),
+      ])
+    },
+  })
+}
+
+export const PmDrawer = dialogComponent(true)
+export const PmDialog = dialogComponent(false)
 
 export interface MenuItem {
   id: string
@@ -351,51 +260,15 @@ export const PmMenu = defineComponent({
   },
   emits: ['select'],
   setup(props, { emit }) {
-    const open = ref(false)
-    const root = ref<HTMLElement>()
-    const list = ref<HTMLElement>()
-    const close = () => open.value = false
-    useDismiss(() => open.value, close, () => root.value)
-    useInView(() => list.value)
-    const items = () => [...(root.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])]
-    const focusAt = (index: number) => {
-      const all = items()
-      all[(index + all.length) % all.length]?.focus()
-    }
-    const onKey = (event: KeyboardEvent) => {
-      const all = items()
-      const at = all.indexOf(document.activeElement as HTMLElement)
-      if (event.key === 'ArrowDown') focusAt(at + 1)
-      else if (event.key === 'ArrowUp') focusAt(at - 1)
-      else if (event.key === 'Tab') return close()
-      else return
-      event.preventDefault()
-    }
-    const toggle = async () => {
-      open.value = !open.value
-      if (open.value) {
-        await nextTick()
-        focusAt(0)
-      }
-    }
-    return () => h('span', { ref: root, class: 'pm-ui-anchor', onKeydown: onKey }, [
-      h(PmIconButton, { 'icon': props.icon, 'label': props.label, 'small': true, 'aria-haspopup': 'menu', 'aria-expanded': open.value ? 'true' : 'false', 'onClick': toggle }),
-      open.value
-        ? h('ul', { 'ref': list, 'class': ['pm-ui-menu', `pm-ui-popover--${props.placement}`], 'role': 'menu', 'aria-label': props.label }, props.items.map(item => h('li', { key: item.id, role: 'none' }, [
-            h('button', {
-              'type': 'button',
-              'role': 'menuitem',
-              'class': ['pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger'],
-              'disabled': item.disabled,
-              'tabindex': -1,
-              'onClick': () => {
-                close()
-                root.value?.querySelector<HTMLElement>('button')?.focus()
-                emit('select', item.id)
-              },
-            }, [item.icon ? h(PmIcon, { name: item.icon, size: 16 }) : null, item.label]),
-          ])))
-        : null,
+    const style = overlayStyle('popover')
+    return () => h(DropdownMenuRoot, {}, () => [
+      h(DropdownMenuTrigger, { asChild: true }, () => h(PmIconButton, { icon: props.icon, label: props.label, small: true })),
+      h(DropdownMenuPortal, {}, () => h(DropdownMenuContent, { ...placement(props.placement), style, class: ['pm-ui-menu', 'pm-ui-floating', 'pm-ui'], 'aria-label': props.label }, () => props.items.map(item =>
+        h(DropdownMenuItem, {
+          key: item.id, disabled: item.disabled, textValue: item.label,
+          class: ['pm-ui-menu__item', item.danger && 'pm-ui-menu__item--danger'],
+          onSelect: () => emit('select', item.id),
+        }, () => [item.icon ? h(PmIcon, { name: item.icon, size: 16 }) : null, item.label])))),
     ])
   },
 })

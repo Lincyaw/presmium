@@ -266,7 +266,7 @@ export function testHome(prefix: string): TestHome {
     },
     async close() {
       for (const process_ of processes.reverse()) await process_.stop()
-      for (const path of [dir, ...workspaces]) rmSync(path, { recursive: true, force: true })
+      for (const path of [dir, ...workspaces]) rmSync(path, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
     },
   }
 }

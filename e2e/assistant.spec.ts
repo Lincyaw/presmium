@@ -25,7 +25,7 @@ test.beforeAll(async () => {
   classroom = await startClassroomServer(dir)
   const lecture = join(dir, 'lecture.md')
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:`))
-  model = await chatStub(request => ['这段代码在', `[合并规则](presmium://sections/merge)中讲解：问题是「${questionOf(request)}」。`])
+  model = await chatStub(request => ['这段代码在', `[合并规则](presmium://sections/merge)中讲解：问题是「${questionOf(request)}」。`], { multiline: true })
   dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '' })
 })
 test.afterAll(async () => {

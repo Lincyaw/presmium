@@ -8,6 +8,11 @@ const zh = {
   files: '文件',
   sessions: '会话',
   conversation: '对话',
+  newConversation: '新建对话',
+  conversationHistory: '历史对话',
+  closeHistory: '收起历史对话',
+  tools: '工具',
+  hideConversation: '收起对话',
   source: '源码',
   preview: '预览',
   settings: '设置',
@@ -20,10 +25,10 @@ const zh = {
   resize: '拖动调整宽度',
   centre: '工作区',
   welcomeTitle: '欢迎使用 Presmium',
-  welcome: '在这里编写讲义：左边是文件与源码，右边是实时预览，对话停靠在最右。不配模型也能编辑、保存与预览；要请 AI 修改，先在设置中配置模型。',
+  welcome: '打开讲义即可预览，按需要切换源码或并排查看。右侧对话可以收起；选中文字或点选预览中的块，就能把关注内容带给 AI。不配模型也能编辑、保存与预览。',
   start: '开始使用',
   models: '设置模型',
-  helpText: '活动栏的“文档”回到文档列表，“文件”是文档的文件树，“会话”是与 AI 的会话；Mod+Alt+B 展开或收起侧栏。在预览中按“点选”再点一块，编辑器到它的行。',
+  helpText: '文档顶部可选“预览”“并排”“源码”；对话顶部可新建对话、打开历史。活动栏的“对话”展开或收起聊天，Mod+Alt+B 收起侧栏。选中文字或用“点选”选择一块，顶部显示带给 AI 的关注内容；可用关闭按钮清除。',
 }
 
 export type FrameMessages = typeof zh
@@ -36,6 +41,11 @@ const en: FrameMessages = {
   files: 'Files',
   sessions: 'Sessions',
   conversation: 'Conversation',
+  newConversation: 'New chat',
+  conversationHistory: 'Chat history',
+  closeHistory: 'Hide chat history',
+  tools: 'Tools',
+  hideConversation: 'Hide conversation',
   source: 'Source',
   preview: 'Preview',
   settings: 'Settings',
@@ -48,10 +58,10 @@ const en: FrameMessages = {
   resize: 'Drag to resize',
   centre: 'Workspace',
   welcomeTitle: 'Welcome to Presmium',
-  welcome: 'Write your lectures here: the files and the source on the left, the live preview on the right, the conversation docked at the far right. Editing, saving and the preview need no model; to ask the AI for changes, set up a model in Settings first.',
+  welcome: 'Open a lecture to preview it, and switch to source or a side by side view when needed. The conversation can be hidden. Select text or pick a block to give the AI context. Editing, saving and previewing need no model.',
   start: 'Start',
   models: 'Set up a model',
-  helpText: '“Documents” in the activity bar goes back to the documents, “Files” is the document’s file tree, “Sessions” are the conversations with the AI; Mod+Alt+B toggles the side panel. In the preview, press “Pick” and click a block to go to its lines.',
+  helpText: 'Choose Preview, Side by side or Source above the document. Start a new chat or open history from the conversation header. Conversation in the activity bar toggles the chat; Mod+Alt+B toggles the sidebar. Select text or pick a block to add conversation context, shown above the document. Clear it with its close button.',
 }
 
 export const FRAME_MESSAGES: Record<Locale, FrameMessages> = { 'zh-CN': zh, 'en': en }

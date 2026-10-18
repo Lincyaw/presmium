@@ -1,3 +1,4 @@
+import * as Tabs from '@radix-ui/react-tabs'
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { createEditor } from '../editor.ts'
@@ -20,24 +21,26 @@ export function SourcePanel() {
     void workbench.save()
   }
   return (
+    <Tabs.Root asChild value={active ?? ''} onValueChange={path => workbench.showFile(path)}>
     <section className="pmw-source" aria-label={t.source} onKeyDown={onKeyDown}>
-      <div className="pmw-source__tabs" role="tablist" aria-label={t.source}>
+      <Tabs.List className="pmw-source__tabs" aria-label={t.source}>
         {open.map(f => (
           <span key={f.path} className="pmw-source__tab" data-active={f.path === active || undefined}>
-            <button type="button" role="tab" aria-selected={f.path === active} title={f.path} onClick={() => workbench.showFile(f.path)}>
+            <Tabs.Trigger value={f.path} title={f.path}>
               {nameOf(f.path)}
               {f.dirty && <span className="pmw-source__dot" aria-label={t.unsaved} role="img" />}
-            </button>
+            </Tabs.Trigger>
             <PmIconButton icon="close" label={t.closeFile(nameOf(f.path))} small onClick={() => workbench.closeFile(f.path)} />
           </span>
         ))}
         <span className="pmw-spacer" />
         {file && <PmButton small icon="check" variant={file.dirty ? 'primary' : 'default'} onClick={() => void workbench.save(file.path)}>{t.save}</PmButton>}
-      </div>
+      </Tabs.List>
       {file?.notice && <FileNoticeBox file={file} />}
-      <EditorPane />
+      <Tabs.Content value={active ?? ''} forceMount className="pmw-source__body"><EditorPane /></Tabs.Content>
       {!file && <p className="pmw-source__empty pmw-muted">{t.noFile}</p>}
     </section>
+    </Tabs.Root>
   )
 }
 
@@ -80,6 +83,7 @@ function EditorPane() {
       save: () => void workbench.save(),
       changed: (path, text) => workbench.edited(path, text),
       moved: line => workbench.moved(line),
+      selected: selection => workbench.selectSource(selection),
     })
     editor.current = made
     const unbind = workbench.bindEditor({ text: path => made.text(path), replace: (path, text, fresh) => made.replace(path, text, fresh), focus: () => made.focus() })
@@ -93,9 +97,9 @@ function EditorPane() {
   useEffect(() => {
     const made = editor.current
     if (!made) return
+    for (const path of made.paths()) if (!workbench.state.open.some(file => file.path === path)) made.forget(path)
     if (!active) return
     made.show(active, workbench.textOf(active) ?? '')
-    for (const path of made.paths()) if (!workbench.state.open.some(file => file.path === path)) made.forget(path)
   }, [active, workbench, opened])
 
   useEffect(() => {

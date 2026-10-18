@@ -24,7 +24,7 @@ export { useMessages, useWorkbench, useWorkbenchStore, WorkbenchProvider } from 
 export { ServiceError, workspaceClient } from './service.ts'
 export type { WorkspaceClient } from './service.ts'
 export { localeOf, Workbench } from './store.ts'
-export type { EditorBridge, FileNotice, Locale, OpenFile, PageIssue, PreviewSink, PreviewView, Reveal, WorkbenchState } from './store.ts'
+export type { DocumentLayout, EditorBridge, FileNotice, Locale, OpenFile, PageIssue, PreviewSink, PreviewView, Reveal, WorkbenchState } from './store.ts'
 export { StatusItems } from './panels/Status.tsx'
 export { DocumentView, FilesPanel, HomePanel, PreviewPanel, ProblemsPanel, SourcePanel }
 

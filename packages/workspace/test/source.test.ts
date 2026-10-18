@@ -36,7 +36,7 @@ describe('the source routes', () => {
 
   it('refuses a file reached through a symbolic link, to another document or out of the workspace (403)', async () => {
     symlinkSync(join(dir, 'intro/lecture.md'), join(dir, 'guide/linked.md'))
-    symlinkSync('/etc/hostname', join(dir, 'guide/outside.md'))
+    symlinkSync(process.execPath, join(dir, 'guide/outside.md'))
     for (const path of ['guide/linked.md', 'guide/outside.md']) expect((await read(path)).status, path).toBe(403)
     const before = file('intro/lecture.md')
     expect((await save('guide/linked.md', 'through the link', 'x')).status).toBe(403)
@@ -62,6 +62,20 @@ describe('the source routes', () => {
     for (const path of ['guide/data.bin', 'guide/nul.md', 'guide/latin1.md']) expect((await read(path)).status, path).toBe(415)
     const files = await raw(`${url}/__presmium/presmium.workspace/files`, { headers: { 'Presmium-Document': 'guide' } })
     expect(files.json<{ files: { path: string, binary?: true }[] }>().files).toContainEqual({ path: 'guide/data.bin', binary: true })
+  })
+
+  it('lets the workspace owner open and save a root text file through the same versioned editor routes', async () => {
+    writeFileSync(join(dir, 'notes.md'), '# Notes\n')
+    const endpoint = `${url}/__presmium/presmium.workspace/source?path=notes.md`
+    const opened = await raw(endpoint)
+    expect(opened.status).toBe(200)
+    const { version } = opened.json<{ version: string }>()
+    const saved = await raw(`${url}/__presmium/presmium.workspace/source`, { json: { path: 'notes.md', content: '# Edited notes\n', base: version } })
+    expect(saved.status).toBe(200)
+    expect(file('notes.md')).toBe('# Edited notes\n')
+    expect((await read('notes.md')).status).toBe(403)
+    const files = await raw(`${url}/__presmium/presmium.workspace/files`)
+    expect(files.json<{ files: { path: string }[] }>().files.map(file => file.path)).toContain('notes.md')
   })
 
   it('refuses a request from another site (403), reading or saving', async () => {

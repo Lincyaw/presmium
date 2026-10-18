@@ -1,16 +1,42 @@
+import { Tree } from 'react-arborist'
+import type { NodeRendererProps } from 'react-arborist'
+import { useMemo } from 'react'
 import type { SourceFile } from '../api.ts'
 import { PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
 
-function byDirectory(files: SourceFile[], document: string): [string, SourceFile[]][] {
-  const groups = new Map<string, SourceFile[]>()
+interface FileNode {
+  id: string
+  name: string
+  file?: SourceFile
+  children?: FileNode[]
+}
+
+function fileTree(files: SourceFile[], document: string): FileNode[] {
+  const root: FileNode = { id: '', name: '', children: [] }
   for (const file of files) {
-    const inside = document && file.path.startsWith(`${document}/`) ? file.path.slice(document.length + 1) : file.path
-    const at = inside.lastIndexOf('/')
-    const dir = at < 0 ? '' : inside.slice(0, at)
-    groups.set(dir, [...groups.get(dir) ?? [], file])
+    const parts = (document && file.path.startsWith(`${document}/`) ? file.path.slice(document.length + 1) : file.path).split('/')
+    let parent = root
+    for (const [i, name] of parts.entries()) {
+      const leaf = i === parts.length - 1
+      const id = leaf ? file.path : `directory:${parts.slice(0, i + 1).join('/')}`
+      let child = parent.children!.find(node => node.id === id)
+      if (!child) {
+        child = { id, name, ...leaf ? { file } : { children: [] } }
+        parent.children!.push(child)
+      }
+      parent = child
+    }
   }
-  return [...groups.entries()].sort(([a], [b]) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)))
+  return root.children!
+}
+
+function FileRow({ node, style }: NodeRendererProps<FileNode>) {
+  return (
+    <button type="button" tabIndex={-1} style={style} className="pmw-tree__file" data-path={node.data.file?.path} data-active={node.isSelected || undefined} disabled={node.data.file?.binary} onClick={() => node.isInternal ? node.toggle() : node.activate()}>
+      <PmIcon name={node.isInternal ? 'folder' : 'document'} size={15} />{node.data.name}
+    </button>
+  )
 }
 
 export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
@@ -21,8 +47,9 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
   const active = useWorkbench(state => state.active)
   const documents = useWorkbench(state => state.documents)
   const failure = useWorkbench(state => state.openFailure)
+  const data = useMemo(() => fileTree(files?.files ?? [], document ?? ''), [files, document])
   if (document === undefined) return null
-  const title = documents?.documents.find(doc => doc.dir === document)?.title ?? document
+  const title = documents?.documents.find(doc => doc.dir === document)?.title ?? (document || documents?.title || t.workspace)
   return (
     <nav className="pmw-files" aria-label={t.filesOf(title)}>
       <div className="pmw-files__head">
@@ -32,33 +59,13 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
       {failure && <PmNotice tone="danger">{t.openFailed(failure)}</PmNotice>}
       {files && files.files.length === 0 && <p className="pmw-muted">{t.noFiles}</p>}
       {files && (
-        <ul className="pmw-tree" role="tree" aria-label={t.files}>
-          {byDirectory(files.files, document).map(([dir, list]) => (
-            <li key={dir || '.'} role="treeitem" aria-expanded="true" aria-selected="false">
-              {dir && <div className="pmw-tree__dir"><PmIcon name="folder" size={15} />{dir}</div>}
-              <ul role="group">
-                {list.map(file => (
-                  <li key={file.path} role="treeitem" aria-selected={file.path === active}>
-                    <button
-                      type="button"
-                      className="pmw-tree__file"
-                      data-path={file.path}
-                      data-active={file.path === active || undefined}
-                      disabled={file.binary}
-                      onClick={() => {
-                        void workbench.openFile(file.path)
-                        onOpen?.(file.path)
-                      }}
-                    >
-                      <PmIcon name="document" size={15} />
-                      {file.path.slice(file.path.lastIndexOf('/') + 1)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
+        <Tree<FileNode> className="pmw-tree" data={data} selection={active} width="100%" height={Math.min(480, Math.max(96, (files.files.length + data.length) * 32))} rowHeight={32} indent={16} openByDefault disableDrag disableDrop disableEdit disableMultiSelection disableSelect={node => Boolean(node.file?.binary)} aria-label={t.files} onActivate={node => {
+          if (!node.data.file || node.data.file.binary) return
+          void workbench.openFile(node.data.file.path)
+          onOpen?.(node.data.file.path)
+        }}>
+          {FileRow}
+        </Tree>
       )}
       {files?.truncated && <p className="pmw-muted">{t.truncated}</p>}
     </nav>

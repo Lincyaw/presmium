@@ -46,7 +46,13 @@ pnpm install
 pnpm add -g ./packages/presmium
 ```
 
-之后的 `presmium` 命令运行的就是这份源码。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+之后的 `presmium` 命令运行的就是这份源码。仓库内也可以直接启动浏览器编辑工作台：
+
+```sh
+pnpm studio
+```
+
+首次自动在 `.presmium/studio-workspace` 准备独立的示例工作区，后续复用其中的文档。打开终端打印的完整网址（默认端口 4320），即可编辑、保存与预览，不配模型也能使用。用 `pnpm studio <目录>` 打开自己的讲义或工作区，`Ctrl+C` 停止。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可证
 

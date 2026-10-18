@@ -24,6 +24,8 @@
 
 ## 命令
 
+- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/studio-workspace` 准备独立的示例工作区，后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。
+
 - `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；运行 `slidev export` 的用例是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
 - `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：示例文稿的构建（`presmium build`，产物在 `examples/demo/dist/<渲染端>/`；`dist/` 是一个站点，网页在 `/web/`，幻灯片在 `/slides/`）、检查、输出 IR
 - `pnpm e2e`：Playwright 端到端测试（先 `pnpm demo:build`）。全部用例在 Chromium 中运行，冒烟用例另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`；没有安装或无法启动的跳过并提示）列出的浏览器中运行。并行工作时用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定各自的端口。性能用例 `e2e/perf.spec.ts` 在全部 Chromium 用例之后运行；单独运行它要加 `--no-deps`（`pnpm exec playwright test e2e/perf.spec.ts --no-deps`），否则会先运行全部 Chromium 用例

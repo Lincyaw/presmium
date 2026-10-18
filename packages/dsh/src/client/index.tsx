@@ -1,10 +1,12 @@
 import { localeOf, Workbench } from '@presmium/workbench'
 import type { Locale } from '@presmium/workbench'
 import { brand } from './brand.tsx'
+import { chrome } from './chrome.tsx'
 import { CLIENT_ID, ROOT_CHILDREN, UI_LAYOUT } from './contract.ts'
-import { fallback } from './fallback.tsx'
+import { FALLBACK_PANEL, fallback } from './fallback.tsx'
 import { frameFor } from './Frame.tsx'
 import { createLayoutStore, LayoutController } from './layout.ts'
+import { sourceLinks } from './source.tsx'
 import { followScheme, ThemePresenter, TOKENS } from './theme.ts'
 
 declare const __PRESMIUM_CSS__: string
@@ -26,8 +28,51 @@ function workbenchLocale(active: string | undefined): Locale {
 }
 
 export function apply(ctx: DshClientContext): void {
+  const navigation = new Promise<DshClientContext['uiWorkspace']>(resolve => ctx.inject(['uiWorkspace'], inner => resolve(inner.uiWorkspace)))
+  let workspaceSnapshot: ReturnType<DshClientContext['workspaces']['list']['getSnapshot']> = { items: [] }
+  const workspaceListeners = new Set<() => void>()
+  const workspaceStore = {
+    getSnapshot: () => workspaceSnapshot,
+    subscribe(listener: () => void) {
+      workspaceListeners.add(listener)
+      return () => { workspaceListeners.delete(listener) }
+    },
+  }
+  // Register the root before the renderer boots; remote-backed workspace data follows later.
+  ctx.inject(['workspaces'], inner => inner.effect(() => {
+    const update = () => {
+      workspaceSnapshot = inner.workspaces.list.getSnapshot()
+      for (const listener of workspaceListeners) listener()
+    }
+    update()
+    return inner.workspaces.list.subscribe(update)
+  }, 'presmium: workspace list'))
   const workbench = new Workbench({ locale: workbenchLocale(ctx.locale.getLocale().active) })
+  const ownLayout = window.__DSH_BOOT__?.entries.some(entry => entry.id === UI_LAYOUT)
+  sourceLinks(ctx, workbench, ownLayout ? FALLBACK_PANEL : null)
   ctx.effect(() => () => workbench.dispose(), 'presmium: workbench')
+  ctx.inject(['sessions'], inner => inner.effect(() => {
+    let previous: string | undefined
+    let pending: AbortController | undefined
+    const sync = () => {
+      const session = Object.values(inner.sessions.list.getSnapshot().byId).find(row => (row.retainedBy.mainView ?? 0) > 0)
+      if (!session) return
+      const document = workbench.state.document === '' && workbench.state.documents?.single === false ? null : workbench.state.document ?? null
+      const key = JSON.stringify([session.id, document])
+      if (key === previous) return
+      previous = key
+      pending?.abort()
+      pending = new AbortController()
+      void fetch('/api/presmium/context', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: session.id, document }), signal: pending.signal,
+      }).catch(() => {})
+    }
+    const offSession = inner.sessions.list.subscribe(sync)
+    const offDocument = workbench.subscribe(sync)
+    sync()
+    return () => { offSession(); offDocument(); pending?.abort() }
+  }, 'presmium: selected document context (all layouts)'))
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
   ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, TOKENS), 'presmium: 书卷 tokens')
   ctx.effect(() => {
@@ -36,7 +81,6 @@ export function apply(ctx: DshClientContext): void {
     return ctx.on('theme/change', follow)
   }, 'presmium: light and dark')
 
-  const ownLayout = window.__DSH_BOOT__?.entries.some(entry => entry.id === UI_LAYOUT)
   if (ownLayout) {
     fallback(ctx, workbench)
   } else {
@@ -52,6 +96,12 @@ export function apply(ctx: DshClientContext): void {
     ctx.effect(() => {
       const handle = createLayoutStore()
       const instance = handle.create()
+      const panelStore = chrome(ctx, workbench, instance.actions, instance.getSnapshot, async () => {
+        const { root } = await workbench.client.workbench()
+        const normalize = (path: string) => path.replace(/\\/g, '/').replace(/\/$/, '')
+        const workspace = workspaceSnapshot.items.find(item => root && normalize(item.path) === normalize(root))
+        if (workspace) (await navigation).startSession(workspace.workspaceId)
+      })
       const store = { ...handle, create: () => instance }
       const mainKeys = () => ctx.slots.entries('main').flatMap(entry => (entry.options.key === undefined ? [] : [entry.options.key]))
       const layout = new LayoutController(instance.actions, id => mainKeys().includes(id), {
@@ -64,7 +114,11 @@ export function apply(ctx: DshClientContext): void {
       }
       const disposePanelInfo = ctx.slots.provideRoot({ hooks: { panelInfo: layout.panelInfo } })
       const disposeService = ctx.reflect.provide('layout', layout)
-      const disposeRoot = ctx.slots.register({ name: 'root', locale: 'common', children: { ...ROOT_CHILDREN }, store }, frameFor(workbench, openSettings))
+      const nativeSidebar = window.__DSH_BOOT__?.entries.some(entry => entry.id === '@deepseek-ai/dsh-client-ui-sidebar')
+      const disposeRoot = ctx.slots.register({ name: 'root', locale: 'common', children: {
+        ...ROOT_CHILDREN,
+        ...(nativeSidebar ? {} : { 'sidebar.panellist': { kind: 'list', scope: 'root' } as const }),
+      }, store }, frameFor(workbench, openSettings, id => navigation.then(service => service.openWorkspace(id)), workspaceStore, panelStore))
       const binding = { code: 'KeyB', modifiers: ['primary', 'alt'] }
       const disposeShortcut = ctx.shortcuts.register({
         id: 'sidebar.left.toggle',

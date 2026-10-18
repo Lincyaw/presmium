@@ -1,4 +1,5 @@
-import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, SavedAnswer, SourceAnswer, WorkbenchAnswer } from './api.ts'
+import type { FocusReport } from '@presmium/kernel'
+import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, SavedAnswer, SourceAnswer, WorkbenchAnswer } from './api.ts'
 
 export class ServiceError extends Error {
   readonly status: number
@@ -19,6 +20,7 @@ export interface WorkspaceClient {
   ir(document: string): Promise<IrAnswer>
   preview(document: string): Promise<PreviewAnswer>
   workbench(): Promise<WorkbenchAnswer>
+  focus(document: string, focus?: FocusReport[]): Promise<FocusAnswer>
   events(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
 }
 
@@ -45,6 +47,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     ir: document => call(url('ir', document)),
     preview: document => call(url('preview', document)),
     workbench: () => call(url('workbench')),
+    focus: (document, focus) => focus === undefined ? call(url('focus', document)) : post(url('focus'), { document, focus }),
     events(document, revision, failed) {
       const source = new EventSource(url('ir/events', document))
       source.addEventListener('revision', (event) => {

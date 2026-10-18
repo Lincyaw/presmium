@@ -15,6 +15,8 @@ In a project with `pnpm add -D @presmium/studio`, `pnpm exec presmium studio` is
 
 `dir` is a workspace root (`presmium.workspace.yaml`) or a deck's directory, as for `presmium serve`. The workbench listens on 127.0.0.1, port 4320 by default (a free port when that one is in use); `--host <addr>` makes it listen on one address of the machine on the local network instead, with no login.
 
+Sessions use the workspace root as their working directory and can read and write files throughout it. Opening another lecture changes document context, not the session or its directory.
+
 The model is chosen in the workbench's model settings, or given by the environment: `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER` for a Messages-compatible service. DeepSeek Harness's home for the workbench (its sessions, model settings and credentials, and the log `presmium-studio.log`) is `$XDG_STATE_HOME/presmium/studio`, never your own `~/.dsh`.
 
 ## Documentation

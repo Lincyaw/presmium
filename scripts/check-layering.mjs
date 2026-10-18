@@ -62,7 +62,7 @@ const rules = [
   },
   { name: 'DeepSeek Harness only in dsh and studio', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
   { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@presmium\/host(\/|$)/.test(spec) },
-  { name: 'the design system uses no package', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') },
+  { name: 'the design system only uses framework-free icons', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') && spec !== 'lucide' },
   { name: 'outputs do not use the workbench', pkgs: pkg => PRODUCTS(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/workbench(\/|$)/.test(spec) },
 ]
 
@@ -74,9 +74,11 @@ const SOURCE = /\.(ts|tsx|vue|mts|mjs|js|jsx|cjs)$/
 
 function files(dir, skip = []) {
   if (!existsSync(dir)) return []
-  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
-    .filter(f => SOURCE.test(f) && !f.split(sep).some(part => part === 'node_modules' || skip.includes(part)))
-    .map(f => join(dir, f))
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.name === 'node_modules' || skip.includes(entry.name)) return []
+    const file = join(dir, entry.name)
+    return entry.isDirectory() ? files(file, skip) : SOURCE.test(entry.name) ? [file] : []
+  })
 }
 
 const applies = (rule, pkg) => (typeof rule.pkgs === 'function' ? rule.pkgs(pkg) : !rule.pkgs || rule.pkgs.includes(pkg)) && !rule.except?.includes(pkg)

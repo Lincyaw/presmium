@@ -237,12 +237,11 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     if (ws) rmSync(ws, { recursive: true, force: true })
   })
 
-  it('runs the first session in a document\'s directory, with nothing under ~/Documents or outside the test\'s directory', async () => {
+  it('runs the first session at the workspace root, with nothing under ~/Documents or outside the test\'s directory', async () => {
     expect(await api.call('workspace/initializeDefault', {})).toBeUndefined()
-    for (const [doc, title] of [['alpha', 'Alpha'], ['beta', 'Beta']]) {
-      expect(await api.call('workspace/create', { request: { path: join(ws, 'lectures', doc) } })).toMatchObject({ workspace: { title }, created: false })
-    }
-    const { sessionId } = await api.call<{ sessionId: string }>('session/create', { request: { cwd: join(ws, 'lectures', 'alpha') } })
+    expect(await api.call('workspace/create', { request: { path: ws } })).toMatchObject({ created: false })
+    const { sessionId } = await api.call<{ sessionId: string }>('session/create', { request: { cwd: ws } })
+    expect((await api.fetch('/api/presmium/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: sessionId, document: 'lectures/alpha' }) })).status).toBe(200)
     await api.call('session/prompt', { request: { requestId: randomUUID(), sessionId, mode: 'queue', content: [{ type: 'text', text: 'What sections does this lecture have?' }] } })
     await expect.poll(() => model.received.filter(r => r.headers['x-deepseek-harness-session-id'] === sessionId && Array.isArray(r.body.tools) && r.body.tools.length > 0).length, { timeout: 120_000 }).toBeGreaterThan(0)
     const turn = model.received.find(r => r.headers['x-deepseek-harness-session-id'] === sessionId && Array.isArray(r.body.tools) && r.body.tools.length > 0)!
@@ -320,8 +319,8 @@ describe('presmium studio\'s processes', () => {
     const running = await studio([STUDIO_BIN, ws, '--port', '5664'], { env: home.env({ DEEPSEEK_API_KEY: 'deepseek-key-96f', DEEPSEEK_BASE_URL: 'http://127.0.0.1:9/elsewhere' }) })
     try {
       const api = await hostApi(running.url)
-      const preview = await (await api.fetch('/api/presmium/preview?document=lectures/alpha')).json() as { web: string, slides: string }
-      for (const url of [preview.web, preview.slides]) expect((await fetch(url)).status, url).toBe(200)
+      const preview = await (await api.fetch('/api/presmium/preview?document=lectures/alpha')).json() as { web: string, slides?: string }
+      for (const url of [preview.web, ...preview.slides ? [preview.slides] : []]) expect((await fetch(url)).status, url).toBe(200)
       const started = descendants(running.child.pid!)
       expect(started.filter(proc => proc.cmdline.includes('watchdog.mjs'))).toHaveLength(2)
       const serve = started.find(proc => / serve /.test(proc.cmdline) && !proc.cmdline.includes('watchdog.mjs'))!

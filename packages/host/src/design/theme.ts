@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { getCurrentInstance, inject, readonly, shallowRef } from 'vue'
+import { createGlobalState, useMutationObserver } from '@vueuse/core'
 import { HOST, installed } from '../key.ts'
 
 export interface Theme {
@@ -8,22 +9,12 @@ export interface Theme {
   toggle(): void
 }
 
-const darkClass = shallowRef(false)
-let observed = false
-
-function observeDarkClass(): Ref<boolean> {
-  if (!observed && typeof document !== 'undefined') {
-    observed = true
-    const root = document.documentElement
-    darkClass.value = root.classList.contains('dark')
-    if (typeof MutationObserver !== 'undefined') {
-      new MutationObserver(() => {
-        darkClass.value = root.classList.contains('dark')
-      }).observe(root, { attributes: true, attributeFilter: ['class'] })
-    }
-  }
-  return darkClass
-}
+const observeDarkClass = createGlobalState(() => {
+  const root = () => typeof document === 'undefined' ? undefined : document.documentElement
+  const dark = shallowRef(root()?.classList.contains('dark') ?? false)
+  useMutationObserver(root, () => dark.value = root()?.classList.contains('dark') ?? false, { attributes: true, attributeFilter: ['class'] })
+  return dark
+})
 
 export function useTheme(): Theme {
   const host = getCurrentInstance() ? inject(HOST, undefined) : installed.adapter

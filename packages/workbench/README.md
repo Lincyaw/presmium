@@ -20,7 +20,11 @@ export function Centre({ open }: { open: boolean }) {
 }
 ```
 
-The workspace service's routes are reached under the page's `api/presmium/` (the host passes them on to the service); React 18 is a peer dependency.
+The workspace service's routes are reached under the page's `api/presmium/` (the host passes them on to the service); React 18 is a peer dependency. Interactive controls wrap Radix Primitives; cmdk owns command search, React Arborist owns the file tree, and react-resizable-panels owns pane resizing. Presmium maintains the visual tokens and the document, save, review and preview behavior, rather than duplicating these libraries' focus, keyboard, positioning and drag logic.
+
+Documents open in preview, with source and side by side modes. Text selections and picked preview blocks become conversation context. `WorkbenchProvider` protects unsaved changes when closing files, leaving a document or unloading the page. Set `protectChanges={false}` on auxiliary providers when several panels share one workbench, keeping the protection mounted once in its primary provider.
+
+Hosts route text file references through `workbench.openSource(document, path, { line })`. It reuses open tabs and protects unsaved changes when switching documents. A multi-document workspace also supports root text files under document `''`, without a lecture preview. Keep `DocumentView` mounted when hiding it so editor drafts and undo history survive navigation.
 
 ## Documentation
 
