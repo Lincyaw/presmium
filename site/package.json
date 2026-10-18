@@ -1,0 +1,16 @@
+{
+  "name": "presmium-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "presmium serve"
+  },
+  "dependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/web": "workspace:*"
+  },
+  "devDependencies": {
+    "typedoc": "0.28.20"
+  }
+}

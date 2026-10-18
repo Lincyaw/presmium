@@ -1,0 +1,47 @@
+# @presmium/cli
+
+The `presmium` command: `check`, `ir`, `build`, `dev` and `serve` for Presmium documents and workspaces.
+
+Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+
+## Install
+
+Install it with the renderers you use and the plugins your documents list:
+
+```sh
+npm install -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook @presmium/slidev-addon-core
+```
+
+Node.js 22.19 or later. Or start a project with `npm create presmium@latest`.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `presmium check [deck]` | Compile and run the checks and publication checks (`--json`, `--update-lock`, `--env`, `--audience`, `--external-links`) |
+| `presmium ir [deck]` | Print the IR as JSON (`--out`) |
+| `presmium build [deck]` | Build `dist/ir.json` and `dist/<renderer>/` (`--to`, `--out`, `--audience`); at a workspace root, the workspace site in `dist/web/` |
+| `presmium dev [deck]` | Dev servers that update on save (`--to`, `--out`, `--server-port`, `--allow`) |
+| `presmium serve [dir]` | The local workbench of a workspace, on this machine (`--port`, `--host`, `--operator-dir`); its browser interface is a preview |
+
+`[deck]` is a directory with `lecture.md` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
+
+## Testing plugins
+
+`@presmium/cli/testing` runs the real command in a child process, for integration tests:
+
+```ts
+import { presmium } from '@presmium/cli/testing'
+
+const { code, stdout } = await presmium(dir, ['build', '--to', 'web'])
+```
+
+## Documentation
+
+- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md)
+- [Plugin guide](https://github.com/presmium/presmium/blob/main/site/plugins/lecture.en.md)
+- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
+
+## License
+
+Apache-2.0

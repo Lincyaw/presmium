@@ -1,0 +1,31 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Presmium API",
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/kernel",
+    "packages/host",
+    "packages/viewer",
+    "packages/compiler",
+    "packages/cli"
+  ],
+  "packageOptions": {
+    "entryPoints": ["src/@(index|testing).ts"],
+    "tsconfig": "../../tsconfig.json",
+    "skipErrorChecking": true,
+    "excludePrivate": true,
+    "excludeInternal": true,
+    "disableGit": true,
+    "sourceLinkTemplate": "https://github.com/presmium/presmium/blob/main/{path}#L{line}",
+    "validation": { "notExported": false, "invalidLink": true, "notDocumented": false }
+  },
+  "out": "site/dist/web/api",
+  "readme": "none",
+  "highlightLanguages": ["bash", "console", "css", "html", "javascript", "json", "jsonc", "json5", "sh", "tsx", "typescript", "vue", "yaml"],
+  "navigationLinks": {
+    "Presmium": "/",
+    "GitHub": "https://github.com/presmium/presmium"
+  },
+  "validation": { "notExported": false, "invalidLink": true, "notDocumented": false },
+  "treatWarningsAsErrors": true
+}

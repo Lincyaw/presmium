@@ -8,7 +8,7 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@presmium/compiler'
+import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@presmium/compiler'
 import type { Compilation, LoadedPlugin } from '@presmium/compiler'
 import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
 import type { WorkspaceDocument } from '../domain/api.ts'
@@ -42,8 +42,20 @@ export function siteIR(compilation: Compilation, doc: IRDocument = compilation.d
   return viewFor({ ...doc, config: { ...doc.config, plugins: dirs } }, 'web')
 }
 
-export function siteDocument(document: WorkspaceDocument, doc?: IRDocument): SiteDocument {
-  return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {} }
+/**
+ * The translations a document declares (P-123), compiled as `presmium build`
+ * of the document alone compiles them (the original's plugins and renderer
+ * configuration, each from its own entry file), as the site gets them
+ * (`siteIR`); with the findings of their compilations.
+ */
+export async function siteTranslations(compilation: Compilation): Promise<{ translations: NonNullable<SiteDocument['translations']>, findings: Finding[] }> {
+  if (!compilation.doc.config.translations) return { translations: [], findings: [] }
+  const { translations, findings } = await compileTranslations(compilation)
+  return { translations: translations.map(({ lang, doc }) => ({ lang, doc: siteIR(compilation, doc) })), findings }
+}
+
+export function siteDocument(document: WorkspaceDocument, doc?: IRDocument, translations?: SiteDocument['translations']): SiteDocument {
+  return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {} }
 }
 
 export function siteSpec(config: WorkspaceConfig, documents: SiteDocument[]): SiteSpec {
@@ -141,11 +153,11 @@ function publishedAsset(options: SiteContextOptions, source: SourcePos, url: str
 }
 
 /**
- * The translations a document of the workspace at `root` declares, which
- * the workspace site leaves out (`presmium.translations`, a warning at its
- * headmatter): `SiteDocument` holds one IR per document, so its pages have
- * no language menu; `presmium build` of the document alone publishes them
- * (docs/ir.md 2.12).
+ * The translations a document of the workspace at `root` declares, which the
+ * site of `presmium serve` leaves out (`presmium.translations`, a warning at
+ * its headmatter): its pages are the originals, compiled as they are edited;
+ * `presmium build` at the workspace root publishes the translations
+ * (`siteTranslations`), as a build of the document alone does.
  */
 export function untranslated(compilation: Compilation, root: string): Finding[] {
   const { translations } = compilation.doc.config
@@ -154,7 +166,7 @@ export function untranslated(compilation: Compilation, root: string): Finding[] 
   return Object.entries(translations).map(([lang, entry]) => ({
     checkId: 'presmium.translations',
     severity: 'warning' as const,
-    message: `translation "${lang}" (${entry}) is not in the workspace site: a workspace site does not build the translations of its documents yet; build this document alone (presmium build ${relative(root, compilation.deckDir).split(sep).join('/') || '.'}) to publish it`,
+    message: `translation "${lang}" (${entry}) is not in the workspace site of presmium serve, which shows the originals; presmium build at the workspace root publishes it (or presmium build ${relative(root, compilation.deckDir).split(sep).join('/') || '.'} for this document alone)`,
     source: { file: compilation.entry, line: frontmatterLine(text, entry) },
   }))
 }
