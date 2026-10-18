@@ -9,7 +9,7 @@ Thank you for helping. This file covers the development setup, the tests, the la
 - Playwright's Chromium for the end-to-end tests: `pnpm exec playwright install chromium` (Firefox and WebKit for the smoke tests are optional, see `docs/browsers.md`).
 
 ```sh
-git clone https://github.com/presmium/presmium.git
+git clone https://github.com/Lincyaw/presmium.git
 cd presmium
 pnpm install
 pnpm test

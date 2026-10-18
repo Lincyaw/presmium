@@ -6,7 +6,7 @@ slides: { class: pm-publish, routeAlias: publish }
 :::
 
 :::{slide}
-**导出**：`presmium-export` 把幻灯片渲染端生成的 Slidev 文稿导出为 PDF，并校验 PDF 中的超链接都还在，例如这段代码的永久链接：[sample-repo/src/math.py#L1-L3 @ 3f2a9c1](https://github.com/presmium/presmium/blob/3f2a9c1/examples/sample-repo/src/math.py#L1-L3)
+**导出**：`presmium-export` 把幻灯片渲染端生成的 Slidev 文稿导出为 PDF，并校验 PDF 中的超链接都还在，例如这段代码的永久链接：[sample-repo/src/math.py#L1-L3 @ 3f2a9c1](https://github.com/Lincyaw/presmium/blob/3f2a9c1/examples/sample-repo/src/math.py#L1-L3)
 :::
 
 ```py

@@ -2,7 +2,7 @@
 
 Running code: run panels, step-by-step execution and recorded outputs; Python in the browser with Pyodide, offline too.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -31,9 +31,9 @@ It is a Presmium plugin and a Slidev addon: its components work on the web page 
 
 ## Documentation
 
-- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md) (Chinese: `site/guide/lecture.md`)
-- [Directive reference](https://github.com/presmium/presmium/blob/main/.agents/skills/presmium-author/references/directives.md) (Chinese): every directive with its options and an example
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md) (Chinese: `site/guide/lecture.md`)
+- [Directive reference](https://github.com/Lincyaw/presmium/blob/main/.agents/skills/presmium-author/references/directives.md) (Chinese): every directive with its options and an example
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please report vulnerabilities privately through GitHub's private vulnerability reporting: open <https://github.com/presmium/presmium/security/advisories/new> (the repository's Security tab, "Report a vulnerability"). Do not open a public issue for a vulnerability.
+Please report vulnerabilities privately through GitHub's private vulnerability reporting: open <https://github.com/Lincyaw/presmium/security/advisories/new> (the repository's Security tab, "Report a vulnerability"). Do not open a public issue for a vulnerability.
 
 Say which package and version you used, how to reproduce the problem, and what an attacker gains. The maintainers acknowledge the report, agree on a fix and a disclosure date with you, and credit you in the advisory unless you prefer otherwise. Fixes go into the latest 1.x release; there are no separate maintenance branches.
 

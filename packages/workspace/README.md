@@ -2,7 +2,7 @@
 
 Presmium's workspace: the site of several documents (`presmium build` at a workspace root) and the local workbench `presmium serve`, with the document templates.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -28,9 +28,9 @@ site:
 
 ## Documentation
 
-- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md): workspaces
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
-- [Security and the trust model](https://github.com/presmium/presmium/blob/main/SECURITY.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): workspaces
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
+- [Security and the trust model](https://github.com/Lincyaw/presmium/blob/main/SECURITY.md)
 
 ## License
 

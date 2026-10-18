@@ -2,7 +2,7 @@
 
 The host adapter of the slides form: it gives plugin components the step state and services of Slidev through `@presmium/host`, starts the plugins of the document, and writes what classrooms follow into each slide.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -28,9 +28,9 @@ List it in every document that builds slides.
 
 ## Documentation
 
-- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md) (Chinese: `site/guide/lecture.md`)
-- [Directive reference](https://github.com/presmium/presmium/blob/main/.agents/skills/presmium-author/references/directives.md) (Chinese): every directive with its options and an example
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md) (Chinese: `site/guide/lecture.md`)
+- [Directive reference](https://github.com/Lincyaw/presmium/blob/main/.agents/skills/presmium-author/references/directives.md) (Chinese): every directive with its options and an example
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

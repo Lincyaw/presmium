@@ -10,7 +10,7 @@ site:
     en: { title: Presmium documentation }
   nav:
     - { text: API, link: /api/ }
-    - { text: GitHub, link: 'https://github.com/presmium/presmium' }
+    - { text: GitHub, link: 'https://github.com/Lincyaw/presmium' }
   footer:
     message: Apache-2.0
     copyright: Presmium contributors

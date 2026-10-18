@@ -1,6 +1,6 @@
 # {{name}}
 
-A [Presmium](https://github.com/presmium/presmium) plugin. A document that lists it in `plugins` can write
+A [Presmium](https://github.com/Lincyaw/presmium) plugin. A document that lists it in `plugins` can write
 
 ```markdown
 :::{greeting} reader

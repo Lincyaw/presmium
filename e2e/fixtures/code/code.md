@@ -6,7 +6,7 @@
 ```{code-ref} region:e2e/fixtures/code/cart.ts#checkout
 :pin: 6e4072a
 :steps: validate, price, receipt
-:repo: https://github.com/presmium/presmium
+:repo: https://github.com/Lincyaw/presmium
 ```
 
 第一步：购物车为空时直接报错。嵌套的 `#region` 标出逻辑单元，编译时换算成每一步高亮的行。
@@ -22,7 +22,7 @@
 
 ```{code-ref} symbol:e2e/fixtures/code/cart.ts#total
 :variants: 6e4072a, c4c6310, f6960cc
-:repo: https://github.com/presmium/presmium
+:repo: https://github.com/Lincyaw/presmium
 ```
 
 total 的第一个版本：下标循环。

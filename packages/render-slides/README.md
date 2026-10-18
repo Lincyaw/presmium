@@ -2,7 +2,7 @@
 
 Presmium's slides renderer: writes the IR as a Slidev deck and builds it, with Presmium's default theme Book (书卷). Narration becomes speaker notes, and plugin components render through the slides host adapter.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -18,8 +18,8 @@ In the headmatter, `renderers.slides` takes Slidev's headmatter options (`theme`
 
 ## Documentation
 
-- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md)
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md)
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

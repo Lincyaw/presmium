@@ -17,7 +17,7 @@
     "excludePrivate": true,
     "excludeInternal": true,
     "disableGit": true,
-    "sourceLinkTemplate": "https://github.com/presmium/presmium/blob/main/{path}#L{line}",
+    "sourceLinkTemplate": "https://github.com/Lincyaw/presmium/blob/main/{path}#L{line}",
     "validation": { "notExported": false, "invalidLink": true, "notDocumented": false }
   },
   "out": "site/dist/web/api",
@@ -25,7 +25,7 @@
   "highlightLanguages": ["bash", "console", "css", "html", "javascript", "json", "jsonc", "json5", "sh", "tsx", "typescript", "vue", "yaml"],
   "navigationLinks": {
     "Presmium": "/",
-    "GitHub": "https://github.com/presmium/presmium"
+    "GitHub": "https://github.com/Lincyaw/presmium"
   },
   "validation": { "notExported": false, "invalidLink": true, "notDocumented": false },
   "treatWarningsAsErrors": true

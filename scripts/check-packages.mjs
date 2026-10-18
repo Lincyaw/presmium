@@ -10,7 +10,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = new URL('..', import.meta.url).pathname
-const REPOSITORY = 'git+https://github.com/presmium/presmium.git'
+const REPOSITORY = 'git+https://github.com/Lincyaw/presmium.git'
 /** Presmium's packages a plugin uses from the application, one copy for all: peers, never dependencies. */
 const SHARED = new Set(['@presmium/kernel', '@presmium/host', '@presmium/viewer', '@presmium/compiler'])
 /** The one public package outside the scope: `npm create presmium` runs the package `create-presmium` (P-142). */

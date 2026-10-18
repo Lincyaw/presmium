@@ -69,6 +69,6 @@ pnpm changeset          # 选包与升级类型（patch、minor、major），写
 
 这些步骤需要账号与凭据，不由开发流程完成：
 
-- 在 GitHub 创建仓库 `presmium/presmium`（与各包 `repository` 一致），设置远端并推送；打开 Actions（`.github/workflows/ci.yml`）。
+- GitHub 仓库 `Lincyaw/presmium`（与各包 `repository` 一致）已创建并推送（2026-10-18，远端 `origin`）；Actions 运行 `.github/workflows/ci.yml`，`.github/workflows/pages.yml` 把示例发布到 GitHub Pages（<https://lincyaw.github.io/presmium/>）。
 - 在 npm 创建组织 `@presmium`，为发布者创建令牌（或登录 `npm login`）；在 CI 中发布时把令牌存为仓库的 secret。
 - 实际发布：`pnpm changeset publish`（见上）。

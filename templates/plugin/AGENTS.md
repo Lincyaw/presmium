@@ -10,7 +10,7 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
 - `.agents/skills/presmium-develop`: how Presmium plugins are made: the contracts, the host's interface,
   the design system, directives, components, server routes, renderer extensions and tests. Its
   `references/plugin.md` walks through a plugin. It is written for the Presmium repository
-  (https://github.com/presmium/presmium): its paths `packages/...` and `docs/...` are there, and
+  (https://github.com/Lincyaw/presmium): its paths `packages/...` and `docs/...` are there, and
   what it says of `workspace:` ranges, changesets and the repository's checks does not apply here.
 - `.agents/skills/presmium-author`: how documents are written, for `example/lecture.md`.
 

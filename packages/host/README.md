@@ -2,7 +2,7 @@
 
 Presmium's host interface for plugin components: step state, services, shared state, interface text and the design system, the same in the web form (VitePress) and in the slides (Slidev).
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -31,8 +31,8 @@ The parts that exist for the local workbench only (`EDIT_MODE`, the toolbar slot
 
 ## Documentation
 
-- [Plugin guide](https://github.com/presmium/presmium/blob/main/site/plugins/lecture.en.md)
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md): what is public, experimental or internal, and the version rules
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md)
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md): what is public, experimental or internal, and the version rules
 
 ## License
 

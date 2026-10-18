@@ -2,7 +2,7 @@
 
 Presmium's IR runtime: renders compiled documents in the browser with Vue, in pluggable runtime views (the document, scrollytelling, the present view, the presenter view), and applies live updates without reloading.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -23,8 +23,8 @@ export default plugin
 
 ## Documentation
 
-- [Plugin guide](https://github.com/presmium/presmium/blob/main/site/plugins/lecture.en.md)
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md): what is public, experimental or internal, and the version rules
+- [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md)
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md): what is public, experimental or internal, and the version rules
 
 ## License
 

@@ -2,7 +2,7 @@
 
 Presmium's web renderer: a static VitePress site around the IR runtime, a page per chapter, with search, the site shell (navigation, footer, Open Graph, sitemap), translations with a language menu, links to the slides, and workspace sites of several documents.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -18,8 +18,8 @@ In the headmatter, `renderers.web`: `base` (the site path), `port` (the dev serv
 
 ## Documentation
 
-- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md): media, workspaces and translations
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): media, workspaces and translations
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

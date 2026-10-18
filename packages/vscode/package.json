@@ -8,7 +8,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/presmium/presmium.git",
+    "url": "git+https://github.com/Lincyaw/presmium.git",
     "directory": "packages/vscode"
   },
   "description": "%description%",

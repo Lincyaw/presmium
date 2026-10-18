@@ -1,6 +1,6 @@
 # create-presmium
 
-Starts a new [Presmium](https://github.com/presmium/presmium) project: a lecture, a workspace or a plugin.
+Starts a new [Presmium](https://github.com/Lincyaw/presmium) project: a lecture, a workspace or a plugin.
 
 ```sh
 npm create presmium@latest

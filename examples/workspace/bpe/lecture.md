@@ -18,7 +18,7 @@ plugins:
   - '@presmium/slidev-addon-assistant'   # 编辑模式中的“AI 修改”与“提问”（presmium serve）
 presmium:
   presmium.code:
-    repo: https://github.com/presmium/presmium
+    repo: https://github.com/Lincyaw/presmium
 renderers:
   web: {}
   slides: {}

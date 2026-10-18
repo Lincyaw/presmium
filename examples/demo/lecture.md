@@ -17,7 +17,7 @@ plugins:
   - '@presmium/slidev-addon-speech'
 presmium:
   presmium.code:
-    repo: https://github.com/presmium/presmium
+    repo: https://github.com/Lincyaw/presmium
 renderers:
   web: {}
   slides: {}

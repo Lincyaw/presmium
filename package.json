@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/presmium/presmium.git"
+    "url": "git+https://github.com/Lincyaw/presmium.git"
   },
   "type": "module",
   "packageManager": "pnpm@11.20.0",

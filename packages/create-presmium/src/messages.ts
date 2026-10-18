@@ -37,7 +37,7 @@ export interface Messages {
   agentsFile(kind: 'lecture' | 'workspace', title: string): string
 }
 
-const REPOSITORY = 'https://github.com/presmium/presmium'
+const REPOSITORY = 'https://github.com/Lincyaw/presmium'
 
 export const MESSAGES: Record<Locale, Messages> = {
   'zh-CN': {

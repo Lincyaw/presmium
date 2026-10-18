@@ -2,7 +2,7 @@
 
 Presmium documents in VS Code: diagnostics, anchor navigation and completion from the Presmium language server, and a `presmium dev` preview that follows the cursor.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Features
 

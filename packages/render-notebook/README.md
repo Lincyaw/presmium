@@ -2,7 +2,7 @@
 
 Presmium's notebook renderer: writes the IR as a Jupyter notebook (nbformat 4). Narration becomes Markdown cells, code in the kernel's language becomes code cells with their recorded outputs, and components show their fallback.
 
-Part of [Presmium](https://github.com/presmium/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
+Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
@@ -16,8 +16,8 @@ In the headmatter, `renderers.notebook`: `kernel` (default `python3`) and `webUr
 
 ## Documentation
 
-- [Author guide](https://github.com/presmium/presmium/blob/main/site/guide/lecture.en.md)
-- [Interfaces and versions](https://github.com/presmium/presmium/blob/main/docs/api.md)
+- [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md)
+- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

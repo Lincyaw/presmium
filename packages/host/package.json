@@ -5,11 +5,11 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/presmium/presmium.git",
+    "url": "git+https://github.com/Lincyaw/presmium.git",
     "directory": "packages/host"
   },
-  "homepage": "https://github.com/presmium/presmium/tree/main/packages/host#readme",
-  "bugs": "https://github.com/presmium/presmium/issues",
+  "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/host#readme",
+  "bugs": "https://github.com/Lincyaw/presmium/issues",
   "keywords": [
     "presmium",
     "vue",
