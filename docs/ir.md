@@ -874,6 +874,7 @@ title: 智能体软件工程
 documents: ['weeks/*/lecture.md', 'syllabus/lecture.md']   # 文档的位置，按此顺序列出与前后导航；默认 '*/lecture.md'
 site:
   home: syllabus                     # 首页显示的文档目录；省略时首页是文档列表（P-122 增补）
+  base: /course/                     # 站点路径：presmium build 把站点构建在这个路径下（GitHub Pages 的项目站点为 /<仓库名>/）；默认 /，presmium serve 中总是 /
   nav: [{ text: 大纲, link: /syllabus/ }, { text: 第 1 周, link: /weeks/01/ }]
   footer: { message: 课程资料按 CC BY 4.0 发布 }
   head: { description: 一门讲智能体工程实践的课程 }

@@ -4,7 +4,7 @@ Presmium turns a lecture written in [MyST Markdown](https://mystmd.org) into web
 
 Presmium is a component library and toolchain, not a hosted service. Think of an enhanced JupyterLab: you write, preview, present and publish on your own machine (or in your own container), readers get static sites, and sharing means sharing files, with collaboration through git.
 
-Demo: <https://lincyaw.github.io/presmium/>, the lecture in `examples/demo` as a web page, slides (`demo/slides/`) and notebooks (`demo/notebook/`), rebuilt on every push to `main`.
+Examples, rebuilt on every push to `main`: <https://lincyaw.github.io/presmium/> is the example workspace (`examples/workspace`) as a static site, its home page listing the documents; <https://lincyaw.github.io/presmium/demo/> is the lecture in `examples/demo` as a web page, slides (`demo/slides/`) and notebooks (`demo/notebook/`). Creating, editing and managing documents takes `presmium serve` on your own machine.
 
 [中文说明](#中文)
 
@@ -59,7 +59,7 @@ Presmium 把用 MyST Markdown 写的讲义编译为中间表示（IR），再生
 
 Presmium 是组件库与工具链，不是托管产品：像一个增强的 JupyterLab，作者在自己的机器（或自己的容器）中编写、预览、讲授与发布，读者阅读构建出的静态站点；分享就是分享文件，协作通过 git。核心（语法与 IR、编译器、渲染端、CLI）与产物不需要任何模型服务。
 
-示例：<https://lincyaw.github.io/presmium/>，即 `examples/demo` 中的讲义构建出的网页、幻灯片（`demo/slides/`）与 notebook（`demo/notebook/`），每次推送到 `main` 时重新构建。
+示例（每次推送到 `main` 时重新构建）：<https://lincyaw.github.io/presmium/> 是示例工作区（`examples/workspace`）的静态站点，首页是文档列表；<https://lincyaw.github.io/presmium/demo/> 是 `examples/demo` 中的讲义构建出的网页、幻灯片（`demo/slides/`）与 notebook（`demo/notebook/`）。新建、编辑与管理文档要在自己的机器上运行 `presmium serve`。
 
 开始：`npm create presmium@latest`，或在项目中安装 `@presmium/cli` 与渲染端后运行 `npx presmium check`、`dev`、`build`。本机工作台 `presmium serve` 是预览，浏览器界面会被新的工作台取代，命令与工作区配置文件保持不变。
 

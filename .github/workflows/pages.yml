@@ -1,9 +1,12 @@
-# Publishes the demo deck (examples/demo) on GitHub Pages, under <the Pages site>/demo/: the web form at
-# demo/web/, the slides at demo/slides/ and the notebooks at demo/notebook/. The slides use hash routing
-# (`routerMode: hash`, slide n at demo/slides/#/n; the web form's links follow it), because a static
-# host serves no page for demo/slides/<n>. The site's root and demo/ lead to the web form, and the web
-# form's 404 page is the site's (its links are absolute). The documentation site (WP-93d) joins this
-# workflow at the root.
+# Publishes the examples on GitHub Pages. At the root, the example workspace (examples/workspace, copied by
+# its try.mjs into a repository of its own, as `presmium serve` takes it): the home page lists its
+# documents, each under <dir>/, built with `site.base` set to the Pages site's path; documents are created,
+# edited and managed with `presmium serve` on one's own machine, so the static site has no such controls.
+# Under demo/, the demo deck (examples/demo) in all three forms: the web form at demo/web/, the slides at
+# demo/slides/ and the notebooks at demo/notebook/. The slides use hash routing (`routerMode: hash`,
+# slide n at demo/slides/#/n; the web form's links follow it), because a static host serves no page for
+# demo/slides/<n>. The workspace site's 404 page is the site's. The documentation site (WP-93d) joins this
+# workflow under docs/.
 name: Pages
 
 on:
@@ -61,15 +64,20 @@ jobs:
             writeFileSync(file, out)
           "
       - run: pnpm demo:build
+      - name: The example workspace's site, under the Pages site's path
+        env:
+          BASE: ${{ steps.pages.outputs.base_path }}/
+          WORKSPACE: ${{ runner.temp }}/workspace
+        run: |
+          node examples/workspace/try.mjs "$WORKSPACE"
+          sed -i "s#^site:\$#site:\n  base: $BASE#" "$WORKSPACE/presmium.workspace.yaml"
+          grep -q "^  base: $BASE\$" "$WORKSPACE/presmium.workspace.yaml" || { echo "no site: block in $WORKSPACE/presmium.workspace.yaml to set its base in"; exit 1; }
+          cd "$WORKSPACE" && node "$GITHUB_WORKSPACE/packages/cli/bin/presmium.mjs" build --out "$GITHUB_WORKSPACE/_site-workspace"
       - name: The site
         run: |
-          mkdir _site
+          cp -r _site-workspace/web _site
           cp -r examples/demo/dist _site/demo
-          cp _site/demo/web/404.html _site/404.html
-          # A page that leads to <to>: redirect <file> <to>.
-          redirect() { printf '<!doctype html><meta charset="utf-8"><title>Presmium</title><meta http-equiv="refresh" content="0; url=%s"><a href="%s">%s</a>\n' "$2" "$2" "$2" > "$1"; }
-          redirect _site/index.html demo/web/
-          redirect _site/demo/index.html web/
+          printf '<!doctype html><meta charset="utf-8"><title>Presmium</title><meta http-equiv="refresh" content="0; url=web/"><a href="web/">web/</a>\n' > _site/demo/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

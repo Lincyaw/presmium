@@ -1536,7 +1536,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - P-144：作者指南与插件开发指南，中文与英文；接口参考由 TypeDoc 生成。
 - P-145：文档站是一个 Presmium 工作区，中英双语；实现工作区站点中的译本（P-123，决定 D-11 推迟的部分：`SiteDocument` 带译本，工作区站点生成语言切换，`presmium.translations` 的警告去掉）；构建时运行发布检查（失效链接）。
 - P-146 的文档部分：README、CONTRIBUTING、SECURITY（报告方式；信任模型摘要：本机单用户，不做多用户隔离）。
-- 文档站的地址：与 WP-93a 写进各包的 `repository`（`github.com/Lincyaw/presmium`）一致，GitHub Pages 的 `https://lincyaw.github.io/presmium/`；`DOCS_SITE_URL` 设为它，首页的使用说明因此链接到文档站。（2026-10-18 用户把仓库建在自己的账号下，地址由验收者统一改为 `github.com/Lincyaw/presmium`。）
+- 文档站的地址：与 WP-93a 写进各包的 `repository`（`github.com/Lincyaw/presmium`）一致，GitHub Pages 的 `https://lincyaw.github.io/presmium/docs/`（根目录是示例工作区）；`DOCS_SITE_URL` 设为它，首页的使用说明因此链接到文档站。（2026-10-18 用户把仓库建在自己的账号下，地址由验收者统一改为 `github.com/Lincyaw/presmium`。）
 
 **验收**：文档站构建无失效链接，两种语言都有完整目录；工作区站点的译本用例通过（`e2e/docs-site.spec.ts` 与现有 `e2e/site.spec.ts`）；`scripts/check-skills.mjs` 通过。
 
@@ -1551,7 +1551,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **拥有**：`site/**`、`packages/web/src/node/site.ts`（按语言的首页与相邻文档）、`packages/web/src/client/home.ts`（首页列表按页面的语言渲染）、`packages/workspace/templates/document/**`（英文的默认模板）、`packages/workspace/src/domain/messages.ts`（`DOCS_SITE_URL`）、`.github/workflows/pages.yml`、`e2e/docs-site.spec.ts`。
 
-**条目**：英文页面的导航“文档列表”与跨文档的上一篇、下一篇指向同一语言（有该语言的页面时）；`/en/` 首页的文档列表在服务端按英文渲染（去掉 `ClientOnly`，没有水合不一致）；文档站支持子路径（GitHub Pages 的 `/presmium/`），`DOCS_SITE_URL` 设为 `https://lincyaw.github.io/presmium/`；文档站加进 `pages.yml`，发布在站点根目录（一个仓库只有一个 Pages 站点：`pages.yml` 已经把示例发布在 `demo/` 下，根目录现在是转到示例的页面，2026-10-18 验收者加，仓库与 Pages 已开通）；英文界面新建的文档用英文模板（带 `lang: en`）。
+**条目**：英文页面的导航“文档列表”与跨文档的上一篇、下一篇指向同一语言（有该语言的页面时）；`/en/` 首页的文档列表在服务端按英文渲染（去掉 `ClientOnly`，没有水合不一致）；文档站以子路径构建（GitHub Pages 的 `/presmium/docs/`：工作区站点的 `site.base` 已由验收者在 2026-10-18 加上，`site/build.mjs` 的链接检查要按它找文件），`DOCS_SITE_URL` 设为 `https://lincyaw.github.io/presmium/docs/`；文档站加进 `pages.yml`，发布在 `docs/` 下（一个仓库只有一个 Pages 站点，仓库与 Pages 已开通：`pages.yml` 已经把示例工作区发布在根目录、示例讲义发布在 `demo/` 下）；英文界面新建的文档用英文模板（带 `lang: en`）。
 
 **验收**：英文页面上的导航与相邻链接都留在英文；`/en/` 没有水合警告；以 `/presmium/` 为子路径构建的文档站没有失效链接；英文工作区新建的第一份文档是英文的。
 

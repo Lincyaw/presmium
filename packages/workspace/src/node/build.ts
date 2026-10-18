@@ -37,11 +37,17 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   }
   const outDir = join(resolve(options.outDir ?? join(config.root, 'dist')), 'web')
   const renderer = await webRenderer(config.root, options.bundled)
-  const ctx = siteContext({ root: config.root, outDir, workDir: join(config.root, '.presmium', 'site'), findings })
+  const ctx = siteContext({ root: config.root, outDir, workDir: join(config.root, '.presmium', 'site'), base: siteBase(config.site.base), findings })
   try {
     await renderer.buildSite!(site, ctx)
   } catch (error) {
     findings.push({ checkId: 'presmium.render', severity: 'error', message: `the workspace site failed: ${errorMessage(error)}` })
   }
   return { outDir, documents, findings }
+}
+
+/** `site.base`, the path the site is served under (a GitHub Pages project site: `/<repository>/`), as `/<path>/`; `/` when not set. */
+function siteBase(value: unknown): string {
+  const path = typeof value === 'string' ? value.trim().replace(/^\/+|\/+$/g, '') : ''
+  return path ? `/${path}/` : '/'
 }

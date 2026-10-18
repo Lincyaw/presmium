@@ -1,8 +1,8 @@
 // The workspace site (P-122, docs/ir.md 6.3): `presmium build` at the workspace root builds one site whose
 // home page lists every document and links to `/<dir>/`, each document readable on its own pages, its search
 // box finding the other documents too (WP-86); in a document's directory it builds that document only.
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, posix, sep } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FIXTURES, presmium, remove, workspace } from './helpers.ts'
 
@@ -49,6 +49,34 @@ describe('presmium build of a workspace', () => {
       expect(searchIndex(join(site, doc))).toContain('quokkaland')
     }
     expect(searchIndex(join(site, 'alpha'))).toContain('/beta/more.html')
+  }, 600_000)
+
+  it('builds the site under `site.base` (a GitHub Pages project site): every local link and asset of every page is under it and names a file of the site', async () => {
+    const sub = workspace('site-base', join(FIXTURES, 'site'))
+    try {
+      writeFileSync(join(sub, 'presmium.workspace.yaml'), `${readFileSync(join(sub, 'presmium.workspace.yaml'), 'utf8')}site: { base: /course/ }\n`)
+      const built = await presmium(sub, ['build'])
+      expect(built.code, built.stderr).toBe(0)
+      const site = join(sub, 'dist/web')
+      expect(readFileSync(join(site, 'index.html'), 'utf8')).toMatch(/<a class="pm-site-home__link" href="\/course\/alpha\/">甲文档<\/a>/)
+      expect(readFileSync(join(site, 'alpha/index.html'), 'utf8')).toContain('src="/course/alpha/assets/')
+
+      const wrong: string[] = []
+      for (const file of readdirSync(site, { recursive: true, encoding: 'utf8' }).filter(name => name.endsWith('.html'))) {
+        const page = `/course/${file.split(sep).join('/')}`
+        for (const [, raw] of readFileSync(join(site, file), 'utf8').matchAll(/\s(?:href|src)="([^"]*)"/g)) {
+          const path = raw!.replace(/&amp;/g, '&').replace(/[?#].*$/s, '')
+          if (!path || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(path)) continue
+          const target = path.startsWith('/') ? path : posix.join(posix.dirname(page), path) + (path.endsWith('/') ? '/' : '')
+          const local = join(site, ...decodeURI(target).replace(/^\/course\//, '').split('/'))
+          const found = target.startsWith('/course/') && (target.endsWith('/') ? existsSync(join(local, 'index.html')) : existsSync(local))
+          if (!found) wrong.push(`${page} -> ${raw}`)
+        }
+      }
+      expect(wrong).toEqual([])
+    } finally {
+      remove(sub)
+    }
   }, 600_000)
 
   it('builds only the one document in its directory', async () => {

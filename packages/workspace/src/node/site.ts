@@ -74,6 +74,8 @@ export interface SiteContextOptions {
   plugins?: Record<string, string>
   /** The plugins of the home page only (package name to directory): the operator plugins in `presmium serve` (`homePlugins`). */
   home?: Record<string, string>
+  /** The site's public base, `/` or `/<path>/`: `site.base` in `presmium build`; `/` by default and in `presmium serve`. */
+  base?: string
   findings: Finding[]
 }
 
@@ -91,7 +93,7 @@ export function siteContext(options: SiteContextOptions): RenderContext {
     plugins: Object.keys(plugins),
     pluginDirs: plugins,
     renderers: ['web'],
-    base: '/',
+    base: options.base ?? '/',
     vitePlugins: [],
     extensionFor: () => undefined,
     portable: (value, from) => portable(value, from, root),
