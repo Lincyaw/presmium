@@ -1,6 +1,7 @@
 import type { IconName } from '@presmium/design'
 import type { ComponentType } from 'react'
 import type { WorkbenchMessages } from './messages.ts'
+import { ChangesPanel } from './panels/Changes.tsx'
 import { DocumentView } from './panels/DocumentView.tsx'
 import { FilesPanel } from './panels/Files.tsx'
 import { HomePanel } from './panels/Home.tsx'
@@ -26,7 +27,7 @@ export type { WorkspaceClient } from './service.ts'
 export { localeOf, Workbench } from './store.ts'
 export type { EditorBridge, FileNotice, Locale, OpenFile, PageIssue, PreviewSink, PreviewView, Reveal, WorkbenchState } from './store.ts'
 export { StatusItems } from './panels/Status.tsx'
-export { DocumentView, FilesPanel, HomePanel, PreviewPanel, ProblemsPanel, SourcePanel }
+export { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, ProblemsPanel, SourcePanel }
 
 export interface PanelDescriptor {
   id: string
@@ -41,4 +42,5 @@ export const PANELS = {
   source: { id: 'source', icon: 'edit', title: t => t.source, Component: SourcePanel },
   problems: { id: 'problems', icon: 'warning', title: t => t.problems, Component: ProblemsPanel },
   preview: { id: 'preview', icon: 'slides', title: t => t.preview, Component: PreviewPanel },
+  changes: { id: 'changes', icon: 'diff', title: t => t.changes, Component: ChangesPanel },
 } satisfies Record<string, PanelDescriptor>

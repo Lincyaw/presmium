@@ -328,15 +328,15 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 | 区域 | 内容 |
 |---|---|
-| 活动栏（最左） | 标志、文档、文件、搜索、会话（dsh 的 `sidebar` 内容）、修改历史、讲授；底部是设置（dsh 的设置与模型设置）与使用说明 |
-| 侧栏 | 活动栏所选的内容：文件树，或 dsh 的会话与工作区 |
+| 活动栏（最左） | 标志、文档、文件、修改（打开文档时；有等待审阅的文件时标出个数）、会话（dsh 的 `sidebar` 内容）；底部是设置（dsh 的设置与模型设置）与使用说明 |
+| 侧栏 | 活动栏所选的内容：文件树、修改，或 dsh 的会话与工作区 |
 | 中央 | 首页时是启动台；打开文件时左边是文件标签与源码编辑器、下方是问题面板，右边是预览，也可以只看其中一个。dsh 的全局面板（插件、自动任务）也显示在这里 |
-| 右侧坞（`rightbar`） | dsh 的文件、终端、Review、浏览器等标签页，以及 Presmium 的审阅 |
+| 右侧坞（`rightbar`） | dsh 的文件、终端、Review、浏览器等标签页 |
 | 对话（`main` 的 `conversation` 键） | 停靠在最右 |
 | 状态栏 | Presmium 的状态项（git、语言、编码、光标所在行、模型）与 `shell.bottom` |
 | 浮层（`shell.overlay`） | 对话框与设置 |
 
-**退路**：根布局与退路是同一个客户端部分。dsh 的启动图中有 `ui-layout` 时（关掉 `presmium-workbench` 的根布局部分并重新打开 `ui-layout`），它不占据 `root`，得到 dsh 自带布局：对话居中，Presmium 的预览、源码与审阅作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页作为 `main` 的全局面板。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
+**退路**：根布局与退路是同一个客户端部分。dsh 的启动图中有 `ui-layout` 时（关掉 `presmium-workbench` 的根布局部分并重新打开 `ui-layout`），它不占据 `root`，得到 dsh 自带布局：对话居中，Presmium 的预览、源码与修改作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页作为 `main` 的全局面板。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
 
 **在插件管理中关掉 `@presmium/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到工作区：首页在 `documents` 得到 404 时说明“`@presmium/dsh` 在‘插件’页中被关掉了，从‘会话’打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
 
@@ -351,8 +351,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 问题 | IR 的诊断 |
 | 预览 | `preview` 与预览协议 |
 | 对话与批注 | dsh 的对话，加上 Presmium 的焦点托盘（第 8 节） |
-| 审阅 | `review` |
-| 修改历史与未提交的修改 | `revisions`、`changes` |
+| 修改：AI 的修改（审阅）、未提交的修改、修改历史 | `review`（文档打开时一直跟随，所以页面开着时审阅不因超时回滚）与它的操作；`changes`、`changes/commit`、`changes/discard`；`revisions`、`revisions/revert` |
 | 讲授回写 | 讲授插件的路由；回写时新建 dsh 会话 |
 | 状态项 | git 状态、光标；模型来自 dsh 的设置 |
 

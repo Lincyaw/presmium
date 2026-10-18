@@ -58,6 +58,7 @@ body,
 }
 
 .pmw-activity__button {
+  position: relative;
   display: grid;
   place-items: center;
   width: 36px;
@@ -68,6 +69,19 @@ body,
   background: none;
   color: var(--pm-color-muted);
   cursor: pointer;
+}
+
+.pmw-activity__count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  padding: 0 3px;
+  border-radius: var(--pm-radius-pill);
+  background: var(--pm-color-accent);
+  color: var(--pm-color-on-accent);
+  font-size: 10px;
+  line-height: 14px;
 }
 
 .pmw-activity__button:hover {

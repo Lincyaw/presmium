@@ -1,4 +1,4 @@
-import { DocumentView, FilesPanel, HomePanel, PreviewPanel, SourcePanel, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
+import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, SourcePanel, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import type { ComponentType } from 'react'
 import { Logo } from './brand.tsx'
@@ -38,6 +38,7 @@ export function fallback(ctx: DshClientContext, workbench: Workbench): void {
     const tabs = [
       { kind: 'presmium-preview', Panel: PreviewPanel, title: () => `Presmium · ${t().preview}` },
       { kind: 'presmium-source', Panel: SourcePanel, title: () => `Presmium · ${t().source}` },
+      { kind: 'presmium-changes', Panel: ChangesPanel, title: () => `Presmium · ${t().changes}` },
     ]
     for (const { kind, Panel, title } of tabs) {
       const id = `${CLIENT_ID}/${kind}`

@@ -197,7 +197,7 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 
 ### 工作台：浏览器中的编辑与 agent
 
-`presmium studio` 是编写讲义的工作台：文件树、源码编辑器（保存前文件被别处改过时提示合并或重新载入）、问题面板与预览（在预览中点选一块，源码跳到它的行；移动光标，预览跟随），以及 DeepSeek Harness 的对话。agent 的修改落在文档目录的源码上：会话第一次写文件时打开这份文档的审阅并持有锁，之后的修改累加进同一次审阅，作者接受后成为一个 git 提交（可以撤销），拒绝的文件恢复原样。工作区配置的 `settings.presmium.assistant.review: auto` 让每轮对话结束时直接提交；没有页面跟随的审阅在 `reviewTimeoutMs`（默认 30 分钟）后回滚。别的 agent（Claude Code、Codex 等）经上文的 MCP 接入。
+`presmium studio` 是编写讲义的工作台：文件树、源码编辑器（保存前文件被别处改过时提示合并或重新载入）、问题面板与预览（在预览中点选一块，源码跳到它的行；移动光标，预览跟随），以及 DeepSeek Harness 的对话。agent 的修改落在文档目录的源码上：会话第一次写文件时打开这份文档的审阅并持有锁，之后的修改累加进同一次审阅，作者接受后成为一个 git 提交（可以撤销），拒绝的文件恢复原样。活动栏的“修改”列出等待审阅的文件（可以看差异、逐个撤回、回到检查点，再接受或全部撤回）、未提交的修改（提交或放弃）与修改历史（撤销一个提交）。工作区配置的 `settings.presmium.assistant.review: auto` 让每轮对话结束时直接提交；工作台没有打开这份文档时，审阅在 `reviewTimeoutMs`（默认 30 分钟）后回滚。别的 agent（Claude Code、Codex 等）经上文的 MCP 接入。
 
 ## 12. 读诊断
 

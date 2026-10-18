@@ -1,4 +1,4 @@
-import { DocumentView, FilesPanel, HomePanel, PmDialog, PmIcon, StatusItems, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
+import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PmDialog, PmIcon, StatusItems, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import type { IconName } from '@presmium/design'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -43,6 +43,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const t = useFrameMessages(workbench)
   const document_ = useWorkbench(state => state.document)
   const documentTitle = useWorkbench(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
+  const pending = useWorkbench(state => state.review?.changes.length ?? 0)
   const frame = useRef<HTMLDivElement>(null)
   const [helpOpen, setHelpOpen] = useState(false)
   const geometry = solve(info)
@@ -75,7 +76,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
       if (narrow) actions.show('files')
       else if (info.activity !== 'files') actions.choose('files')
     }
-    if (document_ === undefined && narrow && (info.view === 'files' || info.view === 'source' || info.view === 'preview')) actions.show('documents')
+    if (document_ === undefined && narrow && (info.view === 'files' || info.view === 'source' || info.view === 'preview' || info.view === 'changes')) actions.show('documents')
     opened.current = document_
   }, [document_, narrow, actions, info.activity, info.view])
 
@@ -103,9 +104,9 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
       return
     }
     if (narrow) actions.show(target as NarrowView)
-    else if (target === 'files' || target === 'sessions') actions.choose(target)
+    else if (target === 'files' || target === 'changes' || target === 'sessions') actions.choose(target)
   }
-  const sideContent = info.activity === 'sessions' ? 'sessions' : 'files'
+  const sideContent = info.activity === 'sessions' ? 'sessions' : info.activity === 'changes' && document_ !== undefined ? 'changes' : 'files'
   const view: NarrowView = narrow ? info.view : 'documents'
   const sideShown = !narrow && (collapsed ? info.sideExpanded : info.sideOpen)
 
@@ -117,22 +118,27 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
             ? <FilesOrDocuments workbench={workbench} onOpen={() => actions.show('source')} />
             : view === 'source' || view === 'preview'
               ? (document_ === undefined ? <HomePanel /> : <DocumentView only={view} />)
-              : view === 'documents' ? <HomePanel /> : null
+              : view === 'changes' && document_ !== undefined
+                ? <ChangesPanel />
+                : view === 'documents' ? <HomePanel /> : null
         )
       : (document_ === undefined ? <HomePanel /> : <DocumentView />)
 
-  const activities: { id: Activity | NarrowView, icon: IconName, label: string, pressed: boolean }[] = narrow
+  const changes = document_ === undefined ? [] : [{ id: 'changes' as const, icon: 'diff' as const, label: t.changes, pressed: narrow ? view === 'changes' : sideShown && sideContent === 'changes', count: pending }]
+  const activities: { id: Activity | NarrowView, icon: IconName, label: string, pressed: boolean, count?: number }[] = narrow
     ? [
         { id: 'documents', icon: 'document', label: t.documents, pressed: view === 'documents' },
         { id: 'files', icon: 'folder', label: t.files, pressed: view === 'files' },
         { id: 'source', icon: 'edit', label: t.source, pressed: view === 'source' },
         { id: 'preview', icon: 'slides', label: t.preview, pressed: view === 'preview' },
+        ...changes,
         { id: 'sessions', icon: 'history', label: t.sessions, pressed: view === 'sessions' },
         { id: 'conversation', icon: 'sparkle', label: t.conversation, pressed: view === 'conversation' },
       ]
     : [
         { id: 'documents', icon: 'document', label: t.documents, pressed: document_ === undefined && activePanel === null },
         { id: 'files', icon: 'folder', label: t.files, pressed: sideShown && sideContent === 'files' },
+        ...changes,
         { id: 'sessions', icon: 'history', label: t.sessions, pressed: sideShown && sideContent === 'sessions' },
       ]
 
@@ -152,6 +158,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
         {activities.map(item => (
           <button key={item.id} type="button" className="pmw-activity__button" data-activity={item.id} aria-label={item.label} title={item.label} aria-pressed={item.pressed} onClick={() => go(item.id)}>
             <PmIcon name={item.icon} />
+            {item.count ? <span className="pmw-activity__count">{item.count}</span> : null}
           </button>
         ))}
         <span className="pmw-activity__end">
@@ -163,6 +170,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
       {!narrow && (
         <aside className="pmw-frame__side" aria-label={t.side} data-shown={sideShown || undefined} data-content={sideContent}>
           <div className="pmw-frame__side-files" hidden={sideContent !== 'files'}><FilesOrDocuments workbench={workbench} /></div>
+          {sideContent === 'changes' && <ChangesPanel />}
         </aside>
       )}
 

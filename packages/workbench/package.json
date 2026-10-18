@@ -1,7 +1,7 @@
 {
   "name": "@presmium/workbench",
   "version": "0.1.0",
-  "description": "Presmium's workbench panels in React (home, file tree, source editor, problems, preview) with the workspace service's client and the preview protocol's workbench side; @presmium/dsh places them in presmium studio (experimental)",
+  "description": "Presmium's workbench panels in React (home, file tree, source editor, problems, preview, changes) with the workspace service's client and the preview protocol's workbench side; @presmium/dsh places them in presmium studio (experimental)",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

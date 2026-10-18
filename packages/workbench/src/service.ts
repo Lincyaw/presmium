@@ -1,4 +1,4 @@
-import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, SavedAnswer, SourceAnswer, WorkbenchAnswer } from './api.ts'
+import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, RevertAnswer, ReviewEnd, ReviewFollowed, ReviewView, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from './api.ts'
 
 export class ServiceError extends Error {
   readonly status: number
@@ -20,6 +20,15 @@ export interface WorkspaceClient {
   preview(document: string): Promise<PreviewAnswer>
   workbench(): Promise<WorkbenchAnswer>
   events(document: string, revision: (event: IrEvent) => void, failed?: () => void): () => void
+  review(document: string, followed: (event: ReviewFollowed) => void): () => void
+  accept(document: string, body: { reject?: string[], message?: string }): Promise<{ ended: ReviewEnd }>
+  reject(document: string, paths?: string[]): Promise<ReviewFollowed>
+  restore(document: string, step: string): Promise<{ review: ReviewView }>
+  changes(document: string): Promise<{ files: UncommittedFile[] }>
+  commit(document: string, message: string, paths?: string[]): Promise<unknown>
+  discard(document: string, paths?: string[]): Promise<unknown>
+  revisions(document: string): Promise<{ revisions: HistoryRevision[] }>
+  revert(document: string, id: string): Promise<RevertAnswer>
 }
 
 export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
@@ -36,6 +45,17 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     return data
   }
   const post = <T>(address: string, body: unknown) => call<T>(address, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const follow = <T>(address: string, name: string, on: (data: T) => void, failed?: () => void) => {
+    const source = new EventSource(address)
+    source.addEventListener(name, (event) => {
+      try {
+        on(JSON.parse((event as MessageEvent<string>).data) as T)
+      } catch {
+      }
+    })
+    if (failed) source.addEventListener('error', failed)
+    return () => source.close()
+  }
   return {
     documents: document => call(url('documents', document)),
     operate: operation => post(url('documents'), operation),
@@ -45,16 +65,15 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     ir: document => call(url('ir', document)),
     preview: document => call(url('preview', document)),
     workbench: () => call(url('workbench')),
-    events(document, revision, failed) {
-      const source = new EventSource(url('ir/events', document))
-      source.addEventListener('revision', (event) => {
-        try {
-          revision(JSON.parse((event as MessageEvent<string>).data) as IrEvent)
-        } catch {
-        }
-      })
-      source.addEventListener('error', () => failed?.())
-      return () => source.close()
-    },
+    events: (document, revision, failed) => follow(url('ir/events', document), 'revision', revision, failed),
+    review: (document, followed) => follow(url('review', document), 'review', followed),
+    accept: (document, body) => post(url('review/accept', document), body),
+    reject: (document, paths) => post(url('review/reject', document), paths ? { paths } : {}),
+    restore: (document, step) => post(url('review/restore', document), { step }),
+    changes: document => call(url('changes', document)),
+    commit: (document, message, paths) => post(url('changes/commit', document), { message, ...paths ? { paths } : {} }),
+    discard: (document, paths) => post(url('changes/discard', document), paths ? { paths } : {}),
+    revisions: document => call(url('revisions', document, { limit: '50' })),
+    revert: (document, id) => post(url('revisions/revert', document), { id }),
   }
 }

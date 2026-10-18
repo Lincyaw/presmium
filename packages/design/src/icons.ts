@@ -5,6 +5,7 @@ const circle = (cx: number, cy: number, r: number): Shape => ['circle', { cx, cy
 
 export const ICONS = {
   'document': [path('M6 3h8l4 4v14H6z'), path('M14 3v4h4')],
+  'diff': [path('M6 3h8l4 4v14H6z'), path('M12 9v6M9 12h6M9 17.5h6')],
   'search': [circle(11, 11, 7), path('m20 20-3.5-3.5')],
   'history': [circle(6, 6, 2), circle(6, 18, 2), circle(18, 9, 2), path('M6 8v8M18 11c0 4-6 3-10 6')],
   'people': [circle(9, 8, 3), path('M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6'), path('M16 5.5a3 3 0 0 1 0 5M21 20c0-2.6-1.6-4.8-4-5.6')],
