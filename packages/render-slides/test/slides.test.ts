@@ -113,8 +113,9 @@ it('a PDF export shows the static fallback of interactive components, not their 
   // The base the deck sets, as a path from the root.
   expect(readFileSync(join(target, 'slides/index.html'), 'utf8')).toMatch(/src="\/talks\/export\/assets\/index-/)
   const pdf = join(target, 'export.pdf')
-  // The slides of plugin components load late on a busy machine; the export waits for them (Slidev's `--wait`).
-  const exported = await slidev(['export', '.presmium/slides/slides.md', '--wait', '2000', '--output', pdf], EXPORT_DECK)
+  // The slides of plugin components load late on a busy machine (a 2-core CI runner still showed "Loading slide..."
+  // after 2 s); the export waits for them once, before it prints (Slidev's `--wait`).
+  const exported = await slidev(['export', '.presmium/slides/slides.md', '--wait', '10000', '--output', pdf], EXPORT_DECK)
   expect(exported.code, exported.output).toBe(0)
 
   const [, panel, local, quiz, predict] = await pdfText(pdf)

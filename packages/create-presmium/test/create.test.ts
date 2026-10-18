@@ -115,9 +115,10 @@ beforeAll(async () => {
   await Promise.all(Object.values(projects).map(project => install(project.dir)))
 }, 900_000)
 
+// Three npm installs: removing them takes longer than a hook's default 10 s on a small CI runner.
 afterAll(() => {
   if (work) rmSync(work, { recursive: true, force: true })
-})
+}, 120_000)
 
 it('packs each template as its one source in the repository, file for file', async () => {
   const unpacked = join(work, 'create-presmium')
