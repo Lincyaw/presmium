@@ -1,8 +1,8 @@
 // create-presmium as a user runs it (P-142; WP-93b), outside the monorepo and without the registry:
 // every public package is packed as it is published (scripts/consumer.ts's `packAll`), and
 // create-presmium runs from its tarball with `npm exec`, as `npm create presmium` runs it. It makes a
-// lecture (answering its questions on standard input), a workspace and a plugin (from arguments) in
-// a temporary directory. Each project then installs Presmium as from the registry: its `package.json`
+// lecture (answering its questions on standard input), a workspace (from arguments, in English) and a
+// plugin (answering its questions in a terminal) in a temporary directory. Each project then installs Presmium as from the registry: its `package.json`
 // names Presmium's packages at create-presmium's version, which the test points at their tarballs
 // (with the packages they need), and npm installs them. There each `presmium check` finds no
 // problems, each build passes, `presmium serve` serves the workspace, and the plugin's own
@@ -67,9 +67,15 @@ async function consumer<T>(name: string, ...args: unknown[]): Promise<T> {
   return JSON.parse(await sh(process.execPath, ['--input-type=module', '-e', script, pathToFileURL(join(ROOT, 'scripts/consumer.ts')).href, name, JSON.stringify(args)], ROOT)) as T
 }
 
-/** `npm create presmium` with create-presmium's tarball for the registry's latest. */
-async function create(args: string[], input = ''): Promise<string> {
-  return sh('npm', ['exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium', ...args], work, input, { LANG: 'zh_CN.UTF-8', LC_ALL: '' })
+/** `npm create presmium` with create-presmium's tarball for the registry's latest, in the system language `lang`. */
+async function create(args: string[], input = '', lang = 'zh_CN.UTF-8'): Promise<string> {
+  return sh('npm', ['exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium', ...args], work, input, { LANG: lang, LC_ALL: '' })
+}
+
+/** As `create`, in a terminal (util-linux's `script`), where the questions are readline's prompts; `input` is typed ahead. */
+async function createInTerminal(input: string): Promise<string> {
+  const command = ['npm', 'exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium'].map(word => `'${word}'`).join(' ')
+  return sh('script', ['--quiet', '--return', '--command', command, '/dev/null'], work, input, { LANG: 'zh_CN.UTF-8', LC_ALL: '' })
 }
 
 /** The project installs its Presmium packages, and those they need, from their tarballs with npm. */
@@ -100,10 +106,11 @@ beforeAll(async () => {
   await consumer('packAll', join(work, 'tarballs'))
   const index = JSON.parse(readFileSync(join(work, 'tarballs/index.json'), 'utf8')) as Tarball[]
   tarballs = new Map(index.map(tarball => [tarball.name, tarball.file]))
-  // Asked: the kind (1, a lecture), the directory and the title; the others from arguments.
-  projects.lecture = made(join(work, 'lecture'), await create([], '1\nlecture\n分词入门\n'))
-  projects.workspace = made(join(work, 'course'), await create(['course', '--type', 'workspace', '--title', '数据结构']))
-  projects.plugin = made(join(work, 'greeting'), await create(['greeting', '--type', 'plugin', '--name', '@acme/presmium-greeting']))
+  // Asked: the kind (1, a lecture; 3, a plugin), the directory and the title or the package name. A
+  // title keeps its `$` (a replacement pattern of String.prototype.replace).
+  projects.lecture = made(join(work, 'lecture'), await create([], '1\nlecture\n分词入门 $& $$x$$\n'))
+  projects.workspace = made(join(work, 'course'), await create(['course', '--type', 'workspace', '--title', 'Data $& structures $$'], '', 'en_US.UTF-8'))
+  projects.plugin = made(join(work, 'greeting'), await createInTerminal('3\ngreeting\n@acme/presmium-greeting\n'))
   await Promise.all(Object.values(projects).map(project => install(project.dir)))
 }, 900_000)
 
@@ -124,13 +131,16 @@ it('packs each template as its one source in the repository, file for file', asy
   }
 })
 
-it('asks for what the arguments leave out, and writes each project for Presmium at its own version, with its agents\' skills', () => {
+it('asks for what the arguments leave out, in the system\'s language, and writes each project for Presmium at its own version, with its agents\' skills', () => {
   const { lecture, workspace, plugin } = projects
-  expect(lecture.output).toContain('新建哪种项目？')
+  for (const asked of [lecture, plugin]) expect(asked.output).toContain('新建哪种项目？')
   expect(lecture.output).toContain('已在 lecture 新建讲义。')
-  expect(readFileSync(join(lecture.dir, 'lecture.md'), 'utf8')).toContain('title: "分词入门"')
-  expect(readFileSync(join(workspace.dir, 'presmium.workspace.yaml'), 'utf8')).toMatch(/^title: "数据结构"$/m)
-  expect(readFileSync(join(workspace.dir, 'intro/lecture.md'), 'utf8')).toContain('title: "第一讲"')
+  expect(plugin.output).toContain('已在 greeting 新建插件。')
+  expect(workspace.output).toContain('Made a workspace in course.')
+  expect(readFileSync(join(lecture.dir, 'lecture.md'), 'utf8')).toContain('title: "分词入门 $& $$x$$"')
+  expect(readFileSync(join(workspace.dir, 'presmium.workspace.yaml'), 'utf8')).toMatch(/^title: "Data \$& structures \$\$"$/m)
+  expect(readFileSync(join(workspace.dir, 'intro/lecture.md'), 'utf8')).toContain('title: "Lecture 1"')
+  expect(readFileSync(join(workspace.dir, 'README.md'), 'utf8')).toContain('A Presmium workspace')
   expect(readFileSync(join(plugin.dir, 'src/domain/index.ts'), 'utf8')).toContain('export const PLUGIN_ID = \'acme.presmium-greeting\'')
   // The CLI, the renderers and the official plugins the documents use, at create-presmium's version.
   const essentials = ['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']
@@ -166,6 +176,8 @@ it('makes a workspace whose document checks with no problems, whose site builds,
   expect(check.stdout).toContain('no problems')
   const build = await presmium(dir, ['build'])
   expect(build.code, build.stdout + build.stderr).toBe(0)
+  expect(build.stdout).toContain('document  intro  Lecture 1')
+  expect(build.stdout).toContain('no problems')
   expect(existsSync(join(dir, 'dist/web/index.html'))).toBe(true)
   // Its sites in serve's state directory, outside the project.
   const cache = mkdtempSync(join(tmpdir(), 'presmium-create-cache-'))

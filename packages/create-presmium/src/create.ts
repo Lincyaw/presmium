@@ -86,20 +86,21 @@ export function createProject(options: ProjectOptions): void {
   if (!validName(name)) throw new CreateError(t.badName(name))
   mkdirSync(dir, { recursive: true })
   const document = (to: string, documentTitle: string) => {
-    // As `presmium serve` makes a document (packages/workspace/src/node/files.ts): the title in a YAML string.
+    // As `presmium serve` makes a document (packages/workspace/src/node/files.ts): the title in a YAML
+    // string. Replacements are functions, so a `$` in a title stays as it is (`$$x$$`, `US$`).
     const quoted = JSON.stringify(documentTitle).slice(1, -1)
-    copyTemplate('document/default', to, (path, text) => path.endsWith('.md') ? text.replaceAll('{{title}}', quoted) : text)
+    copyTemplate('document/default', to, (path, text) => path.endsWith('.md') ? text.replaceAll('{{title}}', () => quoted) : text)
   }
   if (kind === 'lecture') {
     document(dir, title)
     copyTemplate('workspace', dir, unchanged, path => path === '.gitignore')
     writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, dependencies: ranges(ESSENTIALS) })
   } else if (kind === 'workspace') {
-    copyTemplate('workspace', dir, (path, text) => path === 'presmium.workspace.yaml' ? text.replace(/^title: .*$/m, `title: ${JSON.stringify(title)}`) : text)
+    copyTemplate('workspace', dir, (path, text) => path === 'presmium.workspace.yaml' ? text.replace(/^title: .*$/m, () => `title: ${JSON.stringify(title)}`) : text)
     document(join(dir, FIRST_DOCUMENT), t.firstDocument)
     writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, dependencies: ranges([...ESSENTIALS, ...OPERATOR_PLUGINS]) })
   } else {
-    copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', name).replaceAll('{{id}}', pluginId(name)).replaceAll('{{version}}', VERSION))
+    copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginId(name)).replaceAll('{{version}}', () => VERSION))
   }
   if (kind !== 'plugin') {
     writeFileSync(join(dir, 'README.md'), t.readme(kind, title, options.commands))
