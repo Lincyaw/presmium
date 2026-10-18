@@ -1,6 +1,3 @@
-// Real processes for the tests of the remote environments: `presmium` commands on test decks in
-// temporary directories, the compose environment of templates/env/compose, and listeners that
-// record every request (HTTP and WebSocket upgrades) that reaches them.
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
@@ -18,11 +15,9 @@ export const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 export const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
 export const COMPOSE_DIR = fileURLToPath(new URL('../../../templates/env/compose', import.meta.url))
 
-/** Whether Docker with docker compose answers. */
 export const dockerCompose = spawnSync('docker', ['compose', 'version'], { stdio: 'ignore' }).status === 0
   && spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { stdio: 'ignore' }).status === 0
 
-/** The test process's environment without Presmium's variables (a developer's machine may hold some) and Vitest's NODE_ENV. */
 export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -30,12 +25,10 @@ export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv 
   return { ...env, ...extra }
 }
 
-/** `presmium <args>` in `cwd` with the clean environment and `extra` only (not the test process's variables). */
 export function presmium(cwd: string, args: string[], extra: Record<string, string> = {}): Promise<Run> {
   return run(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env: cleanEnv(extra) })
 }
 
-/** A deck in a new temporary directory: `lecture.md` with the plugin (and `plugins`, e.g. the execution plugin) and the notebook renderer named by their paths. */
 export function testDeck(prefix: string, headmatter: string, body: string, plugins: string[] = []): string {
   const dir = mkdtempSync(join(tmpdir(), `presmium-${prefix}-`))
   writeFileSync(join(dir, 'lecture.md'), [
@@ -65,7 +58,6 @@ export interface Jupyter {
   stop(): void
 }
 
-/** `docker compose` with the template and the overlays (`compose.gpu.yaml`, ...); its output, or an error with it. */
 export function compose(project: string, args: string[], env: Record<string, string>, overlays: string[] = []): string {
   const files = ['compose.yaml', ...overlays].flatMap(file => ['-f', join(COMPOSE_DIR, file)])
   const result = spawnSync('docker', ['compose', '-p', project, ...files, ...args], { env: { ...process.env, ...env }, encoding: 'utf8', timeout: 600_000 })
@@ -73,14 +65,12 @@ export function compose(project: string, args: string[], env: Record<string, str
   return result.stdout
 }
 
-/** templates/env/compose/compose.yaml (with `overlays`) under a project name of the work package, on `port`, with a token of its own; waits until healthy. */
 export function startJupyter(project: string, port: number, overlays: string[] = []): Jupyter {
   const env = { JUPYTER_TOKEN: randomBytes(24).toString('hex'), JUPYTER_PORT: String(port) }
   compose(project, ['up', '-d', '--wait'], env, overlays)
   return { url: `http://127.0.0.1:${port}/`, token: env.JUPYTER_TOKEN, stop: () => void compose(project, ['down', '--volumes', '--timeout', '5'], env, overlays) }
 }
 
-/** Whether the host has an NVIDIA GPU for containers (the NVIDIA Container Toolkit registers its devices with Docker). */
 export const nvidiaGpu = dockerCompose
   && spawnSync('nvidia-smi', ['-L'], { stdio: 'ignore' }).status === 0
   && spawnSync('docker', ['info'], { encoding: 'utf8' }).stdout.includes('nvidia.com/gpu')
@@ -99,7 +89,6 @@ export interface Listener {
   close(): Promise<void>
 }
 
-/** A listener that records every request and upgrade, and answers each with `body` (WebSocket upgrades with 400). */
 export async function listener(body = '{"kernelspecs":{}}'): Promise<Listener> {
   const received: Received[] = []
   const server = createServer((req, res) => {
@@ -124,7 +113,6 @@ export async function listener(body = '{"kernelspecs":{}}'): Promise<Listener> {
   }
 }
 
-/** A port nothing listens on. */
 export async function closedPort(): Promise<number> {
   const free = await listener()
   await free.close()
@@ -137,7 +125,6 @@ export interface Child {
   stop(): Promise<void>
 }
 
-/** `presmium <args>` as a long-running process (`dev`). */
 export function presmiumProcess(cwd: string, args: string[], env: NodeJS.ProcessEnv): Child {
   const child = spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
@@ -155,7 +142,6 @@ export function presmiumProcess(cwd: string, args: string[], env: NodeJS.Process
   }
 }
 
-/** Waits until the process prints a match; rejects with its output when it exits first. */
 export function waitFor(child: Child, pattern: RegExp, timeoutMs = 180_000): Promise<RegExpExecArray> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${pattern}:\n${child.output()}`)), timeoutMs)

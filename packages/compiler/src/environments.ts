@@ -1,11 +1,3 @@
-/**
- * Named environments, sessions and credentials of the headmatter (docs/ir.md
- * 2.7, section 4; docs/architecture.md 4.6): the headmatter's `execute`,
- * which the IR keeps as `config.execute`; the executors the providers create
- * for the declared environments; the checks that every environment a block
- * names is declared, that a session stays in one environment, and that the
- * headmatter holds no value that looks like a credential (`presmium.secrets`).
- */
 import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
 import type { CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument } from '@presmium/kernel'
 
@@ -13,7 +5,6 @@ const PREFIX = environmentExecutor('')
 
 type At = (needle: string) => { file: string, line: number }
 
-/** The headmatter's `execute`, as far as it is well formed; what is not is reported. */
 export function readExecute(value: unknown, report: (finding: Finding) => void, at: At): ExecuteConfig {
   if (value === undefined) return {}
   const fail = (message: string, needle = 'execute') => report({ checkId: 'presmium.execute', severity: 'error', message, source: at(needle) })
@@ -44,7 +35,6 @@ export function readExecute(value: unknown, report: (finding: Finding) => void, 
   return execute
 }
 
-/** The provider of each declared environment, by the plugins' `environments`; a kind no plugin provides is an error. */
 export function environmentProviders(execute: ExecuteConfig, providers: Map<string, EnvironmentProvider>, report: (finding: Finding) => void, at: At): Map<string, EnvironmentProvider> {
   const found = new Map<string, EnvironmentProvider>()
   for (const [name, spec] of Object.entries(execute.environments ?? {})) {
@@ -55,12 +45,6 @@ export function environmentProviders(execute: ExecuteConfig, providers: Map<stri
   return found
 }
 
-/**
- * The executors of the declared environments, made once per name and
- * definition and kept between compilations (`made`), so a recompilation in
- * `presmium dev` keeps them. A provider that fails is reported; its blocks
- * then show their recordings.
- */
 export async function environmentExecutors(
   execute: ExecuteConfig,
   providers: Map<string, EnvironmentProvider>,
@@ -92,10 +76,6 @@ export async function environmentExecutors(
   return executors
 }
 
-/**
- * Every environment a block runs in is declared, and the blocks of a session
- * run in one environment (docs/ir.md 2.7): errors on the block's line.
- */
 export function checkRuns(doc: IRDocument, execute: ExecuteConfig, report: (finding: Finding) => void): void {
   const sessions = new Map<string, string>()
   for (const section of doc.sections) {
@@ -114,14 +94,6 @@ export function checkRuns(doc: IRDocument, execute: ExecuteConfig, report: (find
   }
 }
 
-/**
- * Every block that runs in a declared environment is in a language the
- * environment declares (`languages`, P-100) and its executor takes. Otherwise
- * an error on the block's line names the environment, its kind, its
- * languages and the block's language; the environment may be the
- * headmatter's `execute.env`, which the block did not name. An environment
- * that declares none runs what its provider finds (`presmium check --env`).
- */
 export function checkLanguages(doc: IRDocument, execute: ExecuteConfig, executors: readonly Executor[], report: (finding: Finding) => void): Set<CodeNode> {
   const reported = new Set<CodeNode>()
   for (const section of doc.sections) {
@@ -150,24 +122,17 @@ function describe(executor: string): string {
   return executor.startsWith(PREFIX) ? `environment ${executor.slice(PREFIX.length)}` : executor === 'browser' ? 'the default environment' : `executor ${executor}`
 }
 
-/** Values that look like credentials: API keys, tokens, private keys. */
 const CREDENTIALS = [
-  /^sk-[\w-]{16,}$/, // OpenAI, Anthropic, DeepSeek and others
+  /^sk-[\w-]{16,}$/,
   /^(?:gh[pousr]|github_pat)_\w{20,}$/,
   /^xox[abposr]-[\w-]{10,}$/,
   /^AKIA[0-9A-Z]{16}$/,
   /^AIza[\w-]{30,}$/,
-  /^eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,}$/, // a JSON Web Token
+  /^eyJ[\w-]{10,}\.[\w-]{10,}\.[\w-]{10,}$/,
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
 ]
-/** Keys whose long values are credentials whatever they look like. */
 const CREDENTIAL_KEY = /(?:^|[_-])(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key)$/i
 
-/**
- * `presmium.secrets`: a headmatter value that looks like a credential is a
- * warning on its line; credentials come from the environment or a login,
- * never from the deck (N-08, docs/ir.md 2.1).
- */
 export function checkSecrets(headmatter: Record<string, unknown>, report: (finding: Finding) => void, at: At): void {
   const visit = (value: unknown, key: string, path: string) => {
     if (typeof value === 'string') {

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// The switch of the lecture panel in the toolbar while the workspace's edit mode is on (P-136, P-137): it docks the
-// panel at the right of the split (./WritebackDock.vue, ./dock.ts), pressed while it is shown.
 import { useMessages, useService } from '@presmium/host'
 import { AGENT } from '@presmium/kernel'
 import { LECTURE_MESSAGES } from '../domain/index.ts'

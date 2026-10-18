@@ -6,15 +6,11 @@ import { centerIn } from './geometry.ts'
 import type { Point } from './geometry.ts'
 import { resolveTarget, useTargetMark } from './targets.ts'
 
-// The cursor of `PmCursor`. Its steps are registered once, so `PmCursor` mounts a new one when the path changes.
 const props = defineProps<{ plan: PlannedWaypoint[] }>()
 
 const plan = props.plan
-// Waypoint steps count from the cue's block. Step 0 needs no registration: it is the block's own
-// step; the others are registered with the host at their steps of the slide.
 const scope = useStepScope()
 const steps = computed(() => [...new Set(plan.map(point => point.at))].filter(step => step > 0).map(scope.step))
-// The cursor is at the last waypoint whose step has been reached; -1 before the first.
 const reached = plan.map(point => useStepState({ from: point.at }))
 const index = computed(() => reached.filter(state => state.value.reached).length - 1)
 const point = computed(() => plan[index.value])
@@ -23,7 +19,6 @@ const reduced = usePrefersReducedMotion()
 const cursor = ref<HTMLElement>()
 const position = shallowRef<Point>()
 
-// Before the first waypoint the cursor waits, invisible, at that waypoint, so it appears there instead of flying in.
 function measure() {
   const el = cursor.value
   const frame = el?.offsetParent
@@ -33,7 +28,6 @@ function measure() {
 
 watch(index, measure, { flush: 'post' })
 
-// Targets move when the slide is shown, rescaled or its fonts load; measure again then.
 let observer: ResizeObserver | undefined
 onMounted(() => {
   observer = new ResizeObserver(measure)
@@ -47,7 +41,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 
-// Hovered and clicked targets carry the action, so a deck can style them.
 useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.value?.action === 'move' ? undefined : point.value?.action))
 </script>
 
@@ -88,7 +81,6 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
   position: absolute;
   left: -2px;
   top: -2px;
-  /* A pointer as the system draws one, white with a dark edge, on any slide. */
   fill: #fff;
   stroke: #111;
   stroke-width: 1.5;
@@ -111,7 +103,6 @@ useTargetMark(cursor, () => point.value?.to, 'data-pm-cursor', () => (point.valu
 .pm-cursor[data-action='click'] .pm-cursor__ring {
   opacity: 0.7;
 }
-/* The press plays after the move; its last frame is the resting ring shown with reduced motion. */
 .pm-cursor[data-motion='full'][data-action='click'] .pm-cursor__ring {
   animation: pm-cursor-press 0.4s ease-out 0.45s both;
 }

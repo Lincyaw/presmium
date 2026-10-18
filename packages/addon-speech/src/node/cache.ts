@@ -1,11 +1,3 @@
-/**
- * A deck's synthesis cache (docs/ir.md 9.1), committed with the deck:
- * `.presmium/speech/<key>.<wav|ogg>` (the engine's format, labeled, never
- * re-encoded) with `<key>.json` (words, duration, format, engine, the same
- * AI-generated label), and `.presmium/speech.lock.json`, the keys the deck
- * used with the sha256 of their audio. In `presmium serve` the workspace's
- * `DOCUMENT_FILES` writes it (WP-91).
- */
 import { createHash, randomBytes } from 'node:crypto'
 import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -14,10 +6,8 @@ import { isRecord } from '@presmium/kernel'
 import type { AigcLabel } from '../domain/index.ts'
 import type { SynthesisResult } from './backend.ts'
 
-/** `<key>.json`. */
 export interface CacheRecord {
   key: string
-  /** The audio file beside it. */
   audio: string
   mime: string
   duration: number
@@ -39,10 +29,8 @@ interface LockFile {
   synthesis: Record<string, { audio: string, sha256: string }>
 }
 
-/** How a file of the cache is opened to be read: not through a link at its name, nor waiting for a writer of a FIFO. */
 const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0)
 
-/** A regular file's bytes, opened as `OPEN_FLAGS` says (the checked file is the one read); undefined for anything else. */
 function readRegular(file: string): Buffer | undefined {
   let fd: number
   try {
@@ -59,7 +47,6 @@ function readRegular(file: string): Buffer | undefined {
   }
 }
 
-/** Writes beside `file` and renames over it, so a link at `file` is replaced rather than followed. */
 function writeAtomic(file: string, data: string | Uint8Array): void {
   const temporary = `${file}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`
   writeFileSync(temporary, data, { flag: 'wx' })
@@ -72,7 +59,6 @@ export class SynthesisCache {
 
   readonly #deckDir: string
   readonly #workspaceRoot: string
-  /** The workspace's writer when the host has one. */
   readonly #files: () => DocumentFiles | undefined
 
   constructor(deckDir: string, workspaceRoot = deckDir, files: () => DocumentFiles | undefined = () => undefined) {
@@ -83,28 +69,18 @@ export class SynthesisCache {
     this.lockFile = join(deckDir, '.presmium', 'speech.lock.json')
   }
 
-  /** Writes a file of the cache: through the workspace's writer, else beside it and renamed over it. */
   async #put(file: string, data: string | Uint8Array): Promise<void> {
     const files = this.#files()
     if (!files) return writeAtomic(file, data)
     await files.write([{ path: relative(this.#workspaceRoot, file).split(sep).join('/'), content: typeof data === 'string' ? Buffer.from(data) : data }])
   }
 
-  /** The cache directory resolves inside the deck (no linked `.presmium` or `speech`). */
   #contained(): boolean {
     const deck = realpathSync(this.#deckDir)
     const dir = realpathSync(this.dir)
     return dir === join(deck, '.presmium', 'speech')
   }
 
-  /**
-   * The record, audio file and audio of a key, when both are there. The
-   * record is committed with the deck and may be edited by anyone who edits
-   * the deck, so nothing in it can point elsewhere: the audio must be
-   * `<key>.wav` or `<key>.ogg`, and the cache directory, the record and the
-   * audio must be regular files inside the deck, not symbolic links nor
-   * FIFOs, each checked as it is read (`readRegular`).
-   */
   async find(key: string): Promise<{ record: CacheRecord, file: string, audio: Buffer } | undefined> {
     if (!/^[0-9a-f]{32}$/.test(key)) return undefined
     let found: { record: CacheRecord, file: string, audio: Buffer }
@@ -126,7 +102,6 @@ export class SynthesisCache {
   }
 
   async write(result: SynthesisResult, request: { lang: string, text: string }): Promise<{ record: CacheRecord, file: string }> {
-    // The workspace's writer makes the directory, replacing a link on the way; here it is made and checked.
     if (!this.#files()) {
       mkdirSync(this.dir, { recursive: true })
       if (!this.#contained()) throw new Error(`the synthesis cache ${this.dir} resolves outside the deck`)
@@ -156,14 +131,12 @@ export class SynthesisCache {
     return { record, file }
   }
 
-  /** Adds a key to the lock file (sorted, one key per line), unless it is there with this audio. */
   async #lock(key: string, record: CacheRecord): Promise<void> {
     let lock: LockFile = { version: 1, synthesis: {} }
     try {
       const read: unknown = JSON.parse(readRegular(this.lockFile)?.toString('utf8') ?? '')
       if (isRecord(read) && isRecord(read.synthesis)) lock = read as unknown as LockFile
     } catch {
-      // None yet.
     }
     const known = lock.synthesis[key]
     if (known?.audio === record.audio && known.sha256 === record.sha256) return

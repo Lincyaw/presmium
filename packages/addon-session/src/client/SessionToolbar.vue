@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// The classroom in the hosts' toolbar: a button with its state that opens the session panel in a
-// popover (the browser's own: it closes with Esc or a click elsewhere, over everything).
-// It also places the learner's badge on the page.
 import { claimFirst, useMessages } from '@presmium/host'
 import { ref, useId } from 'vue'
 import { MESSAGES, shortStatus, statusText } from '../domain/index.ts'
@@ -13,7 +10,6 @@ const { snapshot } = useClassroom()
 const t = useMessages(MESSAGES)
 const id = useId()
 const open = ref(false)
-// Of the toolbar's instances in a window (the bar and the menu of a phone), the first shows the badge.
 const badge = claimFirst('presmium.session.badge')
 
 function toggled(event: Event): void {
@@ -59,7 +55,6 @@ function toggled(event: Event): void {
 .pm-session-toolbar__state {
   color: var(--pm-color-muted);
 }
-/* The connection: off without a server or link, the warning tone while it connects, the success tone once it is. */
 .pm-session-toolbar__dot {
   background: var(--pm-color-line-strong);
 }
@@ -69,8 +64,6 @@ function toggled(event: Event): void {
 .pm-session-toolbar__dot[data-connection='connecting'] {
   background: var(--pm-color-warn);
 }
-/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. The text
-   wraps, whatever the toolbar around it sets. */
 .pm-session-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;

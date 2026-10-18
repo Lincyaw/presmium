@@ -1,9 +1,3 @@
-/**
- * What the read tools return, read from a compiled document (docs/ir.md):
- * its sections and steps, the narration and the content on screen at a
- * step, code references, recorded outputs, diagnostics and source places.
- * Paths are relative to the deck directory, where an agent edits the source.
- */
 import { dirname, relative } from 'node:path'
 import { blockState, blockText, blockVisible, chapters, irBlocks, narrationAt, tokenize } from '@presmium/kernel'
 import type { CodeNode, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunOutput, RunResult, SourcePos } from '@presmium/kernel'
@@ -15,19 +9,16 @@ export interface Place {
   endLine?: number
 }
 
-/** A source position relative to the deck directory. */
 export function place(doc: IRDocument, pos: SourcePos): Place {
   return { file: relative(dirname(doc.meta.entry), pos.file) || pos.file, line: pos.line, ...pos.endLine ? { endLine: pos.endLine } : {} }
 }
 
-/** A section by its id, or by its 1-based number. */
 export function findSection(doc: IRDocument, ref: string | number): IRSection {
   const section = doc.sections.find(s => s.id === String(ref)) ?? doc.sections.find(s => String(s.index) === String(ref))
   if (!section) throw new Error(`no section ${JSON.stringify(ref)}; list_sections names them`)
   return section
 }
 
-/** A block of a section by its id, components' children included. */
 export function findBlock(section: IRSection, id: string): IRBlock {
   const block = [...irBlocks(section.blocks)].find(b => b.id === id)
   if (!block) throw new Error(`no block ${JSON.stringify(id)} in section ${section.id}; get_section lists them`)
@@ -61,14 +52,12 @@ export function deckInfo(doc: IRDocument, document: string) {
   }
 }
 
-/** A code block's reference to the workspace's code, when it has one. */
 function origin(node: CodeNode) {
   if (!node.origin) return undefined
   const { anchor, file, startLine, endLine, status, drift, pin, permalink } = node.origin
   return { anchor, file, startLine, endLine, status, ...drift ? { drift } : {}, ...pin ? { pin } : {}, ...permalink ? { permalink } : {} }
 }
 
-/** A block as the tools show it; `step` gives the state of a block that spans steps. */
 export function blockInfo(doc: IRDocument, block: IRBlock, step?: number) {
   const { node } = block
   const state = step === undefined ? undefined : blockState(block, step)
@@ -102,7 +91,6 @@ function narration(section: IRSection) {
   return section.blocks.filter(b => b.role === 'narration').map(b => ({ step: b.at, block: b.id, text: blockText(b) }))
 }
 
-/** A section: its narration by step and every block. */
 export function sectionDetail(doc: IRDocument, section: IRSection) {
   return {
     ...sectionSummary(doc, section),
@@ -111,7 +99,6 @@ export function sectionDetail(doc: IRDocument, section: IRSection) {
   }
 }
 
-/** A step of a section: what is on screen and the narration that belongs to it. */
 export function stepDetail(doc: IRDocument, section: IRSection, step: number) {
   if (!Number.isInteger(step) || step < 0 || step > section.steps) throw new Error(`section ${section.id} has steps 0 to ${section.steps}`)
   return {
@@ -124,7 +111,6 @@ export function stepDetail(doc: IRDocument, section: IRSection, step: number) {
   }
 }
 
-/** A code block with its reference to the workspace's code. */
 export function codeRef(doc: IRDocument, section: IRSection, id: string) {
   const block = findBlock(section, id)
   if (block.node.type !== 'code') throw new Error(`block ${id} of section ${section.id} is not code`)
@@ -144,7 +130,6 @@ export function codeRef(doc: IRDocument, section: IRSection, id: string) {
 
 const TEXT = /^(text\/|application\/(json|javascript)$)/
 
-/** A rich output with its text kept and binary data named only. */
 function outputData(output: RunOutput) {
   if (output.output_type !== 'display_data' && output.output_type !== 'execute_result') return output
   const data = Object.fromEntries(Object.entries(output.data).map(([mime, value]) =>
@@ -152,7 +137,6 @@ function outputData(output: RunOutput) {
   return { output_type: output.output_type, data }
 }
 
-/** A run as the tools show it: the streams, the exit and the rich outputs. */
 export function runInfo(run: RunResult | RecordedRun) {
   return {
     ok: run.ok,
@@ -165,7 +149,6 @@ export function runInfo(run: RunResult | RecordedRun) {
   }
 }
 
-/** The recorded outputs of a section's code blocks, or of one. */
 export function outputsOf(section: IRSection, id?: string) {
   const blocks = id ? [findBlock(section, id)] : [...irBlocks(section.blocks)]
   return {
@@ -176,7 +159,6 @@ export function outputsOf(section: IRSection, id?: string) {
   }
 }
 
-/** Findings with their places relative to the deck. */
 export function diagnosticsOf(doc: IRDocument, findings: Finding[]) {
   return findings.map(f => ({
     severity: f.severity,
@@ -187,11 +169,6 @@ export function diagnosticsOf(doc: IRDocument, findings: Finding[]) {
   }))
 }
 
-/**
- * Where a section, a step, a block or an anchor is in the source: the
- * section's heading, the blocks of a step, a block, or the code blocks that
- * reference an anchor with the lines of the referenced code.
- */
 export function locate(doc: IRDocument, target: { section?: string, step?: number, block?: string, anchor?: string }) {
   if (target.anchor) {
     const found = doc.sections.flatMap(section => [...irBlocks(section.blocks)]
@@ -212,11 +189,6 @@ export function locate(doc: IRDocument, target: { section?: string, step?: numbe
 
 const indexes = new WeakMap<IRDocument, MiniSearch>()
 
-/**
- * The web form's local search index: a document per section with its title,
- * its chapter's title above it and the text of its blocks, MiniSearch with the
- * deck's tokenizer and VitePress's search options (P-71).
- */
 function searchIndex(doc: IRDocument): MiniSearch {
   let index = indexes.get(doc)
   if (index) return index

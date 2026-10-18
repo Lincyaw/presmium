@@ -1,11 +1,3 @@
-# Presmium's profile settings for DeepSeek Harness, every carrier (docs/design-dsh.md 6.6). The launcher
-# passes this file with --patch on every start: overlays come after the profile's own patch and the home's,
-# so what the user changes in DeepSeek Harness's settings (written to the profile's cordis.patch.yml)
-# cannot turn these rows back (17, item 5). The row ids are the pinned version's; the upgrade gate's first
-# group checks them (test/config.test.ts). A patch replaces a row's whole config.
-
-# Privacy: no session-log upload, no session telemetry, no plugin inventory sent with each model request.
-# The launcher also sets DSH_TELEMETRY_MODE=DISABLED.
 - id: session-log-deepseek
   disabled: true
 - id: session-telemetry-otel
@@ -13,14 +5,10 @@
 - id: plugin-package-inventory-deepseek
   disabled: true
 
-# Skills: the agents root is an empty directory of Presmium's (the launcher sets DSH_AGENTS_HOME to it,
-# which the presets' own skill rows follow), never the user's ~/.agents. A document's .agents/skills stay.
 - id: skill-filesystem
   config:
     agentsHome: !!js process.env.DSH_AGENTS_HOME || `${process.env.DSH_HOME}/agents`
 
-# The sandbox: the session's directory (its document) is writable, anything wider asks; the user may pick
-# the full-access mode for a session in the page (6.3).
 - id: sandbox-policy
   config:
     mode: workspace-write
@@ -29,8 +17,6 @@
   config:
     policy: ask
 
-# Persona: Presmium's assistant, not a coding agent (17, item 10). The web carrier's presets carry their own
-# persona rows inside their configuration; there, Presmium's role is the guide section (presmium-context).
 - id: system-prompt
   config:
     personaPrefix: >-

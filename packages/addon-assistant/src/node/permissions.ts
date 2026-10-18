@@ -1,18 +1,3 @@
-/**
- * The agent's own permission requests (ACP `session/request_permission`) by
- * approval scope (docs/architecture.md 4.8, 10.4). A request names only its
- * tool call (DeepSeek Harness sends the call's id alone), so the tool call
- * the agent announced before (`tool_call`: title, kind, input, locations)
- * says what it is: a file within the session's directory is `content`
- * (`write`), except in a git directory (`.git/`: in a single-deck repository
- * the document directory holds the repository's, whose configuration and
- * hooks git runs, and no review shows it); a file elsewhere, a shell command,
- * the network or any other tool is `workspace` (owners only); the operator
- * directory is refused outright, asking no one. Where a path is is decided
- * by its real path (its nearest existing directory with the links in it
- * resolved): a link in the document directory to a directory elsewhere does
- * not make a file there `content`.
- */
 import { realpathSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { deckLocale, isRecord } from '@presmium/kernel'
@@ -20,7 +5,6 @@ import type { ApprovalRequest } from '@presmium/kernel'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import { inside as within } from './paths.ts'
 
-/** What the agent announced of a tool call. */
 export interface ToolCallInfo {
   title?: string | null
   kind?: string | null
@@ -28,17 +12,12 @@ export interface ToolCallInfo {
   locations?: { path: string }[] | null
 }
 
-/**
- * A permission request as an approval; a write names its path (absolute), so a
- * change task commits the writes outside its directory that an owner allowed.
- */
 export type AgentApproval = ApprovalRequest & { path?: string }
 
 export type Classified = { refuse: string } | { request: AgentApproval }
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined)
 
-/** The real path of `path`: that of its nearest existing ancestor (links resolved), with the rest of the path after it. */
 export function realPath(path: string): string {
   let rest = ''
   for (let at = resolve(path); ; at = dirname(at)) {

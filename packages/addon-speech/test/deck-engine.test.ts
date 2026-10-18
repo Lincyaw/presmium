@@ -1,6 +1,3 @@
-// A deck cannot define a speech engine (N-08): `engines.x` with an address and a variable of a credential
-// is an error of `presmium check` and `presmium build`, and leads nowhere: synthesis through the speech
-// routes of `presmium dev` fails, no request reaches the address, and the credential is printed nowhere.
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, expect, it } from 'vitest'

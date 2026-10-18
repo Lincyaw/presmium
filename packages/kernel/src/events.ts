@@ -7,10 +7,6 @@ const reportToConsole: ErrorHandler = (error, event) => {
   console.error(`[presmium] handler for "${event.type}" threw`, error)
 }
 
-/**
- * Synchronous in-process event bus. A throwing handler is reported through
- * `onError` and does not stop the other handlers.
- */
 export function createEventBus(onError: ErrorHandler = reportToConsole): EventBus {
   const handlers = new Map<string, Set<Handler>>()
   return {

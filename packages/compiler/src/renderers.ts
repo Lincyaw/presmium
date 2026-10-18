@@ -1,15 +1,3 @@
-/**
- * Renderer registry and dispatch (docs/ir.md section 6). A renderer is the
- * `renderer` of a plugin: one listed in `plugins`, or the package installed
- * for a renderer id (`renderers.<id>.package`, else the default package).
- * Each renderer gets a view of the IR without the blocks `only` excludes;
- * blocks it does not support at all are listed in the build report. The
- * web renderer also gets the translations the deck declares, compiled
- * (`RenderContext.translations`, docs/ir.md 2.12). The local files the
- * renderers publish are those `RenderContext.localAsset` gives (docs/ir.md
- * 6.2): files, and directories inside the deck as a file listing; a local
- * reference that cannot be published is a warning on its line.
- */
 import { existsSync, realpathSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -26,10 +14,8 @@ import { loadPlugin, pluginId } from './plugins.ts'
 import { compileTranslations } from './translations.ts'
 import type { CompiledTranslation } from './translations.ts'
 
-/** Parent of the renderers' work directories in `build`, relative to the deck. */
 export const WORK_DIR = '.presmium'
 
-/** Package that provides each built-in renderer id. */
 export const DEFAULT_RENDERER_PACKAGES: Record<string, string> = {
   web: '@presmium/web',
   slides: '@presmium/render-slides',
@@ -38,29 +24,23 @@ export const DEFAULT_RENDERER_PACKAGES: Record<string, string> = {
 
 export interface InstalledRenderer {
   renderer: Renderer
-  /** Package that provides it. */
   package: string
 }
 
 export interface RendererOutput {
   renderer: string
   outDir: string
-  /** The renderer's work directory (`RenderContext.workDir`), e.g. the Slidev deck of the slides renderer. */
   workDir: string
-  /** The public base path the output is served under (`RenderContext.base`). */
   base: string
   skipped: RenderOutput['skipped']
 }
 
 export interface BuildReport {
-  /** Path of the IR written next to the renderer outputs. */
   ir: string
   outputs: RendererOutput[]
-  /** Compile diagnostics followed by renderer findings. */
   findings: Finding[]
 }
 
-/** Renderers available to a deck, by id; `missing` explains the configured ones that are not. */
 async function installedRenderers(compilation: Compilation): Promise<{ renderers: Map<string, InstalledRenderer>, missing: Map<string, string> }> {
   const renderers = new Map<string, InstalledRenderer>()
   const missing = new Map<string, string>()
@@ -83,10 +63,6 @@ async function installedRenderers(compilation: Compilation): Promise<{ renderers
   return { renderers, missing }
 }
 
-/**
- * The renderers to run: `to` when given (missing ones are errors), else the
- * ids configured in `renderers` (missing ones are warnings), else all installed.
- */
 async function selectRenderers(compilation: Compilation, to?: string[]): Promise<{ selected: InstalledRenderer[], findings: Finding[] }> {
   const { renderers, missing } = await installedRenderers(compilation)
   const configured = Object.keys(compilation.doc.config.renderers)
@@ -101,25 +77,17 @@ async function selectRenderers(compilation: Compilation, to?: string[]): Promise
   return { selected, findings }
 }
 
-/** The renderers run together: their ids, and the public base of each (`RenderContext.base`). */
 interface Run {
   ids: string[]
   bases: Map<string, string>
 }
 
-/** `renderers.<id>.base` as a public base path, `/` or `/<path>/`; undefined when it is not set. */
 function configuredBase(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined
   const path = value.trim().replace(/^\/+|\/+$/g, '')
   return path ? `/${path}/` : '/'
 }
 
-/**
- * The renderers run together and their public bases: the configured base;
- * else, in a build (`shared`) of two or more site renderers none of which
- * sets one, `/<id>/` for each, so the output directory deploys as one site
- * (C-13); else `/`.
- */
 function runOf(compilation: Compilation, selected: InstalledRenderer[], shared: boolean): Run {
   const renderers = selected.map(({ renderer }) => renderer)
   const configured = new Map(renderers.map(({ id }) => [id, configuredBase(compilation.doc.config.renderers[id]?.base)]))
@@ -134,34 +102,11 @@ function runOf(compilation: Compilation, selected: InstalledRenderer[], shared: 
 export interface BuildOptions {
   outDir: string
   to?: string[]
-  /**
-   * Build the version for this audience (P-55) of a compilation of the
-   * whole deck: its view for the audience (`Compilation.forAudience`), with
-   * the translations compiled for it, e.g. the student build. A compilation
-   * for an audience (`CompilerOptions.audience`) builds its own.
-   */
   audience?: string
-  /** For an audience: whether the scan's findings quote the sentences they found (default true); not for findings the audience reads. */
   quote?: boolean
-  /**
-   * For an audience: what the scan reads. `outDir` (default, `presmium
-   * build --audience`): every file of the output directory, which a build of
-   * the whole deck may have written before (the default `dist/` of both), so
-   * a renderer's directory this build did not write fails it too.
-   * `written`: only what this build wrote, the IR and each renderer's
-   * directory (a student build written beside the whole deck's).
-   */
   scan?: 'outDir' | 'written'
 }
 
-/**
- * Writes `<outDir>/ir.json` (with paths relative to the deck, `relativeIR`)
- * and runs the selected renderers, each into `<outDir>/<id>`. They write
- * directories of their own, so they run at the same time; the report lists
- * them in the order selected. A build for an audience then scans the output
- * directory (`BuildOptions.scan`) for the sentences of what the audience's
- * version left out, of the deck or of a translation (`presmium.audience`).
- */
 export async function build(whole: Compilation, options: BuildOptions): Promise<BuildReport> {
   const compilation = options.audience && options.audience !== whole.audience?.name
     ? { ...whole, doc: whole.forAudience(options.audience), audience: whole.audienceOf(options.audience) }
@@ -196,32 +141,23 @@ export async function build(whole: Compilation, options: BuildOptions): Promise<
     const paths = options.scan === 'written' ? [ir, ...outputs.map(output => output.outDir)] : undefined
     findings.push(...await scan.scan(options.outDir, paths, { quote: options.quote ?? true }))
   }
-  // Each renderer reports the local references it cannot publish: a reference is reported once.
   return { ir, outputs, findings: unique([...doc.diagnostics, ...findings, ...results.flatMap(({ reported }) => reported)]) }
 }
 
-/**
- * The scan of a build for an audience: the sentences the deck's version for
- * it left out and those its translations' versions left out, but those any
- * of the versions shows (code is the same in every language).
- */
 function audienceScan(audience: AudienceCompilation, translations: CompiledTranslation[], doc: IRDocument): AudienceCompilation {
   const kept = [doc, ...translations.map(translation => translation.doc)]
   const left = [audience, ...translations.flatMap(translation => (translation.audience ? [translation.audience] : []))].flatMap(own => own.withheld)
   return audienceCompilation(audience.name, unshown(left, kept))
 }
 
-/** The renderer that gets the translations (`RenderContext.translations`). */
 const WEB = 'web'
 
-/** The translations of a run with the web renderer, compiled, and the web renderer's views of them. */
 async function translationsFor(compilation: Compilation, run: Run, compilers?: Map<string, Compiler>): Promise<{ translations: CompiledTranslation[], views: NonNullable<RenderContext['translations']>, findings: Finding[] }> {
   if (!run.ids.includes(WEB) || !compilation.doc.config.translations) return { translations: [], views: [], findings: [] }
   const { translations, findings } = await compileTranslations(compilation, compilers)
   return { translations, views: translations.map(({ lang, doc }) => ({ lang, doc: viewFor(doc, WEB) })), findings }
 }
 
-/** Findings without repetitions. */
 function unique(findings: Finding[]): Finding[] {
   const seen = new Set<string>()
   return findings.filter((finding) => {
@@ -232,14 +168,6 @@ function unique(findings: Finding[]): Finding[] {
   })
 }
 
-/**
- * What `build` does short of building: each selected renderer that can
- * writes what it generates in its work directory (`Renderer.prepare`), e.g.
- * the Slidev deck that `slidev export` works on. `outDir` is where a build
- * would write. `base` replaces the public base of every renderer, for a tool
- * that serves what is prepared under a base of its own: `slidev export`
- * serves the Slidev deck at the root (`/`).
- */
 export async function prepare(compilation: Compilation, options: { outDir: string, to?: string[], base?: string }): Promise<{ outputs: Omit<RendererOutput, 'skipped'>[], findings: Finding[] }> {
   const { selected, findings } = await selectRenderers(compilation, options.to)
   const run = runOf(compilation, selected, true)
@@ -263,11 +191,8 @@ export async function prepare(compilation: Compilation, options: { outDir: strin
 }
 
 export interface DevSession {
-  /** Dev server URL per renderer id. */
   servers: { renderer: string, url: string }[]
-  /** IR file kept up to date while watching. */
   ir: string
-  /** Pushes a compilation the host made (`DevOptions.compilation`) to the dev servers. */
   update(compilation: Compilation): Promise<void>
   close(): Promise<void>
 }
@@ -275,42 +200,15 @@ export interface DevSession {
 export interface DevOptions {
   outDir: string
   to?: string[]
-  /** The Presmium server of `presmium dev`, to which the renderers' dev servers proxy `/__presmium/` (`RenderContext.server`). */
   server?: { url: string }
-  /**
-   * The web form's own plugins besides the deck's (package name to
-   * directory), whose browser parts its dev server loads: the workspace's
-   * edit mode in `presmium dev`.
-   */
   sitePlugins?: Record<string, string>
-  /** Called after every compilation, the first one included. */
   onCompile?(compilation: Compilation, findings: Finding[]): void
-  /**
-   * A host that compiles the deck itself (the documents of `presmium serve`):
-   * its compilation to start from. `dev` then neither compiles nor watches;
-   * the host gives each later compilation to `DevSession.update`.
-   */
   compilation?: Compilation
-  /** The public base of every dev server, for a host that serves them under a path of its own (`RenderContext.base`). */
   base?: string
-  /** The port of every dev server (`renderers.<id>.port`), e.g. a free one the host found. */
   port?: number
-  /** The pages load the agent of the preview protocol, for these parent origins (`RenderContext.preview`). */
   preview?: { origins: string[] }
 }
 
-/**
- * Compiles, starts the dev server of each selected renderer, then recompiles
- * on every change of what the IR depends on, and pushes the new IR to the
- * servers: the source files, the files that directives and passes read (e.g.
- * referenced code, K-09), and the git files that name the revisions they read.
- * Each compilation is reported once what it depends on is watched. Changes
- * during a compilation make one more, which reads the source as it is then.
- * A host that compiles the deck itself (`DevOptions.compilation`) starts the
- * servers from its compilation and gives them the later ones (`update`): the
- * slides of a document of `presmium serve`, whose session compiles it once
- * for every form (docs/design-dsh.md 5.1).
- */
 export async function dev(compiler: Compiler, options: DevOptions): Promise<DevSession> {
   let started = Date.now()
   let compilation = options.compilation ?? await compiler.compile()
@@ -319,7 +217,6 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
   const run = runOf(compilation, selected, false)
   const base = configuredBase(options.base)
   if (base) for (const id of run.ids) run.bases.set(id, base)
-  // The translations are compiled again with the original; the web dev server reads them at each update.
   const translators = new Map<string, Compiler>()
   let translated = await translationsFor(compilation, run, translators)
   findings.push(...translated.findings)
@@ -348,19 +245,16 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
   }
   if (servers.length === 0) findings.push(renderFinding(compilation, 'warning', `no renderer dev server; watching the source and writing the IR to ${ir}`))
-  // The servers load the plugins and renderer options they started with (R-35).
   const setup = (c: Compilation) => JSON.stringify([c.doc.config.plugins, c.doc.config.renderers])
   const initial = setup(compilation)
 
   const watchers = new Map<string, FSWatcher>()
-  /** Watched directory -> names in it whose change matters: a watched file, or the next directory on the way to one not created yet. */
   let relevant = new Map<string, Set<string>>()
   let watched = new Set<string>()
   let timer: NodeJS.Timeout | undefined
   let running = Promise.resolve()
   let queued = false
   let closed = false
-  // At most one compilation waits behind the one running: it reads the source when it starts (R-05).
   const schedule = () => {
     if (closed) return
     clearTimeout(timer)
@@ -368,15 +262,12 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       if (queued) return
       queued = true
       running = running.then(() => {
-        // This compilation reads what the changes still waiting for the timer changed.
         queued = false
         clearTimeout(timer)
         return recompile()
       })
     }, 30)
   }
-  // Directories are watched rather than files, so editors and git, which save by renaming, are seen too.
-  // A file changed after the compilation started, possibly before its directory was watched, is compiled again.
   const watchFiles = async () => {
     const { files, revisions } = compilation.dependencies
     const revs = new Map<string, Set<string>>()
@@ -386,7 +277,6 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     watched = new Set([...compilation.files, ...files, ...git.flat(), ...translated.translations.flatMap(t => t.files)])
     const next = new Map<string, Set<string>>()
     for (const file of watched) {
-      // A file in a directory not created yet (e.g. an include being written): its nearest existing ancestor is watched.
       let dir = dirname(file)
       let name = basename(file)
       while (!existsSync(dir) && dirname(dir) !== dir) {
@@ -408,12 +298,10 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
           if (name && relevant.get(dir)?.has(basename(name))) schedule()
         }))
       } catch {
-        // A directory that cannot be watched (removed meanwhile) is looked at again after the next compilation.
       }
     }
     if (!queued && [...watched].some(file => modifiedSince(file, started))) schedule()
   }
-  /** Gives the servers a new compilation; what goes wrong is reported. */
   const push = async (next: Compilation, reported: Finding[]) => {
     compilation = next
     await writeIR(compilation.doc, options.outDir)
@@ -441,7 +329,6 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     await watchFiles()
     options.onCompile?.(compilation, reported)
   }
-  // A host that compiles the deck itself watches it too.
   if (!options.compilation) await watchFiles()
   options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...findings])
 
@@ -467,22 +354,11 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
   }
 }
 
-/**
- * Whether `file` was modified at or after `time`. File times can lag the
- * clock by a few milliseconds; one in the future (e.g. an extracted archive)
- * is not a modification, or every compilation would start another.
- */
 function modifiedSince(file: string, time: number): boolean {
   const modified = statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0
   return modified >= time - 20 && modified <= Date.now()
 }
 
-/**
- * The document a renderer sees: blocks limited by `only` to other renderers
- * are left out, and so are the steps that only they took (R-03): the steps
- * left are numbered again, narration of a step left out goes with the step
- * before it, and the section's `stepMap` gives the new number of every step.
- */
 export function viewFor(doc: IRDocument, renderer: string): IRDocument {
   let changed = false
   const keep = (blocks: IRBlock[]): IRBlock[] => blocks.flatMap((block) => {
@@ -500,7 +376,6 @@ export function viewFor(doc: IRDocument, renderer: string): IRDocument {
   return { ...doc, sections }
 }
 
-/** A section without the steps no visual block of it takes any more (see `viewFor`). */
 function compactSteps(section: IRSection): IRSection {
   const used = new Set([0])
   for (const block of irBlocks(section.blocks)) {
@@ -528,21 +403,15 @@ async function writeIR(doc: IRDocument, outDir: string): Promise<string> {
   return file
 }
 
-/** This renderer's extension for a component: that of the plugin the node names, else of any plugin with a component of its name. */
 function extensionOf(node: ComponentNode, extensions: RendererExtension[]) {
   const owner = extensions.find(e => e.plugin === node.plugin && e.components?.[node.name])
     ?? (node.plugin ? undefined : extensions.find(e => e.components?.[node.name]))
   return owner?.components?.[node.name]
 }
 
-/**
- * The context of renderer `id`, one of those `run` runs together; the
- * plugins' component renderers for it are bound to it.
- */
 function renderContext(compilation: Compilation, id: string, outDir: string, workDir: string, run: Run, findings: Finding[], server?: { url: string }): RenderContext {
   const { deckDir, workspaceRoot, doc } = compilation
   const config = doc.config.renderers[id]
-  // A renderer may ask for a file again (a dev server at each update): what it reports is kept once.
   const report = (finding: Finding) => {
     const located = { ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } }
     if (!findings.some(f => JSON.stringify(f) === JSON.stringify(located))) findings.push(located)
@@ -589,13 +458,10 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
   return ctx
 }
 
-/** URLs that name no local file: a scheme, protocol-relative, or a fragment (as `localAsset` reads them). */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 
-/** Directory of the deck's work directory where the directories it publishes are prepared (see `publishedDirectory`). */
 const FILES_DIR = 'files'
 
-/** The local path a URL names relative to a block's source file (decoded where it can be), or undefined for a remote URL, a `/...` path or none. */
 function localTarget(source: SourcePos, url: string): string | undefined {
   if (REMOTE.test(url)) return undefined
   const path = url.replace(/[?#].*$/s, '')
@@ -604,16 +470,10 @@ function localTarget(source: SourcePos, url: string): string | undefined {
   try {
     name = decodeURIComponent(path)
   } catch {
-    // As written.
   }
   return resolve(dirname(source.file), name)
 }
 
-/**
- * The document a block's URL links to (`RenderContext.documentLink`, docs/ir.md
- * 6.2): a deck's entry file or its directory, in the workspace, with the
- * URL's fragment. The deck's own entry is one too: its source is not published either.
- */
 function documentLink(compilation: Compilation, source: SourcePos, url: string): DocumentLink | undefined {
   const target = localTarget(source, url)
   if (!target) return undefined
@@ -626,35 +486,20 @@ function documentLink(compilation: Compilation, source: SourcePos, url: string):
   try {
     fragment = decodeURIComponent(fragment)
   } catch {
-    // As written.
   }
   return { dir: relative(compilation.workspaceRoot, dir).split(sep).join('/'), ...fragment ? { fragment } : {} }
 }
 
-/**
- * The local file a block's URL names, as the renderers publish it
- * (`RenderContext.localAsset`, docs/ir.md 6.2): a file in the repository,
- * or a directory strictly inside the deck that is not a deck itself (a link
- * to another document of a workspace stays a link), published with a file
- * listing. A relative reference to nothing, or to a file outside the git
- * repository the deck is in, cannot be published: a warning on its line. The
- * source of a document (`documentLink`) is never published: a single deck's
- * build keeps the link as written, with a warning (the workspace site links
- * the document's page).
- */
 function publishedAsset(compilation: Compilation, source: SourcePos, url: string, report: (finding: Finding) => void): LocalAsset | undefined {
   const { deckDir, workspaceRoot } = compilation
   const warn = (message: string) => report({ checkId: 'presmium.links', severity: 'warning', message, source: { file: source.file, line: lineOf(source, url) } })
-  // `/...` names a file of the deck's public/, or a path of the site.
   const target = localTarget(source, url)
   const found = localAsset(deckDir, source, url)
-  // A document's source under whatever escapes the URL writes (it is read decoded) or name a link gives it.
   if (found && target && basename(realpathSync(found.file)) === DECK_ENTRY) {
     const linked = documentLink(compilation, source, url)
     warn(`${url} is not published: it is the source of ${linked?.dir ? `the document ${linked.dir}` : 'a document'}, which a workspace site links as its page; this build keeps the link as written`)
     return undefined
   }
-  // A deck outside any git repository has no repository to keep its files in.
   if (found && !inside(found.file, workspaceRoot) && existsSync(join(workspaceRoot, '.git'))) {
     warn(`${url} is not published: the file lies outside the deck's repository`)
     return undefined

@@ -1,16 +1,3 @@
-/**
- * The local environment's routes (`server`), under
- * `/__presmium/presmium.execLocal/` in `presmium dev` and `presmium serve`;
- * the server gives them the member, the roles and the deck's configuration.
- * Editors only:
- *
- * - `GET  status`     what is available: Docker, the devcontainer definition, the languages
- * - `POST run`        RunRequest -> RunResult, in the devcontainer image (P-22), once an
- *                     `operate` approval allows it
- * - `POST replicate`  ReplicateRequest -> zip archive (P-26)
- *
- * Each answer is in the language the page asks for (`Accept-Language`).
- */
 import { relative, resolve, sep } from 'node:path'
 import { APPROVALS, errorMessage, isRecord, json, problem } from '@presmium/kernel'
 import type { Route, RunRequest, ServerContext, ServerContribution } from '@presmium/kernel'
@@ -20,7 +7,6 @@ import { definitionRunners, dockerAvailable, findDefinition, readDevcontainer, r
 import { inLanguage, text } from './messages.ts'
 import { PathError, replicateArchive, requirePath } from './replicate.ts'
 
-/** A request the route refuses, with its status. */
 class Refused extends Error {
   readonly status: number
 
@@ -30,7 +16,6 @@ class Refused extends Error {
   }
 }
 
-/** The JSON object of a request's body. */
 async function body(request: Request): Promise<Record<string, unknown>> {
   if (!request.headers.get('content-type')?.startsWith('application/json')) throw new Refused(415, text().notJson)
   let value: unknown
@@ -50,7 +35,6 @@ function string(body: Record<string, unknown>, key: string, optional = false): s
   return value
 }
 
-/** A mapping of names to strings from a request (`args`, `files`), or undefined. */
 function stringTable(body: Record<string, unknown>, key: string): Record<string, string> | undefined {
   const value = body[key]
   if (value === undefined) return undefined
@@ -82,7 +66,6 @@ async function status(workspace: string): Promise<LocalEnvStatus> {
   }
 }
 
-/** A route of an editor, answered in the request's language; a refusal is an error response. */
 function route(handle: (request: Request, member: string) => Promise<Response>): Route {
   return {
     handle: (request, ctx) => inLanguage(request.headers.get('accept-language') ?? undefined, async () => {
@@ -96,11 +79,6 @@ function route(handle: (request: Request, member: string) => Promise<Response>):
   }
 }
 
-/**
- * The routes of the deck's workspace: `presmium.execLocal.workspace`
- * relative to the deck (which the compiler's pass settles, ./pass.ts), else
- * the workspace root.
- */
 export function localEnvRoutes(ctx: ServerContext): ServerContribution {
   const { workspace: configured, buildTimeoutMs } = execLocalConfig(ctx.config)
   const workspace = configured === undefined ? ctx.workspaceRoot : resolve(ctx.deckDir, configured)
@@ -109,14 +87,12 @@ export function localEnvRoutes(ctx: ServerContext): ServerContribution {
       status: route(async () => json(await status(workspace))),
       run: route(async (request, member) => {
         const run = runRequest(await body(request))
-        // Running code in a container is an operation the member allows (10.4), as MCP's run_code is.
         const approvals = ctx.service(APPROVALS)
         const allowed = await approvals?.request({ kind: 'operate', scope: 'content', title: text().runTitle(run.lang), detail: run.code, from: EXEC_LOCAL_ID, member }, request.signal)
         if (!allowed) throw new Refused(403, text().notAllowed)
         if (!findDefinition(workspace)) return json(failedContainerRun(text().noDefinition))
         const devcontainer = await readDevcontainer(workspace)
         if (!devcontainer) return json(failedContainerRun(text().unreadableDefinition))
-        // The client closing the request stops the container.
         return json(await runInContainer(workspace, devcontainer, run, { buildTimeoutMs }, request.signal))
       }),
       replicate: route(async (request) => {

@@ -1,9 +1,3 @@
-// A Messages-compatible model service for the tests (the operator's PRESMIUM_MODEL_URL, or DeepSeek Harness's
-// DEEPSEEK_BASE_URL): it answers each `POST /v1/messages` of an agent's turn (one that offers tools) with the
-// next step of its script as an SSE stream (a text, or a tool call), any other request (a session's title)
-// with a text of its own, records what it received, and can hold its answers until the test lets them go.
-// Not a mock of DeepSeek Harness: the real one talks to it over HTTP, as it would to a model. Shared by the
-// packages' tests and the end-to-end tests through `@presmium/cli/testing` (docs/design-dsh.md section 15).
 import { createServer } from 'node:http'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -19,7 +13,6 @@ export interface Received {
 export interface FakeModel {
   url: string
   received: Received[]
-  /** From now on, answers wait until `release`. */
   hold(): void
   release(): void
   close(): Promise<void>
@@ -53,7 +46,6 @@ export async function fakeModel(script: Step[]): Promise<FakeModel> {
       try {
         parsed = JSON.parse(body) as Record<string, any>
       } catch {
-        // Not JSON.
       }
       const record: Received = { path: req.url ?? '', headers: req.headers, body: parsed }
       received.push(record)
@@ -64,7 +56,6 @@ export async function fakeModel(script: Step[]): Promise<FakeModel> {
       await held
       const turn = (r: Received) => r.path.endsWith('/v1/messages') && Array.isArray(r.body.tools) && r.body.tools.length > 0
       const n = received.filter(r => r.path.endsWith('/v1/messages')).length
-      // A request that offers no tool (a title) takes no step of the script.
       const step = turn(record) ? script[received.filter(turn).indexOf(record)] ?? { text: '完毕。' } : { text: 'Presmium' }
       res.writeHead(200, { 'Content-Type': 'text/event-stream' }).end(stream(step, n))
     })
@@ -88,7 +79,6 @@ export async function fakeModel(script: Step[]): Promise<FakeModel> {
   }
 }
 
-/** A forward proxy that only records who tried to go through it (CONNECT or a plain request) and lets nothing through. */
 export async function recordingProxy(): Promise<{ url: string, attempts: string[], close(): Promise<void> }> {
   const attempts: string[] = []
   const server = createServer((req, res) => {

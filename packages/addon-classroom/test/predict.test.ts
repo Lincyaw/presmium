@@ -1,6 +1,3 @@
-// Runs the real `presmium build --to notebook` on a deck with `{predict}` (P-68): in a notebook a
-// predict is its question, its choices and what it reveals (the content of the step after it, the
-// narration of that step included) folded away in a <details>, written in the deck's language.
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -61,7 +58,6 @@ it('shows a predict as its question, its choices and what it reveals folded away
   const cells = (JSON.parse(readFileSync(join(dir, 'out/notebook/lecture.ipynb'), 'utf8')) as { cells: Cell[] }).cells
   const of = (section: string) => cells.filter(c => c.metadata.presmium.section === section).map(c => ({ type: c.cell_type, source: c.source.join('') }))
 
-  // The section title, then the predict: nothing it reveals stands outside it.
   const [title, predict, ...rest] = of('merge')
   expect(title).toEqual({ type: 'markdown', source: '## 合并三轮' })
   expect(rest).toEqual([])

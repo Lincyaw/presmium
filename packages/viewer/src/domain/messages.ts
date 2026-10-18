@@ -1,17 +1,11 @@
-/**
- * The IR runtime's interface text (N-07), in Chinese and English, as a
- * catalog of @presmium/host (`useMessages`, `currentLocale`).
- */
 import type { Locale } from '@presmium/kernel/contracts'
 
-/** `第 k 步，共 n 步` of a section with steps; steps count from 1 for the reader. */
 const zhStep = (step: number, steps: number) => `第 ${step + 1} 步，共 ${steps + 1} 步`
 
 const zh = {
   views: { document: '文档', scrolly: '滚动叙事', present: '放映', presenter: '演讲者' },
   present: {
     region: '放映',
-    /** Section `index` of `total`, then the step when the section has steps (0-based `step`, last step `steps`). */
     counter: (index: number, total: number, step: number, steps: number) => `${index} / ${total}${steps > 0 ? ` · ${zhStep(step, steps)}` : ''}`,
     prev: '上一步',
     next: '下一步',
@@ -21,7 +15,6 @@ const zh = {
     exit: '退出放映',
   },
   presenter: {
-    /** The step when the section has steps; empty otherwise. */
     step: (step: number, steps: number) => (steps > 0 ? zhStep(step, steps) : ''),
     timer: '计时',
     restart: '重新计时',
@@ -119,5 +112,4 @@ const en: Messages = {
   missingComponent: name => `Unregistered component ${name}`,
 }
 
-/** The IR runtime's text in each UI language. */
 export const VIEWER_MESSAGES: Record<Locale, Messages> = { 'zh-CN': zh, 'en': en }

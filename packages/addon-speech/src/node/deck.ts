@@ -1,12 +1,3 @@
-/**
- * A deck's speech: its default engines (`presmium.speech.engine`,
- * `transcribe`) and its synthesis cache over the engines of this process.
- * A synthesis looks in the cache first and
- * sends no synthesis to an engine on a hit, but asks first whether the
- * operator allows the clip's voice now if it is cloned (`consent`, D-7: by
- * the record's word or the engine's, as far as it is known); a miss is
- * synthesized and written to the cache.
- */
 import type { SynthesisRequest, TranscriptionRequest } from '@presmium/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon } from '../domain/index.ts'
@@ -37,10 +28,8 @@ export class DeckSpeech implements SpeechBackend {
     return this.#inner.voices(engine ?? this.#defaults.engine, lang, signal)
   }
 
-  /** The synthesis and its audio file in the cache. */
   async cached(request: SynthesisRequest, signal?: AbortSignal): Promise<{ result: SynthesisResult, file: string }> {
     const engine = request.engine ?? await this.defaultEngine()
-    // No engine at all: the inner service says so, and asks none.
     if (!engine) return this.#write(await this.#inner.synthesize(request, signal), request)
     const key = cacheKey({ ...request, engine }, applyLexicon(request.text, request.lexicon))
     const hit = await this.cache.find(key)

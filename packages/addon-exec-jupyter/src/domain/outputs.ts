@@ -1,23 +1,14 @@
 import { isRecord, languageId } from '@presmium/kernel'
 import type { RunOutput } from '@presmium/kernel'
 
-/** ANSI escape sequences, which kernels put in tracebacks. */
 const ANSI = /\u001B\[[0-9;?]*[ -/]*[@-~]/g
 
 export function stripAnsi(text: string): string {
   return text.replace(ANSI, '')
 }
 
-/**
- * The outputs of one execution, built from the kernel's IOPub messages
- * (`stream`, `display_data`, `execute_result`, `error`, and
- * `update_display_data`, `clear_output`) as nbformat outputs: consecutive
- * text of one stream is one output, a display updated by its id is replaced
- * where it is, `clear_output` (with `wait`, at the next output) empties them.
- */
 export class OutputCollector {
   readonly outputs: RunOutput[] = []
-  /** The display ids of the outputs, by index. */
   #ids: (string | undefined)[] = []
   #clearOnNext = false
 
@@ -57,7 +48,6 @@ export class OutputCollector {
     this.#ids.push(type === 'display_data' ? displayId(content) : undefined)
   }
 
-  /** The text streams, for readers of `stdout` and `stderr`; an error's traceback, without colours, is stderr. */
   text(): { stdout: string, stderr: string } {
     let stdout = ''
     let stderr = ''
@@ -98,11 +88,6 @@ function errorOutput(content: Record<string, unknown>): RunOutput {
   return { output_type: 'error', ename: String(content.ename ?? 'Error'), evalue: String(content.evalue ?? ''), traceback }
 }
 
-/**
- * How a Python kernel reads a parameter back, as Presmium's runner does
- * (`_pm_arg` of @presmium/kernel/runner.py): a Python literal, else JSON
- * (`true`, `false`, `null`), else the string itself.
- */
 const PYTHON_ARG = `def _pm_arg(raw):
     import ast, json
     try:
@@ -114,14 +99,6 @@ const PYTHON_ARG = `def _pm_arg(raw):
     except (ValueError, TypeError, RecursionError):
         return raw`
 
-/**
- * The run's parameters (`RunRequest.args`, strings) as assignments run
- * before the code (docs/architecture.md 4.6), each value a JSON string
- * literal, which Python, Julia and R read alike. A Python kernel reads them
- * back as the runner does (`_pm_arg`, removed afterwards), so `n: 2` is the
- * number 2 and `verbose: false` is False there too; other kernels get the
- * strings. Names that are not identifiers are left out.
- */
 export function argumentsCode(args: Record<string, string> | undefined, lang = ''): string | undefined {
   const python = languageId(lang) === 'python'
   const lines = Object.entries(args ?? {})

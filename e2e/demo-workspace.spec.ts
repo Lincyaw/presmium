@@ -1,9 +1,3 @@
-// The example workspace (examples/workspace, WP-89a): `presmium serve examples/workspace` starts on this
-// machine and its home page lists the two documents, the BPE document being the demo lecture
-// (sync.mjs --check); and the copy that try.mjs makes, a git repository of its own as a workspace is,
-// serves both documents with the operator's plugins: the new chapter's run panel and predict, the
-// short document's quiz, and no diagnostics; the short document's link leads to the BPE document.
-// Both servers run without credentials (no model, no speech engine), on free ports.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -16,7 +10,6 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const WORKSPACE = join(ROOT, 'examples/workspace')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 
-/** The environment of the test without credentials or Presmium's variables. */
 function clean(): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -26,7 +19,6 @@ function clean(): NodeJS.ProcessEnv {
   return env
 }
 
-/** `presmium serve <dir> --port 0`, resolving with its address once it prints it. */
 function serve(dir: string): Promise<{ child: ChildProcess, url: string }> {
   const child = spawn(process.execPath, [PRESMIUM, 'serve', dir, '--port', '0'], { cwd: ROOT, env: clean(), stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
@@ -53,7 +45,6 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
 test.describe.configure({ mode: 'serial', timeout: 300_000 })
 
 test('presmium serve examples/workspace starts and its home page lists the two documents; the BPE document is the demo lecture', async ({ page }) => {
-  // Exits with 1, naming the files, when the copy differs from examples/demo.
   execFileSync(process.execPath, [join(WORKSPACE, 'sync.mjs'), '--check'], { stdio: 'pipe' })
   const server = await serve(WORKSPACE)
   try {
@@ -76,7 +67,6 @@ test('the copy that try.mjs makes serves both documents with their plugins', asy
   let server: Awaited<ReturnType<typeof serve>> | undefined
   try {
     execFileSync(process.execPath, [join(WORKSPACE, 'try.mjs'), dir], { stdio: 'pipe' })
-    // A repository of its own: the workspace's first commit, and the commits the lecture's pins name.
     expect(execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim()).toBe('1')
     server = await serve(dir)
 
@@ -88,7 +78,6 @@ test('the copy that try.mjs makes serves both documents with their plugins', asy
     await openDevPage(page, `${server.url}/glance/`, page.locator('.pm-block[data-component="PmQuiz"]'))
     await expect(page.locator('.pm-diagnostics')).toHaveCount(0)
 
-    // The short document links to the BPE document by its entry file, which opens its page (F-25), not its source.
     await page.locator('.pm-section[data-section="glance"] a', { hasText: 'BPE 分词' }).click()
     await expect(page).toHaveURL(`${server.url}/bpe/`)
     await expect(page.locator('.pm-section[data-section="cover"] h1')).toContainText('BPE 分词：从字节到词元', { timeout: 60_000 })

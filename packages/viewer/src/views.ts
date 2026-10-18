@@ -9,7 +9,6 @@ import { useViewer } from './viewer.ts'
 
 const sectionsProp = { sections: { type: Array as PropType<IRSection[]>, required: true } } as const
 
-/** The document view: every section expanded, narration as body text; sections hinted `layout: scrolly` scroll. */
 export const DocumentView = defineComponent({
   name: 'PmDocumentView',
   props: sectionsProp,
@@ -20,7 +19,6 @@ export const DocumentView = defineComponent({
   },
 })
 
-/** The scrollytelling view: every section pins its content and steps through it as the narration scrolls. */
 export const ScrollyView = defineComponent({
   name: 'PmScrollyView',
   props: sectionsProp,
@@ -31,17 +29,9 @@ export const ScrollyView = defineComponent({
 
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
-/**
- * Renders the sections of one page in the active page view (or, while an
- * overlay view is active, in the last page view, under the overlay). A page
- * opened directly starts at its own section; the view host follows the
- * reading position while a page view is active, and scrolls to the position
- * after a view switch or a navigation.
- */
 export const ViewHost = defineComponent({
   name: 'PmViewHost',
   props: {
-    /** Ids of the sections on this page. */
     sections: { type: Array as PropType<string[]>, required: true },
   },
   setup(props) {
@@ -55,19 +45,14 @@ export const ViewHost = defineComponent({
     provide(PAGE_TRACKER, tracker)
     onBeforeUnmount(() => tracker.dispose())
 
-    /** The section of this page the URL hash names, if any. */
     const linked = () => {
       const hash = decoded(location.hash.slice(1))
       return props.sections.includes(hash) ? hash : undefined
     }
-    // A link to a section (the sidebar, an anchor, the back button) is an explicit navigation: the section
-    // is the one read, kept in place while content above it loads, until the reader scrolls.
     const onHash = () => {
       const section = linked()
       if (section && isPage()) viewer.show({ section, step: 0 })
     }
-    // A page opened by a link, a reload or the sidebar: the section in the URL hash, else its first section.
-    // Runs before the layout handles `?section=` and `?view=`.
     onMounted(() => {
       window.addEventListener('hashchange', onHash)
       if (viewer.restoring.value || props.sections.length === 0) return
@@ -77,13 +62,11 @@ export const ViewHost = defineComponent({
     })
     onBeforeUnmount(() => window.removeEventListener('hashchange', onHash))
 
-    // A live update keeps what the reader is reading where it is, even when content above it changed (K-11).
     watch(viewer.doc, async () => {
       if (!isPage() || viewer.restoring.value) return
       const restore = tracker.hold()
       await nextTick()
       restore()
-      // Content that lays out later (fonts, highlighted code) may move it again.
       await frame()
       restore()
     }, { flush: 'pre' })
@@ -96,19 +79,16 @@ export const ViewHost = defineComponent({
       const { position } = viewer
       if (tracker.scrollTo(position.value)) viewer.restoring.value = false
       else if (!props.sections.includes(position.value.section) && viewer.options.navigate) viewer.options.navigate(position.value)
-      // On this page, but the view does not lay out sections (a plugin's view): nothing to scroll to.
       else viewer.restoring.value = false
     }, { immediate: true })
 
     const sections = computed(() => props.sections.flatMap(id => viewer.section(id) ?? []))
-    // Busy until a pending position has been scrolled to.
     return () => h('div', { 'class': 'pm-view-host', 'aria-busy': viewer.restoring.value ? 'true' : undefined }, [
       pageView.value ? h(pageView.value.component, { sections: sections.value }) : null,
     ])
   },
 })
 
-/** Renders the active overlay view (the present view, the presenter window), if any. */
 export const OverlayHost = defineComponent({
   name: 'PmOverlayHost',
   setup() {

@@ -4,21 +4,15 @@ import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 import { openDevPage, startDev, useFixture } from './fixtures/deck.ts'
 
-// The zip library of the addon, which writes the archives.
 const { strFromU8, unzipSync } = createRequire(new URL('../packages/addon-exec-local/package.json', import.meta.url))('fflate') as {
   strFromU8: (data: Uint8Array) => string
   unzipSync: (data: Uint8Array) => Record<string, Uint8Array>
 }
 
-// e2e/fixtures/exec-local, built by `presmium build`; its snippet belongs to the workspace next
-// to it. Running needs a Presmium server behind the deck (covered by packages/addon-exec-local/test);
-// a built deck shows the snippet and exports the environment archived at compile time. Code edited
-// in the page is never written back (K-09, D-2): there is no commit, in a build or under `presmium dev`.
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-local')
 const DEFINITION = readFileSync(new URL('fixtures/exec-local/workspace/.devcontainer/devcontainer.json', import.meta.url), 'utf8')
 
-/** Clicks “导出环境” and checks the downloaded archive: the snippet, the devcontainer definition, a README. */
 async function expectExport(page: Page, env: Locator) {
   const [download] = await Promise.all([page.waitForEvent('download'), env.locator('[data-action="replicate"]').click()])
   expect(download.suggestedFilename()).toBe('presmium-env-greet.zip')

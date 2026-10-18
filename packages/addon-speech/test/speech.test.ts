@@ -1,10 +1,3 @@
-// Speech with the deterministic fake engine (WP-82, P-132, P-133, N-08), through the speech routes
-// of `presmium dev` (`/__presmium/presmium.speech/v1/…`, the path the browser's SPEECH uses), which call the
-// engines of dev's environment and keep the deck's synthesis cache, and through the Node SPEECH service (the
-// test plugin's routes, fixtures/speech-probe). The fake engine is a process of its own, defined like any
-// engine (PRESMIUM_SPEECH_FAKE_URL, _PROVIDER, _KEY); it lists the requests it got. An engine of the OpenAI
-// shape that answers Ogg/Opus, as the production ones do, is a server of the test (fixtures/tone.ogg). The
-// operator registers a cloned voice's consent with `presmium-speech consent`.
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -51,7 +44,6 @@ describe('presmium dev with the fake engine defined', () => {
   beforeAll(async () => {
     dir = testDeck('speech', 'presmium:\n  presmium.speech: { engine: fake }', [PROBE])
     operator = temporary('speech-operator')
-    // `other` has an address and a key but no provider: unavailable.
     other = await listener()
     ;({ dev: devProcess, server } = await dev(dir, {
       PRESMIUM_SPEECH_FAKE_URL: fake.url,
@@ -78,7 +70,6 @@ describe('presmium dev with the fake engine defined', () => {
     expect(a.words.map(w => w.text)).toEqual(['我', '们', '先', '看', '这', '三', '行', 'BPE', '合', '并'])
     expect(a.words[0]).toEqual({ text: '我', start: 0, end: 0.22 })
 
-    // The cache holds the audio and its words, and the lock lists the key with the audio's sha256.
     const cache = join(dir, '.presmium/speech')
     const audio = readFileSync(join(cache, `${a.key}.wav`))
     expect(JSON.parse(readFileSync(join(cache, `${a.key}.json`), 'utf8'))).toMatchObject({ key: a.key, voice: 'alpha', engine: 'fake', words: a.words, text: SENTENCE })
@@ -86,7 +77,6 @@ describe('presmium dev with the fake engine defined', () => {
     expect(lock.synthesis[a.key]).toEqual({ audio: `${a.key}.wav`, sha256: createHash('sha256').update(audio).digest('hex') })
     const asked = (await fake.requests()).slice(before)
     expect(asked.map(r => `${r.method} ${r.path}`)).toEqual(['GET /v1/audio/voices', 'POST /v1/audio/speech/timestamps'])
-    // The key went to the engine's address only, and to nothing else.
     expect(asked.every(r => r.authorization === `Bearer ${KEY}`)).toBe(true)
 
     const again = await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input: SENTENCE, lang: 'zh-CN' })
@@ -110,7 +100,6 @@ describe('presmium dev with the fake engine defined', () => {
     expect(transcript.segments).toHaveLength(1)
     expect(transcript.segments[0]!.words).toEqual(a.words)
 
-    // Neither the answers nor dev's output carry the engine's key.
     for (const text of [first.text, again.text, beta.text, JSON.stringify(transcript), devProcess.output()]) expect(text).not.toContain(KEY)
   }, 120_000)
 
@@ -124,7 +113,6 @@ describe('presmium dev with the fake engine defined', () => {
       const recordFile = join(cache, `${first.key}.json`)
       const record = JSON.parse(readFileSync(recordFile, 'utf8')) as { audio: string }
 
-      // An edited record pointing out of the cache.
       writeFileSync(recordFile, JSON.stringify({ ...record, audio: `../../../${outside.split('/').pop()}` }))
       const before = (await fake.requests()).length
       const traversed = await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input, lang: 'zh-CN' })
@@ -132,7 +120,6 @@ describe('presmium dev with the fake engine defined', () => {
       expect(Buffer.from(traversed.json<Timed>().audio, 'base64').toString('latin1')).not.toContain('NOT-A-CLIP')
       expect((await fake.requests()).length).toBeGreaterThan(before)
 
-      // A clip replaced by a link to a file outside the deck.
       const clip = join(cache, `${first.key}.wav`)
       rmSync(clip)
       symlinkSync(outside, clip)
@@ -162,10 +149,8 @@ describe('presmium dev with the fake engine defined', () => {
     const label = { Label: '1', ContentProducer: 'Presmium fake', ProduceID: key, ReservedCode1: '', ContentPropagator: '', PropagateID: '', ReservedCode2: '' }
     expect(JSON.parse(info.AIGC!)).toEqual(label)
     expect(info.ICMT).toBe(`AIGC=${JSON.stringify(label)}`)
-    // The package's own reader of the entries reads them so too.
     expect(infoEntries(bytes)).toEqual(info)
     expect(JSON.parse(readFileSync(join(dir, '.presmium/speech', `${key}.json`), 'utf8'))).toMatchObject({ synthetic: true, AIGC: label })
-    // The fake engine's chunk is untouched: its text and voice are still there, and transcription gives the text back.
     expect(JSON.parse(chunks.pmfk!.toString('utf8'))).toMatchObject({ text: '标识测试。', voice: 'alpha' })
     const form = new FormData()
     form.set('file', new Blob([readFileSync(join(dir, '.presmium/speech', `${key}.wav`))], { type: 'audio/wav' }), 'clip.wav')
@@ -174,14 +159,11 @@ describe('presmium dev with the fake engine defined', () => {
 
   it('sends the lexicon\'s spoken form to the engine and gives the words of the written text', async () => {
     const timed = (await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input: SENTENCE, lang: 'zh-CN', lexicon: { BPE: 'B P E' } })).json<Timed>()
-    // The fake engine embeds the text it got: B, P and E apart.
     const form = new FormData()
     form.set('file', new Blob([Buffer.from(timed.audio, 'base64')], { type: 'audio/wav' }), 'clip.wav')
     expect((await (await fetch(speechUrl(server, 'v1/audio/transcriptions'), { method: 'POST', body: form })).json() as { text: string }).text).toBe('我们先看这三行 B P E 合并。')
-    // BPE is one word again, from the start of B to the end of E; the words after it keep their times.
     expect(timed.words.map(w => w.text)).toEqual(['我', '们', '先', '看', '这', '三', '行', 'BPE', '合', '并'])
     expect(timed.words.slice(7, 9)).toEqual([{ text: 'BPE', start: 2.1, end: 2.44 }, { text: '合', start: 2.52, end: 2.74 }])
-    // A replacement that ends the sentence is one word too (the lecture's {say} gives the same, script.test.ts).
     const end = (await post(speechUrl(server, 'v1/audio/speech/timestamps'), { voice: 'alpha', input: '我们用 BPE', lang: 'zh-CN', lexicon: { BPE: 'B P E' } })).json<Timed>()
     expect(end.words).toEqual([{ text: '我', start: 0, end: 0.22 }, { text: '们', start: 0.3, end: 0.52 }, { text: '用', start: 0.6, end: 0.82 }, { text: 'BPE', start: 0.9, end: 1.24 }])
   }, 60_000)
@@ -231,7 +213,6 @@ describe('cloned voices', () => {
       const failed = await clone(started.server)
       expect(failed.status).toBe(502)
       expect(failed.json().error).toContain('the voices of speech engine "fake" are not known, so a cloned voice cannot be told')
-      // The failure is not kept: the list is asked for again, and it marks the voice as cloned.
       const refused = await clone(started.server)
       expect(refused.status).toBe(403)
       expect(refused.json().error).toContain('settings.presmium.speech.cloned: true')
@@ -253,7 +234,6 @@ describe('cloned voices', () => {
       await started.dev.stop()
     }
 
-    // The operator allows cloned voices (read when the process starts); a record in the deck does not count.
     writeFileSync(join(dir, 'presmium.workspace.yaml'), 'settings:\n  presmium.speech:\n    cloned: true\n')
     mkdirSync(join(dir, '.presmium/speech/consent/fake'), { recursive: true })
     writeFileSync(join(dir, '.presmium/speech/consent/fake/cloned-lin.json'), JSON.stringify(record))
@@ -270,13 +250,11 @@ describe('cloned voices', () => {
       expect(allowed.status, allowed.text).toBe(200)
       expect(allowed.json()).toMatchObject({ voice: 'cloned-lin', synthetic: true })
 
-      // The consent withdrawn: the clip in the cache is refused as a synthesis would be (decision D-7), and the engine is asked nothing.
       const before = (await fake.requests()).length
       rmSync(join(operator, 'consent/fake/cloned-lin.json'))
       const withdrawn = await clone(started.server)
       expect(withdrawn.status).toBe(403)
       expect(withdrawn.json().error).toContain(`${join(operator, 'consent/fake/cloned-lin.json')} is missing`)
-      // Nor does an editor's word in the deck's cache record make it another voice: the engine lists it as cloned.
       const cache = join(dir, '.presmium/speech')
       for (const name of readdirSync(cache).filter(file => file.endsWith('.json'))) {
         const cached = JSON.parse(readFileSync(join(cache, name), 'utf8')) as Record<string, unknown>
@@ -289,7 +267,6 @@ describe('cloned voices', () => {
     } finally {
       await started.dev.stop()
     }
-    // Nor in a process that has not listed the engine's voices yet: the hit asks for the list (no synthesis), which says cloned.
     started = await dev(dir, env())
     try {
       const before = (await fake.requests()).length
@@ -310,7 +287,6 @@ describe('an engine that answers Ogg/Opus (N-08)', () => {
   let started: Awaited<ReturnType<typeof dev>> | undefined
 
   beforeAll(async () => {
-    // An engine of the OpenAI shape with the timestamps extension, whose audio is Ogg/Opus.
     const server = createServer((req, res) => {
       req.resume()
       req.on('end', () => {
@@ -347,13 +323,11 @@ describe('an engine that answers Ogg/Opus (N-08)', () => {
     const clip = readFileSync(join(dir, '.presmium/speech', `${key}.ogg`))
     const label = { Label: '1', ContentProducer: 'Ogg Test', ProduceID: key, ReservedCode1: '', ContentPropagator: '', PropagateID: '', ReservedCode2: '' }
     expect(opusComments(clip)).toEqual([...opusComments(tone), `AIGC=${JSON.stringify(label)}`])
-    // Read without the package: the pages' checksums and numbers hold, and the audio packets are the engine's.
     const [head, , ...audio] = oggPackets(clip)
     const [engineHead, , ...engineAudio] = oggPackets(tone)
     expect(head!.equals(engineHead!)).toBe(true)
     expect(audio.length).toBe(engineAudio.length)
     expect(audio.every((packet, i) => packet.equals(engineAudio[i]!))).toBe(true)
-    // A decoder at hand (FFmpeg) decodes it without an error.
     const ffmpeg = spawnSync('ffmpeg', ['-v', 'error', '-i', join(dir, '.presmium/speech', `${key}.ogg`), '-f', 'null', '-'], { encoding: 'utf8' })
     if (!ffmpeg.error) expect([ffmpeg.status, ffmpeg.stderr]).toEqual([0, ''])
   }, 60_000)

@@ -1,15 +1,9 @@
-/** What the workspace's browser plugin says, in each UI language (N-07). */
 import type { Locale } from '@presmium/kernel/contracts'
 import type { LockKind } from './api.ts'
 import type { RevisionOperation } from './revisions.ts'
 
-/**
- * The documentation site (P-145), which the usage guide links; empty until it
- * is published (WP-93c), and the guide leaves the link out meanwhile.
- */
 export const DOCS_SITE_URL = ''
 
-/** One topic of the home page's usage guide (P-120). */
 export interface GuideTopic {
   title: string
   text: string
@@ -22,32 +16,25 @@ export interface WorkspaceMessages {
   noRevisions: string
   revert: string
   reverted: string
-  /** The undo of an undo (F-55): its button, and what an undo that was redone says. */
   redo: string
   redone: string
   conflicts(files: string[]): string
   documents: string
-  /** The heading of the dialog's list of the documents there are. */
   existing: string
   create: string
-  /** The home page's main action: the document dialog, at its form. */
   newDocument: string
   dir: string
   title: string
   template: string
   submit: string
-  /** The new document is drafted by the agent (P-121); `provider` names the model's service provider (N-08). */
   draft(provider: string | undefined): string
   draftRequest: string
-  /** The agent drafts the new document; the page opens it once the draft is committed. */
   drafting(dir: string): string
-  /** The draft waits for its requester's review (`settings.presmium.assistant.review: required`). */
   draftReview: string
   accept: string
   reject: string
   draftFailed(reason: string | undefined): string
   openDocument(dir: string): string
-  /** The dashed card of the home page that starts an agent's draft, and its hint. */
   draftCard: string
   draftCardHint: string
   rename: string
@@ -57,58 +44,39 @@ export interface WorkspaceMessages {
   confirmDelete(dir: string): string
   close: string
   origin: Record<'agent' | 'document' | 'editor', string>
-  /** The short tag of a change's origin (AI, 编辑, 文档). */
   originTag: Record<'agent' | 'document' | 'editor', string>
-  /** How the history names a document operation (its commit's summary stays as written, F-55). */
   operation(operation: RevisionOperation): string
-  /** How the history names the undo of a change, named as `label`. */
   revertOf(label: string): string
-  /** How the history names the redo of a change (the undo of its undo, F-55), named as `label`. */
   redoOf(label: string): string
-  /** A document operation or an undo refused while another writer holds the document (F-09); `document` '' is the root's. */
   locked(document: string, by: LockKind): string
-  /** The home page's card of the latest changes. */
   recent: string
-  /** The status bar: the workspace's git repository, and the time of its latest change. */
   git(latest: string | undefined): string
-  /** The status bar, when the server names them: the branch and the number of files with changes not committed. */
   branch(name: string, uncommitted: number): string
   noGit: string
-  /** The usage guide of the home page (P-120): its title, its topics (`mcp` is the MCP address) and the documentation site. */
   guide: string
   guideTopics(mcp: string): GuideTopic[]
   docsSite: string
-  /** The source editor (P-124): its pane, the open files and their menu, a file not saved. */
   source: string
   openFiles: string
   filesMenu: string
   closeFile: string
   unsaved: string
   noFile: string
-  /** A file the editor does not open (not text), and a list of files cut at its limit. */
   binary(path: string): string
   truncated: string
-  /** The problems panel: its tab with the count, and none. */
   problems(count: number): string
   noProblems: string
-  /** The status bar: the file's language, its encoding and the cursor's line. */
   line(line: number): string
-  /** A save refused while another writer holds the document (an agent's review): the author's text stays. */
   saveLocked(by: LockKind): string
-  /** A file changed on disk since it was opened, by an agent or another editor, with the editor's text not saved. */
   changedOnDisk(path: string): string
   merge: string
   reload: string
   retry: string
-  /** After a merge: the places marked as conflicts, or none. */
   merged(conflicts: number): string
-  /** How the conflict markers name the two sides. */
   mergeMine: string
   mergeTheirs: string
   saveFailed(reason: string): string
-  /** A save of the workspace's configuration: serve reads it when it starts. */
   configSaved: string
-  /** The changes not committed (P-124): their list, its heading, the commit with its message, the discard. */
   uncommitted: string
   noUncommitted: string
   commitChanges(count: number): string
@@ -117,7 +85,6 @@ export interface WorkspaceMessages {
   discard: string
   confirmDiscard(count: number): string
   changeKind: Record<'added' | 'modified' | 'deleted', string>
-  /** The home page's file tree: a directory's toggle and the workspace's configuration. */
   fileTree: string
 }
 

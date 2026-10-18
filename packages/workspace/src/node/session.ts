@@ -1,11 +1,3 @@
-/**
- * A document compiled on demand in `presmium serve` (docs/domain-model.md
- * section 14, "按需编译"): its compiler, compiled when it is first asked for,
- * then again whenever what its IR depends on changes (the source, the files
- * directives and passes read). Compilations run one at a time; a change
- * during one makes one more. Each compilation comes with the files whose
- * change made it (absolute paths; none for the first).
- */
 import { existsSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
@@ -21,7 +13,6 @@ export class DocumentSession {
   #running: Promise<unknown> = Promise.resolve()
   #queued?: Promise<Compilation>
   readonly #listeners = new Set<(compilation: Compilation, changed: string[]) => void | Promise<void>>()
-  /** The files changed since the compilation running now started. */
   #changedFiles = new Set<string>()
   readonly #watchers = new Map<string, FSWatcher>()
   #relevant = new Map<string, Set<string>>()
@@ -35,12 +26,10 @@ export class DocumentSession {
     this.#log = log
   }
 
-  /** The compilation now: the first one is made on the first call. */
   ready(): Promise<Compilation> {
     if (this.#latest) return Promise.resolve(this.#latest)
     if (!this.#first) {
       const first = this.recompile()
-      // A first compilation that failed (an unreadable entry) is tried again on the next call.
       first.catch(() => {
         if (this.#first === first) this.#first = undefined
       })
@@ -53,13 +42,11 @@ export class DocumentSession {
     return this.#latest
   }
 
-  /** Called after each compilation, the first included, with the files whose change made it. */
   onCompile(listener: (compilation: Compilation, changed: string[]) => void | Promise<void>): () => void {
     this.#listeners.add(listener)
     return () => this.#listeners.delete(listener)
   }
 
-  /** Compiles again after the compilation running now; at most one waits. */
   recompile(): Promise<Compilation> {
     if (this.#queued) return this.#queued
     const next = this.#running.then(async () => {
@@ -92,7 +79,6 @@ export class DocumentSession {
     this.#listeners.clear()
   }
 
-  /** Watches the directories of the files the compilation read; a change compiles again. */
   #watch(compilation: Compilation, started: number): void {
     if (this.#closed) return
     const files = new Set([...compilation.files, ...compilation.dependencies.files])
@@ -119,10 +105,8 @@ export class DocumentSession {
           if (name && this.#relevant.get(dir)?.has(basename(name))) this.#changed(join(dir, name))
         }))
       } catch {
-        // A directory removed meanwhile is looked at again after the next compilation.
       }
     }
-    // A file changed while it compiled is compiled again.
     const modified = [...files].filter((file) => {
       const time = statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0
       return time >= started - 20 && time <= Date.now()

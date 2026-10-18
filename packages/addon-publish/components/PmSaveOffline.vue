@@ -1,12 +1,4 @@
 <script setup lang="ts">
-/**
- * "Save for offline use" in the toolbar (D-6): where the page's service
- * worker caches the heavy runtimes on first use (the web form's), it fetches
- * them all now, so code runs offline before it has run once. Shown only
- * when the service worker offers it; once they are saved it says so. On a
- * first visit the page has no service worker yet when this mounts: it asks
- * again once one controls the page.
- */
 import { useMessages } from '@presmium/host'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { offlineRuntimes, saveOffline } from '../src/client/offline.ts'
@@ -51,7 +43,6 @@ async function save() {
 </template>
 
 <style>
-/* The host's button (N-10); once saved it says so, still legible. */
 .pm-save-offline {
   border-radius: var(--pm-radius-pill);
 }

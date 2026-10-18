@@ -15,17 +15,9 @@ function release(): void {
   executors = []
 }
 
-/**
- * Registers the WGSL executor with the `executor` service of the execution
- * plugin (`presmium.webgpu`), and one for each `kind: webgpu` environment the
- * deck declares (`presmium.env.<name>`, the id its code names). Registered by
- * `setup/main.ts` in the slides form and by the web package in the document
- * form. `dispose` ends the workers of runs under way.
- */
 export const execWebgpuPlugin: PluginDefinition = {
   manifest: { id: EXEC_WEBGPU_ID, version, kernel: '^1.0.0', requires: [{ token: EXECUTOR }], capabilities: ['exec'] },
   setup(ctx) {
-    // A kernel started again (a page restored from the back-forward cache) may set up before the previous one is disposed.
     release()
     const router = ctx.get(EXECUTOR)
     const named = Object.entries(ctx.environments ?? {}).filter(([, spec]) => spec.kind === 'webgpu').map(([name]) => environmentExecutor(name))

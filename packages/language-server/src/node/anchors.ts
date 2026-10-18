@@ -1,9 +1,3 @@
-/**
- * Anchors of directives in the editor: the definition is the code region
- * the deck's resolver finds in the working tree, the hover shows the code and
- * the recorded output of the last compilation, and completion offers the
- * schemes, files and names of an anchor being typed.
- */
 import { readdir } from 'node:fs/promises'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -15,9 +9,7 @@ import type { CompletionItem, Hover, Location, Range } from 'vscode-languageserv
 import { blockAt, declarationNames, regionNames } from '../domain/index.ts'
 import type { AnchorRef, LsMessages } from '../domain/index.ts'
 
-/** Most names checked against the resolver per completion. */
 const MAX_NAMES = 200
-/** Most lines of code shown in a hover. */
 const MAX_LINES = 60
 
 const suggest = (t: LsMessages) => ({ title: t.suggest, command: 'editor.action.triggerSuggest' })
@@ -34,14 +26,12 @@ function locationOf(compilation: Compilation, location: ResolvedLocation): Locat
   }
 }
 
-/** The code region of an anchor in the working tree; the candidates of a fuzzy anchor. */
 export async function anchorDefinition(compilation: Compilation, ref: AnchorRef): Promise<Location[]> {
   const resolution = await resolveAnchor(compilation, ref.anchor)
   const found = resolution.location ? [resolution.location] : resolution.candidates ?? []
   return found.map(location => locationOf(compilation, location))
 }
 
-/** A fenced code block whose fence is longer than any backtick run in the text. */
 function fenced(t: LsMessages, text: string, lang = ''): string {
   const lines = text.replace(/\n+$/, '').split('\n')
   const shown = lines.length > MAX_LINES ? [...lines.slice(0, MAX_LINES), t.moreLines(lines.length - MAX_LINES)] : lines
@@ -53,11 +43,6 @@ function where(file: string, startLine: number, endLine: number): string {
   return `\`${file}:${startLine}-${endLine}\``
 }
 
-/**
- * The code an anchor shows and the last recorded output. The code node of the
- * last compilation is used when it is at the hovered line (it carries the
- * pinned code and the outputs); else the anchor is resolved in the working tree.
- */
 export async function anchorHover(compilation: Compilation, file: string, ref: AnchorRef, t: LsMessages): Promise<Hover> {
   const range: Range = { start: { line: ref.line, character: ref.start }, end: { line: ref.line, character: ref.end } }
   const block = blockAt(compilation.doc, file, ref.line + 1)
@@ -89,11 +74,6 @@ async function resolvedHover(compilation: Compilation, ref: AnchorRef, t: LsMess
   return parts
 }
 
-/**
- * Completion of an anchor being typed (`prefix` starts at column `start`):
- * a scheme, then a workspace file, then a name in the file that the scheme's
- * resolver resolves.
- */
 export async function anchorCompletion(compilation: Compilation, prefix: string, line: number, start: number, end: number, t: LsMessages): Promise<CompletionItem[]> {
   const edit = (from: number, newText: string) => ({ range: { start: { line, character: from }, end: { line, character: end } }, newText })
   const colon = prefix.indexOf(':')
@@ -119,7 +99,6 @@ export async function anchorCompletion(compilation: Compilation, prefix: string,
   const file = target.slice(0, hash)
   const text = await compilation.src.read(file)
   if (text === undefined) return []
-  // Only the names that hold what is typed after `#` are resolved, each a search of the file (R-30).
   const typed = target.slice(hash + 1).toLowerCase()
   const harvested = (scheme === 'region' ? regionNames(text) : scheme === 'symbol' ? declarationNames(text) : [...regionNames(text), ...declarationNames(text)])
     .filter(name => name.toLowerCase().includes(typed))
@@ -136,7 +115,6 @@ export async function anchorCompletion(compilation: Compilation, prefix: string,
   }))
 }
 
-/** Logical units of an anchor for `:steps:`: the regions nested in the code it resolves to. */
 export async function unitNames(compilation: Compilation, anchor: AnchorString): Promise<string[]> {
   const resolution = await resolveAnchor(compilation, anchor)
   return resolution.location ? regionNames(resolution.location.text) : []

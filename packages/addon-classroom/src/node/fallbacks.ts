@@ -1,9 +1,3 @@
-/**
- * The static form of the classroom components (their IR `fallback`), for
- * renderers and exports without the live component: the prompt, then what a
- * reader of a static copy can use, in the deck's language. A notebook shows
- * them so (`./extensions.ts`).
- */
 import type { ComponentNode, IRBlock, MdastNode, RunResult } from '@presmium/kernel'
 import { optionLetter } from '../domain/index.ts'
 import type { ClassroomMessages } from '../domain/index.ts'
@@ -14,12 +8,10 @@ const strong = (value: string): MdastNode => ({ type: 'strong', children: [text(
 const strings = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : [])
 const html = (value: string): MdastNode => ({ type: 'html', value })
 const numbered = (items: string[]): MdastNode => ({ type: 'list', ordered: true, spread: false, children: items.map(item => ({ type: 'listItem', children: [paragraph(text(item))] })) })
-/** A quiz's options as the live quiz labels them, `A. …`, one paragraph each: the answer names them by letter. */
 const lettered = (items: string[]): MdastNode[] => items.map((item, i) => paragraph(text(`${optionLetter(i)}. ${item}`)))
 
 const joined = (value: unknown): string => (Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : '')
 
-/** What a run printed, as text: its streams, the plain text of its results, its error. */
 function printed(run: RunResult): string {
   if (!run.outputs) return [run.stdout, run.stderr].join('')
   return run.outputs.map((output) => {
@@ -30,10 +22,6 @@ function printed(run: RunResult): string {
   }).join('')
 }
 
-/**
- * What a block shows, as mdast: its Markdown, its code with the output
- * recorded at compile time, or a component's static form.
- */
 function shown({ node }: IRBlock): MdastNode[] {
   if (node.type === 'markdown') return node.mdast.type === 'root' ? node.mdast.children ?? [] : [node.mdast]
   if (node.type === 'code') {
@@ -46,11 +34,6 @@ function shown({ node }: IRBlock): MdastNode[] {
   return node.fallback?.children ?? []
 }
 
-/**
- * What a predict reveals (its children that `reveal` and `notes` name),
- * folded away; exports, where nothing can be unfolded, show it open
- * (`data-static="open"`, docs/ir.md 2.13).
- */
 function folded(node: ComponentNode, t: ClassroomMessages): MdastNode[] {
   const ids = new Set([...strings(node.props.reveal), ...strings(node.props.notes)])
   const content = (node.children ?? []).filter(block => ids.has(block.id)).flatMap(shown)
@@ -61,7 +44,6 @@ function after(node: ComponentNode, t: ClassroomMessages): MdastNode[] {
   const { props } = node
   switch (node.name) {
     case 'PmQuiz':
-      // The question with its options, lettered as in the live quiz, the answer folded away.
       return [
         ...lettered(strings(props.options)),
         html(`<details><summary>${t.fallback.answer}</summary>${(props.answer as number[] ?? []).map(optionLetter).join(t.quiz.letters)}</details>`),
@@ -77,14 +59,12 @@ function after(node: ComponentNode, t: ClassroomMessages): MdastNode[] {
     case 'PmPulse':
       return [paragraph(strong(t.fallback.pulse[0]), text(t.fallback.pulse[1](String(props.question), strings(props.levels))))]
     case 'PmPredict':
-      // The choices, or a word to write the prediction down first, then what it reveals, folded away.
       return [props.choices ? numbered(strings(props.choices)) : paragraph(text(t.fallback.write)), ...folded(node, t)]
     default:
       return []
   }
 }
 
-/** The component's prompt (its child block), after a predict's question, followed by its static content. */
 export function fallbackOf(node: ComponentNode, t: ClassroomMessages): MdastNode {
   const prompt = node.children?.find(block => block.id === 'prompt')?.node
   const question = node.name === 'PmPredict' ? [paragraph(strong(t.fallback.predict), text(`${t.colon}${String(node.props.question)}`))] : []

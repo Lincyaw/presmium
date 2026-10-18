@@ -1,7 +1,3 @@
-// The operator's pair (docs/architecture.md section 11, WP-76): PRESMIUM_ENV_<NAME>_TOKEN goes to
-// PRESMIUM_ENV_<NAME>_URL only. A deck whose `url` names another address gets no connection from
-// `presmium build` nor from the proxy of `presmium dev`, and is told why; a token without its
-// address is not sent anywhere. Listeners stand in for the deck's address and the operator's.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Listener } from './helpers.ts'
 import { cleanEnv, listener, presmium, presmiumProcess, remove, testDeck, waitFor } from './helpers.ts'
@@ -21,7 +17,6 @@ afterAll(async () => {
   await operatorAddress?.close()
 })
 
-/** A deck whose environment `gpu` (proxied) names the deck's listener, with a code block that runs in it. */
 function deck(prefix: string): string {
   return testDeck(prefix, `
 execute:
@@ -38,7 +33,6 @@ print("不应运行")
 `)
 }
 
-/** `presmium build`, then `presmium dev` and a request through its proxy of `gpu`; both outputs and the proxy's answer. */
 async function buildAndProxy(dir: string, env: Record<string, string>): Promise<{ build: string, dev: string, proxied: { status: number, text: string } }> {
   const built = await presmium(dir, ['build', '--to', 'notebook'], env)
   const dev = presmiumProcess(dir, ['dev', '--to', 'notebook'], cleanEnv(env))

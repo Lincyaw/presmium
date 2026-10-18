@@ -1,17 +1,8 @@
-/**
- * Ogg/Opus files (RFC 7845): a comment added to the comment header
- * (`OpusTags`) without re-encoding (the AI-generated label, docs/ir.md 9.1),
- * the comments, and the duration. The comment header may span pages and ends
- * its last page, so its pages are rebuilt and the later pages keep their
- * content with new sequence numbers and checksums.
- */
-
 interface Page {
   flags: number
   granule: bigint
   serial: number
   sequence: number
-  /** Lacing values. */
   segments: number[]
   body: Uint8Array
 }
@@ -71,7 +62,6 @@ function pageBytes(page: Page): Uint8Array {
   return out
 }
 
-/** The comment header's pages (from the second page to the one where the packet ends) and its bytes. */
 function commentHeader(all: Page[]): { end: number, packet: Uint8Array } {
   const parts: Uint8Array[] = []
   for (let i = 1; i < all.length; i++) {
@@ -115,12 +105,10 @@ function u32(value: number): Uint8Array {
   return out
 }
 
-/** The comments (`KEY=value`) of an Ogg/Opus file's comment header. */
 export function opusComments(bytes: Uint8Array): string[] {
   return parseTags(commentHeader(pages(bytes)).packet).comments.map(comment => decoder.decode(comment))
 }
 
-/** The file with `comment` added to its comment header; the audio pages keep their content. */
 export function withOpusComment(bytes: Uint8Array, comment: string): Uint8Array {
   const all = pages(bytes)
   const { end, packet } = commentHeader(all)
@@ -133,7 +121,6 @@ export function withOpusComment(bytes: Uint8Array, comment: string): Uint8Array 
     header.set(part, at)
     at += part.length
   }
-  // Lacing: 255 per full segment, then the remainder (0 when the length is a multiple of 255); at most 255 segments a page.
   const lacing = [...Array<number>(Math.floor(header.length / 255)).fill(255), header.length % 255]
   const rebuilt: Page[] = []
   let offset = 0
@@ -156,7 +143,6 @@ export function withOpusComment(bytes: Uint8Array, comment: string): Uint8Array 
   return result
 }
 
-/** Seconds of an Ogg/Opus file: the last granule position less the pre-skip, at 48 kHz. */
 export function oggOpusDuration(bytes: Uint8Array): number {
   const all = pages(bytes)
   const head = all[0]?.body

@@ -1,9 +1,3 @@
-/**
- * Demo plugins that show the kernel at work (the host tests use them, see
- * e2e/fixtures/core/deck): a provider, a consumer of its service, and a
- * plugin whose required service nobody provides. Enabled with
- * `presmium: { presmium.core: { demo: true } }`.
- */
 import { currentLocale } from '@presmium/host'
 import { defineService } from '@presmium/kernel'
 import type { PluginDefinition } from '@presmium/kernel'
@@ -14,13 +8,11 @@ export interface Greeter {
 }
 
 export const DEMO_GREETER = defineService<Greeter>('presmium.demo.greeter')
-/** Provided by the consumer with text produced by the provider's greeter. */
 export const DEMO_GREETING = defineService<string>('presmium.demo.greeting')
 const DEMO_MISSING = defineService<unknown>('presmium.demo.missing')
 
 const kernel = '^1.0.0'
 
-// The consumer is listed first; the kernel still starts the provider before it.
 export const demoPlugins: PluginDefinition[] = [
   {
     manifest: { id: 'presmium.demo.consumer', version, kernel, provides: [DEMO_GREETING], requires: [{ token: DEMO_GREETER }] },

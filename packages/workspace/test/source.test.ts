@@ -1,7 +1,3 @@
-// The source editor's routes refuse what a page may not read or write (P-124, docs/architecture.md 5.11), on a real
-// `presmium serve` of a workspace with two documents: a path out of the page's scope, a file reached through a
-// symbolic link, another document's file, a file that is no UTF-8 text, a request from another site, and a save of a
-// version the file no longer has (an editor on the disk changed it). Nothing is written in any of these.
 import { readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -13,7 +9,6 @@ describe('the source routes', () => {
   let serve: Child
   let url: string
   const file = (path: string) => readFileSync(join(dir, path), 'utf8')
-  /** A request of the `guide` document's page (its scope), with more headers when given. */
   const read = (path: string, headers: Record<string, string> = {}): Promise<RawResponse> =>
     raw(`${url}/__presmium/presmium.workspace/source?path=${encodeURIComponent(path)}`, { headers: { 'Presmium-Document': 'guide', ...headers } })
   const save = (path: string, content: string, base: string, headers: Record<string, string> = {}): Promise<RawResponse> =>
@@ -46,7 +41,6 @@ describe('the source routes', () => {
     const before = file('intro/lecture.md')
     expect((await save('guide/linked.md', 'through the link', 'x')).status).toBe(403)
     expect(file('intro/lecture.md')).toBe(before)
-    // The page's list of files leaves the links out.
     const files = await raw(`${url}/__presmium/presmium.workspace/files`, { headers: { 'Presmium-Document': 'guide' } })
     expect(files.json<{ files: { path: string }[] }>().files.map(f => f.path)).toEqual(['guide/img/plan.svg', 'guide/lecture.md'])
   })
@@ -66,7 +60,6 @@ describe('the source routes', () => {
     writeFileSync(join(dir, 'guide/nul.md'), Buffer.from('text\0more'))
     writeFileSync(join(dir, 'guide/latin1.md'), Buffer.from([0x63, 0x61, 0x66, 0xE9]))
     for (const path of ['guide/data.bin', 'guide/nul.md', 'guide/latin1.md']) expect((await read(path)).status, path).toBe(415)
-    // The listing names the binary file as one, which the editor lists and does not open.
     const files = await raw(`${url}/__presmium/presmium.workspace/files`, { headers: { 'Presmium-Document': 'guide' } })
     expect(files.json<{ files: { path: string, binary?: true }[] }>().files).toContainEqual({ path: 'guide/data.bin', binary: true })
   })
@@ -84,7 +77,6 @@ describe('the source routes', () => {
 
   it('refuses a save of a version the file no longer has (409), with the text on the disk and its version', async () => {
     const opened = (await read('guide/lecture.md')).json<{ content: string, version: string }>()
-    // An editor on the disk changes the file after the page opened it.
     const disk = `${opened.content}\n磁盘上的编辑器加的一行。\n`
     writeFileSync(join(dir, 'guide/lecture.md'), disk)
     const stale = await save('guide/lecture.md', `${opened.content}\n页面上加的一行。\n`, opened.version)
@@ -93,7 +85,6 @@ describe('the source routes', () => {
     expect(conflict.content).toBe(disk)
     expect(conflict.version).not.toBe(opened.version)
     expect(file('guide/lecture.md')).toBe(disk)
-    // Saved again on the version the answer gives, it is written.
     const saved = await save('guide/lecture.md', `${disk}页面上加的一行。\n`, conflict.version)
     expect(saved.status).toBe(200)
     expect(file('guide/lecture.md')).toContain('页面上加的一行。')

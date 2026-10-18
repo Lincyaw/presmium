@@ -1,7 +1,3 @@
-/* Shared by the classroom components, panels and notes in both forms (N-10): the host's tokens, and the controls
-   of its components (the `pm-ui-*` classes). Text is never dimmed with opacity, so it keeps its contrast in light
-   and dark and in the high-contrast mode. In a component of the deck the controls follow the text, which a slide
-   and the present view scale (N-05); the panels and notes keep the sizes of the host's UI. */
 .pm-classroom-card {
   --pm-text-xs: 0.75em;
   --pm-text-sm: 0.875em;
@@ -38,7 +34,6 @@
 .pm-classroom-error {
   color: var(--pm-color-danger);
 }
-/* A reply to a question (the presenter's, or an AI answer the presenter sent). */
 .pm-classroom-reply {
   margin: 0.35em 0;
   padding: 0.35em 0.75em;

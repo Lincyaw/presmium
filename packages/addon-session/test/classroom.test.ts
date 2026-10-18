@@ -1,5 +1,3 @@
-// The session's classroom in Node against a real classroom server (`@presmium/classroom-server`),
-// and the real `presmium check` on a deck that names no classroom server.
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
@@ -15,7 +13,6 @@ const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const dir = mkdtempSync(join(tmpdir(), 'presmium-session-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
-/** A port nobody listens on, yet. */
 async function freePort(): Promise<number> {
   const probe = createServer()
   await new Promise<void>(resolve => probe.listen(0, '127.0.0.1', resolve))
@@ -28,15 +25,12 @@ it('a join abandoned while the server was down leaves the classroom created afte
   const port = await freePort()
   const timeoutMs = 1500
   const classroom = createClassroom({ server: `ws://127.0.0.1:${port}`, base: 'http://localhost/deck/', timeoutMs })
-  // The server is down: joining waits for it.
   const joining = classroom.session.join('oldroom', '小明')
   const server = await startClassroomServer({ port, host: '127.0.0.1', deck: dir })
   try {
-    // Leaving, then creating a classroom, while the join still waits.
     classroom.session.leave()
     const room = await classroom.session.create('王老师')
     await joining
-    // Past the time the abandoned join would have waited.
     await new Promise(resolve => setTimeout(resolve, timeoutMs + 500))
     expect(classroom.session.snapshot()).toMatchObject({ sessionId: room, status: 'active', connection: 'connected', me: { name: '王老师', role: 'presenter' }, error: undefined })
   } finally {

@@ -6,12 +6,6 @@ import { hints, spots } from './adhoc.ts'
 
 let unregister: Unsubscribe[] = []
 
-/**
- * The guidance plugin's part of the host (docs/architecture.md 4.9): it
- * replays the spotlights and hints a presenter made (`spot`, `hint`), which a
- * lecture player applies. Registered by `setup/main.ts` in the slides form
- * and by the web package in the document form.
- */
 const plugin: PluginDefinition = {
   manifest: {
     id: GUIDE_ID,

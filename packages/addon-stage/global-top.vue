@@ -8,11 +8,6 @@ const { isPresenter, isPrintMode } = useNav()
 const { mode } = useScreen()
 const frame = shallowRef<HTMLElement>()
 
-/**
- * A frozen audience view keeps showing the slide it showed when `f` was pressed:
- * the frame covers the slide with a static copy of every layer beneath it, while
- * navigation goes on underneath.
- */
 function freeze(frame: HTMLElement): void {
   const content = frame.closest('.slidev-slide-content')
   if (!content) return
@@ -33,13 +28,11 @@ watch([mode, frame], ([current, el]) => {
   else el.replaceChildren()
 }, { flush: 'sync' })
 
-/** Read when the badge shows: the page's language is set by then. */
 const label = (which: 'black' | 'frozen') => messages().badge[which]
 </script>
 
 <template>
   <template v-if="!isPrintMode">
-    <!-- The presenter keeps the live slides and gets a reminder of what the audience sees. -->
     <template v-if="isPresenter">
       <div v-if="mode !== 'live'" class="pm-stage-badge" :data-mode="mode">
         {{ label(mode) }}

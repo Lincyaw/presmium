@@ -1,38 +1,3 @@
-// Change tasks of the assistant (WP-81; P-113 to P-115, P-121, P-136's tasks; D12): `presmium serve` with the
-// scripted test agent as the operator's replacement runtime (provider "Test Provider"), in workspaces copied
-// from e2e/fixtures/assistant-edit (the assistant installed at the root, documents from its template), each a
-// git repository of its own.
-//
-// - In the browser (6.13's flow): a document created on the home page; in edit mode the annotation and chat
-//   panels name the provider; two annotations change two places, the page follows without a reload, the
-//   review lists the file and its diff, accepting makes one commit and the annotations show the agent's
-//   notes; a chat message adds a section; undoing the annotations' commit brings both places back.
-// - D12 with the git review (deltabox's review off): a file rejected in the review comes back as the task
-//   found it (uncommitted changes too) and the commit has the rest; rejecting all leaves the directory as it
-//   was, without a commit; with `review: auto` the task commits at once; the agent's build through MCP goes
-//   outside the document and is not in the review (F-51).
-// - D12 with deltabox (where the host qualifies): the panel names deltabox, the agent works in the session's
-//   view, and a rejected file comes back as the task found it (uncommitted changes too).
-// - P-121: the home page's new-document form drafts the document with the agent, reviewed in the form (the
-//   home page loads the operator's plugins, and the assistant's `info` answers there).
-// - One change task per document at a time; a transcript task through the `tasks` route.
-// - The operator directory is refused outright; a write through a link in the document to a directory
-//   outside it is the owner's to allow (its real path); in a single-deck repository a change of
-//   presmium.workspace.yaml needs the owner's write approval, and a common directory the agent planted
-//   through `.git/commondir` is put back before the review runs git.
-// - The review kept by the server (WP-81e): a reloaded page takes it up and accepts it; back to before a step
-//   (P-115); a review no page follows is rolled back after the operator's time; one a crashed server left is
-//   rolled back when the document is served again; undoing a commit waits for the document's change task, and
-//   so do the workspace's rename, copy and delete of the document and its history's undo (409, the task's
-//   lock, F-09; the history panel says so in the page's language).
-// - The bundled DeepSeek Harness with the default settings, driven by a fake model, in a single-deck
-//   repository: its change tasks are reviewed with git even where deltabox's review is registered
-//   (architecture.md 9.5) and commit; what it writes in the repository's git directory is put back.
-// - The model settings in the page (WP-92b, P-111): without any model, "AI changes" is on the home page and
-//   says what to set; the settings filled in there (a Messages-compatible fake model, its provider, a key and
-//   a model) apply at once: the chat of a document's "AI changes" completes a change with the bundled
-//   DeepSeek Harness, and the model receives the key and model of the page; the page shows only that a key
-//   is set.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -53,7 +18,6 @@ const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const AGENT = join(ROOT, 'packages/addon-assistant/test/fixtures/scripted-agent.mjs')
 const ASSISTANT = join(ROOT, 'packages/addon-assistant')
 
-/** The test's environment without Vitest's or Presmium's variables or credentials, then `extra`. */
 function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -67,18 +31,12 @@ function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-/** The commits of a repository, newest first: subject and trailers. */
 const commits = (dir: string) => git(dir, ['log', '--format=%H%x00%s%x00%(trailers:only)%x1e']).split('\x1e').map(entry => entry.trim()).filter(Boolean).map((entry) => {
   const [id = '', subject = '', trailers = ''] = entry.split('\0')
   return { id, subject, trailers }
 })
 const filesOf = (dir: string, id: string) => git(dir, ['show', '--name-only', '--format=', id]).split('\n').filter(Boolean).sort()
 
-/**
- * A workspace in examples/demo/.presmium (ignored by git; VitePress resolves from the demo's node_modules):
- * the fixture copied (or `single`, a single-deck repository), the assistant installed at its root, `settings`
- * added to its configuration, a git repository of its own.
- */
 function workspace(prefix: string, settings = '', single?: Record<string, string>): string {
   const work = join(ROOT, 'examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
@@ -107,7 +65,6 @@ interface Serve {
   stop(): Promise<void>
 }
 
-/** `presmium serve` of a workspace, with the scripted agent as the replacement runtime (or, `bundled`, without one). */
 async function serve(dir: string, extra: Record<string, string> = {}, runtime: 'scripted' | 'bundled' = 'scripted'): Promise<Serve> {
   const scripted: Record<string, string> = runtime === 'scripted' ? { PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider', SCRIPTED_AGENT_LOG: `${dir}.agent.log` } : {}
   const child = spawn(process.execPath, [PRESMIUM, 'serve', '--port', '0'], {
@@ -141,7 +98,6 @@ async function serve(dir: string, extra: Record<string, string> = {}, runtime: '
   }
 }
 
-/** A route of the assistant for a document. */
 async function call(server: Serve, document: string, path: string, json?: unknown): Promise<{ status: number, json: Record<string, any> }> {
   const response = await fetch(`${server.url}/__presmium/presmium.assistant/${path}`, {
     method: json === undefined ? 'GET' : 'POST',
@@ -152,7 +108,6 @@ async function call(server: Serve, document: string, path: string, json?: unknow
   return { status: response.status, json: text ? JSON.parse(text) as Record<string, any> : {} }
 }
 
-/** Submits a change task and opens its events. */
 async function submit(server: Serve, document: string, body: Record<string, unknown>): Promise<{ id: string, events: EventStream }> {
   const submitted = await call(server, document, 'tasks', body)
   expect(submitted.status, JSON.stringify(submitted.json)).toBe(201)
@@ -160,7 +115,6 @@ async function submit(server: Serve, document: string, body: Record<string, unkn
   return { id, events: await eventStream(`${server.url}/__presmium/presmium.assistant/tasks/${id}/events?document=${encodeURIComponent(document)}`) }
 }
 
-/** The task's next event of these types. */
 async function next(events: EventStream, ...types: string[]): Promise<Record<string, any>> {
   for (;;) {
     const event = await events.next('message', 90_000)
@@ -171,13 +125,6 @@ async function next(events: EventStream, ...types: string[]): Promise<Record<str
 
 const chat = (prompt: string) => ({ kind: 'chat', prompt, context: { document: '', section: 'x' } })
 
-/**
- * In a single-deck repository the agent writes in the repository's git directory without asking (it is in
- * its working directory): a directory with a configuration defining a filter driver, attributes naming it,
- * and `.git/commondir` pointing git at that directory. Accepted but for those, only lecture.md is committed;
- * nothing of the git directory stays, and the driver never ran. Returns the review's engine: deltabox's
- * lists the git directory's file (rejected all the same), the git review has put it back already.
- */
 async function plantCommonDirectory(server: Serve, dir: string): Promise<string> {
   const planted = [
     '#append evil/config [filter "planted"]',
@@ -204,15 +151,12 @@ async function plantCommonDirectory(server: Serve, dir: string): Promise<string>
   }
   expect(existsSync(join(dir, '.git/commondir'))).toBe(false)
   expect(existsSync(join(dir, 'evil'))).toBe(false)
-  // Neither the review's git nor the commit's ran the planted driver.
   expect(existsSync(join(dir, 'planted-commondir'))).toBe(false)
   return engine
 }
 
-/** What the scripted agent logged. */
 const agentLog = (dir: string) => (existsSync(`${dir}.agent.log`) ? readFileSync(`${dir}.agent.log`, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line) as Record<string, any>) : [])
 
-/** Whether this host qualifies for deltabox, asked as its plugin asks. */
 const deltabox = qualification()
 
 test.describe.configure({ mode: 'serial', timeout: 240_000 })
@@ -231,12 +175,6 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.agent.log`]) if (path) rmSync(path, { recursive: true, force: true })
   })
 
-  /**
-   * The edit panel on a document's page, in edit mode. Edit mode loads modules of its own (the source editor,
-   * the panel): the first time, the document's dev server may optimize a dependency it finds then and reload
-   * the page, later under load. So edit mode is entered once and the requests waited for, then the page is
-   * visited again and edit mode entered on it.
-   */
   async function editPanel(page: Page, document: string) {
     const panel = page.getByRole('region', { name: '批注与对话' })
     for (let visit = 0; visit < 2; visit++) {
@@ -261,11 +199,9 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     const panel = await editPanel(page, 'week5')
     const annotationsPanel = panel.getByRole('region', { name: '批注' })
     const chatPanel = panel.getByRole('region', { name: '对话' })
-    // Both name the operator's provider before anything is sent (N-08).
     await expect(annotationsPanel.locator('.pm-assistant-edit__provider')).toHaveText('修改由 Test Provider 的模型完成')
     await expect(chatPanel.locator('.pm-assistant-edit__provider')).toHaveText('修改由 Test Provider 的模型完成')
 
-    // Two blocks annotated: picked on the page, each with its source's excerpt.
     await page.evaluate(() => (window as unknown as { unreloaded: boolean }).unreloaded = true)
     for (const [text, request] of [['第一段讲解', '第一段讲解：分词把文字切成更小的词元。'], ['第二段讲解', '第二段讲解：词表越大，输入越短。']]) {
       await page.locator('[data-section] [data-block]', { hasText: text! }).first().click()
@@ -276,17 +212,14 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     await expect(annotationsPanel.locator('.pm-assistant-annotation[data-status="draft"]')).toHaveCount(2)
     await annotationsPanel.getByRole('button', { name: '发送 2 条批注' }).click()
 
-    // The source changes in two places and the page follows without a reload, before anything is accepted.
     await expect(page.locator('[data-section]').getByText('第一段讲解：分词把文字切成更小的词元。')).toBeVisible({ timeout: 60_000 })
     await expect(page.locator('[data-section]').getByText('第二段讲解：词表越大，输入越短。')).toBeVisible()
     expect(await page.evaluate(() => (window as unknown as { unreloaded?: boolean }).unreloaded)).toBe(true)
 
-    // The review lists the changed file with its diff; accepting all makes one commit.
     const task = panel.getByRole('region', { name: '修改任务' }).first()
     await expect(task).toHaveAttribute('data-state', 'review', { timeout: 60_000 })
     const file = task.locator('.pm-assistant-change[data-path="week5/lecture.md"]')
     await expect(file).toContainText('修改 +2 −2')
-    // And the steps: a checkpoint after each tool call of the agent.
     await expect(task.locator('.pm-assistant-edit__steps summary')).toContainText('已记录')
     await expect(file.locator('.pm-assistant-change__diff')).toContainText('+第一段讲解：分词把文字切成更小的词元。')
     await task.getByRole('button', { name: '全部接受' }).click()
@@ -297,13 +230,11 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     expect(annotated!.trailers).toMatch(/^Presmium-Origin: agent$/m)
     expect(annotated!.trailers).toMatch(/^Presmium-Task: \S+$/m)
     expect(filesOf(dir, annotated!.id)).toEqual(['week5/lecture.md'])
-    // Both annotations handled, each with the agent's note.
     const done = annotationsPanel.locator('.pm-assistant-annotation[data-status="done"]')
     await expect(done).toHaveCount(2)
     await expect(done.first().locator('.pm-assistant-annotation__status')).toHaveText('已处理')
     await expect(done.first().locator('.pm-assistant-annotation__note')).toContainText('已把 lecture.md 第')
 
-    // A chat message adds a section at the end of the chapter; accepted, one more commit.
     await chatPanel.getByLabel('消息').fill('在本章末尾新增一节')
     await chatPanel.getByRole('button', { name: '发送' }).click()
     await expect(page.getByRole('heading', { name: 'agent 新增的一节' })).toBeVisible({ timeout: 60_000 })
@@ -314,7 +245,6 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     expect(commits(dir)).toHaveLength(before + 2)
     expect(commits(dir)[0]!.subject).toBe('对话修改：在本章末尾新增一节')
 
-    // Undoing the annotations' commit brings both places back, as one more commit.
     const first = panel.locator(`.pm-assistant-edit__task[data-state="done"]`).nth(1)
     await first.getByRole('button', { name: '撤销这次修改' }).click()
     await expect(first.locator('.pm-assistant-edit__reverted')).toContainText('已撤销')
@@ -328,7 +258,6 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
 
   test('deltabox: the panel names it, the agent works in the session\'s view; a rejected file comes back, the rest is committed', async ({ page }) => {
     test.skip(!deltabox.ok, `deltabox is not available on this host: ${deltabox.why}`)
-    // A change not committed when the task starts: the rejected file comes back with it.
     writeFileSync(join(dir, 'week5/lecture.md'), `${readFileSync(join(dir, 'week5/lecture.md'), 'utf8')}\n任务开始前没有提交的一行。\n`)
     const lecture = readFileSync(join(dir, 'week5/lecture.md'), 'utf8')
     const before = commits(dir).length
@@ -339,7 +268,6 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     const task = panel.getByRole('region', { name: '修改任务' }).first()
     await expect(task).toHaveAttribute('data-state', 'review', { timeout: 60_000 })
     await expect(task.locator('.pm-assistant-edit__engine')).toHaveText('请审阅改动（审阅由 deltabox 完成）')
-    // The agent's working directory is the session's view of the document, not the directory itself.
     const cwd = agentLog(dir).filter(e => e.event === 'session/new').at(-1)!.cwd as string
     expect(cwd).toMatch(/\/deltabox-lite\/[^/]+\/mount$/)
     expect(cwd).not.toBe(join(dir, 'week5'))
@@ -354,8 +282,6 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
   })
 
   test('the home page\'s form drafts a new document with the agent: reviewed in the form, committed after the document\'s own commit, then opened', async ({ page }) => {
-    // The home page loads the operator's plugins; the assistant's `info` answers there (the kinds it may send
-    // to a document), and the home page itself takes no task: the draft goes to the new document's routes.
     const home = await call(server, '', 'info')
     expect(home.json).toEqual({ provider: 'Test Provider', source: 'environment', kinds: ['annotations', 'chat', 'transcript'], changes: true, home: true })
     expect((await call(server, '', 'tasks', chat('#append lecture.md 首页不是文档'))).status).toBe(400)
@@ -369,18 +295,15 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     await documents.locator('textarea[name="request"]').fill('写一节关于上下文窗口的讲义')
     await documents.getByRole('button', { name: '新建', exact: true }).click()
 
-    // The draft waits for its review in the form; accepted, the page opens the new document with the draft.
     const draft = documents.locator('.pm-workspace-draft')
     await expect(draft).toHaveAttribute('data-state', 'review', { timeout: 60_000 })
     await expect(draft.locator('.pm-workspace-draft__changes')).toContainText('week6/lecture.md')
     await draft.getByRole('button', { name: '接受' }).click()
     await expect(page).toHaveURL(`${server.url}/week6/`, { timeout: 60_000 })
-    // The new document's dev server starts with this visit: visited again once Vite has optimized its dependencies.
     await openDevPage(page, `${server.url}/week6/`, page.locator('[data-section]').getByText('这是 agent 按要求写出的初稿：写一节关于上下文窗口的讲义'))
     const lecture = readFileSync(join(dir, 'week6/lecture.md'), 'utf8')
     expect(lecture).toContain('## 上下文窗口')
     expect(lecture).toContain('title: "第六周"')
-    // First the document's creation, then the draft.
     const [drafted, created] = commits(dir)
     expect(commits(dir)).toHaveLength(before + 2)
     expect(created!.trailers).toMatch(/^Presmium-Origin: document create week6$/m)
@@ -391,7 +314,6 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
   })
 })
 
-
 test.describe('the review with git (D12), one task per document, a transcript, the operator directory', () => {
   let dir: string
   let server: Serve
@@ -400,9 +322,7 @@ test.describe('the review with git (D12), one task per document, a transcript, t
 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
-    // deltabox's review off: the assistant's own git review.
     dir = workspace('git', '  presmium.deltabox:\n    review: false\n')
-    // The notebook renderer, installed at the root, for the agent's build through MCP.
     symlinkSync(join(ROOT, 'packages/render-notebook'), join(dir, 'node_modules/@presmium/render-notebook'), 'junction')
     operator = mkdtempSync(join(ROOT, 'examples/demo/.presmium/e2e-assistant-edit-operator-'))
     server = await start()
@@ -457,8 +377,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
   })
 
   test('the review\'s git reads none of the repository\'s configuration: a filter driver defined there never runs while the review runs git (WP-92d)', async () => {
-    // A filter driver in the repository's configuration (its git directory is at the workspace root, outside
-    // the document: no guard puts it back), named by the attributes the agent writes in the document.
     const config = join(dir, '.git/config')
     const kept = readFileSync(config, 'utf8')
     writeFileSync(config, `${kept}[filter "planted"]\n\tclean = touch planted\n`)
@@ -467,7 +385,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       try {
         const review = await next(events, 'review')
         expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/.gitattributes', 'intro/notes.md'])
-        // Every step and the review's diff ran git over the attributes: the driver never ran.
         expect(review.steps.length).toBeGreaterThan(1)
         expect(existsSync(join(dir, 'planted'))).toBe(false)
         expect((await call(server, 'intro', `tasks/${id}/review`, { accept: false })).status).toBe(204)
@@ -489,7 +406,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       const second = await call(server, 'intro', 'tasks', chat('#append lecture.md 第二个任务的一行'))
       expect(second.status).toBe(409)
       expect(second.json.error).toBe('这份文档已有一个进行中或等待审阅的修改任务，请先完成它')
-      // Questions are no task of the server's any more (P-112: the reader's own model answers them in the page).
       expect((await call(server, 'intro', 'tasks', { kind: 'question', prompt: '合并的是哪一对？', context: { document: '' } })).status).toBe(400)
       expect((await call(server, 'intro', `tasks/${first.id}/review`, { accept: false })).status).toBe(204)
       await next(first.events, 'done')
@@ -503,7 +419,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       const review = await next(events, 'review')
       expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/lecture.md'])
       expect(lecture()).toContain('据讲授轨 demo 整理的讲解：合并的是出现最多的一对，每轮一次。')
-      // The agent was given the request.
       expect(agentLog(dir).some(e => e.event === 'session/prompt' && e.question === '按章节把整理后的逐字稿写成讲解')).toBe(true)
       expect((await call(server, 'intro', `tasks/${id}/review`, { accept: true })).status).toBe(204)
       const done = await next(events, 'done')
@@ -515,7 +430,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
     } finally {
       events.close()
     }
-    // A track the document does not have is refused.
     expect((await call(server, 'intro', 'tasks', { kind: 'transcript', prompt: '整理', context: { document: '' }, track: 'missing' })).status).toBe(400)
   })
 
@@ -568,7 +482,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       expect(asked.request).toMatchObject({ kind: 'write', scope: 'workspace', from: `agent:${id}` })
       await fetch(`${server.url}/__presmium/presmium.server/control`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ window: 'outside', type: 'answer', id: asked.id, allow: true }) })
       const review = await next(events, 'review')
-      // Not in the review: it is outside the document.
       expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/notes.md'])
       expect((await call(server, 'intro', `tasks/${id}/review`, { accept: true })).status).toBe(204)
       const done = await next(events, 'done')
@@ -584,13 +497,11 @@ test.describe('the review with git (D12), one task per document, a transcript, t
     const window = await eventStream(`${server.url}/__presmium/presmium.server/control?window=build&document=intro`)
     const { id, events } = await submit(server, 'intro', chat('#append notes.md 构建之前写的一行\n#build notebook'))
     try {
-      // The build is an operation the member allows.
       const asked = await window.next('approval', 60_000) as { id: string, request: Record<string, unknown> }
       expect(asked.request).toMatchObject({ kind: 'operate', from: 'presmium.mcp' })
       await fetch(`${server.url}/__presmium/presmium.server/control`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ window: 'build', type: 'answer', id: asked.id, allow: true }) })
       const review = await next(events, 'review')
       expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/notes.md'])
-      // It built, outside the document.
       const built = agentLog(dir).filter(e => e.event === 'build').at(-1)!
       expect(built.isError, built.result).toBe(false)
       expect((JSON.parse(built.result as string) as { outputs: { renderer: string }[] }).outputs.map(output => output.renderer)).toEqual(['notebook'])
@@ -630,7 +541,6 @@ test.describe('the review with git (D12), one task per document, a transcript, t
 })
 
 test.describe('the review kept by the server: a reload, a step undone, no page, a crash, an undo meanwhile', () => {
-  /** How long a review no page follows waits before it is rolled back, once the operator set it (the default is 30 minutes). */
   const UNATTENDED_MS = 3000
   let dir: string
   let server: Serve
@@ -648,7 +558,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
 
   const lecture = () => readFileSync(join(dir, 'intro/lecture.md'), 'utf8')
 
-  /** The edit panel on the document's page, in edit mode (each call loads the page again). */
   async function editPanel(page: Page) {
     await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
     await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
@@ -669,7 +578,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
   test('a page reloaded during the review takes it up again from the server, and accepting it commits', async ({ page }) => {
     const before = commits(dir).length
     await sendChat(await editPanel(page), '#append notes.md 刷新之前写的笔记')
-    // Loaded again: the panel lists the review the server kept, with its file.
     const panel = await editPanel(page)
     const task = panel.getByRole('region', { name: '修改任务' }).first()
     await expect(task).toHaveAttribute('data-state', 'review', { timeout: 30_000 })
@@ -685,7 +593,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
   test('back to before a step (P-115): that step\'s change is gone from the document and the review, the rest is committed', async ({ page }) => {
     const found = lecture()
     const before = commits(dir).length
-    // Two tool calls, apart: a step each.
     const task = await sendChat(await editPanel(page), '#append glossary.md 第一步的术语\n#sleep 2000\n#append lecture.md 第二步的一行')
     await task.locator('.pm-assistant-edit__steps summary').click()
     const steps = task.locator('.pm-assistant-edit__steps li')
@@ -695,7 +602,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
     expect(lecture()).toContain('第二步的一行')
 
     await steps.nth(1).getByRole('button', { name: '回到「edit lecture.md」之前' }).click()
-    // The review again: one step, one file; the document as before the second step.
     await expect(task.locator('.pm-assistant-change')).toHaveCount(1)
     await expect(task.locator('.pm-assistant-change[data-path="intro/glossary.md"]')).toBeVisible()
     await expect(task.locator('.pm-assistant-edit__steps summary')).toHaveText('已记录 1 步')
@@ -739,7 +645,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
       headers: { 'Presmium-Document': encodeURIComponent(document), 'Content-Type': 'application/json' },
       body: JSON.stringify(json),
     })
-    // A commit of the document the history could undo.
     const committed = await submit(server, 'intro', chat('#append held.md 之后要撤销的一行'))
     let revision: string
     try {
@@ -756,7 +661,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
       const pending = await submit(server, 'intro', chat(`#append lecture.md 等待审阅时的一行 ${accept}`))
       try {
         await next(pending.events, 'review')
-        // The document operations (the copy's source too) and the undo would commit or roll back under the task: refused.
         for (const operation of [{ op: 'rename', dir: 'intro', to: 'intro-moved' }, { op: 'copy', dir: 'intro', to: 'intro-copied' }, { op: 'delete', dir: 'intro' }]) {
           const refused = await workspaceRoute('', 'documents', operation)
           expect(refused.status, operation.op).toBe(409)
@@ -765,7 +669,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
         if (accept) {
           expect((await workspaceRoute('intro', 'revisions/revert', { id: revision })).status).toBe(409)
         } else {
-          // The history panel's undo, on the document's page: the panel says why in the page's language (N-07).
           await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
           await page.locator('.pm-workspace-history__toggle').filter({ visible: true }).click()
           const history = page.getByRole('dialog', { name: '修改历史' })
@@ -790,21 +693,18 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
         pending.events.close()
       }
     }
-    // Once the review ended, the undo goes through.
     const undone = await workspaceRoute('intro', 'revisions/revert', { id: revision })
     expect(undone.status, await undone.clone().text()).toBe(200)
     expect(existsSync(join(dir, 'intro/held.md'))).toBe(false)
   })
 
   test('a review no page follows is rolled back after the operator\'s time, and the document takes a change task again', async () => {
-    // The operator's time, short here: read when the server starts.
     await server.stop()
     writeFileSync(join(dir, 'presmium.workspace.yaml'), `${readFileSync(join(dir, 'presmium.workspace.yaml'), 'utf8')}  presmium.assistant:\n    reviewTimeoutMs: ${UNATTENDED_MS}\n`)
     server = await start()
     const found = lecture()
     const { id, events } = await submit(server, 'intro', chat('#append lecture.md 没有人审阅的一行\n#append left.md 没有人审阅的文件'))
     await next(events, 'review')
-    // The server lists it to its sender; then no page follows it.
     expect((await call(server, 'intro', 'tasks')).json.change).toMatchObject({ id, kind: 'chat', prompt: '#append lecture.md 没有人审阅的一行\n#append left.md 没有人审阅的文件' })
     events.close()
     expect(lecture()).toContain('没有人审阅的一行')
@@ -827,7 +727,6 @@ test.describe('the review kept by the server: a reload, a step undone, no page, 
     const { events } = await submit(server, 'intro', chat('#append lecture.md 崩溃时还在审阅\n#append crash.md 崩溃时的文件'))
     await next(events, 'review')
     events.close()
-    // Killed at once (well within the operator's time): nothing rolls the review back meanwhile.
     const exited = new Promise(done => server.child.once('exit', done))
     server.child.kill('SIGKILL')
     await exited
@@ -925,15 +824,10 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
-    // No deltabox settings: where the host qualifies, deltabox's review is registered all the same.
     dir = workspace('dsh', '', {
       'presmium.workspace.yaml': `title: 单份文稿\nsettings:\n  presmium.workspace:\n    plugins: ['@presmium/slidev-addon-assistant']\n`,
       'lecture.md': '---\ntitle: 单份文稿\n---\n\n# 引言\n\n## 第一节\n\n开始时的内容。\n',
     })
-    // DeepSeek Harness, driven by the model's script: the first two tasks write a note each; the third writes a
-    // hook, attributes naming a filter driver, git's configuration defining it (in the repository's git
-    // directory: its sandbox lets it, without asking, the document directory being its working directory) and
-    // a note.
     model = await fakeModel([
       { tool: 'write', input: { file_path: 'notes.md', content: '第一个任务的笔记\n' } },
       { text: '完毕：写了笔记。' },
@@ -954,7 +848,6 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
     for (const path of [dir, `${dir}.state`, `${dir}.cache`]) if (path) rmSync(path, { recursive: true, force: true })
   })
 
-  /** A chat task accepted in its review (but the `reject`ed files): the paths it listed, and its commit. */
   async function accepted(prompt: string, reject: string[] = []): Promise<{ paths: string[], revision: string, id: string }> {
     const { id, events } = await submit(server, '', chat(prompt))
     try {
@@ -978,9 +871,7 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
       expect(filesOf(dir, revision)).toEqual([file])
     }
     expect(commits(dir)).toHaveLength(before + 2)
-    // DeepSeek Harness's staging directories are gone with its writes: nothing uncommitted is left.
     expect(git(dir, ['status', '--porcelain', '--untracked-files=all'])).toBe('')
-    // Where deltabox's review is registered, the log says why the assistant does not use it.
     if (deltabox.ok) expect(server.output()).toContain('change tasks use the assistant\'s git review, not deltabox\'s')
   })
 
@@ -991,7 +882,6 @@ test.describe('the bundled DeepSeek Harness with the default settings, in a sing
     expect(filesOf(dir, revision)).toEqual(['remarks.md'])
     expect(existsSync(join(dir, '.git/hooks/post-checkout'))).toBe(false)
     expect(readFileSync(join(dir, '.git/config'), 'utf8')).toBe(config)
-    // The review's git never ran the planted filter driver.
     expect(existsSync(join(dir, 'planted'))).toBe(false)
     expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/hooks\/post-checkout/)
     expect(server.output()).toMatch(/the agent changed the git directory, put back: .*\.git\/config/)
@@ -1006,12 +896,10 @@ test.describe('the model settings in the page: the bundled DeepSeek Harness with
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     dir = workspace('settings')
-    // DeepSeek Harness, driven by the model's script: a note, then its answer.
     model = await fakeModel([
       { tool: 'write', input: { file_path: 'notes.md', content: '页面设置的模型写的笔记\n' } },
       { text: '完毕：写了笔记。' },
     ])
-    // No model access in the environment.
     server = await serve(dir, {}, 'bundled')
   })
   test.afterAll(async () => {
@@ -1038,19 +926,15 @@ test.describe('the model settings in the page: the bundled DeepSeek Harness with
     await settings.getByRole('button', { name: '保存' }).click()
     await expect(settings.locator('.pm-assistant-model__saved')).toHaveText('已保存')
     await expect(settings).toContainText('当前生效：这里的设置（Page Provider）')
-    // The page has no key back, only that one is set.
     await expect(settings).toContainText('密钥（已设置，留空则不变）')
     await expect(settings.locator('input[name="key"]')).toHaveValue('')
     expect(await page.content()).not.toContain('page-key-92b')
-    // Saved in the user's configuration directory, readable by the user only; not in the workspace.
     expect(statSync(join(`${dir}.config`, 'presmium/assistant.json')).mode & 0o777).toBe(0o600)
     expect(git(dir, ['status', '--porcelain', '--untracked-files=all'])).toBe('')
     await settings.getByRole('button', { name: '关闭' }).click()
-    // The dialog took the place of the popover, which says now where the model comes from.
     await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
     await expect(status).toContainText('AI 修改由 Page Provider 的模型完成（来自模型设置）')
 
-    // A document's "AI changes" turns edit mode on; its chat completes a change with the page's settings, no restart.
     await openDevPage(page, `${server.url}/intro/`, page.locator('[data-section]').first())
     await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
     const panel = page.getByRole('region', { name: '批注与对话' })

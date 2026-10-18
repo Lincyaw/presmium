@@ -2,13 +2,8 @@ import { currentLocale } from '@presmium/host'
 import { defineCustomElement, h, ref } from 'vue'
 import { DEMO_COUNTER_TAG, MESSAGES } from '../domain/index.ts'
 
-/**
- * Demo web component (P-43): a counter whose state lives in the element, so
- * clicking it shows that an embedded component keeps its own interaction.
- */
 const DemoCounter = defineCustomElement({
   props: {
-    /** Default: "count" in the page's language. */
     label: { type: String },
     start: { type: Number, default: 0 },
   },
@@ -19,8 +14,6 @@ const DemoCounter = defineCustomElement({
       h('output', count.value),
     ])
   },
-  // The shadow root keeps the page's CSS out; the host's tokens (N-10) and the colors of the high-contrast mode (P-52)
-  // come in as variables.
   styles: [`
     button {
       font: inherit;
@@ -35,7 +28,6 @@ const DemoCounter = defineCustomElement({
   `],
 })
 
-/** Defines the demo elements once; a no-op where custom elements are unavailable (server rendering). */
 export function defineDemoElements(): void {
   if (typeof customElements === 'undefined' || customElements.get(DEMO_COUNTER_TAG)) return
   customElements.define(DEMO_COUNTER_TAG, DemoCounter)

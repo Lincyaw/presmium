@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// The classroom: its state, creating, joining or rejoining it, the join link and QR code (with a warning when
-// learners' devices cannot open it), the participants, ending and archiving it.
-// Shown in the presenter panels of both forms and from the toolbar.
 import { useMessages } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
 import { renderSVG } from 'uqr'
@@ -70,7 +67,6 @@ function submit(): void {
         <p v-if="loopbackLink(snapshot.joinUrl)" class="pm-session__warning" role="note">
           {{ t.loopbackLink }}
         </p>
-        <!-- eslint-disable-next-line vue/no-v-html -- an SVG generated from the link -->
         <div class="pm-session__qr" role="img" :aria-label="t.qr" v-html="qr" />
       </template>
       <p class="pm-session__label pm-ui-heading">
@@ -130,7 +126,6 @@ function submit(): void {
 .pm-session__link {
   word-break: break-all;
 }
-/* A QR code reads dark on light whatever the scheme. */
 .pm-session__qr {
   width: 8rem;
   height: 8rem;

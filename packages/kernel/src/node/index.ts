@@ -1,19 +1,9 @@
-/**
- * `@presmium/kernel/node`: what the Node sides of the renderers, the
- * compiler and the hosts share that needs Node's own modules; the browser
- * never loads it (scripts/check-layering.mjs).
- */
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync } from 'node:fs'
 import { createRequire, findPackageJSON } from 'node:module'
 import { dirname, join, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { LocalAsset } from '../ir.ts'
 
-/**
- * Copies a published file (`RenderContext.localAsset`) into `dir` under its
- * published name, a directory with its files; a copy already there is kept,
- * since the name holds the content hash. Returns the copy's path.
- */
 export function copyPublished(found: LocalAsset, dir: string): string {
   const target = join(dir, found.name)
   if (!existsSync(target)) {
@@ -23,25 +13,14 @@ export function copyPublished(found: LocalAsset, dir: string): string {
   return target
 }
 
-/** Where a site publishes the license of the fonts the design system bundles into it: `<base>presmium/fonts/LICENSE`. */
 export const FONT_LICENSE = 'presmium/fonts/LICENSE'
 
-/**
- * Each face's copyright, as NOTICE gives it, by Fontsource package: the
- * license file of @fontsource/source-serif-4 names "Google Inc." only.
- */
 const FONT_COPYRIGHTS: Record<string, string> = {
   '@fontsource/ibm-plex-mono': 'IBM Plex Mono: Copyright 2017 IBM Corp. All rights reserved.',
   '@fontsource/ibm-plex-sans': 'IBM Plex Sans: Copyright 2019 IBM Corp. All rights reserved.',
   '@fontsource/source-serif-4': 'Source Serif 4: Copyright 2014 - 2021 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name \'Source\'.',
 }
 
-/**
- * The license of the faces @presmium/host bundles into every site (SIL Open
- * Font License 1.1, NOTICE): for each Fontsource package it depends on, found
- * from `from` (a renderer's module), the face's copyright and the package's
- * license file, one after the other.
- */
 export function fontLicense(from: string | URL): string {
   const manifest = findPackageJSON('@presmium/host', from)
   if (!manifest) throw new Error('@presmium/host is not installed')
@@ -54,57 +33,20 @@ export function fontLicense(from: string | URL): string {
   return [`The fonts of this site, from Fontsource, with their copyrights and licenses (SIL Open Font License 1.1).\n`, ...files].join(`\n${'='.repeat(78)}\n\n`)
 }
 
-/**
- * The Node options of a process that runs a renderer's framework (VitePress,
- * Slidev) and so may import Presmium's packages natively: `--import` of
- * ./strip-types.mjs, which strips the types of TypeScript under node_modules,
- * as installed from npm (P-141), where Node does not.
- */
 export const TYPESCRIPT_IMPORT: readonly string[] = ['--import', new URL('./strip-types.mjs', import.meta.url).href]
 
-/** Packages a framework provides itself (one Vue for the page): never pre-bundled through a plugin. */
 const PROVIDED = /^(?:vue|@vue\/.*|vitepress|@slidev\/.*)$/
-/** Presmium's packages: followed into, never pre-bundled. */
 const PRESMIUM = /^@presmium\//
-/** A module's static and dynamic imports of packages, type-only imports aside. */
 const IMPORT = /(?:^|\n)\s*(?:import|export)(?!\s+type\b)[^'"`;]*?\bfrom\s*['"]([^'"./][^'"]*)['"]|(?:^|\n)\s*import\s*['"]([^'"./][^'"]*)['"]|\bimport\(\s*['"]([^'"./][^'"]*)['"]\s*\)/g
 const SOURCE = /\.(?:[cm]?[jt]s|vue)$/
 const DECLARATION = /\.d\.[cm]?ts$/
 const STYLE = /\.(?:css|scss|sass|less|styl)$/
-/** Directories of a package that hold no browser code. */
 const NOT_BROWSER = new Set(['node', 'bin', 'test', 'fixtures', 'node_modules'])
 
-/**
- * Prepares a Vite dev server whose project lies in `root` for the packages
- * installed under node_modules, as from npm, whose browser code it loads
- * (P-141), and returns what it pre-bundles (`optimizeDeps.include`). Vite
- * does not look into the imports of a dependency, and such a package is
- * one: the CommonJS packages its browser code imports (semver; debug, under
- * micromark) would reach the browser unconverted. `packages` are the
- * directories of the packages the pages load (the renderer's own, the
- * deck's plugins); the Presmium packages their browser code imports come
- * with them. For each one under node_modules, the imports of its browser
- * files (all but `node/`, `bin/` and tests) that name one of its own
- * dependencies, in Vite's nested form `<package> > <import>`. Vite finds
- * `<package>` from `root`, which may lie outside the project (`presmium
- * serve` keeps its sites in its state directory, `presmium dev --out`
- * anywhere): each such package is linked into `root/node_modules`. A
- * package linked from Presmium's workspace is a source that Vite scans
- * itself, and so is a deck's own directory: nothing for them.
- */
 export function preBundle(root: string, packages: Iterable<string>): string[] {
   return optimizeDeps(root, packages).include
 }
 
-/**
- * `preBundle`'s `include`, with the packages it prepares as `exclude`. The
- * pages load those packages' source from node_modules: Vite pre-bundles
- * nothing a dependency imports, but it would pre-bundle one of them where a
- * source outside node_modules imports it (a deck's own components; a plugin
- * that a document names by its directory, as the example of a plugin made
- * with create-presmium does), a second copy beside the source (for
- * `@presmium/host`: "no host installed").
- */
 export function optimizeDeps(root: string, packages: Iterable<string>): { include: string[], exclude: string[] } {
   const include = new Set<string>()
   const exclude = new Set<string>()
@@ -126,7 +68,6 @@ export function optimizeDeps(root: string, packages: Iterable<string>): { includ
   return { include: [...include].sort(), exclude: [...exclude].sort() }
 }
 
-/** The `package.json` of the package `name` as the package in `dir` finds it; undefined for one not installed (an optional peer). */
 function installedManifest(name: string, dir: string): string | undefined {
   try {
     return findPackageJSON(name, pathToFileURL(join(dir, 'package.json')))
@@ -135,13 +76,11 @@ function installedManifest(name: string, dir: string): string | undefined {
   }
 }
 
-/** The directory of the package that holds `file`, by its nearest `package.json`. */
 export function packageOf(file: string): string | undefined {
   const manifest = findPackageJSON(pathToFileURL(file))
   return manifest && dirname(manifest)
 }
 
-/** Links the package in `dir` into `root/node_modules` under its name; a link there to another directory is replaced. */
 function linkPackage(root: string, name: string, dir: string): void {
   const link = join(root, 'node_modules', name)
   const stat = lstatSync(link, { throwIfNoEntry: false })
@@ -154,13 +93,10 @@ function linkPackage(root: string, name: string, dir: string): void {
 
 interface BrowserDependencies {
   name: string
-  /** Imports that name one of its dependencies, Presmium's and the frameworks' aside: what Vite pre-bundles. */
   imports: string[]
-  /** Presmium's packages it imports, among its dependencies and peers. */
   presmium: string[]
 }
 
-/** What the browser files of the installed package in `dir` import of its dependencies; a package does not change while a server runs. */
 const dependencies = new Map<string, BrowserDependencies>()
 function browserDependencies(dir: string): BrowserDependencies {
   let found = dependencies.get(dir)
@@ -179,7 +115,6 @@ function browserDependencies(dir: string): BrowserDependencies {
   return found
 }
 
-/** The packages and package paths the browser files under `dir` import. */
 function browserImports(dir: string, found = new Set<string>(), top = true): Set<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name)
@@ -192,7 +127,6 @@ function browserImports(dir: string, found = new Set<string>(), top = true): Set
   return found
 }
 
-/** The package an import names: `semver/functions/satisfies.js` is `semver`, `@scope/pkg/sub` is `@scope/pkg`. */
 function packageName(specifier: string): string {
   const parts = specifier.split('/')
   return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]!

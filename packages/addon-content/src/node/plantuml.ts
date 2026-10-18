@@ -3,14 +3,8 @@ import type { IRPass } from '@presmium/kernel'
 import plantuml from 'plantuml-encoder'
 import { MESSAGES } from '../domain/index.ts'
 
-/** PlantUML server that draws the diagrams, as Slidev's `plantUmlServer` defaults to. */
 const DEFAULT_SERVER = 'https://www.plantuml.com/plantuml'
 
-/**
- * ```plantuml code blocks become images of the diagram (P-41), drawn as SVG
- * by the PlantUML server (`presmium.content.plantUmlServer`). Every renderer
- * shows an image, and the publish plugin can download it for offline use.
- */
 export const plantUmlPass: IRPass = {
   name: 'plantuml',
   run(doc, ctx) {

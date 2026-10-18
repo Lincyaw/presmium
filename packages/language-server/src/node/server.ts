@@ -1,11 +1,3 @@
-/**
- * The Presmium language server (P-80, P-81). It compiles the deck of each
- * open source file with `@presmium/compiler` whenever a file the compilation
- * read is saved or changes, and publishes the diagnostics at their source
- * lines; it answers definitions, hovers and completions on the editor's
- * buffer against the latest compilation; and for the preview it runs
- * `presmium dev` and maps a cursor to its section.
- */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { sectionLinks, toPages } from '@presmium/web/domain'
@@ -21,14 +13,12 @@ import { toDiagnostics } from './diagnostics.ts'
 import { Previews } from './preview.ts'
 import { deckSyntax } from './syntax.ts'
 
-/** Saves and file events close together compile once. */
 const COMPILE_DELAY = 50
 
 function fileOf(uri: string): string | undefined {
   return uri.startsWith('file:') ? fileURLToPath(uri) : undefined
 }
 
-/** Starts the server on the transport named on the command line (`--stdio`, `--node-ipc`, `--socket=<port>`). */
 export function startServer(): void {
   const connection = createConnection(ProposedFeatures.all)
   const documents = new TextDocuments(TextDocument)
@@ -37,7 +27,6 @@ export function startServer(): void {
   const timers = new Map<Deck, NodeJS.Timeout>()
 
   const bufferLines = (uri: string) => documents.get(uri)?.getText().split(/\r?\n/) ?? []
-  // Findings are about the saved files the compiler read.
   const fileLines = (file: string): string[] => {
     try {
       return readFileSync(file, 'utf8').split(/\r?\n/)
@@ -46,7 +35,6 @@ export function startServer(): void {
     }
   }
 
-  // Every source file of the deck gets its diagnostics, none for a clean file; so does a file that had some before.
   const publish = (deck: Deck) => {
     const byFile = toDiagnostics(deck.findings, deck.entry, fileLines)
     const files = new Set([...deck.compilation?.files ?? [deck.entry], ...byFile.keys()])
@@ -59,7 +47,6 @@ export function startServer(): void {
   }
   const decks = new Decks(publish)
 
-  /** Compiles again the decks that read one of the files. */
   const changed = (files: string[]) => {
     for (const deck of decks.all().filter(d => files.some(file => d.reads(file)))) {
       clearTimeout(timers.get(deck))
@@ -67,7 +54,6 @@ export function startServer(): void {
     }
   }
 
-  /** The deck of a document and its latest compilation. */
   const deckOf = async (uri: string) => {
     const file = fileOf(uri)
     const deck = file ? await decks.of(file) : undefined
@@ -87,7 +73,6 @@ export function startServer(): void {
       serverInfo: { name: 'presmium-language-server' },
     }
   })
-  // Referenced code and the anchor lock change outside the editor too.
   connection.onInitialized(() => {
     if (watchFiles) void connection.client.register(DidChangeWatchedFilesNotification.type, { watchers: [{ globPattern: '**/*' }] })
   })
@@ -102,7 +87,6 @@ export function startServer(): void {
   })
   connection.onDidChangeWatchedFiles(({ changes }) => changed(changes.flatMap(change => fileOf(change.uri) ?? [])))
 
-  /** The anchor at a position of a document, with what its deck accepts and says. */
   const anchorOf = async (uri: string, line: number) => {
     const found = await deckOf(uri)
     if (!found) return undefined

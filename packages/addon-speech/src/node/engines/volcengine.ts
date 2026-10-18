@@ -1,13 +1,3 @@
-/**
- * Volcengine (火山引擎, 豆包语音; docs/design-v0.7.md 7.4) at its fixed
- * address. Synthesis: `seed-tts-2.0` (cloned voices, `S_…`: `seed-icl-2.0`)
- * over the HTTP chunked interface `/api/v3/tts/unidirectional`, Ogg/Opus,
- * with `enable_subtitle` for times per character of the original text; no
- * SSML, LaTeX normalization or server cache, which drop the subtitles.
- * Transcription: the flash recognition `/api/v3/auc/bigmodel/recognize/flash`
- * (base64 audio, WAV, MP3 or Ogg/Opus; times per character). A key of the new
- * console goes in `X-Api-Key`; one of the old console with its app id.
- */
 import { randomUUID } from 'node:crypto'
 import type { SpeechWord, Transcript, TranscriptSegment, VoiceInfo } from '@presmium/kernel'
 import { isRecord } from '@presmium/kernel'
@@ -21,7 +11,6 @@ const ASR = '/api/v3/auc/bigmodel/recognize/flash'
 const OK = 20000000
 const SILENT = '20000003'
 
-/** Voices of the 2.0 models (docs 6561/1257544); any other voice id of the account is taken as it is. */
 const VOICES: VoiceInfo[] = [
   { id: 'zh_female_vv_uranus_bigtts', label: 'Vivi 2.0', lang: ['zh-CN', 'en-US', 'ja-JP'] },
   { id: 'zh_female_xiaohe_uranus_bigtts', label: '小何 2.0', lang: ['zh-CN', 'en-US'] },
@@ -31,7 +20,6 @@ const VOICES: VoiceInfo[] = [
   { id: 'en_female_dacey_uranus_bigtts', label: 'Dacey', lang: ['en-US'] },
 ]
 
-/** A cloned voice of Volcengine's voice cloning (声音复刻) has a speaker id `S_…`. */
 export function volcengineCloned(voice: string): boolean {
   return voice.startsWith('S_')
 }

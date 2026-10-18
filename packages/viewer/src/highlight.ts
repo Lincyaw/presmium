@@ -1,9 +1,3 @@
-/**
- * Code highlighting in the browser with Shiki. Only the grammars listed here
- * are bundled, each loaded on first use, so the build stays small; other
- * languages show as plain text. A server render has none (`import.meta.env.SSR`):
- * it shows plain text, and its build leaves Shiki out.
- */
 import { languageId } from '@presmium/kernel'
 import type { HighlighterCore } from 'shiki/core'
 
@@ -30,12 +24,10 @@ const GRAMMARS: Record<string, Loader> = import.meta.env.SSR ? {} : {
   rust: () => import('shiki/langs/rust.mjs'),
   go: () => import('shiki/langs/go.mjs'),
   java: () => import('shiki/langs/java.mjs'),
-  // The GPU's shaders and exec-wasi's Ruby, as the slides form highlights them.
   wgsl: () => import('shiki/langs/wgsl.mjs'),
   ruby: () => import('shiki/langs/ruby.mjs'),
 }
 
-/** Grammar names of languages besides those `languageId` of the kernel resolves. */
 const ALIASES: Record<string, string> = {
   mts: 'typescript',
   sh: 'shellscript',
@@ -65,17 +57,12 @@ function load(): Promise<HighlighterCore> {
   return highlighter
 }
 
-/** The grammar name of a code block language, or undefined when it is not bundled. */
 export function grammarOf(lang: string): string | undefined {
   const id = languageId(lang)
   const name = ALIASES[id] ?? id
   return name in GRAMMARS ? name : undefined
 }
 
-/**
- * The highlighter with the grammar of `lang` loaded; undefined for languages
- * without a bundled grammar. Browser only.
- */
 export async function highlighterFor(lang: string): Promise<{ highlighter: HighlighterCore, lang: string } | undefined> {
   const name = grammarOf(lang)
   if (!name) return undefined

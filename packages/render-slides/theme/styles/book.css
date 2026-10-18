@@ -1,16 +1,6 @@
-/*
- * Presmium's default slides theme, 书卷 (N-10; docs/design/slide.dc.html, docs/architecture.md 5.12). Paper, ink
- * and a deep teal accent, from the host's tokens: the dark scheme is Slidev's `dark` class on <html>, which the
- * tokens follow. Titles and the deck's text in the serif, code in the mono, controls in the sans of the host's
- * components. Sizes are the slide's own px (a canvas 980 px wide): code at 14 px is 18 px or more once the slide
- * fills a 1280 px wide screen (R-27). Everything is under `.slidev-layout`, so the presenter's own UI keeps
- * Slidev's look.
- */
-
 :root,
 html.dark {
   --slidev-theme-primary: var(--pm-color-accent);
-  /* The theme's background, as Slidev names a theme's colours: the panels over the presenter view take it. */
   --slidev-theme-background: var(--pm-color-surface);
   --slidev-code-background: var(--pm-color-surface);
   --slidev-code-foreground: var(--pm-color-ink);
@@ -25,8 +15,6 @@ html.dark {
   --slidev-code-tab-active-text-color: var(--pm-color-ink);
   --slidev-code-tab-font-size: 12px;
 }
-
-/* Every layout, the theme's and Slidev's own (center, two-cols, ...): paper and ink. ----------------------- */
 
 .slidev-layout {
   box-sizing: border-box;
@@ -145,7 +133,6 @@ html.dark {
   font-size: 0.8em;
 }
 
-/* Code: a panel on the paper, its text 14 px (R-27); a word of code in the text, an accent chip. */
 .slidev-layout code {
   font-family: var(--pm-font-mono);
 }
@@ -162,8 +149,6 @@ html.dark {
   border: 1px solid var(--pm-color-line);
 }
 
-/* The lines a step leaves out of its highlight: one grey, without the syntax's colours, rather than Slidev's 30 %
-   opacity, so they recede and still read at 4.5:1 (WCAG AA, light and dark). */
 .slidev-layout .slidev-code .slidev-code-dishonored {
   opacity: 1;
 }
@@ -178,28 +163,22 @@ html.dark {
   border-bottom: 0;
 }
 
-/* The slides of the theme's layouts (layouts/*.vue) --------------------------------------------------------- */
-
-/* Room at the foot for the footer, which the content and a run panel's measure of its slide keep clear of. */
 .slidev-layout.pm-book {
   position: relative;
   padding: 34px 56px 46px;
 }
 
-/* Footnotes (the stage plugin sets them at the slide's foot) stand above the footer. */
 .slidev-layout.pm-book .footnotes {
   right: 56px;
   bottom: 40px;
   left: 56px;
 }
 
-/* The deck's own text reads in the serif, as the web form's Markdown; components keep the sans of their controls. */
 .pm-book__content > :is(p, ul, ol, blockquote),
 .pm-book__content > .slidev-vclick-target > :is(p, ul, ol, blockquote) {
   font-family: var(--pm-font-serif);
 }
 
-/* The chapter the slide belongs to, in small accent letters above its title, a rule beside it. */
 .pm-book__chapter {
   display: flex;
   align-items: center;
@@ -220,7 +199,6 @@ html.dark {
   background: var(--pm-color-line);
 }
 
-/* The cover: the title large, low on the page, the subtitle in the serif below it. */
 .slidev-layout.pm-book--cover {
   display: flex;
   flex-direction: column;
@@ -251,7 +229,6 @@ html.dark {
   font-size: 20px;
 }
 
-/* The foot: the deck's title, the slide's steps (each one done in the accent), the slide's number. */
 .pm-book-footer {
   position: absolute;
   right: 56px;
@@ -273,7 +250,6 @@ html.dark {
   white-space: nowrap;
 }
 
-/* As wide as its steps (`--steps`), up to 40 % of the foot; the segments narrow for a long one. */
 .pm-book-footer__steps {
   display: flex;
   flex: none;
@@ -282,7 +258,6 @@ html.dark {
   margin-left: auto;
 }
 
-/* The steps to come are framed in `line-strong` (3:1 on the paper, WCAG 1.4.11), the done ones filled. */
 .pm-book-footer__steps > span {
   flex: 1;
   min-width: 2px;

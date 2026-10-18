@@ -1,17 +1,4 @@
 <script setup lang="ts">
-// The lecture player over the present view (P-131): it drives the real page from the track (see
-// player.ts); play and pause, the time and a seek bar, the speed, captions in the lecture's
-// language or a translation, the transcript (a word or a sentence's time seeks to it), the
-// chapters with the steps of each section (one seeks to its time), "try it" and "back to the
-// lecture", and a label on a synthesized voice, which plays its utterances' clips. Editors under
-// `presmium dev` and `presmium serve` work on a recorded lecture's words here (TrackEditor.vue, and
-// an utterance's text in the transcript; in a synthetic voice saving it says it again, after a
-// confirmation that names the provider the operator gives the engine now, N-08). A reader who opens
-// the synthesized lecture before an editor had it made is told so. For `presmium-lecture export`
-// (`&export`) it shows no controls and steps through the lecture on the exporter's call.
-// The transcript shows each sentence as written, its words (to seek to) in it; a translation made
-// from an earlier text of its sentence is marked stale (P-137). The player lies over the page's
-// effects, e.g. the dimming of a spotlight (`--pm-cue-z`): in a layer of its own over the page.
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import type { Operations } from '@presmium/host'
@@ -41,18 +28,15 @@ const status = ref<'loading' | 'missing' | 'not-yet' | 'ready'>()
 const captions = ref(false)
 const language = ref<string>()
 const panel = ref<'transcript' | 'chapters'>()
-/** The side panel's tabs: the transcript and the chapters, one shown, switched there or from the player's bar. */
 const SIDE = { 'zh-CN': { tabs: '逐字稿与章节' }, 'en': { tabs: 'Transcript and chapters' } }
 const side = useMessages(SIDE)
 const sideTabs = computed(() => [{ value: 'transcript', label: t.value.player.transcript }, { value: 'chapters', label: t.value.player.chapters }])
 
-/** Where the lectures come from: the server's routes, else the build's `lecture` output. */
 function lectureSource(): LectureSource {
   const config = viewer.doc.value.config.presmium[LECTURE_ID]
   return server.available ? serverSource(server) : staticSource(staticBase(isRecord(config) ? config : undefined))
 }
 
-/** The clock of a track: the clips of a synthetic voice, else the recorded audio, else the page's. */
 async function clockOf(track: LectureTrack, source: LectureSource): Promise<TrackClock> {
   const length = trackDuration(track)
   const url = (src: string) => source.media(track.id, src).catch(() => '')
@@ -66,7 +50,6 @@ async function clockOf(track: LectureTrack, source: LectureSource): Promise<Trac
 }
 
 let loading = 0
-/** Plays a track (its time `at`), in place of the one played. */
 async function start(track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0) {
   const clock = await clockOf(track, source)
   if (load !== loading) return clock.dispose()
@@ -104,7 +87,6 @@ onBeforeUnmount(() => {
   player.value?.dispose()
 })
 
-/** `presmium-lecture export` steps the lecture: `advance(t)` shows the lecture at t once the page has drawn it. */
 function exportHook(p: LecturePlayer) {
   const frame = () => new Promise<void>(done => requestAnimationFrame(() => done()))
   Object.assign(window, {
@@ -120,14 +102,12 @@ function exportHook(p: LecturePlayer) {
   })
 }
 
-// Editors work on a stored lecture's words (not on `script`, which the deck's narration makes).
 const editing = computed(() => (server.available && server.member.value?.roles.some(role => role === 'editor' || role === 'owner') ? serverEditing(server) : undefined))
 const editable = computed(() => Boolean(editing.value && player.value && playing.value !== SCRIPT_TRACK))
 const editingUtterance = ref<string>()
 const draft = ref('')
 const saving = ref(false)
 const editFailure = ref<string>()
-/** The engine of a synthetic voice; its provider as the operator names it now (N-08), asked from the server. */
 const engine = computed(() => {
   const v = player.value?.track.voice
   return editable.value && v?.kind === 'synthetic' ? v.engine : undefined
@@ -138,14 +118,12 @@ watch(engine, async (id) => {
   const choice = id && editing.value ? await editing.value.speech(id).catch(() => undefined) : undefined
   if (id === engine.value) engineProvider.value = choice?.synthesize?.provider
 }, { immediate: true })
-/** A synthetic voice says a corrected sentence again: its provider, asked first (N-08); the track's when the engine is gone. */
 const sayer = computed(() => {
   const v = player.value?.track.voice
   return v?.kind === 'synthetic' ? engineProvider.value || v.provider || v.engine : undefined
 })
 const confirmingEdit = ref(false)
 
-/** Plays the edited track from where the lecture is. */
 function changed(track: LectureTrack) {
   const ops = operations.value
   if (!ops) return
@@ -185,7 +163,6 @@ const state = computed(() => (!player.value ? undefined : player.value.trying.va
 const titles = computed(() => new Map(viewer.doc.value.sections.map(s => [s.id, s.title])))
 const chapterList = computed(() => (player.value ? chapters(player.value.events, id => titles.value.get(id)) : []))
 const chapter = computed(() => chapterList.value.filter(c => c.t <= time.value).at(-1))
-/** The chapters, and after each section's the later steps the lecture goes to there, in time order. */
 const entries = computed(() => [
   ...chapterList.value.map(c => ({ ...c, step: undefined })),
   ...(player.value ? stepStops(player.value.events) : []).filter(s => s.step > 0).map(s => ({ ...s, title: t.value.player.step(s.step) })),
@@ -194,7 +171,6 @@ const entry = computed(() => entries.value.filter(e => e.t <= time.value).at(-1)
 const languages = computed(() => (player.value ? captionLanguages(player.value.track) : []))
 const current = computed(() => (player.value ? utteranceAt(player.value.track, time.value) : undefined))
 const voice = computed(() => player.value?.track.voice)
-/** The AI-generated label of a synthetic voice, with its provider when the track names it (N-08). */
 const synthetic = computed(() => (voice.value?.kind === 'synthetic' && voice.value.provider ? t.value.player.syntheticBy(voice.value.provider) : t.value.player.synthetic))
 
 function text(u: Utterance): string {
@@ -202,10 +178,8 @@ function text(u: Utterance): string {
   return lang && lang !== player.value?.track.lang ? u.translations?.[lang]?.text ?? u.text : u.text
 }
 
-/** `sha256:<hex>` of a text, as a translation records its original's (P-137); `@noble/hashes`, since a page served over plain http from another machine has no `crypto.subtle`. */
 const digest = (text: string) => `sha256:${bytesToHex(sha256(utf8ToBytes(text)))}`
 
-/** The utterances whose translation into the language shown was made from another text. */
 const stale = computed(() => {
   const p = player.value
   const lang = language.value
@@ -350,11 +324,6 @@ function close() {
 </template>
 
 <style>
-/*
- * Over the present view and the page's effects on it (a spotlight's dimming, `--pm-cue-z`): a fixed
- * layer of its own, which lets the pointer through but where the player is. Fixed and above the
- * present view, it is part of the view's modal area (Tab reaches the player).
- */
 .pm-lecture-layer {
   position: fixed;
   inset: 0;
@@ -364,7 +333,6 @@ function close() {
 .pm-lecture-layer > * {
   pointer-events: auto;
 }
-/* `presmium-lecture export` films the lecture without the present view's own controls. */
 html.pm-lecture-exporting .pm-present__bar {
   display: none;
 }
@@ -410,7 +378,6 @@ html.pm-lecture-exporting .pm-present__bar {
   align-items: center;
   gap: 0.25rem;
 }
-/* Captions: the ink's panel with the paper's text, legible over any slide, light or dark. */
 .pm-lecture-caption {
   position: absolute;
   left: 50%;

@@ -1,11 +1,4 @@
 <script setup lang="ts">
-// "AI changes" (P-111, P-113 to P-115; the workspace's `EDIT_MODE`), in the toolbar of every page the workspace
-// service or `presmium dev` serves, available or not, so the author finds it. In a document the agent may change
-// (one in a git repository, which commits the changes), and the member may edit, it is the switch of the panel
-// docked at the right of edit mode (./EditDock.vue, ./dock.ts): it turns on edit mode and shows the panel, then
-// hides and shows it, pressed while it is shown (docs/design/edit.dc.html). Elsewhere (no model configured, the
-// home page, a document in no git repository, a reader) it opens what is needed and how AI changes are made, in the
-// page's language (what is missing by its code), with the model settings (./ModelSettings.vue).
 import { EDIT_MODE, PmButton, PmIcon, useMessages, useServer, useService } from '@presmium/host'
 import { computed, ref, useId } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -23,10 +16,8 @@ const open = ref(false)
 const popover = ref<HTMLElement>()
 const settings = ref<InstanceType<typeof ModelSettings>>()
 const info = computed(() => assistant.value?.info.value)
-/** The button switches the docked panel: a document the agent may change, which this member may edit. */
 const switches = computed(() => inDocument.value && canChange.value && editMode.value?.allowed.value === true)
 
-/** Why there is no change panel here, and what to do. */
 const status = computed(() => {
   const now = info.value
   if (!now) return []
@@ -39,7 +30,6 @@ const status = computed(() => {
   return lines
 })
 
-/** The switch: turns on edit mode and shows the panel, or hides and shows it. */
 function toggle(): void {
   if (!switches.value) return
   const mode = editMode.value
@@ -55,7 +45,6 @@ function toggled(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'
 }
 
-/** The model settings take the place of the popover, which stays above everything else (the top layer). */
 function openSettings(): void {
   popover.value?.hidePopover()
   void settings.value?.open()
@@ -107,7 +96,6 @@ function openSettings(): void {
   display: inline-flex;
   align-items: center;
 }
-/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. */
 .pm-assistant-edit-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;

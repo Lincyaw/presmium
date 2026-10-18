@@ -1,8 +1,3 @@
-/**
- * `presmium-speech` (docs/architecture.md section 7): `fake`, the
- * deterministic fake engine; `consent`, the operator's registration of a
- * cloned voice's consent record in the operator directory.
- */
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -30,7 +25,6 @@ Commands:
 
   -h, --help   show this help`
 
-/** The workspace root of a directory: its git repository's, else the directory. */
 function workspaceRoot(dir: string): string {
   try {
     return resolve(execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim())
@@ -67,7 +61,6 @@ function consent(args: string[]): number {
   return 0
 }
 
-/** Runs `presmium-speech <argv>`; returns the exit code. */
 export async function main(argv: string[]): Promise<number> {
   const [command, ...args] = argv
   try {

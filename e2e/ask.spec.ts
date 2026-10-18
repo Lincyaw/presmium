@@ -1,17 +1,3 @@
-// Readers' questions in the browser (WP-92b, P-112, decision E-9) on the static student site of a deck that
-// lists the assistant (`presmium build --audience student`), behind a static server that records what it is
-// asked, with an OpenAI-compatible service on this machine (e2e/fixtures/assistant/openai.ts) as the reader's
-// own model service:
-// - without one filled in, the question panel says how questions are answered, that the settings stay in this
-//   browser and that the site's scripts can read the key, and asks for the service;
-// - filled in, it names the service before anything is asked; the reader selects code and asks: the answer
-//   streams in, its citation moves the page to the section it names; the service received the reader's key,
-//   the selection, the current section and the table of contents, and none of the teachers' content; the
-//   site's server received no request with the key;
-// - no console error at all on the static output (F-48), in the reading and the presenter view, whose start
-//   report says the assistant started;
-// - the slides form has no IR runtime: a question goes with the current slide's text; a citation goes to its
-//   section's slide.
 import { request as httpRequest, createServer } from 'node:http'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -32,7 +18,6 @@ interface Site {
   close(): Promise<void>
 }
 
-/** The built site behind a server that records each request (method, path, headers) and passes it on. */
 async function recordingSite(origin: string): Promise<Site> {
   const requests: Site['requests'] = []
   const server = createServer((req, res) => {
@@ -71,7 +56,6 @@ test.afterAll(async () => {
   await deck?.close()
 })
 
-/** Every console error and uncaught error of the page. */
 function errorsOf(page: Page): string[] {
   const errors: string[] = []
   page.on('console', message => message.type() === 'error' && errors.push(message.text()))
@@ -79,7 +63,6 @@ function errorsOf(page: Page): string[] {
   return errors
 }
 
-/** The toolbar's question panel, opened. */
 async function openPanel(page: Page) {
   await page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' }).click()
   const panel = page.getByRole('dialog', { name: '向 AI 提问' })
@@ -112,11 +95,9 @@ test('the reader fills in his service and asks about selected code: the answer s
   await settings.getByLabel('密钥').fill(KEY)
   await settings.getByLabel('模型名').fill('stub-model')
   await settings.getByRole('button', { name: '保存' }).click()
-  // The provider is named before anything is asked (N-08): the service's host, and the model.
   await expect(panel.locator('.pm-assistant__provider')).toContainText(`回答由 ${new URL(model.url).host} 的模型 stub-model 生成`)
   await panel.getByRole('button', { name: '关闭' }).click()
 
-  // The reader selects the code of the section, then asks.
   await page.locator('[data-section="merge"] pre').first().evaluate((pre) => {
     const range = document.createRange()
     range.selectNodeContents(pre)
@@ -128,7 +109,6 @@ test('the reader fills in his service and asks about selected code: the answer s
   model.hold()
   await panel.getByLabel('问题').fill('这段代码做什么？')
   await panel.getByRole('button', { name: '提问', exact: true }).click()
-  // The first piece shows while the rest is on its way.
   const answers = panel.getByRole('list', { name: '回答' })
   await expect(answers.locator('.pm-assistant__answer')).toHaveText('这段代码')
   await expect(answers.getByRole('status')).toContainText('回答中')
@@ -137,7 +117,6 @@ test('the reader fills in his service and asks about selected code: the answer s
   await expect(citation).toBeVisible()
   await expect(answers.locator('.pm-assistant__answer')).toContainText('回答「这段代码做什么？」：把出现最多的一对合并成一个词元，见进阶内容。')
 
-  // What the service received: the reader's key and model; the selection, the section and the table of contents.
   const asked = model.received.find(r => r.method === 'POST')!
   expect(asked.headers.authorization).toBe(`Bearer ${KEY}`)
   expect(asked.body).toMatchObject({ model: 'stub-model', stream: true })
@@ -147,18 +126,15 @@ test('the reader fills in his service and asks about selected code: the answer s
   expect(system).toContain('The section the reader is at: 合并规则 (id merge')
   expect(system).toContain('每一轮合并出现次数最多的一对。')
   expect(system).toContain('- later-section: 进阶内容')
-  // None of the teachers' content: the student site's IR has none.
   expect(sent).not.toContain('TEACHER-HINT-42')
   expect(sent).not.toContain('TEACHER-SECTION-77')
   expect(sent).not.toContain('教学安排')
 
-  // The citation moves the page there.
   await citation.click()
   await expect(panel).toBeHidden()
   await expect(page).toHaveURL(/\/later\.html/)
   await expect(page.locator('section.pm-section[data-section="later-section"]')).toBeInViewport()
 
-  // The site's server never received the key, in any request.
   expect(site.requests.length).toBeGreaterThan(0)
   expect(JSON.stringify(site.requests)).not.toContain(KEY)
   expect(errors).toEqual([])
@@ -173,7 +149,6 @@ test('the static output has no console error, in the reading and the presenter v
   await page.goto(`${site.url}/`)
   await expect(page.locator('[data-section]').first()).toBeVisible()
   await expect(page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' })).toBeVisible()
-  // No change of a document is offered without a server.
   await expect(page.getByRole('button', { name: 'AI 修改' })).toHaveCount(0)
   expect(errors).toEqual([])
 })
@@ -196,12 +171,10 @@ test('in the slides form, which has no IR runtime, a question goes with the curr
     const citation = panel.getByRole('list', { name: '回答' }).getByRole('button', { name: '进阶内容' })
     await expect(citation).toBeVisible()
     const system = model.received.slice(before).find(r => r.method === 'POST')!.body.messages![0]!.content
-    // The current slide's text, named by its section; the table of contents is that slide alone.
     expect(system).toContain('def merge(tokens, pair):')
     expect(system).toContain('(id merge')
     expect(system).not.toContain('later-section:')
     expect(system).not.toContain('TEACHER-HINT-42')
-    // A citation goes to its section's slide, by the section's id.
     await citation.click()
     await expect(page.locator('.slidev-page').getByRole('heading', { name: '进阶内容' })).toBeVisible()
   } finally {

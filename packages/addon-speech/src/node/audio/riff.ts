@@ -1,9 +1,3 @@
-/**
- * WAV (RIFF) files: their chunks, a `LIST`/`INFO` chunk appended without
- * changing the others (the AI-generated label, docs/ir.md 9.1), the
- * duration, and the fake engine's 16-bit PCM files.
- */
-
 export interface RiffChunk {
   id: string
   data: Uint8Array
@@ -32,7 +26,6 @@ function concat(parts: Uint8Array[]): Uint8Array {
   return out
 }
 
-/** A chunk's bytes: id, size, data and the pad byte of an odd size. */
 function chunkBytes(id: string, data: Uint8Array): Uint8Array {
   return concat([encoder.encode(id.padEnd(4, ' ').slice(0, 4)), u32(data.length), data, data.length % 2 ? new Uint8Array(1) : new Uint8Array(0)])
 }
@@ -41,7 +34,6 @@ export function isWav(bytes: Uint8Array): boolean {
   return bytes.length >= 12 && ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WAVE'
 }
 
-/** The chunks after `WAVE`; a size larger than the file (a streamed WAV that never wrote it) ends at the file's end. */
 export function wavChunks(bytes: Uint8Array): RiffChunk[] {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const chunks: RiffChunk[] = []
@@ -59,13 +51,11 @@ function riff(chunks: RiffChunk[]): Uint8Array {
   return concat([encoder.encode('RIFF'), u32(body.length), body])
 }
 
-/** The file with a `LIST`/`INFO` chunk of these entries (four-character ids) appended; the other chunks are kept as they are. */
 export function withInfo(bytes: Uint8Array, entries: [string, string][]): Uint8Array {
   const info = concat([encoder.encode('INFO'), ...entries.map(([id, value]) => chunkBytes(id, encoder.encode(`${value}\0`)))])
   return riff([...wavChunks(bytes), { id: 'LIST', data: info }])
 }
 
-/** The entries of the file's `LIST`/`INFO` chunks, by id. */
 export function infoEntries(bytes: Uint8Array): Record<string, string> {
   const entries: Record<string, string> = {}
   for (const chunk of wavChunks(bytes)) {
@@ -81,7 +71,6 @@ export function infoEntries(bytes: Uint8Array): Record<string, string> {
   return entries
 }
 
-/** Seconds of PCM audio: the `data` chunk's size over the byte rate of `fmt `. */
 export function wavDuration(bytes: Uint8Array): number {
   const chunks = wavChunks(bytes)
   const fmt = chunks.find(chunk => chunk.id === 'fmt ')
@@ -91,7 +80,6 @@ export function wavDuration(bytes: Uint8Array): number {
   return byteRate ? data.data.length / byteRate : 0
 }
 
-/** A mono 16-bit PCM WAV with further chunks between `fmt ` and `data`. */
 export function makeWav(samples: Int16Array, rate: number, extra: RiffChunk[] = []): Uint8Array {
   const fmt = new Uint8Array(16)
   const view = new DataView(fmt.buffer)

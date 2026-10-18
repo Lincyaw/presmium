@@ -1,9 +1,3 @@
-// Compile-time execution through the process sandbox (D13, docs/architecture.md 10.6; WP-73b): the
-// workspace configuration lists a test operator plugin whose PROCESS_SANDBOX runs the command
-// directly in a new run directory and logs each call. With the real `presmium build`, Python and
-// JavaScript code runs through it: the runner's input is a file of the run directory, the command
-// gets exactly the run's `RunContext.env`, and the recordings are those of a build without it; the
-// blocks of a session run in one call.
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -53,7 +47,6 @@ print(x + 1)
 \`\`\`
 `
 
-/** A workspace outside git holding the deck; with `sandbox`, its configuration lists the sandbox plugin, installed at its root. */
 function workspace(sandbox: boolean): { dir: string, log: string } {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-sandbox-'))
   dirs.push(dir)
@@ -68,7 +61,6 @@ function workspace(sandbox: boolean): { dir: string, log: string } {
   return { dir, log }
 }
 
-// The build's whole environment: what the code may see, and what it may not.
 const KEPT = { PATH: process.env.PATH!, HOME: process.env.HOME!, LANG: 'C.UTF-8', FIXTURE_PLAIN: 'shown' }
 const ENV = { ...KEPT, FIXTURE_API_TOKEN: 'hidden', PRESMIUM_FIXTURE: 'hidden' }
 
@@ -86,12 +78,10 @@ it('runs Python and JavaScript through the process sandbox with the run\'s envir
   const calls = readFileSync(sandboxed.log, 'utf8').trim().split('\n').map(line => JSON.parse(line) as { argv: string[], files: Record<string, string>, collect: string[], env: Record<string, string> })
   expect(calls).toHaveLength(3)
   for (const call of calls) {
-    // The runner's input is a file of the run directory; the command gets the run's environment and nothing else.
     expect(Object.keys(call.files)).toContain('.presmium/request.json')
     expect(call.env).toEqual(KEPT)
   }
   expect(calls.map(call => call.argv[0])).toEqual(['python3', process.execPath, 'python3'])
-  // The two blocks of the session, in one call.
   const session = JSON.parse(calls[2]!.files['.presmium/request.json']!) as { runs: { code: string }[] }
   expect(session.runs.map(r => r.code)).toEqual(['x = 41', 'print(x + 1)'])
   expect(calls[2]!.collect).toHaveLength(2)

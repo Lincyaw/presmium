@@ -1,8 +1,3 @@
-// The lecture's routes read the deck's files as they open them (WP-89d, F-12; `openInDeck` in src/node/store.ts),
-// under the real `presmium dev`: a symbolic link in place of a medium or a clip gives 404, never what it names
-// (here a file outside the deck); a FIFO in place of a track, a medium or a clip is not listed or gives 404 at
-// once, and the server goes on answering, as it does not wait for a writer. A clip is given as the speech
-// service gives it from its cache by its key (WP-92c), only when the lecture's utterances say it.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { closeSync, constants, mkdirSync, mkdtempSync, openSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -36,7 +31,6 @@ const TRACK: LectureTrack = {
   events: [[0, 'go', { section: 'intro', step: 0 }]],
 }
 
-/** A clip's record in the synthesis cache, as the speech service writes it. */
 function cacheRecord(clip: string): string {
   const key = clip.slice(0, 32)
   return JSON.stringify({ key, audio: clip, mime: 'audio/wav', duration: 0.5, engine: 'fake', model: 'fake', voice: 'alpha', provider: 'Presmium fake', cloned: false, lang: 'zh-CN', text: '一句。', synthetic: true, AIGC: {}, sha256: '0'.repeat(64) })
@@ -57,7 +51,6 @@ beforeAll(async () => {
     'lectures/rec/track.json': formatTrack(TRACK),
     'lectures/rec/audio/intro.ogg': 'OggIntro',
     [`.presmium/speech/${CLIP}`]: 'CLIP',
-    // The record the synthesis cache keeps beside each clip (docs/ir.md 9.1); the other clip's names the same key.
     ...Object.fromEntries([CLIP, OTHER_CLIP].map(clip => [`.presmium/speech/${clip.slice(0, 32)}.json`, cacheRecord(clip)])),
   }
   for (const [path, text] of Object.entries(files)) {
@@ -84,12 +77,10 @@ beforeAll(async () => {
 }, 120_000)
 
 afterAll(async () => {
-  // A server that waits gets its writer, so the suite can end.
   for (const file of fifos) {
     try {
       closeSync(openSync(file, constants.O_WRONLY | constants.O_NONBLOCK))
     } catch {
-      // No reader waits.
     }
   }
   if (dev && dev.exitCode === null) {
@@ -100,7 +91,6 @@ afterAll(async () => {
   for (const path of [dir, outside]) if (path) rmSync(path, { recursive: true, force: true })
 })
 
-/** A route's answer, which must come within 10 s (a server waiting on a FIFO answers none). */
 async function get(path: string): Promise<{ status: number, text: string }> {
   const answer = fetch(`${server}/__presmium/presmium.lecture/${path}`).then(async response => ({ status: response.status, text: await response.text() }))
   return Promise.race([answer, new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`no answer to ${path} in 10 s`)), 10_000))])
@@ -109,7 +99,6 @@ async function get(path: string): Promise<{ status: number, text: string }> {
 it('gives 404 for a link in place of a medium or a clip, and for a FIFO in place of one, which it does not list as a track; it answers on', async () => {
   expect(await get('tracks/rec/audio/intro.ogg')).toEqual({ status: 200, text: 'OggIntro' })
   expect(await get(`tracks/rec/clips/${CLIP}`)).toEqual({ status: 200, text: 'CLIP' })
-  // A clip of the cache that the lecture does not say is not given.
   expect((await get(`tracks/other/clips/${CLIP}`)).status).toBe(404)
   for (const path of ['tracks/rec/audio/linked.ogg', `tracks/rec/clips/${OTHER_CLIP}`]) {
     const linked = await get(path)

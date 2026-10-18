@@ -1,34 +1,20 @@
-# The web carrier's part of @presmium/dsh (docs/design-dsh.md 6.1, 6.2 and 6.6): its rows, and what the web
-# host needs set for Presmium. The launcher passes it with --patch after the profile's own layer, on every
-# start, for the web carrier only (src/node/launch.ts).
 - insert:
-    # Every document's directory is a DeepSeek Harness workspace; the workspace root is not (6.2).
     - id: presmium-workspaces
       name: '@presmium/dsh/workspaces'
-    # /api/presmium/* to the workspace service and the server, with the service token (2.3).
     - id: presmium-routes
       name: '@presmium/dsh/routes'
 
-# First use: the workspace controller's documents directory is in Presmium's state directory, never
-# ~/Documents; with the documents' workspaces registered at start, DeepSeek Harness makes no first-use
-# workspace at all (K7, K8).
 - id: workspace-controller
   config:
     documentsDirectory: !!js (process.env.DSH_HOME || `${process.env.XDG_STATE_HOME || `${process.env.HOME}/.local/state`}/presmium/studio`) + '/documents'
 
-# Persona: the coding agent's context of DeepSeek Harness's own checkout and GUI is not Presmium's (17, item 10).
 - id: harness-dev-context
   disabled: true
 
-# The workbench (docs/design-dsh.md 7, WP-96d): its client half takes the root layout's place (the bundle's `./client`,
-# a client row is its package's bare name) and its host half brands the page (src/node/workbench.ts).
 - insert:
     - id: presmium-workbench
       name: '@presmium/dsh'
 
-# The interface (6.6): the root layout replaces DeepSeek Harness's own (turned on again, the workbench falls back to it,
-# 7.2); no DeepSeek brand, account, sign-in or search service, and no settings for uploading session logs, which the
-# profile patch turns off.
 - id: ui-layout
   disabled: true
 - id: ui-brand-official

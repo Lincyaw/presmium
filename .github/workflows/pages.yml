@@ -1,12 +1,3 @@
-# Publishes the examples on GitHub Pages. At the root, the example workspace (examples/workspace, copied by
-# its try.mjs into a repository of its own, as `presmium serve` takes it): the home page lists its
-# documents, each under <dir>/, built with `site.base` set to the Pages site's path; documents are created,
-# edited and managed with `presmium serve` on one's own machine, so the static site has no such controls.
-# Under demo/, the demo deck (examples/demo) in all three forms: the web form at demo/web/, the slides at
-# demo/slides/ and the notebooks at demo/notebook/. The slides use hash routing (`routerMode: hash`,
-# slide n at demo/slides/#/n; the web form's links follow it), because a static host serves no page for
-# demo/slides/<n>. The workspace site's 404 page is the site's. The documentation site (WP-93d) joins this
-# workflow under docs/.
 name: Pages
 
 on:
@@ -31,18 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # The demo's code references read the repository's history.
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      # The Python the examples' recorded outputs were made with: in another version the build reuses them
-      # with a warning for each, which the home page shows on the document's card. The builds see no
-      # Chromium either (PLAYWRIGHT_BROWSERS_PATH names an empty directory; `pnpm install` downloads one for
-      # playwright-chromium): the WebGPU example's recording, made on a GPU, is then reused without being
-      # compared with the runner's software renderer.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13.12'

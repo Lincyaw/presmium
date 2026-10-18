@@ -1,12 +1,3 @@
-/**
- * Writing a recorded lecture back into the deck (P-136, P-137; docs/ir.md
- * 9.5): what the lecture side gives the agent of the assistant's change
- * tasks. The transcript as narration: per section and step, the sentences
- * said there, with a `{cue}` before the word each action of the lecture was
- * bound to (`at`), so the agent tidies the words and leaves the cues where
- * they are; and where each step's narration is in the source. And the
- * sentences to translate, each with the digest its translation records.
- */
 import { irBlocks } from '@presmium/kernel'
 import type { IRDocument, SourceRange } from '@presmium/kernel'
 import type { LecturePlan } from './plan.ts'
@@ -16,12 +7,10 @@ import type { Digest } from './vtt.ts'
 import { isStale } from './vtt.ts'
 import { isCjk, locate } from './words.ts'
 
-/** An option value as a role writes it: quoted when it has spaces, quotes or braces. */
 function optionValue(value: string): string {
   return /^[^\s"'{}=]+$/.test(value) ? value : `"${value.replace(/"/g, '\'')}"`
 }
 
-/** A `{cue}` role (docs/ir.md 2.9), e.g. ``{cue to=code-1 lines=2-3}`spot` ``. */
 function cueRole(command: string, options: Record<string, string | number | undefined> = {}): string {
   const written = Object.entries(options).filter(([, v]) => v !== undefined && v !== '').map(([key, v]) => ` ${key}=${optionValue(String(v))}`).join('')
   return `{cue${written}}\`${command}\``
@@ -29,20 +18,13 @@ function cueRole(command: string, options: Record<string, string | number | unde
 
 const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined)
 
-/** The block id of an event's `<section>/<block>` key. */
 function blockOf(key: unknown): string | undefined {
   const value = text(key)
   return value?.includes('/') ? value.slice(value.indexOf('/') + 1) : undefined
 }
 
-/** A selector the player builds for a cue's `sel`: the block, and the selector inside it. */
 const SELECTOR = /^\[data-section="[^"]*"\] \.pm-block\[data-block="([^"]+)"\]\s*(.*)$/
 
-/**
- * The `{cue}` that makes an event again when the narration is said (docs/ir.md
- * 2.9, 9.2), at a place said in step `step` of section `section`; undefined for
- * an event no cue makes (a move to another section, a cleared spotlight).
- */
 export function cueFor(type: string, data: Record<string, unknown>, at: { section?: string, step: number }): string | undefined {
   const block = blockOf(data.block)
   switch (type) {
@@ -71,7 +53,6 @@ export function cueFor(type: string, data: Record<string, unknown>, at: { sectio
   }
 }
 
-/** Where anchor `offset` of an utterance is in its text (UTF-16): before that word, or that character without words. */
 function placeOf(u: Utterance, offset: number): number {
   const words = u.words ?? []
   if (words.length === 0) return [...u.text].slice(0, Math.max(0, offset)).join('').length
@@ -80,7 +61,6 @@ function placeOf(u: Utterance, offset: number): number {
   return place?.start ?? Math.round(u.text.length * offset / words.length)
 }
 
-/** CJK text and its punctuation join without a space. */
 function wide(char: string | undefined): boolean {
   return Boolean(char && (isCjk(char) || /[　-〿＀-￯]/u.test(char)))
 }
@@ -90,9 +70,7 @@ function joined(parts: string[]): string {
 }
 
 export interface DraftStep {
-  /** The step, as the web form numbers them (as the track does). */
   step: number
-  /** The sentences said at the step, joined, with the cues in them. */
   draft: string
   utterances: string[]
 }
@@ -104,15 +82,9 @@ export interface DraftSection {
 
 export interface NarrationDraft {
   sections: DraftSection[]
-  /** Actions bound to words that no cue makes again (types without a cue). */
   skipped: number
 }
 
-/**
- * The transcript of a track as narration, by section (in the order said) and
- * step: each sentence with a `{cue}` before the word each event bound to it
- * happened at (`at`), in the events' order; `section` keeps one section.
- */
 export function narrationDraft(track: LectureTrack, section?: string): NarrationDraft {
   const utterances = new Map(track.utterances.map(u => [u.id, u]))
   const cues = new Map<string, { place: number, role: string, index: number }[]>()
@@ -146,18 +118,11 @@ export function narrationDraft(track: LectureTrack, section?: string): Narration
   return { sections, skipped }
 }
 
-/** Where a step's narration is in the source: its paragraphs, or the on-screen block a step without one follows. */
 export interface NarrationPlace {
   narration: SourceRange[]
   after?: SourceRange & { block: string }
 }
 
-/**
- * Where the narration of a step of a section is (`doc`: the view the plan was
- * made from; `step` as the web form numbers them): the paragraphs the lecture
- * says there (of the deck, or of the separate script), else the last on-screen
- * block shown at that step. `file` as the IR gives it.
- */
 export function narrationPlace(doc: IRDocument, plan: LecturePlan, section: string, step: number): NarrationPlace {
   const planned = plan.sections.find(s => s.id === section)
   const ir = doc.sections.find(s => s.id === section)
@@ -172,16 +137,12 @@ export function narrationPlace(doc: IRDocument, plan: LecturePlan, section: stri
 export interface TranslationItem {
   id: string
   section?: string
-  /** The original text. */
   text: string
-  /** The digest a translation of this text records (`Translation.source`). */
   source: string
-  /** The translation into the language asked, and whether its original changed since. */
   translation?: string
   stale?: boolean
 }
 
-/** The sentences of a track to translate into `lang`, each with the digest its translation records. */
 export function translationItems(track: LectureTrack, lang: string, digest: Digest): TranslationItem[] {
   return track.utterances.map((u) => {
     const done = u.translations?.[lang]

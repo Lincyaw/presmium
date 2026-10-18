@@ -1,4 +1,3 @@
-// Only what other packages of the repository use (docs/review-round2.md, decision 6).
 export { audienceView } from './audience.ts'
 export { Compiler, DECK_ENTRY, frontmatterLine, resolveEntry, sortFindings, workspacePlugins } from './compiler.ts'
 export type { Compilation, CompilerOptions } from './compiler.ts'

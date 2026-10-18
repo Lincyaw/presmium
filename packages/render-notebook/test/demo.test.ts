@@ -1,6 +1,3 @@
-// Builds notebooks with the real `presmium build` and runs them from top to bottom with the local
-// Jupyter stack, as a reader would (P-75): the demo lecture (examples/demo), and the execution
-// fixture deck (e2e/fixtures/exec/panels), whose timeout section has a cell that never ends.
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -33,10 +30,6 @@ afterAll(() => {
   for (const dir of temporary) rmSync(dir, { recursive: true, force: true })
 })
 
-/**
- * Builds the notebook of `deck` and runs it. Returns the code cells as written and as run; every
- * cell that has output recorded at compile time and runs gives that output again.
- */
 async function buildAndRun(deck: string) {
   const out = mkdtempSync(join(tmpdir(), 'presmium-notebook-run-'))
   temporary.push(out)
@@ -58,13 +51,11 @@ async function buildAndRun(deck: string) {
 it.skipIf(!JUPYTER)('the demo lecture runs from top to bottom: recorded outputs come back, only exercise checks fail', async () => {
   const { recorded, ran } = await buildAndRun(DEMO)
   expect(recorded.length).toBeGreaterThanOrEqual(1)
-  // Only the check of an exercise fails, as it does until the learner solves the exercise.
   const failed = ran.filter(cell => cell.outputs?.some(o => o.output_type === 'error'))
   expect(failed.flatMap(cell => cell.metadata.presmium.blocks).every(block => block.startsWith('pm-exercise'))).toBe(true)
 }, 120_000)
 
 it.skipIf(!JUPYTER)('a cell that never ends is skipped and keeps its recorded output; no cell hangs', async () => {
-  // A copy inside the demo, where the deck's plugins resolve from the demo's node_modules.
   const work = join(DEMO, '.presmium')
   mkdirSync(work, { recursive: true })
   const deck = mkdtempSync(join(work, 'notebook-exec-'))
@@ -73,7 +64,6 @@ it.skipIf(!JUPYTER)('a cell that never ends is skipped and keeps its recorded ou
   writeFileSync(join(deck, '.gitignore'), '*\n')
 
   const { recorded, ran } = await buildAndRun(deck)
-  // The timeout section (`while True`) is skipped and shows the output recorded for it.
   const endless = ran.filter(cell => cell.metadata.tags?.includes('skip-execution'))
   expect(endless.map(cell => cell.metadata.presmium.section)).toEqual(['exec-fallback'])
   expect(streams(endless[0]!.outputs)).toEqual(['stdout: x = 1.4142135623730951（√2，预先录制）'])

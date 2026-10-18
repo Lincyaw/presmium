@@ -1,16 +1,3 @@
-/**
- * `presmium-lecture export` (P-135): a lecture as a video file. The deck's
- * web form and lectures are built into a work directory and served on this
- * machine; Chromium (playwright-chromium) opens the lecture in the export
- * mode of the player (`&export`, no controls) and the exporter steps it a
- * frame at a time (`window.presmiumLecture.advance(t)`), taking a screenshot
- * of each. A second page muxes the frames and the lecture's audio (the
- * clips of a synthesized lecture, or the recorded audio, each at its time)
- * into WebM with Mediabunny's WebCodecs path: VP9 or VP8 video, Opus audio.
- * No MP4: the FFmpeg that `@mediabunny/server` brings is built with GPL
- * parts (docs/design-v0.7.md section 11). A synthesized voice is labeled in
- * the file's metadata (`AIGC`), as its clips are.
- */
 import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
@@ -21,14 +8,11 @@ import type { LectureTrack } from '../domain/index.ts'
 
 export interface ExportOptions {
   deckDir: string
-  /** The lecture: default the synthesized one, else the only recorded one. */
   track?: string
-  /** The video file (`.webm`); default `<deck>/dist/<track>.webm`. */
   out?: string
   width?: number
   height?: number
   fps?: number
-  /** Reports progress, a line at a time. */
   log?: (line: string) => void
 }
 
@@ -36,16 +20,10 @@ export interface ExportResult {
   file: string
   track: string
   frames: number
-  /** ms. */
   duration: number
   warnings: string[]
 }
 
-/**
- * The encoder page: Mediabunny's WebM output written through the page's
- * `presmiumWrite(position, base64)`, frames drawn on a canvas, the audio
- * mixed a second at a time from the decoded files at their times.
- */
 const ENCODER = `<!doctype html><meta charset="utf-8"><title>presmium-lecture export</title>
 <script type="module">
 import { AudioBufferSource, CanvasSource, canEncodeAudio, getFirstEncodableVideoCodec, Output, QUALITY_HIGH, StreamTarget, WebMOutputFormat } from './mediabunny.mjs'
@@ -121,7 +99,6 @@ window.presmiumEncoder = {
 window.presmiumEncoderReady = true
 </script>`
 
-/** What the two pages offer the exporter (`window` of the player in export mode, and of the encoder page). */
 interface Hooks {
   presmiumLecture: { duration: number, advance(t: number): Promise<void> }
   presmiumEncoder: { start(options: unknown): Promise<void>, frame(jpeg: string, index: number): Promise<void>, finish(): Promise<void> }
@@ -143,7 +120,6 @@ interface Chromium {
   }>
 }
 
-/** The lecture's audio at its times: a synthesized voice's clips, else the recorded files (local ones). */
 function audioOf(track: LectureTrack, base: string): { url: string, start: number, duration: number }[] {
   if (track.voice.kind === 'synthetic') {
     return track.utterances.filter(u => u.clip).map(u => ({ url: `${base}${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d }))
@@ -151,7 +127,6 @@ function audioOf(track: LectureTrack, base: string): { url: string, start: numbe
   return (track.audio ?? []).filter(a => !/^[a-z][a-z\d+.-]*:/i.test(a.src)).map(a => ({ url: `${base}${a.src}`, start: a.start * 1000, duration: a.duration * 1000 }))
 }
 
-/** Builds the deck's web form and lectures, plays a lecture in Chromium and writes it as a WebM file. */
 export async function exportVideo(options: ExportOptions): Promise<ExportResult> {
   const deckDir = resolve(options.deckDir)
   const log = options.log ?? (() => {})
@@ -176,7 +151,6 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
     const file = resolve(options.out ?? join(deckDir, 'dist', `${id}.webm`))
     mkdirSync(dirname(file), { recursive: true })
 
-    // The build's output under its paths, and the encoder page and Mediabunny's browser bundle (beside its CommonJS entry) under `/__export/`.
     const mediabunny = join(dirname(createRequire(import.meta.url).resolve('mediabunny')), 'mediabunny.min.mjs')
     const server = await serveDirectory(work, {
       extra: {
@@ -184,7 +158,6 @@ export async function exportVideo(options: ExportOptions): Promise<ExportResult>
         '/__export/mediabunny.mjs': { file: mediabunny, type: 'text/javascript' },
       },
     })
-    // The deck's playwright-chromium (as `slidev export` uses it), else this package's.
     const browser = await (await playwrightChromium<Chromium>(deckDir, import.meta.url)).launch()
     const handle = await open(file, 'w')
     try {

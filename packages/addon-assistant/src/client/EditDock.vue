@@ -1,10 +1,4 @@
 <script setup lang="ts">
-// The AI changes docked at the right of edit mode (P-113 to P-115, N-10; docs/design/edit.dc.html): the provider of
-// the model (N-08) and the model settings above; the change tasks sent from this window, newest first (the one under
-// way shows its steps, then its review file by file, a return to before each step; each committed one can be undone);
-// the annotations of the blocks the author clicks (with the block's source and an excerpt of it), sent as one batch;
-// at the foot the chat with the agent, which takes where the author is (section, step, selection). The document's
-// change task this member sent before the page was reloaded (or, for owners, anyone's) is taken up again.
 import { blockAt, blockElement, blockKey, PmBadge, PmButton, PmIconButton, splitBlockKey, useMessages, useServer } from '@presmium/host'
 import type { AgentContext } from '@presmium/kernel'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -25,7 +19,6 @@ const provider = computed(() => agent.value?.provider())
 const settings = ref<InstanceType<typeof ModelSettings>>()
 
 const drafts = computed(() => annotations.value.filter(a => a.status === 'draft'))
-/** The task under way (or waiting for its review) goes first; the ended ones last. */
 const current = computed(() => (busy.value ? changes.value.slice(0, 1) : []))
 const past = computed(() => (busy.value ? changes.value.slice(1) : changes.value))
 const request = ref('')
@@ -33,17 +26,12 @@ const message = ref('')
 
 const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, path, init)
 
-/** The section and step the author is at, and the selected text, for a chat message. */
 const where = computed(() => {
   const position = navigator?.position()
   const section = selected.value?.section ?? position?.section
   return section ? { section, step: position?.section === section ? position.step : undefined, title: navigator?.title(section) ?? section } : undefined
 })
 
-/**
- * A click on a block of the page picks it for an annotation (not on links, buttons or fields, not in the
- * panes of edit mode): the block seen under the pointer, by the host's one rule of what is seen (`blockAt`).
- */
 async function pick(event: MouseEvent): Promise<void> {
   const target = event.target instanceof Element ? event.target : undefined
   if (!target || !navigator || target.closest('.pm-assistant-edit, .pm-edit-dock, .pm-edit-source, a, button, input, textarea, select, label, summary, [contenteditable]')) return
@@ -59,7 +47,6 @@ async function pick(event: MouseEvent): Promise<void> {
   if (picked.value?.block === id && picked.value.section === section) picked.value = { ...picked.value, excerpt }
 }
 
-/** The picked block is outlined on the page. */
 function outline(): void {
   for (const element of document.querySelectorAll('.pm-assistant-picked')) element.classList.remove('pm-assistant-picked')
   const now = picked.value
@@ -67,7 +54,6 @@ function outline(): void {
   blockElement(blockKey(now.section, now.block))?.classList.add('pm-assistant-picked')
 }
 
-/** How a change task taken up again is named: as when it was sent. */
 const labelOf = (change: PendingChange) => change.kind === 'annotations'
   ? t.value.edit.send(change.annotations?.length ?? 0)
   : change.kind === 'transcript' ? t.value.edit.transcript(change.track ?? '') : change.prompt
@@ -75,7 +61,6 @@ const labelOf = (change: PendingChange) => change.kind === 'annotations'
 const listener = (event: MouseEvent) => void pick(event)
 onMounted(() => {
   document.addEventListener('click', listener, true)
-  // The change task under way when the page was loaded (a reload during its review).
   if (assistant.value) void resume(assistant.value, labelOf)
 })
 watch(picked, outline)
@@ -112,7 +97,6 @@ function chat(): void {
   selected.value = undefined
 }
 
-/** Enter sends the chat message, Shift+Enter starts a new line; keys never reach the deck's navigation. */
 function onChatKey(event: KeyboardEvent): void {
   event.stopPropagation()
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
@@ -205,7 +189,6 @@ function onChatKey(event: KeyboardEvent): void {
 </template>
 
 <style scoped>
-/* The dock of edit mode is a column: the header, what scrolls, and the composer at the foot. */
 .pm-assistant-edit {
   display: flex;
   flex: 1;
@@ -310,7 +293,6 @@ function onChatKey(event: KeyboardEvent): void {
   font-size: var(--pm-text-xs);
   white-space: pre;
 }
-/* The composer at the foot (the reference's "写下要求"): the place it goes with, the message, the send button. */
 .pm-assistant-edit__chat {
   flex: none;
   padding: var(--pm-space-3);
@@ -346,7 +328,6 @@ function onChatKey(event: KeyboardEvent): void {
 </style>
 
 <style>
-/* The block picked for an annotation, outlined in the accent on the page (docs/design/edit.dc.html). */
 .pm-assistant-picked {
   outline: 2px solid var(--pm-color-accent);
   outline-offset: 4px;

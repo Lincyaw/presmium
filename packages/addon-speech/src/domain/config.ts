@@ -1,31 +1,16 @@
-/**
- * The deck's side of speech (docs/ir.md 2.1): `presmium.speech` names the
- * default engines by id, `engine` for synthesis and `transcribe` for
- * transcription. A deck never defines an engine: addresses and credentials
- * come from the operator's environment (./engines.ts), so `url`, `keyEnv`
- * and the like are error diagnostics and are not used (docs/architecture.md
- * section 11). The operator's settings (`cloned`, `consentDir`) come from the
- * workspace configuration, never from the deck.
- */
 import { isRecord } from '@presmium/kernel'
 import { howToDefine } from './engines.ts'
 
-/** The plugin's id: its routes are under `/__presmium/presmium.speech/`. */
 export const SPEECH_ID = 'presmium.speech'
 
-/** The speech protocol (the OpenAI audio API shape) under the plugin's mount point. */
 export const PROTOCOL_PATH = 'v1'
 
-/** The owner's route that registers a consent record: `consent/<engine>/<voice>`. */
 export const CONSENT_PATH = 'consent'
 
-/** The default of `settings.presmium.speech.consentDir`, relative to the operator directory. */
 export const DEFAULT_CONSENT_DIR = 'consent'
 
 export interface DeckSpeechConfig {
-  /** The default synthesis engine. */
   engine?: string
-  /** The default transcription engine; else `engine`. */
   transcribe?: string
 }
 
@@ -34,12 +19,9 @@ export interface ConfigProblem {
   message: string
 }
 
-/** Keys that define an engine (its address or credentials), which a deck may not write. */
 const DEFINITION = new Set(['url', 'baseUrl', 'base_url', 'endpoint', 'key', 'keyEnv', 'apiKey', 'api_key', 'token', 'tokenEnv', 'secret', 'provider', 'appid', 'appId', 'model'])
-/** Operator settings (`settings.presmium.speech`), which a deck cannot set. */
 const OPERATOR = new Set(['cloned', 'consentDir'])
 
-/** The deck's `presmium.speech`, and what is wrong with it. */
 export function deckSpeechConfig(value: unknown): { config: DeckSpeechConfig, problems: ConfigProblem[] } {
   const config: DeckSpeechConfig = {}
   const problems: ConfigProblem[] = []

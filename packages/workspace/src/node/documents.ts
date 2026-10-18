@@ -1,17 +1,3 @@
-/**
- * Document operations (P-121, docs/domain-model.md section 14): create from
- * a template, rename (the relative links of the other documents follow),
- * copy, delete. A document's identity is its directory; each operation is a
- * change of the source and one commit whose origin names it
- * (`Presmium-Origin: document <op> <directories>`). An operation holds the
- * locks of the documents it touches (`DOCUMENT_LOCKS`, a copy's source too):
- * one an agent's change task holds is refused with 409 (F-09).
- *
- * What is inside a document directory is written by the document writer
- * (./files.ts, WP-91). serve itself works in the directories around the
- * documents: it makes a new document directory (empty), renames one, and
- * removes one the writer emptied.
- */
 import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { Member } from '@presmium/kernel'
@@ -30,7 +16,6 @@ import type { Revisions } from './revisions.ts'
 export { BUILTIN_TEMPLATES } from './files.ts'
 export const DEFAULT_TEMPLATE = 'default'
 
-/** An error with the HTTP status of the answer, and what the answer says beside its `error`. */
 export class RequestError extends Error {
   readonly status: number
   readonly detail?: Record<string, unknown>
@@ -41,19 +26,16 @@ export class RequestError extends Error {
   }
 }
 
-/** The 409 of a document whose lock another writer holds (F-09): the text, and the lock for the panels (N-07). */
 export function lockedError(document: string, holder: string): RequestError {
   return new RequestError(409, lockedMessage(document, holder), { locked: { document, holder } } satisfies Omit<LockedAnswer, 'error'>)
 }
 
-/** Makes a new, empty document directory, and its parents as they are needed. */
 export function makeDocumentDir(root: string, dir: string): void {
   const path = join(root, dir)
   mkdirSync(dirname(path), { recursive: true })
   mkdirSync(path)
 }
 
-/** A change of the documents an operation or an undo made: those gone, and those there (again or new). */
 export interface DocumentsChange {
   removed: string[]
   added: string[]
@@ -64,13 +46,10 @@ export interface DocumentsOptions {
   git: Git
   revisions: Revisions
   writer: DocumentWriter
-  /** Called after an operation changed the documents (the server's sessions and the site follow, C-7). */
   changed?: (change: DocumentsChange) => void | Promise<void>
-  /** The documents' locks (`DOCUMENT_LOCKS`). */
   locks?: DocumentLocks
 }
 
-/** The directories an operation touches: the document, and where it goes. */
 function touched(operation: DocumentOperation): string[] {
   return operation.op === 'create' || operation.op === 'delete' ? [operation.dir] : [operation.dir, operation.to]
 }
@@ -92,22 +71,18 @@ export class Documents {
     this.#locks = options.locks
   }
 
-  /** The writer of the documents' files (`DOCUMENT_FILES`), which the source editor's saves go through too. */
   get writer(): DocumentWriter {
     return this.#writer
   }
 
-  /** The documents' locks, when the host gives them. */
   get locks(): DocumentLocks | undefined {
     return this.#locks
   }
 
-  /** The documents now, as listed. */
   list(): WorkspaceDocument[] {
     return listDocuments(this.config).map(({ entry: _entry, ...document }) => document)
   }
 
-  /** The directory of the templates: the workspace's `templates`, else Presmium's. */
   get templatesDir(): string {
     return templatesDir(this.config)
   }
@@ -135,7 +110,6 @@ export class Documents {
     }
   }
 
-  /** A new document directory, made empty, then filled by the writer; on a failure it goes again. */
   async #fill(dir: string, fill: () => Promise<void>): Promise<void> {
     makeDocumentDir(this.config.root, dir)
     try {
@@ -146,7 +120,6 @@ export class Documents {
     }
   }
 
-  /** Removes a document directory: the writer empties it, then serve removes it (once more if something came meanwhile). */
   async #remove(dir: string): Promise<void> {
     for (let attempt = 0; ; attempt++) {
       await this.#writer.empty(dir)
@@ -190,7 +163,6 @@ export class Documents {
         const to = fresh(operation.to)
         mkdirSync(dirname(join(this.config.root, to)), { recursive: true })
         renameSync(join(this.config.root, from), join(this.config.root, to))
-        // The other documents' links (and the moved one's own) follow, written by the writer.
         const rewritten = (await this.#writer.relink(from, to)).filter(path => !within(path, to))
         const revision = await this.#revisions.commitNow([from, to, ...rewritten], `Rename document ${from} to ${to}`, rewritten.length ? `Links rewritten in: ${rewritten.join(', ')}` : '', origin({ op: 'rename', dir: from, to }))
         return { revision, dir: to }

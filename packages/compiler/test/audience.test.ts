@@ -1,9 +1,3 @@
-// The student build of a deck compiled whole (`Compilation.forAudience`, as `build` makes it for `audience: student`),
-// with the real compiler and the core plugin, as `presmium dev` loads them (F-85): the
-// core plugin's pass already wrote the slides form's keys of following of the whole deck into each section's
-// `hints.slides`; the view's ir.json has them as the view has its sections and steps, so it names none of the
-// teachers' blocks. A teachers' section goes back to the nearest earlier section the learners' build has, a
-// section only for them included.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,7 +6,6 @@ import { afterAll, expect, it } from 'vitest'
 import { build, Compiler } from '../src/index.ts'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
-/** Under the demo, whose dependencies hold the core plugin. */
 const WORK = join(ROOT, 'examples/demo/.presmium')
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
@@ -85,12 +78,9 @@ it('writes the keys of following of the student build as it has its steps, namin
   const compilation = await new Compiler(join(dir, 'lecture.md')).compile()
   const whole = compilation.doc
   expect(whole.diagnostics.filter(d => d.severity === 'error')).toEqual([])
-  // The whole deck: the teachers' reveal takes the rules' first step; the teachers' sections go back to the
-  // nearest earlier section the learners have: the cover, and the section only for students.
   expect(slidesOf(whole, 'rules')).toMatchObject({ presmiumId: 'rules', presmiumSteps: [[], ['teacher-hint'], ['step-one']] })
   expect(slidesOf(whole, 'plan')?.presmiumBack).toBe('cover')
   expect(slidesOf(whole, 'answers')?.presmiumBack).toBe('ask')
-  // A students' section goes back, for a build without it, to the nearest one every build has.
   expect(slidesOf(whole, 'ask')?.presmiumBack).toBe('rules')
 
   const report = await build(compilation, { audience: 'student', to: [], outDir: join(dir, 'student') })

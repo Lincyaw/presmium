@@ -1,8 +1,3 @@
-// Credentials and compile-time execution (N-08, docs/architecture.md 10.6; WP-73b): with
-// PRESMIUM_MODEL_KEY and OPENAI_API_KEY set, the real `presmium build` runs Python and JavaScript
-// that print every environment variable, and neither the names nor the values reach the
-// recordings, the cache, the IR or the web form. The operator can pass a variable on
-// (`settings.presmium.exec.passEnv`); the others stay out.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
@@ -12,8 +7,6 @@ import type { CodeNode, IRDocument } from '@presmium/kernel'
 import { afterAll, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
-// The decks live in the demo's ignored work directory, where the web form's packages resolve, each a
-// git repository of its own, so its directory is the workspace root that holds its configuration.
 const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
@@ -41,7 +34,6 @@ for (const [name, value] of Object.entries(process.env).sort()) console.log(name
 \`\`\`
 `
 
-/** Every file under a directory, as text. */
 function contents(dir: string): string {
   return readdirSync(dir, { recursive: true, encoding: 'utf8' }).map(name => join(dir, name)).filter(path => statSync(path).isFile()).map(path => readFileSync(path, 'utf8')).join('\n')
 }
@@ -64,7 +56,6 @@ async function build(workspace?: string): Promise<{ dir: string, recorded: strin
 
 it('keeps the build\'s credentials out of the code\'s environment, the recordings, the cache, the IR and the web form', { timeout: 120_000 }, async () => {
   const { dir, recorded } = await build()
-  // The code ran and printed the environment it got.
   expect(recorded).toContain('PATH ')
   for (const [name, value] of Object.entries(SECRETS)) {
     expect(recorded).not.toContain(name)

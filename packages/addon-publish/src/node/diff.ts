@@ -14,33 +14,12 @@ export interface DiffJob {
   refA: string
   refB: string
   deckDir: string
-  /** Report directory; defaults to `<deckDir>/.presmium/diff`. */
   out?: string
-  /** Share of differing pixels above which a page is listed (default 0: any difference). */
   threshold?: number
-  /** Milliseconds to wait before capturing each page, so layout and rendering settle (default 500). */
   wait?: number
-  /**
-   * Installs each commit's own dependencies from its lockfile (pnpm) instead of
-   * rendering both commits with the deck's installed host and addons. Use it to
-   * check a host upgrade; leave it off to review changes to the deck.
-   */
   install?: boolean
 }
 
-/**
- * Renders the deck of two commits in each form it has. The slides renderer
- * writes the Slidev deck, whose every page (slide and click step) `slidev
- * export` captures as PNG; the web renderer builds the site, whose every page
- * (document view) and section (present view) Playwright captures, into
- * `web/`. The captures are compared with pixelmatch; `report.json`,
- * `report.md` and the images go under `a/`, `b/` and `diff/` of the report
- * directory.
- *
- * Each commit is checked out as a git worktree inside the deck directory, so
- * the deck's plugins and renderers resolve from it by the usual Node lookup.
- * Warnings name what the comparison leaves out.
- */
 export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffReport, out: string, warnings: string[] }> {
   const deckDir = resolve(job.deckDir)
   const root = await git(deckDir, 'rev-parse', '--show-toplevel')
@@ -53,7 +32,6 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
 
   const work = join(deckDir, '.presmium', 'diff')
   const out = resolve(job.out ?? work)
-  // The report replaces a previous one; never clear a directory that holds something else.
   if (out !== work && existsSync(out) && (await readdir(out)).length > 0 && !existsSync(join(out, 'report.json'))) {
     throw new Error(`${out} is not empty and holds no previous report; choose another --out`)
   }
@@ -61,7 +39,6 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
   await writeFile(join(work, '.gitignore'), '*\n')
   for (const dir of ['a', 'b', 'diff']) await rm(join(out, dir), { recursive: true, force: true })
 
-  /** Section numbers of the web form's present view, by id, of both commits. */
   const sections = new Map<string, number>()
   for (const [label, side] of [['a', sides[0]!], ['b', sides[1]!]] as const) {
     const checkout = join(work, `checkout-${label}`)
@@ -76,7 +53,6 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
       if (hasForm(compilation, 'slides')) {
         const slides = await slidevDeck(compilation)
         warnings.push(...slides.warnings.map(w => `${side.ref}: ${w}`))
-        // The variable reaches the page as import.meta.env (Vite exposes VITE_*); setup/root.ts then makes text rendering deterministic.
         await slidevExport(slides, { format: 'png', withClicks: true, wait, output: join(out, label), env: { VITE_PRESMIUM_VISUAL_DIFF: '1' } })
       }
       if (hasForm(compilation, 'web')) {
@@ -96,11 +72,6 @@ export async function visualDiff(job: DiffJob): Promise<{ report: VisualDiffRepo
   return { report, out, warnings }
 }
 
-/**
- * Without --install, both commits render with the dependencies installed for
- * the deck, e.g. the workspace's own addons in a monorepo: what the commits
- * change outside the deck directory does not show in the comparison.
- */
 async function unrendered(root: string, deckDir: string, a: string, b: string): Promise<string[]> {
   const deck = relative(root, deckDir)
   if (!deck) return []
@@ -110,7 +81,6 @@ async function unrendered(root: string, deckDir: string, a: string, b: string): 
   return [`changes outside the deck are not rendered from their commit: ${shown}; --install renders each commit with its own dependencies`]
 }
 
-/** Compares the images of `a/<dir>` and `b/<dir>`, page by page as `parse` names them; the differences go to `diff/`. */
 async function comparePages(out: string, dir: string, threshold: number, parse: (name: string) => PageRef | undefined): Promise<VisualDiff[]> {
   const list = async (side: string) => (existsSync(join(out, side, dir)) ? readdir(join(out, side, dir)) : [])
   await mkdir(join(out, 'diff', dir), { recursive: true })
@@ -135,7 +105,6 @@ async function comparePages(out: string, dir: string, threshold: number, parse: 
   return pages
 }
 
-/** Directory of the nearest `pnpm-lock.yaml` from the deck up to the checkout root. */
 function lockfileDir(deck: string, checkout: string): string {
   for (let d = deck; ; d = dirname(d)) {
     if (existsSync(join(d, 'pnpm-lock.yaml'))) return d
@@ -143,7 +112,6 @@ function lockfileDir(deck: string, checkout: string): string {
   }
 }
 
-/** Removes a checkout; `worktree add --force` reuses the path even if git still lists it. */
 async function removeWorktree(root: string, dir: string): Promise<void> {
   if (!existsSync(dir)) return
   await git(root, 'worktree', 'remove', '--force', dir).catch(() => undefined)

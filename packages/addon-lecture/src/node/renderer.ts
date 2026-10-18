@@ -1,36 +1,3 @@
-/**
- * The `lecture` renderer (docs/ir.md 6.3): a site renderer that publishes
- * the deck's recorded lectures for the web form's lecture view, which reads
- * them from `../lecture/` of the same site (or `presmium.lecture.url`):
- *
- *   index.json                      the lectures: id, language, voice, length, caption languages
- *   <id>/track.json                 the track
- *   <id>/audio/*, <id>/video/*      its local media; under the operator's `url` policy
- *                                   (`settings.presmium.lecture.audio`) none: the track
- *                                   names them under that URL, where the operator puts them
- *   <id>/clips/*                    the synthesized clips of its utterances, from the synthesis cache
- *   <id>/captions.<lang>.vtt        the utterances and each translation (stale ones with a warning)
- *   <id>/chapters.vtt, events.vtt   chapters and the events as metadata
- *
- * A recorded lecture is published as the build's view of the deck has it
- * (P-55): without what was said and done in the sections its deck does not
- * have (`deckTrack`), such as the teachers' in `presmium build --audience
- * student`, whose compilation left the teachers' content out before any
- * pass. A build for an audience (the IR says which, `meta.audience`) then
- * publishes what was said, heard and shown only in the sections it has as
- * they were recorded (`recordedSections`, F-13): a section that lost a
- * teachers' block, or whose content moved into a teachers' section after the
- * recording, has another hash than the one the track recorded. Its clips (a
- * recorded lecture said again in a synthetic voice) are published as the
- * speech service gives them by their keys (`cachedClip`): a lecture with a
- * clip in a cloned voice whose consent was withdrawn is not published (D-7).
- *
- * With a voice (`renderers.lecture.voice`), it also says the deck's lecture
- * plan through `SPEECH` (WP-83): `script/`, the synthesized lecture. Clips
- * the synthesis cache has are not synthesized again; a clip it lacks with no
- * engine to make it fails the build, naming the utterance. A build that made
- * every lecture keeps only their keys in `.presmium/speech.lock.json`.
- */
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -44,10 +11,8 @@ import { latestDoc, LECTURE_RENDERER, lectureConfig } from './plan.ts'
 import { mediaFile, mediaPolicy, publishedMedia, readTrack, TRACK_FILE, trackIds } from './store.ts'
 import type { MediaPolicy } from './store.ts'
 
-/** The digest translations record of their original (P-137). */
 export const digest: Digest = text => `sha256:${createHash('sha256').update(text).digest('hex')}`
 
-/** Line of utterance `id` in `track.json`, written one utterance a line (`formatTrack`). */
 function utteranceLine(text: string, id: string): number | undefined {
   const lines = text.split('\n')
   const from = lines.findIndex(line => line.trimStart().startsWith('"utterances"'))
@@ -55,10 +20,8 @@ function utteranceLine(text: string, id: string): number | undefined {
   return from === -1 || at === -1 ? undefined : at + 1
 }
 
-/** The clips a lecture's utterances say. */
 const clipsOf = (track: LectureTrack) => new Set(track.utterances.flatMap(u => u.clip ?? []))
 
-/** Publishes a lecture: its track, its media, the clips of `clips` (the others play silent), captions, chapters and events. */
 function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDocument, ctx: RenderContext, clips: ReadonlySet<string>, policy: MediaPolicy = { kind: 'ignore' }): void {
   const out = join(ctx.outDir, track.id)
   mkdirSync(out, { recursive: true })
@@ -102,7 +65,6 @@ function publishTrack(track: LectureTrack, text: string, file: string, doc: IRDo
   writeFileSync(join(out, 'events.vtt'), eventsVtt(track))
 }
 
-/** The synthesized lecture of a build: published when every utterance could be said; whether it failed. */
 async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: unknown[], tracks: LectureTrack[]): Promise<boolean> {
   const source = { file: doc.meta.entry, line: 1 }
   const speech = ctx.service?.(SPEECH)
@@ -117,22 +79,14 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   }
   if (!made.track) return false
   const text = formatTrack(made.track)
-  // Its clips were said through the speech service in this build, which checked their voices.
   publishTrack(made.track, text, doc.meta.entry, doc, ctx, clipsOf(made.track))
   index.push(summary(made.track))
   tracks.push(made.track)
   return true
 }
 
-/**
- * A recorded lecture as the build publishes it, `doc` being the build's view
- * of the deck: without the sections `doc` does not have, and, for an
- * audience, without what the sections that changed since the recording had
- * (`recordedSections`).
- */
 function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack) => LectureTrack | undefined {
   const latest = latestDoc(deckDir)
-  // The IR as compiled (the latest of this entry, which the passes kept), all of its forms' blocks (the lecture renderer's view lacks the web form's own).
   const own = latest?.meta.entry === doc.meta.entry ? latest : doc
   if (typeof own.meta.audience === 'string') return (track) => {
     const kept = deckTrack(track, own)
@@ -141,13 +95,6 @@ function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack)
   return track => deckTrack(track, own)
 }
 
-/**
- * The clips of a recorded lecture the build may publish: those the speech
- * service gives by their keys now (`cachedClip`; the others, not in the
- * synthesis cache, play silent); `refused` says why one may not be given (a
- * cloned voice whose consent was withdrawn, D-7), and then the lecture is not
- * published.
- */
 async function recordedClips(track: LectureTrack, speech: SpeechService | undefined): Promise<{ clips: Set<string>, refused?: string }> {
   const clips = new Set<string>()
   for (const clip of clipsOf(track)) {
@@ -190,7 +137,6 @@ export const lectureRenderer: Renderer = {
         continue
       }
       if (!stored) continue
-      // The lock keeps the keys of the whole lecture: what this build leaves out is said in others.
       tracks.push(stored.track)
       const track = published(stored.track)
       if (!track) continue
@@ -204,13 +150,10 @@ export const lectureRenderer: Renderer = {
     }
     mkdirSync(ctx.outDir, { recursive: true })
     writeFileSync(join(ctx.outDir, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
-    // The keys no lecture uses any more leave the lock file (the speech service only adds keys); a deck
-    // whose lectures say nothing synthesized leaves it to whatever else wrote it.
     const used = clipKeys(tracks)
     if (complete && (synthesize || used.size > 0)) pruneLock(ctx.deckDir, used)
     return { outDir: ctx.outDir, skipped: [] }
   },
-  // In `presmium dev` the lecture view reads the lectures from the server's routes: nothing to serve but where they are.
   async dev(_doc, ctx) {
     return {
       url: `${ctx.server?.url ?? ''}/__presmium/${LECTURE_ID}/tracks`,

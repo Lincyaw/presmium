@@ -1,13 +1,7 @@
-/**
- * The file tree of the document open (docs/design-dsh.md 7.3): its files by
- * directory (`GET files`), the one shown marked; a file opens in the source
- * editor, a binary one is listed only.
- */
 import type { SourceFile } from '../api.ts'
 import { PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
 
-/** The files by directory, relative to the document's directory. */
 function byDirectory(files: SourceFile[], document: string): [string, SourceFile[]][] {
   const groups = new Map<string, SourceFile[]>()
   for (const file of files) {

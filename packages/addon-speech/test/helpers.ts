@@ -1,7 +1,3 @@
-// Real processes for the tests of speech: `presmium` commands on test decks, the fake engine
-// (`presmium-speech fake`) as a process of its own (and a front of it whose voice list can fail),
-// listeners that record what reaches them, a test plugin that calls the Node SPEECH service
-// (fixtures/speech-probe), and a reader of WAV chunks independent of the package.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -16,11 +12,9 @@ import type { Run } from '@presmium/cli/testing'
 export const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
 const SPEECH_BIN = join(PACKAGE, 'bin/presmium-speech.mjs')
-/** The test plugin whose routes `engines`, `synthesize` and `transcribe` call the Node SPEECH service. */
 export const PROBE = join(PACKAGE, 'test/fixtures/speech-probe')
 export const PROBE_NAME = 'presmium-fixture-speech-probe'
 
-/** The test process's environment without Presmium's variables or credentials (a developer's machine may hold some) and Vitest's NODE_ENV. */
 export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -30,17 +24,14 @@ export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv 
   return { ...env, ...extra }
 }
 
-/** `presmium <args>` in `cwd` with the clean environment and `extra` only. */
 export function presmium(cwd: string, args: string[], extra: Record<string, string> = {}): Promise<Run> {
   return run(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env: cleanEnv(extra) })
 }
 
-/** A new directory outside every workspace (an operator directory, a deck). */
 export function temporary(prefix: string): string {
   return mkdtempSync(join(tmpdir(), `presmium-${prefix}-`))
 }
 
-/** A deck in a new temporary directory: `lecture.md` with the speech plugin (and `plugins`) and the notebook renderer named by their paths. */
 export function testDeck(prefix: string, headmatter: string, plugins: string[] = []): string {
   const dir = temporary(prefix)
   writeFileSync(join(dir, 'lecture.md'), [
@@ -89,12 +80,10 @@ function started(child: ChildProcess): Child {
   }
 }
 
-/** `presmium <args>` left running (`dev`). */
 export function presmiumProcess(cwd: string, args: string[], env: NodeJS.ProcessEnv): Child {
   return started(spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }))
 }
 
-/** Waits until the output matches; rejects with the output when the process exits first. */
 export function waitFor(child: Child, pattern: RegExp, timeoutMs = 180_000): Promise<RegExpExecArray> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${pattern}:\n${child.output()}`)), timeoutMs)
@@ -116,7 +105,6 @@ export function waitFor(child: Child, pattern: RegExp, timeoutMs = 180_000): Pro
   })
 }
 
-/** `presmium dev --to notebook` on a deck; resolves with the process and its server's address. */
 export async function dev(dir: string, env: Record<string, string>): Promise<{ dev: Child, server: string }> {
   const child = presmiumProcess(dir, ['dev', '--to', 'notebook'], cleanEnv(env))
   try {
@@ -134,13 +122,11 @@ export interface FakeRequest {
 }
 
 export interface Fake {
-  /** The address to define it with (`PRESMIUM_SPEECH_FAKE_URL`). */
   url: string
   requests(): Promise<FakeRequest[]>
   stop(): Promise<void>
 }
 
-/** `presmium-speech fake` as a process of its own. */
 export async function startFake(): Promise<Fake> {
   const child = started(spawn(process.execPath, [SPEECH_BIN, 'fake', '--port', '0'], { env: cleanEnv(), stdio: ['ignore', 'pipe', 'pipe'] }))
   const url = (await waitFor(child, /^fake {2}(http\S+)$/m, 60_000))[1]!
@@ -151,10 +137,6 @@ export async function startFake(): Promise<Fake> {
   }
 }
 
-/**
- * A front of the fake engine at an address of its own: it passes every request on, except that it answers
- * `GET …/audio/voices` with 503 while `failVoices` is above 0 (a transient failure of the voice list).
- */
 export async function front(fake: Fake): Promise<{ url: string, failVoices: number, voiceRequests: number, close(): Promise<void> }> {
   const upstream = new URL(fake.url)
   const state = { url: '', failVoices: 0, voiceRequests: 0, close: async () => {} }
@@ -191,7 +173,6 @@ export async function front(fake: Fake): Promise<{ url: string, failVoices: numb
   return state
 }
 
-/** A listener that records every request that reaches it. */
 export async function listener(): Promise<{ url: string, received: string[], close(): Promise<void> }> {
   const received: string[] = []
   const server = createServer((req, res) => {
@@ -210,24 +191,20 @@ export async function listener(): Promise<{ url: string, received: string[], clo
   }
 }
 
-/** The deck's `presmium.speech` routes of a server. */
 export function speechUrl(server: string, path: string): string {
   return `${server.replace(/\/$/, '')}/__presmium/presmium.speech/${path}`
 }
 
-/** A route of the test plugin (fixtures/speech-probe) of a server. */
 export function probeUrl(server: string, path: string): string {
   return `${server.replace(/\/$/, '')}/__presmium/fixture.speechProbe/${path}`
 }
 
-/** A JSON POST with fetch (a `presmium dev` server, on this machine). */
 export async function post(url: string, body: unknown): Promise<{ status: number, text: string, json: <T = Record<string, unknown>>() => T }> {
   const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
   const text = await response.text()
   return { status: response.status, text, json: <T>() => JSON.parse(text) as T }
 }
 
-/** The `LIST`/`INFO` entries and the other chunks of a WAV file, read without the package's code. */
 export function wavInfo(bytes: Buffer): { info: Record<string, string>, chunks: Record<string, Buffer> } {
   const info: Record<string, string> = {}
   const chunks: Record<string, Buffer> = {}
@@ -256,10 +233,6 @@ const OGG_CRC = (() => {
   return table
 })()
 
-/**
- * The packets of an Ogg file, read without the package's code: each page's checksum and sequence number are
- * checked (a decoder refuses a page that fails them), and its packets put together from their lacing.
- */
 export function oggPackets(bytes: Buffer): Buffer[] {
   const packets: Buffer[] = []
   let pending: Buffer[] = []

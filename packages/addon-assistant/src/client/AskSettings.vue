@@ -1,8 +1,4 @@
 <script setup lang="ts">
-// The reader's model service (P-112, E-9): how questions are answered and where the settings stay (this
-// site's browser storage, which the site's scripts can read), then the address, key and model of an
-// OpenAI-compatible Chat Completions service. Shown in the question panel until it is filled in, and when the
-// reader changes it.
 import { PmButton, PmField, PmNotice, useMessages } from '@presmium/host'
 import { ref } from 'vue'
 import { ASSISTANT_MESSAGES, askUrlValid } from '../domain/index.ts'

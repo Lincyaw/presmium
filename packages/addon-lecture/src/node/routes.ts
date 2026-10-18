@@ -1,40 +1,3 @@
-/**
- * The lecture plugin's routes under `/__presmium/presmium.lecture/`
- * (docs/architecture.md 4.7): the recorded lectures listed and played, and
- * recorded. A recording uploads its media as it goes, a chunk every
- * few seconds, each written at its byte position (the WebM muxer writes its
- * header last), then sends the track.
- *
- *   GET  tracks                                the lectures: id, length, voice, language, number of utterances
- *   GET  tracks/<id>                           track.json; `script`, the synthesized lecture, made on an editor's demand
- *   GET  tracks/<id>/<audio|video>/<file>      a media file, with ranges (seeking)
- *   GET  tracks/<id>/clips/<key>.<wav|ogg>     a synthesized clip, from the synthesis cache
- *   POST recordings          { track? }        a new lecture, or one to record a section of again: { id }
- *   POST recordings/<id>/media  { folder, section, kind?, ext }   a free file name: { src }
- *   PUT  recordings/<id>/files/<src>?at=<n>    bytes written at position n
- *   POST recordings/<id>/finish  { head, recording, section? }    writes track.json: { id, track }
- *
- * The lectures are those of the whole deck: `script` said from the plan of
- * the latest IR, taken anew on each request from the synthesis cache (the
- * engine synthesizes only what the cache lacks), so the speech service
- * checks a cloned voice's consent each time. A clip is given by its key, as
- * the speech service gives it from the cache now (`cachedClip`): never
- * synthesized, and refused once a cloned voice's consent is withdrawn (D-7,
- * F-57); a clip of `script` is one of the last few different lectures taken
- * (each kept once: a page that loaded one before the IR changed still plays
- * it, however often other windows take the latest), a clip of a recorded
- * lecture one its utterances say (said again in a synthetic voice). Files
- * are read as they are opened, never through a link nor waiting on a FIFO
- * (`openInDeck`).
- *
- * The author also works on a recorded lecture's words (WP-83), each change
- * written to its track.json, which comes back:
- *
- *   GET  speech[?engine=<id>]                  the engines: transcription and synthesis (the deck's, or <id>), with providers and voices
- *   POST editing/<id>/transcribe               its audio transcribed: utterances, events bound to words
- *   PUT  editing/<id>/utterances/<u> { text }  an utterance's text corrected (said again in a synthetic voice)
- *   POST editing/<id>/synthesize { voice, engine? }   every utterance said again in a voice
- */
 import { closeSync, createReadStream, existsSync, fstatSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
@@ -48,10 +11,8 @@ import type { MadeClip } from './speak.ts'
 import { clipVoice, synthesizeClip } from './speak.ts'
 import { deckFiles, freeMediaPath, mediaFile, mediaPolicy, newTrackId, openInDeck, publishedMedia, readTrack, sha256File, trackDir, trackIds, writeGitFiles, writeTrack } from './store.ts'
 
-/** How many different synthesized lectures keep their clips given (a page plays the one it loaded). */
 const TAKES = 8
 
-/** The largest chunk a recording uploads at once (and the body of its routes), and the largest media file. */
 const MAX_CHUNK = 64 * 1024 * 1024
 const MAX_FILE = 4 * 1024 * 1024 * 1024
 
@@ -64,7 +25,6 @@ const TYPES: Record<string, string> = {
   '.wav': 'audio/wav',
 }
 
-/** Thrown to answer with a status and a message. */
 class Refusal extends Error {
   readonly status: number
 
@@ -74,7 +34,6 @@ class Refusal extends Error {
   }
 }
 
-/** A path from its URL segments; '' when one is malformed. */
 function decoded(segments: string[]): string {
   try {
     return segments.map(decodeURIComponent).join('/')
@@ -83,11 +42,6 @@ function decoded(segments: string[]): string {
   }
 }
 
-/**
- * A media file of the deck, whole or the byte range the request asks for
- * (media elements seek with ranges), streamed from the very file opened
- * (`openInDeck`); 404 for any other.
- */
 function serveFile(deckDir: string, file: string | undefined, request: Request): Response {
   const fd = file === undefined ? undefined : openInDeck(deckDir, file)
   if (fd === undefined) return problem(404, 'no such file')
@@ -111,7 +65,6 @@ function serveFile(deckDir: string, file: string | undefined, request: Request):
   return new Response(body(start, end), { status: 206, headers: partial })
 }
 
-/** The media of a finished recording as the track refers to it: by its path in the lecture's directory, with its hash. */
 function hashed<T extends MediaSegment>(deckDir: string, id: string, segments: T[]): Promise<T[]> {
   return Promise.all(segments.map(async (segment) => {
     const file = mediaFile(deckDir, id, segment.src)
@@ -150,7 +103,6 @@ function readHead(value: unknown, id: string): TrackHead | undefined {
 export function lectureServer(ctx: ServerContext): ServerContribution {
   const { deckDir } = ctx
   const policy = mediaPolicy(ctx.settings)
-  // Written through the workspace's writer in `presmium serve` (WP-91).
   const files = deckFiles(ctx.workspaceRoot, () => ctx.service(DOCUMENT_FILES))
 
   const finish = async (id: string, request: Request): Promise<Response> => {
@@ -165,7 +117,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     if (section && stored) {
       const spliced = spliceSection(stored.track, section, media, head)
       track = spliced.track
-      // The media of the section's earlier recording, by its path in the lecture's directory.
       for (const src of spliced.unused) {
         const file = mediaFile(deckDir, id, src)
         if (file) await files.remove(file)
@@ -179,7 +130,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
 
   const recordings: Route = {
-    // A chunk of a recording, and its track at the end (long lectures have many events).
     maxBody: MAX_CHUNK,
     async handle(request, { rest }) {
       const [id = '', action, ...path] = rest.split('/')
@@ -198,7 +148,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           const file = mediaFile(deckDir, id, decoded(path))
           const at = Number(new URL(request.url).searchParams.get('at') ?? '0')
           if (!file || !Number.isSafeInteger(at) || at < 0) return problem(400, 'expected a media file of the lecture and ?at=<position>')
-          // A chunk extends the file or rewrites what it has (a muxer's header), never leaves a gap.
           const size = existsSync(file) ? statSync(file).size : 0
           if (at > size) return problem(400, `?at=${at} is past the end of the file (${size} bytes)`)
           const bytes = new Uint8Array(await request.arrayBuffer())
@@ -220,7 +169,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     if (!found) throw new Refusal(503, 'no speech service: add @presmium/slidev-addon-speech to the deck\'s plugins')
     return found
   }
-  /** The lecture renderer's view of the latest IR, which the lecture is planned from as a build plans it. */
   const compiled = (): IRDocument => {
     const doc = latestView(deckDir)
     if (!doc) throw new Refusal(503, 'the deck has not compiled yet')
@@ -228,21 +176,8 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
   }
   const lexicon = lexiconOf(ctx.config)
 
-  /**
-   * The clips of the synthesized lectures taken lately, by name, one set a
-   * lecture: kept once however often a lecture is taken (by its clips: an IR
-   * taken again, or another that says the same), the last taken at the end,
-   * the `TAKES` latest kept. A page that loaded a lecture plays it while
-   * other windows take the latest many times.
-   */
   const takes = new Map<string, Set<string>>()
-  /** A take of the lecture in flight, which the requests of the same IR share. */
   let taking: { doc: IRDocument, made: Promise<LectureTrack> } | undefined
-  /**
-   * The deck's synthesized lecture of the latest IR, taken anew on each
-   * request: the clips the cache has are not synthesized again, and the
-   * speech service checks each cloned voice's consent on a hit (D-7).
-   */
   const scriptTrack = (): Promise<LectureTrack> => {
     const doc = compiled()
     if (taking?.doc === doc) return taking.made
@@ -263,12 +198,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     made.then(done, done)
     return made
   }
-  /**
-   * Why a clip of a lecture may not be given, if it may not: `script`'s must be one of a lecture taken
-   * lately, a recorded lecture's one its utterances say; then the speech service gives it by its key from
-   * the cache (no synthesis: a clip the cache lost is 404), refusing a cloned voice whose consent was
-   * withdrawn (D-7).
-   */
   const clipRefusal = async (id: string, name: string): Promise<Response | undefined> => {
     const said = id === SCRIPT_TRACK && voiced() ? [...takes.values()].some(take => take.has(name)) : recorded(id)?.utterances.some(u => u.clip === name)
     if (!said) return problem(404, `no clip ${name} in the lecture ${id}`)
@@ -279,14 +208,11 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
       return problem(403, `the clip ${name} may not be given: ${errorMessage(error)}`)
     }
   }
-  /** The voice the deck names, so `script` is its synthesized lecture. */
   const voiced = () => {
     const doc = latestDoc(deckDir)
     return doc ? lectureVoice(lectureConfig(doc)) : undefined
   }
-  /** A recorded lecture; undefined when there is none. */
   const recorded = (id: string): LectureTrack | undefined => (trackDir(deckDir, id) ? readTrack(deckDir, id)?.track : undefined)
-  /** A track as it is served: media this machine lacks under the external URL of the `url` policy (docs/ir.md 9.1). */
   const served = (track: LectureTrack): LectureTrack => {
     const local = (segment: MediaSegment) => {
       const file = mediaFile(deckDir, track.id, segment.src)
@@ -297,7 +223,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     return { ...track, ...audio ? { audio } : {}, ...video ? { video } : {} }
   }
 
-  /** A stored lecture to work on. */
   const stored = (id: string): LectureTrack => {
     const found = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
     if (!found) throw new Refusal(404, `no lecture ${id}`)
@@ -307,7 +232,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     await writeTrack(files, deckDir, track)
     return json({ ...extra, track })
   }
-  /** The track with its utterances (those of `only`, else all) said again in `voice`. */
   const resynthesize = async (track: LectureTrack, voice: { engine?: string, voice: string }, only?: string): Promise<LectureTrack> => {
     const clips = new Map<string, MadeClip>()
     for (const u of track.utterances) {
@@ -334,7 +258,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           if (!isRecord(body) || typeof body.text !== 'string' || !body.text.trim()) throw new Refusal(400, 'expected { text }')
           const edited = editUtterance(track, decoded(path), body.text)
           if (!edited) throw new Refusal(404, `lecture ${id} has no utterance ${decoded(path)}`)
-          // A synthetic voice says the new text at once.
           const { voice } = track
           return await save(voice.kind === 'synthetic' ? await resynthesize(edited, { engine: voice.engine, voice: voice.voice }, decoded(path)) : edited)
         }
@@ -354,7 +277,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
     },
   }
 
-  /** A file of a lecture: a clip of the synthesis cache it says (its voice allowed now, D-7), or a media file of its directory. */
   const lectureFile = async (id: string, path: string[], request: Request): Promise<Response> => {
     if (path[0] === CLIPS_DIR && path.length === 2) {
       const name = decoded(path.slice(1))
@@ -400,7 +322,6 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
           try {
             const service = speech()
             const doc = latestDoc(deckDir)
-            // `?engine=`: the synthesis engine of a voice (a synthetic track's), with its provider as the operator names it now (N-08).
             const engine = new URL(request.url).searchParams.get('engine') || undefined
             const [transcribe, synthesize] = await Promise.all([transcriptionEngine(service, doc), synthesisEngineOf(service, doc, engine)])
             const voices = synthesize ? await service.voices(synthesize.id, doc?.meta.lang).catch(() => []) : []

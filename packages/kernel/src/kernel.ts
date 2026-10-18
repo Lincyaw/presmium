@@ -18,19 +18,12 @@ import { ServiceRegistry } from './services.ts'
 
 export interface KernelOptions {
   mode: PresentationMode
-  /** The headmatter `presmium` object; each plugin receives `config[manifest.id]`. */
   config?: Record<string, unknown>
   log?: Logger
   events?: EventBus
-  /** The deck's named environments, given to every plugin as `PluginContext.environments`. */
   environments?: Record<string, EnvironmentSpec>
 }
 
-/**
- * Aggregate root of the plugin system: registers plugins, starts them in
- * dependency order and isolates failures to the failing plugin and the plugins
- * that require its services.
- */
 export class Kernel {
   readonly version = KERNEL_VERSION
   readonly mode: PresentationMode
@@ -61,7 +54,6 @@ export class Kernel {
     this.#plugins.push(plugin)
   }
 
-  /** Provides a host-level service. Call before `start` so plugins can require it. */
   provide<T>(token: ServiceToken<T>, impl: T): void {
     this.services.provide(token, impl)
   }
@@ -100,7 +92,6 @@ export class Kernel {
     return this.#report
   }
 
-  /** Disposes running plugins in reverse start order. Errors are logged, not thrown. */
   async dispose(): Promise<void> {
     if (this.#state === 'disposed') return
     this.#state = 'disposed'

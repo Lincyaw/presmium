@@ -1,20 +1,9 @@
 #!/usr/bin/env node
-// Keeps the agent skills in .agents/skills in step with the code:
-// - the layout: .claude/skills links to ../.agents/skills and AGENTS.md to CLAUDE.md, so there is one copy;
-// - every skill has a SKILL.md whose frontmatter names it after its directory and describes it;
-// - the files a skill refers to under references/ exist;
-// - presmium-author's references/directives.md has a section (a `###` heading naming it) for every directive
-//   the compiler and the plugins declare, collected as the compiler collects them: the built-in directives and
-//   the `directives` of each package's `./presmium` entry, loaded with jiti (the compiler's own loader);
-// - every `presmium <command>` the skills mention is a command of the CLI, with options that command takes;
-// - the skills the DeepSeek Harness bundle registers (packages/dsh/package.json `presmium.skills`) are in
-//   .agents/skills, their one source: the bundle's copy is made when it is packed (docs/design-dsh.md 6.1).
 import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join, relative } from 'node:path'
 
-// markdown-it (under myst-parser, loaded with the plugins) requires the deprecated built-in punycode; keep that notice out.
 const emitWarning = process.emitWarning
 process.emitWarning = (warning, ...args) => {
   const code = typeof args[0] === 'object' ? args[0]?.code : args[1]
@@ -26,13 +15,10 @@ const skillsDir = join(root, '.agents/skills')
 const problems = []
 const fail = message => problems.push(message)
 
-// Tools the compiler already depends on: no dependency of our own.
 const compilerRequire = createRequire(join(root, 'packages/compiler/package.json'))
 const { createJiti } = compilerRequire('jiti')
 const YAML = compilerRequire('yaml')
 const jiti = createJiti(join(root, 'packages/compiler/src/plugins.ts'))
-
-// Layout ----------------------------------------------------------------------
 
 function checkLink(path, target) {
   const file = join(root, path)
@@ -52,13 +38,10 @@ function isLink(file) {
 checkLink('.claude/skills', '../.agents/skills')
 checkLink('AGENTS.md', 'CLAUDE.md')
 
-// Skills ----------------------------------------------------------------------
-
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const skills = existsSync(skillsDir) ? readdirSync(skillsDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name).sort() : []
 if (skills.length === 0) fail('.agents/skills holds no skill')
 
-/** Markdown files of a skill: SKILL.md and everything under it. */
 const skillFiles = name => readdirSync(join(skillsDir, name), { recursive: true, encoding: 'utf8' })
   .filter(f => f.endsWith('.md'))
   .map(f => join(skillsDir, name, f))
@@ -91,7 +74,6 @@ for (const name of skills) {
   for (const md of skillFiles(name)) {
     const content = readFileSync(md, 'utf8')
     texts.set(md, content)
-    // `references/x.md` is a file of this skill; `<skill>/references/x.md` one of another skill.
     for (const [, owner, ref] of content.matchAll(/(?<![\w-])(?:([a-z0-9]+(?:-[a-z0-9]+)*)\/)?(references\/[\w./-]+\.md)\b/g)) {
       const dir = owner && skills.includes(owner) ? owner : name
       if (!existsSync(join(skillsDir, dir, ref))) fail(`${relative(root, md)}: refers to ${dir === name ? ref : `${dir}/${ref}`}, which does not exist`)
@@ -99,9 +81,6 @@ for (const name of skills) {
   }
 }
 
-// Directives ------------------------------------------------------------------
-
-/** The `./presmium` export target of a package, as the compiler resolves it (packages/compiler/src/plugins.ts). */
 function exportTarget(value) {
   if (typeof value === 'string') return value
   if (!value || typeof value !== 'object') return undefined
@@ -132,16 +111,12 @@ const reference = join(skillsDir, 'presmium-author/references/directives.md')
 if (!existsSync(reference)) {
   fail(`${relative(root, reference)} is missing`)
 } else {
-  // Each directive has a section of its own: a `###` heading that names it, not only a mention in an example.
   const headings = readFileSync(reference, 'utf8').split('\n').filter(line => line.startsWith('### '))
   for (const [name, source] of declared) {
     if (!headings.some(line => line.includes(`\`{${name}}\``))) fail(`${relative(root, reference)} has no section for {${name}} (declared by ${source}): a heading such as ### \`{${name}}\``)
   }
 }
 
-// CLI commands ----------------------------------------------------------------
-
-/** Commands and their options, read from the CLI's own usage text. */
 function cliCommands() {
   const usage = execFileSync(process.execPath, [join(root, 'packages/cli/bin/presmium.mjs'), '--help'], { encoding: 'utf8' })
   const commands = new Map()
@@ -162,7 +137,6 @@ function cliCommands() {
 
 const commands = cliCommands()
 if (commands.size === 0) fail('could not read the commands from `presmium --help`')
-// `presmium <word>`, not part of a name such as presmium-export, @presmium/cli or presmium.code.
 const MENTION = /(?<![\w@/.-])presmium[ \t]+([a-z][\w-]*)([^`|;&，。）)\n]*)/g
 for (const [file, text] of texts) {
   for (const [, command, rest] of text.matchAll(MENTION)) {
@@ -177,8 +151,6 @@ for (const [file, text] of texts) {
     }
   }
 }
-
-// The bundle's skills -------------------------------------------------------
 
 const bundle = join(root, 'packages/dsh/package.json')
 if (existsSync(bundle)) {

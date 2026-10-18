@@ -4,8 +4,6 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
 
-// e2e/fixtures/code: references to e2e/fixtures/code/cart.ts, pinned to commits of its history
-// and compared across them. Slides are found by their section id in the built IR.
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('code')
 const PAGE = readFileSync(new URL('fixtures/code/code.md', import.meta.url), 'utf8')
@@ -15,12 +13,10 @@ function git(...args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8' }).trim()
 }
 
-/** The first value of a directive option in the page, e.g. `:pin:`. */
 function option(name: string): string {
   return new RegExp(`^:${name}: (.+)$`, 'm').exec(PAGE)![1]!
 }
 
-/** Lines of the function `total` in cart.ts at a commit, as the symbol anchor finds them (1-based). */
 function totalLines(commit: string): [number, number] {
   const lines = git('show', `${commit}:${FILE}`).split('\n')
   const start = lines.findIndex(line => line.startsWith('export function total')) + 1
@@ -30,7 +26,6 @@ function totalLines(commit: string): [number, number] {
 
 const VERSIONS = ['for (let i = 0; i < prices.length; i++)', 'for (const price of prices)', 'prices.reduce((sum, price) => sum + price, 0)']
 
-/** Slidev keeps neighbouring slides in the DOM; the one shown is found by its heading. */
 async function openSlide(page: Page, id: string, heading: string) {
   await page.goto(`${deck().slides}/${deck().slide(id)}`)
   const slide = page.locator('.slidev-page').filter({ has: page.locator('h1', { hasText: heading }) })
@@ -39,7 +34,6 @@ async function openSlide(page: Page, id: string, heading: string) {
 }
 
 test('the code block highlights the logical units one step after another', async ({ page }) => {
-  // Units of the checkout region: validate, price, receipt.
   const units = [
     ['if (items.length === 0)', 'throw new Error(\'cart is empty\')'],
     ['const subtotal =', 'const discount ='],
@@ -86,7 +80,6 @@ test('the multi-version code block switches versions with the steps, the file li
     const [start, end] = totalLines(commits[k]!)
     await expect(code).toContainText(VERSIONS[k]!)
     await expect(active).toHaveText(commits[k]!.slice(0, 7))
-    // The file and lines of the version on screen, linked at its commit.
     await expect(file).toHaveText(`${FILE}:${start}-${end}`)
     await expect(file).toHaveAttribute('href', `${option('repo')}/blob/${commits[k]}/${FILE}#L${start}-L${end}`)
   }
@@ -109,7 +102,6 @@ test('the web form links the code to the remote repository at the pinned commit'
   const link = page.locator(`a[href^="${option('repo')}/blob/${commit}/${FILE}#L"]`)
   await expect(link.first()).toBeVisible()
   await expect(page.getByText('const discount = coupon').first()).toBeVisible()
-  // The same origin bar as in the slides: the pinned commit and whether the code drifted.
   const ref = page.locator('.pm-section[data-section="code-steps"] .pm-code-origin[data-anchor$="#checkout"]')
   await expect(ref.locator('.pm-code-origin__commit')).toHaveText(`@ ${commit.slice(0, 7)}`)
   await expect(ref.locator('.pm-code-origin__badge')).toHaveText('已锁定')

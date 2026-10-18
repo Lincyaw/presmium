@@ -1,11 +1,5 @@
-/**
- * The plugin's words in the languages it speaks (N-07): a page's are chosen
- * by `@presmium/host` (`useMessages`, `currentLocale`), the static forms (a
- * notebook, an export) are in the deck's language (`deckLocale`).
- */
 import type { Locale } from '@presmium/kernel'
 
-/** A typical error (its name) and what to look at. */
 type Typical = [kind: string, hint: string]
 
 const zh = {
@@ -127,7 +121,6 @@ const zh = {
   notes: {
     button: '笔记',
     label: (what: string) => `笔记：${what}`,
-    /** A block of a table or a listing only, named after its section and its kind. */
     blockOf: (section: string, kind: string) => `${section} · ${kind}`,
     kinds: { table: '表格', code: '代码' },
     mine: '我的笔记',
@@ -138,7 +131,6 @@ const zh = {
     inClassroom: '保存在课堂与这个浏览器中，只有你能看到',
     inBrowser: '保存在这个浏览器中，只有你能看到',
   },
-  /** The static forms of the components, for a notebook or an export. */
   fallback: {
     answer: '答案',
     checks: '校验',

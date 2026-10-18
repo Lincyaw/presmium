@@ -1,10 +1,3 @@
-/**
- * The shared components of the design in React (docs/design-dsh.md 7.5): the
- * same classes as the Vue ones of `@presmium/host` (`pm-ui-*`, from
- * `@presmium/design`), so the workbench and the outputs look the same. What is
- * repeated is the behaviour only: the focus, the keys of menus and tabs, where a
- * floating panel goes (docs/architecture.md 5.10).
- */
 import { ICONS } from '@presmium/design'
 import type { IconName } from '@presmium/design'
 import { createPortal } from 'react-dom'
@@ -25,7 +18,6 @@ export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger
 
 type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & { type?: 'button' | 'submit' | 'reset' }
 
-/** A button: `primary` (ink) for the main action, `accent` for a switch that is on, `ghost` without a frame. */
 export function PmButton({ variant = 'default', small, icon, type = 'button', className, children, ...rest }: ButtonProps & { variant?: ButtonVariant, small?: boolean, icon?: IconName }) {
   return (
     <button type={type} className={cls('pm-ui-button', variant !== 'default' && `pm-ui-button--${variant}`, small && 'pm-ui-button--small', className)} {...rest}>
@@ -35,7 +27,6 @@ export function PmButton({ variant = 'default', small, icon, type = 'button', cl
   )
 }
 
-/** A button that is an icon only; its label is its accessible name and its tooltip. */
 export function PmIconButton({ icon, label, small, className, ...rest }: ButtonProps & { icon: IconName, label: string, small?: boolean }) {
   return (
     <button type="button" className={cls('pm-ui-icon-button', small && 'pm-ui-icon-button--small', className)} aria-label={label} title={label} {...rest}>
@@ -46,17 +37,14 @@ export function PmIconButton({ icon, label, small, className, ...rest }: ButtonP
 
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
 
-/** A short label: a count, a language, a state; `pill` for the source of a change. */
 export function PmBadge({ tone = 'neutral', pill, children }: { tone?: Tone, pill?: boolean, children?: ReactNode }) {
   return <span className={cls('pm-ui-badge', tone !== 'neutral' && `pm-ui-badge--${tone}`, pill && 'pm-ui-badge--pill')}>{children}</span>
 }
 
-/** A card; `interactive` when it leads somewhere, `dashed` for a way to make something new. */
 export function PmCard({ variant = 'default', className, children, ...rest }: { variant?: 'default' | 'interactive' | 'dashed', className?: string, children?: ReactNode, [attribute: `data-${string}`]: string | undefined }) {
   return <div className={cls('pm-ui-card', variant !== 'default' && `pm-ui-card--${variant}`, className)} {...rest}>{children}</div>
 }
 
-/** A labelled field around its control; `inline` puts a checkbox before its label. */
 export function PmField({ label, inline, children }: { label: string, inline?: boolean, children?: ReactNode }) {
   return (
     <label className={cls('pm-ui-field', inline && 'pm-ui-field--inline')}>
@@ -70,7 +58,6 @@ export interface Choice<T extends string = string> {
   label: string
 }
 
-/** A row of mutually exclusive buttons: the chosen one raised. */
 export function PmSegmented<T extends string>({ value, options, label, onChange }: { value: T, options: Choice<T>[], label: string, onChange(value: T): void }) {
   return (
     <div className="pm-ui-segmented" role="group" aria-label={label}>
@@ -81,7 +68,6 @@ export function PmSegmented<T extends string>({ value, options, label, onChange 
   )
 }
 
-/** Tabs: the tab list, and the chosen tab's panel, labelled by its tab. Arrow keys move between tabs. */
 export function PmTabs<T extends string>({ value, tabs, label, onChange, children }: { value: T, tabs: Choice<T>[], label: string, onChange(value: T): void, children?: ReactNode }) {
   const prefix = useId()
   const list = useRef<HTMLDivElement>(null)
@@ -107,11 +93,6 @@ export function PmTabs<T extends string>({ value, tabs, label, onChange, childre
   )
 }
 
-/**
- * Closes what floats on Escape (giving the focus back to the trigger, the first
- * control of `root`, when it was inside or lost), and on a press outside `root`.
- * A dialog keeps its place on a press outside, and gives the focus back itself.
- */
 function useDismiss(open: boolean, close: () => void, root: RefObject<HTMLElement | null>, dialog = false): void {
   const latest = useRef(close)
   latest.current = close
@@ -138,7 +119,6 @@ function useDismiss(open: boolean, close: () => void, root: RefObject<HTMLElemen
   }, [open, dialog, root])
 }
 
-/** Keeps a floating panel inside the window, 1 rem from its sides. */
 function useInView(panel: RefObject<HTMLElement | null>, open: boolean): void {
   useLayoutEffect(() => {
     const element = panel.current
@@ -165,7 +145,6 @@ function useInView(panel: RefObject<HTMLElement | null>, open: boolean): void {
 
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 
-/** A panel that floats by its trigger, inside the window; Escape and a press outside close it. */
 export function PmPopover({ open, label, placement = 'below-end', name, trigger, onClose, children }: { open: boolean, label: string, placement?: PopoverPlacement, name?: string, trigger: ReactNode, onClose(): void, children?: ReactNode }) {
   const root = useRef<HTMLSpanElement>(null)
   const panel = useRef<HTMLDivElement>(null)
@@ -179,7 +158,6 @@ export function PmPopover({ open, label, placement = 'below-end', name, trigger,
   )
 }
 
-/** A panel beside the activity bar, as tall as the window: a title, a close button and its content. */
 export function PmDrawer({ open, label, closeLabel, name, trigger, onClose, children }: { open: boolean, label: string, closeLabel: string, name?: string, trigger?: ReactNode, onClose(): void, children?: ReactNode }) {
   const root = useRef<HTMLSpanElement>(null)
   useDismiss(open, onClose, root)
@@ -199,11 +177,6 @@ export function PmDrawer({ open, label, closeLabel, name, trigger, onClose, chil
   )
 }
 
-/**
- * A dialog over the page, titled `label`, with a close button: not modal, so the
- * page stays usable; Escape closes it and the focus goes back where it was. It is
- * drawn at the end of the document.
- */
 export function PmDialog({ open, label, closeLabel, name, actions, onClose, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, onClose(): void, children?: ReactNode }) {
   const panel = useRef<HTMLDivElement>(null)
   const id = useId()
@@ -239,7 +212,6 @@ export interface MenuItem {
   disabled?: boolean
 }
 
-/** A menu behind an icon button: arrow keys move between its items, Enter chooses one, Escape closes it. */
 export function PmMenu({ label, items, icon = 'more', placement = 'below-end', onSelect }: { label: string, items: MenuItem[], icon?: IconName, placement?: PopoverPlacement, onSelect(id: string): void }) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLSpanElement>(null)
@@ -292,7 +264,6 @@ export function PmMenu({ label, items, icon = 'more', placement = 'below-end', o
   )
 }
 
-/** What a place shows while it has nothing: an icon, a title, a sentence and an action. */
 export function PmEmpty({ title, icon, action, children }: { title?: string, icon?: IconName, action?: ReactNode, children?: ReactNode }) {
   return (
     <div className="pm-ui-empty">
@@ -304,7 +275,6 @@ export function PmEmpty({ title, icon, action, children }: { title?: string, ico
   )
 }
 
-/** A message in a box: `role="status"`, or `alert` for a failure (`tone: 'danger'`). */
 export function PmNotice({ tone = 'neutral', children }: { tone?: 'neutral' | 'accent' | 'ok' | 'warn' | 'danger', children?: ReactNode }) {
   return <div className={cls('pm-ui-notice', tone !== 'neutral' && `pm-ui-notice--${tone}`)} role={tone === 'danger' ? 'alert' : 'status'}>{children}</div>
 }

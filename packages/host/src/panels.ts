@@ -15,7 +15,6 @@ interface Registry<T extends Item> {
   subscribe(listener: () => void): Unsubscribe
 }
 
-/** Items ordered by `order`, then by registration; ids are unique. */
 function createRegistry<T extends Item>(kind: string): Registry<T> {
   const items = new Map<string, T>()
   const listeners = new Set<() => void>()
@@ -43,16 +42,10 @@ function createRegistry<T extends Item>(kind: string): Registry<T> {
   }
 }
 
-/**
- * The `presenterPanels` service of a host: panels ordered by `order`, then by
- * registration, the kernel start report first. Each host provides it and shows
- * the panels (`PmPresenterPanels`) in its presenter view only.
- */
 export function createPresenterPanels(): PresenterPanels {
   const service = createRegistry<PresenterPanel>('presenter panel')
   service.register({
     id: 'presmium.core.start-report',
-    // In the UI language when the panel is shown, which may follow the kernel's start.
     get title() {
       return HOST_MESSAGES[currentLocale()].startReport
     },
@@ -62,7 +55,6 @@ export function createPresenterPanels(): PresenterPanels {
   return service
 }
 
-/** The `toolbar` service of a host, shown by `PmToolbar` in its toolbar. */
 export function createToolbar(): Toolbar {
   return createRegistry<ToolbarItem>('toolbar item')
 }

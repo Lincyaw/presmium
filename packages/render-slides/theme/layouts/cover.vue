@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// The cover of 书卷: the deck's title large and low on the paper under an accent rule, what the cover says
-// below it, and the footer without the title it repeats.
 import SlideFooter from '../parts/SlideFooter.vue'
 </script>
 

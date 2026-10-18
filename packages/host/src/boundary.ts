@@ -8,10 +8,8 @@ export interface ComponentError {
   message: string
 }
 
-/** The errors each boundary holds, so a boundary that recovers takes its own back. */
 const caughtErrors = shallowRef<ReadonlyMap<object, ComponentError>>(new Map())
 
-/** Errors caught by `PmBoundary` in this view (reactive); the presenter view lists them. */
 export function componentErrors(): readonly ComponentError[] {
   const errors: ComponentError[] = []
   for (const error of caughtErrors.value.values()) {
@@ -28,19 +26,10 @@ function hold(owner: object, error: ComponentError | undefined): void {
   caughtErrors.value = next
 }
 
-/**
- * Error boundary for plugin components (K-07). An error thrown while rendering
- * its content replaces the content with a placeholder; the rest of the slide
- * keeps rendering. The renderers put each plugin component in one. When
- * `resetKey` changes (e.g. the component's props after a live update, or the
- * step), the boundary renders its content again and forgets the error.
- */
 export const PmBoundary = defineComponent({
   name: 'PmBoundary',
   props: {
-    /** Shown in the placeholder and the presenter view. */
     name: { type: String, default: 'component' },
-    /** A new value renders the content again after an error. */
     resetKey: { type: [String, Number], default: undefined },
   },
   setup(props, { slots }) {

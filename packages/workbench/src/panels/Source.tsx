@@ -1,11 +1,3 @@
-/**
- * The source editor and its file tabs (docs/design-dsh.md 7.3, P-124): the files
- * open, one shown in CodeMirror (../editor.ts), a dot on the unsaved ones; Ctrl+S
- * (⌘ S) or the save button writes the file shown with the version it was opened at.
- * What the pane says of a file: changed on disk as well as here (merge or reload),
- * merged, held by an agent's change, not saved. The compilation's problems of the
- * file shown are marked on their lines.
- */
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { createEditor } from '../editor.ts'
@@ -22,7 +14,6 @@ export function SourcePanel() {
   const open = useWorkbench(state => state.open)
   const active = useWorkbench(state => state.active)
   const file = open.find(f => f.path === active)
-  // Ctrl+S (⌘ S) anywhere in the pane, e.g. on the merge button; the editor's own keymap saves inside it.
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return
     event.preventDefault()
@@ -71,7 +62,6 @@ function FileNoticeBox({ file }: { file: OpenFile }) {
   }
 }
 
-/** The CodeMirror editor, made once and bound to the store; it shows the active file. */
 function EditorPane() {
   const t = useMessages()
   const workbench = useWorkbenchStore()
@@ -105,7 +95,6 @@ function EditorPane() {
     if (!made) return
     if (!active) return
     made.show(active, workbench.textOf(active) ?? '')
-    // Files closed meanwhile lose their editor state.
     for (const path of made.paths()) if (!workbench.state.open.some(file => file.path === path)) made.forget(path)
   }, [active, workbench, opened])
 

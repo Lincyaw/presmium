@@ -1,9 +1,3 @@
-/**
- * The page's own words of the assistant's panels besides ../domain/messages.ts
- * (N-07): what is missing (the server's `missing`, a code with its
- * parameters), in the page's language; the key of the model settings once the
- * service changed; the model in a status bar.
- */
 import type { Locale } from '@presmium/kernel'
 import type { MissingItem } from '../domain/index.ts'
 
@@ -49,12 +43,6 @@ const en: Messages = {
 
 export const CLIENT_MESSAGES: Record<Locale, Messages> = { 'zh-CN': zh, 'en': en }
 
-/**
- * What is missing (`AssistantInfo.missing`), in the page's language, by its
- * code: the model service (with the variables a partial `PRESMIUM_MODEL_*`
- * triple lacks), the provider of a replacement runtime, or the bundled
- * runtime that is not installed.
- */
 export function missingText(missing: MissingItem, t: Messages): string {
   switch (missing.code) {
     case 'model': return missing.variables?.length ? t.missing.partial(missing.variables) : t.missing.model

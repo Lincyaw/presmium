@@ -1,11 +1,3 @@
-// presmium studio (docs/design-dsh.md section 11, WP-96f): the workbench in one command, as an author runs
-// it. Installed outside the monorepo from the packed packages, `presmium studio <dir>` prints one address,
-// which opens the workbench. In a fresh home, the first session runs in a document's directory and nothing
-// is written under ~/Documents or outside the test's directory; the model of the environment is the one
-// DeepSeek Harness uses (the scripted model receives its requests); a request from a foreign origin gets
-// 403 from DeepSeek Harness and from the workspace service; with --host the workbench and the previews
-// work at the address on the local network; after kill -9 of the launcher no process is left.
-// Ports of WP-96f: 5663 to 5666; the workspace service takes a free one.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -22,17 +14,14 @@ const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 const STUDIO_BIN = fileURLToPath(new URL('../bin/presmium-studio.mjs', import.meta.url))
 const CONSUMER = join(ROOT, 'e2e/fixtures/consumer')
 
-/** A test's directories: HOME and the XDG directories under one temporary directory. */
 interface Home {
   dir: string
   home: string
-  /** DeepSeek Harness's home for studio: `$XDG_STATE_HOME/presmium/studio`. */
   dshHome: string
   env(extra?: Record<string, string>): NodeJS.ProcessEnv
   close(): void
 }
 
-/** The environment of an author's shell: none of Presmium's, DeepSeek Harness's or the model's variables, no NODE_ENV or PORT (Vitest's). */
 function shellEnv(): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = {}
   for (const [name, value] of Object.entries(process.env)) {
@@ -59,7 +48,6 @@ function git(dir: string, args: string[]): void {
   execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
 }
 
-/** A git repository of `files`; with `under`, made there (examples/demo/.presmium, where the pages resolve the demo's packages). */
 function repository(files: Record<string, string>, under = join(ROOT, 'examples/demo/.presmium')): string {
   mkdirSync(under, { recursive: true })
   const dir = mkdtempSync(join(under, 'studio-'))
@@ -79,7 +67,6 @@ const TWO_DOCUMENTS = {
   'lectures/beta/lecture.md': '---\ntitle: Beta\nlang: en\n---\n\n# Beta\n\n(beta-one)=\n## The first section of beta\n\nText.\n',
 }
 
-/** A running `presmium studio`: its output, the address it printed, how it ended. */
 interface Running {
   child: ChildProcess
   url: string
@@ -89,7 +76,6 @@ interface Running {
   stop(): Promise<number | null>
 }
 
-/** Starts `node <args>` (a command that runs `presmium studio`) and resolves once it printed its address. */
 async function studio(args: string[], options: { cwd?: string, env: NodeJS.ProcessEnv }): Promise<Running> {
   const child = spawn(process.execPath, args, { cwd: options.cwd ?? ROOT, env: options.env, stdio: ['ignore', 'pipe', 'pipe'] })
   let stdout = ''
@@ -121,7 +107,6 @@ async function studio(args: string[], options: { cwd?: string, env: NodeJS.Proce
   return { child, url, stdout: () => stdout, stderr: () => stderr, exited, stop }
 }
 
-/** DeepSeek Harness's Host API as an outside client calls it (as the workbench's page does, with a cookie). */
 interface HostApi {
   call<T = any>(endpoint: string, args: Record<string, unknown>): Promise<T>
   fetch(path: string, init?: RequestInit): Promise<Response>
@@ -148,7 +133,6 @@ async function hostApi(launch: string): Promise<HostApi> {
 
 interface Proc { pid: number, ppid: number, cmdline: string }
 
-/** The processes that descend from `pid` now. */
 function descendants(pid: number): Proc[] {
   const all = readdirSync('/proc').filter(name => /^\d+$/.test(name)).flatMap((name) => {
     try {
@@ -169,7 +153,6 @@ function descendants(pid: number): Proc[] {
   return out
 }
 
-/** A process's environment variables, by name. */
 function environ(pid: number): Record<string, string> {
   return Object.fromEntries(readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0').filter(Boolean).map((entry) => {
     const at = entry.indexOf('=')
@@ -186,7 +169,6 @@ const alive = (pid: number) => {
   }
 }
 
-/** An IPv4 address of this machine on a local network; undefined when it has none. */
 function lanAddress(): string | undefined {
   return Object.values(networkInterfaces()).flat().find(net => net && net.family === 'IPv4' && !net.internal)?.address
 }
@@ -208,13 +190,11 @@ describe('presmium studio installed from the packed packages', () => {
   })
 
   it('prints one address, which opens the workbench (P-125, P-141)', async () => {
-    // A workspace of the project's document, in a git repository (the document operations commit there).
     const ws = join(project, 'ws')
     mkdirSync(join(ws, 'intro'), { recursive: true })
     cpSync(join(CONSUMER, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
     writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
     git(ws, ['init', '-q', '-b', 'main'])
-    // The project's own `presmium`, as `npx presmium studio` runs it: the CLI hands the command to @presmium/studio.
     const running = await studio([join(project, 'node_modules/@presmium/cli/bin/presmium.mjs'), 'studio', 'ws', '--port', '5666'], { cwd: project, env: home.env() })
     const browser = await chromium.launch()
     try {
@@ -224,7 +204,6 @@ describe('presmium studio installed from the packed packages', () => {
       const errors: string[] = []
       page.on('pageerror', error => errors.push(error.message))
       await page.goto(running.url)
-      // The launch token is exchanged for the cookie; the page is the workbench, DeepSeek Harness's client with Presmium's bundle.
       await expect.poll(() => page.url()).toBe('http://127.0.0.1:5666/')
       await page.locator('#root > *').first().waitFor({ timeout: 120_000 })
       const documents = await page.evaluate(async () => (await fetch('/api/presmium/documents')).json() as Promise<{ documents: { dir: string, title: string }[] }>)
@@ -259,7 +238,6 @@ describe('presmium studio in a fresh home, with the model of the environment', (
   })
 
   it('runs the first session in a document\'s directory, with nothing under ~/Documents or outside the test\'s directory', async () => {
-    // The documents' directories are DeepSeek Harness's workspaces from the start: no first-use workspace is made.
     expect(await api.call('workspace/initializeDefault', {})).toBeUndefined()
     for (const [doc, title] of [['alpha', 'Alpha'], ['beta', 'Beta']]) {
       expect(await api.call('workspace/create', { request: { path: join(ws, 'lectures', doc) } })).toMatchObject({ workspace: { title }, created: false })
@@ -268,12 +246,10 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     await api.call('session/prompt', { request: { requestId: randomUUID(), sessionId, mode: 'queue', content: [{ type: 'text', text: 'What sections does this lecture have?' }] } })
     await expect.poll(() => model.received.filter(r => r.headers['x-deepseek-harness-session-id'] === sessionId && Array.isArray(r.body.tools) && r.body.tools.length > 0).length, { timeout: 120_000 }).toBeGreaterThan(0)
     const turn = model.received.find(r => r.headers['x-deepseek-harness-session-id'] === sessionId && Array.isArray(r.body.tools) && r.body.tools.length > 0)!
-    // The session's document is alpha: its context and its tools.
     const context = /<presmium-document>([\s\S]*?)<\/presmium-document>/.exec(JSON.stringify(turn.body.messages))?.[1] ?? ''
     expect(context).toContain('Document \\"lectures/alpha\\"')
     expect(context).toContain('alpha-one')
     expect(turn.body.tools.map((tool: { name: string }) => tool.name)).toContain('presmium__list_sections')
-    // Nothing in the home but what was there; DeepSeek Harness's home is Presmium's state directory.
     expect(readdirSync(home.home)).toEqual([])
     expect(existsSync(join(home.dshHome, 'profiles', 'presmium-studio', 'package.json'))).toBe(true)
     expect(existsSync(join(home.dshHome, 'documents'))).toBe(false)
@@ -290,13 +266,11 @@ describe('presmium studio in a fresh home, with the model of the environment', (
     expect((await api.fetch('/api/presmium/documents')).status).toBe(200)
     expect((await api.fetch('/api/presmium/documents', { headers: { origin: 'http://evil.example' } })).status).toBe(403)
     expect((await fetch(`${origin}/api/session/list`, { method: 'POST', headers: { cookie: api.cookie, origin: 'http://evil.example', 'content-type': 'application/json' }, body: '{}' })).status).toBe(403)
-    // The previews are the workspace service's pages, embedded by the workbench's origin only.
     const preview = await (await api.fetch('/api/presmium/preview?document=lectures/beta')).json() as { web: string }
     const page = await fetch(preview.web)
     expect(page.status).toBe(200)
     expect(page.headers.get('content-security-policy')).toBe(`frame-ancestors ${origin} http://localhost:5663`)
     expect((await fetch(preview.web, { headers: { origin: 'http://evil.example' } })).status).toBe(403)
-    // The workspace service's own routes take the service token, which the page never has.
     expect((await fetch(`${new URL(preview.web).origin}/__presmium/presmium.workspace/documents`)).status).toBe(401)
   }, 180_000)
 })
@@ -321,7 +295,6 @@ describe('presmium studio on the local network', () => {
       const listed = await api.fetch('/api/presmium/documents')
       expect(listed.status).toBe(200)
       expect((await listed.json() as { documents: { dir: string }[] }).documents.map(doc => doc.dir)).toEqual(['lectures/alpha', 'lectures/beta'])
-      // The previews are at the same address, and that workbench may embed them.
       const preview = await (await api.fetch('/api/presmium/preview?document=lectures/alpha')).json() as { web: string }
       expect(new URL(preview.web).hostname).toBe(lan)
       const page = await fetch(preview.web, { headers: { origin: `http://${lan}:5665` } })
@@ -344,10 +317,8 @@ describe('presmium studio\'s processes', () => {
   it('keeps the model\'s key out of the workspace service, and leaves no process after kill -9 of the launcher', async () => {
     home = testHome('kill')
     ws = repository(TWO_DOCUMENTS)
-    // A DeepSeek key goes to DeepSeek's address only, whatever address the shell names.
     const running = await studio([STUDIO_BIN, ws, '--port', '5664'], { env: home.env({ DEEPSEEK_API_KEY: 'deepseek-key-96f', DEEPSEEK_BASE_URL: 'http://127.0.0.1:9/elsewhere' }) })
     try {
-      // The previews start the documents' dev servers in the workspace service: the web form's and the slides'.
       const api = await hostApi(running.url)
       const preview = await (await api.fetch('/api/presmium/preview?document=lectures/alpha')).json() as { web: string, slides: string }
       for (const url of [preview.web, preview.slides]) expect((await fetch(url)).status, url).toBe(200)

@@ -1,21 +1,3 @@
-// Scripted lectures with the real CLI (WP-83, P-134; docs/ir.md 2.9, 6.3) and the deterministic fake speech
-// engine (`presmium-speech fake`, a process of its own, defined as engine `fake` like any engine; it lists the
-// requests it got): `presmium build --to lecture` says each paragraph of narration once through SPEECH into
-// the synthesis cache and times the cues by the fake engine's word times (220 ms a CJK character, 80 ms
-// between words); a second build has the engine synthesize nothing (it asks for its list of voices only, which
-// says whether a clip's voice is cloned, review-round3 F-57); without the cache and the engine the build fails
-// and `presmium check` names the paragraphs. A separate script (`renderers.lecture.script`) replaces the
-// narration of its sections in the lecture only, and the check names the line of its paragraph with a problem.
-// `{only} lecture` narration is said and not shown; an engine that gives no word times has the cues timed by a
-// transcript of each clip (kept beside it), or, without a transcription, by the number of characters (WP-84,
-// through a front of the fake engine). `presmium dev` makes the synthesized lecture on demand, and an agent
-// reads its plan with the tool `lecture_preview` (MCP); the paid tools `lecture_synthesize` and
-// `track_transcribe` ask first (a window of the control channel answers), and send the engine nothing when
-// refused. A `{say}` that ends a sentence is one word with the times the speech service gives a lexicon's
-// replacement there. In a cloned voice, `presmium dev` gives the synthesized lecture, a recorded lecture said
-// again in the voice and their clips only while the consent holds, and a build publishes them only then: the
-// speech service checks it on each request, a clip by its key in the cache (D-7, F-57); a page keeps the clips
-// of the lecture it loaded after the deck compiled again, and a clip the cache lost is not synthesized (WP-92c).
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -30,7 +12,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const SPEECH = fileURLToPath(new URL('../../addon-speech', import.meta.url))
-/** Decks whose web form is built live in examples/demo/.presmium (ignored by git), where VitePress resolves. */
 const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
 
 type Word = [number, number, string]
@@ -40,7 +21,6 @@ interface Track {
   events: [number, string, Record<string, unknown>][]
 }
 
-/** The environment without Presmium's variables (a developer's machine may define engines), plus `extra`. */
 function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const clean: NodeJS.ProcessEnv = { ...process.env }
   delete clean.NODE_ENV
@@ -52,12 +32,10 @@ const presmium = (dir: string, args: string[], extra: Record<string, string> = {
 
 let fake: { url: string, child: ChildProcess }
 const engine = () => ({ PRESMIUM_SPEECH_FAKE_URL: fake.url, PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake' })
-/** The fake engine's synthesis requests so far. */
 async function syntheses(): Promise<number> {
   const { requests } = await (await fetch(new URL('/requests', fake.url))).json() as { requests: { method: string, path: string }[] }
   return requests.filter(r => r.method === 'POST' && r.path.startsWith('/v1/audio/speech')).length
 }
-/** The fake engine's requests so far, as `<method> <path>`. */
 async function requests(): Promise<string[]> {
   return ((await (await fetch(new URL('/requests', fake.url))).json()) as { requests: { method: string, path: string }[] }).requests.map(r => `${r.method} ${r.path}`)
 }
@@ -82,7 +60,6 @@ afterAll(() => {
 
 const CODE = '(code-1)=\n```python\na = 1\nb = 2\nc = 3\n```'
 
-/** A deck in a new directory under `parent`: the lecture and speech plugins, the voice, and these renderers and sections. */
 function deck(parent: string, renderers: string, body: string): string {
   mkdirSync(parent, { recursive: true })
   const dir = mkdtempSync(join(parent, 'presmium-lecture-script-'))
@@ -120,7 +97,6 @@ const NARRATION = `我们先看 {cue to=code-1 lines=2-3}\`spot\` 这两行，{c
 
 合并之后词表变大。`
 
-/** The fake engine's words of a text said from t: CJK characters 220 ms each, 80 ms apart. */
 function fakeWords(text: string, t: number): Word[] {
   return [...text].filter(c => /\p{Script=Han}/u.test(c)).map((c, i): Word => [t + i * 300, 220, c])
 }
@@ -138,11 +114,8 @@ describe('presmium build --to lecture (P-134)', () => {
     const asked = await syntheses()
     const built = await presmium(dir, ['build', '--to', 'lecture'], engine())
     expect(built.code, built.stdout + built.stderr).toBe(0)
-    // One request per paragraph: the opening's and the two of the merge section.
     expect(await syntheses() - asked).toBe(3)
 
-    // The plan: the opening said at its first step; the merge section's first paragraph at step 0, where the
-    // spotlight comes with 这 and the next step with 再; after the paragraph and the gap (500 ms), the second.
     const out = join(dir, 'dist/lecture/script')
     const track = JSON.parse(readFileSync(join(out, 'track.json'), 'utf8')) as Track
     expect(track.voice).toEqual({ kind: 'synthetic', engine: 'fake', model: 'fake-tts', voice: 'alpha', provider: 'Presmium fake' })
@@ -158,7 +131,6 @@ describe('presmium build --to lecture (P-134)', () => {
       [3420, 'spot', { block: 'merge/code-1', lines: '2-3', at: ['u2', 4] }],
       [4320, 'go', { section: 'merge', step: 1, at: ['u2', 7] }],
     ])
-    // The clips: in the synthesis cache, published beside the track, listed in the lock; the captions.
     for (const u of track.utterances) {
       expect(existsSync(join(dir, '.presmium/speech', u.clip))).toBe(true)
       expect(existsSync(join(out, 'clips', u.clip))).toBe(true)
@@ -167,14 +139,12 @@ describe('presmium build --to lecture (P-134)', () => {
     expect(Object.keys(lock.synthesis).sort()).toEqual(track.utterances.map(u => u.clip.slice(0, -'.wav'.length)).sort())
     expect(readFileSync(join(out, 'captions.zh-CN.vtt'), 'utf8')).toBe('WEBVTT\n\nu1\n00:00:00.000 --> 00:00:01.720\n我们先看合并。\n\nu2\n00:00:02.220 --> 00:00:05.140\n我们先看这两行，再合并。\n\nu3\n00:00:05.640 --> 00:00:07.960\n合并之后词表变大。\n')
 
-    // Again: every clip is in the cache, so the engine synthesizes nothing; it is asked for its voices only (once).
     const before = (await requests()).length
     const again = await presmium(dir, ['build', '--to', 'lecture'], engine())
     expect(again.code, again.stdout + again.stderr).toBe(0)
     expect((await requests()).slice(before)).toEqual(['GET /v1/audio/voices'])
     expect(JSON.parse(readFileSync(join(out, 'track.json'), 'utf8'))).toEqual(track)
 
-    // Without the cache and without an engine: the build fails and the check names each paragraph.
     rmSync(join(dir, '.presmium/speech'), { recursive: true, force: true })
     const failed = await presmium(dir, ['build', '--to', 'lecture'])
     expect(failed.code).toBe(1)
@@ -206,7 +176,6 @@ describe('a separate lecture script (P-134)', () => {
       ['merge', 0, '脚本第一段先看代码。'],
       ['merge', 1, '脚本第二段再看结果。'],
     ])
-    // The first paragraph is said at step 0, the next step comes after it and the gap, and the cue with 结.
     expect(track.utterances.map(u => [u.id, u.t])).toEqual([['u1', 0], ['u2', 2220], ['u3', 5340]])
     expect(track.events).toEqual([
       [0, 'go', { section: 'intro', step: 0 }],
@@ -214,12 +183,10 @@ describe('a separate lecture script (P-134)', () => {
       [5340, 'go', { section: 'merge', step: 1 }],
       [5340 + 7 * 300, 'spot', { block: 'merge/code-1', at: ['u3', 7] }],
     ])
-    // The web form keeps the deck's narration of the section.
     const page = readdirSync(join(dir, 'dist/web')).filter(file => file.endsWith('.html')).map(file => readFileSync(join(dir, 'dist/web', file), 'utf8')).join('\n')
     expect(page).toContain('合并之后词表变大')
     expect(page).not.toContain('脚本第一段')
 
-    // A problem of a paragraph of the script is reported at that paragraph's line, not at the section's heading.
     writeFileSync(join(dir, 'lecture.script.md'), '(merge)=\n## 合并\n\n脚本第一段先看代码。\n\n脚本第二段再看\n{cue to=nope}`spot` 结果。\n')
     const checked = await presmium(dir, ['check', '--json'], engine())
     const findings = (JSON.parse(checked.stdout) as { findings: { checkId: string, message: string, source?: { file: string, line?: number } }[] }).findings
@@ -227,10 +194,6 @@ describe('a separate lecture script (P-134)', () => {
   }, 300_000)
 })
 
-/**
- * A front of the fake engine: its synthesis answers lose their word times (an engine of the OpenAI shape gives
- * none); with `transcribe` false, it refuses transcriptions too.
- */
 async function wordless(state: { transcribe: boolean }): Promise<{ url: string, close(): Promise<void> }> {
   const upstream = new URL(fake.url)
   const server = createServer((req, res) => {
@@ -284,7 +247,6 @@ describe('{only} lecture, and an engine without word times (P-134)', () => {
   }
 
   it('says {only} lecture narration and not {only} web; times the cues by a transcript of each clip, kept beside it, else by the characters', async () => {
-    // The words of each clip come from its transcript, kept beside it in the synthesis cache.
     const aligned = await build()
     expect(aligned.utterances.map(u => [u.section, u.text])).toEqual([['intro', '我们先看合并。'], ['merge', '我们先看这两行。'], ['merge', '只在讲授中说的一句。']])
     for (const u of aligned.utterances) {
@@ -294,7 +256,6 @@ describe('{only} lecture, and an engine without word times (P-134)', () => {
     const said = aligned.utterances[1]!
     expect(aligned.events.find(([, type]) => type === 'spot')).toEqual([said.words![4]![0], 'spot', { block: 'merge/code-1', lines: '2-3', at: [said.id, 4] }])
 
-    // Without a transcription either: no words, and the cue at its share of the characters (这 is the fifth of eight).
     rmSync(join(dir, '.presmium/speech'), { recursive: true, force: true })
     state.transcribe = false
     const estimated = await build()
@@ -305,7 +266,6 @@ describe('{only} lecture, and an engine without word times (P-134)', () => {
   }, 240_000)
 })
 
-/** A window of the control channel of `presmium dev` (as a page holds one): it answers the approvals it is asked. */
 async function controlWindow(server: string): Promise<{ approval(): Promise<string>, answer(id: string, allow: boolean): Promise<void>, close(): void }> {
   const control = `${server}/__presmium/presmium.server/control`
   const abort = new AbortController()
@@ -325,7 +285,6 @@ async function controlWindow(server: string): Promise<{ approval(): Promise<stri
         }
       }
     } catch {
-      // Closed.
     }
   })()
   return {
@@ -397,7 +356,6 @@ describe('presmium dev', () => {
   }, 240_000)
 
   it('asks before lecture_synthesize and track_transcribe: refused, the engine gets no request; allowed, they synthesize and transcribe', async () => {
-    // A recorded lecture whose audio is the fake engine's clip of a sentence (which its transcription gives back).
     const said = '录下来的一句讲解。'
     const audio = Buffer.from(await (await fetch(`${fake.url}/audio/speech`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: said, voice: 'beta' }) })).arrayBuffer())
     mkdirSync(join(dir, 'lectures/rec/audio'), { recursive: true })
@@ -410,7 +368,6 @@ describe('presmium dev', () => {
     const client = new Client({ name: 'presmium-test', version: '0.1.0' }, { versionNegotiation: { mode: 'auto' } })
     await client.connect(new StreamableHTTPClientTransport(new URL(mcp), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }))
     const window = await controlWindow(server)
-    /** Calls a paid tool and answers its approval; the tool's result as text, and whether it failed. */
     const paid = async (name: string, args: Record<string, unknown>, allow: boolean) => {
       const result = client.callTool({ name, arguments: args }) as Promise<{ isError?: boolean, content: { text: string }[] }>
       await window.answer(await window.approval(), allow)
@@ -463,29 +420,23 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
   let output = ''
   let server: string
   const route = (path: string, init?: RequestInit) => fetch(`${server}/__presmium/presmium.lecture/${path}`, init)
-  /** The speaker's consent, which the operator registered outside the workspace. */
   const giveConsent = () => {
     mkdirSync(join(operator, 'consent/fake'), { recursive: true })
     writeFileSync(consent, JSON.stringify({ speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'a'.repeat(64) }))
   }
 
-  /** What the routes, a build and the agent tools need: the fake engine, and the operator directory with the consent. */
   const extra = () => ({ ...engine(), PRESMIUM_OPERATOR_DIR: operator })
-  /** `presmium build --to lecture` into a directory of its own: its exit code, output and directory. */
   const build = async (name: string) => {
     const out = join(dir, name)
     const built = await presmium(dir, ['build', '--to', 'lecture', '--out', out], extra())
     return { ...built, out: join(out, 'lecture') }
   }
 
-  // The deck, its recorded lecture and its dev server; each case gives the consent it needs.
   beforeAll(async () => {
     dir = deck(tmpdir(), '  lecture:\n    voice: { engine: fake, voice: cloned-lin }', '合并之后词表变大。')
     operator = mkdtempSync(join(tmpdir(), 'presmium-lecture-consent-'))
     consent = join(operator, 'consent/fake/cloned-lin.json')
-    // The operator allows cloned voices.
     writeFileSync(join(dir, 'presmium.workspace.yaml'), 'settings:\n  presmium.speech:\n    cloned: true\n')
-    // A recorded lecture with its transcript, to say again in the cloned voice (WP-83's change of voice).
     mkdirSync(join(dir, 'lectures/rec'), { recursive: true })
     writeFileSync(join(dir, 'lectures/rec/track.json'), JSON.stringify({ track: 1, id: 'rec', doc: 'lecture.md', lang: 'zh-CN', ir: { hash: '' }, voice: { kind: 'recorded' }, blocks: {}, utterances: [{ id: 'u1', t: 0, d: 1000, text: '录下来的一句讲解。', section: 'intro', step: 0 }], events: [[0, 'go', { section: 'intro', step: 0 }]] }))
     dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'notebook'], { cwd: dir, env: env(extra()), stdio: ['ignore', 'pipe', 'pipe'] })
@@ -518,7 +469,6 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
     const clips = track.utterances.map(u => u.clip)
     expect(clips.length).toBeGreaterThan(0)
     for (const clip of clips) expect((await route(`tracks/script/clips/${clip}`)).status).toBe(200)
-    // A clip that is none of the lecture's is not given.
     expect((await route(`tracks/script/clips/${'f'.repeat(32)}.wav`)).status).toBe(404)
     const revoiced = await route('editing/rec/synthesize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ engine: 'fake', voice: 'cloned-lin' }) })
     expect(revoiced.status, await revoiced.clone().text()).toBe(200)
@@ -526,14 +476,11 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
     expect(recorded).toHaveLength(1)
     expect((await route(`tracks/rec/clips/${recorded[0]}`)).status).toBe(200)
 
-    // The build publishes both while the consent holds.
     const allowed = await build('allowed')
     expect(allowed.code, allowed.stdout + allowed.stderr).toBe(0)
     for (const clip of clips) expect(existsSync(join(allowed.out, 'script/clips', clip))).toBe(true)
     expect(existsSync(join(allowed.out, 'rec/clips', recorded[0]!))).toBe(true)
 
-    // The consent withdrawn: each clip is refused, though the cache has it; so is the synthesized lecture.
-    // The engine synthesizes nothing.
     const asked = await syntheses()
     rmSync(consent)
     for (const clip of [...clips.map(clip => `script/clips/${clip}`), `rec/clips/${recorded[0]}`]) {
@@ -547,7 +494,6 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
     expect(await syntheses()).toBe(asked)
     for (const clip of [...clips, ...recorded]) expect(existsSync(join(dir, '.presmium/speech', clip))).toBe(true)
 
-    // Nor does a build publish them: neither lecture, each an error.
     const withdrawn = await build('withdrawn')
     expect(withdrawn.code).toBe(1)
     expect(withdrawn.stdout).toMatch(new RegExp(`lecture rec is not published: the clip ${recorded[0]} may not be published: .*${consent} is missing`))
@@ -559,20 +505,17 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
   it('gives the clips of a lecture a page loaded after the deck compiled again and other windows took the new lecture many times; a clip the cache lost is 404, not synthesized again (WP-92c, WP-92d)', async () => {
     giveConsent()
     const loaded = await (await route('tracks/script')).json() as Track
-    // The deck changes: its IR is another, the lecture the page loaded is not the latest.
     const compiled = output.match(/^compiled /gm)!.length
     writeFileSync(join(dir, 'lecture.md'), readFileSync(join(dir, 'lecture.md'), 'utf8').replace('合并之后词表变大。', '合并之后词表变大，编码变短。'))
     for (let waited = 0; output.match(/^compiled /gm)!.length === compiled; waited += 200) {
       if (waited > 60_000) throw new Error(`presmium dev did not compile again:\n${output}`)
       await new Promise(done => setTimeout(done, 200))
     }
-    // Other windows (learners, reloads) take the latest lecture more often than the lectures kept: it is kept once.
     for (let i = 0; i < 12; i++) expect((await route('tracks/script')).status).toBe(200)
     const only = loaded.utterances.filter(u => u.text.includes('合并之后词表变大。'))
     expect(only).toHaveLength(1)
     for (const u of loaded.utterances) expect((await route(`tracks/script/clips/${u.clip}`)).status, u.clip).toBe(200)
 
-    // A clip of the latest lecture whose file the cache lost: 404, and the engine is asked for nothing.
     const latest = await (await route('tracks/script')).json() as Track
     const asked = await syntheses()
     const lost = latest.utterances[0]!.clip

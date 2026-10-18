@@ -1,15 +1,7 @@
-/**
- * Change tasks (P-113 to P-115, P-121, P-136; docs/architecture.md 4.8):
- * what the agent reports on each annotation, and the message of the commit
- * an accepted task becomes (the annotations, the chat message or the
- * lecture track, and the agent's explanation; `REVISIONS` adds the trailers).
- */
 import type { AgentTaskRequest, Locale } from '@presmium/kernel'
 
-/** The workspace configuration at the workspace root: changing it needs an owner's `write` approval (10.4, section 11). */
 export const WORKSPACE_CONFIG = 'presmium.workspace.yaml'
 
-/** The line in which the agent reports on an annotation: `presmium-annotation <id>: <note>`, or `… <id> failed: <why>`. */
 const NOTE = /^[ \t]*presmium-annotation[ \t]+([\w-]+)([ \t]+failed)?[ \t]*[:：][ \t]*(.*?)[ \t]*$/gm
 
 export interface AnnotationNote {
@@ -17,19 +9,16 @@ export interface AnnotationNote {
   note?: string
 }
 
-/** The agent's reports on the annotations, by annotation id; the last report of an id counts. */
 export function annotationNotes(text: string): Map<string, AnnotationNote> {
   const notes = new Map<string, AnnotationNote>()
   for (const [, id, failed, note] of text.matchAll(NOTE)) notes.set(id!, { failed: Boolean(failed), ...note ? { note } : {} })
   return notes
 }
 
-/** The agent's explanation without its report lines. */
 export function explanationOf(text: string): string {
   return text.replace(NOTE, '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
-/** A `chat` whose context names only the document: drafting it (P-121), as the workspace's new-document form asks. */
 export function isDraft(request: AgentTaskRequest): boolean {
   const { section, block, selection, step } = request.context
   return request.kind === 'chat' && !section && !block && !selection && step === undefined
@@ -70,7 +59,6 @@ const WORDS = {
   },
 }
 
-/** The message of the commit of an accepted change task, in the deck's language; `REVISIONS` adds the trailers. */
 export function commitMessage(request: AgentTaskRequest, notes: Map<string, AnnotationNote>, explanation: string, locale: Locale): string {
   const w = WORDS[locale]
   const body: string[] = []

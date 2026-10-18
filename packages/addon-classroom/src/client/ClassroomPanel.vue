@@ -1,8 +1,4 @@
 <script setup lang="ts">
-// The presenter's overview of the classroom, in the presenter panels of both forms and from the
-// toolbar: questions by place (P-66), the understanding pulse (P-67), quizzes (P-64), predictions
-// (P-68) and exercises (P-65). Entries without the shape their collection has are left out
-// (`../domain/guards.ts`).
 import { useMessages, useSectionConfig } from '@presmium/host'
 import { computed } from 'vue'
 import {
@@ -44,7 +40,6 @@ const { failure, write } = useWrite()
 const t = useMessages(MESSAGES)
 const ai = useAiAnswers()
 
-// Places as this window's build numbers its sections, by their ids (D-4): a learner's build may number them apart.
 const config = useSectionConfig(CLASSROOM_ID)
 const numbers = computed(() => sectionNumbers(config.value))
 const byPlace = <T extends { section: string, index: number }>(items: T[]) => [...items].sort((a, b) => placeIndex(a, numbers.value) - placeIndex(b, numbers.value))
@@ -70,7 +65,6 @@ const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ 
   return { id: quiz.id, text: t.value.panel.quiz(placeText(quiz, t.value, numbers.value), quiz.open, result.respondents, result.correct) }
 }))
 
-// How the class predicted: per choice, or the written predictions without their authors.
 const predicted = computed(() => {
   const latest = new Map<string, Prediction>()
   for (const { value } of predictions.value) latest.set(value.predict, value)
@@ -100,7 +94,6 @@ function toggleAnswered(question: Question & { id: string }): void {
   write(() => store.value?.put<Question>(COLLECTIONS.questions, id, { ...value, answered: !value.answered }))
 }
 
-/** Sends the AI's answer, once the presenter confirmed it, to the classroom as the question's reply. */
 function sendAnswer(question: Question & { id: string }): void {
   const draft = ai.drafts.get(question.id)
   if (draft?.state !== 'ready') return

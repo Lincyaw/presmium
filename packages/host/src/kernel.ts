@@ -13,16 +13,9 @@ import type { Navigation, ServerClient, SyncTransports } from './types.ts'
 const registered: PluginDefinition[] = []
 const running = shallowRef<Kernel>()
 let starting: Promise<StartReport> | undefined
-/** Disconnects the control channel of the running kernel. */
 let disconnect: (() => void) | undefined
-/** Plugins the host loads besides the kernel's (e.g. the web form's viewer plugins) that failed. */
 const failures = shallowRef<PluginReport[]>([])
 
-/**
- * Registers a plugin for the kernel start. Addons call it from `setup/main.ts`;
- * late or duplicate registrations are reported and ignored so one addon cannot
- * stop the deck from starting.
- */
 export function registerPresmiumPlugin(plugin: PluginDefinition): void {
   const { id } = plugin.manifest
   if (starting) console.error(`[presmium] ${id} was registered after the kernel started; ignored`)
@@ -35,13 +28,6 @@ function isPluginDefinition(value: unknown): value is PluginDefinition {
   return typeof plugin === 'object' && plugin !== null && typeof plugin.setup === 'function' && typeof plugin.manifest?.id === 'string'
 }
 
-/**
- * The kernel plugins of a plugin package's browser entry, `src/client/plugin.ts`,
- * from which both hosts register them: plugin definitions exported by default
- * or by name, single or in arrays, and the definitions returned by an exported
- * `presmiumPlugins(config)` for the deck's `presmium` configuration (plugins
- * that only start when the deck asks for them).
- */
 export function pluginsOf(module: unknown, config: Record<string, unknown> = {}): PluginDefinition[] {
   const exports = (module ?? {}) as Record<string, unknown>
   const declared = typeof exports.presmiumPlugins === 'function' ? [(exports.presmiumPlugins as (config: Record<string, unknown>) => unknown)(config)] : []
@@ -51,19 +37,12 @@ export function pluginsOf(module: unknown, config: Record<string, unknown> = {})
 
 export interface StartOptions {
   mode: PresentationMode
-  /** The headmatter `presmium` object. */
   config?: Record<string, unknown>
-  /** Provides host-level services before plugins start. */
   beforeStart?(kernel: Kernel): void
   log?: Logger
-  /** Given to `KernelOptions.environments`. */
   environments?: Record<string, EnvironmentSpec>
 }
 
-/**
- * Starts the kernel with every registered plugin. Only the first call starts
- * it; later calls share its result, until `stopPresmium`.
- */
 export function startPresmium(options: StartOptions): Promise<StartReport> {
   starting ??= (async () => {
     const kernel = new Kernel({ mode: options.mode, config: options.config, log: options.log, environments: options.environments })
@@ -76,12 +55,6 @@ export function startPresmium(options: StartOptions): Promise<StartReport> {
   return starting
 }
 
-/**
- * Disposes the running plugins in reverse start order (their `dispose`) and
- * forgets the kernel, so `startPresmium` can start the registered plugins
- * again. Host adapters call it when the page goes away (`pagehide`) and when
- * a hot update replaces the module that started the kernel.
- */
 export async function stopPresmium(): Promise<void> {
   const current = starting
   if (!current) return
@@ -94,11 +67,6 @@ export async function stopPresmium(): Promise<void> {
   await kernel?.dispose()
 }
 
-/**
- * Stops the kernel when the page is hidden for good or kept for later
- * (back-forward cache), and starts it again with `start` when such a page
- * is shown again. For host adapters, in the browser.
- */
 export function stopPresmiumOnPageHide(start: () => void): void {
   window.addEventListener('pagehide', () => void stopPresmium())
   window.addEventListener('pageshow', (event) => {
@@ -106,23 +74,14 @@ export function stopPresmiumOnPageHide(start: () => void): void {
   })
 }
 
-/** Reactive service lookup; undefined until the kernel has started. Host adapters delegate `getService` here. */
 export function presmiumService<T>(token: ServiceToken<T>): T | undefined {
   return running.value?.getService(token)
 }
 
-/**
- * Reports a plugin the host loads outside the kernel (e.g. a viewer plugin
- * of the web form) that failed: the start report lists it as failed.
- */
 export function reportPluginFailure(id: string, reason: string): void {
   failures.value = [...failures.value.filter(report => report.id !== id), { id, status: 'failed', reason }]
 }
 
-/**
- * Reactive start report, with the failures `reportPluginFailure` reported;
- * undefined until the kernel has started. Host adapters delegate `startReport` here.
- */
 export function presmiumReport(): StartReport | undefined {
   const report = running.value?.report()
   return report && failures.value.length ? { ...report, plugins: [...report.plugins, ...failures.value] } : report
@@ -130,26 +89,13 @@ export function presmiumReport(): StartReport | undefined {
 
 export interface HostStart {
   mode: PresentationMode
-  /** The headmatter `presmium` object. */
   config: Record<string, unknown>
-  /** The form's `navigation` service. */
   navigation: Navigation
-  /** The form's `syncTransports` service. */
   transports: SyncTransports
-  /** The IR's `config.execute.environments`; both host adapters give it (the slides form reads it from the Slidev headmatter). */
   environments?: Record<string, EnvironmentSpec>
-  /** The server's client when `presmium dev` or `presmium serve` serves the page (4.7); omitted, `useServer().available` is false. */
   server?: ServerClient
 }
 
-/**
- * Starts the kernel with the registered plugins and the host services every
- * form provides: the presenter panels, the sync transports, the navigation,
- * the toolbar, the operations and the status summaries. With a server, the
- * page joins its control channel and the toolbar shows the approvals that
- * wait for this window. The plugins are disposed when the page goes away,
- * and start again when the browser shows it again from its cache. Browser only.
- */
 export function startHost(options: HostStart): Promise<StartReport> {
   if (options.server) provideServer(options.server)
   const start = () => startPresmium({

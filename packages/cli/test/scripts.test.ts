@@ -1,7 +1,3 @@
-// The structure checks of `pnpm test` (scripts/), on copies of the repository's layout: the layering check names
-// a server or MCP module that imports a browser package and IR runtime code that imports Slidev (F-46); the skill
-// check fails on a command the CLI does not have, an option a command does not take, and a directive whose
-// reference section is gone though an example still mentions it (F-47).
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -42,12 +38,10 @@ it('the layering check names the server and MCP modules that import browser pack
   expect(output).toContain('packages/mcp/src/probe.ts: @presmium/host  (node packages are framework-free)')
   expect(output).toContain('packages/server/src/probe.ts: @presmium/web/node  (node packages are framework-free)')
   expect(output).toContain('packages/viewer/src/probe.ts: @slidev/client  (IR runtime is form-neutral)')
-  // The kernel's Node helpers may use Node; the rest of the kernel, which the browser loads, may not import them.
   expect(output).toContain('packages/kernel/src/probe.ts: ./node/index.ts  (kernel is framework-free)')
   expect(output).not.toContain('packages/kernel/src/node/index.ts')
 })
 
-/** A copy of the repository's skills and their layout, the packages linked; `change` edits the copy. */
 function skills(change: (skills: string) => void): { code: number | null, output: string } {
   const root = scratch()
   cpSync(join(ROOT, 'scripts/check-skills.mjs'), join(root, 'scripts/check-skills.mjs'))
@@ -73,7 +67,6 @@ it('the skill check fails on an unknown command, an unknown option and a directi
   expect(option.code).toBe(1)
   expect(option.output).toContain('"presmium build" has no option --frobnicate')
 
-  // The heading of {quiz} renamed: the examples below it still mention {quiz}, which no longer counts.
   const directive = skills((dir) => {
     const file = join(dir, 'presmium-author/references/directives.md')
     writeFileSync(file, readFileSync(file, 'utf8').replace('### `{quiz}`', '### `{quizz}`'))
@@ -81,6 +74,5 @@ it('the skill check fails on an unknown command, an unknown option and a directi
   expect(directive.code).toBe(1)
   expect(directive.output).toMatch(/has no section for \{quiz\} \(declared by @presmium\/slidev-addon-classroom\)/)
 
-  // The skills as they are pass.
   expect(skills(() => {}).code).toBe(0)
 }, 120_000)

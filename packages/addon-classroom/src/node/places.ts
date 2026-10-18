@@ -4,10 +4,6 @@ import { CLASSROOM_ID, isLabel, MESSAGES, readersHave } from '../domain/index.ts
 import type { Place } from '../domain/index.ts'
 import { fallbackOf } from './fallbacks.ts'
 
-/**
- * The blocks of a section, with what its predicts reveal (`./reveals.ts`)
- * before each predict, whose static form shows them.
- */
 function sectionBlocks(section: IRSection): IRBlock[] {
   return section.blocks.flatMap((block) => {
     const { node } = block
@@ -16,31 +12,12 @@ function sectionBlocks(section: IRSection): IRBlock[] {
   })
 }
 
-/**
- * Whether the author wrote the label `id` (`(id)=`, or `:label: id` among a
- * directive's options) between the 1-based lines `from` and `at`, the
- * block's line, or among the options after it.
- */
 function labelled(lines: readonly string[], from: number, at: number, id: string): boolean {
   let end = at
   while (end < lines.length && lines[end]!.trim().startsWith(':')) end++
   return lines.slice(from - 1, end).some(line => line.trim() === `(${id})=` || line.trim() === `:label: ${id}`)
 }
 
-/**
- * Gives every classroom component, also one a predict reveals, its place
- * (section and block ids, section title and number) as the prop `place`:
- * block ids exist only after the compiler has scheduled the steps. It also
- * writes each component's static form (`fallback`) and a pulse's default
- * question and levels in the deck's language (`lang` in the headmatter). A
- * question box's `:target:` must name a block of its section. A label in
- * the form of a generated id (`step-2`)
- * counts as generated, so it takes no notes and is not named in the
- * presenter's lists; the pass warns about such labels. The numbers of the
- * sections the readers' build has (`readersHave`) go to the plugin's configuration by id
- * (`sections`, `SectionNumbers`), so a window numbers the places learners
- * write as its own build does (D-4).
- */
 export const placesPass: IRPass = {
   name: 'classroom-places',
   async run(doc, ctx) {
@@ -60,7 +37,6 @@ export const placesPass: IRPass = {
       const blocks = sectionBlocks(section)
       for (const block of blocks) {
         const { node, source } = block
-        // Ids are unique in a section, so a label written in the section names this block.
         const from = source.file === section.source.file ? section.source.line : 1
         if (!isLabel(block.id) && labelled(await linesOf(source.file), from, source.line, block.id)) {
           ctx.report({
@@ -92,13 +68,6 @@ export const placesPass: IRPass = {
   },
 }
 
-/**
- * A predict's static form again once compile-time execution has run
- * (`after: 'execute'`), so code it reveals shows with its recorded output and
- * a run panel it reveals with its static form, which the execution plugin's
- * `presmium.exec.fallbacks` writes first (`order`). Without execution (an IR
- * with errors) the form `classroom-places` wrote stays.
- */
 export const predictFallbacksPass: IRPass = {
   name: 'classroom-predict-fallbacks',
   after: 'execute',

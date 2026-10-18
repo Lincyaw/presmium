@@ -1,50 +1,34 @@
 import type { RunResult } from '@presmium/kernel'
 import { diffLines } from 'diff'
 
-/**
- * Run parameters as strings, the form of `RunRequest.args`; runners read
- * literals back (`5` is a number). Lists and mappings (the parameters of
- * languages whose executor reads them, e.g. a shader's buffers) become JSON,
- * which is also YAML.
- */
 export function stringArgs(params: Record<string, unknown> | undefined): Record<string, string> {
   return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value)]))
 }
 
-/** Output recorded ahead of time, shown when a run fails or times out (P-24). */
 export type RecordedOutput = string
 
-/**
- * P-24: a failed or timed-out run shows the recorded output instead, marked as
- * `source: 'recorded'`; the live stderr and `timedOut` are kept to explain why.
- */
 export function withRecordedFallback(result: RunResult, recorded: RecordedOutput | undefined): RunResult {
   if (result.ok || recorded === undefined) return result
   return { ...result, stdout: recorded, source: 'recorded' }
 }
 
-/** Why a recorded output is shown; undefined for live output. */
 export function fallbackReason(result: RunResult): 'timedOut' | 'failed' | undefined {
   if (result.source !== 'recorded') return undefined
   return result.timedOut ? 'timedOut' : 'failed'
 }
 
-/** One run of a code block. Run records stay in the current view and are never written back. */
 export interface RunRecord {
-  /** 1-based, in run order. */
   id: number
   args: Record<string, string>
   result: RunResult
 }
 
-/** The runs of one code block in the current view, oldest first; any two can be compared. */
 export type RunHistory = readonly RunRecord[]
 
 export function appendRun(history: RunHistory, args: Record<string, string>, result: RunResult): RunHistory {
   return [...history, { id: history.length + 1, args: { ...args }, result }]
 }
 
-/** The two records compared by default: the last two runs. */
 export function defaultPair(history: RunHistory): [number, number] | undefined {
   const n = history.length
   return n >= 2 ? [history[n - 2]!.id, history[n - 1]!.id] : undefined
@@ -69,7 +53,6 @@ export interface RunComparison {
   changed: boolean
 }
 
-/** Compares two runs: changed arguments and a line diff of their output. */
 export function compareRuns(before: RunRecord, after: RunRecord): RunComparison {
   const names = [...new Set([...Object.keys(before.args), ...Object.keys(after.args)])]
   const args = names

@@ -1,8 +1,3 @@
-// What serve does with the documents' contributions (WP-89b): a plugin route takes a body up to its limit and
-// refuses a larger one before keeping it, dropping the rest for a moment only (F-02); what a route answers is not
-// cached (F-33); a document taken down (`unmount`) has no routes, and made again it has its new configuration
-// (F-40); the site's paths and a plugin's proxy reach their targets, and a path that climbs out of a proxy is
-// refused before any target sees it (WP-91).
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { request as httpRequest } from 'node:http'
@@ -13,13 +8,11 @@ import { FIXTURES, listener, raw, remove, serveHost, waitFor, workspace } from '
 
 const DECK = join(FIXTURES, 'deck')
 
-/** The resident memory of a process, in bytes. */
 function rss(pid: number): number {
   const kb = /^VmRSS:\s+(\d+) kB$/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1]
   return Number(kb) * 1024
 }
 
-/** A POST of `size` bytes to this machine's server, with its `Content-Length` or chunked; its status and body. */
 function post(url: string, size: number, chunked: boolean): Promise<{ status: number, text: string }> {
   return new Promise((resolve, reject) => {
     const body = Buffer.alloc(size, 120)
@@ -36,10 +29,6 @@ function post(url: string, size: number, chunked: boolean): Promise<{ status: nu
   })
 }
 
-/**
- * A POST whose body never ends, with a `Content-Length` too large or chunked: the answer's status line, and how
- * long the server reads before it ends the connection (-1 when it still reads after 10 seconds).
- */
 function endless(url: string, chunked: boolean): Promise<{ status: string, ms: number }> {
   return new Promise((resolve) => {
     const { hostname, port } = new URL(url)
@@ -97,14 +86,12 @@ describe('presmium serve: the documents\' routes and proxies', () => {
       expect(refused.status, `chunked: ${chunked}`).toBe(413)
     }
     expect(rss(pid) - before).toBeLessThan(50 << 20)
-    // What a client still sends is read and dropped (so it reads the 413 rather than a reset connection), for a moment only.
     for (const chunked of [false, true]) {
       const { status, ms } = await endless(url, chunked)
       expect(status, `chunked: ${chunked}`).toBe('HTTP/1.1 413 Payload Too Large')
       expect(ms, `chunked: ${chunked}`).toBeGreaterThan(0)
       expect(ms, `chunked: ${chunked}`).toBeLessThan(5_000)
     }
-    // Below the default limit, and a route that takes 16 MiB.
     expect(JSON.parse((await post(`${url}/__presmium/fixture.server/upload`, 512 << 10, true)).text)).toEqual({ bytes: 512 << 10 })
     const large = await post(`${url}/__presmium/fixture.server/upload-large`, 10 << 20, false)
     expect(large.status).toBe(200)
@@ -117,7 +104,6 @@ describe('presmium serve: the documents\' routes and proxies', () => {
     expect(site.requests.at(-1)!.path).toBe('/doc/')
     const proxied = await raw(`${url}/__presmium/fixture.server/upstream/api/x?y=1`, { headers: { 'Presmium-Document': 'doc' } })
     expect(proxied.json()).toMatchObject({ path: '/api/x?y=1' })
-    // `..` encoded, or an encoded separator: refused before any target sees it.
     const before = upstream.requests.length
     for (const path of ['upstream/..%2F..%2Fsecret', 'upstream/%2e%2e%2Fsecret', 'upstream/a%5C..%5Csecret']) {
       expect((await raw(`${url}/__presmium/fixture.server/${path}`, { headers: { 'Presmium-Document': 'doc' } })).status, path).toBe(400)
@@ -134,7 +120,6 @@ describe('presmium serve: the documents\' routes and proxies', () => {
     rmSync(join(dir, 'doc'), { recursive: true, force: true })
     await unmount('doc')
     expect((await route('doc', 'context')).status).toBe(404)
-    // Its contribution was closed (the other document's copy of the plugin says how many of the process were).
     expect((await route('other', 'closed')).json()).toEqual({ closed: 1 })
 
     cpSync(DECK, join(dir, 'doc'), { recursive: true })

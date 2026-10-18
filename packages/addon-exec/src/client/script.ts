@@ -6,18 +6,10 @@ import { messages } from './messages.ts'
 
 export const SCRIPT_EXECUTOR_ID = 'js-worker'
 
-/** The modules code may import by name (`SCRIPT_IMPORTS`), at their URLs under the deck's base. */
 function imports(): Record<string, string> {
   return Object.fromEntries(Object.entries(SCRIPT_IMPORTS).map(([name, path]) => [name, new URL(`${import.meta.env.BASE_URL}${path}`, location.href).href]))
 }
 
-/**
- * JavaScript and TypeScript in the browser (P-20): each run gets a fresh
- * module worker, terminated when the run ends, times out or is aborted.
- * Parameters become constants; stdin and files are not available. Imports of
- * the names `SCRIPT_IMPORTS` lists (jax-js, P-104) load the modules the deck
- * publishes, on first use.
- */
 export function createScriptExecutor(options: { timeoutMs: number }): Executor {
   const id = SCRIPT_EXECUTOR_ID
   return {

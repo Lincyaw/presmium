@@ -1,13 +1,3 @@
-// The workspace service's interface for a workbench (P-120, P-116; docs/design-dsh.md section 5, WP-96a), on a real
-// `presmium serve --headless --preview-origin <origin>` of a workspace with one document and the assistant as the
-// operator's plugin, with a service token in its environment:
-// - its pages load neither the workspace's browser plugin nor the operator plugin's browser part, and its home page
-//   is the documents' cards;
-// - `ir` (the revision, the diagnostics, paths relative to the workspace root), `ir/events` (the revision now first,
-//   of a document nothing has compiled yet too; a saved source pushes the new revision and the file), `preview`
-//   (the address of each form's preview), `build` (outside the document) and `check` (the diagnostics);
-// - every route of the workspace asks for the token (401 without it, or with another);
-// - the previews' pages may be framed by the workbench's origin only (`frame-ancestors`).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -18,7 +8,6 @@ const TOKEN = 'service-test-token'
 const WORKBENCH = 'http://127.0.0.1:5617'
 const ALL = { Authorization: `Bearer ${TOKEN}` }
 
-/** The events of an SSE response as they come, until `until` has one it likes or the time is out. */
 async function events(url: string, until: (data: Record<string, unknown>) => boolean, act: () => void): Promise<Record<string, unknown>[]> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 60_000)
@@ -44,7 +33,6 @@ async function events(url: string, until: (data: Record<string, unknown>) => boo
         seen.push(event)
         if (until(event)) return seen
       }
-      // The stream is open, its first event (the revision now) in: the change comes after it.
       if (!acted && seen.length > 0) {
         acted = true
         act()
@@ -84,7 +72,6 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
   }, 120_000)
 
   it('loads neither the workspace\'s nor the operator plugin\'s browser parts, and its home page is the documents\' cards', async () => {
-    // The home page's theme as the page loads it: the documents' cards (no server, no workbench), no plugin.
     const index = await raw(`${url}/`)
     expect(index.status).toBe(200)
     const homeTheme = await raw(`${url}/.vitepress/theme/index.ts`)
@@ -93,7 +80,6 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
     expect(homeTheme.text).not.toMatch(/addon-assistant|packages\/workspace\/src\/client/)
     const homeConfig = readFileSync(join(home, 'cache/presmium/serve', serveState(), 'site/full/home/site/.vitepress/config.mjs'), 'utf8')
     expect(homeConfig).toMatch(/site\.themeConfig\.presmium = \{ home: true, documents: data\.documents \}/)
-    // A document's page: its own plugins and the preview agent, not the workspace's edit mode.
     expect((await raw(`${url}/talk/`)).status).toBe(200)
     const addons = await raw(`${url}/talk/.vitepress/theme/addons.ts`)
     expect(addons.status).toBe(200)
@@ -114,7 +100,6 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
     expect(answer.doc.sections[1]!.source.file).toBe('talk/lecture.md')
     expect(answer.diagnostics).toContainEqual(expect.objectContaining({ message: expect.stringMatching(/unknown renderer id/), source: expect.objectContaining({ file: 'talk/lecture.md' }) }))
 
-    // A save: the stream says the new revision and the file, and `ir` has it.
     const file = join(dir, 'talk/lecture.md')
     const seen = await events(`${url}/__presmium/presmium.workspace/ir/events?document=talk`, event => event.revision !== answer.revision, () => {
       writeFileSync(file, readFileSync(file, 'utf8').replace('The first section of the talk.', 'The first section, saved.'))
@@ -125,12 +110,10 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
     expect(pushed.revision).not.toBe(answer.revision)
     await expect(route('ir?document=talk').then(r => r.json<{ revision: string }>().revision)).resolves.toBe(pushed.revision)
 
-    // The previews: the document's page of the site, and its slides, on the service's origin.
     const preview = await route('preview?document=talk')
     expect(preview.status, preview.text).toBe(200)
     expect(preview.json()).toEqual({ document: 'talk', web: `${url}/talk/`, slides: `${url}/__presmium/presmium.workspace/slides/talk/` })
 
-    // A build goes outside the document, a check gives the diagnostics.
     const build = await route('build?document=talk', { method: 'POST', json: { to: ['web'] } })
     expect(build.status, build.text).toBe(200)
     const outputs = build.json<{ outputs: { renderer: string, outDir: string }[] }>().outputs
@@ -147,7 +130,6 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
       expect((await raw(`${url}/__presmium/presmium.workspace/${path}`, { ...init, headers: { Authorization: 'Bearer another' } })).status, path).toBe(401)
     }
     expect((await route('documents')).status).toBe(200)
-    // The server's own routes are not the workspace's.
     expect((await raw(`${url}/__presmium/presmium.server/hello`)).status).toBe(200)
   })
 
@@ -160,7 +142,6 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
     }
   }, 300_000)
 
-  /** Serve's state directory of this workspace (under XDG_CACHE_HOME). */
   function serveState(): string {
     const state = /its token is in (\S+)\/server\.json/.exec(serve.output())?.[1]
     if (!state) throw new Error(`no state directory in:\n${serve.output()}`)

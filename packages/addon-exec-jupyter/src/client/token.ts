@@ -1,9 +1,3 @@
-/**
- * The learner's token of an `auth: prompt` environment (P-105): asked for in
- * a dialog the first time the page needs it, kept in this page's
- * `sessionStorage` only (the tab's, cleared when it closes), sent to the
- * environment's address only. A token the server refuses is forgotten.
- */
 import { messages } from './messages.ts'
 
 const key = (name: string) => `presmium.execJupyter.token:${name}`
@@ -26,7 +20,6 @@ export function forgetToken(name: string): void {
 
 const asking = new Map<string, Promise<string | undefined>>()
 
-/** The environment's token: the stored one, else what the learner pastes; undefined when they cancel. */
 export function tokenFor(name: string, origin: string): Promise<string | undefined> {
   const stored = storedToken(name)
   if (stored) return Promise.resolve(stored)
@@ -41,7 +34,6 @@ export function tokenFor(name: string, origin: string): Promise<string | undefin
   return pending
 }
 
-/** An element of the token dialog, with the classes of the host's components. */
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag)
   if (className) node.className = className
@@ -49,10 +41,6 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: strin
   return node
 }
 
-/**
- * A modal dialog with one password field, in the host's design (N-10): the header, field and buttons are the
- * host's (`pm-ui-*`), the panel its tokens. The native `<dialog>` keeps it modal and in the middle of the window.
- */
 function ask(name: string, origin: string): Promise<string | undefined> {
   const t = messages()
   const dialog = element('dialog', 'pm-jupyter-token pm-ui')

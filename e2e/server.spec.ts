@@ -1,7 +1,3 @@
-// The server in the browser (WP-73a, docs/architecture.md section 10): a component reaches its
-// plugin's route through useServer() under `presmium dev` and degrades in static output; an approval
-// the route asks for shows in the toolbar; the IR runtime reports and replays `go`; the presenter
-// window shows the marks of roles without children.
 import { cpSync, rmSync } from 'node:fs'
 import { request } from 'node:http'
 import { join } from 'node:path'
@@ -12,7 +8,6 @@ import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/server')
-/** The packages the fixture plugin's browser code imports, which the demo does not depend on. */
 const LINK = { '@presmium/host': 'packages/host' }
 
 test.describe('presmium dev', () => {
@@ -61,15 +56,11 @@ test.describe('presmium dev', () => {
       req.end()
     })
     const local = `${new URL(dev.url).host}`
-    // The page's own requests still work.
     expect((await send('/__presmium/ir', { Host: local })).status).toBe(200)
-    // DNS rebinding: a name of another site that resolves to this machine.
     const rebound = await send('/__presmium/ir', { Host: 'rebind.attacker.example' })
     expect(rebound.status).toBe(403)
     expect(rebound.body).not.toContain('"doc"')
-    // A cross-site request (an image or a form of another site) to this machine.
     expect((await send('/__presmium/ir', { 'Host': local, 'Sec-Fetch-Site': 'cross-site' })).status).toBe(403)
-    // Opening the editor takes a POST with Presmium's header, which another site's page cannot send.
     expect((await send('/__presmium/source?file=lecture.md&line=1', { Host: local })).status).toBe(405)
     expect((await send('/__presmium/source?file=lecture.md&line=1', { 'Host': local, 'Sec-Fetch-Site': 'cross-site' }, 'POST')).status).toBe(403)
   })
@@ -111,7 +102,6 @@ test.describe('static output', () => {
       { section: '步骤', step: 2, view: 'present' },
     ]))
 
-    // On to the last section, then the recorded position again.
     await page.keyboard.press('End')
     await expect(present).toHaveAttribute('data-section', '结尾')
     const before = await page.evaluate(() => window.fixtureOperations!.length)

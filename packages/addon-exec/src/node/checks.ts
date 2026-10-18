@@ -1,18 +1,3 @@
-/**
- * What the execution plugin reports about code that runs in the browser.
- *
- * - The check `presmium.exec` (`presmium check`, D-5): Python that also runs
- *   in the browser (`:run: live` or `both`, a run panel, a stepwise run) and
- *   imports a module the browser lacks: Pyodide there has the standard
- *   library only, so the reader's run would fail where the recording shows
- *   output. Code of a named environment (`:env:`) runs there, not here.
- * - The pass `presmium.exec.steps` (P-21): a stepwise run whose `:steps:` is
- *   not the number of lines its code executes, traced as the browser traces
- *   it (`_pm_trace` of the runner) by the machine's Python, reported at the
- *   directive in `presmium build` and `presmium check`. The slide shows the
- *   declared steps, so it is the author who must hear of it, not the
- *   audience (the component says so only in the presenter view and in dev).
- */
 import { docBlocks, PROCESS_SANDBOX } from '@presmium/kernel'
 import type { Check, CodeNode, Finding, IRBlock, IRPass, ProcessSandbox } from '@presmium/kernel'
 import { configuredTimeout, EXEC_ID, execConfig, inBrowserPython, isPython, pythonImports, stringArgs } from '../domain/index.ts'
@@ -20,7 +5,6 @@ import { plainEnv } from './child.ts'
 import { ownCode } from './passes.ts'
 import { pythonExecutor } from './python.ts'
 
-/** The Python code of a block that runs in the browser's Pyodide, if it is such a block. */
 function browserPython(block: IRBlock): CodeNode | undefined {
   const { node } = block
   if (node.type === 'code') {
@@ -51,15 +35,8 @@ export const browserImportsCheck: Check = {
   },
 }
 
-/** The number of lines code executes, by code and arguments, traced once per process (dev compiles again and again). */
 const traced = new Map<string, Promise<number | undefined>>()
 
-/**
- * The lines Python code executes, traced by the runner's own tracer in the
- * machine's Python (the runner is the program's `__main__`), in the process
- * sandbox when there is one; undefined when it cannot be told (no Python,
- * a failure, more lines than the trace keeps).
- */
 function traceLength(code: string, args: Record<string, string>, maxEvents: number, timeoutMs: number, sandbox: ProcessSandbox | undefined): Promise<number | undefined> {
   const key = JSON.stringify([code, args, maxEvents])
   let found = traced.get(key)

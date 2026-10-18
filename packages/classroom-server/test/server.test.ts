@@ -1,6 +1,3 @@
-// The classroom server as a real server (in this process, so a test can wait for the writes it
-// drops), with y-websocket clients as the session plugin uses and raw WebSocket clients that send
-// what a forged client would; one test starts the `presmium-classroom-server` command.
 import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { connect } from 'node:net'
@@ -29,7 +26,6 @@ beforeAll(async () => {
   url = server.url
 })
 
-// Each test's clients leave when it ends.
 afterEach(() => {
   providers.splice(0).forEach(p => p.destroy())
   sockets.splice(0).forEach(s => s.terminate())
@@ -40,7 +36,6 @@ afterAll(async () => {
   rmSync(deck, { recursive: true, force: true })
 })
 
-/** A client document in a room, once it has synced with the server; `params` go in the URL (e.g. `claim`). */
 async function join(room: string, params: Record<string, string> = {}): Promise<{ doc: Y.Doc, provider: WebsocketProvider }> {
   const doc = new Y.Doc()
   const provider = new WebsocketProvider(url, room, doc, { WebSocketPolyfill: WebSocket as never, disableBc: true, params })
@@ -49,7 +44,6 @@ async function join(room: string, params: Record<string, string> = {}): Promise<
   return { doc, provider }
 }
 
-/** A raw connection to a room, open. */
 async function socket(room: string, params: Record<string, string>): Promise<WebSocket> {
   const ws = new WebSocket(`${url}/${room}?${new URLSearchParams(params)}`)
   sockets.push(ws)
@@ -61,7 +55,6 @@ const closed = (ws: WebSocket) => new Promise<number>(resolve => ws.once('close'
 const providerClosed = (provider: WebsocketProvider) => new Promise<number>(resolve => provider.once('closed', ({ code }: { code: number }) => resolve(code)))
 const drops = (room: string) => dropped.filter(d => d.room === room)
 
-/** A sync message with a Yjs update, as y-websocket clients send their changes. */
 function updateMessage(update: Uint8Array): Uint8Array {
   const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, 0)
@@ -69,7 +62,6 @@ function updateMessage(update: Uint8Array): Uint8Array {
   return encoding.toUint8Array(encoder)
 }
 
-/** An awareness message setting the states of the given clients. */
 function awarenessMessage(states: [client: number, clock: number, state: unknown][]): Uint8Array {
   const update = encoding.createEncoder()
   encoding.writeVarUint(update, states.length)
@@ -84,7 +76,6 @@ function awarenessMessage(states: [client: number, clock: number, state: unknown
   return encoding.toUint8Array(encoder)
 }
 
-/** An answer of participant `p` to quiz `q`, as the classroom plugin writes it. */
 const answer = (q: string, p: string, choice: number) => [`${q}:${p}`, { quiz: q, participant: p, choice: [choice] }] as const
 
 it('starts from the command, which prints its address and, on every interface, its addresses on the network (P-60)', async () => {
@@ -115,12 +106,10 @@ it('syncs the documents of a room, keeps them for late joiners, and keeps rooms 
   a.doc.getMap('session').set('status', 'active')
   await expect.poll(() => b.doc.getMap('session').get('status')).toBe('active')
 
-  // A client that joins later gets the room's state; another room never sees it.
   const late = await join('room-a')
   expect(late.doc.getMap('session').get('status')).toBe('active')
   expect(other.doc.getMap('session').get('status')).toBeUndefined()
 
-  // Awareness: who is connected, and who left.
   a.provider.awareness.setLocalStateField('participant', { name: '主讲' })
   await expect.poll(() => [...b.provider.awareness.getStates().values()].map(s => s.participant?.name)).toContain('主讲')
   a.provider.destroy()
@@ -135,7 +124,6 @@ it('closes a connection with a bad room path or an invalid frame and keeps servi
   badPath.on('error', () => {})
   expect(await new Promise(resolve => badPath.once('close', resolve))).toBe(1008)
 
-  // A client frame without a mask breaks the protocol.
   const { hostname, port } = new URL(url)
   const raw = connect(Number(port), hostname)
   raw.on('error', () => {})
@@ -157,7 +145,6 @@ it('takes no more writes once the classroom has ended', async () => {
   await expect.poll(() => learner.doc.getMap('session').get('status')).toBe('ended')
 
   answers(learner.doc).set(...answer('q2', 'p1', 1))
-  // The server has dropped the late write: a client that joins now reads the classroom without it.
   await expect.poll(() => drops('room-d').map(d => d.reason)).toEqual(['an update after the classroom ended'])
   const late = await join('room-d')
   expect(Object.keys(answers(late.doc).toJSON())).toEqual(['q:p1'])
@@ -166,18 +153,13 @@ it('takes no more writes once the classroom has ended', async () => {
 it('takes the presenter\'s writes only from the presenter, and a learner\'s entries only under their own id and of bounded size (P-60)', async () => {
   const presenter = await join('room-f', { claim: 'presenter-key', participant: 'teacher', key: 'teacher-key' })
   const learner = await join('room-f', { participant: 'p1', key: 'p1-key' })
-  // Someone who knows p1's id from the room, but not p1's key, is not p1.
   const impostor = await join('room-f', { participant: 'p1', key: 'guessed' })
   presenter.doc.getMap('session').set('status', 'active')
   await expect.poll(() => learner.doc.getMap('session').get('status')).toBe('active')
 
-  // A learner's own answer counts.
   learner.doc.getMap('store:answers').set(...answer('s/quiz2', 'p1', 1))
   await expect.poll(() => presenter.doc.getMap('store:answers').has('s/quiz2:p1')).toBe(true)
 
-  // A learner cannot end the classroom, nor open a quiz (each write from a connection of its own,
-  // which the server closes), nor answer for another participant, under the other's id or with
-  // the other's id in the answer, nor write a value over 16 KiB.
   const learners = await Promise.all([1, 2, 3, 4, 5].map(() => join('room-f', { participant: 'p1', key: 'p1-key' })))
   const closes = learners.map(l => providerClosed(l.provider))
   learners[0]!.doc.getMap('session').set('status', 'ended')
@@ -190,7 +172,6 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s entr
   await expect.poll(() => drops('room-f').length).toBe(6)
   expect(await Promise.all(closes)).toEqual([4403, 4403, 4403, 4403, 4403])
   expect(drops('room-f').map(d => d.reason)).toContain('a value in store:questions over 16384 bytes')
-  // Writes after a dropped one are taken as before.
   learner.doc.getMap('store:answers').set(...answer('s/quiz3', 'p1', 0))
   await expect.poll(() => presenter.doc.getMap('store:answers').has('s/quiz3:p1')).toBe(true)
   const late = await join('room-f')
@@ -199,7 +180,6 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s entr
   expect(Object.keys(late.doc.getMap('store:answers').toJSON()).sort()).toEqual(['s/quiz2:p1', 's/quiz3:p1'])
   expect(late.doc.getMap('store:questions').toJSON()).toEqual({})
 
-  // The presenter opens a quiz and ends the classroom.
   presenter.doc.getMap('store:quizzes').set('s/quiz', { open: true })
   presenter.doc.getMap('session').set('status', 'ended')
   await expect.poll(() => late.doc.getMap('session').get('status')).toBe('ended')
@@ -211,19 +191,14 @@ it('finds the participant where its collection puts it in the key: a learner who
   const alice = await join('room-sec', { participant: 'alice', key: 'alice-key' })
   presenter.doc.getMap('session').set('status', 'active')
   await expect.poll(() => alice.doc.getMap('session').get('status')).toBe('active')
-  // Item ids are placeKeys, `<section>/<block>`, and a section id is often a MyST label such as `sec:intro`.
   alice.doc.getMap('store:answers').set(...answer('sec:intro/quiz-1', 'alice', 1))
   alice.doc.getMap('store:questions').set('alice:q1', { author: 'alice', text: '为什么？' })
   await expect.poll(() => presenter.doc.getMap('store:questions').has('alice:q1')).toBe(true)
   const own = presenter.doc.getMap('store:answers').get('sec:intro/quiz-1:alice')
 
-  // `sec` connects, writes its own answer, then tries alice's: an answer in its own name, a deletion,
-  // and a question under alice's key. Each from a connection of its own, which the server closes (4403:
-  // the session plugin starts again from the room and tells the learner).
   const sec = await join('room-sec', { participant: 'sec', key: 'sec-key' })
   sec.doc.getMap('store:answers').set(...answer('sec:intro/quiz-1', 'sec', 2))
   await expect.poll(() => presenter.doc.getMap('store:answers').has('sec:intro/quiz-1:sec')).toBe(true)
-  // An entry under sec's key that names someone else (here the presenter's) stays theirs too.
   presenter.doc.getMap('store:pulse').set('sec:intro/pulse-1:sec', { pulse: 'sec:intro/pulse-1', participant: 'alice', level: 1 })
   await expect.poll(() => sec.doc.getMap('store:pulse').has('sec:intro/pulse-1:sec')).toBe(true)
   const tries = await Promise.all([1, 2, 3, 4].map(() => join('room-sec', { participant: 'sec', key: 'sec-key' })))
@@ -240,29 +215,23 @@ it('finds the participant where its collection puts it in the key: a learner who
     ['sec', 'a write to store:questions under another participant\'s key'],
   ])
 
-  // Alice's entries are as she wrote them, for everyone.
   const late = await join('room-sec')
   expect(late.doc.getMap('store:answers').get('sec:intro/quiz-1:alice')).toEqual(own)
   expect(late.doc.getMap('store:questions').get('alice:q1')).toEqual({ author: 'alice', text: '为什么？' })
 })
 
-/**
- * An update with one struct of a client of its own that sets `value` right after the struct of
- * `client` at `clock`, encoded as Yjs does (version 1): a forged client can send it before
- * that struct exists.
- */
 function structAfter(client: number, clock: number, value: unknown): Uint8Array {
   const encoder = encoding.createEncoder()
-  encoding.writeVarUint(encoder, 1) // one client
-  encoding.writeVarUint(encoder, 1) // with one struct
-  encoding.writeVarUint(encoder, 987654321) // the client
-  encoding.writeVarUint(encoder, 0) // from clock 0
-  encoding.writeUint8(encoder, 0x80 | 8) // an item with an origin, its content any value
+  encoding.writeVarUint(encoder, 1)
+  encoding.writeVarUint(encoder, 1)
+  encoding.writeVarUint(encoder, 987654321)
+  encoding.writeVarUint(encoder, 0)
+  encoding.writeUint8(encoder, 0x80 | 8)
   encoding.writeVarUint(encoder, client)
   encoding.writeVarUint(encoder, clock)
   encoding.writeVarUint(encoder, 1)
   encoding.writeAny(encoder, value as never)
-  encoding.writeVarUint(encoder, 0) // no deletions
+  encoding.writeVarUint(encoder, 0)
   return encoding.toUint8Array(encoder)
 }
 
@@ -270,8 +239,6 @@ it('refuses a learner\'s update that would wait in the room, such as one deletin
   const presenter = await join('room-g', { claim: 'presenter-key' })
   presenter.doc.getMap('session').set('status', 'active')
   const next = Y.getState(presenter.doc.store, presenter.doc.clientID)
-  // A delete set for the presenter's next 20 structs, which nobody has yet: without structs of its
-  // own, it would wait in the room and delete what the presenter writes next.
   const future = new Y.Doc()
   future.clientID = presenter.doc.clientID
   Y.applyUpdate(future, Y.encodeStateAsUpdate(presenter.doc))
@@ -281,8 +248,6 @@ it('refuses a learner\'s update that would wait in the room, such as one deletin
   const code = closed(forged)
   forged.send(updateMessage(Y.encodeStateAsUpdate(future, Y.encodeStateVector(future))))
   expect(await code).toBe(4403)
-  // A value after the presenter's fourth struct from now, the third cursor below: it would wait in
-  // the room, then become the cursor that the presenter's windows and the learners follow.
   const placed = await socket('room-g', { participant: 'p1', key: 'p1-key' })
   const placedCode = closed(placed)
   placed.send(updateMessage(structAfter(presenter.doc.clientID, next + 3, { slide: 666, step: 0 })))
@@ -302,13 +267,10 @@ it('refuses a learner\'s structs in the name of the presenter\'s client, which w
   const presenter = await join('room-j', { claim: 'presenter-key' })
   presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
   const learner = await join('room-j', { participant: 'p1', key: 'p1-key' })
-  // The presenter has written nothing yet: the room knows its client from awareness only.
   await expect.poll(() => learner.provider.awareness.getStates().has(presenter.doc.clientID)).toBe(true)
-  /** The learner's own answer, written as the presenter's client at the clock the presenter writes next. */
   const forge = (choice: number) => {
     const forged = new Y.Doc()
     Y.applyUpdate(forged, Y.encodeStateAsUpdate(presenter.doc))
-    // After the update: a document that receives structs of its own client takes another.
     forged.clientID = presenter.doc.clientID
     const before = Y.encodeStateVector(forged)
     forged.getMap('store:answers').set(...answer('q', 'p1', choice))
@@ -327,7 +289,6 @@ it('refuses a learner\'s structs in the name of the presenter\'s client, which w
   expect(await secondCode).toBe(4403)
   expect(drops('room-j').map(d => d.reason)).toEqual(Array(2).fill('an update in the name of another writer\'s client'))
 
-  // The presenter's next writes count, for the learner and for a late joiner; the forged answers do not.
   presenter.doc.getMap('store:quizzes').set('q', { open: true })
   await expect.poll(() => learner.doc.getMap('store:quizzes').get('q')).toEqual({ open: true })
   const late = await join('room-j')
@@ -341,11 +302,9 @@ it('keeps the presenter\'s client, known from awareness only, as the presenter\'
   presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
   const learner = await join('room-k', { participant: 'p1', key: 'p1-key' })
   await expect.poll(() => learner.provider.awareness.getStates().has(presenter.doc.clientID)).toBe(true)
-  // A brief disconnect before the presenter has written anything: its client leaves the room's awareness.
   presenter.provider.disconnect()
   await expect.poll(() => learner.provider.awareness.getStates().has(presenter.doc.clientID)).toBe(false)
 
-  // The learner's own answer, as the presenter's client at the clock the presenter writes first.
   const forged = new Y.Doc()
   forged.clientID = presenter.doc.clientID
   forged.getMap('store:answers').set(...answer('q', 'p1', 0))
@@ -356,7 +315,6 @@ it('keeps the presenter\'s client, known from awareness only, as the presenter\'
   expect(await code).toBe(4403)
   expect(drops('room-k').map(d => d.reason)).toEqual(['1 awareness state(s) of other clients or participants', 'an update in the name of another writer\'s client'])
 
-  // Back, the presenter shows and writes as its client: both count, for the learner and for a late joiner.
   presenter.provider.connect()
   await expect.poll(() => presenter.provider.synced).toBe(true)
   presenter.provider.awareness.setLocalStateField('participant', { id: 'teacher', name: '王老师', role: 'presenter' })
@@ -375,17 +333,14 @@ it('closes the connection of a refused update, leaves nothing of it in the room,
   const code = providerClosed(learner.provider)
   learner.doc.getMap('store:quizzes').set('q', { open: true })
   expect(await code).toBe(4403)
-  // A refused update under a name the room does not have: checking it adds no such type to the room.
   const other = await join('room-h', { participant: 'p1', key: 'p1-key' })
   const otherCode = providerClosed(other.provider)
   other.doc.getMap('store:p1-junk').set('x', 1)
   expect(await otherCode).toBe(4403)
-  // As the session plugin does: a new document, connected again with the same participant.
   const again = await join('room-h', { participant: 'p1', key: 'p1-key' })
   again.doc.getMap('store:answers').set(...answer('q', 'p1', 1))
   await expect.poll(() => presenter.doc.getMap('store:answers').get('q:p1')).toEqual({ quiz: 'q', participant: 'p1', choice: [1] })
   expect(presenter.doc.getMap('store:quizzes').toJSON()).toEqual({})
-  // The archive holds every top-level type of the room: only what was written.
   const response = await fetch(`${url.replace(/^ws/, 'http')}/archive/room-h`, { method: 'POST', body: 'presenter-key' })
   const { file } = await response.json() as { file: string }
   expect(Object.keys(JSON.parse(readFileSync(joinPath(deck, file), 'utf8')).document).sort()).toEqual(['session', 'store:answers'])
@@ -401,12 +356,10 @@ it('takes awareness states only for a connection\'s own clients, naming the part
 
   const attacker = await socket('room-i', { participant: 'p2', key: 'p2-key' })
   attacker.send(awarenessMessage([
-    // The presenter's client leaves; a client of its own claims to be the presenter; the learner is renamed.
     [presenter.doc.clientID, 1000, null],
     [424242, 1, { participant: { id: 'p0', name: '冒充的主讲', role: 'presenter' } }],
     [learner.doc.clientID, 1000, { participant: { id: 'p1', name: '改掉的名字', role: 'learner' } }],
   ]))
-  // Its own client as itself, which counts.
   attacker.send(awarenessMessage([[424242, 2, { participant: { id: 'p2', name: 'Eve', role: 'learner' } }]]))
   await expect.poll(names).toEqual(['Eve', '小明', '王老师'])
   expect(drops('room-i').map(d => d.reason)).toEqual(['3 awareness state(s) of other clients or participants'])
@@ -414,7 +367,6 @@ it('takes awareness states only for a connection\'s own clients, naming the part
 
 it('archives a classroom with the key it was claimed with, frees it with its participants\' rooms, and refuses it afterwards', async () => {
   const presenter = await join('room-e', { claim: 'presenter-key' })
-  // A later claim does not replace the first.
   const learner = await join('room-e', { claim: 'learner-key' })
   const own = await join('room-e.k7m2qx9a')
   presenter.doc.getMap('session').set('status', 'active')
@@ -435,12 +387,10 @@ it('archives a classroom with the key it was claimed with, frees it with its par
   expect(archived.document.session).toMatchObject({ status: 'ended' })
   expect(archived.document['store:questions']).toEqual({ q1: { text: '为什么？' } })
 
-  // Connected clients learn it and are closed for good, the participant's own room too.
   expect(await learnerClosed).toBe(4410)
   expect(await ownClosed).toBe(4410)
   expect(learner.doc.getMap('session').get('archive')).toBe(file)
 
-  // The room is gone: joining it again is refused, and so is archiving it twice.
   const again = new WebsocketProvider(url, 'room-e', new Y.Doc(), { WebSocketPolyfill: WebSocket as never, disableBc: true })
   providers.push(again)
   expect(await providerClosed(again)).toBe(4410)

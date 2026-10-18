@@ -1,10 +1,3 @@
-/**
- * Exercise checks (P-65). A submission runs through the `executor` service as
- * one Python program, `CHECK_PROGRAM`: it runs the learner's code, then every
- * top-level statement of the checks on its own (usually an `assert`), and
- * prints a JSON report after a marker line. `checkReport` reads it and names
- * the typical error behind each failure.
- */
 import type { RunRequest, RunResult } from '@presmium/kernel'
 import type { ClassroomMessages } from './messages.ts'
 import type { Place } from './place.ts'
@@ -13,9 +6,7 @@ const MARKER = '@@presmium-check@@'
 const SUBMISSION = 'submission.py'
 const CHECKS = 'checks.py'
 
-/** The checking program; the learner's code and the checks are files next to it. */
 export const CHECK_PROGRAM = `import ast as _pm_ast, json as _pm_json
-
 
 def _pm_describe(error):
     line = error.lineno if isinstance(error, SyntaxError) and error.filename == ${JSON.stringify(SUBMISSION)} else None
@@ -25,7 +16,6 @@ def _pm_describe(error):
             line = tb.tb_lineno
         tb = tb.tb_next
     return {'type': type(error).__name__, 'message': str(error), 'line': line}
-
 
 def _pm_check():
     with open(${JSON.stringify(SUBMISSION)}, encoding='utf-8') as f:
@@ -48,28 +38,22 @@ def _pm_check():
         cases.append(case)
     return {'error': None, 'cases': cases}
 
-
 print('\\n${MARKER}' + _pm_json.dumps(_pm_check(), ensure_ascii=False))
 `
 
-/** The run that checks `code` against `checks`. */
 export function checkRequest(code: string, checks: string, timeoutMs?: number): RunRequest {
   return { lang: 'python', code: CHECK_PROGRAM, files: { [SUBMISSION]: code, [CHECKS]: checks }, ...timeoutMs ? { timeoutMs } : {} }
 }
 
 export interface CheckError {
-  /** Python exception type, or `Timeout`. */
   type: string
   message: string
-  /** Line in the learner's code, when the error comes from there. */
   line?: number
-  /** The typical error, e.g. `除以零`, and what to look at. */
   kind: string
   hint: string
 }
 
 export interface CheckCase {
-  /** Line of the check in the checks. */
   line: number
   code: string
   ok: boolean
@@ -77,17 +61,14 @@ export interface CheckCase {
 }
 
 export interface CheckReport {
-  /** `error`: the code did not run to the checks (syntax error, an error at the top level, a timeout). */
   status: 'passed' | 'failed' | 'error'
   passed: number
   total: number
   cases: CheckCase[]
   error?: CheckError
-  /** What the code printed. */
   output: string
 }
 
-/** The typical error behind a Python exception type, named in the language of `t`. */
 export function typicalError(type: string, message: string, t: ClassroomMessages, line?: number): CheckError {
   const [kind, hint] = t.exercise.typical[type] ?? [type, t.exercise.unknown]
   return { type, message, ...line ? { line } : {}, kind, hint }
@@ -99,7 +80,6 @@ interface RawReport {
   cases: { line: number, code: string, ok: boolean, error?: RawError }[]
 }
 
-/** The report of a checking run, its errors named in the language of `t`. */
 export function checkReport(result: RunResult, t: ClassroomMessages): CheckReport {
   const checkError = (raw: RawError) => typicalError(raw.type, raw.message, t, raw.line ?? undefined)
   const at = result.stdout.lastIndexOf(`\n${MARKER}`)
@@ -120,7 +100,6 @@ export function checkReport(result: RunResult, t: ClassroomMessages): CheckRepor
   return { status: passed === cases.length ? 'passed' : 'failed', passed, total: cases.length, cases, output }
 }
 
-/** A learner's last submission of an exercise (collection `submissions`, by `submissionId`), for the presenter view. */
 export interface Submission extends Place {
   exercise: string
   participant: string
@@ -128,7 +107,6 @@ export interface Submission extends Place {
   status: CheckReport['status']
   passed: number
   total: number
-  /** Typical errors of this submission. */
   kinds: string[]
   at: number
 }
@@ -137,7 +115,6 @@ export function submissionId(exercise: string, participant: string): string {
   return `${exercise}:${participant}`
 }
 
-/** The typical errors of a report, each once. */
 export function reportKinds(report: CheckReport): string[] {
   const errors = report.error ? [report.error] : report.cases.flatMap(c => (c.error ? [c.error] : []))
   return [...new Set(errors.map(e => e.kind))]
@@ -146,7 +123,6 @@ export function reportKinds(report: CheckReport): string[] {
 export interface ExerciseSummary {
   submitted: number
   passed: number
-  /** Typical errors and how many learners' last submission had them, most frequent first. */
   kinds: [kind: string, count: number][]
 }
 
@@ -160,7 +136,6 @@ export function summarize(submissions: Submission[]): ExerciseSummary {
   }
 }
 
-/** The presenter's line on an exercise: how many submitted and passed, and the most common errors. */
 export function summaryText(summary: ExerciseSummary, t: ClassroomMessages): string {
   const { exercise, list, people } = t
   const common = summary.kinds.map(([kind, n]) => `${kind} ${people(n)}`).join(list)

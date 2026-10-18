@@ -7,22 +7,15 @@ import { checkReport, checkRequest, COLLECTIONS, isSubmission, MESSAGES, placeKe
 import type { CheckError, CheckReport, Place, Submission } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
-// P-65, from `{exercise}`: the prompt is the default slot. The learner edits the starter code and
-// submits; the checks run through the `executor` service (Pyodide in the browser) and each failing
-// check is marked with its typical error. In an active classroom the result also goes to the
-// presenter, who sees how many passed and the most common errors. Once the classroom has ended, a
-// learner's check result stays on their screen and says so.
 const props = withDefaults(defineProps<{
   lang?: string
   starter?: string
   checks?: string
-  /** Run timeout in ms; the executor's default when omitted. */
   timeout?: number
   place?: Place
 }>(), { lang: 'python', starter: '', checks: '' })
 
 const executor = useService(EXECUTOR)
-// On a slide (and in the present view) the code shows fewer lines and scrolls, so the card keeps to the slide (N-05).
 const rows = usePresentationMode() === 'slides' ? 8 : 12
 const t = useMessages(MESSAGES)
 const { me, status, joined, presenter } = useSession()
@@ -33,10 +26,8 @@ const id = computed(() => (props.place ? placeKey(props.place) : ''))
 const code = ref(props.starter)
 const running = ref(false)
 const report = shallowRef<CheckReport>()
-/** The executor that ran the last check. */
 const ranBy = ref('')
 const summary = computed(() => summarize(submissions.value.map(item => item.value).filter(s => s.exercise === id.value)))
-/** A learner's results no longer reach the presenter. */
 const ended = computed(() => joined.value && !presenter.value && status.value !== 'active')
 
 const verdict = computed(() => {
@@ -59,7 +50,6 @@ async function submit(): Promise<void> {
     report.value = result
     ranBy.value = run.executorId
     const participant = me.value
-    // The presenter sees the last submission of every learner of an active classroom.
     if (store.value && participant && !presenter.value && status.value === 'active' && props.place) {
       store.value.put<Submission>(COLLECTIONS.submissions, submissionId(id.value, participant.id), {
         ...props.place,

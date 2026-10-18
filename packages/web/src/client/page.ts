@@ -6,14 +6,8 @@ import { computed, defineComponent, h, inject } from 'vue'
 import { pageOf, toPages, WEB_MESSAGES } from '../domain/index.ts'
 import type { WebPage } from '../domain/index.ts'
 
-/** The pages of the document the viewer shows, and the path of their locale (`/en` for a translation, P-123). */
 export const PAGES: InjectionKey<{ pages: ComputedRef<WebPage[]>, prefix: ComputedRef<string> }> = Symbol('presmium.pages')
 
-/**
- * Body of every generated page: the page's sections, taken from the live
- * document so that sections added while editing appear at once; on a page of
- * a translation, from the translation.
- */
 export const PresmiumPage = defineComponent({
   name: 'PresmiumPage',
   setup() {
@@ -29,7 +23,6 @@ export const PresmiumPage = defineComponent({
   },
 })
 
-/** The view menu in the navigation bar: every registered view except hidden ones. */
 export const ViewMenu = defineComponent({
   name: 'PresmiumViewMenu',
   setup() {

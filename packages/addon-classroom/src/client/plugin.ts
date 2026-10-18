@@ -9,22 +9,10 @@ import ClassroomToolbar from './ClassroomToolbar.vue'
 
 let cleanup: Unsubscribe[] = []
 
-/** The values of a collection that have the shape `valid` checks. */
 function values<T>(store: ClassroomStore | undefined, name: string, valid: (value: unknown) => value is T): (T & { id: string })[] {
   return (store?.list<unknown>(name) ?? []).flatMap(({ id, value }) => (valid(value) ? [{ ...value, id }] : []))
 }
 
-/**
- * Classroom features (P-63 to P-68), registered by `setup/main.ts` in the
- * slides form and by the web renderer in the web form. The components
- * (`components/`) work over the `session` and `classroomStore` services and
- * check exercises with the `executor` service; without a session they work
- * alone (self-test quizzes, exercises, notes and predictions in the browser).
- * The plugin adds the presenter's overview to the presenter panels and the
- * toolbar, the notes beside the sections of the web form, and the classroom's
- * summary to the host's `STATUS`, which the page reports to a Presmium server
- * (for the MCP tool `get_classroom`): counts only, no learner's identity.
- */
 export const classroomPlugin: PluginDefinition = {
   manifest: {
     id: CLASSROOM_ID,

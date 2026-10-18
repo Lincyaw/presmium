@@ -1,34 +1,21 @@
-/**
- * What the assistant sends the agent (ACP `session/prompt`): how to read the
- * deck (the Presmium MCP tools), the context of the request as one JSON line
- * (`presmium-context:`), and the request itself. A change task says what to
- * change and where: the annotations as one JSON line
- * (`presmium-annotations:`) with the report line expected for each, a
- * lecture track with its file, or the author's message.
- */
 import type { AgentContext, AgentTaskRequest } from '@presmium/kernel'
 import { isDraft } from './changes.ts'
 
-/** The marker of the context line. */
 export const CONTEXT_MARKER = 'presmium-context:'
-/** The marker of the annotations line of an `annotations` task. */
 export const ANNOTATIONS_MARKER = 'presmium-annotations:'
 
 const LANGUAGES: Record<string, string> = { zh: 'Simplified Chinese (zh-CN)', en: 'English' }
 
-/** The language to answer in: the deck's. */
 export function language(lang: string | undefined): string {
   const tag = lang?.trim() || 'zh-CN'
   return LANGUAGES[tag.toLowerCase().split('-')[0]!] ?? tag
 }
 
-/** The context the page gave, without empty fields. */
 function context(value: AgentContext): string {
   const entries = Object.entries(value).filter(([, v]) => v !== undefined && v !== '')
   return `${CONTEXT_MARKER} ${JSON.stringify(Object.fromEntries(entries))}`
 }
 
-/** What a change task asks, by kind. */
 function changeLines(request: AgentTaskRequest, lang: string | undefined): string[] {
   const common = [
     'You change a course document (a Presmium deck: MyST Markdown, its entry lecture.md) in your working directory: edit its source files there only, and keep its headmatter.',
@@ -59,7 +46,6 @@ function changeLines(request: AgentTaskRequest, lang: string | undefined): strin
   ]
 }
 
-/** The prompt of a task, in the deck's language `lang`. */
 export function promptText(request: AgentTaskRequest, lang?: string): string {
   const track = request.kind === 'transcript' && request.track ? [`track: ${request.track} (lectures/${request.track}/track.json)`] : []
   return [...changeLines(request, lang), '', context(request.context), ...track, '', 'Request:', request.prompt].join('\n')

@@ -1,8 +1,4 @@
 <script setup lang="ts">
-// Working on a recorded lecture's words (P-132, P-133), for editors under `presmium dev` and
-// `presmium serve`: transcribe its audio, and say it again in a voice of the synthesis engine. Each
-// entry and its confirmation name the engine's provider (N-08); audio and text go to the provider
-// only after the confirmation. The edited track comes back and replaces the one played.
 import { useMessages } from '@presmium/host'
 import { computed, onMounted, ref } from 'vue'
 import { LECTURE_MESSAGES } from '../domain/index.ts'
@@ -29,7 +25,6 @@ onMounted(async () => {
   }
 })
 
-// The confirmation also says when the engine runs on this machine and sends nothing.
 const provider = (choice: { provider: string, local: boolean } | undefined) => (choice ? (choice.local ? `${choice.provider}（${t.value.editor.local}）` : choice.provider) : '')
 const voiceLabel = computed(() => choices.value?.synthesize?.voices.find(v => v.id === voice.value)?.label ?? voice.value)
 const question = computed(() => {

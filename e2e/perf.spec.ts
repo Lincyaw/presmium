@@ -7,15 +7,6 @@ import type { FixtureDeck } from './fixtures/deck.ts'
 import { buildDeck } from './fixtures/exec/deck.ts'
 import type { BuiltDeck } from './fixtures/exec/deck.ts'
 
-// N-01 and N-02 on a deck of 100 sections, built in beforeAll: the first screen of each
-// form shows within 2 s in a fresh browser context, and a step renders within 100 ms of
-// its key press. Times are taken in the page: from navigation start, and from the
-// keydown's timeStamp to the first animation frame that shows the new state. The frame
-// rate of N-02 is taken while things move: the guidance cursor of e2e/fixtures/guide in the
-// web form's present view, and page turns of the slides. The browser's own Event Timing of a key press
-// (to the next paint, layout included) is checked on slides with a Monaco runner, a flowchart and a
-// mind map (e2e/fixtures/content/heavy, F-83).
-
 const SECTIONS = 100
 
 function hundredSections(): string {
@@ -52,12 +43,10 @@ ${Array.from({ length: SECTIONS }, (_, i) => section(i + 1)).join('\n')}`
 }
 
 let deck: BuiltDeck
-/** The build's `dist/`, one site: built together, the forms are under /web/ and /slides/. */
 let site: Awaited<ReturnType<typeof serve>>
 let slides = ''
 let web = ''
 let guide: FixtureDeck
-/** Slides with a Monaco runner, a flowchart and a mind map (e2e/fixtures/content/heavy). */
 let heavy: FixtureDeck
 
 test.describe.configure({ mode: 'serial' })
@@ -82,7 +71,6 @@ test.afterAll(async () => {
   await heavy?.close()
 })
 
-/** Milliseconds from navigation start to the first frame in which `selector` is visible, in a fresh context. */
 async function firstRender(browser: Browser, url: string, selector: string): Promise<number> {
   const context = await browser.newContext()
   try {
@@ -101,7 +89,6 @@ async function firstRender(browser: Browser, url: string, selector: string): Pro
   }
 }
 
-/** Milliseconds from the keydown of `key` to the first frame in which `shown()` holds in the page. */
 async function keyToFrame(page: Page, key: string, shown: string): Promise<number> {
   await page.evaluate((condition) => {
     const holds = new Function(`return (${condition})`) as () => boolean
@@ -146,8 +133,6 @@ test('a slides click, a slides page turn and a step of the web present view rend
 })
 
 test('on slides with a Monaco runner, a flowchart and a mind map, a key press is painted within 100 ms, as the browser times it (N-02, F-83)', async ({ page }) => {
-  // The Event Timing API times an event from its timestamp to the next paint after its handlers ran,
-  // layout and painting included; entries of 16 ms and more are kept.
   await page.addInitScript(() => {
     const keys: { duration: number, slide: string }[] = []
     Object.assign(window, { pmKeys: keys })
@@ -160,7 +145,6 @@ test('on slides with a Monaco runner, a flowchart and a mind map, a key press is
   await page.goto(`${heavy.slides}/1`)
   await expect(page.locator('.slidev-page-1 .slidev-layout h1')).toBeVisible()
   const last = heavy.doc.sections.length
-  // Each slide and each of its clicks, once the slide has drawn its editor, diagram or map.
   const drawn: Record<string, string> = { 'heavy-runner': '.monaco-editor', 'heavy-flow': 'svg', 'heavy-map': 'svg' }
   for (let no = 1; no <= last; no++) {
     const section = heavy.doc.sections[no - 1]!
@@ -178,7 +162,6 @@ test('on slides with a Monaco runner, a flowchart and a mind map, a key press is
   for (const key of keys) expect(key.duration, `a key press on ${key.slide}`).toBeLessThan(100)
 })
 
-/** Milliseconds between the animation frames while `act` runs. */
 async function frameIntervals(page: Page, act: () => Promise<void>): Promise<number[]> {
   await page.evaluate(() => {
     const times: number[] = []
@@ -210,7 +193,6 @@ test('the guidance cursor of the present view and the slides\' page turns keep 6
     for (const step of [1, 2, 3]) {
       await page.keyboard.press('ArrowRight')
       await expect(present).toHaveAttribute('data-step', String(step))
-      // The cursor moves for half a second.
       await page.waitForTimeout(700)
     }
   })
@@ -219,7 +201,6 @@ test('the guidance cursor of the present view and the slides\' page turns keep 6
   await expect(page.locator('.slidev-page-20 .slidev-layout h1')).toBeVisible()
   const turns = await frameIntervals(page, async () => {
     for (const no of [21, 22, 23]) {
-      // Past the reveal of the slide, then to the next one.
       await page.keyboard.press('ArrowRight')
       await page.keyboard.press('ArrowRight')
       await expect(page.locator(`.slidev-page-${no}`)).toBeVisible()
@@ -229,6 +210,5 @@ test('the guidance cursor of the present view and the slides\' page turns keep 6
 
   const p95s = { cursor: p95(cursor), turns: p95(turns) }
   test.info().annotations.push({ type: 'frame interval p95 (ms)', description: JSON.stringify(p95s) })
-  // 60 frames a second is 16.7 ms a frame; headless browsers jitter.
   for (const [action, ms] of Object.entries(p95s)) expect(ms, action).toBeLessThanOrEqual(20)
 })

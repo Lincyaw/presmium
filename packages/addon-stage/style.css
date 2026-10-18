@@ -1,4 +1,3 @@
-/* P-01 basic content: tables and footnotes inside slides. */
 .slidev-layout table {
   border-collapse: collapse;
 }
@@ -27,8 +26,6 @@
   margin: 0;
 }
 
-/* P-02 step notes: with [click] markers, the current step stands out (the selected tint and the accent's rule, as
-   a chosen line of edit mode) and the others recede to the muted tone. */
 .slidev-note-with-clicks :is(p, li) {
   padding: 0.15em 0.5em;
   border-radius: var(--pm-radius-chip);
@@ -41,7 +38,6 @@
   color: var(--pm-color-muted);
 }
 
-/* P-03 audience screen: black screen, frozen frame, and the presenter's reminder. */
 .pm-stage-black {
   position: fixed;
   inset: 0;

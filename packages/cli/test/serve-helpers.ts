@@ -1,7 +1,3 @@
-// Real processes for the tests of `presmium serve`: workspaces made in examples/demo/.presmium (ignored
-// by git), where VitePress and the plugins resolve from the demo's node_modules, as git repositories of
-// their own; `presmium serve` as a process on this machine; requests with exactly the headers given
-// (`Host` included, which fetch cannot set).
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -19,7 +15,6 @@ export function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-/** A new workspace with the files of a fixture, packages of the repository linked into its node_modules (installed at the root), committed. */
 export function workspace(prefix: string, fixture: string, link: Record<string, string> = {}): string {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, `serve-${prefix}-`))
@@ -40,7 +35,6 @@ export function remove(dir: string | undefined): void {
   if (dir) rmSync(dir, { recursive: true, force: true })
 }
 
-/** The test process's environment without credentials or Presmium's variables, and without Vitest's NODE_ENV. */
 export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -77,7 +71,6 @@ export function presmiumProcess(cwd: string, args: string[], env: NodeJS.Process
   }
 }
 
-/** Waits until the output matches; rejects with the output when the process exits first. */
 export function waitFor(child: Child, pattern: RegExp, timeoutMs = 120_000): Promise<RegExpExecArray> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${pattern}:\n${child.output()}`)), timeoutMs)
@@ -99,7 +92,6 @@ export function waitFor(child: Child, pattern: RegExp, timeoutMs = 120_000): Pro
   })
 }
 
-/** Resolves with the exit code once the process ends. */
 export function exited(child: Child, timeoutMs = 60_000): Promise<number | null> {
   return new Promise((resolve, reject) => {
     if (child.child.exitCode !== null) return resolve(child.child.exitCode)

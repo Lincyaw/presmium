@@ -2,11 +2,6 @@ import { docBlocks } from '@presmium/kernel'
 import type { ComponentNode, DirectiveSpec, IRPass } from '@presmium/kernel'
 import { DEFAULT_TERMINAL_ROWS, EXEC_JUPYTER_ID, jupyterEnvironments, terminalFallback } from '../domain/index.ts'
 
-/**
- * `:::{terminal} <environment>` with `:height:` (rows, default 16): a
- * terminal of a `kind: jupyter` environment's server (P-107), `PmTerminal`.
- * Static renderers show one line instead.
- */
 export const terminalDirective: DirectiveSpec = {
   name: 'terminal',
   arg: true,
@@ -28,7 +23,6 @@ export const terminalDirective: DirectiveSpec = {
   },
 }
 
-/** Every `{terminal}` names a `kind: jupyter` environment the headmatter declares (an error on its line otherwise). */
 export const terminalPass: IRPass = {
   name: 'presmium.execJupyter.terminals',
   run(doc, ctx) {

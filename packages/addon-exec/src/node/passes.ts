@@ -1,28 +1,7 @@
-/**
- * The execution plugin's IR passes (docs/ir.md section 4).
- *
- * - `presmium.exec.timeouts` (step 6): code that runs (`:run:` on a code
- *   block, `{code-ref}` or a run panel) without a timeout of its own gets
- *   `presmium.exec.timeoutMs` of its section, when the configuration sets one,
- *   so a section's `{config}` and the global option bound compile-time and
- *   live runs alike (R-26).
- * - `presmium.exec.panels` (step 6): a run panel runs its code where the
- *   code's run says, the environment (`:env:`, compiled to the executor)
- *   and the session (`:session:`) the compiler read on the directive
- *   (docs/ir.md 2.7), so it gets them as props.
- * - `presmium.exec.fallbacks` (after step 7, `after: 'execute'`): a run
- *   panel's fallback, which PDF and PNG exports show, becomes its code with
- *   the parameters assigned first, followed by the output recorded at compile
- *   time, or the panel's `recorded` output where that run failed, timed out
- *   or did not happen (K-12, P-24). The output recorded at compile time is
- *   also the panel's `compiledOutput`, which it shows with the reason when a
- *   live run cannot happen (no runtime, no GPU adapter, P-104).
- */
 import { docBlocks } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRPass, MdastNode } from '@presmium/kernel'
 import { configuredTimeout, declarations, EXEC_ID, shownOutput } from '../domain/index.ts'
 
-/** The code block a run panel or stepwise run wraps. */
 export function ownCode(node: ComponentNode): CodeNode | undefined {
   return node.children?.map(block => block.node).find((child): child is CodeNode => child.type === 'code')
 }

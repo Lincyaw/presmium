@@ -6,10 +6,6 @@ import { useFixture } from './fixtures/deck.ts'
 import { buildDeck, fixture, serve } from './fixtures/exec/deck.ts'
 import type { BuiltDeck } from './fixtures/exec/deck.ts'
 
-// e2e/fixtures/exec/panels, built by `presmium build`. Slides are found by their
-// section id in the built IR and located by their headings, since Slidev keeps
-// preloaded slides in the DOM too. Loading the Python runtime takes a few seconds,
-// hence the longer waits for first results.
 test.describe.configure({ mode: 'default' })
 const panels = useFixture('exec/panels')
 const RUNTIME = { timeout: 30_000 }
@@ -54,7 +50,6 @@ test('stepping back returns the output to the previous step', async ({ page }) =
     await page.keyboard.press('ArrowRight')
     await expect(run).toHaveAttribute('data-step', String(step))
   }
-  // Executed lines: 1, 2, 3, 4, 2, 3, 4, ... so step 7 runs the print (line 4) for the second time.
   await expect(run).toHaveAttribute('data-line', '4')
   await expect(highlighted).toHaveText('    print(f"n={n} total={total}")')
   await expect(output).toHaveText('n=1 total=1\nn=2 total=3\n')
@@ -81,7 +76,6 @@ test('opening the stepwise slide at a step shows the same as stepping there', as
   }
   expect(await stepped.innerHTML()).toBe(expected)
 
-  // Going back from the next slide, before anything has been traced, lands on the last step.
   await openSlide(page, 'exec-fallback', '预录输出回退')
   await page.keyboard.press('ArrowLeft')
   const back = page.locator('.slidev-page', { has: page.locator('h1', { hasText: '分步执行' }) }).locator('.pm-step-run')
@@ -157,11 +151,6 @@ test('in the web form, code that also runs live runs again in the browser, with 
   await expect(outputs.locator('.pm-output')).toHaveAttribute('data-executor', 'pyodide')
 })
 
-// ---------------------------------------------------------------------------
-// The web form: the document view (every step shown) and the present view
-// ---------------------------------------------------------------------------
-
-/** The section `id` of the fixture's page in the document view, scrolled to. */
 async function webSection(page: Page, id: string) {
   await page.goto(`${panels().web}/exec.html#${id}`)
   const section = page.locator(`.pm-section[data-section="${id}"]`)
@@ -172,13 +161,11 @@ async function webSection(page: Page, id: string) {
 test('in the document view, a stepwise run has a stepper of its own that goes back and forth (R-28)', async ({ page }) => {
   const run = (await webSection(page, 'exec-steps')).locator('.pm-step-run')
   await expect(run).toHaveAttribute('data-state', 'ready', RUNTIME)
-  // The document view shows the final state; the stepper goes back from there.
   await expect(run).toHaveAttribute('data-step', '12')
   await run.getByRole('button', { name: '上一步' }).click()
   await expect(run).toHaveAttribute('data-step', '11')
   await expect(run.locator('.pm-step-run__status')).toContainText('第 11 / 12 步')
   await expect(run.locator('.pm-step-run__output')).toHaveText('n=1 total=1\nn=2 total=3\nn=3 total=6\n')
-  // The slider goes to any step, with the keyboard too.
   await run.getByRole('slider').focus()
   await page.keyboard.press('Home')
   await expect(run).toHaveAttribute('data-step', '0')
@@ -193,7 +180,6 @@ test('in the document view, a stepwise run loads the Python runtime only once it
     if (request.url().endsWith('/pyodide.asm.wasm')) runtime.push(request.url())
   })
   await page.goto(`${panels().web}/exec.html`)
-  // The plugins have started (the run panel can run) and the page has nothing left to load.
   await expect(page.locator('.pm-section[data-section="exec-panel"] .pm-run-panel__run')).toBeEnabled()
   await page.waitForLoadState('networkidle')
   const run = page.locator('.pm-section[data-section="exec-steps"] .pm-step-run')
@@ -223,7 +209,6 @@ test('a page restored from the back-forward cache keeps one Python runtime (R-10
   await button.click()
   await expect(panel.locator('.pm-run-panel__output')).toHaveAttribute('data-source', 'live', RUNTIME)
   expect(runtimes()).toBe(1)
-  // Hidden into the cache and shown again: the hosts stop the kernel and start it again.
   await page.evaluate(async () => {
     window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }))
     window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
@@ -239,7 +224,6 @@ test('a page restored from the back-forward cache keeps one Python runtime (R-10
 test.describe('in the present view at 1920x1080', () => {
   test.use({ viewport: { width: 1920, height: 1080 } })
 
-  /** The size of the code's text on the screen, in px, and how much of a line (`cut`) and of its lines (`hidden`) is cut. */
   async function code(present: Locator, selector: string) {
     const pre = present.locator(`${selector} pre`).first()
     await expect(pre).toBeVisible()
@@ -249,7 +233,6 @@ test.describe('in the present view at 1920x1080', () => {
     })
   }
 
-  /** The size of an element's text on the screen, in px. */
   const textSize = (element: Locator) => element.evaluate((el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().width / el.offsetWidth)
 
   test('the code of a run panel and of a stepwise run follows the size of the slide and is not cut, across or down (R-27, F-19)', async ({ page }) => {
@@ -262,27 +245,23 @@ test.describe('in the present view at 1920x1080', () => {
       expect(cut, id).toBeLessThanOrEqual(0)
       expect(hidden, id).toBeLessThanOrEqual(0)
     }
-    // The run panel's parameter and run button read at the code's size, not the page's form controls' (N-05).
     const present = page.getByRole('region', { name: '放映' })
     await page.goto(`${panels().web}/exec.html?view=present&section=exec-panel`)
     for (const control of [present.locator('.pm-run-panel__param input').first(), present.locator('.pm-run-panel__run')]) {
       await expect(control).toBeVisible()
       expect(await textSize(control)).toBeGreaterThanOrEqual(18)
     }
-    // The slides show a run panel's code whole too, as a column with the controls below.
     const slide = await openSlide(page, 'exec-panel', '执行面板')
     expect((await code(slide, '.pm-run-panel')).hidden).toBeLessThanOrEqual(0)
     await expect(slide.locator('.pm-run-panel')).toHaveClass(/pm-run-panel--present/)
   })
 
-  /** Whether `inner` lies within the height of `outer` on the screen. */
   async function within(inner: Locator, outer: Locator) {
     const [a, b] = await Promise.all([inner.boundingBox(), outer.boundingBox()])
     return Boolean(a && b && a.y >= b.y - 1 && a.y + a.height <= b.y + b.height + 1)
   }
 
   test('a run panel longer than the slide keeps its controls and output on the slide; its code keeps the size and scrolls (N-05, F-19)', async ({ page }) => {
-    // The present view of the web form shrinks a slide that does not fit its frame: the panel fits instead.
     await page.goto(`${panels().web}/exec.html?view=present&section=exec-long`)
     const present = page.getByRole('region', { name: '放映' })
     await expect(present).toHaveAttribute('data-section', 'exec-long')
@@ -292,7 +271,6 @@ test.describe('in the present view at 1920x1080', () => {
     expect(shown.size).toBeGreaterThanOrEqual(18)
     expect(shown.hidden).toBeGreaterThan(0)
 
-    // The slides cut a slide at its edge: the parameters, the run button and the output stay above it.
     const slide = await openSlide(page, 'exec-long', '长代码的面板')
     const panel = slide.locator('.pm-run-panel')
     await expect.poll(() => within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
@@ -304,7 +282,6 @@ test.describe('in the present view at 1920x1080', () => {
     await expect(panel.locator('.pm-run-panel__stdout')).toHaveText('[\'s\', \'low\', \'est\'] [115, 260, 257]\n', RUNTIME)
     expect(await within(panel.locator('.pm-run-panel__side'), slide)).toBe(true)
     expect(await within(panel.locator('.pm-run-panel__run'), slide)).toBe(true)
-    // The output beside the code takes half the width: the code's long lines wrap there, none is cut across (R-27).
     shown = await code(slide, '.pm-run-panel')
     expect(shown.size).toBeGreaterThanOrEqual(18)
     expect(shown.cut).toBeLessThanOrEqual(0)
@@ -320,7 +297,6 @@ test.describe('in the present view at 1920x1080', () => {
       await page.keyboard.press('ArrowRight')
       await expect(run).toHaveAttribute('data-step', String(step))
     }
-    // Executed lines: 1, 2, 3, 4, 2, ...
     await expect(run).toHaveAttribute('data-line', '2')
     await page.keyboard.press('ArrowLeft')
     await expect(present).toHaveAttribute('data-step', '4')
@@ -343,16 +319,10 @@ test.describe('on a phone', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// e2e/fixtures/exec/english: a deck in French (a language Presmium has no messages for, so the
-// interface follows the browser's, English) with JavaScript and TypeScript code
-// ---------------------------------------------------------------------------
-
 test.describe('a French deck with JavaScript and TypeScript', () => {
   test.describe.configure({ mode: 'serial' })
   test.use({ locale: 'en-US' })
   let deck: BuiltDeck
-  /** Built together, the forms are one site: the web form under /web/, the slides under /slides/. */
   let site: Awaited<ReturnType<typeof serve>>
   const slides = { get url() { return `${site.url}/slides` } }
   const web = { get url() { return `${site.url}/web` } }
@@ -386,13 +356,11 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
     await ts.getByRole('button', { name: 'Run', exact: true }).click()
     await expect(ts.locator('.pm-run-panel__stdout')).toHaveText('Hello, Presmium\n')
 
-    // A script that never ends is stopped at its timeout and shows its recorded output.
     const endless = await slidePanel(page, 'js-timeout')
     await endless.getByRole('button', { name: 'Run', exact: true }).click()
     await expect(endless.locator('.pm-run-panel__badge')).toHaveText('Recorded output · timed out')
     await expect(endless.locator('.pm-run-panel__stdout')).toHaveText('settled at 1.4142135623730951 (recorded)')
 
-    // The other plugins of the deck speak English too: the local environment and the toolbar's switch.
     await page.goto(`${slides.url}/${deck.slides['local-env']}`)
     await expect(page.locator('.pm-local-env__notice').filter({ visible: true })).toHaveText('The local environment is available only from the dev server')
     await expect(page.getByRole('switch', { name: 'High contrast' }).filter({ visible: true })).toHaveCount(1)
@@ -440,20 +408,12 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// e2e/fixtures/exec/xss: a test plugin's executor of Python, over Pyodide, gives an image output whose
-// data is a quote and an event handler (section 11, untrusted rich output)
-// ---------------------------------------------------------------------------
-
 test.describe('untrusted output in the slides\' runner (F-20)', () => {
-  // The test plugin imports @presmium/host, which the demo does not depend on.
   const xss = useFixture('exec/xss', { to: 'slides', link: { '@presmium/host': 'packages/host' } })
 
   test('an image output whose data is not base64 runs nothing and is dropped, saying why', async ({ page }) => {
     await page.goto(`${xss().slides}/${xss().slide('evil-image')}`)
     const slide = page.locator(`.slidev-page-${xss().slide('evil-image')}`)
-    // Until it runs, the runner says how to run the code (it has no recording), in the deck's language, naming
-    // the run button by the host's play icon.
     await expect(slide.locator('.slidev-runner-output .pm-run-hint')).toHaveText('按 运行这段代码')
     await expect(slide.locator('.slidev-runner-output .pm-run-hint svg.pm-ui-icon')).toHaveCount(1)
     await page.evaluate(() => {

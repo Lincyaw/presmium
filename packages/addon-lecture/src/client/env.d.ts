@@ -1,5 +1,3 @@
-// The Vite features the lecture view uses (Vite builds the web form). Declared
-// in the same shape as vite/client so the declarations merge when both are present.
 interface ImportMetaEnv {
   BASE_URL: string
 }

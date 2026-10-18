@@ -3,17 +3,12 @@ import type { CodeNode, DirectiveSpec, RunSpec } from '@presmium/kernel'
 import { parseCodeRef, splitTarget } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 
-/**
- * What each `{code-ref}` code node asks for, for the resolution pass of the
- * same compilation (./resolve.ts). The IR keeps only what was resolved.
- */
 export const codeRefs = new WeakMap<CodeNode, CodeRefSpec>()
 
 function langOf(file: string | undefined): string {
   return /\.([\w-]+)$/.exec(file ?? '')?.[1] ?? 'text'
 }
 
-/** `:run:` [compile|live|both] with `:executor:` and `:timeout:` (ms), as on MyST code blocks. */
 function runSpec(lang: string, options: Record<string, unknown>): RunSpec | undefined {
   if (options.run === undefined) return undefined
   const when = String(options.run).trim()
@@ -24,15 +19,8 @@ function runSpec(lang: string, options: Record<string, unknown>): RunSpec | unde
   return spec
 }
 
-/**
- * ```` ```{code-ref} region:src/cart.ts#checkout ```` with `:pin:`, `:steps:`,
- * `:variants:`, `:lang:`, `:repo:` and `:run:`. Becomes a code node whose code,
- * origin, highlights and versions the resolution pass fills in; it takes one
- * step per highlighted unit or version after the first.
- */
 export const codeRefDirective: DirectiveSpec = {
   name: 'code-ref',
-  // Editors resolve the argument as an anchor (go to definition, hover, completion).
   arg: 'anchor',
   options: { pin: 'string', steps: 'list', variants: 'list', lang: 'string', repo: 'string', run: 'string', executor: 'string', timeout: 'number' },
   toIR(input, ctx) {
@@ -47,7 +35,6 @@ export const codeRefDirective: DirectiveSpec = {
     }
     const file = splitTarget(spec.anchor)?.file ?? ''
     const lang = spec.lang ?? langOf(file)
-    // Placeholders until the pass resolves the anchor; an anchor that cannot be read stays `lost`.
     const node: CodeNode = { type: 'code', lang, value: '', origin: { anchor: spec.anchor, file, startLine: 0, endLine: 0, status: 'lost' } }
     const run = runSpec(lang, input.options)
     if (run) node.run = run

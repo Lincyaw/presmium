@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// The classroom in the hosts' toolbar: for the presenter, a button with the number of open
-// questions that opens the overview of the classroom in a popover (the browser's own: it closes
-// with Esc or a click elsewhere). It also places the web form's notes.
 import { claimFirst, useMessages } from '@presmium/host'
 import { computed, ref, useId } from 'vue'
 import { COLLECTIONS, isQuestion, MESSAGES } from '../domain/index.ts'
@@ -17,7 +14,6 @@ const questions = useCollection(() => store.value, COLLECTIONS.questions, isQues
 const unanswered = computed(() => questions.value.filter(({ value }) => !value.answered).length)
 const id = useId()
 const open = ref(false)
-// Of the toolbar's instances in a window (the bar and the menu of a phone), the first places the notes.
 const layer = claimFirst('presmium.classroom.notes')
 
 function toggled(event: Event): void {
@@ -52,8 +48,6 @@ function toggled(event: Event): void {
 .pm-classroom-toolbar__badge {
   margin-left: 0.125rem;
 }
-/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. The text
-   wraps, whatever the toolbar around it sets. */
 .pm-classroom-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;

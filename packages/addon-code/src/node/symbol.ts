@@ -6,7 +6,6 @@ import type { SgNode } from '@ast-grep/napi'
 import { codeFingerprint, found, locate, notFound, splitTarget } from '../domain/index.ts'
 import type { Candidate } from '../domain/index.ts'
 
-// Python ships as a prebuilt tree-sitter parser loaded at runtime.
 registerDynamicLanguage({ python })
 
 const LANGS: Record<string, string> = {
@@ -22,7 +21,6 @@ const LANGS: Record<string, string> = {
   pyi: 'python',
 }
 
-/** Named declarations a symbol path can address, in the TypeScript, JavaScript and Python grammars. */
 const DECLARATIONS = new Set([
   'function_declaration',
   'generator_function_declaration',
@@ -42,23 +40,16 @@ const DECLARATIONS = new Set([
   'assignment',
 ])
 
-/** Nodes around a declaration that belong to it: `export`, Python decorators, the statement of an assignment. */
 const WRAPPERS = new Set(['export_statement', 'decorated_definition', 'expression_statement'])
 
 function kind(node: SgNode | null): string {
   return node ? String(node.kind()) : ''
 }
 
-/** The declared name: `name` in most declarations, the target of a Python assignment. */
 function nameOf(node: SgNode): SgNode | null {
   return node.field('name') ?? (kind(node) === 'assignment' ? node.field('left') : null)
 }
 
-/**
- * The declaration of `name` below `scope`: looked for one level of the tree
- * after another, so the shallowest wins (`Parser.parse` is the method, not a
- * nested helper of the same name) and the search ends there.
- */
 function findDeclaration(scope: SgNode, name: string): SgNode | undefined {
   let level = scope.children()
   while (level.length > 0) {
@@ -69,7 +60,6 @@ function findDeclaration(scope: SgNode, name: string): SgNode | undefined {
   return undefined
 }
 
-/** Every declaration below `scope`, shallowest first: the candidates when a name is not found. */
 function declarations(scope: SgNode): SgNode[] {
   const result: SgNode[] = []
   let level = scope.children()
@@ -80,7 +70,6 @@ function declarations(scope: SgNode): SgNode[] {
   return result
 }
 
-/** The whole statement of a declaration: `const f = ...` for a declarator, with its wrappers. */
 function statement(node: SgNode): SgNode {
   const parent = node.parent()
   const outer = kind(node) === 'variable_declarator' && /^(lexical|variable)_declaration$/.test(kind(parent)) ? parent! : node
@@ -88,7 +77,6 @@ function statement(node: SgNode): SgNode {
   return wrapper && WRAPPERS.has(kind(wrapper)) ? wrapper : outer
 }
 
-/** A declaration's location, fingerprinted without its name so that a renamed declaration stays recognizable. */
 function describe(file: string, lines: string[], node: SgNode): Candidate {
   const name = nameOf(node)!
   const { start, end } = statement(node).range()
@@ -102,7 +90,6 @@ function describe(file: string, lines: string[], node: SgNode): Candidate {
 
 type Tree = { failure: string } | { target: NonNullable<ReturnType<typeof splitTarget>>, at: string, lines: string[], root: SgNode }
 
-/** The syntax tree of an anchor's file, or why there is none. */
 async function syntaxTree(anchor: AnchorString, src: SourceReader, ref: string | undefined, expected: string): Promise<Tree> {
   const target = splitTarget(anchor)
   if (!target) return { failure: `malformed anchor "${anchor}": expected ${expected}` }
@@ -114,11 +101,6 @@ async function syntaxTree(anchor: AnchorString, src: SourceReader, ref: string |
   return { target, at, lines: text.split(/\r?\n/), root: parse(lang, text).root() }
 }
 
-/**
- * `symbol:<file>#<name>[.<member>...]`: a declaration found by name in the
- * syntax tree (P-11), for code that cannot carry region markers. Supports
- * TypeScript, JavaScript and Python files.
- */
 export const symbolResolver: AnchorResolver = {
   scheme: 'symbol',
   async resolve(anchor, src, recorded, ref) {
@@ -139,14 +121,12 @@ export const symbolResolver: AnchorResolver = {
   },
 }
 
-/** The whole lines of a node, fingerprinted as region and pattern anchors are. */
 function span(file: string, lines: string[], node: SgNode): Candidate {
   const { start, end } = node.range()
   const location = locate(file, lines, start.line + 1, end.line + 1)
   return { location, print: codeFingerprint(location.text) }
 }
 
-/** Every node of a tree, each line span once: where locked code may be found again. */
 function spans(file: string, lines: string[], root: SgNode): Candidate[] {
   const seen = new Map<string, Candidate>()
   const visit = (node: SgNode) => {
@@ -159,13 +139,6 @@ function spans(file: string, lines: string[], root: SgNode): Candidate[] {
   return [...seen.values()]
 }
 
-/**
- * `pattern:<file>#<ast-grep pattern>`: the code that matches a pattern of
- * ast-grep (P-11), e.g. `pattern:src/cart.ts#if (prices.length === 0) $$$`,
- * for a fragment found by its syntactic structure rather than by a name;
- * `$NAME` matches any one node, `$$$` any number. The first match in the file
- * counts, as whole lines. Supports the languages of `symbol` anchors.
- */
 export const patternResolver: AnchorResolver = {
   scheme: 'pattern',
   async resolve(anchor, src, recorded, ref) {

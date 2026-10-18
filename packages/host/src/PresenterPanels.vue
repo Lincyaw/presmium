@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// The presenter panels (the `presenterPanels` service); each host shows them in its presenter view only,
-// beside what the presenter watches: in the web form in the presenter window's side column (`to`), in the
-// slides form over the corner of the presenter view's notes.
 import { PRESENTER_PANELS } from '@presmium/kernel'
 import type { PresenterPanel } from '@presmium/kernel'
 import { computed, shallowRef, watchEffect } from 'vue'
@@ -11,9 +8,7 @@ import { useMessages } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
 
 const props = withDefaults(defineProps<{
-  /** Where the panels go: a CSS selector, as `<Teleport to>` takes it. */
   to?: string
-  /** Laid out in the flow of `to` (a side column) rather than fixed over the page. */
   docked?: boolean
 }>(), { to: 'body', docked: false })
 
@@ -53,7 +48,6 @@ const problems = computed(() => {
 </template>
 
 <style scoped>
-/* Over the corner of the presenter view's notes, above its navigation bar: clear of the current slide and its clicks. */
 .pm-presenter-panels {
   position: fixed;
   right: 0.5rem;
@@ -65,7 +59,6 @@ const problems = computed(() => {
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--pm-color-line);
   border-radius: var(--pm-radius-small);
-  /* The host's tokens, which follow the dark scheme of either form, whatever the deck's theme (N-10). */
   background: var(--pm-color-surface);
   color: var(--pm-color-ink);
   font-size: 0.8rem;

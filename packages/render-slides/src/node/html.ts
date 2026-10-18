@@ -1,12 +1,3 @@
-/**
- * HTML a run produced (`text/html` outputs, docs/ir.md 6.1), sanitized as the
- * web form sanitizes it in the browser (DOMPurify with its defaults,
- * @presmium/viewer's outputs), here at build time in a DOM of jsdom
- * (DOMPurify's supported DOM for Node), without `<style>`: in a slide, which
- * Vue compiles as a template, a style element is an error (and would style
- * the whole deck); the deck's styles draw tables. Loaded on first use: most
- * decks have no HTML output.
- */
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)

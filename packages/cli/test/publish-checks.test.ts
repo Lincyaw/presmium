@@ -1,12 +1,3 @@
-// The publication checks of `presmium check` (WP-87, P-54, docs/ir.md 2.11): a broken local link, a `#fragment`
-// that names nothing, a `{csv-table}` with `:file:` (myst-parser's `mystDirectiveError`) and text that
-// `checks.forbid` forbids, each an error on its own line; a link that only the slides show, to a block only the
-// web form shows, is reported for the slides alone; a link to a place another document lacks is reported; without
-// lychee, `--external-links` says so.
-// WP-89b: lychee checks each external URL itself, given on its stdin, so a dead link is reported on its own line
-// and the links of a page that works are not checked (F-44); a single deck's build publishes no document's
-// source, however the link escapes its name or a linked directory holds it, keeping the link as written with a
-// warning (F-25, C-4).
 import { spawnSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -42,13 +33,11 @@ it('reports a broken link, #nowhere, {csv-table} with :file: and a forbidden wor
     { checkId: 'presmium.links', line: line('#web-note'), message: expect.stringMatching(/#web-note is no section.*\(in slides\)$/) },
     { checkId: 'presmium.forbid', line: line('T-123'), message: expect.stringContaining('"T-123" matches T-\\d{3}') },
   ])
-  // The links that work (a file of the deck, a section's label, another document's place) are not reported.
   expect(findings.map(f => f.message).join('\n')).not.toMatch(/starter\.py|#tables|#later/)
   if (spawnSync('lychee', ['--version']).error) {
     expect(findings).toContainEqual(expect.objectContaining({ checkId: 'presmium.links', severity: 'info', message: expect.stringContaining('lychee is not installed') }))
   }
 
-  // A place another document of the workspace does not have.
   writeFileSync(join(dir, 'lecture.md'), lines.join('\n').replace('other/lecture.md#later', 'other/lecture.md#sooner'))
   const again = JSON.parse((await presmium(dir, ['check', '--json'])).stdout) as { findings: Finding[] }
   expect(again.findings).toContainEqual(expect.objectContaining({
@@ -59,11 +48,6 @@ it('reports a broken link, #nowhere, {csv-table} with :file: and a forbidden wor
   }))
 })
 
-/**
- * A stand-in for lychee on the PATH: it writes its arguments and its stdin to `<dir>/argv.json` and
- * `<dir>/stdin.txt`, and checks each URL of its stdin with one GET (a page's own links are not followed),
- * reporting the failures as lychee's JSON does.
- */
 const FAKE_LYCHEE = `#!/usr/bin/env node
 const { writeFileSync } = require('node:fs')
 const { join } = require('node:path')
@@ -93,9 +77,7 @@ it('--external-links gives lychee the URLs on its stdin: a dead link is reported
   copies.push(bin, dir)
   writeFileSync(join(bin, 'lychee'), FAKE_LYCHEE)
   chmodSync(join(bin, 'lychee'), 0o755)
-  // `package.json` of type commonjs for the stand-in, whatever directory above says.
   writeFileSync(join(bin, 'package.json'), '{"type":"commonjs"}\n')
-  // A page that works, whose own link is dead; and a dead page.
   const server = createServer((request, response) => {
     if (request.url === '/ok') response.writeHead(200, { 'Content-Type': 'text/html' }).end('<a href="/inner-broken">x</a>')
     else response.writeHead(404, 'Not Found').end('nope')
@@ -108,7 +90,6 @@ it('--external-links gives lychee the URLs on its stdin: a dead link is reported
     const { findings } = JSON.parse(checked.stdout) as { findings: Finding[] }
     const links = findings.filter(f => f.checkId === 'presmium.links').map(f => ({ line: f.source.line, message: f.message }))
     expect(links).toEqual([{ line: 9, message: `${base}/missing-page: Not Found` }])
-    // lychee read the URLs from its stdin (`-`), never as inputs of their own to fetch and scan.
     const argv = JSON.parse(readFileSync(join(bin, 'argv.json'), 'utf8')) as string[]
     expect(argv).toContain('-')
     expect(argv.join(' ')).not.toContain(base)
@@ -119,14 +100,12 @@ it('--external-links gives lychee the URLs on its stdin: a dead link is reported
 })
 
 it('publishes no document\'s source in a single deck\'s build: the link to another document stays as written, with a warning', async () => {
-  // In the demo, where the renderers resolve.
   const work = join(ROOT, 'examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, 'document-link-'))
   copies.push(dir)
   cpSync(DECK, dir, { recursive: true })
   writeFileSync(join(dir, '.gitignore'), '*\n')
-  // The same source with its name escaped, and a directory of handouts that holds another document.
   writeFileSync(join(dir, 'lecture.md'), `${readFileSync(join(dir, 'lecture.md'), 'utf8')}\n## 资料\n\n又见 [另一份](other/lecture%2Emd#later)，[讲义资料](handouts/)。\n`)
   mkdirSync(join(dir, 'handouts/nested'), { recursive: true })
   writeFileSync(join(dir, 'handouts/sheet.txt'), 'sheet\n')

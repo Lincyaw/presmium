@@ -1,8 +1,3 @@
-/**
- * @presmium/viewer: the IR runtime (docs/ir.md section 8). Renders IR
- * documents in the browser with Vue, in pluggable runtime views, and applies
- * live updates without reloading the page.
- */
 import type { App } from 'vue'
 import { installClicks } from './clicks.ts'
 import { installSlideGlobals } from './globals.ts'
@@ -20,7 +15,6 @@ registerView({ id: 'present', get label() { return messages().views.present }, k
 registerView({ id: 'presenter', get label() { return messages().views.presenter }, kind: 'overlay', component: PresenterView, hidden: true })
 BUILTIN_ACTIONS.forEach(registerAction)
 
-/** Installs the viewer in an app: its state, the `v-click` compatibility layer and Slidev's template globals. */
 export function installViewer(app: App, viewer: Viewer): void {
   provideViewer(app, viewer)
   installClicks(app)

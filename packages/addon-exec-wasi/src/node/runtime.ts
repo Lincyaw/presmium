@@ -1,9 +1,3 @@
-/**
- * The runtime files on this machine: Runno's WASI binaries as the installed
- * `@runno/sandbox` ships them (its `dist/langs`), which the compile-time
- * executor loads and the forms publish; and the environment fingerprint of a
- * runtime, the hash of its files.
- */
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -14,10 +8,6 @@ const require = createRequire(import.meta.url)
 
 let found: string | undefined
 
-/**
- * The directory of the runtime files. Looked up along the module paths: the
- * package's exports name neither its `package.json` nor a CommonJS entry.
- */
 export function runtimeDir(): string {
   if (found) return found
   for (const modules of require.resolve.paths('@runno/sandbox') ?? []) {
@@ -27,7 +17,6 @@ export function runtimeDir(): string {
   throw new Error('the WASI runtimes (@runno/sandbox) are not installed')
 }
 
-/** Why the runtime of `lang` cannot run here, or undefined when its files are all there. */
 export function missingRuntime(lang: string): string | undefined {
   const runtime = runtimeOf(lang)
   if (!runtime) return `no WASI runtime runs ${lang}`
@@ -42,7 +31,6 @@ export function missingRuntime(lang: string): string | undefined {
 
 const fingerprints = new Map<string, string>()
 
-/** `wasi <runtime> sha256:<hash>`: the hash of the runtime's files, in order (docs/ir.md section 4); computed once. */
 export function runtimeFingerprint(lang: string): string {
   const runtime = runtimeOf(lang)
   if (!runtime) return ''

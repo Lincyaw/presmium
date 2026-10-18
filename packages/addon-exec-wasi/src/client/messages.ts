@@ -1,8 +1,3 @@
-/**
- * UI strings of the WebAssembly executor in zh-CN and en (N-07): the reasons a
- * run could not happen, which the code block shows beside its recorded
- * output, in the UI language of @presmium/host.
- */
 import { currentLocale } from '@presmium/host'
 import type { Catalog } from '@presmium/host'
 
@@ -26,7 +21,6 @@ const en: WasiMessages = {
 
 export const MESSAGES: Catalog<WasiMessages> = { 'zh-CN': zhCN, en }
 
-/** The strings of the UI language, read when a string is needed. */
 export function messages(): WasiMessages {
   return MESSAGES[currentLocale()]
 }

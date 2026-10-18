@@ -7,7 +7,6 @@ import { RUNTIMES } from '../runner.mjs'
 import type { Runtime } from '../runner.mjs'
 import { runtimeDir } from './runtime.ts'
 
-/** The part of Vite's plugin interface used here; Vite itself is a dependency of the hosts, not of this package. */
 export interface WasiRuntimePlugin {
   name: string
   configResolved(config: { base: string, build: { ssr?: unknown } }): void
@@ -18,19 +17,9 @@ export interface WasiRuntimePlugin {
 const TYPES: Record<string, string> = { '.wasm': 'application/wasm', '.gz': 'application/gzip' }
 const ALL = Object.values(RUNTIMES).flat()
 
-/** The licenses of the runtime binaries, published next to them as `<base>wasi/LICENSES`. */
 const LICENSES = 'LICENSES'
 const LICENSES_FILE = fileURLToPath(new URL('../../LICENSES', import.meta.url))
 
-/**
- * Serves the WASI runtime files at `<base>wasi/` in dev (all of them, as code
- * may change while the server runs) and copies those of `runtimes` there in
- * builds, so the code runs without a CDN; the web form's service worker
- * precaches every file of the build, as the slides' does with the publishing
- * plugin, so they work offline once loaded (docs/architecture.md 9.2). Their
- * licenses go with them (`<base>wasi/LICENSES`). The server render of a
- * build copies nothing.
- */
 export function wasiRuntime(runtimes: readonly string[]): WasiRuntimePlugin {
   const files = [...new Set(runtimes.flatMap(runtime => Object.hasOwn(RUNTIMES, runtime) ? RUNTIMES[runtime as Runtime] : []))]
   let base = '/'

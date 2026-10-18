@@ -6,33 +6,19 @@ import { messages } from './messages.ts'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
 export interface WasiRunnerOptions {
-  /** Base URL of the runtime files, ending with `/`; resolved against the page URL when a request is sent. */
   runtimeURL: string
-  /** How long a request waits for its runtime to download and compile before it fails, so a stalled download still ends (P-24). */
   loadTimeoutMs: number
 }
 
 export interface WasiRunner {
-  /** An executor on this runner: `id`, running the WASI languages or those of `languages` (a `kind: wasi` environment's). */
   executor(id: string, languages?: string[]): Executor
-  /** Terminates the worker; a later request starts a fresh one. */
   dispose(): void
 }
 
-/**
- * C, C++, Ruby and SQL in the browser (P-103): one worker for the page runs
- * the requests in turn, on the runtime files the form publishes, kept
- * compiled for the page's later runs. The run timeout counts from when the
- * runtime has loaded; a request that exceeds its load or run timeout, or is
- * aborted, terminates the worker, and the next one starts a fresh worker.
- * Programs get no environment variables. The executors of the WASI
- * languages and of `kind: wasi` environments share the worker.
- */
 export function createWasiRunner(options: WasiRunnerOptions): WasiRunner {
   let worker: Worker | undefined
   let queue: Promise<unknown> = Promise.resolve()
   let ids = 0
-  /** Cancels the request the worker is handling. */
   let cancel: (() => void) | undefined
 
   const spawn = () => (worker ??= new Worker(new URL('./wasi.worker.ts', import.meta.url), { type: 'module', name: 'presmium-wasi' }))

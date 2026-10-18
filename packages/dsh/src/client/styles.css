@@ -1,5 +1,3 @@
-/* The client bundle's styles (build/client.mjs makes one string of them): the design system, the workbench's panels and
-   the root layout. The fonts are inlined as data URLs: the module system serves a plugin's scripts only (17, item 8). */
 @import '@presmium/design/design.css';
 @import '@presmium/workbench/styles.css';
 @import './frame.css';

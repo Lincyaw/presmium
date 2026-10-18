@@ -3,19 +3,13 @@ import CueNote from '../src/client/CueNote.vue'
 import { requestHint, useCue } from '../src/client/index.ts'
 
 const props = defineProps<{
-  /** CSS selector of the interactive element to point at, looked up in this slide. */
   target: string
-  /** First step of the hint (default 0, the step its block appears at). */
   at?: number | string
-  /** Step at which it ends (exclusive); open-ended when absent. */
   until?: number | string
-  /** Popover shown when the beacon is clicked. */
   title?: string
   text?: string
 }>()
 
-// On the audience's slide a driver.js beacon pulses at the target; elsewhere a ring pulses around it.
-// In the web form's page views, its title and text show in place.
 const { anchor, look, note, steps } = useCue(props, 'data-pm-hint', requestHint)
 </script>
 
@@ -27,8 +21,6 @@ const { anchor, look, note, steps } = useCue(props, 'data-pm-hint', requestHint)
 </template>
 
 <style>
-/* The beacons' size and layering are in src/client/hints.css. */
-/* A hint in place: the accent's ring, widening and fading (N-10). */
 [data-pm-hint='inline'] {
   outline: 2px solid var(--pm-color-accent);
   outline-offset: 3px;

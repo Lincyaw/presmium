@@ -1,9 +1,3 @@
-/**
- * The text of the workbench's frame and of Presmium's brand in DeepSeek Harness's
- * places (docs/design-dsh.md 7.5 and 7.6), in Chinese and English: the activity
- * bar, the first-use notice, and what replaces DeepSeek's copy in the
- * conversation's opening (by language packs, for the full tags zh-CN and en-US).
- */
 import type { Locale } from '@presmium/workbench'
 
 const zh = {
@@ -62,7 +56,6 @@ const en: FrameMessages = {
 
 export const FRAME_MESSAGES: Record<Locale, FrameMessages> = { 'zh-CN': zh, 'en': en }
 
-/** What replaces DeepSeek's copy in DeepSeek Harness's namespaces, by language pack (`ctx.locale.register`). */
 export const BRAND_COPY: Record<'zh-CN' | 'en-US', Record<string, Record<string, string>>> = {
   'zh-CN': {
     conversation: { 'hero.headline': '写讲义，从这里开始', 'hero.preview': '工作台' },

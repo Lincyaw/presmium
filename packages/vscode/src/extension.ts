@@ -1,8 +1,3 @@
-/**
- * The Presmium extension: a thin client of the Presmium language server
- * (P-80) for the Markdown files of a deck, and a preview of `presmium dev`
- * beside the editor that follows the section at the cursor (P-81).
- */
 import { randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -15,12 +10,10 @@ import { LanguageClient, TransportKind } from 'vscode-languageclient/node'
 
 const SERVER_PACKAGE = '@presmium/language-server'
 const SERVER_BIN = 'bin/presmium-language-server.mjs'
-/** Cursor moves closer together than this move the preview once. */
 const FOLLOW_DELAY = 150
 
 let client: LanguageClient | undefined
 
-/** The language server: `presmium.server.path`, else the one installed in a workspace folder, else the extension's own. */
 function serverModule(context: vscode.ExtensionContext): string {
   const configured = vscode.workspace.getConfiguration('presmium').get<string>('server.path')
   if (configured) return configured
@@ -29,7 +22,6 @@ function serverModule(context: vscode.ExtensionContext): string {
     try {
       return join(dirname(createRequire(join(base, 'package.json')).resolve(`${SERVER_PACKAGE}/package.json`)), SERVER_BIN)
     } catch {
-      // Not installed there.
     }
   }
   throw new Error(`${SERVER_PACKAGE} is not installed; add it to the workspace or set presmium.server.path`)
@@ -44,7 +36,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     return
   }
   const runtime = vscode.workspace.getConfiguration('presmium').get<string>('server.runtime') || 'node'
-  // The server registers the file watching it needs.
   client = new LanguageClient('presmium', 'Presmium', { module: server, runtime, transport: TransportKind.ipc }, {
     documentSelector: [{ scheme: 'file', language: 'markdown' }],
   })
@@ -61,11 +52,6 @@ function sectionAt(client: LanguageClient, editor: vscode.TextEditor): Promise<S
   return client.sendRequest<SectionAt | null>(SECTION_REQUEST, { textDocument: { uri: editor.document.uri.toString() }, position })
 }
 
-/**
- * Opens the deck's `presmium dev` web preview beside the editor, then keeps
- * it on the section at the cursor: within a page by its anchor, which
- * scrolls without reloading; another page through `?section=<id>`.
- */
 async function openPreview(client: LanguageClient): Promise<void> {
   const editor = vscode.window.activeTextEditor
   if (!editor) return
@@ -104,7 +90,6 @@ async function openPreview(client: LanguageClient): Promise<void> {
   })
 }
 
-/** The preview page in the webview: the dev server in a frame, moved by `presmium:show` messages. */
 function previewHtml(url: string, origin: string): string {
   const nonce = randomBytes(16).toString('base64')
   return `<!DOCTYPE html>

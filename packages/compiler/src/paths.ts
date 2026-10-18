@@ -1,16 +1,9 @@
-/**
- * Paths in what the renderers publish (docs/architecture.md 4.2): an output
- * names no path of the machine it was built on, so the same deck builds to
- * the same bytes wherever it is checked out; local files a block names are
- * published with the output under a name that holds their content hash.
- */
 import { existsSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { irBlocks } from '@presmium/kernel'
 import type { IRDocument, SourcePos } from '@presmium/kernel'
 import { fileHash } from './published.ts'
 
-/** URLs that name no local file: a scheme, protocol-relative, or a fragment. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
 
 function inRepository(path: string, root: string): boolean {
@@ -19,12 +12,10 @@ function inRepository(path: string, root: string): boolean {
   return rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel)
 }
 
-/** `path` relative to the directory `from`, with `/` separators; `.` for `from` itself. */
 function relativePath(from: string, path: string): string {
   return relative(from, path).split(sep).join('/') || '.'
 }
 
-/** A value whose absolute paths in the repository `root` are made relative to `from`; other values stay. */
 export function portable(value: unknown, from: string, root: string): unknown {
   if (typeof value === 'string') return inRepository(value, root) ? relativePath(from, value) : value
   if (Array.isArray(value)) return value.map(item => portable(item, from, root))
@@ -32,12 +23,6 @@ export function portable(value: unknown, from: string, root: string): unknown {
   return value
 }
 
-/**
- * The IR as an output publishes it (`<out>/ir.json`): source positions
- * relative to the deck directory, and the paths of the plugins' configuration
- * in the repository relative to the deck too. `presmium ir` and `presmium
- * dev` keep the absolute paths, which editors open.
- */
 export function relativeIR(doc: IRDocument, deckDir: string, workspaceRoot: string): IRDocument {
   const copy = structuredClone(doc)
   const source = (pos: SourcePos) => {
@@ -56,10 +41,6 @@ export function relativeIR(doc: IRDocument, deckDir: string, workspaceRoot: stri
   return copy
 }
 
-/**
- * The local file a URL of a block names (`RenderContext.localAsset`):
- * relative to the block's source file, or `/...` in the deck's `public/`.
- */
 export function localAsset(deckDir: string, source: SourcePos, url: string): { file: string, name: string } | undefined {
   if (REMOTE.test(url)) return undefined
   const path = url.replace(/[?#].*$/s, '')
@@ -68,7 +49,6 @@ export function localAsset(deckDir: string, source: SourcePos, url: string): { f
   try {
     name = decodeURIComponent(path)
   } catch {
-    // A malformed escape: the URL is read as it is written.
   }
   const file = name.startsWith('/') ? join(deckDir, 'public', name) : resolve(dirname(source.file), name)
   if (!existsSync(file) || !statSync(file).isFile()) return undefined

@@ -5,12 +5,6 @@ import { CONTENT_ID, encodeMarkmap, markmapOutline } from '../domain/index.ts'
 
 const transformer = new Transformer()
 
-/**
- * `{markmap}` (P-41): headings and lists drawn as a mindmap by `PmMarkmap`;
- * renderers that cannot draw it show the outline as a nested list. The
- * `markmap` option holds markmap's JSON options; a YAML block at the start of
- * the body sets it, as markmap's own frontmatter does.
- */
 export const markmapDirective: DirectiveSpec = {
   name: 'markmap',
   body: true,

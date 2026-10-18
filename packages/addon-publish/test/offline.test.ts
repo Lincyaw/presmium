@@ -1,11 +1,3 @@
-// Runs the real `presmium build --to web,slides` on a copy of ./fixtures/offline, which
-// uses this addon: the compile pass downloads a remote image whose URL has no
-// extension (as PlantUML's have), and the slides' service worker precaches the build,
-// the WASI runtime of the deck's live Ruby code (a gzip archive among its files)
-// included; the web form's precaches the build but the runtimes, which it keeps
-// when a page first uses them (D-6). Both forms publish the runtimes they redistribute with their licenses
-// (5.4): Pyodide's (`pyodide/LICENSES`), jax-js's (`presmium/jax-js/LICENSE`) and
-// the WASI runtimes' (`wasi/LICENSES`), which their service workers precache.
 import { randomBytes } from 'node:crypto'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -18,8 +10,6 @@ import { bin, copyFixture, removeCopies } from './helpers.ts'
 afterAll(removeCopies)
 
 it('downloads the remote images of the deck and precaches them with the deck, the Pyodide runtime and the WASI runtime, the runtimes\' licenses with them', async () => {
-  // A "remote" image on another origin, served without a file extension; noise keeps it
-  // above the size Vite inlines, so the build has it as a file.
   const png = new PNG({ width: 64, height: 64 })
   randomBytes(png.data.length).copy(png.data)
   const image = PNG.sync.write(png)
@@ -37,7 +27,6 @@ it('downloads the remote images of the deck and precaches them with the deck, th
   }
   expect(result.code, result.stdout + result.stderr).toBe(0)
 
-  // The image is kept in the deck, so later builds have it without network.
   const assets = readdirSync(join(dir, '.presmium/assets'))
   expect(assets).toHaveLength(1)
   expect(assets[0]).toMatch(/\.png$/)
@@ -50,7 +39,6 @@ it('downloads the remote images of the deck and precaches them with the deck, th
 
   expect(readFileSync(join(dist, 'index.html'), 'utf8')).toContain('registerSW.js')
   expect(precached).toEqual(expect.arrayContaining(['index.html', 'favicon.svg', 'pyodide/pyodide.asm.wasm', localImage, 'wasi/ruby-3.2.0.wasm', 'wasi/ruby-3.2.0.tar.gz']))
-  // The runtimes' licenses go with them, in both forms, and are precached with them (F-16).
   const LICENSES = ['pyodide/LICENSES', 'presmium/jax-js/LICENSE', 'wasi/LICENSES']
   expect(precached).toEqual(expect.arrayContaining(LICENSES))
   const web = join(dir, 'dist/web')
@@ -58,7 +46,6 @@ it('downloads the remote images of the deck and precaches them with the deck, th
   const list = (name: string) => JSON.parse(new RegExp(`^const ${name} = (.*)$`, 'm').exec(worker)![1]!) as string[]
   const webPrecached = list('URLS')
   expect(webPrecached).toEqual(expect.arrayContaining(LICENSES.map(file => `/web/${file}`)))
-  // The web form precaches the shell and the content; it keeps the runtimes when a page first uses them (D-6).
   const RUNTIMES = ['/web/pyodide/pyodide.asm.wasm', '/web/wasi/ruby-3.2.0.wasm', '/web/wasi/ruby-3.2.0.tar.gz']
   expect(webPrecached).toEqual(expect.arrayContaining(['/web/index.html']))
   expect(webPrecached.filter(url => RUNTIMES.includes(url))).toEqual([])

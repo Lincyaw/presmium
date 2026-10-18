@@ -1,26 +1,16 @@
-/**
- * A focus as the workbench reports it, resolved on the compiled document
- * (P-116, docs/design-dsh.md 8.2 and 8.6): a block or section of a preview
- * becomes its range of the source, as `locate_source` finds it; a range of the
- * source editor gets the section and block it lies in. The excerpt is read
- * from the file, never taken from the page.
- */
 import { readFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, normalize, sep } from 'node:path'
 import { docBlocks, isRecord } from '@presmium/kernel'
 import type { Focus, FocusReport, IRDocument, SourceRange } from '@presmium/kernel'
 import { findBlock, findSection, place } from './deck.ts'
 
-/** An excerpt longer than this keeps its first and last lines and says how many it leaves out (8.4). */
 export const EXCERPT_LINES = 20
-/** At most this many characters of the text selected in the page are kept. */
 const QUOTE_CHARS = 2000
 const FROM = new Set<Focus['from']>(['source', 'web', 'slides'])
 
 const str = (value: unknown, max = 200) => (typeof value === 'string' && value !== '' && value.length <= max ? value : undefined)
 const line = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined)
 
-/** A focus report from a request's JSON, or why it is not one. */
 export function focusReport(value: unknown): FocusReport | string {
   if (!isRecord(value)) return 'a focus is an object'
   const id = str(value.id)
@@ -39,7 +29,6 @@ export function focusReport(value: unknown): FocusReport | string {
   return report
 }
 
-/** The text of lines `start` to `end` of a file; a longer range keeps its first and last lines. */
 export function excerptOf(text: string, start: number, end: number): string {
   const lines = text.split(/\r?\n/).slice(start - 1, end)
   if (lines.length <= EXCERPT_LINES) return lines.join('\n')
@@ -47,7 +36,6 @@ export function excerptOf(text: string, start: number, end: number): string {
   return [...lines.slice(0, half), `[… ${lines.length - EXCERPT_LINES} more lines …]`, ...lines.slice(-half)].join('\n')
 }
 
-/** The innermost block whose source holds the range's first line, with its section. */
 function blockAt(doc: IRDocument, range: SourceRange): { section: string, block?: string } | undefined {
   let found: { section: string, block: string, span: number } | undefined
   for (const { section, block } of docBlocks(doc)) {
@@ -57,7 +45,6 @@ function blockAt(doc: IRDocument, range: SourceRange): { section: string, block?
     if (!found || end - at.line < found.span) found = { section: section.id, block: block.id, span: end - at.line }
   }
   if (found) return { section: found.section, block: found.block }
-  // Between blocks: the last section that starts before it.
   const sections = doc.sections.filter((s) => {
     const at = place(doc, s.source)
     return at.file === range.file && at.line <= range.startLine
@@ -66,11 +53,6 @@ function blockAt(doc: IRDocument, range: SourceRange): { section: string, block?
   return section && { section: section.id }
 }
 
-/**
- * Resolves a report on the document's compilation: its source range (relative
- * to the document directory), the excerpt read from that file, its section and
- * block. Throws with the reason when the report names nothing of the document.
- */
 export function resolveFocus(doc: IRDocument, document: string, report: FocusReport, read: (file: string) => string = file => readFileSync(file, 'utf8')): Focus {
   const deckDir = dirname(doc.meta.entry)
   let source: SourceRange

@@ -1,8 +1,5 @@
-// The MCP SDK's client as an agent connects to `/mcp` (packages/mcp/test, e2e/mcp.spec.ts), and a window
-// of the server's control channel as a page holds one (it reports positions and answers approvals).
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 
-/** A client of `<server>/mcp` with a bearer token, on the 2026-07-28 protocol where the server offers it. */
 export async function connectMcp(url: string, token: string): Promise<Client> {
   const client = new Client({ name: 'presmium-test', version: '0.1.0' }, { versionNegotiation: { mode: 'auto' } })
   await client.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }))
@@ -14,7 +11,6 @@ interface ToolResult {
   content?: unknown
 }
 
-/** The JSON (or text) of a tool's result. */
 export function resultOf<T = any>(result: ToolResult): T {
   const [first] = result.content as { type: string, text: string }[]
   try {
@@ -25,14 +21,12 @@ export function resultOf<T = any>(result: ToolResult): T {
 }
 
 export interface ControlWindow {
-  /** Resolves with the next event of this name (one already received counts). */
   next(event: string, timeoutMs?: number): Promise<Record<string, any>>
   report(body: Record<string, unknown>): Promise<number>
   answer(id: string, allow: boolean): Promise<number>
   close(): void
 }
 
-/** A window of the control channel of the server at `url`, for the document '' of `presmium dev`. */
 export async function controlWindow(url: string, id: string): Promise<ControlWindow> {
   const abort = new AbortController()
   const control = `${url}/__presmium/presmium.server/control`
@@ -57,7 +51,6 @@ export async function controlWindow(url: string, id: string): Promise<ControlWin
         }
       }
     } catch {
-      // Closed.
     }
   })()
   const post = async (body: Record<string, unknown>) => {

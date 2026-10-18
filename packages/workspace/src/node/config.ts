@@ -1,9 +1,3 @@
-/**
- * The workspace (docs/ir.md section 10, docs/domain-model.md section 14): the
- * configuration `presmium.workspace.yaml` at its root, read once, and its
- * documents, found by the configuration's patterns (default `*\/lecture.md`)
- * and listed from their headmatter only.
- */
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { DECK_ENTRY, readFrontmatter, WORKSPACE_CONFIG } from '@presmium/compiler'
@@ -15,28 +9,20 @@ import { parse as parseYaml } from 'yaml'
 import type { WorkspaceDocument } from '../domain/api.ts'
 import { matchesPattern, patternSegments } from '../domain/paths.ts'
 
-/** The documents of a workspace without `documents` in its configuration. */
 export const DEFAULT_DOCUMENTS = [`*/${DECK_ENTRY}`]
 
-/** Directories never searched for documents. */
 const SKIPPED = new Set(['node_modules', '.git', '.presmium', 'dist'])
 
 const KINDS: ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 const POLICIES = new Set<ApprovalPolicy>(['off', 'ask', 'allow'])
 
 export interface WorkspaceConfig {
-  /** The workspace root (absolute, real path). */
   root: string
-  /** The site title: `title`, else the root directory's name. */
   title: string
-  /** Patterns of the documents' entry files, in order. */
   documents: string[]
-  /** The workspace root is the one document (no configuration of documents, a `lecture.md` at the root). */
   single: boolean
-  /** `site`: the options of the site shell, and `home`. */
   site: Record<string, unknown>
   approvals: Partial<Record<ApprovalKind, ApprovalPolicy>>
-  /** `templates`: the directory of the document templates (absolute); undefined for the templates installed with Presmium. */
   templates?: string
   settings: OperatorSettings
 }
@@ -45,7 +31,6 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.trim() !== '').map(v => v.trim()) : typeof value === 'string' && value.trim() ? [value.trim()] : []
 }
 
-/** Reads the workspace configuration of `root`; throws naming the file when it cannot be read. */
 export function readWorkspace(root: string): WorkspaceConfig {
   const dir = realpathSync(resolve(root))
   const file = join(dir, WORKSPACE_CONFIG)
@@ -74,7 +59,6 @@ export function readWorkspace(root: string): WorkspaceConfig {
   }
 }
 
-/** Whether `dir` is a workspace root that is not itself a deck: it has a configuration and no `lecture.md`, or declares its documents. */
 export function isWorkspaceRoot(dir: string): boolean {
   if (!existsSync(join(dir, WORKSPACE_CONFIG))) return false
   try {
@@ -84,7 +68,6 @@ export function isWorkspaceRoot(dir: string): boolean {
   }
 }
 
-/** The entry files the patterns name, relative to the root, in pattern order, then by path. */
 function entries(config: WorkspaceConfig): string[] {
   const found: string[] = []
   for (const pattern of config.documents) {
@@ -113,19 +96,16 @@ function entries(config: WorkspaceConfig): string[] {
   return found
 }
 
-/** A document as found: its entry file too (relative to the workspace root). */
 export interface FoundDocument extends WorkspaceDocument {
   entry: string
 }
 
-/** The document of an entry file (relative to the root): its directory, and its title, language and tags from its headmatter. */
 function documentOf(config: WorkspaceConfig, entry: string): FoundDocument {
   const dir = entry.split('/').slice(0, -1).join('/')
   let headmatter: Record<string, unknown> = {}
   try {
     headmatter = readFrontmatter(readFileSync(join(config.root, entry), 'utf8'))
   } catch {
-    // Listed by its directory.
   }
   const tags = strings(headmatter.tags)
   return {
@@ -137,12 +117,10 @@ function documentOf(config: WorkspaceConfig, entry: string): FoundDocument {
   }
 }
 
-/** The documents of the workspace, read now (P-121). */
 export function listDocuments(config: WorkspaceConfig): FoundDocument[] {
   return entries(config).map(entry => documentOf(config, entry))
 }
 
-/** Whether a document directory is one the configuration's patterns name (its entry file `lecture.md`). */
 export function namedByPatterns(config: WorkspaceConfig, dir: string): boolean {
   return config.documents.some(pattern => matchesPattern(pattern, dir ? `${dir}/${DECK_ENTRY}` : DECK_ENTRY))
 }

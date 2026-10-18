@@ -1,12 +1,3 @@
-/**
- * Engines of the OpenAI audio API shape at the operator's address (Groq,
- * OpenAI, Speaches, Kokoro-FastAPI, the fake engine): `audio/speech` asks for
- * Ogg/Opus (`response_format: opus`); `audio/speech/timestamps` and
- * `audio/voices`, Presmium's extensions, are used when the engine has them;
- * `audio/transcriptions` asks for `verbose_json` with word times. The key
- * goes to this address only, and a redirect is refused so that it cannot
- * be led elsewhere.
- */
 import type { SpeechWord, Transcript, VoiceInfo } from '@presmium/kernel'
 import { isRecord } from '@presmium/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
@@ -15,7 +6,6 @@ import { answerError, SpeechError } from '../errors.ts'
 import type { EngineAdapter, EngineAudio, EngineInput, EngineSynthesis } from './types.ts'
 import { speaks } from './types.ts'
 
-/** Bytes as a Blob part. */
 export function blobOf(bytes: Uint8Array, type: string): Blob {
   return new Blob([new Uint8Array(bytes)], { type })
 }
@@ -39,7 +29,6 @@ function voiceOf(value: unknown): VoiceInfo | undefined {
 }
 
 export function openaiEngine(engine: EngineDefinition): EngineAdapter {
-  /** The engine answered 404 for the timestamps extension: plain `audio/speech` from then on. */
   let timestamps = true
   const call = (path: string, init: RequestInit, signal?: AbortSignal) => fetch(`${engine.url}/${path}`, {
     ...init,
@@ -50,12 +39,6 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
   const what = `speech engine "${engine.id}" (${engine.provider})`
 
   return {
-    /**
-     * The engine's voices. An engine without the extension (404, 405) has no
-     * list, so none of its voices is known as a clone; any other failure,
-     * or an answer that is not a list, rejects: whether a voice is cloned
-     * cannot be told then, and the consent gate fails closed (N-08).
-     */
     async voices(lang, signal) {
       const response = await call('audio/voices', { method: 'GET' }, signal)
       if (response.status === 404 || response.status === 405) return []
@@ -112,7 +95,6 @@ export function openaiEngine(engine: EngineDefinition): EngineAdapter {
         ? answer.segments.flatMap(s => (isRecord(s) && typeof s.start === 'number' && typeof s.end === 'number' ? [{ start: s.start, end: s.end, text: typeof s.text === 'string' ? s.text : '', words: timedWords(s.words) }] : []))
         : []
       if (segments.length === 0) return oneSegment(text, words, lang, duration)
-      // Segments that came with their words (Presmium's answer) keep them; else the words are put into them by time.
       const placed = segments.some(s => s.words.length) ? segments : wordsIntoSegments(segments, words)
       return { lang, duration, text, segments: placed }
     },

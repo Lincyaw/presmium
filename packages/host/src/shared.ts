@@ -3,7 +3,6 @@ import { effectScope, ref, toRaw, watch } from 'vue'
 import type { SharedStateScope, SyncPublish, SyncTransport, SyncTransports } from './types.ts'
 import { joinWindows } from './windows.ts'
 
-/** A 'remote' shared state as a sync channel: its state is `{ value }`. */
 interface Channel {
   name: string
   receive(patch: Record<string, unknown>): void
@@ -12,31 +11,16 @@ interface Channel {
 }
 
 export interface SharedStates {
-  /** The adapter's `useSharedState`. */
   sharedState<T>(key: string, initial: T, scope: SharedStateScope): Ref<T>
-  /** Joins transports to the 'remote' shared states (part of the `syncTransports` service). */
   transports: SyncTransports
 }
 
 const plain = (value: unknown): unknown => value === undefined ? undefined : JSON.parse(JSON.stringify(toRaw(value)))
 
-/**
- * Shared states (`useSharedState`) of the deck titled `deck`. 'view' states
- * stay in the window. 'local' and 'remote' states travel between the deck's
- * windows in this browser (`joinWindows`, which also brings a window opened
- * later up to date); 'remote' ones are also sync channels named
- * `presmium.shared:<deck>:remote:<key>`, which each transport added through
- * `transports` joins (e.g. a classroom). Every change is applied in the order
- * it arrives, a remote one right after a local one included, and published
- * at once: a change that came from another window or device is applied here
- * without being sent on again (`fromRemote`), and the next local change is
- * sent as local.
- */
 export function createSharedStates(deck: string): SharedStates {
   const states = new Map<string, Ref<unknown>>()
   const channels = new Map<string, Channel>()
   const transports = new Set<SyncTransport>()
-  // A state outlives the component that asked for it first.
   const detached = effectScope(true)
 
   const connect = (transport: SyncTransport, channel: Channel) => {
@@ -64,7 +48,6 @@ export function createSharedStates(deck: string): SharedStates {
       value: () => plain(state.value),
       publishers: new Map(),
     }
-    // Synchronous, so each change is published with its own source.
     watch(state, (value) => {
       changed = true
       const data = plain(value)

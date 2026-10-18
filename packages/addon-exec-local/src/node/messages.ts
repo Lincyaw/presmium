@@ -1,11 +1,3 @@
-/**
- * Texts the node side writes, in zh-CN and en (N-07): the answers of the
- * routes, in the language the page asks for with Accept-Language
- * (src/client/local-env.ts), and the title of the approval a run asks for;
- * the README of an exported environment, in that language or, for the
- * archive built at compile time, in the deck's `lang`. The container executor's messages at
- * compile time are English, like those of the other compile-time executors.
- */
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { deckLocale } from '@presmium/kernel'
 
@@ -23,7 +15,6 @@ const zhCN = {
   notStringTable: (key: string) => `字段 ${key} 必须是字符串表`,
   runTitle: (lang: string) => `在本地环境的容器中运行一段 ${lang} 代码`,
   notAllowed: '没有得到运行的许可',
-  /** README of the exported environment (P-26); `run` is the command that runs the snippet, when known. */
   readme: (file: string, run?: string) => [
     '# Presmium 导出的运行环境',
     '',
@@ -78,16 +69,10 @@ const MESSAGES = { 'zh-CN': zhCN, en }
 
 const requested = new AsyncLocalStorage<ServerMessages>()
 
-/**
- * Runs `task` with the texts of a language: a request's Accept-Language or a
- * deck's `lang`, as `deckLocale` of @presmium/kernel reads it (Chinese when
- * none is named, the default deck language).
- */
 export function inLanguage<T>(language: string | undefined, task: () => T): T {
   return requested.run(MESSAGES[deckLocale(language?.trim())], task)
 }
 
-/** The texts of the request or deck being handled; English elsewhere (the container executor at compile time). */
 export function text(): ServerMessages {
   return requested.getStore() ?? en
 }

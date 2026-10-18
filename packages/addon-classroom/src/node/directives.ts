@@ -1,57 +1,11 @@
-/**
- * The classroom directives. Each makes a component whose prompt (Markdown)
- * is its child block, so both browser forms render it with the deck's
- * Markdown; the component itself only gets data props. The `fallback`, the
- * static form for renderers without the component, is written by the
- * `classroom-places` pass in the deck's language (`./fallbacks.ts`).
- *
- * ````md
- * ```{quiz}
- * BPE 每一轮合并哪一对？
- *
- * - [ ] 最先出现的一对
- * - [x] 出现次数最多的一对
- * ```
- *
- * `````{exercise} python
- * 写函数 `mean(xs)`……
- *
- * ```python
- * def mean(xs): ...          # starter code
- * ```
- *
- * ```python
- * assert mean([1, 2]) == 1.5  # checks: one per top-level statement
- * ```
- * `````
- *
- * ```{question-box}
- * :target: bpe-merge        # optional: a block of this section the questions are about
- * 有疑问就在这里提出。
- * ```
- *
- * ```{pulse} 这一节讲清楚了吗？
- * :levels: 懂了, 有点模糊, 没懂
- * ```
- *
- * ```{predict} 合并三轮之后，词表中有几个新符号？
- * :choices: 1, 2, 3          # optional: without them, readers write their prediction
- * ```
- * ````
- *
- * What `{predict}` reveals, the content of the step after it, becomes its
- * children in the `predict-reveals` pass (`./reveals.ts`).
- */
 import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, MdastNode } from '@presmium/kernel'
 import { CLASSROOM_ID, exerciseSource, optionList, quizSource } from '../domain/index.ts'
 
-/** A component of this plugin with the `prompt` nodes as its child block. */
 function component(name: string, props: Record<string, unknown>, prompt: MdastNode[], ctx: DirectiveContext): ComponentNode {
   const children: IRBlock[] = prompt.length ? [{ id: 'prompt', role: 'visual', at: 0, source: ctx.source, node: { type: 'markdown', mdast: { type: 'root', children: prompt } } }] : []
   return { type: 'component', plugin: CLASSROOM_ID, name, props, ...children.length ? { children } : {} }
 }
 
-/** The body parsed once, as the deck's Markdown. */
 const body = (text: string, ctx: DirectiveContext): MdastNode => (text.trim() ? ctx.parse(text) : { type: 'root', children: [] })
 
 export const quizDirective: DirectiveSpec = {
@@ -100,7 +54,6 @@ export const pulseDirective: DirectiveSpec = {
   body: true,
   options: { levels: 'string' },
   toIR(input, ctx) {
-    // Without them, the pass gives the question and the levels in the deck's language.
     const question = input.arg?.trim()
     const levels = optionList(input.options.levels)
     return { node: component('PmPulse', { ...question ? { question } : {}, ...levels ? { levels } : {} }, body(input.body, ctx).children ?? [], ctx) }

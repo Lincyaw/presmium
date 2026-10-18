@@ -1,39 +1,9 @@
-/**
- * `{run-panel}` (P-20, P-24) and `{step-run}` (P-21): a code body that becomes
- * a component wrapping a code block. The block is the component's only child,
- * so renderers that cannot run code still show it; being the component's own
- * code, it shows neither run controls nor recorded output (docs/ir.md 5.1).
- * The component runs the code of its `code` prop. Its `fallback`, which static
- * forms show in its place, is the code followed by the `:recorded:` output;
- * once the code has run at compile time, ./fallback.ts puts the parameters
- * and the compile-time output in it.
- *
- * ```` ```{run-panel} python ```` (any language an executor runs, e.g. `wgsl`)
- * options: `:params:` (a YAML mapping, the variables injected into the
- * program; other languages' executors read it themselves, docs/ir.md 5.1),
- * `:timeout:` (ms), `:recorded:` (output shown when a run fails or times
- * out) and `:run:` (`both`, the default, also records the output at compile
- * time; `live` only runs in the browser).
- *
- * ```` ```{step-run} python ```` options: `:steps:` (the number of executed
- * lines, one step each), `:params:` and `:timeout:`.
- *
- * Without `:timeout:`, the timeout is `presmium.exec.timeoutMs` of the
- * directive's section (its `{config}` over the global configuration), when set.
- */
 import type { CodeNode, ComponentNode, DirectiveContext, DirectiveInput, DirectiveSpec, IRBlock, RunSpec } from '@presmium/kernel'
 import { parse } from 'yaml'
 import { configuredTimeout, EXEC_ID, isPython, isScript, stringArgs } from '../domain/index.ts'
 
 type Params = Record<string, unknown>
 
-/**
- * The `:params:` mapping: YAML in the option, or already a mapping from a
- * `---` option block. Python, JavaScript and TypeScript get variables, so
- * their values are strings, numbers or booleans; other languages' executors
- * read it themselves (e.g. `wgsl`, the buffers and dispatch of a shader), so
- * any values go.
- */
 function params(value: unknown, lang: string, ctx: DirectiveContext): Params | undefined {
   if (value === undefined) return undefined
   let data = value
@@ -55,7 +25,6 @@ function positive(value: unknown): number | undefined {
   return value !== undefined && Number.isFinite(n) && n > 0 ? n : undefined
 }
 
-/** The component node around the code block of the directive body. */
 function component(name: string, input: DirectiveInput, ctx: DirectiveContext, run?: Omit<RunSpec, 'lang'>): ComponentNode {
   const lang = input.arg?.trim() || 'python'
   const value = input.body.replace(/\n+$/, '')
@@ -108,7 +77,6 @@ export const stepRunDirective: DirectiveSpec = {
       return { node }
     }
     node.props.steps = steps
-    // One step per executed line after the initial state: state k shows line k.
     return { node, span: steps }
   },
 }

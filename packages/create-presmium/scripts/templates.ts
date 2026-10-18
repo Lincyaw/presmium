@@ -1,10 +1,4 @@
 #!/usr/bin/env node
-// Copies each template from its source in the repository into templates/ (src/templates.ts): the
-// package's `prepack`, so `pnpm pack`, `pnpm publish` and scripts/consumer.ts pack the templates as
-// they are; `pnpm --filter create-presmium templates` runs it alone (create-presmium run from this
-// checkout reads templates/ too). Packs may run at once (the consumer install and create-presmium's
-// test): a file is written beside the package's files, outside templates/, then renamed into place,
-// and one already equal is left alone.
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -30,4 +24,3 @@ for (const [name, source] of Object.entries(TEMPLATE_SOURCES)) {
     renameSync(temporary, target)
   }
 }
-// Silent: `pnpm pack --json` (scripts/consumer.ts) prints the prepack's output with its JSON.

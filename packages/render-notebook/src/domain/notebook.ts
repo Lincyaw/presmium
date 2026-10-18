@@ -1,19 +1,3 @@
-/**
- * IR to a Jupyter notebook in nbformat 4.5 (docs/ir.md section 6). Each
- * section opens with its title; narration and visual Markdown become Markdown
- * cells, consecutive ones merged into one; code in the kernel's language
- * becomes a code cell with the recorded outputs (nbformat outputs as they
- * were recorded, numbered in order; hidden source for `echo: false`, P-102),
- * other code a fenced block.
- * A component is rendered by its plugin's notebook extension, else by its
- * `fallback`, else by a note that links to the web version, and is then
- * listed in the build report. Markdown is written in the form Jupyter
- * renders (./markdown.ts); MyST nodes it has no form for are listed as
- * degraded. Steps do not exist in a notebook: every block is shown in its
- * final state. The URLs of images and links in the blocks' Markdown, and the
- * `assets` of components, go through `media`, which can point local files at
- * copies. The words the notebook adds are in the deck's language.
- */
 import { errorMessage, isRecord, languageId, withProp } from '@presmium/kernel'
 import type {
   CodeNode,
@@ -40,19 +24,10 @@ export interface KernelSpec {
 
 export const DEFAULT_KERNEL: KernelSpec = { name: 'python3', display_name: 'Python 3', language: 'python' }
 
-/**
- * What a plugin's notebook extension returns for a component: one cell or a
- * list (a string is a Markdown cell). A Markdown cell may give `mdast`
- * instead of `source`: the renderer writes it as it writes the deck's
- * Markdown, MyST lowered, local files copied, degradations reported (C-6).
- * The renderer fills in `id` and `metadata.presmium`; returning undefined
- * falls back to the `fallback`.
- */
 export type NotebookCellInput = string | {
   cell_type: 'markdown' | 'code' | 'raw'
   source: string | string[]
   metadata?: Record<string, unknown>
-  /** Code cells only: nbformat outputs. */
   outputs?: unknown[]
   execution_count?: number | null
 } | {
@@ -64,7 +39,6 @@ export type NotebookCellInput = string | {
 export interface NotebookCell {
   id: string
   cell_type: 'markdown' | 'code' | 'raw'
-  /** `presmium` holds the section and blocks the cell comes from. */
   metadata: Record<string, unknown>
   source: string[]
   outputs?: unknown[]
@@ -80,35 +54,22 @@ export interface Notebook {
 
 export interface NotebookOptions {
   kernel: KernelSpec
-  /** Language of the words the notebook adds. */
   locale: Locale
-  /** Where a section is in the web version; a component the notebook cannot show links to it. */
   webLink?: (section: IRSection) => string | undefined
-  /** The plugin extension that renders a component (`RenderContext.extensionFor`). */
   extensionFor: (node: ComponentNode) => ComponentRenderer | undefined
-  /**
-   * The URL to use for a local file's URL in a block (images and links of its
-   * Markdown, `assets` of a component), given the block's source position it
-   * is relative to; undefined keeps the URL. Only what the notebook shows goes
-   * through it.
-   */
   media?: (url: string, source: SourcePos) => string | undefined
 }
 
 export interface NotebookResult {
   notebook: Notebook
-  /** Blocks the notebook does not show, with the reason. */
   skipped: { section: string, block: string, reason: string }[]
   problems: { message: string, source: SourcePos }[]
-  /** Blocks shown without the MyST nodes Jupyter has no form for, e.g. an embed; their text is kept. */
   degraded: { section: string, block: string, nodes: string[], source: SourcePos }[]
-  /** Notes in place of components that could not link to the web version (`webLink` gave none). */
   unlinked: number
 }
 
 type ComponentRenderer = (node: ComponentNode, block: IRBlock) => unknown
 
-/** The words the notebook adds, in the deck's language. */
 const MESSAGES = {
   'zh-CN': {
     web: '网页版',
@@ -160,7 +121,6 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
     if (pending) cell('markdown', pending.parts.join('\n\n'), pending.blocks)
     pending = undefined
   }
-  /** The Markdown of a block (or of the section title), its local files mapped by `options.media`, its problems reported. */
   const written = (mdast: MdastNode, block?: IRBlock): string => {
     const { media } = options
     const { text, problems, degraded } = toMarkdown(mdast, media && block ? url => media(url, block.source) : undefined)
@@ -248,7 +208,6 @@ function renderSection(section: IRSection, options: NotebookOptions, out: Notebo
   flush()
 }
 
-/** A component with its `assets` props set to the URLs of the notebook's copies of the files. */
 function published(node: ComponentNode, block: IRBlock, options: NotebookOptions): ComponentNode {
   const { media } = options
   if (!node.assets || !media) return node
@@ -281,20 +240,13 @@ function codeCaption(node: CodeNode): MdastNode | undefined {
   return children.length ? { type: 'paragraph', children } : undefined
 }
 
-/** The note in place of a component, linked to the web version where `url` says it is. */
 function webNote(node: ComponentNode, t: (typeof MESSAGES)[Locale], url?: string): MdastNode {
   const web = url ? { type: 'link', url, children: [text(t.web)] } : text(t.web)
   return { type: 'blockquote', children: [{ type: 'paragraph', children: t.note({ type: 'inlineCode', value: node.name }, web) }] }
 }
 
-/** Text MIME types, which nbformat writes as lines. */
 const TEXT_TYPE = /^text\/|^image\/svg\+xml$/
 
-/**
- * The outputs of a code cell: the recorded nbformat outputs as they are
- * (multiline text as lines; a result numbered with the cell), or, for runs
- * recorded without them, their text streams.
- */
 function cellOutputs(runs: RecordedRun[], count: number | null): unknown[] {
   if (!runs.some(run => run.outputs)) return streams(runs)
   return runs.flatMap(run => run.outputs ?? streams([run])).map((output) => {
@@ -306,7 +258,6 @@ function cellOutputs(runs: RecordedRun[], count: number | null): unknown[] {
   })
 }
 
-/** Recorded runs as nbformat stream outputs. */
 function streams(runs: RecordedRun[] = []): unknown[] {
   return (['stdout', 'stderr'] as const).flatMap((name) => {
     const text = runs.map(run => run[name]).join('')
@@ -314,12 +265,10 @@ function streams(runs: RecordedRun[] = []): unknown[] {
   })
 }
 
-/** nbformat multiline text: lines that keep their newline. */
 function lines(text: string): string[] {
   return text ? text.split(/(?<=\n)/) : []
 }
 
-/** Unique cell id (nbformat 4.5: 1 to 64 characters of [A-Za-z0-9_-]) made from the section id. */
 function cellId(section: IRSection, ids: Set<string>): string {
   const base = section.id.replace(/[^\w-]/g, '').slice(0, 48) || `section-${section.index}`
   let n = 1

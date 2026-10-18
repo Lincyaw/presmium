@@ -1,9 +1,3 @@
-/*
- * The root layout of the workbench (docs/design-dsh.md 7.2 and 7.7): the grid of the activity bar, the side panel,
- * the centre, the right dock's track and the docked conversation over the status bar; below 768 px the activity bar
- * runs along the top and one view fills the width. DeepSeek Harness's own panels draw themselves in their cells.
- */
-
 html,
 body,
 #root {
@@ -39,8 +33,6 @@ body,
 .pmw-frame__skip:focus {
   transform: none;
 }
-
-/* The activity bar */
 
 .pmw-activity {
   grid-area: activity;
@@ -94,8 +86,6 @@ body,
   outline-offset: 1px;
 }
 
-/* The side panel: Presmium's file tree, or DeepSeek Harness's sidebar */
-
 .pmw-frame__side,
 .pmw-frame__sidebar {
   grid-area: side;
@@ -121,7 +111,6 @@ body,
   display: none;
 }
 
-/* Below 1024 px the side panel opens over the centre. */
 .pmw-frame[data-collapsed]:not([data-narrow]) .pmw-frame__side[data-shown],
 .pmw-frame[data-collapsed]:not([data-narrow]) .pmw-frame__sidebar[data-shown] {
   position: absolute;
@@ -228,8 +217,6 @@ body,
   background: linear-gradient(to right, transparent 3px, var(--pm-color-accent) 3px, var(--pm-color-accent) 5px, transparent 5px);
 }
 
-/* Narrow screens: the activity bar along the top, one view at a time */
-
 .pmw-frame[data-narrow] {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto auto;
@@ -285,8 +272,6 @@ body,
   gap: var(--pm-space-2);
 }
 
-/* The brand in DeepSeek Harness's places and the first-use notice */
-
 .pmw-logo {
   flex: none;
   display: block;
@@ -338,12 +323,10 @@ body,
   gap: var(--pm-space-2);
 }
 
-/* The Plugins page offers no experimental bundles and no plugin market (7.5): the group is hidden. */
 [data-plugin-group='extensions'] {
   display: none !important;
 }
 
-/* The fallback: Presmium's panels in DeepSeek Harness's own layout (7.2). */
 .pmw-fallback {
   height: 100%;
   overflow: auto;

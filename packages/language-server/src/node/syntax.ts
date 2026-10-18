@@ -1,9 +1,3 @@
-/**
- * What the deck of a compilation accepts and says, for the editor: its
- * directives with their options (from the compiler's built-in directives and
- * the plugins' specs), the directives whose argument is an anchor, and the
- * messages in the deck's language.
- */
 import { BUILTIN_DIRECTIVE_INFO, COMMON_DIRECTIVE_OPTIONS, RUN_OPTION } from '@presmium/compiler'
 import type { Compilation, DirectiveOptionInfo } from '@presmium/compiler'
 import { deckLocale } from '@presmium/kernel'
@@ -13,9 +7,7 @@ import type { DirectiveInfo, LsMessages, OptionInfo } from '../domain/index.ts'
 
 export interface DeckSyntax {
   directives: Map<string, DirectiveInfo>
-  /** Options every directive accepts. */
   common: Record<string, OptionInfo>
-  /** Directives whose argument is an anchor. */
   anchors: Set<string>
   t: LsMessages
 }

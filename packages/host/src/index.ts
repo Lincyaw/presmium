@@ -1,4 +1,3 @@
-// The design system (N-10): fonts, tokens and the shared components' classes, for every page that uses the host.
 import './design/design.css'
 
 export { trackAgentTask } from './agent.ts'

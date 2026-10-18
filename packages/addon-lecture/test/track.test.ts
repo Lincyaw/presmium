@@ -1,10 +1,3 @@
-// Lecture tracks with the real CLI (WP-77, docs/ir.md section 9): `presmium check` reports the events
-// of a recorded lecture whose block is gone, with their time (P-130); `presmium build --to lecture`
-// exports captions in the track's language and in a translation, and marks a translation whose
-// original changed since as stale (P-137). The operator's media policies (`settings.presmium.lecture.audio`,
-// P-130, P-132): under `presmium dev` with the fake speech engine (a process of its own), a lecture recorded
-// through the routes keeps its media's paths, is transcribed and played back from this machine, and its build
-// names the media under the external URL of the `url` policy; `lfs` hands the media to git LFS and publishes them.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -50,7 +43,6 @@ ${code}
 
 const sha256 = (text: string) => `sha256:${createHash('sha256').update(text).digest('hex')}`
 
-/** A recorded lecture of the deck: two moves, a spotlight and a pointer on the code, two utterances with English translations. */
 function track(doc: IRDocument): LectureTrack {
   const events: LectureTrack['events'] = [
     [0, 'go', { section: 'intro', step: 0, view: 'present' }],
@@ -125,7 +117,6 @@ describe('presmium build --to lecture (P-137)', () => {
     expect(JSON.parse(readFileSync(join(out, 'index.json'), 'utf8'))).toEqual([expect.objectContaining({ id: 'demo', lang: 'zh-CN', captions: ['zh-CN', 'en'] })])
     expect(built.stdout + built.stderr).not.toContain('stale')
 
-    // The second sentence is said differently now; its English translation was made from the old one.
     const edited = track(doc)
     edited.utterances[1]!.text = '再来看合并函数'
     writeFileSync(join(dir, 'lectures/demo/track.json'), formatTrack(edited))
@@ -138,7 +129,6 @@ describe('presmium build --to lecture (P-137)', () => {
   }, 180_000)
 })
 
-/** The environment without Presmium's variables (a developer's machine may define engines), plus `extra`. */
 function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -146,7 +136,6 @@ function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   return { ...env, ...extra }
 }
 
-/** A process of its own and the address it prints (the first match of `pattern`). */
 async function started(args: string[], cwd: string, env: NodeJS.ProcessEnv, pattern: RegExp): Promise<{ child: ChildProcess, url: string }> {
   const child = spawn(process.execPath, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
   const url = await new Promise<string>((done, fail) => {
@@ -177,7 +166,6 @@ describe('the operator\'s media policies (settings.presmium.lecture.audio, P-130
   let dev: ChildProcess | undefined
   const dirs: string[] = []
 
-  /** A deck with the lecture and speech plugins, the operator's media policy, and one section. */
   const policyDeck = (audio: string) => {
     const dir = mkdtempSync(join(tmpdir(), 'presmium-lecture-media-'))
     dirs.push(dir)
@@ -196,7 +184,6 @@ describe('the operator\'s media policies (settings.presmium.lecture.audio, P-130
     for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
   })
 
-  /** Records a lecture of one section through the routes of `presmium dev`; its audio is the fake engine's clip of `SAID`. */
   async function record(server: string): Promise<{ id: string, src: string, bytes: Buffer }> {
     const route = (path: string, init?: RequestInit) => fetch(`${server}/__presmium/presmium.lecture/${path}`, init)
     const post = (path: string, body: unknown) => route(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -224,7 +211,6 @@ describe('the operator\'s media policies (settings.presmium.lecture.audio, P-130
     expect(stored().audio.map(a => a.src)).toEqual([src])
     expect(readFileSync(join(dir, 'lectures', id, '.gitignore'), 'utf8')).toContain(`published under ${PREFIX}`)
 
-    // Transcribed from the file on this machine, and played back from it.
     const transcribed = await route(`editing/${id}/transcribe`, { method: 'POST' })
     expect(transcribed.status, await transcribed.clone().text()).toBe(200)
     expect(stored().utterances.map(u => u.text)).toEqual([SAID])
@@ -234,14 +220,12 @@ describe('the operator\'s media policies (settings.presmium.lecture.audio, P-130
     expect(played.status).toBe(200)
     expect(Buffer.from(await played.arrayBuffer()).equals(bytes)).toBe(true)
 
-    // Published under the external URL, where the operator puts the file: the build does not copy it.
     const built = await presmium(dir, ['build', '--to', 'lecture'])
     expect(built.code, built.stdout + built.stderr).toBe(0)
     const published = JSON.parse(readFileSync(join(dir, 'dist/lecture', id, 'track.json'), 'utf8')) as { audio: { src: string }[] }
     expect(published.audio.map(a => a.src)).toEqual([`${PREFIX}${id}/${src}`])
     expect(existsSync(join(dir, 'dist/lecture', id, src))).toBe(false)
 
-    // A checkout without the file: the route names it under the URL too.
     rmSync(join(dir, 'lectures', id, src))
     expect(await served()).toEqual([`${PREFIX}${id}/${src}`])
     await stop(dev)

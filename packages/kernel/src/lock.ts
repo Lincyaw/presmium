@@ -2,13 +2,8 @@ import { isRenderable } from './contracts.ts'
 import type { AnchorLockFile, RecordedAnchor, Resolution } from './contracts.ts'
 import { errorMessage } from './errors.ts'
 
-/** Lock file location relative to the deck directory. */
 export const ANCHOR_LOCK_PATH = '.presmium/anchors.lock.json'
 
-/**
- * Read/write model of `.presmium/anchors.lock.json`. Serialization sorts
- * anchors and fixes field order, so rewriting an unchanged lock is a no-op.
- */
 export class AnchorLock {
   #anchors = new Map<string, RecordedAnchor>()
 
@@ -24,7 +19,6 @@ export class AnchorLock {
     return new AnchorLock(Object.entries(file.anchors))
   }
 
-  /** Parses lock file text; missing or blank text yields an empty lock. Throws on invalid content. */
   static parse(text: string | undefined): AnchorLock {
     if (text === undefined || text.trim() === '') return AnchorLock.empty()
     let data: unknown
@@ -48,10 +42,6 @@ export class AnchorLock {
     this.#anchors.set(anchor, { fingerprint: recorded.fingerprint, file: recorded.file, startLine: recorded.startLine })
   }
 
-  /**
-   * Records a renderable resolution (`exact` or `moved`). Fuzzy and lost
-   * resolutions keep the previous record, which awaits human confirmation.
-   */
   record(anchor: string, resolution: Resolution): boolean {
     const { location, fingerprint } = resolution
     if (!isRenderable(resolution) || !location || !fingerprint) return false
@@ -59,7 +49,6 @@ export class AnchorLock {
     return true
   }
 
-  /** Drops records for anchors no longer used by the deck. */
   retain(anchors: Iterable<string>): void {
     const keep = new Set(anchors)
     for (const anchor of [...this.#anchors.keys()]) {

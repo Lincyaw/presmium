@@ -1,10 +1,3 @@
-// Document operations and the revision history (P-121, P-115; docs/domain-model.md section 14), through
-// the workspace's routes of a real `presmium serve` on a real git repository: each operation is one commit
-// whose `Presmium-Origin` trailer names the operation and its directories (the history labels it in the
-// reader's language, F-55), a rename rewrites the links of the other documents, a revert of a rename restores
-// the directory (a revert of that undo redoes it, and the history says so), a revert that conflicts with later commits changes nothing and names the files, and git runs
-// none of the repository's hooks. A copy keeps what of `.presmium/` belongs to the document, byte for byte,
-// and leaves out what is generated (F-52). A directory with a space keeps its name in the history's label.
 import { randomBytes } from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -21,7 +14,6 @@ describe('document operations', () => {
 
   beforeAll(async () => {
     dir = workspace('documents', join(FIXTURES, 'documents'))
-    // A hook that leaves a trace when it runs: the workspace's commits must not run it.
     mkdirSync(join(dir, '.git/hooks'), { recursive: true })
     writeFileSync(join(dir, '.git/hooks/pre-commit'), `#!/bin/sh\necho ran > "${join(dir, 'hook-ran')}"\n`)
     chmodSync(join(dir, '.git/hooks/pre-commit'), 0o755)
@@ -38,7 +30,6 @@ describe('document operations', () => {
     const listed = await raw(route('documents'))
     expect(listed.json<{ documents: { dir: string }[], templates: string[] }>()).toMatchObject({ documents: [{ dir: 'guide' }, { dir: 'intro' }], templates: ['default'] })
 
-    // Create, from the template.
     const created = await operate({ op: 'create', dir: 'week3', title: '第三周' })
     expect(created.status).toBe(200)
     expect(created.json()).toMatchObject({ dir: 'week3' })
@@ -46,7 +37,6 @@ describe('document operations', () => {
     expect(message(dir)).toMatch(/^Create document week3\n[\s\S]*\nPresmium-Origin: document create week3\nCo-authored-by: local author </m)
     expect(git(dir, ['show', '--name-only', '--format=', 'HEAD']).trim()).toBe('week3/lecture.md')
 
-    // Rename: the other document's links follow.
     const renamed = await operate({ op: 'rename', dir: 'guide', to: 'manual' })
     expect(renamed.status).toBe(200)
     const rename = renamed.json<{ revision: { id: string } }>().revision.id
@@ -58,7 +48,6 @@ describe('document operations', () => {
     expect(message(dir)).toMatch(/^Rename document guide to manual\n[\s\S]*Presmium-Origin: document rename guide manual$/m)
     expect(git(dir, ['show', '--name-only', '--no-renames', '--format=', 'HEAD']).trim().split('\n').sort()).toEqual(['guide/img/plan.svg', 'guide/lecture.md', 'intro/lecture.md', 'manual/img/plan.svg', 'manual/lecture.md'])
 
-    // Copy, then delete.
     expect((await operate({ op: 'copy', dir: 'intro', to: 'intro-copy' })).status).toBe(200)
     expect(readFileSync(join(dir, 'intro-copy/lecture.md'), 'utf8')).toContain('[指南](../manual/lecture.md)')
     expect(message(dir)).toMatch(/^Copy document intro to intro-copy\n[\s\S]*Presmium-Origin: document copy intro intro-copy$/m)
@@ -68,10 +57,8 @@ describe('document operations', () => {
 
     expect(commits(dir)).toBe(before + 4)
     expect(git(dir, ['status', '--porcelain']).trim()).toBe('')
-    // The pre-commit hook never ran.
     expect(existsSync(join(dir, 'hook-ran'))).toBe(false)
 
-    // The history lists the four, newest first, each with its operation; a bad directory is refused.
     const history = await raw(route('revisions'))
     const revisions = history.json<{ revisions: { message: string, operation?: Record<string, string> }[] }>().revisions
     expect(revisions.map(r => r.message.split('\n')[0])).toEqual([
@@ -88,7 +75,6 @@ describe('document operations', () => {
     ])
     expect((await operate({ op: 'create', dir: '../outside' })).status).toBe(400)
 
-    // Reverting the rename brings the directory and the links back.
     const reverted = await raw(route('revisions/revert'), { json: { id: rename } })
     expect(reverted.status).toBe(200)
     expect(reverted.json()).toMatchObject({ ok: true })
@@ -98,7 +84,6 @@ describe('document operations', () => {
     expect(message(dir)).toMatch(new RegExp(`^Revert "Rename document guide to manual"\\n\\nThis reverts commit ${rename}\\.\\n\\nPresmium-Origin: document rename guide manual\\nPresmium-Revert: ${rename}`, 'm'))
     expect(existsSync(join(dir, 'hook-ran'))).toBe(false)
 
-    // Reverting the undo redoes the rename, and reverting the redo undoes it again: the history tells them apart (F-55).
     const undo = git(dir, ['rev-parse', 'HEAD']).trim()
     expect((await raw(route('revisions/revert'), { json: { id: undo } })).status).toBe(200)
     expect(existsSync(join(dir, 'manual/lecture.md'))).toBe(true)
@@ -116,7 +101,6 @@ describe('document operations', () => {
   })
 
   it('reports the files a revert conflicts with, and leaves the work tree as it was', async () => {
-    // A document created by the workspace, then changed by a later commit of an author.
     const created = (await operate({ op: 'create', dir: 'week4', title: '第四周' })).json<{ revision: { id: string } }>().revision.id
     writeFileSync(join(dir, 'week4/lecture.md'), `${readFileSync(join(dir, 'week4/lecture.md'), 'utf8')}\n作者后来加的一段。\n`)
     git(dir, ['commit', '-q', '-am', 'An author edits week4'])
@@ -144,7 +128,6 @@ describe('document operations', () => {
       mkdirSync(dirname(join(dir, 'intro', path)), { recursive: true })
       writeFileSync(join(dir, 'intro', path), content)
     }
-    // A renderer's project: generated, not the document's.
     mkdirSync(join(dir, 'intro/.presmium/web'), { recursive: true })
     writeFileSync(join(dir, 'intro/.presmium/web/index.md'), 'generated\n')
 
@@ -154,7 +137,6 @@ describe('document operations', () => {
   })
 
   it('names a listed directory with a space whole in the history (its word of Presmium-Origin percent-encoded)', async () => {
-    // An author's document whose directory has a space: listed, so it may be deleted.
     mkdirSync(join(dir, 'week 1'))
     writeFileSync(join(dir, 'week 1/lecture.md'), '---\ntitle: 第一周\n---\n\n## 一\n')
     git(dir, ['add', '-A'])

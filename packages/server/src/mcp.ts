@@ -1,9 +1,3 @@
-/**
- * The `McpHost` of the server (docs/architecture.md 10.2): the documents and
- * host operations of its `ServerHost`, the windows' positions and status
- * summaries of the control channel, its approvals, and the agent tools of the
- * documents' plugins. `/mcp` mounts `@presmium/mcp` over it.
- */
 import type { AgentTool, Member, ServiceToken } from '@presmium/kernel'
 import type { McpHost, McpPluginTools, McpPosition } from '@presmium/mcp'
 import type { Control } from './control.ts'
@@ -13,15 +7,10 @@ import type { ServedDocument, ServerHost } from './host.ts'
 export interface McpHostOptions {
   serverHost?: ServerHost
   control: Control
-  /** `presmium dev` or `presmium serve`, for the service's instructions. */
   command: 'dev' | 'serve'
-  /** A served document, its contributions made on its first request; undefined when there is none. */
   mount(document: string): Promise<ServedDocument | undefined>
-  /** The documents mounted so far. */
   mounted(): Promise<ServedDocument[]>
-  /** The server's own Node services, in front of the document's. */
   service<T>(token: ServiceToken<T>): T | undefined
-  /** The focus the workbench reported (`presmium.server/focus`). */
   focus: FocusStore
 }
 
@@ -60,7 +49,6 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
       const doc = await options.mount(document)
       return toolsOf(doc ? [doc] : [], options.service)
     },
-    // The member's presenting windows first, then those of editors and owners, then any window (10.4, F-38).
     positions(document: string | undefined, member: Member) {
       const all = control.positions(undefined, document, member)
       const presenting = (w: typeof all[number]) => w.member === member.id && (w.report.role === 'presenter' || w.report.role === 'audience')

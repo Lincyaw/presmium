@@ -2,12 +2,6 @@ import { defineShortcutsSetup } from '@slidev/types'
 import { ref } from 'vue'
 import { useScreen } from '../src/client/screen.ts'
 
-/**
- * Slidev binds a plain `f` to fullscreen outside the configurable shortcut list.
- * The stage takes the key for freezing: a plain `f` that is not typed into a
- * field stops at the document, before Slidev's window-level listeners, and drives
- * the freeze shortcut below instead.
- */
 const freezeKey = ref(false)
 
 function isTyping(target: EventTarget | null): boolean {
@@ -26,7 +20,6 @@ window.addEventListener('blur', () => {
   freezeKey.value = false
 })
 
-/** P-03: `b` blacks out the audience view, `f` freezes it; the same key again restores it. */
 export default defineShortcutsSetup((_nav, base) => [
   ...base,
   { name: 'presmium_stage_black', key: 'b', fn: () => useScreen().toggle('black') },

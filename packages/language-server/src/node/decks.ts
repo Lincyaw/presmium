@@ -1,8 +1,3 @@
-/**
- * The decks of the open documents and their latest compilation. A deck is
- * compiled with `@presmium/compiler` from the saved files, as `presmium
- * check` does: the compile diagnostics plus the plugins' checks.
- */
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { Compiler, DECK_ENTRY, readFrontmatter } from '@presmium/compiler'
@@ -14,9 +9,7 @@ export class Deck {
   readonly entry: string
   readonly #compiler: Compiler
   readonly #compiled: (deck: Deck) => void
-  /** The latest successful compilation. */
   compilation?: Compilation
-  /** Diagnostics of the latest compilation; every finding has a source. */
   findings: Finding[] = []
   #running?: Promise<void>
   #again = false
@@ -27,7 +20,6 @@ export class Deck {
     this.#compiled = compiled
   }
 
-  /** Compiles the deck; a request during a compilation compiles once more after it. */
   compile(): Promise<void> {
     if (this.#running) {
       this.#again = true
@@ -43,17 +35,14 @@ export class Deck {
     return this.#running
   }
 
-  /** Settles when the compilation under way, if any, is done. */
   ready(): Promise<void> {
     return this.#running ?? Promise.resolve()
   }
 
-  /** Whether a file is a source file of the deck. */
   owns(file: string): boolean {
     return this.compilation ? this.compilation.files.includes(file) : file === this.entry
   }
 
-  /** Whether the compilation read a file: a source, referenced code, the anchor lock. */
   reads(file: string): boolean {
     const { compilation } = this
     if (!compilation) return file === this.entry
@@ -72,7 +61,6 @@ export class Deck {
   }
 }
 
-/** Whether a Markdown file's frontmatter lists plugins, which makes it a deck entry. */
 function declaresPlugins(file: string): boolean {
   try {
     return 'plugins' in readFrontmatter(readFileSync(file, 'utf8'))
@@ -81,7 +69,6 @@ function declaresPlugins(file: string): boolean {
   }
 }
 
-/** Entries that may hold a file: itself as `lecture.md`, the `lecture.md` of its directory and above, itself when it lists plugins. */
 function candidateEntries(file: string): string[] {
   const entries = basename(file) === DECK_ENTRY ? [file] : []
   for (let dir = dirname(file); ; dir = dirname(dir)) {
@@ -97,7 +84,6 @@ export class Decks {
   readonly #decks = new Map<string, Deck>()
   readonly #compiled: (deck: Deck) => void
 
-  /** `compiled` is called after every compilation of a deck. */
   constructor(compiled: (deck: Deck) => void) {
     this.#compiled = compiled
   }
@@ -106,7 +92,6 @@ export class Decks {
     return [...this.#decks.values()]
   }
 
-  /** The deck of an entry, compiled when first opened. */
   open(entry: string): Deck {
     let deck = this.#decks.get(entry)
     if (!deck) {
@@ -117,11 +102,6 @@ export class Decks {
     return deck
   }
 
-  /**
-   * The deck a source file belongs to; undefined for a file of no deck. A deck
-   * whose latest compilation holds the file answers at once, even while it
-   * compiles again (R-46); otherwise the compilations under way are awaited.
-   */
   async of(file: string): Promise<Deck | undefined> {
     const known = this.all()
     const owner = known.find(deck => deck.compilation?.files.includes(file))

@@ -9,10 +9,6 @@ const SEVERITY: Record<Severity, DiagnosticSeverity> = {
   info: DiagnosticSeverity.Information,
 }
 
-/**
- * Findings carry a file and a line. The range is the line's text, or the
- * directive argument when the message names it (e.g. a lost anchor).
- */
 function rangeOf(text: string, line: number, message: string): Range {
   const fence = fenceAt([text], 0)
   const word = fence?.arg.split(/\s/)[0]
@@ -23,7 +19,6 @@ function rangeOf(text: string, line: number, message: string): Range {
   return { start: { line, character: start }, end: { line, character: text.trimEnd().length } }
 }
 
-/** Diagnostics by absolute file path; `lines` gives the lines of a file. */
 export function toDiagnostics(findings: Finding[], entry: string, lines: (file: string) => string[]): Map<string, Diagnostic[]> {
   const byFile = new Map<string, Diagnostic[]>()
   const texts = new Map<string, string[]>()

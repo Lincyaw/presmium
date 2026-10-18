@@ -1,6 +1,3 @@
-// Runs the real `presmium build` and `presmium ir` on decks outside git: code runs at compile time
-// with the local python3 and node executors, and its recorded output reaches the IR, the
-// notebook and the run panels' fallbacks.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -90,7 +87,6 @@ interface Cell {
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
-/** A new deck directory holding `lecture.md`. */
 function deck(text: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-exec-'))
   dirs.push(dir)
@@ -104,7 +100,6 @@ async function build(dir: string, env: Record<string, string> = {}): Promise<{ c
   return { code, output: stdout + stderr, cells }
 }
 
-/** The IR of `presmium ir`, with every block of the components' children. */
 async function ir(dir: string): Promise<{ doc: IRDocument, blocks(section: string): IRBlock[] }> {
   const { code, stdout, stderr } = await presmium(dir, ['ir'])
   expect(code, stderr).toBe(0)
@@ -125,22 +120,14 @@ it('records the output at compile time; a run panel in the kernel\'s language be
   expect(code(first.cells)).toEqual([
     { source: 'n = 3\nfor i in range(n):\n    print("第", i)', stdout: '第 0\n第 1\n第 2\n' },
     { source: 'print(sum(range(5)))', stdout: '10\n' },
-    // IPython is Python, for the notebook as for the executors (R-104).
     { source: 'print("ipython", 2 ** 5)', stdout: 'ipython 32\n' },
     { source: 'print("plain", 2 ** 6)', stdout: 'plain 64\n' },
-    // A run that timed out at compile time shows the recorded output (P-24) and is not run again.
     { source: 'while True: pass', stdout: 'rec-out', tags: ['skip-execution'] },
   ])
-  // TypeScript runs on node at compile time; outside the kernel's language it stays a fenced block with its output.
   expect(markdown(first.cells)).toContain('```typescript\nconst xs: number[] = [1, 2, 3]\nconsole.log(xs.map(x => x * 2))\n```\n\n```text\n[2,4,6]\n```')
-  // A JavaScript run panel shows its parameters, its code and its output: recorded at compile time,
-  // including what a timer prints later, as a run in the browser would...
   expect(markdown(first.cells)).toContain("```javascript\nconst n = 3\nsetTimeout(() => console.log('compiled', n * 2), 30)\nconsole.log('now')\n```\n\n```text\nnow\ncompiled 6\n```")
-  // ...or the recorded one, for a panel that runs only live.
   expect(markdown(first.cells)).toContain('```javascript\nconst n = 3\nconsole.log(n * 2)\n```\n\n```text\n预先录制：6\n```')
 
-  // Without python3, the recordings in .presmium/freeze give the same notebook; a timeout is
-  // never recorded, so the panel that timed out shows its recorded output again.
   const empty = join(dir, 'no-python')
   mkdirSync(empty)
   const cached = await build(dir, { PATH: empty })
@@ -229,7 +216,6 @@ console.log('started')
 it('stops compile-time runs at presmium.exec.timeoutMs of their section (R-26)', async () => {
   const { blocks } = await ir(deck(RUNS))
   const [panel, child, plain] = blocks('slow').map(block => block.node) as [ComponentNode, CodeNode, CodeNode]
-  // The section's {config} over the global option, for the panel and for a plain code block alike.
   expect(panel.props.timeout).toBe(1000)
   for (const node of [child, plain]) {
     expect(node.run?.timeoutMs).toBe(1000)

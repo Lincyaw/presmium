@@ -8,7 +8,6 @@ export interface ParsedAnchor {
   target: string
 }
 
-/** Splits `scheme:target`; returns undefined when the anchor is malformed. */
 export function parseAnchor(anchor: string): ParsedAnchor | undefined {
   const colon = anchor.indexOf(':')
   const scheme = anchor.slice(0, colon)
@@ -21,11 +20,6 @@ function lost(message: string): Resolution {
   return { status: 'lost', message }
 }
 
-/**
- * Dispatches anchors to resolvers by scheme. Malformed anchors, unknown
- * schemes and throwing resolvers all resolve to `lost` with a message, so a
- * single bad anchor never aborts a check run.
- */
 export function createAnchorResolverRegistry(resolvers: AnchorResolver[] = []): AnchorResolverRegistry {
   const byScheme = new Map<string, AnchorResolver>()
   const registry: AnchorResolverRegistry = {

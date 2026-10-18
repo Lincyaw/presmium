@@ -1,9 +1,3 @@
-/**
- * The shared components of the design (N-10, docs/architecture.md 5.10):
- * icons, buttons, fields, badges, cards, segmented controls, tabs, popovers,
- * drawers, dialogs, menus, empty states and notices, drawn with the classes of
- * components.css. Plugins use these rather than controls of their own.
- */
 import type { InjectionKey, PropType, VNode } from 'vue'
 import { defineComponent, h, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, Teleport, watch } from 'vue'
 import type { ToolbarPlace } from '../types.ts'
@@ -12,20 +6,12 @@ import type { IconName } from '@presmium/design'
 
 const PLACE: InjectionKey<ToolbarPlace> = Symbol('presmium.toolbarPlace')
 
-/**
- * Where the calling toolbar item is drawn (see `ToolbarPlace`); a page's toolbar unless a shell says otherwise.
- *
- * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
- */
+/** @experimental */
 export function useToolbarPlace(): ToolbarPlace {
   return inject(PLACE, 'bar')
 }
 
-/**
- * Tells the toolbar items below the calling component where they are drawn. Must be called inside a component setup.
- *
- * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
- */
+/** @experimental */
 export function provideToolbarPlace(place: ToolbarPlace): void {
   provide(PLACE, place)
 }
@@ -56,7 +42,6 @@ export const PmIcon = defineComponent({
 
 export type ButtonVariant = 'default' | 'primary' | 'accent' | 'ghost' | 'danger'
 
-/** A button: `primary` (ink) for the main action, `accent` for a switch that is on, `ghost` without a frame. */
 export const PmButton = defineComponent({
   name: 'PmButton',
   props: {
@@ -73,7 +58,6 @@ export const PmButton = defineComponent({
   },
 })
 
-/** A button that is an icon only; its label is its accessible name and its tooltip. */
 export const PmIconButton = defineComponent({
   name: 'PmIconButton',
   props: {
@@ -93,7 +77,6 @@ export const PmIconButton = defineComponent({
 
 export type Tone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger' | 'outline'
 
-/** A short label: a count, a language, a state (`ok`, `warn`); `pill` for the source of a change. */
 export const PmBadge = defineComponent({
   name: 'PmBadge',
   props: {
@@ -105,7 +88,6 @@ export const PmBadge = defineComponent({
   },
 })
 
-/** A card; `interactive` when it leads somewhere, `dashed` for a way to make something new. */
 export const PmCard = defineComponent({
   name: 'PmCard',
   props: {
@@ -117,7 +99,6 @@ export const PmCard = defineComponent({
   },
 })
 
-/** A labelled field around its control (the default slot); `inline` puts a checkbox before its label. */
 export const PmField = defineComponent({
   name: 'PmField',
   props: {
@@ -136,7 +117,6 @@ export interface Choice {
   label: string
 }
 
-/** A row of mutually exclusive buttons (the preview's views): the chosen one raised. */
 export const PmSegmented = defineComponent({
   name: 'PmSegmented',
   props: {
@@ -158,10 +138,6 @@ export const PmSegmented = defineComponent({
 
 let ids = 0
 
-/**
- * Tabs: the tab list, and the chosen tab's panel (the default slot, given the
- * chosen `value`), labelled by its tab. Arrow keys move between tabs.
- */
 export const PmTabs = defineComponent({
   name: 'PmTabs',
   props: {
@@ -207,12 +183,6 @@ export const PmTabs = defineComponent({
   },
 })
 
-/**
- * Closes what floats on Escape, wherever the focus is (giving it back to the
- * trigger, the first control of `root`, when it was inside or lost), and on a
- * press outside `root` (the trigger and the panel). A dialog keeps its place
- * on a press outside, and gives the focus back itself.
- */
 function useDismiss(open: () => boolean, close: () => void, root: () => HTMLElement | undefined, dialog = false): void {
   const outside = !dialog
   const onPointer = (event: PointerEvent) => {
@@ -237,12 +207,6 @@ function useDismiss(open: () => boolean, close: () => void, root: () => HTMLElem
   })
 }
 
-/**
- * Keeps a floating panel inside the window, 1 rem from its sides: a panel
- * that would leave it (its trigger near an edge, a phone's narrow screen,
- * e.g. VitePress's navigation screen) moves sideways. It follows the window
- * and the panel's size, which its content changes as it loads.
- */
 function useInView(panel: () => HTMLElement | undefined): void {
   let observer: ResizeObserver | undefined
   const place = () => {
@@ -272,12 +236,6 @@ function useInView(panel: () => HTMLElement | undefined): void {
 
 export type PopoverPlacement = 'below-end' | 'below-start' | 'above-end' | 'above-start'
 
-/**
- * A panel that floats by its trigger (the `trigger` slot), labelled `label`,
- * with the default slot's content, inside the window; Escape and a press
- * outside close it. `name` prefixes the classes of the wrapper and the panel
- * (`<name>__panel`).
- */
 export const PmPopover = defineComponent({
   name: 'PmPopover',
   props: {
@@ -301,10 +259,6 @@ export const PmPopover = defineComponent({
   },
 })
 
-/**
- * A panel beside the activity bar, as tall as the window: a title, a close
- * button and the default slot. Escape and a press outside close it.
- */
 export const PmDrawer = defineComponent({
   name: 'PmDrawer',
   props: {
@@ -333,12 +287,6 @@ export const PmDrawer = defineComponent({
   },
 })
 
-/**
- * A dialog over the page, titled `label` (its accessible name), with a close
- * button: not modal, so the page stays usable; Escape closes it and the
- * focus goes back where it was. It moves to the end of the document, out of
- * any toolbar.
- */
 export const PmDialog = defineComponent({
   name: 'PmDialog',
   props: {
@@ -393,11 +341,6 @@ export interface MenuItem {
   disabled?: boolean
 }
 
-/**
- * A menu behind an icon button (`more` by default): arrow keys move between
- * its items, Enter chooses one (`select` with its id), Escape closes it; the
- * focus goes back to the button.
- */
 export const PmMenu = defineComponent({
   name: 'PmMenu',
   props: {
@@ -457,7 +400,6 @@ export const PmMenu = defineComponent({
   },
 })
 
-/** What a place shows while it has nothing: an icon, a title, a sentence (the default slot) and an action. */
 export const PmEmpty = defineComponent({
   name: 'PmEmpty',
   props: {
@@ -474,7 +416,6 @@ export const PmEmpty = defineComponent({
   },
 })
 
-/** A message in a box: `role="status"`, or `alert` for a failure (`tone: 'danger'`); `role` from the caller wins. */
 export const PmNotice = defineComponent({
   name: 'PmNotice',
   props: {
@@ -485,14 +426,6 @@ export const PmNotice = defineComponent({
   },
 })
 
-/**
- * A toolbar item that opens a panel, drawn for its place (`useToolbarPlace`):
- * in the activity bar an icon button and a drawer beside it, elsewhere a
- * button with its label and a popover (above it in a status bar). `name`
- * prefixes the classes: the wrapper `<name>`, the button `<name>__toggle`,
- * the panel `<name>__panel` (a dialog labelled `label`). Its activity-bar form
- * is the workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
- */
 export const PmToolbarEntry = defineComponent({
   name: 'PmToolbarEntry',
   props: {

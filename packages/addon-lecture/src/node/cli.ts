@@ -1,8 +1,3 @@
-/**
- * `presmium-lecture` (docs/architecture.md section 7): `export` renders a
- * lecture of a deck to a video file (P-135, ./export.ts). Exit codes as in
- * `presmium`: 0 done, 2 usage or a failure.
- */
 import { existsSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative } from 'node:path'
 import { parseArgs } from 'node:util'

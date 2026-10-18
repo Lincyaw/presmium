@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// Slides form only (a Slidev global layer): "read on the web" opens the current slide's web section at its step (P-74).
-// The slides renderer adds this addon when the deck has a web form. The web form is at
-// `presmium: { presmium.web: { webUrl } }`, else in the `web` directory next to the slides.
 import { useMessages } from '@presmium/host'
 import { configs, useNav } from '@slidev/client'
 import { computed } from 'vue'

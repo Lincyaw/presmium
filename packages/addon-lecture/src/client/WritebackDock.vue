@@ -1,9 +1,4 @@
 <script setup lang="ts">
-// The lecture panel of edit mode (P-136, P-137; the workspace's `EDIT_MODE`), docked at the right of the split
-// (N-10; ./dock.ts): the deck's recorded lectures, each handed to the agent as "narration from the transcript" (a
-// `transcript` task) or "translate" (a `chat` task on its track), with the model's provider named (N-08). The tasks
-// sent from here follow, newest first: progress, the review of the changed files (accept or reject all), the commit
-// and the undo of it. The agent service (`AGENT`) runs, reviews, commits and undoes them (./writeback.ts).
 import { PmButton, PmIconButton, useLocale, useMessages, useServer, useService } from '@presmium/host'
 import { AGENT } from '@presmium/kernel'
 import { computed, onMounted, ref } from 'vue'
@@ -12,7 +7,6 @@ import { writebackWanted } from './dock.ts'
 import type { LectureSummary } from './source.ts'
 import { decide, revert, sendNarration, sendTranslation, writebacks, writing } from './writeback.ts'
 
-/** Languages to translate into; each named in the UI language. */
 const LANGUAGES = ['en', 'zh-CN', 'ja', 'ko', 'fr', 'de', 'es']
 
 const t = useMessages(LECTURE_MESSAGES)
@@ -56,7 +50,6 @@ function translate(id: string): void {
   if (agent.value) sendTranslation(agent.value, id, t.value.writeback.translateLabel(id, name), t.value.writeback.translateRequest(id, name, lang))
 }
 
-/** A unified diff's lines, each with its kind: added, removed, a hunk's header, or context. */
 function diffLines(diff: string): { text: string, kind: 'add' | 'del' | 'hunk' | 'same' }[] {
   return diff.replace(/\n$/, '').split('\n').map(text => ({
     text,
@@ -179,7 +172,6 @@ function diffLines(diff: string): { text: string, kind: 'add' | 'del' | 'hunk' |
 </template>
 
 <style scoped>
-/* A column of the dock: the header, then what scrolls. */
 .pm-lecture-writeback {
   display: flex;
   flex: 1;
@@ -187,7 +179,6 @@ function diffLines(diff: string): { text: string, kind: 'add' | 'del' | 'hunk' |
   min-height: 0;
   text-align: left;
 }
-/* Below the AI changes when both are docked. */
 .pm-lecture-writeback:not(:first-child) {
   border-top: 1px solid var(--pm-color-line);
 }

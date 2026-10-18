@@ -1,4 +1,3 @@
-// The presmium-skills row: src/node/skills.ts (docs/design-dsh.md 6.2).
 import { load } from './load.mjs'
 
 const row = await load('skills.ts')

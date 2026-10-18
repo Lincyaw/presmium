@@ -1,10 +1,3 @@
-// The course site (WP-86: P-78, P-79, P-123, P-122 增补), on sites the real `presmium build` makes in `beforeAll`.
-// A deck (e2e/fixtures/site/deck) with the site shell of `renderers.web`, local files its body and raw HTML link,
-// and an English translation; a workspace (e2e/fixtures/site/workspace) whose home page is one of its two
-// documents, with search and the doc footer across them. WP-81e2: a hidden directory is not published (and
-// presmium check says so); text of raw HTML that only looks like an attribute is not; the site of a workspace
-// left out a document's translation (WP-93c: it publishes it). WP-89f: linked Markdown files are files, not pages (F-24); a link to
-// another document's lecture.md opens its page, and no build publishes a document's source (F-25).
 import { spawnSync } from 'node:child_process'
 import { cpSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -17,7 +10,6 @@ import { deckDir, presmium, serve } from './fixtures/deck.ts'
 const FIXTURES = fileURLToPath(new URL('./fixtures/site', import.meta.url))
 const PRESMIUM = fileURLToPath(new URL('../packages/cli/bin/presmium.mjs', import.meta.url))
 
-/** A built site: its directory, the build report and the server of its `dist/`. */
 interface Built {
   dir: string
   report: string
@@ -46,7 +38,6 @@ async function buildSite(fixture: string, args: string[], served: string, single
   }
 }
 
-/** The body of the file a link of the page names. */
 async function download(page: Page, href: string | null): Promise<Buffer> {
   expect(href).toBeTruthy()
   const response = await page.request.get(new URL(href!, page.url()).href)
@@ -54,7 +45,6 @@ async function download(page: Page, href: string | null): Promise<Buffer> {
   return response.body()
 }
 
-/** Opens the search box with its shortcut, again until the page has hydrated and takes it. */
 async function openSearch(page: Page) {
   const input = page.getByRole('searchbox')
   await expect(async () => {
@@ -101,7 +91,6 @@ test.describe('a deck with a site shell, published files and a translation', () 
     expect(poster).toMatch(/^\/web\/media\/[\da-f]{8}-cover\.png$/)
     expect(await download(page, poster)).toEqual(readFileSync(join(site.dir, 'media/cover.png')))
 
-    // The directory opens at its file listing, from which each file downloads.
     await section.getByRole('link', { name: '整个起始目录', exact: true }).click()
     await expect(page).toHaveURL(/\/web\/media\/[\da-f]{8}-starter\/(?:index\.html)?$/)
     await expect(page.getByRole('heading', { name: 'starter/' })).toBeVisible()
@@ -109,7 +98,6 @@ test.describe('a deck with a site shell, published files and a translation', () 
     await page.getByRole('link', { name: 'data.csv' }).click()
     expect(readFileSync((await (await saved).path())!)).toEqual(readFileSync(join(site.dir, 'starter/data.csv')))
 
-    // The slides publish the same file, and the listing too.
     const doc = JSON.parse(readFileSync(join(site.dir, 'dist/ir.json'), 'utf8')) as IRDocument
     const slide = doc.sections.find(s => s.id === 'starter')!.index
     await page.goto(`${site.url}/slides/${slide}`)
@@ -121,14 +109,12 @@ test.describe('a deck with a site shell, published files and a translation', () 
   })
 
   test('a linked Markdown template and the README of a linked directory are published as files, not built as pages (F-24)', async ({ page }) => {
-    // Their HTML-like placeholders (`<answer>`, `<placeholder>`) and `{{ x }}` would fail the build as Vue templates.
     await page.goto(`${site.url}/web/start.html`)
     const section = page.locator('.pm-section[data-section="starter"]')
     expect(await download(page, await section.getByRole('link', { name: '报告模板', exact: true }).getAttribute('href'))).toEqual(readFileSync(join(site.dir, 'kit/report.md')))
     await section.getByRole('link', { name: '实验工具包', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'kit/' })).toBeVisible()
     expect(await download(page, await page.getByRole('link', { name: 'README.md' }).getAttribute('href'))).toEqual(readFileSync(join(site.dir, 'kit/README.md')))
-    // The only pages under media/ are the file listings of the directories.
     const media = readdirSync(join(site.dir, 'dist/web/media'), { recursive: true, encoding: 'utf8' })
     expect(media.filter(file => file.endsWith('.md')).length).toBeGreaterThanOrEqual(2)
     expect(media.filter(file => file.endsWith('.html') && !/(?:^|\/)index\.html$/.test(file))).toEqual([])
@@ -142,11 +128,9 @@ test.describe('a deck with a site shell, published files and a translation', () 
     const hidden = new RegExp(`^lecture\\.md:${line('(.handouts/)')}  warning  \\.handouts/ is not published: hidden directories and node_modules are not published  \\(presmium\\.links\\)$`, 'gm')
     expect(site.report.match(hidden)).toHaveLength(1)
     for (const form of ['dist/web/media', 'dist/slides']) expect(readdirSync(join(site.dir, form), { recursive: true, encoding: 'utf8' }).filter(file => file.includes('answers.txt'))).toEqual([])
-    // presmium check says so too, on the same line (its broken links are errors: it exits 1).
     const checked = spawnSync(process.execPath, [PRESMIUM, 'check', '--json'], { cwd: site.dir, encoding: 'utf8' })
     const { findings } = JSON.parse(checked.stdout) as { findings: { checkId: string, message: string, source: { line: number } }[] }
     expect(findings).toContainEqual(expect.objectContaining({ checkId: 'presmium.links', message: '.handouts/: hidden directories and node_modules are not published', source: expect.objectContaining({ line: line('(.handouts/)') }) }))
-    // Raw HTML is parsed: ` href=not-a-file.txt` in the text of a `<code>` is no attribute, so nothing is published for it.
     expect(site.report).not.toContain('not-a-file.txt')
   })
 

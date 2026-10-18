@@ -5,8 +5,6 @@ import type { Locator, Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
 import { build, serve, writeDeck } from './fixtures/plugins/decks.ts'
 
-// e2e/fixtures/content: its sections set a routeAlias for the slides form, so the spec does not
-// depend on how many slides come before them.
 test.describe.configure({ mode: 'default' })
 const content = useFixture('content')
 
@@ -24,24 +22,20 @@ test('formulas, Mermaid and PlantUML render as math, an svg diagram and a local 
   const slide = await open(page, 'content-diagrams')
   await expect(slide.locator('.katex annotation').first()).toHaveText('e^{i\\pi} + 1 = 0')
   await expect(slide.locator('.katex-display annotation')).toContainText('\\frac{n(n+1)}{2}')
-  // Slidev draws Mermaid diagrams in a shadow root.
   await expect(slide.locator('.mermaid svg[aria-roledescription="flowchart-v2"]')).toContainText('VitePress')
 
-  // The ```plantuml block is an image drawn by the PlantUML server, downloaded at compile time.
   const diagram = (await open(page, 'content-sequence')).getByRole('img', { name: 'PlantUML 图' })
   await expect.poll(() => loaded(diagram)).toBeGreaterThan(0)
   expect(await diagram.getAttribute('src')).not.toMatch(/^https?:/)
 })
 
 test('a {markmap} directive becomes a mindmap that fits its slide', async ({ page }) => {
-  // Entering from the previous slide also covers a map mounted while its slide was hidden.
   await open(page, 'content-sequence')
   await page.keyboard.press('ArrowRight')
   const map = page.locator('.slidev-layout.pm-content-mindmap svg.pm-markmap')
   await expect(map.locator('.markmap-node')).toHaveCount(13)
   await expect(map.locator('.markmap-node').last()).toHaveText('富内容')
 
-  // Fitted: the nodes stay inside the svg and fill most of its width or height.
   const fitted = () => map.evaluate((svg) => {
     const box = svg.getBoundingClientRect()
     const nodes = [...svg.querySelectorAll('.markmap-node')].map(node => node.getBoundingClientRect())
@@ -75,7 +69,6 @@ test('media directives give video, audio and an animated image from the build, w
   await expect.poll(() => loaded(image)).toBe(96)
   expect(await image.getAttribute('src')).toMatch(/\.gif$/)
 
-  // With reduced motion the animated image gives way to a still one.
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const still = (await open(page, 'content-media')).getByRole('img', { name: '旋转的加载动画' })
   await expect(still).toHaveCount(1)
@@ -94,7 +87,6 @@ test('an embedded web component keeps its own interactive state', async ({ page 
   await first.locator('button').click()
   await expect(first.locator('output')).toHaveText('2')
   await expect(second.locator('output')).toHaveText('10')
-  // Clicking inside the slide does not advance the deck.
   await expect(slide).toBeVisible()
 })
 
@@ -110,7 +102,6 @@ test('the web form renders the same content: math, diagrams, mindmap, media and 
   await counter.locator('button').click()
   await expect(counter.locator('output')).toHaveText('1')
 
-  // The media files are the component's `assets`, which the web renderer publishes.
   const video = section('content-media').locator('figure.pm-media video')
   await expect(video).toHaveAttribute('src', /^\/web\/media\/[0-9a-f]{8}-/)
   expect((await page.request.get(new URL((await video.getAttribute('src'))!, page.url()).href)).status()).toBe(200)
@@ -126,7 +117,6 @@ test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ p
   await page.goto(`${content().web}/content.html`)
   const map = page.locator('.pm-section[data-section="content-mindmap"] svg.pm-markmap')
   await expect(map.locator('.markmap-node')).toHaveCount(13)
-  // The fold toggle of a node with children is a button in the tab order.
   const toggle = map.getByRole('button', { name: '折叠或展开：公式' })
   await expect(toggle).toHaveAttribute('tabindex', '0')
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
@@ -139,7 +129,6 @@ test('the mindmap folds and unfolds a node from the keyboard (N-06)', async ({ p
   await expect(map.locator('.markmap-node')).toHaveCount(13)
 })
 
-/** The video of e2e/fixtures/content/cards.md: a poster and two caption tracks, every file answered. */
 async function expectCaptionedVideo(page: Page, video: Locator) {
   const tracks = video.locator('track')
   await expect(tracks).toHaveCount(2)
@@ -165,7 +154,6 @@ test('a video with a poster and captions in two languages has its poster and two
 
 test('a grid of three cards has three columns on a desktop and one on a phone; a card\'s button is a link (P-46)', async ({ page }) => {
   const cards = page.locator('.pm-section[data-section="content-cards"] .pm-grid > .pm-card')
-  /** The columns the cards stand in: their distinct left edges. */
   const columns = async () => new Set(await cards.evaluateAll(list => list.map(card => Math.round(card.getBoundingClientRect().left)))).size
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto(`${content().web}/cards.html`)
@@ -174,7 +162,6 @@ test('a grid of three cards has three columns on a desktop and one on a phone; a
   await page.setViewportSize({ width: 375, height: 800 })
   await expect.poll(columns).toBe(1)
 
-  // The first card links somewhere as a whole; its button is a link to a section.
   await expect(cards.nth(0).locator('.pm-card__title a')).toHaveAttribute('href', 'https://example.com/week-01/')
   const button = cards.nth(0).locator('.pm-card__footer a.pm-button')
   await expect(button).toHaveText('进入讲义')
@@ -214,8 +201,6 @@ test.describe('online media', () => {
   let deck: string
   let site: Awaited<ReturnType<typeof serve>>
 
-  // e2e/fixtures/plugins/online.md: {youtube}, and {video} and {audio} with URLs. Built together,
-  // the forms are one site: the web form under /web/, the slides under /slides/.
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     deck = writeDeck('online', `
@@ -239,7 +224,6 @@ renderers:
   })
 
   test('a YouTube video and online video and audio show from their URLs in both forms, and the notebook links to them (P-42)', async ({ page }) => {
-    // Nothing is fetched from the network: the players point to their URLs.
     await page.route(/youtube|example\.com/, route => route.abort())
     const PLAYER = 'https://www.youtube-nocookie.com/embed/luoMHjh-XcQ?start=30'
 

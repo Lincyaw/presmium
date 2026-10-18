@@ -1,12 +1,7 @@
 import type { Snippet } from './regions.ts'
 
-/** Step names that highlight no unit in particular. */
 const NO_UNIT = new Set(['all', 'none'])
 
-/**
- * The lines (1-based, of the displayed code) highlighted at each step (P-15):
- * one logical unit per step. Throws for a name that is not a unit.
- */
 export function highlightSteps(steps: string[], units: Snippet['units']): number[][] {
   return steps.map((step) => {
     const unit = units.get(step)
@@ -17,7 +12,6 @@ export function highlightSteps(steps: string[], units: Snippet['units']): number
   })
 }
 
-/** The units of a snippet as IR `CodeOrigin.units`. */
 export function unitRecord(units: Snippet['units']): Record<string, { startLine: number, endLine: number }> {
   return Object.fromEntries([...units].map(([name, { from, to }]) => [name, { startLine: from, endLine: to }]))
 }

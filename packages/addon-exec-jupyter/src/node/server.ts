@@ -1,29 +1,9 @@
-/**
- * The server's proxy of `auth: proxy` environments (P-105): under
- * `/__presmium/presmium.execJupyter/env/<name>/` the browser reaches the
- * environment's Jupyter Server, HTTP and WebSocket, and the server adds the
- * credentials, which the page never sees: the target is the operator's
- * `PRESMIUM_ENV_<NAME>_URL`, with `PRESMIUM_ENV_<NAME>_TOKEN`; a deck whose
- * `url` names another origin gets no proxy. Learners use it: the role is
- * `reader`.
- *
- * The proxies follow the environments the compiler last declared for the
- * deck (./environments.ts), so a recompilation that changes them changes
- * the proxies. An environment that cannot be proxied answers its requests
- * with the reason.
- */
 import { problem } from '@presmium/kernel'
 import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@presmium/kernel'
 import { authOf, operatorConnection, proxyPath } from '../domain/index.ts'
 import type { Connection } from '../domain/index.ts'
 import { declaredEnvironments } from './environments.ts'
 
-/**
- * The request headers the proxy sets: the credentials, and the target's own
- * `Host` and `Origin`, as a client of the server (a hosted server behind a
- * name-based proxy needs its host; the Jupyter Server checks a WebSocket's
- * origin against it). Lower case, so they replace the browser's.
- */
 export function proxyHeaders(connection: Connection): Record<string, string> {
   const target = new URL(connection.url)
   const headers: Record<string, string> = { host: target.host, origin: target.origin }
@@ -33,7 +13,6 @@ export function proxyHeaders(connection: Connection): Record<string, string> {
 
 interface Mount {
   proxy?: ProxySpec
-  /** Why there is no proxy. */
   reason?: string
 }
 

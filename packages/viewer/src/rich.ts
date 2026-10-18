@@ -1,19 +1,9 @@
-/**
- * Math (KaTeX) and diagrams (Mermaid). Math the host rendered when it
- * published the document (`html`) shows as it is, in the server render too;
- * other math and the diagrams are rendered in the browser after mount: the
- * server render and the first client render show the source text, so
- * hydration matches, and the libraries load on first use. A server render
- * never loads them (`import.meta.env.SSR`), so its build leaves them out.
- * KaTeX's stylesheet comes with the page, for the math rendered beforehand.
- */
 import { AUTHOR_MARKS_CLASS, errorMessage, escapeHtml } from '@presmium/kernel'
 import 'katex/dist/katex.min.css'
 import { computed, defineComponent, h, onMounted, ref, shallowRef, watch } from 'vue'
 import { useSectionContext } from './context.ts'
 import { useDark } from './dark.ts'
 
-/** A promise that never settles: what a library load gives in a server render. */
 const never = <T>() => new Promise<T>(() => {})
 
 type Katex = typeof import('katex').default
@@ -31,7 +21,6 @@ export const PmMath = defineComponent({
   props: {
     tex: { type: String, required: true },
     display: Boolean,
-    /** The math already rendered by KaTeX (e.g. by the web renderer, when it publishes the document). */
     html: { type: String, default: undefined },
   },
   setup(props) {
@@ -65,13 +54,6 @@ function loadMermaid(): Promise<Mermaid> {
   return mermaid
 }
 
-/**
- * The host's colours (its design tokens, docs/architecture.md 5.10) as
- * Mermaid's theme variables, for its `base` theme: a diagram is drawn in the
- * paper, ink and accent of the page, light or dark, and its labels reach
- * WCAG AA (Mermaid's own dark theme draws an edge's label at 4.4:1).
- * Undefined where the page has no tokens: Mermaid's own themes then.
- */
 function tokenTheme(dark: boolean): Record<string, string | boolean> | undefined {
   const style = getComputedStyle(document.documentElement)
   const token = (name: string) => style.getPropertyValue(`--pm-color-${name}`).trim()
@@ -110,12 +92,6 @@ function tokenTheme(dark: boolean): Record<string, string | boolean> | undefined
   }
 }
 
-/**
- * A Mermaid diagram, drawn in the browser (docs/ir.md section 8.1) in the
- * page's appearance, again when it changes: the host's colours where the page
- * has them (`tokenTheme`). A flowchart keeps its natural size, so its labels
- * stay readable; a wide one scrolls sideways.
- */
 export const PmMermaid = defineComponent({
   name: 'PmMermaid',
   props: { code: { type: String, required: true } },
@@ -131,7 +107,6 @@ export const PmMermaid = defineComponent({
         const variables = tokenTheme(dark.value)
         const appearance = dark.value ? 'dark' : 'default'
         const theme = variables ? 'base' : appearance
-        // The configuration is global: set before each drawing, with the appearance of this one.
         library.initialize({ startOnLoad: false, securityLevel: 'strict', theme, ...variables ? { themeVariables: variables } : {}, flowchart: { useMaxWidth: false } })
         const { svg } = await library.render(`pm-mermaid-${++diagrams}`, props.code)
         if (id !== latest) return
@@ -156,11 +131,6 @@ export const PmMermaid = defineComponent({
 const authorMarks = shallowRef(false)
 let observed = false
 
-/**
- * Whether the page shows the author's marks: the switch of the page, the
- * class `AUTHOR_MARKS_CLASS` of `<html>`, which the preview agent sets
- * (`marks`) and edit mode while it is on. Reactive; false in a server render.
- */
 function useAuthorMarks() {
   if (!observed && typeof document !== 'undefined') {
     observed = true
@@ -173,12 +143,6 @@ function useAuthorMarks() {
   return authorMarks
 }
 
-/**
- * The mark of a registered role without children (docs/ir.md 2.8, 6.4), e.g.
- * where a `{cue}` stands: `〔<name> <value>〕`, shown only in the presenter
- * window and while the page shows the author's marks (`useAuthorMarks`), so
- * the author sees where the marks are; elsewhere it renders nothing.
- */
 export const PmRoleMark = defineComponent({
   name: 'PmRoleMark',
   props: { mark: { type: String, required: true } },

@@ -1,12 +1,4 @@
 <script setup lang="ts">
-/**
- * A terminal of a remote environment (P-107): xterm.js on a terminal of the
- * environment's Jupyter Server, which the reader opens with a button (an
- * `auth: prompt` environment asks for the token then). It connects as the
- * environment's code does; where the page cannot reach the environment
- * (an `auth: proxy` environment in a static page) it says why instead.
- * Closing the page or leaving the slide shuts the terminal down.
- */
 import { useMessages, useService } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
@@ -16,7 +8,6 @@ import { DEFAULT_TERMINAL_ROWS, JUPYTER_ENVIRONMENTS } from '../src/domain/index
 import type { TerminalSession } from '../src/domain/service.ts'
 
 const props = withDefaults(defineProps<{
-  /** A `kind: jupyter` environment of the deck. */
   env: string
   rows?: number
 }>(), { rows: DEFAULT_TERMINAL_ROWS })
@@ -37,7 +28,6 @@ async function open() {
   close()
   state.value = 'connecting'
   failure.value = undefined
-  // The screen shows from here on: xterm measures it when it opens.
   await nextTick()
   const [{ Terminal }, { FitAddon }] = await Promise.all([import('@xterm/xterm'), import('@xterm/addon-fit')])
   const terminal = new Terminal({ rows: props.rows, cursorBlink: true, fontSize: 14, convertEol: false })
@@ -102,8 +92,6 @@ onBeforeUnmount(close)
 </template>
 
 <style scoped>
-/* A terminal in 书卷 (N-10): a panel framed like the deck's code, its bar the sunk paper, the screen the terminal's
-   own (xterm.js draws its text on its own black). */
 .pm-terminal {
   --pm-text-sm: 0.875em;
 

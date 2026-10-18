@@ -1,10 +1,3 @@
-/**
- * Speech with the engines of this process's environment. Picks the engine (an
- * engine the operator did not define gets no request), checks a cloned
- * voice's consent (./consent.ts) before synthesizing, applies the
- * pronunciation lexicon to the text (words come back in the written form),
- * and labels the audio as AI-generated (./audio/label.ts).
- */
 import { remapWords } from '@presmium/kernel'
 import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
 import type { EngineDefinition } from '../domain/index.ts'
@@ -19,29 +12,20 @@ import type { EngineAdapter } from './engines/index.ts'
 import { speaks } from './engines/types.ts'
 import { SpeechError } from './errors.ts'
 
-/**
- * The words an engine timed over the spoken text (the lexicon applied) as
- * words of the written text (the kernel's `remapWords`): a replacement's
- * words become its written form, without the spaces around it.
- */
 function writtenWords(words: SpeechWord[], written: string, spoken: SpokenText): SpeechWord[] {
   if (spoken.spans.length === 0) return words
   return remapWords(words, written, spoken.text, spoken.spans).map(({ text, start, end }) => ({ text: text.trim(), start, end }))
 }
 
 export interface CoreOptions {
-  /** The environment's variable names, which say what engines there are. */
   names(): Iterable<string>
   secret(name: string): string | undefined
-  /** `settings.presmium.speech` of the workspace configuration. */
   settings: Record<string, unknown>
-  /** Where consent records are: the operator directory, outside the workspace. */
   operatorDir?: string
   log: Logger
 }
 
 export interface SpeechCore extends SpeechBackend {
-  /** Writes a consent record into the operator directory; returns its file. */
   registerConsent(engine: string, voice: string, record: unknown): string
 }
 
@@ -54,14 +38,8 @@ export function speechCore(options: CoreOptions): SpeechCore {
     if (!found) adapters.set(engine.id, found = engineAdapter(engine))
     return found
   }
-  /**
-   * Each engine's voices, asked once per process. A failure is not kept and
-   * fails the synthesis too: whether its voice is cloned cannot be known.
-   */
   const lists = new Map<string, Promise<VoiceInfo[]>>()
-  /** The lists this process has got, which tell a cache's hit whether its voice is cloned (`consent`). */
   const known = new Map<string, VoiceInfo[]>()
-  /** The engines whose list a cache's hit could not get: their hits are not held up asking again. */
   const unlisted = new Set<string>()
   const allVoices = (engine: EngineDefinition) => {
     let list = lists.get(engine.id)
@@ -109,7 +87,6 @@ export function speechCore(options: CoreOptions): SpeechCore {
       const listed = (await allVoices(engine)).find(voice => voice.id === request.voice)
       const cloned = listed?.cloned === true || adapter(engine).cloned?.(request.voice) === true
       if (cloned) checkConsent(options.operatorDir, options.settings, engine.id, request.voice)
-      // The engine gets the text as spoken; the words it times are given as words of the written text.
       const spoken = speak(request.text, request.lexicon)
       const key = cacheKey({ ...request, engine: engine.id }, spoken.text)
       const produced = await adapter(engine).synthesize({ voice: request.voice, text: spoken.text, lang: request.lang, rate: request.rate, style: request.style }, signal)
@@ -141,8 +118,6 @@ export function speechCore(options: CoreOptions): SpeechCore {
 
     async consent(engine, voice, recorded) {
       if (!recorded) {
-        // Not cloned by the record's word: by the engine's, its adapter's or its list of voices (asked once per process,
-        // a hit sends it no synthesis); the record's word stands only for an engine not defined here or that cannot list them.
         const defined = engines().engines.find(own => own.id === engineId(engine))
         if (!defined) return
         if (adapter(defined).cloned?.(voice) !== true) {
@@ -166,7 +141,6 @@ export function speechCore(options: CoreOptions): SpeechCore {
   }
 }
 
-/** Logs the engines that lack a variable, naming it, once when a server starts. */
 export async function reportEngines(core: SpeechBackend, log: Logger): Promise<void> {
   const { engines, unavailable } = await core.listing('en')
   if (engines.length) log.info(`speech engines: ${engines.map(engine => `${engine.id} (${engine.provider})`).join(', ')}`)

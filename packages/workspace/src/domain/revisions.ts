@@ -1,13 +1,3 @@
-/**
- * Commit messages of the revision history (docs/architecture.md 4.8): a
- * summary line, a body, and trailers that say where a change came from, so
- * the history is filtered by them and needs no database of the server. A
- * document operation's `Presmium-Origin` names the operation and its
- * directories after `document` (`document rename guide manual`; a space or
- * `%` in a directory percent-encoded, `week%201`), so the history panel
- * labels it in the reader's language (N-07) while the commit's summary stays
- * as written; a revert's names those of the change it undoes.
- */
 import type { Member, RevisionOrigin } from '@presmium/kernel/contracts'
 
 export const ORIGIN_TRAILER = 'Presmium-Origin'
@@ -17,26 +7,19 @@ const CO_AUTHOR = 'Co-authored-by'
 
 const ORIGINS = new Set<RevisionOrigin['kind']>(['agent', 'document', 'editor'])
 
-/** What a document operation did (P-121): the operation and its directories. */
 export type RevisionOperation =
   | { op: 'create', dir: string }
   | { op: 'delete', dir: string }
   | { op: 'rename', dir: string, to: string }
   | { op: 'copy', dir: string, to: string }
 
-/** The origin of a commit of the workspace: the contract's, and a document operation's own. */
 export type CommitOrigin = RevisionOrigin & { operation?: RevisionOperation }
 
-/** The `Name <email>` of a member, for git; a member without an email gets one of this machine. */
 export function memberAddress(member: Member): string {
   const clean = (value: string) => value.replace(/[<>\n]/g, '').trim()
   return `${clean(member.name) || clean(member.id)} <${clean(member.email ?? '') || `${clean(member.id).replace(/\s+/g, '-') || 'member'}@presmium.invalid`}>`
 }
 
-/**
- * A directory as one word of `Presmium-Origin`: a listed document's directory may hold a space (a pattern
- * matched `weeks/week 1`), so whitespace and `%` are percent-encoded; the rest stays readable.
- */
 const word = (dir: string) => dir.replace(/[%\s]/gu, char => encodeURIComponent(char))
 function unword(text: string): string {
   try {
@@ -46,14 +29,12 @@ function unword(text: string): string {
   }
 }
 
-/** `Presmium-Origin`'s value: the kind, then a document operation and its directories. */
 function originValue(origin: CommitOrigin): string {
   const operation = origin.operation
   if (!operation) return origin.kind
   return [origin.kind, operation.op, word(operation.dir), ...'to' in operation ? [word(operation.to)] : []].join(' ')
 }
 
-/** A commit message: the summary, the body, and the trailers of its origin (and of the reverted commit). */
 export function commitMessage(summary: string, body: string, origin: CommitOrigin, revert?: string): string {
   const trailers = [`${ORIGIN_TRAILER}: ${originValue(origin)}`]
   if (origin.task) trailers.push(`${TASK_TRAILER}: ${origin.task}`)
@@ -63,7 +44,6 @@ export function commitMessage(summary: string, body: string, origin: CommitOrigi
   return `${head}\n\n${body.trim() ? `${body.trim()}\n\n` : ''}${trailers.join('\n')}\n`
 }
 
-/** The trailers of a message: its last paragraph's `Key: value` lines. */
 export function trailers(message: string): Record<string, string[]> {
   const paragraphs = message.trim().split(/\n\s*\n/)
   const last = paragraphs.at(-1) ?? ''
@@ -76,7 +56,6 @@ export function trailers(message: string): Record<string, string[]> {
   return out
 }
 
-/** The document operation a `Presmium-Origin` value names after its kind; undefined for none. */
 function operationOf(words: string[]): RevisionOperation | undefined {
   const [op, dir, to] = [words[0], ...words.slice(1).map(unword)]
   if (!dir) return undefined
@@ -86,7 +65,6 @@ function operationOf(words: string[]): RevisionOperation | undefined {
   return undefined
 }
 
-/** The origin a message names; undefined for a commit without Presmium's trailer. */
 export function originOf(message: string): (CommitOrigin & { revert?: string, coAuthor?: string }) | undefined {
   const found = trailers(message)
   const [kind, ...rest] = (found[ORIGIN_TRAILER]?.[0] ?? '').trim().split(/\s+/)

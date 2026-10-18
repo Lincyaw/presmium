@@ -1,13 +1,3 @@
-/**
- * The source editor (P-124): CodeMirror 6, loaded with the source pane only.
- * MyST is Markdown with its headmatter in YAML, and directives, their
- * options, labels and roles marked as the design's keys; a YAML file is
- * YAML. The compilation's problems are marked on their lines (the lint
- * gutter); a block picked in the preview marks its lines. Ctrl+S (⌘ S)
- * saves. Each open file keeps its own state (its undo history, its cursor),
- * shown one at a time. Colours are the design's tokens, so light and dark
- * follow the page.
- */
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { yaml, yamlFrontmatter } from '@codemirror/lang-yaml'
@@ -22,16 +12,12 @@ import type { DecorationSet, ViewUpdate } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 
 export interface EditorOptions {
-  /** The accessible name of the text. */
   label: string
   save(): void
-  /** A file's text changed in the editor. */
   changed(path: string, text: string): void
-  /** The cursor is on this line of the file shown. */
   moved(line: number): void
 }
 
-/** A problem of the compilation on a line of a file. */
 export interface Problem {
   line: number
   severity: 'error' | 'warning' | 'info'
@@ -39,12 +25,9 @@ export interface Problem {
 }
 
 export interface SourceEditor {
-  /** Shows a file: its state if it has one, else `text`. */
   show(path: string, text: string): void
   text(path: string): string | undefined
-  /** Replaces a file's text: an edit to undo, or (`fresh`) a text loaded anew. */
   replace(path: string, text: string, fresh: boolean): void
-  /** Moves the cursor to a line of the file shown and scrolls there; `mark` marks the lines up to `endLine`. */
   reveal(line: number, endLine?: number, mark?: boolean): void
   problems(path: string, problems: Problem[]): void
   forget(path: string): void
@@ -52,7 +35,6 @@ export interface SourceEditor {
   destroy(): void
 }
 
-/** MyST's own marks: a directive's fence, an option, a label, a role. */
 const MYST = new MatchDecorator({
   regexp: /^(?:`{3,}|:{3,})\{[\w.:-]+\}.*$|^:[\w-]+:(?=\s|$)|^\([^)\s]+\)=\s*$|\{[\w.:-]+\}`[^`]*`/g,
   decoration: match => Decoration.mark({ class: match[0].startsWith('(') ? 'pm-cm-myst-label' : 'pm-cm-myst' }),
@@ -80,12 +62,6 @@ const HIGHLIGHT = HighlightStyle.define([
   { tag: [tags.keyword, tags.bool, tags.null, tags.number, tags.atom], color: 'var(--pm-color-syntax-keyword)' },
 ])
 
-/**
- * The design's editor (docs/design/edit.dc.html): the code colour, the mono
- * face, line numbers in the muted colour (the reference's lighter one does
- * not reach WCAG AA), the picked lines as a selected row with the accent at
- * their left.
- */
 const THEME = EditorView.theme({
   '&': { height: '100%', backgroundColor: 'var(--pm-color-code)', color: 'var(--pm-color-ink)', fontSize: '0.84375rem' },
   '&.cm-focused': { outline: 'none' },
@@ -111,7 +87,6 @@ const THEME = EditorView.theme({
   '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': { backgroundColor: 'var(--pm-color-accent-soft)' },
 })
 
-/** The lines a block picked in the preview takes. */
 const pick = StateEffect.define<{ from: number, to: number } | null>()
 const picked = StateField.define<DecorationSet>({
   create: () => Decoration.none,
@@ -198,7 +173,6 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
     },
     replace(path, text, fresh) {
       if (path !== current) {
-        // A file not shown starts again from the text, with a history of its own.
         states.set(path, EditorState.create({ doc: text, extensions: extensions(path) }))
         return
       }

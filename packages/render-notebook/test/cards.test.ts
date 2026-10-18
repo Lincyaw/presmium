@@ -1,6 +1,3 @@
-// Runs the real `presmium build --to notebook` on a deck with MyST's cards, grids, tabs and buttons
-// (docs/ir.md 2.10, P-46): Jupyter has no form for them, so a card's and a tab's title become small
-// headings over their paragraphs, a button a link, and the build report lists the degradations.
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'

@@ -4,25 +4,13 @@ import { expect, test } from '@playwright/test'
 import type { Browser, Locator, Page } from '@playwright/test'
 import { build, FIXTURES, rawLearner, serve, startClassroomServer, writeDeck, writePage } from './fixtures/plugins/decks.ts'
 
-// Classroom features (e2e/fixtures/plugins/classroom.md). Without a classroom the quiz is a
-// self-test and notes stay in the browser. The classroom tests build a deck of the classroom page
-// whose frontmatter points to a real classroom server (`presmium-classroom-server` on a free port,
-// with that deck as its deck directory) and drive a presenter and two learners in browser contexts
-// of their own. The notebook form is checked in packages/addon-classroom/test. The other test decks
-// of e2e/fixtures/plugins check the classroom in English and in a language without messages, over
-// another session implementation, and its notes across edits of the deck.
-
-/** Loading the Python runtime for the first check takes a few seconds. */
 const RUNTIME = { timeout: 30_000 }
 
 const quiz = (page: Page) => page.locator('.pm-quiz').filter({ visible: true })
 const noteSpot = (page: Page, section: string, block?: string) =>
   page.locator(block ? `.pm-note-spot[data-section="${section}"][data-block="${block}"]` : `.pm-note-spot[data-section="${section}"]:not([data-block])`)
-/** The block a note spot stands in, if any: its notes button shows while the reader points at it. */
 const blockOf = (spot: Locator) => spot.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " pm-block ")][1]')
-/** Whether the reader sees a note spot: a block's spot is transparent until it shows. */
 const shown = (spot: Locator) => spot.evaluate(el => getComputedStyle(el.closest('.pm-note-slot')!).opacity !== '0')
-/** The notes button of the labelled block `merge-rule`, named after the block's first words. */
 const MERGE_RULE = /^笔记：合并规则：每一轮把出现次数最多/
 
 async function openNotes(spot: Locator, name: string | RegExp): Promise<void> {
@@ -37,7 +25,6 @@ async function addNote(page: Page, spot: ReturnType<typeof noteSpot>, name: stri
   await expect(spot.getByRole('list', { name: '我的笔记' })).toContainText(text)
 }
 
-/** The classroom page as a deck of its own; with `server`, its frontmatter names that classroom server. */
 function writeClassroomDeck(deck: string, server?: string): void {
   writeFileSync(join(deck, '.gitignore'), '*\n')
   cpSync(join(FIXTURES, 'classroom.md'), join(deck, 'pages/classroom.md'))
@@ -74,7 +61,6 @@ ${session}renderers:
 `)
 }
 
-/** A new deck directory in the demo's working directory, where the deck's packages resolve. */
 function deckDir(name: string): string {
   const work = resolve('examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
@@ -107,8 +93,6 @@ test.describe('without a classroom', () => {
     await quiz(page).getByRole('button', { name: '提交' }).click()
     await expect(quiz(page).getByRole('status')).toHaveText('回答正确')
 
-    // Every section has a note spot, and so has the labelled block; a section shows one notes
-    // button, the block's shows while the reader points at the block, named after its first words.
     const section = noteSpot(page, 'classroom-questions')
     const block = noteSpot(page, 'classroom-questions', 'merge-rule')
     await expect(block).toHaveCount(1)
@@ -118,7 +102,6 @@ test.describe('without a classroom', () => {
     await expect.poll(() => shown(block)).toBe(true)
     await page.mouse.move(0, 0)
     await expect.poll(() => shown(block)).toBe(false)
-    // A keyboard user reaches it with Tab from the section's button, and it shows while focused (N-06).
     await section.getByRole('button').focus()
     for (let i = 0; i < 10 && !await block.getByRole('button').evaluate(el => el === document.activeElement); i++) await page.keyboard.press('Tab')
     await expect(block.getByRole('button')).toBeFocused()
@@ -127,7 +110,6 @@ test.describe('without a classroom', () => {
     await block.getByLabel('新笔记').fill('频率相同时怎么办？')
     await block.getByRole('button', { name: '保存笔记' }).press('Enter')
     await expect(block.getByRole('list', { name: '我的笔记' })).toContainText('频率相同时怎么办？')
-    // A note survives a reload, and a block with notes shows its button with their count.
     await addNote(page, noteSpot(page, 'classroom-quiz'), '课堂测验', '合并看的是频率')
     await expect(noteSpot(page, 'classroom-quiz').locator('.pm-note-spot__where')).toHaveText('保存在这个浏览器中，只有你能看到')
     await page.reload()
@@ -135,31 +117,22 @@ test.describe('without a classroom', () => {
     await expect(block.locator('.pm-note-spot__count')).toHaveText('1')
     await expect.poll(() => shown(block)).toBe(true)
 
-    // A table's cells would run together: its block's notes are named after its section and its kind (F-82).
     await page.goto(`${web.url}/?section=classroom-table`)
     await expect(noteSpot(page, 'classroom-table', 'pair-ids').getByRole('button')).toHaveAccessibleName('笔记：下一次合并哪一对？ · 表格')
   })
 })
 
-// ---------------------------------------------------------------------------
-// A deck with a classroom server
-// ---------------------------------------------------------------------------
-
 const sessionButton = (page: Page) => page.getByRole('button', { name: /^课堂/ })
 const badge = (page: Page) => page.getByRole('region', { name: '课堂状态' })
 
 interface Lag {
-  /** From now on, what the classroom server sends the page waits. */
   hold(): void
-  /** Delivers what waited, in order, and stops holding. */
   release(): void
 }
 
-/** Relays the page's connections to the classroom server `server`, so its view of the classroom can lag behind. */
 async function laggable(page: Page, server: string): Promise<Lag> {
   let held: (() => void)[] | undefined
   await page.routeWebSocket(url => url.href.startsWith(server), (ws) => {
-    // What the page sends goes on at once.
     const upstream = ws.connectToServer()
     upstream.onMessage(message => held ? held.push(() => ws.send(message)) : ws.send(message))
   })
@@ -175,21 +148,13 @@ async function laggable(page: Page, server: string): Promise<Lag> {
 
 interface Classroom {
   presenter: Page
-  /** 小明 */
   a: Page
-  /** 小红 */
   b: Page
   room: string
-  /** The join link. */
   link: string
   close(): Promise<void>
 }
 
-/**
- * The presenter creates a classroom on `start` (the session panel is in the toolbar of the web form,
- * in the presenter view's panels of the slides form); two learners join with its link. `prepare`
- * runs on each learner's page before it joins.
- */
 async function classroom(browser: Browser, start: string, form: 'web' | 'slides', prepare?: (learner: Page) => Promise<void>): Promise<Classroom> {
   const contexts = await Promise.all([browser.newContext(), browser.newContext(), browser.newContext()])
   const [presenter, a, b] = await Promise.all(contexts.map(context => context.newPage())) as [Page, Page, Page]
@@ -207,7 +172,6 @@ async function classroom(browser: Browser, start: string, form: 'web' | 'slides'
   await expect(panel.getByRole('img', { name: '加入课堂的二维码' }).locator('svg')).toBeVisible()
   const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
   const room = new URL(link).searchParams.get('room')!
-  // Out of the way of the slide.
   if (form === 'web') await panel.getByRole('button', { name: '关闭' }).click()
   else await presenter.locator('.pm-presenter-panels summary').click()
   for (const [learner, name] of [[a, '小明'], [b, '小红']] as const) {
@@ -218,7 +182,6 @@ async function classroom(browser: Browser, start: string, form: 'web' | 'slides'
   return { presenter, a, b, room, link, close: async () => void await Promise.all(contexts.map(context => context.close())) }
 }
 
-/** In the web form the learners browse the classroom page on their own, so the presenter's scrolling does not move them. */
 async function browseAlone(...learners: Page[]): Promise<void> {
   for (const learner of learners) {
     await expect(learner).toHaveURL(/\/classroom\.html/)
@@ -231,7 +194,6 @@ test.describe('a classroom', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let server: Awaited<ReturnType<typeof startClassroomServer>>
   let deck: string
-  /** Built together, the forms are one site: the web form under /web/, the slides under /slides/. */
   let site: Awaited<ReturnType<typeof serve>>
   const web = { get url() { return `${site.url}/web` } }
   const slides = { get url() { return `${site.url}/slides` } }
@@ -262,7 +224,6 @@ test.describe('a classroom', () => {
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
     await expect(quiz(a).getByRole('status')).toHaveText('作答中：选择后提交')
 
-    // 小明 answers twice; only his last answer counts.
     await quiz(a).getByRole('radio', { name: /最先出现/ }).check()
     await quiz(a).getByRole('button', { name: '提交' }).click()
     await expect(quiz(a).getByRole('status')).toHaveText('已提交 A，作答关闭前可以修改')
@@ -273,7 +234,6 @@ test.describe('a classroom', () => {
     await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 2 人，答对 1 人')
     await expect(quiz(presenter).locator('.pm-quiz__count')).toHaveText(['0 人', '1 人', '1 人'])
 
-    // 小红's view lags: she still sees the quiz open after the presenter closed it, and changes her answer.
     const lag = lags.get(b)!
     lag.hold()
     await quiz(presenter).getByRole('button', { name: '关闭作答' }).click()
@@ -281,12 +241,10 @@ test.describe('a classroom', () => {
     await quiz(b).getByRole('radio', { name: /次数最多/ }).check()
     await quiz(b).getByRole('button', { name: '提交' }).click()
     await expect(quiz(b).getByRole('status')).toHaveText('已提交 B，作答关闭前可以修改')
-    // The late answer reaches the room but not the result, which closing froze.
     await expect(quiz(presenter).locator('.pm-quiz__late')).toHaveText('关闭后送达的作答 1 份，未计入')
     await expect(quiz(presenter).locator('.pm-quiz__tally')).toHaveText('已作答 2 人，答对 1 人')
     await expect(quiz(presenter).locator('.pm-quiz__count')).toHaveText(['0 人', '1 人', '1 人'])
 
-    // Closed: everyone sees the tally and the right option; nobody can answer.
     lag.release()
     await expect(quiz(b).getByRole('status')).toHaveText('作答已关闭，你的答案错误；关闭后送达的作答未计入')
     await expect(quiz(b).getByRole('radio', { name: /次数最少/ })).toBeChecked()
@@ -304,7 +262,6 @@ test.describe('a classroom', () => {
     await box.getByLabel('问题').fill('频率相同的两对先合并哪一对？')
     await box.getByRole('button', { name: '提问' }).click()
     await expect(box.getByRole('list', { name: '我的提问' })).toContainText('频率相同的两对先合并哪一对？')
-    // Another learner does not get it in the question box.
     await expect(b.locator('.pm-question-box').getByRole('list')).toHaveCount(0)
     await a.locator('.pm-pulse').getByRole('button', { name: '懂了' }).click()
     await b.locator('.pm-pulse').getByRole('button', { name: '没懂' }).click()
@@ -316,7 +273,6 @@ test.describe('a classroom', () => {
     await expect(asked.locator('.pm-classroom-panel__where')).toHaveText(`第 ${sections['classroom-questions']} 节 · 提问与理解度 · merge-rule`)
     await expect(asked.getByRole('listitem')).toHaveText(/^小明：频率相同的两对先合并哪一对？/)
     await expect(overview.getByRole('region', { name: '理解度' })).toContainText('懂了 1 人 · 有点模糊 1 人 · 没懂 0 人')
-    // The pulse on the page shows the presenter the same distribution.
     await expect(presenter.locator('.pm-pulse [data-level="有点模糊"]')).toHaveAttribute('data-count', '1')
     await close()
   })
@@ -352,11 +308,9 @@ test.describe('a classroom', () => {
     await expect(theirs.getByRole('list', { name: '我的笔记' })).toHaveCount(0)
     await expect(theirs).toHaveAttribute('data-notes', '0')
 
-    // The tab stays in the classroom after a reload, and so do its notes.
     await a.reload()
     await expect(badge(a)).toBeVisible()
     await expect(noteSpot(a, 'classroom-questions', 'merge-rule')).toHaveAttribute('data-notes', '1')
-    // Another tab of the same browser comes back as the same participant, browsing alone as before, and finds the notes too.
     const tab = await a.context().newPage()
     await tab.goto(`${link}&name=${encodeURIComponent('小明')}`)
     await expect(badge(tab)).toContainText('自主浏览中')
@@ -382,7 +336,6 @@ test.describe('a classroom', () => {
     await expect(box).toContainText('课堂已结束，不再接受提问')
     await expect(box.getByLabel('问题')).toHaveCount(0)
     await expect(a.locator('.pm-pulse').getByRole('button')).toHaveCount(0)
-    // An exercise still checks, and says that the result no longer reaches the presenter.
     await expect(a.locator('.pm-exercise__ended')).toHaveText('课堂已结束：结果只在本机显示，不再提交')
 
     await panel.getByRole('button', { name: '归档课堂' }).click()
@@ -392,7 +345,6 @@ test.describe('a classroom', () => {
     const archived = JSON.parse(readFileSync(join(deck, file), 'utf8')) as { room: string, document: Record<string, Record<string, { text?: string }>> }
     expect(archived.room).toBe(room)
     expect(Object.values(archived.document['store:questions']!).map(q => q.text)).toEqual(['合并到什么时候停止？'])
-    // Archiving frees the learner's own store on the server, not the notes this browser kept.
     await expect(notes.getByRole('list', { name: '我的笔记' })).toContainText('课上记的笔记')
     await expect(notes.locator('.pm-note-spot__where')).toHaveText('保存在这个浏览器中，只有你能看到')
     await notes.getByLabel('新笔记').fill('课后补充')
@@ -414,7 +366,6 @@ test.describe('a classroom', () => {
     await a.close()
     const again = await context.newPage()
     await again.goto(`${link}&name=${encodeURIComponent('小明')}`)
-    // Browsing alone as before, the learner opens the quiz's page.
     await expect(badge(again)).toContainText('自主浏览中')
     await again.goto(`${web.url}/classroom.html`)
     await expect(quiz(again).getByRole('status')).toHaveText('已提交 A，作答关闭前可以修改')
@@ -432,7 +383,6 @@ test.describe('a classroom', () => {
     const pulse = (await presenter.locator('.pm-pulse').getAttribute('data-pulse'))!
     const [section, block] = pulse.split('/')
     const place = { section, block, title: '提问与理解度', index: sections['classroom-questions'] }
-    // An answer without its choice, a vote without its levels, then a question with its shape.
     const other = await rawLearner(server.url, room, 'other')
     other.write('answers', `${quizId}:other`, { quiz: quizId, participant: 'other', name: '旧版本', at: Date.now() })
     other.write('pulse', `${pulse}:other`, { ...place, pulse, participant: 'other', level: 0, at: Date.now() })
@@ -455,12 +405,10 @@ test.describe('a classroom', () => {
     const { presenter, a, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
     await quiz(presenter).getByRole('button', { name: '开放作答' }).click()
-    // A question over the size the server takes (16 KiB): the box limits it, a changed page does not.
     const box = a.locator('.pm-question-box')
     await box.getByLabel('问题').evaluate(el => el.removeAttribute('maxlength'))
     await box.getByLabel('问题').fill('长'.repeat(20_000))
     await box.getByRole('button', { name: '提问' }).click()
-    // The window drops what the server refused, as the classroom has it, and says so until the next write.
     await expect(box.getByRole('list', { name: '我的提问' })).toHaveCount(0)
     await expect(badge(a)).toContainText('自主浏览中')
     await expect(badge(a).getByRole('alert')).toHaveText(/^课堂服务拒绝了你刚才的写入/)
@@ -474,7 +422,6 @@ test.describe('a classroom', () => {
   test('a projector tab that the presenter opens by URL shows the presenter\'s quiz, not a self-test', async ({ browser }) => {
     const { presenter, a, close } = await classroom(browser, `${web.url}/classroom.html`, 'web')
     await browseAlone(a)
-    // Another tab of the presenter's browser, as a projector shows the present view.
     const projector = await presenter.context().newPage()
     await projector.goto(`${web.url}/classroom.html?view=present&section=classroom-quiz`)
     const shown = projector.getByRole('region', { name: '放映' }).locator('.pm-quiz')
@@ -486,7 +433,6 @@ test.describe('a classroom', () => {
     await quiz(a).getByRole('radio', { name: /次数最多/ }).check()
     await quiz(a).getByRole('button', { name: '提交' }).click()
     await expect(shown.locator('.pm-quiz__tally')).toHaveText('已作答 1 人，答对 1 人')
-    // The room sees the right answer only once the quiz is closed.
     await expect(shown.locator('[data-correct]')).toHaveCount(0)
     await quiz(presenter).getByRole('button', { name: '关闭作答' }).click()
     await expect(shown.locator('[data-correct]')).toHaveAttribute('data-option', 'B')
@@ -498,7 +444,6 @@ test.describe('a classroom', () => {
     const { presenter, a, b, close } = await classroom(browser, `${slides.url}/presenter/${index}`, 'slides')
     for (const learner of [a, b]) await expect(learner).toHaveURL(new RegExp(`/${index}(\\?|$)`))
     await expect(quiz(a).getByRole('status')).toHaveText('等待主讲开放作答')
-    // The audience window of the presenter's browser, opened by URL as Slidev suggests for a projector.
     const projector = await presenter.context().newPage()
     await projector.goto(`${slides.url}/${index}`)
     await expect(quiz(projector).getByRole('status')).toHaveText('尚未开放作答')
@@ -513,16 +458,11 @@ test.describe('a classroom', () => {
     await quiz(presenter).getByRole('button', { name: '关闭作答' }).click()
     await expect(quiz(a).getByRole('status')).toHaveText('作答已关闭，你的答案正确')
     await expect(quiz(b).getByRole('button', { name: '提交' })).toBeDisabled()
-    // The presenter view's panel lists the quiz too.
     await presenter.locator('.pm-presenter-panels summary').click()
     await expect(presenter.locator('[data-panel="presmium.classroom"]')).toContainText(`第 ${index} 节 · 课堂测验：已关闭，已作答 2 人，答对 1 人`)
     await close()
   })
 })
-
-// ---------------------------------------------------------------------------
-// Test decks of e2e/fixtures/plugins
-// ---------------------------------------------------------------------------
 
 test.describe('an English deck', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
@@ -530,7 +470,6 @@ test.describe('an English deck', () => {
   let deck: string
   let web: Awaited<ReturnType<typeof serve>>
 
-  // With the session and the classroom, but no executor.
   test.beforeAll(async () => {
     test.setTimeout(240_000)
     server = await startClassroomServer()
@@ -609,7 +548,6 @@ test.describe('a deck in a language without messages', () => {
   let deck: string
   let web: Awaited<ReturnType<typeof serve>>
 
-  // A classroom server is named, so the published deck shows the classroom; nothing connects to it.
   test.beforeAll(async () => {
     test.setTimeout(240_000)
     deck = writeDeck('french', `
@@ -653,7 +591,6 @@ test.describe('another session implementation', () => {
   let deck: string
   let web: Awaited<ReturnType<typeof serve>>
 
-  // The fixture plugin provides `session` and `classroomStore` in place of addon-session.
   test.beforeAll(async () => {
     test.setTimeout(240_000)
     deck = writeDeck('memory-session', `
@@ -676,7 +613,6 @@ renderers:
   })
 
   test('runs a quiz round with the quiz unchanged, and the start report shows the provider that replaced addon-session (K-08)', async ({ browser }) => {
-    // Tabs of one browser, where the in-memory classroom lives.
     const context = await browser.newContext()
     const presenter = await context.newPage()
     await presenter.goto(`${web.url}/quiz.html?as=presenter`)
@@ -696,7 +632,6 @@ renderers:
     const report = presenter.locator('.pm-start-report')
     await expect(report.locator('[data-plugin="fixture.memory-session"]')).toHaveAttribute('data-status', 'started')
     await expect(report.locator('[data-plugin="presmium.session"]')).toHaveCount(0)
-    // The classroom found every service it asks for.
     await expect(report.locator('[data-plugin="presmium.classroom"]')).toHaveAttribute('data-status', 'started')
     await context.close()
   })
@@ -710,7 +645,6 @@ export function total(prices: number[]): number {
 `
 
 test('notes stay attached to their section and to a labelled code block when the deck and the code change (P-63)', async ({ page }) => {
-  // Two builds.
   test.setTimeout(480_000)
   const deck = writeDeck('notes', `
 title: Notes
@@ -724,14 +658,12 @@ renderers:
   mkdirSync(join(deck, 'src'))
   writeFileSync(join(deck, 'src/cart.ts'), CART)
   await build(deck)
-  // The same address after the rebuild: notes are kept per site.
   const web = await serve(join(deck, 'dist/web'))
   try {
     await page.goto(`${web.url}/notes.html`)
     await addNote(page, noteSpot(page, 'cart'), 'Cart', 'The total is a sum')
     await addNote(page, noteSpot(page, 'cart', 'cart-total'), /^笔记：/, 'reduce starts at 0')
 
-    // A new section before it, a paragraph before the block, a comment above the code and a change in it.
     writePage(deck, 'notes.md', text => `(intro)=\n## Introduction\n\nA new first section.\n\n${text.replace('The cart adds', 'A new paragraph.\n\nThe cart adds')}`)
     writeFileSync(join(deck, 'src/cart.ts'), `// Prices are in cents.\n\n${CART.replace('sum + price', 'sum + Math.round(price)')}`)
     await build(deck)

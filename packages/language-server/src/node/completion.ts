@@ -1,8 +1,3 @@
-/**
- * Completion in a deck's source: directive names after `{`, the options of
- * a directive and some of their values, component names, and anchors with
- * their logical units (`:steps:`).
- */
 import type { Compilation } from '@presmium/compiler'
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver/node'
 import type { CompletionItem, Position } from 'vscode-languageserver/node'
@@ -40,7 +35,6 @@ export async function complete(compilation: Compilation, lines: string[], positi
       }))
 
     case 'argument': {
-      // The components the compiler knows: the plugins' and the deck's own.
       if (typing.fence.name === 'component') {
         return [...compilation.components].map(([name, plugin]) => ({ label: name, kind: CompletionItemKind.Class, detail: plugin, textEdit: edit(name) }))
       }

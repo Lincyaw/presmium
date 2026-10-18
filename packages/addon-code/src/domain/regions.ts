@@ -1,7 +1,3 @@
-/**
- * `#region` markers, in the comment styles that Slidev's and VitePress's
- * `<<< file#name` snippet imports accept (VS Code folding regions).
- */
 const MARKERS: { start: RegExp, end: RegExp }[] = [
   { start: /^\s*\/\/\s*#?region\b\s*(.*?)\s*$/, end: /^\s*\/\/\s*#?endregion\b\s*(.*?)\s*$/ },
   { start: /^\s*<!--\s*#?region\b\s*(.*?)\s*-->/, end: /^\s*<!--\s*#?endregion\b\s*(.*?)\s*-->/ },
@@ -35,17 +31,10 @@ export function isRegionMarker(line: string): boolean {
 
 export interface Region {
   name: string
-  /** 0-based index of the start marker line. */
   open: number
-  /** 0-based index of the end marker line. */
   close: number
 }
 
-/**
- * All closed regions in document order of their start markers. An end marker
- * closes the innermost open region of the same name (or of any name when it has
- * none) in the same comment style, so regions nest.
- */
 export function findRegions(lines: string[]): Region[] {
   const open: (Marker & { line: number })[] = []
   const regions: Region[] = []
@@ -61,24 +50,20 @@ export function findRegions(lines: string[]): Region[] {
   return regions.sort((a, b) => a.open - b.open)
 }
 
-/** Removes the indentation common to all non-blank lines. */
 export function dedent(lines: string[]): string[] {
   const indents = lines.filter(l => l.trim() !== '').map(l => /^[ \t]*/.exec(l)![0].length)
   const common = indents.length > 0 ? Math.min(...indents) : 0
   return lines.map(l => l.slice(Math.min(common, /^[ \t]*/.exec(l)![0].length)))
 }
 
-/** Code as displayed: region markers removed, common indentation removed. */
 export interface Snippet {
   code: string
-  /** Logical units (nested regions) as 1-based, inclusive line ranges of `code`. */
   units: Map<string, { from: number, to: number }>
 }
 
 export function toSnippet(text: string): Snippet {
   const lines = text.split(/\r?\n/)
   const kept: string[] = []
-  // Displayed line count before each raw line.
   const before: number[] = []
   for (const line of lines) {
     before.push(kept.length)

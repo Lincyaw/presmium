@@ -1,8 +1,3 @@
-/**
- * The preview of P-81: `presmium dev --to web` for a deck, run as a child
- * process of the language server (its output must stay off the protocol
- * stream), one per deck, until the server shuts down.
- */
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -10,14 +5,11 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { createInterface } from 'node:readline'
 
-/** How long `presmium dev` may take to print the web server's URL. */
 const START_TIMEOUT = 120_000
-/** Working directory of the preview's `presmium dev`, relative to the deck. */
 const PREVIEW_DIR = '.presmium/preview'
 
 const CLI = '@presmium/cli'
 
-/** The `presmium` command of the `@presmium/cli` package that `from` resolves. */
 function cliBin(from: string): string | undefined {
   let dir: string
   try {
@@ -34,7 +26,6 @@ function cliBin(from: string): string | undefined {
   return undefined
 }
 
-/** The `presmium` command: the deck's own, else the server's. */
 function presmiumBin(deckDir: string): string {
   const bin = cliBin(join(deckDir, 'package.json')) ?? cliBin(import.meta.url)
   if (!bin) throw new Error(`${CLI} is not installed`)
@@ -46,17 +37,13 @@ export class Previews {
   readonly #children = new Set<ChildProcess>()
   readonly #log: (line: string) => void
 
-  /** `log` receives the output of `presmium dev`. */
   constructor(log: (line: string) => void) {
     this.#log = log
   }
 
-  /** The base URL of the deck's web dev server, started on first use. */
   open(entry: string): Promise<string> {
     const known = this.#urls.get(entry)
     if (known) return known
-    // Forgotten when it fails or its process ends, unless another start took its place meanwhile (F-43): a first
-    // `presmium dev` that timed out exits after the next one started.
     const forget = () => {
       if (this.#urls.get(entry) === url) this.#urls.delete(entry)
     }
@@ -68,13 +55,11 @@ export class Previews {
 
   #start(entry: string, forget: () => void): Promise<string> {
     const deckDir = dirname(entry)
-    // Its own working directory, apart from a `presmium dev` the author runs.
     const args = [presmiumBin(deckDir), 'dev', entry, '--to', 'web', '--out', join(deckDir, PREVIEW_DIR)]
     const child = spawn(process.execPath, args, { cwd: deckDir, stdio: ['ignore', 'pipe', 'pipe'] })
     this.#children.add(child)
     return new Promise((resolve, reject) => {
       let started = false
-      // Before the web server is up, a failure stops `presmium dev`.
       const fail = (error: Error) => {
         clearTimeout(timer)
         reject(error)
@@ -103,7 +88,6 @@ export class Previews {
     })
   }
 
-  /** Stops every preview. */
   async close(): Promise<void> {
     const exits = [...this.#children].map(child => new Promise<void>((done) => {
       child.once('exit', () => done())

@@ -1,12 +1,3 @@
-/**
- * The provider of `kind: jupyter` environments (P-100, P-105): at compile
- * time each declared environment is an executor `presmium.env.<name>`
- * running in the server's kernels, connected by the credential rules of
- * `operatorConnection` (the operator's pair). The environment
- * fingerprint is the deck's image digest, the kernel spec's hash and what
- * `kernel_info` reports. The compiler gives each declared environment to
- * `create`; they are kept by deck, for the server's proxies (./server.ts).
- */
 import { createHash } from 'node:crypto'
 import { environmentExecutor } from '@presmium/kernel'
 import type { EnvironmentContext, EnvironmentProvider, EnvironmentSpec, Executor } from '@presmium/kernel'
@@ -15,17 +6,14 @@ import { createKernels } from '../jupyter/kernels.ts'
 import type { Kernels, KernelsText } from '../jupyter/kernels.ts'
 import { nodeSettings } from './connection.ts'
 
-/** The `kind: jupyter` environments each deck declared, by deck directory, as the compiler last gave them. */
 const declared = new Map<string, Map<string, EnvironmentSpec>>()
 
 export function declaredEnvironments(deckDir: string): Map<string, EnvironmentSpec> {
   return declared.get(deckDir) ?? new Map()
 }
 
-/** How long a fingerprint holds before it is asked of the server again (a `presmium dev` outlives image updates). */
 const FINGERPRINT_TTL_MS = 60_000
 
-/** The reasons of failed runs (`prefix` names the environment) and of `probe` (whose caller names it). */
 function text(prefix: string, url: () => string): KernelsText {
   return {
     unreachable: error => `${prefix}cannot reach ${url()}: ${error}`,
@@ -42,7 +30,6 @@ function canonical(value: unknown): string {
   return JSON.stringify(value)
 }
 
-/** The compile-time executor of a declared environment: one kernel pool, made on first use. */
 export function createJupyterExecutor(name: string, spec: EnvironmentSpec, ctx: EnvironmentContext): Executor {
   const id = environmentExecutor(name)
   const kernel = kernelOf(spec)
@@ -93,7 +80,6 @@ export const jupyterProvider: EnvironmentProvider = {
     if (!known) declared.set(ctx.deckDir, known = new Map())
     known.set(name, spec)
     const resolved = operatorConnection(name, spec, { secret: ctx.secret })
-    // A deck that sends the operator's token elsewhere is an error; its blocks show their recordings.
     if ('mismatch' in resolved) throw new Error(resolved.mismatch)
     return createJupyterExecutor(name, spec, ctx)
   },

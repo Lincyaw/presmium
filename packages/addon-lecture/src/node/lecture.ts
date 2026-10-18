@@ -1,12 +1,3 @@
-/**
- * The synthesized lecture of a deck (P-134, docs/ir.md 6.3): its plan said
- * with the clips of the synthesis cache (`SPEECH`), as a track with the id
- * `script`. The `lecture` renderer publishes it with a build, the server
- * makes it on demand in `presmium dev` and `presmium serve`, and the agent
- * tools preview and synthesize it. Clips of the cache are files
- * `.presmium/speech/<key>.<wav|ogg>` of the deck; the build keeps the keys
- * its lectures use in `.presmium/speech.lock.json` and drops the others.
- */
 import { randomBytes } from 'node:crypto'
 import { renameSync, writeFileSync } from 'node:fs'
 import { basename, join, relative } from 'node:path'
@@ -21,23 +12,14 @@ import { audioBlob, clipVoice, sameEngine, synthesizePlan, transcribeSegments } 
 import { mediaFile, readInDeck, readRegular, readTrack, trackDir, writeTrack } from './store.ts'
 import type { DeckFiles } from './store.ts'
 
-/** The synthesis cache of a deck. */
 export function speechDir(deckDir: string): string {
   return join(deckDir, '.presmium', 'speech')
 }
 
-/** The file of a clip in the deck's synthesis cache; undefined for a name that is no clip. */
 export function clipFile(deckDir: string, name: string): string | undefined {
   return CLIP_FILE.test(name) ? join(speechDir(deckDir), name) : undefined
 }
 
-/**
- * A clip of the deck's synthesis cache by its file name, as the speech
- * service gives it now (`SpeechService.cached`, D-7): only while its voice
- * may be used (a cloned voice's consent), without asking an engine to
- * synthesize. Undefined when the cache does not have it; rejects when its
- * voice may not be used, or the service cannot look a clip up.
- */
 export async function cachedClip(speech: SpeechService, name: string, signal?: AbortSignal): Promise<Synthesis | undefined> {
   if (!CLIP_FILE.test(name)) return undefined
   if (!speech.cached) throw new Error('the speech service cannot look a clip up in its cache')
@@ -47,16 +29,11 @@ export async function cachedClip(speech: SpeechService, name: string, signal?: A
 
 export interface SynthesizedLecture {
   deck: DeckPlan
-  /** Undefined when the deck names no voice, or when some utterance could not be said (`unsaid`). */
   track?: LectureTrack
   clips: Map<string, MadeClip>
   unsaid: Unsaid[]
 }
 
-/**
- * The deck's lecture said with its voice (`doc`: the lecture renderer's view
- * of the IR, `lectureView`); `files` writes what is kept beside the clips.
- */
 export async function synthesizedLecture(doc: IRDocument, deckDir: string, speech: SpeechService, signal?: AbortSignal, options: { files?: DeckFiles } = {}): Promise<SynthesizedLecture> {
   const deck = deckPlan(doc, deckDir)
   const clips = new Map<string, MadeClip>()
@@ -74,19 +51,16 @@ export async function synthesizedLecture(doc: IRDocument, deckDir: string, speec
   return { deck, track, clips: made.clips, unsaid: [] }
 }
 
-/** The finding of an utterance that could not be said. */
 export function unsaidMessage(u: Unsaid): string {
   const text = u.text.length > 40 ? `${u.text.slice(0, 40)}…` : u.text
   return `lecture ${SCRIPT_TRACK}: 「${text}」 (section ${u.section}) could not be said from the synthesis cache nor synthesized: ${u.reason}`
 }
 
-/** The deck's speech settings (`presmium.speech`): the engines it names for synthesis and transcription. */
 function speechConfig(doc: IRDocument | undefined): Record<string, unknown> {
   const config = doc?.config.presmium['presmium.speech']
   return isRecord(config) ? config : {}
 }
 
-/** The engine a transcription takes: the deck's `presmium.speech.transcribe`, else its `engine`, else the first that transcribes. */
 export async function transcriptionEngine(speech: SpeechService, doc: IRDocument | undefined): Promise<SpeechEngineInfo | undefined> {
   const config = speechConfig(doc)
   const named = [config.transcribe, config.engine].find((v): v is string => typeof v === 'string' && v.length > 0)
@@ -94,7 +68,6 @@ export async function transcriptionEngine(speech: SpeechService, doc: IRDocument
   return named ? engines.find(e => sameEngine(e.id, named)) : engines[0]
 }
 
-/** The engine a synthesis takes: `engine` (a voice's), else the deck's `presmium.speech.engine`, else the first that synthesizes. */
 export async function synthesisEngineOf(speech: SpeechService, doc: IRDocument | undefined, engine?: string): Promise<SpeechEngineInfo | undefined> {
   const config = speechConfig(doc)
   const named = [engine, config.engine].find((v): v is string => typeof v === 'string' && v.length > 0)
@@ -102,17 +75,11 @@ export async function synthesisEngineOf(speech: SpeechService, doc: IRDocument |
   return named ? engines.find(e => sameEngine(e.id, named)) : engines[0]
 }
 
-/**
- * Transcribes a recorded lecture of the deck (P-132) with the deck's
- * transcription engine and writes it: its utterances, and its events bound
- * to their words. Throws when there is no such lecture or engine.
- */
 export async function transcribeLecture(files: DeckFiles, deckDir: string, id: string, speech: SpeechService, doc: IRDocument | undefined, signal?: AbortSignal): Promise<{ track: LectureTrack, bound: number, provider: string }> {
   const stored = trackDir(deckDir, id) ? readTrack(deckDir, id) : undefined
   if (!stored) throw new Error(`no lecture ${id}`)
   const engine = await transcriptionEngine(speech, doc)
   if (!engine) throw new Error('no speech engine transcribes: the operator defines one (PRESMIUM_SPEECH_<ID>_URL and _PROVIDER)')
-  // Each file read as it is opened, never through a link.
   const audio = (segment: { src: string }) => {
     const file = mediaFile(deckDir, id, segment.src)
     const bytes = file && readInDeck(deckDir, file)
@@ -124,17 +91,12 @@ export async function transcribeLecture(files: DeckFiles, deckDir: string, id: s
   return { track, bound, provider: engine.provider }
 }
 
-/** The cache keys of the clips of these tracks. */
 export function clipKeys(tracks: Iterable<LectureTrack>): Set<string> {
   const keys = new Set<string>()
   for (const track of tracks) for (const u of track.utterances) if (u.clip) keys.add(u.clip.replace(/\.\w+$/, ''))
   return keys
 }
 
-/**
- * Keeps in the deck's `speech.lock.json` the keys of `used` only (sorted, one
- * per line, as the speech service writes it). Returns how many it dropped.
- */
 export function pruneLock(deckDir: string, used: ReadonlySet<string>): number {
   const file = join(deckDir, '.presmium', 'speech.lock.json')
   const text = readRegular(file)?.toString('utf8')

@@ -1,10 +1,3 @@
-/**
- * The IR runtime's operations (docs/architecture.md 4.9, docs/ir.md 9.2): it
- * reports `go` (section, step, view) whenever the position or the view
- * changes, and replays a `go` by showing its view and position. The report
- * is made at once (a synchronous watcher), so a change a replay makes is
- * reported while the host's `replaying` is set, and dropped.
- */
 import type { Operations } from '@presmium/host'
 import { watch } from 'vue'
 import { getView } from './registry.ts'

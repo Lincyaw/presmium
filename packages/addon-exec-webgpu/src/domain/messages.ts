@@ -1,14 +1,6 @@
-/**
- * Text of the WebGPU backend in zh-CN and en (N-07): why a shader cannot run
- * (its recorded output shows instead), what is wrong with its `:params:`, the
- * summary of a run, and how a run panel names the parameters (D-10). The browser follows the UI language
- * (`@presmium/host`); compile time records in the deck's language
- * (`RunContext.lang`), as other text written into the build output is.
- */
 import type { Locale } from '@presmium/kernel'
 
 const zhCN = {
-  // Why a shader cannot run here.
   noWebgpu: '浏览器没有 WebGPU',
   noAdapter: '没有可用的 GPU 适配器',
   missingFeature: (features: string) => `GPU 适配器缺少特性 ${features}`,
@@ -17,7 +9,6 @@ const zhCN = {
   timedOut: (ms: number) => `GPU 运行超过 ${ms} ms，已销毁设备并停止`,
   crashed: (error: string) => `GPU 运行出错：${error}`,
   cancelled: '已取消',
-  // What is wrong with the shader or its parameters.
   shader: (detail: string) => `着色器有错误：\n${detail}`,
   validation: (detail: string) => `WebGPU 报告错误：${detail}`,
   notYaml: (name: string, error: string) => `:params: 中的 ${name} 不是合法的 YAML：${error}`,
@@ -33,12 +24,10 @@ const zhCN = {
   badEntry: 'entry 要写成入口函数的名字',
   badFeatures: 'features 要写成特性名的列表，例如 [shader-f16]',
   tooLarge: (bytes: number, max: number) => `缓冲区共 ${bytes} 字节，超过规模限制 ${max} 字节`,
-  // The summary of a run.
   stats: (min: string, max: string, mean: string) => `最小 ${min}，最大 ${max}，平均 ${mean}`,
   time: (ms: string, samples: number, gpu: boolean, emulated: boolean) =>
     `计时：每次派发 ${ms} ms（${[samples > 1 ? `${samples} 次的中位数` : '', gpu ? 'GPU 时间戳' : '挂钟时间', emulated ? 'CPU 模拟' : ''].filter(Boolean).join('；')}）`,
   adapter: (name: string, fallback: boolean) => `适配器：${name}${fallback ? '（回退适配器）' : ''}`,
-  // How a run panel names the parameters, and the arguments of a run in its history.
   labels: { buffers: '缓冲区', dispatch: '工作组数', entry: '入口函数', repeat: '重复次数', features: '所需特性' } as Record<string, string>,
   values: (count: number) => `${count} 个值`,
 }

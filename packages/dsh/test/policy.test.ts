@@ -1,8 +1,3 @@
-// The upgrade gate's second group, approvals (docs/design-dsh.md 6.3, WP-96b): in a headless run against the
-// scripted model, Presmium's tools follow the workspace's approval policy. `ask` goes to DeepSeek Harness's
-// approval, which headless cannot answer: refused. `off`: the tool is not among those the model is offered
-// (nor among MCP's). `allow` runs in the full-access mode too, where DeepSeek Harness answers every question
-// with no. Writing the operator directory is refused in the full-access mode too.
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fakeModel } from '@presmium/cli/testing'
@@ -83,7 +78,6 @@ describe('[gate] Presmium\'s approval policy in DeepSeek Harness', () => {
     const grant = await issued.json() as { url: string, token: string }
     const session = await connectPresmiumMcp(grant.url, grant.token, 'presmium-test')
     try {
-      // `ask`, and no window to ask: DeepSeek Harness asked already.
       const listed = (await session.tools()).find(tool => tool.name === 'run_code')
       expect(listed).toMatchObject({ kind: 'operate', approval: 'ask' })
       const ran = await session.call('run_code', { section: 'first', block: 'code-1' })

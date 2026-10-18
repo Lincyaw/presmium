@@ -2,22 +2,18 @@ import type { PluginStatus } from '@presmium/kernel/contracts'
 import type { Catalog } from './locale.ts'
 
 export interface HostMessages {
-  /** The presenter panels' heading: what they hold, the start report among the plugins' panels. */
   panels: string
   startReport: string
   starting: string
   noPlugins: string
   status: Record<PluginStatus, string>
-  /** Between a status and its reason. */
   because: string
   componentError(component: string, message: string): string
   problems(count: number): string
-  /** The toolbar entry of the approvals waiting for this window. */
   approvals(count: number): string
   approvalsTitle: string
   allow: string
   deny: string
-  /** Who asks for an approval. */
   from(who: string): string
 }
 

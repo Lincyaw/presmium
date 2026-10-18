@@ -10,19 +10,8 @@ import { webDeck } from './fixtures/web/deck.ts'
 import type { WebDeck } from './fixtures/web/deck.ts'
 import { WEB } from './urls.ts'
 
-// The web form (@presmium/web) of the reading fixture deck (e2e/fixtures/web/deck, built in
-// beforeAll with its slides) and of the core fixture deck (e2e/fixtures/core/deck). Of the demo
-// (examples/demo/dist, its web form under /web/ on WEB) only what holds for any content is
-// checked: every plugin component renders, and no page scrolls sideways on a phone.
-
-/** Letters and digits only: the IR text and the rendered page differ in spacing and punctuation. */
 const words = (text: string) => text.replace(/[^\p{L}\p{N}]+/gu, '')
 
-/**
- * The text of the IR that the page shows as text. Math and diagrams are drawn
- * (their source does not show; see RICH), raw HTML shows its text without its
- * tags or styles, and footnote references have no text.
- */
 function mdastText(node: MdastNode): string {
   if (node.type === 'math' || node.type === 'inlineMath') return ''
   if (node.type === 'html') return (node.value ?? '').replace(/<(style|script)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<[^>]*>/g, '')
@@ -35,17 +24,14 @@ function blockText(block: IRBlock): string {
   return node.type === 'markdown' ? mdastText(node.mdast) : ''
 }
 
-/** Drawn content (math, diagrams), left out of the page text as its source is left out of the IR text. */
 const RICH = '.pm-math, .pm-mermaid'
 
-/** Paths of the web pages of the site at `site`, in sidebar order. */
 async function webPages(page: Page, site = WEB): Promise<string[]> {
   await page.goto(site)
   const hrefs = await page.locator('.VPSidebar a').evaluateAll(links => links.map(a => (a as HTMLAnchorElement).pathname))
   return [...new Set(hrefs)]
 }
 
-/** Opens every page of the site at `origin` and expects none to scroll sideways. */
 async function expectNoSidewaysScroll(page: Page, origin: string, paths: string[]) {
   for (const path of paths) {
     await page.goto(`${origin}${path}`)
@@ -55,12 +41,10 @@ async function expectNoSidewaysScroll(page: Page, origin: string, paths: string[
   }
 }
 
-/** A phone: 375 CSS px wide, with a mobile viewport and touch. */
 function phone(browser: Browser) {
   return browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true })
 }
 
-/** The text of an element as the page shows it: drawn content left out, the heading anchor's zero-width space too. */
 function shownText(locator: Locator): Promise<string[]> {
   return locator.evaluateAll((els, rich) => els.map((el) => {
     const textOf = (node: Node): string => node instanceof Element && node.matches(rich)
@@ -70,10 +54,8 @@ function shownText(locator: Locator): Promise<string[]> {
   }), RICH)
 }
 
-/** Search results; the view menu's options are not among them. */
 const results = (page: Page) => page.getByRole('listbox').getByRole('option')
 
-/** Opens the search box with its shortcut, again until the page has hydrated and takes it. */
 async function openSearch(page: Page) {
   const input = page.getByRole('searchbox')
   await expect(async () => {
@@ -83,7 +65,6 @@ async function openSearch(page: Page) {
   return input
 }
 
-/** Milliseconds from typing `query` until the search results show (the result list must be empty before). */
 function timeSearch(page: Page, query: string): Promise<number> {
   return page.evaluate(q => new Promise<number>((resolve) => {
     const input = document.querySelector<HTMLInputElement>('input[type=search]')!
@@ -104,7 +85,6 @@ test('every plugin component of the demo renders in the web form', async ({ page
       const section = doc.sections.find(s => s.id === id)!
       for (const block of section.blocks.filter(b => b.node.type === 'component')) {
         const rendered = page.locator(`.pm-section[data-section="${id}"] .pm-block[data-block="${block.id}"]`)
-        // Registered, loaded in the browser and rendered (inside its error boundary).
         await expect(rendered).toHaveAttribute('data-component', (block.node as { name: string }).name)
         await expect(rendered.locator('.pm-client-only, .pm-component-missing')).toHaveCount(0)
         await expect(rendered.locator('*').first()).toBeAttached()
@@ -122,9 +102,6 @@ test('no page of the demo scrolls sideways on a 375 px wide phone', async ({ pag
   await context.close()
 })
 
-// e2e/fixtures/web/deck: the cover (index.html); chapter 1 is chapters/basics.md, which has no
-// chapter title (basics.html); chapters 2 and 3 open with a chapter title each in chapters/advanced.md
-// (advanced.html, wide-content.html). Sections `scrolly` and `wide` are hinted `web: { layout: scrolly }`.
 test.describe('the reading fixture deck', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let deck: WebDeck
@@ -160,7 +137,6 @@ test.describe('the reading fixture deck', () => {
       await expect(page.locator('.pm-section-nav, .pm-section a[rel="next"], .pm-section a[rel="prev"]')).toHaveCount(0)
     }
 
-    // A chapter title heads its page; a chapter without one starts with its first section.
     await page.goto(deck.web('advanced.html'))
     await expect(page.locator('h1#advanced')).toContainText('第二章 进阶')
     await expect(page.locator('.pm-section[data-section="advanced"]')).toContainText('章首的讲解')
@@ -168,7 +144,6 @@ test.describe('the reading fixture deck', () => {
     await expect(page.locator('h1')).toHaveCount(0)
     await expect(page.locator('h2#reading')).toBeVisible()
 
-    // {only} limits blocks to renderers: the web shows its own, never the slides' ones.
     const reading = page.locator('.pm-section[data-section="reading"]')
     await expect(reading).toContainText('网页中才有的补充说明')
     await expect(reading).not.toContainText('幻灯片中才有的提示')
@@ -185,7 +160,6 @@ test.describe('the reading fixture deck', () => {
     await expect(prev).toContainText('阅读页面')
     await expect(prev).toHaveAttribute('href', '/web/basics.html')
     await expect(next).toContainText('第三章 宽内容')
-    // Below the last section.
     const [footer, last] = await Promise.all([next.boundingBox(), page.locator('.pm-section').last().boundingBox()])
     expect(footer!.y).toBeGreaterThan(last!.y + last!.height)
     await next.click()
@@ -196,19 +170,16 @@ test.describe('the reading fixture deck', () => {
 
   test('the sidebar lists the chapters, each with its sections; a section opens its page at its anchor', async ({ page }) => {
     await page.goto(deck.web('basics.html'))
-    // A tree: the chapters, and under each its sections.
     const chapters = page.locator('.VPSidebar .VPSidebarItem.level-1')
     await expect(chapters).toHaveCount(CHAPTERS.length)
     for (const [i, chapter] of CHAPTERS.entries()) {
       const item = chapters.nth(i)
       await expect(item.locator(':scope > .item a')).toHaveText(chapter.title)
       await expect(item.locator(':scope > .item a')).toHaveAttribute('href', chapter.path)
-      // The first section opens the chapter: the chapter's own entry.
       const titles = chapter.sections.slice(1).map(id => deck.doc.sections.find(s => s.id === id)!.title)
       await expect(item.locator('.VPSidebarItem.level-2 a')).toHaveText(titles)
     }
     await expect(page.locator('.VPSidebar .VPSidebarItem.level-3')).toHaveCount(0)
-    // Chapters stand out from their sections.
     await expect(chapters.first().locator(':scope > .item .text')).toHaveCSS('font-weight', '600')
     await expect(chapters.nth(1).locator('.VPSidebarItem.level-2 .text').first()).not.toHaveCSS('font-weight', '600')
 
@@ -235,7 +206,6 @@ test.describe('the reading fixture deck', () => {
   test('what the slide shows stands on a board, apart from the narration, and keeps its formatting', async ({ page }) => {
     await page.goto(deck.web('basics.html'))
     const reading = page.locator('.pm-section[data-section="reading"]')
-    // The slide's list and the code after it share one board.
     const boards = reading.locator('.pm-board')
     await expect(boards).toHaveCount(1)
     await expect(boards.locator('> .pm-block--visual')).toHaveCount(2)
@@ -265,9 +235,7 @@ test.describe('the reading fixture deck', () => {
       return { tag: el.tagName, inside: box.left >= stage.left && box.right <= stage.right, fits: el.scrollWidth <= el.clientWidth, scrolls: ['auto', 'scroll'].includes(getComputedStyle(el).overflowX) }
     }))
     expect(boxes.map(b => b.tag)).toEqual(['PRE', 'PRE', 'TABLE'])
-    // Every listing and table stays inside the stage; it fits, or it scrolls sideways.
     for (const box of boxes) expect(box.inside && (box.fits || box.scrolls), JSON.stringify(box)).toBe(true)
-    // The code shrinks to the stage's width; a line too long even then scrolls, and the end of it can be read.
     expect(boxes[0]!.fits).toBe(true)
     expect(boxes[1]!.fits).toBe(false)
     const long = stage.locator('pre').nth(1)
@@ -282,7 +250,6 @@ test.describe('the reading fixture deck', () => {
     for (const lang of ['wgsl', 'ruby']) {
       const tokens = page.locator(`.pm-section[data-section="highlight"] .pm-code[data-lang="${lang}"] .line span`)
       await expect(tokens.first()).toBeVisible()
-      // Shiki's tokens, each with its theme's colour: more than one colour in the listing.
       await expect.poll(async () => new Set(await tokens.evaluateAll(spans => spans.map(span => getComputedStyle(span).color))).size, { message: lang }).toBeGreaterThan(2)
     }
   })
@@ -293,9 +260,7 @@ test.describe('the reading fixture deck', () => {
     await page.goto(deck.web('wide-content.html'))
     const table = page.locator('.pm-section[data-section="highlight"] table')
     await expect(table.locator('code')).toHaveCount(11)
-    // One line box per piece of code: `est ` keeps its space, `'e' 's'` is not broken inside.
     expect(await table.locator('code').evaluateAll(codes => codes.map(code => code.getClientRects().length))).toEqual(Array(11).fill(1))
-    // A heading on one line too, not a character per line.
     expect(await table.locator('th').evaluateAll(cells => cells.map((cell) => {
       const range = document.createRange()
       range.selectNodeContents(cell)
@@ -309,10 +274,8 @@ test.describe('the reading fixture deck', () => {
   test('a Chinese keyword is found within 300 ms and opens its section', async ({ page }) => {
     await page.goto(deck.web())
     const input = await openSearch(page)
-    // The first query loads the index; time later ones. The time includes VitePress's 200 ms input debounce.
     await input.fill('网页')
     await expect(results(page).first()).toBeVisible()
-    // The fastest of three, so that a moment of load on the machine does not count.
     const times: number[] = []
     for (let i = 0; i < 3 && !times.some(t => t < 300); i++) {
       await input.fill('')
@@ -344,17 +307,14 @@ test.describe('the reading fixture deck', () => {
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))
     await page.goto(deck.web())
-    // The service worker precaches every file, the image whose name holds a '#' too, and activates.
     await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
     await context.setOffline(true)
     expect((await page.reload())?.fromServiceWorker()).toBe(true)
     const input = await openSearch(page)
-    // Code is indexed too.
     await input.fill('createViewer')
     await results(page).first().click()
     await expect(page.locator('h2#reading')).toBeInViewport()
     await expect(page.locator('.pm-section[data-section="reading"] .pm-code')).toContainText('createViewer')
-    // The page that holds the image whose name has a '#' and a malformed anchor works offline.
     await page.goto(deck.web('advanced.html'))
     const image = page.getByRole('img', { name: '三根柱子的图表' })
     await expect(image).toHaveAttribute('src', /chart%231\.svg$/)
@@ -374,21 +334,18 @@ test.describe('the reading fixture deck', () => {
 
   test('pages reflow at 200 % and 400 % zoom and follow the reader\'s font size', async ({ page, browser }) => {
     const paths = await webPages(page, deck.web())
-    // 200 %: 640 CSS px on a 1280 px wide screen; 400 %: 320 CSS px.
     for (const options of [{ viewport: { width: 640, height: 400 }, deviceScaleFactor: 2 }, { viewport: { width: 320, height: 256 } }]) {
       const context = await browser.newContext(options)
       await expectNoSidewaysScroll(await context.newPage(), deck.url, paths)
       await context.close()
     }
 
-    // The browser's default font size (a Chromium setting) sizes the text.
     const cdp = await page.context().newCDPSession(page)
     await cdp.send('Page.setFontSizes', { fontSizes: { standard: 24 } })
     await page.goto(deck.web('basics.html'))
     const size = (selector: string) => page.locator(selector).first().evaluate(el => getComputedStyle(el).fontSize)
     expect(await size('html')).toBe('24px')
     expect(await size('body')).toBe('24px')
-    // The headings grow with it and stay above the body text.
     const px = async (selector: string) => Number.parseFloat(await size(selector))
     for (const standard of [24, 32]) {
       await cdp.send('Page.setFontSizes', { fontSizes: { standard } })
@@ -435,7 +392,6 @@ test.describe('the reading fixture deck', () => {
     const reading = page.locator('.pm-section[data-section="reading"]')
     const link = reading.locator('h2').getByRole('link', { name: '在幻灯片中打开' })
     expect(new URL((await link.getAttribute('href'))!).pathname).toBe(`/slides/${index}`)
-    // Beside the title, which stays the heading's text (the outline shows it).
     const [title, entry] = await Promise.all([reading.locator('h2').boundingBox(), link.boundingBox()])
     expect(entry!.y).toBeLessThan(title!.y + title!.height)
     expect((await shownText(reading.locator('h2')))[0]).toBe('阅读页面')
@@ -445,7 +401,6 @@ test.describe('the reading fixture deck', () => {
     const atStep = new URL((await scrolly.getByRole('link', { name: '在幻灯片中打开' }).getAttribute('href'))!)
     expect(`${atStep.pathname}${atStep.search}`).toBe(`/slides/${index + 1}?clicks=2`)
 
-    // The built slides show the slide, and their "read on the web" opens the section.
     await page.goto(deck.slides(String(index)))
     await expect(page.locator(`.slidev-page-${index}`)).toContainText('上屏内容')
     const toWeb = page.getByRole('link', { name: '在网页中阅读' })
@@ -454,19 +409,16 @@ test.describe('the reading fixture deck', () => {
     await expect(page).toHaveURL(/\/web\/basics\.html/)
     await expect(page.locator('h2#reading')).toBeInViewport()
 
-    // `?section=<id>&step=<n>` opens a section at a step.
     await page.goto(deck.web('?section=scrolly&step=2'))
     await expect(scrolly).toHaveAttribute('data-step', '2')
     await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
   })
 
   test('without any deck configuration the slides offer "read on the web", which opens slide N at step S', async ({ page }) => {
-    // The deck configures no addon for the button: the slides renderer adds it because the deck has a web form.
     expect(deck.doc.config.renderers.slides?.addons).toBeUndefined()
     const index = deck.slide('scrolly')
     await page.goto(deck.slides(`${index}?clicks=2`))
     await expect(page.locator(`.slidev-page-${index}`)).toContainText('编译')
-    // The link follows the step once Slidev has applied `?clicks=`.
     const link = page.getByRole('link', { name: '在网页中阅读' })
     await expect(link).toHaveAttribute('href', new RegExp(`\\?slide=${index}&step=2$`))
     await page.goto((await link.getAttribute('href'))!)
@@ -477,7 +429,6 @@ test.describe('the reading fixture deck', () => {
   })
 
   test('a component counts its steps from its block in the web form too', async ({ page }) => {
-    // In the present view, the stepper of `stepper` (at step 0) at step 1 and the one of `steps` (at step 2) at step 3.
     const stepper = async (section: string, step: number) => {
       await page.goto(deck.web(`advanced.html?view=present&section=${section}&step=${step}`))
       const present = page.getByRole('region', { name: '放映' })
@@ -489,7 +440,6 @@ test.describe('the reading fixture deck', () => {
       return shown.innerHTML()
     }
     expect(await stepper('steps', 3)).toBe(await stepper('stepper', 1))
-    // The document view shows every step: the last state.
     await page.goto(deck.web('advanced.html'))
     await expect(page.locator('.pm-section[data-section="stepper"] .fx-stepper')).toHaveAttribute('data-step', '3')
   })
@@ -503,7 +453,6 @@ test.describe('the reading fixture deck', () => {
       await expect(labels(view).first()).toBeVisible()
       const heights = await labels(view).evaluateAll(els => els.map(el => el.getBoundingClientRect().height))
       expect(Math.min(...heights), `at ${width} px`).toBeGreaterThanOrEqual(12)
-      // A diagram wider than the page scrolls inside its block, never the page.
       const [scroll, client] = await view.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth])
       expect(scroll).toBeLessThanOrEqual(client)
       await context.close()
@@ -520,7 +469,6 @@ test.describe('the reading fixture deck', () => {
   test('the view menu and the controls of a block show the keyboard focus', async ({ page }) => {
     await page.goto(deck.web('advanced.html'))
     await expect(page.locator('.pm-section[data-section="live-code"] .pm-code-block__run button')).toBeEnabled()
-    /** Presses Tab until `selector` has the focus; returns its outline and box shadow. */
     const tabTo = async (selector: string) => {
       await expect(async () => {
         await page.keyboard.press('Tab')
@@ -553,7 +501,6 @@ test.describe('the reading fixture deck', () => {
       }
     }
     expect(errors).toEqual([])
-    // Math is rendered when the site is built: readers without JavaScript see it too.
     const html = await (await page.request.get(deck.web('advanced.html'))).text()
     expect(html).toContain('class="katex"')
   })
@@ -564,21 +511,16 @@ test.describe('the reading fixture deck', () => {
     await expect(page.locator('.VPSkipLink')).toHaveText('跳到正文')
     await expect(page.locator('.VPNavBar .VPSwitchAppearance').filter({ visible: true })).toHaveAttribute('title', /^切换到(深色|浅色)模式$/)
     await expect(page.locator('.VPDocFooter .pager-link .desc')).toHaveText(['上一章', '下一章'])
-    // The sidebar and the links to the chapters before and after are named for assistive technology too (R-72),
-    // also on a page reached from the sidebar.
     for (const name of ['侧边栏导航', '翻页']) await expect(page.getByRole('navigation', { name, exact: true })).toBeAttached()
     await page.locator('.VPDocFooter .pager-link.next').click()
     await expect(page).not.toHaveURL(/basics\.html/)
     for (const name of ['侧边栏导航', '翻页']) await expect(page.getByRole('navigation', { name, exact: true })).toBeAttached()
-    // The keys of the search box are named for assistive technology too.
     await openSearch(page)
     const keys = page.locator('.VPLocalSearchBox')
     for (const label of ['回车键', '上箭头', '下箭头', 'Esc 键']) await expect(keys.getByLabel(label, { exact: true })).toBeAttached()
     await page.keyboard.press('Escape')
-    // The navigation bar's menu buttons, which VitePress names in English only (F-79).
     await expect(page.locator('.VPNavBarHamburger')).toHaveAttribute('aria-label', '打开导航菜单')
     await expect(page.locator('.VPNavBarExtra > button')).toHaveAttribute('aria-label', '更多导航')
-    // On a phone: the menu of the sidebar, the navigation menu and the link back to the top.
     const context = await phone(browser)
     const mobile = await context.newPage()
     await mobile.goto(deck.web('basics.html'))
@@ -593,9 +535,6 @@ test.describe('the reading fixture deck', () => {
   })
 })
 
-// e2e/fixtures/core/deck: an en-US deck with a long title and a test plugin (fixture.core) whose
-// components read their section's configuration and share a state, and whose kernel plugins
-// cannot all start. The web form is served under /web/.
 test.describe('the fixture deck in the web form', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let deck: FixtureDeck
@@ -624,7 +563,6 @@ test.describe('the fixture deck in the web form', () => {
     await expect.poll(published).toEqual({ value: 'black', fromRemote: false })
     await page.keyboard.press('b')
     await expect(page.locator('.pm-stage-black')).toHaveCount(0)
-    // From another device (a classroom's presenter).
     await page.evaluate(() => window.fixtureDevices!['presmium.stage.screen']!.receive({ value: 'black' }))
     await expect(page.locator('.pm-stage-black')).toBeVisible()
   })
@@ -632,7 +570,6 @@ test.describe('the fixture deck in the web form', () => {
   test('two windows of the deck share a plugin state, and a window opened later gets it', async ({ context }) => {
     const [a, b] = [await context.newPage(), await context.newPage()]
     await a.goto(site())
-    // The other window presents the section.
     await b.goto(`${site()}?view=present&section=shared`)
     const [shown, presented] = [a.locator('.pm-section[data-section="shared"] .fx-shared'), b.locator('.pm-present .fx-shared')]
     await expect(presented.locator('output')).toHaveText('0')
@@ -665,7 +602,6 @@ test.describe('the fixture deck in the web form', () => {
       return { appearance: picker.appearance, radius: picker.borderRadius, shadow: picker.boxShadow !== 'none', control: getComputedStyle(document.documentElement).getPropertyValue('--pm-radius-control').trim() }
     })
     expect(look).toMatchObject({ appearance: 'base-select', radius: look.control, shadow: true })
-    // The list is the page's, not the system's: its options show on the page and take a click.
     await menu.click()
     const other = page.getByRole('option').nth(1)
     await expect(other).toBeVisible()
@@ -715,9 +651,7 @@ test.describe('the fixture deck in the web form', () => {
   })
 
   test('the plugins start in the web form as in the slides: the start reports agree', async ({ page }) => {
-    // Two presenter windows, one of each form, load one after the other.
     test.setTimeout(120_000)
-    // The start report is a presenter panel in both forms: the presenter window of the web form, the presenter view of the slides.
     const plugins = async () => {
       await page.locator('.pm-presenter-panels summary').click()
       await expect(page.locator('.pm-start-report [data-plugin="fixture.core.lifecycle"]')).toBeVisible()
@@ -739,9 +673,8 @@ test.describe('the fixture deck in the web form', () => {
     await expectNoSidewaysScroll(mobile, deck.url, paths)
     await expect(mobile.locator('.VPNavBarTitle .title span')).toHaveCSS('text-overflow', 'ellipsis')
 
-    // A join link without a name: the learner's badge asks for one.
     await mobile.goto(`${site()}?room=fixture-room`)
-    const badge = mobile.getByRole('region', { name: 'Classroom status' }) // an en-US deck
+    const badge = mobile.getByRole('region', { name: 'Classroom status' })
     await expect(badge).toBeInViewport({ ratio: 1 })
     await badge.getByRole('textbox').fill('Ada')
     await expect(badge.getByRole('textbox')).toHaveValue('Ada')
@@ -751,8 +684,6 @@ test.describe('the fixture deck in the web form', () => {
   })
 })
 
-// e2e/fixtures/web/deck without any renderer option: built together, the forms take the bases
-// /web/ and /slides/, and dist/ is served as it is, as one site.
 test.describe('a deck that sets no renderer options', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let deck: WebDeck
@@ -785,8 +716,6 @@ test.describe('a deck that sets no renderer options', () => {
   })
 })
 
-// e2e/fixtures/viewer/en with `lang: fr`, a language Presmium has no text for: the web form says
-// so in <html lang> and speaks English, as the slides do (deckLocale).
 test.describe('a deck in French', () => {
   test.describe.configure({ timeout: 120_000 })
   let site: FixtureDeck
@@ -811,8 +740,6 @@ test.describe('a deck in French', () => {
   })
 })
 
-// e2e/fixtures/web/links (P-46): a card whose :link: names a local file links to the published file,
-// as a link and a {button} to it do; a {button} without a target looks like a button too.
 test.describe('cards and buttons in the web form', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let site: FixtureDeck

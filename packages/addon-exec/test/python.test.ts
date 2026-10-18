@@ -1,8 +1,3 @@
-// Python as the author writes it, with the real `presmium build` and `presmium check` on decks outside
-// git: the value of a last expression is the run's `execute_result`, as in Jupyter (D-8), in the IR (which
-// the web form shows), the slides and the notebook; `presmium check` warns of Python for the browser that
-// imports what the browser lacks (D-5); both warn of a stepwise run whose `:steps:` is not the number of
-// lines its code executes, at the directive. A recording an older runner made runs again (D-8).
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -88,7 +83,6 @@ ${FENCE}
   const record = JSON.parse(readFileSync(join(freeze, file!), 'utf8')) as { revision?: string, environment: string, run: { outputs: unknown[] } }
   expect(record.revision).toMatch(/^runner [0-9a-f]{16}$/)
   expect(record.environment).toMatch(/^Python 3\./)
-  // The recording as a runner before D-8 left it: no revision, no value of the last expression, under its old key.
   rmSync(join(freeze, file!))
   const { revision: _revision, ...old } = record
   writeFileSync(join(freeze, `${'0'.repeat(64)}.json`), JSON.stringify({ ...old, run: { ...old.run, outputs: [] } }))
@@ -101,7 +95,6 @@ ${FENCE}
   expect((doc.sections[0]!.blocks[0]!.node as CodeNode).outputs![0]!.outputs).toEqual([{ output_type: 'execute_result', data: { 'text/plain': '{\'a\': 3}' }, metadata: {} }])
   expect(readdirSync(freeze).filter(name => name.endsWith('.json'))).toEqual([file])
 
-  // A third build runs nothing: the recording is this runner's.
   const again = await presmium(dir, ['build', '--to', 'notebook'])
   expect(again.stdout).toMatch(/0 executed/)
 }, 180_000)

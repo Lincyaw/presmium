@@ -1,23 +1,11 @@
-/**
- * What the lecture plugin draws over the page: the pointer of a recorded
- * lecture (`point`) and the strokes of the laser and the marker (`ink`),
- * each anchored to a block and placed from the block's box at every frame,
- * so they follow the layout in a window of any size (docs/ir.md 9.2).
- *
- * `ink` data: `{ block, tool: 'laser' | 'marker', lines }` (code lines, `3-5`)
- * or `{ block, tool, range: [x0, y0, x1, y1] }` (relative to the block), or
- * `{ clear: true }`. Marker strokes stay until cleared; laser strokes fade.
- */
 import type { PathPoint } from '../domain/index.ts'
 import { blockElement, codeLines, lineNumbers } from '@presmium/host'
 
-/** How long a laser stroke shows, ms. */
 const LASER_MS = 1500
 
 interface Pointer {
   block: string
   path: PathPoint[]
-  /** `performance.now()` when it was applied; the path plays from there unless seeking. */
   from: number
   animate: boolean
 }
@@ -27,7 +15,6 @@ interface Ink {
   tool: 'laser' | 'marker'
   lines?: string
   range?: [number, number, number, number]
-  /** Laser strokes: when they are gone. */
   until?: number
 }
 
@@ -46,7 +33,6 @@ function range(value: unknown): Ink['range'] {
   return Array.isArray(value) && value.length === 4 && value.every(n => typeof n === 'number') ? value as Ink['range'] : undefined
 }
 
-/** The pointer's place in its path `elapsed` ms after it started. */
 function along(points: PathPoint[], elapsed: number): PathPoint {
   const next = points.findIndex(([t]) => t > elapsed)
   if (next <= 0) return next === 0 ? points[0]! : points.at(-1)!
@@ -66,7 +52,6 @@ function ensureLayer(): HTMLElement {
   return layer
 }
 
-/** The box of an ink stroke in the window, from its block's box now. */
 function inkBox(ink: Ink, block: HTMLElement): DOMRect | undefined {
   if (ink.lines) {
     const rows = codeLines(block)
@@ -89,7 +74,6 @@ const STYLES: Record<string, Partial<CSSStyleDeclaration>> = {
   pointer: { width: '16px', height: '16px', borderRadius: '50%', background: 'rgb(239 68 68 / 0.9)', boxShadow: '0 0 0 4px rgb(239 68 68 / 0.25)' },
 }
 
-/** The k-th element of the layer, made (with the look of `kind`) when it has fewer, or remade when it shows another kind. */
 function slot(root: HTMLElement, k: number, kind: string, block: string): HTMLElement {
   let el = root.children[k] as HTMLElement | undefined
   if (!el || el.dataset.kind !== kind) {
@@ -134,7 +118,6 @@ function redraw(): void {
   if (!frame) frame = requestAnimationFrame(draw)
 }
 
-/** Applies a `point` operation: the pointer moves along its path (at once while seeking). */
 export function applyPoint(data: Record<string, unknown>, seeking: boolean): void {
   const points = path(data.path)
   if (typeof data.block !== 'string' || points.length === 0) return
@@ -142,7 +125,6 @@ export function applyPoint(data: Record<string, unknown>, seeking: boolean): voi
   redraw()
 }
 
-/** Applies an `ink` operation; a laser stroke shows only when it is played, not when a seek passes it. */
 export function applyInk(data: Record<string, unknown>, seeking: boolean): void {
   if (data.clear === true) {
     inks = []

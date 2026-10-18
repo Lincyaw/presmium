@@ -1,8 +1,3 @@
-/**
- * Where a listing comes from (`CodeNode.origin`) and what its output says
- * about the run, as parts both browser forms draw: the web form's viewer and
- * the slides renderer, which writes them into the slides.
- */
 import type { CodeNode, ResolutionStatus, RunResult } from '@presmium/kernel'
 import type { Locale } from '@presmium/kernel/contracts'
 
@@ -24,7 +19,6 @@ const zh = {
   recorded: '预录输出',
 }
 
-/** The text of the parts in one UI language. */
 export type OriginMessages = typeof zh
 
 const en: OriginMessages = {
@@ -47,24 +41,17 @@ const en: OriginMessages = {
 
 export const ORIGIN_MESSAGES: Record<Locale, OriginMessages> = { 'zh-CN': zh, 'en': en }
 
-/** One part of the origin bar, in order: the file and lines, the versions or the commit, a badge. */
 export interface OriginPart {
-  /** Its class: `pm-code-origin__<kind>`. */
   kind: 'file' | 'variant' | 'commit' | 'badge'
   text: string
-  /** A link (to the repository) when set. */
   href?: string
-  /** An explanation, e.g. as a tooltip. */
   title?: string
-  /** A version: the one on screen. */
   active?: boolean
-  /** A badge: the resolution status it shows (`data-status`), or the drift of pinned code (`data-drift`). */
   status?: ResolutionStatus
   drift?: 'synced' | 'drifted'
 }
 
 export interface OriginBar {
-  /** The anchor of the code reference; absent for a titled listing without one. */
   anchor?: string
   parts: OriginPart[]
 }
@@ -73,14 +60,6 @@ function lines(start: number, end = start): string {
   return end > start ? `${start}-${end}` : `${start}`
 }
 
-/**
- * The origin bar of a listing: the file and lines linked to the repository,
- * the commit of each version (the one on screen marked) or the pinned commit,
- * and a badge when the anchor moved or was lost or pinned code drifted, each
- * badge with its explanation. `shown` is the version on screen; its file
- * link and lines are those of that version. Undefined for a listing with
- * neither origin nor title.
- */
 export function originParts(node: CodeNode, shown: number | undefined, locale: Locale): OriginBar | undefined {
   const t = ORIGIN_MESSAGES[locale]
   const { origin } = node
@@ -104,7 +83,6 @@ export function originParts(node: CodeNode, shown: number | undefined, locale: L
   return { anchor: origin.anchor, parts }
 }
 
-/** What a run's output says about the run: a timeout, a failing exit code, a recording. */
 export function outputNotes(run: RunResult, locale: Locale): string[] {
   const t = ORIGIN_MESSAGES[locale]
   return [

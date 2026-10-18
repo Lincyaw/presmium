@@ -1,6 +1,3 @@
-// `presmium check` of a deck with a translation (P-123, docs/ir.md 2.12): the translation records the digest of
-// the original it follows; once the original changes, the check reports the translation out of date with the
-// new digest, and no more once that digest is written back (packages/web/test/fixtures/translations, in a copy).
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,7 +12,6 @@ const deck = mkdtempSync(join(tmpdir(), 'presmium-translations-'))
 cpSync(FIXTURE, deck, { recursive: true })
 afterAll(() => rmSync(deck, { recursive: true, force: true }))
 
-/** The `presmium.translations` findings of `presmium check`. */
 async function translationFindings(): Promise<Finding[]> {
   const { code, stdout, stderr } = await presmium(deck, ['check', '--json'])
   expect(code, stderr).toBe(0)

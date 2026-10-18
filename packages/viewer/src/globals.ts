@@ -1,9 +1,3 @@
-/**
- * Slidev's template globals for plugin components written for the slides
- * form: `$page` and `$clicks` (the enclosing section's number and step),
- * `$slidev` (deck configuration and navigation), `$nav`, and, through
- * `withSlideGlobals`, `$frontmatter` (the section's title and hints).
- */
 import type { IRSection } from '@presmium/kernel'
 import type { App, Component, ComponentOptions } from 'vue'
 import { computed, getCurrentInstance, inject, reactive } from 'vue'
@@ -12,7 +6,6 @@ import type { SectionContext } from './context.ts'
 import { VIEWER } from './viewer.ts'
 import type { Viewer } from './viewer.ts'
 
-/** The section being rendered; globals are read while a component renders. */
 function section() {
   return getCurrentInstance() ? inject(SECTION_CONTEXT, undefined) : undefined
 }
@@ -47,19 +40,12 @@ export function installSlideGlobals(app: App, viewer: Viewer): void {
   define('$slidev', () => ({ configs: configs.value, themeConfigs: {}, nav }))
 }
 
-/** Slidev's per-slide frontmatter of a section: its title and its hints for this renderer. */
 export function sectionFrontmatter(section: IRSection, renderer: string): Record<string, unknown> {
   return { title: section.title, ...section.hints[renderer] }
 }
 
-/**
- * A plugin component that sees `$frontmatter` as in Slidev: its section's
- * frontmatter. The component's own property shadows a `$frontmatter` global
- * the host may define (VitePress: the page's frontmatter).
- */
 export function withSlideGlobals(component: Component): Component {
   if (typeof component === 'function') return component
-  // A copy of the options with an injected section and a computed property: `extends` would not inherit `setup` or `render`.
   const options = component as ComponentOptions
   const inject = Array.isArray(options.inject) ? Object.fromEntries(options.inject.map(key => [key, key])) : options.inject
   return {

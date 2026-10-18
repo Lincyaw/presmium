@@ -7,21 +7,14 @@ import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 import { webDeck } from './fixtures/web/deck.ts'
 import type { WebDeck } from './fixtures/web/deck.ts'
 
-// The IR runtime (@presmium/viewer) in the web form of the fixture decks: the reading deck of
-// e2e/fixtures/web/deck (cover; basics.html with `reading` and the scrolly section `scrolly`;
-// advanced.html with steppers, a run panel and a diagram, and live code; wide-content.html), the
-// decks under e2e/fixtures/viewer, and `presmium dev` on e2e/fixtures/viewer/dev.
-
 declare global {
   interface Window {
-    /** The names of the BroadcastChannels the page has opened (`recordChannels`). */
     channelNames?: string[]
   }
 }
 
 const menu = (page: Page) => page.getByRole('combobox', { name: '视图' })
 
-/** Waits until the page view has scrolled to the position kept across a view switch. */
 async function settled(page: Page) {
   await expect(page.locator('.pm-view-host')).not.toHaveAttribute('aria-busy', 'true')
 }
@@ -31,7 +24,6 @@ async function selectView(page: Page, view: string) {
   if (view !== 'present') await settled(page)
 }
 
-/** Scrolls the narration of a step of a scrolly section to the middle of the screen. */
 async function scrollToStep(page: Page, section: string, step: number) {
   const target = page.locator(`.pm-section[data-section="${section}"]`)
   await expect(async () => {
@@ -40,7 +32,6 @@ async function scrollToStep(page: Page, section: string, step: number) {
   }).toPass()
 }
 
-/** Records the name of every BroadcastChannel the pages of `context` open, in `window.channelNames`. */
 async function recordChannels(context: BrowserContext) {
   await context.addInitScript(() => {
     const names: string[] = []
@@ -55,7 +46,6 @@ async function recordChannels(context: BrowserContext) {
   })
 }
 
-/** Whether two boxes overlap. */
 function overlap(a: { x: number, y: number, width: number, height: number }, b: typeof a): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 }
@@ -79,7 +69,6 @@ test.describe('the reading fixture deck', () => {
     await expect(present).toHaveAttribute('data-step', '2')
     await expect(present.locator('li', { hasText: '发布' })).toBeVisible()
 
-    // Leaving the present view goes back to the page view it came from, at the same place.
     await page.keyboard.press('Escape')
     await expect(present).toHaveCount(0)
     await expect(menu(page)).toHaveValue('document')
@@ -88,7 +77,6 @@ test.describe('the reading fixture deck', () => {
     await expect(scrolly).toHaveAttribute('data-step', '2')
     await expect(scrolly.locator('.pm-step[data-step="2"]')).toBeInViewport()
 
-    // The scrolly view lays out every section that way; the position stays.
     await selectView(page, 'scrolly')
     await expect(page.locator('.pm-section[data-section="reading"]')).toHaveClass(/pm-section--scrolly/)
     await expect(scrolly).toHaveAttribute('data-step', '2')
@@ -97,7 +85,6 @@ test.describe('the reading fixture deck', () => {
     await selectView(page, 'present')
     await expect(present).toHaveAttribute('data-step', '3')
 
-    // A section on another page: leaving the present view goes to its page, still in the scrolly view.
     await page.keyboard.press('End')
     await expect(present).toHaveAttribute('data-section', 'wide')
     await page.getByRole('button', { name: '退出放映' }).click()
@@ -108,7 +95,6 @@ test.describe('the reading fixture deck', () => {
   })
 
   test('the present view pages with the keyboard; the presenter window follows with the narration of the step', async ({ page }) => {
-    // `?view=` opens a view at the page's own section.
     await page.goto(deck.web('basics.html?view=present'))
     const present = page.getByRole('region', { name: '放映' })
     await expect(present).toHaveAttribute('data-section', 'reading')
@@ -117,7 +103,6 @@ test.describe('the reading fixture deck', () => {
     await expect(present).toHaveAttribute('data-step', '0')
     await page.keyboard.press('ArrowRight')
     await page.keyboard.press('ArrowRight')
-    // The stepper appears at step 2 and steps through its own states from there.
     const stepper = present.locator('.fx-stepper')
     await expect(present).toHaveAttribute('data-step', '2')
     await expect(stepper).toHaveAttribute('data-step', '0')
@@ -125,13 +110,11 @@ test.describe('the reading fixture deck', () => {
     await expect(present).toHaveAttribute('data-step', '3')
     await expect(stepper).toHaveAttribute('data-step', '1')
     await expect(stepper.locator('li').nth(1)).toBeHidden()
-    // Narration is not on the screen.
     await expect(present).not.toContainText('先是离线缓存')
 
     const [presenter] = await Promise.all([page.waitForEvent('popup'), present.getByRole('button', { name: '演讲者窗口' }).click()])
     const notes = presenter.locator('.pm-presenter')
     await expect(notes).toHaveAttribute('data-step', '3')
-    // The current screen shows what the audience sees at this step, under the section's title.
     await expect(notes.locator('.pm-presenter__slide .fx-stepper')).toHaveAttribute('data-step', '1')
     await expect(notes.locator('.pm-presenter__slide .pm-present__title')).toHaveText('滚动叙事')
     await expect(notes.locator('.pm-presenter__slide')).not.toContainText('先是离线缓存')
@@ -139,7 +122,6 @@ test.describe('the reading fixture deck', () => {
     await expect(notes.locator('.pm-presenter__next')).toContainText('然后是形态互跳')
     await expect(notes.locator('.pm-presenter__timer')).toHaveText(/^\d\d:\d\d$/)
 
-    // Either window moves both.
     await page.keyboard.press('ArrowRight')
     await expect(notes).toHaveAttribute('data-step', '4')
     await expect(notes.locator('.pm-current')).toContainText('然后是形态互跳')
@@ -156,7 +138,6 @@ test.describe('the reading fixture deck', () => {
     const total = deck.doc.sections.length
     await page.goto(deck.web('basics.html?view=present'))
     const counter = page.locator('.pm-present__counter')
-    // `reading` has no steps.
     await expect(counter).toHaveText(`2 / ${total}`)
     await page.keyboard.press('ArrowRight')
     await expect(counter).toHaveText(`3 / ${total} · 第 1 步，共 ${scrolly.steps + 1} 步`)
@@ -180,7 +161,6 @@ test.describe('the reading fixture deck', () => {
     await page.keyboard.press('o')
     const overview = present.getByRole('dialog', { name: '总览' })
     await expect(overview.getByRole('button')).toHaveCount(deck.doc.sections.length)
-    // The current section has the focus; the arrow keys move it, Enter jumps.
     await expect(overview.locator('[aria-current="true"]')).toBeFocused()
     await page.keyboard.press('ArrowRight')
     await expect(overview.locator('[data-section="scrolly"]')).toBeFocused()
@@ -192,7 +172,6 @@ test.describe('the reading fixture deck', () => {
     await present.getByRole('button', { name: '总览' }).click()
     await overview.locator('[data-section="stepper"]').click()
     await expect(present).toHaveAttribute('data-section', 'stepper')
-    // Escape closes the overview, not the present view.
     await page.keyboard.press('o')
     await page.keyboard.press('Escape')
     await expect(overview).toHaveCount(0)
@@ -215,7 +194,6 @@ test.describe('the reading fixture deck', () => {
     await page.goto(deck.web('basics.html?view=present'))
     const present = page.getByRole('region', { name: '放映' })
     await expect(present).toHaveAttribute('data-section', 'reading')
-    // A section of another page, at a step of its own.
     await page.keyboard.press('End')
     await expect(present).toHaveAttribute('data-section', 'wide')
     await page.keyboard.press('ArrowLeft')
@@ -232,14 +210,12 @@ test.describe('the reading fixture deck', () => {
     await presenter.reload()
     await expect(notes).toHaveAttribute('data-section', moved.section!)
     await expect(notes).toHaveAttribute('data-step', moved.step!)
-    // Back in the page view, the address names no view.
     await page.keyboard.press('Escape')
     await expect(page).not.toHaveURL(/view=/)
   })
 
   test('a link to a section below content that loads late opens it at the top of the screen; the present view starts there', async ({ page }) => {
     await page.goto(deck.web('advanced.html#live-code'))
-    // The run panel and the diagram above it render in the browser, after the page has loaded.
     await expect(page.locator('.pm-section[data-section="panel"] .pm-mermaid[data-rendered]')).toBeAttached()
     await expect(page.locator('.pm-section[data-section="panel"] .pm-client-only')).toHaveCount(0)
     const heading = page.locator('h2#live-code')
@@ -254,7 +230,6 @@ test.describe('the reading fixture deck', () => {
     await page.reload()
     await page.reload()
     const block = page.locator('.pm-section[data-section="live-code"] .pm-code-block[data-run="both"]')
-    // The output recorded at compile time first.
     await expect(block.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
     await expect(block.getByRole('button', { name: '运行' })).toBeEnabled()
     await block.getByRole('button', { name: '运行' }).click()
@@ -269,7 +244,6 @@ test.describe('the reading fixture deck', () => {
     const present = page.getByRole('region', { name: '放映' })
     await expect(present).toBeFocused()
     const inside = () => page.evaluate(() => Boolean(document.activeElement?.closest('.pm-present')))
-    // More Tab presses than the view has controls: focus cycles inside, never into the page behind.
     for (let i = 0; i < 12; i++) {
       await page.keyboard.press('Tab')
       expect(await inside()).toBe(true)
@@ -290,7 +264,6 @@ test.describe('the reading fixture deck', () => {
   test('the present view fits every section to the screen at the usual projector resolutions, wide code and tables too', async ({ page }) => {
     test.setTimeout(300_000)
     const { sections } = deck.doc
-    // Whether the slide's content reaches past its frame, which would cut it off, or a listing or a table of it scrolls.
     const overflows = () => page.locator('.pm-present__slide').evaluate((frame) => {
       const content = frame.querySelector('.pm-present__content')!.getBoundingClientRect()
       const box = frame.getBoundingClientRect()
@@ -301,7 +274,6 @@ test.describe('the reading fixture deck', () => {
     for (const [width, height] of [[1920, 1080], [1440, 900], [1366, 768], [1280, 720], [1280, 800], [1024, 768]] as const) {
       await page.setViewportSize({ width, height })
       await page.goto(deck.web('?view=present'))
-      // Every section at its first and its last step, paging on from one section to the next.
       for (const section of sections) {
         await expect(present).toHaveAttribute('data-section', section.id)
         await expect.poll(overflows, { message: `${section.id} at ${width}x${height}` }).toBe(false)
@@ -320,9 +292,6 @@ test.describe('the reading fixture deck', () => {
     await expect(present).toHaveAttribute('data-section', 'advanced')
     const list = present.locator('.pm-present__slide ol')
     await expect(list.locator('li')).toHaveCount(4)
-    // Where the first item's marker starts: as far before the item as the marker is wide, which is
-    // how far a marker inside an item of a list beside it moves the item's text. The block and the
-    // slide frame clip what reaches before them.
     const { marker, block, frame } = await list.evaluate((ol) => {
       const probe = document.createElement('ol')
       probe.style.cssText = 'list-style-position: inside; margin: 0; padding: 0'
@@ -379,14 +348,12 @@ test.describe('two decks of the same title under two bases of one origin (e2e/fi
     await a.keyboard.press('b')
     await expect(a.getByRole('region', { name: 'Presentation' })).toHaveAttribute('data-step', '1')
     await expect(a.locator('.pm-stage-black')).toBeVisible()
-    // Time for a message to arrive, were there one.
     await b.waitForTimeout(500)
     await expect(b.getByRole('region', { name: 'Presentation' })).toHaveAttribute('data-step', '0')
     await expect(b.locator('.pm-stage-black')).toHaveCount(0)
   })
 })
 
-/** Console messages of a page that report a hydration mismatch. */
 function hydrationMismatches(page: Page): string[] {
   const found: string[] = []
   page.on('console', (message) => {
@@ -412,10 +379,8 @@ test.describe('MyST roles and directives, raw HTML and code origins (e2e/fixture
     await expect(roles.locator('p sub')).toHaveText('2')
     await expect(roles.locator('p sup')).toHaveText('2')
     await expect(roles.locator('p abbr')).toHaveAttribute('title', 'intermediate representation')
-    // Inline content stays inside its paragraph.
     await expect(page.locator('.pm-section p div')).toHaveCount(0)
     await expect(roles.locator('p', { hasText: '打开搜索' })).toHaveCount(1)
-    // A reference without text shows its target section's title.
     await expect(roles.getByRole('link', { name: '指令', exact: true })).toHaveAttribute('href', /#myst-directives$/)
     await expect(roles.getByRole('link', { name: '角色', exact: true })).toHaveAttribute('href', /#myst-roles$/)
 
@@ -491,7 +456,6 @@ test.describe('MyST roles and directives, raw HTML and code origins (e2e/fixture
     await page.goto(`${site.web}/#version-track`)
     const section = page.locator('.pm-section[data-section="version-track"]')
     await expect(section).toHaveClass(/pm-section--scrolly/)
-    // Nine versions: narration at the first two steps, the other seven are the block's own.
     expect(site.doc.sections.find(s => s.id === 'version-track')!.steps).toBe(8)
     const narrated = 2
     const bare = 7
@@ -519,7 +483,6 @@ test.describe('narration a pass moved into a component (e2e/fixtures/viewer/pred
     await expect(notes.locator('.pm-presenter__note')).toHaveText([/先请大家估计一下/, new RegExp(reveal)])
     await expect(notes.locator('.pm-current')).toContainText('先请大家估计一下')
     await expect(notes.locator('.pm-presenter__next')).toContainText(reveal)
-    // On the screen the audience sees, the narration stays off the slide.
     await expect(notes.locator('.pm-presenter__slide')).not.toContainText(reveal)
     await page.keyboard.press('ArrowRight')
     await expect(notes).toHaveAttribute('data-step', '1')
@@ -539,7 +502,6 @@ test.describe('steps in the web form (e2e/fixtures/viewer/steps)', () => {
   test('the present view shows a step the same, whether it opens at the step or steps there from step 0 (K-04, F-77)', async ({ page }) => {
     const present = page.getByRole('region', { name: '放映' })
     const { steps } = site.doc.sections.find(s => s.id === 'walk')!
-    /** The present view's markup at `step`, once it no longer changes (the highlighter and the component load late). */
     const settledAt = async (step: number) => {
       await expect(present).toHaveAttribute('data-step', String(step))
       await expect(present.locator('.pm-demo-stepper')).toBeAttached()
@@ -553,7 +515,6 @@ test.describe('steps in the web form (e2e/fixtures/viewer/steps)', () => {
       }, { intervals: [300] }).toBe(true)
       return last
     }
-    // A step of the stepper, and the last, where the code shows highlighted.
     for (const step of [3, steps]) {
       await page.goto(`${site.web}/?view=present&section=walk&step=${step}`)
       const jumped = await settledAt(step)
@@ -570,7 +531,6 @@ test.describe('tags of an agent\'s trace beside inline SVG and MathML (e2e/fixtu
   let site: FixtureDeck
   test.beforeAll(async () => {
     test.setTimeout(300_000)
-    // The build fails if the slides' unclosed <reminder> reaches Slidev as markup.
     site = await buildFixture('viewer/tags', { to: 'web,slides,notebook' })
   })
   test.afterAll(() => site?.close())
@@ -620,7 +580,6 @@ test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
       await expect(present.getByRole('button', { name, exact: true })).toBeVisible()
     }
 
-    // The stage's black screen; the presenter window's reminder and labels.
     await page.keyboard.press('b')
     await expect(page.locator('.pm-stage-black')).toBeVisible()
     const [presenter] = await Promise.all([page.waitForEvent('popup'), page.keyboard.press('p')])
@@ -633,7 +592,6 @@ test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
     await presenter.keyboard.press('b')
     await expect(page.locator('.pm-stage-black')).toHaveCount(0)
 
-    // The code block's controls: no executor in this deck.
     await page.keyboard.press('End')
     await expect(present).toHaveAttribute('data-section', 'code')
     const block = present.locator('.pm-code-block')
@@ -646,10 +604,6 @@ test.describe('a deck in English (e2e/fixtures/viewer/en)', () => {
   })
 })
 
-/**
- * `presmium dev --to web` on a copy of a deck, in a directory of its own inside the demo (so the
- * renderers and plugins resolve). Its "editor" records what it is asked to open.
- */
 async function devDeck(files: string[]): Promise<{ deck: string, url: string, stop(): Promise<void> }> {
   const deck = deckDir('dev')
   for (const file of files) cpSync(file, join(deck, file.split('/').at(-1)!), { recursive: true })
@@ -671,12 +625,10 @@ async function devDeck(files: string[]): Promise<{ deck: string, url: string, st
   }
 }
 
-/** Opens a dev page once its dependencies are optimized (`openDevPage`), when `ready` shows. */
 function openDev(page: Page, url: string, ready: string) {
   return openDevPage(page, url, page.locator(ready).first())
 }
 
-/** Marks the window, so a reload shows as a missing mark. */
 async function mark(page: Page) {
   await page.evaluate(() => {
     (window as { marker?: boolean }).marker = true
@@ -685,7 +637,6 @@ async function mark(page: Page) {
 
 const marked = (page: Page) => page.evaluate(() => (window as { marker?: boolean }).marker === true)
 
-/** The vertical scroll position once it no longer changes from one check to the next. */
 async function restingScroll(page: Page): Promise<number> {
   let last = Number.NaN
   await expect.poll(async () => {
@@ -698,7 +649,6 @@ async function restingScroll(page: Page): Promise<number> {
 }
 
 test.describe('presmium dev', () => {
-  // A dev page may take `openDevPage`'s whole 120 s to be ready on a loaded machine; the case's own steps come after.
   test.describe.configure({ mode: 'serial', timeout: 240_000 })
   let dev: Awaited<ReturnType<typeof devDeck>>
   test.beforeAll(async () => {
@@ -721,7 +671,6 @@ test.describe('presmium dev', () => {
     await mark(page)
     const before = await restingScroll(page)
 
-    // Milliseconds from saving an edit to the page showing it, observed in the page.
     const timeEdit = async (from: string, to: string) => {
       await page.evaluate((text) => {
         const w = window as { shownAt?: number }
@@ -738,7 +687,6 @@ test.describe('presmium dev', () => {
       await expect(scrolly).toContainText(to)
       return await page.evaluate(() => (window as { shownAt?: number }).shownAt!) - saved
     }
-    // The fastest of up to three edits, so that a moment of load on the machine does not count.
     const words = ['渲染', '绘制', '排版', '呈现']
     const times: number[] = []
     for (let i = 1; i < words.length && !times.some(t => t < 300); i++) {
@@ -746,7 +694,6 @@ test.describe('presmium dev', () => {
     }
     expect(Math.min(...times), `times: ${times.join(', ')}`).toBeLessThan(300)
 
-    // Same page (no reload), same view, step and scroll position.
     expect(await marked(page)).toBe(true)
     await expect(menu(page)).toHaveValue('scrolly')
     await expect(scrolly).toHaveAttribute('data-step', '2')
@@ -756,8 +703,6 @@ test.describe('presmium dev', () => {
   test('a page whose request for the current document is answered before two edits, and arrives after them, shows the second edit (F-84)', async ({ page }) => {
     await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
     const scrolly = page.locator('.pm-section[data-section="scrolly"]')
-    // The dev server answers the page's requests for the current document (when it loads and connects) at
-    // once; the answers reach the page only after the two edits came over the WebSocket.
     let release!: () => void
     const held = new Promise<void>((done) => {
       release = done
@@ -774,7 +719,6 @@ test.describe('presmium dev', () => {
     await page.reload()
     await expect(scrolly).toBeVisible()
     await expect.poll(() => answered).toBeGreaterThan(0)
-    // Words of this run, so the test can be repeated on the same server (`--repeat-each`).
     const [first, second] = [1, 2].map(n => `第二步，第 ${n} 次改动 ${test.info().repeatEachIndex}-${Date.now()}`)
     edit(/第二步，[^。]*/, first!)
     await expect(scrolly).toContainText(first!)
@@ -782,7 +726,6 @@ test.describe('presmium dev', () => {
     await expect(scrolly).toContainText(second!)
     release()
     await expect.poll(() => delivered).toBe(answered)
-    // The late answers named an older document: the page keeps the latest.
     await page.waitForTimeout(500)
     await expect(scrolly).toContainText(second!)
     await page.unrouteAll({ behavior: 'ignoreErrors' })
@@ -791,7 +734,6 @@ test.describe('presmium dev', () => {
   test('a section, or a block with Alt+click, opens its source in the editor', async ({ page }) => {
     await openDev(page, `${dev.url}web.html`, '.pm-section[data-section="scrolly"]')
     const opened = join(dev.deck, 'opened.txt')
-    // File and line the editor was given.
     const asked = () => (existsSync(opened) ? readFileSync(opened, 'utf8').split('\n').slice(0, 2) : [])
     const scrolly = page.locator('.pm-section[data-section="scrolly"]')
     const source = readFileSync(join(dev.deck, 'pages/web.md'), 'utf8').split('\n')
@@ -836,7 +778,6 @@ test.describe('presmium dev', () => {
     const before = await top()
     await mark(page)
 
-    // Paragraphs added to the section above push the reading position down the page.
     const added = Array.from({ length: 4 }, (_, i) => `上方新增的第 ${i + 1} 段讲解，让前一节变长。`).join('\n\n')
     edit('搜索框支持中文分词', `${added}\n\n搜索框支持中文分词`)
     await expect(page.locator('.pm-section[data-section="web"]')).toContainText('上方新增的第 4 段讲解')
@@ -850,13 +791,11 @@ test.describe('presmium dev', () => {
     const scrolly = page.locator('.pm-section[data-section="scrolly"]')
     const input = page.getByRole('searchbox')
     const result = page.getByRole('listbox').getByRole('option').first()
-    // The search index is updated in the page too: typing again finds the new keyword.
     const find = (word: string) => expect(async () => {
       await input.fill('')
       await input.fill(word)
       await expect(result).toBeVisible({ timeout: 1000 })
     }).toPass({ timeout: 15_000 })
-    // The author has searched before editing.
     await page.keyboard.press('Control+k')
     await find('编译源码')
     await page.keyboard.press('Escape')
@@ -866,7 +805,6 @@ test.describe('presmium dev', () => {
     await expect(scrolly).toContainText('Quokka')
     await page.keyboard.press('Control+k')
     await find('quokka')
-    // An edit while the search box is open.
     edit('第三步，发布站点。', '第三步，发布站点，也就是 Numbat 步骤。')
     await expect(scrolly).toContainText('Numbat')
     await find('numbat')
@@ -901,7 +839,6 @@ test.describe('presmium dev', () => {
     await page.keyboard.press('ArrowLeft')
     await expect(last).toHaveAttribute('data-pm-click', 'hidden')
 
-    // One word less: the last mark comes one step earlier.
     edit(':span: 4\nitems: [甲, 乙, 丙]', ':span: 3\nitems: [甲, 乙]', 'live')
     await expect(page.locator('.pm-present .fx-clicks__item')).toHaveCount(2)
     await expect(page.locator('.pm-present')).toHaveAttribute('data-step', '3')
@@ -939,7 +876,6 @@ test.describe('presmium dev', () => {
     edit('旧代码的输出', '新代码的输出', 'live')
     await expect(block).toContainText('新代码的输出')
     await expect(block.getByRole('button', { name: '运行' })).toBeEnabled()
-    // Longer than the run would have taken.
     await page.waitForTimeout(5000)
     await expect(block.locator('.pm-outputs')).toHaveCount(0)
   })
@@ -949,7 +885,6 @@ test.describe('presmium dev', () => {
     mkdirSync(join(dev.deck, 'components'), { recursive: true })
     writeFileSync(join(dev.deck, 'components/FixtureAdded.vue'), '<template><p class="fx-added">新加的组件</p></template>\n')
     edit(/$/, '\n(added-component)=\n## 新加的组件\n\n:::{component} FixtureAdded\n:::\n\n服务运行时加入的组件。\n', 'live')
-    // The theme's list of components changes too: the page may reload.
     await expect(page.locator('.pm-section[data-section="added-component"] .fx-added')).toHaveText('新加的组件', { timeout: 30_000 })
   })
 })
@@ -976,12 +911,10 @@ test.describe('a plugin that extends the IR runtime', () => {
     await selectView(page, 'document')
     await expect(page.locator('h2#probe')).toBeInViewport()
 
-    // A renderer for a node kind (csv code) and one for a component.
     const table = page.locator('.pm-section[data-section="table"]')
     await expect(table.locator('table.pm-csv td', { hasText: '苹果' })).toBeVisible()
     await expect(table.locator('.pm-swapped')).toHaveText('插件的渲染器')
     await expect(table.locator('.pm-swap')).toHaveCount(0)
-    // The deck has no slides form, so no section links to one.
     await expect(page.getByRole('link', { name: '在幻灯片中打开' })).toHaveCount(0)
   })
 
@@ -997,7 +930,6 @@ test.describe('a plugin that extends the IR runtime', () => {
   test('a component written for Slidev sees its section\'s $frontmatter, $page and $clicks, and v-click rules', async ({ page }) => {
     await openDev(page, `${dev.url}?view=present&section=probe`, '.pm-present .pm-probe')
     const probe = page.locator('.pm-present .pm-probe')
-    // $frontmatter is the section's (title and web hints), not the VitePress page's.
     await expect(probe).toHaveAttribute('data-title', '探针')
     await expect(probe).toHaveAttribute('data-accent', 'teal')
     await expect(probe).toHaveAttribute('data-page', '3')
@@ -1012,11 +944,9 @@ test.describe('a plugin that extends the IR runtime', () => {
     await page.keyboard.press('ArrowRight')
     await expect(probe).toHaveAttribute('data-clicks', '2')
     await expect.poll(states).toEqual(['shown', 'shown', 'hidden'])
-    // Stepping back is the reverse.
     await page.keyboard.press('ArrowLeft')
     await expect.poll(states).toEqual(['shown', 'shown', 'shown'])
 
-    // The document view shows the final state.
     await page.keyboard.press('Escape')
     const inPage = page.locator('.pm-section[data-section="probe"] .pm-probe')
     await expect.poll(() => Promise.all(['click', 'after', 'hide'].map(part => inPage.locator(`.pm-probe__${part}`).getAttribute('data-pm-click')))).toEqual(['shown', 'shown', 'hidden'])
@@ -1025,7 +955,6 @@ test.describe('a plugin that extends the IR runtime', () => {
   test('a footnote reference opens its definition, which the compiler keeps in the same section, by its number', async ({ page }) => {
     await openDev(page, dev.url, '.pm-section[data-section="table"]')
     const reference = page.locator('.pm-section[data-section="table"] .pm-footnote-ref a')
-    // The deck's first footnote, numbered by the compiler.
     await expect(reference).toHaveAttribute('data-label', '1')
     await reference.click()
     await expect(page).toHaveURL(/#fn-csv$/)

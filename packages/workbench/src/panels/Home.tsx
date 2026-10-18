@@ -1,10 +1,3 @@
-/**
- * The home page (docs/design/home.dc.html, P-121): the launcher of the workspace.
- * Its documents as cards (a document opens on a click); a search over the
- * documents, their sections and the commands (Ctrl K); a document made from a
- * template; renaming, copying and deleting a document (each one commit, the
- * cards follow); and how an outside agent connects (MCP).
- */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DocumentOperation, WorkspaceDocument } from '../api.ts'
 import { PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmMenu, PmNotice } from '../components.tsx'
@@ -14,7 +7,6 @@ type Editing =
   | { op: 'create' }
   | { op: 'rename' | 'copy' | 'delete', doc: WorkspaceDocument }
 
-/** A directory beside `dir` that no document has: `<dir>-2`, `-3`, … */
 function freeDir(dir: string, taken: string[]): string {
   for (let n = 2; ; n++) {
     const candidate = `${dir}-${n}`
@@ -159,7 +151,6 @@ function OperationDialog({ editing, templates, taken, error, onClose, onRun }: {
   )
 }
 
-/** The launcher's search: the documents, their titles and directories, and the commands; Ctrl K (⌘ K) focuses it. */
 function Search({ documents, onCreate }: { documents: WorkspaceDocument[], onCreate(): void }) {
   const t = useMessages()
   const workbench = useWorkbenchStore()
@@ -213,7 +204,6 @@ function Search({ documents, onCreate }: { documents: WorkspaceDocument[], onCre
   )
 }
 
-/** The address of the workspace service's MCP, which an outside agent connects to (the bundle says where the service is). */
 function McpCard() {
   const t = useMessages()
   const workbench = useWorkbenchStore()

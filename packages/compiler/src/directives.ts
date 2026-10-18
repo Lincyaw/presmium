@@ -1,26 +1,17 @@
-/**
- * The built-in directives as editors describe them (docs/ir.md section 5.1):
- * names, options and what they do, in the languages Presmium has messages
- * for. The compiler implements them in source.ts (`{include}`, `{literalinclude}`, and MyST's
- * card, grid and tab extensions) and blocks.ts.
- */
 import type { DirectiveOptionType, Locale } from '@presmium/kernel'
 
 export interface DirectiveOptionInfo {
   type?: DirectiveOptionType
   doc?: Record<Locale, string>
-  /** Values to offer. */
   values?: string[]
 }
 
 export interface DirectiveInfo {
   name: string
   doc: Record<Locale, string>
-  /** Options besides the common ones. */
   options: Record<string, DirectiveOptionInfo>
 }
 
-/** Options every directive accepts. */
 export const COMMON_DIRECTIVE_OPTIONS: Record<string, DirectiveOptionInfo> = {
   reveal: {
     doc: { 'zh-CN': '在下一步出现；`{slide}`、`{only}` 上写 `items` 时列表逐项出现。', 'en': 'Appears at the next step; `items` on `{slide}` and `{only}` reveals list items one per step.' },
@@ -34,7 +25,6 @@ export const COMMON_DIRECTIVE_OPTIONS: Record<string, DirectiveOptionInfo> = {
   },
 }
 
-/** `:run:` of code blocks and of the plugins' code directives. */
 export const RUN_OPTION: DirectiveOptionInfo = {
   type: 'string',
   doc: { 'zh-CN': '`compile` 在构建时执行并录制输出，`live` 只在浏览器中执行，`both` 两者都做。', 'en': '`compile` records the output at build time, `live` runs in the browser, `both` does both.' },
@@ -57,7 +47,6 @@ const CODE_OPTIONS: Record<string, DirectiveOptionInfo> = {
 
 const CLASS: DirectiveOptionInfo = { type: 'string', doc: { 'zh-CN': 'CSS 类名。', 'en': 'CSS class names.' } }
 
-/** MyST's cards, grids and tabs (docs/ir.md 2.10). */
 const LAYOUT_DIRECTIVES: DirectiveInfo[] = [
   {
     name: 'grid',
