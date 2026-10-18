@@ -3,9 +3,10 @@
 // outside the monorepo that installs the tarballs with npm, with a third-party plugin from its own
 // tarball (e2e/fixtures/consumer/plugin) and a document that uses it (e2e/fixtures/consumer/deck).
 // There `presmium check`, `build` of the three forms, `dev` and `serve` (a workspace whose sites lie
-// outside the project, in serve's state directory) run as a user runs them. A plugin whose peer
-// dependencies exclude the installed Presmium is reported, and the build goes on without it.
-// e2e/consumer.spec.ts shows the plugin's component in a browser.
+// outside the project, in serve's state directory; a document made from the templates installed with
+// @presmium/workspace) run as a user runs them. A plugin whose peer dependencies exclude the
+// installed Presmium is reported, and the build goes on without it. e2e/consumer.spec.ts shows the
+// plugin's component in a browser.
 import { spawn } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -146,8 +147,10 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
   mkdirSync(join(ws, 'intro'), { recursive: true })
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
   writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
+  // A git repository: the document operations commit there.
+  expect((await run('git', ['init', '-q'], { cwd: ws })).code).toBe(0)
   const cache = mkdtempSync(join(tmpdir(), 'presmium-consumer-cache-'))
-  const serve = await start(['serve', 'ws', '--port', '5404'], /^mcp {2}/m, { XDG_CACHE_HOME: cache })
+  const serve = await start(['serve', 'ws', '--port', '0'], /^mcp {2}/m, { XDG_CACHE_HOME: cache })
   try {
     const url = /^serve {2}(http:\/\/\S+)$/m.exec(serve.output())?.[1]
     expect(url, serve.output()).toBeDefined()
@@ -168,6 +171,12 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
     expect(license.status).toBe(200)
     const text = await license.text()
     for (const line of FONT_LICENSE) expect(text).toContain(line)
+    // The document templates come with @presmium/workspace: a new document is made from the default one.
+    const documents = `${url}/__presmium/presmium.workspace/documents`
+    expect(((await (await fetch(documents)).json()) as { templates: string[] }).templates).toEqual(['default'])
+    const created = await fetch(documents, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'create', dir: 'second', title: 'Second' }) })
+    expect(created.status, await created.text()).toBe(200)
+    expect(readFileSync(join(ws, 'second/lecture.md'), 'utf8')).toContain('title: "Second"')
   } finally {
     await serve.stop()
     rmSync(cache, { recursive: true, force: true })

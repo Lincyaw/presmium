@@ -23,8 +23,8 @@ import { rewriteLinks, within } from '../domain/paths.ts'
 import { listDocuments, namedByPatterns } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 
-/** The document templates installed with Presmium (`templates/document/<name>/`). */
-export const BUILTIN_TEMPLATES = fileURLToPath(new URL('../../../../templates/document', import.meta.url))
+/** The document templates installed with Presmium: this package's `templates/document/<name>/`, published with it. */
+export const BUILTIN_TEMPLATES = fileURLToPath(new URL('../../templates/document', import.meta.url))
 
 /** Directories of a document that are not its source (outputs, caches, dependencies). */
 const NOT_SOURCE = new Set(['node_modules', 'dist', '.git'])

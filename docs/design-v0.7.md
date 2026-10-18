@@ -417,7 +417,7 @@ ACP 不逐字流式输出，所以回答按条显示，工具调用过程作为�
   - 各插件的服务端贡献：环境代理、语音、助手、MCP。
 
   多份文档按需编译：只编译正在被访问的文档，并监听它的源码；其余文档只读取头部，用于列表。
-- **从模板新建文档**：模板放在 `templates/document/`。也可以由 agent 起草，相当于一轮对话修改。
+- **从模板新建文档**：模板放在 `templates/document/`（1.0 起随 `@presmium/workspace` 发布，在 `packages/workspace/templates/document/`，WP-93a）。也可以由 agent 起草，相当于一轮对话修改。
 
 ## 7. 讲授（M8，P-90、P-130 至 P-136）
 

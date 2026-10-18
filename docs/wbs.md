@@ -1504,7 +1504,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 ### WP-93b 起步工具（L 波次第二步，并行）
 
-**拥有**：`packages/create-presmium/**`（新）、`templates/plugin/**`（新）、`templates/document/**`、`templates/workspace/**`、`e2e/create.spec.ts` 与 `packages/create-presmium/test/**`（新）。
+**拥有**：`packages/create-presmium/**`（新）、`templates/plugin/**`（新）、`packages/workspace/templates/document/**`（文档模板随 `@presmium/workspace` 发布，WP-93a 从 `templates/document/` 移来）、`templates/workspace/**`、`e2e/create.spec.ts` 与 `packages/create-presmium/test/**`（新）。
 
 **条目**：P-142。`npm create presmium@latest` 交互地或以参数选择讲义、工作区、插件三种项目；插件模板含一个两种形态共用的组件、一个指令、一个服务端路由、中英文文本与一个能运行的集成测试，遵守 CLAUDE.md 的分层与测试约定；生成的项目带 `.agents/skills` 中适合作者或插件开发者的技能副本或链接说明。
 

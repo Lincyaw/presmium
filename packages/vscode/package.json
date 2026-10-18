@@ -5,6 +5,12 @@
   "private": true,
   "type": "module",
   "publisher": "presmium",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/vscode"
+  },
   "description": "%description%",
   "categories": [
     "Programming Languages"

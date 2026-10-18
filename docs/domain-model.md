@@ -488,7 +488,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、确认策略与插件的运营者设置 `settings`（如工作区的插件列表、修改的审阅） |
 | 文档 | `Document` | 一份文稿：目录（身份）、入口文件、标题、语言、标签，取自它的头部 |
 | 文档操作 | `DocumentOperation` | 新建（从模板，或由 agent 起草）、重命名、复制、删除 |
-| 文档模板 | `templates/document/<名>/` | 新建文档时复制的目录 |
+| 文档模板 | `packages/workspace/templates/document/<名>/`（随 `@presmium/workspace` 发布）或工作区配置 `templates` 指定的目录 | 新建文档时复制的目录 |
 | 修改 | `Revision` | 一个提交及其来源 `RevisionOrigin`：agent 任务、文档操作、作者在编辑器中的提交 |
 | 修改历史 | `RevisionService`（`REVISIONS`，Node） | 提交、按文档或任务列出修改、撤销（`git revert`）；撤销一次撤销是重做（`HistoryRevision.redo`，WP-89g），历史面板按它标为“重做” |
 | 成员 | `Member`（4A 节） | 本机作者（所有者）；工作区服务只供运行它的那个用户使用，没有登录与成员的配置 |

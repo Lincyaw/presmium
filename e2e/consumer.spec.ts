@@ -101,7 +101,7 @@ test('presmium serve shows a workspace\'s home page and its document with the th
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
   writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
   // Serve's state directory, where it writes the workspace's sites, outside the project.
-  const output = await start(['serve', 'ws', '--port', '5405'], /^mcp {2}/m, { XDG_CACHE_HOME: outsideDir('presmium-consumer-cache-') })
+  const output = await start(['serve', 'ws', '--port', '0'], /^mcp {2}/m, { XDG_CACHE_HOME: outsideDir('presmium-consumer-cache-') })
   const url = /^serve {2}(http:\/\/\S+)$/m.exec(output)![1]
   const errors: string[] = []
   page.on('pageerror', error => errors.push(String(error)))

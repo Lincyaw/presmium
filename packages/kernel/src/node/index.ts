@@ -103,12 +103,21 @@ export function preBundle(root: string, packages: Iterable<string>): string[] {
     if (imports.length > 0) linkPackage(root, name, real)
     for (const specifier of imports) include.add(`${name} > ${specifier}`)
     for (const dependency of presmium) {
-      const manifest = findPackageJSON(dependency, pathToFileURL(join(real, 'package.json')))
+      const manifest = installedManifest(dependency, real)
       if (manifest) visit(dirname(manifest))
     }
   }
   for (const dir of packages) if (existsSync(join(dir, 'package.json'))) visit(dir)
   return [...include].sort()
+}
+
+/** The `package.json` of the package `name` as the package in `dir` finds it; undefined for one not installed (an optional peer). */
+function installedManifest(name: string, dir: string): string | undefined {
+  try {
+    return findPackageJSON(name, pathToFileURL(join(dir, 'package.json')))
+  } catch {
+    return undefined
+  }
 }
 
 /** The directory of the package that holds `file`, by its nearest `package.json`. */
