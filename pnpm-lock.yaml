@@ -777,6 +777,25 @@ importers:
         specifier: workspace:*
         version: link:../cli
 
+  packages/dsh:
+    dependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@presmium/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+    devDependencies:
+      '@deepseek-ai/dsh':
+        specifier: 0.2.1-alpha.4
+        version: 0.2.1-alpha.4(1f9cec9785ab06955d8f2824f50f9509)
+
   packages/host:
     dependencies:
       '@fontsource/ibm-plex-mono':
@@ -833,6 +852,9 @@ importers:
 
   packages/mcp:
     dependencies:
+      '@modelcontextprotocol/client':
+        specifier: 2.3.1
+        version: 2.3.1
       '@modelcontextprotocol/server':
         specifier: 2.3.1
         version: 2.3.1
@@ -848,10 +870,6 @@ importers:
       minisearch:
         specifier: 7.2.0
         version: 7.2.0
-    devDependencies:
-      '@modelcontextprotocol/client':
-        specifier: 2.3.1
-        version: 2.3.1
 
   packages/render-notebook:
     dependencies:

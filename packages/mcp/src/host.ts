@@ -10,6 +10,7 @@ import type {
   ApprovalKind,
   ApprovalRequest,
   Finding,
+  Focus,
   IRDocument,
   Member,
   RunResult,
@@ -20,6 +21,22 @@ import type {
 export interface McpCaller {
   member: Member
   mode: AgentMode
+  /**
+   * The host confirmed this caller's operations before they reach the
+   * service (a session token of DeepSeek Harness, `McpIssueOptions.confirmed`):
+   * no approval is asked of a window.
+   */
+  confirmed?: boolean
+  /** The one document the caller's calls may name, and their default (`McpIssueOptions.document`). */
+  document?: string
+}
+
+/** The focus a document's workbench reported last (`presmium.server/focus`, docs/design-dsh.md 8.6). */
+export interface McpFocus {
+  document: string
+  focus: Focus[]
+  /** When it was reported (ms since the epoch). */
+  at: number
 }
 
 /** A document of the host (P-120). */
@@ -87,6 +104,13 @@ export interface McpHost {
   /** Whether operations of this kind are offered at all: the tools of a kind whose policy is `off` are not listed (10.4). */
   offers(kind: ApprovalKind): boolean
   /**
+   * The approval policy of a kind (`ask` or `allow`; `off` is not offered), which
+   * the tools list in `_meta` (`presmium/approval`) for a caller whose host
+   * confirms its operations itself (DeepSeek Harness, docs/design-dsh.md 6.3).
+   * Absent: `ask`.
+   */
+  approval?(kind: ApprovalKind): 'off' | 'ask' | 'allow'
+  /**
    * The plugins' agent tools (`PresmiumNodePlugin.tools`) of a document, or
    * without one, of the documents the host has loaded (the first of a name).
    */
@@ -99,6 +123,14 @@ export interface McpHost {
   positions?(document: string | undefined, member: Member): McpPosition[]
   /** Calls `listener` when a window reports a new position; returns the function that stops it. */
   watchPositions?(listener: () => void): () => void
+  /**
+   * The focus the workbench reported last for a document, or without one the
+   * latest of any document; undefined when there is none. Absent without a
+   * workbench (`presmium-mcp`): `get_focus` answers null.
+   */
+  focus?(document?: string): McpFocus | undefined
+  /** Calls `listener` when a focus is reported; returns the function that stops it. */
+  watchFocus?(listener: () => void): () => void
   /** The status summaries the pages of a document reported (`STATUS`), by plugin id. */
   classroom?(document: string): Record<string, unknown>
   /** Sends `go` to the windows of a document that show it (the member's presenting ones first); returns how many. */

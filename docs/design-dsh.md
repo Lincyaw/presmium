@@ -192,7 +192,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 ### 4.4 坐标与步骤
 
 - 章节与块用 IR 的 ID。ID 在实时更新中保持不变（块被改写时可能移动，见 8.7 节）。
-- 步号按完整文稿编号。幻灯片形态中只给其他渲染端的块不占步骤，编号不同，这时用 `trail` 换算（内核的 `stepTrail`、`trailStep`，WP-92b 为控制通道做的就是这件事）。
+- 步号：`position`、`picked` 的 `step` 是页面自己的步号，都带 `trail`，工作台用内核的 `trailStep` 换算成完整文稿的步号；`go` 要按完整文稿的步号定位时带上 `trail`（由 `stepTrail` 得出），只带 `step` 时按页面的步号。幻灯片形态中只给其他渲染端的块不占步骤，两种编号因此可能不同（WP-92b 为控制通道做的是同一种换算；96a 实现时定下，验收者 2026-10-18 改写本条）。
 - `position` 的字段与控制通道报告的位置相同（章节、步骤、`trail`、视图），两处用同一套换算。
 - 产物在 DOM 上写锚点：网页已经有 `data-section`、`.pm-block[data-block]`、`data-step`；幻灯片要补上同样的块级锚点（96a 在 `render-slides` 生成的文稿中加），静态构建中同样存在，无害。
 
@@ -666,7 +666,8 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 | 允许发行版设定的首次使用工作区策略 | 第一次使用会在 `~/Documents` 下建目录 | `documentsDirectory` 加启动时登记（6.6 节） |
 | 不经标准输出的启动令牌交接 | 启动器只能解析标准输出 | 解析标准输出（11.2 节） |
 | 不止一次有效的授权，以及回答者能看到的参数 | 授权只一次有效，回答者看不到参数 | `displayReason` 带摘要（6.3 节） |
-| 按会话给出不同的工具集 | 多份文档的插件工具不同 | 登记并集，pre-execute 拒绝（第 9 节） |
+| 按会话给出不同的工具集 | 多份文档的插件工具不同 | 登记并集，pre-execute 拒绝（第 9 节）；96b 发现 `agent/created` 时经 `agent.ctx` 登记即可，这一条已不需要（17.1 节） |
+| agent 预设的 persona 跟随部署的 persona，或可按 ID 打补丁 | web 的预设各带 `persona` 行，补丁找不到它们 | 指南写在 system 消息中，关掉 `harness-dev-context`（17.1 节第 10 项） |
 | 可以配置品牌的桌面外壳 | 官方桌面版的外框带 DeepSeek 的品牌 | 不做桌面（11.6 节） |
 
 ## 17. 待原型的问题
@@ -687,6 +688,26 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 | 10 | persona 行的 ID 与覆盖方式 | 用 `systemPrompt.section` 说明 Presmium 的角色 | 96b |
 | 11 | `ctx.tools.guard` 在完全访问模式下是否先于 dsh 的回答者生效 | 运营者目录另由沙箱规则拒绝 | 96b |
 | 12 | dsh 能否按会话给出不同的工具集 | 登记并集（第 9 节） | 96b |
+
+### 17.1 WP-96b 的结论
+
+都在锁定的 0.2.1-alpha.4 上用假模型运行过；用例在 `packages/dsh/test/`。
+
+- **第 1 项（bundle 的转发）**：成立。`connection.fetch` 的精确路由按流回答：原型路由每 400 ms 写一段 SSE，经 dsh 宿主（它对回答做 gzip 压缩）到达客户端的间隔仍约 400 ms，没有被缓冲。`presmium-routes` 原样返回上游的流，`ir/events` 因此可以经它推送（服务一侧见 96a）。
+- **第 5 项**：成立。`--patch` 在 profile 自己的补丁与 `$DSH_HOME/cordis.patch.yml` 之后：profile 补丁重新打开三个上传行后，加上 Presmium 的补丁启动时它们仍关闭，模型请求中没有上传的字段；同一个 profile 不带 Presmium 的补丁启动时，请求带 `dsh_session_log` 与 `dsh_plugin_packages`（`privacy.test.ts`）。启动器不需要改写 profile 的补丁。
+- **第 9 项**：经回环 `/mcp` 可行，不需要进程内桥接。本机一份小文稿上：签发会话令牌约 0.4 s（第一次，含服务就绪），连接约 50 ms，`tools/list` 约 15 ms，读取类调用的中位数约 6 ms。dsh 对登记的工具没有默认时限（`timeoutMs` 省略时不限，`dsh-tool-call-timeout-policy` 只执行工具声明的时限）；bundle 的 MCP 客户端把单次调用的时限从 SDK 默认的 60 s 放宽到 10 分钟，构建与运行代码不会被它截断。
+- **第 10 项**：部分成立。headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，profile 补丁换成 Presmium 的说明（补丁整体替换这一行的 config）。web 载体的 4 个 agent 预设（`preset-standard` 等）各在自己的配置中带一个 `persona` 行，补丁只能按 ID 找到顶层与 group 中的行，换它要整份重写预设的配置，因此不换：web 中 Presmium 的角色由 `presmium-context` 的指南（system 消息中的一段）说明，`harness-dev-context` 行关掉，模型请求中不再有 DeepSeek Harness 检出目录与 GUI 的说明，预设自己的“You are a coding agent powered by …”仍在。`privacy.test.ts` 在 headless 中断言 Presmium 的 persona、没有编程 agent 的 persona，在 web 中断言有指南、没有 `harness-dev-context` 的说明；是否要求 web 也换掉预设的 persona 由验收者决定（上游请求见第 16 节）。
+- **第 11 项**：成立，有前提。完全访问模式（`danger-full-access`，确认策略 `never`）下，写运营者目录的 `write` 调用得到 guard 的拒绝说明，文件没有写出（`policy.test.ts`）。前提是 pre-execute 对这些调用不 ask：bundle 起初对“写到会话目录之外”一律 ask，结果是回答者的“the user rejected”，拒绝虽然成立，却不是 guard 的；实现中 policy 把运营者目录中的路径留给 guard。
+- **第 12 项**：成立。`agent/created` 是串行事件，dsh 等它的监听者结束才处理输入；监听者经 `agent.ctx.tools.register` 登记的工具只属于那个 agent。bundle 因此为每个会话登记它所属文档的工具，不登记并集：web 载体上两份文档的两个会话，有测试插件的一份得到 `presmium__fixture_note`，另一份没有（`context.test.ts`）。上下文同样登记在 agent 的作用域中。
+
+实现与设计不同或设计没有写明之处：
+
+1. **按载体拆分补丁**：bundle 层（`dsh.bundle` 的 `cordis.patch.yml`）是全部载体的行；web 载体的两行与它的设置在 `web.patch.yml`，与 `profile.patch.yml` 一样由启动器以 `--patch` 传入（`@presmium/dsh/launch`）。dsh 的一个包只有一个 bundle 层，按载体选择只能这样做。
+2. **`presmium-workspaces` 只在 web 载体**：`ctx.workspaceRegistry` 只有 web 的组合中有；headless 与 acp 的会话就在 dsh 启动的目录中。
+3. **策略不由 bundle 读 `presmium.workspace.yaml`**（13.5 节）：会话令牌是主机已确认的，MCP 对它列出的操作类工具在 `_meta` 中带上种类与策略（`presmium/kind`、`presmium/approval`），策略的唯一来源仍是服务端（工作区配置的 `approvals`、`presmium dev --allow`）。
+4. **会话令牌只给启动服务的主机**：没有设置 `PRESMIUM_SERVICE_TOKEN` 时 `tokens` 一律 403（设置了时要求它）；这样产物页面中的脚本拿不到不经确认的令牌。
+5. **文稿快照每一步之前经 MCP 重读**（`agent/pre-step`），不维护按 `ir/events` 更新的缓存：读取类调用只要几毫秒（第 9 项），快照也就总是新的。
+6. **焦点的报告**：`POST presmium.server/focus` 的请求体是 `{ document, focus: FocusReport[] }`（`FocusReport` 在内核契约中），批注的保存留给 96e。
 
 ## 18. 工作包
 

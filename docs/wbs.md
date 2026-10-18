@@ -1647,6 +1647,8 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - `packages/workspace/test/service.test.ts`：无界面模式的页面与首页；新路由；服务令牌；`frame-ancestors`；
 - `packages/cli/test/preview.test.ts`：扫描网页与幻灯片的静态产物；`presmium dev` 不加 `--edit` 时没有编辑模式，也没有预览代理。
 
+**结果（验收者，2026-10-18）**：已合并（两轮验收：第一轮的两个主要问题是 `picked` 不带 `trail`，以及幻灯片中当前一步还没显示的块也能高亮、点选、加标记，都已修好并有用例）。幻灯片的每页按节包一层 `.pm-slide-section[data-section]`（`display: contents`），块有 `.pm-block[data-block]`，所以宿主插件经 `blockElement` 也能在幻灯片中找到块。验收者合并时应用了开发者给出的 `packages/render-slides/test/slides.test.ts` 补丁（期望的标记带上新的锚点），并把 `design-dsh.md` 4.4 节与 `go` 的注释改为实现的步号规则（页面自己的步号加 `trail`）。留给后续：组件内部的子块与原始 HTML 块在幻灯片中没有块锚点（网页中有），点选落到父块，归 96e；非无界面的 `serve` 中 `GET preview` 也启动带预览配置的幻灯片，幻灯片启动失败时整个路由失败（应只回答网页的地址），归 96c；`packages/render-slides/theme/styles/book.css` 中 `.pm-book__content > p` 的规则够不到包了锚点的内容，`src/deck/style.css` 按新的嵌套重复了一份，以后移进主题。
+
 ### WP-96b bundle 的骨架、工具一致与升级闸门（第一步，与 96a 并行）
 
 **需求**：P-111、P-117，P-116 的 MCP 一侧；`design-dsh.md` 第 3、6、9 节，5.3、8.2、8.6、12 节（第 1、2 组）。
@@ -1685,6 +1687,8 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **用例**（`packages/dsh/test/`）：`config.test.ts`（行 ID、载体、版本不满足时拒绝）；`policy.test.ts`（四种情况）；`privacy.test.ts`（请求体、技能目录、测试目录之外没有写入；profile 补丁重新打开上传行；persona）；`context.test.ts`（两份文档）；`parity.test.ts`（工具与焦点；6.12 节的四个操作）；`service.test.ts`（`kill -9`）。
 
+**结果（验收者，2026-10-18）**：已合并（一轮验收通过）。dsh 锁定在 0.2.1-alpha.4；bundle 自己启动的服务改为 `presmium serve --headless`（96a 合并后，验收者改）；`.changeset/config.json` 的 `fixed` 组排除 `@presmium/dsh`、`@presmium/workbench`、`@presmium/studio`，它们保持 0.x；新包的仓库地址改为 `github.com/Lincyaw/presmium`。验收者修了 `config.test.ts` 中“版本不满足时启动跳过 bundle”的用例：dsh 先从自己的安装位置解析 profile 的 bundle，pnpm 把 `@presmium/dsh` 提升到那里之后（全新安装就是这样），手工链接的不兼容副本被真实的包挡住，用例改为给副本另起一个包名。接受的偏离：网页载体中 dsh 的四个预设保留自己的 persona（补丁改不到预设内部的行，上游请求记录在 `design-dsh.md` 第 16 节），Presmium 的角色说明在 system 消息中，`harness-dev-context` 已关闭；运营者目录的保护对 shell 命令只按路径文字判断；自启动的服务只去掉 `DSH_*`、`DEEPSEEK_*` 两类变量（本机自用，安全不在考量范围）。留给后续：不属于任何文档的会话也得到 Presmium 的指南（`context.ts` 用宿主范围的 `systemPrompt.section`），`presmium://focus` 的订阅与 `presmium-mcp`（stdio）的 `get_focus` 没有用例，归 96e；`presmium-workspaces` 的跟随（新文档登记、改标题、删除）没有用例，归 96d。
+
 ### WP-96c 会话、审阅与修改历史（第二步，96a、96b 之后，与 96d、96f 并行）
 
 **需求**：P-115（N 波次的增补）；`design-dsh.md` 6.5 节，13.3 节第 18 行中审阅的部分。
@@ -1698,6 +1702,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 3. 接受即提交，尾注另带 `Presmium-Session` 与 `Presmium-Turn`；拒绝；回到检查点；撤销后给会话发一条标明来源的消息。
 4. 审阅记录在 dsh 宿主重启后仍在；没有页面跟随时按 `reviewTimeoutMs` 回滚。
 5. 先行验证：`design-dsh.md` 第 17 节第 4 项的服务一侧。
+6. （96a 遗留）`GET preview`：幻灯片启动失败时只回答网页的地址，不让整个路由失败；不是无界面模式的 `serve` 不为幻灯片写预览配置。
 
 **验收**：
 
@@ -1714,7 +1719,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **需求**：P-124、P-125，N-10 的工作台部分；`design-dsh.md` 第 7 节，6.6 节中界面的行，第 12 节第 3 组。
 
-**拥有**：`packages/design/**`（新）；`packages/host/src/design/**` 与 `packages/host/package.json`（改为引用 design）；`packages/workbench/**`（新；`src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**` 归 96e）；`packages/dsh/src/client/**`、`packages/dsh/src/node/workbench.ts`（新，`presmium-workbench` 行的宿主部分：`tapIndex` 设网页标题与图标）、`packages/dsh/build/**`、`packages/dsh/package.json`、`packages/dsh/cordis.patch.yml`、`packages/dsh/profile.patch.yml`；`e2e/workbench.spec.ts`、`e2e/fixtures/workbench/**`（新）、`e2e/fixtures/contrast.ts`。
+**拥有**：`packages/design/**`（新）；`packages/host/src/design/**` 与 `packages/host/package.json`（改为引用 design）；`packages/workbench/**`（新；`src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**` 归 96e）；`packages/dsh/src/client/**`、`packages/dsh/src/node/workbench.ts`（新，`presmium-workbench` 行的宿主部分：`tapIndex` 设网页标题与图标）、`packages/dsh/build/**`、`packages/dsh/package.json`、`packages/dsh/cordis.patch.yml`、`packages/dsh/profile.patch.yml`；`e2e/workbench.spec.ts`、`e2e/fixtures/workbench/**`（新）、`e2e/fixtures/contrast.ts`；`packages/dsh/test/workspaces.test.ts`（新）。
 
 **条目**：
 
@@ -1727,6 +1732,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 7. 客户端包的构建（7.8 节）：esbuild 与生成工厂格式的插件，外部依赖是外壳的模块表。
 8. 升级闸门第 3 组：启动审计。
 9. 先行验证：`design-dsh.md` 第 17 节第 1 项的工作台一侧、第 6、8 项。
+10. （96b 遗留）`presmium-workspaces` 的跟随有用例：新建的文档被登记，改标题后改名，删去的文档被移除。
 
 **验收**：
 
@@ -1775,7 +1781,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **需求**：P-113、P-114、P-116，P-136 在工作台中的部分，P-111 的模型状态，P-124 中未提交的修改（提交与放弃），6.13 节验收的第二条；`design-dsh.md` 第 8 节，7.3 节中归 96e 的面板，第 10 节，第 12 节第 4 组。
 
-**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新），以及 `packages/workbench/src/index.ts` 与 `package.json` 中这些面板的导出与依赖；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）。
+**拥有**：`packages/workbench/src/ai/**`、`src/focus/**`、`src/review/**`、`src/history/**`、`src/lecture/**`（新），以及 `packages/workbench/src/index.ts` 与 `package.json` 中这些面板的导出与依赖；`packages/dsh/src/client/**`（登记这些面板）；`packages/server/src/**` 中焦点的部分（重新定位）；`e2e/workbench-ai.spec.ts`、`e2e/fixtures/workbench-ai/**`、`packages/dsh/test/hostapi.test.ts`（新）；`packages/dsh/src/node/context.ts`、`packages/mcp/test/**` 中焦点的用例、`packages/render-slides/src/node/**` 中块锚点的部分。
 
 **条目**：
 
@@ -1786,6 +1792,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 5. 模型状态；没有模型时 Presmium 自己的说明与设置入口（第 10 节）。
 6. 升级闸门第 4 组：工作台调用的 Host API 端点的 schema 比对。
 7. 先行验证：`design-dsh.md` 第 17 节第 2、3、4 项。
+8. （96a、96b 遗留）不属于任何文档的会话不得到 Presmium 的指南与上下文（`packages/dsh/src/node/context.ts` 现在用宿主范围的 `systemPrompt.section`）；`presmium://focus` 的订阅（`resources/updated`）与 `presmium-mcp`（stdio）的 `get_focus` 有用例；幻灯片中组件内部的子块与原始 HTML 块也有块锚点，点选落到子块，与网页一致。
 
 **验收**：
 

@@ -637,7 +637,7 @@ N 波次：工作台中的 agent 是 DeepSeek Harness 的会话，它经 bundle 
 | 放映、演讲者视图、课堂、运行代码、读者问答、放映中的讲授录制 | 没有 | 属于产物（决定 G-1），不经 dsh |
 | 外部 agent（Claude Code、Codex） | 没有 | 经 MCP 连接工作区服务，与 dsh 看到同样的工具与焦点 |
 
-**焦点（值对象）**：`Focus`（`packages/kernel/src/contracts/agent.ts`）有 `id`、`from`（`source`、`web` 或 `slides`）、`document`（文档目录）、`source`（文件与行区间）、`excerpt`（摘录），以及可选的 `section`、`block`、`step` 与 `quote`（页面上选中的文字）。批注 `Annotation` 的 `focus` 与 `AgentContext` 的 `focus` 引用它。
+**焦点（值对象）**：`Focus`（`packages/kernel/src/contracts/agent.ts`）有 `id`、`from`（`source`、`web` 或 `slides`）、`document`（文档目录）、`source`（文件与行区间）、`excerpt`（摘录），以及可选的 `section`、`block`、`step` 与 `quote`（页面上选中的文字）；`source.file` 相对于文档目录。批注 `Annotation` 的 `focus` 与 `AgentContext` 的 `focus` 引用它。工作台报告的是 `FocusReport`（块或节的锚点，或编辑器中的行区间，还没有摘录），服务端换算成 `Focus` 并按文档保存最近一次（WP-96b）。
 
 不变量：
 

@@ -1,7 +1,9 @@
-// A Messages-compatible model service for the tests (the operator's PRESMIUM_MODEL_URL): it answers each
-// `POST /v1/messages` with the next step of its script as an SSE stream (a text, or a tool call), records
-// what it received, and can hold its answers until the test lets them go. Not a mock of DeepSeek Harness:
-// the real one talks to it over HTTP, as it would to a model.
+// A Messages-compatible model service for the tests (the operator's PRESMIUM_MODEL_URL, or DeepSeek Harness's
+// DEEPSEEK_BASE_URL): it answers each `POST /v1/messages` of an agent's turn (one that offers tools) with the
+// next step of its script as an SSE stream (a text, or a tool call), any other request (a session's title)
+// with a text of its own, records what it received, and can hold its answers until the test lets them go.
+// Not a mock of DeepSeek Harness: the real one talks to it over HTTP, as it would to a model. Shared by the
+// packages' tests and the end-to-end tests through `@presmium/cli/testing` (docs/design-dsh.md section 15).
 import { createServer } from 'node:http'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -53,14 +55,18 @@ export async function fakeModel(script: Step[]): Promise<FakeModel> {
       } catch {
         // Not JSON.
       }
-      received.push({ path: req.url ?? '', headers: req.headers, body: parsed })
+      const record: Received = { path: req.url ?? '', headers: req.headers, body: parsed }
+      received.push(record)
       if (req.method !== 'POST' || !(req.url ?? '').endsWith('/v1/messages')) {
         res.writeHead(404).end()
         return
       }
       await held
+      const turn = (r: Received) => r.path.endsWith('/v1/messages') && Array.isArray(r.body.tools) && r.body.tools.length > 0
       const n = received.filter(r => r.path.endsWith('/v1/messages')).length
-      res.writeHead(200, { 'Content-Type': 'text/event-stream' }).end(stream(script[n - 1] ?? { text: '完毕。' }, n))
+      // A request that offers no tool (a title) takes no step of the script.
+      const step = turn(record) ? script[received.filter(turn).indexOf(record)] ?? { text: '完毕。' } : { text: 'Presmium' }
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' }).end(stream(step, n))
     })
   })
   const port = await new Promise<number>(done => server.listen(0, '127.0.0.1', () => done((server.address() as AddressInfo).port)))

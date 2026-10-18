@@ -1,0 +1,78 @@
+{
+  "name": "@presmium/dsh",
+  "version": "0.1.0",
+  "description": "Presmium's bundle for DeepSeek Harness: the workbench's host side (Presmium's tools, approvals, document context, skills and routes) for presmium studio (experimental)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lincyaw/presmium.git",
+    "directory": "packages/dsh"
+  },
+  "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/dsh#readme",
+  "bugs": "https://github.com/Lincyaw/presmium/issues",
+  "keywords": [
+    "presmium",
+    "dsh",
+    "deepseek-harness",
+    "bundle"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19",
+    "dsh": "0.2.1-alpha.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    "./service": "./rows/service.mjs",
+    "./workspaces": "./rows/workspaces.mjs",
+    "./tools": "./rows/tools.mjs",
+    "./policy": "./rows/policy.mjs",
+    "./context": "./rows/context.mjs",
+    "./skills": "./rows/skills.mjs",
+    "./routes": "./rows/routes.mjs",
+    "./turns": "./rows/turns.mjs",
+    "./launch": "./src/node/launch.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "rows",
+    "src",
+    "skills",
+    "cordis.patch.yml",
+    "web.patch.yml",
+    "profile.patch.yml"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "presmium": {
+    "skills": [
+      "presmium-author",
+      "presmium-present"
+    ],
+    "generated": [
+      "skills"
+    ]
+  },
+  "scripts": {
+    "prepack": "node scripts/copy-skills.mjs",
+    "postpack": "node scripts/copy-skills.mjs --remove"
+  },
+  "dependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "@presmium/mcp": "workspace:*",
+    "jiti": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh": "0.2.1-alpha.4"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh": "0.2.1-alpha.4"
+  }
+}

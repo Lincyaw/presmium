@@ -67,7 +67,7 @@ export interface PreviewPosition {
 
 /** The messages the workbench sends the page. */
 export type PreviewCommand =
-  /** Go to a section, at its step (the whole document's: with `trail`, the step the trail reaches), in a view of the web form. */
+  /** Go to a section, at its step, in a view of the web form: with `trail`, the step the trail reaches (a workbench makes it from the whole document's step with `stepTrail`); with `step` alone, the page's own step, which in the slides differs from the whole document's when some blocks are for the web only. */
   | { type: 'go', section: string, step?: number, trail?: string[], view?: string }
   /** Frame a block or a section, brought into view; `null` clears. */
   | { type: 'highlight', target: PreviewAnchor | null }

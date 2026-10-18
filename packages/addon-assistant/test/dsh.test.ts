@@ -17,8 +17,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { dshArgs, dshBin, templateFile } from '../src/node/launch.ts'
-import { fakeModel, recordingProxy } from './fixtures/fake-model.ts'
-import type { FakeModel } from './fixtures/fake-model.ts'
+import { fakeModel, recordingProxy } from '@presmium/cli/testing'
+import type { FakeModel } from '@presmium/cli/testing'
 import { call, descendants, dev, env, FIXTURES, PACKAGE, presmium, processInfo, ROOT, taskEvents, workspace } from './helpers.ts'
 
 interface Row { id?: string, disabled: boolean, text: string }

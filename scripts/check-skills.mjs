@@ -6,7 +6,9 @@
 // - presmium-author's references/directives.md has a section (a `###` heading naming it) for every directive
 //   the compiler and the plugins declare, collected as the compiler collects them: the built-in directives and
 //   the `directives` of each package's `./presmium` entry, loaded with jiti (the compiler's own loader);
-// - every `presmium <command>` the skills mention is a command of the CLI, with options that command takes.
+// - every `presmium <command>` the skills mention is a command of the CLI, with options that command takes;
+// - the skills the DeepSeek Harness bundle registers (packages/dsh/package.json `presmium.skills`) are in
+//   .agents/skills, their one source: the bundle's copy is made when it is packed (docs/design-dsh.md 6.1).
 import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, readdirSync, readFileSync, readlinkSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -173,6 +175,17 @@ for (const [file, text] of texts) {
     for (const [, option] of rest.matchAll(/(?:^|\s)--([\w-]+)/g)) {
       if (!options.has(option)) fail(`${where}: "presmium ${command}" has no option --${option}`)
     }
+  }
+}
+
+// The bundle's skills -------------------------------------------------------
+
+const bundle = join(root, 'packages/dsh/package.json')
+if (existsSync(bundle)) {
+  const bundled = JSON.parse(readFileSync(bundle, 'utf8')).presmium?.skills ?? []
+  if (bundled.length === 0) fail('packages/dsh/package.json names no skill (presmium.skills)')
+  for (const name of bundled) {
+    if (!skills.includes(name)) fail(`packages/dsh/package.json: the bundle registers the skill ${name}, which is not in .agents/skills`)
   }
 }
 

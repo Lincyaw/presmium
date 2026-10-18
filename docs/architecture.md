@@ -124,6 +124,8 @@ N 波次新增的规则（`design-dsh.md` 3.2 节，WP-96b 写入 `scripts/check
 - **面板不认识宿主**：`@presmium/workbench` 不引用 vue、`@presmium/host` 与 `@deepseek-ai/*`；`@presmium/design` 不引用任何包。
 - **mcp 的使用者**：“只有 server 使用 mcp”放宽为“server 与 dsh 使用 mcp”；`@modelcontextprotocol/*` 仍只在 `mcp` 中，bundle 经 `@presmium/mcp` 导出的客户端一侧使用 MCP。
 
+实现（WP-96b）：`check-layering.mjs` 的规则 `only the server and the dsh bundle use mcp`、`DeepSeek Harness only in dsh and studio (G-9)`、`the workbench's panels know no host`、`the design system uses no package`、`outputs do not use the workbench` 检查模块引用；另有两项检查不看引用：产物的代码（`web`、`viewer`、`addon-core`、`render-*` 的全部，各插件的 `src/client` 与 `components`，去掉注释之后）中不出现 `EDIT_MODE` 与工作台的槽位（`slot: '<槽位>'`、`bySlot('<槽位>')`、`slots.value.has('<槽位>')`），白名单 `OLD_WORKBENCH` 列出旧工作台今天的 7 个文件（`design-dsh.md` 13.3 节第 4 至 7、12、14 行），96g 清空；各包 `package.json` 的依赖（含开发与对等依赖）中 `@deepseek-ai/*` 只出现在 `dsh`、`studio` 与 96g 之前的 `addon-assistant` 中。`check-packages.mjs` 让 `@presmium/workbench`、`@presmium/dsh`、`@presmium/studio` 有自己的 0.x 版本（不计入统一版本），`package.json` 的 `presmium.generated` 列出打包时才生成、不入库却在 `files` 中的路径（`@presmium/dsh` 的 `skills`，96d 的预编译客户端）。
+
 `package.json` 的 `exports`：
 
 | 入口 | 指向 | 用途 |
@@ -1767,11 +1769,11 @@ v0.8 的外部服务一律用说同一协议的真实实现来测试，不 mock 
 | WebAssembly | 真实的 WASI 运行时；编译时把构建机的 `PATH` 换成不含 C 工具链的目录，证明不需要本机工具链；断网（`context.setOffline(true)`）验证离线 |
 | WebGPU | 默认的无头 Chromium 没有 GPU 适配器，正好验证回退；用例另以 `test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })` 验证执行路径与“CPU 模拟”的计时标注 |
 | MCP | MCP SDK 的客户端（`@modelcontextprotocol/client`）连接 `/mcp` 与 `presmium-mcp`，逐个调用工具；确认经控制通道回答 |
-| agent | ACP 协议的确定性测试 agent（`packages/addon-assistant/test/fixtures/scripted-agent.mjs`，用 `@agentclientprotocol/sdk` 的 agent 端写成的真实子进程）：按问题中的指令行事（默认以给它的 MCP 服务列出工具、`get_section` 后给出带引用的回答，`#cite <章节>` 改引用的章节，`#write <文件>` 请求写文件的权限，`#wait` 等到 `session/cancel`），`SCRIPTED_AGENT_LOG` 给出时把它的环境、`session/new` 的参数、列出的工具、权限的结果与取消写进这个文件；助手按 `PRESMIUM_AGENT_COMMAND` 或 `settings.presmium.assistant.command` 启动它（替换运行时的同一条路）。随包的 DeepSeek Harness 不调用模型的部分（启动、`initialize`、`session/new`、`--dump-config` 校验三份模板）用假的 `DEEPSEEK_API_KEY` 对固定版本运行（测试另以 `HTTPS_PROXY` 指向一个只记录的代理，确认没有请求发出）；要回答的用例以测试起的 Messages 兼容服务（`test/fixtures/fake-model.ts`，按脚本给出文字或工具调用的 SSE，可以暂缓回答）为 `PRESMIUM_MODEL_URL` 运行真正的 DeepSeek Harness；调用 DeepSeek 真实模型的用例需要 `DEEPSEEK_API_KEY`，默认跳过 |
+| agent | ACP 协议的确定性测试 agent（`packages/addon-assistant/test/fixtures/scripted-agent.mjs`，用 `@agentclientprotocol/sdk` 的 agent 端写成的真实子进程）：按问题中的指令行事（默认以给它的 MCP 服务列出工具、`get_section` 后给出带引用的回答，`#cite <章节>` 改引用的章节，`#write <文件>` 请求写文件的权限，`#wait` 等到 `session/cancel`），`SCRIPTED_AGENT_LOG` 给出时把它的环境、`session/new` 的参数、列出的工具、权限的结果与取消写进这个文件；助手按 `PRESMIUM_AGENT_COMMAND` 或 `settings.presmium.assistant.command` 启动它（替换运行时的同一条路）。随包的 DeepSeek Harness 不调用模型的部分（启动、`initialize`、`session/new`、`--dump-config` 校验三份模板）用假的 `DEEPSEEK_API_KEY` 对固定版本运行（测试另以 `HTTPS_PROXY` 指向一个只记录的代理，确认没有请求发出）；要回答的用例以测试起的 Messages 兼容服务（`@presmium/cli/testing` 的 `fakeModel`，源码 `packages/cli/src/fake-model.ts`，WP-96b 从助手插件的 `test/fixtures/` 移来；按脚本给出文字或工具调用的 SSE，只有提供工具的请求即 agent 的 turn 按脚本走，会话标题等其他请求另有固定的回答，可以暂缓回答）为 `PRESMIUM_MODEL_URL` 运行真正的 DeepSeek Harness；调用 DeepSeek 真实模型的用例需要 `DEEPSEEK_API_KEY`，默认跳过 |
 | 修改审阅 | git 实现：临时目录中的真实 git 仓库；deltabox 实现：真实的 `deltabox-lite`（Node 绑定），不满足条件（平台、glibc、FUSE、Landlock）时跳过并说明原因 |
 | 语音 | 确定性的假引擎（`presmium-speech fake`）：真实的 HTTP 服务，同一协议，测试经 `PRESMIUM_SPEECH_FAKE_URL` 与 `PRESMIUM_SPEECH_FAKE_PROVIDER=Presmium fake` 把它定义为引擎 `fake`（与真实引擎同一条配置路径）；中文每字 220 ms、拉丁字母每字 60 ms、词间 80 ms，合成的 WAV 中嵌入文字与音色，合成后再转写可以精确往返；音色列表中有一个克隆音色，用于同意记录的用例；用例数它收到的请求，验证缓存命中时不再合成。火山引擎与 Groq 的冒烟用例只在设置了 `PRESMIUM_TEST_VOLCENGINE_KEY`、`PRESMIUM_TEST_GROQ_KEY` 时运行 |
 | 讲授 | 录制：Chromium 的假麦克风播放假引擎合成的音频（`--use-fake-ui-for-media-stream`、`--use-fake-device-for-media-stream`、`--use-file-for-fake-audio-capture=<wav>%noloop`，以 `test.use({ launchOptions })` 只加在讲授的用例上），讲授轨中有 `go` 与 `point`，回放到时刻 t 显示正确的章节与步骤（WP-77 的 `e2e/lecture.spec.ts` 用假设备自带的音调与假摄像头，不加 `--use-file-for-fake-audio-capture`：假引擎由同时进行的 WP-82 交付；回放的测试讲授轨带一段构建前写入的静音 WAV，所以走 `MediaClock`）；脚本化：用假引擎构建测试讲义，检查片段、VTT 与提示标记的时刻 |
-| dsh（N 波次） | 锁定版本的真实 dsh（headless 与 web 载体），每个用例自己的 `DSH_HOME` 与 `HOME`；模型是 `@presmium/cli/testing` 的脚本化 Messages 兼容假模型（由 WP-96b 从助手插件的测试移来），断言请求体中没有上传的字段、技能目录中没有用户的技能、测试目录之外没有写入 |
+| dsh（N 波次） | 锁定版本的真实 dsh（headless、acp 与 web 载体），每个用例自己的 `DSH_HOME` 与 `HOME`；模型是 `@presmium/cli/testing` 的脚本化 Messages 兼容假模型（由 WP-96b 从助手插件的测试移来），断言请求体中没有上传的字段、技能目录中没有用户的技能、测试目录之外没有写入。`packages/dsh/test/harness.ts`（端到端用例也用它）：`testHome(prefix)` 在临时目录中给出 `HOME`、`XDG_*`、`DSH_HOME` 与干净的环境，`profile(carrier)` 按 `@presmium/dsh/launch` 写 profile 并链接 bundle，`dump(carrier)`、`headless(cwd, prompt, { model })`、`acp(cwd)`、`web(cwd, port, { model })`（`api()` 以令牌换 cookie，`call(endpoint, args)` 调 Host API，`fetch(path)` 带 cookie）、`serve(root)`（`presmium serve` 加服务令牌，`env` 是交给 dsh 的 `PRESMIUM_SERVICE_URL` 等），`homeEntries()`；`workspace(prefix, files, link)` 在 `examples/demo/.presmium/` 中建一个自己的 git 仓库（dsh 的项目根因此是它，不是本仓库与它的 `.agents/skills`）；`turns(model)`、`toolResults(model)` 读假模型收到的 agent 请求与工具结果 |
 | 工作区 | 临时目录中的真实 git 仓库：文档操作与撤销各形成正确的提交（读 `git log` 与尾注）；局域网访问与课堂同步在 `presmium serve --host 0.0.0.0` 上，浏览器以本机的局域网地址打开页面（本机没有局域网地址时跳过） |
 
 服务端的用例（WP-73a）：`packages/server/test/server.test.ts` 对测试文稿运行 `presmium dev`；`serve` 模式的用例由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 启动（以子进程调用真实的 `startServer`，文档用真实的编译器编译），`presmium serve` 本身的用例在 `cli/test/serve.test.ts` 与 `e2e/workspace.spec.ts`。浏览器不允许 `fetch` 设置 `Host`，Node 端的用例用 `node:http` 发送原样的请求头。
@@ -2222,9 +2224,10 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | `RenderContext.preview?: { origins: string[] }`：开发服务器的页面带预览代理与允许的父页面来源 | `packages/kernel/src/ir.ts`（只增加可选字段） | 96a |
 | 工作区服务的新路由：`ir`、`ir/events`、`preview`、`build`、`check`；无界面模式 `presmium serve --headless --preview-origin <源>`；服务令牌 `PRESMIUM_SERVICE_TOKEN` | `packages/workspace/src/node/`、`packages/cli/src/cli.ts`（`design-dsh.md` 第 5 节） | 96a |
 | 审阅的路由：`review`、`review/open`、`review/step`、`review/accept`、`review/reject`、`review/restore`；`CHANGE_REVIEW` 的 git 实现由工作区服务登记 | `packages/workspace/src/node/review/` | 96c |
-| `Focus`；`Annotation.focus`、`AgentContext.focus` | `packages/kernel/src/contracts/agent.ts`（只增加） | 96b |
-| `MCP_ENDPOINT.issue(member, mode, { confirmed })`：会话令牌（主机已确认的模式）；服务端路由 `presmium.server/tokens` 与 `presmium.server/focus` | `packages/kernel/src/contracts/server.ts`（只增加）、`packages/server/src/` | 96b |
-| 工具表与 MCP 客户端一侧；资源 `presmium://focus` 与工具 `get_focus`；`McpHost.focus` | `@presmium/mcp` | 96b |
+| `Focus`、`FocusReport`（工作台报告的、尚未换算的焦点）；`Annotation.focus`、`AgentContext.focus` | `packages/kernel/src/contracts/agent.ts`（只增加） | 96b |
+| `MCP_ENDPOINT.issue(member, mode, { confirmed, document })`（`McpIssueOptions`）：会话令牌（主机已确认、绑定一份文档）；服务端路由 `presmium.server/tokens` 与 `presmium.server/focus` | `packages/kernel/src/contracts/server.ts`（只增加）、`packages/server/src/server.ts`、`focus.ts` | 96b |
+| 工具表 `TOOL_TABLE` 与 `listTools(host, caller)`；列出的工具的 `_meta`（`presmium/kind`，主机已确认的调用者另有 `presmium/approval`）；客户端一侧 `@presmium/mcp/client`（`connectPresmiumMcp`、`describeOperation`）；焦点的换算 `resolveFocus`；资源 `presmium://focus` 与工具 `get_focus`；`McpHost.focus`、`watchFocus`、`approval`；`McpCaller.confirmed`、`document` | `@presmium/mcp` | 96b |
+| bundle `@presmium/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@presmium/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`） | `packages/dsh/` | 96b |
 | `presmium dev --edit`（旧工作台的编辑模式，默认关闭） | `packages/cli/src/cli.ts` | 96a，96g 删去 |
 | `presmium studio [目录] [--port] [--host]` | `@presmium/studio`；`@presmium/cli` 转交 | 96f |
 
@@ -2249,6 +2252,18 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 - **焦点**（决定 G-8，P-116）：工作台把焦点报告给服务端，服务端把锚点换成源码范围与摘录（与 `locate_source` 同一个函数）并保存，MCP 的 `presmium://focus` 与 `get_focus`、bundle 的上下文都读它（`design-dsh.md` 第 8 节）。
 - **profile 补丁**（`design-dsh.md` 6.6 节）：启动器每次启动都传入，关掉上传与遥测的行、DeepSeek 的品牌与账号的行，固定技能目录与第一次使用的工作区目录。
 
+实现（WP-96b）：
+
+- **包**：`@presmium/dsh`（0.1.0，`engines.dsh` 与对 `@deepseek-ai/dsh` 的对等依赖都是精确的 `0.2.1-alpha.4`，即仓库中已有的一份）。每行一个普通 ESM 的入口 `rows/<行>.mjs`（导出 `@presmium/dsh/<行>`），用 jiti 加载 `src/node/` 的源码；bundle 不引用任何 dsh 的包，只为用到的宿主接口声明最小的类型（`src/node/dsh.ts`）。bundle 层 `cordis.patch.yml` 是全部载体的行（`presmium-service`、`-tools`、`-policy`、`-context`、`-skills`、`-turns`）；`web.patch.yml` 是 web 载体的行（`presmium-workspaces`、`presmium-routes`）与它的设置（工作区控制器的 `documentsDirectory`、关掉 `harness-dev-context`）；`profile.patch.yml` 是每个载体的 profile 设置（三个上传行、技能的 `agentsHome`、`workspace-write` 与 `ask`、`system-prompt` 的 `personaPrefix`）。启动器以 `--patch` 依次传入 `web.patch.yml`（只在 web）与 `profile.patch.yml`，环境中另有 `DSH_HOME`、`DSH_AGENTS_HOME`（其中的 `agents/`）、`DSH_TELEMETRY_MODE=DISABLED`；profile 列出 `dsh-base`、载体的 bundle 与 `@presmium/dsh`，并把本包链接进它的 `node_modules`（`launch.ts` 的 `writeProfile`）。技能的唯一来源是 `.agents/skills`：打包时 `prepack` 把 `package.json` 的 `presmium.skills`（`presmium-author`、`presmium-present`）复制进 `skills/`（不入库），检出中直接读源。
+- **`presmium-service`**：环境中有 `PRESMIUM_SERVICE_URL` 与 `PRESMIUM_SERVICE_TOKEN` 时用它（工作区根是 `PRESMIUM_WORKSPACE`，否则 dsh 启动的目录）；否则自己生成服务令牌，以 `node watchdog.mjs node presmium serve <根> --port 0` 启动服务：看门狗以 `detached` 自成进程组，标准输入是来自 dsh 宿主的管道，管道关闭（宿主退出，`kill -9` 也是）或收到 SIGTERM 时向整个组发 SIGTERM，5 秒后 SIGKILL，服务退出时组中剩下的进程一并结束。服务的环境去掉 `DSH_*` 与 `DEEPSEEK_*`（模型凭据不进运行文稿代码的进程）。这一行提供 cordis 服务 `presmium`：会话的目录用 `ctx.workingDirectory.get(session)`（不是进程的工作目录），在工作区服务列出的文档中找到它所属的文档（`GET presmium.workspace/documents`，带服务令牌）；第一次需要时为会话取会话令牌（`POST presmium.server/tokens`），用 `@presmium/mcp/client` 连接 `/mcp` 并列出工具；`session/disposed` 时作废令牌，退出时作废全部。
+- **`presmium-tools`**：`agent/created`（dsh 等这个监听者结束才处理输入）时，把会话的文档在 MCP 中列出的工具连同原样的 JSON Schema 登记为 `presmium__<名字>`，经 `agent.ctx.tools.register` 登记在 agent 自己的作用域中：每个会话有自己文档的工具（`design-dsh.md` 第 17 节第 12 项），策略为 `off` 的种类 MCP 不列出，也就不登记。调用转成 `tools/call`。
+- **`presmium-policy`**：`tools/pre-execute` 中，`presmium__*` 工具的种类与策略来自工具列表的 `_meta`；`read` 交给下一个监听者，`allow` 直接放行（完全访问模式下也执行），`ask` 返回 ask，说明用 `describeOperation` 按文稿语言写（如“Presmium · 运行「first」一节的 code-1”）；不属于会话文档的 `presmium__*` 工具拒绝；文件工具（`write`、`edit`、`str_replace_editor`）写到会话的文档目录之外时 ask。运营者目录（`PRESMIUM_OPERATOR_DIR`，或 `$XDG_STATE_HOME/presmium/operator`）由 `ctx.tools.guard` 拒绝（文件工具的路径在其中，或 `bash` 的命令提到它），pre-execute 对这些调用不提问，所以完全访问模式下也是 guard 的拒绝。会话令牌是主机已确认的：服务端对它的操作不再经 `APPROVALS` 询问窗口，`off` 的种类照旧不列出。
+- **`presmium-context`**：system 消息中一段固定的指南（`presmium:guide`）；`agent/created` 时在 agent 的作用域登记运行时上下文 `presmium:document`，每一步之前（`agent/pre-step`）经会话令牌读 `deck_info`、`list_sections`、`get_position`、`get_focus` 重写快照：文档目录、标题、语言、入口、诊断数、章节、放映位置，焦点照 `get_focus` 的回答原样写成 JSON。
+- **`presmium-skills`**：`ctx.skills.register` 登记 `presmium.skills` 中的技能（`source: 'bundled'`）。
+- **`presmium-workspaces`**（web）：启动时（这一行激活之前）把每份文档的目录登记为 dsh 工作区，标题是文档的标题；之后每 3 秒比对文档：新建的登记，标题改了的改名，不在了的删去登记（会话保留）。工作区根不登记，因此 dsh 不建第一次使用的默认工作区。
+- **`presmium-routes`**（web）：`/api/presmium/<路径>` 的精确路由（`GET`、`POST`），`documents`、`files`、`source`、`changes`、`changes/commit`、`changes/discard`、`revisions`、`revisions/revert`、`ir`、`ir/events`、`preview`、`build`、`check`、`review` 及其五个子路由转到 `/__presmium/presmium.workspace/<路径>`，`focus` 转到 `/__presmium/presmium.server/focus`；查询串、`Content-Type`、`Accept`、`presmium-document` 照传，加上服务令牌，回答按流原样返回（流式经 `connection.fetch` 可行，第 17 节第 1 项）。没有 dsh 的 cookie 时 401（dsh 的栅栏）。
+- **服务端**：`presmium.server/tokens` 只在设置了 `PRESMIUM_SERVICE_TOKEN` 时可用，并要求它（否则 403 或 401）：`POST { document, session }` 签发主机已确认、绑定该文档的令牌（同一会话再签发时作废旧的），`DELETE { session? }` 作废一个或全部；绑定的令牌只能读写它的文档（别的 `document` 报错）。`presmium.server/focus`：`GET ?document=`（不带时为任一文档最近的），`POST { document, focus: FocusReport[] }`（设置了服务令牌时要求它）由 `resolveFocus` 在文档的编译结果上换算：预览中点选的块或节得到它的源码范围（与 `locate_source` 同一个 `place`），编辑器中的行范围得到所在的节与块（包含起始行的最内层块），摘录从文件读出，超过 20 行时只留首尾并注明省去的行数；按文档保存最近一次，文档被删去、改名或重建时忘掉，`presmium://focus` 的订阅者收到更新。
+
 ### 13.5 升级闸门
 
 每次升级 dsh 单独作为一个工作包，先运行五组用例（第 7 节）：
@@ -2258,6 +2273,8 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 3. 客户端的启动审计：`root` 的子槽位、`ctx.layout` 的成员、品牌与首次使用提示的槽位名、`--dsw-*` 令牌名、外壳模块表的键、页面没有错误（96d）；
 4. 工作台调用的 Host API 端点的 schema 比对（96e）；
 5. 工作台的端到端用例，含退路布局（96d、96e）。
+
+第 1、2 组在 `packages/dsh/test/`（WP-96b）：`config.test.ts`（三个载体的 `--dump-config`；headless 与 acp 启动时没有未激活的行；`engines.dsh` 不满足时安装被拒、启动时跳过）是第 1 组；`policy.test.ts`（`ask`、`off`、`allow`、会话令牌、运营者目录）、`privacy.test.ts`（请求体与技能目录、profile 补丁重新打开上传行、persona）、`context.test.ts`（web 载体上两份文档的两个会话、工作区登记、`/api/presmium/*`）、`parity.test.ts`（工具一致、焦点、6.12 节的四个操作）是第 2 组；`service.test.ts`（`kill -9`）不属于闸门。单独运行闸门：`pnpm exec vitest run packages/dsh -t '\[gate\]'`。
 
 ### 13.6 旧工作台
 

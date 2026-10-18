@@ -20,18 +20,19 @@ import { serveStdio } from '@modelcontextprotocol/server/stdio'
 import { deckLocale, docBlocks, errorMessage, isRecord, stepKeys, stepTrail, trailStep } from '@presmium/kernel'
 import type { AgentTool, ApprovalKind, ApprovalScope, CodeNode, Finding, IRDocument, Member, MemberRole } from '@presmium/kernel'
 import { codeRef, deckInfo, diagnosticsOf, findBlock, findSection, locate, outputsOf, place, runInfo, search, sectionDetail, sectionSummary, stepDetail } from './deck.ts'
-import type { McpCaller, McpHost, McpProcess } from './host.ts'
+import type { McpCaller, McpDocument, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 
 /** The MCP server's version: this package's. */
 export const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 export const POSITION_URI = 'presmium://position'
+export const FOCUS_URI = 'presmium://focus'
 
 /** The read tools, which every token sees. */
 export const READ_TOOLS = [
   'list_documents', 'deck_info', 'list_sections', 'get_section', 'get_step', 'search',
-  'get_code_ref', 'get_outputs', 'get_diagnostics', 'locate_source', 'get_position', 'get_classroom',
+  'get_code_ref', 'get_outputs', 'get_diagnostics', 'locate_source', 'get_position', 'get_classroom', 'get_focus',
 ] as const
 
 /** The operate tools, for the tokens of editors and owners. */
@@ -63,6 +64,29 @@ interface ToolSpec {
   run(call: Call): Promise<unknown>
 }
 
+/**
+ * A tool as both adapters offer it (decision G-3, docs/design-dsh.md section 9):
+ * MCP lists it (`/mcp`, `presmium-mcp`), the DeepSeek Harness bundle registers
+ * it as `presmium__<name>` with the same input schema.
+ */
+export interface McpToolInfo {
+  name: string
+  description: string
+  /** The JSON Schema of its input, an object. */
+  inputSchema: Record<string, unknown>
+  /** `read`, or the approval kind an operation asks for. */
+  kind: 'read' | ApprovalKind
+}
+
+/**
+ * The `_meta` keys of a listed tool: its kind, and for a caller whose host
+ * confirms operations itself (`McpCaller.confirmed`), the approval policy of
+ * that kind (`ask` or `allow`), which the bundle maps to DeepSeek Harness's
+ * decisions (docs/design-dsh.md 6.3).
+ */
+export const TOOL_KIND_META = 'presmium/kind'
+export const TOOL_APPROVAL_META = 'presmium/approval'
+
 const DOCUMENT = { document: { type: 'string', description: 'The document directory (list_documents); omit it when the host serves one document.' } }
 const SECTION = { section: { type: 'string', description: 'The section id (list_sections), or its 1-based number.' } }
 const STEP = { step: { type: 'integer', minimum: 0, description: 'The step, from 0 (the section\'s initial state).' } }
@@ -78,6 +102,12 @@ function operates(caller: McpCaller): boolean {
 
 const str = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined)
 const int = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) ? value : undefined)
+
+/** The focus the workbench reported last, of a document or of any: as `presmium://focus` and `get_focus` answer. */
+function focus(call: Call, document?: string) {
+  const found = call.host.focus?.(document)
+  return found ? { document: found.document, focus: found.focus, reported: new Date(found.at).toISOString() } : { focus: null }
+}
 
 /**
  * The position the windows of a document (or of any) last reported, the
@@ -223,6 +253,14 @@ const TOOLS: ToolSpec[] = [
     run: async call => ({ classroom: call.host.classroom?.(await call.document()) ?? {} }),
   },
   {
+    name: 'get_focus',
+    description: 'What the author points at in the workbench (a selection of the source, blocks picked in a preview): each focus with its source range, the excerpt read from the file, its section, block and step; null when nothing is pointed at.',
+    properties: { document: { type: 'string', description: 'The document directory (list_documents); omit it for the latest focus of any document.' } },
+    kind: 'read',
+    // A document named is checked as any tool's (a session's token names its own only).
+    run: async call => focus(call, str(call.args.document) === undefined ? call.caller.document : await call.document()),
+  },
+  {
     name: 'navigate',
     description: 'Moves the presentation (the windows presenting the deck) to a section and step, once a person allows it.',
     properties: { ...DOCUMENT, ...SECTION, ...STEP },
@@ -352,8 +390,51 @@ async function answer(run: () => Promise<unknown>): Promise<CallToolResult> {
   }
 }
 
-function inputSchema(properties: Record<string, unknown> = {}, required: string[] = []) {
-  return fromJsonSchema<Args>({ type: 'object', properties, ...required.length ? { required } : {} } as JsonSchemaType)
+function schemaOf(properties: Record<string, unknown> = {}, required: string[] = []): Record<string, unknown> {
+  return { type: 'object', properties, ...required.length ? { required } : {} }
+}
+
+/** The table of the built-in tools (G-3): name, description, input schema and kind, as both adapters offer them. */
+export const TOOL_TABLE: readonly McpToolInfo[] = TOOLS.map(tool => ({ name: tool.name, description: tool.description, inputSchema: schemaOf(tool.properties, tool.required), kind: tool.kind }))
+
+/** A plugin's agent tool as offered: its input schema with `document`. */
+function pluginInfo(tool: AgentTool): McpToolInfo {
+  const schema = isRecord(tool.input) ? tool.input : {}
+  return { name: tool.name, description: tool.description, inputSchema: { ...schema, type: 'object', properties: { ...DOCUMENT, ...isRecord(schema.properties) ? schema.properties : {} } }, kind: tool.kind }
+}
+
+interface Offered {
+  builtIn: ToolSpec[]
+  plugins: AgentTool[]
+  documents: McpDocument[]
+}
+
+/** What a caller is offered: the built-in tools its token and the host allow, and the plugins' tools of its document (or of the one, or of those loaded). */
+async function offer(host: McpHost, caller: McpCaller): Promise<Offered> {
+  const documents = await host.documents().catch(() => [])
+  const only = caller.document ?? (documents.length === 1 ? documents[0]!.dir : undefined)
+  const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (operates(caller) && host.offers(kind))
+  const builtIn = TOOLS.filter(tool => offered(tool.kind) && supported(host, tool.name))
+  const plugins: AgentTool[] = []
+  const names = new Set(TOOLS.map(tool => tool.name))
+  for (const tool of (await host.tools?.(only).catch(() => undefined))?.tools ?? []) {
+    if (names.has(tool.name) || !offered(tool.kind)) continue
+    names.add(tool.name)
+    plugins.push(tool)
+  }
+  return { builtIn, plugins, documents }
+}
+
+/**
+ * The tools MCP lists to a caller for a document (G-3, docs/design-dsh.md
+ * section 9): the built-in ones of `TOOL_TABLE` its token and the host's
+ * policy offer (a kind whose policy is `off` is left out), then the plugins'
+ * agent tools of the document (by default the caller's, or the one). The
+ * DeepSeek Harness bundle registers exactly these.
+ */
+export async function listTools(host: McpHost, caller: McpCaller, document = caller.document): Promise<McpToolInfo[]> {
+  const { builtIn, plugins } = await offer(host, document === undefined ? caller : { ...caller, document })
+  return [...builtIn.map(tool => TOOL_TABLE.find(info => info.name === tool.name)!), ...plugins.map(pluginInfo)]
 }
 
 /** How an edit of the source reaches the tools, by the process that serves MCP. */
@@ -374,15 +455,17 @@ function instructions(host: McpHost, caller: McpCaller, tools: { name: string, k
   return [
     `Presmium: ${title ? `the lecture deck "${title}"` : 'lecture decks'} as tools.`,
     `Read tools: ${reads.join(', ')}.`,
-    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics, presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}${host.classroom ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>).`,
+    `The same data is offered as resources: presmium://documents, presmium://deck, presmium://sections, presmium://sections/{section}, presmium://sections/{section}/steps/{step}, presmium://sections/{section}/outputs, presmium://diagnostics, presmium://ir (the compiled deck)${pages ? ', presmium://position (subscribe to it to hear when the presentation moves)' : ''}, presmium://focus (what the author points at in the workbench; subscribe to it to hear of a new one)${host.classroom ? ', presmium://classroom' : ''}. With several documents, add ?document=<dir> to a deck's resource (presmium://sections?document=<dir>).`,
     'Sections are named by id (list_sections); steps count from 0. Paths are relative to the deck directory.',
     !operates(caller)
       ? 'This token reads only.'
       : operations.length === 0
         ? (pages ? 'No operation is offered here.' : 'No operation is offered: presmium-mcp offers the kinds of operation its --allow names.')
-        : pages
-          ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
-          : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
+        : caller.confirmed
+          ? `Operate tools: ${operations.join(', ')}. Your host confirms each by Presmium's approval policy before it calls it.`
+          : pages
+            ? `Operate tools: ${operations.join(', ')}. Each may first wait for a person to allow it (in the page), and fails when refused.`
+            : `Operate tools: ${operations.join(', ')}, allowed as presmium-mcp --allow says.`,
     `No tool writes files: edit the deck's source with your own file tools; ${recompiles(host.process)} With several documents, name one with \`document\` (list_documents).`,
   ].join('\n')
 }
@@ -421,19 +504,13 @@ function argsOf(variables: Variables): Args {
 
 /** The MCP server for one caller: the tools and resources its token may use. */
 export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<McpServer> {
-  const documents = await host.documents().catch(() => [])
-  const only = documents.length === 1 ? documents[0]!.dir : undefined
-
-  const offered = (kind: 'read' | ApprovalKind) => kind === 'read' || (operates(caller) && host.offers(kind))
-  const builtIn = TOOLS.filter(tool => offered(tool.kind) && supported(host, tool.name))
-  // The plugins' tools: those of the one document, else of the documents the host has loaded.
-  const plugins: AgentTool[] = []
-  const names = new Set(TOOLS.map(tool => tool.name))
-  for (const tool of (await host.tools?.(only).catch(() => undefined))?.tools ?? []) {
-    if (names.has(tool.name) || !offered(tool.kind)) continue
-    names.add(tool.name)
-    plugins.push(tool)
-  }
+  // The plugins' tools: those of the caller's document, or of the one document, else of the documents the host has loaded.
+  const { builtIn, plugins, documents } = await offer(host, caller)
+  /** The kind of a listed tool, and for a caller whose host confirms its operations, the kind's policy (6.3). */
+  const meta = (kind: 'read' | ApprovalKind) => ({
+    [TOOL_KIND_META]: kind,
+    ...caller.confirmed && kind !== 'read' ? { [TOOL_APPROVAL_META]: host.approval?.(kind) ?? 'ask' } : {},
+  })
 
   const server = new McpServer({ name: 'presmium', version: MCP_VERSION }, {
     capabilities: { resources: { subscribe: true } },
@@ -448,9 +525,11 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
       caller,
       args,
       signal,
-      document: () => document ??= resolveDocument(host, str(args.document)),
+      document: () => document ??= resolveDocument(host, str(args.document), caller.document),
       compiled: () => compiled ??= self.document().then(dir => host.compile(dir)),
       async approve(kind, title, options = {}) {
+        // The caller's host asked already, by the same policy (a DeepSeek Harness session's token).
+        if (caller.confirmed) return
         const { doc } = await self.compiled()
         const messages = MCP_MESSAGES[deckLocale(doc.meta.lang)]
         const allowed = await host.approve({
@@ -470,17 +549,17 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
   for (const tool of builtIn) {
     server.registerTool(tool.name, {
       description: tool.description,
-      inputSchema: inputSchema(tool.properties, tool.required),
+      inputSchema: fromJsonSchema<Args>(schemaOf(tool.properties, tool.required) as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
+      _meta: meta(tool.kind),
     }, (args, ctx) => answer(() => tool.run(call(args, ctx.mcpReq.signal))))
   }
   for (const tool of plugins) {
-    const schema = isRecord(tool.input) ? tool.input : {}
-    const properties = { ...DOCUMENT, ...isRecord(schema.properties) ? schema.properties : {} }
     server.registerTool(tool.name, {
       description: tool.description,
-      inputSchema: fromJsonSchema<Args>({ ...schema, type: 'object', properties } as JsonSchemaType),
+      inputSchema: fromJsonSchema<Args>(pluginInfo(tool).inputSchema as JsonSchemaType),
       annotations: { readOnlyHint: tool.kind === 'read' },
+      _meta: meta(tool.kind),
     }, (args, ctx) => answer(() => pluginTool(call(args, ctx.mcpReq.signal), tool)))
   }
 
@@ -503,6 +582,8 @@ export async function presmiumServer(host: McpHost, caller: McpCaller): Promise<
   resource('ir', 'presmium://ir', async c => (await c.compiled()).doc)
   // The position of any document's windows (a subscription names this URI); get_position takes a document.
   if (host.positions) resource('position', POSITION_URI, c => position(c), false)
+  // The focus of any document (a subscription names this URI); get_focus takes a document.
+  resource('focus', FOCUS_URI, async c => focus(c, c.caller.document), false)
   if (host.classroom) resource('classroom', 'presmium://classroom', read('get_classroom'))
   const section = (name: string, uri: string, tool: string) => template(name, uri, read(tool))
   section('section', 'presmium://sections/{section}', 'get_section')
@@ -524,7 +605,12 @@ async function pluginTool(call: Call, tool: AgentTool): Promise<unknown> {
   return found.run(input, { document, member: call.caller.member, service: own.service, signal: call.signal })
 }
 
-async function resolveDocument(host: McpHost, named: string | undefined): Promise<string> {
+async function resolveDocument(host: McpHost, named: string | undefined, bound?: string): Promise<string> {
+  // A token bound to a document (a DeepSeek Harness session's) names that one only.
+  if (bound !== undefined) {
+    if (named !== undefined && named !== bound) throw new Error(`this token is for the document ${JSON.stringify(bound)}, not ${JSON.stringify(named)}`)
+    return bound
+  }
   const documents = await host.documents()
   if (named !== undefined) {
     if (!documents.some(d => d.dir === named)) throw new Error(`no document ${JSON.stringify(named)}; list_documents names them`)
@@ -542,12 +628,15 @@ export interface PresmiumMcp {
 
 export function createPresmiumMcp(host: McpHost): PresmiumMcp {
   const handler = createMcpHandler(({ authInfo }) => presmiumServer(host, callerOf(authInfo)))
-  // Subscribers of presmium://position re-read it whenever a window reports where it is.
-  const stop = host.watchPositions?.(() => void handler.notify.resourceUpdated(POSITION_URI))
+  // Subscribers of presmium://position re-read it whenever a window reports where it is, those of presmium://focus when a focus is reported.
+  const stops = [
+    host.watchPositions?.(() => void handler.notify.resourceUpdated(POSITION_URI)),
+    host.watchFocus?.(() => void handler.notify.resourceUpdated(FOCUS_URI)),
+  ]
   return {
     fetch: (request, caller) => handler.fetch(request, { authInfo: { token: '', clientId: caller.member.id, scopes: [caller.mode], extra: { caller } } }),
     async close() {
-      stop?.()
+      for (const stop of stops) stop?.()
       await handler.close()
     },
   }

@@ -1,6 +1,8 @@
 /**
  * For the integration tests of every package (docs/wbs.md, test principles):
- * the real `presmium` CLI in a child process, run as an author runs it.
+ * the real `presmium` CLI in a child process, run as an author runs it, and a
+ * scripted Messages-compatible model service (`fakeModel`) that the real
+ * DeepSeek Harness talks to in place of a model (docs/design-dsh.md section 15).
  */
 import { execFile } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
@@ -33,3 +35,6 @@ export function presmium(cwd: string, args: string[], env: Record<string, string
   const { NODE_ENV: _test, ...inherited } = process.env
   return run(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env: { ...inherited, ...env } })
 }
+
+export { fakeModel, recordingProxy } from './fake-model.ts'
+export type { FakeModel, Received, Step } from './fake-model.ts'
