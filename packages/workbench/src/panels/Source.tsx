@@ -1,0 +1,125 @@
+/**
+ * The source editor and its file tabs (docs/design-dsh.md 7.3, P-124): the files
+ * open, one shown in CodeMirror (../editor.ts), a dot on the unsaved ones; Ctrl+S
+ * (⌘ S) or the save button writes the file shown with the version it was opened at.
+ * What the pane says of a file: changed on disk as well as here (merge or reload),
+ * merged, held by an agent's change, not saved. The compilation's problems of the
+ * file shown are marked on their lines.
+ */
+import { useEffect, useRef } from 'react'
+import type { KeyboardEvent } from 'react'
+import { createEditor } from '../editor.ts'
+import type { Problem, SourceEditor } from '../editor.ts'
+import { PmButton, PmIconButton, PmNotice } from '../components.tsx'
+import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
+import type { OpenFile } from '../store.ts'
+
+const nameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1)
+
+export function SourcePanel() {
+  const t = useMessages()
+  const workbench = useWorkbenchStore()
+  const open = useWorkbench(state => state.open)
+  const active = useWorkbench(state => state.active)
+  const file = open.find(f => f.path === active)
+  // Ctrl+S (⌘ S) anywhere in the pane, e.g. on the merge button; the editor's own keymap saves inside it.
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return
+    event.preventDefault()
+    void workbench.save()
+  }
+  return (
+    <section className="pmw-source" aria-label={t.source} onKeyDown={onKeyDown}>
+      <div className="pmw-source__tabs" role="tablist" aria-label={t.source}>
+        {open.map(f => (
+          <span key={f.path} className="pmw-source__tab" data-active={f.path === active || undefined}>
+            <button type="button" role="tab" aria-selected={f.path === active} title={f.path} onClick={() => workbench.showFile(f.path)}>
+              {nameOf(f.path)}
+              {f.dirty && <span className="pmw-source__dot" aria-label={t.unsaved} role="img" />}
+            </button>
+            <PmIconButton icon="close" label={t.closeFile(nameOf(f.path))} small onClick={() => workbench.closeFile(f.path)} />
+          </span>
+        ))}
+        <span className="pmw-spacer" />
+        {file && <PmButton small icon="check" variant={file.dirty ? 'primary' : 'default'} onClick={() => void workbench.save(file.path)}>{t.save}</PmButton>}
+      </div>
+      {file?.notice && <FileNoticeBox file={file} />}
+      <EditorPane />
+      {!file && <p className="pmw-source__empty pmw-muted">{t.noFile}</p>}
+    </section>
+  )
+}
+
+function FileNoticeBox({ file }: { file: OpenFile }) {
+  const t = useMessages()
+  const workbench = useWorkbenchStore()
+  const notice = file.notice!
+  switch (notice.kind) {
+    case 'changed':
+      return (
+        <PmNotice tone="warn">
+          <span>{t.changedOnDisk(nameOf(file.path))}</span>
+          <span className="pmw-notice__actions">
+            <PmButton small onClick={() => workbench.merge(file.path, { mine: t.mergeMine, theirs: t.mergeTheirs })}>{t.merge}</PmButton>
+            <PmButton small onClick={() => workbench.reload(file.path)}>{t.reload}</PmButton>
+          </span>
+        </PmNotice>
+      )
+    case 'merged': return <PmNotice tone="accent">{t.merged(notice.conflicts)}</PmNotice>
+    case 'locked': return <PmNotice tone="warn">{t.locked}</PmNotice>
+    case 'failed': return <PmNotice tone="danger">{t.saveFailed(notice.message)}</PmNotice>
+  }
+}
+
+/** The CodeMirror editor, made once and bound to the store; it shows the active file. */
+function EditorPane() {
+  const t = useMessages()
+  const workbench = useWorkbenchStore()
+  const parent = useRef<HTMLDivElement>(null)
+  const editor = useRef<SourceEditor>(undefined)
+  const active = useWorkbench(state => state.active)
+  const reveal = useWorkbench(state => state.reveal)
+  const ir = useWorkbench(state => state.ir)
+  const opened = useWorkbench(state => state.open.length)
+  const label = useRef(t.editor(''))
+  label.current = t.editor(active ?? '')
+
+  useEffect(() => {
+    const made = createEditor(parent.current!, {
+      label: label.current,
+      save: () => void workbench.save(),
+      changed: (path, text) => workbench.edited(path, text),
+      moved: line => workbench.moved(line),
+    })
+    editor.current = made
+    const unbind = workbench.bindEditor({ text: path => made.text(path), replace: (path, text, fresh) => made.replace(path, text, fresh), focus: () => made.focus() })
+    return () => {
+      unbind()
+      made.destroy()
+      editor.current = undefined
+    }
+  }, [workbench])
+
+  useEffect(() => {
+    const made = editor.current
+    if (!made) return
+    if (!active) return
+    made.show(active, workbench.textOf(active) ?? '')
+    // Files closed meanwhile lose their editor state.
+    for (const path of made.paths()) if (!workbench.state.open.some(file => file.path === path)) made.forget(path)
+  }, [active, workbench, opened])
+
+  useEffect(() => {
+    if (reveal && reveal.path === active) editor.current?.reveal(reveal.line, reveal.endLine, reveal.mark)
+  }, [reveal, active])
+
+  useEffect(() => {
+    if (!active || !editor.current) return
+    const problems: Problem[] = (ir?.diagnostics ?? []).filter(finding => finding.source?.file === active && finding.source.line).map(finding => ({ line: finding.source!.line!, severity: finding.severity === 'error' ? 'error' : finding.severity === 'warning' ? 'warning' : 'info', message: finding.message }))
+    editor.current.problems(active, problems)
+  }, [ir, active])
+
+  return (
+    <div className="pmw-source__editor" ref={parent} hidden={!active} data-path={active} />
+  )
+}

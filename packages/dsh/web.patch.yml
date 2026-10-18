@@ -19,3 +19,31 @@
 # Persona: the coding agent's context of DeepSeek Harness's own checkout and GUI is not Presmium's (17, item 10).
 - id: harness-dev-context
   disabled: true
+
+# The workbench (docs/design-dsh.md 7, WP-96d): its client half takes the root layout's place (the bundle's `./client`,
+# a client row is its package's bare name) and its host half brands the page (src/node/workbench.ts).
+- insert:
+    - id: presmium-workbench
+      name: '@presmium/dsh'
+
+# The interface (6.6): the root layout replaces DeepSeek Harness's own (turned on again, the workbench falls back to it,
+# 7.2); no DeepSeek brand, account, sign-in or search service, and no settings for uploading session logs, which the
+# profile patch turns off.
+- id: ui-layout
+  disabled: true
+- id: ui-brand-official
+  disabled: true
+- id: ui-settings-account
+  disabled: true
+- id: account-controller
+  disabled: true
+- id: deepseek-account
+  disabled: true
+- id: llm-deepseek-account
+  disabled: true
+- id: web-search-deepseek
+  disabled: true
+- id: ui-settings-web-search
+  disabled: true
+- id: ui-settings-session-log
+  disabled: true

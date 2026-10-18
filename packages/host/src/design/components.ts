@@ -7,8 +7,8 @@
 import type { InjectionKey, PropType, VNode } from 'vue'
 import { defineComponent, h, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, Teleport, watch } from 'vue'
 import type { ToolbarPlace } from '../types.ts'
-import { ICONS } from './icons.ts'
-import type { IconName } from './icons.ts'
+import { ICONS } from '@presmium/design'
+import type { IconName } from '@presmium/design'
 
 const PLACE: InjectionKey<ToolbarPlace> = Symbol('presmium.toolbarPlace')
 

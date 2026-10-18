@@ -1558,11 +1558,11 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 5.10 设计系统（N-10）
 
-> **N 波次**：令牌、`pm-ui-*` 的类、字体与图标由 WP-96d 移进 `@presmium/design`（`@presmium/host` 改为引用它），工作台的 React 面板用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节）。本节中的工作区首页的工作台、编辑模式与工作台的槽位（`home`、`create`、`files`、`tabs`、`source`、`dock`）属于旧工作台，1.0 中为实验性，WP-96g 删去；`tools`、`settings`、`status` 留给产物。
+> **N 波次**：令牌、`pm-ui-*` 的类、字体与图标在 `@presmium/design`（`packages/design/src/`，WP-96d 由 `packages/host/src/design/` 移出；`@presmium/host` 引用它，Vue 组件与 `useTheme` 留在 `host`），工作台的 React 面板（`@presmium/workbench` 的 `components.tsx`）用同一层，dsh 自己的面板经它的 `--dsw-*` 令牌映射（`design-dsh.md` 7.5 节，第 13 节）。本节中的工作区首页的工作台、编辑模式与工作台的槽位（`home`、`create`、`files`、`tabs`、`source`、`dock`）属于旧工作台，1.0 中为实验性，WP-96g 删去；`tools`、`settings`、`status` 留给产物。
 
 用户选定的设计（WP-95a，`docs/design/`）是工作台的布局与编辑方式、书卷的样式。`@presmium/host` 提供设计令牌与通用组件；网页形态的外壳（工作区首页的工作台、阅读页、编辑模式）与插件都用它们，不各自定义颜色与控件。插件界面与幻灯片的默认主题见 5.12 节。
 
-**令牌**：CSS 自定义属性，在 `packages/host/src/design/tokens.css`。`:root` 为亮色；`<html>` 有 `dark` 类时为暗色（VitePress 的外观开关与 Slidev 的暗色模式都设这个类）。
+**令牌**：CSS 自定义属性，在 `packages/design/src/tokens.css`（颜色令牌的名字另由 `@presmium/design` 的 `COLORS`、`color(name)` 给出）。`:root` 为亮色；`<html>` 有 `dark` 类时为暗色（VitePress 的外观开关与 Slidev 的暗色模式都设这个类）。
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
@@ -1576,11 +1576,11 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-ease` | 系统要求减少动态效果时时长为 0（N-06） |
 | 外壳 | `--pm-activity-width`、`--pm-sidebar-width`、`--pm-statusbar-height`、`--pm-z-popover`、`--pm-z-dialog` | 工作台的列宽、状态栏高与浮层的层级 |
 
-**字体**：三种西文字体的拉丁子集随 `@presmium/host` 发布（Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载（N-03）。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。网页形态的主题改为扩展 `vitepress/theme-without-fonts`，不再打包 VitePress 的 Inter。
+**字体**：三种西文字体的拉丁子集随 `@presmium/design` 发布（`fonts.css`；`@presmium/host` 也列出这三个包，站点的字体许可证由它们写出，Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载（N-03）。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。网页形态的主题改为扩展 `vitepress/theme-without-fonts`，不再打包 VitePress 的 Inter。
 
-**加载**：`@presmium/host` 的入口引入 `src/design/design.css`（字体、令牌与组件的类），用到宿主的页面都有它们；宿主之外的页面可以单独引入 `@presmium/host/design.css`。
+**加载**：`@presmium/host` 的入口引入 `src/design/design.css`（它引入 `@presmium/design/design.css`：字体、令牌与组件的类），用到宿主的页面都有它们；宿主之外的页面可以单独引入 `@presmium/host/design.css` 或 `@presmium/design/design.css`。
 
-**通用组件**（`packages/host/src/design/components.ts`，样式在 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类）：
+**通用组件**（`packages/host/src/design/components.ts`，样式在 `@presmium/design` 的 `components.css`，类名以 `pm-ui-` 开头；插件也可以直接用这些类；工作台的 React 版在 `@presmium/workbench`，同名同类）：
 
 | 组件 | 用途 |
 |---|---|
@@ -2228,6 +2228,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | `MCP_ENDPOINT.issue(member, mode, { confirmed, document })`（`McpIssueOptions`）：会话令牌（主机已确认、绑定一份文档）；服务端路由 `presmium.server/tokens` 与 `presmium.server/focus` | `packages/kernel/src/contracts/server.ts`（只增加）、`packages/server/src/server.ts`、`focus.ts` | 96b |
 | 工具表 `TOOL_TABLE` 与 `listTools(host, caller)`；列出的工具的 `_meta`（`presmium/kind`，主机已确认的调用者另有 `presmium/approval`）；客户端一侧 `@presmium/mcp/client`（`connectPresmiumMcp`、`describeOperation`）；焦点的换算 `resolveFocus`；资源 `presmium://focus` 与工具 `get_focus`；`McpHost.focus`、`watchFocus`、`approval`；`McpCaller.confirmed`、`document` | `@presmium/mcp` | 96b |
 | bundle `@presmium/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@presmium/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`） | `packages/dsh/` | 96b |
+| 设计系统 `@presmium/design`（令牌、类、字体、图标、`COLORS`）；工作台的面板与状态 `@presmium/workbench`（`Workbench`、`workspaceClient`、`connectPreview`、`PANELS`、React 版的 `Pm*`）；bundle 的客户端部分 `@presmium/dsh/client` 与 `presmium-workbench` 行（`/api/presmium/workbench`） | `packages/design/`、`packages/workbench/`、`packages/dsh/src/client/`、`packages/dsh/src/node/workbench.ts`、`packages/dsh/build/` | 96d |
 | `presmium dev --edit`（旧工作台的编辑模式，默认关闭） | `packages/cli/src/cli.ts` | 96a，96g 删去 |
 | `presmium studio [目录] [--port] [--host]` | `@presmium/studio`；`@presmium/cli` 转交 | 96f |
 
@@ -2264,6 +2265,14 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 - **`presmium-routes`**（web）：`/api/presmium/<路径>` 的精确路由（`GET`、`POST`），`documents`、`files`、`source`、`changes`、`changes/commit`、`changes/discard`、`revisions`、`revisions/revert`、`ir`、`ir/events`、`preview`、`build`、`check`、`review` 及其五个子路由转到 `/__presmium/presmium.workspace/<路径>`，`focus` 转到 `/__presmium/presmium.server/focus`；查询串、`Content-Type`、`Accept`、`presmium-document` 照传，加上服务令牌，回答按流原样返回（流式经 `connection.fetch` 可行，第 17 节第 1 项）。没有 dsh 的 cookie 时 401（dsh 的栅栏）。
 - **服务端**：`presmium.server/tokens` 只在设置了 `PRESMIUM_SERVICE_TOKEN` 时可用，并要求它（否则 403 或 401）：`POST { document, session }` 签发主机已确认、绑定该文档的令牌（同一会话再签发时作废旧的），`DELETE { session? }` 作废一个或全部；绑定的令牌只能读写它的文档（别的 `document` 报错）。`presmium.server/focus`：`GET ?document=`（不带时为任一文档最近的），`POST { document, focus: FocusReport[] }`（设置了服务令牌时要求它）由 `resolveFocus` 在文档的编译结果上换算：预览中点选的块或节得到它的源码范围（与 `locate_source` 同一个 `place`），编辑器中的行范围得到所在的节与块（包含起始行的最内层块），摘录从文件读出，超过 20 行时只留首尾并注明省去的行数；按文档保存最近一次，文档被删去、改名或重建时忘掉，`presmium://focus` 的订阅者收到更新。
 
+实现（WP-96d，工作台的外壳）：
+
+- **包**：`@presmium/design`（1.x，随 `host` 发版）是 `packages/host/src/design/` 移出的 `tokens.css`、`components.css`、`fonts.css`、`design.css` 与图标（`ICONS`、`iconMarkup`），另有颜色令牌的名字（`COLORS`、`color(name)`）；没有框架，`host` 的 `design.css` 引入它，Vue 组件与 `useTheme` 留在 `host`，产物的外观不变。`@presmium/workbench`（0.x）是 React 面板与框架无关的部分：工作区服务的客户端（`workspaceClient`，页面经 `api/presmium/<路由>` 带 dsh 的 cookie 访问，`?document=` 指文档，`ir/events` 用 `EventSource`）、状态（`Workbench`：文档与文档操作、打开的文档、它的文件、IR 与诊断，`ir/events` 中改过的打开的文件与磁盘比较、没改过的跟随、改过的提示合并或重新载入，保存带打开时的版本、409 时用 `node-diff3` 三方合并）、预览协议的工作台一侧（`connectPreview`：每个 iframe 一个 nonce，核对 `origin`、`source` 与 nonce，`ready` 之后补发每种命令的最后一条；版本不符时提示）、源码与预览的对应（`placeAt`、`placeOf`，由旧工作台移来）、CodeMirror 6 的编辑器、React 版的 `Pm*` 组件（类同 `host` 的 Vue 版）与中英文的文字；面板为 `HomePanel`（文档卡片、从模板新建、改名、复制、删除，启动台搜索，MCP 卡片）、`FilesPanel`、`SourcePanel`、`ProblemsPanel`（IR 的诊断与页面的 `report`）、`PreviewPanel`（网页与幻灯片两种形态、点选、`ready` 迟迟不来时重新载入）、`DocumentView`、`StatusItems`，以 `PANELS` 描述。分层检查保证它不引用 vue、`@presmium/host` 与 `@deepseek-ai/*`。
+- **客户端部分**（`packages/dsh/src/client/`）：`presmium-workbench` 行（web 载体，`web.patch.yml`）名为包名本身 `@presmium/dsh`：dsh 的模块系统只把整包名的行当作客户端的来源（`<包>/<子路径>` 的行不算），所以包的 `.` 出口是这一行（`rows/workbench.mjs`），`./client` 是预编译的包。`index.tsx` 在启动图中没有 `@deepseek-ai/dsh-client-ui-layout` 时占据 `root`（与 ui-layout 相同的六个子槽位，`contract.ts` 的 `ROOT_CHILDREN`），用 `dsh-client-store` 的 `defineStore` 建布局的状态，`ctx.reflect.provide('layout')` 提供 `ctx.layout`（`layout.ts`：`panelInfo`、`selectPanel`、`beginNavigation`、`toggleSidebar`、`openRightbar`、`closeRightbar`），`ctx.slots.provideRoot` 提供 `usePanelInfo`，重新实现 ui-layout 的主题呈现（`theme.ts` 的 `ThemePresenter`），登记“展开／收起侧栏”的快捷键（桌面 Mod+B，网页 macOS 与 Windows 上 Mod+Alt+B；dsh 不许网页在 Linux 上用这一组合）；有 ui-layout 时改为退路（`fallback.tsx`）。`Frame.tsx` 排出活动栏、侧栏（文档的文件树，或 dsh 的 `sidebar`：会话、插件、自动任务、设置）、中央（启动台或打开的文档；选了 `main` 的全局面板时显示它）、右侧坞的轨道（`rightbar`，按中央保留 400 px 算出 `width` 与 `canShow`）、停靠在最右的对话（`main` 的 `conversation`）、状态栏与 `shell.bottom`、`shell.overlay`；侧栏、右侧坞与对话之间有拖动柄；网页标题跟随当前会话（没有会话时为打开的文档）；宽度小于 1024 px 时侧栏浮在中央之上，小于 768 px 时活动栏横排在顶部，文档、文件、源码、预览、会话与对话各占整个宽度，dsh 的右侧坞在窄屏中自己全屏；活动栏的“设置”点 dsh 侧栏底部的设置按钮（设置面板自己浮在页面上）。`theme.ts` 以 `ctx.theme.overrideTokens` 把 dsh 的客户端插件用到、ui-theme 定义的 78 个 `--dsw-alias-*` 令牌（另有侧栏、气泡、菜单的几个 `--dsw-specific-*` 与焦点环）映射为 `var(--pm-color-*)`，dsh 在上面画白字的发送按钮与提示气泡用固定的深色；`<html>` 的 `dark` 类与预览的 `appearance` 跟随 dsh 的明暗，字体是 Presmium 的，用户自己选的优先。`brand.tsx` 占据 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`，以优先级 -1 的同名步骤替换 `settings.onboarding` 中的 `welcome-notice`（Presmium 的首次使用提示，画在页面之上，读过记在浏览器的 `localStorage`，可以直接打开模型设置）与 `deepseek-official`（DeepSeek 的登录，立即完成），并用 `ctx.locale.addLanguage` 加上 `zh-CN`、`en-US` 两个语言包（`conversation` 的 `hero.headline`、`hero.preview`）；界面语言由 `ctx.locale` 映射为 `zh-CN` 或 `en` 交给面板。插件页的实验插件组（其中有插件市场）按它的 DOM 属性 `data-plugin-group="extensions"` 隐藏。
+- **宿主部分与补丁**：`src/node/workbench.ts` 以 `ctx.webServer.tapIndex` 把网页标题换成 Presmium、图标换成 Presmium 的标志、去掉 dsh 的 web manifest，并登记 `/api/presmium/workbench`（工作区服务 MCP 的地址，首页的 MCP 卡片用）。界面的行在 `web.patch.yml`（只属于 web 载体，headless 与 acp 不受影响）：关掉 `ui-layout`、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`、`ui-settings-web-search`、`ui-settings-session-log`。启动器以 `--patch` 传入，所以用户在插件管理中关掉 `@presmium/dsh` 之后，这些行与工作台仍在，bundle 自己的行与 `/api/presmium/*` 不在，首页说明怎样在“插件”中重新打开（`design-dsh.md` 第 17 节第 6 项）。
+- **构建**（`packages/dsh/build/`）：`client.mjs` 用 esbuild 把 `src/client/index.tsx`（连同 `@presmium/workbench`、CodeMirror 与设计系统）打成 `build/dist/client.js`，外部依赖是外壳模块表的键（`contract.ts` 的 `SHELL_MODULES`），输出包在 `window.__ModuleLoader__.load({ id: '@presmium/dsh', factory })` 中；样式（含以 data URL 内联的 WOFF2 字体，dsh 的模块系统只提供插件的脚本）是一个字符串，模块在页面中加上带 `data-plugin` 的 `<style>`。打包时 `prepack` 构建（`presmium.generated` 含 `build/dist`，不入库）；检出中 `rows/workbench.mjs` 在 dsh 读取客户端包之前调 `ensure.mjs`：包不在或比它的源码（`build/dist/client.json` 列出）旧时重新构建，写入是原子的；从 npm 安装的包不构建。约 950 KB（未压缩）。
+- **用例**：`e2e/workbench.spec.ts`（启动审计、两种宽度、侧栏的拖动柄与快捷键、保存与预览更新、双向定位与问题、外部改动与合并、明暗两套的对比度、两种界面语言的品牌、文档管理、关掉 bundle、退路布局），用 `e2e/fixtures/workbench/studio.ts` 以 studio 的方式启动（`presmium serve --headless --preview-origin <dsh 的源>` 加 96b 的 harness 启动的 web 载体）；`packages/dsh/test/workspaces.test.ts`（`presmium-workspaces` 的跟随）。
+
 ### 13.5 升级闸门
 
 每次升级 dsh 单独作为一个工作包，先运行五组用例（第 7 节）：
@@ -2275,6 +2284,8 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 5. 工作台的端到端用例，含退路布局（96d、96e）。
 
 第 1、2 组在 `packages/dsh/test/`（WP-96b）：`config.test.ts`（三个载体的 `--dump-config`；headless 与 acp 启动时没有未激活的行；`engines.dsh` 不满足时安装被拒、启动时跳过）是第 1 组；`policy.test.ts`（`ask`、`off`、`allow`、会话令牌、运营者目录）、`privacy.test.ts`（请求体与技能目录、profile 补丁重新打开上传行、persona）、`context.test.ts`（web 载体上两份文档的两个会话、工作区登记、`/api/presmium/*`）、`parity.test.ts`（工具一致、焦点、6.12 节的四个操作）是第 2 组；`service.test.ts`（`kill -9`）不属于闸门。单独运行闸门：`pnpm exec vitest run packages/dsh -t '\[gate\]'`。
+
+第 3 组是 `e2e/workbench.spec.ts` 中带 `@gate` 的启动审计（WP-96d）：读锁定版本的客户端包（`e2e/fixtures/workbench/audit.ts`），核对 `root` 的子槽位与 ui-layout 声明的相同、dsh 插件调用的 `ctx.layout` 成员都在 `LAYOUT_MEMBERS` 中、品牌与首次使用的槽位与步骤还在、用到且定义了的 `--dsw-alias-*` 都已映射、映射的都已定义、外壳模块表的键等于构建的外部依赖、插件页实验插件组的属性还在，再打开页面，启动图中有 `@presmium/dsh` 而没有 ui-layout 与 DeepSeek 的品牌和账号，没有页面错误；同一文件的退路用例也带 `@gate`（第 5 组的一部分）。单独运行：`pnpm exec playwright test e2e/workbench.spec.ts --grep @gate`。
 
 ### 13.6 旧工作台
 

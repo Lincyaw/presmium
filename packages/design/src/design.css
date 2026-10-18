@@ -1,0 +1,6 @@
+/* Presmium's design system (N-10, docs/design-dsh.md 7.5): the fonts, the tokens and the shared components' classes, for
+   the outputs (@presmium/host loads it into every page of the web form and the slides) and for the workbench (its React
+   panels, in the client bundle of @presmium/dsh). A page outside them may import '@presmium/design/design.css'. */
+@import './fonts.css';
+@import './tokens.css';
+@import './components.css';

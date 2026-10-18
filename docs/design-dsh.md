@@ -676,14 +676,14 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 
 | # | 问题 | 不成立时 | 工作包 |
 |---|---|---|---|
-| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧）。服务一侧成立（96a，运行）：`GET ir/events` 是服务端直接流出的 SSE（`eventStream`，不缓冲），连接后先发当前的修订号，保存源码后一条新事件随即到达（`packages/workspace/test/service.test.ts`）；bundle 的转发由 96b 试 |
+| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧）。服务一侧成立（96a，运行）：`GET ir/events` 是服务端直接流出的 SSE（`eventStream`，不缓冲），连接后先发当前的修订号，保存源码后一条新事件随即到达（`packages/workspace/test/service.test.ts`）；bundle 的转发由 96b 试；工作台一侧成立（96d，运行）：页面以 `EventSource` 读 `/api/presmium/ir/events`，保存或外部改动后的修订号随即到达，编辑器据此与磁盘比较（17.2 节） |
 | 2 | 面板怎样发起会话：在页面中带 cookie 调 Host API，还是用客户端运行时的会话服务 | — | 96e |
 | 3 | 批注怎样进入对话：`conversation.composer` 槽位中的托盘，还是直接发 `session/prompt` | — | 96e |
 | 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e |
 | 5 | 启动时传入的补丁与 profile 自己的补丁谁先谁后：用户在界面中的改动能否盖过隐私相关的行 | 启动器每次启动前把 profile 补丁中的这些行改回 | 96b |
-| 6 | 用户在插件管理中关掉 `@presmium/dsh` 之后会怎样，`ui-layout` 是否回来 | 工作台说明怎样重新打开 | 96d |
+| 6 | 用户在插件管理中关掉 `@presmium/dsh` 之后会怎样，`ui-layout` 是否回来 | 工作台说明怎样重新打开 | 96d：`ui-layout` 不回来，工作台说明怎样重新打开（17.2 节） |
 | 7 | 启动令牌在标准输出之外有没有交接方式 | 解析标准输出 | 96f |
-| 8 | 客户端包能否带字体等静态文件 | 以 data URL 内联 | 96d |
+| 8 | 客户端包能否带字体等静态文件 | 以 data URL 内联 | 96d：不能，字体以 data URL 内联（17.2 节） |
 | 9 | 经回环 MCP 调工具的延迟，以及 dsh 对工具的超时 | 进程内桥接（K6 运行过的做法） | 96b |
 | 10 | persona 行的 ID 与覆盖方式 | 用 `systemPrompt.section` 说明 Presmium 的角色 | 96b |
 | 11 | `ctx.tools.guard` 在完全访问模式下是否先于 dsh 的回答者生效 | 运营者目录另由沙箱规则拒绝 | 96b |
@@ -708,6 +708,26 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 4. **会话令牌只给启动服务的主机**：没有设置 `PRESMIUM_SERVICE_TOKEN` 时 `tokens` 一律 403（设置了时要求它）；这样产物页面中的脚本拿不到不经确认的令牌。
 5. **文稿快照每一步之前经 MCP 重读**（`agent/pre-step`），不维护按 `ir/events` 更新的缓存：读取类调用只要几毫秒（第 9 项），快照也就总是新的。
 6. **焦点的报告**：`POST presmium.server/focus` 的请求体是 `{ document, focus: FocusReport[] }`（`FocusReport` 在内核契约中），批注的保存留给 96e。
+
+### 17.2 WP-96d 的结论
+
+都在锁定的 0.2.1-alpha.4 上运行过；用例在 `e2e/workbench.spec.ts`，原型的脚本在开发者的草稿目录中。
+
+- **第 1 项（工作台一侧）**：成立。`@presmium/workbench` 的客户端以 `EventSource` 读 `/api/presmium/ir/events?document=`（同源，带 dsh 的 cookie），`presmium-routes` 按流转发：编辑器保存或文件在磁盘上被改后，事件随即到达，工作台读新的 IR（诊断）并把事件列出的、打开着的文件与磁盘比较（外部改动的用例）。连接断开时 `EventSource` 自己重连，期间读一次 IR；不需要按秒轮询。
+- **第 6 项**：`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器以 `--patch` 传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`、插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`；这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。所以页面是工作台、读不到工作区：首页在 `documents` 得到 404 时说明“`@presmium/dsh` 在‘插件’页中被关掉了，从‘会话’打开‘插件’把它重新打开，然后重新载入页面”（用例：关掉、看到说明、打开、文档卡片回来；切换是热加载的，不用重启）。不另做处理：重新打开就恢复，用户的数据都在。
+- **第 8 项**：不能。dsh 的模块系统只提供启动图中的合并脚本（`plugins/??…&rev=`）与按修订号请求的 `client.<名>.js` 分块；同一包中的其他文件（字体、JSON，连不带修订号的 `client.js`）都是 404（运行）。字体因此以 data URL 内联在样式中：Fontsource 的样式写 WOFF2 与 WOFF 两种，构建只内联 WOFF2（浏览器都取第一种），8 个字面约 212 KB，整个客户端包约 930 KB（gzip 约 400 KB）。
+
+实现与设计不同或设计没有写明之处：
+
+1. **客户端的行是包名本身**：dsh 的模块系统只把名字是整包名（`@presmium/dsh`）的 Loader 行当作客户端的来源，`@presmium/dsh/<行>` 这样的子路径不算；一个包也只能有一个这样的行。所以 `presmium-workbench` 的 `name` 是 `@presmium/dsh`，包的 `.` 出口是它的宿主部分，`./client` 是预编译的包。根布局与退路是同一个客户端部分：启动图中有 `ui-layout` 时它不占据 `root`，改为退路。
+2. **界面的行在 `web.patch.yml`**：6.6 节把它们列在 profile 补丁中；它们只有 web 载体有，headless 与 acp 的补丁里不能出现，所以与 96b 的 web 行放在一起（同样由启动器以 `--patch` 传入）。另外关掉了 `web-search-deepseek`（DeepSeek 的搜索服务本身）与 `ui-settings-session-log`（上传会话日志的设置，上传已由 profile 补丁关掉，页面上写着 DeepSeek）。
+3. **插件页的实验插件与插件市场**没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出（市场就是其中的一个 bundle）。工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它；启动审计核对这个属性仍在锁定版本的插件页中。
+4. **首次使用提示**：dsh 把 `settings.onboarding` 的步骤画在侧栏底部的设置区里，根布局显示文件树时侧栏被收起，所以 Presmium 的提示画在页面之上（portal）。dsh 自己的 `welcome-notice` 在宿主上记“已读”，替换它的步骤只能调用 `complete()`（只在页面的内存中），所以“已读”记在浏览器的 `localStorage`。同一个槽位里 DeepSeek 的登录步骤（`deepseek-official`）以同样的方式换成立即完成的步骤。
+5. **“展开／收起侧栏”的快捷键**：dsh 只许网页在 macOS 与 Windows 上用 Mod+Alt 组合（Linux 的网页上允许的组合很少），与 ui-layout 相同，网页在 Linux 上没有默认的按键；侧栏也可以用活动栏与 dsh 侧栏自己的按钮收起。
+6. **语言包**：`zh-CN`、`en-US` 两个语言包会出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”；只换 `conversation` 的 `hero.headline` 与 `hero.preview`，其余回退到 dsh 的中文与英文。
+7. **MCP 卡片**：首页的“连接外部 agent”要工作区服务的地址，bundle 另登记一条精确路由 `/api/presmium/workbench`（`presmium-workbench` 行，回答 `{ mcp }`）。
+8. **检出中的客户端包**：dsh 要求客户端包在启动前已构建。检出中没有构建步骤，所以 `presmium-workbench` 行的入口在 dsh 读取客户端包之前检查源码是否比包新，是则用 esbuild 重新构建（原子写入，并行启动的 dsh 互不干扰）；发布的包由 `prepack` 构建，安装后不再构建。
+9. **bundle 自己启动的服务没有 `--preview-origin`**：不经 studio、只装 bundle 运行 dsh 时（`presmium-service` 自己启动 `presmium serve --headless`），预览页面的 `frame-ancestors` 是 `'none'`，工作台的预览不能显示。studio（96f）与端到端用例都传入 dsh 的源；要让单独运行的 dsh 也有预览，96b 的 `presmium-service` 需要在启动服务时传入 dsh 网页的源（留给后续）。
 
 ## 18. 工作包
 
