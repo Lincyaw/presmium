@@ -72,4 +72,4 @@ git(['add', '-A'], target)
 git([...identity, '-c', 'commit.gpgSign=false', 'commit', '-q', '-m', '示例工作区：BPE 分词与分词速览'], target)
 
 console.log(`the example workspace is in ${target}; serve it with:
-  node ${join(REPO, 'packages/cli/bin/presmium.mjs')} serve ${target}`)
+  presmium serve ${target}`)

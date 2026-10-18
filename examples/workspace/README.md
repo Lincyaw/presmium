@@ -1,6 +1,6 @@
 # 示例工作区
 
-两份文档组成的工作区，用来体验 `presmium serve`（文档列表与产物）和 `presmium studio`（工作台：编辑与 agent）：
+两份文档组成的工作区，用来体验 `presmium serve`（文档列表与产物）和 `presmium-studio`（工作台：编辑与 agent）：
 
 - `bpe/`：示例讲义“BPE 分词”（`../demo` 的副本，头部另外列出读者问答插件）；
 - `glance/`：一份短文档“分词速览”，三小节和一道测验，适合拿来试修改。
@@ -31,7 +31,7 @@ presmium-studio ~/presmium-example-workspace        # 工作台：只打印一�
 | `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` | 改用自己的 Messages 兼容服务（三个都要设置，优先于 `DEEPSEEK_API_KEY`） |
 | `PRESMIUM_SPEECH_VOLCENGINE_KEY` | 火山引擎的语音：由讲解合成讲授（文档头部要选音色，见 `../demo/README.md`）、转写录制的讲授 |
 
-读者的“提问”不用这里的任何设置：读者在“提问”面板中填写自己的 OpenAI 兼容服务（只保存在他的浏览器中），问题直接发给这个服务。
+读者的“提问”不用这里的任何设置：读者在“提问”面板中填写自己的 OpenAI 兼容服务（只保存在读者自己的浏览器中），问题直接发给这个服务。
 
 ## 连接外部 agent
 
