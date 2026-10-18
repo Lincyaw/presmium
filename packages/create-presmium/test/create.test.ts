@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
 import { run } from '@presmium/cli/testing'
@@ -48,30 +48,37 @@ async function consumer<T>(name: string, ...args: unknown[]): Promise<T> {
   return JSON.parse(await sh(process.execPath, ['--input-type=module', '-e', script, pathToFileURL(join(ROOT, 'scripts/consumer.ts')).href, name, JSON.stringify(args)], ROOT)) as T
 }
 
+const createPresmium = () => ['pnpm', `--package=${tarballs.get('create-presmium')}`, 'dlx', 'create-presmium']
+
 async function create(args: string[], input = '', lang = 'zh_CN.UTF-8'): Promise<string> {
-  return sh('npm', ['exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium', ...args], work, input, { LANG: lang, LC_ALL: '' })
+  const [command, ...rest] = createPresmium()
+  return sh(command!, [...rest, ...args], work, input, { LANG: lang, LC_ALL: '' })
 }
 
 async function createInTerminal(input: string): Promise<string> {
-  const command = ['npm', 'exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium'].map(word => `'${word}'`).join(' ')
+  const command = createPresmium().map(word => `'${word}'`).join(' ')
   return sh('script', ['--quiet', '--return', '--command', command, '/dev/null'], work, input, { LANG: 'zh_CN.UTF-8', LC_ALL: '' })
 }
 
 async function install(dir: string): Promise<void> {
   const file = join(dir, 'package.json')
   const pkg = JSON.parse(readFileSync(file, 'utf8')) as Record<string, Record<string, string> | undefined>
-  const fields = ['dependencies', 'devDependencies'].filter(field => pkg[field])
-  const listed = fields.flatMap(field => Object.keys(pkg[field]!)).filter(name => name.startsWith('@presmium/'))
-  for (const name of await consumer<string[]>('closure', listed)) {
-    const field = fields.find(field => pkg[field]![name]) ?? fields[0]!
-    pkg[field]![name] = `file:${tarballs.get(name)}`
+  const spec = (name: string) => `file:${relative(dir, tarballs.get(name)!)}`
+  for (const field of ['dependencies', 'devDependencies']) {
+    for (const name of Object.keys(pkg[field] ?? {})) if (tarballs.has(name)) pkg[field]![name] = spec(name)
   }
   writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`)
-  await sh('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], dir)
+  appendFileSync(join(dir, 'pnpm-workspace.yaml'), `overrides:\n${[...tarballs.keys()].map(name => `  '${name}': '${spec(name)}'\n`).join('')}`)
+  await sh('pnpm', ['install', '--reporter=append-only'], dir)
+}
+
+function presmiumBin(project: string): string {
+  const own = join(project, 'node_modules/presmium/bin/presmium.mjs')
+  return existsSync(own) ? own : join(project, 'node_modules/@presmium/cli/bin/presmium.mjs')
 }
 
 function presmium(project: string, args: string[]) {
-  return run(process.execPath, [join(project, 'node_modules/@presmium/cli/bin/presmium.mjs'), ...args], { cwd: project, env: userEnv() })
+  return run(process.execPath, [presmiumBin(project), ...args], { cwd: project, env: userEnv() })
 }
 
 function made(dir: string, output: string): Project {
@@ -117,11 +124,10 @@ it('asks for what the arguments leave out, in the system\'s language, and writes
   expect(readFileSync(join(workspace.dir, 'intro/lecture.md'), 'utf8')).toContain('title: "Lecture 1"')
   expect(readFileSync(join(workspace.dir, 'README.md'), 'utf8')).toContain('A Presmium workspace')
   expect(readFileSync(join(plugin.dir, 'src/domain/index.ts'), 'utf8')).toContain('export const PLUGIN_ID = \'acme.presmium-greeting\'')
-  const essentials = ['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']
   const at = (names: string[]) => Object.fromEntries(names.map(name => [name, `^${VERSION}`]))
-  expect(lecture.made.dependencies).toEqual(at(essentials))
-  expect(workspace.made.dependencies).toEqual(at([...essentials, '@presmium/slidev-addon-assistant']))
-  expect(plugin.made).toMatchObject({ name: '@acme/presmium-greeting', devDependencies: at(essentials), peerDependencies: at(['@presmium/compiler', '@presmium/host', '@presmium/kernel', '@presmium/viewer']) })
+  for (const made of [lecture, workspace]) expect(made.made.devDependencies).toEqual(at(['presmium']))
+  expect(lecture.output).toMatch(/^ {2}presmium dev$/m)
+  expect(plugin.made).toMatchObject({ name: '@acme/presmium-greeting', devDependencies: at(['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']), peerDependencies: at(['@presmium/compiler', '@presmium/host', '@presmium/kernel', '@presmium/viewer']) })
   for (const [kind, skills] of [['lecture', ['presmium-author', 'presmium-present']], ['workspace', ['presmium-author', 'presmium-present']], ['plugin', ['presmium-author', 'presmium-develop']]] as const) {
     const { dir } = projects[kind]
     for (const skill of skills) expect(readFileSync(join(dir, '.agents/skills', skill, 'SKILL.md'), 'utf8')).toContain(`name: ${skill}`)
@@ -154,7 +160,7 @@ it('makes a workspace whose document checks with no problems, whose site builds,
   expect(build.stdout).toContain('no problems')
   expect(existsSync(join(dir, 'dist/web/index.html'))).toBe(true)
   const cache = mkdtempSync(join(tmpdir(), 'presmium-create-cache-'))
-  const serve = spawn(process.execPath, [join(dir, 'node_modules/@presmium/cli/bin/presmium.mjs'), 'serve', '--port', '0'], { cwd: dir, env: userEnv({ XDG_CACHE_HOME: cache }), stdio: ['ignore', 'pipe', 'pipe'] })
+  const serve = spawn(process.execPath, [presmiumBin(dir), 'serve', '--port', '0'], { cwd: dir, env: userEnv({ XDG_CACHE_HOME: cache }), stdio: ['ignore', 'pipe', 'pipe'] })
   const exited = new Promise(resolve => serve.once('exit', resolve))
   try {
     let output = ''
@@ -189,6 +195,6 @@ it('makes a plugin whose example checks with no problems and builds, and whose i
   expect(build.code, build.stdout + build.stderr).toBe(0)
   expect(build.stdout).toContain('0 errors, 0 warnings')
   for (const file of ['web/index.html', 'slides/index.html', 'notebook/lecture.ipynb']) expect(existsSync(join(dir, 'example/dist', file)), file).toBe(true)
-  const tests = stripVTControlCharacters(await sh('npm', ['test'], dir))
+  const tests = stripVTControlCharacters(await sh('pnpm', ['test'], dir))
   expect(tests).toMatch(/Tests {2}3 passed \(3\)/)
 }, 600_000)

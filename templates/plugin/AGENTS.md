@@ -36,7 +36,7 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
 
 ## Commands
 
-- `npm test`: the integration tests (Vitest).
-- `npm run dev`: `presmium dev` of the example, in the web page and the slides; the example names the
+- `pnpm test`: the integration tests (Vitest).
+- `pnpm dev`: `presmium dev` of the example, in the web page and the slides; the example names the
   plugin by its directory (`..`), so it runs the plugin's sources as they are, neither packed nor installed.
-- `npm run check`, `npm run build`: `presmium check` and `build` of the example.
+- `pnpm check`, `pnpm build`: `presmium check` and `build` of the example.

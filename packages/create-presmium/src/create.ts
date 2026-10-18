@@ -1,16 +1,12 @@
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import type { Commands, Messages, ProjectKind } from './messages.ts'
-import { projectPath, templateFiles, TEMPLATES } from './templates.ts'
+import type { Messages, ProjectKind } from './messages.ts'
+import { projectPath, templateDir, templateFiles } from './templates.ts'
 
 export const KINDS: readonly ProjectKind[] = ['lecture', 'workspace', 'plugin']
 
 export const VERSION = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version
-
-const ESSENTIALS = ['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']
-
-const OPERATOR_PLUGINS = ['@presmium/slidev-addon-assistant']
 
 const SKILLS: Record<ProjectKind, string[]> = {
   lecture: ['presmium-author', 'presmium-present'],
@@ -29,7 +25,6 @@ export interface ProjectOptions {
   name: string
   git: boolean
   t: Messages
-  commands: Commands
 }
 
 export class CreateError extends Error {
@@ -69,17 +64,17 @@ export function createProject(options: ProjectOptions): void {
   }
   if (kind === 'lecture') {
     document(dir, title)
-    copyTemplate('workspace', dir, unchanged, path => path === '.gitignore')
-    writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, dependencies: ranges(ESSENTIALS) })
+    copyTemplate('workspace', dir, unchanged, path => path === '.gitignore' || path === 'pnpm-workspace.yaml')
+    writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, devDependencies: { presmium: `^${VERSION}` } })
   } else if (kind === 'workspace') {
     copyTemplate('workspace', dir, (path, text) => path === 'presmium.workspace.yaml' ? text.replace(/^title: .*$/m, () => `title: ${JSON.stringify(title)}`) : text)
     document(join(dir, FIRST_DOCUMENT), t.firstDocument)
-    writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, dependencies: ranges([...ESSENTIALS, ...OPERATOR_PLUGINS]) })
+    writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, devDependencies: { presmium: `^${VERSION}` } })
   } else {
     copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginId(name)).replaceAll('{{version}}', () => VERSION))
   }
   if (kind !== 'plugin') {
-    writeFileSync(join(dir, 'README.md'), t.readme(kind, title, options.commands))
+    writeFileSync(join(dir, 'README.md'), t.readme(kind, title))
     writeFileSync(join(dir, 'AGENTS.md'), t.agentsFile(kind, title))
   }
   agentFiles(dir, SKILLS[kind])
@@ -91,8 +86,8 @@ const unchanged = (_path: string, text: string): string => text
 const TEXT = /(?:\.(?:md|ts|mts|js|mjs|vue|json|ya?ml|css|html|txt)|(?:^|[\\/])\.gitignore)$/
 
 function copyTemplate(template: string, to: string, edit: (path: string, text: string) => string, only: (path: string) => boolean = () => true): void {
-  const from = join(TEMPLATES, template)
-  if (!existsSync(from)) throw new Error(`${from} is missing: create-presmium's templates are copied when it is packed (pnpm --filter create-presmium templates)`)
+  const from = templateDir(template)
+  if (!existsSync(from)) throw new Error(`${from} is missing`)
   for (const stored of templateFiles(from)) {
     const path = projectPath(stored)
     if (!only(path)) continue
@@ -100,10 +95,6 @@ function copyTemplate(template: string, to: string, edit: (path: string, text: s
     mkdirSync(dirname(join(to, path)), { recursive: true })
     writeFileSync(join(to, path), TEXT.test(path) ? edit(path, content.toString('utf8')) : content)
   }
-}
-
-function ranges(names: string[]): Record<string, string> {
-  return Object.fromEntries(names.map(name => [name, `^${VERSION}`]))
 }
 
 function writePackage(dir: string, pkg: Record<string, unknown>): void {

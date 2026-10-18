@@ -1,18 +1,22 @@
 # @presmium/cli
 
-The `presmium` command: `check`, `ir`, `build`, `dev` and `serve` for Presmium documents and workspaces.
+The `presmium` command: `new`, `check`, `ir`, `build`, `dev` and `serve` for Presmium documents and workspaces.
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Install
 
-Install it with the renderers you use and the plugins your documents list:
+Most people install the `presmium` package, which brings this command with the renderers and the official plugins:
 
 ```sh
-npm install -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook @presmium/slidev-addon-core
+pnpm add -g presmium
 ```
 
-Node.js 22.19 or later. Or start a project with `npm create presmium@latest`.
+In a project that picks its own renderers and plugins, install the CLI with them (Node.js 22.19 or later):
+
+```sh
+pnpm add -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook @presmium/slidev-addon-core
+```
 
 ## Commands
 
@@ -22,8 +26,9 @@ Node.js 22.19 or later. Or start a project with `npm create presmium@latest`.
 | `presmium ir [deck]` | Print the IR as JSON (`--out`) |
 | `presmium build [deck]` | Build `dist/ir.json` and `dist/<renderer>/` (`--to`, `--out`, `--audience`); at a workspace root, the workspace site in `dist/web/` |
 | `presmium dev [deck]` | Dev servers that update on save (`--to`, `--out`, `--server-port`, `--allow`) |
+| `presmium new [dir]` | A new lecture, workspace or plugin project (`--type`, `--title`, `--name`, `--no-git`); from `create-presmium`, which the `presmium` package brings |
 | `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
-| `presmium studio [dir]` | The workbench (experimental), from `@presmium/studio` installed beside the CLI (`--port`, `--host`) |
+| `presmium studio [dir]` | The workbench (experimental), from `@presmium/studio` installed in the project (`--port`, `--host`); installed globally, it is `presmium-studio` |
 
 `[deck]` is a directory with `lecture.md` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
 

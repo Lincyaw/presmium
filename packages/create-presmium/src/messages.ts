@@ -2,11 +2,6 @@ export type Locale = 'zh-CN' | 'en'
 
 export type ProjectKind = 'lecture' | 'workspace' | 'plugin'
 
-export interface Commands {
-  install: string
-  run(script: string): string
-}
-
 export interface Messages {
   usage: string
   kindQuestion: string
@@ -23,7 +18,7 @@ export interface Messages {
   next: string
   agents: string
   firstDocument: string
-  readme(kind: 'lecture' | 'workspace', title: string, commands: Commands): string
+  readme(kind: 'lecture' | 'workspace', title: string): string
   agentsFile(kind: 'lecture' | 'workspace', title: string): string
 }
 
@@ -31,7 +26,7 @@ const REPOSITORY = 'https://github.com/Lincyaw/presmium'
 
 export const MESSAGES: Record<Locale, Messages> = {
   'zh-CN': {
-    usage: `用法：npm create presmium@latest [<目录>] [-- <选项>]
+    usage: `用法：presmium new [<目录>] [<选项>]（或 pnpm create presmium [<目录>] [<选项>]）
 
 在 <目录> 中新建一个 Presmium 项目；没有给出 --type 或目录时逐项询问。
 
@@ -39,7 +34,7 @@ export const MESSAGES: Record<Locale, Messages> = {
   --type <种类>    lecture（一份讲义）、workspace（多份文档的工作区，用 presmium serve 预览）
                    或 plugin（插件：指令、两种形态共用的组件与服务端路由）
   --title <标题>   讲义或工作区的标题（默认为目录名）
-  --name <包名>    插件的 npm 包名（默认为目录名）
+  --name <包名>    插件的包名（默认为目录名）
   --no-git         不运行 git init
   -h, --help       显示本说明`,
     kindQuestion: '新建哪种项目？',
@@ -52,40 +47,38 @@ export const MESSAGES: Record<Locale, Messages> = {
     dirQuestion: '目录',
     titleQuestion: '标题',
     nameQuestion: '包名',
-    noAnswer: '没有读到回答：用 --type 与目录给出项目（npm create presmium@latest -- --help）',
+    noAnswer: '没有读到回答：用 --type 与目录给出项目（presmium new --help）',
     badKind: kind => `没有这种项目：${kind}（可选 lecture、workspace、plugin）`,
-    badName: name => `不能用作 npm 包名：${name}（小写字母、数字与 - . _，可以带 @作用域/）`,
+    badName: name => `不能用作包名：${name}（小写字母、数字与 - . _，可以带 @作用域/）`,
     notEmpty: dir => `${dir} 已存在且不是空目录`,
     created: (kind, dir) => `已在 ${dir} 新建${{ lecture: '讲义', workspace: '工作区', plugin: '插件' }[kind]}。`,
     next: '接下来：',
     agents: '编程智能体：AGENTS.md 与 .agents/skills 中的技能。',
     firstDocument: '第一讲',
-    readme: (kind, title, c) => kind === 'lecture'
+    readme: (kind, title) => kind === 'lecture'
       ? `# ${title}
 
-一份 Presmium 讲义：源码是 \`lecture.md\`（MyST Markdown），Presmium 把它编译为网页、幻灯片与 notebook。
+一份 Presmium 讲义：源码是 \`lecture.md\`（MyST Markdown），Presmium 把它编译为网页、幻灯片与 notebook。命令来自 \`pnpm add -g presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
 
 \`\`\`sh
-${c.install}
-${c.run('dev')}       # 实时预览网页与幻灯片
-${c.run('check')}     # 检查讲义：语法、插件、链接
-${c.run('build')}     # 构建网页、幻灯片与 notebook，产物在 dist/
+presmium dev       # 实时预览网页与幻灯片
+presmium check     # 检查讲义：语法、插件、链接
+presmium build     # 构建网页、幻灯片与 notebook，产物在 dist/
 \`\`\`
 
 \`AGENTS.md\` 是给编程智能体的说明，技能在 \`.agents/skills\`。Presmium：${REPOSITORY}
 `
       : `# ${title}
 
-一个 Presmium 工作区：每个子目录中的 \`lecture.md\` 是一份文档（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。
+一个 Presmium 工作区：每个子目录中的 \`lecture.md\` 是一份文档（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
 
 \`\`\`sh
-${c.install}
-${c.run('serve')}     # 工作区服务：文档列表与实时预览，只在本机
-${c.run('check')}     # 检查文档 intro；其他文档：npx presmium check <目录>
-${c.run('build')}     # 构建工作区的站点，产物在 dist/web/
+presmium serve           # 文档列表与各文档的实时预览，只在本机
+presmium check intro     # 检查一份文档
+presmium build           # 构建工作区的站点，产物在 dist/web/
 \`\`\`
 
-编辑与 agent 在工作台 \`presmium studio\` 中（另装 \`@presmium/studio\`，实验性）。修改历史与撤销都是 git 提交，所以工作区要是 git 仓库（create-presmium 在 git 仓库之外新建工作区时运行 git init）。工作区配置列出的助手插件给读者“提问”。
+编辑与 agent 在工作台中：\`pnpm add -g @presmium/studio\` 后运行 \`presmium-studio\`（实验性）。修改历史与撤销都是 git 提交，所以工作区要是 git 仓库（create-presmium 在 git 仓库之外新建工作区时运行 git init）。工作区配置列出的助手插件给读者“提问”。
 
 \`AGENTS.md\` 是给编程智能体的说明，技能在 \`.agents/skills\`。Presmium：${REPOSITORY}
 `,
@@ -102,11 +95,11 @@ ${kind === 'lecture'
 
 技能为 Presmium 的仓库而写：其中的 \`docs/\`、\`examples/\` 等路径在 ${REPOSITORY}。
 
-改完后运行 \`${kind === 'lecture' ? 'npx presmium check' : 'npx presmium check <文档目录>'}\` 并修复它报告的问题；\`npx presmium build\` 构建${kind === 'lecture' ? '网页、幻灯片与 notebook' : '工作区的站点'}。
+改完后运行 \`${kind === 'lecture' ? 'presmium check' : 'presmium check <文档目录>'}\` 并修复它报告的问题；\`presmium build\` 构建${kind === 'lecture' ? '网页、幻灯片与 notebook' : '工作区的站点'}。
 `,
   },
   'en': {
-    usage: `Usage: npm create presmium@latest [<directory>] [-- <options>]
+    usage: `Usage: presmium new [<directory>] [<options>] (or pnpm create presmium [<directory>] [<options>])
 
 Makes a new Presmium project in <directory>; asks for what --type or the directory leaves out.
 
@@ -114,7 +107,7 @@ Options:
   --type <kind>    lecture (one document), workspace (documents to preview with presmium serve)
                    or plugin (a directive, a component of both forms, a server route)
   --title <text>   the lecture's or the workspace's title (default: the directory's name)
-  --name <name>    the plugin's npm package name (default: the directory's name)
+  --name <name>    the plugin's package name (default: the directory's name)
   --no-git         do not run git init
   -h, --help       show this help`,
     kindQuestion: 'Which project?',
@@ -127,25 +120,25 @@ Options:
     dirQuestion: 'Directory',
     titleQuestion: 'Title',
     nameQuestion: 'Package name',
-    noAnswer: 'no answer read: give the project with --type and a directory (npm create presmium@latest -- --help)',
+    noAnswer: 'no answer read: give the project with --type and a directory (presmium new --help)',
     badKind: kind => `no such project: ${kind} (lecture, workspace or plugin)`,
-    badName: name => `not an npm package name: ${name} (lowercase letters, digits and - . _, with an optional @scope/)`,
+    badName: name => `not a package name: ${name} (lowercase letters, digits and - . _, with an optional @scope/)`,
     notEmpty: dir => `${dir} exists and is not empty`,
     created: (kind, dir) => `Made a ${kind} in ${dir}.`,
     next: 'Next:',
     agents: 'For coding agents: AGENTS.md, and the skills in .agents/skills.',
     firstDocument: 'Lecture 1',
-    readme: (kind, title, c) => kind === 'lecture'
+    readme: (kind, title) => kind === 'lecture'
       ? `# ${title}
 
 A Presmium lecture: \`lecture.md\` (MyST Markdown) is the source, which Presmium compiles to a web page,
-slides and a notebook.
+slides and a notebook. The commands come from \`pnpm add -g presmium\`; after \`pnpm install\` here, they
+are the version \`package.json\` pins.
 
 \`\`\`sh
-${c.install}
-${c.run('dev')}       # a live preview of the web page and the slides
-${c.run('check')}     # checks the lecture: syntax, plugins, links
-${c.run('build')}     # builds the web page, the slides and the notebook into dist/
+presmium dev       # a live preview of the web page and the slides
+presmium check     # checks the lecture: syntax, plugins, links
+presmium build     # builds the web page, the slides and the notebook into dist/
 \`\`\`
 
 \`AGENTS.md\` is for coding agents, with the skills in \`.agents/skills\`. Presmium: ${REPOSITORY}
@@ -153,17 +146,17 @@ ${c.run('build')}     # builds the web page, the slides and the notebook into di
       : `# ${title}
 
 A Presmium workspace: the \`lecture.md\` of each subdirectory is a document (the first in \`intro/\`), and
-\`presmium.workspace.yaml\` is the workspace's configuration.
+\`presmium.workspace.yaml\` is the workspace's configuration. The commands come from \`pnpm add -g presmium\`;
+after \`pnpm install\` here, they are the version \`package.json\` pins.
 
 \`\`\`sh
-${c.install}
-${c.run('serve')}     # the workspace service: the documents and live previews, on this machine
-${c.run('check')}     # checks the document intro; another one: npx presmium check <directory>
-${c.run('build')}     # builds the workspace's site into dist/web/
+presmium serve           # the documents and their live previews, on this machine
+presmium check intro     # checks one document
+presmium build           # builds the workspace's site into dist/web/
 \`\`\`
 
-Editing and the agent are in the workbench, \`presmium studio\` (installed separately as \`@presmium/studio\`,
-experimental). The history and undo are git commits, so the workspace is a git repository (create-presmium
+Editing and the agent are in the workbench: \`pnpm add -g @presmium/studio\`, then \`presmium-studio\`
+(experimental). The history and undo are git commits, so the workspace is a git repository (create-presmium
 runs git init when it makes one outside a git repository). The assistant plugin the configuration lists
 gives readers "Ask".
 
@@ -182,7 +175,7 @@ Skills (\`.agents/skills\`, in Chinese):
 
 The skills are written for the Presmium repository: their paths \`docs/\`, \`examples/\` and so on are in ${REPOSITORY}.
 
-After a change, run \`${kind === 'lecture' ? 'npx presmium check' : 'npx presmium check <document directory>'}\` and fix what it reports; \`npx presmium build\` builds ${kind === 'lecture' ? 'the web page, the slides and the notebook' : 'the workspace\'s site'}.
+After a change, run \`${kind === 'lecture' ? 'presmium check' : 'presmium check <document directory>'}\` and fix what it reports; \`presmium build\` builds ${kind === 'lecture' ? 'the web page, the slides and the notebook' : 'the workspace\'s site'}.
 `,
   },
 }

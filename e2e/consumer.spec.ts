@@ -93,7 +93,7 @@ test('presmium serve shows a workspace\'s home page and its document with the th
   const errors: string[] = []
   page.on('pageerror', error => errors.push(String(error)))
   await page.goto(`${url}/`)
-  await expect(page.getByRole('link', { name: /Installed from npm/ }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: /Installed from tarballs/ }).first()).toBeVisible()
   expect(errors).toEqual([])
   await greeting(page, `${url}/intro/`)
 })

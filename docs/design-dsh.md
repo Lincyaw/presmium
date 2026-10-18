@@ -523,7 +523,7 @@ export interface Focus {
 
 启动令牌只能从 dsh 的标准输出读取：每个 dsh 进程自己生成启动令牌，只经 `dsh-web-app` 中的两处带出，`printUrl` 打印的 `dsh web: <网址>` 一行，与 `openBrowser` 交给浏览器的同一个网址（宿主的连接服务另有 `authenticatedUrl(baseUrl)`，只在类型声明中，README 没有写，不用）。`dsh-web-app` 的 README 把这一行写成供监管者使用的就绪信号：加载树安定、启动审计通过之后才打印。`presmium-workspaces` 在激活时登记文档的工作区，所以读到这一行时工作区已经登记好，启动器不另外查询。用户在 profile 自己的补丁中把 `printUrl` 设为 `false` 时启动器等不到这一行，3 分钟后报错并给出日志的位置。
 
-两个进程的输出写进 `$DSH_HOME/presmium-studio.log`；启动器的标准输出只有 `studio  <网址>` 一行，警告（局域网没有登录、`PRESMIUM_MODEL_*` 不全、怎样导入 `assistant.json`）在标准错误。
+两个进程的输出写进 `$DSH_HOME/presmium-studio.log`；启动器的标准输出只有 `studio  <网址>` 一行，警告（局域网没有登录、`PRESMIUM_MODEL_*` 不全）在标准错误。
 
 启动器、dsh 宿主与工作区服务各在自己的进程组中，各有父进程退出的看门狗：`kill -9` 启动器之后不留下任何进程，开发服务器也不成为孤儿。
 
@@ -531,7 +531,7 @@ export interface Focus {
 
 工作台只用 dsh 的模型设置，凭据存在上面的 `DSH_HOME` 中（dsh 不回传密钥）。环境变量 `DEEPSEEK_API_KEY`，以及 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`，映射为 `DEEPSEEK_*`（dsh 接受 Messages 兼容的地址）。
 
-- **导入 `assistant.json`**：用户配置目录中以前的模型设置 `assistant.json`，由 studio 第一次启动时提示导入，导入后不删除原文件。dsh 拒绝 `.env` 文件（启动目录的与 `$DSH_HOME` 的都是）中决定网络去向的变量，例如 `DEEPSEEK_BASE_URL`，写了就拒绝启动，只接受启动环境中的。所以导入分两处：密钥写进 `$DSH_HOME/.env`（dsh 的凭据层中最低的一层），服务的地址写进 `$DSH_HOME/presmium-studio.json`，环境中没有模型的每次启动由启动器作为 `DEEPSEEK_BASE_URL` 传入。导入只在终端中询问一次（默认是）；不在终端时每次在标准错误说明怎样导入。工作区根（dsh 的启动目录）的 `.env` 因此改不了密钥的去向，但能让 dsh 拒绝启动，日志写明原因。
+- **`.env`**：dsh 拒绝 `.env` 文件（启动目录的与 `$DSH_HOME` 的都是）中决定网络去向的变量，例如 `DEEPSEEK_BASE_URL`，写了就拒绝启动，只接受启动环境中的。工作区根（dsh 的启动目录）的 `.env` 因此改不了密钥的去向，但能让 dsh 拒绝启动，日志写明原因。
 - **优先级**：dsh 在模型设置中保存的密钥（`.credentials.yaml`）先于环境变量。作者在界面中保存过 DeepSeek 的密钥之后又以 `PRESMIUM_MODEL_URL` 等启动时，dsh 会把保存的密钥发往那个服务；这是 dsh 的规则，启动器不改写 dsh 的凭据文件。
 
 ### 11.4 局域网
@@ -580,7 +580,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 讲授的录制发生在演讲者视图（产物）中，结果写进讲授轨，保存经讲授插件的服务端路由；改写、回写与审阅在工作台中。
 
-修改历史是 git 提交与尾注，会话的提交另有 `Presmium-Session` 与 `Presmium-Turn`。`presmium.workspace.yaml` 中的 `approvals` 与 `settings.presmium.assistant.review` 由工作区服务读取并执行（6.3、6.5 节），bundle 不读。用户配置目录中的 `assistant.json` 由 studio 第一次启动时提示导入（11.3 节）。
+修改历史是 git 提交与尾注，会话的提交另有 `Presmium-Session` 与 `Presmium-Turn`。`presmium.workspace.yaml` 中的 `approvals` 与 `settings.presmium.assistant.review` 由工作区服务读取并执行（6.3、6.5 节），bundle 不读。
 
 ## 14. 安全与隐私
 
@@ -617,7 +617,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 | 只从 profile 中解析插件模块 | profile 的 `node_modules` 链接到 bundle（11.1 节） |
 | 第一次使用会在 `~/Documents` 下建目录 | `documentsDirectory` 加启动时登记（6.6 节） |
 | 启动令牌只能从标准输出读取 | 解析 `dsh web: <网址>` 一行（11.2 节） |
-| `.env` 中不能放决定网络去向的变量 | 模型的地址存在 `presmium-studio.json`，启动时经环境传入（11.3 节） |
+| `.env` 中不能放决定网络去向的变量 | 模型的地址只经启动环境传入（11.3 节） |
 | `--host` 不接受通配地址与主机名；cookie 走明文 HTTP | 只接受一个具体 IP 地址；要加密时在前面放 TLS（11.4 节） |
 | 授权只一次有效，回答者看不到参数 | `displayReason` 带摘要（6.3 节） |
 | web 的 agent 预设各带 `persona` 行，补丁按 ID 找不到它们 | 指南写在 system 消息中，关掉 `harness-dev-context`（6.6 节） |

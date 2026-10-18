@@ -13,6 +13,7 @@ git clone https://github.com/Lincyaw/presmium.git
 cd presmium
 pnpm install
 pnpm test
+pnpm add -g ./packages/presmium    # the global presmium command, running these sources
 ```
 
 The framework documentation the code is written against is fetched with `pnpm docs:fetch` into `vendor/docs/slidev` and `vendor/docs/vitepress` (not committed). Read it there rather than the frameworks' compiled code.
@@ -27,7 +28,7 @@ The framework documentation the code is written against is fetched with `pnpm do
 | `pnpm verify` | All of the above |
 | `pnpm --filter presmium-docs build` | The documentation site in `site/`, with its publication checks and the API reference (TypeDoc) |
 | `pnpm release:check` | A dry run of publishing every public package |
-| `pnpm consumer [<dir>]` | Packs the public packages and installs them with npm in a project outside the repository |
+| `pnpm consumer [<dir>]` | Packs the public packages and installs `presmium` from them with pnpm in a project outside the repository |
 
 ## Tests
 

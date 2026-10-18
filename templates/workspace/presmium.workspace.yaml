@@ -1,16 +1,15 @@
-# A workspace (docs/ir.md section 10): this file, and the .gitignore beside it, at the root of a git
-# repository whose documents are its subdirectories, each with a lecture.md. `npm create presmium@latest`
-# makes one (a workspace project); or copy both files to such a root. Install the operator plugins listed
-# below at that root (npm install @presmium/slidev-addon-assistant), or remove them from the list. Then
-# `presmium serve` there, or `presmium build`.
+# A workspace (docs/ir.md section 10): this file at the root of a git repository whose documents are its
+# subdirectories, each with a lecture.md. `presmium new --type workspace` makes one. Then `presmium serve`
+# there, or `presmium build`.
 title: 课程名称
 documents: ['*/lecture.md']         # where the documents are, in this order; default '*/lecture.md'
 site: {}                            # the site shell: nav, footer, head, sitemap (as renderers.web)
 approvals: { operate: ask, spend: ask, write: ask, agent: ask }
 settings:                           # the plugins' operator settings, by plugin id; never in a deck
   presmium.workspace:
-    # The operator plugins, installed at this root (e.g. npm install @presmium/slidev-addon-assistant): every
-    # document loads them. The assistant gives the readers "提问" (each reader's own model, in the browser).
+    # The operator plugins: every document loads them. The official ones come with presmium; others are
+    # installed at this root (pnpm add -D <package>). The assistant gives the readers "提问" (each reader's
+    # own model, in the browser).
     plugins: ['@presmium/slidev-addon-assistant']
   # presmium.assistant:
   #   review: required                       # agent changes wait for the author's review (auto: committed at once)

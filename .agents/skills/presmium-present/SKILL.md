@@ -162,7 +162,7 @@ presmium:
 
 - **示例讲义**：在仓库根目录 `pnpm demo:build`，再 `pnpm exec sirv examples/demo/dist --single slides/index.html`，网页在 `/web/`，幻灯片在 `/slides/`。“延伸”一章（网页的 `extend.html`）：C 程序点“运行”在浏览器里编译、运行（第一次下载约 50 MB 的编译器），输出与构建时的录制相同；GPU 着色器在支持 WebGPU 的浏览器中用显卡运行，否则显示构建时录制的结果与原因；先运行“先训练”的代码块，再运行“再编码”的，体会同一会话的变量；在“下一次合并哪一对？”写下预测并保存，答案才出现。
 - **讲授的合成与回放**：示例讲义的头部列出了讲授渲染端，但 `pnpm demo:build` 不构建它，所以默认构建的网页中没有讲授（“视图”菜单中也没有“讲授”）。在环境变量中设置火山引擎的 `PRESMIUM_SPEECH_VOLCENGINE_KEY`，把头部的 `lecture: {}` 改为 `lecture: { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }`，`presmium build --to web,lecture` 合成讲授，服务 `dist/` 后打开 `/web/?view=lecture&track=script` 播放：说到 `{cue}` 处的字时聚光代码、显示录制的输出、停顿，`BPE` 读作“B P E”。提交 `.presmium/speech/` 与 `.presmium/speech.lock.json` 后，别人构建不再需要凭据。
-- **示例工作区**：工作区要是一个 git 仓库的根目录，所以先 `node examples/workspace/try.mjs ~/presmium-example-workspace` 把它复制成独立的仓库（带上讲义引用的示例代码与锁定的提交），再 `presmium serve ~/presmium-example-workspace`，打开 `http://127.0.0.1:4310`：首页列出两份文档，点进去是讲义。编写与 agent 的修改用 `presmium studio ~/presmium-example-workspace`（见 presmium-author 技能的“工作台”）。
+- **示例工作区**：工作区要是一个 git 仓库的根目录，所以先 `node examples/workspace/try.mjs ~/presmium-example-workspace` 把它复制成独立的仓库（带上讲义引用的示例代码与锁定的提交），再 `presmium serve ~/presmium-example-workspace`，打开 `http://127.0.0.1:4310`：首页列出两份文档，点进去是讲义。编写与 agent 的修改用 `presmium-studio ~/presmium-example-workspace`（见 presmium-author 技能的“工作台”）。两个命令来自仓库根目录的 `pnpm add -g ./packages/presmium ./packages/studio`。
 
 ## 10. 常见问题
 

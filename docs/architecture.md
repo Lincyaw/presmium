@@ -49,8 +49,9 @@ presmium/
 │   ├── kernel/              @presmium/kernel                    纯 TS 共享内核：契约、服务注册、锚点、检查
 │   ├── host/                @presmium/host                      形态无关的宿主接口与组合式函数（Vue）
 │   ├── compiler/            @presmium/compiler                  MyST 解析、编译步骤、执行缓存、IR
-│   ├── cli/                 @presmium/cli                       presmium build | dev | ir | check | serve | studio；./testing 供各包的集成测试运行 CLI
-│   ├── create-presmium/     create-presmium                     pnpm create presmium：新建讲义、工作区或插件项目（模板在打包时从仓库复制）
+│   ├── cli/                 @presmium/cli                       presmium new | build | dev | ir | check | serve | studio；./testing 供各包的集成测试运行 CLI
+│   ├── presmium/            presmium                            pnpm add -g presmium：CLI 连同渲染端与官方插件；转交给项目里装的 presmium
+│   ├── create-presmium/     create-presmium                     presmium new、pnpm create presmium：新建讲义、工作区或插件项目（模板在打包时从仓库复制）
 │   ├── render-slides/       @presmium/render-slides             幻灯片渲染端（生成 Slidev 项目）
 │   ├── render-notebook/     @presmium/render-notebook           notebook 渲染端（.ipynb）
 │   ├── addon-core/          @presmium/slidev-addon-core         宿主适配：Slidev 实现
@@ -189,7 +190,7 @@ packages/addon-<ctx>/
 
 插件的 `package.json` 以 `peerDependencies` 声明它支持的 Presmium 版本：插件共用应用中的 `@presmium/kernel`、`host`、`viewer`、`compiler`，这些只作为对等依赖，不作为依赖（`scripts/check-packages.mjs` 检查官方插件）。加载器在导入插件之前比较已安装的版本，不满足时不导入它（导入本身可能失败），报告 `presmium.plugins` 的错误（`plugin "X" (name ver) is not loaded: it needs @presmium/kernel ^9.0.0 (peerDependencies),and 1.0.0-rc.0 is installed`），构建不崩溃，只是没有这个插件；`kernel` 范围不满足时同样如此。
 
-从 npm 仓库安装时：Presmium 的包以 TypeScript 源码发布，Node 不剥离 `node_modules` 中 `.ts` 的类型，渲染端以 `--import` 加载 `@presmium/kernel/node` 的 `TYPESCRIPT_IMPORT`（`strip-types.mjs`）启动 VitePress 与 Slidev；Vite 不查看依赖的导入，`preBundle(root, packageDirs)` 从渲染端与文稿插件的包出发，列出它们浏览器代码导入的依赖（`optimizeDeps.include` 的 `<包> > <导入>`），并把这些包链接进 Vite 根目录的 `node_modules`（`presmium serve` 的站点在状态目录中，`presmium dev --out` 可以在任何地方）；从单仓链接的包与文稿自己的目录由 Vite 自己扫描。站点在 `<base>presmium/fonts/LICENSE` 带上字体的许可证（OFL）。消费者安装测试见第 7 节。
+从注册表安装时：Presmium 的包以 TypeScript 源码发布，Node 不剥离 `node_modules` 中 `.ts` 的类型，渲染端以 `--import` 加载 `@presmium/kernel/node` 的 `TYPESCRIPT_IMPORT`（`strip-types.mjs`）启动 VitePress 与 Slidev；Vite 不查看依赖的导入，`preBundle(root, packageDirs)` 从渲染端与文稿插件的包出发，列出它们浏览器代码导入的依赖（`optimizeDeps.include` 的 `<包> > <导入>`），并把这些包链接进 Vite 根目录的 `node_modules`（`presmium serve` 的站点在状态目录中，`presmium dev --out` 可以在任何地方）；从单仓链接的包与文稿自己的目录由 Vite 自己扫描。站点在 `<base>presmium/fonts/LICENSE` 带上字体的许可证（OFL）。消费者安装测试见第 7 节。
 
 插件从哪里加载（10.2 节）：`presmium dev`、`serve`、`build`、`check` 都按文稿的 `plugins` 从文稿目录向上查找 `node_modules`，也接受相对于文稿的路径，替换渲染端的 `renderers.<id>.package`（`ir.md` 2.1 节）同样如此；随 CLI 安装的 Presmium 自己的包（渲染端）在找不到时从 CLI 加载。运营者插件另列在工作区配置的 `settings.presmium.workspace.plugins` 中，安装在工作区根目录，每份文档与工作区首页都加载它们。
 
@@ -1483,7 +1484,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 层级 | 工具 | 范围 | 命令 |
 |---|---|---|---|
 | 结构检查 | `scripts/check-layering.mjs`、`scripts/check-skills.mjs`、`scripts/check-plugins.mjs`、`scripts/check-packages.mjs` | 第 3 节的分层规则；技能与代码一致（指令、命令及其选项）；每个 Node 插件声明 `version` 与当前内核满足的 `kernel` 范围（4.2 节）；每个包按 `.changeset/README.md` 的表公开或私有，公开的包有许可证、同一版本、`engines`、元数据与只含发布所需的 `files`，插件以对等依赖使用共用的包 | `pnpm test` |
-| 消费者安装 | Vitest、Playwright | `scripts/consumer.ts` 用 pnpm 打包全部公开的包，在单仓之外的临时目录中用 npm 安装（另加一个从自己的压缩包安装的第三方插件）；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、三种形态的 `build`、`dev`、`serve`（站点在项目之外，从随包的模板新建文档）与不兼容插件的诊断，`e2e/consumer.spec.ts` 在浏览器中看插件的组件 | `pnpm test`、`pnpm e2e` |
+| 消费者安装 | Vitest、Playwright | `scripts/consumer.ts` 用 pnpm 打包全部公开的包，在单仓之外的临时目录中用 pnpm 从压缩包安装 `presmium`（另加一个从自己的压缩包安装的第三方插件）；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、三种形态的 `build`、`dev`、`serve`（站点在项目之外，从随包的模板新建文档）、不兼容插件的诊断，在空目录中 `presmium new` 之后检查与构建，以及转交给项目里的 `presmium`，`e2e/consumer.spec.ts` 在浏览器中看插件的组件 | `pnpm test`、`pnpm e2e` |
 | 集成 | Vitest | 真实运行 CLI、构建产物检查、服务端（`packages/<pkg>/test/`）；运行 `slidev export` 的用例是单独的项目 `export`，在其他用例之后运行 | `pnpm test` |
 | 构建 | `presmium build` | 示例文稿编译并生成全部媒介（网页、幻灯片、notebook） | `pnpm demo:build` |
 | 检查 | `presmium check` | 示例文稿全部检查项通过 | `pnpm demo:check` |
@@ -1800,7 +1801,7 @@ agent 的修改在提交之前由作者审阅。审阅在工作区服务中（`r
 
 | 层 | 包 | 框架 | 依赖 dsh | 版本 |
 |---|---|---|---|---|
-| 核心 | `kernel`、`compiler`、`cli`、`server`、`mcp`、`language-server`、`workspace` 的 Node 部分（工作区服务）、`classroom-server`、`create-presmium`、`presmium-vscode` | TS、Node | 否 | 1.x |
+| 核心 | `kernel`、`compiler`、`cli`、`presmium`、`server`、`mcp`、`language-server`、`workspace` 的 Node 部分（工作区服务）、`classroom-server`、`create-presmium`、`presmium-vscode` | TS、Node | 否 | 1.x |
 | 产物 | `web`、`viewer`、`render-slides`、`addon-core`、`render-notebook`、各插件的组件与 `src/client`、`host` | Vue | 否 | 1.x |
 | 工作台 | `design`（与产物共用）、`workbench`、`dsh`、`studio` | React 18（由 dsh 的外壳提供） | 只有 `dsh` 与 `studio` | 0.x（`design` 随 `host` 为 1.x） |
 
@@ -1823,12 +1824,12 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 实现：
 
-- **包与命令**：`@presmium/studio`（0.1.0；依赖精确版本的 `@deepseek-ai/dsh` 0.2.1-alpha.4、`@presmium/dsh` 与 `@presmium/cli`）：`src/cli.ts` 的 `main`（`presmium studio [目录] [--port <端口>] [--host <地址>]`；命令 `presmium-studio` 相同）、`src/studio.ts` 的 `startStudio`（启动器）、`src/model.ts`（模型的环境变量与 `assistant.json` 的导入）。`@presmium/cli` 不依赖它：`presmium studio` 从 CLI 的包目录（同一个 `node_modules`，全局安装时也是）或当前项目解析 `@presmium/studio`，用 jiti 加载并转交，带上 CLI 自己的 `bin/presmium.mjs` 作为工作区服务的命令；没装时说明怎样安装（`npm install --save-dev @presmium/studio`，或与全局的 CLI 一起 `--global`），以 2 退出。目录的规则同 `presmium serve`。
+- **包与命令**：`@presmium/studio`（0.1.0；依赖精确版本的 `@deepseek-ai/dsh` 0.2.1-alpha.4、`@presmium/dsh` 与 `presmium`）：`src/cli.ts` 的 `main`（`presmium studio [目录] [--port <端口>] [--host <地址>]`；命令 `presmium-studio` 相同）、`src/studio.ts` 的 `startStudio`（启动器）、`src/model.ts`（模型的环境变量）。`@presmium/cli` 不依赖它：`presmium studio` 从回退的包目录（`presmium`）、CLI 的包目录或当前项目解析 `@presmium/studio`，用 jiti 加载并转交，带上运行它的 `presmium` 命令作为工作区服务的命令；pnpm 的全局安装每个包各在自己的目录中，所以全局装的工作台的命令是 `presmium-studio`，它依赖 `presmium`，用 `presmium` 的 `bin/presmium.mjs` 启动工作区服务。没装时说明怎样安装（`pnpm add -g @presmium/studio` 后运行 `presmium-studio`，或在项目中 `pnpm add -D @presmium/studio`），以 2 退出。目录的规则同 `presmium serve`。
 - **目录与 profile**：`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`（没有这个变量时是 `~/.local/state/presmium/studio`），从不用环境中的 `DSH_HOME` 或用户自己的 `~/.dsh`。每次启动用 `@presmium/dsh/launch` 的 `writeProfile` 写 profile `presmium-studio`（web 载体；保留 profile 自己的 `cordis.patch.yml`，即用户在界面中的改动），以 `launchArgs` 传入 `web.patch.yml` 与 `profile.patch.yml`，环境中加 `launchEnv`。两个进程的输出写进其中的 `presmium-studio.log`（0600，每行带进程名；过 16 MB 时另起，旧的留作 `.1`）：启动器的标准输出只有一行 `studio  <网址>`。
 - **端口与源**：工作台的端口默认 4320，每次相同，浏览器的 cookie 因此在重启之后仍有效（dsh 的签名密钥在 `DSH_HOME` 中）；4320 被占用时另取一个空闲端口，`--port 0` 取空闲端口，`--port` 给出的端口被占用时报错。端口在启动任何进程之前由启动器选定，因为工作区服务以工作台的源启动：`--preview-origin` 是 `http://127.0.0.1:<端口>` 与 `http://localhost:<端口>`（`--host` 时是 `http://<地址>:<端口>`）。
 - **启动顺序**（`design-dsh.md` 11.2 节）：服务令牌（24 字节的随机值）；`node <WATCHDOG> node <presmium> serve <目录> --port 0 [--host <地址>] --preview-origin …`，环境中没有 `DSH_*`、`DEEPSEEK_*`、`PRESMIUM_MODEL_*`、`NODE_ENV`、`PORT`，有 `PRESMIUM_SERVICE_TOKEN`，等它打印 `serve  <网址>` 与 `workspace  <根目录>`；`node <WATCHDOG> node <dsh> --profile presmium-studio --patch … --port <端口> --no-open [--host <地址> --trusted-host <地址>:<端口>]`，工作目录是工作区根，环境中有 `PRESMIUM_SERVICE_URL`、`PRESMIUM_SERVICE_TOKEN`、`PRESMIUM_WORKSPACE`、`launchEnv` 与模型的变量，等它打印 `dsh web: <网址>`（`WEB_READY`）；打印这个网址。dsh 在加载树安定、启动审计通过之后才打印这一行（`dsh-web-app` 的 README），`presmium-workspaces` 在激活时登记文档的工作区，所以这一行也说明登记好了，启动器不另外查询。任何一步失败（3 分钟没有就绪也算）都停下已启动的进程，在标准错误报告并给出日志的位置，以 2 退出。
 - **监管**（11.2、14 节）：两个进程各在 `@presmium/dsh` 的看门狗（`WATCHDOG`，`presmium-service` 行用的同一个）之下，以 `detached` 自成进程组，看门狗的标准输入是来自启动器的管道：启动器退出（`kill -9` 也是）时看门狗结束整个组，组中的开发服务器一并结束。SIGINT、SIGTERM、SIGHUP 时启动器先停 dsh（bundle 在服务处作废会话令牌）再停服务，各等 15 秒，之后向组发 SIGKILL，以 0 退出；一个进程自己结束时启动器停下另一个，报告是哪一个与日志的位置，以 1 退出。
-- **模型**（11.3 节）：`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三个都有时成为 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` 与 `DEEPSEEK_SEARCH_BASE_URL`（网页搜索用同一个密钥，地址也是这个服务）；只有一部分时在标准错误警告缺少哪个；否则 `DEEPSEEK_API_KEY` 原样传给 dsh，作者环境中的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 不传（密钥只去 DeepSeek 的官方地址）。dsh 自己不接受 `.env` 文件中的这类地址变量（工作区根的 `.env` 写了它时 dsh 拒绝启动），所以工作区的 `.env` 改不了密钥的去向。以前的模型设置文件 `assistant.json`（`$XDG_CONFIG_HOME/presmium/assistant.json`）在环境中没有模型、作者还没回答过时询问一次（标准输入与标准错误都是终端时问“是否导入”，默认是；不是终端时每次在标准错误说明怎样导入）：导入时密钥写进 `DSH_HOME/.env`（dsh 的凭据层中最低的一层，0600；环境与在模型设置中保存的密钥都在它之前），服务的地址写进 `DSH_HOME/presmium-studio.json`，之后每次环境中没有模型的启动都把它作为 `DEEPSEEK_BASE_URL` 传入；回答记在同一个文件中，原文件不删；模型名不导入，启动器提示在模型设置中选择。
+- **模型**（11.3 节）：`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三个都有时成为 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` 与 `DEEPSEEK_SEARCH_BASE_URL`（网页搜索用同一个密钥，地址也是这个服务）；只有一部分时在标准错误警告缺少哪个；否则 `DEEPSEEK_API_KEY` 原样传给 dsh，作者环境中的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 不传（密钥只去 DeepSeek 的官方地址）。dsh 自己不接受 `.env` 文件中的这类地址变量（工作区根的 `.env` 写了它时 dsh 拒绝启动），所以工作区的 `.env` 改不了密钥的去向。
 - **局域网**（11.4 节）：`--host` 只接受本机的一个具体 IP 地址（拒绝 `0.0.0.0`、`::` 等通配地址与主机名），dsh 与工作区服务都只监听这个地址（服务端的 `Host`、`Origin` 规则按 10.1 节接受它），`--preview-origin` 是它的源；启动时在标准错误警告没有登录，同一网络中到得了这两个端口的人都以作者的身份工作。
 - **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在文档目录中、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `examples/demo/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@presmium/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
 

@@ -1,5 +1,5 @@
 ---
-title: Installed from npm
+title: Installed from tarballs
 lang: en
 plugins:
   - '@presmium/slidev-addon-core'
@@ -10,9 +10,9 @@ renderers:
   notebook: {}
 ---
 
-# Installed from npm
+# Installed from tarballs
 
-A document built by Presmium as a user installs it: the packages' tarballs, installed with npm.
+A document built by Presmium as a user installs it: the packages' tarballs, installed with pnpm.
 
 ## A plugin from a tarball
 

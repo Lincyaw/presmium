@@ -322,4 +322,4 @@ A document's `plugins` may name a plugin's directory by its absolute path. Test 
 (plugin-testing-publish)=
 ## Before publishing
 
-After `npm pack`, install the tarball in another directory together with `@presmium/cli` and the renderers: `presmium check` should find no problem and the build should pass; then look at the component on the web page and in the slides. The plugin project `npm create presmium@latest` makes already has this layout and an integration test that runs.
+After `pnpm pack`, `pnpm add -D <tarball>` in another project: `presmium check` should find no problem and the build should pass; then look at the component on the web page and in the slides. The plugin project `presmium new --type plugin` makes already has this layout and an integration test that runs.

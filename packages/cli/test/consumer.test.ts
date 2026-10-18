@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { run } from '../src/testing.ts'
@@ -36,8 +36,9 @@ afterAll(() => {
   if (project) rmSync(project, { recursive: true, force: true })
 })
 
-const presmiumBin = () => join(project, 'node_modules/@presmium/cli/bin/presmium.mjs')
-const presmium = (args: string[]) => run(process.execPath, [presmiumBin(), ...args], { cwd: project, env: userEnv() })
+const presmiumBin = () => join(project, 'node_modules/presmium/bin/presmium.mjs')
+const installed = (name: string) => join(dirname(realpathSync(join(project, 'node_modules/presmium'))), name)
+const presmium = (args: string[], cwd = project) => run(process.execPath, [presmiumBin(), ...args], { cwd, env: userEnv() })
 
 async function start(args: string[], ready: RegExp, env: Record<string, string> = {}): Promise<{ output: () => string, stop: () => Promise<void> }> {
   const child = spawn(process.execPath, [presmiumBin(), ...args], { cwd: project, env: userEnv(env), stdio: ['ignore', 'pipe', 'pipe'] })
@@ -76,7 +77,7 @@ it('packs every public package with its license and the files its exports and co
     }
     expect(files.filter(file => file.startsWith('test/')), name).toEqual([])
   }
-  const plugin = JSON.parse(readFileSync(join(project, 'node_modules/@presmium/slidev-addon-core/package.json'), 'utf8')) as { license: string, peerDependencies: Record<string, string>, dependencies?: Record<string, string> }
+  const plugin = JSON.parse(readFileSync(join(installed('@presmium/slidev-addon-core'), 'package.json'), 'utf8')) as { license: string, peerDependencies: Record<string, string>, dependencies?: Record<string, string> }
   expect(plugin.license).toBe('Apache-2.0')
   expect(plugin.peerDependencies['@presmium/kernel']).toMatch(/^\^\d+\.\d+\.\d+/)
   expect(Object.keys(plugin.dependencies ?? {}).filter(name => name.startsWith('@presmium/'))).toEqual([])
@@ -134,7 +135,7 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
       expect(page.status, path).toBe(200)
       expect(await page.text(), path).toContain('id="app"')
     }
-    const kernel = await fetch(`${url}/intro/@fs${join(project, 'node_modules/@presmium/kernel/src/services.ts')}`)
+    const kernel = await fetch(`${url}/intro/@fs${join(installed('@presmium/kernel'), 'src/services.ts')}`)
     expect(kernel.status).toBe(200)
     const code = await kernel.text()
     expect(code).toMatch(/^import .*semver.* from "[^"]+"/m)
@@ -167,3 +168,34 @@ it('reports a plugin whose peer dependencies exclude the installed Presmium and 
   expect(build.stdout + build.stderr).not.toContain('was imported')
   expect(existsSync(join(project, 'incompatible/dist/notebook/lecture.ipynb'))).toBe(true)
 }, 300_000)
+
+it('makes a lecture with presmium new in an empty directory and checks and builds it with nothing installed there', async () => {
+  const empty = mkdtempSync(join(tmpdir(), 'presmium-new-'))
+  try {
+    const made = await presmium(['new', 'talk', '--type', 'lecture', '--title', 'Talk', '--no-git'], empty)
+    expect(made.code, made.stdout + made.stderr).toBe(0)
+    expect(made.stdout).toMatch(/^ {2}presmium dev$/m)
+    const lecture = join(empty, 'talk')
+    expect(JSON.parse(readFileSync(join(lecture, 'package.json'), 'utf8')).devDependencies).toEqual({ presmium: expect.stringMatching(/^\^\d/) })
+    const check = await presmium(['check'], lecture)
+    expect(check.code, check.stdout + check.stderr).toBe(0)
+    const build = await presmium(['build', '--to', 'web,slides,notebook'], lecture)
+    expect(build.code, build.stdout + build.stderr).toBe(0)
+    for (const page of ['web/index.html', 'slides/index.html', 'notebook/lecture.ipynb']) expect(existsSync(join(lecture, 'dist', page)), page).toBe(true)
+  } finally {
+    rmSync(empty, { recursive: true, force: true })
+  }
+}, 600_000)
+
+it('hands the command to the presmium a project has installed', async () => {
+  const other = mkdtempSync(join(tmpdir(), 'presmium-local-'))
+  try {
+    mkdirSync(join(other, 'node_modules/presmium/bin'), { recursive: true })
+    writeFileSync(join(other, 'node_modules/presmium/package.json'), '{ "name": "presmium", "version": "0.0.1", "type": "module" }\n')
+    writeFileSync(join(other, 'node_modules/presmium/bin/presmium.mjs'), 'console.log(`the project\'s presmium: ${process.argv.slice(2).join(\' \')}`)\n')
+    const ran = await presmium(['check', 'deck'], other)
+    expect(ran.stdout.trim()).toBe('the project\'s presmium: check deck')
+  } finally {
+    rmSync(other, { recursive: true, force: true })
+  }
+})

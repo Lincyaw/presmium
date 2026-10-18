@@ -17,19 +17,14 @@ Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再由渲
 (start-install)=
 ## 安装
 
-Presmium 需要 Node.js 22.19 或更新的版本。最快的开始方式是起步工具，它问你要哪种项目（讲义、工作区或插件），生成目录、`package.json` 与第一份文稿：
+Presmium 需要 Node.js 22.19 或更新的版本与 pnpm（`corepack enable pnpm`；第一次全局安装前运行一次 `pnpm setup`）。全局安装 `presmium`，它带着三个渲染端与全部官方插件：
 
 ```sh
-npm create presmium@latest
+pnpm add -g presmium
+presmium new        # 问你要哪种项目（讲义、工作区或插件），生成目录与第一份文稿
 ```
 
-也可以在一个已有的目录中自己安装：
-
-```sh
-npm install -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook @presmium/slidev-addon-core
-```
-
-`@presmium/cli` 提供 `presmium` 命令；`@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook` 分别生成网页、幻灯片与 notebook，只装要用的；文稿头部 `plugins` 列出的插件包也要安装。构建时运行的代码块用本机的 `python3` 或 `node`。
+文稿不用再安装什么就能 `presmium check`、`dev`、`build`。第三方插件装在文稿所在的项目中（`pnpm add -D <包名>`）。新建的项目在 `package.json` 中列出 `presmium` 的版本：在项目中 `pnpm install` 之后，全局的 `presmium` 命令改用项目里的那一份，版本由项目决定。构建时运行的代码块用本机的 `python3` 或 `node`。
 
 (start-first)=
 ## 第一份文稿
@@ -241,7 +236,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@presmium/slidev
 (assistant-edit)=
 ## 由 agent 修改讲义
 
-工作台 `presmium studio`（另装 `@presmium/studio`，实验性）中的 agent 按你的对话修改讲义，改动先由你审阅，接受后成为一个可以撤销的 git 提交。模型服务在环境变量（如 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）或工作台的模型设置中提供，从不写进讲义与产物。
+工作台（实验性；`pnpm add -g @presmium/studio` 之后运行 `presmium-studio`）中的 agent 按你的对话修改讲义，改动先由你审阅，接受后成为一个可以撤销的 git 提交。模型服务在环境变量（如 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）或工作台的模型设置中提供，从不写进讲义与产物。
 
 (assistant-mcp)=
 ## 编辑器中的 agent
@@ -278,7 +273,7 @@ site:
 (workspace-serve)=
 ## 本机服务与工作台
 
-`presmium serve` 在本机启动工作区服务：首页列出文档，每份文档的站点按需编译、保存即更新。`presmium studio`（另装 `@presmium/studio`，实验性）在它之上启动工作台：文件树、源码编辑、预览、问题列表与 agent。二者只供运行它们的你使用，默认只监听本机；`--host` 让局域网中的其他设备也能打开，但没有登录，到得了这个端口的人都能以你的身份修改与运行。服务的预览只显示原文，译本由 `presmium build` 发布。
+`presmium serve` 在本机启动工作区服务：首页列出文档，每份文档的站点按需编译、保存即更新。`presmium-studio`（`pnpm add -g @presmium/studio`，实验性）在它之上启动工作台：文件树、源码编辑、预览、问题列表与 agent。二者只供运行它们的你使用，默认只监听本机；`--host` 让局域网中的其他设备也能打开，但没有登录，到得了这个端口的人都能以你的身份修改与运行。服务的预览只显示原文，译本由 `presmium build` 发布。
 
 (publish)=
 # 发布

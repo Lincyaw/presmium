@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-npm install -D @presmium/slidev-addon-guide
+pnpm add -D @presmium/slidev-addon-guide
 ```
 
 List it in the headmatter of the documents that use it:

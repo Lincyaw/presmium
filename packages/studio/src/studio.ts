@@ -42,8 +42,7 @@ export function studioHome(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 export function presmiumBin(): string {
-  const entry = createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@presmium/cli')
-  return join(dirname(dirname(entry)), 'bin', 'presmium.mjs')
+  return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('presmium/package.json')), 'bin', 'presmium.mjs')
 }
 
 const urlHost = (host: string) => (host.includes(':') ? `[${host}]` : host)
@@ -220,7 +219,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       cwd: root,
       env: {
         ...inherited(env, name => OWN(name) || ['DEEPSEEK_API_KEY', 'DEEPSEEK_BASE_URL', 'DEEPSEEK_SEARCH_BASE_URL'].includes(name)),
-        ...modelEnv(env, home).env,
+        ...modelEnv(env).env,
         ...launchEnv(home),
         PRESMIUM_SERVICE_URL: url,
         PRESMIUM_SERVICE_TOKEN: token,

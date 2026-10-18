@@ -12,7 +12,7 @@ renderers:
 
 # Greeting
 
-A document that uses the plugin: `npm run dev` shows it in the web page and the slides, `npm run build`
+A document that uses the plugin: `pnpm dev` shows it in the web page and the slides, `pnpm build`
 builds the web page, the slides and the notebook into `example/dist/`.
 
 (greeting)=

@@ -1,7 +1,7 @@
 {
   "name": "create-presmium",
   "version": "1.0.0-rc.0",
-  "description": "npm create presmium: a new Presmium lecture, workspace or plugin",
+  "description": "presmium new, or pnpm create presmium: a new Presmium lecture, workspace or plugin",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -26,6 +26,10 @@
   },
   "bin": {
     "create-presmium": "./bin/create-presmium.mjs"
+  },
+  "exports": {
+    ".": "./src/cli.ts",
+    "./package.json": "./package.json"
   },
   "files": [
     "bin",

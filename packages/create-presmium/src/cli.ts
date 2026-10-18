@@ -4,7 +4,7 @@ import { basename, relative, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { assertEmpty, createProject, CreateError, KINDS, nameOf, validName } from './create.ts'
 import { MESSAGES, systemLocale } from './messages.ts'
-import type { Commands, Messages, ProjectKind } from './messages.ts'
+import type { Messages, ProjectKind } from './messages.ts'
 
 const DEFAULT_DIRS: Record<ProjectKind, string> = {
   lecture: 'my-lecture',
@@ -38,9 +38,8 @@ export async function main(argv: string[]): Promise<number> {
     const name = args.values.name ?? (asking && project === 'plugin' ? await questions.ask(t.nameQuestion, nameOf(dir)) : nameOf(dir))
     if (!validName(name)) throw new CreateError(t.badName(name))
     questions.close()
-    const commands = packageManager()
-    createProject({ kind: project, dir, title, name, git: args.values.git, t, commands })
-    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], commands.install, ...project === 'plugin' ? [commands.run('test'), commands.run('dev')] : [commands.run(project === 'lecture' ? 'dev' : 'serve')]]
+    createProject({ kind: project, dir, title, name, git: args.values.git, t })
+    const steps = [...folder === '.' ? [] : [`cd ${/[\s'"]/.test(folder) ? JSON.stringify(folder) : folder}`], ...project === 'plugin' ? ['pnpm install', 'pnpm test', 'pnpm dev'] : [`presmium ${project === 'lecture' ? 'dev' : 'serve'}`]]
     process.stdout.write(`${t.created(project, folder)}\n\n${t.next}\n${steps.map(step => `  ${step}\n`).join('')}\n${t.agents}\n`)
     return 0
   } catch (error) {
@@ -107,10 +106,3 @@ class Questions {
   }
 }
 
-function packageManager(agent = process.env.npm_config_user_agent ?? ''): Commands {
-  const name = /^(pnpm|yarn|bun)\//.exec(agent)?.[1]
-  if (name === 'pnpm') return { install: 'pnpm install', run: script => `pnpm ${script}` }
-  if (name === 'yarn') return { install: 'yarn', run: script => `yarn ${script}` }
-  if (name === 'bun') return { install: 'bun install', run: script => `bun run ${script}` }
-  return { install: 'npm install', run: script => (script === 'test' ? 'npm test' : `npm run ${script}`) }
-}

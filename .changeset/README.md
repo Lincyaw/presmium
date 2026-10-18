@@ -1,6 +1,6 @@
 # 版本与发布
 
-Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录。公开的包（`@presmium/*` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
+Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记录。公开的包（`@presmium/*`、`presmium` 与 `create-presmium`）是一组固定版本（`config.json` 的 `fixed`），一起发布、版本相同；1.0 从 `1.0.0-rc.0` 开始，处在预发布模式（`pre.json`，标签 `rc`）。源码以 `.ts`、`.vue` 直接发布，不预编译；各包内部的依赖写 `workspace:`，发布时换成版本：`workspace:*` 成为确切的版本，插件对 Presmium 的对等依赖 `workspace:^` 成为 `^<版本>`。
 
 ## 哪些包发布
 
@@ -39,9 +39,10 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@presmium/slidev-addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@presmium/slidev-addon-speech` | npm | 插件：语音服务 |
 | `@presmium/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能在打包时从 `.agents/skills` 复制，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
-| `@presmium/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；`@presmium/cli` 装了它时转交；0.x、实验性，版本号不随统一版本 |
+| `@presmium/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @presmium/studio`），依赖 `presmium`，项目里装了它时 `presmium studio` 转交给它；0.x、实验性，版本号不随统一版本 |
 | `@presmium/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@presmium/dsh` 的客户端部分打包使用 |
-| `create-presmium` | npm | `npm create presmium@latest`：新建讲义、工作区或插件项目（不在 `@presmium` 作用域中：`npm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，见包内 `templates/README.md`） |
+| `presmium` | npm | `pnpm add -g presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |
+| `create-presmium` | npm | `presmium new` 与 `pnpm create presmium`：新建讲义、工作区或插件项目（不在 `@presmium` 作用域中：`pnpm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，在源码仓库中直接用源） |
 | `presmium-vscode` | 否 | VS Code 扩展：预打包为 `.vsix`，发布到扩展市场，不发布到 npm |
 | `presmium-demo` | 否 | 示例讲义（`examples/demo`） |
 | `presmium-example-workspace` | 否 | 示例工作区（`examples/workspace`） |
@@ -63,7 +64,7 @@ pnpm changeset          # 选包与升级类型（patch、minor、major），写
 
 1. `pnpm changeset version`：按累积的变更记录升级全部公开包的版本（预发布模式中为 `1.0.0-rc.<n>`），写各包的 `CHANGELOG.md`；然后 `pnpm install` 更新锁文件，提交。
 2. `pnpm release:check`：`pnpm -r publish --dry-run --no-git-checks`，按发布的样子打包每个公开的包而不上传。消费者安装测试用同样的压缩包在单仓之外的项目中安装、检查、构建与运行：`pnpm test` 中的 `packages/cli/test/consumer.test.ts`，`pnpm e2e` 中的 `e2e/consumer.spec.ts`；`pnpm consumer [<目录>]` 单独做一个这样的项目。
-3. `pnpm changeset publish`：发布版本尚不在 npm 上的包（预发布模式中带 `rc` 标签，`npm install @presmium/cli` 不会装到它），然后 `git push --follow-tags`。
+3. `pnpm changeset publish`：发布版本尚不在 npm 上的包（预发布模式中带 `rc` 标签，`pnpm add -g presmium` 不会装到它），然后 `git push --follow-tags`。
 4. 正式的 1.0.0：`pnpm changeset pre exit`，再走一遍 1 至 3。
 
 `1.0.0-rc.0` 已经写在各包中，第一次发布从第 2 步开始。
@@ -74,5 +75,5 @@ GitHub 仓库是 `Lincyaw/presmium`（远端 `origin`，与各包的 `repository
 
 下面的步骤需要账号与凭据，由维护者完成，不由开发流程完成：
 
-- 在 npm 创建组织 `@presmium`，为发布者创建令牌（或登录 `npm login`）；在 CI 中发布时把令牌存为仓库的 secret。
+- 在 npm 创建组织 `@presmium`，为发布者创建令牌（或登录 `pnpm login`）；在 CI 中发布时把令牌存为仓库的 secret。
 - 实际发布：`pnpm changeset publish`（见上）。

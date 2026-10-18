@@ -37,8 +37,11 @@
   ],
   "dependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4",
-    "@presmium/cli": "workspace:*",
     "@presmium/dsh": "workspace:*",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "presmium": "workspace:*"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*"
   }
 }

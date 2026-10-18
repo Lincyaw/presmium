@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { execFile } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join, relative, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
@@ -12,40 +12,24 @@ export const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 export const FIXTURES = join(ROOT, 'e2e/fixtures/consumer')
 
-export const ESSENTIALS = ['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']
+export const ESSENTIALS = ['presmium']
 
 export const STUDIO = [...ESSENTIALS, '@presmium/studio']
+
+const BUILDS = /^allowBuilds:\n(?: .*\n)+/m.exec(readFileSync(join(ROOT, 'pnpm-workspace.yaml'), 'utf8'))![0]
 
 export interface PublicPackage {
   name: string
   dir: string
-  needs: string[]
 }
 
 export function publicPackages(): PublicPackage[] {
   return readdirSync(join(ROOT, 'packages')).sort().flatMap((dir) => {
     const file = join(ROOT, 'packages', dir, 'package.json')
     if (!existsSync(file)) return []
-    const pkg = JSON.parse(readFileSync(file, 'utf8')) as { name: string, private?: boolean, dependencies?: object, peerDependencies?: object, peerDependenciesMeta?: object }
-    if (pkg.private) return []
-    const optional = new Set(Object.keys(pkg.peerDependenciesMeta ?? {}))
-    const needs = Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies }).filter(name => name.startsWith('@presmium/') && !optional.has(name))
-    return [{ name: pkg.name, dir: join(ROOT, 'packages', dir), needs }]
+    const pkg = JSON.parse(readFileSync(file, 'utf8')) as { name: string, private?: boolean }
+    return pkg.private ? [] : [{ name: pkg.name, dir: join(ROOT, 'packages', dir) }]
   })
-}
-
-export function closure(names: string[]): string[] {
-  const known = new Map(publicPackages().map(pkg => [pkg.name, pkg]))
-  const found = new Set<string>()
-  const visit = (name: string): void => {
-    const pkg = known.get(name)
-    if (!pkg) throw new Error(`${name} is not a public package of the workspace`)
-    if (found.has(name)) return
-    found.add(name)
-    pkg.needs.forEach(visit)
-  }
-  names.forEach(visit)
-  return [...found].sort()
 }
 
 export interface Tarball {
@@ -107,9 +91,9 @@ export async function packAll(dest: string): Promise<Map<string, Tarball>> {
 
 export async function packPlugin(dir: string, dest: string): Promise<{ name: string, file: string }> {
   mkdirSync(dest, { recursive: true })
-  const { stdout } = await run('npm', ['pack', resolve(dir), '--pack-destination', dest, '--json'], { cwd: dest, env: userEnv(), maxBuffer: 64 << 20 })
-  const [packed] = JSON.parse(stdout) as { name: string, filename: string }[]
-  return { name: packed!.name, file: resolve(dest, packed!.filename) }
+  const { stdout } = await run('pnpm', ['pack', '--pack-destination', dest, '--json'], { cwd: resolve(dir), env: userEnv(), maxBuffer: 64 << 20 })
+  const packed = JSON.parse(stdout) as { name: string, filename: string }
+  return { name: packed.name, file: resolve(dest, packed.filename) }
 }
 
 export interface ConsumerOptions {
@@ -124,15 +108,24 @@ export async function consumerProject(options: ConsumerOptions = {}): Promise<{ 
   mkdirSync(dir, { recursive: true })
   if (options.files) cpSync(options.files, dir, { recursive: true })
   const tarballs = await packAll(join(dir, 'tarballs'))
+  writeFileSync(join(dir, 'pnpm-workspace.yaml'), `${BUILDS}${overrides(tarballs, dir)}`)
   const dependencies: Record<string, string> = {}
-  for (const name of closure(options.packages ?? ESSENTIALS)) dependencies[name] = `file:./tarballs/${basename(tarballs.get(name)!.file)}`
+  for (const name of options.packages ?? ESSENTIALS) dependencies[name] = tarballSpec(tarballs.get(name)!.file, dir)
   for (const plugin of options.plugins ?? []) {
     const { name, file } = await packPlugin(plugin, join(dir, 'tarballs'))
-    dependencies[name] = `file:./tarballs/${basename(file)}`
+    dependencies[name] = tarballSpec(file, dir)
   }
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: 'presmium-consumer', private: true, type: 'module', dependencies }, null, 2)}\n`)
-  await run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], { cwd: dir, env: userEnv(), maxBuffer: 64 << 20 })
+  await run('pnpm', ['install', '--reporter=append-only'], { cwd: dir, env: userEnv(), maxBuffer: 64 << 20 })
   return { dir, tarballs }
+}
+
+function tarballSpec(file: string, dir: string): string {
+  return `file:./${relative(dir, file)}`
+}
+
+export function overrides(tarballs: Map<string, Tarball>, dir: string): string {
+  return `overrides:\n${[...tarballs.values()].map(({ name, file }) => `  '${name}': '${tarballSpec(file, dir)}'\n`).join('')}`
 }
 
 export function userEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
@@ -144,7 +137,11 @@ export function userEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 }
 
 export function presmiumBin(project: string): string {
-  return join(project, 'node_modules/@presmium/cli/bin/presmium.mjs')
+  return join(project, 'node_modules/presmium/bin/presmium.mjs')
+}
+
+export function installedDir(project: string, name: string): string {
+  return join(dirname(realpathSync(join(project, 'node_modules/presmium'))), name)
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

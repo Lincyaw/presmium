@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-npm install -D @presmium/cli @presmium/web
+pnpm add -D @presmium/cli @presmium/web
 ```
 
 `presmium build` builds it into `dist/web/` when it is installed (or `--to web`); `presmium dev --to web` runs its dev server.

@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { deckLocale, previewFrameAncestors } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
@@ -27,6 +27,20 @@ export function siteFiles(workDir: string) {
 }
 
 export const SRC_EXCLUDE = ['public/**']
+
+export function presmiumRoot(): string {
+  const own = realpathSync(WEB_DIR)
+  let outermost: string | undefined
+  for (let dir = own; dirname(dir) !== dir; dir = dirname(dir)) {
+    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) return dir
+    if (dir.split(sep).at(-1) === 'node_modules') outermost = dirname(dir)
+  }
+  return outermost ?? own
+}
+
+export function allowed(...dirs: (string | undefined)[]): string[] {
+  return [...new Set(dirs.filter((dir): dir is string => Boolean(dir)).map(dir => (existsSync(dir) ? realpathSync(dir) : dir)))]
+}
 
 export function write(file: string, content: string | Buffer): void {
   if (existsSync(file) && readFileSync(file).equals(Buffer.from(content))) return
@@ -187,7 +201,7 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>,
     `...(node${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(options)} }) ?? [])`)
   const server = options.server ? `
 site.themeConfig.presmium.server = true
-site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.stringify(options.server)}, ws: true } } }
+site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.stringify(options.server)}, ws: true } }, fs: { allow: ${JSON.stringify(allowed(files.root, deck.deckDir, deck.workspaceRoot, presmiumRoot()))} } }
 ` : ''
   const inWorkspace = workspace ? `
 Object.assign(site.themeConfig.presmium, ${JSON.stringify({ document: workspace.document, home: workspace.home, ir: workspace.endpoints.ir, ...workspace.served ? { server: true } : {} })})

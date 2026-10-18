@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { basename, dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,6 +12,15 @@ export const TEMPLATE_SOURCES: Record<string, string> = {
 }
 
 export const TEMPLATES = fileURLToPath(new URL('../templates', import.meta.url))
+
+const REPOSITORY = fileURLToPath(new URL('../../..', import.meta.url))
+
+export function templateDir(template: string): string {
+  const packed = join(TEMPLATES, template)
+  if (existsSync(packed)) return packed
+  const name = Object.keys(TEMPLATE_SOURCES).find(key => template === key || template.startsWith(`${key}/`))
+  return name ? join(REPOSITORY, TEMPLATE_SOURCES[name]!, template.slice(name.length)) : packed
+}
 
 const LEFT_OUT = new Set(['node_modules', 'dist', '.presmium'])
 

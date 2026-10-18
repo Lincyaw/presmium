@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-npm install -D @presmium/cli @presmium/render-slides @presmium/slidev-addon-core
+pnpm add -D @presmium/cli @presmium/render-slides @presmium/slidev-addon-core
 ```
 
 List `@presmium/slidev-addon-core` in the document's `plugins`: it is the host adapter of the slides.

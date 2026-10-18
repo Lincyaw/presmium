@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Usage
 
 ```sh
-npx presmium-language-server --stdio
+pnpm exec presmium-language-server --stdio
 ```
 
 It also takes `--node-ipc` and `--socket=<port>`. The VS Code extension starts it; other editors start it as a language server for Markdown files.

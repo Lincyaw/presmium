@@ -39,7 +39,17 @@ export async function loadPlugin(name: string, deckDir: string, sources?: Plugin
 }
 
 function bundledDir(name: string, sources?: PluginSources): string | undefined {
-  return sources?.bundled && BUNDLED.has(name) ? findPackageDir(name, sources.bundled) : undefined
+  if (!sources?.bundled) return undefined
+  return BUNDLED.has(name) || dependsOn(sources.bundled, name) ? findPackageDir(name, sources.bundled) : undefined
+}
+
+function dependsOn(dir: string, name: string): boolean {
+  try {
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { dependencies?: Record<string, string> }
+    return Object.hasOwn(pkg.dependencies ?? {}, name)
+  } catch {
+    return false
+  }
 }
 
 interface PluginPackage {

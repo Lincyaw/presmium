@@ -870,6 +870,84 @@ importers:
         specifier: 7.2.0
         version: 7.2.0
 
+  packages/presmium:
+    dependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@presmium/host':
+        specifier: workspace:*
+        version: link:../host
+      '@presmium/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@presmium/render-notebook':
+        specifier: workspace:*
+        version: link:../render-notebook
+      '@presmium/render-slides':
+        specifier: workspace:*
+        version: link:../render-slides
+      '@presmium/slidev-addon-assistant':
+        specifier: workspace:*
+        version: link:../addon-assistant
+      '@presmium/slidev-addon-classroom':
+        specifier: workspace:*
+        version: link:../addon-classroom
+      '@presmium/slidev-addon-code':
+        specifier: workspace:*
+        version: link:../addon-code
+      '@presmium/slidev-addon-content':
+        specifier: workspace:*
+        version: link:../addon-content
+      '@presmium/slidev-addon-core':
+        specifier: workspace:*
+        version: link:../addon-core
+      '@presmium/slidev-addon-exec':
+        specifier: workspace:*
+        version: link:../addon-exec
+      '@presmium/slidev-addon-exec-jupyter':
+        specifier: workspace:*
+        version: link:../addon-exec-jupyter
+      '@presmium/slidev-addon-exec-local':
+        specifier: workspace:*
+        version: link:../addon-exec-local
+      '@presmium/slidev-addon-exec-wasi':
+        specifier: workspace:*
+        version: link:../addon-exec-wasi
+      '@presmium/slidev-addon-exec-webgpu':
+        specifier: workspace:*
+        version: link:../addon-exec-webgpu
+      '@presmium/slidev-addon-guide':
+        specifier: workspace:*
+        version: link:../addon-guide
+      '@presmium/slidev-addon-lecture':
+        specifier: workspace:*
+        version: link:../addon-lecture
+      '@presmium/slidev-addon-publish':
+        specifier: workspace:*
+        version: link:../addon-publish
+      '@presmium/slidev-addon-session':
+        specifier: workspace:*
+        version: link:../addon-session
+      '@presmium/slidev-addon-speech':
+        specifier: workspace:*
+        version: link:../addon-speech
+      '@presmium/slidev-addon-stage':
+        specifier: workspace:*
+        version: link:../addon-stage
+      '@presmium/viewer':
+        specifier: workspace:*
+        version: link:../viewer
+      '@presmium/web':
+        specifier: workspace:*
+        version: link:../web
+      create-presmium:
+        specifier: workspace:*
+        version: link:../create-presmium
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+
   packages/render-notebook:
     dependencies:
       myst-to-md:
@@ -977,15 +1055,19 @@ importers:
       '@deepseek-ai/dsh':
         specifier: 0.2.1-alpha.4
         version: 0.2.1-alpha.4(1f9cec9785ab06955d8f2824f50f9509)
-      '@presmium/cli':
-        specifier: workspace:*
-        version: link:../cli
       '@presmium/dsh':
         specifier: workspace:*
         version: link:../dsh
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
+      presmium:
+        specifier: workspace:*
+        version: link:../presmium
+    devDependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
 
   packages/viewer:
     dependencies:

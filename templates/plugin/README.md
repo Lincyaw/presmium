@@ -14,11 +14,11 @@ route.
 ## Develop
 
 ```sh
-npm install
-npm test           # the integration tests: the real presmium CLI on example/lecture.md
-npm run dev        # the example in the web page and the slides, live
-npm run check      # presmium check of the example
-npm run build      # the example's web page, slides and notebook, in example/dist/
+pnpm install
+pnpm test          # the integration tests: the real presmium CLI on example/lecture.md
+pnpm dev           # the example in the web page and the slides, live
+pnpm check         # presmium check of the example
+pnpm build         # the example's web page, slides and notebook, in example/dist/
 ```
 
 | Path | What |
@@ -34,7 +34,7 @@ npm run build      # the example's web page, slides and notebook, in example/dis
 ## Use it in a document
 
 ```sh
-npm install {{name}}
+pnpm add -D {{name}}
 ```
 
 ```yaml

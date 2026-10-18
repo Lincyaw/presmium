@@ -18,19 +18,14 @@ This guide is for people who write lectures. It starts with installing Presmium 
 (start-install)=
 ## Install
 
-Presmium needs Node.js 22.19 or later. The quickest start is the starter, which asks which kind of project you want (a lecture, a workspace or a plugin) and writes its directory, its `package.json` and a first document:
+Presmium needs Node.js 22.19 or later and pnpm (`corepack enable pnpm`; run `pnpm setup` once before the first global install). Install `presmium` globally; it comes with the three renderers and every official plugin:
 
 ```sh
-npm create presmium@latest
+pnpm add -g presmium
+presmium new        # asks which kind of project (a lecture, a workspace or a plugin) and writes its directory and a first document
 ```
 
-You can also install into an existing directory yourself:
-
-```sh
-npm install -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook @presmium/slidev-addon-core
-```
-
-`@presmium/cli` provides the `presmium` command; `@presmium/web`, `@presmium/render-slides` and `@presmium/render-notebook` make the web pages, the slides and the notebook, so install the ones you use; the plugin packages a document lists in its `plugins` are installed too. Code blocks that run at build time use the machine's `python3` or `node`.
+A document needs nothing more installed for `presmium check`, `dev` and `build`. Third-party plugins are installed in the document's project (`pnpm add -D <package>`). A new project lists the version of `presmium` in its `package.json`: after `pnpm install` there, the global `presmium` command hands over to the project's copy, so the project decides the version. Code blocks that run at build time use the machine's `python3` or `node`.
 
 (start-first)=
 ## A first document
@@ -242,7 +237,7 @@ The answers come from a model service the reader sets up (the address of an Open
 (assistant-edit)=
 ## Changes by an agent
 
-In the workbench, `presmium studio` (installed separately as `@presmium/studio`, experimental), an agent changes a lecture as your chat asks: you review the changes, and what you accept becomes a git commit you can revert. The model service comes from environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or from the workbench's model settings; it is never written into the lecture or its outputs.
+In the workbench (experimental; `pnpm add -g @presmium/studio`, then `presmium-studio`), an agent changes a lecture as your chat asks: you review the changes, and what you accept becomes a git commit you can revert. The model service comes from environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or from the workbench's model settings; it is never written into the lecture or its outputs.
 
 (assistant-mcp)=
 ## Agents in your editor
@@ -279,7 +274,7 @@ The translations the documents declare are published with the workspace site: ea
 (workspace-serve)=
 ## The local service and the workbench
 
-`presmium serve` starts the workspace service on your machine: its home page lists the documents, and each document's site compiles on demand and updates as you save. `presmium studio` (installed separately as `@presmium/studio`, experimental) starts the workbench on top of it: the file tree, source editing, preview, the problems and an agent. Both are for you alone and listen on this machine only by default; `--host` opens them to other devices on your local network, with no login, so whoever reaches the port works as you. The service's preview shows the originals; `presmium build` publishes the translations.
+`presmium serve` starts the workspace service on your machine: its home page lists the documents, and each document's site compiles on demand and updates as you save. `presmium-studio` (`pnpm add -g @presmium/studio`, experimental) starts the workbench on top of it: the file tree, source editing, preview, the problems and an agent. Both are for you alone and listen on this machine only by default; `--host` opens them to other devices on your local network, with no login, so whoever reaches the port works as you. The service's preview shows the originals; `presmium build` publishes the translations.
 
 (publish)=
 # Publishing

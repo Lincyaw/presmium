@@ -13,9 +13,10 @@
 
 ```sh
 pnpm install
+pnpm add -g ./packages/presmium ./packages/studio  # 全局命令 presmium 与 presmium-studio，运行这份源码
 node examples/workspace/try.mjs ~/presmium-example-workspace
-presmium serve ~/presmium-example-workspace     # 文档列表与产物：http://127.0.0.1:4310
-presmium studio ~/presmium-example-workspace    # 工作台：只打印一个网址
+presmium serve ~/presmium-example-workspace         # 文档列表与产物：http://127.0.0.1:4310
+presmium-studio ~/presmium-example-workspace        # 工作台：只打印一个网址
 ```
 
 副本中还有 BPE 讲义引用的示例代码 `examples/sample-repo` 与讲义锁定的几个提交，所以代码引用和它们的永久链接照常可用；`node_modules` 是指向本目录 `node_modules` 的链接。

@@ -1,12 +1,13 @@
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import type { IRDocument } from '../packages/kernel/src/ir.ts'
-import { closure, packAll, packPlugin, presmiumBin, userEnv } from '../scripts/consumer.ts'
+import { overrides, packAll, packPlugin, presmiumBin, userEnv } from '../scripts/consumer.ts'
+import type { Tarball } from '../scripts/consumer.ts'
 import { openDevPage, serve } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'serial' })
@@ -20,17 +21,20 @@ let plugin: string
 let site: { url: string, close(): Promise<void> } | undefined
 const running: ChildProcess[] = []
 
-async function install(dir: string, tarballs: Map<string, { file: string }>, field: 'dependencies' | 'devDependencies', extra: Record<string, string> = {}): Promise<void> {
+async function install(dir: string, tarballs: Map<string, Tarball>, extra: Record<string, string> = {}): Promise<void> {
   const file = join(dir, 'package.json')
-  const pkg = JSON.parse(readFileSync(file, 'utf8')) as Record<typeof field, Record<string, string>>
-  for (const name of closure(Object.keys(pkg[field]).filter(name => name.startsWith('@presmium/')))) pkg[field][name] = `file:${tarballs.get(name)!.file}`
-  Object.assign(pkg[field], extra)
+  const pkg = JSON.parse(readFileSync(file, 'utf8')) as { devDependencies: Record<string, string> }
+  for (const name of Object.keys(pkg.devDependencies)) if (tarballs.has(name)) pkg.devDependencies[name] = `file:${tarballs.get(name)!.file}`
+  Object.assign(pkg.devDependencies, extra)
   writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`)
-  await sh('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], dir)
+  appendFileSync(join(dir, 'pnpm-workspace.yaml'), overrides(tarballs, dir))
+  await sh('pnpm', ['install', '--reporter=append-only'], dir)
 }
 
-async function dev(cwd: string, args: string[], forms: string[]): Promise<Record<string, string>> {
-  const child = spawn(process.execPath, [presmiumBin(cwd), ...args], { cwd, env: userEnv(), stdio: ['ignore', 'pipe', 'pipe'] })
+const pluginBin = (dir: string) => join(dir, 'node_modules/@presmium/cli/bin/presmium.mjs')
+
+async function dev(cwd: string, args: string[], forms: string[], bin = presmiumBin(cwd)): Promise<Record<string, string>> {
+  const child = spawn(process.execPath, [bin, ...args], { cwd, env: userEnv(), stdio: ['ignore', 'pipe', 'pipe'] })
   running.push(child)
   return new Promise((resolve, reject) => {
     let output = ''
@@ -57,7 +61,7 @@ test.beforeAll(async () => {
   test.setTimeout(900_000)
   work = mkdtempSync(join(tmpdir(), 'presmium-create-e2e-'))
   const tarballs = await packAll(join(work, 'tarballs'))
-  const create = (args: string[]) => sh('npm', ['exec', '--yes', `--package=${tarballs.get('create-presmium')!.file}`, '--', 'create-presmium', ...args], work!)
+  const create = (args: string[]) => sh('pnpm', [`--package=${tarballs.get('create-presmium')!.file}`, 'dlx', 'create-presmium', ...args], work!)
   await create(['greeting', '--type', 'plugin', '--name', 'presmium-plugin-greeting'])
   await create(['lecture', '--type', 'lecture', '--title', '问候'])
   plugin = join(work, 'greeting')
@@ -68,9 +72,9 @@ test.beforeAll(async () => {
   writeFileSync(source, readFileSync(source, 'utf8')
     .replace(/^( {2}- '@presmium\/slidev-addon-core'.*)$/m, `$1\n  - ${packed.name}\nrenderers:\n  web: { port: ${PORTS.web} }\n  slides: { port: ${PORTS.slides} }`)
     .concat('\n(greeting)=\n## 问候\n\n:::{greeting} 读者\n:::\n'))
-  await install(lecture, tarballs, 'dependencies', { [packed.name]: `file:${packed.file}` })
+  await install(lecture, tarballs, { [packed.name]: `file:${packed.file}` })
   await sh(process.execPath, [presmiumBin(lecture), 'build', '--to', 'web,slides'], lecture)
-  await install(plugin, tarballs, 'devDependencies')
+  await install(plugin, tarballs)
   const example = join(plugin, 'example/lecture.md')
   writeFileSync(example, readFileSync(example, 'utf8').replace(/^ {2}web: \{\}$/m, `  web: { port: ${EXAMPLE_PORTS.web} }`).replace(/^ {2}slides: \{\}$/m, `  slides: { port: ${EXAMPLE_PORTS.slides} }`))
   site = await serve(join(lecture, 'dist'), '/slides/')
@@ -114,12 +118,12 @@ test('under presmium dev the component waves through the plugin\'s server route'
   await expect(card.locator('.greeting-card__count')).toHaveText('已挥手 2 次')
 })
 
-test('the plugin project\'s npm run dev shows its example\'s component in the web page and the slides', async ({ page }) => {
+test('the plugin project\'s pnpm dev shows its example\'s component in the web page and the slides', async ({ page }) => {
   test.setTimeout(300_000)
   const { scripts } = JSON.parse(readFileSync(join(plugin, 'package.json'), 'utf8')) as { scripts: { dev: string } }
   const [command, ...args] = scripts.dev.split(' ')
   expect(command).toBe('presmium')
-  const urls = await dev(plugin, args, ['web', 'slides'])
+  const urls = await dev(plugin, args, ['web', 'slides'], pluginBin(plugin))
   const doc = JSON.parse(readFileSync(join(plugin, 'example/.presmium/dev/ir.json'), 'utf8')) as IRDocument
   const pages = [`${urls.web}/?section=greeting`, `${urls.slides}/${doc.sections.find(section => section.id === 'greeting')!.index}`]
   for (const url of pages) {

@@ -321,4 +321,4 @@ it('builds the poll into the web page', async () => {
 (plugin-testing-publish)=
 ## 发布之前
 
-`npm pack` 之后在另一个目录中安装压缩包与 `@presmium/cli`、渲染端，`presmium check` 没有问题、构建通过，再在网页与幻灯片中看一遍组件。起步工具 `npm create presmium@latest` 生成的插件项目已经带着这样的结构与一个能运行的集成测试。
+`pnpm pack` 之后在另一个项目中 `pnpm add -D <压缩包>`，`presmium check` 没有问题、构建通过，再在网页与幻灯片中看一遍组件。`presmium new --type plugin` 生成的插件项目已经带着这样的结构与一个能运行的集成测试。

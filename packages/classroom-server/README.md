@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Usage
 
 ```sh
-npx presmium-classroom-server --port 1234
+pnpm exec presmium-classroom-server --port 1234
 ```
 
 Documents point to it in their headmatter: `presmium: { presmium.session: { server: ws://<host>:1234 } }`. `presmium dev` and `presmium serve` also run one on their own port. Options: `--port`, `--host`, `--deck` (where archived classrooms are written). Run it on the classroom's own network: anyone with a join link can join.

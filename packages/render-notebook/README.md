@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-npm install -D @presmium/cli @presmium/render-notebook
+pnpm add -D @presmium/cli @presmium/render-notebook
 ```
 
 ## Configuration

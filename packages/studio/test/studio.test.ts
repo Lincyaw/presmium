@@ -195,7 +195,7 @@ describe('presmium studio installed from the packed packages', () => {
     cpSync(join(CONSUMER, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
     writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
     git(ws, ['init', '-q', '-b', 'main'])
-    const running = await studio([join(project, 'node_modules/@presmium/cli/bin/presmium.mjs'), 'studio', 'ws', '--port', '5666'], { cwd: project, env: home.env() })
+    const running = await studio([join(project, 'node_modules/presmium/bin/presmium.mjs'), 'studio', 'ws', '--port', '5666'], { cwd: project, env: home.env() })
     const browser = await chromium.launch()
     try {
       expect(running.stdout()).toBe(`studio  ${running.url}\n`)
@@ -207,7 +207,7 @@ describe('presmium studio installed from the packed packages', () => {
       await expect.poll(() => page.url()).toBe('http://127.0.0.1:5666/')
       await page.locator('#root > *').first().waitFor({ timeout: 120_000 })
       const documents = await page.evaluate(async () => (await fetch('/api/presmium/documents')).json() as Promise<{ documents: { dir: string, title: string }[] }>)
-      expect(documents.documents).toEqual([{ dir: 'intro', title: 'Installed from npm', lang: 'en' }])
+      expect(documents.documents).toEqual([{ dir: 'intro', title: 'Installed from tarballs', lang: 'en' }])
       expect(errors).toEqual([])
     } finally {
       await browser.close()

@@ -19,11 +19,24 @@ import { devHost } from './host.ts'
 
 export const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 
+export interface MainOptions {
+  bundled?: string
+  bin?: string
+}
+
+let bundled = BUNDLED
+let presmiumBin = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
+
 const USAGE = `Usage: presmium <command> [deck] [options]
 
 The deck is a directory holding lecture.md, or an entry file (default: .).
 
 Commands:
+  new     a new project in the directory (default: asks), from create-presmium
+          --type <kind>   lecture, workspace or plugin (default: asks)
+          --title <text>  the lecture's or the workspace's title
+          --name <name>   the plugin's package name
+          --no-git        do not run git init
   build   compile and render; writes <out>/ir.json and <out>/<renderer>/; at a workspace root
           (presmium.workspace.yaml) builds the workspace site into <out>/web/
           --to <ids>      renderers to run, comma-separated (default: the deck's renderers)
@@ -97,7 +110,10 @@ interface Command {
   previewOrigins: string[]
 }
 
-export async function main(argv: string[]): Promise<number> {
+export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
+  bundled = options.bundled ?? BUNDLED
+  if (options.bin) presmiumBin = options.bin
+  if (argv[0] === 'new') return create(argv.slice(1))
   if (argv[0] === 'studio') return studio(argv.slice(1))
   let command: Command | 'help'
   try {
@@ -212,14 +228,14 @@ async function check(command: Command): Promise<number> {
     updateLock: command.updateLock,
     environments: command.env,
     externalLinks: command.externalLinks,
-    compiler: { bundled: BUNDLED, ...command.audience ? { audience: command.audience } : {} },
+    compiler: { bundled, ...command.audience ? { audience: command.audience } : {} },
   })
   process.stdout.write(command.json ? `${JSON.stringify(checkJson(result), null, 2)}\n` : checkText(result))
   return exitCode(result.findings)
 }
 
 async function ir(command: Command): Promise<number> {
-  const { doc } = await new Compiler(command.entry, { bundled: BUNDLED }).compile()
+  const { doc } = await new Compiler(command.entry, { bundled }).compile()
   const json = `${JSON.stringify(doc, null, 2)}\n`
   if (command.out) {
     const file = resolve(command.out)
@@ -234,11 +250,11 @@ async function ir(command: Command): Promise<number> {
 
 async function buildDeck(command: Command): Promise<number> {
   if (command.workspace) {
-    const report = await buildWorkspace(command.workspace, { outDir: command.out, bundled: BUNDLED })
+    const report = await buildWorkspace(command.workspace, { outDir: command.out, bundled })
     process.stdout.write(workspaceText(report))
     return exitCode(report.findings)
   }
-  const compilation = await new Compiler(command.entry, { bundled: BUNDLED, ...command.audience ? { audience: command.audience } : {} }).compile({ pruneCache: true })
+  const compilation = await new Compiler(command.entry, { bundled, ...command.audience ? { audience: command.audience } : {} }).compile({ pruneCache: true })
   const outDir = resolve(command.out ?? join(compilation.deckDir, 'dist'))
   const report = await build(compilation, { outDir, to: command.to })
   process.stdout.write(buildText(report, compilation.runs, compilation.audience?.name))
@@ -258,7 +274,7 @@ async function devDeck(command: Command): Promise<number> {
     document: async dir => (dir === '' && latest ? servedDocument(latest) : undefined),
     stateFile: join(deckDir, '.presmium', 'server.json'),
   })
-  const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: server.services })
+  const compiler = new Compiler(command.entry, { bundled, services: server.services })
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })
   await writeFile(join(outDir, '.gitignore'), '*\n')
@@ -297,7 +313,7 @@ async function serve(command: Command): Promise<number> {
     host: command.host,
     port: command.port,
     ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
-    bundled: BUNDLED,
+    bundled,
     check: compilation => compilation.check(),
     previewOrigins: command.previewOrigins,
   })
@@ -313,26 +329,34 @@ async function serve(command: Command): Promise<number> {
   return 0
 }
 
-const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
-
-function studioEntry(): string | undefined {
-  for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), 'package.json')).href]) {
+function installed(name: string): string | undefined {
+  for (const from of [pathToFileURL(join(bundled, 'package.json')).href, import.meta.url, pathToFileURL(join(process.cwd(), 'package.json')).href]) {
     try {
-      return createRequire(from).resolve('@presmium/studio')
+      return createRequire(from).resolve(name)
     } catch {
     }
   }
   return undefined
 }
 
-async function studio(argv: string[]): Promise<number> {
-  const entry = studioEntry()
+async function create(argv: string[]): Promise<number> {
+  const entry = installed('create-presmium')
   if (!entry) {
-    process.stderr.write('presmium studio: the workbench is not installed. It is the package @presmium/studio (experimental; with DeepSeek Harness, about 865 MB), installed beside @presmium/cli: npm install --save-dev @presmium/studio in this project, or npm install --global @presmium/studio for a global presmium.\n')
+    process.stderr.write('presmium new: create-presmium is not installed; it comes with the presmium package: pnpm add -g presmium\n')
+    return 2
+  }
+  const { main: createMain } = await createJiti(import.meta.url).import<{ main(argv: string[]): Promise<number> }>(entry)
+  return createMain(argv)
+}
+
+async function studio(argv: string[]): Promise<number> {
+  const entry = installed('@presmium/studio')
+  if (!entry) {
+    process.stderr.write('presmium studio: the workbench is not installed here. It is the package @presmium/studio (experimental; with DeepSeek Harness, about 865 MB): pnpm add -g @presmium/studio, then run presmium-studio; or pnpm add -D @presmium/studio in this project.\n')
     return 2
   }
   const { main: studioMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { presmium: string }): Promise<number> }>(entry)
-  return studioMain(argv, { presmium: PRESMIUM_BIN })
+  return studioMain(argv, { presmium: presmiumBin })
 }
 
 function networkLines(host: string | undefined, url: string): string {

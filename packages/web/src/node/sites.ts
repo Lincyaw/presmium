@@ -17,7 +17,7 @@ import { publishedFile } from './publish.ts'
 import type { DocumentPage } from './publish.ts'
 import { buildDocument, devDocument } from './renderer.ts'
 import type { DocumentDevServer, DocumentSite } from './renderer.ts'
-import { browserPackages, languageLabel, linkDependencies, OG_TITLE, SRC_EXCLUDE, write } from './site.ts'
+import { allowed, browserPackages, languageLabel, linkDependencies, OG_TITLE, presmiumRoot, SRC_EXCLUDE, write } from './site.ts'
 import type { WorkspaceOptions } from './site.ts'
 import { vitepressBuild, vitepressDev } from './vitepress.ts'
 
@@ -101,16 +101,6 @@ function packageDir(name: string, from: string): string | undefined {
     if (existsSync(join(candidate, 'package.json'))) return realpathSync(candidate)
     if (dirname(dir) === dir) return undefined
   }
-}
-
-function presmiumRoot(): string {
-  const own = realpathSync(fileURLToPath(new URL('../..', import.meta.url)))
-  let outermost: string | undefined
-  for (let dir = own; dirname(dir) !== dir; dir = dirname(dir)) {
-    if (existsSync(join(dir, 'pnpm-workspace.yaml'))) return dir
-    if (dir.split(sep).at(-1) === 'node_modules') outermost = dirname(dir)
-  }
-  return outermost ?? own
 }
 
 function siteModules(ctx: RenderContext): ClientModules {
@@ -377,10 +367,6 @@ function writeIndex(dir: string, title: string | undefined, target: string | und
     write(join(dir, 'index.md'), list)
     rmSync(join(dir, `${LIST_PAGE}.md`), { force: true })
   }
-}
-
-function allowed(...dirs: (string | undefined)[]): string[] {
-  return [...new Set(dirs.filter((dir): dir is string => Boolean(dir)).map(dir => (existsSync(dir) ? realpathSync(dir) : dir)))]
 }
 
 export async function buildSite(site: SiteSpec, ctx: RenderContext): Promise<RenderOutput> {

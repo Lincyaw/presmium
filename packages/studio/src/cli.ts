@@ -1,10 +1,8 @@
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
-import { answerImport, importAnswered, modelEnv, readAssistantSettings } from './model.ts'
-import type { AssistantSettings } from './model.ts'
-import { startStudio, studioHome } from './studio.ts'
+import { modelEnv } from './model.ts'
+import { startStudio } from './studio.ts'
 
 const USAGE = `Usage: presmium studio [dir] [options]
 
@@ -32,19 +30,6 @@ function portOf(value: string | undefined): number | undefined {
   return n
 }
 
-async function offerImport(home: string, settings: AssistantSettings): Promise<void> {
-  const where = `${settings.provider ?? 'DeepSeek'}${settings.url ? ` at ${settings.url}` : ''}`
-  if (!process.stdin.isTTY || !process.stderr.isTTY) {
-    process.stderr.write(`presmium studio: ${settings.file} has the model settings of presmium serve's assistant (${where}); start presmium studio in a terminal once to import them, or enter a model in the workbench's model settings\n`)
-    return
-  }
-  const prompt = createInterface({ input: process.stdin, output: process.stderr })
-  const answer = await prompt.question(`presmium studio: use the model settings of presmium serve's assistant (${settings.file}: ${where}) in the workbench? [Y/n] `)
-  prompt.close()
-  const imported = answerImport(home, /^\s*(?:y|yes)?\s*$/i.test(answer) ? settings : undefined)
-  if (imported) process.stderr.write(`presmium studio: imported into ${home} (${settings.file} stays)${settings.model ? `; choose the model ${settings.model} in the model settings` : ''}\n`)
-}
-
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
   let values: { port?: string, host?: string, help?: boolean }
   let dir: string
@@ -67,9 +52,6 @@ export async function main(argv: string[], options: MainOptions = {}): Promise<n
 
   const model = modelEnv(process.env)
   if (model.warning) process.stderr.write(`presmium studio: ${model.warning}\n`)
-  const home = studioHome(process.env)
-  const saved = model.from.length === 0 && !importAnswered(home) ? readAssistantSettings(process.env) : undefined
-  if (saved) await offerImport(home, saved)
 
   let studio
   try {
