@@ -33,7 +33,8 @@ function status(i: number): string {
   font-weight: 700;
   color: var(--pm-color-accent);
 }
+/* A step done recedes in the muted colour, which still reads at WCAG AA (an opacity of 0.6 did not: 4.4:1). */
 .pm-demo-stepper li[data-status='done'] {
-  opacity: 0.6;
+  color: var(--pm-color-muted);
 }
 </style>

@@ -3,6 +3,7 @@ import type { PluginDefinition } from '@presmium/kernel'
 import { version } from '../../package.json'
 import { createExecutorRouter, EXEC_ID, execConfig, TRACER } from '../domain/index.ts'
 import { messages } from './messages.ts'
+import { environments } from './place.ts'
 import { createPyodideExecutor } from './pyodide.ts'
 import type { PyodideExecutor } from './pyodide.ts'
 import { createScriptExecutor } from './script.ts'
@@ -21,6 +22,8 @@ export const execPlugin: PluginDefinition = {
   manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], capabilities: ['exec'] },
   setup(ctx) {
     const config = execConfig(ctx.config)
+    // Where a run panel's code runs, by its environment's kind (./place.ts).
+    environments.value = ctx.environments ?? {}
     // A kernel started again (a page restored from the back-forward cache) may set up before the
     // previous one is disposed; disposing an executor only ends its worker, so either order is safe.
     pyodide?.dispose()

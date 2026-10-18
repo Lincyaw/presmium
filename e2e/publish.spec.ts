@@ -175,9 +175,6 @@ test('high contrast keeps the opacity that other plugins give their step states'
   await page.goto(slides(`${deck().slide('guide')}?clicks=0`))
   await expect(page.locator('html')).toHaveAttribute('data-pm-contrast', 'high')
   await expect(page.locator('.slidev-layout.pm-guide .pm-cursor')).toHaveCSS('opacity', '0')
-  // The steps the stepper of the host page has done stay dimmed.
-  await page.goto(slides(`${deck().slide('core')}?clicks=3`))
-  await expect(page.locator('.pm-demo-stepper li[data-status="done"]').first()).toHaveCSS('opacity', '0.6')
 })
 
 // Every slide of the deck, with all its click steps shown, whatever plugin draws it.

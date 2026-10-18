@@ -1,10 +1,10 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
-import { presmium } from './fixtures/deck.ts'
+import { deckDir, presmium } from './fixtures/deck.ts'
 import { SLIDES, WEB } from './urls.ts'
 
 // The demo lecture (examples/demo): it builds to the three media without warnings, as `pnpm demo:build`
@@ -17,11 +17,20 @@ import { SLIDES, WEB } from './urls.ts'
 const DEMO = fileURLToPath(new URL('../examples/demo', import.meta.url))
 /** `presmium-export` of the publishing plugin, which the lecture lists. */
 const EXPORT = fileURLToPath(new URL('../packages/addon-publish/bin/presmium-export.mjs', import.meta.url))
+/** The deck of the print page's test: two slides, a link each, and a plugin that makes the page slow and fail once. */
+const PRINT = fileURLToPath(new URL('./fixtures/print', import.meta.url))
+/**
+ * The build and the export both write the lecture's Slidev deck, `.presmium/slides` (the slides renderer's work
+ * directory, whatever `--out`), and the export serves it while it prints: the two never run at once (a test lock),
+ * or the build rewrites the deck under the print page.
+ */
+const DEMO_DECK = { lock: 'examples/demo/.presmium/slides' }
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
 
+/** The sections of the built lecture's IR (`pnpm demo:build`), read from the build rather than from the server WEB serves. */
 async function sections(): Promise<Section[]> {
-  return (await (await fetch(`${WEB}/ir.json`)).json() as { sections: Section[] }).sections
+  return (JSON.parse(readFileSync(join(DEMO, 'dist/web/ir.json'), 'utf8')) as { sections: Section[] }).sections
 }
 
 /**
@@ -32,7 +41,7 @@ async function sections(): Promise<Section[]> {
  */
 const RECORDED_ELSEWHERE = /\swarning\s+block \S+: its recorded output was made with "[^"]*", this build has "[^"]*"; the recording is reused/
 
-test('the lecture builds to the web, the slides and a notebook without warnings', async ({ browserName }) => {
+test('the lecture builds to the web, the slides and a notebook without warnings', DEMO_DECK, async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'the build does not depend on the browser')
   test.setTimeout(600_000)
   const out = mkdtempSync(join(tmpdir(), 'presmium-demo-'))
@@ -54,13 +63,18 @@ test('the lecture builds to the web, the slides and a notebook without warnings'
   }
 })
 
-test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8)', async ({ browserName }) => {
+test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8)', DEMO_DECK, async ({ browserName }) => {
   test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
   test.setTimeout(900_000)
   const out = mkdtempSync(join(tmpdir(), 'presmium-demo-export-'))
   try {
     const exported = spawnSync(process.execPath, [EXPORT, DEMO, '--output', join(out, 'demo.pdf'), '--json'], { cwd: DEMO, encoding: 'utf8', timeout: 840_000 })
-    expect(exported.status, exported.stderr).toBe(0)
+    // A failed export leaves its PDF and its output with the test's results.
+    if (exported.status !== 0) {
+      if (existsSync(join(out, 'demo.pdf'))) await test.info().attach('demo.pdf', { path: join(out, 'demo.pdf'), contentType: 'application/pdf' })
+      await test.info().attach('presmium-export', { body: `${exported.stdout}\n${exported.stderr}`, contentType: 'text/plain' })
+    }
+    expect(exported.status, `${exported.stdout}\n${exported.stderr}`).toBe(0)
     const report = JSON.parse(exported.stdout) as { format: string, pages: number, links: { url: string, pages: number[] }[] }
     expect(report.format).toBe('pdf')
     expect(report.pages).toBe((await sections()).length)
@@ -68,6 +82,33 @@ test('the lecture\'s slides export to a PDF, a page a slide, its links kept (C-8
     expect(readFileSync(join(out, 'demo.pdf')).subarray(0, 5).toString()).toBe('%PDF-')
   } finally {
     rmSync(out, { recursive: true, force: true })
+  }
+})
+
+/**
+ * Why the export above failed under the load of a full run, on a deck of its own (e2e/fixtures/print). `slidev
+ * export` prints its print page once the page's network has been idle for 500 ms and the slides it then finds have
+ * loaded. A busy machine leaves the network idle while the browser evaluates the page's modules, before the app has
+ * mounted: the export found no slide to wait for and printed blank pages (the links lost). And a request of the page
+ * can fail (Chromium fails the requests in flight with `net::ERR_NETWORK_CHANGED` when a Docker container of another
+ * test starts; Vite answers "Outdated Optimize Dep"): the app never started and the export timed out waiting for the
+ * page's body. The publishing plugin's print page now keeps its network busy until it shows every slide, and loads
+ * again when its modules fail to (packages/addon-publish/setup/print.ts). The fixture's plugin holds the app back
+ * for 5 s once its modules have loaded, as the busy machine did, and fails the page's first request for one of them.
+ */
+test('the export waits for the print page to show every slide, and loads it again when a request of the page fails (C-8)', async ({ browserName }) => {
+  test.skip(browserName !== 'chromium', 'the export runs in Playwright\'s Chromium whatever the browser under test')
+  test.setTimeout(300_000)
+  const dir = deckDir('print')
+  try {
+    cpSync(PRINT, dir, { recursive: true })
+    const exported = spawnSync(process.execPath, [EXPORT, dir, '--output', join(dir, 'print.pdf'), '--json'], { cwd: dir, encoding: 'utf8', timeout: 240_000 })
+    expect(exported.status, `${exported.stdout}\n${exported.stderr}`).toBe(0)
+    const report = JSON.parse(exported.stdout) as { pages: number, links: { url: string, pages: number[] }[] }
+    expect(report.pages).toBe(2)
+    expect(report.links.map(link => [link.url, link.pages])).toEqual([['https://example.com/one', [1]], ['https://example.com/two', [2]]])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })
 

@@ -1,3 +1,4 @@
+import { iconMarkup } from '@presmium/host'
 import { escapeHtml, EXECUTOR, isRecord } from '@presmium/kernel'
 import type { RunOutput, RunResult } from '@presmium/kernel'
 import { useNav } from '@slidev/client'
@@ -87,6 +88,11 @@ function showsRecording(options: Record<string, unknown>): boolean {
  */
 const RUNNER_LANGS = ['python', 'py', 'python3', 'javascript', 'js', 'typescript', 'ts', 'c', 'cpp', 'c++', 'ruby', 'rb', 'sql']
 
+/** How to run the code, naming the runner's button by its icon, the host's line icon (N-10). */
+function runHint(): CodeRunnerOutput {
+  return { html: `<span class="pm-run-hint">${messages().runHint(iconMarkup('play', '0.9em', 2))}</span>` }
+}
+
 /**
  * Monaco Runner support (Slidev's `{monaco-run}` code blocks, which the slides
  * renderer writes for code with `:run: live` or `both`) through the
@@ -104,7 +110,7 @@ const RUNNER_LANGS = ['python', 'py', 'python3', 'javascript', 'js', 'typescript
 function runner(lang: string): CodeRunner {
   return async (code, { options }) => {
     const recording = recordingOf(options)
-    if (showsRecording(options)) return recording ? recorded(recording) : [{ text: messages().runHint, class: 'pm-run-hint' }]
+    if (showsRecording(options)) return recording ? recorded(recording) : [runHint()]
     const executor = await whenService(EXECUTOR)
     if (!executor) return recording ? recorded(recording, messages().unavailable) : [{ error: messages().unavailable }]
     const text = (key: string) => (typeof options[key] === 'string' && options[key] ? options[key] as string : undefined)

@@ -98,6 +98,16 @@ for i in range(num_merges):
     print("合并第", i + 1, "轮")
 ```
 
+(trace)=
+## 逐行执行
+
+```{step-run} python
+:steps: 3
+a = 1
+b = a + 1
+print(b)
+```
+
 (exercise)=
 ## 动手：合并一对
 
@@ -123,3 +133,25 @@ assert merge([1, 2, 3], (1, 2), 9) == [9, 3]
 
 ```{pulse} 你弄清楚了吗？
 ```
+
+(stepper)=
+## 分三步
+
+:::{component} PmDemoStepper
+:span: 3
+steps: [统计, 选出, 合并]
+:::
+
+已经走过的步骤退为次要的颜色，仍然清楚可读。
+
+(diagram)=
+## 流程图
+
+```mermaid
+flowchart LR
+  A[文本的字节] --> B[统计相邻的对]
+  B -- 次数最多 --> C[合并成新词元]
+  C -- 还不够 --> B
+```
+
+连线上的标签在明暗两套下都清楚可读。

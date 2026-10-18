@@ -3,12 +3,15 @@ import { usePresentationMode, useSectionConfig, useService, useStartReport } fro
 import { EXECUTOR, isRecord } from '@presmium/kernel'
 import type { ParamsDisplay } from '@presmium/kernel'
 import { computed, reactive, ref, shallowRef } from 'vue'
-import { useMessages, useSlideRoom } from '../src/client/index.ts'
+import { languageName, runPlace, seconds, useMessages, useSlideRoom } from '../src/client/index.ts'
 import { appendRun, compareRuns, configuredTimeout, defaultPair, EXEC_ID, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'
 import type { RunHistory, RunRecord } from '../src/domain/index.ts'
 
 // P-20 run panel: wraps a code block; runs it with the parameters in the form,
-// keeps a run history in this view and compares two runs. P-24: a failed or
+// keeps a run history in this view and compares two runs. In 书卷 (N-10,
+// docs/design/slide.dc.html) its bar above the code names the language and
+// where it runs, with the parameters and the run button; the output beside
+// the code (where there is room) is labelled with the run's duration. P-24: a failed or
 // timed-out run shows `recorded` instead, marked as recorded; a run that could
 // not happen (no runtime, no GPU adapter, a timeout) shows the output recorded
 // at compile time, with the reason. Any language an executor runs (e.g. `wgsl`);
@@ -49,7 +52,7 @@ useSlideRoom(root, presenting, (panel) => {
   const main = root.value?.querySelector<HTMLElement>('.pm-run-panel__main')
   const pre = main?.querySelector<HTMLElement>('.pm-run-panel__source pre')
   if (!main || !pre) return
-  // The controls below the code keep their height; the code takes the rest.
+  // The bar above the code keeps its height; the code takes the rest.
   const code = panel - (main.offsetHeight - pre.offsetHeight)
   if (room.value?.panel !== panel || room.value.code !== code) room.value = { panel, code }
 })
@@ -58,11 +61,27 @@ const running = ref(false)
 // The runs being compared; each new run selects the last two.
 const selected = ref<number[]>([])
 
-/** How the executor that runs this code shows its parameters, if it says. */
-const display = computed((): ParamsDisplay | undefined => {
+/**
+ * The executor that runs this code: its environment's, else the one the router chooses for its language. The
+ * router's list is not reactive (an executor registers, or stops supporting a language, later): asked again after
+ * each run.
+ */
+const routed = computed(() => {
+  void history.value
   const executors = executor.value?.list() ?? []
-  const routed = props.executor ? executors.find(e => e.id === props.executor) : executors.find(e => e.supports(props.lang))
-  return routed?.params?.(props.lang)
+  return props.executor ? executors.find(e => e.id === props.executor) : executors.find(e => e.supports(props.lang))
+})
+/** How the executor that runs this code shows its parameters, if it says. */
+const display = computed((): ParamsDisplay | undefined => routed.value?.params?.(props.lang))
+/**
+ * Where the code runs, as the bar says it (./src/client/place.ts): once it has run, where it ran; before, where the
+ * router would run it. Nothing for an executor that does not say.
+ */
+const where = computed(() => {
+  const place = runPlace(latest.value?.result.executorId ?? props.executor ?? routed.value?.id)
+  if (!place) return undefined
+  const said = t.value.runsIn
+  return place.kind === 'browser' || place.kind === 'machine' ? said[place.kind] : said[place.kind](place.name)
 })
 const label = (name: string) => display.value?.labels[name] ?? name
 const split = (name: string) => Boolean(display.value?.fields?.includes(name) && fields[name])
@@ -81,6 +100,11 @@ const reason = computed(() => {
   const why = result && fallbackReason(result)
   if (!why) return undefined
   return why === 'failed' && result.exitCode === null && result.stderr.trim() ? result.stderr.trim() : t.value[why]
+})
+/** The output's label: with the run's duration when it ran, not for a recorded output. */
+const outputLabel = computed(() => {
+  const result = latest.value?.result
+  return result && result.source === 'live' ? t.value.outputTook(seconds(result.durationMs)) : t.value.output
 })
 const comparison = computed(() => {
   const [before, after] = [...selected.value].sort((a, b) => a - b).map(id => history.value.find(record => record.id === id))
@@ -129,34 +153,41 @@ function fieldSize(value: string | undefined): number {
     :data-runs="history.length"
   >
     <div class="pm-run-panel__main">
+      <form class="pm-run-panel__bar pm-run-panel__form" @submit.prevent="run">
+        <span class="pm-run-panel__where"><span class="pm-run-panel__lang">{{ languageName(lang) }}</span><template v-if="where"> · {{ where }}</template></span>
+        <!-- The parameters stay with the run button: where the bar wraps, they go to its second line together. -->
+        <span class="pm-run-panel__controls">
+          <template v-for="(_, name) in args" :key="name">
+            <template v-if="split(name)">
+              <label v-for="(__, key) in fields[name]" :key="`${name}.${key}`" class="pm-run-panel__param">
+                <span>{{ label(name) }} <code>{{ key }}</code></span>
+                <input v-model="fields[name]![key]" class="pm-ui-input" :name="`${name}.${key}`" :size="fieldSize(fields[name]![key])" spellcheck="false" autocomplete="off">
+              </label>
+            </template>
+            <label v-else class="pm-run-panel__param">
+              <span>{{ label(name) }}</span>
+              <input v-model="args[name]" class="pm-ui-input" :name="name" :size="fieldSize(args[name])" spellcheck="false" autocomplete="off">
+            </label>
+          </template>
+          <span v-if="!executor && report" class="pm-run-panel__hint">{{ t.unavailable }}</span>
+          <button type="submit" class="pm-run-panel__run pm-ui-button pm-ui-button--primary" :disabled="running || !executor">
+            <svg class="pm-ui-icon" width="0.75em" height="0.75em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
+            {{ running ? t.running : history.length ? t.rerun : t.run }}
+          </button>
+        </span>
+      </form>
       <div class="pm-run-panel__source">
         <slot>
           <pre><code>{{ code }}</code></pre>
         </slot>
       </div>
-      <form class="pm-run-panel__form" @submit.prevent="run">
-        <template v-for="(_, name) in args" :key="name">
-          <template v-if="split(name)">
-            <label v-for="(__, key) in fields[name]" :key="`${name}.${key}`" class="pm-run-panel__param">
-              <span>{{ label(name) }} <code>{{ key }}</code></span>
-              <input v-model="fields[name]![key]" class="pm-ui-input" :name="`${name}.${key}`" :size="fieldSize(fields[name]![key])" spellcheck="false" autocomplete="off">
-            </label>
-          </template>
-          <label v-else class="pm-run-panel__param">
-            <span>{{ label(name) }}</span>
-            <input v-model="args[name]" class="pm-ui-input" :name="name" :size="fieldSize(args[name])" spellcheck="false" autocomplete="off">
-          </label>
-        </template>
-        <button type="submit" class="pm-run-panel__run pm-ui-button pm-ui-button--primary" :disabled="running || !executor">
-          <svg class="pm-ui-icon" width="0.75em" height="0.75em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
-          {{ running ? t.running : history.length ? t.rerun : t.run }}
-        </button>
-        <span v-if="!executor && report" class="pm-run-panel__hint">{{ t.unavailable }}</span>
-      </form>
     </div>
     <!-- Until the first run there is nothing to show beside the code, which keeps the full width. -->
     <div v-if="latest || history.length" class="pm-run-panel__side">
       <div v-if="latest" class="pm-run-panel__output" :data-source="latest.result.source" :data-ok="latest.result.ok">
+        <div class="pm-run-panel__label">
+          {{ outputLabel }}
+        </div>
         <div v-if="reason" class="pm-run-panel__badge pm-ui-badge pm-ui-badge--warn">
           {{ t.recordedBadge(reason) }}
         </div>
@@ -185,9 +216,10 @@ function fieldSize(value: string | undefined): number {
 </template>
 
 <style scoped>
-/* The run panel in 书卷 (N-10, docs/design/slide.dc.html): the code, its parameters and the ink run button below
-   it; the output in the paper's sunk panel beside it. Sizes follow the font size of the slide, which the present
-   view scales with the screen (N-05); the host's controls follow it too. */
+/* The run panel in 书卷 (N-10, docs/design/slide.dc.html): a card of the code under its bar (the language, where it
+   runs, the parameters, the ink run button); the output in the paper's sunk panel beside it, labelled with the run's
+   duration. Sizes follow the font size of the slide, which the present view scales with the screen (N-05); the
+   host's controls follow it too. */
 .pm-run-panel {
   --pm-text-sm: 0.875em;
   --pm-text-md: 1em;
@@ -196,7 +228,7 @@ function fieldSize(value: string | undefined): number {
   /* Code and output side by side where there is room (a slide); in a narrow place (a board in
      the document view, a phone) they stack, so the code keeps the full width. */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
-  gap: 0.75em;
+  gap: 0.75em 1.25em;
   color: var(--pm-color-ink);
   font-family: var(--pm-font-sans);
   font-size: 0.8em;
@@ -205,17 +237,54 @@ function fieldSize(value: string | undefined): number {
 .pm-run-panel__side {
   min-width: 0;
 }
+.pm-run-panel__main {
+  overflow: hidden;
+  border: 1px solid var(--pm-color-line);
+  border-radius: var(--pm-radius-panel);
+  background: var(--pm-color-surface);
+}
+.pm-run-panel__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4em 0.75em;
+  padding: 0.45em 0.6em 0.45em 1.1em;
+  border-bottom: 1px solid var(--pm-color-line);
+  color: var(--pm-color-muted);
+}
+.pm-run-panel__lang {
+  font-family: var(--pm-font-mono);
+}
+.pm-run-panel__controls {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4em 0.75em;
+  min-width: 0;
+}
 .pm-run-panel__source {
+  /* The slides' code block: no margin, no corners of its own (Slidev's variables for them). */
+  --slidev-code-margin: 0;
+  --slidev-code-radius: 0;
+
   /* The code keeps the size of the deck's other code blocks; only the controls and output are smaller. */
   font-size: 1.25em;
 }
+/* The code is the card's body: the code block's own frame and margins give way (the slides' and the web form's). */
+.pm-run-panel__source :deep(:is(.pm-code-block, .slidev-code-wrapper)) {
+  margin: 0;
+}
 .pm-run-panel__source :deep(pre) {
   margin: 0;
+  border: 0;
+  border-radius: 0;
   max-height: 20em;
   overflow: auto;
 }
 /* In the slides and the present view (projected) the panel keeps to the room below its top on the
-   slide: the code takes what the controls leave and scrolls only when it is longer, the output
+   slide: the code takes what the bar leaves and scrolls only when it is longer, the output
    beside it scrolls in that height. Its size stays the slide's, which a long panel would otherwise
    push off the slide or (the present view) shrink (N-05, F-19). */
 .pm-run-panel--present {
@@ -230,30 +299,25 @@ function fieldSize(value: string | undefined): number {
 }
 /* Projected, a line too long for the code's half of the panel (the output beside it after a run) wraps
    rather than being cut at its edge; the parameters and the run button read at the code's size, as form
-   controls take no size of their own from the page (R-27, N-05). */
+   controls take no size of their own from the page (R-27, N-05); the bar's words are a little smaller. */
 .pm-run-panel--present .pm-run-panel__source :deep(:is(pre, code)) {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.pm-run-panel--present .pm-run-panel__form {
+.pm-run-panel--present .pm-run-panel__bar {
   font-size: 1.25em;
 }
-.pm-run-panel--present .pm-run-panel__form :is(input, button) {
-  font-size: inherit;
+.pm-run-panel--present .pm-run-panel__where {
+  font-size: 0.8em;
 }
-.pm-run-panel__form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5em 0.75em;
-  margin-top: 0.6em;
+.pm-run-panel__bar :is(input, button) {
+  font-size: inherit;
 }
 .pm-run-panel__param {
   display: inline-flex;
   align-items: center;
   gap: 0.4em;
   max-width: 100%;
-  color: var(--pm-color-muted);
 }
 .pm-run-panel__param code {
   color: var(--pm-color-ink);
@@ -279,9 +343,14 @@ function fieldSize(value: string | undefined): number {
   gap: 0.5em;
 }
 .pm-run-panel__output {
-  padding: 0.75em 1em;
+  padding: 0.75em 1.1em;
   border-radius: var(--pm-radius-panel);
   background: var(--pm-color-sunk);
+}
+.pm-run-panel__label {
+  margin-bottom: 0.4em;
+  color: var(--pm-color-muted);
+  font-size: 0.9em;
 }
 .pm-run-panel__side pre {
   margin: 0;

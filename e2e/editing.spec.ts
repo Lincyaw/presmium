@@ -6,6 +6,8 @@
 // The uncommitted changes head the history: committed with a line of explanation, the commit is there and undone
 // there; discarded, the content is back as committed. A save while an agent's change task waits for its review is
 // refused with a notice and the author's text stays; once the review is done, the merge keeps both sides' changes.
+// A file an editor on the disk changed while it was open: a save says so, and reloading takes the disk's text; or the
+// merge keeps both; either way the editor has the focus again, and Ctrl+S saves wherever the focus is in the pane.
 // On the home page the file tree opens a document's file on its page in edit mode, and the workspace's
 // configuration in the home page's own editor.
 import { execFileSync, spawn } from 'node:child_process'
@@ -14,7 +16,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writ
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { eventStream } from '../packages/addon-assistant/test/helpers.ts'
 import { openDevPage } from './fixtures/deck.ts'
 
@@ -130,6 +132,9 @@ test.describe('editing the source in the browser', () => {
     const problem = problems.locator('.pm-source__problem').filter({ hasText: 'unknown directive' })
     const more = readFileSync(join(served!.dir, 'notes/pages/more.md'), 'utf8').split('\n').findIndex(text => text.startsWith(':::{nosuch}')) + 1
     await expect(problem.locator('.pm-source__problem-place')).toHaveText(`pages/more.md:${more}`)
+    // Its severity is the host's line icon, not a glyph.
+    await expect(problem.locator('svg.pm-source__problem-icon')).toHaveCount(1)
+    await expect(problem).not.toContainText(/[●▲○]/)
     await problem.click()
     await expect(page.getByRole('tablist', { name: '打开的文件' }).getByRole('tab', { name: /^pages\/more\.md/ })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.pm-workspace-cursor')).toHaveText(`MyST · UTF-8 · 第 ${more} 行`)
@@ -265,6 +270,62 @@ test.describe('editing the source in the browser', () => {
     await expect(page.getByRole('tab', { name: /^lecture\.md/ }).locator('.pm-workspace-tab__dirty')).toHaveCount(0)
     await expect.poll(lecture).toContain('这一段要改的词是 gamma\n')
     expect(lecture()).toContain('AI 写的一行')
+  })
+
+  /** Puts the cursor at the end of the paragraph to change, by picking it in the preview. */
+  async function atParagraph(page: Page, editor: Locator) {
+    await page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '这一段要改的词是' }).click()
+    await editor.focus()
+    await page.keyboard.press('End')
+  }
+  const dirty = (page: Page) => page.getByRole('tab', { name: /^lecture\.md/ }).locator('.pm-workspace-tab__dirty')
+
+  test('a file an editor on the disk changed while it was open: saving says so, and reloading takes the disk\'s text; the editor has the focus again', async ({ page }) => {
+    const editor = await editMode(page)
+    await atParagraph(page, editor)
+    await page.keyboard.type(' 作者的字')
+    await expect(dirty(page)).toHaveCount(1)
+    // An editor on the disk changes the file meanwhile.
+    writeFileSync(join(served!.dir, 'notes/lecture.md'), lecture().replace(/这一段要改的词是 \S+/, '这一段要改的词是 磁盘'))
+    await page.keyboard.press('Control+s')
+    const changed = page.locator('.pm-source__notice[data-kind="changed"]')
+    await expect(changed).toContainText('lecture.md 在打开之后被修改了')
+    expect(lecture()).not.toContain('作者的字')
+    await changed.getByRole('button', { name: '重新载入' }).click()
+    await expect(changed).toHaveCount(0)
+    await expect(editor).toContainText('这一段要改的词是 磁盘')
+    await expect(editor).not.toContainText('作者的字')
+    await expect(dirty(page)).toHaveCount(0)
+    // The focus is back in the editor: the author goes on typing, and Ctrl+S saves.
+    await expect(editor).toBeFocused()
+    await page.keyboard.press('End')
+    await page.keyboard.type(' 再写')
+    await page.keyboard.press('Control+s')
+    await expect(dirty(page)).toHaveCount(0)
+    await expect.poll(lecture).toMatch(/再写/)
+    expect(lecture()).toContain('这一段要改的词是 磁盘')
+  })
+
+  test('a change of an editor on the disk while the author edits: the merge keeps both, the editor has the focus again, and Ctrl+S anywhere in the source pane saves', async ({ page }) => {
+    const editor = await editMode(page)
+    await atParagraph(page, editor)
+    await page.keyboard.type(' 我的修改')
+    // An editor on the disk adds a line; the page sees it when the window comes back (and after the compilation it causes).
+    writeFileSync(join(served!.dir, 'notes/lecture.md'), `${lecture().trimEnd()}\n\n磁盘编辑器加的一段。\n`)
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+    const changed = page.locator('.pm-source__notice[data-kind="changed"]')
+    await expect(changed).toContainText('lecture.md 在打开之后被修改了')
+    await changed.getByRole('button', { name: '合并' }).click()
+    await expect(page.locator('.pm-source__notice[data-kind="merged"]')).toContainText('已合并双方的修改')
+    await expect(editor).toContainText('我的修改')
+    await expect(editor).toContainText('磁盘编辑器加的一段。')
+    await expect(editor).toBeFocused()
+    // Saved from the problems below the editor rather than the editor itself.
+    await page.getByRole('region', { name: /^问题 \d+$/ }).locator('.pm-source__problem').first().focus()
+    await page.keyboard.press('Control+s')
+    await expect(dirty(page)).toHaveCount(0)
+    await expect.poll(lecture).toContain('我的修改')
+    expect(lecture()).toContain('磁盘编辑器加的一段。')
   })
 
   test('the home page\'s file tree opens a document\'s file in edit mode, and the workspace\'s configuration in its own editor', async ({ page }) => {

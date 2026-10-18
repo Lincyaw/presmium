@@ -3,10 +3,14 @@
 // - The slides of a deck that names no theme are 书卷: paper and ink, the title in the serif, the section's chapter
 //   in small accent letters above it, at the foot the deck's title, the slide's steps and its number; code of 18 px
 //   or more on a 1280 px projection; light and dark. The cover has its own layout.
-// - The plugins' components (quiz, predict, run panel, exercise, classroom) use the host's controls, in both forms:
-//   every text reaches WCAG AA and every field's border 3:1, light and dark, on the slides (the lines a code's
-//   highlight leaves out too), in the presenter view's panels with a classroom, and in the web form, and the
-//   reader's question panel too (e2e/fixtures/plugin-ui, built).
+// - The plugins' components (quiz, predict, run panel, exercise, classroom, the core's stepper) and Mermaid's diagrams
+//   use the host's controls and colours, in both forms: every text reaches WCAG AA and every field's border 3:1, light
+//   and dark, on the slides (the lines a code's highlight leaves out, a step done and a diagram's labels too), in the
+//   presenter view's panels with a classroom, and in the web form, and the reader's question panel too
+//   (e2e/fixtures/plugin-ui, built). They draw the host's line icons, not glyphs.
+// - The run panel as docs/design/slide.dc.html draws it: a bar above the code names the language and where it runs,
+//   with the run button; the output, beside the code on a slide, says how long the run took; the web form and its
+//   present view have the same bar.
 // - In a workspace served on this machine, with the assistant as the operator's plugin and the scripted agent as its
 //   runtime (e2e/fixtures/plugin-ui-workspace): the AI changes dock at the right of edit mode, switched by the
 //   toolbar's "AI 修改"; the status bars name the model and where it comes from, and open the model settings, where
@@ -89,6 +93,7 @@ test.describe('a deck built with the default theme', () => {
         const slide = page.locator(`.slidev-page-${section.index}`)
         await expect(slide.locator('h1').first()).toBeVisible()
         await expect(slide.locator('.slidev-layout')).toHaveCSS('background-color', dark ? 'rgb(22, 22, 20)' : 'rgb(247, 245, 240)')
+        if (section.id === 'diagram') await expect(slide.locator('.mermaid')).toBeVisible()
         expect(await lowContrast(page, `.slidev-page-${section.index}`), section.id).toEqual([])
       }
       // Slidev's reset leaves the host's filled buttons filled.
@@ -117,16 +122,66 @@ test.describe('a deck built with the default theme', () => {
       await scheme(page, dark)
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.goto(`${deck().web}/basics.html`)
-      for (const name of ['quiz', 'predict', 'run-panel', 'exercise', 'question-box', 'pulse']) await expect(page.locator(`.pm-${name}`).first()).toBeVisible()
+      for (const name of ['quiz', 'predict', 'run-panel', 'exercise', 'question-box', 'pulse', 'demo-stepper']) await expect(page.locator(`.pm-${name}`).first()).toBeVisible()
+      await expect(page.locator('.pm-mermaid[data-rendered]')).toHaveAttribute('data-theme', dark ? 'dark' : 'default')
       await expect(page.locator('.pm-run-panel__run')).toHaveCSS('background-color', dark ? 'rgb(237, 234, 227)' : 'rgb(28, 27, 25)')
-      // The components; the code inside them is highlighted by the web form, as the deck's other code.
-      expect(await lowContrast(page, ':is(.pm-quiz, .pm-predict, .pm-run-panel, .pm-exercise, .pm-question-box, .pm-pulse)', 'pre.shiki')).toEqual([])
+      // The components and the diagram; the code inside them is highlighted by the web form, as the deck's other code.
+      expect(await lowContrast(page, ':is(.pm-quiz, .pm-predict, .pm-run-panel, .pm-exercise, .pm-question-box, .pm-pulse, .pm-demo-stepper, .pm-mermaid)', 'pre.shiki')).toEqual([])
       await page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' }).click()
       const ask = page.getByRole('dialog', { name: '向 AI 提问' })
       await expect(ask.getByLabel('地址')).toBeVisible()
       expect(await lowContrast(page, '.pm-assistant-popover')).toEqual([])
     })
   }
+
+  /** Pyodide loads with the first run. */
+  const RUNTIME = { timeout: 180_000 }
+
+  test('the run panel names the language and where it runs above the code, with its run button; its output, beside the code on a slide, says how long the run took', async ({ page }) => {
+    test.setTimeout(240_000)
+    await page.setViewportSize({ width: 1280, height: 720 })
+    const index = deck().slide('run')
+    await page.goto(`${deck().slides}/${index}`)
+    const panel = page.locator(`.slidev-page-${index} .pm-run-panel`)
+    const bar = panel.locator('.pm-run-panel__bar')
+    await expect(bar.locator('.pm-run-panel__where')).toHaveText('Python · 浏览器中运行')
+    const [top, code] = await Promise.all([bar.boundingBox(), panel.locator('.pm-run-panel__source pre').boundingBox()])
+    expect(top!.y + top!.height).toBeLessThanOrEqual(code!.y + 1)
+    await bar.locator('.pm-run-panel__run').click()
+    const output = panel.locator('.pm-run-panel__output')
+    await expect(output.locator('.pm-run-panel__stdout')).toContainText('合并第 2 轮', RUNTIME)
+    await expect(output.locator('.pm-run-panel__label')).toHaveText(/^输出 · \d+\.\d{2} 秒$/)
+    const [main, beside] = await Promise.all([panel.locator('.pm-run-panel__main').boundingBox(), output.boundingBox()])
+    expect(beside!.x).toBeGreaterThanOrEqual(main!.x + main!.width - 1)
+    expect(beside!.y).toBeLessThan(main!.y + main!.height)
+
+    // The web form and its present view draw the same bar.
+    await page.goto(`${deck().web}/basics.html`)
+    await expect(page.locator('.pm-section[data-section="run"] .pm-run-panel__where')).toHaveText('Python · 浏览器中运行')
+    await page.goto(`${deck().web}/basics.html?view=present&section=run`)
+    await expect(page.getByRole('region', { name: '放映' }).locator('.pm-run-panel__where')).toHaveText('Python · 浏览器中运行')
+  })
+
+  test('the plugins draw the host\'s line icons, not glyphs: the exercise\'s marks, the high-contrast switch, the step buttons of a traced run', async ({ page }) => {
+    test.setTimeout(240_000)
+    await page.goto(`${deck().web}/basics.html`)
+    // The document form traces the code once the block nears the viewport.
+    const traced = page.locator('.pm-section[data-section="trace"] .pm-step-run')
+    await traced.scrollIntoViewIfNeeded()
+    const stepper = traced.locator('.pm-step-run__stepper')
+    await expect(stepper).toBeVisible(RUNTIME)
+    await expect(stepper.locator('button svg.pm-ui-icon')).toHaveCount(2)
+    expect(await stepper.textContent()).not.toMatch(/[◀▶]/)
+    const exercise = page.locator('.pm-section[data-section="exercise"] .pm-exercise')
+    await exercise.getByRole('button', { name: '提交' }).click()
+    const cases = exercise.locator('.pm-exercise__cases li')
+    await expect(cases.first()).toBeVisible(RUNTIME)
+    await expect(cases.locator('svg.pm-exercise__mark')).toHaveCount(await cases.count())
+    expect(await exercise.locator('.pm-exercise__cases').textContent()).not.toMatch(/[✓✗]/)
+    const toggle = page.getByRole('switch', { name: '高对比度' }).filter({ visible: true }).first()
+    await expect(toggle.locator('svg.pm-ui-icon')).toHaveCount(1)
+    expect(await toggle.textContent()).not.toMatch(/◐/)
+  })
 })
 
 /** The test's environment without Presmium's variables or credentials, then `extra`. */

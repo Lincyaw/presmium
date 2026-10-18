@@ -4,9 +4,10 @@
  * (and `presmium dev`) the page has the server and is a workbench (N-10,
  * docs/design/home.dc.html): the activity bar (after a link that skips to
  * the content), the workspace's files (its name as the page's heading, and
- * the tree of the `files` slot), the launcher with its search (Ctrl K) over
- * the documents, their sections and the commands, and the status bar, around
- * the cards. It starts the host (the toolbar, the server's client, the
+ * the tree of the `files` slot; where the side bar gives way, in a drawer of
+ * the activity bar), the launcher with its search (Ctrl K) over the
+ * documents, their sections and the commands, and the status bar, around the
+ * cards. It starts the host (the toolbar, the server's client, the
  * approvals) and the site's plugins, e.g. the workspace's browser plugin,
  * whose entries fill the places of the workbench (`ToolbarItem.slot`); while
  * its editor is open (`EDIT_MODE`), the launcher's place shows it (`tabs`,
@@ -14,7 +15,7 @@
  * documents changed, the window event `presmium:documents`). A static site
  * keeps the default theme's page, with the same cards.
  */
-import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, PmButton, PmCard, PmEmpty, PmIcon, PmIconButton, pluginsOf, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, startHost, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
+import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, PmButton, PmCard, PmDrawer, PmEmpty, PmIcon, PmIconButton, pluginsOf, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, startHost, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
 import type { HostAdapter, Navigation, ToolbarItem, ToolbarSlot } from '@presmium/host'
 import { FINAL_STEP } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
@@ -23,7 +24,6 @@ import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { InjectionKey } from 'vue'
 import { computed, defineComponent, h, inject, nextTick, onBeforeUnmount, onMounted, provide, readonly, ref, shallowRef, watchEffect } from 'vue'
 import { samePage, WEB_MESSAGES } from '../domain/index.ts'
-import { SHELL_MESSAGES } from './messages.ts'
 import './style.css'
 
 export interface SiteHomeInput {
@@ -56,7 +56,7 @@ const HOME_CONFIG = { 'presmium.workspace': { home: true } }
 
 /** The documents read from the server, once it has answered; before, those of the site's data. */
 const served = shallowRef<HomeDocument[]>()
-/** The launcher's search, which the workbench's bar holds and the list filters by. */
+/** The search box of a static site's home page, which the cards are filtered by (the workbench's launcher lists what it finds instead). */
 const query = ref('')
 /** The cards are in the workbench, whose bar has the search box. */
 const IN_WORKBENCH: InjectionKey<boolean> = Symbol('presmium.workbench')
@@ -218,14 +218,17 @@ function commands(items: ToolbarItem[], toggleTheme: { label: string, run(): voi
 /**
  * The launcher's search (Ctrl K, ⌘ K): the documents, their sections and the
  * commands it finds, as a list under the box (arrow keys, Enter); the
- * documents' cards are filtered too. Opened, it has the documents not
- * compiled yet compiled, so their sections are found.
+ * documents' cards stay as they are, so a search for a section does not
+ * empty them. Opened, it has the documents not compiled yet compiled, so
+ * their sections are found.
  */
 const LauncherSearch = defineComponent({
   name: 'PresmiumLauncherSearch',
   setup() {
-    const s = useMessages(SHELL_MESSAGES)
+    const t = useMessages(WEB_MESSAGES)
     const documents = useDocuments()
+    // The launcher's own words: what it finds is listed under the box, and the cards stay as they are.
+    const query = ref('')
     const toolbar = useService(TOOLBAR)
     const theme = useTheme()
     const input = ref<HTMLInputElement>()
@@ -239,7 +242,7 @@ const LauncherSearch = defineComponent({
         .slice(0, 8).map((doc): Found => ({ id: `document:${doc.dir}`, group: 'documents', label: doc.title, detail: `${doc.dir}/`, run: () => location.assign(doc.href) }))
       const sections = documents.value.flatMap(doc => (doc.sections ?? []).filter(section => matches(section.title, words))
         .map((section): Found => ({ id: `section:${doc.dir}:${section.id}`, group: 'sections', label: section.title, detail: doc.title, run: () => location.assign(section.href) }))).slice(0, 12)
-      const found = commands(toolbar.value?.list() ?? [], { label: s.value.toggleTheme, run: theme.toggle }).filter(command => matches(command.label, words)).slice(0, 8)
+      const found = commands(toolbar.value?.list() ?? [], { label: t.value.toggleTheme, run: theme.toggle }).filter(command => matches(command.label, words)).slice(0, 8)
       return [...docs, ...sections, ...found]
     })
     const choose = (found: Found | undefined) => {
@@ -277,7 +280,7 @@ const LauncherSearch = defineComponent({
     onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     const optionId = (index: number) => `pm-launcher-option-${index}`
     const groups: Found['group'][] = ['documents', 'sections', 'commands']
-    const groupLabel = (group: Found['group']) => (group === 'documents' ? s.value.groupDocuments : group === 'sections' ? s.value.groupSections : s.value.groupCommands)
+    const groupLabel = (group: Found['group']) => (group === 'documents' ? t.value.groupDocuments : group === 'sections' ? t.value.groupSections : t.value.groupCommands)
     return () => {
       const list = results.value
       if (active.value >= list.length) active.value = 0
@@ -293,8 +296,8 @@ const LauncherSearch = defineComponent({
             'type': 'text',
             'role': 'combobox',
             'value': query.value,
-            'placeholder': s.value.searchAll,
-            'aria-label': s.value.searchAll,
+            'placeholder': t.value.searchAll,
+            'aria-label': t.value.searchAll,
             'aria-autocomplete': 'list',
             'aria-expanded': expanded ? 'true' : 'false',
             'aria-controls': 'pm-launcher-results',
@@ -310,8 +313,8 @@ const LauncherSearch = defineComponent({
           h('kbd', { class: 'pm-ui-kbd' }, 'Ctrl K'),
         ]),
         expanded
-          ? h('div', { id: 'pm-launcher-results', class: 'pm-launcher__results', role: 'listbox', 'aria-label': s.value.results }, list.length === 0
-              ? [h('p', { class: 'pm-launcher__none' }, s.value.noResults)]
+          ? h('div', { id: 'pm-launcher-results', class: 'pm-launcher__results', role: 'listbox', 'aria-label': t.value.results }, list.length === 0
+              ? [h('p', { class: 'pm-launcher__none' }, t.value.noResults)]
               : groups.flatMap((group) => {
                   const members = list.map((found, index) => ({ found, index })).filter(({ found }) => found.group === group)
                   return members.length === 0
@@ -411,32 +414,66 @@ function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): Hos
   }
 }
 
-/** The workspace's files in the side bar: each document's directory (its pages), and the workspace's configuration. */
-/**
- * The workspace's side bar: its name (the page's heading where the side bar
- * shows), and its files: the tree a plugin gives (`files`), else the
- * documents' directories and the configuration.
- */
+/** The workspace's files: the tree a plugin gives (`files`), else the documents' directories and the configuration. */
+const FileTree = defineComponent({
+  name: 'PresmiumWorkspaceTree',
+  setup() {
+    const documents = useDocuments()
+    const filled = useFilledSlots()
+    return () => (filled.value.has('files')
+      ? h(PmToolbar, { class: 'pm-workbench__tree-items', place: 'home', filter: bySlot('files') })
+      : h('ul', { class: 'pm-workbench__tree', role: 'list' }, [
+          ...documents.value.map(doc => h('li', { key: doc.dir }, [
+            h('a', { class: 'pm-workbench__file', href: doc.href, title: doc.title }, [h(PmIcon, { name: 'folder', size: 15 }), `${doc.dir}/`]),
+          ])),
+          h('li', [h('span', { class: 'pm-workbench__file pm-workbench__file--plain' }, [h(PmIcon, { name: 'document', size: 15 }), 'presmium.workspace.yaml'])]),
+        ]))
+  },
+})
+
+/** The workspace's side bar: its name, the page's heading where the side bar shows, and its files. */
 const Files = defineComponent({
   name: 'PresmiumWorkspaceFiles',
   setup() {
     const { site } = useData()
-    const documents = useDocuments()
-    const filled = useFilledSlots()
     const t = useMessages(WEB_MESSAGES)
     return () => h('aside', { 'class': 'pm-workbench__files', 'aria-label': t.value.files }, [
       h('h1', { class: 'pm-workbench__name' }, site.value.title),
-      filled.value.has('files')
-        ? h(PmToolbar, { class: 'pm-workbench__tree-items', place: 'home', filter: bySlot('files') })
-        : h('ul', { class: 'pm-workbench__tree', role: 'list' }, [
-            ...documents.value.map(doc => h('li', { key: doc.dir }, [
-              h('a', { class: 'pm-workbench__file', href: doc.href, title: doc.title }, [h(PmIcon, { name: 'folder', size: 15 }), `${doc.dir}/`]),
-            ])),
-            h('li', [h('span', { class: 'pm-workbench__file pm-workbench__file--plain' }, [h(PmIcon, { name: 'document', size: 15 }), 'presmium.workspace.yaml'])]),
-          ]),
+      h(FileTree),
     ])
   },
 })
+
+/** Where the side bar gives way (narrower than 1024 px: tablets, phones), the activity bar's entry that opens the files in a drawer. */
+const FilesDrawer = defineComponent({
+  name: 'PresmiumWorkspaceFilesDrawer',
+  setup() {
+    const t = useMessages(WEB_MESSAGES)
+    const open = ref(false)
+    // A file chosen opens elsewhere (its document's page, or the editor in the launcher's place): the drawer closes.
+    const onClick = (event: MouseEvent) => {
+      if ((event.target as Element | null)?.closest('[data-path], a[href]')) open.value = false
+    }
+    return () => h(PmDrawer, { 'open': open.value, 'label': t.value.files, 'closeLabel': t.value.close, 'name': 'pm-workbench-files', 'onUpdate:open': (next: boolean) => open.value = next }, {
+      trigger: () => h(PmIconButton, { 'icon': 'folder', 'label': t.value.files, 'class': 'pm-workbench-files__toggle', 'aria-expanded': open.value ? 'true' : 'false', 'onClick': () => open.value = !open.value }),
+      default: () => h('div', { class: 'pm-workbench-files__body', onClick }, [h(FileTree)]),
+    })
+  },
+})
+
+/** Whether the side bar gives way (`.pm-workbench__files` in style.css): narrower than 1024 px. */
+function useNarrow() {
+  const narrow = ref(false)
+  let media: MediaQueryList | undefined
+  const update = () => narrow.value = Boolean(media?.matches)
+  onMounted(() => {
+    media = window.matchMedia('(max-width: 1023px)')
+    update()
+    media.addEventListener('change', update)
+  })
+  onBeforeUnmount(() => media?.removeEventListener('change', update))
+  return narrow
+}
 
 /** The id of the workbench's content, where the link that skips the bars goes. */
 const CONTENT_ID = 'pm-workbench-content'
@@ -447,11 +484,11 @@ const Workbench = defineComponent({
   setup() {
     provide(IN_WORKBENCH, true)
     const t = useMessages(WEB_MESSAGES)
-    const s = useMessages(SHELL_MESSAGES)
     const theme = useTheme()
     const { site } = useData()
     const edit = useService(EDIT_MODE)
     const editing = computed(() => Boolean(edit.value?.active.value))
+    const narrow = useNarrow()
     const focusSearch = () => document.querySelector<HTMLInputElement>('.pm-workbench .pm-site-home__search')?.focus()
     const toDocuments = async () => {
       edit.value?.leave()
@@ -464,15 +501,16 @@ const Workbench = defineComponent({
       document.getElementById(CONTENT_ID)?.focus()
     }
     return () => h('div', { class: 'pm-workbench pm-ui' }, [
-      h('a', { class: 'pm-skip-link', href: `#${CONTENT_ID}`, onClick: skip }, s.value.skipToContent),
+      h('a', { class: 'pm-skip-link', href: `#${CONTENT_ID}`, onClick: skip }, t.value.skipToContent),
       h('nav', { 'class': 'pm-workbench__activity', 'aria-label': t.value.activity }, [
         h('div', { 'class': 'pm-workbench__logo', 'aria-hidden': 'true' }, 'P'),
         h(PmIconButton, { 'icon': 'document', 'label': t.value.documentsHeading, 'aria-pressed': editing.value ? 'false' : 'true', 'onClick': () => void toDocuments() }),
         h(PmIconButton, { icon: 'search', label: t.value.search, onClick: focusSearch }),
+        narrow.value ? h(FilesDrawer) : null,
         h(PmToolbar, { place: 'activity', filter: (item: ToolbarItem) => inTools(item) && Boolean(item.icon) }),
         h('div', { class: 'pm-workbench__activity-end' }, [h(PmToolbar, { place: 'activity', filter: bySlot('settings') })]),
       ]),
-      h(Files),
+      narrow.value ? null : h(Files),
       h('div', { class: 'pm-workbench__main' }, [
         h('header', { class: 'pm-workbench__bar' }, [
           h('span', { class: 'pm-workbench__title' }, t.value.launcher),

@@ -1,14 +1,16 @@
-// WCAG AA in the page, as e2e/design.spec.ts checks the shell (N-10): for the specs of the plugins' UIs and the
-// slides theme (e2e/plugin-ui.spec.ts).
+// WCAG AA in the page (N-10): the one check of the specs of the shell (e2e/design.spec.ts), the plugins' UIs and the
+// slides theme (e2e/plugin-ui.spec.ts) and the remote environment's token dialog (e2e/exec-remote.spec.ts).
 import type { Page } from '@playwright/test'
 
 /**
  * What under `scope` falls short of WCAG AA. Texts whose contrast with what is behind them is below 4.5:1, or 3:1 for
- * large text (24 px, or 18.66 px bold) (1.4.3); the background is every ancestor's background colour composited, the
- * text's colour with the opacity of its ancestors. And the borders that show what a control is, those of the host's
- * fields, below 3:1 against the control's background or what is around it (1.4.11). Disabled controls are left out,
+ * large text (24 px, or 18.66 px bold; on a slide, its size scaled to the screen) (1.4.3); the background is every
+ * ancestor's background colour composited, the text's colour with the opacity of its ancestors. And the borders that
+ * show what a control is or which one is chosen, those of the host's fields, of the web form's view menu and of a
+ * chosen segment, below 3:1 against the control's background or what is around it (1.4.11). Disabled controls are left out,
  * as WCAG does, and so is text a slide hides until its step, and what is inside `except` (another part's own
- * colours, e.g. the web form's highlighting of code).
+ * colours, e.g. the web form's highlighting of code). Open shadow roots are looked into (the slides draw a Mermaid
+ * diagram in one); SVG text is measured with its fill.
  */
 export function lowContrast(page: Page, scope = 'body', except?: string): Promise<string[]> {
   return page.evaluate(([selector, skip]) => {
@@ -30,12 +32,14 @@ export function lowContrast(page: Page, scope = 'body', except?: string): Promis
       const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x)
       return (high! + 0.05) / (low! + 0.05)
     }
+    /** An element's parent, across the edge of a shadow root to its host. */
+    const parentOf = (element: Element): Element | null => element.parentElement ?? ((element.getRootNode() as ShadowRoot).host ?? null)
     /** An element's background over its ancestors', and the opacity it is drawn with. */
     const backdrop = (element: Element) => {
       let background = [255, 255, 255, 1]
       let opacity = 1
       const layers: number[][] = []
-      for (let at: Element | null = element; at; at = at.parentElement) {
+      for (let at: Element | null = element; at; at = parentOf(at)) {
         const own = getComputedStyle(at)
         opacity *= Number(own.opacity)
         layers.push(parse(own.backgroundColor))
@@ -43,29 +47,45 @@ export function lowContrast(page: Page, scope = 'body', except?: string): Promis
       for (const layer of layers.reverse()) background = over(layer, background)
       return { background, opacity }
     }
+    /** Whether an element or an ancestor, across shadow roots, matches. */
+    const within = (element: Element, selectors: string) => {
+      for (let at: Element | null = element; at; at = parentOf(at)) if (at.matches(selectors)) return true
+      return false
+    }
     const shown = (element: Element) => {
-      if (element.closest('[aria-hidden="true"], :disabled, [aria-disabled="true"], .slidev-vclick-hidden')) return false
-      if (skip && element.closest(skip)) return false
+      if (within(element, '[aria-hidden="true"], :disabled, [aria-disabled="true"], .slidev-vclick-hidden')) return false
+      if (skip && within(element, skip)) return false
       if (!element.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false
       const box = element.getBoundingClientRect()
       return box.width > 1 && box.height > 1
     }
+    /** The elements under `selector`, and those in the open shadow roots among them. */
+    const elements = (query: string): HTMLElement[] => {
+      const found: HTMLElement[] = []
+      const add = (element: HTMLElement) => {
+        found.push(element)
+        if (element.shadowRoot) element.shadowRoot.querySelectorAll<HTMLElement>('*').forEach(add)
+      }
+      document.querySelectorAll<HTMLElement>(query).forEach(add)
+      return found
+    }
     const failures: string[] = []
-    for (const element of document.querySelectorAll<HTMLElement>(`${selector}, ${selector} *`)) {
+    for (const element of elements(`${selector}, ${selector} *`)) {
       const text = [...element.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent ?? '').join('').trim()
       if (!text || !shown(element)) continue
       const style = getComputedStyle(element)
       const { background, opacity } = backdrop(element)
-      const color = parse(style.color)
+      // SVG text is drawn with its fill (the labels of a diagram drawn without HTML).
+      const color = parse(element instanceof SVGElement && /^(rgb|color)/.test(style.fill) ? style.fill : style.color)
       const drawn = over([color[0]!, color[1]!, color[2]!, color[3]! * opacity], background)
       // On a slide the px are the slide's, scaled to the screen.
       const scale = element.getBoundingClientRect().height / (element.offsetHeight || element.getBoundingClientRect().height) || 1
       const size = Number.parseFloat(style.fontSize) * scale
       const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700)
       const value = ratio(drawn, background)
-      if (value < (large ? 3 : 4.5)) failures.push(`${text.slice(0, 40)} (${element.className || element.tagName}: ${value.toFixed(2)})`)
+      if (value < (large ? 3 : 4.5)) failures.push(`${text.slice(0, 40)} (${element.getAttribute('class') || element.tagName}: ${value.toFixed(2)})`)
     }
-    const bounded = '.pm-ui-input, .pm-ui-select, .pm-ui-textarea, .pm-ui-search'
+    const bounded = '.pm-ui-input, .pm-ui-select, .pm-ui-textarea, .pm-ui-search, .pm-view-menu, .pm-ui-segmented__option[aria-pressed="true"]'
     for (const element of document.querySelectorAll<HTMLElement>(`${selector} :is(${bounded})`)) {
       if (!shown(element) || !element.parentElement) continue
       const inside = backdrop(element)
@@ -73,7 +93,7 @@ export function lowContrast(page: Page, scope = 'body', except?: string): Promis
       const border = parse(getComputedStyle(element).borderTopColor)
       const drawn = over([border[0]!, border[1]!, border[2]!, border[3]! * inside.opacity], inside.background)
       const value = Math.min(ratio(drawn, inside.background), ratio(drawn, around))
-      if (value < 3) failures.push(`border of ${element.getAttribute('name') ?? element.className}: ${value.toFixed(2)}`)
+      if (value < 3) failures.push(`border of ${element.id || element.getAttribute('name') || element.className}: ${value.toFixed(2)}`)
     }
     return failures
   }, [scope, except] as const)

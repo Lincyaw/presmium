@@ -35,11 +35,15 @@ function languageOf(path: string): string {
   return path.split('.').at(-1)?.toUpperCase() ?? ''
 }
 
-const SEVERITY_ICON: Record<Finding['severity'], string> = { error: '●', warning: '▲', info: '○' }
+const SEVERITY_ICON = { error: 'error', warning: 'warning', info: 'info' } as const satisfies Record<Finding['severity'], string>
 const severityColor = (severity: Finding['severity']) => (severity === 'error' ? 'var(--pm-color-danger)' : severity === 'warning' ? 'var(--pm-color-warn)' : 'var(--pm-color-accent)')
 
-/** What the pane says of the file shown, with what the author may do. */
-function notice(t: WorkspaceMessages) {
+/**
+ * What the pane says of the file shown, with what the author may do; `done`
+ * runs after a merge or a reload (the editor takes the focus back, so the
+ * author goes on typing and Ctrl+S saves).
+ */
+function notice(t: WorkspaceMessages, done: () => void) {
   const file = find(activePath.value)
   const message = openFailure.value
   if (message) return h(PmNotice, { 'class': 'pm-source__notice', 'tone': 'danger', 'data-kind': 'open' }, () => message)
@@ -49,7 +53,13 @@ function notice(t: WorkspaceMessages) {
   const box = (tone: 'warn' | 'accent' | 'ok' | 'danger', text: string, buttons?: ReturnType<typeof actions>) => h(PmNotice, { 'class': 'pm-source__notice', tone, 'data-kind': said.kind, 'role': tone === 'danger' || said.kind === 'locked' || said.kind === 'changed' ? 'alert' : 'status' }, () => [text, buttons ?? null])
   switch (said.kind) {
     case 'locked': return box('warn', t.saveLocked(said.by), actions(['retry', t.retry, () => void saveFile(file.path)]))
-    case 'changed': return box('warn', t.changedOnDisk(shortName(file.path)), actions(['merge', t.merge, () => mergeFile(file.path, t)], ['reload', t.reload, () => reloadFile(file.path)]))
+    case 'changed': return box('warn', t.changedOnDisk(shortName(file.path)), actions(['merge', t.merge, () => {
+      mergeFile(file.path, t)
+      done()
+    }], ['reload', t.reload, () => {
+      reloadFile(file.path)
+      done()
+    }]))
     case 'merged': return box('accent', t.merged(said.conflicts))
     case 'config': return box('ok', t.configSaved)
     case 'failed': return box('danger', t.saveFailed(said.message))
@@ -253,7 +263,7 @@ export const SourcePane = defineComponent({
               'style': { display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 'var(--pm-space-2)', width: '100%', padding: '2px 4px', border: 0, borderRadius: 'var(--pm-radius-small)', background: 'transparent', color: 'var(--pm-color-ink)', font: 'inherit', textAlign: 'start', cursor: 'pointer' },
               'onClick': () => void openFile(path, line ? { line } : undefined),
             }, [
-              h('span', { 'aria-hidden': 'true', 'style': { color: severityColor(finding.severity) } }, SEVERITY_ICON[finding.severity]),
+              h(PmIcon, { class: 'pm-source__problem-icon', name: SEVERITY_ICON[finding.severity], size: 14, style: { flex: 'none', alignSelf: 'center', color: severityColor(finding.severity) } }),
               h('span', { class: 'pm-source__problem-place', style: { fontFamily: 'var(--pm-font-mono)', color: 'var(--pm-color-muted)' } }, `${shortName(path)}${line ? `:${line}` : ''}`),
               h('span', { class: 'pm-source__problem-message' }, finding.message),
               finding.hint ? h('span', { style: { color: 'var(--pm-color-muted)' } }, finding.hint) : null,
@@ -261,8 +271,18 @@ export const SourcePane = defineComponent({
           ]))),
     ])
 
-    return () => h('div', { class: 'pm-source', style: { display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0, background: 'var(--pm-color-code)' } }, [
-      h('div', { style: { flex: 'none', padding: notice(t.value) ? 'var(--pm-space-2) var(--pm-space-3) 0' : 0 } }, [notice(t.value)]),
+    // After a merge or a reload the button pressed is gone: the focus goes back to the editor.
+    const refocus = () => void nextTick(() => editor?.focus())
+    // Ctrl+S (⌘ S) saves wherever the focus is in the pane (the notice's buttons, the problems), not only in the
+    // editor, whose own binding handles it first there.
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's') return
+      event.preventDefault()
+      void saveFile()
+    }
+
+    return () => h('div', { class: 'pm-source', style: { display: 'flex', flex: 1, flexDirection: 'column', minHeight: 0, background: 'var(--pm-color-code)' }, onKeydown }, [
+      h('div', { style: { flex: 'none', padding: notice(t.value, refocus) ? 'var(--pm-space-2) var(--pm-space-3) 0' : 0 } }, [notice(t.value, refocus)]),
       openFiles.value.length === 0 && ready.value ? h(PmEmpty, { class: 'pm-source__empty', icon: 'document' }, () => t.value.noFile) : null,
       h('div', { ref: host, class: 'pm-source__editor', style: { flex: 1, minHeight: 0, overflow: 'hidden', display: openFiles.value.length === 0 ? 'none' : undefined } }),
       listing.value?.home ? null : problemsList(),

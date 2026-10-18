@@ -15,7 +15,7 @@
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import type { Operations } from '@presmium/host'
-import { OPERATIONS, PmTabs, useMessages, useServer, useService } from '@presmium/host'
+import { OPERATIONS, PmIcon, PmTabs, useMessages, useServer, useService } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
@@ -254,7 +254,7 @@ function close() {
         <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{{ synthetic }}</span>
       </div>
       <template v-else-if="player">
-        <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale">⚠</span></p>
+        <p v-if="captions && current" class="pm-lecture-caption" :lang="language" aria-live="polite" :data-stale="stale.has(current.id) ? 'true' : undefined">{{ text(current) }}<span v-if="stale.has(current.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span></p>
         <aside v-if="panel" class="pm-lecture-side" :aria-label="panel === 'transcript' ? t.player.transcript : t.player.chapters">
           <PmTabs :model-value="panel" :tabs="sideTabs" :label="side.tabs" @update:model-value="panel = $event as 'transcript' | 'chapters'">
             <TrackEditor v-if="panel === 'transcript' && editable && editing" :key="player.track.id" :track="player.track" :editing="editing" @changed="changed" />
@@ -282,8 +282,8 @@ function close() {
                 <template v-else>
                   <span v-if="language === player.track.lang && textPieces(u)" class="pm-lecture-transcript__text"><template v-for="(piece, i) in textPieces(u)" :key="i"><span v-if="piece.t !== undefined" class="pm-lecture-word" @click="seekTo(piece.t)">{{ piece.text }}</span><template v-else>{{ piece.text }}</template></template></span>
                   <span v-else class="pm-lecture-transcript__text" @click="seekTo(u.t)">{{ text(u) }}</span>
-                  <span v-if="stale.has(u.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale">⚠</span>
-                  <button v-if="editable && language === player.track.lang" type="button" class="pm-lecture-transcript__edit-button" :aria-label="t.editor.edit(u.id)" @click="edit(u)">✎</button>
+                  <span v-if="stale.has(u.id)" class="pm-lecture-stale" role="img" :title="t.player.stale" :aria-label="t.player.stale"><PmIcon name="warning" size="1em" :stroke-width="2" /></span>
+                  <button v-if="editable && language === player.track.lang" type="button" class="pm-lecture-transcript__edit-button" :aria-label="t.editor.edit(u.id)" @click="edit(u)"><PmIcon name="edit" size="1em" /></button>
                 </template>
               </li>
             </ol>
@@ -498,13 +498,18 @@ html.pm-lecture-exporting .pm-present__bar {
   flex-basis: 100%;
 }
 .pm-lecture-transcript__edit-button {
+  display: inline-flex;
+  align-items: center;
   margin-inline-start: auto;
+  padding: 0.15em;
   border: 0;
   background: none;
   color: var(--pm-color-muted);
   cursor: pointer;
 }
 .pm-lecture-stale {
+  display: inline-flex;
+  vertical-align: -0.1em;
   margin-inline-start: 0.35em;
   color: var(--pm-color-warn);
   cursor: help;
