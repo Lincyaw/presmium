@@ -27,7 +27,10 @@ function fromDeck(deck: string, path: string): string {
 const CLIENT_SETUPS = '{main,root,routes,shortcuts,code-runners,monaco,mermaid,mermaid-renderer,context-menu}'
 
 export default function setup(options: Options) {
-  const entries = options.roots.flatMap((root) => {
+  // A root installed under node_modules (Presmium from npm) is left out: the renderer's own list
+  // (`preBundle`, P-141) pre-bundles what it imports, and as an entry Vite would also pre-bundle the
+  // Presmium packages it imports, a second copy beside the source the pages load (no host installed).
+  const entries = options.roots.filter(root => !/[\\/]node_modules[\\/]/.test(root)).flatMap((root) => {
     const at = fromDeck(options.userRoot, root)
     return [`${at}/setup/${CLIENT_SETUPS}.{ts,js,mjs}`, `${at}/components/**/*.vue`, `${at}/layouts/*.vue`]
   })
