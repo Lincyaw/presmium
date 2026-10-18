@@ -9,10 +9,13 @@
 //
 // So a script at the top of the page (../index.html, which Slidev adds to the page of every deck with this addon)
 // keeps a request to `PRINT_HOLD` pending from the start, and the network busy, until ./root.ts says that the page
-// shows every slide (`PRINT_READY`); the export's own `--timeout` bounds the wait. Only `slidev export`'s server
-// leaves that request unanswered (`printPage`); elsewhere the answer tells the script that there is nothing to hold.
-// A page whose modules or slides failed to load (`PRINT_FAILED`) is reloaded instead, a few times. The names are
-// repeated in ../index.html. The module is loaded in Node (./vite-plugins.ts) and in the page (./root.ts).
+// shows every slide (`PRINT_READY`); the export's own `--timeout` bounds the wait. The page's body stays hidden until
+// then too, so an export that finds the network idle anyway waits for it (Slidev waits 30 s for the body). Only
+// `slidev export`'s server leaves that request unanswered (`printPage`); elsewhere the answer tells the script that
+// there is nothing to hold. A page whose modules or slides failed to load (`PRINT_FAILED`) is loaded again instead, a
+// few times, once the server answers (while the host's network changes, a reload would show the browser's error
+// page). The names are repeated in ../index.html. The module is loaded in Node (./vite-plugins.ts) and in the page
+// (./root.ts).
 
 /** The request the print page keeps pending until it is ready, under the server's base. */
 export const PRINT_HOLD = '@presmium/print-pending'

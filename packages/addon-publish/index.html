@@ -1,41 +1,52 @@
 <body>
   <script>
-    // A page in print mode keeps its network busy until it shows every slide, and is reloaded when its modules fail
-    // to load: setup/print.ts says why, and names the request and the events this repeats.
+    // A page in print mode keeps its network busy and its body hidden until it shows every slide, and is loaded again
+    // when its modules fail to load: setup/print.ts says why, and names the request and the events this repeats.
     (() => {
       if (!new URLSearchParams(location.search).has('print')) return
+      const body = document.body
+      const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
       let held = true
+      let reloading = false
       let request
+      const show = () => {
+        held = false
+        body.style.visibility = ''
+      }
       const pend = () => {
         if (!held) return
         request = new AbortController()
         // An answer comes from a server other than `slidev export`'s (a built deck, the dev server): nothing to hold.
-        fetch('@presmium/print-pending', { signal: request.signal, cache: 'no-store' }).then(() => { held = false }, () => setTimeout(pend, 50))
+        fetch('@presmium/print-pending', { signal: request.signal, cache: 'no-store' }).then(show, () => setTimeout(pend, 50))
       }
       const release = () => {
-        held = false
+        show()
         request.abort()
       }
-      const reload = (why) => {
-        if (!held) return
+      const reload = async (why) => {
+        if (!held || reloading) return
+        reloading = true
         let reloads = 0
         try {
           reloads = Number(sessionStorage.getItem('presmium:print-reloads')) || 0
           sessionStorage.setItem('presmium:print-reloads', String(reloads + 1))
         } catch {}
-        if (reloads < 3) {
-          console.warn(`presmium: ${why}; the print page is reloaded`)
-          location.reload()
-        } else {
+        if (reloads >= 3) {
           console.error(`presmium: ${why}, after ${reloads} reloads of the print page`)
           release()
+          return
         }
+        console.warn(`presmium: ${why}; the print page is loaded again once the server answers`)
+        // The host's network may still be changing: loading the page now would show the browser's error page.
+        while (!await fetch(location.href, { method: 'HEAD', cache: 'no-store' }).then(() => true, () => false)) await wait(250)
+        location.reload()
       }
+      body.style.visibility = 'hidden'
       addEventListener('presmium:print-ready', release)
-      addEventListener('presmium:print-failed', event => reload(event.detail))
+      addEventListener('presmium:print-failed', event => void reload(event.detail))
       addEventListener('error', (event) => {
         const script = event.target
-        if (script instanceof HTMLScriptElement && script.type === 'module') reload(`${script.src} did not load`)
+        if (script instanceof HTMLScriptElement && script.type === 'module') void reload(`${script.src} did not load`)
       }, true)
       pend()
     })()
