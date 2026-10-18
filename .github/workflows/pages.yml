@@ -38,14 +38,15 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # The Python the examples' recorded outputs were made with: in another version the build reuses them
+      # with a warning for each, which the home page shows on the document's card. No Chromium either: the
+      # WebGPU example's recording (made on a GPU) is reused without comparing it to a software renderer.
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13.12'
       - name: Python for compile-time execution
         run: python -m pip install nbformat nbclient ipykernel
       - run: pnpm install --frozen-lockfile
-      - name: Chromium for the WebGPU example's recording at build time
-        run: pnpm exec playwright install --with-deps chromium
       - id: pages
         uses: actions/configure-pages@v5
       - name: The demo's site paths under the Pages site
