@@ -973,6 +973,21 @@ importers:
         specifier: 2.3.1
         version: 2.3.1
 
+  packages/studio:
+    dependencies:
+      '@deepseek-ai/dsh':
+        specifier: 0.2.1-alpha.4
+        version: 0.2.1-alpha.4(1f9cec9785ab06955d8f2824f50f9509)
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@presmium/dsh':
+        specifier: workspace:*
+        version: link:../dsh
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+
   packages/viewer:
     dependencies:
       '@presmium/host':

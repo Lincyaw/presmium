@@ -1,0 +1,44 @@
+{
+  "name": "@presmium/studio",
+  "version": "0.1.0",
+  "description": "presmium studio: Presmium's workbench on DeepSeek Harness in one command, with the workspace service of a directory (experimental)",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lincyaw/presmium.git",
+    "directory": "packages/studio"
+  },
+  "homepage": "https://github.com/Lincyaw/presmium/tree/main/packages/studio#readme",
+  "bugs": "https://github.com/Lincyaw/presmium/issues",
+  "keywords": [
+    "presmium",
+    "studio",
+    "workbench",
+    "dsh",
+    "deepseek-harness"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "presmium-studio": "./bin/presmium-studio.mjs"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.2.1-alpha.4",
+    "@presmium/cli": "workspace:*",
+    "@presmium/dsh": "workspace:*",
+    "jiti": "^2.7.0"
+  }
+}

@@ -104,7 +104,7 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 - 网页渲染端的工作台：`presmium serve` 与 `presmium dev` 中首页的工作台（活动栏、文件树、启动台、状态栏）、编辑模式的外壳、窗口事件 `presmium:documents` 与首页的文档列表接口 `@presmium/documents.json`。静态站点的首页与页面是公开的产物（第 2.1 节）。
 - 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`、`ReviewDecision`、`TaskRevertResult`），`@presmium/slidev-addon-assistant` 的“AI 修改”面板、停靠面板、模型设置界面与路由 `info`、`settings`、`tasks/*`、`revert`、`excerpt`，`@presmium/slidev-addon-lecture` 编辑模式中的“讲授回写”面板。修改任务的请求与事件（`AgentTaskRequest`、`AgentTaskKind`、`AgentContext`、`Annotation`、`AnnotationStatus`、`AgentEvent`、`Citation`）同时是 Node 端 `AGENT_RUNTIME` 的会话（`AgentSession.prompt`）与 `ASK` 的类型，随它们公开。读者问答（`ASK` 与提问面板）是产物的一部分，是公开接口。
 
-- N 波次的工作台（`docs/design-dsh.md`）：`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁与 `./launch`，服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`；契约 `Focus`、`FocusReport`、`McpIssueOptions` 随新工作台定型，在 1.0 中同样是实验性的。
+- N 波次的工作台（`docs/design-dsh.md`）：`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁与 `./launch`，`@presmium/studio`（0.x：`presmium studio` 与 `presmium-studio` 命令，以及 `main`、`startStudio` 等导出），服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`；契约 `Focus`、`FocusReport`、`McpIssueOptions` 随新工作台定型，在 1.0 中同样是实验性的。
 
 本节的 TypeScript 声明在源码中带 TSDoc 标签 `@experimental`，接口参考（`/api/`）中显示为 Experimental；只有一部分是实验性的声明（`ToolbarSlot`、`PmToolbarEntry`）在说明中写明是哪一部分，`@presmium/workspace` 的 `./client` 与 `./domain` 在入口文件的说明中标注。界面、路由与窗口事件没有声明可以标注，以本节的列表为准；标注与本节不一致时同样以本节为准。
 

@@ -1,8 +1,10 @@
 import { existsSync, statSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
+import { createJiti } from 'jiti'
 import { errorMessage } from '@presmium/kernel'
 import type { ApprovalKind, Finding, Severity } from '@presmium/kernel'
 import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
@@ -63,6 +65,13 @@ Commands:
                           ask for it (Authorization: Bearer)
           --preview-origin <origin>  (with --headless, repeatable) the origin of a workbench whose
                           pages embed the previews, e.g. http://127.0.0.1:4320
+  studio  the workbench (experimental): DeepSeek Harness with Presmium's bundle and the workspace
+          service of the directory (the workspace root, or a deck); prints the one address to open.
+          It is the package @presmium/studio (with DeepSeek Harness, about 865 MB), installed beside
+          this one
+          --port <n>      the workbench's port (default: 4320, or a free one when that is in use)
+          --host <addr>   listen on this address of the machine on the local network instead of
+                          127.0.0.1, with no login: whoever reaches the port works as you
 
   -h, --help   show this help
 
@@ -111,6 +120,7 @@ interface Command {
 
 /** Runs `presmium <argv>` and returns the exit code. */
 export async function main(argv: string[]): Promise<number> {
+  if (argv[0] === 'studio') return studio(argv.slice(1))
   let command: Command | 'help'
   try {
     command = parseCommand(argv)
@@ -359,6 +369,36 @@ async function serve(command: Command): Promise<number> {
   })
   await started.close()
   return 0
+}
+
+/** This package's `presmium` command, which `presmium studio` runs the workspace service with. */
+const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
+
+/** `@presmium/studio`'s entry, installed beside this package or in the current project; undefined when it is not installed. */
+function studioEntry(): string | undefined {
+  for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), 'package.json')).href]) {
+    try {
+      return createRequire(from).resolve('@presmium/studio')
+    } catch {
+      // Not there.
+    }
+  }
+  return undefined
+}
+
+/**
+ * `presmium studio`: handed over to `@presmium/studio` when it is installed
+ * (docs/design-dsh.md 11.1); the core does not depend on it, nor on DeepSeek
+ * Harness (G-1, G-9). Without it, says how to install it.
+ */
+async function studio(argv: string[]): Promise<number> {
+  const entry = studioEntry()
+  if (!entry) {
+    process.stderr.write('presmium studio: the workbench is not installed. It is the package @presmium/studio (experimental; with DeepSeek Harness, about 865 MB), installed beside @presmium/cli: npm install --save-dev @presmium/studio in this project, or npm install --global @presmium/studio for a global presmium.\n')
+    return 2
+  }
+  const { main: studioMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { presmium: string }): Promise<number> }>(entry)
+  return studioMain(argv, { presmium: PRESMIUM_BIN })
 }
 
 /** `network  <url>` for each address of the local network a `--host` of every interface (or that address) is reached at. */
