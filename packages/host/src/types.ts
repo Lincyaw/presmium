@@ -217,7 +217,7 @@ export interface EditMode {
   leave(): void
 }
 
-/** Provided by the workspace's browser plugin; absent in `presmium dev` and in static output. */
+/** Provided by the workspace's browser plugin, in `presmium serve` and `presmium dev`; absent in static output. */
 export const EDIT_MODE = defineService<EditMode>('presmium.editMode')
 
 // ---------------------------------------------------------------------------

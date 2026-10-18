@@ -1603,7 +1603,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 5.11 浏览器中的源码编辑（P-124）
 
-编辑模式中，作者不经 agent 直接改源码（WP-95c，布局见 `docs/design/edit.dc.html`）。只在 `presmium serve` 中（工作区的浏览器插件与路由）；单文档的仓库也可以用 `presmium serve <文稿目录>`。
+编辑模式中，作者不经 agent 直接改源码（WP-95c，布局见 `docs/design/edit.dc.html`）。在 `presmium serve` 与 `presmium dev` 中（工作区的浏览器插件与路由；`presmium dev` 见 10.2 节的“`presmium dev` 的编辑模式”，WP-92d）。
 
 **源码编辑器**：CodeMirror 6（MIT，`@codemirror/*` 与 `@lezer/highlight`，`packages/workspace/src/client/editor.ts`），随源码面板加载。Markdown 文件按 MyST：头部是 YAML，指令的围栏、选项、标签与角色用设计的 `syntax-key` 等颜色标出；`.yaml` 按 YAML。每个打开的文件有自己的编辑状态（撤销历史、光标），一次显示一个。`Ctrl S`（⌘ S）保存。行号用 `muted`（参考稿的 `gutter` 对 `code` 只有 2.6:1）。Tab 不缩进，焦点照常移出编辑器（N-06）。
 
@@ -1654,7 +1654,7 @@ WP-95d 把插件的界面与幻灯片的默认主题改为 5.10 节的设计系�
 
 - 编辑模式中，“批注与对话”是停靠在右侧的面板（`EditDock.vue`）。它经工具栏的 `dock` 槽位在显示时注册、收起时注销，外壳只在它显示时留出右栏（`dock.ts`）。
 - 工具栏的“AI 修改”是这个面板的开关（`aria-pressed`）：在编辑者可以修改的文档中，它进入编辑模式并显示面板。进入编辑模式时面板自动显示，退出时隐藏。面板顶部是标题、模型的服务提供方、模型设置与收起按钮，中间是修改任务与批注，底部是对话的输入框（Enter 发送，Shift+Enter 换行）。
-- 在别处（工作区首页、`presmium dev`、没有模型、不能编辑），“AI 修改”打开一个弹层，写明不可用的原因与要设置什么。服务端的 `info.missing` 是英文，页面按缺少的项给出页面语言的说明（`src/client/messages.ts`）：模型服务、`PRESMIUM_MODEL_*` 中没设的变量、替换运行时的服务提供方、没有安装的随包运行时。
+- 在别处（工作区首页、不在 git 仓库中的文稿、没有模型、不能编辑），“AI 修改”打开一个弹层，写明不可用的原因与要设置什么。服务端的 `info.missing` 是代码与参数（`MissingItem`，4.8 节，WP-92d），页面按代码给出页面语言的说明（`src/client/messages.ts` 的 `missingText`）：模型服务、`PRESMIUM_MODEL_*` 中没设的变量、替换运行时的服务提供方、没有安装的随包运行时。
 - 工作区首页与编辑模式的状态栏显示模型与它的来源（`status` 槽位，`ModelStatus.vue`）：`info.source` 为环境变量、工作区配置或模型设置；没有模型时为“模型未配置”。点它打开模型设置。
 - 模型设置是宿主的对话框（`PmDialog`）。服务、服务提供方或地址与已保存的不同时，密钥必填；“已设置，留空则不变”只在三者都没变时出现，与服务端的规则一致。配置文件的路径与环境变量名这类长词在任意处换行，手机宽度下对话框与其中的输入框不超出屏幕。
 - 首页的“由 AI 起草一份文档”是工作区插件的 `create` 卡片，用助手提供的 `AGENT`：运营者把助手列为工作区插件、助手可以对话时显示。

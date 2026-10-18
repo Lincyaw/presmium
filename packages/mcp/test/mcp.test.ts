@@ -4,7 +4,7 @@
 // subscription ended), and hears of a new position it subscribed to; `presmium-mcp` lists the read tools
 // on stdio and loads the packages installed with the deck's CLI.
 // WP-89b: a window's position found by its section (F-41); presmium-mcp checks as presmium check does
-// (F-03). WP-92c: every token reads the whole deck, teachers' content included (no student view).
+// (F-03). WP-92c: every token reads the whole deck, teachers' content included (readers get the student build, `presmium build --audience student`).
 // WP-92b: get_position gives the step in the whole deck's numbering, by the keys of the steps a window of
 // another numbering reports (F-85), and navigate sends the windows those keys.
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
