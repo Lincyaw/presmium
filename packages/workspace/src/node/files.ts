@@ -211,6 +211,17 @@ export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChang
  */
 const DECK_CONTENT = new Set(['freeze', 'drawings', 'assets', 'speech', 'speech.lock.json', 'anchors.lock.json'])
 
+/**
+ * Whether a path (relative, with `/`) is generated in a `.presmium/` directory, whatever the repository's
+ * `.gitignore` says: there only the content above is source. The source editor neither lists nor commits
+ * such a file (e.g. the MCP token of `presmium dev`, `.presmium/server.json`).
+ */
+export function generatedPath(path: string): boolean {
+  const parts = path.split('/')
+  const at = parts.indexOf('.presmium')
+  return at >= 0 && !DECK_CONTENT.has(parts[at + 1] ?? '')
+}
+
 /** The source files of a directory (absolute), relative to it: regular files and links, outputs and caches left out (of `.presmium/`, only its content). */
 function sourceEntries(dir: string): { path: string, link?: string, executable?: boolean }[] {
   const out: { path: string, link?: string, executable?: boolean }[] = []

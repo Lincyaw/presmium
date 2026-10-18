@@ -37,6 +37,16 @@ export class Git {
     }
   }
 
+  /** Whether git ignores `path` (relative to `dir`, a directory of a work tree): nothing there is ever committed. */
+  static ignores(dir: string, path: string): boolean {
+    try {
+      execFileSync('git', [...gitConfigArgs(), 'check-ignore', '-q', '--', path], { cwd: dir, stdio: 'ignore', env: gitEnvironment(process.env) })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   /** `git <args>` at the root, with these further variables (e.g. a temporary index), resolving with its end. */
   run(command: string[], env: Record<string, string> = {}): Promise<GitResult> {
     return new Promise((done) => {

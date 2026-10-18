@@ -3,7 +3,7 @@
  * 10.2): `presmium check`, the language server, `presmium dev`, `presmium serve`
  * and `presmium-mcp` run the plugins' checks and the publication checks
  * (`Compilation.check`), run one code block now (`runBlock`) and build the
- * whole deck or its student view (`buildView`).
+ * whole deck (`buildView`).
  */
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -13,9 +13,6 @@ import { frontmatterLine } from './compiler.ts'
 import type { Compilation } from './compiler.ts'
 import { build } from './renderers.ts'
 import type { BuildReport } from './renderers.ts'
-
-/** The audience of the student view (P-55, D8). */
-export const STUDENT = 'student'
 
 /** What the plugins' checks read of a compilation. */
 export function checkContext(compilation: Compilation): CheckContext {
@@ -75,12 +72,9 @@ export async function runBlock(compilation: Compilation, target: { section: stri
 
 /**
  * A host's build of a compilation into `outDir` (default `<deck>/dist`): the
- * whole deck, or its student view as `presmium build --audience student`
- * builds it, its translations too, the files it wrote scanned for what it
- * leaves out (the output directory holds the whole deck's builds as well);
- * the one who asked reads the student view, so the findings quote nothing.
+ * whole deck, as `presmium build` builds it (MCP's `build`). The student
+ * build of a deck is `presmium build --audience student` (P-55).
  */
-export function buildView(compilation: Compilation, options: { to?: string[], view?: 'full' | 'student', outDir?: string } = {}): Promise<BuildReport> {
-  const student = options.view === 'student' ? { audience: STUDENT, quote: false, scan: 'written' as const } : {}
-  return build(compilation, { outDir: options.outDir ?? join(compilation.deckDir, 'dist'), to: options.to, ...student })
+export function buildView(compilation: Compilation, options: { to?: string[], outDir?: string } = {}): Promise<BuildReport> {
+  return build(compilation, { outDir: options.outDir ?? join(compilation.deckDir, 'dist'), to: options.to })
 }

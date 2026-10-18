@@ -9,7 +9,7 @@ import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
 import type { BuildReport, Compilation, RunStats } from '@presmium/compiler'
 import { anyAddress, isLoopback, networkAddresses, servedDocument, startServer } from '@presmium/server'
 import type { ApprovalPolicy } from '@presmium/server'
-import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
+import { buildWorkspace, deckEditing, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
 import type { WorkspaceBuild } from '@presmium/workspace'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
@@ -32,7 +32,9 @@ Commands:
           --out <dir>     output directory (default: <deck>/dist)
           --audience <name>  only the content for this audience (e.g. student); then every file
                           written is scanned for the sentences of the content left out
-  dev     compile, start the Presmium server and the renderers' dev servers, recompile on save
+  dev     compile, start the Presmium server and the renderers' dev servers, recompile on save;
+          the web form has edit mode (the source in the browser; its changes are committed
+          where the deck is in a git repository)
           --to <ids>      renderers to run, comma-separated
           --out <dir>     working directory (default: <deck>/.presmium/dev)
           --server-port <n>  port of the Presmium server (default: a free port)
@@ -230,25 +232,38 @@ async function buildDeck(command: Command): Promise<number> {
   return exitCode(report.findings)
 }
 
+/** The `.gitignore` line that keeps `presmium dev`'s MCP token (`<deck>/.presmium/server.json`) out of git, wherever the deck is in the repository. */
+const TOKEN_IGNORE = '**/.presmium/server.json'
+
 /**
  * `presmium dev`: the Presmium server (this machine only) with
- * the plugins' server contributions, then the renderers' dev servers, which
- * proxy `/__presmium/` to it (docs/architecture.md 10.1, 10.2).
+ * the plugins' server contributions and the workspace's edit mode for the
+ * deck (P-124: the source editor's routes, the document writer, its lock
+ * and, in a git repository, its history), then the renderers' dev servers,
+ * which proxy `/__presmium/` to it; the web form's loads the workspace's
+ * browser plugin (docs/architecture.md 10.1, 10.2).
  */
 async function devDeck(command: Command): Promise<number> {
   let latest: Compilation | undefined
   const deckDir = dirname(command.entry)
   const approvals: Partial<Record<ApprovalKind, ApprovalPolicy>> = Object.fromEntries(command.allow.map(kind => [kind, 'allow']))
   const host = devHost(() => latest)
+  const editing = deckEditing(command.entry)
   const server = await startServer({
     mode: 'dev',
     port: command.serverPort,
     approvals,
     serverHost: host,
-    document: async dir => (dir === '' && latest ? servedDocument(latest) : undefined),
+    document: async (dir) => {
+      if (dir !== '' || !latest) return undefined
+      const served = servedDocument(latest)
+      return { ...served, plugins: [editing.plugin, ...served.plugins] }
+    },
     stateFile: join(deckDir, '.presmium', 'server.json'),
   })
-  const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: server.services })
+  if (!editing.git) process.stderr.write(`presmium dev: ${editing.root} is not in a git repository, or git ignores it: edit mode saves, but commits nothing and has no history (git init there to commit, with the line ${TOKEN_IGNORE} in .gitignore)\n`)
+  else if (!editing.tokenIgnored) process.stderr.write(`presmium dev: git does not ignore .presmium/server.json, this process's MCP token: add the line ${TOKEN_IGNORE} to .gitignore (edit mode never commits it, git add would)\n`)
+  const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: [...server.services, ...editing.services] })
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })
   await writeFile(join(outDir, '.gitignore'), '*\n')
@@ -258,6 +273,7 @@ async function devDeck(command: Command): Promise<number> {
       outDir,
       to: command.to,
       server: { url: server.url },
+      sitePlugins: editing.sitePlugins,
       onCompile(compilation, findings) {
         latest = compilation
         const lines = findingLines(findings)

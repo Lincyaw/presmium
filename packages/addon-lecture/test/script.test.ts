@@ -458,16 +458,16 @@ describe('presmium dev', () => {
 describe('presmium dev with a cloned voice (D-7, F-57)', () => {
   let dir: string
   let operator: string
+  let consent: string
   let dev: ChildProcess | undefined
   let output = ''
-  afterAll(async () => {
-    if (dev && dev.exitCode === null) {
-      const exited = new Promise(done => dev!.once('exit', done))
-      dev.kill('SIGTERM')
-      await exited
-    }
-    for (const path of [dir, operator]) if (path) rmSync(path, { recursive: true, force: true })
-  })
+  let server: string
+  const route = (path: string, init?: RequestInit) => fetch(`${server}/__presmium/presmium.lecture/${path}`, init)
+  /** The speaker's consent, which the operator registered outside the workspace. */
+  const giveConsent = () => {
+    mkdirSync(join(operator, 'consent/fake'), { recursive: true })
+    writeFileSync(consent, JSON.stringify({ speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'a'.repeat(64) }))
+  }
 
   /** What the routes, a build and the agent tools need: the fake engine, and the operator directory with the consent. */
   const extra = () => ({ ...engine(), PRESMIUM_OPERATOR_DIR: operator })
@@ -478,19 +478,18 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
     return { ...built, out: join(out, 'lecture') }
   }
 
-  it('gives the synthesized lecture, a recorded lecture said again in the voice, and their clips while the consent holds, and neither once it is withdrawn, though the cache has them; a build publishes them only then', async () => {
+  // The deck, its recorded lecture and its dev server; each case gives the consent it needs.
+  beforeAll(async () => {
     dir = deck(tmpdir(), '  lecture:\n    voice: { engine: fake, voice: cloned-lin }', '合并之后词表变大。')
     operator = mkdtempSync(join(tmpdir(), 'presmium-lecture-consent-'))
-    // The operator allows cloned voices and has the speaker's consent, outside the workspace.
+    consent = join(operator, 'consent/fake/cloned-lin.json')
+    // The operator allows cloned voices.
     writeFileSync(join(dir, 'presmium.workspace.yaml'), 'settings:\n  presmium.speech:\n    cloned: true\n')
-    const consent = join(operator, 'consent/fake/cloned-lin.json')
-    mkdirSync(join(operator, 'consent/fake'), { recursive: true })
-    writeFileSync(consent, JSON.stringify({ speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'a'.repeat(64) }))
     // A recorded lecture with its transcript, to say again in the cloned voice (WP-83's change of voice).
     mkdirSync(join(dir, 'lectures/rec'), { recursive: true })
     writeFileSync(join(dir, 'lectures/rec/track.json'), JSON.stringify({ track: 1, id: 'rec', doc: 'lecture.md', lang: 'zh-CN', ir: { hash: '' }, voice: { kind: 'recorded' }, blocks: {}, utterances: [{ id: 'u1', t: 0, d: 1000, text: '录下来的一句讲解。', section: 'intro', step: 0 }], events: [[0, 'go', { section: 'intro', step: 0 }]] }))
     dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'notebook'], { cwd: dir, env: env(extra()), stdio: ['ignore', 'pipe', 'pipe'] })
-    const server = await new Promise<string>((done, fail) => {
+    server = await new Promise<string>((done, fail) => {
       const read = (chunk: Buffer) => {
         output += chunk
         const match = /^server {2}(http\S+)$/m.exec(output)
@@ -500,7 +499,18 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
       dev!.stderr!.on('data', read)
       dev!.once('exit', code => fail(new Error(`presmium dev exited (${code}): ${output}`)))
     })
-    const route = (path: string, init?: RequestInit) => fetch(`${server}/__presmium/presmium.lecture/${path}`, init)
+  }, 120_000)
+  afterAll(async () => {
+    if (dev && dev.exitCode === null) {
+      const exited = new Promise(done => dev!.once('exit', done))
+      dev.kill('SIGTERM')
+      await exited
+    }
+    for (const path of [dir, operator]) if (path) rmSync(path, { recursive: true, force: true })
+  })
+
+  it('gives the synthesized lecture, a recorded lecture said again in the voice, and their clips while the consent holds, and neither once it is withdrawn, though the cache has them; a build publishes them only then', async () => {
+    giveConsent()
     const taken = await route('tracks/script')
     expect(taken.status, await taken.clone().text()).toBe(200)
     const track = await taken.json() as Track
@@ -546,10 +556,8 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
     expect(await syntheses()).toBe(asked)
   }, 300_000)
 
-  it('gives the clips of a lecture a page loaded after the deck compiled again; a clip the cache lost is 404, not synthesized again (WP-92c)', async () => {
-    writeFileSync(join(operator, 'consent/fake/cloned-lin.json'), JSON.stringify({ speaker: '林老师', scope: '课程讲授的合成', date: '2026-10-01', statementSha256: 'a'.repeat(64) }))
-    const server = /^server {2}(http\S+)$/m.exec(output)![1]!
-    const route = (path: string) => fetch(`${server}/__presmium/presmium.lecture/${path}`)
+  it('gives the clips of a lecture a page loaded after the deck compiled again and other windows took the new lecture many times; a clip the cache lost is 404, not synthesized again (WP-92c, WP-92d)', async () => {
+    giveConsent()
     const loaded = await (await route('tracks/script')).json() as Track
     // The deck changes: its IR is another, the lecture the page loaded is not the latest.
     const compiled = output.match(/^compiled /gm)!.length
@@ -558,6 +566,10 @@ describe('presmium dev with a cloned voice (D-7, F-57)', () => {
       if (waited > 60_000) throw new Error(`presmium dev did not compile again:\n${output}`)
       await new Promise(done => setTimeout(done, 200))
     }
+    // Other windows (learners, reloads) take the latest lecture more often than the lectures kept: it is kept once.
+    for (let i = 0; i < 12; i++) expect((await route('tracks/script')).status).toBe(200)
+    const only = loaded.utterances.filter(u => u.text.includes('合并之后词表变大。'))
+    expect(only).toHaveLength(1)
     for (const u of loaded.utterances) expect((await route(`tracks/script/clips/${u.clip}`)).status, u.clip).toBe(200)
 
     // A clip of the latest lecture whose file the cache lost: 404, and the engine is asked for nothing.

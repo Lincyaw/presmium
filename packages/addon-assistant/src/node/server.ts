@@ -30,10 +30,10 @@
  * Readers' questions are no route of the server's: the page asks the
  * reader's own model (P-112, `ASK`, ../client/ask.ts).
  *
- * On the workspace's home page (`presmium serve` mounts the operator's
- * plugins there too) only `info` and `settings` answer: the home page is not
- * a document, and the tasks it sends (drafting a new document) go to their
- * document's routes.
+ * On the workspace's home page (`ServerContext.home`; `presmium serve`
+ * mounts the operator's plugins there too) only `info` and `settings`
+ * answer: the home page is not a document, and the tasks it sends (drafting
+ * a new document) go to their document's routes.
  *
  * Each task opens one agent session in its review's root, with the MCP
  * token `MCP_ENDPOINT` issues for the member (revoked when the session
@@ -44,9 +44,10 @@
  *
  * A change task holds its document's lock (`DOCUMENT_LOCKS`, F-09) while it
  * runs and waits for its review, and an undo holds it while it runs: where
- * the workspace provides the locks (`presmium serve`) its document
- * operations and its history's undo take them too, so neither changes the
- * document under the task; elsewhere the assistant keeps its own.
+ * the workspace provides the locks (`presmium serve`, `presmium dev`) its
+ * document operations, its history's undo and the source editor's saves
+ * take them too, so none changes the document under the task; elsewhere the
+ * assistant keeps its own.
  *
  * A change task's review is `CHANGE_REVIEW`'s, except under the bundled
  * DeepSeek Harness: its writes fault a deltabox-lite
@@ -74,9 +75,6 @@ import type { Task } from './tasks.ts'
 const isOwner = (member: Member) => member.roles.includes('owner')
 const mayEdit = (member: Member) => member.roles.some(role => role === 'editor' || role === 'owner')
 
-/** The deck entry of a single-deck repository (the workspace's `DECK_ENTRY`). */
-const DECK_ENTRY = 'lecture.md'
-
 /** An excerpt is at most this many lines and characters. */
 const EXCERPT_LINES = 60
 const EXCERPT_CHARS = 4000
@@ -92,14 +90,8 @@ const AGENT_HOLDER = 'agent:'
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
   const tasks = new Tasks()
-  /**
-   * The workspace's home page, which presmium serve mounts at the workspace
-   * root: not a document. The root is a document only in a single-deck
-   * repository (its deck entry there); where no change is committed
-   * (presmium dev) the deck directory is always a document.
-   */
-  const home = resolve(ctx.deckDir) === resolve(ctx.workspaceRoot)
-    && Boolean(ctx.service(REVISIONS)) && !existsSync(join(ctx.deckDir, DECK_ENTRY))
+  /** The workspace's home page of presmium serve: not a document (a deck at its repository's root is one, whatever its entry is called). */
+  const home = ctx.home === true
 
   /** The documents' locks: the workspace's where it provides them (`DOCUMENT_LOCKS`), else these. */
   const own = new Map<string, string>()
@@ -148,7 +140,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return undefined
   }
 
-  /** The kinds this member may submit: change tasks, for editors and owners, while there is a runtime and the workspace commits them (`REVISIONS`, presmium serve). */
+  /** The kinds this member may submit: change tasks, for editors and owners, while there is a runtime and the workspace commits them (`REVISIONS`: a document in a git repository). */
   const kinds = (member: Member): AgentTaskKind[] => (provider() && mayEdit(member) && ctx.service(REVISIONS) ? CHANGE_KINDS : [])
 
   /** The model settings as the page shows them: in effect and saved, never the key. */
@@ -249,7 +241,7 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           const info: AssistantInfo = {
             ...found ? { provider: found, ...choice.kind !== 'none' ? { source: choice.source } : {} } : {},
             ...found && runtime?.runtime ? { runtime: runtime.runtime } : {},
-            ...!found ? { missing: choice.kind === 'none' ? choice.missing : t.notInstalled } : {},
+            ...!found ? { missing: choice.kind === 'none' ? choice.missing : { code: 'harness' } } : {},
             kinds: kinds(rc.member),
             changes: Boolean(ctx.service(REVISIONS)),
             ...home ? { home: true } : {},

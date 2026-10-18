@@ -29,7 +29,7 @@ import { commitMessage, memberAddress, originOf } from '../domain/revisions.ts'
 import type { CommitOrigin } from '../domain/revisions.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { makeDocumentDir, RequestError } from './documents.ts'
-import { documentDirOf, writeChanges } from './files.ts'
+import { documentDirOf, generatedPath, writeChanges } from './files.ts'
 import type { DocumentWriter } from './files.ts'
 import type { Git } from './git.ts'
 
@@ -142,18 +142,20 @@ export class Revisions implements RevisionService {
     return this.#revision('HEAD')
   }
 
-  /** The branch checked out (none when HEAD is detached) and the number of files with changes not committed. */
-  async status(): Promise<{ branch?: string, uncommitted: number }> {
+  /** The branch checked out (none when HEAD is detached) and the number of files under these paths (relative to the root; '' for the root) with changes not committed, as `uncommittedFiles` lists them. */
+  async status(paths: string[] = ['']): Promise<{ branch?: string, uncommitted: number }> {
     const branch = await this.#git.attempt(['symbolic-ref', '--quiet', '--short', 'HEAD'])
-    const changes = await this.#git.attempt(['status', '--porcelain', '-z', '--no-renames', '--untracked-files=all'])
-    return { ...branch.ok ? { branch: branch.output.trim() } : {}, uncommitted: changes.ok ? changes.output.split('\0').filter(Boolean).length : 0 }
+    return { ...branch.ok ? { branch: branch.output.trim() } : {}, uncommitted: (await this.#statusOf(paths)).length }
   }
 
-  /** The files under these paths (relative to the root; '' for the root) whose work tree differs from the last commit, with their lines added and removed. */
+  /**
+   * The files under these paths (relative to the root; '' for the root) whose work tree differs from the last
+   * commit, with their lines added and removed; not those generated in a `.presmium/` directory, which no
+   * commit of the editor takes even where the repository has no `.gitignore` for them.
+   */
   async uncommittedFiles(paths: string[]): Promise<UncommittedFile[]> {
     const specs = paths.map(path => path || '.')
-    const status = await this.#git.attempt(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
-    if (!status.ok) return []
+    const status = await this.#statusOf(paths)
     const counts = new Map<string, [number, number]>()
     const numstat = await this.#git.attempt(['diff', '--numstat', '-z', '--no-renames', 'HEAD', '--', ...specs], { GIT_LITERAL_PATHSPECS: '1' })
     if (numstat.ok) {
@@ -162,9 +164,7 @@ export class Revisions implements RevisionService {
         if (added !== '-') counts.set(this.#fromTop(path), [Number(added), Number(removed)])
       }
     }
-    return status.output.split('\0').filter(Boolean).map((entry): UncommittedFile => {
-      const code = entry.slice(0, 2)
-      const path = this.#fromTop(entry.slice(3))
+    return status.map(({ code, path }): UncommittedFile => {
       const kind = code.includes('D') ? 'deleted' : code === '??' || code[0] === 'A' ? 'added' : 'modified'
       const counted = counts.get(path) ?? (kind === 'added' ? lineCount(join(this.#files.config.root, path)) : undefined)
       return { path, kind, ...counted ? { added: counted[0], removed: counted[1] } : {} }
@@ -238,6 +238,15 @@ export class Revisions implements RevisionService {
     if (!verified.ok) return []
     const files = (await this.#git.raw(['show', '--no-renames', '--name-only', '-z', '--format=', verified.output.trim()])).split('\0').filter(Boolean).map(this.#fromTop)
     return [...new Set(files.flatMap(file => documentDirOf(this.#files.config, file) ?? []))]
+  }
+
+  /** `git status` of these paths (relative to the root): each file's code and its path relative to the root, those generated in `.presmium/` left out. */
+  async #statusOf(paths: string[]): Promise<{ code: string, path: string }[]> {
+    const status = await this.#git.attempt(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', ...paths.map(path => path || '.')], { GIT_LITERAL_PATHSPECS: '1' })
+    if (!status.ok) return []
+    return status.output.split('\0').filter(Boolean)
+      .map(entry => ({ code: entry.slice(0, 2), path: this.#fromTop(entry.slice(3)) }))
+      .filter(({ path }) => !generatedPath(path))
   }
 
   /** A path of git (from the top of the work tree) relative to the workspace root. */

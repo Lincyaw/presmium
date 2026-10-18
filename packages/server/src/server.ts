@@ -256,6 +256,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
             service: <T>(token: ServiceToken<T>) => (own.get(token.id) as T | undefined) ?? doc.service(token),
             secret: name => env[name],
             ...operatorDir ? { operatorDir } : {},
+            ...doc.home ? { home: true } : {},
             log: prefixed(log, id),
           }
           try {

@@ -137,9 +137,8 @@ export interface BuildOptions {
   /**
    * Build the version for this audience (P-55) of a compilation of the
    * whole deck: its view for the audience (`Compilation.forAudience`), with
-   * the translations compiled for it; the student view of a host's
-   * `ServerHost.build`. A compilation for an audience
-   * (`CompilerOptions.audience`) builds its own.
+   * the translations compiled for it, e.g. the student build. A compilation
+   * for an audience (`CompilerOptions.audience`) builds its own.
    */
   audience?: string
   /** For an audience: whether the scan's findings quote the sentences they found (default true); not for findings the audience reads. */
@@ -150,7 +149,7 @@ export interface BuildOptions {
    * the whole deck may have written before (the default `dist/` of both), so
    * a renderer's directory this build did not write fails it too.
    * `written`: only what this build wrote, the IR and each renderer's
-   * directory (a host's build of the student view, beside the whole deck's).
+   * directory (a student build written beside the whole deck's).
    */
   scan?: 'outDir' | 'written'
 }
@@ -276,6 +275,12 @@ export interface DevOptions {
   to?: string[]
   /** The Presmium server of `presmium dev`, to which the renderers' dev servers proxy `/__presmium/` (`RenderContext.server`). */
   server?: { url: string }
+  /**
+   * The web form's own plugins besides the deck's (package name to
+   * directory), whose browser parts its dev server loads: the workspace's
+   * edit mode in `presmium dev`.
+   */
+  sitePlugins?: Record<string, string>
   /** Called after every compilation, the first one included. */
   onCompile?(compilation: Compilation, findings: Finding[]): void
 }
@@ -307,7 +312,11 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
     const outDir = join(options.outDir, renderer.id)
     const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings, options.server)
-    if (renderer.id === WEB) ctx.translations = translations
+    if (renderer.id === WEB) {
+      ctx.translations = translations
+      ctx.plugins = [...ctx.plugins, ...Object.keys(options.sitePlugins ?? {}).filter(name => !ctx.plugins.includes(name))]
+      ctx.pluginDirs = { ...ctx.pluginDirs, ...options.sitePlugins }
+    }
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)

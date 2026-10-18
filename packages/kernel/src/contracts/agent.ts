@@ -327,9 +327,11 @@ export interface DocumentLockService {
 }
 
 /**
- * Node service: `presmium serve` provides it (the workspace), and the document
- * operations, the history's undo and the assistant's change tasks take their
- * locks through it. Without it (`presmium dev`), the assistant keeps its own.
+ * Node service: `presmium serve` and `presmium dev` provide it (the
+ * workspace), and the document operations, the history's undo, the source
+ * editor's saves and the assistant's change tasks take their locks through
+ * it. In `presmium dev` the plugins name the deck '' (its document). Without
+ * it, the assistant keeps its own.
  */
 export const DOCUMENT_LOCKS = defineService<DocumentLockService>('presmium.documentLocks')
 
@@ -358,9 +360,11 @@ export interface DocumentFiles {
 }
 
 /**
- * Node service: the workspace registers it in `presmium serve` (both modes).
- * Plugins write the files of their deck through it when the host has it
- * (`ServerContext.service`, `NodeServiceContext.service`, `PassContext.service`),
- * and in this process only without it (`presmium dev`, `build`).
+ * Node service: the workspace registers it in `presmium serve` and
+ * `presmium dev` (not for a deck git ignores inside another repository, whose
+ * workspace root is not the editor's). Plugins write the files of their deck
+ * through it when the host has it (`ServerContext.service`,
+ * `NodeServiceContext.service`, `PassContext.service`), and in this process
+ * only without it (`presmium build`, and the decks above).
  */
 export const DOCUMENT_FILES = defineService<DocumentFiles>('presmium.documentFiles')

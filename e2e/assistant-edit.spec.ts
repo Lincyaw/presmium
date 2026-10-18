@@ -231,12 +231,20 @@ test.describe('in the browser: annotations, chat, review and undo', () => {
     for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.agent.log`]) if (path) rmSync(path, { recursive: true, force: true })
   })
 
-  /** The edit panel on a document's page, in edit mode. */
+  /**
+   * The edit panel on a document's page, in edit mode. Edit mode loads modules of its own (the source editor,
+   * the panel): the first time, the document's dev server may optimize a dependency it finds then and reload
+   * the page, later under load. So edit mode is entered once and the requests waited for, then the page is
+   * visited again and edit mode entered on it.
+   */
   async function editPanel(page: Page, document: string) {
-    await openDevPage(page, `${server.url}/${document}/`, page.locator('[data-section]').first())
-    await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
     const panel = page.getByRole('region', { name: '批注与对话' })
-    await expect(panel).toBeVisible()
+    for (let visit = 0; visit < 2; visit++) {
+      await openDevPage(page, `${server.url}/${document}/`, page.locator('[data-section]').first())
+      await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
+      await expect(panel).toBeVisible({ timeout: 30_000 })
+      await page.waitForLoadState('networkidle')
+    }
     return panel
   }
 
@@ -445,6 +453,32 @@ test.describe('the review with git (D12), one task per document, a transcript, t
       expect(commits(dir)).toHaveLength(before)
     } finally {
       events.close()
+    }
+  })
+
+  test('the review\'s git reads none of the repository\'s configuration: a filter driver defined there never runs while the review runs git (WP-92d)', async () => {
+    // A filter driver in the repository's configuration (its git directory is at the workspace root, outside
+    // the document: no guard puts it back), named by the attributes the agent writes in the document.
+    const config = join(dir, '.git/config')
+    const kept = readFileSync(config, 'utf8')
+    writeFileSync(config, `${kept}[filter "planted"]\n\tclean = touch planted\n`)
+    try {
+      const { id, events } = await submit(server, 'intro', chat('#append .gitattributes * filter=planted\n#append notes.md 过滤驱动之下的一行'))
+      try {
+        const review = await next(events, 'review')
+        expect(review.changes.map((c: { path: string }) => c.path)).toEqual(['intro/.gitattributes', 'intro/notes.md'])
+        // Every step and the review's diff ran git over the attributes: the driver never ran.
+        expect(review.steps.length).toBeGreaterThan(1)
+        expect(existsSync(join(dir, 'planted'))).toBe(false)
+        expect((await call(server, 'intro', `tasks/${id}/review`, { accept: false })).status).toBe(204)
+        expect(await next(events, 'done')).toEqual({ type: 'done' })
+        expect(existsSync(join(dir, 'intro/.gitattributes'))).toBe(false)
+        expect(existsSync(join(dir, 'planted'))).toBe(false)
+      } finally {
+        events.close()
+      }
+    } finally {
+      writeFileSync(config, kept)
     }
   })
 

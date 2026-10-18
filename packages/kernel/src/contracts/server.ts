@@ -84,6 +84,12 @@ export interface ServerContext {
   secret(name: string): string | undefined
   /** As `NodeServiceContext.operatorDir`: the absolute operator directory. */
   operatorDir?: string
+  /**
+   * The workspace's home page of `presmium serve`, which is no document: its
+   * `deckDir` and `workspaceRoot` are an empty directory outside the
+   * workspace. A plugin there answers what needs no document.
+   */
+  home?: boolean
   log: Logger
 }
 

@@ -10,7 +10,7 @@
  */
 import { AGENT_RUNTIME, errorMessage } from '@presmium/kernel'
 import type { AgentRuntime, AgentSession, AgentSessionOptions, NodeServiceContext, ServiceToken } from '@presmium/kernel'
-import { choiceProvider, runtimeChoice } from '../domain/index.ts'
+import { choiceProvider, missingSentence, runtimeChoice } from '../domain/index.ts'
 import type { RuntimeChoice } from '../domain/index.ts'
 import { dshArgs, dshBin, dshVersion, localEnv, replacementEnv } from './launch.ts'
 import { readModelSettings, settingsFile } from './model-settings.ts'
@@ -23,7 +23,7 @@ export function currentChoice(ctx: Pick<NodeServiceContext, 'secret' | 'settings
 }
 
 /** The bundled DeepSeek Harness is not installed: what the choice says then. */
-const NOT_INSTALLED = 'the bundled DeepSeek Harness is not installed'
+const NOT_INSTALLED = missingSentence({ code: 'harness' })
 
 /** `AGENT_RUNTIME` over the operator's current choice: a new ACP runtime (and runtime name) whenever the choice changed. */
 export class AssistantRuntime implements AgentRuntime {
@@ -48,7 +48,7 @@ export class AssistantRuntime implements AgentRuntime {
     const runtime = this.#runtime()
     if (!runtime) {
       const choice = currentChoice(this.#ctx)
-      return Promise.reject(new Error(choice.kind === 'none' ? choice.missing : NOT_INSTALLED))
+      return Promise.reject(new Error(choice.kind === 'none' ? missingSentence(choice.missing) : NOT_INSTALLED))
     }
     return runtime.open(options)
   }
@@ -74,7 +74,7 @@ let announced = false
 
 /** The start-up line: available with the provider, the runtime and where they come from; or what to set. */
 export function statusLine(choice: RuntimeChoice): string {
-  if (choice.kind === 'none') return `the assistant is unavailable: ${choice.missing}`
+  if (choice.kind === 'none') return `the assistant is unavailable: ${missingSentence(choice.missing)}`
   if (choice.kind === 'bundled' && !dshBin()) return `the assistant is unavailable: ${NOT_INSTALLED}`
   const runtime = choice.kind === 'replacement' ? `the replacement runtime ${choice.command[0]}` : `the bundled DeepSeek Harness ${dshVersion() ?? ''}`.trim()
   const from = choice.source === 'page' ? 'the model settings saved in the page' : choice.from.join(', ')

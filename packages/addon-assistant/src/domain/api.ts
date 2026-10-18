@@ -11,7 +11,7 @@
  */
 import { isRecord } from '@presmium/kernel'
 import type { AgentContext, AgentTaskKind, AgentTaskRequest, Annotation, ReviewDecision, SourceRange } from '@presmium/kernel'
-import type { RuntimeSource } from './config.ts'
+import type { MissingItem, RuntimeSource } from './config.ts'
 
 /** `GET info`. */
 export interface AssistantInfo {
@@ -21,13 +21,13 @@ export interface AssistantInfo {
   runtime?: string
   /** Where the model comes from: the environment, the workspace's configuration, the page's model settings. */
   source?: RuntimeSource
-  /** What the operator should set, while the assistant is unavailable. */
-  missing?: string
+  /** What the operator should set, while the assistant is unavailable: a code the page says in its language. */
+  missing?: MissingItem
   /** The kinds of task this member may submit here. */
   kinds: AgentTaskKind[]
   /** The page is the workspace's home page, no document: its tasks go to the documents. */
   home?: boolean
-  /** Change tasks are committed here (`presmium serve`); not in `presmium dev`. */
+  /** Change tasks are committed here (`REVISIONS`): the document is in a git repository, in `presmium serve` or `presmium dev`. */
   changes: boolean
 }
 

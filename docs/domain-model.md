@@ -381,7 +381,7 @@ v0.9 删除了多人共用一个服务端的部署（决定 E-1 至 E-8）：信
 | 锚点引用 | `AnchorRef` | 源码中写出的一个锚点及其行与列，用于跳转与悬停 |
 | 光标所在章节 | `SectionAt` | 编辑器位置对应的章节 ID，用于预览同步 |
 
-不变量：编辑只在源码中进行，语言服务与预览都不修改源码。
+不变量：编辑只在源码中进行，语言服务与预览都不修改源码；浏览器中的源码编辑器（P-124）同样只写源码文件（14 节）。
 
 ## 12. 执行环境
 
@@ -439,6 +439,7 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 模型访问 | `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`；页面的模型设置 | 运营者配置的模型服务：配置了就启动随包的 DeepSeek Harness。它得到 `DEEPSEEK_API_KEY`，或由 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 改名而来的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY`（不带其他 `PRESMIUM_` 变量）。环境变量没有时可以在页面的“模型设置”中填写 |
 | 模型设置 | 助手的 `settings` 路由，`$XDG_CONFIG_HOME/presmium/assistant.json` | 运营者在页面中填写的服务提供方、地址、密钥与模型名，保存在用户配置目录中只有本人可读的文件里（0600），不进工作区与文稿；保存后下一个会话即用；页面只显示密钥是否已设置 |
 | 生效的来源 | `RuntimeSource`（`info` 与 `settings` 的 `source`） | 替换的运行时（环境变量或工作区设置）、环境变量中的模型访问、页面的模型设置，按此优先；都没有时为 `none`，并给出缺少的设置（`missing`） |
+| 缺少的设置 | `MissingItem`（`info` 与 `settings` 的 `missing`） | 助手不可用时缺少什么，是代码与参数：`model`（没有模型访问；`variables` 是只设置了一部分的 `PRESMIUM_MODEL_*` 中缺少的）、`provider`（替换的运行时没有服务提供方）、`harness`（随包的 DeepSeek Harness 没有安装）；页面按代码给出页面语言的说明，日志用英文（WP-92d） |
 | 读者的模型服务 | `AskClient`（`ASK`，浏览器） | 读者自己填写的 OpenAI 兼容服务（地址、密钥、模型名），只保存在他的浏览器中；页面直接请求它，不经站点的服务端 |
 | 替换的运行时 | `PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command` | 运营者给出的其他 ACP agent（Claude、Codex、Gemini 的适配），替换默认的运行时 |
 | 模型提供方 | `AgentRuntime.provider`、`AgentClient.provider()`；`AskClient.provider()` | 修改文稿的模型属于哪家服务，界面据此标明（N-08）；来自运营者的配置（模型访问或页面的模型设置；替换的运行时取 `settings.presmium.assistant.provider` 或 `PRESMIUM_AGENT_PROVIDER`），在任何请求之前就已知。读者的提问面板标明读者自己填写的服务（地址的主机） |
@@ -491,7 +492,12 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 | 修改 | `Revision` | 一个提交及其来源 `RevisionOrigin`：agent 任务、文档操作、作者在编辑器中的提交 |
 | 修改历史 | `RevisionService`（`REVISIONS`，Node） | 提交、按文档或任务列出修改、撤销（`git revert`）；撤销一次撤销是重做（`HistoryRevision.redo`，WP-89g），历史面板按它标为“重做” |
 | 成员 | `Member`（4A 节） | 本机作者（所有者）；工作区服务只供运行它的那个用户使用，没有登录与成员的配置 |
-| 编辑模式 | `EditMode`（`EDIT_MODE`） | 页面上的编辑状态：批注、对话、文档操作与修改历史在其中可用 |
+| 编辑模式 | `EditMode`（`EDIT_MODE`） | 页面上的编辑状态：源码编辑器、批注、对话、文档操作与修改历史在其中可用；`presmium serve` 的文档与首页，`presmium dev` 的文稿 |
+| 源码文件 | `SourceFile`、`SourceAnswer`（工作区的 `files`、`source` 路由） | 编辑器能打开的文件：文档页是它的文档目录中的文件，首页是每份文档的文件与 `presmium.workspace.yaml`；路径相对于工作区根目录，不经符号链接，不进 `.git`、产物与 Presmium 自己的目录 |
+| 文件的版本 | `version`（字节的散列） | 编辑器打开或保存时文件的样子；保存时写明自己改的是哪个版本（P-124） |
+| 未提交的修改 | `UncommittedFile`（`changes` 路由） | 工作树与最近一次提交不同的文件（新增、修改、删除，增删的行数），列在修改历史的顶部，写一句说明后提交（来源 `editor`），或放弃 |
+| 文档的锁 | `DocumentLockService`（`DOCUMENT_LOCKS`，Node） | 一份文档同一时间只有一个写入者：agent 的修改任务（到审阅结束）、文档操作、撤销、编辑器的保存、提交与放弃 |
+| 文档的写入器 | `DocumentFiles`（`DOCUMENT_FILES`，Node） | 工作区写文档目录的唯一途径：途中的符号链接被替换，从不被跟随；编辑器的保存、撤销与插件的写入都经它 |
 | 工作区站点 | `SiteSpec`、`Renderer.buildSite` | 多份文档组成的网站：首页（文档列表，或指定为一份文稿）、每份文档在 `/<文档目录>/` 下、跨文稿搜索与前后导航 |
 
 **工作区（聚合根）**：文档的集合与它们的修改历史。
@@ -504,10 +510,13 @@ Presmium 作为 agent 的环境：agent 经 MCP 读取文稿的全部内容与�
 - **编辑按角色**：本机作者是所有者，可以进入编辑模式、修改与撤销，管工作区设置并回答 `workspace` 范围的确认（4A 节）；学习者得到的是学生版的构建（第 10 节）。
 - **按需编译**：只编译正在被访问的文档并监听它的源码；其他文档只读取头部，用于列表。编译时的代码全部执行（4A 节）。
 - **运营者目录不属于文档**：运营者目录在工作区之外的用户状态目录中，其中的文件从不进入提交。
-- **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor。
+- **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor；助手的 git 审阅在自己的 git 目录中运行 git，不读仓库的配置（WP-92d）。
+- **保存不丢失任何一方的修改**（P-124）：保存写明编辑器打开的版本，文件在那之后被改过（agent、磁盘上的编辑器）时不写入，页面让作者合并或重新载入；agent 的修改任务从开始到审阅结束持有文档的锁，期间保存被拒绝，作者的文字留在编辑器中，审阅的回滚不覆盖作者的保存。
+- **保存不是提交**：保存只写文件；没有提交的修改由作者写一句说明后提交（一个提交，来源 `editor`），或放弃（写回最近一次提交的样子）。任务开始时没有提交的修改照常保留（审阅的快照包含它们）。
+- **一份文稿也是工作区**：`presmium dev` 把它的文稿当作只有这一份文档的工作区，编辑模式与 `presmium serve` 相同，没有文档操作；文稿不在 git 仓库中（或被 git 忽略）时可以保存，不能提交，修改历史为空，助手也不能提交修改任务（WP-92d）。
 - 浏览器不直接修改渲染结果；一切修改都落在源码上（原则 6）。
 
-服务：`REVISIONS`（Node）、`EDIT_MODE`（浏览器）。
+服务：`REVISIONS`、`DOCUMENT_LOCKS`、`DOCUMENT_FILES`（Node）、`EDIT_MODE`（浏览器）。
 
 领域事件：git 历史就是工作区的事件日志：`DocumentCreated`、`DocumentRenamed`、`DocumentCopied`、`DocumentDeleted`、`RevisionCommitted`、`RevisionReverted` 都是带来源尾注的提交。
 
