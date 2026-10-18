@@ -15,7 +15,7 @@
 ## 统计相邻对
 
 ```{code-ref} region:examples/sample-repo/src/bpe.py#get_stats
-:variants: 1a5eed6, a4dc4a9, 2458dee
+:variants: 1840640, 149c089, dd64ade
 ```
 
 `get_stats` 统计每一对相邻 id 出现的次数，返回一个字典：键是一对 id，值是次数。这个函数在仓库里改过两次，我们按提交的先后看它的三个版本。第一版用下标遍历，`ids[i]` 和 `ids[i + 1]` 组成一对，循环只走到倒数第二个元素。
@@ -74,7 +74,7 @@ assert merge([5], (1, 2), 9) == [5], "只有一个元素时没有可合并的对
 ## 训练循环
 
 ```{code-ref} symbol:examples/sample-repo/src/bpe.py#train
-:pin: 2458dee
+:pin: dd64ade
 :steps: bytes, count, pick, merge
 ```
 

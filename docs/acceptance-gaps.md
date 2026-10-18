@@ -1,6 +1,6 @@
 # 最终验收缺口清单
 
-本清单由最终验收审计（6 个独立审计代理 + 汇总）在 `main` f33198c 上生成，共 51 个缺口（12 个主要、39 个次要），按代码归属分为四组，对应工作分解中的 WP-60a 至 WP-60d。每个缺口的修法即其验收标准；修复后对应的集成或端到端测试必须存在并通过。
+本清单由最终验收审计（6 个独立审计代理 + 汇总）在 `main` cc22e81 上生成，共 51 个缺口（12 个主要、39 个次要），按代码归属分为四组，对应工作分解中的 WP-60a 至 WP-60d。每个缺口的修法即其验收标准；修复后对应的集成或端到端测试必须存在并通过。
 
 ## 组间约定
 
@@ -356,7 +356,7 @@ Each group builds its own fixture decks under e2e/fixtures/<group>, and only G2 
 
 **缺口**：Export and diff paths that work are unguarded. The export test checks a hand-written Markdown permalink, not one generated from {code-ref}. No test runs presmium-export --with-clicks. presmium-diff --install (needed for host-upgrade regression) is untested.
 
-**证据**：packages/addon-publish/test/fixtures/deck/lecture.md:15 is a literal link. Probe: presmium-export --with-clicks on a {code-ref} with :pin: 669aa6b gives exit 0 and the permalink on pages 1-3; the demo gives 67 pages and 0 lost links. diff --install in a scratch clone with a CSS change lists page 002-01, while without --install it only warns.
+**证据**：packages/addon-publish/test/fixtures/deck/lecture.md:15 is a literal link. Probe: presmium-export --with-clicks on a {code-ref} with :pin: 035d111 gives exit 0 and the permalink on pages 1-3; the demo gives 67 pages and 0 lost links. diff --install in a scratch clone with a CSS change lists page 002-01, while without --install it only warns.
 
 **修法与验收**：Replace the hand-written link in the export fixture with a {code-ref} (with :steps:) to a small committed file, run presmium-export --with-clicks, and assert the generated permalink is on every step page. Add a diff.test.ts case: a fixture repo with a lockfile and a commit changing a dependency's or workspace addon's CSS; --install lists the page, and the run without --install warns.
 

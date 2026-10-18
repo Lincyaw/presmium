@@ -1,10 +1,10 @@
 (code-steps)=
 ## 代码引用：分步高亮
 
-引用业务仓库中的代码，不把代码复制进文稿。代码来自 `e2e/fixtures/code/cart.ts` 的 checkout 区间，锁定在提交 6e4072a；幻灯片标题栏和网页代码块上的链接指向远端仓库中这个提交的对应行，徽标显示工作区中的代码是否已经改变。
+引用业务仓库中的代码，不把代码复制进文稿。代码来自 `e2e/fixtures/code/cart.ts` 的 checkout 区间，锁定在提交 10a2a63；幻灯片标题栏和网页代码块上的链接指向远端仓库中这个提交的对应行，徽标显示工作区中的代码是否已经改变。
 
 ```{code-ref} region:e2e/fixtures/code/cart.ts#checkout
-:pin: 6e4072a
+:pin: 10a2a63
 :steps: validate, price, receipt
 :repo: https://github.com/Lincyaw/presmium
 ```
@@ -21,7 +21,7 @@
 同一个函数在三个提交中的写法，随步骤原地切换。锚点按语法树找到函数，被引用的代码不需要任何标记。
 
 ```{code-ref} symbol:e2e/fixtures/code/cart.ts#total
-:variants: 6e4072a, c4c6310, f6960cc
+:variants: 10a2a63, 89cd8ae, 31f07c8
 :repo: https://github.com/Lincyaw/presmium
 ```
 
@@ -36,7 +36,7 @@ total 的第一个版本：下标循环。
 
 ````md
 ```{code-ref} region:e2e/fixtures/code/cart.ts#checkout
-:pin: 6e4072a
+:pin: 10a2a63
 :steps: validate, price, receipt
 ```
 ````

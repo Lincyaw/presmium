@@ -58,7 +58,7 @@
 3. **浏览器中的编辑只在 `presmium studio` 中**（G-4）：没有不依赖 dsh 的轻量编辑页。
 4. **上游请求只记录**（G-7）：第 16 节。
 5. **hub 排在 96f 之后**：WP-94 为每个用户启动 `presmium studio`（11.5 节）。
-6. **现有助手的技能泄露已经修复**：提交 c8a2616 让随助手启动的 dsh 读 Presmium 自己的 `DSH_AGENTS_HOME`，并有用例；N 波次不再为它排工作。
+6. **现有助手的技能泄露已经修复**：提交 14c44a8 让随助手启动的 dsh 读 Presmium 自己的 `DSH_AGENTS_HOME`，并有用例；N 波次不再为它排工作。
 7. **起草新文档在新文档的目录中进行**：草稿把工作区根也登记为 dsh 工作区，供首页的起草使用。定稿改为先按模板新建文档（一个文档操作，一个提交），再在新文档的目录中开会话起草（7.3 节）。这样每个 agent 会话的工作目录、沙箱的根与审阅的根都是同一个文档目录；工作区根不登记。
 8. **studio 用自己的 `DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，不与旧工作台的 `$XDG_STATE_HOME/presmium/dsh` 共用，因为 96g 之前两者可能锁定不同的 dsh 版本，一个 `DSH_HOME` 只由一个版本写（11.1 节）。
 9. **会话令牌与焦点的路由在服务端**（`@presmium/server`），不在工作区的路由中：`MCP_ENDPOINT` 本来就是服务端的服务，焦点与放映位置一样由服务端保存（5.3、8.6 节）。
@@ -525,7 +525,7 @@ export interface Focus {
 ### 11.1 命令与目录
 
 - **命令**：`presmium studio [目录] [--port <端口>] [--host <地址>]`，由 `@presmium/studio` 提供；`@presmium/cli` 在装了它时转交，没装时说明怎样安装。目录的规则同 `presmium serve`（工作区，或只有一份文档的仓库）。
-- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`（定稿与草稿不同之处第 8 条）。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@presmium/dsh`；profile 的 `node_modules` 链接到 bundle（K8 发现 dsh 只从 profile 中解析插件模块）。`DSH_AGENTS_HOME` 是其中的 `agents/`（与 c8a2616 中助手的做法相同）。
+- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`（定稿与草稿不同之处第 8 条）。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@presmium/dsh`；profile 的 `node_modules` 链接到 bundle（K8 发现 dsh 只从 profile 中解析插件模块）。`DSH_AGENTS_HOME` 是其中的 `agents/`（与 14c44a8 中助手的做法相同）。
 
 ### 11.2 启动与监管
 

@@ -227,7 +227,7 @@ MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-ta
 
 ````md
 ```{code-ref} region:src/bpe.py#merge
-:pin: 2458dee
+:pin: dd64ade
 :steps: count, replace
 ```
 ````

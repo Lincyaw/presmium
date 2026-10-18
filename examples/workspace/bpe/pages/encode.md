@@ -15,7 +15,7 @@
 ## 编码：按学到的先后合并
 
 ```{code-ref} symbol:examples/sample-repo/src/bpe.py#encode
-:pin: 2458dee
+:pin: dd64ade
 ```
 
 给新文本分词时，同样从字节开始，然后反复合并。不同的是，这时不再看次数，而是看规则学到的先后：在当前序列的所有相邻对中，找出最早学到的那条规则来合并。`merges.get(p, float("inf"))` 让没学过的对排在最后；如果连排在最前面的一对都没学过，说明已经没有可用的规则，编码结束。
@@ -26,7 +26,7 @@
 ## 解码：把字节拼回来
 
 ```{code-ref} symbol:examples/sample-repo/src/bpe.py#decode
-:pin: 2458dee
+:pin: dd64ade
 ```
 
 解码要简单得多。先建一张表，写出每个 id 代表的字节串：0 到 255 是单个字节，之后每条规则的新 id 等于它合并的两个 id 的字节串连在一起。规则是按学到的先后排列的，所以建表时用到的 id 一定已经在表里。
