@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - examples/*
+  - site
 allowBuilds:
   '@ast-grep/lang-python': false
   '@deepseek-ai/dsh-subprocess-local': false

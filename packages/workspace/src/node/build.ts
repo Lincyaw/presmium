@@ -2,8 +2,9 @@
  * `presmium build` at a workspace root (P-122, docs/ir.md section 7): every
  * document compiled (their own plugins, all code run), then the
  * workspace site built by the web renderer into `<out>/web/`: the home page
- * lists the documents, each under `/<dir>/`. The site has no translations of
- * the documents (a warning for each a document declares).
+ * lists the documents, each under `/<dir>/`, and the translations a
+ * document declares under `/<dir>/<lang>/` (P-123), compiled as a build of
+ * the document alone compiles them.
  */
 import { join, resolve } from 'node:path'
 import { Compiler } from '@presmium/compiler'
@@ -11,7 +12,7 @@ import type { RunStats } from '@presmium/compiler'
 import { errorMessage } from '@presmium/kernel'
 import type { Finding } from '@presmium/kernel'
 import { listDocuments, readWorkspace } from './config.ts'
-import { siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
+import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
 
 export interface WorkspaceBuild {
   /** The site's directory, `<out>/web`. */
@@ -29,9 +30,10 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   const site = siteSpec(config, [])
   for (const document of found) {
     const compilation = await new Compiler(join(config.root, document.entry), { bundled: options.bundled, settings: config.settings }).compile({ pruneCache: true })
-    findings.push(...compilation.doc.diagnostics, ...untranslated(compilation, config.root))
+    const translated = await siteTranslations(compilation)
+    findings.push(...compilation.doc.diagnostics, ...translated.findings)
     documents.push({ dir: document.dir, title: document.title, runs: compilation.runs })
-    site.documents.push(siteDocument(document, siteIR(compilation)))
+    site.documents.push(siteDocument(document, siteIR(compilation), translated.translations))
   }
   const outDir = join(resolve(options.outDir ?? join(config.root, 'dist')), 'web')
   const renderer = await webRenderer(config.root, options.bundled)

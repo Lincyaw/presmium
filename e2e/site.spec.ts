@@ -3,7 +3,7 @@
 // and an English translation; a workspace (e2e/fixtures/site/workspace) whose home page is one of its two
 // documents, with search and the doc footer across them. WP-81e2: a hidden directory is not published (and
 // presmium check says so); text of raw HTML that only looks like an attribute is not; the site of a workspace
-// says it leaves out a document's translation. WP-89f: linked Markdown files are files, not pages (F-24); a link to
+// left out a document's translation (WP-93c: it publishes it). WP-89f: linked Markdown files are files, not pages (F-24); a link to
 // another document's lecture.md opens its page, and no build publishes a document's source (F-25).
 import { spawnSync } from 'node:child_process'
 import { cpSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
@@ -182,8 +182,17 @@ test.describe('a workspace site', () => {
     await site?.close()
   })
 
-  test('a document\'s translation is not in the workspace site, and the build says so at its headmatter', () => {
-    expect(site.report).toMatch(/^week2\/lecture\.md:3  warning  translation "en" \(lecture\.en\.md\) is not in the workspace site: a workspace site does not build the translations of its documents yet; build this document alone \(presmium build week2\) to publish it  \(presmium\.translations\)$/m)
+  test('a document\'s translation is published under its directory, and its language menu switches to it (WP-93c)', async ({ page }) => {
+    expect(site.report).not.toContain('is not in the workspace site')
+    await page.goto(`${site.url}/week2/`)
+    const menu = page.locator('.VPNavBarTranslations')
+    await expect(async () => {
+      await menu.getByRole('button').hover()
+      await menu.getByRole('link', { name: 'English' }).click({ timeout: 2000 })
+    }).toPass({ timeout: 20_000 })
+    await expect(page).toHaveURL(`${site.url}/week2/en/`)
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('.pm-section[data-section="w2-shells"]')).toContainText('logarithmic spiral')
   })
 
   test('the home page shows the document the configuration names', async ({ page }) => {
