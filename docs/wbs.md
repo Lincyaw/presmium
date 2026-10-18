@@ -1879,6 +1879,42 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 WP-94 排在 WP-96f 之后：hub 为每个用户启动 `presmium studio`，不再启动 `presmium serve`，LiteLLM 的地址填进 DeepSeek Harness 的模型设置，路径前缀用 dsh 的 `--public-url` 与 `--trusted-host`（`design-dsh.md` 11.5 节）。下面的拥有与条目写于 N 波次之前，开工时按此修订（studio 与工作区服务在前缀下运行、预览的源）。
 
+## 命令行工具与 pnpm（WP-97）
+
+用户 2026-10-18 试用后的要求：Presmium 要像一个规范的命令行工具那样使用；包管理器“要么用 pnpm，要么用 npm，不能混用”，由验收者选定。
+
+**决定（H-1 至 H-4，用户确认方向，验收者定细节）**：
+
+- H-1：只用 pnpm。仓库的开发本来就用 pnpm，使用者安装、新建、运行也用 pnpm：文档、README、技能、生成的项目、命令的提示、消费者安装测试与第三方插件的打包都只写 pnpm（`pnpm add`、`pnpm add -g`、`pnpm exec`、`pnpm dlx`、`pnpm create`、`pnpm pack`），不出现 npm 与 npx 的命令。前提写一次：Node.js 22.19 以上与 pnpm（`corepack enable pnpm`，或 pnpm 官网的安装方式），全局安装前运行一次 `pnpm setup`。
+- H-2：一个全局安装即可用的包 `presmium`（不带作用域，npm 上这个名字空着）：依赖 `@presmium/cli`、三个渲染端与官方插件，提供 `presmium` 命令。`pnpm add -g presmium` 之后，在没有安装任何包的目录中 `presmium check`、`dev`、`build`、`serve` 都能用：渲染端与插件先从文稿项目（或工作区根目录）找，找不到时用 `presmium` 包自己带的（编译器已有 `bundledDir` 的回退，扩展到这个包）。项目自己装了 `presmium`（`pnpm add -D presmium`）时，全局命令改用项目里的那一份，版本由项目决定。
+- H-3：`presmium new [目录] [--type lecture|workspace|plugin]` 新建项目，用 `create-presmium` 的模板与问答；新建的讲义与工作区不需要先安装依赖就能 `presmium dev`、`presmium serve`（只有用到第三方插件时才 `pnpm add`）。`pnpm create presmium` 仍可用，与 `presmium new` 是同一段代码。
+- H-4：源码仓库中的试用：`pnpm install` 之后在 `packages/presmium` 中运行 `pnpm link --global`，得到同一个全局 `presmium` 命令（开发者指南与 CONTRIBUTING 写明）；不另加 `pnpm try` 之类的根脚本，`node packages/cli/bin/presmium.mjs` 不出现在面向使用者的文字中。
+
+### WP-97 命令行工具 `presmium` 与只用 pnpm（与 N 波次第三步并行）
+
+**需求**：P-141、P-142 的修订（本节 H-1 至 H-4）；N-10 的上手部分。
+
+**拥有**：`packages/presmium/**`（新）；`packages/cli/**`（`new` 命令、全局命令转交给项目里的 `presmium`、提示文字）；`packages/compiler/src/plugins.ts` 与 `src/renderers.ts`（渲染端与插件的回退）；`packages/create-presmium/**`；`templates/**`；`scripts/consumer.ts`、`e2e/consumer.spec.ts`、`packages/cli/test/**`；`scripts/check-packages.mjs`；根目录的 `README.md`、`CONTRIBUTING.md`、`CLAUDE.md` 的命令一节、`.changeset/README.md` 与 `.changeset/config.json`（`presmium` 随统一版本）；各包的 `README.md`（`packages/studio/README.md` 除外，它归 96h）；`docs/requirements.md`（P-141、P-142 与附录 B 的修订记录）、`docs/api.md`、`docs/architecture.md` 中包与命令的部分；`.agents/skills/**`。端口 5701–5709。不拥有：`site/**`（93d，合并后由验收者按 H-1 改安装说明）、`packages/studio/**`（96h，需要改的提示写进交付报告）。
+
+**条目**：
+
+1. `presmium` 包（H-2）：依赖与 `bin`；`files`、元数据与发布检查（`scripts/check-packages.mjs` 的表加上不带作用域的包）；随统一版本发布。
+2. 回退解析（H-2）：渲染端与插件在文稿项目、工作区根目录找不到时，从 `presmium` 包的安装位置找；项目里装的优先；诊断说明用的是哪一份。全局命令发现项目里装有 `presmium` 时转交给它。
+3. `presmium new`（H-3）：交互问答与 `--type`、`--title` 等参数，与 `pnpm create presmium` 共用 `create-presmium` 的代码；生成的项目、模板、下一步的提示与插件模板的测试都只用 pnpm。
+4. 只用 pnpm（H-1）：README、CONTRIBUTING、各包 README、技能、`docs/*.md` 与命令的提示文字中的 npm、npx 命令改为 pnpm；消费者安装测试改用 pnpm（全局安装与项目安装两种），第三方插件用 `pnpm pack` 打包。
+5. 仓库中的试用（H-4）：`packages/presmium` 中 `pnpm link --global` 后的全局命令，写进开发者指南与 CONTRIBUTING。
+
+**验收**：
+
+- 在单仓之外，用打包的结果做一次 pnpm 全局安装（临时的 `PNPM_HOME`），在一个空目录中：`presmium new` 生成讲义，不安装任何包即 `presmium check` 没有问题、`presmium build` 生成网页、幻灯片与 notebook、`presmium dev` 的页面能打开；`presmium new --type workspace` 生成工作区，`presmium serve` 的首页列出文档；
+- 项目里另装了 `presmium` 时，全局命令用项目里的那一份（输出或版本能分辨）；
+- 第三方插件（`pnpm pack` 打包）用 `pnpm add` 装进项目后被加载；
+- `pnpm create presmium` 与 `presmium new` 生成相同的项目；插件模板生成的项目 `pnpm test` 通过；
+- 面向使用者的文字中没有 npm、npx 的命令（一个用例扫描 README、各包 README、技能、模板与命令的提示文字）；
+- `pnpm release:check` 通过，其中有 `presmium`。
+
+**用例**：`packages/cli/test/consumer.test.ts`（全局安装、空目录、项目优先、第三方插件）；`packages/create-presmium/test/create.test.ts`（`presmium new` 与 `pnpm create presmium` 一致、插件模板的测试）；`packages/cli/test/docs.test.ts`（新，扫描面向使用者的文字）；`e2e/consumer.spec.ts`（全局安装后 `presmium serve` 的首页与文档页）。
+
 ### WP-94 hub 托管模板
 
 **拥有**：`templates/hub/**`（新）、`packages/server/**` 中路径前缀的支持、`packages/cli/src/cli.ts` 的 `serve --base-path`、`e2e/hub.spec.ts`（新）。
