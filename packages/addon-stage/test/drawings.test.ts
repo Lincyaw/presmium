@@ -100,11 +100,12 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   await page.mouse.down()
   for (let i = 1; i <= 10; i++) await page.mouse.move(box.x + box.width * (0.3 + i * 0.04), y - i * 6)
   await page.mouse.up()
-  await expect.poll(() => existsSync(drawing), { timeout: 15_000 }).toBe(true)
+  // The file can be written before the stroke is in it (a busy host): wait for the stroke.
+  const stroke = () => (existsSync(drawing) ? /<path[^>]* d="([^"]{12})/.exec(readFileSync(drawing, 'utf8'))?.[1] : undefined)
+  await expect.poll(stroke, { timeout: 15_000 }).toBeTruthy()
   // Saved in the deck, not in the generated (ignored) dev deck.
   expect(existsSync(join(deck, '.presmium/dev/slides/.presmium'))).toBe(false)
-  const path = /<path[^>]* d="([^"]{12})/.exec(readFileSync(drawing, 'utf8'))?.[1]
-  expect(path).toBeTruthy()
+  const path = stroke()
 
   const built = await presmium(deck, ['build', '--to', 'slides'])
   expect(built.code, built.stdout + built.stderr).toBe(0)
