@@ -35,7 +35,7 @@ const serverCheck: Check = {
 const plugin: PresmiumNodePlugin = {
   id: SESSION_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   checks: [serverCheck],
   async server(ctx) {
     const classroom = await startClassroomServer({

@@ -1,5 +1,6 @@
 import { environmentExecutor, EXECUTOR } from '@presmium/kernel'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { DEFAULT_TIMEOUT_MS, EXEC_WEBGPU_ID, WEBGPU_EXECUTOR_ID } from '../domain/index.ts'
 import { createWebgpuExecutor } from './executor.ts'
 import type { WebgpuExecutor } from './executor.ts'
@@ -22,7 +23,7 @@ function release(): void {
  * form. `dispose` ends the workers of runs under way.
  */
 export const execWebgpuPlugin: PluginDefinition = {
-  manifest: { id: EXEC_WEBGPU_ID, version: '0.1.0', kernel: '^0.1.0', requires: [{ token: EXECUTOR }], capabilities: ['exec'] },
+  manifest: { id: EXEC_WEBGPU_ID, version, kernel: '^1.0.0', requires: [{ token: EXECUTOR }], capabilities: ['exec'] },
   setup(ctx) {
     // A kernel started again (a page restored from the back-forward cache) may set up before the previous one is disposed.
     release()

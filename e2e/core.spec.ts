@@ -306,7 +306,7 @@ test.describe('the fixture deck in the slides form', () => {
     const report = (await openPanels(page)).locator('.pm-start-report')
     const plugin = (id: string) => report.locator(`[data-plugin="${id}"]`)
     await expect(plugin('fixture.core.future')).toHaveAttribute('data-status', 'disabled')
-    await expect(plugin('fixture.core.future')).toContainText('kernel 0.1.0 does not satisfy "^9.0.0"')
+    await expect(plugin('fixture.core.future')).toContainText('kernel 1.0.0 does not satisfy "^9.0.0"')
     await expect(plugin('fixture.core.throws')).toHaveAttribute('data-status', 'failed')
     await expect(plugin('fixture.core.throws')).toContainText('fixture setup failed on purpose')
     for (const id of ['fixture.core.cycle-a', 'fixture.core.cycle-b']) {

@@ -3,7 +3,7 @@
 export default {
   id: 'fixture.probe',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   roles: [{
     name: 'probe',
     children: (input: { value: string }) => (input.value === 'hidden' ? [] : [{ type: 'strong', children: [{ type: 'text', value: input.value }] }]),

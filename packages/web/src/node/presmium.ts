@@ -6,6 +6,6 @@ import { renderer } from './renderer.ts'
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 /** The web renderer plugin; the compiler loads it for the renderer id `web`. */
-const plugin: PresmiumNodePlugin = { id: WEB_ID, version, kernel: '^0.1.0', renderer }
+const plugin: PresmiumNodePlugin = { id: WEB_ID, version, kernel: '^1.0.0', renderer }
 
 export default plugin

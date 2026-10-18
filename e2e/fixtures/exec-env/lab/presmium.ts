@@ -6,7 +6,7 @@ const RECORDED = '实验环境中录制的输出\n'
 export default {
   id: 'fixture.lab',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   environments: {
     'fixture-lab': {
       create: (name: string) => ({

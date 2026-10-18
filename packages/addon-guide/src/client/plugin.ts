@@ -1,5 +1,6 @@
 import { NAVIGATION, OPERATIONS } from '@presmium/host'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { GUIDE_ID } from '../domain/index.ts'
 import { hints, spots } from './adhoc.ts'
 
@@ -14,8 +15,8 @@ let unregister: Unsubscribe[] = []
 const plugin: PluginDefinition = {
   manifest: {
     id: GUIDE_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     requires: [{ token: OPERATIONS, optional: true }, { token: NAVIGATION, optional: true }],
   },
   setup(ctx) {

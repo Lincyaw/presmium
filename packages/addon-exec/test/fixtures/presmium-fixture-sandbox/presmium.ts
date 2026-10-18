@@ -55,7 +55,7 @@ function sandbox(log: string) {
 export default {
   id: 'fixture.sandbox',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
   services: (ctx: { settings: Record<string, unknown> }) => [[{ id: 'presmium.processSandbox' }, sandbox(String(ctx.settings.log))]],
 }

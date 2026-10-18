@@ -21,7 +21,7 @@ function answer(ctx: Context, work: (speech: any) => Promise<unknown>): Promise<
 export default {
   id: 'fixture.speechProbe',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   server: (ctx: Context) => ({
     routes: {
       engines: { handle: () => answer(ctx, speech => speech.engines()) },

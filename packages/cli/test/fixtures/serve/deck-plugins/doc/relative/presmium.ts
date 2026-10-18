@@ -3,4 +3,4 @@ import { writeFileSync } from 'node:fs'
 
 writeFileSync(new URL('./loaded', import.meta.url), 'loaded')
 
-export default { id: 'fixture.relative', version: '0.1.0', kernel: '^0.1.0' }
+export default { id: 'fixture.relative', version: '0.1.0', kernel: '^1.0.0' }

@@ -14,7 +14,7 @@ declare global {
 const OPERATIONS = { id: 'presmium.operations' } as ServiceToken<Operations>
 
 const recorder: PluginDefinition = {
-  manifest: { id: 'fixture.server.operations', version: '0.1.0', kernel: '^0.1.0', requires: [{ token: OPERATIONS, optional: true }] },
+  manifest: { id: 'fixture.server.operations', version: '0.1.0', kernel: '^1.0.0', requires: [{ token: OPERATIONS, optional: true }] },
   setup(ctx) {
     const operations = ctx.tryGet(OPERATIONS)
     if (!operations) return

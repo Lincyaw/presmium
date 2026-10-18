@@ -8,7 +8,7 @@ const json = (data: unknown) => new Response(JSON.stringify(data), { headers: { 
 export default {
   id: 'fixture.server',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   server: (ctx: Context) => ({
     routes: {
       value: { role: 'reader', handle: () => json({ value: '来自服务端的回答' }) },

@@ -1,5 +1,6 @@
 import { environmentExecutor, EXECUTOR } from '@presmium/kernel'
 import type { Executor, PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { EXEC_LOCAL_ID, execLocalConfig, LOCAL_ENV } from '../domain/index.ts'
 import { createLocalEnv } from './local-env.ts'
 
@@ -18,8 +19,8 @@ let unregister: Unsubscribe[] = []
 const plugin: PluginDefinition = {
   manifest: {
     id: EXEC_LOCAL_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     provides: [LOCAL_ENV],
     requires: [{ token: EXECUTOR, optional: true }],
     capabilities: ['exec', 'fs'],

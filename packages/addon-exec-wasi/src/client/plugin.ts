@@ -1,5 +1,6 @@
 import { environmentExecutor, EXECUTOR } from '@presmium/kernel'
 import type { PluginDefinition } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { EXEC_WASI_ID, execWasiConfig, RUNTIME_DIR, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
 import { createWasiRunner } from './executor.ts'
 import type { WasiRunner } from './executor.ts'
@@ -19,8 +20,8 @@ let runner: WasiRunner | undefined
 const plugin: PluginDefinition = {
   manifest: {
     id: EXEC_WASI_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     requires: [{ token: EXECUTOR, optional: true }],
     capabilities: ['exec'],
   },

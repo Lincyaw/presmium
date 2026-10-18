@@ -52,7 +52,7 @@ const devcontainer: EnvironmentProvider = {
 const plugin: PresmiumNodePlugin = {
   id: EXEC_LOCAL_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [localEnvDirective],
   passes: [localEnvPass(container)],
   executors: [container],

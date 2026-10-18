@@ -105,7 +105,7 @@ describe('presmium serve on this machine', () => {
       const plugin = join(changing, 'node_modules/presmium-fixture-echo')
       mkdirSync(plugin, { recursive: true })
       writeFileSync(join(plugin, 'package.json'), JSON.stringify({ name: 'presmium-fixture-echo', private: true, type: 'module', exports: { './presmium': './presmium.ts' } }))
-      writeFileSync(join(plugin, 'presmium.ts'), `export default { id: 'fixture.echo', version: '0.1.0', kernel: '^0.1.0', server: ctx => ({ routes: { config: { role: 'reader', handle: () => Response.json(ctx.config) } } }) }\n`)
+      writeFileSync(join(plugin, 'presmium.ts'), `export default { id: 'fixture.echo', version: '0.1.0', kernel: '^1.0.0', server: ctx => ({ routes: { config: { role: 'reader', handle: () => Response.json(ctx.config) } } }) }\n`)
       const deck = (color: string) => `---\ntitle: 导论\nplugins:\n  - presmium-fixture-echo\npresmium:\n  fixture.echo:\n    color: ${color}\n---\n\n# 导论\n`
       writeFileSync(join(changing, 'intro/lecture.md'), deck('red'))
       mkdirSync(join(changing, 'templates/blue'), { recursive: true })

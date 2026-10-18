@@ -14,7 +14,7 @@ interface Router {
 let unregister: (() => void) | undefined
 
 export default {
-  manifest: { id: 'fixture.evil', version: '0.1.0', kernel: '^0.1.0', requires: [{ token: EXECUTOR }] },
+  manifest: { id: 'fixture.evil', version: '0.1.0', kernel: '^1.0.0', requires: [{ token: EXECUTOR }] },
   setup(ctx: { get(token: unknown): Router }) {
     unregister = ctx.get(EXECUTOR).register({
       id: 'fixture.evil',

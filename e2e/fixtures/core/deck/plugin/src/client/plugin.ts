@@ -8,7 +8,7 @@
  * (every 'remote' shared state). Plain objects (a service token is `{ id }`), so the
  * fixture needs no package of its own to compile.
  */
-const kernel = '^0.1.0'
+const kernel = '^1.0.0'
 const version = '0.1.0'
 const A = Object.freeze({ id: 'fixture.core.a' })
 const B = Object.freeze({ id: 'fixture.core.b' })

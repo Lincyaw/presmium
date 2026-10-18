@@ -67,7 +67,7 @@ const agent = {
 let unregister: (() => void)[] = []
 
 export const fixtureDesign = {
-  manifest: { id: 'fixture.design', version: '0.1.0', kernel: '^0.1.0', provides: [AGENT], requires: [{ token: TOOLBAR, optional: true }] },
+  manifest: { id: 'fixture.design', version: '0.1.0', kernel: '^1.0.0', provides: [AGENT], requires: [{ token: TOOLBAR, optional: true }] },
   setup(ctx: Context) {
     ctx.provide(AGENT, agent)
     const toolbar = ctx.tryGet(TOOLBAR) as Toolbar | undefined

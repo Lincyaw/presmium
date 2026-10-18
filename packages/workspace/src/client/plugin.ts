@@ -17,6 +17,7 @@ import type { ToolbarItem } from '@presmium/host'
 import { AGENT } from '@presmium/kernel'
 import type { AgentClient, PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { computed, readonly } from 'vue'
+import { version } from '../../package.json'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { mayEdit } from '../domain/members.ts'
 import { WORKSPACE_MESSAGES } from '../domain/messages.ts'
@@ -29,8 +30,8 @@ const unregister: Unsubscribe[] = []
 export const workspacePlugin: PluginDefinition = {
   manifest: {
     id: WORKSPACE_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     provides: [EDIT_MODE],
     requires: [{ token: TOOLBAR, optional: true }, { token: AGENT, optional: true }],
   },

@@ -17,6 +17,7 @@
 import { currentLocale, NAVIGATION, TOOLBAR, useServer } from '@presmium/host'
 import { AGENT, ASK, PRESENTER_PANELS } from '@presmium/kernel'
 import type { AgentClient, PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'
 import AssistantToolbar from './AssistantToolbar.vue'
@@ -56,8 +57,8 @@ const unavailable: AgentClient = {
 export const assistantPlugin: PluginDefinition = {
   manifest: {
     id: ASSISTANT_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     provides: [AGENT, ASK],
     requires: [{ token: TOOLBAR, optional: true }, { token: PRESENTER_PANELS, optional: true }, { token: NAVIGATION, optional: true }],
   },

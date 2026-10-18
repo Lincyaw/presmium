@@ -70,7 +70,7 @@ function cue(name: string, tag: string): DirectiveSpec {
 const plugin: PresmiumNodePlugin = {
   id: GUIDE_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [cursor, cue('spotlight', 'PmSpotlight'), cue('hint', 'PmHint')],
 }
 

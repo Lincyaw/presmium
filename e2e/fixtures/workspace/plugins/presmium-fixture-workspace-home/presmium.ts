@@ -17,7 +17,7 @@ const json = (data: unknown) => new Response(JSON.stringify(data), { headers: { 
 export default {
   id: 'fixture.home',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
   server: (ctx: Context) => ({
     routes: {

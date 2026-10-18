@@ -35,7 +35,7 @@ const webgpu: EnvironmentProvider = {
 const plugin: PresmiumNodePlugin = {
   id: EXEC_WEBGPU_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   executors: [createRecorder({ id: WEBGPU_EXECUTOR_ID, adapter: 'auto' })],
   environments: { webgpu },
   vitePlugins: () => [jaxRuntime()],

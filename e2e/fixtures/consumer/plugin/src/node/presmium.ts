@@ -23,7 +23,7 @@ const hello: DirectiveSpec = {
 const plugin: PresmiumNodePlugin = {
   id: 'acme.hello',
   version: '1.0.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [hello],
   vitePlugins: () => [{ name: 'acme:hello' }],
 }

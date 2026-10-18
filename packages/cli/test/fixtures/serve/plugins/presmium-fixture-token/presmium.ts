@@ -9,7 +9,7 @@ const MCP_ENDPOINT = { id: 'presmium.mcpEndpoint' }
 export default {
   id: 'fixture.token',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   server: (ctx: Context) => ({
     routes: {
       token: {

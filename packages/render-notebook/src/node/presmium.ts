@@ -35,7 +35,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const plugin: PresmiumNodePlugin = {
   id: CHECK_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   renderer: {
     id: 'notebook',
     support,

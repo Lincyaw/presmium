@@ -1,5 +1,6 @@
 import { currentLocale, OPERATIONS, TOOLBAR } from '@presmium/host'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { LECTURE_ID, LECTURE_MESSAGES } from '../domain/index.ts'
 import { dockWriteback } from './dock.ts'
 import { applyInk, applyPoint, clearInks, clearPointer } from './marks.ts'
@@ -19,7 +20,7 @@ let unregister: Unsubscribe[] = []
  * registers it in the document form.
  */
 const plugin: PluginDefinition = {
-  manifest: { id: LECTURE_ID, version: '0.1.0', kernel: '^0.1.0', requires: [{ token: OPERATIONS, optional: true }, { token: TOOLBAR, optional: true }] },
+  manifest: { id: LECTURE_ID, version, kernel: '^1.0.0', requires: [{ token: OPERATIONS, optional: true }, { token: TOOLBAR, optional: true }] },
   setup(ctx) {
     offerLectures(ctx.config)
     const operations = ctx.tryGet(OPERATIONS)

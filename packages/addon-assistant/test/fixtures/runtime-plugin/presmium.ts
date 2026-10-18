@@ -17,7 +17,7 @@ let session: any
 export default {
   id: 'fixture.runtime',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
   server: (ctx: Context) => ({
     routes: {

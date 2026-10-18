@@ -3,5 +3,5 @@
 export default {
   id: 'fixture.mcp',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
 }

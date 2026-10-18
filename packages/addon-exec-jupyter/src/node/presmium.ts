@@ -21,7 +21,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const plugin: PresmiumNodePlugin = {
   id: EXEC_JUPYTER_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [terminalDirective],
   passes: [terminalPass],
   environments: { jupyter: jupyterProvider },

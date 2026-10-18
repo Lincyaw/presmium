@@ -2,6 +2,6 @@
 export default {
   id: 'fixture.design',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
 }

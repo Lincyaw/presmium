@@ -15,7 +15,7 @@ let grant: Grant | undefined
 export default {
   id: 'fixture.mcp',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   server: (ctx: Context) => ({
     routes: {
       token: {

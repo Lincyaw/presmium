@@ -7,7 +7,7 @@ const link = (node: Node) => `<a class="fixture-attach" href="${node.props.files
 export default {
   id: 'fixture.attach',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [{
     name: 'attach',
     toIR: () => ({

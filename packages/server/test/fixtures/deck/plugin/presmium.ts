@@ -18,7 +18,7 @@ const counted = globalThis as { fixtureClosed?: number }
 export default {
   id: 'fixture.server',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   services: (ctx: Context) => [[ECHO, { value: 'from the node service', settings: ctx.settings, config: ctx.config }]],
   server: (ctx: Context) => ({
     routes: {

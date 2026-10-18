@@ -50,4 +50,4 @@ const pinned = {
   },
 }
 
-export default { id: 'fixture.viewer', version: '0.1.0', kernel: '^0.1.0', directives: [versions, pinned] }
+export default { id: 'fixture.viewer', version: '0.1.0', kernel: '^1.0.0', directives: [versions, pinned] }

@@ -95,8 +95,9 @@ const poll: DirectiveSpec = {
   },
 }
 
-// version 与 kernel：编译器不加载内核范围不符的插件；scripts/check-plugins.mjs 检查每个官方插件都写了
-const plugin: PresmiumNodePlugin = { id: POLL_ID, version, kernel: '^0.1.0', directives: [poll] }
+// version 与 kernel：version 取自 package.json；kernel 是插件契约的版本范围（KERNEL_VERSION，1.0 起为 1.0.0，与包的版本分开），
+// 编译器不加载范围不符的插件，幻灯片也不把它作为插件；scripts/check-plugins.mjs 检查每个官方插件都写了
+const plugin: PresmiumNodePlugin = { id: POLL_ID, version, kernel: '^1.0.0', directives: [poll] }
 export default plugin
 ```
 
@@ -131,7 +132,7 @@ export default plugin
 | `operator` | `boolean` | 运营者插件：列在 `settings.presmium.workspace.plugins` 中、安装在工作区根目录时每份文稿都加载；`presmium serve` 的首页（文档 `''`）也挂上它的服务端部分并加载它的浏览器部分（例如助手的 `AGENT`），文档的页面仍只加载文稿列出的插件的浏览器部分。首页不是文档：服务端部分在那里的 `ctx.deckDir` 与 `ctx.workspaceRoot` 都是 serve 的一个空目录（不是工作区根目录），路由在首页只回答不需要文档的请求，不读写文件 |
 | `environments` | `{ [kind]: EnvironmentProvider { create(name, spec, ctx), probe? } }` | 具名环境的提供方：为头部 `execute.environments` 中该 `kind` 的环境创建编译时执行器，ID 必须是 `environmentExecutor(name)`（`presmium.env.<名>`）；`probe` 供 `presmium check --env`。浏览器端同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记同 ID 的执行器（范例：`addon-exec-local` 的 `devcontainer`） |
 | `tools` | `AgentTool { name, description, input, kind, run(input, ctx) }` | agent 工具：MCP 服务（`/mcp` 与 `presmium-mcp`）以 `name`（小写加下划线，与内置工具同名的被忽略）列出，`input` 是对象的 JSON Schema（MCP 另加可选的 `document`）；`kind` 为 `read` 的每个令牌都能用，`operate`、`spend` 只给作者的令牌，先经 `APPROVALS` 确认再调用。`run` 的 `ctx` 有 `document`、`member`、`service`（Node 端服务）、`signal`，返回 JSON 数据或文字 |
-| `version`、`kernel` | string | 必须写：`version` 与 `package.json` 一致，`kernel` 为兼容的内核版本范围（如 `^0.1.0`），不兼容时编译器不加载 |
+| `version`、`kernel` | string | 必须写：`version` 与 `package.json` 一致，`kernel` 为兼容的内核版本范围（如 `^1.0.0`），不兼容时编译器不加载 |
 
 遍历块用 `@presmium/kernel` 的 `docBlocks(doc)`（含组件的子块），报错消息用 `errorMessage(error)`，语言名比较用 `languageId(lang)`。
 
@@ -153,7 +154,7 @@ export default plugin
 
 ## 6. 浏览器端注册
 
-- `src/client/plugin.ts` 默认导出 `PluginDefinition`：`{ manifest: { id: POLL_ID, version: '0.1.0', kernel: '^0.1.0', provides?, requires?: [{ token, optional? }] }, setup(ctx) { ctx.provide(TOKEN, impl) }, dispose?() {} }`。没有浏览器端服务时可以不写。
+- `src/client/plugin.ts` 默认导出 `PluginDefinition`：`{ manifest: { id: POLL_ID, version, kernel: '^1.0.0', provides?, requires?: [{ token, optional? }] }, setup(ctx) { ctx.provide(TOKEN, impl) }, dispose?() {} }`，`version` 取自包的 `package.json`（`import { version } from '../../package.json'`）。没有浏览器端服务时可以不写。
   - 网页形态：`@presmium/web` 自动导入 `plugins` 中每个包的这个文件并注册。
   - 幻灯片形态：`setup/main.ts` 注册它：
 

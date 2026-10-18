@@ -32,7 +32,7 @@ const { version } = require('../../package.json') as { version: string }
 const plugin: PresmiumNodePlugin = {
   id: 'presmium.slides',
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   renderer: {
     id: 'slides',
     site: true,

@@ -182,10 +182,16 @@ function headmatter(doc: IRDocument, gen: Generation): Record<string, unknown> {
   }
 }
 
-/** The deck's Slidev addons: its plugins, the addons `renderers.slides.addons` names, and the web form's package (`formAddons`). */
+/**
+ * The deck's Slidev addons: the plugins the compiler loaded (one it refused,
+ * for another kernel or another Presmium, P-143, is left out, as in the web
+ * form), the addons `renderers.slides.addons` names, and the web form's
+ * package (`formAddons`).
+ */
 function addonNames(doc: IRDocument, ctx: RenderContext): string[] {
   const { addons } = ctx.config
-  const listed = [...doc.config.plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, ctx)]
+  const plugins = doc.config.plugins.filter(name => ctx.pluginDirs[name] !== undefined)
+  const listed = [...plugins, ...Array.isArray(addons) ? addons : [], ...formAddons(doc, ctx)]
   return listed.filter((name): name is string => typeof name === 'string')
 }
 

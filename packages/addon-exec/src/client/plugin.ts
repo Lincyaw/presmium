@@ -1,5 +1,6 @@
 import { EXECUTOR } from '@presmium/kernel'
 import type { PluginDefinition } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { createExecutorRouter, EXEC_ID, execConfig, TRACER } from '../domain/index.ts'
 import { messages } from './messages.ts'
 import { createPyodideExecutor } from './pyodide.ts'
@@ -17,7 +18,7 @@ let pyodide: PyodideExecutor | undefined
  * hidden, a hot update), `dispose` ends the Python worker with its runtime.
  */
 export const execPlugin: PluginDefinition = {
-  manifest: { id: EXEC_ID, version: '0.1.0', kernel: '^0.1.0', provides: [EXECUTOR, TRACER], capabilities: ['exec'] },
+  manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], capabilities: ['exec'] },
   setup(ctx) {
     const config = execConfig(ctx.config)
     // A kernel started again (a page restored from the back-forward cache) may set up before the

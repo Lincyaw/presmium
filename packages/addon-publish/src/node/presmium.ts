@@ -14,7 +14,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const plugin: PresmiumNodePlugin = {
   id: PUBLISH_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   passes: [remoteAssetsPass],
   rendererExtensions: {
     // The high-contrast switch is a control of the page; a notebook has nothing to switch.

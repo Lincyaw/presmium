@@ -17,7 +17,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const plugin: PresmiumNodePlugin = {
   id: CONTENT_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [markmapDirective, ...MEDIA_KINDS.map(kind => mediaDirective(kind)), youtubeDirective],
   passes: [plantUmlPass],
   rendererExtensions: { notebook: { components: { PmMedia: notebookMedia } } },

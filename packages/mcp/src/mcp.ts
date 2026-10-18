@@ -13,6 +13,7 @@
  * can be subscribed to (`subscriptions/listen`) and is announced updated
  * whenever a window reports a position. `serveMcpStdio` serves it on stdio.
  */
+import { createRequire } from 'node:module'
 import { createMcpHandler, fromJsonSchema, McpServer, ResourceTemplate, UriTemplate } from '@modelcontextprotocol/server'
 import type { AuthInfo, CallToolResult, JsonSchemaType, Variables } from '@modelcontextprotocol/server'
 import { serveStdio } from '@modelcontextprotocol/server/stdio'
@@ -23,7 +24,8 @@ import type { McpCaller, McpHost, McpProcess } from './host.ts'
 import { MCP_MESSAGES } from './messages.ts'
 import type { McpMessages } from './messages.ts'
 
-export const MCP_VERSION = '0.1.0'
+/** The MCP server's version: this package's. */
+export const MCP_VERSION: string = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 export const POSITION_URI = 'presmium://position'
 
 /** The read tools, which every token sees. */

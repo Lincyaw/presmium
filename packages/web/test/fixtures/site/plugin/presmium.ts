@@ -6,7 +6,7 @@ interface Emitter { emitFile(file: { type: 'asset', fileName: string, source: st
 export default {
   id: 'fixture.site',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   vitePlugins: ({ config }: Context) => [{
     name: 'fixture-site',
     apply: 'build',

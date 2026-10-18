@@ -1502,6 +1502,13 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **验收**：`pnpm -r publish --dry-run` 通过；消费者安装测试通过；不兼容插件的诊断用例通过；`pnpm verify` 通过。
 
+**WP-93a 与 WP-92d 的结果（验收者，2026-10-18）**：两者都已合并（92d 两轮验收，93a 两轮）。验收者在合并后：
+
+- 文档模板随 `@presmium/workspace` 发布：`templates/document/` 移到 `packages/workspace/templates/document/`（从 npm 安装的 `presmium serve` 原先列不出模板），消费者安装测试在 git 仓库中从模板新建文档；`preBundle` 跳过没有安装的可选对等依赖；消费者安装测试的 `serve` 用空闲端口。
+- 决定 F-1：插件契约的版本 `KERNEL_VERSION` 在 1.0 为 `1.0.0`，官方插件与测试插件的 `kernel` 为 `^1.0.0`；它与包的版本分开，契约有不兼容的改动时升主版本（文档部分归 WP-93c 的 `docs/api.md`）。官方插件在浏览器端的 `version` 也读 `package.json`（MCP 服务与 ACP 客户端的版本同样）。
+- 编译器拒绝的插件（`kernel` 或对等依赖不满足）不再作为幻灯片的 Slidev 插件（`render-slides/src/node/slidev.ts` 的 `addonNames`，与网页一致），用例在 `packages/render-slides/test/deck.test.ts`。
+- 留给 WP-93b：只安装 `@presmium/cli` 不带渲染端，生成的项目要列出 CLI、渲染端与用到的官方插件（同 `scripts/consumer.ts`）；`create-presmium` 的压缩包只能带自己目录中的模板。留给 WP-93c：工作区首页的字体许可证与 `optimizeDeps`（93a 已在 `sites.ts` 中补上，93c 核对）、`docs/api.md` 的版本规则（`IR_VERSION`、`KERNEL_VERSION`、`peerDependencies`）、各包 README 与 `homepage`。
+
 ### WP-93b 起步工具（L 波次第二步，并行）
 
 **拥有**：`packages/create-presmium/**`（新）、`templates/plugin/**`（新）、`packages/workspace/templates/document/**`（文档模板随 `@presmium/workspace` 发布，WP-93a 从 `templates/document/` 移来）、`templates/workspace/**`、`e2e/create.spec.ts` 与 `packages/create-presmium/test/**`（新）。

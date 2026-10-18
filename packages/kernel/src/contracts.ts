@@ -20,7 +20,7 @@ export * from './contracts/server.ts'
 export * from './contracts/service.ts'
 export * from './contracts/speech.ts'
 
-export const KERNEL_VERSION = '0.1.0'
+export const KERNEL_VERSION = '1.0.0'
 
 // ---------------------------------------------------------------------------
 // Services
@@ -38,7 +38,7 @@ export interface PluginManifest {
   /** Reverse-DNS style id, e.g. 'presmium.code'. */
   id: string
   version: string
-  /** Semver range of compatible kernel versions, e.g. '^0.1.0'. */
+  /** Semver range of compatible kernel versions, e.g. '^1.0.0'. */
   kernel: string
   provides?: ServiceToken<unknown>[]
   requires?: ServiceRequirement[]
@@ -269,7 +269,7 @@ export interface PresmiumNodePlugin {
   /** The plugin's own version, reported with problems. */
   version?: string
   /**
-   * Semver range of compatible kernel versions, e.g. '^0.1.0'; the compiler
+   * Semver range of compatible kernel versions, e.g. '^1.0.0'; the compiler
    * does not load a plugin whose range excludes `KERNEL_VERSION`.
    */
   kernel?: string

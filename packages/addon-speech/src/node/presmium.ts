@@ -19,7 +19,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const plugin: PresmiumNodePlugin = {
   id: SPEECH_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
   passes: [speechConfigPass],
   services: ctx => [[SPEECH, nodeSpeech(ctx)]],

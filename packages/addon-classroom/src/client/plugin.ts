@@ -1,6 +1,7 @@
 import { currentLocale, STATUS, TOOLBAR } from '@presmium/host'
 import { CLASSROOM_STORE, EXECUTOR, PRESENTER_PANELS, SESSION } from '@presmium/kernel'
 import type { ClassroomStore, PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { CLASSROOM_ID, classroomSummary, COLLECTIONS, isAnswer, isPrediction, isPulseVote, isQuestion, isQuizState, isSubmission, MESSAGES, sectionNumbers } from '../domain/index.ts'
 import type { ClassroomSummary } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'
@@ -27,8 +28,8 @@ function values<T>(store: ClassroomStore | undefined, name: string, valid: (valu
 export const classroomPlugin: PluginDefinition = {
   manifest: {
     id: CLASSROOM_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     requires: [SESSION, CLASSROOM_STORE, EXECUTOR, TOOLBAR, PRESENTER_PANELS, STATUS].map(token => ({ token, optional: true })),
   },
   setup(ctx) {

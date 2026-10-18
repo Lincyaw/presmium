@@ -35,6 +35,6 @@ const slideSectionsPass: IRPass = {
 }
 
 /** The host adapter adds no resolvers, checks or Markdown transforms; its one pass names the slides' places. */
-const plugin: PresmiumNodePlugin = { id: 'presmium.core', version, kernel: '^0.1.0', passes: [slideSectionsPass] }
+const plugin: PresmiumNodePlugin = { id: 'presmium.core', version, kernel: '^1.0.0', passes: [slideSectionsPass] }
 
 export default plugin

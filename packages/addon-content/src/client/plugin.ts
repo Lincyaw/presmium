@@ -1,4 +1,5 @@
 import type { PluginDefinition } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { CONTENT_ID } from '../domain/index.ts'
 import { defineDemoElements } from './elements.ts'
 
@@ -7,7 +8,7 @@ import { defineDemoElements } from './elements.ts'
  * by @presmium/web in the document form; starting it defines the demo web component.
  */
 const plugin: PluginDefinition = {
-  manifest: { id: CONTENT_ID, version: '0.1.0', kernel: '^0.1.0' },
+  manifest: { id: CONTENT_ID, version, kernel: '^1.0.0' },
   setup() {
     defineDemoElements()
   },

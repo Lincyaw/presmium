@@ -5,7 +5,7 @@ const STAMP = { id: 'fixture.operator.stamp' }
 export default {
   id: 'fixture.operator',
   version: '0.1.0',
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
   services: (ctx: { settings: Record<string, unknown> }) => [[STAMP, { stamp: ctx.settings.stamp }]],
   passes: [{

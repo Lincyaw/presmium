@@ -19,6 +19,7 @@
  * In `presmium dev` (./dev.ts) every request is of the one deck
  * (`WorkspaceRoutes.document`), and there are no document operations.
  */
+import { createRequire } from 'node:module'
 import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, RequestContext, Route, ServerContribution } from '@presmium/kernel'
 import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer, SavedAnswer } from '../domain/api.ts'
@@ -29,6 +30,8 @@ import { documentDirOf } from './files.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
 import { MAX_SOURCE, SourceFiles } from './source.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 export interface WorkspaceRoutes {
   documents: Documents
@@ -207,8 +210,8 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
 export function workspacePlugin(options: WorkspaceRoutes): PresmiumNodePlugin {
   return {
     id: WORKSPACE_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     server: () => workspaceContribution(options),
   }
 }

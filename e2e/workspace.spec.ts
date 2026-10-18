@@ -262,7 +262,7 @@ test.describe('the workspace in the browser', () => {
     })
     await page.route('**/packages/workspace/src/client/plugin.ts*', async (route) => {
       const response = await route.fetch()
-      const agentPlugin = `export const fixtureAgent = { manifest: { id: 'fixture.agent', version: '0.1.0', kernel: '^0.1.0', provides: [{ id: 'presmium.agent' }] }, setup(ctx) { ctx.provide({ id: 'presmium.agent' }, window.draftAgent.client) } }`
+      const agentPlugin = `export const fixtureAgent = { manifest: { id: 'fixture.agent', version: '0.1.0', kernel: '^1.0.0', provides: [{ id: 'presmium.agent' }] }, setup(ctx) { ctx.provide({ id: 'presmium.agent' }, window.draftAgent.client) } }`
       await route.fulfill({ response, body: `${await response.text()}\n${agentPlugin}\n` })
     })
 

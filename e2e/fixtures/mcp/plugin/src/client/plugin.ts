@@ -9,7 +9,7 @@ const STATUS = { id: 'presmium.status' } as ServiceToken<StatusRegistry>
 let unregister: (() => void) | undefined
 
 const status: PluginDefinition = {
-  manifest: { id: 'fixture.mcp.status', version: '0.1.0', kernel: '^0.1.0', requires: [{ token: STATUS, optional: true }] },
+  manifest: { id: 'fixture.mcp.status', version: '0.1.0', kernel: '^1.0.0', requires: [{ token: STATUS, optional: true }] },
   setup(ctx) {
     unregister = ctx.tryGet(STATUS)?.register({ id: 'fixture.mcp', read: () => ({ answered: 3, question: '哪一对先合并？' }) })
   },

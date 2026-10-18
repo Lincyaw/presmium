@@ -1,5 +1,6 @@
 import { SPEECH } from '@presmium/kernel'
 import type { PluginDefinition } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { SPEECH_ID } from '../domain/index.ts'
 import { browserSpeech } from './speech.ts'
 
@@ -11,8 +12,8 @@ import { browserSpeech } from './speech.ts'
 const plugin: PluginDefinition = {
   manifest: {
     id: SPEECH_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     provides: [SPEECH],
     capabilities: ['network'],
   },

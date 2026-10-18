@@ -2,6 +2,7 @@ import { currentLocale, NAVIGATION, SYNC_TRANSPORTS, TOOLBAR, useServer } from '
 import { CLASSROOM_STORE, isRecord, PRESENTER_PANELS, SESSION } from '@presmium/kernel'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
 import { watch } from 'vue'
+import { version } from '../../package.json'
 import { localServer, MESSAGES, reachableServer, SESSION_ID, sessionConfig } from '../domain/index.ts'
 import type { LocalClassroom } from '../domain/index.ts'
 import { createClassroom } from './classroom.ts'
@@ -61,8 +62,8 @@ async function ownServer(): Promise<{ server: string, params: Record<string, str
 export const sessionPlugin: PluginDefinition = {
   manifest: {
     id: SESSION_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     provides: [SESSION, CLASSROOM_STORE],
     requires: [NAVIGATION, TOOLBAR, PRESENTER_PANELS, SYNC_TRANSPORTS].map(token => ({ token, optional: true })),
     capabilities: ['network'],

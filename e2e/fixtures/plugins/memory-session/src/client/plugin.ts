@@ -89,7 +89,7 @@ function memoryClassroom(): { session: SessionService, store: ClassroomStore } {
 }
 
 const plugin: PluginDefinition = {
-  manifest: { id: 'fixture.memory-session', version: '0.0.0', kernel: '^0.1.0', provides: [SESSION, CLASSROOM_STORE] },
+  manifest: { id: 'fixture.memory-session', version: '0.0.0', kernel: '^1.0.0', provides: [SESSION, CLASSROOM_STORE] },
   setup(ctx) {
     const { session, store } = memoryClassroom()
     ctx.provide(SESSION, session)

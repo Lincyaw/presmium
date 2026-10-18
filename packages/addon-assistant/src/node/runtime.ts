@@ -13,6 +13,7 @@
  * `session/cancel`; closing ends the session and the process.
  */
 import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { Readable, Writable } from 'node:stream'
 import * as acp from '@agentclientprotocol/sdk'
 import { errorMessage } from '@presmium/kernel'
@@ -20,6 +21,8 @@ import type { AgentEvent, AgentRuntime, AgentSession, AgentSessionOptions, Agent
 import { citationsOf, promptText } from '../domain/index.ts'
 import { classify } from './permissions.ts'
 import type { ToolCallInfo } from './permissions.ts'
+
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
 /** How a session's agent starts. */
 export interface Launch {
@@ -199,7 +202,7 @@ export class AcpRuntime implements AgentRuntime {
       const init = await connection.agent.request(acp.methods.agent.initialize, {
         protocolVersion: acp.PROTOCOL_VERSION,
         clientCapabilities: {},
-        clientInfo: { name: 'presmium', version: '0.1.0' },
+        clientInfo: { name: 'presmium', version },
       })
       this.#runtime = runtimeName(init.agentInfo) ?? this.#runtime
       closable = init.agentCapabilities?.sessionCapabilities?.close !== undefined && init.agentCapabilities?.sessionCapabilities?.close !== null

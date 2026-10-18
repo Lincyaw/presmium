@@ -20,7 +20,7 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 const plugin: PresmiumNodePlugin = {
   id: CLASSROOM_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   directives: [quizDirective, exerciseDirective, questionBoxDirective, pulseDirective, predictDirective],
   passes: [revealsPass, placesPass, predictFallbacksPass],
   rendererExtensions,

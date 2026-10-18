@@ -1,5 +1,6 @@
 import { EXECUTOR } from '@presmium/kernel'
 import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { version } from '../../package.json'
 import { EXEC_JUPYTER_ID, JUPYTER_ENVIRONMENTS, jupyterEnvironments } from '../domain/index.ts'
 import { createRemoteEnvironments } from './environments.ts'
 import type { RemoteEnvironments } from './environments.ts'
@@ -18,8 +19,8 @@ let unregister: Unsubscribe[] = []
 const plugin: PluginDefinition = {
   manifest: {
     id: EXEC_JUPYTER_ID,
-    version: '0.1.0',
-    kernel: '^0.1.0',
+    version,
+    kernel: '^1.0.0',
     provides: [JUPYTER_ENVIRONMENTS],
     requires: [{ token: EXECUTOR, optional: true }],
     capabilities: ['exec', 'network'],

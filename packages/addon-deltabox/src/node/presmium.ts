@@ -119,7 +119,7 @@ const reportPass: IRPass = {
 const plugin: PresmiumNodePlugin = {
   id: DELTABOX_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   operator: true,
   services,
   passes: [reportPass],

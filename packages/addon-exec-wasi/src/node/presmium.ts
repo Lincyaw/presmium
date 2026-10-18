@@ -42,7 +42,7 @@ const wasi: EnvironmentProvider = {
 const plugin: PresmiumNodePlugin = {
   id: EXEC_WASI_ID,
   version,
-  kernel: '^0.1.0',
+  kernel: '^1.0.0',
   passes: [runtimesPass],
   executors: [createWasiExecutor(WASI_EXECUTOR_ID)],
   environments: { [WASI_KIND]: wasi },

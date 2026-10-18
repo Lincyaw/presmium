@@ -7,6 +7,7 @@
 import { currentLocale } from '@presmium/host'
 import { defineService } from '@presmium/kernel'
 import type { PluginDefinition } from '@presmium/kernel'
+import { version } from '../../package.json'
 
 export interface Greeter {
   greet(name: string): string
@@ -17,8 +18,7 @@ export const DEMO_GREETER = defineService<Greeter>('presmium.demo.greeter')
 export const DEMO_GREETING = defineService<string>('presmium.demo.greeting')
 const DEMO_MISSING = defineService<unknown>('presmium.demo.missing')
 
-const kernel = '^0.1.0'
-const version = '0.1.0'
+const kernel = '^1.0.0'
 
 // The consumer is listed first; the kernel still starts the provider before it.
 export const demoPlugins: PluginDefinition[] = [

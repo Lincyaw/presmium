@@ -180,7 +180,7 @@ it('{config} overrides a plugin\'s global options in its section, for its direct
 
   const future = await presmium(dir, ['ir', 'future'])
   expect(future.code).toBe(1)
-  expect(future.stderr).toContain('plugin "../addons/future" (fixture.future 2.0.0) is not loaded: kernel 0.1.0 does not satisfy "^9.0.0"')
+  expect(future.stderr).toContain('plugin "../addons/future" (fixture.future 2.0.0) is not loaded: kernel 1.0.0 does not satisfy "^9.0.0"')
 })
 
 it('compiles a {code-cell} as a code block, keeps labels as ids, keeps the footnotes of each included file its own and reports a misspelled {only} (R-02, R-04, R-37, R-38)', async () => {
