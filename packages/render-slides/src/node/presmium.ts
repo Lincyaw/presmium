@@ -16,7 +16,7 @@ import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { errorMessage, irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
 import type { IRDocument, LocalAsset, MdastNode, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
-import { copyPublished, FONT_LICENSE, fontLicense, preBundle, TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
+import { copyPublished, FONT_LICENSE, fontLicense, optimizeDeps, TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
 import { addonDirs, hasExtension, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
@@ -127,8 +127,8 @@ async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc:
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '*\n')
   const packages = [PACKAGE_DIR, ...addonDirs(doc, ctx)]
-  const include = preBundle(dir, packages)
-  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium), include, allowed(ctx, packages)))
+  const optimize = optimizeDeps(dir, packages)
+  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium), optimize, allowed(ctx, packages)))
   await copyFile(STYLE, join(dir, 'style.css'))
   await rm(join(dir, 'public'), { recursive: true, force: true })
   await mkdir(join(dir, 'public'))
@@ -209,15 +209,16 @@ function allowed(ctx: RenderContext, packages: string[]): string[] {
  * to the Presmium server, WebSockets too (docs/architecture.md 10.1), and
  * the directories it may serve (`allow`); for the Presmium packages
  * installed under node_modules, as from npm, the browser dependencies the
- * dev server pre-bundles (`preBundle`).
+ * dev server pre-bundles, and the packages themselves, which it never does
+ * (`optimizeDeps`).
  */
-function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[], include: string[], allow: string[]): string {
+function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[], optimize: { include: string[], exclude: string[] }, allow: string[]): string {
   const imports = entries.map(({ file }, i) => `import plugin${i} from ${JSON.stringify(file)}\n`).join('')
   const deck = JSON.stringify({ deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot })
   const plugins = entries.map(({ config }, i) => `    ...(plugin${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(config)} }) ?? []),\n`).join('')
   const proxy = ctx.server ? `  server: { proxy: { '^/__presmium/': { target: ${JSON.stringify(ctx.server.url)}, ws: true } }, fs: { allow: ${JSON.stringify(allow)} } },\n` : ''
-  const optimize = include.length > 0 ? `  optimizeDeps: { include: ${JSON.stringify(include)} },\n` : ''
-  return `${imports}\nconst deck = ${deck}\n\nexport default {\n  cacheDir: 'node_modules/.vite',\n  plugins: [\n${plugins}  ],\n${proxy}${optimize}}\n`
+  const optimized = optimize.exclude.length > 0 ? `  optimizeDeps: ${JSON.stringify(optimize)},\n` : ''
+  return `${imports}\nconst deck = ${deck}\n\nexport default {\n  cacheDir: 'node_modules/.vite',\n  plugins: [\n${plugins}  ],\n${proxy}${optimized}}\n`
 }
 
 /**

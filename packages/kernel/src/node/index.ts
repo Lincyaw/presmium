@@ -93,13 +93,28 @@ const NOT_BROWSER = new Set(['node', 'bin', 'test', 'fixtures', 'node_modules'])
  * itself, and so is a deck's own directory: nothing for them.
  */
 export function preBundle(root: string, packages: Iterable<string>): string[] {
+  return optimizeDeps(root, packages).include
+}
+
+/**
+ * `preBundle`'s `include`, with the packages it prepares as `exclude`. The
+ * pages load those packages' source from node_modules: Vite pre-bundles
+ * nothing a dependency imports, but it would pre-bundle one of them where a
+ * source outside node_modules imports it (a deck's own components; a plugin
+ * that a document names by its directory, as the example of a plugin made
+ * with create-presmium does), a second copy beside the source (for
+ * `@presmium/host`: "no host installed").
+ */
+export function optimizeDeps(root: string, packages: Iterable<string>): { include: string[], exclude: string[] } {
   const include = new Set<string>()
+  const exclude = new Set<string>()
   const seen = new Set<string>()
   const visit = (dir: string): void => {
     const real = realpathSync(dir)
     if (seen.has(real) || !real.split(sep).includes('node_modules')) return
     seen.add(real)
     const { name, imports, presmium } = browserDependencies(real)
+    exclude.add(name)
     if (imports.length > 0) linkPackage(root, name, real)
     for (const specifier of imports) include.add(`${name} > ${specifier}`)
     for (const dependency of presmium) {
@@ -108,7 +123,7 @@ export function preBundle(root: string, packages: Iterable<string>): string[] {
     }
   }
   for (const dir of packages) if (existsSync(join(dir, 'package.json'))) visit(dir)
-  return [...include].sort()
+  return { include: [...include].sort(), exclude: [...exclude].sort() }
 }
 
 /** The `package.json` of the package `name` as the package in `dir` finds it; undefined for one not installed (an optional peer). */
