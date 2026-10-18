@@ -14,6 +14,7 @@ import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { stripVTControlCharacters } from 'node:util'
 import { run } from '@presmium/cli/testing'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { storedPath, TEMPLATE_SOURCES, templateFiles } from '../src/templates.ts'
@@ -216,6 +217,7 @@ it('makes a plugin whose example checks with no problems and builds, and whose i
   expect(build.code, build.stdout + build.stderr).toBe(0)
   expect(build.stdout).toContain('0 errors, 0 warnings')
   for (const file of ['web/index.html', 'slides/index.html', 'notebook/lecture.ipynb']) expect(existsSync(join(dir, 'example/dist', file)), file).toBe(true)
-  const tests = await sh('npm', ['test'], dir)
+  // Vitest colours its summary where it sees a CI (GitHub Actions).
+  const tests = stripVTControlCharacters(await sh('npm', ['test'], dir))
   expect(tests).toMatch(/Tests {2}3 passed \(3\)/)
 }, 600_000)
