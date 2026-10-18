@@ -228,12 +228,8 @@ it('presmium-mcp finds what presmium check finds, a plugin\'s finding on its lin
   }
 }, 120_000)
 
-it('presmium-mcp lists the read tools on stdio, no operation without --allow operate, and loads what the CLI installs', async () => {
+it('presmium-mcp lists the read tools on stdio, no operation without --allow operate', async () => {
   const dir = deck()
-  const cli = join(dir, 'node_modules/@presmium/cli')
-  mkdirSync(join(cli, 'node_modules/@presmium'), { recursive: true })
-  writeFileSync(join(cli, 'package.json'), `${JSON.stringify({ name: '@presmium/cli', private: true, type: 'module' })}\n`)
-  cpSync(fileURLToPath(new URL('./fixtures/bundled', import.meta.url)), join(cli, 'node_modules/@presmium/slidev-addon-deltabox'), { recursive: true })
   const client = new Client({ name: 'presmium-test', version: '0.1.0' })
   try {
     await client.connect(new StdioClientTransport({ command: process.execPath, args: [MCP_BIN, dir], env: env() as Record<string, string>, stderr: 'ignore' }))
@@ -242,7 +238,6 @@ it('presmium-mcp lists the read tools on stdio, no operation without --allow ope
     expect(tools.filter(name => OPERATE.includes(name))).toEqual([])
     expect(client.getInstructions()).toContain('No operation is offered')
     expect(client.getInstructions()).toContain('presmium-mcp compiles the deck again at the next call')
-    expect(resultOf(await client.callTool({ name: 'fixture_bundled', arguments: {} }))).toEqual({ bundled: true })
     const info = resultOf(await client.callTool({ name: 'deck_info', arguments: {} }))
     expect(info).toMatchObject({ title: 'MCP 测试文稿', sections: 4, entry: 'lecture.md' })
   } finally {

@@ -38,9 +38,9 @@ npx presmium build      # dist/ir.json and dist/<renderer>/
 
 The 1.0 packages are release candidates (`1.0.0-rc.*`) until the first release.
 
-### The local workbench (preview)
+### The workspace service and the workbench
 
-`presmium serve` starts a workbench on your machine for a workspace of documents: a live site, editing the source in the browser, managing documents, the history of changes, and changes by an AI agent that you review before they are committed. It is for one user on their own machine. Its browser interface is a preview and will be replaced by a new workbench, separate from the outputs. The `presmium serve` command and the workspace configuration file stay; see [docs/api.md](docs/api.md) for what is stable.
+`presmium serve` starts the workspace service on your machine for a workspace of documents: a home page listing the documents, and each document's site, compiled on demand and updated as you save. `presmium studio` (the package `@presmium/studio`, experimental) starts the workbench on top of it: the file tree, the source editor, previews, the problems, and an AI agent whose changes you review before they are committed. Both are for one user on their own machine; see [docs/api.md](docs/api.md) for what is stable.
 
 ## Documentation
 
@@ -61,6 +61,6 @@ Presmium 是组件库与工具链，不是托管产品：像一个增强的 Jupy
 
 示例（每次推送到 `main` 时重新构建）：<https://lincyaw.github.io/presmium/> 是示例工作区（`examples/workspace`）的静态站点，首页是文档列表；<https://lincyaw.github.io/presmium/demo/> 是 `examples/demo` 中的讲义构建出的网页、幻灯片（`demo/slides/`）与 notebook（`demo/notebook/`）。新建、编辑与管理文档要在自己的机器上运行 `presmium serve`。
 
-开始：`npm create presmium@latest`，或在项目中安装 `@presmium/cli` 与渲染端后运行 `npx presmium check`、`dev`、`build`。本机工作台 `presmium serve` 是预览，浏览器界面会被新的工作台取代，命令与工作区配置文件保持不变。
+开始：`npm create presmium@latest`，或在项目中安装 `@presmium/cli` 与渲染端后运行 `npx presmium check`、`dev`、`build`。工作区：`presmium serve`（文档列表与按需编译的站点）；工作台：`presmium studio`（另装 `@presmium/studio`，实验性）。
 
 文档：[作者指南](site/guide/lecture.md)、[插件开发指南](site/plugins/lecture.md)、[接口与版本](site/reference/lecture.md)（文档站在 `site/`，`pnpm --filter presmium-docs build` 构建），公开接口与版本规则见 [docs/api.md](docs/api.md)，设计文档在 [docs/](docs/)。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)，安全问题见 [SECURITY.md](SECURITY.md)。许可证为 Apache-2.0。

@@ -79,14 +79,10 @@ const devTheme = (args: string[]) => dev(['--to', 'web', ...args], 'web', async 
   addons: await (await served(web, '.vitepress/theme/addons.ts')).text(),
 }))
 
-it('runs presmium dev without edit mode and without the preview agent; with --edit, edit mode is there', async () => {
+it('runs presmium dev without the preview agent', async () => {
   const plain = await devTheme([])
   expect(plain.addons).toContain('addon-core')
-  expect(plain.addons).not.toContain('workspace/src/client')
   expect(plain.index).not.toContain('client/preview.ts')
-  const editing = await devTheme(['--edit'])
-  expect(editing.addons).toContain('workspace/src/client/plugin.ts')
-  expect(editing.index).not.toContain('client/preview.ts')
 
   const deck = join(dir, '.presmium/dev/slides')
   const page = await dev(['--to', 'slides'], 'slides', async (slides) => {

@@ -1,11 +1,10 @@
-import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, PmButton, PmCard, PmDrawer, PmEmpty, PmIcon, PmIconButton, pluginsOf, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, startHost, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
-import type { HostAdapter, Navigation, ToolbarItem, ToolbarSlot } from '@presmium/host'
+import { createSharedStates, currentLocale, installHost, PmEmpty, PmIcon, pluginsOf, PmToolbar, presmiumReport, presmiumService, registerPresmiumPlugin, startHost, useMessages } from '@presmium/host'
+import type { HostAdapter, Navigation } from '@presmium/host'
 import { FINAL_STEP } from '@presmium/viewer'
 import type { Theme } from 'vitepress'
-import { Content, inBrowser, useData } from 'vitepress'
+import { inBrowser, useData } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
-import type { InjectionKey } from 'vue'
-import { computed, defineComponent, h, inject, nextTick, onBeforeUnmount, onMounted, provide, readonly, ref, shallowRef, watchEffect } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, readonly, ref } from 'vue'
 import { samePage, WEB_MESSAGES } from '../domain/index.ts'
 import './style.css'
 
@@ -22,65 +21,14 @@ interface HomeDocument {
   description?: string
   pages?: number
   problems?: { errors: number, warnings: number }
-  sections?: { id: string, title: string, href: string }[]
 }
 
-export const DOCUMENTS_EVENT = 'presmium:documents'
-
-const HOME_CONFIG = { 'presmium.workspace': { home: true } }
-
-const served = shallowRef<HomeDocument[]>()
 const query = ref('')
-const IN_WORKBENCH: InjectionKey<boolean> = Symbol('presmium.workbench')
-
-let endpoint: string | undefined
-async function refresh(compile = false): Promise<void> {
-  if (!endpoint) return
-  for (let tries = 0; tries < 60; tries++) {
-    try {
-      const response = await fetch(`${endpoint}${compile ? '?compile=1' : ''}`, { cache: 'no-store' })
-      if (!response.ok) return
-      const answer = (await response.json()) as { documents: HomeDocument[], compiling?: boolean }
-      served.value = answer.documents
-      if (!compile || !answer.compiling) return
-    } catch (error) {
-      console.warn('[presmium] could not read the documents of the site', error)
-      return
-    }
-    await new Promise(done => setTimeout(done, 1000))
-  }
-}
 
 function useDocuments() {
   const { theme } = useData()
-  const options = computed(() => theme.value.presmium ?? {})
-  onMounted(() => {
-    if (endpoint || !options.value.endpoint) return
-    endpoint = options.value.endpoint as string
-    served.value = options.value.documents ?? []
-    void refresh()
-    window.addEventListener(DOCUMENTS_EVENT, () => void refresh())
-  })
-  return computed<HomeDocument[]>(() => served.value ?? options.value.documents ?? [])
+  return computed<HomeDocument[]>(() => theme.value.presmium?.documents ?? [])
 }
-
-function useFilledSlots() {
-  const toolbar = useService(TOOLBAR)
-  const slots = shallowRef(new Set<ToolbarSlot>())
-  watchEffect((onCleanup) => {
-    const registry = toolbar.value
-    if (!registry) return
-    const update = () => {
-      slots.value = new Set(registry.list().map(item => item.slot ?? 'tools'))
-    }
-    update()
-    onCleanup(registry.subscribe(update))
-  })
-  return slots
-}
-
-const inTools = (item: ToolbarItem) => !item.slot || item.slot === 'tools'
-const bySlot = (slot: ToolbarItem['slot']) => (item: ToolbarItem) => item.slot === slot
 
 function card(doc: HomeDocument, t: typeof WEB_MESSAGES[keyof typeof WEB_MESSAGES]) {
   const badge = (text: string, tone = '') => h('span', { class: `pm-ui-badge${tone ? ` pm-ui-badge--${tone}` : ''}` }, text)
@@ -97,29 +45,6 @@ function card(doc: HomeDocument, t: typeof WEB_MESSAGES[keyof typeof WEB_MESSAGE
     ]),
   ])
 }
-
-const McpCard = defineComponent({
-  name: 'PresmiumMcpCard',
-  setup() {
-    const t = useMessages(WEB_MESSAGES)
-    const address = ref('')
-    const copied = ref(false)
-    onMounted(() => address.value = `${location.origin}/mcp`)
-    const copy = async () => {
-      await navigator.clipboard?.writeText(address.value).catch(() => {})
-      copied.value = true
-      setTimeout(() => copied.value = false, 2000)
-    }
-    return () => h(PmCard, { class: 'pm-site-home__mcp' }, () => [
-      h('h2', { class: 'pm-ui-heading' }, t.value.mcp),
-      h('div', { class: 'pm-site-home__address' }, [
-        h('code', address.value),
-        h(PmButton, { small: true, icon: copied.value ? 'check' : 'copy', onClick: () => void copy() }, () => (copied.value ? t.value.copied : t.value.copy)),
-      ]),
-      h('p', { class: 'pm-site-home__hint' }, t.value.mcpHint),
-    ])
-  },
-})
 
 const SearchBox = defineComponent({
   name: 'PresmiumSiteSearch',
@@ -150,150 +75,12 @@ const SearchBox = defineComponent({
   },
 })
 
-interface Found {
-  id: string
-  group: 'documents' | 'sections' | 'commands'
-  label: string
-  detail?: string
-  run(): void
-}
-
-const matches = (text: string, words: string[]) => words.every(word => text.toLowerCase().includes(word))
-
-function commands(items: ToolbarItem[], toggleTheme: { label: string, run(): void }): Found[] {
-  const found: Found[] = []
-  for (const item of items) {
-    if (item.slot && !['tools', 'settings', 'create'].includes(item.slot)) continue
-    const control = document.querySelector<HTMLElement>(`[data-toolbar-item="${CSS.escape(item.id)}"]`)
-    const target = control?.matches('button, a[href]') ? control : control?.querySelector<HTMLElement>('button, a[href]')
-    if (target) found.push({ id: `command:${item.id}`, group: 'commands', label: item.title, run: () => target.click() })
-  }
-  found.push({ id: 'command:theme', group: 'commands', label: toggleTheme.label, run: toggleTheme.run })
-  return found
-}
-
-const LauncherSearch = defineComponent({
-  name: 'PresmiumLauncherSearch',
-  setup() {
-    const t = useMessages(WEB_MESSAGES)
-    const documents = useDocuments()
-    const query = ref('')
-    const toolbar = useService(TOOLBAR)
-    const theme = useTheme()
-    const input = ref<HTMLInputElement>()
-    const open = ref(false)
-    const active = ref(0)
-    let outlined = false
-    const results = computed((): Found[] => {
-      const words = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
-      if (words.length === 0) return []
-      const docs = documents.value.filter(doc => matches(`${doc.title} ${doc.dir} ${doc.description ?? ''} ${(doc.tags ?? []).join(' ')}`, words))
-        .slice(0, 8).map((doc): Found => ({ id: `document:${doc.dir}`, group: 'documents', label: doc.title, detail: `${doc.dir}/`, run: () => location.assign(doc.href) }))
-      const sections = documents.value.flatMap(doc => (doc.sections ?? []).filter(section => matches(section.title, words))
-        .map((section): Found => ({ id: `section:${doc.dir}:${section.id}`, group: 'sections', label: section.title, detail: doc.title, run: () => location.assign(section.href) }))).slice(0, 12)
-      const found = commands(toolbar.value?.list() ?? [], { label: t.value.toggleTheme, run: theme.toggle }).filter(command => matches(command.label, words)).slice(0, 8)
-      return [...docs, ...sections, ...found]
-    })
-    const choose = (found: Found | undefined) => {
-      if (!found) return
-      open.value = false
-      found.run()
-    }
-    const onFocus = () => {
-      open.value = true
-      if (outlined) return
-      outlined = true
-      void refresh(true)
-    }
-    const onKeydown = (event: KeyboardEvent) => {
-      const count = results.value.length
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault()
-        open.value = true
-        if (count) active.value = (active.value + (event.key === 'ArrowDown' ? 1 : -1) + count) % count
-      } else if (event.key === 'Enter') {
-        event.preventDefault()
-        choose(results.value[active.value])
-      } else if (event.key === 'Escape' && open.value) {
-        event.stopPropagation()
-        open.value = false
-      }
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        input.value?.focus()
-      }
-    }
-    onMounted(() => window.addEventListener('keydown', onKey))
-    onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
-    const optionId = (index: number) => `pm-launcher-option-${index}`
-    const groups: Found['group'][] = ['documents', 'sections', 'commands']
-    const groupLabel = (group: Found['group']) => (group === 'documents' ? t.value.groupDocuments : group === 'sections' ? t.value.groupSections : t.value.groupCommands)
-    return () => {
-      const list = results.value
-      if (active.value >= list.length) active.value = 0
-      const expanded = open.value && query.value.trim() !== ''
-      return h('div', { class: 'pm-launcher', onFocusout: (event: FocusEvent) => {
-        if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) open.value = false
-      } }, [
-        h('label', { class: 'pm-ui-search pm-site-home__search-box' }, [
-          h(PmIcon, { name: 'search', size: 15, strokeWidth: 1.8 }),
-          h('input', {
-            'ref': input,
-            'class': 'pm-site-home__search',
-            'type': 'text',
-            'role': 'combobox',
-            'value': query.value,
-            'placeholder': t.value.searchAll,
-            'aria-label': t.value.searchAll,
-            'aria-autocomplete': 'list',
-            'aria-expanded': expanded ? 'true' : 'false',
-            'aria-controls': 'pm-launcher-results',
-            'aria-activedescendant': expanded && list.length ? optionId(active.value) : undefined,
-            'onInput': (event: Event) => {
-              query.value = (event.target as HTMLInputElement).value
-              active.value = 0
-              open.value = true
-            },
-            'onFocus': onFocus,
-            'onKeydown': onKeydown,
-          }),
-          h('kbd', { class: 'pm-ui-kbd' }, 'Ctrl K'),
-        ]),
-        expanded
-          ? h('div', { id: 'pm-launcher-results', class: 'pm-launcher__results', role: 'listbox', 'aria-label': t.value.results }, list.length === 0
-              ? [h('p', { class: 'pm-launcher__none' }, t.value.noResults)]
-              : groups.flatMap((group) => {
-                  const members = list.map((found, index) => ({ found, index })).filter(({ found }) => found.group === group)
-                  return members.length === 0
-                    ? []
-                    : [h('div', { 'role': 'group', 'aria-label': groupLabel(group), 'class': 'pm-launcher__group' }, [
-                        h('p', { 'class': 'pm-launcher__heading', 'aria-hidden': 'true' }, groupLabel(group)),
-                        ...members.map(({ found, index }) => h('div', {
-                          'id': optionId(index),
-                          'role': 'option',
-                          'class': 'pm-launcher__option',
-                          'data-result': found.id,
-                          'aria-selected': index === active.value ? 'true' : 'false',
-                          'onMousedown': (event: MouseEvent) => event.preventDefault(),
-                          'onClick': () => choose(found),
-                          'onMouseenter': () => active.value = index,
-                        }, [h('span', found.label), found.detail ? h('span', { class: 'pm-launcher__detail' }, found.detail) : null])),
-                      ])]
-                })) : null,
-      ])
-    }
-  },
-})
-
 const SiteHome = defineComponent({
   name: 'PresmiumSiteHome',
   setup() {
-    const { site, theme } = useData()
+    const { site } = useData()
     const documents = useDocuments()
     const tag = ref<string>()
-    const workbench = inject(IN_WORKBENCH, false)
     const t = computed(() => WEB_MESSAGES[currentLocale()])
     const tags = computed(() => [...new Set(documents.value.flatMap(doc => doc.tags ?? []))].sort())
     const shown = computed(() => {
@@ -301,12 +88,12 @@ const SiteHome = defineComponent({
       return documents.value.filter(doc => (!tag.value || doc.tags?.includes(tag.value))
         && words.every(word => `${doc.title} ${doc.dir} ${doc.description ?? ''} ${(doc.tags ?? []).join(' ')}`.toLowerCase().includes(word)))
     })
-    return () => h('div', { class: ['pm-site-home', 'pm-ui', workbench && 'pm-site-home--workbench'] }, [
-      workbench ? null : h('h1', { class: 'pm-site-home__title' }, site.value.title),
+    return () => h('div', { class: 'pm-site-home pm-ui' }, [
+      h('h1', { class: 'pm-site-home__title' }, site.value.title),
       h('section', { 'class': 'pm-site-home__section', 'aria-labelledby': 'pm-site-home-documents' }, [
         h('div', { class: 'pm-site-home__filters' }, [
           h('h2', { id: 'pm-site-home-documents', class: 'pm-ui-heading' }, t.value.documentsHeading),
-          workbench ? null : h(SearchBox),
+          h(SearchBox),
           tags.value.length > 0
             ? h('div', { 'class': 'pm-site-home__tags pm-ui-segmented', 'role': 'group', 'aria-label': t.value.tags }, [
                 h('button', { 'type': 'button', 'class': 'pm-site-home__tag pm-ui-segmented__option', 'aria-pressed': tag.value === undefined, 'onClick': () => tag.value = undefined }, t.value.allTags),
@@ -318,12 +105,8 @@ const SiteHome = defineComponent({
           shown.value.length === 0
             ? h(PmEmpty, { class: 'pm-site-home__empty', icon: 'document' }, () => t.value.noDocuments)
             : h('ul', { class: 'pm-site-home__documents', role: 'list' }, shown.value.map(doc => card(doc, t.value))),
-          h(PmToolbar, { place: 'home', filter: bySlot('create') }),
         ]),
       ]),
-      theme.value.presmium?.server
-        ? h('section', { class: 'pm-site-home__cards' }, [h(PmToolbar, { place: 'home', filter: bySlot('home') }), h(McpCard)])
-        : null,
     ])
   },
 })
@@ -357,134 +140,13 @@ function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): Hos
   }
 }
 
-const FileTree = defineComponent({
-  name: 'PresmiumWorkspaceTree',
-  setup() {
-    const documents = useDocuments()
-    const filled = useFilledSlots()
-    return () => (filled.value.has('files')
-      ? h(PmToolbar, { class: 'pm-workbench__tree-items', place: 'home', filter: bySlot('files') })
-      : h('ul', { class: 'pm-workbench__tree', role: 'list' }, [
-          ...documents.value.map(doc => h('li', { key: doc.dir }, [
-            h('a', { class: 'pm-workbench__file', href: doc.href, title: doc.title }, [h(PmIcon, { name: 'folder', size: 15 }), `${doc.dir}/`]),
-          ])),
-          h('li', [h('span', { class: 'pm-workbench__file pm-workbench__file--plain' }, [h(PmIcon, { name: 'document', size: 15 }), 'presmium.workspace.yaml'])]),
-        ]))
-  },
-})
-
-const Files = defineComponent({
-  name: 'PresmiumWorkspaceFiles',
-  setup() {
-    const { site } = useData()
-    const t = useMessages(WEB_MESSAGES)
-    return () => h('aside', { 'class': 'pm-workbench__files', 'aria-label': t.value.files }, [
-      h('h1', { class: 'pm-workbench__name' }, site.value.title),
-      h(FileTree),
-    ])
-  },
-})
-
-const FilesDrawer = defineComponent({
-  name: 'PresmiumWorkspaceFilesDrawer',
-  setup() {
-    const t = useMessages(WEB_MESSAGES)
-    const open = ref(false)
-    const onClick = (event: MouseEvent) => {
-      if ((event.target as Element | null)?.closest('[data-path], a[href]')) open.value = false
-    }
-    return () => h(PmDrawer, { 'open': open.value, 'label': t.value.files, 'closeLabel': t.value.close, 'name': 'pm-workbench-files', 'onUpdate:open': (next: boolean) => open.value = next }, {
-      trigger: () => h(PmIconButton, { 'icon': 'folder', 'label': t.value.files, 'class': 'pm-workbench-files__toggle', 'aria-expanded': open.value ? 'true' : 'false', 'onClick': () => open.value = !open.value }),
-      default: () => h('div', { class: 'pm-workbench-files__body', onClick }, [h(FileTree)]),
-    })
-  },
-})
-
-function useNarrow() {
-  const narrow = ref(false)
-  let media: MediaQueryList | undefined
-  const update = () => narrow.value = Boolean(media?.matches)
-  onMounted(() => {
-    media = window.matchMedia('(max-width: 1023px)')
-    update()
-    media.addEventListener('change', update)
-  })
-  onBeforeUnmount(() => media?.removeEventListener('change', update))
-  return narrow
-}
-
-const CONTENT_ID = 'pm-workbench-content'
-
-const Workbench = defineComponent({
-  name: 'PresmiumWorkbench',
-  setup() {
-    provide(IN_WORKBENCH, true)
-    const t = useMessages(WEB_MESSAGES)
-    const theme = useTheme()
-    const { site } = useData()
-    const edit = useService(EDIT_MODE)
-    const editing = computed(() => Boolean(edit.value?.active.value))
-    const narrow = useNarrow()
-    const focusSearch = () => document.querySelector<HTMLInputElement>('.pm-workbench .pm-site-home__search')?.focus()
-    const toDocuments = async () => {
-      edit.value?.leave()
-      await nextTick()
-      document.querySelector('.pm-workbench__main')?.scrollTo({ top: 0 })
-      document.querySelector<HTMLElement>('.pm-site-home__link')?.focus()
-    }
-    const skip = (event: Event) => {
-      event.preventDefault()
-      document.getElementById(CONTENT_ID)?.focus()
-    }
-    return () => h('div', { class: 'pm-workbench pm-ui' }, [
-      h('a', { class: 'pm-skip-link', href: `#${CONTENT_ID}`, onClick: skip }, t.value.skipToContent),
-      h('nav', { 'class': 'pm-workbench__activity', 'aria-label': t.value.activity }, [
-        h('div', { 'class': 'pm-workbench__logo', 'aria-hidden': 'true' }, 'P'),
-        h(PmIconButton, { 'icon': 'document', 'label': t.value.documentsHeading, 'aria-pressed': editing.value ? 'false' : 'true', 'onClick': () => void toDocuments() }),
-        h(PmIconButton, { icon: 'search', label: t.value.search, onClick: focusSearch }),
-        narrow.value ? h(FilesDrawer) : null,
-        h(PmToolbar, { place: 'activity', filter: (item: ToolbarItem) => inTools(item) && Boolean(item.icon) }),
-        h('div', { class: 'pm-workbench__activity-end' }, [h(PmToolbar, { place: 'activity', filter: bySlot('settings') })]),
-      ]),
-      narrow.value ? null : h(Files),
-      h('div', { class: 'pm-workbench__main' }, [
-        h('header', { class: 'pm-workbench__bar' }, [
-          h('span', { class: 'pm-workbench__title' }, t.value.launcher),
-          h('h1', { class: 'pm-workbench__heading' }, site.value.title),
-          h(LauncherSearch),
-          h('div', { class: 'pm-workbench__actions' }, [h(PmToolbar, { filter: (item: ToolbarItem) => inTools(item) && !item.icon })]),
-        ]),
-        h('main', { id: CONTENT_ID, class: 'pm-workbench__content', tabindex: -1 }, editing.value
-          ? [h('section', { 'class': 'pm-workbench__source', 'aria-label': t.value.sourcePane }, [
-              h('div', { class: 'pm-workbench__tabs' }, [h(PmToolbar, { filter: bySlot('tabs') })]),
-              h('div', { class: 'pm-workbench__editor' }, [h(PmToolbar, { place: 'pane', filter: bySlot('source') })]),
-            ])]
-          : [h(Content)]),
-        h('footer', { 'class': 'pm-workbench__status', 'aria-label': t.value.statusBar }, [
-          h(PmToolbar, { place: 'status', filter: bySlot('status') }),
-          h('button', {
-            'type': 'button',
-            'class': 'pm-workbench__theme',
-            'aria-label': theme.dark.value ? t.value.toLight : t.value.toDark,
-            'title': theme.dark.value ? t.value.toLight : t.value.toDark,
-            'onClick': theme.toggle,
-          }, [h(PmIcon, { name: theme.dark.value ? 'sun' : 'moon', size: 14 })]),
-        ]),
-      ]),
-    ])
-  },
-})
-
 const Layout = defineComponent({
   name: 'PresmiumSiteHomeLayout',
   setup() {
-    const { theme, page } = useData()
-    return () => (theme.value.presmium?.server && !page.value.isNotFound
-      ? h(Workbench)
-      : h(DefaultTheme.Layout, null, {
-          'nav-bar-content-after': () => h(PmToolbar, { class: 'pm-toolbar--bar' }),
-          'nav-screen-content-after': () => h(PmToolbar, { class: 'pm-toolbar--screen' }),
-        }))
+    return () => h(DefaultTheme.Layout, null, {
+      'nav-bar-content-after': () => h(PmToolbar, { class: 'pm-toolbar--bar' }),
+      'nav-screen-content-after': () => h(PmToolbar, { class: 'pm-toolbar--screen' }),
+    })
   },
 })
 
@@ -507,16 +169,13 @@ export function createSiteHomeTheme(input: SiteHomeInput): Theme {
       const shared = createSharedStates(`${siteData.value.title} (home)`)
       installHost(app, homeHost(siteData.value.lang, shared.sharedState))
       if (!inBrowser) return
-      const served = Boolean(siteData.value.themeConfig.presmium?.server)
-      const server = served ? createServerClient({ document: '' }) : undefined
-      provideServer(server)
       const navigation: Navigation = { position: computed(() => ({ slide: 1, step: 0 })), go: () => {} }
       void Promise.all(input.plugins.map(load => load().catch((error: unknown) => {
         console.error('[presmium] a plugin module failed to load', error)
         return {}
       }))).then((modules) => {
-        modules.flatMap(module => pluginsOf(module, HOME_CONFIG)).forEach(registerPresmiumPlugin)
-        return startHost({ mode: 'document', config: HOME_CONFIG, navigation, transports: shared.transports, server })
+        modules.flatMap(module => pluginsOf(module, {})).forEach(registerPresmiumPlugin)
+        return startHost({ mode: 'document', config: {}, navigation, transports: shared.transports })
       })
     },
   }

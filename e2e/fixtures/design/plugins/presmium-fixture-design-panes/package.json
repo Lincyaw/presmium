@@ -1,7 +1,0 @@
-{
-  "name": "presmium-fixture-design-panes",
-  "private": true,
-  "type": "module",
-  "description": "Test-only operator plugin of e2e/design.spec.ts: toolbar items in the places of the shell that no plugin fills in that workspace (edit mode's dock, the status bar), drawn with the host's components, and a stand-in of the assistant's client that may draft",
-  "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
-}

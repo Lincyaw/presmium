@@ -36,7 +36,7 @@ export const MESSAGES: Record<Locale, Messages> = {
 在 <目录> 中新建一个 Presmium 项目；没有给出 --type 或目录时逐项询问。
 
 选项：
-  --type <种类>    lecture（一份讲义）、workspace（多份文档的工作区，用 presmium serve 编辑与预览）
+  --type <种类>    lecture（一份讲义）、workspace（多份文档的工作区，用 presmium serve 预览）
                    或 plugin（插件：指令、两种形态共用的组件与服务端路由）
   --title <标题>   讲义或工作区的标题（默认为目录名）
   --name <包名>    插件的 npm 包名（默认为目录名）
@@ -45,7 +45,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     kindQuestion: '新建哪种项目？',
     kinds: {
       lecture: '讲义：一份文稿，生成网页、幻灯片与 notebook',
-      workspace: '工作区：多份文档与一个站点，用 presmium serve 编辑与预览',
+      workspace: '工作区：多份文档与一个站点，用 presmium serve 预览',
       plugin: '插件：指令、网页与幻灯片共用的组件、服务端路由与集成测试',
     },
     numberQuestion: '编号',
@@ -80,12 +80,12 @@ ${c.run('build')}     # 构建网页、幻灯片与 notebook，产物在 dist/
 
 \`\`\`sh
 ${c.install}
-${c.run('serve')}     # 工作台：文档、实时预览与浏览器中的编辑，只在本机
+${c.run('serve')}     # 工作区服务：文档列表与实时预览，只在本机
 ${c.run('check')}     # 检查文档 intro；其他文档：npx presmium check <目录>
 ${c.run('build')}     # 构建工作区的站点，产物在 dist/web/
 \`\`\`
 
-工作台（\`presmium serve\` 的浏览器界面）是预览版，以后的版本会改变它。新建文档、修改历史与撤销都是 git 提交，所以工作区要是 git 仓库（create-presmium 在 git 仓库之外新建工作区时运行 git init）。工作区配置列出的助手插件提供“AI 修改”，模型在工作台的设置中填写。
+编辑与 agent 在工作台 \`presmium studio\` 中（另装 \`@presmium/studio\`，实验性）。修改历史与撤销都是 git 提交，所以工作区要是 git 仓库（create-presmium 在 git 仓库之外新建工作区时运行 git init）。工作区配置列出的助手插件给读者“提问”。
 
 \`AGENTS.md\` 是给编程智能体的说明，技能在 \`.agents/skills\`。Presmium：${REPOSITORY}
 `,
@@ -111,8 +111,8 @@ ${kind === 'lecture'
 Makes a new Presmium project in <directory>; asks for what --type or the directory leaves out.
 
 Options:
-  --type <kind>    lecture (one document), workspace (documents to edit and preview with
-                   presmium serve) or plugin (a directive, a component of both forms, a server route)
+  --type <kind>    lecture (one document), workspace (documents to preview with presmium serve)
+                   or plugin (a directive, a component of both forms, a server route)
   --title <text>   the lecture's or the workspace's title (default: the directory's name)
   --name <name>    the plugin's npm package name (default: the directory's name)
   --no-git         do not run git init
@@ -120,7 +120,7 @@ Options:
     kindQuestion: 'Which project?',
     kinds: {
       lecture: 'lecture: one document, as a web page, slides and a notebook',
-      workspace: 'workspace: documents and a site, edited and previewed with presmium serve',
+      workspace: 'workspace: documents and a site, previewed with presmium serve',
       plugin: 'plugin: a directive, a component of the web page and the slides, a server route and tests',
     },
     numberQuestion: 'Number',
@@ -157,15 +157,15 @@ A Presmium workspace: the \`lecture.md\` of each subdirectory is a document (the
 
 \`\`\`sh
 ${c.install}
-${c.run('serve')}     # the workbench: documents, live previews and editing in the browser, on this machine
+${c.run('serve')}     # the workspace service: the documents and live previews, on this machine
 ${c.run('check')}     # checks the document intro; another one: npx presmium check <directory>
 ${c.run('build')}     # builds the workspace's site into dist/web/
 \`\`\`
 
-The workbench (\`presmium serve\`'s pages) is a preview, which later versions will change. New documents,
-the history and undo are git commits, so the workspace is a git repository (create-presmium runs git init
-when it makes one outside a git repository). The
-assistant plugin the configuration lists gives "AI edits"; its model is set in the workbench's settings.
+Editing and the agent are in the workbench, \`presmium studio\` (installed separately as \`@presmium/studio\`,
+experimental). The history and undo are git commits, so the workspace is a git repository (create-presmium
+runs git init when it makes one outside a git repository). The assistant plugin the configuration lists
+gives readers "Ask".
 
 \`AGENTS.md\` is for coding agents, with the skills in \`.agents/skills\`. Presmium: ${REPOSITORY}
 `,

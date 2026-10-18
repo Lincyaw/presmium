@@ -200,7 +200,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
 
   try {
     const service = supervise('serve', [
-      options.presmium ?? presmiumBin(), 'serve', resolve(options.dir), '--headless', '--port', '0',
+      options.presmium ?? presmiumBin(), 'serve', resolve(options.dir), '--port', '0',
       ...host ? ['--host', host] : [],
       ...origins.flatMap(origin => ['--preview-origin', origin]),
     ], {

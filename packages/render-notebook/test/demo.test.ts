@@ -23,7 +23,13 @@ interface Cell {
   outputs?: Output[]
 }
 
-const streams = (outputs: Output[] = []) => outputs.filter(o => o.output_type === 'stream').map(o => `${o.name}: ${[o.text ?? ''].flat().join('')}`)
+const streams = (outputs: Output[] = []) => outputs.filter(o => o.output_type === 'stream').reduce<{ name?: string, text: string }[]>((all, o) => {
+  const text = [o.text ?? ''].flat().join('')
+  const last = all.at(-1)
+  if (last && last.name === o.name) last.text += text
+  else all.push({ name: o.name, text })
+  return all
+}, []).map(({ name, text }) => `${name}: ${text}`)
 
 const temporary: string[] = []
 afterAll(() => {

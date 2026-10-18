@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { defineService, errorMessage } from '@presmium/kernel'
+import { errorMessage } from '@presmium/kernel'
 import type { ChangeReviewService, DocumentFiles, Logger, Member, Revision, ReviewChange, ReviewStep } from '@presmium/kernel'
 import { trailers } from '../../domain/revisions.ts'
 import type { WorkspaceConfig } from '../config.ts'
@@ -11,9 +11,6 @@ import type { DocumentLocks } from '../locks.ts'
 import type { Revisions } from '../revisions.ts'
 import { GIT_ENGINE, leftSessionReview, openGitReview, recoverGitReview, resumeGitReview } from './git-review.ts'
 import type { GitReview } from './git-review.ts'
-
-/** @experimental */
-export const GIT_REVIEW = defineService<ChangeReviewService>('presmium.workspace.gitReview')
 
 export const SESSION_TRAILER = 'Presmium-Session'
 export const TURN_TRAILER = 'Presmium-Turn'

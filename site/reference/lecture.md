@@ -9,7 +9,7 @@ translations: { en: lecture.en.md }
 
 Presmium 1.x 对公开接口按语义化版本承诺稳定。这一份文档说明三个版本号各管什么、哪些接口是公开的、哪些是实验性的。每个声明的签名见接口参考（导航栏的“API”，由 TypeDoc 从源码生成）；仓库中的 `docs/api.md` 是完整的列表。
 
-Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、CLI）与它的产物（网页、幻灯片、notebook、讲授），它们不需要任何模型服务。本机工作台（`presmium serve` 的浏览器界面）是预览，会被一个与产物分离的新工作台取代。
+Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、CLI）与它的产物（网页、幻灯片、notebook、讲授），它们不需要任何模型服务。工作台 `presmium studio` 与产物分离，是实验性的。
 
 (versions)=
 # 版本规则
@@ -70,13 +70,12 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 # 实验性接口
 
 (experimental-workbench)=
-## 工作台的浏览器端
+## 工作台
 
 以下接口是实验性的，不在 1.x 的承诺之内，可以在次版本中改变。其中的 TypeScript 声明在源码中带 `@experimental` 标签，接口参考中显示为 Experimental；界面与路由没有声明可以标注，以这里的列表为准。
 
-- `@presmium/workspace` 的浏览器插件（编辑模式、浏览器中的源码编辑、文档管理、修改历史、文件树）与它为这些界面提供的路由；
-- `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE`，工具栏的 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock` 槽位与对应的位置，`trackAgentTask`；
-- 网页渲染端在 `presmium serve` 与 `presmium dev` 中的工作台外壳（活动栏、启动台、状态栏、编辑模式的外壳）；
-- 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`），助手的“AI 修改”面板与模型设置界面，讲授插件的“讲授回写”面板。修改任务的请求与事件同时是 Node 端 agent 运行时（`AGENT_RUNTIME`）的类型，是公开接口。
+- 工作台 `presmium studio` 的包：`@presmium/studio`、`@presmium/dsh`、`@presmium/workbench`（0.x）的全部导出与界面；
+- 工作区服务为工作台提供的路由（文档、文件、源码、修改、修改历史与审阅）；
+- 契约 `Focus`、`FocusReport`、`McpIssueOptions`，`@presmium/host` 的 `useToolbarPlace`、`provideToolbarPlace`。
 
 命令 `presmium serve`、工作区配置文件与 Node 端的服务是公开接口；读者问答（`ASK` 与提问面板）是产物的一部分，也是公开接口。插件不要依赖实验性接口，依赖时在自己的对等依赖中写确切的版本。

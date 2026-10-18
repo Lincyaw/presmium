@@ -26,7 +26,7 @@ test.beforeAll(async () => {
   const lecture = join(dir, 'lecture.md')
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:`))
   model = await chatStub(request => ['这段代码在', `[合并规则](presmium://sections/merge)中讲解：问题是「${questionOf(request)}」。`])
-  dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '', PRESMIUM_AGENT_COMMAND: '' }, ['--edit'])
+  dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '' })
 })
 test.afterAll(async () => {
   await dev?.stop()
@@ -36,74 +36,6 @@ test.afterAll(async () => {
 })
 
 const pageUrl = (path: string) => new URL(path, dev.url).href
-
-test('"AI changes" is in the toolbar without a model: it says what to set, that changes are committed to git, and opens the model settings', async ({ page }) => {
-  await openDevPage(page, pageUrl('code.html'), page.locator('[data-section="merge"]'))
-  await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
-  const panel = page.getByRole('dialog', { name: 'AI 修改' })
-  await expect(panel).toContainText('AI 修改不可用：没有配置模型。')
-  await expect(panel).toContainText('在“模型设置”中填写模型服务')
-  await expect(panel).toContainText('DEEPSEEK_API_KEY')
-  await expect(panel).toContainText('缺少：模型服务（在“模型设置”中填写，或设置环境变量 DEEPSEEK_API_KEY')
-  await expect(panel).not.toContainText('no model access')
-  await expect(panel).toContainText('AI 修改要提交到 git：这份文稿不在 git 仓库中（或被 git 忽略）')
-  await panel.getByRole('button', { name: '模型设置' }).click()
-  const settings = page.getByRole('dialog', { name: '模型设置' })
-  await expect(settings).toContainText('当前生效：没有配置')
-  await expect(settings).toContainText('密钥（未设置）')
-  await expect(settings).toContainText(`${dir}.config/presmium/assistant.json`)
-})
-
-test('what is missing reads by its code, in the page\'s language: the variables a partial model service lacks, a replacement runtime\'s provider, the bundled harness', async ({ page }) => {
-  const cases: [Record<string, unknown>, string, string][] = [
-    [{ code: 'model', variables: ['PRESMIUM_MODEL_KEY', 'PRESMIUM_MODEL_PROVIDER'] }, '模型服务：PRESMIUM_MODEL_URL、PRESMIUM_MODEL_KEY 与 PRESMIUM_MODEL_PROVIDER 要一起设置，还缺 PRESMIUM_MODEL_KEY、PRESMIUM_MODEL_PROVIDER', 'a model service: PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER go together, and PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER are not set'],
-    [{ code: 'provider' }, '替换运行时的服务提供方：PRESMIUM_AGENT_COMMAND（或工作区配置中的 command）要配上 PRESMIUM_AGENT_PROVIDER（或 provider）', 'the replacement runtime\'s provider: PRESMIUM_AGENT_COMMAND (or the workspace configuration\'s command) needs PRESMIUM_AGENT_PROVIDER (or provider)'],
-    [{ code: 'harness' }, '随包的 DeepSeek Harness（没有安装）', 'the bundled DeepSeek Harness (not installed)'],
-    [{ code: 'model' }, '模型服务（在“模型设置”中填写', 'a model service (fill in “Model settings”, or set DEEPSEEK_API_KEY'],
-  ]
-  let missing: Record<string, unknown> = {}
-  await page.route(/\/__presmium\/presmium\.assistant\/info(?:\?|$)/, async (route) => {
-    const response = await route.fetch()
-    await route.fulfill({ response, json: { ...await response.json() as object, missing } })
-  })
-  const button = page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button')
-  for (const [index, [item, zh, en]] of cases.entries()) {
-    missing = item
-    if (index === 0) await openDevPage(page, pageUrl('code.html'), button)
-    else await page.reload()
-    await button.click()
-    await expect(page.getByRole('dialog', { name: 'AI 修改' })).toContainText(`缺少：${zh}`)
-    await page.evaluate(() => document.documentElement.lang = 'en')
-    await expect(page.getByRole('dialog', { name: 'AI changes' })).toContainText(`Missing: ${en}`)
-  }
-})
-
-test('edit mode: the deck\'s source opens in the browser, a sentence saved shows in the page without a reload; out of git, nothing is committed', async ({ page }) => {
-  const toggle = page.locator('.pm-workspace-edit').filter({ visible: true })
-  const editor = page.getByRole('region', { name: '源码' }).getByRole('textbox', { name: '源码' })
-  for (let visit = 0; visit < 2; visit++) {
-    await openDevPage(page, pageUrl('code.html'), toggle)
-    await toggle.click()
-    await expect(editor).toContainText('每一轮合并出现次数最多的一对。', { timeout: 30_000 })
-    await page.waitForLoadState('networkidle')
-  }
-  await page.evaluate(() => (window as unknown as { unreloaded: boolean }).unreloaded = true)
-
-  await page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '每一轮合并出现次数最多的一对。' }).click()
-  const line = readFileSync(join(dir, 'lecture.md'), 'utf8').split('\n').findIndex(text => text.startsWith('每一轮合并')) + 1
-  const status = page.getByRole('contentinfo', { name: '状态栏' })
-  await expect(status.locator('.pm-workspace-cursor')).toHaveText(`MyST · UTF-8 · 第 ${line} 行`)
-  await editor.focus()
-  await page.keyboard.press('End')
-  await page.keyboard.type('开发中加的一句。')
-  await page.keyboard.press('Control+s')
-  await expect(page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '最多的一对。开发中加的一句。' })).toBeVisible()
-  expect(readFileSync(join(dir, 'lecture.md'), 'utf8')).toContain('每一轮合并出现次数最多的一对。开发中加的一句。\n')
-  expect(await page.evaluate(() => (window as unknown as { unreloaded?: boolean }).unreloaded === true)).toBe(true)
-
-  await expect(status.locator('.pm-workspace-git')).toHaveText('不是 git 仓库')
-  await expect(page.getByRole('button', { name: /^提交 \d+ 处修改/ })).toHaveCount(0)
-})
 
 test('a learner\'s question reaches the presenter\'s overview; the presenter\'s own model service answers it, the presenter sends it, and the learner sees it', async ({ browser }) => {
   const contexts = await Promise.all([browser.newContext(), browser.newContext()])

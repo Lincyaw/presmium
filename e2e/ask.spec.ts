@@ -149,7 +149,6 @@ test('the static output has no console error, in the reading and the presenter v
   await page.goto(`${site.url}/`)
   await expect(page.locator('[data-section]').first()).toBeVisible()
   await expect(page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'AI 修改' })).toHaveCount(0)
   expect(errors).toEqual([])
 })
 

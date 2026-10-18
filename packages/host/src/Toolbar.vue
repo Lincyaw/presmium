@@ -43,24 +43,7 @@ watchEffect((onCleanup) => {
   gap: 0.5rem;
 }
 
-.pm-toolbar[data-place='activity'] {
-  flex-direction: column;
-  gap: 6px;
-}
-
 .pm-toolbar[data-place='status'] {
   gap: 1.125rem;
-}
-
-.pm-toolbar[data-place='home'] {
-  display: contents;
-}
-
-.pm-toolbar[data-place='pane'] {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: stretch;
-  min-height: 0;
 }
 </style>

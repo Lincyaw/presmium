@@ -38,7 +38,6 @@
     "@presmium/compiler": "workspace:*",
     "@presmium/kernel": "workspace:*",
     "@presmium/server": "workspace:*",
-    "@presmium/slidev-addon-deltabox": "workspace:*",
     "@presmium/workspace": "workspace:*",
     "jiti": "^2.7.0"
   }

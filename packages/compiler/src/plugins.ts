@@ -21,9 +21,7 @@ export interface PluginProblem {
   message: string
 }
 
-export const DELTABOX_PACKAGE = '@presmium/slidev-addon-deltabox'
-
-const BUNDLED = new Set(['@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', DELTABOX_PACKAGE])
+const BUNDLED = new Set(['@presmium/web', '@presmium/render-slides', '@presmium/render-notebook'])
 
 export interface PluginSources {
   workspaceRoot: string
@@ -125,12 +123,6 @@ export async function loadOperatorPlugins(sources: PluginSources): Promise<{ plu
     const { loaded, problem } = await loadFrom(name, dir, (severity, message) => ({ name, severity, message }))
     if (problem) problems.push(problem)
     if (loaded?.plugin?.operator === true) plugins.push(loaded)
-  }
-  const deltabox = !sources.listed.includes(DELTABOX_PACKAGE) && bundledDir(DELTABOX_PACKAGE, sources)
-  if (deltabox) {
-    const { loaded, problem } = await loadFrom(DELTABOX_PACKAGE, deltabox, (severity, message) => ({ name: DELTABOX_PACKAGE, severity, message }))
-    if (problem) problems.push(problem)
-    if (loaded?.plugin) plugins.push(loaded)
   }
   return { plugins, problems }
 }

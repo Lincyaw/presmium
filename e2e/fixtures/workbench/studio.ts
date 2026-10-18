@@ -1,7 +1,7 @@
 // The workbench of e2e/workbench.spec.ts started as `presmium studio` starts it (docs/design-dsh.md 11.2), with the
 // test harness of the bundle (packages/dsh/test/harness.ts): in a test home (HOME, DSH_HOME and XDG under a temporary
-// directory), the workspace of e2e/fixtures/workbench/workspace (a git repository of its own), `presmium serve
-// --headless` with a service token and the workbench's origin as the previews' (`--preview-origin`), and DeepSeek
+// directory), the workspace of e2e/fixtures/workbench/workspace (a git repository of its own), `presmium serve` with a
+// service token and the workbench's origin as the previews' (`--preview-origin`), and DeepSeek
 // Harness's web host with Presmium's bundle and profile, given the service. The page opens with the host's launch
 // address; the first-use notice is read away.
 import { randomBytes } from 'node:crypto'
@@ -46,7 +46,7 @@ export async function startStudio(options: { port: number, model?: FakeModel, pa
     const workspace = home.workspace(options.prefix ?? 'workbench', fixtureFiles())
     const origin = `http://127.0.0.1:${options.port}`
     const token = randomBytes(24).toString('base64url')
-    const process_ = running(spawn(process.execPath, [PRESMIUM_BIN, 'serve', workspace.dir, '--headless', '--port', '0', '--preview-origin', origin], {
+    const process_ = running(spawn(process.execPath, [PRESMIUM_BIN, 'serve', workspace.dir, '--port', '0', '--preview-origin', origin], {
       cwd: workspace.dir,
       env: home.env({ PRESMIUM_SERVICE_TOKEN: token }),
       stdio: ['ignore', 'pipe', 'pipe'],

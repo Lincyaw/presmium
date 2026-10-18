@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { docBlocks, errorMessage, isRenderable } from '@presmium/kernel'
-import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, ResolutionStatus, ResolvedLocation, Severity, SourceReader } from '@presmium/kernel'
+import type { AnchorString, CodeNode, CodeVariant, IRDocument, IRPass, PassContext, ResolutionStatus, ResolvedLocation, Severity } from '@presmium/kernel'
 import { codeConfig, driftDiff, highlightSteps, permalink, repoWebUrl, splitTarget, toSnippet, unitRecord } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 import { codeRefs } from './directive.ts'

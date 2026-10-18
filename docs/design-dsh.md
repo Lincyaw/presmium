@@ -11,7 +11,6 @@
 | dsh | DeepSeek Harness（MIT）：agent 循环、工具、沙箱、确认、会话、模型适配，以及一个用 React 写的网页客户端运行时。Presmium 只经它的插件、配置补丁与客户端插件机制使用它 |
 | 产物 | 渲染端从 IR 生成、能单独部署的东西：网页、幻灯片、notebook、讲授。静态构建的结果与开发服务器实时提供的页面都算。产物用 Vue（VitePress、Slidev） |
 | 工作台 | 作者编写文稿用的界面：外壳、首页、文件树、源码编辑器、问题、预览、对话与批注、审阅与修改历史、讲授的面板。它是 `presmium studio` 的页面 |
-| 旧工作台 | 1.0 中 `presmium serve` 的界面、`@presmium/workspace` 的浏览器部分、助手与讲授插件中属于工作台的面板、`presmium dev` 的编辑模式（Vue，在产物页面之中）。它是实验性的，将被删去（第 13 节） |
 | 工作区服务 | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、修改历史与审阅、MCP |
 | bundle | dsh 的扩展包，由 dsh 的插件与配置补丁组成。Presmium 的 bundle 是 `@presmium/dsh`。它不是 Presmium 自己的插件包（`@presmium/slidev-addon-*`） |
 | 行 | dsh 配置树中的一项：一个插件、它的配置与是否启用，以 ID 标识（如 `ui-layout`） |
@@ -43,7 +42,7 @@
 4. **dsh 只经一个包接触。** 只有 `@presmium/dsh` 引用 dsh 的宿主接口与客户端接口；`@presmium/studio` 只负责安装与启动 dsh；分层检查保证这一点（3.2 节）。工作台的面板不引用 dsh，核心与产物不知道 dsh 存在。dsh 的接口变了，只改这一个包。dsh 精确锁定一个版本，升级先过升级闸门（第 12 节）。
 5. **不改 dsh。** 不 fork，不打补丁，只用它的插件、配置补丁与客户端插件机制（仓库的“依赖优先”）；它的限制在 Presmium 一侧绕开（第 16 节）。
 6. **工作台中的 agent 只用 dsh，外部 agent 经 MCP 接入。** 模型在 dsh 的模型设置中选。外部 agent（Claude Code、Codex 等）是一等入口。一张工具表，两个适配器（MCP 与 dsh 工具）：工具只在工作区服务中执行，新工具两边都有，两边的清单由一致性用例保证相同（第 9 节）。
-7. **浏览器中的源码编辑只在工作台中。** `presmium studio` 可以不配模型；`presmium dev` 是实时预览加“在编辑器中打开”，`presmium serve` 只有文档列表与产物（13.4 节）。没有不依赖 dsh 的浏览器编辑页。
+7. **浏览器中的源码编辑只在工作台中。** `presmium studio` 可以不配模型；`presmium dev` 是实时预览加“在编辑器中打开”，`presmium serve` 只有文档列表与产物（第 13 节）。没有不依赖 dsh 的浏览器编辑页。
 8. **文稿的代码不进 dsh 宿主。** 编译、编译时执行与构建都在工作区服务的进程中；持有模型凭据与确认通道的 dsh 宿主不运行文稿的代码。
 9. **修改落在源码上，并成为提交。** dsh 的修改卡片只是视图；审阅、提交与撤销由 Presmium 负责（6.5 节）。
 10. **隐私默认关闭，每次启动重新声明。** 不上传会话日志、插件清单与遥测，不读用户目录中的技能，第一次使用时不在用户的文档目录中建目录（6.6 节）。
@@ -66,7 +65,7 @@
 |---|---|---|
 | studio 启动器 | 组装 profile，启动并监管下面两个进程，打印一个网址 | 无 |
 | dsh 宿主 | agent、会话、确认、Host API、工作台网页、bundle 的宿主部分 | 用户访问的那一个端口：默认只在本机（`127.0.0.1`），`--host` 时只在给出的地址上 |
-| 工作区服务 | `presmium serve --headless`：编译会话、产物的开发服务器、文档与源码、审阅与修改历史、焦点、MCP | 空闲端口，与 dsh 宿主在同一地址上（默认回环），因为预览 iframe 由浏览器直接访问它 |
+| 工作区服务 | `presmium serve`：编译会话、产物的开发服务器、文档与源码、审阅与修改历史、焦点、MCP | 空闲端口，与 dsh 宿主在同一地址上（默认回环），因为预览 iframe 由浏览器直接访问它 |
 | 产物的开发服务器 | VitePress 与 Slidev 的子进程 | 回环，经工作区服务转发 |
 
 “一个网址”指用户只需打开 dsh 宿主的地址；预览 iframe 指向工作区服务的源，由工作台自己填入。预览不由 dsh 宿主提供：dsh 的 webServer 前缀路由只在插件激活时构建一次，编辑之后不更新，侧栏的 Browser 也不显示 dsh 自己的源。
@@ -102,14 +101,14 @@
 | `@presmium/dsh` | 工作台（bundle） | 宿主部分（Node）与客户端部分（React，预编译）；唯一接触 dsh 接口的包 | 是：精确的对等依赖与 `engines.dsh` | 0.x |
 | `@presmium/studio` | 工作台（启动器） | `presmium studio`：组装 profile，启动与监管 dsh 和工作区服务 | 是：精确版本的 `@deepseek-ai/dsh` | 0.x |
 
-现有包中与工作台有关的部分：`kernel` 有预览协议的契约与 `Focus`；`mcp` 另导出工具表与客户端一侧；`server` 有会话令牌与焦点；`workspace` 的浏览器部分与 `web` 的工作台部分随旧工作台删去；`cli` 的 `studio` 子命令只转交给 `@presmium/studio`，没装时说明怎样安装（约 865 MB，其中 `@deepseek-ai/*` 约 566 MB，只在装 studio 时发生）。
+现有包中与工作台有关的部分：`kernel` 有预览协议的契约与 `Focus`；`mcp` 另导出工具表与客户端一侧；`server` 有会话令牌与焦点；`cli` 的 `studio` 子命令只转交给 `@presmium/studio`，没装时说明怎样安装（约 865 MB，其中 `@deepseek-ai/*` 约 566 MB，只在装 studio 时发生）。
 
 ### 3.2 分层规则
 
 `scripts/check-layering.mjs` 检查：
 
-- **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*`、`addon-core`、各插件的 `src/client` 与 `components`）不引用 `EDIT_MODE`、工作台的槽位（`home`、`create`、`files`、`tabs`、`source`、`dock`）与 `@presmium/workbench`。旧工作台的引用（13.3 节）列在白名单中，旧工作台删去时清空。
-- **dsh 只在一处**：`@deepseek-ai/*` 只出现在 `packages/dsh` 与 `packages/studio`；旧工作台删去之前另有 `addon-assistant`（旧工作台的 ACP 运行时）。
+- **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*`、`addon-core`、各插件的 `src/client` 与 `components`）不引用 `@presmium/workbench`。
+- **dsh 只在一处**：`@deepseek-ai/*` 只出现在 `packages/dsh` 与 `packages/studio`。
 - **面板不认识宿主**：`@presmium/workbench` 不引用 vue、`@presmium/host` 与 `@deepseek-ai/*`。
 - **mcp 的使用者**：server 与 dsh 使用 mcp；`@modelcontextprotocol/*` 只在 `mcp` 中，bundle 经 `@presmium/mcp` 导出的客户端一侧使用 MCP。
 - **design 没有框架**：`@presmium/design` 不引用任何包。
@@ -135,7 +134,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - 工作台向工作区服务请求预览地址（`GET preview`，5.1 节），在地址上加查询参数 `presmium-preview=<nonce>`（每个 iframe 一个随机值），再放进 iframe。
 - 预览代理只存在于工作区服务启动的开发服务器提供的页面中：工作区服务给它启动的开发服务器的 `RenderContext.preview`（可选字段：`{ origins }`，允许的父页面来源）。静态构建与 `presmium dev` 不带它。代理只在三个条件都满足时启动：地址带这个参数，`window.parent !== window`，`origins` 不为空。
 - `presmium dev` 的页面由浏览器直接打开，不嵌在任何工作台中，没有对方可以通信，所以不带预览代理；点选因此只在 `presmium studio` 中可用。
-- 允许的父页面来源是 `presmium serve --headless --preview-origin <源>`（可重复）给出的；在 studio 中，启动器把 dsh 的源（`--host` 时是局域网的源）告诉服务。代理只向这些来源发消息，也只接受从它们发来、带同一个 nonce 的消息。
+- 允许的父页面来源是 `presmium serve --preview-origin <源>`（可重复）给出的；在 studio 中，启动器把 dsh 的源（`--host` 时是局域网的源）告诉服务。代理只向这些来源发消息，也只接受从它们发来、带同一个 nonce 的消息。
 - 代理启动后先发 `ready`。工作台收到 `ready` 之后才发别的消息。信封的版本不同时，工作台提示“预览的版本与工作台不符，请重新启动”。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
 
@@ -148,7 +147,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 工作台 → 产物 | `highlight` | `target`：`{ section, block? }` 或 `null` | 框出一块或一节；不在视野中时滚动过去；`null` 清除 |
 | 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加虚线框 |
 | 工作台 → 产物 | `pins` | `targets`：`[{ id, section, block, label }]` | 在这些块旁画编号标记（`label`）；标记在页面之中，滚动、缩放与切换步骤时自然跟着块走；块不在当前页面中时不画。空数组清除 |
-| 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），`PmRoleMark` 看它而不看 `EDIT_MODE` |
+| 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），`PmRoleMark` 看它 |
 | 工作台 → 产物 | `appearance` | `dark` | 明暗跟随工作台 |
 | 产物 → 工作台 | `position` | `section`、`step`、`trail`、`view?` | 位置变化时发出，至多每 150 ms 一次 |
 | 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position` |
@@ -205,16 +204,13 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | `presmium.server/focus`（`GET`、`POST`） | 工作台报告焦点与批注，服务把锚点换成源码范围与摘录并保存（8.6 节） |
 | `/mcp` | MCP，供外部 agent 与 bundle 使用 |
 
-### 5.2 无界面模式
+### 5.2 `presmium serve` 的页面
 
-`presmium serve --headless`：
-
-- 页面不加载工作区的浏览器插件，也不加载运营者插件的浏览器部分；
+- 页面只加载文稿列出的插件，没有编辑界面；
 - 首页是文档卡片，与静态的工作区站点相同；
-- 产物的开发服务器带预览代理，允许的来源来自 `--preview-origin`；
-- 旧工作台删去之后这是唯一的模式，选项保留且不再有作用。
+- 产物的开发服务器带预览代理，允许的来源来自 `--preview-origin`。
 
-`presmium dev` 默认不加载编辑模式；`--edit` 加载它，随旧工作台删去。
+`presmium dev` 是一份文稿的实时预览，同样没有编辑界面。
 
 ### 5.3 服务令牌与会话令牌
 
@@ -238,7 +234,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 | 行 | 载体 | 作用 | dsh 接口 |
 |---|---|---|---|
-| `presmium-service` | 全部 | 给出工作区服务的地址与服务令牌：启动环境中带着它们时（studio）直接用，否则自己启动 `presmium serve --headless` 并监管它。服务在自己的进程组中，父进程退出时随之结束 | `ctx.effect` |
+| `presmium-service` | 全部 | 给出工作区服务的地址与服务令牌：启动环境中带着它们时（studio）直接用，否则自己启动 `presmium serve` 并监管它。服务在自己的进程组中，父进程退出时随之结束 | `ctx.effect` |
 | `presmium-workspaces` | web | 把每份文档的目录登记为 dsh 工作区，新建、改名、删除文档时同步改名或归档；工作区根不登记。`ctx.workspaceRegistry` 只在 web 的组合中有；headless 与 acp 的会话就在 dsh 启动的目录中 | `ctx.workspaceRegistry` |
 | `presmium-tools` | 全部 | 第 9 节的 dsh 适配器：会话创建时把它所属文档的工具登记为 `presmium__<名字>` | `agent/created`、`agent.ctx.tools.register`、`defineTool` |
 | `presmium-policy` | 全部 | 确认的映射（6.3 节） | `tools/pre-execute`、`ctx.tools.guard`、`approval/request` |
@@ -286,10 +282,10 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 4. **审阅**：`settings.presmium.assistant.review` 为 `required`（默认）时，工作台的审阅面板列出自快照以来的全部文件，作者可以全部接受、拒绝某些文件，或回到某个检查点；为 `auto` 时每个 turn 结束就提交。`review` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，bundle 不读它们；超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。作者在 turn 之间接受之后，下一次写入开一个新的审阅。
 5. **提交**：一次接受形成一个提交，尾注是 `Presmium-Origin: agent`、`Presmium-Task`、`Presmium-Session: <会话>`、`Presmium-Turn: <起>-<止>` 与 `Co-authored-by`。提交后释放锁。
 6. **撤销**：`git revert`，尾注 `Presmium-Revert`。撤销会话的提交之后，bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）给会话注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头。它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见；agent 不在时等它被创建或恢复再注入。dsh 文件工具的“先读后改”规则会拦住基于旧内容的编辑。
-7. **记录**：审阅记录由工作区服务保存，另记会话、turn 的范围、检查点与各步。服务关闭或崩溃时会话的审阅不回滚，下一个服务进程启动时恢复它并重新持有锁（旧工作台助手的修改任务的审阅照旧回滚）。dsh 宿主重启后修改卡片没有了，审阅仍在，可以经新宿主接受。Presmium 不依赖 dsh 只在内存中的修改摘要，它在宿主重启后返回 404。
+7. **记录**：审阅记录由工作区服务保存，另记会话、turn 的范围、检查点与各步。服务关闭或崩溃时会话的审阅不回滚，下一个服务进程启动时恢复它并重新持有锁。dsh 宿主重启后修改卡片没有了，审阅仍在，可以经新宿主接受。Presmium 不依赖 dsh 只在内存中的修改摘要，它在宿主重启后返回 404。
 8. **构建**：agent 经工具发起的构建由工作区服务写到文档目录之外，不进入审阅与修改卡片。
 
-服务只在编译结果没有 `CHANGE_REVIEW`（没有 deltabox）时以 git 审阅回答它。dsh 的写入使 deltabox 的审阅出错，旧工作台的助手因此另取 `GIT_REVIEW`（ID `presmium.workspace.gitReview`，服务与助手各自定义，不进契约，随助手的运行时删去）；`presmium dev` 只登记 `GIT_REVIEW`。
+服务以 git 审阅回答 `CHANGE_REVIEW`。
 
 ### 6.6 profile 补丁与隐私默认值
 
@@ -346,19 +342,19 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 ### 7.3 面板
 
-| 面板 | 数据来源 | 取代的旧代码（13.3 节） |
-|---|---|---|
-| 首页：文档卡片、新建与管理、启动台搜索、MCP 卡片 | `documents`；MCP 卡片的地址来自 `/api/presmium/workbench`（6.2 节） | `web/src/client/home.ts` 的工作台部分；`workspace/src/client/panels.ts` 的文档管理 |
-| 由 AI 起草 | 先按模板新建文档（`POST documents`，一个提交），再在新文档目录的 dsh 会话中起草 | `home.ts` 的 `create` |
-| 文件树 | `files` | `home.ts` 的 `Files`；`workspace/src/client/editing.ts` 的文件树 |
-| 源码编辑器与文件标签 | `source`（版本、409、锁）；IR 的诊断；`ir/events` 中改过的文件 | `workspace/src/client/editor.ts`、`editing.ts`、`source.ts` |
-| 问题 | IR 的诊断 | `editing.ts` 的问题面板 |
-| 预览 | `preview` 与预览协议 | `web/src/client/theme.ts` 的 `EditFrame`；`workspace/src/client/preview.ts`、`viewer.ts` |
-| 对话与批注 | dsh 的对话，加上 Presmium 的焦点托盘（第 8 节） | `addon-assistant` 的 `EditDock.vue`、`edit.ts` |
-| 审阅 | `review` | `addon-assistant` 的 `ChangeTask.vue` |
-| 修改历史与未提交的修改 | `revisions`、`changes` | `panels.ts` 的修改历史与提交入口 |
-| 讲授回写 | 讲授插件的路由；回写时新建 dsh 会话 | `addon-lecture` 的 `WritebackDock.vue`；`PlayerPanel.vue` 的编辑部分 |
-| 状态项 | git 状态、光标；模型来自 dsh 的设置 | `GitStatus`、`EditorStatus`；`ModelStatus.vue` |
+| 面板 | 数据来源 |
+|---|---|
+| 首页：文档卡片、新建与管理、启动台搜索、MCP 卡片 | `documents`；MCP 卡片的地址来自 `/api/presmium/workbench`（6.2 节） |
+| 由 AI 起草 | 先按模板新建文档（`POST documents`，一个提交），再在新文档目录的 dsh 会话中起草 |
+| 文件树 | `files` |
+| 源码编辑器与文件标签 | `source`（版本、409、锁）；IR 的诊断；`ir/events` 中改过的文件 |
+| 问题 | IR 的诊断 |
+| 预览 | `preview` 与预览协议 |
+| 对话与批注 | dsh 的对话，加上 Presmium 的焦点托盘（第 8 节） |
+| 审阅 | `review` |
+| 修改历史与未提交的修改 | `revisions`、`changes` |
+| 讲授回写 | 讲授插件的路由；回写时新建 dsh 会话 |
+| 状态项 | git 状态、光标；模型来自 dsh 的设置 |
 
 起草新文档在新文档的目录中进行：工作区根不登记为 dsh 工作区，所以每个 agent 会话的工作目录、沙箱的根与审阅的根都是同一个文档目录。
 
@@ -498,7 +494,7 @@ export interface Focus {
 - **多份文档**：`agent/created` 是串行事件，dsh 等它的监听者结束才处理输入，监听者经 `agent.ctx.tools.register` 登记的工具只属于那个 agent。bundle 因此为每个会话登记它所属文档的工具，不登记各文档工具的并集：两份文档的两个会话，有某个插件的一份得到这个插件的工具，另一份没有。`off` 的种类不登记。
 - **一致性用例**：同一份文档、同一组设置下，MCP `tools/list` 的名字与输入 schema，等于 headless 会话中提供给模型的 `presmium__*` 工具（去掉前缀），含一个插件的 `AgentTool`；`off` 的种类两边都不列出；`get_focus` 与会话快照中的焦点相同。新增工具时这个用例保证两边都有。
 - **外部 agent 是一等入口**：工作台中的 agent 只用 dsh；Claude Code、Codex 等经 MCP 连接工作区服务，工具与 dsh 中相同，修改落在源码上，工作台的预览与编辑器经 `ir/events` 跟上。它们写的修改不经 Presmium 的审阅（它们没有 Presmium 的会话），作者在“未提交的修改”中提交或放弃，与在自己的编辑器中改一样。
-- **没有 ACP 的替换运行时**：旧工作台的 ACP 运行时（`PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command`、`AGENT_RUNTIME` 的 ACP 实现）随旧工作台删去，ACP 的两个测试 agent（助手插件的 `scripted-agent.mjs`、讲授插件的 `writeback-agent.mjs`）与两个包对 `@agentclientprotocol/sdk` 的依赖一起删去。理由：经 ACP 时 Presmium 的确认种类与说明丢失，两套传输与两套确认语义要一起维护；外部 agent 经 MCP 已经能做同样的修改。
+- **外部 agent 只经 MCP**：工作台中的 agent 是 dsh；别的 agent（Claude Code、Codex 等）经 MCP 接入，不另有驱动 agent 的协议。经别的协议时 Presmium 的确认种类与说明会丢失，两套传输与确认语义要一起维护。
 
 ## 10. 没有模型与没有 dsh 时
 
@@ -515,12 +511,12 @@ export interface Focus {
 ### 11.1 命令与目录
 
 - **命令**：`presmium studio [目录] [--port <端口>] [--host <地址>]`，由 `@presmium/studio` 提供；`@presmium/cli` 在装了它时转交，没装时说明怎样安装。目录的规则同 `presmium serve`（工作区，或只有一份文档的仓库）。
-- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，不与旧工作台的 `$XDG_STATE_HOME/presmium/dsh` 共用：两者可能锁定不同的 dsh 版本，一个 `DSH_HOME` 只由一个版本写。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@presmium/dsh`；dsh 只从 profile 中解析插件模块，所以 profile 的 `node_modules` 链接到 bundle。`DSH_AGENTS_HOME` 是其中的 `agents/`（旧工作台的助手启动的 dsh 同样读 Presmium 自己的 `DSH_AGENTS_HOME`）。
+- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，一个 `DSH_HOME` 只由一个 dsh 版本写。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@presmium/dsh`；dsh 只从 profile 中解析插件模块，所以 profile 的 `node_modules` 链接到 bundle。`DSH_AGENTS_HOME` 是其中的 `agents/`。
 
 ### 11.2 启动与监管
 
 1. 选定 dsh 的端口：默认 4320，每次相同，浏览器的 cookie 跨重启有效；被占用时另取空闲端口。端口要在启动之前选定，因为工作区服务以工作台的源启动。
-2. 生成服务令牌；启动工作区服务：`presmium serve <目录> --headless --port 0 --preview-origin <dsh 的源>`，环境中带 `PRESMIUM_SERVICE_TOKEN`。
+2. 生成服务令牌；启动工作区服务：`presmium serve <目录> --port 0 --preview-origin <dsh 的源>`，环境中带 `PRESMIUM_SERVICE_TOKEN`。
 3. 启动 dsh：`--profile presmium-studio --port <端口> --no-open`，加上 6.6 节的补丁，工作目录为工作区根，环境中带服务的地址与令牌（bundle 的 `presmium-service` 行因此不再自己启动服务）。
 4. 等 dsh 在标准输出打印 `dsh web: <网址>`。
 5. 打印一个网址。
@@ -533,9 +529,9 @@ export interface Focus {
 
 ### 11.3 模型
 
-工作台只用 dsh 的模型设置，凭据存在上面的 `DSH_HOME` 中（dsh 不回传密钥）。环境变量 `DEEPSEEK_API_KEY`，以及 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`，按助手的规则映射为 `DEEPSEEK_*`（dsh 接受 Messages 兼容的地址）。
+工作台只用 dsh 的模型设置，凭据存在上面的 `DSH_HOME` 中（dsh 不回传密钥）。环境变量 `DEEPSEEK_API_KEY`，以及 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`，映射为 `DEEPSEEK_*`（dsh 接受 Messages 兼容的地址）。
 
-- **导入 `assistant.json`**：旧工作台在用户配置目录中的 `assistant.json`，由 studio 第一次启动时提示导入，导入后不删除原文件。dsh 拒绝 `.env` 文件（启动目录的与 `$DSH_HOME` 的都是）中决定网络去向的变量，例如 `DEEPSEEK_BASE_URL`，写了就拒绝启动，只接受启动环境中的。所以导入分两处：密钥写进 `$DSH_HOME/.env`（dsh 的凭据层中最低的一层），服务的地址写进 `$DSH_HOME/presmium-studio.json`，环境中没有模型的每次启动由启动器作为 `DEEPSEEK_BASE_URL` 传入。导入只在终端中询问一次（默认是）；不在终端时每次在标准错误说明怎样导入。工作区根（dsh 的启动目录）的 `.env` 因此改不了密钥的去向，但能让 dsh 拒绝启动，日志写明原因。
+- **导入 `assistant.json`**：用户配置目录中以前的模型设置 `assistant.json`，由 studio 第一次启动时提示导入，导入后不删除原文件。dsh 拒绝 `.env` 文件（启动目录的与 `$DSH_HOME` 的都是）中决定网络去向的变量，例如 `DEEPSEEK_BASE_URL`，写了就拒绝启动，只接受启动环境中的。所以导入分两处：密钥写进 `$DSH_HOME/.env`（dsh 的凭据层中最低的一层），服务的地址写进 `$DSH_HOME/presmium-studio.json`，环境中没有模型的每次启动由启动器作为 `DEEPSEEK_BASE_URL` 传入。导入只在终端中询问一次（默认是）；不在终端时每次在标准错误说明怎样导入。工作区根（dsh 的启动目录）的 `.env` 因此改不了密钥的去向，但能让 dsh 拒绝启动，日志写明原因。
 - **优先级**：dsh 在模型设置中保存的密钥（`.credentials.yaml`）先于环境变量。作者在界面中保存过 DeepSeek 的密钥之后又以 `PRESMIUM_MODEL_URL` 等启动时，dsh 会把保存的密钥发往那个服务；这是 dsh 的规则，启动器不改写 dsh 的凭据文件。
 
 ### 11.4 局域网
@@ -559,7 +555,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 ## 12. 版本与升级闸门
 
-- **dsh**：精确锁定一个版本，现在是 `0.2.1-alpha.4`。`@presmium/studio` 依赖精确版本的 `@deepseek-ai/dsh`；`@presmium/dsh` 用精确的对等依赖与 `engines.dsh`，安装与启动时都会检查。不用 npm 仓库的 dist-tag（`latest` 指向旧版本）。旧工作台的助手插件有自己的固定版本，随它删去。
+- **dsh**：精确锁定一个版本，现在是 `0.2.1-alpha.4`。`@presmium/studio` 依赖精确版本的 `@deepseek-ai/dsh`；`@presmium/dsh` 用精确的对等依赖与 `engines.dsh`，安装与启动时都会检查。不用 npm 仓库的 dist-tag（`latest` 指向旧版本）。
 - **Presmium 的包**：核心与产物是 1.x，`@presmium/design` 随 `@presmium/host` 发版；`@presmium/workbench`、`@presmium/dsh`、`@presmium/studio` 是 0.x、实验性，等 dsh 发布正式版、并且升级闸门在连续两个 dsh 版本上都通过之后，才纳入 1.x 的承诺。
 - **dsh 变动快**：发版频繁，各包没有 CHANGELOG，根布局插件要重新提供的布局契约只有 README 描述。所以能否升级只由升级闸门判断。
 - **升级闸门**：升级 dsh 是单独的一次改动，先通过下面五组用例。用例名带 `[gate]`（Vitest）或标签 `@gate`（Playwright），可以单独运行。
@@ -574,47 +570,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 - **会话格式**：bundle 只经事件与接口使用会话，不读会话日志文件，dsh 的会话格式升级因此不影响 Presmium。
 
-## 13. 从旧工作台迁移
-
-### 13.1 1.0 中的旧工作台
-
-旧工作台是实验性的，不在语义化版本的承诺之内：`presmium serve` 的界面、`@presmium/workspace` 的浏览器部分、助手与讲授插件中属于工作台的面板、`presmium dev` 的编辑模式，以及只为它们存在的契约（`EditMode` 与 `EDIT_MODE`，工具栏槽位 `home`、`create`、`files`、`tabs`、`source`、`dock` 与位置 `activity`、`home`、`pane`，`AGENT`、`AGENT_RUNTIME` 与 ACP 相关的设置）。`docs/api.md` 把它们列为实验性；源码中这些契约带 `@experimental` 标注（`packages/host/src/types.ts` 与 `packages/kernel/src/contracts/agent.ts`）。
-
-删去之前，旧工作台仍是 `presmium serve` 的默认界面，只修缺陷，不加功能；分层检查的白名单把它隔离起来。
-
-### 13.2 步骤
-
-两个工作台共存时，旧工作台只有一处行为与 1.0 不同：`presmium dev` 默认不加载编辑模式（`--edit` 加载）。审阅在工作区服务中，旧工作台的助手也用它。
-
-删去旧工作台时：删去 13.3 节的耦合，清空分层检查的白名单，把旧工作台的用例改为测新工作台，删去 ACP 的替换运行时（第 9 节），更新文档与技能（`presmium-author` 与 `presmium-develop` 中关于编辑模式与“AI 修改”的段落改为指向工作台）。
-
-### 13.3 要删去的耦合
-
-静态构建中没有编辑相关的代码，耦合只出现在由服务提供的页面中。
-
-| # | 位置 | 内容 | 去向 |
-|---|---|---|---|
-| 1 | `packages/web/src/node/sites.ts`（`siteModules`、`homePluginDirs`、`homeModules`，用在 `buildSite` 与 `devSite`） | 站点自己的插件进入每份文档的页面；`ctx.config.homePlugins` 的浏览器部分进入首页 | 机制留给产物自己的站点插件；无界面模式不经它注入工作台；删去这条注入 |
-| 2 | `packages/workspace/src/node/site.ts`（`servedPlugins`、`homePlugins`）；`serve.ts` 中首页加入运营者插件、`plugins: servedPlugins()` | serve 把工作区的浏览器插件放进每一页，把助手等运营者插件的浏览器部分放进首页 | 无界面模式不传入；删去 |
-| 3 | `packages/workspace/src/node/dev.ts`（`sitePlugins: servedPlugins()`），经 `packages/cli/src/cli.ts` 到 `packages/compiler/src/renderers.ts` | `presmium dev` 的网页加载工作区的浏览器插件，即编辑模式 | 默认不加载，`--edit` 加载；删去 `sitePlugins` 与 `--edit` |
-| 4 | 文稿 `plugins` 中列出的助手与讲授插件：`packages/addon-assistant/src/client/plugin.ts`、`packages/addon-lecture/src/client/plugin.ts` | 有服务时登记“AI 修改”、模型状态与停靠面板，登记讲授回写的开关与停靠面板 | 从这两个插件移出 |
-| 5 | `packages/host/src/types.ts`（`ToolbarSlot` 中的 `home`、`create`、`files`、`tabs`、`source`、`dock`；`ToolbarPlace` 中的 `activity`、`home`、`pane`；`EditMode`、`EDIT_MODE`）；`packages/host/src/index.ts` 的导出 | 工作台的槽位与编辑模式写进了产物共用的宿主契约 | 删去；`tools`、`settings`、`status` 留给产物 |
-| 6 | `packages/viewer/src/rich.ts`（`PmRoleMark`） | `{cue}` 等标记只在编辑模式中显示 | 看预览协议的 `marks` |
-| 7 | `packages/web/src/client/theme.ts`（`bySlot`、`EDIT_TOOLS`、`useEditing`、`readWorkspaceTitle`、`EditFrame`，`Layout` 中编辑模式的部分） | 编辑模式的整套外壳：顶栏、`source` 与 `dock` 两栏、状态栏、`<html>` 上的 `pm-editing` 等类 | 删去 |
-| 8 | `packages/web/src/client/home.ts`（`McpCard`、启动台的命令搜索、`create`、`FileTree`、`Files`、`FilesDrawer`、`Workbench`，`Layout` 在有服务时选工作台） | 首页的工作台 | 删去，首页回到静态站点那样的文档卡片 |
-| 9 | `packages/web/src/client/style.css`（首页的工作台及其窄屏规则、编辑模式） | 工作台的样式 | 删去；要保留的规则移进 `@presmium/design` |
-| 10 | `packages/workspace/src/client/viewer.ts`、`preview.ts` | 编辑器在页面内直接取 IR 运行时的 viewer，读 DOM 并加框 | 由预览代理与预览协议取代 |
-| 11 | `packages/workspace/src/client/**` | 编辑模式、源码编辑器、文件标签、问题、文档管理、修改历史、使用说明 | 由 `@presmium/workbench` 的 React 面板取代，删去 |
-| 12 | `packages/addon-assistant/src/client/` 的 `EditPanel.vue`、`EditDock.vue`、`dock.ts`、`ChangeTask.vue`、`ModelSettings.vue`、`ModelStatus.vue`、`edit.ts`、`agent.ts` | “AI 修改”的入口、停靠面板、任务与审阅、模型设置、`AGENT` 的客户端 | 由 dsh 的对话与工作台的面板（7.3 节）取代，删去 |
-| 13 | 同一目录的 `AskPanel.vue`、`AskSettings.vue`、`ask.ts`、`AssistantToolbar.vue` | 读者问答，用读者自己的模型服务 | 产物，保留 |
-| 14 | `packages/addon-lecture/src/client/` 的 `WritebackDock.vue`、`WritebackPanel.vue`、`writeback.ts`、`dock.ts`；`PlayerPanel.vue` 的 `serverEditing` | 讲授回写；编者改写已录制的讲授 | 由工作台的讲授回写面板取代，删去 |
-| 15 | `packages/addon-lecture/src/client/RecorderPanel.vue`、`recorder.ts` | 放映时录制讲授，经讲授插件的路由保存 | 产物（属于放映），保留 |
-| 16 | `packages/web/src/node/vite.ts` 的 `source` 端点，`packages/web/src/client/theme.ts` 的 `openSource` | `presmium dev` 中从预览打开作者自己的编辑器 | 产物的开发功能，保留；在预览协议中对应 `picked` |
-| 17 | `packages/workspace/src/node/source.ts`、`routes.ts` 等 | 文件、源码、未提交的修改、提交、放弃、文档、修改历史的路由 | 服务，保留；即工作区服务的接口（第 5 节） |
-| 18 | `packages/addon-assistant/src/node/`（ACP 运行时、任务、设置、`git-review.ts`、`review-record.ts`）、`packages/addon-assistant/dsh/` | 旧工作台的 agent 服务端 | 审阅在工作区服务中（6.5 节）；ACP 运行时与 dsh 模板删去 |
-| 19 | `e2e/editing.spec.ts`、`e2e/design.spec.ts`、`e2e/assistant.spec.ts` 与 `e2e/assistant-edit.spec.ts` 中编辑的部分、`e2e/plugin-ui.spec.ts` 中工作区的部分、`e2e/lecture-writeback.spec.ts`、`e2e/workspace.spec.ts`（旧首页的文档管理与修改历史，约 40 个旧界面的选择器，以及局域网中“编辑模式与确认”一例）、`packages/cli/test/serve.test.ts` 中“首页加载运营者插件的浏览器部分”一例、`packages/cli/test/dev-editing.test.ts` | 旧工作台的用例 | 改为测新工作台；`packages/workspace/test/source.test.ts`（路由）保留 |
-
-### 13.4 三条命令的分工
+## 13. 三条命令的分工
 
 | 命令 | 是什么 | 需要 dsh |
 |---|---|---|
@@ -624,12 +580,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 讲授的录制发生在演讲者视图（产物）中，结果写进讲授轨，保存经讲授插件的服务端路由；改写、回写与审阅在工作台中。
 
-### 13.5 数据兼容
-
-- 修改历史（git 提交与尾注）不变，新的提交只多 `Presmium-Session` 与 `Presmium-Turn` 两条尾注。
-- 审阅记录的格式随审阅一起从助手插件移进工作区服务，旧记录照常读取。
-- `presmium.workspace.yaml` 中的 `approvals` 与 `settings.presmium.assistant.review` 由工作区服务读取并执行（6.3、6.5 节），bundle 不读。
-- 用户配置目录中的 `assistant.json` 由 studio 第一次启动时提示导入（11.3 节）。
+修改历史是 git 提交与尾注，会话的提交另有 `Presmium-Session` 与 `Presmium-Turn`。`presmium.workspace.yaml` 中的 `approvals` 与 `settings.presmium.assistant.review` 由工作区服务读取并执行（6.3、6.5 节），bundle 不读。用户配置目录中的 `assistant.json` 由 studio 第一次启动时提示导入（11.3 节）。
 
 ## 14. 安全与隐私
 

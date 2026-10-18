@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { useMessages } from '@presmium/host'
-import { computed, ref, useId } from 'vue'
+import { ref, useId } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'
-import { assistant, useNavigator } from './state.ts'
+import { useNavigator } from './state.ts'
 
 const t = useMessages(ASSISTANT_MESSAGES)
 const id = useId()
 const open = ref(false)
 const popover = ref<HTMLElement>()
 useNavigator()
-const shown = computed(() => !assistant.value || (assistant.value.info.value !== undefined && !assistant.value.info.value.home))
 
 function toggled(event: Event): void {
   open.value = (event as ToggleEvent).newState === 'open'
@@ -22,7 +21,7 @@ function cited(): void {
 </script>
 
 <template>
-  <span v-if="shown" class="pm-assistant-toolbar">
+  <span class="pm-assistant-toolbar">
     <button type="button" class="pm-ui-button pm-ui-button--ghost pm-ui-button--small" :popovertarget="id" :aria-expanded="open" :title="t.toolbar.title">
       {{ t.toolbar.button }}
     </button>

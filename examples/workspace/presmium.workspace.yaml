@@ -1,13 +1,13 @@
 # The example workspace (README.md): its documents are the subdirectories with a lecture.md (the
-# default pattern '*/lecture.md', so documents created or renamed on the home page are listed too).
+# default pattern '*/lecture.md', so documents created or renamed in the workbench are listed too).
 title: 分词入门（示例工作区）
 site:
   footer: { message: Presmium 的示例工作区 }
 settings:
   presmium.workspace:
-    # The operator plugins, which every document and the home page load (the assistant drafts a new
-    # document there). The plugins a document lists load as in `presmium dev`, from the packages installed
-    # at the workspace root (package.json, and the link try.mjs makes).
+    # The operator plugins, which every document loads. The plugins a document lists load as in
+    # `presmium dev`, from the packages installed at the workspace root (package.json, and the link
+    # try.mjs makes).
     plugins:
       - '@presmium/slidev-addon-speech'
       - '@presmium/slidev-addon-assistant'

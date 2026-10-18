@@ -1,4 +1,4 @@
-import type { ApprovalRequest, McpAccess, Member } from './server.ts'
+import type { Member } from './server.ts'
 import { defineService } from './service.ts'
 import type { ServiceToken } from './service.ts'
 
@@ -39,30 +39,6 @@ export interface AgentContext {
   focus?: Focus[]
 }
 
-export type AgentTaskKind = 'annotations' | 'chat' | 'transcript'
-
-export type AnnotationStatus = 'draft' | 'sent' | 'done' | 'failed'
-
-export interface Annotation {
-  id: string
-  section: string
-  block: string
-  source: SourceRange
-  excerpt: string
-  request: string
-  status: AnnotationStatus
-  note?: string
-  focus?: Focus
-}
-
-export interface AgentTaskRequest {
-  kind: AgentTaskKind
-  prompt: string
-  context: AgentContext
-  annotations?: Annotation[]
-  track?: string
-}
-
 export interface Citation {
   label: string
   section: string
@@ -70,71 +46,12 @@ export interface Citation {
   block?: string
 }
 
-export type AgentEvent =
-  | { type: 'progress', text: string, tool?: string, call?: string, status?: 'running' | 'completed' | 'failed' }
-  | { type: 'message', text: string, citations?: Citation[] }
-  | { type: 'approval', id: string, request: ApprovalRequest }
-  | { type: 'annotation', id: string, status: AnnotationStatus, note?: string }
-  | { type: 'step', step: ReviewStep }
-  | { type: 'review', engine: string, changes: ReviewChange[], steps: ReviewStep[] }
-  | { type: 'done', revision?: string }
-  | { type: 'error', message: string }
-
-/** @experimental */
-export type ReviewDecision =
-  | { accept: true, reject?: string[] }
-  | { accept: false }
-
-/** @experimental */
-export interface AgentTask {
-  readonly id: string
-  readonly events: AsyncIterable<AgentEvent>
-  cancel(): void
-  review(decision: ReviewDecision): Promise<void>
-  revert(): Promise<TaskRevertResult>
-}
-
-/** @experimental */
-export type TaskRevertResult = { ok: true, revision: string } | { ok: false, conflicts: string[] }
-
-/** @experimental */
-export interface AgentClient {
-  available(kind: AgentTaskKind): boolean
-  provider(): string | undefined
-  runtime(): string | undefined
-  submit(request: AgentTaskRequest): AgentTask
-}
-
-/** @experimental */
-export const AGENT = defineService<AgentClient>('presmium.agent')
-
 export interface AskClient {
   provider(): string | undefined
   ask(question: string, context: AgentContext, signal?: AbortSignal): AsyncIterable<string>
 }
 
 export const ASK = defineService<AskClient>('presmium.ask')
-
-export interface AgentSessionOptions {
-  cwd: string
-  member: Member
-  mcp?: McpAccess
-  approve(request: ApprovalRequest): Promise<boolean>
-}
-
-export interface AgentSession {
-  prompt(request: AgentTaskRequest, signal?: AbortSignal): AsyncIterable<AgentEvent>
-  cancel(): Promise<void>
-  close(): Promise<void>
-}
-
-export interface AgentRuntime {
-  readonly provider: string | undefined
-  readonly runtime?: string
-  open(options: AgentSessionOptions): Promise<AgentSession>
-}
-
-export const AGENT_RUNTIME = defineService<AgentRuntime>('presmium.agentRuntime')
 
 export type AgentToolKind = 'read' | 'operate' | 'spend'
 

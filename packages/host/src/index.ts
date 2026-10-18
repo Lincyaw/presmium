@@ -1,7 +1,5 @@
 import './design/design.css'
 
-export { trackAgentTask } from './agent.ts'
-export type { AgentTaskState } from './agent.ts'
 export { blockAt, blockElement, blockKey, codeLines, lineNumbers, linesText, positionSlide, splitBlockKey } from './blocks.ts'
 export type { BlockPoint } from './blocks.ts'
 export { componentErrors, PmBoundary } from './boundary.ts'
@@ -60,11 +58,10 @@ export type { StepScope } from './scope.ts'
 export { createSharedStates } from './shared.ts'
 export type { SharedStates } from './shared.ts'
 export { default as PmToolbar } from './Toolbar.vue'
-export { EDIT_MODE, NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
+export { NAVIGATION, OPERATIONS, STATUS, SYNC_TRANSPORTS, TOOLBAR } from './types.ts'
 export { deckChannel, joinWindows } from './windows.ts'
 export type { WindowChannel } from './windows.ts'
 export type {
-  EditMode,
   HostAdapter,
   Navigation,
   NavigationPosition,

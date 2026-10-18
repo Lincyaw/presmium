@@ -45,7 +45,7 @@ async function events(url: string, until: (data: Record<string, unknown>) => boo
   return seen
 }
 
-describe('presmium serve --headless: the workspace service for a workbench', () => {
+describe('presmium serve: the workspace service for a workbench', () => {
   let dir: string
   let home: string
   let serve: Child
@@ -56,7 +56,7 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
     dir = workspace('service', join(FIXTURES, 'service'), { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' })
     home = `${dir}.home`
     mkdirSync(home)
-    serve = presmiumProcess(dir, ['serve', '--headless', '--preview-origin', WORKBENCH, '--port', '0'], cleanEnv({ PRESMIUM_SERVICE_TOKEN: TOKEN, HOME: home, XDG_CACHE_HOME: join(home, 'cache'), XDG_STATE_HOME: join(home, 'state'), XDG_CONFIG_HOME: join(home, 'config') }))
+    serve = presmiumProcess(dir, ['serve', '--preview-origin', WORKBENCH, '--port', '0'], cleanEnv({ PRESMIUM_SERVICE_TOKEN: TOKEN, HOME: home, XDG_CACHE_HOME: join(home, 'cache'), XDG_STATE_HOME: join(home, 'state'), XDG_CONFIG_HOME: join(home, 'config') }))
     url = (await waitFor(serve, /^serve {2}(http\S+)$/m))[1]!
   }, 120_000)
   afterAll(async () => {

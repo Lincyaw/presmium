@@ -1,6 +1,6 @@
 ---
 name: presmium-present
-description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档），讲授的录制与回放（放映视图中录音、摄像头、聚光 s、激光笔与荧光笔，lectures/<id>/track.json，?view=lecture&track=<id> 的回放、倍速、字幕、逐字稿、我来试试；由讲解合成的讲授 script、录制讲授的转写与修改、换音色重新合成、编辑模式中把转写交给 agent 整理为讲解或生成译文、presmium-lecture export 导出 WebM 视频）；示例讲义 examples/demo 与示例工作区 examples/workspace 的体验步骤。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server, recording a lecture and playing it back, a lecture synthesized from the narration, transcribing and correcting a recorded lecture, writing a transcript back as narration or translating it with the agent, exporting a lecture video, trying the example lecture and the example workspace."
+description: "Presmium 放映与授课指南：构建并服务网页形态与幻灯片形态，切换运行时视图（文档 document、滚动叙事 scrolly、放映 present）与演讲者窗口，放映快捷键（翻页、总览、黑屏 b、冻结 f），幻灯片导出 PDF（presmium-export），notebook，离线使用，网页与幻灯片互跳，启动课堂服务 presmium-classroom-server 并配置 presmium.session.server，课堂流程（创建课堂、加入链接与二维码、跟随与自主浏览、测验、练习、提问、理解度、先预测再揭示、结束、归档），讲授的录制与回放（放映视图中录音、摄像头、聚光 s、激光笔与荧光笔，lectures/<id>/track.json，?view=lecture&track=<id> 的回放、倍速、字幕、逐字稿、我来试试；由讲解合成的讲授 script、录制讲授的转写与修改、换音色重新合成、在工作台中把转写交给 agent 整理为讲解或生成译文、presmium-lecture export 导出 WebM 视频）；示例讲义 examples/demo 与示例工作区 examples/workspace 的体验步骤。Use when presenting or teaching with a Presmium deck: serving the built web or slides output, presenter view, keyboard shortcuts, PDF export, notebook, offline, form switching, running a classroom session server, recording a lecture and playing it back, a lecture synthesized from the narration, transcribing and correcting a recorded lecture, writing a transcript back as narration or translating it with the agent, exporting a lecture video, trying the example lecture and the example workspace."
 ---
 
 # 用 Presmium 放映与授课
@@ -72,7 +72,7 @@ pnpm exec sirv <文稿>/dist/slides --single --port 8081 # 幻灯片：--single 
 - **静态站点**：`presmium build --to web,lecture` 把讲授发布在 `dist/lecture/`（含 `captions.<语言>.vtt`、`chapters.vtt`、`events.vtt`），网页从同一站点的 `../lecture/` 读取；分开部署时在头部写 `presmium: { presmium.lecture: { url: <地址> } }`。
 - **合成的讲授**：头部写了 `renderers.lecture.voice`（并列出 `@presmium/slidev-addon-speech`）时，讲义的讲解就是讲授的脚本（写法见 presmium-author 技能）：`presmium build --to web,lecture` 把它合成为讲授 `script`（片段发布在 `dist/lecture/script/clips/`），`?view=lecture&track=script` 播放，提示标记 `{cue}` 在说到相应的字时聚光、推进；`presmium dev` 中打开它时由服务端按需合成。播放栏显示“AI 合成语音（<服务提供方>）”。合成要运营者定义的语音引擎（`PRESMIUM_SPEECH_<ID>_URL` 与 `_PROVIDER`），合成过的片段在合成缓存 `.presmium/speech/` 中，提交后别处构建不需要引擎。
 - **转写与修改**（`presmium dev` 与工作区服务中，编辑者）：回放一份录制的讲授，打开“逐字稿”：“转写（<服务提供方>）”先确认把录音发给谁，转写后得到逐句的文字，录制时在说某句话期间做的操作绑定到当时说的字；每句后的 ✎ 修改这句的文字（没改的字保留时间；合成音色的讲授中保存时重新合成这一句，先确认发给哪个服务提供方）；选一个“音色”点“重新合成（<服务提供方>）”，整段讲授换成这个音色的合成语音，操作跟着字走，没有绑定到字的操作时刻不变。改动都写回 `lectures/<id>/track.json`。
-- **转写回写**（工作区服务 `presmium serve` 中的编辑者；文稿 `plugins` 有 `@presmium/slidev-addon-assistant` 与讲授插件，运营者把它们列在 `settings.presmium.workspace.plugins` 中并配置了 agent）：工具栏的“编辑”进入编辑模式后点“讲授回写”，面板停靠在右侧（与“AI 修改”上下排列，再点一次收起），列出录制过的讲授（要先转写），写明模型的服务提供方。“整理为讲解”把转写交给 agent：按章节整理逐字稿（去掉口头禅与口误、补全标点），写成这一节的讲解替换原来的，录制时说到某个字时做的操作（聚光、指针、推进一步、标记……）写成那个字之前的 `{cue}`；“生成译文”（选一种语言）让 agent 把每句的译文写进 `lectures/<id>/track.json`（字幕可选这种语言，`presmium build --to lecture` 导出 `captions.<语言>.vtt`）。agent 改完后面板列出改动的文件与差异，“接受”形成一个提交，“全部拒绝”恢复原样；提交之后可以“撤销这次修改”。同一文档一次只能有一个修改任务（包括“AI 修改”面板中的）。
+- **转写回写**：在 `presmium studio` 中让 agent 把一份录制讲授的逐字稿整理为讲解、或生成译文（它经 MCP 工具 `track_narration`、`track_translations` 取得内容），修改经审阅后提交。
 - **导出视频**：`presmium-lecture export [文稿目录] --track <ID> --out <文件>.webm`（`--size 1280x720`、`--fps 10` 为默认）构建网页与讲授，在 Chromium 中逐帧播放并与声音合成为 WebM 视频（只导出 WebM；要文稿安装 `playwright-chromium`，与 `slidev export` 相同）；合成的声音在文件的元数据中标明由 AI 生成。
 ### 由 agent 跳转（`presmium dev`）
 
@@ -158,11 +158,11 @@ presmium:
 
 ## 9. 体验示例讲义与示例工作区
 
-仓库中的示例讲义 `examples/demo`（BPE 分词）与示例工作区 `examples/workspace` 可以用来走一遍放映、授课与编辑。详细的命令在两个目录的 `README.md` 中。
+仓库中的示例讲义 `examples/demo`（BPE 分词）与示例工作区 `examples/workspace` 可以用来走一遍放映与授课。详细的命令在两个目录的 `README.md` 中。
 
 - **示例讲义**：在仓库根目录 `pnpm demo:build`，再 `pnpm exec sirv examples/demo/dist --single slides/index.html`，网页在 `/web/`，幻灯片在 `/slides/`。“延伸”一章（网页的 `extend.html`）：C 程序点“运行”在浏览器里编译、运行（第一次下载约 50 MB 的编译器），输出与构建时的录制相同；GPU 着色器在支持 WebGPU 的浏览器中用显卡运行，否则显示构建时录制的结果与原因；先运行“先训练”的代码块，再运行“再编码”的，体会同一会话的变量；在“下一次合并哪一对？”写下预测并保存，答案才出现。
 - **讲授的合成与回放**：示例讲义的头部列出了讲授渲染端，但 `pnpm demo:build` 不构建它，所以默认构建的网页中没有讲授（“视图”菜单中也没有“讲授”）。在环境变量中设置火山引擎的 `PRESMIUM_SPEECH_VOLCENGINE_KEY`，把头部的 `lecture: {}` 改为 `lecture: { voice: { engine: volcengine, voice: zh_female_xiaohe_uranus_bigtts } }`，`presmium build --to web,lecture` 合成讲授，服务 `dist/` 后打开 `/web/?view=lecture&track=script` 播放：说到 `{cue}` 处的字时聚光代码、显示录制的输出、停顿，`BPE` 读作“B P E”。提交 `.presmium/speech/` 与 `.presmium/speech.lock.json` 后，别人构建不再需要凭据。
-- **示例工作区**：工作区要是一个 git 仓库的根目录，所以先 `node examples/workspace/try.mjs ~/presmium-example-workspace` 把它复制成独立的仓库（带上讲义引用的示例代码与锁定的提交），再 `node packages/cli/bin/presmium.mjs serve ~/presmium-example-workspace`，打开 `http://127.0.0.1:4310`。首页列出两份文档；“管理文档”新建、复制、重命名、删除，“修改历史”撤销。在工具栏“AI 修改”的“模型设置”中填写模型服务（或启动前设置 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）后，打开“分词速览”，工具栏“编辑”进入编辑模式，在“AI 修改”中点选一段写批注或写一句对话，agent 改完后逐个文件审阅、接受或拒绝，接受的改动成为一个提交并可撤销（写法见 presmium-author 技能的“由 agent 修改讲义”）。凭据只在启动服务的终端的环境变量中，或在用户配置目录中只有本人可读的模型设置里，不写进仓库。
+- **示例工作区**：工作区要是一个 git 仓库的根目录，所以先 `node examples/workspace/try.mjs ~/presmium-example-workspace` 把它复制成独立的仓库（带上讲义引用的示例代码与锁定的提交），再 `presmium serve ~/presmium-example-workspace`，打开 `http://127.0.0.1:4310`：首页列出两份文档，点进去是讲义。编写与 agent 的修改用 `presmium studio ~/presmium-example-workspace`（见 presmium-author 技能的“工作台”）。
 
 ## 10. 常见问题
 
@@ -179,7 +179,6 @@ presmium:
 | 讲授列表中没有 `script`，或播放它时“找不到讲授” | 头部 `renderers.lecture.voice` 写明音色，`plugins` 列出 `@presmium/slidev-addon-speech`；构建时定义了引擎，或合成缓存中有全部片段（`presmium check` 的 `presmium.lecture` 逐句指出缺少的） |
 | 逐字稿中没有“转写”按钮 | 只在 `presmium dev` 与工作区服务中、编辑者可见；运营者要定义能转写的语音引擎，文稿 `plugins` 要有 `@presmium/slidev-addon-speech` |
 | 播放 `script` 时提示“还没有生成” | 服务端还说不出由讲解合成的讲授（缓存缺片段又没有能合成的引擎），或克隆音色的同意已撤回；定义引擎后再打开，或构建时合成并提交合成缓存 |
-| 编辑模式中没有“讲授回写”，或面板说不能交给 agent | 只在工作区服务中、编辑者可见；文稿 `plugins` 要有 `@presmium/slidev-addon-assistant` 与 `@presmium/slidev-addon-lecture`，运营者把它们列在 `settings.presmium.workspace.plugins` 中并配置了模型（或替换的运行时） |
 | 没有课堂入口，或开发中显示“未连接” | 静态构建：配置 `presmium.session.server`、启动课堂服务，重新构建；`presmium dev` 与 `presmium serve` 中不必配置，确认文稿 `plugins` 有会话插件 |
 | 学生打不开加入链接 | 主讲用局域网地址打开讲义，课堂服务地址也用局域网地址（服务启动时打印） |
 | 主讲的标签页关掉了 | 同一浏览器重新打开讲义，在课堂面板中以主讲身份回到课堂 |

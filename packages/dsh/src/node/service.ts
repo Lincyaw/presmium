@@ -91,7 +91,7 @@ export class PresmiumService {
 
   #start(root: string): Promise<Endpoint> {
     const token = randomBytes(24).toString('base64url')
-    const child = spawn(process.execPath, [WATCHDOG, process.execPath, presmiumBin(), 'serve', root, '--headless', '--port', '0'], {
+    const child = spawn(process.execPath, [WATCHDOG, process.execPath, presmiumBin(), 'serve', root, '--port', '0'], {
       cwd: root,
       env: serviceEnv(token),
       stdio: ['pipe', 'pipe', 'pipe'],

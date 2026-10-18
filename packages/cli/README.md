@@ -22,7 +22,8 @@ Node.js 22.19 or later. Or start a project with `npm create presmium@latest`.
 | `presmium ir [deck]` | Print the IR as JSON (`--out`) |
 | `presmium build [deck]` | Build `dist/ir.json` and `dist/<renderer>/` (`--to`, `--out`, `--audience`); at a workspace root, the workspace site in `dist/web/` |
 | `presmium dev [deck]` | Dev servers that update on save (`--to`, `--out`, `--server-port`, `--allow`) |
-| `presmium serve [dir]` | The local workbench of a workspace, on this machine (`--port`, `--host`, `--operator-dir`); its browser interface is a preview |
+| `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
+| `presmium studio [dir]` | The workbench (experimental), from `@presmium/studio` installed beside the CLI (`--port`, `--host`) |
 
 `[deck]` is a directory with `lecture.md` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
 

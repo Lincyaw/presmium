@@ -288,7 +288,7 @@ MyST 的角色写作 ``{名}`内容` ``，角色名之后可以写选项：``{cu
 - 选项只能写成 `key=value`（只写键是 myst-parser 的语法错误），按 `RoleSpec.options` 声明的类型读出（`list` 按空白与逗号拆开）；`children` 抛错时是错误级诊断，节点保留 `value` 的文字。插件不能登记与 MyST 自带角色同名的角色（错误级诊断 `presmium.plugins`），两个插件登记同名角色时后者的被忽略。
 - MyST 自带的角色（`{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等）与编译器内置的 `{button}`（2.10 节）不经这个扩展点。
 
-渲染：网页、幻灯片与 notebook 显示 `children`。演讲者窗口与幻灯片的演讲者备注中，以及页面显示作者用的标记时（`<html>` 的类 `pm-author-marks`：预览协议的 `marks`，旧工作台的编辑模式中也有），没有子内容的角色显示一个标记 `〔<名> <value>〕`，作者能看见提示标记的位置。
+渲染：网页、幻灯片与 notebook 显示 `children`。演讲者窗口与幻灯片的演讲者备注中，以及页面显示作者用的标记时（`<html>` 的类 `pm-author-marks`：预览协议的 `marks`），没有子内容的角色显示一个标记 `〔<名> <value>〕`，作者能看见提示标记的位置。
 
 ### 2.9 讲授脚本
 
@@ -549,7 +549,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 - **富输出与录制块**：录制保存 `outputs`。MIME 数据中长度超过 4096 个字符的值存为 `.presmium/freeze/blobs/<sha256>`，录制只保存引用 `{ "presmium/blob": "<sha256>" }`；编译器读取录制时把它们放回 IR，IR 与产物中的输出因此是完整的 nbformat 输出。`presmium build` 删除不再被引用的录制块。
 - 编译时执行器（执行插件的 `presmium.python`、`presmium.node`）在子进程中、每次运行一个新的临时目录（运行目录）中执行代码；代码、参数与输入写成运行目录中的文件，结果由运行器写进运行目录中的结果文件（不用标准输入与文件描述符 3，进程沙箱不转发它们，`architecture.md` 4.6 节）：程序直接写标准输出（`process.stdout.write`、`console.dir`）不会破坏结果，这些输出照常录制；顶层 `await` 永不完成时，结果为失败并说明原因。运行末尾才发生的 Promise 拒绝与定时器中的异常使运行失败，与浏览器中一致。
 - **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会经代码自己的环境被打印进录制、IR 与产物；有意读取其他进程信息的代码只由进程沙箱挡住，是残余风险（`architecture.md` 9.4、10.6 节）。本地容器的 `docker` 与 devcontainer 命令行另得到 Docker 客户端需要的几个变量（`DOCKER_HOST`、`XDG_RUNTIME_DIR` 等与真实的 `HOME`，都不是凭据），容器里的代码经命令行只得到 `RunContext.env` 中的变量（`architecture.md` 10.6 节）。
-- **进程沙箱**：运营者插件 `addon-deltabox` 可用时，执行插件的子进程在 deltabox 中运行（网络拒绝，看不到其他进程与 Unix 套接字，只能写运行目录；同一会话的代码块在同一次运行中依次执行），构建报告写明隔离方式；不可用时照旧运行并在构建报告中说明（`architecture.md` 10.6 节）。
+- **进程沙箱**：运营者插件登记了进程沙箱（`PROCESS_SANDBOX`）时，执行插件的子进程经它运行，构建报告写明隔离方式（`architecture.md` 10.6 节）。
 - **工作区服务中的执行**：`presmium serve` 与 `presmium dev` 一样全部执行，MCP 的 `run_code` 与 `build` 同样（`architecture.md` 10.6 节）。
 - **执行器的修订**：执行器可以给出自己代码的修订（`Executor.revision`，执行插件的本地 Python 执行器为运行器 `runner.py` 的摘要），它与环境指纹一起进入缓存键并记在录制中。另一运行环境的录制照旧沿用（上一条），另一修订的录制则不沿用：执行器可用时重新执行并替换它，所以运行器改变了输出的方式之后（例如末尾表达式的值成为 `execute_result`，6.1 节），已缓存的录制在下一次构建时更新；没有执行器时仍显示原有的录制。
 
@@ -732,7 +732,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `presmium dev` | `--to <ids>`、`--out <dir>`（工作目录，默认 `<deck>/.presmium/dev`）、`--server-port <n>`（服务端的端口，默认空闲端口）、`--allow <种类,…>`（不询问就放行的确认种类：`operate`、`spend`、`write`、`agent`） | 监听源码与编译读取过的文件（第 5 节），增量编译，启动对应渲染端的开发服务器并打印其地址。保存频繁时合并排队的编译；被引入而尚不存在的文件在创建后即被编译；头部的 `plugins` 或 `renderers` 变化时提示重启 |
 | `presmium ir` | `--out <file>` | 输出 IR JSON（绝对路径），诊断写到标准错误；用于调试 |
 | `presmium check` | `--json`（JSON 输出）、`--update-lock`（先在工作区重新解析全部锚点，重写 `.presmium/anchors.lock.json`）、`--env`（连接每个具名环境，报告不可达的环境）、`--audience <受众>`（按该受众编译后检查）、`--external-links`（用 lychee 检查外部链接） | 完整编译（含编译时执行），再运行各插件的检查项（`Check`），只输出诊断 |
-| `presmium serve` | `[目录]`（工作区根目录或一份文稿，默认当前目录）、`--port <n>`（默认 4310）、`--host <地址>`（默认 `127.0.0.1`；`0.0.0.0`、`::` 或本机网卡的地址让同一用户在局域网中的其他设备上使用，没有登录，启动时警告）、`--operator-dir <dir>`（运营者目录，默认在用户的状态目录中，第 10 节） | 只供运行它的那个用户使用的工作区服务：工作区站点的开发服务器、编辑模式、文档管理、助手、MCP、课堂同步与各插件的服务端贡献（`architecture.md` 第 10 节）。启动时打印 `serve  <地址>`、有 `--host` 时每个局域网地址一行 `network  <地址>`，以及 `workspace  <根目录>` |
+| `presmium serve` | `[目录]`（工作区根目录或一份文稿，默认当前目录）、`--port <n>`（默认 4310）、`--host <地址>`（默认 `127.0.0.1`；`0.0.0.0`、`::` 或本机网卡的地址让同一用户在局域网中的其他设备上使用，没有登录，启动时警告）、`--operator-dir <dir>`（运营者目录，默认在用户的状态目录中，第 10 节） | 只供运行它的那个用户使用的工作区服务：工作区站点的开发服务器、文档管理、修改历史与审阅的路由、MCP、课堂同步与各插件的服务端贡献（`architecture.md` 第 10 节）。启动时打印 `serve  <地址>`、有 `--host` 时每个局域网地址一行 `network  <地址>`，以及 `workspace  <根目录>` |
 
 插件包还提供辅助命令（`presmium-export`、`presmium-diff`、`presmium-classroom-server`、`presmium-language-server`，以及 `presmium-mcp`、`presmium-lecture`、`presmium-speech`），见 `architecture.md` 第 7 节。
 
@@ -756,7 +756,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 | `scrolly` | 滚动叙事：上屏内容固定一侧，讲解滚动，步骤随滚动推进 |
 | `present` | 放映：全屏逐章节、逐步骤；另开窗口为演讲者视图（当前步骤的讲解、下一步预告、计时） |
 
-讲授插件另外注册视图 `lecture`（`?view=lecture&track=<id>`）：以讲授轨驱动真实页面的回放（第 9 节），并在放映视图的工具栏中加入录制。回放的“真实页面”就是放映视图，`lecture` 视图把页面切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的一个图层（视图插件只以类型引用 `@presmium/viewer`，自己画不出带章节上下文的幻灯片）；没有 `track` 参数时它列出文稿的讲授供选择。录制同样是放映视图上的图层，只在 `presmium dev` 与 `presmium serve` 中出现（9.4 节）。编辑模式（工作区提供）中，助手插件给每个块加上批注入口（按 `.pm-block[data-block]` 定位，源码位置取自 IR 中块的 `source`）。
+讲授插件另外注册视图 `lecture`（`?view=lecture&track=<id>`）：以讲授轨驱动真实页面的回放（第 9 节），并在放映视图的工具栏中加入录制。回放的“真实页面”就是放映视图，`lecture` 视图把页面切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的一个图层（视图插件只以类型引用 `@presmium/viewer`，自己画不出带章节上下文的幻灯片）；没有 `track` 参数时它列出文稿的讲授供选择。录制同样是放映视图上的图层，只在 `presmium dev` 与 `presmium serve` 中出现（9.4 节）。工作台的点选按 `.pm-block[data-block]` 定位块，源码位置取自 IR 中块的 `source`。
 
 视图可插拔：插件包的 `src/client/viewer.ts` 默认导出视图插件 `ViewerPlugin`，通过 `registerView` 注册新视图，通过 `registerNodeRenderer` 为节点类型、`code:<语言>` 或组件名注册渲染器。约定见 `architecture.md` 5.1 节。
 
@@ -850,18 +850,14 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 - 合成讲授与语音的路由：`GET tracks/script`（合成的讲授，每次请求从合成缓存取得，缺的片段按需合成，见 6.3 节）与 `GET tracks/<id>/clips/<键>.<wav|ogg>`（合成缓存中的片段；`script` 的给出最近取得的至多 8 份不同讲授中的片段，克隆音色的片段给出前检查同意，见 6.3 节的 `lecture`）；编辑者可用的 `GET speech`（转写与合成引擎的 ID、服务提供方、是否本机与合成引擎的音色）、`POST editing/<id>/transcribe`（以文稿的转写引擎，即 `presmium.speech.transcribe`，否则 `engine`，否则第一个能转写的引擎，转写每一节的录音）、`PUT editing/<id>/utterances/<语音段>`（`{ text }`）与 `POST editing/<id>/synthesize`（`{ voice, engine? }`，每一句以这个音色重新合成），都写回 `track.json` 并返回它。播放器的逐字稿面板中，编辑者有“转写（<服务提供方>）”“重新合成（<服务提供方>）”与每句的修改；转写与合成先弹出写明服务提供方（本机引擎另写明不外发）的确认，确认之后录音与文字才发给语音服务。合成音色的讲授中改一句时，保存按钮是“保存并重新合成（<服务提供方>）”，同样先确认，确认之后这句话才发给语音服务。
 - 运营者设置 `settings.presmium.lecture.audio`：`ignore`（默认，`lectures/<id>/.gitignore` 忽略 `audio/` 与 `video/`）、`lfs`（`.gitattributes` 把它们交给 LFS）或外部地址的前缀（仍然忽略，讲授轨中的 `src` 写成 `<前缀><id>/<文件>`，由运营者把文件放到那里）。
 - `track.json` 每个字段一行，事件、语音段、媒体与块每项一行，改一个事件只改一行。
-- `GET tracks` 的每项另有 `utterances`（语音段的数目，讲授回写的面板据此提示先转写）；`GET speech?engine=<ID>` 给出这个引擎作为合成引擎（合成音色的讲授中改一句时，播放器以它写明运营者现在给这个引擎的服务提供方；引擎已不可用时才用讲授轨记下的 `voice.provider`）；服务端还不能给出 `tracks/script` 时（409）播放器显示“还没有生成”的提示（合成要计费，编辑者打开它时才合成）。
+- `GET tracks` 的每项另有 `utterances`（语音段的数目）；`GET speech?engine=<ID>` 给出这个引擎作为合成引擎（合成音色的讲授中改一句时，播放器以它写明运营者现在给这个引擎的服务提供方；引擎已不可用时才用讲授轨记下的 `voice.provider`）；服务端还不能给出 `tracks/script` 时（409）播放器显示“还没有生成”的提示（合成要计费，编辑者打开它时才合成）。
 
 ### 9.5 转写回写
 
 由讲解合成的讲授（`script`）只有原文字幕：它的语音段没有 `translations`，译文字幕只用于录制的讲授。
 
-讲授一侧只构造请求；任务的执行、审阅、提交与撤销由助手的修改任务完成（`architecture.md` 4.8 节）。
+agent 经讲授插件的两个读取类工具取得回写的内容，写入在会话的审阅之中（`architecture.md` 4.8 节）：
 
-- **入口**：工作区服务中编辑模式的工具栏项“讲授回写”（讲授插件的内核插件 `src/client/plugin.ts` 登记，只在 `EDIT_MODE` 开启且页面有 `AGENT` 时显示）。面板写明模型的服务提供方（`AGENT.provider()`），列出文稿录制的讲授（`GET tracks`，不含合成的 `script`）；没有语音段的提示先转写。`AGENT.available('transcript')` 与 `available('chat')` 都为真时才能提交（编辑者与所有者、服务端有 `REVISIONS`）。
-- **整理为讲解**：提交 `transcript` 任务 `{ kind: 'transcript', track, prompt, context: { document: '', view: 'lecture' } }`。`prompt` 按界面语言写明要求：调用 MCP 工具 `track_narration`，逐步整理草稿（去掉口头禅、重复与口误，补全标点，不改语言与意思），提示标记原样留在原来的两个字之间，替换这一步现有的讲解段落（没有讲解的一步写在 `after` 的块之后），只改讲解。提交说明是助手的“转写回写：讲授轨 <ID>”。
-- **生成译文**：提交一轮 `chat` 任务，上下文写明讲授轨的文件：`{ document: '', view: 'lecture', selection: 'lectures/<ID>/track.json' }`（助手把上下文只有文档的 `chat` 当作起草，所以讲授轨的文件写在 `selection` 中）。`prompt` 的第一行是提交说明的摘要（“为讲授 <ID> 生成<语言>译文（<标签>）”），其余要求调用 `track_translations`，把每句的译文写进讲授轨中这一句的 `translations.<标签> = { text, source }`（`source` 照抄工具给出的摘要），保持每句一行，不改别的字段。语言默认是英文（讲授轨本身是英文时为简体中文），可选 `en`、`zh-CN`、`ja`、`ko`、`fr`、`de`、`es`，名称取自浏览器的 `Intl.DisplayNames`。
-- **任务的显示**：这个窗口提交的任务（最新的在前）显示进度（agent 正在用的工具、已记下的步数，可取消）、审阅（`review` 事件中逐个文件的差异，“接受”或“全部拒绝”，经 `AgentTask.review`）、结果（“已提交 <提交>”或已拒绝）与“撤销这次修改”（助手的 `POST revert { task }`，冲突时列出文件）。同一文档一次一个修改任务，助手拒绝第二个时显示它的原因。
 - **`track_narration`**（`read`，参数 `track`、可选 `section`）：讲授轨的逐字稿按章节（按说的先后）与步骤（语音段的 `step`，网页形态的步号）拼成讲解草稿 `draft`：一步的语音段依次相接（接缝两边都不是中日韩文字或全角标点时加一个空格）；绑定到某个字的事件（`at`）在那个字之前写成提示标记：`spot`、`hint` 为 ``{cue to=<块> lines=<行>}`spot` ``（`selector` 的为 `sel=`），`point` 为 `lines=<行>` 的 `point`，`ink` 为 `ink`（清除的不写），`run` 为 ``{cue to=<块>}`run` ``，`click` 为 `click <动作>`，`mark` 为 `mark <名称>`，`pause` 为 `pause <毫秒>ms`，同一节中推进到更后一步的 `go` 为 ``{cue}`next` ``；别的类型不写，数目在 `skipped` 中。`at` 的偏移在有逐字时间的语音段中是字的下标（标记写在这个字之前），没有时是字符偏移。每一步另给出它在源码中的位置：讲授计划中这一步的讲解段落 `narration`（文件相对于文稿目录与行，来自讲义或单独的讲授脚本），没有讲解时为这一步显示的最后一个上屏块 `after`（块 ID、文件与行）。
 - **`track_translations`**（`read`，参数 `track`、`lang`）：讲授轨的文件、语言与每句的 `id`、`section`、原文 `text`、译文要记下的摘要 `source`（`sha256:<原文的十六进制摘要>`），已有这种语言的译文时另给出它与是否过期。工具只读：写入由 agent 的文件工具完成，所以改动在审阅中。
 
@@ -883,19 +879,11 @@ approvals: { operate: ask, spend: ask, write: ask, agent: ask }
 templates: templates/document        # 新建文档的模板目录；默认使用随包提供的模板
 settings:                            # 插件的运营者设置，键为插件 ID（ServerContext.settings、NodeServiceContext.settings）
   presmium.workspace:
-    plugins:                         # 运营者插件：安装在工作区根目录的包，每份文档与首页都加载它们
-      - '@presmium/slidev-addon-assistant'
+    plugins:                         # 运营者插件：安装在工作区根目录的包，每份文档都加载它们
       - '@presmium/slidev-addon-speech'
-  presmium.deltabox:                 # 随 CLI 安装的 addon-deltabox（不必列在上面，所有命令中都加载；主机满足条件时登记服务）
-    review: true                     # 修改审阅（默认 true）；false 时助手用内置的 git 实现
-    sandbox: true                    # 编译时执行的进程沙箱（默认 true）
-    read: ['~/.local/lib']           # 进程沙箱中另外只读的路径
   presmium.assistant:
-    review: required                 # 修改任务先审阅后提交（默认）；auto：直接全部接受并提交
-    reviewTimeoutMs: 1800000         # 等待审阅而没有页面跟随的修改任务在这之后回滚（默认 30 分钟）
-    # command、provider 只用于替换随包的 DeepSeek Harness，例如：
-    # command: [claude-code-acp]
-    # provider: Anthropic
+    review: required                 # agent 的修改先审阅后提交（默认）；auto：每个 turn 结束时提交
+    reviewTimeoutMs: 1800000         # 等待审阅而没有页面跟随的审阅在这之后回滚（默认 30 分钟）
   presmium.exec:                     # 编译时执行（architecture.md 10.6 节）
     passEnv: [HF_HOME]               # 另外传给被执行代码的环境变量
   presmium.lecture: { audio: ignore }   # 录制音频与录像的去处：ignore（默认）、lfs，或外部地址的前缀
@@ -907,10 +895,9 @@ settings:                            # 插件的运营者设置，键为插件 I
 - 文档的身份是目录；标题、语言与标签取自各文档的头部（`title`、`lang`、`tags`）。
 - `site` 的 `nav`、`footer`、`head`、`sitemap` 与 `renderers.web` 的同名选项相同（2.1 节），作用于整个工作区站点。
 - `approvals` 只在 `presmium serve` 中使用。`settings` 是插件的运营者设置：`presmium dev`、`build`、`check` 与 `presmium serve` 都读取文稿所在工作区根目录的这个文件（单份文稿的仓库也可以只写 `settings`），只在进程启动时读取一次，运行中改动要等运营者重启才生效。工作区没有成员的配置：服务只供运行它的那个用户使用，这个用户就是所有者（写了 `members` 或 `settings.presmium.exec.compile` 也不读取）。
-- `presmium.workspace.plugins` 是运营者的插件列表：从工作区根目录的 `node_modules` 加载，声明了 `operator: true` 的插件在所有命令中每份文档都加载，工作区首页也加载它们（例如助手的“AI 修改”、模型设置与“由 agent 起草”，以及语音服务）；工作区模板 `templates/workspace` 与示例工作区都列出助手，所以首页有“AI 修改”，`presmium serve` 启动时打印助手的状态；`addon-deltabox` 不必列出（`presmium.deltabox` 关闭它的服务）。文稿自己的插件与渲染端包照旧按文稿的 `plugins` 与 `renderers.<id>.package` 加载，`presmium serve` 与 `presmium dev`、`build`、`check` 相同。
+- `presmium.workspace.plugins` 是运营者的插件列表：从工作区根目录的 `node_modules` 加载，声明了 `operator: true` 的插件在所有命令中每份文档都加载（例如语音服务）；文稿自己的插件照常列在文稿的 `plugins` 中。
 - 编译器读文稿的文件（`{include}`、`{literalinclude}`、链接与资源）按真实的文件，跟随符号链接。
-- 这个文件也可以在浏览器中编辑：工作区首页的文件树最后一项是它，在首页的源码编辑器中打开（只给所有者；单份文稿的仓库在文稿页上），保存后提示重新启动 `presmium serve` 才生效（`architecture.md` 5.11 节）。文稿与它的文件在编辑模式中编辑，`presmium serve` 与 `presmium dev` 都可以；`presmium dev` 中文稿不在 git 仓库里时只能保存，不能提交（`architecture.md` 10.2 节）。
-- 助手的模型访问不来自这个文件：来自环境变量 `DEEPSEEK_API_KEY`（DeepSeek 的官方地址，服务提供方为 DeepSeek），或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER`（Messages 兼容的服务，三者都要有）；或来自页面的“模型设置”，保存在用户配置目录的 `$XDG_CONFIG_HOME/presmium/assistant.json`（只有本人可读，不进工作区与文稿；环境变量优先，`architecture.md` 4.8 节）。有模型访问时助手启动随包的 DeepSeek Harness（模板随包提供），没有时助手不可用。`presmium.assistant` 的 `command`（或环境变量 `PRESMIUM_AGENT_COMMAND`，环境变量优先）只用来替换运行时，要同时给出 `provider`（或 `PRESMIUM_AGENT_PROVIDER`），运行时用它自己在环境中的凭据。读者的提问不用这些设置：读者在页面中填写自己的模型服务。
+- 这个文件在工作台中编辑（只给所有者），保存后要重新启动 `presmium serve` 才生效。
 - `presmium.lecture.audio` 为外部地址的前缀时，前缀只在发布时加上（讲授渲染端，以及本机没有文件时的路由）：讲授轨记的是相对的 `src`，所以本机录制之后照样能转写与回放。
 - `presmium.exec` 由编译器读取：`passEnv` 在所有命令中生效；编译时的代码全部执行（`architecture.md` 10.6 节）。
 - `presmium.speech.consentDir` 在运营者目录之中。运营者目录在任何工作区与文档目录之外，是用户的状态目录 `${XDG_STATE_HOME:-~/.local/state}/presmium/operator/<工作区标识>/`（`--operator-dir` 或 `PRESMIUM_OPERATOR_DIR` 可以另行指定；不属于任何文档，agent 对它的权限请求一律被拒绝，`architecture.md` 10.5 节）。记录只由所有者经语音插件的路由或运营者用 `presmium-speech consent` 登记（9.1 节），不随文稿提交。

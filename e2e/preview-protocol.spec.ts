@@ -71,7 +71,7 @@ test.beforeAll(async () => {
   git(dir, ['commit', '-q', '-m', 'Initial commit'])
   const home = `${dir}.home`
   mkdirSync(home)
-  service = spawn(process.execPath, [PRESMIUM, 'serve', '--headless', '--preview-origin', allowed.origin, '--port', '0'], {
+  service = spawn(process.execPath, [PRESMIUM, 'serve', '--preview-origin', allowed.origin, '--port', '0'], {
     cwd: dir,
     env: clean({ PRESMIUM_SERVICE_TOKEN: TOKEN, HOME: home, XDG_STATE_HOME: join(home, 'state'), XDG_CACHE_HOME: join(home, 'cache'), XDG_CONFIG_HOME: join(home, 'config') }),
     stdio: ['ignore', 'pipe', 'pipe'],

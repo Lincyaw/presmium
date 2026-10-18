@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// The workspace's BPE document (bpe/) is the demo lecture (examples/demo) with the assistant added to
-// its plugins, for the edit mode of `presmium serve`: its source, its execution recordings and its
-// anchor lock. This copies it from the demo; with --check it changes nothing, lists the files that
+// The workspace's BPE document (bpe/) is the demo lecture (examples/demo) with the readers' questions
+// plugin added to its plugins: its source, its execution recordings and its anchor lock. This copies it from the demo; with --check it changes nothing, lists the files that
 // differ and exits with 1 when there are any (e2e/demo-workspace.spec.ts runs it so).
 //
 //   node examples/workspace/sync.mjs [--check]
@@ -16,7 +15,7 @@ const check = process.argv.includes('--check')
 
 /** The plugin line after which the copy lists the assistant. */
 const AFTER = "  - '@presmium/slidev-addon-speech'\n"
-const ASSISTANT = "  - '@presmium/slidev-addon-assistant'   # 编辑模式中的“AI 修改”与“提问”（presmium serve）\n"
+const ASSISTANT = "  - '@presmium/slidev-addon-assistant'   # 读者问答：“提问”\n"
 
 /** Files of `dir` (recursively), relative to it. */
 function files(dir) {

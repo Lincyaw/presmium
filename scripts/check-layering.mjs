@@ -17,11 +17,9 @@ const inPackage = (file, pkgDir) => relative(pkgDir, file).split(sep).join('/')
 
 const ADAPTERS = [
   { name: '@modelcontextprotocol/*', pattern: /^@modelcontextprotocol\//, allowed: pkg => pkg === 'mcp' },
-  { name: '@agentclientprotocol/sdk', pattern: /^@agentclientprotocol\/sdk(\/|$)/, allowed: (pkg, path) => pkg === 'addon-assistant' && path.startsWith('src/node/') },
   { name: '@jupyterlab/services', pattern: /^@jupyterlab\/services(\/|$)/, allowed: pkg => pkg === 'addon-exec-jupyter' },
   { name: '@xterm/*', pattern: /^@xterm\//, allowed: pkg => pkg === 'addon-exec-jupyter' },
   { name: 'mediabunny', pattern: /^mediabunny(\/|$)/, allowed: pkg => pkg === 'addon-lecture' },
-  { name: 'deltabox-lite', pattern: /^deltabox-lite(\/|$)/, allowed: (pkg, path) => pkg === 'addon-deltabox' && path.startsWith('src/node/') },
   { name: 'simple-git', pattern: /^simple-git(\/|$)/, allowed: (_pkg, path) => path.startsWith('src/node/') },
 ]
 
@@ -62,30 +60,15 @@ const rules = [
     skip: ['test'],
     forbid: (spec, file, pkgDir) => ADAPTERS.some(adapter => adapter.pattern.test(spec) && !adapter.allowed(pkgName(pkgDir), inPackage(file, pkgDir))),
   },
-  { name: 'DeepSeek Harness only in dsh and studio (G-9)', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
+  { name: 'DeepSeek Harness only in dsh and studio', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
   { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@presmium\/host(\/|$)/.test(spec) },
   { name: 'the design system uses no package', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') },
   { name: 'outputs do not use the workbench', pkgs: pkg => PRODUCTS(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/workbench(\/|$)/.test(spec) },
 ]
 
 const DSH = /^@deepseek-ai\//
-const DSH_PACKAGES = ['dsh', 'studio', 'addon-assistant']
-
+const DSH_PACKAGES = ['dsh', 'studio']
 const PRODUCTS = pkg => ['web', 'viewer', 'addon-core'].includes(pkg) || pkg.startsWith('render-')
-const WORKBENCH_SLOTS = '(?:home|create|files|tabs|source|dock)'
-const WORKBENCH = [
-  { what: 'EDIT_MODE', pattern: /\bEDIT_MODE\b/ },
-  { what: 'a workbench slot', pattern: new RegExp(`\\bslot:\\s*['"]${WORKBENCH_SLOTS}['"]|\\bbySlot\\(\\s*['"]${WORKBENCH_SLOTS}['"]|\\bslots\\.value\\.has\\(\\s*['"]${WORKBENCH_SLOTS}['"]`) },
-]
-const OLD_WORKBENCH = new Set([
-  'packages/web/src/client/theme.ts',
-  'packages/web/src/client/home.ts',
-  'packages/viewer/src/rich.ts',
-  'packages/addon-assistant/src/client/EditPanel.vue',
-  'packages/addon-assistant/src/client/dock.ts',
-  'packages/addon-lecture/src/client/dock.ts',
-  'packages/addon-lecture/src/client/WritebackDock.vue',
-])
 
 const SOURCE = /\.(ts|tsx|vue|mts|mjs|js|jsx|cjs)$/
 
@@ -115,22 +98,11 @@ for (const pkg of readdirSync(join(root, 'packages'))) {
 }
 
 for (const pkg of readdirSync(join(root, 'packages'))) {
-  const pkgDir = join(root, 'packages', pkg)
-  const dirs = PRODUCTS(pkg) ? ['.'] : pkg.startsWith('addon-') ? ['src/client', 'components'] : []
-  for (const file of dirs.flatMap(dir => files(join(pkgDir, dir), ['test']))) {
-    const where = relative(root, file)
-    if (OLD_WORKBENCH.has(where)) continue
-    const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/[^\n]*/g, '$1')
-    for (const { what, pattern } of WORKBENCH) if (pattern.test(text)) violations.push(`${where}: ${what}  (outputs do not know the workbench)`)
-  }
-}
-
-for (const pkg of readdirSync(join(root, 'packages'))) {
   const manifest = join(root, 'packages', pkg, 'package.json')
   if (!existsSync(manifest) || DSH_PACKAGES.includes(pkg)) continue
   const { dependencies = {}, devDependencies = {}, peerDependencies = {} } = JSON.parse(readFileSync(manifest, 'utf8'))
   for (const name of Object.keys({ ...dependencies, ...devDependencies, ...peerDependencies })) {
-    if (DSH.test(name)) violations.push(`${relative(root, manifest)}: ${name}  (DeepSeek Harness only in dsh and studio (G-9))`)
+    if (DSH.test(name)) violations.push(`${relative(root, manifest)}: ${name}  (DeepSeek Harness only in dsh and studio)`)
   }
 }
 

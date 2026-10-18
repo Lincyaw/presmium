@@ -1,6 +1,6 @@
-import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmSegmented, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
-import type { ServerClient, SyncTransports, ToolbarItem, ToolbarSlot } from '@presmium/host'
-import { AUTHOR_MARKS_CLASS, errorMessage } from '@presmium/kernel'
+import { createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium } from '@presmium/host'
+import type { ServerClient, SyncTransports } from '@presmium/host'
+import { errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
@@ -9,7 +9,7 @@ import type { Theme } from 'vitepress'
 import { inBrowser, useData, withBase } from 'vitepress'
 import DefaultTheme from 'vitepress/theme-without-fonts'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, Teleport, watch, watchEffect } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, sectionLinks, sidebar, slideUrl, SOURCE_ENDPOINT, toPages, translationPages, viewSearch, WEB_MESSAGES } from '../domain/index.ts'
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
@@ -121,96 +121,6 @@ function localizeHiddenLabels(): void {
   }
 }
 
-const bySlot = (slot: ToolbarSlot) => (item: ToolbarItem) => item.slot === slot
-
-const EDIT_TOOLS = 'pm-edit-tools'
-
-function useEditing() {
-  const edit = useService(EDIT_MODE)
-  return computed(() => Boolean(edit.value?.active.value))
-}
-
-const workspaceTitle = ref<string>()
-async function readWorkspaceTitle(home: string): Promise<void> {
-  if (workspaceTitle.value !== undefined) return
-  try {
-    const response = await fetch(new URL('@presmium/documents.json', new URL(home, location.href)), { cache: 'no-store' })
-    if (response.ok) workspaceTitle.value = ((await response.json()) as { title?: string }).title
-  } catch {
-  }
-}
-
-const EditFrame = defineComponent({
-  name: 'PresmiumEditFrame',
-  setup() {
-    const t = useMessages(WEB_MESSAGES)
-    const toolbar = useService(TOOLBAR)
-    const viewer = useViewer()
-    const theme = useTheme()
-    const { site, theme: config } = useData()
-    const slots = shallowRef(new Set<ToolbarSlot>())
-    watchEffect((onCleanup) => {
-      const registry = toolbar.value
-      if (!registry) return
-      const update = () => {
-        slots.value = new Set(registry.list().map(item => item.slot ?? 'tools'))
-      }
-      update()
-      onCleanup(registry.subscribe(update))
-    })
-    const active = useEditing()
-    const editable = computed(() => Boolean(config.value.presmium?.server))
-    const home = computed(() => config.value.presmium?.home as string | undefined)
-    const classes = () => ({ 'pm-editing': active.value, 'pm-edit-split': active.value && slots.value.has('source'), 'pm-edit-docked': active.value && slots.value.has('dock') })
-    onMounted(() => watchEffect(() => {
-      if (active.value) document.querySelector<HTMLElement>('.VPNavBarHamburger.active')?.click()
-      for (const [name, on] of Object.entries(classes())) document.documentElement.classList.toggle(name, on)
-      if (active.value && home.value && config.value.presmium?.server) void readWorkspaceTitle(home.value)
-    }))
-    watch(active, (on, was) => {
-      if (on !== Boolean(was) && typeof document !== 'undefined') document.documentElement.classList.toggle(AUTHOR_MARKS_CLASS, on)
-    }, { immediate: true })
-    onBeforeUnmount(() => document.documentElement.classList.remove(...Object.keys(classes())))
-    const view = computed(() => (getView(viewer.view.value)?.kind === 'overlay' ? 'present' : 'document'))
-    const setView = (next: string) => viewer.setView(next === 'present' ? 'present' : viewer.pageView.value)
-    const bar = () => h('header', { 'class': 'pm-edit-bar pm-ui', 'aria-label': t.value.editBar, 'style': active.value ? undefined : { display: 'none' } }, [
-      h('nav', { 'class': 'pm-edit-bar__trail', 'aria-label': t.value.trail }, [
-        h('a', { 'class': 'pm-edit-bar__logo', 'href': home.value ?? withBase('/'), 'aria-hidden': 'true', 'tabindex': -1 }, 'P'),
-        home.value ? h('a', { class: 'pm-edit-bar__workspace', href: home.value }, workspaceTitle.value ?? t.value.documents) : null,
-        home.value ? h('span', { 'class': 'pm-edit-bar__sep', 'aria-hidden': 'true' }, '/') : null,
-        h('span', { 'class': 'pm-edit-bar__document', 'aria-current': 'page' }, site.value.title),
-      ]),
-      h(PmToolbar, { class: 'pm-edit-bar__tabs', filter: bySlot('tabs') }),
-      h('div', { class: 'pm-edit-bar__end' }, [
-        h(PmSegmented, { 'label': t.value.previewView, 'modelValue': view.value, 'options': [{ value: 'document', label: t.value.documentView }, { value: 'present', label: t.value.presentView }], 'onUpdate:modelValue': setView }),
-        slidesBase.value
-          ? h('a', { class: 'pm-ui-button pm-ui-button--ghost pm-ui-button--small pm-edit-bar__slides', href: slideUrl(slidesBase.value, config.value.presmium?.form ?? {}, viewer.section(viewer.position.value.section)?.index ?? 1, viewer.position.value.step), target: '_blank', rel: 'noopener' }, [h(PmIcon, { name: 'slides', size: 14, strokeWidth: 2 }), t.value.slides])
-          : null,
-        h('div', { id: EDIT_TOOLS, class: 'pm-edit-bar__tools' }),
-      ]),
-    ])
-    return () => [
-      editable.value ? bar() : null,
-      ...active.value
-        ? [
-          slots.value.has('source') ? h('section', { 'class': 'pm-edit-source pm-ui', 'aria-label': t.value.sourcePane }, [h(PmToolbar, { place: 'pane', filter: bySlot('source') })]) : null,
-          slots.value.has('dock') ? h('aside', { 'class': 'pm-edit-dock pm-ui', 'aria-label': t.value.dockPane }, [h(PmToolbar, { place: 'pane', filter: bySlot('dock') })]) : null,
-          h('footer', { 'class': 'pm-edit-status pm-ui', 'aria-label': t.value.statusBar }, [
-            h(PmToolbar, { place: 'status', filter: bySlot('status') }),
-            h('button', {
-              'type': 'button',
-              'class': 'pm-edit-status__theme',
-              'aria-label': theme.dark.value ? t.value.toLight : t.value.toDark,
-              'title': theme.dark.value ? t.value.toLight : t.value.toDark,
-              'onClick': theme.toggle,
-            }, [h(PmIcon, { name: theme.dark.value ? 'sun' : 'moon', size: 14 })]),
-          ]),
-        ]
-        : [],
-    ]
-  },
-})
-
 const slidesBase = ref<string>()
 let preview: ThemeInput['preview']
 let viewersReady: Promise<void> = Promise.resolve()
@@ -254,16 +164,13 @@ const Layout = defineComponent({
         copyright ? h('p', { class: 'pm-site-footer__copyright', innerHTML: copyright }) : null,
       ])
     }
-    const editing = useEditing()
-    const toolbar = () => h(Teleport, { to: `#${EDIT_TOOLS}`, defer: true, disabled: !editing.value }, [h(PmToolbar, { class: editing.value ? 'pm-toolbar--edit' : 'pm-toolbar--bar' })])
     return () => h(DefaultTheme.Layout, null, {
-      'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), toolbar()],
-      'nav-screen-content-after': () => (editing.value ? [] : [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })]),
+      'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
+      'nav-screen-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
       'doc-after': footer,
       'layout-bottom': () => [
         h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayHost)]),
         viewer.view.value === 'presenter' ? h(PmPresenterPanels, { to: '.pm-presenter__side', docked: true }) : null,
-        h(EditFrame),
       ],
     })
   },

@@ -15,7 +15,7 @@ plugins:
   - '@presmium/slidev-addon-classroom'
   - '@presmium/slidev-addon-lecture'
   - '@presmium/slidev-addon-speech'
-  - '@presmium/slidev-addon-assistant'   # 编辑模式中的“AI 修改”与“提问”（presmium serve）
+  - '@presmium/slidev-addon-assistant'   # 读者问答：“提问”
 presmium:
   presmium.code:
     repo: https://github.com/Lincyaw/presmium

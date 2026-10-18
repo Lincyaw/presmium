@@ -10,7 +10,7 @@ translationOf: { entry: lecture.md, digest: c12e28d15c3e0e57d64e6a80f2281333b6ad
 
 Presmium 1.x keeps its public interfaces stable under semantic versioning. This document says what each of its three version numbers covers, which interfaces are public and which are experimental. The signature of each declaration is in the API reference (API in the navigation bar, generated from the source by TypeDoc); `docs/api.md` in the repository is the complete list.
 
-Presmium's stable product is the core (the MyST syntax and the IR, the compiler, the renderers, the CLI) and its outputs (web pages, slides, notebooks, lectures), none of which needs a model service. The local workbench (the browser interface of `presmium serve`) is a preview that a new workbench, separate from the outputs, will replace.
+Presmium's stable product is the core (the MyST syntax and the IR, the compiler, the renderers, the CLI) and its outputs (web pages, slides, notebooks, lectures), none of which needs a model service. The workbench, `presmium studio`, is separate from the outputs and experimental.
 
 (versions)=
 # Version rules
@@ -71,13 +71,12 @@ The types that appear in the signatures of public interfaces are public with the
 # Experimental interfaces
 
 (experimental-workbench)=
-## The workbench's browser side
+## The workbench
 
 These interfaces are experimental: outside the 1.x promise, they may change in a minor version. Their TypeScript declarations carry the `@experimental` tag in the source, shown as Experimental in the API reference; for the user interfaces and routes, which have no declaration to tag, this list is what counts.
 
-- the browser plugin of `@presmium/workspace` (edit mode, editing the source in the browser, managing documents, the history of changes, the file tree) and the routes it provides for them;
-- the parts of `@presmium/host` that exist for the workbench only: `EDIT_MODE`, the toolbar's `status`, `home`, `create`, `files`, `tabs`, `source` and `dock` slots with their places, and `trackAgentTask`;
-- the web renderer's workbench shell in `presmium serve` and `presmium dev` (the activity bar, the launcher, the status bar, edit mode's shell);
-- the browser side of changes by an agent: the kernel's `AGENT` and the interfaces through which a page submits change tasks (`AgentClient`, `AgentTask`), the assistant's "AI changes" panel and model settings, and the lecture plugin's "lecture write-back" panel. The requests and events of change tasks are also the types of the Node side's agent runtime (`AGENT_RUNTIME`), and public.
+- the packages of the workbench, `presmium studio`: every export and interface of `@presmium/studio`, `@presmium/dsh` and `@presmium/workbench` (0.x);
+- the routes the workspace service provides for the workbench (documents, files, source, changes, revisions and review);
+- the contracts `Focus`, `FocusReport` and `McpIssueOptions`, and `useToolbarPlace` and `provideToolbarPlace` of `@presmium/host`.
 
 The `presmium serve` command, the workspace configuration file and the Node services are public interfaces; reader questions (`ASK` and the Ask panel) are part of the outputs and public too. Plugins should not depend on experimental interfaces; one that does names exact versions in its peer dependencies.

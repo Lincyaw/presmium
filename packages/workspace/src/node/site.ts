@@ -1,15 +1,10 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@presmium/compiler'
-import type { Compilation, LoadedPlugin } from '@presmium/compiler'
+import type { Compilation } from '@presmium/compiler'
 import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
 import type { WorkspaceDocument } from '../domain/api.ts'
-import { WORKSPACE_ID } from '../domain/api.ts'
 import type { WorkspaceConfig } from './config.ts'
-
-export const WORKSPACE_PACKAGE = '@presmium/workspace'
-export const WORKSPACE_PACKAGE_DIR = fileURLToPath(new URL('../..', import.meta.url))
 
 const WEB_PACKAGE = '@presmium/web'
 
@@ -48,24 +43,21 @@ export interface SiteContextOptions {
   root: string
   outDir: string
   workDir: string
-  plugins?: Record<string, string>
-  home?: Record<string, string>
   base?: string
   findings: Finding[]
 }
 
 export function siteContext(options: SiteContextOptions): RenderContext {
   const { root } = options
-  const plugins = options.plugins ?? {}
   const ctx: RenderContext = {
     deckDir: root,
     workspaceRoot: root,
     outDir: options.outDir,
     workDir: options.workDir,
-    config: options.home ? { homePlugins: options.home } : {},
+    config: {},
     extensions: [],
-    plugins: Object.keys(plugins),
-    pluginDirs: plugins,
+    plugins: [],
+    pluginDirs: {},
     renderers: ['web'],
     base: options.base ?? '/',
     vitePlugins: [],
@@ -127,13 +119,3 @@ export function untranslated(compilation: Compilation, root: string): Finding[] 
     source: { file: compilation.entry, line: frontmatterLine(text, entry) },
   }))
 }
-
-export function servedPlugins(): Record<string, string> {
-  return { [WORKSPACE_PACKAGE]: WORKSPACE_PACKAGE_DIR }
-}
-
-export function homePlugins(plugins: LoadedPlugin[]): Record<string, string> {
-  return Object.fromEntries(plugins.map(loaded => [loaded.name, loaded.dir]))
-}
-
-export { WORKSPACE_ID }

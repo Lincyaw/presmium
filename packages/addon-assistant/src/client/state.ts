@@ -1,11 +1,8 @@
 import type { Navigation } from '@presmium/host'
-import type { AgentClient, AgentContext, AskClient, Citation, IRBlock, IRDocument, SourcePos } from '@presmium/kernel'
+import type { AgentContext, AskClient, Citation, IRBlock, IRDocument, SourcePos } from '@presmium/kernel'
 import { errorMessage } from '@presmium/kernel'
 import { ref, shallowRef } from 'vue'
-import type { AssistantClient } from './agent.ts'
 
-export const agent = shallowRef<AgentClient>()
-export const assistant = shallowRef<AssistantClient>()
 export const asker = shallowRef<AskClient>()
 export const navigation = shallowRef<Navigation>()
 

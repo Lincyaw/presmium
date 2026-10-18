@@ -204,7 +204,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@presmium/slidev
 (execution-cache)=
 ## 缓存与沙箱
 
-输出缓存在 `.presmium/freeze/`，键是代码、语言、参数与运行环境的哈希：代码不变就不重跑，提交这个目录后，别人构建不需要运行环境。编译时运行的代码只得到清理过的环境变量（去掉名字像凭据的变量）。在满足条件的 Linux 主机上，构建时的 Python 与 JavaScript 在进程沙箱 deltabox 中运行：不能联网，只能写自己的运行目录。
+输出缓存在 `.presmium/freeze/`，键是代码、语言、参数与运行环境的哈希：代码不变就不重跑，提交这个目录后，别人构建不需要运行环境。编译时运行的代码只得到清理过的环境变量（去掉名字像凭据的变量）。
 
 (lecture)=
 # 讲授与语音
@@ -241,7 +241,7 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@presmium/slidev
 (assistant-edit)=
 ## 由 agent 修改讲义
 
-在本机工作台（`presmium serve`）中，助手还可以按你的批注或对话修改讲义，改动先由你逐个文件审阅，接受后成为一个可以撤销的 git 提交。这部分属于工作台，是预览功能，界面会随新的工作台改变。模型服务由运营者在环境变量（如 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）或工作台的模型设置中提供，从不写进讲义与产物。
+工作台 `presmium studio`（另装 `@presmium/studio`，实验性）中的 agent 按你的对话修改讲义，改动先由你审阅，接受后成为一个可以撤销的 git 提交。模型服务在环境变量（如 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）或工作台的模型设置中提供，从不写进讲义与产物。
 
 (assistant-mcp)=
 ## 编辑器中的 agent
@@ -276,9 +276,9 @@ site:
 文档声明的译本随工作区站点一同发布：每份文档的译本在 `/<目录>/<语言>/` 下，页面有语言菜单；首页另有每种语言的版本 `/<语言>/`，列出那种语言的文档（没有这种译本的文档列出原文），标题取 `site.locales.<语言>.title`。译本中链接另一份文档时照样写它的入口文件，那份文档有同一语言的译本就到达译本的页面。这份文档站就是这样构建的：每份文档以中文写成，译为英文。
 
 (workspace-serve)=
-## 本机工作台
+## 本机服务与工作台
 
-`presmium serve` 在本机启动工作区服务：站点按需编译、保存即更新，浏览器中可以编辑源码、管理文档、查看与撤销修改历史。它只供运行它的你使用，默认只监听本机；`--host` 让局域网中的其他设备也能打开，但没有登录，到得了这个端口的人都能以你的身份修改与运行。工作台的浏览器界面是预览，会被新的工作台取代；工作区配置文件与 `presmium serve` 命令保持不变。工作台的预览只显示原文，译本由 `presmium build` 发布。
+`presmium serve` 在本机启动工作区服务：首页列出文档，每份文档的站点按需编译、保存即更新。`presmium studio`（另装 `@presmium/studio`，实验性）在它之上启动工作台：文件树、源码编辑、预览、问题列表与 agent。二者只供运行它们的你使用，默认只监听本机；`--host` 让局域网中的其他设备也能打开，但没有登录，到得了这个端口的人都能以你的身份修改与运行。服务的预览只显示原文，译本由 `presmium build` 发布。
 
 (publish)=
 # 发布

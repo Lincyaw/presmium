@@ -11,7 +11,7 @@ import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
 import type { BuildReport, Compilation, RunStats } from '@presmium/compiler'
 import { anyAddress, isLoopback, networkAddresses, servedDocument, startServer } from '@presmium/server'
 import type { ApprovalPolicy } from '@presmium/server'
-import { buildWorkspace, deckEditing, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
+import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
 import type { WorkspaceBuild } from '@presmium/workspace'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
@@ -35,9 +35,6 @@ Commands:
           --out <dir>     working directory (default: <deck>/.presmium/dev)
           --server-port <n>  port of the Presmium server (default: a free port)
           --allow <kinds>    approvals given without asking: operate, spend, write, agent
-          --edit          the web form has edit mode (experimental, until the workbench of presmium
-                          studio replaces it): the source in the browser, its changes committed where
-                          the deck is in a git repository
   ir      print the IR as JSON
           --out <file>    write it to a file instead
   check   compile and run the plugins' checks
@@ -47,20 +44,16 @@ Commands:
           --audience <name>  check the deck as compiled for this audience
           --external-links   also check the external links, with lychee when it is installed
   serve   the workspace service for you on this machine (the argument is the workspace root, or
-          a deck): the workspace site, edit mode, the documents and their history, the plugins'
+          a deck): the workspace site, the documents and their history, the reviews, the plugins'
           routes, the classroom sync; without --host it listens on this machine only
           --port <n>      port (default: 4310)
           --host <addr>   address to listen on (default: 127.0.0.1); 0.0.0.0 or an address on the
                           local network opens it to your other devices there, with no login:
                           whoever reaches the port works as you
           --operator-dir <dir>  the operator directory (default: the user's state directory)
-          --headless      the workspace service without its interface, for a workbench (presmium
-                          studio starts it so): the home page is the documents' cards, the pages
-                          load no workspace or operator plugin, and the documents' dev servers have
-                          the preview agent; with PRESMIUM_SERVICE_TOKEN set, the workspace's routes
-                          ask for it (Authorization: Bearer)
-          --preview-origin <origin>  (with --headless, repeatable) the origin of a workbench whose
-                          pages embed the previews, e.g. http://127.0.0.1:4320
+          --preview-origin <origin>  (repeatable) the origin of a workbench whose pages embed the
+                          previews, e.g. http://127.0.0.1:4320; with PRESMIUM_SERVICE_TOKEN set, the
+                          workspace's routes ask for it (Authorization: Bearer)
   studio  the workbench (experimental): DeepSeek Harness with Presmium's bundle and the workspace
           service of the directory (the workspace root, or a deck); prints the one address to open.
           It is the package @presmium/studio (with DeepSeek Harness, about 865 MB), installed beside
@@ -75,10 +68,10 @@ Exit codes: 0 no errors, 1 error findings, 2 usage or internal error.`
 
 const OPTIONS = {
   'build': ['to', 'out', 'audience'],
-  'dev': ['to', 'out', 'server-port', 'allow', 'edit'],
+  'dev': ['to', 'out', 'server-port', 'allow'],
   'ir': ['out'],
   'check': ['json', 'update-lock', 'env', 'audience', 'external-links'],
-  'serve': ['port', 'host', 'operator-dir', 'headless', 'preview-origin'],
+  'serve': ['port', 'host', 'operator-dir', 'preview-origin'],
 } as const
 
 type Name = keyof typeof OPTIONS
@@ -101,8 +94,6 @@ interface Command {
   operatorDir?: string
   port?: number
   host?: string
-  edit: boolean
-  headless: boolean
   previewOrigins: string[]
 }
 
@@ -150,8 +141,6 @@ function parseCommand(argv: string[]): Command | 'help' {
       'operator-dir': { type: 'string' },
       'port': { type: 'string' },
       'host': { type: 'string' },
-      'edit': { type: 'boolean', default: false },
-      'headless': { type: 'boolean', default: false },
       'preview-origin': { type: 'string', multiple: true },
       'help': { type: 'boolean', short: 'h', default: false },
     },
@@ -179,7 +168,6 @@ function parseCommand(argv: string[]): Command | 'help' {
   const unknown = allow.find(kind => !(KINDS as string[]).includes(kind))
   if (unknown) throw new Error(`--allow takes ${KINDS.join(', ')}, not "${unknown}"`)
   const previewOrigins = values['preview-origin'] ?? []
-  if (previewOrigins.length > 0 && !values.headless) throw new Error('--preview-origin goes with --headless')
   const notOrigin = previewOrigins.find(origin => !isOrigin(origin))
   if (notOrigin !== undefined) throw new Error(`--preview-origin takes an origin such as http://127.0.0.1:4320, not "${notOrigin}"`)
   return {
@@ -198,8 +186,6 @@ function parseCommand(argv: string[]): Command | 'help' {
     operatorDir: values['operator-dir'],
     port: port(values.port, '--port'),
     host: values.host,
-    edit: values.edit,
-    headless: values.headless,
     previewOrigins,
   }
 }
@@ -259,30 +245,20 @@ async function buildDeck(command: Command): Promise<number> {
   return exitCode(report.findings)
 }
 
-const TOKEN_IGNORE = '**/.presmium/server.json'
-
 async function devDeck(command: Command): Promise<number> {
   let latest: Compilation | undefined
   const deckDir = dirname(command.entry)
   const approvals: Partial<Record<ApprovalKind, ApprovalPolicy>> = Object.fromEntries(command.allow.map(kind => [kind, 'allow']))
   const host = devHost(() => latest)
-  const editing = deckEditing(command.entry)
   const server = await startServer({
     mode: 'dev',
     port: command.serverPort,
     approvals,
     serverHost: host,
-    document: async (dir) => {
-      if (dir !== '' || !latest) return undefined
-      const served = servedDocument(latest)
-      return { ...served, plugins: [editing.plugin, ...served.plugins] }
-    },
+    document: async dir => (dir === '' && latest ? servedDocument(latest) : undefined),
     stateFile: join(deckDir, '.presmium', 'server.json'),
   })
-  if (!editing.git) {
-    if (command.edit) process.stderr.write(`presmium dev: ${editing.root} is not in a git repository, or git ignores it: edit mode saves, but commits nothing and has no history (git init there to commit, with the line ${TOKEN_IGNORE} in .gitignore)\n`)
-  } else if (!editing.tokenIgnored) process.stderr.write(`presmium dev: git does not ignore .presmium/server.json, this process's MCP token: add the line ${TOKEN_IGNORE} to .gitignore (edit mode never commits it, git add would)\n`)
-  const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: [...server.services, ...editing.services] })
+  const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: server.services })
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })
   await writeFile(join(outDir, '.gitignore'), '*\n')
@@ -292,7 +268,6 @@ async function devDeck(command: Command): Promise<number> {
       outDir,
       to: command.to,
       server: { url: server.url },
-      ...command.edit ? { sitePlugins: editing.sitePlugins } : {},
       onCompile(compilation, findings) {
         latest = compilation
         const lines = findingLines(findings)
@@ -324,7 +299,7 @@ async function serve(command: Command): Promise<number> {
     ...command.operatorDir ? { operatorDir: resolve(command.operatorDir) } : {},
     bundled: BUNDLED,
     check: compilation => compilation.check(),
-    ...command.headless ? { headless: true, previewOrigins: command.previewOrigins } : {},
+    previewOrigins: command.previewOrigins,
   })
   process.stdout.write(`serve  ${started.url}\n${networkLines(command.host, started.url)}workspace  ${started.root}\nmcp  ${started.mcp.url} (its token is in ${started.mcp.stateFile})\n`)
   if (command.host && !isLoopback(command.host)) {

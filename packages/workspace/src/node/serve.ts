@@ -18,12 +18,12 @@ import { localWriter } from './files.ts'
 import type { DocumentWriter } from './files.ts'
 import { Git } from './git.ts'
 import { DocumentLocks } from './locks.ts'
-import { GIT_REVIEW, Reviews } from './review/reviews.ts'
+import { Reviews } from './review/reviews.ts'
 import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
 import type { WorkspaceRoutes } from './routes.ts'
 import { DocumentSession } from './session.ts'
-import { homePlugins, servedPlugins, siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
+import { siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
 
 export interface ServeOptions {
   dir: string
@@ -32,7 +32,6 @@ export interface ServeOptions {
   operatorDir?: string
   bundled?: string
   check?(compilation: Compilation): Promise<Finding[]>
-  headless?: boolean
   previewOrigins?: string[]
   env?: NodeJS.ProcessEnv
   approvalTimeoutMs?: number
@@ -65,7 +64,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const locks = new DocumentLocks()
   const check = options.check ?? (compilation => compilation.check())
   const token = env.PRESMIUM_SERVICE_TOKEN || undefined
-  const preview = options.headless ? { origins: options.previewOrigins ?? [] } : undefined
+  const preview = { origins: options.previewOrigins ?? [] }
 
   let services: [ServiceToken<unknown>, unknown][] = []
   let hostServices: [ServiceToken<unknown>, unknown][] = []
@@ -226,11 +225,10 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   services = running.services
-  service = workspaceService({ root, sessionOf, serverHost, url: () => running.url, ...preview ? { preview } : {}, stateDir: stateDir(root, env), log })
+  service = workspaceService({ root, sessionOf, serverHost, url: () => running.url, preview, stateDir: stateDir(root, env), log })
   workspace = workspaceOf()
   hostServices = [
     ...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [],
-    ...workspace.reviews ? [[GIT_REVIEW, workspace.reviews.service] as [ServiceToken<unknown>, unknown]] : [],
     [DOCUMENT_FILES, workspace.writer],
     [DOCUMENT_LOCKS, locks],
   ]
@@ -244,8 +242,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     return service!.siteDoc(compilation, siteIR(compilation))
   }
   try {
-    const home = config.single || options.headless ? {} : homePlugins((await operatorsOf()).plugins)
-    site = await localSite({ root, spec, bundled: options.bundled, state: stateDir(root, env), compile: compileFull, siteDoc: (compilation, doc) => service!.siteDoc(compilation, doc), plugins: options.headless ? {} : servedPlugins(), home, preview, log })
+    site = await localSite({ root, spec, bundled: options.bundled, state: stateDir(root, env), compile: compileFull, siteDoc: (compilation, doc) => service!.siteDoc(compilation, doc), preview, log })
   } catch (error) {
     await service?.close()
     await running.close()
@@ -282,9 +279,7 @@ interface LocalSiteOptions {
   state: string
   compile(dir: string): Promise<IRDocument>
   siteDoc(compilation: Compilation, doc: IRDocument): IRDocument
-  plugins: Record<string, string>
-  home: Record<string, string>
-  preview?: { origins: string[] }
+  preview: { origins: string[] }
   log: Logger
 }
 
@@ -293,8 +288,8 @@ async function localSite(options: LocalSiteOptions): Promise<SiteBackend> {
   const renderer = await webRenderer(root, options.bundled)
   const findings: Finding[] = []
   const work = join(options.state, 'site', 'full')
-  const ctx = siteContext({ root, outDir: work, workDir: work, plugins: options.plugins, home: options.home, findings })
-  if (options.preview) ctx.preview = options.preview
+  const ctx = siteContext({ root, outDir: work, workDir: work, findings })
+  ctx.preview = options.preview
   const dev = await renderer.devSite!(spec, ctx, options.compile)
   const origin = new URL(dev.url).origin
   log.info(`the workspace site's dev router is at ${origin} (this machine only; pages reach it through serve)`)

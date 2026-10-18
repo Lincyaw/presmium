@@ -36,7 +36,6 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@presmium/slidev-addon-session` | npm | 插件：课堂会话与同步 |
 | `@presmium/slidev-addon-classroom` | npm | 插件：课堂功能 |
 | `@presmium/slidev-addon-assistant` | npm | 插件：AI 助手与读者问答 |
-| `@presmium/slidev-addon-deltabox` | npm | 插件：修改审阅与进程沙箱（随 CLI 安装） |
 | `@presmium/slidev-addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@presmium/slidev-addon-speech` | npm | 插件：语音服务 |
 | `@presmium/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能在打包时从 `.agents/skills` 复制，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |

@@ -1,17 +1,11 @@
-import { execFileSync, spawn } from 'node:child_process'
-import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { lowContrast } from './fixtures/contrast.ts'
-import { openDevPage, useFixture } from './fixtures/deck.ts'
+import { useFixture } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
-const AGENT = join(ROOT, 'packages/addon-assistant/test/fixtures/scripted-agent.mjs')
 const ASSISTANT = { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' }
 
 async function scheme(page: Page, dark: boolean): Promise<void> {
@@ -154,139 +148,5 @@ test.describe('a deck built with the default theme', () => {
     const toggle = page.getByRole('switch', { name: '高对比度' }).filter({ visible: true }).first()
     await expect(toggle.locator('svg.pm-ui-icon')).toHaveCount(1)
     expect(await toggle.textContent()).not.toMatch(/◐/)
-  })
-})
-
-function clean(extra: Record<string, string>): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env }
-  delete env.NODE_ENV
-  for (const name of Object.keys(env)) {
-    if (name.startsWith('PRESMIUM_') || name.startsWith('DEEPSEEK_') || name.startsWith('DSH_') || /(?:_KEY|_TOKEN|_SECRET|_PASSWORD|_APPID)$/i.test(name)) delete env[name]
-  }
-  return { ...env, ...extra }
-}
-
-test.describe('the assistant in a workspace served on this machine', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180_000 })
-  let dir: string
-  let child: ChildProcess | undefined
-  let url: string
-
-  test.beforeAll(async () => {
-    test.setTimeout(300_000)
-    const work = join(ROOT, 'examples/demo/.presmium')
-    mkdirSync(work, { recursive: true })
-    dir = mkdtempSync(join(work, 'e2e-plugin-ui-'))
-    cpSync(join(ROOT, 'e2e/fixtures/plugin-ui-workspace'), dir, { recursive: true })
-    writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
-    writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
-    mkdirSync(join(dir, 'node_modules/@presmium'), { recursive: true })
-    symlinkSync(join(ROOT, ASSISTANT['@presmium/slidev-addon-assistant']), join(dir, 'node_modules/@presmium/slidev-addon-assistant'), 'junction')
-    const git = (args: string[]) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
-    git(['init', '-q', '-b', 'main'])
-    git(['add', '-A'])
-    git(['commit', '-q', '-m', 'Initial commit'])
-    child = spawn(process.execPath, [PRESMIUM, 'serve', '--port', '0'], {
-      cwd: dir,
-      env: clean({ PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider', XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, XDG_CONFIG_HOME: `${dir}.config` }),
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-    let output = ''
-    child.stderr!.on('data', (chunk: Buffer) => output += chunk)
-    url = await new Promise<string>((resolve, reject) => {
-      child!.stdout!.on('data', (chunk: Buffer) => {
-        output += chunk
-        const found = /^serve {2}(http\S+)$/m.exec(output)
-        if (found) resolve(found[1]!)
-      })
-      child!.once('exit', code => reject(new Error(`presmium serve exited (${code}):\n${output}`)))
-    })
-  })
-  test.afterAll(async () => {
-    if (child && child.exitCode === null) {
-      const exited = new Promise(done => child!.once('exit', done))
-      child.kill('SIGTERM')
-      await exited
-    }
-    for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.config`]) if (path) rmSync(path, { recursive: true, force: true })
-  })
-
-  async function documentPage(page: Page): Promise<void> {
-    await openDevPage(page, `${url}/intro/`, page.locator('[data-section="merge"]').first())
-    await expect(page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' })).toHaveAttribute('aria-pressed', 'false', { timeout: 30_000 })
-  }
-
-  test('the home page names the model in its status bar, and its card drafts a document with the assistant\'s agent', async ({ page }) => {
-    await openDevPage(page, `${url}/`, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await expect(page.locator('.pm-assistant-status').filter({ visible: true })).toHaveText('模型 Test Provider（来自环境变量）')
-    await page.locator('.pm-workspace-draft-card').click()
-    const documents = page.getByRole('dialog', { name: '管理文档' })
-    await expect(documents.locator('input[name="draft"]')).toBeChecked()
-    await expect(documents).toContainText('Test Provider')
-  })
-
-  for (const dark of [false, true]) {
-    test(`"AI 修改" docks the panel at the right of edit mode and switches it, the status bar names the model, all at WCAG AA (${dark ? 'dark' : 'light'})`, async ({ page }) => {
-      await scheme(page, dark)
-      await page.setViewportSize({ width: 1440, height: 900 })
-      await documentPage(page)
-      const toggle = page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' })
-      await toggle.click()
-      await expect(page.locator('html')).toHaveClass(/pm-editing/)
-      const panel = page.getByRole('region', { name: '批注与对话' })
-      await expect(panel).toBeVisible()
-      await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-      const box = (await panel.boundingBox())!
-      expect(box.x).toBeGreaterThan(1440 * 0.6)
-      expect(box.x + box.width).toBeLessThanOrEqual(1441)
-      await expect(page.locator('html')).toHaveClass(/pm-edit-docked/)
-      await expect(panel.getByRole('region', { name: '对话' }).locator('.pm-assistant-edit__provider')).toHaveText('修改由 Test Provider 的模型完成')
-      await expect(page.locator('.pm-assistant-status').filter({ visible: true })).toHaveText('模型 Test Provider（来自环境变量）')
-      expect(await lowContrast(page, '.pm-assistant-edit')).toEqual([])
-      expect(await lowContrast(page, '.pm-assistant-status')).toEqual([])
-
-      await toggle.click()
-      await expect(panel).toHaveCount(0)
-      await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-      await expect(page.locator('html')).not.toHaveClass(/pm-edit-docked/)
-      await expect(page.locator('html')).toHaveClass(/pm-editing/)
-      await toggle.click()
-      await expect(panel).toBeVisible()
-    })
-  }
-
-  test('the model settings open from the status bar; once the service or its address changes the key is asked for again', async ({ page }) => {
-    await documentPage(page)
-    await page.locator('.pm-assistant-edit-toolbar').filter({ visible: true }).getByRole('button', { name: 'AI 修改' }).click()
-    await page.locator('.pm-assistant-status').filter({ visible: true }).getByRole('button').click()
-    const settings = page.getByRole('dialog', { name: '模型设置' })
-    await expect(settings).toContainText('当前生效：环境变量 PRESMIUM_AGENT_COMMAND（Test Provider）')
-    const key = settings.locator('input[name="key"]')
-    await settings.locator('select[name="service"]').selectOption('custom')
-    await settings.locator('input[name="provider"]').fill('Page Provider')
-    await settings.locator('input[name="url"]').fill('https://models.example/v1')
-    await expect(key).toHaveAttribute('required', '')
-    await key.fill('page-key-95d')
-    await settings.getByRole('button', { name: '保存' }).click()
-    await expect(settings.locator('.pm-assistant-model__saved')).toHaveText('已保存')
-    await expect(key).toHaveValue('')
-    await expect(settings).toContainText('密钥（已设置，留空则不变）')
-    await expect(key).not.toHaveAttribute('required')
-    await settings.locator('input[name="url"]').fill('https://other.example/v1')
-    await expect(settings).toContainText('密钥（换了服务或地址，需要重新填写）')
-    await expect(key).toHaveAttribute('required', '')
-    await settings.locator('input[name="url"]').fill('https://models.example/v1')
-    await expect(key).not.toHaveAttribute('required')
-    await settings.locator('select[name="service"]').selectOption('deepseek')
-    await expect(key).toHaveAttribute('required', '')
-    expect(await lowContrast(page, '.pm-assistant-model__panel')).toEqual([])
-
-    await page.setViewportSize({ width: 390, height: 844 })
-    await expect(settings.locator('.pm-assistant-model__note').last()).toContainText('assistant.json')
-    const body = settings.locator('.pm-ui-dialog__body')
-    expect(await body.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
-    const [panel, field] = await Promise.all([settings.boundingBox(), key.boundingBox()])
-    expect(panel!.x + panel!.width).toBeLessThanOrEqual(390)
-    expect(field!.x + field!.width).toBeLessThanOrEqual(panel!.x + panel!.width)
   })
 })

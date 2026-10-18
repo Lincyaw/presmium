@@ -571,7 +571,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 
 ## 行内角色
 
-插件可以登记行内角色（`docs/ir.md` 2.8 节），写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口、编辑模式与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
+插件可以登记行内角色（`docs/ir.md` 2.8 节），写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
 
 ## 讲授的角色 `presmium.lecture`（`@presmium/slidev-addon-lecture`）
 

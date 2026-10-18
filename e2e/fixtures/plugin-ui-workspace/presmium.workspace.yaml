@@ -1,6 +1,0 @@
-# The workspace of e2e/plugin-ui.spec.ts: the assistant is the operator's plugin, installed at the workspace root (the
-# spec links it), so the home page has its entries too.
-title: 书卷工作区
-settings:
-  presmium.workspace:
-    plugins: ['@presmium/slidev-addon-assistant']

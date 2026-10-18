@@ -445,12 +445,6 @@ export const PmToolbarEntry = defineComponent({
       'onClick': () => update(!props.open),
     })
     return () => {
-      if (place === 'activity' && props.icon) {
-        return h(PmDrawer, { 'open': props.open, 'label': props.label, 'closeLabel': props.closeLabel, 'name': props.name, 'onUpdate:open': update }, {
-          trigger: () => h(PmIconButton, { icon: props.icon!, label: props.label, ...toggleAttrs() }),
-          default: () => slots.default?.(),
-        })
-      }
       return h(PmPopover, { 'open': props.open, 'label': props.label, 'name': props.name, 'placement': place === 'status' ? 'above-start' : 'below-end', 'onUpdate:open': update }, {
         trigger: () => h(PmButton, { variant: 'ghost', small: true, icon: props.icon, ...toggleAttrs() }, () => props.label),
         default: () => slots.default?.(),

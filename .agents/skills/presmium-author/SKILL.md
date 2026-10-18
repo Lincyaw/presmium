@@ -136,7 +136,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 
 指令一览、选项与最小示例见 `references/directives.md`。先确认提供该指令的包已写进 `plugins`。
 
-讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。录制过的讲授也能反过来写成讲解：工作区服务的编辑模式中“讲授回写”把转写交给 agent，按章节整理后替换讲解，录制时的操作成为相应位置的 `{cue}`（见 presmium-present 技能）；agent 经 MCP 工具 `track_narration` 读到逐字稿拼成的草稿与每一步讲解在源码中的位置。单独的讲授脚本中一段的问题（如 `{cue}` 的目标不存在），`presmium check` 报告在这一段所在的行。
+讲解就是讲授的脚本：列出 `@presmium/slidev-addon-lecture` 与 `@presmium/slidev-addon-speech`，在 `renderers.lecture.voice` 中选一个音色，`presmium build --to web,lecture` 就把每一步的讲解合成为讲授（`?view=lecture&track=script` 播放）。讲解中用 ``{cue to=code-1 lines=2-3}`spot` `` 在说到下一个字时聚光、``{cue}`next` `` 在这里推进一步、``{say alias="B P E"}`BPE` `` 读出另一种写法；写法与配置见 `references/directives.md` 的“讲授的角色”。录制过的讲授也能反过来写成讲解：让工作台中的 agent 把转写按章节整理后替换讲解，录制时的操作成为相应位置的 `{cue}`；agent 经 MCP 工具 `track_narration` 读到逐字稿拼成的草稿与每一步讲解在源码中的位置。单独的讲授脚本中一段的问题（如 `{cue}` 的目标不存在），`presmium check` 报告在这一段所在的行。
 
 讲授渲染端可以只列在头部而不默认构建：`renderers` 写 `lecture: {}`（不写 `voice` 就不合成，`presmium check` 也不需要语音引擎），`package.json` 的构建脚本写 `presmium build --to web,slides,notebook`；配置好语音引擎后再写上 `voice`，用 `presmium build --to web,lecture` 合成。写了 `voice` 而既没有引擎、合成缓存中又缺少某句话时，`presmium check` 对每一句报错。示例讲义就这样做，见 `examples/demo/README.md`。``{cue}`pause 2s` `` 适合放在一个问题之后，给听的人留出想一想的时间。`{cue}` 在页面上不显示文字，它和前后的中文之间不要留空格（``最多？{cue}`pause 2s`选好答案``），否则网页与 notebook 中多出一个空格；后面紧接行内代码时留一个空格，免得两段反引号连在一起。
 
@@ -160,7 +160,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - 执行会话：同一 `:session:` 的代码块共享解释器（前一块定义、后一块使用），编译时改了其中一块整个会话重新执行；浏览器中每个页面各有一份，“重置会话”丢弃它。
 - 富输出与 `:echo: false`：`display()`、`IPython.display` 的对象、matplotlib 的图与最后一个表达式的值录制为富输出，各媒介按类型显示（浏览器中的 Python 只有标准库：用到 numpy、matplotlib 等的代码块写 `:run: compile`，否则 `presmium check` 警告）；`:echo: false` 只显示输出，Markdown 输出按正文显示（从数据生成表格）。见 `references/directives.md` 的 `{code}`。
 - 编译时执行的代码只得到清理过的环境变量：去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量（运营者可在工作区配置的 `settings.presmium.exec.passEnv` 中列出要传入的变量）。打印环境变量的代码因此不会把凭据写进录制与产物。
-- 进程沙箱：在满足条件的 Linux 主机上（glibc 2.39 以上、FUSE 与 Landlock），编译时的 Python 与 JavaScript 默认在 deltabox 中运行（构建报告写 `isolated by deltabox cbcow-through`）：不能联网（本机地址也不行），只能写自己的运行目录，只读得到系统目录、文稿目录与解释器的安装目录，`HOME` 是临时目录，代码启动的后台进程在这次运行结束时被结束。代码要读别处的文件（例如 `~/.local` 中的 Python 包、数据目录）时，运营者在工作区配置的 `settings.presmium.deltabox.read` 中列出；`settings.presmium.deltabox.sandbox: false` 关闭沙箱（构建报告写明没有沙箱的原因）。
+- 进程沙箱：运营者插件登记了进程沙箱时，编译时的代码经它运行，构建报告写明隔离方式；没有时直接运行。
 - 组件里的代码（执行面板、分步执行、本地环境包着的代码块）由组件运行，不另显示运行按钮与录制输出。
 - 执行缓存在 `.presmium/freeze/`，键为语言、代码、参数、执行器与环境指纹的哈希（会话中的块还包含前一块的键）；较大的图片等输出存在 `.presmium/freeze/blobs/`。`check`、`ir`、`build`、`dev` 每次编译都执行需要执行的代码并写入缓存；代码不变就不重跑；没有运行环境时沿用已提交的录制；超时不录制。只有 `presmium build` 删除已不存在的代码的录制。
 - 超时：代码块或指令的 `:timeout:`，否则 `presmium.exec.timeoutMs`（头部的全局值，或某一节 `{config}` 中的值），否则编译时默认 10 秒。
@@ -176,12 +176,12 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium check [deck]` | 编译并运行插件的检查项与发布检查（6.1 节），只输出诊断；`--json` 输出 JSON，`--update-lock` 先重写锚点锁定文件，`--env` 另外连接头部声明的执行环境，`--audience student` 按学生版编译后检查，`--external-links` 用 lychee 检查外部链接 |
 | `presmium ir [deck]` | 把 IR 输出到标准输出（诊断在标准错误）；`--out <file>` 写到文件 |
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录，`--audience student` 只构建学生版并扫描产物（第 6 节） |
-| `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口。页面是实时预览；加 `--edit` 时网页上另有编辑模式（实验性，以后由基于 DeepSeek Harness 的工作台取代；“编辑”，见下文“在浏览器中改源码”）：文稿在 git 仓库中时保存、提交与撤销都可以（文稿可以在仓库的子目录中），不在 git 仓库中（或被 git 忽略）时只能保存，启动时在标准错误说明。`.presmium/server.json` 是本机服务的令牌，编辑模式从不提交它；仓库的 `.gitignore` 要有一行 `**/.presmium/server.json`（git 不忽略它时启动时提示），免得自己 `git add` 时带上它 |
-| `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式（左边改源码，`Ctrl+S` 保存，右边的预览就地更新），首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。只供运行它的你使用，默认只监听本机（`--port`，默认 4310）；`--host 0.0.0.0`（或本机的某个局域网地址）让你在局域网中的其他设备上打开它，启动时打印每个局域网地址，并警告没有登录：同一网络中到得了这个端口的人都能以你的身份修改与运行；也可以用 SSH 转发端口（`ssh -L 4310:127.0.0.1:4310 <主机>`）；多人使用时每人一个工作区。修改历史中撤销一次撤销标为重做。启动时另打印 MCP 的地址与令牌所在的文件（外部 agent 用它连接，见下文），以及助手的状态。`--headless` 是给工作台用的无界面模式（工作台的启动器这样启动它）：首页是文档卡片，页面不加载工作区与运营者插件的浏览器部分，文档的预览带预览代理，`--preview-origin <源>`（可重复）是嵌入预览的工作台的源 |
+| `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口。页面是实时预览，没有编辑界面 |
+| `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；它也是工作台的后端（文档管理、源码、审阅与修改历史的路由，工作区须是 git 仓库）。只供运行它的你使用，默认只监听本机（`--port`，默认 4310）；`--host 0.0.0.0`（或本机的某个局域网地址）让你在局域网中的其他设备上打开它，启动时打印每个局域网地址，并警告没有登录：同一网络中到得了这个端口的人都能以你的身份修改与运行；也可以用 SSH 转发端口（`ssh -L 4310:127.0.0.1:4310 <主机>`）；多人使用时每人一个工作区。启动时另打印 MCP 的地址与令牌所在的文件（外部 agent 用它连接，见下文）。`--preview-origin <源>`（可重复）是嵌入预览的工作台的源 |
 | `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下；每份文档的搜索框也搜得到其他文档，第一页与最后一页的上一章、下一章接到配置顺序中前后的文档。工作区配置的 `site` 有与 `renderers.web` 相同的 `nav`（链接从站点根写起，如 `/week1/`）、`footer`、`head`、`sitemap`（整个站点一个 `sitemap.xml`），`base: /<路径>/` 把站点构建在这个路径下（GitHub Pages 的项目站点为 `/<仓库名>/`，默认 `/`），`home: <文档目录>` 让首页转到那份文档（文档列表在 `documents.html`），`locales: { en: { title: … } }` 给首页的每种语言版本一个标题；文档的译本在 `/<目录>/<语言>/` 下（第 2 节）；在文档目录中执行则只构建这一份 |
-| `presmium studio [目录]` | 工作台（实验性）：基于 DeepSeek Harness 的编写界面，目录同 `presmium serve`（工作区根目录或一份文稿）。要另装 `@presmium/studio`（`npm install --save-dev @presmium/studio`，连同 DeepSeek Harness 约 865 MB；没装时命令说明怎样装）。只打印一个网址 `studio  http://127.0.0.1:4320/?token=…`，在浏览器中打开它（网址带这次启动的令牌，浏览器以它换得 cookie，之后在同一个端口直接打开 `http://127.0.0.1:4320/` 也行；网址不要给别人）；`--port <n>` 换端口（默认 4320，被占用时另取空闲端口），`--host <地址>` 改为监听本机在局域网中的一个地址（不接受 `0.0.0.0`），没有登录，同一网络中到得了端口的人都以你的身份工作。模型在工作台的模型设置中选，或在启动前设置 `DEEPSEEK_API_KEY`（DeepSeek 的官方地址），或同时设置 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER`（Messages 兼容的服务）；`presmium serve` 的模型设置（`assistant.json`）在终端中第一次启动时询问是否导入。会话、模型设置与日志 `presmium-studio.log` 在 `$XDG_STATE_HOME/presmium/studio`，不用你自己的 DeepSeek Harness 的设置；`Ctrl+C` 停止全部进程 |
+| `presmium studio [目录]` | 工作台（实验性）：基于 DeepSeek Harness 的编写界面，目录同 `presmium serve`（工作区根目录或一份文稿）。要另装 `@presmium/studio`（`pnpm add -D @presmium/studio`，连同 DeepSeek Harness 约 865 MB；没装时命令说明怎样装）。只打印一个网址 `studio  http://127.0.0.1:4320/?token=…`，在浏览器中打开它（网址带这次启动的令牌，浏览器以它换得 cookie，之后在同一个端口直接打开 `http://127.0.0.1:4320/` 也行；网址不要给别人）；`--port <n>` 换端口（默认 4320，被占用时另取空闲端口），`--host <地址>` 改为监听本机在局域网中的一个地址（不接受 `0.0.0.0`），没有登录，同一网络中到得了端口的人都以你的身份工作。模型在工作台的模型设置中选，或在启动前设置 `DEEPSEEK_API_KEY`（DeepSeek 的官方地址），或同时设置 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER`（Messages 兼容的服务）；以前的模型设置文件 `assistant.json` 在终端中第一次启动时询问是否导入。会话、模型设置与日志 `presmium-studio.log` 在 `$XDG_STATE_HOME/presmium/studio`，不用你自己的 DeepSeek Harness 的设置；`Ctrl+C` 停止全部进程 |
 
-常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。多份文档组成的课程用工作区：`presmium serve` 编辑与预览，`presmium build` 在根目录构建整个站点。`presmium serve` 与 `presmium dev` 一样加载文稿 `plugins` 列出的插件；运营者在 `settings.presmium.workspace.plugins` 中列出、装在工作区根目录的运营者插件（如助手、语音）每份文档与首页都加载。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
+常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。多份文档组成的课程用工作区：`presmium studio` 编辑，`presmium serve` 预览，`presmium build` 在根目录构建整个站点。`presmium serve` 与 `presmium dev` 一样加载文稿 `plugins` 列出的插件；运营者在 `settings.presmium.workspace.plugins` 中列出、装在工作区根目录的运营者插件（如语音）每份文档都加载。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
 
 ### 编辑器中的 agent（MCP）
 
@@ -197,36 +197,9 @@ Presmium 以 MCP 把文稿交给 agent（Claude Code、Codex、VS Code 等）：
 
 课堂中主讲的“互动”总览里每个提问有“AI 回答（服务提供方）”：用主讲自己在“提问”面板中填写的模型服务，在主讲的浏览器中生成，主讲确认后发给课堂（引用变成纯文字）；没有填写时总览提示先去填写。学生自己不接触模型。
 
-`presmium serve` 与 `presmium dev` 的工具栏总有“AI 修改”（工作区首页也有）：修改讲义用的 agent（下一节）不可用时，打开它写明缺少什么（按页面语言）；AI 的修改要提交到 git，文稿不在 git 仓库中时它写明先在文稿目录中 `git init`（`.gitignore` 中写上 `**/.presmium/server.json`）再重新启动。它的模型服务在其中的“模型设置”里填写：服务（DeepSeek 的官方地址，或 Messages 兼容的地址与它的服务提供方）、密钥、模型名（留空用默认模型）。设置由本机服务保存在用户配置目录中只有本人可读的文件里（`$XDG_CONFIG_HOME/presmium/assistant.json`，默认在 `~/.config/presmium/`），不写入工作区与文稿；保存后下一个修改任务即用新设置，不必重启；页面只显示密钥是否已设置，不回显它；换了服务或地址时要重新填写密钥（已存的密钥只给原来的服务）；只有工作区的所有者能查看与修改。它与读者提问的设置是分开的两份。也可以写在运行 `presmium` 的环境中，环境优先于页面的设置（页面写明当前生效的来源），改了要重启：
+### 工作台：浏览器中的编辑与 agent
 
-- `DEEPSEEK_API_KEY`：随包的 DeepSeek Harness 访问 DeepSeek 的官方地址（服务提供方 DeepSeek）；
-- 或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY` 与 `PRESMIUM_MODEL_PROVIDER` 三者：运营者的 Messages 兼容服务，优先于前者；
-- 或替换的运行时（只在本机）：`PRESMIUM_AGENT_COMMAND` 是一个 ACP agent 的命令行，同时要有 `PRESMIUM_AGENT_PROVIDER`；也可以写在工作区配置的 `settings.presmium.assistant` 的 `command`、`provider` 中，它优先于模型设置。
-
-都没有时助手不可用，不启动任何进程。启动时日志写明助手是否可用：服务提供方、运行时与设置的来源，或缺少哪项设置（单份文稿的仓库也在启动时，它的文档在启动时就编译）；`presmium dev` 与 `presmium serve` 另打印 MCP 的地址与令牌所在的文件。DeepSeek Harness 是助手的依赖，不必另外安装；它的会话日志上传与遥测由随包的配置模板关闭。工作区中把助手列进 `settings.presmium.workspace.plugins`（并装在工作区根目录；`templates/workspace` 的配置已列出它）后每份文档的服务端与首页都有它，首页因此有“AI 修改”与模型设置，`presmium serve` 启动时打印它的状态；页面上的提问面板仍要文稿的 `plugins` 列出它。
-
-### 在浏览器中改源码
-
-`presmium serve` 与 `presmium dev --edit` 的网页中（编辑者或所有者），文档页工具栏的“编辑”进入编辑模式（`presmium dev` 的文稿不在 git 仓库中时只能保存，没有提交与修改历史）：顶栏是位置（工作区 / 文档）、打开的文件、预览视图（文档、放映）与工具栏；左边是源码编辑器（MyST 高亮），右边是预览，底部的状态栏写明分支与未提交数、语言与光标所在行。
-
-- 在预览中点选一段，源码跳到它的行并标出；在源码中移动光标，预览跟随到那一块（必要时换页）。“打开文件”菜单列出文档的文件。
-- `Ctrl+S` 保存，预览不刷新即更新；编辑器下方的问题面板列出编译的诊断（点一项跳到那一行），诊断也标在行上。
-- 没有提交的修改列在“修改历史”顶部，顶栏另有“提交 N 处修改”：写一句说明后提交（成为历史中的一项，可以撤销），或放弃（文件回到最近一次提交）。
-- agent 的修改任务进行中或等待审阅时不能保存：你的修改留在编辑器中，审阅结束后再保存。文件在打开之后被 agent 或磁盘上的编辑器改过时，保存前会提示“合并”（双方的修改都保留，冲突处用 `<<<<<<<` 与 `>>>>>>>` 标出）或“重新载入”。合并或重新载入之后焦点回到编辑器；焦点在源码面板中任何地方（如问题面板）时 `Ctrl+S` 都保存。
-- 首页的侧栏是文件树：展开一份文档点一个文件，在编辑模式中打开它；`presmium.workspace.yaml` 在首页的编辑器中打开（所有者），重新启动 `presmium serve` 后生效。平板与手机宽度下侧栏收起，活动栏的“工作区文件”在抽屉中打开文件树。启动台的搜索（`Ctrl K`）在框下列出找到的文档、章节与命令（新建文档、管理文档、模型设置、切换明暗等），文档卡片照旧。
-
-### 由 agent 修改讲义（批注、对话、审阅与撤销）
-
-`presmium serve` 中（工作区是 git 仓库，编辑者或所有者），文稿的 `plugins` 列出助手时，工具栏的“AI 修改”进入编辑模式并打开“批注与对话”面板（“编辑”进入编辑模式时它也打开），面板停靠在编辑模式的右侧，再点“AI 修改”收起或展开它；状态栏显示模型与它的来源（环境变量、工作区配置或模型设置），点它打开模型设置，换了服务或地址时要重新填写密钥。不用接触源码：
-
-- **批注**：在页面上点选一个块（段落、代码、组件），面板显示它的源码摘录，写下要求后“添加批注”；可以攒几条再“发送 N 条批注”。每条批注随后显示“已处理”或“未能处理”与 agent 的说明。
-- **对话**：写一句要求（如“在本章末尾新增一节”）发送，自动带上当前章节、步骤与在讲义中选中的文字。
-- 两处都写明模型的服务提供方。同一份文档一次只能有一个修改任务；agent 的修改立即出现在页面上。
-- **审阅**：agent 结束后面板逐个文件列出改动（文字显示差异，二进制文件只标出）与各步，可以“全部接受”、取消勾选某些文件后“接受其余”，或“全部拒绝”；展开各步，可以在某一步上“回到这一步之前”（那一步与之后的改动撤回，再审阅其余）。被拒绝的文件恢复为任务开始时的内容（包括当时没有提交的改动），任务新建的文件删除；接受后留下的改动成为一个提交，说明列出批注或对话与 agent 的解释。每个提交可以在面板中“撤销这次修改”（`git revert`；与之后的修改冲突时列出文件，文档有修改任务待审阅时要先处理它），“修改历史”中也能撤销。
-- 审阅由服务端保存：刷新页面或换一个窗口后，打开“AI 修改”面板就能接着审阅（所有者也能看到别人的）。没有任何页面打开它时，审阅在运营者设定的时限（`settings.presmium.assistant.reviewTimeoutMs`，默认 30 分钟）后全部拒绝；服务意外退出时同样回滚。
-- 首页“管理文档”新建文档时勾选“由 agent 起草”并写下要求：新建之后 agent 写出初稿，在表单中审阅，接受后打开新文档。
-
-agent 只写文档目录：写到目录之外（如工作区的其他文档）要所有者在“待确认”中允许，允许的写入随任务一起提交；运营者目录一律拒绝。单份文稿的仓库中改动 `presmium.workspace.yaml` 时，接受前另需所有者允许，否则它被恢复。运营者设置 `settings.presmium.assistant.review: auto` 时不审阅，任务结束直接提交。修改审阅在 Linux 主机满足条件时由 deltabox 完成（面板写明），否则由 git 完成；被 `.gitignore` 忽略的文件不在 git 的审阅中。随包的 DeepSeek Harness 的修改目前总由 git 审阅（它的写入使 deltabox 的审阅出错；只有替换的运行时用 deltabox）。单份文稿的仓库中 agent 写进 `.git/` 的东西（配置、钩子、`commondir` 等）在审阅时被恢复原样，审阅中列出的 `.git/` 改动一律不接受。经文档目录中的符号链接写到目录之外的文件，同样要所有者允许。
+`presmium studio` 是编写讲义的工作台：文件树、源码编辑器（保存前文件被别处改过时提示合并或重新载入）、问题面板与预览（在预览中点选一块，源码跳到它的行；移动光标，预览跟随），以及 DeepSeek Harness 的对话。agent 的修改落在文档目录的源码上：会话第一次写文件时打开这份文档的审阅并持有锁，之后的修改累加进同一次审阅，作者接受后成为一个 git 提交（可以撤销），拒绝的文件恢复原样。工作区配置的 `settings.presmium.assistant.review: auto` 让每轮对话结束时直接提交；没有页面跟随的审阅在 `reviewTimeoutMs`（默认 30 分钟）后回滚。别的 agent（Claude Code、Codex 等）经上文的 MCP 接入。
 
 ## 12. 读诊断
 

@@ -205,7 +205,7 @@ Python and JavaScript run with the machine's `python3` and `node`. `@presmium/sl
 (execution-cache)=
 ## Cache and sandbox
 
-Outputs are cached in `.presmium/freeze/`, keyed by a hash of the code, the language, the options and the runtime: unchanged code does not run again, and once the directory is committed, others build without the runtime. Code run at build time gets a cleaned environment (variables whose names look like credentials are removed). On Linux hosts that qualify, the Python and JavaScript run at build time run in the process sandbox deltabox: no network, and writes only in their own run directory.
+Outputs are cached in `.presmium/freeze/`, keyed by a hash of the code, the language, the options and the runtime: unchanged code does not run again, and once the directory is committed, others build without the runtime. Code run at build time gets a cleaned environment (variables whose names look like credentials are removed).
 
 (lecture)=
 # Lectures and speech
@@ -242,7 +242,7 @@ The answers come from a model service the reader sets up (the address of an Open
 (assistant-edit)=
 ## Changes by an agent
 
-In the local workbench (`presmium serve`), the assistant can also change a lecture as your annotations or chat ask: you review the changes file by file, and what you accept becomes a git commit you can revert. This is part of the workbench, a preview whose interface will change with the new workbench. The operator provides the model service in environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or in the workbench's model settings; it is never written into the lecture or its outputs.
+In the workbench, `presmium studio` (installed separately as `@presmium/studio`, experimental), an agent changes a lecture as your chat asks: you review the changes, and what you accept becomes a git commit you can revert. The model service comes from environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or from the workbench's model settings; it is never written into the lecture or its outputs.
 
 (assistant-mcp)=
 ## Agents in your editor
@@ -277,9 +277,9 @@ site:
 The translations the documents declare are published with the workspace site: each document's translation under `/<directory>/<lang>/`, with a language menu on its pages; the home page also has a version for each language, `/<lang>/`, which lists the documents in that language (a document without that translation is listed in its original), titled `site.locales.<lang>.title`. A translation links another document by its entry file too, and the link goes to that document's translation into the same language when there is one. This documentation site is built that way: each document is written in Chinese and translated into English.
 
 (workspace-serve)=
-## The local workbench
+## The local service and the workbench
 
-`presmium serve` starts the workspace service on your machine: the site compiles on demand and updates as you save, and in the browser you can edit the source, manage documents and see and revert the history of changes. It is for you alone and listens on this machine only by default; `--host` opens it to other devices on your local network, with no login, so whoever reaches the port works as you. The workbench's browser interface is a preview that a new workbench will replace; the workspace configuration file and the `presmium serve` command stay. The workbench's preview shows the originals; `presmium build` publishes the translations.
+`presmium serve` starts the workspace service on your machine: its home page lists the documents, and each document's site compiles on demand and updates as you save. `presmium studio` (installed separately as `@presmium/studio`, experimental) starts the workbench on top of it: the file tree, source editing, preview, the problems and an agent. Both are for you alone and listen on this machine only by default; `--host` opens them to other devices on your local network, with no login, so whoever reaches the port works as you. The service's preview shows the originals; `presmium build` publishes the translations.
 
 (publish)=
 # Publishing

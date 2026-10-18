@@ -2,7 +2,7 @@
 
 一份面向初学者的完整讲义“BPE 分词：从字节到词元”：先说明为什么需要分词，再手算 BPE，然后用 Python 实现训练、编码与解码，延伸一章把同样的统计交给 C 程序和 GPU 来做，最后回顾。入口是 `lecture.md`（头部与封面），各章在 `pages/` 下，讲义引用的代码在 `../sample-repo/src/bpe.py`。
 
-同一份讲义也是示例工作区 `../workspace` 中的文档 `bpe/`，在那里可以体验 `presmium serve` 的编辑模式与 AI 修改（见 `../workspace/README.md`）。
+同一份讲义也是示例工作区 `../workspace` 中的文档 `bpe/`，在那里可以体验工作区与工作台（见 `../workspace/README.md`）。
 
 ## 构建与预览
 

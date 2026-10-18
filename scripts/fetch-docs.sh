@@ -28,6 +28,4 @@ fetch_paths deepseek-ai/deepseek-harness dsh-v0.2.1-alpha.4 dsh \
   '/packages/preset/agent-preset/skills/'
 fetch_paths modelcontextprotocol/typescript-sdk v2.3.1 mcp \
   '/README.md' '/VERSIONING.md' '/docs/' '/packages/*/README.md' '/packages/middleware/*/README.md'
-fetch_paths delta-box/deltabox-lite v0.1.1 deltabox '/README.md' '/CHANGELOG.md' '/docs/'
-curl -fsSL https://unpkg.com/dsh-deltabox@0.1.2/README.md -o "$dest/deltabox/dsh-deltabox.md"
 echo "docs written to $dest"

@@ -2,6 +2,6 @@
   "name": "presmium-fixture-workspace-home",
   "private": true,
   "type": "module",
-  "description": "Test-only operator plugin of e2e/workspace.spec.ts: a route that says which document it answers for, and a browser part that marks the page it loads on",
+  "description": "Test-only operator plugin of e2e/workspace.spec.ts: a route that says which document it answers for",
   "exports": { "./presmium": "./presmium.ts", "./package.json": "./package.json" }
 }

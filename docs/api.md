@@ -2,7 +2,7 @@
 
 本文列出 Presmium 1.x 按语义化版本承诺稳定的接口（公开接口，第 2 节）、不在承诺之内的接口（实验性接口与内部接口，第 3、4 节），以及包、IR 与插件契约各自的版本规则。接口的签名以源码为准（`packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts` 等），接口参考由 TypeDoc 从源码生成（根目录的 `typedoc.json`，文档站的 `/api/`）。本文与源码不一致时以源码为准，并把不一致当作缺陷报告。
 
-Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、CLI）与它的产物（网页、幻灯片、notebook、讲授），它们不依赖任何模型服务。本机工作台（`presmium serve` 的浏览器界面）是预览，将被一个与产物分离的新工作台取代，所以它的浏览器端接口是实验性的（第 3 节）；命令 `presmium serve`、工作区配置文件与 Node 端的服务照常是公开接口。
+Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、CLI）与它的产物（网页、幻灯片、notebook、讲授），它们不依赖任何模型服务。工作台（`presmium studio`，`docs/design-dsh.md`）与产物分离，它的接口是实验性的（第 3 节）；命令 `presmium serve`、工作区配置文件与 Node 端的服务照常是公开接口。
 
 ## 1. 版本规则
 
@@ -55,8 +55,8 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 - MyST 源语法（`docs/ir.md` 第 2 节）：文稿头部的键（`title`、`lang`、`plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`translations`、`translationOf`、`checks`、`description`、`tags`），章节与标签、讲解与上屏内容、步骤（`:reveal:`、`span` 与讲解的绑定）、内置指令（`{slide}`、`{only}`、`{hints}`、`{config}`、`{component}`、`{include}`、`{audience}`）与 `:audience:`，以及官方插件的指令与行内角色（`.agents/skills/presmium-author/references/directives.md` 列出全部）。
 - IR（`packages/kernel/src/ir.ts`）：`IRDocument`、`IRSection`、`IRBlock`、节点（`markdown`、`code`、`component`）与其中的字段，`IR_VERSION`。
 - 产物的布局与地址：`presmium build` 的 `<out>/ir.json` 与 `<out>/<渲染端>/`，工作区站点的 `<out>/web/` 与 `/<文档目录>/`、译本的 `/<语言>/`；网页的页面文件名与章节锚点（来自标签，`docs/ir.md` 6.1 节），地址参数 `?clicks=`、`?view=`。
-- 工作区配置文件 `presmium.workspace.yaml`：`title`、`documents`、`site`（`home`、`nav`、`footer`、`head`、`sitemap`、`lang`、`locales`）、`settings`（运营者设置，如 `presmium.workspace.plugins`、`presmium.exec.passEnv`、`presmium.deltabox`、`presmium.assistant`）。
-- 运营者的环境变量：执行环境的 `PRESMIUM_ENV_<名>_URL`、`_TOKEN`，语音引擎的 `PRESMIUM_SPEECH_<ID>_*`，模型服务的 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`、`DEEPSEEK_API_KEY`，替换的 agent 运行时 `PRESMIUM_AGENT_COMMAND`、`PRESMIUM_AGENT_PROVIDER`。
+- 工作区配置文件 `presmium.workspace.yaml`：`title`、`documents`、`site`（`home`、`nav`、`footer`、`head`、`sitemap`、`lang`、`locales`）、`settings`（运营者设置，如 `presmium.workspace.plugins`、`presmium.exec.passEnv`、`presmium.assistant` 的 `review` 与 `reviewTimeoutMs`）。
+- 运营者的环境变量：执行环境的 `PRESMIUM_ENV_<名>_URL`、`_TOKEN`，语音引擎的 `PRESMIUM_SPEECH_<ID>_*`，`presmium studio` 的模型服务 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`、`DEEPSEEK_API_KEY`。
 
 ### 2.2 命令
 
@@ -70,7 +70,7 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 - 插件：`PluginDefinition`、`PluginManifest`、`PluginContext`、`StartReport`；Node 端的 `PresmiumNodePlugin` 与它的字段（`directives`、`roles`、`passes`、`executors`、`resolvers`、`checks`、`anchors`、`renderer`、`rendererExtensions`、`vitePlugins`、`services`、`environments`、`server`、`tools`、`operator`、`version`、`kernel`）。
 - 编译：`DirectiveSpec` 与 `DirectiveContext`、`RoleSpec`、`IRPass` 与它的上下文、`Check`、`CheckContext`、`Finding`，锚点（`AnchorString`、`parseAnchor` 与 `ParsedAnchor`、`AnchorResolver`、`Resolution`、`isRenderable`，锚点的指纹 `fingerprint` 与 `normalizeWhitespace`，锚点锁文件 `AnchorLockFile` 与它的位置 `ANCHOR_LOCK_PATH`）。
 - 渲染：`Renderer`、`RenderContext`、`RendererContribution`、`SiteSpec`、`SiteDocument`。
-- 服务令牌与接口：`defineService`、`EXECUTOR`、`SESSION`、`CLASSROOM_STORE`、`PRESENTER_PANELS`、`SPEECH`、`ASK`、`APPROVALS`、`PROCESS_SANDBOX`、`MCP_ENDPOINT`，Node 端的 `AGENT_RUNTIME`、`CHANGE_REVIEW`、`REVISIONS`、`DOCUMENT_FILES`、`DOCUMENT_LOCKS`；执行（`Executor`、`RunRequest`、`RunResult`、`RunContext`、`EnvironmentProvider`、`environmentExecutor`）。
+- 服务令牌与接口：`defineService`、`EXECUTOR`、`SESSION`、`CLASSROOM_STORE`、`PRESENTER_PANELS`、`SPEECH`、`ASK`、`APPROVALS`、`PROCESS_SANDBOX`、`MCP_ENDPOINT`，Node 端的 `CHANGE_REVIEW`、`REVISIONS`、`DOCUMENT_FILES`、`DOCUMENT_LOCKS`；执行（`Executor`、`RunRequest`、`RunResult`、`RunContext`、`EnvironmentProvider`、`environmentExecutor`）。
 - 服务端贡献：`Route`、`ServerContext`、`NodeServiceContext`、`Member`、`json`、`problem`、`eventStream`、`MAX_BODY`；agent 工具 `AgentTool`、`AgentToolContext`。
 - 共用的纯函数：`docBlocks`、`irBlocks`、`nodeMdast`、`withProp`、`errorMessage`、`isRecord`、`languageId`、`failedRun`、`deckLocale`、`localeOf`、`DEFAULT_LANG`、`publishedUrl`、`mapHtmlUrls`、`URL_ATTRIBUTES`、`htmlAttributes`、`escapeHtml`、`lowerMyst`、`roleMark`、`splitWords`、`remapWords`、`stepStateAt`，读取 IR 的 `@presmium/kernel/reading`（`chapters`、`isChapterTitle`、`blockText`、`mdastText`、`blockState`、`blockVisible`、`narrationAt`、`sectionNarration`、`tokenize`，也从 `@presmium/kernel` 导出），`@presmium/kernel/node` 的 `copyPublished`；`KERNEL_VERSION`、`IR_VERSION`。
 
@@ -97,15 +97,11 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 
 ## 3. 实验性接口
 
-以下接口标为实验性，不在 1.x 的语义化版本承诺之内：最后一项是还在定型的新工作台，其余属于本机工作台的浏览器端，新工作台会取代它们。它们可以在次版本中改变或删除，变更记录写明；插件不要依赖它们，依赖时在自己的 `peerDependencies` 中写确切的版本。
+以下接口标为实验性，不在 1.x 的语义化版本承诺之内。它们可以在次版本中改变或删除，变更记录写明；插件不要依赖它们，依赖时在自己的 `peerDependencies` 中写确切的版本。
 
-- `@presmium/workspace` 的浏览器端：`@presmium/workspace/client`（工作台的浏览器插件：编辑模式、浏览器中的源码编辑、文档管理、修改历史、文件树）、`@presmium/workspace/domain`，以及它为这些界面提供的路由（`/__presmium/presmium.workspace/` 下的 `documents`、`files`、`source`、`changes`、`revisions` 等）。
-- `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE` 与 `EditMode`；工具栏的槽位 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock`（`ToolbarSlot` 中 `tools`、`settings` 以外的值）与位置（`ToolbarPlace`、`useToolbarPlace`、`provideToolbarPlace`；`PmToolbarEntry` 在活动栏中的形态）；`trackAgentTask` 与 `AgentTaskState`。
-- 网页渲染端的工作台：`presmium serve` 与 `presmium dev` 中首页的工作台（活动栏、文件树、启动台、状态栏）、编辑模式的外壳、窗口事件 `presmium:documents` 与首页的文档列表接口 `@presmium/documents.json`。静态站点的首页与页面是公开的产物（第 2.1 节）。
-- 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`、`ReviewDecision`、`TaskRevertResult`），`@presmium/slidev-addon-assistant` 的“AI 修改”面板、停靠面板、模型设置界面与路由 `info`、`settings`、`tasks/*`、`revert`、`excerpt`，`@presmium/slidev-addon-lecture` 编辑模式中的“讲授回写”面板。修改任务的请求与事件（`AgentTaskRequest`、`AgentTaskKind`、`AgentContext`、`Annotation`、`AnnotationStatus`、`AgentEvent`、`Citation`）同时是 Node 端 `AGENT_RUNTIME` 的会话（`AgentSession.prompt`）与 `ASK` 的类型，随它们公开。读者问答（`ASK` 与提问面板）是产物的一部分，是公开接口。
-- 新工作台（`docs/design-dsh.md`）：`@presmium/workbench`（工作台的 React 面板、状态与工作区服务的客户端，0.x）的全部导出；`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁、`./launch`，`@presmium/studio`（0.x：`presmium studio` 与 `presmium-studio` 命令，以及 `main`、`startStudio` 等导出）与预编译的客户端部分 `./client`（以及它的路由 `/api/presmium/workbench`），服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`；契约 `Focus`、`FocusReport`、`McpIssueOptions` 随新工作台定型，在 1.0 中同样是实验性的。
+- 工作台（`docs/design-dsh.md`）：`@presmium/workbench`（工作台的 React 面板、状态与工作区服务的客户端，0.x）的全部导出；`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁、`./launch`，`@presmium/studio`（0.x：`presmium studio` 与 `presmium-studio` 命令，以及 `main`、`startStudio` 等导出）与预编译的客户端部分 `./client`（以及它的路由 `/api/presmium/workbench`），服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`，工作区服务的路由（`/__presmium/presmium.workspace/` 下的 `documents`、`files`、`source`、`changes`、`revisions`、`review` 等）；契约 `Focus`、`FocusReport`、`McpIssueOptions` 与 `@presmium/host` 的 `useToolbarPlace`、`provideToolbarPlace` 随工作台定型，在 1.0 中同样是实验性的。
 
-本节的 TypeScript 声明在源码中带 TSDoc 标签 `@experimental`，接口参考（`/api/`）中显示为 Experimental；只有一部分是实验性的声明（`ToolbarSlot`、`PmToolbarEntry`）在说明中写明是哪一部分，`@presmium/workspace` 的 `./client` 与 `./domain` 在入口文件的说明中标注。界面、路由与窗口事件没有声明可以标注，以本节的列表为准；标注与本节不一致时同样以本节为准。
+本节的 TypeScript 声明在源码中带 TSDoc 标签 `@experimental`，接口参考（`/api/`）中显示为 Experimental；界面与路由没有声明可以标注，以本节的列表为准；标注与本节不一致时同样以本节为准。
 
 ## 4. 内部接口
 

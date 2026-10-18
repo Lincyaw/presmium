@@ -1,4 +1,0 @@
-title: 设计验收工作区
-settings:
-  presmium.workspace:
-    plugins: [presmium-fixture-design-panes]

@@ -50,10 +50,9 @@ export interface Navigation {
 
 export const NAVIGATION = defineService<Navigation>('presmium.navigation')
 
-export type ToolbarSlot = 'tools' | 'settings' | 'status' | 'home' | 'create' | 'files' | 'tabs' | 'source' | 'dock'
+export type ToolbarSlot = 'tools' | 'settings' | 'status'
 
-/** @experimental */
-export type ToolbarPlace = 'bar' | 'activity' | 'status' | 'home' | 'pane'
+export type ToolbarPlace = 'bar' | 'status'
 
 export interface ToolbarItem {
   id: string
@@ -90,17 +89,6 @@ export interface StatusRegistry {
 }
 
 export const STATUS = defineService<StatusRegistry>('presmium.status')
-
-/** @experimental */
-export interface EditMode {
-  readonly active: Readonly<Ref<boolean>>
-  readonly allowed: Readonly<Ref<boolean>>
-  enter(): void
-  leave(): void
-}
-
-/** @experimental */
-export const EDIT_MODE = defineService<EditMode>('presmium.editMode')
 
 export interface ReplayHandler {
   apply(data: Record<string, unknown>, seeking: boolean): void

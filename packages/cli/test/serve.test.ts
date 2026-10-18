@@ -56,7 +56,7 @@ describe('presmium serve on this machine', () => {
     expect(await ask({ Host: `127.0.0.1:${port}` })).not.toBe(403)
   }, 180_000)
 
-  it('serves the operator plugins on the home page: their route answers for document \'\' and finds no file of the workspace there, the home page loads their browser part', async () => {
+  it('serves the operator plugins\' routes: for document \'\' they find no file of the workspace, for a document its files', async () => {
     const home = workspace('home', 'basic')
     try {
       const plugin = join(ROOT, 'e2e/fixtures/workspace/plugins/presmium-fixture-workspace-home')
@@ -68,14 +68,6 @@ describe('presmium serve on this machine', () => {
         const where = async (document: string) => (await raw(`${url}/__presmium/fixture.home/where`, { headers: { 'Presmium-Document': document } })).json()
         expect(await where('')).toEqual({ document: '', sees: [] })
         expect(await where('intro')).toEqual({ document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] })
-        const theme = await raw(`${url}/.vitepress/theme/index.ts`)
-        expect(theme.status, theme.text).toBe(200)
-        expect(theme.text).toContain('createSiteHomeTheme')
-        expect(theme.text).toContain('presmium-fixture-workspace-home/src/client/plugin.ts')
-        const page = await raw(`${url}/intro/.vitepress/theme/index.ts`)
-        expect(page.status, page.text).toBe(200)
-        expect(page.text).toContain('createPresmiumTheme')
-        expect(page.text).not.toContain('presmium-fixture-workspace-home')
       } finally {
         await local.stop()
       }
@@ -164,9 +156,6 @@ function execWorkspace(prefix: string): string {
 settings:
   presmium.workspace:
     plugins: ['@presmium/slidev-addon-exec']
-  # This case checks the process that runs the code and its HOME, not the process sandbox.
-  presmium.deltabox:
-    sandbox: false
 `)
   return dir
 }

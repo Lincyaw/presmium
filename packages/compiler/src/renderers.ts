@@ -201,7 +201,6 @@ export interface DevOptions {
   outDir: string
   to?: string[]
   server?: { url: string }
-  sitePlugins?: Record<string, string>
   onCompile?(compilation: Compilation, findings: Finding[]): void
   compilation?: Compilation
   base?: string
@@ -233,8 +232,6 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     if (options.preview) ctx.preview = { origins: [...options.preview.origins] }
     if (renderer.id === WEB) {
       ctx.translations = translations
-      ctx.plugins = [...ctx.plugins, ...Object.keys(options.sitePlugins ?? {}).filter(name => !ctx.plugins.includes(name))]
-      ctx.pluginDirs = { ...ctx.pluginDirs, ...options.sitePlugins }
     }
     try {
       await mkdir(ctx.outDir, { recursive: true })

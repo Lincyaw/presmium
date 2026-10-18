@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { request } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import { join } from 'node:path'
@@ -12,18 +12,6 @@ import { openDevPage } from './fixtures/deck.ts'
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/workspace')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
-
-interface DraftAgent {
-  requests: unknown[]
-  emit(event: Record<string, unknown>): void
-  client: unknown
-}
-
-declare global {
-  interface Window {
-    draftAgent?: DraftAgent
-  }
-}
 
 function clean(extra: Record<string, string>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
@@ -93,7 +81,7 @@ async function cleanUp(children: ChildProcess[], dirs: string[]): Promise<void> 
   for (const dir of dirs) for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.outside`]) rmSync(path, { recursive: true, force: true })
 }
 
-test.describe('the workspace in the browser', () => {
+test.describe('a workspace served on this machine', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
   const dirs: string[] = []
   const children: ChildProcess[] = []
@@ -110,73 +98,6 @@ test.describe('the workspace in the browser', () => {
     await cleanUp(children, dirs)
   })
 
-  test('the author creates, renames, copies and deletes documents; the history shows the four commits; no agent draft without an assistant', async ({ page }) => {
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const panel = page.getByRole('dialog', { name: '管理文档' })
-    await expect(panel.locator('.pm-workspace-document[data-document="intro"]')).toBeVisible()
-    await expect(panel.locator('.pm-workspace-create__draft')).toHaveCount(0)
-
-    await panel.locator('input[name="dir"]').fill('week3')
-    await panel.locator('input[name="title"]').fill('第三周')
-    await panel.getByRole('button', { name: '新建', exact: true }).click()
-    await expect(panel.locator('.pm-workspace-document[data-document="week3"]')).toBeVisible()
-    await expect(page.locator('.pm-site-home__document[data-document="week3"]')).toContainText('第三周')
-
-    const week3 = panel.locator('.pm-workspace-document[data-document="week3"]')
-    await week3.locator('input[name="to"]').fill('week4')
-    await week3.getByRole('button', { name: '重命名' }).click()
-    await expect(panel.locator('.pm-workspace-document[data-document="week4"]')).toBeVisible()
-    await expect(week3).toHaveCount(0)
-
-    const intro = panel.locator('.pm-workspace-document[data-document="intro"]')
-    await intro.locator('input[name="to"]').fill('intro-copy')
-    await intro.getByRole('button', { name: '复制' }).click()
-    const copy = panel.locator('.pm-workspace-document[data-document="intro-copy"]')
-    await expect(copy).toBeVisible()
-
-    page.once('dialog', dialog => void dialog.accept())
-    await copy.getByRole('button', { name: '删除' }).click()
-    await expect(copy).toHaveCount(0)
-    await expect(page.locator('.pm-site-home__document')).toHaveCount(2)
-
-    await page.locator('.pm-workspace-history__toggle').click()
-    const history = page.getByRole('dialog', { name: '修改历史' })
-    await expect(history.locator('.pm-workspace-revision')).toHaveCount(4)
-    await expect(history.locator('.pm-workspace-revision__summary')).toHaveText([
-      '删除文档 intro-copy',
-      '复制文档 intro 为 intro-copy',
-      '重命名文档 week3 为 week4',
-      '新建文档 week3',
-    ])
-  })
-
-  test('the home page loads the operator plugins\' browser parts and their routes answer for it; a document\'s page loads its deck\'s plugins', async ({ page }) => {
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await expect(page.locator('html')).toHaveAttribute('data-fixture-home', 'loaded')
-    const where = (document: string) => page.evaluate(async (dir) => {
-      const response = await fetch('/__presmium/fixture.home/where', { headers: { 'Presmium-Document': dir } })
-      return { status: response.status, body: await response.json() as unknown }
-    }, document)
-    expect(await where('')).toEqual({ status: 200, body: { document: '', sees: [] } })
-    expect(await where('intro')).toEqual({ status: 200, body: { document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] } })
-    await openDevPage(page, `${home}intro/`, page.locator('.pm-section[data-section="导论"]'))
-    await expect(page.locator('.pm-toolbar--bar')).toBeAttached()
-    await expect(page.locator('html')).not.toHaveAttribute('data-fixture-home', 'loaded')
-  })
-
-  test('in edit mode the mark of a role without children shows; out of it, it does not', async ({ page }) => {
-    await openDevPage(page, `${home}intro/`, page.locator('.pm-workspace-edit'))
-    const narration = page.locator('.pm-section[data-section="导论"] .pm-block--narration')
-    await expect(narration).toContainText('可见的角色')
-    await expect(page.locator('.pm-role-mark')).toHaveCount(0)
-    await page.locator('.pm-workspace-edit').click()
-    await expect(page.locator('.pm-workspace-edit')).toHaveAttribute('aria-pressed', 'true')
-    await expect(narration.locator('.pm-role-mark')).toHaveText('〔probe hidden〕')
-    await page.locator('.pm-workspace-edit').click()
-    await expect(page.locator('.pm-role-mark')).toHaveCount(0)
-  })
-
   test('a {literalinclude} shows a file of the workspace as code, and the file a symbolic link names outside it, as presmium dev does', async ({ page }) => {
     const section = page.locator('.pm-section[data-section="code"]')
     await openDevPage(page, `${home}intro/`, section)
@@ -187,78 +108,6 @@ test.describe('the workspace in the browser', () => {
     expect(doc.diagnostics.filter(d => d.severity === 'error')).toEqual([])
   })
 
-  test('with an assistant, a document the agent drafts opens once the draft is committed, after its review', async ({ page }) => {
-    const decisions: unknown[] = []
-    await page.exposeFunction('recordDraftDecision', (decision: unknown) => decisions.push(decision))
-    await page.addInitScript(() => {
-      const events: Record<string, unknown>[] = []
-      let wake: (() => void) | undefined
-      const agent: DraftAgent = {
-        requests: [],
-        emit(event) {
-          events.push(event)
-          wake?.()
-        },
-        client: {
-          available: () => true,
-          provider: () => 'Fixture',
-          runtime: () => undefined,
-          submit(request: unknown) {
-            agent.requests.push(request)
-            return {
-              id: 'draft-1',
-              events: (async function* () {
-                for (;;) {
-                  const event = events.shift()
-                  if (!event) {
-                    await new Promise<void>(done => wake = done)
-                    continue
-                  }
-                  yield event
-                  if (event.type === 'done' || event.type === 'error') return
-                }
-              })(),
-              cancel() {},
-              async review(decision: unknown) {
-                await (window as unknown as { recordDraftDecision(decision: unknown): Promise<void> }).recordDraftDecision(decision)
-                agent.emit({ type: 'done', revision: 'draft-commit' })
-              },
-            }
-          },
-        },
-      }
-      window.draftAgent = agent
-    })
-    await page.route('**/packages/workspace/src/client/plugin.ts*', async (route) => {
-      const response = await route.fetch()
-      const agentPlugin = `export const fixtureAgent = { manifest: { id: 'fixture.agent', version: '0.1.0', kernel: '^1.0.0', provides: [{ id: 'presmium.agent' }] }, setup(ctx) { ctx.provide({ id: 'presmium.agent' }, window.draftAgent.client) } }`
-      await route.fulfill({ response, body: `${await response.text()}\n${agentPlugin}\n` })
-    })
-
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const panel = page.getByRole('dialog', { name: '管理文档' })
-    await panel.locator('input[name="dir"]').fill('week5')
-    await panel.locator('input[name="title"]').fill('第五周')
-    await panel.getByRole('checkbox', { name: '由 agent 起草（模型由 Fixture 提供）' }).check()
-    await panel.locator('textarea[name="request"]').fill('写一节关于上下文窗口的讲义')
-    await panel.getByRole('button', { name: '新建', exact: true }).click()
-
-    const draft = panel.locator('.pm-workspace-draft')
-    await expect(draft).toHaveAttribute('data-state', 'drafting')
-    await expect(page.locator('.pm-site-home__document[data-document="week5"]')).toContainText('第五周')
-    expect(await page.evaluate(() => window.draftAgent!.requests)).toEqual([{ kind: 'chat', prompt: '写一节关于上下文窗口的讲义', context: { document: 'week5' } }])
-    await page.evaluate(() => window.draftAgent!.emit({ type: 'progress', text: '写第一节' }))
-    await expect(draft.locator('.pm-workspace-draft__note')).toHaveText('写第一节')
-    await page.evaluate(() => window.draftAgent!.emit({ type: 'review', engine: 'git', changes: [{ path: 'week5/lecture.md', kind: 'modified', binary: false, added: 12, removed: 3 }], steps: [] }))
-    await expect(draft).toHaveAttribute('data-state', 'review')
-    await expect(draft.locator('.pm-workspace-draft__changes')).toContainText('week5/lecture.md (+12 −3)')
-    expect(new URL(page.url()).pathname).toBe('/')
-
-    await draft.getByRole('button', { name: '接受' }).click()
-    await expect(page).toHaveURL(`${home}week5/`)
-    expect(decisions).toEqual([{ accept: true }])
-  })
 })
 
 const NETWORK = Object.values(networkInterfaces()).flatMap(entries => entries ?? []).find(entry => entry.family === 'IPv4' && !entry.internal)?.address
@@ -317,12 +166,9 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
     await cleanUp(children, dirs)
   })
 
-  test('another device opens the home page and a document at the machine\'s address; edit mode and approvals work there; another site\'s request is still refused', async ({ page }) => {
+  test('another device opens the home page and a document at the machine\'s address; approvals work there; another site\'s request is still refused', async ({ page }) => {
     await openDevPage(page, lan, page.locator('.pm-site-home__document[data-document="intro"]'))
     await openDevPage(page, `${lan}intro/`, page.locator('.pm-section[data-section="导论"]'))
-    await page.locator('.pm-workspace-edit').click()
-    await expect(page.locator('.pm-workspace-edit')).toHaveAttribute('aria-pressed', 'true')
-    await expect(page.locator('.pm-section[data-section="导论"] .pm-role-mark')).toHaveText('〔probe hidden〕')
 
     const asked = page.evaluate(async () => (await fetch('/__presmium/fixture.home/approve', { method: 'POST', headers: { 'Presmium-Document': 'intro' } })).json() as Promise<{ allowed: boolean }>)
     const entry = page.locator('.pm-approvals__toggle')
@@ -365,103 +211,5 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
     } finally {
       await Promise.all(contexts.map(context => context.close()))
     }
-  })
-})
-
-test.describe('the history\'s undo, and documents made on disk, follow on the home page (F-10); the history in the workspace\'s language (F-55)', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180_000 })
-  const dirs: string[] = []
-  const homes: string[] = []
-  const children: ChildProcess[] = []
-
-  async function serve(dir: string): Promise<string> {
-    const home = await serveLocal(dir, children)
-    homes.push(home)
-    return home
-  }
-
-  test.afterAll(async () => {
-    await cleanUp(children, dirs)
-  })
-
-  async function openHistory(page: Page) {
-    await page.locator('.pm-workspace-history__toggle').click()
-    return page.getByRole('dialog', { name: /^(修改历史|History)$/ })
-  }
-
-  test('a rename undone from the history brings the directory back on the home page, its page shows; a creation undone takes it away; labels and dates in zh-CN', async ({ page }) => {
-    const dir = workspaceCopy('local')
-    dirs.push(dir)
-    const home = await serve(dir)
-    const listed = page.locator('.pm-site-home__document')
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const documents = page.getByRole('dialog', { name: '管理文档' })
-    const intro = documents.locator('.pm-workspace-document[data-document="intro"]')
-    await intro.locator('input[name="to"]').fill('intro2')
-    await intro.getByRole('button', { name: '重命名' }).click()
-    await expect(page.locator('.pm-site-home__document[data-document="intro2"]')).toBeVisible()
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const history = await openHistory(page)
-    const renamed = history.locator('.pm-workspace-revision').first()
-    await expect(renamed.locator('.pm-workspace-revision__summary')).toHaveText('重命名文档 intro 为 intro2')
-    await expect(renamed.locator('.pm-workspace-revision__meta time')).toHaveText(/^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{2}:\d{2}$/)
-    await renamed.getByRole('button', { name: '撤销' }).click()
-    await expect(history.locator('.pm-workspace-revision').first().locator('.pm-workspace-revision__summary')).toHaveText('撤销「重命名文档 intro 为 intro2」')
-    await expect(page.locator('.pm-site-home__document[data-document="intro"]')).toBeVisible()
-    await expect(page.locator('.pm-site-home__document[data-document="intro2"]')).toHaveCount(0)
-    await openDevPage(page, `${home}intro/`, page.locator('.pm-section[data-section="导论"]'))
-
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await page.locator('.pm-workspace-documents__toggle').click()
-    await documents.locator('input[name="dir"]').fill('week9')
-    await documents.locator('input[name="title"]').fill('第九周')
-    await documents.getByRole('button', { name: '新建', exact: true }).click()
-    await expect(page.locator('.pm-site-home__document[data-document="week9"]')).toBeVisible()
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const again = await openHistory(page)
-    const created = again.locator('.pm-workspace-revision').first()
-    await expect(created.locator('.pm-workspace-revision__summary')).toHaveText('新建文档 week9')
-    await created.getByRole('button', { name: '撤销' }).click()
-    await expect(page.locator('.pm-site-home__document[data-document="week9"]')).toHaveCount(0)
-    await page.reload()
-    await expect(page.locator('.pm-site-home__document[data-document="intro"]')).toBeVisible()
-    await expect(listed).toHaveCount(1)
-  })
-
-  test('a document made on disk shows on the home page once the site is asked again, and its page shows', async ({ page }) => {
-    const [dir, home] = [dirs[0]!, homes[0]!]
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    mkdirSync(join(dir, 'week7'))
-    writeFileSync(join(dir, 'week7/lecture.md'), '---\ntitle: 第七周\n---\n\n# 第七周\n\n作者在编辑器中新建的文档。\n')
-    await expect(async () => {
-      await page.goto(home)
-      await expect(page.locator('.pm-site-home__document[data-document="week7"]')).toContainText('第七周', { timeout: 5_000 })
-    }).toPass({ timeout: 60_000 })
-    await openDevPage(page, `${home}week7/`, page.locator('[data-section]').getByText('作者在编辑器中新建的文档。'))
-  })
-
-  test('in a workspace whose documents are English, the history speaks English', async ({ page }) => {
-    const dir = workspaceCopy('english', (copy) => {
-      writeFileSync(join(copy, 'intro/lecture.md'), readFileSync(join(copy, 'intro/lecture.md'), 'utf8').replace('title: 导论\n', 'title: Introduction\nlang: en\n'))
-    })
-    dirs.push(dir)
-    const home = await serve(dir)
-    await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const documents = page.getByRole('dialog', { name: 'Documents' })
-    const intro = documents.locator('.pm-workspace-document[data-document="intro"]')
-    await intro.locator('input[name="to"]').fill('intro-copy')
-    await intro.getByRole('button', { name: 'Copy' }).click()
-    await expect(page.locator('.pm-site-home__document[data-document="intro-copy"]')).toBeVisible()
-    await page.locator('.pm-workspace-documents__toggle').click()
-    const history = await openHistory(page)
-    const copied = history.locator('.pm-workspace-revision').first()
-    await expect(copied.locator('.pm-workspace-revision__summary')).toHaveText('Copy document intro to intro-copy')
-    await expect(copied.locator('.pm-workspace-revision__meta')).toContainText('document operation')
-    await expect(copied.locator('.pm-workspace-revision__meta time')).toHaveText(/^\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2}\s[AP]M$/)
-    await copied.getByRole('button', { name: 'Revert' }).click()
-    await expect(history.locator('.pm-workspace-revision').first().locator('.pm-workspace-revision__summary')).toHaveText('Revert "Copy document intro to intro-copy"')
   })
 })
