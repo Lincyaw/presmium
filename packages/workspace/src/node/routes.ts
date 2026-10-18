@@ -1,34 +1,3 @@
-/**
- * The workspace's routes under `/__presmium/presmium.workspace/` (docs/architecture.md
- * 10.2): the documents and their operations, and the revision history and
- * its reverts. The server checks the roles (`Route.role`): readers list the
- * documents; editors and owners change them and read the history.
- *
- * An undo holds the locks of the documents its commit changed (`DOCUMENT_LOCKS`,
- * F-09): while an agent's change task holds one, it is refused with 409, whose
- * answer names the lock (`LockedAnswer`), as a document operation's does. Once
- * done, the documents it took away or brought back are told to the server and
- * the site, as a document operation's are (C-7, F-10).
- *
- * The source editor's routes (P-124, ./source.ts): `files`, `source` (read
- * and save), and `changes` with its `commit` and `discard`, for editors and
- * owners, in the scope of the request's document (on the home page, every
- * document and the configuration). A commit or a discard holds the locks of
- * the documents it changes, as an undo does.
- *
- * In `presmium dev` (./dev.ts) every request is of the one deck
- * (`WorkspaceRoutes.document`), and there are no document operations.
- *
- * The workspace service's interface for a workbench (./service.ts,
- * docs/design-dsh.md 5.1): `ir`, `ir/events`, `preview`, `build` and
- * `check` of the request's document, for editors and owners, and the
- * proxies of the slides' previews; the reviews of DeepSeek Harness sessions
- * (`review` and its routes, ./review/routes.ts, WP-96c). With a service token
- * (`PRESMIUM_SERVICE_TOKEN`, which `presmium studio` gives the service and
- * its bundle), every route asks for `Authorization: Bearer <token>`: a
- * product page's scripts, which reach these routes on the same origin,
- * cannot change the source through them (5.3).
- */
 import { timingSafeEqual } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { eventStream, errorMessage, isRecord, json, problem } from '@presmium/kernel'
@@ -51,30 +20,21 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 
 export interface WorkspaceRoutes {
   documents: Documents
-  /** Undefined when the workspace is not a git repository: the operations and the history answer 409. */
   revisions?: Revisions
-  /** The documents' locks (`DOCUMENT_LOCKS`); an undo takes them. */
   locks?: DocumentLocks
-  /** The documents an undo took away or brought back (the server's sessions and the site follow, C-7). */
   documentsChanged?(change: DocumentsChange): Promise<void> | void
-  /** `presmium dev`: the directory of its one deck, the document of every request (the server's is ''); no document operations. */
   document?: string
-  /** `presmium serve`: the service's interface for a workbench (`ir`, `ir/events`, `preview`, `build`, `check`) and the previews' proxies. */
   service?: WorkspaceService
-  /** The service token (`PRESMIUM_SERVICE_TOKEN`): every route asks for it. */
   token?: string
-  /** `presmium serve` in a git repository: the reviews of DeepSeek Harness sessions (`review`, ./review/routes.ts); an undo of a session's commit is told to them. */
   reviews?: Reviews
 }
 
-/** Whether a request names the service token. */
 function authorized(request: Request, token: string): boolean {
   const given = Buffer.from(bearer(request.headers.get('authorization')) ?? '')
   const own = Buffer.from(token)
   return given.length === own.length && timingSafeEqual(given, own)
 }
 
-/** The renderer ids `POST build` takes, as `presmium build --to`. */
 function rendererIds(body: unknown): string[] | undefined {
   if (!isRecord(body) || !Array.isArray(body.to)) return undefined
   const ids = body.to.filter((id): id is string => typeof id === 'string' && /^[\w.-]+$/.test(id))
@@ -105,26 +65,21 @@ async function answer(work: () => Promise<Response>): Promise<Response> {
   }
 }
 
-/** The documents that went and came between two listings. */
 function difference(before: string[], after: string[]): DocumentsChange {
   return { removed: before.filter(dir => !after.includes(dir)), added: after.filter(dir => !before.includes(dir)) }
 }
 
-/** The paths a commit or a discard of the editor takes: those asked for among the files not committed, else all of them. */
 function chosenPaths(body: unknown, uncommitted: string[]): string[] {
   const asked = isRecord(body) && Array.isArray(body.paths) ? body.paths.filter((path): path is string => typeof path === 'string') : undefined
   return asked ? uncommitted.filter(path => asked.includes(path)) : uncommitted
 }
 
-/** The server contribution of the workspace, mounted for every document (and for the home page, document ''). */
 export function workspaceContribution(options: WorkspaceRoutes): ServerContribution {
   const { documents, revisions, locks } = options
   const listed = () => documents.list().map(doc => doc.dir)
   const source = new SourceFiles({ config: documents.config, writer: documents.writer, ...locks ? { locks } : {} })
-  /** The scope of a request: its document's, or that of `presmium dev`'s deck. */
   const scopeOf = (ctx: RequestContext) => source.scope(options.document ?? ctx.document)
   const uncommitted = async (ctx: RequestContext) => (revisions ? await revisions.uncommittedFiles(source.roots(scopeOf(ctx))) : [])
-  /** Runs `work` on the uncommitted files `body` names, holding the locks of their documents. */
   const onChanges = async (request: Request, ctx: RequestContext, holder: string, work: (paths: string[], member: Member, body: Record<string, unknown>) => Promise<Response>) => {
     if (request.method !== 'POST') return problem(405, 'POST')
     if (!revisions) return problem(409, NO_GIT)
@@ -144,13 +99,11 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       role: 'reader',
       handle: (request, ctx) => answer(async () => {
         if (request.method === 'GET') {
-          // The status bar counts the files of the page's scope not committed, as its changes list them.
           const status = revisions ? await revisions.status(source.roots(scopeOf(ctx))) : {}
           return json({ title: documents.config.title, documents: documents.list(), templates: documents.templates(), git: Boolean(revisions), ...status, single: documents.config.single || options.document !== undefined } satisfies DocumentsAnswer)
         }
         if (request.method !== 'POST') return problem(405, 'GET or POST')
         if (options.document !== undefined) return problem(409, 'presmium dev serves one deck: the document operations are the workspace service\'s (presmium serve)')
-        // Readers list the documents only.
         if (!ctx.member.roles.some(role => role === 'editor' || role === 'owner')) return problem(403, 'document operations need the role editor')
         if (!revisions) return problem(409, NO_GIT)
         const operation = operationOf(await request.json().catch(() => undefined))
@@ -158,7 +111,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         return json(await documents.apply(operation, ctx.member))
       }),
     },
-    // The history is the editors' (its messages quote annotations, prompts and the agent's explanations; WP-91).
     revisions: {
       role: 'editor',
       handle: (request, ctx) => answer(async () => {
@@ -166,8 +118,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!revisions) return json({ revisions: [] } satisfies RevisionsAnswer)
         const params = new URL(request.url).searchParams
         const limit = Number(params.get('limit'))
-        // A document's page lists its own changes; the home page (document '') all of them; a single deck its own
-        // (its directory may be one of a larger repository: presmium dev).
         const document = params.get('document') ?? ((options.document ?? ctx.document) || (documents.config.single ? '.' : undefined))
         return json({ revisions: await revisions.history({ ...document ? { document } : {}, ...params.get('task') ? { task: params.get('task')! } : {}, ...Number.isInteger(limit) && limit > 0 ? { limit } : {} }) } satisfies RevisionsAnswer)
       }),
@@ -179,7 +129,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!revisions) return problem(409, NO_GIT)
         const body: unknown = await request.json().catch(() => undefined)
         if (!isRecord(body) || typeof body.id !== 'string' || !/^[0-9a-f]{4,64}$/i.test(body.id)) return problem(400, '{ id: <commit> }')
-        // Not while an agent's change task of a document the commit changed runs or waits for its review (F-09).
         const claimed = locks?.claimAll(await revisions.documentsOf(body.id), 'revision:revert')
         if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
         try {
@@ -187,7 +136,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
           const result = await revisions.revert(body.id, ctx.member)
           if (result.ok) {
             await options.documentsChanged?.(difference(before, listed()))
-            // A session's commit undone: the bundle tells the session (docs/design-dsh.md 6.5).
             const undone = trailers(result.revision.message)['Presmium-Revert']?.[0] ?? body.id
             void options.reviews?.reverted(undone, result.revision.id).catch(() => undefined)
           }
@@ -206,7 +154,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
     },
     'source': {
       role: 'editor',
-      // The text as JSON, escaped: up to twice the file's size, and more.
       maxBody: MAX_SOURCE * 3,
       handle: (request, ctx) => answer(async () => {
         const scope = scopeOf(ctx)
@@ -240,7 +187,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       handle: (request, ctx) => answer(() => onChanges(request, ctx, 'editor:discard', async (paths) => {
         const before = listed()
         await revisions!.discard(paths)
-        // A document that was new goes with its files; one brought back by deleted files comes again.
         await options.documentsChanged?.(difference(before, listed()))
         return json({ paths } satisfies CommitAnswer)
       })),
@@ -255,7 +201,6 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
   return { routes, ...options.service ? { proxies: options.service.proxies } : {} }
 }
 
-/** The service's interface for a workbench, of the request's document (./service.ts). */
 function serviceRoutes(service: WorkspaceService): Record<string, Route> {
   return {
     'ir': {
@@ -284,7 +229,6 @@ function serviceRoutes(service: WorkspaceService): Record<string, Route> {
   }
 }
 
-/** The workspace as a plugin of every served document: its routes only (its browser part is the site's own plugin). */
 export function workspacePlugin(options: WorkspaceRoutes): PresmiumNodePlugin {
   return {
     id: WORKSPACE_ID,

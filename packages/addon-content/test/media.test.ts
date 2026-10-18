@@ -1,7 +1,3 @@
-// Runs the real `presmium build --to notebook` on a deck with a {video} that has a poster and
-// captions in two languages (docs/ir.md 2.14): the notebook shows the same <video> with its
-// <track>s as the other forms, its files copied to media/; a caption file that does not exist
-// fails the build with an error on the directive's line.
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -40,7 +36,6 @@ afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })
 
 const vtt = (text: string) => `WEBVTT\n\n00:00.000 --> 00:03.000\n${text}\n`
 
-/** A deck directory with `lecture.md`, a poster and two caption files. */
 function deck(text: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-media-'))
   dirs.push(dir)
@@ -64,7 +59,6 @@ it('writes a video with its poster and two caption tracks into the notebook, the
   const copy = (name: string) => `media/${media.find(file => file.endsWith(`-${name}`))}`
   expect(media).toEqual(expect.arrayContaining([expect.stringMatching(/^[\da-f]{8}-poster\.png$/), expect.stringMatching(/-loop\.en\.vtt$/), expect.stringMatching(/-loop\.zh\.vtt$/), expect.stringMatching(/-clip\.webm$/)]))
   expect(video).toContain(`<video controls preload="metadata" src="${copy('clip.webm')}" poster="${copy('poster.png')}">`)
-  // The tracks are labelled with the languages' names in the deck's language; English shows at first.
   expect(video).toContain(`<track kind="captions" src="${copy('loop.en.vtt')}" srclang="en" label="英语" default>`)
   expect(video).toContain(`<track kind="captions" src="${copy('loop.zh.vtt')}" srclang="zh-CN" label="中文（中国）">`)
   expect(video).toContain('<figcaption>智能体环路的一轮</figcaption>')

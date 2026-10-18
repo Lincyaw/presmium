@@ -1,13 +1,7 @@
-/**
- * UI strings of the remote environments in zh-CN and en (N-07), in the UI
- * language of @presmium/host: `useMessages(MESSAGES)` in components,
- * `messages()` elsewhere (the executor's reasons, the token dialog).
- */
 import { currentLocale } from '@presmium/host'
 import type { Catalog } from '@presmium/host'
 
 const zhCN = {
-  // Why a run or a terminal cannot happen.
   unknown: (name: string) => `文稿没有声明 kind: jupyter 的环境 ${name}`,
   envOnly: (name: string) => `环境 ${name} 的凭据方式是 env，只在构建时可用`,
   hubReserved: (name: string) => `环境 ${name} 的凭据方式 hub 尚未提供`,
@@ -19,13 +13,11 @@ const zhCN = {
   noKernel: (name: string, kernel: string, known: string[]) => `环境 ${name} 没有内核 ${kernel}（有：${known.join('、') || '无'}）`,
   wrongLanguage: (name: string, kernel: string, language: string, lang: string) => `环境 ${name} 的内核 ${kernel} 运行 ${language}，不运行 ${lang}`,
   timedOut: (seconds: number) => `运行超过 ${seconds} 秒，已中断内核`,
-  // The token dialog (`auth: prompt`).
   tokenTitle: (name: string) => `环境 ${name} 的令牌`,
   tokenHelp: (origin: string) => `粘贴你的 Jupyter 令牌。它只保存在本页的会话存储中（关闭标签页即清除），只发往 ${origin}。`,
   tokenLabel: '令牌',
   tokenConnect: '连接',
   tokenCancel: '取消',
-  // The terminal.
   terminal: (name: string) => `环境 ${name} 的终端`,
   terminalOpen: '打开终端',
   terminalConnecting: '正在连接……',

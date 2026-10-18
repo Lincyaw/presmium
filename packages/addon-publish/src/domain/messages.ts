@@ -1,7 +1,3 @@
-/**
- * UI strings of the publishing plugin in zh-CN and en (N-07), chosen by
- * `@presmium/host` (`useMessages`, `currentLocale`).
- */
 import type { Locale } from '@presmium/kernel'
 
 const zhCN = {

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// One change task in the edit panel: its progress and steps while the agent works, its review file by file
-// (each kept or rejected; a unified diff for text, binary files only named) with a return to before each step
-// (P-115), its commit and the undo of it. What its events say is `change.progress` (the host's `trackAgentTask`).
 import { PmButton, useMessages, useServer } from '@presmium/host'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import { decide, keep, restoreTo, revert } from './edit.ts'
@@ -13,7 +10,6 @@ const t = useMessages(ASSISTANT_MESSAGES)
 const server = useServer()
 const route = (path: string, init?: RequestInit) => server.fetch(ASSISTANT_ID, path, init)
 
-/** A unified diff's lines, each with its kind: added, removed, a hunk's header, or context. */
 function diffLines(diff: string): { text: string, kind: 'add' | 'del' | 'hunk' | 'same' }[] {
   return diff.replace(/\n$/, '').split('\n').map(text => ({
     text,
@@ -111,7 +107,6 @@ function diffLines(diff: string): { text: string, kind: 'add' | 'del' | 'hunk' |
 </template>
 
 <style scoped>
-/* A change task in the dock: a card on the paper; its review's diffs in the colours of added and removed lines. */
 .pm-assistant-edit__task {
   display: grid;
   gap: var(--pm-space-2);

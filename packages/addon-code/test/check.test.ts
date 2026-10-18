@@ -1,5 +1,3 @@
-// Runs the real `presmium check` CLI on a MyST deck that references code in a throwaway git
-// repository; the diagnostics come from the {code-ref} resolution pass of the compiler.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -30,7 +28,6 @@ export function checkout(prices: number[], coupon?: string): string {
 // #endregion checkout
 `
 
-// The same code with blank lines inserted, indented four spaces per level, and the checkout region shifted right.
 const CART_REFORMATTED = `
 
 export function total(prices: number[]): number {
@@ -53,7 +50,6 @@ export function total(prices: number[]): number {
   // #endregion checkout
 `
 
-// Python code without markers, referenced by symbol.
 const PARSER = `class Parser:
     def __init__(self, text):
         self.text = text
@@ -66,13 +62,10 @@ const PARSER = `class Parser:
         return words
 `
 
-// The same code with blank lines inserted and indented two spaces per level.
 const PARSER_REFORMATTED = `\n\n${PARSER.replace(/^(?: {4})+/gm, lead => ' '.repeat(lead.length / 2))}`
 
-// A fragment without markers or a name, found by its syntax: the guard of checkout.
 const GUARD = 'pattern:src/cart.ts#if ($COND) throw $ERR'
 
-/** Runs a command and returns its output; throws with its error output when it fails. */
 function sh(cwd: string, command: string, args: string[]): string {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8' })
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed: ${result.stderr}`)
@@ -90,7 +83,6 @@ interface Finding {
   source: { file: string, line: number }
 }
 
-/** A git repository with src/cart.ts and src/parser.py committed and a deck that pins one anchor to that commit. */
 function createRepo(): { dir: string, deck: string, fenceLine: number, edit: (text: string, file?: string) => void } {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-code-'))
   repos.push(dir)
@@ -160,7 +152,6 @@ it('keeps passing after blank lines are inserted and the referenced code is re-i
   const { code, findings } = await check(repo.dir)
   expect(code).toBe(0)
   expect(problems(findings)).toEqual([])
-  // The lock notices that the anchors moved down, and nothing else: the code itself is unchanged.
   expect(findings.map(f => f.message)).toEqual([
     'anchor region:src/cart.ts#checkout moved to src/cart.ts:8',
     'anchor symbol:src/cart.ts#total moved to src/cart.ts:3',
@@ -209,7 +200,6 @@ it('reports drift with a diff when the pinned code changes in the working tree',
 
 interface CodeNode { value: string, origin: { anchor: string, file: string, startLine: number, endLine: number, pin?: string, permalink?: string } }
 
-/** The code nodes of the deck at `deck` (relative to `dir`), compiled by `presmium ir`. */
 async function codeNodes(dir: string, deck = 'deck'): Promise<CodeNode[]> {
   const { code, stdout, stderr } = await presmium(dir, ['ir', deck])
   if (code !== 0) throw new Error(`presmium ir failed: ${stderr}`)
@@ -243,7 +233,6 @@ it('reads pinned code from a git submodule and links it to the submodule\'s repo
   git(lib, 'add', '.')
   git(lib, 'commit', '-qm', 'lib')
   const pinned = git(lib, 'rev-parse', 'HEAD')
-  // The submodule's code changes after the pinned commit.
   writeFileSync(join(lib, 'src/x.ts'), '// lib\n// #region part\nexport function part(a: number): number {\n  return a * 3\n}\n// #endregion part\n')
   git(lib, 'commit', '-qam', 'triple')
 
@@ -272,7 +261,6 @@ presmium:
 
 it('reads anchor paths from the repository root and says so when a path is written from the deck (R-107)', async () => {
   const repo = createRepo()
-  // The deck's own file, named from the deck's directory instead of the repository root.
   mkdirSync(join(repo.dir, 'deck/lib'))
   writeFileSync(join(repo.dir, 'deck/lib/util.ts'), '// #region one\nexport const one = 1\n// #endregion one\n')
   writeFileSync(repo.deck, `${readFileSync(repo.deck, 'utf8')}
@@ -305,7 +293,6 @@ presmium.code: { repo: https://github.com/acme/elsewhere }
 `)
   const nodes = await codeNodes(repo.dir)
   const links = nodes.filter(node => node.origin.anchor === 'symbol:src/cart.ts#total').map(node => node.origin.permalink)
-  // The section without a {config} keeps the headmatter's repository.
   expect(links).toEqual([
     expect.stringMatching(/^https:\/\/github\.com\/acme\/shop\/blob\/[0-9a-f]{40}\/src\/cart\.ts#L1-L3$/),
     expect.stringMatching(/^https:\/\/github\.com\/acme\/elsewhere\/blob\/[0-9a-f]{40}\/src\/cart\.ts#L1-L3$/),
@@ -314,7 +301,6 @@ presmium.code: { repo: https://github.com/acme/elsewhere }
 
 it('refuses an anchor that names a file in .git, putting nothing of it in the IR, and reads the working tree\'s own files (F-26)', async () => {
   const repo = createRepo()
-  // A remote with a credential in its URL, as `.git/config` may hold.
   sh(repo.dir, 'git', ['remote', 'add', 'origin', 'https://probe-user:ghp_PROBESECRET0123456789@github.com/acme/shop.git'])
   writeFileSync(repo.deck, `---\nplugins:\n  - ${ADDON}\n---\n\n## Named\n\n\`\`\`{code-ref} region:.git/config#core\n\`\`\`\n`)
   const compilation = await new Compiler(repo.deck, { workspaceRoot: repo.dir }).compile()

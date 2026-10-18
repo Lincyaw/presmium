@@ -7,21 +7,14 @@ import { defineCodeRunnersSetup } from '@slidev/types'
 import DOMPurify from 'dompurify'
 import { messages, whenService } from '../src/client/index.ts'
 
-/** One output entry per line, as the built-in runners do for each console line. */
 function lines(text: string, className?: string): CodeRunnerOutput[] {
   return text ? text.replace(/\n$/, '').split('\n').map(line => ({ text: line, class: className })) : []
 }
 
 const joined = (value: unknown) => (Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : JSON.stringify(value, null, 2))
 
-/** What an image output's data may hold: base64, nothing else (an attribute value is never closed by it). */
 const BASE64 = /^[A-Za-z0-9+/=]*$/
 
-/**
- * A rich output as Slidev's runner shows HTML (docs/ir.md 6.1): an image of
- * base64 data (other data is dropped, saying so: it is untrusted, section 11),
- * the HTML sanitized (Slidev does not sanitize it), other types as text.
- */
 function rich(output: RunOutput): CodeRunnerOutput[] {
   if (output.output_type === 'stream') return lines(joined(output.text), output.name === 'stderr' ? 'pm-run-stderr' : undefined)
   if (output.output_type === 'error') return [{ error: output.traceback.join('\n') || `${output.ename}: ${output.evalue}` }]
@@ -38,7 +31,6 @@ function rich(output: RunOutput): CodeRunnerOutput[] {
   return text === undefined ? [] : [{ html: `<pre class="pm-run-text">${escapeHtml(joined(text))}</pre>` }]
 }
 
-/** What a run shows: its rich outputs, else its streams. */
 function outputs(result: Pick<RunResult, 'ok' | 'stdout' | 'stderr' | 'outputs'>): CodeRunnerOutput[] {
   if (result.outputs) {
     const shown = result.outputs.flatMap(rich)
@@ -49,7 +41,6 @@ function outputs(result: Pick<RunResult, 'ok' | 'stdout' | 'stderr' | 'outputs'>
   return shown
 }
 
-/** The output recorded at compile time that the slides renderer gives a runner (`recording` of its options), when there is one. */
 type Recording = Pick<RunResult, 'ok' | 'stdout' | 'stderr' | 'outputs'>
 
 function recordingOf(options: Record<string, unknown>): Recording | undefined {
@@ -58,19 +49,11 @@ function recordingOf(options: Record<string, unknown>): Recording | undefined {
   return { ok: value.ok === true, stdout: value.stdout, stderr: value.stderr, ...Array.isArray(value.outputs) ? { outputs: value.outputs as RunOutput[] } : {} }
 }
 
-/** The recording, under a line that says it is one (and why it shows, or what it says about the run). */
 function recorded(recording: Recording, why?: string): CodeRunnerOutput[] {
   const t = messages()
   return [{ text: why ? t.recordedLine(why) : t.recordedOutput, class: 'pm-run-recorded' }, ...outputs(recording)]
 }
 
-/**
- * The runners' options already shown once: a runner's first call, when its
- * slide loads (`autorun: 'once'`), shows the recording; it runs the code
- * only when asked (the run button). A printed slide (`slidev export`, the
- * browser exporter) always shows the recording: printing with clicks draws
- * the slide once per click, each a runner of its own with the same options.
- */
 const shown = new WeakSet<object>()
 
 function showsRecording(options: Record<string, unknown>): boolean {
@@ -81,32 +64,12 @@ function showsRecording(options: Record<string, unknown>): boolean {
   return true
 }
 
-/**
- * The languages of the runners: those the slides renderer writes as
- * `{monaco-run}` (Python, JavaScript, TypeScript, and C, C++, Ruby, SQL for
- * the WASI executor), with their usual aliases.
- */
 const RUNNER_LANGS = ['python', 'py', 'python3', 'javascript', 'js', 'typescript', 'ts', 'c', 'cpp', 'c++', 'ruby', 'rb', 'sql']
 
-/** How to run the code, naming the runner's button by its icon, the host's line icon (N-10). */
 function runHint(): CodeRunnerOutput {
   return { html: `<span class="pm-run-hint">${messages().runHint(iconMarkup('play', '0.9em', 2))}</span>` }
 }
 
-/**
- * Monaco Runner support (Slidev's `{monaco-run}` code blocks, which the slides
- * renderer writes for code with `:run: live` or `both`) through the
- * `executor` service, so a block runs on the same executors as in the web
- * form: Pyodide for Python, the script worker for JavaScript and TypeScript,
- * the WASI executor for C, C++, Ruby and SQL, or the executor of its
- * environment. The renderer gives each block its options (`runnerOptions`):
- * `block` (its key), `executor` and `session` (`:env:`, `:session:`,
- * docs/ir.md 2.7), `timeout` (ms) and `recording`, the output recorded at
- * compile time. The runner's output area is the block's only one: until the
- * block is run it shows the recording, marked as one, or how to run the
- * code; a run that could not happen (no runtime, a timeout) shows the
- * recording with the reason (P-24). Rich outputs show as the runner's HTML.
- */
 function runner(lang: string): CodeRunner {
   return async (code, { options }) => {
     const recording = recordingOf(options)

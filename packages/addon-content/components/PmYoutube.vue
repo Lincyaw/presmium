@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-/** A YouTube video (P-42) from `{youtube}`: the privacy-enhanced player in an iframe, in both forms. */
 const props = defineProps<{ id: string, start?: number, width?: number, height?: number, caption?: string }>()
 
 const src = computed(() => `https://www.youtube-nocookie.com/embed/${encodeURIComponent(props.id)}${props.start ? `?start=${props.start}` : ''}`)

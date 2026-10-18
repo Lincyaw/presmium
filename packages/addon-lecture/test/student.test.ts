@@ -1,14 +1,3 @@
-// A build for students (P-55 × P-131, review-round3 F-13): `presmium build --audience student --to lecture`
-// publishes each recorded lecture without the teachers' sections, and only in the sections the students' IR has
-// as they were recorded (the hash of each section the track keeps, `ir.sections`): a section that lost a
-// teachers' block, or whose content moved into a teachers' section since the recording, publishes none of what
-// was said and shown there (WP-89g). The deck has teacher-only narration in its opening, a teachers' reveal in
-// its quiz and a teacher-only section; the recorded lecture `rec` goes through all of them with its audio, a
-// screen video and clips of the synthesis cache; `renamed` was recorded when that section was labeled
-// `solutions`, so the deck has no such section now; `moved` was recorded when a hint was in the practice, which
-// has since moved into the teachers' section. What was said there is in other words than the deck's, so the
-// build's scan of the sentences left out would not find it. The deck's synthesized lecture is said by the fake
-// engine (`presmium-speech fake`, a process of its own). Nothing of what only teachers see is in any file written.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -24,14 +13,10 @@ import type { LectureTrack } from '../src/domain/index.ts'
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const SPEECH = fileURLToPath(new URL('../../addon-speech', import.meta.url))
 
-/** Clips of the synthesis cache the recorded lecture says its sentences with: a student's and a teacher's. */
 const STUDENT_CLIP = `${'c'.repeat(32)}.wav`
 const TEACHER_CLIP = `${'b'.repeat(32)}.wav`
-/** What only teachers see: no file of the build for students holds it. */
 const TEACHER = ['只给教师看的讲解', '期末考试的第三题', '教师指南', '第三题的答案', '六乘七是四十二', 'OggTeacherAudio', 'TEACHER-CLIP', 'RENAMED-SECRET', 'OggRenamedTeacher']
-/** What was said and shown in the sections that lost something for the teachers since: the opening, the quiz, the practice of `moved`. */
 const CHANGED = ['开场时念出了只给教师的那一段', 'OggIntroAudio', 'ScreenOfIntro', '测验题的录音讲解', '揭晓之后的录音讲解', 'OggQuizAudio', 'MOVED-HINT', 'OggMovedPractice']
-/** The hint of the practice, which later moved into the teachers' section. */
 const HINT = '提示：先数出每一对相邻符号出现的次数，再决定合并哪一对。'
 
 const DECK = `---
@@ -86,10 +71,8 @@ renderers:
 ${HINT}
 `
 
-/** The deck when \`moved\` was recorded: the hint was in the practice. */
 const BEFORE = DECK.replace(`\n${HINT}\n`, '\n').replace('练习这一节，读者与教师都听到。\n', `练习这一节，读者与教师都听到。\n\n${HINT}\n`)
 
-/** The recorded lecture: the opening (said over the teachers' paragraph), the practice, the quiz (its reveal at step 1), the teachers' section. */
 const REC: LectureTrack = {
   track: 1,
   id: 'rec',
@@ -122,7 +105,6 @@ const REC: LectureTrack = {
   ],
 }
 
-/** Recorded when the teachers' section was labeled `solutions`: what was said there repeats the deck's text. */
 const RENAMED: LectureTrack = {
   ...REC,
   id: 'renamed',
@@ -134,7 +116,6 @@ const RENAMED: LectureTrack = {
   utterances: [
     { id: 'u1', t: 500, d: 2000, text: '练习的另一段录音。', section: 'practice', step: 0 },
     { id: 'u2', t: 4500, d: 2000, text: 'RENAMED-SECRET 整节只给教师：期末考试的第三题就是这个例子。', section: 'solutions', step: 0 },
-    // Said in the teachers' section without a section of its own: placed by the move before it.
     { id: 'u3', t: 6600, d: 1000, text: 'RENAMED-SECRET 第三题的答案。' },
   ],
   events: [
@@ -144,7 +125,6 @@ const RENAMED: LectureTrack = {
   ],
 }
 
-/** Recorded when the hint was in the practice: the speaker said it, in other words. */
 const MOVED: LectureTrack = {
   ...REC,
   id: 'moved',
@@ -154,7 +134,6 @@ const MOVED: LectureTrack = {
   events: [[0, 'go', { section: 'practice', step: 0, view: 'present' }]],
 }
 
-/** The environment without Presmium's variables or credentials, and NODE_ENV, plus `extra`. */
 function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const clean: NodeJS.ProcessEnv = { ...process.env }
   delete clean.NODE_ENV
@@ -180,7 +159,6 @@ beforeAll(async () => {
   })
   dir = mkdtempSync(join(tmpdir(), 'presmium-lecture-student-'))
   operator = mkdtempSync(join(tmpdir(), 'presmium-lecture-operator-'))
-  // The hashes of the sections as the recorder took them: of the whole deck, and of the deck before the hint moved.
   const recorded = async (deck: string) => {
     const at = mkdtempSync(join(tmpdir(), 'presmium-lecture-recorded-'))
     try {
@@ -230,13 +208,11 @@ it('publishes each recorded lecture without the teachers\' sections, nor what wa
   })
   expect(built.code, `${built.stdout}\n${built.stderr}`).toBe(0)
   const published = (id: string) => JSON.parse(readFileSync(join(out, 'lecture', id, 'track.json'), 'utf8')) as LectureTrack
-  // The opening lost the teachers' paragraph, the quiz its reveal: only the practice is as it was recorded.
   expect(published('rec').utterances.map(u => u.text)).toEqual(['练习的录音讲解。'])
   expect(published('rec').audio).toEqual([expect.objectContaining({ section: 'practice' })])
   expect(published('rec').video).toEqual([])
   expect(existsSync(join(out, 'lecture/rec/audio/intro.ogg'))).toBe(false)
   expect(existsSync(join(out, 'lecture/rec/video/intro.screen.webm'))).toBe(false)
-  // The hint moved into the teachers' section after `moved` was recorded: nothing of it is left to publish.
   expect(existsSync(join(out, 'lecture/moved'))).toBe(false)
   expect((JSON.parse(readFileSync(join(out, 'lecture/index.json'), 'utf8')) as { id: string }[]).map(entry => entry.id).sort()).toEqual(['rec', 'renamed', 'script'])
   expect(published('renamed').utterances.map(u => u.text)).toEqual(['练习的另一段录音。'])

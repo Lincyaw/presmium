@@ -1,16 +1,4 @@
 /// <reference lib="webworker" />
-/**
- * Runs Python in Pyodide off the main thread, so a run that never ends can be
- * stopped by terminating the worker. Requests are handled one at a time. The
- * runner (`@presmium/kernel/runner.py`, the one compile time uses) keeps the
- * globals of each session until the session ends (P-101).
- *
- * The WebGPU bridge `presmium_gpu` (P-104) is importable. Code that awaits at
- * its top level runs with `_pm_run_await` (./run_await.py), and the worker
- * awaits it; other code runs with stack switching where the browser has
- * JavaScript Promise Integration, so it can wait for a promise without
- * `await` (`pyodide.ffi.run_sync`, `presmium_gpu.run_sync`).
- */
 import { errorMessage } from '@presmium/kernel'
 import type { loadPyodide as LoadPyodide, PyodideInterface } from 'pyodide'
 import runner from '@presmium/kernel/runner.py?raw'
@@ -20,9 +8,7 @@ import runAwait from './run_await.py?raw'
 
 declare const self: DedicatedWorkerGlobalScope
 
-/** Where the worker's own modules are, on `sys.path`. */
 const MODULES = '/presmium'
-/** JavaScript Promise Integration (WebAssembly stack switching). */
 const JSPI = typeof (WebAssembly as { Suspending?: unknown }).Suspending === 'function'
 
 let runtime: Promise<PyodideInterface> | undefined
@@ -38,7 +24,6 @@ async function start(indexURL: string): Promise<PyodideInterface> {
   return pyodide
 }
 
-/** Loads the runtime once; a failed load is retried by the next request. */
 function load(indexURL: string): Promise<PyodideInterface> {
   runtime ??= start(indexURL).catch((error: unknown) => {
     runtime = undefined
@@ -49,7 +34,6 @@ function load(indexURL: string): Promise<PyodideInterface> {
 
 const reply = (message: WorkerReply) => self.postMessage(message)
 
-/** Whether the code awaits at its top level (`_pm_awaits` of ./run_await.py). */
 function awaiting(pyodide: PyodideInterface, code: string): boolean {
   const awaits = pyodide.globals.get('_pm_awaits')
   try {

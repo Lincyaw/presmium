@@ -9,16 +9,6 @@ import WritebackPanel from './WritebackPanel.vue'
 
 let unregister: Unsubscribe[] = []
 
-/**
- * The lecture plugin's part of the host (docs/architecture.md 4.9): the
- * replay of what it reports while a lecture is recorded, the pointer
- * (`point`) and the laser and marker strokes (`ink`); and in the toolbar,
- * shown in the workspace's edit mode only, the switch of the panel docked
- * beside the page that hands a recorded lecture to the assistant's agent
- * (P-136, P-137; ./dock.ts). It takes the compiler's
- * word on whether the deck has lectures (`offerLectures`). The web package
- * registers it in the document form.
- */
 const plugin: PluginDefinition = {
   manifest: { id: LECTURE_ID, version, kernel: '^1.0.0', requires: [{ token: OPERATIONS, optional: true }, { token: TOOLBAR, optional: true }] },
   setup(ctx) {

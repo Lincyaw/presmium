@@ -1,4 +1,3 @@
-// The presmium-tools row: src/node/tools.ts (docs/design-dsh.md 6.2).
 import { load } from './load.mjs'
 
 const row = await load('tools.ts')

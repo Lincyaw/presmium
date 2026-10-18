@@ -1,6 +1,3 @@
-// `presmium build --to web` of a deck with math, an image, local files named by a link and a link
-// definition, and a plugin that adds a Vite plugin (packages/web/test/fixtures/site), built in a copy
-// beside the fixture so its renderer resolves. The first build is shared; the last test edits and rebuilds.
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'

@@ -1,12 +1,3 @@
-// The review routes of the workspace service (P-115, docs/design-dsh.md 5.1 and 6.5, WP-96c), on a real
-// `presmium serve` with a service token (as presmium studio starts it), the test writing the files as a
-// DeepSeek Harness session would between the routes' calls:
-// - a session's review takes the document's lock (the editor's save gets 409), records checkpoints, adds the
-//   turns it covers; a page follows it as SSE; back to a step, a file rejected, then accepted as one commit
-//   whose trailers name the session and its turns, and the lock is free again;
-// - stopped and started again, the service resumes a session's review with its checkpoints, and rolls back a
-//   review the assistant left in its old record (a task of a process that crashed);
-// - `GET preview` of a serve without `--headless`: its slides have no preview agent configuration.
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
@@ -19,7 +10,6 @@ import { cleanEnv, git, message, presmiumProcess, raw, remove, waitFor, workspac
 const TOKEN = 'review-test-token'
 const LECTURE = '---\ntitle: 审阅\n---\n\n# 审阅\n\n(one)=\n## 第一节\n\n开始时的内容。\n'
 
-/** The events of an SSE response, read in the background. */
 function follow(url: string, headers: Record<string, string>): { events: Record<string, any>[], close(): void } {
   const controller = new AbortController()
   const events: Record<string, any>[] = []
@@ -81,14 +71,12 @@ describe('the review routes of presmium serve', () => {
       const opened = await route('review/open', 'intro', { session: 'session-a', turn: 1 })
       expect(opened.status, opened.text).toBe(200)
       expect(opened.json()).toMatchObject({ review: { document: 'intro', session: 'session-a', holder: 'agent:session-a', turns: { from: 1, to: 1 }, running: true, changes: [] } })
-      // Another session, and the editor, find the document locked.
       expect((await route('review/open', 'intro', { session: 'session-b' })).json()).toMatchObject({ locked: { holder: 'agent:session-a' } })
       const version = route('source?path=intro/lecture.md', 'intro').then(r => r.json<{ version: string }>().version)
       const saved = await route('source', 'intro', { path: 'intro/lecture.md', content: 'x', base: await version })
       expect(saved.status).toBe(409)
       expect(saved.json()).toMatchObject({ locked: { document: 'intro', holder: 'agent:session-a' } })
 
-      // The session writes (turn 1), then two more files (turn 2), a checkpoint after each write.
       writeFileSync(join(dir, 'intro/lecture.md'), LECTURE.replace('开始时的内容。', '第一轮。'))
       expect((await route('review/step', 'intro', { session: 'session-a', turn: 1, label: 'write lecture.md', tool: 'write' })).status).toBe(200)
       expect((await route('review/step', 'intro', { session: 'session-a', turn: 1, end: true })).json()).toMatchObject({ review: { running: false } })
@@ -99,10 +87,8 @@ describe('the review routes of presmium serve', () => {
       const ended = (await route('review/step', 'intro', { session: 'session-a', turn: 2, end: true })).json<{ review: { turns: unknown, steps: { id: string }[], changes: { path: string }[] } }>()
       expect(ended.review.turns).toEqual({ from: 1, to: 2 })
       expect(ended.review.changes.map(c => c.path)).toEqual(['intro/later.md', 'intro/lecture.md', 'intro/notes.md'])
-      // Another session's checkpoint is not this review's.
       expect((await route('review/step', 'intro', { session: 'session-b', label: 'write x' })).status).toBe(409)
 
-      // Back to before the third write: later.md goes; notes.md rejected: gone too, the review goes on.
       expect((await route('review/restore', 'intro', { step: ended.review.steps[2]!.id })).status).toBe(200)
       expect(existsSync(join(dir, 'intro/later.md'))).toBe(false)
       expect((await route('review/reject', 'intro', { paths: ['intro/notes.md'] })).json()).toMatchObject({ review: { changes: [{ path: 'intro/lecture.md' }] } })
@@ -116,7 +102,6 @@ describe('the review routes of presmium serve', () => {
       expect((await route('review', 'intro')).json()).toEqual({})
       expect((await route('source', 'intro', { path: 'intro/lecture.md', content: read('intro/lecture.md'), base: await route('source?path=intro/lecture.md', 'intro').then(r => r.json<{ version: string }>().version) })).status).toBe(200)
 
-      // The page saw the review as it changed, then how it ended.
       await expect.poll(() => page.events.at(-1)?.ended?.outcome).toBe('accepted')
       expect(page.events[0]).toEqual({ document: 'intro' })
       expect(page.events.some(event => event.review?.changes?.length === 3)).toBe(true)
@@ -132,10 +117,7 @@ describe('the review routes of presmium serve', () => {
     await route('review/step', 'intro', { session: 'session-c', turn: 4, end: true })
     await serve.stop()
 
-    // The assistant's record of a task whose server crashed (before WP-96c: no session), its snapshot the
-    // document as committed; the task's changes in the files.
     const deck = realpathSync(join(dir, 'old'))
-    // The document directory as a tree, as the review writes it (its paths only, through an index of its own).
     const index = join(home, 'snapshot-index')
     const indexed = (args: string[]) => execFileSync('git', args, { cwd: dir, env: { ...process.env, GIT_INDEX_FILE: index }, encoding: 'utf8' })
     indexed(['add', '-A', '--', 'old'])
@@ -158,7 +140,6 @@ describe('the review routes of presmium serve', () => {
 
     const resumed = (await route('review', 'intro')).json<{ review: { session: string, turns: unknown, steps: { label: string }[], changes: { path: string }[] } }>().review
     expect(resumed).toMatchObject({ session: 'session-c', turns: { from: 4, to: 4 }, steps: [{ label: 'write kept.md' }], changes: [{ path: 'intro/kept.md' }] })
-    // Its lock is held again.
     expect((await route('review/open', 'intro', { session: 'session-d' })).status).toBe(409)
     expect((await route('review/accept', 'intro', {})).status).toBe(200)
     expect(message(dir)).toMatch(/^AI 修改：kept\.md\n[\s\S]*Presmium-Session: session-c\nPresmium-Turn: 4-4\n/)

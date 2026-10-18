@@ -1,9 +1,3 @@
-// The upgrade gate's second group, privacy and persona (docs/design-dsh.md 6.4 and 6.6, WP-96b): the model's
-// requests carry no session log and no plugin inventory; the skill catalog has Presmium's skills and none of
-// the user's (~/.agents/skills); nothing is written outside the test's directory (no ~/Documents). The
-// profile's own patch turning the uploads back on (what a change in DeepSeek Harness's settings writes) does
-// not reach the start: Presmium's patch comes after it, and without Presmium's patch the same profile does
-// upload (17, item 5). The system message has Presmium's role, not DeepSeek Harness's coding agent's.
 import { spawn } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -18,13 +12,11 @@ const UPLOADS = ['session-log-deepseek', 'session-telemetry-otel', 'plugin-packa
 const LECTURE = '---\ntitle: 隐私\n---\n\n# 隐私\n\n(first)=\n## 第一节\n\n正文。\n'
 const GUIDE = 'This is a Presmium workspace'
 
-/** Whether any of the model's requests has one of the upload fields. */
 const uploads = (model: FakeModel) => {
   const bodies = JSON.stringify(model.received.map(r => r.body))
   return ['dsh_session_log', 'dsh_plugin_packages'].filter(field => bodies.includes(field))
 }
 
-/** The skills the catalog of a turn's request lists. */
 const catalog = (body: Record<string, any>) => [...JSON.stringify(body.messages).matchAll(/\\n- `([\w-]+)`: /g)].map(match => match[1])
 
 describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
@@ -48,7 +40,6 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
   })
 
   it('[gate] the requests carry no upload, the skills are Presmium\'s only, and nothing is written outside the test\'s directory', async () => {
-    // A skill of the user's own, which no request may carry.
     mkdirSync(join(home.home, '.agents/skills/private-notes-96b'), { recursive: true })
     writeFileSync(join(home.home, '.agents/skills/private-notes-96b/SKILL.md'), '---\nname: private-notes-96b\ndescription: The user\'s private notes 96b.\n---\n\nPrivate.\n')
     const scripted = await model([{ text: '好。' }])
@@ -57,7 +48,6 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
     expect(uploads(scripted)).toEqual([])
     expect(catalog(turns(scripted)[0]!).sort()).toEqual(['presmium-author', 'presmium-present'])
     expect(JSON.stringify(scripted.received.map(r => r.body))).not.toContain('private-notes-96b')
-    // HOME holds the user's skill and nothing DeepSeek Harness or Presmium made: no Documents.
     expect(home.homeEntries()).toEqual(['.agents'])
   }, 180_000)
 
@@ -65,7 +55,6 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
     const other = testHome('privacy-patch')
     try {
       const profile = other.profile('headless')
-      // What a change in DeepSeek Harness's settings writes: the profile's own patch.
       writeFileSync(join(other.dshHome, 'profiles', profile, 'cordis.patch.yml'), UPLOADS.map(id => `- id: ${id}\n  disabled: false\n`).join(''))
       const rows = other.dump('headless')
       for (const id of UPLOADS) expect(rows.get(id)?.disabled, id).toBe(true)
@@ -73,7 +62,6 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
       const run = other.headless(dir, '你好。', { model: presmium, env: service.env })
       expect(await run.exited, run.output()).toBe(0)
       expect(uploads(presmium)).toEqual([])
-      // The same profile started without Presmium's patch does upload: what the assertion above would see.
       const bare = await model([{ text: '好。' }])
       const without = running(spawn(process.execPath, [DSH, '--profile', profile, '你好。'], { cwd: dir, env: other.env({ ...service.env, DEEPSEEK_BASE_URL: bare.url, DEEPSEEK_API_KEY: 'model-key-96b' }), stdio: ['ignore', 'pipe', 'pipe'] }))
       expect(await without.exited, without.output()).toBe(0)
@@ -91,7 +79,6 @@ describe('[gate] privacy and persona of Presmium\'s DeepSeek Harness', () => {
     expect(system).toContain('You are Presmium\'s assistant for the authors of lectures')
     expect(system).toContain(GUIDE)
     expect(system).not.toContain('You are a coding agent')
-    // The web carrier: its presets keep their own persona; the coding agent's context of DeepSeek Harness's checkout and GUI is gone.
     const page = await model([{ text: '好。' }])
     const web = await home.web(dir, 5624, { model: page, env: service.env })
     try {

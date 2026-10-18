@@ -12,21 +12,14 @@ const { version } = createRequire(import.meta.url)('../../package.json') as { ve
 
 const container = createContainerExecutor()
 
-/** The language of the notebook's kernel, read as the notebook renderer reads `renderers.notebook.kernel`. */
 function kernelLanguage(kernel: unknown): string {
   if (typeof kernel === 'string' && kernel) return languageId(kernel.replace(/[-\d.]+$/, '') || kernel)
   if (isRecord(kernel) && typeof kernel.language === 'string') return languageId(kernel.language)
   return 'python'
 }
 
-/** Where a `devcontainer` environment's definition is: its `path`, relative to the deck, else the workspace root. */
 const definitionDir = (spec: EnvironmentSpec, deckDir: string, workspaceRoot: string) => typeof spec.path === 'string' && spec.path ? resolve(deckDir, spec.path) : workspaceRoot
 
-/**
- * The provider of `kind: devcontainer` environments (P-100): the container
- * executor, named after the environment (`presmium.env.<name>`), bound to the
- * definition of the environment's `path`.
- */
 const devcontainer: EnvironmentProvider = {
   create(name, spec, ctx) {
     const executor = createContainerExecutor(environmentExecutor(name))
@@ -40,15 +33,6 @@ const devcontainer: EnvironmentProvider = {
   },
 }
 
-/**
- * The local environment (P-22, P-26): the `{local-env}` directive, the
- * container executor for compile-time execution (`:executor: presmium.container`
- * on a code block), the routes that run the edited snippet in the container
- * and export its environment (./server.ts, in `presmium dev` and `presmium
- * serve`, for both forms), and the snippet as a notebook code cell when it
- * is in the kernel's language; and the provider of `kind: devcontainer`
- * environments. Code edited in the browser is never written back (K-09).
- */
 const plugin: PresmiumNodePlugin = {
   id: EXEC_LOCAL_ID,
   version,
@@ -61,7 +45,6 @@ const plugin: PresmiumNodePlugin = {
   rendererExtensions: {
     notebook: {
       components: {
-        // A snippet in the kernel's language is a code cell; others show their fallback.
         PmLocalEnv(node, _block, ctx) {
           const code = node.children?.find(child => child.node.type === 'code')?.node as CodeNode | undefined
           return code && languageId(code.lang) === kernelLanguage(ctx.config.kernel) ? { cell_type: 'code', source: code.value, outputs: [], execution_count: null } : undefined

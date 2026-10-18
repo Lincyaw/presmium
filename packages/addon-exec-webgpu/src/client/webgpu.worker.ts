@@ -1,9 +1,4 @@
 /// <reference lib="webworker" />
-/**
- * Runs one compute shader off the main thread (../gpu.mjs). On `stop` (a
- * timeout or a cancelled run) it destroys the device first; the executor
- * then ends the worker.
- */
 import { compute } from '../gpu.mjs'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 

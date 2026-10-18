@@ -1,8 +1,3 @@
-// The tests' harness of DeepSeek Harness with Presmium's bundle (docs/design-dsh.md section 15, WP-96b): the
-// pinned dsh, found through this package, with a profile of Presmium's (src/node/launch.ts) in a temporary
-// DSH_HOME under a temporary HOME, on the headless, acp and web carriers; `presmium serve` as the workspace
-// service; workspaces of test documents; and what was written outside the test's directory. The end-to-end
-// tests of the workbench (WP-96d, 96e) start DeepSeek Harness with it too.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
@@ -20,11 +15,9 @@ export const PACKAGE = fileURLToPath(new URL('..', import.meta.url)).replace(/\/
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 export const DSH = dshBin()
 
-/** A process left running, its output kept. */
 export interface Running {
   child: ChildProcess
   output(): string
-  /** Waits until the output matches. */
   wait(pattern: RegExp, timeoutMs?: number): Promise<RegExpExecArray>
   exited: Promise<number | null>
   stop(): Promise<void>
@@ -69,7 +62,6 @@ export function running(child: ChildProcess): Running {
   }
 }
 
-/** What the test process's environment keeps: no NODE_ENV, PORT, Presmium's, DeepSeek Harness's or the model's variables, no credentials. */
 export function cleanEnv(): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = {}
   for (const [name, value] of Object.entries(process.env)) {
@@ -79,10 +71,8 @@ export function cleanEnv(): NodeJS.ProcessEnv {
   return out
 }
 
-/** One rows of the composed tree (`--dump-config`), by id. */
 export interface Row { id: string, disabled: boolean, text: string }
 
-/** The top-level rows of a `--dump-config` output. */
 export function rowsOf(dump: string): Map<string, Row> {
   const rows = new Map<string, Row>()
   for (const text of dump.split(/^(?=- )/m).slice(1)) {
@@ -93,9 +83,7 @@ export function rowsOf(dump: string): Map<string, Row> {
 }
 
 export interface Workspace {
-  /** Its root. */
   dir: string
-  /** A file of it, read. */
   read(file: string): string
 }
 
@@ -105,12 +93,6 @@ export function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-/**
- * A workspace in examples/demo/.presmium (ignored by git), where VitePress resolves from the demo's
- * node_modules: `files` written, the packages of `link` linked into its node_modules (the operator installs
- * plugins at the root), a git repository of its own (so DeepSeek Harness's project root is the workspace,
- * not this repository with its .agents/skills).
- */
 export function workspace(prefix: string, files: Record<string, string>, link: Record<string, string> = {}): Workspace {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, `dsh-${prefix}-`))
@@ -130,47 +112,32 @@ export function workspace(prefix: string, files: Record<string, string>, link: R
   return { dir, read: file => readFileSync(join(dir, file), 'utf8') }
 }
 
-/** A workspace service (`presmium serve`) of the test, started the way presmium studio does: with a service token. */
 export interface Service {
   url: string
   root: string
   token: string
-  /** The process's own MCP token, from its state file. */
   mcpToken(): string
-  /** The variables that give DeepSeek Harness this service. */
   env: Record<string, string>
   process: Running
   stop(): Promise<void>
 }
 
-/** A test's home: its directory, HOME, DSH_HOME and XDG directories under it, and DeepSeek Harness started there. */
 export interface TestHome {
   dir: string
   home: string
   dshHome: string
-  /** The environment of the test's processes: clean, with HOME, XDG_*, DSH_HOME and the launcher's variables; then `extra`. */
   env(extra?: Record<string, string | undefined>): NodeJS.ProcessEnv
-  /** Writes (once) the profile of a carrier; returns its name. */
   profile(carrier: Carrier): string
-  /** `dsh --profile <carrier's> --dump-config` with the launcher's patches and `patches`. */
   dump(carrier: Carrier, options?: { patches?: string[], cwd?: string }): Map<string, Row>
-  /** `presmium serve <root>` with a service token. */
   serve(root: string, extra?: Record<string, string>): Promise<Service>
-  /** One headless run of `prompt` in `cwd`, against a model; resolves with its exit code and output. */
   headless(cwd: string, prompt: string, options: { model: FakeModel, env?: Record<string, string | undefined>, patches?: string[] }): Running
-  /** The acp carrier started in `cwd` and asked `initialize`; resolves with what it printed on stderr, then stops it. */
   acp(cwd: string, options?: { env?: Record<string, string | undefined> }): Promise<{ stderr: string, initialized: unknown }>
-  /** The web carrier on `port` in `cwd`; resolves once it printed its address. */
   web(cwd: string, port: number, options: { model?: FakeModel, env?: Record<string, string | undefined>, patches?: string[] }): Promise<Web>
-  /** The entries of HOME the test's processes made (a test asserts there is no Documents). */
   homeEntries(): string[]
-  /** A workspace (`workspace`) that `close()` removes. */
   workspace(prefix: string, files: Record<string, string>, link?: Record<string, string>): Workspace
-  /** Ends the processes it started and removes its directory and workspaces. */
   close(): Promise<void>
 }
 
-/** DeepSeek Harness's web host: its address, the URL with the launch token, and its Host API with a cookie. */
 export interface Web {
   url: string
   launch: string
@@ -179,7 +146,6 @@ export interface Web {
   stop(): Promise<void>
 }
 
-/** The Host API as an outside client calls it (docs/design-dsh.md, V1): unary RPC as `POST /api/<endpoint>`, fetch routes with the cookie. */
 export interface HostApi {
   call<T = any>(endpoint: string, args: Record<string, unknown>): Promise<T>
   fetch(path: string, init?: RequestInit): Promise<Response>
@@ -305,7 +271,6 @@ export function testHome(prefix: string): TestHome {
   }
 }
 
-/** The tool results the model was given back, request by request (the last message's `tool_result` blocks). */
 export function toolResults(model: FakeModel): string[] {
   return model.received.filter(r => r.path.endsWith('/v1/messages')).flatMap((r) => {
     const last = (r.body.messages as { content: unknown }[] | undefined)?.at(-1)
@@ -313,7 +278,6 @@ export function toolResults(model: FakeModel): string[] {
   })
 }
 
-/** The model's requests (`POST /v1/messages`) that offered tools: the agent's turns, not a title's. */
 export function turns(model: FakeModel): Record<string, any>[] {
   return model.received.filter(r => r.path.endsWith('/v1/messages') && Array.isArray(r.body.tools) && r.body.tools.length > 0).map(r => r.body)
 }

@@ -10,12 +10,6 @@ function localStorageOrNone(): Storage | undefined {
   }
 }
 
-/**
- * A `ClassroomStore` in the browser's `localStorage` under one key, for what
- * a reader keeps outside a classroom (notes, predictions). Other tabs of the
- * deck see the changes. Without storage (private mode, blocked) it keeps
- * nothing.
- */
 export function createBrowserStore(key: string, storage = localStorageOrNone()): ClassroomStore {
   const listeners = new Map<string, Set<() => void>>()
   const notify = (name?: string) => (name ? [listeners.get(name)] : [...listeners.values()]).forEach(set => set?.forEach(listener => listener()))
@@ -59,10 +53,6 @@ export function createBrowserStore(key: string, storage = localStorageOrNone()):
   }
 }
 
-/**
- * Two stores as one: writes go to both, reads see the items of both (`first`
- * wins for an id in both), and a change in either is a change.
- */
 export function bothStores(first: ClassroomStore, second: ClassroomStore): ClassroomStore {
   return {
     list<T>(name: string) {
@@ -88,7 +78,6 @@ export function bothStores(first: ClassroomStore, second: ClassroomStore): Class
 
 let kept: ClassroomStore | undefined
 
-/** What this browser keeps of a deck (its base URL): the reader's notes and predictions. */
 export function browserStore(): ClassroomStore {
   kept ??= createBrowserStore(`presmium.classroom:${new URL(import.meta.env.BASE_URL, location.href).pathname}`)
   return kept

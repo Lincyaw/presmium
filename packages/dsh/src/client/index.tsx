@@ -1,15 +1,3 @@
-/**
- * The client part of `@presmium/dsh` (docs/design-dsh.md 7): a client plugin of
- * DeepSeek Harness's web client (`dsh.client`), loaded by its module system from
- * the precompiled bundle (build/client.mjs). It
- * 1. takes the `root` slot in place of ui-layout (which the web patch turns off):
- *    the same six child slots, `ctx.layout` with ui-layout's contract, the
- *    `usePanelInfo` hook, the theme presenter and Mod+B (./Frame.tsx, ./layout.ts);
- *    with ui-layout on, it hangs the same panels in that layout instead (./fallback.tsx);
- * 2. maps DeepSeek Harness's tokens onto 书卷 and follows its light and dark (./theme.ts);
- * 3. puts Presmium's brand in its places (./brand.tsx);
- * 4. gives the workbench (`@presmium/workbench`) DeepSeek Harness's language.
- */
 import { localeOf, Workbench } from '@presmium/workbench'
 import type { Locale } from '@presmium/workbench'
 import { brand } from './brand.tsx'
@@ -21,7 +9,6 @@ import { followScheme, ThemePresenter, TOKENS } from './theme.ts'
 
 declare const __PRESMIUM_CSS__: string
 
-/** The styles go in with the module (the module system takes a plugin's style tags back by their `data-plugin`). */
 if (typeof document !== 'undefined' && !document.querySelector(`style[data-plugin-css="${CLIENT_ID}"]`)) {
   const style = document.createElement('style')
   style.dataset.plugin = CLIENT_ID
@@ -32,7 +19,6 @@ if (typeof document !== 'undefined' && !document.querySelector(`style[data-plugi
 
 export const inject = ['slots', 'theme', 'locale', 'shortcuts']
 
-/** The workbench's language from DeepSeek Harness's: Chinese or English, else the browser's (7.6). */
 function workbenchLocale(active: string | undefined): Locale {
   const tag = active?.toLowerCase() ?? ''
   if (tag.startsWith('zh') || tag.startsWith('en')) return localeOf(tag)
@@ -72,10 +58,6 @@ export function apply(ctx: DshClientContext): void {
         getSnapshot: () => instance.getSnapshot().panelInfo,
         subscribe: listener => instance.subscribe(listener),
       })
-      /**
-       * DeepSeek Harness's settings: their trigger is at the foot of its sidebar, which the frame keeps mounted when
-       * it shows the file tree; the settings draw themselves over the page.
-       */
       const openSettings = () => {
         const triggers = document.querySelectorAll<HTMLElement>('[data-pmw-slot="sidebar"] button[aria-haspopup="dialog"]')
         triggers[triggers.length - 1]?.click()

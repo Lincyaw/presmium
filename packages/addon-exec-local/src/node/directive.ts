@@ -2,16 +2,8 @@ import { dirname, resolve } from 'node:path'
 import type { CodeNode, ComponentNode, DirectiveSpec } from '@presmium/kernel'
 import { EXEC_LOCAL_ID, workspacePath } from '../domain/index.ts'
 
-/** The workspace a `{local-env}` names with `:workspace:`, for the pass of the same compilation (./pass.ts). */
 export const requestedWorkspaces = new WeakMap<ComponentNode, string>()
 
-/**
- * ```` ```{local-env} python ```` with `:file:` (the snippet's path in the
- * workspace, where exports put it) and `:workspace:` (the folder holding the
- * devcontainer definition, relative to the file of the directive; by
- * default `presmium.execLocal.workspace`, else the workspace root).
- * Becomes `<PmLocalEnv>` around the code block of its body.
- */
 export const localEnvDirective: DirectiveSpec = {
   name: 'local-env',
   arg: true,

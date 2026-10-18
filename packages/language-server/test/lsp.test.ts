@@ -1,6 +1,3 @@
-// The language server (P-80, P-81) driven over LSP on a MyST deck that references code in a
-// throwaway git repository; the deck is compiled by the real compiler with the code and
-// execution plugins.
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -72,14 +69,12 @@ renderers:
 \`\`\`
 `
 
-// Python code without region markers, referenced by symbol.
 const PARSER = `class Parser:
     def __init__(self, text):
         self.text = text
 
     def parse(self):
         return self.text.split()
-
 
 def helper():
     return Parser('a b').parse()
@@ -106,7 +101,6 @@ beforeAll(async () => {
   await git('init', '-q')
   await git('add', '.')
   await git('commit', '-qm', 'bpe')
-  // The working tree moves on from the commit the `pinned` section pins; lines and output stay.
   writeFileSync(code, BPE.replace('pairs = {}', 'pairs = dict()'))
   server = await startServer()
   server.open(uri, DECK)
@@ -171,7 +165,6 @@ it('shows the referenced code and its recorded output on hover, in the deck\'s l
   expect(value).toContain('region:src/bpe.py#merge')
   expect(value).toContain('best = max(pairs, key=pairs.get)')
   expect(value).not.toContain('# region pick')
-  // The deck names no language, so it is in zh-CN.
   expect(value).toMatch(/录制的输出[\s\S]*ab 2/)
 })
 
@@ -187,7 +180,6 @@ it('completes region names in an anchor, directive names and options', async () 
   expect(regions).toEqual(expect.arrayContaining(['merge', 'count', 'pick']))
   expect(regions).not.toContain('gone')
   expect(await complete('```{code-ref} symbol:src/parser.py#')).toEqual(expect.arrayContaining(['Parser', 'Parser.__init__', 'Parser.parse', 'helper']))
-  // The compiler's built-in directives, {config} among them, and the plugins'.
   expect(await complete('```{')).toEqual(expect.arrayContaining(['code-ref', 'run-panel', 'slide', 'component', 'config']))
   expect(await complete(':')).toEqual(expect.arrayContaining(['steps', 'pin', 'run', 'reveal']))
 })
@@ -214,7 +206,6 @@ it('answers at once about a file of a deck that is compiling again after a save 
   server.open(slow, text)
   await server.diagnostics(slow)
   server.save(slow)
-  // The compilation the save starts takes a second; the hover does not wait for it.
   await sleep(300)
   const started = Date.now()
   await server.connection.sendRequest(HoverRequest.type, { textDocument: { uri: slow }, position: { line: 7, character: 0 } })
@@ -222,7 +213,6 @@ it('answers at once about a file of a deck that is compiling again after a save 
 }, 30_000)
 
 it('starts one presmium dev for a deck again after a start that failed, however often the preview is asked for (F-43)', async () => {
-  // First without a web renderer: presmium dev starts no web server, and the preview fails and stops it.
   const entry = join(dir, 'again/lecture.md')
   mkdirSync(join(dir, 'again'))
   const text = (web: string) => `---\ntitle: Again\nrenderers:\n  web:\n    package: ${web}\n---\n\n## One\n\nText.\n`
@@ -231,7 +221,6 @@ it('starts one presmium dev for a deck again after a start that failed, however 
   server.open(again, text(join(dir, 'no-web-renderer')))
   await server.diagnostics(again)
   await expect(server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } })).rejects.toThrow(/no web server/)
-  // The deck fixed, the preview starts while the first presmium dev is still on its way out; asked again, it is the same one.
   writeFileSync(entry, text(pkg('web')))
   const first = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } }) as Preview
   const second = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } }) as Preview
@@ -239,7 +228,6 @@ it('starts one presmium dev for a deck again after a start that failed, however 
   expect(devProcesses(entry)).toHaveLength(1)
 }, 180_000)
 
-/** The `presmium dev` processes of this machine that run the deck `entry`. */
 function devProcesses(entry: string): string[] {
   return readdirSync('/proc').filter(pid => /^\d+$/.test(pid)).flatMap((pid) => {
     try {

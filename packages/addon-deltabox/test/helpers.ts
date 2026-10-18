@@ -1,6 +1,3 @@
-// The real `presmium` CLI for the tests of the deltabox plugin (the CLI depends on this package, so
-// the tests name its file rather than its package), whether this host qualifies for deltabox, and a
-// process's tree, to end it all at once as a crash would.
 import { execFile, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
@@ -14,10 +11,6 @@ const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.
 export const ADDON_EXEC = fileURLToPath(new URL('../../addon-exec', import.meta.url))
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 
-/**
- * Whether this host qualifies, asked as the plugin asks it (in a state directory of its own). The
- * tests skip where it does not, saying why and what deltabox needs.
- */
 export function qualification(): { ok: boolean, why: string } {
   const state = mkdtempSync(join(tmpdir(), 'presmium-deltabox-probe-'))
   try {
@@ -28,7 +21,6 @@ export function qualification(): { ok: boolean, why: string } {
   }
 }
 
-/** The test process's environment without Vitest's NODE_ENV, and `extra`. */
 export function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const { NODE_ENV: _test, ...inherited } = process.env
   return { ...inherited, ...extra }
@@ -36,7 +28,6 @@ export function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 
 export interface Result { code: number, stdout: string, stderr: string }
 
-/** `presmium <args>` to its end. */
 export function presmium(args: string[], options: { cwd: string, env: NodeJS.ProcessEnv }): Promise<Result> {
   return new Promise((resolve) => {
     execFile(process.execPath, [PRESMIUM_BIN, ...args], { cwd: options.cwd, env: options.env, maxBuffer: 64 << 20 }, (error, stdout, stderr) => {
@@ -48,12 +39,10 @@ export function presmium(args: string[], options: { cwd: string, env: NodeJS.Pro
 export interface Running {
   child: ChildProcess
   output(): string
-  /** Waits until the output matches. */
   wait(pattern: RegExp, timeoutMs?: number): Promise<RegExpExecArray>
   stop(): Promise<void>
 }
 
-/** `presmium <args>`, left running. */
 export function presmiumProcess(args: string[], options: { cwd: string, env: NodeJS.ProcessEnv }): Running {
   const child = spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd: options.cwd, env: options.env, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
@@ -92,7 +81,6 @@ export function presmiumProcess(args: string[], options: { cwd: string, env: Nod
   }
 }
 
-/** A process and all its descendants, deepest first. */
 export function processTree(pid: number): number[] {
   const parents = new Map<number, number>()
   for (const name of readdirSync('/proc')) {

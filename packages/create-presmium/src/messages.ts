@@ -1,14 +1,7 @@
-/**
- * create-presmium's text in Chinese and English (N-07), by the system's language (`LC_ALL`,
- * `LC_MESSAGES`, `LANG`, else Intl's): the questions, the result, and the README.md and AGENTS.md
- * of a new lecture or workspace. A plugin's README.md and AGENTS.md are its template's.
- */
-
 export type Locale = 'zh-CN' | 'en'
 
 export type ProjectKind = 'lecture' | 'workspace' | 'plugin'
 
-/** The commands a project's README.md and the next steps name (`npm run dev`, ...). */
 export interface Commands {
   install: string
   run(script: string): string
@@ -18,12 +11,10 @@ export interface Messages {
   usage: string
   kindQuestion: string
   kinds: Record<ProjectKind, string>
-  /** Asks for the kind's number. */
   numberQuestion: string
   dirQuestion: string
   titleQuestion: string
   nameQuestion: string
-  /** stdin ended before an answer. */
   noAnswer: string
   badKind(kind: string): string
   badName(name: string): string
@@ -31,7 +22,6 @@ export interface Messages {
   created(kind: ProjectKind, dir: string): string
   next: string
   agents: string
-  /** The title of a new workspace's first document. */
   firstDocument: string
   readme(kind: 'lecture' | 'workspace', title: string, commands: Commands): string
   agentsFile(kind: 'lecture' | 'workspace', title: string): string
@@ -197,7 +187,6 @@ After a change, run \`${kind === 'lecture' ? 'npx presmium check' : 'npx presmiu
   },
 }
 
-/** The system's language: Chinese for a `zh` locale, English otherwise. */
 export function systemLocale(env: NodeJS.ProcessEnv = process.env): Locale {
   const tag = env.LC_ALL || env.LC_MESSAGES || env.LANG || Intl.DateTimeFormat().resolvedOptions().locale
   return /^zh/i.test(tag) ? 'zh-CN' : 'en'

@@ -1,9 +1,4 @@
 <script setup lang="ts">
-// The question panel in the hosts' toolbar (the web form's reading view; the slides form's navigation
-// controls): a button that opens it in a popover (the browser's own, closed with Esc or a click elsewhere).
-// Every page of a deck that lists the assistant has it, static ones too (P-112): the reader's own model
-// service answers. Not on the workspace's home page, which is no document. Following a citation closes it,
-// so the reader sees the place.
 import { useMessages } from '@presmium/host'
 import { computed, ref, useId } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -14,9 +9,7 @@ const t = useMessages(ASSISTANT_MESSAGES)
 const id = useId()
 const open = ref(false)
 const popover = ref<HTMLElement>()
-// Found here, so an AI answer of the classroom has the page's IR before the panel was opened.
 useNavigator()
-/** A served page waits for the server to say whether it is a document. */
 const shown = computed(() => !assistant.value || (assistant.value.info.value !== undefined && !assistant.value.info.value.home))
 
 function toggled(event: Event): void {
@@ -52,7 +45,6 @@ function cited(): void {
 .pm-assistant-popover__close {
   margin-top: var(--pm-space-3);
 }
-/* The browser's own popover (the top layer), drawn as the host's: a panel that floats, by the toolbar. */
 .pm-assistant-popover {
   position: fixed;
   inset: 4.5rem 1rem auto auto;

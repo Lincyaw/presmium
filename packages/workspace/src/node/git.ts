@@ -1,16 +1,7 @@
-/**
- * git for the workspace (docs/architecture.md 4.8, 10.7, section 11), as the
- * kernel says Presmium runs git (`gitConfigArgs`, `gitEnvironment`): the
- * repository's hooks and fsmonitor off, so no script of the repository runs
- * when the workspace commits or reverts; commits are not signed. One
- * operation at a time per workspace: the index is shared. What a revert
- * writes in the work tree goes through `DOCUMENT_FILES` (./revisions.ts).
- */
 import { execFile, execFileSync } from 'node:child_process'
 import { realpathSync } from 'node:fs'
 import { gitConfigArgs, gitEnvironment } from '@presmium/kernel'
 
-/** A git command's end: its status, its output as bytes and its errors. */
 export interface GitResult {
   code: number
   stdout: Buffer
@@ -19,7 +10,6 @@ export interface GitResult {
 
 export class Git {
   readonly root: string
-  /** The work tree's top, as found from the root (a real path). */
   readonly top: string
   #queue: Promise<unknown> = Promise.resolve()
 
@@ -28,7 +18,6 @@ export class Git {
     this.top = realpathSync(execFileSync('git', [...gitConfigArgs(), 'rev-parse', '--show-toplevel'], { cwd: root, encoding: 'utf8', env: gitEnvironment(process.env) }).trim())
   }
 
-  /** Whether the root is a git work tree (the editing features need one). */
   static isRepository(root: string): boolean {
     try {
       return execFileSync('git', [...gitConfigArgs(), 'rev-parse', '--is-inside-work-tree'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: gitEnvironment(process.env) }).trim() === 'true'
@@ -37,7 +26,6 @@ export class Git {
     }
   }
 
-  /** Whether git ignores `path` (relative to `dir`, a directory of a work tree): nothing there is ever committed. */
   static ignores(dir: string, path: string): boolean {
     try {
       execFileSync('git', [...gitConfigArgs(), 'check-ignore', '-q', '--', path], { cwd: dir, stdio: 'ignore', env: gitEnvironment(process.env) })
@@ -47,7 +35,6 @@ export class Git {
     }
   }
 
-  /** `git <args>` at the root, with these further variables (e.g. a temporary index), resolving with its end. */
   run(command: string[], env: Record<string, string> = {}): Promise<GitResult> {
     return new Promise((done) => {
       execFile('git', [...gitConfigArgs(), ...command], {
@@ -62,20 +49,17 @@ export class Git {
     })
   }
 
-  /** `git <args>`; throws with git's message on a non-zero exit. */
   async raw(command: string[], env?: Record<string, string>): Promise<string> {
     const result = await this.run(command, env)
     if (result.code !== 0) throw new Error(result.stderr.trim() || `git ${command[0]} exited with ${result.code}`)
     return result.stdout.toString('utf8')
   }
 
-  /** `git <args>`, resolving with the exit status rather than throwing. */
   async attempt(command: string[], env?: Record<string, string>): Promise<{ ok: boolean, output: string }> {
     const result = await this.run(command, env)
     return { ok: result.code === 0, output: result.code === 0 ? result.stdout.toString('utf8') : `${result.stderr}${result.stdout.toString('utf8')}` }
   }
 
-  /** Runs `work` after the operations queued before it, so two never share the index. */
   exclusive<T>(work: () => Promise<T>): Promise<T> {
     const next = this.#queue.then(work, work)
     this.#queue = next.catch(() => undefined)

@@ -1,8 +1,3 @@
-// Named environments (P-100, WP-73b), with the real `presmium ir` and `presmium check`: a deck
-// declares `box: { kind: devcontainer }`, which the local environment plugin provides; code that
-// names it runs with its executor, code that names an undeclared environment is an error on its
-// line, and a headmatter value that looks like a credential is a warning. The code runs only live,
-// so no container starts.
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,7 +10,6 @@ const EXEC_LOCAL = fileURLToPath(new URL('../../addon-exec-local', import.meta.u
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
-/** A deck outside git (its directory is the workspace root), its headmatter and body given. */
 function deck(head: string, body: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-env-'))
   dirs.push(dir)
@@ -41,12 +35,10 @@ it('check fails on code that names an undeclared environment, on its line; it wa
   expect(result.code, result.stdout + result.stderr).toBe(1)
   const { findings } = JSON.parse(result.stdout) as { findings: { checkId: string, severity: string, message: string, source: { file: string, line: number } }[] }
   const lecture = join(dir, 'lecture.md')
-  // The code block starts on line 13, after the headmatter (the token on line 8) and the heading.
   expect(findings).toContainEqual(expect.objectContaining({ checkId: 'presmium.execute', severity: 'error', source: { file: lecture, line: 13 } }))
   expect(findings.find(f => f.source.line === 13)?.message).toContain('nowhere')
   expect(findings).toContainEqual(expect.objectContaining({ checkId: 'presmium.secrets', severity: 'warning', source: { file: lecture, line: 8 } }))
 
-  // --env asks the provider: there is no devcontainer definition here.
   const probed = await presmium(dir, ['check', '--env'])
   expect(probed.stdout).toMatch(/lecture\.md:7 {2}error {2}environment "box" \(devcontainer\) is not reachable: no devcontainer definition/)
 })
@@ -60,7 +52,6 @@ it('check says on a block\'s line that its environment does not run its language
   const result = await presmium(dir, ['check', '--json'])
   expect(result.code, result.stdout + result.stderr).toBe(1)
   const { findings } = JSON.parse(result.stdout) as { findings: { checkId: string, severity: string, message: string, hint?: string, source: { line: number } }[] }
-  // Said once, on the block: not also as a missing executor.
   const execute = findings.filter(f => f.checkId === 'presmium.execute')
   expect(execute).toEqual([
     expect.objectContaining({ severity: 'error', message: 'environment "wasm" (wasi) runs c, not ruby', source: expect.objectContaining({ line: 13 }), hint: expect.stringContaining('execute.env') }),

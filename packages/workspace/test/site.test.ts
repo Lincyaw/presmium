@@ -1,12 +1,8 @@
-// The workspace site (P-122, docs/ir.md 6.3): `presmium build` at the workspace root builds one site whose
-// home page lists every document and links to `/<dir>/`, each document readable on its own pages, its search
-// box finding the other documents too (WP-86); in a document's directory it builds that document only.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, posix, sep } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FIXTURES, presmium, remove, workspace } from './helpers.ts'
 
-/** The text of a document's search index chunk (the web renderer's own MiniSearch index). */
 function searchIndex(site: string): string {
   const chunks = join(site, 'assets/chunks')
   const file = readdirSync(chunks).find(name => name.startsWith('@localSearchIndexroot'))
@@ -36,14 +32,12 @@ describe('presmium build of a workspace', () => {
     }
     expect(home).toContain('入门')
 
-    // Each document under its directory, its assets under it too, with its own pages.
     const alpha = readFileSync(join(site, 'alpha/index.html'), 'utf8')
     expect(alpha).toContain('甲文档的第一章')
     expect(alpha).toContain('src="/alpha/assets/')
     expect(readFileSync(join(site, 'beta/index.html'), 'utf8')).toContain('乙文档讲 quokkaland')
     expect(readFileSync(join(site, 'beta/more.html'), 'utf8')).toContain('乙文档的第二章')
 
-    // Each document's search box finds the other documents too, under their pages.
     for (const doc of ['alpha', 'beta']) {
       expect(searchIndex(join(site, doc))).toContain('zymurgy')
       expect(searchIndex(join(site, doc))).toContain('quokkaland')

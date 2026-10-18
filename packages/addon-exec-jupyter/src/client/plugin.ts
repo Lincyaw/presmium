@@ -8,14 +8,6 @@ import type { RemoteEnvironments } from './environments.ts'
 let remote: RemoteEnvironments | undefined
 let unregister: Unsubscribe[] = []
 
-/**
- * Provides `JUPYTER_ENVIRONMENTS` (for `PmTerminal`) and registers, in the
- * `executor` router, an executor `presmium.env.<name>` for each declared
- * `kind: jupyter` environment (`ctx.environments`, P-100), the id the
- * compile-time executor has. Registered by `setup/main.ts` in the slides
- * form and by the web package in the document form. `dispose` shuts the
- * page's kernels down.
- */
 const plugin: PluginDefinition = {
   manifest: {
     id: EXEC_JUPYTER_ID,

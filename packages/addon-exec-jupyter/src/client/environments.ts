@@ -1,19 +1,3 @@
-/**
- * The page's `kind: jupyter` environments (P-105): for each, an executor
- * `presmium.env.<name>` on the environment's kernels, and terminals (P-107),
- * connected by the environment's credential mode:
- * - `proxy`: through the Presmium server's proxy (`presmium dev`, `presmium
- *   serve`), which adds the credentials; the page has none. A static page
- *   has no server, and the run fails (the recorded output shows).
- * - `prompt`: to the deck's `url` with the learner's own token, which the
- *   page asks for once and keeps in this tab's `sessionStorage`
- *   (./token.ts). A JupyterHub user server's `{user}` is the token's user.
- * - `none`: to the deck's `url`, without a token.
- * - `env` works at build time only; `hub` is reserved.
- * Each session is a kernel of this page (the router names sessions after
- * the page), so pages and learners do not share variables. HTML outputs are
- * sanitized before anything shows them.
- */
 import { environmentExecutor, isRecord } from '@presmium/kernel'
 import type { EnvironmentSpec, Executor, RunResult } from '@presmium/kernel'
 import { currentLocale, useServer } from '@presmium/host'
@@ -30,11 +14,9 @@ import { forgetToken, tokenFor } from './token.ts'
 export interface RemoteEnvironments {
   service: JupyterEnvironments
   executors: Executor[]
-  /** Shuts down the page's kernels and its open terminals (ir.md 2.7: leaving the page closes them). */
   dispose(): void
 }
 
-/** The document the server serves this page as, which a WebSocket cannot send as a header (`hello` says it). */
 let documentName: Promise<string> | undefined
 function servedDocument(): Promise<string> {
   documentName ??= useServer().fetch('presmium.server', 'hello')
@@ -44,7 +26,6 @@ function servedDocument(): Promise<string> {
   return documentName
 }
 
-/** A JupyterHub user server's `{user}`: the name the hub gives the token's owner. */
 async function hubUser(url: string, token: string): Promise<string> {
   const origin = originOf(url.replace('{user}', 'x'))!
   const response = await fetch(`${origin}/hub/api/user`, { headers: { Authorization: `token ${token}` } })
@@ -54,15 +35,10 @@ async function hubUser(url: string, token: string): Promise<string> {
   return encodeURIComponent(user.name)
 }
 
-/** Image types whose data is base64; anything else in it is dropped (an attribute value is never closed by it). */
 const IMAGES = ['image/png', 'image/jpeg', 'image/gif']
 const BASE64 = /^[A-Za-z0-9+/=\s]*$/
 const badImage = (data: Record<string, unknown>) => IMAGES.some(type => data[type] !== undefined && (typeof data[type] !== 'string' || !BASE64.test(data[type])))
 
-/**
- * A kernel's outputs as the page may show them (section 11, untrusted rich
- * output): HTML and SVG sanitized, an image whose data is not base64 left out.
- */
 async function sanitized(result: RunResult): Promise<RunResult> {
   if (!result.outputs?.some(output => 'data' in output && (typeof output.data['text/html'] === 'string' || typeof output.data['image/svg+xml'] === 'string' || badImage(output.data)))) return result
   const { default: DOMPurify } = await import('dompurify')
@@ -103,7 +79,6 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     if (authOf(spec) === 'proxy') {
       const document = await servedDocument()
       const base = `${location.origin}/__presmium/${EXEC_JUPYTER_ID}/${proxyPath(name)}/`
-      // The server takes the document from a header, or from the query of a WebSocket.
       class DocumentSocket extends WebSocket {
         constructor(url: string | URL, protocols?: string | string[]) {
           const target = new URL(url)
@@ -130,7 +105,6 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     const token = await tokenFor(name, originOf(url.replace('{user}', 'x'))!)
     if (!token) throw new Error(messages().noToken(name))
     const resolved = url.includes('{user}') ? url.replace('{user}', await hubUser(url, token)) : url
-    // The browser cannot give a WebSocket a header: the token goes in its URL (to this server only).
     return ServerConnection.makeSettings({ baseUrl: baseUrl(resolved), token, appendToken: true })
   }
 
@@ -149,7 +123,6 @@ export function createRemoteEnvironments(environments: Record<string, Environmen
     forgetToken(name)
   }
 
-  /** The terminals open on the servers, which `dispose` shuts down: the page going away unmounts no component. */
   const terminals = new Set<TerminalSession>()
   const pools: Kernels[] = []
   const executors = Object.entries(environments).map(([name, spec]): Executor => {

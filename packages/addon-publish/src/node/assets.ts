@@ -8,23 +8,16 @@ import { ASSETS_DIR, assetExtension, PUBLISH_ID, publishOptions } from '../domai
 
 const DOWNLOAD_TIMEOUT_MS = 15_000
 
-/** Name of the downloads, the hash of their URL; other files of the directory are left alone. */
 const DOWNLOAD = /^[\da-f]{16}\.[a-z\d]+$/
 
-/**
- * Remote URLs whose download failed in this process, with why: a later
- * compilation (dev, the language server) does not wait for them again.
- */
 const failed = new Map<string, string>()
 
-/** The images of mdast. */
 function images(node: MdastNode, found: MdastNode[] = []): MdastNode[] {
   if (node.type === 'image' && typeof node.url === 'string') found.push(node)
   node.children?.forEach(child => images(child, found))
   return found
 }
 
-/** The local copy of `url` in `dir`, which holds `existing`: downloaded unless an earlier compilation did. */
 async function localCopy(url: string, dir: string, existing: readonly string[]): Promise<string> {
   const name = createHash('sha256').update(url).digest('hex').slice(0, 16)
   const found = existing.find(file => file.startsWith(`${name}.`))
@@ -46,15 +39,6 @@ async function localCopy(url: string, dir: string, existing: readonly string[]):
   }
 }
 
-/**
- * Remote images of the IR, such as PlantUML diagrams, are downloaded into
- * `<deck>/.presmium/assets` and referenced from there (P-51), so every
- * renderer publishes them with its output and the deck shows them offline.
- * Runs after the passes that create images. The images download at once,
- * each URL once; an image that cannot be downloaded stays remote, with a
- * warning, and is not tried again while the process runs. Downloads the deck
- * no longer uses are removed.
- */
 export const remoteAssetsPass: IRPass = {
   name: 'remote-assets',
   order: 100,
@@ -72,7 +56,6 @@ export const remoteAssetsPass: IRPass = {
     const copies = new Map(urls.map((url, i) => [url, i]))
     const settled = await Promise.allSettled(urls.map(url => localCopy(url, dir, existing)))
     const used = new Set<string>()
-    // In the order of the blocks, as the diagnostics were before.
     for (const { node, block } of remote) {
       const url = node.url as string
       const copy = settled[copies.get(url)!]!

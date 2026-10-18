@@ -1,8 +1,3 @@
-/**
- * The assistant's words (N-07): the page's by `@presmium/host`
- * (`useMessages`), the approvals the server asks and the commit messages in
- * the deck's language (`deckLocale`).
- */
 import type { AnnotationStatus, Locale, ReviewChangeKind } from '@presmium/kernel'
 import type { RuntimeSource } from './config.ts'
 

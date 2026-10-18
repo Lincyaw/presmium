@@ -1,13 +1,3 @@
-/*
- * High-contrast theme (P-52). `useHighContrast` sets data-pm-contrast="high" on
- * <html>. Like the forced colors of an operating system's high-contrast mode,
- * the content of slides (.slidev-layout) and of web pages (.vp-doc), plugin
- * components included, is then drawn in two colors: text in --pm-contrast-fg
- * (links in --pm-contrast-link) on --pm-contrast-bg. Both pairs exceed WCAG
- * AA (4.5:1) by far, in the light and the dark color scheme. Diagrams, which
- * draw their own colors (Mermaid, also in shadow roots), are redrawn in the
- * same two colors by diagrams.ts.
- */
 :root[data-pm-contrast='high'] {
   --pm-contrast-bg: #ffffff;
   --pm-contrast-fg: #000000;
@@ -31,8 +21,6 @@
   --vp-code-block-bg: var(--pm-contrast-bg);
 }
 
-/* The host's tokens (N-10), so its components and the plugins' panels outside the content are drawn alike; over the
-   dark tokens too, whichever stylesheet comes first. */
 :is(:root, :root.dark)[data-pm-contrast='high'] {
   --pm-color-bg: var(--pm-contrast-bg);
   --pm-color-surface: var(--pm-contrast-bg);
@@ -60,7 +48,6 @@
   color: var(--pm-contrast-fg) !important;
 }
 
-/* Every element: text in the foreground color, including syntax-highlighted code and colored badges or buttons. */
 :root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *,
 :root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) .shiki span {
   color: var(--pm-contrast-fg) !important;
@@ -68,33 +55,19 @@
   text-shadow: none !important;
 }
 
-/*
- * Elements that hold content show the page background through them. Empty
- * elements hold no text and keep their colors: they draw shapes such as bars,
- * icons or a cursor.
- */
 :root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) *:not(:empty) {
   background-color: transparent !important;
   background-image: none !important;
 }
 
-/*
- * Opacity is left alone: plugins show step states with it (hidden, done,
- * pending), and a state must not change with the colors. With two colors,
- * text faded down to 0.6 still passes AA. Only the host's own fades of
- * content go further and are raised: the subtitle under a slide title, and
- * the lines that a code step dims.
- */
 :root[data-pm-contrast='high'] .slidev-layout h1 + p {
   opacity: 1 !important;
 }
 
-/* Code lines a step dims, as code-lines.ts marks them. */
 :root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) pre .line[data-pm-dimmed] {
   opacity: 0.6 !important;
 }
 
-/* The narration of the other steps of a scrolling section (the web form's IR runtime), which it dims. */
 :root[data-pm-contrast='high'] .pm-section--scrolly > .pm-track .pm-block--narration.pm-hidden {
   opacity: 0.6 !important;
 }
@@ -107,7 +80,6 @@
   text-decoration: underline;
 }
 
-/* Controls and code blocks, without their fill, are outlined. */
 :root[data-pm-contrast='high'] :is(.slidev-layout, .vp-doc) :is(button, input, select, textarea, [role='button'], [role='tab']) {
   border: 1px solid var(--pm-contrast-border) !important;
 }

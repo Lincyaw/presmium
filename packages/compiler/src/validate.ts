@@ -1,14 +1,6 @@
-/**
- * Pass 8 (docs/ir.md section 4): checks the IR against its schema
- * (packages/kernel/src/ir.ts) and the invariants of the compilation context
- * (docs/domain-model.md section 3A). Plugin passes may have changed the IR;
- * every violation is an `error` finding located at its section or block, or
- * at the first line of the entry file when it concerns the whole document.
- */
 import { IR_VERSION, isRecord } from '@presmium/kernel'
 import type { Finding, IRBlock, IRDocument, IRSection, MdastNode, SourcePos } from '@presmium/kernel'
 
-/** `entry` locates the document-level findings; it defaults to `meta.entry`. */
 export function validateIR(doc: IRDocument, entry?: string): Finding[] {
   const findings: Finding[] = []
   const file = entry ?? (isRecord(doc.meta) && typeof doc.meta.entry === 'string' ? doc.meta.entry : 'ir.json')
@@ -93,7 +85,6 @@ function nodeProblem({ node }: IRBlock): string | undefined {
   }
 }
 
-/** What is wrong with an mdast tree: every node needs a type, and children must be a list of nodes. */
 function mdastProblem(node: MdastNode, path: string): string | undefined {
   if (typeof node.type !== 'string') return `${path} has a node without a type`
   if (node.children === undefined) return undefined

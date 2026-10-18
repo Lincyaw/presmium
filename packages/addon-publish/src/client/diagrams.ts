@@ -1,11 +1,3 @@
-/**
- * Diagrams in high contrast (P-52). Mermaid draws its own colors into each
- * SVG (in the slides form, inside a shadow root that the page's CSS does not
- * reach), and its dark theme labels fall below AA. In high contrast these
- * rules draw diagrams in the two colors of contrast.css: text and lines in the
- * foreground, shapes and labels filled with the background. contrast.ts gives
- * the shadow roots that appear while the mode is on their sheet (`adoptShadows`).
- */
 const DIAGRAM = 'svg[aria-roledescription]'
 
 function rules(scope: string): string {
@@ -21,7 +13,6 @@ ${scope} marker * { fill: ${fg} !important; stroke: ${fg} !important; }
 `
 }
 
-/** Rules for the diagrams in shadow roots; empty while the mode is off. */
 let shadowSheet: CSSStyleSheet | undefined
 
 const supported = () => typeof CSSStyleSheet !== 'undefined' && 'adoptedStyleSheets' in Document.prototype
@@ -33,7 +24,6 @@ function adopt(host: Element): void {
   }
 }
 
-/** Gives the open shadow roots in or at `node` the diagrams' sheet. */
 export function adoptShadows(node: Node): void {
   if (!shadowSheet || !(node instanceof Element || node instanceof Document)) return
   if (node instanceof Element) adopt(node)
@@ -42,11 +32,6 @@ export function adoptShadows(node: Node): void {
   }
 }
 
-/**
- * Styles diagrams (`on`) or stops: the page's own diagrams through a
- * document-wide sheet, the ones in open shadow roots through a sheet that the
- * shadow roots of the page adopt, whose rules `on` switches.
- */
 export function styleDiagrams(on: boolean): void {
   if (!supported()) return
   if (!shadowSheet) {

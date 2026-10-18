@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process'
 
 export interface ProcessResult {
-  /** Exit code; null when the process could not start or was killed by a signal. */
   code: number | null
   stdout: string
   stderr: string
@@ -10,26 +9,15 @@ export interface ProcessResult {
 
 export interface ProcessOptions {
   cwd?: string
-  /** The process's whole environment; default this process's. */
   env?: Record<string, string>
-  /** Written to stdin, which is then closed. */
   input?: string
   timeoutMs?: number
   signal?: AbortSignal
-  /** Called once when the timeout fires or the signal aborts, before the process is stopped. */
   onStop?: () => void
 }
 
-/** How long a stopped process has to end after SIGTERM before it is killed. */
 const GRACE_MS = 5_000
 
-/**
- * Runs a command to completion and collects its output; never rejects. When
- * the timeout fires or the signal aborts, the process gets SIGTERM, and
- * SIGKILL once the grace period is over. Outside Windows it runs in a process
- * group of its own, which both signals reach, so what it started (e.g. the
- * `docker build` of the Dev Containers CLI) stops with it.
- */
 export function runProcess(command: string, args: string[], options: ProcessOptions = {}): Promise<ProcessResult> {
   return new Promise((resolve) => {
     const group = process.platform !== 'win32'

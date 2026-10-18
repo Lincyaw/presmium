@@ -1,16 +1,3 @@
-/**
- * `ASK` (P-112, decision E-9): the reader's own model service, an
- * OpenAI-compatible Chat Completions service asked from this browser
- * directly, never through the site's server, so a static site answers too.
- * Its address, key and model stay in this site's browser storage
- * (`localStorage`; nothing when the storage is blocked but this page). A
- * question goes with what the page shows: in the web form the IR of the
- * page's document (on a student site the student build's, without the
- * teachers' content), its section's text and the table of contents for
- * citations; in the slides form, which has no IR runtime, the text of the
- * current slide, and citations reach that slide only. The request carries
- * no cookie of the site and no referrer.
- */
 import type { Navigation } from '@presmium/host'
 import type { AgentContext, AskClient } from '@presmium/kernel'
 import { shallowRef } from 'vue'
@@ -26,21 +13,17 @@ function stored(): AskSettings | undefined {
   }
 }
 
-/** The reader's settings in this browser; undefined until filled in. */
 export const askSettings = shallowRef<AskSettings | undefined>(typeof window === 'undefined' ? undefined : stored())
 
-/** Saves the settings in this browser (undefined clears them). */
 export function saveAskSettings(settings: AskSettings | undefined): void {
   askSettings.value = settings
   try {
     if (settings) localStorage.setItem(ASK_STORAGE_KEY, JSON.stringify(settings))
     else localStorage.removeItem(ASK_STORAGE_KEY)
   } catch {
-    // Storage blocked: the settings last as long as this page.
   }
 }
 
-/** What the page gives with a question about `context`: the IR where the IR runtime runs, else the current slide's text. */
 function placeOf(context: AgentContext, navigation: Navigation | undefined): AskPlace {
   const selection = context.selection ? { selection: context.selection } : {}
   const doc = currentNavigator()?.doc()
@@ -54,7 +37,6 @@ function placeOf(context: AgentContext, navigation: Navigation | undefined): Ask
       ...selection,
     }
   }
-  // The slides form: Slidev marks each slide's page with `slidev-page-<number>` (its documented class).
   const position = navigation?.position.value
   const page = position && typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`.slidev-page-${position.slide}`) : undefined
   const text = page?.innerText.trim() ?? ''
@@ -68,7 +50,6 @@ function placeOf(context: AgentContext, navigation: Navigation | undefined): Ask
   }
 }
 
-/** Reads a streamed answer (server-sent events), piece by piece. */
 async function* streamed(body: ReadableStream<Uint8Array>): AsyncIterable<string> {
   const reader = body.getReader()
   const decoder = new TextDecoder()
@@ -108,7 +89,6 @@ export function createAskClient(navigation: () => Navigation | undefined, missin
         ...signal ? { signal } : {},
       })
       if (!response.ok) throw new Error(serviceError(response.status, await response.text().catch(() => '')))
-      // A service that answers whole, not streamed.
       if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body) {
         const text = completionText(await response.json().catch(() => undefined))
         if (text === undefined) throw new Error(serviceError(response.status, 'no answer'))

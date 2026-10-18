@@ -1,10 +1,3 @@
-// The upgrade gate's second group, one tool table (decision G-3, docs/design-dsh.md sections 8.6 and 9,
-// WP-96b): for the same document and settings, the tools MCP lists (`tools/list`, names and input schemas)
-// are the `presmium__*` tools DeepSeek Harness offers the model, a plugin's agent tool included. A focus the
-// workbench reports is the same through `presmium://focus`, `get_focus` and the session's document context,
-// its excerpt read from the file. With `operate` allowed, the agent of a headless run lists the sections,
-// reads one's narration and code, runs its code and moves the presentation, which `get_position` then reports
-// (requirements 6.12, the first acceptance item, on DeepSeek Harness's side).
 import { join } from 'node:path'
 import { fakeModel } from '@presmium/cli/testing'
 import type { FakeModel } from '@presmium/cli/testing'
@@ -39,14 +32,12 @@ print(6 * 7)
 第二节的正文。
 `
 
-/** A window of the control channel, as a presenting page holds one (packages/mcp/test/client.ts). */
 interface ControlWindow {
   next(event: string, timeoutMs?: number): Promise<Record<string, any>>
   report(body: Record<string, unknown>): Promise<number>
   close(): void
 }
 
-/** The JSON of a tool's text result. */
 const parsed = (text: string) => JSON.parse(text) as Record<string, any>
 
 describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
@@ -67,7 +58,6 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
       'presmium-fixture-dsh': join(FIXTURES, 'plugin'),
     })
     service = await home.serve(ws.dir)
-    // An outside agent's MCP client, with the process's own token (Claude Code, Codex).
     mcp = await connectPresmiumMcp(`${service.url}/mcp`, service.mcpToken(), 'presmium-test')
   }, 240_000)
   afterAll(async () => {
@@ -108,7 +98,6 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
     expect(pick!.excerpt).toBe(lines.slice(pick!.source.startLine - 1, pick!.source.endLine).join('\n'))
     expect(pick!.excerpt).toContain('print(6 * 7)')
     expect(selected).toMatchObject({ id: 'lines-1', from: 'source', section: 'first', block: expect.any(String), excerpt: '讲解：先算六乘七。' })
-    // The session's document context has the same focus.
     const scripted = await model([{ text: '好。' }])
     const run = home.headless(ws.dir, '看看我指的地方。', { model: scripted, env: service.env })
     expect(await run.exited, run.output()).toBe(0)
@@ -130,7 +119,6 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
         { text: '完毕：列出章节、读了第一节、运行了代码并跳到第二节。' },
       ])
       const run = home.headless(ws.dir, '列出章节，读第一节，运行它的代码，再把放映跳到第二节。', { model: scripted, env: service.env })
-      // The page moves where it is told, and says so, as a presenting page does.
       const go = await page.next('go', 120_000)
       expect(go).toMatchObject({ section: 'second', step: 0 })
       expect(await page.report({ position: { slide: go.slide, step: go.step, view: 'present', section: go.section }, role: 'presenter', status: {} })).toBe(200)

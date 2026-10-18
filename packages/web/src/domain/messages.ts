@@ -1,28 +1,21 @@
 import type { Locale } from '@presmium/kernel/contracts'
 
-/** What the web form says around the IR runtime and in its shell (the workbench, edit mode's top bar, the launcher), in each UI language (N-07). */
 export const WEB_MESSAGES = {
   'zh-CN': {
     viewMenu: '视图',
     openInSlides: '在幻灯片中打开',
-    /** The short label of that link beside a section heading. */
     slides: '幻灯片',
     readOnWeb: '在网页中阅读',
-    /** The hidden labels of the default theme's sidebar and doc footer, which its configuration has no option for. */
     sidebarNav: '侧边栏导航',
     pager: '翻页',
-    /** The buttons of the navigation bar that open the navigation screen (phones) and the extra menu (tablets): "mobile navigation", "extra navigation". */
     mobileNav: '打开导航菜单',
     extraNav: '更多导航',
-    /** The link of a workspace site's pages to its home page, and the heading of its documents. */
     documents: '文档列表',
     documentsHeading: '文档',
-    /** The home page of a workspace site. */
     searchDocuments: '搜索文档',
     tags: '标签',
     allTags: '全部',
     noDocuments: '没有文档',
-    /** The workbench of a served home page (docs/design/home.dc.html): its bars and their entries. */
     activity: '活动',
     launcher: '启动台',
     files: '工作区文件',
@@ -38,26 +31,21 @@ export const WEB_MESSAGES = {
     mcpHint: 'Claude Code、Codex 等用它读讲义、运行代码、跳转放映；令牌在 presmium serve 启动时打印的文件中（Authorization: Bearer）。',
     copy: '复制',
     copied: '已复制',
-    /** The panes of edit mode beside the page (docs/architecture.md 5.10). */
     sourcePane: '源码',
     dockPane: '编辑面板',
-    /** Edit mode's top bar (docs/design/edit.dc.html): its trail (workspace / document), the preview's views. */
     editBar: '编辑',
     trail: '位置',
     previewView: '预览视图',
     documentView: '文档',
     presentView: '放映',
-    /** The launcher's search over documents, sections and commands: its box, its results and their groups. */
     searchAll: '搜索文档、章节与命令',
     results: '搜索结果',
     groupDocuments: '文档',
     groupSections: '章节',
     groupCommands: '命令',
     noResults: '没有找到',
-    /** The commands the shell itself has, and the workbench's link past its bars. */
     toggleTheme: '切换明暗',
     skipToContent: '跳到内容',
-    /** The close button of a drawer of the workbench (the files, where the side bar gives way). */
     close: '关闭',
   },
   'en': {
@@ -109,15 +97,6 @@ export const WEB_MESSAGES = {
   },
 } satisfies Record<Locale, unknown>
 
-/**
- * The labels of the VitePress default theme and its local search, by
- * language: every label its configuration documents; English ones are
- * VitePress's own. The doc footer links the chapters before and after a
- * page. VitePress has no option for the hidden labels of its sidebar
- * ("Sidebar Navigation") and doc footer ("Pager"), nor for those of the
- * navigation bar's menu buttons ("mobile navigation", "extra navigation"):
- * the theme sets them in the browser (`WEB_MESSAGES`).
- */
 export const SITE_LABELS = {
   'zh-CN': {
     themeConfig: {

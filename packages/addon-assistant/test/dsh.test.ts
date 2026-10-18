@@ -1,16 +1,3 @@
-// DeepSeek Harness bundled with the assistant (D11, D15, P-111). Its pinned version composes the template
-// (`--dump-config`): no session-log upload or telemetry, the shell with a `workspace-write` sandbox and
-// asking, the model of ACP sessions from the operator's model settings.
-// With only a (fake) DEEPSEEK_API_KEY and no command, `presmium dev`'s assistant starts it: the provider is
-// DeepSeek, the runtime is what `initialize` reports, `session/new` succeeds, and nothing goes to the model.
-// With the operator's Messages-compatible service (PRESMIUM_MODEL_URL, _KEY, _PROVIDER; a fake one here) its
-// environment has the URL and key as DEEPSEEK_BASE_URL and DEEPSEEK_API_KEY and none of Presmium's
-// variables, and the service receives that key with the request. The page's model settings (P-111), saved
-// through the assistant's route while the process runs, go to the user's configuration directory (0600, the
-// key never answered back), and the next session's service receives their key and model; saved without a
-// key, they keep the saved one only for the same service and address (WP-92c); the environment comes first. In `presmium serve`, a chat task's agent lists the sections, reads one's narration and code,
-// runs its code and moves the presentation through Presmium's MCP, a window allowing the two operations
-// (F-49). The request to DeepSeek's real model needs DEEPSEEK_API_KEY and is skipped without it.
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -23,7 +10,6 @@ import { call, descendants, dev, env, FIXTURES, PACKAGE, presmium, processInfo, 
 
 interface Row { id?: string, disabled: boolean, text: string }
 
-/** The rows of the composed profile tree (`--dump-config`), by id. */
 function dump(home: string): Map<string, Row> {
   const output = execFileSync(process.execPath, [...dshArgs(dshBin()!), '--dump-config'], { env: env({ DSH_HOME: home }), encoding: 'utf8' })
   const rows = new Map<string, Row>()
@@ -74,13 +60,11 @@ plugins:
 每一轮合并出现次数最多的一对。
 `
 
-/** A chat request to an agent session of the server's runtime (the test plugin's `prompt` route): its messages, or why it failed. */
 async function prompt(server: string, text: string): Promise<{ status: number, messages?: string[], error?: string }> {
   const response = await fetch(`${server}/__presmium/fixture.runtime/prompt`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: text }) })
   return { status: response.status, ...await response.json() as { messages?: string[], error?: string } }
 }
 
-/** The model settings route (`settings`): its status and answer as text. */
 async function settings(server: string, method = 'GET', body?: unknown): Promise<{ status: number, text: string, json: Record<string, any> }> {
   const response = await fetch(`${server}/__presmium/presmium.assistant/settings`, {
     method,
@@ -107,13 +91,11 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       XDG_STATE_HOME: join(base, 'state'),
       XDG_CONFIG_HOME: join(base, 'config'),
       DEEPSEEK_API_KEY: 'sk-fake-for-presmium-tests',
-      // Anything DeepSeek Harness sends off this machine goes through the proxy, which records it.
       HTTPS_PROXY: proxy.url,
       HTTP_PROXY: proxy.url,
       NO_PROXY: '',
     }))
     try {
-      // `presmium dev` commits no change: its pages offer none.
       expect((await call(server, 'info')).json).toEqual({ provider: 'DeepSeek', source: 'environment', kinds: [], changes: false })
       expect(running.output()).toMatch(/the assistant is available: provider DeepSeek, the bundled DeepSeek Harness \S+ \(from DEEPSEEK_API_KEY\)/)
       const opened = await fetch(`${server}/__presmium/fixture.runtime/open`, { method: 'POST' })
@@ -132,7 +114,6 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
 
   it('with the operator\'s Messages service: its URL and key are DeepSeek Harness\'s, no Presmium variable is; the service receives that key, and none of the user\'s own skills', async () => {
     const model = await fakeModel([{ text: '每一轮合并出现次数最多的一对，见[合并规则](presmium://sections/merge)。' }])
-    // A skill of the user's own (~/.agents/skills), which the request must not carry.
     const home = join(base, 'home')
     mkdirSync(join(home, '.agents/skills/private-notes-7c1'), { recursive: true })
     writeFileSync(join(home, '.agents/skills/private-notes-7c1/SKILL.md'), '---\nname: private-notes-7c1\ndescription: The user\'s private notes 7c1.\n---\n\nPrivate.\n')
@@ -146,7 +127,6 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
     }))
     try {
       expect((await call(server, 'info')).json).toMatchObject({ provider: 'Test Provider', source: 'environment' })
-      // The model holds its answer while the test reads the agent's environment.
       model.hold()
       const answered = prompt(server, '合并的是哪一对？')
       await expect.poll(() => model.received.length, { timeout: 60_000 }).toBeGreaterThan(0)
@@ -163,7 +143,6 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       expect(done.messages!.join('')).toContain('[合并规则](presmium://sections/merge)')
       expect(model.received[0]!.headers['x-api-key']).toBe('model-key-5e8b')
       expect(model.received[0]!.path).toBe('/v1/messages')
-      // No model named: the pinned version's default.
       expect(model.received[0]!.body.model).toBe('deepseek-v4-flash')
       expect(seen.DSH_AGENTS_HOME).toBe(join(base, 'state/presmium/dsh/agents'))
       expect(JSON.stringify(model.received.map(r => r.body))).not.toContain('private-notes-7c1')
@@ -183,7 +162,6 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       await running.wait(/the assistant is unavailable: no model access: fill in the model settings in the page/, 10_000)
       expect((await call(server, 'info')).json).toMatchObject({ kinds: [], missing: { code: 'model' } })
       expect((await settings(server)).json).toEqual({ source: 'none', missing: { code: 'model' }, saved: { key: false }, file })
-      // An address that is no URL, or one without its provider, is refused.
       expect((await settings(server, 'POST', { provider: 'Test Provider', url: 'not a url', key: 'k' })).status).toBe(400)
       expect((await settings(server, 'POST', { url: model.url, key: 'k' })).status).toBe(400)
 
@@ -193,15 +171,12 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       expect(saved.text).not.toContain('page-key-7f1')
       expect(statSync(file).mode & 0o777).toBe(0o600)
       expect(statSync(join(config, 'presmium')).mode & 0o777).toBe(0o700)
-      // In effect without a restart.
       expect((await call(server, 'info')).json).toMatchObject({ provider: 'Test Provider', source: 'page' })
       const done = await prompt(server, '设置生效了吗？')
       expect(done.status, done.error).toBe(200)
       expect(model.received[0]!.headers['x-api-key']).toBe('page-key-7f1')
       expect(model.received[0]!.body.model).toBe('page-model-1')
-      // Saved again without a key: the key stays.
       expect((await settings(server, 'POST', { provider: 'Test Provider', url: model.url, model: 'page-model-2' })).json.saved).toEqual({ provider: 'Test Provider', url: model.url, model: 'page-model-2', key: true })
-      // Another service without a key: refused, so the saved key never goes to it; both ways (WP-92c).
       const refused = await settings(server, 'POST', { model: 'deepseek-chat' })
       expect(refused.status, refused.text).toBe(400)
       expect(refused.text).toContain('give its key')
@@ -216,7 +191,6 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       await model.close()
     }
 
-    // The environment comes first; the page's settings stay saved, and go when cleared.
     const again = await dev(deck, env({ XDG_STATE_HOME: join(base, 'state'), XDG_CONFIG_HOME: config, DEEPSEEK_API_KEY: 'sk-fake-for-presmium-tests' }))
     try {
       expect((await settings(again.server)).json).toMatchObject({ source: 'environment', provider: 'DeepSeek', from: ['DEEPSEEK_API_KEY'], saved: { provider: 'Test Provider', key: true } })
@@ -241,7 +215,6 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
   }, 300_000)
 })
 
-/** A window of the control channel (`controlWindow` of packages/mcp/test/client.ts). */
 interface ControlWindow {
   next(event: string, timeoutMs?: number): Promise<Record<string, any>>
   report(body: Record<string, unknown>): Promise<number>
@@ -262,7 +235,6 @@ describe('presmium serve with the bundled DeepSeek Harness on Presmium\'s MCP (6
       'presmium.workspace.yaml': `title: DSH 与 MCP\nsettings:\n  presmium.workspace:\n    plugins: ['@presmium/slidev-addon-assistant', '@presmium/slidev-addon-exec']\n`,
       'lecture.md': '---\ntitle: DSH 与 MCP\nplugins:\n  - \'@presmium/slidev-addon-exec\'\n---\n\n# DSH 与 MCP\n\n(first)=\n## 第一节\n\n讲解：先算六乘七。\n\n```{code} python\n:run:\nprint(6 * 7)\n```\n\n(second)=\n## 第二节\n\n第二节的正文。\n',
     }, { '@presmium/slidev-addon-assistant': PACKAGE, '@presmium/slidev-addon-exec': join(ROOT, 'packages/addon-exec') })
-    // The model's script: the four tools of Presmium's MCP, one after the other, then its answer.
     model = await fakeModel([
       { tool: 'mcp__presmium__list_sections', input: {} },
       { tool: 'mcp__presmium__get_section', input: { section: 'first' } },
@@ -271,7 +243,6 @@ describe('presmium serve with the bundled DeepSeek Harness on Presmium\'s MCP (6
       { text: '完毕：列出章节、读了第一节、运行了代码并跳到第二节。' },
     ])
     const running = presmium(['serve', '--port', '0'], { cwd: dir, env: env({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache`, PRESMIUM_MODEL_URL: model.url, PRESMIUM_MODEL_KEY: 'model-key-f49', PRESMIUM_MODEL_PROVIDER: 'Test Provider' }) })
-    // A window of the control channel, as a presenting page holds one (the MCP client of packages/mcp's tests, used as it is).
     const { controlWindow } = await import(join(ROOT, 'packages/mcp/test/client.ts')) as { controlWindow(url: string, id: string): Promise<ControlWindow> }
     try {
       const server = (await running.wait(/^serve {2}(http\S+)$/m))[1]!
@@ -282,7 +253,6 @@ describe('presmium serve with the bundled DeepSeek Harness on Presmium\'s MCP (6
         const submitted = await call(server, 'tasks', { json: { kind: 'chat', prompt: '列出章节，读第一节，运行它的代码，再把放映跳到第二节。', context: { document: '', section: 'first' } } })
         expect(submitted.status, JSON.stringify(submitted.json)).toBe(201)
         const events = taskEvents(`${server}/__presmium/presmium.assistant/tasks/${submitted.json.id}/events`)
-        // The window allows running the code, then the move.
         const asked: Record<string, any>[] = []
         for (let i = 0; i < 2; i++) {
           const approval = await page.next('approval', 120_000)
@@ -293,7 +263,6 @@ describe('presmium serve with the bundled DeepSeek Harness on Presmium\'s MCP (6
         expect((await events).at(-1)).toMatchObject({ type: 'done' })
         expect(await page.next('go', 10_000)).toMatchObject({ step: 0 })
 
-        // What DeepSeek Harness gave the model back, call by call.
         const results = model.received.filter(r => r.path.endsWith('/v1/messages')).flatMap((r) => {
           const last = (r.body.messages as { content: unknown }[] | undefined)?.at(-1)
           return (Array.isArray(last?.content) ? last.content as { type: string, content: unknown }[] : []).filter(c => c.type === 'tool_result').map(c => JSON.stringify(c.content))

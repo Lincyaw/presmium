@@ -1,10 +1,6 @@
 import { createTwoFilesPatch, FILE_HEADERS_ONLY } from 'diff'
 import { toSnippet } from './regions.ts'
 
-/**
- * Unified diff between the pinned code and the current code of one anchor
- * (P-14), on the displayed code: region markers and common indentation removed.
- */
 export function driftDiff(file: string, pinned: { commit: string, text: string }, current: { label: string, text: string }): string {
   const before = `${toSnippet(pinned.text).code}\n`
   const after = `${toSnippet(current.text).code}\n`

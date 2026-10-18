@@ -2,15 +2,12 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
 
-// e2e/fixtures/stage: a section of basic content, then a section whose list reveals an item per
-// step with a paragraph of narration per step. Both forms are built by `presmium build`.
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('stage')
 const slides = (path: string | number) => `${deck().slides}/${path}`
 const basics = () => deck().slide('stage-basics')
 const steps = () => deck().slide('stage-steps')
 
-/** Opens the audience view and the presenter view of the basics slide in one browser. */
 async function openBothViews(page: Page) {
   const audience = page
   await audience.goto(slides(basics()))
@@ -21,7 +18,6 @@ async function openBothViews(page: Page) {
   return { audience, presenter }
 }
 
-/** Whether the element topmost at the centre of the window lies inside `selector`. */
 function coversCentre(page: Page, selector: string) {
   return page.evaluate(sel => !!document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest(sel), selector)
 }
@@ -46,10 +42,8 @@ test('tables, footnotes and highlighted code are visible', async ({ page }) => {
 test('presenter notes highlight the current step and fade the others', async ({ page }) => {
   await page.goto(slides(`presenter/${steps()}`))
   const notes = page.locator('.slidev-note-with-clicks').first()
-  // One paragraph of narration per step: the narration of the list binds to its items' steps.
   const step = (n: number) => notes.locator(':scope > p').nth(n)
   await expect(notes.locator(':scope > p')).toHaveCount(3)
-  // The host's tokens (N-10): the selected tint for the current step, the muted tone for the others.
   const highlighted = 'rgb(234, 243, 241)'
   const faded = 'rgb(92, 88, 79)'
 
@@ -72,7 +66,6 @@ test('b blacks out the audience view and b again restores it', async ({ page }) 
   await presenter.keyboard.press('b')
   await expect(audience.locator('.pm-stage-black')).toBeVisible()
   expect(await coversCentre(audience, '.pm-stage-black')).toBe(true)
-  // The badge speaks the page's language; the demo leaves Slidev's.
   await expect(presenter.locator('.pm-stage-badge')).toHaveAttribute('data-mode', 'black')
   await expect(presenter.locator('.pm-stage-black')).toHaveCount(0)
 
@@ -124,7 +117,6 @@ test('the web form shows the table, the footnote at its section and the highligh
   await page.goto(`${deck().web}/stage.html`)
   const section = page.locator('.pm-section[data-section="stage-basics"]')
   await expect(section.locator('table tbody tr')).toHaveCount(3)
-  // The footnote is defined at the end of the file but belongs to the section that refers to it.
   await expect(section).toContainText('快捷键在演讲者视图和听众视图中都可用')
   await expect(page.locator('.pm-section[data-section="stage-steps"]')).not.toContainText('快捷键在演讲者视图和听众视图中都可用')
   const code = section.locator('pre.shiki')
@@ -149,7 +141,6 @@ test('in the web form\'s present view, b blacks out and f freezes the audience w
   expect(await coversCentre(page, '.pm-present__slide')).toBe(true)
   await expect(badge).toHaveCount(0)
 
-  // From the presenter window: the audience keeps seeing the frozen slide while the presenter moves on.
   await presenter.keyboard.press('f')
   const frozen = page.locator('.pm-stage-frozen')
   await expect(frozen).toBeVisible()
@@ -170,7 +161,6 @@ test('the slides form fits the stage slides to a 4:3 and a 16:10 screen', async 
     for (const [no, layout] of [[basics(), 'pm-stage-basics'], [steps(), 'pm-stage-steps']] as const) {
       await page.goto(slides(no))
       const slide = page.locator(`.slidev-layout.${layout}`).filter({ visible: true })
-      // The whole slide is on the screen (the ratio allows for sub-pixel scaling).
       await expect(slide).toBeInViewport({ ratio: 0.999 })
       expect(await slide.evaluate(el => el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth), `${layout} at ${width}x${height}`).toBe(true)
     }
@@ -184,17 +174,13 @@ test('the slides form has an overview: o shows every slide, a click goes to one'
   await expect(preview).toHaveCount(0)
   await page.keyboard.press('o')
   await expect(preview).toBeVisible()
-  // The preview's frame takes the click.
   await preview.click({ force: true })
   await expect(page).toHaveURL(new RegExp(`/${steps()}$`))
-  // The overview closes on the chosen slide: its heading shows once, on the slide.
   await expect(preview).toHaveCount(1)
   await expect(page.locator('.pm-stage-steps h1').filter({ visible: true })).toBeInViewport()
 })
 
 test('an image written in the source, next to its page, loads in both forms, and neither page requests a missing file', async ({ page }) => {
-  // Requests answered 4xx, and files answered with a page: the slides' server sends its index.html
-  // for any path it does not have, as Slidev's routes need.
   const missing: string[] = []
   page.on('response', (response) => {
     const navigation = response.request().resourceType() === 'document'
@@ -205,7 +191,6 @@ test('an image written in the source, next to its page, loads in both forms, and
     const image = slide.getByRole('img', { name: '听众视图的三种状态：正常、黑屏、冻结' })
     await expect(image).toBeVisible()
     await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true)
-    // Slidev preloads the images of the slides around the current one.
     await page.waitForLoadState('networkidle')
   }
   await page.goto(slides(steps()))

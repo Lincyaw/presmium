@@ -1,8 +1,3 @@
-// Annotations (P-04, K-09): `presmium dev --to slides` on a deck that uses the stage saves a
-// drawing made in the page in the source deck's .presmium/drawings, where it is committed with the
-// deck; `presmium build` ships it without the author's paths; clearing it removes the file.
-// The deck lives in the demo's ignored .presmium directory, so it resolves Slidev, its theme and
-// the plugins from the demo's node_modules.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -14,7 +9,6 @@ import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const DEMO = fileURLToPath(new URL('../../../examples/demo', import.meta.url))
-/** The environment of a shell: without Vitest's NODE_ENV=test, which would change how Vite builds. */
 const ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => name !== 'NODE_ENV'))
 
 const LECTURE = `---
@@ -47,7 +41,6 @@ afterAll(async () => {
   rmSync(deck, { recursive: true, force: true })
 })
 
-/** Starts `presmium dev --to slides` and resolves with the URL of the slides. */
 function startDev(): Promise<string> {
   dev = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', 'slides'], { cwd: deck, env: ENV, stdio: ['ignore', 'pipe', 'pipe'] })
   return new Promise((resolve, reject) => {
@@ -63,11 +56,6 @@ function startDev(): Promise<string> {
   })
 }
 
-/**
- * Opens the slides once the dev server has optimized its dependencies: while Vite optimizes them it
- * may reload the first visits or abort their module requests (slowly on a loaded machine), so a
- * visit is repeated until the slide shows, then the slides are visited once more.
- */
 async function openSlides(page: Page, url: string): Promise<void> {
   const heading = page.locator('.slidev-page h1', { hasText: 'Drawings' }).first()
   const deadline = Date.now() + 180_000
@@ -100,10 +88,8 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   await page.mouse.down()
   for (let i = 1; i <= 10; i++) await page.mouse.move(box.x + box.width * (0.3 + i * 0.04), y - i * 6)
   await page.mouse.up()
-  // The file can be written before the stroke is in it (a busy host): wait for the stroke.
   const stroke = () => (existsSync(drawing) ? /<path[^>]* d="([^"]{12})/.exec(readFileSync(drawing, 'utf8'))?.[1] : undefined)
   await expect.poll(stroke, { timeout: 15_000 }).toBeTruthy()
-  // Saved in the deck, not in the generated (ignored) dev deck.
   expect(existsSync(join(deck, '.presmium/dev/slides/.presmium'))).toBe(false)
   const path = stroke()
 
@@ -113,7 +99,6 @@ it('a drawing made in presmium dev is saved in the deck, ships with the build, a
   expect(shipped.some(text => text.includes(path!))).toBe(true)
   expect(shipped.filter(text => text.includes(deck))).toEqual([])
 
-  // The drawing toolbar's "Delete" clears the slide's drawing.
   await page.getByTitle('Delete', { exact: true }).click()
   await expect.poll(() => existsSync(drawing), { timeout: 15_000 }).toBe(false)
 }, 360_000)

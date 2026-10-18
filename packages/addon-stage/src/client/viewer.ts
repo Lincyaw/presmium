@@ -1,23 +1,13 @@
-/**
- * The audience screen (P-03) in the web form's present view: `b` blacks it
- * out, `f` freezes it while the presenter moves on; the same key again
- * restores it. The mode is the host's shared state (`useScreen`), so the
- * present view (the audience window), the presenter window and the other
- * devices of a classroom follow each other; the presenter window shows a
- * reminder instead.
- */
 import type { Component } from 'vue'
 import { defineComponent, h, shallowRef, watch } from 'vue'
 import { messages } from './messages.ts'
 import { useScreen } from './screen.ts'
 
-/** What the stage uses of the viewer plugin context (`ViewerPluginContext` of @presmium/viewer). */
 export interface StageViewerContext {
   registerAction(action: { id: string, keys: readonly string[], run(viewer: unknown): boolean | void }): void
   registerLayer(layer: { id: string, component: Component }): void
 }
 
-/** A static copy of the slide as it is now, without ids; laid over it while frozen. */
 function freeze(frame: HTMLElement): void {
   const present = frame.closest('.pm-present')
   const slide = present?.querySelector<HTMLElement>('.pm-present__slide')
@@ -37,14 +27,12 @@ function freeze(frame: HTMLElement): void {
   frame.replaceChildren(copy)
 }
 
-/** The layer over the present view (a black screen, a frozen copy) and the presenter window (a reminder). */
 const ScreenLayer: Component = defineComponent({
   name: 'PmStageScreen',
   props: { view: { type: String, required: true } },
   setup(props) {
     const { mode } = useScreen()
     const frame = shallowRef<HTMLElement>()
-    // Synchronously, so the copy shows the slide before a position that follows the freeze arrives.
     watch([mode, frame], ([current, el]) => {
       if (!el) return
       if (current === 'frozen') freeze(el)
@@ -67,7 +55,6 @@ const ScreenLayer: Component = defineComponent({
   },
 })
 
-/** The viewer plugin (docs/ir.md section 8.2) the web form loads from `src/client/viewer.ts`. */
 export default function stageViewerPlugin({ registerAction, registerLayer }: StageViewerContext): void {
   registerAction({ id: 'presmium.stage.black', keys: ['b'], run: () => useScreen().toggle('black') })
   registerAction({ id: 'presmium.stage.freeze', keys: ['f'], run: () => useScreen().toggle('frozen') })

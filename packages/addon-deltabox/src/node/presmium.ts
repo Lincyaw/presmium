@@ -1,20 +1,3 @@
-/**
- * The deltabox plugin (D12, D13; docs/architecture.md 10.6, 10.7): an
- * operator plugin installed with the CLI, which the compiler loads in every
- * command without the workspace listing it. Where the host qualifies (Linux
- * x64 or arm64, glibc 2.39, deltabox's binding, a cbcow-through session
- * started strictly, no degraded protection) it provides `PROCESS_SANDBOX`,
- * through which the exec plugin runs compile-time code, and `CHANGE_REVIEW`,
- * through which the assistant reviews an agent's changes. deltabox's binding
- * is loaded only in the plugin's helper process (./helper.ts).
- *
- * The operator's `settings.presmium.deltabox`: `sandbox` and `review` (both
- * on unless `false`), `read` (more read-only paths for the process sandbox,
- * `~/` for the home directory) and `stateDir` (deltabox's session state and
- * the review snapshots; outside every workspace, by default in the user's
- * state directory). A service left out is named in the startup log with its
- * reason, and a build whose code runs without the sandbox says why.
- */
 import { realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
@@ -58,9 +41,7 @@ const real = (path: string) => {
   }
 }
 
-/** Why each deck's compile-time code runs without the process sandbox, for its build report. */
 const unsandboxed = new Map<string, string>()
-/** Startup log lines already written by this process. */
 const logged = new Set<string>()
 
 function logOnce(ctx: NodeServiceContext, line: string): void {
@@ -69,11 +50,9 @@ function logOnce(ctx: NodeServiceContext, line: string): void {
   ctx.log.info(line)
 }
 
-/** Whether the host qualifies, with the state directory outside the workspace; asked once per process. */
 function availability(ctx: NodeServiceContext, settings: DeltaboxSettings): { ok: true, kind: string } | { ok: false, reason: string } {
   const t = messages(ctx.lang)
   const fromRoot = relative(real(ctx.workspaceRoot), real(settings.stateDir))
-  // Inside the workspace root (a directory named `..state` is inside it, F-11).
   if (fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot)) return { ok: false, reason: t.stateInside(settings.stateDir) }
   const found = probe(settings.stateDir, ctx.log)
   if (found.recovered?.length) logOnce(ctx, t.recovered(found.recovered))
@@ -100,7 +79,6 @@ function services(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][] {
   return entries
 }
 
-/** The build report says why compile-time code ran without the process sandbox (when no other plugin provides one). */
 const reportPass: IRPass = {
   name: 'presmium.deltabox.report',
   after: 'execute',

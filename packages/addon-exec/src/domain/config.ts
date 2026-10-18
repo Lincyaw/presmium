@@ -1,16 +1,11 @@
 import { languageId } from '@presmium/kernel'
 
-/** Id under which this addon reads its options from the `presmium` config. */
 export const EXEC_ID = 'presmium.exec'
 
 export interface ExecConfig {
-  /** Default run timeout in milliseconds, counted from the start of execution (runtime loading excluded). */
   timeoutMs: number
-  /** How long a run waits for the Python runtime to load before it fails (and shows its recorded output). */
   loadTimeoutMs: number
-  /** Most trace events recorded before a stepwise run is stopped. */
   maxTraceEvents: number
-  /** Where the Pyodide runtime files are served; defaults to `<base>pyodide/` of the deck. */
   pyodideURL?: string
 }
 
@@ -18,7 +13,6 @@ export const DEFAULT_EXEC_CONFIG: ExecConfig = { timeoutMs: 10_000, loadTimeoutM
 
 const positive = (value: unknown, fallback: number) => (typeof value === 'number' && value > 0 ? value : fallback)
 
-/** Reads `presmium: { presmium.exec: { timeoutMs, loadTimeoutMs, maxTraceEvents, pyodideURL } }`, ignoring malformed values. */
 export function execConfig(raw: Record<string, unknown>): ExecConfig {
   return {
     timeoutMs: positive(raw.timeoutMs, DEFAULT_EXEC_CONFIG.timeoutMs),
@@ -28,35 +22,20 @@ export function execConfig(raw: Record<string, unknown>): ExecConfig {
   }
 }
 
-/**
- * The `timeoutMs` a configuration sets (global `presmium.exec`, with a
- * section's `{config}` over it); undefined when it sets none, so that the
- * executor's own default applies.
- */
 export function configuredTimeout(raw: Record<string, unknown>): number | undefined {
   return typeof raw.timeoutMs === 'number' && raw.timeoutMs > 0 ? raw.timeoutMs : undefined
 }
 
-/** Languages the Python executors accept (`python`, `py`, `python3`, `ipython*`). */
 export function isPython(lang: string): boolean {
   return languageId(lang) === 'python'
 }
 
-/** Languages the JavaScript executors accept (src/runner.mjs). */
 export function isScript(lang: string): boolean {
   return ['javascript', 'typescript'].includes(languageId(lang))
 }
 
-/**
- * Modules that JavaScript and TypeScript code in the browser imports by name,
- * and where the deck serves them, under its base URL: the script worker
- * resolves these names itself, as workers have no import maps. jax-js
- * (`@jax-js/jax`, P-104) is published by the WebGPU plugin
- * (`addon-exec-webgpu`); without it the import fails.
- */
 export const SCRIPT_IMPORTS: Readonly<Record<string, string>> = { '@jax-js/jax': 'presmium/jax-js/index.js' }
 
-/** Script languages whose types are removed before they run. */
 export function isTypeScript(lang: string): boolean {
   return languageId(lang) === 'typescript'
 }

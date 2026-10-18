@@ -9,18 +9,9 @@ const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const ADDON_DIR = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES_DIR = fileURLToPath(new URL('../..', import.meta.url))
 
-// Scratch copies live inside the package so that the decks resolve the slides
-// renderer, @slidev/cli, the theme and playwright-chromium from its node_modules.
-// Each fixture has its own package.json, so each copy gets its own Vite cache and
-// tests can run in parallel.
 const SCRATCH = fileURLToPath(new URL('./.tmp', import.meta.url))
 const copies: string[] = []
 
-/**
- * A fresh copy of `fixtures/<name>`, with `ADDON_DIR` in its deck entry (`entry`)
- * replaced by this addon's directory and `PACKAGES_DIR` by the directory of all
- * packages; call `removeCopies` in `afterAll`.
- */
 export function copyFixture(name: string, entry = 'lecture.md'): string {
   mkdirSync(SCRATCH, { recursive: true })
   const dir = mkdtempSync(join(SCRATCH, `${name}-`))
@@ -31,7 +22,6 @@ export function copyFixture(name: string, entry = 'lecture.md'): string {
   return dir
 }
 
-/** A copy of `fixtures/<name>` as a git repository with one commit; `prepare` runs before the commit. */
 export function repository(name: string, entry?: string, prepare?: (dir: string) => void): string {
   const dir = copyFixture(name, entry)
   writeFileSync(join(dir, '.gitignore'), 'node_modules/\n')
@@ -46,7 +36,6 @@ export function removeCopies(): void {
   copies.splice(0).forEach(dir => rmSync(dir, { recursive: true, force: true }))
 }
 
-/** The environment of a shell: without Vitest's NODE_ENV=test, which would change how Vite and Workbox build. */
 export const SHELL_ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => name !== 'NODE_ENV'))
 
 export type { Run }
@@ -56,7 +45,6 @@ const BINS = {
   'presmium-diff': join(ADDON_DIR, 'bin/presmium-diff.mjs'),
 }
 
-/** Runs one of this package's bins, or the `presmium` CLI, as a real process. */
 export function bin(name: keyof typeof BINS | 'presmium', cwd: string, ...args: string[]): Promise<Run> {
   if (name === 'presmium') return presmium(cwd, args)
   return run(process.execPath, [BINS[name], ...args], { cwd, env: SHELL_ENV })
@@ -64,7 +52,6 @@ export function bin(name: keyof typeof BINS | 'presmium', cwd: string, ...args: 
 
 const GIT_ENV = { GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@example.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@example.com' }
 
-/** Runs a command and returns its trimmed stdout; throws when it fails. */
 export function command(cwd: string, name: string, ...args: string[]): string {
   const result = spawnSync(name, args, { cwd, env: { ...SHELL_ENV, ...GIT_ENV }, encoding: 'utf8' })
   if (result.status !== 0) throw new Error(`${name} ${args.join(' ')} failed (${result.status}): ${result.stderr}`)

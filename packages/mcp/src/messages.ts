@@ -1,7 +1,3 @@
-/**
- * The approvals' titles, written in the deck's language (`deckLocale`):
- * the person who answers reads them in the page's toolbar.
- */
 import type { Locale } from '@presmium/kernel'
 
 export interface McpMessages {

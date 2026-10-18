@@ -1,8 +1,3 @@
-// `presmium build` of fixtures/repro (web, slides and notebook) is reproducible (Principle 5): the
-// same bytes from two checkouts of the deck and from a rebuild, with no path of the machine in them,
-// although a plugin's pass puts some in its configuration (fixtures/repro/plugin). The copies lie in
-// the demo, whose node_modules hold the renderers and plugins, at the same depth, as two clones of
-// the repository would.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,13 +19,11 @@ function checkout(): string {
   return join(dir, 'deck')
 }
 
-/** `presmium build` as an author runs it (`presmium` of @presmium/cli/testing). */
 async function build(deck: string, out: string): Promise<void> {
   const { code, stdout, stderr } = await presmium(deck, ['build', '--out', out])
   if (code !== 0) throw new Error(`presmium build exited with ${code}\n${stdout}${stderr}`)
 }
 
-/** Every file of the outputs, the IR beside them included, by path. */
 function outputs(out: string): Map<string, Buffer> {
   const files = new Map<string, Buffer>()
   for (const file of readdirSync(out, { recursive: true, encoding: 'utf8' })) {
@@ -55,8 +48,6 @@ it('builds the same IR, web, slides and notebook bytes in two checkouts and on a
   const local = [...first].filter(([, bytes]) => bytes.includes(ROOT) || bytes.includes(a)).map(([file]) => file)
   expect(local, `files naming ${relative(process.cwd(), ROOT) || ROOT}`).toEqual([])
 
-  // The repository's paths are relative: to the deck in the IR and the site, to the generated Slidev
-  // deck (where Slidev resolves them) in the slides. A path of the site that exists on the machine stays.
   const published = JSON.parse(first.get('ir.json')!.toString()) as { meta: { entry: string }, config: { presmium: Record<string, unknown> }, sections: { source: { file: string } }[] }
   expect([published.meta.entry, published.sections.at(-1)!.source.file]).toEqual(['lecture.md', 'pages/two.md'])
   expect(published.config.presmium['fixture.repro']).toEqual({ data: 'img', site: '/tmp' })

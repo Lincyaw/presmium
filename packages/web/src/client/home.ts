@@ -1,20 +1,3 @@
-/**
- * The home page of a workspace site (P-122): the documents, as cards, with a
- * search box and their tags, each linking to its pages. In `presmium serve`
- * (and `presmium dev`) the page has the server and is a workbench (N-10,
- * docs/design/home.dc.html): the activity bar (after a link that skips to
- * the content), the workspace's files (its name as the page's heading, and
- * the tree of the `files` slot; where the side bar gives way, in a drawer of
- * the activity bar), the launcher with its search (Ctrl K) over the
- * documents, their sections and the commands, and the status bar, around the
- * cards. It starts the host (the toolbar, the server's client, the
- * approvals) and the site's plugins, e.g. the workspace's browser plugin,
- * whose entries fill the places of the workbench (`ToolbarItem.slot`); while
- * its editor is open (`EDIT_MODE`), the launcher's place shows it (`tabs`,
- * `source`). The list follows the server (re-read when a plugin says the
- * documents changed, the window event `presmium:documents`). A static site
- * keeps the default theme's page, with the same cards.
- */
 import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, PmButton, PmCard, PmDrawer, PmEmpty, PmIcon, PmIconButton, pluginsOf, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, startHost, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
 import type { HostAdapter, Navigation, ToolbarItem, ToolbarSlot } from '@presmium/host'
 import { FINAL_STEP } from '@presmium/viewer'
@@ -27,15 +10,9 @@ import { samePage, WEB_MESSAGES } from '../domain/index.ts'
 import './style.css'
 
 export interface SiteHomeInput {
-  /** Loaders of the site's plugins' `src/client/plugin.ts`. */
   plugins: (() => Promise<unknown>)[]
 }
 
-/**
- * A document as the home page lists it (see ../node/sites.ts). A card shows
- * the description, the number of pages and the result of the checks when
- * the list has them; the launcher's search finds its sections.
- */
 interface HomeDocument {
   dir: string
   title: string
@@ -48,22 +25,15 @@ interface HomeDocument {
   sections?: { id: string, title: string, href: string }[]
 }
 
-/** The event a plugin sends after it changed the documents, so the list is read again. */
 export const DOCUMENTS_EVENT = 'presmium:documents'
 
-/** The configuration the home page's plugins get: they are on the home page of a workspace site. */
 const HOME_CONFIG = { 'presmium.workspace': { home: true } }
 
-/** The documents read from the server, once it has answered; before, those of the site's data. */
 const served = shallowRef<HomeDocument[]>()
-/** The search box of a static site's home page, which the cards are filtered by (the workbench's launcher lists what it finds instead). */
 const query = ref('')
-/** The cards are in the workbench, whose bar has the search box. */
 const IN_WORKBENCH: InjectionKey<boolean> = Symbol('presmium.workbench')
 
-/** The server's live list of the documents (`presmium serve`), once a page found it. */
 let endpoint: string | undefined
-/** Reads the list again; with `compile`, the documents not compiled yet compile (their sections), and it is read until they are. */
 async function refresh(compile = false): Promise<void> {
   if (!endpoint) return
   for (let tries = 0; tries < 60; tries++) {
@@ -81,7 +51,6 @@ async function refresh(compile = false): Promise<void> {
   }
 }
 
-/** The documents of the site, following the server in `presmium serve`. Must be called inside a component setup. */
 function useDocuments() {
   const { theme } = useData()
   const options = computed(() => theme.value.presmium ?? {})
@@ -95,7 +64,6 @@ function useDocuments() {
   return computed<HomeDocument[]>(() => served.value ?? options.value.documents ?? [])
 }
 
-/** The slots the toolbar's items fill now. Must be called inside a component setup. */
 function useFilledSlots() {
   const toolbar = useService(TOOLBAR)
   const slots = shallowRef(new Set<ToolbarSlot>())
@@ -111,11 +79,9 @@ function useFilledSlots() {
   return slots
 }
 
-/** The items of a place of the workbench (`ToolbarItem.slot`). */
 const inTools = (item: ToolbarItem) => !item.slot || item.slot === 'tools'
 const bySlot = (slot: ToolbarItem['slot']) => (item: ToolbarItem) => item.slot === slot
 
-/** A document's card: its title (the link, the whole card's), its description, its directory, pages, language, tags and checks. */
 function card(doc: HomeDocument, t: typeof WEB_MESSAGES[keyof typeof WEB_MESSAGES]) {
   const badge = (text: string, tone = '') => h('span', { class: `pm-ui-badge${tone ? ` pm-ui-badge--${tone}` : ''}` }, text)
   const problems = doc.problems
@@ -132,7 +98,6 @@ function card(doc: HomeDocument, t: typeof WEB_MESSAGES[keyof typeof WEB_MESSAGE
   ])
 }
 
-/** The card of the MCP service (`/mcp`): its address, to copy, for an outside agent. */
 const McpCard = defineComponent({
   name: 'PresmiumMcpCard',
   setup() {
@@ -156,7 +121,6 @@ const McpCard = defineComponent({
   },
 })
 
-/** The launcher's search box; Ctrl K (⌘ K) focuses it. */
 const SearchBox = defineComponent({
   name: 'PresmiumSiteSearch',
   setup() {
@@ -186,7 +150,6 @@ const SearchBox = defineComponent({
   },
 })
 
-/** One result of the launcher's search. */
 interface Found {
   id: string
   group: 'documents' | 'sections' | 'commands'
@@ -195,14 +158,8 @@ interface Found {
   run(): void
 }
 
-/** Whether a text holds every word of the query. */
 const matches = (text: string, words: string[]) => words.every(word => text.toLowerCase().includes(word))
 
-/**
- * The commands of the home page: each item of the toolbar drawn on it that
- * opens something (its first control, pressed), under its title; and the
- * appearance switch.
- */
 function commands(items: ToolbarItem[], toggleTheme: { label: string, run(): void }): Found[] {
   const found: Found[] = []
   for (const item of items) {
@@ -215,19 +172,11 @@ function commands(items: ToolbarItem[], toggleTheme: { label: string, run(): voi
   return found
 }
 
-/**
- * The launcher's search (Ctrl K, ⌘ K): the documents, their sections and the
- * commands it finds, as a list under the box (arrow keys, Enter); the
- * documents' cards stay as they are, so a search for a section does not
- * empty them. Opened, it has the documents not compiled yet compiled, so
- * their sections are found.
- */
 const LauncherSearch = defineComponent({
   name: 'PresmiumLauncherSearch',
   setup() {
     const t = useMessages(WEB_MESSAGES)
     const documents = useDocuments()
-    // The launcher's own words: what it finds is listed under the box, and the cards stay as they are.
     const query = ref('')
     const toolbar = useService(TOOLBAR)
     const theme = useTheme()
@@ -379,11 +328,6 @@ const SiteHome = defineComponent({
   },
 })
 
-/**
- * The home page of a site whose `site.home` names a document: it leads to
- * that document (a refresh in the page's head does without JavaScript too),
- * and says so with a link meanwhile.
- */
 const SiteRedirect = defineComponent({
   name: 'PresmiumSiteRedirect',
   setup() {
@@ -396,7 +340,6 @@ const SiteRedirect = defineComponent({
   },
 })
 
-/** The host of the home page: no document, no steps; the toolbar, the shared states, the server's client and the appearance switch. */
 function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): HostAdapter {
   const cursor = readonly(ref({ slide: 1, step: 0 }))
   return {
@@ -414,7 +357,6 @@ function homeHost(lang: string, sharedState: HostAdapter['useSharedState']): Hos
   }
 }
 
-/** The workspace's files: the tree a plugin gives (`files`), else the documents' directories and the configuration. */
 const FileTree = defineComponent({
   name: 'PresmiumWorkspaceTree',
   setup() {
@@ -431,7 +373,6 @@ const FileTree = defineComponent({
   },
 })
 
-/** The workspace's side bar: its name, the page's heading where the side bar shows, and its files. */
 const Files = defineComponent({
   name: 'PresmiumWorkspaceFiles',
   setup() {
@@ -444,13 +385,11 @@ const Files = defineComponent({
   },
 })
 
-/** Where the side bar gives way (narrower than 1024 px: tablets, phones), the activity bar's entry that opens the files in a drawer. */
 const FilesDrawer = defineComponent({
   name: 'PresmiumWorkspaceFilesDrawer',
   setup() {
     const t = useMessages(WEB_MESSAGES)
     const open = ref(false)
-    // A file chosen opens elsewhere (its document's page, or the editor in the launcher's place): the drawer closes.
     const onClick = (event: MouseEvent) => {
       if ((event.target as Element | null)?.closest('[data-path], a[href]')) open.value = false
     }
@@ -461,7 +400,6 @@ const FilesDrawer = defineComponent({
   },
 })
 
-/** Whether the side bar gives way (`.pm-workbench__files` in style.css): narrower than 1024 px. */
 function useNarrow() {
   const narrow = ref(false)
   let media: MediaQueryList | undefined
@@ -475,10 +413,8 @@ function useNarrow() {
   return narrow
 }
 
-/** The id of the workbench's content, where the link that skips the bars goes. */
 const CONTENT_ID = 'pm-workbench-content'
 
-/** The workbench of a served home page (docs/design/home.dc.html). */
 const Workbench = defineComponent({
   name: 'PresmiumWorkbench',
   setup() {
@@ -514,7 +450,6 @@ const Workbench = defineComponent({
       h('div', { class: 'pm-workbench__main' }, [
         h('header', { class: 'pm-workbench__bar' }, [
           h('span', { class: 'pm-workbench__title' }, t.value.launcher),
-          // Where the side bar gives way, the workspace's name heads the page here.
           h('h1', { class: 'pm-workbench__heading' }, site.value.title),
           h(LauncherSearch),
           h('div', { class: 'pm-workbench__actions' }, [h(PmToolbar, { filter: (item: ToolbarItem) => inTools(item) && !item.icon })]),
@@ -553,7 +488,6 @@ const Layout = defineComponent({
   },
 })
 
-/** The VitePress theme of a workspace site's home page. */
 export function createSiteHomeTheme(input: SiteHomeInput): Theme {
   return {
     extends: DefaultTheme,
@@ -561,7 +495,6 @@ export function createSiteHomeTheme(input: SiteHomeInput): Theme {
     enhanceApp({ app, router, siteData }) {
       app.component('PresmiumSiteHome', SiteHome)
       app.component('PresmiumSiteRedirect', SiteRedirect)
-      // The documents are sites of their own: a link to one loads it, rather than the router's 404.
       router.onBeforeRouteChange = (to) => {
         if (!inBrowser) return
         const url = new URL(to, location.href)

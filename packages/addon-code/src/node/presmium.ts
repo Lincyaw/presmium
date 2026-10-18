@@ -7,11 +7,6 @@ import { patternResolver, symbolResolver } from './symbol.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
-/**
- * Code references (P-10..P-16): the `region`, `symbol` and `pattern` anchors,
- * the `{code-ref}` directive and the pass that resolves it into a code node.
- * The pass reports the anchor, drift and link diagnostics of `presmium check`.
- */
 const plugin: PresmiumNodePlugin = {
   id: CODE_ID,
   version,

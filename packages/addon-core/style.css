@@ -1,4 +1,3 @@
-/* A component that failed (K-07): the danger tone of the host's tokens, framed, in its place on the slide. */
 .pm-boundary-error {
   padding: 0.5rem 0.75rem;
   border: 1px dashed var(--pm-color-danger);
@@ -9,19 +8,12 @@
   font-size: 0.85em;
 }
 
-/* Presmium's controls on a slide show where the keyboard focus is (N-06), in the accent as the host's do. */
 .slidev-layout :is(button, input, select, textarea, summary):focus-visible,
 .pm-toolbar :is(button, input, select, textarea, a):focus-visible {
   outline: 2px solid var(--pm-color-accent);
   outline-offset: 2px;
 }
 
-/*
- * Reduced motion (N-06): slide transitions and the fades of clicks happen at
- * once. Presmium's own animations show their final state already
- * (usePrefersReducedMotion); this covers Slidev's CSS transitions, whatever
- * the deck's `transition`.
- */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -31,11 +23,6 @@
   }
 }
 
-/*
- * Slidev's reset (Tailwind's preflight) makes `button`, `[type='button']` and `[type='submit']` transparent, with
- * the specificity of the host's classes and after them in the slides' stylesheet: the host's buttons (N-10,
- * @presmium/host's components.css) keep their fill, in their every state, in the slides form.
- */
 .pm-ui-button[type] {
   background-color: var(--pm-color-surface);
 }

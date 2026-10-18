@@ -1,6 +1,3 @@
-// Runs the real `presmium-diff` (git worktrees, compiler, slides renderer and
-// `slidev export`, web renderer and Playwright, pixelmatch) on git repositories
-// that hold copies of ./fixtures.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, expect, it } from 'vitest'
@@ -32,12 +29,10 @@ it('lists the pages of the slide that changed between two commits', async () => 
   expect(report.listed.map((p: { slide: number, step: number }) => [p.slide, p.step])).toEqual([[2, 0], [2, 1]])
   expect(readFileSync(join(dir, '.presmium/diff/report.md'), 'utf8')).toContain('![diff](diff/002-01.png)')
   expect(existsSync(join(dir, '.presmium/diff/diff/002-01.png'))).toBe(true)
-  // The temporary worktrees are gone and the report directory ignores itself.
   expect(git(dir, 'worktree', 'list').split('\n')).toHaveLength(1)
   expect(git(dir, 'status', '--porcelain')).toBe('')
 }, 240_000)
 
-// fixtures/upgrade: a pnpm workspace whose deck uses an addon of the workspace; a commit changes the addon's CSS.
 it('with --install renders each commit with the dependencies of its own lockfile; without, it warns that it does not', async () => {
   const dir = repository('upgrade', 'deck/lecture.md', root => command(root, 'pnpm', 'install', '--prefer-offline'))
   expect(existsSync(join(dir, 'pnpm-lock.yaml'))).toBe(true)
@@ -56,7 +51,6 @@ it('with --install renders each commit with the dependencies of its own lockfile
   expect(shared.stderr).toContain('warning: changes outside the deck are not rendered from their commit: addon/style.css; --install renders each commit with its own dependencies')
 }, 360_000)
 
-// fixtures/web: a deck with the web form only, under a base of its own (R-93), whose narration has a block for the web form.
 it('renders the web form of both commits, and lists the web page whose {only} web content changed (P-53)', async () => {
   const dir = repository('web')
   const lecture = join(dir, 'lecture.md')

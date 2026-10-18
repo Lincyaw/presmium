@@ -1,20 +1,10 @@
-/**
- * Narration as it is spoken (docs/ir.md 2.8, 2.9): the text of a paragraph
- * of narration, with the inline roles of the lecture plugin read out. A
- * `{cue}` is a mark at a place of the text; a `{say}` shows its content and
- * is spoken as its `alias`, so the text to synthesize differs from the text
- * shown there (`spans`). Whitespace is collapsed; a line break between two
- * CJK characters is no space.
- */
 import { isRecord } from '@presmium/kernel'
 import type { MdastNode, WordSpan } from '@presmium/kernel'
 import { LECTURE_ID } from './track.ts'
 import { isCjk } from './words.ts'
 
-/** A `{cue}` in a text: its command and options, at a place of the shown text (UTF-16 offset). */
 export interface CueMark {
   offset: number
-  /** The role's content, e.g. `spot` or `pause 800ms`. */
   command: string
   to?: string
   lines?: string
@@ -22,15 +12,12 @@ export interface CueMark {
 }
 
 export interface SpokenText {
-  /** The text as shown (captions, the transcript). */
   text: string
-  /** The text as spoken: `{say}` aliases in place of what they show. */
   spoken: string
   spans: WordSpan[]
   cues: CueMark[]
 }
 
-/** Nodes whose text is not spoken. */
 const SILENT = new Set(['image', 'imageReference', 'html', 'footnoteReference', 'definition', 'footnoteDefinition', 'comment', 'mystComment', 'target', 'mystTarget'])
 
 const BLOCKS = new Set(['paragraph', 'listItem', 'heading', 'blockquote', 'tableCell', 'tableRow'])
@@ -39,7 +26,6 @@ function text(value: unknown): string | undefined {
   return typeof value === 'string' && value ? value : undefined
 }
 
-/** Builds the shown and the spoken text side by side. */
 class Builder {
   text = ''
   spoken = ''
@@ -47,13 +33,11 @@ class Builder {
   readonly cues: CueMark[] = []
   private pending: 'space' | 'line' | undefined
 
-  /** Appends text to both, or `shown` to the shown text and `spoken` to the spoken one. */
   append(shown: string, spoken = shown): void {
     if (shown === spoken) {
       for (const char of shown) this.char(char, char)
       return
     }
-    // A replacement: its whitespace is collapsed apart, and it is one span.
     const [lead] = /^\s*/.exec(shown)!
     for (const char of lead) this.char(char, char)
     this.flush(shown.trim()[0] ?? '')
@@ -69,7 +53,6 @@ class Builder {
     this.cues.push({ ...mark, offset: this.text.length })
   }
 
-  /** A break between blocks or lines. */
   line(): void {
     if (this.text) this.pending = 'line'
   }
@@ -88,7 +71,6 @@ class Builder {
     this.spoken += spoken
   }
 
-  /** Writes the whitespace before `next`: none between CJK characters (written without spaces; authors put some around roles). */
   private flush(next: string): void {
     const pending = this.pending
     this.pending = undefined
@@ -99,7 +81,6 @@ class Builder {
   }
 }
 
-/** CJK characters and the punctuation and full-width forms used with them. */
 function wide(char: string): boolean {
   return isCjk(char) || /[　-〿＀-￯]/u.test(char)
 }
@@ -108,7 +89,6 @@ function collapse(value: string): string {
   return value.replace(/\s+/g, ' ').trim()
 }
 
-/** Whether a node is a role of the lecture plugin, by name. */
 export function lectureRole(node: MdastNode, name: 'cue' | 'say'): boolean {
   return node.type === 'presmiumRole' && node.plugin === LECTURE_ID && node.name === name
 }
@@ -146,21 +126,18 @@ function walk(node: MdastNode, out: Builder): void {
   if (block) out.line()
 }
 
-/** The plain text of a node, as shown. */
 function plain(node: MdastNode): string {
   if (SILENT.has(node.type)) return ''
   if (typeof node.value === 'string' && !node.children) return node.value
   return (node.children ?? []).map(plain).join('')
 }
 
-/** A paragraph (or list, quote …) of narration as shown and as spoken, with its cues. */
 export function spokenText(node: MdastNode): SpokenText {
   const out = new Builder()
   walk(node, out)
   return out.done()
 }
 
-/** The text of a `pause` cue as ms: `800ms`, `1.5s`, `2` (seconds); undefined when it is no duration. */
 export function duration(value: string): number | undefined {
   const match = /^(\d+(?:\.\d+)?)\s*(ms|s)?$/.exec(value.trim())
   if (!match) return undefined
@@ -172,10 +149,8 @@ export type CueCommand = 'next' | 'spot' | 'hint' | 'point' | 'click' | 'run' | 
 
 export const CUE_COMMANDS: readonly CueCommand[] = ['next', 'spot', 'hint', 'point', 'click', 'run', 'ink', 'pause', 'mark']
 
-/** Commands that act on a block. */
 export const TARGETED: ReadonlySet<CueCommand> = new Set(['spot', 'hint', 'point', 'click', 'run', 'ink'])
 
-/** A cue's command read: its name and argument (`click <action>`, `pause <duration>`, `mark <name>`), or why it is none. */
 export function readCue(command: string): { name: CueCommand, arg: string } | { problem: string } {
   const [name = '', ...rest] = command.trim().split(/\s+/)
   const arg = rest.join(' ')

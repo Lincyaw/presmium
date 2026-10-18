@@ -1,7 +1,3 @@
-// Runs the real `presmium build --to notebook` on decks with the classroom directives: in a notebook
-// a quiz is a question list and an exercise is its prompt, its starter code and its checks as code
-// cells, written in the deck's language (English for a language without messages, such as French).
-// The build also warns about a label that looks like a generated block id.
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -115,7 +111,6 @@ interface Cell {
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
-/** Builds `deck` (`lecture.md` and `files`) to a notebook; the build's output and the notebook's cells by section. */
 async function notebook(deck: string, files: Record<string, string> = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-classroom-'))
   dirs.push(dir)
@@ -137,12 +132,10 @@ it('shows a quiz as a question list and an exercise as code cells; live-only com
   expect(output).not.toContain('not rendered')
   expect(output).toMatch(/lecture\.md:\d+ +warning +label \(step-2\)= ends in -<number> like a generated block id/)
 
-  // One Markdown cell with the section title.
   const [quiz, ...rest] = of('quiz')
   expect(rest).toEqual([])
   expect(quiz?.type).toBe('markdown')
   expect(quiz?.source).toContain('BPE 每一轮合并哪一对相邻符号？')
-  // The options are lettered as the answer names them, as in the live quiz (F-78).
   expect(quiz?.source).toMatch(/A\. 最先出现的一对\n\nB\. 出现次数最多的一对/)
   expect(quiz?.source).not.toMatch(/^1\.\s/m)
   expect(quiz?.source).toContain('<details><summary>答案</summary>B</details>')
@@ -153,7 +146,6 @@ it('shows a quiz as a question list and an exercise as code cells; live-only com
     { type: 'code', source: '# 校验：先运行上面的单元格，再运行这个单元格；没有报错就是通过。\nassert mean([1, 2, 3]) == 2' },
   ])
 
-  // Only the section title: the question box and the pulse need a classroom.
   expect(of('live')).toEqual([{ type: 'markdown', source: '## 课堂' }])
 })
 
@@ -176,7 +168,6 @@ it('writes an exercise\'s prompt as the deck\'s Markdown, its local image copied
   expect(quiz?.source).not.toMatch(/C\.\s/)
   expect(quiz?.source).toContain('<details><summary>Answer</summary>B</details>')
 
-  // The pulse's default question, written at compile time.
   const ir = JSON.parse(readFileSync(join(dir, 'out/ir.json'), 'utf8')) as { meta: { lang: string }, sections: { id: string, blocks: { node: { props?: Record<string, unknown> } }[] }[] }
   expect(ir.meta.lang).toBe('fr')
   const pulse = ir.sections.find(s => s.id === 'pulse')!.blocks.map(b => b.node.props).find(props => props?.question)

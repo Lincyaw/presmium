@@ -1,8 +1,3 @@
-/**
- * `npm create presmium@latest [<directory>] [-- --type lecture|workspace|plugin ...]` (P-142):
- * asks for what the arguments leave out, one line of standard input per question (a terminal,
- * or answers piped in), then makes the project and says what to run next.
- */
 import { createInterface } from 'node:readline'
 import type { Interface } from 'node:readline'
 import { basename, relative, resolve } from 'node:path'
@@ -11,14 +6,12 @@ import { assertEmpty, createProject, CreateError, KINDS, nameOf, validName } fro
 import { MESSAGES, systemLocale } from './messages.ts'
 import type { Commands, Messages, ProjectKind } from './messages.ts'
 
-/** Where a new project goes when asked without an answer. */
 const DEFAULT_DIRS: Record<ProjectKind, string> = {
   lecture: 'my-lecture',
   workspace: 'my-course',
   plugin: 'presmium-plugin-greeting',
 }
 
-/** Runs create-presmium with `argv` and returns the exit code: 0 made, 1 refused, 2 a usage error. */
 export async function main(argv: string[]): Promise<number> {
   const t = MESSAGES[systemLocale()]
   let args: ReturnType<typeof parse>
@@ -34,7 +27,6 @@ export async function main(argv: string[]): Promise<number> {
   }
   const questions = new Questions(t)
   try {
-    // Without a kind or a directory it is a conversation: it asks for the title or name too.
     const asking = args.values.type === undefined || args.positionals[0] === undefined
     const kind = args.values.type ?? await questions.kind()
     if (!KINDS.includes(kind as ProjectKind)) throw new CreateError(t.badKind(kind), true)
@@ -77,7 +69,6 @@ function parse(argv: string[]) {
   return parsed
 }
 
-/** The questions, one line of standard input each; read lines wait for their question. */
 class Questions {
   #lines?: AsyncIterator<string>
   #reader?: Interface
@@ -91,7 +82,6 @@ class Questions {
     const terminal = process.stdin.isTTY === true
     this.#reader ??= createInterface({ input: process.stdin, terminal, output: terminal ? process.stdout : undefined })
     this.#lines ??= this.#reader[Symbol.asyncIterator]()
-    // In a terminal the question is the line's prompt, which readline draws again as the answer is edited.
     const prompt = `${question} (${answer}): `
     if (terminal) {
       this.#reader.setPrompt(prompt)
@@ -105,7 +95,6 @@ class Questions {
     return next.value.trim() || answer
   }
 
-  /** The kind of project: its number or its name. */
   async kind(): Promise<string> {
     process.stdout.write(`${this.t.kindQuestion}\n${KINDS.map((kind, i) => `  ${i + 1}. ${this.t.kinds[kind]}\n`).join('')}`)
     const answer = await this.ask(this.t.numberQuestion, '1')
@@ -118,7 +107,6 @@ class Questions {
   }
 }
 
-/** The commands of the package manager that runs create-presmium (`npm create`, `pnpm create`, ...). */
 function packageManager(agent = process.env.npm_config_user_agent ?? ''): Commands {
   const name = /^(pnpm|yarn|bun)\//.exec(agent)?.[1]
   if (name === 'pnpm') return { install: 'pnpm install', run: script => `pnpm ${script}` }

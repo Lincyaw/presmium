@@ -1,7 +1,3 @@
-/**
- * The plugin's words in the languages it speaks (N-07), chosen by
- * `@presmium/host` (`useMessages`, `currentLocale`).
- */
 import type { Locale } from '@presmium/kernel'
 
 const zh = {
@@ -28,7 +24,6 @@ const zh = {
     follow: '跟随',
     free: '自主',
   },
-  /** Around the two code names of the hint shown without a classroom server. */
   hint: ['文稿照常放映与阅读。要开课，启动 ', '，并在文稿 frontmatter 中设置 ', '。'],
   nickname: '昵称',
   create: '创建课堂',

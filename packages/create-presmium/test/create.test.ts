@@ -1,14 +1,3 @@
-// create-presmium as a user runs it (P-142; WP-93b), outside the monorepo and without the registry:
-// every public package is packed as it is published (scripts/consumer.ts's `packAll`), and
-// create-presmium runs from its tarball with `npm exec`, as `npm create presmium` runs it. It makes a
-// lecture (answering its questions on standard input), a workspace (from arguments, in English) and a
-// plugin (answering its questions in a terminal) in a temporary directory. Each project then installs Presmium as from the registry: its `package.json`
-// names Presmium's packages at create-presmium's version, which the test points at their tarballs
-// (with the packages they need), and npm installs them. There each `presmium check` finds no
-// problems, each build passes, `presmium serve` serves the workspace, and the plugin's own
-// integration tests pass (they run `presmium dev` too). The tarball holds each
-// template as its one source in the repository, file for file. e2e/create.spec.ts loads the plugin
-// in a lecture and shows it in a browser.
 import { spawn } from 'node:child_process'
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -22,7 +11,6 @@ import { storedPath, TEMPLATE_SOURCES, templateFiles } from '../src/templates.ts
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 const { version: VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
 
-/** A tarball as `tarballs/index.json` lists it (scripts/consumer.ts). */
 interface Tarball {
   name: string
   file: string
@@ -30,9 +18,7 @@ interface Tarball {
 
 interface Project {
   dir: string
-  /** Its `package.json` as create-presmium wrote it. */
   made: { name: string, scripts: Record<string, string>, dependencies?: Record<string, string>, devDependencies?: Record<string, string>, peerDependencies?: Record<string, string> }
-  /** What create-presmium printed. */
   output: string
 }
 
@@ -40,14 +26,12 @@ let work: string
 let tarballs: Map<string, string>
 const projects: Record<'lecture' | 'workspace' | 'plugin', Project> = {} as never
 
-/** A user's shell: without the variables pnpm and Vitest set (NODE_ENV=test changes Vite's builds). */
 function userEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env = { ...process.env }
   for (const name of Object.keys(env)) if (/^(?:npm|pnpm)_/i.test(name) || ['NODE_ENV', 'INIT_CWD', 'VITEST', 'VITEST_WORKER_ID', 'VITEST_POOL_ID', 'TEST'].includes(name)) delete env[name]
   return { ...env, ...extra }
 }
 
-/** Runs a command; resolves with its output, fails with it. `input` is its standard input. */
 async function sh(command: string, args: string[], cwd: string, input = '', env: Record<string, string> = {}): Promise<string> {
   const child = spawn(command, args, { cwd, env: userEnv(env), stdio: ['pipe', 'pipe', 'pipe'] })
   let output = ''
@@ -59,27 +43,20 @@ async function sh(command: string, args: string[], cwd: string, input = '', env:
   return output
 }
 
-/**
- * Calls a function of scripts/consumer.ts with JSON arguments in a process of its own (the test does
- * not import from outside its package) and resolves with its JSON result.
- */
 async function consumer<T>(name: string, ...args: unknown[]): Promise<T> {
   const script = 'const consumer = await import(process.argv[1]); process.stdout.write(JSON.stringify(await consumer[process.argv[2]](...JSON.parse(process.argv[3])) ?? null))'
   return JSON.parse(await sh(process.execPath, ['--input-type=module', '-e', script, pathToFileURL(join(ROOT, 'scripts/consumer.ts')).href, name, JSON.stringify(args)], ROOT)) as T
 }
 
-/** `npm create presmium` with create-presmium's tarball for the registry's latest, in the system language `lang`. */
 async function create(args: string[], input = '', lang = 'zh_CN.UTF-8'): Promise<string> {
   return sh('npm', ['exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium', ...args], work, input, { LANG: lang, LC_ALL: '' })
 }
 
-/** As `create`, in a terminal (util-linux's `script`), where the questions are readline's prompts; `input` is typed ahead. */
 async function createInTerminal(input: string): Promise<string> {
   const command = ['npm', 'exec', '--yes', `--package=${tarballs.get('create-presmium')}`, '--', 'create-presmium'].map(word => `'${word}'`).join(' ')
   return sh('script', ['--quiet', '--return', '--command', command, '/dev/null'], work, input, { LANG: 'zh_CN.UTF-8', LC_ALL: '' })
 }
 
-/** The project installs its Presmium packages, and those they need, from their tarballs with npm. */
 async function install(dir: string): Promise<void> {
   const file = join(dir, 'package.json')
   const pkg = JSON.parse(readFileSync(file, 'utf8')) as Record<string, Record<string, string> | undefined>
@@ -93,7 +70,6 @@ async function install(dir: string): Promise<void> {
   await sh('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error'], dir)
 }
 
-/** The project's own `presmium`, as `npx presmium` runs it. */
 function presmium(project: string, args: string[]) {
   return run(process.execPath, [join(project, 'node_modules/@presmium/cli/bin/presmium.mjs'), ...args], { cwd: project, env: userEnv() })
 }
@@ -107,15 +83,12 @@ beforeAll(async () => {
   await consumer('packAll', join(work, 'tarballs'))
   const index = JSON.parse(readFileSync(join(work, 'tarballs/index.json'), 'utf8')) as Tarball[]
   tarballs = new Map(index.map(tarball => [tarball.name, tarball.file]))
-  // Asked: the kind (1, a lecture; 3, a plugin), the directory and the title or the package name. A
-  // title keeps its `$` (a replacement pattern of String.prototype.replace).
   projects.lecture = made(join(work, 'lecture'), await create([], '1\nlecture\n分词入门 $& $$x$$\n'))
   projects.workspace = made(join(work, 'course'), await create(['course', '--type', 'workspace', '--title', 'Data $& structures $$'], '', 'en_US.UTF-8'))
   projects.plugin = made(join(work, 'greeting'), await createInTerminal('3\ngreeting\n@acme/presmium-greeting\n'))
   await Promise.all(Object.values(projects).map(project => install(project.dir)))
 }, 900_000)
 
-// Three npm installs: removing them takes longer than a hook's default 10 s on a small CI runner.
 afterAll(() => {
   if (work) rmSync(work, { recursive: true, force: true })
 }, 120_000)
@@ -144,7 +117,6 @@ it('asks for what the arguments leave out, in the system\'s language, and writes
   expect(readFileSync(join(workspace.dir, 'intro/lecture.md'), 'utf8')).toContain('title: "Lecture 1"')
   expect(readFileSync(join(workspace.dir, 'README.md'), 'utf8')).toContain('A Presmium workspace')
   expect(readFileSync(join(plugin.dir, 'src/domain/index.ts'), 'utf8')).toContain('export const PLUGIN_ID = \'acme.presmium-greeting\'')
-  // The CLI, the renderers and the official plugins the documents use, at create-presmium's version.
   const essentials = ['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']
   const at = (names: string[]) => Object.fromEntries(names.map(name => [name, `^${VERSION}`]))
   expect(lecture.made.dependencies).toEqual(at(essentials))
@@ -181,7 +153,6 @@ it('makes a workspace whose document checks with no problems, whose site builds,
   expect(build.stdout).toContain('document  intro  Lecture 1')
   expect(build.stdout).toContain('no problems')
   expect(existsSync(join(dir, 'dist/web/index.html'))).toBe(true)
-  // Its sites in serve's state directory, outside the project.
   const cache = mkdtempSync(join(tmpdir(), 'presmium-create-cache-'))
   const serve = spawn(process.execPath, [join(dir, 'node_modules/@presmium/cli/bin/presmium.mjs'), 'serve', '--port', '0'], { cwd: dir, env: userEnv({ XDG_CACHE_HOME: cache }), stdio: ['ignore', 'pipe', 'pipe'] })
   const exited = new Promise(resolve => serve.once('exit', resolve))
@@ -218,7 +189,6 @@ it('makes a plugin whose example checks with no problems and builds, and whose i
   expect(build.code, build.stdout + build.stderr).toBe(0)
   expect(build.stdout).toContain('0 errors, 0 warnings')
   for (const file of ['web/index.html', 'slides/index.html', 'notebook/lecture.ipynb']) expect(existsSync(join(dir, 'example/dist', file)), file).toBe(true)
-  // Vitest colours its summary where it sees a CI (GitHub Actions).
   const tests = stripVTControlCharacters(await sh('npm', ['test'], dir))
   expect(tests).toMatch(/Tests {2}3 passed \(3\)/)
 }, 600_000)

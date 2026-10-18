@@ -8,9 +8,7 @@ import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 
 declare global {
   interface Window {
-    /** Running animations in each frame after a key press (`animationsAfter`). */
     motionFrames?: number[]
-    /** The names of the BroadcastChannels the page has opened (`recordChannels`). */
     channelNames?: string[]
   }
 }
@@ -21,7 +19,6 @@ async function openPanels(page: Page) {
   return panels
 }
 
-/** Records the name of every BroadcastChannel the pages of `context` open, in `window.channelNames`. */
 async function recordChannels(context: BrowserContext) {
   await context.addInitScript(() => {
     const names: string[] = []
@@ -36,14 +33,8 @@ async function recordChannels(context: BrowserContext) {
   })
 }
 
-/** Frames sampled after a key press: half a second at 60 frames a second, longer when the machine is busy. */
 const FRAMES = 30
 
-/**
- * Presses `key` and returns the most animations running in any of the frames
- * that follow it. A page turn starts its transition a frame or two after the
- * key, so a single look right after it can miss the transition or see it end.
- */
 async function animationsAfter(page: Page, key: string): Promise<number> {
   await page.evaluate((frames) => {
     const counts: number[] = []
@@ -61,7 +52,6 @@ async function animationsAfter(page: Page, key: string): Promise<number> {
   return Math.max(...await page.evaluate(() => window.motionFrames!))
 }
 
-/** A small deck for `presmium dev --to slides`, in a directory of its own inside the demo so its packages resolve. */
 const DEV_DECK = `---
 title: 开发服务器
 plugins:
@@ -81,18 +71,11 @@ renderers:
 `
 
 interface DevDeck {
-  /** The deck's source file. */
   file: string
-  /** Starts `presmium dev --to slides` in the deck and resolves to the slides' URL. */
   serve(): Promise<string>
 }
 
-/**
- * DEV_DECK in a directory of its own. The server stops and the directory goes away in the
- * fixture's teardown, which also runs when the test times out (a `finally` in the test does not).
- */
 const devTest = test.extend<{ devDeck: DevDeck }>({
-  // Playwright reads the fixtures a fixture uses from its first parameter, so it must be a pattern.
   devDeck: async ({}, use) => {
     const dir = deckDir('slides')
     writeFileSync(join(dir, 'lecture.md'), DEV_DECK)
@@ -123,18 +106,13 @@ devTest('presmium dev serves the slides with Slidev and updates them when the so
   expect(await page.evaluate(() => (window as { marker?: boolean }).marker)).toBe(true)
 })
 
-// e2e/fixtures/core/deck: an en-US deck with a test plugin (fixture.core) whose components read
-// their section's configuration and share a state, and whose kernel plugins cannot all start,
-// with the demo plugins and components of @presmium/slidev-addon-core (pages/host.md).
 test.describe('the fixture deck in the slides form', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 })
   let deck: FixtureDeck
   const slide = (id: string, query = '') => `${deck.url}/slides/${deck.slide(id)}${query}`
   const presenter = (id: string) => `${deck.url}/slides/presenter/${deck.slide(id)}`
-  /** The slide of section `id`; Slidev also renders the slides next to the current one. */
   const shown = (page: Page, id: string) => page.locator(`.slidev-page-${deck.slide(id)}`)
 
-  /** Opens `url` and waits until the kernel has started the plugins (fixture.core.lifecycle notes it). */
   async function open(page: Page, url: string) {
     await page.goto(url)
     await expect.poll(() => page.evaluate(() => window.fixtureLang)).toBeTruthy()
@@ -163,20 +141,17 @@ test.describe('the fixture deck in the slides form', () => {
   })
 
   test('a component counts its steps from its block: at its first internal step it looks the same wherever the block appears', async ({ page }) => {
-    // The stepper of `steps` appears at step 0; the one of `late-steps` at step 2.
     const stepper = async (url: string, layout: string) => {
       await open(page, url)
       const stepper = page.locator(`.slidev-layout.${layout} .pm-demo-stepper`).first()
       await expect(stepper).toHaveAttribute('data-step', '1')
       await expect(stepper.locator('li[data-status="active"]')).toHaveText('Parse')
-      // Slidev marks each click target with its click of the slide, which differs by design.
       return (await stepper.innerHTML()).replace(/ data-slidev-clicks-(start|end)="\d+"/g, '')
     }
     const early = await stepper(slide('steps', '?clicks=1'), 'fx-steps')
     const late = await stepper(slide('late-steps', '?clicks=3'), 'fx-late-steps')
     expect(late).toBe(early)
 
-    // One step back is the late stepper's initial state, the step its block appears at.
     await page.keyboard.press('ArrowLeft')
     await expect(page.locator('.slidev-layout.fx-late-steps .pm-demo-stepper').first()).toHaveAttribute('data-step', '0')
   })
@@ -184,7 +159,6 @@ test.describe('the fixture deck in the slides form', () => {
   test('narration becomes the speaker notes, highlighted at the step it belongs to', async ({ page }) => {
     await open(page, presenter('steps'))
     const notes = page.locator('.slidev-note')
-    // Narration after the stepper takes one paragraph per internal step (docs/ir.md 2.4).
     const intro = notes.locator('p', { hasText: 'Here a component follows the steps' })
     const first = notes.locator('p', { hasText: 'The first step highlights' })
     await expect(intro).not.toHaveClass(/slidev-note-fade/)
@@ -252,7 +226,6 @@ test.describe('the fixture deck in the slides form', () => {
     await expect(panels.locator('.pm-component-errors li')).toHaveCount(1)
     await expect(panels.locator('.pm-component-errors [data-component="FixtureSetupThrows"]')).toBeVisible()
 
-    // The web form: its page, and its presenter window.
     await page.goto(`${deck.url}/web/errors.html`)
     const section = page.locator('.pm-section[data-section="setup-error"]')
     await expect(section.locator('[data-pm-error="FixtureSetupThrows"]')).toContainText('fixture setup threw on purpose')
@@ -281,7 +254,6 @@ test.describe('the fixture deck in the slides form', () => {
     }
     await expect(await label('global')).toHaveText('global')
     await expect(await label('scoped')).toHaveText('section')
-    // The cover's frontmatter is the headmatter, which holds the global configuration too.
     await expect(await label('presmium-fixture-deck-with-a-title-too-long-for-a-phone')).toHaveText('cover')
   })
 
@@ -296,7 +268,6 @@ test.describe('the fixture deck in the slides form', () => {
     const panels = await openPanels(page)
     await expect(panels.locator('[data-panel="presmium.core.start-report"] h3')).toHaveText('Start report')
     await expect(panels.locator('[data-plugin="fixture.core.lifecycle"]')).toHaveText('fixture.core.lifecycle started')
-    // Slidev's page says `lang="en"` until it applies the headmatter; the plugins start in the deck's language.
     expect(await page.evaluate(() => window.fixtureLang)).toBe('en-US')
     await context.close()
   })
@@ -315,7 +286,6 @@ test.describe('the fixture deck in the slides form', () => {
     }
     await expect(plugin('fixture.core.lifecycle')).toHaveAttribute('data-status', 'started')
 
-    // fixture.core.lifecycle counts its disposals in localStorage.
     const disposals = () => page.evaluate(() => Number(localStorage.getItem('fixture.core.disposals') ?? 0))
     const before = await disposals()
     await page.reload()
@@ -344,7 +314,6 @@ test.describe('the fixture deck in the slides form', () => {
     const [a, b, web] = [await context.newPage(), await context.newPage(), await context.newPage()]
     for (const page of [a, b]) await open(page, slide('shared'))
     await web.goto(`${deck.url}/web/?view=present&section=shared`)
-    // The channel names carry each form's base, which Vite sets in both builds.
     await expect.poll(() => channels(a)).toContain(channel('/slides/'))
     await expect.poll(() => channels(web)).toContain(channel('/web/'))
 
@@ -364,14 +333,12 @@ test.describe('the fixture deck in the slides form', () => {
     await page.evaluate(() => window.fixtureDevice!.receive({ value: 5 }))
     await expect(remote).toHaveText('5')
 
-    // A local change and, in the same task, one from another device: the later one stays.
     const button = `.slidev-page-${deck.slide('shared')} .fx-remote button`
     await page.evaluate((button) => {
       document.querySelector<HTMLButtonElement>(button)!.click()
       window.fixtureDevice!.receive({ value: 9 })
     }, button)
     await expect(remote).toHaveText('9')
-    // A change from another device and right after it a local one: the local one goes out as local.
     await page.evaluate((button) => {
       window.fixtureDevice!.receive({ value: 20 })
       document.querySelector<HTMLButtonElement>(button)!.click()
@@ -386,7 +353,6 @@ test.describe('the fixture deck in the slides form', () => {
   })
 
   test('with reduced motion, turning a page and revealing an item animate nothing', async ({ page }) => {
-    // The deck's slides go `slide-left`; without reduced motion a page turn animates.
     const ready = async () => {
       await open(page, slide('lifecycle'))
       await expect(shown(page, 'lifecycle').locator('[data-pm-error="FixtureBroken"]')).toBeVisible()

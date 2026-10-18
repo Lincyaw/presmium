@@ -1,9 +1,3 @@
-// Smoke cases of the real engines (WP-82), through the speech routes of `presmium dev`: they run
-// only with the test credentials in the environment, and say how to enable them otherwise.
-// - Volcengine (火山引擎): PRESMIUM_TEST_VOLCENGINE_KEY (and PRESMIUM_TEST_VOLCENGINE_APPID for a key of the
-//   old console): synthesis of a sentence that mixes Chinese and English, with times per character and the
-//   label in the Ogg/Opus comment header, then its transcription.
-// - Groq: PRESMIUM_TEST_GROQ_KEY: transcription (whisper-large-v3-turbo) of the fake engine's audio.
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'

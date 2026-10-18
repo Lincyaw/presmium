@@ -1,9 +1,3 @@
-// Compile-time recording of a WGSL compute shader (P-104, WP-75), with the real `presmium build`: the
-// run panel's shader runs in Playwright's Chromium on SwiftShader (the environment's `adapter`), so
-// any machine records the same; the recording's environment fingerprint names the browser and the
-// fallback adapter, and its timing is marked as CPU emulation. The summary is in the deck's language
-// (`RunContext.lang`; the deck has none, so zh-CN). Where Chromium finds a GPU through Vulkan, the same
-// shader is recorded on it (`adapter: gpu`) and the fingerprint names its vendor; skipped otherwise.
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -70,7 +64,6 @@ it('records the shader\'s output in Chromium on SwiftShader, in the deck\'s lang
   expect(records[0]!.environment).toMatch(/^chromium [\d.]+; google swiftshader \(fallback\)$/)
 }, 180_000)
 
-/** The GPU Chromium finds through Vulkan (the recorder's `adapter: gpu`); undefined where it finds none, or only a fallback. */
 const gpu = await findRuntime('gpu', plainEnv()).then(runtime => (runtime.adapter.fallback ? undefined : runtime.adapter), () => undefined)
 if (!gpu) console.warn('[record.test] the GPU case is skipped: Chromium finds no GPU through Vulkan (--enable-features=Vulkan); run it on a machine with a GPU and its Vulkan driver')
 

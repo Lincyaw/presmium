@@ -1,29 +1,7 @@
-/**
- * The review's routes of the workspace service (docs/design-dsh.md 5.1 and
- * 6.5, WP-96c), for editors and owners, of the request's document
- * (`Presmium-Document`, or `?document=`):
- *
- * - `GET review`: the document's review (`{ review? }`); asked as
- *   `text/event-stream`, the review now and each change of it (a page
- *   following it: no time runs out meanwhile).
- * - `POST review/open` `{ session, turn? }`: the session's review, opened
- *   before its first write (the document's lock is `agent:<session>`'s), or
- *   the one it has; 409 with the lock while another holds it.
- * - `POST review/step` `{ session, turn?, label?, tool?, end? }`: a checkpoint
- *   after a tool call (`label`), the end of the turn (`end`).
- * - `POST review/accept` `{ reject?, message? }`: one commit of the changes
- *   but the files of `reject`.
- * - `POST review/reject` `{ paths? }`: these files back as the review found
- *   them, or all of them.
- * - `POST review/restore` `{ step }`: back to before a step.
- * - `GET review/events`: SSE for the bundle: the reviews as they change, and
- *   the undo of a session's commit.
- */
 import { eventStream, isRecord, json, problem } from '@presmium/kernel'
 import type { Route } from '@presmium/kernel'
 import type { Reviews } from './reviews.ts'
 
-/** A request's JSON body, or `{}`. */
 async function bodyOf(request: Request): Promise<Record<string, unknown>> {
   const body: unknown = await request.json().catch(() => undefined)
   return isRecord(body) ? body : {}
@@ -33,7 +11,6 @@ const text = (value: unknown, max = 4000) => (typeof value === 'string' && value
 const turnOf = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined)
 const paths = (value: unknown) => (Array.isArray(value) ? value.filter((path): path is string => typeof path === 'string' && path !== '') : undefined)
 
-/** The routes; `answer` turns a `RequestError` into its answer, as the workspace's other routes do. */
 export function reviewRoutes(reviews: Reviews, answer: (work: () => Promise<Response>) => Promise<Response>): Record<string, Route> {
   const post = (handle: (body: Record<string, unknown>, document: string) => Promise<Response>): Route => ({
     role: 'editor',

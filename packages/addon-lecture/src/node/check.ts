@@ -1,14 +1,3 @@
-/**
- * The check `presmium.lecture` (docs/ir.md 9.3): each recorded lecture of
- * the deck against the deck as it is now. Events whose block or section is
- * gone are reported with their time (the player drops them), as are blocks
- * that moved or changed and sections whose steps changed. And the lecture
- * plan (WP-83), made as the build makes it: cues whose block is wrong (and
- * whose command is, in a separate script; the role reports it in the deck),
- * and, when the deck names a voice but no engine can synthesize it, the
- * utterances the synthesis cache lacks (the build would fail on them). The
- * check only looks things up: it sends nothing to a speech engine.
- */
 import { errorMessage, SPEECH } from '@presmium/kernel'
 import type { Check, CheckContext, Finding, IRDocument, Severity } from '@presmium/kernel'
 import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, plannedUtterances, unchanged } from '../domain/index.ts'
@@ -39,7 +28,6 @@ function what(type: string, drift: EventDrift): string {
   }
 }
 
-/** The findings of one lecture against the deck. */
 export function trackFindings(deckDir: string, id: string, doc: IRDocument): Finding[] {
   let stored
   try {
@@ -65,7 +53,6 @@ export function trackFindings(deckDir: string, id: string, doc: IRDocument): Fin
   return findings
 }
 
-/** The findings of the lecture plan: its cues, and the clips no engine can make. */
 async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const view = lectureView(ctx.ir)
   const deck = deckPlan(view, ctx.deckDir)
@@ -78,7 +65,6 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
     return findings
   }
   if (await synthesisEngineOf(speech, view, deck.voice.engine).catch(() => undefined)) return findings
-  // No engine to make a clip: the cache must have every one (a lookup sends no request; nor is a clip transcribed to align it).
   for (const u of plannedUtterances(deck.plan)) {
     try {
       await synthesizeClip(speech, u, { voice: deck.voice, lang: deck.lang, ...deck.lexicon ? { lexicon: deck.lexicon } : {}, lookup: true })

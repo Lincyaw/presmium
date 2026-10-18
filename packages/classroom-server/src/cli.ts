@@ -21,7 +21,6 @@ the window that created a classroom can end or archive it, open and close its
 quizzes or move its learners; the others write only their own answers,
 questions, votes and submissions.`
 
-/** Runs the server until it is stopped; returns the exit code on a usage error. */
 export async function main(argv: string[]): Promise<number | undefined> {
   let port: number
   let host: string | undefined
@@ -52,7 +51,6 @@ export async function main(argv: string[]): Promise<number | undefined> {
   return undefined
 }
 
-/** The machine's IPv4 addresses on its networks (not the loopback), where other devices reach it. */
 function lanAddresses(): string[] {
   return Object.values(networkInterfaces()).flatMap(entries => entries ?? []).filter(entry => entry.family === 'IPv4' && !entry.internal).map(entry => entry.address)
 }

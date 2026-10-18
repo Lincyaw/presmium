@@ -1,11 +1,3 @@
-/**
- * A separate lecture script (`renderers.lecture.script`, docs/ir.md 2.9):
- * a MyST file of narration whose sections carry the labels of the deck's
- * sections (`(merge)=` before a heading). Its paragraphs (and lists and
- * quotes) are the steps' narration of those sections, read with the same
- * inline roles: `{cue …}` and `{say …}`. It is read as CommonMark, the
- * roles found as their text followed by the content in backticks.
- */
 import { isAbsolute, join } from 'node:path'
 import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
@@ -13,17 +5,14 @@ import { LECTURE_ID } from '../domain/index.ts'
 import type { ScriptSections } from '../domain/index.ts'
 import { readInDeck } from './store.ts'
 
-/** Blocks that are narration in a script. */
 const NARRATION = new Set(['paragraph', 'list', 'blockquote'])
 
-/** `{cue to=code-1 lines=3-5}` or `{say alias="B P E"}` at the end of a text, before the content in backticks. */
 const ROLE = /\{(cue|say)((?:\s+[\w-]+=(?:"[^"]*"|'[^']*'|[^\s"'}]+))*)\s*\}$/
 
 function options(text: string): Record<string, string> {
   return Object.fromEntries([...text.matchAll(/([\w-]+)=(?:"([^"]*)"|'([^']*)'|([^\s"'}]+))/g)].map(m => [m[1]!, m[2] ?? m[3] ?? m[4] ?? '']))
 }
 
-/** The roles of a list of inline nodes, as the compiler keeps them (`presmiumRole`). */
 function roles(children: MdastNode[]): MdastNode[] {
   const out: MdastNode[] = []
   for (const child of children) {
@@ -51,18 +40,15 @@ function plain(node: MdastNode): string {
   return typeof node.value === 'string' ? node.value : (node.children ?? []).map(plain).join('')
 }
 
-/** A frontmatter block at the start, which CommonMark would read as text, as blank lines (the lines keep their numbers). */
 function withoutFrontmatter(text: string): string {
   const match = /^---\r?\n[\s\S]*?\r?\n---\r?\n/.exec(text)
   return match ? match[0].replace(/[^\n]/g, '') + text.slice(match[0].length) : text
 }
 
-/** The script's narration by section label; problems as findings (the file missing, sections without a label). */
 export function readScript(deckDir: string, path: string): { sections: ScriptSections, file: string, findings: Finding[] } {
   const file = isAbsolute(path) ? path : join(deckDir, path)
   const findings: Finding[] = []
   const sections: ScriptSections = new Map()
-  // A file of the deck, read as it is opened, never through a link.
   const bytes = readInDeck(deckDir, file)
   if (!bytes) {
     findings.push({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.script: ${path} is not a file of the deck` })

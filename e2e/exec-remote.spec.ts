@@ -1,9 +1,3 @@
-// Remote environments (WP-76, P-105, P-107): e2e/fixtures/exec-remote runs its code in a Jupyter
-// Server started from templates/env/compose/compose.yaml. Under `presmium dev`, `auth: proxy` code
-// runs in the compose kernels through the server's proxy, which adds the token the page never sees;
-// sessions are the page's, so two learners do not share variables; `{terminal}` opens a shell there.
-// In a static build, `auth: prompt` code runs once the learner pastes the token, which stays in the
-// tab's sessionStorage. Leaving the page shuts its terminals down. Needs Docker; skipped without it.
 import { cpSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -17,14 +11,10 @@ import type { Hub, Jupyter } from './fixtures/exec-remote/jupyter.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/exec-remote')
-/** The plugin, which the demo does not depend on. */
 const LINK = { '@presmium/slidev-addon-exec-jupyter': 'packages/addon-exec-jupyter' }
-/** The compose environment's port, in WP-89e's range (the fixture's web dev server is on 5339). */
 const JUPYTER_PORT = 5338
-/** The JupyterHub's port, which e2e/fixtures/exec-remote/hub/lecture.md names. */
 const HUB_PORT = 5337
 const OUTPUT = '远端内核 CPython 42\n'
-/** A kernel takes a moment to start. */
 const KERNEL = { timeout: 60_000 }
 
 test.describe.configure({ mode: 'serial' })
@@ -41,7 +31,6 @@ test.afterAll(() => {
 
 const block = (page: Page, id: string) => page.locator(`.pm-block[data-block="${id}"]`)
 
-/** Runs a code block; resolves once it shows the output of a live run. */
 async function run(code: Locator): Promise<void> {
   await code.locator('.pm-code-block__run button').first().click()
   await expect(code.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', KERNEL)
@@ -68,11 +57,9 @@ test.describe('presmium dev, auth: proxy', () => {
     page.on('websocket', socket => seen.push(socket.url()))
     const where = block(page, 'where')
     await openDevPage(page, dev.url, where.locator('.pm-code-block__run button'))
-    // The dev server compiled the block in the same kernels.
     await expect(where.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
     await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
 
-    // The dev server pre-bundled the Jupyter client, so its first import does not reload the page.
     await run(where)
     await expect(where.locator('.pm-output')).toHaveAttribute('data-executor', 'presmium.env.lab')
     await expect(where.locator('.pm-output__stdout')).toHaveText(OUTPUT)
@@ -118,7 +105,6 @@ test.describe('presmium dev, auth: proxy', () => {
     await page.keyboard.press('Enter')
     await expect(terminal.locator('.xterm-rows')).toContainText('presmium-42')
 
-    // The page goes away without unmounting its components (pagehide): the terminal goes with it.
     const opened = (await terminals()).filter(name => !before.includes(name))
     expect(opened).toHaveLength(1)
     await page.goto('about:blank')
@@ -126,7 +112,6 @@ test.describe('presmium dev, auth: proxy', () => {
   })
 })
 
-/** Every file under `dir`. */
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name)
@@ -138,7 +123,6 @@ test.describe('static output, auth: prompt', () => {
   let deck: FixtureDeck
   test.beforeAll(async () => {
     test.setTimeout(600_000)
-    // The build records the output with the operator's pair; the page then asks the learner for a token.
     const saved = { url: process.env.PRESMIUM_ENV_LAB_URL, token: process.env.PRESMIUM_ENV_LAB_TOKEN }
     process.env.PRESMIUM_ENV_LAB_URL = jupyter!.url
     process.env.PRESMIUM_ENV_LAB_TOKEN = jupyter!.token
@@ -171,7 +155,6 @@ test.describe('static output, auth: prompt', () => {
     await where.locator('.pm-code-block__run button').first().click()
     const dialog = page.getByRole('dialog', { name: '环境 lab 的令牌' })
     await expect(dialog).toBeVisible()
-    // The host's field and buttons, at WCAG AA (N-10).
     await expect(dialog.locator('input.pm-ui-input[name="token"]')).toBeVisible()
     expect(await lowContrast(page, '.pm-jupyter-token')).toEqual([])
     await dialog.getByLabel('令牌').fill(jupyter!.token)
@@ -184,7 +167,6 @@ test.describe('static output, auth: prompt', () => {
     const leaking = files(join(deck.dir, 'dist')).filter(file => readFileSync(file).includes(jupyter!.token))
     expect(leaking).toEqual([])
 
-    // The slides of the same site, in the same tab, find the token there: their terminal opens without asking.
     await page.goto(`${deck.slides}/${deck.slide('shell')}`)
     const terminal = page.locator('.pm-terminal[data-env="lab"]')
     await terminal.locator('.pm-terminal__open').click()

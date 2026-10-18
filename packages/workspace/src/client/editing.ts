@@ -1,13 +1,3 @@
-/**
- * The source editor's places in the shell (P-124, docs/architecture.md 5.11,
- * docs/design/edit.dc.html): the source pane of edit mode (the `source`
- * slot: the file's notice, the editor, the problems of the compilation), the
- * open files' tabs (`tabs`, in edit mode's top bar), the cursor's line in the
- * status bar (`status`), "commit N changes" (`tools`) and the changes not
- * committed (also at the head of the history); on the home page the file
- * tree (`files`), whose files open in the editor: a document's on its page in
- * edit mode, the workspace's configuration on the home page itself.
- */
 import { PmBadge, PmButton, PmEmpty, PmIcon, PmMenu, PmNotice, PmToolbarEntry, useMessages } from '@presmium/host'
 import type { MenuItem } from '@presmium/host'
 import type { Finding } from '@presmium/kernel'
@@ -23,12 +13,10 @@ import type { Place } from './preview.ts'
 import { failure, onDocumentsChange } from './routes.ts'
 import { activePath, bindEditor, checkDisk, closeFile, commitChanges, cursorLine, deckPath, discardChanges, edited, editing, find, listing, loadListing, loadUncommitted, mergeFile, openFailure, openFile, openFiles, reloadFile, requested, reveal, saveFile, textOf, uncommitted, workspacePath } from './source.ts'
 
-/** A file's name in its tab and menus: its path in the document (on the home page, in the workspace). */
 function shortName(path: string): string {
   return deckPath(listing.value?.document ?? '', path) ?? path
 }
 
-/** The language the status bar names. */
 function languageOf(path: string): string {
   if (/\.(?:md|markdown)$/i.test(path)) return 'MyST'
   if (/\.ya?ml$/i.test(path)) return 'YAML'
@@ -38,11 +26,6 @@ function languageOf(path: string): string {
 const SEVERITY_ICON = { error: 'error', warning: 'warning', info: 'info' } as const satisfies Record<Finding['severity'], string>
 const severityColor = (severity: Finding['severity']) => (severity === 'error' ? 'var(--pm-color-danger)' : severity === 'warning' ? 'var(--pm-color-warn)' : 'var(--pm-color-accent)')
 
-/**
- * What the pane says of the file shown, with what the author may do; `done`
- * runs after a merge or a reload (the editor takes the focus back, so the
- * author goes on typing and Ctrl+S saves).
- */
 function notice(t: WorkspaceMessages, done: () => void) {
   const file = find(activePath.value)
   const message = openFailure.value
@@ -66,13 +49,6 @@ function notice(t: WorkspaceMessages, done: () => void) {
   }
 }
 
-/**
- * The source pane (the `source` slot of edit mode): the notice of the file
- * shown, the editor (loaded with the pane), and the problems of the
- * compilation, each opening its line. On a document's page the preview and
- * the source follow each other, and the open files follow the disk after
- * each compilation and when the window comes back.
- */
 export const SourcePane = defineComponent({
   name: 'PmWorkspaceSource',
   setup() {
@@ -84,10 +60,8 @@ export const SourcePane = defineComponent({
     let unbind: (() => void) | undefined
     let alive = true
     const document = computed(() => listing.value?.document ?? '')
-    /** The compilation's problems that name a file, by its path in the workspace. */
     const problems = computed(() => (preview.value?.doc.value.diagnostics ?? []).flatMap(finding => (finding.source ? [{ finding, path: workspacePath(document.value, finding.source.file), line: finding.source.line }] : [])))
 
-    /** The file first shown: the one a link asked for, else the current section's, else the deck's entry. */
     const openFirst = async () => {
       const files = await loadListing()
       const doc = document.value
@@ -121,7 +95,6 @@ export const SourcePane = defineComponent({
     })
     onBeforeUnmount(() => {
       alive = false
-      // The texts not saved stay, for when the pane comes back.
       for (const file of openFiles.value) file.draft = file.dirty ? editor?.text(file.path) ?? file.draft : undefined
       unbind?.()
       editor?.destroy()
@@ -129,7 +102,6 @@ export const SourcePane = defineComponent({
       mark(undefined)
     })
 
-    // The file shown, then the place asked for in it.
     let shownReveal = 0
     watch([activePath, reveal, ready], () => {
       const file = find(activePath.value)
@@ -141,24 +113,19 @@ export const SourcePane = defineComponent({
         editor.reveal(place.line, place.endLine, place.mark)
       }
     }, { flush: 'post' })
-    // Closed files leave the editor.
     watch(() => openFiles.value.map(file => file.path), (now, before) => {
       for (const path of before ?? []) if (!now.includes(path)) editor?.forget(path)
     })
-    // The problems on their lines.
     watch([problems, ready, () => openFiles.value.length], () => {
       for (const file of openFiles.value) {
         editor?.problems(file.path, problems.value.filter(problem => problem.path === file.path && problem.line).map((problem): Problem => ({ line: problem.line!, severity: problem.finding.severity, message: problem.finding.message })))
       }
     })
 
-    // The preview follows the cursor; a pick in the preview opens its lines (a document's page only).
     let last: string | undefined
     let waiting: Place | undefined
-    /** The control that had the focus when the preview went to another of the document's pages, which may take it. */
     let keep: { element: HTMLElement, until: number } | undefined
     const keyOf = (place: Place) => `${place.section}\0${place.block ?? ''}`
-    /** Marks the place waited for once its page shows it (a page loads in a few frames). */
     const settle = (deadline: number) => requestAnimationFrame(() => {
       if (!waiting) return
       const element = elementOf(waiting)
@@ -174,7 +141,6 @@ export const SourcePane = defineComponent({
       const element = elementOf(place)
       if (!element) {
         waiting = place
-        // Another page: the site moves the focus to its top when a page opens; the source pane keeps it.
         const focused = window.document.activeElement
         if (focused instanceof HTMLElement && host.value?.closest('.pm-source')?.contains(focused)) keep = { element: focused, until: Date.now() + 3000 }
         preview.value?.show({ section: place.section, step: 0 })
@@ -196,7 +162,6 @@ export const SourcePane = defineComponent({
       keep = undefined
       element.focus({ preventScroll: true })
     }
-    // The author's own press elsewhere ends it.
     const onPointer = () => keep = undefined
     let timer: ReturnType<typeof setTimeout> | undefined
     watch([cursorLine, activePath], () => {
@@ -219,7 +184,6 @@ export const SourcePane = defineComponent({
       mark(elementOf(place))
       void openFile(workspacePath(document.value, place.source.file), { line: place.source.line, endLine: place.source.endLine, mark: true })
     }
-    // After a compilation the page renders again: the mark comes back, and the files are compared with the disk.
     const remark = () => {
       const viewer = preview.value
       const file = activePath.value && deckPath(document.value, activePath.value)
@@ -233,7 +197,6 @@ export const SourcePane = defineComponent({
       void checkDisk()
     })
     const onFocus = () => void checkDisk()
-    // An undo of the history, a commit or a discard: the open files follow the disk.
     onDocumentsChange(onFocus)
     onMounted(() => {
       window.document.addEventListener('click', onClick)
@@ -271,10 +234,7 @@ export const SourcePane = defineComponent({
           ]))),
     ])
 
-    // After a merge or a reload the button pressed is gone: the focus goes back to the editor.
     const refocus = () => void nextTick(() => editor?.focus())
-    // Ctrl+S (⌘ S) saves wherever the focus is in the pane (the notice's buttons, the problems), not only in the
-    // editor, whose own binding handles it first there.
     const onKeydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's') return
       event.preventDefault()
@@ -290,7 +250,6 @@ export const SourcePane = defineComponent({
   },
 })
 
-/** The open files' tabs (the `tabs` slot of edit mode's top bar): a dot on one not saved; a menu opens the others. */
 export const FileTabs = defineComponent({
   name: 'PmWorkspaceTabs',
   setup() {
@@ -345,7 +304,6 @@ export const FileTabs = defineComponent({
   },
 })
 
-/** The status bar's part of the editor: the file's language, its encoding and the cursor's line. */
 export const EditorStatus = defineComponent({
   name: 'PmWorkspaceCursor',
   setup() {
@@ -356,16 +314,9 @@ export const EditorStatus = defineComponent({
   },
 })
 
-/**
- * The changes not committed (P-124): each file with its lines added and
- * removed, a line saying what changed and the commit (one commit,
- * `Presmium-Origin: editor`, which the history lists and may undo), or the
- * discard (the files as committed).
- */
 export const Uncommitted = defineComponent({
   name: 'PmWorkspaceUncommitted',
   props: {
-    /** Where it is drawn: a heading of its own in the history. */
     heading: Boolean,
   },
   setup(props) {
@@ -424,7 +375,6 @@ export const Uncommitted = defineComponent({
   },
 })
 
-/** "Commit N changes" in edit mode's toolbar: the changes not committed, to commit or discard. */
 export const CommitEntry = defineComponent({
   name: 'PmWorkspaceCommit',
   setup() {
@@ -446,7 +396,6 @@ interface TreeNode {
   children?: TreeNode[]
 }
 
-/** The files of a document as a tree of its directories, each directory before the files. */
 function tree(dir: string, files: SourceFile[]): TreeNode[] {
   const root: TreeNode = { name: '', path: dir, children: [] }
   for (const file of files) {
@@ -468,23 +417,15 @@ function tree(dir: string, files: SourceFile[]): TreeNode[] {
   return order(root.children!)
 }
 
-/** The page of a document, at a file in edit mode. */
 function editUrl(document: string, file: string): string {
   const url = new URL(`${document.split('/').map(encodeURIComponent).join('/')}/`, location.href)
   url.searchParams.set('edit', file)
   return url.href
 }
 
-/**
- * The home page's file tree (the `files` slot, the workbench's side bar):
- * each document a folder of its files and directories, then the workspace's
- * configuration. A document's file opens on its page in edit mode; the
- * configuration in the home page's editor.
- */
 export const FileTree = defineComponent({
   name: 'PmWorkspaceFiles',
   props: {
-    /** The folders open at first. */
     expanded: { type: Array as PropType<string[]>, default: () => [] },
   },
   setup(props) {
@@ -537,7 +478,6 @@ export const FileTree = defineComponent({
   },
 })
 
-/** Before the page goes, a file changed in the editor and not saved makes the browser ask. */
 export function guardUnsaved(): () => void {
   const onLeave = (event: BeforeUnloadEvent) => {
     if (openFiles.value.some(file => file.dirty && textOf(file) !== file.base)) event.preventDefault()

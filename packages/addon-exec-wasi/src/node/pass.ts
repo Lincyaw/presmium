@@ -3,13 +3,6 @@ import type { IRPass } from '@presmium/kernel'
 import { EXEC_WASI_ID, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
 import { runtimeOf } from '../runner.mjs'
 
-/**
- * `presmium.execWasi.runtimes`: the runtimes the deck's code that runs in the
- * browser needs (`:run: live` or `both`, run panels' code included, by the
- * WASI executor or a `kind: wasi` environment), written to the plugin's
- * configuration (`runtimes`), so a build publishes those and no others
- * (`clang` alone is some 50 MB).
- */
 export const runtimesPass: IRPass = {
   name: 'presmium.execWasi.runtimes',
   run(doc) {

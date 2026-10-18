@@ -1,25 +1,14 @@
-/**
- * Working on a lecture track's words (P-132, P-133): the transcript of a
- * recorded lecture becomes its utterances, and the events said during an
- * utterance are bound to the word being said (`at`); an utterance's text
- * can be corrected, the words that stay keeping their times; and a lecture
- * can be said again in another voice: every utterance gets a synthesized
- * clip at its own time, the events bound to words move with the new words,
- * and the others keep their times.
- */
 import type { TrackEvent, TranscriptSegment } from '@presmium/kernel'
 import type { Clip } from './synthesis.ts'
 import { anchorOf } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance, Voice } from './track.ts'
 import { charOffset, locate, realign, reanchor, trackWords } from './words.ts'
 
-/** What a transcription of one audio segment of a track gave. */
 export interface SegmentTranscript {
   segment: MediaSegment
   segments: TranscriptSegment[]
 }
 
-/** The step a track is at at time t of a section: its last move there at or before t. */
 function stepAt(track: LectureTrack, section: string, t: number): number {
   let step = 0
   for (const [at, type, data] of track.events) {
@@ -29,7 +18,6 @@ function stepAt(track: LectureTrack, section: string, t: number): number {
   return step
 }
 
-/** The anchor of time t in an utterance: the word said then, or the next one; a character offset without words. */
 function anchorAtTime(utterance: Utterance, t: number): number {
   if (utterance.words?.length) {
     const index = utterance.words.findIndex(([start, d]) => start + d > t)
@@ -39,11 +27,6 @@ function anchorAtTime(utterance: Utterance, t: number): number {
   return Math.round(length * Math.max(0, Math.min(1, (t - utterance.t) / Math.max(1, utterance.d))))
 }
 
-/**
- * Binds the events without an anchor that happen while an utterance is said
- * to the word said then (`at`), and drops anchors to utterances the track no
- * longer has. Returns the track and how many events it bound.
- */
 export function bindEvents(track: LectureTrack): { track: LectureTrack, bound: number } {
   const ids = new Set(track.utterances.map(u => u.id))
   let bound = 0
@@ -59,11 +42,6 @@ export function bindEvents(track: LectureTrack): { track: LectureTrack, bound: n
   return { track: { ...track, events }, bound }
 }
 
-/**
- * A recorded track with the utterances of its transcripts (one per segment
- * of each, in time order), in place of the ones it had, and its events bound
- * to their words.
- */
 export function transcribedTrack(track: LectureTrack, transcripts: readonly SegmentTranscript[]): { track: LectureTrack, bound: number } {
   const said = transcripts
     .flatMap(({ segment, segments }) => segments.filter(s => s.text.trim()).map(s => ({ segment, s })))
@@ -84,7 +62,6 @@ export function transcribedTrack(track: LectureTrack, transcripts: readonly Segm
   return bindEvents({ ...track, utterances })
 }
 
-/** The events with their anchors to an utterance moved by `anchor`. */
 function moveAnchors(events: readonly TrackEvent[], id: string, anchor: (offset: number) => number): TrackEvent[] {
   return events.map(([t, type, data]): TrackEvent => {
     const at = anchorOf(data)
@@ -92,12 +69,6 @@ function moveAnchors(events: readonly TrackEvent[], id: string, anchor: (offset:
   })
 }
 
-/**
- * The track with new text of an utterance, aligned again: the words that
- * stay keep their times, new words share the time around them, the events
- * bound to it follow their words. Its clip, of the old text, is dropped.
- * Undefined when the track has no such utterance.
- */
 export function editUtterance(track: LectureTrack, id: string, text: string): LectureTrack | undefined {
   const index = track.utterances.findIndex(u => u.id === id)
   if (index === -1) return undefined
@@ -107,13 +78,6 @@ export function editUtterance(track: LectureTrack, id: string, text: string): Le
   return { ...track, utterances, events: moveAnchors(track.events, id, anchor) }
 }
 
-/**
- * The track said with these clips (by utterance id) in `voice`: each
- * utterance keeps its time, or starts when the one before it now ends if
- * that is later (clips do not overlap), and gets the clip's length and
- * words; the events bound to its words follow them, the others keep their
- * times.
- */
 export function resynthesizedTrack(track: LectureTrack, clips: ReadonlyMap<string, Clip>, voice: Voice): LectureTrack {
   let events = track.events
   let end = 0
@@ -130,14 +94,12 @@ export function resynthesizedTrack(track: LectureTrack, clips: ReadonlyMap<strin
     if (words && before.length) {
       anchor = reanchor(u.text, before, words)
     } else if (words) {
-      // From character offsets to words: the word at that place of the text.
       const places = locate(words.map(w => w[2]), u.text)
       anchor = (offset) => {
         const index = places.findIndex(p => p !== undefined && charOffset(u.text, p.start) >= offset)
         return index === -1 ? words.length : index
       }
     } else {
-      // To character offsets: where each old word is.
       const places = locate(before.map(w => w[2]), u.text)
       anchor = offset => (places[offset] ? charOffset(u.text, places[offset]!.start) : [...u.text].length)
     }

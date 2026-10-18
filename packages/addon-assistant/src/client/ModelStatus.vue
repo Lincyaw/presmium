@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// The model of the AI changes in a status bar (the workspace's home page and edit mode; docs/design/edit.dc.html):
-// its provider and where it comes from (`AssistantInfo.source`: the environment, the workspace's configuration, the
-// page's model settings), or that none is configured; it opens the model settings.
 import { useMessages } from '@presmium/host'
 import { computed, ref } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -33,7 +30,6 @@ const text = computed(() => {
   display: inline-flex;
   align-items: center;
 }
-/* Text of the status bar that is a button: its font and colour, a frame only for the keyboard's focus. */
 .pm-assistant-status__button {
   display: inline-flex;
   align-items: center;

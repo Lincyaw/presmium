@@ -1,9 +1,3 @@
-// `presmium-lecture export` (WP-83, P-135): the synthesized lecture of a test deck (said by the deterministic
-// fake speech engine, a process of its own) played in Chromium a frame at a time and written as WebM with its
-// audio. The file is read back with Mediabunny: a video and an Opus audio track, as long as the lecture track
-// (within a second), labeled as AI-generated speech. The page it films, the player's export mode, shows the
-// lecture without the present view's controls (its bar of buttons), with the AI label. The deck lives in
-// examples/demo/.presmium (ignored by git), where its web form builds.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -100,7 +94,6 @@ describe('presmium-lecture export (P-135)', () => {
     expect(await audio!.getCodec()).toBe('opus')
     expect(Math.abs(await input.computeDuration() - length)).toBeLessThanOrEqual(1)
     expect(Math.abs(await audio!.computeDuration() - length)).toBeLessThanOrEqual(1)
-    // The voice is synthesized: the file says so, as its clips do (N-08).
     const tags = await input.getMetadataTags()
     expect(tags.comment).toMatch(/^AIGC=\{"Label":"1","ContentProducer":"Presmium fake"/)
   }, 300_000)
@@ -112,11 +105,9 @@ describe('presmium-lecture export (P-135)', () => {
     const browser = await chromium.launch()
     try {
       const page = await browser.newPage({ viewport: { width: 640, height: 360 } })
-      // As the player shows it to a viewer: the present view's bar is there.
       await page.goto(`${site.url}/web/?view=lecture&track=script`)
       await page.locator('.pm-lecture-player').waitFor()
       expect(await page.locator('.pm-present__bar').isVisible()).toBe(true)
-      // As the exporter films it.
       await page.goto(`${site.url}/web/?view=lecture&track=script&export`)
       await page.waitForFunction('Boolean(window.presmiumLecture)')
       await page.locator('.pm-present').waitFor()

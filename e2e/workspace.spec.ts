@@ -1,17 +1,3 @@
-// The workspace in the browser (WP-79, P-120, P-121): `presmium serve` on this machine, the one member the local
-// author. The author creates, renames, copies and deletes documents on the home page, and the history shows the
-// four commits; without an assistant the new document form has no "draft with the agent"; the home page loads the
-// operator plugins' browser parts and serves their routes (WP-81e2), which a document's page loads only when its
-// deck lists the plugin; there their routes find none of the workspace's files; in edit mode the mark of a role
-// without children shows; a `{literalinclude}` shows a file of the workspace, and the file a symbolic link names
-// outside it, as `presmium dev` and `presmium build` do; with an assistant (a stand-in of the `AGENT` service), a
-// drafted document opens once the draft is committed (E-7). The history names the operations in the workspace's
-// language. A rename undone from the history brings the directory back on the home page and its page shows, a
-// creation undone takes it away, a document made on disk shows after the next request (F-10); the history's
-// labels and dates are zh-CN's, or English's in an English workspace (F-55). With `--host 0.0.0.0`, another
-// device of the local network uses the workspace at the machine's address, edit mode and approvals included,
-// while another site's requests are refused; a deck that names no classroom server has its classroom synced
-// on serve's own port, where a learner on that device joins and follows (E-3 revised, one port).
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -27,8 +13,6 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/workspace')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 
-
-/** The stand-in of the assistant's `AGENT` client in the page: one drafting task, whose events the test sends. */
 interface DraftAgent {
   requests: unknown[]
   emit(event: Record<string, unknown>): void
@@ -41,7 +25,6 @@ declare global {
   }
 }
 
-/** The environment of the test without credentials or Presmium's variables. */
 function clean(extra: Record<string, string>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -51,7 +34,6 @@ function clean(extra: Record<string, string>): NodeJS.ProcessEnv {
   return { ...env, ...extra }
 }
 
-/** `presmium <args>` in `cwd`, resolving with its first line matching `pattern`'s group once it prints it. */
 function start(cwd: string, args: string[], env: NodeJS.ProcessEnv, pattern: RegExp): Promise<{ child: ChildProcess, match: string }> {
   const child = spawn(process.execPath, [PRESMIUM, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
@@ -78,13 +60,8 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
   clearTimeout(timer)
 }
 
-/** What the file outside each workspace copy holds, which a symbolic link in its document `intro` names. */
 const SENTINEL = `outside-${Math.random().toString(36).slice(2)}`
 
-/**
- * A workspace from the fixture (its operator plugins installed at the root), `edit`ed, as a git repository of its
- * own; `intro/secret.txt` is a symbolic link to a file outside it (`<dir>.outside/secret.txt`).
- */
 function workspaceCopy(prefix: string, edit: (dir: string) => void = () => {}): string {
   const work = join(ROOT, 'examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
@@ -105,14 +82,12 @@ function workspaceCopy(prefix: string, edit: (dir: string) => void = () => {}): 
   return dir
 }
 
-/** `presmium serve` of a workspace on this machine, with state and cache directories of its own: its home page. */
 async function serveLocal(dir: string, children: ChildProcess[]): Promise<string> {
   const started = await start(dir, ['serve', '--port', '0'], clean({ XDG_STATE_HOME: `${dir}.state`, XDG_CACHE_HOME: `${dir}.cache` }), /^serve {2}(http\S+)$/m)
   children.push(started.child)
   return `${started.match}/`
 }
 
-/** Stops the servers and removes the workspaces with their state, cache and outside directories. */
 async function cleanUp(children: ChildProcess[], dirs: string[]): Promise<void> {
   for (const child of children) await stop(child)
   for (const dir of dirs) for (const path of [dir, `${dir}.state`, `${dir}.cache`, `${dir}.outside`]) rmSync(path, { recursive: true, force: true })
@@ -140,7 +115,6 @@ test.describe('the workspace in the browser', () => {
     await page.locator('.pm-workspace-documents__toggle').click()
     const panel = page.getByRole('dialog', { name: '管理文档' })
     await expect(panel.locator('.pm-workspace-document[data-document="intro"]')).toBeVisible()
-    // Without an assistant there is no "draft with the agent".
     await expect(panel.locator('.pm-workspace-create__draft')).toHaveCount(0)
 
     await panel.locator('input[name="dir"]').fill('week3')
@@ -166,7 +140,6 @@ test.describe('the workspace in the browser', () => {
     await expect(copy).toHaveCount(0)
     await expect(page.locator('.pm-site-home__document')).toHaveCount(2)
 
-    // The history names each operation in the workspace's language (the commits' summaries stay English, F-55).
     await page.locator('.pm-workspace-history__toggle').click()
     const history = page.getByRole('dialog', { name: '修改历史' })
     await expect(history.locator('.pm-workspace-revision')).toHaveCount(4)
@@ -181,15 +154,12 @@ test.describe('the workspace in the browser', () => {
   test('the home page loads the operator plugins\' browser parts and their routes answer for it; a document\'s page loads its deck\'s plugins', async ({ page }) => {
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
     await expect(page.locator('html')).toHaveAttribute('data-fixture-home', 'loaded')
-    // The operator plugin's route on the home page (document ''), as on a document's; the home page is no
-    // document: the plugin's deck directory there holds none of the workspace's files (its git directory either).
     const where = (document: string) => page.evaluate(async (dir) => {
       const response = await fetch('/__presmium/fixture.home/where', { headers: { 'Presmium-Document': dir } })
       return { status: response.status, body: await response.json() as unknown }
     }, document)
     expect(await where('')).toEqual({ status: 200, body: { document: '', sees: [] } })
     expect(await where('intro')).toEqual({ status: 200, body: { document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] } })
-    // The deck of intro does not list it: its page does not load its browser part.
     await openDevPage(page, `${home}intro/`, page.locator('.pm-section[data-section="导论"]'))
     await expect(page.locator('.pm-toolbar--bar')).toBeAttached()
     await expect(page.locator('html')).not.toHaveAttribute('data-fixture-home', 'loaded')
@@ -218,7 +188,6 @@ test.describe('the workspace in the browser', () => {
   })
 
   test('with an assistant, a document the agent drafts opens once the draft is committed, after its review', async ({ page }) => {
-    // The assistant's `AGENT` client (WP-80) stands in, as one more plugin of the page's workspace module.
     const decisions: unknown[] = []
     await page.exposeFunction('recordDraftDecision', (decision: unknown) => decisions.push(decision))
     await page.addInitScript(() => {
@@ -275,7 +244,6 @@ test.describe('the workspace in the browser', () => {
     await panel.locator('textarea[name="request"]').fill('写一节关于上下文窗口的讲义')
     await panel.getByRole('button', { name: '新建', exact: true }).click()
 
-    // The document exists from its template; the page stays while the agent drafts, and the review is answered here.
     const draft = panel.locator('.pm-workspace-draft')
     await expect(draft).toHaveAttribute('data-state', 'drafting')
     await expect(page.locator('.pm-site-home__document[data-document="week5"]')).toContainText('第五周')
@@ -287,17 +255,14 @@ test.describe('the workspace in the browser', () => {
     await expect(draft.locator('.pm-workspace-draft__changes')).toContainText('week5/lecture.md (+12 −3)')
     expect(new URL(page.url()).pathname).toBe('/')
 
-    // Accepted, the task commits and ends: then the page opens the new document.
     await draft.getByRole('button', { name: '接受' }).click()
     await expect(page).toHaveURL(`${home}week5/`)
     expect(decisions).toEqual([{ accept: true }])
   })
 })
 
-/** An IPv4 address of this machine on a network (not the loopback), where another device reaches it. */
 const NETWORK = Object.values(networkInterfaces()).flatMap(entries => entries ?? []).find(entry => entry.family === 'IPv4' && !entry.internal)?.address
 
-/** A request of another site's page to `url`: its `Origin` names that site. */
 function crossSite(url: string, path: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const { hostname, port } = new URL(url)
@@ -310,7 +275,6 @@ function crossSite(url: string, path: string): Promise<number> {
   })
 }
 
-/** A document whose deck lists the session plugin and names no classroom server. */
 const CLASS = `---
 title: 课堂
 plugins:
@@ -333,7 +297,6 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
   test.skip(!NETWORK, 'this machine has no network address besides the loopback')
   const dirs: string[] = []
   const children: ChildProcess[] = []
-  /** The home page at the loopback, and at the machine's network address. */
   let local: string
   let lan: string
 
@@ -361,7 +324,6 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
     await expect(page.locator('.pm-workspace-edit')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.pm-section[data-section="导论"] .pm-role-mark')).toHaveText('〔probe hidden〕')
 
-    // A route that asks for approval, answered in this window's toolbar.
     const asked = page.evaluate(async () => (await fetch('/__presmium/fixture.home/approve', { method: 'POST', headers: { 'Presmium-Document': 'intro' } })).json() as Promise<{ allowed: boolean }>)
     const entry = page.locator('.pm-approvals__toggle')
     await expect(entry).toHaveText('待确认 1')
@@ -371,7 +333,6 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
     await dialog.getByRole('button', { name: '允许' }).click()
     expect(await asked).toEqual({ allowed: true })
 
-    // A page of another site, at either address, is refused.
     for (const at of [lan, local]) expect(await crossSite(at, '/__presmium/fixture.home/approve')).toBe(403)
     await expect(entry).toHaveCount(0)
   })
@@ -400,7 +361,6 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
       await presenter.keyboard.press('ArrowRight')
       await expect(present(presenter)).toHaveAttribute('data-section', 'class-two')
       await expect(present(learner)).toHaveAttribute('data-section', 'class-two')
-      // The learner's classroom goes through serve, at the address the learner opened.
       expect(sockets.some(url => url.startsWith(`ws://${NETWORK}:${new URL(lan).port}/__presmium/presmium.session/sync/${room}?`))).toBe(true)
     } finally {
       await Promise.all(contexts.map(context => context.close()))
@@ -411,11 +371,9 @@ test.describe('presmium serve on the local network (E-3, revised), with the clas
 test.describe('the history\'s undo, and documents made on disk, follow on the home page (F-10); the history in the workspace\'s language (F-55)', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })
   const dirs: string[] = []
-  /** The home page of each workspace served. */
   const homes: string[] = []
   const children: ChildProcess[] = []
 
-  /** `presmium serve` of a workspace: its home page, kept for the case after. */
   async function serve(dir: string): Promise<string> {
     const home = await serveLocal(dir, children)
     homes.push(home)
@@ -426,7 +384,6 @@ test.describe('the history\'s undo, and documents made on disk, follow on the ho
     await cleanUp(children, dirs)
   })
 
-  /** The history panel, opened on the home page. */
   async function openHistory(page: Page) {
     await page.locator('.pm-workspace-history__toggle').click()
     return page.getByRole('dialog', { name: /^(修改历史|History)$/ })
@@ -439,7 +396,6 @@ test.describe('the history\'s undo, and documents made on disk, follow on the ho
     const listed = page.locator('.pm-site-home__document')
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
 
-    // Renamed, then undone from the history.
     await page.locator('.pm-workspace-documents__toggle').click()
     const documents = page.getByRole('dialog', { name: '管理文档' })
     const intro = documents.locator('.pm-workspace-document[data-document="intro"]')
@@ -450,7 +406,6 @@ test.describe('the history\'s undo, and documents made on disk, follow on the ho
     const history = await openHistory(page)
     const renamed = history.locator('.pm-workspace-revision').first()
     await expect(renamed.locator('.pm-workspace-revision__summary')).toHaveText('重命名文档 intro 为 intro2')
-    // The date as zh-CN writes it, e.g. 2026/10/17 12:30:05.
     await expect(renamed.locator('.pm-workspace-revision__meta time')).toHaveText(/^\d{4}\/\d{1,2}\/\d{1,2} \d{1,2}:\d{2}:\d{2}$/)
     await renamed.getByRole('button', { name: '撤销' }).click()
     await expect(history.locator('.pm-workspace-revision').first().locator('.pm-workspace-revision__summary')).toHaveText('撤销「重命名文档 intro 为 intro2」')
@@ -458,7 +413,6 @@ test.describe('the history\'s undo, and documents made on disk, follow on the ho
     await expect(page.locator('.pm-site-home__document[data-document="intro2"]')).toHaveCount(0)
     await openDevPage(page, `${home}intro/`, page.locator('.pm-section[data-section="导论"]'))
 
-    // Created, then undone: the home page lists it no more.
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
     await page.locator('.pm-workspace-documents__toggle').click()
     await documents.locator('input[name="dir"]').fill('week9')
@@ -479,7 +433,6 @@ test.describe('the history\'s undo, and documents made on disk, follow on the ho
   test('a document made on disk shows on the home page once the site is asked again, and its page shows', async ({ page }) => {
     const [dir, home] = [dirs[0]!, homes[0]!]
     await openDevPage(page, home, page.locator('.pm-site-home__document[data-document="intro"]'))
-    // An author makes it in an editor, or a git pull brings it.
     mkdirSync(join(dir, 'week7'))
     writeFileSync(join(dir, 'week7/lecture.md'), '---\ntitle: 第七周\n---\n\n# 第七周\n\n作者在编辑器中新建的文档。\n')
     await expect(async () => {
@@ -507,7 +460,6 @@ test.describe('the history\'s undo, and documents made on disk, follow on the ho
     const copied = history.locator('.pm-workspace-revision').first()
     await expect(copied.locator('.pm-workspace-revision__summary')).toHaveText('Copy document intro to intro-copy')
     await expect(copied.locator('.pm-workspace-revision__meta')).toContainText('document operation')
-    // The date as en writes it, e.g. 10/17/2026, 12:30:05 PM.
     await expect(copied.locator('.pm-workspace-revision__meta time')).toHaveText(/^\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2}:\d{2}\s[AP]M$/)
     await copied.getByRole('button', { name: 'Revert' }).click()
     await expect(history.locator('.pm-workspace-revision').first().locator('.pm-workspace-revision__summary')).toHaveText('Revert "Copy document intro to intro-copy"')

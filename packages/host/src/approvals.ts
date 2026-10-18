@@ -1,9 +1,3 @@
-/**
- * The approvals entry of the toolbar (docs/architecture.md 10.4): shown only
- * while approvals wait for this window, with what each one asks, who asks,
- * and Allow and Deny. The web form's present and presenter views, which cover
- * the toolbar, show it in their control bars.
- */
 import type { PropType } from 'vue'
 import { defineComponent, h, ref, watch } from 'vue'
 import { PmButton, PmNotice, PmPopover } from './design/components.ts'
@@ -14,14 +8,12 @@ import { approvals } from './server.ts'
 export const PmApprovals = defineComponent({
   name: 'PmApprovals',
   props: {
-    /** Where the panel opens: below the entry (a toolbar at the top), or above it (a control bar at the bottom). */
     placement: { type: String as PropType<'below' | 'above'>, default: 'below' },
   },
   setup(props) {
     const t = useMessages(HOST_MESSAGES)
     const open = ref(false)
     const failed = ref<string>()
-    // Once nothing waits, the entry goes away; it shows closed when the next approval comes.
     watch(() => approvals.pending.value.length, (count) => {
       if (count === 0) open.value = false
     })

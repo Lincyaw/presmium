@@ -1,6 +1,3 @@
-// Real processes and raw HTTP for the tests of the server: `presmium dev` on a fixture deck, the
-// `serve` mode host (fixtures/serve-host.ts), listeners standing in for the site and a proxy's
-// target, and requests with the headers a browser would send (`Host` included, which fetch cannot set).
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { execFileSync } from 'node:child_process'
@@ -13,14 +10,9 @@ import { fileURLToPath } from 'node:url'
 import { CREDENTIAL_VARIABLE } from '@presmium/kernel'
 
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
-/** The `presmium` command (the CLI depends on this package, so the tests name its file rather than its package). */
 const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
 
-/**
- * A new directory inside the demo (ignored by git), where the renderers and plugins resolve from the
- * demo's node_modules, made a git repository of its own so that it is its own workspace root.
- */
 export function workspace(prefix: string, files: Record<string, string> = {}): string {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, `${prefix}-`))
@@ -35,7 +27,6 @@ export function remove(dir: string | undefined): void {
   if (dir) rmSync(dir, { recursive: true, force: true })
 }
 
-/** The test process's environment without credentials (a developer's machine may hold some) and without Vitest's NODE_ENV. */
 export function cleanEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -65,7 +56,6 @@ function started(child: ChildProcess): Child {
   }
 }
 
-/** Waits until the output matches; rejects with the output when the process exits first. */
 export function waitFor(child: Child, pattern: RegExp, timeoutMs = 240_000): Promise<RegExpExecArray> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out waiting for ${pattern}:\n${child.output()}`)), timeoutMs)
@@ -87,12 +77,10 @@ export function waitFor(child: Child, pattern: RegExp, timeoutMs = 240_000): Pro
   })
 }
 
-/** `presmium <args>` in `cwd`, left running. */
 export function presmiumProcess(cwd: string, args: string[], env: NodeJS.ProcessEnv = cleanEnv()): Child {
   return started(spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }))
 }
 
-/** The `serve` mode host on a workspace; resolves with its first line (`{ url }` or `{ error }`) and the process. */
 export async function serveHost(env: Record<string, string>): Promise<{ host: Child, url?: string, error?: string }> {
   const host = started(spawn(process.execPath, [join(FIXTURES, 'serve-host.ts')], { env: cleanEnv(env), stdio: ['pipe', 'pipe', 'pipe'] }))
   const line = (await waitFor(host, /^\{.*\}$/m, 120_000))[0]
@@ -107,7 +95,6 @@ export interface RawResponse {
   json<T = Record<string, unknown>>(): T
 }
 
-/** A request with exactly these headers (`Host` included), and its path as written (no `.` or `..` part resolved). */
 export function raw(url: string, options: { method?: string, headers?: Record<string, string>, body?: string } = {}): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const { protocol, hostname, port } = new URL(url)
@@ -124,7 +111,6 @@ export function raw(url: string, options: { method?: string, headers?: Record<st
   })
 }
 
-/** A listener that records the requests it gets and answers each with JSON naming its path (and a cookie). */
 export async function listener(): Promise<{ url: string, requests: { method: string, path: string, headers: IncomingHttpHeaders, body: string }[], close(): Promise<void> }> {
   const requests: { method: string, path: string, headers: IncomingHttpHeaders, body: string }[] = []
   const server = createServer((req, res) => {

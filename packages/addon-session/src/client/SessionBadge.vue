@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// A learner's classroom controls, over everything (also over the present view, above its control bar,
-// whose height the hosts give as --pm-overlay-bar): join a classroom from a link without a name,
-// follow the presenter or browse alone, and see when the classroom has ended.
 import { useMessages } from '@presmium/host'
 import { computed, ref } from 'vue'
 import { MESSAGES } from '../domain/index.ts'
@@ -66,7 +63,6 @@ async function join(): Promise<void> {
 </template>
 
 <style scoped>
-/* A learner's classroom, at the foot of the page: a floating bar of the host's design (N-10). */
 .pm-session-badge {
   position: fixed;
   right: 1rem;

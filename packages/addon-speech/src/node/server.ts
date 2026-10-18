@@ -1,13 +1,3 @@
-/**
- * The speech plugin's server contribution (docs/architecture.md 4.7), under
- * `/__presmium/presmium.speech/`:
- *
- * - `v1/…` (editors): the speech protocol, which the browser's `SPEECH`
- *   uses, through the deck's synthesis cache as the Node `SPEECH` (a hit
- *   sends no request), over the engines of this process's environment.
- * - `consent/<engine>/<voice>` (owners): registers a consent record in the
- *   operator directory outside the workspace.
- */
 import { DOCUMENT_FILES } from '@presmium/kernel'
 import type { ServerContext, ServerContribution } from '@presmium/kernel'
 import { CONSENT_PATH, deckSpeechConfig, PROTOCOL_PATH } from '../domain/index.ts'
@@ -17,7 +7,6 @@ import { reportEngines, speechCore } from './core.ts'
 import { DeckSpeech } from './deck.ts'
 import { protocolHandler } from './routes.ts'
 
-/** The largest request of the speech routes: a transcription's audio (OpenAI's own limit is 25 MB). */
 const MAX_AUDIO = 32 * 1024 * 1024
 
 export function speechServer(ctx: ServerContext): ServerContribution {

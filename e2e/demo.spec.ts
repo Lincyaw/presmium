@@ -3,12 +3,6 @@ import type { Page } from '@playwright/test'
 import type { IRDocument } from '../packages/kernel/src/ir.ts'
 import { SLIDES, WEB } from './urls.ts'
 
-// The demo lecture's chapter "延伸" (examples/demo/pages/extend.md, WP-89a) in its build
-// (`pnpm demo:build`, served on WEB and SLIDES): it opens in the web form and the slides; the C
-// program, recorded at build time in WebAssembly, runs in the browser with the same output; the
-// compute shader, recorded at build time on the GPU, finds the same pair on a WebGPU adapter in the
-// browser (SwiftShader, so that any machine has one), and its slide shows it whole; the predict shows
-// its answer once the reader has saved a choice; the table that the Python session wrote and the cards show.
 const RUNTIME = { timeout: 120_000 }
 
 async function irDocument(page: Page): Promise<IRDocument> {
@@ -22,7 +16,6 @@ test('the chapter opens in the web form: the table its session wrote, the predic
   await page.goto(`${WEB}/extend.html`)
   for (const section of chapter) await expect(page.locator(`.pm-section[data-section="${section.id}"]`)).toContainText(section.title)
 
-  // Written by a code block of the session that shows its output only.
   const table = page.locator('.pm-block[data-block="merges-table"]')
   await expect(table.locator('tbody tr')).toHaveCount(10)
   await expect(table.locator('tbody tr').last()).toContainText("'newest newest '")
@@ -49,13 +42,10 @@ test('the chapter opens in the slides, the C program with the output recorded at
     await expect(page.locator(`.slidev-page-${section.index} h1`)).toHaveText(section.title)
   }
   const index = doc.sections.find(s => s.id === 'extend-c')!.index
-  // The runner shows the build's recording in its own output (WP-89e, F-18).
   await expect(page.locator(`.slidev-page-${index} .slidev-runner-output`)).toContainText('次数最多的一对 (97, 97) 就是 a a')
 })
 
 test('on its slide the compute shader stays legible, its run panel on the slide and the code scrolling (C-8, R-27)', async ({ page }) => {
-  // The run panel fills what is left of the slide (WP-89e, F-19). The acceptor chose R-27 over showing the
-  // whole shader: the code keeps a projection size (18 px or more) and scrolls in its panel.
   const doc = await irDocument(page)
   const { index } = doc.sections.find(s => s.id === 'extend-gpu')!
   await page.setViewportSize({ width: 1920, height: 1080 })
@@ -79,10 +69,8 @@ test('on their slides the C program and the training code keep a projection size
     const slide = page.locator(`.slidev-page-${index}`)
     const editor = slide.locator('.slidev-monaco-container-inner').first()
     await expect(slide.locator('.view-lines').first()).toBeVisible()
-    // The code's size on the screen: its font size, scaled with the slide.
     const size = await slide.locator('.view-lines').first().evaluate((el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize) * el.getBoundingClientRect().height / el.offsetHeight)
     expect(size, id).toBeGreaterThanOrEqual(18)
-    // The output, below the editor, is on the slide; the editor, shorter than the code, scrolls to its last line.
     const output = slide.locator('.slidev-runner-output').first()
     await expect(output).toBeVisible()
     const [frame, below] = [(await slide.boundingBox())!, (await output.boundingBox())!]
@@ -104,7 +92,6 @@ test('the C program runs in the browser and prints what the build recorded', asy
   await expect(block.locator('.pm-outputs')).toHaveAttribute('data-source', 'recorded')
   const recorded = await block.locator('.pm-output__stdout').textContent()
   expect(recorded).toBe('(97, 97): 4\n(97, 98): 2\n(97, 99): 1\n(98, 97): 1\n(98, 100): 1\n(100, 97): 1\n次数最多的一对 (97, 97) 就是 a a\n')
-  // The first run downloads the C compiler (some 50 MB) from the build.
   await run.click()
   await expect(block.locator('.pm-outputs')).toHaveAttribute('data-source', 'live', RUNTIME)
   await expect(block.locator('.pm-output')).toHaveAttribute('data-executor', 'presmium.wasi')
@@ -117,7 +104,6 @@ test('on a WebGPU adapter, the compute shader finds the pair the build recorded 
   const recorded = String((block.node as unknown as { props: { compiledOutput: string } }).props.compiledOutput)
   expect(recorded.split('\n')[0]).toBe('best: u32[3] = [97, 97, 4]')
 
-  // Chromium with SwiftShader, a WebGPU adapter on any machine (the default headless one has none).
   const browser = await playwright.chromium.launch({ args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] })
   try {
     const gpuPage = await browser.newPage()

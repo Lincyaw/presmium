@@ -1,26 +1,15 @@
-/**
- * The bodies of `{quiz}` and `{exercise}` as authors write them, parsed as
- * MyST: Markdown for the prompt, plus a task list (the options) or code
- * blocks (the starter code and the checks), at the top level of the body.
- * Code blocks inside other blocks, e.g. an example of a task list in a fence,
- * stay in the prompt.
- */
 import type { MdastNode } from '@presmium/kernel'
 
 export interface QuizSource {
-  /** The nodes around the options. */
   prompt: MdastNode[]
   options: string[]
-  /** Indexes of the options marked `[x]`. */
   answer: number[]
 }
 
-/** The text of a node, as a reader sees it (markup left out). */
 function plainText(node: MdastNode): string {
   return typeof node.value === 'string' ? node.value : (node.children ?? []).map(plainText).join('')
 }
 
-/** `- [ ] option` or `- [x] option` at the top level; `x` marks a right option. */
 export function quizSource(body: MdastNode): QuizSource {
   const prompt: MdastNode[] = []
   const options: string[] = []
@@ -45,9 +34,7 @@ export interface CodeSource {
 }
 
 export interface ExerciseSource {
-  /** The nodes besides the top-level code blocks. */
   prompt: MdastNode[]
-  /** Top-level code blocks in order: the starter code, then the checks. */
   code: CodeSource[]
 }
 
@@ -61,11 +48,6 @@ export function exerciseSource(body: MdastNode): ExerciseSource {
   return { prompt, code }
 }
 
-/**
- * The options of a directive option such as `{pulse}`'s `:levels:` or
- * `{predict}`'s `:choices:`: `a, b, c` (a full-width comma too), or a list;
- * undefined when fewer than two are given.
- */
 export function optionList(value: unknown): string[] | undefined {
   const items = Array.isArray(value) ? value.map(String) : typeof value === 'string' ? value.split(/[,，]/) : []
   const options = items.map(item => item.trim()).filter(Boolean)

@@ -1,21 +1,3 @@
-/**
- * The Jupyter kernel protocol client the compile-time executor (Node) and
- * the browser executor share, on `@jupyterlab/services` (P-105). A session
- * (`RunRequest.session`) is a kernel of its own, kept until `endSession`; a
- * run without one gets a kernel that is shut down after it. Runs of a
- * session execute one after the other, in the order they were asked for.
- *
- * A run maps onto the protocol so: the request's `args` are assignments
- * executed first, silently; the code runs as one `execute_request`; its
- * IOPub messages are the outputs (`stream`, `display_data`,
- * `execute_result`, `error`); `input_request`s get the request's `stdin`,
- * line by line (`input_reply`); at its timeout, or when the caller aborts,
- * the kernel is interrupted; its `files` are written with the Contents API to
- * the kernel's own directory (`presmium-runs/<id>/`, its working
- * directory), which is deleted, with what the code wrote there, once the
- * kernel has shut down. Starting a kernel sends its name and path only,
- * never environment variables: the kernel has the server's environment.
- */
 import { failedRun, languageId } from '@presmium/kernel'
 import type { RunRequest, RunResult } from '@presmium/kernel'
 import type { Kernel, ServerConnection } from '@jupyterlab/services'
@@ -24,11 +6,8 @@ import { argumentsCode, OutputCollector } from '../domain/outputs.ts'
 
 type Services = typeof import('@jupyterlab/services')
 
-/** Texts of the failed runs, in the reader's language (browser) or English (builds). */
 export interface KernelsText {
-  /** The server could not be reached, or refused. */
   unreachable(error: string): string
-  /** The token was refused (401, 403). */
   refused: string
   noKernel(kernel: string, known: string[]): string
   wrongLanguage(kernel: string, language: string, lang: string): string
@@ -37,24 +16,14 @@ export interface KernelsText {
 
 export interface KernelsOptions {
   executorId: string
-  /** The kernel spec's name. */
   kernel: string
-  /** Languages the deck says the environment runs; without them, the kernel spec's language decides. */
   languages?: string[]
-  /**
-   * The connection's settings, made when a run first needs them (the
-   * browser may ask for a token then). A rejection fails the run, its
-   * message the reason.
-   */
   settings(): Promise<ServerConnection.ISettings>
-  /** Called when the server refused the credentials, so the next run asks again. */
   refused?(): void
   text: KernelsText
 }
 
-/** What `kernel_info` and the kernel spec say: the environment fingerprint's part from the server. */
 export interface KernelDescription {
-  /** The kernel spec as the server serves it (`api/kernelspecs/<name>`). */
   spec: unknown
   implementation: string
   implementationVersion: string
@@ -66,11 +35,8 @@ export interface Kernels {
   supports(lang: string): boolean
   run(request: RunRequest, signal?: AbortSignal): Promise<RunResult>
   endSession(session: string): Promise<void>
-  /** Starts a kernel to read `kernel_info`, with the kernel spec, and shuts it down. */
   describe(): Promise<KernelDescription>
-  /** Probes the server: undefined when it answers with the kernel spec, else why not. */
   probe(): Promise<string | undefined>
-  /** Shuts every kernel down (without waiting). */
   dispose(): void
 }
 
@@ -82,17 +48,13 @@ interface Handle {
 
 interface Session {
   kernel?: Promise<Handle>
-  /** The runs asked for so far: the next one starts when it ends. */
   tail: Promise<unknown>
 }
 
-/** How long connecting to a new kernel may take. */
 const CONNECT_TIMEOUT_MS = 30_000
-/** How long an interrupted execution may take to stop before its kernel is shut down. */
 const INTERRUPT_GRACE_MS = 5_000
 
 let loaded: Promise<Services> | undefined
-/** `@jupyterlab/services`, loaded when first used (the browser loads it with the first remote run). */
 export function services(): Promise<Services> {
   loaded ??= import('@jupyterlab/services')
   return loaded
@@ -106,7 +68,6 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-/** An HTTP status of a services error (`ServerConnection.ResponseError`), if it has one. */
 function statusOf(error: unknown): number | undefined {
   const response = (error as { response?: { status?: unknown } } | undefined)?.response
   return typeof response?.status === 'number' ? response.status : undefined
@@ -119,7 +80,6 @@ export function createKernels(options: KernelsOptions): Kernels {
 
   const fail = (reason: string, started = Date.now()) => failedRun(options.executorId, reason, Date.now() - started)
 
-  /** The settings, or the failed result that says why there are none. */
   const settingsOrFail = async (): Promise<ServerConnection.ISettings | RunResult> => {
     try {
       return await options.settings()
@@ -128,7 +88,6 @@ export function createKernels(options: KernelsOptions): Kernels {
     }
   }
 
-  /** A failure of the server: refused credentials are forgotten, so the next run asks again. */
   const failure = (error: unknown, started: number): RunResult => {
     const status = statusOf(error)
     if (status === 401 || status === 403) {
@@ -157,7 +116,6 @@ export function createKernels(options: KernelsOptions): Kernels {
     const drive = new Drive({ serverSettings: settings })
     await drive.save(RUNS_DIR, { type: 'directory' })
     await drive.save(dir, { type: 'directory' })
-    // The path sets the kernel's working directory; jupyter_server reads `path` besides `name`.
     const model = await KernelAPI.startNew({ name: options.kernel, path: `${dir}/kernel` } as { name: string }, settings)
     const connection = new KernelConnection({ model, serverSettings: settings, handleComms: false })
     const handle = { id: model.id, dir, connection }
@@ -176,7 +134,6 @@ export function createKernels(options: KernelsOptions): Kernels {
     try {
       await handle.connection.shutdown()
     } catch {
-      // Gone already (culled, or the server stopped).
     }
     const settings = handle.connection.serverSettings
     handle.connection.dispose()
@@ -194,7 +151,6 @@ export function createKernels(options: KernelsOptions): Kernels {
     }
   }
 
-  /** Runs a request in a kernel; the caller has made sure no other run of that kernel is under way. */
   const runIn = async (kernel: () => Promise<Handle>, request: RunRequest, signal: AbortSignal | undefined, settings: ServerConnection.ISettings, started: number): Promise<RunResult> => {
     let handle: Handle
     try {
@@ -236,11 +192,6 @@ export function createKernels(options: KernelsOptions): Kernels {
     return result
   }
 
-  /**
-   * One `execute_request`: outputs into `collector`, `stdin` for input
-   * requests; interrupted at the timeout or on abort. A kernel that does not
-   * stop after the interrupt is shut down.
-   */
   const execute = async (handle: Handle, code: string, stdin: string, collector: OutputCollector | undefined, timeoutMs: number, signal?: AbortSignal): Promise<{ status: string, timedOut: boolean }> => {
     const { KernelAPI } = await services()
     const lines = stdin ? stdin.replace(/\n$/, '').split('\n') : []
@@ -256,7 +207,6 @@ export function createKernels(options: KernelsOptions): Kernels {
     const interrupt = () => {
       if (stopping) return
       void KernelAPI.interruptKernel(handle.id, handle.connection.serverSettings).catch(() => {})
-      // A kernel that does not stop is shut down: the reply then never comes, and `done` rejects.
       stopping = setTimeout(() => void shutdown(handle), INTERRUPT_GRACE_MS)
     }
     const timer = setTimeout(() => {
@@ -311,7 +261,6 @@ export function createKernels(options: KernelsOptions): Kernels {
         sessions.set(request.session, session)
       }
       const own = session
-      // Queued now, so the runs of a session execute in the order asked for.
       const result = own.tail.then(async () => {
         const started = Date.now()
         const settings = await settingsOrFail()
@@ -367,13 +316,6 @@ export function createKernels(options: KernelsOptions): Kernels {
   }
 }
 
-/**
- * Deletes a directory on the server with the Contents API, its files and
- * directories first: a server deletes a directory that is not empty only
- * when its contents manager sends it to the trash or `always_delete_dir` is
- * set. What cannot be deleted (the server stopped, a hidden file it does
- * not list) stays.
- */
 async function removeDirectory(settings: ServerConnection.ISettings, path: string): Promise<void> {
   const { Drive } = await services()
   const drive = new Drive({ serverSettings: settings })
@@ -388,7 +330,6 @@ async function removeDirectory(settings: ServerConnection.ISettings, path: strin
   await remove(path).catch(() => {})
 }
 
-/** Resolves once the kernel answered `kernel_info` over its WebSocket; rejects when it cannot connect. */
 function connected(connection: Kernel.IKernelConnection): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => done(new Error(`no answer from the kernel within ${CONNECT_TIMEOUT_MS / 1000} s`)), CONNECT_TIMEOUT_MS)

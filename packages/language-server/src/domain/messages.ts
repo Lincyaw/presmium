@@ -1,4 +1,3 @@
-/** What the language server says in hovers and completions, in the deck's language (N-07). */
 import type { Locale } from '@presmium/kernel'
 
 export const LS_MESSAGES = {

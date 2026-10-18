@@ -1,21 +1,3 @@
-/**
- * The root layout (docs/design-dsh.md 7.2, docs/design/home.dc.html and
- * edit.dc.html): the occupant of DeepSeek Harness's `root` slot in place of
- * ui-layout. From left to right: the activity bar; the side panel (the document's
- * file tree, or DeepSeek Harness's `sidebar`: workspaces, sessions, plugins,
- * settings); the centre (the launcher, or the document open: source and problems
- * beside the preview; a global panel of `main` when one is selected); the right
- * dock's track (`rightbar`: files, terminal, Review); the conversation (`main`'s
- * `conversation`) docked at the right. Under them the status bar and
- * `shell.bottom`; `shell.overlay` over everything. DeepSeek Harness's plugins
- * render through `renderSlot` unchanged.
- *
- * The geometry follows ui-layout's contract: the right dock gets the width the
- * centre can spare (it reports its presentation through `ctx.layout`, and closes
- * itself when `canShow` is false); the side panel collapses below 1024 px; below
- * 768 px the activity bar runs along the top and one view fills the width (7.7).
- * Drag handles resize the side panel, the dock and the conversation.
- */
 import { DocumentView, FilesPanel, HomePanel, PmDialog, PmIcon, StatusItems, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import type { IconName } from '@presmium/design'
@@ -33,7 +15,6 @@ interface FrameProps {
   renderSlot(name: string, props?: Record<string, unknown>, options?: Record<string, unknown>): ReactNode
 }
 
-/** The root occupant for this page's workbench. */
 export function frameFor(workbench: Workbench, openSettings: () => void) {
   return function PresmiumFrame(props: FrameProps) {
     return (
@@ -44,7 +25,6 @@ export function frameFor(workbench: Workbench, openSettings: () => void) {
   }
 }
 
-/** The geometry of one frame: the columns' widths and what the right dock may take. */
 function solve(info: LayoutState['layoutInfo']) {
   const viewport = info.viewportWidth
   const narrow = viewport < NARROW
@@ -89,7 +69,6 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
     }
   }, [actions])
 
-  // A document opened from the launcher shows its source (narrow) or its file tree (wide).
   const opened = useRef(document_)
   useEffect(() => {
     if (document_ !== undefined && document_ !== opened.current) {
@@ -116,7 +95,6 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const panel = activePanel !== null ? renderSlot('main', {}, { entryKey: activePanel }) : null
   const rightbar = renderSlot('rightbar', { width: geometry.rightbar, viewportWidth: geometry.viewport, canShow: geometry.rightbar > 0 })
 
-  /** Where the activity bar leads: the launcher, the file tree, DeepSeek Harness's sidebar, a view (narrow). */
   const go = (target: Activity | NarrowView) => {
     if (target !== 'sessions' && target !== 'conversation') actions.selectPanel(null)
     if (target === 'documents') {
@@ -188,7 +166,6 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
         </aside>
       )}
 
-      {/* DeepSeek Harness's sidebar stays mounted: in the side panel (wide), or as the sessions view (narrow). */}
       <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? view === 'sessions' : sideShown && sideContent === 'sessions') || undefined}>{sidebar}</div>
 
       <main id="pmw-centre" className="pmw-frame__centre" aria-label={documentTitle ?? t.centre} hidden={narrow && (view === 'sessions' || view === 'conversation') && panel === null}>{centre}</main>
@@ -214,7 +191,6 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   )
 }
 
-/** The side panel's file tree; with no document open, the documents to open. */
 function FilesOrDocuments({ workbench, onOpen }: { workbench: Workbench, onOpen?: () => void }) {
   const document_ = useWorkbench(state => state.document)
   const documents = useWorkbench(state => state.documents)
@@ -237,7 +213,6 @@ function FilesOrDocuments({ workbench, onOpen }: { workbench: Workbench, onOpen?
   )
 }
 
-/** A column's drag handle: pointer capture, the change reported from where the drag started. */
 function DragHandle({ side, left, start, label, onDrag }: { side: string, left: number, start: number, label: string, onDrag(start: number, dx: number): void }) {
   const origin = useRef<{ x: number, start: number } | null>(null)
   const down = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {

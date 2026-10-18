@@ -1,12 +1,6 @@
 import { irBlocks } from '@presmium/kernel'
 import type { IRBlock, IRDocument, IRSection } from '@presmium/kernel'
 
-/**
- * The section at a 1-based line of a source file (P-81): the last section
- * whose heading is in the file at or above the line; in a file included
- * inside a section, the section of the last block from the file at or above
- * the line, else of its first block.
- */
 export function sectionAt(doc: IRDocument, file: string, line: number): IRSection | undefined {
   const headed = doc.sections.filter(s => s.source.file === file && s.source.line <= line).at(-1)
   if (headed) return headed
@@ -22,7 +16,6 @@ export function sectionAt(doc: IRDocument, file: string, line: number): IRSectio
   return last?.section ?? first ?? (file === doc.meta.entry ? doc.sections[0] : undefined)
 }
 
-/** The block at a 1-based line of a source file, e.g. the code node of a `{code-ref}`. */
 export function blockAt(doc: IRDocument, file: string, line: number): IRBlock | undefined {
   for (const section of doc.sections) {
     for (const block of irBlocks(section.blocks)) {

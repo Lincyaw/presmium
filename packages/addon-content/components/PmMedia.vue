@@ -4,14 +4,6 @@ import { computed } from 'vue'
 import { captionTracks, mediaElements } from '../src/domain/index.ts'
 import type { MediaKind } from '../src/domain/index.ts'
 
-/**
- * A media block (P-42) from `{video}`, `{audio}` or `{animation}`: the media
- * element, and for an animation with a still image both images. A video
- * shows its `poster` before it plays and has a caption track per language of
- * `captions`, labelled with the language's name in the UI language;
- * `captionsDefault` shows at first. `src`, `still`, `poster` and the files of
- * `captions` are the URLs the renderer published the files at.
- */
 const props = defineProps<{
   kind: MediaKind
   src: string
@@ -62,7 +54,6 @@ const tracks = computed(() => (props.kind === 'video' ? captionTracks(props.capt
   font-family: var(--pm-font-sans);
   font-size: 0.85em;
 }
-/* An animation gives way to its still image when the system asks for reduced motion. */
 .pm-media .pm-media-still {
   display: none;
 }

@@ -1,18 +1,3 @@
-/**
- * Writing in a workspace's document directories (WP-91, docs/architecture.md
- * 10.7): the one way the workspace changes what is inside them, written by
- * this process.
- *
- * A path is relative to the workspace root and lies in a document directory:
- * a directory the configuration's patterns name, there as a real directory
- * (no link on the way from the root); no part of it is `.git`. Inside the
- * document directory, a link or a file where a directory belongs is
- * replaced by the directory; a file is written beside its place and renamed
- * over it, so a link at its place is replaced rather than followed (a piece
- * written at a position goes into the file there, opened without following
- * a link; a link in its place becomes an empty file first). Copies and
- * templates take regular files and links, never what a link points to.
- */
 import { randomBytes } from 'node:crypto'
 import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, renameSync, rmdirSync, rmSync, symlinkSync, writeFileSync, writeSync } from 'node:fs'
 import type { Stats } from 'node:fs'
@@ -23,32 +8,19 @@ import { rewriteLinks, within } from '../domain/paths.ts'
 import { listDocuments, namedByPatterns } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 
-/** The document templates installed with Presmium: this package's `templates/document/<name>/`, published with it. */
 export const BUILTIN_TEMPLATES = fileURLToPath(new URL('../../templates/document', import.meta.url))
 
-/** Directories of a document that are not its source (outputs, caches, dependencies). */
 const NOT_SOURCE = new Set(['node_modules', 'dist', '.git'])
 
-/** A path the writer refuses: the request's fault. */
 export class FilesError extends Error {}
 
-/**
- * The writes of the workspace's document operations and reverts: the
- * changes of `DOCUMENT_FILES`, and a document made from a template, copied,
- * its Markdown's links following a move, or emptied.
- */
 export interface DocumentWriter extends DocumentFiles {
-  /** Fills the (empty) document directory `dir` from the template `template`, its title in its Markdown. */
   template(dir: string, template: string, title: string): Promise<void>
-  /** Copies the source of document `from` into the (empty) document directory `to`; its relative links point where they did. */
   copy(from: string, to: string): Promise<void>
-  /** Rewrites the relative links of every document's Markdown after `from` moved to `to`; returns the files changed. */
   relink(from: string, to: string): Promise<string[]>
-  /** Removes everything in the document directory `dir`, which stays. */
   empty(dir: string): Promise<void>
 }
 
-/** The parts of a path relative to the root: no empty, `.` or `..` part, no `.git`, no NUL. */
 function partsOf(path: unknown): string[] {
   if (typeof path !== 'string' || !path || path.includes('\0') || path.startsWith('/')) throw new FilesError(`not a path in the workspace: ${JSON.stringify(path)}`)
   const parts = path.split('/')
@@ -65,7 +37,6 @@ function stat(path: string): Stats | undefined {
   }
 }
 
-/** Whether `dir` (relative to the root) is there as a directory, with no link on the way from the root. */
 function realDirectory(root: string, dir: string): boolean {
   let current = root
   for (const part of dir ? dir.split('/') : []) {
@@ -75,7 +46,6 @@ function realDirectory(root: string, dir: string): boolean {
   return stat(current)?.isDirectory() ?? false
 }
 
-/** The document directory a path lies in: the deepest of its directories the patterns name; undefined for none. */
 export function documentDirOf(config: WorkspaceConfig, path: string): string | undefined {
   const parts = path.split('/')
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -85,7 +55,6 @@ export function documentDirOf(config: WorkspaceConfig, path: string): string | u
   return undefined
 }
 
-/** A document directory to write in: named by the patterns, there as a real directory. */
 function documentDir(config: WorkspaceConfig, dir: string): string {
   if (dir !== '') partsOf(dir)
   if (!namedByPatterns(config, dir)) throw new FilesError(`${dir || '.'} is not a document directory of this workspace`)
@@ -93,7 +62,6 @@ function documentDir(config: WorkspaceConfig, dir: string): string {
   return dir
 }
 
-/** The directory a file of `parts` goes in, made inside `base` (relative to the root): what is in the way of a directory is replaced. */
 function madeParent(root: string, base: string, parts: string[]): string {
   let current = join(root, base)
   const start = base ? base.split('/').length : 0
@@ -107,7 +75,6 @@ function madeParent(root: string, base: string, parts: string[]): string {
   return current
 }
 
-/** The directory of a file of `parts` inside `base` when it is there as a real directory; undefined otherwise. */
 function existingParent(root: string, base: string, parts: string[]): string | undefined {
   let current = join(root, base)
   const start = base ? base.split('/').length : 0
@@ -118,7 +85,6 @@ function existingParent(root: string, base: string, parts: string[]): string | u
   return current
 }
 
-/** Puts `make` (which creates a new entry at the path it is given) at `target`: beside it first, then renamed over it. */
 function replace(parent: string, target: string, make: (temporary: string) => void): void {
   const temporary = join(parent, `.presmium-write-${randomBytes(6).toString('hex')}`)
   make(temporary)
@@ -132,7 +98,6 @@ function replace(parent: string, target: string, make: (temporary: string) => vo
   }
 }
 
-/** Removes the directories a removal left empty, from `from` up to (not including) the document directory. */
 function prune(root: string, base: string, from: string): void {
   const top = join(root, base)
   for (let dir = from; dir !== top && dir.startsWith(`${top}/`); dir = join(dir, '..')) {
@@ -145,7 +110,6 @@ function prune(root: string, base: string, from: string): void {
   }
 }
 
-/** Applies one change inside `base` (a document directory, or in serve's own part of the workspace the root). */
 function apply(root: string, base: string, change: DocumentFileChange): void {
   const parts = partsOf(change.path)
   const name = parts.at(-1)!
@@ -170,7 +134,6 @@ function apply(root: string, base: string, change: DocumentFileChange): void {
   replace(parent, target, temporary => writeFileSync(temporary, change.content, { flag: 'wx', mode: change.executable ? 0o777 : 0o666 }))
 }
 
-/** Writes `content` at byte `at` of the file `target` (no gap): anything but a file in its place becomes an empty file first. */
 function writeAt(parent: string, target: string, content: Uint8Array, at: number): void {
   if (!Number.isSafeInteger(at) || at < 0) throw new FilesError(`not a position in a file: ${at}`)
   if (!stat(target)?.isFile()) replace(parent, target, temporary => writeFileSync(temporary, '', { flag: 'wx', mode: 0o666 }))
@@ -184,14 +147,7 @@ function writeAt(parent: string, target: string, content: Uint8Array, at: number
   }
 }
 
-/**
- * Writes changes of document directories (`DOCUMENT_FILES`). With
- * `outside`, a path in no document directory is written too, relative to the
- * root: serve's own files (a revert of an allowed write outside the
- * documents).
- */
 export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChange[], outside = false): void {
-  // Every path is checked before anything is written.
   const targets = changes.map((change) => {
     const parts = partsOf(change.path)
     const dir = documentDirOf(config, parts.join('/'))
@@ -199,36 +155,23 @@ export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChang
     if (dir !== undefined) documentDir(config, dir)
     return { change, base: dir ?? '' }
   })
-  // Removals first: a link or directory that goes may stand where a written file's directory comes.
   for (const { change, base } of targets) if ('remove' in change) apply(config.root, base, change)
   for (const { change, base } of targets) if (!('remove' in change)) apply(config.root, base, change)
 }
 
-/**
- * What of a document's `.presmium/` is its content, as the repository's `.gitignore` keeps it (F-52): the
- * recordings (`freeze/`), drawings, assets, the synthesized speech and its lock, the anchor lock. The rest
- * there is generated (the renderers' projects) and not copied.
- */
 const DECK_CONTENT = new Set(['freeze', 'drawings', 'assets', 'speech', 'speech.lock.json', 'anchors.lock.json'])
 
-/**
- * Whether a path (relative, with `/`) is generated in a `.presmium/` directory, whatever the repository's
- * `.gitignore` says: there only the content above is source. The source editor neither lists nor commits
- * such a file (e.g. the MCP token of `presmium dev`, `.presmium/server.json`).
- */
 export function generatedPath(path: string): boolean {
   const parts = path.split('/')
   const at = parts.indexOf('.presmium')
   return at >= 0 && !DECK_CONTENT.has(parts[at + 1] ?? '')
 }
 
-/** The source files of a directory (absolute), relative to it: regular files and links, outputs and caches left out (of `.presmium/`, only its content). */
 function sourceEntries(dir: string): { path: string, link?: string, executable?: boolean }[] {
   const out: { path: string, link?: string, executable?: boolean }[] = []
   const walk = (current: string, rel: string) => {
     for (const name of readdirSync(current).sort()) {
       if (NOT_SOURCE.has(name)) continue
-      // The document's own `.presmium/`: its content only.
       if (rel === '.presmium' && !DECK_CONTENT.has(name)) continue
       const path = join(current, name)
       const entry = rel ? `${rel}/${name}` : name
@@ -243,12 +186,10 @@ function sourceEntries(dir: string): { path: string, link?: string, executable?:
   return out
 }
 
-/** The directory of the templates: the workspace's `templates`, else Presmium's. */
 export function templatesDir(config: WorkspaceConfig): string {
   return config.templates ?? BUILTIN_TEMPLATES
 }
 
-/** The template directory of a name; undefined for a name that is no template. */
 export function templateOf(config: WorkspaceConfig, name: string): string | undefined {
   if (!name || name.includes('/') || name.includes('\\') || name.startsWith('.')) return undefined
   const dir = join(templatesDir(config), name)
@@ -272,7 +213,6 @@ export function copyDocument(config: WorkspaceConfig, from: string, to: string):
   writeChanges(config, sourceEntries(join(config.root, from)).map(({ path, link, executable }): DocumentFileChange => {
     if (link !== undefined) return { path: `${to}/${path}`, link }
     const content = readFileSync(join(config.root, from, path))
-    // Links out of the copy point where they pointed from the original.
     if (path.endsWith('.md')) return { path: `${to}/${path}`, content: Buffer.from(rewriteLinks(content.toString('utf8'), `${to}/${path}`, `${from}/${path}`, from, to)) }
     return { path: `${to}/${path}`, content, ...executable ? { executable } : {} }
   }))
@@ -301,7 +241,6 @@ export function emptyDocument(config: WorkspaceConfig, dir: string): void {
   for (const name of readdirSync(path)) rmSync(join(path, name), { recursive: true, force: true })
 }
 
-/** The writer in this process. */
 export function localWriter(config: WorkspaceConfig): DocumentWriter {
   return {
     write: async changes => writeChanges(config, changes),

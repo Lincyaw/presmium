@@ -1,21 +1,3 @@
-/**
- * The resolution pass of `{code-ref}` (docs/ir.md section 4, step 6): reads
- * the referenced code from the working tree or a pinned commit, converts the
- * logical units into line highlights (P-15), reads every version (P-16),
- * links the code to its remote repository (P-13) and reports anchors that
- * moved, need confirmation or are lost, and pinned code that drifted (P-14).
- * `presmium check` and `presmium build` both report these diagnostics.
- *
- * Everything the renderers show about the code is in the code node: its
- * `origin`, whether pinned code drifted (`origin.drift`), and the lines and
- * permalink of each version (`variants[k]`). The repository URL of the
- * permalinks is `:repo:`, else `presmium.code.repo` of the block's section
- * (its `{config}` over the headmatter), else the `origin` remote.
- *
- * The working tree is read with the compiler's reader (`PassContext.src`);
- * commits with this addon's, which also reads submodules (P-12). An anchor
- * never names a file in `.git`.
- */
 import { existsSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { docBlocks, errorMessage, isRenderable } from '@presmium/kernel'
@@ -28,7 +10,6 @@ import type { Repository, Workspace } from './git.ts'
 
 const LOCK_HINT = 'run presmium check --update-lock to record the current location'
 
-/** The code shown for one revision: a pinned commit or version, or the working tree. */
 interface Shot {
   commit?: string
   location: ResolvedLocation
@@ -53,17 +34,11 @@ export const codeRefPass: IRPass = {
   },
 }
 
-/** Anchors of the code references in a compiled deck, for `presmium check --update-lock`. */
 export function codeRefAnchors(doc: IRDocument | undefined): AnchorString[] {
   if (!doc) return []
   return [...docBlocks(doc)].flatMap(({ block: { node } }) => node.type === 'code' && node.origin?.anchor ? [node.origin.anchor] : [])
 }
 
-/**
- * Why an anchor is lost. When its file is missing from the working tree, the
- * message says that anchor paths start at the repository root and, when the
- * path names a file from the deck's directory instead, how to write it.
- */
 async function lostMessage(anchor: AnchorString, message: string | undefined, workspace: Workspace, ctx: PassContext): Promise<[string, string]> {
   const file = splitTarget(anchor)?.file
   const restore = 'restore the #region markers, the declaration or the code the pattern matches, or fix the anchor'
@@ -85,7 +60,6 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string
     return
   }
 
-  // Anchor health in the working tree, against the lock.
   const recorded = ctx.lock.anchors[anchor]
   const current = await ctx.resolvers.resolve(anchor, workspace.src, recorded)
   const where = current.location && `${current.location.file}:${current.location.startLine}`
@@ -98,7 +72,6 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string
     report('presmium.code.anchors', 'info', `code at ${anchor} changed since the anchor was locked`, LOCK_HINT)
   }
 
-  // Commits are read with this addon's reader, which also reads submodules (P-12).
   const repo = await workspace.repository(splitTarget(anchor)?.file ?? '')
   const shots: Shot[] = []
   for (const rev of spec.variants ?? [spec.pin]) {
@@ -129,7 +102,6 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string
 
   const snippet = toSnippet(shown.location.text)
   const { file, startLine, endLine } = shown.location
-  // Code of the working tree links to HEAD, where its lines may differ.
   const linked = shown.commit ? shown : await head(anchor, repo, workspace, ctx)
   node.value = snippet.code
   node.origin = { anchor, file, startLine, endLine, status: shown.status, units: unitRecord(snippet.units) }
@@ -139,7 +111,6 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string
   if (href) origin.permalink = href
 
   if (spec.variants) {
-    // Each version with its own lines and link (C-10), shown with it on its step.
     node.variants = shots.map((shot): CodeVariant => {
       const variant: CodeVariant = { label: shot.commit!.slice(0, 7), value: toSnippet(shot.location.text).code, startLine: shot.location.startLine, endLine: shot.location.endLine }
       const href = link(shot)
@@ -165,7 +136,6 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string
   }
 }
 
-/** The anchor at HEAD, for the permalink of code read from the working tree. */
 async function head(anchor: AnchorString, repo: Repository, workspace: Workspace, ctx: PassContext): Promise<Shot | undefined> {
   const commit = await repo.commit('HEAD')
   if (!commit) return undefined
@@ -173,10 +143,6 @@ async function head(anchor: AnchorString, repo: Repository, workspace: Workspace
   return isRenderable(resolution) ? { commit, location: resolution.location!, status: resolution.status } : undefined
 }
 
-/**
- * Web URL of a repository for permalinks: for the workspace's own repository
- * the configured URL when set, otherwise the `origin` remote.
- */
 async function repoUrl(repo: Repository, configured: string | undefined): Promise<string | undefined> {
   return repoWebUrl((repo.prefix ? undefined : configured) ?? await repo.remote())
 }

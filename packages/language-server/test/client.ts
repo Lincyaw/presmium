@@ -1,4 +1,3 @@
-// Drives the real language server process over stdio with the LSP protocol, as an editor does.
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
@@ -21,11 +20,8 @@ const BIN = fileURLToPath(new URL('../bin/presmium-language-server.mjs', import.
 export interface Client {
   connection: ProtocolConnection
   open(uri: string, text: string): void
-  /** Replaces the whole text of an open document, without saving it. */
   change(uri: string, text: string, version: number): void
-  /** Tells the server the document was saved, as an editor does once it wrote the file. */
   save(uri: string): void
-  /** The diagnostics last published for a document; waits for the first publication. */
   diagnostics(uri: string): Promise<Diagnostic[]>
   close(): Promise<void>
 }

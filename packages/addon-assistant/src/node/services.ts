@@ -1,13 +1,3 @@
-/**
- * The agent runtime this process registers (`AGENT_RUNTIME`, D11, P-111):
- * the operator's choice (`runtimeChoice`), asked again whenever it is read,
- * so the model settings saved in the page apply to the next session without
- * a restart: a replacement runtime, or the bundled DeepSeek Harness with the
- * model access of the environment or of the page; none without either (its
- * `provider` is undefined, it starts nothing, and the server says why,
- * ./server.ts). When the process starts, the assistant says on its log
- * whether it is available and with what, or which settings it misses.
- */
 import { AGENT_RUNTIME, errorMessage } from '@presmium/kernel'
 import type { AgentRuntime, AgentSession, AgentSessionOptions, NodeServiceContext, ServiceToken } from '@presmium/kernel'
 import { choiceProvider, missingSentence, runtimeChoice } from '../domain/index.ts'
@@ -16,16 +6,13 @@ import { dshArgs, dshBin, dshVersion, localEnv, replacementEnv } from './launch.
 import { readModelSettings, settingsFile } from './model-settings.ts'
 import { AcpRuntime } from './runtime.ts'
 
-/** The operator's choice now: the environment, the workspace's settings, then the page's saved model settings. */
 export function currentChoice(ctx: Pick<NodeServiceContext, 'secret' | 'settings'>): RuntimeChoice {
   const secret = (name: string) => ctx.secret(name)
   return runtimeChoice(secret, ctx.settings, readModelSettings(settingsFile(secret)))
 }
 
-/** The bundled DeepSeek Harness is not installed: what the choice says then. */
 const NOT_INSTALLED = missingSentence({ code: 'harness' })
 
-/** `AGENT_RUNTIME` over the operator's current choice: a new ACP runtime (and runtime name) whenever the choice changed. */
 export class AssistantRuntime implements AgentRuntime {
   readonly #ctx: NodeServiceContext
   readonly #env: NodeJS.ProcessEnv
@@ -69,10 +56,8 @@ export class AssistantRuntime implements AgentRuntime {
   }
 }
 
-/** What the assistant says on the log when the process starts: once. */
 let announced = false
 
-/** The start-up line: available with the provider, the runtime and where they come from; or what to set. */
 export function statusLine(choice: RuntimeChoice): string {
   if (choice.kind === 'none') return `the assistant is unavailable: ${missingSentence(choice.missing)}`
   if (choice.kind === 'bundled' && !dshBin()) return `the assistant is unavailable: ${NOT_INSTALLED}`

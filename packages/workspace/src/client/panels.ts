@@ -1,12 +1,3 @@
-/**
- * The workspace's entries in the shell (P-120, P-121, N-10): the edit
- * switch of a document's page; on the home page the document operations
- * (a button and a dialog), the agent's draft card, the latest changes, the
- * usage guide; everywhere the revision history (an icon of the home page's
- * activity bar), with the changes not committed at its head, and the git
- * status of the status bar. Each is for editors and owners only, drawn with
- * the host's components and tokens.
- */
 import { currentLocale, PmBadge, PmButton, PmCard, PmDialog, PmEmpty, PmField, PmIcon, PmNotice, PmToolbarEntry, useMessages, useServer, useToolbarPlace } from '@presmium/host'
 import type { AgentClient, AgentTask, ReviewChange } from '@presmium/kernel'
 import { computed, defineComponent, h, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
@@ -20,24 +11,19 @@ import { editing, loadUncommitted, uncommitted } from './source.ts'
 
 export { editing }
 
-/** The assistant's client, when the assistant plugin provides one (WP-80): drafting a new document needs it. */
 const agent = shallowRef<AgentClient>()
 export function setAgent(client: AgentClient | undefined): void {
   agent.value = client
 }
 
-/** The document dialog of the home page, which its button, its draft card and the dialog itself open and close. */
 const dialog = ref(false)
-/** The dialog opens at its form, with "draft with the agent" chosen (the draft card). */
 const draftChosen = ref(false)
 
-/** The member may edit (editors and owners). */
 function useEditor() {
   const server = useServer()
   return computed(() => server.available && mayEdit(server.member.value?.roles))
 }
 
-/** A time as the home page says it: the hour today, else yesterday, else the date (N-07). */
 function shortTime(date: string): string {
   const when = new Date(date)
   const locale = currentLocale()
@@ -64,22 +50,14 @@ export const EditToggle = defineComponent({
   },
 })
 
-/** A commit's first line. */
 const summaryOf = (revision: HistoryRevision) => revision.message.split('\n')[0] ?? ''
 
-/** The subject an undo's commit quotes (`Revert "<subject>"`), unwrapped `times` times. */
 function unwrap(summary: string, times: number): string {
   let subject = summary
   for (let i = 0; i < times; i++) subject = /^Revert "(.*)"$/.exec(subject)?.[1] ?? subject
   return subject
 }
 
-/**
- * How many undos a revision is away from a change (F-55): 0 for a change, 1
- * for its undo, 2 for the undo of that undo (a redo), and so on. The chain of
- * `reverts` among the listed revisions says it; where it leaves the list, the
- * nesting of the commit's subject does.
- */
 function undoDepth(revision: HistoryRevision, find: (id: string) => HistoryRevision | undefined): number {
   let depth = 0
   for (let at = revision; at.reverts; depth++) {
@@ -94,24 +72,17 @@ function undoDepth(revision: HistoryRevision, find: (id: string) => HistoryRevis
   return depth
 }
 
-/** The lookup of `undoDepth` among `revisions`, by full or abbreviated commit id. */
 function finder(revisions: HistoryRevision[]): (id: string) => HistoryRevision | undefined {
   const byId = new Map(revisions.map(revision => [revision.id, revision]))
   return id => byId.get(id) ?? revisions.find(revision => revision.id.startsWith(id) || id.startsWith(revision.id))
 }
 
-/**
- * How the history names a revision in the reader's language (N-07, F-55): a document operation by its origin; an
- * undo by what it undoes, a redo (the undo of an undo) as the redo of the change; others (an agent's commit,
- * written in the deck's language) by their summary. The commit's own summary stays as written.
- */
 function revisionLabel(revision: HistoryRevision, depth: number, t: WorkspaceMessages): string {
   const change = revision.operation ? t.operation(revision.operation) : unwrap(summaryOf(revision), depth)
   if (depth === 0) return change
   return depth % 2 === 1 ? t.revertOf(change) : t.redoOf(change)
 }
 
-/** The tag of a revision's origin: the AI's changes stand out. */
 function originTag(revision: HistoryRevision, t: WorkspaceMessages) {
   const kind = revision.origin.kind
   return h(PmBadge, { class: 'pm-workspace-revision__origin', tone: kind === 'agent' ? 'accent' : 'outline', pill: true }, () => t.originTag[kind])
@@ -149,7 +120,6 @@ export const History = defineComponent({
     onMounted(() => void loadUncommitted())
     const item = (revision: HistoryRevision, find: (id: string) => HistoryRevision | undefined) => {
       const depth = undoDepth(revision, find)
-      // An undo is undone by a redo; a change or a redo by an undo.
       const undoes = depth % 2 === 1
       return h('li', { 'key': revision.id, 'class': 'pm-workspace-revision', 'data-revision': revision.id, 'data-undo': depth === 0 ? undefined : undoes ? 'undo' : 'redo' }, [
         h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 'var(--pm-space-2)' } }, [
@@ -184,7 +154,6 @@ export const History = defineComponent({
         },
       }, () => [
         message.value ? h(PmNotice, { class: 'pm-workspace-history__message', tone: 'danger', role: 'alert' }, () => message.value) : null,
-        // The changes not committed head the history (P-124): committed, they are its newest item.
         uncommitted.value.length > 0 ? h('div', { style: { marginBottom: 'var(--pm-space-4)', paddingBottom: 'var(--pm-space-4)', borderBottom: '1px solid var(--pm-color-line)' } }, [h(Uncommitted, { heading: true })]) : null,
         revisions.value.length === 0
           ? h(PmEmpty, { icon: 'history' }, () => t.value.noRevisions)
@@ -194,28 +163,18 @@ export const History = defineComponent({
   },
 })
 
-/** The agent's draft of a new document, followed until its commit. */
 interface Draft {
   dir: string
   task: AgentTask
   state: 'drafting' | 'review' | 'failed'
-  /** The agent's latest progress or message, or why the draft failed. */
   note?: string
-  /** The changes a review shows. */
   changes?: ReviewChange[]
 }
 
-/** The page of a document of the site. */
 function documentUrl(dir: string): string {
   return new URL(`${encodeURI(dir)}/`, location.href).href
 }
 
-/**
- * The home page's document operations (P-121): the button of the dialog and
- * "new document", and the dialog: a form that makes a document from a
- * template or has the agent draft it, and the documents, each renamed,
- * copied or deleted. Every operation is one commit.
- */
 export const Documents = defineComponent({
   name: 'PmWorkspaceDocuments',
   setup() {
@@ -226,12 +185,6 @@ export const Documents = defineComponent({
     const busy = ref(false)
     const form = ref({ dir: '', title: '', template: '', draft: false, request: '' })
     const agentDraft = shallowRef<Draft>()
-    /**
-     * Follows the drafting task (P-121): the page stays until the task ends
-     * with its commit (`done`), answering a review it waits for here, then
-     * opens the new document with the draft. Leaving at once would lose the
-     * task's events, and show the template before the draft.
-     */
     const follow = async (dir: string, task: AgentTask) => {
       const update = (next: Partial<Draft>) => agentDraft.value = { ...agentDraft.value!, ...next }
       agentDraft.value = { dir, task, state: 'drafting' }
@@ -283,12 +236,9 @@ export const Documents = defineComponent({
       void run({ op: 'create', dir: dir.trim(), ...title.trim() ? { title: title.trim() } : {}, ...template ? { template } : {} }, (result) => {
         form.value = { dir: '', title: '', template: '', draft: false, request: '' }
         if (!drafting || !result.dir) return
-        // Drafted by the agent: one chat task whose context is the new document's directory (P-121), followed until its commit.
         void follow(result.dir, agent.value!.submit({ kind: 'chat', prompt: request, context: { document: result.dir } }))
       })
     }
-    // However it opens (its button, "new document", the draft card): the documents are read again, and the
-    // draft card's choice is taken, with the focus on the request (the dialog puts it on its first field).
     watch(dialog, async (open) => {
       if (!open) return
       void load()
@@ -347,7 +297,6 @@ export const Documents = defineComponent({
             onChange: (event: Event) => form.value.template = (event.target as HTMLSelectElement).value,
           }, known!.templates.map(name => h('option', { value: name }, name))))
         : null,
-      // Drafting needs the assistant (WP-80); without one the option is not there.
       canDraft
         ? h('label', { class: 'pm-workspace-create__draft pm-ui-field pm-ui-field--inline', style: { gridColumn: '1 / -1' } }, [
             h('input', { type: 'checkbox', name: 'draft', class: 'pm-ui-checkbox', checked: form.value.draft, onChange: (event: Event) => form.value.draft = (event.target as HTMLInputElement).checked }),
@@ -405,7 +354,6 @@ export const Documents = defineComponent({
   },
 })
 
-/** The home page's main action, an item of its own (the launcher's search finds it): the document dialog at its form. */
 export const NewDocument = defineComponent({
   name: 'PmWorkspaceNewDocument',
   setup() {
@@ -415,7 +363,6 @@ export const NewDocument = defineComponent({
   },
 })
 
-/** The dashed card beside the documents (the `create` slot): the agent drafts a new document, in the document dialog. */
 export const DraftCard = defineComponent({
   name: 'PmWorkspaceDraftCard',
   setup() {
@@ -440,7 +387,6 @@ export const DraftCard = defineComponent({
   },
 })
 
-/** The home page's card of the latest changes (the `home` slot), each tagged with its origin. */
 export const RecentChanges = defineComponent({
   name: 'PmWorkspaceRecent',
   setup() {
@@ -476,14 +422,8 @@ export const RecentChanges = defineComponent({
   },
 })
 
-/** What the status bar reads of the `documents` route: the branch and the uncommitted files, once the server names them. */
 type GitAnswer = DocumentsAnswer & { branch?: string, uncommitted?: number }
 
-/**
- * The status bar's entry: the workspace's git repository, its branch and
- * its files with changes not committed when the server names them
- * (docs/design/README.md), else the time of its latest commit.
- */
 export const GitStatus = defineComponent({
   name: 'PmWorkspaceGit',
   setup() {
@@ -517,16 +457,10 @@ export const GitStatus = defineComponent({
   },
 })
 
-/** The address of the MCP service of this server (`/mcp`, docs/architecture.md 10.2). */
 function mcpAddress(): string {
   return `${location.origin}/mcp`
 }
 
-/**
- * The usage guide of the home page (P-120): the document operations, edit
- * mode, the AI's changes, the model settings, the history, an outside agent
- * over MCP, and the documentation site.
- */
 export const Guide = defineComponent({
   name: 'PmWorkspaceGuide',
   setup() {

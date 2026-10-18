@@ -1,12 +1,3 @@
-/**
- * The web round of `presmium-diff` (P-53): builds the web form of a
- * compilation, serves it on a local port under its public base
- * (`renderers.web.base`, the compiler's `serveDirectory`) and captures, with
- * the Chromium of `playwright-chromium` (which `slidev export` needs too, as
- * the deck has it: the compiler's `playwrightChromium`), every page in the
- * document view (`<page>.png`, the whole page) and every section in the
- * present view (`present-<section>.png`).
- */
 import { mkdir, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { build, playwrightChromium, serveDirectory, viewFor } from '@presmium/compiler'
@@ -24,10 +15,6 @@ interface Chromium {
   }>
 }
 
-/**
- * Builds the web form into `out` (removed afterwards) and captures it into
- * `dir`; returns warnings, e.g. when the deck has no web renderer installed.
- */
 export async function captureWeb(compilation: Compilation, out: string, dir: string, wait: number): Promise<string[]> {
   await rm(out, { recursive: true, force: true })
   const report = await build(compilation, { outDir: out, to: ['web'] })
@@ -38,7 +25,6 @@ export async function captureWeb(compilation: Compilation, out: string, dir: str
   const site = `${server.url}${web.base}`
   const browser = await (await playwrightChromium<Chromium>(compilation.deckDir)).launch()
   try {
-    // The same window, no service worker and no motion, so two builds of the same pages look the same.
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce', serviceWorkers: 'block' })
     const pages = (await readdir(web.outDir)).filter(file => file.endsWith('.html') && file !== '404.html').sort()
     for (const file of pages) {

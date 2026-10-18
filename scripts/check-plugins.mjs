@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-// Every package's Node plugin (`./presmium`, docs/architecture.md 4.2) declares what the compiler
-// checks before loading it (K-07, R-111): `kernel`, a range of kernel versions that the current
-// kernel satisfies, and `version`, the package's own. The compiler skips the check for a plugin
-// that declares nothing, so without this a kernel upgrade would load every plugin unchecked.
-// The entries are loaded as the compiler loads them, with jiti.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
@@ -14,7 +9,6 @@ const { createJiti } = compilerRequire('jiti')
 const jiti = createJiti(join(root, 'packages/compiler/src/plugins.ts'))
 const { KERNEL_VERSION, kernelIncompatibility } = await jiti.import(join(root, 'packages/kernel/src/index.ts'))
 
-/** The `./presmium` export target of a package, as the compiler resolves it (packages/compiler/src/plugins.ts). */
 function exportTarget(value) {
   if (typeof value === 'string') return value
   if (!value || typeof value !== 'object') return undefined

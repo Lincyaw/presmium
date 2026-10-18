@@ -8,20 +8,11 @@ import { COLLECTIONS, isPrediction, isSavedPrediction, MESSAGES, placeKey, predi
 import type { Place, Prediction, SavedPrediction } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
-// P-68, from `{predict}`: the reader predicts, picking a choice or writing a few words, before the
-// content of the next step shows. Its children are the prompt, then what it reveals (the compiler
-// moved them in and names them in `reveal` and `notes`). In the reader's views the revealed content
-// stays hidden until the reader has saved a prediction; a presentation (the present and presenter
-// views, the slides) shows it at its step, as the room sees it. The prediction is kept in this
-// browser; a learner's also goes to the classroom, where the presenter's overview counts them.
 const props = defineProps<{
   question: string
-  /** Without them, the reader writes the prediction. */
   choices?: string[]
-  /** Ids of the revealed blocks shown on screen, and of the revealed narration. */
   reveal?: string[]
   notes?: string[]
-  /** Set by the compiler. */
   place?: Place
 }>()
 
@@ -43,7 +34,6 @@ const held = computed(() => role.value === 'reader' && !saved.value)
 const choice = ref<number>()
 const text = ref('')
 const ready = computed(() => (props.choices ? choice.value !== undefined : text.value.trim() !== ''))
-// The saved prediction shows in the form, e.g. after a reload.
 watch(saved, (prediction) => {
   if (prediction) {
     choice.value = prediction.choice
@@ -68,12 +58,6 @@ function save(): void {
   }))
 }
 
-/**
- * The prompt or the revealed content among the children. The IR runtime renders each child as a
- * node keyed by its block id, the slides form the clicks that wrap the revealed content (the prompt
- * shows from the start, unwrapped); a presentation leaves the narration to the presenter's notes.
- * Children without those keys all follow the form.
- */
 function children(part: 'prompt' | 'reveal'): VNode[] {
   const nodes = slots.default?.() ?? []
   const notes = props.notes ?? []
@@ -137,7 +121,6 @@ const Children = ({ part }: { part: 'prompt' | 'reveal' }) => children(part)
   border: 0;
 }
 .pm-predict__choices legend {
-  /* Read out with the choices; the question above says it on screen. */
   position: absolute;
   width: 1px;
   height: 1px;

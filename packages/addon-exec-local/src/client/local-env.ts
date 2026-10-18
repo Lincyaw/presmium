@@ -6,11 +6,9 @@ import type { LocalEnvService, LocalEnvStatus, ReplicateRequest } from '../domai
 import { messages } from './messages.ts'
 
 export interface LocalEnv extends LocalEnvService {
-  /** The container executor (P-22) for the `executor` router. */
   readonly executor: Executor
 }
 
-/** A POST to a route of the plugin (`useServer().fetch` sends the page's language); its error as an exception. */
 async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
   const res = await useServer().fetch(EXEC_LOCAL_ID, path, {
     method: 'POST',
@@ -26,7 +24,6 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
 }
 
 async function probe(): Promise<LocalEnvStatus> {
-  // A static build has no Presmium server behind it.
   if (!useServer().available) return disconnected('devServerOnly')
   try {
     const res = await useServer().fetch(EXEC_LOCAL_ID, 'status')
@@ -38,7 +35,6 @@ async function probe(): Promise<LocalEnvStatus> {
   }
 }
 
-/** Client of the plugin's routes (see src/node/server.ts). */
 export function createLocalEnv(): LocalEnv {
   let status: Promise<LocalEnvStatus> | undefined
   let languages: string[] = []
@@ -64,7 +60,6 @@ export function createLocalEnv(): LocalEnv {
   const executor: Executor = {
     id: CONTAINER_EXECUTOR_ID,
     runsIn: 'machine',
-    // Languages are known once the status probe has answered; until then the router falls back.
     supports: lang => languages.includes(languageId(lang)),
     run: (request, signal) => service.run(request, signal),
   }

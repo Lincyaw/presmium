@@ -1,11 +1,3 @@
-/**
- * The fallback (docs/design-dsh.md 7.2): with the root layout off and DeepSeek
- * Harness's own layout (`ui-layout`) on, the same panels hang in that layout. The
- * workbench's centre (the launcher, or the document open with its file tree,
- * source, problems and preview) is a global panel of `main`, reached from the
- * sidebar's panel list; the preview and the source are tab types of the right dock
- * (`ctx.sidebarRightTabs`), opened from its guide.
- */
 import { DocumentView, FilesPanel, HomePanel, PreviewPanel, SourcePanel, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import type { ComponentType } from 'react'
@@ -13,7 +5,6 @@ import { Logo } from './brand.tsx'
 import { CLIENT_ID } from './contract.ts'
 import { FRAME_MESSAGES } from './messages.ts'
 
-/** The global panel's key in `main`, and its entry in the sidebar's panel list. */
 export const FALLBACK_PANEL = 'presmium'
 
 function Centre() {

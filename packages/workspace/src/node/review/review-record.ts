@@ -1,17 +1,3 @@
-/**
- * The records of the git reviews under way (docs/architecture.md 10.7): one
- * file per document directory in `${XDG_STATE_HOME:-~/.local/state}/presmium/reviews/`,
- * outside every workspace (an agent cannot reach it), written when a review
- * opens and removed when it ends. A server that crashed (no rollback when it
- * ended) leaves its record: the next process that serves the document finds
- * it, with the process that wrote it gone, and restores the directory from
- * the snapshot it names. The record of a DeepSeek Harness session's review
- * (`session`, docs/design-dsh.md 6.5) also keeps its checkpoints and steps,
- * written again at each step: the next process resumes that review, which
- * waits for the author rather than for a process. The records the assistant
- * wrote before the review moved into the workspace service (WP-96c) are the
- * same file with the same fields, without `session`.
- */
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -20,36 +6,24 @@ import type { Member, ReviewStep } from '@presmium/kernel'
 import type { SavedGuard } from './git-guard.ts'
 import type { GitDirs } from './git-review.ts'
 
-/** What the record of a session's review keeps beside its snapshot, for the process that resumes it. */
 export interface SessionRecord {
-  /** DeepSeek Harness's session. */
   session: string
-  /** The document directory, relative to the workspace root. */
   document: string
   member: Member
-  /** The session's turns the review covers. */
   turns: { from: number, to: number }
-  /** ISO 8601. */
   opened: string
-  /** The trees of the checkpoints after the snapshot, one per step. */
   checkpoints: string[]
   steps: ReviewStep[]
 }
 
 export interface ReviewRecord {
-  /** The document directory (a real path). */
   deck: string
-  /** Its work tree's top and git directories. */
   dirs: GitDirs
-  /** The snapshot: the tree object of the directory when the task started. */
   snapshot: string
   task: string
-  /** The process that holds the review, and when it started (Linux). */
   pid: number
   started?: string
-  /** The repository's git directory as the task found it (a single-deck repository). */
   guard?: SavedGuard
-  /** A session's review: the next process resumes it rather than rolling it back. */
   session?: SessionRecord
 }
 
@@ -59,7 +33,6 @@ export function recordsDir(env: NodeJS.ProcessEnv = process.env): string {
 
 const fileOf = (deck: string) => join(recordsDir(), `${createHash('sha256').update(deck).digest('hex').slice(0, 24)}.json`)
 
-/** When a process started (clock ticks after boot, Linux); undefined elsewhere or when it is gone. */
 export function startTime(pid: number): string | undefined {
   try {
     const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
@@ -69,10 +42,8 @@ export function startTime(pid: number): string | undefined {
   }
 }
 
-/** This process, as its records name it. */
 export const SELF = { pid: process.pid, started: startTime(process.pid) }
 
-/** Whether the process that wrote a record still runs (the same process: same id and start). */
 export function holderRuns(record: ReviewRecord): boolean {
   try {
     process.kill(record.pid, 0)

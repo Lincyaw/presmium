@@ -1,16 +1,7 @@
-/**
- * The time of a lecture being played (`TrackClock`, docs/domain-model.md
- * section 15): `SilentClock` runs on the page's clock, for a lecture with
- * captions only; `MediaClock` follows the audio of a recorded lecture, one
- * file per section, and runs on the page's clock between and after them;
- * `ClipClock` does so with the clips of a synthesized lecture, one per
- * utterance. Times in ms since the lecture started.
- */
 import type { Ref } from 'vue'
 import { shallowRef } from 'vue'
 
 export interface TrackClock {
-  /** The lecture's time now. */
   now(): number
   readonly playing: Readonly<Ref<boolean>>
   readonly rate: Readonly<Ref<number>>
@@ -18,7 +9,6 @@ export interface TrackClock {
   pause(): void
   seek(t: number): void
   setRate(rate: number): void
-  /** Keeps the media in step; the player calls it every frame while it plays. */
   tick(): void
   dispose(): void
 }
@@ -26,7 +16,6 @@ export interface TrackClock {
 export class SilentClock implements TrackClock {
   readonly playing = shallowRef(false)
   readonly rate = shallowRef(1)
-  /** The time at `since`, and the page time since when it has run. */
   protected at = 0
   protected since = performance.now()
   protected readonly duration: number
@@ -72,14 +61,12 @@ export class SilentClock implements TrackClock {
   }
 }
 
-/** One audio file of the lecture: from `start` for `duration`, ms. */
 export interface ClockMedia {
   url: string
   start: number
   duration: number
 }
 
-/** How far the audio may drift from the clock before it is moved, ms. */
 const DRIFT_MS = 250
 
 export class MediaClock extends SilentClock {
@@ -95,17 +82,14 @@ export class MediaClock extends SilentClock {
     })
   }
 
-  /** The audio that plays at time t. */
   private mediaAt(t: number) {
     return this.media.find(m => t >= m.start && t < m.start + m.duration)
   }
 
-  /** While a file plays, the lecture's time is the file's. */
   override now(): number {
     const current = this.playing.value ? this.mediaAt(super.now()) : undefined
     if (current && !current.el.paused && current.el.readyState >= 2) {
       const t = current.start + current.el.currentTime * 1000
-      // The page clock follows the audio, so it goes on from there between files.
       this.at = Math.min(t, this.duration)
       this.since = performance.now()
       return this.at
@@ -149,7 +133,6 @@ export class MediaClock extends SilentClock {
       const offset = (t - m.start) / 1000
       if (Math.abs(m.el.currentTime - offset) * 1000 > DRIFT_MS) m.el.currentTime = offset
       m.el.playbackRate = this.rate.value
-      // A browser that does not let it play (autoplay rules, no device) leaves the page clock running.
       if (m.el.paused) void m.el.play().catch(() => undefined)
     }
   }
@@ -164,9 +147,4 @@ export class MediaClock extends SilentClock {
   }
 }
 
-/**
- * The clock of a synthesized lecture (`ClipClock`): the clips of its
- * utterances, each from its utterance's time for its length, on the page's
- * clock between them, as a `MediaClock` plays one file per section.
- */
 export class ClipClock extends MediaClock {}

@@ -1,9 +1,3 @@
-/**
- * What the tools that look at a build in a browser share (`presmium-diff`'s
- * web round, `presmium-lecture export`): a static server for a build's output
- * directory, as a static host serves it, and Playwright's Chromium as the
- * deck has it for `slidev export`.
- */
 import { createReadStream, existsSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
@@ -11,7 +5,6 @@ import type { AddressInfo } from 'node:net'
 import { extname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-/** Content types of what a build holds. */
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -38,22 +31,13 @@ const TYPES: Record<string, string> = {
   '.txt': 'text/plain; charset=utf-8',
 }
 
-/** A path the server answers besides the directory's files: a file elsewhere, or a body. */
 export type ServedExtra = { file: string, type?: string } | { body: string | Uint8Array, type: string }
 
 export interface StaticServer {
-  /** `http://127.0.0.1:<port>`. */
   url: string
   close(): Promise<void>
 }
 
-/**
- * Serves `root` on a free port of this machine under the public base it was
- * built for (`base`, `/` or `/<path>/`): a directory answers with its
- * `index.html`, a path outside the base or of no file with `404.html` when
- * the build has one (404 either way); nothing outside `root` is served.
- * `extra` answers further paths (e.g. an encoder page and its module).
- */
 export async function serveDirectory(root: string, options: { base?: string, extra?: Record<string, ServedExtra> } = {}): Promise<StaticServer> {
   const dir = resolve(root)
   const base = options.base ?? '/'
@@ -95,12 +79,6 @@ export async function serveDirectory(root: string, options: { base?: string, ext
   }
 }
 
-/**
- * Playwright's Chromium (the `chromium` export of `playwright-chromium`), as
- * the deck has it for `slidev export`; else, when `fallbackFrom` is given (a
- * module's `import.meta.url` or a file), as it resolves from there. Throws
- * saying how to install it.
- */
 export async function playwrightChromium<T = unknown>(deckDir: string, fallbackFrom?: string): Promise<T> {
   for (const from of [join(deckDir, 'package.json'), ...fallbackFrom ? [fallbackFrom] : []]) {
     let entry: string

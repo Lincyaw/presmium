@@ -6,10 +6,6 @@ import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, RenderCon
 import { captionTracks, CONTENT_ID, isRemote, languageTag, MEDIA_OPTIONS, mediaFallback, parseCaptions, videoHtml, youtubeId } from '../domain/index.ts'
 import type { MediaKind, MediaOptions } from '../domain/index.ts'
 
-/**
- * A media file named in the deck: a path relative to the source file, or a
- * package path such as `@org/pkg/media/clip.webm` resolved from the deck.
- */
 function resolveMedia(path: string, ctx: DirectiveContext): string | undefined {
   const file = resolve(dirname(ctx.file), path)
   if (existsSync(file) || path.startsWith('.') || isAbsolute(path)) return existsSync(file) ? file : undefined
@@ -22,25 +18,12 @@ function resolveMedia(path: string, ctx: DirectiveContext): string | undefined {
 
 const posix = (path: string) => path.split(sep).join('/')
 
-/** Options of each media directive besides `MEDIA_OPTIONS`: files are strings, read below. */
 const FILE_OPTIONS = {
   video: { 'poster': 'string', 'captions': 'string', 'captions-default': 'string' },
   audio: {},
   animation: { still: 'string' },
 } as const
 
-/**
- * `{video} path`, `{audio} path`, `{animation} path` (P-42). The block is a
- * `PmMedia` figure that draws the media elements, the body its caption. A
- * video's `:poster:` is its cover image, its `:captions:` caption tracks
- * (`en=a.vtt, zh-CN=b.vtt`), `:captions-default:` the language shown at
- * first (docs/ir.md 2.14). Each local file is relative to the source file
- * (or a package path) and declared in `assets` by its prop's path (`src`,
- * `still`, `poster`, `captions.<language>`), so each renderer publishes the
- * file with its output and sets the prop to the published URL; a file that
- * does not exist is an error on the directive's line. An online file, an
- * `http(s)://` URL, stays as it is in every form.
- */
 export function mediaDirective(kind: MediaKind): DirectiveSpec {
   return {
     name: kind,
@@ -53,7 +36,6 @@ export function mediaDirective(kind: MediaKind): DirectiveSpec {
       const media = input.arg?.trim()
       if (!media) report('error', 'needs the path or URL of the media file')
       const assets: Record<string, string> = {}
-      /** The URL of a file a prop names: an online file as it is, a local one relative to the source file, declared in `assets`. */
       const url = (path: string, prop: string) => {
         if (isRemote(path)) return path
         const file = resolveMedia(path, ctx)
@@ -87,13 +69,6 @@ export function mediaDirective(kind: MediaKind): DirectiveSpec {
   }
 }
 
-/**
- * A video with a poster or captions in a notebook (docs/ir.md 2.14): the
- * `<video>` with its `<track>`s as HTML, the tracks labelled in the deck's
- * language. The renderer has copied the files to the notebook's `media/` and
- * set the props to the copies. Other media keep their fallback, a link to
- * the file.
- */
 export function notebookMedia(node: ComponentNode, _block: IRBlock, ctx: RenderContext): unknown {
   const { kind, src, poster, captions, captionsDefault, caption, ...options } = node.props
   if (kind !== 'video' || (!poster && !captions)) return undefined
@@ -102,11 +77,6 @@ export function notebookMedia(node: ComponentNode, _block: IRBlock, ctx: RenderC
   return { cell_type: 'markdown', source: html }
 }
 
-/**
- * ```` ```{youtube} <video id or link> ```` (P-42): a YouTube video in an
- * iframe, `PmYoutube`, in both forms; the body is its caption, `:start:` the
- * second it starts at. Renderers without it (a notebook, an export) link to the video.
- */
 export const youtubeDirective: DirectiveSpec = {
   name: 'youtube',
   arg: true,

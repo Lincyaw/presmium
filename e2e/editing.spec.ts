@@ -1,15 +1,3 @@
-// Editing the source in the browser (P-124, WP-95c; docs/architecture.md 5.11): `presmium serve` of a workspace
-// copied from e2e/fixtures/editing, a git repository of its own, with the assistant installed at its root and the
-// scripted test agent as its runtime. In edit mode a paragraph picked in the preview opens its lines in the source
-// editor; a word changed there and saved (Ctrl+S) shows in the page without a reload; a section added in the source
-// shows in the table of contents; the compilation's problems are listed under the editor and marked on their lines.
-// The uncommitted changes head the history: committed with a line of explanation, the commit is there and undone
-// there; discarded, the content is back as committed. A save while an agent's change task waits for its review is
-// refused with a notice and the author's text stays; once the review is done, the merge keeps both sides' changes.
-// A file an editor on the disk changed while it was open: a save says so, and reloading takes the disk's text; or the
-// merge keeps both; either way the editor has the focus again, and Ctrl+S saves wherever the focus is in the pane.
-// On the home page the file tree opens a document's file on its page in edit mode, and the workspace's
-// configuration in the home page's own editor.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -25,7 +13,6 @@ const FIXTURE = join(ROOT, 'e2e/fixtures/editing')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const AGENT = join(ROOT, 'packages/addon-assistant/test/fixtures/scripted-agent.mjs')
 
-/** The test's environment without Vitest's or Presmium's variables or credentials, then `extra`. */
 function clean(extra: Record<string, string>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -39,7 +26,6 @@ function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-/** The fixture as a workspace in examples/demo/.presmium (VitePress resolves from the demo's node_modules), served. */
 async function serveWorkspace(): Promise<{ dir: string, url: string, child: ChildProcess }> {
   const work = join(ROOT, 'examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
@@ -90,7 +76,6 @@ test.describe('editing the source in the browser', () => {
     for (const path of ['', '.state', '.cache', '.config']) if (served) rmSync(`${served.dir}${path}`, { recursive: true, force: true })
   })
 
-  /** The document's page in edit mode, its entry open in the source editor; the window remembers it was not reloaded. */
   async function editMode(page: Page) {
     await openDevPage(page, `${served!.url}notes/`, page.locator('.pm-workspace-edit').filter({ visible: true }))
     await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
@@ -107,7 +92,6 @@ test.describe('editing the source in the browser', () => {
     const tab = page.getByRole('tablist', { name: '打开的文件' }).getByRole('tab', { name: /^lecture\.md/ })
     await expect(tab).toHaveAttribute('aria-selected', 'true')
 
-    // The block's source position (the IR's): its line, marked, the cursor on it.
     const paragraph = page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '这一段要改的词是' })
     await paragraph.click()
     const line = lecture().split('\n').findIndex(text => text.includes('这一段要改的词是')) + 1
@@ -115,7 +99,6 @@ test.describe('editing the source in the browser', () => {
     await expect(editor.locator('.cm-line.pm-cm-picked')).toHaveText('这一段要改的词是 alpha')
     expect(await paragraph.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid')
 
-    // One word changed: the tab says it is not saved until Ctrl+S; the page follows without a reload.
     await editor.focus()
     await page.keyboard.press('End')
     await page.keyboard.press('Shift+Control+ArrowLeft')
@@ -127,19 +110,16 @@ test.describe('editing the source in the browser', () => {
     expect(lecture()).toContain('这一段要改的词是 omega\n')
     expect(await unreloaded(page)).toBe(true)
 
-    // The compilation's problems: listed under the editor with their file and line, marked on the line once opened.
     const problems = page.getByRole('region', { name: /^问题 \d+$/ })
     const problem = problems.locator('.pm-source__problem').filter({ hasText: 'unknown directive' })
     const more = readFileSync(join(served!.dir, 'notes/pages/more.md'), 'utf8').split('\n').findIndex(text => text.startsWith(':::{nosuch}')) + 1
     await expect(problem.locator('.pm-source__problem-place')).toHaveText(`pages/more.md:${more}`)
-    // Its severity is the host's line icon, not a glyph.
     await expect(problem.locator('svg.pm-source__problem-icon')).toHaveCount(1)
     await expect(problem).not.toContainText(/[●▲○]/)
     await problem.click()
     await expect(page.getByRole('tablist', { name: '打开的文件' }).getByRole('tab', { name: /^pages\/more\.md/ })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.pm-workspace-cursor')).toHaveText(`MyST · UTF-8 · 第 ${more} 行`)
     await expect(editor.locator('.cm-lintRange-error')).toHaveCount(1)
-    // The preview follows the cursor to the included file's page; there the cursor put on a paragraph shows it, marked.
     await expect(page).toHaveURL(/\/notes\/more\.html/)
     await expect(page.locator('.pm-section[data-section="问题"]')).toBeVisible()
     await editor.locator('.cm-line').filter({ hasText: 'quokka' }).click()
@@ -159,7 +139,6 @@ test.describe('editing the source in the browser', () => {
     await page.keyboard.press('Control+s')
     await expect(page.locator('.pm-section__title').filter({ hasText: '新加的一节' })).toBeVisible()
     expect(await unreloaded(page)).toBe(true)
-    // Out of edit mode, the sidebar (the table of contents) has it.
     await page.locator('.pm-workspace-edit').filter({ visible: true }).click()
     await expect(page.locator('.VPSidebar').getByRole('link', { name: '新加的一节' })).toBeVisible()
     expect(await unreloaded(page)).toBe(true)
@@ -181,7 +160,6 @@ test.describe('editing the source in the browser', () => {
     expect(Number(git(served!.dir, ['rev-list', '--count', 'HEAD']).trim())).toBe(Number(before) + 1)
     expect(git(served!.dir, ['log', '-1', '--format=%B'])).toContain('Presmium-Origin: editor')
 
-    // Undone from the history: the file, the page and the editor are as before.
     await revision.getByRole('button', { name: '撤销' }).click()
     await expect(history.locator('.pm-workspace-revision').first()).toHaveAttribute('data-undo', 'undo')
     await expect.poll(lecture).toContain('这一段要改的词是 alpha\n')
@@ -202,7 +180,6 @@ test.describe('editing the source in the browser', () => {
     await page.keyboard.press('Control+s')
     await expect(page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '这一段要改的词是 beta' })).toBeVisible()
 
-    // "Commit 1 change" in the top bar: the changes, to commit or discard.
     const commit = page.getByRole('banner', { name: '编辑' }).getByRole('button', { name: '提交 1 处修改' })
     await commit.click()
     const panel = page.getByRole('dialog', { name: '提交 1 处修改' })
@@ -223,7 +200,6 @@ test.describe('editing the source in the browser', () => {
     await page.keyboard.press('Shift+Control+ArrowLeft')
     await page.keyboard.type('gamma')
 
-    // The agent's change task appends a line to the file and waits for its review, holding the document.
     const assistant = (path: string, body?: unknown) => fetch(`${served!.url}__presmium/presmium.assistant/${path}`, {
       method: body === undefined ? 'GET' : 'POST',
       headers: { 'Presmium-Document': 'notes', ...body === undefined ? {} : { 'Content-Type': 'application/json' } },
@@ -239,7 +215,6 @@ test.describe('editing the source in the browser', () => {
         if (event.type === 'review') break
         if (event.type === 'error') throw new Error(`the task failed: ${event.message}`)
       }
-      // The agent's line is in the file already (the git review shows the change in place).
       expect(lecture()).toContain('AI 写的一行')
       await page.keyboard.press('Control+s')
       const notice = page.locator('.pm-source__notice[data-kind="locked"]')
@@ -248,7 +223,6 @@ test.describe('editing the source in the browser', () => {
       expect(lecture()).toContain('AI 写的一行')
       expect(lecture()).not.toContain('gamma')
 
-      // The review accepted (one commit of the agent's): saving again finds the file changed; merged, both stay.
       expect((await assistant(`tasks/${id}/review`, { accept: true })).status).toBe(204)
       for (;;) {
         const event = await events.next('message', 90_000)
@@ -272,7 +246,6 @@ test.describe('editing the source in the browser', () => {
     expect(lecture()).toContain('AI 写的一行')
   })
 
-  /** Puts the cursor at the end of the paragraph to change, by picking it in the preview. */
   async function atParagraph(page: Page, editor: Locator) {
     await page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '这一段要改的词是' }).click()
     await editor.focus()
@@ -285,7 +258,6 @@ test.describe('editing the source in the browser', () => {
     await atParagraph(page, editor)
     await page.keyboard.type(' 作者的字')
     await expect(dirty(page)).toHaveCount(1)
-    // An editor on the disk changes the file meanwhile.
     writeFileSync(join(served!.dir, 'notes/lecture.md'), lecture().replace(/这一段要改的词是 \S+/, '这一段要改的词是 磁盘'))
     await page.keyboard.press('Control+s')
     const changed = page.locator('.pm-source__notice[data-kind="changed"]')
@@ -296,7 +268,6 @@ test.describe('editing the source in the browser', () => {
     await expect(editor).toContainText('这一段要改的词是 磁盘')
     await expect(editor).not.toContainText('作者的字')
     await expect(dirty(page)).toHaveCount(0)
-    // The focus is back in the editor: the author goes on typing, and Ctrl+S saves.
     await expect(editor).toBeFocused()
     await page.keyboard.press('End')
     await page.keyboard.type(' 再写')
@@ -310,7 +281,6 @@ test.describe('editing the source in the browser', () => {
     const editor = await editMode(page)
     await atParagraph(page, editor)
     await page.keyboard.type(' 我的修改')
-    // An editor on the disk adds a line; the page sees it when the window comes back (and after the compilation it causes).
     writeFileSync(join(served!.dir, 'notes/lecture.md'), `${lecture().trimEnd()}\n\n磁盘编辑器加的一段。\n`)
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))
     const changed = page.locator('.pm-source__notice[data-kind="changed"]')
@@ -320,7 +290,6 @@ test.describe('editing the source in the browser', () => {
     await expect(editor).toContainText('我的修改')
     await expect(editor).toContainText('磁盘编辑器加的一段。')
     await expect(editor).toBeFocused()
-    // Saved from the problems below the editor rather than the editor itself.
     await page.getByRole('region', { name: /^问题 \d+$/ }).locator('.pm-source__problem').first().focus()
     await page.keyboard.press('Control+s')
     await expect(dirty(page)).toHaveCount(0)
@@ -345,7 +314,6 @@ test.describe('editing the source in the browser', () => {
     const source = page.locator('.pm-workbench__source')
     await expect(source.getByRole('textbox', { name: '源码' })).toContainText('title: 编辑验收工作区')
     await expect(page.getByRole('contentinfo', { name: '状态栏' }).locator('.pm-workspace-cursor')).toHaveText(/^YAML · UTF-8 · 第 \d+ 行$/)
-    // Back to the launcher by the activity bar's documents.
     await page.getByRole('navigation', { name: '活动' }).getByRole('button', { name: '文档' }).click()
     await expect(page.locator('.pm-site-home__document[data-document="notes"]')).toBeVisible()
   })

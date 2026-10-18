@@ -1,6 +1,5 @@
 import { deckLocale } from '@presmium/kernel'
 
-/** The line static renderers show for `{terminal}` (docs/ir.md 5.1), in the deck's language. */
 export function terminalFallback(name: string, lang: string | undefined): string {
   return deckLocale(lang) === 'en'
     ? `Terminal of the environment ${name}: open it in the web page or the slides.`

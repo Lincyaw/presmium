@@ -1,4 +1,3 @@
-// The presmium-policy row: src/node/policy.ts (docs/design-dsh.md 6.2).
 import { load } from './load.mjs'
 
 const row = await load('policy.ts')

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// The notes of one place (P-63): a section, or a labelled block of it. Only their author sees them.
-// The notes layer gives the spot its notes and the store they are kept in.
 import { useMessages } from '@presmium/host'
 import type { ClassroomStore, StoredItem } from '@presmium/kernel'
 import { ref } from 'vue'
@@ -12,12 +10,9 @@ import './style.css'
 const props = defineProps<{
   section: string
   block?: string
-  /** What the notes are about, for the button's accessible name. */
   label: string
-  /** The notes of this place, oldest first. */
   notes: StoredItem<Note>[]
   store: ClassroomStore
-  /** The notes also go to the participant's own store of the classroom. */
   inClassroom: boolean
 }>()
 
@@ -70,7 +65,6 @@ function add(): void {
   font-size: 0.8rem;
   line-height: 1.5;
 }
-/* The toggle reads quieter until it is used or the place has notes. */
 .pm-note-spot__toggle {
   color: var(--pm-color-muted);
 }
@@ -81,7 +75,6 @@ function add(): void {
 .pm-note-spot__count {
   margin-left: 0.25rem;
 }
-/* A note is the reader's own: a slip of the warm tint on the paper. */
 .pm-note-spot__panel {
   box-sizing: border-box;
   width: 100%;

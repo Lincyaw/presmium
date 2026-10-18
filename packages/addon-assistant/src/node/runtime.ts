@@ -1,17 +1,3 @@
-/**
- * `AGENT_RUNTIME` (docs/architecture.md 4.8): the ACP client
- * (`@agentclientprotocol/sdk`). Each session is an agent process of its own
- * (the bundled DeepSeek Harness, or the operator's replacement), started
- * with the environment `launch` gives, initialized, and given one ACP
- * session: `cwd` the session's directory, `mcpServers` Presmium's MCP
- * endpoint with the session's token. A task's prompt goes as text; the
- * agent's committed messages become `message` events (with their
- * citations), its tool calls `progress` events (`call` is the tool call's
- * id). The agent's permission requests are classified by the tool call it
- * announced (./permissions.ts) and confirmed through the session's
- * `approve`; only one-shot options are ever chosen. Cancelling sends
- * `session/cancel`; closing ends the session and the process.
- */
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { Readable, Writable } from 'node:stream'
@@ -24,26 +10,21 @@ import type { ToolCallInfo } from './permissions.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
-/** How a session's agent starts. */
 export interface Launch {
   command: string
   args: string[]
   env: Record<string, string>
-  /** Called once the process ended, e.g. to stop a model relay. */
   close?(): Promise<void>
 }
 
 export interface AcpRuntimeOptions {
   provider: string
   launch(options: AgentSessionOptions): Promise<Launch>
-  /** The deck's language: the prompt asks for answers in it; approvals are worded in it. */
   lang?: string
-  /** Refused outright. */
   operatorDir?: string
   log: Logger
 }
 
-/** An async queue of events, ended or failed once. */
 class Channel<T> {
   readonly #items: T[] = []
   #wake?: () => void
@@ -79,10 +60,8 @@ class Channel<T> {
   }
 }
 
-/** The first start of each DeepSeek Harness home, which sets up its profile alone: the others wait for it. */
 const firstStarts = new Map<string, Promise<void>>()
 
-/** `agentInfo` as the runtime's name: its title (or name) and version. */
 function runtimeName(info: { name?: string, title?: string | null, version?: string } | null | undefined): string | undefined {
   const name = info?.title || info?.name
   return name ? `${name}${info?.version ? ` ${info.version}` : ''}` : undefined
@@ -119,11 +98,9 @@ export class AcpRuntime implements AgentRuntime {
     })
     const exited = new Promise<void>(done => child.once('close', () => done()))
     child.once('error', error => log.error(`the agent did not start: ${errorMessage(error)}`))
-    // A process that did not start, or ended, takes no more input: the connection reports it.
     child.stdin.on('error', () => undefined)
     const failure = (error: unknown) => new Error(`${errorMessage(error)}${stderr.trim() ? `\n${stderr.trim().split('\n').slice(-5).join('\n')}` : ''}`)
 
-    /** The tool calls the agent announced, by id. */
     const calls = new Map<string, ToolCallInfo>()
     let current: Channel<AgentEvent> | undefined
     let text = ''

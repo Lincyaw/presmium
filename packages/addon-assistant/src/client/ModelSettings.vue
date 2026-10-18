@@ -1,11 +1,4 @@
 <script setup lang="ts">
-// The model settings of the AI changes (P-111, N-08), in the host's dialog, which its opener opens (`open()`):
-// what is in effect and where it comes from (the environment comes first), and the page's own settings: DeepSeek's
-// official address or a Messages-compatible one with its provider's name, the key, the model's name. The server
-// saves them in the user's configuration directory and the next change task uses them; the page never gets the key
-// back, only whether one is set. A saved key stays only while the service, its provider and its address stay: once
-// one of them changes the key is asked for again, as the server requires. Kept apart from a reader's own model
-// service for questions (./AskSettings.vue).
 import { PmButton, PmDialog, PmField, PmNotice, useMessages, useServer } from '@presmium/host'
 import { computed, ref } from 'vue'
 import { ASSISTANT_ID, ASSISTANT_MESSAGES } from '../domain/index.ts'
@@ -27,7 +20,6 @@ const status = ref('')
 const failure = ref('')
 const busy = ref(false)
 
-/** What is in effect, in words. */
 const effect = computed(() => {
   const now = view.value
   if (!now) return ''
@@ -37,14 +29,12 @@ const effect = computed(() => {
   return t.value.settings.none
 })
 
-/** The service, its provider or its address differ from what was saved: a saved key does not go with them. */
 const changed = computed(() => {
   const saved = view.value?.saved
   if (!saved) return false
   if ((service.value === 'custom') !== Boolean(saved.url)) return true
   return service.value === 'custom' && (url.value.trim() !== (saved.url ?? '') || provider.value.trim() !== (saved.provider ?? ''))
 })
-/** The saved key is kept when the field stays empty. */
 const keeps = computed(() => Boolean(view.value?.saved.key) && !changed.value)
 const keyLabel = computed(() => (view.value?.saved.key && changed.value ? c.value.keyChanged : t.value.settings.key(keeps.value)))
 
@@ -77,7 +67,6 @@ async function call(init?: RequestInit): Promise<void> {
   }
 }
 
-/** Opens the dialog with the settings as the server has them now. */
 async function open(): Promise<void> {
   status.value = ''
   shown.value = true
@@ -157,8 +146,6 @@ defineExpose({ open })
 </template>
 
 <style>
-/* The dialog moves to the end of the document (PmDialog): these rules are not scoped to the opener. */
-/* A long word (the file's path, a variable's name) breaks rather than widening the dialog past a phone's screen. */
 .pm-assistant-model__form {
   display: grid;
   gap: var(--pm-space-3);

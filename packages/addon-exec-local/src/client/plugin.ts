@@ -6,16 +6,6 @@ import { createLocalEnv } from './local-env.ts'
 
 let unregister: Unsubscribe[] = []
 
-/**
- * Provides the `localEnv` service and, when an `executor` router exists, adds
- * the container executor to it as a second implementation (P-22): with a
- * higher priority it replaces the browser executor for the languages its
- * devcontainer runs, but only while a dev server with Docker is behind the deck.
- * Each declared `kind: devcontainer` environment (`ctx.environments`, P-100)
- * gets the same executor under its own id, `presmium.env.<name>`, for code
- * that names it with `:env:`; without such a dev server it is unavailable,
- * and such code shows its recorded output.
- */
 const plugin: PluginDefinition = {
   manifest: {
     id: EXEC_LOCAL_ID,

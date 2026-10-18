@@ -1,11 +1,3 @@
-/**
- * The present view (P-77): full screen, one section at a time, step by step,
- * driven by the keyboard; and the presenter window, which shows the narration
- * of the current step, a preview of the next one and a timer. Windows of the
- * same document in these views follow each other (see `createViewer`).
- * Keys run the named actions of the registry (K-15); plugins add their own,
- * and layers drawn over the views.
- */
 import { PmApprovals } from '@presmium/host'
 import { blockText, sectionNarration } from '@presmium/kernel'
 import type { IRSection } from '@presmium/kernel'
@@ -20,10 +12,8 @@ import type { ViewerAction } from './registry.ts'
 import { useViewer } from './viewer.ts'
 import type { Viewer } from './viewer.ts'
 
-/** Whether the overview of the present view is open; one present view shows at a time. */
 const overview = ref(false)
 
-/** The built-in actions: navigation in both views; leaving, the presenter window and the overview in the present view. */
 export const BUILTIN_ACTIONS: readonly ViewerAction[] = [
   { id: 'next', keys: ['ArrowRight', 'ArrowDown', 'PageDown', ' '], run: (viewer) => { viewer.next() } },
   { id: 'prev', keys: ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'], run: (viewer) => { viewer.prev() } },
@@ -43,7 +33,6 @@ function typing(target: EventTarget | null): boolean {
   return Boolean((target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]'))
 }
 
-/** Keys while the view is shown: the first action of the view bound to the key runs. */
 function useActions(viewer: Viewer, view: string): void {
   const onKey = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || typing(event.target)) return
@@ -72,12 +61,6 @@ function focusables(within: readonly Element[]): HTMLElement[] {
     .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
 }
 
-/**
- * An overlay view is modal (N-06): the page under it is inert, and Tab cycles
- * through the view and what is drawn over it (fixed elements with a higher
- * z-index, such as the presenter panels or a classroom badge). Leaving it
- * gives the focus back to the control that opened it, e.g. the view menu.
- */
 function useModal(root: Readonly<Ref<HTMLElement | undefined>>): void {
   let opener: Element | null = null
   let above: Element[] = []
@@ -125,7 +108,6 @@ function useModal(root: Readonly<Ref<HTMLElement | undefined>>): void {
   })
 }
 
-/** How the content of a slide is fitted to its frame: its layout width, its scale, the height it shows at and its shift to the centre. */
 interface Fitted {
   width?: number
   scale: number
@@ -133,15 +115,6 @@ interface Fitted {
   shift: number
 }
 
-/**
- * Fits the content of a slide to its frame (N-05): content taller than the
- * frame, or wider (a listing or a table whose lines are longer than the
- * frame), is scaled down as a slide is, so nothing is cut off or scrolls at
- * any screen size. Wide content is laid out wider by what it lacks, then the
- * whole is scaled to the frame. Hidden steps keep their place, so the scale
- * is the same at every step. The scaled content's box gets the scaled height,
- * so the frame never overflows.
- */
 function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly<Ref<HTMLElement | undefined>>) {
   const fitted = ref<Fitted>()
   const fit = () => {
@@ -153,7 +126,6 @@ function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly
       width: outer.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight),
     }
     if (available.height <= 0 || available.width <= 0) return
-    // Measured at the frame's width (a transform changes no layout size), then at the width wide content needs.
     inner.style.width = ''
     const wide = Math.max(0, ...[...inner.querySelectorAll<HTMLElement>('pre, table, .pm-block, .pm-mermaid, .pm-math--display')].map(el => el.scrollWidth - el.clientWidth))
     const width = available.width + wide
@@ -162,7 +134,6 @@ function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly
     const scale = Math.min(1, available.width / width, available.height / natural)
     const next = scale < 1 ? { width: wide > 0 ? width : undefined, scale, height: natural * scale, shift: (available.width - width * scale) / 2 } : undefined
     if (JSON.stringify(next) !== JSON.stringify(fitted.value)) fitted.value = next
-    // The render sets the same width; it does not patch a style that has not changed.
     else if (next?.width) inner.style.width = `${next.width}px`
   }
   let observer: ResizeObserver | undefined
@@ -178,11 +149,6 @@ function useFit(frame: Readonly<Ref<HTMLElement | undefined>>, content: Readonly
   return fitted
 }
 
-/**
- * The height of an overlay view's control bar, as the CSS variable
- * `--pm-overlay-bar` of the page (`<html>`), so what lies over the view in
- * the body (e.g. a classroom badge) keeps clear of it.
- */
 function useOverlayBar(bar: Readonly<Ref<HTMLElement | undefined>>): void {
   const root = () => document.documentElement.style
   let observer: ResizeObserver | undefined
@@ -200,11 +166,9 @@ function useOverlayBar(bar: Readonly<Ref<HTMLElement | undefined>>): void {
   })
 }
 
-/** The current section and step, given to the components inside as `SECTION_CONTEXT` of view `view`. */
 function useCurrent(viewer: Viewer, view: string) {
   const section = computed(() => viewer.section(viewer.position.value.section))
   const step = computed(() => viewer.position.value.step)
-  // Rendered only while the section exists.
   provide(SECTION_CONTEXT, { section: section as Readonly<Ref<IRSection>>, step, view: computed(() => view) })
   return { section, step }
 }
@@ -221,7 +185,6 @@ function layers(view: string) {
   return listLayers(view).map(layer => h(layer.component, { key: layer.id, view }))
 }
 
-/** Moves the focus among the overview's sections with the arrow keys, Home and End; returns whether it handled the key. */
 function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
   const items = [...root?.querySelectorAll<HTMLElement>('.pm-overview__item') ?? []]
   if (!items.length) return false
@@ -250,7 +213,6 @@ export const PresentView = defineComponent({
       root.value?.focus()
     }
     useActions(viewer, 'present')
-    // While the overview is open, keys move through it instead of running actions; Enter picks a section.
     const onOverviewKey = (event: KeyboardEvent) => {
       if (!overview.value || event.key === 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return
       event.stopImmediatePropagation()
@@ -292,7 +254,6 @@ export const PresentView = defineComponent({
         'data-step': step.value,
       }, [
         h('div', { ref: frame, class: 'pm-present__slide' }, [
-          // Scaled, the content's box is as tall as it shows and clips the content's unscaled layout box.
           h('div', { class: 'pm-present__fit', style: fitted.value ? { height: `${fitted.value.height}px`, overflow: 'clip' } : undefined }, h('div', {
             key: current.id,
             ref: content,
@@ -304,7 +265,6 @@ export const PresentView = defineComponent({
             h('h1', { class: 'pm-present__title' }, current.title),
             ...visuals(current, step.value),
           ])),
-          // The overview lies over the slide, which keeps its state underneath.
           overview.value
             ? h('div', { 'class': 'pm-overview', 'role': 'dialog', 'aria-label': t.present.overview }, h('ol', { class: 'pm-overview__grid' }, sections.map(s => h('li', { key: s.id }, h('button', {
                 'type': 'button',
@@ -323,7 +283,6 @@ export const PresentView = defineComponent({
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
           button(t.present.fullscreen, () => void root.value?.requestFullscreen?.().catch(() => {})),
           button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
-          // The view covers the page's toolbar: approvals (e.g. an agent's navigate) are answered here.
           h(PmApprovals, { placement: 'above' }),
         ]),
         ...layers('present'),
@@ -355,10 +314,6 @@ export const PresenterView = defineComponent({
     })
     onBeforeUnmount(() => clearInterval(timer))
 
-    /**
-     * What comes next: the narration of the next step, or the next section.
-     * The narration a pass moved into a component (a reveal's, in `PmPredict`) counts.
-     */
     const upcoming = computed(() => {
       const t = messages()
       const next = nextPosition(viewer.doc.value, viewer.position.value)
@@ -384,7 +339,6 @@ export const PresenterView = defineComponent({
           h(PmApprovals),
         ]),
         h('div', { class: 'pm-presenter__main' }, [
-          // What the audience sees: the section's title, then its visual blocks at this step.
           h('div', { key: current.id, class: 'pm-presenter__slide' }, [h('h1', { class: 'pm-present__title' }, current.title), ...visuals(current, step.value)]),
           h('div', { class: 'pm-presenter__side' }, [
             h('p', { class: 'pm-presenter__label' }, t.presenter.notes),

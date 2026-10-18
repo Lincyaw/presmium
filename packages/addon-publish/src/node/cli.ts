@@ -7,8 +7,6 @@ import { visualDiff } from './diff.ts'
 import { exportDeck } from './export.ts'
 import { EXPORT_TIMEOUT, EXPORT_WAIT, isDeck } from './slides.ts'
 
-// Exit codes as in `presmium check`: 0 ok, 1 problems found, 2 usage or runtime error.
-
 const EXPORT_USAGE = `Usage: presmium-export [deckDir] [--format pdf|png] [--output <file.pdf | dir>] [--with-clicks] [--range <1,3-5>] [--dark] [--wait <ms>] [--timeout <ms>] [--json]
 
 Renders the deck with the slides renderer and exports the Slidev deck it
@@ -34,7 +32,6 @@ fails (exit 2). Both commits render with the host and addons
 installed for the deck; --install renders each commit with the dependencies of
 its own pnpm lockfile instead, e.g. to check a host or addon upgrade.`
 
-/** A path relative to the working directory when it lies inside it. */
 function shown(file: string): string {
   const rel = relative(process.cwd(), file)
   return rel === '' ? '.' : rel.startsWith('..') || isAbsolute(rel) ? file : rel

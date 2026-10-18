@@ -1,12 +1,3 @@
-/**
- * Recording a lecture in the present view (P-90, docs/ir.md section 9):
- * the microphone (echo cancellation and noise suppression on), optionally a
- * camera and the screen, one file of each per section; every operation the
- * page reports (`OPERATIONS`) as an event at its time. The media goes to the
- * server as it is recorded, every few seconds; at the end the server writes
- * `lectures/<id>/track.json`. Recording one section again replaces that
- * section of an existing lecture and stops when the presenter leaves it.
- */
 import type { Operations, ServerClient } from '@presmium/host'
 import type { IRDocument, Operation, TrackEvent } from '@presmium/kernel'
 import { shallowRef } from 'vue'
@@ -15,7 +6,6 @@ import type { MediaSegment, Recording, VideoSegment } from '../domain/index.ts'
 import type { Capture, Chunk } from './media.ts'
 import { captureAudio, captureVideo } from './media.ts'
 
-/** How often the recorded media goes to the server, ms. */
 const UPLOAD_MS = 5000
 
 export type RecorderState = 'starting' | 'recording' | 'saving' | 'saved' | 'failed'
@@ -23,28 +13,22 @@ export type RecorderState = 'starting' | 'recording' | 'saving' | 'saved' | 'fai
 export interface RecorderOptions {
   server: ServerClient
   operations: Operations
-  /** The document and the position now. */
   doc: () => IRDocument
   position: () => { section: string, step: number }
-  /** Who speaks: the member's name. */
   speaker?: string
   camera?: boolean
   screen?: boolean
-  /** Record the current section of this lecture again. */
   track?: string
 }
 
 type Source = 'audio' | 'camera' | 'screen'
 
-/** One file of a section being recorded. */
 interface Segment {
   source: Source
   section: string
-  /** ms since the recording started. */
   start: number
   end?: number
   capture: Capture
-  /** Its path in the lecture's directory, once the server named it. */
   src: Promise<string>
   pending: Chunk[]
   stopped?: Promise<void>
@@ -60,17 +44,13 @@ async function answer<T>(response: Promise<Response>): Promise<T> {
 export class LectureRecorder {
   readonly state = shallowRef<RecorderState>('starting')
   readonly error = shallowRef<string>()
-  /** ms recorded. */
   readonly elapsed = shallowRef(0)
   id?: string
-  /** The section recorded again, in that mode. */
   readonly section?: string
-  /** The section being recorded now. */
   private current?: string
 
   private readonly options: RecorderOptions
   private readonly events: TrackEvent[] = []
-  /** The page time (`performance.now()`) at which each pointer path about to be reported began, by its data. */
   private readonly paths = new WeakMap<object, number>()
   private readonly segments: Segment[] = []
   private streams: Partial<Record<Source, MediaStream>> = {}
@@ -78,7 +58,6 @@ export class LectureRecorder {
   private timers: ReturnType<typeof setInterval>[] = []
   private unsubscribe?: () => void
   private uploading = Promise.resolve()
-  /** Moves to other sections, in order. */
   private rotating = Promise.resolve()
   private stopping?: Promise<void>
 
@@ -87,15 +66,12 @@ export class LectureRecorder {
     if (options.track) this.section = options.position().section
   }
 
-  /** ms since the recording started, whole. */
   now(): number {
     return Math.round(performance.now() - this.t0)
   }
 
   async start(): Promise<void> {
     try {
-      // The screen first: sharing it needs the click that started the recording (transient
-      // activation), which waiting for the presenter to allow the microphone could outlast.
       if (this.options.screen) this.streams.screen = await navigator.mediaDevices.getDisplayMedia({ video: true })
       this.streams.audio = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
       if (this.options.camera) this.streams.camera = await navigator.mediaDevices.getUserMedia({ video: true })
@@ -115,16 +91,10 @@ export class LectureRecorder {
     }
   }
 
-  /**
-   * Says when a pointer path began (page time) before it is reported as
-   * `point` with `data`: the path is reported once it ends, a while after its
-   * last move, and its event is at its start (docs/ir.md 9.2).
-   */
   pathStarted(data: Record<string, unknown>, at: number): void {
     this.paths.set(data, at)
   }
 
-  /** Ends the recording, uploads what is left and writes the track; resolves when it is saved. */
   stop(): Promise<void> {
     this.stopping ??= this.finish()
     return this.stopping
@@ -136,7 +106,6 @@ export class LectureRecorder {
 
   private record({ type, data }: Operation): void {
     if (this.state.value !== 'recording') return
-    // A pointer path is reported when it ends: its event is at its start, which the panel gave, else its length earlier.
     const began = this.paths.get(data)
     const path = type === 'point' && Array.isArray(data.path) ? data.path as [number, number, number][] : undefined
     const t = Math.max(0, Math.round(began !== undefined ? began - this.t0 : this.now() - (path?.at(-1)?.[0] ?? 0)))
@@ -154,7 +123,6 @@ export class LectureRecorder {
     this.events.push([t, type, data])
   }
 
-  /** Starts the files of a section: the microphone's, and the camera's and the screen's when they record. */
   private async open(section: string): Promise<void> {
     const start = this.now()
     const sources: Source[] = ['audio', ...this.streams.camera ? ['camera' as const] : [], ...this.streams.screen ? ['screen' as const] : []]
@@ -187,7 +155,6 @@ export class LectureRecorder {
     return segment.stopped
   }
 
-  /** The presenter moved to another section: its own files begin, the others end. */
   private async rotate(section: string): Promise<void> {
     const open = this.segments.filter(s => s.end === undefined)
     open.forEach(s => s.end = this.now())
@@ -195,7 +162,6 @@ export class LectureRecorder {
     await Promise.all(open.map(s => this.close(s)))
   }
 
-  /** Sends what was recorded since the last upload: adjoining chunks of a file in one request. */
   private upload(): Promise<void> {
     this.uploading = this.uploading.then(async () => {
       for (const segment of this.segments) {

@@ -1,14 +1,3 @@
-/**
- * The plugin's side of its helper process (./helper.ts, docs/architecture.md
- * 10.6): started with `PATH`, `HOME` and `DELTABOX_STATE_DIR` only, in a
- * process group of its own (a Ctrl-C of the terminal reaches `presmium`,
- * which closes its reviews, not the helper), through jiti as the CLI loads
- * TypeScript. One helper per state directory and process, started on first
- * use; it keeps `presmium` running only while a request is under way. When
- * nothing else keeps `presmium` running, its helpers are closed and waited
- * for; a helper whose `presmium` ended otherwise (a signal, `process.exit`)
- * ends its sessions alone once its standard input closes.
- */
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
@@ -24,12 +13,10 @@ import { orphans } from './records.ts'
 const HELPER = fileURLToPath(new URL('./helper.ts', import.meta.url))
 const JITI = pathToFileURL(join(dirname(createRequire(import.meta.url).resolve('jiti/package.json')), 'lib/jiti-register.mjs')).href
 
-/** The helper's whole environment. */
 function helperEnv(stateDir: string): Record<string, string> {
   return { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: homedir(), DELTABOX_STATE_DIR: stateDir }
 }
 
-/** What decides a host's qualification within one boot: the boot, deltabox's version and this plugin's. */
 function hostKey(): string {
   const require = createRequire(import.meta.url)
   const versions = [require('deltabox-lite/package.json'), require('../../package.json')].map(pkg => (pkg as { version: string }).version)
@@ -42,13 +29,6 @@ function hostKey(): string {
 
 const probes = new Map<string, Probe>()
 
-/**
- * Whether this host qualifies (`helper.ts probe`, which first restores the
- * sessions crashed helpers left). Asked once per state directory and
- * process; a host that qualified is not asked again in the same boot unless
- * a crash left sessions behind. macOS is not asked: it stays off until
- * verified there.
- */
 export function probe(stateDir: string, log?: Logger): Probe {
   let found = probes.get(stateDir)
   if (!found) probes.set(stateDir, found = process.platform === 'darwin' ? { ok: false, reason: 'macos', detail: process.arch } : ask(stateDir, log))
@@ -64,7 +44,6 @@ function ask(stateDir: string, log?: Logger): Probe {
   } catch {}
   mkdirSync(join(stateDir, 'presmium'), { recursive: true })
   const result = spawnSync(process.execPath, ['--import', JITI, HELPER, 'probe'], { env: helperEnv(stateDir), encoding: 'utf8', timeout: 120_000 })
-  // What the helper says on the way (a crashed session it could not restore) goes to the startup log.
   for (const line of (result.stderr ?? '').split('\n')) if (line.trim()) log?.warn(line)
   try {
     const found = JSON.parse(result.stdout.trim().split('\n').at(-1)!) as Probe
@@ -81,7 +60,6 @@ interface Pending {
   reject(error: Error): void
 }
 
-/** The helper of one state directory: requests as calls, a running request cancelled with its signal. */
 export class Helper {
   #child?: ChildProcess
   readonly #pending = new Map<number, Pending>()
@@ -156,11 +134,6 @@ export class Helper {
     return child
   }
 
-  /**
-   * Ends the helper: it rolls back its reviews and stops its sessions, and
-   * this process keeps running until it has (for at most `CLOSING_MS`, then
-   * the helper finishes alone).
-   */
   close(): void {
     const child = this.#child
     if (!child || this.#closing) return
@@ -171,7 +144,6 @@ export class Helper {
     child.stdin!.end()
   }
 
-  /** The helper keeps this process running only while a request is under way (or it is closing). */
   #hold(busy: boolean): void {
     const child = this.#child
     if (!child) return
@@ -186,12 +158,10 @@ const CLOSING_MS = 30_000
 
 const helpers = new Map<string, Helper>()
 
-// Once nothing else keeps this process running, its helpers end, and it waits for them.
 process.on('beforeExit', () => {
   for (const helper of helpers.values()) helper.close()
 })
 
-/** The helper of a state directory in this process. */
 export function helperFor(stateDir: string, log: Logger): Helper {
   let helper = helpers.get(stateDir)
   if (!helper) helpers.set(stateDir, helper = new Helper(stateDir, log))

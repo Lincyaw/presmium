@@ -1,31 +1,3 @@
-/**
- * A classroom in the browser: the `session` and `classroomStore` services
- * over one Yjs document per room, synced with the classroom server by a
- * y-websocket provider. The presenter publishes the position of their window
- * (the hosts' `navigation` service); learners who follow are moved there. In
- * the slides form the presenter's Slidev state (navigation, drawings, ...)
- * also reaches the learners, as a `SyncTransport`. Each participant also has
- * a document of their own (`personal`), in a room named by a key only they
- * know, connected when it is first used; archiving the classroom frees it.
- * The presenter's window claims the room with a key of its own, which
- * archiving the classroom takes; the classroom server takes the presenter's
- * writes only with that key, and a learner's only under the learner's id,
- * proved by the learner's key. When the server refuses an update it closes
- * the connection, and the window starts again from the room's document. The
- * document's layout is in `./document.ts`.
- *
- * Membership (room, participant, keys, following) is kept per deck and room
- * in the browser's `localStorage`, until the participant leaves or the
- * classroom is archived: a reload keeps the tab's place, a join link to a
- * room the browser is in brings back the same participant, and a presenter
- * whose window was closed can rejoin as presenter. Other tabs of the deck in
- * the presenter's browser, such as a projector window opened by URL, show the
- * classroom as the presenter's windows: a tab in no classroom asks the deck's
- * other tabs (a BroadcastChannel), and an open presenter window answers with
- * its membership. Such a mirror shows what the presenter sees but does not
- * move the learners: only the window that created or rejoined the classroom
- * publishes its position.
- */
 import { currentLocale } from '@presmium/host'
 import type { Navigation, SyncTransport } from '@presmium/host'
 import { errorMessage } from '@presmium/kernel'
@@ -38,30 +10,20 @@ import type { ClassroomSession, ClassroomSnapshot, FollowMode, Position, Session
 import { channel, collection, endSession, publishCursor, readSession, sessionMap, startSession, writeChannel } from './document.ts'
 
 export interface ClassroomOptions {
-  /** WebSocket URL of the classroom server; none (until `serve` gives one): creating and joining fail. */
   server?: string
-  /** Query parameters every request to the classroom server carries, e.g. the document a page's own server serves (`?document=`). */
   params?: Record<string, string>
-  /** This window's position; without it nobody follows. */
   navigation?: Navigation
-  /** The deck's base URL, for join links. */
   base: string
-  /** Keeps memberships across tabs and restarts (`localStorage`). */
   storage?: Storage
-  /** Remembers this tab's classroom across reloads (`sessionStorage`). */
   tabStorage?: Storage
-  /** How long creating or joining waits for the server. Default 10 s. */
   timeoutMs?: number
 }
 
 export interface Classroom {
   session: ClassroomSession
   store: ClassroomStore
-  /** Joins the host's synchronized state to the classroom (the `syncTransports` service). */
   transport: SyncTransport
-  /** Joins the classroom of a join link (`?room=&name=`), or the one this tab was in before a reload. */
   resume(search: string): Promise<void>
-  /** Uses this classroom server from now on (the page's own server's, found after the classroom was made); before any classroom is entered. */
   serve(server: string, params?: Record<string, string>): void
   dispose(): void
 }
@@ -70,35 +32,23 @@ interface Membership {
   server: string
   room: string
   me: Participant
-  /** Names the participant's own room, `<room>.<key>`; never shared. */
   key: string
-  /** The presenter's key to the room, which the classroom server asks for to archive it. */
   claim?: string
-  /** A learner's choice, kept across reloads. */
   follow?: FollowMode
-  /** When it was stored, to offer the latest classroom to rejoin. */
   at?: number
 }
 
-/** A synchronized channel of the slides form. */
 interface Link {
   receive(patch: Record<string, unknown>): void
-  /** The latest local state, written to the room when the presenter starts it. */
   state: Readonly<Record<string, unknown>>
 }
 
-/** What the deck's tabs in one browser tell each other about the presenter's classroom. */
 type TabMessage =
-  /** A tab in no classroom asks whether a presenter window is open. */
   | { type: 'who' }
-  /** A presenter window answers, or has started or rejoined a classroom. */
   | { type: 'presenter', membership: Membership }
-  /** A presenter window has left its classroom. */
   | { type: 'left', room: string }
 
-/** The classroom server closes the connections of an archived classroom with this code. */
 const ARCHIVED_CLOSE_CODE = 4410
-/** The classroom server closes a connection with this code when it refused one of its updates. */
 const REFUSED_CLOSE_CODE = 4403
 
 const messages = (): SessionMessages => MESSAGES[currentLocale()]
@@ -112,7 +62,6 @@ function observe(map: Y.Map<unknown>, handler: (event: Y.YMapEvent<unknown>, tra
   return () => map.unobserve(handler)
 }
 
-/** Runs a storage access; storage can be missing or refuse (private mode, quota). */
 function stored<T>(access: () => T): T | undefined {
   try {
     return access()
@@ -121,10 +70,6 @@ function stored<T>(access: () => T): T | undefined {
   }
 }
 
-/**
- * A `classroomStore` over the document that `doc` returns; `rebind` moves its
- * subscribers to a new document. `checkWrite` throws when writing is refused.
- */
 function documentStore(doc: () => Y.Doc, checkWrite: () => void): { store: ClassroomStore, rebind(): void } {
   const listeners = new Map<string, Set<() => void>>()
   let detach: (() => void)[] = []
@@ -170,32 +115,24 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   let personalDoc = new Y.Doc()
   let provider: WebsocketProvider | undefined
   let personalProvider: WebsocketProvider | undefined
-  /** The attempt to enter a classroom in progress; `disconnect` aborts it. */
   let entering: AbortController | undefined
   let membership: Membership | undefined
-  /** This tab shows the classroom of the presenter's window in this browser and publishes nothing. */
   let mirror = false
   let connection: ClassroomSnapshot['connection'] = 'offline'
   let follow: FollowMode = 'follow'
   let invitation: string | undefined
   let error: string | undefined
-  /** The server refused a write of this window since its last write. */
   let refused = false
-  /** A join link to a classroom this browser presents: the one to offer to rejoin. */
   let preferred: string | undefined
-  /** The presenter position this window last went to. */
   let followed: Position | undefined
 
   const listeners = new Set<(snapshot: ClassroomSnapshot) => void>()
   const links = new Map<string, Link>()
-  /** Observers on the current document, removed when it is replaced. */
   let detach: (() => void)[] = []
 
-  // Memberships, per deck and room in localStorage; this tab's room in sessionStorage.
   const prefix = `presmium.session:${new URL(options.base).pathname}`
   const usable = (value: Membership | null | undefined) => (value && value.server === server && value.room && value.me?.id && value.key ? value : undefined)
   const remembered = (room: string) => stored(() => usable(JSON.parse(options.storage?.getItem(`${prefix}:${room}`) ?? 'null') as Membership | null))
-  /** The classroom this browser created on this server that a window can rejoin as presenter: that of the join link, else the latest. */
   function presented(): Membership | undefined {
     const keys = stored(() => Array.from({ length: options.storage?.length ?? 0 }, (_, i) => options.storage!.key(i) ?? '')) ?? []
     const rooms = preferred ? [preferred] : keys.filter(key => key.startsWith(`${prefix}:`)).map(key => key.slice(prefix.length + 1))
@@ -203,7 +140,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       .filter((value): value is Membership => value?.me.role === 'presenter' && value.claim !== undefined)
       .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))[0]
   }
-  /** Keeps this window's membership; a mirror keeps none of its own. */
   function remember(): void {
     if (!membership || mirror) return
     const value: Membership = { ...membership, follow, at: Date.now() }
@@ -245,7 +181,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
   const active = () => membership !== undefined && sessionStatus(readSession(doc)) === 'active'
   const following = () => role() === 'learner' && follow === 'follow' && active()
 
-  // The shared collections take no writes once the classroom has ended (the server refuses them too).
   const shared = documentStore(() => doc, () => {
     if (membership && !active()) throw new Error(messages().errors.ended)
     if (refused) {
@@ -253,13 +188,11 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       notify()
     }
   })
-  // The participant's own room is connected when the store is first used in a classroom.
   const personal = documentStore(() => {
     if (membership && server && !personalProvider) personalProvider = new WebsocketProvider(server, `${membership.room}.${membership.key}`, personalDoc, { params })
     return personalDoc
   }, () => {})
 
-  /** Moves a following learner to the presenter's position when it changed (or always, when `force`). */
   function followPresenter(force = false): void {
     const target = followTarget(membership?.me, follow, readSession(doc))
     if (!target || !navigation || (!force && samePosition(target, followed))) return
@@ -267,7 +200,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     navigation.go(target)
   }
 
-  /** The presenter's position goes to the room. */
   function publish(): void {
     if (navigation && role() === 'presenter' && !mirror && active()) publishCursor(doc, navigation.position.value)
   }
@@ -280,7 +212,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     }))
   }
 
-  /** A learner who starts or resumes following gets the presenter's state of every channel. */
   function deliverChannels(): void {
     if (!following()) return
     for (const [name, link] of links) {
@@ -289,7 +220,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     }
   }
 
-  /** Makes `next` the classroom document: observers move to it, store subscribers see its content. */
   function bind(next: Y.Doc): void {
     detach.forEach(stop => stop())
     detach = []
@@ -323,17 +253,10 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     bindPersonal(new Y.Doc())
   }
 
-  /** The deck's other tabs in this browser; none where BroadcastChannel is missing. */
   const tabs = typeof BroadcastChannel === 'undefined' ? undefined : new BroadcastChannel(prefix)
   const tell = (message: TabMessage) => tabs?.postMessage(message)
-  /** This window presents the classroom: it created or rejoined it, and is no mirror. */
   const presenting = () => membership?.me.role === 'presenter' && !mirror
 
-  /**
-   * Waits until the provider has synced with the server, at most `timeoutMs`;
-   * fails at once for an archived classroom, and when `signal` aborts (the
-   * window left or entered another classroom meanwhile).
-   */
   function synced(connecting: WebsocketProvider, signal: AbortSignal): Promise<void> {
     if (connecting.synced) return Promise.resolve()
     return new Promise((resolve, reject) => {
@@ -366,19 +289,12 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     })
   }
 
-  /**
-   * Connects to a room as `next.me`; `start` makes it a new classroom with
-   * `me` as presenter, `asMirror` shows the presenter's classroom of another
-   * tab. Each call supersedes the one before: what a superseded call does
-   * after it waited stays undone.
-   */
   async function enter(next: Membership, start = false, asMirror = false): Promise<void> {
     if (!server) throw new Error(messages().errors.noServer)
     disconnect()
     const attempt = entering = new AbortController()
     const { room, me, key, claim } = next
     const fresh = new Y.Doc()
-    // Every update goes through the classroom server, which checks who may write it.
     const connecting = new WebsocketProvider(server, room, fresh, { disableBc: true, params: { ...params, participant: me.id, key, ...claim ? { claim } : {} } })
     const current = () => provider === connecting
     provider = connecting
@@ -404,7 +320,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     })
     connecting.on('closed', ({ code }: { code: number }) => {
       if (!current() || !membership) return
-      // The server refused an update this document holds: start again from the room's, and say so.
       if (code === REFUSED_CLOSE_CODE) {
         void enter({ ...membership, follow }, false, mirror).then(() => {
           if (membership?.room !== room || membership.me.id !== me.id) return
@@ -413,7 +328,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
         }, () => {})
         return
       }
-      // An archived classroom: the server is done with it, the document stays readable here.
       connection = 'offline'
       if (!mirror) forget(room)
       notify()
@@ -422,11 +336,9 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     try {
       await synced(connecting, attempt.signal)
     } catch (failure) {
-      // Superseded: another call entered or left meanwhile.
       if (!current()) return
       disconnect()
       error = errorMessage(failure)
-      // A learner can try again from the join form.
       if (me.role === 'learner') invitation = room
       notify()
       throw failure
@@ -436,11 +348,9 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     if (start) startSession(doc, me, Date.now())
     remember()
     if (mirror) {
-      // Shows the presenter's classroom; its windows publish.
     } else if (me.role === 'presenter') {
       tell({ type: 'presenter', membership: membership! })
       publish()
-      // State the presenter's windows had before the classroom started.
       for (const [name, link] of links) writeChannel(doc, name, link.state)
     } else {
       followPresenter(true)
@@ -464,7 +374,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
     },
     async join(room, name) {
       const nickname = name.trim() || messages().defaultName.learner
-      // A participant this browser already is in the room comes back as themselves.
       const before = remembered(room)
       if (before?.me.role === 'learner' && before.me.name === nickname) return enter(before)
       await enter({ server: server ?? '', room, me: { id: randomId(16), name: nickname, role: 'learner' }, key: randomId(24) })
@@ -473,7 +382,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       const before = presented()
       if (!before) throw new Error(messages().errors.noRoom)
       await enter(before)
-      // The classroom server no longer has it (e.g. it restarted): nothing to rejoin.
       if (membership?.room === before.room && readSession(doc).status === undefined) {
         forget(before.room)
         disconnect()
@@ -493,7 +401,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       const response = await fetch(archiveUrl(at, room, params), { method: 'POST', body: claim ?? '' })
         .catch(() => { throw new Error(errors.unreachable(at)) })
       const result = await response.json().catch(() => ({})) as { file?: string }
-      // The classroom server's statuses: not the creator's key, no such room, archived before.
       const refused: Record<number, string> = { 403: errors.notCreator, 404: errors.noRoom, 410: errors.alreadyArchived }
       if (!response.ok || !result.file) throw new Error(refused[response.status] ?? errors.archiveFailed(response.status))
       forget(room)
@@ -522,13 +429,10 @@ export function createClassroom(options: ClassroomOptions): Classroom {
       const link: Link = { receive, state }
       links.set(name, link)
       attachChannel(name, link)
-      // A channel that connects while the learner follows (e.g. a component on a page shown
-      // later) starts from the presenter's state.
       const current = channel(doc, name).toJSON()
       if (following() && Object.keys(current).length > 0) receive(current)
       return (next, fromRemote) => {
         link.state = next
-        // Learners only receive; what another window sent is not the presenter's own change.
         if (!fromRemote && role() === 'presenter' && !mirror && active()) writeChannel(doc, name, next)
       }
     },
@@ -536,8 +440,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
 
   const stopPublishing: Unsubscribe = navigation ? watch(navigation.position, publish) : () => {}
 
-  // A presenter window tells the tabs that ask; a tab in no classroom of its own shows the
-  // presenter's, until the presenter leaves it.
   if (tabs) {
     tabs.onmessage = ({ data }: MessageEvent<TabMessage>) => {
       if (data.type === 'who' && presenting()) tell({ type: 'presenter', membership: membership! })
@@ -559,7 +461,6 @@ export function createClassroom(options: ClassroomOptions): Classroom {
         if (request) {
           const before = remembered(request.room)
           if (before?.me.role === 'presenter') {
-            // The presenter's own link: their open window answers, else the panel offers to rejoin.
             preferred = request.room
             tell({ type: 'who' })
             notify()
@@ -572,14 +473,12 @@ export function createClassroom(options: ClassroomOptions): Classroom {
             notify()
           }
         } else {
-          // A reload of the page keeps this tab's place in its classroom.
           const room = stored(() => options.tabStorage?.getItem(prefix))
           const before = room ? remembered(room) : undefined
           if (before) await enter(before)
           else tell({ type: 'who' })
         }
       } catch {
-        // Reported in the snapshot.
       }
     },
     serve(found, given = {}) {

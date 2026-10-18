@@ -1,12 +1,3 @@
-/**
- * The workspace's browser part in the site's dev servers (`presmium serve`,
- * the site's own plugins' Vite plugins, docs/architecture.md 5.11): the
- * source editor's dependencies (CodeMirror 6 and what it imports, node-diff3)
- * are ES modules served as they are, not optimized. Vite optimizes a
- * dependency it finds after it started (the editor loads with the source
- * pane) by reloading the page, which would leave edit mode. Plain object:
- * `vite` is the web renderer's dependency, not ours.
- */
 const EDITOR_DEPENDENCIES = [
   '@codemirror/autocomplete',
   '@codemirror/commands',

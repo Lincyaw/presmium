@@ -1,14 +1,3 @@
-/**
- * The publication check `presmium.links` (P-54, docs/ir.md 2.11): in the view
- * of each renderer (`viewFor`), so content that only one form shows is
- * checked in that form only, every link, image, card and component asset,
- * and the `href`, `src` and `poster` of raw HTML, must name what exists: a
- * local file in the repository (a directory is published as a list of its
- * files), a `#fragment` of the deck (a section id, a block id, a label or a
- * heading), or a `<document>.md#fragment` of another document of the
- * workspace. A link broken in every form is reported once. With
- * `externalLinks`, lychee checks the external links when it is installed.
- */
 import { execFile, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path'
@@ -20,26 +9,20 @@ import { viewFor } from './renderers.ts'
 import { plainText, slugify, splitSections } from './sections.ts'
 import { Parser, readFrontmatter } from './source.ts'
 
-/** What the publication checks read of a compilation. */
 export interface PublishInput {
   doc: IRDocument
   entry: string
   deckDir: string
   workspaceRoot: string
-  /** The renderers whose views are checked. */
   renderers: string[]
 }
 
-/** URLs with a scheme or protocol-relative: no local file. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/)/i
 const EXTERNAL = /^https?:\/\//i
-/** The attributes of raw HTML that name a file or a place, and those that name a place. */
 const URL_ATTRIBUTES = new Set(['href', 'src', 'poster'])
 const ID_ATTRIBUTES = new Set(['id', 'name'])
-/** Nodes whose `url` names a file or a place: a card's `:link:` too (docs/ir.md 2.10). */
 const LINKED = new Set(['link', 'image', 'definition', 'card'])
 
-/** A problem of a link, with the renderers whose view has it. */
 interface Problem {
   source: SourcePos
   url: string
@@ -82,7 +65,6 @@ export async function checkLinks(input: PublishInput, options: { externalLinks?:
   return findings
 }
 
-/** The URLs a block names itself (its child blocks are walked on their own). */
 function blockUrls(block: IRBlock): string[] {
   const { node } = block
   const urls: string[] = []
@@ -101,7 +83,6 @@ function blockUrls(block: IRBlock): string[] {
   return urls.map(url => url.trim()).filter(Boolean)
 }
 
-/** What is wrong with a URL of a block, or undefined. */
 async function linkProblem(url: string, source: SourcePos, input: PublishInput, anchors: Set<string>, documents: Map<string, Promise<Set<string>>>): Promise<string | undefined> {
   if (REMOTE.test(url)) return undefined
   const hash = url.indexOf('#')
@@ -114,7 +95,6 @@ async function linkProblem(url: string, source: SourcePos, input: PublishInput, 
   const hidden = publishesDirectory(file, input.deckDir) ? unpublishedDirectory(file, input.deckDir) : undefined
   if (hidden) return `${path}: ${hidden}`
   if (!fragment) return undefined
-  // A link into a document: the deck itself, or another document of the workspace.
   const entry = statSync(file).isDirectory() ? join(file, 'lecture.md') : file
   if (extname(entry) !== '.md' || !existsSync(entry)) return undefined
   if (entry === input.entry) return anchors.has(fragment) ? undefined : `${path}#${fragment}: #${fragment} is no section, block, label or heading of the deck`
@@ -122,7 +102,6 @@ async function linkProblem(url: string, source: SourcePos, input: PublishInput, 
   return (await documents.get(entry)!).has(fragment) ? undefined : `${path}#${fragment}: no section, block, label or heading of ${relative(input.workspaceRoot, entry).split(sep).join('/')} has the id ${fragment}`
 }
 
-/** The places of a compiled document a `#fragment` may name: section ids, block ids, labels, headings, footnotes and ids of raw HTML. */
 function documentAnchors(doc: IRDocument): Set<string> {
   const anchors = new Set<string>()
   for (const section of doc.sections) {
@@ -148,11 +127,6 @@ function mdastAnchors(node: MdastNode, anchors: Set<string>): void {
   node.children?.forEach(child => mdastAnchors(child, anchors))
 }
 
-/**
- * The places of another document, read from its source as the compiler
- * splits it (its includes expanded): section ids, labels and headings. Its
- * plugins are not loaded: their directives give no places here.
- */
 async function sourceAnchors(entry: string): Promise<Set<string>> {
   const anchors = new Set<string>()
   try {
@@ -165,24 +139,16 @@ async function sourceAnchors(entry: string): Promise<Set<string>> {
     for (const section of splitSections(children, { entry, title, sectionDepth: depth }, () => {})) anchors.add(section.id)
     for (const node of children) mdastAnchors(node, anchors)
   } catch {
-    // An unreadable document has no places.
   }
   return anchors
 }
 
-/**
- * `presmium check --external-links`: lychee checks the external links when
- * it is installed (a warning for each that fails, on its own line); without
- * it, a note.
- */
 async function externalLinks(urls: Map<string, SourcePos>, entry: string, line: LineFinder): Promise<Finding[]> {
   if (urls.size === 0) return []
   const at = { file: entry, line: 1 }
   if (spawnSync('lychee', ['--version'], { stdio: 'ignore' }).error) {
     return [{ checkId: 'presmium.links', severity: 'info', message: `lychee is not installed: ${urls.size === 1 ? 'the external link was' : `the ${urls.size} external links were`} not checked (install lychee, https://lychee.cli.rs, to check them)`, source: at }]
   }
-  // The URLs on stdin, one per line: lychee checks each of them, where it would take a URL argument for a page to
-  // read and check the links of (F-44).
   const output = await new Promise<{ stdout: string, error?: Error }>((done) => {
     const child = execFile('lychee', ['--format', 'json', '--no-progress', '-'], { maxBuffer: 64 << 20 }, (error, stdout) => done({ stdout, ...error ? { error } : {} }))
     child.stdin?.on('error', () => {})
@@ -203,12 +169,10 @@ async function externalLinks(urls: Map<string, SourcePos>, entry: string, line: 
   })
 }
 
-/** How a URL may be written in the source: as it is, and decoded. */
 function needles(url: string): string[] {
   return [...new Set([url, decode(url)])]
 }
 
-/** Finds the line of a block's source that holds one of `needles` (its first line when none does); reads each file once. */
 export type LineFinder = (source: SourcePos, needles: string[]) => number
 
 export function lineFinder(): LineFinder {

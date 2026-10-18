@@ -5,13 +5,11 @@ import { promisify } from 'node:util'
 
 const exec = promisify(execFile)
 
-/** Runs git in `cwd` and returns its trimmed stdout. */
 export async function git(cwd: string, ...args: string[]): Promise<string> {
   const { stdout } = await exec('git', args, { cwd, maxBuffer: 64 << 20 })
   return stdout.trim()
 }
 
-/** PATH with every `node_modules/.bin` from `dir` upwards first, as package managers set it for scripts. */
 function binPath(dir: string): string {
   const bins: string[] = []
   for (let d = dir; ; d = dirname(d)) {
@@ -21,11 +19,6 @@ function binPath(dir: string): string {
   return [...bins, process.env.PATH ?? ''].join(delimiter)
 }
 
-/**
- * Runs a command installed for `cwd` (e.g. the deck's own `slidev`), with `env`
- * added to the environment. Its output goes to stderr so that our stdout stays
- * machine-readable; rejects when it fails.
- */
 export function run(cwd: string, command: string, args: string[], env: Record<string, string> = {}): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd, env: { ...process.env, ...env, PATH: binPath(cwd) }, stdio: ['ignore', 2, 2] })

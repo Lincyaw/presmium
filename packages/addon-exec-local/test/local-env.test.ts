@@ -1,8 +1,3 @@
-// Builds a MyST test deck that lives in a fresh git repository with a devcontainer definition
-// (`presmium build --to slides`), then starts the real `presmium dev` servers on it. Checks what
-// the compiler records (container output, environment archive) and what the plugin's routes answer
-// (`/__presmium/presmium.execLocal/`; runs are allowed with `--allow operate`); and that the write-back is
-// gone (D-2). Container cases are skipped (and reported as skipped) when no Docker daemon is available.
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -18,21 +13,15 @@ import { imageName } from '../src/node/container.ts'
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))
 const FIXTURE = join(PACKAGE, 'test/fixtures/repo')
-// A fresh repository per run, so parallel runs in one checkout do not share it; the
-// container sees it as /workspaces/repo.
 const SCRATCH = mkdtempSync(join(tmpdir(), 'presmium-local-env-'))
 const REPO = join(SCRATCH, 'repo')
-// The temporary directory of the dev servers, where a run makes its directory.
 const TMP = join(SCRATCH, 'tmp')
 const DEFINITION = readFileSync(join(FIXTURE, '.devcontainer/devcontainer.json'), 'utf8')
-// Ports of WP-89e's range; the dev servers of this file only.
 const SLIDES_PORT = 5333
 const WEB_PORT = 5334
 const ROUTES = '/__presmium/presmium.execLocal'
-// Each run starts in a directory of its own; the workspace is read-only, its modules importable.
 const PYTHON_INFO = 'import os, sys\nprint(os.getcwd(), sys.version_info[:2])\nfrom src.greet import greet\nprint(greet("容器"))'
 const PYTHON_OUTPUT = '/presmium-run (3, 12)\n你好，Presmium\n你好，容器\n'
-// In the environment `box` (the same definition), the code sees the build's variables but its credentials and the host's paths.
 const ENV_INFO = 'import os\nprint(os.environ.get("FIXTURE_PLAIN"), os.environ.get("FIXTURE_API_TOKEN"), os.environ["HOME"] != os.environ.get("FIXTURE_HOST_HOME"))'
 
 const docker = spawnSync('docker', ['version', '--format', '{{.Server.Version}}'], { stdio: 'ignore' }).status === 0
@@ -46,7 +35,6 @@ function git(...args: string[]): string {
 const servers: ChildProcess[] = []
 let ir: IRDocument
 
-/** `presmium dev --to <form>` on the test deck, runs allowed, resolved with the URL of its server. */
 function startDev(form: string): Promise<string> {
   const { NODE_ENV: _test, ...env } = process.env
   const server = spawn(process.execPath, [PRESMIUM_BIN, 'dev', '--to', form, '--allow', 'operate'], { cwd: REPO, env: { ...env, TMPDIR: TMP }, stdio: 'pipe' })
@@ -92,8 +80,6 @@ beforeAll(async () => {
     .replace('__RENDER_WEB__', join(PACKAGES, 'web'))
     .replace('__SLIDES_PORT__', String(SLIDES_PORT))
     .replace('__WEB_PORT__', String(WEB_PORT)))
-  // Compile-time execution in the container (P-22) needs Docker; the deck has it only then. Without
-  // `:executor:`, python3 code goes to the one executor that runs Python, the container's (R-104).
   if (docker) {
     appendFileSync(deck, `\n## 编译时\n\n\`\`\`{code} python\n:run:\n:executor: presmium.container\n${PYTHON_INFO}\n\`\`\`\n`)
     appendFileSync(deck, `\n## python3\n\n\`\`\`{code} python3\n:run:\nprint("python3", 6 * 7)\n\`\`\`\n`)
@@ -132,8 +118,6 @@ describe('container executor (P-22)', () => {
   })
 
   it.skipIf(!docker)('answers a run request as the other executors do: files beside the program, parameters as variables (R-24)', async () => {
-    // The shape of an exercise check (checkRequest of the classroom plugin): the program reads the
-    // learner's code and the checks from files of the request.
     const check = (submission: string) => ({
       lang: 'python',
       code: 'scope = {}\nexec(open("submission.py").read(), scope)\nexec(open("checks.py").read(), scope)\nprint("passed")',
@@ -176,7 +160,6 @@ describe('container executor (P-22)', () => {
 
 describe('workspace (K-13, R-100)', () => {
   it('is published relative to the deck, in the IR and in the slides bundle', () => {
-    // The deck's configuration as the IR and the bundled headmatter of the slides serialize it.
     const written = readdirSync(join(REPO, 'dist'), { recursive: true, withFileTypes: true })
       .filter(entry => entry.isFile() && /\.(json|js)$/.test(entry.name))
       .flatMap(entry => [...readFileSync(join(entry.parentPath, entry.name), 'utf8').matchAll(/"presmium\.execLocal":\s*\{\s*"?workspace"?:\s*["'`]([^"'`]*)/g)])
@@ -216,9 +199,6 @@ describe('the run directory (N-08)', () => {
     expect(await (await running).json()).toMatchObject({ ok: true, stdout: 'slept\n' })
     expect(readdirSync(TMP).filter(name => name.startsWith('presmium-container-'))).toEqual([])
 
-    // Nothing else can place a name in the run directory before the runner's input: it is created in the
-    // private directory above and written at once. The request's own file of that name stands for a link
-    // placed there in advance; the exclusive create refuses either.
     const taken = await (await post(slides, 'run', { lang: 'python', code: 'print("never")', files: { '.presmium/request.json': '{"runs": []}' } })).json()
     expect(taken).toMatchObject({ ok: false, exitCode: null, stdout: '' })
     expect(taken.stderr).toContain('EEXIST')
@@ -257,10 +237,8 @@ describe('environment replicate (P-26)', () => {
     expect(built['.devcontainer/devcontainer.json']).toBe(DEFINITION)
     expect(built['src/greet.py']).toBe(readFileSync(join(FIXTURE, 'src/greet.py'), 'utf8'))
     expect(built['README.md']).toContain('devcontainer exec --workspace-folder . python3 src/greet.py')
-    // The archive built at compile time is in the deck's language (zh-CN by default)...
     expect(built['README.md']).toMatch(/^# Presmium 导出的运行环境\n/)
 
-    // ...the one the dev server builds in the page's.
     const snippet = 'print("snippet")\n'
     const res = await post(slides, 'replicate', { file: 'src/snippet.py', content: snippet, lang: 'python' }, 'en-US')
     expect(res.headers.get('content-type')).toBe('application/zip')

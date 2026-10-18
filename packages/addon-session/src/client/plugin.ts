@@ -19,17 +19,10 @@ function storage(kind: 'localStorage' | 'sessionStorage'): Storage | undefined {
   }
 }
 
-/** How long a page waits for its host to give the server's client. */
 const SERVER_WAIT_MS = 5000
 
-/**
- * The classroom sync of the server that serves the page (`presmium dev`,
- * `presmium serve`): its WebSocket URL at the page's host and the document
- * the page names there; undefined in static output.
- */
 async function ownServer(): Promise<{ server: string, params: Record<string, string> } | undefined> {
   const client = useServer()
-  // The host gives its client as early as it can, which may be after the plugins are set up.
   const available = client.available || await new Promise<boolean>((resolve) => {
     const timer = setTimeout(() => done(false), SERVER_WAIT_MS)
     const stop = watch(() => client.available, ready => ready && done(true))
@@ -46,19 +39,6 @@ async function ownServer(): Promise<{ server: string, params: Record<string, str
   return localServer(answer as unknown as LocalClassroom, location)
 }
 
-/**
- * The classroom session (P-60 to P-62), registered by `setup/main.ts` in the
- * slides form and by the web renderer in the web form. Provides the `session`
- * and `classroomStore` services and shows the classroom in the hosts' toolbar
- * and presenter panels; learners follow the presenter through the hosts'
- * `navigation` service. The hosts' synchronized state (in the slides form,
- * Slidev's navigation, drawings and the stage's screen) reaches the learners
- * through the `syncTransports` service (K-06). The classroom server is the
- * deck's `presmium.session.server` (one on a loopback host is reached at the
- * page's host from other devices); without it, the server that serves the
- * page (`presmium dev`, `presmium serve`) syncs the classroom on its own
- * port; a published deck without it shows no classroom.
- */
 export const sessionPlugin: PluginDefinition = {
   manifest: {
     id: SESSION_ID,
@@ -91,7 +71,6 @@ export const sessionPlugin: PluginDefinition = {
       void classroom.resume(location.search)
       return
     }
-    // A dev server without its own sync shows the session panel with how to set one up.
     void ownServer().then((own) => {
       if (disposed) return
       if (own) classroom.serve(own.server, own.params)

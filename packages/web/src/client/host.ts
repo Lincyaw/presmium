@@ -8,25 +8,14 @@ import { useData } from 'vitepress'
 import { computed, readonly, ref } from 'vue'
 
 export interface ViewerHostOptions {
-  /** The site language, for the server render. */
   lang: string
   shared: SharedStates
 }
 
-/** The role of a view: the presenter window, the audience of an overlay view (the present view), a reader of a page view. */
 function roleOf(view: string): ViewRole {
   return view === 'presenter' ? 'presenter' : getView(view)?.kind === 'overlay' ? 'audience' : 'reader'
 }
 
-/**
- * Host adapter of the web form, fed by the IR runtime: the step of a
- * component is its section's step (every step reached in the document view;
- * the IR runtime gives each block its step scope), the cursor is the
- * enclosing section and its step, and the role is that of the view that
- * renders the component (a reader of the page under the present view stays
- * a reader; outside a section, the active view's). A section's `{config}`
- * comes with its IR section. The web form renders no static copies.
- */
 export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): HostAdapter {
   const overlay = () => getView(viewer.view.value)?.kind === 'overlay'
   const role = computed(() => roleOf(viewer.view.value))
@@ -64,23 +53,10 @@ export function createViewerHost(viewer: Viewer, options: ViewerHostOptions): Ho
     useSharedState: options.shared.sharedState,
     getService: presmiumService,
     startReport: presmiumReport,
-    // The appearance switch of the navigation bar, so `useTheme` changes it as the reader would.
     useDarkMode: () => useData().isDark,
   }
 }
 
-/**
- * The `navigation` service of the web form: the IR runtime's section (by its
- * number, as the slides form counts slides), step and view, and the position
- * by ids (D-4, F-85): the section's id, the keys of the steps reached in it,
- * and for a section only some audiences have, the section to go back to
- * (`FollowAnchor`). Moving switches the view first, unless it is hidden (the
- * presenter window), then shows the position, going to its page if needed. A
- * position with a section id goes by ids (`followedPlace`): the full and the
- * student build number their sections and steps apart; a section this build
- * lacks goes to the end of the one to go back to, or nowhere. A position
- * without an id goes by the numbers.
- */
 export function createViewerNavigation(viewer: Viewer): Navigation {
   const keys = new WeakMap<IRSection, StepKeys>()
   const keysOf = (section: IRSection) => {

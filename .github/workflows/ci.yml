@@ -1,7 +1,3 @@
-# P-146: on every push to main and every pull request, the structure checks and integration tests
-# (`pnpm test`, the consumer install among them), the demo's check and build, the end-to-end tests in
-# Chromium and a dry run of the release. Every night, and when started by hand, the full suite
-# (`pnpm verify`): the smoke tests in Firefox and WebKit too, and the timing tests.
 name: CI
 
 on:
@@ -20,7 +16,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # The ports of the demo's two forms in the end-to-end tests (e2e/urls.ts).
   PRESMIUM_E2E_SLIDES_PORT: '4173'
   PRESMIUM_E2E_WEB_PORT: '4174'
 
@@ -33,7 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # The code references of the demo and the tests read the repository's history.
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4

@@ -1,13 +1,3 @@
-/**
- * The deterministic fake engine (`presmium-speech fake`, docs/architecture.md
- * section 7): a real HTTP service of the OpenAI audio API shape with
- * Presmium's extensions, which the operator defines like any engine
- * (`PRESMIUM_SPEECH_FAKE_URL`, `PRESMIUM_SPEECH_FAKE_PROVIDER`). Synthesis
- * gives a WAV of one tone per word at the fake timing (../domain/words.ts)
- * with the text, voice and words in a chunk `pmfk`, so transcribing it gives
- * them back exactly. One of its voices is a clone. `GET /requests` lists the
- * requests it got (method, path, `Authorization`), for tests to count.
- */
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { SpeechWord, VoiceInfo } from '@presmium/kernel'
@@ -31,7 +21,6 @@ export interface FakeContent {
   words: SpeechWord[]
 }
 
-/** The fake engine's audio of a text. */
 export function fakeAudio(text: string, voice: string, lang: string): { audio: Uint8Array, words: SpeechWord[], duration: number } {
   const { words, duration } = fakeWords(text)
   const samples = new Int16Array(Math.round(duration * RATE))
@@ -43,7 +32,6 @@ export function fakeAudio(text: string, voice: string, lang: string): { audio: U
   return { audio: makeWav(samples, RATE, [{ id: CHUNK, data: new TextEncoder().encode(JSON.stringify(content)) }]), words, duration }
 }
 
-/** What the fake engine embedded in its audio; undefined for other audio. */
 export function fakeContent(bytes: Uint8Array): FakeContent | undefined {
   if (!isWav(bytes)) return undefined
   const chunk = wavChunks(bytes).find(c => c.id === CHUNK)
@@ -56,7 +44,6 @@ export function fakeContent(bytes: Uint8Array): FakeContent | undefined {
 }
 
 export interface FakeEngine {
-  /** The base address to define the engine with (`…/v1`). */
   url: string
   close(): Promise<void>
 }

@@ -1,8 +1,3 @@
-// The upgrade gate's first group (docs/design-dsh.md section 12, WP-96b): the pinned DeepSeek Harness composes
-// Presmium's bundle as designed. `--dump-config` of each carrier has the bundle's rows (the web carrier's two
-// more), the three upload rows off, the skills, sandbox, persona and first-use settings of Presmium's profile
-// patch; headless and acp start without an entry that did not activate; a bundle whose `engines.dsh` the
-// pinned version does not satisfy is refused at installation and skipped at start.
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -12,7 +7,6 @@ import { writeProfile } from '../src/node/launch.ts'
 import { DSH, PACKAGE, rowsOf, testHome } from './harness.ts'
 import type { Service, TestHome } from './harness.ts'
 
-/** The bundle's rows on every carrier, and the web carrier's own. */
 const HOST_ROWS = ['presmium-service', 'presmium-tools', 'presmium-policy', 'presmium-context', 'presmium-skills', 'presmium-turns']
 const WEB_ROWS = ['presmium-workspaces', 'presmium-routes']
 const UPLOADS = ['session-log-deepseek', 'session-telemetry-otel', 'plugin-package-inventory-deepseek']
@@ -65,8 +59,6 @@ describe('[gate] the pinned DeepSeek Harness with Presmium\'s bundle', () => {
   }, 180_000)
 
   it('[gate] refuses to install a bundle the pinned version does not satisfy (engines.dsh), and skips it at start', () => {
-    // This package as it would be with a requirement of another version, under a name of its own: dsh
-    // resolves a profile's bundles from its own installation first, where pnpm hoists `@presmium/dsh` itself.
     const name = '@presmium/dsh-other'
     const other = mkdtempSync(join(home.dir, 'bundle-'))
     cpSync(join(PACKAGE, 'cordis.patch.yml'), join(other, 'cordis.patch.yml'))
@@ -75,7 +67,6 @@ describe('[gate] the pinned DeepSeek Harness with Presmium\'s bundle', () => {
     const installing = spawnSync(process.execPath, [DSH, 'plugin', '--profile', 'presmium-other', 'add', `link:${other}`], { cwd: home.dir, env: home.env(), encoding: 'utf8' })
     expect(installing.status).not.toBe(0)
     expect(`${installing.stdout}${installing.stderr}`).toMatch(/incompatible with dsh 0\.2\.1-alpha\.4[\s\S]*nothing was installed/)
-    // Linked by hand as a launcher links it: the start leaves it out.
     const profile = writeProfile(home.dshHome, 'presmium-linked', 'headless', other)
     writeFileSync(join(profile, 'package.json'), readFileSync(join(profile, 'package.json'), 'utf8').replace('"@presmium/dsh"', JSON.stringify(name)))
     renameSync(join(profile, 'node_modules/@presmium/dsh'), join(profile, 'node_modules', name))

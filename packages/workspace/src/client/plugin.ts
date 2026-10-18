@@ -1,19 +1,4 @@
-/**
- * The workspace's browser plugin (P-120, P-121, P-124, docs/domain-model.md
- * section 14), the site's own plugin in `presmium serve`: it provides
- * `EDIT_MODE` and adds to the shell, for editors and owners only
- * (docs/architecture.md 5.10, 5.11): on a document's page the edit switch,
- * and in edit mode the source editor (its pane, its files' tabs, the cursor's
- * line in the status bar) and "commit N changes"; on the home page the
- * document operations, the agent's draft card, the latest changes, the usage
- * guide, the file tree and the editor of the workspace's configuration; on
- * both the revision history with its undos and redos and the changes not
- * committed at its head, and the git status. `?edit=<path in the document>`
- * opens a document's page in edit mode at that file (the home page's file
- * tree links so).
- *
- * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
- */
+/** @experimental */
 import { currentLocale, EDIT_MODE, TOOLBAR, useServer } from '@presmium/host'
 import type { ToolbarItem } from '@presmium/host'
 import { AGENT } from '@presmium/kernel'
@@ -54,7 +39,6 @@ export const workspacePlugin: PluginDefinition = {
     const toolbar = ctx.tryGet(TOOLBAR)
     if (!toolbar || !server.available) return
     const home = ctx.config.home === true
-    // A link to a file of the document: its page in edit mode, at the file.
     const asked = new URLSearchParams(location.search).get('edit')
     if (!home && asked) {
       requested.value = asked

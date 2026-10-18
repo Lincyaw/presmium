@@ -1,13 +1,3 @@
-/**
- * Passes 3 and 4 (docs/ir.md sections 2.3 to 2.5): turns the nodes of a
- * section into blocks. Directives become IR nodes (built-in `{slide}`,
- * `{only}`, `{hints}`, `{config}`, `{component}`, and the directives of
- * plugins); every block gets its role, narration or visual, and the audiences
- * `:audience:` and `{audience}` give it and its section (docs/ir.md 2.11);
- * `:audience:` on a directive nested deeper marks the nodes it gives, and an
- * `{include}` with `:audience:` is a scope around what it includes.
- * Step numbers are assigned later (see steps.ts) from `reveal`, `group` and `span`.
- */
 import { environmentExecutor, errorMessage, isRecord } from '@presmium/kernel'
 import type {
   BlockRole,
@@ -34,19 +24,14 @@ import { AUDIENCE_SCOPE, audienceList, markAudience, within } from './audience.t
 import { BODY, ROLE, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
 
-/** A block before step scheduling. */
 export interface BlockDraft {
   label?: string
-  /** Prefix of the generated block id, e.g. 'paragraph', 'code', 'pm-demo-stepper'. */
   kind: string
   role: BlockRole
-  /** `:reveal:` on the block itself: it appears at the step after the last one used. */
   reveal: boolean
-  /** Set on every block of a `{slide}` or `{only}` with `:reveal:`: the blocks of a group appear together. */
   group?: number
   span: number
   only?: RendererId[]
-  /** `:audience:` of the block, or of the `{slide}` or `{only}` around it (docs/ir.md 2.11). */
   audience?: string[]
   source: SourcePos
   node: IRNode
@@ -68,17 +53,12 @@ export interface BlockContext {
   entry: string
   deckDir: string
   workspaceRoot: string
-  /** The deck's language (`meta.lang`). */
   lang: string
-  /** Renderer ids `{only}` may name: the built-in ones and those the headmatter configures. */
   renderers: Set<string>
   parser: Parser
   directives: Map<string, PluginDirective>
-  /** The roles plugins register (docs/ir.md 2.8). */
   roles: Map<string, PluginRole>
-  /** Component name -> id of the plugin that registers it. */
   components: Map<string, string>
-  /** The headmatter's `execute`: the environment of code with `:run:` and no `:env:` (docs/ir.md 2.7). */
   execute: ExecuteConfig
   report(finding: Finding): void
   watch(...files: string[]): void
@@ -86,58 +66,36 @@ export interface BlockContext {
 
 export type Hints = Record<RendererId, Record<string, unknown>>
 
-/** Plugin configuration of a section (`{config}`), keyed by plugin id. */
 export type SectionConfig = Record<string, Record<string, unknown>>
 
-/** Built-in directives; the value tells whether the body is MyST parsed in place. */
 export const BUILTIN_DIRECTIVES = new Map([['slide', true], ['only', true], ['hints', false], ['config', false], ['component', false], ['audience', false]])
 
-/** Options every directive accepts; they are not passed to plugin directives. */
 const COMMON_OPTIONS = ['reveal', 'label', 'audience']
-/** What myst-parser leaves in place of a directive or role it could not apply (e.g. `{csv-table}` with `:file:`). */
 const MYST_ERRORS = new Set(['mystDirectiveError', 'mystRoleError'])
-/** Options of the code a directive runs (docs/ir.md 2.7), which the compiler reads for plugin directives that do not declare them. */
 const RUN_OPTIONS = ['env', 'session']
-/** The reserved environment name: route by language, as without environments. */
 const BROWSER = 'browser'
 const COMPONENT_OPTIONS = [...COMMON_OPTIONS, 'span', 'plugin']
-/** Directives whose child is code; an `{include}` left in the tree is a literal one (source.ts expands the others). */
 const CODE_DIRECTIVES = new Set(['code', 'code-block', 'code-cell', 'sourcecode', 'literalinclude', 'include'])
 const NARRATION = new Set(['paragraph', 'list', 'blockquote', 'heading', 'definitionList', 'footnoteDefinition', 'thematicBreak'])
-/** Dropped wherever they are: `outputs` is the output area MyST gives a `{code-cell}`, with a random id. */
 const DROPPED = new Set(['comment', 'mystTarget', 'outputs', BODY])
-/**
- * The elements raw HTML may name, as the HTML parser reads them: HTML's
- * (`svg` and `math` among them), and inside an `<svg>` or a `<math>` those of
- * SVG or MathML (`circle`, `mi`). A tag that names none of them where it
- * stands (`<reminder>`) is no markup.
- */
 const HTML_ELEMENTS = new Set(htmlTagNames)
 const FOREIGN_ELEMENTS = { svg: new Set(svgTagNames.map(name => name.toLowerCase())), math: new Set(mathmlTagNames) }
-/** A tag: `/` if it closes, its name, its attributes (ending in `/` if it closes itself), `>`. */
 const TAG = /<(\/?)([A-Za-z][\w:.-]*)([^<>]*)(>?)/g
-/** MyST's own directives, with the options each takes. */
 const MYST_DIRECTIVES = defaultOptions.directives as unknown as { name: string, alias?: string[], options?: Record<string, unknown> }[]
 
 interface Scope {
   visual: boolean
   only?: RendererId[]
-  /** `:reveal: items` on the enclosing `{slide}` or `{only}`: each of its lists reveals its items. */
   items?: boolean
-  /** Group of the enclosing `{slide}` or `{only}` with `:reveal:`. */
   group?: number
-  /** `:audience:` of the enclosing `{slide}` or `{only}`. */
   audience?: string[]
 }
 
-/** The blocks, hints and configuration of the section being converted. */
 interface Output {
   blocks: BlockDraft[]
   hints: Hints
-  /** Read before the blocks, so a directive anywhere in the section sees it. */
   config: SectionConfig
   groups: number
-  /** `{audience}`: the section is only for these audiences. */
   audience?: string[]
 }
 
@@ -149,10 +107,6 @@ export async function sectionBlocks(nodes: MdastNode[], ctx: BlockContext): Prom
   return { blocks: out.blocks, hints: out.hints, config: out.config, ...out.audience ? { audience: out.audience } : {} }
 }
 
-/**
- * The `{config}` directives of a section, at its top level or in a `{slide}`
- * or `{only}`: YAML mappings keyed by plugin id, merged in source order.
- */
 function sectionConfig(nodes: MdastNode[], ctx: BlockContext): SectionConfig {
   const config: SectionConfig = {}
   for (const node of nodes) {
@@ -197,7 +151,6 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
       continue
     }
     if (node.type === AUDIENCE_SCOPE) {
-      // What an `{include}` with `:audience:` includes; after a heading it included, the section it opens.
       const audience = scopeAudience(node, source, ctx)
       if (node.section) {
         out.audience = within(out.audience, audience)
@@ -242,7 +195,6 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
 
   if (name === 'audience') {
     const names = audienceList(arg)
-    // Without names the section is for no audience (as `:audience:` without names): left out of every build and view for one.
     if (names.length === 0) fail('needs the audiences its section is for, e.g. {audience} teacher; until it names them, the section is left out of every version for an audience')
     if (body.trim()) fail('takes no body: it marks its whole section; to mark part of a section, give a directive :audience:, e.g. an {only} around the paragraphs', 'warning')
     out.audience = out.audience ? out.audience.filter(a => names.includes(a)) : names
@@ -259,7 +211,6 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       }
       only = scope.only ? scope.only.filter(id => ids.includes(id)) : ids
     }
-    // `:reveal:` makes the whole directive a group that appears at the next step.
     const inner: Scope = {
       visual: scope.visual || name === 'slide',
       only,
@@ -283,7 +234,6 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     return
   }
 
-  // Read with the section, before its blocks (see `sectionConfig`).
   if (name === 'config') return
 
   if (name === 'component') {
@@ -345,22 +295,15 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
     return
   }
   if (children.length === 0) return fail('unknown directive; is the plugin that provides it listed in `plugins`?')
-  // A MyST directive (admonition, figure, math, ...): its standard mdast output is visual content.
   push({ kind: name, label, reveal: reveal !== undefined, role: 'visual', span: 0, source, audience, node: markdown(children, ctx) })
 }
 
-/**
- * `:audience:` of a directive: its audiences, within those of the `{slide}`
- * or `{only}` around it. Without names it is an error, and the content is
- * for no audience: left out of every build for one.
- */
 function audienceOption(value: unknown, outer: string[] | undefined, fail: (message: string) => void): string[] {
   const names = typeof value === 'string' ? audienceList(value) : []
   if (names.length === 0) fail(':audience: needs the audiences it is for, e.g. :audience: teacher')
   return within(outer, names)
 }
 
-/** The audiences of an audience scope (`{include}` with `:audience:`); an error when it names none. */
 function scopeAudience(node: MdastNode, source: SourcePos, ctx: BlockContext): string[] {
   const audience = node.audience as string[]
   if (audience.length === 0 && !node.section) {
@@ -369,12 +312,6 @@ function scopeAudience(node: MdastNode, source: SourcePos, ctx: BlockContext): s
   return audience
 }
 
-/**
- * A directive or role myst-parser could not apply leaves a `mystDirectiveError`
- * or `mystRoleError` in its place: an error of the deck (`presmium.directive`,
- * P-54), and nothing of it reaches the IR. Options the MyST directive does not
- * take are named, as the likely cause (`{csv-table}` reads no `:file:`).
- */
 function mystError(node: MdastNode, source: SourcePos, ctx: BlockContext): void {
   const name = String(node.name ?? '')
   const message = typeof node.message === 'string' ? node.message : 'invalid'
@@ -385,11 +322,6 @@ function mystError(node: MdastNode, source: SourcePos, ctx: BlockContext): void 
   ctx.report({ checkId: 'presmium.directive', severity: 'error', message: `${what}: ${message}${hint}`, source: { file: source.file, line: source.line } })
 }
 
-/**
- * The code of a code directive: its child, or the code in the container that
- * `:caption:` makes or in the notebook block of a `{code-cell}` (whose
- * output area is dropped).
- */
 function codeOf(node: MdastNode | undefined): MdastNode | undefined {
   if (node?.type === 'code') return node
   return node?.type === 'container' || node?.type === 'block' ? node.children?.find(c => c.type === 'code') : undefined
@@ -400,7 +332,6 @@ function codeNode(node: MdastNode, options: Record<string, string | true>, sourc
   const code: CodeNode = { type: 'code', lang, value: typeof node.value === 'string' ? node.value : '' }
   const title = options.caption ?? options.filename
   if (typeof title === 'string') code.title = title
-  // `:emphasize-lines:`, which myst-parser reads into `emphasizeLines`, highlights the same lines at every step.
   const emphasized: unknown[] = Array.isArray(node.emphasizeLines) ? node.emphasizeLines : []
   const count = code.value.split('\n').length
   const lines = emphasized.filter((n): n is number => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= count)
@@ -417,7 +348,6 @@ function codeNode(node: MdastNode, options: Record<string, string | true>, sourc
     else if (echo === 'false' && !code.run) warn(':echo: false needs :run:; the code shows')
     else if (echo === 'false') {
       code.echo = false
-      // Hidden code cannot be run by readers: what it shows is what compile time recorded.
       if (code.run!.when === 'live') {
         warn(':echo: false with :run: live: the code has no controls to run it; it runs at compile time')
         code.run!.when = 'compile'
@@ -427,20 +357,12 @@ function codeNode(node: MdastNode, options: Record<string, string | true>, sourc
   return code
 }
 
-/** The code a directive's node runs: its own, or that of a component's child blocks. */
 function runnableCode(node: IRNode): RunSpec[] {
   if (node.type === 'code') return node.run ? [node.run] : []
   if (node.type !== 'component') return []
   return (node as ComponentNode).children?.flatMap(child => runnableCode(child.node)) ?? []
 }
 
-/**
- * `:env:` and `:session:` on code that runs (docs/ir.md 2.7): the environment,
- * else the headmatter's `execute.env`, becomes the executor
- * `presmium.env.<name>`; the reserved `browser` routes by language. Whether
- * the environment is declared, and the sessions, are checked once the deck
- * is converted (environments.ts).
- */
 function runOptions(spec: RunSpec, options: Record<string, string | true>, warn: (message: string, severity?: Finding['severity']) => void, ctx: BlockContext): void {
   const env = typeof options.env === 'string' ? options.env.trim() : undefined
   if (options.env === true || env === '') warn(':env: needs the name of an environment of `execute.environments`, or browser', 'error')
@@ -457,7 +379,6 @@ function runOptions(spec: RunSpec, options: Record<string, string | true>, warn:
   if (session) spec.session = session
 }
 
-/** `:run:` [compile|live|both], `:executor:`, `:timeout:` (ms), `:env:`, `:session:` of a code directive. */
 function runSpec(lang: string, options: Record<string, string | true>, warn: (message: string, severity?: Finding['severity']) => void, ctx: BlockContext): RunSpec {
   const when = options.run === true || options.run === '' ? 'compile' : options.run
   const spec: RunSpec = { lang, when: 'compile' }
@@ -474,18 +395,8 @@ function markdown(nodes: MdastNode[], ctx: BlockContext): Extract<IRNode, { type
   return { type: 'markdown', mdast: { type: 'root', children: clean(nodes, ctx) } }
 }
 
-/** How deep the raw HTML read so far is inside `<svg>` and `<math>` elements. */
 type Foreign = Record<keyof typeof FOREIGN_ELEMENTS, number>
 
-/**
- * Inline raw HTML whose tags name no element, such as the `<reminder>` of an
- * agent's trace, as the text it is: in narration and in table cells such tags
- * are words of the content rather than markup, and a renderer that compiles
- * the HTML (the slides', as Vue templates) fails on one that is not closed
- * (docs/coverage-agentic-se.md section 4). Inline HTML comes one tag per
- * node, so the `<svg>` or `<math>` that SVG and MathML tags stand in is
- * followed across the nodes.
- */
 function literalTags(nodes: MdastNode[], foreign: Foreign = { svg: 0, math: 0 }): MdastNode[] {
   return nodes.map((node) => {
     if (node.type === 'html' && typeof node.value === 'string') {
@@ -504,12 +415,6 @@ function literalTags(nodes: MdastNode[], foreign: Foreign = { svg: 0, math: 0 })
   })
 }
 
-/**
- * Standard mdast for the IR: positions, comments and labels are dropped and
- * MyST wrappers around processed directives and roles are unwrapped. MyST
- * syntax that nothing processed does not reach the IR: an unknown role keeps
- * its text, an unknown directive is dropped.
- */
 function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNode[] {
   return nodes.flatMap((node): MdastNode[] => {
     if (MYST_ERRORS.has(node.type)) {
@@ -517,7 +422,6 @@ function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNo
       return []
     }
     if (DROPPED.has(node.type)) return []
-    // What an `{include}` with `:audience:` includes, here inside a block: its nodes are marked.
     if (node.type === AUDIENCE_SCOPE) return markAudience(clean(node.children ?? [], ctx, file), scopeAudience(node, sourceOf(node, file), ctx))
     if (node.type === 'mystRole' && ctx.roles.has(String(node.name))) return [roleNode(node, ctx, file)]
     if (node.type === 'mystDirective' || node.type === 'mystRole') {
@@ -527,7 +431,6 @@ function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNo
         ctx.report({ checkId: 'presmium.directive', severity, message, source: { file: where.file, line: where.line } })
       if (node.children?.length && !(node.type === 'mystDirective' && (BUILTIN_DIRECTIVES.has(name) || ctx.directives.has(name)))) {
         const nodes = clean(node.children, ctx, file)
-        // `:audience:` of a MyST directive nested in a block (docs/ir.md 2.11): the nodes it gives are marked.
         const option = node.type === 'mystDirective' && isRecord(node.options) ? node.options.audience : undefined
         return option === undefined ? nodes : markAudience(nodes, audienceOption(option, undefined, message => report('error', `{${name}}: ${message}`)))
       }
@@ -549,12 +452,6 @@ function clean(nodes: MdastNode[], ctx: BlockContext, file = ctx.entry): MdastNo
   })
 }
 
-/**
- * A role a plugin registers, as the IR keeps it (docs/ir.md 2.8): a
- * `presmiumRole` node with the plugin's id, the options (typed as the role
- * declares them, and `value`, the content between the backticks) and the
- * children the role gives, by default the text of `value`.
- */
 function roleNode(node: MdastNode, ctx: BlockContext, file: string): MdastNode {
   const name = String(node.name)
   const { plugin, config, spec } = ctx.roles.get(name)!
@@ -596,7 +493,6 @@ function bodyNodeLine(node: MdastNode): number | undefined {
   return typeof line === 'number' ? line : undefined
 }
 
-/** Top-level list items of a markdown block, the units of `:reveal: items`. */
 function listItems(mdast: MdastNode): number {
   return (mdast.children ?? []).filter(c => c.type === 'list').reduce((n, list) => n + (list.children?.length ?? 0), 0)
 }
@@ -619,7 +515,6 @@ function yamlBody(body: string, fail: (message: string) => void): Record<string,
   return undefined
 }
 
-/** An option value read as YAML: `3` is a number, `[a, b]` a list. Options from a `---` block are already typed. */
 function yamlValue(value: unknown): unknown {
   if (typeof value !== 'string') return value
   try {

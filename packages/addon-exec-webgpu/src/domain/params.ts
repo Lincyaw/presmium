@@ -1,25 +1,3 @@
-/**
- * The compute request of a WGSL shader and the run panel's `:params:`
- * (docs/ir.md 2.7): `buffers` gives each buffer the shader declares its data
- * or size, by the name of the shader's variable, so the group, binding,
- * storage access and value type come from the declaration; `dispatch` the
- * workgroups (1 to 3 numbers, default 1), `entry` the entry point (default:
- * the shader's only compute entry point), `repeat` how many times the
- * shader runs on the same buffers (default 1, the timing is the median),
- * `features` the adapter features it needs.
- *
- * ```yaml
- * buffers:
- *   a: [1, 2, 3, 4]           # data; the type comes from array<f32>
- *   b: { data: [10, 20, 30, 40] }
- *   out: { size: 4 }          # 4 values, initially 0 (`fill` sets another value)
- * dispatch: 1
- * ```
- *
- * Writable storage buffers are read back and shown (`read` says otherwise).
- * The run panel passes each value of `:params:` as a string (YAML; JSON for
- * lists and mappings), as learners edit them in its form.
- */
 import { isRecord } from '@presmium/kernel'
 import { parse } from 'yaml'
 import type { ComputeBuffer, ComputeRequest, ScalarType } from './compute.ts'
@@ -28,7 +6,6 @@ import type { WebgpuMessages } from './messages.ts'
 
 const KEYS = ['buffers', 'dispatch', 'entry', 'repeat', 'features']
 const TYPES = ['f32', 'i32', 'u32']
-/** A buffer declaration: its attributes, address space, access, name and type. */
 const DECLARATION = /((?:@\s*\w+\s*(?:\([^)]*\))?\s*)+)var\s*<\s*(storage|uniform)\s*(?:,\s*(read_write|read))?\s*>\s*([A-Za-z_]\w*)\s*:\s*([^;]+);/g
 const SHORTHAND: Record<string, string> = { f: 'f32', i: 'i32', u: 'u32', h: 'f16' }
 
@@ -38,11 +15,9 @@ interface Declaration {
   binding: number
   usage: 'storage' | 'uniform'
   access: 'read' | 'read_write'
-  /** The scalar type its type is made of, when there is one (not a struct). */
   scalar?: string
 }
 
-/** The buffers a shader declares (comments removed first). */
 export function declarations(code: string): Declaration[] {
   const source = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
   return [...source.matchAll(DECLARATION)].map(([, attributes, space, access, name, type]) => {
@@ -65,7 +40,6 @@ export function declarations(code: string): Declaration[] {
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 const positive = (value: unknown, max = Infinity): value is number => Number.isInteger(value) && (value as number) >= 1 && (value as number) <= max
 
-/** Bytes a buffer takes on the GPU (as the compute core allocates it). */
 function bytes(buffer: Pick<ComputeBuffer, 'length' | 'usage'>): number {
   const size = Math.max(4, buffer.length * 4)
   return buffer.usage === 'uniform' ? Math.ceil(size / 16) * 16 : size
@@ -98,7 +72,6 @@ function buffer(declaration: Declaration, spec: unknown, text: WebgpuMessages): 
   }
 }
 
-/** The number of values a buffer's specification gives it (its data or size), if it gives one. */
 function valueCount(spec: unknown): number | undefined {
   const fields = Array.isArray(spec) ? { data: spec } : spec
   if (!isRecord(fields)) return undefined
@@ -106,11 +79,6 @@ function valueCount(spec: unknown): number | undefined {
   return Math.max(...counted) || undefined
 }
 
-/**
- * A run's arguments as a run panel's history shows them (D-10): each buffer
- * with its number of values, then the other parameters by their labels, e.g.
- * `缓冲区 text：11 个值，best：3 个值 · 重复次数 10`.
- */
 export function paramsSummary(args: Record<string, string>, text: WebgpuMessages): string {
   const read = (raw: string): unknown => {
     try {
@@ -132,10 +100,6 @@ export function paramsSummary(args: Record<string, string>, text: WebgpuMessages
   }).join(' · ')
 }
 
-/**
- * The request of a shader with the arguments of its run (`RunRequest.args`),
- * or the error that keeps it from running, in the language of `text`.
- */
 export function computeRequest(code: string, args: Record<string, string> | undefined, text: WebgpuMessages): { request: ComputeRequest } | { error: string } {
   const params: Record<string, unknown> = {}
   for (const [name, raw] of Object.entries(args ?? {})) {

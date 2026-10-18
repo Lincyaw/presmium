@@ -1,19 +1,9 @@
-/**
- * The preview panel (docs/design-dsh.md 4 and 7.3): the document's web form or
- * slides, from the workspace service's dev servers (`GET preview`), in an iframe of
- * the service's origin, driven over the preview protocol (../preview.ts). It
- * follows the workbench's appearance, frames the block the cursor is in, and in
- * pick mode a click on a block opens its lines in the editor. The page updates
- * itself when the source is saved (no reload); a page that does not say `ready`
- * (a dev server still optimizing its dependencies) is loaded again.
- */
 import { useEffect, useRef, useState } from 'react'
 import { connectPreview } from '../preview.ts'
 import { PmButton, PmIconButton, PmNotice, PmSegmented } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
 import type { PreviewView } from '../store.ts'
 
-/** How long a page may take to say `ready` before it is loaded again, and how often. */
 const READY_MS = 45_000
 const RELOADS = 3
 

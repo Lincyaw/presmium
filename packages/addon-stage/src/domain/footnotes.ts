@@ -1,12 +1,5 @@
 import type { IRBlock, IRDocument, IRSection, MdastNode } from '@presmium/kernel'
 
-/**
- * Footnotes (P-01). The MyST parser moves every footnote definition to the
- * end of its file, so a definition lands in the last section of the file, as
- * narration. This puts each definition back into the section that first
- * references it, after that section's blocks, with the role and step of the
- * referencing block: a footnote of a slide is shown on that slide.
- */
 export function placeFootnotes(doc: IRDocument): void {
   const definitions: { section: IRSection, block: IRBlock, identifier: string }[] = []
   for (const section of doc.sections) {
@@ -26,7 +19,6 @@ export function placeFootnotes(doc: IRDocument): void {
   }
 }
 
-/** The identifier of a block that holds a footnote definition and nothing else. */
 function definitionOf(block: IRBlock): string | undefined {
   if (block.node.type !== 'markdown') return undefined
   const [first, ...rest] = block.node.mdast.children ?? []

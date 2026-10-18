@@ -1,8 +1,3 @@
-/**
- * Texts of the deltabox plugin in zh-CN and en (N-07), in the deck's `lang`:
- * the build report's note on code that runs without the process sandbox, the
- * startup log's reasons for leaving a service out, and the review's errors.
- */
 import { deckLocale } from '@presmium/kernel'
 import type { Unqualified } from './protocol.ts'
 

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-// The foot of a slide (docs/design/slide.dc.html): the deck's title, the slide's steps, each one done in the
-// accent, and its number of the deck's. In the slide, so an export shows it on every page at its step.
 import { useMessages } from '@presmium/host'
 import { useSlideContext } from '@slidev/client'
 import { computed } from 'vue'

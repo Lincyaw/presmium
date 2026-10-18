@@ -1,38 +1,16 @@
-/**
- * A recorded lecture as a build publishes it (P-55 × P-131): without what
- * was said and done in the sections the built deck does not have
- * (`deckTrack`), and in a version for an audience (the students') only in
- * the sections that version has as they were recorded (`recordedSections`,
- * F-13). It fails closed: what it cannot place goes, and so do the audio
- * and video of a section that lost something since the recording.
- */
 import type { IRDocument, TrackEvent } from '@presmium/kernel'
 import { blockDrift, blockOf, irHash, sectionHashes } from './drift.ts'
 import { anchorOf, timedEvents } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance } from './track.ts'
 
-/** How a lecture is cut to a view: where its things are in the view, and which sections and recordings it keeps. */
 interface Cut {
-  /** The step a place has in the view; undefined when the view does not have it (`section` undefined: before the first move). */
   place(section: string | undefined, step: number): number | undefined
-  /** Whether an event on a block (by its key as recorded) stays; `placed`: the view has the place it was done at. */
   block(key: string, placed: boolean): boolean
-  /** Whether the view has a section. */
   section(id: string): boolean
-  /** Whether the view keeps a section's audio and video. */
   media(id: string): boolean
 }
 
-/**
- * The lecture cut to a view: the utterances and events of the places it
- * has (renumbered as it numbers its steps), the events on blocks it keeps,
- * and the audio and video of the sections it keeps them of and nothing was
- * left out of (a section's recording is one file, which holds what was said
- * and shown there). Undefined when nothing is left; the track itself when
- * nothing changed.
- */
 function cut(track: LectureTrack, view: Cut): LectureTrack | undefined {
-  /** Where the lecture is at a time: the last move at or before it. */
   const moves = timedEvents(track).filter(event => event.type === 'go' && typeof event.data.section === 'string')
   const at = (t: number) => moves.filter(move => move.t <= t).at(-1)?.data
   const sectionAt = (t: number) => {
@@ -42,7 +20,6 @@ function cut(track: LectureTrack, view: Cut): LectureTrack | undefined {
   const stepAt = (t: number) => Number(at(t)?.step ?? 0)
 
   let changed = false
-  /** Sections something was left out of: their recordings are left out too. */
   const tainted = new Set<string>()
   const dropped = new Set<string>()
   const utterances: Utterance[] = []
@@ -102,20 +79,6 @@ function cut(track: LectureTrack, view: Cut): LectureTrack | undefined {
   }
 }
 
-/**
- * A recorded lecture as a version for an audience (`view`, its IR: the
- * students') publishes it (F-13, P-55): what was said, the audio and the
- * video only of the sections the version has as they were recorded, by the
- * hash of each section the track keeps (`track.ir.sections`, `sectionHashes`
- * of the web form's blocks). A section whose hash is not the version's
- * lost something since (content for another audience, or content moved into
- * a section only for another audience after the recording), and what was
- * said or shown there may have been it: its utterances, its media and its
- * events but the moves go. It fails closed: a track without the hashes of
- * its sections keeps them only when the hash of the whole IR is the
- * version's. Undefined when nothing is left; the track itself when nothing
- * changed.
- */
 export function recordedSections(track: LectureTrack, view: IRDocument): LectureTrack | undefined {
   const now = sectionHashes(view)
   const recorded = track.ir.sections
@@ -141,19 +104,11 @@ export function recordedSections(track: LectureTrack, view: IRDocument): Lecture
   return { ...track, ...audio ? { audio } : {}, ...video ? { video } : {}, utterances, events }
 }
 
-/**
- * The lecture of a deck that leaves nothing out, as a build publishes it:
- * without what was said and done in the sections `doc` does not have (one
- * relabeled or deleted since the recording, or left out of the build) and
- * their audio and video. The rest stays as recorded: the player follows a
- * block that moved and skips the actions on one that is gone, saying so.
- */
 export function deckTrack(track: LectureTrack, doc: IRDocument): LectureTrack | undefined {
   const sections = new Set(doc.sections.map(section => section.id))
   const drift = blockDrift(track, doc)
   return cut(track, {
     place: (section, step) => (section === undefined || sections.has(section) ? step : undefined),
-    // An action on a block of a section the deck does not have goes with that section, unless the block moved to one it has.
     block: key => sections.has(key.slice(0, key.lastIndexOf('/'))) || Boolean(drift.get(key)?.to),
     section: id => sections.has(id),
     media: id => sections.has(id),

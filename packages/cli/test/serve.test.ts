@@ -1,11 +1,3 @@
-// `presmium serve` (WP-79, docs/architecture.md section 10): one command starts the workspace service for the
-// one user on this machine, on the loopback; with `--host` on the local network too, for that user's other
-// devices, saying there is no login (E-3, revised). The home page has the operator plugins: their routes answer for it, and
-// it loads their browser parts (WP-81e2). A document loads the plugins its deck lists, as in `presmium dev` (E-2).
-// With PRESMIUM_DEBUG its server says more (F-35). A document deleted under serve has no plugin routes any more,
-// and made again with another configuration, its routes have that one (C-7, F-40). Compile-time code runs in
-// serve without asking, with the `serve` rules of its environment (N-08). It prints its MCP endpoint and the
-// file (0600, outside the workspace) that holds the process's token for it, as `presmium dev` does (WP-92c).
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
@@ -29,7 +21,6 @@ describe('presmium serve on this machine', () => {
     serve = presmiumProcess(dir, ['serve', '--port', '0'], cleanEnv({ PRESMIUM_DEBUG: '1' }))
     const url = (await waitFor(serve, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
     expect(serve.output()).toMatch(/^workspace {2}\S+$/m)
-    // The MCP endpoint, and the file that holds the process's token: readable by the user only, outside the workspace.
     const [, endpoint, stateFile] = await waitFor(serve, /^mcp {2}(http:\/\/127\.0\.0\.1:\d+\/mcp) \(its token is in (.+)\)$/m)
     expect(endpoint).toBe(`${url}/mcp`)
     expect(stateFile!.startsWith(dir)).toBe(false)
@@ -42,7 +33,6 @@ describe('presmium serve on this machine', () => {
     const initialized = await raw(endpoint!, { headers: { ...accept, Authorization: `Bearer ${state.token}` }, json: initialize })
     expect(initialized.status, initialized.text).toBe(200)
     expect(initialized.text).toContain('"serverInfo"')
-    // Its server's debug lines, with PRESMIUM_DEBUG (F-35).
     expect(serve.output()).toMatch(/\[presmium serve\] listening at http:\/\/127\.0\.0\.1:\d+/)
     const documents = await raw(`${url}/__presmium/presmium.workspace/documents`)
     expect(documents.json()).toMatchObject({ documents: [{ dir: 'intro', title: '导论' }], git: true, single: false })
@@ -50,8 +40,6 @@ describe('presmium serve on this machine', () => {
     expect(home.status).toBe(200)
     expect(home.text).toContain('<div id="app">')
 
-    // The site's own dev router (a port of its own on this machine) refuses other sites' pages: a rebound
-    // host name and a cross-site request get 403, whatever path they ask for; serve's loopback Host passes.
     const router = (await waitFor(serve, /dev router is at (http:\/\/127\.0\.0\.1:\d+)/))[1]!
     const port = Number(new URL(router).port)
     const ask = (headers: Record<string, string>, path = '/@presmium/documents.json') => new Promise<number>((done, fail) => {
@@ -78,10 +66,8 @@ describe('presmium serve on this machine', () => {
       try {
         const url = (await waitFor(local, /^serve {2}(http:\/\/127\.0\.0\.1:\d+)$/m))[1]!
         const where = async (document: string) => (await raw(`${url}/__presmium/fixture.home/where`, { headers: { 'Presmium-Document': document } })).json()
-        // The home page is no document: the plugin's deck directory there holds none of the workspace's files.
         expect(await where('')).toEqual({ document: '', sees: [] })
         expect(await where('intro')).toEqual({ document: 'intro', sees: ['presmium.workspace.yaml', '.git', 'lecture.md'] })
-        // The home page's theme imports the plugin's browser part; a document's page does not (its deck does not list it).
         const theme = await raw(`${url}/.vitepress/theme/index.ts`)
         expect(theme.status, theme.text).toBe(200)
         expect(theme.text).toContain('createSiteHomeTheme')
@@ -101,7 +87,6 @@ describe('presmium serve on this machine', () => {
   it('takes a deleted document\'s plugin routes down; made again with another configuration, its routes have that one', async () => {
     const changing = workspace('remount', 'basic')
     try {
-      // An operator plugin whose route answers with the document's configuration of it.
       const plugin = join(changing, 'node_modules/presmium-fixture-echo')
       mkdirSync(plugin, { recursive: true })
       writeFileSync(join(plugin, 'package.json'), JSON.stringify({ name: 'presmium-fixture-echo', private: true, type: 'module', exports: { './presmium': './presmium.ts' } }))
@@ -132,14 +117,12 @@ describe('presmium serve on this machine', () => {
   it('listens on the local network with --host, saying there is no login, and on a name of this machine (E-3, revised)', async () => {
     const network = presmiumProcess(dir, ['serve', '--host', '0.0.0.0', '--port', '0'])
     try {
-      // Its own address is a loopback one; another device reaches it at the machine's addresses on the network.
       const port = (await waitFor(network, /^serve {2}http:\/\/127\.0\.0\.1:(\d+)$/m))[1]!
       await waitFor(network, /with no login: anyone who reaches port \d+ uses this workspace as you/)
       if (networkAddresses().length > 0) expect(network.output()).toContain(`network  http://${networkAddresses()[0]}:${port}/`)
     } finally {
       await network.stop()
     }
-    // A name of this machine is taken, and says nothing of the network.
     const local = presmiumProcess(dir, ['serve', '--host', 'localhost', '--port', '0'])
     try {
       await waitFor(local, /^serve {2}http:\/\/localhost:\d+$/m)
@@ -150,7 +133,6 @@ describe('presmium serve on this machine', () => {
   }, 180_000)
 })
 
-/** The IR the site of `presmium serve` shows of a document (its dev server's endpoint), as a member asks for it. */
 async function siteIR(url: string, dir: string, headers: Record<string, string> = {}): Promise<{ text: string, doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }> {
   const answer = await raw(`${url}/${dir}/@presmium/ir`, { headers })
   expect(answer.status, answer.text).toBe(200)
@@ -176,7 +158,6 @@ describe('the plugins of presmium serve are those the deck lists, as in presmium
   }, 180_000)
 })
 
-/** A workspace whose document `code` runs Python at compile time (the exec plugin, installed at the root and listed). */
 function execWorkspace(prefix: string): string {
   const dir = workspace(prefix, 'exec', { '@presmium/slidev-addon-exec': 'packages/addon-exec' })
   writeFileSync(join(dir, 'presmium.workspace.yaml'), `title: 编译时执行
@@ -190,7 +171,6 @@ settings:
   return dir
 }
 
-/** The recorded runs of the document `code` that printed their environment. */
 function recordings(dir: string): { env: Record<string, string>, parent: string }[] {
   const freeze = join(dir, 'code/.presmium/freeze')
   if (!existsSync(freeze)) return []

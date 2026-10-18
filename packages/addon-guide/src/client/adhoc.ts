@@ -1,15 +1,3 @@
-/**
- * Spotlights and hints the presenter puts on a block while presenting, as
- * the operations `spot` and `hint` (docs/ir.md 9.2): reported when the
- * presenter makes one (`s` and `h` over a block, see viewer.ts) and replayed
- * by a lecture player. The data names the block (`<section>/<block>`) or a
- * CSS selector, optionally code `lines` (`3-5`), a `title` and `text`; data
- * without a target turns the cue off. A cue lasts while the position stays
- * in its section and step (`span` more steps), so the picture at any time is
- * a function of the operations before it, whether they were made, replayed
- * in order or replayed at once (a seek). Blocks and code lines are found as
- * `@presmium/host` finds them (`blockElement`, `codeLines`, `lineNumbers`).
- */
 import { blockElement, codeLines, lineNumbers } from '@presmium/host'
 import type { Navigation } from '@presmium/host'
 import { watch } from 'vue'
@@ -18,26 +6,16 @@ import { requestHint } from './hints.ts'
 import { requestSpotlight } from './spotlight.ts'
 
 export interface AdhocCue {
-  /** `<section id>/<block id>`. */
   block?: string
   selector?: string
-  /** Code lines of the block, e.g. `3-5` or `2,4`. */
   lines?: string
-  /** Further steps the cue lasts. */
   span?: number
   title?: string
   text?: string
 }
 
-/** How often a cue looks for its target again, which a page layout or a move may have changed. */
 const REFRESH_MS = 250
 
-/**
- * The first element a selector cue names that the audience sees, by the rule
- * `blockElement` follows for blocks: not under a modal view (`[inert]`, as
- * the present view makes the page under it), not hidden at the current step
- * (`.pm-hidden`), laid out.
- */
 function visible(elements: Iterable<HTMLElement>): HTMLElement | undefined {
   for (const el of elements) {
     if (!el.closest('[inert], .pm-hidden') && el.getClientRects().length > 0) return el
@@ -45,7 +23,6 @@ function visible(elements: Iterable<HTMLElement>): HTMLElement | undefined {
   return undefined
 }
 
-/** The box of code lines in a block: from the first line named to the last, as wide as the listing. */
 function linesBox(block: HTMLElement, lines: string): DOMRect | undefined {
   const rows = codeLines(block)
   const named = lineNumbers(lines).map(n => rows[n - 1]).filter((row): row is HTMLElement => Boolean(row))
@@ -73,11 +50,9 @@ export function cueOf(data: Record<string, unknown>): AdhocCue | undefined {
   return cue.block || cue.selector ? cue : undefined
 }
 
-/** The cues of one kind (`spot` or `hint`) made outside the steps: at most one at a time. */
 export class AdhocCues {
   private current?: { cue: AdhocCue, slide: number, step: number }
   private readonly owner = {}
-  /** A box laid over code lines, which the effect then draws on. */
   private box?: HTMLElement
   private timer?: ReturnType<typeof setInterval>
   private navigation?: Navigation
@@ -88,7 +63,6 @@ export class AdhocCues {
     this.show = show
   }
 
-  /** Follows the position of a started host: a cue ends when the position leaves its section and steps. */
   bind(navigation: Navigation | undefined): void {
     this.unwatch?.()
     this.navigation = navigation
@@ -105,12 +79,10 @@ export class AdhocCues {
     this.navigation = undefined
   }
 
-  /** The cue shown now, if any. */
   get shown(): AdhocCue | undefined {
     return this.current?.cue
   }
 
-  /** Shows the cue of an operation's data, or none; `animate` false while a player seeks. */
   apply(data: Record<string, unknown>, animate = true): void {
     const cue = cueOf(data)
     if (!cue) return this.off()
@@ -121,7 +93,6 @@ export class AdhocCues {
     this.timer = setInterval(() => this.draw(animate), REFRESH_MS)
   }
 
-  /** Whether `data` names the cue shown now. */
   showing(data: Record<string, unknown>): boolean {
     const cue = cueOf(data)
     return Boolean(cue && this.current && sameCue(cue, this.current.cue))
@@ -136,7 +107,6 @@ export class AdhocCues {
     this.show(this.owner, undefined)
   }
 
-  /** Draws the cue on its target as it is laid out now; nothing while the target is not shown. */
   private draw(animate: boolean): void {
     const cue = this.current?.cue
     if (!cue) return

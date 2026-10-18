@@ -1,8 +1,6 @@
-/** The lecture plugin's UI text (N-07), in Chinese and English, as a catalog of @presmium/host. */
 import type { Locale } from '@presmium/kernel/contracts'
 
 export interface LectureMessages {
-  /** Name of the lecture view in the view menu. */
   view: string
   recorder: {
     region: string
@@ -38,14 +36,11 @@ export interface LectureMessages {
     trying: string
     close: string
     synthetic: string
-    /** The AI-generated label with the engine's provider (N-08). */
     syntheticBy: (provider: string) => string
     loading: string
     missing: (id: string) => string
-    /** A reader opens the synthesized lecture before an editor had it made (synthesis is paid). */
     notYet: string
     dropped: (count: number) => string
-    /** A translation made from an earlier text of its sentence (P-137). */
     stale: string
     jump: (time: string) => string
     step: (step: number) => string
@@ -56,7 +51,6 @@ export interface LectureMessages {
     unavailable: string
     open: (id: string) => string
   }
-  /** Working on a recorded lecture's words (P-132, P-133); the engines' providers are named (N-08). */
   editor: {
     region: string
     transcribe: (provider: string) => string
@@ -73,13 +67,11 @@ export interface LectureMessages {
     cancel: string
     edit: (id: string) => string
     save: string
-    /** Saving a sentence of a synthetic voice says it again: the button and its confirmation name the provider. */
     saveSay: (provider: string) => string
     saveSayConfirm: (provider: string) => string
     saving: string
     failed: (reason: string) => string
   }
-  /** Writing a recorded lecture back through the assistant's change tasks (P-136, P-137); the model's provider is named (N-08). */
   writeback: {
     toggle: string
     title: string
@@ -111,9 +103,7 @@ export interface LectureMessages {
     reverted: (revision: string) => string
     conflicts: (files: string[]) => string
     failed: (reason: string) => string
-    /** The request of the `transcript` task: the transcript as narration, written back by section, the cues kept. */
     narrateRequest: (id: string) => string
-    /** The request of the `chat` task; its first line is the commit's subject. */
     translateRequest: (id: string, language: string, lang: string) => string
   }
 }

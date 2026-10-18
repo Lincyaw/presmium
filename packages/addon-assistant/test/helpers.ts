@@ -1,6 +1,3 @@
-// Real processes for the assistant's tests: the `presmium` CLI (the CLI's file: it is not a dependency of
-// this package's code), the scripted test agent, the events of a task as a page follows them, the log the
-// test agent keeps, and what /proc says of a process.
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -14,10 +11,8 @@ export const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 export const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 export const PACKAGE = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '')
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
-/** The scripted test agent, as a replacement runtime's command line. */
 export const AGENT_COMMAND = `${process.execPath} ${fileURLToPath(new URL('./fixtures/scripted-agent.mjs', import.meta.url))}`
 
-/** The test process's environment without Vitest's NODE_ENV, Presmium's variables and credentials; then `extra`. */
 export function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = { ...process.env }
   delete out.NODE_ENV
@@ -30,12 +25,10 @@ export function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 export interface Running {
   child: ChildProcess
   output(): string
-  /** Waits until the output matches. */
   wait(pattern: RegExp, timeoutMs?: number): Promise<RegExpExecArray>
   stop(): Promise<void>
 }
 
-/** `presmium <args>`, left running. */
 export function presmium(args: string[], options: { cwd: string, env: NodeJS.ProcessEnv }): Running {
   const child = spawn(process.execPath, [PRESMIUM_BIN, ...args], { cwd: options.cwd, env: options.env, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
@@ -75,7 +68,6 @@ export function presmium(args: string[], options: { cwd: string, env: NodeJS.Pro
   }
 }
 
-/** `presmium dev` on a deck: resolves with its server's address once it watches. */
 export async function dev(cwd: string, environment: NodeJS.ProcessEnv): Promise<{ running: Running, server: string }> {
   const running = presmium(['dev'], { cwd, env: environment })
   const server = (await running.wait(/^server {2}(http\S+)$/m))[1]!
@@ -83,7 +75,6 @@ export async function dev(cwd: string, environment: NodeJS.ProcessEnv): Promise<
   return { running, server }
 }
 
-/** The events of a task until its terminal one (`done` or `error`), as a page reads them (SSE). */
 export async function taskEvents(url: string, headers: Record<string, string> = {}, onEvent?: (event: AgentEvent) => void): Promise<AgentEvent[]> {
   const response = await fetch(url, { headers: { Accept: 'text/event-stream', ...headers } })
   if (response.status !== 200 || !response.body) throw new Error(`the events answered ${response.status}: ${await response.text()}`)
@@ -107,13 +98,11 @@ export async function taskEvents(url: string, headers: Record<string, string> = 
   return events
 }
 
-/** What the scripted agent logged, one object a line. */
 export function agentLog(file: string): Record<string, any>[] {
   if (!existsSync(file)) return []
   return readFileSync(file, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line) as Record<string, any>)
 }
 
-/** A process's command line and environment, from /proc; undefined once it is gone. */
 export function processInfo(pid: number): { cmdline: string, environ: Record<string, string> } | undefined {
   try {
     const environ = Object.fromEntries(readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0').filter(Boolean).map((entry) => {
@@ -126,7 +115,6 @@ export function processInfo(pid: number): { cmdline: string, environ: Record<str
   }
 }
 
-/** The processes that descend from `pid` now, with their command lines. */
 export function descendants(pid: number): { pid: number, cmdline: string }[] {
   const children = new Map<number, number[]>()
   for (const name of readdirSync('/proc').filter(entry => /^\d+$/.test(entry))) {
@@ -135,7 +123,6 @@ export function descendants(pid: number): { pid: number, cmdline: string }[] {
       const ppid = Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1])
       children.set(ppid, [...children.get(ppid) ?? [], Number(name)])
     } catch {
-      // Gone meanwhile.
     }
   }
   const out: { pid: number, cmdline: string }[] = []
@@ -153,19 +140,12 @@ export function descendants(pid: number): { pid: number, cmdline: string }[] {
   return out
 }
 
-// Workspaces --------------------------------------------------------------------------------------------
-
 const WORK = join(ROOT, 'examples/demo/.presmium')
 
 export function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-/**
- * A workspace in examples/demo/.presmium (ignored by git), where VitePress resolves from the demo's
- * node_modules: `files` written, packages of the repository linked into its node_modules (installed at
- * the root, as the operator installs them), a git repository of its own.
- */
 export function workspace(prefix: string, files: Record<string, string>, link: Record<string, string>): string {
   mkdirSync(WORK, { recursive: true })
   const dir = mkdtempSync(join(WORK, `assistant-${prefix}-`))
@@ -187,12 +167,10 @@ export function workspace(prefix: string, files: Record<string, string>, link: R
 
 export interface EventStream {
   events: { event: string, data: Record<string, any> }[]
-  /** Resolves with the next event of this name not taken yet. */
   next(event: string, timeoutMs?: number): Promise<Record<string, any>>
   close(): void
 }
 
-/** An SSE stream read with these headers (`Host` included). */
 export function eventStream(url: string, headers: Record<string, string> = {}): Promise<EventStream> {
   return new Promise((resolve, reject) => {
     const events: EventStream['events'] = []
@@ -246,7 +224,6 @@ export function eventStream(url: string, headers: Record<string, string> = {}): 
   })
 }
 
-/** Calls a route of the assistant (`/__presmium/presmium.assistant/<path>`). */
 export async function call(server: string, path: string, init: { method?: string, json?: unknown, headers?: Record<string, string> } = {}): Promise<{ status: number, json: Record<string, any> }> {
   const response = await fetch(`${server}/__presmium/presmium.assistant/${path}`, {
     method: init.method ?? (init.json === undefined ? 'GET' : 'POST'),

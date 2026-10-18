@@ -1,10 +1,3 @@
-/**
- * The least of DeepSeek Harness's client runtime the workbench uses (docs/design-dsh.md
- * 2.4, seam S2, and 7.8): `ui-slots`, `client-store` and `ui-primitives` have no
- * installable package or types, so only the members called are declared here. The
- * names follow the pinned version's READMEs and published declarations
- * (`dsh-client-ui-layout`, `-ui-theme`, `-locale`, `-ui-sidebar-right`, `-shortcuts`).
- */
 declare module '@deepseek-ai/dsh-client-store' {
   export interface StoreInstance<S, A> {
     actions: A
@@ -18,13 +11,11 @@ declare module '@deepseek-ai/dsh-client-store' {
   export function defineStore<S, A extends Record<string, (draft: S, ...args: any[]) => void>>(spec: { init: () => S, actions: A }): StoreHandle<S, Bound<A>>
 }
 
-/** An observable a hook reads (`HostObservable`). */
 interface DshObservable<T> {
   getSnapshot(): T
   subscribe(listener: () => void): () => void
 }
 
-/** A selector hook over an observable the renderer binds (`SnapshotSelectorHook`). */
 type DshSelectorHook<T> = <U>(select: (value: T) => U) => U
 
 interface DshSlotOptions {
@@ -52,7 +43,6 @@ interface DshSlots {
   provideRoot(options: { hooks: Record<string, DshObservable<unknown>> }): () => void
 }
 
-/** A resolved theme snapshot (`ThemeSnapshot` of dsh-client-ui-theme). */
 interface DshThemeSnapshot {
   preference: string
   fontSizes: { text: number, code: number, terminal: number }
@@ -96,7 +86,6 @@ interface DshSidebarRightTabs {
   }): () => void
 }
 
-/** The client context a plugin's `apply` gets (a Cordis context). */
 interface DshClientContext {
   effect(effect: () => unknown, label?: string): void
   on(event: string, listener: (...args: any[]) => void): () => void
@@ -110,7 +99,6 @@ interface DshClientContext {
   layout: { selectPanel(id: string | null): void }
 }
 
-/** The boot graph the host writes into the page (`dsh-client-modules`). */
 interface Window {
   __DSH_BOOT__?: { entries: { id: string }[], release?: { version: string, commit?: string } }
 }

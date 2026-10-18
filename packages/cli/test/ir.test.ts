@@ -1,4 +1,3 @@
-// `presmium ir` on fixtures/lecture: the compiler passes of docs/ir.md sections 2 and 4.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
@@ -14,10 +13,7 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
   const doc = JSON.parse(stdout) as IRDocument
   expect(doc.diagnostics).toEqual([])
   expect(doc.sections.map(s => ({ id: s.id, depth: s.depth, steps: s.steps, blocks: s.blocks.map(step) }))).toEqual([
-    // The cover: content before the first `##`, titled by the `#` heading.
     { id: 'bpe-分词', depth: 0, steps: 0, blocks: ['paragraph-1 visual 0', 'paragraph-2 narration 0'] },
-    // The id comes from the label; list items reveal one per step; narration binds to the step at which
-    // the stepwise block before it appears; visual content without :reveal: shows from step 0.
     { id: 'bpe-merge', depth: 2, steps: 1, blocks: [
       'paragraph-1 narration 0',
       'list-1 visual 0+1',
@@ -25,8 +21,6 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
       'code-1 visual 0',
       'paragraph-3 narration 0 only web,notebook',
     ] },
-    // A component spans its steps; a revealed {slide} appears whole at the next step; so does a revealed block.
-    // One narration paragraph per internal step of the spanning block (ir.md 2.4).
     { id: '逐步演示', depth: 2, steps: 3, blocks: [
       'fixture-stepper-1 visual 0+1',
       'paragraph-1 narration 0',
@@ -40,14 +34,13 @@ it('splits sections and assigns ids, roles and steps as in docs/ir.md section 2'
   ])
 
   const [cover, merge, demo] = doc.sections
-  expect(doc.meta.stamp).toBe('checked') // a plugin pass ran with its configuration
+  expect(doc.meta.stamp).toBe('checked')
   expect(cover!.title).toBe('BPE 分词')
   expect(merge!.source).toMatchObject({ file: join(dir, 'lecture/chapter.md'), line: 2 })
   expect(merge!.hints).toEqual({ slides: { layout: 'two-cols' } })
   expect(merge!.blocks[1]!.node).toMatchObject({ type: 'markdown', reveal: 'items', mdast: { type: 'root', children: [{ type: 'list' }] } })
   expect(demo!.blocks[0]!.node).toEqual({ type: 'component', plugin: 'fixture.render', name: 'FixtureStepper', props: { labels: ['统计', '合并'] } })
 
-  // Compiling the same source again yields the same IR.
   expect((await presmium(dir, ['ir', 'lecture'])).stdout).toBe(stdout)
 })
 
@@ -56,7 +49,6 @@ it('keeps a footnote definition in the section and {slide} it is written in; :em
   const { code, stdout } = await presmium(dir, ['ir', 'notes'])
   expect(code).toBe(0)
   const doc = JSON.parse(stdout) as IRDocument
-  // MyST moves definitions to the end of the file, which is the second section.
   expect(doc.sections.map(s => s.blocks.map(step))).toEqual([
     ['paragraph-1 narration 0', 'footnoteDefinition-1 narration 0', 'list-1 visual 0', 'footnoteDefinition-2 visual 0', 'code-1 visual 0'],
     ['paragraph-1 narration 0'],
@@ -90,7 +82,6 @@ it('executes code once, answers from the cache after, and reruns only changed co
   expect(await outputs()).toEqual(['COUNT PAIRS\n', 'MERGE PAIRS\n'])
   expect(runs()).toEqual(['count pairs', 'merge pair', 'merge pairs'])
 
-  // `build` drops the recording of the code that changed.
   const freeze = join(dir, 'lecture/.presmium/freeze')
   const recorded = () => readdirSync(freeze).map(f => JSON.parse(readFileSync(join(freeze, f), 'utf8')).code).sort()
   expect(recorded()).toEqual(['count pairs', 'merge pair', 'merge pairs'])
@@ -98,7 +89,6 @@ it('executes code once, answers from the cache after, and reruns only changed co
   expect(recorded()).toEqual(['count pairs', 'merge pairs'])
   expect(runs()).toHaveLength(3)
 
-  // Without the executor installed, the committed cache still provides the same outputs.
   edit('lecture/lecture.md', '  - ../addons/echo\n', '')
   expect(await outputs()).toEqual(['COUNT PAIRS\n', 'MERGE PAIRS\n'])
   expect(runs()).toHaveLength(3)
@@ -108,7 +98,6 @@ it('reuses output recorded with another interpreter version and warns, unless th
   const dir = fixtures()
   const bin = join(dir, 'bin')
   mkdirSync(bin)
-  // A fake interpreter on PATH: the executor fingerprints it with `fakeinterp --version`.
   const install = (version: string) => writeFileSync(join(bin, 'fakeinterp'), [
     '#!/bin/sh',
     `if [ "$1" = --version ]; then echo "Interp ${version}"; exit 0; fi`,
@@ -138,7 +127,6 @@ it('reuses output recorded with another interpreter version and warns, unless th
   const rerun = await compile()
   expect(rerun.output).toBe('2.0: print hello\n')
   expect(rerun.stderr).not.toContain('recorded output')
-  // The new recording replaces the old one.
   expect(rerun.files).toHaveLength(1)
   expect(rerun.files).not.toEqual(recorded.files)
 })
@@ -156,9 +144,7 @@ it('gives {ref}, {eq} and {numref} without text the title or number of their tar
     ['ref', 'energy', 'Mass and energy'],
     ['eq', 'eq-energy', '(1)'],
     ['eq', 'eq-pythagoras', '(2)'],
-    // MyST keeps the number with its word: a no-break space.
     ['numref', 'fig-dot', 'Figure 1'],
-    // Text written with the reference is kept.
     ['ref', 'energy', 'the first section'],
     ['ref', 'figures', 'Figures'],
     ['ref', 'nowhere', ''],
@@ -173,7 +159,6 @@ it('{config} overrides a plugin\'s global options in its section, for its direct
   const doc = JSON.parse(stdout) as IRDocument
   const props = (id: string) => doc.sections.find(s => s.id === id)!.blocks.map(b => b.node.type === 'component' ? b.node.props : undefined)
   expect(props('global')).toEqual([{ label: 'global', tone: 'plain' }])
-  // Wherever the directive is in the section: before {config}, or in a {slide}.
   expect(props('overridden')).toEqual([{ label: 'section', tone: 'plain' }, { label: 'section', tone: 'plain' }])
   expect(doc.sections.map(s => s.config)).toEqual([undefined, undefined, { 'fixture.scoped': { label: 'section' } }])
   expect(doc.meta.labels).toEqual({ 'scoped-configuration': 'global', 'global': 'global', 'overridden': 'section' })
@@ -188,20 +173,16 @@ it('compiles a {code-cell} as a code block, keeps labels as ids, keeps the footn
   const first = await presmium(dir, ['ir', 'syntax'])
   expect(first.code).toBe(0)
   const doc = JSON.parse(first.stdout) as IRDocument
-  // The labelled section has its label; the earlier title whose slug it is takes the next id, without a diagnostic.
   expect(doc.sections.map(s => s.id)).toEqual(['intro-2', 'intro', 'only', 'chapter-a', 'chapter-b'])
   const entry = join(dir, 'syntax/lecture.md')
   const line = readFileSync(entry, 'utf8').split('\n').indexOf(':::{only} slide') + 1
   expect(doc.diagnostics).toMatchObject([{ severity: 'warning', message: expect.stringContaining('unknown renderer id "slide"'), source: { file: entry, line } }])
 
-  // `:run:` of a {code-cell} runs at compile time; MyST's output area, with its random id, is not in the IR.
   expect(doc.sections[1]!.blocks[0]!.node).toMatchObject({ type: 'code', lang: 'echo', value: 'hello cell', run: { when: 'compile' }, outputs: [{ stdout: 'HELLO CELL\n' }] })
   expect(first.stdout).not.toContain('"type": "outputs"')
-  // A plugin pass that runs after compile-time execution sees the outputs (C-17).
   expect(doc.meta.recorded).toEqual(['HELLO CELL\n'])
   expect((await presmium(dir, ['ir', 'syntax'])).stdout).toBe(first.stdout)
 
-  // Both chapters write [^1]: each reference goes to the definition of its own chapter, and each chapter counts from 1.
   const footnotes = (id: string) => doc.sections.find(s => s.id === id)!.blocks.flatMap((b) => {
     const found: MdastNode[] = []
     const visit = (node: MdastNode) => (node.type.startsWith('footnote') ? found.push(node) : node.children?.forEach(visit))
@@ -216,10 +197,8 @@ it('gives each renderer the steps of what it shows: steps that only blocks of ot
   const dir = fixtures()
   const out = join(dir, 'out')
   expect((await presmium(dir, ['build', 'syntax', '--out', out])).code).toBe(0)
-  // `{only} web` with `:reveal:` takes step 1 of the document, before the revealed code.
   const only = (JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as IRDocument).sections.find(s => s.id === 'only')!
   expect([only.steps, only.blocks.find(b => b.id === 'code-1')!.at]).toEqual([2, 2])
-  // The fixture renderer shows the code at the first click, and has no step without a change.
   expect(JSON.parse(readFileSync(join(out, 'fixture/outline.json'), 'utf8')).steps.only).toEqual({ steps: 1, at: { 'code-1': 1 } })
 })
 

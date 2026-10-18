@@ -3,7 +3,6 @@ import { defineAppSetup } from '@slidev/types'
 import { watch } from 'vue'
 import { CLEAR_DRAWING } from '../src/domain/index.ts'
 
-/** In the dev server, a slide whose drawing was cleared has its saved drawing removed (see ./vite-plugins.ts). */
 export default defineAppSetup(() => {
   if (mode !== 'dev') return
   let drawn = new Set<string>()

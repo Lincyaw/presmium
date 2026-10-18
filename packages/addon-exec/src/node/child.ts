@@ -1,26 +1,3 @@
-/**
- * Compile-time execution in a child process (K-19), shared by the local
- * executors. A run happens in a run directory of its own: the runner's input
- * is a file in it (`.presmium/request.json`) and the runner writes the result
- * of each request to `.presmium/result-<i>.json` there, so whatever the
- * program writes to its standard streams cannot break the result, and a
- * process sandbox, which passes on no standard input or extra file
- * descriptor, runs it the same way (docs/architecture.md 4.6, 10.6). With
- * the compiler's `RunContext.sandbox` the command runs through it; otherwise
- * it runs here, in a new temporary directory, and is killed once it exceeds
- * its timeout. The code gets `RunContext.env` and nothing else of this
- * process's environment; without a context only `PATH`, `LANG` and a
- * temporary `HOME`.
- *
- * The runs of one session (`RunRequest.session`) share the interpreter: the
- * requests of a session that arrive together (the compiler sends a session's
- * blocks at once) run in one process, in order, and a later request of the
- * session runs again those before it, so it finds what they defined.
- *
- * What a run records goes into the published forms, whatever the deck's
- * language, so the messages added here are English, like the interpreters'
- * own, and name nothing of the build machine (K-13).
- */
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -29,7 +6,6 @@ import { failedRun } from '@presmium/kernel'
 import type { ProcessSandbox, RunContext, RunOutput, RunRequest, RunResult, SandboxResult, SandboxRun } from '@presmium/kernel'
 import { DEFAULT_EXEC_CONFIG } from '../domain/index.ts'
 
-/** What a runner writes for one request. */
 interface RunnerOutput {
   stdout: string
   stderr: string
@@ -37,25 +13,17 @@ interface RunnerOutput {
   outputs?: RunOutput[]
 }
 
-/** The runner's input file in the run directory. */
 export const REQUEST_FILE = '.presmium/request.json'
 const resultFile = (i: number) => `.presmium/result-${i}.json`
 
-/** Node's exit code when the event loop empties while a top-level await is still pending. */
 const UNSETTLED_AWAIT = 13
 
-/** The environment of code run without a compiler's context: `PATH`, `LANG` and a temporary `HOME`. */
 export function plainEnv(): Record<string, string> {
   const home = join(tmpdir(), 'presmium-home')
   mkdirSync(home, { recursive: true })
   return { PATH: process.env.PATH ?? '', LANG: process.env.LANG ?? 'C.UTF-8', HOME: home }
 }
 
-/**
- * Runs a command as the process sandbox would (`ProcessSandbox.run`), without
- * isolation: in a new temporary directory holding the files, with exactly the
- * given environment, killed at the timeout or on abort.
- */
 export const directRun: ProcessSandbox = {
   kind: 'none',
   run(request: SandboxRun): Promise<SandboxResult> {
@@ -103,11 +71,8 @@ export const directRun: ProcessSandbox = {
 
 export interface ChildRunner {
   executorId: string
-  /** The command and its arguments; it reads `.presmium/request.json` in its working directory. */
   argv: string[]
-  /** Paths outside the run directory the command reads (the interpreter, the runner's own files). */
   read(): string[]
-  /** Whether requests of one session share the interpreter. */
   sessions: boolean
 }
 
@@ -119,13 +84,11 @@ interface Pending {
 }
 
 interface Session {
-  /** Requests run in the session so far, which a later request runs again first. */
   history: RunRequest[]
   queue: Pending[]
   tail: Promise<void>
 }
 
-/** A local executor's runs: in the sandbox of the run's context or directly, sessions batched (see the top of this file). */
 export function childRuns(runner: ChildRunner) {
   const sessions = new Map<string, Session>()
 
@@ -133,7 +96,6 @@ export function childRuns(runner: ChildRunner) {
     const id = runner.executorId
     const session = runner.sessions ? requests[0]?.session : undefined
     const input = { session, runs: requests.map(({ code, args, stdin, files, lang }) => ({ code, args, stdin, files, lang })) }
-    // A session's runs share the time of all of them; each one's own timeout is its share.
     const timeouts = requests.map(r => r.timeoutMs ?? DEFAULT_EXEC_CONFIG.timeoutMs)
     const timeoutMs = timeouts.reduce((sum, t) => sum + t, 0)
     const sandbox = ctx?.sandbox ?? directRun
@@ -189,7 +151,6 @@ export function childRuns(runner: ChildRunner) {
       const session = state
       return new Promise((resolve) => {
         session.queue.push({ request, signal, ctx, resolve })
-        // The requests of the session sent together run in one process, once the earlier ones are done.
         if (session.queue.length === 1) session.tail = session.tail.then(() => new Promise(next => setImmediate(next))).then(() => flush(session))
       })
     },

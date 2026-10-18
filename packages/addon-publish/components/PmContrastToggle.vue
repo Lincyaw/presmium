@@ -3,7 +3,6 @@ import { PmIcon, useMessages } from '@presmium/host'
 import { useHighContrast } from '../src/client/contrast.ts'
 import { MESSAGES } from '../src/domain/index.ts'
 
-// `compact` shows the icon only, as in the hosts' toolbars.
 defineProps<{ compact?: boolean }>()
 
 const { enabled, toggle } = useHighContrast()
@@ -27,7 +26,6 @@ const t = useMessages(MESSAGES)
 </template>
 
 <style>
-/* The host's button (N-10); on, it is the switch that is on, in the accent. */
 .pm-contrast-toggle {
   border-radius: var(--pm-radius-pill);
 }

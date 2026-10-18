@@ -17,10 +17,6 @@ import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
 import { devHost } from './host.ts'
 
-/**
- * The CLI's package directory: Presmium's own packages installed with the
- * CLI (the renderers, `addon-deltabox`) resolve from here (docs/architecture.md 10.6).
- */
 export const BUNDLED = fileURLToPath(new URL('..', import.meta.url))
 
 const USAGE = `Usage: presmium <command> [deck] [options]
@@ -91,34 +87,25 @@ const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 
 interface Command {
   name: Name
-  /** The deck's entry file; for `serve`, the workspace root or deck directory. */
   entry: string
-  /** `build` at a workspace root: the workspace site. */
   workspace?: string
   to?: string[]
   out?: string
   json: boolean
   updateLock: boolean
-  /** `check --env`: probe the declared environments. */
   env: boolean
-  /** `build`, `check`: compile for this audience only (P-55). */
   audience?: string
-  /** `check --external-links`: lychee checks the external links (P-54). */
   externalLinks: boolean
   serverPort?: number
   allow: ApprovalKind[]
   operatorDir?: string
   port?: number
   host?: string
-  /** `dev --edit`: the web form's edit mode (until WP-96g). */
   edit: boolean
-  /** `serve --headless`: the service without its interface, for a workbench. */
   headless: boolean
-  /** `serve --preview-origin`: the workbench's origins. */
   previewOrigins: string[]
 }
 
-/** Runs `presmium <argv>` and returns the exit code. */
 export async function main(argv: string[]): Promise<number> {
   if (argv[0] === 'studio') return studio(argv.slice(1))
   let command: Command | 'help'
@@ -183,7 +170,6 @@ function parseCommand(argv: string[]): Command | 'help' {
   if (workspace && values.audience !== undefined) throw new Error('--audience does not apply to a workspace yet: build each document for its audience')
   const audience = values.audience?.trim()
   if (values.audience !== undefined && !/^[\w.-]+$/.test(audience ?? '')) throw new Error(`--audience takes the name of an audience, e.g. student, not "${values.audience}"`)
-  // serve takes a directory: the workspace root, or a deck directory.
   const directory = name === 'serve'
   const entry = directory || workspace ? resolve(deck) : resolveEntry(deck)
   if (!existsSync(entry) || (directory && !statSync(entry).isDirectory())) throw new Error(`${entry} not found`)
@@ -218,7 +204,6 @@ function parseCommand(argv: string[]): Command | 'help' {
   }
 }
 
-/** Whether a value is an origin: `http(s)://<host>[:<port>]`, nothing after it. */
 function isOrigin(value: string): boolean {
   try {
     const url = new URL(value)
@@ -269,26 +254,13 @@ async function buildDeck(command: Command): Promise<number> {
   }
   const compilation = await new Compiler(command.entry, { bundled: BUNDLED, ...command.audience ? { audience: command.audience } : {} }).compile({ pruneCache: true })
   const outDir = resolve(command.out ?? join(compilation.deckDir, 'dist'))
-  // For an audience, the build scans every file of the output directory for what was left out (P-55): a renderer's
-  // directory a build of the whole deck left there would be published with it.
   const report = await build(compilation, { outDir, to: command.to })
   process.stdout.write(buildText(report, compilation.runs, compilation.audience?.name))
   return exitCode(report.findings)
 }
 
-/** The `.gitignore` line that keeps `presmium dev`'s MCP token (`<deck>/.presmium/server.json`) out of git, wherever the deck is in the repository. */
 const TOKEN_IGNORE = '**/.presmium/server.json'
 
-/**
- * `presmium dev`: the Presmium server (this machine only) with
- * the plugins' server contributions and the workspace's routes for the
- * deck (P-124: the source editor's routes, the document writer, its lock
- * and, in a git repository, its history), then the renderers' dev servers,
- * which proxy `/__presmium/` to it (docs/architecture.md 10.1, 10.2). With
- * `--edit` the web form's loads the workspace's browser plugin, edit mode
- * (experimental; WP-96g removes it with the option, G-4); without it the
- * page is the live preview, and loads no preview agent either.
- */
 async function devDeck(command: Command): Promise<number> {
   let latest: Compilation | undefined
   const deckDir = dirname(command.entry)
@@ -344,11 +316,6 @@ async function devDeck(command: Command): Promise<number> {
   return 0
 }
 
-/**
- * `presmium serve`: the workspace service, on this machine, until stopped
- * (docs/architecture.md section 10). Prints its address, the workspace and
- * the MCP endpoint with the file that holds its token.
- */
 async function serve(command: Command): Promise<number> {
   const started = await serveWorkspace({
     dir: command.entry,
@@ -371,26 +338,18 @@ async function serve(command: Command): Promise<number> {
   return 0
 }
 
-/** This package's `presmium` command, which `presmium studio` runs the workspace service with. */
 const PRESMIUM_BIN = fileURLToPath(new URL('../bin/presmium.mjs', import.meta.url))
 
-/** `@presmium/studio`'s entry, installed beside this package or in the current project; undefined when it is not installed. */
 function studioEntry(): string | undefined {
   for (const from of [import.meta.url, pathToFileURL(join(process.cwd(), 'package.json')).href]) {
     try {
       return createRequire(from).resolve('@presmium/studio')
     } catch {
-      // Not there.
     }
   }
   return undefined
 }
 
-/**
- * `presmium studio`: handed over to `@presmium/studio` when it is installed
- * (docs/design-dsh.md 11.1); the core does not depend on it, nor on DeepSeek
- * Harness (G-1, G-9). Without it, says how to install it.
- */
 async function studio(argv: string[]): Promise<number> {
   const entry = studioEntry()
   if (!entry) {
@@ -401,7 +360,6 @@ async function studio(argv: string[]): Promise<number> {
   return studioMain(argv, { presmium: PRESMIUM_BIN })
 }
 
-/** `network  <url>` for each address of the local network a `--host` of every interface (or that address) is reached at. */
 function networkLines(host: string | undefined, url: string): string {
   if (!host || isLoopback(host)) return ''
   const { port } = new URL(url)

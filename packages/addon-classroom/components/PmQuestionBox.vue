@@ -6,12 +6,7 @@ import { COLLECTIONS, isQuestion, MESSAGES, placeText } from '../src/domain/inde
 import type { Place, Question } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
-// P-66, from `{question-box}`: the prompt is the default slot. Learners of an active classroom ask
-// here; a question is attached to this section, or to the block `target` names. The learner sees
-// their own questions, the presenter every question asked here (the presenter view lists them all
-// by place) and marks them answered.
 const props = defineProps<{
-  /** Id of a block of this section the questions are about. */
   target?: string
   place?: Place
 }>()

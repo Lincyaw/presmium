@@ -4,11 +4,6 @@ import { readonly, shallowRef } from 'vue'
 const dark = shallowRef(false)
 let observed = false
 
-/**
- * Whether the page shows its dark appearance: the `dark` class of `<html>`,
- * which VitePress sets and the appearance switch changes. Reactive; false in
- * a server render.
- */
 export function useDark(): Readonly<Ref<boolean>> {
   if (!observed && typeof document !== 'undefined') {
     observed = true

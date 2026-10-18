@@ -1,9 +1,4 @@
 /// <reference lib="webworker" />
-/**
- * Runs WASI requests off the main thread (src/runner.mjs), one at a time: the
- * runtime files come from the form's published runtime directory (the service
- * worker's cache when offline) and stay compiled in the worker for later runs.
- */
 import { prepare, runWasi } from '../runner.mjs'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 

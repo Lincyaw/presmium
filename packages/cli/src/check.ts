@@ -6,38 +6,25 @@ import { checkContext, Compiler, frontmatterLine, sortFindings } from '@presmium
 import type { Compilation, CompilerOptions } from '@presmium/compiler'
 
 export interface CheckOptions {
-  /** Deck directory or entry file. */
   deck: string
-  /** Re-resolve the deck's anchors and rewrite `.presmium/anchors.lock.json` before checking. */
   updateLock?: boolean
-  /** What the host gives the compiler (e.g. where Presmium's own packages are installed). */
   compiler?: CompilerOptions
-  /** Connect to the declared environments (`presmium check --env`, P-100). */
   environments?: boolean
-  /** Check the external links with lychee when it is installed (`presmium check --external-links`, P-54). */
   externalLinks?: boolean
 }
 
 export interface LockUpdate {
-  /** Absolute path of the lock file. */
   file: string
   anchors: number
   changed: boolean
 }
 
 export interface CheckResult {
-  /** Absolute path of the deck entry file. */
   entry: string
-  /** Every finding has a source; findings are ordered by file and line. */
   findings: Finding[]
   lock?: LockUpdate
 }
 
-/**
- * Compiles the deck to its validated IR (docs/ir.md section 7), for an
- * audience when `compiler.audience` names one, and runs the plugins' checks
- * and the publication checks.
- */
 export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   const compiler = new Compiler(options.deck, options.compiler)
   let compilation = await compiler.compile()
@@ -49,7 +36,6 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   let lock: LockUpdate | undefined
   if (options.updateLock) {
     lock = await updateLock(compilation, (name, error) => fail(`plugin "${name}" failed to list anchors: ${errorMessage(error)}`, frontmatterLine(entryText, name)))
-    // Plugin passes read the lock, so the IR is compiled again against the new one.
     compilation = await compiler.compile()
   }
 
@@ -59,11 +45,6 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   return { entry: compilation.entry, findings: sortFindings(all), lock }
 }
 
-/**
- * `presmium check --env`: each declared environment's provider connects to it
- * (`EnvironmentProvider.probe`); one that cannot be reached is an error on its
- * line of the headmatter, with the provider's reason.
- */
 export async function probeEnvironments(compilation: Compilation, text: string): Promise<Finding[]> {
   const findings: Finding[] = []
   for (const { name, spec, provider, context } of compilation.environments) {
@@ -94,7 +75,6 @@ async function updateLock(compilation: Compilation, onError: (plugin: string, er
   }
   const { lock } = compilation
   for (const anchor of [...anchors].sort()) lock.record(anchor, await compilation.resolvers.resolve(anchor, ctx.src, lock.get(anchor)))
-  // Prune only when every plugin listed its anchors, so a failing plugin keeps its records.
   if (complete) lock.retain(anchors)
   const text = lock.serialize()
   if (text !== before) {

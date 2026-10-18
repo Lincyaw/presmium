@@ -1,6 +1,3 @@
-// Inline roles a plugin registers (docs/ir.md 2.8): `{probe}` stays in the IR as a `presmiumRole`
-// node with its options and `value`; the web form shows its children only; a role no plugin
-// registers is flattened to its text with a warning.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,7 +6,6 @@ import { afterAll, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/roles', import.meta.url))
-// In the demo, whose node_modules hold the web renderer.
 const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
 mkdirSync(WORK, { recursive: true })
 const dir = mkdtempSync(join(WORK, 'roles-'))
@@ -30,7 +26,6 @@ it('keeps a registered role as a presmiumRole node, flattens an unknown one, and
     { type: 'presmiumRole', plugin: 'fixture.probe', name: 'probe', options: { value: '可见的内容' }, children: [{ type: 'strong', children: [{ type: 'text', value: '可见的内容' }] }] },
     { type: 'presmiumRole', plugin: 'fixture.probe', name: 'probe', options: { mark: '提示', count: 2, value: 'hidden' }, children: [] },
   ])
-  // The role no plugin registers is its text.
   expect(find(mdast, 'text').map(node => node.value).join('')).toContain('之后 压平的文字')
   expect(printed.stderr).toMatch(/warning {2}unknown role \{nonesuch\}/)
 
@@ -38,7 +33,6 @@ it('keeps a registered role as a presmiumRole node, flattens an unknown one, and
   expect(built.code, built.stdout + built.stderr).toBe(0)
   const html = readdirSync(join(dir, 'out/web')).filter(file => file.endsWith('.html')).map(file => readFileSync(join(dir, 'out/web', file), 'utf8')).join('\n')
   expect(html).toContain('<strong>可见的内容</strong>')
-  // No mark outside the presenter window and edit mode, and nothing of the role without children.
   const paragraph = /<p>讲解前 [\s\S]*?<\/p>/.exec(html)?.[0]
   expect(paragraph).toBe('<p>讲解前 <span class="pm-role" data-role="probe"><strong>可见的内容</strong></span> 中间 <!----> 之后 压平的文字。</p>')
   expect(html).not.toContain('〔probe')

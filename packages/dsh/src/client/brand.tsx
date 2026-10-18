@@ -1,12 +1,3 @@
-/**
- * Presmium's brand in DeepSeek Harness's places (docs/design-dsh.md 7.4 and 7.5):
- * the sidebar's brand mark and name, the conversation's opening mark, the
- * first-use notice (the `welcome-notice` step of `settings.onboarding`, below
- * DeepSeek's in priority; the DeepSeek sign-in step is passed over), and the
- * opening's copy through language packs for zh-CN and en-US (a full tag wins
- * over the built-in primary one). The page's title and icon are the host's
- * (src/node/workbench.ts).
- */
 import { PmButton, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import { useEffect, useSyncExternalStore } from 'react'
@@ -15,7 +6,6 @@ import { BRAND_LANGUAGES, BRAND_SLOTS, ONBOARDING } from './contract.ts'
 import { BRAND_COPY, FRAME_MESSAGES } from './messages.ts'
 import type { FrameMessages } from './messages.ts'
 
-/** Presmium's mark: a P of paper on the accent. */
 export function Logo({ size = 24, className }: { size?: number, className?: string }) {
   return (
     <svg className={className ? `pmw-logo ${className}` : 'pmw-logo'} width={size} height={size} viewBox="0 0 32 32" role="img" aria-label="Presmium">
@@ -25,13 +15,11 @@ export function Logo({ size = 24, className }: { size?: number, className?: stri
   )
 }
 
-/** The frame's text in the workbench's language. */
 export function useFrameMessages(workbench: Workbench): FrameMessages {
   const locale = useSyncExternalStore(workbench.subscribe, () => workbench.getState().locale)
   return FRAME_MESSAGES[locale]
 }
 
-/** Where this browser remembers the first-use notice was read (a convenience: losing it shows the notice again). */
 const WELCOMED = 'presmium.workbench.welcomed'
 
 function welcomed(): boolean {
@@ -42,10 +30,6 @@ function welcomed(): boolean {
   }
 }
 
-/**
- * Presmium's first-use notice: what the workbench is, and the way to the model's settings. DeepSeek Harness renders
- * the step inside its sidebar, which the root layout may hide, so the notice is drawn over the page.
- */
 function Welcome({ workbench, complete, openSection }: { workbench: Workbench, complete?: () => void, openSection?: (id: string) => void }) {
   const t = useFrameMessages(workbench)
   const read = welcomed()
@@ -57,7 +41,6 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
     try {
       localStorage.setItem(WELCOMED, '1')
     } catch {
-      // Shown again next time.
     }
     complete?.()
   }
@@ -86,7 +69,6 @@ function Welcome({ workbench, complete, openSection }: { workbench: Workbench, c
   )
 }
 
-/** A first-use step Presmium passes over (DeepSeek's sign-in): it completes at once. */
 function PassOver({ complete }: { complete?: () => void }) {
   useEffect(() => {
     complete?.()
@@ -94,7 +76,6 @@ function PassOver({ complete }: { complete?: () => void }) {
   return null
 }
 
-/** Registers the brand's places; each registration lives as long as the plugin. */
 export function brand(ctx: DshClientContext, workbench: Workbench): void {
   const [mark, name, hero] = BRAND_SLOTS
   ctx.effect(() => ctx.slots.inject(mark, () => ctx.slots.register({ name: mark }, ({ size }: { size?: number }) => <Logo size={size ?? 24} />)), 'presmium: sidebar brand mark')

@@ -1,5 +1,3 @@
-// The extension runs only inside VS Code; this checks that it type-checks against the VS Code API
-// and bundles into the file its manifest names, with the commands it registers contributed.
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'

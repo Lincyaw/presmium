@@ -1,8 +1,4 @@
 <script setup lang="ts">
-// The question panel (P-112, decision E-9): until the reader filled in a model service of his own it says how
-// questions are answered and asks for it (./AskSettings.vue); then it names the service's provider and model
-// before anything is asked (N-08). A question goes with the current section, or with the text the reader
-// selected in the deck; the answer streams in, and the places it cites are links that move the page there.
 import { PmButton, useMessages } from '@presmium/host'
 import type { AgentContext, Citation } from '@presmium/kernel'
 import { computed, ref } from 'vue'
@@ -19,10 +15,8 @@ const text = ref('')
 const changing = ref(false)
 const running = computed(() => exchanges.value.some(e => e.state === 'running'))
 const service = computed(() => askSettings.value && { provider: askProvider(askSettings.value.url), model: askSettings.value.model })
-/** Citations move the page where it can be moved: the IR runtime, or the host's navigation. */
 const follows = computed(() => Boolean(navigator ?? navigation.value))
 
-/** The place the question is about: the selection's section, else the page's. */
 const place = computed(() => {
   const position = navigator?.position() ?? navigation.value?.position.value
   const section = selected.value?.section ?? position?.section
@@ -181,7 +175,6 @@ function go(citation: Citation): void {
   display: grid;
   gap: var(--pm-space-2);
 }
-/* The question as the reader's own bubble, the answer as the reading text below it (docs/design/edit.dc.html). */
 .pm-assistant__question {
   justify-self: end;
   max-width: 85%;

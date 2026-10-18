@@ -1,8 +1,3 @@
-/**
- * UI strings of the execution plugin in zh-CN and en (N-07), in the UI
- * language of @presmium/host: `useMessages()` in components, `messages()`
- * where a string is needed outside them.
- */
 import { currentLocale, useMessages as useCatalog } from '@presmium/host'
 import type { Catalog } from '@presmium/host'
 import type { ComputedRef } from 'vue'
@@ -17,16 +12,13 @@ const zhCN = {
   recordedBadge: (reason: string) => `预录输出 · ${reason}`,
   recordedLine: (reason: string) => `预录输出（${reason}）`,
   recordedOutput: '预录输出',
-  /** `icon` is the run button's icon, as SVG markup. */
   runHint: (icon: string) => `按 ${icon} 运行这段代码`,
-  /** The run panel's bar: where its code runs (./place.ts). */
   runsIn: {
     browser: '浏览器中运行',
     machine: '本机运行',
     remote: (name: string) => `在远端环境 ${name} 中运行`,
     environment: (name: string) => `在环境 ${name} 中运行`,
   },
-  /** The label of a run's output, with its duration in seconds when it ran. */
   output: '输出',
   outputTook: (seconds: string) => `输出 · ${seconds} 秒`,
   droppedImage: '图片输出的数据不是 base64，未显示',
@@ -106,12 +98,10 @@ const en: ExecMessages = {
 
 export const MESSAGES: Catalog<ExecMessages> = { 'zh-CN': zhCN, en }
 
-/** The strings of the UI language, read when a string is needed. */
 export function messages(): ExecMessages {
   return MESSAGES[currentLocale()]
 }
 
-/** For components: the strings, following the UI language. */
 export function useMessages(): ComputedRef<ExecMessages> {
   return useCatalog(MESSAGES)
 }

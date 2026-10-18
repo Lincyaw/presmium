@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Download the Markdown docs of the host frameworks and integrated tools into vendor/docs (not committed).
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 dest="$root/vendor/docs"
@@ -23,16 +22,12 @@ fetch_paths() { # repo tag name pattern... (docs kept in several places; repo la
 
 fetch slidevjs/slidev v53.0.0 docs slidev
 fetch vuejs/vitepress v1.6.4 docs/en vitepress
-# DeepSeek Harness: user and architecture docs, CLI reference, and every package README (MCP client, SDK, ACP, API, bundles, approvals, LLM, sessions).
 fetch_paths deepseek-ai/deepseek-harness dsh-v0.2.1-alpha.4 dsh \
   '/README.md' '/SAFETY.md' '/CONTRIBUTING.md' '/docs/' '!/docs/persistence-changes/' '!/docs/postmortem/' \
   '/apps/cli/*.md' '/apps/cli/reference/' '/packages/*/README.md' '/packages/*/*/README.md' \
   '/packages/preset/agent-preset/skills/'
-# MCP TypeScript SDK: guides (servers, serving over stdio and Streamable HTTP, clients) and package READMEs.
 fetch_paths modelcontextprotocol/typescript-sdk v2.3.1 mcp \
   '/README.md' '/VERSIONING.md' '/docs/' '/packages/*/README.md' '/packages/middleware/*/README.md'
-# deltabox-lite: review/rollback sessions and the process sandbox (CLI, Node binding, policies, platform notes).
 fetch_paths delta-box/deltabox-lite v0.1.1 deltabox '/README.md' '/CHANGELOG.md' '/docs/'
-# dsh-deltabox has no public repository; its README is only in the npm package (kept for the rejected option A).
 curl -fsSL https://unpkg.com/dsh-deltabox@0.1.2/README.md -o "$dest/deltabox/dsh-deltabox.md"
 echo "docs written to $dest"

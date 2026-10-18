@@ -1,17 +1,3 @@
-/**
- * `AGENT` in the page (docs/architecture.md 4.8): the client of the
- * assistant's routes. `available`, `provider` and `runtime` read `info`,
- * asked when the plugin starts and again after each task (the runtime is
- * known once an agent started). A task's id is drawn here, so `submit`
- * returns at once; its events come from `tasks/<id>/events` (SSE), each
- * once even when the stream reconnects (the server sends them from the
- * first), until `done` or `error`. A task whose context names a document
- * goes to that document's routes: the workspace's new-document form drafts
- * the document it created (P-121) from the home page. A task's `revert`
- * undoes its commit through its document's `revert` route. Besides the
- * contract, the page's own panels may ask for the document's change task under way
- * (`pending`) and follow it again (`attach`), after the page was reloaded.
- */
 import { createServerClient } from '@presmium/host'
 import type { ServerClient } from '@presmium/host'
 import type { AgentClient, AgentEvent, AgentTask, AgentTaskKind, AgentTaskRequest, ReviewDecision, TaskRevertResult } from '@presmium/kernel'
@@ -24,9 +10,7 @@ export interface AssistantClient {
   client: AgentClient
   info: Readonly<ShallowRef<AssistantInfo | undefined>>
   refresh(): Promise<void>
-  /** The page's document's change task under way or waiting for its review, when this member sent it or owns the workspace. */
   pending(): Promise<PendingChange | undefined>
-  /** A task submitted before (by this page before it was reloaded, or another): its events from the first, its cancel and review. */
   attach(id: string): AgentTask
 }
 
@@ -36,10 +20,8 @@ function taskId(): string {
   return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
 }
 
-/** The server clients of the other documents the page's tasks went to (the home page drafting a new one). */
 const others = new Map<string, ServerClient>()
 
-/** The server client of the page's document, or of another document of the workspace. */
 function serverOf(server: ServerClient, document: string | undefined): ServerClient {
   if (!document) return server
   let other = others.get(document)
@@ -47,7 +29,6 @@ function serverOf(server: ServerClient, document: string | undefined): ServerCli
   return other
 }
 
-/** The events of a submitted task, from its SSE route. */
 async function* follow(server: ServerClient, id: string, posted: Promise<Response>): AsyncIterable<AgentEvent> {
   const response = await posted.catch((error: unknown) => error)
   if (!(response instanceof Response) || !response.ok) {
@@ -102,10 +83,8 @@ export function createAgentClient(server: ServerClient): AssistantClient {
       if (response.ok) info.value = await response.json() as AssistantInfo
       else await response.text()
     } catch {
-      // The server is gone; what was known stays.
     }
   }
-  /** A task of `target` whose submission is `posted` (an accepted one for a task submitted before). */
   const task = (target: ServerClient, id: string, posted: Promise<Response>): AgentTask => {
     const events: AsyncIterable<AgentEvent> = {
       async* [Symbol.asyncIterator]() {
@@ -131,7 +110,6 @@ export function createAgentClient(server: ServerClient): AssistantClient {
         if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { error?: string }).error ?? `${response.status}`)
         await response.text()
       },
-      // The undo of the task's commit, through the assistant's `revert` route of the task's document.
       async revert(): Promise<TaskRevertResult> {
         await posted
         const response = await target.fetch(ASSISTANT_ID, 'revert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task: id }) })

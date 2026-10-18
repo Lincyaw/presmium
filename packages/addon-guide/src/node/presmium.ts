@@ -1,22 +1,3 @@
-/**
- * Guidance cues as MyST directives (P-30 to P-32):
- *
- *   :::{cursor}              one waypoint per line, `[move|hover|click] <selector>`;
- *   #query                   waypoint k is the block's step k
- *   click #run
- *   :::
- *
- *   :::{spotlight} #output   lit while its block's steps last (`:span:`, default 0),
- *   :title: Results          the body is the popover text
- *   The results show here.
- *   :::
- *
- *   :::{hint} #help          the same for a pulsing hint
- *   :::
- *
- * Cue steps count from the block (docs/ir.md 2.4): both renderers give the
- * component its block's `at` as step scope.
- */
 import { createRequire } from 'node:module'
 import { deckLocale } from '@presmium/kernel'
 import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@presmium/kernel'
@@ -29,10 +10,6 @@ function component(name: string, props: Record<string, unknown>, fallback: Mdast
   return { type: 'component', plugin: GUIDE_ID, name, props: defined, fallback }
 }
 
-/**
- * A cue's popover as static content, for renderers that cannot show the cue,
- * in the deck's language (`lang`); empty without a popover.
- */
 function popover(lang: string | undefined, title?: string, text?: string): MdastNode {
   const children: MdastNode[] = []
   if (title) children.push({ type: 'strong', children: [{ type: 'text', value: title }] })
@@ -40,7 +17,6 @@ function popover(lang: string | undefined, title?: string, text?: string): Mdast
   return { type: 'root', children: children.length > 0 ? [{ type: 'paragraph', children }] : [] }
 }
 
-/** A cursor draws over the content (`layer: 'overlay'`): it has no place of its own, and nothing to show without running. */
 const cursor: DirectiveSpec = {
   name: 'cursor',
   body: true,

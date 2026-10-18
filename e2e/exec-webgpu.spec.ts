@@ -2,12 +2,6 @@ import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 import { openSlide, useFixture } from './fixtures/deck.ts'
 
-// e2e/fixtures/exec-webgpu, built by `presmium build` (WP-75, P-104): a WGSL compute shader in a run
-// panel, recorded at build time in Playwright's Chromium; the same shader from Python through
-// `presmium_gpu`; and jax-js in JavaScript. Chromium runs with SwiftShader (docs/architecture.md
-// section 7), so the GPU is a fallback adapter and timings are CPU emulation; one test starts the
-// default headless Chromium, which has no GPU adapter, to see the recorded output and the reason; and
-// where Chromium finds a GPU through Vulkan, the shader and jax-js run on it (skipped otherwise).
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('exec-webgpu', { link: { '@presmium/slidev-addon-exec-webgpu': 'packages/addon-exec-webgpu' } })
 test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })
@@ -19,7 +13,6 @@ async function webBlock(page: Page, section: string, block: string): Promise<Loc
   return page.locator(`.pm-block[data-block="${block}"]`)
 }
 
-/** Runs the code block and resolves with its output, once the run has ended. */
 async function runCode(code: Locator): Promise<Locator> {
   await expect(code.locator('.pm-code-block__run button').first()).toBeEnabled()
   await code.locator('.pm-code-block__run button').first().click()
@@ -67,7 +60,6 @@ test('Python runs the same shader through presmium_gpu, with await and, having J
   const synchronous = await runCode(page.locator('.pm-block[data-block="py-sync"]'))
   await expect(synchronous.locator('.pm-output__stdout')).toHaveText('JSPI: True\n[11.0, 22.0, 33.0, 44.0]\n', RUNTIME)
 
-  // The scale limits of the run panel hold in Python too.
   const limits = await runCode(page.locator('.pm-block[data-block="py-limits"]'))
   await expect(limits.locator('.pm-output__stdout')).toHaveText('The buffers take 160000000 bytes, over the scale limit of 134217728 bytes\nrepeat is an integer from 1 to 1000\n', RUNTIME)
 })
@@ -78,7 +70,6 @@ test('JavaScript multiplies 2×2 matrices with jax-js on WebGPU', async ({ page 
 })
 
 test('without a GPU adapter, the shader shows its recorded output and why', async ({ playwright }) => {
-  // The default headless Chromium (without the SwiftShader flags of the other tests): WebGPU, but no adapter.
   const browser = await playwright.chromium.launch({ args: [] })
   try {
     const page = await browser.newPage()
@@ -88,10 +79,8 @@ test('without a GPU adapter, the shader shows its recorded output and why', asyn
     await expect(output).toHaveAttribute('data-source', 'recorded', RUNTIME)
     await expect(output.locator('.pm-run-panel__badge')).toHaveText('预录输出 · 没有可用的 GPU 适配器')
     await expect(output.locator('.pm-run-panel__stdout')).toContainText(SUM)
-    // Recorded at compile time in the deck's language.
     await expect(output.locator('.pm-run-panel__stdout')).toContainText(/^计时：每次派发 .* ms/m)
 
-    // Python code whose shader cannot run here did not run: it says why, without a traceback (P-24, F-70).
     const python = await webBlock(page, 'python', 'py-async')
     await python.locator('.pm-code-block__run button').first().click()
     await expect(python.locator('.pm-outputs')).toContainText('没有可用的 GPU 适配器', RUNTIME)
@@ -102,7 +91,6 @@ test('without a GPU adapter, the shader shows its recorded output and why', asyn
   }
 })
 
-/** Chromium's flags for the GPU through Vulkan, as the recorder starts it (`adapter: gpu`). */
 const VULKAN = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--use-angle=vulkan']
 
 test('on the GPU that Chromium finds through Vulkan, the shader and jax-js run on it (P-104; skipped without one)', async ({ playwright }) => {

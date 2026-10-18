@@ -2,8 +2,6 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { useFixture } from './fixtures/deck.ts'
 
-// e2e/fixtures/guide: a {cursor} moves to the query (1), hovers (2) and clicks (3) the
-// search button; a {spotlight} lights the results (4); a {hint} points at the help button (5).
 test.describe.configure({ mode: 'default' })
 const deck = useFixture('guide')
 const STEPS = [
@@ -14,7 +12,6 @@ const STEPS = [
   { cursor: '2:click', mark: 'guide-run=click', spotlight: 'guide-output=live', hint: '', overlay: 'guide-output', beacons: 0 },
   { cursor: '2:click', mark: 'guide-run=click', spotlight: '', hint: 'guide-help=live', overlay: '', beacons: 1 },
 ]
-/** Where the cursor tip should be at each step. */
 const CURSOR_AT = ['#guide-query', '#guide-query', '#guide-run', '#guide-run', '#guide-run', '#guide-run']
 
 async function openGuide(page: Page, step: number, view = '') {
@@ -22,7 +19,6 @@ async function openGuide(page: Page, step: number, view = '') {
   await expect(page.locator('.slidev-layout.pm-guide .pm-cursor').first()).toBeAttached()
 }
 
-/** What the cues show on the audience's slide: cursor waypoint and action, target marks, page-level effects. */
 function cues(page: Page) {
   return page.evaluate(() => {
     const slide = document.querySelector('.slidev-layout.pm-guide')!
@@ -39,7 +35,6 @@ function cues(page: Page) {
   })
 }
 
-/** Distance in pixels from the cursor tip to the centre of `selector`. */
 function cursorOffset(page: Page, selector: string) {
   return page.evaluate((selector) => {
     const slide = document.querySelector('.slidev-layout.pm-guide')!
@@ -49,7 +44,6 @@ function cursorOffset(page: Page, selector: string) {
   }, selector)
 }
 
-/** Whether the spotlight's cutout lies on `#guide-output` of `slide`: the box is lit, the page just outside it is dimmed. */
 function spotlightFits(page: Page, slide = '.pm-guide') {
   return page.evaluate((slide) => {
     const path = document.querySelector<SVGPathElement>('.driver-overlay path')
@@ -61,7 +55,6 @@ function spotlightFits(page: Page, slide = '.pm-guide') {
   }, slide)
 }
 
-/** Distance in pixels from the centre of the hint beacon to the top right corner of the help button. */
 function beaconOffset(page: Page) {
   return page.evaluate(() => {
     const dot = document.querySelector('.driver-hint.pm-hint-beacon')!.getBoundingClientRect()
@@ -81,14 +74,12 @@ test('each step puts the cursor, spotlight and hint where the deck declares them
     if (step > 0) await expect.poll(() => cursorOffset(page, CURSOR_AT[step]!)).toBeLessThan(1)
     if (step === 3) expect(await animations(page, '.pm-guide .pm-cursor__ring')).toBe(1)
     if (step === 4) {
-      // The page is dimmed around the results, with the spotlight's popover.
       await expect.poll(() => spotlightFits(page)).toBe(true)
       await expect(page.locator('.pm-spotlight-popover .driver-popover-title')).toHaveText('搜索结果')
       await expect(page.locator('body')).toHaveClass(/driver-fade/)
     }
   }
 
-  // Step 5: the beacon pulses on the help button's corner and opens its explanation.
   const beacon = page.locator('.driver-hint.pm-hint-beacon')
   const popover = page.locator('.pm-hint-popover .driver-popover-title')
   await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
@@ -96,7 +87,6 @@ test('each step puts the cursor, spotlight and hint where the deck declares them
   await beacon.click()
   await expect(popover).toHaveText('帮助')
 
-  // Opening the hint leaves the arrow keys to the deck, with the popover open or closed with Escape.
   await page.keyboard.press('ArrowLeft')
   await expect.poll(() => cues(page)).toEqual(STEPS[4])
   await expect(popover).toHaveCount(0)
@@ -112,7 +102,6 @@ test('each step puts the cursor, spotlight and hint where the deck declares them
 test('the spotlight and the beacon follow their targets when the window is resized', async ({ page }) => {
   await openGuide(page, 4)
   await expect.poll(() => spotlightFits(page)).toBe(true)
-  // Slidev rescales the slide with a CSS transform, as when entering fullscreen.
   await page.setViewportSize({ width: 900, height: 900 })
   await expect.poll(() => spotlightFits(page)).toBe(true)
 
@@ -134,7 +123,6 @@ test('under the spotlight the host navigation and overview stay on top and usabl
 
   const popover = (await page.locator('.pm-spotlight-popover').boundingBox())!
   await nav('Show slide overview')
-  // The overview covers the spotlight's popover, and a click on a thumbnail goes to that slide.
   const first = page.locator('.slidev-page-1').last()
   await expect(first).toBeVisible()
   const covered = await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('.driver-popover'), { x: popover.x + popover.width / 2, y: popover.y + popover.height / 2 })
@@ -145,9 +133,6 @@ test('under the spotlight the host navigation and overview stay on top and usabl
 })
 
 test('stepping back undoes every cue and leaves the slide as a direct jump does', async ({ page }) => {
-  // The cursor's place is checked with a tolerance (cursorOffset): its transform may differ by a
-  // fraction of a pixel when the page's fonts finish loading between the two visits. Only the
-  // cursor's own transform is left out of the comparison; any other leftover style still counts.
   const slide = () => page.locator('.slidev-layout.pm-guide').evaluate((layout) => {
     const copy = layout.cloneNode(true) as HTMLElement
     for (const cursor of copy.querySelectorAll<HTMLElement>('.pm-cursor')) cursor.style.removeProperty('transform')
@@ -170,7 +155,6 @@ test('stepping back undoes every cue and leaves the slide as a direct jump does'
 test('with reduced motion every cue shows its final state at once', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await openGuide(page, 0)
-  // No polling below: each state must hold as soon as the step is taken.
   for (const step of [1, 2, 3]) {
     await page.keyboard.press('ArrowRight')
     await expect.poll(() => cues(page)).toEqual(STEPS[step])
@@ -192,7 +176,6 @@ test('with reduced motion every cue shows its final state at once', async ({ pag
 
 test('the presenter view shows the cues in its slides instead of covering the page', async ({ page }) => {
   await openGuide(page, 4, '/presenter')
-  // The current slide shows the spotlight in place; the next-step preview shows the hint.
   await expect(page.locator('[data-pm-spotlight]')).toHaveAttribute('data-pm-spotlight', 'inline')
   await expect(page.locator('[data-pm-hint]')).toHaveAttribute('data-pm-hint', 'inline')
   await expect(page.locator('.driver-overlay')).toHaveCount(0)
@@ -205,7 +188,6 @@ test('under the spotlight, Tab moves the focus to the spotlit element and the ke
   const output = page.locator('.pm-guide #guide-output')
   await page.keyboard.press('Tab')
   await expect(output).toBeFocused()
-  // Tab keeps the focus there while the spotlight lasts; Shift+Tab as well.
   await page.keyboard.press('Tab')
   await expect(output).toBeFocused()
   await page.keyboard.press('Shift+Tab')
@@ -213,7 +195,6 @@ test('under the spotlight, Tab moves the focus to the spotlit element and the ke
 
   await page.keyboard.press('ArrowRight')
   await expect.poll(() => cues(page)).toEqual(STEPS[5])
-  // The spotlight is over: its element is no longer made focusable.
   await expect(output).not.toHaveAttribute('tabindex')
   await page.keyboard.press('ArrowLeft')
   await expect.poll(() => cues(page)).toEqual(STEPS[4])
@@ -221,8 +202,6 @@ test('under the spotlight, Tab moves the focus to the spotlit element and the ke
 
 test('in the web form the cues follow the steps of the present view, which draws them over the page', async ({ page }) => {
   await page.goto(`${deck().web}/guide.html`)
-  // The document view shows every step done: the cursor has clicked, no spotlight or hint is left,
-  // and the explanations of the spotlight and the hint stand in the text.
   const section = page.locator('.pm-section[data-section="guide"]')
   await expect(section.locator('#guide-run')).toHaveAttribute('data-pm-cursor', 'click')
   await expect(section.locator('[data-pm-spotlight], [data-pm-hint]')).toHaveCount(0)
@@ -248,13 +227,11 @@ test('in the web form the cues follow the steps of the present view, which draws
     await expect(present).toHaveAttribute('data-step', String(step))
     await expect.poll(marks).toEqual(marked)
     if (step === 4) {
-      // The page is dimmed around the results, with the spotlight's explanation.
       await expect.poll(() => spotlightFits(page, '.pm-present')).toBe(true)
       await expect(page.locator('.pm-spotlight-popover .driver-popover-title')).toHaveText('搜索结果')
       await expect(page.locator('.pm-spotlight-popover .driver-popover-description')).toHaveText('点击搜索后，结果出现在这里。')
     }
   }
-  // The beacon on the help button opens its explanation.
   await page.locator('.driver-hint.pm-hint-beacon').click()
   await expect(page.locator('.pm-hint-popover .driver-popover-title')).toHaveText('帮助')
   for (let step = expected.length - 2; step >= 0; step--) {
@@ -293,7 +270,6 @@ test('without JavaScript the page has no empty board, and loading it moves nothi
       await expect(section.locator('.pm-client-only')).toHaveCount(0)
       await expect(section.locator('.pm-cue-note')).toHaveCount(2)
     } else {
-      // Every board shows something: the cues' explanations stand in for them.
       const empty = await page.locator('.pm-board').evaluateAll(boards => boards.filter(board => !board.textContent?.trim()).length)
       expect(empty).toBe(0)
       await expect(section).toContainText('点击搜索后，结果出现在这里。')
@@ -322,7 +298,6 @@ test('a cue that keeps still stops reading its target on every frame', async ({ 
     return calls
   })
   expect(frames).toBe(0)
-  // A resize wakes it, and the beacon follows its target again.
   await page.setViewportSize({ width: 900, height: 900 })
   await expect.poll(() => beaconOffset(page)).toBeLessThan(2)
 })

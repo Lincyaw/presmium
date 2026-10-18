@@ -1,13 +1,3 @@
-/**
- * The classroom components in a notebook, where nothing is live. A quiz is
- * the question with its options (its `fallback`, the answer folded away). An
- * exercise is its prompt, given as mdast so the notebook renderer writes it
- * as the deck's Markdown (MyST lowered, local files copied), and two code
- * cells: the starter code to edit and the checks to run after it, labelled in
- * the deck's language. A predict is its question, the choices and what it
- * reveals folded away, in one Markdown cell (its static form). A question box
- * and a pulse only make sense in a classroom and leave no cell.
- */
 import { deckLocale } from '@presmium/kernel'
 import type { ComponentNode, IRBlock, MdastNode, RenderContext, RendererContribution } from '@presmium/kernel'
 import { MESSAGES } from '../domain/index.ts'

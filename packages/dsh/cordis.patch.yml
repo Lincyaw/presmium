@@ -1,29 +1,17 @@
-# @presmium/dsh: Presmium's bundle for DeepSeek Harness (docs/design-dsh.md section 6). This layer (the
-# package's dsh.bundle) has the rows of every carrier (web, headless, acp). The web carrier's own rows are
-# in web.patch.yml, and Presmium's profile settings in profile.patch.yml: the launcher passes them with
-# --patch on every start (src/node/launch.ts), so headless and acp start without a row waiting for a web
-# service (6.1). Every row finds a session's document by the session's directory, not this process's.
 - insert:
-    # The workspace service (PRESMIUM_SERVICE_URL and _TOKEN from presmium studio; else it starts
-    # `presmium serve` itself) and each session's document, token and tools; the `presmium` service.
     - id: presmium-service
       name: '@presmium/dsh/service'
       config:
         url: !!js process.env.PRESMIUM_SERVICE_URL
         token: !!js process.env.PRESMIUM_SERVICE_TOKEN
         root: !!js process.env.PRESMIUM_WORKSPACE || process.cwd()
-    # The document's tools of Presmium's MCP as the session's own `presmium__<name>` (section 9).
     - id: presmium-tools
       name: '@presmium/dsh/tools'
-    # Presmium's approval policy on tools/pre-execute; the operator directory denied by a guard (6.3).
     - id: presmium-policy
       name: '@presmium/dsh/policy'
-    # The guide in the system message and the session's document as runtime context (6.4).
     - id: presmium-context
       name: '@presmium/dsh/context'
-    # Presmium's skills for authors, registered at run time (6.4).
     - id: presmium-skills
       name: '@presmium/dsh/skills'
-    # The session's review and commits (6.5): declared here, implemented by WP-96c.
     - id: presmium-turns
       name: '@presmium/dsh/turns'

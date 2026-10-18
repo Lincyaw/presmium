@@ -1,13 +1,4 @@
 <script setup lang="ts">
-/**
- * A code snippet backed by the local environment: run it, edited or not, in
- * the devcontainer image (P-22), or export it with the devcontainer
- * definition (P-26). The code block in the default slot shows the snippet,
- * the `code` prop holds it. Running needs a Presmium server behind the deck
- * (`presmium dev` or `presmium serve`) and an editor; the export also works
- * in any build, from the archive made at compile time. Edits stay in the
- * page: nothing is written back (K-09).
- */
 import { useService, useStartReport } from '@presmium/host'
 import { errorMessage, languageId } from '@presmium/kernel'
 import type { RunResult } from '@presmium/kernel'
@@ -17,14 +8,10 @@ import { archiveName, disconnected, LOCAL_ENV } from '../src/domain/index.ts'
 import type { LocalEnvStatus } from '../src/domain/index.ts'
 
 const props = withDefaults(defineProps<{
-  /** File of the snippet, relative to the workspace; where exports put it. */
   file: string
   lang?: string
-  /** The snippet; the wrapped code block shows it. */
   code?: string
-  /** The snippet and the devcontainer definition as a base64 zip archive, made at compile time. */
   archive?: string
-  /** The devcontainer definition, relative to the workspace. */
   devcontainer?: string
 }>(), { lang: 'python', code: '' })
 
@@ -35,7 +22,6 @@ const probed = shallowRef<LocalEnvStatus>()
 watch(env, async (service) => {
   if (service) probed.value = await service.status()
 }, { immediate: true })
-// Undefined while the kernel starts and the dev server answers.
 const status = computed(() => probed.value ?? (report.value && !env.value ? disconnected('pluginOff') : undefined))
 
 const editing = ref(false)
@@ -56,7 +42,6 @@ const notice = computed(() => {
 const connected = computed(() => !!status.value?.connected)
 const canExport = computed(() => (connected.value ? !!status.value?.devcontainer : !!props.archive))
 
-/** The edited code, or the snippet until the presenter edits it. */
 function currentCode(): string {
   const text = editing.value ? draft.value : props.code
   return text.endsWith('\n') ? text : `${text}\n`
@@ -87,7 +72,6 @@ async function run() {
   output.value = await act('run', service => service.run({ lang: props.lang, code: currentCode() })) ?? output.value
 }
 
-/** The archive made at compile time, for builds without a dev server. */
 function builtArchive(): Blob {
   const bytes = Uint8Array.from(atob(props.archive ?? ''), c => c.charCodeAt(0))
   return new Blob([bytes], { type: 'application/zip' })
@@ -147,8 +131,6 @@ async function replicate() {
 </template>
 
 <style scoped>
-/* An environment's file (N-10): its name and container as a header, the file, the host's controls, the output in
-   the sunk panel. Sizes follow the slide's font (N-05). */
 .pm-local-env {
   --pm-text-xs: 0.75em;
   --pm-text-sm: 0.875em;

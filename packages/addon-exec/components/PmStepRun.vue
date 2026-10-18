@@ -8,28 +8,11 @@ import StepMark from '../src/client/StepMark.vue'
 import { configuredTimeout, EXEC_ID, frameAt, stringArgs, TRACER } from '../src/domain/index.ts'
 import type { Trace } from '../src/domain/index.ts'
 
-// P-21 stepwise execution: the code is traced once; every executed line
-// becomes one internal step of the block (`:span:` = `steps`): internal step k
-// highlights the line executed k-th and shows the output accumulated up to it;
-// step 0 is the state before the first line.
-//
-// Where the host shows the final state of every step (the document view), a
-// stepper of the component's own lets the reader go through the lines: what
-// the component shows is a function of the section's step and the reader's
-// local step, as the result of a run is of the reader's input.
 const props = withDefaults(defineProps<{
   lang?: string
-  /** The code to trace; the wrapped code block shows it. */
   code?: string
   params?: Record<string, string | number | boolean>
-  /** Timeout in ms; else `presmium.exec.timeoutMs` of the section, else the executor's default. */
   timeout?: number
-  /**
-   * Number of steps (executed lines), shown in the status once traced. Declare it:
-   * the steps then exist before the trace has run, so opening the slide at a
-   * step (link, reload, going back from the next slide) shows that step (K-04).
-   * Without it the steps appear only once the trace is ready.
-   */
   steps?: number
 }>(), { lang: 'python', code: '' })
 
@@ -46,12 +29,9 @@ const trace = shallowRef<Trace>()
 const count = computed(() => props.steps ?? trace.value?.events.length ?? 0)
 const traced = computed(() => (trace.value?.error === undefined ? trace.value?.events.length : undefined))
 const mismatch = computed(() => props.steps !== undefined && traced.value !== undefined && traced.value !== props.steps)
-// What `:steps:` should be is for the author (the build reports it too, presmium.exec): the presenter
-// view and the dev server say it, the audience and readers see only the steps.
 const role = useViewRole()
 const authoring = computed(() => role.value === 'presenter' || import.meta.env.DEV)
 
-// Each step mark reports whether its step has been reached; marks are consecutive, so the step is how many are.
 const marks = shallowReactive(new Map<number, Readonly<Ref<StepState>>>())
 provide(STEP_MARKS, (k, state) => {
   marks.set(k, state)
@@ -59,7 +39,6 @@ provide(STEP_MARKS, (k, state) => {
 })
 const sectionStep = computed(() => [...marks.values()].filter(state => state.value.reached).length)
 
-// The host shows every step at once (its step is infinite) in the document view.
 const hostStep = useHost().useStep()
 const expanded = computed(() => !Number.isFinite(hostStep.value))
 const local = ref<number>()
@@ -75,9 +54,6 @@ function go(target: number) {
   local.value = Math.max(0, Math.min(last.value, target))
 }
 
-// The slides trace at once. In the document form, where every section of a page is mounted,
-// tracing (which loads the Python runtime) waits until the block nears the viewport or its
-// section reaches one of its steps (scrolly).
 const lazy = usePresentationMode() === 'document'
 const wanted = computed(() => !lazy || near.value || (!expanded.value && sectionStep.value > 0))
 let observer: IntersectionObserver | undefined
@@ -171,8 +147,6 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
   --pm-text-sm: 0.875em;
 
   display: grid;
-  /* Code and output side by side where there is room; stacked where it is narrow (a phone),
-     so the code keeps the full width. Sizes follow the slide's font size (N-05). */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   gap: 0.75em;
   color: var(--pm-color-ink);
@@ -189,7 +163,6 @@ watchEffect(() => markLine(source.value, frame.value?.line, 'pm-step-run__line')
   display: inline-block;
   min-width: 100%;
 }
-/* The line just run: the selected tint and an accent rule, as edit mode marks a chosen line. */
 .pm-step-run__source :deep(.pm-step-run__line) {
   background: var(--pm-color-selected);
   box-shadow: inset 3px 0 var(--pm-color-accent);

@@ -1,14 +1,3 @@
-// Edit mode in `presmium dev` (P-124, WP-92d; docs/architecture.md 10.2): the workspace's source routes over
-// the one deck, with the real CLI and the assistant (the scripted test agent as its runtime). A deck in a
-// subdirectory of a git repository: its files are listed by their path in the repository, a file outside the
-// deck is refused, a save naming an older version is refused with what is on disk, a save compiles again; the
-// changes list it, the status bar counts the deck's files only, and a commit with a line of explanation is one
-// commit with the editor's origin, in the deck's history; there are no document operations; the assistant
-// commits change tasks there, and while one runs the deck's lock is its: a save is refused. A deck at the root
-// of a repository with no .gitignore, its entry not lecture.md: the MCP token of `presmium dev`
-// (.presmium/server.json) is neither listed, counted nor committed, and the deck is a document the assistant
-// changes, not the workspace's home page. A deck in no git repository saves all the same, and commits
-// nothing, nor does the assistant.
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -34,7 +23,6 @@ afterAll(async () => {
 
 type Route = (path: string, body?: unknown) => Promise<{ status: number, json: any }>
 
-/** `presmium dev --edit` of the deck in `dir` (no renderer's dev server; `entry` there), its state outside it: the routes of a plugin, once it compiled. */
 async function dev(dir: string, state: string, entry?: string): Promise<{ child: Child, route: Route, assistant: Route }> {
   const env = cleanEnv({ XDG_STATE_HOME: join(state, 'state'), XDG_CONFIG_HOME: join(state, 'config'), PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider' })
   const child = presmiumProcess(dir, ['dev', ...entry ? [entry] : [], '--to', 'notebook', '--edit'], env)
@@ -48,7 +36,6 @@ async function dev(dir: string, state: string, entry?: string): Promise<{ child:
   return { child, route: of('presmium.workspace'), assistant: of('presmium.assistant') }
 }
 
-/** How many times the dev server compiled so far. */
 const compiled = (child: Child) => child.output().match(/^compiled /gm)?.length ?? 0
 
 describe('presmium dev: edit mode', () => {
@@ -60,7 +47,6 @@ describe('presmium dev: edit mode', () => {
     writeFileSync(join(repo, 'talks/bpe/lecture.md'), LECTURE)
     writeFileSync(join(repo, 'README.md'), '仓库的说明\n')
     writeFileSync(join(repo, '.gitignore'), '.presmium/\n')
-    // The assistant's own git review (deltabox's off).
     writeFileSync(join(repo, 'presmium.workspace.yaml'), 'settings:\n  presmium.deltabox:\n    review: false\n')
     git(repo, ['init', '-q', '-b', 'main'])
     git(repo, ['add', '-A'])
@@ -75,18 +61,15 @@ describe('presmium dev: edit mode', () => {
     const opened = await route('source?path=talks%2Fbpe%2Flecture.md')
     expect(opened.json.content).toBe(LECTURE)
 
-    // A save naming the version opened writes the file, and the deck compiles again.
     const before = compiled(child)
     const saved = await route('source', { path: 'talks/bpe/lecture.md', content: LECTURE.replace('alpha', 'omega'), base: opened.json.version })
     expect(saved.status).toBe(200)
     expect(readFileSync(join(repo, 'talks/bpe/lecture.md'), 'utf8')).toContain('omega')
     await expect.poll(() => compiled(child), { timeout: 60_000 }).toBeGreaterThan(before)
-    // One naming the version it opened before is refused with what is there now.
     const stale = await route('source', { path: 'talks/bpe/lecture.md', content: LECTURE, base: opened.json.version })
     expect(stale.status).toBe(409)
     expect(stale.json.conflict.content).toContain('omega')
 
-    // A file outside the deck changed too: the status bar counts the deck's files only.
     writeFileSync(join(repo, 'README.md'), '改过的说明\n')
     expect((await route('changes')).json.files).toEqual([{ path: 'talks/bpe/lecture.md', kind: 'modified', added: 1, removed: 1 }])
     expect((await route('documents')).json).toMatchObject({ git: true, branch: 'main', uncommitted: 1, single: true })
@@ -100,7 +83,6 @@ describe('presmium dev: edit mode', () => {
     const history = (await route('revisions')).json.revisions
     expect(history.map((revision: { files: string[] }) => revision.files)).toEqual([['talks/bpe/lecture.md']])
 
-    // The assistant commits change tasks here; while one runs, a save is refused with its lock.
     expect((await assistant('info')).json).toMatchObject({ changes: true, kinds: expect.arrayContaining(['chat']) })
     const now = await route('source?path=talks%2Fbpe%2Flecture.md')
     const task = await assistant('tasks', { kind: 'chat', prompt: '#wait', context: { document: '' } })
@@ -137,7 +119,6 @@ describe('presmium dev: edit mode', () => {
     expect(committed.json.paths).toEqual(['talk.md'])
     expect(git(repo, ['ls-files'])).toBe('talk.md\n')
 
-    // A document of the assistant's, whose change tasks it takes.
     const info = (await assistant('info')).json
     expect(info).toMatchObject({ changes: true, kinds: expect.arrayContaining(['chat']) })
     expect(info.home).toBeUndefined()

@@ -1,7 +1,3 @@
-// The presmium-service row (docs/design-dsh.md 6.2 and 14, WP-96b): run outside presmium studio, DeepSeek
-// Harness's host starts the workspace service itself, in a process group of its own under a watchdog, with a
-// service token and without the model's credentials (the deck's code runs there, not in the host). After
-// `kill -9` of the host, neither the service nor the dev servers it started are left.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fakeModel } from '@presmium/cli/testing'
@@ -12,7 +8,6 @@ import type { TestHome, Workspace } from './harness.ts'
 
 interface Proc { pid: number, ppid: number, cmdline: string }
 
-/** The processes that descend from `pid` now. */
 function descendants(pid: number): Proc[] {
   const all = readdirSync('/proc').filter(name => /^\d+$/.test(name)).flatMap((name) => {
     try {
@@ -42,7 +37,6 @@ const alive = (pid: number) => {
   }
 }
 
-/** A process's environment variables, by name. */
 function environ(pid: number): Record<string, string> {
   return Object.fromEntries(readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0').filter(Boolean).map((entry) => {
     const at = entry.indexOf('=')
@@ -66,7 +60,6 @@ describe('the workspace service DeepSeek Harness starts itself', () => {
   })
 
   it('runs in its own process group without the model\'s credentials, and leaves no process after kill -9 of the host', async () => {
-    // The model holds its answer: the run stays in its first turn, the service up.
     model.hold()
     const run = home.headless(ws.dir, '列出章节。', { model, env: {} })
     await expect.poll(() => turns(model).length, { timeout: 180_000 }).toBeGreaterThan(0)
@@ -76,7 +69,6 @@ describe('the workspace service DeepSeek Harness starts itself', () => {
     const seen = environ(serve.pid)
     expect(seen.PRESMIUM_SERVICE_TOKEN).toMatch(/^\S{20,}$/)
     expect(Object.keys(seen).filter(name => /^(DEEPSEEK_|DSH_)/.test(name))).toEqual([])
-    // A page of the service starts its site's dev server, a child of the service.
     const state = join(home.dir, 'cache', 'presmium', 'serve')
     const { url } = JSON.parse(readFileSync(join(state, readdirSync(state)[0]!, 'server.json'), 'utf8')) as { url: string }
     await fetch(`${url}/`).then(response => response.text())

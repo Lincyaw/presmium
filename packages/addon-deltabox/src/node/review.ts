@@ -1,16 +1,3 @@
-/**
- * `CHANGE_REVIEW` through deltabox (D12, docs/architecture.md 10.7): a review
- * is a cbcow-through session on the document directory, held by the helper.
- * The agent works in the session's view (`root`), so its writes reach the
- * document directory at once (the preview follows them) and are journaled.
- * Each step is a checkpoint and the changes since the previous one (at most
- * 100; later steps join the last); going back to before a step aborts to the
- * checkpoint before it; accepting commits everything, then the rejected
- * files go back to the snapshot taken when the review opened; rejecting all
- * aborts (a session that faulted is rolled back from that snapshot by the
- * helper, which frees the directory). Paths are relative to the workspace
- * root here and to the document directory in the helper.
- */
 import { realpathSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import type { ChangeReview, ChangeReviewService, ReviewChange, ReviewStep } from '@presmium/kernel'
@@ -18,7 +5,6 @@ import type { Helper } from './client.ts'
 import { messages } from './messages.ts'
 import type { BoxChange, ReviewOpened } from './protocol.ts'
 
-/** deltabox keeps at most 100 checkpoints. */
 const MAX_STEPS = 100
 
 const posix = (path: string) => path.split('\\').join('/')
@@ -47,7 +33,6 @@ class DeltaboxReview implements ChangeReview {
   readonly visibility: 'immediate' | 'on-commit'
   readonly #helper: Helper
   readonly #session: string
-  /** The document directory, relative to the workspace root ('' when it is the root). */
   readonly #prefix: string
   readonly #ended: string
   readonly #steps: ReviewStep[] = []
@@ -74,12 +59,10 @@ class DeltaboxReview implements ChangeReview {
     }
   }
 
-  /** A path of the document directory, relative to the workspace root. */
   #outer(path: string): string {
     return this.#prefix ? `${this.#prefix}/${posix(path)}` : posix(path)
   }
 
-  /** A path relative to the workspace root, relative to the document directory; undefined outside it. */
   #inner(path: string): string | undefined {
     const inner = this.#prefix ? (posix(path).startsWith(`${this.#prefix}/`) ? posix(path).slice(this.#prefix.length + 1) : undefined) : posix(path)
     return inner && !inner.split('/').includes('..') ? inner : undefined
@@ -92,7 +75,6 @@ class DeltaboxReview implements ChangeReview {
   async step(label: string, tool?: string): Promise<ReviewStep> {
     this.#live()
     const full = this.#steps.length >= MAX_STEPS
-    // A step past the limit joins the last one: its changes since the checkpoint before it.
     const from = full ? this.#checkpoints.at(-2) : this.#checkpoints.at(-1)
     const { changes, checkpoint } = await this.#helper.call<{ changes: BoxChange[], checkpoint?: string }>('review.step', { session: this.#session, from, checkpoint: !full, label })
     const at = new Date().toISOString()
@@ -118,7 +100,6 @@ class DeltaboxReview implements ChangeReview {
     return changes.map(c => this.#change(c))
   }
 
-  /** Back to the checkpoint before the step (the session's start for the first): deltabox aborts to it, the review goes on. */
   async restoreTo(stepId: string): Promise<void> {
     this.#live()
     const at = this.#steps.findIndex(step => step.id === stepId)

@@ -1,8 +1,3 @@
-/**
- * The status items (docs/design-dsh.md 7.3): the git branch and the files not
- * committed, the document's language, the encoding and the cursor's line. The
- * model's state is the AI's (WP-96e).
- */
 import { PmIcon } from '../components.tsx'
 import { useMessages, useWorkbench } from '../react.tsx'
 

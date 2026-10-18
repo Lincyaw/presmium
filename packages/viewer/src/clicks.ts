@@ -1,14 +1,3 @@
-/**
- * `v-click` compatibility for plugin components written for Slidev: the
- * directives `v-click`, `v-after`, `v-click-hide` and the components
- * `<v-click>`, `<v-after>`, `<v-clicks>`. As in a slide, click positions are
- * steps of the section: absolute numbers are section steps (components give
- * theirs with `useStepScope().step(k)`), relative ones count on from the
- * previous relative click of the block. An element shows while the section's
- * step is inside its click range (`.hide`: outside it). Where every step is
- * shown (the document view) elements take their final state, as the
- * component's step state does.
- */
 import type { App, Directive, DirectiveBinding, Ref } from 'vue'
 import { defineComponent, h, onBeforeUnmount, onMounted, shallowRef, watchEffect, withDirectives } from 'vue'
 import { clickVisible, resolveClicks } from './domain/index.ts'
@@ -19,13 +8,10 @@ interface Controller {
   remove(el: HTMLElement): void
 }
 
-/** Root class of a block; its click elements are resolved together. */
 export const BLOCK_CLASS = 'pm-block'
 
 const controllers = new WeakMap<Element, Controller>()
-/** The controller each element is registered with: an element that leaves on its own is out of its block by its `unmounted`. */
 const owners = new WeakMap<HTMLElement, Controller>()
-/** Elements mounted before their block (children mount first); claimed when it mounts. */
 const pending = new Map<HTMLElement, ClickSpec>()
 
 function register(el: HTMLElement, spec: ClickSpec): void {
@@ -45,10 +31,6 @@ function unregister(el: HTMLElement): void {
   owners.delete(el)
 }
 
-/**
- * Tracks the click elements of a block and marks each `data-pm-click="shown|hidden"`
- * for the section's step. Returns a function that stops tracking.
- */
 export function trackClicks(block: HTMLElement, step: Readonly<Ref<number>>): () => void {
   const specs = new Map<HTMLElement, ClickSpec>()
   const ranges = shallowRef(new Map<HTMLElement, ClickRange>())
@@ -89,7 +71,6 @@ function clickDirective(kind: ClickSpec['kind'], hide = false): Directive<HTMLEl
     mounted(el, binding) {
       register(el, spec(binding))
     },
-    // A position given by the step scope moves when a live update moves the block.
     updated(el, binding) {
       if (JSON.stringify(binding.value) === JSON.stringify(binding.oldValue)) return
       unregister(el)
@@ -106,7 +87,6 @@ const vAfter = clickDirective('after')
 
 const clickProps = { at: { type: [Number, String, Array], default: undefined }, hide: Boolean }
 
-/** `<v-click>` and `<v-after>`: the content as one click target, without a layout box. */
 function clickComponent(name: string, directive: Directive) {
   return defineComponent({
     name,
@@ -117,7 +97,6 @@ function clickComponent(name: string, directive: Directive) {
   })
 }
 
-/** `<v-clicks>`: each list item (or each child) is a click target; `every` groups them. */
 const VClicks = defineComponent({
   name: 'VClicks',
   props: { every: { type: [Number, String], default: 1 }, hide: Boolean },

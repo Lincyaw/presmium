@@ -3,15 +3,11 @@ import validRange from 'semver/ranges/valid.js'
 import { KERNEL_VERSION } from './contracts.ts'
 import type { PluginManifest, ServiceToken } from './contracts.ts'
 
-/** Owner recorded for services provided by the host rather than by a plugin. */
 export const HOST_OWNER = 'host'
 
 export interface StartPlan {
-  /** Plugins to initialize, dependencies first; ties keep registration order. */
   order: string[]
-  /** Plugins disabled before initialization, with the reason. */
   excluded: Map<string, string>
-  /** Dependency cycles, each listed as plugin ids along the cycle. */
   cycles: string[][]
 }
 
@@ -20,10 +16,6 @@ interface Entry {
   owner: string
 }
 
-/**
- * Holds service implementations (one per token id) and resolves the start
- * order of plugins from their manifests.
- */
 export class ServiceRegistry {
   #entries = new Map<string, Entry>()
 
@@ -51,7 +43,6 @@ export class ServiceRegistry {
     return this.#entries.get(token.id)?.owner
   }
 
-  /** Removes every service provided by `owner`. */
   revoke(owner: string): void {
     for (const [id, entry] of this.#entries) {
       if (entry.owner === owner) this.#entries.delete(id)
@@ -62,13 +53,6 @@ export class ServiceRegistry {
     return [...this.#entries.keys()]
   }
 
-  /**
-   * Resolves plugin dependencies against the services already registered here.
-   * Disables plugins whose kernel range does not match, plugins that provide a
-   * service someone else already provides, and every plugin on a dependency
-   * cycle (optional requirements count as edges). Required services that no one
-   * provides are left for the kernel to report when the plugin's turn comes.
-   */
   plan(manifests: PluginManifest[], kernelVersion: string = KERNEL_VERSION): StartPlan {
     const excluded = new Map<string, string>()
     for (const m of manifests) {
@@ -108,7 +92,6 @@ export class ServiceRegistry {
   }
 }
 
-/** Why a plugin's kernel range does not admit `version`; undefined when it does. */
 export function kernelIncompatibility(range: string, version: string = KERNEL_VERSION): string | undefined {
   return incompatibility(range, version)
 }
@@ -119,7 +102,6 @@ function incompatibility(range: string, version: string): string | undefined {
   return undefined
 }
 
-/** Ids reachable from `start` through at least one edge. */
 function reachable(start: string, deps: Map<string, string[]>): Set<string> {
   const seen = new Set<string>()
   const stack = [...(deps.get(start) ?? [])]
@@ -132,7 +114,6 @@ function reachable(start: string, deps: Map<string, string[]>): Set<string> {
   return seen
 }
 
-/** Groups plugins that lie on a cycle into strongly connected components, each in edge order. */
 function findCycles(ids: string[], deps: Map<string, string[]>): string[][] {
   const reach = new Map(ids.map(id => [id, reachable(id, deps)]))
   const onCycle = ids.filter(id => reach.get(id)!.has(id))
@@ -154,7 +135,6 @@ function findCycles(ids: string[], deps: Map<string, string[]>): string[][] {
   return cycles
 }
 
-/** Kahn's algorithm; picks the earliest registered ready plugin each round. */
 function topologicalOrder(ids: string[], deps: Map<string, string[]>): string[] {
   const pending = [...ids]
   const order: string[] = []

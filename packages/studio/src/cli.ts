@@ -1,10 +1,3 @@
-/**
- * `presmium studio [dir] [--port <n>] [--host <addr>]` (docs/design-dsh.md
- * 11.1): `@presmium/cli` hands the command over when this package is
- * installed; `presmium-studio` is the same command. It starts the workbench
- * (`startStudio`), prints its one address and runs until stopped (Ctrl-C,
- * SIGTERM) or until one of its processes ends.
- */
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
@@ -29,7 +22,6 @@ Options:
   -h, --help     show this help`
 
 export interface MainOptions {
-  /** The `presmium` command that runs the workspace service: the forwarding CLI's own. */
   presmium?: string
 }
 
@@ -40,7 +32,6 @@ function portOf(value: string | undefined): number | undefined {
   return n
 }
 
-/** On a terminal, asks once whether the old workbench's model settings come along; elsewhere says how. */
 async function offerImport(home: string, settings: AssistantSettings): Promise<void> {
   const where = `${settings.provider ?? 'DeepSeek'}${settings.url ? ` at ${settings.url}` : ''}`
   if (!process.stdin.isTTY || !process.stderr.isTTY) {
@@ -54,7 +45,6 @@ async function offerImport(home: string, settings: AssistantSettings): Promise<v
   if (imported) process.stderr.write(`presmium studio: imported into ${home} (${settings.file} stays)${settings.model ? `; choose the model ${settings.model} in the model settings` : ''}\n`)
 }
 
-/** Runs `presmium studio <argv>` and returns the exit code: 0 when stopped, 1 when a process ended, 2 for a usage error or a failed start. */
 export async function main(argv: string[], options: MainOptions = {}): Promise<number> {
   let values: { port?: string, host?: string, help?: boolean }
   let dir: string

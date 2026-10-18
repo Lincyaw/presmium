@@ -1,20 +1,9 @@
-/**
- * Footnotes across included files (docs/ir.md 5.1: a reference and its
- * definition are in the same file). MyST numbers a footnote by the label the
- * author wrote, so two files that both write `[^1]` would share it once
- * `{include}` joins them. Each file keeps its footnotes: an identifier that
- * an earlier file already defines is renamed in the later file (its `label`,
- * what the author wrote, stays), and the footnotes of each file are numbered
- * from 1 in the order of their first reference (`enumerator`, which the
- * renderers show).
- */
 import { docBlocks, nodeMdast } from '@presmium/kernel'
 import type { IRDocument, MdastNode } from '@presmium/kernel'
 import { unique } from './sections.ts'
 
 const FOOTNOTE = new Set(['footnoteReference', 'footnoteDefinition'])
 
-/** `files` lists the source files in the order they are read, entry first. */
 export function numberFootnotes(doc: IRDocument, files: readonly string[]): void {
   const byFile = new Map<string, MdastNode[]>(files.map(file => [file, []]))
   const collect = (node: MdastNode, into: MdastNode[]) => {

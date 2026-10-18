@@ -1,9 +1,3 @@
-/**
- * The speech protocol (../domain/protocol.ts) over a backend: the routes
- * `v1/*` of `presmium dev` and `presmium serve` (the deck's cache over the
- * engines of the process). Answers carry no credential:
- * engines are called by the backend, never with the caller's headers.
- */
 import { json, problem } from '@presmium/kernel'
 import type { TimedSpeech, TranscriptionAnswer } from '../domain/index.ts'
 import { synthesisRequestOf } from '../domain/index.ts'
@@ -31,13 +25,11 @@ function timedSpeech(result: SynthesisResult): TimedSpeech {
 
 const text = (value: FormDataEntryValue | null | undefined) => (typeof value === 'string' && value.trim() ? value.trim() : undefined)
 
-/** Answers a request to `<path>` under `v1/`. */
 export function protocolHandler(backend: SpeechBackend): (request: Request, path: string) => Promise<Response> {
   return async (request, path) => {
     const method = request.method.toUpperCase()
     try {
       if (path === 'engines' && method === 'GET') return json(await backend.listing(request.headers.get('accept-language') ?? undefined))
-      // Whether a cloned voice may be used now (the operator's settings and consent records), for a cache's hit.
       if (path === 'audio/consent' && method === 'GET') {
         const query = new URL(request.url).searchParams
         await backend.consent(query.get('engine') ?? '', query.get('voice') ?? '', query.get('recorded') !== '0', request.signal)

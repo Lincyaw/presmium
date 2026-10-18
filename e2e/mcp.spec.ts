@@ -1,7 +1,3 @@
-// The agent environment in the browser (WP-78, P-110): with only the present view open under `presmium dev`,
-// an MCP client's `navigate` to the third section asks for approval in the view's control bar, and once
-// allowed there the present view shows that section and a subscriber of presmium://position hears it; a
-// test plugin's `STATUS` summary reaches MCP's `get_classroom`.
 import { cpSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -23,7 +19,6 @@ test.beforeAll(async () => {
   dir = deckDir('mcp')
   cpSync(FIXTURE, dir, { recursive: true })
   dev = await startDev(dir, 'web')
-  // The per-process token of presmium dev, as an agent in the author's editor reads it.
   const state = JSON.parse(readFileSync(join(dir, '.presmium/server.json'), 'utf8')) as { mcp: string, token: string }
   mcp = await connectMcp(state.mcp, state.token)
 })
@@ -34,13 +29,11 @@ test.afterAll(async () => {
 })
 
 test('navigate asks in the present view\'s control bar, and once allowed there the view shows the third section', async ({ page }) => {
-  // Only the present view is open: it covers the page's toolbar, so the approval entry is in its own bar.
   const present = page.locator('.pm-present')
   await openDevPage(page, `${dev.url}?view=present`, present)
   await expect(present).toHaveAttribute('data-section', 'mcp-端到端测试文稿')
   await expect.poll(async () => resultOf(await mcp.callTool({ name: 'get_position', arguments: {} })).position?.view).toBe('present')
 
-  // A subscriber of presmium://position hears the present view report where it moved.
   let updates = 0
   mcp.setNotificationHandler('notifications/resources/updated', (n) => {
     if (n.params.uri === 'presmium://position') updates++
@@ -62,7 +55,6 @@ test('navigate asks in the present view\'s control bar, and once allowed there t
   expect(resultOf(result)).toMatchObject({ section: '第三节', step: 0, windows: 1 })
   await expect(present).toHaveAttribute('data-section', '第三节')
   await expect(entry).toHaveCount(0)
-  // Once the present view reported the third section, its update was announced.
   const where = async () => JSON.parse(((await mcp.readResource({ uri: 'presmium://position' })).contents[0] as { text: string }).text).position
   await expect.poll(async () => updates > 0 && (await where())?.section).toBe('第三节')
   await subscription.close()

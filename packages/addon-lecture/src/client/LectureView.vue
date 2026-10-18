@@ -1,7 +1,4 @@
 <script setup lang="ts">
-// The view `lecture` (docs/ir.md 8.2): `?view=lecture&track=<id>` plays a lecture on the real page,
-// which is the present view with the player over it; without a lecture named, the view lists the
-// deck's lectures to choose one.
 import { useMessages, useServer } from '@presmium/host'
 import { isRecord } from '@presmium/kernel'
 import { onMounted, ref } from 'vue'

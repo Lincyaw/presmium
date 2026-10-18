@@ -1,8 +1,3 @@
-/**
- * The problems panel (docs/design-dsh.md 7.3): the diagnostics of the document's
- * compilation (`GET ir`, followed through `ir/events`), each leading to its line,
- * and the problems a preview's page reported at run time (`report`).
- */
 import { PmIcon } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
 

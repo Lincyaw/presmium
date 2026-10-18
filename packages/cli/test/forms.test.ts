@@ -1,7 +1,3 @@
-// `presmium build` of fixtures/forms to the slides and a notebook: the words the renderers write
-// follow the deck's language (R-01; French has no messages, so they are English), and a component
-// of the deck's own `components/` is known to the compiler and rendered in the slides (R-47). The
-// copy lies in the demo, whose node_modules hold the renderers, Slidev and its theme.
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,14 +17,12 @@ it('writes the slides and the notebook in the deck\'s language and renders the d
   const { code, stdout, stderr } = await presmium(dir, ['build', '--out', 'out'])
   expect(code, stdout + stderr).toBe(0)
   expect((JSON.parse(readFileSync(join(dir, 'out/ir.json'), 'utf8')) as IRDocument).meta.lang).toBe('fr')
-  // Only the component no plugin registers is reported; the deck's own is known.
   expect(stdout.split('\n').filter(line => line.includes('  warning  '))).toEqual([
     'lecture.md:22  warning  {component}: no plugin in `plugins` registers the component Unknown  (presmium.directive)',
   ])
 
   const slides = readFileSync(join(dir, '.presmium/slides/slides.md'), 'utf8')
   expect(slides).toContain('> The component Unknown can only be viewed on the web.')
-  // The deck's component is rendered with its step, isolated by the renderer.
   expect(slides).toContain('<div v-click="1">\n\n<PmStepScope :at="1">\n\n<PmBoundary name="StepBadge">\n\n<StepBadge label="étape" />')
   expect(existsSync(join(dir, '.presmium/slides/components/StepBadge.vue'))).toBe(true)
   const assets = join(dir, 'out/slides/assets')

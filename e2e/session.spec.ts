@@ -7,11 +7,6 @@ import { buildFixture, useFixture } from './fixtures/deck.ts'
 import type { FixtureDeck } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
-// Classroom sessions (e2e/fixtures/session). The fixture deck configures no classroom server; the
-// classroom tests build a copy whose frontmatter points to a real classroom server
-// (`presmium-classroom-server` on a free port) and drive a presenter and learners in separate
-// browser contexts. The copy also has the page remote.md with a counter of the fixture plugin of
-// e2e/fixtures/core (read only), shared with `useSharedState(…, { scope: 'remote' })`.
 test.describe.configure({ mode: 'default' })
 const offline = useFixture('session')
 
@@ -22,7 +17,6 @@ const badge = (page: Page) => page.getByRole('region', { name: '课堂状态' })
 test('without a classroom server the deck shows and reads as before, and its build shows no classroom', async ({ page }) => {
   await page.goto(`${offline().web}/session.html`)
   await expect(page.locator('.pm-section[data-section="session-follow"]')).toContainText('回到主讲进度')
-  // The session plugin starts, but a published deck has no classroom to offer (`presmium check` says how to set one up).
   await expect(page.locator('.VPNav')).toBeVisible()
   await expect(panelButton(page)).toHaveCount(0)
   await expect(badge(page)).toHaveCount(0)
@@ -32,7 +26,6 @@ test('without a classroom server the deck shows and reads as before, and its bui
   await page.keyboard.press('ArrowRight')
   await expect(present(page)).toHaveAttribute('data-step', '1')
 
-  // Both forms register the same session plugin, and it starts in both.
   const sessionPlugins = async () => {
     await page.locator('.pm-presenter-panels summary').click()
     const plugins = page.locator('.pm-start-report [data-plugin^="presmium.session"]')
@@ -42,10 +35,8 @@ test('without a classroom server the deck shows and reads as before, and its bui
   }
   await page.goto(`${offline().web}/session.html?view=presenter&section=session`)
   await sessionPlugins()
-  // The presenter view, like the present view, gives the height of its control bar to what lies over it (C-9).
   await expect.poll(() => overlayBar(page)).toMatch(/^[1-9]\d*(\.\d+)?px$/)
 
-  // The slides: the presenter view has no classroom panel either; the slides still step.
   await page.goto(`${offline().slides}/presenter/session`)
   await sessionPlugins()
   await expect(page.locator('[data-panel="presmium.session"]')).toHaveCount(0)
@@ -55,15 +46,6 @@ test('without a classroom server the deck shows and reads as before, and its bui
   await expect(page.locator('.slidev-page').getByRole('heading', { name: '跟随与自主' })).toBeVisible()
 })
 
-// ---------------------------------------------------------------------------
-// A deck with a classroom server
-// ---------------------------------------------------------------------------
-
-/**
- * Names the classroom server in the frontmatter of the deck copy in `dir`, and adds the page with
- * the shared counter and the fixture plugin it needs (copied by `with`; it imports @presmium/host
- * as a plugin package does, which the demo does not depend on).
- */
 function withServer(dir: string, server: string): void {
   const file = join(dir, 'lecture.md')
   const text = readFileSync(file, 'utf8')
@@ -74,7 +56,6 @@ function withServer(dir: string, server: string): void {
   symlinkSync(resolve('packages/host'), join(dir, 'node_modules/@presmium/host'), 'junction')
 }
 
-/** A presenter and a learner, each in a browser context of their own. */
 async function people(browser: Browser): Promise<{ presenter: Page, learner: Page, close(): Promise<void> }> {
   const contexts = await Promise.all([browser.newContext(), browser.newContext()])
   const [presenter, learner] = await Promise.all(contexts.map(context => context.newPage()))
@@ -87,20 +68,17 @@ async function people(browser: Browser): Promise<{ presenter: Page, learner: Pag
   }
 }
 
-/** The presenter creates a classroom from the toolbar of the web form; the session panel stays open. */
 async function create(presenter: Page, name = '王老师'): Promise<{ panel: Locator, link: string, room: string }> {
   await panelButton(presenter).click()
   const panel = presenter.getByRole('dialog', { name: '课堂' })
   await panel.getByLabel('昵称').fill(name)
   await panel.getByRole('button', { name: '创建课堂' }).click()
-  // Started: the window keeps its membership from then on, so it can be closed and the classroom rejoined (R-19).
   await expect(panel.getByRole('status')).toHaveText('课堂进行中，你是主讲')
   await expect(panel.getByRole('img', { name: '加入课堂的二维码' }).locator('svg')).toBeVisible()
   const link = (await panel.locator('.pm-session__link').getAttribute('href'))!
   return { panel, link, room: new URL(link).searchParams.get('room')! }
 }
 
-/** The height of the overlay view's control bar that the page gives what lies over it (C-9): `--pm-overlay-bar` of `<html>`. */
 const overlayBar = (page: Page) => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pm-overlay-bar').trim())
 
 test.describe('a classroom', () => {
@@ -129,16 +107,13 @@ test.describe('a classroom', () => {
     const { panel, link } = await create(presenter)
     await expect(panel.getByRole('status')).toHaveText('课堂进行中，你是主讲')
     expect(link).toMatch(/\/\?room=\w+$/)
-    // The deck is served at 127.0.0.1 here: learners' devices could not open the link.
     await expect(panel.getByRole('note')).toHaveText('学习者的设备打不开这个地址，请用局域网地址打开文稿')
 
-    // The join link opens the site's first page; the learner goes to the presenter's section, on its page.
     await learner.goto(`${link}&name=${encodeURIComponent('小明')}`)
     await expect(badge(learner)).toContainText('正在跟随主讲')
     await expect(learner).toHaveURL(/\/session\.html/)
     await expect(panel.getByRole('list', { name: '参与者' })).toContainText('小明')
 
-    // The presenter presents: the learner follows into the present view, to the section and step.
     await panel.getByRole('button', { name: '关闭' }).click()
     await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
     await expect(present(presenter)).toHaveAttribute('data-section', 'session')
@@ -148,20 +123,17 @@ test.describe('a classroom', () => {
     await expect(present(learner)).toHaveAttribute('data-section', 'session-follow')
     await expect(present(learner)).toHaveAttribute('data-step', '2')
 
-    // Browsing alone, the learner stays where they are while the presenter moves on.
     await badge(learner).getByRole('button', { name: '自主浏览' }).click()
     await presenter.keyboard.press('ArrowRight')
     await expect(badge(learner)).toContainText('主讲在第 3 节第 3 步')
     await expect(present(learner)).toHaveAttribute('data-step', '2')
 
-    // One click goes back to the presenter's place, and following goes on.
     await badge(learner).getByRole('button', { name: '回到主讲进度' }).click()
     await expect(present(learner)).toHaveAttribute('data-step', '3')
     await expect(badge(learner)).toContainText('正在跟随主讲')
     await presenter.keyboard.press('ArrowRight')
     await expect(present(learner)).toHaveAttribute('data-section', 'web')
 
-    // The presenter ends the classroom; the learner sees it.
     await presenter.keyboard.press('Escape')
     await panelButton(presenter).click()
     await panel.getByRole('button', { name: '结束课堂' }).click()
@@ -173,7 +145,6 @@ test.describe('a classroom', () => {
   test('a learner who opens the bare join link of the QR code gives a nickname and joins', async ({ browser }) => {
     const { presenter, learner, close } = await people(browser)
     await presenter.goto(`${deck.web}/session.html`)
-    // The link the QR code holds, without a name.
     const { panel, link, room } = await create(presenter)
 
     await learner.goto(link)
@@ -187,11 +158,9 @@ test.describe('a classroom', () => {
 
   test('in the slides form a learner follows the presenter from slide to slide and click to click, with Slidev\'s state, over one connection', async ({ browser }) => {
     const { presenter, learner, close } = await people(browser)
-    // The learner's own room is connected only when used: the slides form has no notes.
     const sockets: string[] = []
     learner.on('websocket', socket => void sockets.push(socket.url()))
 
-    // The classroom is in the presenter view's Presmium panel.
     await presenter.goto(`${deck.slides}/presenter/2`)
     await presenter.locator('.pm-presenter-panels summary').click()
     const panel = presenter.locator('[data-panel="presmium.session"]')
@@ -202,17 +171,14 @@ test.describe('a classroom', () => {
 
     await learner.goto(`${link}&name=${encodeURIComponent('小红')}`)
     await expect(badge(learner)).toContainText('正在跟随主讲')
-    // Slide 2 is the session slide, at its route alias.
     await expect(learner).toHaveURL(/\/session(\?|$)/)
     await expect(panel.getByRole('list', { name: '参与者' })).toContainText('小红')
 
-    // Next slide, then its first click.
     await presenter.keyboard.press('ArrowRight')
     await expect(learner).toHaveURL(/\/3(\?|$)/)
     await presenter.keyboard.press('ArrowRight')
     await expect(learner).toHaveURL(/\/3\?(.*&)?clicks=1(&|$)/)
 
-    // Slidev's synchronized state reaches the learner too: the stage's black screen (`b`).
     await presenter.keyboard.press('b')
     await expect(learner.locator('.pm-stage-black')).toBeVisible()
     await presenter.keyboard.press('b')
@@ -237,16 +203,12 @@ test.describe('a classroom', () => {
       await expect.poll(() => overlayBar(page)).toMatch(/^[1-9]\d*(\.\d+)?px$/)
     }
 
-    // The mouse on a desktop, a finger on a phone.
     const press = (page: Page, target: Locator) => (page === mobile ? target.tap() : target.click())
     for (const page of [learner, mobile]) {
       await press(page, present(page).getByRole('button', { name: '退出放映' }))
       await expect(present(page)).toHaveCount(0)
-      // Without the present view, nothing lies over the page.
       expect(await overlayBar(page)).toBe('')
     }
-    // The presenter moves on and the learners follow into the present view again; browsing alone,
-    // they step and open the overview themselves.
     await presenter.keyboard.press('ArrowRight')
     for (const page of [learner, mobile]) {
       await expect(present(page)).toHaveAttribute('data-section', 'session-follow')
@@ -297,7 +259,6 @@ test.describe('a classroom', () => {
     const context = await browser.newContext()
     const page = await context.newPage()
     await page.goto(`${deck.web}/session.html`)
-    // A nickname of the longest allowed length, in one word.
     const { panel } = await create(page, 'Presenter-with-a-rather-long-nickname-40')
     await expect(panel).toContainText('Presenter-with-a-rather-long-nickname-40')
     expect(await panel.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
@@ -359,7 +320,6 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
   })
 
   test('a learner of the student build follows the presenter of the full build to the same section, and the overview numbers the learner\'s places as the presenter\'s build does (F-85)', async ({ browser }) => {
-    // The teacher's section comes first, so the two builds number the sections after it apart.
     expect([full.slide('follow-rules'), student.slide('follow-rules')]).toEqual([3, 2])
     const { presenter, learner, close } = await people(browser)
     await presenter.goto(`${full.web}/`)
@@ -367,8 +327,6 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await learner.goto(`${student.web}/?room=${room}&name=${encodeURIComponent('小明')}`)
     await expect(badge(learner)).toContainText('正在跟随主讲')
 
-    // The presenter presents the cover, the teacher's section, then the rules: the learner, whose build
-    // has no teacher's section, goes to the nearest section before it, the cover, and then shows the rules.
     await panel.getByRole('button', { name: '关闭' }).click()
     await presenter.getByRole('combobox', { name: '视图' }).selectOption('present')
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-cover')
@@ -379,8 +337,6 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-rules')
     await expect(badge(learner)).toContainText('正在跟随主讲')
 
-    // The rules' first step is the teacher's: the presenter's steps 1 to 3 are the learner's 0 to 2, found by
-    // the blocks each step shows, so the learner never shows a point the presenter has not reached.
     const point = (page: Page, text: string) => present(page).getByText(text)
     await presenter.keyboard.press('ArrowRight')
     await expect(present(presenter)).toHaveAttribute('data-step', '1')
@@ -397,14 +353,11 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await presenter.keyboard.press('ArrowRight')
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
 
-    // The presenter goes back through the rules to the teacher's section: the learner, again, to the cover.
     for (let i = 0; i < 5; i++) await presenter.keyboard.press('ArrowLeft')
     await expect(present(presenter)).toHaveAttribute('data-section', 'follow-plan')
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-cover')
     for (let i = 0; i < 5; i++) await presenter.keyboard.press('ArrowRight')
     await expect(present(learner)).toHaveAttribute('data-section', 'follow-ask')
-    // A teachers' section after the students' own: the learner stays in the nearest section before it that the
-    // learner's build has, the students' own, not the nearest one every build has (the rules).
     await presenter.keyboard.press('ArrowRight')
     await expect(present(presenter)).toHaveAttribute('data-section', 'follow-answers')
     await learner.waitForTimeout(1000)
@@ -412,8 +365,6 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await presenter.keyboard.press('ArrowLeft')
     await expect(present(presenter)).toHaveAttribute('data-section', 'follow-ask')
 
-    // The learner asks in the section their build numbers 3, one for students that both builds have; the
-    // presenter's overview numbers it 4.
     await badge(learner).getByRole('button', { name: '自主浏览' }).click()
     await present(learner).getByRole('button', { name: '退出放映' }).click()
     const box = learner.locator('.pm-question-box')
@@ -441,18 +392,13 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await expect(badge(learner)).toContainText('正在跟随主讲')
     await expect(slide(learner, '跟随与受众')).toBeVisible()
 
-    // The teacher's section is the presenter's slide 2 and no slide of the learner's: the learner stays
-    // on the cover, the nearest slide before it (Slidev's own state names slide 2, the learner's rules,
-    // but goes by section).
     await presenter.keyboard.press('ArrowRight')
     await expect(presenter).toHaveURL(/\/presenter\/2(\?|$)/)
     await learner.waitForTimeout(1500)
     await expect(learner).toHaveURL(/\/1(\?|$)/)
-    // The rules: the presenter's slide 3 is the learner's slide 2.
     await presenter.keyboard.press('ArrowRight')
     await expect(learner).toHaveURL(/\/2(\?|$)/)
     await expect(slide(learner, '合并规则')).toBeVisible()
-    // The presenter's drawing on the rules shows on the learner's rules, and not on the learner's slide 3.
     await presenter.getByTitle('Show drawing toolbar').click()
     const box = (await presenter.locator('.slidev-slide-content').first().boundingBox())!
     await presenter.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.7)
@@ -461,8 +407,6 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
     await presenter.mouse.up()
     const strokes = learner.locator('.slidev-slide-content > svg path')
     await expect(strokes).not.toHaveCount(0)
-    // The rules' first click shows the teacher's point: the presenter's clicks 1 to 3 are the learner's 0 to 2,
-    // found by the blocks each click shows (Slidev's own state names the presenter's clicks).
     const clicks = (n: number) => new RegExp(`/2\\?(.*&)?clicks=${n}(&|$)`)
     await presenter.keyboard.press('ArrowRight')
     await expect(presenter).toHaveURL(/\/presenter\/3\?(.*&)?clicks=1(&|$)/)
@@ -473,18 +417,15 @@ test.describe('a classroom across the full and the student build (D-4)', () => {
       await expect(presenter).toHaveURL(new RegExp(`/presenter/3\\?(.*&)?clicks=${n + 1}(&|$)`))
       await expect(learner).toHaveURL(clicks(n))
     }
-    // The question box: the presenter's slide 4, the learner's 3.
     await presenter.keyboard.press('ArrowRight')
     await expect(learner).toHaveURL(/\/3(\?|$)/)
     await expect(slide(learner, '提问')).toBeVisible()
     await expect(strokes).toHaveCount(0)
     await expect(badge(learner)).toContainText('正在跟随主讲')
-    // The teachers' section after it: the learner stays on the students' own slide, the nearest of the learner's build.
     await presenter.keyboard.press('ArrowRight')
     await expect(presenter).toHaveURL(/\/presenter\/5(\?|$)/)
     await learner.waitForTimeout(1500)
     await expect(learner).toHaveURL(/\/3(\?|$)/)
-    // Straight back to the teacher's section: the learner goes to the nearest slide before it, the cover.
     for (let i = 0; i < 3; i++) await presenter.keyboard.press('ArrowUp')
     await expect(presenter).toHaveURL(/\/presenter\/2(\?|$)/)
     await expect(learner).toHaveURL(/\/1(\?|$)/)

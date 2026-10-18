@@ -1,17 +1,3 @@
-// The assistant in the pages of `presmium dev` (WP-80, WP-92b; P-111, P-112, N-08), without any model the
-// operator configured, for a deck git ignores (it is in examples/demo/.presmium):
-// - "AI changes" is in the toolbar all the same; its popover says AI changes are unavailable, what to set (the
-//   page's model settings, or the environment and a restart), what is missing in the page's language (the
-//   server gives its code), and that the changes are committed to a git repository, which this deck is not in;
-//   the model settings open from it. Each code of what is missing (the page's `info` answered with it) reads in
-//   Chinese and in English.
-// - Edit mode (P-124, WP-92d; `presmium dev --edit`): the deck's source opens in the browser; a paragraph picked in the preview opens
-//   its line, a sentence added there and saved shows in the page without a reload; out of git, the status bar
-//   says so and there is nothing to commit.
-// - In a classroom, a learner's question reaches the presenter's overview; its "AI answer" asks the
-//   presenter's own model service (the one the presenter filled in for the question panel; an
-//   OpenAI-compatible service on this machine here), naming its provider; the presenter sends the answer to
-//   the classroom, and the learner sees it, its citation as plain text.
 import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -40,8 +26,6 @@ test.beforeAll(async () => {
   const lecture = join(dir, 'lecture.md')
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:`))
   model = await chatStub(request => ['这段代码在', `[合并规则](presmium://sections/merge)中讲解：问题是「${questionOf(request)}」。`])
-  // No model of the operator's: no model variable, and a configuration directory of its own.
-  // Edit mode is `--edit`'s (until WP-96g).
   dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '', PRESMIUM_AGENT_COMMAND: '' }, ['--edit'])
 })
 test.afterAll(async () => {
@@ -51,7 +35,6 @@ test.afterAll(async () => {
   for (const path of [dir, `${dir}.config`]) if (path) rmSync(path, { recursive: true, force: true })
 })
 
-/** A page of the dev server (its address ends with a slash). */
 const pageUrl = (path: string) => new URL(path, dev.url).href
 
 test('"AI changes" is in the toolbar without a model: it says what to set, that changes are committed to git, and opens the model settings', async ({ page }) => {
@@ -72,8 +55,6 @@ test('"AI changes" is in the toolbar without a model: it says what to set, that 
 })
 
 test('what is missing reads by its code, in the page\'s language: the variables a partial model service lacks, a replacement runtime\'s provider, the bundled harness', async ({ page }) => {
-  // The server gives each code where its environment has it (packages/addon-assistant/test/acp.test.ts); here its
-  // `info` answers with each in turn, the rest as the server has it, and the page says it in Chinese, then English.
   const cases: [Record<string, unknown>, string, string][] = [
     [{ code: 'model', variables: ['PRESMIUM_MODEL_KEY', 'PRESMIUM_MODEL_PROVIDER'] }, '模型服务：PRESMIUM_MODEL_URL、PRESMIUM_MODEL_KEY 与 PRESMIUM_MODEL_PROVIDER 要一起设置，还缺 PRESMIUM_MODEL_KEY、PRESMIUM_MODEL_PROVIDER', 'a model service: PRESMIUM_MODEL_URL, PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER go together, and PRESMIUM_MODEL_KEY and PRESMIUM_MODEL_PROVIDER are not set'],
     [{ code: 'provider' }, '替换运行时的服务提供方：PRESMIUM_AGENT_COMMAND（或工作区配置中的 command）要配上 PRESMIUM_AGENT_PROVIDER（或 provider）', 'the replacement runtime\'s provider: PRESMIUM_AGENT_COMMAND (or the workspace configuration\'s command) needs PRESMIUM_AGENT_PROVIDER (or provider)'],
@@ -92,7 +73,6 @@ test('what is missing reads by its code, in the page\'s language: the variables 
     else await page.reload()
     await button.click()
     await expect(page.getByRole('dialog', { name: 'AI 修改' })).toContainText(`缺少：${zh}`)
-    // The UI language follows `<html lang>`.
     await page.evaluate(() => document.documentElement.lang = 'en')
     await expect(page.getByRole('dialog', { name: 'AI changes' })).toContainText(`Missing: ${en}`)
   }
@@ -101,8 +81,6 @@ test('what is missing reads by its code, in the page\'s language: the variables 
 test('edit mode: the deck\'s source opens in the browser, a sentence saved shows in the page without a reload; out of git, nothing is committed', async ({ page }) => {
   const toggle = page.locator('.pm-workspace-edit').filter({ visible: true })
   const editor = page.getByRole('region', { name: '源码' }).getByRole('textbox', { name: '源码' })
-  // Edit mode loads modules of its own: the first time, the dev server may optimize a dependency it finds then and
-  // reload the page; so it is entered once and its requests waited for, then the page is visited again.
   for (let visit = 0; visit < 2; visit++) {
     await openDevPage(page, pageUrl('code.html'), toggle)
     await toggle.click()
@@ -111,7 +89,6 @@ test('edit mode: the deck\'s source opens in the browser, a sentence saved shows
   }
   await page.evaluate(() => (window as unknown as { unreloaded: boolean }).unreloaded = true)
 
-  // The paragraph picked in the preview: its line, the cursor on it; a sentence added at its end and saved.
   await page.locator('.pm-section[data-section] .pm-block--markdown').filter({ hasText: '每一轮合并出现次数最多的一对。' }).click()
   const line = readFileSync(join(dir, 'lecture.md'), 'utf8').split('\n').findIndex(text => text.startsWith('每一轮合并')) + 1
   const status = page.getByRole('contentinfo', { name: '状态栏' })
@@ -124,7 +101,6 @@ test('edit mode: the deck\'s source opens in the browser, a sentence saved shows
   expect(readFileSync(join(dir, 'lecture.md'), 'utf8')).toContain('每一轮合并出现次数最多的一对。开发中加的一句。\n')
   expect(await page.evaluate(() => (window as unknown as { unreloaded?: boolean }).unreloaded === true)).toBe(true)
 
-  // Not in a git repository: the status bar says so, and there is nothing to commit.
   await expect(status.locator('.pm-workspace-git')).toHaveText('不是 git 仓库')
   await expect(page.getByRole('button', { name: /^提交 \d+ 处修改/ })).toHaveCount(0)
 })
@@ -134,7 +110,6 @@ test('a learner\'s question reaches the presenter\'s overview; the presenter\'s 
   const [presenter, learner] = await Promise.all(contexts.map(context => context.newPage())) as [Page, Page]
   try {
     await openDevPage(presenter, pageUrl('code.html'), presenter.locator('[data-section="merge"]'))
-    // The presenter's own model service, filled in once in the question panel.
     await presenter.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' }).click()
     const ask = presenter.getByRole('dialog', { name: '向 AI 提问' })
     await ask.getByLabel('地址').fill(model.url)
@@ -167,12 +142,10 @@ test('a learner\'s question reaches the presenter\'s overview; the presenter\'s 
     await expect(question.locator('.pm-classroom-panel__answer')).toContainText('问题是「为什么先统计次数？」', { timeout: 30_000 })
     await question.getByRole('button', { name: '发给课堂' }).click()
     await expect(question.locator('.pm-classroom-reply')).toContainText(`AI 回答（${provider}）：`)
-    // The presenter's browser asked the presenter's service, with the question's section.
     const asked = model.received.find(r => r.method === 'POST')!
     expect(asked.headers.authorization).toBe('Bearer presenter-key-51c')
     expect(asked.body.messages![0]!.content).toContain('(id questions')
 
-    // The learner gets the answer, its citation as plain text.
     const reply = box.getByRole('list', { name: '我的提问' }).locator('.pm-classroom-reply')
     await expect(reply).toContainText(`AI 回答（${provider}）：这段代码在合并规则中讲解：问题是「为什么先统计次数？」。`)
   } finally {

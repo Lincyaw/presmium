@@ -1,19 +1,3 @@
-/**
- * The lecture plugin's agent tools (docs/architecture.md 4.8, MCP's
- * plugin tools): an agent writing a lecture reads the plan its narration
- * and cues make (`lecture_preview`), has it said (`lecture_synthesize`,
- * paid: the clips the synthesis cache lacks go to the engine), and has a
- * recorded lecture transcribed (`track_transcribe`, paid: its audio goes to
- * the transcription engine's provider). MCP asks for approval of the paid
- * ones (`spend`) before calling them. A tool reaches its deck through the
- * deck's Node service `LECTURE_DECK`, and plans from the latest IR (the
- * lecture renderer's view of it, as a build does) of the whole deck.
- * To write a recorded
- * lecture back (WP-84; P-136, P-137), the agent of the assistant's change
- * task reads its transcript as narration, with the cues in place and where
- * each step's narration is (`track_narration`), and the sentences to
- * translate with the digest each translation records (`track_translations`).
- */
 import { isAbsolute, relative, resolve } from 'node:path'
 import { defineService, DOCUMENT_FILES, SPEECH } from '@presmium/kernel'
 import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@presmium/kernel'
@@ -25,7 +9,6 @@ import { digest } from './renderer.ts'
 import { deckFiles, readTrack, TRACK_FILE, trackDir } from './store.ts'
 import type { DeckFiles } from './store.ts'
 
-/** The deck of a document, for the tools: a Node service of the lecture plugin. */
 export interface LectureDeck {
   deckDir: string
   workspaceRoot: string
@@ -38,7 +21,6 @@ function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument, file
   if (!deck) throw new Error('this document does not use the lecture plugin')
   const doc = latestView(deck.deckDir)
   if (!doc) throw new Error('the document has not compiled yet')
-  // Written through the workspace's writer in `presmium serve` (WP-91).
   return { deckDir: deck.deckDir, doc, files: deckFiles(deck.workspaceRoot, () => ctx.service(DOCUMENT_FILES)) }
 }
 
@@ -48,7 +30,6 @@ function speechOf(ctx: AgentToolContext): SpeechService {
   return speech
 }
 
-/** The plan as the agent reads it: per section and step, what is said and the cues in it (at the word they sit before). */
 function planView(plan: LecturePlan, section?: string) {
   return plan.sections.filter(s => !section || s.id === section).map(s => ({
     section: s.id,
@@ -120,7 +101,6 @@ export const trackTranscribe: AgentTool = {
   },
 }
 
-/** A recorded lecture of the deck, by the tool input's `track`. */
 function storedTrack(deckDir: string, input: Record<string, unknown>): LectureTrack {
   if (typeof input.track !== 'string' || !input.track) throw new Error('track: the lecture id is required')
   const track = trackDir(deckDir, input.track) ? readTrack(deckDir, input.track)?.track : undefined

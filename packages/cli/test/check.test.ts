@@ -1,4 +1,3 @@
-// `presmium check` on the compiler: the WP-03 acceptance kept on MyST decks.
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
@@ -18,7 +17,6 @@ it('locates findings as file:line in text output and prints parseable JSON', asy
   const dir = fixtures()
   const text = await check(dir, 'broken')
   expect(text.stdout).toContain('broken/pages/todo.md:7  error  section 3 is unfinished')
-  // A crashing check is located at the entry file, on the frontmatter line of its plugin.
   expect(text.stdout).toContain('broken/lecture.md:4  error  check sample.crash crashed: boom')
 
   const json = JSON.parse((await check(dir, 'broken', '--json')).stdout)

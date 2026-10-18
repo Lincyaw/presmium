@@ -1,9 +1,3 @@
-/**
- * Local JavaScript and TypeScript executor for compile-time execution (K-19):
- * runs code with the node that runs the compiler, through the same runner as
- * the browser (src/runner.mjs), so the recorded output matches a live run.
- * Each run is a module of its own: it has no sessions.
- */
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
@@ -14,11 +8,8 @@ import { childRuns, REQUEST_FILE } from './child.ts'
 export const SCRIPT_EXECUTOR_ID = 'presmium.node'
 
 const RUNNER = new URL('../runner.mjs', import.meta.url)
-/** The package of the runner and of Sucrase, which it imports: read by the run. */
 const READ = [fileURLToPath(new URL('../..', import.meta.url)), dirname(createRequire(RUNNER).resolve('sucrase/package.json')), dirname(dirname(process.execPath))]
 
-// The result goes to a file of the run directory (./child.ts); the run has cancelled what the code
-// left pending, and whatever else it opened ends with the process.
 const MAIN = `import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { runScript } from ${JSON.stringify(RUNNER.href)}
 const { runs } = JSON.parse(readFileSync(${JSON.stringify(REQUEST_FILE)}, 'utf8'))

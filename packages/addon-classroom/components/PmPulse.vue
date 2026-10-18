@@ -6,9 +6,6 @@ import { COLLECTIONS, distribution, isPulseVote, MESSAGES, placeKey, voteId } fr
 import type { Place, PulseVote } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
-// P-67, from `{pulse}`: learners of an active classroom say how well they follow; voting again
-// replaces their vote. The presenter sees the distribution here and in the presenter view.
-// The compiler gives the question and levels in the deck's language when the directive has none.
 const props = defineProps<{
   question?: string
   levels?: string[]

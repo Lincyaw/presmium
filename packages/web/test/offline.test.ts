@@ -1,5 +1,3 @@
-// `presmium build --to web` on a deck that turns offline support off (`presmium.publish.offline: false`):
-// the site is built without the service worker that would precache it.
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'

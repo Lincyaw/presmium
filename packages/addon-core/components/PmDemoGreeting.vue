@@ -8,7 +8,6 @@ const MESSAGES = {
   'en': { unavailable: 'The greeting service is unavailable', starting: 'Starting the kernel…' },
 }
 
-// The greeting is provided by presmium.demo.consumer using presmium.demo.provider's service.
 const t = useMessages(MESSAGES)
 const greeting = useService(DEMO_GREETING)
 const report = useStartReport()

@@ -1,18 +1,3 @@
-// Writing a recorded lecture back into the deck (WP-84; P-136, P-137): `presmium serve` on this machine (LOCAL)
-// of a workspace copied from e2e/fixtures/lecture-writeback (a git repository of its own; the assistant, the
-// lecture and the speech plugins installed at its root), with the deterministic test agent of the lecture
-// plugin (packages/addon-lecture/test/fixtures/writeback-agent.mjs) as the operator's replacement runtime
-// (provider "Test Provider"), reviewed with the assistant's git review.
-//
-// - In edit mode the lecture panel names the provider and hands lecture `demo` (a transcribed recording: a
-//   spotlight bound to a word, a mark bound to a character) to "narration from the transcript": the agent reads
-//   track_narration and writes each section's tidied draft; the review is accepted and makes one commit; the
-//   narration has the cues where the actions were bound; undoing the commit brings the narration back.
-// - "Translate" (English): the agent reads track_translations and writes the translations into track.json;
-//   accepted, every utterance has its English translation with the digest of its text, and the lecture's
-//   build exports English captions without a stale one.
-// - WP-83's leftover: correcting a sentence of a synthetic lecture names the provider the operator gives its
-//   engine now (`Presmium fake`), not the one the track recorded (`Old Provider`).
 import { createHash } from 'node:crypto'
 import { execFileSync, spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
@@ -28,7 +13,6 @@ const FIXTURE = join(ROOT, 'e2e/fixtures/lecture-writeback')
 const PRESMIUM = join(ROOT, 'packages/cli/bin/presmium.mjs')
 const AGENT = join(ROOT, 'packages/addon-lecture/test/fixtures/writeback-agent.mjs')
 const PLUGINS = { 'slidev-addon-assistant': 'packages/addon-assistant', 'slidev-addon-lecture': 'packages/addon-lecture', 'slidev-addon-speech': 'packages/addon-speech' }
-/** serve's port: `PRESMIUM_E2E_WRITEBACK_PORT`, else a free one, so the spec runs beside others. */
 const PORT = Number(process.env.PRESMIUM_E2E_WRITEBACK_PORT ?? 0)
 
 test.describe.configure({ mode: 'serial', timeout: 240_000 })
@@ -37,14 +21,12 @@ function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })
 }
 
-/** The commits of a repository, newest first: subject and trailers. */
 const commits = (dir: string) => git(dir, ['log', '--format=%H%x00%s%x00%(trailers:only)%x1e']).split('\x1e').map(entry => entry.trim()).filter(Boolean).map((entry) => {
   const [id = '', subject = '', trailers = ''] = entry.split('\0')
   return { id, subject, trailers }
 })
 const filesOf = (dir: string, id: string) => git(dir, ['show', '--name-only', '--format=', id]).split('\n').filter(Boolean).sort()
 
-/** The test's environment without Vitest's or Presmium's variables or credentials, then `extra`. */
 function clean(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
   delete env.NODE_ENV
@@ -70,7 +52,6 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
     mkdirSync(work, { recursive: true })
     dir = mkdtempSync(join(work, 'e2e-lecture-writeback-'))
     cpSync(FIXTURE, dir, { recursive: true })
-    // The assistant's own git review, not deltabox's, where the host qualifies for it.
     writeFileSync(join(dir, 'presmium.workspace.yaml'), `${readFileSync(join(dir, 'presmium.workspace.yaml'), 'utf8')}  presmium.deltabox:\n    review: false\n`)
     writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.presmium/\n')
     writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: dir.split('/').at(-1)!.toLowerCase(), private: true, type: 'module' })}\n`)
@@ -85,7 +66,6 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
         PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`,
         PRESMIUM_AGENT_PROVIDER: 'Test Provider',
         WRITEBACK_AGENT_LOG: `${dir}.agent.log`,
-        // An engine the operator defines (nothing is synthesized here, nothing listens there): its provider is what the player names.
         PRESMIUM_SPEECH_FAKE_URL: 'http://127.0.0.1:9/v1',
         PRESMIUM_SPEECH_FAKE_PROVIDER: 'Presmium fake',
         XDG_STATE_HOME: `${dir}.state`,
@@ -115,11 +95,8 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
 
   const lecture = () => readFileSync(join(dir, 'intro/lecture.md'), 'utf8')
 
-  /** The lecture panel on the document's page, in edit mode. */
   async function lecturePanel(page: Page) {
     await openDevPage(page, `${url}/intro/`, page.locator('[data-section="merge"]').first())
-    // After the previous case's undo the site may still be taking the document back in, which renders the
-    // page's controls again: edit mode is on once its control stays pressed and the entry shows.
     const edit = page.locator('.pm-workspace-edit').filter({ visible: true })
     const entry = page.getByRole('button', { name: '讲授回写' })
     await expect(async () => {
@@ -137,39 +114,32 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
     const original = lecture()
     const before = commits(dir).length
     const panel = await lecturePanel(page)
-    // The model's provider is named before anything is sent (N-08).
     await expect(panel.locator('.pm-lecture-writeback__provider')).toHaveText('修改由 Test Provider 的模型完成')
     const demo = panel.locator('li[data-track="demo"]')
     await expect(demo).toContainText('讲授 demo（3 句）')
     await demo.getByRole('button', { name: '整理为讲解' }).click()
 
-    // The agent read the transcript as narration (the lecture side's tool) and wrote it; the review lists the file.
     const task = panel.getByRole('region', { name: '回写任务' }).first()
     await expect(task).toHaveAttribute('data-state', 'review', { timeout: 90_000 })
     await expect(task.locator('.pm-lecture-writeback__change[data-path="intro/lecture.md"]')).toContainText('+2 −2')
     await task.getByRole('button', { name: '接受' }).click()
     await expect(task.getByRole('status')).toContainText('已提交')
 
-    // The narration of each section is the tidied transcript; the spotlight is cued before the word 这 it was
-    // bound to, the mark before 词 (bound by a character, the utterance having no word times).
     const written = lecture()
     expect(written).toContain('\n我们先看{cue to=code-1 lines=2-3}`spot`这两行代码，合并出现最多的一对。\n')
     expect(written).toContain('\n{cue}`mark 词表`词表随合并增长。\n')
     expect(written).not.toContain('原来的讲解')
     expect(written).not.toContain('词表的讲解')
     expect(written.replace(/\n[^\n]*\{cue[^\n]*\n/g, '\n')).toBe(original.replace(/\n(原来的讲解|词表的讲解)[^\n]*\n/g, '\n'))
-    // One commit, of the task, with the lecture track in its message.
     expect(commits(dir)).toHaveLength(before + 1)
     const [made] = commits(dir)
     expect(made!.subject).toBe('转写回写：讲授轨 demo')
     expect(made!.trailers).toMatch(/^Presmium-Task: \S+$/m)
     expect(filesOf(dir, made!.id)).toEqual(['intro/lecture.md'])
-    // The page follows without a reload; edit mode marks the cue where it is.
     await expect(page.locator('section.pm-section[data-section="merge"]')).toContainText('我们先看〔cue spot〕这两行代码，合并出现最多的一对。', { timeout: 60_000 })
     const tools = readFileSync(`${dir}.agent.log`, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line) as { event: string, name?: string }).filter(entry => entry.event === 'tool')
     expect(tools.map(entry => entry.name)).toEqual(['track_narration'])
 
-    // Undone: the narration comes back, as one more commit.
     await task.getByRole('button', { name: '撤销这次修改' }).click()
     await expect(task.getByRole('status').filter({ hasText: '已撤销' })).toBeVisible()
     expect(lecture()).toBe(original)
@@ -189,7 +159,6 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
     await expect(task.getByRole('status')).toContainText('已提交')
     expect(commits(dir)[0]!.subject).toBe('对话修改：为讲授 demo 生成英语译文（en）')
 
-    // Each utterance has its translation, recording the digest of the text it translates.
     const track = JSON.parse(readFileSync(join(dir, 'intro/lectures/demo/track.json'), 'utf8')) as Track
     const sha = (text: string) => `sha256:${createHash('sha256').update(text).digest('hex')}`
     expect(track.utterances.map(u => [u.id, u.translations?.en])).toEqual([
@@ -197,7 +166,6 @@ test.describe('a recorded lecture written back by the agent (P-136, P-137)', () 
       ['u2', { text: 'merge the pair that occurs most often.', source: sha('合并出现最多的一对。') }],
       ['u3', { text: 'The vocabulary grows with each merge.', source: sha('那个，词表随合并增长。') }],
     ])
-    // The lecture's build exports the English captions, none of them stale.
     const built = await presmium(['build', '--to', 'lecture'], join(dir, 'intro'))
     expect(built).not.toContain('stale')
     const captions = readFileSync(join(dir, 'intro/dist/lecture/demo/captions.en.vtt'), 'utf8')

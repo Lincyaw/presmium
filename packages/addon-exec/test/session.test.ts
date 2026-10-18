@@ -1,7 +1,3 @@
-// Execution sessions at compile time (P-101, WP-73b), with the real `presmium build`: the blocks of
-// one `:session:` share the interpreter, so the second block finds what the first defined; a build
-// of unchanged code executes nothing; a change to the first block runs the whole session again,
-// since a block's cache key chains the keys of the blocks before it (docs/ir.md section 4).
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -47,7 +43,6 @@ it('records what the session\'s blocks print in one interpreter, runs nothing ag
     expect(result.code, result.stdout + result.stderr).toBe(0)
     const doc = JSON.parse(readFileSync(join(dir, 'dist/ir.json'), 'utf8')) as IRDocument
     const outputs = doc.sections[0]!.blocks.map(block => (block.node as CodeNode).outputs?.[0]?.stdout)
-    // The count only: where the host qualifies, the line goes on to say the runs were isolated by deltabox.
     return { outputs, runs: /code runs: \d+ executed, \d+ from cache/.exec(result.stdout)?.[0] }
   }
 

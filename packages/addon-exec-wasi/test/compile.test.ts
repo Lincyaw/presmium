@@ -1,11 +1,3 @@
-// Compile-time execution on the WASI binaries (P-103, WP-74), with the real `presmium build` on a
-// machine without a toolchain: the build's PATH holds nothing but the FUSE helpers the process sandbox
-// mounts with (deltabox, where the host qualifies), so no cc, ruby or sqlite3
-// can run, yet the C program (and the C++, Ruby and SQL blocks) are recorded. The recording names
-// the runtime by the hash of its binaries, which a second build from scratch computes alike. The
-// program's environment is the build's, cleaned of credentials (docs/architecture.md 10.6). A run is a
-// process of its own, whose program's memory has a limit: one that allocates without end fails, and the
-// compiling process does not grow with it (N-08).
 import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -87,7 +79,6 @@ int main(void) { puts("in the environment"); return 0; }
 ${FENCE}
 `
 
-/** Builds the deck in `dir` with the build machine's PATH `path`; the outputs by block, and the recordings' fingerprints. */
 async function build(dir: string, path: string) {
   const result = await presmium(dir, ['build'], { PATH: path, FIXTURE_PLAIN: 'visible', FIXTURE_API_TOKEN: 'hidden' })
   expect(result.code, result.stdout + result.stderr).toBe(0)
@@ -122,7 +113,6 @@ it('records C, C++, Ruby and SQL without a toolchain on the build machine, under
     expect.stringMatching(/^wasi sqlite sha256:[0-9a-f]{16}$/),
   ])
 
-  // From scratch: the same fingerprints, so the same cache keys.
   rmSync(join(dir, '.presmium'), { recursive: true })
   rmSync(join(dir, 'dist'), { recursive: true })
   const second = await build(dir, empty)
@@ -132,7 +122,6 @@ it('records C, C++, Ruby and SQL without a toolchain on the build machine, under
   expect(second.runs.sum!.stdout).toBe(first.runs.sum!.stdout)
 }, 180_000)
 
-/** The peak resident memory of a process (`VmHWM`), in MiB, while it lives. */
 function peakMemory(pid: number): number {
   try {
     return Number(/^VmHWM:\s+(\d+) kB$/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1] ?? 0) / 1024
@@ -175,7 +164,6 @@ int main(void) {
 }
 ${FENCE}
 `)
-  // \`presmium ir\` compiles and runs the code, nothing more; its own peak memory, sampled while it runs.
   const { NODE_ENV: _test, ...env } = process.env
   const child = spawn(process.execPath, [PRESMIUM_BIN, 'ir', '--out', 'ir.json'], { cwd: dir, env, stdio: 'ignore' })
   let peak = 0

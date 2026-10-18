@@ -1,10 +1,3 @@
-// A compile-time run of the WASI executor (./executor.ts) in a process of its own, which the
-// compiler's process sandbox runs (or ./process.ts on this machine): it reads `.presmium/request.json`
-// in its working directory (the request, the runtime directory and the timeouts),
-// runs the request in a worker thread (./worker.mjs) and writes `.presmium/result-0.json`. The
-// program's memory is this process's, never the compiler's; the executor starts the process with
-// the engine's limit on a WebAssembly memory (`--wasm-max-mem-pages`), past which the program's
-// allocations fail (N-08). The timeout counts from when the runtime has loaded.
 import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { Worker } from 'node:worker_threads'
 

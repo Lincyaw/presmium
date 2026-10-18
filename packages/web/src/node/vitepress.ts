@@ -1,8 +1,3 @@
-/**
- * Runs the VitePress command line, the documented interface of VitePress, in
- * a process that loads Presmium's TypeScript also when it is installed under
- * node_modules (`TYPESCRIPT_IMPORT`): the site's config imports it.
- */
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { createServer } from 'node:net'
@@ -18,11 +13,6 @@ function bin(): string {
   return join(dirname(pkg), (require(pkg) as { bin: Record<string, string> }).bin.vitepress!)
 }
 
-/**
- * `vitepress build <root> --outDir <outDir>`. VitePress reports progress on
- * stdout; it goes to stderr here, so the build report of `presmium build`
- * stays readable on stdout.
- */
 export function vitepressBuild(root: string, outDir: string): Promise<number> {
   return new Promise((done) => {
     const child = spawn(process.execPath, [...TYPESCRIPT_IMPORT, bin(), 'build', root, '--outDir', outDir], { stdio: ['ignore', 2, 2] })
@@ -31,7 +21,6 @@ export function vitepressBuild(root: string, outDir: string): Promise<number> {
   })
 }
 
-/** A port free now on `host` (VitePress's command line takes no port 0). */
 export function freePort(host: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const probe = createServer()
@@ -49,11 +38,6 @@ export interface DevProcess {
   close(): Promise<void>
 }
 
-/**
- * `vitepress dev <root>` with an IPC channel; resolves once the server listens. `receive` gets the other
- * messages of the server. `port` 0 takes a free port; `host` is the address it listens on (default VitePress's);
- * an abort of `signal` stops a server still starting.
- */
 export async function vitepressDev(root: string, port: number | undefined, receive: (message: DevMessage) => void, options: { host?: string, signal?: AbortSignal } = {}): Promise<DevProcess> {
   const listen = port === 0 ? await freePort(options.host ?? '127.0.0.1') : port
   const args = [...TYPESCRIPT_IMPORT, bin(), 'dev', root, ...(listen ? ['--port', String(listen)] : []), ...(options.host ? ['--host', options.host] : [])]
@@ -77,7 +61,6 @@ export async function vitepressDev(root: string, port: number | undefined, recei
         async close() {
           options.signal?.removeEventListener('abort', stop)
           stop()
-          // Vite closes its server on SIGTERM and waits for the connections still open; it is not waited for long.
           const timer = setTimeout(() => child.kill('SIGKILL'), 3000)
           await exited
           clearTimeout(timer)

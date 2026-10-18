@@ -1,8 +1,4 @@
 <script setup lang="ts">
-// Recording a lecture from the present view (P-90): under `presmium dev` and `presmium serve`, a
-// new lecture or one section of an existing lecture again, with the camera and the screen if
-// wanted. While it records, the pointer over a block is reported as `point` (about 20 samples a
-// second, simplified); the laser and the marker draw on a block and report `ink`.
 import { blockAt, linesText, OPERATIONS, PmIcon, useMessages, useServer, useService } from '@presmium/host'
 import type { BlockPoint } from '@presmium/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
@@ -14,11 +10,8 @@ import { playing, refreshLectures, useViewer } from './state.ts'
 
 defineProps<{ view: string }>()
 
-/** The present view, where the blocks pointed at are. */
 const PRESENT = '.pm-present'
-/** Pointer samples: at most one every 50 ms (20 a second). */
 const SAMPLE_MS = 50
-/** A path ends after this long without a move, or once it is this long. */
 const IDLE_MS = 400
 const LONGEST_MS = 1000
 
@@ -65,7 +58,6 @@ async function start() {
 
 async function stop() {
   await recorder.value?.stop()
-  // The view menu offers the lecture view once the deck has one.
   await Promise.all([loadTracks(), refreshLectures()])
 }
 
@@ -81,7 +73,6 @@ const status = computed(() => {
   }
 })
 
-// The pointer over a block of the present view, while recording.
 let path: { block: string, line?: number, from: number, points: PathPoint[] } | undefined
 let sampled = 0
 let idle: ReturnType<typeof setTimeout> | undefined
@@ -92,7 +83,6 @@ function flush() {
   path = undefined
   if (!done || !operations.value) return
   const data = { block: done.block, path: simplifyPath(done.points), ...done.line ? { line: done.line } : {} }
-  // Reported once it ends (up to IDLE_MS after its last move), it happened from its first.
   recorder.value?.pathStarted(data, done.from)
   operations.value.report({ type: 'point', data })
 }
@@ -111,9 +101,7 @@ function onPointer(event: PointerEvent) {
   if (event.timeStamp - path.from >= LONGEST_MS) flush()
 }
 
-// The laser and the marker: a stroke over one block, its code lines or a box of it.
 const surface = shallowRef<HTMLElement>()
-/** Where the stroke began. */
 let stroke: BlockPoint | undefined
 
 function onDown(event: PointerEvent) {
@@ -148,7 +136,6 @@ watch(recording, (now) => {
 onBeforeUnmount(() => {
   window.removeEventListener('pointermove', onPointer)
   flush()
-  // Leaving the present view ends the recording.
   void recorder.value?.stop()
 })
 </script>

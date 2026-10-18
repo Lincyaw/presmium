@@ -1,7 +1,6 @@
 import type { Check, CheckContext, Finding, Unsubscribe } from './contracts.ts'
 import { errorMessage } from './errors.ts'
 
-/** Collects checks by id and runs them; a throwing check becomes an `error` finding. */
 export class CheckRegistry {
   #checks = new Map<string, Check>()
 
@@ -21,7 +20,6 @@ export class CheckRegistry {
     return [...this.#checks.values()]
   }
 
-  /** Runs every check concurrently; findings keep registration order. */
   async run(ctx: CheckContext): Promise<Finding[]> {
     const results = await Promise.all(this.list().map(check => runIsolated(check, ctx)))
     return results.flat()

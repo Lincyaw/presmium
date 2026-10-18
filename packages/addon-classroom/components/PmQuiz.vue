@@ -6,16 +6,9 @@ import { acceptsAnswers, answerId, COLLECTIONS, countedAnswers, isAnswer, isCorr
 import type { Answer, Place, QuizState } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
-// P-64, from `{quiz}`: the prompt is the default slot. In a classroom the presenter opens and closes
-// the quiz and sees the tally as answers come in; learners answer while it is open, and answering
-// again replaces their answer. Once it is closed everyone sees the tally and the right options; the
-// result is frozen at closing, so an answer that reaches the room later does not count.
-// Outside a classroom it is a self-test that tells at once whether an answer is right.
 const props = defineProps<{
   options: string[]
-  /** Indexes of the right options. */
   answer: number[]
-  /** Set by the compiler. */
   place?: Place
 }>()
 
@@ -35,21 +28,17 @@ const result = computed(() => tally(props.options.length, props.answer, counted.
 const multiple = computed(() => props.answer.length > 1)
 const open = computed(() => acceptsAnswers(status.value, state.value))
 const closed = computed(() => state.value?.open === false)
-/** This learner's last answer, and the one that counts: once the quiz is closed, the one it was closed with. */
 const submitted = computed(() => (me.value ? answers.value.find(item => item.id === answerId(id.value, me.value!.id))?.value : undefined))
 const mine = computed(() => (closed.value ? counted.value.find(a => a.participant === me.value?.id) : submitted.value))
 
 const choice = ref<number[]>([])
-/** The self-test answer outside a classroom. */
 const tried = ref<number[]>()
-// A learner sees their answer again, e.g. after a reload, and once the quiz is closed, the one that counted.
 watch([mine, closed], ([answer]) => {
   if (answer && (closed.value || choice.value.length === 0)) choice.value = [...answer.choice]
 }, { immediate: true })
 
 const canAnswer = computed(() => (joined.value ? !presenter.value && open.value : true))
 const showTally = computed(() => joined.value && (presenter.value || closed.value))
-// Not before the quiz is closed, not even on the presenter's screen, which the room may see.
 const revealed = computed(() => (joined.value ? closed.value : tried.value !== undefined))
 const letters = (choice: number[]) => choice.map(optionLetter).join(t.value.quiz.letters)
 
@@ -173,7 +162,6 @@ function setOpen(next: boolean): void {
   gap: 0.5em;
   cursor: pointer;
 }
-/* The right options once revealed: framed and tinted in the success colour, the letter too. */
 .pm-quiz__option[data-correct] {
   border-color: var(--pm-color-ok);
   background: var(--pm-color-ok-soft);

@@ -1,18 +1,7 @@
-/**
- * The MyST source around a position in the editor: the directive fence on a
- * line, the options block under it, the anchor of a directive and what is
- * being typed. The editor's buffer may not parse yet, so this reads lines;
- * the compiler stays the parser of the deck.
- */
-
-/** Opening fence of a directive: ```` ```{name} arg ```` or `:::{name} arg`. */
 export interface Fence {
-  /** 0-based line. */
   line: number
   name: string
-  /** Column of the name, after `{`. */
   nameStart: number
-  /** The argument, trimmed; empty when there is none. */
   arg: string
   argStart: number
 }
@@ -28,7 +17,6 @@ export function fenceAt(lines: readonly string[], line: number): Fence | undefin
   return { line, name, nameStart: open.length, arg: rest.trim(), argStart: after + rest.length - rest.trimStart().length }
 }
 
-/** The directive whose fence is on `line` or above the options block that holds `line`. */
 export function directiveAt(lines: readonly string[], line: number): Fence | undefined {
   for (let i = line; i >= 0; i--) {
     const fence = fenceAt(lines, i)
@@ -38,7 +26,6 @@ export function directiveAt(lines: readonly string[], line: number): Fence | und
   return undefined
 }
 
-/** Names of the options written under a fence (`:name: value` lines). */
 export function writtenOptions(lines: readonly string[], fence: Fence): string[] {
   const names: string[] = []
   for (let i = fence.line + 1; i < lines.length && OPTION.test(lines[i]!); i++) {
@@ -48,7 +35,6 @@ export function writtenOptions(lines: readonly string[], fence: Fence): string[]
   return names
 }
 
-/** An anchor written as the argument of a directive. */
 export interface AnchorRef {
   anchor: `${string}:${string}`
   scheme: string
@@ -57,12 +43,6 @@ export interface AnchorRef {
   end: number
 }
 
-/**
- * The anchor on a fence line: the argument of a directive whose argument is
- * an anchor (`anchors`, from the specs' `arg: 'anchor'`; a `pattern:` anchor
- * may hold spaces), or the first word of the argument of any directive when
- * it starts with one of `schemes`.
- */
 export function anchorAt(lines: readonly string[], line: number, schemes: readonly string[] = [], anchors: ReadonlySet<string> = new Set()): AnchorRef | undefined {
   const fence = fenceAt(lines, line)
   const word = (fence && anchors.has(fence.name) ? fence.arg : fence?.arg.split(/\s/)[0]) ?? ''
@@ -73,15 +53,10 @@ export function anchorAt(lines: readonly string[], line: number, schemes: readon
   return { anchor: word as AnchorRef['anchor'], scheme, line, start: fence.argStart, end: fence.argStart + word.length }
 }
 
-/** What is being typed at a position, for completion. `start` is the column where the typed word begins. */
 export type Typing =
-  /** A directive name after the opening `{`; `closed` when the `}` follows. */
   | { kind: 'directive', prefix: string, start: number, closed: boolean }
-  /** The argument of a directive. */
   | { kind: 'argument', fence: Fence, prefix: string, start: number }
-  /** An option name in the options block. */
   | { kind: 'option', fence: Fence, prefix: string, start: number, written: string[] }
-  /** The value of an option; for a list, its last item. */
   | { kind: 'value', fence: Fence, option: string, prefix: string, start: number }
 
 export function typingAt(lines: readonly string[], line: number, character: number): Typing | undefined {

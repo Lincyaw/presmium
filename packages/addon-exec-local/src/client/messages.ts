@@ -1,9 +1,3 @@
-/**
- * UI strings of the local environment in zh-CN and en (N-07), in the UI
- * language of @presmium/host: `useMessages()` in components, `messages()`
- * where a string is needed outside them; the routes answer in it
- * (`useServer().fetch` sends it).
- */
 import { currentLocale, useMessages as useCatalog } from '@presmium/host'
 import type { Catalog } from '@presmium/host'
 import type { ComputedRef } from 'vue'
@@ -52,12 +46,10 @@ const en: LocalEnvMessages = {
 
 export const MESSAGES: Catalog<LocalEnvMessages> = { 'zh-CN': zhCN, en }
 
-/** The strings of the UI language, read when a string is needed. */
 export function messages(): LocalEnvMessages {
   return MESSAGES[currentLocale()]
 }
 
-/** For components: the strings, following the UI language. */
 export function useMessages(): ComputedRef<LocalEnvMessages> {
   return useCatalog(MESSAGES)
 }

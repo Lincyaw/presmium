@@ -1,11 +1,3 @@
-// Audiences (WP-87, P-55, docs/ir.md 2.11): `presmium build --audience student` leaves the teacher's blocks and
-// sections out of every output, the directives nested in another's body or a list and an `{include}` with
-// `:audience:` among them, and scans what it wrote for their sentences; `presmium check --audience student` checks
-// the student version. WP-81e2: a deck's translations are compiled for the audience too, without a temporary file
-// in the deck, and scanned; `{audience}` without names fails closed; a student build keeps no finding of what it
-// left out; content after an `{include}` with `:audience:` that opens a section is a warning; `build`'s `audience`
-// option builds a whole compilation for the audience; `presmium build --audience` scans the whole output
-// directory; serve says the workspace site leaves a translation out.
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { build, Compiler } from '@presmium/compiler'
@@ -14,19 +6,11 @@ import { presmium } from './helpers.ts'
 import { FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
 
 const DECK = join(ROOT, 'e2e/fixtures/publish-checks/audience')
-/** A Chinese deck and its English translation, each with a teacher's block and a teacher's section. */
 const TRANSLATED = join(ROOT, 'e2e/fixtures/publish-checks/translated')
-/** What only the teacher's content of the two languages holds (lowercase, as the search index keeps it). */
 const TEACHER_BOTH = ['teacherzh41', 'guidezh52', 'teacheren41', 'guideen52']
-/** What only the teacher's blocks and section hold (lowercase: the search index keeps its terms so). */
 const TEACHER = ['teacheronly42', 'guideonly17', 'answerkey99', 'demotips', '演示合并之前先断开网络', '这一节整节只给教师']
-/**
- * What only the teacher's nested directives (a tab, a tip in a note, a card, code in a list item) and included file
- * hold, and the footnotes written in a teacher's tab, note and dropdown (F-01).
- */
 const NESTED = ['tabkey31', 'tipkey58', 'cardkey64', 'listkey72', 'includekey85', 'handbook23', '助教手册', 'tabfoot36', 'notefoot47', 'dropfoot53']
 
-/** A copy of the deck in examples/demo/.presmium, where its plugins, Slidev and VitePress resolve. */
 function deck(source = DECK): string {
   const work = join(ROOT, 'examples/demo/.presmium')
   mkdirSync(work, { recursive: true })
@@ -37,7 +21,6 @@ function deck(source = DECK): string {
   return dir
 }
 
-/** The files under `dir` (relative) whose text, lowercased, holds `text`. */
 function holding(dir: string, text: string): string[] {
   return readdirSync(dir, { recursive: true, encoding: 'utf8' }).filter((file) => {
     try {
@@ -59,18 +42,14 @@ describe('presmium build --audience student', () => {
     expect(built.code, built.stdout + built.stderr).toBe(0)
     const out = join(dir, 'student')
     for (const text of [...TEACHER, ...NESTED]) expect(holding(out, text), text).toEqual([])
-    // The nested teacher's content is in the whole deck: it is the audience that leaves it out.
     const full = await presmium(dir, ['ir'])
     for (const text of NESTED) expect(full.stdout.toLowerCase(), text).toContain(text)
-    // The student's content is there, in each output: so the search above reads them.
     const student = holding(out, 'studentvisible')
     for (const output of [/^ir\.json$/, /^web\/.*\.html$/, /^web\/assets\/chunks\/@localSearchIndexroot\.\w+\.js$/, /^slides\/assets\/.*\.js$/, /^notebook\/.*\.ipynb$/]) {
       expect(student.some(file => output.test(file)), String(output)).toBe(true)
     }
-    // The teacher's section is in neither the web form's contents nor the slides; the others are numbered again.
     const { sections } = JSON.parse(readFileSync(join(out, 'ir.json'), 'utf8')) as { sections: { title: string, index: number }[] }
     expect(sections.map(s => [s.index, s.title])).toEqual([[1, '受众测试'], [2, '合并规则'], [3, '练习']])
-    // The footnotes of the teacher's tab, note and dropdown belong to them, so the student version has no problem with them.
     const checked = await presmium(dir, ['check', '--audience', 'student', '--json'])
     expect(checked.code, checked.stdout + checked.stderr).toBe(0)
     const { findings } = JSON.parse(checked.stdout) as { findings: { checkId: string, severity: string }[] }
@@ -110,7 +89,6 @@ describe('presmium build --audience student', () => {
   }, 120_000)
 })
 
-/** A JSON-RPC request to MCP (Streamable HTTP) with a bearer token; the result, whether answered as JSON or as an event. */
 async function mcp(url: string, host: string, token: string, method: string, params: Record<string, unknown>): Promise<Record<string, any>> {
   const answer = await raw(`${url}/mcp`, {
     headers: { 'Host': host, 'Authorization': `Bearer ${token}`, 'Accept': 'application/json, text/event-stream' },
@@ -128,7 +106,6 @@ describe('a deck with a translation, for an audience', () => {
   it('builds neither language with the teacher\'s content, and compiles the translation without writing a file in the deck', async () => {
     const dir = deck(TRANSLATED)
     dirs.push(dir)
-    // Every name written in the deck directory while it builds.
     const written: string[] = []
     const watcher = watch(dir, (_event, name) => name && written.push(name))
     const built = await presmium(dir, ['build', '--audience', 'student', '--out', 'student'])
@@ -136,7 +113,6 @@ describe('a deck with a translation, for an audience', () => {
     expect(built.code, built.stdout + built.stderr).toBe(0)
     const out = join(dir, 'student')
     for (const text of TEACHER_BOTH) expect(holding(out, text), text).toEqual([])
-    // Both languages are built: the English pages under /en/ with the English student's content.
     expect(holding(join(out, 'web/en'), 'studenten').length).toBeGreaterThan(0)
     expect(holding(join(out, 'web'), 'studentzh').length).toBeGreaterThan(0)
     expect(written.filter(name => name.startsWith('.presmium-translation'))).toEqual([])
@@ -147,7 +123,6 @@ describe('a deck with a translation, for an audience', () => {
     const dir = deck(TRANSLATED)
     dirs.push(dir)
     appendFileSync(join(dir, 'lecture.en.md'), '\n```{code} python\n:run:\nprint("Note for teachers: unplug the network before the demo, " + "password TEACHEREN41.")\n```\n')
-    // The compilation of the whole deck, built for the audience.
     const compilation = await new Compiler(join(dir, 'lecture.md'), { bundled: join(ROOT, 'packages/cli') }).compile()
     const out = join(dir, 'dist')
     const report = await build(compilation, { outDir: out, to: ['web'], audience: 'student', quote: false, scan: 'written' })
@@ -188,7 +163,6 @@ describe('the edges of audiences', () => {
       expect.objectContaining({ message: expect.stringContaining('secret-answers.md'), source: expect.objectContaining({ line: at('{include} instructor/secret-answers.md') }) }),
       expect.objectContaining({ message: expect.stringContaining('{hiddenrole}'), source: expect.objectContaining({ line: at('HIDDENTIP36') }) }),
     ]))
-    // Only the content for everyone after it is: the {only} for the teacher alone is the teacher's section's.
     expect(findings.filter(f => f.message.includes('follows an {include}'))).toHaveLength(1)
 
     const built = await presmium(dir, ['build', '--audience', 'student', '--to', 'web', '--out', 'student'])
@@ -208,7 +182,6 @@ describe('presmium serve: a document with a translation', () => {
   it('says in the diagnostics that the workspace site leaves the translation out', async () => {
     dir = workspace('translated-local', 'translated', { '@presmium/slidev-addon-exec': 'packages/addon-exec', '@presmium/web': 'packages/web' })
     cpSync(TRANSLATED, join(dir, 'course'), { recursive: true })
-    // The test plugin's route issues an MCP token to read the diagnostics with.
     cpSync(join(FIXTURES, 'plugins/presmium-fixture-token'), join(dir, 'node_modules/presmium-fixture-token'), { recursive: true })
     const config = join(dir, 'presmium.workspace.yaml')
     writeFileSync(config, readFileSync(config, 'utf8').replace('\'@presmium/web\']', '\'@presmium/web\', presmium-fixture-token]'))

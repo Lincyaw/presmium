@@ -1,18 +1,9 @@
-/**
- * The gate of cloned voices (N-08, docs/architecture.md section 11): the
- * operator allows them (`settings.presmium.speech.cloned: true`) and each
- * has its speaker's consent record at `<consentDir>/<engine>/<voice>.json`
- * of the operator directory (`consentDir` from the settings, default
- * `consent`). The operator directory is outside every workspace; records in
- * a deck are never read.
- */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { json, problem } from '@presmium/kernel'
 import { consentPath, consentProblem, DEFAULT_CONSENT_DIR, safeName } from '../domain/index.ts'
 import { SpeechError } from './errors.ts'
 
-/** The consent directory of an operator directory. */
 export function consentDir(operatorDir: string, settings: Record<string, unknown>): string {
   const configured = typeof settings.consentDir === 'string' && settings.consentDir.trim() ? settings.consentDir.trim() : DEFAULT_CONSENT_DIR
   const dir = resolve(operatorDir, configured)
@@ -27,7 +18,6 @@ function names(engine: string, voice: string): void {
   if (!safeName(engine) || !safeName(voice)) throw new SpeechError(400, `"${engine}/${voice}" is not an engine id and a voice id (letters, digits, ".", "_", "-")`)
 }
 
-/** Refuses a cloned voice the operator has not allowed, or whose consent record is missing or invalid. */
 export function checkConsent(operatorDir: string | undefined, settings: Record<string, unknown>, engine: string, voice: string): void {
   const what = `voice "${voice}" of engine "${engine}" is a cloned voice`
   if (settings.cloned !== true) {
@@ -52,7 +42,6 @@ export function checkConsent(operatorDir: string | undefined, settings: Record<s
   if (problem) throw new SpeechError(403, `${what} whose consent record ${file} is not valid: ${problem}`)
 }
 
-/** Writes a consent record into the operator directory; returns its file. */
 export function writeConsent(operatorDir: string | undefined, settings: Record<string, unknown>, engine: string, voice: string, record: unknown): string {
   if (!operatorDir) throw new SpeechError(409, 'this process has no operator directory to hold consent records')
   names(engine, voice)
@@ -66,7 +55,6 @@ export function writeConsent(operatorDir: string | undefined, settings: Record<s
   return file
 }
 
-/** The route `consent/<engine>/<voice>`: the request's body (JSON) is the record. */
 export async function consentRoute(request: Request, rest: string, register: (engine: string, voice: string, record: unknown) => string): Promise<Response> {
   if (request.method !== 'POST' && request.method !== 'PUT') return problem(405, 'POST the consent record (JSON) to consent/<engine>/<voice>')
   const [engine, voice, ...more] = rest.split('/').filter(Boolean)

@@ -1,24 +1,3 @@
-/**
- * Audiences (P-55, docs/ir.md 2.11): blocks and sections only for some
- * audiences (`:audience:`, `{audience}`). A compilation for an audience
- * (`CompilerOptions.audience`, `presmium build --audience`) leaves the other
- * audiences' content out before the plugin passes and compile-time execution,
- * so no pass, executor or renderer gets it; `audienceDocument` gives the same
- * view of a document already compiled (`Compilation.forAudience`, which a
- * build of a whole compilation for an audience builds). Block ids stay those of the whole document; the
- * steps left are numbered again and the sections numbered again.
- *
- * In the source, `:audience:` on a directive inside another directive's body
- * or a list marks the nodes the directive gives (`data.audience` of each);
- * an `{include}` with `:audience:` puts what it includes in an audience scope
- * (`AudienceParser`), whose headings still open sections (`liftScopes`), each
- * section only for those audiences.
- *
- * After a build for an audience, `scanOutputs` looks in every file the build
- * wrote for the longer sentences of what was left out (`presmium.audience`):
- * text that reached the output another way, e.g. through the output of a code
- * block. A sentence the content left in itself contains is not looked for.
- */
 import { lstat, readdir, readFile } from 'node:fs/promises'
 import { basename, extname, join, relative } from 'node:path'
 import { irBlocks, isRecord, nodeMdast } from '@presmium/kernel'
@@ -27,84 +6,54 @@ import { resolveReferences } from './references.ts'
 import { Parser, sourceOf } from './source.ts'
 import type { ParsedFile } from './source.ts'
 
-/** A section or block left out for an audience. */
 export interface Removed {
   source: SourcePos
-  /** The audiences it is for. */
   audience: string[]
-  /** The title of a section left out. */
   title?: string
   blocks: IRBlock[]
-  /** Nodes marked inside a block that stays (`source` is that block's): the diagnostics there stay. */
   nested?: boolean
 }
 
-/**
- * Where the source marks content for some audiences: an `{include}` with
- * `:audience:` (what it includes, or the error of one that failed), a
- * directive with `:audience:` at any depth; with the audiences of the marks
- * around it. A view for an audience the mark leaves out drops the findings
- * located there (`audienceView`), also where the content gave no block.
- */
 export interface AudienceMark {
   source: SourcePos
   audience: string[]
 }
 
-/** Content left out for an audience: where it is written, the audiences it is for, and its longer sentences. */
 export interface Withheld {
   source: SourcePos
   audience: string[]
   sentences: string[]
 }
 
-/**
- * The source node around what an `{include}` with `:audience:` includes
- * (`audience`: the names, `[]` when none is given). With `section`, it holds
- * nothing and follows a heading: the section the heading opens is only for
- * these audiences.
- */
 export const AUDIENCE_SCOPE = 'presmiumAudience'
 
-/** Sentences shorter than this (in characters) are not looked for: such text may well occur anywhere. */
 const MIN_SENTENCE = 12
 
-/** Files a build writes that hold no text. */
 const BINARY = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.bmp', '.mp3', '.mp4', '.m4a', '.webm', '.ogg', '.oga', '.wav', '.flac', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.wasm', '.zip', '.gz', '.pdf'])
 
 const HTML_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ' }
 
-/** Whether content for `audience` (none: everyone) is for `name`. */
 export function forAudience(audience: string[] | undefined, name: string): boolean {
   return !audience || audience.includes(name)
 }
 
-/** Audience names, comma- or space-separated (docs/ir.md 2.11). */
 export function audienceList(text: string): string[] {
   return [...new Set(text.split(/[\s,]+/).filter(Boolean))]
 }
 
-/** The audiences of content for `inner` inside content for `outer` (none: everyone). */
 export function within(outer: string[] | undefined, inner: string[]): string[] {
   return outer ? outer.filter(name => inner.includes(name)) : inner
 }
 
-/** The audiences an mdast node nested in a block is for (`data.audience`); none: those of its block. */
 export function markOf(node: unknown): string[] | undefined {
   const audience = isRecord(node) && isRecord(node.data) ? node.data.audience : undefined
   return Array.isArray(audience) ? audience as string[] : undefined
 }
 
-/** Nodes only for `audience`, within the audiences each is marked for already. */
 export function markAudience(nodes: MdastNode[], audience: string[]): MdastNode[] {
   return nodes.map(node => ({ ...node, data: { ...isRecord(node.data) ? node.data : {}, audience: within(markOf(node), audience) } }))
 }
 
-/**
- * The parser of a compilation: in every file it reads, an `{include}` with
- * `:audience:` is put in an audience scope (`AUDIENCE_SCOPE`), so what it
- * includes is expanded inside the scope.
- */
 export class AudienceParser extends Parser {
   readonly #scoped = new WeakMap<ParsedFile, ParsedFile>()
 
@@ -117,7 +66,6 @@ export class AudienceParser extends Parser {
   }
 }
 
-/** The nodes with each `{include}` that has `:audience:` in an audience scope; the same array when none has. */
 function scopeIncludes(nodes: MdastNode[]): MdastNode[] {
   let changed = false
   const result = nodes.map((node): MdastNode => {
@@ -134,18 +82,6 @@ function scopeIncludes(nodes: MdastNode[]): MdastNode[] {
   return changed ? result : nodes
 }
 
-/**
- * The top-level nodes with the audience scopes that hold headings opening
- * sections taken apart, so the headings still open sections: what comes
- * before the first heading stays in the scope, and each heading is followed
- * by a scope with `section`, which makes its section only for the scope's
- * audiences, and by the nodes of that section as they are.
- *
- * Content written after such a scope, before the next heading, joins the
- * last section the scope opened, as MyST splices an include: `trailing` gets
- * its first node and the audiences of that section, when the content is for
- * more audiences than the section (a warning of the compiler).
- */
 export function liftScopes(nodes: MdastNode[], sectionDepth: number, trailing?: (node: MdastNode, audience: string[]) => void): MdastNode[] {
   if (!nodes.some(node => lifted(node, sectionDepth))) return nodes
   const out: MdastNode[] = []
@@ -165,7 +101,6 @@ export function liftScopes(nodes: MdastNode[], sectionDepth: number, trailing?: 
   return out
 }
 
-/** An audience scope that holds a heading opening a section: taken apart by `liftScopes`. */
 function lifted(node: MdastNode, depth: number): boolean {
   return node.type === AUDIENCE_SCOPE && (node.audience as string[]).length > 0 && holdsSection(node, depth)
 }
@@ -178,17 +113,14 @@ function holdsSection(scope: MdastNode, depth: number): boolean {
   return (scope.children ?? []).some(node => opens(node, depth) || (node.type === AUDIENCE_SCOPE && holdsSection(node, depth)))
 }
 
-/** Nodes that give no content of a section: comments, labels, and the directives that only configure it. */
 const SETTINGS = new Set(['hints', 'config', 'audience'])
 
-/** The audiences a node marks itself for: those of an audience scope, or a directive's `:audience:`. */
 function ownAudience(node: MdastNode): string[] | undefined {
   if (node.type === AUDIENCE_SCOPE) return node.section ? undefined : node.audience as string[]
   const option = node.type === 'mystDirective' && isRecord(node.options) ? node.options.audience : undefined
   return option === undefined ? undefined : audienceList(typeof option === 'string' ? option : '')
 }
 
-/** Whether `node`, content for `own` (none: everyone), is for an audience the section for `section` leaves out. */
 function wider(node: MdastNode, own: string[] | undefined, section: string[]): boolean {
   if (node.type === 'comment' || node.type === 'mystTarget' || (node.type === 'mystDirective' && SETTINGS.has(String(node.name)))) return false
   const marked = ownAudience(node)
@@ -196,7 +128,6 @@ function wider(node: MdastNode, own: string[] | undefined, section: string[]): b
   return !audience || audience.some(name => !section.includes(name))
 }
 
-/** The audience marks of the source (`AudienceMark`), at any depth, each within those around it. */
 export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[], marks: AudienceMark[] = []): AudienceMark[] {
   for (const node of nodes) {
     const own = ownAudience(node)
@@ -207,14 +138,6 @@ export function audienceMarks(nodes: MdastNode[], entry: string, outer?: string[
   return marks
 }
 
-/**
- * The blocks written inside a source mark that leaves audiences out get the
- * mark's audiences (within their own): what such a directive holds belongs to
- * its audiences even when it became a block of its own, e.g. a footnote
- * definition written in a teacher's note (a safety net under the parser's
- * placement, ./source.ts). A block that holds the mark (a tab set around a
- * teacher's tab) is not inside it.
- */
 export function markBlocks(sections: IRSection[], marks: AudienceMark[]): void {
   if (marks.length === 0) return
   for (const section of sections) {
@@ -228,11 +151,6 @@ export function markBlocks(sections: IRSection[], marks: AudienceMark[]): void {
   }
 }
 
-/**
- * Takes `scope` apart into `out`. The scope is the expansion's own node,
- * which knows the file and line of its `{include}`: it keeps what comes
- * before the first heading. Gives the audiences of the last section it opened.
- */
 function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNode[], trailing?: (node: MdastNode, audience: string[]) => void): string[] {
   const before: MdastNode[] = []
   let opened = false
@@ -246,7 +164,6 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
       open()
       last = lift(node, within(audience, node.audience as string[]), depth, out, trailing)
     } else if (opens(node, depth)) {
-      // A heading's label stays just before it, where the section takes it.
       const label = !opened && before.at(-1)?.type === 'mystTarget' ? before.pop() : undefined
       open()
       out.push(...label ? [label] : [], node, { type: AUDIENCE_SCOPE, audience, section: true })
@@ -262,17 +179,9 @@ function lift(scope: MdastNode, audience: string[], depth: number, out: MdastNod
   return last
 }
 
-/**
- * The document as `name` sees it: without the sections, blocks and nested
- * nodes whose audiences do not include it, nor the diagnostics located in
- * the sections and blocks left out or in the source `marks` that leave it
- * out (`keeps` says which findings stay: they may name what was left out);
- * and what was left out.
- */
 export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[] = []): { doc: IRDocument, removed: Removed[], keeps: (finding: Finding) => boolean } {
   const removed: Removed[] = []
   const sections: IRSection[] = []
-  /** The sections whose steps the view numbers again. */
   const compacted = new Set<string>()
   for (const section of doc.sections) {
     if (!forAudience(section.audience, name)) {
@@ -310,12 +219,6 @@ export function audienceView(doc: IRDocument, name: string, marks: AudienceMark[
   }
 }
 
-/**
- * Where what a view for `name` leaves out is written: each block left out;
- * each section left out from its heading to the next section in the same
- * file (so a line that gave no block, such as an `{include}` that failed, is
- * in it), and its blocks in other files.
- */
 function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[] {
   const spans: SourcePos[] = removed.filter(item => !item.nested && item.title === undefined).map(item => item.source)
   doc.sections.forEach((section, i) => {
@@ -327,18 +230,8 @@ function leftOut(doc: IRDocument, name: string, removed: Removed[]): SourcePos[]
   return spans
 }
 
-/**
- * The view of a compiled document for `name` (`Compilation.forAudience`):
- * `audienceView`, detached from the document, with the cross-references
- * resolved again in it (the references compilation filled in are given in
- * `filled`), so a reference to a section left out keeps no title of it and
- * figures and equations are numbered as the view has them, as in a build
- * for the audience; and without the blocks that still show a sentence of
- * what was left out (`withoutLeaks`).
- */
 export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<object>, marks: AudienceMark[] = []): IRDocument {
   const { doc: found, removed } = audienceView(doc, name, marks)
-  // The view says which audience it is for (`meta.audience`), as a compilation for it does.
   const view = { ...found, meta: { ...found.meta, audience: name } }
   if (removed.length === 0) return view
   const own = detached(view, filled)
@@ -346,7 +239,6 @@ export function audienceDocument(doc: IRDocument, name: string, filled: WeakSet<
   return withoutLeaks(own, removed, name)
 }
 
-/** The cross-references of a document written without text, which compilation resolves (`resolveReferences`) by filling them in. */
 export function emptyReferences(doc: IRDocument): WeakSet<object> {
   const found = new WeakSet<object>()
   const visit = (node: MdastNode) => {
@@ -357,7 +249,6 @@ export function emptyReferences(doc: IRDocument): WeakSet<object> {
   return found
 }
 
-/** The longer sentences of what was left out of `kept`, but those its own content holds too. */
 export function withheld(removed: Removed[], kept: IRDocument): Withheld[] {
   const shown = ownText(kept)
   return removed.map(({ source, audience, title, blocks }) => {
@@ -366,23 +257,15 @@ export function withheld(removed: Removed[], kept: IRDocument): Withheld[] {
   })
 }
 
-/** What was left out without the sentences one of `docs` holds in its own content (a translation keeps the same code). */
 export function unshown(left: Withheld[], docs: IRDocument[]): Withheld[] {
   const shown = docs.map(ownText).join('\n')
   return left.map(item => ({ ...item, sentences: item.sentences.filter(sentence => !shown.includes(sentence)) }))
 }
 
-/** The text of a document's own content, its titles, prose, code and component props: without recorded output. */
 function ownText(doc: IRDocument): string {
   return doc.sections.flatMap(section => [section.title, ...[...irBlocks(section.blocks)].flatMap(blockTexts)]).map(squash).join('\n')
 }
 
-/**
- * Every file under the `paths` a build wrote that holds a sentence of the
- * content left out for `audience`: an error located at the content left out,
- * naming the file relative to `base`, and the sentence unless `quote` is
- * false (findings the audience itself may read).
- */
 export async function scanOutputs(left: Withheld[], paths: string[], audience: string, base: string, quote = true): Promise<Finding[]> {
   const wanted = left.filter(item => item.sentences.length > 0)
   const found = new Map<Withheld, { sentence: string, file: string }>()
@@ -407,16 +290,10 @@ export async function scanOutputs(left: Withheld[], paths: string[], audience: s
   }))
 }
 
-/** `blocks` holds the same blocks as `before`. */
 function same(blocks: readonly IRBlock[], before: readonly IRBlock[]): boolean {
   return blocks.length === before.length && blocks.every((block, i) => block === before[i])
 }
 
-/**
- * A block's node without what inside it is for other audiences: the nodes
- * marked so (`data.audience`) in its mdast, a component's props and
- * fallback, which go to `removed`; and a component's child blocks (`keep`).
- */
 function nodeFor(block: IRBlock, name: string, removed: Removed[], keep: (blocks: IRBlock[]) => IRBlock[]): IRNode {
   const { node } = block
   const left: MdastNode[] = []
@@ -438,7 +315,6 @@ function nodeFor(block: IRBlock, name: string, removed: Removed[], keep: (blocks
   return result
 }
 
-/** `value` without the mdast nodes in it marked for other audiences, which go to `left`; `value` itself when none is. */
 function prune<T>(value: T, name: string, left: MdastNode[]): T {
   if (Array.isArray(value)) {
     let changed = false
@@ -464,10 +340,6 @@ function prune<T>(value: T, name: string, left: MdastNode[]): T {
   return (changed ? Object.fromEntries(entries) : value) as T
 }
 
-/**
- * The view with its own copy of the mdast that `resolveReferences` reads and
- * numbers, the references in `filled` emptied again as written.
- */
 function detached(view: IRDocument, filled: WeakSet<object>): IRDocument {
   const copy = (node: MdastNode): MdastNode => {
     if (filled.has(node)) {
@@ -485,21 +357,12 @@ function detached(view: IRDocument, filled: WeakSet<object>): IRDocument {
   return { ...view, sections: view.sections.map(section => ({ ...section, blocks: blocks(section.blocks) })) }
 }
 
-/**
- * The view without the blocks that show a sentence of what was left out:
- * the code of the whole document ran at compile time, so a block's recorded
- * output may hold one. `presmium serve` renders the view itself, without a
- * build to scan, so such a block is left out too, with an error
- * (`presmium.audience`) in the view's diagnostics, which names where the
- * content left out is written but not what it says: the audience reads it.
- */
 function withoutLeaks(view: IRDocument, removed: Removed[], name: string): IRDocument {
   const wanted = withheld(removed, view).filter(item => item.sentences.length > 0)
   if (wanted.length === 0) return view
   const findings: Finding[] = []
   const sections = view.sections.map((section) => {
     const blocks = section.blocks.filter((block) => {
-      // Images and other binary data hold no sentence.
       const text = readable(JSON.stringify(block.node, (key, value: unknown) => (key.startsWith('image/') || key === 'application/pdf' ? undefined : value)))
       for (const item of wanted) {
         if (!item.sentences.some(sentence => text.includes(sentence))) continue
@@ -519,27 +382,9 @@ function withoutLeaks(view: IRDocument, removed: Removed[], name: string): IRDoc
   return findings.length === 0 ? view : { ...view, sections, diagnostics: [...view.diagnostics, ...findings] }
 }
 
-/**
- * A section without the steps no visual block of it takes any more: the
- * steps left are numbered again, and narration of a step left out goes with
- * the step before it (as `viewFor` does for the blocks of other renderers).
- */
-/** The keys of the slides form's following (docs/ir.md 2.11) that the core plugin's pass `slide-sections` writes into `hints.slides`. */
 const STEPS_KEY = 'presmiumSteps'
 const BACK_KEY = 'presmiumBack'
 
-/**
- * A section of a view for an audience with the slides form's keys of
- * following as the view has them (F-85): what the core plugin's pass wrote
- * of the whole document into `hints.slides` (a view of a document compiled
- * whole, `Compilation.forAudience`, runs no pass) would name what the view
- * leaves out and number its steps as the whole document does. In a section
- * the view left something out of (`compacted`), each step's keys (`<block>`,
- * `<block>+<k>`, `<block>-`, a component's child `<component>/<child>`) keep
- * those of the blocks it has, and the steps left without any are closed up,
- * as `compactSteps` closes up the steps no block takes any more; the section
- * to go back to stays when the view has it.
- */
 function withViewKeys(section: IRSection, sections: ReadonlySet<string>, compacted: boolean): IRSection {
   const hints = section.hints.slides
   const back = isRecord(hints) && typeof hints[BACK_KEY] === 'string' && !sections.has(hints[BACK_KEY])
@@ -585,7 +430,6 @@ function compactSteps(section: IRSection): IRSection {
   return { ...section, steps: map(section.steps), blocks: renumber(section.blocks) }
 }
 
-/** The texts a block's own source holds: prose, code, the props and fallback of a component (not its child blocks, nor recorded output). */
 function blockTexts(block: IRBlock): string[] {
   const { node } = block
   switch (node.type) {
@@ -595,7 +439,6 @@ function blockTexts(block: IRBlock): string[] {
   }
 }
 
-/** Each text of an mdast tree on its own (a sentence split by emphasis is two texts, as the outputs keep them). */
 function mdastTexts(node: MdastNode): string[] {
   const own: string[] = []
   if (typeof node.value === 'string') own.push(node.type === 'html' ? node.value.replace(/<[^<>]*>/g, ' ') : node.value)
@@ -610,7 +453,6 @@ function propTexts(value: unknown): string[] {
   return []
 }
 
-/** The sentences of a text long enough to look for, each on one line with its spaces squashed. */
 function sentences(text: string): string[] {
   return text.split(/[。！？!?；;\r\n]+|(?<=\.)\s+/u).map(squash).filter(sentence => [...sentence].length >= MIN_SENTENCE)
 }
@@ -619,11 +461,6 @@ function squash(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-/**
- * The text of an output file as it reads: the escapes of JavaScript and
- * JSON strings and HTML's character references resolved, spaces squashed;
- * then once more without tags, for text a renderer marked up (highlighted code).
- */
 function readable(text: string): string {
   const decoded = text
     .replace(/\\u\{([\da-f]+)\}/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
@@ -636,7 +473,6 @@ function readable(text: string): string {
   return `${squash(decoded)}\n${squash(decoded.replace(/<[^<>]*>/g, ''))}`
 }
 
-/** The files at `path`: itself when a file, else those under it, recursively; links are not followed. */
 async function files(path: string): Promise<string[]> {
   const entries = await readdir(path, { withFileTypes: true }).catch(() => undefined)
   if (!entries) return (await lstat(path).catch(() => undefined))?.isFile() ? [path] : []

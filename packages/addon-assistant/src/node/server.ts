@@ -1,62 +1,3 @@
-/**
- * The assistant's routes (design-v0.7 5.3, docs/architecture.md 4.8) under
- * `/__presmium/presmium.assistant/`:
- *
- * - `GET info`: the model's provider (the runtime's, known before any
- *   request), where it comes from, the runtime's name once an agent
- *   started, what to set while it is unavailable, the kinds of task this
- *   member may submit.
- * - `GET settings`, `POST settings`, `DELETE settings` (owners): the model
- *   settings of the page (P-111): which are in effect and where from, and
- *   those the page saved, without the key (only whether one is set);
- *   saving writes them to the user's configuration directory
- *   (./model-settings.ts), and the next agent session uses them. Saved
- *   without a key, they keep the saved key only for the same service and
- *   address; otherwise a key is required (400).
- * - `POST tasks`: a change task (`AgentTaskRequest`, with the id the page
- *   drew), for editors and owners where `REVISIONS` commits them, one per
- *   document at a time. `GET tasks`: the document's change task under way
- *   or waiting for its review, to the member who sent it and to owners (a
- *   page that was reloaded follows it again).
- * - `GET tasks/<id>/events`: its events (SSE, from the first), to the
- *   member who submitted it and owners; `POST tasks/<id>/cancel`;
- *   `POST tasks/<id>/review`: the decision on a change task's review;
- *   `POST tasks/<id>/restore` (`{ step }`): back to before a step of it.
- * - `POST revert` (`{ task }`): undoes the commit of a change task of this
- *   document; not while the document has a change task.
- * - `GET excerpt?file=&start=&end=`: lines of a source file of the
- *   document, for an annotation.
- *
- * Readers' questions are no route of the server's: the page asks the
- * reader's own model (P-112, `ASK`, ../client/ask.ts).
- *
- * On the workspace's home page (`ServerContext.home`; `presmium serve`
- * mounts the operator's plugins there too) only `info` and `settings`
- * answer: the home page is not a document, and the tasks it sends (drafting
- * a new document) go to their document's routes.
- *
- * Each task opens one agent session in its review's root, with the MCP
- * token `MCP_ENDPOINT` issues for the member (revoked when the session
- * closes). The agent's permission requests within its directory were
- * confirmed by sending the task, the others go to `APPROVALS` with their
- * scope. The terminal event (`done` or `error`) comes once the session and
- * its tokens are closed.
- *
- * A change task holds its document's lock (`DOCUMENT_LOCKS`, F-09) while it
- * runs and waits for its review, and an undo holds it while it runs: where
- * the workspace provides the locks (`presmium serve`, `presmium dev`) its
- * document operations, its history's undo and the source editor's saves
- * take them too, so none changes the document under the task; elsewhere the
- * assistant keeps its own.
- *
- * A change task's review is `CHANGE_REVIEW`'s (deltabox's, or the workspace
- * service's git review where deltabox registers none), except under the
- * bundled DeepSeek Harness: its writes fault a deltabox-lite 0.1.1 review (a
- * file it unlinks in the staging directory it made in the session,
- * docs/architecture.md 9.5), so its tasks use the workspace's git review
- * (`GIT_REVIEW`). The workspace service also rolls back, when it starts, a
- * git review a crashed server left (WP-96c moved the git review there).
- */
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -75,32 +16,22 @@ import type { Task } from './tasks.ts'
 const isOwner = (member: Member) => member.roles.includes('owner')
 const mayEdit = (member: Member) => member.roles.some(role => role === 'editor' || role === 'owner')
 
-/** An excerpt is at most this many lines and characters. */
 const EXCERPT_LINES = 60
 const EXCERPT_CHARS = 4000
 
 let gitReviewed = false
 
-/** The model settings a page sends: a few short fields. */
 const SETTINGS_BODY = 16 * 1024
 
-/** The prefix of an agent task's lock holder (`agent:<task id>`). */
 const AGENT_HOLDER = 'agent:'
 
-/**
- * The workspace service's git review, whatever `CHANGE_REVIEW` is (`presmium serve` and `presmium dev` in a
- * git repository register it; @presmium/workspace names it by the same id): the tasks under the bundled DeepSeek
- * Harness. Until WP-96g removes this runtime.
- */
 const GIT_REVIEW = defineService<ChangeReviewService>('presmium.workspace.gitReview')
 
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
   const tasks = new Tasks()
-  /** The workspace's home page of presmium serve: not a document (a deck at its repository's root is one, whatever its entry is called). */
   const home = ctx.home === true
 
-  /** The documents' locks: the workspace's where it provides them (`DOCUMENT_LOCKS`), else these. */
   const own = new Map<string, string>()
   const claim = (document: string, holder: string): (() => void) | undefined => {
     const locks = ctx.service(DOCUMENT_LOCKS)
@@ -112,19 +43,13 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     }
   }
   const holderOf = (document: string) => ctx.service(DOCUMENT_LOCKS)?.holder(document) ?? own.get(document)
-  /** Why the document takes no change now, by who holds its lock. */
   const refusal = (document: string) => {
     const holder = holderOf(document) ?? ''
     return holder.startsWith(AGENT_HOLDER) ? t.busy : holder.endsWith(':revert') ? t.reverting : t.operating
   }
 
-  /** The model's provider: the runtime's, as the operator's settings are now; none without a runtime. */
   const provider = (): string | undefined => ctx.service(AGENT_RUNTIME)?.provider
 
-  /**
-   * The change tasks' review service: `CHANGE_REVIEW`, but the workspace's git review under the bundled
-   * DeepSeek Harness, which the operator may choose in the page at any time: asked for each task.
-   */
   const reviews = (): ChangeReviewService | undefined => {
     const service = ctx.service(CHANGE_REVIEW)
     const git = ctx.service(GIT_REVIEW)
@@ -136,10 +61,8 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return git
   }
 
-  /** The kinds this member may submit: change tasks, for editors and owners, while there is a runtime and the workspace commits them (`REVISIONS`: a document in a git repository). */
   const kinds = (member: Member): AgentTaskKind[] => (provider() && mayEdit(member) && ctx.service(REVISIONS) ? CHANGE_KINDS : [])
 
-  /** The model settings as the page shows them: in effect and saved, never the key. */
   const settingsView = (): ModelSettingsView => {
     const file = settingsFile(name => ctx.secret(name))
     const { key, ...saved } = readModelSettings(file) ?? {}
@@ -155,7 +78,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     }
   }
 
-  /** An approval asked for a task: announced to its page, answered by the members its scope names. */
   const ask = async (task: Task, request: ApprovalRequest): Promise<boolean> => {
     const approvals = ctx.service(APPROVALS)
     if (!approvals) return false
@@ -164,11 +86,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return approvals.request(asked, task.abort.signal)
   }
 
-  /**
-   * The agent's permission requests: a write within the task's directory (`content`) was confirmed by
-   * sending the task (N-08); the rest go to the approvals, by scope, and a write outside it that an
-   * owner allowed is committed with the task.
-   */
   const approve = async (task: Task, request: AgentApproval): Promise<boolean> => {
     const { path, ...rest } = request
     if (rest.scope === 'content') return true
@@ -177,7 +94,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return allowed
   }
 
-  /** The task's agent session in `cwd`: its events (an agent's failure throws), then its messages; closed, with its token, before it resolves. */
   const session = async (task: Task, cwd: string, request: AgentTaskRequest, onEvent: (event: AgentEvent) => Promise<void> | void): Promise<string[]> => {
     const runtime = ctx.service(AGENT_RUNTIME)
     if (!runtime?.provider) throw new Error(t.noRuntime)
@@ -193,7 +109,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
       })
       if (!task.abort.signal.aborted) {
         for await (const event of opened.prompt(request, task.abort.signal)) {
-          // A transport's approval events are not passed on; this task announces its own (`ask`).
           if (event.type === 'approval' || event.type === 'done') continue
           if (event.type === 'error') throw new Error(event.message)
           if (event.type === 'message') messages.push(event.text)
@@ -209,7 +124,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return messages
   }
 
-  /** A task the member may follow: theirs, or any for owners. */
   const taskOf = (id: string, member: Member): Task | Response => {
     const task = tasks.get(id)
     if (!task) return problem(404, 'no such task')
@@ -217,7 +131,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return task
   }
 
-  /** A file of the document directory, by its path relative to it (its real path inside it). */
   const documentFile = (file: string): string | undefined => {
     const deck = realpathSync(ctx.deckDir)
     const path = resolve(deck, file)
@@ -257,8 +170,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           if (request.method === 'POST') {
             const given = modelSettingsOf(await request.json().catch(() => undefined))
             if (!given) return problem(400, 'model settings: { provider?, url?, key?, model? }')
-            // No key given: the one saved stays (the page never has it), only for the same service and address,
-            // so a key never goes to another service; otherwise a key is needed.
             const saved = readModelSettings(file)
             const kept = given.key || !saved?.key || !sameService(saved, given) ? undefined : saved.key
             if (!given.key && !kept) return problem(400, saved?.key ? 'the service or its address changed: give its key (the saved key is not sent to another service)' : 'model settings: the key is required')
@@ -281,7 +192,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
         role: 'reader',
         async handle(request, rc: RequestContext) {
           if (request.method === 'GET') {
-            // The change task under way, to its sender and owners: a reloaded page follows it again.
             const holder = holderOf(rc.document)
             const task = holder?.startsWith(AGENT_HOLDER) ? tasks.get(holder.slice(AGENT_HOLDER.length)) : undefined
             const visible = task && !task.ended && task.request && (task.member.id === rc.member.id || isOwner(rc.member))
@@ -307,11 +217,9 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           if (!kinds(rc.member).includes(kind)) return problem(403, t.notAllowed)
           const id = parsed.id ?? randomUUID()
           if (tasks.has(id)) return problem(409, 'a task with this id exists')
-          // The document is the one the request belongs to, whatever the page said.
           const document = rc.document
           const taskRequest: AgentTaskRequest = { ...parsed.request, context: { ...parsed.request.context, document } }
           if (kind === 'transcript' && !documentFile(join('lectures', taskRequest.track!, 'track.json'))) return problem(400, t.noTrack(taskRequest.track!))
-          // One change task per document, running or waiting for its review; none while the document is operated on or a commit undone.
           const release = claim(document, `${AGENT_HOLDER}${id}`)
           if (!release) return problem(409, refusal(document))
           const task = tasks.create(id, rc.member, kind, document, taskRequest)
@@ -363,7 +271,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
           if (!task) return problem(400, 'POST { task }')
           if (home) return problem(400, t.noDocument)
           if (!revisions) return problem(501, t.noChanges)
-          // Not while a change task of the document runs or waits: its review would restore files over the undo.
           const document = rc.document
           const release = claim(document, 'assistant:revert')
           if (!release) return problem(409, refusal(document))
@@ -393,7 +300,6 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
       },
     },
     close() {
-      // Change tasks under way or waiting for their review are rolled back.
       return tasks.close()
     },
   }

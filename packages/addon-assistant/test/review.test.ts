@@ -1,8 +1,3 @@
-// Where a path is, in the assistant's review, permissions and change tasks (F-11): a file of the document named
-// `..notes.md` is in the document (as the compiler's `inside` says), not outside it. Under `presmium serve` with
-// the scripted test agent and the assistant's git review: the agent writes it without asking, the review lists
-// it, rejecting all takes it away and accepting commits it; a file of that name outside the document is still
-// the owner's to allow, and refused, it is not written.
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -35,7 +30,6 @@ describe('a file of the document named ..notes.md', () => {
     ...json === undefined ? {} : { body: JSON.stringify(json) },
   })
 
-  /** A chat task of the document: its id, and its events until `review` or the end. */
   async function chat(prompt: string): Promise<{ id: string, events: AgentEvent[] }> {
     const submitted = await route('tasks', { kind: 'chat', prompt, context: { document: 'intro', section: 'x' } })
     const { id } = await submitted.json() as { id: string }
@@ -45,7 +39,6 @@ describe('a file of the document named ..notes.md', () => {
     return { id, events }
   }
 
-  /** The events of a task until its review (a page following it). */
   async function untilReview(prompt: string): Promise<{ id: string, review: Extract<AgentEvent, { type: 'review' }>, stream: EventStream }> {
     const submitted = await route('tasks', { kind: 'chat', prompt, context: { document: 'intro', section: 'x' } })
     expect(submitted.status).toBe(201)
@@ -60,7 +53,6 @@ describe('a file of the document named ..notes.md', () => {
 
   beforeAll(async () => {
     dir = workspace('review', {
-      // deltabox's review off: the assistant's own git review.
       'presmium.workspace.yaml': 'title: 审阅的路径\nsettings:\n  presmium.workspace:\n    plugins: [\'@presmium/slidev-addon-assistant\']\n  presmium.deltabox:\n    review: false\n',
       'intro/lecture.md': LECTURE,
     }, { '@presmium/slidev-addon-assistant': PACKAGE })
@@ -77,7 +69,6 @@ describe('a file of the document named ..notes.md', () => {
     try {
       expect(rejected.review.engine).toBe('git')
       expect(rejected.review.changes.map(c => c.path)).toEqual(['intro/..notes.md'])
-      // Written in the document, so without asking.
       expect(agentLog(log()).filter(e => e.event === 'permission')).toEqual([])
       expect(existsSync(join(dir, 'intro/..notes.md'))).toBe(true)
       expect((await route(`tasks/${rejected.id}/review`, { accept: false })).status).toBe(204)

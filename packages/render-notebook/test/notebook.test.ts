@@ -1,5 +1,3 @@
-// Runs the real `presmium build` on a copy of ./fixtures and checks the notebook it writes;
-// the local Jupyter stack (python3 with nbformat, nbclient and ipykernel) validates and runs it.
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -27,8 +25,6 @@ let ir: IRDocument
 let file: string
 let cells: Cell[]
 
-// The deck is built outside git, so the build cache stays out of the repository;
-// the renderer is found the way a deck finds it, in node_modules.
 beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), 'presmium-notebook-'))
   cpSync(fileURLToPath(new URL('./fixtures', import.meta.url)), dir, { recursive: true })
@@ -59,7 +55,6 @@ it.skipIf(!JUPYTER)(`reproduces the recorded outputs when its code cells run in 
     expect(outputs.every(o => o.output_type === 'stream')).toBe(true)
     return Object.fromEntries(['stdout', 'stderr'].map(name => [name, outputs.filter(o => o.name === name).flatMap(o => o.text ?? []).join('')]))
   }
-  // Two cells ran at build time, one on stdout and stderr; the cell of the quiz extension has no output.
   expect(code.map(c => streams(c.outputs))).toEqual([
     { stdout: '合计 55\n', stderr: '' },
     { stdout: '[0, 1, 4, 9]\n', stderr: '这一行写到标准错误\n' },
@@ -76,16 +71,13 @@ it('puts the section titles and all narration text in Markdown cells', () => {
   for (const section of ir.sections) expect(markdown()).toContain(`# ${section.title}\n`)
   for (const block of narration) {
     if (block.node.type !== 'markdown') throw new Error(`narration ${block.id} is not markdown`)
-    // A dollar is escaped, so Jupyter does not read math (R-50).
     for (const value of text(block.node.mdast)) expect(markdown()).toContain(value.replaceAll('$', '\\$'))
   }
-  // Code in another language than the kernel's stays readable as a fenced block; `{only} web` is left out.
   expect(markdown()).toContain('```bash\necho 不是内核语言的代码\n```')
   expect(markdown()).not.toContain('只在网页中出现')
 })
 
 it('copies the local files that the images and links it shows point to next to the notebook and links the copies', () => {
-  // The image is written relative to an included page, the link in a component fallback relative to the entry.
   const image = /!\[点图\]\((media\/[\w-]+\.svg)\)/.exec(markdown())?.[1]
   const link = /\[下载数据\]\((media\/[\w-]+\.csv)\)/.exec(markdown())?.[1]
   const escaped = /\[原始数据\]\((media\/[\w-]+%231\.csv)\)/.exec(markdown())?.[1]
@@ -96,12 +88,9 @@ it('copies the local files that the images and links it shows point to next to t
   expect(readFileSync(join(notebookDir, image!), 'utf8')).toBe(readFileSync(join(dir, 'figures/dot.svg'), 'utf8'))
   expect(readFileSync(join(notebookDir, link!), 'utf8')).toBe(readFileSync(join(dir, 'figures/data.csv'), 'utf8'))
   expect(readFileSync(join(notebookDir, decodeURIComponent(escaped!)), 'utf8')).toBe(readFileSync(join(dir, 'figures/raw#1.csv'), 'utf8'))
-  // The file a component names (`assets`) is copied too; its extension's cell, given as mdast, is lowered.
   const clip = /<kbd>Space<\/kbd> plays <video src="(media\/[0-9a-f]{8}-clip\.webm)"><\/video>/.exec(markdown())?.[1]
   expect(clip).toBeDefined()
-  // Only what the notebook shows is copied: not the preview image of the chart, whose fallback it shows.
   expect(readdirSync(join(notebookDir, 'media')).sort()).toEqual([image!, link!, decodeURIComponent(escaped!), clip!].map(f => f.slice('media/'.length)).sort())
-  // Remote URLs and URLs with malformed escapes are kept.
   expect(markdown()).toContain('(https://example.org/gauss)')
   expect(markdown()).toContain('![坏图](%E0%A4.png)')
 })
@@ -114,12 +103,10 @@ it('writes MyST directives and roles as Markdown that Jupyter renders, and repor
   expect(markdown()).toContain('$$\nE = mc^2\n$$')
   expect(markdown()).toContain('![求和示意](https://example.org/sum.png)\n\n*求和的过程。*')
   expect(markdown()).toContain('水的化学式是 H<sub>2</sub>O，保存用 <kbd>Ctrl</kbd>。')
-  // Escaped dollars stay dollars, not math (R-50); a table cell keeps its inline content on one line (R-49); a footnote shows its number (R-04).
   expect(markdown()).toContain('A coffee costs \\$5 and a cake \\$3, written with escaped dollars.')
   expect(markdown()).toMatch(/\| `lowest` +\| `low` \+ `est` +\| 260 +\|/)
   expect(markdown()).toContain('最后一句有脚注<sup>[1]</sup>。')
   expect(markdown()).toContain('<sup>[1]</sup> 脚注写成编号。')
-  // An embed has no Jupyter form: the build report lists it as degraded, at its source line.
   const line = readFileSync(join(dir, 'pages/myst.md'), 'utf8').split('\n').indexOf('```{embed} energy') + 1
   expect(build.stdout).toContain(`pages/myst.md:${line}  warning  myst#embed-1: degraded in the notebook, which has no Jupyter form for embed`)
   expect(build.stdout.match(/degraded in the notebook/g)).toHaveLength(1)
@@ -137,7 +124,6 @@ it('renders components through the plugin extension or the fallback, and reports
 })
 
 it('links the notes of components to their page of the web form built with them when no webUrl is set (R-48)', async () => {
-  // Built inside the demo, whose node_modules hold the web renderer, VitePress and Vue.
   const work = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
   mkdirSync(work, { recursive: true })
   const deck = mkdtempSync(join(work, 'notebook-linked-'))
@@ -146,8 +132,6 @@ it('links the notes of components to their page of the web form built with them 
     const built = await presmium(deck, ['build', '--out', 'out'])
     expect(built.code, built.stdout + built.stderr).toBe(0)
     const text = (JSON.parse(readFileSync(join(deck, 'out/notebook/lecture.ipynb'), 'utf8')).cells as Cell[]).map(c => c.source.join('')).join('\n\n')
-    // The section opens no page of its own: the note links to its anchor on the page of its chapter,
-    // which the web build wrote.
     expect(text).toContain('> The interactive component `Gauge` can only be used in [the web version](../web/gauge.html#the-gauge).')
     expect(readFileSync(join(deck, 'out/web/gauge.html'), 'utf8')).toContain('id="the-gauge"')
   } finally {

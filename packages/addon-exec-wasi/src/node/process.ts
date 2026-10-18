@@ -1,9 +1,3 @@
-/**
- * A run as the process sandbox runs one (`ProcessSandbox.run`), on this
- * machine without isolation, where the compiler has no sandbox: the command
- * in a new private temporary directory holding the files, with exactly the
- * given environment, killed at the timeout or on abort.
- */
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

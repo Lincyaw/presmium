@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { usePrefersReducedMotion } from '@presmium/host'
 
-// With reduced motion the bar is drawn in its final state without animating.
 const reduced = usePrefersReducedMotion()
 </script>
 

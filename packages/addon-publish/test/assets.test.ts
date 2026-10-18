@@ -1,6 +1,3 @@
-// The real compiler in this process (twice, as `presmium dev` and the language server compile) on a
-// copy of ./fixtures/assets, whose remote images a slow local server serves: the publish plugin's
-// pass downloads them at once, and an image that failed is not fetched again in the same process.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -15,7 +12,6 @@ afterAll(removeCopies)
 it('downloads the remote images of a deck at once, and tries a failed one once per process (N-03)', async () => {
   const image = PNG.sync.write(new PNG({ width: 2, height: 2 }))
   const requests: string[] = []
-  // Each image takes a second; the missing one fails after two.
   const server = createServer((request, response) => {
     requests.push(request.url!)
     const missing = request.url === '/missing'
@@ -32,7 +28,6 @@ it('downloads the remote images of a deck at once, and tries a failed one once p
     return { ms: Date.now() - start, warnings: doc.diagnostics.filter(f => f.checkId === 'presmium.publish').map(f => f.message) }
   }
   try {
-    // One after another, the downloads would take 4 × 1 s + 2 s.
     const first = await timed()
     expect(first.ms).toBeLessThan(4000)
     expect(first.warnings).toEqual([expect.stringMatching(/^remote image http:\S+\/missing was not downloaded \(HTTP 404\)/)])

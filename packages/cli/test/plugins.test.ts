@@ -1,7 +1,3 @@
-// Operator plugins (docs/architecture.md 4.2): a plugin the workspace configuration lists in
-// `settings.presmium.workspace.plugins` and that declares `operator: true` is loaded for every deck,
-// whose `plugins` need not name it: its pass runs and its Node service, made with the operator's
-// settings, is there. A listed plugin that is no operator plugin, and an unlisted one, are not loaded.
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -14,7 +10,6 @@ const FIXTURE = fileURLToPath(new URL('./fixtures/operator', import.meta.url))
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 
-/** A copy of the workspace (no git: the deck directory is its root), the plugins installed at its root. */
 function workspace(): string {
   const dir = mkdtempSync(join(tmpdir(), 'presmium-operator-'))
   dirs.push(dir)
@@ -31,9 +26,7 @@ it('loads the operator plugins the workspace lists for a deck that does not name
   const built = await presmium(dir, ['build', '--out', 'out'])
   expect(built.code, built.stdout + built.stderr).toBe(0)
   const { meta, config } = ir(dir)
-  // Its pass ran, with its Node service made from the operator's settings.
   expect(meta.operatorStamp).toBe('运营者的设置')
-  // A listed plugin that is no operator plugin is not loaded; the deck's plugins stay its own.
   expect(meta.listed).toBeUndefined()
   expect(config.plugins).toEqual([])
 })

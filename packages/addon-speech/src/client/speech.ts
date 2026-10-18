@@ -1,9 +1,3 @@
-/**
- * The browser's `SPEECH` (docs/architecture.md 4.8): the speech protocol's
- * routes of the server that serves the page (`/__presmium/presmium.speech/v1/…`).
- * The page never holds a credential and never calls an engine itself. A
- * static page has no server: every call rejects, saying so.
- */
 import { useServer } from '@presmium/host'
 import type { SpeechService, Synthesis } from '@presmium/kernel'
 import type { EngineListing, TimedSpeech, TranscriptionAnswer, VoiceListing } from '../domain/index.ts'
@@ -16,7 +10,6 @@ function bytesOf(base64: string): Uint8Array<ArrayBuffer> {
   return bytes
 }
 
-/** `config` is the deck's `presmium.speech`: its default engines. */
 export function browserSpeech(config: Record<string, unknown>): SpeechService {
   const defaults = deckSpeechConfig(config).config
   const server = useServer()

@@ -1,11 +1,3 @@
-/**
- * `presmium build` at a workspace root (P-122, docs/ir.md section 7): every
- * document compiled (their own plugins, all code run), then the
- * workspace site built by the web renderer into `<out>/web/`: the home page
- * lists the documents, each under `/<dir>/`, and the translations a
- * document declares under `/<dir>/<lang>/` (P-123), compiled as a build of
- * the document alone compiles them.
- */
 import { join, resolve } from 'node:path'
 import { Compiler } from '@presmium/compiler'
 import type { RunStats } from '@presmium/compiler'
@@ -15,10 +7,8 @@ import { listDocuments, readWorkspace } from './config.ts'
 import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
 
 export interface WorkspaceBuild {
-  /** The site's directory, `<out>/web`. */
   outDir: string
   documents: { dir: string, title: string, runs: RunStats }[]
-  /** Every document's diagnostics, then the renderer's. */
   findings: Finding[]
 }
 
@@ -46,7 +36,6 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
   return { outDir, documents, findings }
 }
 
-/** `site.base`, the path the site is served under (a GitHub Pages project site: `/<repository>/`), as `/<path>/`; `/` when not set. */
 function siteBase(value: unknown): string {
   const path = typeof value === 'string' ? value.trim().replace(/^\/+|\/+$/g, '') : ''
   return path ? `/${path}/` : '/'

@@ -1,11 +1,3 @@
-/**
- * The publication check `presmium.forbid` (P-54, docs/ir.md 2.11): the
- * headmatter's `checks.forbid` lists regular expressions (JavaScript syntax),
- * e.g. internal ticket numbers or the names of unpublished material; each
- * match in the text of a renderer's view (section titles, narration, what is
- * on screen, link targets, code and its recorded output) is an error at the
- * block, reported once for the forms that show it.
- */
 import { irBlocks, isRecord, mdastText } from '@presmium/kernel'
 import type { Finding, IRBlock, MdastNode, SourcePos } from '@presmium/kernel'
 import { lineFinder } from './links.ts'
@@ -60,7 +52,6 @@ export function checkForbidden(input: PublishInput, headmatter: Record<string, u
   return findings
 }
 
-/** The text a block shows itself (its child blocks are read on their own): prose with its link targets, code and recorded output, props. */
 function blockText(block: IRBlock): string {
   const { node } = block
   switch (node.type) {
@@ -70,13 +61,11 @@ function blockText(block: IRBlock): string {
   }
 }
 
-/** What the text of a tree leaves out: the targets of its links and images, and its raw HTML with the attributes. */
 function targets(node: MdastNode): string[] {
   const own = node.type === 'html' ? node.value : node.url
   return [...typeof own === 'string' ? [own] : [], ...(node.children ?? []).flatMap(targets)]
 }
 
-/** The text of a recorded run: its streams, and the text of its rich outputs. */
 function outputText(run: NonNullable<Extract<IRBlock['node'], { type: 'code' }>['outputs']>[number]): string[] {
   return [run.stdout, run.stderr, ...(run.outputs ?? []).flatMap((output) => {
     if (output.output_type === 'stream') return [output.text]

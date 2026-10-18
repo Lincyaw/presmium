@@ -1,18 +1,3 @@
-/**
- * The workspace pass of the local environment. It settles the deck's
- * workspace (`presmium.execLocal.workspace` relative to the deck, else the
- * first `{local-env}` that names one, else the workspace root) and
- * - binds the container executor to it for compile-time execution;
- * - writes it, relative to the deck, into the deck's configuration, so the
- *   routes (`server` of ./presmium.ts) find it; the published forms carry
- *   no path of the build machine (K-13);
- * - reports a `{local-env}` that names another workspace: running goes
- *   through the deck's one workspace, so it would run in another image
- *   than it exports;
- * - attaches to each `<PmLocalEnv>` its environment (P-26): the snippet and
- *   the devcontainer definition as a zip archive, downloadable from any build,
- *   with a README in the deck's language.
- */
 import { relative, resolve, sep } from 'node:path'
 import { docBlocks } from '@presmium/kernel'
 import type { CodeNode, ComponentNode, IRBlock, IRPass } from '@presmium/kernel'

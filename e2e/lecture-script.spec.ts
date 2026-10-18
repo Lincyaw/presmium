@@ -1,14 +1,3 @@
-// Scripted lectures and speech in lecture tracks (WP-83, P-132 to P-134, N-08) on e2e/fixtures/lecture-script,
-// with the deterministic fake speech engine (`presmium-speech fake`, a process of its own) defined as engine
-// `fake` of provider `Presmium fake`; its WAV clips carry the text and voice they say (a `pmfk` chunk).
-// Synthesized: `presmium build --to web,lecture` says the narration; played back as a static site, the word
-// after `{cue to=code-1 lines=2-3}`spot`` spotlights lines 2 and 3 of code-1 when it is said; `{say}` shows
-// what it shows and the engine was asked for its alias; the player labels the AI voice with its provider.
-// Recorded: under `presmium dev`, with Chromium's fake microphone (flags for this spec only), a lecture is
-// recorded, transcribed (a front of the fake engine answers the recorded Ogg/Opus, which the fake engine
-// cannot read, with a fixed transcript), one sentence corrected and the lecture said again in another voice;
-// in that voice a corrected sentence is said again after a confirmation that names the provider; playing a
-// sentence plays its clip (the audio the page plays, spied on `HTMLMediaElement.prototype.play`, is the clip).
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
@@ -22,7 +11,6 @@ import type { DevServer } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/lecture-script')
-/** The lecture and speech plugins, which the demo does not depend on. */
 const LINK = { '@presmium/slidev-addon-lecture': 'packages/addon-lecture', '@presmium/slidev-addon-speech': 'packages/addon-speech' }
 const PROVIDER = 'Presmium fake'
 
@@ -38,7 +26,6 @@ interface Track {
   events: [number, string, Record<string, unknown>][]
 }
 
-/** `presmium-speech fake --port 0`, a process of its own. */
 async function startFake(): Promise<{ url: string, child: ChildProcess }> {
   const child = spawn(process.execPath, [join(ROOT, 'packages/addon-speech/bin/presmium-speech.mjs'), 'fake', '--port', '0'], { stdio: ['ignore', 'pipe', 'inherit'] })
   const url = await new Promise<string>((done, fail) => {
@@ -53,12 +40,10 @@ async function startFake(): Promise<{ url: string, child: ChildProcess }> {
   return { url, child }
 }
 
-/** The fake engine defined as engine `fake` of `Presmium fake`. */
 function speechEnv(url: string): NodeJS.ProcessEnv {
   return { ...process.env, PRESMIUM_SPEECH_FAKE_URL: url, PRESMIUM_SPEECH_FAKE_PROVIDER: PROVIDER }
 }
 
-/** `presmium <args>` in a deck with this environment; rejects with the output when it fails. */
 async function presmium(dir: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
   const child = spawn(process.execPath, [join(ROOT, 'packages/cli/bin/presmium.mjs'), ...args], { cwd: dir, env, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
@@ -69,7 +54,6 @@ async function presmium(dir: string, args: string[], env: NodeJS.ProcessEnv): Pr
   return output
 }
 
-/** What the fake engine embedded in a WAV it made: the text and voice it says. */
 function fakeContent(bytes: Buffer): { text: string, voice: string } {
   for (let at = 12; at + 8 <= bytes.length;) {
     const size = bytes.readUInt32LE(at + 4)
@@ -109,7 +93,6 @@ test.describe('a lecture synthesized from the narration (P-134)', () => {
   })
 
   test('spotlights lines 2 and 3 of code-1 when the word after the cue is said, labels the AI voice, says {say} as its alias (N-08)', async ({ page }) => {
-    // The cue is bound to the word after it, 这, and happens when it is said.
     const spot = track.events.find(([, type]) => type === 'spot')!
     expect(spot[2]).toMatchObject({ block: 'merge/code-1', lines: '2-3' })
     const [id, index] = spot[2].at as [string, number]
@@ -124,12 +107,10 @@ test.describe('a lecture synthesized from the narration (P-134)', () => {
     await player.getByRole('button', { name: '逐字稿' }).click()
     const words = page.locator(`.pm-lecture-transcript__item[data-utterance="${id}"] .pm-lecture-word`)
     const present = page.locator('.pm-present')
-    // The word before it: no spotlight yet.
     await words.nth(index - 1).click()
     await expect(present).toHaveAttribute('data-section', 'merge')
     expect(Number(await player.getAttribute('data-time'))).toBe(utterance.words![index - 1]![0])
     await expect(page.locator('.pm-adhoc-lines')).toHaveCount(0)
-    // The word itself: lines 2 and 3 of code-1 in the spotlight.
     await words.nth(index).click()
     expect(Number(await player.getAttribute('data-time'))).toBe(spot[0])
     await expect(page.locator('.driver-overlay')).toBeVisible()
@@ -138,7 +119,6 @@ test.describe('a lecture synthesized from the narration (P-134)', () => {
     expect(Math.abs(box!.y - second!.y)).toBeLessThan(2)
     expect(Math.abs(box!.y + box!.height - (third!.y + third!.height))).toBeLessThan(2)
 
-    // {say}: the narration, the transcript and the word times show BPE; the engine was asked to say B P E.
     const said = track.utterances.find(u => u.text.includes('BPE'))!
     expect(said.words!.map(w => w[2])).toContain('BPE')
     await expect(page.locator(`.pm-lecture-transcript__item[data-utterance="${said.id}"]`)).toContainText('BPE')
@@ -152,17 +132,12 @@ test.describe('a lecture synthesized from the narration (P-134)', () => {
   })
 })
 
-/** A transcript segment with its words evenly in its time, as an OpenAI-shaped `verbose_json` answer has them. */
 function segment(text: string, start: number, end: number) {
   const chars = [...text].filter(c => /\p{Script=Han}/u.test(c))
   const step = (end - start) / chars.length
   return { start, end, text, words: chars.map((c, i) => ({ word: c, start: start + i * step, end: start + (i + 1) * step })) }
 }
 
-/**
- * A front of the fake engine: it passes every request on, but answers a transcription of recorded
- * audio (Ogg/Opus, which the fake engine cannot read back) with the next of these transcripts.
- */
 async function transcribingFront(fake: string, transcripts: ReturnType<typeof segment>[][]): Promise<{ url: string, asked: number, close(): Promise<void> }> {
   const upstream = new URL(fake)
   const state = { url: '', asked: 0, close: async () => {} }
@@ -204,7 +179,6 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
   test.beforeAll(async () => {
     test.setTimeout(300_000)
     fake = await startFake()
-    // The opening's audio says one sentence; the merge section's two, the first while the code is spotlighted.
     front = await transcribingFront(fake.url, [
       [segment('我们从开场讲起', 0.2, 1.0)],
       [segment('现在看合并函数的代码', 0.3, 2.6), segment('注意这几行', 2.8, 3.4)],
@@ -224,7 +198,6 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
   const read = (id: string) => JSON.parse(readFileSync(join(dir, 'lectures', id, 'track.json'), 'utf8')) as Track
 
   test('transcribes with the provider named, then a corrected sentence said in a new voice plays its new clip; unbound events keep their times', async ({ page }) => {
-    // The audio the page starts playing, by its URL (it calls through).
     await page.addInitScript(() => {
       const played: string[] = []
       Object.assign(window, { playedMedia: played })
@@ -234,7 +207,6 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
         return play.call(this)
       }
     })
-    // Record: the opening, then the merge section, where the code is spotlighted while the first sentence is said.
     await openDevPage(page, `${dev!.url}?view=present`, page.getByRole('region', { name: '讲授录制' }))
     const recorder = page.getByRole('region', { name: '讲授录制' })
     const present = page.locator('.pm-present')
@@ -255,8 +227,6 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     const id = recorded().find(name => !before.has(name))!
     expect(read(id).audio?.map(a => a.section)).toEqual(['intro', 'merge'])
 
-    // Transcribe: the entry and its confirmation name the provider.
-    // The dev server renders the lecture view's page for the first time: it may take a while under load.
     await page.goto(`${dev!.url}?view=lecture&track=${id}`)
     const player = page.getByRole('region', { name: '讲授回放' })
     await expect(player).toHaveAttribute('data-state', 'paused', { timeout: 60_000 })
@@ -270,12 +240,10 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     expect(front!.asked).toBe(2)
     const transcribed = read(id)
     expect(transcribed.utterances.map(u => [u.id, u.section, u.text])).toEqual([['u1', 'intro', '我们从开场讲起'], ['u2', 'merge', '现在看合并函数的代码'], ['u3', 'merge', '注意这几行']])
-    // The spotlight came while u2 was said: it is bound to a word of it; the moves between sentences are not.
     expect(transcribed.events.find(([, type]) => type === 'spot')![2].at).toEqual(['u2', expect.any(Number)])
     const unbound = transcribed.events.filter(([, , data]) => !data.at)
     expect(unbound.map(([, type]) => type)).toContain('go')
 
-    // Correct the last sentence, then say the lecture again in voice beta.
     const last = page.locator('.pm-lecture-transcript__item[data-utterance="u3"]')
     await last.getByRole('button', { name: '修改语音段 u3' }).click()
     await last.getByRole('textbox', { name: '修改语音段 u3' }).fill('注意这两行代码')
@@ -289,7 +257,6 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     await expect(editor.getByRole('status')).toHaveText('已重新合成', { timeout: 30_000 })
     await expect(player.locator('.pm-lecture-player__ai')).toHaveText(`AI 合成语音（${PROVIDER}）`)
 
-    // In the synthetic voice a corrected sentence is said again: the button and its confirmation name the provider (N-08).
     const first = page.locator('.pm-lecture-transcript__item[data-utterance="u1"]')
     await first.getByRole('button', { name: '修改语音段 u1' }).click()
     await first.getByRole('textbox', { name: '修改语音段 u1' }).fill('我们从开场白讲起')
@@ -299,7 +266,6 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     await sayAgain.getByRole('button', { name: '确定' }).click()
     await expect(first).toContainText('我们从开场白讲起', { timeout: 30_000 })
 
-    // The corrected sentences have new clips: the new text in the new voice.
     const said = read(id)
     expect(said.voice).toMatchObject({ kind: 'synthetic', voice: 'beta', provider: PROVIDER })
     expect(fakeContent(readFileSync(join(dir, '.presmium/speech', said.utterances.find(u => u.id === 'u1')!.clip!)))).toMatchObject({ text: '我们从开场白讲起', voice: 'beta' })
@@ -307,14 +273,12 @@ test.describe('a recorded lecture transcribed, corrected and said again (P-132, 
     const clip = await player.getAttribute('data-clip')
     expect(clip).toBe(said.utterances.find(u => u.id === 'u3')!.clip)
     expect(fakeContent(readFileSync(join(dir, '.presmium/speech', clip!)))).toMatchObject({ text: '注意这两行代码', voice: 'beta' })
-    // Playing from there plays that clip, as the server serves it (ClipClock).
     const played = () => page.evaluate(() => (window as unknown as { playedMedia: string[] }).playedMedia)
     await page.evaluate(() => (window as unknown as { playedMedia: string[] }).playedMedia.splice(0))
     await player.getByRole('button', { name: '播放', exact: true }).click()
     await expect.poll(async () => (await played()).length).toBeGreaterThan(0)
     const bytes = await page.evaluate(async (src) => Array.from(new Uint8Array(await (await fetch(src)).arrayBuffer())), (await played())[0]!)
     expect(fakeContent(Buffer.from(bytes))).toMatchObject({ text: '注意这两行代码', voice: 'beta' })
-    // The events not bound to words keep their times; the bound ones follow their words.
     expect(said.events.filter(([, , data]) => !data.at)).toEqual(unbound)
     const spot = said.events.find(([, type]) => type === 'spot')!
     const [, at] = spot[2].at as [string, number]

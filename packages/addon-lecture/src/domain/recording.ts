@@ -1,15 +1,9 @@
-/**
- * Making a track from a recording (P-90): pointer paths simplified before
- * they are stored, the events and media of one recording put together, and
- * a section recorded again spliced into the track it belongs to.
- */
 import type { TrackEvent } from '@presmium/kernel'
 import { blockOf } from './drift.ts'
 import { timedEvents } from './timing.ts'
 import type { LectureTrack, MediaSegment, TrackBlock, Utterance, VideoSegment, Voice } from './track.ts'
 import { sortEvents, TRACK_VERSION, trackDuration } from './track.ts'
 
-/** A pointer sample: `[ms since the path started, x, y]`, x and y relative to the block (0 to 1). */
 export type PathPoint = [dt: number, x: number, y: number]
 
 function distance([, x, y]: PathPoint, [, x1, y1]: PathPoint, [, x2, y2]: PathPoint): number {
@@ -21,11 +15,6 @@ function distance([, x, y]: PathPoint, [, x1, y1]: PathPoint, [, x2, y2]: PathPo
   return Math.hypot(x - (x1 + k * dx), y - (y1 + k * dy))
 }
 
-/**
- * A pointer path with the points that add little left out
- * (Ramer–Douglas–Peucker, `tolerance` relative to the block), coordinates
- * rounded to three places; the first and last points stay.
- */
 export function simplifyPath(path: readonly PathPoint[], tolerance = 0.01): PathPoint[] {
   const round = ([t, x, y]: PathPoint): PathPoint => [Math.round(t), Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000]
   if (path.length <= 2) return path.map(round)
@@ -49,13 +38,11 @@ export function simplifyPath(path: readonly PathPoint[], tolerance = 0.01): Path
   return [...keep].sort((a, b) => a - b).map(i => round(path[i]!))
 }
 
-/** What one recording made: its events, media and length, times from its own start. */
 export interface Recording {
   events: TrackEvent[]
   audio: MediaSegment[]
   video: VideoSegment[]
   utterances: Utterance[]
-  /** ms. */
   duration: number
 }
 
@@ -64,13 +51,11 @@ export interface TrackHead {
   doc: string
   lang: string
   irHash: string
-  /** The hash of each section of the IR recorded on (`sectionHashes`). */
   sections: Record<string, string>
   voice: Voice
   blocks: Record<string, TrackBlock>
 }
 
-/** A new track of one recording. */
 export function recordedTrack(head: TrackHead, recording: Recording): LectureTrack {
   return {
     track: TRACK_VERSION,
@@ -87,17 +72,11 @@ export function recordedTrack(head: TrackHead, recording: Recording): LectureTra
   }
 }
 
-/** The blocks the events still refer to. */
 function pruneBlocks(blocks: Record<string, TrackBlock>, events: readonly TrackEvent[]): Record<string, TrackBlock> {
   const used = new Set(events.flatMap(([, , data]) => blockOf(data) ?? []))
   return Object.fromEntries(Object.entries(blocks).filter(([key]) => used.has(key)))
 }
 
-/**
- * Where a section is in a track, ms: from the first move to it until the
- * next move to another section (or the end); undefined when the track never
- * goes there.
- */
 export function sectionSpan(track: LectureTrack, section: string, end: number): [number, number] | undefined {
   const goes = timedEvents(track).filter(e => e.type === 'go' && typeof e.data.section === 'string')
   const first = goes.findIndex(e => e.data.section === section)
@@ -106,13 +85,6 @@ export function sectionSpan(track: LectureTrack, section: string, end: number): 
   return [goes[first]!.t, next?.t ?? end]
 }
 
-/**
- * The IR hashes of a track with one section recorded again: that section's
- * of the new recording, the others' of the track (so `presmium check` still
- * finds what drifted in them since); a track without section hashes, whose
- * IR is no longer the deck's, gets none it does not know. The whole IR's
- * hash is the new recording's only when every section's is.
- */
 function splicedIr(track: LectureTrack, section: string, head: TrackHead): LectureTrack['ir'] {
   const before = track.ir.sections ?? (track.ir.hash === head.irHash ? head.sections : {})
   const unknown = Object.fromEntries(Object.keys(head.sections).filter(id => !(id in before)).map(id => [id, '']))
@@ -121,13 +93,6 @@ function splicedIr(track: LectureTrack, section: string, head: TrackHead): Lectu
   return { hash: current ? head.irHash : track.ir.hash, sections }
 }
 
-/**
- * The track with one section recorded again (P-90): what the track had in
- * that section's span (events, utterances, its media) is replaced by the new
- * recording, and what follows moves by the difference in length. A section
- * the track never went to is added at its end. Also returns the media files
- * the track no longer uses.
- */
 export function spliceSection(track: LectureTrack, section: string, recording: Recording, head: TrackHead): { track: LectureTrack, unused: string[] } {
   const end = Math.round(trackDuration(track))
   const [from, to] = sectionSpan(track, section, end) ?? [end, end]

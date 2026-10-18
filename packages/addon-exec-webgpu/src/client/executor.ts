@@ -4,26 +4,12 @@ import type { Executor, RunResult } from '@presmium/kernel'
 import { computeRequest, isWgsl, MESSAGES, paramsSummary, programError, runResult } from '../domain/index.ts'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 
-/** How long a stopped worker may take to destroy its device before it is ended anyway. */
 const STOP_GRACE_MS = 200
 
 export type WebgpuExecutor = Executor & {
-  /** Ends the workers of runs under way. */
   dispose(): void
 }
 
-/**
- * WGSL compute shaders in the browser (P-104): each run gets a worker of its
- * own, which runs the shader on a device of its own. A run that exceeds its
- * timeout, or is cancelled, has the worker destroy the device and is ended
- * (a shader may keep the GPU busy); a lost device ends the run too. Where the
- * shader cannot run (no WebGPU, no adapter, a missing feature or limit, a lost
- * device, a timeout) the result is a run that did not happen (`exitCode`
- * null), and the recorded output shows with the reason; a shader WebGPU
- * rejects, or wrong `:params:`, is the program's own error. A run panel
- * names the parameters in the UI language, shows the buffers one field each
- * and its history a summary of them (`params`, D-10).
- */
 export function createWebgpuExecutor(options: { id: string, timeoutMs: number }): WebgpuExecutor {
   const { id } = options
   const running = new Set<Worker>()
@@ -59,7 +45,6 @@ export function createWebgpuExecutor(options: { id: string, timeoutMs: number })
           signal?.removeEventListener('abort', onAbort)
           resolve(result)
         }
-        // The worker destroys the device, then it is ended.
         const stop = (result: RunResult) => {
           finish(result)
           worker.postMessage({ type: 'stop' } satisfies WorkerRequest)

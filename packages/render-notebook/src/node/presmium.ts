@@ -1,23 +1,3 @@
-/**
- * The notebook renderer (P-75): writes the IR as one Jupyter notebook,
- * `<outDir>/<entry name>.ipynb` (see ../domain/notebook.ts).
- *
- * Configuration, `renderers.notebook` in the frontmatter:
- *   kernel   the kernel name (default python3), or { name, language, display_name };
- *            code in the kernel's language becomes code cells
- *   webUrl   URL of the web version, linked from components the notebook cannot
- *            show; when the same build builds the web form with @presmium/web,
- *            they link to it relatively (`../web/<page>#<section>`, as in the
- *            output directory), on the pages @presmium/web lays out
- *
- * MyST nodes Jupyter cannot render are written as CommonMark and HTML, and the
- * ones without such a form are reported as degraded (../domain/markdown.ts).
- *
- * Plugins render their components as cells through `rendererExtensions.notebook`;
- * the cells they return are typed by `NotebookCellInput`, and paths in them
- * are relative to the notebook, in `ctx.outDir`. The local files that the
- * images and links it shows point to are copied to `<outDir>/media/` (./media.ts).
- */
 import { createRequire } from 'node:module'
 import { writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
@@ -65,14 +45,8 @@ async function options(doc: IRDocument, ctx: RenderContext): Promise<Omit<Notebo
   return { kernel: kernelSpec(kernel, warn), locale: deckLocale(ctx.lang), webLink: await webLink(doc, ctx, webUrl), extensionFor: ctx.extensionFor }
 }
 
-/** The default web renderer, whose page layout the notebook follows (an optional peer dependency). */
 const WEB_PACKAGE = '@presmium/web'
 
-/**
- * Where a section is in the web version: under `webUrl`, else, when this build
- * also builds the web form with the default web renderer, its page beside the
- * notebook's directory. Another web renderer lays out pages of its own.
- */
 async function webLink(doc: IRDocument, ctx: RenderContext, webUrl: unknown): Promise<((section: IRSection) => string) | undefined> {
   if (typeof webUrl === 'string') return section => `${webUrl.replace(/#.*$/, '')}#${encodeURIComponent(section.id)}`
   const web = doc.config.renderers.web?.package ?? WEB_PACKAGE
@@ -80,13 +54,11 @@ async function webLink(doc: IRDocument, ctx: RenderContext, webUrl: unknown): Pr
   const layout = await import('@presmium/web/domain').catch(() => undefined)
   if (!layout) return undefined
   const links = layout.sectionLinks(layout.toPages(doc))
-  // The site's first page is its directory; a notebook opened from disk needs the file.
   return section => `../web${(links[section.id] ?? '/').replace(/^\/(?=#|$)/, '/index.html')}`
 }
 
 function kernelSpec(value: unknown, warn: (message: string) => void): KernelSpec {
   if (value === undefined || value === DEFAULT_KERNEL.name) return DEFAULT_KERNEL
-  // A kernel name is read as its language without the version: julia-1.10 -> julia.
   if (typeof value === 'string' && value) return { name: value, display_name: value, language: value.replace(/[-\d.]+$/, '') || value }
   if (typeof value === 'object' && value !== null && 'name' in value && 'language' in value && typeof value.name === 'string' && typeof value.language === 'string') {
     const displayName = 'display_name' in value && typeof value.display_name === 'string' ? value.display_name : value.name

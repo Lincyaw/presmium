@@ -1,9 +1,3 @@
-/**
- * The shapes of what participants write to the classroom store. The
- * classroom server checks only whose an entry is (`ClassroomStore`), so an
- * entry from a client of another version, or written by hand, can lack what
- * the components read; they leave such entries out.
- */
 import { isRecord } from '@presmium/kernel'
 import type { Submission } from './exercise.ts'
 import type { Note } from './notes.ts'
@@ -53,7 +47,6 @@ export function isNote(value: unknown): value is Note {
   return isRecord(value) && isString(value.section) && (value.block === undefined || isString(value.block)) && isString(value.text) && isTime(value.at)
 }
 
-/** A prediction as the browser keeps it: a choice or a text. */
 export function isSavedPrediction(value: unknown): value is SavedPrediction {
   return isRecord(value) && (isCount(value.choice) || isString(value.text)) && isTime(value.at)
 }

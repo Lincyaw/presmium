@@ -1,16 +1,6 @@
-/*
- * Presmium's design tokens (N-10, docs/architecture.md 5.10; the chosen design in docs/design/): the
- * colours of "书卷" (paper, ink, a deep teal accent), the fonts, sizes, spacing, radii, the one shadow
- * and the motion of every Presmium screen and default theme. Light on :root; dark where the host puts
- * the class `dark` on <html> (VitePress's appearance switch, Slidev's dark mode).
- */
 :root {
   color-scheme: light;
 
-  /* Colours (docs/design/README.md). Text colours reach WCAG AA (4.5:1) on bg, surface and sunk, and each
-     tone on its soft background: `ok` is a shade darker than the reference (#2f7d4f) for AA on `ok-soft`.
-     `line-strong`, the border of fields and of a chosen segment, reaches 3:1 on bg, surface and sunk
-     (WCAG 1.4.11): a shade darker than the reference's `line2` (#a39c8e), kept as `gutter` (the source editor's line numbers are `muted`, for AA). */
   --pm-color-bg: #f7f5f0;
   --pm-color-surface: #ffffff;
   --pm-color-sunk: #efebe3;
@@ -31,18 +21,15 @@
   --pm-color-danger-soft: #f8e5df;
   --pm-color-add: #2f6b3a;
   --pm-color-del: #a3321c;
-  /* Source code: line numbers, keys, strings, keywords. */
   --pm-color-gutter: #a39c8e;
   --pm-color-syntax-key: #7a3e8e;
   --pm-color-syntax-string: #2f6b3a;
   --pm-color-syntax-keyword: #8a3b12;
 
-  /* Fonts: the Latin faces ship with Presmium (fonts.css); Chinese uses the system's. */
   --pm-font-sans: 'IBM Plex Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', system-ui, sans-serif;
   --pm-font-serif: 'Source Serif 4', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Noto Serif SC', 'SimSun', serif;
   --pm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
 
-  /* Sizes in rem, so they follow the reader's font size (N-06): 12, 13, 14 (the UI), 16, 17 (reading), 20, 32 px. */
   --pm-text-xs: 0.75rem;
   --pm-text-sm: 0.8125rem;
   --pm-text-md: 0.875rem;
@@ -55,7 +42,6 @@
   --pm-leading-reading: 1.85;
   --pm-tracking-label: 0.06em;
 
-  /* Spacing: a 4 px grid. */
   --pm-space-1: 0.25rem;
   --pm-space-2: 0.5rem;
   --pm-space-3: 0.75rem;
@@ -65,7 +51,6 @@
   --pm-space-8: 2rem;
   --pm-space-10: 2.5rem;
 
-  /* Radii: controls, cards, panels on slides, chips, pills. */
   --pm-radius-control: 8px;
   --pm-radius-small: 6px;
   --pm-radius-card: 12px;
@@ -73,21 +58,17 @@
   --pm-radius-chip: 4px;
   --pm-radius-pill: 999px;
 
-  /* The one shadow: the selected item of a segmented control, and what floats (popovers, dialogs). No gradients. */
   --pm-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   --pm-shadow-float: 0 1px 2px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
 
-  /* Motion; none for readers who ask for less (N-06, see the media query below). */
   --pm-duration-fast: 120ms;
   --pm-duration: 200ms;
   --pm-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  /* The workbench (docs/design/home.dc.html): its columns and bars. */
   --pm-activity-width: 56px;
   --pm-sidebar-width: 252px;
   --pm-statusbar-height: 1.75rem;
 
-  /* Layers above the page: popovers, then dialogs. */
   --pm-z-popover: 1000;
   --pm-z-dialog: 1100;
 }

@@ -1,11 +1,3 @@
-// A kind: jupyter environment at compile time (P-105, WP-76): `presmium build` runs the deck's code in
-// the kernels of the compose environment (templates/env/compose/compose.yaml) with the operator's pair
-// PRESMIUM_ENV_<NAME>_URL and _TOKEN, and records the outputs with the environment's fingerprint,
-// leaving no run directory on the server; a run panel's parameters keep their types; a block that
-// exceeds its timeout interrupts the kernel, which runs the session's next block; a run's files are in
-// its working directory; `presmium check --env` reports an environment it cannot reach. The template's
-// overlays: the GPU one gives the kernel the host's NVIDIA GPUs (where the host has them), the gVisor
-// one names the runtime `runsc`. Needs Docker; skipped without it.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { CodeNode, ComponentNode, IRDocument } from '@presmium/kernel'
@@ -15,7 +7,6 @@ import plugin from '../src/node/presmium.ts'
 import type { Jupyter } from './helpers.ts'
 import { closedPort, compose, dockerCompose, nvidiaGpu, PACKAGES, presmium, remove, startJupyter, testDeck } from './helpers.ts'
 
-/** The compose environment's ports, in WP-89e's range. */
 const PORT = 5335
 const GPU_PORT = 5336
 const IMAGE = 'quay.io/jupyter/base-notebook:2026-10-12@sha256:3fc2b8023bb7e3f11a09bd77aa07575c1ece16a0b9b64556757e34c52f667a1a'
@@ -105,7 +96,6 @@ print("after", round(time.time() - started) < 30)
     PRESMIUM_ENV_REMOTE_TOKEN: jupyter!.token,
     PRESMIUM_ENV_CLOSED_URL: `http://127.0.0.1:${closed}/`,
     PRESMIUM_ENV_CLOSED_TOKEN: 'closed-environment-token',
-    // The build's own variables do not reach the kernel: it starts with the server's environment.
     FIXTURE_BUILD_VALUE: 'build-only',
   })
 
@@ -118,11 +108,9 @@ print("after", round(time.time() - started) < 30)
     expect(output('where')).toMatchObject({ ok: true, executorId: 'presmium.env.remote', stdout: expect.stringMatching(/^远端内核 3\.\d+\.\d+ True\n\[\]\n$/) })
     expect(output('use')).toMatchObject({ ok: true, stdout: '42\n' })
 
-    // A run panel's parameters keep their types in the kernel, as in the browser and the local runner (F-17).
     const panel = [...docBlocks(doc)].find(({ block }) => block.id === 'params')!.block.node as ComponentNode
     expect((panel.children![0]!.node as CodeNode).outputs?.[0]).toMatchObject({ ok: true, stdout: 'int float str bool 42 off\n' })
 
-    // The block over its timeout interrupted the kernel; the session's next block ran in it at once.
     expect(output('slow')).toMatchObject({ ok: false, timedOut: true })
     expect(output('after')).toMatchObject({ ok: true, stdout: 'after True\n' })
 
@@ -133,19 +121,14 @@ print("after", round(time.time() - started) < 30)
       expect(environment).toContain(`image=${IMAGE}`)
       expect(environment).toMatch(/kernelspec=python3:sha256:[0-9a-f]{16} kernel=ipython \d+\.\d+\.\d+ python 3\.\d+\.\d+$/)
     }
-    // The second build answers from the recordings (the timed-out block is not recorded, and runs again).
     const again = await presmium(dir, ['build', '--to', 'notebook'], env())
     expect(again.stdout).toMatch(/code runs: \d executed, [45] from cache/)
 
-    // Each kernel's run directory (presmium-runs/<id>/, its working directory) went with the kernel.
     const runs = await fetch(`${jupyter!.url}api/contents/presmium-runs?content=1`, { headers: { Authorization: `token ${jupyter!.token}` } })
     expect(runs.status).toBe(200)
     expect((await runs.json() as { content: unknown[] }).content).toEqual([])
   }, 300_000)
 
-  // No block of a deck sends files to an environment: the Executor contract's callers do (a classroom
-  // exercise's check sends the learner's code and the checks as files). So the case calls the plugin's
-  // environment provider as the compiler does, from the entry it loads (`./presmium`).
   it('puts a run\'s files in its working directory, where the code reads them', async () => {
     const executor = await plugin.environments!.jupyter!.create('remote', { kind: 'jupyter' }, {
       deckDir: dir,

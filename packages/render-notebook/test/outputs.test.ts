@@ -1,7 +1,3 @@
-// Rich outputs in the notebook (P-102, WP-73b), with the real `presmium build`: code that displays
-// a PNG (made with the standard library) has a `display_data` output with `image/png` in its cell;
-// code with `:echo: false` that prints a Markdown table has its source hidden
-// (`metadata.jupyter.source_hidden`). nbformat, when installed, validates the notebook.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

@@ -1,7 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } from 'pdf-lib'
 
-/** URIs of the link annotations on each page of a PDF; index 0 is page 1. */
 export async function pdfLinks(file: string): Promise<string[][]> {
   const doc = await PDFDocument.load(await readFile(file), { updateMetadata: false })
   return doc.getPages().map((page) => {
@@ -18,7 +17,6 @@ export async function pdfLinks(file: string): Promise<string[][]> {
   })
 }
 
-/** Keeps the pages of a PDF whose 0-based index `keep` accepts. */
 export async function keepPages(file: string, keep: (index: number) => boolean): Promise<void> {
   const doc = await PDFDocument.load(await readFile(file), { updateMetadata: false })
   for (let i = doc.getPageCount() - 1; i >= 0; i--) {

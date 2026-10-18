@@ -1,8 +1,3 @@
-/**
- * The workbench panels' text in Chinese and English (docs/design-dsh.md 7.6): the
- * language follows DeepSeek Harness's (`Workbench.setLocale`), else the browser's.
- * What the panels write into a document follows the document's `lang`, not this.
- */
 import type { Locale } from './store.ts'
 
 const zh = {
