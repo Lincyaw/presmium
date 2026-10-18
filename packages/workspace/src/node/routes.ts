@@ -22,7 +22,8 @@
  * The workspace service's interface for a workbench (./service.ts,
  * docs/design-dsh.md 5.1): `ir`, `ir/events`, `preview`, `build` and
  * `check` of the request's document, for editors and owners, and the
- * proxies of the slides' previews. With a service token
+ * proxies of the slides' previews; the reviews of DeepSeek Harness sessions
+ * (`review` and its routes, ./review/routes.ts, WP-96c). With a service token
  * (`PRESMIUM_SERVICE_TOKEN`, which `presmium studio` gives the service and
  * its bundle), every route asks for `Authorization: Bearer <token>`: a
  * product page's scripts, which reach these routes on the same origin,
@@ -35,11 +36,14 @@ import type { Member, PresmiumNodePlugin, RequestContext, Route, ServerContribut
 import { bearer } from '@presmium/server'
 import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer, SavedAnswer } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
+import { trailers } from '../domain/revisions.ts'
 import { lockedError, RequestError } from './documents.ts'
 import type { Documents, DocumentsChange } from './documents.ts'
 import { documentDirOf } from './files.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
+import { reviewRoutes } from './review/routes.ts'
+import type { Reviews } from './review/reviews.ts'
 import type { WorkspaceService } from './service.ts'
 import { MAX_SOURCE, SourceFiles } from './source.ts'
 
@@ -59,6 +63,8 @@ export interface WorkspaceRoutes {
   service?: WorkspaceService
   /** The service token (`PRESMIUM_SERVICE_TOKEN`): every route asks for it. */
   token?: string
+  /** `presmium serve` in a git repository: the reviews of DeepSeek Harness sessions (`review`, ./review/routes.ts); an undo of a session's commit is told to them. */
+  reviews?: Reviews
 }
 
 /** Whether a request names the service token. */
@@ -179,7 +185,12 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         try {
           const before = listed()
           const result = await revisions.revert(body.id, ctx.member)
-          if (result.ok) await options.documentsChanged?.(difference(before, listed()))
+          if (result.ok) {
+            await options.documentsChanged?.(difference(before, listed()))
+            // A session's commit undone: the bundle tells the session (docs/design-dsh.md 6.5).
+            const undone = trailers(result.revision.message)['Presmium-Revert']?.[0] ?? body.id
+            void options.reviews?.reverted(undone, result.revision.id).catch(() => undefined)
+          }
           return json(result satisfies RevertAnswer, result.ok ? 200 : 409)
         } finally {
           claimed?.release()
@@ -223,6 +234,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       })),
     },
     ...options.service ? serviceRoutes(options.service) : {},
+    ...options.reviews ? reviewRoutes(options.reviews, answer) : {},
     'changes/discard': {
       role: 'editor',
       handle: (request, ctx) => answer(() => onChanges(request, ctx, 'editor:discard', async (paths) => {

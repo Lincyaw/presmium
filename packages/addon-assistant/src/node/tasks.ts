@@ -5,7 +5,8 @@
  * ended; the pages following a task are counted. A change task waiting for
  * its review keeps the resolver of the decision and the return to a step.
  * Tasks live in memory only (a change task's review has a record on disk
- * while it is open, ./review-record.ts).
+ * while it is open, kept by the review's engine: the workspace service's git
+ * review, or deltabox's).
  */
 import type { AgentEvent, AgentTaskKind, AgentTaskRequest, Member, ReviewDecision } from '@presmium/kernel'
 

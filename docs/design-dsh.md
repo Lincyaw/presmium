@@ -679,7 +679,7 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 | 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧）。服务一侧成立（96a，运行）：`GET ir/events` 是服务端直接流出的 SSE（`eventStream`，不缓冲），连接后先发当前的修订号，保存源码后一条新事件随即到达（`packages/workspace/test/service.test.ts`）；bundle 的转发由 96b 试 |
 | 2 | 面板怎样发起会话：在页面中带 cookie 调 Host API，还是用客户端运行时的会话服务 | — | 96e |
 | 3 | 批注怎样进入对话：`conversation.composer` 槽位中的托盘，还是直接发 `session/prompt` | — | 96e |
-| 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e |
+| 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e。服务一侧见 17.2 节（96c） |
 | 5 | 启动时传入的补丁与 profile 自己的补丁谁先谁后：用户在界面中的改动能否盖过隐私相关的行 | 启动器每次启动前把 profile 补丁中的这些行改回 | 96b |
 | 6 | 用户在插件管理中关掉 `@presmium/dsh` 之后会怎样，`ui-layout` 是否回来 | 工作台说明怎样重新打开 | 96d |
 | 7 | 启动令牌在标准输出之外有没有交接方式 | 解析标准输出 | 96f |
@@ -708,6 +708,21 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 4. **会话令牌只给启动服务的主机**：没有设置 `PRESMIUM_SERVICE_TOKEN` 时 `tokens` 一律 403（设置了时要求它）；这样产物页面中的脚本拿不到不经确认的令牌。
 5. **文稿快照每一步之前经 MCP 重读**（`agent/pre-step`），不维护按 `ir/events` 更新的缓存：读取类调用只要几毫秒（第 9 项），快照也就总是新的。
 6. **焦点的报告**：`POST presmium.server/focus` 的请求体是 `{ document, focus: FocusReport[] }`（`FocusReport` 在内核契约中），批注的保存留给 96e。
+
+### 17.2 WP-96c 的结论
+
+在锁定的 0.2.1-alpha.4 上用假模型运行过；用例在 `packages/dsh/test/turns.test.ts` 与 `packages/workspace/test/review.test.ts`，实现见 `architecture.md` 13.4 节。
+
+- **第 4 项（服务一侧）**：成立。一次审阅覆盖会话在它期间的全部 turn：服务给出 turn 的范围（`turns { from, to }`，提交的尾注 `Presmium-Turn: <起>-<止>`）、是否有 turn 在运行，以及按工具调用的检查点（标签是工具与文件或命令）。dsh 的修改卡片（`workspace/changes`）仍是每个 turn 的视图：同一个 turn 中它列出的文件与审阅的改动相同（构建的产物两边都没有），多个 turn 时每张卡片是审阅的一部分；宿主重启后卡片没有了，审阅仍在，可以经新宿主接受。所以审阅是修改的唯一来源，卡片只作 turn 内的提示；面板怎样把两者放在一起由 96e 决定。
+
+实现与设计不同或设计没有写明之处：
+
+1. **审阅在 `tools/execute` 中打开**，不在 `tools/pre-execute` 中：它在确认之后、工具执行之前运行，被拒绝或被策略否决的调用不会打开审阅，也不持有锁；锁被别人持有时这次调用以原因失败，什么也没写。打开是幂等的（同一会话得到同一个审阅），所以每次写入之前都问一次服务，宿主不必记住审阅是否还开着（作者在 turn 之间接受之后，下一次写入开一个新的审阅）。
+2. **一个 turn 结束时审阅没有改动就结束**（例如 shell 只运行了 `ls`），释放锁；`review: auto` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，不由 bundle 读取（13.5 节写的是 bundle 读取）：超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。
+3. **会话的审阅在服务重启后恢复**：记录另写会话、turn 的范围、检查点与各步；服务关闭或崩溃时不回滚，下一个服务进程启动时恢复它并重新持有锁（助手的修改任务的审阅照旧回滚）。这样 bundle 自己启动的服务随宿主重启时，审阅也仍在。
+4. **路由**：5.1 节的六个之外，`GET review/events` 是 bundle 用的 SSE（审阅的变化，以及撤销一个会话的提交）；`GET review` 以 `text/event-stream` 请求时是页面跟随。`review/reject` 给出文件时只恢复它们、审阅继续，不给时全部回滚；`review/accept` 可以带作者写的说明。
+5. **撤销后的消息**：bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头；它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见。agent 不在时等它被创建或恢复再注入。
+6. **`CHANGE_REVIEW` 与助手**：服务只在编译结果没有 `CHANGE_REVIEW`（没有 deltabox）时以 git 审阅回答它；随包的 DeepSeek Harness 的写入使 deltabox 的审阅出错，助手因此另取 `GIT_REVIEW`（ID `presmium.workspace.gitReview`，服务与助手各自定义，不进契约，96g 随助手的运行时删去）。`presmium dev` 只登记 `GIT_REVIEW`。
 
 ## 18. 工作包
 

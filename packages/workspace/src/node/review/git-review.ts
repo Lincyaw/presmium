@@ -1,6 +1,8 @@
 /**
- * The assistant's own change review (D12, docs/architecture.md 10.7), used
- * where no `CHANGE_REVIEW` service is registered: git, in this process. The
+ * The workspace's git review of an agent's changes (D12, docs/architecture.md
+ * 10.7 and 13.4): `CHANGE_REVIEW` where deltabox registers none, the review
+ * of a DeepSeek Harness session (./reviews.ts), and the assistant's under the
+ * bundled DeepSeek Harness (WP-96c moved it here from the assistant). The
  * document directory is the agent's working directory (`root`), so changes
  * show at once (`immediate`). Opening writes the directory as a tree object
  * through a temporary index (the snapshot: committed, uncommitted and
@@ -29,7 +31,8 @@
  * commands of the author and the workspace. One review per document
  * directory at a time; while it is open a record names its snapshot
  * (./review-record.ts), so a server that crashed is rolled back by the next
- * one (`recoverGitReview`).
+ * one (`recoverGitReview`); a session's review is resumed instead
+ * (`resumeGitReview`), its record having the checkpoints and steps.
  *
  * Where the workspace writes the document files (`DOCUMENT_FILES`, WP-91),
  * restoring goes through it: the review reads the snapshot's files from git
@@ -40,13 +43,33 @@
 import { execFile } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, relative, resolve, sep } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { gitConfigArgs, gitEnvironment } from '@presmium/kernel'
 import type { ChangeReview, DocumentFileChange, DocumentFiles, ReviewChange, ReviewChangeKind, ReviewStep } from '@presmium/kernel'
 import { guardGitDir } from './git-guard.ts'
 import type { GitGuard } from './git-guard.ts'
-import { inside as within } from './paths.ts'
 import { holderRuns, readRecord, removeRecord, SELF, writeRecord } from './review-record.ts'
+import type { ReviewRecord, SessionRecord } from './review-record.ts'
+
+/** Whether `path` is `dir` or lies under it, as the compiler's `inside` says (F-11): `..notes.md` is inside. */
+export function within(path: string, dir: string): boolean {
+  const rel = relative(resolve(dir), resolve(path))
+  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))
+}
+
+/** A git review: the contract's, and what the workspace's session reviews do besides (./reviews.ts). */
+export interface GitReview extends ChangeReview {
+  /** The task (`Presmium-Task`) the record names. */
+  readonly task: string
+  /** The trees of the checkpoints after the snapshot, one per step. */
+  checkpoints(): readonly string[]
+  /** Brings these files (relative to the workspace root) back as the snapshot has them; the review goes on. */
+  restoreFiles(paths: string[]): Promise<void>
+  /** A session's review: what its record says of the session now (its turns), written at once. */
+  note(session: Omit<SessionRecord, 'checkpoints' | 'steps'>): void
+  /** Ends it in this process only, its record kept, so the next process resumes it (a session's review). */
+  suspend(): void
+}
 
 /** The engine's name, as the review event and the panel show it. */
 export const GIT_ENGINE = 'git'
@@ -318,10 +341,12 @@ export function recoverGitReview(options: Omit<GitReviewOptions, 'task'>): Promi
   return running
 }
 
+
 async function recover(deck: string, root: string, options: Omit<GitReviewOptions, 'task'>): Promise<{ task: string, paths: string[] } | undefined> {
   const { onRestore } = options
   const record = readRecord(deck)
-  if (!record || opened.has(deck) || holderRuns(record)) return undefined
+  // A session's review waits for its author: it is resumed (`resumeGitReview`), never rolled back here.
+  if (!record || record.session || opened.has(deck) || holderRuns(record)) return undefined
   let trees: Trees | undefined
   try {
     // The git directory as the task found it first: the review's own reads its configuration.
@@ -337,12 +362,20 @@ async function recover(deck: string, root: string, options: Omit<GitReviewOption
   }
 }
 
-export async function openGitReview(options: GitReviewOptions): Promise<ChangeReview> {
+/** The record of a session's review that a process left (it ended, or crashed): what `resumeGitReview` takes up. */
+export function leftSessionReview(deckDir: string): ReviewRecord | undefined {
+  const deck = realpathSync(deckDir)
+  const record = readRecord(deck)
+  return record?.session && !opened.has(deck) && !holderRuns(record) ? record : undefined
+}
+
+export async function openGitReview(options: GitReviewOptions & { session?: Omit<SessionRecord, 'checkpoints' | 'steps'> }): Promise<GitReview> {
   const deck = realpathSync(options.deckDir)
   const root = realpathSync(options.workspaceRoot)
   if (opened.has(deck)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way already`)
   const left = readRecord(deck)
   if (left && holderRuns(left)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way in another process (${left.pid})`)
+  if (left?.session) throw new Error(`a review of ${relative(root, deck) || '.'} waits for its author (session ${left.session.session}): accept or reject it in the workbench first`)
   if (left) await recoverGitReview(options)
   const dirs = await gitDirsOf(root)
   const { guard, restore: guarded } = guarding(dirs.gitDir, deck, root, options.onRestore)
@@ -358,22 +391,49 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
     trees.dispose()
     throw error
   }
-  try {
-    writeRecord({ deck, dirs, snapshot, task: options.task, ...SELF, ...guard ? { guard: guard.saved() } : {} })
-  } catch (error) {
-    options.warn?.(`the review's record was not written, so a crash would leave its changes: ${error instanceof Error ? error.message : String(error)}`)
-  }
-  const steps: ReviewStep[] = []
+  const record: ReviewRecord = { deck, dirs, snapshot, task: options.task, ...SELF, ...guard ? { guard: guard.saved() } : {}, ...options.session ? { session: { ...options.session, checkpoints: [], steps: [] } } : {} }
+  return reviewOf({ deck, trees, guarded, record, warn: options.warn })
+}
+
+/** Takes up a session's review that a process left (`leftSessionReview`): its snapshot, checkpoints and steps, held by this process now. */
+export async function resumeGitReview(record: ReviewRecord, options: Omit<GitReviewOptions, 'task' | 'deckDir'>): Promise<GitReview> {
+  const deck = realpathSync(record.deck)
+  const root = realpathSync(options.workspaceRoot)
+  if (opened.has(deck) || holderRuns(record)) throw new Error(`a change of ${relative(root, deck) || '.'} is under way already`)
+  const { restore: guarded } = guarding(record.dirs.gitDir, deck, root, options.onRestore, record.guard ? guardGitDir(record.dirs.gitDir, record.guard) : undefined)
+  // The git directory as the review found it, before its own git directory reads its configuration.
+  guarded()
+  const trees = new Trees(record.dirs, deck, root, await readingOf(record.dirs), options)
+  opened.add(deck)
+  return reviewOf({ deck, trees, guarded, record: { ...record, ...SELF }, warn: options.warn })
+}
+
+/** The review of an open record: its steps and checkpoints (a resumed one's from its record), written back as they change. */
+function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, record: ReviewRecord, warn?: (message: string) => void }): GitReview {
+  const { deck, trees, guarded, record } = open
+  const { snapshot } = record
+  const steps: ReviewStep[] = [...record.session?.steps ?? []]
   /** The trees of the checkpoints, the snapshot first. */
-  const checkpoints = [snapshot]
-  let made = 0
+  const checkpoints = [snapshot, ...record.session?.checkpoints ?? []]
+  let made = Math.max(0, ...steps.map(step => Number(/^step-(\d+)$/.exec(step.id)?.[1] ?? 0)))
   let settled = false
+  let suspended = false
+
+  /** The record as the review is now: a session's with its checkpoints and steps. */
+  const write = () => {
+    try {
+      writeRecord({ ...record, ...record.session ? { session: { ...record.session, checkpoints: checkpoints.slice(1), steps } } : {} })
+    } catch (error) {
+      open.warn?.(`the review's record was not written, so a crash would leave its changes: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+  write()
 
   const settle = () => {
     if (settled) return
     settled = true
     opened.delete(deck)
-    removeRecord(deck)
+    if (!suspended) removeRecord(deck)
     trees.dispose()
   }
   const live = () => {
@@ -383,6 +443,8 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
   return {
     root: deck,
     visibility: 'immediate',
+    task: record.task,
+    checkpoints: () => checkpoints.slice(1),
     async step(label, tool) {
       live()
       guarded()
@@ -392,11 +454,13 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
         checkpoints[checkpoints.length - 1] = now
         const last: ReviewStep = { ...steps.at(-1)!, label, ...tool ? { tool } : {}, at: new Date().toISOString(), changes: await trees.compare(checkpoints.at(-2)!, now) }
         steps[steps.length - 1] = last
+        if (record.session) write()
         return last
       }
       const step: ReviewStep = { id: `step-${++made}`, label, ...tool ? { tool } : {}, at: new Date().toISOString(), changes: await trees.compare(checkpoints.at(-1)!, now) }
       checkpoints.push(now)
       steps.push(step)
+      if (record.session) write()
       return step
     },
     steps: () => steps,
@@ -413,6 +477,18 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
       await trees.reset(checkpoints[at]!)
       steps.splice(at)
       checkpoints.splice(at + 1)
+      if (record.session) write()
+    },
+    async restoreFiles(paths) {
+      live()
+      guarded()
+      const changed = new Set((await trees.compare(snapshot, await trees.tree())).map(change => change.path))
+      await trees.restore(snapshot, paths.filter(path => changed.has(path)))
+    },
+    note(session) {
+      if (!record.session) return
+      record.session = { ...record.session, ...session }
+      write()
     },
     async accept(reject = []) {
       live()
@@ -437,6 +513,10 @@ export async function openGitReview(options: GitReviewOptions): Promise<ChangeRe
       } finally {
         settle()
       }
+    },
+    suspend() {
+      suspended = true
+      settle()
     },
   }
 }

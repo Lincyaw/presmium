@@ -49,22 +49,22 @@
  * take them too, so none changes the document under the task; elsewhere the
  * assistant keeps its own.
  *
- * A change task's review is `CHANGE_REVIEW`'s, except under the bundled
- * DeepSeek Harness: its writes fault a deltabox-lite
- * 0.1.1 review (a file it unlinks in the staging directory it made in the
- * session, docs/architecture.md 9.5), so its tasks use the assistant's git
- * review. A git review a crashed server left is rolled back when the
- * document is served again.
+ * A change task's review is `CHANGE_REVIEW`'s (deltabox's, or the workspace
+ * service's git review where deltabox registers none), except under the
+ * bundled DeepSeek Harness: its writes fault a deltabox-lite 0.1.1 review (a
+ * file it unlinks in the staging directory it made in the session,
+ * docs/architecture.md 9.5), so its tasks use the workspace's git review
+ * (`GIT_REVIEW`). The workspace service also rolls back, when it starts, a
+ * git review a crashed server left (WP-96c moved the git review there).
  */
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, eventStream, isRecord, json, MCP_ENDPOINT, problem, REVISIONS } from '@presmium/kernel'
-import type { AgentEvent, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
+import { AGENT_RUNTIME, APPROVALS, CHANGE_REVIEW, deckLocale, defineService, DOCUMENT_LOCKS, errorMessage, eventStream, isRecord, json, MCP_ENDPOINT, problem, REVISIONS } from '@presmium/kernel'
+import type { AgentEvent, AgentSession, AgentTaskKind, AgentTaskRequest, ApprovalRequest, ChangeReviewService, Member, RequestContext, ServerContext, ServerContribution } from '@presmium/kernel'
 import { ASSISTANT_MESSAGES, CHANGE_KINDS, modelSettingsOf, modelSettingsProblem, restoreStepOf, reviewDecisionOf, sameService, taskRequestOf } from '../domain/index.ts'
 import type { AssistantInfo, ModelSettingsView, PendingChange, RevertAnswer } from '../domain/index.ts'
 import { runChange } from './changes.ts'
-import { recoverGitReview } from './git-review.ts'
 import { readModelSettings, removeModelSettings, settingsFile, writeModelSettings } from './model-settings.ts'
 import { inside } from './paths.ts'
 import type { AgentApproval } from './permissions.ts'
@@ -86,6 +86,13 @@ const SETTINGS_BODY = 16 * 1024
 
 /** The prefix of an agent task's lock holder (`agent:<task id>`). */
 const AGENT_HOLDER = 'agent:'
+
+/**
+ * The workspace service's git review, whatever `CHANGE_REVIEW` is (`presmium serve` and `presmium dev` in a
+ * git repository register it; @presmium/workspace names it by the same id): the tasks under the bundled DeepSeek
+ * Harness. Until WP-96g removes this runtime.
+ */
+const GIT_REVIEW = defineService<ChangeReviewService>('presmium.workspace.gitReview')
 
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
@@ -111,33 +118,22 @@ export function assistantServer(ctx: ServerContext): ServerContribution {
     return holder.startsWith(AGENT_HOLDER) ? t.busy : holder.endsWith(':revert') ? t.reverting : t.operating
   }
 
-  // A change task's git review that a crashed server left: the directory as the task found it.
-  if (!home) {
-    recoverGitReview({
-      workspaceRoot: ctx.workspaceRoot,
-      deckDir: ctx.deckDir,
-      ...ctx.service(DOCUMENT_FILES) ? { files: ctx.service(DOCUMENT_FILES)! } : {},
-      onRestore: paths => ctx.log.warn(`the git directory as a change task found it, put back: ${paths.join(', ')}`),
-    }).then((found) => {
-      if (found) ctx.log.warn(`task ${found.task} was waiting for its review when the server ended: rolled back (${found.paths.join(', ') || 'no change'})`)
-    }, (error: unknown) => ctx.log.warn(`the change task a crashed server left was not rolled back: ${errorMessage(error)}`))
-  }
-
   /** The model's provider: the runtime's, as the operator's settings are now; none without a runtime. */
   const provider = (): string | undefined => ctx.service(AGENT_RUNTIME)?.provider
 
   /**
-   * The change tasks' review service: none (the assistant's git review) under the bundled DeepSeek
-   * Harness, which the operator may choose in the page at any time: asked for each task.
+   * The change tasks' review service: `CHANGE_REVIEW`, but the workspace's git review under the bundled
+   * DeepSeek Harness, which the operator may choose in the page at any time: asked for each task.
    */
-  const reviews = () => {
+  const reviews = (): ChangeReviewService | undefined => {
     const service = ctx.service(CHANGE_REVIEW)
-    if (!service || currentChoice(ctx).kind !== 'bundled') return service
+    const git = ctx.service(GIT_REVIEW)
+    if (!service || service.engine === git?.engine || currentChoice(ctx).kind !== 'bundled') return service ?? git
     if (!gitReviewed) {
       gitReviewed = true
-      ctx.log.info(`change tasks use the assistant's git review, not ${service.engine}'s: the bundled DeepSeek Harness's writes fault a deltabox-lite 0.1.1 review`)
+      ctx.log.info(`change tasks use the assistant's git review, not ${service.engine}'s: the bundled DeepSeek Harness's writes fault a deltabox-lite 0.1.1 review (the git review is the workspace service's)`)
     }
-    return undefined
+    return git
   }
 
   /** The kinds this member may submit: change tasks, for editors and owners, while there is a runtime and the workspace commits them (`REVISIONS`: a document in a git repository). */

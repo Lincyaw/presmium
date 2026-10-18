@@ -167,8 +167,9 @@ export function workspaceService(options: ServiceOptions): Service {
           compilation: stamped(compilation),
           base: `/__presmium/${WORKSPACE_ID}/${path}`,
           port: await freePort(),
-          // On the service's origin: the pages' `/__presmium/` requests reach the service itself.
-          preview: { origins: options.preview?.origins ?? [] },
+          // On the service's origin: the pages' `/__presmium/` requests reach the service itself. The preview
+          // agent's configuration only headless (WP-96c): without `--headless` no workbench frames the pages.
+          ...options.preview ? { preview: { origins: options.preview.origins } } : {},
           onCompile(_compilation, findings) {
             for (const finding of findings.filter(f => f.checkId === 'presmium.render')) log.warn(`the slides' preview of ${dir || '.'}: ${finding.message}`)
           },
@@ -248,7 +249,8 @@ export function workspaceService(options: ServiceOptions): Service {
     async preview(document) {
       const base = options.url()
       const web = `${base}/${document ? `${urlPath(document)}/` : ''}`
-      const own = await slidesOf(document)
+      // A slides' preview that did not start (logged) leaves the web form's address (WP-96c).
+      const own = await slidesOf(document).catch(() => undefined)
       return { document, web, ...own ? { slides: `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}` } : {} }
     },
     async build(document, to) {
