@@ -72,12 +72,12 @@ test.afterAll(async () => {
   for (const dir of [...outside, ...project ? [project] : []]) rmSync(dir, { recursive: true, force: true })
 })
 
-/** The plugin's component on a page of a form, in the document's language. */
-async function greeting(page: Page, url: string): Promise<void> {
+/** The plugin's component on a page of a form, in the document's language; a dev server's first page waits for its dependency optimization. */
+async function greeting(page: Page, url: string, timeout = 10_000): Promise<void> {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(String(error)))
   await page.goto(url)
-  await expect(page.locator('.hello-greeting').first()).toHaveText('Hello, reader!')
+  await expect(page.locator('.hello-greeting').first()).toHaveText('Hello, reader!', { timeout })
   expect(errors.filter(error => !/FloatingVue|Wake Lock/.test(error))).toEqual([])
 }
 
@@ -90,8 +90,8 @@ test('presmium dev, its output outside the project, serves both forms with the t
   test.setTimeout(300_000)
   const output = await start(['dev', '--to', 'web,slides', '--out', outsideDir('presmium-consumer-dev-')], /^watching/m)
   const url = (form: string) => new RegExp(`^${form} {2}(http://\\S+?)/?$`, 'm').exec(output)?.[1]
-  await greeting(page, `${url('web')}/`)
-  await greeting(page, `${url('slides')}/2`)
+  await greeting(page, `${url('web')}/`, 60_000)
+  await greeting(page, `${url('slides')}/2`, 60_000)
 })
 
 test('presmium serve shows a workspace\'s home page and its document with the third-party plugin\'s component', async ({ page }) => {
