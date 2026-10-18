@@ -27,6 +27,8 @@ export interface ServedDocument {
   settings?: Record<string, Record<string, unknown>>
   /** The LOCAL operator directory, as its compiler found it; `ServerOptions.operatorDir` goes first. */
   operatorDir?: string
+  /** The workspace's home page, no document (`ServerContext.home`). */
+  home?: boolean
 }
 
 /** The document of a compilation, as the server serves it. */

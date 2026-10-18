@@ -232,6 +232,9 @@ async function buildDeck(command: Command): Promise<number> {
   return exitCode(report.findings)
 }
 
+/** The `.gitignore` line that keeps `presmium dev`'s MCP token (`<deck>/.presmium/server.json`) out of git, wherever the deck is in the repository. */
+const TOKEN_IGNORE = '**/.presmium/server.json'
+
 /**
  * `presmium dev`: the Presmium server (this machine only) with
  * the plugins' server contributions and the workspace's edit mode for the
@@ -258,7 +261,8 @@ async function devDeck(command: Command): Promise<number> {
     },
     stateFile: join(deckDir, '.presmium', 'server.json'),
   })
-  if (!editing.git) process.stderr.write(`presmium dev: ${editing.root} is not in a git repository, or git ignores it: edit mode saves, but commits nothing and has no history (git init there to commit)\n`)
+  if (!editing.git) process.stderr.write(`presmium dev: ${editing.root} is not in a git repository, or git ignores it: edit mode saves, but commits nothing and has no history (git init there to commit, with the line ${TOKEN_IGNORE} in .gitignore)\n`)
+  else if (!editing.tokenIgnored) process.stderr.write(`presmium dev: git does not ignore .presmium/server.json, this process's MCP token: add the line ${TOKEN_IGNORE} to .gitignore (edit mode never commits it, git add would)\n`)
   const compiler = new Compiler(command.entry, { bundled: BUNDLED, services: [...server.services, ...editing.services] })
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })

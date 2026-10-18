@@ -16,6 +16,11 @@
  * workspace root: there the plugins write their files themselves, as
  * without the workspace (no `DOCUMENT_FILES`), and so they do when the deck
  * directory was given through a symbolic link inside a repository.
+ *
+ * What is generated in the deck's `.presmium/` (the MCP token of
+ * `presmium dev`, `.presmium/server.json`, among it) the editor neither
+ * lists nor commits, whatever the repository's `.gitignore` says
+ * (`generatedPath`, ./files.ts).
  */
 import { realpathSync } from 'node:fs'
 import { basename, dirname, relative, resolve, sep } from 'node:path'
@@ -44,6 +49,8 @@ export interface DeckEditing {
   root: string
   /** Whether the editor's changes are committed: the deck is in a git work tree that does not ignore it. */
   git: boolean
+  /** Whether git ignores the deck's `.presmium/server.json` (the MCP token), or nothing there is committed: `git add` takes it otherwise. */
+  tokenIgnored: boolean
 }
 
 /** Edit mode for the deck of `entry` in `presmium dev`. */
@@ -89,5 +96,6 @@ export function deckEditing(entry: string): DeckEditing {
     sitePlugins: servedPlugins(),
     root,
     git: committed,
+    tokenIgnored: !committed || Git.ignores(deckDir, '.presmium/server.json'),
   }
 }

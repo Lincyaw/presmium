@@ -4,10 +4,13 @@
 // deck is refused, a save naming an older version is refused with what is on disk, a save compiles again; the
 // changes list it, the status bar counts the deck's files only, and a commit with a line of explanation is one
 // commit with the editor's origin, in the deck's history; there are no document operations; the assistant
-// commits change tasks there, and while one runs the deck's lock is its: a save is refused. A deck in no git
-// repository saves all the same, and commits nothing, nor does the assistant.
+// commits change tasks there, and while one runs the deck's lock is its: a save is refused. A deck at the root
+// of a repository with no .gitignore, its entry not lecture.md: the MCP token of `presmium dev`
+// (.presmium/server.json) is neither listed, counted nor committed, and the deck is a document the assistant
+// changes, not the workspace's home page. A deck in no git repository saves all the same, and commits
+// nothing, nor does the assistant.
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -31,10 +34,10 @@ afterAll(async () => {
 
 type Route = (path: string, body?: unknown) => Promise<{ status: number, json: any }>
 
-/** `presmium dev` of the deck in `dir` (no renderer's dev server), its state outside it: the routes of a plugin, once it compiled. */
-async function dev(dir: string, state: string): Promise<{ child: Child, route: Route, assistant: Route }> {
+/** `presmium dev` of the deck in `dir` (no renderer's dev server; `entry` there), its state outside it: the routes of a plugin, once it compiled. */
+async function dev(dir: string, state: string, entry?: string): Promise<{ child: Child, route: Route, assistant: Route }> {
   const env = cleanEnv({ XDG_STATE_HOME: join(state, 'state'), XDG_CONFIG_HOME: join(state, 'config'), PRESMIUM_AGENT_COMMAND: `${process.execPath} ${AGENT}`, PRESMIUM_AGENT_PROVIDER: 'Test Provider' })
-  const child = presmiumProcess(dir, ['dev', '--to', 'notebook'], env)
+  const child = presmiumProcess(dir, ['dev', ...entry ? [entry] : [], '--to', 'notebook'], env)
   running.push(child)
   const server = (await waitFor(child, /^server {2}(http\S+)$/m))[1]!
   await waitFor(child, /^watching;/m)
@@ -111,6 +114,34 @@ describe('presmium dev: edit mode', () => {
       expect((await assistant(`tasks/${task.json.id}/cancel`, {})).status).toBe(204)
     }
   }, 180_000)
+
+  it('at the root of a repository with no .gitignore, its entry another name: the MCP token is neither listed nor committed; the deck is a document', async () => {
+    const repo = mkdtempSync(join(tmpdir(), 'presmium-dev-editing-'))
+    const state = mkdtempSync(join(tmpdir(), 'presmium-dev-editing-state-'))
+    made.push(repo, state)
+    writeFileSync(join(repo, 'talk.md'), LECTURE)
+    git(repo, ['init', '-q', '-b', 'main'])
+    git(repo, ['add', '-A'])
+    git(repo, ['commit', '-q', '-m', 'Initial commit'])
+    const { child, route, assistant } = await dev(repo, state, 'talk.md')
+    expect(existsSync(join(repo, '.presmium/server.json'))).toBe(true)
+    expect(child.output()).toMatch(/git does not ignore \.presmium\/server\.json, this process's MCP token: add the line \*\*\/\.presmium\/server\.json to \.gitignore/)
+
+    expect((await route('changes')).json.files).toEqual([])
+    expect((await route('documents')).json).toMatchObject({ git: true, uncommitted: 0, single: true })
+    expect((await route('changes/commit', { message: '提交' })).status).toBe(409)
+    const opened = await route('source?path=talk.md')
+    expect((await route('source', { path: 'talk.md', content: LECTURE.replace('alpha', 'omega'), base: opened.json.version })).status).toBe(200)
+    expect((await route('changes')).json.files).toEqual([{ path: 'talk.md', kind: 'modified', added: 1, removed: 1 }])
+    const committed = await route('changes/commit', { message: '把 alpha 改成 omega' })
+    expect(committed.json.paths).toEqual(['talk.md'])
+    expect(git(repo, ['ls-files'])).toBe('talk.md\n')
+
+    // A document of the assistant's, whose change tasks it takes.
+    const info = (await assistant('info')).json
+    expect(info).toMatchObject({ changes: true, kinds: expect.arrayContaining(['chat']) })
+    expect(info.home).toBeUndefined()
+  }, 120_000)
 
   it('in no git repository: saves, and commits nothing', async () => {
     const base = mkdtempSync(join(tmpdir(), 'presmium-dev-editing-'))

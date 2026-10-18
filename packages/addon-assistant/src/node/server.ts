@@ -30,10 +30,10 @@
  * Readers' questions are no route of the server's: the page asks the
  * reader's own model (P-112, `ASK`, ../client/ask.ts).
  *
- * On the workspace's home page (`presmium serve` mounts the operator's
- * plugins there too) only `info` and `settings` answer: the home page is not
- * a document, and the tasks it sends (drafting a new document) go to their
- * document's routes.
+ * On the workspace's home page (`ServerContext.home`; `presmium serve`
+ * mounts the operator's plugins there too) only `info` and `settings`
+ * answer: the home page is not a document, and the tasks it sends (drafting
+ * a new document) go to their document's routes.
  *
  * Each task opens one agent session in its review's root, with the MCP
  * token `MCP_ENDPOINT` issues for the member (revoked when the session
@@ -75,9 +75,6 @@ import type { Task } from './tasks.ts'
 const isOwner = (member: Member) => member.roles.includes('owner')
 const mayEdit = (member: Member) => member.roles.some(role => role === 'editor' || role === 'owner')
 
-/** The deck entry of a single-deck repository (the workspace's `DECK_ENTRY`). */
-const DECK_ENTRY = 'lecture.md'
-
 /** An excerpt is at most this many lines and characters. */
 const EXCERPT_LINES = 60
 const EXCERPT_CHARS = 4000
@@ -93,15 +90,8 @@ const AGENT_HOLDER = 'agent:'
 export function assistantServer(ctx: ServerContext): ServerContribution {
   const t = ASSISTANT_MESSAGES[deckLocale(ctx.lang)]
   const tasks = new Tasks()
-  /**
-   * The workspace's home page, which presmium serve mounts at the workspace
-   * root: not a document. The root is a document only in a single-deck
-   * repository, or a deck of presmium dev at its repository's root (its deck
-   * entry there); where no change is committed the deck directory is always
-   * a document.
-   */
-  const home = resolve(ctx.deckDir) === resolve(ctx.workspaceRoot)
-    && Boolean(ctx.service(REVISIONS)) && !existsSync(join(ctx.deckDir, DECK_ENTRY))
+  /** The workspace's home page of presmium serve: not a document (a deck at its repository's root is one, whatever its entry is called). */
+  const home = ctx.home === true
 
   /** The documents' locks: the workspace's where it provides them (`DOCUMENT_LOCKS`), else these. */
   const own = new Map<string, string>()

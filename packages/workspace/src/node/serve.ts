@@ -215,7 +215,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
    * document's compilation has them (the host's first). The home page is no document: the plugins'
    * routes get an empty directory of serve's, outside the workspace, as its deck directory and
    * workspace root (`home`), so no route of theirs reads or changes a file of the workspace there
-   * (the documents are the workspace's routes' to list and create).
+   * (the documents are the workspace's routes' to list and create); `ServerContext.home` says so.
    */
   let operators: ReturnType<typeof workspacePlugins> | undefined
   let home: string | undefined
@@ -236,6 +236,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
       service: <T>(token: ServiceToken<T>) => (own(token) ?? loaded.service(token)) as T | undefined,
       settings: config.settings,
       ...options.operatorDir ? { operatorDir: options.operatorDir } : {},
+      home: true,
     }
   }
 
