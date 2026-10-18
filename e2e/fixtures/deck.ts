@@ -99,9 +99,9 @@ export interface DevServer {
   stop(): Promise<void>
 }
 
-/** Runs `presmium dev --to <to>` in the deck directory `dir` and resolves with the URL it prints for `to`. */
-export async function startDev(dir: string, to: string, env: NodeJS.ProcessEnv = {}): Promise<DevServer> {
-  const child = spawn(process.execPath, [join(ROOT, 'packages/cli/bin/presmium.mjs'), 'dev', '--to', to], {
+/** Runs `presmium dev --to <to>` (with `args`, e.g. `--edit`) in the deck directory `dir` and resolves with the URL it prints for `to`. */
+export async function startDev(dir: string, to: string, env: NodeJS.ProcessEnv = {}, args: string[] = []): Promise<DevServer> {
+  const child = spawn(process.execPath, [join(ROOT, 'packages/cli/bin/presmium.mjs'), 'dev', '--to', to, ...args], {
     cwd: dir,
     stdio: ['ignore', 'pipe', 'inherit'],
     env: { ...process.env, ...env },

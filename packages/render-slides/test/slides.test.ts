@@ -145,8 +145,9 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
   const slides = readFileSync(join(MYST_DECK, '.presmium/slides/slides.md'), 'utf8')
   const notebook = (JSON.parse(readFileSync(join(target, 'notebook/lecture.ipynb'), 'utf8')) as { cells: { source: string[] }[] }).cells.map(c => c.source.join('')).join('\n\n')
 
-  // The web-only block takes no step of the slides: the code that follows it shows at the first click (R-03).
-  expect(slides).toContain('# Only\n\n<div v-click="1">\n\n```python\nprint("after")')
+  // The web-only block takes no step of the slides: the code that follows it shows at the first click (R-03),
+  // in its anchor (WP-96a).
+  expect(slides).toContain('# Only\n\n<div class="pm-block" data-block="code-1" data-section="only" data-step="1">\n\n<div v-click="1">\n\n```python\nprint("after")')
 
   // MyST lowered as the notebook lowers it (R-07): the figure's caption a paragraph of its own, the dropdown
   // a <details>, the definition list a list; links to labels go to their slides through Slidev's <Link>.
@@ -167,9 +168,9 @@ it('writes MyST as Slidev reads it, publishes the local files the slides show an
   for (const file of ['e385aa54-dot.svg', '003d456f-handout.pdf', '7cb92485-clip.webm']) expect(existsSync(join(target, 'slides', file)), file).toBe(true)
   expect(notebook).toContain('![A dot](media/e385aa54-dot.svg) [The handout](media/003d456f-handout.pdf)')
 
-  // Footnotes of two included files that both write [^1] stay apart in one slide (R-04).
-  expect(slides).toContain('One[^1].\n\n[^1]: The first note.')
-  expect(slides).toContain('Two[^1-2].\n\n[^1-2]: The second note.')
+  // Footnotes of two included files that both write [^1] stay apart in one slide (R-04); a definition has no anchor (WP-96a).
+  expect(slides).toContain('One[^1].\n\n</div>\n\n[^1]: The first note.')
+  expect(slides).toContain('Two[^1-2].\n\n</div>\n\n[^1-2]: The second note.')
 
   // Each plugin component is isolated (K-07); an extension that throws leaves the component and a warning
   // at its block (R-33); code that a component holds shows no recorded output (C-5).

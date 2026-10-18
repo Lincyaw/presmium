@@ -267,6 +267,8 @@ export interface DevSession {
   servers: { renderer: string, url: string }[]
   /** IR file kept up to date while watching. */
   ir: string
+  /** Pushes a compilation the host made (`DevOptions.compilation`) to the dev servers. */
+  update(compilation: Compilation): Promise<void>
   close(): Promise<void>
 }
 
@@ -283,6 +285,18 @@ export interface DevOptions {
   sitePlugins?: Record<string, string>
   /** Called after every compilation, the first one included. */
   onCompile?(compilation: Compilation, findings: Finding[]): void
+  /**
+   * A host that compiles the deck itself (the documents of `presmium serve`):
+   * its compilation to start from. `dev` then neither compiles nor watches;
+   * the host gives each later compilation to `DevSession.update`.
+   */
+  compilation?: Compilation
+  /** The public base of every dev server, for a host that serves them under a path of its own (`RenderContext.base`). */
+  base?: string
+  /** The port of every dev server (`renderers.<id>.port`), e.g. a free one the host found. */
+  port?: number
+  /** The pages load the agent of the preview protocol, for these parent origins (`RenderContext.preview`). */
+  preview?: { origins: string[] }
 }
 
 /**
@@ -292,13 +306,19 @@ export interface DevOptions {
  * referenced code, K-09), and the git files that name the revisions they read.
  * Each compilation is reported once what it depends on is watched. Changes
  * during a compilation make one more, which reads the source as it is then.
+ * A host that compiles the deck itself (`DevOptions.compilation`) starts the
+ * servers from its compilation and gives them the later ones (`update`): the
+ * slides of a document of `presmium serve`, whose session compiles it once
+ * for every form (docs/design-dsh.md 5.1).
  */
 export async function dev(compiler: Compiler, options: DevOptions): Promise<DevSession> {
   let started = Date.now()
-  let compilation = await compiler.compile()
+  let compilation = options.compilation ?? await compiler.compile()
   const ir = await writeIR(compilation.doc, options.outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
   const run = runOf(compilation, selected, false)
+  const base = configuredBase(options.base)
+  if (base) for (const id of run.ids) run.bases.set(id, base)
   // The translations are compiled again with the original; the web dev server reads them at each update.
   const translators = new Map<string, Compiler>()
   let translated = await translationsFor(compilation, run, translators)
@@ -312,6 +332,8 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
     const outDir = join(options.outDir, renderer.id)
     const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings, options.server)
+    if (options.port !== undefined) ctx.config = { ...ctx.config, port: options.port }
+    if (options.preview) ctx.preview = { origins: [...options.preview.origins] }
     if (renderer.id === WEB) {
       ctx.translations = translations
       ctx.plugins = [...ctx.plugins, ...Object.keys(options.sitePlugins ?? {}).filter(name => !ctx.plugins.includes(name))]
@@ -391,36 +413,50 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     }
     if (!queued && [...watched].some(file => modifiedSince(file, started))) schedule()
   }
+  /** Gives the servers a new compilation; what goes wrong is reported. */
+  const push = async (next: Compilation, reported: Finding[]) => {
+    compilation = next
+    await writeIR(compilation.doc, options.outDir)
+    reported.push(...compilation.doc.diagnostics)
+    translated = await translationsFor(compilation, run, translators)
+    reported.push(...translated.findings)
+    translations.splice(0, translations.length, ...translated.views)
+    if (servers.length > 0 && setup(compilation) !== initial) {
+      reported.push(renderFinding(compilation, 'warning', 'the plugins or renderers in the headmatter changed; restart presmium dev to load them in the dev servers'))
+    }
+    for (const { renderer, server } of servers) {
+      await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
+        reported.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
+      })
+    }
+  }
   const recompile = async () => {
     started = Date.now()
     const reported: Finding[] = []
     try {
-      compilation = await compiler.compile()
-      await writeIR(compilation.doc, options.outDir)
-      reported.push(...compilation.doc.diagnostics)
-      translated = await translationsFor(compilation, run, translators)
-      reported.push(...translated.findings)
-      translations.splice(0, translations.length, ...translated.views)
-      if (servers.length > 0 && setup(compilation) !== initial) {
-        reported.push(renderFinding(compilation, 'warning', 'the plugins or renderers in the headmatter changed; restart presmium dev to load them in the dev servers'))
-      }
-      for (const { renderer, server } of servers) {
-        await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
-          reported.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
-        })
-      }
+      await push(await compiler.compile(), reported)
     } catch (error) {
       reported.push(renderFinding(compilation, 'error', errorMessage(error)))
     }
     await watchFiles()
     options.onCompile?.(compilation, reported)
   }
-  await watchFiles()
+  // A host that compiles the deck itself watches it too.
+  if (!options.compilation) await watchFiles()
   options.onCompile?.(compilation, [...compilation.doc.diagnostics, ...findings])
 
   return {
     servers: servers.map(({ renderer, url }) => ({ renderer, url })),
     ir,
+    async update(next) {
+      if (closed) return
+      const reported: Finding[] = []
+      running = running.then(() => push(next, reported)).catch((error: unknown) => {
+        reported.push(renderFinding(next, 'error', errorMessage(error)))
+      })
+      await running
+      options.onCompile?.(compilation, reported)
+    },
     async close() {
       closed = true
       clearTimeout(timer)

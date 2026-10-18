@@ -18,10 +18,21 @@
  *
  * In `presmium dev` (./dev.ts) every request is of the one deck
  * (`WorkspaceRoutes.document`), and there are no document operations.
+ *
+ * The workspace service's interface for a workbench (./service.ts,
+ * docs/design-dsh.md 5.1): `ir`, `ir/events`, `preview`, `build` and
+ * `check` of the request's document, for editors and owners, and the
+ * proxies of the slides' previews. With a service token
+ * (`PRESMIUM_SERVICE_TOKEN`, which `presmium studio` gives the service and
+ * its bundle), every route asks for `Authorization: Bearer <token>`: a
+ * product page's scripts, which reach these routes on the same origin,
+ * cannot change the source through them (5.3).
  */
+import { timingSafeEqual } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { errorMessage, isRecord, json, problem } from '@presmium/kernel'
+import { eventStream, errorMessage, isRecord, json, problem } from '@presmium/kernel'
 import type { Member, PresmiumNodePlugin, RequestContext, Route, ServerContribution } from '@presmium/kernel'
+import { bearer } from '@presmium/server'
 import type { ChangesAnswer, CommitAnswer, DocumentOperation, DocumentsAnswer, RevertAnswer, RevisionsAnswer, SavedAnswer } from '../domain/api.ts'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { lockedError, RequestError } from './documents.ts'
@@ -29,6 +40,7 @@ import type { Documents, DocumentsChange } from './documents.ts'
 import { documentDirOf } from './files.ts'
 import type { DocumentLocks } from './locks.ts'
 import type { Revisions } from './revisions.ts'
+import type { WorkspaceService } from './service.ts'
 import { MAX_SOURCE, SourceFiles } from './source.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
@@ -43,6 +55,24 @@ export interface WorkspaceRoutes {
   documentsChanged?(change: DocumentsChange): Promise<void> | void
   /** `presmium dev`: the directory of its one deck, the document of every request (the server's is ''); no document operations. */
   document?: string
+  /** `presmium serve`: the service's interface for a workbench (`ir`, `ir/events`, `preview`, `build`, `check`) and the previews' proxies. */
+  service?: WorkspaceService
+  /** The service token (`PRESMIUM_SERVICE_TOKEN`): every route asks for it. */
+  token?: string
+}
+
+/** Whether a request names the service token. */
+function authorized(request: Request, token: string): boolean {
+  const given = Buffer.from(bearer(request.headers.get('authorization')) ?? '')
+  const own = Buffer.from(token)
+  return given.length === own.length && timingSafeEqual(given, own)
+}
+
+/** The renderer ids `POST build` takes, as `presmium build --to`. */
+function rendererIds(body: unknown): string[] | undefined {
+  if (!isRecord(body) || !Array.isArray(body.to)) return undefined
+  const ids = body.to.filter((id): id is string => typeof id === 'string' && /^[\w.-]+$/.test(id))
+  return ids.length > 0 ? ids : undefined
 }
 
 const NO_GIT = 'the workspace is not a git repository: run git init in it to use the document operations and the history'
@@ -192,6 +222,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         return json({ ...revision ? { revision } : {}, paths } satisfies CommitAnswer)
       })),
     },
+    ...options.service ? serviceRoutes(options.service) : {},
     'changes/discard': {
       role: 'editor',
       handle: (request, ctx) => answer(() => onChanges(request, ctx, 'editor:discard', async (paths) => {
@@ -203,7 +234,42 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
       })),
     },
   }
-  return { routes }
+  const { token } = options
+  if (token) {
+    for (const [key, route] of Object.entries(routes)) {
+      routes[key] = { ...route, handle: (request, ctx) => (authorized(request, token) ? route.handle(request, ctx) : Promise.resolve(problem(401, 'the workspace service\'s routes need its token: Authorization: Bearer <PRESMIUM_SERVICE_TOKEN>'))) }
+    }
+  }
+  return { routes, ...options.service ? { proxies: options.service.proxies } : {} }
+}
+
+/** The service's interface for a workbench, of the request's document (./service.ts). */
+function serviceRoutes(service: WorkspaceService): Record<string, Route> {
+  return {
+    'ir': {
+      role: 'editor',
+      handle: (request, ctx) => answer(async () => (request.method === 'GET' ? json(await service.ir(ctx.document)) : problem(405, 'GET'))),
+    },
+    'ir/events': {
+      role: 'editor',
+      handle: async (request, ctx) => (request.method === 'GET' ? eventStream(service.events(ctx.document, request.signal), request.signal) : problem(405, 'GET')),
+    },
+    'preview': {
+      role: 'editor',
+      handle: (request, ctx) => answer(async () => (request.method === 'GET' ? json(await service.preview(ctx.document)) : problem(405, 'GET'))),
+    },
+    'build': {
+      role: 'editor',
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'POST') return problem(405, 'POST')
+        return json(await service.build(ctx.document, rendererIds(await request.json().catch(() => undefined))))
+      }),
+    },
+    'check': {
+      role: 'editor',
+      handle: (request, ctx) => answer(async () => (request.method === 'POST' ? json(await service.check(ctx.document)) : problem(405, 'POST'))),
+    },
+  }
 }
 
 /** The workspace as a plugin of every served document: its routes only (its browser part is the site's own plugin). */

@@ -7,12 +7,9 @@
  * never loads them (`import.meta.env.SSR`), so its build leaves them out.
  * KaTeX's stylesheet comes with the page, for the math rendered beforehand.
  */
-import { EDIT_MODE, useService } from '@presmium/host'
-import type { EditMode } from '@presmium/host'
-import { errorMessage, escapeHtml } from '@presmium/kernel'
+import { AUTHOR_MARKS_CLASS, errorMessage, escapeHtml } from '@presmium/kernel'
 import 'katex/dist/katex.min.css'
-import type { ComputedRef } from 'vue'
-import { computed, defineComponent, h, onMounted, ref, watch } from 'vue'
+import { computed, defineComponent, h, onMounted, ref, shallowRef, watch } from 'vue'
 import { useSectionContext } from './context.ts'
 import { useDark } from './dark.ts'
 
@@ -156,25 +153,39 @@ export const PmMermaid = defineComponent({
   },
 })
 
+const authorMarks = shallowRef(false)
+let observed = false
+
+/**
+ * Whether the page shows the author's marks: the switch of the page, the
+ * class `AUTHOR_MARKS_CLASS` of `<html>`, which the preview agent sets
+ * (`marks`) and edit mode while it is on. Reactive; false in a server render.
+ */
+function useAuthorMarks() {
+  if (!observed && typeof document !== 'undefined') {
+    observed = true
+    const root = document.documentElement
+    authorMarks.value = root.classList.contains(AUTHOR_MARKS_CLASS)
+    new MutationObserver(() => {
+      authorMarks.value = root.classList.contains(AUTHOR_MARKS_CLASS)
+    }).observe(root, { attributes: true, attributeFilter: ['class'] })
+  }
+  return authorMarks
+}
+
 /**
  * The mark of a registered role without children (docs/ir.md 2.8, 6.4), e.g.
  * where a `{cue}` stands: `〔<name> <value>〕`, shown only in the presenter
- * window and in edit mode (`EDIT_MODE`), so the author sees where the marks
- * are; elsewhere it renders nothing.
+ * window and while the page shows the author's marks (`useAuthorMarks`), so
+ * the author sees where the marks are; elsewhere it renders nothing.
  */
 export const PmRoleMark = defineComponent({
   name: 'PmRoleMark',
   props: { mark: { type: String, required: true } },
   setup(props) {
     const section = useSectionContext()
-    // Outside a host (a render of the viewer alone) there is no edit mode.
-    let editMode: ComputedRef<EditMode | undefined> | undefined
-    try {
-      editMode = useService(EDIT_MODE)
-    } catch {
-      editMode = undefined
-    }
-    const shown = computed(() => section?.view.value === 'presenter' || editMode?.value?.active.value === true)
+    const marks = useAuthorMarks()
+    const shown = computed(() => section?.view.value === 'presenter' || marks.value)
     return () => (shown.value ? h('span', { class: 'pm-role-mark' }, props.mark) : null)
   },
 })

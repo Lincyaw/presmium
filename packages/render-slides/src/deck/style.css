@@ -4,6 +4,46 @@
  * are the host's tokens (@presmium/host/design.css, which addon-core loads), so they follow the deck's dark mode.
  */
 
+/*
+ * The anchors (docs/design-dsh.md 4.4): a slide's section (`.pm-slide-section[data-section]`) holds its title and
+ * blocks without a box of its own, so the slide's layout lays them out as before; a block's
+ * (`.pm-block[data-block]`) wraps its content. The rules of the theme 书卷 (theme/styles/book.css) for the slide's own
+ * paragraphs and lists hold for those in an anchor too.
+ */
+.pm-slide-section {
+  display: contents;
+}
+
+.pm-book__content > .pm-slide-section > .pm-block > :is(p, ul, ol, blockquote),
+.pm-book__content > .pm-slide-section > .pm-block > .slidev-vclick-target > :is(p, ul, ol, blockquote) {
+  font-family: var(--pm-font-serif);
+}
+
+.pm-book--cover .pm-book__content > .pm-slide-section > .pm-block > :is(p, ul, ol) {
+  max-width: 80%;
+  color: var(--pm-color-muted);
+  font-size: 20px;
+}
+
+/* Where a role without children stands (a `{cue}`): shown only while the page shows the author's marks (`marks`). */
+.slidev-layout .pm-role-mark {
+  display: none;
+}
+
+html.pm-author-marks .slidev-layout .pm-role-mark {
+  display: inline;
+  margin: 0 0.15em;
+  padding: 0 0.2em;
+  border-radius: 3px;
+  font-size: 0.85em;
+  color: var(--pm-color-muted);
+  background: var(--pm-color-sunk);
+}
+
+html.pm-author-marks .slidev-layout .pm-role-mark::before {
+  content: attr(data-mark);
+}
+
 /* Where a code block comes from: file and lines, commits, drift. No faded text, so it keeps its contrast in every theme. */
 .slidev-layout .pm-code-origin {
   display: flex;
@@ -196,12 +236,13 @@
  * recorded for it) keeps that output on the page when it is taller than its slide: the slide is a
  * column, and the blocks before the output give way and are cut instead (N-05, F-19).
  */
-.print-slide-container .slidev-layout:has(> .pm-static-fallback > .slidev-code-wrapper:last-child) {
+.print-slide-container .slidev-layout:has(> .pm-slide-section > .pm-block > .pm-static-fallback > .slidev-code-wrapper:last-child) {
   display: flex;
   flex-direction: column;
 }
 
-.print-slide-container .slidev-layout > .pm-static-fallback:has(> .slidev-code-wrapper:last-child) {
+.print-slide-container .slidev-layout > .pm-slide-section > .pm-block:has(> .pm-static-fallback > .slidev-code-wrapper:last-child),
+.print-slide-container .slidev-layout > .pm-slide-section > .pm-block > .pm-static-fallback:has(> .slidev-code-wrapper:last-child) {
   display: flex;
   flex-direction: column;
   min-height: 0;

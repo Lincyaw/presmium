@@ -16,6 +16,7 @@ import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution,
 export * from './contracts/agent.ts'
 export * from './contracts/execution.ts'
 export * from './contracts/operations.ts'
+export * from './contracts/preview.ts'
 export * from './contracts/server.ts'
 export * from './contracts/service.ts'
 export * from './contracts/speech.ts'

@@ -1,6 +1,6 @@
 import { createServerClient, createSharedStates, currentLocale, EDIT_MODE, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmSegmented, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium, TOOLBAR, useMessages, useService, useTheme } from '@presmium/host'
 import type { ServerClient, SyncTransports, ToolbarItem, ToolbarSlot } from '@presmium/host'
-import { errorMessage } from '@presmium/kernel'
+import { AUTHOR_MARKS_CLASS, errorMessage } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@presmium/viewer'
 import type { LiveUpdate, Position, Viewer } from '@presmium/viewer'
@@ -14,6 +14,7 @@ import { IR_ENDPOINT, offlineEnabled, requested, samePage, SERVICE_WORKER, secti
 import type { FormOptions } from '../domain/index.ts'
 import { createViewerHost, createViewerNavigation } from './host.ts'
 import { PAGES, PresmiumPage, ViewMenu } from './page.ts'
+import type { WebPreviewPage } from './preview.ts'
 import './style.css'
 
 /** A plugin's `src/client/viewer.ts`, by package name, loaded lazily. */
@@ -35,6 +36,11 @@ export interface ThemeInput {
   viewers?: ViewerModule[]
   /** The translations (P-123), by language, each the locale `/<lang>/` of the site: their IR, imported when a page of theirs opens. */
   translations?: Record<string, () => Promise<{ default: IRDocument }>>
+  /**
+   * The preview agent (./preview.ts), which only the theme of a preview's dev server passes in
+   * (`RenderContext.preview`): started once the layout has mounted.
+   */
+  preview?: (page: WebPreviewPage) => void
 }
 
 /** What the generated site configuration tells the theme (`themeConfig.presmium`, see ../node/site.ts). */
@@ -221,6 +227,10 @@ const EditFrame = defineComponent({
       for (const [name, on] of Object.entries(classes())) document.documentElement.classList.toggle(name, on)
       if (active.value && home.value && config.value.presmium?.server) void readWorkspaceTitle(home.value)
     }))
+    // The author's marks (a `{cue}`) show in edit mode, as the preview's `marks` shows them (until WP-96g).
+    watch(active, (on, was) => {
+      if (on !== Boolean(was) && typeof document !== 'undefined') document.documentElement.classList.toggle(AUTHOR_MARKS_CLASS, on)
+    }, { immediate: true })
     onBeforeUnmount(() => document.documentElement.classList.remove(...Object.keys(classes())))
     /** The preview's view: the page, or the present view over it. */
     const view = computed(() => (getView(viewer.view.value)?.kind === 'overlay' ? 'present' : 'document'))
@@ -267,6 +277,8 @@ const EditFrame = defineComponent({
 
 /** Base URL of the slides form: configured, else the `slides` directory next to the site; none without a slides form. Browser only. */
 const slidesBase = ref<string>()
+/** The preview agent of a preview's page (`ThemeInput.preview`), started once by the layout. */
+let preview: ThemeInput['preview']
 /** Settles when the viewer plugins are installed, so their views can be opened by `?view=`. */
 let viewersReady: Promise<void> = Promise.resolve()
 
@@ -282,8 +294,11 @@ const Layout = defineComponent({
   name: 'PresmiumLayout',
   setup() {
     const viewer = useViewer()
-    const { theme, page } = useData()
+    const { theme, page, isDark } = useData()
     onMounted(async () => {
+      const agent = preview
+      preview = undefined
+      agent?.({ viewer, dark: isDark })
       localizeHiddenLabels()
       watch(() => page.value.relativePath, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
       const form: FormOptions = theme.value.presmium?.form ?? {}
@@ -485,6 +500,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       app.component('PresmiumPage', PresmiumPage)
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
+      preview = input.preview
       viewersReady = loadViewerPlugins(input.viewers ?? [])
       // `presmium dev` or `presmium serve` serves the page: the server's client, given before any component asks for it
       // (`useServer`); in a workspace site it names the page's document.

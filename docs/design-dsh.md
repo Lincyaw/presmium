@@ -184,7 +184,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），取代今天 `PmRoleMark` 对 `EDIT_MODE` 的判断 |
 | 工作台 → 产物 | `appearance` | `dark` | 明暗跟随工作台 |
 | 产物 → 工作台 | `position` | `section`、`step`、`trail`、`view?` | 位置变化时发出，至多每 150 ms 一次 |
-| 产物 → 工作台 | `picked` | `section`、`block?`、`step?` | 点选的结果；幻灯片形态带块出现的步骤 |
+| 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position` |
 | 产物 → 工作台 | `selection` | `{ section, block?, text }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`） |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message` | 页面中的运行时问题（插件启动失败、组件出错），与 IR 的诊断分开：IR 的诊断由工作区服务给出 |
@@ -675,7 +675,7 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 
 | # | 问题 | 不成立时 | 工作包 |
 |---|---|---|---|
-| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧） |
+| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧）。服务一侧成立（96a，运行）：`GET ir/events` 是服务端直接流出的 SSE（`eventStream`，不缓冲），连接后先发当前的修订号，保存源码后一条新事件随即到达（`packages/workspace/test/service.test.ts`）；bundle 的转发由 96b 试 |
 | 2 | 面板怎样发起会话：在页面中带 cookie 调 Host API，还是用客户端运行时的会话服务 | — | 96e |
 | 3 | 批注怎样进入对话：`conversation.composer` 槽位中的托盘，还是直接发 `session/prompt` | — | 96e |
 | 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e |

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, rmSync,
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { deckLocale } from '@presmium/kernel'
+import { deckLocale, previewFrameAncestors } from '@presmium/kernel'
 import type { IRDocument } from '@presmium/kernel'
 import { FONT_LICENSE, fontLicense, optimizeDeps, packageOf } from '@presmium/kernel/node'
 import { formOptions, neighbour, pageMarkdown, searchDocuments, SERVER_PROXY, sidebar, SITE_LABELS, toPages, translationPages } from '../domain/index.ts'
@@ -10,6 +10,8 @@ import type { FormOptions, NavItem, Neighbour, SearchDocument, SiteShell, WebPag
 import type { ClientModules } from './addons.ts'
 
 const CLIENT_ENTRY = fileURLToPath(new URL('../client/index.ts', import.meta.url))
+/** The preview agent of the web form, which only a preview's theme imports (`RenderContext.preview`). */
+const PREVIEW_AGENT = fileURLToPath(new URL('../client/preview.ts', import.meta.url))
 /** The search tokenizer's module (`tokenize`, self-contained: VitePress serializes it into the client bundle). */
 const SEARCH = createRequire(import.meta.url).resolve('@presmium/kernel/reading')
 const VITE_PLUGIN = fileURLToPath(new URL('./vite.ts', import.meta.url))
@@ -239,7 +241,7 @@ function shellConfig(shell: SiteShell, base: string, image: string | undefined, 
 /** The generated configuration's code that writes each page's title into its `og:title` (a build hook). */
 export const OG_TITLE = `site.transformHead = ({ title }) => [['meta', { property: 'og:title', content: title }]]\n`
 
-function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths, workspace: WorkspaceOptions | undefined, image: string | undefined, optimize: { include: string[], exclude: string[] }): string {
+function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>, modules: ClientModules, deck: DeckPaths, workspace: WorkspaceOptions | undefined, image: string | undefined, optimize: { include: string[], exclude: string[] }, preview: SiteInput['preview']): string {
   // The labels of the default theme and its search box are in the deck's language.
   const labels = SITE_LABELS[deckLocale(options.lang)]
   const shell = shellConfig(options.shell, options.base, image, workspace)
@@ -270,10 +272,13 @@ site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.
 Object.assign(site.themeConfig.presmium, ${JSON.stringify({ document: workspace.document, home: workspace.home, ir: workspace.endpoints.ir, ...workspace.served ? { server: true } : {} })})
 ${workspace.served ? `site.vite.server = { fs: { allow: ${JSON.stringify(workspace.allow ?? [])} } }
 ` : ''}` : ''
+  // A preview's pages (docs/design-dsh.md 4.5): framed by the workbench's origins only.
+  const framed = preview ? `site.vite.plugins.push(presmiumFrame(${JSON.stringify(previewFrameAncestors(preview.origins))}))
+` : ''
   return `${GENERATED}
 import { readFileSync } from 'node:fs'
 import { tokenize } from ${JSON.stringify(SEARCH)}
-import { presmiumIR } from ${JSON.stringify(VITE_PLUGIN)}
+import { presmiumFrame, presmiumIR } from ${JSON.stringify(VITE_PLUGIN)}
 ${imports}
 const site = ${JSON.stringify(site, null, 2)}
 
@@ -305,7 +310,7 @@ site.vite = {
   // pre-bundled, themselves never (the pages load their source).
   optimizeDeps: ${JSON.stringify(optimize)},` : ''}
 }
-${server}${inWorkspace}${shell.ogTitle ? OG_TITLE : ''}
+${server}${inWorkspace}${framed}${shell.ogTitle ? OG_TITLE : ''}
 // Local search over the IR text of each section: titles, narration, prose and code. The index is
 // the renderer's own (see presmiumIR); the search box tokenizes queries as it does, Chinese into words.
 site.themeConfig.search = {
@@ -321,13 +326,15 @@ export default site
 `
 }
 
-function theme(): string {
+/** The theme of the site; a preview's (`preview`: the workbench's origins and the document) starts the preview agent. */
+function theme(preview?: { origins: string[], document: string }): string {
   return `${GENERATED}
 import doc, { revision, translations } from 'virtual:presmium/ir'
 import { createPresmiumTheme } from ${JSON.stringify(CLIENT_ENTRY)}
-import { components, plugins, viewers } from './addons.ts'
+${preview ? `import { startWebPreview } from ${JSON.stringify(PREVIEW_AGENT)}
+` : ''}import { components, plugins, viewers } from './addons.ts'
 
-export default createPresmiumTheme({ doc, revision, translations, components, plugins, viewers })
+export default createPresmiumTheme({ doc, revision, translations, components, plugins, viewers${preview ? `, preview: page => startWebPreview(page, ${JSON.stringify(preview)})` : ''} })
 `
 }
 
@@ -372,6 +379,8 @@ export interface SiteInput {
   translations?: { lang: string, doc: IRDocument }[]
   /** The image of the site shell's `head`, as published. */
   image?: string
+  /** The dev server of a preview (`RenderContext.preview`): its pages load the preview agent and may be framed by these origins only. */
+  preview?: { origins: string[] }
 }
 
 /** The file of a translation beside the original's file `file` (`ir.json` -> `ir.en.json`). */
@@ -419,8 +428,8 @@ export function writeSite(workDir: string, input: SiteInput): void {
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(files.root)
   const optimize = optimizeDeps(files.root, browserPackages(modules))
-  write(join(files.root, '.vitepress/config.mjs'), config(options, files, modules, input.deck, workspace, input.image, optimize))
-  write(join(files.root, '.vitepress/theme/index.ts'), theme())
+  write(join(files.root, '.vitepress/config.mjs'), config(options, files, modules, input.deck, workspace, input.image, optimize, input.preview))
+  write(join(files.root, '.vitepress/theme/index.ts'), theme(input.preview && { origins: input.preview.origins, document: workspace?.document ?? '' }))
   write(join(files.root, '.vitepress/theme/addons.ts'), addons(modules))
   const depth = depthOf(workspace?.document ?? '')
   writePages(files.root, pages, '', depth, workspace)

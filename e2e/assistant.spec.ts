@@ -5,7 +5,7 @@
 //   server gives its code), and that the changes are committed to a git repository, which this deck is not in;
 //   the model settings open from it. Each code of what is missing (the page's `info` answered with it) reads in
 //   Chinese and in English.
-// - Edit mode (P-124, WP-92d): the deck's source opens in the browser; a paragraph picked in the preview opens
+// - Edit mode (P-124, WP-92d; `presmium dev --edit`): the deck's source opens in the browser; a paragraph picked in the preview opens
 //   its line, a sentence added there and saved shows in the page without a reload; out of git, the status bar
 //   says so and there is nothing to commit.
 // - In a classroom, a learner's question reaches the presenter's overview; its "AI answer" asks the
@@ -41,7 +41,8 @@ test.beforeAll(async () => {
   writeFileSync(lecture, readFileSync(lecture, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom.url}\nrenderers:`))
   model = await chatStub(request => ['这段代码在', `[合并规则](presmium://sections/merge)中讲解：问题是「${questionOf(request)}」。`])
   // No model of the operator's: no model variable, and a configuration directory of its own.
-  dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '', PRESMIUM_AGENT_COMMAND: '' })
+  // Edit mode is `--edit`'s (until WP-96g).
+  dev = await startDev(dir, 'web', { XDG_CONFIG_HOME: `${dir}.config`, DEEPSEEK_API_KEY: '', PRESMIUM_MODEL_URL: '', PRESMIUM_AGENT_COMMAND: '' }, ['--edit'])
 })
 test.afterAll(async () => {
   await dev?.stop()
