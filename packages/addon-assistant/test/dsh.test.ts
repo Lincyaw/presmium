@@ -130,9 +130,14 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
     }
   }, 180_000)
 
-  it('with the operator\'s Messages service: its URL and key are DeepSeek Harness\'s, no Presmium variable is; the service receives that key', async () => {
+  it('with the operator\'s Messages service: its URL and key are DeepSeek Harness\'s, no Presmium variable is; the service receives that key, and none of the user\'s own skills', async () => {
     const model = await fakeModel([{ text: '每一轮合并出现次数最多的一对，见[合并规则](presmium://sections/merge)。' }])
+    // A skill of the user's own (~/.agents/skills), which the request must not carry.
+    const home = join(base, 'home')
+    mkdirSync(join(home, '.agents/skills/private-notes-7c1'), { recursive: true })
+    writeFileSync(join(home, '.agents/skills/private-notes-7c1/SKILL.md'), '---\nname: private-notes-7c1\ndescription: The user\'s private notes 7c1.\n---\n\nPrivate.\n')
     const { running, server } = await dev(deck, env({
+      HOME: home,
       XDG_STATE_HOME: join(base, 'state'),
       XDG_CONFIG_HOME: join(base, 'config'),
       PRESMIUM_MODEL_URL: model.url,
@@ -160,6 +165,8 @@ describe('presmium dev with the bundled DeepSeek Harness', () => {
       expect(model.received[0]!.path).toBe('/v1/messages')
       // No model named: the pinned version's default.
       expect(model.received[0]!.body.model).toBe('deepseek-v4-flash')
+      expect(seen.DSH_AGENTS_HOME).toBe(join(base, 'state/presmium/dsh/agents'))
+      expect(JSON.stringify(model.received.map(r => r.body))).not.toContain('private-notes-7c1')
     } finally {
       model.release()
       await running.stop()

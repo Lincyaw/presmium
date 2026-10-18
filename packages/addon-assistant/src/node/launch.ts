@@ -95,5 +95,7 @@ export function localEnv(env: NodeJS.ProcessEnv, access: ModelAccess): Record<st
   if (access.model) out[MODEL_VARIABLE] = access.model
   out.DSH_TELEMETRY_MODE = 'DISABLED'
   out.DSH_HOME = dshHome(env)
+  // Its own shared agents root, so the user's ~/.agents/skills never reach the model with a request.
+  out.DSH_AGENTS_HOME = join(out.DSH_HOME, 'agents')
   return out
 }
