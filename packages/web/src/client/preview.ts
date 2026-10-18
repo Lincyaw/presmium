@@ -10,7 +10,7 @@
  */
 import { componentErrors, presmiumReport } from '@presmium/host'
 import type { NavigationPosition } from '@presmium/host'
-import { irBlocks, PREVIEW_REVISION, startPreviewAgent } from '@presmium/kernel'
+import { irBlocks, PREVIEW_REVISION, startPreviewAgent, stepKeys, stepTrail } from '@presmium/kernel'
 import type { PreviewAgent } from '@presmium/kernel'
 import type { FollowAnchor, Viewer } from '@presmium/viewer'
 import type { Ref } from 'vue'
@@ -57,7 +57,11 @@ export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions
     setDark(value) {
       dark.value = value
     },
-    stepOf: anchor => (anchor.block ? blockStep(anchor.section, anchor.block) : undefined),
+    stepOf({ section, block }) {
+      const step = blockStep(section, block)
+      const found = viewer.section(section)
+      return step === undefined || !found ? undefined : { step, trail: stepTrail(stepKeys(found), step) }
+    },
   })
   if (!agent) return
   watch(() => navigation.position.value, () => agent.moved())

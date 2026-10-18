@@ -88,8 +88,12 @@ export type PreviewReport =
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   /** The page moved; at most every 150 ms. */
   | ({ type: 'position' } & PreviewPosition)
-  /** A block (or a section's heading) picked; in the slides, with the step the block appears at. */
-  | { type: 'picked', section: string, block?: string, step?: number }
+  /**
+   * A block (or a section's heading, a section's blank) picked; a block with the step it appears at, the page's
+   * own, and the trail of that step, as `position` has them (a reader of the whole document finds its step with
+   * `trailStep`: the slides leave out the steps of the blocks only other forms have).
+   */
+  | { type: 'picked', section: string, block?: string, step?: number, trail?: string[] }
   /** Text selected in the page, in a block or a section; `null` when nothing is. */
   | { type: 'selection', selection: (PreviewAnchor & { text: string }) | null }
   /** The page shows a new IR. */
@@ -140,7 +144,7 @@ export function readPreviewReport(data: unknown, nonce: string): PreviewReport |
   switch (m.type) {
     case 'ready': return (m.renderer === 'web' || m.renderer === 'slides') && text(m.document) && optional(m.revision, text) && strings(m.capabilities) ? { type: 'ready', renderer: m.renderer, document: m.document, ...m.revision ? { revision: m.revision as string } : {}, capabilities: m.capabilities as PreviewCommandType[] } : undefined
     case 'position': return text(m.section) && step(m.step) && strings(m.trail) && optional(m.view, text) ? { type: 'position', section: m.section, step: m.step, trail: m.trail, ...m.view ? { view: m.view as string } : {} } : undefined
-    case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number } } : undefined
+    case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {} } : undefined
     case 'selection': return m.selection === null || (record(m.selection) && text(m.selection.text) && anchor(m.selection)) ? { type: 'selection', selection: m.selection as (PreviewAnchor & { text: string }) | null } : undefined
     case 'updated': return optional(m.revision, text) ? { type: 'updated', ...m.revision ? { revision: m.revision as string } : {} } : undefined
     case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {} } : undefined
@@ -169,8 +173,13 @@ export interface PreviewPage {
   sectionOf?(element: Element): string | undefined
   /** The element of a whole section the reader sees; by default the first one with its `data-section`. */
   sectionElement?(section: string): HTMLElement | undefined
-  /** The step at which a block appears in the page, for `picked`. */
-  stepOf?(anchor: PreviewAnchor): number | undefined
+  /**
+   * Whether the page shows an element at its step, besides the rule of every form (laid out, not under a modal
+   * view or hidden by its step: `[inert]`, `.pm-hidden`): the slides hide what a click has not shown yet.
+   */
+  seen?(element: Element): boolean
+  /** The step at which a block appears in the page, the page's own, and the trail of that step, for `picked`. */
+  stepOf?(anchor: Required<PreviewAnchor>): { step: number, trail: string[] } | undefined
 }
 
 /** The running agent: the form tells it what changed. */
@@ -211,11 +220,6 @@ function previewNonce(): string | undefined {
   return window.name.startsWith(FRAME_NAME) ? window.name.slice(FRAME_NAME.length) || undefined : undefined
 }
 
-/** Whether an element is laid out and not hidden by its step or under a modal view (the host's rule of what is seen). */
-function seen(element: Element): boolean {
-  return !element.closest('[inert], .pm-hidden') && element.getClientRects().length > 0
-}
-
 /**
  * Starts the agent in a page of a dev server that has one, when the three
  * conditions hold (docs/design-dsh.md 4.2): its address (or the frame, after
@@ -253,6 +257,16 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   let sent: string | undefined
   let revision: string | undefined
 
+  /** Whether an element is laid out and not hidden by its step or under a modal view (the host's rule of what is seen), nor by its form. */
+  const seen = (element: Element): boolean =>
+    !element.closest('[inert], .pm-hidden') && element.getClientRects().length > 0 && (page.seen?.(element) ?? true)
+  /** The block an element is in that the page shows: a block not shown yet (a later click of the slides) is none. */
+  const seenBlock = (element: Element): HTMLElement | undefined => {
+    for (let block = element.closest<HTMLElement>('.pm-block[data-block]'); block; block = block.parentElement?.closest<HTMLElement>('.pm-block[data-block]') ?? null) {
+      if (seen(block)) return block
+    }
+    return undefined
+  }
   const sectionOf = (element: Element): string | undefined =>
     element.closest<HTMLElement>('[data-section]')?.dataset.section ?? page.sectionOf?.(element)
   const blockElement = (section: string, block: string): HTMLElement | undefined => {
@@ -268,9 +282,9 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     return all.find(el => el.classList.contains('pm-section') && seen(el)) ?? all.find(seen)
   }
   const elementOf = (target: PreviewAnchor) => (target.block ? blockElement(target.section, target.block) : sectionElement(target.section))
-  /** The anchor of an element: its block, else its section. */
+  /** The anchor of an element: its block that the page shows, else its section. */
   const anchorOf = (element: Element): PreviewAnchor | undefined => {
-    const block = element.closest<HTMLElement>('.pm-block[data-block]')
+    const block = seenBlock(element)
     const section = sectionOf(block ?? element)
     if (!section) return undefined
     return block ? { section, block: block.dataset.block! } : { section }
@@ -341,7 +355,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   let hovered: Element | undefined
   const hover = (event: MouseEvent) => {
     const target = event.target instanceof Element ? event.target : undefined
-    const block = target && !target.closest(CONTROLS) ? target.closest('.pm-block[data-block]') ?? undefined : undefined
+    const block = target && !target.closest(CONTROLS) ? seenBlock(target) : undefined
     if (block === hovered) return
     hovered?.removeAttribute(HOVER)
     hovered = block
@@ -356,8 +370,8 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     if (!anchor) return
     event.preventDefault()
     event.stopImmediatePropagation()
-    const at = page.stepOf?.(anchor)
-    post({ type: 'picked', ...anchor, ...at === undefined ? {} : { step: at } })
+    const at = anchor.block ? page.stepOf?.({ section: anchor.section, block: anchor.block }) : undefined
+    post({ type: 'picked', ...anchor, ...at ? { step: at.step, trail: at.trail } : {} })
   }
   const setPicking = (on: boolean) => {
     if (on === picking) return

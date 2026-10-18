@@ -184,7 +184,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 工作台 → 产物 | `marks` | `on` | 显示作者用的标记（如 `{cue}`），取代今天 `PmRoleMark` 对 `EDIT_MODE` 的判断 |
 | 工作台 → 产物 | `appearance` | `dark` | 明暗跟随工作台 |
 | 产物 → 工作台 | `position` | `section`、`step`、`trail`、`view?` | 位置变化时发出，至多每 150 ms 一次 |
-| 产物 → 工作台 | `picked` | `section`、`block?`、`step?` | 点选的结果；幻灯片形态带块出现的步骤 |
+| 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position` |
 | 产物 → 工作台 | `selection` | `{ section, block?, text }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`） |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
 | 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message` | 页面中的运行时问题（插件启动失败、组件出错），与 IR 的诊断分开：IR 的诊断由工作区服务给出 |

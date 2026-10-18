@@ -262,7 +262,11 @@ function formAddons(doc: IRDocument, ctx: RenderContext): string[] {
  * A slide: the section's `hints.slides` in its frontmatter, and its `{config}`
  * under `presmium`, where the slides host adapter reads it (`useSectionConfig`).
  * The cover's frontmatter is the headmatter, whose `presmium` is the global
- * configuration; the cover's own goes under `presmiumSection`.
+ * configuration; the cover's own goes under `presmiumSection`. Its title and
+ * blocks are in its section's anchor (`[data-section]`, docs/design-dsh.md
+ * 4.4), as the web form's sections, which takes no box of its own
+ * (`.pm-slide-section`, ../deck/style.css); the notes stay last, where Slidev
+ * reads them.
  */
 function slide(section: IRSection, head: Record<string, unknown>, gen: Generation): string {
   gen.section = section.id
@@ -272,9 +276,10 @@ function slide(section: IRSection, head: Record<string, unknown>, gen: Generatio
   const notes: IRBlock[] = []
   const parts = section.title ? [md({ type: 'heading', depth: 1, children: [{ type: 'text', value: section.title }] }, undefined, gen)] : []
   parts.push(...blocks(section.blocks, gen, notes, false))
-  if (notes.length > 0) parts.push(`<!--\n${notesText(notes, gen)}\n-->`)
+  const body = [`<div class="pm-slide-section" data-section="${escapeHtml(section.id)}">\n\n${parts.join('\n\n')}\n\n</div>`]
+  if (notes.length > 0) body.push(`<!--\n${notesText(notes, gen)}\n-->`)
   const open = Object.keys(frontmatter).length > 0 ? `---\n${stringify(frontmatter).trim()}\n---` : '---'
-  return `${open}\n\n${parts.join('\n\n')}\n`
+  return `${open}\n\n${body.join('\n\n')}\n`
 }
 
 /**

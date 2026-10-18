@@ -31,10 +31,18 @@ Alpha's narration.
 Beta starts with this block.
 :::
 
+::::{only} web
+:reveal:
+(beta-web)=
+:::{slide}
+The web shows this block at a step of its own, which the slides do not have.
+:::
+::::
+
 (beta-step)=
 :::{slide}
 :reveal:
-Beta's second step shows this block.
+Beta's last step shows this block.
 :::
 
 (gamma)=

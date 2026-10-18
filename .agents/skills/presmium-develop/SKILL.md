@@ -9,7 +9,7 @@ description: "Presmium 仓库开发者指南：包结构与限界上下文、分
 
 写讲义见 presmium-author 技能，放映与课堂见 presmium-present 技能。
 
-N 波次（基于 DeepSeek Harness 的工作台）的设计在 `docs/design-dsh.md`，工作包在 `docs/wbs.md` 的 N 波次。产物只经预览协议嵌入工作台（`docs/architecture.md` 13.3 节）：网页与幻灯片的预览代理（`web/src/client/preview.ts`、`addon-core/src/client/preview.ts`，只在 `RenderContext.preview` 的开发服务器中加载，静态构建与 `presmium dev` 没有），幻灯片的每个顶层块包在 `.pm-block[data-block][data-section][data-step]` 中；工作区服务给工作台的接口是工作区路由的 `ir`、`ir/events`、`preview`、`build`、`check`（`workspace/src/node/service.ts`），`presmium serve --headless --preview-origin <源>` 是无界面模式，环境中有 `PRESMIUM_SERVICE_TOKEN` 时工作区的路由要这个令牌。在它完成之前，旧工作台（`presmium serve` 的界面、`presmium dev` 的编辑模式、助手与讲授插件中属于工作台的面板）只修缺陷，不加功能。
+N 波次（基于 DeepSeek Harness 的工作台）的设计在 `docs/design-dsh.md`，工作包在 `docs/wbs.md` 的 N 波次。产物只经预览协议嵌入工作台（`docs/architecture.md` 13.3 节）：网页与幻灯片的预览代理（`web/src/client/preview.ts`、`addon-core/src/client/preview.ts`，只在 `RenderContext.preview` 的开发服务器中加载，静态构建与 `presmium dev` 没有），幻灯片的每一页的标题与块包在章节的锚点 `.pm-slide-section[data-section]`（`display: contents`）中，每个顶层块包在 `.pm-block[data-block][data-section][data-step]` 中（宿主的 `blockElement` 在两种形态中都找得到块）；幻灯片的步号是页面自己的，`position`、`picked` 都带 `trail`，工作台用 `trailStep` 换算；工作区服务给工作台的接口是工作区路由的 `ir`、`ir/events`、`preview`、`build`、`check`（`workspace/src/node/service.ts`），`presmium serve --headless --preview-origin <源>` 是无界面模式，环境中有 `PRESMIUM_SERVICE_TOKEN` 时工作区的路由要这个令牌。在它完成之前，旧工作台（`presmium serve` 的界面、`presmium dev` 的编辑模式、助手与讲授插件中属于工作台的面板）只修缺陷，不加功能。
 
 ## 1. 包与限界上下文
 

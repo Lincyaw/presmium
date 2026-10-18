@@ -3,9 +3,9 @@
 // operator's plugin, with a service token in its environment:
 // - its pages load neither the workspace's browser plugin nor the operator plugin's browser part, and its home page
 //   is the documents' cards;
-// - `ir` (the revision, the diagnostics, paths relative to the workspace root), `ir/events` (a saved source pushes
-//   the new revision and the file), `preview` (the address of each form's preview), `build` (outside the
-//   document) and `check` (the diagnostics);
+// - `ir` (the revision, the diagnostics, paths relative to the workspace root), `ir/events` (the revision now first,
+//   of a document nothing has compiled yet too; a saved source pushes the new revision and the file), `preview`
+//   (the address of each form's preview), `build` (outside the document) and `check` (the diagnostics);
 // - every route of the workspace asks for the token (401 without it, or with another);
 // - the previews' pages may be framed by the workbench's origin only (`frame-ancestors`).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -76,6 +76,12 @@ describe('presmium serve --headless: the workspace service for a workbench', () 
     remove(dir)
     remove(home)
   })
+
+  it('gives the revision first to a workbench that asks for the events of a document nothing has compiled', async () => {
+    const seen = await events(`${url}/__presmium/presmium.workspace/ir/events?document=fresh`, () => true, () => {})
+    const { revision } = (await route('ir?document=fresh')).json<{ revision: string }>()
+    expect(seen).toEqual([{ document: 'fresh', revision, diagnostics: { errors: 0, warnings: 0 }, files: [] }])
+  }, 120_000)
 
   it('loads neither the workspace\'s nor the operator plugin\'s browser parts, and its home page is the documents\' cards', async () => {
     // The home page's theme as the page loads it: the documents' cards (no server, no workbench), no plugin.

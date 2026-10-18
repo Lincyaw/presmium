@@ -1,12 +1,13 @@
 /**
  * The preview agent of the slides form (docs/design-dsh.md 4.6): the
  * kernel's agent (`startPreviewAgent`) over the anchors the slides renderer
- * writes on each block (`.pm-block[data-block]` with its `data-section` and
- * `data-step`), with the slides' navigation by ids, Slidev's dark mode, and
- * the revision of the IR that the preview's dev server sends over Vite's
- * WebSocket (`presmium:revision`). Only a preview's deck loads it, from a
- * setup of its own (render-slides); a build and `presmium dev` never do.
- * Must be called in the root setup.
+ * writes (each slide's section in `[data-section]`, each block in
+ * `.pm-block[data-block]` with its `data-section` and `data-step`), with the
+ * slides' navigation by ids, what a click has not shown yet, Slidev's dark
+ * mode, and the revision of the IR that the preview's dev server sends over
+ * Vite's WebSocket (`presmium:revision`). Only a preview's deck loads it,
+ * from a setup of its own (render-slides); a build and `presmium dev` never
+ * do. Must be called in the root setup.
  */
 import { componentErrors, presmiumReport } from '@presmium/host'
 import type { NavigationPosition } from '@presmium/host'
@@ -23,6 +24,9 @@ export interface SlidesPreviewOptions {
   /** The document's directory, relative to the workspace root. */
   document: string
 }
+
+/** Slidev's documented class of a click's element that is hidden: not shown yet, or hidden again. */
+const CLICK_HIDDEN = 'slidev-vclick-hidden'
 
 /** The slide number of a slide's page element (`.slidev-page-<n>`). */
 function pageNumber(element: Element | null | undefined): number | undefined {
@@ -65,10 +69,23 @@ export function startSlidesPreview(options: SlidesPreviewOptions): void {
       if (no === undefined) return undefined
       return [...document.querySelectorAll<HTMLElement>(`.slidev-page-${no} .slidev-layout`)].find(el => el.getClientRects().length > 0)
     },
-    stepOf(anchor: PreviewAnchor) {
-      if (!anchor.block) return undefined
-      const element = document.querySelector<HTMLElement>(`.pm-block[data-section="${CSS.escape(anchor.section)}"][data-block="${CSS.escape(anchor.block)}"]`)
-      return element?.dataset.step === undefined ? undefined : Number(element.dataset.step)
+    /**
+     * Not what a click has not shown yet or has hidden again: a block's anchor holds the element of its click
+     * (`v-click`), hidden with it; a list whose items come one by one is hidden before its first item's click.
+     */
+    seen(element) {
+      if (element.closest(`.${CLICK_HIDDEN}`)) return false
+      const block = element.closest<HTMLElement>('.pm-block[data-step]')
+      if (!block) return true
+      if ([...block.children].some(child => child.classList.contains(CLICK_HIDDEN))) return false
+      return pageNumber(block.closest('.slidev-page')) !== currentSlideNo.value || Number(block.dataset.step) <= clicks.value
+    },
+    /** The click a block appears at on its slide, and the trail of that click (the keys of the slide's steps, D-4). */
+    stepOf({ section, block }: Required<PreviewAnchor>) {
+      const no = sections().noOf(section)
+      if (no === undefined) return undefined
+      const step = blockStep(section, block)
+      return { step, trail: sections().anchorOf(no, step).trail ?? [] }
     },
   })
   if (!agent) return

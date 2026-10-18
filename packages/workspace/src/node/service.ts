@@ -223,9 +223,10 @@ export function workspaceService(options: ServiceOptions): Service {
         done()
         wake?.()
       }, { once: true })
-      // The revision now, when the document has compiled, comes first.
-      const latest = options.sessionOf(document).latest
-      if (latest) waiting.push(eventOf(document, latest, []))
+      // The revision now comes first: that of the compilation the document has, else of its first one, which starts now.
+      const session = options.sessionOf(document)
+      if (session.latest) waiting.push(eventOf(document, session.latest, []))
+      else void session.ready().catch(() => undefined)
       return {
         async* [Symbol.asyncIterator]() {
           try {

@@ -5,7 +5,7 @@ plugins:
   - '@presmium/slidev-addon-core'
 renderers:
   web: { port: 5618 }
-  slides: {}
+  slides: { port: 5619 }
 ---
 
 # Preview
