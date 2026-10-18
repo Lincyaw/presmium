@@ -1,6 +1,6 @@
 /**
  * How a launcher starts DeepSeek Harness with this bundle (docs/design-dsh.md
- * 6.1, 6.6 and 11.1): `presmium studio` (WP-96f) and the tests' harness. A
+ * 6.1, 6.6, 11.1 and 11.2): `presmium studio` (WP-96f) and the tests' harness. A
  * profile of Presmium's lists the carrier's bundles and this one, and links
  * this package into its `node_modules` (DeepSeek Harness resolves a bundle's
  * modules from the profile, K8); every start passes the carrier's patches
@@ -30,6 +30,24 @@ const CARRIERS: Record<Carrier, string> = {
 export function launchPatches(carrier: Carrier): string[] {
   return [...carrier === 'web' ? [join(PACKAGE_DIR, 'web.patch.yml')] : [], join(PACKAGE_DIR, 'profile.patch.yml')]
 }
+
+/** The launcher's arguments of `dsh` (before the carrier's own): the profile `name`, then the carrier's patches. */
+export function launchArgs(name: string, carrier: Carrier): string[] {
+  return ['--profile', name, ...launchPatches(carrier).flatMap(file => ['--patch', file])]
+}
+
+/**
+ * The watchdog a launcher runs each of its processes under, as the
+ * `presmium-service` row runs the workspace service (docs/design-dsh.md 11.2
+ * and 14): `node <WATCHDOG> <command> [args...]`, spawned `detached` with its
+ * stdin a pipe from the launcher. The command runs in the watchdog's own
+ * process group, which ends when the launcher goes (`kill -9` included: the
+ * pipe closes) or the watchdog gets SIGTERM, the command's descendants with it.
+ */
+export const WATCHDOG = join(PACKAGE_DIR, 'src', 'node', 'watchdog.mjs')
+
+/** The line DeepSeek Harness's web carrier prints once it is ready: its address with the launch token (docs/design-dsh.md 17, item 7). */
+export const WEB_READY = /^dsh web: (https?:\/\/\S+)$/m
 
 /** The version of DeepSeek Harness this bundle is for (`engines.dsh`): exactly one. */
 export function dshVersion(): string {

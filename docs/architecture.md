@@ -2216,6 +2216,17 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 `presmium studio` 的启动器启动并监管 dsh 宿主与工作区服务（各在自己的进程组中，有父进程退出的看门狗），只打印 dsh 宿主的一个网址。文稿的代码只在工作区服务中运行，不进 dsh 宿主（`design-dsh.md` 第 2、11 节）。
 
+实现（WP-96f）：
+
+- **包与命令**：`@presmium/studio`（0.1.0；依赖精确版本的 `@deepseek-ai/dsh` 0.2.1-alpha.4、`@presmium/dsh` 与 `@presmium/cli`）：`src/cli.ts` 的 `main`（`presmium studio [目录] [--port <端口>] [--host <地址>]`；命令 `presmium-studio` 相同）、`src/studio.ts` 的 `startStudio`（启动器）、`src/model.ts`（模型的环境变量与 `assistant.json` 的导入）。`@presmium/cli` 不依赖它（G-1、G-9）：`presmium studio` 从 CLI 的包目录（同一个 `node_modules`，全局安装时也是）或当前项目解析 `@presmium/studio`，用 jiti 加载并转交，带上 CLI 自己的 `bin/presmium.mjs` 作为工作区服务的命令；没装时说明怎样安装（`npm install --save-dev @presmium/studio`，或与全局的 CLI 一起 `--global`），以 2 退出。目录的规则同 `presmium serve`。
+- **目录与 profile**：`DSH_HOME` 是 `$XDG_STATE_HOME/presmium/studio`（没有这个变量时是 `~/.local/state/presmium/studio`），从不用环境中的 `DSH_HOME` 或用户自己的 `~/.dsh`。每次启动用 `@presmium/dsh/launch` 的 `writeProfile` 写 profile `presmium-studio`（web 载体；保留 profile 自己的 `cordis.patch.yml`，即用户在界面中的改动），以 `launchArgs` 传入 `web.patch.yml` 与 `profile.patch.yml`，环境中加 `launchEnv`。两个进程的输出写进其中的 `presmium-studio.log`（0600，每行带进程名；过 16 MB 时另起，旧的留作 `.1`）：启动器的标准输出只有一行 `studio  <网址>`。
+- **端口与源**：工作台的端口默认 4320，每次相同，浏览器的 cookie 因此在重启之后仍有效（dsh 的签名密钥在 `DSH_HOME` 中）；4320 被占用时另取一个空闲端口，`--port 0` 取空闲端口，`--port` 给出的端口被占用时报错。端口在启动任何进程之前由启动器选定，因为工作区服务以工作台的源启动：`--preview-origin` 是 `http://127.0.0.1:<端口>` 与 `http://localhost:<端口>`（`--host` 时是 `http://<地址>:<端口>`）。
+- **启动顺序**（`design-dsh.md` 11.2 节）：服务令牌（24 字节的随机值）；`node <WATCHDOG> node <presmium> serve <目录> --headless --port 0 [--host <地址>] --preview-origin …`，环境中没有 `DSH_*`、`DEEPSEEK_*`、`PRESMIUM_MODEL_*`、`NODE_ENV`、`PORT`，有 `PRESMIUM_SERVICE_TOKEN`，等它打印 `serve  <网址>` 与 `workspace  <根目录>`；`node <WATCHDOG> node <dsh> --profile presmium-studio --patch … --port <端口> --no-open [--host <地址> --trusted-host <地址>:<端口>]`，工作目录是工作区根，环境中有 `PRESMIUM_SERVICE_URL`、`PRESMIUM_SERVICE_TOKEN`、`PRESMIUM_WORKSPACE`、`launchEnv` 与模型的变量，等它打印 `dsh web: <网址>`（`WEB_READY`）；打印这个网址。dsh 在加载树安定、启动审计通过之后才打印这一行（`dsh-web-app` 的 README），`presmium-workspaces` 在激活时登记文档的工作区，所以这一行也说明登记好了，启动器不另外查询。任何一步失败（3 分钟没有就绪也算）都停下已启动的进程，在标准错误报告并给出日志的位置，以 2 退出。
+- **监管**（11.2、14 节）：两个进程各在 `@presmium/dsh` 的看门狗（`WATCHDOG`，`presmium-service` 行用的同一个）之下，以 `detached` 自成进程组，看门狗的标准输入是来自启动器的管道：启动器退出（`kill -9` 也是）时看门狗结束整个组，组中的开发服务器一并结束。SIGINT、SIGTERM、SIGHUP 时启动器先停 dsh（bundle 在服务处作废会话令牌）再停服务，各等 15 秒，之后向组发 SIGKILL，以 0 退出；一个进程自己结束时启动器停下另一个，报告是哪一个与日志的位置，以 1 退出。
+- **模型**（11.3 节）：按旧工作台助手的规则：`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三个都有时成为 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` 与 `DEEPSEEK_SEARCH_BASE_URL`（网页搜索用同一个密钥，地址也是这个服务）；只有一部分时在标准错误警告缺少哪个；否则 `DEEPSEEK_API_KEY` 原样传给 dsh，作者环境中的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 不传（密钥只去 DeepSeek 的官方地址）。dsh 自己不接受 `.env` 文件中的这类地址变量（工作区根的 `.env` 写了它时 dsh 拒绝启动），所以工作区的 `.env` 改不了密钥的去向。旧工作台的 `assistant.json`（`$XDG_CONFIG_HOME/presmium/assistant.json`）在环境中没有模型、作者还没回答过时询问一次（标准输入与标准错误都是终端时问“是否导入”，默认是；不是终端时每次在标准错误说明怎样导入）：导入时密钥写进 `DSH_HOME/.env`（dsh 的凭据层中最低的一层，0600；环境与在模型设置中保存的密钥都在它之前），服务的地址写进 `DSH_HOME/presmium-studio.json`，之后每次环境中没有模型的启动都把它作为 `DEEPSEEK_BASE_URL` 传入；回答记在同一个文件中，原文件不删；模型名不导入，启动器提示在模型设置中选择。
+- **局域网**（11.4 节）：`--host` 只接受本机的一个具体 IP 地址（拒绝 `0.0.0.0`、`::` 等通配地址与主机名），dsh 与工作区服务都只监听这个地址（服务端的 `Host`、`Origin` 规则按 10.1 节接受它），`--preview-origin` 是它的源；启动时在标准错误警告没有登录，同一网络中到得了这两个端口的人都以作者的身份工作。
+- **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在文档目录中、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `examples/demo/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@presmium/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
+
 ### 13.2 契约与接口
 
 | 契约或接口 | 位置 | 工作包 |
@@ -2227,7 +2238,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 | `Focus`、`FocusReport`（工作台报告的、尚未换算的焦点）；`Annotation.focus`、`AgentContext.focus` | `packages/kernel/src/contracts/agent.ts`（只增加） | 96b |
 | `MCP_ENDPOINT.issue(member, mode, { confirmed, document })`（`McpIssueOptions`）：会话令牌（主机已确认、绑定一份文档）；服务端路由 `presmium.server/tokens` 与 `presmium.server/focus` | `packages/kernel/src/contracts/server.ts`（只增加）、`packages/server/src/server.ts`、`focus.ts` | 96b |
 | 工具表 `TOOL_TABLE` 与 `listTools(host, caller)`；列出的工具的 `_meta`（`presmium/kind`，主机已确认的调用者另有 `presmium/approval`）；客户端一侧 `@presmium/mcp/client`（`connectPresmiumMcp`、`describeOperation`）；焦点的换算 `resolveFocus`；资源 `presmium://focus` 与工具 `get_focus`；`McpHost.focus`、`watchFocus`、`approval`；`McpCaller.confirmed`、`document` | `@presmium/mcp` | 96b |
-| bundle `@presmium/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@presmium/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`） | `packages/dsh/` | 96b |
+| bundle `@presmium/dsh`：`dsh.bundle`（`cordis.patch.yml`）、`web.patch.yml`、`profile.patch.yml`；启动器用的 `@presmium/dsh/launch`（`writeProfile`、`launchPatches`、`launchEnv`、`dshBin`；96f 另加 `launchArgs`、看门狗 `WATCHDOG` 与就绪的一行 `WEB_READY`） | `packages/dsh/` | 96b、96f |
 | `presmium dev --edit`（旧工作台的编辑模式，默认关闭） | `packages/cli/src/cli.ts` | 96a，96g 删去 |
 | `presmium studio [目录] [--port] [--host]` | `@presmium/studio`；`@presmium/cli` 转交 | 96f |
 

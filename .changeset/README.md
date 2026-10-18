@@ -39,6 +39,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@presmium/slidev-addon-lecture` | npm | 插件：讲授轨与导出视频 |
 | `@presmium/slidev-addon-speech` | npm | 插件：语音服务 |
 | `@presmium/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节），技能在打包时从 `.agents/skills` 复制 |
+| `@presmium/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；`@presmium/cli` 装了它时转交；0.x、实验性，版本号不随统一版本 |
 | `create-presmium` | npm | `npm create presmium@latest`：新建讲义、工作区或插件项目（不在 `@presmium` 作用域中：`npm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，见包内 `templates/README.md`） |
 | `presmium-vscode` | 否 | VS Code 扩展：预打包为 `.vsix`，发布到扩展市场，不发布到 npm |
 | `presmium-demo` | 否 | 示例讲义（`examples/demo`） |

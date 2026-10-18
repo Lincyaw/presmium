@@ -682,7 +682,7 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 | 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e |
 | 5 | 启动时传入的补丁与 profile 自己的补丁谁先谁后：用户在界面中的改动能否盖过隐私相关的行 | 启动器每次启动前把 profile 补丁中的这些行改回 | 96b |
 | 6 | 用户在插件管理中关掉 `@presmium/dsh` 之后会怎样，`ui-layout` 是否回来 | 工作台说明怎样重新打开 | 96d |
-| 7 | 启动令牌在标准输出之外有没有交接方式 | 解析标准输出 | 96f |
+| 7 | 启动令牌在标准输出之外有没有交接方式 | 解析标准输出 | 96f。没有（17.2 节）：解析标准输出 |
 | 8 | 客户端包能否带字体等静态文件 | 以 data URL 内联 | 96d |
 | 9 | 经回环 MCP 调工具的延迟，以及 dsh 对工具的超时 | 进程内桥接（K6 运行过的做法） | 96b |
 | 10 | persona 行的 ID 与覆盖方式 | 用 `systemPrompt.section` 说明 Presmium 的角色 | 96b |
@@ -708,6 +708,21 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 4. **会话令牌只给启动服务的主机**：没有设置 `PRESMIUM_SERVICE_TOKEN` 时 `tokens` 一律 403（设置了时要求它）；这样产物页面中的脚本拿不到不经确认的令牌。
 5. **文稿快照每一步之前经 MCP 重读**（`agent/pre-step`），不维护按 `ir/events` 更新的缓存：读取类调用只要几毫秒（第 9 项），快照也就总是新的。
 6. **焦点的报告**：`POST presmium.server/focus` 的请求体是 `{ document, focus: FocusReport[] }`（`FocusReport` 在内核契约中），批注的保存留给 96e。
+
+### 17.2 WP-96f 的结论
+
+在锁定的 0.2.1-alpha.4 上运行过；用例在 `packages/studio/test/studio.test.ts`，实现见 `architecture.md` 13.1 节。
+
+- **第 7 项**：不成立，启动器解析标准输出。每个 dsh 进程自己生成启动令牌，只经两处带出，都在 `dsh-web-app` 中：`printUrl` 打印的 `dsh web: <网址>` 一行，与 `openBrowser` 交给浏览器的同一个网址。宿主的连接服务有 `authenticatedUrl(baseUrl)`，但只在类型声明中，README 没有写；经它交接要 bundle 的一行另开通道，不用。`dsh-web-app` 的 README 把这一行写成供监管者使用的就绪信号（加载树安定、启动审计通过之后才打印），所以读它既得到令牌，也等到了 `presmium-workspaces` 登记好文档的工作区（这一行在激活时登记），启动器不另外查询（11.2 节第 3 步）。限制：用户在 profile 自己的补丁中把 `printUrl` 设为 `false` 时启动器等不到这一行，3 分钟后报错并给出日志的位置（上游请求见第 16 节）。
+
+实现与设计不同或设计没有写明之处：
+
+1. **模型的地址不能放进 `.env`**：dsh 拒绝 `.env` 文件（启动目录的与 `$DSH_HOME` 的都是）中决定网络去向的变量，例如 `DEEPSEEK_BASE_URL`，写了就拒绝启动，只接受启动环境中的。所以 11.3 节的“导入为 dsh 的凭据”拆成两处：密钥写进 `$DSH_HOME/.env`（dsh 的凭据层中最低的一层），服务的地址写进 studio 自己的 `$DSH_HOME/presmium-studio.json`，每次环境中没有模型的启动由启动器作为 `DEEPSEEK_BASE_URL` 传入。导入只在终端中询问一次（默认是）；不在终端时每次在标准错误说明怎样导入。这条规则也意味着工作区根（dsh 的启动目录）的 `.env` 改不了密钥的去向，可是它能让 dsh 拒绝启动，日志写明原因。
+2. **dsh 的凭据优先于环境**：dsh 在模型设置中保存的密钥（`.credentials.yaml`）先于环境变量。作者在界面中保存过 DeepSeek 的密钥之后又以 `PRESMIUM_MODEL_URL` 等启动时，dsh 会把保存的密钥发往那个服务；这是 dsh 的规则，启动器不改写 dsh 的凭据文件。
+3. **端口在启动之前选定**：工作区服务以工作台的源启动（`--preview-origin`），所以启动器先选好 dsh 的端口：默认 4320，每次相同，浏览器的 cookie 跨重启有效；被占用时另取空闲端口。
+4. **一个网址**：两个进程的输出写进 `$DSH_HOME/presmium-studio.log`，启动器的标准输出只有 `studio  <网址>` 一行，警告（局域网没有登录、`PRESMIUM_MODEL_*` 不全、怎样导入 `assistant.json`）在标准错误。
+5. **`--host`**：只接受本机的一个具体 IP 地址（dsh 不接受通配地址与主机名），dsh 与工作区服务都只监听它，本机也用这个地址打开。
+6. **消费者安装与打包**：两个用例（CLI 的与 studio 的消费者安装）会同时打包全部公开的包，`@presmium/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录（技能的副本，96d 之后还有预编译的客户端），`scripts/consumer.ts` 因此在全仓的一个锁之下打包。
 
 ## 18. 工作包
 
