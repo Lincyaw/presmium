@@ -1547,7 +1547,7 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 - 验收者补的：`create-presmium` 的 README；新建文档的标题含 `$` 时不再被改写；SECURITY 写明独立的课堂服务默认监听所有网卡；`@types/semver` 改为 kernel 的依赖；设计文档与需求中关于工作区译本的描述同步。
 - 接受的偏离：`presmium serve` 的预览只显示原文，仍提示译本要经工作区根目录的 `presmium build` 发布。
 
-### WP-93d 文档站与英文页面的收尾（1.0 发布前，可与 N 波次第一步并行）
+### WP-93d 文档站与英文页面的收尾（1.0 发布前；在 96a 合并之后，96a 拥有 `packages/web/**`）
 
 **拥有**：`site/**`、`packages/web/src/node/site.ts`（按语言的首页与相邻文档）、`packages/web/src/client/home.ts`（首页列表按页面的语言渲染）、`packages/workspace/templates/document/**`（英文的默认模板）、`packages/workspace/src/domain/messages.ts`（`DOCS_SITE_URL`）、`.github/workflows/docs.yml`（新）、`e2e/docs-site.spec.ts`。
 
