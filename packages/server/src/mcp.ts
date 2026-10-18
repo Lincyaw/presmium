@@ -7,6 +7,7 @@
 import type { AgentTool, Member, ServiceToken } from '@presmium/kernel'
 import type { McpHost, McpPluginTools, McpPosition } from '@presmium/mcp'
 import type { Control } from './control.ts'
+import type { FocusStore } from './focus.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
 
 export interface McpHostOptions {
@@ -20,6 +21,8 @@ export interface McpHostOptions {
   mounted(): Promise<ServedDocument[]>
   /** The server's own Node services, in front of the document's. */
   service<T>(token: ServiceToken<T>): T | undefined
+  /** The focus the workbench reported (`presmium.server/focus`). */
+  focus: FocusStore
 }
 
 function toolsOf(documents: ServedDocument[], own: McpHostOptions['service']): McpPluginTools {
@@ -51,6 +54,7 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     run: (document, target, signal) => host().run(document, target, signal),
     approve: (request, signal) => control.approvals.request(request, signal),
     offers: kind => control.policy(kind) !== 'off',
+    approval: kind => control.policy(kind),
     async tools(document) {
       if (document === undefined) return toolsOf(await options.mounted(), options.service)
       const doc = await options.mount(document)
@@ -63,6 +67,8 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
       return [...all.filter(presenting), ...all.filter(w => !presenting(w))].map(position)
     },
     watchPositions: listener => control.watch(listener),
+    focus: document => options.focus.get(document),
+    watchFocus: listener => options.focus.watch(listener),
     classroom: document => control.status(document),
     navigate: (document, to, member) => control.go(to, member, document),
     session: (document, action, name, member) => control.session(action, name, document, member),

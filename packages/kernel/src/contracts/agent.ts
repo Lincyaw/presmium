@@ -8,6 +8,56 @@ import type { ServiceToken } from './service.ts'
 
 export interface SourceRange { file: string, startLine: number, endLine: number }
 
+/**
+ * Where the user points (P-116, decision G-8, docs/design-dsh.md section 8):
+ * a range of the source, with its place in the document. A selection in the
+ * source editor and a pick in the web or slides preview end up as one. The
+ * server resolves what the workbench reports (`FocusReport`) into it and keeps
+ * the latest of each document (`presmium.server/focus`); MCP reads it as
+ * `presmium://focus` and `get_focus`, and the bundle puts it in a session's
+ * document context.
+ *
+ * @experimental The new workbench's (docs/api.md section 3).
+ */
+export interface Focus {
+  id: string
+  /** Where it was pointed at. */
+  from: 'source' | 'web' | 'slides'
+  /** The document directory, relative to the workspace root. */
+  document: string
+  /** The range of the source, always there; its file is relative to the document directory. */
+  source: SourceRange
+  /** The source's text of that range: read from the file by the server, never taken from the page. */
+  excerpt: string
+  /**
+   * Its place in the document: a pick in a preview names the section and the
+   * block, one in the slides also the step; for a selection in the editor the
+   * server finds the section and block by line.
+   */
+  section?: string
+  block?: string
+  step?: number
+  /** The text selected in the page, to help an agent find those words in the block. */
+  quote?: string
+}
+
+/**
+ * What the workbench reports of a focus before the server resolves it
+ * (`POST presmium.server/focus`): a block of a preview (`section`, `block`,
+ * `step`), or a range of the source editor (`source`).
+ *
+ * @experimental The new workbench's (docs/api.md section 3).
+ */
+export interface FocusReport {
+  id: string
+  from: Focus['from']
+  section?: string
+  block?: string
+  step?: number
+  quote?: string
+  source?: SourceRange
+}
+
 export interface AgentContext {
   /** Document directory, relative to the workspace root. */
   document: string
@@ -18,6 +68,8 @@ export interface AgentContext {
   /** The selected text. */
   selection?: string
   source?: SourceRange
+  /** What the user points at (G-8); without any, the place above is the passive focus. */
+  focus?: Focus[]
 }
 
 /**
@@ -42,6 +94,8 @@ export interface Annotation {
   status: AnnotationStatus
   /** The agent's note. */
   note?: string
+  /** The focus the annotation is on (G-8); `section`, `block`, `source` and `excerpt` above agree with it. */
+  focus?: Focus
 }
 
 export interface AgentTaskRequest {

@@ -6,6 +6,9 @@
 // file its `exports` and `bin` name, internal dependencies through `workspace:`; a plugin (a package
 // with a `./presmium` entry) has the Presmium packages it shares with the application as peers. A
 // private package is in the table's private rows. `pnpm -r publish --dry-run` packs what this allows.
+// The workbench's packages of the N wave (docs/design-dsh.md 3.3) are 0.x, experimental, with versions of
+// their own; what a package's `prepack` generates (`presmium.generated` in its package.json: the skills
+// copied into @presmium/dsh, its precompiled client) is in its `files` without being in the repository.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -15,6 +18,8 @@ const REPOSITORY = 'git+https://github.com/presmium/presmium.git'
 const SHARED = new Set(['@presmium/kernel', '@presmium/host', '@presmium/viewer', '@presmium/compiler'])
 /** The one public package outside the scope: `npm create presmium` runs the package `create-presmium` (P-142). */
 const UNSCOPED = new Set(['create-presmium'])
+/** The 0.x packages, outside Presmium's one version until DeepSeek Harness is stable (docs/design-dsh.md 12). */
+const ZERO = new Set(['@presmium/workbench', '@presmium/dsh', '@presmium/studio'])
 
 const read = file => JSON.parse(readFileSync(join(root, file), 'utf8'))
 const rootPackage = read('package.json')
@@ -52,7 +57,14 @@ for (const dir of workspaces) {
   }
   if (row && row !== 'npm') problems.push(`${at}: published, but the table says "${row}"`)
   if (!pkg.name.startsWith('@presmium/') && !UNSCOPED.has(pkg.name)) problems.push(`${at}: a public package is named @presmium/*`)
-  versions.add(pkg.version)
+  if (ZERO.has(pkg.name)) {
+    if (!/^0\./.test(pkg.version)) problems.push(`${at}: a package of the workbench is 0.x (docs/design-dsh.md 12), not ${pkg.version}`)
+  } else {
+    versions.add(pkg.version)
+  }
+  /** What `prepack` generates: in `files`, not in the repository. */
+  const generated = pkg.presmium?.generated ?? []
+  const made = target => generated.some(dir => target === dir || target.startsWith(`${dir}/`))
   if (pkg.license !== 'Apache-2.0') problems.push(`${at}: license is ${JSON.stringify(pkg.license)}, not "Apache-2.0"`)
   if (!existsSync(join(root, dir, 'LICENSE')) || readFileSync(join(root, dir, 'LICENSE'), 'utf8') !== license) problems.push(`${at}: its LICENSE is not the root's`)
   if (pkg.engines?.node !== rootPackage.engines.node) problems.push(`${at}: engines.node is ${JSON.stringify(pkg.engines?.node)}, the root's is "${rootPackage.engines.node}"`)
@@ -63,10 +75,10 @@ for (const dir of workspaces) {
   if (!Array.isArray(pkg.files) || pkg.files.length === 0) {
     problems.push(`${at}: no files`)
   } else {
-    for (const file of pkg.files) if (!existsSync(join(root, dir, file))) problems.push(`${at}: files names ${file}, which does not exist`)
+    for (const file of pkg.files) if (!made(file) && !existsSync(join(root, dir, file))) problems.push(`${at}: files names ${file}, which does not exist`)
     for (const target of [...targets(pkg.exports), ...targets(pkg.bin)]) {
       if (target === 'package.json') continue
-      if (!existsSync(join(root, dir, target))) problems.push(`${at}: ${target} (exports or bin) does not exist`)
+      if (!made(target) && !existsSync(join(root, dir, target))) problems.push(`${at}: ${target} (exports or bin) does not exist`)
       if (!pkg.files.some(file => target === file || target.startsWith(`${file}/`))) problems.push(`${at}: ${target} (exports or bin) is not in files`)
     }
   }

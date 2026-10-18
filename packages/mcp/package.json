@@ -26,20 +26,19 @@
     "presmium-mcp": "./bin/presmium-mcp.mjs"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
   },
   "files": [
     "bin",
     "src"
   ],
   "dependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
     "@modelcontextprotocol/server": "2.3.1",
     "@presmium/compiler": "workspace:*",
     "@presmium/kernel": "workspace:*",
     "jiti": "^2.7.0",
     "minisearch": "7.2.0"
-  },
-  "devDependencies": {
-    "@modelcontextprotocol/client": "2.3.1"
   }
 }

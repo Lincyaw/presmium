@@ -62,7 +62,7 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 
 - `presmium build | dev | ir | check | serve` 与 `presmium --help` 列出的选项；退出码（0 没有错误，1 有错误级诊断，2 用法或内部错误）；诊断的格式（`<文件>:<行>  <级别>  <消息>  (<检查 ID>)`）、检查 ID 与 `presmium check --json` 的结构（`findings` 的 `checkId`、`severity`、`message`、`source`）。诊断的消息文字可以改进，检查 ID 不变。
 - 其他包带的命令：`presmium-mcp`（`@presmium/mcp`，stdio 的 MCP 服务）、`presmium-export` 与 `presmium-diff`（`@presmium/slidev-addon-publish`）、`presmium-lecture export`（`@presmium/slidev-addon-lecture`）、`presmium-speech`（`@presmium/slidev-addon-speech`）、`presmium-language-server`（`@presmium/language-server`）、`presmium-classroom-server`（`@presmium/classroom-server`，课堂同步服务，选项 `--port`、`--host`、`--deck`）。
-- MCP 环境：`/mcp` 与 `presmium-mcp` 的工具名与输入（`list_documents`、`deck_info`、`list_sections`、`get_section`、`get_step`、`search`、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`、`get_position`、`get_classroom`、`navigate`、`run_code`、`build`、`classroom_start`、`classroom_end`，以及插件的工具）与资源 `presmium://…`。
+- MCP 环境：`/mcp` 与 `presmium-mcp` 的工具名与输入（`list_documents`、`deck_info`、`list_sections`、`get_section`、`get_step`、`search`、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`、`get_position`、`get_classroom`、`get_focus`、`navigate`、`run_code`、`build`、`classroom_start`、`classroom_end`，以及插件的工具）与资源 `presmium://…`。
 - `@presmium/cli/testing`：`presmium(cwd, args, env?)`、`run`、`PRESMIUM_BIN`，插件的集成测试用它们运行真正的 CLI。
 
 ### 2.3 内核契约（`@presmium/kernel`）
@@ -103,6 +103,8 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 - `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE` 与 `EditMode`；工具栏的槽位 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock`（`ToolbarSlot` 中 `tools`、`settings` 以外的值）与位置（`ToolbarPlace`、`useToolbarPlace`、`provideToolbarPlace`；`PmToolbarEntry` 在活动栏中的形态）；`trackAgentTask` 与 `AgentTaskState`。
 - 网页渲染端的工作台：`presmium serve` 与 `presmium dev` 中首页的工作台（活动栏、文件树、启动台、状态栏）、编辑模式的外壳、窗口事件 `presmium:documents` 与首页的文档列表接口 `@presmium/documents.json`。静态站点的首页与页面是公开的产物（第 2.1 节）。
 - 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`、`ReviewDecision`、`TaskRevertResult`），`@presmium/slidev-addon-assistant` 的“AI 修改”面板、停靠面板、模型设置界面与路由 `info`、`settings`、`tasks/*`、`revert`、`excerpt`，`@presmium/slidev-addon-lecture` 编辑模式中的“讲授回写”面板。修改任务的请求与事件（`AgentTaskRequest`、`AgentTaskKind`、`AgentContext`、`Annotation`、`AnnotationStatus`、`AgentEvent`、`Citation`）同时是 Node 端 `AGENT_RUNTIME` 的会话（`AgentSession.prompt`）与 `ASK` 的类型，随它们公开。读者问答（`ASK` 与提问面板）是产物的一部分，是公开接口。
+
+- N 波次的工作台（`docs/design-dsh.md`）：`@presmium/dsh`（DeepSeek Harness 的 bundle，0.x，有自己的版本号）的行、补丁与 `./launch`，服务端为它提供的路由 `presmium.server/tokens`（会话令牌）与 `presmium.server/focus`；契约 `Focus`、`FocusReport`、`McpIssueOptions` 随新工作台定型，在 1.0 中同样是实验性的。
 
 本节的 TypeScript 声明在源码中带 TSDoc 标签 `@experimental`，接口参考（`/api/`）中显示为 Experimental；只有一部分是实验性的声明（`ToolbarSlot`、`PmToolbarEntry`）在说明中写明是哪一部分，`@presmium/workspace` 的 `./client` 与 `./domain` 在入口文件的说明中标注。界面、路由与窗口事件没有声明可以标注，以本节的列表为准；标注与本节不一致时同样以本节为准。
 

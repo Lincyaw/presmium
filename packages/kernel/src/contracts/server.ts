@@ -232,9 +232,28 @@ export interface McpGrant extends McpAccess {
   revoke(): void
 }
 
+/**
+ * How a token is issued (`McpEndpoint.issue`, WP-96b). A session token of
+ * DeepSeek Harness is `confirmed` and bound to the document of its session
+ * (docs/design-dsh.md 5.3).
+ *
+ * @experimental The new workbench's (docs/api.md section 3).
+ */
+export interface McpIssueOptions {
+  /**
+   * The host already confirmed the operations of this token's caller (DeepSeek
+   * Harness asked, by Presmium's approval policy, before the call): its
+   * operate and spend tools ask no window through `APPROVALS`. The kinds whose
+   * policy is `off` stay unlisted.
+   */
+  confirmed?: boolean
+  /** The one document (relative to the workspace root) the token's calls may name; its default. */
+  document?: string
+}
+
 export interface McpEndpoint {
   /** Issues a token for a member and a mode; the member's roles decide which tools there are. */
-  issue(member: Member, mode: AgentMode): McpGrant
+  issue(member: Member, mode: AgentMode, options?: McpIssueOptions): McpGrant
 }
 
 /** Node service, provided by the server where it mounts `/mcp` (`presmium dev` and `presmium serve`); none in `presmium build`. */

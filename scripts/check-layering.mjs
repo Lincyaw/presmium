@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Enforces the layering rules of docs/architecture.md section 3 across all packages.
-// Every module reference counts: static and dynamic imports, re-exports and require().
+// Every module reference counts: static and dynamic imports, re-exports and require(). The N wave's rules
+// (docs/design-dsh.md 3.2) add what a file's text says of the workbench, and what a package.json depends on.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { dirname, join, relative, resolve, sep } from 'node:path'
@@ -67,7 +68,8 @@ const rules = [
   // v0.8 (WP-73a): the server packages, the hosts plugins do not use, and the protocol adapters.
   { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || /^@presmium\/(viewer|web|host)(\/|$)/.test(spec) },
   { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/server(\/|$)/.test(spec) },
-  { name: 'only the server uses mcp', pkgs: pkg => !['server', 'mcp'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/mcp(\/|$)/.test(spec) },
+  // N wave (WP-96b): the bundle of DeepSeek Harness is MCP's second user (its client side, `@presmium/mcp/client`).
+  { name: 'only the server and the dsh bundle use mcp', pkgs: pkg => !['server', 'mcp', 'dsh'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/mcp(\/|$)/.test(spec) },
   { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/(server|mcp|workspace|web)(\/|$)/.test(spec) },
   {
     name: 'protocol clients stay in their adapter',
@@ -75,7 +77,42 @@ const rules = [
     skip: ['test'],
     forbid: (spec, file, pkgDir) => ADAPTERS.some(adapter => adapter.pattern.test(spec) && !adapter.allowed(pkgName(pkgDir), inPackage(file, pkgDir))),
   },
+  // N wave (docs/design-dsh.md 3.2, WP-96b).
+  { name: 'DeepSeek Harness only in dsh and studio (G-9)', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
+  { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@presmium\/host(\/|$)/.test(spec) },
+  { name: 'the design system uses no package', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') },
+  { name: 'outputs do not use the workbench', pkgs: pkg => PRODUCTS(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/workbench(\/|$)/.test(spec) },
 ]
+
+// N wave (docs/design-dsh.md 3.2, decision G-9): DeepSeek Harness is referenced, and depended on, only by these
+// packages; `addon-assistant` (the old workbench's ACP runtime) until WP-96g.
+const DSH = /^@deepseek-ai\//
+const DSH_PACKAGES = ['dsh', 'studio', 'addon-assistant']
+
+/**
+ * The outputs (G-1): the packages of the web page and the slides, and each plugin's `src/client` and
+ * `components`. They know nothing of the workbench: no `EDIT_MODE` and none of the workbench's toolbar slots
+ * (`home`, `create`, `files`, `tabs`, `source`, `dock`), read from the files' text.
+ */
+const PRODUCTS = pkg => ['web', 'viewer', 'addon-core'].includes(pkg) || pkg.startsWith('render-')
+const WORKBENCH_SLOTS = '(?:home|create|files|tabs|source|dock)'
+const WORKBENCH = [
+  { what: 'EDIT_MODE', pattern: /\bEDIT_MODE\b/ },
+  { what: 'a workbench slot', pattern: new RegExp(`\\bslot:\\s*['"]${WORKBENCH_SLOTS}['"]|\\bbySlot\\(\\s*['"]${WORKBENCH_SLOTS}['"]|\\bslots\\.value\\.has\\(\\s*['"]${WORKBENCH_SLOTS}['"]`) },
+]
+/**
+ * The old workbench's references in the outputs today (docs/design-dsh.md 13.3, rows 4 to 7 and 12, 14),
+ * allowed until WP-96g removes them and empties this list. Paths relative to the repository root.
+ */
+const OLD_WORKBENCH = new Set([
+  'packages/web/src/client/theme.ts',
+  'packages/web/src/client/home.ts',
+  'packages/viewer/src/rich.ts',
+  'packages/addon-assistant/src/client/EditPanel.vue',
+  'packages/addon-assistant/src/client/dock.ts',
+  'packages/addon-lecture/src/client/dock.ts',
+  'packages/addon-lecture/src/client/WritebackDock.vue',
+])
 
 const SOURCE = /\.(ts|tsx|vue|mts|mjs|js|jsx|cjs)$/
 
@@ -101,6 +138,29 @@ for (const pkg of readdirSync(join(root, 'packages'))) {
         if (rule.forbid(spec, file, pkgDir)) violations.push(`${relative(root, file)}: ${spec}  (${rule.name})`)
       }
     }
+  }
+}
+
+// The outputs' text: no EDIT_MODE, no workbench slot (but the old workbench's, listed above).
+for (const pkg of readdirSync(join(root, 'packages'))) {
+  const pkgDir = join(root, 'packages', pkg)
+  const dirs = PRODUCTS(pkg) ? ['.'] : pkg.startsWith('addon-') ? ['src/client', 'components'] : []
+  for (const file of dirs.flatMap(dir => files(join(pkgDir, dir), ['test']))) {
+    const where = relative(root, file)
+    if (OLD_WORKBENCH.has(where)) continue
+    // The code, not what its comments say of the workbench.
+    const text = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/[^\n]*/g, '$1')
+    for (const { what, pattern } of WORKBENCH) if (pattern.test(text)) violations.push(`${where}: ${what}  (outputs do not know the workbench)`)
+  }
+}
+
+// What the packages depend on: DeepSeek Harness only in dsh and studio (G-9).
+for (const pkg of readdirSync(join(root, 'packages'))) {
+  const manifest = join(root, 'packages', pkg, 'package.json')
+  if (!existsSync(manifest) || DSH_PACKAGES.includes(pkg)) continue
+  const { dependencies = {}, devDependencies = {}, peerDependencies = {} } = JSON.parse(readFileSync(manifest, 'utf8'))
+  for (const name of Object.keys({ ...dependencies, ...devDependencies, ...peerDependencies })) {
+    if (DSH.test(name)) violations.push(`${relative(root, manifest)}: ${name}  (DeepSeek Harness only in dsh and studio (G-9))`)
   }
 }
 

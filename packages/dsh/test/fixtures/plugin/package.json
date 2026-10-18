@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-dsh",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of packages/dsh/test: one agent tool, which both adapters offer",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

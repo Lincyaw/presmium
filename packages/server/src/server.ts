@@ -9,13 +9,12 @@
  * there by default, or on the local network with `--host` (E-3, revised),
  * for the user's other devices, without a login.
  */
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
 import { APPROVALS, eventStream, isRecord, MAX_BODY, MCP_ENDPOINT, errorMessage, prefixed } from '@presmium/kernel'
 import type {
-  AgentMode,
   ApprovalKind,
   Logger,
   McpEndpoint,
@@ -28,10 +27,12 @@ import type {
 } from '@presmium/kernel'
 import { pluginLogger } from '@presmium/compiler'
 import { createPresmiumMcp } from '@presmium/mcp'
+import type { McpCaller } from '@presmium/mcp'
 import { authenticate, LOCAL_AUTHOR, machineHosts } from './auth.ts'
 import type { Refusal } from './auth.ts'
 import { Control, hasRole } from './control.ts'
 import type { ApprovalPolicy, WindowPosition } from './control.ts'
+import { focusBody, FocusStore } from './focus.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
 import { bearer, closeServer, createProxy, header, isLoopback, json, limitBody, listen, nodeServer, problem, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
@@ -98,8 +99,13 @@ export interface ServerOptions {
    * Another MCP service behind `/mcp`; by default `@presmium/mcp` over the
    * `serverHost`, the control channel and the approvals (WP-78).
    */
-  mcp?(request: Request, access: { member: Member, mode: AgentMode }): Promise<Response>
-  /** The process's environment (`ServerContext.secret`); default `process.env`. */
+  mcp?(request: Request, access: McpCaller): Promise<Response>
+  /**
+   * The process's environment (`ServerContext.secret`); default `process.env`.
+   * With `PRESMIUM_SERVICE_TOKEN` (docs/design-dsh.md 5.3), the session
+   * tokens (`presmium.server/tokens`) and focus reports (`presmium.server/focus`)
+   * need `Authorization: Bearer <that token>`.
+   */
   env?: NodeJS.ProcessEnv
   /** How long an approval waits for an answer; default 50 s. */
   approvalTimeoutMs?: number
@@ -212,14 +218,14 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   })
   // The process's own MCP token, for the local author's outside agents (Claude Code, Codex): in the state file only.
   const token = randomBytes(24).toString('base64url')
-  const mcpTokens = new Map<string, { member: Member, mode: AgentMode }>()
+  const mcpTokens = new Map<string, McpCaller>()
   /** The open responses of each issued token (subscription streams), ended when it is revoked. */
   const mcpStreams = new Map<string, Set<AbortController>>()
   let url = ''
   const mcpEndpoint: McpEndpoint = {
-    issue(member, mode) {
+    issue(member, mode, issued = {}) {
       const value = randomBytes(24).toString('base64url')
-      mcpTokens.set(value, { member, mode })
+      mcpTokens.set(value, { member, mode, ...issued.confirmed ? { confirmed: true } : {}, ...issued.document !== undefined ? { document: issued.document } : {} })
       return {
         url: `${url}/mcp`,
         token: value,
@@ -232,6 +238,20 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     },
   }
   const services: [ServiceToken<unknown>, unknown][] = [[APPROVALS, control.approvals], [MCP_ENDPOINT, mcpEndpoint]]
+
+  /**
+   * The service token of the host that started this process (docs/design-dsh.md
+   * 5.3): the bundle of DeepSeek Harness, or `presmium studio`, sends it.
+   */
+  const serviceToken = env.PRESMIUM_SERVICE_TOKEN || undefined
+  const fromHost = (request: Request) => {
+    const given = bearer(request.headers.get('authorization'))
+    if (!serviceToken || given === undefined || given.length !== serviceToken.length) return false
+    return timingSafeEqual(Buffer.from(given), Buffer.from(serviceToken))
+  }
+  /** The session tokens issued through `presmium.server/tokens`, by DeepSeek Harness's session. */
+  const sessions = new Map<string, ReturnType<McpEndpoint['issue']>>()
+  const focus = new FocusStore()
   const own = new Map(services.map(([token, impl]) => [token.id, impl]))
 
   // Documents and their contributions, made on the first request of each.
@@ -285,6 +305,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     mount: async dir => (await mount(dir))?.doc,
     mounted: async () => (await Promise.all([...mounted.values()].map(known => known.catch(() => undefined)))).flatMap(m => (m ? [m.doc] : [])),
     service: <T>(token: ServiceToken<T>) => own.get(token.id) as T | undefined,
+    focus,
   }))
 
   /** Who sent a request, or why it is refused; decided once per request. */
@@ -344,7 +365,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   /** `/mcp`: the caller its bearer token names; a subscription stream of an issued token ends when the token is revoked. */
   const serveMcp = async (request: Request): Promise<Response> => {
     const given = bearer(request.headers.get('authorization'))
-    const access = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
+    const access: McpCaller | undefined = given === undefined ? undefined : given === token ? { member: LOCAL_AUTHOR, mode: 'author' as const } : mcpTokens.get(given)
     if (!access) return problem(401, 'MCP needs an Authorization: Bearer token')
     const limited = await limitBody(request, MAX_BODY)
     if (limited instanceof Response) return limited
@@ -397,7 +418,70 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       }
       return problem(400, 'unknown message')
     }
+    if (route === 'tokens') return await tokensRoute(request)
+    if (route === 'focus') return await focusRoute(request)
     return problem(404, 'not found')
+  }
+
+  /**
+   * `tokens` (docs/design-dsh.md 5.3): `POST { document, session }` issues a
+   * session token of DeepSeek Harness, `confirmed` and bound to the document
+   * (one per session: a new one revokes the old), `DELETE { session? }`
+   * revokes one session's or every one. Only the host that started this
+   * process issues them: it needs the service token.
+   */
+  const tokensRoute = async (request: Request): Promise<Response> => {
+    if (!serviceToken) return problem(403, 'session tokens are issued only to the host that started this service (PRESMIUM_SERVICE_TOKEN)')
+    if (!fromHost(request)) return problem(401, 'session tokens need Authorization: Bearer <the service token>')
+    const limited = await limitBody(request, MAX_BODY)
+    if (limited instanceof Response) return limited
+    const body: unknown = await limited.json().catch(() => ({}))
+    const session = isRecord(body) && typeof body.session === 'string' && body.session !== '' ? body.session : undefined
+    if (request.method === 'DELETE') {
+      const revoked = session === undefined ? [...sessions.keys()] : sessions.has(session) ? [session] : []
+      for (const id of revoked) {
+        sessions.get(id)!.revoke()
+        sessions.delete(id)
+      }
+      return json({ revoked: revoked.length })
+    }
+    if (request.method !== 'POST') return problem(405, 'POST or DELETE')
+    if (!isRecord(body) || typeof body.document !== 'string' || session === undefined) return problem(400, '{ document, session }')
+    const document = body.document
+    if (options.serverHost && !(await options.serverHost.documents()).some(doc => doc.dir === document)) return problem(404, `no document ${JSON.stringify(document)}`)
+    sessions.get(session)?.revoke()
+    const grant = mcpEndpoint.issue(LOCAL_AUTHOR, 'author', { confirmed: true, document })
+    sessions.set(session, grant)
+    return json({ url: grant.url, token: grant.token, document }, 201)
+  }
+
+  /**
+   * `focus` (docs/design-dsh.md 8.6): `GET ?document=` the latest focus of a
+   * document (of any without one), `POST { document, focus: [...] }` the
+   * workbench's report, resolved on the document's compilation; with a
+   * service token, only its host reports.
+   */
+  const focusRoute = async (request: Request): Promise<Response> => {
+    if (request.method === 'GET') {
+      const params = new URL(request.url).searchParams
+      const found = focus.get(params.has('document') ? params.get('document')! : undefined)
+      return json(found ? { document: found.document, focus: found.focus, reported: new Date(found.at).toISOString() } : { focus: null })
+    }
+    if (request.method !== 'POST') return problem(405, 'GET or POST')
+    if (serviceToken && !fromHost(request)) return problem(401, 'a focus report needs Authorization: Bearer <the service token>')
+    if (!options.serverHost) return problem(409, 'this server compiles no document')
+    const limited = await limitBody(request, MAX_BODY)
+    if (limited instanceof Response) return limited
+    const body = focusBody(await limited.json().catch(() => undefined))
+    if (typeof body === 'string') return problem(400, body)
+    if (!(await options.serverHost.documents()).some(doc => doc.dir === body.document)) return problem(404, `no document ${JSON.stringify(body.document)}`)
+    try {
+      const { doc } = await options.serverHost.compile(body.document)
+      const record = focus.report(body.document, doc, body.focus)
+      return json({ document: record.document, focus: record.focus, reported: new Date(record.at).toISOString() })
+    } catch (error) {
+      return problem(400, errorMessage(error))
+    }
   }
 
   const pluginRoute = async (request: Request, target: { plugin: string, path: string }, member: Member, document: string): Promise<Response> => {
@@ -446,6 +530,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     control,
     serverHost: options.serverHost,
     async unmount(dir) {
+      focus.forget(dir)
       const known = mounted.get(dir)
       // The next request loads the document again, as it is then.
       mounted.delete(dir)
@@ -455,6 +540,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       }
     },
     async close() {
+      for (const grant of sessions.values()) grant.revoke()
+      sessions.clear()
       // Waiting approvals are refused first, so the MCP calls that wait for them end.
       control.close()
       await mcp?.close().catch((error: unknown) => log.error(`MCP failed to close: ${errorMessage(error)}`))
