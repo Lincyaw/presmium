@@ -38,27 +38,36 @@
  * (`../bpe/lecture.md#extend-c`, `RenderContext.documentLink`, C-4) goes to
  * that document's page of the section or label its fragment names
  * (`/bpe/extend.html#extend-c`); a document's source is never published.
+ *
+ * The translations a document declares (`SiteDocument.translations`, P-123)
+ * are published as a build of the document alone publishes them: each under
+ * `<base><dir>/<lang>/`, with the document's language menu. The home page
+ * has a locale for each language of the translations, `<base><lang>/`, which
+ * lists each document in that language when it has a translation in it (its
+ * original otherwise); its title is `site.locales.<lang>.title`, else the
+ * site's. A link written in a translation to another document goes to that
+ * document's translation into the same language when it has one.
  */
-import { existsSync, mkdirSync, realpathSync, rmSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, realpathSync, rmSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, localRequestRefusal, nodeMdast } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, isRecord, localRequestRefusal, nodeMdast } from '@presmium/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
 import { FONT_LICENSE, fontLicense, preBundle } from '@presmium/kernel/node'
 import { createProxyServer } from 'http-proxy-3'
-import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, urlPath } from '../domain/index.ts'
-import type { Neighbour, SearchDocument } from '../domain/index.ts'
+import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, translationPages, urlPath } from '../domain/index.ts'
+import type { Neighbour, SearchDocument, WebPage } from '../domain/index.ts'
 import { clientModules } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 import { publishedFile } from './publish.ts'
 import type { DocumentPage } from './publish.ts'
 import { buildDocument, devDocument } from './renderer.ts'
 import type { DocumentDevServer, DocumentSite } from './renderer.ts'
-import { browserPackages, linkDependencies, OG_TITLE, SRC_EXCLUDE, write } from './site.ts'
+import { browserPackages, languageLabel, linkDependencies, OG_TITLE, SRC_EXCLUDE, write } from './site.ts'
 import type { WorkspaceOptions } from './site.ts'
 import { vitepressBuild, vitepressDev } from './vitepress.ts'
 
@@ -77,6 +86,8 @@ const WORKSPACE_FILE = 'presmium.workspace.yaml'
 const DECK_ENTRY = 'lecture.md'
 /** URLs that name no file: a scheme, protocol-relative, or a fragment. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
+/** The language of a link to another document found in a translation (`documentContext`), for `documentPage`. */
+const LINK_LANGUAGE = new WeakMap<DocumentLink, string>()
 /** The options of the workspace's `site` that make the site shell (P-78). */
 const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap']
 
@@ -125,12 +136,32 @@ function homeDocuments(site: SiteSpec, base: string, compiled: ReadonlyMap<strin
   return site.documents.map(({ dir, title, lang, tags, doc }) => ({ dir, title, ...lang ? { lang } : {}, ...tags?.length ? { tags } : {}, href: documentBase(base, dir), ...cardOf(compiled.get(dir) ?? doc, documentBase(base, dir)) }))
 }
 
+/** The languages of the documents' translations (P-123) but the site's own, in the order they come: the home page's locales. */
+function siteLanguages(site: SiteSpec, lang: string): string[] {
+  return [...new Set(site.documents.flatMap(entry => (entry.translations ?? []).map(t => t.lang)))].filter(other => other !== lang)
+}
+
+/** A document's translation into `lang`, with its pages, named as the original's (`translationPages`). */
+function translationOf(entry: SiteDocument, lang: string): { doc: IRDocument, pages: WebPage[] } | undefined {
+  const translated = entry.translations?.find(t => t.lang === lang)
+  return translated && entry.doc ? { doc: translated.doc, pages: translationPages(translated.doc, toPages(entry.doc)) } : undefined
+}
+
+/** The documents as the home page of the locale `lang` lists them: in that language when translated into it, else the original. */
+function localeDocuments(site: SiteSpec, base: string, lang: string): HomeDocument[] {
+  return site.documents.map((entry) => {
+    const translated = translationOf(entry, lang)
+    if (!translated) return homeDocuments({ ...site, documents: [entry] }, base)[0]!
+    const root = `${documentBase(base, entry.dir)}${lang}/`
+    return { dir: entry.dir, title: translated.doc.meta.title, lang, ...entry.tags?.length ? { tags: entry.tags } : {}, href: root, ...cardOf(translated.doc, root, translated.pages) }
+  })
+}
+
 /** What a document's card shows of its IR: the headmatter's `description`, the number of pages, the findings by severity; and its sections, linked under `root`. */
-function cardOf(doc: IRDocument | undefined, root: string): Pick<HomeDocument, 'description' | 'pages' | 'problems' | 'sections'> {
-  if (!doc) return {}
+function cardOf(doc: IRDocument | undefined, root: string, pages = doc && toPages(doc)): Pick<HomeDocument, 'description' | 'pages' | 'problems' | 'sections'> {
+  if (!doc || !pages) return {}
   const description = typeof doc.meta.description === 'string' ? doc.meta.description.trim() : ''
   const count = (severity: Finding['severity']) => doc.diagnostics.filter(finding => finding.severity === severity).length
-  const pages = toPages(doc)
   const links = sectionLinks(pages)
   const sections = doc.sections.flatMap(section => (section.title && links[section.id] ? [{ id: section.id, title: section.title, href: `${root}${links[section.id]!.slice(1)}` }] : []))
   return { ...description ? { description } : {}, pages: pages.length, problems: { errors: count('error'), warnings: count('warning') }, sections }
@@ -241,18 +272,38 @@ function labelSection(doc: IRDocument, label: string): string | undefined {
  * directory; one that is not in the site keeps the link as written.
  */
 function documentPage(site: SiteSpec, base: string, docs: Map<string, IRDocument>): DocumentPage {
-  return ({ dir, fragment }) => {
-    if (!site.documents.some(entry => entry.dir === dir)) return undefined
-    const root = documentBase(base, dir)
+  return (link) => {
+    const { dir, fragment } = link
+    const entry = site.documents.find(other => other.dir === dir)
+    if (!entry) return undefined
+    // From a translation, the linked document's translation into its language, at the same page (`translationPages`).
+    const lang = LINK_LANGUAGE.get(link)
+    const translated = lang ? translationOf(entry, lang) : undefined
+    const root = `${documentBase(base, dir)}${translated ? `${lang}/` : ''}`
     const anchor = fragment ? `#${encodeURIComponent(fragment)}` : ''
     const doc = docs.get(dir)
     if (!doc || !fragment) return `${root}${anchor}`
     // Site-relative links of the document's sections: `/`, `/extend.html`, `/extend.html#extend-c`.
-    const links = sectionLinks(toPages(doc))
+    const links = sectionLinks(translated?.pages ?? toPages(doc))
     if (links[fragment]) return `${root}${links[fragment].slice(1)}`
     const section = labelSection(doc, fragment)
     return `${root}${(section ? links[section]!.split('#')[0]! : '/').slice(1)}${anchor}`
   }
+}
+
+/** The files of a document's sections and blocks. */
+function sourceFiles(doc: IRDocument): Set<string> {
+  return new Set([...doc.sections.map(section => section.source.file), ...[...docBlocks(doc)].map(({ block }) => block.source.file)])
+}
+
+/** The language of each file that only a translation of `doc` holds (its entry, the files it includes). */
+function translatedFiles(doc: IRDocument, translations: SiteDocument['translations'] = []): Map<string, string> {
+  const original = sourceFiles(doc)
+  const files = new Map<string, string>()
+  for (const { lang, doc: translated } of translations) {
+    for (const file of sourceFiles(translated)) if (!original.has(file)) files.set(file, lang)
+  }
+  return files
 }
 
 /**
@@ -261,7 +312,15 @@ function documentPage(site: SiteSpec, base: string, docs: Map<string, IRDocument
  * and its links to documents, whose sources are not published.
  */
 function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: IRDocument, outDir: string, workDir: string): RenderContext {
-  const documentLink = documentLinkOf(ctx)
+  const linkOf = documentLinkOf(ctx)
+  const entry = site.documents.find(other => other.dir === dir)
+  const translated = translatedFiles(doc, entry?.translations)
+  const documentLink = (source: SourcePos, url: string): DocumentLink | undefined => {
+    const link = linkOf(source, url)
+    const lang = translated.get(source.file)
+    if (link && lang) LINK_LANGUAGE.set(link, lang)
+    return link
+  }
   const deckDir = join(ctx.workspaceRoot, dir)
   const pluginDirs: Record<string, string> = {}
   for (const name of doc.config.plugins) {
@@ -280,7 +339,8 @@ function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: I
     lang: doc.meta.lang,
     base: documentBase(ctx.base, dir),
     vitePlugins: [],
-    translations: undefined,
+    // Its translations (P-123), each a locale of its site under `<lang>/`, as a build of the document alone has them.
+    translations: entry?.translations,
     documentLink,
     localAsset(source, url) {
       if (documentLink(source, url)) return undefined
@@ -354,9 +414,13 @@ function documentSite(ctx: RenderContext, site: SiteSpec, dir: string, extra: Cl
   }
 }
 
-/** Every page of the site's documents, relative to its base, for its sitemap. */
+/** Every page of the site's documents and of their translations, relative to its base, for its sitemap. */
 function sitemapPages(site: SiteSpec): string[] {
-  return site.documents.flatMap(entry => (entry.doc && entry.dir ? toPages(entry.doc).map(page => `${urlPath(entry.dir)}${pageLink(page)}`.replace(/^\//, '')) : []))
+  return site.documents.flatMap((entry) => {
+    if (!entry.doc || !entry.dir) return []
+    const translated = (entry.translations ?? []).flatMap(({ lang }) => translationOf(entry, lang)?.pages.map(page => pageLink(page, `/${lang}`)) ?? [])
+    return [...toPages(entry.doc).map(page => pageLink(page)), ...translated].map(link => `${urlPath(entry.dir)}${link}`.replace(/^\//, ''))
+  })
 }
 
 /**
@@ -374,7 +438,21 @@ function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules:
   const dataFile = join(workDir, 'home.json')
   const home = homeDocument(site)
   const target = home && documentBase(ctx.base, home.dir)
-  write(dataFile, JSON.stringify({ title: site.title, documents: homeDocuments(site, ctx.base), sitemap: sitemapPages(site) }))
+  // A locale of the home page for each language of the documents' translations (P-123).
+  const titles = isRecord(site.config.locales) ? site.config.locales : {}
+  const locales = siteLanguages(site, lang).map((other) => {
+    const own = titles[other]
+    const translatedHome = home && translationOf(home, other) ? `${target}${other}/` : target
+    return {
+      lang: other,
+      label: languageLabel(other),
+      title: isRecord(own) && typeof own.title === 'string' ? own.title : site.title,
+      themeConfig: SITE_LABELS[deckLocale(other)].themeConfig,
+      documents: localeDocuments(site, ctx.base, other),
+      ...translatedHome ? { redirect: translatedHome, list: `${ctx.base}${other}/${LIST_PAGE}.html` } : {},
+    }
+  })
+  write(dataFile, JSON.stringify({ title: site.title, label: languageLabel(lang), documents: homeDocuments(site, ctx.base), locales, sitemap: sitemapPages(site) }))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(root)
   const include = preBundle(root, browserPackages(modules))
@@ -408,6 +486,14 @@ const site = ${JSON.stringify(config, null, 2)}
 const data = JSON.parse(readFileSync(${JSON.stringify(dataFile)}, 'utf8'))
 site.title = data.title
 site.themeConfig.presmium = { home: true, documents: data.documents${target ? `, redirect: ${JSON.stringify(target)}, list: ${JSON.stringify(`${ctx.base}${LIST_PAGE}.html`)}` : ''}${served ? `, server: true, endpoint: ${JSON.stringify(`${ctx.base}${DOCUMENTS_ENDPOINT}`)}` : ''} }
+// The languages of the documents' translations (P-123): a locale each, which lists the documents in its language.
+if (data.locales.length > 0) {
+  site.locales = { root: { label: data.label, lang: site.lang } }
+  for (const locale of data.locales) {
+    const presmium = { ...site.themeConfig.presmium, documents: locale.documents, ...locale.redirect ? { redirect: locale.redirect, list: locale.list } : {} }
+    site.locales[locale.lang] = { label: locale.label, lang: locale.lang, title: locale.title, themeConfig: { ...locale.themeConfig, presmium } }
+  }
+}
 site.vite = { plugins: [presmiumReady(), ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])], resolve: { dedupe: ['vue'] }${include.length > 0 ? `, optimizeDeps: { include: ${JSON.stringify(include)} }` : ''}${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
 ${sitemap}${shell.head ? OG_TITLE : ''}
 export default site
@@ -423,16 +509,33 @@ ${modules.plugins.map(file => `    ${load(file)},`).join('\n')}
   ],
 })
 `)
-  const list = '---\nlayout: page\n---\n\n<PresmiumSiteHome />\n'
+  writeIndex(root, home?.title, target)
+  // The pages of each locale under `<lang>/`; those of languages no longer translated go.
+  const langs = new Set(locales.map(locale => locale.lang))
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (entry.isDirectory() && !entry.name.startsWith('.') && !['public', 'node_modules'].includes(entry.name) && !langs.has(entry.name)) rmSync(join(root, entry.name), { recursive: true, force: true })
+  }
+  for (const locale of locales) writeIndex(join(root, locale.lang), locale.documents.find(doc => doc.dir === home?.dir)?.title, locale.redirect, true)
+  return root
+}
+
+/**
+ * The home page in `dir`: the documents list, or, with a home document, a
+ * page leading to `target` (its title `title`) and the list in
+ * `documents.md`. A locale's list is rendered in the browser only
+ * (`clientOnly`): the server render of the home page has the site's
+ * language, not the locale's.
+ */
+function writeIndex(dir: string, title: string | undefined, target: string | undefined, clientOnly = false): void {
+  const list = `---\nlayout: page\n---\n\n${clientOnly ? '<ClientOnly><PresmiumSiteHome /></ClientOnly>' : '<PresmiumSiteHome />'}\n`
   if (target) {
     const refresh = JSON.stringify(['meta', { 'http-equiv': 'refresh', 'content': `0; url=${target}` }])
-    write(join(root, 'index.md'), `---\nlayout: page\ntitle: ${JSON.stringify(home!.title)}\nhead:\n  - ${refresh}\n---\n\n<PresmiumSiteRedirect />\n`)
-    write(join(root, `${LIST_PAGE}.md`), list)
+    write(join(dir, 'index.md'), `---\nlayout: page\ntitle: ${JSON.stringify(title ?? '')}\nhead:\n  - ${refresh}\n---\n\n<PresmiumSiteRedirect />\n`)
+    write(join(dir, `${LIST_PAGE}.md`), list)
   } else {
-    write(join(root, 'index.md'), list)
-    rmSync(join(root, `${LIST_PAGE}.md`), { force: true })
+    write(join(dir, 'index.md'), list)
+    rmSync(join(dir, `${LIST_PAGE}.md`), { force: true })
   }
-  return root
 }
 
 /** Directories a dev server may serve files of: its project, the deck, the plugins, Presmium's packages. */

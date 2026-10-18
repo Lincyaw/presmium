@@ -1,0 +1,83 @@
+---
+title: Interfaces and versions
+lang: en
+description: Which interfaces stay stable under semantic versioning, and the version rules of the packages, the IR and the plugin contract
+translationOf: { entry: lecture.md, digest: c12e28d15c3e0e57d64e6a80f2281333b6ad814f56bbc055d5bb1c54185c2a8a }
+---
+
+(reference)=
+# Interfaces and versions
+
+Presmium 1.x keeps its public interfaces stable under semantic versioning. This document says what each of its three version numbers covers, which interfaces are public and which are experimental. The signature of each declaration is in the API reference (API in the navigation bar, generated from the source by TypeDoc); `docs/api.md` in the repository is the complete list.
+
+Presmium's stable product is the core (the MyST syntax and the IR, the compiler, the renderers, the CLI) and its outputs (web pages, slides, notebooks, lectures), none of which needs a model service. The local workbench (the browser interface of `presmium serve`) is a preview that a new workbench, separate from the outputs, will replace.
+
+(versions)=
+# Version rules
+
+(versions-numbers)=
+## Three version numbers
+
+| Version | In 1.0 | What it covers |
+|---|---|---|
+| The packages' version | `1.0.0` | Every public npm package, released together with the same version |
+| `IR_VERSION` | `1` | The JSON format of the IR (`presmium ir`, and `ir.json` in the outputs) |
+| `KERNEL_VERSION` | `1.0.0` | The plugin contract, against which a plugin's `kernel` range is matched |
+
+(versions-packages)=
+## The packages' version
+
+- **Major**: an incompatible change of a public interface (removed, renamed, a changed signature or behavior), or a major bump of `IR_VERSION` or `KERNEL_VERSION`.
+- **Minor**: compatible features, such as new directives, options, renderers and new optional fields of the contracts.
+- **Patch**: bug fixes and documentation.
+
+A public interface to be removed is marked `@deprecated` first and stays at least until the next major version. All public packages share one version: "Presmium 1.x" is 1.x of any public package.
+
+(versions-ir)=
+## IR_VERSION
+
+Within one `IR_VERSION` only optional fields are added; removing or renaming a field, changing its type or meaning, or changing the rules of steps and section ids raises `IR_VERSION`, and is a major version of the packages. Programs that read `ir.json` check its `ir` field first.
+
+(versions-kernel)=
+## KERNEL_VERSION and plugins
+
+`KERNEL_VERSION` is the version of the plugin contract, separate from the packages' version. Plugins write `kernel: '^1.0.0'` in their Node entry and in their browser manifest; a plugin whose range excludes the current version is not loaded, `presmium check` reports `presmium.plugins`, and the build does not crash. A compatible addition to the contract raises its minor version, an incompatible change its major version.
+
+Plugins declare `@presmium/kernel`, `@presmium/host`, `@presmium/viewer` and `@presmium/compiler`, those they use, as peer dependencies `^1.0.0`, sharing the application's copy; when the installed Presmium does not satisfy them, the loader reports it the same way and leaves the plugin out. Such a plugin works with any Presmium 1.x.
+
+(public)=
+# Public interfaces
+
+(public-documents)=
+## Documents, the IR and commands
+
+- The MyST source syntax: the headmatter's keys, sections and labels, narration and on-screen content, steps, the built-in directives, and the directives and inline roles of the official plugins.
+- The IR (`IRDocument` and the other types of `@presmium/kernel`) and `IR_VERSION`; the layout and addresses of the outputs (`dist/ir.json`, `dist/<renderer>/`, page file names and section anchors, `?clicks=`, `?view=`).
+- `presmium build | dev | ir | check | serve` with their options, exit codes, the format of findings and their check ids, and the structure of `presmium check --json`; the commands of the other packages (`presmium-mcp`, `presmium-export`, `presmium-diff`, `presmium-lecture`, `presmium-speech`, `presmium-language-server`, `presmium-classroom-server`); the MCP tools and resources.
+- The workspace configuration file `presmium.workspace.yaml` with the operator's settings, and the operator's environment variables.
+
+(public-contracts)=
+## The plugin contract
+
+- `@presmium/kernel`: plugin definitions and manifests, the fields of the Node plugin `PresmiumNodePlugin`, `DirectiveSpec`, `RoleSpec`, `IRPass`, `Check`, `Finding`, `Renderer`, `RenderContext`, service tokens and their interfaces (the Node services included), server routes and agent tools, and the plain functions plugins share.
+- `@presmium/host`: the composables components use (`useStepState`, `useService`, `useSharedState`, `useServer`, `useMessages` and others), the host's services (the `tools` and `settings` slots of `TOOLBAR`, `NAVIGATION`, `OPERATIONS`), and the design system's tokens and components.
+- `@presmium/viewer`: the viewer plugin `ViewerPlugin` and what its context gives: the registration functions, `useViewer`, `SectionView` and `BlockView`.
+- `@presmium/cli/testing`: `presmium` for plugins' integration tests.
+- `@presmium/compiler`: the programming interface `Compiler`, `Compilation`, `build`, `dev` and the like.
+
+The types that appear in the signatures of public interfaces are public with them. Any other name a package exports (section 4 of `docs/api.md` lists the usual kinds) is internal, shared between Presmium's own packages, and may change in any version, even when the API reference shows it.
+
+(experimental)=
+# Experimental interfaces
+
+(experimental-workbench)=
+## The workbench's browser side
+
+These interfaces are experimental: outside the 1.x promise, they may change in a minor version. Their TypeScript declarations carry the `@experimental` tag in the source, shown as Experimental in the API reference; for the user interfaces and routes, which have no declaration to tag, this list is what counts.
+
+- the browser plugin of `@presmium/workspace` (edit mode, editing the source in the browser, managing documents, the history of changes, the file tree) and the routes it provides for them;
+- the parts of `@presmium/host` that exist for the workbench only: `EDIT_MODE`, the toolbar's `status`, `home`, `create`, `files`, `tabs`, `source` and `dock` slots with their places, and `trackAgentTask`;
+- the web renderer's workbench shell in `presmium serve` and `presmium dev` (the activity bar, the launcher, the status bar, edit mode's shell);
+- the browser side of changes by an agent: the kernel's `AGENT` and the interfaces through which a page submits change tasks (`AgentClient`, `AgentTask`), the assistant's "AI changes" panel and model settings, and the lecture plugin's "lecture write-back" panel. The requests and events of change tasks are also the types of the Node side's agent runtime (`AGENT_RUNTIME`), and public.
+
+The `presmium serve` command, the workspace configuration file and the Node services are public interfaces; reader questions (`ASK` and the Ask panel) are part of the outputs and public too. Plugins should not depend on experimental interfaces; one that does names exact versions in its peer dependencies.

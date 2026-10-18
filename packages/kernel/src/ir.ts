@@ -492,6 +492,13 @@ export interface SiteDocument {
   tags?: string[]
   /** The compiled IR; absent in dev for a document not visited yet. */
   doc?: IRDocument
+  /**
+   * The translations the document declares (P-123), compiled as for a build
+   * of the document alone: language and IR, as `RenderContext.translations`.
+   * The site publishes each under `<base><dir>/<lang>/` with a language menu,
+   * and the home page in each of their languages.
+   */
+  translations?: { lang: string, doc: IRDocument }[]
 }
 
 export interface SiteSpec {

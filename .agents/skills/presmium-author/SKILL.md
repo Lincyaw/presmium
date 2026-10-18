@@ -54,7 +54,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 - `base` 的默认值：同时构建网页与幻灯片、两者都不写 `base` 时，网页为 `/web/`、幻灯片为 `/slides/`，`dist/` 整体就是一个站点；只构建一种时为 `/`。
 - 不写 `renderers` 时构建全部已安装的渲染端。
 - 入口文件以 UTF-8 BOM 开头（Windows 记事本）也没关系。
-- 译本（P-123）：原文头部写 `translations: { en: lecture.en.md }`（语言到同一目录中的另一个入口文件）。译本自己的头部只写 `title`、`lang` 与 `translationOf: { entry: lecture.md, digest: <摘要> }`，插件与渲染端配置取自原文；章节标签与原文相同（原文没有写标签的章节，译本照原文由标题生成的 ID 写上标签），语言菜单才能停在同一章。`presmium build` 把译本放在网页的 `/<语言>/` 下（幻灯片与 notebook 只有原文）。原文改动后 `presmium check` 警告译本过期（`presmium.translations`，位置在译本的 `digest` 一行）并给出新的摘要：核对译文后把它写回 `digest`。新写的译本先随便写一个摘要，检查会给出正确的（摘要要写成 64 位十六进制的字符串，全是数字的摘要被 YAML 读成数字）。译本同样可以写 `:audience:` 与 `{audience}`：`presmium build --audience student` 的两种语言都去掉教师内容，扫描也查译本的。工作区站点（在工作区根目录 `presmium build`、`presmium serve`）还不发布译本，声明了译本的文档得到警告 `presmium.translations`，要发布译本就单独构建这份文档。
+- 译本（P-123）：原文头部写 `translations: { en: lecture.en.md }`（语言到同一目录中的另一个入口文件）。译本自己的头部只写 `title`、`lang` 与 `translationOf: { entry: lecture.md, digest: <摘要> }`，插件与渲染端配置取自原文；章节标签与原文相同（原文没有写标签的章节，译本照原文由标题生成的 ID 写上标签），语言菜单才能停在同一章。`presmium build` 把译本放在网页的 `/<语言>/` 下（幻灯片与 notebook 只有原文）。原文改动后 `presmium check` 警告译本过期（`presmium.translations`，位置在译本的 `digest` 一行）并给出新的摘要：核对译文后把它写回 `digest`。新写的译本先随便写一个摘要，检查会给出正确的（摘要要写成 64 位十六进制的字符串，全是数字的摘要被 YAML 读成数字）。译本同样可以写 `:audience:` 与 `{audience}`：`presmium build --audience student` 的两种语言都去掉教师内容，扫描也查译本的。工作区站点（在工作区根目录 `presmium build`）同样发布译本：文档的译本在 `/<文档目录>/<语言>/` 下，页面有语言菜单；首页另有每种语言的版本 `/<语言>/`，列出那种语言的文档（没有这种译本的文档列出原文），标题取工作区配置的 `site.locales.<语言>.title`（不写时用 `title`）。译本中链接另一份文档时照样写它的入口文件（`../week2/lecture.md#标签`），那份文档有同一语言的译本就到达译本的页面，没有时到原文；导航栏的“文档”与跨文档的上一章、下一章仍回到原语言。`presmium serve` 的预览只显示原文，声明了译本的文档在那里得到警告 `presmium.translations`（`… is not in the workspace site of presmium serve …`）。
 
 ## 3. 章节
 
@@ -178,7 +178,7 @@ sectionDepth: 2                 # 可选：开始章节的标题级别，默认 
 | `presmium build [deck]` | 编译并生成媒介：`<deck>/dist/ir.json` 与 `<deck>/dist/<渲染端>/`；`--to web,slides,notebook` 选渲染端，`--out <dir>` 改输出目录，`--audience student` 只构建学生版并扫描产物（第 6 节） |
 | `presmium dev [deck]` | 启动 Presmium 服务端与渲染端的开发服务器（网页、幻灯片），保存源码后增量更新；`--to web` 只启动网页，`--out <dir>` 改工作目录（默认 `.presmium/dev`），`--server-port <n>` 指定服务端的端口，`--allow operate` 让插件请求的这类确认不再询问（种类还有 `spend`、`write`、`agent`）。服务端只监听本机，地址与 MCP 的令牌写在 `.presmium/server.json`；插件请求的确认出现在页面工具栏的“待确认”入口。网页上有编辑模式（“编辑”，见下文“在浏览器中改源码”）：文稿在 git 仓库中时保存、提交与撤销都可以（文稿可以在仓库的子目录中），不在 git 仓库中（或被 git 忽略）时只能保存，启动时在标准错误说明。`.presmium/server.json` 是本机服务的令牌，编辑模式从不提交它；仓库的 `.gitignore` 要有一行 `**/.presmium/server.json`（git 不忽略它时启动时提示），免得自己 `git add` 时带上它 |
 | `presmium serve [目录]` | 工作区服务：一个工作区（根目录有 `presmium.workspace.yaml`，文档在子目录中，各有 `lecture.md`）或一份文稿的站点开发服务器：首页列出文档，每份文档在 `/<目录>/` 下，按需编译、保存即更新；工具栏的“编辑”进入编辑模式（左边改源码，`Ctrl+S` 保存，右边的预览就地更新），首页的“管理文档”新建（从模板）、重命名（其他文档中指向它的相对链接随之改写）、复制、删除文档，“修改历史”列出这些提交并可撤销（工作区须是 git 仓库）。只供运行它的你使用，默认只监听本机（`--port`，默认 4310）；`--host 0.0.0.0`（或本机的某个局域网地址）让你在局域网中的其他设备上打开它，启动时打印每个局域网地址，并警告没有登录：同一网络中到得了这个端口的人都能以你的身份修改与运行；也可以用 SSH 转发端口（`ssh -L 4310:127.0.0.1:4310 <主机>`）；多人使用时每人一个工作区。修改历史中撤销一次撤销标为重做。启动时另打印 MCP 的地址与令牌所在的文件（外部 agent 用它连接，见下文），以及助手的状态 |
-| `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下；每份文档的搜索框也搜得到其他文档，第一页与最后一页的上一章、下一章接到配置顺序中前后的文档。工作区配置的 `site` 有与 `renderers.web` 相同的 `nav`（链接从站点根写起，如 `/week1/`）、`footer`、`head`、`sitemap`（整个站点一个 `sitemap.xml`），`home: <文档目录>` 让首页转到那份文档（文档列表在 `documents.html`）；在文档目录中执行则只构建这一份 |
+| `presmium build [工作区根目录]` | 在工作区根目录构建整个工作区站点到 `dist/web/`：首页是文档列表，每份文档在 `/<目录>/` 下；每份文档的搜索框也搜得到其他文档，第一页与最后一页的上一章、下一章接到配置顺序中前后的文档。工作区配置的 `site` 有与 `renderers.web` 相同的 `nav`（链接从站点根写起，如 `/week1/`）、`footer`、`head`、`sitemap`（整个站点一个 `sitemap.xml`），`home: <文档目录>` 让首页转到那份文档（文档列表在 `documents.html`），`locales: { en: { title: … } }` 给首页的每种语言版本一个标题；文档的译本在 `/<目录>/<语言>/` 下（第 2 节）；在文档目录中执行则只构建这一份 |
 
 常用流程：改源码 → `presmium check` → `presmium dev --to web` 边写边看 → `presmium build` 生成全部媒介。多份文档组成的课程用工作区：`presmium serve` 编辑与预览，`presmium build` 在根目录构建整个站点。`presmium serve` 与 `presmium dev` 一样加载文稿 `plugins` 列出的插件；运营者在 `settings.presmium.workspace.plugins` 中列出、装在工作区根目录的运营者插件（如助手、语音）每份文档与首页都加载。构建报告列出渲染端未渲染的块（`N blocks not rendered`）。
 
@@ -265,7 +265,7 @@ agent 只写文档目录：写到目录之外（如工作区的其他文档）�
 | `presmium.links` `… is not published: there is no such file`（构建报告） | 路径相对于写链接的文件；改正路径或补上文件 |
 | `presmium.links` `… is not published: the file lies outside the deck's repository`（工作区站点中为 `outside the workspace`） | 把文件放进文稿所在的仓库（工作区） |
 | `presmium.translations` `translation "en" (…) is out of date` | 核对译本与原文的差异，把消息中的新摘要写进译本头部 `translationOf.digest` |
-| `presmium.translations` `translation "en" (…) is not in the workspace site` | 工作区站点还不发布译本：要发布就单独构建这份文档（`presmium build <文档目录>`） |
+| `presmium.translations` `translation "en" (…) is not in the workspace site of presmium serve` | `presmium serve` 的预览只显示原文：在工作区根目录 `presmium build` 发布译本（或 `presmium build <文档目录>` 单独构建这份文档） |
 | `presmium.links` `… is not published: hidden directories and node_modules are not published` | 把要发布的文件放进一个普通目录再链接它 |
 | `presmium.audience` `this content follows an {include} with :audience: whose file opens a section …` | 在 `{include}` 之后写一个标题另开一节，或把这段内容移到 `{include}` 之前 |
 | `presmium.audience` `<n> findings are in the content left out for student, not shown here` | 被去掉的教师内容中有问题：运行不带 `--audience` 的 `presmium check` 查看并改正 |
