@@ -341,7 +341,7 @@ function close() {
             <button v-if="state === 'trying'" type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__back" @click="player.back()">{{ t.player.back }}</button>
             <button v-else type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small pm-lecture-player__try" @click="player.tryIt()">{{ t.player.tryIt }}</button>
             <span v-if="voice?.kind === 'synthetic'" class="pm-lecture-player__ai pm-ui-badge pm-ui-badge--accent pm-ui-badge--pill">{{ synthetic }}</span>
-            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-label="t.player.close" @click="close">×</button>
+            <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" :aria-label="t.player.close" @click="close"><PmIcon name="close" size="1em" /></button>
           </div>
         </div>
       </template>
