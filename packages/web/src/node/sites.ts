@@ -45,7 +45,8 @@
  * has a locale for each language of the translations, `<base><lang>/`, which
  * lists each document in that language when it has a translation in it (its
  * original otherwise); its title is `site.locales.<lang>.title`, else the
- * site's.
+ * site's. A link written in a translation to another document goes to that
+ * document's translation into the same language when it has one.
  */
 import { existsSync, mkdirSync, readdirSync, realpathSync, rmSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -85,6 +86,8 @@ const WORKSPACE_FILE = 'presmium.workspace.yaml'
 const DECK_ENTRY = 'lecture.md'
 /** URLs that name no file: a scheme, protocol-relative, or a fragment. */
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i
+/** The language of a link to another document found in a translation (`documentContext`), for `documentPage`. */
+const LINK_LANGUAGE = new WeakMap<DocumentLink, string>()
 /** The options of the workspace's `site` that make the site shell (P-78). */
 const SHELL_KEYS = ['nav', 'footer', 'head', 'sitemap']
 
@@ -269,18 +272,38 @@ function labelSection(doc: IRDocument, label: string): string | undefined {
  * directory; one that is not in the site keeps the link as written.
  */
 function documentPage(site: SiteSpec, base: string, docs: Map<string, IRDocument>): DocumentPage {
-  return ({ dir, fragment }) => {
-    if (!site.documents.some(entry => entry.dir === dir)) return undefined
-    const root = documentBase(base, dir)
+  return (link) => {
+    const { dir, fragment } = link
+    const entry = site.documents.find(other => other.dir === dir)
+    if (!entry) return undefined
+    // From a translation, the linked document's translation into its language, at the same page (`translationPages`).
+    const lang = LINK_LANGUAGE.get(link)
+    const translated = lang ? translationOf(entry, lang) : undefined
+    const root = `${documentBase(base, dir)}${translated ? `${lang}/` : ''}`
     const anchor = fragment ? `#${encodeURIComponent(fragment)}` : ''
     const doc = docs.get(dir)
     if (!doc || !fragment) return `${root}${anchor}`
     // Site-relative links of the document's sections: `/`, `/extend.html`, `/extend.html#extend-c`.
-    const links = sectionLinks(toPages(doc))
+    const links = sectionLinks(translated?.pages ?? toPages(doc))
     if (links[fragment]) return `${root}${links[fragment].slice(1)}`
     const section = labelSection(doc, fragment)
     return `${root}${(section ? links[section]!.split('#')[0]! : '/').slice(1)}${anchor}`
   }
+}
+
+/** The files of a document's sections and blocks. */
+function sourceFiles(doc: IRDocument): Set<string> {
+  return new Set([...doc.sections.map(section => section.source.file), ...[...docBlocks(doc)].map(({ block }) => block.source.file)])
+}
+
+/** The language of each file that only a translation of `doc` holds (its entry, the files it includes). */
+function translatedFiles(doc: IRDocument, translations: SiteDocument['translations'] = []): Map<string, string> {
+  const original = sourceFiles(doc)
+  const files = new Map<string, string>()
+  for (const { lang, doc: translated } of translations) {
+    for (const file of sourceFiles(translated)) if (!original.has(file)) files.set(file, lang)
+  }
+  return files
 }
 
 /**
@@ -289,7 +312,15 @@ function documentPage(site: SiteSpec, base: string, docs: Map<string, IRDocument
  * and its links to documents, whose sources are not published.
  */
 function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: IRDocument, outDir: string, workDir: string): RenderContext {
-  const documentLink = documentLinkOf(ctx)
+  const linkOf = documentLinkOf(ctx)
+  const entry = site.documents.find(other => other.dir === dir)
+  const translated = translatedFiles(doc, entry?.translations)
+  const documentLink = (source: SourcePos, url: string): DocumentLink | undefined => {
+    const link = linkOf(source, url)
+    const lang = translated.get(source.file)
+    if (link && lang) LINK_LANGUAGE.set(link, lang)
+    return link
+  }
   const deckDir = join(ctx.workspaceRoot, dir)
   const pluginDirs: Record<string, string> = {}
   for (const name of doc.config.plugins) {
@@ -309,7 +340,7 @@ function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: I
     base: documentBase(ctx.base, dir),
     vitePlugins: [],
     // Its translations (P-123), each a locale of its site under `<lang>/`, as a build of the document alone has them.
-    translations: site.documents.find(entry => entry.dir === dir)?.translations,
+    translations: entry?.translations,
     documentLink,
     localAsset(source, url) {
       if (documentLink(source, url)) return undefined

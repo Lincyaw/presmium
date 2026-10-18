@@ -52,7 +52,7 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 
 - MyST 源语法：文稿头部的键、章节与标签、讲解与上屏内容、步骤、内置指令，以及官方插件的指令与行内角色。
 - IR（`@presmium/kernel` 的 `IRDocument` 等类型）与 `IR_VERSION`；产物的布局与地址（`dist/ir.json`、`dist/<渲染端>/`、页面文件名与章节锚点、`?clicks=`、`?view=`）。
-- `presmium build | dev | ir | check | serve` 与它们的选项、退出码、诊断的格式与检查 ID、`presmium check --json` 的结构；插件包带的命令（`presmium-mcp`、`presmium-export`、`presmium-diff`、`presmium-lecture`、`presmium-speech`）；MCP 的工具与资源。
+- `presmium build | dev | ir | check | serve` 与它们的选项、退出码、诊断的格式与检查 ID、`presmium check --json` 的结构；其他包带的命令（`presmium-mcp`、`presmium-export`、`presmium-diff`、`presmium-lecture`、`presmium-speech`、`presmium-language-server`、`presmium-classroom-server`）；MCP 的工具与资源。
 - 工作区配置文件 `presmium.workspace.yaml` 与运营者设置、运营者的环境变量。
 
 (public-contracts)=
@@ -60,9 +60,11 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 
 - `@presmium/kernel`：插件定义与清单、Node 端插件 `PresmiumNodePlugin` 的字段、`DirectiveSpec`、`RoleSpec`、`IRPass`、`Check`、`Finding`、`Renderer`、`RenderContext`、服务令牌与它们的接口（含 Node 端的服务）、服务端路由与 agent 工具，以及插件共用的纯函数。
 - `@presmium/host`：组件用的组合式函数（`useStepState`、`useService`、`useSharedState`、`useServer`、`useMessages` 等）、宿主的服务（`TOOLBAR` 的 `tools` 与 `settings` 槽位、`NAVIGATION`、`OPERATIONS`）、设计系统的令牌与组件。
-- `@presmium/viewer`：视图插件 `ViewerPlugin` 与它的注册函数。
+- `@presmium/viewer`：视图插件 `ViewerPlugin` 与它从上下文得到的注册函数、`useViewer`、`SectionView`、`BlockView`。
 - `@presmium/cli/testing`：插件的集成测试用的 `presmium`。
 - `@presmium/compiler`：`Compiler`、`Compilation`、`build`、`dev` 等编程接口。
+
+公开接口签名中出现的类型随它一起公开。包导出的其他名字（`docs/api.md` 第 4 节列出常见的几类）是 Presmium 自己的包之间共用的内部接口，即使接口参考中有它们，也可以在任何版本中改变。
 
 (experimental)=
 # 实验性接口
@@ -70,11 +72,11 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 (experimental-workbench)=
 ## 工作台的浏览器端
 
-以下接口标为 `@experimental`，不在 1.x 的承诺之内，可以在次版本中改变：
+以下接口是实验性的，不在 1.x 的承诺之内，可以在次版本中改变。其中的 TypeScript 声明在源码中带 `@experimental` 标签，接口参考中显示为 Experimental；界面与路由没有声明可以标注，以这里的列表为准。
 
 - `@presmium/workspace` 的浏览器插件（编辑模式、浏览器中的源码编辑、文档管理、修改历史、文件树）与它为这些界面提供的路由；
-- `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE`，工具栏的 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock` 槽位与对应的位置；
+- `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE`，工具栏的 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock` 槽位与对应的位置，`trackAgentTask`；
 - 网页渲染端在 `presmium serve` 与 `presmium dev` 中的工作台外壳（活动栏、启动台、状态栏、编辑模式的外壳）；
-- 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与修改任务的类型，助手的“AI 修改”面板与模型设置界面，讲授插件的“讲授回写”面板。
+- 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`），助手的“AI 修改”面板与模型设置界面，讲授插件的“讲授回写”面板。修改任务的请求与事件同时是 Node 端 agent 运行时（`AGENT_RUNTIME`）的类型，是公开接口。
 
 命令 `presmium serve`、工作区配置文件与 Node 端的服务是公开接口；读者问答（`ASK` 与提问面板）是产物的一部分，也是公开接口。插件不要依赖实验性接口，依赖时在自己的对等依赖中写确切的版本。

@@ -10,7 +10,8 @@
     "packages/cli"
   ],
   "packageOptions": {
-    "entryPoints": ["src/@(index|testing).ts"],
+    "entryPoints": ["src/**/@(index|testing).ts"],
+    "exclude": ["**/domain/**"],
     "tsconfig": "../../tsconfig.json",
     "skipErrorChecking": true,
     "excludePrivate": true,

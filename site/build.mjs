@@ -6,7 +6,9 @@
 //      /<document>/en/, the home page in both languages;
 //   3. the API reference, generated from the source by TypeDoc (typedoc.json at the repository root), under /api/;
 //   4. a check of the built site: every local href and src of every page names a file of the site.
-// Usage: node build.mjs [--out <dir>]
+// Any step that fails stops the build with exit code 1.
+// Usage: node build.mjs [--out <dir>] [--site <workspace>]
+//   --site builds another workspace the same way (default: this directory), e.g. one the tests break on purpose.
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -14,14 +16,19 @@ import { dirname, join, posix, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PRESMIUM_BIN as PRESMIUM } from '@presmium/cli/testing'
 
-const SITE = dirname(fileURLToPath(import.meta.url))
-const ROOT = resolve(SITE, '..')
+const HERE = dirname(fileURLToPath(import.meta.url))
+const ROOT = resolve(HERE, '..')
 const require = createRequire(import.meta.url)
 const TYPEDOC = join(dirname(require.resolve('typedoc/package.json')), 'bin/typedoc')
 
 const args = process.argv.slice(2)
-const at = args.indexOf('--out')
-const out = resolve(at >= 0 && args[at + 1] ? args[at + 1] : join(SITE, 'dist'))
+/** The value of an option, `--name <value>`. */
+function option(name) {
+  const at = args.indexOf(name)
+  return at >= 0 && args[at + 1] ? args[at + 1] : undefined
+}
+const SITE = resolve(option('--site') ?? HERE)
+const out = resolve(option('--out') ?? join(SITE, 'dist'))
 const web = join(out, 'web')
 
 /** Runs a command, its output passed through; exits when it fails. */

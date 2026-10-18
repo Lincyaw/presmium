@@ -27,7 +27,7 @@ Components get everything through this package, never from `@slidev/*` or `vitep
 
 ## Experimental parts
 
-The parts that exist for the local workbench only (`EDIT_MODE`, and the toolbar slots of the workbench and edit mode) are experimental and outside the 1.x semver promise; see the interface list.
+The parts that exist for the local workbench only (`EDIT_MODE`, the toolbar slots and places of the workbench and edit mode, `trackAgentTask`) are experimental and outside the 1.x semver promise; their declarations carry the TSDoc tag `@experimental`, and the interface list names them.
 
 ## Documentation
 

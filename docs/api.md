@@ -1,6 +1,6 @@
 # 公开接口与版本规则（P-143）
 
-本文列出 Presmium 1.x 按语义化版本承诺稳定的接口（公开接口）、不在承诺之内的接口（实验性接口与内部接口），以及包、IR 与插件契约各自的版本规则。接口的签名以源码为准（`packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts` 等），接口参考由 TypeDoc 从源码生成（根目录的 `typedoc.json`，文档站的 `/api/`）。本文与源码不一致时以源码为准，并把不一致当作缺陷报告。
+本文列出 Presmium 1.x 按语义化版本承诺稳定的接口（公开接口，第 2 节）、不在承诺之内的接口（实验性接口与内部接口，第 3、4 节），以及包、IR 与插件契约各自的版本规则。接口的签名以源码为准（`packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts` 等），接口参考由 TypeDoc 从源码生成（根目录的 `typedoc.json`，文档站的 `/api/`）。本文与源码不一致时以源码为准，并把不一致当作缺陷报告。
 
 Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、CLI）与它的产物（网页、幻灯片、notebook、讲授），它们不依赖任何模型服务。本机工作台（`presmium serve` 的浏览器界面）是预览，将被一个与产物分离的新工作台取代，所以它的浏览器端接口是实验性的（第 3 节）；命令 `presmium serve`、工作区配置文件与 Node 端的服务照常是公开接口。
 
@@ -46,7 +46,9 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 
 ## 2. 公开接口
 
-以下接口在 1.x 中按第 1.1 节的规则保持兼容。
+以下接口在 1.x 中按第 1.1 节的规则保持兼容。公开接口的签名中出现的类型（参数、返回值与字段的类型，例如 `SourcePos`、`MdastNode`、`ServiceToken`、`Severity`、`AgentEvent`）随它一起公开。
+
+一个包导出的名字，本节没有列出、也不是公开接口签名中的类型，就是内部接口（第 4 节），即使接口参考中有它：接口参考列出各入口的全部导出，哪些公开以本文为准。
 
 ### 2.1 文稿与 IR
 
@@ -59,25 +61,25 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 ### 2.2 命令
 
 - `presmium build | dev | ir | check | serve` 与 `presmium --help` 列出的选项；退出码（0 没有错误，1 有错误级诊断，2 用法或内部错误）；诊断的格式（`<文件>:<行>  <级别>  <消息>  (<检查 ID>)`）、检查 ID 与 `presmium check --json` 的结构（`findings` 的 `checkId`、`severity`、`message`、`source`）。诊断的消息文字可以改进，检查 ID 不变。
-- 插件包带的命令：`presmium-mcp`（`@presmium/mcp`，stdio 的 MCP 服务）、`presmium-export` 与 `presmium-diff`（`@presmium/slidev-addon-publish`）、`presmium-lecture export`（`@presmium/slidev-addon-lecture`）、`presmium-speech`（`@presmium/slidev-addon-speech`）、`presmium-language-server`（`@presmium/language-server`）。
+- 其他包带的命令：`presmium-mcp`（`@presmium/mcp`，stdio 的 MCP 服务）、`presmium-export` 与 `presmium-diff`（`@presmium/slidev-addon-publish`）、`presmium-lecture export`（`@presmium/slidev-addon-lecture`）、`presmium-speech`（`@presmium/slidev-addon-speech`）、`presmium-language-server`（`@presmium/language-server`）、`presmium-classroom-server`（`@presmium/classroom-server`，课堂同步服务，选项 `--port`、`--host`、`--deck`）。
 - MCP 环境：`/mcp` 与 `presmium-mcp` 的工具名与输入（`list_documents`、`deck_info`、`list_sections`、`get_section`、`get_step`、`search`、`get_code_ref`、`get_outputs`、`get_diagnostics`、`locate_source`、`get_position`、`get_classroom`、`navigate`、`run_code`、`build`、`classroom_start`、`classroom_end`，以及插件的工具）与资源 `presmium://…`。
 - `@presmium/cli/testing`：`presmium(cwd, args, env?)`、`run`、`PRESMIUM_BIN`，插件的集成测试用它们运行真正的 CLI。
 
 ### 2.3 内核契约（`@presmium/kernel`）
 
 - 插件：`PluginDefinition`、`PluginManifest`、`PluginContext`、`StartReport`；Node 端的 `PresmiumNodePlugin` 与它的字段（`directives`、`roles`、`passes`、`executors`、`resolvers`、`checks`、`anchors`、`renderer`、`rendererExtensions`、`vitePlugins`、`services`、`environments`、`server`、`tools`、`operator`、`version`、`kernel`）。
-- 编译：`DirectiveSpec` 与 `DirectiveContext`、`RoleSpec`、`IRPass` 与它的上下文、`Check`、`CheckContext`、`Finding`，锚点（`AnchorString`、`AnchorResolver`、`Resolution`、`AnchorLockFile`）。
+- 编译：`DirectiveSpec` 与 `DirectiveContext`、`RoleSpec`、`IRPass` 与它的上下文、`Check`、`CheckContext`、`Finding`，锚点（`AnchorString`、`parseAnchor` 与 `ParsedAnchor`、`AnchorResolver`、`Resolution`、`isRenderable`，锚点的指纹 `fingerprint` 与 `normalizeWhitespace`，锚点锁文件 `AnchorLockFile` 与它的位置 `ANCHOR_LOCK_PATH`）。
 - 渲染：`Renderer`、`RenderContext`、`RendererContribution`、`SiteSpec`、`SiteDocument`。
 - 服务令牌与接口：`defineService`、`EXECUTOR`、`SESSION`、`CLASSROOM_STORE`、`PRESENTER_PANELS`、`SPEECH`、`ASK`、`APPROVALS`、`PROCESS_SANDBOX`、`MCP_ENDPOINT`，Node 端的 `AGENT_RUNTIME`、`CHANGE_REVIEW`、`REVISIONS`、`DOCUMENT_FILES`、`DOCUMENT_LOCKS`；执行（`Executor`、`RunRequest`、`RunResult`、`RunContext`、`EnvironmentProvider`、`environmentExecutor`）。
 - 服务端贡献：`Route`、`ServerContext`、`NodeServiceContext`、`Member`、`json`、`problem`、`eventStream`、`MAX_BODY`；agent 工具 `AgentTool`、`AgentToolContext`。
-- 共用的纯函数：`docBlocks`、`irBlocks`、`nodeMdast`、`withProp`、`errorMessage`、`isRecord`、`languageId`、`failedRun`、`deckLocale`、`localeOf`、`DEFAULT_LANG`、`publishedUrl`、`mapHtmlUrls`、`htmlAttributes`、`escapeHtml`、`lowerMyst`、`roleMark`、`splitWords`、`remapWords`、`stepStateAt`，读取 IR 的 `@presmium/kernel/reading`（`chapters`、`blockText`、`blockState`、`blockVisible`、`narrationAt`、`sectionNarration`、`tokenize`），`@presmium/kernel/node` 的 `copyPublished`；`KERNEL_VERSION`、`IR_VERSION`。
+- 共用的纯函数：`docBlocks`、`irBlocks`、`nodeMdast`、`withProp`、`errorMessage`、`isRecord`、`languageId`、`failedRun`、`deckLocale`、`localeOf`、`DEFAULT_LANG`、`publishedUrl`、`mapHtmlUrls`、`URL_ATTRIBUTES`、`htmlAttributes`、`escapeHtml`、`lowerMyst`、`roleMark`、`splitWords`、`remapWords`、`stepStateAt`，读取 IR 的 `@presmium/kernel/reading`（`chapters`、`isChapterTitle`、`blockText`、`mdastText`、`blockState`、`blockVisible`、`narrationAt`、`sectionNarration`、`tokenize`，也从 `@presmium/kernel` 导出），`@presmium/kernel/node` 的 `copyPublished`；`KERNEL_VERSION`、`IR_VERSION`。
 
 ### 2.4 宿主接口（`@presmium/host`）与 IR 运行时（`@presmium/viewer`）
 
-- 组件与浏览器端插件用的组合式函数与函数：`useStepState`、`useStepScope`、`useCursor`、`useViewRole`、`usePresentationMode`、`usePrefersReducedMotion`、`useStaticRender`、`useSectionConfig`、`useService`、`useSharedState`、`useServer`、`useMessages`、`useLocale`、`currentLocale`、`useTheme`、`useSessionSnapshot`、`claimFirst`、`useStartReport`、`registerPresmiumPlugin`、`presmiumService`、`PmBoundary`。
-- 宿主的服务：`TOOLBAR`（槽位 `tools` 与 `settings`，第 3 节之外的部分）、`NAVIGATION`、`OPERATIONS`、`STATUS`、`SYNC_TRANSPORTS` 与它们的接口，`ServerClient`；实现宿主用的 `HostAdapter`。
-- 设计系统：CSS 令牌 `--pm-*`、组件 `PmIcon`（`ICONS` 的名字）、`PmButton`、`PmIconButton`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`、`PmToolbar`，类名 `pm-ui-*`；在页面上找块的 `blockKey`、`splitBlockKey`、`blockElement`、`blockAt`、`codeLines`、`lineNumbers`、`linesText`、`positionSlide`。
-- IR 运行时的视图插件：`ViewerPlugin` 与 `ViewerPluginContext`（`registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`），以及页面标记 `.pm-section[data-section]`、`.pm-block[data-block]`。
+- 组件与浏览器端插件用的组合式函数与函数：`useStepState`、`useStepScope`、`provideStepScope`、`useCursor`、`useViewRole`、`usePresentationMode`、`usePrefersReducedMotion`、`useStaticRender`、`useSectionConfig`、`useService`、`useSharedState`、`useServer`、`useMessages`、`useLocale`、`currentLocale`、`useTheme`、`useSessionSnapshot`、`claimFirst`、`useStartReport`、`registerPresmiumPlugin`、`presmiumService`、`PmBoundary`、`PmStepScope`（以组件标签给出内容的步骤作用域，供写组件标签的渲染端）。
+- 宿主的服务：`TOOLBAR`（槽位 `tools` 与 `settings`；其他槽位见第 3 节）、`NAVIGATION`、`OPERATIONS`、`STATUS`、`SYNC_TRANSPORTS` 与它们的接口，`ServerClient`；实现宿主用的 `HostAdapter`。
+- 设计系统：CSS 令牌 `--pm-*`、组件 `PmIcon`（`ICONS` 的名字；`iconMarkup` 给出同一图标的 SVG 文本）、`PmButton`、`PmIconButton`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`、`PmToolbar`、`PmToolbarEntry`（它在活动栏中的形态见第 3 节），类名 `pm-ui-*`；在页面上找块的 `blockKey`、`splitBlockKey`、`blockElement`、`blockAt`、`codeLines`、`lineNumbers`、`linesText`、`positionSlide`。
+- IR 运行时的视图插件：`ViewerPlugin` 与 `ViewerPluginContext`（`registerView`、`registerNodeRenderer`、`registerComponent`、`registerAction`、`registerLayer`、`useViewer`、`SectionView`、`BlockView`）与它们的类型（`ViewDefinition`、`NodeRenderer`、`ViewerAction`、`ViewerLayer`、`Viewer`、`SectionLayout`），以及页面标记 `.pm-section[data-section]`、`.pm-block[data-block]`。视图插件从这个上下文得到它需要的一切，从 `@presmium/viewer` 只导入这些类型；这个包的其他导出是内部接口（第 4 节）。
 
 ### 2.5 编译器的编程接口（`@presmium/compiler`）
 
@@ -88,24 +90,26 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 以下接口标为实验性，不在 1.x 的语义化版本承诺之内：它们属于本机工作台的浏览器端，新工作台会取代它们。它们可以在次版本中改变或删除，变更记录写明；插件不要依赖它们，依赖时在自己的 `peerDependencies` 中写确切的版本。
 
 - `@presmium/workspace` 的浏览器端：`@presmium/workspace/client`（工作台的浏览器插件：编辑模式、浏览器中的源码编辑、文档管理、修改历史、文件树）、`@presmium/workspace/domain`，以及它为这些界面提供的路由（`/__presmium/presmium.workspace/` 下的 `documents`、`files`、`source`、`changes`、`revisions` 等）。
-- `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE` 与 `EditMode`；工具栏的槽位 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock` 与位置 `activity`、`status`、`home`、`pane`（`ToolbarSlot`、`ToolbarPlace`、`useToolbarPlace`、`provideToolbarPlace`；`PmToolbarEntry` 在活动栏中的形态）；`trackAgentTask`。
+- `@presmium/host` 中只为工作台存在的部分：`EDIT_MODE` 与 `EditMode`；工具栏的槽位 `status`、`home`、`create`、`files`、`tabs`、`source`、`dock`（`ToolbarSlot` 中 `tools`、`settings` 以外的值）与位置（`ToolbarPlace`、`useToolbarPlace`、`provideToolbarPlace`；`PmToolbarEntry` 在活动栏中的形态）；`trackAgentTask` 与 `AgentTaskState`。
 - 网页渲染端的工作台：`presmium serve` 与 `presmium dev` 中首页的工作台（活动栏、文件树、启动台、状态栏）、编辑模式的外壳、窗口事件 `presmium:documents` 与首页的文档列表接口 `@presmium/documents.json`。静态站点的首页与页面是公开的产物（第 2.1 节）。
-- 由 agent 修改讲义的浏览器端：内核的 `AGENT`（`AgentClient`）与修改任务的类型（`AgentTask`、`AgentTaskRequest`、`AgentTaskKind`、`Annotation`、`AnnotationStatus`、`AgentContext`、`AgentEvent`、`ReviewDecision`、`TaskRevertResult`、`Citation`），`@presmium/slidev-addon-assistant` 的“AI 修改”面板、停靠面板、模型设置界面与路由 `info`、`settings`、`tasks/*`、`revert`、`excerpt`，`@presmium/slidev-addon-lecture` 编辑模式中的“讲授回写”面板。读者问答（`ASK` 与提问面板）是产物的一部分，是公开接口。
+- 由 agent 修改讲义的浏览器端：内核的 `AGENT` 与页面提交修改任务的接口（`AgentClient`、`AgentTask`、`ReviewDecision`、`TaskRevertResult`），`@presmium/slidev-addon-assistant` 的“AI 修改”面板、停靠面板、模型设置界面与路由 `info`、`settings`、`tasks/*`、`revert`、`excerpt`，`@presmium/slidev-addon-lecture` 编辑模式中的“讲授回写”面板。修改任务的请求与事件（`AgentTaskRequest`、`AgentTaskKind`、`AgentContext`、`Annotation`、`AnnotationStatus`、`AgentEvent`、`Citation`）同时是 Node 端 `AGENT_RUNTIME` 的会话（`AgentSession.prompt`）与 `ASK` 的类型，随它们公开。读者问答（`ASK` 与提问面板）是产物的一部分，是公开接口。
 
-源码中这些声明以 `@experimental` 标注；标注与本节不一致时以本节为准。
+本节的 TypeScript 声明在源码中带 TSDoc 标签 `@experimental`，接口参考（`/api/`）中显示为 Experimental；只有一部分是实验性的声明（`ToolbarSlot`、`PmToolbarEntry`）在说明中写明是哪一部分，`@presmium/workspace` 的 `./client` 与 `./domain` 在入口文件的说明中标注。界面、路由与窗口事件没有声明可以标注，以本节的列表为准；标注与本节不一致时同样以本节为准。
 
 ## 4. 内部接口
 
-为 Presmium 自己的包之间共用而导出、不在承诺之内的接口，可以在任何版本中改变：
+为 Presmium 自己的包之间共用而导出、不在承诺之内的接口，可以在任何版本中改变。下面列出常见的几类；第 2、3 节没有列出、也不是公开接口签名中的类型的导出，同样是内部接口。
 
 - `@presmium/server`、`@presmium/workspace` 的 Node 端编程接口（`buildWorkspace`、`serveWorkspace` 等；命令与配置文件是公开的）、`@presmium/mcp` 的编程接口（工具与命令是公开的）、`@presmium/language-server` 的 `./domain` 与 `./protocol`、`@presmium/classroom-server` 的编程接口。
 - 渲染端包（`@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook`）与插件包的 `./domain`、`./client`、`./presmium` 等入口：它们经插件契约被加载，入口中的其他导出不是接口。
-- `@presmium/kernel` 中为宿主与服务端实现而导出的部分：`Kernel`、`ServiceRegistry`、`CheckRegistry`、`createEventBus`、`createAnchorResolverRegistry`、`AnchorLock`、`HOST_OWNER`、`kernelIncompatibility`、`localRequestRefusal`、`hostName`、`GIT_SAFE_CONFIG`、`gitConfigArgs`、`gitEnvironment`、`CREDENTIAL_VARIABLE`、`prefixed`，以及 `@presmium/kernel/node` 的其他导出（如 `preBundle`、`fontLicense`）。
+- `@presmium/kernel` 中为宿主与服务端实现而导出的部分：`Kernel` 与 `KernelOptions`、`StartPlan`、`ServiceRegistry`、`CheckRegistry`、`createEventBus`、`createAnchorResolverRegistry`、`AnchorLock`、`HOST_OWNER`、`kernelIncompatibility`、`localRequestRefusal`、`hostName`、`GIT_SAFE_CONFIG`、`gitConfigArgs`、`gitEnvironment`、`CREDENTIAL_VARIABLE`、`prefixed`、`fnv1a64`，在不同的步骤编号之间对应步骤的 `stepKeys`、`stepTrail`、`trailStep`（形态之间的跟随与 MCP 的 `get_position` 用它们），以及 `@presmium/kernel/node` 中 `copyPublished` 以外的导出（如 `preBundle`、`fontLicense`、`FONT_LICENSE`）。
 - `@presmium/compiler` 第 2.5 节之外的导出（如 `loadPlugins`、`workspacePlugins`、`runBlock`、`buildView`、`checkContext`、`audienceView`、`compileTranslations`、`directoryAsset`、`serveDirectory`、`playwrightChromium`、`pluginLogger`）。
-- `@presmium/host` 中实现宿主用的 `installHost`、`startHost`、`startPresmium`、`stopPresmium`、`createToolbar`、`createOperations`、`createStatusRegistry`、`createPresenterPanels`、`createServerClient`、`provideServer`、`createSharedStates`、`deckChannel`、`joinWindows`，以及 `@presmium/viewer` 中实现网页渲染端用的 `createViewer`、`installViewer`、`installViewerPlugin`。
+- `@presmium/host` 中实现宿主用的 `installHost`、`useHost`、`startHost`、`startPresmium`、`stopPresmium`、`stopPresmiumOnPageHide`、`pluginsOf`、`presmiumReport`、`reportPluginFailure`、`componentErrors`、`createToolbar`、`createOperations`、`createStatusRegistry`、`createPresenterPanels`、`createServerClient`、`provideServer`、`createSharedStates`、`deckChannel`、`joinWindows`，宿主自己显示的 `PmApprovals`（运营者的确认）与 `PmPresenterPanels`（演示者视图的面板）。
+- `@presmium/viewer` 中第 2.4 节之外的导出，供网页渲染端实现 IR 运行时：`createViewer`、`installViewer`、`installViewerPlugin`、`VIEWER`，内置视图 `DocumentView`、`ScrollyView`、`PresentView`、`PresenterView` 与 `OverlayHost`、`ViewHost`，`BUILTIN_ACTIONS`、`followOperations`、`useSectionContext` 与 `SECTION_CONTEXT`，节点的渲染 `MarkdownView`、`CodeView`、`PmMath`、`PmMermaid`、`PmRoleMark`、`PmComponentFallback`，注册表的读取（`getView`、`listViews`、`getNodeRenderer`、`getComponent`、`listActions`、`listLayers`），`messages`，以及 `@presmium/viewer/domain` 的纯函数（也从包的根入口导出）。
+- `@presmium/cli` 的根入口（`runCheck`、`CheckOptions`、`CheckResult`、`LockUpdate`）：用命令与 `presmium check --json`，插件的测试用 `@presmium/cli/testing`。
 
 ## 5. 检查与维护
 
 - 公开的包、对等依赖与版本由 `scripts/check-packages.mjs` 检查，官方插件的 `version` 与 `kernel` 由 `scripts/check-plugins.mjs` 检查，消费者安装测试（`packages/cli/test/consumer.test.ts`、`e2e/consumer.spec.ts`）从压缩包安装并加载一个第三方插件，不兼容插件的诊断有自己的用例。
 - 改动第 2 节的接口时：兼容的增加写变更记录（`pnpm changeset`，次版本）；不兼容的改动只在主版本中进行，同时按第 1.2、1.3 节决定是否提升 `IR_VERSION`、`KERNEL_VERSION`。改动第 3 节的接口时在变更记录中写明。
-- 接口参考由 TypeDoc 生成（`typedoc.json`：`@presmium/kernel`、`host`、`viewer`、`compiler`、`cli` 的入口），随文档站构建（`pnpm --filter presmium-docs build`，在 `/api/` 下）。
+- 接口参考由 TypeDoc 生成（`typedoc.json`：`@presmium/kernel`（含 `@presmium/kernel/node`）、`host`、`viewer`、`compiler`、`cli` 与 `cli/testing` 的入口），随文档站构建（`pnpm --filter presmium-docs build`，在 `/api/` 下）。它列出入口的全部导出，公开与否以本文为准。

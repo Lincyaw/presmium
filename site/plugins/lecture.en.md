@@ -2,7 +2,7 @@
 title: Plugin guide
 lang: en
 description: Extend Presmium with components, directives, services, server routes, views and renderers
-translationOf: { entry: lecture.md, digest: 0ad9684a7a757c37415532b786016247652b75e27352ba5bdbdeeacd6516a025 }
+translationOf: { entry: lecture.md, digest: 316bea89e8fd42febf1f5c5be6796f42e0b860c64dbfcd0a2c80e10481c6bc0d }
 ---
 
 (plugins)=
@@ -10,7 +10,7 @@ translationOf: { entry: lecture.md, digest: 0ad9684a7a757c37415532b786016247652b
 
 Presmium's components, directives, executors, services and renderers all come from plugins, and official and third-party plugins use the same contracts. A plugin is an npm package: its Node entry turns directives of the source into IR, runs passes and checks at compile time, and provides services and server routes; in the browser its components are the same Vue components in the web form and in the slides, and they get the step state and services through `@presmium/host` only.
 
-This guide follows an imagined poll plugin, `presmium.poll`, from the package's layout to its tests. The full signatures are in the API reference (API in the navigation bar), and the version rules in "Interfaces and versions".
+This guide follows an imagined poll plugin, `presmium.poll`, from the package's layout to its tests. The full signatures are in the API reference (API in the navigation bar), and the version rules in [Interfaces and versions](../reference/lecture.md#versions).
 
 (plugin-package)=
 # The plugin package

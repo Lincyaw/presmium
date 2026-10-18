@@ -2,7 +2,7 @@
 title: Author guide
 lang: en
 description: Write lectures in MyST Markdown and publish them as web pages, slides, notebooks and narrated lectures
-translationOf: { entry: lecture.md, digest: 22bc98d42ee946768246d258dac000578ce14f0007bcb4e27711d6e618c6356c }
+translationOf: { entry: lecture.md, digest: 83f208c9a40d27cfa2630baa4ccfef2597cd028c12925fa24b86c6e60d9159a8 }
 ---
 
 (guide)=
@@ -10,7 +10,7 @@ translationOf: { entry: lecture.md, digest: 22bc98d42ee946768246d258dac000578ce1
 
 Presmium compiles a lecture written in MyST Markdown into an intermediate representation (IR), from which renderers make web pages, slides (Slidev), Jupyter notebooks and narrated lectures. A lecture is plain text that can live in the same git repository as the code it explains; its code blocks can quote the repository's real code, run when it is built, and run in the reader's browser.
 
-This guide is for people who write lectures. It starts with installing Presmium and a first document, then covers the syntax, the media, running code, lectures and speech, the AI assistant and reader questions, workspaces and publishing. People who write plugins should read the plugin guide.
+This guide is for people who write lectures. It starts with installing Presmium and a first document, then covers the syntax, the media, running code, lectures and speech, the AI assistant and reader questions, workspaces and publishing. People who write plugins should read the [plugin guide](../plugins/lecture.md).
 
 (start)=
 # Getting started
@@ -274,7 +274,7 @@ site:
 (workspace-translations)=
 ## Translations in a workspace
 
-The translations the documents declare are published with the workspace site: each document's translation under `/<directory>/<lang>/`, with a language menu on its pages; the home page also has a version for each language, `/<lang>/`, which lists the documents in that language (a document without that translation is listed in its original), titled `site.locales.<lang>.title`. This documentation site is built that way: each document is written in Chinese and translated into English.
+The translations the documents declare are published with the workspace site: each document's translation under `/<directory>/<lang>/`, with a language menu on its pages; the home page also has a version for each language, `/<lang>/`, which lists the documents in that language (a document without that translation is listed in its original), titled `site.locales.<lang>.title`. A translation links another document by its entry file too, and the link goes to that document's translation into the same language when there is one. This documentation site is built that way: each document is written in Chinese and translated into English.
 
 (workspace-serve)=
 ## The local workbench

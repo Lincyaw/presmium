@@ -1,10 +1,11 @@
 // The documentation site (WP-93c: P-144, P-145, P-123 in workspace sites), built in `beforeAll` by its own build
 // (site/build.mjs: the publication checks of every document and translation, `presmium build` of the workspace,
-// TypeDoc, a link check of the built pages) into a temporary directory, and served from there.
+// TypeDoc, a link check of the built pages) into a temporary directory, and served from there. The same build
+// of small workspaces written in temporary directories shows that a dead link or an out-of-date translation fails it.
 import { spawn } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
@@ -14,15 +15,34 @@ const SITE = fileURLToPath(new URL('../site', import.meta.url))
 /** The documents of the site, each written in Chinese and translated into English. */
 const DOCUMENTS = ['guide', 'plugins', 'reference']
 
-/** Runs the site's build into `out` and resolves with its output; fails with it. */
-async function buildDocs(out: string): Promise<string> {
-  const child = spawn(process.execPath, [join(SITE, 'build.mjs'), '--out', out], { cwd: SITE, stdio: ['ignore', 'pipe', 'pipe'] })
+/** Runs site/build.mjs with `args`: its exit code and output. */
+async function runBuild(args: string[]): Promise<{ code: number | null, output: string }> {
+  const child = spawn(process.execPath, [join(SITE, 'build.mjs'), ...args], { cwd: SITE, stdio: ['ignore', 'pipe', 'pipe'] })
   let output = ''
   child.stdout.on('data', (chunk: Buffer) => output += chunk)
   child.stderr.on('data', (chunk: Buffer) => output += chunk)
   const code = await new Promise<number | null>(done => child.once('exit', done))
+  return { code, output }
+}
+
+/** Runs the site's build into `out` and resolves with its output; fails with it. */
+async function buildDocs(out: string): Promise<string> {
+  const { code, output } = await runBuild(['--out', out])
   if (code !== 0) throw new Error(`site/build.mjs exited (${code}):\n${output}`)
   return output
+}
+
+/** Writes a workspace of one document, `notes`, into a new temporary directory: `files` by path. */
+function workspace(files: Record<string, string>): string {
+  const root = mkdtempSync(join(tmpdir(), 'presmium-docs-broken-'))
+  for (const [path, text] of Object.entries({ 'presmium.workspace.yaml': 'title: Notes\ndocuments: [notes/lecture.md]\n', ...files })) {
+    mkdirSync(dirname(join(root, path)), { recursive: true })
+    writeFileSync(join(root, path), text)
+  }
+  // `presmium build` finds the web renderer from the workspace, as an installed project has it.
+  mkdirSync(join(root, 'node_modules/@presmium'), { recursive: true })
+  symlinkSync(fileURLToPath(new URL('../packages/web', import.meta.url)), join(root, 'node_modules/@presmium/web'))
+  return root
 }
 
 /** The links of a document page's sidebar: its table of contents. */
@@ -104,12 +124,63 @@ test.describe('the documentation site', () => {
     await expect(page).toHaveURL(`${site.url}/plugins/plugin-testing.html`)
   })
 
+  test('a link to another document goes to its page in the language of the page that links it', async ({ page }) => {
+    await page.goto(`${site.url}/plugins/en/`)
+    await page.getByRole('link', { name: 'Interfaces and versions' }).first().click()
+    // `../reference/lecture.md#versions`, written in both languages: the page of the section `versions`.
+    await expect(page).toHaveURL(`${site.url}/reference/en/versions.html`)
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await page.goto(`${site.url}/plugins/`)
+    await page.locator('.VPDoc').getByRole('link', { name: '接口与版本' }).click()
+    await expect(page).toHaveURL(`${site.url}/reference/versions.html`)
+  })
+
   test('the API reference is generated from the source, under the navigation bar\'s API', async ({ page }) => {
     await page.goto(`${site.url}/reference/en/`)
     await page.locator('.VPNavBar').getByRole('link', { name: 'API', exact: true }).click()
     await expect(page).toHaveURL(`${site.url}/api/`)
     await page.getByRole('link', { name: '@presmium/kernel' }).first().click()
+    await page.locator('.col-content').getByRole('link', { name: 'index', exact: true }).click()
     await expect(page.getByRole('link', { name: 'KERNEL_VERSION' }).first()).toBeVisible()
     await expect(page.getByRole('link', { name: 'IR_VERSION' }).first()).toBeVisible()
+    // `@presmium/kernel/node` too, whose `copyPublished` docs/api.md lists as public.
+    await page.goto(`${site.url}/api/modules/_presmium_kernel.node.html`)
+    await expect(page.locator('.col-content').getByRole('link', { name: 'copyPublished' })).toBeVisible()
+  })
+})
+
+test.describe('the documentation site\'s build fails', () => {
+  test.describe.configure({ timeout: 300_000 })
+  const made: string[] = []
+  test.afterAll(() => {
+    for (const dir of made) rmSync(dir, { recursive: true, force: true })
+  })
+
+  test('on a dead link or an out-of-date translation of a document, before building anything', async () => {
+    const root = workspace({
+      'notes/lecture.md': '---\ntitle: 笔记\ntranslations: { en: lecture.en.md }\n---\n\n(notes)=\n# 笔记\n\n见[缺少的文件](missing.md)。\n',
+      'notes/lecture.en.md': '---\ntitle: Notes\nlang: en\ntranslationOf: { entry: lecture.md, digest: abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789 }\n---\n\n(notes)=\n# Notes\n\nSee the file.\n',
+    })
+    made.push(root)
+    const { code, output } = await runBuild(['--site', root, '--out', join(root, 'dist')])
+    expect(code, output).toBe(1)
+    expect(output).toMatch(/^notes\/lecture\.md:9 {2}error {2}missing\.md: no such file {2}\(presmium\.links\)$/m)
+    expect(output).toMatch(/^notes\/lecture\.en\.md:\d+ {2}warning {2}translation "en" \(lecture\.en\.md\) is out of date: .* \(presmium\.translations\)$/m)
+    expect(output).toContain('the publication checks found 2 problems')
+    expect(existsSync(join(root, 'dist'))).toBe(false)
+  })
+
+  test('on a link of a built page to no file of the site', async () => {
+    const root = workspace({
+      'presmium.workspace.yaml': 'title: Notes\ndocuments: [notes/lecture.md]\nsite:\n  nav:\n    - { text: Missing, link: /nowhere/ }\n',
+      'notes/lecture.md': '---\ntitle: Notes\nlang: en\n---\n\n(notes)=\n# Notes\n\nA page.\n',
+    })
+    made.push(root)
+    const { code, output } = await runBuild(['--site', root, '--out', join(root, 'dist')])
+    expect(code, output).toBe(1)
+    expect(output).toContain('checked notes/lecture.md: no problems')
+    expect(output).toContain('dead link: /index.html -> /nowhere/')
+    expect(output).toContain('dead link: /notes/index.html -> ../nowhere/')
+    expect(output).toMatch(/^\d+ dead links in the built site$/m)
   })
 })
