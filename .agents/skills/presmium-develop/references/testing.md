@@ -22,6 +22,8 @@
 
 消费者安装（P-141）：`scripts/consumer.ts` 的 `consumerProject` 用 pnpm 打包全部公开的包、用 npm 打包 `e2e/fixtures/consumer/plugin`（第三方插件），在系统临时目录中用 npm 从压缩包安装（第一次要从 npm 下载依赖，之后用 npm 的缓存），复制 `e2e/fixtures/consumer/deck` 的文稿；`packages/cli/test/consumer.test.ts` 在其中运行 `check`、`build`（三种形态）、`dev`、工作区的 `serve`（`XDG_CACHE_HOME` 指向项目之外的临时目录，站点因而在项目之外）与不兼容插件的诊断，`e2e/consumer.spec.ts` 在浏览器中看插件的组件（构建的两种形态、输出在项目之外的 `dev`、`serve` 的首页与文档）。两者各装一次，约一两分钟。开发服务器的端口写在项目的 `renderers.<id>.port` 中（被占用时取下一个空闲端口）。
 
+起步工具（P-142）同样在单仓之外、不经 npm 的注册表：`packages/create-presmium/test/create.test.ts` 用 `scripts/consumer.ts` 的 `packAll` 打包（测试不从包外导入，在子进程中调用 consumer.ts 的函数），以 `npm exec --package=<create-presmium 的压缩包> -- create-presmium …`（`npm create presmium` 的做法）在临时目录中新建讲义（从标准输入回答提问）、工作区与插件，再把各项目 `package.json` 中 Presmium 的包（及它们需要的包，`closure`）指向压缩包后 `npm install`；然后检查 create-presmium 的压缩包中的模板与源逐个文件相同、生成的文件（版本、技能副本、链接、`git init`），每个项目 `presmium check` 无问题、构建通过，插件项目的 `npm test`（它自己的集成测试）通过。`e2e/create.spec.ts` 把插件项目用 npm 打包、装进一份新建的讲义，在浏览器中看组件在构建的网页与幻灯片中显示，`presmium dev`（端口 5413）中经插件的服务端路由挥手。插件模板的开发依赖 `vitest` 用 `^5`：npm 10.9 在这棵依赖树中解析 vitest 4.1 时崩溃（`Cannot read properties of null (reading 'edgesOut')`）。
+
 只跑一个文件：`pnpm exec vitest run packages/addon-code/test/check.test.ts`、`pnpm exec playwright test e2e/guide.spec.ts --project chromium`；只跑一个项目：`pnpm exec vitest run --project export`。
 
 ## Vitest 集成测试的写法

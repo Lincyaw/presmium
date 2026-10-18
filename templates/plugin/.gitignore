@@ -1,0 +1,11 @@
+node_modules
+dist/
+# The example's working directory: only these files of .presmium/ belong to a document (recordings,
+# drawings, assets, synthesized speech and the locks); the rest there is generated.
+**/.presmium/*
+!**/.presmium/freeze/
+!**/.presmium/anchors.lock.json
+!**/.presmium/drawings/
+!**/.presmium/assets/
+!**/.presmium/speech/
+!**/.presmium/speech.lock.json

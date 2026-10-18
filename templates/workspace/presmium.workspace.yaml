@@ -1,6 +1,7 @@
-# A workspace (docs/ir.md section 10): copy this file, and the .gitignore beside it, to the root of a git
-# repository whose documents are its subdirectories, each with a lecture.md. Install the operator plugins
-# listed below at that root (pnpm add @presmium/slidev-addon-assistant), or remove them from the list. Then
+# A workspace (docs/ir.md section 10): this file, and the .gitignore beside it, at the root of a git
+# repository whose documents are its subdirectories, each with a lecture.md. `npm create presmium@latest`
+# makes one (a workspace project); or copy both files to such a root. Install the operator plugins listed
+# below at that root (npm install @presmium/slidev-addon-assistant), or remove them from the list. Then
 # `presmium serve` there, or `presmium build`.
 title: 课程名称
 documents: ['*/lecture.md']         # where the documents are, in this order; default '*/lecture.md'
@@ -8,7 +9,7 @@ site: {}                            # the site shell: nav, footer, head, sitemap
 approvals: { operate: ask, spend: ask, write: ask, agent: ask }
 settings:                           # the plugins' operator settings, by plugin id; never in a deck
   presmium.workspace:
-    # The operator plugins, installed at this root (e.g. pnpm add @presmium/slidev-addon-assistant): every
+    # The operator plugins, installed at this root (e.g. npm install @presmium/slidev-addon-assistant): every
     # document and the home page load them. The assistant gives "AI 修改" and the model settings on the home page
     # and on every document, and says at start-up whether it is available and with what.
     plugins: ['@presmium/slidev-addon-assistant']

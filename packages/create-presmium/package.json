@@ -1,0 +1,45 @@
+{
+  "name": "create-presmium",
+  "version": "1.0.0-rc.0",
+  "description": "npm create presmium: a new Presmium lecture, workspace or plugin",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/presmium/presmium.git",
+    "directory": "packages/create-presmium"
+  },
+  "homepage": "https://github.com/presmium/presmium/tree/main/packages/create-presmium#readme",
+  "bugs": "https://github.com/presmium/presmium/issues",
+  "keywords": [
+    "presmium",
+    "create",
+    "template",
+    "myst",
+    "slides"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "create-presmium": "./bin/create-presmium.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates"
+  ],
+  "scripts": {
+    "prepack": "node scripts/templates.ts",
+    "templates": "node scripts/templates.ts"
+  },
+  "dependencies": {
+    "jiti": "^2.7.0"
+  },
+  "devDependencies": {
+    "@presmium/cli": "workspace:*"
+  }
+}

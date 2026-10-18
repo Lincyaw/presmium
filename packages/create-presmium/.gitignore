@@ -1,0 +1,4 @@
+# Copied from the templates' sources when the package is packed (src/templates.ts, scripts/templates.ts).
+/templates/*
+!/templates/README.md
+/.template-*.tmp

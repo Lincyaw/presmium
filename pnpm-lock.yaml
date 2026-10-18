@@ -767,6 +767,16 @@ importers:
         specifier: ^7.8.0
         version: 7.8.0
 
+  packages/create-presmium:
+    dependencies:
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+    devDependencies:
+      '@presmium/cli':
+        specifier: workspace:*
+        version: link:../cli
+
   packages/host:
     dependencies:
       '@fontsource/ibm-plex-mono':
