@@ -30,7 +30,7 @@
 | profile | dsh 的一套安装与配置（`$DSH_HOME/profiles/<名>/`）：列出的 bundle、它们的补丁与用户在界面中的改动 |
 | 根布局插件 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件。dsh 自带的是 `dsh-client-ui-layout`（行 `ui-layout`），它排出的布局叫“dsh 自带布局” |
 | 预览协议 | 工作台与嵌在它里面的产物页面之间的消息约定（第 4 节） |
-| 预览代理 | 产物页面中实现预览协议的一小段脚本，只出现在开发服务器提供的页面中 |
+| 预览代理 | 产物页面中实现预览协议的一小段脚本，只出现在工作区服务启动的开发服务器提供的页面中；`presmium dev` 与静态构建不带它（4.2 节） |
 | 升级闸门 | 每次升级 dsh 之前必须通过的五组集成用例（第 12 节） |
 | 服务令牌 | studio 的启动器（或自己启动服务的 bundle）为一次启动生成的随机值，bundle 用它访问工作区服务的路由（5.3 节） |
 | 会话令牌 | 为一个 dsh 会话签发的 MCP 令牌，模式为“主机已确认”：经它调用的操作类工具不再向页面窗口请求确认，因为 dsh 已按 Presmium 的策略决定过（5.3 节） |
@@ -62,6 +62,8 @@
 8. **studio 用自己的 `DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，不与旧工作台的 `$XDG_STATE_HOME/presmium/dsh` 共用，因为 96g 之前两者可能锁定不同的 dsh 版本，一个 `DSH_HOME` 只由一个版本写（11.1 节）。
 9. **会话令牌与焦点的路由在服务端**（`@presmium/server`），不在工作区的路由中：`MCP_ENDPOINT` 本来就是服务端的服务，焦点与放映位置一样由服务端保存（5.3、8.6 节）。
 10. **用例文件名**：`e2e/preview.spec.ts` 已经是 P-81 的预览同步，预览协议的用例是 `e2e/preview-protocol.spec.ts`。
+11. **焦点的输入框在工作台中**：焦点草案让编号标记与输入框都出现在页面中块的旁边。定稿只把编号标记画在页面中（预览协议新增的 `pins` 消息，4.3 节），输入框在工作台的焦点托盘中（8.3 节）。理由：产物页面与工作台不同源，页面中运行着第三方插件的脚本（4.5 节），作者写在页面中的要求它们读得到；输入框还要带上工作台的文字、键盘处理与界面语言，这违背 G-1 的“产物只暴露锚点”。标记留在页面中，滚动、缩放与切换步骤时才能跟着块走。
+12. **`presmium dev` 不带预览代理**：焦点草案在 `presmium dev` 与 `presmium serve` 提供的页面中都加载预览代理（草案称“预览客户端”）。定稿只在工作区服务启动的开发服务器的页面中加载它，允许的来源由 `--preview-origin` 给出（4.2 节）。理由：`presmium dev` 的页面由浏览器直接打开，不嵌在任何工作台中，没有对方可以通信；G-4 之后它只是实时预览加“在编辑器中打开”。点选因此只在 `presmium studio` 中可用。
 
 ## 1. 目标与原则
 
@@ -164,7 +166,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 - 传输是 `window.postMessage`。每条消息的信封是 `{ protocol: 'presmium-preview', version: 1, nonce, type, ...字段 }`。
 - 工作台向工作区服务请求预览地址（`GET preview`，5.1 节），在地址上加查询参数 `presmium-preview=<nonce>`（每个 iframe 一个随机值），再放进 iframe。
-- 预览代理只存在于开发服务器提供的页面中：工作区服务给它启动的开发服务器的 `RenderContext.preview`（新的可选字段：`{ origins }`，允许的父页面来源）。静态构建与 `presmium dev` 不带它。代理只在三个条件都满足时启动：地址带这个参数，`window.parent !== window`，`origins` 不为空。
+- 预览代理只存在于工作区服务启动的开发服务器提供的页面中：工作区服务给它启动的开发服务器的 `RenderContext.preview`（新的可选字段：`{ origins }`，允许的父页面来源）。静态构建与 `presmium dev` 不带它。代理只在三个条件都满足时启动：地址带这个参数，`window.parent !== window`，`origins` 不为空。
 - 允许的父页面来源是 `presmium serve --headless --preview-origin <源>`（可重复）给出的；在 studio 中，启动器把 dsh 的源（`--host` 时另加局域网的源）告诉服务。代理只向这些来源发消息，也只接受从它们发来、带同一个 nonce 的消息。
 - 代理启动后先发 `ready`。工作台收到 `ready` 之后才发别的消息。信封的版本不同时，工作台提示“预览的版本与工作台不符，请重新启动”。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
@@ -443,7 +445,7 @@ export interface Focus {
 }
 ```
 
-- `Annotation` 增加 `focus?: Focus`：一条批注是一个焦点、一句要求与处理状态。已有的 `section`、`block`、`source`、`excerpt` 保留，与 `focus` 一致，旧代码照常读。状态沿用 `AnnotationStatus`（草稿、已发送、已完成、失败），agent 写下自己的说明（`note`）。
+- `Annotation` 增加 `focus?: Focus`：一条批注是一个焦点、一句要求与处理状态。已有的 `section`、`block`、`source`、`excerpt` 保留，与 `focus` 一致，旧代码照常读。状态沿用 `AnnotationStatus`（草稿、已发送、已处理、未能处理，即 `draft`、`sent`、`done`、`failed`），agent 写下自己的说明（`note`）。
 - `AgentContext` 增加 `focus?: Focus[]`。
 - 没有选中任何东西时，**当前位置**（文档、节、步骤、形态）是一种被动的焦点，对话时自动带上，不需要用户操作。
 
@@ -486,7 +488,7 @@ export interface Focus {
 
 - **保存**：工作台把当前的焦点与批注报告给服务端（`POST presmium.server/focus`，经 bundle 转发，带服务令牌）。服务端把锚点换成源码范围与摘录（与 MCP 的 `locate_source` 同一个函数），按文档保存最近一次的焦点（与放映位置一样，由服务端保存，不属于某个页面）。
 - **dsh**：bundle 的文稿快照列出当前的焦点（6.4 节）；发送批注时，它们作为一条带来源标记的消息进入会话。
-- **MCP**：资源 `presmium://focus`（可订阅，与 `presmium://position` 一样，任一文档的焦点）与读取类工具 `get_focus`（可选参数 `document`）。在终端中用 Claude Code 或 Codex 的人因此也能看到作者在工作台中选中的东西。
+- **MCP**：资源 `presmium://focus`（可订阅，与 `presmium://position` 一样，任一文档的焦点）与读取类工具 `get_focus`（可选参数 `document`）。它们经 MCP 宿主接口的新方法 `McpHost.focus(document?)` 取得焦点（`@presmium/mcp`，只增加）：服务端返回它保存的焦点；`presmium-mcp`（stdio，不经服务端，也没有工作台）返回空。在终端中用 Claude Code 或 Codex 的人因此也能看到作者在工作台中选中的东西。
 - 第 9 节的一致性用例同时断言：同一个焦点经 MCP 读到的与 dsh 会话的快照中的相同。
 
 ### 8.7 源码改动之后
@@ -505,7 +507,7 @@ export interface Focus {
 - **多份文档**：dsh 的工具在插件激活时登记。dsh 不能按会话给出不同的工具集时（17 节），bundle 登记各文档工具的并集，pre-execute 对会话的文档没有的工具返回 deny 并说明原因；`off` 是工作区一级的设置，对应的工具不登记。
 - **一致性用例**（96b）：同一份文档、同一组设置下，MCP `tools/list` 的名字与输入 schema，等于 headless 会话中提供给模型的 `presmium__*` 工具（去掉前缀），含一个插件的 `AgentTool`；`off` 的种类两边都不列出；`get_focus` 与会话快照中的焦点相同。新增工具时这个用例保证两边都有。
 - **外部 agent 是一等入口**：工作台中的 agent 只用 dsh（G-3）；Claude Code、Codex 等经 MCP 连接工作区服务，工具与 dsh 中相同，修改落在源码上，工作台的预览与编辑器经 `ir/events` 跟上。它们写的修改不经 Presmium 的审阅（它们没有 Presmium 的会话），作者在“未提交的修改”中提交或放弃，与在自己的编辑器中改一样。
-- **ACP 的替换运行时**（`PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command`、`AGENT_RUNTIME` 的 ACP 实现）随旧工作台在 96g 删去。理由：经 ACP 时 Presmium 的确认种类与说明丢失（K5 复核），两套传输与两套确认语义要一起维护；外部 agent 经 MCP 已经能做同样的修改。
+- **ACP 的替换运行时**（`PRESMIUM_AGENT_COMMAND`、`settings.presmium.assistant.command`、`AGENT_RUNTIME` 的 ACP 实现）随旧工作台在 96g 删去，ACP 的两个测试 agent（助手插件的 `scripted-agent.mjs`、讲授插件的 `writeback-agent.mjs`）与两个包对 `@agentclientprotocol/sdk` 的依赖一起删去。理由：经 ACP 时 Presmium 的确认种类与说明丢失（K5 复核），两套传输与两套确认语义要一起维护；外部 agent 经 MCP 已经能做同样的修改。
 
 ## 10. 没有模型与没有 dsh 时
 
@@ -577,7 +579,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 ### 13.1 1.0 中的旧工作台（G-6）
 
-1.0 照常发布，不加功能。旧工作台标为实验性，不在语义化版本的承诺之内：`presmium serve` 的界面、`@presmium/workspace` 的浏览器部分、助手与讲授插件中属于工作台的面板、`presmium dev` 的编辑模式，以及只为它们存在的契约（`EDIT_MODE`、工具栏槽位 `home`、`create`、`files`、`tabs`、`source`、`dock`，`AGENT_RUNTIME` 与 ACP 相关的设置）。`requirements.md` 的“定位与边界”据此修订；公开接口的列表（`docs/api.md`）要列出它们为实验性。
+1.0 照常发布，不加功能。旧工作台标为实验性，不在语义化版本的承诺之内：`presmium serve` 的界面、`@presmium/workspace` 的浏览器部分、助手与讲授插件中属于工作台的面板、`presmium dev` 的编辑模式，以及只为它们存在的契约（`EditMode` 与 `EDIT_MODE`，工具栏槽位 `home`、`create`、`files`、`tabs`、`source`、`dock` 与位置 `activity`、`home`、`pane`，`AGENT`、`AGENT_RUNTIME` 与 ACP 相关的设置）。`requirements.md` 的“定位与边界”据此修订；公开接口的列表（`docs/api.md`，WP-93c）要列出它们为实验性；源码上的 `@experimental` 标注（P-143）写在 `packages/host/src/types.ts` 与 `packages/kernel/src/contracts/agent.ts` 中这些契约上，不在 93c 的拥有中，由验收者在合并 93c 时加上（`wbs.md` WP-96 的“留给别的工作包”）。两者都要在用户实际发布 1.0 之前做完。
 
 N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只修缺陷，不加功能；分层检查的白名单把它隔离起来。
 
@@ -672,7 +674,7 @@ N 波次进行期间，旧工作台仍是 `presmium serve` 的默认界面，只
 
 | # | 问题 | 不成立时 | 工作包 |
 |---|---|---|---|
-| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96b、96d |
+| 1 | `connection.fetch` 的路由能否流式回答（`ir/events` 的推送） | 工作台按秒轮询修订号 | 96a（服务一侧）、96b（bundle 的转发）、96d（工作台一侧） |
 | 2 | 面板怎样发起会话：在页面中带 cookie 调 Host API，还是用客户端运行时的会话服务 | — | 96e |
 | 3 | 批注怎样进入对话：`conversation.composer` 槽位中的托盘，还是直接发 `session/prompt` | — | 96e |
 | 4 | 一次审阅跨越多个 turn 时界面怎样呈现，与 dsh 修改卡片是什么关系 | — | 96c、96e |
