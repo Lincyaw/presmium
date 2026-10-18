@@ -64,7 +64,7 @@ test('on its slide the compute shader stays legible, its run panel on the slide 
   const code = slide.locator('.pm-run-panel__source pre').first()
   await expect(code).toBeVisible()
   await expect(code).toContainText('best[2] = counts[top];')
-  expect(await code.evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize) * (el.getBoundingClientRect().height / el.offsetHeight))).toBeGreaterThanOrEqual(18)
+  expect(await code.evaluate(el => Number.parseFloat(getComputedStyle(el).fontSize) * (el.getBoundingClientRect().height / (el as HTMLElement).offsetHeight))).toBeGreaterThanOrEqual(18)
   const bottom = (await slide.boundingBox())!
   const run = (await slide.locator('.pm-run-panel__run').first().boundingBox())!
   expect(run.y + run.height).toBeLessThanOrEqual(bottom.y + bottom.height)

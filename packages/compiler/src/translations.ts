@@ -71,7 +71,7 @@ function body(text: string): string {
 export function originalDigest(doc: IRDocument): string {
   const files = [doc.meta.entry]
   for (const section of doc.sections) {
-    for (const { file } of [section.source, ...irBlocks(section.blocks).map(block => block.source)]) if (!files.includes(file)) files.push(file)
+    for (const { file } of [section.source, ...[...irBlocks(section.blocks)].map(block => block.source)]) if (!files.includes(file)) files.push(file)
   }
   const hash = createHash('sha256').update(doc.meta.title)
   for (const file of files) {
