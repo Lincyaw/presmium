@@ -39,8 +39,10 @@ jobs:
           node-version: 22
           cache: pnpm
       # The Python the examples' recorded outputs were made with: in another version the build reuses them
-      # with a warning for each, which the home page shows on the document's card. No Chromium either: the
-      # WebGPU example's recording (made on a GPU) is reused without comparing it to a software renderer.
+      # with a warning for each, which the home page shows on the document's card. The builds see no
+      # Chromium either (PLAYWRIGHT_BROWSERS_PATH names an empty directory; `pnpm install` downloads one for
+      # playwright-chromium): the WebGPU example's recording, made on a GPU, is then reused without being
+      # compared with the runner's software renderer.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13.12'
@@ -65,10 +67,13 @@ jobs:
             writeFileSync(file, out)
           "
       - run: pnpm demo:build
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/no-browsers
       - name: The example workspace's site, under the Pages site's path
         env:
           BASE: ${{ steps.pages.outputs.base_path }}/
           WORKSPACE: ${{ runner.temp }}/workspace
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/no-browsers
         run: |
           node examples/workspace/try.mjs "$WORKSPACE"
           sed -i "s#^site:\$#site:\n  base: $BASE#" "$WORKSPACE/presmium.workspace.yaml"
