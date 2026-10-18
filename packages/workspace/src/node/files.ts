@@ -262,7 +262,7 @@ export function fromTemplate(config: WorkspaceConfig, dir: string, template: str
   const quoted = JSON.stringify(title).slice(1, -1)
   writeChanges(config, sourceEntries(source).filter(entry => entry.link === undefined).map(({ path, executable }) => {
     const content = readFileSync(join(source, path))
-    return { path: `${dir}/${path}`, content: path.endsWith('.md') ? Buffer.from(content.toString('utf8').replaceAll('{{title}}', quoted)) : content, ...executable ? { executable } : {} }
+    return { path: `${dir}/${path}`, content: path.endsWith('.md') ? Buffer.from(content.toString('utf8').replaceAll('{{title}}', () => quoted)) : content, ...executable ? { executable } : {} }
   }))
 }
 

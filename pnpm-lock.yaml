@@ -797,16 +797,15 @@ importers:
 
   packages/kernel:
     dependencies:
+      '@types/semver':
+        specifier: ^7.8.0
+        version: 7.8.0
       parse5:
         specifier: 7.3.0
         version: 7.3.0
       semver:
         specifier: ^7.8.5
         version: 7.8.5
-    devDependencies:
-      '@types/semver':
-        specifier: ^7.8.0
-        version: 7.8.0
 
   packages/language-server:
     dependencies:

@@ -1540,6 +1540,21 @@ WP-95c、95d、92c 已合并。验收者随合并做了：宿主演讲者面板�
 
 **验收**：文档站构建无失效链接，两种语言都有完整目录；工作区站点的译本用例通过（`e2e/docs-site.spec.ts` 与现有 `e2e/site.spec.ts`）；`scripts/check-skills.mjs` 通过。
 
+**WP-93b 与 WP-93c 的结果（验收者，2026-10-18）**：两者都已合并（各两轮验收）。
+
+- 93b：`npm create presmium` 生成讲义、工作区与插件三种项目，单仓之外从打包结果安装的用例通过。顺带修了已安装的 Presmium 包在 Vite 中被预构建成第二份（插件模板的 `npm run dev` 看不到组件）：`@presmium/kernel/node` 的 `optimizeDeps` 给出 `include` 与 `exclude`，网页、幻灯片与工作区首页的开发服务器都用它。
+- 93c：文档站 `site/`（中英双语的工作区，构建时跑发布检查与链接检查，接口参考由 TypeDoc 生成）、`docs/api.md`（公开、实验性与内部接口，版本规则，插件包的约定）、各包与根目录的 README、CONTRIBUTING、SECURITY；工作区站点发布译本。实验性的声明带 `@experimental`。
+- 验收者补的：`create-presmium` 的 README；新建文档的标题含 `$` 时不再被改写；SECURITY 写明独立的课堂服务默认监听所有网卡；`@types/semver` 改为 kernel 的依赖；设计文档与需求中关于工作区译本的描述同步。
+- 接受的偏离：`presmium serve` 的预览只显示原文，仍提示译本要经工作区根目录的 `presmium build` 发布。
+
+### WP-93d 文档站与英文页面的收尾（1.0 发布前，可与 N 波次第一步并行）
+
+**拥有**：`site/**`、`packages/web/src/node/site.ts`（按语言的首页与相邻文档）、`packages/web/src/client/home.ts`（首页列表按页面的语言渲染）、`packages/workspace/templates/document/**`（英文的默认模板）、`packages/workspace/src/domain/messages.ts`（`DOCS_SITE_URL`）、`.github/workflows/docs.yml`（新）、`e2e/docs-site.spec.ts`。
+
+**条目**：英文页面的导航“文档列表”与跨文档的上一篇、下一篇指向同一语言（有该语言的页面时）；`/en/` 首页的文档列表在服务端按英文渲染（去掉 `ClientOnly`，没有水合不一致）；文档站支持子路径（GitHub Pages 的 `/presmium/`），`DOCS_SITE_URL` 设为 `https://presmium.github.io/presmium/`，`docs.yml` 构建并发布文档站（仓库与 Pages 的开通是用户的步骤）；英文界面新建的文档用英文模板（带 `lang: en`）。
+
+**验收**：英文页面上的导航与相邻链接都留在英文；`/en/` 没有水合警告；以 `/presmium/` 为子路径构建的文档站没有失效链接；英文工作区新建的第一份文档是英文的。
+
 ## N 波次：基于 DeepSeek Harness 的工作台（WP-96 至 96g）
 
 用户 2026-10-18 定下的方向：Presmium 的核心与产物不依赖模型；面向作者的工作台围绕 DeepSeek Harness（dsh）的生态与形态构建，相当于一个定制的 dsh 发行版。依据是一次可行性验证（三个原型，各经一次复核，用仓库中的 dsh 0.2.1-alpha.4 与脚本化的假模型）：结论报告、设计草案与“焦点上下文”草案在验收者的草稿目录中（`dsh-spike/REPORT.md`、`DESIGN.md`、`FOCUS.md`），WP-96 把它们定稿进 `docs/`。

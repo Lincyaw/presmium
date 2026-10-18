@@ -57,7 +57,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url'
 import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, isRecord, localRequestRefusal, nodeMdast } from '@presmium/kernel'
 import type { DocumentLink, Finding, IRDocument, MdastNode, RenderContext, RenderOutput, SiteDevServer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
-import { FONT_LICENSE, fontLicense, preBundle } from '@presmium/kernel/node'
+import { FONT_LICENSE, fontLicense, optimizeDeps } from '@presmium/kernel/node'
 import { createProxyServer } from 'http-proxy-3'
 import { pageLink, searchDocuments, sectionLinks, siteShell, SITE_LABELS, toPages, translationPages, urlPath } from '../domain/index.ts'
 import type { Neighbour, SearchDocument, WebPage } from '../domain/index.ts'
@@ -455,7 +455,7 @@ function writeHome(workDir: string, site: SiteSpec, ctx: RenderContext, modules:
   write(dataFile, JSON.stringify({ title: site.title, label: languageLabel(lang), documents: homeDocuments(site, ctx.base), locales, sitemap: sitemapPages(site) }))
   write(join(workDir, '.gitignore'), '*\n')
   linkDependencies(root)
-  const include = preBundle(root, browserPackages(modules))
+  const optimize = optimizeDeps(root, browserPackages(modules))
   const publicDir = join(root, 'public')
   // The fonts the design system bundles go with their license (NOTICE), at the site's root too.
   write(join(publicDir, FONT_LICENSE), fontLicense(import.meta.url))
@@ -494,7 +494,7 @@ if (data.locales.length > 0) {
     site.locales[locale.lang] = { label: locale.label, lang: locale.lang, title: locale.title, themeConfig: { ...locale.themeConfig, presmium } }
   }
 }
-site.vite = { plugins: [presmiumReady(), ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])], resolve: { dedupe: ['vue'] }${include.length > 0 ? `, optimizeDeps: { include: ${JSON.stringify(include)} }` : ''}${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
+site.vite = { plugins: [presmiumReady(), ...[${modules.vite.map((_, i) => `vite${i}`).join(', ')}].flatMap(config => config?.plugins ?? [])], resolve: { dedupe: ['vue'] }${optimize.include.length + optimize.exclude.length > 0 ? `, optimizeDeps: ${JSON.stringify(optimize)}` : ''}${served ? `, server: { fs: { allow: ${JSON.stringify(allow)} } }` : ''} }
 ${sitemap}${shell.head ? OG_TITLE : ''}
 export default site
 `)

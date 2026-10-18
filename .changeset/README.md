@@ -42,6 +42,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `presmium-vscode` | 否 | VS Code 扩展：预打包为 `.vsix`，发布到扩展市场，不发布到 npm |
 | `presmium-demo` | 否 | 示例讲义（`examples/demo`） |
 | `presmium-example-workspace` | 否 | 示例工作区（`examples/workspace`） |
+| `presmium-docs` | 否 | 文档站（`site/`），一个 Presmium 工作区，`pnpm --filter presmium-docs build` 构建 |
 
 不在工作区中的测试替身也不发布：`packages/*/test/fixtures/**` 与 `e2e/fixtures/**` 中的插件与文稿都是 `private`，例如消费者安装测试的第三方插件 `presmium-plugin-hello`（`e2e/fixtures/consumer/plugin`）。`packages/render-slides/theme` 是幻灯片的默认主题，随 `@presmium/render-slides` 发布，不单独发布。
 

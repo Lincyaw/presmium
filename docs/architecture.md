@@ -1404,6 +1404,8 @@ export interface SiteDocument {
   tags?: string[]
   /** 编译好的 IR；开发中尚未访问的文档没有 */
   doc?: IRDocument
+  /** 头部声明的译本（P-123），像单独构建文档那样编译（语言，IR），同 `RenderContext.translations`；站点把每个译本发布在 `<base><dir>/<lang>/`（WP-93c） */
+  translations?: { lang: string, doc: IRDocument }[]
 }
 
 export interface SiteSpec {
@@ -1448,7 +1450,7 @@ export interface Renderer {
 - 译本从自己的入口编译：`CompilerOptions` 增加 `headmatter`（替换入口头部的字段，值为 `undefined` 的去掉；译本取原文的 `plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`checks`，没有 `lang`、`title` 时取声明的语言与原文标题，去掉 `translations`）与 `deckDir`（文稿目录不是入口所在目录时：译本在原文的文稿目录中编译，插件、`public/`、组件、锚点锁与执行缓存都是这份文稿的）。`Compilation.options` 记录编译选项，译本的编译取它（宿主服务也在其中），原文为某个受众编译、或构建某个受众的视图时（`Compilation.audience`）译本同样按该受众编译；`presmium dev` 中译本的编译器在头部或受众变化时换新。文稿目录中不写任何文件。
 - `build(compilation, { outDir, to, audience?, quote?, scan? })`：`audience` 构建完整编译的该受众视图（`forAudience`、`audienceOf`），译本按该受众编译；为某个受众编译或构建时，构建结束后扫描输出，被去掉的句子包括各译本的（不含原文或任一译本自己也有的句子），`quote: false` 时诊断不引用句子。`scan` 默认 `outDir`，读输出目录中的每个文件（`presmium build --audience`：此前完整构建留在同一目录中的其他渲染端目录同样被检查）；`written` 只读这次写出的 `ir.json` 与各渲染端的目录，`presmium dev` 与 `presmium serve` 的 `ServerHost.build` 用它（文稿的 `dist/` 中同时有完整版的构建）。`presmium build --audience` 与 `ServerHost.build` 都经它。
 - 发布文件的共用代码：`packages/compiler/src/published.ts`（`fileHash` 按大小、inode、修改时间与状态改变时间缓存文件的哈希，两秒之内改过的文件不缓存（同 git 对“racily clean”的处理：时间戳的精度之内同样大小的改动看不出来），`publishesDirectory`、`directoryAsset` 拒绝隐藏目录与 `node_modules`，`lineOf`、`inside`，`htmlAttributes` 以 parse5 找出原始 HTML 的属性），由 `@presmium/compiler` 导出，工作区站点的上下文引用它，`portable` 同样。三个渲染端改写原始 HTML 的 `mapHtmlUrls` 也改用 parse5，各在自己的包中（渲染端不互相引用，也不依赖编译器；合为一份要放进 kernel，不在本工作包中）。网页的 `mapHtmlUrls` 从 `src/domain` 移到 `src/node/html.ts`（只有构建用它，不进浏览器）。
-- 工作区站点不构建译本：`packages/workspace/src/node/site.ts` 的 `untranslated` 为声明了译本的文档给出警告 `presmium.translations`，工作区根目录的 `presmium build` 写进构建报告，`presmium serve` 写进该文档的诊断（`ir.md` 2.12 节）。
+- 工作区站点的译本（WP-93c 起）：工作区根目录的 `presmium build` 以 `packages/workspace/src/node/site.ts` 的 `siteTranslations`（编译器的 `compileTranslations`）编译每份文档的译本，放进 `SiteDocument.translations`，网页渲染端的 `sites.ts` 把它们交给文档的 `RenderContext.translations` 并为首页生成每种语言的 locale（`ir.md` 2.12 节）。`presmium serve` 的预览不编译译本：`untranslated` 为声明了译本的文档给出警告 `presmium.translations`，写进该文档的诊断。
 - 首页的运营者插件：编译器的 `workspacePlugins(root, options)` 按文档编译的同一选项加载运营者插件（`settings.presmium.workspace.plugins` 中声明 `operator: true` 的，另加随 CLI 安装的 `addon-deltabox`）并登记它们的 Node 服务。`presmium serve` 在服务端启动之后加载一次，首页（文档 `''`）的 `ServedDocument` 带上它们的服务端部分与服务（宿主的服务在前），所以它们的路由在首页应答。首页不是文档：它的 `ServerContext.deckDir` 与 `workspaceRoot` 都是 serve 在系统临时目录中建的一个空目录（关闭时删去），不是工作区根目录，所以插件的路由在首页读不到也改不了工作区中的文件；插件按 `ServerContext.home` 认出首页（服务端从首页的 `ServedDocument.home` 得到它；`presmium dev` 的文稿在仓库的根目录、入口不叫 `lecture.md` 时也是文档，所以不能按目录猜），那里只回答不需要文档的请求，文档的列出与新建经工作区的路由（`presmium.workspace`）。它们的 Node 服务仍按工作区创建（`workspacePlugins` 的上下文是工作区根目录）。站点上下文的 `config.homePlugins`（包名到目录）让网页渲染端只在首页加载它们的浏览器部分（`src/client/plugin.ts`、`viewer.ts`、`components/`），例如助手的 `AGENT`，文档管理的“由 agent 起草”因此出现；文档的页面仍只加载其文稿列出的插件。
 
 ## 5. 插件约定

@@ -85,6 +85,16 @@ IR 是编译器与渲染端、IR 运行时、MCP 和外部工具之间的格式�
 
 `Compiler`、`Compilation`（`doc`、`check`、`publishChecks`、`forAudience` 等字段）、`CompilerOptions`、`resolveEntry`、`build` 与 `BuildOptions`、`BuildReport`、`dev`、`viewFor`、`readFrontmatter`、`DECK_ENTRY`。供宿主与工具在 Node 中编译、检查与构建文稿；其余导出见第 4 节。
 
+### 2.6 插件包的约定
+
+第三方插件依靠以下约定被发现与加载，它们与内核契约一样受版本规则约束（`docs/architecture.md` 第 4、5 节，`.agents/skills/presmium-develop/references/plugin.md`）：
+
+- `package.json` 的 `exports['./presmium']`：Node 端插件（`PresmiumNodePlugin`）；`peerDependencies` 声明支持的 Presmium 版本（1.4 节）；
+- 包目录中的 `components/`（两种形态共用的 Vue 组件，按标签名注册）、`setup/`（幻灯片形态的 Slidev 设置）、`src/client/plugin.ts`（浏览器端插件 `PluginDefinition`）、`src/client/viewer.ts`（IR 运行时的视图插件）、`vite.config.ts`（加入两种形态开发服务器的 Vite 配置）；
+- `package.json` 的 `slidev` 字段（作为 Slidev 插件时的声明）。
+
+第 4 节中“插件包的 `./presmium`、`./client` 等入口”指的是这些入口中约定之外的导出，约定本身是公开的。
+
 ## 3. 实验性接口
 
 以下接口标为实验性，不在 1.x 的语义化版本承诺之内：它们属于本机工作台的浏览器端，新工作台会取代它们。它们可以在次版本中改变或删除，变更记录写明；插件不要依赖它们，依赖时在自己的 `peerDependencies` 中写确切的版本。

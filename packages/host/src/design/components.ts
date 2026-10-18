@@ -12,12 +12,20 @@ import type { IconName } from './icons.ts'
 
 const PLACE: InjectionKey<ToolbarPlace> = Symbol('presmium.toolbarPlace')
 
-/** Where the calling toolbar item is drawn (see `ToolbarPlace`); a page's toolbar unless a shell says otherwise. */
+/**
+ * Where the calling toolbar item is drawn (see `ToolbarPlace`); a page's toolbar unless a shell says otherwise.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
+ */
 export function useToolbarPlace(): ToolbarPlace {
   return inject(PLACE, 'bar')
 }
 
-/** Tells the toolbar items below the calling component where they are drawn. Must be called inside a component setup. */
+/**
+ * Tells the toolbar items below the calling component where they are drawn. Must be called inside a component setup.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
+ */
 export function provideToolbarPlace(place: ToolbarPlace): void {
   provide(PLACE, place)
 }
@@ -482,7 +490,8 @@ export const PmNotice = defineComponent({
  * in the activity bar an icon button and a drawer beside it, elsewhere a
  * button with its label and a popover (above it in a status bar). `name`
  * prefixes the classes: the wrapper `<name>`, the button `<name>__toggle`,
- * the panel `<name>__panel` (a dialog labelled `label`).
+ * the panel `<name>__panel` (a dialog labelled `label`). Its activity-bar form
+ * is the workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
  */
 export const PmToolbarEntry = defineComponent({
   name: 'PmToolbarEntry',

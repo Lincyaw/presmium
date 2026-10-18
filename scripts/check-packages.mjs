@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// What each workspace package publishes (P-140, P-141): the table of .changeset/README.md lists every
+// What each workspace package (pnpm-workspace.yaml) publishes (P-140, P-141): the table of .changeset/README.md lists every
 // package, public or private. A public package has the Apache-2.0 license (its `license` field and its
 // own LICENSE, the root's), Presmium's one version, the root's `engines.node`, complete metadata
 // (description, repository, homepage, bugs, keywords, publishConfig), `files` that exist and hold every
@@ -25,7 +25,14 @@ const rows = new Map([...table.matchAll(/^\| `([^`]+)` \| ([^|]+) \|/gm)].map(([
 
 const problems = []
 const versions = new Set()
-const workspaces = ['packages', 'examples'].flatMap(dir => readdirSync(join(root, dir)).sort().map(name => `${dir}/${name}`))
+/** The globs of pnpm-workspace.yaml's `packages` (`dir` or `dir/*`), one per line under the key. */
+const globs = []
+for (const line of readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8').split('packages:\n')[1]?.split('\n') ?? []) {
+  const listed = /^\s+-\s+['"]?([^'"\s]+)['"]?\s*$/.exec(line)
+  if (!listed) break
+  globs.push(listed[1])
+}
+const workspaces = globs.flatMap(glob => (glob.endsWith('/*') ? readdirSync(join(root, glob.slice(0, -2))).sort().map(name => `${glob.slice(0, -2)}/${name}`) : [glob]))
   .filter(dir => existsSync(join(root, dir, 'package.json')))
 
 /** The files an `exports` or `bin` entry names; a pattern names its directory. */

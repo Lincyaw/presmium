@@ -8,6 +8,7 @@ import type { AgentTask, AnnotationStatus, ReviewChange, ReviewStep } from '@pre
 import type { Ref } from 'vue'
 import { ref } from 'vue'
 
+/** @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3). */
 export interface AgentTaskState {
   /**
    * `running` until the task waits for its sender's review (`review`) or
@@ -37,6 +38,8 @@ export interface AgentTaskState {
  * The state of a task, updated from its events until it ends (`done` or
  * `error`). The panel may change it besides (e.g. `deciding` while its
  * review decision is sent).
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
  */
 export function trackAgentTask(task: AgentTask): Ref<AgentTaskState> {
   const state = ref<AgentTaskState>({ state: 'running', steps: [], changes: [], annotations: {} })

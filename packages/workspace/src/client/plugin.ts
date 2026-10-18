@@ -11,6 +11,8 @@
  * committed at its head, and the git status. `?edit=<path in the document>`
  * opens a document's page in edit mode at that file (the home page's file
  * tree links so).
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
  */
 import { currentLocale, EDIT_MODE, TOOLBAR, useServer } from '@presmium/host'
 import type { ToolbarItem } from '@presmium/host'

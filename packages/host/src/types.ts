@@ -145,12 +145,17 @@ export const NAVIGATION = defineService<Navigation>('presmium.navigation')
  * pane of its split (the source editor) and `dock` in its right dock; the
  * home page shows `tabs` and `source` in place of the launcher while its
  * editor is open (the workspace's `EDIT_MODE`).
+ *
+ * Only `tools` and `settings` are public; the other slots are the
+ * workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
  */
 export type ToolbarSlot = 'tools' | 'settings' | 'status' | 'home' | 'create' | 'files' | 'tabs' | 'source' | 'dock'
 
 /**
  * Where an item's component is drawn now (`useToolbarPlace`): a page's
  * toolbar, the activity bar, a status bar, the home page, a pane of edit mode.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
  */
 export type ToolbarPlace = 'bar' | 'activity' | 'status' | 'home' | 'pane'
 
@@ -209,6 +214,7 @@ export interface StatusRegistry {
 /** Host service of both forms: the plugins' status summaries, sent to the server over the control channel. */
 export const STATUS = defineService<StatusRegistry>('presmium.status')
 
+/** @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3). */
 export interface EditMode {
   readonly active: Readonly<Ref<boolean>>
   /** The current member may enter edit mode (editors and owners). */
@@ -217,7 +223,11 @@ export interface EditMode {
   leave(): void
 }
 
-/** Provided by the workspace's browser plugin, in `presmium serve` and `presmium dev`; absent in static output. */
+/**
+ * Provided by the workspace's browser plugin, in `presmium serve` and `presmium dev`; absent in static output.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
+ */
 export const EDIT_MODE = defineService<EditMode>('presmium.editMode')
 
 // ---------------------------------------------------------------------------

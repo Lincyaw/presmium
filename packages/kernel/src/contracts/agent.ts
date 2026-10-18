@@ -76,13 +76,18 @@ export type AgentEvent =
   | { type: 'done', revision?: string }
   | { type: 'error', message: string }
 
-/** The requester's decision on a change task. */
+/**
+ * The requester's decision on a change task.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
+ */
 export type ReviewDecision =
   /** Accept; the files of `reject` (relative to the workspace root) go back to their content when the task started, files the task created are deleted. */
   | { accept: true, reject?: string[] }
   /** Reject all: back to the state when the task started. */
   | { accept: false }
 
+/** @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3). */
 export interface AgentTask {
   readonly id: string
   readonly events: AsyncIterable<AgentEvent>
@@ -98,10 +103,18 @@ export interface AgentTask {
   revert(): Promise<TaskRevertResult>
 }
 
-/** The undo of a change task's commit (`AgentTask.revert`): the id of the commit that reverted it, or the files that conflict. */
+/**
+ * The undo of a change task's commit (`AgentTask.revert`): the id of the commit that reverted it, or the files that conflict.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
+ */
 export type TaskRevertResult = { ok: true, revision: string } | { ok: false, conflicts: string[] }
 
-/** In the browser: a page submits tasks to the server's assistant. */
+/**
+ * In the browser: a page submits tasks to the server's assistant.
+ *
+ * @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3).
+ */
 export interface AgentClient {
   /** The server has an agent runtime (the operator configured model access, or a replacement runtime) and the member may submit tasks of this kind. */
   available(kind: AgentTaskKind): boolean
@@ -112,6 +125,7 @@ export interface AgentClient {
   submit(request: AgentTaskRequest): AgentTask
 }
 
+/** @experimental The workbench's browser side, outside the 1.x semver promise (docs/api.md section 3). */
 export const AGENT = defineService<AgentClient>('presmium.agent')
 
 /**
