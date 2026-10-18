@@ -1,0 +1,86 @@
+# Publishes the demo deck (examples/demo) on GitHub Pages, under <the Pages site>/demo/: the web form at
+# demo/web/, the slides at demo/slides/ and the notebooks at demo/notebook/. The slides use hash routing
+# (`routerMode: hash`, slide n at demo/slides/#/n; the web form's links follow it), because a static
+# host serves no page for demo/slides/<n>. The site's root and demo/ lead to the web form, and the web
+# form's 404 page is the site's (its links are absolute). The documentation site (WP-93d) joins this
+# workflow at the root.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the demo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The demo's code references read the repository's history.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python for compile-time execution
+        run: python -m pip install nbformat nbclient ipykernel
+      - run: pnpm install --frozen-lockfile
+      - name: Chromium for the WebGPU example's recording at build time
+        run: pnpm exec playwright install --with-deps chromium
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: The demo's site paths under the Pages site
+        env:
+          BASE: ${{ steps.pages.outputs.base_path }}/demo/
+        run: |
+          node --input-type=module -e "
+            import { readFileSync, writeFileSync } from 'node:fs'
+            const file = 'examples/demo/lecture.md'
+            const base = process.env.BASE
+            const text = readFileSync(file, 'utf8')
+            const out = text
+              .replace(/^  web: \{\}$/m, '  web: { base: ' + base + 'web/ }')
+              .replace(/^  slides: \{\}$/m, '  slides: { base: ' + base + 'slides/, routerMode: hash }')
+            if (!out.includes(base + 'web/') || !out.includes(base + 'slides/')) throw new Error('renderers.web and renderers.slides in ' + file + ' are no longer {}: set their base here another way')
+            writeFileSync(file, out)
+          "
+      - run: pnpm demo:build
+      - name: The site
+        run: |
+          mkdir _site
+          cp -r examples/demo/dist _site/demo
+          cp _site/demo/web/404.html _site/404.html
+          # A page that leads to <to>: redirect <file> <to>.
+          redirect() { printf '<!doctype html><meta charset="utf-8"><title>Presmium</title><meta http-equiv="refresh" content="0; url=%s"><a href="%s">%s</a>\n' "$2" "$2" "$2" > "$1"; }
+          redirect _site/index.html demo/web/
+          redirect _site/demo/index.html web/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
