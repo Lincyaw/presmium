@@ -328,7 +328,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 桌面的窗口装饰（`shell.leading`、`--dsh-frame-*`）留到做桌面时（11.6 节）。
 
-布局按 `docs/design/home.dc.html` 与 `edit.dc.html`：
+布局如下：
 
 | 区域 | 内容 |
 |---|---|

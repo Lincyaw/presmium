@@ -66,6 +66,8 @@ presmium dev --to web
 
 ## 选择编辑方式
 
+在 VS Code 中编辑时，从 GitHub Release 下载对应系统与处理器的 `.vsix`，用“Extensions: Install from VSIX…”安装。打开讲义后执行“Presmium: Open Preview to the Side”，保存后更新、按光标所在章节定位；需要 Node.js 22.19 以上与文稿自己的插件依赖，不需要工作台或模型。安装与平台选择见 [扩展说明](../../../packages/vscode/README.md)。
+
 用户已有编辑器时直接修改源码。想在浏览器中编辑时，另装 `pnpm add -g @presmium/studio`，用 `presmium-studio <目录>` 打开工作台；项目内安装则用 `pnpm add -D @presmium/studio` 和 `pnpm exec presmium studio <目录>`。打开终端打印的完整网址，`Ctrl+C` 停止。不配置模型也能编辑、保存与预览。
 
 工作台打开文稿先显示预览，顶部可切换“源码”“并排”；右侧对话可收起再打开。选中源码或预览中的文字、点选预览块后，顶部显示同步给 agent 的关注内容；切到聊天输入框后仍保留，可手动清除。并排或源码视图中点选预览块也会定位源码。agent 改动接受后成为可撤销的 git 提交；同一文档正在审阅时留意锁定与外部编辑冲突。

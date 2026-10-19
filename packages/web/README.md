@@ -19,7 +19,6 @@ In the headmatter, `renderers.web`: `base` (the site path), `port` (the dev serv
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): media, workspaces and translations
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

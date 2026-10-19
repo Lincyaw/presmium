@@ -22,7 +22,6 @@ The model is chosen in the workbench's model settings, or given by the environme
 ## Documentation
 
 - [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md)
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

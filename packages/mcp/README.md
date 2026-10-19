@@ -17,7 +17,6 @@ The reading tools (`list_sections`, `get_section`, `get_step`, `search`, `get_co
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): agents in your editor
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

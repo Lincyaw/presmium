@@ -29,7 +29,6 @@ Hosts route text file references through `workbench.openSource(document, path, {
 ## Documentation
 
 - [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md) (section 7)
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

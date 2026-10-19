@@ -15,7 +15,6 @@ Documents point to it in their headmatter: `presmium: { presmium.session: { serv
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md)
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

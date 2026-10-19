@@ -34,7 +34,6 @@ The interactive primitives wrap Reka UI; positioning, dismissal, keyboard naviga
 ## Documentation
 
 - [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md)
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md): what is public, experimental or internal, and the version rules
 
 ## License
 

@@ -74,6 +74,8 @@ description: "帮助开发者评估 Presmium 架构、定位故障、实现或�
 
 ## 按改变的行为选择验证
 
+VS Code 扩展用 `pnpm --filter presmium-vscode package:vsix` 生成当前系统与处理器的安装包。语言服务与网页渲染运行时从锁文件部署进 VSIX；不能把开发目录的软链接当成已打包依赖。运行 `packages/vscode/test/build.test.ts` 验证解压后的服务在仓库外启动预览，并在普通 VS Code 窗口中验收安装包。`.github/workflows/vscode.yml` 在六个平台上构建验证，GitHub Release 发布后附加下载文件；安装与构建步骤统一维护在 `packages/vscode/README.md`。
+
 测试用法与真实 CLI、服务和浏览器的辅助工具见 [集成测试](references/testing.md)。只写集成测试，不写单元测试，不 mock 宿主框架；每个行为一到两个用例，验证用户可观察的结果。专用端到端文稿放在 `e2e/fixtures/<组>/`，在 `beforeAll` 中构建。
 
 先运行改动对应的用例。插件组件覆盖两种形态与必要的静态降级；实时预览覆盖保存与位置保持；共享加载或打包的改动覆盖消费者安装；dsh 的改动运行设计文档中的相应升级闸门。

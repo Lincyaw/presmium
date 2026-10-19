@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { errorMessage, escapeHtml } from '@presmium/kernel'
@@ -24,6 +25,8 @@ function serverModule(context: vscode.ExtensionContext): string {
     } catch {
     }
   }
+  const bundled = join(context.extensionPath, 'runtime', SERVER_BIN)
+  if (existsSync(bundled)) return bundled
   throw new Error(`${SERVER_PACKAGE} is not installed; add it to the workspace or set presmium.server.path`)
 }
 

@@ -1,8 +1,9 @@
 import { build } from 'esbuild'
+import { fileURLToPath } from 'node:url'
 
 await build({
-  entryPoints: [new URL('../src/extension.ts', import.meta.url).pathname],
-  outfile: new URL('../dist/extension.cjs', import.meta.url).pathname,
+  entryPoints: [fileURLToPath(new URL('../src/extension.ts', import.meta.url))],
+  outfile: fileURLToPath(new URL('../dist/extension.cjs', import.meta.url)),
   bundle: true,
   platform: 'node',
   format: 'cjs',

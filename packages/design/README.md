@@ -22,4 +22,4 @@ button.innerHTML = `${iconMarkup('play')} Run`
 | `ICONS`, `iconMarkup(name, size?)` | the line icons, as shapes or as SVG markup |
 | `COLORS`, `color(name)`, `colorToken(name)` | the names of the colour tokens, as `var(--pm-color-<name>)` or the property |
 
-The tokens and the components are described in `docs/architecture.md` (section 5.10) of the repository; the chosen design is in `docs/design/`.
+The tokens and the components are described in `docs/architecture.md` (section 5.10) of the repository.

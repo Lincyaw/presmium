@@ -17,7 +17,6 @@ In the headmatter, `renderers.notebook`: `kernel` (default `python3`) and `webUr
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md)
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

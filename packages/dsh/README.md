@@ -17,7 +17,6 @@ Presmium provides one navigation shell and composes Harness's session browser an
 ## Documentation
 
 - [Design of the workbench on DeepSeek Harness](https://github.com/Lincyaw/presmium/blob/main/docs/design-dsh.md)
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 
 ## License
 

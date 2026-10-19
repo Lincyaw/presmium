@@ -2,13 +2,13 @@
 title: Interfaces and versions
 lang: en
 description: Which interfaces stay stable under semantic versioning, and the version rules of the packages, the IR and the plugin contract
-translationOf: { entry: lecture.md, digest: 22a0df5551f01b8172c05afe330cca99568b8a74c016b82c9e13d0633547b9ae }
+translationOf: { entry: lecture.md, digest: 18cc06616831ab0938d448fecf4cb9ba6b5031080b9cc3c0ac711f2ff7777015 }
 ---
 
 (reference)=
 # Interfaces and versions
 
-Presmium 1.x keeps its public interfaces stable under semantic versioning. This document says what each of its three version numbers covers, which interfaces are public and which are experimental. The signature of each declaration is in the API reference (API in the navigation bar, generated from the source by TypeDoc); `docs/api.md` in the repository is the complete list.
+Presmium 1.x keeps its public interfaces stable under semantic versioning. This document says what each of its three version numbers covers, which interfaces are public and which are experimental. The signature of each declaration is in the API reference (API in the navigation bar, generated from the source by TypeDoc).
 
 Presmium's stable product is the core (the MyST syntax and the IR, the compiler, the renderers, the CLI) and its outputs (web pages, slides, notebooks, lectures), none of which needs a model service. The workbench, `presmium studio`, is separate from the outputs and experimental.
 
@@ -65,7 +65,7 @@ Plugins declare `@presmium/kernel`, `@presmium/host`, `@presmium/viewer` and `@p
 - `@presmium/cli/testing`: `presmium` for plugins' integration tests.
 - `@presmium/compiler`: the programming interface `Compiler`, `Compilation`, `build`, `dev` and the like.
 
-The types that appear in the signatures of public interfaces are public with them. Any other name a package exports (section 4 of `docs/api.md` lists the usual kinds) is internal, shared between Presmium's own packages, and may change in any version, even when the API reference shows it.
+The types that appear in the signatures of public interfaces are public with them. Any other name a package exports is internal, shared between Presmium's own packages, and may change in any version, even when the API reference shows it.
 
 (experimental)=
 # Experimental interfaces

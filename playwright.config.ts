@@ -23,7 +23,7 @@ function runnable(name: Browser): boolean {
   } else {
     const probe = `require('@playwright/test').${name}.launch().then(browser => browser.close(), () => process.exit(1))`
     runs = spawnSync(process.execPath, ['-e', probe], { stdio: 'ignore', timeout: 60_000 }).status === 0
-    if (!runs) console.warn(`[presmium] ${name} cannot start on this host (missing system libraries?); its smoke tests are skipped. Install them with: pnpm exec playwright install-deps ${name}, or run it in Playwright's Docker image (docs/browsers.md)`)
+    if (!runs) console.warn(`[presmium] ${name} cannot start on this host (missing system libraries?); its smoke tests are skipped. Install them with: pnpm exec playwright install-deps ${name}`)
   }
   process.env[`PRESMIUM_E2E_RUNS_${name.toUpperCase()}`] = runs ? '1' : '0'
   return runs

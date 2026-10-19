@@ -8,7 +8,6 @@
 - 领域模型（DDD）：`docs/domain-model.md`
 - 架构、契约、测试策略：`docs/architecture.md`
 - 工作台（基于 DeepSeek Harness）的设计：`docs/design-dsh.md`
-- 公开接口与版本规则：`docs/api.md`
 - 契约源码：`packages/kernel/src/contracts.ts`、`packages/kernel/src/ir.ts`、`packages/host/src/types.ts`
 
 ## 约定

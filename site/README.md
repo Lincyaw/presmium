@@ -37,4 +37,3 @@ node site/build.mjs --site <工作区> --out <目录>   # 以同样的步骤构�
 - 原文改了以后，`presmium check <目录>` 警告译本过期并给出新的摘要：核对译本后把它写进译本头部的 `translationOf.digest`。
 - 链接另一份文档写它的入口文件（`[接口与版本](../reference/lecture.md#versions)`），译本中也写原文的入口：站点把英文页面上的链接指向那份文档的英文译本。
 - 正文中不写指向 `/api/` 的链接（发布检查把 `/…` 当作文档的 `public/` 目录），写“导航栏的 API”。
-- 公开接口与版本规则的完整列表在 `docs/api.md`，`reference` 是它面向读者的摘要，两边一起改。

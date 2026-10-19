@@ -19,6 +19,9 @@
     "vscode": "^1.91.0"
   },
   "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "workspace"
+  ],
   "activationEvents": [
     "onLanguage:markdown"
   ],
@@ -58,6 +61,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "package:vsix": "node scripts/package.mjs",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
@@ -67,6 +71,10 @@
   },
   "devDependencies": {
     "@types/vscode": "1.91.0",
-    "esbuild": "0.21.5"
+    "@types/yauzl": "2.10.3",
+    "@vscode/vsce": "4.0.0",
+    "esbuild": "0.21.5",
+    "vscode-jsonrpc": "9.0.3",
+    "yauzl": "3.4.0"
   }
 }

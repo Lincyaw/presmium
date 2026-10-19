@@ -11,7 +11,6 @@ It comes with `@presmium/cli`; you do not install it yourself. Its programming i
 ## Documentation
 
 - [Plugin guide](https://github.com/Lincyaw/presmium/blob/main/site/plugins/lecture.en.md): server routes
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 - [Security and the trust model](https://github.com/Lincyaw/presmium/blob/main/SECURITY.md)
 
 ## License

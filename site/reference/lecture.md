@@ -7,7 +7,7 @@ translations: { en: lecture.en.md }
 (reference)=
 # 接口与版本
 
-Presmium 1.x 对公开接口按语义化版本承诺稳定。这一份文档说明三个版本号各管什么、哪些接口是公开的、哪些是实验性的。每个声明的签名见接口参考（导航栏的“API”，由 TypeDoc 从源码生成）；仓库中的 `docs/api.md` 是完整的列表。
+Presmium 1.x 对公开接口按语义化版本承诺稳定。这一份文档说明三个版本号各管什么、哪些接口是公开的、哪些是实验性的。每个声明的签名见接口参考（导航栏的“API”，由 TypeDoc 从源码生成）。
 
 Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、CLI）与它的产物（网页、幻灯片、notebook、讲授），它们不需要任何模型服务。工作台 `presmium studio` 与产物分离，是实验性的。
 
@@ -64,7 +64,7 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 - `@presmium/cli/testing`：插件的集成测试用的 `presmium`。
 - `@presmium/compiler`：`Compiler`、`Compilation`、`build`、`dev` 等编程接口。
 
-公开接口签名中出现的类型随它一起公开。包导出的其他名字（`docs/api.md` 第 4 节列出常见的几类）是 Presmium 自己的包之间共用的内部接口，即使接口参考中有它们，也可以在任何版本中改变。
+公开接口签名中出现的类型随它一起公开。包导出的其他名字是 Presmium 自己的包之间共用的内部接口，即使接口参考中有它们，也可以在任何版本中改变。
 
 (experimental)=
 # 实验性接口

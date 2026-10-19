@@ -32,6 +32,14 @@ function presmiumBin(deckDir: string): string {
   return bin
 }
 
+function stop(child: ChildProcess, signal: NodeJS.Signals = 'SIGTERM'): void {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
+  if (process.platform === 'win32') {
+    const task = spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' })
+    task.once('error', () => { child.kill(signal) })
+  } else child.kill(signal)
+}
+
 export class Previews {
   readonly #urls = new Map<string, Promise<string>>()
   readonly #children = new Set<ChildProcess>()
@@ -63,7 +71,7 @@ export class Previews {
       const fail = (error: Error) => {
         clearTimeout(timer)
         reject(error)
-        if (!started) child.kill('SIGTERM')
+        if (!started) stop(child)
       }
       const timer = setTimeout(() => fail(new Error('presmium dev did not start the web server in time')), START_TIMEOUT)
       createInterface({ input: child.stderr! }).on('line', line => this.#log(line))
@@ -90,12 +98,12 @@ export class Previews {
 
   async close(): Promise<void> {
     const exits = [...this.#children].map(child => new Promise<void>((done) => {
-      child.once('exit', () => done())
-      child.kill('SIGTERM')
-      setTimeout(() => {
-        child.kill('SIGKILL')
+      const timer = setTimeout(() => {
+        stop(child, 'SIGKILL')
         done()
       }, 5000).unref()
+      child.once('exit', () => { clearTimeout(timer); done() })
+      stop(child)
     }))
     this.#urls.clear()
     await Promise.all(exits)

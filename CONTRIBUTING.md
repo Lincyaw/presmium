@@ -6,7 +6,7 @@ Thank you for helping. This file covers the development setup, the tests, the la
 
 - Node.js 22.19 or later and pnpm 11 (`corepack enable` picks the version in `package.json`).
 - Python 3 on the `PATH` for compile-time execution; the notebook tests also need `nbformat`, `nbclient` and `ipykernel` (`python -m pip install nbformat nbclient ipykernel`).
-- Playwright's Chromium for the end-to-end tests: `pnpm exec playwright install chromium` (Firefox and WebKit for the smoke tests are optional, see `docs/browsers.md`).
+- Playwright's Chromium for the end-to-end tests: `pnpm exec playwright install chromium` (Firefox and WebKit for the smoke tests are optional).
 
 ```sh
 git clone https://github.com/Lincyaw/presmium.git
@@ -54,7 +54,7 @@ Other conventions:
 - Source is published as `.ts` and `.vue`, not compiled; relative imports name the `.ts` extension, and only erasable TypeScript syntax is used.
 - A component's look is a pure function of the step, so stepping back works.
 - Each package keeps its own zh-CN and en interface text; components use `useMessages` of `@presmium/host`. Text written into outputs follows the document's `lang`.
-- The contracts are `packages/kernel/src/contracts.ts`, `packages/kernel/src/ir.ts` and `packages/host/src/types.ts`. Public interfaces follow semantic versioning: read [docs/api.md](docs/api.md) before changing one. An export it does not list is internal; a declaration of the workbench's browser side carries the TSDoc tag `@experimental` and is listed in its section 3.
+- The contracts are `packages/kernel/src/contracts.ts`, `packages/kernel/src/ir.ts` and `packages/host/src/types.ts`. Public interfaces follow semantic versioning, and a declaration of the workbench's browser side carries the TSDoc tag `@experimental`.
 
 ## Agent skills
 

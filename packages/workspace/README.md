@@ -29,7 +29,6 @@ site:
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): workspaces
-- [Interfaces and versions](https://github.com/Lincyaw/presmium/blob/main/docs/api.md)
 - [Security and the trust model](https://github.com/Lincyaw/presmium/blob/main/SECURITY.md)
 
 ## License
