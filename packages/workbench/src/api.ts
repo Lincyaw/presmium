@@ -1,4 +1,4 @@
-import type { Finding, Focus, IRDocument } from '@presmium/kernel'
+import type { Finding, Focus, IRDocument, ReviewChange, ReviewStep, Revision } from '@presmium/kernel'
 
 export interface WorkspaceDocument {
   dir: string
@@ -89,3 +89,38 @@ export interface FocusAnswer {
   focus: Focus[] | null
   reported?: string
 }
+
+export interface ReviewView {
+  id: string
+  session: string
+  turns: { from: number, to: number }
+  running: boolean
+  mode: 'required' | 'auto'
+  steps: ReviewStep[]
+  changes: ReviewChange[]
+}
+
+export interface ReviewEnd {
+  outcome: 'accepted' | 'rejected' | 'rolled-back' | 'empty'
+  revision?: Revision
+  files: string[]
+}
+
+export interface ReviewFollowed {
+  document: string
+  review?: ReviewView
+  ended?: ReviewEnd
+}
+
+export interface UncommittedFile {
+  path: string
+  kind: 'added' | 'modified' | 'deleted'
+  added?: number
+  removed?: number
+}
+
+export interface HistoryRevision extends Revision {
+  reverts?: string
+}
+
+export type RevertAnswer = { ok: true, revision: Revision } | { ok: false, conflicts: string[] }

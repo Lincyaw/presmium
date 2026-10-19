@@ -1,11 +1,11 @@
-import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleHelp, CircleX, Contrast, Copy, ExternalLink, FileText, Folder, GitBranch, GitFork, Info, Moon, MoreHorizontal, Pencil, Play, Plug, Plus, Presentation, Redo2, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
+import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleHelp, CircleX, Contrast, Copy, ExternalLink, FileDiff, FileText, Folder, GitBranch, GitFork, Info, Moon, MoreHorizontal, Pencil, Play, Plug, Plus, Presentation, Redo2, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
 import type { IconNode } from 'lucide'
 
 export type Shape = IconNode[number]
 
 // Presmium's semantic names stay stable across the Vue, React and generated HTML views.
 export const ICONS = {
-  document: FileText, search: Search, history: GitFork, people: Users, help: CircleHelp,
+  document: FileText, diff: FileDiff, search: Search, history: GitFork, people: Users, help: CircleHelp,
   sliders: SlidersHorizontal, plus: Plus, sparkle: Sparkles, edit: Pencil, close: X,
   copy: Copy, check: Check, branch: GitBranch, 'chevron-right': ChevronRight,
   'chevron-left': ChevronLeft, 'chevron-down': ChevronDown, folder: Folder,

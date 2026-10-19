@@ -1,4 +1,4 @@
-import { DocumentView, FilesPanel, HomePanel, PreviewPanel, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
+import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
 import type { Workbench } from '@presmium/workbench'
 import type { ComponentType } from 'react'
 import { Logo } from './brand.tsx'
@@ -35,11 +35,15 @@ export function fallback(ctx: DshClientContext, workbench: Workbench): void {
   ctx.effect(() => ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: FALLBACK_PANEL, order: -10, label: () => t().product }, () => <Logo size={20} />)), 'presmium: the panel list entry')
   ctx.effect(() => ctx.slots.register({ name: 'main', key: FALLBACK_PANEL }, provided(Centre, undefined, true)), 'presmium: the workbench as a global panel')
   ctx.inject(['sidebarRightTabs'], (inner) => {
-    const kind = 'presmium-preview'
-    const id = `${CLIENT_ID}/${kind}`
-    const title = () => `Presmium · ${t().preview}`
-    const Body = provided(PreviewPanel, 'pmw-fallback__tab pm-ui')
-    inner.effect(() => inner.sidebarRightTabs.register({ id, kind, priority: 'extension', keepMounted: true, title, guide: [{ id: kind, order: 50, title }] }), `presmium: ${kind} tab type`)
-    inner.effect(() => inner.slots.inject('sidebar.right.pane.tab', () => inner.slots.register({ name: 'sidebar.right.pane.tab', key: id }, Body)), `presmium: ${kind} tab body`)
+    const tabs = [
+      { kind: 'presmium-preview', Panel: PreviewPanel, title: () => `Presmium · ${t().preview}` },
+      { kind: 'presmium-changes', Panel: ChangesPanel, title: () => `Presmium · ${t().changes}` },
+    ]
+    for (const { kind, Panel, title } of tabs) {
+      const id = `${CLIENT_ID}/${kind}`
+      const Body = provided(Panel, 'pmw-fallback__tab pm-ui')
+      inner.effect(() => inner.sidebarRightTabs.register({ id, kind, priority: 'extension', keepMounted: true, title, guide: [{ id: kind, order: 50, title }] }), `presmium: ${kind} tab type`)
+      inner.effect(() => inner.slots.inject('sidebar.right.pane.tab', () => inner.slots.register({ name: 'sidebar.right.pane.tab', key: id }, Body)), `presmium: ${kind} tab body`)
+    }
   })
 }

@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
@@ -56,6 +57,12 @@ async function send(page: Page, message: string): Promise<void> {
   await page.keyboard.press('Enter')
 }
 
+async function openWritten(page: Page, name: RegExp): Promise<void> {
+  await expect(async () => {
+    await conversation(page).getByRole('button', { name }).filter({ visible: true }).last().click({ timeout: 2000 })
+  }).toPass({ timeout: 30_000 })
+}
+
 function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], { cwd: dir, encoding: 'utf8' })
 }
@@ -71,6 +78,9 @@ test.describe('the root layout', () => {
       { text: '写好了。' },
       { tool: 'write', input: { file_path: 'notes-2.md', content: '# 笔记二\n' } },
       { text: '又写好了。' },
+      { tool: 'write', input: { file_path: 'summary.md', content: '# 小结\n' } },
+      { tool: 'write', input: { file_path: 'extra.md', content: '多出来的\n' } },
+      { text: '改好了。' },
     ])
     studio = await startStudio({ port: 5643 + studioPortOffset, model })
   })
@@ -292,7 +302,7 @@ test.describe('the root layout', () => {
     await expect(preview(page).locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
     await send(page, '写一份笔记')
     await expect(conversation(page)).toContainText('写好了。', { timeout: 60_000 })
-    await conversation(page).locator('button').filter({ hasText: /已编辑\s*notes\.md/ }).click()
+    await openWritten(page, /notes\.md/)
     const dock = page.locator('[data-pmw-slot="rightbar"]')
     await expect(dock).toContainText('第一条。')
     await dock.getByRole('button', { name: /^(New tab|新标签页)$/ }).first().click()
@@ -325,7 +335,7 @@ test.describe('the root layout', () => {
     await expect(conversation(page)).toBeVisible()
     await send(page, '再写一份')
     await expect(conversation(page)).toContainText('又写好了。', { timeout: 60_000 })
-    await conversation(page).locator('button').filter({ hasText: /已编辑\s*notes-2\.md/ }).click()
+    await openWritten(page, /notes-2\.md/)
     await expect(dock.getByText('笔记二').first()).toBeVisible()
     await dock.getByRole('button', { name: /^(New tab|新标签页)$/ }).first().click()
     await dock.getByText(/^(Workspace files|工作区文件)$/).first().click()
@@ -342,6 +352,8 @@ test.describe('the root layout', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await studio.open(page)
     const side = page.locator('.pmw-frame__side')
+    await expect(side).toBeHidden()
+    await page.locator('[data-activity="files"]').click()
     await expect(side).toBeVisible()
     const width = (await side.boundingBox())!.width
     const handle = (await page.locator('.pmw-frame__handle[data-side="side"]').boundingBox())!
@@ -490,6 +502,43 @@ test.describe('the root layout', () => {
       'document rename lectures/third lectures/fourth',
       'document create lectures/third',
     ])
+  })
+
+  test('the changes: the AI\'s change waits for review, one file taken back and the rest one commit; the author\'s own change committed; a commit undone from the history', async ({ page }) => {
+    const dir = studio.workspace.dir
+    const intro = join(dir, 'lectures/intro')
+    const api = await studio.web.api()
+    const { sessionId } = await api.call<{ sessionId: string }>('session/create', { request: { cwd: intro } })
+    await api.call('session/prompt', { request: { requestId: randomUUID(), sessionId, mode: 'queue', content: [{ type: 'text', text: '写一份小结。' }] } })
+    await studio.open(page)
+    await openDocument(page, '分词入门')
+    await page.getByRole('navigation', { name: '活动栏' }).getByRole('button', { name: '修改' }).click()
+    const review = page.getByRole('region', { name: 'AI 的修改' })
+    await expect(review).toContainText('2 个文件等待审阅', { timeout: 60_000 })
+    await review.getByRole('button', { name: '撤回 extra.md' }).click()
+    await expect(review).toContainText('1 个文件等待审阅')
+    expect(existsSync(join(intro, 'extra.md'))).toBe(false)
+    await review.getByRole('textbox', { name: '提交说明（可选）' }).fill('Add a summary')
+    await review.getByRole('button', { name: '接受' }).click()
+    await expect(review).toBeHidden()
+    const history = page.getByRole('region', { name: '修改历史' })
+    await expect(history.locator('.pmw-changes__subject').first()).toHaveText('Add a summary')
+    expect(git(dir, ['log', '-1', '--format=%(trailers:key=Presmium-Session,valueonly)']).trim()).toBe(sessionId)
+
+    const more = join(intro, 'pages/more.md')
+    writeFileSync(more, `${readFileSync(more, 'utf8')}\n作者手写的一行。\n`)
+    const uncommitted = page.getByRole('region', { name: '未提交的修改' })
+    await expect(uncommitted).toContainText('pages/more.md', { timeout: 60_000 })
+    await uncommitted.getByRole('textbox', { name: '提交说明', exact: true }).fill('Edit by hand')
+    await uncommitted.getByRole('button', { name: '提交' }).click()
+    await expect(uncommitted).toContainText('没有未提交的修改。')
+    await expect(history.locator('.pmw-changes__subject').first()).toHaveText('Edit by hand')
+
+    const summary = history.locator('.pmw-changes__revision').filter({ has: page.locator('.pmw-changes__subject', { hasText: /^Add a summary$/ }) })
+    await summary.getByRole('button', { name: '撤销' }).click()
+    await expect(summary).toContainText('已撤销')
+    await expect(history.locator('.pmw-changes__subject').first()).toHaveText('Revert "Add a summary"')
+    expect(existsSync(join(intro, 'summary.md'))).toBe(false)
   })
 })
 

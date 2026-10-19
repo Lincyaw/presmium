@@ -1,6 +1,6 @@
 import { stepKeys, trailStep } from '@presmium/kernel'
 import type { Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewReport } from '@presmium/kernel'
-import type { DocumentOperation, DocumentsAnswer, FilesAnswer, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, SourceAnswer } from './api.ts'
+import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, ReviewFollowed, ReviewView, SourceAnswer, UncommittedFile } from './api.ts'
 import { mergeTexts } from './merge.ts'
 import type { MergeLabels } from './merge.ts'
 import { placeAt, placeOf } from './places.ts'
@@ -67,6 +67,10 @@ export interface WorkbenchState {
   leaving?: string[]
   leaveSaving: boolean
   leaveFailed: boolean
+  review?: ReviewView
+  changed?: UncommittedFile[]
+  history?: HistoryRevision[]
+  changesFailure?: string
 }
 
 export interface EditorBridge {
@@ -93,6 +97,8 @@ export class Workbench {
   readonly #previews = new Set<PreviewSink>()
   readonly #saving = new Set<string>()
   #stopEvents?: () => void
+  #stopReview?: () => void
+  #changeReads = 0
   #revealed = 0
   #highlightTimer?: ReturnType<typeof setTimeout>
   #highlight: PreviewAnchor | null = null
@@ -174,16 +180,17 @@ export class Workbench {
   }
 
   async #openDocument(dir: string): Promise<void> {
-    this.#stopEvents?.()
-    this.#set({ document: dir, files: undefined, ir: undefined, open: [], active: undefined, line: 1, reveal: undefined, preview: undefined, previewFailure: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined })
+    this.#stop()
+    this.#stopReview = this.client.review(dir, event => this.#reviewed(dir, event))
+    this.#set({ document: dir, files: undefined, ir: undefined, open: [], active: undefined, line: 1, reveal: undefined, preview: undefined, previewFailure: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined, ...NO_CHANGES })
     if (dir === '' && this.#state.documents?.single === false) {
       this.#stopEvents = undefined
       this.#set({ layout: 'source' })
-      await Promise.all([this.#readFiles(dir), this.#readStatus(dir)])
+      await Promise.all([this.#readFiles(dir), this.#readStatus(dir), this.#readChanges(dir)])
       return
     }
     this.#stopEvents = this.client.events(dir, event => void this.#compiled(dir, event), () => void this.#readIr(dir))
-    await Promise.all([this.#readFiles(dir), this.#readIr(dir), this.#readPreview(dir), this.#readStatus(dir), this.#readFocus(dir)])
+    await Promise.all([this.#readFiles(dir), this.#readIr(dir), this.#readPreview(dir), this.#readStatus(dir), this.#readFocus(dir), this.#readChanges(dir)])
   }
 
   closeDocument(): void {
@@ -192,9 +199,8 @@ export class Workbench {
   }
 
   #closeDocument(): void {
-    this.#stopEvents?.()
-    this.#stopEvents = undefined
-    this.#set({ document: undefined, files: undefined, ir: undefined, open: [], active: undefined, reveal: undefined, preview: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined })
+    this.#stop()
+    this.#set({ document: undefined, files: undefined, ir: undefined, open: [], active: undefined, reveal: undefined, preview: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined, ...NO_CHANGES })
     void this.loadDocuments()
   }
 
@@ -231,6 +237,67 @@ export class Workbench {
     }
   }
 
+  async #readChanges(dir: string): Promise<void> {
+    const read = ++this.#changeReads
+    try {
+      const [{ files }, { revisions }] = await Promise.all([this.client.changes(dir), this.client.revisions(dir)])
+      if (this.#state.document === dir && read === this.#changeReads) this.#set({ changed: files, history: revisions })
+    } catch {
+    }
+  }
+
+  #reviewed(dir: string, event: ReviewFollowed): void {
+    if (this.#state.document !== dir) return
+    this.#set({ review: event.review })
+    if (event.ended) {
+      void this.#readChanges(dir)
+      void this.#readStatus(dir)
+    }
+  }
+
+  async #act(work: (dir: string) => Promise<unknown>): Promise<boolean> {
+    const dir = this.#state.document
+    if (dir === undefined) return false
+    try {
+      await work(dir)
+      this.#set({ changesFailure: undefined })
+      return true
+    } catch (error) {
+      this.#set({ changesFailure: message(error) })
+      return false
+    } finally {
+      void this.#readChanges(dir)
+      void this.#readStatus(dir)
+    }
+  }
+
+  acceptReview(message?: string): Promise<boolean> {
+    return this.#act(dir => this.client.accept(dir, message ? { message } : {}))
+  }
+
+  rejectReview(paths?: string[]): Promise<boolean> {
+    return this.#act(dir => this.client.reject(dir, paths))
+  }
+
+  restoreReview(step: string): Promise<boolean> {
+    return this.#act(dir => this.client.restore(dir, step))
+  }
+
+  commitChanges(message: string): Promise<boolean> {
+    return this.#act(dir => this.client.commit(dir, message))
+  }
+
+  discardChanges(): Promise<boolean> {
+    return this.#act(dir => this.client.discard(dir))
+  }
+
+  revert(id: string): Promise<boolean> {
+    return this.#act(async (dir) => {
+      const answer = await this.client.revert(dir, id)
+      if (!answer.ok) throw new Error(answer.conflicts.join(', '))
+    })
+  }
+
   async #readPreview(dir: string): Promise<void> {
     try {
       const preview = await this.client.preview(dir)
@@ -244,9 +311,10 @@ export class Workbench {
     if (this.#state.document !== dir) return
     if (event.revision !== this.#state.ir?.revision) await this.#readIr(dir)
     const changed = this.#state.open.filter(file => event.files.includes(file.path)).map(file => file.path)
-    if (changed.length > 0) {
-      await this.checkDisk(changed)
+    if (changed.length > 0) await this.checkDisk(changed)
+    if (event.files.length > 0) {
       void this.#readStatus(dir)
+      void this.#readChanges(dir)
     }
     if (event.files.some(file => !this.#state.files?.files.some(listed => listed.path === file))) void this.#readFiles(dir)
   }
@@ -512,11 +580,19 @@ export class Workbench {
     for (const preview of this.#previews) preview.send(command)
   }
 
-  dispose(): void {
+  #stop(): void {
     this.#stopEvents?.()
+    this.#stopReview?.()
+    this.#stopEvents = this.#stopReview = undefined
+  }
+
+  dispose(): void {
+    this.#stop()
     clearTimeout(this.#highlightTimer)
   }
 }
+
+const NO_CHANGES = { review: undefined, changed: undefined, history: undefined, changesFailure: undefined }
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error)

@@ -16,8 +16,8 @@ export const DOCK_MAX = 640
 
 export const clamp = (px: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(px)))
 
-export type Activity = 'documents' | 'files' | 'sessions'
-export type NarrowView = 'documents' | 'files' | 'source' | 'preview' | 'sessions' | 'conversation'
+export type Activity = 'documents' | 'files' | 'changes' | 'sessions'
+export type NarrowView = 'documents' | 'files' | 'source' | 'preview' | 'changes' | 'sessions' | 'conversation'
 
 export interface LayoutState {
   panelInfo: { activePanelId: string | null }
