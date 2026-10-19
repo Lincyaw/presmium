@@ -200,7 +200,7 @@ export class Workbench {
 
   async #readFiles(dir: string): Promise<void> {
     try {
-      const files = await this.client.files(dir)
+      const files = await this.client.files('')
       if (this.#state.document === dir) this.#set({ files })
     } catch {
     }
@@ -269,7 +269,8 @@ export class Workbench {
     if (!this.#file(path)) {
       let answer: SourceAnswer
       try {
-        answer = await this.client.source(document, path)
+        // Files belong to the opened workspace; the selected document owns only its preview and context.
+        answer = await this.client.source('', path)
       } catch (error) {
         this.#set({ openFailure: message(error) })
         return false
@@ -282,14 +283,15 @@ export class Workbench {
   }
 
   async openSource(document: string, path: string, at?: Omit<Reveal, 'path' | 'seq'>): Promise<void> {
+    const destination = document === '' ? this.#state.document ?? document : document
     const open = async () => {
-      if (document !== this.#state.document) await this.#openDocument(document)
-      if (document !== this.#state.document) return
+      if (destination !== this.#state.document) await this.#openDocument(destination)
+      if (destination !== this.#state.document) return
       if (this.#file(path)) await this.checkDisk([path])
       await this.openFile(path, at ?? { line: this.#state.active === path ? this.#state.line : 1 })
       this.#editor?.focus?.()
     }
-    if (document !== this.#state.document && this.#deferLeave(this.#state.open, open)) return
+    if (destination !== this.#state.document && this.#deferLeave(this.#state.open, open)) return
     await open()
   }
 
@@ -345,7 +347,7 @@ export class Workbench {
     const text = this.textOf(file.path) ?? file.base
     this.#saving.add(file.path)
     try {
-      const { version } = await this.client.save(document, file.path, text, file.version)
+      const { version } = await this.client.save('', file.path, text, file.version)
       this.#update(file.path, { base: text, version, dirty: this.textOf(file.path) !== text, notice: undefined })
       void this.#readStatus(document)
     } catch (error) {
@@ -386,7 +388,7 @@ export class Workbench {
       const known = file.version
       let answer: SourceAnswer
       try {
-        answer = await this.client.source(document, path)
+        answer = await this.client.source('', path)
       } catch {
         continue
       }

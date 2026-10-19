@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 export const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
 export const PRESMIUM_BIN = join(ROOT, 'packages/cli/bin/presmium.mjs')
-const WORK = join(ROOT, 'examples/demo/.presmium')
+const WORK = join(ROOT, 'e2e/fixtures/regression/.presmium')
 
 export function git(dir: string, args: string[]): string {
   return execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir, encoding: 'utf8' })

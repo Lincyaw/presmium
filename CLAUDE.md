@@ -24,11 +24,11 @@
 
 ## 命令
 
-- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/studio-workspace` 准备独立的示例工作区，后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。
+- `pnpm studio [目录]`：启动浏览器编辑工作台，首次自动在 `.presmium/cs336-workspace` 准备独立的示例工作区，后续复用；可指定讲义或工作区，支持 `--port`、`--host`、`--help`。打开终端打印的完整网址，`Ctrl+C` 停止；编辑和预览不需要模型。
 
 - `pnpm test`：分层检查 + 技能检查（`scripts/check-skills.mjs`，技能在 `.agents/skills`）+ 插件声明检查（`scripts/check-plugins.mjs`）+ 包的发布检查（`scripts/check-packages.mjs`，按 `.changeset/README.md` 的表）+ 集成测试（Vitest，`packages/<pkg>/test/`，含消费者安装测试 `packages/cli/test/consumer.test.ts`；运行 `slidev export` 的用例是 `export` 项目，在其他用例之后运行，单独运行用 `pnpm exec vitest run --project export`）
-- `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：示例文稿的构建（`presmium build`，产物在 `examples/demo/dist/<渲染端>/`；`dist/` 是一个站点，网页在 `/web/`，幻灯片在 `/slides/`）、检查、输出 IR
-- `pnpm e2e`：Playwright 端到端测试（先 `pnpm demo:build`）。全部用例在 Chromium 中运行，冒烟用例另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`；没有安装或无法启动的跳过并提示）列出的浏览器中运行。并行工作时用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定各自的端口。性能用例 `e2e/perf.spec.ts` 在全部 Chromium 用例之后运行；单独运行它要加 `--no-deps`（`pnpm exec playwright test e2e/perf.spec.ts --no-deps`），否则会先运行全部 Chromium 用例
+- `pnpm demo:build`、`pnpm demo:check`、`pnpm demo:ir`：构建、检查和输出唯一公开示例 `examples/cs336` 的全部 17 讲；课程站点在 `examples/cs336/dist/web/`，单讲的幻灯片与 notebook 同时汇入课程站点的 `lecture_XX/slides/`、`lecture_XX/notebook/`。Python 讲义将执行结果直接转换为 Markdown 并使用内置步骤，不使用 trace 插件或播放器，PDF 全部 496 页逐页转换；完整性清单为 `coverage.json`。
+- `pnpm e2e`：构建私有回归文稿后运行 Playwright。功能专用文稿放在 `e2e/fixtures/<组>/`；旧 BPE 文稿只保留在 `e2e/fixtures/regression/` 用于回归验证。Chromium 运行全部用例，冒烟另在 `PRESMIUM_E2E_BROWSERS`（默认 `firefox,webkit`）中已安装且能启动的浏览器运行。并行测试用 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT` 指定端口。性能用例最后运行，单独运行时加 `--no-deps`。
 - `pnpm verify`：全部
 - `pnpm changeset`（记录一次改动）、`pnpm release:check`（`pnpm -r publish --dry-run`，不实际发布）、`pnpm consumer [<目录>] [--studio]`（打包后在单仓之外用 pnpm 安装 `presmium`，得到一个消费者项目；`--studio` 另装 `presmium studio`，约 865 MB）
 - 从源码使用命令：`pnpm add -g ./packages/presmium` 之后的全局 `presmium` 就是这份源码（`presmium new`、`check`、`dev`、`build`、`serve`）。面向使用者的命令只写 pnpm 与 `presmium`，不写 npm、npx 与单仓中的路径

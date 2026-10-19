@@ -49,7 +49,7 @@ packages/addon-poll/
 
 - 源码以 `.ts`、`.vue` 发布，不预编译；相对导入写 `.ts` 扩展名。
 - 加包或依赖后在仓库根目录运行 `pnpm install`，并提交 `pnpm-lock.yaml`。
-- 要在示例文稿中用它：加进 `examples/demo/package.json` 的依赖与 `examples/demo/lecture.md` 的 `plugins`。
+- 公开示例只有 `examples/cs336/` 的完整课程；新增插件的专用验证文稿放在 `e2e/fixtures/<组>/`，不要将功能演示混入课程。需要在课程中使用时，加进 `examples/cs336/package.json` 的依赖与相应文稿的 `plugins`。
 
 ## 2. 分层（`scripts/check-layering.mjs` 检查）
 

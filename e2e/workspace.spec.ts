@@ -51,7 +51,7 @@ async function stop(child: ChildProcess | undefined): Promise<void> {
 const SENTINEL = `outside-${Math.random().toString(36).slice(2)}`
 
 function workspaceCopy(prefix: string, edit: (dir: string) => void = () => {}): string {
-  const work = join(ROOT, 'examples/demo/.presmium')
+  const work = join(ROOT, 'e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, `e2e-workspace-${prefix}-`))
   cpSync(FIXTURE, dir, { recursive: true })

@@ -2,7 +2,7 @@
 
 用 MyST Markdown 写讲义，生成网页、幻灯片、Jupyter notebook 与带语音的讲授。
 
-示例：[示例工作区](https://lincyaw.github.io/presmium/)，[示例讲义](https://lincyaw.github.io/presmium/demo/)（网页、[幻灯片](https://lincyaw.github.io/presmium/demo/slides/)、[notebook](https://lincyaw.github.io/presmium/demo/notebook/)）。
+唯一示例：[Stanford CS336 完整课程](examples/cs336/README.md)，将上游 2026 春季的全部 17 讲转换为 MyST 讲义，保留 Python 原始执行步骤与全部 496 页 PDF。`pnpm demo:check` 检查完整性，`pnpm demo:build` 构建课程网页、幻灯片与 notebook。
 
 ## 安装
 
@@ -52,7 +52,7 @@ pnpm add -g ./packages/presmium
 pnpm studio
 ```
 
-首次自动在 `.presmium/studio-workspace` 准备独立的示例工作区，后续复用其中的文档。打开终端打印的完整网址（默认端口 4320），即可编辑、保存与预览，不配模型也能使用。用 `pnpm studio <目录>` 打开自己的讲义或工作区，`Ctrl+C` 停止。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+首次自动在 `.presmium/cs336-workspace` 准备独立的示例工作区，后续复用其中的文档。打开终端打印的完整网址（默认端口 4320），即可编辑、保存与预览，不配模型也能使用。用 `pnpm studio <目录>` 打开自己的讲义或工作区，`Ctrl+C` 停止。参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可证
 

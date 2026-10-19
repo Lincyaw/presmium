@@ -3,7 +3,7 @@ import type { Workbench } from '@presmium/workbench'
 import type { ReactNode } from 'react'
 import { useFrameMessages } from './brand.tsx'
 import type { LayoutActions, LayoutState } from './layout.ts'
-import { NARROW } from './layout.ts'
+import { NARROW, SIDE_COLLAPSE } from './layout.ts'
 
 interface SidebarProps {
   renderSlot(name: string, props?: Record<string, unknown>, options?: Record<string, unknown>): ReactNode
@@ -28,7 +28,7 @@ export function chrome(ctx: DshClientContext, workbench: Workbench, actions: Lay
       for (const listener of listeners) listener()
     })
     const closeHistory = () => {
-      if (currentLayout().layoutInfo.viewportWidth < NARROW) actions.show('conversation')
+      if (currentLayout().layoutInfo.viewportWidth < SIDE_COLLAPSE) actions.revealConversation()
       else actions.toggleSidebar()
     }
     function Sidebar({ renderSlot }: SidebarProps) {
@@ -55,13 +55,9 @@ export function chrome(ctx: DshClientContext, workbench: Workbench, actions: Lay
   ctx.effect(() => {
     function ConversationActions() {
       const t = useFrameMessages(workbench)
-      const history = () => {
-        if (currentLayout().layoutInfo.viewportWidth < NARROW) actions.show('sessions')
-        else actions.choose('sessions')
-      }
       return <div className="pmw-chat-actions pm-ui" role="group" aria-label={t.conversation}>
         <PmIconButton icon="plus" label={t.newConversation} small onClick={() => void startSession()} />
-        <PmIconButton icon="history" label={t.conversationHistory} small onClick={history} />
+        <PmIconButton icon="history" label={t.conversationHistory} small onClick={() => actions.showHistory()} />
         <PmIconButton icon="close" label={t.hideConversation} small onClick={() => {
           if (currentLayout().layoutInfo.viewportWidth < NARROW) actions.show(workbench.state.document === undefined ? 'documents' : 'preview')
           else actions.setDockOpen(false)

@@ -829,3 +829,5 @@ html.pm-presenting {
   color: var(--vp-c-text-2, #666);
   background: var(--vp-c-default-soft, rgba(128, 128, 128, 0.15));
 }
+
+.pm-step-range.pm-hidden { display: none !important; }

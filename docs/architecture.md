@@ -1362,7 +1362,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ### 5.9 浮层组件与组件拥有的代码
 
-在页面上绘制在其他内容之上、自身不占版面的组件（例如引导的光标），由指令把组件节点标为 `layer: 'overlay'`。渲染端不给它单独的位置：网页的文档视图把浮层块放在板书之外，不会出现空卡片，服务端渲染与首帧的版面也不跳动；幻灯片渲染端不给没有降级内容的浮层组件写空的 `PmStaticFallback`。
+在页面上绘制在其他内容之上、自身不占版面的组件（例如引导的光标），由指令把组件节点标为 `layer: 'overlay'`。渲染端不给它单独的位置：网页的文档视图按源码顺序渲染块，不给上屏内容添加板书外框；浮层本身不占版面，服务端渲染与首帧的版面也不跳动；幻灯片渲染端不给没有降级内容的浮层组件写空的 `PmStaticFallback`。
 
 组件拥有的代码：组件的子块中的代码块（例如执行面板、分步执行、本地环境包着的代码）属于组件。两种形态都不给它们运行控件，也不显示它们的录制输出：网页由 IR 运行时实现，幻灯片渲染端把它们写成组件插槽中的普通代码块（照常做语言映射）。组件运行的代码由指令放在组件的属性中（如执行面板的 `code`），不从渲染后的 DOM 读回。
 
@@ -1477,9 +1477,11 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 ## 6. 示例文稿约定
 
-示例文稿 `examples/demo` 是一份面向初学者的完整讲义“BPE 分词：从字节到词元”：入口 `lecture.md`（MyST）写头部与封面，各章在 `pages/` 下（`tokens.md`、`idea.md`、`implement.md`、`encode.md`、`extend.md`、`wrapup.md`），引用的代码在 `examples/sample-repo/src/bpe.py`。讲义中不出现插件 ID、内部机制这类调试性文字。“延伸”一章（`extend.md`）用上执行环境与讲授的写法，同时是讲义的一部分：同一个统计相邻对的函数用 C 在 WebAssembly 中运行，WGSL 计算着色器在 GPU 上统计字节对，Python 的会话跨三个代码块（先训练，再由只显示输出的代码块生成规则表，最后编码），“下一次合并哪一对？”的先预测再揭示，“延伸阅读”的卡片与栅格，讲解中的 `{cue}` 与 `{say}`。头部的 `renderers` 列出讲授渲染端 `lecture`（不写音色），`pnpm demo:build` 只构建网页、幻灯片与 notebook（`presmium build --to web,slides,notebook`），合成讲授的做法写在 `examples/demo/README.md`。示例工作区 `examples/workspace` 有两份文档：示例讲义的副本 `bpe/`（由 `sync.mjs` 从 `examples/demo` 复制）与短文档 `glance/`，用于体验 `presmium serve`；工作区要是 git 仓库的根目录，`try.mjs` 把它复制成一个独立的仓库（带上 `examples/sample-repo` 与讲义锁定的提交，`node_modules` 链接到示例工作区安装的插件）。
+唯一公开示例位于 `examples/cs336/`：Stanford CS336 2026 春季课程的全部 17 讲，固定上游提交并保留原始材料。每讲的 `lecture.md` 按主题编排连续阅读的文档与 notebook；`slides.md` 独立编排 PPT，两个入口都使用标准 MyST 编译为 IR。9 份 Python 讲义直接转换执行记录中的文字、图像、引用和实际变量值：文档保留语句的最终结果，合并列表和引用；PPT 用 `{slide}` 的 `at`、`until` 保留全部出现与替换步骤，支持前进与回退。没有可见变化的 Python 调用不占演示步骤，不使用课程专用插件或录制播放器。8 份 PDF 的全部 496 页保留在 PPT，阅读文档提取正文与独立图表，并合并连续页面的同名主题。提取器误识别的装饰线表格重新提取为正文，profiler 等预格式输出使用文本代码块。源码和转换元信息只存放在维护文件中。`coverage.json` 和审计脚本核对两个入口的哈希、原始步骤映射、展示事件、页面和资源。
 
-功能的测试不依赖示例讲义：每组功能有自己的测试文稿 `e2e/fixtures/<组>/`，端到端用例在 `beforeAll` 中构建它们（7 节）。示例讲义由冒烟用例 `e2e/smoke.spec.ts`（三种媒介都能无警告地构建，网页与幻灯片都能打开并翻页）与 `e2e/demo.spec.ts`（“延伸”一章在两种形态中打开，C 程序在浏览器中的输出与构建时的录制相同，着色器在 WebGPU 适配器上得到录制的结果）使用；`e2e/demo-workspace.spec.ts` 检查 `presmium serve examples/workspace` 的首页列出两份文档、`bpe/` 与示例讲义一致，并在 `try.mjs` 做出的副本上打开两份文档。构建产物位于 `examples/demo/dist/<渲染端 ID>/`。`lang` 是文稿的语言，决定两种形态的界面语言（5.7 节）。示例文稿的 `.presmium/` 中只提交执行缓存 `freeze/` 与锚点锁定文件（4.3 节）。
+`pnpm studio` 首次复制课程到独立的 `.presmium/cs336-workspace`，之后复用用户可编辑的副本。`pnpm demo:check` 检查全部文稿；`pnpm demo:build` 构建全部幻灯片、notebook 和课程站点，站点在 `examples/cs336/dist/web/`。上游录制值不在构建时重新运行，构建不要求 CUDA 或外部模型服务。
+
+功能回归使用 `e2e/fixtures/<组>/` 的私有文稿。旧 BPE 讲义仅作为 `e2e/fixtures/regression/` 保留，源码也移入该夹具；代码引用的历史版本行为由专用代码用例验证。它不是公开示例。冒烟和功能测试从该目录解析依赖；课程用例检查 17 讲导航、原始步骤前进回退和页面资源。`lang` 决定两种形态的界面语言（5.7 节）。
 
 ## 7. 测试策略
 
@@ -1499,7 +1501,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 端到端测试的约定：
 
 - 示例文稿的产物 `dist/` 是一个站点（网页在 `/web/`，幻灯片在 `/slides/`，2.1 节的默认 `base`），服务在 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT`（默认 4173、4174）。同时构建两种形态的测试文稿同样把 `dist/` 作为一个站点服务（`serve(dir,'/slides/')`，`buildFixture` 自动这样做）。并行的检出各用一对端口；端口被占用时报错，不复用别处的服务。幻灯片通过 `/<页号>?clicks=<步骤>` 定位，演讲者视图为 `/presenter/<页号>`。
-- 需要专用文稿的用例（宿主适配、另一种界面语言、性能、课堂服务）在 `beforeAll` 中把测试文稿写到 `examples/demo/.presmium/e2e-*`（不入库，插件从示例文稿的依赖中解析），用真实的 `presmium build` 构建，再在空闲端口上服务产物。测试文稿放在 `e2e/fixtures/<组>/`。
+- 需要专用文稿的用例（宿主适配、另一种界面语言、性能、课堂服务）在 `beforeAll` 中把测试文稿写到 `e2e/fixtures/regression/.presmium/e2e-*`（不入库，插件从示例文稿的依赖中解析），用真实的 `presmium build` 构建，再在空闲端口上服务产物。测试文稿放在 `e2e/fixtures/<组>/`。
 - 性能用例（`e2e/perf.spec.ts`）是单独的 Playwright 项目，依赖 Chromium 项目，在其他用例结束后运行，计时不与其他用例争用机器。单独运行它要加 `--no-deps`：`pnpm exec playwright test e2e/perf.spec.ts --no-deps`；不加时 Playwright 先运行全部 Chromium 用例。
 - 其他浏览器：`PRESMIUM_E2E_BROWSERS` 列出冒烟用例另外运行的浏览器，默认 `firefox,webkit`。没有安装，或在本机无法启动的浏览器（WebKit 需要很多 Linux 主机缺少的系统库）被跳过，并提示安装命令（`pnpm exec playwright install <浏览器>`、`pnpm exec playwright install-deps <浏览器>`）；WebKit 也可以在 Playwright 的 Docker 镜像中运行（`browsers.md`）。真实的 Safari、Edge 与前一个大版本在发布前按 `browsers.md` 手工检查并记录。
 - 集成测试分两个 Vitest 项目（`vitest.config.ts`）：`integration` 与 `export`。`export` 是运行 `slidev export` 的三个测试文件（`render-slides/test/slides.test.ts`、`addon-publish/test/export.test.ts`、`diff.test.ts`），在 `integration` 结束后运行：`slidev export` 用 Slidev 的开发服务器服务文稿，等浏览器空闲后打印，机器被其他用例的构建占满时它会在页面就绪前截图或超时。单独运行一组：`pnpm exec vitest run --project export`。
@@ -1518,7 +1520,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 修改审阅 | 临时目录中的真实 git 仓库 |
 | 语音 | 确定性的假引擎（`presmium-speech fake`）：真实的 HTTP 服务，同一协议，测试经 `PRESMIUM_SPEECH_FAKE_URL` 与 `PRESMIUM_SPEECH_FAKE_PROVIDER=Presmium fake` 把它定义为引擎 `fake`（与真实引擎同一条配置路径）；中文每字 220 ms、拉丁字母每字 60 ms、词间 80 ms，合成的 WAV 中嵌入文字与音色，合成后再转写可以精确往返；音色列表中有一个克隆音色，用于同意记录的用例；用例数它收到的请求，验证缓存命中时不再合成。火山引擎与 Groq 的冒烟用例只在设置了 `PRESMIUM_TEST_VOLCENGINE_KEY`、`PRESMIUM_TEST_GROQ_KEY` 时运行 |
 | 讲授 | 录制：Chromium 的假麦克风播放假引擎合成的音频（`--use-fake-ui-for-media-stream`、`--use-fake-device-for-media-stream`、`--use-file-for-fake-audio-capture=<wav>%noloop`，以 `test.use({ launchOptions })` 只加在讲授的用例上），讲授轨中有 `go` 与 `point`，回放到时刻 t 显示正确的章节与步骤（`e2e/lecture.spec.ts` 用假设备自带的音调与假摄像头，不加 `--use-file-for-fake-audio-capture`；回放的测试讲授轨带一段构建前写入的静音 WAV，所以走 `MediaClock`）；脚本化：用假引擎构建测试讲义，检查片段、VTT 与提示标记的时刻 |
-| dsh | 锁定版本的真实 dsh（headless、acp 与 web 载体），每个用例自己的 `DSH_HOME` 与 `HOME`；模型是 `@presmium/cli/testing` 的脚本化 Messages 兼容假模型，断言请求体中没有上传的字段、技能目录中没有用户的技能、测试目录之外没有写入。`packages/dsh/test/harness.ts`（端到端用例也用它）：`testHome(prefix)` 在临时目录中给出 `HOME`、`XDG_*`、`DSH_HOME` 与干净的环境，`profile(carrier)` 按 `@presmium/dsh/launch` 写 profile 并链接 bundle，`dump(carrier)`、`headless(cwd, prompt, { model })`、`acp(cwd)`、`web(cwd, port, { model })`（`api()` 以令牌换 cookie，`call(endpoint,args)` 调 Host API，`fetch(path)` 带 cookie）、`serve(root)`（`presmium serve` 加服务令牌，`env` 是交给 dsh 的 `PRESMIUM_SERVICE_URL` 等），`homeEntries()`；`workspace(prefix, files, link)` 在 `examples/demo/.presmium/` 中建一个自己的 git 仓库（dsh 的项目根因此是它，不是本仓库与它的 `.agents/skills`）；`turns(model)`、`toolResults(model)` 读假模型收到的 agent 请求与工具结果 |
+| dsh | 锁定版本的真实 dsh（headless、acp 与 web 载体），每个用例自己的 `DSH_HOME` 与 `HOME`；模型是 `@presmium/cli/testing` 的脚本化 Messages 兼容假模型，断言请求体中没有上传的字段、技能目录中没有用户的技能、测试目录之外没有写入。`packages/dsh/test/harness.ts`（端到端用例也用它）：`testHome(prefix)` 在临时目录中给出 `HOME`、`XDG_*`、`DSH_HOME` 与干净的环境，`profile(carrier)` 按 `@presmium/dsh/launch` 写 profile 并链接 bundle，`dump(carrier)`、`headless(cwd, prompt, { model })`、`acp(cwd)`、`web(cwd, port, { model })`（`api()` 以令牌换 cookie，`call(endpoint,args)` 调 Host API，`fetch(path)` 带 cookie）、`serve(root)`（`presmium serve` 加服务令牌，`env` 是交给 dsh 的 `PRESMIUM_SERVICE_URL` 等），`homeEntries()`；`workspace(prefix, files, link)` 在 `e2e/fixtures/regression/.presmium/` 中建一个自己的 git 仓库（dsh 的项目根因此是它，不是本仓库与它的 `.agents/skills`）；`turns(model)`、`toolResults(model)` 读假模型收到的 agent 请求与工具结果 |
 | 工作区 | 临时目录中的真实 git 仓库：文档操作与撤销各形成正确的提交（读 `git log` 与尾注）；局域网访问与课堂同步在 `presmium serve --host 0.0.0.0` 上，浏览器以本机的局域网地址打开页面（本机没有局域网地址时跳过） |
 
 服务端的用例：`packages/server/test/server.test.ts` 对测试文稿运行 `presmium dev`；`serve` 模式的用例由测试用的宿主 `packages/server/test/fixtures/serve-host.ts` 启动（以子进程调用真实的 `startServer`，文档用真实的编译器编译），`presmium serve` 本身的用例在 `cli/test/serve.test.ts` 与 `e2e/workspace.spec.ts`。浏览器不允许 `fetch` 设置 `Host`，Node 端的用例用 `node:http` 发送原样的请求头。
@@ -1835,7 +1837,7 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 - **监管**（11.2、14 节）：两个进程各在 `@presmium/dsh` 的看门狗（`WATCHDOG`，`presmium-service` 行用的同一个）之下，以 `detached` 自成进程组，看门狗的标准输入是来自启动器的管道：启动器退出（`kill -9` 也是）时看门狗结束整个组，组中的开发服务器一并结束。SIGINT、SIGTERM、SIGHUP 时启动器先停 dsh（bundle 在服务处作废会话令牌）再停服务，各等 15 秒，之后向组发 SIGKILL，以 0 退出；一个进程自己结束时启动器停下另一个，报告是哪一个与日志的位置，以 1 退出。
 - **模型**（11.3 节）：`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三个都有时成为 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` 与 `DEEPSEEK_SEARCH_BASE_URL`（网页搜索用同一个密钥，地址也是这个服务）；只有一部分时在标准错误警告缺少哪个；否则 `DEEPSEEK_API_KEY` 原样传给 dsh，作者环境中的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 不传（密钥只去 DeepSeek 的官方地址）。dsh 自己不接受 `.env` 文件中的这类地址变量（工作区根的 `.env` 写了它时 dsh 拒绝启动），所以工作区的 `.env` 改不了密钥的去向。
 - **局域网**（11.4 节）：`--host` 只接受本机的一个具体 IP 地址（拒绝 `0.0.0.0`、`::` 等通配地址与主机名），dsh 与工作区服务都只监听这个地址（服务端的 `Host`、`Origin` 规则按 10.1 节接受它），`--preview-origin` 是它的源；启动时在标准错误警告没有登录，同一网络中到得了这两个端口的人都以作者的身份工作。
-- **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在文档目录中、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `examples/demo/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@presmium/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
+- **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在文档目录中、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `e2e/fixtures/regression/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@presmium/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
 
 ### 13.2 契约与接口
 

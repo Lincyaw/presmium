@@ -211,3 +211,5 @@ html.pm-author-marks .slidev-layout .pm-role-mark::before {
 .print-slide-container .pm-static-fallback > .slidev-code-wrapper:last-child {
   flex-shrink: 0;
 }
+
+.pm-step-range.slidev-vclick-hidden { display: none !important; }

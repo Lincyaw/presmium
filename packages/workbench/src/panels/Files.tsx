@@ -47,9 +47,9 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
   const active = useWorkbench(state => state.active)
   const documents = useWorkbench(state => state.documents)
   const failure = useWorkbench(state => state.openFailure)
-  const data = useMemo(() => fileTree(files?.files ?? [], document ?? ''), [files, document])
+  const data = useMemo(() => fileTree(files?.files ?? [], files?.home ? '' : document ?? ''), [files, document])
   if (document === undefined) return null
-  const title = documents?.documents.find(doc => doc.dir === document)?.title ?? (document || documents?.title || t.workspace)
+  const title = files?.home ? documents?.title ?? t.workspace : documents?.documents.find(doc => doc.dir === document)?.title ?? (document || documents?.title || t.workspace)
   return (
     <nav className="pmw-files" aria-label={t.filesOf(title)}>
       <div className="pmw-files__head">

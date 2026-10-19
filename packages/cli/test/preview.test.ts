@@ -6,7 +6,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest'
 import { BIN, presmium } from './helpers.ts'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/preview', import.meta.url))
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
 const AGENT = /presmium-preview|data-preview-highlight|pm-preview-pin/
 
 let dir: string

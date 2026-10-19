@@ -16,7 +16,7 @@
 
 ### `{slide}`
 
-正文为 MyST，其中的块都是上屏内容。选项：`:reveal:`、`:reveal: items`。
+正文为 MyST，其中的块都是上屏内容。选项：`:reveal:`、`:reveal: items`、`:at:`（非负整数，从 0 开始）、`:until:`（到该步骤隐藏，必须大于起始步骤）。`at` 不能与 `reveal` 合用；阅读形态展开内容，放映中按范围显示，回退时恢复。两个结果分别写 `:at: 0`、`:until: 1` 与 `:at: 1` 即可替换，不需要组件或播放器。
 
 ```md
 :::{slide}
@@ -30,7 +30,7 @@
 
 ### `{only}`
 
-参数为渲染端 ID 列表（`web`、`slides`、`notebook`，逗号或空格分隔）；正文为 MyST，其中的块只交给这些渲染端。嵌套时取交集。选项：`:reveal:`、`:reveal: items`。
+参数为渲染端 ID 列表（`web`、`slides`、`notebook`，逗号或空格分隔）；正文为 MyST，其中的块只交给这些渲染端。嵌套时取交集。选项：`:reveal:`、`:reveal: items`、`:at:`、`:until:`（步骤范围语义同 `{slide}`）。
 
 ```md
 :::{only} web, notebook

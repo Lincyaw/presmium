@@ -1,0 +1,29 @@
+{
+  "name": "presmium-cs336",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "presmium serve .",
+    "build": "node tools/course.mjs build",
+    "check": "node tools/course.mjs check",
+    "ir": "node tools/course.mjs ir",
+    "import": "uv run --with pymupdf==1.26.5 --with pymupdf4llm==0.0.27 --with pillow==11.3.0 tools/import.py",
+    "audit": "node tools/audit.mjs"
+  },
+  "dependencies": {
+    "@presmium/cli": "workspace:*",
+    "@presmium/web": "workspace:*",
+    "@presmium/viewer": "workspace:*",
+    "@presmium/host": "workspace:*",
+    "@presmium/slidev-addon-core": "workspace:*",
+    "@presmium/slidev-addon-content": "workspace:*",
+    "@presmium/render-slides": "workspace:*",
+    "@presmium/render-notebook": "workspace:*",
+    "@slidev/cli": "53.0.0",
+    "@slidev/theme-default": "^0.25.0",
+    "vue": "^3.5.42",
+    "@presmium/compiler": "workspace:*",
+    "@presmium/kernel": "workspace:*",
+    "yaml": "2.9.0"
+  }
+}

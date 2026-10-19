@@ -2,4 +2,6 @@
 # a problem of its compilation.
 title: 工作台用例
 documents:
+  # A matching directory is not necessarily a lecture: examples/ and scripts/ contain only code.
+  - '*/lecture.md'
   - lectures/*/lecture.md

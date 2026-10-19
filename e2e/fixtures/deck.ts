@@ -1,7 +1,7 @@
 // Fixture decks of the feature specs: e2e/fixtures/<name> holds a deck (lecture.md and the files it
-// includes). It is copied into examples/demo/.presmium, where its plugins, Slidev and VitePress
-// resolve from the demo's node_modules, built with the real `presmium build`, and its web form and
-// slides are served on free ports. The specs depend on their fixture decks, never on the demo lecture.
+// includes). It is copied into e2e/fixtures/regression/.presmium, where its plugins, Slidev and VitePress
+// resolve from the regression fixture's node_modules, built with the real `presmium build`, and its web form and
+// slides are served on free ports. The specs depend on their fixture decks, independent of the public CS336 course.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { cpSync, createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -74,13 +74,13 @@ export async function presmium(args: string[], cwd: string): Promise<string> {
 }
 
 /**
- * A new deck directory inside examples/demo/.presmium (ignored by git), where the deck finds the
+ * A new deck directory inside e2e/fixtures/regression/.presmium (ignored by git), where the deck finds the
  * workspace's packages, with a package of its own (so each build gets its own Vite cache). `link`
  * links more packages into its node_modules, by name, from paths of the repository: e.g. the
  * `@presmium/host` that a fixture plugin imports, which the demo does not depend on.
  */
 export function deckDir(prefix: string, link: Record<string, string> = {}): string {
-  const work = join(ROOT, 'examples/demo/.presmium')
+  const work = join(ROOT, 'e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, `e2e-${prefix}-`))
   writeFileSync(join(dir, '.gitignore'), '*\n')

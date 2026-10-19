@@ -54,6 +54,7 @@ export class SourceFiles {
 
   allows(scope: Scope, path: string, member: Member): boolean {
     if (path === WORKSPACE_FILE) return (scope.home || (this.#config.single && scope.document === '')) && member.roles.includes('owner')
+    if (scope.home && member.roles.includes('owner')) return true
     const dir = documentDirOf(this.#config, path)
     if (dir === undefined) return scope.home && member.roles.includes('owner')
     return scope.home ? listDocuments(this.#config).some(doc => doc.dir === dir) : dir === scope.document
@@ -74,7 +75,7 @@ export class SourceFiles {
         const path = dir ? `${dir}/${name}` : name
         const found = lstatSync(join(this.#config.root, path), { throwIfNoEntry: false })
         if (!found || found.isSymbolicLink()) continue
-        if (found.isDirectory() && documentDirOf(this.#config, `${path}/x`) === owner) {
+        if (found.isDirectory() && (scope.home || documentDirOf(this.#config, `${path}/x`) === owner)) {
           walk(path, owner)
         } else if (found.isFile() && this.allows(scope, path, member)) {
           if (files.length >= MAX_FILES) {
@@ -85,8 +86,7 @@ export class SourceFiles {
         }
       }
     }
-    for (const root of scope.home ? listDocuments(this.#config).map(doc => doc.dir) : [scope.document]) walk(root, root)
-    if (scope.home && member.roles.includes('owner')) walk('', undefined)
+    walk(scope.home ? '' : scope.document, scope.home ? undefined : scope.document)
     const documents = scope.home ? listDocuments(this.#config).map(doc => doc.dir) : undefined
     return { document: scope.document, home: scope.home, ...documents ? { documents } : {}, files, ...truncated ? { truncated: true as const } : {} }
   }
@@ -120,7 +120,7 @@ export class SourceFiles {
   }
 
   async save(scope: Scope, path: string, content: string, base: string, member: Member): Promise<string> {
-    const document = documentDirOf(this.#config, path)
+    const document = listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => within(path, doc.dir))?.dir
     const outside = document === undefined
     const release = outside || !this.#locks ? () => {} : this.#locks.claim(document, 'editor:save')
     if (!release) throw lockedError(document!, this.#locks!.holder(document!) ?? '')

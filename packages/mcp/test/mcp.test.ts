@@ -12,7 +12,7 @@ import type { ControlWindow } from './client.ts'
 const DECK = fileURLToPath(new URL('./fixtures/deck', import.meta.url))
 const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
 const MCP_BIN = fileURLToPath(new URL('../bin/presmium-mcp.mjs', import.meta.url))
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
 
 const READ = ['list_documents', 'deck_info', 'list_sections', 'get_section', 'get_step', 'search', 'get_code_ref', 'get_outputs', 'get_diagnostics', 'locate_source']
 const OPERATE = ['navigate', 'run_code', 'build', 'classroom_start', 'classroom_end']

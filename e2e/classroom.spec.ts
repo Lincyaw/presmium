@@ -62,7 +62,7 @@ ${session}renderers:
 }
 
 function deckDir(name: string): string {
-  const work = resolve('examples/demo/.presmium')
+  const work = resolve('e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   return mkdtempSync(join(work, `e2e-${name}-`))
 }

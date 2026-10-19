@@ -124,7 +124,7 @@ it('renders components through the plugin extension or the fallback, and reports
 })
 
 it('links the notes of components to their page of the web form built with them when no webUrl is set (R-48)', async () => {
-  const work = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+  const work = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
   mkdirSync(work, { recursive: true })
   const deck = mkdtempSync(join(work, 'notebook-linked-'))
   try {

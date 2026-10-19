@@ -1,5 +1,5 @@
 // Test decks of the exec group's specs: built with the real `presmium build` and served
-// on free ports. A deck is written inside examples/demo/.presmium (ignored by git), so
+// on free ports. A deck is written inside e2e/fixtures/regression/.presmium (ignored by git), so
 // its plugins, Slidev and VitePress resolve from the demo's node_modules.
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
@@ -22,7 +22,7 @@ export const fixture = (name: string) => (dir: string) => cpSync(fileURLToPath(n
 
 /** A new deck written by `write`, built for the renderers `to` into `<dir>/dist`. */
 export async function buildDeck(prefix: string, write: (dir: string) => void, to = ['web', 'slides']): Promise<BuiltDeck> {
-  const work = join(ROOT, 'examples/demo/.presmium')
+  const work = join(ROOT, 'e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, `e2e-${prefix}-`))
   const remove = () => rmSync(dir, { recursive: true, force: true })

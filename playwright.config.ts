@@ -4,8 +4,8 @@ import { defineConfig, devices, firefox, webkit } from '@playwright/test'
 import { SLIDES_PORT, WEB_PORT } from './e2e/urls.ts'
 
 const servers = [
-  { form: 'examples/demo/dist/slides', port: SLIDES_PORT, single: 'slides/index.html' },
-  { form: 'examples/demo/dist/web', port: WEB_PORT, single: '' },
+  { form: 'e2e/fixtures/regression/dist/slides', port: SLIDES_PORT, single: 'slides/index.html' },
+  { form: 'e2e/fixtures/regression/dist/web', port: WEB_PORT, single: '' },
 ].filter(s => existsSync(s.form))
 
 const OTHER_BROWSERS = {
@@ -46,7 +46,7 @@ export default defineConfig({
     ...others.map(name => ({ name, use: OTHER_BROWSERS[name].device, testMatch: 'smoke.spec.ts' })),
   ],
   webServer: servers.map(s => ({
-    command: `node_modules/.bin/sirv examples/demo/dist ${s.single ? `--single ${s.single} ` : ''}--port ${s.port} --quiet`,
+    command: `node_modules/.bin/sirv e2e/fixtures/regression/dist ${s.single ? `--single ${s.single} ` : ''}--port ${s.port} --quiet`,
     port: s.port,
     reuseExistingServer: false,
   })),

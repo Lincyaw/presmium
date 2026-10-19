@@ -1,5 +1,5 @@
 // Test decks of the classroom, content, code and editor plugins (e2e/fixtures/plugins): built with
-// the real CLI in a directory under examples/demo/.presmium, where the deck finds the workspace's
+// the real CLI in a directory under e2e/fixtures/regression/.presmium, where the deck finds the workspace's
 // packages, served on a free port, with a real classroom server when a test needs one.
 import { spawn } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
@@ -60,7 +60,7 @@ export async function rawLearner(server: string, room: string, participant: stri
  * `transform` changes them).
  */
 export function writeDeck(name: string, headmatter: string, pages: string[], transform?: (text: string) => string): string {
-  const work = resolve('examples/demo/.presmium')
+  const work = resolve('e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   const deck = mkdtempSync(join(work, `e2e-${name}-`))
   writeFileSync(join(deck, '.gitignore'), '*\n')

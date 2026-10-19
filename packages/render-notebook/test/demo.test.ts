@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { presmium, run } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
-const DEMO = fileURLToPath(new URL('../../../examples/demo', import.meta.url))
+const DEMO = fileURLToPath(new URL('../../../e2e/fixtures/regression', import.meta.url))
 const EXEC_FIXTURE = fileURLToPath(new URL('../../../e2e/fixtures/exec/panels', import.meta.url))
 const CHECKER = fileURLToPath(new URL('./notebook.py', import.meta.url))
 const JUPYTER = spawnSync('python3', ['-c', 'import nbformat, nbclient, ipykernel']).status === 0

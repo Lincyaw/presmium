@@ -6,7 +6,7 @@ import { afterAll, expect, it } from 'vitest'
 import { build, Compiler } from '../src/index.ts'
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
-const WORK = join(ROOT, 'examples/demo/.presmium')
+const WORK = join(ROOT, 'e2e/fixtures/regression/.presmium')
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 

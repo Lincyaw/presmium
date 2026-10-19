@@ -24,7 +24,7 @@ The workspace service's routes are reached under the page's `api/presmium/` (the
 
 Documents open in preview, with source and side by side modes. Text selections and picked preview blocks become conversation context. `WorkbenchProvider` protects unsaved changes when closing files, leaving a document or unloading the page. Set `protectChanges={false}` on auxiliary providers when several panels share one workbench, keeping the protection mounted once in its primary provider.
 
-Hosts route text file references through `workbench.openSource(document, path, { line })`. It reuses open tabs and protects unsaved changes when switching documents. A multi-document workspace also supports root text files under document `''`, without a lecture preview. Keep `DocumentView` mounted when hiding it so editor drafts and undo history survive navigation.
+Hosts route text file references through `workbench.openSource(document, path, { line })`. The file tree and source reads and saves use the opened workspace's scope (`''`), including code outside the current lecture directory. Opening shared code or root notes keeps the selected lecture preview and existing drafts; switching lectures still protects unsaved changes. Without a selected lecture, root files open in source mode. Keep `DocumentView` mounted when hiding it so editor drafts and undo history survive navigation.
 
 ## Documentation
 

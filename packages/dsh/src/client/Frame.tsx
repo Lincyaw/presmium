@@ -68,8 +68,11 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const [helpOpen, setHelpOpen] = useState(false)
   const geometry = solve(info)
   const { narrow, collapsed } = geometry
+  const lastSource = useRef({ file: activeFile, navigation: sourceNavigation })
   useEffect(() => {
-    if (narrow && activeFile) actions.show('source')
+    const changed = lastSource.current.file !== activeFile || lastSource.current.navigation !== sourceNavigation
+    lastSource.current = { file: activeFile, navigation: sourceNavigation }
+    if (narrow && activeFile && (changed || (info.view !== 'conversation' && info.view !== 'sessions'))) actions.show('source')
   }, [narrow, activeFile, sourceNavigation, actions])
   const dockPanel = usePanelRef()
   const sidePanelRef = usePanelRef()
@@ -158,15 +161,15 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const rightbar = renderSlot('rightbar', { width: rightbarBox?.width ?? geometry.rightbar, viewportWidth: geometry.viewport, canShow: geometry.rightbar > 0 })
 
   const go = (target: Activity | NarrowView) => {
-    if (narrow || (target !== 'sessions' && target !== 'conversation')) actions.selectPanel(null)
+    if (target === 'sessions') { actions.toggleConversations(); return }
+    if (narrow || target !== 'conversation') actions.selectPanel(null)
     if (target === 'documents') {
       workbench.closeDocument()
       if (narrow && workbench.state.document === undefined) actions.show('documents')
       return
     }
     if (narrow) actions.show(target as NarrowView)
-    else if (target === 'conversation') actions.toggleConversation()
-    else if (target === 'files' || target === 'sessions') actions.choose(target)
+    else if (target === 'files') actions.choose(target)
   }
   const sideContent = info.activity === 'sessions' ? 'sessions' : 'files'
   const view: NarrowView = narrow ? info.view : 'documents'
@@ -189,14 +192,12 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
         { id: 'files', icon: 'folder', label: t.files, pressed: view === 'files' },
         { id: 'source', icon: 'edit', label: t.source, pressed: view === 'source' },
         { id: 'preview', icon: 'slides', label: t.preview, pressed: view === 'preview' },
-        { id: 'sessions', icon: 'history', label: t.sessions, pressed: view === 'sessions' },
-        { id: 'conversation', icon: 'sparkle', label: t.conversation, pressed: view === 'conversation' },
+        { id: 'sessions', icon: 'history', label: t.conversationHistory, pressed: view === 'sessions' || view === 'conversation' },
       ]
     : [
         { id: 'documents', icon: 'document', label: t.documents, pressed: document_ === undefined && activePanel === null && !sideShown },
         { id: 'files', icon: 'folder', label: t.files, pressed: sideShown && sideContent === 'files' },
-        { id: 'sessions', icon: 'history', label: t.sessions, pressed: sideShown && sideContent === 'sessions' },
-        { id: 'conversation', icon: 'sparkle', label: t.conversation, pressed: info.dockOpen },
+        { id: 'sessions', icon: 'history', label: t.conversationHistory, pressed: info.dockOpen || (sideShown && sideContent === 'sessions') },
       ]
 
   const sidePanel = (<>

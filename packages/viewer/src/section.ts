@@ -2,7 +2,7 @@ import { isChapterTitle, narrationAt } from '@presmium/kernel'
 import type { IRBlock, IRSection } from '@presmium/kernel'
 import type { InjectionKey, PropType, Ref, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRef } from 'vue'
-import { BlockView, isOverlay } from './block.ts'
+import { BlockView } from './block.ts'
 import { SECTION_CONTEXT } from './context.ts'
 import { FINAL_STEP, sectionDiagnostics, stepAtLine } from './domain/index.ts'
 import type { Position } from './domain/index.ts'
@@ -142,24 +142,6 @@ function blockViews(blocks: IRBlock[], section: IRSection, step: number, expande
   return blocks.map(block => h(BlockView, { key: block.id, block, section, step, expanded }))
 }
 
-function documentBlocks(section: IRSection, step: number): VNodeChild[] {
-  const children: VNodeChild[] = []
-  let board: IRBlock[] = []
-  const flush = () => {
-    if (board.length) children.push(h('div', { key: `board:${board[0]!.id}`, class: 'pm-board' }, blockViews(board, section, step, true)))
-    board = []
-  }
-  for (const block of section.blocks) {
-    if (block.role === 'visual' && !isOverlay(block)) {
-      board.push(block)
-      continue
-    }
-    if (block.role === 'narration') flush()
-    children.push(h(BlockView, { key: block.id, block, section, step, expanded: true }))
-  }
-  flush()
-  return children
-}
 
 export const SectionView = defineComponent({
   name: 'PmSectionView',
@@ -197,7 +179,7 @@ export const SectionView = defineComponent({
               return h('div', { 'key': k, 'class': ['pm-step', { 'pm-step--current': k === current, 'pm-step--bare': narration.length === 0 }], 'data-step': k }, blockViews(narration, section, current, false))
             })),
           ]
-        : [h('div', { class: 'pm-section__body' }, documentBlocks(section, current))]
+        : [h('div', { class: 'pm-section__body' }, blockViews(section.blocks, section, current, true))]
       return h('section', {
         'ref': el,
         'class': ['pm-section', `pm-section--${layout}`, { 'pm-section--error': problems.some(p => p.severity === 'error') }],

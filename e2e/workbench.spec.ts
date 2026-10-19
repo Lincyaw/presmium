@@ -21,6 +21,17 @@ const preview = (page: Page) => page.frameLocator('.pmw-preview__frame')
 const editor = (page: Page) => page.locator('.pmw-source__editor .cm-content')
 const conversation = (page: Page) => page.locator('[data-pmw-slot="main:conversation"]')
 
+async function showConversation(page: Page): Promise<void> {
+  if (!await conversation(page).isVisible()) await page.locator('[data-activity="sessions"]').click()
+  await expect(conversation(page)).toBeVisible()
+}
+
+async function showHistory(page: Page): Promise<void> {
+  if (!await conversation(page).isVisible()) await showConversation(page)
+  await conversation(page).getByRole('button', { name: '历史对话', exact: true }).click()
+  await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeVisible()
+}
+
 // Auxiliary previews still have a public command; their duplicate conversation-header opener is removed.
 async function toggleAuxiliary(page: Page): Promise<void> {
   const primary = await page.evaluate(() => /Mac|iPhone|iPad/.test(navigator.platform)) ? 'Meta' : 'Control'
@@ -29,11 +40,13 @@ async function toggleAuxiliary(page: Page): Promise<void> {
 
 async function openDocument(page: Page, title: string): Promise<void> {
   await page.locator('.pmw-home__card').filter({ hasText: title }).locator('.pmw-home__open').click()
-  await expect(page.locator('.pmw-files__title:visible')).toHaveText(title)
+  await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', `${title} 的预览`)
 }
 
 async function openFile(page: Page, name: string, text: string): Promise<void> {
-  await page.locator('.pmw-tree__file:visible', { hasText: name }).click()
+  if (!await page.locator('.pmw-frame__side-files').isVisible()) await page.locator('[data-activity="files"]').click()
+  const path = name.includes('/') ? name : `lectures/intro/${name === 'more.md' ? 'pages/' : ''}${name}`
+  await page.locator(`.pmw-tree__file[data-path="${path}"]:visible`).click()
   await expect(editor(page)).toContainText(text)
 }
 
@@ -97,6 +110,11 @@ test.describe('the root layout', () => {
     await expect(conversation(page).locator('[contenteditable="true"]')).toBeVisible()
     await expect(conversation(page).locator('svg.pmw-logo')).toBeVisible()
     await expect(page.locator('.pmw-home__card')).toHaveCount(2)
+    await expect(page.locator('.pmw-frame__side-files')).toBeHidden()
+    await page.locator('[data-activity="files"]').click()
+    await expect(page.locator('.pmw-frame__side-files')).toBeVisible()
+    await page.locator('[data-activity="files"]').click()
+    await expect(page.locator('.pmw-frame__side-files')).toBeHidden()
     for (let attempt = 0; attempt < 3; attempt++) {
       await page.reload()
       await expect(page.locator('.pmw-frame')).toBeVisible()
@@ -107,17 +125,18 @@ test.describe('the root layout', () => {
 
   test('command search and the file tree open a document and its nested source with the keyboard', async ({ page }) => {
     await studio.open(page)
+    await expect(page.locator('.pmw-home__card')).toHaveCount(2)
     const search = page.getByRole('combobox', { name: '搜索文档与命令' })
     await search.fill('分词入门')
     await search.press('ArrowDown')
     await search.press('Enter')
-    await expect(page.locator('.pmw-files__title')).toHaveText('分词入门')
-    await page.getByRole('tree', { name: '文件' }).focus()
-    await page.keyboard.press('Home')
-    await page.keyboard.press('ArrowDown')
-    await page.keyboard.press('ArrowLeft')
+    await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', '分词入门 的预览')
+    await page.locator('[data-activity="files"]').click()
+    await expect(page.locator('.pmw-files__title')).toHaveText('工作台用例')
+    const folder = page.locator('.pmw-tree__file').filter({ hasText: /^pages$/ })
+    await folder.click()
     await expect(page.locator('.pmw-tree__file', { hasText: 'more.md' })).toHaveCount(0)
-    await page.keyboard.press('ArrowRight')
+    await folder.press('ArrowRight')
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Space')
     await expect(editor(page)).toContainText('延伸一节')
@@ -150,7 +169,7 @@ test.describe('the root layout', () => {
     const sidebar = page.locator('[data-pmw-slot="sidebar"]')
     for (const width of [1440, 900, 390]) {
       await page.setViewportSize({ width, height: 900 })
-      if (!await conversation(page).isVisible()) await activity.getByRole('button', { name: '对话', exact: true }).click()
+      if (!await conversation(page).isVisible()) await showConversation(page)
       await expect(conversation(page).getByRole('button', { name: '新建对话', exact: true })).toBeVisible()
       await expect(conversation(page).getByRole('button', { name: /^(Open right sidebar|打开右侧边栏)$/ })).toHaveCount(0)
       await expect(conversation(page).locator('.pmw-frame__dock-bar')).toHaveCount(0)
@@ -199,7 +218,7 @@ test.describe('the root layout', () => {
       }
       if (width === 390) {
         await expect(activity.locator('[aria-pressed="true"]')).toHaveCount(1)
-        await activity.getByRole('button', { name: '对话', exact: true }).click()
+        await showConversation(page)
         await expect(page.locator('.pmw-frame__panel')).toHaveCount(0)
         await expect(conversation(page)).toBeVisible()
         await activity.getByRole('button', { name: '自动化任务', exact: true }).click()
@@ -255,7 +274,7 @@ test.describe('the root layout', () => {
     await dock.getByRole('button', { name: '收起右侧边栏', exact: true }).click()
     await expect(pushed).toBeHidden()
     await page.setViewportSize({ width: 390, height: 900 })
-    await page.getByRole('navigation', { name: '活动栏' }).getByRole('button', { name: '对话', exact: true }).click()
+    await showConversation(page)
     await toggleAuxiliary(page)
     await expect(full).toBeVisible()
     await expect.poll(async () => (await full.boundingBox())?.x).toBe(0)
@@ -280,7 +299,7 @@ test.describe('the root layout', () => {
     await dock.getByText(/^(Workspace files|工作区文件)$/).first().click()
     await expect(dock.getByText('notes.md').first()).toBeVisible()
     await dock.getByRole('button', { name: /^(Collapse right sidebar|收起右侧边栏)$/ }).first().click()
-    await activity.getByRole('button', { name: '会话' }).click()
+    await showHistory(page)
     await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeVisible()
     await expect(page.locator('[data-pmw-slot="sidebar"]').getByRole('heading', { name: '历史对话' })).toBeVisible()
     await expect(page.locator('[data-pmw-slot="sidebar"]').getByRole('tree', { name: '会话' })).toBeVisible()
@@ -300,9 +319,9 @@ test.describe('the root layout', () => {
     await activity.getByRole('button', { name: '预览' }).click()
     await expect(page.locator('.pmw-preview__frame')).toBeVisible()
     await expect(preview(page).locator('[data-section="words"]')).toBeAttached()
-    await activity.getByRole('button', { name: '会话' }).click()
+    await showHistory(page)
     await expect(page.locator('[data-pmw-slot="sidebar"]').getByRole('heading', { name: '历史对话' })).toBeVisible()
-    await activity.getByRole('button', { name: '对话' }).click()
+    await showConversation(page)
     await expect(conversation(page)).toBeVisible()
     await send(page, '再写一份')
     await expect(conversation(page)).toContainText('又写好了。', { timeout: 60_000 })
@@ -416,7 +435,7 @@ test.describe('the root layout', () => {
       await expect.poll(() => lowContrast(page, '.pmw-frame'), { message: `${scheme}: the launcher` }).toEqual([])
       await openDocument(page, '分词入门')
       await openFile(page, 'more.md', '延伸')
-      await page.getByRole('navigation', { name: '活动栏' }).getByRole('button', { name: '会话' }).click()
+      await showHistory(page)
       await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeVisible()
       await expect.poll(() => lowContrast(page, '.pmw-frame', '.pmw-preview__frame'), { message: `${scheme}: the document` }).toEqual([])
     }
@@ -516,7 +535,7 @@ test.describe('reading and conversation context', () => {
     await expect(conversation(page)).toBeHidden()
     await expect.poll(async () => (await page.locator('.pmw-document').boundingBox())!.width).toBeGreaterThan(width + 200)
     await page.screenshot({ path: test.info().outputPath('conversation-hidden.png') })
-    await page.getByRole('navigation', { name: '活动栏' }).getByRole('button', { name: '对话', exact: true }).click()
+    await showConversation(page)
     await expect(draft).toBeVisible()
     await expect(draft).toContainText('尚未发送的问题')
     await expect(editor(page)).toContainText('保留的草稿')
@@ -536,7 +555,7 @@ test.describe('reading and conversation context', () => {
     await editor(page).getByText('一份讲分词的讲义').click()
     await page.keyboard.press('End')
     await page.keyboard.type('（新对话保留文稿）')
-    if (width === 390) await activity.getByRole('button', { name: '对话', exact: true }).click()
+    if (width === 390) await showConversation(page)
     else await activity.getByRole('button', { name: '文件', exact: true }).click()
     await expect(page.locator('[data-pmw-slot="sidebar"]')).toBeHidden()
     const composer = conversation(page).locator('[contenteditable="true"]').first()
@@ -679,7 +698,7 @@ test.describe('one source editor', () => {
     const activity = page.getByRole('navigation', { name: '活动栏' })
     if (width === 390) await activity.getByRole('button', { name: '文件', exact: true }).click()
     await openFile(page, 'lecture.md', '一份讲分词的讲义')
-    if (width === 390) await activity.getByRole('button', { name: '对话', exact: true }).click()
+    if (width === 390) await showConversation(page)
     await send(page, '读取第十三行')
     await expect(conversation(page)).toContainText('已读到指定的代码行。', { timeout: 60_000 })
     await conversation(page).getByText(/已完成.*用时/).last().click()
@@ -699,14 +718,14 @@ test.describe('one source editor', () => {
     await expect(conversation(page).getByRole('button', { name: /^(Open right sidebar|打开右侧边栏)$/ })).toHaveCount(0)
     await page.keyboard.press('End')
     await page.keyboard.type(`（保留草稿${width}）`)
-    if (width === 390) await activity.getByRole('button', { name: '对话', exact: true }).click()
+    if (width === 390) await showConversation(page)
     await reference.click()
     await expect(editor(page)).toContainText(`（保留草稿${width}）`)
     await expect(page.locator('.pmw-source__tab')).toHaveCount(1)
     if (width === 1440) await expect(preview(page).locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
     await page.screenshot({ path: test.info().outputPath('shared-editor.png'), animations: 'disabled' })
 
-    if (width === 390) await activity.getByRole('button', { name: '对话', exact: true }).click()
+    if (width === 390) await showConversation(page)
     await send(page, '读取工作区的笔记')
     await expect(conversation(page)).toContainText('已读到工作区笔记。', { timeout: 60_000 })
     await expect(conversation(page).getByText(/已完成.*用时/)).toHaveCount(2)
@@ -714,32 +733,135 @@ test.describe('one source editor', () => {
     await conversation(page).getByRole('button', { name: '已读取文件', exact: true }).last().click()
     const notes = conversation(page).getByRole('button', { name: 'notes %.md', exact: true })
     await notes.click()
-    const prompt = page.getByRole('dialog', { name: '保存未完成的修改？' })
-    await prompt.getByRole('button', { name: '取消', exact: true }).click()
-    if (width === 390) await activity.getByRole('button', { name: '源码', exact: true }).click()
-    await expect(editor(page)).toContainText(`（保留草稿${width}）`)
-    if (width === 390) await activity.getByRole('button', { name: '对话', exact: true }).click()
-    await notes.click()
-    await prompt.getByRole('button', { name: '保存', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: '保存未完成的修改？' })).toHaveCount(0)
     await expect(editor(page)).toContainText('工作区笔记')
-    await expect(page.locator('.pmw-source__tab')).toHaveCount(1)
+    await expect(page.locator('.pmw-source__tab')).toHaveCount(2)
+    await page.getByRole('tab', { name: /^lecture\.md/ }).click()
+    await expect(editor(page)).toContainText(`（保留草稿${width}）`)
+    await page.getByRole('tab', { name: 'notes %.md', exact: true }).click()
     await editor(page).click()
     await page.keyboard.press('Control+End')
     await page.keyboard.type(`已保存${width}\n`)
     await page.keyboard.press('Control+s')
-    await expect(page.locator('.pmw-source__dot')).toBeHidden()
+    await expect(page.locator('.pmw-source__tab[data-active] .pmw-source__dot')).toBeHidden()
     expect(readFileSync(join(studio.workspace.dir, 'notes %.md'), 'utf8')).toContain(`已保存${width}`)
     if (width === 1440) {
       await toggleAuxiliary(page)
       const dock = page.locator('[data-pmw-slot="rightbar"]')
       await dock.getByText('notes %.md', { exact: true }).first().click()
-      await expect(page.locator('.pmw-source__tab')).toHaveCount(1)
+      await expect(page.locator('.pmw-source__tab')).toHaveCount(2)
       await expect(editor(page)).toContainText(`已保存${width}`)
       await expect(dock).toBeHidden()
       await toggleAuxiliary(page)
       await dock.getByText('diagram.svg', { exact: true }).first().click()
       await expect(dock.locator('img')).toBeVisible()
     }
+  })
+})
+
+test.describe('unified conversations', () => {
+  let studio: Studio
+  let model: FakeModel
+  test.beforeAll(async () => {
+    test.setTimeout(400_000)
+    model = await fakeModel([1440, 390].map(() => ({ text: '这是一段可恢复的对话。' })))
+    studio = await startStudio({ port: 5695 + studioPortOffset, model, prefix: 'unified-conversations' })
+  })
+  test.afterAll(async () => { await studio?.close(); await model?.close() })
+
+  for (const width of [1440, 390]) test(`${width}px: one conversation entry restores chat from current and previous history rows, keeping both drafts`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    let selected: string | undefined
+    page.on('response', response => {
+      if (response.url().endsWith('/api/presmium/context') && response.ok()) selected = response.request().postDataJSON().session
+    })
+    await studio.open(page)
+    await openDocument(page, '分词入门')
+    const activity = page.getByRole('navigation', { name: '活动栏' })
+    await expect(activity.getByRole('button', { name: '历史对话', exact: true })).toHaveCount(1)
+    await expect(activity.locator('[data-activity="conversation"]')).toHaveCount(0)
+    if (width === 390) await activity.getByRole('button', { name: '文件', exact: true }).click()
+    await openFile(page, 'lecture.md', '一份讲分词的讲义')
+    await editor(page).getByText('一份讲分词的讲义').click()
+    await page.keyboard.press('End')
+    await page.keyboard.type('（对话导航保留草稿）')
+    await showConversation(page)
+    await send(page, '保存一个历史会话')
+    await expect(conversation(page)).toContainText('这是一段可恢复的对话。', { timeout: 60_000 })
+    await expect.poll(() => selected).toBeTruthy()
+    const previous = selected!
+    const draft = conversation(page).locator('[contenteditable="true"]').first()
+    await draft.fill('还没有发送的草稿')
+    await showHistory(page)
+    if (width === 1440) await conversation(page).getByRole('button', { name: '收起对话', exact: true }).click()
+    await expect(conversation(page)).toBeHidden()
+    const row = page.locator(`[data-pmw-slot="sidebar"] [data-row-key="session:${previous}"]`)
+    await row.click()
+    await expect(conversation(page)).toBeVisible()
+    await expect(draft).toContainText('还没有发送的草稿')
+    await conversation(page).getByRole('button', { name: '新建对话', exact: true }).click()
+    await expect.poll(() => selected).not.toBe(previous)
+    if (width === 1440) await page.setViewportSize({ width: 900, height: 900 })
+    await showHistory(page)
+    await row.click()
+    await expect(conversation(page)).toBeVisible()
+    await expect(conversation(page)).toContainText('这是一段可恢复的对话。')
+    await expect(draft).toContainText('还没有发送的草稿')
+    if (width === 1440) await page.setViewportSize({ width, height: 900 })
+    else await activity.getByRole('button', { name: '源码', exact: true }).click()
+    await expect(editor(page)).toContainText('（对话导航保留草稿）')
+    await page.screenshot({ path: test.info().outputPath('unified-conversations.png'), animations: 'disabled' })
+  })
+})
+
+test.describe('workspace code files', () => {
+  let studio: Studio
+  let model: FakeModel
+  const path = 'examples/sample-repo/src/bpe.py'
+  test.beforeAll(async () => {
+    test.setTimeout(400_000)
+    model = await fakeModel([1440, 390].flatMap(() => [
+      { tool: 'read', input: { file_path: path, offset: 3, limit: 2 } },
+      { text: '已读取代码。' },
+    ]))
+    studio = await startStudio({ port: 5693 + studioPortOffset, model, prefix: 'workspace-code' })
+  })
+  test.afterAll(async () => { await studio?.close(); await model?.close() })
+
+  for (const width of [1440, 390]) test(`${width}px: workspace Python and TypeScript files open from the tree and chat, save, and keep the lecture preview and drafts`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await studio.open(page)
+    await openDocument(page, '分词入门')
+    const activity = page.getByRole('navigation', { name: '活动栏' })
+    if (width === 390) await activity.getByRole('button', { name: '文件', exact: true }).click()
+    await openFile(page, path, 'def get_stats(tokens):')
+    await editor(page).click()
+    await page.keyboard.press('Control+End')
+    await page.keyboard.type(`\n# 工作区代码草稿${width}\n`)
+    if (width === 390) await activity.getByRole('button', { name: '文件', exact: true }).click()
+    await page.getByRole('tree', { name: '文件', exact: true }).hover()
+    await page.mouse.wheel(0, 600)
+    await openFile(page, 'scripts/tokens.ts', 'export function tokens(text: string)')
+    await page.getByRole('tab', { name: /^bpe\.py/ }).click()
+    await expect(editor(page)).toContainText(`工作区代码草稿${width}`)
+    await page.getByRole('button', { name: '保存', exact: true }).click()
+    await expect(page.locator('.pmw-source__dot')).toBeHidden()
+    expect(readFileSync(join(studio.workspace.dir, path), 'utf8')).toContain(`工作区代码草稿${width}`)
+    const frame = page.locator('.pmw-preview__frame')
+    await expect(frame).toHaveAttribute('title', '分词入门 的预览')
+    if (width === 1440) await expect(preview(page).locator('[data-section="words"]')).toBeVisible({ timeout: 120_000 })
+    if (width === 390) await showConversation(page)
+    await send(page, '读取工作区代码的第三行')
+    await expect(conversation(page)).toContainText('已读取代码。', { timeout: 60_000 })
+    await conversation(page).getByText(/已完成.*用时/).last().click()
+    await conversation(page).getByRole('button', { name: '已读取文件', exact: true }).last().click()
+    await conversation(page).getByRole('button', { name: path, exact: true }).click()
+    await expect(editor(page)).toContainText(`工作区代码草稿${width}`)
+    await expect(page.locator('[data-status="line"]')).toHaveText('第 3 行')
+    await expect(page.locator('.pmw-source__tab')).toHaveCount(2)
+    await expect(frame).toHaveAttribute('title', '分词入门 的预览')
+    await expect(page.locator('[data-pmw-slot="rightbar"]')).toBeHidden()
+    await page.screenshot({ path: test.info().outputPath('workspace-code.png'), animations: 'disabled' })
   })
 })
 

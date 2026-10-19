@@ -205,7 +205,7 @@ function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolea
   const click = block.until === undefined ? `v-click="${block.at}"`
     : block.at === 0 ? `v-click.hide="${block.until}"`
     : `v-click="[${block.at}, ${block.until}]"`
-  return wrap(`<div ${click}${key}>\n\n${content}\n\n</div>`)
+  return wrap(`<div ${click}${block.until === undefined ? '' : ' class="pm-step-range"'}${key}>\n\n${content}\n\n</div>`)
 }
 
 const NOT_CONTENT = new Set(['html', 'footnoteDefinition', 'definition'])

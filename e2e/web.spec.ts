@@ -203,25 +203,19 @@ test.describe('the reading fixture deck', () => {
     await expect(page.locator('h2#scrolly')).toBeInViewport()
   })
 
-  test('what the slide shows stands on a board, apart from the narration, and keeps its formatting', async ({ page }) => {
+  test('document content stays in source order without presentation boards and keeps its formatting', async ({ page }) => {
     await page.goto(deck.web('basics.html'))
     const reading = page.locator('.pm-section[data-section="reading"]')
-    const boards = reading.locator('.pm-board')
-    await expect(boards).toHaveCount(1)
-    await expect(boards.locator('> .pm-block--visual')).toHaveCount(2)
-    await expect(reading.locator('.pm-board .pm-block--narration')).toHaveCount(0)
-    await expect(boards.locator('li')).toHaveCount(3)
-    await expect(boards.locator('li strong')).toHaveText('上屏内容')
-
-    const style = (locator: Locator) => locator.evaluate((el) => {
-      const s = getComputedStyle(el)
-      return { border: s.borderLeftWidth, background: s.backgroundColor }
-    })
-    const board = await style(boards)
-    const narration = await style(reading.locator('.pm-block--narration').first())
-    expect(board.border).toBe('4px')
-    expect(board.background).not.toBe('rgba(0, 0, 0, 0)')
-    expect(narration).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)' })
+    await expect(reading.locator('.pm-board')).toHaveCount(0)
+    await expect(reading.locator('.pm-section__body > .pm-block--visual')).toHaveCount(2)
+    await expect(reading.locator('li')).toHaveCount(3)
+    await expect(reading.locator('li strong')).toHaveText('上屏内容')
+    const blocks = await reading.locator('.pm-section__body > .pm-block').evaluateAll(elements => elements.map(element => ({
+      role: element.classList.contains('pm-block--visual') ? 'visual' : 'narration',
+      border: getComputedStyle(element).borderLeftWidth,
+    })))
+    expect(blocks.filter(block => block.role === 'visual')).toHaveLength(2)
+    expect(blocks.every(block => block.border === '0px')).toBe(true)
   })
 
   test('code and tables on the stage of a scrolly section are not cut off', async ({ page }) => {

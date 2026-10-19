@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - examples/*
+  - e2e/fixtures/regression
   - site
 allowBuilds:
   '@ast-grep/lang-python': false

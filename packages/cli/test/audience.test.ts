@@ -12,7 +12,7 @@ const TEACHER = ['teacheronly42', 'guideonly17', 'answerkey99', 'demotips', '演
 const NESTED = ['tabkey31', 'tipkey58', 'cardkey64', 'listkey72', 'includekey85', 'handbook23', '助教手册', 'tabfoot36', 'notefoot47', 'dropfoot53']
 
 function deck(source = DECK): string {
-  const work = join(ROOT, 'examples/demo/.presmium')
+  const work = join(ROOT, 'e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, 'audience-'))
   cpSync(source, dir, { recursive: true })

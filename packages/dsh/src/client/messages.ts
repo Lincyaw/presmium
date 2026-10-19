@@ -28,7 +28,7 @@ const zh = {
   welcome: '打开讲义即可预览，按需要切换源码或并排查看。右侧对话可以收起；选中文字或点选预览中的块，就能把关注内容带给 AI。不配模型也能编辑、保存与预览。',
   start: '开始使用',
   models: '设置模型',
-  helpText: '文档顶部可选“预览”“并排”“源码”；对话顶部可新建对话、打开历史。活动栏的“对话”展开或收起聊天，Mod+Alt+B 收起侧栏。选中文字或用“点选”选择一块，顶部显示带给 AI 的关注内容；可用关闭按钮清除。',
+  helpText: '文档顶部可选“预览”“并排”“源码”；对话顶部可新建对话、打开历史。活动栏统一使用“历史对话”入口，选择历史会话会直接显示聊天，收起后也可从这里恢复。Mod+Alt+B 收起侧栏。选中文字或用“点选”选择一块，顶部显示带给 AI 的关注内容；可用关闭按钮清除。',
 }
 
 export type FrameMessages = typeof zh
@@ -61,7 +61,7 @@ const en: FrameMessages = {
   welcome: 'Open a lecture to preview it, and switch to source or a side by side view when needed. The conversation can be hidden. Select text or pick a block to give the AI context. Editing, saving and previewing need no model.',
   start: 'Start',
   models: 'Set up a model',
-  helpText: 'Choose Preview, Side by side or Source above the document. Start a new chat or open history from the conversation header. Conversation in the activity bar toggles the chat; Mod+Alt+B toggles the sidebar. Select text or pick a block to add conversation context, shown above the document. Clear it with its close button.',
+  helpText: 'Choose Preview, Side by side or Source above the document. Start a new chat or open history from the conversation header. Chat history in the activity bar is the shared entry for history and chat. Selecting a history row reveals its conversation, including when chat was hidden. Mod+Alt+B toggles the sidebar. Select text or pick a block to add conversation context, shown above the document. Clear it with its close button.',
 }
 
 export const FRAME_MESSAGES: Record<Locale, FrameMessages> = { 'zh-CN': zh, 'en': en }

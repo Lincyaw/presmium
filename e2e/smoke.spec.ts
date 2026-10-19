@@ -7,10 +7,10 @@ import { expect, test } from '@playwright/test'
 import { deckDir, presmium } from './fixtures/deck.ts'
 import { SLIDES, WEB } from './urls.ts'
 
-const DEMO = fileURLToPath(new URL('../examples/demo', import.meta.url))
+const DEMO = fileURLToPath(new URL('../e2e/fixtures/regression', import.meta.url))
 const EXPORT = fileURLToPath(new URL('../packages/addon-publish/bin/presmium-export.mjs', import.meta.url))
 const PRINT = fileURLToPath(new URL('./fixtures/print', import.meta.url))
-const DEMO_DECK = { lock: 'examples/demo/.presmium/slides' }
+const DEMO_DECK = { lock: 'e2e/fixtures/regression/.presmium/slides' }
 
 interface Section { id: string, index: number, title: string, depth: number, steps: number }
 

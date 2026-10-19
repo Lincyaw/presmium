@@ -31,6 +31,11 @@ export const RUN_OPTION: DirectiveOptionInfo = {
   values: ['compile', 'live', 'both'],
 }
 
+const STEP_RANGE: Record<string, DirectiveOptionInfo> = {
+  at: { type: 'number', doc: { 'zh-CN': '从指定步骤开始显示（从 0 开始），不能与 reveal 合用。', en: 'Shows from this zero-based step; cannot be combined with reveal.' } },
+  until: { type: 'number', doc: { 'zh-CN': '到指定步骤时隐藏；回退时恢复。', en: 'Hides at this step and returns when stepping back.' } },
+}
+
 const TITLE = { 'zh-CN': '标题。', 'en': 'Title.' }
 
 const CODE_OPTIONS: Record<string, DirectiveOptionInfo> = {
@@ -83,8 +88,8 @@ const LAYOUT_DIRECTIVES: DirectiveInfo[] = [
 ]
 
 export const BUILTIN_DIRECTIVE_INFO: readonly DirectiveInfo[] = [
-  { name: 'slide', doc: { 'zh-CN': '上屏内容；正文为 MyST。', 'en': 'Content shown on screen; the body is MyST.' }, options: {} },
-  { name: 'only', doc: { 'zh-CN': '只在这些渲染端出现的内容，如 `{only} web, notebook`。', 'en': 'Content limited to renderers, e.g. `{only} web, notebook`.' }, options: {} },
+  { name: 'slide', doc: { 'zh-CN': '上屏内容；正文为 MyST。', 'en': 'Content shown on screen; the body is MyST.' }, options: STEP_RANGE },
+  { name: 'only', doc: { 'zh-CN': '只在这些渲染端出现的内容，如 `{only} web, notebook`。', 'en': 'Content limited to renderers, e.g. `{only} web, notebook`.' }, options: STEP_RANGE },
   { name: 'hints', doc: { 'zh-CN': '各渲染端的排版提示；正文为 YAML。', 'en': 'Layout hints per renderer; the body is YAML.' }, options: {} },
   { name: 'config', doc: { 'zh-CN': '只在本章节生效的插件配置；正文为 YAML，键为插件 ID。', 'en': 'Plugin configuration of this section; the body is YAML keyed by plugin id.' }, options: {} },
   { name: 'audience', doc: { 'zh-CN': '整个章节只给这些受众，如 `{audience} teacher`；放在章节顶层，没有正文。', 'en': 'The whole section is only for these audiences, e.g. `{audience} teacher`; at the top of a section, without a body.' }, options: {} },

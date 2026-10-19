@@ -13,7 +13,7 @@ import { parseTrack, trackDuration } from '../src/domain/index.ts'
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
 const SPEECH = fileURLToPath(new URL('../../addon-speech', import.meta.url))
 const LECTURE_BIN = join(ADDON, 'bin/presmium-lecture.mjs')
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
 
 function env(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
   const clean: NodeJS.ProcessEnv = { ...process.env }

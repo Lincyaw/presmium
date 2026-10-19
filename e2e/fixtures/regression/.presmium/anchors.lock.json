@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "anchors": {
+    "region:e2e/fixtures/regression/code/bpe.py#get_stats": {
+      "fingerprint": "6bf528d75033a42e",
+      "file": "e2e/fixtures/regression/code/bpe.py",
+      "startLine": 8
+    },
+    "symbol:e2e/fixtures/regression/code/bpe.py#decode": {
+      "fingerprint": "f7ccb95ea5a95970",
+      "file": "e2e/fixtures/regression/code/bpe.py",
+      "startLine": 65
+    },
+    "symbol:e2e/fixtures/regression/code/bpe.py#encode": {
+      "fingerprint": "f9a7360bac7dcba3",
+      "file": "e2e/fixtures/regression/code/bpe.py",
+      "startLine": 53
+    },
+    "symbol:e2e/fixtures/regression/code/bpe.py#train": {
+      "fingerprint": "4b6065cc5045f59f",
+      "file": "e2e/fixtures/regression/code/bpe.py",
+      "startLine": 31
+    }
+  }
+}

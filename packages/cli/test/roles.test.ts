@@ -6,7 +6,7 @@ import { afterAll, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/roles', import.meta.url))
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
 mkdirSync(WORK, { recursive: true })
 const dir = mkdtempSync(join(WORK, 'roles-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))

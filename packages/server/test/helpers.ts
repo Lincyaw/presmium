@@ -11,7 +11,7 @@ import { CREDENTIAL_VARIABLE } from '@presmium/kernel'
 
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
 
 export function workspace(prefix: string, files: Record<string, string> = {}): string {
   mkdirSync(WORK, { recursive: true })

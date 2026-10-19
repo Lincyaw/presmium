@@ -49,7 +49,8 @@ export function apply(ctx: DshClientContext): void {
   }, 'presmium: workspace list'))
   const workbench = new Workbench({ locale: workbenchLocale(ctx.locale.getLocale().active) })
   const ownLayout = window.__DSH_BOOT__?.entries.some(entry => entry.id === UI_LAYOUT)
-  sourceLinks(ctx, workbench, ownLayout ? FALLBACK_PANEL : null)
+  let showEditor = (layout: DshClientContext['layout']) => layout.selectPanel(FALLBACK_PANEL)
+  sourceLinks(ctx, workbench, layout => showEditor(layout))
   ctx.effect(() => () => workbench.dispose(), 'presmium: workbench')
   ctx.inject(['sessions'], inner => inner.effect(() => {
     let previous: string | undefined
@@ -108,6 +109,7 @@ export function apply(ctx: DshClientContext): void {
         getSnapshot: () => instance.getSnapshot().panelInfo,
         subscribe: listener => instance.subscribe(listener),
       })
+      showEditor = () => layout.showDocument()
       const openSettings = () => {
         const triggers = document.querySelectorAll<HTMLElement>('[data-pmw-slot="sidebar"] button[aria-haspopup="dialog"]')
         triggers[triggers.length - 1]?.click()
@@ -118,7 +120,7 @@ export function apply(ctx: DshClientContext): void {
       const disposeRoot = ctx.slots.register({ name: 'root', locale: 'common', children: {
         ...ROOT_CHILDREN,
         ...(nativeSidebar ? {} : { 'sidebar.panellist': { kind: 'list', scope: 'root' } as const }),
-      }, store }, frameFor(workbench, openSettings, id => navigation.then(service => service.openWorkspace(id)), workspaceStore, panelStore))
+      }, store }, frameFor(workbench, openSettings, id => navigation.then(service => service.openWorkspace(id, () => layout.preserveNextConversation())), workspaceStore, panelStore))
       const binding = { code: 'KeyB', modifiers: ['primary', 'alt'] }
       const disposeShortcut = ctx.shortcuts.register({
         id: 'sidebar.left.toggle',

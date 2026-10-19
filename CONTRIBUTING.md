@@ -17,7 +17,7 @@ pnpm test
 pnpm add -g ./packages/presmium    # the global presmium command, running these sources
 ```
 
-`pnpm studio` prepares an independent example workspace in `.presmium/studio-workspace` on first launch and reuses its editable documents on later launches. The file tree, source editor and previews work without a model. Open the full URL printed in the terminal (default port 4320); press Ctrl+C to stop. To edit another lecture or workspace, run `pnpm studio <dir>`; options such as `--port 4321` are forwarded to the workbench.
+`pnpm studio` prepares an independent example workspace in `.presmium/cs336-workspace` on first launch and reuses its editable documents on later launches. The file tree, source editor and previews work without a model. Open the full URL printed in the terminal (default port 4320); press Ctrl+C to stop. To edit another lecture or workspace, run `pnpm studio <dir>`; options such as `--port 4321` are forwarded to the workbench.
 
 The framework documentation the code is written against is fetched with `pnpm docs:fetch` into `vendor/docs/slidev` and `vendor/docs/vitepress` (not committed). Read it there rather than the frameworks' compiled code.
 
@@ -25,10 +25,10 @@ The framework documentation the code is written against is fetched with `pnpm do
 
 | Command | What it runs |
 |---|---|
-| `pnpm studio [dir]` | The browser workbench; defaults to the automatically prepared `.presmium/studio-workspace`, with an optional lecture or workspace directory |
+| `pnpm studio [dir]` | The browser workbench; defaults to the automatically prepared `.presmium/cs336-workspace`, with an optional lecture or workspace directory |
 | `pnpm test` | The layering check, the skills check, the plugin and package checks, and the integration tests (Vitest, `packages/<pkg>/test/`) |
-| `pnpm demo:check`, `pnpm demo:build` | `presmium check` and `presmium build` of the example lecture `examples/demo` |
-| `pnpm e2e` | The Playwright end-to-end tests (build the demo first); `PRESMIUM_E2E_SLIDES_PORT` and `PRESMIUM_E2E_WEB_PORT` choose the ports |
+| `pnpm demo:check`, `pnpm demo:build` | `presmium check` and `presmium build` of all 17 CS336 lectures in `examples/cs336` |
+| `pnpm e2e` | Builds the private regression fixture and runs Playwright; the CS336 spec builds the full course when needed; `PRESMIUM_E2E_SLIDES_PORT` and `PRESMIUM_E2E_WEB_PORT` choose the ports |
 | `pnpm verify` | All of the above |
 | `pnpm --filter presmium-docs build` | The documentation site in `site/`, with its publication checks and the API reference (TypeDoc) |
 | `pnpm release:check` | A dry run of publishing every public package |

@@ -58,7 +58,7 @@ test.beforeAll(async () => {
   test.setTimeout(300_000)
   allowed = await hostServer()
   other = await hostServer()
-  const work = join(ROOT, 'examples/demo/.presmium')
+  const work = join(ROOT, 'e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   dir = mkdtempSync(join(work, 'e2e-preview-protocol-'))
   cpSync(join(FIXTURE, 'workspace'), dir, { recursive: true })

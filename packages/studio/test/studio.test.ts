@@ -48,7 +48,7 @@ function git(dir: string, args: string[]): void {
   execFileSync('git', ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgSign=false', ...args], { cwd: dir })
 }
 
-function repository(files: Record<string, string>, under = join(ROOT, 'examples/demo/.presmium')): string {
+function repository(files: Record<string, string>, under = join(ROOT, 'e2e/fixtures/regression/.presmium')): string {
   mkdirSync(under, { recursive: true })
   const dir = mkdtempSync(join(under, 'studio-'))
   for (const [file, text] of Object.entries({ ...files, '.gitignore': 'node_modules/\ndist/\n.presmium/\n' })) {

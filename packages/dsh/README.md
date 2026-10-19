@@ -12,7 +12,7 @@ In a checkout of the repository the client bundle is built when DeepSeek Harness
 
 Conversation file links, code line references and the workspace file list open the same central editor. The adapter uses Harness's public resource resolver and workspace path helpers, keeping line locations, open tabs and unsaved changes together. Images, PDF, Office, spreadsheets and HTML retain Harness's dedicated previews. The same routing applies when Harness's own layout is enabled.
 
-Presmium provides one navigation shell and composes Harness's session browser and settings through public slots. Plugins and automations sit beside Settings in the activity bar and open global panels without losing document drafts. New chat, history and close actions use the conversation's resident header; the duplicate right-sidebar opener is removed. Auxiliary panels follow the actual resized track; on smaller windows, panels give way rather than covering each other. The fallback layout enables both Harness's `ui-layout` and `ui-sidebar`.
+Presmium provides one navigation shell and composes Harness's session browser and settings through public slots. Chat history is the single activity entry for history and conversation; selecting a history row restores chat even when the same session was hidden. Plugins and automations sit beside Settings in the activity bar and open global panels without losing document drafts. New chat, history and close actions use the conversation's resident header; the duplicate right-sidebar opener is removed. Auxiliary panels follow the actual resized track; on smaller windows, panels give way rather than covering each other. The fallback layout enables both Harness's `ui-layout` and `ui-sidebar`.
 
 ## Documentation
 

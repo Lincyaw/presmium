@@ -20,7 +20,7 @@ function normalized(path: string): string | undefined {
 }
 
 /** Use the Harness resolver for file links and line references, then open the canonical editor. */
-export function sourceLinks(ctx: DshClientContext, workbench: Workbench, panel: string | null): void {
+export function sourceLinks(ctx: DshClientContext, workbench: Workbench, showEditor: (layout: DshClientContext['layout']) => void): void {
   ctx.inject(['sidebarRightTabs', 'sidebarRight', 'sessions', 'layout'], inner => inner.effect(() => {
     let root: string | undefined
     let active = true
@@ -51,7 +51,7 @@ export function sourceLinks(ctx: DshClientContext, workbench: Workbench, panel: 
         const line = tab.navigation.params?.line
         tab.actions.close()
         if (inner.sidebarRight.isExpanded()) inner.sidebarRight.toggleExpanded()
-        inner.layout.selectPanel(panel)
+        showEditor(inner.layout)
         void workbench.openSource(target.document, target.path, typeof line === 'number' && Number.isInteger(line) && line > 0 ? { line, mark: true } : undefined)
       }, [tab.visible, tab.contentId, tab.navigation.revision])
       return <span data-pmw-source-route="" hidden />
@@ -66,7 +66,7 @@ export function sourceLinks(ctx: DshClientContext, workbench: Workbench, panel: 
         if (!target || normalized(absolutePath) !== normalized(resolveWorkspacePath(root, target.path))) return
         inner.sidebarRight.close(tab.id)
         if (inner.sidebarRight.isExpanded()) inner.sidebarRight.toggleExpanded()
-        inner.layout.selectPanel(panel)
+        showEditor(inner.layout)
         void workbench.openSource(target.document, target.path)
       }, [absolutePath, documents])
       return null

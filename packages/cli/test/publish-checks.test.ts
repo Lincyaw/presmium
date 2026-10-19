@@ -100,7 +100,7 @@ it('--external-links gives lychee the URLs on its stdin: a dead link is reported
 })
 
 it('publishes no document\'s source in a single deck\'s build: the link to another document stays as written, with a warning', async () => {
-  const work = join(ROOT, 'examples/demo/.presmium')
+  const work = join(ROOT, 'e2e/fixtures/regression/.presmium')
   mkdirSync(work, { recursive: true })
   const dir = mkdtempSync(join(work, 'document-link-'))
   copies.push(dir)

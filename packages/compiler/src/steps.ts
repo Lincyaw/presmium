@@ -36,11 +36,12 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
       }
       groups.set(group, current)
     }
-    const at = draft.reveal ? last + 1
+    const at = draft.at ?? (draft.reveal ? last + 1
       : draft.role === 'narration' ? current + Math.min(narrated, currentSpan)
       : draft.span > 0 ? last
       : group !== undefined ? groups.get(group)!
-      : 0
+      : 0)
+    if (draft.until !== undefined && draft.until <= at) report({ checkId: 'presmium.steps', severity: 'error', message: ':until: must be greater than the block’s starting step', source: draft.source })
     if (draft.role === 'visual') {
       current = at
       currentSpan = draft.span
@@ -49,11 +50,12 @@ export function scheduleSteps(drafts: BlockDraft[], report: (finding: Finding) =
     else if (draft.role === 'narration') {
       narrated++
     }
-    last = Math.max(last, at + draft.span)
+    last = Math.max(last, at + draft.span, draft.until ?? 0)
     return {
       id: ids[i]!,
       role: draft.role,
       at,
+      ...draft.until !== undefined ? { until: draft.until } : {},
       ...draft.span > 0 ? { span: draft.span } : {},
       ...draft.only ? { only: draft.only } : {},
       source: draft.source,

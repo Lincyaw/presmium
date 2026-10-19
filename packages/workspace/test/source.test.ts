@@ -1,4 +1,4 @@
-import { readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, RawResponse } from './helpers.ts'
@@ -76,6 +76,21 @@ describe('the source routes', () => {
     expect((await read('notes.md')).status).toBe(403)
     const files = await raw(`${url}/__presmium/presmium.workspace/files`)
     expect(files.json<{ files: { path: string }[] }>().files.map(file => file.path)).toContain('notes.md')
+  })
+
+  it('lists, reads and saves code in a directory matching the lecture glob without a lecture entry', async () => {
+    const path = 'examples/sample-repo/src/bpe.py'
+    mkdirSync(join(dir, 'examples/sample-repo/src'), { recursive: true })
+    writeFileSync(join(dir, path), 'def get_stats(tokens):\n    return {}\n')
+    const opened = await raw(`${url}/__presmium/presmium.workspace/source?path=${encodeURIComponent(path)}`)
+    expect(opened.status).toBe(200)
+    const { version } = opened.json<{ version: string }>()
+    const content = 'def get_stats(tokens):\n    return {"count": len(tokens)}\n'
+    expect((await raw(`${url}/__presmium/presmium.workspace/source`, { json: { path, content, base: version } })).status).toBe(200)
+    expect(file(path)).toBe(content)
+    expect((await read(path)).status).toBe(403)
+    const files = (await raw(`${url}/__presmium/presmium.workspace/files`)).json<{ files: { path: string }[] }>().files
+    expect(files.filter(item => item.path === path)).toHaveLength(1)
   })
 
   it('refuses a request from another site (403), reading or saving', async () => {

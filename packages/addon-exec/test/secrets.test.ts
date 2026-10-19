@@ -7,7 +7,7 @@ import type { CodeNode, IRDocument } from '@presmium/kernel'
 import { afterAll, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
-const WORK = fileURLToPath(new URL('../../../examples/demo/.presmium', import.meta.url))
+const WORK = fileURLToPath(new URL('../../../e2e/fixtures/regression/.presmium', import.meta.url))
 const dirs: string[] = []
 afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })))
 

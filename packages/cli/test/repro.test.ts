@@ -6,7 +6,7 @@ import { presmium } from './helpers.ts'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/repro', import.meta.url))
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url))
-const WORK = join(ROOT, 'examples/demo/.presmium')
+const WORK = join(ROOT, 'e2e/fixtures/regression/.presmium')
 
 const copies: string[] = []
 afterAll(() => copies.forEach(dir => rmSync(dir, { recursive: true, force: true })))

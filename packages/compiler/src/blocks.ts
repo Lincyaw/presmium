@@ -25,6 +25,8 @@ import { BODY, ROLE, sourceOf } from './source.ts'
 import type { Parser } from './source.ts'
 
 export interface BlockDraft {
+  at?: number
+  until?: number
   label?: string
   kind: string
   role: BlockRole
@@ -84,6 +86,8 @@ const TAG = /<(\/?)([A-Za-z][\w:.-]*)([^<>]*)(>?)/g
 const MYST_DIRECTIVES = defaultOptions.directives as unknown as { name: string, alias?: string[], options?: Record<string, unknown> }[]
 
 interface Scope {
+  at?: number
+  until?: number
   visual: boolean
   only?: RendererId[]
   items?: boolean
@@ -136,7 +140,7 @@ async function convert(nodes: MdastNode[], scope: Scope, ctx: BlockContext, out:
       draft.span = items - 1
     }
     const audience = draft.audience ?? scope.audience
-    out.blocks.push({ ...draft, label: draft.label ?? label, reveal: draft.reveal === true, group: scope.group, only: scope.only, ...audience ? { audience } : {} })
+    out.blocks.push({ ...draft, at: draft.at ?? scope.at, until: draft.until ?? scope.until, label: draft.label ?? label, reveal: draft.reveal === true, group: scope.group, only: scope.only, ...audience ? { audience } : {} })
     label = undefined
   }
 
@@ -211,7 +215,21 @@ async function directive(node: MdastNode, source: SourcePos, scope: Scope, targe
       }
       only = scope.only ? scope.only.filter(id => ids.includes(id)) : ids
     }
+    const position = (key: 'at' | 'until') => {
+      if (options[key] === undefined) return scope[key]
+      const value = Number(options[key])
+      if (options[key] === true || options[key] === '' || !Number.isInteger(value) || value < 0) {
+        fail(`:${key}: must be a non-negative integer`)
+        return scope[key]
+      }
+      return value
+    }
+    const at = position('at')
+    const until = position('until')
+    if (at !== undefined && until !== undefined && until <= at) fail(':until: must be greater than :at:')
+    if (at !== undefined && reveal !== undefined) fail(':at: and :reveal: cannot be combined')
     const inner: Scope = {
+      at, until,
       visual: scope.visual || name === 'slide',
       only,
       items: reveal === undefined ? scope.items : reveal === 'items',

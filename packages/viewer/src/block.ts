@@ -110,7 +110,7 @@ export const BlockView = defineComponent({
       const visible = props.expanded || blockVisible(block, props.step)
       return h('div', {
         'ref': el,
-        'class': [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, { 'pm-block--overlay': isOverlay(block), 'pm-hidden': !visible }],
+        'class': [BLOCK_CLASS, `pm-block--${block.role}`, `pm-block--${block.node.type}`, { 'pm-step-range': block.until !== undefined, 'pm-block--overlay': isOverlay(block), 'pm-hidden': !visible }],
         'data-block': block.id,
         'data-at': block.at,
         'data-component': block.node.type === 'component' ? block.node.name : undefined,

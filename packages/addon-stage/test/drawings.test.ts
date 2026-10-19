@@ -8,7 +8,7 @@ import type { Browser, Page } from '@playwright/test'
 import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
-const DEMO = fileURLToPath(new URL('../../../examples/demo', import.meta.url))
+const DEMO = fileURLToPath(new URL('../../../e2e/fixtures/regression', import.meta.url))
 const ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => name !== 'NODE_ENV'))
 
 const LECTURE = `---

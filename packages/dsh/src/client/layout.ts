@@ -37,13 +37,31 @@ export interface LayoutState {
   }
 }
 
+function revealConversation(d: LayoutState): void {
+  d.panelInfo.activePanelId = null
+  d.layoutInfo.dockOpen = true
+  d.layoutInfo.view = 'conversation'
+  if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
+}
+
+function showHistory(d: LayoutState): void {
+  d.panelInfo.activePanelId = null
+  d.layoutInfo.activity = 'sessions'
+  d.layoutInfo.sideOpen = true
+  d.layoutInfo.view = 'sessions'
+  if (d.layoutInfo.viewportWidth < SIDE_COLLAPSE) {
+    d.layoutInfo.sideExpanded = d.layoutInfo.viewportWidth >= NARROW
+    d.layoutInfo.dockOpen = false
+  } else d.layoutInfo.dockOpen = true
+}
+
 export function createLayoutStore() {
   return defineStore({
     init: (): LayoutState => ({
       panelInfo: { activePanelId: null },
       layoutInfo: {
         viewportWidth: window.innerWidth,
-        sideOpen: true,
+        sideOpen: false,
         sideExpanded: false,
         side: SIDE_DEFAULT,
         dock: DOCK_DEFAULT,
@@ -88,9 +106,19 @@ export function createLayoutStore() {
         d.layoutInfo.dockOpen = open
         if (open && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
       },
-      toggleConversation: (d: LayoutState) => {
-        d.layoutInfo.dockOpen = !d.layoutInfo.dockOpen
-        if (d.layoutInfo.dockOpen && d.layoutInfo.viewportWidth < SIDE_COLLAPSE) d.layoutInfo.sideExpanded = false
+      revealConversation,
+      showHistory,
+      toggleConversations: (d: LayoutState) => {
+        const info = d.layoutInfo
+        if (info.viewportWidth < NARROW) {
+          if (info.view === 'conversation') showHistory(d)
+          else revealConversation(d)
+        } else {
+          const historyShown = info.activity === 'sessions' && (info.viewportWidth < SIDE_COLLAPSE ? info.sideExpanded : info.sideOpen)
+          if (historyShown && info.viewportWidth < SIDE_COLLAPSE) revealConversation(d)
+          else if (historyShown && info.dockOpen) info.sideOpen = false
+          else showHistory(d)
+        }
       },
       setRightbar: (d: LayoutState, px: number) => {
         d.layoutInfo.rightbar = clamp(px, RIGHTBAR_MIN, Math.max(RIGHTBAR_MIN, d.layoutInfo.viewportWidth * RIGHTBAR_MAX_RATIO))
@@ -134,6 +162,7 @@ export type LayoutActions = ReturnType<LayoutStore['create']>['actions']
 
 export class LayoutController {
   #navigation = new AbortController()
+  #preserveNextConversation = false
   readonly #actions: LayoutActions
   readonly #hasMainPanel: (id: string) => boolean
   readonly panelInfo: DshObservable<LayoutState['panelInfo']>
@@ -148,6 +177,20 @@ export class LayoutController {
     if (id !== null && !this.#hasMainPanel(id)) throw new Error(`layout.selectPanel: main panel "${id}" is not registered`)
     this.#navigation.abort()
     this.#actions.selectPanel(id)
+    if (id === null && !this.#preserveNextConversation) this.#actions.revealConversation()
+    this.#preserveNextConversation = false
+  }
+
+  /** Initial workspace binding must not replace the author's current view. Called by openWorkspace's beforeOpen. */
+  preserveNextConversation(): void {
+    this.#preserveNextConversation = true
+  }
+
+  /** Source navigation selects the document without revealing the conversation. */
+  showDocument(): void {
+    this.#navigation.abort()
+    this.#actions.selectPanel(null)
+    this.#actions.show('source')
   }
 
   beginNavigation(): AbortSignal {

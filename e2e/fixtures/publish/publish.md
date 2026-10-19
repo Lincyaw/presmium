@@ -15,7 +15,7 @@ def add(a, b):
     return a + b
 ```
 
-导出：`pnpm --filter presmium-demo exec presmium-export . --output demo.pdf`。代码引用插件生成的永久链接同样会被校验。
+导出：`presmium-export . --output lecture.pdf`。代码引用插件生成的永久链接同样会被校验。
 
 :::{slide}
 **离线**：两种形态的构建产物都带 Service Worker，打开过一次之后断网也能放映；远程图片（例如 PlantUML 图）在编译时下载到文稿的 `.presmium/assets`。
@@ -32,7 +32,7 @@ def add(a, b):
 **可视化差异**：`presmium-diff <refA> <refB>` 逐页截图比较两个提交的幻灯片，列出有差异的页。
 :::
 
-可视化差异：`pnpm --filter presmium-demo exec presmium-diff HEAD~1 HEAD`，报告写在 `.presmium/diff/report.md`。
+可视化差异：`presmium-diff HEAD~1 HEAD`，报告写在 `.presmium/diff/report.md`。
 
 (publish-scrolly)=
 ## 滚动叙事

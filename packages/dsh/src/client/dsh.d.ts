@@ -120,7 +120,7 @@ interface DshClientContext {
   sidebarRight: { active(): { id: string, kind: string, contentId: string } | undefined, close(id: string): void, isExpanded(): boolean, toggleExpanded(): void }
   layout: { selectPanel(id: string | null): void }
   sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }> }
-  uiWorkspace: { openWorkspace(id: string): Promise<void>, startSession(id?: string): void }
+  uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void }
   workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
 }
 

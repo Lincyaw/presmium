@@ -44,8 +44,8 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `presmium` | npm | `pnpm add -g presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |
 | `create-presmium` | npm | `presmium new` 与 `pnpm create presmium`：新建讲义、工作区或插件项目（不在 `@presmium` 作用域中：`pnpm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，在源码仓库中直接用源） |
 | `presmium-vscode` | 否 | VS Code 扩展：预打包为 `.vsix`，发布到扩展市场，不发布到 npm |
-| `presmium-demo` | 否 | 示例讲义（`examples/demo`） |
-| `presmium-example-workspace` | 否 | 示例工作区（`examples/workspace`） |
+| `presmium-cs336` | 否 | 完整 CS336 课程示例（`examples/cs336`） |
+| `presmium-regression-fixture` | 否 | 集成测试的私有文稿与依赖（`e2e/fixtures/regression`） |
 | `presmium-docs` | 否 | 文档站（`site/`），一个 Presmium 工作区，`pnpm --filter presmium-docs build` 构建 |
 
 不在工作区中的测试替身也不发布：`packages/*/test/fixtures/**` 与 `e2e/fixtures/**` 中的插件与文稿都是 `private`，例如消费者安装测试的第三方插件 `presmium-plugin-hello`（`e2e/fixtures/consumer/plugin`）。`packages/render-slides/theme` 是幻灯片的默认主题，随 `@presmium/render-slides` 发布，不单独发布。
