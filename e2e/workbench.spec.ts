@@ -44,9 +44,22 @@ async function openDocument(page: Page, title: string): Promise<void> {
   await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', `${title} 的预览`)
 }
 
+async function revealFile(page: Page, path: string): Promise<void> {
+  const parts = path.split('/')
+  for (let i = 1; i < parts.length; i++) {
+    const folder = page.locator(`.pmw-tree__file[data-node="directory:${parts.slice(0, i).join('/')}"]:visible`)
+    await expect(folder).toBeVisible()
+    if (await folder.getAttribute('data-open') !== 'true') await folder.click()
+    await expect(folder).toHaveAttribute('data-open', 'true')
+  }
+}
+
 async function openFile(page: Page, name: string, text: string): Promise<void> {
-  if (!await page.locator('.pmw-frame__side-files').isVisible()) await page.locator('[data-activity="files"]').click()
   const path = name.includes('/') ? name : `lectures/intro/${name === 'more.md' ? 'pages/' : ''}${name}`
+  if (await page.locator(`.pmw-tree__file[data-path="${path}"]:visible`).count() === 0 && await page.locator('.pmw-frame').count()) {
+    if (!await page.locator('.pmw-frame__side-files').isVisible()) await page.locator('[data-activity="files"]').click()
+  }
+  await revealFile(page, path)
   await page.locator(`.pmw-tree__file[data-path="${path}"]:visible`).click()
   await expect(editor(page)).toContainText(text)
 }
@@ -137,19 +150,41 @@ test.describe('the root layout', () => {
     await studio.open(page)
     await expect(page.locator('.pmw-home__card')).toHaveCount(2)
     const search = page.getByRole('combobox', { name: '搜索文档与命令' })
-    await search.fill('分词入门')
+    await expect(conversation(page).locator('[contenteditable="true"]')).toBeFocused()
+    await page.keyboard.press('Control+k')
+    await expect(search).toBeFocused()
+    await page.keyboard.type('分词入门')
+    await expect(search).toHaveValue('分词入门')
     await search.press('ArrowDown')
     await search.press('Enter')
     await expect(page.locator('.pmw-preview__frame')).toHaveAttribute('title', '分词入门 的预览')
     await page.locator('[data-activity="files"]').click()
     await expect(page.locator('.pmw-files__title')).toHaveText('工作台用例')
-    const folder = page.locator('.pmw-tree__file').filter({ hasText: /^pages$/ })
+    const more = page.locator('.pmw-tree__file', { hasText: 'more.md' })
+    await expect(more).toHaveCount(0)
+    const lectures = page.locator('.pmw-tree__file[data-node="directory:lectures"]')
+    await expect(lectures).toHaveAttribute('data-open', 'false')
+    await lectures.click()
+    await page.locator('.pmw-tree__file[data-node="directory:lectures/intro"]').click()
+    const folder = page.locator('.pmw-tree__file[data-node="directory:lectures/intro/pages"]')
+    await expect(folder).toHaveAttribute('data-open', 'false')
+    await expect(more).toHaveCount(0)
     await folder.click()
-    await expect(page.locator('.pmw-tree__file', { hasText: 'more.md' })).toHaveCount(0)
-    await folder.press('ArrowRight')
+    await expect(folder).toHaveAttribute('data-open', 'true')
+    await expect(more).toBeVisible()
+    await page.keyboard.press('ArrowLeft')
+    await expect(more).toHaveCount(0)
+    await page.keyboard.press('ArrowRight')
+    await expect(more).toBeVisible()
     await page.keyboard.press('ArrowDown')
     await page.keyboard.press('Space')
     await expect(editor(page)).toContainText('延伸一节')
+    await page.reload()
+    await openDocument(page, '分词入门')
+    await page.locator('[data-activity="files"]').click()
+    for (const id of ['lectures', 'lectures/intro', 'lectures/intro/pages']) {
+      await expect(page.locator(`.pmw-tree__file[data-node="directory:${id}"]`)).toHaveAttribute('data-open', 'true')
+    }
   })
 
   test('switching documents keeps the same workspace session', async ({ page }) => {
@@ -409,8 +444,17 @@ test.describe('the root layout', () => {
     const problem = problems.locator('.pmw-problem').filter({ hasText: 'nosuch' })
     await expect(problem).toContainText('lectures/intro/pages/more.md:8')
     await page.locator('.pmw-source__tab', { hasText: 'lecture.md' }).getByRole('tab').click()
+    if (!await page.locator('.pmw-frame__side-files').isVisible()) await page.locator('[data-activity="files"]').click()
+    for (const id of ['directory:lectures/intro/pages', 'directory:lectures/intro', 'directory:lectures']) {
+      await page.locator(`.pmw-tree__file[data-node="${id}"]`).click()
+      await expect(page.locator(`.pmw-tree__file[data-node="${id}"]`)).toHaveAttribute('data-open', 'false')
+    }
+    const more = page.locator('.pmw-tree__file[data-path="lectures/intro/pages/more.md"]')
+    await expect(more).toHaveCount(0)
     await problem.click()
     await expect(page.locator('.pmw-source__tab[data-active]')).toContainText('more.md')
+    await expect(page.locator('.pmw-tree__file[data-node="directory:lectures/intro/pages"]')).toHaveAttribute('data-open', 'true')
+    await expect(more).toHaveAttribute('data-active', 'true')
     await expect(page.locator('[data-status="line"]')).toHaveText('第 8 行')
   })
 

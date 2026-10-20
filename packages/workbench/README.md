@@ -20,7 +20,7 @@ export function Centre({ open }: { open: boolean }) {
 }
 ```
 
-The workspace service's routes are reached under the page's `api/presmium/` (the host passes them on to the service); React 18 is a peer dependency. Interactive controls wrap Radix Primitives; cmdk owns command search, React Arborist owns the file tree, and react-resizable-panels owns pane resizing. Presmium maintains the visual tokens and the document, save, review and preview behavior, rather than duplicating these libraries' focus, keyboard, positioning and drag logic.
+The workspace service's routes are reached under the page's `api/presmium/` (the host passes them on to the service); React 18 is a peer dependency. Interactive controls wrap Radix Primitives; cmdk owns command search, React Arborist owns the file tree, and react-resizable-panels owns pane resizing. Presmium maintains the visual tokens and the document, save, review and preview behavior, rather than duplicating these libraries' focus, keyboard, positioning and drag logic. The file tree follows VS Code's Explorer: folders start closed, keep their open state per workspace or document, sort before files, and open a file's folders and scroll to it when a source is opened elsewhere.
 
 Documents open in preview, with source and side by side modes. Text selections and picked preview blocks become conversation context. `WorkbenchProvider` protects unsaved changes when closing files, leaving a document or unloading the page. Set `protectChanges={false}` on auxiliary providers when several panels share one workbench, keeping the protection mounted once in its primary provider.
 

@@ -206,7 +206,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
 
   const sidePanel = (<>
           <aside className="pmw-frame__side" aria-label={t.side} data-shown={sideShown || undefined} data-content={sideContent}>
-            <div className="pmw-frame__side-files" hidden={sideContent !== 'files'}><FilesOrDocuments workbench={workbench} /></div>
+            <div className="pmw-frame__side-files" hidden={sideContent !== 'files'}>{!narrow && <FilesOrDocuments workbench={workbench} />}</div>
             {sideContent === 'changes' && <ChangesPanel />}
           </aside>
           <div className="pmw-frame__sidebar" data-pmw-slot="sidebar" data-shown={(narrow ? view === 'sessions' : sideShown && sideContent === 'sessions') || undefined}>{sidebar}</div>
