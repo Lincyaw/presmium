@@ -36,8 +36,8 @@ afterAll(() => {
   if (project) rmSync(project, { recursive: true, force: true })
 })
 
-const presmiumBin = () => join(project, 'node_modules/presmium/bin/presmium.mjs')
-const installed = (name: string) => join(dirname(realpathSync(join(project, 'node_modules/presmium'))), name)
+const presmiumBin = () => join(project, 'node_modules/@lincyaw/presmium/bin/presmium.mjs')
+const installed = (name: string) => realpathSync(join(project, 'node_modules', name))
 const presmium = (args: string[], cwd = project) => run(process.execPath, [presmiumBin(), ...args], { cwd, env: userEnv() })
 
 async function start(args: string[], ready: RegExp, env: Record<string, string> = {}): Promise<{ output: () => string, stop: () => Promise<void> }> {

@@ -50,7 +50,7 @@ presmium/
 │   ├── host/                @lincyaw/host                      形态无关的宿主接口与组合式函数（Vue）
 │   ├── compiler/            @lincyaw/compiler                  MyST 解析、编译步骤、执行缓存、IR
 │   ├── cli/                 @lincyaw/cli                       presmium new | build | dev | ir | check | serve | studio；./testing 供各包的集成测试运行 CLI
-│   ├── presmium/            presmium                            pnpm add -g presmium：CLI 连同渲染端与官方插件；转交给项目里装的 presmium
+│   ├── presmium/            presmium                            pnpm add -g @lincyaw/presmium：CLI 连同渲染端与官方插件；转交给项目里装的 presmium
 │   ├── create-presmium/     create-presmium                     presmium new、pnpm create presmium：新建讲义、工作区或插件项目（模板在打包时从仓库复制）
 │   ├── render-slides/       @lincyaw/render-slides             幻灯片渲染端（生成 Slidev 项目）
 │   ├── render-notebook/     @lincyaw/render-notebook           notebook 渲染端（.ipynb）

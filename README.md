@@ -9,7 +9,7 @@
 需要 Node.js 22.19 以上与 pnpm（`corepack enable pnpm`）。第一次全局安装前运行一次 `pnpm setup`。
 
 ```sh
-pnpm add -g presmium
+pnpm add -g @lincyaw/presmium
 ```
 
 ## 使用

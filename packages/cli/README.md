@@ -9,7 +9,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 Most people install the `presmium` package, which brings this command with the renderers and the official plugins:
 
 ```sh
-pnpm add -g presmium
+pnpm add -g @lincyaw/presmium
 ```
 
 In a project that picks its own renderers and plugins, install the CLI with them (Node.js 22.19 or later):

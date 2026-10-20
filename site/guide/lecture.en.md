@@ -21,7 +21,7 @@ This guide is for people who write lectures. It starts with installing Presmium 
 Presmium needs Node.js 22.19 or later and pnpm (`corepack enable pnpm`; run `pnpm setup` once before the first global install). Install `presmium` globally; it comes with the three renderers and every official plugin:
 
 ```sh
-pnpm add -g presmium
+pnpm add -g @lincyaw/presmium
 presmium new        # asks which kind of project (a lecture, a workspace or a plugin) and writes its directory and a first document
 ```
 

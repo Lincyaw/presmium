@@ -29,7 +29,7 @@ description: "帮助用户把内容写成可阅读、可演示的 Presmium 讲�
 
 从材料和现有内容推断受众、目标与交付形式。确实会改变内容取舍却无法推断的信息再询问；不要把配置选项变成问卷。
 
-新项目需要 Node.js 22.19 以上与 pnpm。安装 `pnpm add -g presmium` 后：
+新项目需要 Node.js 22.19 以上与 pnpm。安装 `pnpm add -g @lincyaw/presmium` 后：
 
 ```sh
 presmium new my-lecture --type lecture --title 分词入门

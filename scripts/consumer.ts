@@ -12,7 +12,7 @@ export const ROOT = fileURLToPath(new URL('..', import.meta.url))
 
 export const FIXTURES = join(ROOT, 'e2e/fixtures/consumer')
 
-export const ESSENTIALS = ['presmium']
+export const ESSENTIALS = ['@lincyaw/presmium', '@lincyaw/kernel', '@lincyaw/slidev-addon-core']
 
 export const STUDIO = [...ESSENTIALS, '@lincyaw/studio']
 
@@ -137,11 +137,11 @@ export function userEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 }
 
 export function presmiumBin(project: string): string {
-  return join(project, 'node_modules/presmium/bin/presmium.mjs')
+  return join(project, 'node_modules/@lincyaw/presmium/bin/presmium.mjs')
 }
 
 export function installedDir(project: string, name: string): string {
-  return join(dirname(realpathSync(join(project, 'node_modules/presmium'))), name)
+  return join(dirname(realpathSync(join(project, 'node_modules/@lincyaw/presmium'))), name)
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

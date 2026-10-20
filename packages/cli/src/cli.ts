@@ -342,7 +342,7 @@ function installed(name: string): string | undefined {
 async function create(argv: string[]): Promise<number> {
   const entry = installed('create-presmium')
   if (!entry) {
-    process.stderr.write('presmium new: create-presmium is not installed; it comes with the presmium package: pnpm add -g presmium\n')
+    process.stderr.write('presmium new: create-presmium is not installed; it comes with the presmium package: pnpm add -g @lincyaw/presmium\n')
     return 2
   }
   const { main: createMain } = await createJiti(import.meta.url).import<{ main(argv: string[]): Promise<number> }>(entry)

@@ -20,7 +20,7 @@ Presmium 把一份 MyST Markdown 讲义编译为中间表示（IR），再由渲
 Presmium 需要 Node.js 22.19 或更新的版本与 pnpm（`corepack enable pnpm`；第一次全局安装前运行一次 `pnpm setup`）。全局安装 `presmium`，它带着三个渲染端与全部官方插件：
 
 ```sh
-pnpm add -g presmium
+pnpm add -g @lincyaw/presmium
 presmium new        # 问你要哪种项目（讲义、工作区或插件），生成目录与第一份文稿
 ```
 

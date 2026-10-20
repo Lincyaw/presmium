@@ -42,7 +42,7 @@ export function studioHome(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 export function presmiumBin(): string {
-  return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('presmium/package.json')), 'bin', 'presmium.mjs')
+  return join(dirname(createRequire(join(PACKAGE_DIR, 'package.json')).resolve('@lincyaw/presmium/package.json')), 'bin', 'presmium.mjs')
 }
 
 const urlHost = (host: string) => (host.includes(':') ? `[${host}]` : host)

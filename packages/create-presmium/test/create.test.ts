@@ -73,7 +73,7 @@ async function install(dir: string): Promise<void> {
 }
 
 function presmiumBin(project: string): string {
-  const own = join(project, 'node_modules/presmium/bin/presmium.mjs')
+  const own = join(project, 'node_modules/@lincyaw/presmium/bin/presmium.mjs')
   return existsSync(own) ? own : join(project, 'node_modules/@lincyaw/cli/bin/presmium.mjs')
 }
 

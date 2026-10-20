@@ -58,7 +58,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     readme: (kind, title) => kind === 'lecture'
       ? `# ${title}
 
-一份 Presmium 讲义：源码是 \`lecture.md\`（MyST Markdown），Presmium 把它编译为网页、幻灯片与 notebook。命令来自 \`pnpm add -g presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
+一份 Presmium 讲义：源码是 \`lecture.md\`（MyST Markdown），Presmium 把它编译为网页、幻灯片与 notebook。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
 
 \`\`\`sh
 presmium dev       # 实时预览网页与幻灯片
@@ -70,7 +70,7 @@ presmium build     # 构建网页、幻灯片与 notebook，产物在 dist/
 `
       : `# ${title}
 
-一个 Presmium 工作区：每个子目录中的 \`lecture.md\` 是一份文档（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
+一个 Presmium 工作区：每个子目录中的 \`lecture.md\` 是一份文档（第一份在 \`intro/\`），\`presmium.workspace.yaml\` 是工作区的配置。命令来自 \`pnpm add -g @lincyaw/presmium\`；在本目录 \`pnpm install\` 之后，用的是 \`package.json\` 锁定的版本。
 
 \`\`\`sh
 presmium serve           # 文档列表与各文档的实时预览，只在本机
@@ -132,7 +132,7 @@ Options:
       ? `# ${title}
 
 A Presmium lecture: \`lecture.md\` (MyST Markdown) is the source, which Presmium compiles to a web page,
-slides and a notebook. The commands come from \`pnpm add -g presmium\`; after \`pnpm install\` here, they
+slides and a notebook. The commands come from \`pnpm add -g @lincyaw/presmium\`; after \`pnpm install\` here, they
 are the version \`package.json\` pins.
 
 \`\`\`sh
@@ -146,7 +146,7 @@ presmium build     # builds the web page, the slides and the notebook into dist/
       : `# ${title}
 
 A Presmium workspace: the \`lecture.md\` of each subdirectory is a document (the first in \`intro/\`), and
-\`presmium.workspace.yaml\` is the workspace's configuration. The commands come from \`pnpm add -g presmium\`;
+\`presmium.workspace.yaml\` is the workspace's configuration. The commands come from \`pnpm add -g @lincyaw/presmium\`;
 after \`pnpm install\` here, they are the version \`package.json\` pins.
 
 \`\`\`sh

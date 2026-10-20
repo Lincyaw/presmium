@@ -5,7 +5,7 @@ import { join } from 'node:path'
 const root = new URL('..', import.meta.url).pathname
 const REPOSITORY = 'git+https://github.com/Lincyaw/presmium.git'
 const SHARED = new Set(['@lincyaw/kernel', '@lincyaw/host', '@lincyaw/viewer', '@lincyaw/compiler'])
-const UNSCOPED = new Set(['presmium', 'create-presmium'])
+const UNSCOPED = new Set(['create-presmium'])
 const ZERO = new Set(['@lincyaw/workbench', '@lincyaw/dsh', '@lincyaw/studio'])
 
 const read = file => JSON.parse(readFileSync(join(root, file), 'utf8'))

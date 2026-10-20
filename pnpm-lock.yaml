@@ -1082,12 +1082,12 @@ importers:
       '@lincyaw/dsh':
         specifier: workspace:*
         version: link:../dsh
+      '@lincyaw/presmium':
+        specifier: workspace:*
+        version: link:../presmium
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
-      presmium:
-        specifier: workspace:*
-        version: link:../presmium
     devDependencies:
       '@lincyaw/cli':
         specifier: workspace:*

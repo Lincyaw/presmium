@@ -1,6 +1,6 @@
 # create-presmium
 
-Starts a new [Presmium](https://github.com/Lincyaw/presmium) project: a lecture, a workspace or a plugin. `presmium new` (from `pnpm add -g presmium`) runs it; so does `pnpm create presmium`.
+Starts a new [Presmium](https://github.com/Lincyaw/presmium) project: a lecture, a workspace or a plugin. `presmium new` (from `pnpm add -g @lincyaw/presmium`) runs it; so does `pnpm create presmium`.
 
 ```sh
 presmium new

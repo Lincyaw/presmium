@@ -41,7 +41,7 @@ Presmium 的包用 [Changesets](https://changesets.dev) 管理版本与变更记
 | `@lincyaw/dsh` | npm | DeepSeek Harness 的 bundle：工作台的宿主部分（工具、确认策略、文稿上下文、技能、路由）与客户端部分（根布局、面板、主题与品牌）；0.x、实验性，版本号不随统一版本（`docs/design-dsh.md` 12 节）；技能在打包时从 `.agents/skills` 复制，客户端部分在打包时预编译（`build/client.mjs`，`docs/design-dsh.md` 7.8 节） |
 | `@lincyaw/studio` | npm | `presmium studio`：组装 Presmium 的 profile，启动并监管 DeepSeek Harness（精确版本的依赖）与工作区服务，只打印一个网址；命令 `presmium-studio`（`pnpm add -g @lincyaw/studio`），依赖 `presmium`，项目里装了它时 `presmium studio` 转交给它；0.x、实验性，版本号不随统一版本 |
 | `@lincyaw/workbench` | npm | 工作台的 React 面板与工作区服务的客户端（首页、文件树、源码编辑器、问题、预览）；0.x、实验性，版本号不随统一版本，由 `@lincyaw/dsh` 的客户端部分打包使用 |
-| `presmium` | npm | `pnpm add -g presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |
+| `@lincyaw/presmium` | npm | `pnpm add -g @lincyaw/presmium`：`presmium` 命令连同三个渲染端与全部官方插件；文稿与工作区中找不到的插件从它的依赖中找，项目里装有 `@lincyaw/presmium` 时全局命令转交给项目里的那一份；`presmium new` 运行 `create-presmium` |
 | `create-presmium` | npm | `presmium new` 与 `pnpm create presmium`：新建讲义、工作区或插件项目（不在 `@lincyaw` 作用域中：`pnpm create presmium` 运行的就是这个名字的包；它的模板在打包时从各自的源复制，在源码仓库中直接用源） |
 | `presmium-vscode` | 否 | VS Code 扩展：按平台预打包为 `.vsix`，含语言服务与网页渲染运行时，附加到 GitHub Release；不发布到 npm，扩展市场发布另行处理 |
 | `presmium-cs336` | 否 | 完整 CS336 课程示例（`examples/cs336`） |
@@ -64,7 +64,7 @@ pnpm changeset          # 选包与升级类型（patch、minor、major），写
 
 1. `pnpm changeset version`：按累积的变更记录升级全部公开包的版本（预发布模式中为 `1.0.0-rc.<n>`），写各包的 `CHANGELOG.md`；然后 `pnpm install` 更新锁文件，提交。
 2. `pnpm release:check`：`pnpm -r publish --dry-run --no-git-checks`，按发布的样子打包每个公开的包而不上传。消费者安装测试用同样的压缩包在单仓之外的项目中安装、检查、构建与运行：`pnpm test` 中的 `packages/cli/test/consumer.test.ts`，`pnpm e2e` 中的 `e2e/consumer.spec.ts`；`pnpm consumer [<目录>]` 单独做一个这样的项目。
-3. `pnpm changeset publish`：发布版本尚不在 npm 上的包（预发布模式中带 `rc` 标签，`pnpm add -g presmium` 不会装到它），然后 `git push --follow-tags`。
+3. `pnpm changeset publish`：发布版本尚不在 npm 上的包（预发布模式中带 `rc` 标签，`pnpm add -g @lincyaw/presmium` 不会装到它），然后 `git push --follow-tags`。
 4. 正式的 1.0.0：`pnpm changeset pre exit`，再走一遍 1 至 3。
 
 `1.0.0-rc.0` 已经写在各包中，第一次发布从第 2 步开始。
