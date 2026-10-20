@@ -227,7 +227,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
   - 出口：`.` 是 `presmium-workbench` 行的宿主部分，`./client` 是预编译的客户端包，其余各行各有一个出口，`./launch` 供启动器传入补丁；
   - `engines.dsh` 与对 `@deepseek-ai/dsh-*` 的精确对等依赖。dsh 在安装与启动时都检查它们，不满足时拒绝。
 - 宿主部分：每行一个普通 ESM 的入口文件，入口用 jiti 加载 `src/node/` 的 `.ts` 源码。
-- 补丁：dsh 的一个包只有一个 bundle 层，只在某个载体中出现的行因此放在另外的补丁中，由启动器以 `--patch` 传入（`@lincyaw/dsh/launch`）：`profile.patch.yml`（全部载体：隐私、技能、第一次使用、沙箱、persona，6.6 节）与 `web.patch.yml`（web 载体：`presmium-workspaces`、`presmium-routes`、`presmium-workbench` 三行与它们的设置，以及界面上关掉的行）。headless 与 acp 载体不带 `web.patch.yml`，启动时不警告有行没有激活。
+- 补丁：dsh 的一个包只有一个 bundle 层，只在某个载体中出现的行因此放在另外的补丁中，由启动器以 `--patch` 传入（`@lincyaw/dsh/launch`）：`profile.patch.yml`（全部载体：隐私、技能、第一次使用、沙箱、persona，6.6 节）与 `web.patch.yml`（web 载体：`presmium-workspaces`、`presmium-routes`、`presmium-workbench` 三行与它们的设置、内置的 `preset-authoring` 预设，以及界面上关掉的行）。headless 与 acp 载体不带 `web.patch.yml`，启动时不警告有行没有激活。
 - 技能：源只有 `.agents/skills` 一份，打包时复制进包内（副本不入库）；`scripts/check-skills.mjs` 核对 bundle 登记的技能都在源中。
 
 ### 6.2 宿主部分的行
@@ -268,7 +268,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 ### 6.4 文稿上下文与技能
 
-- **指南**：一段固定的说明放进 system 消息：这是一个 Presmium 工作区，怎样用工具与技能，修改先审阅再提交。web 载体中 Presmium 的角色也由它说明（6.6 节的 persona）。
+- **指南**：一段固定的说明放进 system 消息：这是一个 Presmium 工作区，怎样用工具与技能，修改先审阅再提交。web 载体中 Presmium 的角色由内置预设 `preset-authoring` 的 persona 说明（6.6 节）。
 - **文稿快照**：网页会话按界面选中的文稿获取上下文，会话工作目录始终是工作区根目录；未选择文稿时明确告知模型。快照包含标题、语言、入口文件、章节（ID 与标题）、诊断数、当前位置与当前的焦点（8.6 节）。dsh 的提供者接口是同步的；bundle 在每一步之前（`agent/pre-step`）经 MCP 重读快照，不另维护缓存：读取类调用只要几毫秒（第 9 节），快照也就总是新的。快照以 user 角色写进会话日志，所以“模型看得到的都会记下来”不需要另做。上下文与工具一样登记在 agent 的作用域中。
 - **技能**：在运行时登记（`ctx.skills.register`）。skill-filesystem 的 `agentsHome` 固定到 Presmium 状态目录中的空目录，用户的 `~/.agents/skills` 不进入技能目录；文稿项目自己的 `.agents/skills` 保留，它是作者自己的材料。项目中的同名技能会覆盖 bundle 的那份，这一点写进技能的说明。
 
@@ -295,7 +295,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - **技能**：skill-filesystem 的 `agentsHome` 与环境变量 `DSH_AGENTS_HOME` 都指向 Presmium 状态目录中的空目录。
 - **第一次使用**：工作区控制器的 `documentsDirectory` 指向 Presmium 的状态目录，并在启动时登记好文档的工作区。两者都做到，第一次使用就不会在 `~/Documents` 下建目录。
 - **沙箱**：`workspace-write`，确认策略为 ask。
-- **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体的 4 个 agent 预设（`preset-standard` 等）各在自己的配置中带一个 `persona` 行，补丁只能按 ID 找到顶层与 group 中的行，所以不换：web 中 Presmium 的角色由 `presmium-context` 的指南说明，编程 agent 的 `harness-dev-context` 行关掉，预设自己的“You are a coding agent powered by …”仍在。
+- **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体用 `web.patch.yml` 中声明的预设 `preset-authoring` 承载 Presmium 的角色与发布会原则，并把 `agent-preset-registry` 的默认值改为它；预设内的 `persona` 行遮蔽部署级的 `personaPrefix`，所以两段文字各自完整。dsh 自带的 `preset-standard` 等仍可选，选中时仍是“You are a coding agent powered by …”。
 - **界面**（`web.patch.yml`）：关掉 `ui-layout` 与 `ui-sidebar`（由 Presmium 的根布局与导航外壳替换；退路模式下同时重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）与 `ui-settings-session-log`（上传会话日志的设置）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
 
 ## 7. 工作台
@@ -644,7 +644,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 | `.env` 中不能放决定网络去向的变量 | 模型的地址只经启动环境传入（11.3 节） |
 | `--host` 不接受通配地址与主机名；cookie 走明文 HTTP | 只接受一个具体 IP 地址；要加密时在前面放 TLS（11.4 节） |
 | 授权只一次有效，回答者看不到参数 | `displayReason` 带摘要（6.3 节） |
-| web 的 agent 预设各带 `persona` 行，补丁按 ID 找不到它们 | 指南写在 system 消息中，关掉 `harness-dev-context`（6.6 节） |
+| web 的 agent 预设各带 `persona` 行，补丁按 ID 找不到它们 | 另声明内置预设 `preset-authoring` 并设为默认，角色与原则都在它的 persona 中（6.6 节） |
 | 修改摘要只在内存中，宿主重启后返回 404 | 审阅记录由工作区服务保存（6.5 节） |
 | `welcome-notice` 的“已读”记在宿主上，替换它的步骤只能 `complete()` | “已读”记在浏览器的 `localStorage`（7.4 节） |
 | 网页在 Linux 上不许 Mod+Alt 组合 | 侧栏的快捷键在 Linux 的网页上没有默认按键，用活动栏与侧栏按钮收起（7.2 节） |

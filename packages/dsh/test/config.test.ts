@@ -30,10 +30,16 @@ describe('[gate] the pinned DeepSeek Harness with Presmium\'s bundle', () => {
     expect(web.get('presmium-service')!.text).toContain('process.env.PRESMIUM_SERVICE_URL')
     expect(web.get('workspace-controller')!.text).toContain('documentsDirectory')
     expect(web.get('harness-dev-context')!.disabled).toBe(true)
+    const preset = web.get('preset-authoring')
+    expect(preset?.disabled, 'web: preset-authoring').toBe(false)
+    expect(preset!.text).toContain('id: authoring')
+    expect(preset!.text).toContain('发布会原则')
+    expect(web.get('agent-preset-registry')!.text).toContain('default: authoring')
     for (const carrier of ['headless', 'acp'] as const) {
       const rows = home.dump(carrier)
       for (const id of HOST_ROWS) expect(rows.get(id)?.disabled, `${carrier}: ${id}`).toBe(false)
       for (const id of WEB_ROWS) expect(rows.has(id), `${carrier}: ${id}`).toBe(false)
+      expect(rows.has('preset-authoring'), `${carrier}: preset-authoring`).toBe(false)
     }
     for (const rows of [web, home.dump('headless'), home.dump('acp')]) {
       for (const id of UPLOADS) expect(rows.get(id)?.disabled, id).toBe(true)
