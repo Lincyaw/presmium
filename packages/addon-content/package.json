@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-content",
+  "name": "@lincyaw/slidev-addon-content",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: rich content: diagrams, mind maps, media, and web components",
   "license": "Apache-2.0",
@@ -45,13 +45,13 @@
     "vue": "^3.5.42"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }

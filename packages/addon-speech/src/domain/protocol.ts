@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import type { SpeechEngineInfo, SpeechWord, SynthesisRequest, Transcript, VoiceInfo } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { SpeechEngineInfo, SpeechWord, SynthesisRequest, Transcript, VoiceInfo } from '@lincyaw/kernel'
 import type { AigcLabel } from './aigc.ts'
 import type { UnavailableEngine } from './engines.ts'
 

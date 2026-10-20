@@ -2,7 +2,7 @@
 title: Preview
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   web: { port: 5618 }
   slides: { port: 5619 }

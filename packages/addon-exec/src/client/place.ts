@@ -1,5 +1,5 @@
-import { environmentExecutor } from '@presmium/kernel'
-import type { EnvironmentSpec, Executor } from '@presmium/kernel'
+import { environmentExecutor } from '@lincyaw/kernel'
+import type { EnvironmentSpec, Executor } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
 
 export type RunPlace =

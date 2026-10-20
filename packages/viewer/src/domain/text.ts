@@ -1,5 +1,5 @@
-import { docBlocks } from '@presmium/kernel'
-import type { IRDocument, MdastNode } from '@presmium/kernel'
+import { docBlocks } from '@lincyaw/kernel'
+import type { IRDocument, MdastNode } from '@lincyaw/kernel'
 
 const WIDE = /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|[\u{1F300}-\u{1FAFF}\u{20000}-\u{3FFFD}]/u
 

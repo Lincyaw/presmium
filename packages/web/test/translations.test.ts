@@ -2,8 +2,8 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
-import type { Finding } from '@presmium/kernel'
+import { presmium } from '@lincyaw/cli/testing'
+import type { Finding } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/translations', import.meta.url))

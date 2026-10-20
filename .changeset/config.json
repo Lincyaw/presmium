@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@presmium/*", "!@presmium/dsh", "!@presmium/workbench", "!@presmium/studio", "presmium", "create-presmium"]],
+  "fixed": [["@lincyaw/*", "!@lincyaw/dsh", "!@lincyaw/workbench", "!@lincyaw/studio", "presmium", "create-presmium"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

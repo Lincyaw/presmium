@@ -2,14 +2,14 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import type { Executor } from '@presmium/kernel'
+import type { Executor } from '@lincyaw/kernel'
 import { isPython } from '../domain/index.ts'
 import { childRuns } from './child.ts'
 
 export const PYTHON_EXECUTOR_ID = 'presmium.python'
 
 const PYTHON = 'python3'
-const RUNNER = readFileSync(createRequire(import.meta.url).resolve('@presmium/kernel/runner.py'), 'utf8')
+const RUNNER = readFileSync(createRequire(import.meta.url).resolve('@lincyaw/kernel/runner.py'), 'utf8')
 const RUNNER_REVISION = `runner ${createHash('sha256').update(RUNNER).digest('hex').slice(0, 16)}`
 
 let probe: { version: string, prefixes: string[] } | undefined

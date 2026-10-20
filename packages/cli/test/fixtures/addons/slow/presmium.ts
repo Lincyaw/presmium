@@ -1,6 +1,6 @@
 // Test-only plugin whose pass takes a second, as compile-time execution can.
 import { setTimeout } from 'node:timers/promises'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.slow',

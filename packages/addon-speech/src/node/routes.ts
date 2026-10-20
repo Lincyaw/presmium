@@ -1,4 +1,4 @@
-import { json, problem } from '@presmium/kernel'
+import { json, problem } from '@lincyaw/kernel'
 import type { TimedSpeech, TranscriptionAnswer } from '../domain/index.ts'
 import { synthesisRequestOf } from '../domain/index.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'

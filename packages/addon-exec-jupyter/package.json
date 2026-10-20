@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-exec-jupyter",
+  "name": "@lincyaw/slidev-addon-exec-jupyter",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: remote Jupyter kernels at build time and in the browser, and a browser terminal",
   "license": "Apache-2.0",
@@ -44,13 +44,13 @@
     "ws": "^8.22.0"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0",
     "@types/ws": "8.18.2"
   }

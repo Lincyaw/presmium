@@ -1,4 +1,4 @@
-import type { DirectiveOptionType, Locale } from '@presmium/kernel'
+import type { DirectiveOptionType, Locale } from '@lincyaw/kernel'
 
 export interface DirectiveOptionInfo {
   type?: DirectiveOptionType

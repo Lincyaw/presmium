@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
-import { PRESMIUM_BIN, run } from '@presmium/cli/testing'
+import { PRESMIUM_BIN, run } from '@lincyaw/cli/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))

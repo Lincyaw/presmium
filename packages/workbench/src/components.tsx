@@ -1,5 +1,5 @@
-import { ICONS } from '@presmium/design'
-import type { IconName } from '@presmium/design'
+import { ICONS } from '@lincyaw/design'
+import type { IconName } from '@lincyaw/design'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Popover from '@radix-ui/react-popover'

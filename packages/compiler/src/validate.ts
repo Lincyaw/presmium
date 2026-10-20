@@ -1,5 +1,5 @@
-import { IR_VERSION, isRecord } from '@presmium/kernel'
-import type { Finding, IRBlock, IRDocument, IRSection, MdastNode, SourcePos } from '@presmium/kernel'
+import { IR_VERSION, isRecord } from '@lincyaw/kernel'
+import type { Finding, IRBlock, IRDocument, IRSection, MdastNode, SourcePos } from '@lincyaw/kernel'
 
 export function validateIR(doc: IRDocument, entry?: string): Finding[] {
   const findings: Finding[] = []

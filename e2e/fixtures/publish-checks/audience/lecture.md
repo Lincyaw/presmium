@@ -2,7 +2,7 @@
 title: 受众测试
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec'
 renderers:
   web: {}
   slides:

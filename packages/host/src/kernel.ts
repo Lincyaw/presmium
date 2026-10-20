@@ -1,5 +1,5 @@
-import { Kernel, PRESENTER_PANELS } from '@presmium/kernel'
-import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@presmium/kernel'
+import { Kernel, PRESENTER_PANELS } from '@lincyaw/kernel'
+import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
 import { PmApprovals } from './approvals.ts'
 import { currentLocale } from './locale.ts'

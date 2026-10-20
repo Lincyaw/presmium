@@ -1,5 +1,5 @@
-import { currentLocale, useMessages as useCatalog } from '@presmium/host'
-import type { Catalog } from '@presmium/host'
+import { currentLocale, useMessages as useCatalog } from '@lincyaw/host'
+import type { Catalog } from '@lincyaw/host'
 import type { ComputedRef } from 'vue'
 
 const zhCN = {

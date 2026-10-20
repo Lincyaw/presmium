@@ -42,7 +42,7 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 
 `KERNEL_VERSION` 是插件契约的版本，与包的版本分开。插件在 Node 端入口与浏览器端的清单中写 `kernel: '^1.0.0'`；范围不包含当前版本的插件不被加载，`presmium check` 报告 `presmium.plugins`，构建不崩溃。契约有兼容的增加时升次版本，有不兼容的改动时升主版本。
 
-插件对 `@presmium/kernel`、`@presmium/host`、`@presmium/viewer`、`@presmium/compiler` 中用到的包写对等依赖 `^1.0.0`，与应用共用一份；已安装的 Presmium 不满足它时，加载器同样报告并不加载这个插件。这样的插件可以用于任何 Presmium 1.x。
+插件对 `@lincyaw/kernel`、`@lincyaw/host`、`@lincyaw/viewer`、`@lincyaw/compiler` 中用到的包写对等依赖 `^1.0.0`，与应用共用一份；已安装的 Presmium 不满足它时，加载器同样报告并不加载这个插件。这样的插件可以用于任何 Presmium 1.x。
 
 (public)=
 # 公开接口
@@ -51,18 +51,18 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 ## 文稿、IR 与命令
 
 - MyST 源语法：文稿头部的键、章节与标签、讲解与上屏内容、步骤、内置指令，以及官方插件的指令与行内角色。
-- IR（`@presmium/kernel` 的 `IRDocument` 等类型）与 `IR_VERSION`；产物的布局与地址（`dist/ir.json`、`dist/<渲染端>/`、页面文件名与章节锚点、`?clicks=`、`?view=`）。
+- IR（`@lincyaw/kernel` 的 `IRDocument` 等类型）与 `IR_VERSION`；产物的布局与地址（`dist/ir.json`、`dist/<渲染端>/`、页面文件名与章节锚点、`?clicks=`、`?view=`）。
 - `presmium build | dev | ir | check | serve` 与它们的选项、退出码、诊断的格式与检查 ID、`presmium check --json` 的结构；其他包带的命令（`presmium-mcp`、`presmium-export`、`presmium-diff`、`presmium-lecture`、`presmium-speech`、`presmium-language-server`、`presmium-classroom-server`）；MCP 的工具与资源。
 - 工作区配置文件 `presmium.workspace.yaml` 与运营者设置、运营者的环境变量。
 
 (public-contracts)=
 ## 插件契约
 
-- `@presmium/kernel`：插件定义与清单、Node 端插件 `PresmiumNodePlugin` 的字段、`DirectiveSpec`、`RoleSpec`、`IRPass`、`Check`、`Finding`、`Renderer`、`RenderContext`、服务令牌与它们的接口（含 Node 端的服务）、服务端路由与 agent 工具，以及插件共用的纯函数。
-- `@presmium/host`：组件用的组合式函数（`useStepState`、`useService`、`useSharedState`、`useServer`、`useMessages` 等）、宿主的服务（`TOOLBAR` 的 `tools` 与 `settings` 槽位、`NAVIGATION`、`OPERATIONS`）、设计系统的令牌与组件。
-- `@presmium/viewer`：视图插件 `ViewerPlugin` 与它从上下文得到的注册函数、`useViewer`、`SectionView`、`BlockView`。
-- `@presmium/cli/testing`：插件的集成测试用的 `presmium`。
-- `@presmium/compiler`：`Compiler`、`Compilation`、`build`、`dev` 等编程接口。
+- `@lincyaw/kernel`：插件定义与清单、Node 端插件 `PresmiumNodePlugin` 的字段、`DirectiveSpec`、`RoleSpec`、`IRPass`、`Check`、`Finding`、`Renderer`、`RenderContext`、服务令牌与它们的接口（含 Node 端的服务）、服务端路由与 agent 工具，以及插件共用的纯函数。
+- `@lincyaw/host`：组件用的组合式函数（`useStepState`、`useService`、`useSharedState`、`useServer`、`useMessages` 等）、宿主的服务（`TOOLBAR` 的 `tools` 与 `settings` 槽位、`NAVIGATION`、`OPERATIONS`）、设计系统的令牌与组件。
+- `@lincyaw/viewer`：视图插件 `ViewerPlugin` 与它从上下文得到的注册函数、`useViewer`、`SectionView`、`BlockView`。
+- `@lincyaw/cli/testing`：插件的集成测试用的 `presmium`。
+- `@lincyaw/compiler`：`Compiler`、`Compilation`、`build`、`dev` 等编程接口。
 
 公开接口签名中出现的类型随它一起公开。包导出的其他名字是 Presmium 自己的包之间共用的内部接口，即使接口参考中有它们，也可以在任何版本中改变。
 
@@ -74,8 +74,8 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 
 以下接口是实验性的，不在 1.x 的承诺之内，可以在次版本中改变。其中的 TypeScript 声明在源码中带 `@experimental` 标签，接口参考中显示为 Experimental；界面与路由没有声明可以标注，以这里的列表为准。
 
-- 工作台 `presmium studio` 的包：`@presmium/studio`、`@presmium/dsh`、`@presmium/workbench`（0.x）的全部导出与界面；
+- 工作台 `presmium studio` 的包：`@lincyaw/studio`、`@lincyaw/dsh`、`@lincyaw/workbench`（0.x）的全部导出与界面；
 - 工作区服务为工作台提供的路由（文档、文件、源码、修改、修改历史与审阅）；
-- 契约 `Focus`、`FocusReport`、`McpIssueOptions`，`@presmium/host` 的 `useToolbarPlace`、`provideToolbarPlace`。
+- 契约 `Focus`、`FocusReport`、`McpIssueOptions`，`@lincyaw/host` 的 `useToolbarPlace`、`provideToolbarPlace`。
 
 命令 `presmium serve`、工作区配置文件与 Node 端的服务是公开接口；读者问答（`ASK` 与提问面板）是产物的一部分，也是公开接口。插件不要依赖实验性接口，依赖时在自己的对等依赖中写确切的版本。

@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel'
+import type { Locale } from '@lincyaw/kernel'
 
 const zhCN = {
   noWebgpu: '浏览器没有 WebGPU',

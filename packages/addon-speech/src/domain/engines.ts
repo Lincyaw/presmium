@@ -1,4 +1,4 @@
-import type { SpeechEngineInfo } from '@presmium/kernel'
+import type { SpeechEngineInfo } from '@lincyaw/kernel'
 
 export const VOLCENGINE = 'volcengine'
 export const FAKE = 'fake'

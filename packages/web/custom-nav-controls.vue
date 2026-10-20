@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { configs, useNav } from '@slidev/client'
 import { computed } from 'vue'
 import { formOptions, WEB_MESSAGES, webUrl } from './src/domain/index.ts'

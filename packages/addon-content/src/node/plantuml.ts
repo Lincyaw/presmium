@@ -1,5 +1,5 @@
-import { deckLocale, docBlocks } from '@presmium/kernel'
-import type { IRPass } from '@presmium/kernel'
+import { deckLocale, docBlocks } from '@lincyaw/kernel'
+import type { IRPass } from '@lincyaw/kernel'
 import plantuml from 'plantuml-encoder'
 import { MESSAGES } from '../domain/index.ts'
 

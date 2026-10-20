@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmPresenterPanels } from '@presmium/host'
+import { PmPresenterPanels } from '@lincyaw/host'
 import { useNav } from '@slidev/client'
 
 const { isPresenter } = useNav()

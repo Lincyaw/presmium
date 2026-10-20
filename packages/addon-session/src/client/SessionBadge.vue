@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { computed, ref } from 'vue'
 import { MESSAGES } from '../domain/index.ts'
 import { releaseFocus, useClassroom } from './use.ts'

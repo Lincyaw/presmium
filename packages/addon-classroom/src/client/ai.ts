@@ -1,5 +1,5 @@
-import { useService } from '@presmium/host'
-import { ASK, errorMessage } from '@presmium/kernel'
+import { useService } from '@lincyaw/host'
+import { ASK, errorMessage } from '@lincyaw/kernel'
 import { computed, reactive } from 'vue'
 import type { Question } from '../domain/index.ts'
 

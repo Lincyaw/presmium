@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-code",
+  "name": "@lincyaw/slidev-addon-code",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: code references into a git repository: region and syntax anchors, locked commits, links, drift checks and step highlights",
   "license": "Apache-2.0",
@@ -38,11 +38,11 @@
     "simple-git": "^4.0.2"
   },
   "peerDependencies": {
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*"
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/kernel": "workspace:*"
   }
 }

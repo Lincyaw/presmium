@@ -1,5 +1,5 @@
-import { deckLocale, docBlocks, isRecord } from '@presmium/kernel'
-import type { IRBlock, IRPass, IRSection } from '@presmium/kernel'
+import { deckLocale, docBlocks, isRecord } from '@lincyaw/kernel'
+import type { IRBlock, IRPass, IRSection } from '@lincyaw/kernel'
 import { CLASSROOM_ID, isLabel, MESSAGES, readersHave } from '../domain/index.ts'
 import type { Place } from '../domain/index.ts'
 import { fallbackOf } from './fallbacks.ts'

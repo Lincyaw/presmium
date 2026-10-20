@@ -1,5 +1,5 @@
-import { useServer } from '@presmium/host'
-import type { Viewer, ViewerPluginContext } from '@presmium/viewer'
+import { useServer } from '@lincyaw/host'
+import type { Viewer, ViewerPluginContext } from '@lincyaw/viewer'
 import { computed, shallowRef, watch } from 'vue'
 import { LECTURE_ID } from '../domain/index.ts'
 

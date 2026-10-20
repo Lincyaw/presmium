@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
-import type { Operations } from '@presmium/host'
-import { OPERATIONS, PmIcon, PmTabs, useMessages, useServer, useService } from '@presmium/host'
-import { isRecord } from '@presmium/kernel'
+import type { Operations } from '@lincyaw/host'
+import { OPERATIONS, PmIcon, PmTabs, useMessages, useServer, useService } from '@lincyaw/host'
+import { isRecord } from '@lincyaw/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
 import type { LectureTrack, Utterance } from '../domain/index.ts'

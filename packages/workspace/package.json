@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/workspace",
+  "name": "@lincyaw/workspace",
   "version": "1.0.0-rc.0",
   "description": "Presmium's workspace service (presmium serve): documents, their history, reviews and the workspace site",
   "license": "Apache-2.0",
@@ -31,9 +31,9 @@
     "templates"
   ],
   "dependencies": {
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/server": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/server": "workspace:*",
     "yaml": "^2.9.1"
   }
 }

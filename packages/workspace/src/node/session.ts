@@ -1,9 +1,9 @@
 import { existsSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import type { Compilation, Compiler } from '@presmium/compiler'
-import { errorMessage } from '@presmium/kernel'
-import type { Logger } from '@presmium/kernel'
+import type { Compilation, Compiler } from '@lincyaw/compiler'
+import { errorMessage } from '@lincyaw/kernel'
+import type { Logger } from '@lincyaw/kernel'
 
 export class DocumentSession {
   readonly dir: string

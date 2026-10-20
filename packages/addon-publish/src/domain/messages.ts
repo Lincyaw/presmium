@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel'
+import type { Locale } from '@lincyaw/kernel'
 
 const zhCN = {
   highContrast: '高对比度',

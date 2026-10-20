@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, posix, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PRESMIUM_BIN as PRESMIUM } from '@presmium/cli/testing'
+import { PRESMIUM_BIN as PRESMIUM } from '@lincyaw/cli/testing'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(HERE, '..')

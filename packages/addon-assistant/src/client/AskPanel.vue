@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PmButton, useMessages } from '@presmium/host'
-import type { AgentContext, Citation } from '@presmium/kernel'
+import { PmButton, useMessages } from '@lincyaw/host'
+import type { AgentContext, Citation } from '@lincyaw/kernel'
 import { computed, ref } from 'vue'
 import { answerParts, askProvider, ASSISTANT_MESSAGES } from '../domain/index.ts'
 import { askSettings } from './ask.ts'

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import { SPEECH } from '@presmium/kernel'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import { SPEECH } from '@lincyaw/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { SPEECH_ID } from '../domain/index.ts'
 import { speechConfigPass } from './pass.ts'
 import { speechServer } from './server.ts'

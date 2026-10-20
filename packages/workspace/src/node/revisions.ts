@@ -1,7 +1,7 @@
 import { lstatSync, mkdtempSync, readdirSync, readFileSync, rmdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, sep } from 'node:path'
-import type { DocumentFileChange, Member, RevertResult, Revision, RevisionService } from '@presmium/kernel'
+import type { DocumentFileChange, Member, RevertResult, Revision, RevisionService } from '@lincyaw/kernel'
 import type { HistoryRevision, UncommittedFile } from '../domain/api.ts'
 import { leavesRoot } from '../domain/paths.ts'
 import { commitMessage, memberAddress, originOf } from '../domain/revisions.ts'

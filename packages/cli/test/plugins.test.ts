@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync } from
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { IRDocument } from '@presmium/kernel'
+import type { IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
 

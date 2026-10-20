@@ -1,4 +1,4 @@
-import type { SynthesisRequest, TranscriptionRequest } from '@presmium/kernel'
+import type { SynthesisRequest, TranscriptionRequest } from '@lincyaw/kernel'
 import type { DeckSpeechConfig } from '../domain/index.ts'
 import { applyLexicon } from '../domain/index.ts'
 import type { SpeechBackend, SynthesisResult } from './backend.ts'

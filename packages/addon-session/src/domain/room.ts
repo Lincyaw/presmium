@@ -1,4 +1,4 @@
-import type { Participant, SessionStatus } from '@presmium/kernel'
+import type { Participant, SessionStatus } from '@lincyaw/kernel'
 
 export interface Position {
   slide: number

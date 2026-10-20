@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/web",
+  "name": "@lincyaw/web",
   "version": "1.0.0-rc.0",
   "description": "Presmium's web renderer: a VitePress site around the IR runtime, with search and form switching",
   "license": "Apache-2.0",
@@ -44,15 +44,15 @@
     "vue": "^3.5.42"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^",
-    "@presmium/viewer": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^",
+    "@lincyaw/viewer": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/viewer": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/viewer": "workspace:*",
     "@slidev/client": "53.0.0",
     "@slidev/types": "53.0.0"
   }

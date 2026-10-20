@@ -1,5 +1,5 @@
 import type { PathPoint } from '../domain/index.ts'
-import { blockElement, codeLines, lineNumbers } from '@presmium/host'
+import { blockElement, codeLines, lineNumbers } from '@lincyaw/host'
 
 const LASER_MS = 1500
 

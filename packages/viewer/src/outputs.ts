@@ -1,5 +1,5 @@
-import { currentLocale } from '@presmium/host'
-import type { MdastNode, RunOutput, RunResult } from '@presmium/kernel'
+import { currentLocale } from '@lincyaw/host'
+import type { MdastNode, RunOutput, RunResult } from '@lincyaw/kernel'
 import { AnsiUp } from 'ansi_up'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { gfmFromMarkdown } from 'mdast-util-gfm'

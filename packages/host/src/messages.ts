@@ -1,4 +1,4 @@
-import type { PluginStatus } from '@presmium/kernel/contracts'
+import type { PluginStatus } from '@lincyaw/kernel/contracts'
 import type { Catalog } from './locale.ts'
 
 export interface HostMessages {

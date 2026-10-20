@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-publish",
+  "name": "@lincyaw/slidev-addon-publish",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: publishing: offline sites, high contrast, PDF and image export (presmium-export), visual diffs (presmium-diff)",
   "license": "Apache-2.0",
@@ -53,17 +53,17 @@
     "vue": "^3.5.42"
   },
   "peerDependencies": {
-    "@presmium/compiler": "workspace:^",
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/compiler": "workspace:^",
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/compiler": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/render-slides": "workspace:*",
-    "@presmium/web": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/render-slides": "workspace:*",
+    "@lincyaw/web": "workspace:*",
     "@slidev/cli": "53.0.0",
     "@slidev/client": "53.0.0",
     "@slidev/theme-default": "^0.25.0",

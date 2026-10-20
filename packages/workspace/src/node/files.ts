@@ -3,7 +3,7 @@ import { closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, open
 import type { Stats } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { DocumentFileChange, DocumentFiles } from '@presmium/kernel'
+import type { DocumentFileChange, DocumentFiles } from '@lincyaw/kernel'
 import { rewriteLinks, within } from '../domain/paths.ts'
 import { listDocuments, namedByPatterns } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'

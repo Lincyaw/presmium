@@ -1,4 +1,4 @@
-import type { RunResult } from '@presmium/kernel'
+import type { RunResult } from '@lincyaw/kernel'
 import { diffLines } from 'diff'
 
 export function stringArgs(params: Record<string, unknown> | undefined): Record<string, string> {

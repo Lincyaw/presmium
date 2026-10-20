@@ -2,7 +2,7 @@
 // appends each run to the file named by PRESMIUM_FIXTURE_RUNS, so tests can count runs.
 // Its pass after compile-time execution lists the outputs in the IR's metadata.
 import { appendFileSync } from 'node:fs'
-import type { IRBlock, PresmiumNodePlugin } from '@presmium/kernel'
+import type { IRBlock, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const outputs = (blocks: IRBlock[]): string[] => blocks.flatMap(({ node }) =>
   node.type === 'code' ? node.outputs?.map(o => o.stdout) ?? [] : node.type === 'component' ? outputs(node.children ?? []) : [])

@@ -1,8 +1,8 @@
 /**
  * The plugin's domain: pure TypeScript, which the Node side, the component and the tests share.
- * It imports nothing of Vue, Node, @presmium/host or the frameworks (AGENTS.md, layering).
+ * It imports nothing of Vue, Node, @lincyaw/host or the frameworks (AGENTS.md, layering).
  */
-import type { Locale } from '@presmium/kernel/contracts'
+import type { Locale } from '@lincyaw/kernel/contracts'
 
 /** The plugin's id: its routes are under `/__presmium/<id>/`, its configuration is `presmium.<id>`. */
 export const PLUGIN_ID = '{{id}}'

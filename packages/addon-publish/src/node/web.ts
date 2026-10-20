@@ -1,7 +1,7 @@
 import { mkdir, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { build, playwrightChromium, serveDirectory, viewFor } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
+import { build, playwrightChromium, serveDirectory, viewFor } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
 
 interface Chromium {
   launch(): Promise<{

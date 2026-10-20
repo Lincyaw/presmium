@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { IRPass } from '@presmium/kernel'
+import type { IRPass } from '@lincyaw/kernel'
 import { deckSpeechConfig, SPEECH_ID } from '../domain/index.ts'
 
 function configLine(file: string): number {

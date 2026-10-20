@@ -1,5 +1,5 @@
-import { failedRun } from '@presmium/kernel'
-import type { Executor, RunRequest, RunResult } from '@presmium/kernel'
+import { failedRun } from '@lincyaw/kernel'
+import type { Executor, RunRequest, RunResult } from '@lincyaw/kernel'
 import { DEFAULT_TIMEOUT_MS } from '../domain/index.ts'
 import { runsLanguage } from '../runner.mjs'
 import { messages } from './messages.ts'

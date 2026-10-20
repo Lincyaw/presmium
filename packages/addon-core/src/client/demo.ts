@@ -1,6 +1,6 @@
-import { currentLocale } from '@presmium/host'
-import { defineService } from '@presmium/kernel'
-import type { PluginDefinition } from '@presmium/kernel'
+import { currentLocale } from '@lincyaw/host'
+import { defineService } from '@lincyaw/kernel'
+import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 
 export interface Greeter {

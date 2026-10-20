@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useStaticRender } from '@presmium/host'
+import { useStaticRender } from '@lincyaw/host'
 
 const printing = useStaticRender()
 </script>

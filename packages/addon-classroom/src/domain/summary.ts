@@ -1,4 +1,4 @@
-import type { Participant, SessionStatus } from '@presmium/kernel'
+import type { Participant, SessionStatus } from '@lincyaw/kernel'
 import type { Submission } from './exercise.ts'
 import { latestPerParticipant, placeIndex, placeKey } from './place.ts'
 import type { Place, SectionNumbers } from './place.ts'

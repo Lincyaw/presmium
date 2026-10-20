@@ -3,7 +3,7 @@ import { useFixture } from './fixtures/deck.ts'
 
 test.describe('shared Vue interactions', () => {
   test.describe.configure({ mode: 'default', timeout: 180_000 })
-  const deck = useFixture('ui-primitives', { link: { '@presmium/host': 'packages/host' } })
+  const deck = useFixture('ui-primitives', { link: { '@lincyaw/host': 'packages/host' } })
 
   for (const form of ['web', 'slides'] as const) {
     test(`${form}: nested overlays dismiss one layer and return focus; menus and tabs work with the keyboard`, async ({ page }, testInfo) => {

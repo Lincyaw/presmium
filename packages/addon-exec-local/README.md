@@ -1,4 +1,4 @@
-# @presmium/slidev-addon-exec-local
+# @lincyaw/slidev-addon-exec-local
 
 Running code in a local container built from the repository's devcontainer definition, and exporting the environment.
 
@@ -7,17 +7,17 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @presmium/slidev-addon-exec-local
+pnpm add -D @lincyaw/slidev-addon-exec-local
 ```
 
 List it in the headmatter of the documents that use it:
 
 ```yaml
 plugins:
-  - '@presmium/slidev-addon-exec-local'
+  - '@lincyaw/slidev-addon-exec-local'
 ```
 
-It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@presmium/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
+It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
 
 ## What it provides
 

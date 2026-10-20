@@ -1,5 +1,5 @@
-import { problem } from '@presmium/kernel'
-import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@presmium/kernel'
+import { problem } from '@lincyaw/kernel'
+import type { EnvironmentSpec, ProxySpec, Route, ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { authOf, operatorConnection, proxyPath } from '../domain/index.ts'
 import type { Connection } from '../domain/index.ts'
 import { declaredEnvironments } from './environments.ts'

@@ -1,4 +1,4 @@
-import type { ComponentNode, IRBlock, IRPass } from '@presmium/kernel'
+import type { ComponentNode, IRBlock, IRPass } from '@lincyaw/kernel'
 import { CLASSROOM_ID } from '../domain/index.ts'
 
 const isPredict = (block: IRBlock): block is IRBlock & { node: ComponentNode } => block.node.type === 'component' && block.node.plugin === CLASSROOM_ID && block.node.name === 'PmPredict'

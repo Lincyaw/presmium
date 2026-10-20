@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { lstatSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
-import type { DocumentFileChange, Member } from '@presmium/kernel'
+import type { DocumentFileChange, Member } from '@lincyaw/kernel'
 import type { ConflictAnswer, FilesAnswer, SourceAnswer, SourceFile } from '../domain/api.ts'
 import { WORKSPACE_FILE } from '../domain/api.ts'
 import { within } from '../domain/paths.ts'

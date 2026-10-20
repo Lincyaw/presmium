@@ -1,4 +1,4 @@
-import { problem } from '@presmium/kernel'
+import { problem } from '@lincyaw/kernel'
 
 export class SpeechError extends Error {
   readonly status: number

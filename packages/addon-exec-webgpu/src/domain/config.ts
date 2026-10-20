@@ -1,5 +1,5 @@
-import { languageId } from '@presmium/kernel'
-import type { EnvironmentSpec } from '@presmium/kernel'
+import { languageId } from '@lincyaw/kernel'
+import type { EnvironmentSpec } from '@lincyaw/kernel'
 
 export const EXEC_WEBGPU_ID = 'presmium.execWebgpu'
 

@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-guide",
+  "name": "@lincyaw/slidev-addon-guide",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: guidance cues: a simulated cursor, spotlights and hints",
   "license": "Apache-2.0",
@@ -40,12 +40,12 @@
     "vue": "^3.5.42"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }

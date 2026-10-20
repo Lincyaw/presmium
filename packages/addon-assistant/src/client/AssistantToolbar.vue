@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { ref, useId } from 'vue'
 import { ASSISTANT_MESSAGES } from '../domain/index.ts'
 import AskPanel from './AskPanel.vue'

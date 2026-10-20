@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import type { EnvironmentAuth, EnvironmentSpec } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { EnvironmentAuth, EnvironmentSpec } from '@lincyaw/kernel'
 
 export const EXEC_JUPYTER_ID = 'presmium.execJupyter'
 

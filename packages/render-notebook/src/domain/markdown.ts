@@ -1,5 +1,5 @@
-import { lowerMyst } from '@presmium/kernel'
-import type { LowerOptions, MdastNode } from '@presmium/kernel'
+import { lowerMyst } from '@lincyaw/kernel'
+import type { LowerOptions, MdastNode } from '@lincyaw/kernel'
 import { writeMd } from 'myst-to-md'
 import { VFile } from 'vfile'
 

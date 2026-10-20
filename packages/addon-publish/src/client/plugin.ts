@@ -1,5 +1,5 @@
-import { currentLocale, TOOLBAR } from '@presmium/host'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { currentLocale, TOOLBAR } from '@lincyaw/host'
+import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { defineComponent, h } from 'vue'
 import { version } from '../../package.json'
 import PmContrastToggle from '../../components/PmContrastToggle.vue'

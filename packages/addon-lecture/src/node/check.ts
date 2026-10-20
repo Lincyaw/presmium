@@ -1,5 +1,5 @@
-import { errorMessage, SPEECH } from '@presmium/kernel'
-import type { Check, CheckContext, Finding, IRDocument, Severity } from '@presmium/kernel'
+import { errorMessage, SPEECH } from '@lincyaw/kernel'
+import type { Check, CheckContext, Finding, IRDocument, Severity } from '@lincyaw/kernel'
 import { blockOf, clockText, eventDrift, eventLine, LECTURE_ID, plannedUtterances, unchanged } from '../domain/index.ts'
 import type { EventDrift } from '../domain/index.ts'
 import { synthesisEngineOf } from './lecture.ts'
@@ -61,7 +61,7 @@ async function planFindings(ctx: CheckContext): Promise<Finding[]> {
   const speech = ctx.service?.(SPEECH)
   const source = { file: ctx.ir.meta.entry, line: 1 }
   if (!speech) {
-    findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @presmium/slidev-addon-speech to plugins', source })
+    findings.push({ checkId: LECTURE_ID, severity: 'error', message: 'renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/slidev-addon-speech to plugins', source })
     return findings
   }
   if (await synthesisEngineOf(speech, view, deck.voice.engine).catch(() => undefined)) return findings

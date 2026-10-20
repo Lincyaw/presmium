@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { currentLocale, usePrefersReducedMotion, usePresentationMode } from '@presmium/host'
+import { currentLocale, usePrefersReducedMotion, usePresentationMode } from '@lincyaw/host'
 import { deriveOptions, Markmap } from 'markmap-view'
 import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import { decodeMarkmap, MESSAGES } from '../domain/index.ts'

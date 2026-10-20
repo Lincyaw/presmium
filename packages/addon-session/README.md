@@ -1,4 +1,4 @@
-# @presmium/slidev-addon-session
+# @lincyaw/slidev-addon-session
 
 Classroom sessions: sync across devices and following the presenter.
 
@@ -7,22 +7,22 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @presmium/slidev-addon-session
+pnpm add -D @lincyaw/slidev-addon-session
 ```
 
 List it in the headmatter of the documents that use it:
 
 ```yaml
 plugins:
-  - '@presmium/slidev-addon-session'
+  - '@lincyaw/slidev-addon-session'
 ```
 
-It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@presmium/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
+It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
 
 ## What it provides
 
 - Classroom sessions that learners join from their devices, and following the presenter's position.
-- With `presmium dev` and `presmium serve`, the classroom server runs on their own port; otherwise point to a `@presmium/classroom-server`.
+- With `presmium dev` and `presmium serve`, the classroom server runs on their own port; otherwise point to a `@lincyaw/classroom-server`.
 
 ## Configuration
 

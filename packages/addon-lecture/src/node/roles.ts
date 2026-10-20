@@ -1,4 +1,4 @@
-import type { RoleSpec } from '@presmium/kernel'
+import type { RoleSpec } from '@lincyaw/kernel'
 import { readCue } from '../domain/index.ts'
 
 export const cueRole: RoleSpec = {

@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path'
 
 const require = createRequire(import.meta.url)
 
-const PACKAGE = '@presmium/slidev-addon-exec-jupyter'
+const PACKAGE = '@lincyaw/slidev-addon-exec-jupyter'
 
 export function servicesInBrowserBuilds(): { name: string, enforce: 'pre', resolveId(source: string, importer?: string): string | undefined } {
   const shim = require.resolve('@jupyterlab/services/lib/shim/ws.js')

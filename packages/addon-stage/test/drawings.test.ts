@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
-import { presmium, PRESMIUM_BIN } from '@presmium/cli/testing'
+import { presmium, PRESMIUM_BIN } from '@lincyaw/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const DEMO = fileURLToPath(new URL('../../../e2e/fixtures/regression', import.meta.url))
@@ -14,7 +14,7 @@ const ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => na
 const LECTURE = `---
 title: Drawings
 plugins:
-  - '@presmium/slidev-addon-stage'
+  - '@lincyaw/slidev-addon-stage'
 renderers:
   slides: {}
 ---

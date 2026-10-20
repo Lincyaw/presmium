@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { computed, onMounted, ref } from 'vue'
 import { LECTURE_MESSAGES } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'

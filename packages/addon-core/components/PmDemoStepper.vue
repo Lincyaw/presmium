@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useStepScope, useStepState } from '@presmium/host'
+import { useStepScope, useStepState } from '@lincyaw/host'
 import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{ steps?: string[] }>(), {

@@ -1,4 +1,4 @@
-import type { SpeechWord, Transcript, VoiceInfo } from '@presmium/kernel'
+import type { SpeechWord, Transcript, VoiceInfo } from '@lincyaw/kernel'
 
 export interface EngineSynthesis {
   voice: string

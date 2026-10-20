@@ -13,7 +13,7 @@
 title: 分词入门
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   web: {}
   slides: {}

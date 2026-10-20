@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { ApprovalKind, ApprovalRequest, Approvals, Member, MemberRole } from '@presmium/kernel'
+import type { ApprovalKind, ApprovalRequest, Approvals, Member, MemberRole } from '@lincyaw/kernel'
 
 export type ApprovalPolicy = 'off' | 'ask' | 'allow'
 

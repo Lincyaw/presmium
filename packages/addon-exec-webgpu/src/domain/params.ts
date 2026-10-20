@@ -1,4 +1,4 @@
-import { isRecord } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import { parse } from 'yaml'
 import type { ComputeBuffer, ComputeRequest, ScalarType } from './compute.ts'
 import { LIMITS } from './config.ts'

@@ -9,8 +9,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { open } from 'yauzl'
 import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node'
 import { expect, it } from 'vitest'
-import { PREVIEW_REQUEST, SECTION_REQUEST } from '@presmium/language-server/protocol'
-import type { Preview, SectionAt } from '@presmium/language-server/protocol'
+import { PREVIEW_REQUEST, SECTION_REQUEST } from '@lincyaw/language-server/protocol'
+import type { Preview, SectionAt } from '@lincyaw/language-server/protocol'
 
 const PKG = fileURLToPath(new URL('..', import.meta.url))
 const TSC = createRequire(import.meta.url).resolve('typescript/bin/tsc')

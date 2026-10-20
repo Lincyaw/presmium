@@ -1,4 +1,4 @@
-import type { Citation } from '@presmium/kernel'
+import type { Citation } from '@lincyaw/kernel'
 
 const LINK = /\[([^\]\n]+)\]\(presmium:\/\/sections\/([^)\s/#?]+)(?:\/steps\/(\d+))?(?:#([^)\s]+))?\)/g
 

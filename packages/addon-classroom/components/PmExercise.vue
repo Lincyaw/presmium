@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PmIcon, useMessages, usePresentationMode, useService } from '@presmium/host'
-import { EXECUTOR } from '@presmium/kernel'
+import { PmIcon, useMessages, usePresentationMode, useService } from '@lincyaw/host'
+import { EXECUTOR } from '@lincyaw/kernel'
 import { computed, ref, shallowRef } from 'vue'
 import { useClassroomStore, useCollection, useSession } from '../src/client/use.ts'
 import { checkReport, checkRequest, COLLECTIONS, isSubmission, MESSAGES, placeKey, reportKinds, submissionId, summarize, summaryText } from '../src/domain/index.ts'

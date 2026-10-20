@@ -1,4 +1,4 @@
-import type { TrackEvent, TranscriptSegment } from '@presmium/kernel'
+import type { TrackEvent, TranscriptSegment } from '@lincyaw/kernel'
 import type { Clip } from './synthesis.ts'
 import { anchorOf } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance, Voice } from './track.ts'

@@ -1,5 +1,5 @@
-import { deckLocale } from '@presmium/kernel'
-import type { ComponentNode, IRBlock, MdastNode, RenderContext, RendererContribution } from '@presmium/kernel'
+import { deckLocale } from '@lincyaw/kernel'
+import type { ComponentNode, IRBlock, MdastNode, RenderContext, RendererContribution } from '@lincyaw/kernel'
 import { MESSAGES } from '../domain/index.ts'
 
 function code(source: string) {

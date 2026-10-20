@@ -1,5 +1,5 @@
-import { PmIconButton } from '@presmium/workbench'
-import type { Workbench } from '@presmium/workbench'
+import { PmIconButton } from '@lincyaw/workbench'
+import type { Workbench } from '@lincyaw/workbench'
 import type { ReactNode } from 'react'
 import { useFrameMessages } from './brand.tsx'
 import type { LayoutActions, LayoutState } from './layout.ts'

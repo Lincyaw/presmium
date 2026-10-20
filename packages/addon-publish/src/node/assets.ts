@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, sep } from 'node:path'
-import { docBlocks, errorMessage, nodeMdast } from '@presmium/kernel'
-import type { IRBlock, IRPass, MdastNode } from '@presmium/kernel'
+import { docBlocks, errorMessage, nodeMdast } from '@lincyaw/kernel'
+import type { IRBlock, IRPass, MdastNode } from '@lincyaw/kernel'
 import { ASSETS_DIR, assetExtension, PUBLISH_ID, publishOptions } from '../domain/index.ts'
 
 const DOWNLOAD_TIMEOUT_MS = 15_000

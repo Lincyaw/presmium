@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
-import { run } from '@presmium/cli/testing'
+import { run } from '@lincyaw/cli/testing'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { storedPath, TEMPLATE_SOURCES, templateFiles } from '../src/templates.ts'
 
@@ -74,7 +74,7 @@ async function install(dir: string): Promise<void> {
 
 function presmiumBin(project: string): string {
   const own = join(project, 'node_modules/presmium/bin/presmium.mjs')
-  return existsSync(own) ? own : join(project, 'node_modules/@presmium/cli/bin/presmium.mjs')
+  return existsSync(own) ? own : join(project, 'node_modules/@lincyaw/cli/bin/presmium.mjs')
 }
 
 function presmium(project: string, args: string[]) {
@@ -127,7 +127,7 @@ it('asks for what the arguments leave out, in the system\'s language, and writes
   const at = (names: string[]) => Object.fromEntries(names.map(name => [name, `^${VERSION}`]))
   for (const made of [lecture, workspace]) expect(made.made.devDependencies).toEqual(at(['presmium']))
   expect(lecture.output).toMatch(/^ {2}presmium dev$/m)
-  expect(plugin.made).toMatchObject({ name: '@acme/presmium-greeting', devDependencies: at(['@presmium/cli', '@presmium/web', '@presmium/render-slides', '@presmium/render-notebook', '@presmium/slidev-addon-core']), peerDependencies: at(['@presmium/compiler', '@presmium/host', '@presmium/kernel', '@presmium/viewer']) })
+  expect(plugin.made).toMatchObject({ name: '@acme/presmium-greeting', devDependencies: at(['@lincyaw/cli', '@lincyaw/web', '@lincyaw/render-slides', '@lincyaw/render-notebook', '@lincyaw/slidev-addon-core']), peerDependencies: at(['@lincyaw/compiler', '@lincyaw/host', '@lincyaw/kernel', '@lincyaw/viewer']) })
   for (const [kind, skills] of [['lecture', ['presmium-author', 'presmium-present']], ['workspace', ['presmium-author', 'presmium-present']], ['plugin', ['presmium-author', 'presmium-develop']]] as const) {
     const { dir } = projects[kind]
     for (const skill of skills) expect(readFileSync(join(dir, '.agents/skills', skill, 'SKILL.md'), 'utf8')).toContain(`name: ${skill}`)

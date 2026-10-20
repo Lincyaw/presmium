@@ -1,5 +1,5 @@
-import { irBlocks } from '@presmium/kernel'
-import type { ViewerPlugin } from '@presmium/viewer'
+import { irBlocks } from '@lincyaw/kernel'
+import type { ViewerPlugin } from '@lincyaw/viewer'
 import { setNavigator } from './state.ts'
 
 const plugin: ViewerPlugin = (ctx) => {

@@ -1,6 +1,6 @@
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { build, Compiler } from '@presmium/compiler'
+import { build, Compiler } from '@lincyaw/compiler'
 import { afterAll, describe, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
 import { FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
@@ -180,11 +180,11 @@ describe('presmium serve: a document with a translation', () => {
   afterAll(() => remove(dir))
 
   it('says in the diagnostics that the workspace site leaves the translation out', async () => {
-    dir = workspace('translated-local', 'translated', { '@presmium/slidev-addon-exec': 'packages/addon-exec', '@presmium/web': 'packages/web' })
+    dir = workspace('translated-local', 'translated', { '@lincyaw/slidev-addon-exec': 'packages/addon-exec', '@lincyaw/web': 'packages/web' })
     cpSync(TRANSLATED, join(dir, 'course'), { recursive: true })
     cpSync(join(FIXTURES, 'plugins/presmium-fixture-token'), join(dir, 'node_modules/presmium-fixture-token'), { recursive: true })
     const config = join(dir, 'presmium.workspace.yaml')
-    writeFileSync(config, readFileSync(config, 'utf8').replace('\'@presmium/web\']', '\'@presmium/web\', presmium-fixture-token]'))
+    writeFileSync(config, readFileSync(config, 'utf8').replace('\'@lincyaw/web\']', '\'@lincyaw/web\', presmium-fixture-token]'))
     const entry = join(dir, 'course/lecture.md')
     writeFileSync(entry, readFileSync(entry, 'utf8').replace('plugins:\n', 'plugins:\n  - presmium-fixture-token\n'))
     const local = presmiumProcess(dir, ['serve', '--port', '0'])

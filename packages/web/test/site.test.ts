@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
+import { presmium } from '@lincyaw/cli/testing'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))

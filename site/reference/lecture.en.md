@@ -43,7 +43,7 @@ Within one `IR_VERSION` only optional fields are added; removing or renaming a f
 
 `KERNEL_VERSION` is the version of the plugin contract, separate from the packages' version. Plugins write `kernel: '^1.0.0'` in their Node entry and in their browser manifest; a plugin whose range excludes the current version is not loaded, `presmium check` reports `presmium.plugins`, and the build does not crash. A compatible addition to the contract raises its minor version, an incompatible change its major version.
 
-Plugins declare `@presmium/kernel`, `@presmium/host`, `@presmium/viewer` and `@presmium/compiler`, those they use, as peer dependencies `^1.0.0`, sharing the application's copy; when the installed Presmium does not satisfy them, the loader reports it the same way and leaves the plugin out. Such a plugin works with any Presmium 1.x.
+Plugins declare `@lincyaw/kernel`, `@lincyaw/host`, `@lincyaw/viewer` and `@lincyaw/compiler`, those they use, as peer dependencies `^1.0.0`, sharing the application's copy; when the installed Presmium does not satisfy them, the loader reports it the same way and leaves the plugin out. Such a plugin works with any Presmium 1.x.
 
 (public)=
 # Public interfaces
@@ -52,18 +52,18 @@ Plugins declare `@presmium/kernel`, `@presmium/host`, `@presmium/viewer` and `@p
 ## Documents, the IR and commands
 
 - The MyST source syntax: the headmatter's keys, sections and labels, narration and on-screen content, steps, the built-in directives, and the directives and inline roles of the official plugins.
-- The IR (`IRDocument` and the other types of `@presmium/kernel`) and `IR_VERSION`; the layout and addresses of the outputs (`dist/ir.json`, `dist/<renderer>/`, page file names and section anchors, `?clicks=`, `?view=`).
+- The IR (`IRDocument` and the other types of `@lincyaw/kernel`) and `IR_VERSION`; the layout and addresses of the outputs (`dist/ir.json`, `dist/<renderer>/`, page file names and section anchors, `?clicks=`, `?view=`).
 - `presmium build | dev | ir | check | serve` with their options, exit codes, the format of findings and their check ids, and the structure of `presmium check --json`; the commands of the other packages (`presmium-mcp`, `presmium-export`, `presmium-diff`, `presmium-lecture`, `presmium-speech`, `presmium-language-server`, `presmium-classroom-server`); the MCP tools and resources.
 - The workspace configuration file `presmium.workspace.yaml` with the operator's settings, and the operator's environment variables.
 
 (public-contracts)=
 ## The plugin contract
 
-- `@presmium/kernel`: plugin definitions and manifests, the fields of the Node plugin `PresmiumNodePlugin`, `DirectiveSpec`, `RoleSpec`, `IRPass`, `Check`, `Finding`, `Renderer`, `RenderContext`, service tokens and their interfaces (the Node services included), server routes and agent tools, and the plain functions plugins share.
-- `@presmium/host`: the composables components use (`useStepState`, `useService`, `useSharedState`, `useServer`, `useMessages` and others), the host's services (the `tools` and `settings` slots of `TOOLBAR`, `NAVIGATION`, `OPERATIONS`), and the design system's tokens and components.
-- `@presmium/viewer`: the viewer plugin `ViewerPlugin` and what its context gives: the registration functions, `useViewer`, `SectionView` and `BlockView`.
-- `@presmium/cli/testing`: `presmium` for plugins' integration tests.
-- `@presmium/compiler`: the programming interface `Compiler`, `Compilation`, `build`, `dev` and the like.
+- `@lincyaw/kernel`: plugin definitions and manifests, the fields of the Node plugin `PresmiumNodePlugin`, `DirectiveSpec`, `RoleSpec`, `IRPass`, `Check`, `Finding`, `Renderer`, `RenderContext`, service tokens and their interfaces (the Node services included), server routes and agent tools, and the plain functions plugins share.
+- `@lincyaw/host`: the composables components use (`useStepState`, `useService`, `useSharedState`, `useServer`, `useMessages` and others), the host's services (the `tools` and `settings` slots of `TOOLBAR`, `NAVIGATION`, `OPERATIONS`), and the design system's tokens and components.
+- `@lincyaw/viewer`: the viewer plugin `ViewerPlugin` and what its context gives: the registration functions, `useViewer`, `SectionView` and `BlockView`.
+- `@lincyaw/cli/testing`: `presmium` for plugins' integration tests.
+- `@lincyaw/compiler`: the programming interface `Compiler`, `Compilation`, `build`, `dev` and the like.
 
 The types that appear in the signatures of public interfaces are public with them. Any other name a package exports is internal, shared between Presmium's own packages, and may change in any version, even when the API reference shows it.
 
@@ -75,8 +75,8 @@ The types that appear in the signatures of public interfaces are public with the
 
 These interfaces are experimental: outside the 1.x promise, they may change in a minor version. Their TypeScript declarations carry the `@experimental` tag in the source, shown as Experimental in the API reference; for the user interfaces and routes, which have no declaration to tag, this list is what counts.
 
-- the packages of the workbench, `presmium studio`: every export and interface of `@presmium/studio`, `@presmium/dsh` and `@presmium/workbench` (0.x);
+- the packages of the workbench, `presmium studio`: every export and interface of `@lincyaw/studio`, `@lincyaw/dsh` and `@lincyaw/workbench` (0.x);
 - the routes the workspace service provides for the workbench (documents, files, source, changes, revisions and review);
-- the contracts `Focus`, `FocusReport` and `McpIssueOptions`, and `useToolbarPlace` and `provideToolbarPlace` of `@presmium/host`.
+- the contracts `Focus`, `FocusReport` and `McpIssueOptions`, and `useToolbarPlace` and `provideToolbarPlace` of `@lincyaw/host`.
 
 The `presmium serve` command, the workspace configuration file and the Node services are public interfaces; reader questions (`ASK` and the Ask panel) are part of the outputs and public too. Plugins should not depend on experimental interfaces; one that does names exact versions in its peer dependencies.

@@ -1,5 +1,5 @@
-import type { AgentTool, Member, ServiceToken } from '@presmium/kernel'
-import type { McpHost, McpPluginTools, McpPosition } from '@presmium/mcp'
+import type { AgentTool, Member, ServiceToken } from '@lincyaw/kernel'
+import type { McpHost, McpPluginTools, McpPosition } from '@lincyaw/mcp'
 import type { Control } from './control.ts'
 import type { FocusStore } from './focus.ts'
 import type { ServedDocument, ServerHost } from './host.ts'

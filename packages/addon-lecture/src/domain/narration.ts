@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import type { MdastNode, WordSpan } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { MdastNode, WordSpan } from '@lincyaw/kernel'
 import { LECTURE_ID } from './track.ts'
 import { isCjk } from './words.ts'
 

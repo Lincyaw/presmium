@@ -1,4 +1,4 @@
-import type { IRSection } from '@presmium/kernel'
+import type { IRSection } from '@lincyaw/kernel'
 import type { InjectionKey, Ref } from 'vue'
 import { inject } from 'vue'
 

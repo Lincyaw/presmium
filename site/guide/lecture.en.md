@@ -37,7 +37,7 @@ A document is a directory whose entry file is `lecture.md`:
 title: Binary search
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 ---
 
 # Binary search
@@ -88,8 +88,8 @@ Each finding is printed as `<file>:<line>  <severity>  <message>  (<check id>)`.
 title: Byte pair encoding
 lang: en                    # the document's language: <html lang>, the interface and the text written into outputs; default zh-CN
 plugins:                    # the plugin packages it uses
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-code'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-code'
 presmium:                   # the plugins' configuration, keyed by plugin id
   presmium.code: { repo: https://github.com/org/repo }
 renderers:                  # the renderers built by default, and their configuration
@@ -137,7 +137,7 @@ On-screen content shows at step 0. `:reveal:` makes a block appear at the next s
 (syntax-code)=
 ## Quoting real code
 
-`{code-ref}` of `@presmium/slidev-addon-code` quotes code of the repository instead of copying it. The anchor is `region:src/bpe.py#merge` (a `#region` comment in the code), `symbol:src/bpe.py#BPE.merge` (a declaration in the syntax tree) or `pattern:` (an ast-grep pattern). `:pin:` reads the code of a commit and makes a permanent link to it; when pinned code changed in the working tree, `presmium check` warns of the drift and shows the diff.
+`{code-ref}` of `@lincyaw/slidev-addon-code` quotes code of the repository instead of copying it. The anchor is `region:src/bpe.py#merge` (a `#region` comment in the code), `symbol:src/bpe.py#BPE.merge` (a declaration in the syntax tree) or `pattern:` (an ast-grep pattern). `:pin:` reads the code of a commit and makes a permanent link to it; when pinned code changed in the working tree, `presmium check` warns of the drift and shows the diff.
 
 (media)=
 # Media
@@ -147,10 +147,10 @@ On-screen content shows at step 0. `:reveal:` makes a block appear at the next s
 
 | Renderer | Package | Output |
 |---|---|---|
-| `web` | `@presmium/web` | A static site: a page per chapter, search, navigation and footer |
-| `slides` | `@presmium/render-slides` | Slidev slides with the default theme Book (书卷); export to PDF and PNG |
-| `notebook` | `@presmium/render-notebook` | A Jupyter notebook: narration in Markdown cells, code in code cells |
-| `lecture` | `@presmium/slidev-addon-lecture` | A lecture: the narration synthesized as speech, replayed with the page's operations |
+| `web` | `@lincyaw/web` | A static site: a page per chapter, search, navigation and footer |
+| `slides` | `@lincyaw/render-slides` | Slidev slides with the default theme Book (书卷); export to PDF and PNG |
+| `notebook` | `@lincyaw/render-notebook` | A Jupyter notebook: narration in Markdown cells, code in code cells |
+| `lecture` | `@lincyaw/slidev-addon-lecture` | A lecture: the narration synthesized as speech, replayed with the page's operations |
 
 `presmium build --to web,slides` builds only the listed renderers. A plugin's component is the same component on the web page and in the slides; static media such as the notebook show the component's fallback, or a line that links the web page when it has none.
 
@@ -190,12 +190,12 @@ print(sum(range(10)))
 (execution-languages)=
 ## Languages and executors
 
-Python and JavaScript run with the machine's `python3` and `node`. `@presmium/slidev-addon-exec-wasi` runs C, C++, Ruby and SQL in WebAssembly, with the same runtime at build time and in the browser; `@presmium/slidev-addon-exec-webgpu` runs WGSL compute shaders on the browser's GPU.
+Python and JavaScript run with the machine's `python3` and `node`. `@lincyaw/slidev-addon-exec-wasi` runs C, C++, Ruby and SQL in WebAssembly, with the same runtime at build time and in the browser; `@lincyaw/slidev-addon-exec-webgpu` runs WGSL compute shaders on the browser's GPU.
 
 (execution-environments)=
 ## Named environments
 
-`execute.environments` in the headmatter declares named environments, and a code block picks one with `:env: <name>`: `devcontainer` (`@presmium/slidev-addon-exec-local`, a local container), `jupyter` (`@presmium/slidev-addon-exec-jupyter`, a remote Jupyter server), `wasi` and `webgpu`. The headmatter holds no credentials: they come only from the environment variables of the process that runs `presmium`, such as `PRESMIUM_ENV_<name>_TOKEN`. `presmium check --env` connects to each declared environment.
+`execute.environments` in the headmatter declares named environments, and a code block picks one with `:env: <name>`: `devcontainer` (`@lincyaw/slidev-addon-exec-local`, a local container), `jupyter` (`@lincyaw/slidev-addon-exec-jupyter`, a remote Jupyter server), `wasi` and `webgpu`. The headmatter holds no credentials: they come only from the environment variables of the process that runs `presmium`, such as `PRESMIUM_ENV_<name>_TOKEN`. `presmium check --env` connects to each declared environment.
 
 (execution-cache)=
 ## Cache and sandbox
@@ -208,7 +208,7 @@ Outputs are cached in `.presmium/freeze/`, keyed by a hash of the code, the lang
 (lecture-script)=
 ## The narration is the script
 
-List `@presmium/slidev-addon-lecture` and `@presmium/slidev-addon-speech`, pick a voice in `renderers.lecture.voice`, and `presmium build --to web,lecture` synthesizes the narration of each step into a lecture: as it plays, the page moves through the steps. The narration can hold inline cues:
+List `@lincyaw/slidev-addon-lecture` and `@lincyaw/slidev-addon-speech`, pick a voice in `renderers.lecture.voice`, and `presmium build --to web,lecture` synthesizes the narration of each step into a lecture: as it plays, the page moves through the steps. The narration can hold inline cues:
 
 - ``{cue}`next` `` moves one step on here, ``{cue}`pause 2s` `` pauses for two seconds;
 - ``{cue to=code-1 lines=2-3}`spot` `` spotlights two lines of the code as the next word is spoken;
@@ -230,14 +230,14 @@ A speaker can also record a lecture in the presentation view: the voice and the 
 (assistant-ask)=
 ## Reader questions
 
-With `@presmium/slidev-addon-assistant` in the document's `plugins`, its pages have an Ask button: readers ask about the current section, or select some text first and ask about it, and the citations in the answer jump to their sections. Static sites have it too; no server is needed.
+With `@lincyaw/slidev-addon-assistant` in the document's `plugins`, its pages have an Ask button: readers ask about the current section, or select some text first and ask about it, and the citations in the answer jump to their sections. Static sites have it too; no server is needed.
 
 The answers come from a model service the reader sets up (the address of an OpenAI compatible Chat Completions API, a key and a model name), kept in the reader's browser only; the question and the text of the current section go straight from the browser to that service, at the reader's cost. The panel says so, and says that scripts of the same site can read the key.
 
 (assistant-edit)=
 ## Changes by an agent
 
-In the workbench (experimental; `pnpm add -g @presmium/studio`, then `presmium-studio`), an agent changes a lecture as your chat asks: you review the changes, and what you accept becomes a git commit you can revert. The model service comes from environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or from the workbench's model settings; it is never written into the lecture or its outputs.
+In the workbench (experimental; `pnpm add -g @lincyaw/studio`, then `presmium-studio`), an agent changes a lecture as your chat asks: you review the changes, and what you accept becomes a git commit you can revert. The model service comes from environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or from the workbench's model settings; it is never written into the lecture or its outputs.
 
 (assistant-mcp)=
 ## Agents in your editor
@@ -274,7 +274,7 @@ The translations the documents declare are published with the workspace site: ea
 (workspace-serve)=
 ## The local service and the workbench
 
-`presmium serve` starts the workspace service on your machine: its home page lists the documents, and each document's site compiles on demand and updates as you save. `presmium-studio` (`pnpm add -g @presmium/studio`, experimental) starts the workbench on top of it: the file tree, source editing, preview, the problems and an agent. Both are for you alone and listen on this machine only by default; `--host` opens them to other devices on your local network, with no login, so whoever reaches the port works as you. The service's preview shows the originals; `presmium build` publishes the translations.
+`presmium serve` starts the workspace service on your machine: its home page lists the documents, and each document's site compiles on demand and updates as you save. `presmium-studio` (`pnpm add -g @lincyaw/studio`, experimental) starts the workbench on top of it: the file tree, source editing, preview, the problems and an agent. Both are for you alone and listen on this machine only by default; `--host` opens them to other devices on your local network, with no login, so whoever reaches the port works as you. The service's preview shows the originals; `presmium build` publishes the translations.
 
 (publish)=
 # Publishing

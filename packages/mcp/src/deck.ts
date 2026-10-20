@@ -1,6 +1,6 @@
 import { dirname, relative } from 'node:path'
-import { blockState, blockText, blockVisible, chapters, irBlocks, narrationAt, tokenize } from '@presmium/kernel'
-import type { CodeNode, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunOutput, RunResult, SourcePos } from '@presmium/kernel'
+import { blockState, blockText, blockVisible, chapters, irBlocks, narrationAt, tokenize } from '@lincyaw/kernel'
+import type { CodeNode, Finding, IRBlock, IRDocument, IRSection, RecordedRun, RunOutput, RunResult, SourcePos } from '@lincyaw/kernel'
 import MiniSearch from 'minisearch'
 
 export interface Place {

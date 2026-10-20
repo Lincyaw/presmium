@@ -77,10 +77,10 @@ it('packs every public package with its license and the files its exports and co
     }
     expect(files.filter(file => file.startsWith('test/')), name).toEqual([])
   }
-  const plugin = JSON.parse(readFileSync(join(installed('@presmium/slidev-addon-core'), 'package.json'), 'utf8')) as { license: string, peerDependencies: Record<string, string>, dependencies?: Record<string, string> }
+  const plugin = JSON.parse(readFileSync(join(installed('@lincyaw/slidev-addon-core'), 'package.json'), 'utf8')) as { license: string, peerDependencies: Record<string, string>, dependencies?: Record<string, string> }
   expect(plugin.license).toBe('Apache-2.0')
-  expect(plugin.peerDependencies['@presmium/kernel']).toMatch(/^\^\d+\.\d+\.\d+/)
-  expect(Object.keys(plugin.dependencies ?? {}).filter(name => name.startsWith('@presmium/'))).toEqual([])
+  expect(plugin.peerDependencies['@lincyaw/kernel']).toMatch(/^\^\d+\.\d+\.\d+/)
+  expect(Object.keys(plugin.dependencies ?? {}).filter(name => name.startsWith('@lincyaw/'))).toEqual([])
 })
 
 it('checks the document with no problems and builds its web form, slides and notebook with the third-party plugin (P-141)', async () => {
@@ -135,7 +135,7 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
       expect(page.status, path).toBe(200)
       expect(await page.text(), path).toContain('id="app"')
     }
-    const kernel = await fetch(`${url}/intro/@fs${join(installed('@presmium/kernel'), 'src/services.ts')}`)
+    const kernel = await fetch(`${url}/intro/@fs${join(installed('@lincyaw/kernel'), 'src/services.ts')}`)
     expect(kernel.status).toBe(200)
     const code = await kernel.text()
     expect(code).toMatch(/^import .*semver.* from "[^"]+"/m)
@@ -158,7 +158,7 @@ it('serves a workspace with presmium serve, its sites outside the project, the b
 it('reports a plugin whose peer dependencies exclude the installed Presmium and builds the document without it (P-143)', async () => {
   cpSync(join(FIXTURES, 'incompatible'), join(project, 'incompatible'), { recursive: true })
   const { version } = JSON.parse(readFileSync(join(ROOT, 'packages/kernel/package.json'), 'utf8')) as { version: string }
-  const message = `plugin "./plugin" (presmium-plugin-future 2.0.0) is not loaded: it needs @presmium/kernel ^9.0.0 (peerDependencies), and ${version} is installed`
+  const message = `plugin "./plugin" (presmium-plugin-future 2.0.0) is not loaded: it needs @lincyaw/kernel ^9.0.0 (peerDependencies), and ${version} is installed`
   const check = await presmium(['check', 'incompatible'])
   expect(check.code).toBe(1)
   expect(check.stdout).toContain(`lecture.md:5  error  ${message}`)

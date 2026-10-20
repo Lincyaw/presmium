@@ -2,9 +2,9 @@
 title: 浏览器 GPU 测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-exec'
-  - '@presmium/slidev-addon-exec-webgpu'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec-webgpu'
 renderers:
   web: {}
   slides:

@@ -1,5 +1,5 @@
-import { errorMessage, failedRun } from '@presmium/kernel'
-import type { Executor, ExecutorRouter, RunRequest, RunResult } from '@presmium/kernel'
+import { errorMessage, failedRun } from '@lincyaw/kernel'
+import type { Executor, ExecutorRouter, RunRequest, RunResult } from '@lincyaw/kernel'
 
 interface Entry {
   executor: Executor

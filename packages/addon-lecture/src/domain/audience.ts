@@ -1,4 +1,4 @@
-import type { IRDocument, TrackEvent } from '@presmium/kernel'
+import type { IRDocument, TrackEvent } from '@lincyaw/kernel'
 import { blockDrift, blockOf, irHash, sectionHashes } from './drift.ts'
 import { anchorOf, timedEvents } from './timing.ts'
 import type { LectureTrack, MediaSegment, Utterance } from './track.ts'

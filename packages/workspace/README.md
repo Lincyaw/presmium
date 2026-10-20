@@ -1,4 +1,4 @@
-# @presmium/workspace
+# @lincyaw/workspace
 
 Presmium's workspace: the site of several documents (`presmium build` at a workspace root) and the local workbench `presmium serve`, with the document templates.
 
@@ -6,7 +6,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 
 ## Install
 
-It comes with `@presmium/cli`.
+It comes with `@lincyaw/cli`.
 
 ## Workspaces
 
@@ -24,7 +24,7 @@ site:
 
 ## The workbench (preview)
 
-`presmium serve` runs the workbench on your machine: the live site, editing the source in the browser, managing documents and the history of changes. Its browser side (`@presmium/workspace/client`, `@presmium/workspace/domain` and the routes behind it) is experimental and will be replaced by a new workbench; the command, the workspace configuration file and the Node services stay.
+`presmium serve` runs the workbench on your machine: the live site, editing the source in the browser, managing documents and the history of changes. Its browser side (`@lincyaw/workspace/client`, `@lincyaw/workspace/domain` and the routes behind it) is experimental and will be replaced by a new workbench; the command, the workspace configuration file and the Node services stay.
 
 ## Documentation
 

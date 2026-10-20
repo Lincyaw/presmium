@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages, useService, useStartReport } from '@presmium/host'
+import { useMessages, useService, useStartReport } from '@lincyaw/host'
 import { computed } from 'vue'
 import { DEMO_GREETING } from '../src/client/demo.ts'
 

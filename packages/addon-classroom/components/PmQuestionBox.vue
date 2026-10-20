@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { computed, ref } from 'vue'
 import { newId, useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
 import { COLLECTIONS, isQuestion, MESSAGES, placeText } from '../src/domain/index.ts'

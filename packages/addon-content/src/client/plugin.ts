@@ -1,4 +1,4 @@
-import type { PluginDefinition } from '@presmium/kernel'
+import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { CONTENT_ID } from '../domain/index.ts'
 import { defineDemoElements } from './elements.ts'

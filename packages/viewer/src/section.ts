@@ -1,5 +1,5 @@
-import { isChapterTitle, narrationAt } from '@presmium/kernel'
-import type { IRBlock, IRSection } from '@presmium/kernel'
+import { isChapterTitle, narrationAt } from '@lincyaw/kernel'
+import type { IRBlock, IRSection } from '@lincyaw/kernel'
 import type { InjectionKey, PropType, Ref, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, ref, shallowRef, toRef } from 'vue'
 import { BlockView } from './block.ts'

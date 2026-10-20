@@ -6,8 +6,8 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PRESMIUM_BIN, run } from '@presmium/cli/testing'
-import type { Run } from '@presmium/cli/testing'
+import { PRESMIUM_BIN, run } from '@lincyaw/cli/testing'
+import type { Run } from '@lincyaw/cli/testing'
 
 export const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 const PACKAGES = fileURLToPath(new URL('../..', import.meta.url))

@@ -1,6 +1,6 @@
 // The fixture deck of e2e/web.spec.ts and e2e/viewer.spec.ts (./deck): a zh-CN deck of three
 // chapters (a source file without a chapter title, then two chapter titles in one file) with a
-// test plugin whose component steps. Built by `buildFixture` with the @presmium/host its plugin
+// test plugin whose component steps. Built by `buildFixture` with the @lincyaw/host its plugin
 // imports and served as one site: the web form under /web/ and the slides under /slides/ (the bases
 // the deck sets), so each form's default link to the other works.
 import { readFileSync } from 'node:fs'
@@ -26,7 +26,7 @@ export interface WebDeck {
 
 /** Builds the fixture deck into the forms `to` (e.g. `web,slides`), changed by `edit`, and serves them. */
 export async function webDeck(to: string, edit?: (dir: string) => void): Promise<WebDeck> {
-  const deck = await buildFixture('web/deck', { to, edit, link: { '@presmium/host': 'packages/host' }, bases: true })
+  const deck = await buildFixture('web/deck', { to, edit, link: { '@lincyaw/host': 'packages/host' }, bases: true })
   return {
     url: deck.url,
     web: (path = '') => `${deck.web}/${path}`,

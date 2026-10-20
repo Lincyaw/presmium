@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmIcon, useMessages } from '@presmium/host'
+import { PmIcon, useMessages } from '@lincyaw/host'
 import { useHighContrast } from '../src/client/contrast.ts'
 import { MESSAGES } from '../src/domain/index.ts'
 

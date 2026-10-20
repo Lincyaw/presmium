@@ -1,7 +1,7 @@
 // Test-only executor for the `interp` language: runs the code with the `fakeinterp` program on
 // PATH, and fingerprints the runtime with `fakeinterp --version`, as an interpreter executor does.
 import { execFileSync } from 'node:child_process'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.interp',

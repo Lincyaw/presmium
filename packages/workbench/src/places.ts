@@ -1,5 +1,5 @@
-import { irBlocks } from '@presmium/kernel'
-import type { IRDocument, SourcePos } from '@presmium/kernel'
+import { irBlocks } from '@lincyaw/kernel'
+import type { IRDocument, SourcePos } from '@lincyaw/kernel'
 
 export interface Place {
   section: string

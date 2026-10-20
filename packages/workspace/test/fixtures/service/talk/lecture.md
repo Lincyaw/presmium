@@ -2,7 +2,7 @@
 title: Service Talk
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   web: {}
   slides: {}

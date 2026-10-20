@@ -1,8 +1,8 @@
 import { createRequire } from 'node:module'
 import { writeFile } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
-import { deckLocale } from '@presmium/kernel'
-import type { IRDocument, IRSection, PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
+import { deckLocale } from '@lincyaw/kernel'
+import type { IRDocument, IRSection, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
 import { DEFAULT_KERNEL, renderNotebook, support } from '../domain/notebook.ts'
 import type { KernelSpec, NotebookOptions } from '../domain/notebook.ts'
 import { localMedia } from './media.ts'
@@ -45,13 +45,13 @@ async function options(doc: IRDocument, ctx: RenderContext): Promise<Omit<Notebo
   return { kernel: kernelSpec(kernel, warn), locale: deckLocale(ctx.lang), webLink: await webLink(doc, ctx, webUrl), extensionFor: ctx.extensionFor }
 }
 
-const WEB_PACKAGE = '@presmium/web'
+const WEB_PACKAGE = '@lincyaw/web'
 
 async function webLink(doc: IRDocument, ctx: RenderContext, webUrl: unknown): Promise<((section: IRSection) => string) | undefined> {
   if (typeof webUrl === 'string') return section => `${webUrl.replace(/#.*$/, '')}#${encodeURIComponent(section.id)}`
   const web = doc.config.renderers.web?.package ?? WEB_PACKAGE
   if (!ctx.renderers.includes('web') || web !== WEB_PACKAGE) return undefined
-  const layout = await import('@presmium/web/domain').catch(() => undefined)
+  const layout = await import('@lincyaw/web/domain').catch(() => undefined)
   if (!layout) return undefined
   const links = layout.sectionLinks(layout.toPages(doc))
   return section => `../web${(links[section.id] ?? '/').replace(/^\/(?=#|$)/, '/index.html')}`

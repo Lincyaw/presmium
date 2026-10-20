@@ -1,4 +1,4 @@
-# @presmium/kernel
+# @lincyaw/kernel
 
 Presmium's shared kernel: the IR and the plugin contracts, the service registry, anchors and checks. Plain TypeScript, used by the compiler, the renderers, the IR runtime and every plugin.
 
@@ -9,16 +9,16 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 Plugins declare it as a peer dependency, so they share the application's copy:
 
 ```json
-"peerDependencies": { "@presmium/kernel": "^1.0.0" }
+"peerDependencies": { "@lincyaw/kernel": "^1.0.0" }
 ```
 
 ## Entries
 
-- `@presmium/kernel`: the contracts (`PresmiumNodePlugin`, `PluginDefinition`, `DirectiveSpec`, `IRPass`, `Renderer`, `RenderContext`, `Check`, the service tokens), the IR types (`IRDocument` and its nodes), `KERNEL_VERSION`, `IR_VERSION`, and plain helpers such as `docBlocks`, `withProp`, `deckLocale`, `json` and `problem`.
-- `@presmium/kernel/contracts`, `@presmium/kernel/ir`: the contracts or the IR types alone.
-- `@presmium/kernel/reading`: plain functions that read compiled documents (`chapters`, `blockText`, `narrationAt`, `tokenize`).
-- `@presmium/kernel/node`: helpers for Node code: `copyPublished` (its other exports are internal).
-- `@presmium/kernel/runner.py`: the shared Python runner of the executors.
+- `@lincyaw/kernel`: the contracts (`PresmiumNodePlugin`, `PluginDefinition`, `DirectiveSpec`, `IRPass`, `Renderer`, `RenderContext`, `Check`, the service tokens), the IR types (`IRDocument` and its nodes), `KERNEL_VERSION`, `IR_VERSION`, and plain helpers such as `docBlocks`, `withProp`, `deckLocale`, `json` and `problem`.
+- `@lincyaw/kernel/contracts`, `@lincyaw/kernel/ir`: the contracts or the IR types alone.
+- `@lincyaw/kernel/reading`: plain functions that read compiled documents (`chapters`, `blockText`, `narrationAt`, `tokenize`).
+- `@lincyaw/kernel/node`: helpers for Node code: `copyPublished` (its other exports are internal).
+- `@lincyaw/kernel/runner.py`: the shared Python runner of the executors.
 
 ## Versions
 

@@ -5,7 +5,7 @@ import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
+import { TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
 import type { DevMessage } from './vite.ts'
 
 function bin(): string {

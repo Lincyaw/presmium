@@ -1,4 +1,4 @@
-# @presmium/server
+# @lincyaw/server
 
 The server of `presmium dev` and `presmium serve`: plugin routes and proxies under `/__presmium/`, approvals, the control channel and the MCP endpoint. It listens on this machine only unless `presmium serve --host` is given.
 
@@ -6,7 +6,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 
 ## Install
 
-It comes with `@presmium/cli`; you do not install it yourself. Its programming interface serves Presmium's own packages and is internal; plugins add routes through `PresmiumNodePlugin.server`.
+It comes with `@lincyaw/cli`; you do not install it yourself. Its programming interface serves Presmium's own packages and is internal; plugins add routes through `PresmiumNodePlugin.server`.
 
 ## Documentation
 

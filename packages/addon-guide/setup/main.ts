@@ -1,4 +1,4 @@
-import { registerPresmiumPlugin } from '@presmium/host'
+import { registerPresmiumPlugin } from '@lincyaw/host'
 import { useIsSlideActive, useSlideContext } from '@slidev/client'
 import { defineAppSetup } from '@slidev/types'
 import { computed } from 'vue'

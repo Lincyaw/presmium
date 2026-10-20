@@ -1,4 +1,4 @@
-import type { SyncTransports } from '@presmium/host'
+import type { SyncTransports } from '@lincyaw/host'
 import { addSyncMethod } from '@slidev/client'
 import { drawingsIn, drawingsOut, sharedOut, sharedReceiver, slideSections } from '../domain/index.ts'
 import type { SlideSections } from '../domain/index.ts'

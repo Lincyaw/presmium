@@ -1,5 +1,5 @@
-import { failedRun } from '@presmium/kernel'
-import type { Executor, RunRequest, RunResult } from '@presmium/kernel'
+import { failedRun } from '@lincyaw/kernel'
+import type { Executor, RunRequest, RunResult } from '@lincyaw/kernel'
 import { isPython } from '../domain/index.ts'
 import type { Trace, Tracer } from '../domain/index.ts'
 import { messages } from './messages.ts'

@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join, relative, sep } from 'node:path'
-import { deckLocale, escapeHtml } from '@presmium/kernel'
-import type { SourcePos } from '@presmium/kernel'
+import { deckLocale, escapeHtml } from '@lincyaw/kernel'
+import type { SourcePos } from '@lincyaw/kernel'
 import { DECK_ENTRY } from './compiler.ts'
 import { inside } from './settings.ts'
 

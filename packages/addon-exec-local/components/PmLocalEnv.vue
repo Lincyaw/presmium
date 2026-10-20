@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useService, useStartReport } from '@presmium/host'
-import { errorMessage, languageId } from '@presmium/kernel'
-import type { RunResult } from '@presmium/kernel'
+import { useService, useStartReport } from '@lincyaw/host'
+import { errorMessage, languageId } from '@lincyaw/kernel'
+import type { RunResult } from '@lincyaw/kernel'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useMessages } from '../src/client/messages.ts'
 import { archiveName, disconnected, LOCAL_ENV } from '../src/domain/index.ts'

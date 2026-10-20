@@ -409,7 +409,7 @@ test.describe('a French deck with JavaScript and TypeScript', () => {
 })
 
 test.describe('untrusted output in the slides\' runner (F-20)', () => {
-  const xss = useFixture('exec/xss', { to: 'slides', link: { '@presmium/host': 'packages/host' } })
+  const xss = useFixture('exec/xss', { to: 'slides', link: { '@lincyaw/host': 'packages/host' } })
 
   test('an image output whose data is not base64 runs nothing and is dropped, saying why', async ({ page }) => {
     await page.goto(`${xss().slides}/${xss().slide('evil-image')}`)

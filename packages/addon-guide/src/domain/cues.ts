@@ -1,4 +1,4 @@
-import type { StepRange } from '@presmium/kernel/contracts'
+import type { StepRange } from '@lincyaw/kernel/contracts'
 
 export const GUIDE_ID = 'presmium.guide'
 

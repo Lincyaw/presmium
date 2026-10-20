@@ -1,2 +1,2 @@
-import '@presmium/host/design.css'
+import '@lincyaw/host/design.css'
 import './book.css'

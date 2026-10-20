@@ -1,5 +1,5 @@
-import { docBlocks, nodeMdast } from '@presmium/kernel'
-import type { IRDocument, MdastNode } from '@presmium/kernel'
+import { docBlocks, nodeMdast } from '@lincyaw/kernel'
+import type { IRDocument, MdastNode } from '@lincyaw/kernel'
 import { unique } from './sections.ts'
 
 const FOOTNOTE = new Set(['footnoteReference', 'footnoteDefinition'])

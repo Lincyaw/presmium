@@ -1,4 +1,4 @@
-# @presmium/slidev-addon-exec-jupyter
+# @lincyaw/slidev-addon-exec-jupyter
 
 Remote Jupyter environments at build time and in the browser, and a browser terminal.
 
@@ -7,17 +7,17 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @presmium/slidev-addon-exec-jupyter
+pnpm add -D @lincyaw/slidev-addon-exec-jupyter
 ```
 
 List it in the headmatter of the documents that use it:
 
 ```yaml
 plugins:
-  - '@presmium/slidev-addon-exec-jupyter'
+  - '@lincyaw/slidev-addon-exec-jupyter'
 ```
 
-It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@presmium/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
+It is a Presmium plugin and a Slidev addon: its components work on the web page and in the slides. It needs `@lincyaw/cli` and the renderers in the same project, and declares the Presmium packages it shares with them as peer dependencies (Presmium 1.x).
 
 ## What it provides
 

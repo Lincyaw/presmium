@@ -2,12 +2,12 @@
 title: 书卷样式
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-exec'
-  - '@presmium/slidev-addon-session'
-  - '@presmium/slidev-addon-classroom'
-  - '@presmium/slidev-addon-publish'
-  - '@presmium/slidev-addon-assistant'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-session'
+  - '@lincyaw/slidev-addon-classroom'
+  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/slidev-addon-assistant'
 renderers:
   web: {}
   slides: {}

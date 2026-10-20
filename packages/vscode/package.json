@@ -65,8 +65,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
-    "@presmium/language-server": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/language-server": "workspace:*",
     "vscode-languageclient": "10.1.2"
   },
   "devDependencies": {

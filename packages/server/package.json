@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/server",
+  "name": "@lincyaw/server",
   "version": "1.0.0-rc.0",
   "description": "The server of presmium dev and presmium serve: plugin routes and proxies, approvals, the control channel and MCP",
   "license": "Apache-2.0",
@@ -29,9 +29,9 @@
   ],
   "dependencies": {
     "@hono/node-server": "2.1.3",
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/mcp": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/mcp": "workspace:*",
     "hono": "4.13.13",
     "http-proxy-3": "2.0.1"
   },

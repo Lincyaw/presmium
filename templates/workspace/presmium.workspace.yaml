@@ -10,6 +10,6 @@ settings:                           # the plugins' operator settings, by plugin 
     # The operator plugins: every document loads them. The official ones come with presmium; others are
     # installed at this root (pnpm add -D <package>). The assistant gives the readers "提问" (each reader's
     # own model, in the browser).
-    plugins: ['@presmium/slidev-addon-assistant']
+    plugins: ['@lincyaw/slidev-addon-assistant']
   # presmium.assistant:
   #   review: required                       # agent changes wait for the author's review (auto: committed at once)

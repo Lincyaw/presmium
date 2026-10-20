@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { CodeNode, IRDocument } from '@presmium/kernel'
+import type { CodeNode, IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 import { presmium } from './helpers.ts'
 

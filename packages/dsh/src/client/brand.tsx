@@ -1,5 +1,5 @@
-import { PmButton, WorkbenchProvider } from '@presmium/workbench'
-import type { Workbench } from '@presmium/workbench'
+import { PmButton, WorkbenchProvider } from '@lincyaw/workbench'
+import type { Workbench } from '@lincyaw/workbench'
 import { useEffect, useSyncExternalStore } from 'react'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { BRAND_LANGUAGES, BRAND_SLOTS, ONBOARDING } from './contract.ts'

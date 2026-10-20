@@ -8,8 +8,8 @@
  * at the document (GET reads, POST waves once more). A built site has no server.
  */
 import { createRequire } from 'node:module'
-import { deckLocale, json } from '@presmium/kernel'
-import type { DirectiveSpec, PresmiumNodePlugin } from '@presmium/kernel'
+import { deckLocale, json } from '@lincyaw/kernel'
+import type { DirectiveSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { COMPONENT, GREETING_MESSAGES, PLUGIN_ID } from '../domain/index.ts'
 import type { Waves } from '../domain/index.ts'
 
@@ -42,7 +42,7 @@ const greeting: DirectiveSpec = {
 const plugin: PresmiumNodePlugin = {
   id: PLUGIN_ID,
   version,
-  // The plugin contract this plugin is written for (KERNEL_VERSION of @presmium/kernel); the
+  // The plugin contract this plugin is written for (KERNEL_VERSION of @lincyaw/kernel); the
   // compiler does not load a plugin whose range excludes the installed one.
   kernel: '^1.0.0',
   directives: [greeting],

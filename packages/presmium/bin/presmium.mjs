@@ -23,6 +23,6 @@ if (local && realpathSync(join(dirname(local), '..')) !== own) {
     const code = typeof args[0] === 'object' ? args[0]?.code : args[1]
     if (code !== 'DEP0040') emitWarning.call(process, warning, ...args)
   }
-  const { main } = await createJiti(import.meta.url).import('@presmium/cli')
+  const { main } = await createJiti(import.meta.url).import('@lincyaw/cli')
   process.exitCode = await main(process.argv.slice(2), { bundled: own, bin: fileURLToPath(import.meta.url) })
 }

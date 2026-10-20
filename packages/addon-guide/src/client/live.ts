@@ -1,4 +1,4 @@
-import { useViewRole } from '@presmium/host'
+import { useViewRole } from '@lincyaw/host'
 import type { InjectionKey, Ref } from 'vue'
 import { computed, inject } from 'vue'
 

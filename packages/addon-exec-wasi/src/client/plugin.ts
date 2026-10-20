@@ -1,5 +1,5 @@
-import { environmentExecutor, EXECUTOR } from '@presmium/kernel'
-import type { PluginDefinition } from '@presmium/kernel'
+import { environmentExecutor, EXECUTOR } from '@lincyaw/kernel'
+import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { EXEC_WASI_ID, execWasiConfig, RUNTIME_DIR, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
 import { createWasiRunner } from './executor.ts'

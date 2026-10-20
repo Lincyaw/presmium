@@ -1,7 +1,7 @@
 ---
 title: 编译时执行
 plugins:
-  - '@presmium/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec'
 ---
 
 # 执行

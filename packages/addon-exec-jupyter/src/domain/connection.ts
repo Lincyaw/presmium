@@ -1,4 +1,4 @@
-import type { EnvironmentSpec } from '@presmium/kernel'
+import type { EnvironmentSpec } from '@lincyaw/kernel'
 import { authOf, baseUrl, operatorVariables, originOf } from './config.ts'
 
 export interface Connection {

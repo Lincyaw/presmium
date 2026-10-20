@@ -1,5 +1,5 @@
-import type { ServerClient } from '@presmium/host'
-import { isRecord } from '@presmium/kernel'
+import type { ServerClient } from '@lincyaw/host'
+import { isRecord } from '@lincyaw/kernel'
 import { LECTURE_ID, parseTrack } from '../domain/index.ts'
 import type { LectureTrack, Voice } from '../domain/index.ts'
 

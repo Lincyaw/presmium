@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/host",
+  "name": "@lincyaw/host",
   "version": "1.0.0-rc.0",
   "description": "Presmium's host interface for plugin components in every form: step state, services, interface text, and the design system (tokens, components, fonts)",
   "license": "Apache-2.0",
@@ -33,8 +33,8 @@
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fontsource/source-serif-4": "5.3.1",
-    "@presmium/design": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/design": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@vueuse/core": "15.0.0",
     "reka-ui": "2.11.0",
     "vue": "^3.5.42"

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, normalize, sep } from 'node:path'
-import { docBlocks, isRecord } from '@presmium/kernel'
-import type { Focus, FocusReport, IRDocument, SourceRange } from '@presmium/kernel'
+import { docBlocks, isRecord } from '@lincyaw/kernel'
+import type { Focus, FocusReport, IRDocument, SourceRange } from '@lincyaw/kernel'
 import { findBlock, findSection, place } from './deck.ts'
 
 export const EXCERPT_LINES = 20

@@ -1,4 +1,4 @@
-# @presmium/language-server
+# @lincyaw/language-server
 
 The language server of Presmium documents: diagnostics, anchor definitions and hovers, completion of directives, options and anchors, and the preview that follows the cursor.
 

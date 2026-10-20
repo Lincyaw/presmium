@@ -1,6 +1,6 @@
 import { networkInterfaces } from 'node:os'
 import { parseArgs } from 'node:util'
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage } from '@lincyaw/kernel'
 import { startClassroomServer } from './index.ts'
 
 const USAGE = `Usage: presmium-classroom-server [--port <n>] [--host <address>] [--deck <dir>]

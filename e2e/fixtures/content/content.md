@@ -76,7 +76,7 @@ markmap:
 slides: { class: pm-content-media, routeAlias: content-media }
 :::
 
-```{video} @presmium/slidev-addon-content/media/clip.webm
+```{video} @lincyaw/slidev-addon-content/media/clip.webm
 :controls:
 :muted:
 :loop:
@@ -84,13 +84,13 @@ slides: { class: pm-content-media, routeAlias: content-media }
 视频：controls 显示播放控制，width 设定尺寸
 ```
 
-```{audio} @presmium/slidev-addon-content/media/tone.ogg
+```{audio} @lincyaw/slidev-addon-content/media/tone.ogg
 :controls:
 音频：同样用 controls 显示播放控制
 ```
 
-```{animation} @presmium/slidev-addon-content/media/spinner.gif
-:still: @presmium/slidev-addon-content/media/spinner.png
+```{animation} @lincyaw/slidev-addon-content/media/spinner.gif
+:still: @lincyaw/slidev-addon-content/media/spinner.png
 :width: 96
 :height: 96
 :alt: 旋转的加载动画

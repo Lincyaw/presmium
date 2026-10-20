@@ -1,5 +1,5 @@
-import { EXECUTOR } from '@presmium/kernel'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { EXECUTOR } from '@lincyaw/kernel'
+import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { EXEC_JUPYTER_ID, JUPYTER_ENVIRONMENTS, jupyterEnvironments } from '../domain/index.ts'
 import { createRemoteEnvironments } from './environments.ts'

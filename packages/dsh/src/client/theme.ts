@@ -1,5 +1,5 @@
-import { color } from '@presmium/design'
-import type { ColorName } from '@presmium/design'
+import { color } from '@lincyaw/design'
+import type { ColorName } from '@lincyaw/design'
 
 type Pair = { light: string, dark: string }
 const same = (value: string): Pair => ({ light: value, dark: value })

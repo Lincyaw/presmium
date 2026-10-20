@@ -5,8 +5,8 @@ import { realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { connectPresmiumMcp } from '@presmium/mcp/client'
-import type { ListedTool, PresmiumMcpClient } from '@presmium/mcp/client'
+import { connectPresmiumMcp } from '@lincyaw/mcp/client'
+import type { ListedTool, PresmiumMcpClient } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshLogger } from './dsh.ts'
 
 export const name = 'presmium-service'
@@ -42,7 +42,7 @@ const DOCUMENTS_MS = 2000
 const WATCHDOG = fileURLToPath(new URL('./watchdog.mjs', import.meta.url))
 
 function presmiumBin(): string {
-  const entry = createRequire(import.meta.url).resolve('@presmium/cli')
+  const entry = createRequire(import.meta.url).resolve('@lincyaw/cli')
   return join(dirname(dirname(entry)), 'bin', 'presmium.mjs')
 }
 

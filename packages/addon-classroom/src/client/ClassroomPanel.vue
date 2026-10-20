@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages, useSectionConfig } from '@presmium/host'
+import { useMessages, useSectionConfig } from '@lincyaw/host'
 import { computed } from 'vue'
 import {
   CLASSROOM_ID,

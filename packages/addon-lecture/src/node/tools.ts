@@ -1,6 +1,6 @@
 import { isAbsolute, relative, resolve } from 'node:path'
-import { defineService, DOCUMENT_FILES, SPEECH } from '@presmium/kernel'
-import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@presmium/kernel'
+import { defineService, DOCUMENT_FILES, SPEECH } from '@lincyaw/kernel'
+import type { AgentTool, AgentToolContext, IRDocument, SourceRange, SpeechService } from '@lincyaw/kernel'
 import { LECTURES_DIR, narrationDraft, narrationPlace, SCRIPT_TRACK, trackDuration, translationItems } from '../domain/index.ts'
 import type { LecturePlan, LectureTrack } from '../domain/index.ts'
 import { synthesizedLecture, transcribeLecture, unsaidMessage } from './lecture.ts'
@@ -26,7 +26,7 @@ function deckOf(ctx: AgentToolContext): { deckDir: string, doc: IRDocument, file
 
 function speechOf(ctx: AgentToolContext): SpeechService {
   const speech = ctx.service(SPEECH)
-  if (!speech) throw new Error('no speech service: the deck needs @presmium/slidev-addon-speech')
+  if (!speech) throw new Error('no speech service: the deck needs @lincyaw/slidev-addon-speech')
   return speech
 }
 

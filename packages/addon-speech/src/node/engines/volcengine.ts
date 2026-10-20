@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { SpeechWord, Transcript, TranscriptSegment, VoiceInfo } from '@presmium/kernel'
-import { isRecord } from '@presmium/kernel'
+import type { SpeechWord, Transcript, TranscriptSegment, VoiceInfo } from '@lincyaw/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { SpeechError } from '../errors.ts'
 import type { EngineAdapter, EngineAudio, EngineInput, EngineSynthesis } from './types.ts'

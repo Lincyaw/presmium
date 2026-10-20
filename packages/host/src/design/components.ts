@@ -2,8 +2,8 @@ import type { InjectionKey, PropType, VNode } from 'vue'
 import { defineComponent, cloneVNode, h, inject, provide, ref, useId } from 'vue'
 import { DialogClose, DialogContent, DialogPortal, DialogRoot, DialogTitle, DialogTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger, PopoverAnchor, PopoverContent, PopoverPortal, PopoverRoot, TabsContent, TabsList, TabsRoot, TabsTrigger, ToggleGroupItem, ToggleGroupRoot } from 'reka-ui'
 import type { ToolbarPlace } from '../types.ts'
-import { ICONS } from '@presmium/design'
-import type { IconName } from '@presmium/design'
+import { ICONS } from '@lincyaw/design'
+import type { IconName } from '@lincyaw/design'
 
 const PLACE: InjectionKey<ToolbarPlace> = Symbol('presmium.toolbarPlace')
 const OVERLAY_Z: InjectionKey<string> = Symbol('presmium.overlayZ')

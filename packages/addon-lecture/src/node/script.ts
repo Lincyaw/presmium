@@ -1,5 +1,5 @@
 import { isAbsolute, join } from 'node:path'
-import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
+import type { Finding, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { LECTURE_ID } from '../domain/index.ts'
 import type { ScriptSections } from '../domain/index.ts'

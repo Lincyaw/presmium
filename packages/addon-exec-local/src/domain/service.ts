@@ -1,5 +1,5 @@
-import { defineService, failedRun } from '@presmium/kernel'
-import type { RunRequest, RunResult } from '@presmium/kernel'
+import { defineService, failedRun } from '@lincyaw/kernel'
+import type { RunRequest, RunResult } from '@lincyaw/kernel'
 
 export const CONTAINER_EXECUTOR_ID = 'presmium.container'
 

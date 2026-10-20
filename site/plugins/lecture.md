@@ -7,7 +7,7 @@ translations: { en: lecture.en.md }
 (plugins)=
 # 插件开发指南
 
-Presmium 的组件、指令、执行器、服务与渲染端都以插件提供，官方插件与第三方插件用的是同一套契约。一个插件是一个 npm 包：Node 端的入口把源码中的指令变成 IR、在编译时运行步骤与检查、提供服务与服务端路由；浏览器端的组件在网页与幻灯片两种形态中是同一个 Vue 组件，只经 `@presmium/host` 取得步骤状态与服务。
+Presmium 的组件、指令、执行器、服务与渲染端都以插件提供，官方插件与第三方插件用的是同一套契约。一个插件是一个 npm 包：Node 端的入口把源码中的指令变成 IR、在编译时运行步骤与检查、提供服务与服务端路由；浏览器端的组件在网页与幻灯片两种形态中是同一个 Vue 组件，只经 `@lincyaw/host` 取得步骤状态与服务。
 
 这份指南以一个假想的投票插件 `presmium.poll` 为例，从包的结构讲到测试。接口的完整签名见接口参考（导航栏的“API”），版本规则见[接口与版本](../reference/lecture.md#versions)。
 
@@ -46,21 +46,21 @@ presmium-plugin-poll/
   "files": ["components", "setup", "src"],
   "slidev": {},
   "peerDependencies": {
-    "@presmium/host": "^1.0.0",
-    "@presmium/kernel": "^1.0.0"
+    "@lincyaw/host": "^1.0.0",
+    "@lincyaw/kernel": "^1.0.0"
   },
   "devDependencies": {
-    "@presmium/cli": "^1.0.0",
-    "@presmium/host": "^1.0.0",
-    "@presmium/kernel": "^1.0.0",
-    "@presmium/web": "^1.0.0",
+    "@lincyaw/cli": "^1.0.0",
+    "@lincyaw/host": "^1.0.0",
+    "@lincyaw/kernel": "^1.0.0",
+    "@lincyaw/web": "^1.0.0",
     "vitest": "^4.0.0"
   }
 }
 ```
 
 - 每个插件包本身也是一个 Slidev 插件（`slidev` 字段、`components/`、`setup/`），幻灯片形态因此认得它的组件。
-- 对 `@presmium/kernel`、`@presmium/host`、`@presmium/viewer`、`@presmium/compiler` 中用到的包写成对等依赖：插件与应用共用一份 Presmium。已安装的 Presmium 不满足对等依赖时，加载器给出诊断 `presmium.plugins` 而不加载插件，构建不会崩溃。
+- 对 `@lincyaw/kernel`、`@lincyaw/host`、`@lincyaw/viewer`、`@lincyaw/compiler` 中用到的包写成对等依赖：插件与应用共用一份 Presmium。已安装的 Presmium 不满足对等依赖时，加载器给出诊断 `presmium.plugins` 而不加载插件，构建不会崩溃。
 - 源码以 `.ts` 与 `.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
 
 (plugin-package-version)=
@@ -73,10 +73,10 @@ Node 端入口与浏览器端的插件清单都写 `version` 与 `kernel`：`ver
 
 | 位置 | 可以引用 | 不得引用 |
 |---|---|---|
-| `src/domain/` | `@presmium/kernel`、纯计算的库 | vue、`@presmium/host`、`@slidev/*`、vitepress、Node 的内置模块 |
-| `components/`、`src/client/` | `src/domain/`、`@presmium/kernel`、`@presmium/host`、vue | `@slidev/*`、vitepress |
+| `src/domain/` | `@lincyaw/kernel`、纯计算的库 | vue、`@lincyaw/host`、`@slidev/*`、vitepress、Node 的内置模块 |
+| `components/`、`src/client/` | `src/domain/`、`@lincyaw/kernel`、`@lincyaw/host`、vue | `@slidev/*`、vitepress |
 | `setup/` | 以上全部，加 `@slidev/client` 的公开导出与 `@slidev/types` | Slidev 的其他包、vitepress |
-| `src/node/` | `src/domain/`、`@presmium/kernel`、Node 的库 | vue |
+| `src/node/` | `src/domain/`、`@lincyaw/kernel`、Node 的库 | vue |
 
 不要引用框架的内部路径，也不要引用别的插件包：两个插件要共用的契约放进内核（业务服务）或宿主（宿主层的令牌）。
 
@@ -86,11 +86,11 @@ Node 端入口与浏览器端的插件清单都写 `version` 与 `kernel`：`ver
 (plugin-components-host)=
 ## 只经过宿主
 
-组件放在 `components/` 下，网页与幻灯片都用它。它只从 `@presmium/host` 取得步骤状态与服务，不直接用 Slidev 或 VitePress，所以两种形态都能渲染：
+组件放在 `components/` 下，网页与幻灯片都用它。它只从 `@lincyaw/host` 取得步骤状态与服务，不直接用 Slidev 或 VitePress，所以两种形态都能渲染：
 
 ```vue
 <script setup lang="ts">
-import { useMessages, useStepState } from '@presmium/host'
+import { useMessages, useStepState } from '@lincyaw/host'
 import { MESSAGES } from '../src/domain/messages.ts'
 
 defineProps<{ question: string, choices: string[] }>()
@@ -135,7 +135,7 @@ const t = useMessages(MESSAGES)
 
 ```ts
 import { createRequire } from 'node:module'
-import type { DirectiveSpec, PresmiumNodePlugin } from '@presmium/kernel'
+import type { DirectiveSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -203,7 +203,7 @@ Node 端入口的 `services(ctx)` 返回 `[令牌, 实现]` 的列表，编译�
 Node 端入口的 `server(ctx)` 返回路由与反向代理，挂在 `/__presmium/<插件 ID>/` 下，`presmium dev` 与 `presmium serve` 都有。路由用 Fetch API 的请求与回答：
 
 ```ts
-import { json } from '@presmium/kernel'
+import { json } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'presmium.poll',
@@ -236,10 +236,10 @@ const plugin: PresmiumNodePlugin = {
 (plugin-views-viewer)=
 ## IR 运行时的扩展
 
-网页形态由 IR 运行时 `@presmium/viewer` 渲染。插件的 `src/client/viewer.ts` 默认导出一个视图插件 `(ctx) => void`，可以注册新的运行时视图（`registerView`，如放映视图）、节点的渲染（`registerNodeRenderer`）、组件（`registerComponent`）、动作（`registerAction`）与图层（`registerLayer`）。只以类型方式引用 `@presmium/viewer`：
+网页形态由 IR 运行时 `@lincyaw/viewer` 渲染。插件的 `src/client/viewer.ts` 默认导出一个视图插件 `(ctx) => void`，可以注册新的运行时视图（`registerView`，如放映视图）、节点的渲染（`registerNodeRenderer`）、组件（`registerComponent`）、动作（`registerAction`）与图层（`registerLayer`）。只以类型方式引用 `@lincyaw/viewer`：
 
 ```ts
-import type { ViewerPlugin } from '@presmium/viewer'
+import type { ViewerPlugin } from '@lincyaw/viewer'
 
 const plugin: ViewerPlugin = (ctx) => {
   // 放映视图中按 R 显示下一步
@@ -295,14 +295,14 @@ export const MESSAGES = {
 (plugin-testing-integration)=
 ## 只写集成测试
 
-插件的测试真正运行 CLI、构建产物、打开浏览器，不对单个函数做隔离测试，也不 mock Slidev 与 VitePress；每条验收标准一到两个用例。`@presmium/cli/testing` 的 `presmium(cwd, args)` 在子进程中运行真正的 `presmium` 命令：
+插件的测试真正运行 CLI、构建产物、打开浏览器，不对单个函数做隔离测试，也不 mock Slidev 与 VitePress；每条验收标准一到两个用例。`@lincyaw/cli/testing` 的 `presmium(cwd, args)` 在子进程中运行真正的 `presmium` 命令：
 
 ```ts
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
+import { presmium } from '@lincyaw/cli/testing'
 import { expect, it } from 'vitest'
 
 const PLUGIN = fileURLToPath(new URL('..', import.meta.url))

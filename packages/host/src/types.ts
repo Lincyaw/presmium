@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
-import { defineService } from '@presmium/kernel/contracts'
-import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@presmium/kernel/contracts'
-import type { IconName } from '@presmium/design'
+import { defineService } from '@lincyaw/kernel/contracts'
+import type { Cursor, Member, Operation, PresentationMode, ServiceToken, StartReport, Unsubscribe } from '@lincyaw/kernel/contracts'
+import type { IconName } from '@lincyaw/design'
 
 export type ViewRole = 'audience' | 'presenter' | 'reader'
 

@@ -1,8 +1,8 @@
-import { stepTrail, trailStep } from '@presmium/kernel'
-import type { IRSection, StepKeys } from '@presmium/kernel'
+import { stepTrail, trailStep } from '@lincyaw/kernel'
+import type { IRSection, StepKeys } from '@lincyaw/kernel'
 
-export { stepKeys, stepTrail, trailStep } from '@presmium/kernel'
-export type { StepKeys } from '@presmium/kernel'
+export { stepKeys, stepTrail, trailStep } from '@lincyaw/kernel'
+export type { StepKeys } from '@lincyaw/kernel'
 
 export interface FollowAnchor {
   section?: string

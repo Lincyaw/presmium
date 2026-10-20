@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { Member } from '@presmium/kernel'
+import type { Member } from '@lincyaw/kernel'
 import type { DocumentOperation, LockedAnswer, OperationAnswer, WorkspaceDocument } from '../domain/api.ts'
 import { invalidDocumentDir, within } from '../domain/paths.ts'
 import type { CommitOrigin, RevisionOperation } from '../domain/revisions.ts'

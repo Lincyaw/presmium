@@ -1,4 +1,4 @@
-import type { RunResult } from '@presmium/kernel'
+import type { RunResult } from '@lincyaw/kernel'
 import { isPython, isScript } from './config.ts'
 
 function literal(value: unknown, script: boolean): string {

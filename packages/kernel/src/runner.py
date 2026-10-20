@@ -1,5 +1,5 @@
 # The Python runner of Presmium (docs/architecture.md 9.2), published by the kernel as
-# `@presmium/kernel/runner.py` and shared by the plugins that run Python: the execution plugin
+# `@lincyaw/kernel/runner.py` and shared by the plugins that run Python: the execution plugin
 # loads it into Pyodide in the browser and runs it with the local python3 at compile time, the
 # local environment plugin runs it in the container. The kernel itself never reads it.
 #

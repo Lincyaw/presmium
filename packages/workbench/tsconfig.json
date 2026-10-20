@@ -1,5 +1,5 @@
 {
-  // The workbench's React panels and the client part of @presmium/dsh, type-checked together (`tsc -p packages/workbench`);
+  // The workbench's React panels and the client part of @lincyaw/dsh, type-checked together (`tsc -p packages/workbench`);
   // the repository's tsconfig.json takes `.ts` only.
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {

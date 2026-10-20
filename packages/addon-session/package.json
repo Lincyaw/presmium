@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-session",
+  "name": "@lincyaw/slidev-addon-session",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: classroom sessions, sync across devices, and following the presenter",
   "license": "Apache-2.0",
@@ -35,7 +35,7 @@
   ],
   "slidev": {},
   "dependencies": {
-    "@presmium/classroom-server": "workspace:*",
+    "@lincyaw/classroom-server": "workspace:*",
     "@slidev/types": "53.0.0",
     "uqr": "^0.1.3",
     "vue": "^3.5.42",
@@ -43,13 +43,13 @@
     "yjs": "^13.6.33"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }

@@ -1,5 +1,5 @@
-import { fingerprint, fnv1a64, irBlocks } from '@presmium/kernel'
-import type { IRBlock, IRDocument, MdastNode, TrackEvent } from '@presmium/kernel'
+import { fingerprint, fnv1a64, irBlocks } from '@lincyaw/kernel'
+import type { IRBlock, IRDocument, MdastNode, TrackEvent } from '@lincyaw/kernel'
 import { anchorOf } from './timing.ts'
 import type { LectureTrack, TrackBlock } from './track.ts'
 

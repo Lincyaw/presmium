@@ -1,8 +1,8 @@
 import { existsSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative } from 'node:path'
 import { parseArgs } from 'node:util'
-import { DECK_ENTRY } from '@presmium/compiler'
-import { errorMessage } from '@presmium/kernel'
+import { DECK_ENTRY } from '@lincyaw/compiler'
+import { errorMessage } from '@lincyaw/kernel'
 import { clockText } from '../domain/index.ts'
 import { exportVideo } from './export.ts'
 

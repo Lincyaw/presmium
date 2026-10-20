@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { deckLocale } from '@presmium/kernel'
-import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, RenderContext } from '@presmium/kernel'
+import { deckLocale } from '@lincyaw/kernel'
+import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, RenderContext } from '@lincyaw/kernel'
 import { captionTracks, CONTENT_ID, isRemote, languageTag, MEDIA_OPTIONS, mediaFallback, parseCaptions, videoHtml, youtubeId } from '../domain/index.ts'
 import type { MediaKind, MediaOptions } from '../domain/index.ts'
 

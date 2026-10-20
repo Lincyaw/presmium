@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The server's answer through useServer(), or its degraded text in static output; asking for an approval.
-import { useServer } from '@presmium/host'
+import { useServer } from '@lincyaw/host'
 import { ref, watchEffect } from 'vue'
 
 const server = useServer()

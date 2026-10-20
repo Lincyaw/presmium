@@ -12,7 +12,7 @@
 | 产物 | 渲染端从 IR 生成、能单独部署的东西：网页、幻灯片、notebook、讲授。静态构建的结果与开发服务器实时提供的页面都算。产物用 Vue（VitePress、Slidev） |
 | 工作台 | 作者编写文稿用的界面：外壳、首页、文件树、源码编辑器、问题、预览、对话与批注、审阅与修改历史、讲授的面板。它是 `presmium studio` 的页面 |
 | 工作区服务 | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、修改历史与审阅、MCP |
-| bundle | dsh 的扩展包，由 dsh 的插件与配置补丁组成。Presmium 的 bundle 是 `@presmium/dsh`。它不是 Presmium 自己的插件包（`@presmium/slidev-addon-*`） |
+| bundle | dsh 的扩展包，由 dsh 的插件与配置补丁组成。Presmium 的 bundle 是 `@lincyaw/dsh`。它不是 Presmium 自己的插件包（`@lincyaw/slidev-addon-*`） |
 | 行 | dsh 配置树中的一项：一个插件、它的配置与是否启用，以 ID 标识（如 `ui-layout`） |
 | 载体 | dsh 的运行形态：`web`（网页客户端）、`headless`（命令行）、`acp`（经 ACP 被别的程序驱动） |
 | profile | dsh 的一套安装与配置（`$DSH_HOME/profiles/<名>/`）：列出的 bundle、它们的补丁与用户在界面中的改动 |
@@ -39,7 +39,7 @@
 1. **核心与产物离开模型也能工作。** 核心（编译器、IR、渲染端、IR 运行时、CLI、静态产物）不引用 `@deepseek-ai/*`。
 2. **产物与工作台分离。** 改动源码的归工作台；不改动源码的（放映、演讲者视图、课堂、运行代码、读者用自己的模型问答、放映中的讲授录制）归产物。产物保持 Vue，只向工作台暴露锚点（`data-section`、`data-block`、`data-step`），经预览协议嵌入工作台（第 4 节）。
 3. **工作台是 dsh 的客户端插件。** 工作台用 React 写成 dsh 的客户端插件；Presmium 的根布局插件替换 dsh 自带布局，按 `docs/design` 的工作台排布，dsh 的对话、确认卡片与修改卡片停靠在右侧（第 7 节）。dsh 的界面组件不能单个嵌入别的页面（第 16 节），所以工作台在 dsh 的客户端运行时之中，不另写一个调用 Host API 的界面。
-4. **dsh 只经一个包接触。** 只有 `@presmium/dsh` 引用 dsh 的宿主接口与客户端接口；`@presmium/studio` 只负责安装与启动 dsh；分层检查保证这一点（3.2 节）。工作台的面板不引用 dsh，核心与产物不知道 dsh 存在。dsh 的接口变了，只改这一个包。dsh 精确锁定一个版本，升级先过升级闸门（第 12 节）。
+4. **dsh 只经一个包接触。** 只有 `@lincyaw/dsh` 引用 dsh 的宿主接口与客户端接口；`@lincyaw/studio` 只负责安装与启动 dsh；分层检查保证这一点（3.2 节）。工作台的面板不引用 dsh，核心与产物不知道 dsh 存在。dsh 的接口变了，只改这一个包。dsh 精确锁定一个版本，升级先过升级闸门（第 12 节）。
 5. **不改 dsh。** 不 fork，不打补丁，只用它的插件、配置补丁与客户端插件机制（仓库的“依赖优先”）；它的限制在 Presmium 一侧绕开（第 16 节）。
 6. **工作台中的 agent 只用 dsh，外部 agent 经 MCP 接入。** 模型在 dsh 的模型设置中选。外部 agent（Claude Code、Codex 等）是一等入口。一张工具表，两个适配器（MCP 与 dsh 工具）：工具只在工作区服务中执行，新工具两边都有，两边的清单由一致性用例保证相同（第 9 节）。
 7. **浏览器中的源码编辑只在工作台中。** `presmium studio` 可以不配模型；`presmium dev` 是实时预览加“在编辑器中打开”，`presmium serve` 只有文档列表与产物（第 13 节）。没有不依赖 dsh 的浏览器编辑页。
@@ -84,7 +84,7 @@
 | 接缝 | 两侧 | 用到的接口 | 稳定性 |
 |---|---|---|---|
 | S1 | bundle 与 dsh 宿主 | `ctx.tools.register`、`agent/created` 与 `agent.ctx.tools.register`、`defineTool`；`tools/pre-execute`、`tools/execute`；`ctx.tools.guard`；`approval/request`；`ctx.systemPrompt.section`、`context`、`agent/pre-step`；`ctx.skills.register` 与 skill-filesystem 的配置；`ctx.workspaceRegistry`；`ctx.connection.fetch.register`（精确路径，必须在 `/api` 下）与 `admit()`；`ctx.webServer.tapIndex`；turn 与 `workspace/changes` 事件；`Agent.inject`；bundle 的格式（`dsh.bundle`、行 ID、`!!js`） | README 有文档，alpha |
-| S2 | 工作台的客户端插件与 dsh 客户端运行时 | `dsh.client` 声明与 `dsh.client.external`（有文档）；包的工厂格式 `__ModuleLoader__.load`（无文档）；外壳的模块表（React 18.3.1 等）；槽位接口；`root` 的 6 个子槽位与 `ctx.layout`（README 描述了行为）；`ctx.theme`；`ctx.locale`；`ctx.sidebarRightTabs`；品牌槽位与 `settings.onboarding` | 最不稳定；只出现在 `@presmium/dsh` 的客户端部分 |
+| S2 | 工作台的客户端插件与 dsh 客户端运行时 | `dsh.client` 声明与 `dsh.client.external`（有文档）；包的工厂格式 `__ModuleLoader__.load`（无文档）；外壳的模块表（React 18.3.1 等）；槽位接口；`root` 的 6 个子槽位与 `ctx.layout`（README 描述了行为）；`ctx.theme`；`ctx.locale`；`ctx.sidebarRightTabs`；品牌槽位与 `settings.onboarding` | 最不稳定；只出现在 `@lincyaw/dsh` 的客户端部分 |
 | S3 | 工作台的面板与 dsh 的会话 | 面板自己发起的会话与提示（起草、讲授回写、批注）：Host API 的 `session/create`、`session/prompt`（schema 严格校验），或客户端运行时的会话服务 | 中 |
 | S4 | bundle 与工作区服务 | Presmium 自己的回环 HTTP 接口、`/mcp`、服务令牌、进程监管 | Presmium 自有 |
 | S5 | 工作台与产物 | 预览协议；IR 与诊断经工作区服务取得 | Presmium 自有 |
@@ -96,35 +96,35 @@
 
 | 包 | 层 | 内容 | 依赖 dsh | 版本 |
 |---|---|---|---|---|
-| `@presmium/design` | 产物与工作台共用 | 令牌 `tokens.css`、`pm-ui-*` 的类 `components.css`、字体 `fonts.css`、图标（SVG 字符串）与令牌名；`@presmium/host` 引用它。没有框架 | 否 | 1.x，随 `host` 发版 |
-| `@presmium/workbench` | 工作台 | React 面板，以及框架无关的部分：工作区服务的客户端、预览协议的工作台一侧、编辑器的状态（CodeMirror 6、三方合并）、审阅与历史的模型 | 否，不引用 `@deepseek-ai/*` | 0.x |
-| `@presmium/dsh` | 工作台（bundle） | 宿主部分（Node）与客户端部分（React，预编译）；唯一接触 dsh 接口的包 | 是：精确的对等依赖与 `engines.dsh` | 0.x |
-| `@presmium/studio` | 工作台（启动器） | `presmium studio`：组装 profile，启动与监管 dsh 和工作区服务 | 是：精确版本的 `@deepseek-ai/dsh` | 0.x |
+| `@lincyaw/design` | 产物与工作台共用 | 令牌 `tokens.css`、`pm-ui-*` 的类 `components.css`、字体 `fonts.css`、图标（SVG 字符串）与令牌名；`@lincyaw/host` 引用它。没有框架 | 否 | 1.x，随 `host` 发版 |
+| `@lincyaw/workbench` | 工作台 | React 面板，以及框架无关的部分：工作区服务的客户端、预览协议的工作台一侧、编辑器的状态（CodeMirror 6、三方合并）、审阅与历史的模型 | 否，不引用 `@deepseek-ai/*` | 0.x |
+| `@lincyaw/dsh` | 工作台（bundle） | 宿主部分（Node）与客户端部分（React，预编译）；唯一接触 dsh 接口的包 | 是：精确的对等依赖与 `engines.dsh` | 0.x |
+| `@lincyaw/studio` | 工作台（启动器） | `presmium studio`：组装 profile，启动与监管 dsh 和工作区服务 | 是：精确版本的 `@deepseek-ai/dsh` | 0.x |
 
-现有包中与工作台有关的部分：`kernel` 有预览协议的契约与 `Focus`；`mcp` 另导出工具表与客户端一侧；`server` 有会话令牌与焦点；`cli` 的 `studio` 子命令只转交给 `@presmium/studio`，没装时说明怎样安装（约 865 MB，其中 `@deepseek-ai/*` 约 566 MB，只在装 studio 时发生）。
+现有包中与工作台有关的部分：`kernel` 有预览协议的契约与 `Focus`；`mcp` 另导出工具表与客户端一侧；`server` 有会话令牌与焦点；`cli` 的 `studio` 子命令只转交给 `@lincyaw/studio`，没装时说明怎样安装（约 865 MB，其中 `@deepseek-ai/*` 约 566 MB，只在装 studio 时发生）。
 
 ### 3.2 分层规则
 
 `scripts/check-layering.mjs` 检查：
 
-- **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*`、`addon-core`、各插件的 `src/client` 与 `components`）不引用 `@presmium/workbench`。
+- **产物不认识工作台**：产物的包（`web`、`viewer`、`render-*`、`addon-core`、各插件的 `src/client` 与 `components`）不引用 `@lincyaw/workbench`。
 - **dsh 只在一处**：`@deepseek-ai/*` 只出现在 `packages/dsh` 与 `packages/studio`。
-- **面板不认识宿主**：`@presmium/workbench` 不引用 vue、`@presmium/host` 与 `@deepseek-ai/*`。
-- **mcp 的使用者**：server 与 dsh 使用 mcp；`@modelcontextprotocol/*` 只在 `mcp` 中，bundle 经 `@presmium/mcp` 导出的客户端一侧使用 MCP。
-- **design 没有框架**：`@presmium/design` 不引用任何包。
+- **面板不认识宿主**：`@lincyaw/workbench` 不引用 vue、`@lincyaw/host` 与 `@deepseek-ai/*`。
+- **mcp 的使用者**：server 与 dsh 使用 mcp；`@modelcontextprotocol/*` 只在 `mcp` 中，bundle 经 `@lincyaw/mcp` 导出的客户端一侧使用 MCP。
+- **design 没有框架**：`@lincyaw/design` 不引用任何包。
 
 ### 3.3 发布
 
-- 源码仍以 `.ts` 直接发布。例外有两个：`presmium-vscode`，以及 `@presmium/dsh` 的客户端部分（预编译，7.8 节）。dsh 的运行时没有 TS 加载器，装在 `node_modules` 中的 `.ts` 也不能由 Node 原生加载，所以 bundle 的宿主部分每一行有一个普通 ESM 的入口文件，入口用 jiti 加载本包的 `.ts` 源码，与 Presmium 的可执行文件相同；jiti 的缓存为空时冷启动约 1.1 s。
+- 源码仍以 `.ts` 直接发布。例外有两个：`presmium-vscode`，以及 `@lincyaw/dsh` 的客户端部分（预编译，7.8 节）。dsh 的运行时没有 TS 加载器，装在 `node_modules` 中的 `.ts` 也不能由 Node 原生加载，所以 bundle 的宿主部分每一行有一个普通 ESM 的入口文件，入口用 jiti 加载本包的 `.ts` 源码，与 Presmium 的可执行文件相同；jiti 的缓存为空时冷启动约 1.1 s。
 - 0.x 的三个包有自己的版本号，不随 Presmium 的统一版本；`scripts/check-packages.mjs` 为它们开例外。
-- `@presmium/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录（技能的副本与预编译的客户端），所以同时打包全部公开的包的 `scripts/consumer.ts` 在全仓的一个锁之下打包。
+- `@lincyaw/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录（技能的副本与预编译的客户端），所以同时打包全部公开的包的 `scripts/consumer.ts` 在全仓的一个锁之下打包。
 - 许可证：dsh 的 304 个包中 300 个 MIT，`libreoffice-kit` 与 `libreoffice-kit-wasm` 为 MPL-2.0，`node-addon-system` 及其平台包为 BSD-3-Clause；从 npm 仓库安装不算由 Presmium 再分发。MIT 不授予 DeepSeek 的名称与标志：发行版不用 DeepSeek 的品牌，不暗示其背书，只在“关于”与 `NOTICE` 中写明“基于 DeepSeek Harness（MIT）”。
 
 ## 4. 预览协议 v1
 
 ### 4.1 作用与边界
 
-工作台经预览协议驱动嵌在它里面的产物页面，产物页面经它报告位置与点选。协议只传章节、块与步骤的 ID 和少量状态，不传源码位置，也不传 DOM。源码位置由工作台从 IR 的 `SourcePos` 得出（`placeAt`、`placeOf`，在 `@presmium/workbench` 中）。
+工作台经预览协议驱动嵌在它里面的产物页面，产物页面经它报告位置与点选。协议只传章节、块与步骤的 ID 和少量状态，不传源码位置，也不传 DOM。源码位置由工作台从 IR 的 `SourcePos` 得出（`placeAt`、`placeOf`，在 `@lincyaw/workbench` 中）。
 
 v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实时页面；讲授播放器不在 v1 中。
 
@@ -175,7 +175,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 消息类型与 `PREVIEW_PROTOCOL = 1` | `packages/kernel/src/contracts/preview.ts`；产物与工作台都只依赖这里 |
 | 网页的预览代理 | `packages/web/src/client/preview.ts`：用 IR 运行时的 viewer 跳转、取位置、找章节与块的元素，实现 `marks`（`packages/viewer/src/rich.ts` 的 `PmRoleMark` 看它） |
 | 幻灯片的预览代理 | `slidev-addon-core` 的客户端，用宿主的 `NAVIGATION` 与 `blockElement` |
-| 工作台一侧 | `@presmium/workbench` 的预览面板 |
+| 工作台一侧 | `@lincyaw/workbench` 的预览面板 |
 | 静态构建 | 不带预览代理；用例扫描构建产物 |
 
 ### 4.7 与控制通道的关系
@@ -184,7 +184,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 ## 5. 工作区服务的接口
 
-工作台经这些接口取得 IR、构建与开发服务。工作区服务的路由挂在 `/__presmium/presmium.workspace/` 下；服务端自己的路由在 `/__presmium/presmium.server/` 下。会话令牌与焦点的路由属于服务端（`@presmium/server`），不在工作区的路由中：`MCP_ENDPOINT` 是服务端的服务，焦点与放映位置一样由服务端保存。
+工作台经这些接口取得 IR、构建与开发服务。工作区服务的路由挂在 `/__presmium/presmium.workspace/` 下；服务端自己的路由在 `/__presmium/presmium.server/` 下。会话令牌与焦点的路由属于服务端（`@lincyaw/server`），不在工作区的路由中：`MCP_ENDPOINT` 是服务端的服务，焦点与放映位置一样由服务端保存。
 
 ### 5.1 路由
 
@@ -217,7 +217,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - **服务令牌**：studio 中，启动器生成一个随机值，经环境变量 `PRESMIUM_SERVICE_TOKEN` 交给工作区服务与 dsh 宿主（不放在命令行，`ps` 看不到）。设置了它时，工作区的路由与 `tokens`、`focus` 的写入要求 `Authorization: Bearer <服务令牌>`；产物页面自己的 `/__presmium/<插件>/` 路由（讲授、课堂、远端环境的代理）只检查 `Host` 与 `Origin`。这样预览页面中的脚本不能用工作区的路由改源码。agent 与服务同一 uid，能读到这个值，所以它只是纵深防御；`architecture.md` 9.4 节的残余风险不变。
 - **会话令牌**：bundle 为每个 dsh 会话向服务端取一个 MCP 令牌（`POST tokens` `{ document, session }`），令牌绑定本机作者与文档，模式为“主机已确认”：经它调用的操作类工具不再经 `APPROVALS` 向页面窗口请求确认，因为 dsh 的 `tools/pre-execute` 已经按 Presmium 的策略决定过（6.3 节）。会话令牌只签发给启动服务的主机：没有设置 `PRESMIUM_SERVICE_TOKEN` 时 `tokens` 一律 403，产物页面中的脚本因此拿不到不经确认的令牌。会话结束时 bundle 作废它；dsh 宿主退出时服务作废全部。契约：`MCP_ENDPOINT.issue` 有可选的第三个参数 `{ confirmed: true }`（`packages/kernel/src/contracts/server.ts`）。
 
-## 6. bundle `@presmium/dsh`
+## 6. bundle `@lincyaw/dsh`
 
 ### 6.1 包的形态
 
@@ -227,7 +227,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
   - 出口：`.` 是 `presmium-workbench` 行的宿主部分，`./client` 是预编译的客户端包，其余各行各有一个出口，`./launch` 供启动器传入补丁；
   - `engines.dsh` 与对 `@deepseek-ai/dsh-*` 的精确对等依赖。dsh 在安装与启动时都检查它们，不满足时拒绝。
 - 宿主部分：每行一个普通 ESM 的入口文件，入口用 jiti 加载 `src/node/` 的 `.ts` 源码。
-- 补丁：dsh 的一个包只有一个 bundle 层，只在某个载体中出现的行因此放在另外的补丁中，由启动器以 `--patch` 传入（`@presmium/dsh/launch`）：`profile.patch.yml`（全部载体：隐私、技能、第一次使用、沙箱、persona，6.6 节）与 `web.patch.yml`（web 载体：`presmium-workspaces`、`presmium-routes`、`presmium-workbench` 三行与它们的设置，以及界面上关掉的行）。headless 与 acp 载体不带 `web.patch.yml`，启动时不警告有行没有激活。
+- 补丁：dsh 的一个包只有一个 bundle 层，只在某个载体中出现的行因此放在另外的补丁中，由启动器以 `--patch` 传入（`@lincyaw/dsh/launch`）：`profile.patch.yml`（全部载体：隐私、技能、第一次使用、沙箱、persona，6.6 节）与 `web.patch.yml`（web 载体：`presmium-workspaces`、`presmium-routes`、`presmium-workbench` 三行与它们的设置，以及界面上关掉的行）。headless 与 acp 载体不带 `web.patch.yml`，启动时不警告有行没有激活。
 - 技能：源只有 `.agents/skills` 一份，打包时复制进包内（副本不入库）；`scripts/check-skills.mjs` 核对 bundle 登记的技能都在源中。
 
 ### 6.2 宿主部分的行
@@ -244,7 +244,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | `presmium-routes` | web | 把 `/api/presmium/*` 转到工作区服务与服务端（精确路径，必须在 `/api` 下），流式的回答原样返回 | `ctx.connection.fetch.register`、`admit()` |
 | `presmium-workbench` | web | 客户端部分：根布局插件、面板、主题、品牌、语言；网页标题与图标；精确路由 `/api/presmium/workbench`（回答 `{ mcp }`，即工作区服务的 MCP 地址，供首页的 MCP 卡片） | `dsh.client`、`ctx.webServer.tapIndex`、`ctx.connection.fetch.register` |
 
-客户端的行是包名本身：dsh 的模块系统只把名字是整包名（`@presmium/dsh`）的 Loader 行当作客户端的来源，`@presmium/dsh/<行>` 这样的子路径不算，一个包也只能有一个这样的行。所以 `presmium-workbench` 行的 `name` 是 `@presmium/dsh`。
+客户端的行是包名本身：dsh 的模块系统只把名字是整包名（`@lincyaw/dsh`）的 Loader 行当作客户端的来源，`@lincyaw/dsh/<行>` 这样的子路径不算，一个包也只能有一个这样的行。所以 `presmium-workbench` 行的 `name` 是 `@lincyaw/dsh`。
 
 网页中的会话固定在启动时的工作区根目录，文件读写与沙箱边界覆盖整个工作区。打开、关闭或切换文稿不切换 Harness workspace、会话或 cwd；客户端经认证路由 `POST /api/presmium/context` 将 `{ session, document }`（关闭文稿时 `document: null`）交给适配器。当前文稿只决定文稿工具、快照和焦点；会话空闲后更新工具登记与 MCP 会话，每一步前重读快照，运行中的工具调用保留原来的文稿。headless 与 acp 未显式选择文稿时仍按会话目录匹配，兼容从单篇文稿目录启动的用法。
 
@@ -306,12 +306,12 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 | 部分 | 内容 | 可以依赖 | 不得依赖 |
 |---|---|---|---|
-| `@presmium/design` | 令牌、`pm-ui-*` 的类、字体、图标、令牌名 | 无 | 任何框架 |
-| `@presmium/workbench` | React 面板与框架无关的逻辑 | `@presmium/design`、`@presmium/kernel`（类型与纯函数）、CodeMirror 6、`node-diff3`、react 18（对等依赖） | vue、`@presmium/host`、`@deepseek-ai/*` |
-| `@presmium/dsh` 的 `src/client` | 根布局插件，把面板登记进槽位，主题、品牌、语言包 | `@presmium/workbench`、dsh 外壳的模块表 | vue |
-| `@presmium/dsh` 的 `src/node` | 第 6 节的各行 | `@presmium/mcp`、Node 库 | vue、`@presmium/host` |
+| `@lincyaw/design` | 令牌、`pm-ui-*` 的类、字体、图标、令牌名 | 无 | 任何框架 |
+| `@lincyaw/workbench` | React 面板与框架无关的逻辑 | `@lincyaw/design`、`@lincyaw/kernel`（类型与纯函数）、CodeMirror 6、`node-diff3`、react 18（对等依赖） | vue、`@lincyaw/host`、`@deepseek-ai/*` |
+| `@lincyaw/dsh` 的 `src/client` | 根布局插件，把面板登记进槽位，主题、品牌、语言包 | `@lincyaw/workbench`、dsh 外壳的模块表 | vue |
+| `@lincyaw/dsh` 的 `src/node` | 第 6 节的各行 | `@lincyaw/mcp`、Node 库 | vue、`@lincyaw/host` |
 
-面板以“面板描述”导出：标题、图标、组件、需要的服务。只有 `@presmium/dsh` 登记它们，所以同一批面板既能挂在根布局中，也能挂在 dsh 自带布局中。
+面板以“面板描述”导出：标题、图标、组件、需要的服务。只有 `@lincyaw/dsh` 登记它们，所以同一批面板既能挂在根布局中，也能挂在 dsh 自带布局中。
 
 ### 7.2 根布局与退路
 
@@ -354,7 +354,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 **退路**：根布局与退路是同一个客户端部分。重新打开 `ui-layout` 与 `ui-sidebar` 后，它不占据 `root` 或 `sidebar`，得到 dsh 自带布局：对话居中，Presmium 的预览与审阅作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页与文档编辑器作为 `main` 的全局面板。文件引用仍回到同一个文档编辑器，不再另设源码坞标签。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
 
-**在插件管理中关掉 `@presmium/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到工作区：首页在 `documents` 得到 404 时说明“`@presmium/dsh` 在‘插件’页中被关掉了，从活动栏打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
+**在插件管理中关掉 `@lincyaw/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到工作区：首页在 `documents` 得到 404 时说明“`@lincyaw/dsh` 在‘插件’页中被关掉了，从活动栏打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
 
 ### 7.3 面板
 
@@ -393,11 +393,11 @@ Presmium 自己占用的槽位：品牌槽位 `sidebar.brand.mark`、`sidebar.br
 
 ### 7.5 设计系统、主题与品牌
 
-- **共用的一层**：`@presmium/design`，产物中的 Vue 组件与工作台中的 React 组件用同一层令牌与 `pm-ui-*` 的类。
-- **React 版的通用组件**在 `@presmium/workbench`：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。工作台搜索用 cmdk，文件树用 React Arborist（只读目录操作，打开与选择文件），分栏用 react-resizable-panels。源码编辑继续使用 CodeMirror 6，文本合并继续使用 node-diff3。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
+- **共用的一层**：`@lincyaw/design`，产物中的 Vue 组件与工作台中的 React 组件用同一层令牌与 `pm-ui-*` 的类。
+- **React 版的通用组件**在 `@lincyaw/workbench`：`PmButton`、`PmIconButton`、`PmIcon`、`PmField`、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`。有交互的组件封装 Radix Primitives，焦点、键盘导航、浮层定位与模态遮罩由依赖提供；Presmium 只维护样式与业务回调。工作台搜索用 cmdk，文件树用 React Arborist（只读目录操作，打开与选择文件），分栏用 react-resizable-panels。源码编辑继续使用 CodeMirror 6，文本合并继续使用 node-diff3。首次使用的提示直接使用 Harness 的 `Modal`。对比度与键盘行为由浏览器用例检查。
 - **dsh 的令牌**：`ctx.theme.overrideTokens` 把 dsh 用到的 76 个 `--dsw-*` 别名令牌（dsh 共用到 125 个变量）映射到书卷的取值，明暗两套。字体经 `--dsh-font-family-*` 设为 IBM Plex Sans 与 IBM Plex Mono，用户自己选的字体优先。dsh 写死的颜色、圆角、字号与 CSS module 的类不去覆盖：检查以 WCAG AA 与截图为准，不要求和书卷一致。
 - **暗色**：工作台在 `<html>` 上设 `dark` 类，`--pm-*` 与 `--dsw-*` 一起切换，再经预览协议的 `appearance` 让产物跟随。
-- **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline` 与 `hero.preview`，其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@presmium/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。
+- **品牌**：品牌槽位、标题与图标（`tapIndex`）、首次使用提示换成 Presmium 的。对话首页的标语用公开的语言包接口替换（`ctx.locale.addLanguage` 加 `register`）：`zh-CN`、`en-US` 两个语言包出现在 dsh 设置的语言列表中，标为“简体中文（Presmium）”“English (Presmium)”，只换 `conversation` 的 `hero.headline` 与 `hero.preview`，其余回退到 dsh 的中文与英文。换不干净的：其他语言标签（如 zh-TW）仍显示 dsh 的文案；插件管理器的备用源默认是 npmmirror；用户能在插件管理中关掉 `@lincyaw/dsh`（7.2 节）。默认的模型路由是 DeepSeek 的官方服务，它是正当的服务提供方，不算品牌问题。
 
 ### 7.6 界面语言
 
@@ -498,7 +498,7 @@ export interface Focus {
 
 - **保存**：工作台把当前的焦点与批注报告给服务端（`POST presmium.server/focus`，请求体 `{ document, focus: FocusReport[] }`，`FocusReport` 在内核契约中；经 bundle 转发，带服务令牌）。服务端把锚点换成源码范围与摘录（与 MCP 的 `locate_source` 同一个函数），按文档保存最近一次的焦点（与放映位置一样，由服务端保存，不属于某个页面）。
 - **dsh**：bundle 的文稿快照列出当前的焦点（6.4 节）；发送批注时，它们作为一条带来源标记的消息进入会话。
-- **MCP**：资源 `presmium://focus`（可订阅，与 `presmium://position` 一样，任一文档的焦点）与读取类工具 `get_focus`（可选参数 `document`）。它们经 MCP 宿主接口的方法 `McpHost.focus(document?)` 取得焦点（`@presmium/mcp`）：服务端返回它保存的焦点；`presmium-mcp`（stdio，不经服务端，也没有工作台）返回空。在终端中用 Claude Code 或 Codex 的人因此也能看到作者在工作台中选中的东西。
+- **MCP**：资源 `presmium://focus`（可订阅，与 `presmium://position` 一样，任一文档的焦点）与读取类工具 `get_focus`（可选参数 `document`）。它们经 MCP 宿主接口的方法 `McpHost.focus(document?)` 取得焦点（`@lincyaw/mcp`）：服务端返回它保存的焦点；`presmium-mcp`（stdio，不经服务端，也没有工作台）返回空。在终端中用 Claude Code 或 Codex 的人因此也能看到作者在工作台中选中的东西。
 - 第 9 节的一致性用例同时断言：同一个焦点经 MCP 读到的与 dsh 会话的快照中的相同。
 
 ### 8.7 源码改动之后
@@ -511,9 +511,9 @@ export interface Focus {
 
 ## 9. MCP 与 dsh 的工具一致
 
-- **一张工具表**：`@presmium/mcp` 导出内置工具的表（名字、说明、JSON Schema、种类 `read` 或确认的种类），以及按文档列出工具的函数：内置工具按种类的策略筛选（`off` 不列出），加上插件贡献的 `AgentTool`。
+- **一张工具表**：`@lincyaw/mcp` 导出内置工具的表（名字、说明、JSON Schema、种类 `read` 或确认的种类），以及按文档列出工具的函数：内置工具按种类的策略筛选（`off` 不列出），加上插件贡献的 `AgentTool`。
 - **适配器一：MCP**。`/mcp`（`presmium dev`、`presmium serve`）与 `presmium-mcp`（stdio）。
-- **适配器二：dsh 工具**（bundle 的 `presmium-tools`）。bundle 作为 MCP 客户端（`@presmium/mcp` 导出的客户端一侧）连接工作区服务的回环 `/mcp`，用会话令牌列出工具，把每个工具连同原样的 JSON Schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`。种类决定 6.3 节的映射。编译只在服务中进行一次，预览与 agent 看到的是同一次编译，文稿代码也不进 dsh 宿主。回环的开销很小：本机一份小文稿上，第一次签发会话令牌约 0.4 s（含服务就绪），连接约 50 ms，`tools/list` 约 15 ms，读取类调用的中位数约 6 ms。
+- **适配器二：dsh 工具**（bundle 的 `presmium-tools`）。bundle 作为 MCP 客户端（`@lincyaw/mcp` 导出的客户端一侧）连接工作区服务的回环 `/mcp`，用会话令牌列出工具，把每个工具连同原样的 JSON Schema 登记为 `presmium__<名字>`，调用时转成 `tools/call`。种类决定 6.3 节的映射。编译只在服务中进行一次，预览与 agent 看到的是同一次编译，文稿代码也不进 dsh 宿主。回环的开销很小：本机一份小文稿上，第一次签发会话令牌约 0.4 s（含服务就绪），连接约 50 ms，`tools/list` 约 15 ms，读取类调用的中位数约 6 ms。
 - **时限**：dsh 对登记的工具没有默认时限（`timeoutMs` 省略时不限，`dsh-tool-call-timeout-policy` 只执行工具自己声明的时限）；bundle 的 MCP 客户端把单次调用的时限从 MCP SDK 默认的 60 s 放宽到 10 分钟，构建与运行代码不会被它截断。
 - **多份文档**：`agent/created` 是串行事件，dsh 等它的监听者结束才处理输入，监听者经 `agent.ctx.tools.register` 登记的工具只属于那个 agent。bundle 因此为每个会话登记它所属文档的工具，不登记各文档工具的并集：两份文档的两个会话，有某个插件的一份得到这个插件的工具，另一份没有。`off` 的种类不登记。
 - **一致性用例**：同一份文档、同一组设置下，MCP `tools/list` 的名字与输入 schema，等于 headless 会话中提供给模型的 `presmium__*` 工具（去掉前缀），含一个插件的 `AgentTool`；`off` 的种类两边都不列出；`get_focus` 与会话快照中的焦点相同。新增工具时这个用例保证两边都有。
@@ -534,8 +534,8 @@ export interface Focus {
 
 ### 11.1 命令与目录
 
-- **命令**：`presmium studio [目录] [--port <端口>] [--host <地址>]`，由 `@presmium/studio` 提供；`@presmium/cli` 在装了它时转交，没装时说明怎样安装。目录的规则同 `presmium serve`（工作区，或只有一份文档的仓库）。
-- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，一个 `DSH_HOME` 只由一个 dsh 版本写。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@presmium/dsh`；dsh 只从 profile 中解析插件模块，所以 profile 的 `node_modules` 链接到 bundle。`DSH_AGENTS_HOME` 是其中的 `agents/`。
+- **命令**：`presmium studio [目录] [--port <端口>] [--host <地址>]`，由 `@lincyaw/studio` 提供；`@lincyaw/cli` 在装了它时转交，没装时说明怎样安装。目录的规则同 `presmium serve`（工作区，或只有一份文档的仓库）。
+- **`DSH_HOME`**：`$XDG_STATE_HOME/presmium/studio`，一个 `DSH_HOME` 只由一个 dsh 版本写。其中的 profile `presmium-studio`：`package.json` 列出 bundle `dsh-base`、`dsh-web-app` 与 `@lincyaw/dsh`；dsh 只从 profile 中解析插件模块，所以 profile 的 `node_modules` 链接到 bundle。`DSH_AGENTS_HOME` 是其中的 `agents/`。
 
 ### 11.2 启动与监管
 
@@ -579,8 +579,8 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 ## 12. 版本与升级闸门
 
-- **dsh**：精确锁定一个版本，现在是 `0.2.1-alpha.4`。`@presmium/studio` 依赖精确版本的 `@deepseek-ai/dsh`；`@presmium/dsh` 用精确的对等依赖与 `engines.dsh`，安装与启动时都会检查。不用 npm 仓库的 dist-tag（`latest` 指向旧版本）。
-- **Presmium 的包**：核心与产物是 1.x，`@presmium/design` 随 `@presmium/host` 发版；`@presmium/workbench`、`@presmium/dsh`、`@presmium/studio` 是 0.x、实验性，等 dsh 发布正式版、并且升级闸门在连续两个 dsh 版本上都通过之后，才纳入 1.x 的承诺。
+- **dsh**：精确锁定一个版本，现在是 `0.2.1-alpha.4`。`@lincyaw/studio` 依赖精确版本的 `@deepseek-ai/dsh`；`@lincyaw/dsh` 用精确的对等依赖与 `engines.dsh`，安装与启动时都会检查。不用 npm 仓库的 dist-tag（`latest` 指向旧版本）。
+- **Presmium 的包**：核心与产物是 1.x，`@lincyaw/design` 随 `@lincyaw/host` 发版；`@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio` 是 0.x、实验性，等 dsh 发布正式版、并且升级闸门在连续两个 dsh 版本上都通过之后，才纳入 1.x 的承诺。
 - **dsh 变动快**：发版频繁，各包没有 CHANGELOG，根布局插件要重新提供的布局契约只有 README 描述。所以能否升级只由升级闸门判断。
 - **升级闸门**：升级 dsh 是单独的一次改动，先通过下面五组用例。用例名带 `[gate]`（Vitest）或标签 `@gate`（Playwright），可以单独运行。
 
@@ -619,7 +619,7 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 ## 15. 测试策略
 
-- 只写集成测试（仓库的约定）：真实运行 CLI、构建产物、服务、浏览器与锁定版本的 dsh；模型用脚本化的 Messages 兼容假模型（`@presmium/cli/testing`，供各包与端到端用例共用），不 mock 宿主框架；每条验收标准一到两个用例。
+- 只写集成测试（仓库的约定）：真实运行 CLI、构建产物、服务、浏览器与锁定版本的 dsh；模型用脚本化的 Messages 兼容假模型（`@lincyaw/cli/testing`，供各包与端到端用例共用），不 mock 宿主框架；每条验收标准一到两个用例。
 - 每个用例用自己的 `DSH_HOME` 与 `HOME`（临时目录），并断言没有写到测试目录之外（例如没有出现 `~/Documents`）。
 - 预览协议的用例（`e2e/preview-protocol.spec.ts`）用一个不依赖任何框架的测试宿主页面，测的是协议本身，而不是某个工作台的实现；`e2e/preview.spec.ts` 是预览同步的用例。
 - bundle 的用例在 `packages/dsh/test/`（行与补丁、工具一致、确认、上下文、隐私、turn 与审阅），审阅的服务一侧在 `packages/workspace/test/review.test.ts`，studio 在 `packages/studio/test/studio.test.ts`。

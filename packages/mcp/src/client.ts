@@ -1,6 +1,6 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
-import { deckLocale, isRecord } from '@presmium/kernel'
-import type { ApprovalKind } from '@presmium/kernel'
+import { deckLocale, isRecord } from '@lincyaw/kernel'
+import type { ApprovalKind } from '@lincyaw/kernel'
 import { MCP_MESSAGES } from './messages.ts'
 
 export interface ListedTool {

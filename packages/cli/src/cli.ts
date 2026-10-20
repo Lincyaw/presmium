@@ -5,14 +5,14 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
-import { errorMessage } from '@presmium/kernel'
-import type { ApprovalKind, Finding, Severity } from '@presmium/kernel'
-import { build, Compiler, dev, resolveEntry } from '@presmium/compiler'
-import type { BuildReport, Compilation, RunStats } from '@presmium/compiler'
-import { anyAddress, isLoopback, networkAddresses, servedDocument, startServer } from '@presmium/server'
-import type { ApprovalPolicy } from '@presmium/server'
-import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@presmium/workspace'
-import type { WorkspaceBuild } from '@presmium/workspace'
+import { errorMessage } from '@lincyaw/kernel'
+import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
+import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
+import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
+import { anyAddress, isLoopback, networkAddresses, servedDocument, startServer } from '@lincyaw/server'
+import type { ApprovalPolicy } from '@lincyaw/server'
+import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
+import type { WorkspaceBuild } from '@lincyaw/workspace'
 import { runCheck } from './check.ts'
 import type { CheckResult } from './check.ts'
 import { devHost } from './host.ts'
@@ -69,7 +69,7 @@ Commands:
                           workspace's routes ask for it (Authorization: Bearer)
   studio  the workbench (experimental): DeepSeek Harness with Presmium's bundle and the workspace
           service of the directory (the workspace root, or a deck); prints the one address to open.
-          It is the package @presmium/studio (with DeepSeek Harness, about 865 MB), installed beside
+          It is the package @lincyaw/studio (with DeepSeek Harness, about 865 MB), installed beside
           this one
           --port <n>      the workbench's port (default: 4320, or a free one when that is in use)
           --host <addr>   listen on this address of the machine on the local network instead of
@@ -350,9 +350,9 @@ async function create(argv: string[]): Promise<number> {
 }
 
 async function studio(argv: string[]): Promise<number> {
-  const entry = installed('@presmium/studio')
+  const entry = installed('@lincyaw/studio')
   if (!entry) {
-    process.stderr.write('presmium studio: the workbench is not installed here. It is the package @presmium/studio (experimental; with DeepSeek Harness, about 865 MB): pnpm add -g @presmium/studio, then run presmium-studio; or pnpm add -D @presmium/studio in this project.\n')
+    process.stderr.write('presmium studio: the workbench is not installed here. It is the package @lincyaw/studio (experimental; with DeepSeek Harness, about 865 MB): pnpm add -g @lincyaw/studio, then run presmium-studio; or pnpm add -D @lincyaw/studio in this project.\n')
     return 2
   }
   const { main: studioMain } = await createJiti(import.meta.url).import<{ main(argv: string[], options: { presmium: string }): Promise<number> }>(entry)

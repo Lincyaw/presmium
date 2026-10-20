@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePrefersReducedMotion, useStepScope, useStepState } from '@presmium/host'
+import { usePrefersReducedMotion, useStepScope, useStepState } from '@lincyaw/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { PlannedWaypoint } from '../domain/index.ts'
 import { centerIn } from './geometry.ts'

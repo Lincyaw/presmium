@@ -1,7 +1,7 @@
 // Test-only plugin. Self-contained (Node built-ins and type imports only) so the fixture works from a temp copy.
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import type { AnchorResolver, AnchorString, ComponentNode, Finding, IRBlock, IRDocument, PresmiumNodePlugin } from '@presmium/kernel'
+import type { AnchorResolver, AnchorString, ComponentNode, Finding, IRBlock, IRDocument, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 // Anchor syntax of this fixture: the directive ```{anchor} line:<file>#<text>```.
 function usages(doc: IRDocument): { anchor: AnchorString, block: IRBlock }[] {

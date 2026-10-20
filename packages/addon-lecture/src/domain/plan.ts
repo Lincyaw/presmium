@@ -1,5 +1,5 @@
-import { irBlocks, isRecord } from '@presmium/kernel'
-import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@presmium/kernel'
+import { irBlocks, isRecord } from '@lincyaw/kernel'
+import type { CodeNode, IRBlock, IRDocument, IRSection, MdastNode, RecordedRun, SourcePos, WordSpan } from '@lincyaw/kernel'
 import { blockKey } from './drift.ts'
 import type { CueCommand, CueMark, SpokenText } from './narration.ts'
 import { duration, readCue, spokenText, TARGETED } from './narration.ts'

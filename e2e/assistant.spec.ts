@@ -20,7 +20,7 @@ let model: ChatStub
 
 test.beforeAll(async () => {
   test.setTimeout(300_000)
-  dir = deckDir('assistant', { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' })
+  dir = deckDir('assistant', { '@lincyaw/slidev-addon-assistant': 'packages/addon-assistant' })
   cpSync(FIXTURE, join(dir, 'lecture.md'))
   classroom = await startClassroomServer(dir)
   const lecture = join(dir, 'lecture.md')

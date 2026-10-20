@@ -1,5 +1,5 @@
 ---
-"@presmium/dsh": patch
+"@lincyaw/dsh": patch
 ---
 
 Use one navigation shell and one conversation header, composing Harness's session browser, settings and actions through public slots. Remove duplicate sidebar branding and controls.

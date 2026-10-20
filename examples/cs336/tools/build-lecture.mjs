@@ -1,4 +1,4 @@
-import { Compiler, build } from '@presmium/compiler'
+import { Compiler, build } from '@lincyaw/compiler'
 import { rmSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 

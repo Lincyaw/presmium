@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
-import { networkAddresses } from '@presmium/server'
+import { networkAddresses } from '@lincyaw/server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child } from './serve-helpers.ts'
 import { cleanEnv, FIXTURES, presmiumProcess, raw, remove, ROOT, waitFor, workspace } from './serve-helpers.ts'
@@ -42,7 +42,7 @@ describe('presmium serve on this machine', () => {
 
     const router = (await waitFor(serve, /dev router is at (http:\/\/127\.0\.0\.1:\d+)/))[1]!
     const port = Number(new URL(router).port)
-    const ask = (headers: Record<string, string>, path = '/@presmium/documents.json') => new Promise<number>((done, fail) => {
+    const ask = (headers: Record<string, string>, path = '/@lincyaw/documents.json') => new Promise<number>((done, fail) => {
       const req = httpRequest({ host: '127.0.0.1', port, path, headers }, (res) => {
         res.resume()
         done(res.statusCode!)
@@ -51,7 +51,7 @@ describe('presmium serve on this machine', () => {
       req.end()
     })
     expect(await ask({ Host: 'rebind.attacker.example' })).toBe(403)
-    expect(await ask({ Host: 'rebind.attacker.example' }, '/intro/@presmium/ir')).toBe(403)
+    expect(await ask({ Host: 'rebind.attacker.example' }, '/intro/@lincyaw/ir')).toBe(403)
     expect(await ask({ 'Host': `127.0.0.1:${port}`, 'Sec-Fetch-Site': 'cross-site' })).toBe(403)
     expect(await ask({ Host: `127.0.0.1:${port}` })).not.toBe(403)
   }, 180_000)
@@ -126,7 +126,7 @@ describe('presmium serve on this machine', () => {
 })
 
 async function siteIR(url: string, dir: string, headers: Record<string, string> = {}): Promise<{ text: string, doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }> {
-  const answer = await raw(`${url}/${dir}/@presmium/ir`, { headers })
+  const answer = await raw(`${url}/${dir}/@lincyaw/ir`, { headers })
   expect(answer.status, answer.text).toBe(200)
   return { text: answer.text, doc: answer.json<{ doc: { diagnostics: { checkId: string, severity: string, message: string }[] } }>().doc }
 }
@@ -151,11 +151,11 @@ describe('the plugins of presmium serve are those the deck lists, as in presmium
 })
 
 function execWorkspace(prefix: string): string {
-  const dir = workspace(prefix, 'exec', { '@presmium/slidev-addon-exec': 'packages/addon-exec' })
+  const dir = workspace(prefix, 'exec', { '@lincyaw/slidev-addon-exec': 'packages/addon-exec' })
   writeFileSync(join(dir, 'presmium.workspace.yaml'), `title: 编译时执行
 settings:
   presmium.workspace:
-    plugins: ['@presmium/slidev-addon-exec']
+    plugins: ['@lincyaw/slidev-addon-exec']
 `)
   return dir
 }

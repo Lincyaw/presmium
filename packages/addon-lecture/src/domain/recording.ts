@@ -1,4 +1,4 @@
-import type { TrackEvent } from '@presmium/kernel'
+import type { TrackEvent } from '@lincyaw/kernel'
 import { blockOf } from './drift.ts'
 import { timedEvents } from './timing.ts'
 import type { LectureTrack, MediaSegment, TrackBlock, Utterance, VideoSegment, Voice } from './track.ts'

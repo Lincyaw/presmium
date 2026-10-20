@@ -1,5 +1,5 @@
-import type { RunRequest } from '@presmium/kernel'
-import { defineService } from '@presmium/kernel'
+import type { RunRequest } from '@lincyaw/kernel'
+import { defineService } from '@lincyaw/kernel'
 
 export interface TraceEvent {
   line: number

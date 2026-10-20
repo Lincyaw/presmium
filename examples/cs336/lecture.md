@@ -2,7 +2,7 @@
 title: 'Stanford CS336: Language Modeling from Scratch'
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   web: {}
   slides: {}

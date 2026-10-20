@@ -1,4 +1,4 @@
-import type { ListedTool } from '@presmium/mcp/client'
+import type { ListedTool } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshToolDefinition } from './dsh.ts'
 import type { PresmiumSession } from './service.ts'
 

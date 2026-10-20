@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import { deckLocale } from '@presmium/kernel'
-import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@presmium/kernel'
+import { deckLocale } from '@lincyaw/kernel'
+import type { ComponentNode, DirectiveSpec, MdastNode, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { CUE_MESSAGES, GUIDE_ID, parseCursorPath, planCursorPath } from '../domain/index.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }

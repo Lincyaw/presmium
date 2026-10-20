@@ -1,5 +1,5 @@
-import { localeOf } from '@presmium/kernel/contracts'
-import type { Locale } from '@presmium/kernel/contracts'
+import { localeOf } from '@lincyaw/kernel/contracts'
+import type { Locale } from '@lincyaw/kernel/contracts'
 import type { ComputedRef } from 'vue'
 import { computed, getCurrentInstance, inject, shallowRef } from 'vue'
 import { HOST, installed } from './key.ts'

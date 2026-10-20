@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/compiler",
+  "name": "@lincyaw/compiler",
   "version": "1.0.0-rc.0",
   "description": "Presmium's compiler: MyST source to the IR, plugin loading, compile-time execution and its cache, checks and the renderers",
   "license": "Apache-2.0",
@@ -29,7 +29,7 @@
     "src"
   ],
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "html-tag-names": "2.1.0",
     "jiti": "^2.7.0",
     "mathml-tag-names": "4.0.0",

@@ -7,8 +7,8 @@
     "serve": "presmium serve"
   },
   "dependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/web": "workspace:*"
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/web": "workspace:*"
   },
   "devDependencies": {
     "typedoc": "0.28.20"

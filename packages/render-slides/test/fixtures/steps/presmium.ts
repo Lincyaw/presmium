@@ -1,7 +1,7 @@
 // Test-only plugin: code blocks that step through line highlights ({stepcode}) or
 // versions ({morph}, each at its own lines and permalink, as a code reference gives them),
 // and an `echo` executor whose output is recorded at build time (`exit <n>` exits with code n).
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const lines = (spec: string) => spec.split(',').flatMap((part) => {
   const [from, to = from] = part.split('-').map(Number)

@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import { DEFAULT_LANG } from '@presmium/kernel/contracts'
+import { isRecord } from '@lincyaw/kernel'
+import { DEFAULT_LANG } from '@lincyaw/kernel/contracts'
 
 export const WEB_ID = 'presmium.web'
 

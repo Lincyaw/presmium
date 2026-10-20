@@ -1,4 +1,4 @@
-import type { IRSection } from '@presmium/kernel'
+import type { IRSection } from '@lincyaw/kernel'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, provide, watch } from 'vue'
 import { decoded } from './markdown.ts'

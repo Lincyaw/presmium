@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import { openSlide, useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
-const deck = useFixture('exec-wasi', { to: 'web,slides', link: { '@presmium/slidev-addon-exec-wasi': 'packages/addon-exec-wasi' } })
+const deck = useFixture('exec-wasi', { to: 'web,slides', link: { '@lincyaw/slidev-addon-exec-wasi': 'packages/addon-exec-wasi' } })
 const RUNTIME = { timeout: 120_000 }
 
 async function program(page: Page): Promise<Locator> {

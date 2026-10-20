@@ -2,7 +2,7 @@
 title: 步骤可逆
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   web: {}
 ---

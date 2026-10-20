@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { CODE_ID, regionResolver } from '../domain/index.ts'
 import { codeRefDirective } from './directive.ts'
 import { codeRefAnchors, codeRefPass } from './resolve.ts'

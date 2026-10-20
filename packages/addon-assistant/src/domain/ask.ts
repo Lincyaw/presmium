@@ -1,5 +1,5 @@
-import { blockText } from '@presmium/kernel'
-import type { IRSection } from '@presmium/kernel'
+import { blockText } from '@lincyaw/kernel'
+import type { IRSection } from '@lincyaw/kernel'
 import { language } from './prompt.ts'
 
 export interface AskSettings {

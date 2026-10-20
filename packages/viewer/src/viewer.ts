@@ -1,5 +1,5 @@
-import { joinWindows } from '@presmium/host'
-import type { IRDocument, IRSection, SourcePos } from '@presmium/kernel'
+import { joinWindows } from '@lincyaw/host'
+import type { IRDocument, IRSection, SourcePos } from '@lincyaw/kernel'
 import type { App, InjectionKey, Ref, ShallowRef, VNodeChild } from 'vue'
 import { computed, inject, ref, shallowRef } from 'vue'
 import { applyUpdate, clampPosition, footnoteSections, keepPosition, nextPosition, prevPosition } from './domain/index.ts'

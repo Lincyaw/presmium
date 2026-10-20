@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { Member, ReviewStep } from '@presmium/kernel'
+import type { Member, ReviewStep } from '@lincyaw/kernel'
 import type { SavedGuard } from './git-guard.ts'
 import type { GitDirs } from './git-review.ts'
 

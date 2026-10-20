@@ -206,8 +206,8 @@ test.describe('online media', () => {
     deck = writeDeck('online', `
 title: Online media
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   web: {}
   slides:

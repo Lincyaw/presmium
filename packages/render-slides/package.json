@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/render-slides",
+  "name": "@lincyaw/render-slides",
   "version": "1.0.0-rc.0",
   "description": "Presmium's slides renderer: writes the IR as a Slidev deck and builds it, with the default theme",
   "license": "Apache-2.0",
@@ -45,15 +45,15 @@
     "yaml": "^2.9.1"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^",
-    "@presmium/viewer": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^",
+    "@lincyaw/viewer": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/viewer": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/viewer": "workspace:*",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "5.7.284",
     "playwright-chromium": "1.64.1"

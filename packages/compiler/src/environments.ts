@@ -1,5 +1,5 @@
-import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument } from '@presmium/kernel'
+import { environmentExecutor, errorMessage, irBlocks, isRecord } from '@lincyaw/kernel'
+import type { CodeNode, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument } from '@lincyaw/kernel'
 
 const PREFIX = environmentExecutor('')
 

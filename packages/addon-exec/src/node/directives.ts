@@ -1,4 +1,4 @@
-import type { CodeNode, ComponentNode, DirectiveContext, DirectiveInput, DirectiveSpec, IRBlock, RunSpec } from '@presmium/kernel'
+import type { CodeNode, ComponentNode, DirectiveContext, DirectiveInput, DirectiveSpec, IRBlock, RunSpec } from '@lincyaw/kernel'
 import { parse } from 'yaml'
 import { configuredTimeout, EXEC_ID, isPython, isScript, stringArgs } from '../domain/index.ts'
 

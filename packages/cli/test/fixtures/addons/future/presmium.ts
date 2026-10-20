@@ -1,5 +1,5 @@
 // Test-only plugin written for a kernel that does not exist yet: the compiler must not load it.
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.future',

@@ -2,7 +2,7 @@
 // so a build of it with the slides is a build of two sites, which deploys as one (C-13).
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.site',

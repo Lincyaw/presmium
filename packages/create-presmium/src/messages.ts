@@ -78,7 +78,7 @@ presmium check intro     # 检查一份文档
 presmium build           # 构建工作区的站点，产物在 dist/web/
 \`\`\`
 
-编辑与 agent 在工作台中：\`pnpm add -g @presmium/studio\` 后运行 \`presmium-studio\`（实验性）。修改历史与撤销都是 git 提交，所以工作区要是 git 仓库（create-presmium 在 git 仓库之外新建工作区时运行 git init）。工作区配置列出的助手插件给读者“提问”。
+编辑与 agent 在工作台中：\`pnpm add -g @lincyaw/studio\` 后运行 \`presmium-studio\`（实验性）。修改历史与撤销都是 git 提交，所以工作区要是 git 仓库（create-presmium 在 git 仓库之外新建工作区时运行 git init）。工作区配置列出的助手插件给读者“提问”。
 
 \`AGENTS.md\` 是给编程智能体的说明，技能在 \`.agents/skills\`。Presmium：${REPOSITORY}
 `,
@@ -155,7 +155,7 @@ presmium check intro     # checks one document
 presmium build           # builds the workspace's site into dist/web/
 \`\`\`
 
-Editing and the agent are in the workbench: \`pnpm add -g @presmium/studio\`, then \`presmium-studio\`
+Editing and the agent are in the workbench: \`pnpm add -g @lincyaw/studio\`, then \`presmium-studio\`
 (experimental). The history and undo are git commits, so the workspace is a git repository (create-presmium
 runs git init when it makes one outside a git repository). The assistant plugin the configuration lists
 gives readers "Ask".

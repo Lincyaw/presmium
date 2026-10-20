@@ -1,4 +1,4 @@
-import { environmentExecutor, errorMessage, isRecord } from '@presmium/kernel'
+import { environmentExecutor, errorMessage, isRecord } from '@lincyaw/kernel'
 import type {
   BlockRole,
   CodeNode,
@@ -14,7 +14,7 @@ import type {
   RoleSpec,
   RunSpec,
   SourcePos,
-} from '@presmium/kernel'
+} from '@lincyaw/kernel'
 import { htmlTagNames } from 'html-tag-names'
 import { mathmlTagNames } from 'mathml-tag-names'
 import { defaultOptions } from 'myst-parser'

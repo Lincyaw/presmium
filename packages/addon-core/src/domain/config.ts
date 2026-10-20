@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import type { EnvironmentSpec } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { EnvironmentSpec } from '@lincyaw/kernel'
 
 export const CORE_ID = 'presmium.core'
 

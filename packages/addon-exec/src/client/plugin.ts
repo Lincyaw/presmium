@@ -1,5 +1,5 @@
-import { EXECUTOR } from '@presmium/kernel'
-import type { PluginDefinition } from '@presmium/kernel'
+import { EXECUTOR } from '@lincyaw/kernel'
+import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { createExecutorRouter, EXEC_ID, execConfig, TRACER } from '../domain/index.ts'
 import { messages } from './messages.ts'

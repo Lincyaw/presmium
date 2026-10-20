@@ -2,8 +2,8 @@
 title: 讲台测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-stage'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-stage'
 renderers:
   web: {}
   slides:

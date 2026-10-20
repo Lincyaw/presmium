@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, relative, resolve } from 'node:path'
-import { Compiler, DECK_ENTRY, viewFor } from '@presmium/compiler'
+import { Compiler, DECK_ENTRY, viewFor } from '@lincyaw/compiler'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { diffReport, pageStatus, pairPages, parsePageFile, parseWebFile, reportMarkdown } from '../domain/index.ts'

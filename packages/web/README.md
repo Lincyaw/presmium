@@ -1,4 +1,4 @@
-# @presmium/web
+# @lincyaw/web
 
 Presmium's web renderer: a static VitePress site around the IR runtime, a page per chapter, with search, the site shell (navigation, footer, Open Graph, sitemap), translations with a language menu, links to the slides, and workspace sites of several documents.
 
@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @presmium/cli @presmium/web
+pnpm add -D @lincyaw/cli @lincyaw/web
 ```
 
 `presmium build` builds it into `dist/web/` when it is installed (or `--to web`); `presmium dev --to web` runs its dev server.

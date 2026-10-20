@@ -2,7 +2,7 @@
 // {quiz} through this plugin's notebook extension, {chart} through its fallback,
 // {canvas} with neither, so it ends up in the build report; {clip} names a local file
 // (`assets`) and its extension gives a Markdown cell as mdast.
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const component = (name: string, props: Record<string, unknown> = {}) => ({ type: 'component' as const, plugin: 'fixture.widgets', name, props })
 

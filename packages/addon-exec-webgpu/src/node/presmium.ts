@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import { environmentExecutor, errorMessage } from '@presmium/kernel'
-import type { EnvironmentProvider, PresmiumNodePlugin } from '@presmium/kernel'
+import { environmentExecutor, errorMessage } from '@lincyaw/kernel'
+import type { EnvironmentProvider, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { adapterChoice, EXEC_WEBGPU_ID, WEBGPU_EXECUTOR_ID } from '../domain/index.ts'
 import { jaxRuntime } from './jax.ts'
 import { createRecorder, findRuntime, plainEnv } from './recorder.ts'

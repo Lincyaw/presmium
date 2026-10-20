@@ -28,20 +28,20 @@
     "dev": "presmium dev example --to web,slides"
   },
   "peerDependencies": {
-    "@presmium/compiler": "^{{version}}",
-    "@presmium/host": "^{{version}}",
-    "@presmium/kernel": "^{{version}}",
-    "@presmium/viewer": "^{{version}}",
+    "@lincyaw/compiler": "^{{version}}",
+    "@lincyaw/host": "^{{version}}",
+    "@lincyaw/kernel": "^{{version}}",
+    "@lincyaw/viewer": "^{{version}}",
     "vue": "^3.5.0"
   },
   "devDependencies": {
-    "@presmium/cli": "^{{version}}",
-    "@presmium/host": "^{{version}}",
-    "@presmium/kernel": "^{{version}}",
-    "@presmium/render-notebook": "^{{version}}",
-    "@presmium/render-slides": "^{{version}}",
-    "@presmium/slidev-addon-core": "^{{version}}",
-    "@presmium/web": "^{{version}}",
+    "@lincyaw/cli": "^{{version}}",
+    "@lincyaw/host": "^{{version}}",
+    "@lincyaw/kernel": "^{{version}}",
+    "@lincyaw/render-notebook": "^{{version}}",
+    "@lincyaw/render-slides": "^{{version}}",
+    "@lincyaw/slidev-addon-core": "^{{version}}",
+    "@lincyaw/web": "^{{version}}",
     "@types/node": "^22.19.0",
     "vitest": "^5.0.0",
     "vue": "^3.5.0"

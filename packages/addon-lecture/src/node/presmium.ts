@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { LECTURE_ID } from '../domain/index.ts'
 import { lectureCheck } from './check.ts'
 import { keepPass } from './plan.ts'

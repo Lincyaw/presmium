@@ -244,9 +244,9 @@ test.describe('web form', () => {
 test.describe('web form, offline runtimes (D-6)', () => {
   const wasi = useFixture('exec-wasi', {
     to: 'web',
-    link: { '@presmium/slidev-addon-exec-wasi': 'packages/addon-exec-wasi' },
+    link: { '@lincyaw/slidev-addon-exec-wasi': 'packages/addon-exec-wasi' },
     edit: dir => writeFileSync(join(dir, 'lecture.md'), readFileSync(join(dir, 'lecture.md'), 'utf8')
-      .replace("  - '@presmium/slidev-addon-exec-wasi'\n", "  - '@presmium/slidev-addon-exec-wasi'\n  - '@presmium/slidev-addon-publish'\n")),
+      .replace("  - '@lincyaw/slidev-addon-exec-wasi'\n", "  - '@lincyaw/slidev-addon-exec-wasi'\n  - '@lincyaw/slidev-addon-publish'\n")),
   })
 
   test('a first visit caches no C compiler; once saved for offline use, C runs offline (F-73)', async ({ page, context }) => {

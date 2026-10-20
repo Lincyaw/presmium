@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel/contracts'
+import type { Locale } from '@lincyaw/kernel/contracts'
 
 export interface CueMessages {
   separator: string

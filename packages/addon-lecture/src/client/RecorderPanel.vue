@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { blockAt, linesText, OPERATIONS, PmIcon, useMessages, useServer, useService } from '@presmium/host'
-import type { BlockPoint } from '@presmium/host'
+import { blockAt, linesText, OPERATIONS, PmIcon, useMessages, useServer, useService } from '@lincyaw/host'
+import type { BlockPoint } from '@lincyaw/host'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { clockText, LECTURE_ID, LECTURE_MESSAGES, simplifyPath } from '../domain/index.ts'
 import type { PathPoint } from '../domain/index.ts'

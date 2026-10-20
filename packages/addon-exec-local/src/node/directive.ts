@@ -1,5 +1,5 @@
 import { dirname, resolve } from 'node:path'
-import type { CodeNode, ComponentNode, DirectiveSpec } from '@presmium/kernel'
+import type { CodeNode, ComponentNode, DirectiveSpec } from '@lincyaw/kernel'
 import { EXEC_LOCAL_ID, workspacePath } from '../domain/index.ts'
 
 export const requestedWorkspaces = new WeakMap<ComponentNode, string>()

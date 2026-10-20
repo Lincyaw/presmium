@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-theme-book",
+  "name": "@lincyaw/slidev-theme-book",
   "version": "0.1.0",
   "private": true,
   "description": "Presmium's default Slidev theme, 书卷: the slides renderer writes it into the deck when renderers.slides names no theme",

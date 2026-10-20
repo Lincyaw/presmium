@@ -1,4 +1,4 @@
-import type { FocusReport } from '@presmium/kernel'
+import type { FocusReport } from '@lincyaw/kernel'
 import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, RevertAnswer, ReviewEnd, ReviewFollowed, ReviewView, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from './api.ts'
 
 export class ServiceError extends Error {

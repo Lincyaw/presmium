@@ -1,4 +1,4 @@
-import type { Participant } from '@presmium/kernel'
+import type { Participant } from '@lincyaw/kernel'
 import type * as Y from 'yjs'
 import { changedEntries, cursorOf, ended, samePosition, started } from '../domain/index.ts'
 import type { Position, SessionRecord } from '../domain/index.ts'

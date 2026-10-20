@@ -1,4 +1,4 @@
-import type { SessionStatus } from '@presmium/kernel'
+import type { SessionStatus } from '@lincyaw/kernel'
 import { latestPerParticipant } from './place.ts'
 import type { Place } from './place.ts'
 

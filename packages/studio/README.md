@@ -1,17 +1,17 @@
-# @presmium/studio
+# @lincyaw/studio
 
-`presmium studio`: Presmium's workbench in one command. It starts [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT) with Presmium's bundle, [`@presmium/dsh`](https://www.npmjs.com/package/@presmium/dsh), and the workspace service of a directory (`presmium serve`, from the `presmium` package it depends on), and prints the one address to open in the browser. Experimental (0.x): it installs one exact version of DeepSeek Harness, `0.2.1-alpha.4` (about 865 MB with its dependencies).
+`presmium studio`: Presmium's workbench in one command. It starts [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT) with Presmium's bundle, [`@lincyaw/dsh`](https://www.npmjs.com/package/@lincyaw/dsh), and the workspace service of a directory (`presmium serve`, from the `presmium` package it depends on), and prints the one address to open in the browser. Experimental (0.x): it installs one exact version of DeepSeek Harness, `0.2.1-alpha.4` (about 865 MB with its dependencies).
 
 Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures written in MyST Markdown into web pages, slides, Jupyter notebooks and narrated lectures.
 
 ## Usage
 
 ```sh
-pnpm add -g @presmium/studio
+pnpm add -g @lincyaw/studio
 presmium-studio [dir] [--port <n>] [--host <addr>]
 ```
 
-In a project with `pnpm add -D @presmium/studio`, `pnpm exec presmium studio` is the same command.
+In a project with `pnpm add -D @lincyaw/studio`, `pnpm exec presmium studio` is the same command.
 
 `dir` is a workspace root (`presmium.workspace.yaml`) or a deck's directory, as for `presmium serve`. The workbench listens on 127.0.0.1, port 4320 by default (a free port when that one is in use); `--host <addr>` makes it listen on one address of the machine on the local network instead, with no login.
 

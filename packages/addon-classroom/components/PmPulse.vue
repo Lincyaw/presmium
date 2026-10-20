@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { computed } from 'vue'
 import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
 import { COLLECTIONS, distribution, isPulseVote, MESSAGES, placeKey, voteId } from '../src/domain/index.ts'

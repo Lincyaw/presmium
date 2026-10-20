@@ -14,7 +14,7 @@ export const FIXTURES = join(ROOT, 'e2e/fixtures/consumer')
 
 export const ESSENTIALS = ['presmium']
 
-export const STUDIO = [...ESSENTIALS, '@presmium/studio']
+export const STUDIO = [...ESSENTIALS, '@lincyaw/studio']
 
 const BUILDS = /^allowBuilds:\n(?: .*\n)+/m.exec(readFileSync(join(ROOT, 'pnpm-workspace.yaml'), 'utf8'))![0]
 

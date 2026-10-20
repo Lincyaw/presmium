@@ -1,4 +1,4 @@
-export const PRINT_HOLD = '@presmium/print-pending'
+export const PRINT_HOLD = '@lincyaw/print-pending'
 
 export const PRINT_READY = 'presmium:print-ready'
 

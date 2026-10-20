@@ -20,7 +20,7 @@
 
 不需要浏览器的用例放在 `packages/<包>/test/*.test.ts`。把最小文稿写进临时目录，插件用绝对路径，渲染端可用 `renderers.<id>.package` 指向包目录。
 
-`@presmium/cli/testing` 的 `presmium(cwd, args, env?)` 真正启动 CLI，返回 `{ code, stdout, stderr }`。先断言退出码，并把标准输出与标准错误作为失败信息；再读回 IR 或产物验证结果。该辅助工具去掉测试进程的 `NODE_ENV=test`，避免构建模式与使用者不同。
+`@lincyaw/cli/testing` 的 `presmium(cwd, args, env?)` 真正启动 CLI，返回 `{ code, stdout, stderr }`。先断言退出码，并把标准输出与标准错误作为失败信息；再读回 IR 或产物验证结果。该辅助工具去掉测试进程的 `NODE_ENV=test`，避免构建模式与使用者不同。
 
 示例模式：
 
@@ -31,7 +31,7 @@ const notebook = JSON.parse(readFileSync(join(dir, 'dist/notebook/lecture.ipynb'
 expect(JSON.stringify(notebook.cells)).toContain('预期的降级内容')
 ```
 
-需要给包增加 `@presmium/cli` 开发依赖时先检查依赖方向。`mcp`、`server` 的测试直接启动 CLI 可执行文件，避免 `cli → server → mcp` 的链接成环。
+需要给包增加 `@lincyaw/cli` 开发依赖时先检查依赖方向。`mcp`、`server` 的测试直接启动 CLI 可执行文件，避免 `cli → server → mcp` 的链接成环。
 
 ## 浏览器用例怎样准备文稿
 

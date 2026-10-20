@@ -4,10 +4,10 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PRESMIUM_BIN, run } from '@presmium/cli/testing'
+import { PRESMIUM_BIN, run } from '@lincyaw/cli/testing'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { formatTrack, irHash, sectionHashes } from '../src/domain/index.ts'
-import type { IRDocument } from '@presmium/kernel'
+import type { IRDocument } from '@lincyaw/kernel'
 import type { LectureTrack } from '../src/domain/index.ts'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))

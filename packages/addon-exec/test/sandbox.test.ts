@@ -2,8 +2,8 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PRESMIUM_BIN, run } from '@presmium/cli/testing'
-import type { CodeNode, IRDocument } from '@presmium/kernel'
+import { PRESMIUM_BIN, run } from '@lincyaw/cli/testing'
+import type { CodeNode, IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))

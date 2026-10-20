@@ -27,7 +27,7 @@ const rules = [
   {
     name: 'domain is pure TS',
     dirs: ['src/domain'],
-    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/|@presmium\/host)/.test(spec) || nodeBuiltin(spec)
+    forbid: (spec, file, pkgDir) => vue(spec) || /^(vitepress|@slidev\/|@lincyaw\/host)/.test(spec) || nodeBuiltin(spec)
       || (target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), join('src', 'domain'))),
   },
   {
@@ -41,19 +41,19 @@ const rules = [
   { name: 'kernel/node is framework-free', pkgs: ['kernel'], dirs: ['src/node'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) },
   { name: 'IR runtime is form-neutral', pkgs: ['viewer'], dirs: ['src'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
   { name: 'host is form-neutral', pkgs: ['host'], dirs: ['src'], forbid: spec => /^(vitepress|@slidev\/)/.test(spec) },
-  { name: 'components use @presmium/host, not vitepress', dirs: ['components', 'src/client'], except: ['web'], forbid: spec => /^vitepress/.test(spec) },
-  { name: 'components use @presmium/host, not @slidev/client', dirs: ['components', 'src/client'], except: ['addon-core'], forbid: spec => /^@slidev\/client(\/|$)/.test(spec) },
+  { name: 'components use @lincyaw/host, not vitepress', dirs: ['components', 'src/client'], except: ['web'], forbid: spec => /^vitepress/.test(spec) },
+  { name: 'components use @lincyaw/host, not @slidev/client', dirs: ['components', 'src/client'], except: ['addon-core'], forbid: spec => /^@slidev\/client(\/|$)/.test(spec) },
   { name: 'components use no Slidev package but @slidev/client', dirs: ['components', 'src/client'], forbid: spec => /^@slidev\/(?!client$)/.test(spec) },
   { name: 'setup/ and global layers use only @slidev/client and @slidev/types of Slidev', dirs: ['setup'], files: GLOBAL_LAYERS, forbid: spec => /^@slidev\/(?!(client|types)$)/.test(spec) },
   { name: 'node adapters do not use vue', dirs: ['src/node'], forbid: spec => vue(spec) },
   { name: 'only web uses vitepress', dirs: ['.'], except: ['web'], forbid: spec => /^vitepress/.test(spec) },
   { name: 'no framework internals', dirs: ['.'], forbid: spec => /^@slidev\/client\/(?!index)|^vitepress\/dist|^@slidev\/cli\/dist/.test(spec) },
-  { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/slidev-addon-/.test(spec) },
+  { name: 'no package uses an addon', dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/slidev-addon-/.test(spec) },
   { name: 'relative imports stay in their package', dirs: ['.'], forbid: (spec, file, pkgDir) => target(spec, file, pkgDir) !== undefined && outside(target(spec, file, pkgDir), '.') },
-  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || /^@presmium\/(viewer|web|host)(\/|$)/.test(spec) },
-  { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/server(\/|$)/.test(spec) },
-  { name: 'only the server and the dsh bundle use mcp', pkgs: pkg => !['server', 'mcp', 'dsh'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/mcp(\/|$)/.test(spec) },
-  { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/(server|mcp|workspace|web)(\/|$)/.test(spec) },
+  { name: 'node packages are framework-free', pkgs: ['server', 'mcp'], dirs: ['src'], forbid: spec => vue(spec) || /^(vitepress|@slidev\/)/.test(spec) || /^@lincyaw\/(viewer|web|host)(\/|$)/.test(spec) },
+  { name: 'only cli and workspace use the server', pkgs: pkg => !['cli', 'workspace', 'server'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/server(\/|$)/.test(spec) },
+  { name: 'only the server and the dsh bundle use mcp', pkgs: pkg => !['server', 'mcp', 'dsh'].includes(pkg), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/mcp(\/|$)/.test(spec) },
+  { name: 'plugins use contracts, not the hosts', pkgs: pkg => pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/(server|mcp|workspace|web)(\/|$)/.test(spec) },
   {
     name: 'protocol clients stay in their adapter',
     dirs: ['.'],
@@ -61,9 +61,9 @@ const rules = [
     forbid: (spec, file, pkgDir) => ADAPTERS.some(adapter => adapter.pattern.test(spec) && !adapter.allowed(pkgName(pkgDir), inPackage(file, pkgDir))),
   },
   { name: 'DeepSeek Harness only in dsh and studio', dirs: ['.'], forbid: (spec, _file, pkgDir) => DSH.test(spec) && !DSH_PACKAGES.includes(pkgName(pkgDir)) },
-  { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@presmium\/host(\/|$)/.test(spec) },
+  { name: 'the workbench\'s panels know no host', pkgs: ['workbench'], dirs: ['.'], skip: ['test'], forbid: spec => vue(spec) || DSH.test(spec) || /^@lincyaw\/host(\/|$)/.test(spec) },
   { name: 'the design system only uses framework-free icons', pkgs: ['design'], dirs: ['.'], skip: ['test'], forbid: spec => !spec.startsWith('.') && spec !== 'lucide' },
-  { name: 'outputs do not use the workbench', pkgs: pkg => PRODUCTS(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@presmium\/workbench(\/|$)/.test(spec) },
+  { name: 'outputs do not use the workbench', pkgs: pkg => PRODUCTS(pkg) || pkg.startsWith('addon-'), dirs: ['.'], skip: ['test'], forbid: spec => /^@lincyaw\/workbench(\/|$)/.test(spec) },
 ]
 
 const DSH = /^@deepseek-ai\//

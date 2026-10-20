@@ -1,4 +1,4 @@
-import type { TrackEvent, WrittenWord } from '@presmium/kernel'
+import type { TrackEvent, WrittenWord } from '@lincyaw/kernel'
 import type { LecturePlan, PlannedCue } from './plan.ts'
 import { wordTime } from './timing.ts'
 import type { LectureTrack, TrackBlock, Utterance, Voice } from './track.ts'

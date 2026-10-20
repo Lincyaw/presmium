@@ -1,5 +1,5 @@
-import { useServer } from '@presmium/host'
-import type { SpeechService, Synthesis } from '@presmium/kernel'
+import { useServer } from '@lincyaw/host'
+import type { SpeechService, Synthesis } from '@lincyaw/kernel'
 import type { EngineListing, TimedSpeech, TranscriptionAnswer, VoiceListing } from '../domain/index.ts'
 import { deckSpeechConfig, PROTOCOL_PATH, SPEECH_ID, speechBody, transcriptOf } from '../domain/index.ts'
 

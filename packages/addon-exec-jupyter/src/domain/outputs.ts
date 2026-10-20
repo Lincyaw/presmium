@@ -1,5 +1,5 @@
-import { isRecord, languageId } from '@presmium/kernel'
-import type { RunOutput } from '@presmium/kernel'
+import { isRecord, languageId } from '@lincyaw/kernel'
+import type { RunOutput } from '@lincyaw/kernel'
 
 const ANSI = /\u001B\[[0-9;?]*[ -/]*[@-~]/g
 

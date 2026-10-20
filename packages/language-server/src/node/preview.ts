@@ -8,7 +8,7 @@ import { createInterface } from 'node:readline'
 const START_TIMEOUT = 120_000
 const PREVIEW_DIR = '.presmium/preview'
 
-const CLI = '@presmium/cli'
+const CLI = '@lincyaw/cli'
 
 function cliBin(from: string): string | undefined {
   let dir: string

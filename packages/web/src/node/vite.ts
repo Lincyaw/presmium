@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import MiniSearch from 'minisearch'
-import { localRequestRefusal, tokenize } from '@presmium/kernel'
+import { localRequestRefusal, tokenize } from '@lincyaw/kernel'
 import { IR_ENDPOINT, SOURCE_ENDPOINT } from '../domain/links.ts'
 
 export const IR_MODULE = 'virtual:presmium/ir'

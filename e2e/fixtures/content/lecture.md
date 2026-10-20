@@ -2,9 +2,9 @@
 title: 富内容测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
-  - '@presmium/slidev-addon-publish'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
+  - '@lincyaw/slidev-addon-publish'
 renderers:
   web: {}
   slides:

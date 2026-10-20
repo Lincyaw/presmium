@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_JUPYTER_ID } from '../domain/index.ts'
 import { terminalDirective, terminalPass } from './directive.ts'
 import { jupyterProvider } from './environments.ts'

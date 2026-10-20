@@ -1,6 +1,6 @@
 // Test-only plugin that leaves malformed mdast in the IR, a node without a type: its pass does, in
 // the first block of the deck, and so does its directive {typeless}, in its own block.
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.breaker',

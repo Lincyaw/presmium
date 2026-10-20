@@ -1,6 +1,6 @@
 import { relative, resolve, sep } from 'node:path'
-import { APPROVALS, errorMessage, isRecord, json, problem } from '@presmium/kernel'
-import type { Route, RunRequest, ServerContext, ServerContribution } from '@presmium/kernel'
+import { APPROVALS, errorMessage, isRecord, json, problem } from '@lincyaw/kernel'
+import type { Route, RunRequest, ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig, failedContainerRun } from '../domain/index.ts'
 import type { LocalEnvStatus } from '../domain/index.ts'
 import { definitionRunners, dockerAvailable, findDefinition, readDevcontainer, runInContainer } from './container.ts'

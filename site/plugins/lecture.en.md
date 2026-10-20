@@ -8,7 +8,7 @@ translationOf: { entry: lecture.md, digest: 832af4823d44344ad766952692af1aee29c3
 (plugins)=
 # Plugin guide
 
-Presmium's components, directives, executors, services and renderers all come from plugins, and official and third-party plugins use the same contracts. A plugin is an npm package: its Node entry turns directives of the source into IR, runs passes and checks at compile time, and provides services and server routes; in the browser its components are the same Vue components in the web form and in the slides, and they get the step state and services through `@presmium/host` only.
+Presmium's components, directives, executors, services and renderers all come from plugins, and official and third-party plugins use the same contracts. A plugin is an npm package: its Node entry turns directives of the source into IR, runs passes and checks at compile time, and provides services and server routes; in the browser its components are the same Vue components in the web form and in the slides, and they get the step state and services through `@lincyaw/host` only.
 
 This guide follows an imagined poll plugin, `presmium.poll`, from the package's layout to its tests. The full signatures are in the API reference (API in the navigation bar), and the version rules in [Interfaces and versions](../reference/lecture.md#versions).
 
@@ -47,21 +47,21 @@ presmium-plugin-poll/
   "files": ["components", "setup", "src"],
   "slidev": {},
   "peerDependencies": {
-    "@presmium/host": "^1.0.0",
-    "@presmium/kernel": "^1.0.0"
+    "@lincyaw/host": "^1.0.0",
+    "@lincyaw/kernel": "^1.0.0"
   },
   "devDependencies": {
-    "@presmium/cli": "^1.0.0",
-    "@presmium/host": "^1.0.0",
-    "@presmium/kernel": "^1.0.0",
-    "@presmium/web": "^1.0.0",
+    "@lincyaw/cli": "^1.0.0",
+    "@lincyaw/host": "^1.0.0",
+    "@lincyaw/kernel": "^1.0.0",
+    "@lincyaw/web": "^1.0.0",
     "vitest": "^4.0.0"
   }
 }
 ```
 
 - Every plugin package is a Slidev addon too (the `slidev` field, `components/`, `setup/`), so the slides know its components.
-- `@presmium/kernel`, `@presmium/host`, `@presmium/viewer` and `@presmium/compiler`, those the plugin uses, are peer dependencies: the plugin shares the application's one copy of Presmium. When the installed Presmium does not satisfy them, the loader reports `presmium.plugins` and leaves the plugin out; the build does not crash.
+- `@lincyaw/kernel`, `@lincyaw/host`, `@lincyaw/viewer` and `@lincyaw/compiler`, those the plugin uses, are peer dependencies: the plugin shares the application's one copy of Presmium. When the installed Presmium does not satisfy them, the loader reports `presmium.plugins` and leaves the plugin out; the build does not crash.
 - The source is published as `.ts` and `.vue`, not compiled first; relative imports name the `.ts` extension.
 
 (plugin-package-version)=
@@ -74,10 +74,10 @@ The Node entry and the browser plugin's manifest both declare `version` and `ker
 
 | Where | May import | Must not import |
 |---|---|---|
-| `src/domain/` | `@presmium/kernel`, libraries of plain computation | vue, `@presmium/host`, `@slidev/*`, vitepress, Node's built-in modules |
-| `components/`, `src/client/` | `src/domain/`, `@presmium/kernel`, `@presmium/host`, vue | `@slidev/*`, vitepress |
+| `src/domain/` | `@lincyaw/kernel`, libraries of plain computation | vue, `@lincyaw/host`, `@slidev/*`, vitepress, Node's built-in modules |
+| `components/`, `src/client/` | `src/domain/`, `@lincyaw/kernel`, `@lincyaw/host`, vue | `@slidev/*`, vitepress |
 | `setup/` | all of the above, plus the public exports of `@slidev/client` and `@slidev/types` | Slidev's other packages, vitepress |
-| `src/node/` | `src/domain/`, `@presmium/kernel`, Node libraries | vue |
+| `src/node/` | `src/domain/`, `@lincyaw/kernel`, Node libraries | vue |
 
 Never import a framework's internal paths, nor another plugin package: contracts two plugins share belong in the kernel (business services) or the host (host tokens).
 
@@ -87,11 +87,11 @@ Never import a framework's internal paths, nor another plugin package: contracts
 (plugin-components-host)=
 ## Through the host only
 
-Components live in `components/`, and the web form and the slides both use them. A component gets the step state and services from `@presmium/host` only and never uses Slidev or VitePress directly, so either form can render it:
+Components live in `components/`, and the web form and the slides both use them. A component gets the step state and services from `@lincyaw/host` only and never uses Slidev or VitePress directly, so either form can render it:
 
 ```vue
 <script setup lang="ts">
-import { useMessages, useStepState } from '@presmium/host'
+import { useMessages, useStepState } from '@lincyaw/host'
 import { MESSAGES } from '../src/domain/messages.ts'
 
 defineProps<{ question: string, choices: string[] }>()
@@ -136,7 +136,7 @@ A directive is a `DirectiveSpec`: a name, an argument, a body, options and `toIR
 
 ```ts
 import { createRequire } from 'node:module'
-import type { DirectiveSpec, PresmiumNodePlugin } from '@presmium/kernel'
+import type { DirectiveSpec, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }
 
@@ -204,7 +204,7 @@ Executors in `executors` run code at compile time: they use only the environment
 `server(ctx)` of the Node entry returns routes and reverse proxies under `/__presmium/<plugin id>/`, in both `presmium dev` and `presmium serve`. Routes take and give Fetch API requests and responses:
 
 ```ts
-import { json } from '@presmium/kernel'
+import { json } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'presmium.poll',
@@ -237,10 +237,10 @@ An `AgentTool` in `tools` becomes an MCP tool: `name`, `description`, the JSON S
 (plugin-views-viewer)=
 ## Extending the IR runtime
 
-The IR runtime `@presmium/viewer` renders the web form. A plugin's `src/client/viewer.ts` exports a viewer plugin `(ctx) => void` by default, which can register runtime views (`registerView`, such as the present view), node renderers (`registerNodeRenderer`), components (`registerComponent`), actions (`registerAction`) and layers (`registerLayer`). It imports `@presmium/viewer` for its types only:
+The IR runtime `@lincyaw/viewer` renders the web form. A plugin's `src/client/viewer.ts` exports a viewer plugin `(ctx) => void` by default, which can register runtime views (`registerView`, such as the present view), node renderers (`registerNodeRenderer`), components (`registerComponent`), actions (`registerAction`) and layers (`registerLayer`). It imports `@lincyaw/viewer` for its types only:
 
 ```ts
-import type { ViewerPlugin } from '@presmium/viewer'
+import type { ViewerPlugin } from '@lincyaw/viewer'
 
 const plugin: ViewerPlugin = (ctx) => {
   // In the present view, the key R shows the next step
@@ -296,14 +296,14 @@ Components use `useMessages(MESSAGES)`, other code `MESSAGES[currentLocale()]`. 
 (plugin-testing-integration)=
 ## Integration tests only
 
-A plugin's tests run the real CLI, build real outputs and open a real browser; they do not test single functions in isolation, nor mock Slidev or VitePress, and each acceptance criterion gets one or two cases. `presmium(cwd, args)` of `@presmium/cli/testing` runs the real `presmium` command in a child process:
+A plugin's tests run the real CLI, build real outputs and open a real browser; they do not test single functions in isolation, nor mock Slidev or VitePress, and each acceptance criterion gets one or two cases. `presmium(cwd, args)` of `@lincyaw/cli/testing` runs the real `presmium` command in a child process:
 
 ```ts
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
+import { presmium } from '@lincyaw/cli/testing'
 import { expect, it } from 'vitest'
 
 const PLUGIN = fileURLToPath(new URL('..', import.meta.url))

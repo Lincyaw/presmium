@@ -1,4 +1,4 @@
-import { isRecord } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import type { Submission } from './exercise.ts'
 import type { Note } from './notes.ts'
 import type { Prediction, SavedPrediction } from './predict.ts'

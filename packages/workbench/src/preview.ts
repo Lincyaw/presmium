@@ -1,5 +1,5 @@
-import { isPreviewEnvelope, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, readPreviewReport } from '@presmium/kernel'
-import type { PreviewCommand, PreviewReport } from '@presmium/kernel'
+import { isPreviewEnvelope, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, readPreviewReport } from '@lincyaw/kernel'
+import type { PreviewCommand, PreviewReport } from '@lincyaw/kernel'
 
 export interface PreviewHandlers {
   report(report: PreviewReport): void

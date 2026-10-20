@@ -4,7 +4,7 @@ import { closeSync, constants, mkdirSync, mkdtempSync, openSync, rmSync, symlink
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PRESMIUM_BIN } from '@presmium/cli/testing'
+import { PRESMIUM_BIN } from '@lincyaw/cli/testing'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import { formatTrack } from '../src/domain/index.ts'
 import type { LectureTrack } from '../src/domain/index.ts'

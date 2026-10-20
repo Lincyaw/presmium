@@ -1,7 +1,7 @@
 // Test-only executor: runs `python` code blocks with the local python3 at compile time,
 // so the notebook carries real recorded outputs.
 import { execFile } from 'node:child_process'
-import type { PresmiumNodePlugin, RunResult } from '@presmium/kernel'
+import type { PresmiumNodePlugin, RunResult } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.python',

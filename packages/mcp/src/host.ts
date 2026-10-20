@@ -9,7 +9,7 @@ import type {
   Member,
   RunResult,
   ServiceToken,
-} from '@presmium/kernel'
+} from '@lincyaw/kernel'
 
 export interface McpCaller {
   member: Member

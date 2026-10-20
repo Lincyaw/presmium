@@ -40,8 +40,8 @@ def frontmatter(n):
 title: "CS336 Lecture {n:02}: {TITLES[n]}"
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   web: {{}}
   slides: {{}}

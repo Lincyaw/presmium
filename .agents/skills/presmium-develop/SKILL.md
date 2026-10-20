@@ -7,7 +7,7 @@ description: "帮助开发者评估 Presmium 架构、定位故障、实现或�
 
 工作台的通用交互复用现成组件：弹窗、菜单、浮层、标签页与分段切换封装 Radix Primitives，命令搜索用 cmdk，文件树用 React Arborist，分栏用 react-resizable-panels；首次欢迎直接用 Harness 的 `Modal`。使用现有设计令牌，文档操作、保存冲突、编译、审阅与预览同步由 Presmium 维护，不重复实现依赖已有的焦点、键盘、定位与拖拽行为。
 
-产物中的 Vue 交互封装 Reka UI，包含弹窗、抽屉、菜单、浮层、Tabs、分段切换与放映焦点范围；不另写全局 Escape、焦点循环或浮层定位。内容标签的 `sync` 联动与步骤状态仍是 Presmium 的业务。主题观察统一经宿主与 VueUse，图标用 `@presmium/design` 中映射到 Lucide 的语义名称，问答流用 eventsource-parser 解析 SSE 事件。
+产物中的 Vue 交互封装 Reka UI，包含弹窗、抽屉、菜单、浮层、Tabs、分段切换与放映焦点范围；不另写全局 Escape、焦点循环或浮层定位。内容标签的 `sync` 联动与步骤状态仍是 Presmium 的业务。主题观察统一经宿主与 VueUse，图标用 `@lincyaw/design` 中映射到 Lucide 的语义名称，问答流用 eventsource-parser 解析 SSE 事件。
 
 先确定用户希望改变的行为，再找到负责它的边界。交付应能说明谁在什么操作下遇到什么变化，以及真实组装的系统如何证明这个变化。
 
@@ -57,7 +57,7 @@ description: "帮助开发者评估 Presmium 架构、定位故障、实现或�
 先选已有插件、服务或渲染扩展点。已有组件能满足时通过公开接口定制。需要新的能力时：
 
 - 语法、引用、执行输出或诊断在编译侧处理；依赖的文件经 `ctx.src`、`ctx.resolvers` 或 `ctx.watch` 登记，使修改能触发重新编译。
-- 组件与浏览器逻辑只经 `@presmium/host` 取得步骤、配置与服务。同一步应得到同一视觉状态，前进再后退也成立。
+- 组件与浏览器逻辑只经 `@lincyaw/host` 取得步骤、配置与服务。同一步应得到同一视觉状态，前进再后退也成立。
 - 插件之间通过服务契约协作，不直接引用另一个插件。`src/domain` 保持纯 TS；Node 适配器与浏览器适配器各自处理外部系统。
 - 修改源码的能力属于工作台与工作区；产物经带版本的预览协议与工作台通信。DeepSeek Harness 的接口只在 `dsh` 与启动器 `studio` 中出现。
 

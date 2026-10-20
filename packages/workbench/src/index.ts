@@ -1,4 +1,4 @@
-import type { IconName } from '@presmium/design'
+import type { IconName } from '@lincyaw/design'
 import type { ComponentType } from 'react'
 import type { WorkbenchMessages } from './messages.ts'
 import { ChangesPanel } from './panels/Changes.tsx'

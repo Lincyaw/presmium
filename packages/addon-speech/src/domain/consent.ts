@@ -1,4 +1,4 @@
-import { isRecord } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import { engineId } from './engines.ts'
 
 export interface ConsentRecord {

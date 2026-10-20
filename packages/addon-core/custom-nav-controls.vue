@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmToolbar } from '@presmium/host'
+import { PmToolbar } from '@lincyaw/host'
 </script>
 
 <template>

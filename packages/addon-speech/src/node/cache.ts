@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import type { DocumentFiles, SpeechWord } from '@presmium/kernel'
-import { isRecord } from '@presmium/kernel'
+import type { DocumentFiles, SpeechWord } from '@lincyaw/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import type { AigcLabel } from '../domain/index.ts'
 import type { SynthesisResult } from './backend.ts'
 

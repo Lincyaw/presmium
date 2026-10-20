@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel/contracts'
+import type { Locale } from '@lincyaw/kernel/contracts'
 
 const zh = {
   badge: { black: '听众视图已黑屏', frozen: '听众视图已冻结' },

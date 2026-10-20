@@ -2,8 +2,8 @@ import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium, run } from '@presmium/cli/testing'
-import type { Run } from '@presmium/cli/testing'
+import { presmium, run } from '@lincyaw/cli/testing'
+import type { Run } from '@lincyaw/cli/testing'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const ADDON_DIR = fileURLToPath(new URL('..', import.meta.url))

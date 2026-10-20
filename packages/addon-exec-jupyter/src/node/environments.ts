@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import { environmentExecutor } from '@presmium/kernel'
-import type { EnvironmentContext, EnvironmentProvider, EnvironmentSpec, Executor } from '@presmium/kernel'
+import { environmentExecutor } from '@lincyaw/kernel'
+import type { EnvironmentContext, EnvironmentProvider, EnvironmentSpec, Executor } from '@lincyaw/kernel'
 import { kernelOf, languagesOf, operatorConnection } from '../domain/index.ts'
 import { createKernels } from '../jupyter/kernels.ts'
 import type { Kernels, KernelsText } from '../jupyter/kernels.ts'

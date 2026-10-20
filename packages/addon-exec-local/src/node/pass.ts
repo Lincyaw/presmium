@@ -1,6 +1,6 @@
 import { relative, resolve, sep } from 'node:path'
-import { docBlocks } from '@presmium/kernel'
-import type { CodeNode, ComponentNode, IRBlock, IRPass } from '@presmium/kernel'
+import { docBlocks } from '@lincyaw/kernel'
+import type { CodeNode, ComponentNode, IRBlock, IRPass } from '@lincyaw/kernel'
 import { EXEC_LOCAL_ID, execLocalConfig } from '../domain/index.ts'
 import type { ContainerExecutor } from './container.ts'
 import { findDefinition } from './container.ts'

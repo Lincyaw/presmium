@@ -2,9 +2,9 @@
 title: 课堂会话测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-stage'
-  - '@presmium/slidev-addon-session'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-stage'
+  - '@lincyaw/slidev-addon-session'
 presmium:
   presmium.core:
     demo: true

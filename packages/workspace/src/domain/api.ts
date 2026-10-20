@@ -1,4 +1,4 @@
-import type { Revision } from '@presmium/kernel/contracts'
+import type { Revision } from '@lincyaw/kernel/contracts'
 import type { RevisionOperation } from './revisions.ts'
 
 export const WORKSPACE_ID = 'presmium.workspace'

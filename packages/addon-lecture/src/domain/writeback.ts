@@ -1,5 +1,5 @@
-import { irBlocks } from '@presmium/kernel'
-import type { IRDocument, SourceRange } from '@presmium/kernel'
+import { irBlocks } from '@lincyaw/kernel'
+import type { IRDocument, SourceRange } from '@lincyaw/kernel'
 import type { LecturePlan } from './plan.ts'
 import { anchorOf } from './timing.ts'
 import type { LectureTrack, Utterance } from './track.ts'

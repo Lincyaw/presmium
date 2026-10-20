@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
-import { errorMessage } from '@presmium/kernel'
+import { useMessages } from '@lincyaw/host'
+import { errorMessage } from '@lincyaw/kernel'
 import { renderSVG } from 'uqr'
 import { computed, ref } from 'vue'
 import { loopbackLink, MESSAGES, statusText } from '../domain/index.ts'

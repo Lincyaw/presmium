@@ -1,6 +1,6 @@
 // Test-only plugin `fixture.scoped`: `{badge}` shows the `label` option it is configured with
 // where it is written, and its pass records the label of each section in the metadata.
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const plugin: PresmiumNodePlugin = {
   id: 'fixture.scoped',

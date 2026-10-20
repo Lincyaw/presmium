@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { computed, onBeforeUnmount, onMounted, shallowRef } from 'vue'
 import { COLLECTIONS, isLabel, isNote, MESSAGES, notesAt } from '../domain/index.ts'
 import NoteSpot from './NoteSpot.vue'

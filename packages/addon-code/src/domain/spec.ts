@@ -1,5 +1,5 @@
-import { parseAnchor } from '@presmium/kernel'
-import type { AnchorString } from '@presmium/kernel'
+import { parseAnchor } from '@lincyaw/kernel'
+import type { AnchorString } from '@lincyaw/kernel'
 
 export interface CodeRefSpec {
   anchor: AnchorString

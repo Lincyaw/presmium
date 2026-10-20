@@ -1,6 +1,6 @@
 # Top-level `await` for Python in the browser: the asynchronous form of the WebGPU bridge
 # (`await presmium_gpu.run(...)`, P-104) and other awaitables Pyodide gives (`pyodide.http`).
-# Loaded into the Pyodide worker after the shared runner (@presmium/kernel/runner.py), whose
+# Loaded into the Pyodide worker after the shared runner (@lincyaw/kernel/runner.py), whose
 # helpers it uses: `_pm_run_await` runs code as `_pm_run` does, with the same outputs (the value of a
 # last expression too), session and isolation, but compiled to allow `await` at its top level, and
 # the worker awaits it.

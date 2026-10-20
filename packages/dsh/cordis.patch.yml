@@ -1,17 +1,17 @@
 - insert:
     - id: presmium-service
-      name: '@presmium/dsh/service'
+      name: '@lincyaw/dsh/service'
       config:
         url: !!js process.env.PRESMIUM_SERVICE_URL
         token: !!js process.env.PRESMIUM_SERVICE_TOKEN
         root: !!js process.env.PRESMIUM_WORKSPACE || process.cwd()
     - id: presmium-tools
-      name: '@presmium/dsh/tools'
+      name: '@lincyaw/dsh/tools'
     - id: presmium-policy
-      name: '@presmium/dsh/policy'
+      name: '@lincyaw/dsh/policy'
     - id: presmium-context
-      name: '@presmium/dsh/context'
+      name: '@lincyaw/dsh/context'
     - id: presmium-skills
-      name: '@presmium/dsh/skills'
+      name: '@lincyaw/dsh/skills'
     - id: presmium-turns
-      name: '@presmium/dsh/turns'
+      name: '@lincyaw/dsh/turns'

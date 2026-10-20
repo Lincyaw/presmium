@@ -1,5 +1,5 @@
-import { environmentExecutor, EXECUTOR } from '@presmium/kernel'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { environmentExecutor, EXECUTOR } from '@lincyaw/kernel'
+import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { DEFAULT_TIMEOUT_MS, EXEC_WEBGPU_ID, WEBGPU_EXECUTOR_ID } from '../domain/index.ts'
 import { createWebgpuExecutor } from './executor.ts'

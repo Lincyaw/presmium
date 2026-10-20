@@ -1,5 +1,5 @@
-import { presmiumReport, presmiumService } from '@presmium/host'
-import type { ServiceToken } from '@presmium/kernel'
+import { presmiumReport, presmiumService } from '@lincyaw/host'
+import type { ServiceToken } from '@lincyaw/kernel'
 import { watch } from 'vue'
 
 export function whenService<T>(token: ServiceToken<T>): Promise<T | undefined> {

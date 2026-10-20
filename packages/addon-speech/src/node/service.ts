@@ -1,5 +1,5 @@
-import { DOCUMENT_FILES } from '@presmium/kernel'
-import type { NodeServiceContext, SpeechService } from '@presmium/kernel'
+import { DOCUMENT_FILES } from '@lincyaw/kernel'
+import type { NodeServiceContext, SpeechService } from '@lincyaw/kernel'
 import { deckSpeechConfig } from '../domain/index.ts'
 import { SynthesisCache } from './cache.ts'
 import { speechCore } from './core.ts'

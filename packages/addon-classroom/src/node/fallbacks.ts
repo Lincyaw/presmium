@@ -1,4 +1,4 @@
-import type { ComponentNode, IRBlock, MdastNode, RunResult } from '@presmium/kernel'
+import type { ComponentNode, IRBlock, MdastNode, RunResult } from '@lincyaw/kernel'
 import { optionLetter } from '../domain/index.ts'
 import type { ClassroomMessages } from '../domain/index.ts'
 

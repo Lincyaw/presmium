@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel/contracts'
+import type { Locale } from '@lincyaw/kernel/contracts'
 
 const zhStep = (step: number, steps: number) => `第 ${step + 1} 步，共 ${steps + 1} 步`
 

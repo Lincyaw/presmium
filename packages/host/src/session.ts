@@ -1,5 +1,5 @@
-import { SESSION } from '@presmium/kernel'
-import type { SessionService, SessionSnapshot } from '@presmium/kernel'
+import { SESSION } from '@lincyaw/kernel'
+import type { SessionService, SessionSnapshot } from '@lincyaw/kernel'
 import type { ComputedRef, Ref } from 'vue'
 import { computed, getCurrentScope, onScopeDispose, shallowRef, watchEffect } from 'vue'
 import { useService } from './host.ts'

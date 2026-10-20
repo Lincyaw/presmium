@@ -1,4 +1,4 @@
-import type { RunOutput as RichOutput, RunRequest } from '@presmium/kernel'
+import type { RunOutput as RichOutput, RunRequest } from '@lincyaw/kernel'
 
 export interface WorkerRequest {
   id: number

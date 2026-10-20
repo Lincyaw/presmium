@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { workspaceSettings } from '@presmium/compiler'
-import { errorMessage, SPEECH } from '@presmium/kernel'
-import type { IRDocument, RenderContext, Renderer, SpeechService } from '@presmium/kernel'
+import { workspaceSettings } from '@lincyaw/compiler'
+import { errorMessage, SPEECH } from '@lincyaw/kernel'
+import type { IRDocument, RenderContext, Renderer, SpeechService } from '@lincyaw/kernel'
 import { captionLanguages, captionsVtt, chaptersVtt, CLIPS_DIR, deckTrack, eventsVtt, formatTrack, LECTURE_ID, lectureVoice, recordedSections, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { Digest, LectureTrack } from '../domain/index.ts'
 import { cachedClip, clipFile, clipKeys, pruneLock, synthesizedLecture, unsaidMessage } from './lecture.ts'
@@ -69,7 +69,7 @@ async function publishSynthesized(doc: IRDocument, ctx: RenderContext, index: un
   const source = { file: doc.meta.entry, line: 1 }
   const speech = ctx.service?.(SPEECH)
   if (!speech) {
-    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @presmium/slidev-addon-speech to plugins`, source })
+    ctx.report({ checkId: LECTURE_ID, severity: 'error', message: `renderers.lecture.voice: the lecture is said through the speech service, which no plugin provides; add @lincyaw/slidev-addon-speech to plugins`, source })
     return false
   }
   const made = await synthesizedLecture(doc, ctx.deckDir, speech)
@@ -98,7 +98,7 @@ function publishedTrack(doc: IRDocument, deckDir: string): (track: LectureTrack)
 async function recordedClips(track: LectureTrack, speech: SpeechService | undefined): Promise<{ clips: Set<string>, refused?: string }> {
   const clips = new Set<string>()
   for (const clip of clipsOf(track)) {
-    if (!speech) return { clips, refused: 'its clips are given through the speech service, which checks a cloned voice\'s consent, and no plugin provides it; add @presmium/slidev-addon-speech to plugins' }
+    if (!speech) return { clips, refused: 'its clips are given through the speech service, which checks a cloned voice\'s consent, and no plugin provides it; add @lincyaw/slidev-addon-speech to plugins' }
     try {
       if (await cachedClip(speech, clip)) clips.add(clip)
     } catch (error) {

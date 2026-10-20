@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel'
+import type { Locale } from '@lincyaw/kernel'
 
 export interface McpMessages {
   navigate(section: string, step: number): string

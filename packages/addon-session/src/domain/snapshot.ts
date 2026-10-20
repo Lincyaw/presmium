@@ -1,4 +1,4 @@
-import type { ClassroomStore, SessionService, SessionSnapshot, Unsubscribe } from '@presmium/kernel'
+import type { ClassroomStore, SessionService, SessionSnapshot, Unsubscribe } from '@lincyaw/kernel'
 import type { SessionMessages } from './messages.ts'
 import type { FollowMode, Position } from './room.ts'
 

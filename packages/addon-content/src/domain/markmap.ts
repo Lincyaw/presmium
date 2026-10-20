@@ -1,4 +1,4 @@
-import type { MdastNode } from '@presmium/kernel'
+import type { MdastNode } from '@lincyaw/kernel'
 
 export interface MarkmapNode {
   content: string

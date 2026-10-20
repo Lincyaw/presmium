@@ -2,7 +2,7 @@
 // deck's configuration and in a section's {config}, as a plugin that works with files does (e.g. a
 // workspace), so the configuration holds paths of the machine. `site` is a path of the published site.
 import { resolve } from 'node:path'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const ID = 'fixture.repro'
 

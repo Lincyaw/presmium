@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PRESENTER_PANELS } from '@presmium/kernel'
-import type { PresenterPanel } from '@presmium/kernel'
+import { PRESENTER_PANELS } from '@lincyaw/kernel'
+import type { PresenterPanel } from '@lincyaw/kernel'
 import { computed, shallowRef, watchEffect } from 'vue'
 import { componentErrors } from './boundary.ts'
 import { useService, useStartReport } from './host.ts'

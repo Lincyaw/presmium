@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { claimFirst, useMessages } from '@presmium/host'
+import { claimFirst, useMessages } from '@lincyaw/host'
 import { computed, ref, useId } from 'vue'
 import { COLLECTIONS, isQuestion, MESSAGES } from '../domain/index.ts'
 import ClassroomPanel from './ClassroomPanel.vue'

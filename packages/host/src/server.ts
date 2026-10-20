@@ -1,5 +1,5 @@
-import { SESSION } from '@presmium/kernel/contracts'
-import type { ApprovalRequest, Member, ServiceToken, Unsubscribe } from '@presmium/kernel/contracts'
+import { SESSION } from '@lincyaw/kernel/contracts'
+import type { ApprovalRequest, Member, ServiceToken, Unsubscribe } from '@lincyaw/kernel/contracts'
 import type { Ref } from 'vue'
 import { computed, shallowRef, watch } from 'vue'
 import { currentLocale } from './locale.ts'

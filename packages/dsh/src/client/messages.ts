@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/workbench'
+import type { Locale } from '@lincyaw/workbench'
 
 const zh = {
   product: 'Presmium',

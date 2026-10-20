@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel'
+import type { Locale } from '@lincyaw/kernel'
 
 const zh = {
   toolbar: { button: '提问', title: '向 AI 提问（关于当前一节或选中的内容），用你自己的模型服务' },

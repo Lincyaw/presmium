@@ -1,5 +1,5 @@
-import { blockText, chapters } from '@presmium/kernel'
-import type { IRDocument } from '@presmium/kernel'
+import { blockText, chapters } from '@lincyaw/kernel'
+import type { IRDocument } from '@lincyaw/kernel'
 
 export interface WebPage {
   path: string

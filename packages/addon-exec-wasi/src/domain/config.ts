@@ -1,4 +1,4 @@
-import { isRecord } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
 
 export const EXEC_WASI_ID = 'presmium.execWasi'
 

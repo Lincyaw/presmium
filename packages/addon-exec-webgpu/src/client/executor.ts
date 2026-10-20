@@ -1,6 +1,6 @@
-import { currentLocale } from '@presmium/host'
-import { failedRun } from '@presmium/kernel'
-import type { Executor, RunResult } from '@presmium/kernel'
+import { currentLocale } from '@lincyaw/host'
+import { failedRun } from '@lincyaw/kernel'
+import type { Executor, RunResult } from '@lincyaw/kernel'
 import { computeRequest, isWgsl, MESSAGES, paramsSummary, programError, runResult } from '../domain/index.ts'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 

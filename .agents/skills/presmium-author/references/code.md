@@ -4,7 +4,7 @@
 
 ## 引用真实代码
 
-列出 `@presmium/slidev-addon-code`，用 `{code-ref}`。锚点路径从文稿所在 git 仓库的根目录写起；不在 git 中时才从文稿目录写起。
+列出 `@lincyaw/slidev-addon-code`，用 `{code-ref}`。锚点路径从文稿所在 git 仓库的根目录写起；不在 git 中时才从文稿目录写起。
 
 - 有人工标记的区域用 `region:src/bpe.py#merge`。
 - 引用声明用 `symbol:src/bpe.py#Tokenizer.encode`。
@@ -16,7 +16,7 @@
 
 ## 选择执行时机
 
-列出 `@presmium/slidev-addon-exec`。代码块加 `:run: compile` 在编译时运行，`:run: live` 由读者点击运行，`:run: both` 两者都要；单独写 `:run:` 是编译时运行。
+列出 `@lincyaw/slidev-addon-exec`。代码块加 `:run: compile` 在编译时运行，`:run: live` 由读者点击运行，`:run: both` 两者都要；单独写 `:run:` 是编译时运行。
 
 ````md
 ```{code} python
@@ -27,7 +27,7 @@ print(sum([1, 2, 3]))
 
 网页给现场代码显示运行按钮；幻灯片中的 Python、JavaScript、TypeScript 使用 Monaco Runner。执行面板适合带参数的例子，分步执行适合解释运行过程，写法查 [指令参考](directives.md)。
 
-浏览器 Python 使用 Pyodide，现有内置运行环境只有标准库；依赖 numpy、matplotlib 等的例子优先用编译时输出，或选择合适的远端环境。C、C++、Ruby、SQL 可用 `@presmium/slidev-addon-exec-wasi`，其运行时会增加发布体积。GPU 和远端内核只在任务需要时配置。
+浏览器 Python 使用 Pyodide，现有内置运行环境只有标准库；依赖 numpy、matplotlib 等的例子优先用编译时输出，或选择合适的远端环境。C、C++、Ruby、SQL 可用 `@lincyaw/slidev-addon-exec-wasi`，其运行时会增加发布体积。GPU 和远端内核只在任务需要时配置。
 
 ## 让前后代码共享变量
 

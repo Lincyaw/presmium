@@ -1,5 +1,5 @@
-import { stepStateAt } from '@presmium/kernel/contracts'
-import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState } from '@presmium/kernel/contracts'
+import { stepStateAt } from '@lincyaw/kernel/contracts'
+import type { PresentationMode, ServiceToken, StartReport, StepRange, StepState } from '@lincyaw/kernel/contracts'
 import type { App, ComputedRef, Ref } from 'vue'
 import { computed, getCurrentInstance, getCurrentScope, inject, onScopeDispose, readonly, ref } from 'vue'
 import { PmBoundary } from './boundary.ts'

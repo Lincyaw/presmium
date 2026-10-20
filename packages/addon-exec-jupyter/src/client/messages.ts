@@ -1,5 +1,5 @@
-import { currentLocale } from '@presmium/host'
-import type { Catalog } from '@presmium/host'
+import { currentLocale } from '@lincyaw/host'
+import type { Catalog } from '@lincyaw/host'
 
 const zhCN = {
   unknown: (name: string) => `文稿没有声明 kind: jupyter 的环境 ${name}`,

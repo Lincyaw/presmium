@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { usePrefersReducedMotion } from '@presmium/host'
+import { usePrefersReducedMotion } from '@lincyaw/host'
 
 const reduced = usePrefersReducedMotion()
 </script>

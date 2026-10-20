@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage } from '@lincyaw/kernel'
 import type { loadPyodide as LoadPyodide, PyodideInterface } from 'pyodide'
-import runner from '@presmium/kernel/runner.py?raw'
+import runner from '@lincyaw/kernel/runner.py?raw'
 import gpuBridge from './presmium_gpu.py?raw'
 import type { WorkerReply, WorkerRequest } from './protocol.ts'
 import runAwait from './run_await.py?raw'

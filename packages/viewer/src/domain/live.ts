@@ -1,4 +1,4 @@
-import type { Finding, IRDocument, IRSection } from '@presmium/kernel'
+import type { Finding, IRDocument, IRSection } from '@lincyaw/kernel'
 
 export interface LiveUpdate {
   order: string[]

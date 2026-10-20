@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { closeSync, constants, createReadStream, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, sep } from 'node:path'
-import type { DocumentFiles } from '@presmium/kernel'
+import type { DocumentFiles } from '@lincyaw/kernel'
 import { formatTrack, LECTURES_DIR, parseTrack, TRACK_ID } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment } from '../domain/index.ts'
 

@@ -1,4 +1,4 @@
-import { blockAt, OPERATIONS, presmiumService } from '@presmium/host'
+import { blockAt, OPERATIONS, presmiumService } from '@lincyaw/host'
 import type { AdhocCues } from './adhoc.ts'
 import { hints, spots } from './adhoc.ts'
 

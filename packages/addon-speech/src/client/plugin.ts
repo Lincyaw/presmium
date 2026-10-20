@@ -1,5 +1,5 @@
-import { SPEECH } from '@presmium/kernel'
-import type { PluginDefinition } from '@presmium/kernel'
+import { SPEECH } from '@lincyaw/kernel'
+import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { SPEECH_ID } from '../domain/index.ts'
 import { browserSpeech } from './speech.ts'

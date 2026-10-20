@@ -19,7 +19,7 @@
         if (!held) return
         request = new AbortController()
         // An answer comes from a server other than `slidev export`'s (a built deck, the dev server): nothing to hold.
-        fetch('@presmium/print-pending', { signal: request.signal, cache: 'no-store' }).then(show, () => setTimeout(pend, 50))
+        fetch('@lincyaw/print-pending', { signal: request.signal, cache: 'no-store' }).then(show, () => setTimeout(pend, 50))
       }
       const release = () => {
         show()

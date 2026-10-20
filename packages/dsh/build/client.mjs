@@ -8,7 +8,7 @@ const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 export const OUT = join(PACKAGE, 'build', 'dist')
 export const BUNDLE = join(OUT, 'client.js')
 export const META = join(OUT, 'client.json')
-const ID = '@presmium/dsh'
+const ID = '@lincyaw/dsh'
 
 const noWoffFallback = {
   name: 'presmium-no-woff-fallback',

@@ -1,4 +1,4 @@
-import type { Locale } from '@presmium/kernel/contracts'
+import type { Locale } from '@lincyaw/kernel/contracts'
 
 export const WEB_MESSAGES = {
   'zh-CN': {

@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium, run } from '@presmium/cli/testing'
+import { presmium, run } from '@lincyaw/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const DEMO = fileURLToPath(new URL('../../../e2e/fixtures/regression', import.meta.url))

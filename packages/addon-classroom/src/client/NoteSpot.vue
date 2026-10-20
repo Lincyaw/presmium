@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
-import type { ClassroomStore, StoredItem } from '@presmium/kernel'
+import { useMessages } from '@lincyaw/host'
+import type { ClassroomStore, StoredItem } from '@lincyaw/kernel'
 import { ref } from 'vue'
 import { COLLECTIONS, MESSAGES } from '../domain/index.ts'
 import type { Note } from '../domain/index.ts'

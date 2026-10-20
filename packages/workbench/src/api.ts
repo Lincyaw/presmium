@@ -1,4 +1,4 @@
-import type { Finding, Focus, IRDocument, ReviewChange, ReviewStep, Revision } from '@presmium/kernel'
+import type { Finding, Focus, IRDocument, ReviewChange, ReviewStep, Revision } from '@lincyaw/kernel'
 
 export interface WorkspaceDocument {
   dir: string

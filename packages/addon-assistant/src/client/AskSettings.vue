@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmButton, PmField, PmNotice, useMessages } from '@presmium/host'
+import { PmButton, PmField, PmNotice, useMessages } from '@lincyaw/host'
 import { ref } from 'vue'
 import { ASSISTANT_MESSAGES, askUrlValid } from '../domain/index.ts'
 import { askSettings, saveAskSettings } from './ask.ts'

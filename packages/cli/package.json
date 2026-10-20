@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/cli",
+  "name": "@lincyaw/cli",
   "version": "1.0.0-rc.0",
   "description": "The presmium command: build, dev, ir, check and serve for Presmium documents",
   "license": "Apache-2.0",
@@ -35,10 +35,10 @@
     "src"
   ],
   "dependencies": {
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/server": "workspace:*",
-    "@presmium/workspace": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/server": "workspace:*",
+    "@lincyaw/workspace": "workspace:*",
     "jiti": "^2.7.0"
   }
 }

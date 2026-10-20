@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-classroom",
+  "name": "@lincyaw/slidev-addon-classroom",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: classroom features: anchored notes, quizzes, checked exercises, questions, feedback, and predict-then-reveal",
   "license": "Apache-2.0",
@@ -39,13 +39,13 @@
     "vue": "^3.5.42"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }

@@ -2,8 +2,8 @@
 title: "CS336 Lecture 05: GPUs"
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   slides: {}
 ---

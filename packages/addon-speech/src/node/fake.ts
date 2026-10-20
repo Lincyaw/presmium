@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import type { SpeechWord, VoiceInfo } from '@presmium/kernel'
-import { isRecord } from '@presmium/kernel'
+import type { SpeechWord, VoiceInfo } from '@lincyaw/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import { fakeWords, oneSegment } from '../domain/index.ts'
 import { isWav, makeWav, wavChunks, wavDuration } from './audio/riff.ts'
 

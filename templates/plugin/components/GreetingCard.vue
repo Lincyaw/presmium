@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // The {greeting} directive's component, one for the web page and the slides: it uses
-// @presmium/host and Vue only, never @slidev/* or vitepress, so the host of either form serves
+// @lincyaw/host and Vue only, never @slidev/* or vitepress, so the host of either form serves
 // it. Its text follows the page's language. Served by `presmium dev` or `presmium serve`, it can
 // wave: the plugin's server route counts the waves; a built site has no server and no button.
-import { PmButton, useMessages, useServer } from '@presmium/host'
+import { PmButton, useMessages, useServer } from '@lincyaw/host'
 import { ref } from 'vue'
 import { GREETING_MESSAGES, PLUGIN_ID } from '../src/domain/index.ts'
 import type { Waves } from '../src/domain/index.ts'

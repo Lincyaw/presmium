@@ -32,66 +32,66 @@ importers:
 
   e2e/fixtures/regression:
     dependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../../../packages/cli
-      '@presmium/render-notebook':
+      '@lincyaw/render-notebook':
         specifier: workspace:*
         version: link:../../../packages/render-notebook
-      '@presmium/render-slides':
+      '@lincyaw/render-slides':
         specifier: workspace:*
         version: link:../../../packages/render-slides
-      '@presmium/slidev-addon-classroom':
+      '@lincyaw/slidev-addon-classroom':
         specifier: workspace:*
         version: link:../../../packages/addon-classroom
-      '@presmium/slidev-addon-code':
+      '@lincyaw/slidev-addon-code':
         specifier: workspace:*
         version: link:../../../packages/addon-code
-      '@presmium/slidev-addon-content':
+      '@lincyaw/slidev-addon-content':
         specifier: workspace:*
         version: link:../../../packages/addon-content
-      '@presmium/slidev-addon-core':
+      '@lincyaw/slidev-addon-core':
         specifier: workspace:*
         version: link:../../../packages/addon-core
-      '@presmium/slidev-addon-exec':
+      '@lincyaw/slidev-addon-exec':
         specifier: workspace:*
         version: link:../../../packages/addon-exec
-      '@presmium/slidev-addon-exec-local':
+      '@lincyaw/slidev-addon-exec-local':
         specifier: workspace:*
         version: link:../../../packages/addon-exec-local
-      '@presmium/slidev-addon-exec-wasi':
+      '@lincyaw/slidev-addon-exec-wasi':
         specifier: workspace:*
         version: link:../../../packages/addon-exec-wasi
-      '@presmium/slidev-addon-exec-webgpu':
+      '@lincyaw/slidev-addon-exec-webgpu':
         specifier: workspace:*
         version: link:../../../packages/addon-exec-webgpu
-      '@presmium/slidev-addon-guide':
+      '@lincyaw/slidev-addon-guide':
         specifier: workspace:*
         version: link:../../../packages/addon-guide
-      '@presmium/slidev-addon-lecture':
+      '@lincyaw/slidev-addon-lecture':
         specifier: workspace:*
         version: link:../../../packages/addon-lecture
-      '@presmium/slidev-addon-publish':
+      '@lincyaw/slidev-addon-publish':
         specifier: workspace:*
         version: link:../../../packages/addon-publish
-      '@presmium/slidev-addon-session':
+      '@lincyaw/slidev-addon-session':
         specifier: workspace:*
         version: link:../../../packages/addon-session
-      '@presmium/slidev-addon-speech':
+      '@lincyaw/slidev-addon-speech':
         specifier: workspace:*
         version: link:../../../packages/addon-speech
-      '@presmium/slidev-addon-stage':
+      '@lincyaw/slidev-addon-stage':
         specifier: workspace:*
         version: link:../../../packages/addon-stage
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../../../packages/viewer
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../../../packages/web
       '@slidev/cli':
         specifier: 53.0.0
-        version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(playwright-chromium@1.64.1)(postcss@8.5.30)(react@19.3.1)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(terser@5.51.2)(vite-plugin-pwa@1.3.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(workbox-build@7.4.1(supports-color@9.4.0))(workbox-window@7.4.1))
+        version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(playwright-chromium@1.64.1)(postcss@8.5.30)(react@19.3.1)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(terser@5.51.2)(vite-plugin-pwa@1.3.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(workbox-build@7.4.1(supports-color@9.4.0))(workbox-window@7.4.1))
       '@slidev/theme-default':
         specifier: ^0.25.0
         version: 0.25.0
@@ -105,34 +105,34 @@ importers:
 
   examples/cs336:
     dependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../../packages/cli
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../../packages/host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
-      '@presmium/render-notebook':
+      '@lincyaw/render-notebook':
         specifier: workspace:*
         version: link:../../packages/render-notebook
-      '@presmium/render-slides':
+      '@lincyaw/render-slides':
         specifier: workspace:*
         version: link:../../packages/render-slides
-      '@presmium/slidev-addon-content':
+      '@lincyaw/slidev-addon-content':
         specifier: workspace:*
         version: link:../../packages/addon-content
-      '@presmium/slidev-addon-core':
+      '@lincyaw/slidev-addon-core':
         specifier: workspace:*
         version: link:../../packages/addon-core
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../../packages/viewer
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../../packages/web
       '@slidev/cli':
@@ -160,13 +160,13 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
 
@@ -179,13 +179,13 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -207,13 +207,13 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2(supports-color@9.4.0)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
 
@@ -235,13 +235,13 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -257,13 +257,13 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
       '@slidev/client':
@@ -294,13 +294,13 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -331,13 +331,13 @@ importers:
         specifier: ^8.22.0
         version: 8.22.0
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -365,13 +365,13 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -390,16 +390,16 @@ importers:
         specifier: 53.0.0
         version: 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/render-notebook':
+      '@lincyaw/render-notebook':
         specifier: workspace:*
         version: link:../render-notebook
 
@@ -418,13 +418,13 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -443,10 +443,10 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -471,24 +471,24 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
+      '@lincyaw/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@lincyaw/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@lincyaw/host':
+        specifier: workspace:*
+        version: link:../host
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@lincyaw/viewer':
+        specifier: workspace:*
+        version: link:../viewer
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
-      '@presmium/cli':
-        specifier: workspace:*
-        version: link:../cli
-      '@presmium/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-      '@presmium/host':
-        specifier: workspace:*
-        version: link:../host
-      '@presmium/kernel':
-        specifier: workspace:*
-        version: link:../kernel
-      '@presmium/viewer':
-        specifier: workspace:*
-        version: link:../viewer
       playwright-chromium:
         specifier: 1.64.1
         version: 1.64.1
@@ -523,22 +523,22 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/render-slides':
+      '@lincyaw/render-slides':
         specifier: workspace:*
         version: link:../render-slides
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../web
       '@slidev/cli':
@@ -562,7 +562,7 @@ importers:
 
   packages/addon-session:
     dependencies:
-      '@presmium/classroom-server':
+      '@lincyaw/classroom-server':
         specifier: workspace:*
         version: link:../classroom-server
       '@slidev/types':
@@ -581,13 +581,13 @@ importers:
         specifier: ^13.6.33
         version: 13.6.33
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -603,16 +603,16 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
 
@@ -625,13 +625,13 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@slidev/client':
@@ -640,7 +640,7 @@ importers:
 
   packages/classroom-server:
     dependencies:
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       jiti:
@@ -668,16 +668,16 @@ importers:
 
   packages/cli:
     dependencies:
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/server':
+      '@lincyaw/server':
         specifier: workspace:*
         version: link:../server
-      '@presmium/workspace':
+      '@lincyaw/workspace':
         specifier: workspace:*
         version: link:../workspace
       jiti:
@@ -686,7 +686,7 @@ importers:
 
   packages/compiler:
     dependencies:
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       html-tag-names:
@@ -739,7 +739,7 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
 
@@ -760,13 +760,13 @@ importers:
 
   packages/dsh:
     dependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/mcp':
+      '@lincyaw/mcp':
         specifier: workspace:*
         version: link:../mcp
       jiti:
@@ -779,10 +779,10 @@ importers:
       '@deepseek-ai/dsh-util-workspace-path':
         specifier: 0.2.1-alpha.4
         version: 0.2.1-alpha.4(@deepseek-ai/cordis@4.0.5-alpha.2)
-      '@presmium/design':
+      '@lincyaw/design':
         specifier: workspace:*
         version: link:../design
-      '@presmium/workbench':
+      '@lincyaw/workbench':
         specifier: workspace:*
         version: link:../workbench
       '@types/react':
@@ -815,10 +815,10 @@ importers:
       '@fontsource/source-serif-4':
         specifier: 5.3.1
         version: 5.3.1
-      '@presmium/design':
+      '@lincyaw/design':
         specifier: workspace:*
         version: link:../design
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@vueuse/core':
@@ -845,22 +845,22 @@ importers:
 
   packages/language-server:
     dependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../web
       jiti:
@@ -875,18 +875,18 @@ importers:
 
   packages/mcp:
     dependencies:
+      '@lincyaw/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@lincyaw/kernel':
+        specifier: workspace:*
+        version: link:../kernel
       '@modelcontextprotocol/client':
         specifier: 2.3.1
         version: 2.3.1
       '@modelcontextprotocol/server':
         specifier: 2.3.1
         version: 2.3.1
-      '@presmium/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-      '@presmium/kernel':
-        specifier: workspace:*
-        version: link:../kernel
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -896,73 +896,73 @@ importers:
 
   packages/presmium:
     dependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/render-notebook':
+      '@lincyaw/render-notebook':
         specifier: workspace:*
         version: link:../render-notebook
-      '@presmium/render-slides':
+      '@lincyaw/render-slides':
         specifier: workspace:*
         version: link:../render-slides
-      '@presmium/slidev-addon-assistant':
+      '@lincyaw/slidev-addon-assistant':
         specifier: workspace:*
         version: link:../addon-assistant
-      '@presmium/slidev-addon-classroom':
+      '@lincyaw/slidev-addon-classroom':
         specifier: workspace:*
         version: link:../addon-classroom
-      '@presmium/slidev-addon-code':
+      '@lincyaw/slidev-addon-code':
         specifier: workspace:*
         version: link:../addon-code
-      '@presmium/slidev-addon-content':
+      '@lincyaw/slidev-addon-content':
         specifier: workspace:*
         version: link:../addon-content
-      '@presmium/slidev-addon-core':
+      '@lincyaw/slidev-addon-core':
         specifier: workspace:*
         version: link:../addon-core
-      '@presmium/slidev-addon-exec':
+      '@lincyaw/slidev-addon-exec':
         specifier: workspace:*
         version: link:../addon-exec
-      '@presmium/slidev-addon-exec-jupyter':
+      '@lincyaw/slidev-addon-exec-jupyter':
         specifier: workspace:*
         version: link:../addon-exec-jupyter
-      '@presmium/slidev-addon-exec-local':
+      '@lincyaw/slidev-addon-exec-local':
         specifier: workspace:*
         version: link:../addon-exec-local
-      '@presmium/slidev-addon-exec-wasi':
+      '@lincyaw/slidev-addon-exec-wasi':
         specifier: workspace:*
         version: link:../addon-exec-wasi
-      '@presmium/slidev-addon-exec-webgpu':
+      '@lincyaw/slidev-addon-exec-webgpu':
         specifier: workspace:*
         version: link:../addon-exec-webgpu
-      '@presmium/slidev-addon-guide':
+      '@lincyaw/slidev-addon-guide':
         specifier: workspace:*
         version: link:../addon-guide
-      '@presmium/slidev-addon-lecture':
+      '@lincyaw/slidev-addon-lecture':
         specifier: workspace:*
         version: link:../addon-lecture
-      '@presmium/slidev-addon-publish':
+      '@lincyaw/slidev-addon-publish':
         specifier: workspace:*
         version: link:../addon-publish
-      '@presmium/slidev-addon-session':
+      '@lincyaw/slidev-addon-session':
         specifier: workspace:*
         version: link:../addon-session
-      '@presmium/slidev-addon-speech':
+      '@lincyaw/slidev-addon-speech':
         specifier: workspace:*
         version: link:../addon-speech
-      '@presmium/slidev-addon-stage':
+      '@lincyaw/slidev-addon-stage':
         specifier: workspace:*
         version: link:../addon-stage
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../web
       create-presmium:
@@ -981,13 +981,13 @@ importers:
         specifier: ^5.3.7
         version: 5.3.7
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../web
 
@@ -1027,16 +1027,16 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
       pdf-lib:
@@ -1054,13 +1054,13 @@ importers:
       '@hono/node-server':
         specifier: 2.1.3
         version: 2.1.3(hono@4.13.13)
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/mcp':
+      '@lincyaw/mcp':
         specifier: workspace:*
         version: link:../mcp
       hono:
@@ -1079,7 +1079,7 @@ importers:
       '@deepseek-ai/dsh':
         specifier: 0.2.1-alpha.4
         version: 0.2.1-alpha.4(1f9cec9785ab06955d8f2824f50f9509)
-      '@presmium/dsh':
+      '@lincyaw/dsh':
         specifier: workspace:*
         version: link:../dsh
       jiti:
@@ -1089,16 +1089,16 @@ importers:
         specifier: workspace:*
         version: link:../presmium
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
 
   packages/viewer:
     dependencies:
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@shikijs/magic-move':
@@ -1156,10 +1156,10 @@ importers:
 
   packages/vscode:
     dependencies:
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/language-server':
+      '@lincyaw/language-server':
         specifier: workspace:*
         version: link:../language-server
       vscode-languageclient:
@@ -1206,16 +1206,16 @@ importers:
         specifier: ^3.5.42
         version: 3.5.44(typescript@6.0.3)
     devDependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../cli
-      '@presmium/host':
+      '@lincyaw/host':
         specifier: workspace:*
         version: link:../host
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/viewer':
+      '@lincyaw/viewer':
         specifier: workspace:*
         version: link:../viewer
       '@slidev/client':
@@ -1254,10 +1254,10 @@ importers:
       '@lezer/highlight':
         specifier: 1.2.5
         version: 1.2.5
-      '@presmium/design':
+      '@lincyaw/design':
         specifier: workspace:*
         version: link:../design
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
       '@radix-ui/react-dialog':
@@ -1309,13 +1309,13 @@ importers:
 
   packages/workspace:
     dependencies:
-      '@presmium/compiler':
+      '@lincyaw/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@presmium/kernel':
+      '@lincyaw/kernel':
         specifier: workspace:*
         version: link:../kernel
-      '@presmium/server':
+      '@lincyaw/server':
         specifier: workspace:*
         version: link:../server
       yaml:
@@ -1324,10 +1324,10 @@ importers:
 
   site:
     dependencies:
-      '@presmium/cli':
+      '@lincyaw/cli':
         specifier: workspace:*
         version: link:../packages/cli
-      '@presmium/web':
+      '@lincyaw/web':
         specifier: workspace:*
         version: link:../packages/web
     devDependencies:
@@ -9014,6 +9014,7 @@ packages:
   glob@11.1.0:
     resolution: {integrity: sha512-vuNwKSaKiqm7g0THUBu2x7ckSs3XJLXE+2ssL7/MfTGPLLcrJQ/4Uq1CjPTtO5cCIiRxqvN6Twy1qOwhL0Xjcw==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   global-directory@4.0.1:
@@ -19012,6 +19013,135 @@ snapshots:
 
   '@sindresorhus/merge-streams@4.0.0': {}
 
+  '@slidev/cli@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(playwright-chromium@1.64.1)(postcss@8.5.30)(react@19.3.1)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(terser@5.51.2)(vite-plugin-pwa@1.3.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(workbox-build@7.4.1(supports-color@9.4.0))(workbox-window@7.4.1))':
+    dependencies:
+      '@antfu/ni': 30.6.0
+      '@antfu/utils': 9.3.0
+      '@comark/markdown-it': 0.3.4(@types/markdown-it@14.2.0)(markdown-it@14.3.2)
+      '@iconify-json/carbon': 1.2.28
+      '@iconify-json/ph': 1.2.2
+      '@iconify-json/svg-spinners': 1.2.4
+      '@lillallol/outline-pdf': 4.0.0
+      '@modelcontextprotocol/node': 2.1.1(@modelcontextprotocol/server@2.3.1)
+      '@modelcontextprotocol/server': 2.3.1
+      '@shikijs/magic-move': 4.5.0(react@19.3.1)(shiki@4.5.0)(vue@3.5.44(typescript@6.0.3))
+      '@shikijs/markdown-it': 4.5.0
+      '@shikijs/twoslash': 4.5.0(supports-color@9.4.0)(typescript@6.0.3)
+      '@shikijs/vitepress-twoslash': 4.5.0(@nuxt/kit@3.21.11)(supports-color@9.4.0)(typescript@6.0.3)
+      '@slidev/client': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(react@19.3.1)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@slidev/parser': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@slidev/types': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@unocss/extractor-mdc': 66.11.0
+      '@unocss/reset': 66.11.0
+      '@vitejs/plugin-vue': 6.0.10(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      '@vitejs/plugin-vue-jsx': 5.1.6(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      ansis: 4.4.0
+      chokidar: 5.0.0
+      cli-progress: 3.12.0
+      connect: 3.7.0(supports-color@9.4.0)
+      fast-deep-equal: 3.1.3
+      fast-glob: 3.3.3
+      get-port-please: 3.2.0
+      global-directory: 5.0.0
+      htmlparser2: 12.0.0
+      is-installed-globally: 1.0.1
+      jiti: 2.7.0
+      katex: 0.18.10
+      local-pkg: 1.2.1
+      lz-string: 1.5.0
+      magic-string: 1.4.3
+      magic-string-stack: 2.0.0
+      markdown-exit: 1.3.0
+      markdown-it-footnote: 4.0.0
+      markdown-it-github-alerts: 1.0.1(markdown-it@14.3.2)
+      mlly: 1.8.2
+      monaco-editor: 0.56.0
+      obug: 3.0.0
+      open: 11.0.4
+      pathe: 2.0.3
+      pdf-lib: 1.17.1
+      picomatch: 4.0.7
+      plantuml-encoder: 1.4.0
+      postcss-nested: 8.0.1(postcss@8.5.30)
+      pptxgenjs: 4.0.1
+      prompts: 2.4.2
+      public-ip: 8.0.0
+      resolve-from: 5.0.0
+      resolve-global: 2.0.0
+      shiki: 4.5.0
+      sirv: 3.0.2
+      source-map-js: 1.2.2
+      typescript: 6.0.3
+      unhead: 3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      unocss: 66.11.0(@oxc-project/types@0.153.0)(cac@7.1.0)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      unplugin-icons: 24.0.0(@vue/compiler-sfc@3.5.44)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      unplugin-vue-components: 32.1.0(@nuxt/kit@3.21.11)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      unplugin-vue-markdown: 32.1.1(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      untun: 0.2.2
+      uqr: 0.1.3
+      verkit: 0.4.1
+      vite: 8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+      vite-plugin-inspect: 12.1.0(@nuxt/kit@3.21.11)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      vite-plugin-remote-assets: 2.1.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      vite-plugin-static-copy: 4.1.1(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      vite-plugin-vue-server-ref: 1.0.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      vitefu: 1.1.3(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      vue: 3.5.44(typescript@6.0.3)
+      yaml: 2.9.1
+      yargs: 18.2.0
+      zod: 4.6.7
+    optionalDependencies:
+      playwright-chromium: 1.64.1
+      vite-plugin-pwa: 1.3.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(workbox-build@7.4.1(supports-color@9.4.0))(workbox-window@7.4.1)
+    transitivePeerDependencies:
+      - '@devframes/agentic'
+      - '@farmfe/core'
+      - '@nuxt/kit'
+      - '@oxc-project/types'
+      - '@pinia/colada'
+      - '@rsbuild/core'
+      - '@rspack/core'
+      - '@svgr/core'
+      - '@svgx/core'
+      - '@types/markdown-it'
+      - '@types/node'
+      - '@unhead/cli'
+      - '@unocss/astro'
+      - '@unocss/postcss'
+      - '@unocss/webpack'
+      - '@vitejs/devtools'
+      - '@vitejs/devtools-kit'
+      - '@vue/compiler-sfc'
+      - '@vue/compiler-vapor'
+      - bun-types-no-globals
+      - cac
+      - crossws
+      - esbuild
+      - less
+      - lightningcss
+      - magicast
+      - markdown-it
+      - markdown-it-async
+      - ocache
+      - oxc-parser
+      - pinia
+      - postcss
+      - react
+      - rolldown
+      - rollup
+      - sass
+      - sass-embedded
+      - solid-js
+      - srvx
+      - stylus
+      - sugarss
+      - supports-color
+      - svelte
+      - terser
+      - tsx
+      - unloader
+      - webpack
+
   '@slidev/cli@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@types/markdown-it@14.2.0)(@types/node@22.20.5)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(playwright-chromium@1.64.1)(postcss@8.5.30)(react@19.3.1)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(terser@5.51.2)(vite-plugin-pwa@1.3.0(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.0))(workbox-build@7.4.1(supports-color@9.4.0))(workbox-window@7.4.1))':
     dependencies:
       '@antfu/ni': 30.6.0
@@ -19511,6 +19641,87 @@ snapshots:
       katex: 0.18.10
       lz-string: 1.5.0
       markdown-it-github-alerts: 1.0.1(markdown-it@15.0.2)
+      mermaid: 12.2.0
+      monaco-editor: 0.56.0
+      nanotar: 0.3.0
+      pptxgenjs: 4.0.1
+      recordrtc: 5.6.2
+      shiki: 4.5.0
+      typescript: 6.0.3
+      unocss: 66.11.0(@oxc-project/types@0.153.0)(cac@7.1.0)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      vue: 3.5.44(typescript@6.0.3)
+      vue-router: 5.4.0(@vue/compiler-sfc@3.5.44)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      yaml: 2.9.1
+    transitivePeerDependencies:
+      - '@devframes/agentic'
+      - '@farmfe/core'
+      - '@nuxt/kit'
+      - '@oxc-project/types'
+      - '@pinia/colada'
+      - '@rsbuild/core'
+      - '@rspack/core'
+      - '@svgr/core'
+      - '@svgx/core'
+      - '@unhead/cli'
+      - '@unocss/astro'
+      - '@unocss/postcss'
+      - '@unocss/webpack'
+      - '@vitejs/devtools-kit'
+      - '@vue/compiler-sfc'
+      - '@vue/compiler-vapor'
+      - bun-types-no-globals
+      - cac
+      - crossws
+      - esbuild
+      - lightningcss
+      - magicast
+      - markdown-it
+      - markdown-it-async
+      - ocache
+      - oxc-parser
+      - pinia
+      - react
+      - rolldown
+      - rollup
+      - solid-js
+      - srvx
+      - supports-color
+      - svelte
+      - unloader
+      - vite
+      - webpack
+
+  '@slidev/client@53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(markdown-it@14.3.2)(oxc-parser@0.153.0)(react@19.3.1)(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))':
+    dependencies:
+      '@antfu/utils': 9.3.0
+      '@fix-webm-duration/fix': 1.0.1
+      '@iconify-json/carbon': 1.2.28
+      '@iconify-json/ph': 1.2.2
+      '@iconify-json/svg-spinners': 1.2.4
+      '@shikijs/engine-javascript': 4.5.0
+      '@shikijs/magic-move': 4.5.0(react@19.3.1)(shiki@4.5.0)(vue@3.5.44(typescript@6.0.3))
+      '@shikijs/monaco': 4.5.0
+      '@shikijs/vitepress-twoslash': 4.5.0(@nuxt/kit@3.21.11)(supports-color@9.4.0)(typescript@6.0.3)
+      '@slidev/parser': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@slidev/rough-notation': 0.1.0
+      '@slidev/types': 53.0.0(@nuxt/kit@3.21.11)(@oxc-project/types@0.153.0)(@vue/compiler-sfc@3.5.44)(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(rolldown@1.2.13)(rollup@4.64.6)(srvx@1.0.5)(supports-color@9.4.0)(typescript@6.0.3)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@typescript/ata': 0.9.8(typescript@6.0.3)
+      '@unhead/vue': 3.4.3(@oxc-project/types@0.153.0)(@vitejs/devtools-kit@0.7.6(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(lightningcss@1.33.0)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      '@unocss/extractor-mdc': 66.11.0
+      '@unocss/preset-mini': 66.11.0
+      '@unocss/reset': 66.11.0
+      '@vueuse/core': 14.4.0(vue@3.5.44(typescript@6.0.3))
+      '@vueuse/math': 14.4.0(vue@3.5.44(typescript@6.0.3))
+      '@vueuse/motion': 3.0.3(vue@3.5.44(typescript@6.0.3))
+      ansis: 4.4.0
+      drauu: 1.0.0
+      file-saver: 2.0.5
+      fitty: 2.4.2
+      floating-vue: 5.4.0(@nuxt/kit@3.21.11)(vue@3.5.44(typescript@6.0.3))
+      fuse.js: 7.5.0
+      katex: 0.18.10
+      lz-string: 1.5.0
+      markdown-it-github-alerts: 1.0.1(markdown-it@14.3.2)
       mermaid: 12.2.0
       monaco-editor: 0.56.0
       nanotar: 0.3.0
@@ -20381,6 +20592,24 @@ snapshots:
       - rollup
       - unloader
 
+  '@unhead/bundler@3.4.3(@oxc-project/types@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(unhead@3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))':
+    dependencies:
+      magic-string: 1.4.3
+      oxc-walker: 1.1.1(@oxc-project/types@0.153.0)(oxc-parser@0.153.0)(rolldown@1.2.13)
+      unhead: 3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      unplugin: 3.4.0(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+    optionalDependencies:
+      rolldown: 1.2.13
+      vite: 8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+    transitivePeerDependencies:
+      - '@farmfe/core'
+      - '@oxc-project/types'
+      - '@rsbuild/core'
+      - '@rspack/core'
+      - bun-types-no-globals
+      - rollup
+      - unloader
+
   '@unhead/vue@3.4.3(@oxc-project/types@0.153.0)(@vitejs/devtools-kit@0.7.6(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(lightningcss@1.33.0)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))':
     dependencies:
       '@unhead/bundler': 3.4.3(@oxc-project/types@0.153.0)(@vitejs/devtools-kit@0.7.6(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(lightningcss@1.33.0)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(unhead@3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
@@ -20431,7 +20660,7 @@ snapshots:
 
   '@unhead/vue@3.4.3(@oxc-project/types@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))':
     dependencies:
-      '@unhead/bundler': 3.4.3(@oxc-project/types@0.153.0)(@vitejs/devtools-kit@0.7.6(cac@7.1.0)(crossws@0.4.15(srvx@1.0.5))(srvx@1.0.5)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(lightningcss@1.33.0)(oxc-parser@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(unhead@3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@unhead/bundler': 3.4.3(@oxc-project/types@0.153.0)(rolldown@1.2.13)(rollup@4.64.6)(unhead@3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
       hookable: 6.1.2
       unhead: 3.4.3(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
       unplugin: 3.4.0(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))

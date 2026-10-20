@@ -3,7 +3,7 @@
 // file (`assets`); {panel}: a component that holds code run at build time; FixtureTwin: a
 // component named as one of the twin plugin, whose extensions must not be picked for its nodes;
 // {pointer}: an overlay with nothing to show in exports.
-import type { ComponentNode, PresmiumNodePlugin } from '@presmium/kernel'
+import type { ComponentNode, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const ID = 'fixture.widgets'
 const component = (name: string, extra: Partial<ComponentNode> = {}): ComponentNode => ({ type: 'component', plugin: ID, name, props: {}, ...extra })

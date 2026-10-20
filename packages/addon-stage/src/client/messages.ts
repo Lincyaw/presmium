@@ -1,4 +1,4 @@
-import { currentLocale } from '@presmium/host'
+import { currentLocale } from '@lincyaw/host'
 import { STAGE_MESSAGES } from '../domain/index.ts'
 import type { StageMessages } from '../domain/index.ts'
 

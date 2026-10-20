@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
-import type { SourceReader } from '@presmium/kernel'
+import type { SourceReader } from '@lincyaw/kernel'
 
 const run = promisify(execFile)
 

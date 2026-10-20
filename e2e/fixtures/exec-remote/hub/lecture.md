@@ -2,9 +2,9 @@
 title: JupyterHub 测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-exec'
-  - '@presmium/slidev-addon-exec-jupyter'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec-jupyter'
 # Each learner's own server on the spec's JupyterHub (./Dockerfile): `{user}` is the name the hub gives
 # the token the learner pastes.
 execute:

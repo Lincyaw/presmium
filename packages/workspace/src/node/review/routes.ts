@@ -1,5 +1,5 @@
-import { eventStream, isRecord, json, problem } from '@presmium/kernel'
-import type { Route } from '@presmium/kernel'
+import { eventStream, isRecord, json, problem } from '@lincyaw/kernel'
+import type { Route } from '@lincyaw/kernel'
 import type { Reviews } from './reviews.ts'
 
 async function bodyOf(request: Request): Promise<Record<string, unknown>> {

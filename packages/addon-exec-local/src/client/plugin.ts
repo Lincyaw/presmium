@@ -1,5 +1,5 @@
-import { environmentExecutor, EXECUTOR } from '@presmium/kernel'
-import type { Executor, PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { environmentExecutor, EXECUTOR } from '@lincyaw/kernel'
+import type { Executor, PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { EXEC_LOCAL_ID, execLocalConfig, LOCAL_ENV } from '../domain/index.ts'
 import { createLocalEnv } from './local-env.ts'

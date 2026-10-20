@@ -1,7 +1,7 @@
-import { BUILTIN_DIRECTIVE_INFO, COMMON_DIRECTIVE_OPTIONS, RUN_OPTION } from '@presmium/compiler'
-import type { Compilation, DirectiveOptionInfo } from '@presmium/compiler'
-import { deckLocale } from '@presmium/kernel'
-import type { Locale } from '@presmium/kernel'
+import { BUILTIN_DIRECTIVE_INFO, COMMON_DIRECTIVE_OPTIONS, RUN_OPTION } from '@lincyaw/compiler'
+import type { Compilation, DirectiveOptionInfo } from '@lincyaw/compiler'
+import { deckLocale } from '@lincyaw/kernel'
+import type { Locale } from '@lincyaw/kernel'
 import { anchorDirectives, directiveInfos, LS_MESSAGES } from '../domain/index.ts'
 import type { DirectiveInfo, LsMessages, OptionInfo } from '../domain/index.ts'
 

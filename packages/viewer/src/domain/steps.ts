@@ -1,4 +1,4 @@
-import type { IRBlock, IRDocument } from '@presmium/kernel'
+import type { IRBlock, IRDocument } from '@lincyaw/kernel'
 
 export const FINAL_STEP = Number.POSITIVE_INFINITY
 

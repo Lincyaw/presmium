@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import type { TrackEvent } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { TrackEvent } from '@lincyaw/kernel'
 
 export const LECTURE_ID = 'presmium.lecture'
 

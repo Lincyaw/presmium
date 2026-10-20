@@ -22,8 +22,8 @@ const FONT_COPYRIGHTS: Record<string, string> = {
 }
 
 export function fontLicense(from: string | URL): string {
-  const manifest = findPackageJSON('@presmium/host', from)
-  if (!manifest) throw new Error('@presmium/host is not installed')
+  const manifest = findPackageJSON('@lincyaw/host', from)
+  if (!manifest) throw new Error('@lincyaw/host is not installed')
   const { dependencies = {} } = JSON.parse(readFileSync(manifest, 'utf8')) as { dependencies?: Record<string, string> }
   const require = createRequire(manifest)
   const files = Object.keys(dependencies).filter(name => name.startsWith('@fontsource/')).sort().map((name) => {
@@ -36,7 +36,7 @@ export function fontLicense(from: string | URL): string {
 export const TYPESCRIPT_IMPORT: readonly string[] = ['--import', new URL('./strip-types.mjs', import.meta.url).href]
 
 const PROVIDED = /^(?:vue|@vue\/.*|vitepress|@slidev\/.*)$/
-const PRESMIUM = /^@presmium\//
+const PRESMIUM = /^@lincyaw\//
 const IMPORT = /(?:^|\n)\s*(?:import|export)(?!\s+type\b)[^'"`;]*?\bfrom\s*['"]([^'"./][^'"]*)['"]|(?:^|\n)\s*import\s*['"]([^'"./][^'"]*)['"]|\bimport\(\s*['"]([^'"./][^'"]*)['"]\s*\)/g
 const SOURCE = /\.(?:[cm]?[jt]s|vue)$/
 const DECLARATION = /\.d\.[cm]?ts$/

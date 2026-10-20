@@ -1,4 +1,4 @@
-import { createServerClient, pluginsOf, registerPresmiumPlugin, startHost, stopPresmium } from '@presmium/host'
+import { createServerClient, pluginsOf, registerPresmiumPlugin, startHost, stopPresmium } from '@lincyaw/host'
 import { configs } from '@slidev/client'
 import { presmiumConfig, presmiumEnvironments } from '../domain/index.ts'
 import { createSlidevNavigation, useSlideSections } from './navigation.ts'

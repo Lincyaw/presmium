@@ -1,5 +1,5 @@
-import { failedRun } from '@presmium/kernel'
-import type { RunResult } from '@presmium/kernel'
+import { failedRun } from '@lincyaw/kernel'
+import type { RunResult } from '@lincyaw/kernel'
 import type { ComputeOutcome } from './compute.ts'
 import { unavailable } from './compute.ts'
 import type { WebgpuMessages } from './messages.ts'

@@ -1,5 +1,5 @@
-import { roleMark } from '@presmium/kernel'
-import type { IRBlock, MarkdownNode, MdastNode } from '@presmium/kernel'
+import { roleMark } from '@lincyaw/kernel'
+import type { IRBlock, MarkdownNode, MdastNode } from '@lincyaw/kernel'
 import type { Element, ElementContent, Nodes, Properties, Root, RootContent } from 'hast'
 import { raw } from 'hast-util-raw'
 import type { Handler, Handlers, State } from 'mdast-util-to-hast'

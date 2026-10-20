@@ -1,5 +1,5 @@
-import { failedRun } from '@presmium/kernel'
-import type { Executor, RunResult } from '@presmium/kernel'
+import { failedRun } from '@lincyaw/kernel'
+import type { Executor, RunResult } from '@lincyaw/kernel'
 import { isScript, isTypeScript, SCRIPT_IMPORTS } from '../domain/index.ts'
 import type { ScriptOutput, ScriptRequest } from '../runner.mjs'
 import { messages } from './messages.ts'

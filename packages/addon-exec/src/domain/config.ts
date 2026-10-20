@@ -1,4 +1,4 @@
-import { languageId } from '@presmium/kernel'
+import { languageId } from '@lincyaw/kernel'
 
 export const EXEC_ID = 'presmium.exec'
 

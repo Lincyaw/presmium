@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/mcp",
+  "name": "@lincyaw/mcp",
   "version": "1.0.0-rc.0",
   "description": "Presmium's agent environment: a document's tools and resources over MCP, and presmium-mcp over stdio",
   "license": "Apache-2.0",
@@ -36,8 +36,8 @@
   "dependencies": {
     "@modelcontextprotocol/client": "2.3.1",
     "@modelcontextprotocol/server": "2.3.1",
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "jiti": "^2.7.0",
     "minisearch": "7.2.0"
   }

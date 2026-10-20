@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { CLASSROOM_ID } from '../domain/index.ts'
 import { exerciseDirective, predictDirective, pulseDirective, questionBoxDirective, quizDirective } from './directives.ts'
 import { rendererExtensions } from './extensions.ts'

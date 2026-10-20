@@ -1,4 +1,4 @@
-import { languageId } from '@presmium/kernel'
+import { languageId } from '@lincyaw/kernel'
 import type { HighlighterCore } from 'shiki/core'
 
 type Loader = () => Promise<unknown>

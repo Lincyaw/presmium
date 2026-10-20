@@ -53,7 +53,7 @@ describe('presmium serve: the workspace service for a workbench', () => {
   const route = (path: string, options: Parameters<typeof raw>[1] = {}) => raw(`${url}/__presmium/presmium.workspace/${path}`, { ...options, headers: { ...ALL, ...options.headers } })
 
   beforeAll(async () => {
-    dir = workspace('service', join(FIXTURES, 'service'), { '@presmium/slidev-addon-assistant': 'packages/addon-assistant' })
+    dir = workspace('service', join(FIXTURES, 'service'), { '@lincyaw/slidev-addon-assistant': 'packages/addon-assistant' })
     home = `${dir}.home`
     mkdirSync(home)
     serve = presmiumProcess(dir, ['serve', '--preview-origin', WORKBENCH, '--port', '0'], cleanEnv({ PRESMIUM_SERVICE_TOKEN: TOKEN, HOME: home, XDG_CACHE_HOME: join(home, 'cache'), XDG_STATE_HOME: join(home, 'state'), XDG_CONFIG_HOME: join(home, 'config') }))

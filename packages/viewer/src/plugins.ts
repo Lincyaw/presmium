@@ -1,4 +1,4 @@
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage } from '@lincyaw/kernel'
 import { BlockView } from './block.ts'
 import { registerAction, registerComponent, registerLayer, registerNodeRenderer, registerView } from './registry.ts'
 import { SectionView } from './section.ts'

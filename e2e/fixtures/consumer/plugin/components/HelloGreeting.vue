@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Through @presmium/host only, as every plugin component: the text in the document's language.
-import { useMessages } from '@presmium/host'
+// Through @lincyaw/host only, as every plugin component: the text in the document's language.
+import { useMessages } from '@lincyaw/host'
 
 defineProps<{ name: string }>()
 

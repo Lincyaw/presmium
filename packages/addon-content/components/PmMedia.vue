@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useLocale } from '@presmium/host'
+import { useLocale } from '@lincyaw/host'
 import { computed } from 'vue'
 import { captionTracks, mediaElements } from '../src/domain/index.ts'
 import type { MediaKind } from '../src/domain/index.ts'

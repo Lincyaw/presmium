@@ -1,12 +1,12 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
-import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@presmium/kernel'
+import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
+import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import type { WorkspaceDocument } from '../domain/api.ts'
 import type { WorkspaceConfig } from './config.ts'
 
-const WEB_PACKAGE = '@presmium/web'
+const WEB_PACKAGE = '@lincyaw/web'
 
 export async function webRenderer(root: string, bundled?: string): Promise<Renderer> {
   const { plugins, problems } = await loadPlugins(root, [WEB_PACKAGE], { workspaceRoot: root, listed: [], bundled })

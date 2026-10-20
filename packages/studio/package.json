@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/studio",
+  "name": "@lincyaw/studio",
   "version": "0.1.0",
   "description": "presmium studio: Presmium's workbench on DeepSeek Harness in one command, with the workspace service of a directory (experimental)",
   "license": "Apache-2.0",
@@ -37,11 +37,11 @@
   ],
   "dependencies": {
     "@deepseek-ai/dsh": "0.2.1-alpha.4",
-    "@presmium/dsh": "workspace:*",
+    "@lincyaw/dsh": "workspace:*",
     "jiti": "^2.7.0",
     "presmium": "workspace:*"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*"
+    "@lincyaw/cli": "workspace:*"
   }
 }

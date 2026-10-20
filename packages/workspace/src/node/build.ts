@@ -1,8 +1,8 @@
 import { join, resolve } from 'node:path'
-import { Compiler } from '@presmium/compiler'
-import type { RunStats } from '@presmium/compiler'
-import { errorMessage } from '@presmium/kernel'
-import type { Finding } from '@presmium/kernel'
+import { Compiler } from '@lincyaw/compiler'
+import type { RunStats } from '@lincyaw/compiler'
+import { errorMessage } from '@lincyaw/kernel'
+import type { Finding } from '@lincyaw/kernel'
 import { listDocuments, readWorkspace } from './config.ts'
 import { siteContext, siteDocument, siteIR, siteSpec, siteTranslations, webRenderer } from './site.ts'
 

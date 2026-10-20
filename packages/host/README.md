@@ -1,4 +1,4 @@
-# @presmium/host
+# @lincyaw/host
 
 Presmium's host interface for plugin components: step state, services, shared state, interface text and the design system, the same in the web form (VitePress) and in the slides (Slidev).
 
@@ -6,13 +6,13 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 
 ## Install
 
-Plugins declare it as a peer dependency (`"@presmium/host": "^1.0.0"`); a document's own components in `components/` need it in the document's `package.json`.
+Plugins declare it as a peer dependency (`"@lincyaw/host": "^1.0.0"`); a document's own components in `components/` need it in the document's `package.json`.
 
 ## Usage
 
 ```vue
 <script setup lang="ts">
-import { useMessages, useStepState } from '@presmium/host'
+import { useMessages, useStepState } from '@lincyaw/host'
 
 const shown = useStepState({ from: 1 })
 const t = useMessages({ 'zh-CN': { done: '完成' }, 'en': { done: 'Done' } })
@@ -23,7 +23,7 @@ const t = useMessages({ 'zh-CN': { done: '完成' }, 'en': { done: 'Done' } })
 </template>
 ```
 
-Components get everything through this package, never from `@slidev/*` or `vitepress`, so both forms render them. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in Vue, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@presmium/design`, which it loads into every page.
+Components get everything through this package, never from `@slidev/*` or `vitepress`, so both forms render them. It also provides the design system: the `Pm*` components (`PmButton`, `PmDialog`, `PmIcon` and others) in Vue, over the `--pm-*` tokens, the classes and the fonts (IBM Plex Sans, IBM Plex Mono and Source Serif 4, SIL Open Font License 1.1) of `@lincyaw/design`, which it loads into every page.
 
 The interactive primitives wrap Reka UI; positioning, dismissal, keyboard navigation and focus management come from the library. Theme observation uses VueUse, and the shared icon names map to Lucide.
 

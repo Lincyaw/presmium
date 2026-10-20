@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { irBlocks } from '@presmium/kernel'
-import type { IRDocument, SourcePos } from '@presmium/kernel'
+import { irBlocks } from '@lincyaw/kernel'
+import type { IRDocument, SourcePos } from '@lincyaw/kernel'
 import { fileHash } from './published.ts'
 
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i

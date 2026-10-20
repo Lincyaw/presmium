@@ -1,7 +1,7 @@
 ---
-"@presmium/workbench": patch
-"@presmium/dsh": patch
-"@presmium/workspace": patch
+"@lincyaw/workbench": patch
+"@lincyaw/dsh": patch
+"@lincyaw/workspace": patch
 ---
 
 Browse and edit text files relative to the opened workspace, including code outside the current lecture directory. Opening a shared code file or root note keeps the lecture preview and existing drafts, and saves through the workspace's versioned source routes.

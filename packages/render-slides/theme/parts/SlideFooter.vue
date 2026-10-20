@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { useSlideContext } from '@slidev/client'
 import { computed } from 'vue'
 

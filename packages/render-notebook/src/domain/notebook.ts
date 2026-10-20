@@ -1,4 +1,4 @@
-import { errorMessage, isRecord, languageId, withProp } from '@presmium/kernel'
+import { errorMessage, isRecord, languageId, withProp } from '@lincyaw/kernel'
 import type {
   CodeNode,
   ComponentNode,
@@ -13,7 +13,7 @@ import type {
   RunOutput,
   SourcePos,
   Support,
-} from '@presmium/kernel'
+} from '@lincyaw/kernel'
 import { toMarkdown } from './markdown.ts'
 
 export interface KernelSpec {

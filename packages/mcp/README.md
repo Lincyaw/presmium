@@ -1,4 +1,4 @@
-# @presmium/mcp
+# @lincyaw/mcp
 
 Presmium's agent environment: a document's tools and resources over MCP, for agents such as Claude Code, Codex or VS Code.
 

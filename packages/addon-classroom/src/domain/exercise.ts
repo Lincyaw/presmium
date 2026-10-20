@@ -1,4 +1,4 @@
-import type { RunRequest, RunResult } from '@presmium/kernel'
+import type { RunRequest, RunResult } from '@lincyaw/kernel'
 import type { ClassroomMessages } from './messages.ts'
 import type { Place } from './place.ts'
 

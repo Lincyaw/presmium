@@ -113,7 +113,7 @@ steps: [解析, 启动, 渲染]
 :::
 ```
 
-`PmDemoStepper` 来自 `@presmium/slidev-addon-core`；`PmContrastToggle`（高对比度开关，`@presmium/slidev-addon-publish`）也可以这样放进正文。文稿目录下 `components/` 中的组件（插件 ID `deck`）也可以放进来，两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
+`PmDemoStepper` 来自 `@lincyaw/slidev-addon-core`；`PmContrastToggle`（高对比度开关，`@lincyaw/slidev-addon-publish`）也可以这样放进正文。文稿目录下 `components/` 中的组件（插件 ID `deck`）也可以放进来，两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
 
 ### `{include}`
 
@@ -153,8 +153,8 @@ print(sum(range(10)))
 - `:echo: false`（须有 `:run:`）：只显示输出，不显示代码与运行控件；只输出 Markdown（`text/markdown`）时按正文显示，用于从数据生成表格与列表。与 `:run: live` 同用时警告并按 `compile` 执行。
 - 富输出：Python 中 `display(obj)`（不必导入）与 `from IPython.display import Markdown, HTML, Image, SVG, Latex, JSON` 显示对象（按它的 `_repr_html_`、`_repr_markdown_`、`_repr_png_` 等）；matplotlib 的图在 `plt.show()` 与运行结束时显示为图片（matplotlib 要装在运行代码的环境中：浏览器中的 Python 只有标准库，导入其他模块的 `live`、`both` 代码块得到 `presmium check` 的警告，改用 `:run: compile` 或只用标准库）。最后一条语句是表达式时，它的值（不为 `None`）像在 Jupyter 中一样显示为输出。网页、幻灯片按类型显示（HTML 经清洗，幻灯片中放进沙箱 iframe），notebook 把输出原样写进单元格。
 - 普通代码围栏（```` ```python ````）不能带选项；要执行就写成 `{code}`。
-- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@presmium/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。C 中没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束：写成 `static int stats[256][256];` 或给初值。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
-- 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行（C 等语言要列出 `@presmium/slidev-addon-exec-wasi`），录制的输出显示在它下方。
+- C、C++、Ruby、SQL（语言名 `c`、`cpp` 或 `c++`、`ruby` 或 `rb`、`sql`）：`plugins` 中列出 `@lincyaw/slidev-addon-exec-wasi` 后，这些代码块在编译时与浏览器中都由 WebAssembly 中的同一份运行时执行（C、C++ 先由 clang 8 编译，`-Werror`），构建机不需要编译器或解释器，网页离线也能运行；每次运行是独立的程序（不支持 `:session:`），SQL 在空的内存数据库中执行。C 中没有初值、也不是 `static` 的全局变量（如 `int stats[256][256];`）使程序以退出码 134 结束：写成 `static int stats[256][256];` 或给初值。发布的运行时旁边附有它们的许可证说明（`wasi/LICENSES`）。
+- 带 `live` 或 `both` 的代码块在网页中有运行按钮；幻灯片中 Python、JavaScript、TypeScript 与 C、C++、Ruby、SQL 的这类代码块是 Slidev 的 Monaco Runner（`{monaco-run}`），点运行按钮执行（C 等语言要列出 `@lincyaw/slidev-addon-exec-wasi`），录制的输出显示在它下方。
 - 写在插件组件里的代码块（执行面板等的正文）由组件运行，没有自己的运行按钮与录制输出。
 
 ### `{grid}`、`{grid-item}`、`{card}`、`{tab-set}`、`{tab-item}` 与 `{button}`
@@ -202,7 +202,7 @@ MyST 标准的卡片、栅格、选项卡与按钮（mystmd 的 `myst-ext-card`�
 
 MyST 自带的指令（`{note}` 等提示框、`{figure}`、`{math}`、`{list-table}`、`{dropdown}` 等）作为上屏内容保留标准 mdast。```` ```mermaid ```` 代码块由渲染端绘制。未注册、也不是 MyST 指令的名字报错 `unknown directive; is the plugin that provides it listed in plugins?`。
 
-## 代码引用 `presmium.code`（`@presmium/slidev-addon-code`）
+## 代码引用 `presmium.code`（`@lincyaw/slidev-addon-code`）
 
 ### `{code-ref}`
 
@@ -248,7 +248,7 @@ def merge(ids, pair, new_id):
 
 诊断：`presmium.code.anchors`（锚点丢失为错误，模糊匹配为警告，移动为提示）、`presmium.code.drift`（锁定提交之后工作区的代码变了，警告并附差异）、`presmium.code.links`（没有远端仓库，没有永久链接）、`presmium.code.syntax`（参数不是锚点、`:variants:` 少于两个等）。
 
-## 浏览器执行 `presmium.exec`（`@presmium/slidev-addon-exec`）
+## 浏览器执行 `presmium.exec`（`@lincyaw/slidev-addon-exec`）
 
 浏览器中 Python 由 Pyodide 执行，JavaScript、TypeScript 由脚本 Worker 执行；编译时执行用本机的 `python3` 与 `node`。语言名 `py`、`python3`、`ipython` 都是 Python，`js`、`mjs` 是 JavaScript，`ts` 是 TypeScript。全局配置 `presmium.exec`：`timeoutMs`（默认 10000，也可以在某一节的 `{config}` 中设置）、`loadTimeoutMs`（默认 30000）、`maxTraceEvents`（默认 500）、`pyodideURL`。
 
@@ -296,7 +296,7 @@ print(total)
 
 生成 `PmStepRun`，步数为 `:steps:`。网页的文档视图中组件有自己的上一步、下一步与滑块，读者可以逐行查看；网页中组件接近屏幕时才加载 Python 运行时。
 
-## 本地环境 `presmium.execLocal`（`@presmium/slidev-addon-exec-local`）
+## 本地环境 `presmium.execLocal`（`@lincyaw/slidev-addon-exec-local`）
 
 ### `{local-env}`
 
@@ -316,7 +316,7 @@ print("hello")
 
 生成 `PmLocalEnv`；它还提供执行器 `presmium.container`，供代码块的 `:executor:` 使用。在容器中运行需要 Docker 与 Presmium 的服务端（`presmium dev` 或 `presmium serve`，网页与幻灯片都可以；运行与环境复刻是插件 `presmium.execLocal` 的服务端路由，编辑者可用，运行先经 `operate` 确认）；面板上没有把代码提交回仓库的按钮；每次运行是新的容器，工作目录是这次运行自己的目录，工作区只读挂载在 `/workspaces/<目录名>`，其中的模块可以导入。一份文稿只有一个工作区：各 `{local-env}` 指定不同的 `:workspace:` 时报错。全局配置 `presmium.execLocal`：`workspace`、`priority`（默认 10，高于浏览器执行器）、`buildTimeoutMs`（构建 devcontainer 镜像的时限，默认 600000）。
 
-## 浏览器 GPU `presmium.execWebgpu`（`@presmium/slidev-addon-exec-webgpu`）
+## 浏览器 GPU `presmium.execWebgpu`（`@lincyaw/slidev-addon-exec-webgpu`）
 
 没有自己的指令：它为 `{run-panel} wgsl` 提供 WebGPU 计算着色器的执行器（浏览器中运行，构建时在 Playwright 的 Chromium 中录制），并让 JavaScript、TypeScript 代码能导入 jax-js。要和执行插件一起列在 `plugins` 中。
 
@@ -348,7 +348,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 - 构建时：有显卡时 Chromium 经 Vulkan 用显卡，否则用 SwiftShader；`execute.environments` 中声明 `cpu: { kind: webgpu, adapter: swiftshader }` 并写 `:env: cpu`，任何机器上录制都相同（`adapter` 还可以是 `auto`、`gpu`）。没有安装 Playwright 的 Chromium 时不录制，沿用已有的录制。
 - Python（Pyodide）中运行同样的着色器：`import presmium_gpu as gpu`，`result = await gpu.run(SHADER, buffers={'a': [1, 2], 'b': [3, 4], 'out': {'size': 2}}, dispatch=1)`（代码块顶层可以 `await`），`result['out']` 是读回的列表，`print(result)` 显示与面板相同的摘要（英文）；Chromium、Firefox 等有 JSPI 的浏览器另有同步写法 `gpu.run_sync(...)`。规模限制与面板相同（缓冲区共 128 MiB，`repeat` 至多 1000），超出时抛出 `ValueError`；不能运行时抛出 `presmium_gpu.GPUUnavailable`。这样的代码块写 `:run: live`（构建时的 Python 没有 WebGPU）。
 - JavaScript、TypeScript 中 `import { init, defaultDevice, numpy as np } from '@jax-js/jax'` 使用 jax-js（张量与自动微分；`await init()` 之后 `defaultDevice('webgpu')` 在 GPU 上计算，没有 WebGPU 时默认用 WebAssembly）。jax-js 随产物发布，第一次导入时加载；这样的代码块写 `:run: live`。幻灯片中 Monaco 编辑器不显示 jax-js 的类型（渲染端自动关掉找不到的包的类型查找），运行不受影响。
-## 远端环境 `presmium.execJupyter`（`@presmium/slidev-addon-exec-jupyter`）
+## 远端环境 `presmium.execJupyter`（`@lincyaw/slidev-addon-exec-jupyter`）
 
 提供 `kind: jupyter` 的具名环境：任何 Jupyter Server（`templates/env/compose/` 的 docker compose 模板、JupyterHub、agent-sandbox 等）。头部声明环境，代码块用 `:env:` 选择，构建时与浏览器中都在它的内核中运行：
 
@@ -377,7 +377,7 @@ execute:
 
 生成 `PmTerminal`。环境不存在或不是 `kind: jupyter` 时报错（`presmium.execJupyter`）。静态产物中 `proxy` 方式的终端显示说明而不连接，`prompt` 方式照常可用；notebook 中不生成单元格，PDF 等静态导出显示一行说明。
 
-## 引导 `presmium.guide`（`@presmium/slidev-addon-guide`）
+## 引导 `presmium.guide`（`@lincyaw/slidev-addon-guide`）
 
 目标用 CSS 选择器指定，通常是同一章节中你自己写的 HTML 元素的 `id`。
 
@@ -410,7 +410,7 @@ click #run
 
 生成 `PmSpotlight`、`PmHint`，步数为 `:span:`。缺少参数时报错。
 
-## 富内容 `presmium.content`（`@presmium/slidev-addon-content`）
+## 富内容 `presmium.content`（`@lincyaw/slidev-addon-content`）
 
 公式（`$…$`、`$$…$$`）与 ```` ```mermaid ```` 由渲染端绘制，不需要指令。全局配置 `presmium.content.plantUmlServer`：PlantUML 服务地址。```` ```plantuml ````（或 `puml`）代码块由编译步骤变成图片。
 
@@ -434,7 +434,7 @@ markmap:
 
 ### `{video}`、`{audio}`、`{animation}`
 
-参数为媒体文件路径（相对于本文件，或包路径如 `@presmium/slidev-addon-content/media/clip.webm`，或 `http(s)://` 网址）；正文为说明文字。
+参数为媒体文件路径（相对于本文件，或包路径如 `@lincyaw/slidev-addon-content/media/clip.webm`，或 `http(s)://` 网址）；正文为说明文字。
 
 | 选项 | 类型 |
 |---|---|
@@ -470,9 +470,9 @@ markmap:
 
 生成 `PmYoutube`，降级为视频链接。
 
-## 课堂 `presmium.classroom`（`@presmium/slidev-addon-classroom`）
+## 课堂 `presmium.classroom`（`@lincyaw/slidev-addon-classroom`）
 
-课堂组件需要会话插件 `@presmium/slidev-addon-session`（`presmium dev` 与 `presmium serve` 自带课堂同步；发布到静态托管时文稿头部写 `presmium.session.server`，见 presmium-present 技能）；`{exercise}` 的校验另需执行插件 `@presmium/slidev-addon-exec`。
+课堂组件需要会话插件 `@lincyaw/slidev-addon-session`（`presmium dev` 与 `presmium serve` 自带课堂同步；发布到静态托管时文稿头部写 `presmium.session.server`，见 presmium-present 技能）；`{exercise}` 的校验另需执行插件 `@lincyaw/slidev-addon-exec`。
 
 ### `{quiz}`
 
@@ -563,19 +563,19 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 
 | 插件包 | 插件 ID | 作用 |
 |---|---|---|
-| `@presmium/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件；编译步骤把每节的 ID、它的各步的键与要回退到的章节写进它那张幻灯片的 frontmatter（`presmiumId`、`presmiumSteps`、`presmiumBack`，课堂按它们在完整版与学生版之间跟随，`{hints}` 中不要用这些键） |
-| `@presmium/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `footnotes` 把脚注定义放到引用它的块旁 |
-| `@presmium/slidev-addon-publish` | `presmium.publish` | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
-| `@presmium/slidev-addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |
-| `@presmium/slidev-addon-exec-wasi` | `presmium.execWasi` | 在 WebAssembly 中运行 `c`、`cpp`、`ruby`、`sql` 的代码（执行器 `presmium.wasi`，见 `{code}`）；具名环境 `kind: wasi`（可写 `languages: [c]`）；全局配置 `loadTimeoutMs`（浏览器中下载运行时的时限，默认 120000）。只有浏览器中运行的代码（`:run: live` 或 `both`）让构建发布运行时（C、C++ 约 52 MB） |
+| `@lincyaw/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件；编译步骤把每节的 ID、它的各步的键与要回退到的章节写进它那张幻灯片的 frontmatter（`presmiumId`、`presmiumSteps`、`presmiumBack`，课堂按它们在完整版与学生版之间跟随，`{hints}` 中不要用这些键） |
+| `@lincyaw/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `footnotes` 把脚注定义放到引用它的块旁 |
+| `@lincyaw/slidev-addon-publish` | `presmium.publish` | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
+| `@lincyaw/slidev-addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |
+| `@lincyaw/slidev-addon-exec-wasi` | `presmium.execWasi` | 在 WebAssembly 中运行 `c`、`cpp`、`ruby`、`sql` 的代码（执行器 `presmium.wasi`，见 `{code}`）；具名环境 `kind: wasi`（可写 `languages: [c]`）；全局配置 `loadTimeoutMs`（浏览器中下载运行时的时限，默认 120000）。只有浏览器中运行的代码（`:run: live` 或 `both`）让构建发布运行时（C、C++ 约 52 MB） |
 
 ## 行内角色
 
 插件可以登记行内角色（`docs/ir.md` 2.8 节），写作 ``{名}`内容` ``，选项写成 `key=value`：``{cue to=code-1 lines=3-5}`spot` ``（只写键而不写值是语法错误）。登记过的角色在 IR 中保留为 `presmiumRole` 节点，网页、幻灯片与 notebook 显示它的子内容；没有子内容的角色（如提示标记）只在网页的演讲者窗口与幻灯片的演讲者备注中显示一个标记 `〔名 内容〕`。没有插件登记的角色压平为文字并给出警告 `unknown role`。MyST 自带的 `{sub}`、`{sup}`、`{kbd}`、`{abbr}` 等不受影响，插件不能登记同名的角色。
 
-## 讲授的角色 `presmium.lecture`（`@presmium/slidev-addon-lecture`）
+## 讲授的角色 `presmium.lecture`（`@lincyaw/slidev-addon-lecture`）
 
-讲授插件登记两个行内角色，写在讲解中（`docs/ir.md` 2.9 节）。讲解就是讲授的脚本：文稿头部写了 `renderers.lecture.voice` 时，`presmium build --to web,lecture` 把每一步的讲解经语音服务（`@presmium/slidev-addon-speech`，也要列在 `plugins` 中）合成为讲授 `script`，网页以 `?view=lecture&track=script` 播放。
+讲授插件登记两个行内角色，写在讲解中（`docs/ir.md` 2.9 节）。讲解就是讲授的脚本：文稿头部写了 `renderers.lecture.voice` 时，`presmium build --to web,lecture` 把每一步的讲解经语音服务（`@lincyaw/slidev-addon-speech`，也要列在 `plugins` 中）合成为讲授 `script`，网页以 `?view=lecture&track=script` 播放。
 
 ```markdown
 我们先看 {cue to=code-1 lines=3-5}`spot` 这三行，{cue}`next` 再把它合并成新符号。

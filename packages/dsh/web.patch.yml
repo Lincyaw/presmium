@@ -1,8 +1,8 @@
 - insert:
     - id: presmium-workspaces
-      name: '@presmium/dsh/workspaces'
+      name: '@lincyaw/dsh/workspaces'
     - id: presmium-routes
-      name: '@presmium/dsh/routes'
+      name: '@lincyaw/dsh/routes'
 
 - id: workspace-controller
   config:
@@ -13,7 +13,7 @@
 
 - insert:
     - id: presmium-workbench
-      name: '@presmium/dsh'
+      name: '@lincyaw/dsh'
 
 - id: ui-layout
   disabled: true

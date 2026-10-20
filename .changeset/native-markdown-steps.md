@@ -1,7 +1,7 @@
 ---
-"@presmium/compiler": patch
-"@presmium/viewer": patch
-"@presmium/render-slides": patch
+"@lincyaw/compiler": patch
+"@lincyaw/viewer": patch
+"@lincyaw/render-slides": patch
 ---
 
 Allow Markdown slide and only blocks to declare an absolute starting step and an exclusive ending step with at and until. Render changing results directly as Markdown with reversible replacement in the web presentation and Slidev, without a custom component or trace player. Replace the public examples with the complete CS336 course.

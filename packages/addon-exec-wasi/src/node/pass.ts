@@ -1,5 +1,5 @@
-import { docBlocks, environmentExecutor, isRecord } from '@presmium/kernel'
-import type { IRPass } from '@presmium/kernel'
+import { docBlocks, environmentExecutor, isRecord } from '@lincyaw/kernel'
+import type { IRPass } from '@lincyaw/kernel'
 import { EXEC_WASI_ID, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
 import { runtimeOf } from '../runner.mjs'
 

@@ -1,5 +1,5 @@
-import { localeOf, Workbench } from '@presmium/workbench'
-import type { Locale } from '@presmium/workbench'
+import { localeOf, Workbench } from '@lincyaw/workbench'
+import type { Locale } from '@lincyaw/workbench'
 import { brand } from './brand.tsx'
 import { chrome } from './chrome.tsx'
 import { CLIENT_ID, ROOT_CHILDREN, UI_LAYOUT } from './contract.ts'

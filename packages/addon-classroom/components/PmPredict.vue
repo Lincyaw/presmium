@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages, useViewRole } from '@presmium/host'
+import { useMessages, useViewRole } from '@lincyaw/host'
 import type { VNode } from 'vue'
 import { computed, ref, useId, useSlots, watch } from 'vue'
 import { browserStore } from '../src/client/local.ts'

@@ -1,4 +1,4 @@
-import type { Finding, IRBlock } from '@presmium/kernel'
+import type { Finding, IRBlock } from '@lincyaw/kernel'
 import type { BlockDraft } from './blocks.ts'
 import { unique } from './sections.ts'
 

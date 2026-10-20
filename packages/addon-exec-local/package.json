@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-exec-local",
+  "name": "@lincyaw/slidev-addon-exec-local",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: run code in a local container from the repository's devcontainer definition, and export the environment",
   "license": "Apache-2.0",
@@ -42,13 +42,13 @@
     "vue": "^3.5.42"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }

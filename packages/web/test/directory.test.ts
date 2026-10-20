@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PRESMIUM_BIN } from '@presmium/cli/testing'
+import { PRESMIUM_BIN } from '@lincyaw/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))

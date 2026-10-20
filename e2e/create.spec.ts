@@ -31,7 +31,7 @@ async function install(dir: string, tarballs: Map<string, Tarball>, extra: Recor
   await sh('pnpm', ['install', '--reporter=append-only'], dir)
 }
 
-const pluginBin = (dir: string) => join(dir, 'node_modules/@presmium/cli/bin/presmium.mjs')
+const pluginBin = (dir: string) => join(dir, 'node_modules/@lincyaw/cli/bin/presmium.mjs')
 
 async function dev(cwd: string, args: string[], forms: string[], bin = presmiumBin(cwd)): Promise<Record<string, string>> {
   const child = spawn(process.execPath, [bin, ...args], { cwd, env: userEnv(), stdio: ['ignore', 'pipe', 'pipe'] })
@@ -70,7 +70,7 @@ test.beforeAll(async () => {
   lecture = join(work, 'lecture')
   const source = join(lecture, 'lecture.md')
   writeFileSync(source, readFileSync(source, 'utf8')
-    .replace(/^( {2}- '@presmium\/slidev-addon-core'.*)$/m, `$1\n  - ${packed.name}\nrenderers:\n  web: { port: ${PORTS.web} }\n  slides: { port: ${PORTS.slides} }`)
+    .replace(/^( {2}- '@lincyaw\/slidev-addon-core'.*)$/m, `$1\n  - ${packed.name}\nrenderers:\n  web: { port: ${PORTS.web} }\n  slides: { port: ${PORTS.slides} }`)
     .concat('\n(greeting)=\n## 问候\n\n:::{greeting} 读者\n:::\n'))
   await install(lecture, tarballs, { [packed.name]: `file:${packed.file}` })
   await sh(process.execPath, [presmiumBin(lecture), 'build', '--to', 'web,slides'], lecture)

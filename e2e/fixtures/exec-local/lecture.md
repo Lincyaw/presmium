@@ -2,9 +2,9 @@
 title: 本地环境测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-exec'
-  - '@presmium/slidev-addon-exec-local'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec-local'
 renderers:
   web: {}
   slides:

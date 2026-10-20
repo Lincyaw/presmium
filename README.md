@@ -33,7 +33,7 @@ presmium serve              # 文档列表与各文档的站点，http://127.0.0
 presmium build              # 整个站点构建到 dist/web/
 ```
 
-工作台（实验性，编辑、预览与 AI agent）：`pnpm add -g @presmium/studio`，然后在工作区中运行 `presmium-studio`。
+工作台（实验性，编辑、预览与 AI agent）：`pnpm add -g @lincyaw/studio`，然后在工作区中运行 `presmium-studio`。
 
 讲义怎么写见[作者指南](site/guide/lecture.md)，插件怎么写见[插件开发指南](site/plugins/lecture.md)。
 

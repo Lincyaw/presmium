@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { claimFirst, useMessages } from '@presmium/host'
+import { claimFirst, useMessages } from '@lincyaw/host'
 import { ref, useId } from 'vue'
 import { MESSAGES, shortStatus, statusText } from '../domain/index.ts'
 import SessionBadge from './SessionBadge.vue'

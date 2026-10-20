@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_ID } from '../domain/index.ts'
 import { browserImportsCheck, stepsPass } from './checks.ts'
 import { runPanelDirective, stepRunDirective } from './directives.ts'

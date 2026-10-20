@@ -1,4 +1,4 @@
-import { defineService } from '@presmium/kernel'
+import { defineService } from '@lincyaw/kernel'
 
 export interface TerminalSession {
   send(data: string): void

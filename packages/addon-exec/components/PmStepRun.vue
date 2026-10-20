@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PmIcon, useHost, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@presmium/host'
-import type { StepState } from '@presmium/kernel'
+import { PmIcon, useHost, usePresentationMode, useSectionConfig, useService, useStartReport, useViewRole } from '@lincyaw/host'
+import type { StepState } from '@lincyaw/kernel'
 import type { Ref } from 'vue'
 import { computed, onBeforeUnmount, onMounted, provide, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
 import { markLine, STEP_MARKS, useMessages } from '../src/client/index.ts'

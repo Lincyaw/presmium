@@ -2,7 +2,7 @@
 title: Un cours
 lang: fr
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   slides: {}
   notebook: {}

@@ -2,8 +2,8 @@
 title: 引导测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-guide'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-guide'
 renderers:
   web: {}
   slides:

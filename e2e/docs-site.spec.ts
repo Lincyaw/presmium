@@ -31,8 +31,8 @@ function workspace(files: Record<string, string>): string {
     mkdirSync(dirname(join(root, path)), { recursive: true })
     writeFileSync(join(root, path), text)
   }
-  mkdirSync(join(root, 'node_modules/@presmium'), { recursive: true })
-  symlinkSync(fileURLToPath(new URL('../packages/web', import.meta.url)), join(root, 'node_modules/@presmium/web'))
+  mkdirSync(join(root, 'node_modules/@lincyaw'), { recursive: true })
+  symlinkSync(fileURLToPath(new URL('../packages/web', import.meta.url)), join(root, 'node_modules/@lincyaw/web'))
   return root
 }
 
@@ -126,7 +126,7 @@ test.describe('the documentation site', () => {
     await page.goto(`${site.url}/reference/en/`)
     await page.locator('.VPNavBar').getByRole('link', { name: 'API', exact: true }).click()
     await expect(page).toHaveURL(`${site.url}/api/`)
-    await page.getByRole('link', { name: '@presmium/kernel' }).first().click()
+    await page.getByRole('link', { name: '@lincyaw/kernel' }).first().click()
     await page.locator('.col-content').getByRole('link', { name: 'index', exact: true }).click()
     await expect(page.getByRole('link', { name: 'KERNEL_VERSION' }).first()).toBeVisible()
     await expect(page.getByRole('link', { name: 'IR_VERSION' }).first()).toBeVisible()

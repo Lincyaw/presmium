@@ -1,8 +1,8 @@
 ---
 title: Print fixture
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-publish'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-publish'
   - ./slow-start
 renderers:
   slides:

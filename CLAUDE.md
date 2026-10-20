@@ -1,6 +1,6 @@
 # Presmium
 
-讲义与演示系统：MyST 源码由 `@presmium/compiler` 编译为中间表示（IR），由可插拔的渲染端生成网页（主媒介，VitePress 外壳 + IR 运行时 `@presmium/viewer`）、幻灯片（Slidev）、notebook 等媒介，支持实时渲染。插件组件在网页与幻灯片两种形态中共用。
+讲义与演示系统：MyST 源码由 `@lincyaw/compiler` 编译为中间表示（IR），由可插拔的渲染端生成网页（主媒介，VitePress 外壳 + IR 运行时 `@lincyaw/viewer`）、幻灯片（Slidev）、notebook 等媒介，支持实时渲染。插件组件在网页与幻灯片两种形态中共用。
 
 ## 必读
 
@@ -14,8 +14,8 @@
 
 - 依赖优先：能用现成组件就用，通过公开接口定制；不 fork、不打补丁、不引用 Slidev 或 VitePress 的内部路径。
 - 查框架接口先读本地文档 `vendor/docs/slidev`、`vendor/docs/vitepress`（缺失时运行 `pnpm docs:fetch`），不读框架的编译产物。
-- 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@presmium/host` 获取步骤状态与服务，不用 `@slidev/*`（`addon-core` 除外）；只在幻灯片形态加载的 `setup/` 与全局图层可以用 `@slidev/client` 的公开导出；只有 `web` 使用 vitepress；插件包之间不互相引用。
-- 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@presmium/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。
+- 分层（`docs/architecture.md` 第 3 节，`scripts/check-layering.mjs` 检查）：`src/domain` 为纯 TS；组件与 `src/client` 只通过 `@lincyaw/host` 获取步骤状态与服务，不用 `@slidev/*`（`addon-core` 除外）；只在幻灯片形态加载的 `setup/` 与全局图层可以用 `@slidev/client` 的公开导出；只有 `web` 使用 vitepress；插件包之间不互相引用。
+- 界面文本有中文与英文（`docs/architecture.md` 5.7 节）：每个包维护自己的 zh-CN 与 en 文本，按 `<html lang>`（由文稿头部的 `lang` 决定，默认 `zh-CN`）选择，没有对应文本时看 `navigator.language`；组件可以用 `@lincyaw/host` 的 `useLocale`、`useMessages(catalog)`。编译时写入产物的文本按文稿的 `lang`。
 - 步骤可逆：组件的视觉状态是步骤的纯函数。
 - 技能：面向讲义作者、讲者与开发者的技能在 `.agents/skills`（Codex 读取），`.claude/skills` 是指向它的软链接，`AGENTS.md` 是指向本文件的软链接；改动指令、命令或开发流程时同步更新技能，`scripts/check-skills.mjs` 检查二者一致。
 - 源码以 `.ts`、`.vue` 直接发布，不预编译；相对导入写 `.ts` 扩展名。
@@ -31,4 +31,4 @@
 - `pnpm verify`：全部
 - `pnpm changeset`（记录一次改动）、`pnpm release:check`（`pnpm -r publish --dry-run`，不实际发布）、`pnpm consumer [<目录>] [--studio]`（打包后在单仓之外用 pnpm 安装 `presmium`，得到一个消费者项目；`--studio` 另装 `presmium studio`，约 865 MB）
 - 从源码使用命令：`pnpm add -g ./packages/presmium` 之后的全局 `presmium` 就是这份源码（`presmium new`、`check`、`dev`、`build`、`serve`）。面向使用者的命令只写 pnpm 与 `presmium`，不写 npm、npx 与单仓中的路径
-- 工作台（实验性，`docs/design-dsh.md`）：`presmium-studio [目录]`（`pnpm add -g ./packages/studio`）启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；项目里装了 `@presmium/studio` 时 `presmium studio` 相同
+- 工作台（实验性，`docs/design-dsh.md`）：`presmium-studio [目录]`（`pnpm add -g ./packages/studio`）启动 DeepSeek Harness 加 Presmium 的 bundle 与工作区服务，只打印一个网址；项目里装了 `@lincyaw/studio` 时 `presmium studio` 相同

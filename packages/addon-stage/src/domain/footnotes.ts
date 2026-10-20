@@ -1,4 +1,4 @@
-import type { IRBlock, IRDocument, IRSection, MdastNode } from '@presmium/kernel'
+import type { IRBlock, IRDocument, IRSection, MdastNode } from '@lincyaw/kernel'
 
 export function placeFootnotes(doc: IRDocument): void {
   const definitions: { section: IRSection, block: IRBlock, identifier: string }[] = []

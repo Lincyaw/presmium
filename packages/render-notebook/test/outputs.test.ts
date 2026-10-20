@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
+import { presmium } from '@lincyaw/cli/testing'
 import { afterAll, expect, it } from 'vitest'
 
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
@@ -55,8 +55,8 @@ it('writes the recorded outputs into the cells as they are, and hides the source
   const dir = mkdtempSync(join(tmpdir(), 'presmium-outputs-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'lecture.md'), DECK)
-  mkdirSync(join(dir, 'node_modules/@presmium'), { recursive: true })
-  symlinkSync(PACKAGE, join(dir, 'node_modules/@presmium/render-notebook'))
+  mkdirSync(join(dir, 'node_modules/@lincyaw'), { recursive: true })
+  symlinkSync(PACKAGE, join(dir, 'node_modules/@lincyaw/render-notebook'))
   const result = await presmium(dir, ['build', '--to', 'notebook'])
   expect(result.code, result.stdout + result.stderr).toBe(0)
   const file = join(dir, 'dist/notebook/lecture.ipynb')

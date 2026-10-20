@@ -1,4 +1,4 @@
-import type { IRSection } from '@presmium/kernel'
+import type { IRSection } from '@lincyaw/kernel'
 import type { App, Component, ComponentOptions } from 'vue'
 import { computed, getCurrentInstance, inject, reactive } from 'vue'
 import { SECTION_CONTEXT } from './context.ts'

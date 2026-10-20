@@ -32,7 +32,7 @@ def section_${n}(x):
   return `---
 title: Performance
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   web: {}
   slides:

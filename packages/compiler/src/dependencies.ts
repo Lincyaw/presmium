@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import type { AnchorResolverRegistry, SourceReader } from '@presmium/kernel'
+import type { AnchorResolverRegistry, SourceReader } from '@lincyaw/kernel'
 import { COMMIT } from './workspace.ts'
 
 export type CommittedFiles = Map<string, string>

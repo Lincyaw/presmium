@@ -1,7 +1,7 @@
 ---
 title: Reproducible builds
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
   - ./plugin
 presmium:
   presmium.core: { demo: true }

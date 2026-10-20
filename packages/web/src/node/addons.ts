@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { isRecord } from '@presmium/kernel'
-import type { PresmiumNodePlugin, RenderContext } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
 
 const CLIENT_PLUGIN = 'src/client/plugin.ts'
 const VIEWER_PLUGIN = 'src/client/viewer.ts'

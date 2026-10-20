@@ -1,4 +1,4 @@
-import type { IRBlock, IRDocument, MdastNode, SourcePos } from '@presmium/kernel'
+import type { IRBlock, IRDocument, MdastNode, SourcePos } from '@lincyaw/kernel'
 
 export interface DeclaredLink {
   url: string

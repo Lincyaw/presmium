@@ -1,5 +1,5 @@
-import type { SpeechWord, Transcript, VoiceInfo } from '@presmium/kernel'
-import { isRecord } from '@presmium/kernel'
+import type { SpeechWord, Transcript, VoiceInfo } from '@lincyaw/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../../domain/index.ts'
 import { oneSegment, wordsIntoSegments } from '../../domain/index.ts'
 import { answerError, SpeechError } from '../errors.ts'

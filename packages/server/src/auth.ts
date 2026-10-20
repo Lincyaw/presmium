@@ -1,6 +1,6 @@
 import type { IncomingMessage } from 'node:http'
 import { hostname as machineName, networkInterfaces } from 'node:os'
-import type { Member } from '@presmium/kernel'
+import type { Member } from '@lincyaw/kernel'
 import { header, hostname, isLoopback, originHost } from './http.ts'
 
 export const LOCAL_AUTHOR: Member = { id: 'local', name: 'local author', roles: ['owner'] }

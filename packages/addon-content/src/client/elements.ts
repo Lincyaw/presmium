@@ -1,4 +1,4 @@
-import { currentLocale } from '@presmium/host'
+import { currentLocale } from '@lincyaw/host'
 import { defineCustomElement, h, ref } from 'vue'
 import { DEMO_COUNTER_TAG, MESSAGES } from '../domain/index.ts'
 

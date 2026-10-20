@@ -1,4 +1,4 @@
-import { useSharedState } from '@presmium/host'
+import { useSharedState } from '@lincyaw/host'
 import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 import { SCREEN_KEY, screenMode, toggleScreen } from '../domain/index.ts'

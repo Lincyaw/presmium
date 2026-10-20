@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { ASSISTANT_ID } from '../domain/index.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }

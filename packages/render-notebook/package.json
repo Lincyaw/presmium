@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/render-notebook",
+  "name": "@lincyaw/render-notebook",
   "version": "1.0.0-rc.0",
   "description": "Presmium's notebook renderer: writes the IR as a Jupyter notebook (nbformat 4)",
   "license": "Apache-2.0",
@@ -35,17 +35,17 @@
     "vfile": "^5.3.7"
   },
   "peerDependencies": {
-    "@presmium/kernel": "workspace:^",
-    "@presmium/web": "workspace:^"
+    "@lincyaw/kernel": "workspace:^",
+    "@lincyaw/web": "workspace:^"
   },
   "peerDependenciesMeta": {
-    "@presmium/web": {
+    "@lincyaw/web": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/kernel": "workspace:*",
-    "@presmium/web": "workspace:*"
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
+    "@lincyaw/web": "workspace:*"
   }
 }

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 export type Carrier = 'web' | 'headless' | 'acp'
 
 export const PACKAGE_DIR = fileURLToPath(new URL('../..', import.meta.url))
-export const PACKAGE_NAME = '@presmium/dsh'
+export const PACKAGE_NAME = '@lincyaw/dsh'
 
 const CARRIERS: Record<Carrier, string> = {
   web: '@deepseek-ai/dsh-web-app',
@@ -42,7 +42,7 @@ export function launchEnv(dshHome: string): Record<string, string> {
 
 export function writeProfile(dshHome: string, name: string, carrier: Carrier, bundle = PACKAGE_DIR): string {
   const dir = join(dshHome, 'profiles', name)
-  mkdirSync(join(dir, 'node_modules', '@presmium'), { recursive: true })
+  mkdirSync(join(dir, 'node_modules', '@lincyaw'), { recursive: true })
   mkdirSync(join(dshHome, 'agents'), { recursive: true })
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify({
     name: `dsh-profile-${name}`,

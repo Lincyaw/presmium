@@ -21,7 +21,7 @@ The installation includes the language server, compiler and web renderer. It nee
 ## Settings
 
 - `presmium.server.runtime`: the Node.js executable that runs the language server (Node.js 22.19 or later).
-- `presmium.server.path`: the path of `presmium-language-server.mjs`; by default the one of `@presmium/language-server` installed in the workspace, else the extension's own.
+- `presmium.server.path`: the path of `presmium-language-server.mjs`; by default the one of `@lincyaw/language-server` installed in the workspace, else the extension's own.
 
 ## Building the extension
 

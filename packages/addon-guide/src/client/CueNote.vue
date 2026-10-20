@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { CUE_MESSAGES } from '../domain/index.ts'
 
 defineProps<{ title?: string, text?: string, state?: 'shown' | 'hidden' }>()

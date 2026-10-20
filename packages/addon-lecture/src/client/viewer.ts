@@ -1,5 +1,5 @@
-import type { ViewerPlugin } from '@presmium/viewer'
-import { currentLocale } from '@presmium/host'
+import type { ViewerPlugin } from '@lincyaw/viewer'
+import { currentLocale } from '@lincyaw/host'
 import { LECTURE_MESSAGES } from '../domain/index.ts'
 import LectureView from './LectureView.vue'
 import PlayerPanel from './PlayerPanel.vue'

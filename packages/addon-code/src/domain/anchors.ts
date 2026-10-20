@@ -1,5 +1,5 @@
-import { fingerprint, parseAnchor } from '@presmium/kernel'
-import type { AnchorResolver, AnchorString, RecordedAnchor, Resolution, ResolvedLocation } from '@presmium/kernel'
+import { fingerprint, parseAnchor } from '@lincyaw/kernel'
+import type { AnchorResolver, AnchorString, RecordedAnchor, Resolution, ResolvedLocation } from '@lincyaw/kernel'
 import { findRegions, toSnippet } from './regions.ts'
 
 export function splitTarget(anchor: AnchorString): { scheme: string, file: string, name: string } | undefined {

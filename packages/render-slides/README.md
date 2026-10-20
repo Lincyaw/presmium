@@ -1,4 +1,4 @@
-# @presmium/render-slides
+# @lincyaw/render-slides
 
 Presmium's slides renderer: writes the IR as a Slidev deck and builds it, with Presmium's default theme Book (书卷). Narration becomes speaker notes, and plugin components render through the slides host adapter.
 
@@ -7,10 +7,10 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @presmium/cli @presmium/render-slides @presmium/slidev-addon-core
+pnpm add -D @lincyaw/cli @lincyaw/render-slides @lincyaw/slidev-addon-core
 ```
 
-List `@presmium/slidev-addon-core` in the document's `plugins`: it is the host adapter of the slides.
+List `@lincyaw/slidev-addon-core` in the document's `plugins`: it is the host adapter of the slides.
 
 ## Configuration
 

@@ -15,7 +15,7 @@ license file.
 ===============================================================
 
 Pyodide 314.0.7 (npm package pyodide), with CPython 3.14.2
-    Published at <base>pyodide/ by @presmium/slidev-addon-exec, with the
+    Published at <base>pyodide/ by @lincyaw/slidev-addon-exec, with the
     texts of these licenses at <base>pyodide/LICENSES (the package's
     LICENSES file):
     Pyodide              Mozilla Public License 2.0; source code at
@@ -32,7 +32,7 @@ Pyodide 314.0.7 (npm package pyodide), with CPython 3.14.2
                          libraries: Apache License 2.0 with LLVM Exceptions
 
 WebAssembly runtimes of Runno (@runno/sandbox 0.10.2, @runno/wasi 0.10.0)
-    Published at <base>wasi/ by @presmium/slidev-addon-exec-wasi, with the
+    Published at <base>wasi/ by @lincyaw/slidev-addon-exec-wasi, with the
     texts of these licenses at <base>wasi/LICENSES (the package's LICENSES
     file):
     clang, wasm-ld 8.0.1 University of Illinois/NCSA Open Source License
@@ -43,7 +43,7 @@ WebAssembly runtimes of Runno (@runno/sandbox 0.10.2, @runno/wasi 0.10.0)
     Runno                MIT License, Copyright (c) Benjamin Taylor
 
 jax-js 0.1.25 (@jax-js/jax)
-    Published at <base>presmium/jax-js/ by @presmium/slidev-addon-exec-webgpu,
+    Published at <base>presmium/jax-js/ by @lincyaw/slidev-addon-exec-webgpu,
     with its license at <base>presmium/jax-js/LICENSE:
     MIT License, Copyright (c) 2025 Eric Zhang
 
@@ -52,14 +52,14 @@ jax-js 0.1.25 (@jax-js/jax)
 ========
 
 KaTeX 0.18.10 (npm package katex)
-    @presmium/viewer bundles KaTeX's style sheet and fonts into sites that
+    @lincyaw/viewer bundles KaTeX's style sheet and fonts into sites that
     show mathematics. MIT License, Copyright (c) 2013-2020 Khan Academy and
     other contributors (https://github.com/KaTeX/KaTeX/blob/main/LICENSE).
 
 IBM Plex Sans, IBM Plex Mono and Source Serif 4 (Fontsource:
 @fontsource/ibm-plex-sans 5.3.0, @fontsource/ibm-plex-mono 5.3.0,
 @fontsource/source-serif-4 5.3.1)
-    The design system of @presmium/host bundles the Latin subsets of these
+    The design system of @lincyaw/host bundles the Latin subsets of these
     typefaces into every site:
     IBM Plex Sans        Copyright 2019 IBM Corp. All rights reserved.
     IBM Plex Mono        Copyright 2017 IBM Corp. All rights reserved.

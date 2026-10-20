@@ -1,6 +1,6 @@
 # 远端环境：docker compose 模板
 
-一台 Jupyter Server（P-105、P-106），文稿中 `kind: jupyter` 的环境连接它：代码块的 `:env:` 在它的内核中运行（构建时与浏览器中），`{terminal}` 打开它的终端（P-107）。插件是 `@presmium/slidev-addon-exec-jupyter`。
+一台 Jupyter Server（P-105、P-106），文稿中 `kind: jupyter` 的环境连接它：代码块的 `:env:` 在它的内核中运行（构建时与浏览器中），`{terminal}` 打开它的终端（P-107）。插件是 `@lincyaw/slidev-addon-exec-jupyter`。
 
 | 文件 | 作用 |
 |---|---|

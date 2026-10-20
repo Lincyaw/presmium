@@ -1,5 +1,5 @@
-import { isRecord } from '@presmium/kernel'
-import type { DirectiveSpec } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
+import type { DirectiveSpec } from '@lincyaw/kernel'
 import { Transformer } from 'markmap-lib'
 import { CONTENT_ID, encodeMarkmap, markmapOutline } from '../domain/index.ts'
 

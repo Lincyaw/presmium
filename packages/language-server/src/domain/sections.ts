@@ -1,5 +1,5 @@
-import { irBlocks } from '@presmium/kernel'
-import type { IRBlock, IRDocument, IRSection } from '@presmium/kernel'
+import { irBlocks } from '@lincyaw/kernel'
+import type { IRBlock, IRDocument, IRSection } from '@lincyaw/kernel'
 
 export function sectionAt(doc: IRDocument, file: string, line: number): IRSection | undefined {
   const headed = doc.sections.filter(s => s.source.file === file && s.source.line <= line).at(-1)

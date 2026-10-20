@@ -1,4 +1,4 @@
-import type { DocumentLockService } from '@presmium/kernel'
+import type { DocumentLockService } from '@lincyaw/kernel'
 import { lockKind } from '../domain/api.ts'
 
 export class DocumentLocks implements DocumentLockService {

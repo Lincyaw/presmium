@@ -3,10 +3,10 @@ title: Running Code
 # A language Presmium has no messages for: the interface follows the browser (English in the tests).
 lang: fr
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-exec'
-  - '@presmium/slidev-addon-exec-local'
-  - '@presmium/slidev-addon-publish'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec-local'
+  - '@lincyaw/slidev-addon-publish'
 presmium:
   presmium.publish:
     offline: false

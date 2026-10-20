@@ -1,4 +1,4 @@
-import type { Compilation } from '@presmium/compiler'
+import type { Compilation } from '@lincyaw/compiler'
 import { CompletionItemKind, MarkupKind } from 'vscode-languageserver/node'
 import type { CompletionItem, Position } from 'vscode-languageserver/node'
 import { anchorAt, optionsOf, typingAt } from '../domain/index.ts'

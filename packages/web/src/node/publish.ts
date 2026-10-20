@@ -1,8 +1,8 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
-import { irBlocks, mapHtmlUrls, publishedUrl, withProp } from '@presmium/kernel'
-import type { DocumentLink, IRBlock, IRDocument, LocalAsset, MdastNode, RenderContext, SourcePos } from '@presmium/kernel'
-import { copyPublished } from '@presmium/kernel/node'
+import { irBlocks, mapHtmlUrls, publishedUrl, withProp } from '@lincyaw/kernel'
+import type { DocumentLink, IRBlock, IRDocument, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
+import { copyPublished } from '@lincyaw/kernel/node'
 import katex from 'katex'
 
 export const MEDIA = 'media'

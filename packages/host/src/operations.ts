@@ -1,4 +1,4 @@
-import type { Operation, Unsubscribe } from '@presmium/kernel/contracts'
+import type { Operation, Unsubscribe } from '@lincyaw/kernel/contracts'
 import { ref } from 'vue'
 import type { Operations, ReplayHandler, StatusProvider, StatusRegistry } from './types.ts'
 

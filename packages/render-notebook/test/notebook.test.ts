@@ -3,9 +3,9 @@ import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, syml
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium, run } from '@presmium/cli/testing'
-import type { Run } from '@presmium/cli/testing'
-import type { IRDocument, MdastNode } from '@presmium/kernel'
+import { presmium, run } from '@lincyaw/cli/testing'
+import type { Run } from '@lincyaw/cli/testing'
+import type { IRDocument, MdastNode } from '@lincyaw/kernel'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 
 const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
@@ -28,8 +28,8 @@ let cells: Cell[]
 beforeAll(async () => {
   dir = mkdtempSync(join(tmpdir(), 'presmium-notebook-'))
   cpSync(fileURLToPath(new URL('./fixtures', import.meta.url)), dir, { recursive: true })
-  mkdirSync(join(dir, 'node_modules/@presmium'), { recursive: true })
-  symlinkSync(PACKAGE, join(dir, 'node_modules/@presmium/render-notebook'))
+  mkdirSync(join(dir, 'node_modules/@lincyaw'), { recursive: true })
+  symlinkSync(PACKAGE, join(dir, 'node_modules/@lincyaw/render-notebook'))
   build = await presmium(dir, ['build', '--out', 'out'])
   ir = JSON.parse(readFileSync(join(dir, 'out/ir.json'), 'utf8'))
   file = join(dir, 'out/notebook/lecture.ipynb')

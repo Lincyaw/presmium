@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { deckLocale } from '@presmium/kernel'
+import { deckLocale } from '@lincyaw/kernel'
 
 const zhCN = {
   noDefinition: '工作区没有 devcontainer 定义',

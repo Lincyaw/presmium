@@ -1,5 +1,5 @@
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import type { MdastNode } from '@presmium/kernel'
+import type { MdastNode } from '@lincyaw/kernel'
 import type { Element, ElementContent, Properties } from 'hast'
 import type { Handler, State } from 'mdast-util-to-hast'
 import type { PropType, VNodeChild } from 'vue'

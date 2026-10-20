@@ -1,5 +1,5 @@
-import { blockElement, codeLines, lineNumbers } from '@presmium/host'
-import type { Navigation } from '@presmium/host'
+import { blockElement, codeLines, lineNumbers } from '@lincyaw/host'
+import type { Navigation } from '@lincyaw/host'
 import { watch } from 'vue'
 import type { CueRequest, ShowCue } from './cue.ts'
 import { requestHint } from './hints.ts'

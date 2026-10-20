@@ -1,5 +1,5 @@
-import { splitWords } from '@presmium/kernel'
-import type { SpeechWord } from '@presmium/kernel'
+import { splitWords } from '@lincyaw/kernel'
+import type { SpeechWord } from '@lincyaw/kernel'
 import type { Utterance, Word } from './track.ts'
 
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u

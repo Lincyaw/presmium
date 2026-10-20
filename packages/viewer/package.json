@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/viewer",
+  "name": "@lincyaw/viewer",
   "version": "1.0.0-rc.0",
   "description": "Presmium's IR runtime: renders the IR in the browser, with runtime views and live updates",
   "license": "Apache-2.0",
@@ -31,8 +31,8 @@
     "src"
   ],
   "dependencies": {
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@shikijs/magic-move": "4.5.0",
     "ansi_up": "6.0.6",
     "dompurify": "3.4.17",

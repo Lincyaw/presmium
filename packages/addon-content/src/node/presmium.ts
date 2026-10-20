@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module'
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 import { CONTENT_ID, MEDIA_KINDS } from '../domain/index.ts'
 import { markmapDirective } from './markmap.ts'
 import { mediaDirective, notebookMedia, youtubeDirective } from './media.ts'

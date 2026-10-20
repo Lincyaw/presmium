@@ -1,6 +1,6 @@
-import type { Compilation } from '@presmium/compiler'
-import { pluginId } from '@presmium/compiler'
-import type { Finding, IRDocument, PresmiumNodePlugin, RunResult, ServiceToken } from '@presmium/kernel'
+import type { Compilation } from '@lincyaw/compiler'
+import { pluginId } from '@lincyaw/compiler'
+import type { Finding, IRDocument, PresmiumNodePlugin, RunResult, ServiceToken } from '@lincyaw/kernel'
 
 export interface ServedPlugin {
   id: string

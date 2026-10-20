@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useMessages, useServer } from '@presmium/host'
-import { isRecord } from '@presmium/kernel'
+import { useMessages, useServer } from '@lincyaw/host'
+import { isRecord } from '@lincyaw/kernel'
 import { onMounted, ref } from 'vue'
 import { clockText, LECTURE_ID, LECTURE_MESSAGES } from '../domain/index.ts'
 import type { LectureSummary } from './source.ts'

@@ -1,4 +1,4 @@
-import { AUTHOR_MARKS_CLASS, errorMessage, escapeHtml } from '@presmium/kernel'
+import { AUTHOR_MARKS_CLASS, errorMessage, escapeHtml } from '@lincyaw/kernel'
 import 'katex/dist/katex.min.css'
 import { computed, defineComponent, h, onMounted, ref, shallowRef, watch } from 'vue'
 import { useSectionContext } from './context.ts'

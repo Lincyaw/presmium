@@ -1,5 +1,5 @@
-import { isRecord, languageId } from '@presmium/kernel'
-import type { ComponentNode, IRBlock, MdastNode, RecordedRun, RendererContribution, RenderContext } from '@presmium/kernel'
+import { isRecord, languageId } from '@lincyaw/kernel'
+import type { ComponentNode, IRBlock, MdastNode, RecordedRun, RendererContribution, RenderContext } from '@lincyaw/kernel'
 import { declarations, shownOutput } from '../domain/index.ts'
 import { ownCode } from './passes.ts'
 

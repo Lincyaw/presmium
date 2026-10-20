@@ -1,4 +1,4 @@
-# @presmium/render-notebook
+# @lincyaw/render-notebook
 
 Presmium's notebook renderer: writes the IR as a Jupyter notebook (nbformat 4). Narration becomes Markdown cells, code in the kernel's language becomes code cells with their recorded outputs, and components show their fallback.
 
@@ -7,7 +7,7 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 ## Install
 
 ```sh
-pnpm add -D @presmium/cli @presmium/render-notebook
+pnpm add -D @lincyaw/cli @lincyaw/render-notebook
 ```
 
 ## Configuration

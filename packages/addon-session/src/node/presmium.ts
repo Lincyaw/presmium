@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
-import { startClassroomServer } from '@presmium/classroom-server'
-import { isRecord, json } from '@presmium/kernel'
-import type { Check, PresmiumNodePlugin } from '@presmium/kernel'
+import { startClassroomServer } from '@lincyaw/classroom-server'
+import { isRecord, json } from '@lincyaw/kernel'
+import type { Check, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { SESSION_ID, SYNC_PATH, sessionConfig } from '../domain/index.ts'
 
 const { version } = createRequire(import.meta.url)('../../package.json') as { version: string }

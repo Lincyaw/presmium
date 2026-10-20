@@ -2,8 +2,8 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { errorMessage, isRecord, kernelIncompatibility } from '@presmium/kernel'
-import type { PresmiumNodePlugin, Severity } from '@presmium/kernel'
+import { errorMessage, isRecord, kernelIncompatibility } from '@lincyaw/kernel'
+import type { PresmiumNodePlugin, Severity } from '@lincyaw/kernel'
 import { createJiti } from 'jiti'
 import { satisfies, validRange } from 'semver'
 
@@ -21,7 +21,7 @@ export interface PluginProblem {
   message: string
 }
 
-const BUNDLED = new Set(['@presmium/web', '@presmium/render-slides', '@presmium/render-notebook'])
+const BUNDLED = new Set(['@lincyaw/web', '@lincyaw/render-slides', '@lincyaw/render-notebook'])
 
 export interface PluginSources {
   workspaceRoot: string
@@ -59,7 +59,7 @@ interface PluginPackage {
   peerDependencies?: Record<string, unknown>
 }
 
-const PRESMIUM_SCOPE = '@presmium/'
+const PRESMIUM_SCOPE = '@lincyaw/'
 
 const COMPILER_DIR = fileURLToPath(new URL('..', import.meta.url))
 const COMPILER_PACKAGE = JSON.parse(readFileSync(join(COMPILER_DIR, 'package.json'), 'utf8')) as { name: string, version: string }

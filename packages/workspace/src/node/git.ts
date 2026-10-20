@@ -1,6 +1,6 @@
 import { execFile, execFileSync } from 'node:child_process'
 import { realpathSync } from 'node:fs'
-import { gitConfigArgs, gitEnvironment } from '@presmium/kernel'
+import { gitConfigArgs, gitEnvironment } from '@lincyaw/kernel'
 
 export interface GitResult {
   code: number

@@ -16,8 +16,8 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
 
 ## Conventions
 
-- Layering: `src/domain` is pure TypeScript (no Vue, Node, `@presmium/host` or framework); the
-  component and any `src/client` code get step state, text and services from `@presmium/host` only, never
+- Layering: `src/domain` is pure TypeScript (no Vue, Node, `@lincyaw/host` or framework); the
+  component and any `src/client` code get step state, text and services from `@lincyaw/host` only, never
   `@slidev/*` or `vitepress`, so they run in both forms; `src/node` uses no Vue. A `setup/` directory
   (loaded in the slides form only) may use `@slidev/client`'s public exports. Never import a
   framework's internal paths.
@@ -28,9 +28,9 @@ This project is one plugin, `{{id}}`: `README.md` lists its files.
   undoes it. Styles use the design system's tokens (`var(--pm-color-ink)`, ...) and controls
   (`PmButton`, ...).
 - The plugin declares `kernel: '^1.0.0'` (the plugin contract) and its `version` from `package.json`;
-  `@presmium/kernel`, `host`, `viewer` and `compiler` are peer dependencies.
+  `@lincyaw/kernel`, `host`, `viewer` and `compiler` are peer dependencies.
 - Sources ship as `.ts` and `.vue`, not compiled; relative imports end in `.ts`.
-- Tests are integration tests only: they run the real `presmium` CLI (`@presmium/cli/testing`),
+- Tests are integration tests only: they run the real `presmium` CLI (`@lincyaw/cli/testing`),
   builds and servers on documents, never mocks of Presmium, Slidev or VitePress; one or two cases
   for each thing the plugin promises.
 

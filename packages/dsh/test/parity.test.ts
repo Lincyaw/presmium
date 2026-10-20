@@ -1,8 +1,8 @@
 import { join } from 'node:path'
-import { fakeModel } from '@presmium/cli/testing'
-import type { FakeModel } from '@presmium/cli/testing'
-import { connectPresmiumMcp } from '@presmium/mcp/client'
-import type { PresmiumMcpClient } from '@presmium/mcp/client'
+import { fakeModel } from '@lincyaw/cli/testing'
+import type { FakeModel } from '@lincyaw/cli/testing'
+import { connectPresmiumMcp } from '@lincyaw/mcp/client'
+import type { PresmiumMcpClient } from '@lincyaw/mcp/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { FIXTURES, ROOT, testHome, toolResults, turns } from './harness.ts'
 import type { Service, TestHome, Workspace } from './harness.ts'
@@ -10,7 +10,7 @@ import type { Service, TestHome, Workspace } from './harness.ts'
 const LECTURE = `---
 title: 一张工具表
 plugins:
-  - '@presmium/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec'
   - presmium-fixture-dsh
 ---
 
@@ -54,7 +54,7 @@ describe('[gate] one tool table for MCP and DeepSeek Harness', () => {
   beforeAll(async () => {
     home = testHome('parity')
     ws = home.workspace('parity', { 'presmium.workspace.yaml': 'title: 一张工具表\napprovals: { operate: allow }\n', 'lecture.md': LECTURE }, {
-      '@presmium/slidev-addon-exec': join(ROOT, 'packages/addon-exec'),
+      '@lincyaw/slidev-addon-exec': join(ROOT, 'packages/addon-exec'),
       'presmium-fixture-dsh': join(FIXTURES, 'plugin'),
     })
     service = await home.serve(ws.dir)

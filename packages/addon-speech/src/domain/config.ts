@@ -1,4 +1,4 @@
-import { isRecord } from '@presmium/kernel'
+import { isRecord } from '@lincyaw/kernel'
 import { howToDefine } from './engines.ts'
 
 export const SPEECH_ID = 'presmium.speech'

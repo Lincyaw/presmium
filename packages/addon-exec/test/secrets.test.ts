@@ -2,8 +2,8 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
-import type { CodeNode, IRDocument } from '@presmium/kernel'
+import { presmium } from '@lincyaw/cli/testing'
+import type { CodeNode, IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))

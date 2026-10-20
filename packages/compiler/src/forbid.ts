@@ -1,5 +1,5 @@
-import { irBlocks, isRecord, mdastText } from '@presmium/kernel'
-import type { Finding, IRBlock, MdastNode, SourcePos } from '@presmium/kernel'
+import { irBlocks, isRecord, mdastText } from '@lincyaw/kernel'
+import type { Finding, IRBlock, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { lineFinder } from './links.ts'
 import type { PublishInput } from './links.ts'
 import { viewFor } from './renderers.ts'

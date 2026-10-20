@@ -2,8 +2,8 @@
 title: "CS336 Lecture 14: Data II"
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   web: {}
   notebook: {}

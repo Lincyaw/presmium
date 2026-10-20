@@ -1,4 +1,4 @@
-import { useHost, usePrefersReducedMotion, useStepScope, useStepState, useViewRole } from '@presmium/host'
+import { useHost, usePrefersReducedMotion, useStepScope, useStepState, useViewRole } from '@lincyaw/host'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { cueRange, cueSteps } from '../domain/index.ts'
 import { useIsLive } from './live.ts'

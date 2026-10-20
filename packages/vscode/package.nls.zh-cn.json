@@ -5,5 +5,5 @@
   "command.openPreview": "在侧边打开预览",
   "configuration.title": "Presmium",
   "configuration.server.runtime": "运行语言服务的 Node.js 可执行文件（Node.js 22.19 或更高版本）。",
-  "configuration.server.path": "presmium-language-server.mjs 的路径。默认使用工作区中安装的 @presmium/language-server，没有时使用扩展自带的。"
+  "configuration.server.path": "presmium-language-server.mjs 的路径。默认使用工作区中安装的 @lincyaw/language-server，没有时使用扩展自带的。"
 }

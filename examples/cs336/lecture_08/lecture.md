@@ -2,8 +2,8 @@
 title: "CS336 Lecture 08: Parallelism basics"
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   web: {}
   notebook: {}

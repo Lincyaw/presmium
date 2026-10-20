@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
-import { environmentExecutor } from '@presmium/kernel'
-import type { EnvironmentProvider, PresmiumNodePlugin } from '@presmium/kernel'
+import { environmentExecutor } from '@lincyaw/kernel'
+import type { EnvironmentProvider, PresmiumNodePlugin } from '@lincyaw/kernel'
 import { EXEC_WASI_ID, execWasiConfig, WASI_EXECUTOR_ID, WASI_KIND } from '../domain/index.ts'
 import { wasiLanguage } from '../runner.mjs'
 import { createWasiExecutor } from './executor.ts'

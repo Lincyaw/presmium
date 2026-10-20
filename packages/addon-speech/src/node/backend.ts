@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { SpeechWord, SynthesisRequest, Transcript, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
+import type { SpeechWord, SynthesisRequest, Transcript, TranscriptionRequest, VoiceInfo } from '@lincyaw/kernel'
 import type { AigcLabel, EngineListing } from '../domain/index.ts'
 import { engineId } from '../domain/index.ts'
 

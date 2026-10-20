@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useMessages, useService } from '@presmium/host'
-import { errorMessage } from '@presmium/kernel'
+import { useMessages, useService } from '@lincyaw/host'
+import { errorMessage } from '@lincyaw/kernel'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import '@xterm/xterm/css/xterm.css'
 import { MESSAGES } from '../src/client/messages.ts'

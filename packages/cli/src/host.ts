@@ -1,6 +1,6 @@
-import { buildView, runBlock } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
-import type { ServerHost } from '@presmium/server'
+import { buildView, runBlock } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
+import type { ServerHost } from '@lincyaw/server'
 
 export function devHost(latest: () => Compilation | undefined): ServerHost {
   const current = (document: string): Compilation => {

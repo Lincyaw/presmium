@@ -38,7 +38,7 @@ presmium:
 
 ## 导出 PDF 或图片
 
-文稿需列出 `@presmium/slidev-addon-publish`。项目中使用：
+文稿需列出 `@lincyaw/slidev-addon-publish`。项目中使用：
 
 ```sh
 pnpm exec presmium-export --format pdf --output lecture.pdf

@@ -4,8 +4,8 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSyn
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { errorMessage, languageId } from '@presmium/kernel'
-import type { Executor, RunContext, RunOutput, RunRequest, RunResult } from '@presmium/kernel'
+import { errorMessage, languageId } from '@lincyaw/kernel'
+import type { Executor, RunContext, RunOutput, RunRequest, RunResult } from '@lincyaw/kernel'
 import { parse } from 'jsonc-parser'
 import { CONTAINER_EXECUTOR_ID, DEFAULT_BUILD_TIMEOUT_MS, failedContainerRun, runnersFrom, workspacePath } from '../domain/index.ts'
 import type { Runners } from '../domain/index.ts'
@@ -19,7 +19,7 @@ const READ_TIMEOUT_MS = 60_000
 const RUN_DIR = '/presmium-run'
 const REQUEST_FILE = '.presmium/request.json'
 const RESULT_FILE = '.presmium/result-0.json'
-const PYTHON_RUNNER = `${readFileSync(require.resolve('@presmium/kernel/runner.py'), 'utf8')}\n_pm_main()\n`
+const PYTHON_RUNNER = `${readFileSync(require.resolve('@lincyaw/kernel/runner.py'), 'utf8')}\n_pm_main()\n`
 const DOCKER_CLIENT = ['DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_CONFIG', 'DOCKER_CERT_PATH', 'DOCKER_TLS_VERIFY', 'XDG_RUNTIME_DIR', 'HOME']
 const HOST_PATHS = new Set(['PATH', 'HOME', 'TMPDIR'])
 

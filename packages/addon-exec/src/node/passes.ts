@@ -1,5 +1,5 @@
-import { docBlocks } from '@presmium/kernel'
-import type { CodeNode, ComponentNode, IRPass, MdastNode } from '@presmium/kernel'
+import { docBlocks } from '@lincyaw/kernel'
+import type { CodeNode, ComponentNode, IRPass, MdastNode } from '@lincyaw/kernel'
 import { configuredTimeout, declarations, EXEC_ID, shownOutput } from '../domain/index.ts'
 
 export function ownCode(node: ComponentNode): CodeNode | undefined {

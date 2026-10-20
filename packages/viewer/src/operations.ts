@@ -1,4 +1,4 @@
-import type { Operations } from '@presmium/host'
+import type { Operations } from '@lincyaw/host'
 import { watch } from 'vue'
 import { getView } from './registry.ts'
 import type { Viewer } from './viewer.ts'

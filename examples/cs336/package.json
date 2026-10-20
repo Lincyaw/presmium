@@ -11,19 +11,19 @@
     "audit": "node tools/audit.mjs"
   },
   "dependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/web": "workspace:*",
-    "@presmium/viewer": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/slidev-addon-core": "workspace:*",
-    "@presmium/slidev-addon-content": "workspace:*",
-    "@presmium/render-slides": "workspace:*",
-    "@presmium/render-notebook": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/web": "workspace:*",
+    "@lincyaw/viewer": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/slidev-addon-core": "workspace:*",
+    "@lincyaw/slidev-addon-content": "workspace:*",
+    "@lincyaw/render-slides": "workspace:*",
+    "@lincyaw/render-notebook": "workspace:*",
     "@slidev/cli": "53.0.0",
     "@slidev/theme-default": "^0.25.0",
     "vue": "^3.5.42",
-    "@presmium/compiler": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/compiler": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "yaml": "2.9.0"
   }
 }

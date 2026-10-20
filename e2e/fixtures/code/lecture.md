@@ -2,8 +2,8 @@
 title: 代码引用测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-code'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-code'
 renderers:
   web: {}
   slides:

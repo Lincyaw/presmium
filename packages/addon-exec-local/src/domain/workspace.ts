@@ -1,4 +1,4 @@
-import { isRecord, languageId } from '@presmium/kernel'
+import { isRecord, languageId } from '@lincyaw/kernel'
 
 export type Runners = Record<string, string[]>
 

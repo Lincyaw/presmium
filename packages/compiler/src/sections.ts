@@ -1,4 +1,4 @@
-import type { Finding, MdastNode, SourcePos } from '@presmium/kernel'
+import type { Finding, MdastNode, SourcePos } from '@lincyaw/kernel'
 import { fileOf, lineOf, sourceOf } from './source.ts'
 
 export interface RawSection {

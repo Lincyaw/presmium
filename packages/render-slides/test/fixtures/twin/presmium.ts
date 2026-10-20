@@ -1,6 +1,6 @@
 // Test-only plugin whose component has the name of one of the widgets plugin (fixture.widgets):
 // both renderers pick the extensions of the plugin the node names.
-import type { PresmiumNodePlugin } from '@presmium/kernel'
+import type { PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const ID = 'fixture.twin'
 

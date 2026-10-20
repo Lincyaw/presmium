@@ -3,8 +3,8 @@
  * sections of a page as cards, a renderer for `csv` code blocks and one for
  * the component PmSwap.
  */
-import type { CodeNode, IRBlock, IRSection } from '@presmium/kernel'
-import type { ViewerPlugin } from '@presmium/viewer'
+import type { CodeNode, IRBlock, IRSection } from '@lincyaw/kernel'
+import type { ViewerPlugin } from '@lincyaw/viewer'
 import type { PropType } from 'vue'
 import { defineComponent, h } from 'vue'
 

@@ -2,13 +2,13 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, escapeHtml, languageId, lowerMyst, nodeMdast, publishedUrl, roleMark, withProp } from '@presmium/kernel'
-import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, LocalAsset, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@presmium/kernel'
+import { DEFAULT_LANG, deckLocale, docBlocks, errorMessage, escapeHtml, languageId, lowerMyst, nodeMdast, publishedUrl, roleMark, withProp } from '@lincyaw/kernel'
+import type { CodeNode, ComponentNode, IRBlock, IRDocument, IRSection, LinkedType, LocalAsset, Locale, MdastNode, RenderContext, RunOutput, RunResult } from '@lincyaw/kernel'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { gfmFromMarkdown } from 'mdast-util-gfm'
 import { gfm } from 'micromark-extension-gfm'
-import { originParts, outputNotes } from '@presmium/viewer/domain'
-import type { OriginPart } from '@presmium/viewer/domain'
+import { originParts, outputNotes } from '@lincyaw/viewer/domain'
+import type { OriginPart } from '@lincyaw/viewer/domain'
 import { stringify } from 'yaml'
 import { sanitizedHtml } from './html.ts'
 import { codeLang, markdown } from './markdown.ts'
@@ -50,7 +50,7 @@ export function deckLang(doc: IRDocument): string {
 
 const RENDERER_KEYS = new Set(['package', 'base', 'port', 'liveCode'])
 
-const WEB_PACKAGE = '@presmium/web'
+const WEB_PACKAGE = '@lincyaw/web'
 
 const THEME_DIR = fileURLToPath(new URL('../../theme', import.meta.url))
 

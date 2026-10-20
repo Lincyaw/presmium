@@ -1,4 +1,4 @@
-# @presmium/classroom-server
+# @lincyaw/classroom-server
 
 Presmium's classroom sync server: the y-websocket rooms classroom sessions sync through.
 

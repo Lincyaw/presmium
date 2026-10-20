@@ -6,23 +6,23 @@
 
 | 上下文 | 包 | 职责 |
 |---|---|---|
-| 内核 Kernel | `@presmium/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约，以及插件共用的服务契约 |
-| 编译 Compilation | `@presmium/compiler`、`@presmium/cli` | 解析 MyST 源码、执行编译步骤与行内角色、编译时执行与缓存（含执行会话）、受众筛选、生成 IR、运行检查 |
-| 渲染 Rendering | `@presmium/viewer`、`@presmium/web`、`@presmium/render-slides`、`@presmium/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图；站点外壳、文件发布与译本；工作区站点 |
-| 宿主适配 Host | `@presmium/host`、`@presmium/slidev-addon-core`、`@presmium/web`、`@presmium/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
-| 讲台 Stage | `@presmium/slidev-addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 |
-| 代码引用 CodeRef | `@presmium/slidev-addon-code` | 引用、锁定、漂移、跳转、分步高亮、多版本 |
-| 代码执行 Execution | `@presmium/slidev-addon-exec`、`@presmium/slidev-addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 |
-| 执行环境 Environment | `@presmium/slidev-addon-exec-jupyter`、`@presmium/slidev-addon-exec-wasi`、`@presmium/slidev-addon-exec-webgpu`；会话与富输出也落在代码执行的两个包中 | 具名环境、环境提供方与指纹、执行会话、富输出、远端环境的凭据方式、部署模板、浏览器终端 |
-| 引导 Guidance | `@presmium/slidev-addon-guide` | 模拟光标、聚光、交互提示 |
-| 富内容 Content | `@presmium/slidev-addon-content`；卡片、栅格、选项卡由编译器与渲染端直接支持 | 公式、图表、思维导图、媒体（含封面与字幕轨）、Web 组件、卡片与栅格 |
-| 发布 Publishing | `@presmium/slidev-addon-publish`；发布检查与受众筛选在编译器与 CLI 中 | 导出、离线、高对比度、可视化差异、发布检查、受众范围 |
-| 课堂 Classroom | `@presmium/slidev-addon-session`、`@presmium/slidev-addon-classroom`、`@presmium/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 |
-| 编辑 Editing | `@presmium/language-server`、`presmium-vscode` | 编辑器中的诊断、跳转、悬停、补全，编辑器与预览同步 |
-| 智能体 Agent | `@presmium/mcp`、`@presmium/dsh`、`@presmium/slidev-addon-assistant` | agent 环境（MCP 与 dsh 的工具）、焦点、学习者问答 |
-| 工作区 Workspace | `@presmium/workspace` | 工作区服务、文档管理、修改历史与撤销（重做）、修改审阅、工作区站点 |
-| 工作台 Workbench | `@presmium/workbench`、`@presmium/dsh`、`@presmium/studio`；`@presmium/design` 与产物共用 | 作者编写文稿的界面：文件树、源码编辑器、问题、预览、对话与焦点、审阅与修改历史；DeepSeek Harness 的防腐层（bundle）；`presmium studio` |
-| 讲授 Lecture（含语音 Speech） | `@presmium/slidev-addon-lecture`、`@presmium/slidev-addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音服务（语音协议 `v1/*`）、引擎、合成缓存、字幕译文 |
+| 内核 Kernel | `@lincyaw/kernel` | 插件清单、服务注册、锚点契约、检查契约、步骤契约、IR 契约，以及插件共用的服务契约 |
+| 编译 Compilation | `@lincyaw/compiler`、`@lincyaw/cli` | 解析 MyST 源码、执行编译步骤与行内角色、编译时执行与缓存（含执行会话）、受众筛选、生成 IR、运行检查 |
+| 渲染 Rendering | `@lincyaw/viewer`、`@lincyaw/web`、`@lincyaw/render-slides`、`@lincyaw/render-notebook` | 从 IR 生成各媒介或在浏览器中动态渲染 IR，声明支持程度并降级；运行时视图；站点外壳、文件发布与译本；工作区站点 |
+| 宿主适配 Host | `@lincyaw/host`、`@lincyaw/slidev-addon-core`、`@lincyaw/web`、`@lincyaw/server` | 形态无关的宿主接口，及其 Slidev、VitePress 两个实现；服务端：插件的服务端贡献、请求来源的检查、操作确认、控制通道 |
+| 讲台 Stage | `@lincyaw/slidev-addon-stage` | 基础内容、步骤备注、冻结画面、圈画标注 |
+| 代码引用 CodeRef | `@lincyaw/slidev-addon-code` | 引用、锁定、漂移、跳转、分步高亮、多版本 |
+| 代码执行 Execution | `@lincyaw/slidev-addon-exec`、`@lincyaw/slidev-addon-exec-local` | 执行服务、运行记录、分步执行、回退、环境复刻 |
+| 执行环境 Environment | `@lincyaw/slidev-addon-exec-jupyter`、`@lincyaw/slidev-addon-exec-wasi`、`@lincyaw/slidev-addon-exec-webgpu`；会话与富输出也落在代码执行的两个包中 | 具名环境、环境提供方与指纹、执行会话、富输出、远端环境的凭据方式、部署模板、浏览器终端 |
+| 引导 Guidance | `@lincyaw/slidev-addon-guide` | 模拟光标、聚光、交互提示 |
+| 富内容 Content | `@lincyaw/slidev-addon-content`；卡片、栅格、选项卡由编译器与渲染端直接支持 | 公式、图表、思维导图、媒体（含封面与字幕轨）、Web 组件、卡片与栅格 |
+| 发布 Publishing | `@lincyaw/slidev-addon-publish`；发布检查与受众筛选在编译器与 CLI 中 | 导出、离线、高对比度、可视化差异、发布检查、受众范围 |
+| 课堂 Classroom | `@lincyaw/slidev-addon-session`、`@lincyaw/slidev-addon-classroom`、`@lincyaw/classroom-server` | 会话、网络传输、跟随、笔记、测验、练习、提问、理解度、先预测再揭示 |
+| 编辑 Editing | `@lincyaw/language-server`、`presmium-vscode` | 编辑器中的诊断、跳转、悬停、补全，编辑器与预览同步 |
+| 智能体 Agent | `@lincyaw/mcp`、`@lincyaw/dsh`、`@lincyaw/slidev-addon-assistant` | agent 环境（MCP 与 dsh 的工具）、焦点、学习者问答 |
+| 工作区 Workspace | `@lincyaw/workspace` | 工作区服务、文档管理、修改历史与撤销（重做）、修改审阅、工作区站点 |
+| 工作台 Workbench | `@lincyaw/workbench`、`@lincyaw/dsh`、`@lincyaw/studio`；`@lincyaw/design` 与产物共用 | 作者编写文稿的界面：文件树、源码编辑器、问题、预览、对话与焦点、审阅与修改历史；DeepSeek Harness 的防腐层（bundle）；`presmium studio` |
+| 讲授 Lecture（含语音 Speech） | `@lincyaw/slidev-addon-lecture`、`@lincyaw/slidev-addon-speech` | 讲授轨、录制、回放、脚本化讲授、导出视频、转写回写；语音服务（语音协议 `v1/*`）、引擎、合成缓存、字幕译文 |
 
 网页形态的站点外壳、文件发布与译本属于渲染上下文，见第 9 节；工作区站点的组织属于工作区，网页渲染端负责构建它。
 
@@ -45,7 +45,7 @@
 ```
 
 - **内核是共享内核**：所有上下文只依赖内核的契约，彼此之间不直接依赖。多个插件共用的业务服务契约（`executor`、`session`、`classroomStore`、`speech`、`agent`、`agentRuntime`、`revisions`、`approvals`、`mcpEndpoint` 与操作词汇 `TrackEvent`）也放在内核包中，因为提供方与使用方是不同的插件（`architecture.md` 4.5 节）。
-- **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）不引用 `@slidev/*` 与 vitepress，只通过 `@presmium/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行。只在幻灯片形态中加载的部分（插件包的 `setup/` 与全局图层）可以使用 `@slidev/client` 的公开导出；只有网页渲染端使用 vitepress。领域层（`src/domain/`）不引用 Vue。完整规则见 `architecture.md` 第 3 节。服务端（`@presmium/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
+- **宿主适配是防腐层**：插件的组件与浏览器端代码（`components/`、`src/client/`）不引用 `@slidev/*` 与 vitepress，只通过 `@lincyaw/host` 获取步骤状态、服务与形态信息，因此同一个组件可以在两种形态中运行。只在幻灯片形态中加载的部分（插件包的 `setup/` 与全局图层）可以使用 `@slidev/client` 的公开导出；只有网页渲染端使用 vitepress。领域层（`src/domain/`）不引用 Vue。完整规则见 `architecture.md` 第 3 节。服务端（`@lincyaw/server`）是宿主适配在 Node 端的对应物：插件只经 `ServerContext`、`RequestContext` 与 `approvals` 使用它，浏览器端只经 `useServer()`。
 - **上下文之间通过服务协作**：例如课堂的练习校验使用代码执行提供的 `executor` 服务；测验、笔记等功能使用会话插件提供的 `session` 服务，会话插件可以整体替换。
 - **外部系统只经防腐层接入**：每个外部系统只在一个适配器中出现，适配器说一种标准协议（`architecture.md` 第 3 节的检查规则）。
 
@@ -55,8 +55,8 @@
 |---|---|---|---|
 | 执行环境 | 代码执行 | 客户与供应商：环境的执行器登记到 `executor` 路由，按 ID 精确选择 | `EnvironmentProvider`、`EXECUTOR` |
 | 编译（IR） | 智能体 | 遵奉者：MCP 服务以 IR 为公开语言读取文稿 | IR、`AgentTool` |
-| 智能体 | 外部 agent | 开放主机服务：MCP 工具与资源，任何 MCP 客户端都可以用 | `@presmium/mcp` |
-| 外部 DeepSeek Harness | 智能体 | 防腐层：`@presmium/dsh` 是唯一接触 dsh 接口的包（第 16 节） | bundle 的行 |
+| 智能体 | 外部 agent | 开放主机服务：MCP 工具与资源，任何 MCP 客户端都可以用 | `@lincyaw/mcp` |
+| 外部 DeepSeek Harness | 智能体 | 防腐层：`@lincyaw/dsh` 是唯一接触 dsh 接口的包（第 16 节） | bundle 的行 |
 | 工作区 | 智能体、讲授 | 客户与供应商：修改提交为 git 提交，撤销即 `git revert` | `REVISIONS` |
 | 智能体 | 工作区、讲授、课堂 | 客户与供应商：会话的修改经工作区的审阅、讲授的 agent 工具、课堂中的 AI 回答 | `CHANGE_REVIEW`、`AgentTool`、`ASK` |
 | 语音（讲授的一部分） | 讲授、智能体 | 客户与供应商：转写与合成 | `SPEECH` |
@@ -71,8 +71,8 @@
 |---|---|---|---|
 | 渲染（产物） | 工作台 | 开放主机服务：产物只暴露锚点，经预览协议回答点选与位置 | `PREVIEW_PROTOCOL`、`data-section`、`data-block`、`data-step` |
 | 工作区（工作区服务） | 工作台 | 客户与供应商：文档、源码、IR 与诊断、审阅、修改历史、焦点 | 工作区服务的路由、`ir/events` |
-| 智能体（MCP） | 工作台中的 agent、外部 agent | 开放主机服务：一张工具表，两个适配器（MCP 与 dsh 工具） | `@presmium/mcp` |
-| 外部 DeepSeek Harness | 工作台 | 防腐层：只有 `@presmium/dsh` 引用它的接口，`@presmium/studio` 只启动它 | bundle 的行、客户端插件 |
+| 智能体（MCP） | 工作台中的 agent、外部 agent | 开放主机服务：一张工具表，两个适配器（MCP 与 dsh 工具） | `@lincyaw/mcp` |
+| 外部 DeepSeek Harness | 工作台 | 防腐层：只有 `@lincyaw/dsh` 引用它的接口，`@lincyaw/studio` 只启动它 | bundle 的行、客户端插件 |
 
 ## 3. 内核
 
@@ -172,7 +172,7 @@
 
 ## 4. 宿主适配
 
-`@presmium/host` 定义形态无关的宿主接口 `HostAdapter`（`architecture.md` 4.4 节），`@presmium/slidev-addon-core` 与 `@presmium/web` 分别实现。
+`@lincyaw/host` 定义形态无关的宿主接口 `HostAdapter`（`architecture.md` 4.4 节），`@lincyaw/slidev-addon-core` 与 `@lincyaw/web` 分别实现。
 
 | 中文 | 标识符 | 幻灯片形态（Slidev） | 网页形态（VitePress + IR 运行时） |
 |---|---|---|---|
@@ -196,11 +196,11 @@
 
 ## 4A. 服务端
 
-`@presmium/server` 是宿主适配在 Node 端的对应物：`presmium dev` 与 `presmium serve` 进程中唯一的 HTTP 服务。它挂载插件的服务端贡献，统一处理请求来源、凭据与确认（`architecture.md` 第 10 节）。服务端只供运行它的那个用户使用：被执行的代码与 agent 以这个用户的身份受信任，措施是纵深防御，没有登录；多人使用时每人一个工作区（hub 托管模板）。
+`@lincyaw/server` 是宿主适配在 Node 端的对应物：`presmium dev` 与 `presmium serve` 进程中唯一的 HTTP 服务。它挂载插件的服务端贡献，统一处理请求来源、凭据与确认（`architecture.md` 第 10 节）。服务端只供运行它的那个用户使用：被执行的代码与 agent 以这个用户的身份受信任，措施是纵深防御，没有登录；多人使用时每人一个工作区（hub 托管模板）。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| 服务端 | `@presmium/server` 的 `startServer` | 插件的路由与代理、MCP 端点、控制通道；`presmium dev` 中只监听本机，渲染端的开发服务器把 `/__presmium/` 代理到它；`presmium serve` 中它是唯一的端口，默认只监听本机，`--host` 时也在局域网上 |
+| 服务端 | `@lincyaw/server` 的 `startServer` | 插件的路由与代理、MCP 端点、控制通道；`presmium dev` 中只监听本机，渲染端的开发服务器把 `/__presmium/` 代理到它；`presmium serve` 中它是唯一的端口，默认只监听本机，`--host` 时也在局域网上 |
 | 服务端贡献 | `ServerContribution` | 插件挂在 `/__presmium/<插件 ID>/` 下的路由 `Route` 与反向代理 `ProxySpec`，各自声明所需的最低角色 |
 | 服务端上下文 | `ServerContext` | 插件创建服务端贡献时得到的文稿目录、配置、Node 端服务与凭据 |
 | 请求上下文 | `RequestContext` | 发起请求的成员、请求所属的文档、路由之后的路径 |
@@ -327,7 +327,7 @@
 - 统计只统计每位参与者的最后一次作答或投票。
 - 揭示内容在读者保存预测之前不显示；投在全班面前的放映画面按步骤显示。预测保存在本机（`SavedPrediction`，保存后不能修改），课堂中学习者的预测另写入 `predictions` 集合（`Prediction`，键含参与者 ID），主讲看到分布（`PredictionTally`，每人只计最后一次）。
 
-信任模型：课堂服务（`@presmium/classroom-server`）面向课堂自己的网络，不验证参与者身份，拿到加入链接的人都能连接。主讲人的权利由服务端强制：创建课堂的窗口连接时声明房间密钥（`?claim=<key>`），只有持有该密钥的连接可以写入课堂状态与测验的开放状态、归档课堂；学习者只能写入自己参与者 ID 下的作答：服务端在键中按集合找参与者 ID 的位置（作答等在最后一段，提问在第一段），不在键的其他位置找，键上已属于他人的条目不能改写或删除。学习者的私有笔记在各自的房间中。
+信任模型：课堂服务（`@lincyaw/classroom-server`）面向课堂自己的网络，不验证参与者身份，拿到加入链接的人都能连接。主讲人的权利由服务端强制：创建课堂的窗口连接时声明房间密钥（`?claim=<key>`），只有持有该密钥的连接可以写入课堂状态与测验的开放状态、归档课堂；学习者只能写入自己参与者 ID 下的作答：服务端在键中按集合找参与者 ID 的位置（作答等在最后一段，提问在第一段），不在键的其他位置找，键上已属于他人的条目不能改写或删除。学习者的私有笔记在各自的房间中。
 
 服务：`session`（当前参与者、角色、课堂状态）、`classroomStore`（共享文档的读写）。课堂插件向宿主的 `STATUS` 登记不含学习者身份的汇总 `ClassroomSummary`（参与人数、作答、预测与理解度的分布、练习的提交与通过人数、未回答的问题数；不含昵称、参与者 ID 与学习者写下的文字），agent 经 MCP 读取。
 
@@ -335,7 +335,7 @@
 
 ## 9. 网页形态
 
-网页形态由 IR 生成，不由幻灯片转换：VitePress 提供外壳（导航、侧栏、页内大纲、搜索、深色模式），页面正文由 IR 运行时 `@presmium/viewer` 在浏览器中动态渲染（`ir.md` 第 8 节）。
+网页形态由 IR 生成，不由幻灯片转换：VitePress 提供外壳（导航、侧栏、页内大纲、搜索、深色模式），页面正文由 IR 运行时 `@lincyaw/viewer` 在浏览器中动态渲染（`ir.md` 第 8 节）。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
@@ -380,7 +380,7 @@
 
 ## 11. 编辑
 
-语言服务 `@presmium/language-server` 用 `@presmium/compiler` 编译编辑中的文稿，通过 LSP 提供诊断、锚点跳转、悬停（引用的代码与最近一次输出）与补全（region 名、指令与选项）；VS Code 扩展 `presmium-vscode` 启动它，并把编辑器光标所在的章节发给 `presmium dev` 的预览。
+语言服务 `@lincyaw/language-server` 用 `@lincyaw/compiler` 编译编辑中的文稿，通过 LSP 提供诊断、锚点跳转、悬停（引用的代码与最近一次输出）与补全（region 名、指令与选项）；VS Code 扩展 `presmium-vscode` 启动它，并把编辑器光标所在的章节发给 `presmium dev` 的预览。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
@@ -437,7 +437,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
-| agent 环境 | `@presmium/mcp` 的 `createPresmiumMcp` | MCP 服务：以工具与只读资源暴露工作区、文稿与放映状态；运行在 `presmium dev` 与 `presmium serve` 的进程中（`/mcp`），`presmium-mcp` 以 stdio 提供同样的工具 |
+| agent 环境 | `@lincyaw/mcp` 的 `createPresmiumMcp` | MCP 服务：以工具与只读资源暴露工作区、文稿与放映状态；运行在 `presmium dev` 与 `presmium serve` 的进程中（`/mcp`），`presmium-mcp` 以 stdio 提供同样的工具 |
 | agent 工具 | MCP 工具；插件贡献的 `AgentTool` | 读取类（`read`）、操作类（`operate`，需要确认）、计费类（`spend`，需要确认）；插件可以贡献工具，如讲授插件的 `lecture_preview` |
 | agent 资源 | `presmium://…` | 与读取类工具对应的只读资源；放映位置与焦点的资源可以订阅更新 |
 | 令牌模式 | `AgentMode`（`MCP_ENDPOINT.issue(member, mode)`） | 只有 `author`：作者的 agent，可以写源码；每个令牌都读完整的文稿 |
@@ -473,7 +473,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 工作区 | `Workspace`；根目录的 `presmium.workspace.yaml` | 一个 git 仓库，包含多份文档；配置声明文档的位置（默认 `*/lecture.md`）、站点、确认策略与插件的运营者设置 `settings`（如工作区的插件列表、修改的审阅） |
 | 文档 | `Document` | 一份文稿：目录（身份）、入口文件、标题、语言、标签，取自它的头部 |
 | 文档操作 | `DocumentOperation` | 新建（从模板，或由 agent 起草）、重命名、复制、删除 |
-| 文档模板 | `packages/workspace/templates/document/<名>/`（随 `@presmium/workspace` 发布）或工作区配置 `templates` 指定的目录 | 新建文档时复制的目录 |
+| 文档模板 | `packages/workspace/templates/document/<名>/`（随 `@lincyaw/workspace` 发布）或工作区配置 `templates` 指定的目录 | 新建文档时复制的目录 |
 | 修改 | `Revision` | 一个提交及其来源 `RevisionOrigin`：agent 的会话、文档操作、作者在编辑器中的提交 |
 | 修改历史 | `RevisionService`（`REVISIONS`，Node） | 提交、按文档列出修改、撤销（`git revert`）；撤销一次撤销是重做（`HistoryRevision.redo`），历史面板按它标为“重做” |
 | 成员 | `Member`（4A 节） | 本机作者（所有者）；工作区服务只供运行它的那个用户使用，没有登录与成员的配置 |
@@ -568,15 +568,15 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 ## 16. 工作台与 dsh
 
-工作台是 DeepSeek Harness（下称 dsh）的一个定制发行版（设计见 `design-dsh.md`）。它不是新的业务领域：文稿、修改、审阅与修改历史仍归工作区与智能体（第 13、14 节）；工作台把它们呈现给作者，并经防腐层（bundle `@presmium/dsh`）把 dsh 的会话、确认与修改卡片接到 Presmium 的概念上。
+工作台是 DeepSeek Harness（下称 dsh）的一个定制发行版（设计见 `design-dsh.md`）。它不是新的业务领域：文稿、修改、审阅与修改历史仍归工作区与智能体（第 13、14 节）；工作台把它们呈现给作者，并经防腐层（bundle `@lincyaw/dsh`）把 dsh 的会话、确认与修改卡片接到 Presmium 的概念上。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 产物 | 网页、幻灯片、notebook、讲授 | 渲染端从 IR 生成、能单独部署的东西；静态构建的结果与开发服务器实时提供的页面都算。产物不认识工作台，只暴露锚点 |
-| 工作台 | `presmium studio` 的页面；`@presmium/workbench`、`@presmium/dsh` | 作者编写文稿的界面：Presmium 的根布局插件与 React 面板，加上 dsh 的对话、确认卡片、修改卡片、会话与模型设置 |
+| 工作台 | `presmium studio` 的页面；`@lincyaw/workbench`、`@lincyaw/dsh` | 作者编写文稿的界面：Presmium 的根布局插件与 React 面板，加上 dsh 的对话、确认卡片、修改卡片、会话与模型设置 |
 | 工作区服务 | `presmium serve` | `presmium serve` 中不含界面的部分：编译会话、产物的开发服务器、文档与源码的路由、审阅、修改历史、焦点、MCP |
-| bundle | `@presmium/dsh` | dsh 的扩展包（不是 Presmium 自己的插件包）：宿主部分的行（工具、确认策略、上下文、技能、文档的工作区登记、turn 与审阅、路由）与客户端部分（根布局插件与面板） |
-| 根布局插件 | `@presmium/dsh` 的客户端部分 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件，替换 dsh 自带的 `ui-layout` |
+| bundle | `@lincyaw/dsh` | dsh 的扩展包（不是 Presmium 自己的插件包）：宿主部分的行（工具、确认策略、上下文、技能、文档的工作区登记、turn 与审阅、路由）与客户端部分（根布局插件与面板） |
+| 根布局插件 | `@lincyaw/dsh` 的客户端部分 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件，替换 dsh 自带的 `ui-layout` |
 | 预览协议 | `PREVIEW_PROTOCOL`（`packages/kernel/src/contracts/preview.ts`） | 工作台与嵌在它里面的产物页面之间的 `postMessage` 消息约定，只传章节、块与步骤的 ID |
 | 预览代理 | 网页与幻灯片的客户端中的一小段脚本 | 产物页面中实现预览协议的部分，只在工作区服务启动的开发服务器的页面中 |
 | 焦点 | `Focus` | 用户指向的一处：源码中的一段，带上它在文稿中的位置（见下） |
@@ -615,7 +615,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **不悄悄指到别处**：源码改动后先按块 ID、再按摘录重新定位，都找不到时标为已失效。
 - **产物只暴露锚点**：焦点由工作台组装，服务端把锚点换成源码范围；静态构建中没有点选的代码。
 - **两边看到同一个焦点**：外部 agent 经 MCP 读到的焦点与 dsh 会话的上下文中的相同；两边的工具清单也相同。
-- **dsh 只经一个包**：只有 `@presmium/dsh` 引用 dsh 的接口，`@presmium/studio` 只启动它；核心与产物不知道 dsh 存在。
+- **dsh 只经一个包**：只有 `@lincyaw/dsh` 引用 dsh 的接口，`@lincyaw/studio` 只启动它；核心与产物不知道 dsh 存在。
 - **一个会话属于一份文档**：会话的目录是文档目录，也是沙箱与审阅的根；目录不是文档目录的会话得不到 Presmium 的工具与上下文。
 - **文稿的代码不进 dsh 宿主**：编译、编译时执行与构建在工作区服务的进程中。
 - **修改落在源码上并成为提交**：dsh 的修改卡片只是视图，审阅、提交与撤销由 Presmium 负责。

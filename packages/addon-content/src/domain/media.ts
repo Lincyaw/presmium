@@ -1,5 +1,5 @@
-import { escapeHtml } from '@presmium/kernel'
-import type { MdastNode } from '@presmium/kernel'
+import { escapeHtml } from '@lincyaw/kernel'
+import type { MdastNode } from '@lincyaw/kernel'
 
 export type MediaKind = 'video' | 'audio' | 'animation'
 

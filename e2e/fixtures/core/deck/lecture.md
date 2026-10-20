@@ -2,13 +2,13 @@
 title: Presmium Fixture Deck With A Title Too Long For A Phone
 lang: en-US
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-session'
-  - '@presmium/slidev-addon-stage'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-session'
+  - '@lincyaw/slidev-addon-stage'
   - ./plugin
 presmium:
   fixture.core: { label: global }
-  # The demo plugins of @presmium/slidev-addon-core: a provider, its consumer and an orphan.
+  # The demo plugins of @lincyaw/slidev-addon-core: a provider, its consumer and an orphan.
   presmium.core: { demo: true }
   # The learner's badge shows for an invitation (`?room=`) before anything connects.
   presmium.session: { server: 'ws://127.0.0.1:9' }

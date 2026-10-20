@@ -24,8 +24,8 @@ export {
   useToolbarPlace,
 } from './design/components.ts'
 export type { ButtonVariant, Choice, MenuItem, PopoverPlacement, Tone } from './design/components.ts'
-export { iconMarkup, ICONS } from '@presmium/design'
-export type { IconName } from '@presmium/design'
+export { iconMarkup, ICONS } from '@lincyaw/design'
+export type { IconName } from '@lincyaw/design'
 export { useTheme } from './design/theme.ts'
 export type { Theme } from './design/theme.ts'
 export {
@@ -80,5 +80,5 @@ export type {
   ToolbarSlot,
   ViewRole,
 } from './types.ts'
-export { localeOf } from '@presmium/kernel/contracts'
-export type { Locale } from '@presmium/kernel/contracts'
+export { localeOf } from '@lincyaw/kernel/contracts'
+export type { Locale } from '@lincyaw/kernel/contracts'

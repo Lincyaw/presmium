@@ -5,7 +5,7 @@
 // it gives a Vite plugin, which the renderer finds in its context.
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { IRDocument, PresmiumNodePlugin } from '@presmium/kernel'
+import type { IRDocument, PresmiumNodePlugin } from '@lincyaw/kernel'
 
 const titles = (doc: IRDocument) => doc.sections.map(s => s.title)
 

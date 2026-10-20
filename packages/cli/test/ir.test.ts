@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
-import type { IRBlock, IRDocument, MdastNode } from '@presmium/kernel'
+import type { IRBlock, IRDocument, MdastNode } from '@lincyaw/kernel'
 import { expect, it } from 'vitest'
 import { fixtures, presmium } from './helpers.ts'
 

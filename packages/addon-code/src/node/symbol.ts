@@ -1,5 +1,5 @@
-import { errorMessage } from '@presmium/kernel'
-import type { AnchorResolver, AnchorString, SourceReader } from '@presmium/kernel'
+import { errorMessage } from '@lincyaw/kernel'
+import type { AnchorResolver, AnchorString, SourceReader } from '@lincyaw/kernel'
 import python from '@ast-grep/lang-python'
 import { Lang, parse, registerDynamicLanguage } from '@ast-grep/napi'
 import type { SgNode } from '@ast-grep/napi'

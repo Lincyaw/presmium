@@ -8,9 +8,9 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
-import { Compiler } from '@presmium/compiler'
-import { servedDocument, startServer } from '@presmium/server'
-import type { ServerHost } from '@presmium/server'
+import { Compiler } from '@lincyaw/compiler'
+import { servedDocument, startServer } from '@lincyaw/server'
+import type { ServerHost } from '@lincyaw/server'
 
 const root = process.env.SERVE_WORKSPACE ?? process.cwd()
 const compilers = new Map<string, Compiler>()

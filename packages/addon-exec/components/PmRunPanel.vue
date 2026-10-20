@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { usePresentationMode, useSectionConfig, useService, useStartReport } from '@presmium/host'
-import { EXECUTOR, isRecord } from '@presmium/kernel'
-import type { ParamsDisplay } from '@presmium/kernel'
+import { usePresentationMode, useSectionConfig, useService, useStartReport } from '@lincyaw/host'
+import { EXECUTOR, isRecord } from '@lincyaw/kernel'
+import type { ParamsDisplay } from '@lincyaw/kernel'
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { languageName, runPlace, seconds, useMessages, useSlideRoom } from '../src/client/index.ts'
 import { appendRun, compareRuns, configuredTimeout, defaultPair, EXEC_ID, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'

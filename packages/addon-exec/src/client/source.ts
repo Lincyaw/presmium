@@ -1,4 +1,4 @@
-import type { StepState } from '@presmium/kernel'
+import type { StepState } from '@lincyaw/kernel'
 import type { InjectionKey, Ref } from 'vue'
 
 export function markLine(container: HTMLElement | undefined, line: number | undefined, className: string): void {

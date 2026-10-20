@@ -1,4 +1,4 @@
-import type { Finding, Severity } from '@presmium/kernel'
+import type { Finding, Severity } from '@lincyaw/kernel'
 import { DiagnosticSeverity } from 'vscode-languageserver/node'
 import type { Diagnostic, Range } from 'vscode-languageserver/node'
 import { fenceAt } from '../domain/index.ts'

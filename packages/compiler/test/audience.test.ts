@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { IRDocument } from '@presmium/kernel'
+import type { IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 import { build, Compiler } from '../src/index.ts'
 
@@ -13,7 +13,7 @@ afterAll(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })
 const DECK = `---
 title: 受众
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 renderers:
   slides: {}
 ---

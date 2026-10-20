@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A counter every window of the deck shares (useSharedState, scope 'local'), and one that
 // other devices share too (scope 'remote', through the sync transports).
-import { useSharedState } from '@presmium/host'
+import { useSharedState } from '@lincyaw/host'
 
 const count = useSharedState('fixture.core.count', 0)
 const remote = useSharedState('fixture.core.remote', 0, { scope: 'remote' })

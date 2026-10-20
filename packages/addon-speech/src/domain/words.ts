@@ -1,5 +1,5 @@
-import { splitWords } from '@presmium/kernel'
-import type { SpeechWord, Transcript, TranscriptSegment, WordSpan } from '@presmium/kernel'
+import { splitWords } from '@lincyaw/kernel'
+import type { SpeechWord, Transcript, TranscriptSegment, WordSpan } from '@lincyaw/kernel'
 
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u
 

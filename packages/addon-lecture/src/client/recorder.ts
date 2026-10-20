@@ -1,5 +1,5 @@
-import type { Operations, ServerClient } from '@presmium/host'
-import type { IRDocument, Operation, TrackEvent } from '@presmium/kernel'
+import type { Operations, ServerClient } from '@lincyaw/host'
+import type { IRDocument, Operation, TrackEvent } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
 import { irHash, LECTURE_ID, referencedBlocks, sectionHashes } from '../domain/index.ts'
 import type { MediaSegment, Recording, VideoSegment } from '../domain/index.ts'

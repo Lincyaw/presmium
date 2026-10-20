@@ -62,7 +62,7 @@ slides: { class: pm-content-tabs, routeAlias: content-tabs }
 slides: { class: pm-content-captions, routeAlias: content-captions }
 :::
 
-```{video} @presmium/slidev-addon-content/media/clip.webm
+```{video} @lincyaw/slidev-addon-content/media/clip.webm
 :controls:
 :muted:
 :width: 280

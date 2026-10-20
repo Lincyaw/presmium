@@ -1,5 +1,5 @@
-import { remapWords } from '@presmium/kernel'
-import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@presmium/kernel'
+import { remapWords } from '@lincyaw/kernel'
+import type { Logger, SpeechWord, SynthesisRequest, TranscriptionRequest, VoiceInfo } from '@lincyaw/kernel'
 import type { EngineDefinition } from '../domain/index.ts'
 import type { SpokenText } from '../domain/index.ts'
 import { aigcLabel, engineId, engineInfo, howToDefine, operatorEngines, providerName, speak } from '../domain/index.ts'

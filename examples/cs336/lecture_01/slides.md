@@ -2,8 +2,8 @@
 title: "CS336 Lecture 01: Introduction and tokenization"
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   slides: {}
 ---

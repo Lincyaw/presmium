@@ -2,8 +2,8 @@
 title: 不可信的输出
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-exec'
   - ./evil
 renderers:
   slides:

@@ -9,6 +9,6 @@
     "./presmium": "./presmium.ts"
   },
   "peerDependencies": {
-    "@presmium/kernel": "^9.0.0"
+    "@lincyaw/kernel": "^9.0.0"
   }
 }

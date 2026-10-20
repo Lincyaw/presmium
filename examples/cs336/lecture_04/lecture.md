@@ -2,8 +2,8 @@
 title: "CS336 Lecture 04: Attention alternatives and mixture of experts"
 lang: en
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-content'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-content'
 renderers:
   web: {}
   notebook: {}

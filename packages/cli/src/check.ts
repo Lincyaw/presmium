@@ -1,9 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { ANCHOR_LOCK_PATH, errorMessage } from '@presmium/kernel'
-import type { AnchorString, Finding } from '@presmium/kernel'
-import { checkContext, Compiler, frontmatterLine, sortFindings } from '@presmium/compiler'
-import type { Compilation, CompilerOptions } from '@presmium/compiler'
+import { ANCHOR_LOCK_PATH, errorMessage } from '@lincyaw/kernel'
+import type { AnchorString, Finding } from '@lincyaw/kernel'
+import { checkContext, Compiler, frontmatterLine, sortFindings } from '@lincyaw/compiler'
+import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 
 export interface CheckOptions {
   deck: string

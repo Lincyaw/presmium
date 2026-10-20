@@ -1,5 +1,5 @@
-import { stepKeys, trailStep } from '@presmium/kernel'
-import type { Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewReport } from '@presmium/kernel'
+import { stepKeys, trailStep } from '@lincyaw/kernel'
+import type { Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewReport } from '@lincyaw/kernel'
 import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, ReviewFollowed, ReviewView, SourceAnswer, UncommittedFile } from './api.ts'
 import { mergeTexts } from './merge.ts'
 import type { MergeLabels } from './merge.ts'

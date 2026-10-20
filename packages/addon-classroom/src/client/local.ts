@@ -1,4 +1,4 @@
-import type { ClassroomStore } from '@presmium/kernel'
+import type { ClassroomStore } from '@lincyaw/kernel'
 
 type Data = Record<string, Record<string, unknown>>
 

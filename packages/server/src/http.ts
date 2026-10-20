@@ -3,7 +3,7 @@ import type { IncomingHttpHeaders, IncomingMessage, Server, ServerResponse } fro
 import type { AddressInfo } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { getRequestListener } from '@hono/node-server'
-import { json, problem } from '@presmium/kernel'
+import { json, problem } from '@lincyaw/kernel'
 import { createProxyServer } from 'http-proxy-3'
 
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]'])

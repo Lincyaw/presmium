@@ -1,8 +1,8 @@
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { publishedUrl } from '@presmium/kernel'
-import type { RenderContext, SourcePos } from '@presmium/kernel'
-import { copyPublished } from '@presmium/kernel/node'
+import { publishedUrl } from '@lincyaw/kernel'
+import type { RenderContext, SourcePos } from '@lincyaw/kernel'
+import { copyPublished } from '@lincyaw/kernel/node'
 
 export const MEDIA_DIR = 'media'
 

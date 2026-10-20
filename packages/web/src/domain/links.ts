@@ -1,4 +1,4 @@
-import type { IRDocument } from '@presmium/kernel'
+import type { IRDocument } from '@lincyaw/kernel'
 import type { FormOptions } from './config.ts'
 
 export function urlPath(path: string): string {

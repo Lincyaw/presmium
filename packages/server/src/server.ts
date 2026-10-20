@@ -2,7 +2,7 @@ import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
 import { dirname } from 'node:path'
-import { APPROVALS, eventStream, isRecord, MAX_BODY, MCP_ENDPOINT, errorMessage, prefixed } from '@presmium/kernel'
+import { APPROVALS, eventStream, isRecord, MAX_BODY, MCP_ENDPOINT, errorMessage, prefixed } from '@lincyaw/kernel'
 import type {
   ApprovalKind,
   Logger,
@@ -13,10 +13,10 @@ import type {
   ServerContext,
   ServerContribution,
   ServiceToken,
-} from '@presmium/kernel'
-import { pluginLogger } from '@presmium/compiler'
-import { createPresmiumMcp } from '@presmium/mcp'
-import type { McpCaller } from '@presmium/mcp'
+} from '@lincyaw/kernel'
+import { pluginLogger } from '@lincyaw/compiler'
+import { createPresmiumMcp } from '@lincyaw/mcp'
+import type { McpCaller } from '@lincyaw/mcp'
 import { authenticate, LOCAL_AUTHOR, machineHosts } from './auth.ts'
 import type { Refusal } from './auth.ts'
 import { Control, hasRole } from './control.ts'

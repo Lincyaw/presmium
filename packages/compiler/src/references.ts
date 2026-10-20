@@ -1,5 +1,5 @@
-import { irBlocks, nodeMdast } from '@presmium/kernel'
-import type { Finding, IRDocument, MdastNode } from '@presmium/kernel'
+import { irBlocks, nodeMdast } from '@lincyaw/kernel'
+import type { Finding, IRDocument, MdastNode } from '@lincyaw/kernel'
 import type { GenericParent } from 'myst-common'
 import { normalizeLabel } from 'myst-common'
 import { enumerateTargetsTransform, ReferenceState } from 'myst-transforms'

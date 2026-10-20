@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMessages } from '@presmium/host'
+import { useMessages } from '@lincyaw/host'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { offlineRuntimes, saveOffline } from '../src/client/offline.ts'
 import { MESSAGES } from '../src/domain/index.ts'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // N labels take N internal steps after the initial state (`:span: N`): internal step k reveals
 // label k and highlights it until the next one. Steps count from the component's block.
-import { useStepScope, useStepState } from '@presmium/host'
+import { useStepScope, useStepState } from '@lincyaw/host'
 import { computed } from 'vue'
 
 const props = defineProps<{ steps: string[] }>()

@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import { Compiler, DECK_ENTRY, readFrontmatter } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
-import { ANCHOR_LOCK_PATH, errorMessage } from '@presmium/kernel'
-import type { Finding } from '@presmium/kernel'
+import { Compiler, DECK_ENTRY, readFrontmatter } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
+import { ANCHOR_LOCK_PATH, errorMessage } from '@lincyaw/kernel'
+import type { Finding } from '@lincyaw/kernel'
 
 export class Deck {
   readonly entry: string

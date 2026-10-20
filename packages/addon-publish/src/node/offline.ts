@@ -1,4 +1,4 @@
-import { errorMessage } from '@presmium/kernel'
+import { errorMessage } from '@lincyaw/kernel'
 import { VitePWA } from 'vite-plugin-pwa'
 import RemoteAssets from 'vite-plugin-remote-assets'
 import webfontDownload from 'vite-plugin-webfont-dl'

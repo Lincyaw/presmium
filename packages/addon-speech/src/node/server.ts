@@ -1,5 +1,5 @@
-import { DOCUMENT_FILES } from '@presmium/kernel'
-import type { ServerContext, ServerContribution } from '@presmium/kernel'
+import { DOCUMENT_FILES } from '@lincyaw/kernel'
+import type { ServerContext, ServerContribution } from '@lincyaw/kernel'
 import { CONSENT_PATH, deckSpeechConfig, PROTOCOL_PATH } from '../domain/index.ts'
 import { SynthesisCache } from './cache.ts'
 import { consentRoute } from './consent.ts'

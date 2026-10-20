@@ -2,16 +2,16 @@
 title: Presmium 功能测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
-  - '@presmium/slidev-addon-stage'
-  - '@presmium/slidev-addon-code'
-  - '@presmium/slidev-addon-exec'
-  - '@presmium/slidev-addon-exec-local'
-  - '@presmium/slidev-addon-guide'
-  - '@presmium/slidev-addon-content'
-  - '@presmium/slidev-addon-publish'
-  - '@presmium/slidev-addon-session'
-  - '@presmium/slidev-addon-classroom'
+  - '@lincyaw/slidev-addon-core'
+  - '@lincyaw/slidev-addon-stage'
+  - '@lincyaw/slidev-addon-code'
+  - '@lincyaw/slidev-addon-exec'
+  - '@lincyaw/slidev-addon-exec-local'
+  - '@lincyaw/slidev-addon-guide'
+  - '@lincyaw/slidev-addon-content'
+  - '@lincyaw/slidev-addon-publish'
+  - '@lincyaw/slidev-addon-session'
+  - '@lincyaw/slidev-addon-classroom'
 presmium:
   presmium.core:
     demo: true

@@ -8,7 +8,7 @@ import type { DevServer, FixtureDeck } from './fixtures/deck.ts'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FIXTURE = join(ROOT, 'e2e/fixtures/server')
-const LINK = { '@presmium/host': 'packages/host' }
+const LINK = { '@lincyaw/host': 'packages/host' }
 
 test.describe('presmium dev', () => {
   test.describe.configure({ mode: 'serial', timeout: 180_000 })

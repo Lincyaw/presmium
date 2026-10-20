@@ -1,4 +1,4 @@
-import type { Member, RevisionOrigin } from '@presmium/kernel/contracts'
+import type { Member, RevisionOrigin } from '@lincyaw/kernel/contracts'
 
 export const ORIGIN_TRAILER = 'Presmium-Origin'
 export const TASK_TRAILER = 'Presmium-Task'

@@ -1,4 +1,4 @@
-import { installHost } from '@presmium/host'
+import { installHost } from '@lincyaw/host'
 import { defineAppSetup } from '@slidev/types'
 import { createSlidevHost } from '../src/client/host.ts'
 

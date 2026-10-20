@@ -1,4 +1,4 @@
-export const CLIENT_ID = '@presmium/dsh'
+export const CLIENT_ID = '@lincyaw/dsh'
 
 export const ROOT_CHILDREN = {
   'sidebar': { kind: 'single', scope: 'root' },

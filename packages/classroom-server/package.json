@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/classroom-server",
+  "name": "@lincyaw/classroom-server",
   "version": "1.0.0-rc.0",
   "description": "Presmium's classroom sync server: y-websocket rooms",
   "license": "Apache-2.0",
@@ -36,7 +36,7 @@
     "start": "node bin/server.mjs"
   },
   "dependencies": {
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "jiti": "^2.7.0",
     "lib0": "^0.2.119",
     "ws": "^8.22.0",

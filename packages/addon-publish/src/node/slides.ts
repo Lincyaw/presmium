@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs'
 import { readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { Compiler, DECK_ENTRY, prepare, viewFor } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
-import { TYPESCRIPT_IMPORT } from '@presmium/kernel/node'
+import { Compiler, DECK_ENTRY, prepare, viewFor } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
+import { TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
 import { exportedSlides, missingSlides, parseRange } from '../domain/index.ts'
 import { run } from './process.ts'
 

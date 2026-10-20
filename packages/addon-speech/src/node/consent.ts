@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { json, problem } from '@presmium/kernel'
+import { json, problem } from '@lincyaw/kernel'
 import { consentPath, consentProblem, DEFAULT_CONSENT_DIR, safeName } from '../domain/index.ts'
 import { SpeechError } from './errors.ts'
 

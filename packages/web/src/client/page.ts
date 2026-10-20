@@ -1,5 +1,5 @@
-import { useMessages } from '@presmium/host'
-import { listViews, useViewer, ViewHost } from '@presmium/viewer'
+import { useMessages } from '@lincyaw/host'
+import { listViews, useViewer, ViewHost } from '@lincyaw/viewer'
 import { useData } from 'vitepress'
 import type { ComputedRef, InjectionKey } from 'vue'
 import { computed, defineComponent, h, inject } from 'vue'

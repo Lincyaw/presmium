@@ -1,4 +1,4 @@
-# @presmium/workbench
+# @lincyaw/workbench
 
 Presmium's workbench panels in React: the launcher of a workspace (its documents, made from a template, renamed, copied and deleted), a document's file tree, the source editor (CodeMirror 6, with a three-way merge when a file changed on disk), the problems of its compilation, its live preview (the web form or the slides, driven over Presmium's preview protocol) and its changes (an agent's change waiting for review, the changes not committed, the history and its undo). Under them, bound to no framework: the client of the workspace service (`presmium serve`), the workbench's state, the preview protocol's workbench side, and the shared components of Presmium's design (`PmButton`, `PmDialog`, `PmMenu` and the others) in React. Experimental (0.x).
 
@@ -6,12 +6,12 @@ Part of [Presmium](https://github.com/Lincyaw/presmium), which turns lectures wr
 
 ## Usage
 
-`presmium studio` shows these panels in DeepSeek Harness's web client: `@presmium/dsh` bundles them into its client part and places them. They know nothing of the host they are drawn in; a layout gives them one `Workbench` and places them:
+`presmium studio` shows these panels in DeepSeek Harness's web client: `@lincyaw/dsh` bundles them into its client part and places them. They know nothing of the host they are drawn in; a layout gives them one `Workbench` and places them:
 
 ```tsx
-import { HomePanel, DocumentView, Workbench, WorkbenchProvider, workspaceClient } from '@presmium/workbench'
-import '@presmium/design/design.css'
-import '@presmium/workbench/styles.css'
+import { HomePanel, DocumentView, Workbench, WorkbenchProvider, workspaceClient } from '@lincyaw/workbench'
+import '@lincyaw/design/design.css'
+import '@lincyaw/workbench/styles.css'
 
 const workbench = new Workbench({ client: workspaceClient('api/presmium/'), locale: 'zh-CN' })
 

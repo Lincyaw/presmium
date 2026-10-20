@@ -1,5 +1,5 @@
-import type { Operations } from '@presmium/host'
-import type { IRDocument } from '@presmium/kernel'
+import type { Operations } from '@lincyaw/host'
+import type { IRDocument } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
 import { eventDrift, lastIndexAt, timedEvents, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, TimedEvent } from '../domain/index.ts'

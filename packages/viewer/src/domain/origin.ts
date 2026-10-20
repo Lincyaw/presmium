@@ -1,5 +1,5 @@
-import type { CodeNode, ResolutionStatus, RunResult } from '@presmium/kernel'
-import type { Locale } from '@presmium/kernel/contracts'
+import type { CodeNode, ResolutionStatus, RunResult } from '@lincyaw/kernel'
+import type { Locale } from '@lincyaw/kernel/contracts'
 
 const zh = {
   workingTree: '工作区',

@@ -1,4 +1,4 @@
-# @presmium/cli
+# @lincyaw/cli
 
 The `presmium` command: `new`, `check`, `ir`, `build`, `dev` and `serve` for Presmium documents and workspaces.
 
@@ -15,7 +15,7 @@ pnpm add -g presmium
 In a project that picks its own renderers and plugins, install the CLI with them (Node.js 22.19 or later):
 
 ```sh
-pnpm add -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render-notebook @presmium/slidev-addon-core
+pnpm add -D @lincyaw/cli @lincyaw/web @lincyaw/render-slides @lincyaw/render-notebook @lincyaw/slidev-addon-core
 ```
 
 ## Commands
@@ -28,16 +28,16 @@ pnpm add -D @presmium/cli @presmium/web @presmium/render-slides @presmium/render
 | `presmium dev [deck]` | Dev servers that update on save (`--to`, `--out`, `--server-port`, `--allow`) |
 | `presmium new [dir]` | A new lecture, workspace or plugin project (`--type`, `--title`, `--name`, `--no-git`); from `create-presmium`, which the `presmium` package brings |
 | `presmium serve [dir]` | The workspace service, on this machine: the documents and their sites, compiled on demand (`--port`, `--host`, `--operator-dir`, `--preview-origin`) |
-| `presmium studio [dir]` | The workbench (experimental), from `@presmium/studio` installed in the project (`--port`, `--host`); installed globally, it is `presmium-studio` |
+| `presmium studio [dir]` | The workbench (experimental), from `@lincyaw/studio` installed in the project (`--port`, `--host`); installed globally, it is `presmium-studio` |
 
 `[deck]` is a directory with `lecture.md` or an entry file, by default the current directory. Exit codes: 0 no errors, 1 error findings, 2 usage or internal error. `presmium --help` lists every option.
 
 ## Testing plugins
 
-`@presmium/cli/testing` runs the real command in a child process, for integration tests:
+`@lincyaw/cli/testing` runs the real command in a child process, for integration tests:
 
 ```ts
-import { presmium } from '@presmium/cli/testing'
+import { presmium } from '@lincyaw/cli/testing'
 
 const { code, stdout } = await presmium(dir, ['build', '--to', 'web'])
 ```

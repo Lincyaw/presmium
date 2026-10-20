@@ -1,4 +1,4 @@
-import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, MdastNode } from '@presmium/kernel'
+import type { ComponentNode, DirectiveContext, DirectiveSpec, IRBlock, MdastNode } from '@lincyaw/kernel'
 import { CLASSROOM_ID, exerciseSource, optionList, quizSource } from '../domain/index.ts'
 
 function component(name: string, props: Record<string, unknown>, prompt: MdastNode[], ctx: DirectiveContext): ComponentNode {

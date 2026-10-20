@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { describeOperation } from '@presmium/mcp/client'
+import { describeOperation } from '@lincyaw/mcp/client'
 import type { DshContext, DshPreDecision, DshToolExecution } from './dsh.ts'
 import { PREFIX } from './tools.ts'
 

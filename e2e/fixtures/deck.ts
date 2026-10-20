@@ -77,7 +77,7 @@ export async function presmium(args: string[], cwd: string): Promise<string> {
  * A new deck directory inside e2e/fixtures/regression/.presmium (ignored by git), where the deck finds the
  * workspace's packages, with a package of its own (so each build gets its own Vite cache). `link`
  * links more packages into its node_modules, by name, from paths of the repository: e.g. the
- * `@presmium/host` that a fixture plugin imports, which the demo does not depend on.
+ * `@lincyaw/host` that a fixture plugin imports, which the demo does not depend on.
  */
 export function deckDir(prefix: string, link: Record<string, string> = {}): string {
   const work = join(ROOT, 'e2e/fixtures/regression/.presmium')

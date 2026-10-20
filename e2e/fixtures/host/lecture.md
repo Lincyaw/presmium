@@ -2,7 +2,7 @@
 title: 宿主适配测试文稿
 lang: zh-CN
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
 presmium:
   presmium.core:
     demo: true

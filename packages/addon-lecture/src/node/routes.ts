@@ -1,8 +1,8 @@
 import { closeSync, createReadStream, existsSync, fstatSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { Readable } from 'node:stream'
-import { DOCUMENT_FILES, errorMessage, isRecord, json, problem, SPEECH } from '@presmium/kernel'
-import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService } from '@presmium/kernel'
+import { DOCUMENT_FILES, errorMessage, isRecord, json, problem, SPEECH } from '@lincyaw/kernel'
+import type { IRDocument, Route, ServerContext, ServerContribution, SpeechService } from '@lincyaw/kernel'
 import { CLIPS_DIR, editUtterance, fileStem, lectureVoice, lexiconOf, recordedTrack, resynthesizedTrack, SCRIPT_TRACK, spliceSection, trackDuration } from '../domain/index.ts'
 import type { LectureTrack, MediaSegment, Recording, TrackHead, Voice } from '../domain/index.ts'
 import { cachedClip, clipFile, synthesisEngineOf, synthesizedLecture, transcribeLecture, transcriptionEngine, unsaidMessage } from './lecture.ts'
@@ -166,7 +166,7 @@ export function lectureServer(ctx: ServerContext): ServerContribution {
 
   const speech = (): SpeechService => {
     const found = ctx.service(SPEECH)
-    if (!found) throw new Refusal(503, 'no speech service: add @presmium/slidev-addon-speech to the deck\'s plugins')
+    if (!found) throw new Refusal(503, 'no speech service: add @lincyaw/slidev-addon-speech to the deck\'s plugins')
     return found
   }
   const compiled = (): IRDocument => {

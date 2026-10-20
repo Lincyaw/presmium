@@ -1,6 +1,6 @@
-import type { Navigation } from '@presmium/host'
-import type { AgentContext, AskClient, Citation, IRBlock, IRDocument, SourcePos } from '@presmium/kernel'
-import { errorMessage } from '@presmium/kernel'
+import type { Navigation } from '@lincyaw/host'
+import type { AgentContext, AskClient, Citation, IRBlock, IRDocument, SourcePos } from '@lincyaw/kernel'
+import { errorMessage } from '@lincyaw/kernel'
 import { ref, shallowRef } from 'vue'
 
 export const asker = shallowRef<AskClient>()

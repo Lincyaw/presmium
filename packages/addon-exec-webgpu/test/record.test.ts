@@ -2,8 +2,8 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { presmium } from '@presmium/cli/testing'
-import type { CodeNode, ComponentNode, IRDocument } from '@presmium/kernel'
+import { presmium } from '@lincyaw/cli/testing'
+import type { CodeNode, ComponentNode, IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 import { findRuntime, plainEnv } from '../src/node/recorder.ts'
 

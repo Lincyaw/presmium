@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import { openSlide, useFixture } from './fixtures/deck.ts'
 
 test.describe.configure({ mode: 'default' })
-const deck = useFixture('exec-webgpu', { link: { '@presmium/slidev-addon-exec-webgpu': 'packages/addon-exec-webgpu' } })
+const deck = useFixture('exec-webgpu', { link: { '@lincyaw/slidev-addon-exec-webgpu': 'packages/addon-exec-webgpu' } })
 test.use({ launchOptions: { args: ['--enable-unsafe-webgpu', '--use-webgpu-adapter=swiftshader', '--enable-unsafe-swiftshader'] } })
 const RUNTIME = { timeout: 60_000 }
 const SUM = 'out: f32[4] = [11, 22, 33, 44]'

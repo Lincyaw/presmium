@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dshBin, launchArgs, launchEnv, WATCHDOG, WEB_READY, writeProfile } from '@presmium/dsh/launch'
+import { dshBin, launchArgs, launchEnv, WATCHDOG, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import { modelEnv } from './model.ts'
 
 export const PROFILE = 'presmium-studio'

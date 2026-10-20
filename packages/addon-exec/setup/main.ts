@@ -1,4 +1,4 @@
-import { registerPresmiumPlugin } from '@presmium/host'
+import { registerPresmiumPlugin } from '@lincyaw/host'
 import { defineAppSetup } from '@slidev/types'
 import { execPlugin } from '../src/client/index.ts'
 

@@ -1,7 +1,7 @@
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
-import type { Executor } from '@presmium/kernel'
+import type { Executor } from '@lincyaw/kernel'
 import { isScript } from '../domain/index.ts'
 import { childRuns, REQUEST_FILE } from './child.ts'
 

@@ -1,5 +1,5 @@
-import { failedRun, languageId } from '@presmium/kernel'
-import type { RunRequest, RunResult } from '@presmium/kernel'
+import { failedRun, languageId } from '@lincyaw/kernel'
+import type { RunRequest, RunResult } from '@lincyaw/kernel'
 import type { Kernel, ServerConnection } from '@jupyterlab/services'
 import { DEFAULT_TIMEOUT_MS, RUNS_DIR } from '../domain/config.ts'
 import { argumentsCode, OutputCollector } from '../domain/outputs.ts'

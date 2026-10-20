@@ -2,17 +2,17 @@ import { stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { errorMessage } from '@presmium/kernel'
-import type { ApprovalKind, Member } from '@presmium/kernel'
-import { buildView, Compiler, findPackageDir, resolveEntry, runBlock } from '@presmium/compiler'
-import type { Compilation } from '@presmium/compiler'
+import { errorMessage } from '@lincyaw/kernel'
+import type { ApprovalKind, Member } from '@lincyaw/kernel'
+import { buildView, Compiler, findPackageDir, resolveEntry, runBlock } from '@lincyaw/compiler'
+import type { Compilation } from '@lincyaw/compiler'
 import type { McpHost } from './host.ts'
 import { serveMcpStdio } from './mcp.ts'
 
 const AUTHOR: Member = { id: 'local', name: 'local author', roles: ['owner'] }
 const KINDS: readonly ApprovalKind[] = ['operate', 'spend', 'write', 'agent']
 const OWN_DIR = fileURLToPath(new URL('..', import.meta.url))
-const CLI_PACKAGE = '@presmium/cli'
+const CLI_PACKAGE = '@lincyaw/cli'
 
 const USAGE = `Usage: presmium-mcp [deck] [--allow <kinds>]
 

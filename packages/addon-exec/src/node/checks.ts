@@ -1,5 +1,5 @@
-import { docBlocks, PROCESS_SANDBOX } from '@presmium/kernel'
-import type { Check, CodeNode, Finding, IRBlock, IRPass, ProcessSandbox } from '@presmium/kernel'
+import { docBlocks, PROCESS_SANDBOX } from '@lincyaw/kernel'
+import type { Check, CodeNode, Finding, IRBlock, IRPass, ProcessSandbox } from '@lincyaw/kernel'
 import { configuredTimeout, EXEC_ID, execConfig, inBrowserPython, isPython, pythonImports, stringArgs } from '../domain/index.ts'
 import { plainEnv } from './child.ts'
 import { ownCode } from './passes.ts'

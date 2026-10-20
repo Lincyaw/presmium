@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
-import type { SourceReader } from '@presmium/kernel'
+import type { SourceReader } from '@lincyaw/kernel'
 import { simpleGit } from 'simple-git'
 
 export interface Repository {

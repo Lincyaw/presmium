@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The `label` option of fixture.core where the component is: global, or its section's {config}.
-import { useSectionConfig } from '@presmium/host'
+import { useSectionConfig } from '@lincyaw/host'
 
 const config = useSectionConfig('fixture.core')
 </script>

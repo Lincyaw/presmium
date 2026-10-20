@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PmButton, PmDialog, PmDrawer, PmMenu, PmPopover, PmSegmented, PmTabs } from '@presmium/host'
+import { PmButton, PmDialog, PmDrawer, PmMenu, PmPopover, PmSegmented, PmTabs } from '@lincyaw/host'
 import { ref } from 'vue'
 
 const dialog = ref(false)

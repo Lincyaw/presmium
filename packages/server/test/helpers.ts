@@ -7,7 +7,7 @@ import type { IncomingHttpHeaders } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { CREDENTIAL_VARIABLE } from '@presmium/kernel'
+import { CREDENTIAL_VARIABLE } from '@lincyaw/kernel'
 
 export const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const PRESMIUM_BIN = fileURLToPath(new URL('../../cli/bin/presmium.mjs', import.meta.url))

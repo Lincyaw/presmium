@@ -1,4 +1,4 @@
-import { deckLocale } from '@presmium/kernel'
+import { deckLocale } from '@lincyaw/kernel'
 
 export function terminalFallback(name: string, lang: string | undefined): string {
   return deckLocale(lang) === 'en'

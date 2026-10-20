@@ -54,7 +54,7 @@ export function pyodideRuntime(): PyodideRuntimePlugin {
   }
 }
 
-const PACKAGE = '@presmium/slidev-addon-exec'
+const PACKAGE = '@lincyaw/slidev-addon-exec'
 
 export function prebundled(): { name: string, config(config: { root?: string }): { optimizeDeps: { include: string[] } } | undefined } {
   return {

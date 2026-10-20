@@ -1,5 +1,5 @@
-import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, useWorkbench, WorkbenchProvider } from '@presmium/workbench'
-import type { Workbench } from '@presmium/workbench'
+import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, useWorkbench, WorkbenchProvider } from '@lincyaw/workbench'
+import type { Workbench } from '@lincyaw/workbench'
 import type { ComponentType } from 'react'
 import { Logo } from './brand.tsx'
 import { CLIENT_ID } from './contract.ts'

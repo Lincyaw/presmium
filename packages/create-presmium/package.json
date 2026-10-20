@@ -44,6 +44,6 @@
     "jiti": "^2.7.0"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*"
+    "@lincyaw/cli": "workspace:*"
   }
 }

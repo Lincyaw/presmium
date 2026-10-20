@@ -1,4 +1,4 @@
-import { useSessionSnapshot } from '@presmium/host'
+import { useSessionSnapshot } from '@lincyaw/host'
 import type { Ref } from 'vue'
 import { computed } from 'vue'
 import { isClassroomSession } from '../domain/index.ts'

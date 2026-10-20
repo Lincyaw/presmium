@@ -50,10 +50,10 @@ function withServer(dir: string, server: string): void {
   const file = join(dir, 'lecture.md')
   const text = readFileSync(file, 'utf8')
     .replace('presmium:\n', `presmium:\n  presmium.session:\n    server: ${server}\n`)
-    .replace(`  - '@presmium/slidev-addon-session'\n`, `  - '@presmium/slidev-addon-session'\n  - ./core/deck/plugin\n`)
+    .replace(`  - '@lincyaw/slidev-addon-session'\n`, `  - '@lincyaw/slidev-addon-session'\n  - ./core/deck/plugin\n`)
   writeFileSync(file, `${text}\n\`\`\`{include} remote.md\n\`\`\`\n`)
-  mkdirSync(join(dir, 'node_modules/@presmium'), { recursive: true })
-  symlinkSync(resolve('packages/host'), join(dir, 'node_modules/@presmium/host'), 'junction')
+  mkdirSync(join(dir, 'node_modules/@lincyaw'), { recursive: true })
+  symlinkSync(resolve('packages/host'), join(dir, 'node_modules/@lincyaw/host'), 'junction')
 }
 
 async function people(browser: Browser): Promise<{ presenter: Page, learner: Page, close(): Promise<void> }> {

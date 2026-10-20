@@ -1,6 +1,6 @@
-import { focusReport, resolveFocus } from '@presmium/mcp'
-import type { McpFocus } from '@presmium/mcp'
-import type { FocusReport, IRDocument } from '@presmium/kernel'
+import { focusReport, resolveFocus } from '@lincyaw/mcp'
+import type { McpFocus } from '@lincyaw/mcp'
+import type { FocusReport, IRDocument } from '@lincyaw/kernel'
 
 const MAX_FOCUS = 50
 

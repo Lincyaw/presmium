@@ -1,5 +1,5 @@
-import { OPERATIONS } from '@presmium/host'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { OPERATIONS } from '@lincyaw/host'
+import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { LECTURE_ID } from '../domain/index.ts'
 import { applyInk, applyPoint, clearInks, clearPointer } from './marks.ts'

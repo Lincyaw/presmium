@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
-import { languageId } from '@presmium/kernel'
+import { languageId } from '@lincyaw/kernel'
 import { strToU8, zipSync } from 'fflate'
 import { archiveName, workspacePath } from '../domain/index.ts'
 import type { ReplicateRequest } from '../domain/index.ts'

@@ -1,8 +1,8 @@
 import { isAbsoluteWorkspacePath, parseFileAddress, resolveWorkspacePath, workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
-import type { Workbench } from '@presmium/workbench'
+import type { Workbench } from '@lincyaw/workbench'
 import { useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 
-const ID = '@presmium/dsh/source'
+const ID = '@lincyaw/dsh/source'
 // These formats keep Harness's rich previews. Text files share the workbench editor.
 const PREVIEW = /\.(?:png|jpe?g|gif|webp|avif|ico|bmp|svg|pdf|html?|csv|tsv|wasm|zip|gz|tgz|bz2|xz|7z|woff2?|ttf|otf|eot|mp3|mp4|m4a|wav|ogg|oga|webm|mov|avi|mkv|bin|so|dylib|dll|exe|pyc|xlsx?|docx?|pptx?|parquet|npy|npz|pkl|db|sqlite)$/i
 const RESERVED = new Set(['node_modules', 'dist', '.git', '.presmium'])

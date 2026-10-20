@@ -1,4 +1,4 @@
-import type { MdastNode } from '@presmium/kernel'
+import type { MdastNode } from '@lincyaw/kernel'
 import { gfmToMarkdown } from 'mdast-util-gfm'
 import { toMarkdown } from 'mdast-util-to-markdown'
 import type { Options } from 'mdast-util-to-markdown'

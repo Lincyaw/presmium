@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { sectionLinks, toPages } from '@presmium/web/domain'
+import { sectionLinks, toPages } from '@lincyaw/web/domain'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { createConnection, DidChangeWatchedFilesNotification, ProposedFeatures, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/node'
 import { anchorAt, PREVIEW_REQUEST, SECTION_REQUEST, sectionAt } from '../domain/index.ts'

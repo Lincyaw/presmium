@@ -2,8 +2,8 @@ import { existsSync, realpathSync, statSync, watch } from 'node:fs'
 import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { errorMessage, irBlocks, isRecord } from '@presmium/kernel'
-import type { ComponentNode, ComponentRenderer, DocumentLink, Finding, IRBlock, IRDocument, IRSection, LocalAsset, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@presmium/kernel'
+import { errorMessage, irBlocks, isRecord } from '@lincyaw/kernel'
+import type { ComponentNode, ComponentRenderer, DocumentLink, Finding, IRBlock, IRDocument, IRSection, LocalAsset, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@lincyaw/kernel'
 import { unshown } from './audience.ts'
 import { audienceCompilation, DECK_ENTRY } from './compiler.ts'
 import type { AudienceCompilation, Compilation, Compiler } from './compiler.ts'
@@ -17,9 +17,9 @@ import type { CompiledTranslation } from './translations.ts'
 export const WORK_DIR = '.presmium'
 
 export const DEFAULT_RENDERER_PACKAGES: Record<string, string> = {
-  web: '@presmium/web',
-  slides: '@presmium/render-slides',
-  notebook: '@presmium/render-notebook',
+  web: '@lincyaw/web',
+  slides: '@lincyaw/render-slides',
+  notebook: '@lincyaw/render-notebook',
 }
 
 export interface InstalledRenderer {

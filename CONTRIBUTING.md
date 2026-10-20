@@ -45,7 +45,7 @@ The framework documentation the code is written against is fetched with `pnpm do
 `scripts/check-layering.mjs` (part of `pnpm test`) enforces the layers of `docs/architecture.md` section 3:
 
 - `src/domain/` is plain TypeScript: no Vue, no frameworks, no Node built-ins.
-- Components and `src/client/` get step state and services through `@presmium/host` only; they do not import `@slidev/*` (only `addon-core` may) or `vitepress` (only `web` may).
+- Components and `src/client/` get step state and services through `@lincyaw/host` only; they do not import `@slidev/*` (only `addon-core` may) or `vitepress` (only `web` may).
 - `setup/` and global layers, loaded in the slides only, may use the public exports of `@slidev/client`.
 - No package imports a plugin package, and nothing imports the internal paths of Slidev or VitePress. Depend on maintained components through their public interfaces; do not fork or patch them.
 
@@ -53,7 +53,7 @@ Other conventions:
 
 - Source is published as `.ts` and `.vue`, not compiled; relative imports name the `.ts` extension, and only erasable TypeScript syntax is used.
 - A component's look is a pure function of the step, so stepping back works.
-- Each package keeps its own zh-CN and en interface text; components use `useMessages` of `@presmium/host`. Text written into outputs follows the document's `lang`.
+- Each package keeps its own zh-CN and en interface text; components use `useMessages` of `@lincyaw/host`. Text written into outputs follows the document's `lang`.
 - The contracts are `packages/kernel/src/contracts.ts`, `packages/kernel/src/ir.ts` and `packages/host/src/types.ts`. Public interfaces follow semantic versioning, and a declaration of the workbench's browser side carries the TSDoc tag `@experimental`.
 
 ## Agent skills

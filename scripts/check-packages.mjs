@@ -4,9 +4,9 @@ import { join } from 'node:path'
 
 const root = new URL('..', import.meta.url).pathname
 const REPOSITORY = 'git+https://github.com/Lincyaw/presmium.git'
-const SHARED = new Set(['@presmium/kernel', '@presmium/host', '@presmium/viewer', '@presmium/compiler'])
+const SHARED = new Set(['@lincyaw/kernel', '@lincyaw/host', '@lincyaw/viewer', '@lincyaw/compiler'])
 const UNSCOPED = new Set(['presmium', 'create-presmium'])
-const ZERO = new Set(['@presmium/workbench', '@presmium/dsh', '@presmium/studio'])
+const ZERO = new Set(['@lincyaw/workbench', '@lincyaw/dsh', '@lincyaw/studio'])
 
 const read = file => JSON.parse(readFileSync(join(root, file), 'utf8'))
 const rootPackage = read('package.json')
@@ -40,7 +40,7 @@ for (const dir of workspaces) {
     continue
   }
   if (row && row !== 'npm') problems.push(`${at}: published, but the table says "${row}"`)
-  if (!pkg.name.startsWith('@presmium/') && !UNSCOPED.has(pkg.name)) problems.push(`${at}: a public package is named @presmium/*`)
+  if (!pkg.name.startsWith('@lincyaw/') && !UNSCOPED.has(pkg.name)) problems.push(`${at}: a public package is named @lincyaw/*`)
   if (ZERO.has(pkg.name)) {
     if (!/^0\./.test(pkg.version)) problems.push(`${at}: a package of the workbench is 0.x (docs/design-dsh.md 12), not ${pkg.version}`)
   } else {
@@ -67,7 +67,7 @@ for (const dir of workspaces) {
   }
   for (const field of ['dependencies', 'devDependencies', 'peerDependencies']) {
     for (const [name, range] of Object.entries(pkg[field] ?? {})) {
-      if (name.startsWith('@presmium/') && !range.startsWith('workspace:')) problems.push(`${at}: ${field}.${name} is not a workspace: range`)
+      if (name.startsWith('@lincyaw/') && !range.startsWith('workspace:')) problems.push(`${at}: ${field}.${name} is not a workspace: range`)
     }
   }
   if (pkg.exports?.['./presmium']) {

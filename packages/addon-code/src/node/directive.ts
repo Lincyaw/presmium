@@ -1,5 +1,5 @@
-import { errorMessage } from '@presmium/kernel'
-import type { CodeNode, DirectiveSpec, RunSpec } from '@presmium/kernel'
+import { errorMessage } from '@lincyaw/kernel'
+import type { CodeNode, DirectiveSpec, RunSpec } from '@lincyaw/kernel'
 import { parseCodeRef, splitTarget } from '../domain/index.ts'
 import type { CodeRefSpec } from '../domain/index.ts'
 

@@ -1,7 +1,7 @@
 ---
-"@presmium/workbench": patch
-"@presmium/dsh": patch
-"@presmium/web": patch
+"@lincyaw/workbench": patch
+"@lincyaw/dsh": patch
+"@lincyaw/web": patch
 ---
 
 Reuse Radix UI controls, cmdk command search, React Arborist file trees and react-resizable-panels for the workbench's generic interactions. Reuse Harness's onboarding modal while preserving Presmium's document, source editing and preview behavior.

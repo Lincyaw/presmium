@@ -1,5 +1,5 @@
 {
-  "name": "@presmium/slidev-addon-exec",
+  "name": "@lincyaw/slidev-addon-exec",
   "version": "1.0.0-rc.0",
   "description": "Presmium plugin: run panels for code, step-by-step execution and recorded outputs; Python in the browser with Pyodide",
   "license": "Apache-2.0",
@@ -45,13 +45,13 @@
     "yaml": "^2.9.1"
   },
   "peerDependencies": {
-    "@presmium/host": "workspace:^",
-    "@presmium/kernel": "workspace:^"
+    "@lincyaw/host": "workspace:^",
+    "@lincyaw/kernel": "workspace:^"
   },
   "devDependencies": {
-    "@presmium/cli": "workspace:*",
-    "@presmium/host": "workspace:*",
-    "@presmium/kernel": "workspace:*",
+    "@lincyaw/cli": "workspace:*",
+    "@lincyaw/host": "workspace:*",
+    "@lincyaw/kernel": "workspace:*",
     "@slidev/client": "53.0.0"
   }
 }

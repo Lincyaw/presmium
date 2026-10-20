@@ -1,6 +1,6 @@
 import { EventSourceParserStream } from 'eventsource-parser/stream'
-import type { Navigation } from '@presmium/host'
-import type { AgentContext, AskClient } from '@presmium/kernel'
+import type { Navigation } from '@lincyaw/host'
+import type { AgentContext, AskClient } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
 import { ASK_STORAGE_KEY, askMessages, askProvider, askSettingsOf, chunkText, completionText, completionsUrl, sectionText, serviceError } from '../domain/index.ts'
 import type { AskPlace, AskSettings } from '../domain/index.ts'

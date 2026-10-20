@@ -1,5 +1,5 @@
-import { docBlocks } from '@presmium/kernel'
-import type { ComponentNode, DirectiveSpec, IRPass } from '@presmium/kernel'
+import { docBlocks } from '@lincyaw/kernel'
+import type { ComponentNode, DirectiveSpec, IRPass } from '@lincyaw/kernel'
 import { DEFAULT_TERMINAL_ROWS, EXEC_JUPYTER_ID, jupyterEnvironments, terminalFallback } from '../domain/index.ts'
 
 export const terminalDirective: DirectiveSpec = {

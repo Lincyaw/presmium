@@ -1,4 +1,4 @@
-import type { PresenterPanel, PresenterPanels, Unsubscribe } from '@presmium/kernel'
+import type { PresenterPanel, PresenterPanels, Unsubscribe } from '@lincyaw/kernel'
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
 import StartReportPanel from './StartReportPanel.vue'

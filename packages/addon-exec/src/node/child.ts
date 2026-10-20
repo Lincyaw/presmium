@@ -2,8 +2,8 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { failedRun } from '@presmium/kernel'
-import type { ProcessSandbox, RunContext, RunOutput, RunRequest, RunResult, SandboxResult, SandboxRun } from '@presmium/kernel'
+import { failedRun } from '@lincyaw/kernel'
+import type { ProcessSandbox, RunContext, RunOutput, RunRequest, RunResult, SandboxResult, SandboxRun } from '@lincyaw/kernel'
 import { DEFAULT_EXEC_CONFIG } from '../domain/index.ts'
 
 interface RunnerOutput {

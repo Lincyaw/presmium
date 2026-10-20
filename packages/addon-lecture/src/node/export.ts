@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
-import { build, Compiler, playwrightChromium, serveDirectory } from '@presmium/compiler'
+import { build, Compiler, playwrightChromium, serveDirectory } from '@lincyaw/compiler'
 import { CLIPS_DIR, parseTrack, SCRIPT_TRACK, trackDuration } from '../domain/index.ts'
 import type { LectureTrack } from '../domain/index.ts'
 

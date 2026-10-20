@@ -1,5 +1,5 @@
-import { NAVIGATION, OPERATIONS } from '@presmium/host'
-import type { PluginDefinition, Unsubscribe } from '@presmium/kernel'
+import { NAVIGATION, OPERATIONS } from '@lincyaw/host'
+import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { GUIDE_ID } from '../domain/index.ts'
 import { hints, spots } from './adhoc.ts'

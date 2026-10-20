@@ -25,7 +25,7 @@ pnpm build         # the example's web page, slides and notebook, in example/dis
 |---|---|
 | `src/domain/index.ts` | The plugin's id and its text in Chinese and English: pure TypeScript |
 | `src/node/presmium.ts` | What the compiler loads: the `{greeting}` directive and the server route `waves` |
-| `components/GreetingCard.vue` | The component, in the web page and the slides; it uses `@presmium/host` only |
+| `components/GreetingCard.vue` | The component, in the web page and the slides; it uses `@lincyaw/host` only |
 | `example/lecture.md` | A document that uses the plugin, by its directory |
 | `test/plugin.test.ts` | Integration tests (Vitest) |
 
@@ -39,10 +39,10 @@ pnpm add -D {{name}}
 
 ```yaml
 plugins:
-  - '@presmium/slidev-addon-core'
+  - '@lincyaw/slidev-addon-core'
   - '{{name}}'
 ```
 
-The plugin shares Presmium with the document that loads it: `@presmium/kernel`, `host`, `viewer` and
+The plugin shares Presmium with the document that loads it: `@lincyaw/kernel`, `host`, `viewer` and
 `compiler` are peer dependencies, and Presmium reports a plugin whose peers the installed Presmium does
 not satisfy, without loading it. Before publishing, choose a license (`license` in `package.json`).
