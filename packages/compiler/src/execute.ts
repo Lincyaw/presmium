@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { CREDENTIAL_VARIABLE, environmentExecutor, errorMessage, irBlocks, isRecord } from '@lincyaw/kernel'
 import type { CodeNode, Executor, Finding, IRBlock, IRDocument, RecordedRun, RunCache, RunContext, RunOutput, RunRequest, RunResult } from '@lincyaw/kernel'
+import { resourceEnvironment } from '@lincyaw/kernel/node'
 
 export const FREEZE_DIR = '.presmium/freeze'
 const BLOBS = 'blobs'
@@ -174,6 +175,7 @@ export interface RunStats {
 }
 
 export interface ExecuteOptions extends ExecutionOptions {
+  signal?: AbortSignal
   rerun?: boolean
   context: RunContext
   unsupported?: ReadonlySet<CodeNode>
@@ -196,7 +198,8 @@ export function runEnvironment(rules: 'local' | 'serve', passEnv: readonly strin
     const value = source[name]
     if (value !== undefined) env[name] = value
   }
-  return env
+  if (source.PRESMIUM_MAX_THREADS !== undefined) env.PRESMIUM_MAX_THREADS = source.PRESMIUM_MAX_THREADS
+  return resourceEnvironment(env)
 }
 
 function runHome(workspaceRoot: string, source: NodeJS.ProcessEnv): string {
@@ -280,26 +283,33 @@ export async function executePass(doc: IRDocument, executors: Executor[], cache:
 
   const sessions: [Executor, string][] = []
   const compile = `compile:${randomUUID()}`
-  for (const unit of pending) {
-    const executor = unit.executor!
-    const session = unit.session && `${compile}:${unit.session}`
-    const run = (request: RunRequest) => executor.run(session ? { ...request, session } : request, undefined, options.context)
-    try {
-      if (session) {
-        await executor.endSession?.(session)
-        sessions.push([executor, session])
-        const results = await Promise.all(unit.items.map(item => run(item.request)))
-        unit.items.forEach((item, i) => record(item, results[i]!, unit, cache, stats, say))
-      } else {
-        const item = unit.items[0]!
-        record(item, await run(item.request), unit, cache, stats, say)
+  try {
+    for (const unit of pending) {
+      options.signal?.throwIfAborted()
+      const executor = unit.executor!
+      const session = unit.session && `${compile}:${unit.session}`
+      const run = (request: RunRequest) => executor.run(session ? { ...request, session } : request, options.signal, options.context)
+      try {
+        if (session) {
+          await executor.endSession?.(session)
+          sessions.push([executor, session])
+          // Submit a logical session together: executors batch these into one runtime.
+          const results = await Promise.all(unit.items.map(item => run(item.request)))
+          options.signal?.throwIfAborted()
+          unit.items.forEach((item, i) => record(item, results[i]!, unit, cache, stats, say))
+        } else {
+          const item = unit.items[0]!
+          const result = await run(item.request)
+          options.signal?.throwIfAborted()
+          record(item, result, unit, cache, stats, say)
+        }
+      } catch (error) {
+        options.signal?.throwIfAborted()
+        for (const item of unit.items) fromRecording(item, cache, stats, say, executor.id, errorMessage(error))
       }
-    } catch (error) {
-      for (const item of unit.items) fromRecording(item, cache, stats, say, executor.id, errorMessage(error))
     }
-  }
-  for (const [executor, session] of sessions) {
-    await executor.endSession?.(session)?.catch(() => {})
+  } finally {
+    for (const [executor, session] of sessions) await executor.endSession?.(session)?.catch(() => {})
   }
   return stats
 }

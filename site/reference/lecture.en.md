@@ -2,7 +2,7 @@
 title: Interfaces and versions
 lang: en
 description: Which interfaces stay stable under semantic versioning, and the version rules of the packages, the IR and the plugin contract
-translationOf: { entry: lecture.md, digest: 18cc06616831ab0938d448fecf4cb9ba6b5031080b9cc3c0ac711f2ff7777015 }
+translationOf: { entry: lecture.md, digest: 2b7794afb342504be83afa15caed21915921ba025d7b17662844b39ddb469e36 }
 ---
 
 (reference)=
@@ -55,6 +55,10 @@ Plugins declare `@lincyaw/kernel`, `@lincyaw/host`, `@lincyaw/viewer` and `@linc
 - The IR (`IRDocument` and the other types of `@lincyaw/kernel`) and `IR_VERSION`; the layout and addresses of the outputs (`dist/ir.json`, `dist/<renderer>/`, page file names and section anchors, `?clicks=`, `?view=`).
 - `presmium build | dev | ir | check | serve` with their options, exit codes, the format of findings and their check ids, and the structure of `presmium check --json`; the commands of the other packages (`presmium-mcp`, `presmium-export`, `presmium-diff`, `presmium-lecture`, `presmium-speech`, `presmium-language-server`, `presmium-classroom-server`); the MCP tools and resources.
 - The workspace configuration file `presmium.workspace.yaml` with the operator's settings, and the operator's environment variables.
+
+Native thread pools used by local previews, builds and code execution default to one thread; the libuv pool is capped at two threads. Operators can set `PRESMIUM_MAX_THREADS` to adjust the native thread budget, capped at half the available logical processors (one on a single-core machine). Smaller native thread settings are preserved. These soft limits leave capacity for other applications and do not replace container CPU or memory quotas.
+
+The programming interface accepts `CompilerOptions.priority: 'interactive' | 'background'` (default: `background`). Top-level compilations in one host run serially, with interactive work preceding queued background work. `compiler.compile({ signal })` accepts an `AbortSignal` to cancel obsolete work at cooperative checkpoints. Global passes, dependency checks and the final IR remain complete.
 
 (public-contracts)=
 ## The plugin contract

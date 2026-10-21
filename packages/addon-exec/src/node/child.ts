@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { failedRun } from '@lincyaw/kernel'
 import type { ProcessSandbox, RunContext, RunOutput, RunRequest, RunResult, SandboxResult, SandboxRun } from '@lincyaw/kernel'
+import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
 import { DEFAULT_EXEC_CONFIG } from '../domain/index.ts'
 
 interface RunnerOutput {
@@ -34,7 +35,8 @@ export const directRun: ProcessSandbox = {
     }
     return new Promise((resolve) => {
       const [command, ...args] = request.argv
-      const child = spawn(command!, args, { cwd: dir, env: { ...request.env }, stdio: ['ignore', 'pipe', 'pipe'] })
+      const child = spawn(command!, args, { cwd: dir, env: resourceEnvironment(request.env), stdio: ['ignore', 'pipe', 'pipe'] })
+      backgroundPriority(child.pid)
       const out: Buffer[] = []
       const err: Buffer[] = []
       let stopped = false
@@ -103,7 +105,7 @@ export function childRuns(runner: ChildRunner) {
     let outcome: SandboxResult
     try {
       outcome = await sandbox.run({
-        argv: runner.argv,
+        argv: runner.argv[0] === process.execPath ? [process.execPath, ...NODE_RESOURCE_ARGS, ...runner.argv.slice(1)] : runner.argv,
         files: { [REQUEST_FILE]: JSON.stringify(input) },
         collect: requests.map((_, i) => resultFile(i)),
         env: ctx?.env ?? plainEnv(),

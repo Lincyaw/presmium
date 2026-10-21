@@ -1,7 +1,7 @@
 import { statSync } from 'node:fs'
 import { join } from 'node:path'
 import { irBlocks, mapHtmlUrls, publishedUrl, withProp } from '@lincyaw/kernel'
-import type { DocumentLink, IRBlock, IRDocument, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
+import type { DocumentLink, IRBlock, IRDocument, IRSection, LocalAsset, MdastNode, RenderContext, SourcePos } from '@lincyaw/kernel'
 import { copyPublished } from '@lincyaw/kernel/node'
 import katex from 'katex'
 
@@ -34,6 +34,7 @@ function localAsset(ctx: RenderContext, source: SourcePos, url: string): Asset |
 }
 
 const rendered = new Map<string, string>()
+const PUBLICATION_CACHE_BYTES = 16 << 20
 
 function renderMath(tex: string, display: boolean): string {
   const key = `${display ? 'D' : 'I'}${tex}`
@@ -47,9 +48,51 @@ function renderMath(tex: string, display: boolean): string {
 
 export type DocumentPage = (link: DocumentLink) => string | undefined
 
-export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string, documentPage?: DocumentPage): IRDocument {
+export class PublicationCache {
+  readonly #sections = new Map<string, { key: string, section: IRSection, bytes: number }>()
+  #bytes = 0
+
+  get(section: IRSection): { key: string, section?: IRSection } {
+    const key = JSON.stringify(section)
+    const known = this.#sections.get(section.id)
+    return { key, ...known?.key === key ? { section: known.section } : {} }
+  }
+
+  set(original: IRSection, key: string, section: IRSection): void {
+    const old = this.#sections.get(original.id)
+    if (old) this.#bytes -= old.bytes
+    this.#sections.delete(original.id)
+    // Local files and raw HTML can change independently of the IR. Revisit them.
+    const local = (node: MdastNode): boolean => node.type === 'html'
+      || (LINKED.has(node.type) && typeof node.url === 'string' && !/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(node.url))
+      || Boolean(node.children?.some(local))
+    for (const block of irBlocks(original.blocks)) {
+      if (block.node.type === 'markdown' && local(block.node.mdast)) return
+      if (block.node.type === 'component' && (Object.keys(block.node.assets ?? {}).length || (block.node.fallback && local(block.node.fallback)))) return
+    }
+    const bytes = (key.length + JSON.stringify(section).length) * 2
+    if (bytes > PUBLICATION_CACHE_BYTES) return
+    this.#sections.set(original.id, { key, section, bytes })
+    this.#bytes += bytes
+    while (this.#bytes > PUBLICATION_CACHE_BYTES || this.#sections.size > 2048) {
+      const first = this.#sections.keys().next().value!
+      this.#bytes -= this.#sections.get(first)!.bytes
+      this.#sections.delete(first)
+    }
+  }
+
+  prune(ids: Set<string>): void {
+    for (const [id, entry] of this.#sections) {
+      if (ids.has(id)) continue
+      this.#sections.delete(id)
+      this.#bytes -= entry.bytes
+    }
+  }
+}
+
+export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir: string, base: string, documentPage?: DocumentPage, cache?: PublicationCache): IRDocument {
   const { deckDir } = ctx
-  const copy = structuredClone(doc)
+  const copy: IRDocument = structuredClone(cache ? { ...doc, sections: [] } : doc)
   const media = join(publicDir, MEDIA)
   const relative = (pos: { file: string }) => {
     pos.file = ctx.portable(pos.file, deckDir) as string
@@ -81,12 +124,23 @@ export function publishedDocument(doc: IRDocument, ctx: RenderContext, publicDir
   }
   copy.meta.entry = ctx.portable(copy.meta.entry, deckDir) as string
   copy.config.presmium = ctx.portable(copy.config.presmium, deckDir) as IRDocument['config']['presmium']
-  for (const section of copy.sections) {
+  for (const original of cache ? doc.sections : copy.sections) {
+    const known = cache?.get(original)
+    if (known?.section) {
+      copy.sections.push(known.section)
+      continue
+    }
+    const section = cache ? structuredClone(original) : original
     relative(section.source)
     if (section.config) section.config = ctx.portable(section.config, deckDir) as typeof section.config
     for (const b of irBlocks(section.blocks)) block(b)
     for (const b of irBlocks(section.blocks)) relative(b.source)
+    if (cache) {
+      copy.sections.push(section)
+      cache.set(original, known!.key, section)
+    }
   }
+  cache?.prune(new Set(doc.sections.map(section => section.id)))
   for (const finding of copy.diagnostics) {
     if (finding.source) relative(finding.source)
   }

@@ -13,8 +13,11 @@ function key(value: unknown): string {
 }
 
 export function diffDocuments(prev: IRDocument, next: IRDocument): LiveUpdate | undefined {
-  const old = new Map(prev.sections.map(s => [s.id, key(s)]))
-  const sections = next.sections.filter(s => old.get(s.id) !== key(s))
+  const old = new Map(prev.sections.map(s => [s.id, s]))
+  const sections = next.sections.filter(s => {
+    const previous = old.get(s.id)
+    return previous !== s && (previous === undefined || key(previous) !== key(s))
+  })
   const order = next.sections.map(s => s.id)
   const update: LiveUpdate = { order, sections, diagnostics: next.diagnostics }
   if (key(prev.meta) !== key(next.meta)) update.meta = next.meta

@@ -9,7 +9,7 @@ import type { WebRendererConfig } from '../domain/index.ts'
 import { clientModules, nodeVitePlugins } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 import { writeServiceWorker } from './offline.ts'
-import { publishedDocument, publishedFile } from './publish.ts'
+import { PublicationCache, publishedDocument, publishedFile } from './publish.ts'
 import type { DocumentPage } from './publish.ts'
 import { siteFiles, write, writeSite } from './site.ts'
 import type { WorkspaceOptions } from './site.ts'
@@ -55,13 +55,14 @@ function headImage(doc: IRDocument, ctx: RenderContext, options: WebRendererConf
   return published && options.shell.sitemap ? `${options.shell.sitemap.hostname}${published}` : published
 }
 
-async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, document: DocumentSite = {}) {
+async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, document: DocumentSite = {}, incremental = false) {
   const options = rendererConfig(ctx)
   const files = siteFiles(workDir)
   rmSync(files.publicDir, { recursive: true, force: true })
   const deck = { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }
   const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium, Boolean(document.workspace))
-  const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base, document.documentPage)
+  const publication = incremental ? new PublicationCache() : undefined
+  const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base, document.documentPage, publication)
   const image = headImage(doc, ctx, options, files.publicDir, document)
   const site = (published: IRDocument) => writeSite(workDir, {
     doc: published,
@@ -93,7 +94,7 @@ export interface DocumentDevServer {
 }
 
 export async function devDocument(doc: IRDocument, ctx: RenderContext, document: DocumentSite = {}, port?: number, listen: { host?: string, signal?: AbortSignal } = {}): Promise<DocumentDevServer> {
-  const { options, files, publish, site } = await prepare(doc, ctx, ctx.outDir, document)
+  const { options, files, publish, site } = await prepare(doc, ctx, ctx.outDir, document, true)
   let current = publish(doc)
   let revision = revisionOf(JSON.stringify(current))
   site(current)

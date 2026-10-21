@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
+import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
 import type { ListedTool, PresmiumMcpClient } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshLogger } from './dsh.ts'
 
@@ -95,12 +96,13 @@ export class PresmiumService {
 
   #start(root: string): Promise<Endpoint> {
     const token = randomBytes(24).toString('base64url')
-    const child = spawn(process.execPath, [WATCHDOG, process.execPath, presmiumBin(), 'serve', root, '--port', '0'], {
+    const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, WATCHDOG, process.execPath, ...NODE_RESOURCE_ARGS, presmiumBin(), 'serve', root, '--port', '0'], {
       cwd: root,
-      env: serviceEnv(token),
+      env: resourceEnvironment(serviceEnv(token)),
       stdio: ['pipe', 'pipe', 'pipe'],
       detached: true,
     })
+    backgroundPriority(child.pid)
     this.#child = child
     child.stdin!.on('error', () => {})
     let output = ''

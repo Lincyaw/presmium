@@ -1,6 +1,6 @@
 export { audienceView } from './audience.ts'
 export { Compiler, DECK_ENTRY, frontmatterLine, resolveEntry, sortFindings, workspacePlugins } from './compiler.ts'
-export type { Compilation, CompilerOptions } from './compiler.ts'
+export type { Compilation, CompileOptions, CompilerOptions } from './compiler.ts'
 export { BUILTIN_DIRECTIVE_INFO, COMMON_DIRECTIVE_OPTIONS, RUN_OPTION } from './directives.ts'
 export type { DirectiveInfo, DirectiveOptionInfo } from './directives.ts'
 export type { RunStats } from './execute.ts'

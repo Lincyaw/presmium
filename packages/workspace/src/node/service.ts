@@ -99,6 +99,7 @@ export interface Service extends WorkspaceService {
 export function workspaceService(options: ServiceOptions): Service {
   const { root, log } = options
   const revisions = new WeakMap<Compilation, string>()
+  const readable = new WeakMap<Compilation, IRDocument>()
   const revisionOf = (compilation: Compilation) => {
     let known = revisions.get(compilation)
     if (!known) revisions.set(compilation, known = irRevision(compilation.doc))
@@ -167,7 +168,8 @@ export function workspaceService(options: ServiceOptions): Service {
     proxies,
     async ir(document) {
       const compilation = await options.sessionOf(document).ready()
-      const doc = relativeIR(compilation.doc, root, root)
+      let doc = readable.get(compilation)
+      if (!doc) readable.set(compilation, doc = relativeIR(compilation.doc, root, root))
       return { document, revision: revisionOf(compilation), doc, diagnostics: doc.diagnostics }
     },
     events(document, signal) {

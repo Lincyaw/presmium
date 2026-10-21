@@ -18,6 +18,10 @@ export class DocumentSession {
   #relevant = new Map<string, Set<string>>()
   #timer?: NodeJS.Timeout
   #closed = false
+  #compiling = false
+  #version = 0
+  #controller?: AbortController
+  readonly #observed = new Map<string, number>()
   readonly #log: Logger
 
   constructor(dir: string, compiler: Compiler, log: Logger) {
@@ -51,28 +55,52 @@ export class DocumentSession {
     if (this.#queued) return this.#queued
     const next = this.#running.then(async () => {
       this.#queued = undefined
-      const started = Date.now()
-      const changed = [...this.#changedFiles]
-      this.#changedFiles.clear()
-      const compilation = await this.compiler.compile()
-      this.#latest = compilation
-      for (const listener of this.#listeners) {
-        try {
-          await listener(compilation, changed)
-        } catch (error) {
-          this.#log.error(`after compiling ${this.dir || '.'}: ${errorMessage(error)}`)
+      this.#compiling = true
+      try {
+        let compilation: Compilation | undefined
+        const changed = new Set<string>()
+        let version: number
+        do {
+          version = this.#version
+          for (const file of this.#changedFiles) changed.add(file)
+          this.#changedFiles.clear()
+          const started = Date.now()
+          const controller = this.#controller = new AbortController()
+          try {
+            compilation = await this.compiler.compile({ signal: controller.signal })
+          } catch (error) {
+            if (!this.#closed && controller.signal.aborted && version !== this.#version) continue
+            throw error
+          }
+          this.#watch(compilation, started)
+        } while (!this.#closed && version !== this.#version)
+        if (!compilation) throw new Error('the compilation did not complete')
+        if (this.#closed) return compilation
+        this.#latest = compilation
+        for (const listener of this.#listeners) {
+          try {
+            await listener(compilation, [...changed])
+          } catch (error) {
+            this.#log.error(`after compiling ${this.dir || '.'}: ${errorMessage(error)}`)
+          }
         }
+        return compilation
+      } finally {
+        this.#controller = undefined
+        this.#compiling = false
+        if (!this.#closed && this.#changedFiles.size > 0) this.#schedule()
       }
-      this.#watch(compilation, started)
-      return compilation
     })
     this.#queued = next
-    this.#running = next.catch((error: unknown) => this.#log.error(`compiling ${this.dir || '.'} failed: ${errorMessage(error)}`))
+    this.#running = next.catch((error: unknown) => {
+      if (!this.#closed) this.#log.error(`compiling ${this.dir || '.'} failed: ${errorMessage(error)}`)
+    })
     return next
   }
 
   close(): void {
     this.#closed = true
+    this.#controller?.abort()
     clearTimeout(this.#timer)
     for (const watcher of this.#watchers.values()) watcher.close()
     this.#watchers.clear()
@@ -109,15 +137,25 @@ export class DocumentSession {
     }
     const modified = [...files].filter((file) => {
       const time = statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0
-      return time >= started - 20 && time <= Date.now()
+      const changed = time >= started - 20 && time <= Date.now() && this.#observed.get(file) !== time
+      this.#observed.set(file, time)
+      return changed
     })
+    for (const file of this.#observed.keys()) if (!files.has(file)) this.#observed.delete(file)
     for (const file of modified) this.#changed(file)
   }
 
   #changed(file: string): void {
     if (this.#closed) return
     this.#changedFiles.add(file)
+    this.#observed.set(file, statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? 0)
+    this.#version++
+    this.#controller?.abort()
+    if (!this.#compiling) this.#schedule()
+  }
+
+  #schedule(): void {
     clearTimeout(this.#timer)
-    this.#timer = setTimeout(() => void this.recompile().catch(() => undefined), 50)
+    this.#timer = setTimeout(() => void this.recompile().catch(() => undefined), 10)
   }
 }

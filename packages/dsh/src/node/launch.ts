@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync,
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resourceEnvironment } from '@lincyaw/kernel/node'
+export { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
 
 export type Carrier = 'web' | 'headless' | 'acp'
 
@@ -36,8 +38,8 @@ export function dshBin(from = PACKAGE_DIR): string {
   return join(dirname(manifest), typeof bin === 'string' ? bin : bin.dsh!)
 }
 
-export function launchEnv(dshHome: string): Record<string, string> {
-  return { DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED' }
+export function launchEnv(dshHome: string, env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  return resourceEnvironment({ DSH_HOME: dshHome, DSH_AGENTS_HOME: join(dshHome, 'agents'), DSH_TELEMETRY_MODE: 'DISABLED', PRESMIUM_MAX_THREADS: env.PRESMIUM_MAX_THREADS })
 }
 
 export function writeProfile(dshHome: string, name: string, carrier: Carrier, bundle = PACKAGE_DIR): string {

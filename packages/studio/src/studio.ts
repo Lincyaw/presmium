@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { dshBin, launchArgs, launchEnv, WATCHDOG, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
+import { backgroundPriority, dshBin, launchArgs, launchEnv, NODE_RESOURCE_ARGS, resourceEnvironment, WATCHDOG, WEB_READY, writeProfile } from '@lincyaw/dsh/launch'
 import { modelEnv } from './model.ts'
 
 export const PROFILE = 'presmium-studio'
@@ -119,7 +119,8 @@ interface Supervised {
 }
 
 function supervise(name: string, args: string[], options: { cwd: string, env: Record<string, string>, log: Log }): Supervised {
-  const child = spawn(process.execPath, [WATCHDOG, process.execPath, ...args], { cwd: options.cwd, env: options.env, detached: true, stdio: ['pipe', 'pipe', 'pipe'] })
+  const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, WATCHDOG, process.execPath, ...NODE_RESOURCE_ARGS, ...args], { cwd: options.cwd, env: resourceEnvironment(options.env), detached: true, stdio: ['pipe', 'pipe', 'pipe'] })
+  backgroundPriority(child.pid)
   child.stdin!.on('error', () => {})
   let output: string | undefined = ''
   const waiting = new Set<() => void>()
@@ -220,7 +221,7 @@ export async function startStudio(options: StudioOptions): Promise<Studio> {
       env: {
         ...inherited(env, name => OWN(name) || ['DEEPSEEK_API_KEY', 'DEEPSEEK_BASE_URL', 'DEEPSEEK_SEARCH_BASE_URL'].includes(name)),
         ...modelEnv(env).env,
-        ...launchEnv(home),
+        ...launchEnv(home, env),
         PRESMIUM_SERVICE_URL: url,
         PRESMIUM_SERVICE_TOKEN: token,
         PRESMIUM_WORKSPACE: root,

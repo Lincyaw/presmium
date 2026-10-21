@@ -55,6 +55,10 @@ Presmium 的稳定产品是核心（MyST 语法与 IR、编译器、渲染端、
 - `presmium build | dev | ir | check | serve` 与它们的选项、退出码、诊断的格式与检查 ID、`presmium check --json` 的结构；其他包带的命令（`presmium-mcp`、`presmium-export`、`presmium-diff`、`presmium-lecture`、`presmium-speech`、`presmium-language-server`、`presmium-classroom-server`）；MCP 的工具与资源。
 - 工作区配置文件 `presmium.workspace.yaml` 与运营者设置、运营者的环境变量。
 
+本地预览、构建和代码执行的常见原生线程池默认使用 1 个线程，libuv 线程池最多 2 个线程。运营者可设置 `PRESMIUM_MAX_THREADS` 调整原生线程预算，上限为可用逻辑处理器的一半（单核环境为 1）；更小的原生线程设置仍有效。这些软限制用于给其他应用保留资源，不能代替容器的 CPU 或内存配额。
+
+编程接口的 `CompilerOptions.priority` 可为 `interactive` 或 `background`（默认）。同一宿主内顶层编译串行运行，交互任务先于排队的后台任务。`compiler.compile({ signal })` 接受 `AbortSignal`，在协作点取消过期编译；全局步骤、依赖校验与最终 IR 的完整性保持不变。
+
 (public-contracts)=
 ## 插件契约
 

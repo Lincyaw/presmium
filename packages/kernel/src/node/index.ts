@@ -3,6 +3,7 @@ import { createRequire, findPackageJSON } from 'node:module'
 import { dirname, join, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { LocalAsset } from '../ir.ts'
+export { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from './resources.ts'
 
 export function copyPublished(found: LocalAsset, dir: string): string {
   const target = join(dir, found.name)

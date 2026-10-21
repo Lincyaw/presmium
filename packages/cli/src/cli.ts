@@ -274,7 +274,7 @@ async function devDeck(command: Command): Promise<number> {
     document: async dir => (dir === '' && latest ? servedDocument(latest) : undefined),
     stateFile: join(deckDir, '.presmium', 'server.json'),
   })
-  const compiler = new Compiler(command.entry, { bundled, services: server.services })
+  const compiler = new Compiler(command.entry, { bundled, priority: 'interactive', services: server.services })
   const outDir = resolve(command.out ?? join(compiler.deckDir, '.presmium', 'dev'))
   await mkdir(outDir, { recursive: true })
   await writeFile(join(outDir, '.gitignore'), '*\n')

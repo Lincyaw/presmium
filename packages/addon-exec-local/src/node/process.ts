@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { backgroundPriority, resourceEnvironment } from '@lincyaw/kernel/node'
 
 export interface ProcessResult {
   code: number | null
@@ -21,7 +22,8 @@ const GRACE_MS = 5_000
 export function runProcess(command: string, args: string[], options: ProcessOptions = {}): Promise<ProcessResult> {
   return new Promise((resolve) => {
     const group = process.platform !== 'win32'
-    const child = spawn(command, args, { cwd: options.cwd, env: options.env, stdio: 'pipe', detached: group })
+    const child = spawn(command, args, { cwd: options.cwd, env: resourceEnvironment(options.env), stdio: 'pipe', detached: group })
+    backgroundPriority(child.pid)
     const stdout: Buffer[] = []
     const stderr: Buffer[] = []
     let timedOut = false

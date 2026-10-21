@@ -7,7 +7,7 @@ import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { errorMessage, irBlocks, isRecord, nodeMdast, previewFrameAncestors, PREVIEW_REVISION } from '@lincyaw/kernel'
 import type { IRDocument, LocalAsset, MdastNode, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
-import { copyPublished, FONT_LICENSE, fontLicense, optimizeDeps, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
+import { backgroundPriority, copyPublished, FONT_LICENSE, fontLicense, NODE_RESOURCE_ARGS, optimizeDeps, resourceEnvironment, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
 import { addonDirs, hasExtension, previewDocument, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
 
@@ -241,7 +241,8 @@ class SlidevError extends Error {
 
 function slidev(args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [...TYPESCRIPT_IMPORT, slidevBin(), ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, slidevBin(), ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'], env: resourceEnvironment() })
+    backgroundPriority(child.pid)
     let output = ''
     child.stdout.on('data', (chunk: Buffer) => output += chunk)
     child.stderr.on('data', (chunk: Buffer) => output += chunk)
@@ -251,7 +252,8 @@ function slidev(args: string[], cwd: string): Promise<void> {
 }
 
 function slidevDev(dir: string, args: string[]): Promise<{ url: string, close(): Promise<void> }> {
-  const child: ChildProcess = spawn(process.execPath, [...TYPESCRIPT_IMPORT, slidevBin(), 'slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] })
+  const child: ChildProcess = spawn(process.execPath, [...NODE_RESOURCE_ARGS, ...TYPESCRIPT_IMPORT, slidevBin(), 'slides.md', ...args], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'], env: resourceEnvironment() })
+  backgroundPriority(child.pid)
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
   const close = async () => {
     if (child.exitCode === null) child.kill('SIGTERM')

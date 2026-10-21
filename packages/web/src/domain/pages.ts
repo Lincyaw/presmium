@@ -96,9 +96,10 @@ export interface SearchDocument {
 }
 
 export function searchDocuments(doc: IRDocument, base: string, pages: readonly WebPage[] = toPages(doc), titles: string[] = []): SearchDocument[] {
+  const byId = new Map(doc.sections.map(section => [section.id, section]))
   return pages.flatMap((page) => {
     const path = page.path === 'index' ? '' : `${page.path}.html`
-    return page.sections.flatMap(id => doc.sections.filter(s => s.id === id)).map((section, i) => ({
+    return page.sections.flatMap(id => byId.get(id) ?? []).map((section, i) => ({
       id: `${base}${path}#${section.id}`,
       title: section.title,
       titles: [...titles, ...i === 0 ? [] : [page.title]],

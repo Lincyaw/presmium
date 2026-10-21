@@ -12,7 +12,7 @@ const slideSectionsPass: IRPass = {
   run(doc) {
     for (const section of doc.sections) {
       const steps = stepKeys(section, SLIDES)
-      const back = backSection(doc.sections, section.id)
+      const back = section.audience?.length ? backSection(doc.sections, section.id) : undefined
       section.hints.slides = {
         ...section.hints.slides,
         [SECTION_KEY]: section.id,

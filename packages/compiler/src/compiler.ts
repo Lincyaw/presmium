@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
+import { setImmediate } from 'node:timers/promises'
 import { basename, dirname, extname, join, relative, resolve } from 'node:path'
 import { ANCHOR_LOCK_PATH, AnchorLock, DEFAULT_LANG, IR_VERSION, PROCESS_SANDBOX, createAnchorResolverRegistry, docBlocks, environmentExecutor, errorMessage, failedRun, isRecord } from '@lincyaw/kernel'
 import type { AnchorResolverRegistry, CodeNode, DirectiveOptionType, EnvironmentContext, EnvironmentProvider, EnvironmentSpec, ExecuteConfig, Executor, Finding, IRDocument, IRPass, IRSection, NodeServiceContext, PassContext, RunContext, RunRequest, RunResult, ServiceToken, SourceReader } from '@lincyaw/kernel'
@@ -29,6 +30,8 @@ import type { Parser } from './source.ts'
 import { scheduleSteps } from './steps.ts'
 import { applyTranslations, translationFields } from './translations.ts'
 import { validateIR } from './validate.ts'
+import { compileTask } from './scheduling.ts'
+import { hasPluginSyntax, moveSection, SectionCache } from './section-cache.ts'
 import { createSourceReader, findWorkspaceRoot } from './workspace.ts'
 
 export const DECK_ENTRY = 'lecture.md'
@@ -38,6 +41,7 @@ const BUILTIN_RENDERERS = ['web', 'slides', 'notebook']
 const MYST_ROLES = new Set((defaultOptions.roles as unknown as { name: string, alias?: string[] }[]).flatMap(role => [role.name, ...role.alias ?? []]))
 
 export interface CompilerOptions {
+  priority?: 'interactive' | 'background'
   settings?: OperatorSettings
   services?: [ServiceToken<unknown>, unknown][]
   workspaceRoot?: string
@@ -96,6 +100,7 @@ export interface Compilation {
 
 export interface CompileOptions {
   pruneCache?: boolean
+  signal?: AbortSignal
 }
 
 export function resolveEntry(deck: string): string {
@@ -129,6 +134,7 @@ export class Compiler {
   #plugins?: Plugins
   #parser?: { key: string, parser: Parser }
   readonly #environments = new Map<string, Executor>()
+  readonly #sections = new SectionCache()
 
   constructor(deck: string, options: CompilerOptions = {}) {
     this.entry = resolveEntry(deck)
@@ -136,7 +142,12 @@ export class Compiler {
     this.options = options
   }
 
-  async compile(options: CompileOptions = {}): Promise<Compilation> {
+  compile(options: CompileOptions = {}): Promise<Compilation> {
+    return compileTask(() => this.#compile(options), this.options.priority === 'interactive')
+  }
+
+  async #compile(options: CompileOptions): Promise<Compilation> {
+    options.signal?.throwIfAborted()
     const workspace = this.#workspace ??= await this.#openWorkspace()
     const { root: workspaceRoot, src, settings } = workspace
     const findings: Finding[] = []
@@ -212,6 +223,7 @@ export class Compiler {
     executors.push(...await environmentExecutors(execute, declared, environmentContext, this.#environments, report, at))
 
     const parser = this.#parserFor(directives, roles)
+    parser.signal = options.signal
     const source = await parser.expand(this.entry)
     findings.push(...source.findings)
     dependencies.watch(...source.missing)
@@ -230,14 +242,32 @@ export class Compiler {
     const raw = splitSections(lifted, { entry: this.entry, title, sectionDepth }, report)
     const rendererIds = new Set([...BUILTIN_RENDERERS, ...isRecord(renderers) ? Object.keys(renderers) : []])
     const ctx = { entry: this.entry, deckDir: this.deckDir, workspaceRoot, lang, renderers: rendererIds, parser, directives, roles, components, execute, report, watch }
-    const sections: IRSection[] = []
+    const prepared: IRSection[] = []
+    const cacheable: boolean[] = []
+    this.#sections.context(JSON.stringify({ headmatter, components: [...components], plugins: this.#plugins?.key }))
+    let yielded = performance.now()
     for (const [i, section] of raw.entries()) {
-      const { blocks: drafts, hints, config, audience } = await sectionBlocks(section.nodes, ctx)
-      const { blocks, steps } = scheduleSteps(drafts, report)
+      options.signal?.throwIfAborted()
+      const key = hasPluginSyntax(section.nodes, directives, roles) ? undefined : this.#sections.key(section)
+      cacheable.push(key !== undefined)
+      const known = key === undefined ? undefined : this.#sections.get(section.id, key, section.source)
+      if (known) {
+        prepared.push(known.section)
+        findings.push(...known.findings)
+        if (performance.now() - yielded >= 8) {
+          await setImmediate()
+          yielded = performance.now()
+        }
+        continue
+      }
+      const local: Finding[] = []
+      const sectionReport = (finding: Finding) => { report(finding); local.push(finding) }
+      const { blocks: drafts, hints, config, audience } = await sectionBlocks(section.nodes, { ...ctx, report: sectionReport })
+      const { blocks, steps } = scheduleSteps(drafts, sectionReport)
       drafts.forEach((draft, j) => {
         if (draft.audience) blocks[j]!.audience = draft.audience
       })
-      sections.push({
+      const compiled: IRSection = {
         id: section.id,
         index: i + 1,
         title: section.title,
@@ -248,8 +278,23 @@ export class Compiler {
         ...Object.keys(config).length > 0 ? { config } : {},
         blocks,
         ...audience ? { audience } : {},
-      })
+      }
+      prepared.push(compiled)
+      if (key !== undefined) this.#sections.set(section.id, key, compiled, local)
+      if (performance.now() - yielded >= 8) {
+        await setImmediate()
+        yielded = performance.now()
+      }
     }
+    this.#sections.prune(new Set(raw.map(section => section.id)))
+    // Clone cached blueprints together. Fresh plugin nodes must retain identity:
+    // directives can associate them with pass-local state in a WeakMap.
+    const sections = structuredClone(prepared.map((section, i) => cacheable[i] ? section : null))
+      .map((section, i) => section ?? prepared[i]!)
+    sections.forEach((section, i) => {
+      section.index = i + 1
+      moveSection(section, raw[i]!.source)
+    })
 
     markBlocks(sections, marks)
 
@@ -297,6 +342,7 @@ export class Compiler {
     const passes = plugins.flatMap(loaded => (loaded.plugin?.passes ?? []).map(pass => ({ pass, loaded })))
       .sort((a, b) => (a.pass.order ?? 0) - (b.pass.order ?? 0))
     const runPass = async ({ pass, loaded }: { pass: IRPass, loaded: LoadedPlugin }) => {
+      options.signal?.throwIfAborted()
       const config = configOf(loaded)
       const pctx: PassContext = {
         deckDir: this.deckDir,
@@ -318,6 +364,7 @@ export class Compiler {
       } catch (error) {
         report({ checkId: 'presmium.plugins', severity: 'error', message: `pass ${pass.name} of plugin ${pluginId(loaded)} failed: ${errorMessage(error)}`, source: at(loaded.name) })
       }
+      options.signal?.throwIfAborted()
     }
     const blame = (findings: Finding[], culprit: string): Finding[] => findings.map(finding => ({ ...finding, hint: culprit }))
     let invalid = blame(validateIR(doc, this.entry), 'the IR is invalid before the plugin passes: a directive wrote it')
@@ -335,11 +382,12 @@ export class Compiler {
     if (invalid.length === 0) {
       filled = emptyReferences(doc)
       resolveReferences(doc, report)
-      runs = await executePass(doc, executors, cache, report, { ...this.options.execution, rerun: execute.rerun === 'environment', context: runContext, unsupported })
+      runs = await executePass(doc, executors, cache, report, { ...this.options.execution, signal: options.signal, rerun: execute.rerun === 'environment', context: runContext, unsupported })
       for (const step of passes.filter(({ pass }) => pass.after === 'execute')) await runPass(step)
       invalid = validateIR(doc, this.entry)
     }
     findings.push(...invalid)
+    options.signal?.throwIfAborted()
     doc.diagnostics = sortFindings(findings)
     if (options.pruneCache && !audience && !findings.some(f => f.severity === 'error')) cache.prune()
     const publish = { doc, entry: this.entry, deckDir: this.deckDir, workspaceRoot, renderers: publishedRenderers(doc, plugins) }

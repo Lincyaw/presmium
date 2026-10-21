@@ -80,7 +80,9 @@ VS Code 扩展用 `pnpm --filter presmium-vscode package:vsix` 生成当前系�
 
 先运行改动对应的用例。插件组件覆盖两种形态与必要的静态降级；实时预览覆盖保存与位置保持；共享加载或打包的改动覆盖消费者安装；dsh 的改动运行设计文档中的相应升级闸门。
 
-仓库完整检查用 `pnpm test`，示例用 `pnpm demo:check`、`pnpm demo:build`，端到端用 `pnpm e2e`，合并前按仓库要求运行 `pnpm verify`。只修改技能文档时先运行 `node scripts/check-skills.mjs`，再核对任务路径与示例；通过格式检查不代表指导正确。
+性能改动按 `docs/architecture.md` 1.1 节记录冷启动、修改编译和保存到预览的延迟，区分 CPU 时间、实际等待时间与测试预算；在相同负载下交替比较前后版本，并核对 IR、公式编号、源码行号和旧快照不变。测试与基准使用单个 worker，遵守默认的原生线程预算；不要为追求 100 ms 而取消校验或提高并发。增量编译覆盖跨块引用、脚注、围栏、include 与插件外部依赖，连续保存验证取消旧任务后只发布最新结果。资源预算的环境变量、缓存上限与软限制统一见该节。
+
+日常开发遵守 `AGENTS.md` 的测试成本约定：只运行改动直接涉及的定向集成测试和相关轻量结构检查，默认单个 worker，只构建所需文稿与媒介，定向验证通过后停止。除非用户明确要求全量验证，不自动运行 `pnpm test`、`pnpm verify`、完整 `pnpm e2e` 或全部 17 讲的 demo 构建与检查，收尾和合并前也不例外。报告实际通过、跳过和未运行的范围。只修改技能文档时运行 `node scripts/check-skills.mjs` 并核对任务路径与示例；通过格式检查不代表指导正确。
 
 浏览器用例只用自己启动的服务器；并行时设置各自的 `PRESMIUM_E2E_SLIDES_PORT`、`PRESMIUM_E2E_WEB_PORT`。单独运行性能用例用 `pnpm exec playwright test e2e/perf.spec.ts --no-deps`。结束时按记录的 PID 停自己的进程。
 

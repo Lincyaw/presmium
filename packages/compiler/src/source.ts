@@ -9,6 +9,7 @@ import { tabDirectives } from 'myst-ext-tabs'
 import { mystParse } from 'myst-parser'
 import { includeDirectiveTransform } from 'myst-transforms'
 import { parse as parseYaml } from 'yaml'
+import { FragmentParser, shiftLines } from './fragments.ts'
 
 export const BODY = 'presmiumDirectiveBody'
 
@@ -55,9 +56,11 @@ export function withoutBom(text: string): string {
 }
 
 export class Parser {
+  signal?: AbortSignal
   readonly #specs: object[]
   readonly #roles: object[]
   readonly #cache = new Map<string, ParsedFile>()
+  readonly #fragments = new FragmentParser()
 
   constructor(directives: Map<string, boolean>, roles: Map<string, Record<string, DirectiveOptionType> | undefined> = new Map()) {
     this.#roles = [...MYST_EXTENSIONS.roles, ...[...roles].map(([name, options]) => ({
@@ -87,12 +90,13 @@ export class Parser {
   }
 
   async read(file: string): Promise<ParsedFile | undefined> {
+    this.signal?.throwIfAborted()
     const read = await readFile(file, 'utf8').catch(() => undefined)
     if (read === undefined) return undefined
     const text = withoutBom(read)
     const cached = this.#cache.get(file)
     if (cached?.text === text) return cached
-    const parsed = this.#parseFile(file, text)
+    const parsed = await this.#parseFile(file, text)
     this.#cache.set(file, parsed)
     return parsed
   }
@@ -112,7 +116,7 @@ export class Parser {
     return { children, files, missing, findings }
   }
 
-  #parseFile(file: string, text: string): ParsedFile {
+  async #parseFile(file: string, text: string): Promise<ParsedFile> {
     const findings: Finding[] = []
     const { yaml, body } = splitFrontmatter(text)
     let frontmatter: Record<string, unknown> = {}
@@ -125,7 +129,7 @@ export class Parser {
         findings.push({ checkId: 'presmium.parse', severity: 'error', message: `invalid frontmatter: ${errorMessage(error)}`, source: { file, line: 1 } })
       }
     }
-    const tree = this.parse(body)
+    const tree = await this.#fragments.parse(body, text => this.parse(text), file, this.signal)
     tagFile(tree, file)
     const children = placeFootnotes((tree.children ?? []).flatMap(c => c.type === 'block' ? c.children ?? [] : [c]))
     return { file, text, frontmatter, findings, children }
@@ -289,12 +293,4 @@ function contentLines(node: MdastNode): { line: number, endLine: number } | unde
 function tagFile(node: MdastNode, file: string): void {
   origin.set(node, file)
   for (const child of node.children ?? []) tagFile(child, file)
-}
-
-function shiftLines(node: MdastNode, offset: number): void {
-  const position = node.position as { start?: { line: number }, end?: { line: number } } | undefined
-  if (position?.start) position.start.line += offset
-  if (position?.end) position.end.line += offset
-  if (typeof node.line === 'number') node.line += offset
-  for (const child of node.children ?? []) shiftLines(child, offset)
 }

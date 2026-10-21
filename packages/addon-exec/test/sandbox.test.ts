@@ -79,7 +79,12 @@ it('runs Python and JavaScript through the process sandbox with the run\'s envir
   expect(calls).toHaveLength(3)
   for (const call of calls) {
     expect(Object.keys(call.files)).toContain('.presmium/request.json')
-    expect(call.env).toEqual(KEPT)
+    expect(call.env).toEqual({
+      ...KEPT,
+      GOMAXPROCS: '1', RAYON_NUM_THREADS: '1', OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1',
+      MKL_NUM_THREADS: '1', NUMEXPR_MAX_THREADS: '1', POLARS_MAX_THREADS: '1', UV_THREADPOOL_SIZE: '2',
+      BLIS_NUM_THREADS: '1', VECLIB_MAXIMUM_THREADS: '1', NUMEXPR_NUM_THREADS: '1',
+    })
   }
   expect(calls.map(call => call.argv[0])).toEqual(['python3', process.execPath, 'python3'])
   const session = JSON.parse(calls[2]!.files['.presmium/request.json']!) as { runs: { code: string }[] }

@@ -66,12 +66,12 @@ expect(JSON.stringify(notebook.cells)).toContain('预期的降级内容')
 
 ## 运行与判断
 
-先运行改动对应的文件，例如 `pnpm exec vitest run packages/cli/test/ir.test.ts` 或 `pnpm exec playwright test e2e/guide.spec.ts --project chromium`。
+默认只运行改动对应的文件，例如 `pnpm exec vitest run --project integration packages/cli/test/ir.test.ts --maxWorkers=1 --no-file-parallelism` 或 `pnpm exec playwright test e2e/guide.spec.ts --project chromium --no-deps --workers=1`。只构建这些用例需要的文稿与媒介，并按需运行相关轻量结构检查。定向验证通过后停止，不自动扩大范围。除非用户明确要求全量验证，不运行以下全量命令；收尾和合并前同样遵守此约定。
 
 `pnpm test` 包含结构检查与 Vitest。PDF 导出相关文件在 `export` 项目，排在其他集成测试之后；单独运行用 `pnpm exec vitest run --project export`，避免同时大量构建导致截图时机不稳定。
 
-端到端前先构建示例 `pnpm demo:build`，专用文稿由 fixture 自己构建。`pnpm e2e` 的完整 Chromium 用例之外，Firefox、WebKit 默认只跑冒烟；缺少浏览器或系统条件会提示跳过。报告时区分通过、跳过与未运行。
+定向端到端只构建用例实际需要的示例或专用 fixture，不预先构建全部 17 讲；专用文稿由 fixture 自己构建。用户明确要求全部示例时才运行 `pnpm demo:build`。`pnpm e2e` 的完整 Chromium 用例之外，Firefox、WebKit 默认只跑冒烟；缺少浏览器或系统条件会提示跳过。报告时区分通过、跳过与未运行。
 
 性能用例排在其他 Chromium 用例之后；单独运行用 `pnpm exec playwright test e2e/perf.spec.ts --no-deps`，否则会先运行 Chromium 全套。
 
-全部验证用 `pnpm verify`。通过后说明验证覆盖的用户行为；还有未验证的外部条件时明确保留限制。
+用户明确要求全部验证时用 `pnpm verify`。报告验证实际覆盖的用户行为，并区分通过、跳过和未运行；还有未验证的外部条件时明确保留限制。

@@ -77,7 +77,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     if (known) return known
     const document = docs().find(doc => doc.dir === dir)
     if (!document) throw new RequestError(404, `no document ${JSON.stringify(dir)}`)
-    const session = new DocumentSession(dir, new Compiler(join(root, document.entry), { ...pluginOptions(), execution: { env: 'serve' } }), log)
+    const session = new DocumentSession(dir, new Compiler(join(root, document.entry), { ...pluginOptions(), priority: 'interactive', execution: { env: 'serve' } }), log)
     session.onCompile(async (compilation) => {
       for (const finding of untranslated(compilation, root)) {
         if (!compilation.doc.diagnostics.some(f => f.message === finding.message)) compilation.doc.diagnostics.push(finding)
@@ -235,7 +235,6 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   await workspace.reviews?.recover(docs().map(doc => doc.dir))
 
   started()
-  if (config.single) for (const { dir } of docs()) void sessionOf(dir).ready().catch(() => undefined)
 
   const compileFull = async (dir: string): Promise<IRDocument> => {
     const compilation = await sessionOf(dir).ready()

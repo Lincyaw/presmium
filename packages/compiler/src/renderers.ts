@@ -118,7 +118,7 @@ export async function build(whole: Compilation, options: BuildOptions): Promise<
   const run = runOf(compilation, selected, true)
   const translated = await translationsFor(compilation, run)
   findings.push(...translated.findings)
-  const results = await Promise.all(selected.map(async ({ renderer }) => {
+  const render = async ({ renderer }: InstalledRenderer) => {
     const reported: Finding[] = []
     const ctx = renderContext(compilation, renderer.id, join(options.outDir, renderer.id), join(compilation.deckDir, WORK_DIR, renderer.id), run, reported)
     if (renderer.id === WEB) ctx.translations = translated.views
@@ -134,7 +134,10 @@ export async function build(whole: Compilation, options: BuildOptions): Promise<
       reported.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed: ${errorMessage(error)}`))
       return { reported }
     }
-  }))
+  }
+  // Each renderer can start its own toolchain. Do not multiply their native pools.
+  const results: Awaited<ReturnType<typeof render>>[] = []
+  for (const renderer of selected) results.push(await render(renderer))
   const outputs = results.flatMap(({ result }) => result ? [result] : [])
   if (compilation.audience) {
     const scan = audienceScan(compilation.audience, translated.translations, doc)
