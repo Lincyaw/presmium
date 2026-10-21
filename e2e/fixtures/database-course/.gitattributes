@@ -1,0 +1,2 @@
+# Python's csv writer emits CRLF; preserve the original benchmark evidence.
+results/*.csv whitespace=cr-at-eol

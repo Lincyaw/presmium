@@ -1,0 +1,81 @@
+{
+  "runtime": "native Python, real filesystem, independent processes",
+  "evidence": [
+    {
+      "action": "writer-exits",
+      "file": "snapshot.json",
+      "bytes": 39,
+      "stored": {
+        "Ada": {
+          "balance": 100
+        }
+      }
+    },
+    {
+      "action": "new-process-reads",
+      "Ada": {
+        "balance": 100
+      },
+      "nullable_is_value": true,
+      "unknown": "absent"
+    },
+    {
+      "action": "same-file-same-query",
+      "counters": {
+        "AppendLogStore": {
+          "records_read": 80,
+          "bytes_read": 3430
+        },
+        "IndexedLogStore": {
+          "records_read": 1,
+          "bytes_read": 43
+        }
+      }
+    },
+    {
+      "action": "compact-and-reopen",
+      "bytes_before": 18128,
+      "bytes_after": 2816,
+      "live_keys": 64,
+      "compact_ms": 3.0071,
+      "reopen_before_ms": 5.6637,
+      "reopen_after_ms": 0.8772,
+      "reopen_records_before": 416,
+      "reopen_records_after": 64,
+      "timing_scope": "one classroom observation with warm OS cache, not a repeated benchmark",
+      "publication_syncs": 2,
+      "deleted_key_stays_deleted": true
+    },
+    {
+      "action": "repair-only-incomplete-tail",
+      "discarded_bytes": 3,
+      "whole_prior_batch_preserved": true
+    },
+    {
+      "action": "flush-range-compact-reopen",
+      "range": [
+        [
+          "key-000002",
+          {
+            "version": 0
+          }
+        ],
+        [
+          "key-000003",
+          {
+            "version": 1
+          }
+        ],
+        [
+          "key-000005",
+          {
+            "version": 0
+          }
+        ]
+      ],
+      "sstables_before": 4,
+      "sstables_after": 1,
+      "manifest_exists": true
+    }
+  ]
+}
