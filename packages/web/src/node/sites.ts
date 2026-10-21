@@ -104,8 +104,7 @@ function packageDir(name: string, from: string): string | undefined {
 }
 
 function siteModules(ctx: RenderContext): ClientModules {
-  const { components, plugins, viewers, vite } = clientModules({ ...ctx, deckDir: join(ctx.workDir, 'site-plugins') }, [])
-  return { components, plugins, viewers, vite, nodeVite: [] }
+  return clientModules({ ...ctx, deckDir: join(ctx.workDir, 'site-plugins') }, [])
 }
 
 function decoded(text: string): string {

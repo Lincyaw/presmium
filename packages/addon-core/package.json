@@ -37,6 +37,11 @@
     "style.css"
   ],
   "slidev": {},
+  "presmium": {
+    "preview": {
+      "restartable": true
+    }
+  },
   "dependencies": {
     "@slidev/types": "53.0.0",
     "vue": "^3.5.42"

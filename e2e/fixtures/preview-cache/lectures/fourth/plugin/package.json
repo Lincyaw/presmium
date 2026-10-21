@@ -1,0 +1,9 @@
+{
+  "name": "presmium-fixture-preview-cache-viewer",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

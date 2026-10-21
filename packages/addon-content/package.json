@@ -37,6 +37,11 @@
     "vite.config.ts"
   ],
   "slidev": {},
+  "presmium": {
+    "preview": {
+      "restartable": true
+    }
+  },
   "dependencies": {
     "@slidev/types": "53.0.0",
     "markmap-lib": "^0.18.12",

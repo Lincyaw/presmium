@@ -1,5 +1,6 @@
 import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PreviewPanel, useWorkbench, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
+import { useRef } from 'react'
 import type { ComponentType } from 'react'
 import { Logo } from './brand.tsx'
 import { CLIENT_ID } from './contract.ts'
@@ -9,16 +10,15 @@ export const FALLBACK_PANEL = 'presmium'
 
 function Centre() {
   const document_ = useWorkbench(state => state.document)
+  const retainedDocument = useRef(false)
+  if (document_ !== undefined) retainedDocument.current = true
   return (
     <div className="pmw-fallback pm-ui" data-pmw-fallback="">
-      {document_ === undefined
-        ? <HomePanel />
-        : (
-            <div className="pmw-fallback__doc">
-              <FilesPanel />
-              <DocumentView />
-            </div>
-          )}
+      {document_ === undefined && <HomePanel />}
+      {retainedDocument.current && <div className="pmw-fallback__doc" hidden={document_ === undefined}>
+        <FilesPanel />
+        <DocumentView active={document_ !== undefined} />
+      </div>}
     </div>
   )
 }

@@ -24,6 +24,8 @@ export interface IrEvent {
   files: string[]
 }
 
+export type PreviewView = 'web' | 'slides'
+
 export interface PreviewAnswer {
   document: string
   web: string
@@ -42,7 +44,7 @@ export interface CheckAnswer {
 export interface WorkspaceService {
   ir(document: string): Promise<IrAnswer>
   events(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: IrEvent }>
-  preview(document: string): Promise<PreviewAnswer>
+  preview(document: string, view?: PreviewView): Promise<PreviewAnswer>
   build(document: string, to?: string[]): Promise<BuildAnswer>
   check(document: string): Promise<CheckAnswer>
   proxies: ProxySpec[]
@@ -125,6 +127,7 @@ export function workspaceService(options: ServiceOptions): Service {
         const configured = Object.keys(compilation.doc.config.renderers)
         if (configured.length > 0 && !configured.includes('slides')) return undefined
         const path = slidesPath(dir)
+        let startupErrors: string[] = []
         const started = await dev(session.compiler, {
           outDir: join(options.stateDir, 'preview', encodeURIComponent(dir) || '_'),
           to: ['slides'],
@@ -133,12 +136,14 @@ export function workspaceService(options: ServiceOptions): Service {
           port: await freePort(),
           ...options.preview ? { preview: { origins: options.preview.origins } } : {},
           onCompile(_compilation, findings) {
+            startupErrors = findings.filter(f => f.checkId === 'presmium.render' && f.severity === 'error').map(f => f.message)
             for (const finding of findings.filter(f => f.checkId === 'presmium.render')) log.warn(`the slides' preview of ${dir || '.'}: ${finding.message}`)
           },
         })
         const server = started.servers[0]
-        if (!server || closed) {
+        if (!server || closed || slides.get(dir) !== known) {
           await started.close()
+          if (!server && !closed) throw new Error(startupErrors.join('\n') || 'the slides renderer did not start a preview server')
           return undefined
         }
         const target = new URL(server.url)
@@ -146,9 +151,11 @@ export function workspaceService(options: ServiceOptions): Service {
         proxies.sort((a, b) => b.path.length - a.path.length)
         return started
       })()
-      known.catch((error: unknown) => {
+      known.then(started => {
+        if (!started && slides.get(dir) === known) slides.delete(dir)
+      }, (error: unknown) => {
         log.warn(`the slides' preview of ${dir || '.'} did not start: ${errorMessage(error)}`)
-        slides.delete(dir)
+        if (slides.get(dir) === known) slides.delete(dir)
       })
       slides.set(dir, known)
     }
@@ -207,11 +214,18 @@ export function workspaceService(options: ServiceOptions): Service {
         },
       }
     },
-    async preview(document) {
+    async preview(document, view) {
       const base = options.url()
       const web = `${base}/${document ? `${urlPath(document)}/` : ''}`
-      const own = await slidesOf(document).catch(() => undefined)
-      return { document, web, ...own ? { slides: `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}` } : {} }
+      const slideURL = `${base}/__presmium/${WORKSPACE_ID}/${slidesPath(document)}`
+      const compilation = await options.sessionOf(document).ready()
+      const configured = Object.keys(compilation.doc.config.renderers)
+      const available = configured.length === 0 || configured.includes('slides')
+      if (view === 'web' || !available) {
+        return { document, web, ...available ? { slides: slideURL } : {} }
+      }
+      const own = await (view === 'slides' ? slidesOf(document) : slidesOf(document).catch(() => undefined))
+      return { document, web, ...own ? { slides: slideURL } : {} }
     },
     async build(document, to) {
       return await options.serverHost.build(document, to ? { to } : {})
@@ -222,6 +236,11 @@ export function workspaceService(options: ServiceOptions): Service {
     compiled(dir, compilation, changed) {
       const event = eventOf(dir, compilation, changed)
       for (const listener of listeners.get(dir) ?? []) listener(event)
+      const configured = Object.keys(compilation.doc.config.renderers)
+      if (configured.length > 0 && !configured.includes('slides')) {
+        void stop(dir).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not stop: ${errorMessage(error)}`))
+        return
+      }
       const known = slides.get(dir)
       if (known) void known.then(started => started?.update(stamped(compilation))).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not update: ${errorMessage(error)}`))
     },

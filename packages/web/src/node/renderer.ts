@@ -38,6 +38,7 @@ export interface DocumentSite {
 function merge(modules: ClientModules, extra?: ClientModules): ClientModules {
   if (!extra) return modules
   return {
+    restartable: modules.restartable === true && extra.restartable === true,
     components: new Map([...extra.components, ...modules.components]),
     plugins: [...extra.plugins, ...modules.plugins],
     viewers: [...extra.viewers, ...modules.viewers],

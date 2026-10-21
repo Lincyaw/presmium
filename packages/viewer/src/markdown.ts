@@ -1,5 +1,6 @@
+import { currentLocale } from '@lincyaw/host'
 import { roleMark } from '@lincyaw/kernel'
-import type { IRBlock, MarkdownNode, MdastNode } from '@lincyaw/kernel'
+import type { IRBlock, IRDocument, MarkdownNode, MdastNode } from '@lincyaw/kernel'
 import type { Element, ElementContent, Nodes, Properties, Root, RootContent } from 'hast'
 import { raw } from 'hast-util-raw'
 import type { Handler, Handlers, State } from 'mdast-util-to-hast'
@@ -189,6 +190,62 @@ export function markdownToHast(mdast: MdastNode, prefix: string, links: Markdown
   return tree
 }
 
+interface CachedTree {
+  node: MdastNode
+  key: string
+  tree: Root
+  bytes: number
+}
+
+interface DocumentTrees {
+  nodes: Map<MdastNode, Map<string, CachedTree>>
+  recent: Map<CachedTree, true>
+  bytes: number
+}
+
+const TREE_LIMIT = 256
+const TREE_BYTES = 4 << 20
+const viewerTrees = new WeakMap<Viewer, WeakMap<IRDocument, DocumentTrees>>()
+
+function reusableTree(viewer: Viewer, doc: IRDocument, node: MdastNode, prefix: string, links: MarkdownLinks, locale: string): Root {
+  const key = JSON.stringify([prefix, locale])
+  let documentTrees = viewerTrees.get(viewer)
+  if (!documentTrees) {
+    documentTrees = new WeakMap()
+    viewerTrees.set(viewer, documentTrees)
+  }
+  let cache = documentTrees.get(doc)
+  const known = cache?.nodes.get(node)?.get(key)
+  if (cache && known) {
+    cache.recent.delete(known)
+    cache.recent.set(known, true)
+    return known.tree
+  }
+  const tree = markdownToHast(node, prefix, links)
+  // Only immutable HAST survives component unmounts; no VNodes or mounted resources are retained.
+  const bytes = JSON.stringify(tree).length * 2 // UTF-16 JSON size is a soft heap estimate.
+  if (bytes > TREE_BYTES) return tree
+  if (!cache) {
+    cache = { nodes: new Map(), recent: new Map(), bytes: 0 }
+    documentTrees.set(doc, cache)
+  }
+  const entry: CachedTree = { node, key, tree, bytes }
+  const variants = cache.nodes.get(node) ?? new Map<string, CachedTree>()
+  variants.set(key, entry)
+  cache.nodes.set(node, variants)
+  cache.recent.set(entry, true)
+  cache.bytes += bytes
+  while (cache.recent.size > TREE_LIMIT || cache.bytes > TREE_BYTES) {
+    const first = cache.recent.keys().next().value!
+    cache.recent.delete(first)
+    cache.bytes -= first.bytes
+    const old = cache.nodes.get(first.node)!
+    old.delete(first.key)
+    if (old.size === 0) cache.nodes.delete(first.node)
+  }
+  return tree
+}
+
 function attributes(properties: Properties): Record<string, unknown> {
   const attrs: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(properties)) {
@@ -245,7 +302,12 @@ export const MarkdownView = defineComponent({
   setup(props) {
     const viewer = inject(VIEWER, undefined)
     const links = viewerLinks(viewer)
-    const tree = computed(() => markdownToHast((props.block.node as MarkdownNode).mdast, props.prefix, links))
+    const tree = computed(() => {
+      const node = (props.block.node as MarkdownNode).mdast
+      return viewer
+        ? reusableTree(viewer, viewer.doc.value, node, props.prefix, links, currentLocale())
+        : markdownToHast(node, props.prefix, links)
+    })
     return () => {
       const node = props.block.node as MarkdownNode
       const hidden = node.reveal === 'items' && !props.expanded ? (k: number) => !itemVisible(props.block, k, props.step) : undefined

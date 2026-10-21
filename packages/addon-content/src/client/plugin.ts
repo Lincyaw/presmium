@@ -5,6 +5,7 @@ import { defineDemoElements } from './elements.ts'
 
 const plugin: PluginDefinition = {
   manifest: { id: CONTENT_ID, version, kernel: '^1.0.0' },
+  restartable: true,
   setup() {
     defineDemoElements()
   },

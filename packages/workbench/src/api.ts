@@ -65,6 +65,8 @@ export interface IrEvent {
   files: string[]
 }
 
+export type PreviewView = 'web' | 'slides'
+
 export interface PreviewAnswer {
   document: string
   web: string

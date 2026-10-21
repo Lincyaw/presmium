@@ -143,6 +143,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 方向 | 类型 | 字段 | 说明 |
 |---|---|---|---|
 | 产物 → 工作台 | `ready` | `renderer`（`web` 或 `slides`）、`document`、`revision`、`capabilities` | 代理就绪。`revision` 是页面所用 IR 的修订号；`capabilities` 列出页面支持的消息类型 |
+| 工作台 → 产物 | `activity` | `active`、`request` | 可选能力。暂停时卸载文稿组件并停止内核；恢复时刷新网页 IR、恢复内核和布局。`request` 为非负安全整数 |
+| 产物 → 工作台 | `activity` | `active`、`request`、`revision?`、`error?` | 完成上述切换后的确认，回传请求编号；失败时工作台销毁预览，沿用重新加载路径 |
 | 工作台 → 产物 | `go` | `section`、`step?`、`trail?`、`view?` | 跳到某节的某一步。`view` 是网页形态的运行时视图（`document`、`present` 等，与控制通道的位置相同）；幻灯片形态没有 |
 | 工作台 → 产物 | `highlight` | `target`：`{ section, block? }` 或 `null` | 框出一块或一节；不在视野中时滚动过去；`null` 清除 |
 | 工作台 → 产物 | `pick` | `on` | 点选模式。打开时点在块上报告 `picked`，不触发块自己的操作；链接、按钮与输入框照常工作（规则同 `placeOfClick`）。鼠标下的块加虚线框 |
@@ -196,7 +198,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | `GET revisions`、`POST revisions/revert` | 修改历史与撤销 |
 | `GET ir?document=` | 文档的 IR、修订号与诊断 |
 | `GET ir/events?document=` | SSE，由服务直接流出、不缓冲：连接后先发当前的修订号，之后是新的修订号、诊断数与改过的文件（相对于工作区根目录）。编辑器据此与磁盘比较 |
-| `GET preview?document=` | 各形态开发服务器的地址；开发服务器按需启动，页面带预览代理 |
+| `GET preview?document=&view=web\|slides` | 各形态开发服务器的地址；按选择的形态启动，页面带预览代理。网页请求不启动幻灯片；显式请求幻灯片时，启动失败返回错误而不是冒充未配置。文稿的渲染端配置变化后刷新可选形态，缺失或启动失败时仍可切回网页，修复后可重新载入 |
 | `POST build`、`POST check` | 构建（写到文档目录之外，`architecture.md` 10.6 节）与检查 |
 | `GET review?document=`、`POST review/open`、`POST review/step`、`POST review/accept`、`POST review/reject`、`POST review/restore` | 审阅（git 实现，6.5 节）：打开（bundle，持有者 `agent:<会话>`）、记检查点、查看、接受（可以带作者写的说明）、拒绝（给出文件时只恢复它们、审阅继续，不给时全部回滚）、回到某个检查点。`GET review` 以 `text/event-stream` 请求时是页面跟随 |
 | `GET review/events` | SSE，供 bundle：审阅的变化，以及撤销一个会话的提交 |

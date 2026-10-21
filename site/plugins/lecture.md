@@ -125,6 +125,8 @@ const t = useMessages(MESSAGES)
 
 `src/client/plugin.ts` 默认导出内核插件（`PluginDefinition`）：清单写 `id`、`version`、`kernel`、提供与需要的服务，`setup(ctx)` 中 `ctx.provide(令牌, 实现)`，`dispose` 中释放 Worker 与定时器。网页形态自动导入它；幻灯片形态由 `setup/main.ts` 用 `registerPresmiumPlugin` 注册。
 
+只有确认浏览器模块可在卸载后安全重建时，才在插件包或文稿目录的 `package.json` 中声明 `presmium: { preview: { restartable: true } }`；此承诺涵盖组件、viewer、client 模块及 Vite 注入的代码。内核插件还须在 `PluginDefinition` 上声明 `restartable: true`，承诺 `dispose` 停止全部后台工作，且同一份定义可以再次 `setup`。工作台据此决定网页预览能否保留已加载的模块：切走时卸载文稿组件并停止内核，切回时重新启动。任一来源未声明或加载失败时，工作台会销毁该预览再加载；不能为提速跳过执行、流式问答、录制与媒体资源的清理。
+
 (plugin-directives)=
 # 指令与角色
 

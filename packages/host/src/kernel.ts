@@ -15,6 +15,10 @@ const running = shallowRef<Kernel>()
 let starting: Promise<StartReport> | undefined
 let disconnect: (() => void) | undefined
 const failures = shallowRef<PluginReport[]>([])
+let resumeHost: (() => Promise<StartReport>) | undefined
+let hostActive = true
+let resumePage: (() => void) | undefined
+let watchingPage = false
 
 export function registerPresmiumPlugin(plugin: PluginDefinition): void {
   const { id } = plugin.manifest
@@ -68,10 +72,19 @@ export async function stopPresmium(): Promise<void> {
 }
 
 export function stopPresmiumOnPageHide(start: () => void): void {
+  resumePage = start
+  if (watchingPage) return
+  watchingPage = true
   window.addEventListener('pagehide', () => void stopPresmium())
   window.addEventListener('pageshow', (event) => {
-    if (event.persisted) start()
+    if (event.persisted && hostActive) resumePage?.()
   })
+}
+
+export async function setHostActive(active: boolean): Promise<void> {
+  hostActive = active
+  if (active) await resumeHost?.()
+  else await stopPresmium()
 }
 
 export function presmiumService<T>(token: ServiceToken<T>): T | undefined {
@@ -126,6 +139,8 @@ export function startHost(options: HostStart): Promise<StartReport> {
       disconnect = connectControl(server, { navigation: options.navigation, status, service: token => kernel.getService(token) })
     },
   })
-  stopPresmiumOnPageHide(() => void start())
+  resumeHost = start
+  hostActive = true
+  stopPresmiumOnPageHide(() => void setHostActive(true))
   return start()
 }

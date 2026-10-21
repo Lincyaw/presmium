@@ -6,14 +6,15 @@
 // address; the first-use notice is read away.
 import { randomBytes } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { PRESMIUM_BIN } from '../../../packages/cli/src/testing.ts'
 import type { FakeModel } from '../../../packages/cli/src/testing.ts'
-import { running, testHome } from '../../../packages/dsh/test/harness.ts'
+import { writeProfile } from '../../../packages/dsh/src/node/launch.ts'
+import { PACKAGE, running, testHome } from '../../../packages/dsh/test/harness.ts'
 import type { Running, TestHome, Web, Workspace } from '../../../packages/dsh/test/harness.ts'
 
 const FIXTURE = fileURLToPath(new URL('./workspace', import.meta.url))
@@ -24,7 +25,7 @@ function fixtureFiles(dir = FIXTURE): Record<string, string> {
   const files: Record<string, string> = {}
   for (const name of readdirSync(dir, { recursive: true, encoding: 'utf8' })) {
     const path = join(dir, name)
-    if (statSync(path).isFile()) files[relative(FIXTURE, path)] = readFileSync(path, 'utf8')
+    if (statSync(path).isFile()) files[relative(dir, path)] = readFileSync(path, 'utf8')
   }
   return files
 }
@@ -40,10 +41,23 @@ export interface Studio {
   close(): Promise<void>
 }
 
-export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string }): Promise<Studio> {
+export async function startStudio(options: { port: number, model?: FakeModel, patches?: string[], prefix?: string, fixture?: string, isolateClient?: boolean }): Promise<Studio> {
   const home = testHome(options.prefix ?? 'workbench')
   try {
-    const workspace = home.workspace(options.prefix ?? 'workbench', fixtureFiles())
+    if (options.isolateClient) {
+      // A concurrent client build must not make Harness hot-reload this test's bundle.
+      const bundle = join(home.dir, 'bundle')
+      mkdirSync(bundle, { recursive: true })
+      for (const name of ['package.json', 'src', 'rows', 'build', 'skills', 'cordis.patch.yml', 'web.patch.yml', 'profile.patch.yml']) {
+        // Packaged bundles include generated skills; source checkouts may not.
+        if (name === 'skills' && !existsSync(join(PACKAGE, name))) continue
+        cpSync(join(PACKAGE, name), join(bundle, name), { recursive: true })
+      }
+      symlinkSync(join(PACKAGE, 'node_modules'), join(bundle, 'node_modules'), 'junction')
+      const profile = home.profile('web')
+      writeProfile(home.dshHome, profile, 'web', bundle)
+    }
+    const workspace = home.workspace(options.prefix ?? 'workbench', fixtureFiles(options.fixture))
     const origin = `http://127.0.0.1:${options.port}`
     const token = randomBytes(24).toString('base64url')
     const process_ = running(spawn(process.execPath, [PRESMIUM_BIN, 'serve', workspace.dir, '--port', '0', '--preview-origin', origin], {

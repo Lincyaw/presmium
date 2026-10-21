@@ -489,6 +489,12 @@ button.pmw-problem:hover {
   margin: var(--pm-space-2);
 }
 
+.pmw-preview__frames {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .pmw-preview__frame {
   flex: 1;
   width: 100%;

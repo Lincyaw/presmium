@@ -13,8 +13,8 @@ export const ROUTES: Record<string, string> = Object.fromEntries([
   ['focus', `${SERVER}focus`],
 ])
 
-const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id']
-const RETURNED = ['content-type', 'cache-control', 'content-disposition', 'x-accel-buffering']
+const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']
+const RETURNED = ['content-type', 'cache-control', 'content-disposition', 'x-accel-buffering', 'etag']
 
 export function apply(ctx: DshContext): void {
   for (const [path, target] of Object.entries(ROUTES)) {

@@ -6,7 +6,7 @@ import { ProblemsPanel } from './Problems.tsx'
 import { PreviewPanel } from './Preview.tsx'
 import { SourcePanel } from './Source.tsx'
 
-export function DocumentView({ only }: { only?: 'source' | 'preview' }) {
+export function DocumentView({ only, active = true }: { only?: 'source' | 'preview', active?: boolean }) {
   const t = useMessages()
   const workbench = useWorkbenchStore()
   const layout = useWorkbench(state => state.layout)
@@ -43,7 +43,7 @@ export function DocumentView({ only }: { only?: 'source' | 'preview' }) {
         <ProblemsPanel />
       </Panel>
       <Separator className="pmw-separator" aria-label={t.resize} hidden={Boolean(single)} />
-      <Panel id="preview" panelRef={preview} collapsible collapsedSize={0} minSize="20%" className="pmw-doc__preview" hidden={single === 'source'}><PreviewPanel /></Panel>
+      <Panel id="preview" panelRef={preview} collapsible collapsedSize={0} minSize="20%" className="pmw-doc__preview" hidden={single === 'source'}><PreviewPanel active={active && mode !== 'source'} /></Panel>
     </Group>
     </div>
   )

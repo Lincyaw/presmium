@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-preview-cache-legacy",
+  "private": true,
+  "type": "module",
+  "presmium": { "preview": { "restartable": true } },
+  "exports": {
+    "./presmium": "./presmium.ts",
+    "./package.json": "./package.json"
+  }
+}

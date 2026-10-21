@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { isRecord } from '@lincyaw/kernel'
 import type { PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
+import { packageOf } from '@lincyaw/kernel/node'
 
 const CLIENT_PLUGIN = 'src/client/plugin.ts'
 const VIEWER_PLUGIN = 'src/client/viewer.ts'
@@ -15,6 +16,7 @@ export interface VitePluginsEntry {
 }
 
 export interface ClientModules {
+  restartable: boolean
   components: Map<string, string>
   plugins: string[]
   viewers: { name: string, file: string }[]
@@ -23,15 +25,27 @@ export interface ClientModules {
 }
 
 function collect(dir: string, name: string, modules: ClientModules, plugin: boolean): void {
+  let browser = false
   const components = join(dir, 'components')
   if (existsSync(components)) {
     for (const file of readdirSync(components).filter(f => COMPONENT.test(f)).sort()) {
+      browser = true
       modules.components.set(file.replace(/\.[^.]+$/, ''), join(components, file))
     }
   }
-  if (existsSync(join(dir, CLIENT_PLUGIN))) modules.plugins.push(join(dir, CLIENT_PLUGIN))
-  if (existsSync(join(dir, VIEWER_PLUGIN))) modules.viewers.push({ name, file: join(dir, VIEWER_PLUGIN) })
-  if (plugin && existsSync(join(dir, VITE_CONFIG))) modules.vite.push(join(dir, VITE_CONFIG))
+  if (existsSync(join(dir, CLIENT_PLUGIN))) {
+    browser = true
+    modules.plugins.push(join(dir, CLIENT_PLUGIN))
+  }
+  if (existsSync(join(dir, VIEWER_PLUGIN))) {
+    browser = true
+    modules.viewers.push({ name, file: join(dir, VIEWER_PLUGIN) })
+  }
+  if (plugin && existsSync(join(dir, VITE_CONFIG))) {
+    browser = true
+    modules.vite.push(join(dir, VITE_CONFIG))
+  }
+  if (browser && !restartablePackage(dir)) modules.restartable = false
 }
 
 function manifest(dir: string): Record<string, unknown> {
@@ -41,6 +55,12 @@ function manifest(dir: string): Record<string, unknown> {
   } catch {
     return {}
   }
+}
+
+function restartablePackage(dir: string | undefined): boolean {
+  if (!dir) return false
+  const { presmium } = manifest(dir)
+  return isRecord(presmium) && isRecord(presmium.preview) && presmium.preview.restartable === true
 }
 
 function nodeEntry(dir: string): string | undefined {
@@ -65,7 +85,14 @@ export async function nodeVitePlugins(ctx: RenderContext, presmium: Record<strin
 }
 
 export function clientModules(ctx: RenderContext, nodeVite: VitePluginsEntry[]): ClientModules {
-  const modules: ClientModules = { components: new Map(), plugins: [], viewers: [], vite: [], nodeVite }
+  const modules: ClientModules = { restartable: true, components: new Map(), plugins: [], viewers: [], vite: [], nodeVite }
+  for (const { file } of nodeVite) {
+    try {
+      if (!restartablePackage(packageOf(file))) modules.restartable = false
+    } catch {
+      modules.restartable = false
+    }
+  }
   for (const name of ctx.plugins) {
     const dir = ctx.pluginDirs[name]
     const { name: pkg } = dir ? manifest(dir) : {}

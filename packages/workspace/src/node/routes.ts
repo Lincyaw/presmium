@@ -205,7 +205,16 @@ function serviceRoutes(service: WorkspaceService): Record<string, Route> {
   return {
     'ir': {
       role: 'editor',
-      handle: (request, ctx) => answer(async () => (request.method === 'GET' ? json(await service.ir(ctx.document)) : problem(405, 'GET'))),
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'GET') return problem(405, 'GET')
+        const ir = await service.ir(ctx.document)
+        const etag = `"${ir.revision}"`
+        if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers: { ETag: etag, 'Cache-Control': 'no-store' } })
+        const response = json(ir)
+        response.headers.set('ETag', etag)
+        response.headers.set('Cache-Control', 'no-store')
+        return response
+      }),
     },
     'ir/events': {
       role: 'editor',
@@ -213,7 +222,12 @@ function serviceRoutes(service: WorkspaceService): Record<string, Route> {
     },
     'preview': {
       role: 'editor',
-      handle: (request, ctx) => answer(async () => (request.method === 'GET' ? json(await service.preview(ctx.document)) : problem(405, 'GET'))),
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'GET') return problem(405, 'GET')
+        const view = new URL(request.url).searchParams.get('view') ?? undefined
+        if (view !== undefined && view !== 'web' && view !== 'slides') return problem(400, 'view must be web or slides')
+        return json(await service.preview(ctx.document, view))
+      }),
     },
     'build': {
       role: 'editor',

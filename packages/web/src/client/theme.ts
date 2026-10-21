@@ -1,6 +1,6 @@
-import { createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, startHost, stopPresmium } from '@lincyaw/host'
+import { componentErrors, createServerClient, createSharedStates, currentLocale, installHost, OPERATIONS, pluginsOf, PmIcon, PmPresenterPanels, PmToolbar, presmiumReport, presmiumService, provideServer, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost, stopPresmium } from '@lincyaw/host'
 import type { ServerClient, SyncTransports } from '@lincyaw/host'
-import { errorMessage } from '@lincyaw/kernel'
+import { errorMessage, previewActive } from '@lincyaw/kernel'
 import type { IRDocument } from '@lincyaw/kernel'
 import { createViewer, followOperations, getView, installViewer, installViewerPlugin, OverlayHost, PmComponentFallback, registerComponent, useViewer, withSlideGlobals } from '@lincyaw/viewer'
 import type { LiveUpdate, Position, Viewer } from '@lincyaw/viewer'
@@ -27,6 +27,7 @@ export interface ThemeInput {
   revision?: string
   components: Record<string, () => Promise<unknown>>
   plugins: (() => Promise<unknown>)[]
+  restartable?: boolean
   viewers?: ViewerModule[]
   translations?: Record<string, () => Promise<{ default: IRDocument }>>
   preview?: (page: WebPreviewPage) => void
@@ -46,14 +47,20 @@ interface UpdateEvent {
   revision: string
 }
 
-async function startKernel(loaders: ThemeInput['plugins'], doc: IRDocument, viewer: Viewer, transports: SyncTransports, server?: ServerClient): Promise<void> {
+async function startKernel(loaders: ThemeInput['plugins'], doc: IRDocument, viewer: Viewer, transports: SyncTransports, server: ServerClient | undefined, enabled: () => boolean): Promise<{ started: boolean, restartable: boolean }> {
   const config = doc.config.presmium
+  let failed = false
   const modules = await Promise.all(loaders.map(load => load().catch((error) => {
+    failed = true
     console.error('[presmium] a plugin module failed to load', error)
     return {}
   })))
-  modules.flatMap(module => pluginsOf(module, config)).forEach(registerPresmiumPlugin)
+  const plugins = modules.flatMap(module => pluginsOf(module, config))
+  const restartable = !failed && plugins.every(plugin => plugin.restartable === true)
+  if (!enabled()) return { started: false, restartable }
+  plugins.forEach(registerPresmiumPlugin)
   await startHost({ mode: 'document', config, navigation: createViewerNavigation(viewer), transports, server, environments: doc.config.execute?.environments })
+  return { started: true, restartable }
 }
 
 function clientOnly(name: string, load: () => Promise<unknown>): Component {
@@ -73,17 +80,23 @@ function clientOnly(name: string, load: () => Promise<unknown>): Component {
   })
 }
 
-async function loadViewerPlugins(modules: ViewerModule[]): Promise<void> {
+async function loadViewerPlugins(modules: ViewerModule[]): Promise<boolean> {
+  let valid = true
   await Promise.all(modules.map(async ({ name, load }) => {
     const id = `${name} (viewer)`
     try {
       const reason = installViewerPlugin(((await load()) as { default?: unknown }).default, id)
-      if (reason) reportPluginFailure(id, reason)
+      if (reason) {
+        valid = false
+        reportPluginFailure(id, reason)
+      }
     } catch (error) {
+      valid = false
       console.error(`[presmium] ${id} failed to load`, error)
       reportPluginFailure(id, errorMessage(error))
     }
   }))
+  return valid
 }
 
 function serviceWorker(offline: boolean): void {
@@ -122,8 +135,10 @@ function localizeHiddenLabels(): void {
 }
 
 const slidesBase = ref<string>()
+const active = ref(previewActive())
 let preview: ThemeInput['preview']
-let viewersReady: Promise<void> = Promise.resolve()
+let setActive: WebPreviewPage['setActive'] = async () => {}
+let viewersReady: Promise<unknown> = Promise.resolve()
 
 const Layout = defineComponent({
   name: 'PresmiumLayout',
@@ -133,9 +148,10 @@ const Layout = defineComponent({
     onMounted(async () => {
       const agent = preview
       preview = undefined
-      agent?.({ viewer, dark: isDark })
+      agent?.({ viewer, dark: isDark, setActive })
       localizeHiddenLabels()
       watch(() => page.value.relativePath, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
+      watch(active, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
       const form: FormOptions = theme.value.presmium?.form ?? {}
       if (form.slides) slidesBase.value = form.slidesUrl ?? new URL('../slides', new URL(withBase('/'), location.href)).href
       const ask = requested(location.search, viewer.doc.value)
@@ -164,7 +180,7 @@ const Layout = defineComponent({
         copyright ? h('p', { class: 'pm-site-footer__copyright', innerHTML: copyright }) : null,
       ])
     }
-    return () => h(DefaultTheme.Layout, null, {
+    return () => active.value ? h(DefaultTheme.Layout, null, {
       'nav-bar-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--bar' }), h(PmToolbar, { class: 'pm-toolbar--bar' })],
       'nav-screen-content-after': () => [home(), h(ViewMenu, { class: 'pm-view-menu--screen' }), h(PmToolbar, { class: 'pm-toolbar--screen' })],
       'doc-after': footer,
@@ -172,33 +188,43 @@ const Layout = defineComponent({
         h('div', { class: 'vp-doc pm-overlay-views' }, [h(OverlayHost)]),
         viewer.view.value === 'presenter' ? h(PmPresenterPanels, { to: '.pm-presenter__side', docked: true }) : null,
       ],
-    })
+    }) : null
   },
 })
 
-function followDevServer(original: () => IRDocument, revision: string | undefined, endpoint: string, follow: (doc: IRDocument) => void): void {
+function followDevServer(original: () => IRDocument, revision: string | undefined, endpoint: string, follow: (doc: IRDocument) => void, enabled: () => boolean): (force?: boolean) => Promise<void> {
   const hot = import.meta.hot
-  if (!hot) return
+  if (!hot) return async () => {}
   let current = revision
   let updates = 0
   let asked = 0
   let answered = 0
-  const fetchCurrent = async () => {
+  const fetchCurrent = async (force = false) => {
+    if (!force && !enabled()) return
     const request = ++asked
     const since = updates
     try {
-      const response = await fetch(endpoint, { cache: 'no-store' })
-      if (!response.ok) return
+      const response = await fetch(endpoint, { cache: 'no-store', ...current ? { headers: { 'If-None-Match': `"${current}"` } } : {} })
+      if (response.status === 304) {
+        answered = Math.max(answered, request)
+        return
+      }
+      if (!response.ok) {
+        if (force) throw new Error(`the document refresh failed (${response.status})`)
+        return
+      }
       const { revision: latest, doc } = await response.json() as { revision: string, doc: IRDocument }
-      if (updates !== since || request < answered || latest === current) return
+      if (!enabled() || updates !== since || request < answered || latest === current) return
       answered = request
       current = latest
       follow(doc)
     } catch (error) {
       console.warn('[presmium] could not get the current document from the dev server', error)
+      if (force) throw error
     }
   }
   hot.on('presmium:update', ({ update, base, revision: next }: UpdateEvent) => {
+    if (!enabled()) return
     if (base !== current) {
       void fetchCurrent()
       return
@@ -209,6 +235,7 @@ function followDevServer(original: () => IRDocument, revision: string | undefine
   })
   hot.on('vite:ws:connect', () => void fetchCurrent())
   void fetchCurrent()
+  return fetchCurrent
 }
 
 function localeOf(path: string, base: string, langs: string[]): string {
@@ -299,22 +326,72 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
       for (const [name, load] of Object.entries(input.components)) registerComponent(name, clientOnly(name, load))
       if (!inBrowser) return
       preview = input.preview
-      viewersReady = loadViewerPlugins(input.viewers ?? [])
-      const server = presmium.server ? createServerClient({ document: presmium.document }) : undefined
-      provideServer(server)
-      void startKernel(input.plugins, input.doc, current, shared.transports, server)
+      let requestedActive = active.value
+      let kernelLoaded = false
+      let restartable = false
+      let viewersLoaded = false
+      let viewersValid = false
+      let wasPaused = !requestedActive
+      let lifecycle = Promise.resolve()
+      const runtimeConfig = JSON.stringify(input.doc.config)
       watch(() => presmiumService(OPERATIONS), (operations, _, onCleanup) => {
         if (operations) onCleanup(followOperations(current, operations))
       }, { immediate: true })
       if (import.meta.env.PROD) serviceWorker(offlineEnabled(input.doc.config.presmium))
-      followDevServer(() => original.value, input.revision, presmium.ir ?? IR_ENDPOINT, (doc) => {
+      const refresh = followDevServer(() => original.value, input.revision, presmium.ir ?? IR_ENDPOINT, (doc) => {
         original.value = doc
         if (locale.value === 'root') current.replace(doc)
         const site = siteData.value
         const nav = sidebar(doc, toPages(doc))
         if (site.title === doc.meta.title && JSON.stringify(site.themeConfig.sidebar) === JSON.stringify(nav)) return
         siteData.value = { ...site, title: doc.meta.title, themeConfig: { ...site.themeConfig, sidebar: nav } }
-      })
+      }, () => requestedActive)
+      const pauseMedia = () => {
+        for (const media of document.querySelectorAll('audio, video')) (media as HTMLMediaElement).pause()
+      }
+      setActive = (on) => {
+        requestedActive = on
+        const change = lifecycle.then(async () => {
+          if (!on) {
+            if (!restartable || componentErrors().length > 0 || presmiumReport()?.plugins.some(plugin => plugin.status !== 'started')) {
+              throw new Error('the document runtime cannot safely restart; reload the preview')
+            }
+            pauseMedia()
+            active.value = false
+            await nextTick()
+            await setHostActive(false)
+            wasPaused = true
+            return
+          }
+          if (wasPaused) {
+            await refresh(true)
+            if (JSON.stringify(original.value.config) !== runtimeConfig || original.value.meta.lang !== input.doc.meta.lang) {
+              throw new Error('the document runtime configuration changed; reload the preview')
+            }
+          }
+          if (!kernelLoaded) {
+            if (!viewersLoaded) {
+              viewersReady = loadViewerPlugins(input.viewers ?? [])
+              viewersValid = await viewersReady === true
+              viewersLoaded = true
+            }
+            const server = requestedActive && presmium.server ? createServerClient({ document: presmium.document }) : undefined
+            if (requestedActive) provideServer(server)
+            const kernel = await startKernel(input.plugins, current.doc.value, current, shared.transports, server, () => requestedActive)
+            kernelLoaded = kernel.started
+            restartable = input.restartable === true && viewersValid && kernel.restartable
+          } else await setHostActive(true)
+          wasPaused = false
+          // A queued pause checks the completed initial load before disposing anything.
+          if (requestedActive) {
+            active.value = true
+            await nextTick()
+          }
+        })
+        lifecycle = change.catch(() => undefined)
+        return change
+      }
+      if (requestedActive) void setActive(true).catch(error => console.error('[presmium] the document runtime did not start', error))
     },
   }
 }

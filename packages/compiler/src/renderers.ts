@@ -212,9 +212,11 @@ export interface DevOptions {
 }
 
 export async function dev(compiler: Compiler, options: DevOptions): Promise<DevSession> {
+  await mkdir(options.outDir, { recursive: true })
+  const outDir = realpathSync(options.outDir)
   let started = Date.now()
   let compilation = options.compilation ?? await compiler.compile()
-  const ir = await writeIR(compilation.doc, options.outDir)
+  const ir = await writeIR(compilation.doc, outDir)
   const { selected, findings } = await selectRenderers(compilation, options.to)
   const run = runOf(compilation, selected, false)
   const base = configuredBase(options.base)
@@ -229,8 +231,8 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
       findings.push(renderFinding(compilation, 'warning', `renderer ${renderer.id} has no dev server`))
       continue
     }
-    const outDir = join(options.outDir, renderer.id)
-    const ctx = renderContext(compilation, renderer.id, outDir, outDir, run, findings, options.server)
+    const dir = join(outDir, renderer.id)
+    const ctx = renderContext(compilation, renderer.id, dir, dir, run, findings, options.server)
     if (options.port !== undefined) ctx.config = { ...ctx.config, port: options.port }
     if (options.preview) ctx.preview = { origins: [...options.preview.origins] }
     if (renderer.id === WEB) {
@@ -304,7 +306,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
   }
   const push = async (next: Compilation, reported: Finding[]) => {
     compilation = next
-    await writeIR(compilation.doc, options.outDir)
+    await writeIR(compilation.doc, outDir)
     reported.push(...compilation.doc.diagnostics)
     translated = await translationsFor(compilation, run, translators)
     reported.push(...translated.findings)

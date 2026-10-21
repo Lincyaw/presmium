@@ -43,7 +43,7 @@ export {
   useViewRole,
 } from './host.ts'
 export type { SharedStateOptions } from './host.ts'
-export { pluginsOf, presmiumReport, presmiumService, registerPresmiumPlugin, reportPluginFailure, startHost, startPresmium, stopPresmium, stopPresmiumOnPageHide } from './kernel.ts'
+export { pluginsOf, presmiumReport, presmiumService, registerPresmiumPlugin, reportPluginFailure, setHostActive, startHost, startPresmium, stopPresmium, stopPresmiumOnPageHide } from './kernel.ts'
 export type { HostStart, StartOptions } from './kernel.ts'
 export { currentLocale, useLocale, useMessages } from './locale.ts'
 export type { Catalog } from './locale.ts'

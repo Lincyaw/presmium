@@ -138,10 +138,18 @@ export function presmiumIR(irFile: string, searchDocuments: string, endpoints: {
       server.middlewares.use(endpoints.ir, (req, res) => {
         if (refused(req, res)) return
         const json = readFileSync(irFile, 'utf8')
+        const revision = revisionOf(json)
+        const etag = `"${revision}"`
+        res.setHeader('ETag', etag)
+        res.setHeader('Cache-Control', 'no-store')
+        if (req.method === 'GET' && req.headers['if-none-match'] === etag) {
+          res.statusCode = 304
+          res.end()
+          return
+        }
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
-        res.setHeader('Cache-Control', 'no-store')
-        res.end(`{"revision":${JSON.stringify(revisionOf(json))},"doc":${json}}`)
+        res.end(`{"revision":${JSON.stringify(revision)},"doc":${json}}`)
       })
       server.middlewares.use(endpoints.source, (req, res) => {
         if (refused(req, res)) return

@@ -1,5 +1,5 @@
 import { isPreviewEnvelope, PREVIEW_PARAM, PREVIEW_PROTOCOL, previewEnvelope, readPreviewReport } from '@lincyaw/kernel'
-import type { PreviewCommand, PreviewReport } from '@lincyaw/kernel'
+import type { PreviewCommand, PreviewCommandType, PreviewReport } from '@lincyaw/kernel'
 
 export interface PreviewHandlers {
   report(report: PreviewReport): void
@@ -10,6 +10,7 @@ export interface PreviewConnection {
   readonly src: string
   readonly nonce: string
   readonly ready: boolean
+  readonly capabilities: readonly PreviewCommandType[]
   send(command: PreviewCommand): void
   dispose(): void
 }
@@ -25,6 +26,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
   const origin = url.origin
   const latest = new Map<string, PreviewCommand>()
   let ready = false
+  let capabilities: readonly PreviewCommandType[] = []
   const post = (command: PreviewCommand) => frame()?.contentWindow?.postMessage(previewEnvelope(own, command), origin)
   const listener = (event: MessageEvent) => {
     const window_ = frame()?.contentWindow
@@ -37,6 +39,7 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     if (!report) return
     if (report.type === 'ready') {
       ready = true
+      capabilities = Object.freeze([...report.capabilities])
       for (const command of latest.values()) post(command)
     }
     handlers.report(report)
@@ -47,6 +50,9 @@ export function connectPreview(frame: () => HTMLIFrameElement | null, address: s
     nonce: own,
     get ready() {
       return ready
+    },
+    get capabilities() {
+      return capabilities
     },
     send(command) {
       latest.set(command.type, command)

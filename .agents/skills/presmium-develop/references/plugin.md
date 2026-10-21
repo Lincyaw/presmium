@@ -149,7 +149,7 @@ export default plugin
 - 静态导出：带 `fallback` 的组件在 PDF、PNG 中由宿主换成降级内容；需要自己判断时读 `useStaticRender()`。
 - 绘制在其他内容之上、自身不占版面的浮层组件，由指令把节点标为 `layer: 'overlay'`（例如引导插件的 `{cursor}`），渲染端不给它单独的位置。
 - 全部展开的文档视图（`useHost().useStep()` 为无穷大）中，有内部步骤的组件可以给读者自己的步进控件；视觉状态是（章节步骤，本地步骤）的纯函数（`docs/architecture.md` 5.3 节，范例 `packages/addon-exec/components/PmStepRun.vue`）。
-- 持有 Worker、定时器等资源的服务在插件的 `dispose` 中释放：页面从往返缓存恢复时内核会再次启动插件。
+- 持有 Worker、定时器等资源的服务在插件的 `dispose` 中释放：页面从往返缓存恢复时内核会再次启动插件。 只有确认 `dispose` 完整停止 Worker、排队任务、流式请求、媒体轨道与计时器，且同一插件定义可再次 `setup` 时，才在 `PluginDefinition` 上声明 `restartable: true`。此外，组件、viewer、client 模块与 Vite 注入的每个来源包（含文稿本地模块）都须在 `package.json` 声明 `presmium.preview.restartable: true`；任一来源未声明或加载失败时工作台销毁该预览，避免缓存留下后台工作。可缓存网页切走时仍会真正卸载组件并停止内核，不能用隐藏或 `KeepAlive` 代替清理。
 - 样式与控件用设计系统（`docs/architecture.md` 5.10 节）：颜色、字体、间距、圆角与阴影只用 `@lincyaw/host` 的令牌（`var(--pm-color-ink)`、`var(--pm-color-muted)`、`var(--pm-color-accent)`、`var(--pm-font-sans)`、`var(--pm-space-3)`、`var(--pm-radius-control)` 等），不写死颜色，暗色随令牌切换；按钮、输入框、徽标、卡片、分段控件、标签页、弹层、抽屉、对话框、菜单、空状态与提示用 `PmButton`、`PmIconButton`、`PmField`（类 `pm-ui-input`、`pm-ui-select`、`pm-ui-textarea`）、`PmBadge`、`PmCard`、`PmSegmented`、`PmTabs`、`PmPopover`、`PmDrawer`、`PmDialog`、`PmMenu`、`PmEmpty`、`PmNotice`，图标用 `PmIcon`（`ICONS` 中的名字），不用 emoji；也可以直接用 `pm-ui-*` 类。文字对背景达到 WCAG AA，标识输入框与选中状态的边框对相邻颜色达到 3:1（用 `line-strong`），`e2e/design.spec.ts` 与 `e2e/fixtures/contrast.ts` 的 `lowContrast` 两项都查（`e2e/plugin-ui.spec.ts` 用后者查插件组件与幻灯片主题）。文稿中的组件（幻灯片、放映视图按字号缩放）在根元素上把 `--pm-text-sm`、`--pm-text-md` 设为 em，控件随周围的文字缩放（`packages/addon-classroom/src/client/style.css`）；工具栏中的弹层与面板保持宿主的字号。幻灯片形态中 Slidev 的重置样式让 `[type=button]` 透明、特异性与 `pm-ui-button` 相同，`addon-core/style.css` 补回按钮的填充。
 
 ## 6. 浏览器端注册

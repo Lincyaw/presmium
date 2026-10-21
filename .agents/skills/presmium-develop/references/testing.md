@@ -74,4 +74,6 @@ expect(JSON.stringify(notebook.cells)).toContain('预期的降级内容')
 
 性能用例排在其他 Chromium 用例之后；单独运行用 `pnpm exec playwright test e2e/perf.spec.ts --no-deps`，否则会先运行 Chromium 全套。
 
+工作台打开或切换讲义变慢时，使用 `node scripts/bench-workbench-preview.mjs /private/tmp/preview.json --rounds 3`：只启动一套隔离工作台与 Chromium，分别记录两次首开和三次返回，计时直到预览 ready 且首章节可见。区分预览地址接口的耗时与 iframe 加载耗时，记录系统负载；不要把编译时间当作整页延迟。 缓存优化另外核对同一 iframe/window 被复用、返回时零新增脚本、暂停后文稿组件及控制流停止、隐藏修改恢复为最新内容、两帧上限与未通过包级／内核插件 `restartable` 双重准入时的销毁退路（包括没有内核插件的 viewer-only 包）；定向用例为 `e2e/preview-cache.spec.ts`。基准同时记录自动化动作总耗时与浏览器真实点击到 ready 的时间，不混用二者。加 `--cs336` 只测真实课程的前两讲和图片。测试与脚本快照隔离工作台客户端，避免并行重建触发 Harness 热替换；并行会话运行定向 Playwright 时用 `--output /private/tmp/<独立目录>` 避免产物冲突。此脚本不构建完整示例或运行测试套件；首次调查见 `docs/benchmarks/workbench-preview-2026-10-21.md`，缓存生命周期、真实 CS336 测量与剩余延迟见 `docs/benchmarks/preview-cache-2026-10-21.md`；报告实际系统负载，不把小文稿或最好一轮当作所有场景都已达到 100 ms。
+
 用户明确要求全部验证时用 `pnpm verify`。报告验证实际覆盖的用户行为，并区分通过、跳过和未运行；还有未验证的外部条件时明确保留限制。

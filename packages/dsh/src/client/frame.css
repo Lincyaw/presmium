@@ -327,6 +327,8 @@ body,
   height: 100%;
 }
 
+.pmw-fallback__doc[hidden] { display: none; }
+
 .pmw-fallback__tab {
   height: 100%;
   overflow: hidden;

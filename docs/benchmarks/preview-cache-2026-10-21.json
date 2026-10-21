@@ -1,0 +1,846 @@
+{
+  "description": "Actual browser click-to-ready and separate Playwright wall time; sequential exploratory runs under different system load, not a controlled A/B speedup comparison.",
+  "runs": {
+    "smallFixtureBeforeConditionalIR": {
+      "measuredAt": "2026-10-21T07:37:47.797Z",
+      "runtime": {
+        "node": "v22.23.2",
+        "platform": "darwin",
+        "arch": "arm64",
+        "logicalCpus": 10,
+        "memoryBytes": 25769803776
+      },
+      "rounds": 7,
+      "loadAtStart": [
+        7.15966796875,
+        6.67529296875,
+        7.78515625
+      ],
+      "boot": {
+        "studioReadyMs": 1119.020125,
+        "browserLaunchMs": 96.6451669999999,
+        "workbenchOpenMs": 406.14970900000003,
+        "totalMs": 1665.0417080000002
+      },
+      "opens": [
+        {
+          "title": "分词入门",
+          "phase": "first-open",
+          "elapsedMs": 5360.505667,
+          "requests": 349,
+          "completedRequests": 346,
+          "failedRequests": 0,
+          "requestTypes": {
+            "fetch": 17,
+            "eventsource": 4,
+            "document": 1,
+            "script": 322,
+            "font": 5
+          },
+          "loadBefore": [
+            7.146484375,
+            6.6806640625,
+            7.7802734375
+          ],
+          "clickToReadyMs": 5231.200000047684,
+          "loadAfter": [
+            7.13427734375,
+            6.685546875,
+            7.775390625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "Second lecture",
+          "phase": "first-open",
+          "elapsedMs": 5329.860334,
+          "requests": 346,
+          "completedRequests": 346,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 14,
+            "eventsource": 4,
+            "document": 1,
+            "script": 322,
+            "font": 5
+          },
+          "loadBefore": [
+            7.13427734375,
+            6.685546875,
+            7.775390625
+          ],
+          "clickToReadyMs": 5221.299999952316,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "分词入门",
+          "phase": "warm-return",
+          "elapsedMs": 106.37083299999904,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 28.200000047683716,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "Second lecture",
+          "phase": "warm-return",
+          "elapsedMs": 109.89995799999997,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 6,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 32.89999997615814,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "分词入门",
+          "phase": "warm-return",
+          "elapsedMs": 105.76733400000012,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 32.60000002384186,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "Second lecture",
+          "phase": "warm-return",
+          "elapsedMs": 103.48358299999927,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 35.39999997615814,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "分词入门",
+          "phase": "warm-return",
+          "elapsedMs": 104.14329100000032,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 35.199999928474426,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "Second lecture",
+          "phase": "warm-return",
+          "elapsedMs": 104.16400000000067,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 47.89999997615814,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "分词入门",
+          "phase": "warm-return",
+          "elapsedMs": 104.43199999999888,
+          "requests": 17,
+          "completedRequests": 16,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4
+          },
+          "loadBefore": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "clickToReadyMs": 31.299999952316284,
+          "loadAfter": [
+            6.962890625,
+            6.6572265625,
+            7.7587890625
+          ],
+          "pageErrors": []
+        }
+      ],
+      "pageErrors": [],
+      "complete": true,
+      "loadAtEnd": [
+        6.962890625,
+        6.6572265625,
+        7.7587890625
+      ]
+    },
+    "cs336BeforeConditionalIR": {
+      "measuredAt": "2026-10-21T07:40:39.431Z",
+      "runtime": {
+        "node": "v22.23.2",
+        "platform": "darwin",
+        "arch": "arm64",
+        "logicalCpus": 10,
+        "memoryBytes": 25769803776
+      },
+      "rounds": 3,
+      "loadAtStart": [
+        4.55322265625,
+        5.81591796875,
+        7.22509765625
+      ],
+      "boot": {
+        "studioReadyMs": 2906.7385,
+        "browserLaunchMs": 191.15062499999976,
+        "workbenchOpenMs": 462.66883400000006,
+        "totalMs": 3705.389708
+      },
+      "opens": [
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "first-open",
+          "elapsedMs": 8432.492458,
+          "requests": 385,
+          "completedRequests": 378,
+          "failedRequests": 0,
+          "requestTypes": {
+            "fetch": 17,
+            "eventsource": 4,
+            "document": 1,
+            "script": 341,
+            "image": 14,
+            "font": 8
+          },
+          "loadBefore": [
+            5.4697265625,
+            5.98486328125,
+            7.2763671875
+          ],
+          "clickToReadyMs": 8142.5,
+          "loadAfter": [
+            5.19140625,
+            5.91845703125,
+            7.2451171875
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "first-open",
+          "elapsedMs": 6865.677541999999,
+          "requests": 376,
+          "completedRequests": 380,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 14,
+            "eventsource": 4,
+            "document": 1,
+            "script": 341,
+            "image": 9,
+            "font": 7
+          },
+          "loadBefore": [
+            5.19140625,
+            5.91845703125,
+            7.2451171875
+          ],
+          "clickToReadyMs": 6453.400000095367,
+          "loadAfter": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 229.35437499999898,
+          "requests": 21,
+          "completedRequests": 21,
+          "failedRequests": 2,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "clickToReadyMs": 90.60000002384186,
+          "loadAfter": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "warm-return",
+          "elapsedMs": 108.18008300000292,
+          "requests": 20,
+          "completedRequests": 19,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4,
+            "image": 3
+          },
+          "loadBefore": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "clickToReadyMs": 63.40000009536743,
+          "loadAfter": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 206.40016699999978,
+          "requests": 21,
+          "completedRequests": 20,
+          "failedRequests": 5,
+          "requestTypes": {
+            "fetch": 13,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "clickToReadyMs": 155,
+          "loadAfter": [
+            5.6162109375,
+            5.986328125,
+            7.25341796875
+          ],
+          "pageErrors": []
+        }
+      ],
+      "pageErrors": [],
+      "complete": true,
+      "loadAtEnd": [
+        5.6162109375,
+        5.986328125,
+        7.25341796875
+      ]
+    },
+    "cs336ConditionalIR": {
+      "measuredAt": "2026-10-21T08:00:00.190Z",
+      "runtime": {
+        "node": "v22.23.2",
+        "platform": "darwin",
+        "arch": "arm64",
+        "logicalCpus": 10,
+        "memoryBytes": 25769803776
+      },
+      "rounds": 5,
+      "fixture": "cs336-01-02",
+      "loadAtStart": [
+        5.4619140625,
+        8.9169921875,
+        9.0654296875
+      ],
+      "boot": {
+        "studioReadyMs": 3018.272625,
+        "browserLaunchMs": 118.64458300000024,
+        "workbenchOpenMs": 450.6012079999996,
+        "totalMs": 3644.023166
+      },
+      "opens": [
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "first-open",
+          "elapsedMs": 9465.821709,
+          "requests": 385,
+          "completedRequests": 377,
+          "failedRequests": 1,
+          "requestTypes": {
+            "fetch": 17,
+            "eventsource": 4,
+            "document": 1,
+            "script": 341,
+            "image": 14,
+            "font": 8
+          },
+          "loadBefore": [
+            5.3447265625,
+            8.8349609375,
+            9.03564453125
+          ],
+          "clickToReadyMs": 8983.200000047684,
+          "loadAfter": [
+            5.31689453125,
+            8.77099609375,
+            9.01171875
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "first-open",
+          "elapsedMs": 10876.917457999998,
+          "requests": 376,
+          "completedRequests": 379,
+          "failedRequests": 2,
+          "requestTypes": {
+            "fetch": 14,
+            "eventsource": 4,
+            "document": 1,
+            "script": 341,
+            "image": 9,
+            "font": 7
+          },
+          "loadBefore": [
+            5.31689453125,
+            8.77099609375,
+            9.01171875
+          ],
+          "clickToReadyMs": 10526.200000047684,
+          "loadAfter": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 268.39183400000184,
+          "requests": 20,
+          "completedRequests": 18,
+          "failedRequests": 7,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "clickToReadyMs": 126.10000002384186,
+          "loadAfter": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "warm-return",
+          "elapsedMs": 237.2330839999995,
+          "requests": 19,
+          "completedRequests": 17,
+          "failedRequests": 7,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 3
+          },
+          "loadBefore": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "clickToReadyMs": 111.29999995231628,
+          "loadAfter": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 255.59179099999892,
+          "requests": 20,
+          "completedRequests": 18,
+          "failedRequests": 7,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "clickToReadyMs": 128.60000002384186,
+          "loadAfter": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "warm-return",
+          "elapsedMs": 118.5826249999991,
+          "requests": 19,
+          "completedRequests": 16,
+          "failedRequests": 7,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 3
+          },
+          "loadBefore": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "clickToReadyMs": 73.59999990463257,
+          "loadAfter": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 226.21704200000022,
+          "requests": 20,
+          "completedRequests": 18,
+          "failedRequests": 7,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "clickToReadyMs": 121.20000004768372,
+          "loadAfter": [
+            7.00146484375,
+            9.0029296875,
+            9.09130859375
+          ],
+          "pageErrors": []
+        }
+      ],
+      "pageErrors": [],
+      "complete": true,
+      "loadAtEnd": [
+        7.00146484375,
+        9.0029296875,
+        9.09130859375
+      ]
+    },
+    "cs336ConditionalIRAndHastMemo": {
+      "measuredAt": "2026-10-21T08:09:47.752Z",
+      "runtime": {
+        "node": "v22.23.2",
+        "platform": "darwin",
+        "arch": "arm64",
+        "logicalCpus": 10,
+        "memoryBytes": 25769803776
+      },
+      "rounds": 5,
+      "fixture": "cs336-01-02",
+      "loadAtStart": [
+        7.19140625,
+        7.4443359375,
+        8.11767578125
+      ],
+      "boot": {
+        "studioReadyMs": 6782.908583,
+        "browserLaunchMs": 180.57566700000007,
+        "workbenchOpenMs": 2725.800375,
+        "totalMs": 9778.029958000001
+      },
+      "opens": [
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "first-open",
+          "elapsedMs": 17093.27375,
+          "requests": 382,
+          "completedRequests": 373,
+          "failedRequests": 1,
+          "requestTypes": {
+            "fetch": 14,
+            "eventsource": 4,
+            "document": 1,
+            "script": 341,
+            "image": 14,
+            "font": 8
+          },
+          "loadBefore": [
+            7.1484375,
+            7.4287109375,
+            8.10400390625
+          ],
+          "clickToReadyMs": 16631.5,
+          "loadAfter": [
+            7.50634765625,
+            7.4833984375,
+            8.10595703125
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "first-open",
+          "elapsedMs": 18174.13125,
+          "requests": 376,
+          "completedRequests": 378,
+          "failedRequests": 2,
+          "requestTypes": {
+            "fetch": 14,
+            "eventsource": 4,
+            "document": 1,
+            "script": 341,
+            "image": 9,
+            "font": 7
+          },
+          "loadBefore": [
+            7.50634765625,
+            7.4833984375,
+            8.10595703125
+          ],
+          "clickToReadyMs": 17812.300000071526,
+          "loadAfter": [
+            12.5458984375,
+            8.6015625,
+            8.49365234375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 384.28783299999486,
+          "requests": 20,
+          "completedRequests": 16,
+          "failedRequests": 2,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            12.5458984375,
+            8.6015625,
+            8.49365234375
+          ],
+          "clickToReadyMs": 223.5,
+          "loadAfter": [
+            12.5458984375,
+            8.6015625,
+            8.49365234375
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "warm-return",
+          "elapsedMs": 318.1280410000036,
+          "requests": 18,
+          "completedRequests": 5,
+          "failedRequests": 3,
+          "requestTypes": {
+            "fetch": 11,
+            "eventsource": 4,
+            "image": 3
+          },
+          "loadBefore": [
+            12.5458984375,
+            8.6015625,
+            8.49365234375
+          ],
+          "clickToReadyMs": 170.60000002384186,
+          "loadAfter": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 358.2518330000021,
+          "requests": 20,
+          "completedRequests": 19,
+          "failedRequests": 3,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "clickToReadyMs": 225.70000004768372,
+          "loadAfter": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 02: Resource accounting",
+          "phase": "warm-return",
+          "elapsedMs": 279.18937500000175,
+          "requests": 19,
+          "completedRequests": 15,
+          "failedRequests": 3,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 3
+          },
+          "loadBefore": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "clickToReadyMs": 157.10000002384186,
+          "loadAfter": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "pageErrors": []
+        },
+        {
+          "title": "CS336 Lecture 01: Introduction and tokenization",
+          "phase": "warm-return",
+          "elapsedMs": 402.4563330000019,
+          "requests": 20,
+          "completedRequests": 17,
+          "failedRequests": 3,
+          "requestTypes": {
+            "fetch": 12,
+            "eventsource": 4,
+            "image": 4
+          },
+          "loadBefore": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "clickToReadyMs": 288.2000000476837,
+          "loadAfter": [
+            12.1015625,
+            8.57470703125,
+            8.48486328125
+          ],
+          "pageErrors": []
+        }
+      ],
+      "pageErrors": [],
+      "complete": true,
+      "loadAtEnd": [
+        12.1015625,
+        8.57470703125,
+        8.48486328125
+      ]
+    }
+  }
+}

@@ -1,0 +1,480 @@
+{
+  "note": "Exploratory runs used fresh isolated state; concurrent source changes and system load prevent controlled whole-page before/after attribution. Experimental variants were discarded. Request counts in exploratory runs count completed requests; final run counts started requests.",
+  "exploratory": [
+    {
+      "variant": "before",
+      "loadAtStart": [
+        4.43359375,
+        7.4970703125,
+        17.28955078125
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 5935.320334,
+          "completedRequests": 341
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 5333.053125,
+          "completedRequests": 340
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 324.10158299999966,
+          "completedRequests": 340
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 337.91320899999846,
+          "completedRequests": 340
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 330.0983750000014,
+          "completedRequests": 340
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-crawl",
+      "loadAtStart": [
+        4.1357421875,
+        6.18994140625,
+        14.9345703125
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 5906.016666,
+          "completedRequests": 531
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 5340.298124999999,
+          "completedRequests": 494
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 331.22500000000036,
+          "completedRequests": 338
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 335.93962499999907,
+          "completedRequests": 338
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 315.00816699999996,
+          "completedRequests": 338
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-entry",
+      "loadAtStart": [
+        3.04296875,
+        5.01416015625,
+        12.8271484375
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 6414.731,
+          "completedRequests": 341
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 5857.866916999999,
+          "completedRequests": 340
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 327.90150000000176,
+          "completedRequests": 340
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 321.43775000000096,
+          "completedRequests": 340
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 329.7933329999978,
+          "completedRequests": 340
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-source",
+      "loadAtStart": [
+        9.60791015625,
+        5.98828125,
+        12.13525390625
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 6902.497458,
+          "completedRequests": 3130
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 5388.494250000002,
+          "completedRequests": 3131
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 842.6122080000005,
+          "completedRequests": 3131
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 995.9979590000021,
+          "completedRequests": 3131
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 1042.5175830000007,
+          "completedRequests": 3131
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-bundle",
+      "loadAtStart": [
+        5.59130859375,
+        5.806640625,
+        9.7646484375
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 8527.934958,
+          "completedRequests": 343
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 6851.983541,
+          "completedRequests": 341
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 947.8322500000031,
+          "completedRequests": 341
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 1442.982583000001,
+          "completedRequests": 341
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 868.9045839999999,
+          "completedRequests": 341
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-warmup",
+      "loadAtStart": [
+        5.59130859375,
+        5.802734375,
+        9.45166015625
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 7991.486750000001,
+          "completedRequests": 342
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 6856.933707999999,
+          "completedRequests": 340
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 853.0967500000006,
+          "completedRequests": 340
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 854.843791000003,
+          "completedRequests": 340
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 899.0623339999984,
+          "completedRequests": 340
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-explicit",
+      "loadAtStart": [
+        7.7626953125,
+        6.3701171875,
+        9.45263671875
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 10446.185167,
+          "completedRequests": 342
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 8388.508500000002,
+          "completedRequests": 341
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 1457.4390410000015,
+          "completedRequests": 341
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 858.6078329999982,
+          "completedRequests": 341
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 844.3166249999995,
+          "completedRequests": 341
+        }
+      ],
+      "pageErrors": []
+    },
+    {
+      "variant": "after-eager",
+      "loadAtStart": [
+        9.138671875,
+        7.0029296875,
+        9.47705078125
+      ],
+      "opens": [
+        {
+          "title": "分词入门",
+          "elapsedMs": 10457.81,
+          "completedRequests": 342
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 13933.94525,
+          "completedRequests": 341
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 861.32575,
+          "completedRequests": 341
+        },
+        {
+          "title": "Second lecture",
+          "elapsedMs": 861.2415829999991,
+          "completedRequests": 341
+        },
+        {
+          "title": "分词入门",
+          "elapsedMs": 856.2551669999993,
+          "completedRequests": 340
+        }
+      ],
+      "pageErrors": []
+    }
+  ],
+  "previewEndpointComparison": [
+    {
+      "query": "document=talk&view=web",
+      "ms": 74.84595900000022,
+      "status": 200,
+      "slidesAvailable": true
+    },
+    {
+      "query": "document=talk",
+      "ms": 3536.0993329999997,
+      "status": 200,
+      "slidesAvailable": true
+    },
+    {
+      "query": "document=talk&view=web",
+      "ms": 2.5196249999999054,
+      "status": 200,
+      "slidesAvailable": true
+    },
+    {
+      "query": "document=talk&view=slides",
+      "ms": 2.2325000000000728,
+      "status": 200,
+      "slidesAvailable": true
+    }
+  ],
+  "final": {
+    "measuredAt": "2026-10-21T07:07:46.360Z",
+    "runtime": {
+      "node": "v22.23.2",
+      "platform": "darwin",
+      "arch": "arm64",
+      "logicalCpus": 10,
+      "memoryBytes": 25769803776
+    },
+    "rounds": 3,
+    "loadAtStart": [
+      25.8232421875,
+      16.84912109375,
+      13.1513671875
+    ],
+    "boot": {
+      "studioReadyMs": 8135.055708,
+      "browserLaunchMs": 257.957042,
+      "workbenchOpenMs": 1065.463749999999,
+      "totalMs": 9559.424875
+    },
+    "opens": [
+      {
+        "title": "分词入门",
+        "phase": "first-open",
+        "elapsedMs": 18708.869417,
+        "requests": 344,
+        "completedRequests": 342,
+        "failedRequests": 0,
+        "requestTypes": {
+          "fetch": 15,
+          "eventsource": 3,
+          "document": 1,
+          "script": 320,
+          "font": 5
+        },
+        "loadBefore": [
+          29.203125,
+          17.88623046875,
+          13.5634765625
+        ],
+        "loadAfter": [
+          24.0908203125,
+          17.45458984375,
+          13.5087890625
+        ],
+        "pageErrors": []
+      },
+      {
+        "title": "Second lecture",
+        "phase": "first-open",
+        "elapsedMs": 19465.446375,
+        "requests": 340,
+        "completedRequests": 340,
+        "failedRequests": 1,
+        "requestTypes": {
+          "fetch": 11,
+          "eventsource": 3,
+          "document": 1,
+          "script": 320,
+          "font": 5
+        },
+        "loadBefore": [
+          24.0908203125,
+          17.45458984375,
+          13.5087890625
+        ],
+        "loadAfter": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "pageErrors": []
+      },
+      {
+        "title": "分词入门",
+        "phase": "warm-return",
+        "elapsedMs": 840.6614169999957,
+        "requests": 340,
+        "completedRequests": 340,
+        "failedRequests": 1,
+        "requestTypes": {
+          "fetch": 11,
+          "eventsource": 3,
+          "document": 1,
+          "script": 320,
+          "font": 5
+        },
+        "loadBefore": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "loadAfter": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "pageErrors": []
+      },
+      {
+        "title": "Second lecture",
+        "phase": "warm-return",
+        "elapsedMs": 877.8080409999966,
+        "requests": 340,
+        "completedRequests": 339,
+        "failedRequests": 1,
+        "requestTypes": {
+          "fetch": 11,
+          "eventsource": 3,
+          "document": 1,
+          "script": 320,
+          "font": 5
+        },
+        "loadBefore": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "loadAfter": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "pageErrors": []
+      },
+      {
+        "title": "分词入门",
+        "phase": "warm-return",
+        "elapsedMs": 836.471749999997,
+        "requests": 340,
+        "completedRequests": 339,
+        "failedRequests": 1,
+        "requestTypes": {
+          "fetch": 11,
+          "eventsource": 3,
+          "document": 1,
+          "script": 320,
+          "font": 5
+        },
+        "loadBefore": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "loadAfter": [
+          21.51904296875,
+          17.294921875,
+          13.5419921875
+        ],
+        "pageErrors": []
+      }
+    ],
+    "pageErrors": [],
+    "complete": true,
+    "loadAtEnd": [
+      21.51904296875,
+      17.294921875,
+      13.5419921875
+    ]
+  }
+}

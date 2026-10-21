@@ -15,6 +15,7 @@ export interface WebPreviewOptions {
 export interface WebPreviewPage {
   viewer: Viewer
   dark: Ref<boolean>
+  setActive(active: boolean): Promise<void>
 }
 
 export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions): void {
@@ -42,6 +43,7 @@ export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions
     setDark(value) {
       dark.value = value
     },
+    setActive: page.setActive,
     stepOf({ section, block }) {
       const step = blockStep(section, block)
       const found = viewer.section(section)

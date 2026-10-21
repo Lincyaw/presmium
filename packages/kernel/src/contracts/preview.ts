@@ -40,6 +40,7 @@ export type PreviewCommand =
   | { type: 'pins', targets: PreviewPin[] }
   | { type: 'marks', on: boolean }
   | { type: 'appearance', dark: boolean }
+  | { type: 'activity', active: boolean, request: number }
 
 export type PreviewCommandType = PreviewCommand['type']
 
@@ -49,6 +50,7 @@ export type PreviewReport =
   | { type: 'picked', section: string, block?: string, step?: number, trail?: string[] }
   | { type: 'selection', selection: (PreviewAnchor & { text: string }) | null }
   | { type: 'updated', revision?: string }
+  | { type: 'activity', active: boolean, request: number, revision?: string, error?: string }
   | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string }
 
 export type PreviewEnvelope<M> = M & { protocol: typeof PREVIEW_NAME, version: number, nonce: string }
@@ -61,6 +63,7 @@ const record = (value: unknown): value is Record<string, unknown> => typeof valu
 const text = (value: unknown): value is string => typeof value === 'string'
 const optional = <T>(value: unknown, is: (v: unknown) => v is T) => value === undefined || is(value)
 const step = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0
+const request = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
 const strings = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 10_000 && value.every(text)
 const anchor = (value: unknown): value is PreviewAnchor => record(value) && text(value.section) && optional(value.block, text)
 
@@ -77,6 +80,7 @@ export function readPreviewCommand(data: unknown, nonce: string): PreviewCommand
     case 'pick':
     case 'marks': return typeof m.on === 'boolean' ? { type: m.type, on: m.on } : undefined
     case 'appearance': return typeof m.dark === 'boolean' ? { type: 'appearance', dark: m.dark } : undefined
+    case 'activity': return typeof m.active === 'boolean' && request(m.request) ? { type: 'activity', active: m.active, request: m.request } : undefined
     case 'pins': return Array.isArray(m.targets) && m.targets.length <= 1000 && m.targets.every(t => record(t) && text(t.id) && text(t.section) && text(t.block) && text(t.label))
       ? { type: 'pins', targets: (m.targets as PreviewPin[]).map(({ id, section, block, label }) => ({ id, section, block, label })) }
       : undefined
@@ -93,6 +97,9 @@ export function readPreviewReport(data: unknown, nonce: string): PreviewReport |
     case 'picked': return text(m.section) && optional(m.block, text) && optional(m.step, step) && optional(m.trail, strings) ? { type: 'picked', section: m.section, ...m.block ? { block: m.block as string } : {}, ...m.step === undefined ? {} : { step: m.step as number }, ...m.trail ? { trail: m.trail as string[] } : {} } : undefined
     case 'selection': return m.selection === null || (record(m.selection) && text(m.selection.text) && anchor(m.selection)) ? { type: 'selection', selection: m.selection as (PreviewAnchor & { text: string }) | null } : undefined
     case 'updated': return optional(m.revision, text) ? { type: 'updated', ...m.revision ? { revision: m.revision as string } : {} } : undefined
+    case 'activity': return typeof m.active === 'boolean' && request(m.request) && optional(m.revision, text) && optional(m.error, text)
+      ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }
+      : undefined
     case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {} } : undefined
     default: return undefined
   }
@@ -107,6 +114,7 @@ export interface PreviewPage {
   go(command: Extract<PreviewCommand, { type: 'go' }>): void
   reveal(target: PreviewAnchor): void
   setDark(dark: boolean): void
+  setActive?(active: boolean): void | Promise<void>
   sectionOf?(element: Element): string | undefined
   sectionElement?(section: string): HTMLElement | undefined
   seen?(element: Element): boolean
@@ -122,6 +130,7 @@ export interface PreviewAgent {
 }
 
 const FRAME_NAME = `${PREVIEW_NAME}:`
+const PAUSED = ':paused'
 const STYLE_ID = 'presmium-preview-style'
 const HIGHLIGHT = 'data-preview-highlight'
 const HOVER = 'data-preview-hover'
@@ -141,14 +150,26 @@ function previewNonce(): string | undefined {
   if (typeof window === 'undefined') return undefined
   const given = new URL(window.location.href).searchParams.get(PREVIEW_PARAM)
   if (given) return given
-  return window.name.startsWith(FRAME_NAME) ? window.name.slice(FRAME_NAME.length) || undefined : undefined
+  if (!window.name.startsWith(FRAME_NAME)) return undefined
+  const own = window.name.slice(FRAME_NAME.length)
+  return (own.endsWith(PAUSED) ? own.slice(0, -PAUSED.length) : own) || undefined
+}
+
+export function previewActive(): boolean {
+  if (typeof window === 'undefined' || window.parent === window) return true
+  const nonce = previewNonce()
+  return !nonce || window.name !== `${FRAME_NAME}${nonce}${PAUSED}`
 }
 
 export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   if (typeof window === 'undefined' || window.parent === window || page.origins.length === 0) return undefined
   const nonce = previewNonce()
   if (!nonce) return undefined
-  window.name = `${FRAME_NAME}${nonce}`
+  let active = previewActive()
+  let stopped = false
+  let activity = Promise.resolve()
+  const capabilities: PreviewCommandType[] = [...COMMANDS, ...page.setActive ? ['activity' as const] : []]
+  window.name = `${FRAME_NAME}${nonce}${active ? '' : PAUSED}`
   const root = document.documentElement
   root.dataset.presmiumPreview = 'on'
   if (!document.getElementById(STYLE_ID)) {
@@ -159,6 +180,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   }
 
   const post = (message: PreviewReport) => {
+    if (stopped || (!active && message.type !== 'ready' && message.type !== 'activity')) return
     for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
 
@@ -240,27 +262,35 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   }
   let frame = 0
   const redraw = () => {
+    if (!active || stopped) return
     cancelAnimationFrame(frame)
     frame = requestAnimationFrame(() => {
+      frame = 0
+      if (!active || stopped) return
       drawHighlight(false)
       drawPins()
     })
   }
+  let highlighting: ReturnType<typeof setTimeout> | undefined
   const showHighlight = (target: PreviewAnchor | null) => {
+    clearTimeout(highlighting)
     highlight = target
+    if (!active || stopped) return
     if (!target) return void drawHighlight(false)
     if (drawHighlight(true)) return
     page.reveal(target)
     const until = Date.now() + 5000
     const retry = () => {
-      if (highlight !== target || drawHighlight(true) || Date.now() > until) return
-      setTimeout(retry, 100)
+      highlighting = undefined
+      if (!active || stopped || highlight !== target || drawHighlight(true) || Date.now() > until) return
+      highlighting = setTimeout(retry, 100)
     }
-    setTimeout(retry, 50)
+    highlighting = setTimeout(retry, 50)
   }
 
   let hovered: Element | undefined
   const hover = (event: MouseEvent) => {
+    if (!active || stopped) return
     const target = event.target instanceof Element ? event.target : undefined
     const block = target && !target.closest(CONTROLS) ? seenBlock(target) : undefined
     if (block === hovered) return
@@ -269,6 +299,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     hovered?.setAttribute(HOVER, '')
   }
   const click = (event: MouseEvent) => {
+    if (!active || stopped) return
     const target = event.target instanceof Element ? event.target : undefined
     if (!target || event.button !== 0 || target.closest(CONTROLS)) return
     if (document.getSelection()?.isCollapsed === false) return
@@ -297,7 +328,9 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   let selecting: ReturnType<typeof setTimeout> | undefined
   const selection = () => {
     clearTimeout(selecting)
+    if (!active || stopped) return
     selecting = setTimeout(() => {
+      if (!active || stopped) return
       const range = document.getSelection()
       const value = range && !range.isCollapsed ? range.toString().trim() : ''
       const node = range?.rangeCount ? range.getRangeAt(0).commonAncestorContainer : undefined
@@ -316,7 +349,46 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   const observer = new MutationObserver(() => {
     if (highlight || pins.length > 0) redraw()
   })
-  observer.observe(document.body, { childList: true, subtree: true })
+  if (active) observer.observe(document.body, { childList: true, subtree: true })
+
+  const changeActivity = (command: Extract<PreviewCommand, { type: 'activity' }>) => {
+    if (!page.setActive) return
+    activity = activity.then(async () => {
+      if (stopped) return
+      active = false
+      window.name = `${FRAME_NAME}${nonce}${PAUSED}`
+      clearTimeout(timer)
+      timer = undefined
+      clearTimeout(selecting)
+      clearTimeout(highlighting)
+      cancelAnimationFrame(frame)
+      frame = 0
+      observer.disconnect()
+      hovered?.removeAttribute(HOVER)
+      hovered = undefined
+      try {
+        await page.setActive!(command.active)
+        if (stopped) return
+        active = command.active
+        window.name = `${FRAME_NAME}${nonce}${active ? '' : PAUSED}`
+        const current = page.revision()
+        post({ type: 'activity', active, request: command.request, ...current === undefined ? {} : { revision: current } })
+        if (active) {
+          observer.observe(document.body, { childList: true, subtree: true })
+          sent = undefined
+          last = 0
+          moved()
+          redraw()
+        }
+      } catch (error) {
+        active = false
+        window.name = `${FRAME_NAME}${nonce}${PAUSED}`
+        post({ type: 'activity', active: false, request: command.request, error: errorMessage(error) })
+      }
+    }).catch((error) => {
+      console.error(`[presmium] the preview activity could not be reported: ${errorMessage(error)}`)
+    })
+  }
 
   const receive = (event: MessageEvent) => {
     if (event.source !== window.parent || !page.origins.includes(event.origin)) return
@@ -332,6 +404,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
           return drawPins()
         case 'marks': return void root.classList.toggle(AUTHOR_MARKS_CLASS, command.on)
         case 'appearance': return page.setDark(command.dark)
+        case 'activity': return changeActivity(command)
       }
     } catch (error) {
       console.error(`[presmium] the preview could not take ${command.type}: ${errorMessage(error)}`)
@@ -343,14 +416,16 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   let last = 0
   const sendPosition = () => {
     timer = undefined
+    if (stopped) return
     const position = page.position()
     if (!position) return
     if (!ready) {
       ready = true
       revision = page.revision()
-      post({ type: 'ready', renderer: page.renderer, document: page.document, ...revision ? { revision } : {}, capabilities: COMMANDS })
-      for (const problem of waiting.splice(0)) post(problem)
+      post({ type: 'ready', renderer: page.renderer, document: page.document, ...revision ? { revision } : {}, capabilities })
     }
+    if (!active) return
+    for (const problem of waiting.splice(0)) post(problem)
     const key = JSON.stringify(position)
     if (key === sent) return
     sent = key
@@ -358,7 +433,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     post({ type: 'position', ...position })
   }
   const moved = () => {
-    if (timer) return
+    if (stopped || timer || (!active && ready)) return
     timer = setTimeout(sendPosition, Math.max(0, 150 - (Date.now() - last)))
   }
   moved()
@@ -366,6 +441,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
   return {
     moved,
     updated() {
+      if (!active || stopped) return
       const next = page.revision()
       if (!ready || next === revision) return
       revision = next
@@ -374,17 +450,21 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     },
     redraw,
     report(problem) {
+      if (stopped) return
       const message = { type: 'report' as const, ...problem }
-      if (ready) post(message)
+      if (ready && active) post(message)
       else waiting.push(message)
     },
     stop() {
+      stopped = true
       window.removeEventListener('message', receive)
       document.removeEventListener('selectionchange', selection)
       observer.disconnect()
       setPicking(false)
       clearTimeout(timer)
       clearTimeout(selecting)
+      clearTimeout(highlighting)
+      cancelAnimationFrame(frame)
       delete root.dataset.presmiumPreview
     },
   }

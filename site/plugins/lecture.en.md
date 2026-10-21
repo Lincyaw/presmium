@@ -2,7 +2,7 @@
 title: Plugin guide
 lang: en
 description: Extend Presmium with components, directives, services, server routes, views and renderers
-translationOf: { entry: lecture.md, digest: 832af4823d44344ad766952692af1aee29c36e1cabc76155c1eea710a9dcaf9e }
+translationOf: { entry: lecture.md, digest: 707aa83775bceb38f522c97eb2e382d4eb7757fe3b539ace4265d64b29cc5585 }
 ---
 
 (plugins)=
@@ -125,6 +125,8 @@ const t = useMessages(MESSAGES)
 ## Registering the browser side
 
 `src/client/plugin.ts` exports the kernel plugin (`PluginDefinition`) by default: its manifest names `id`, `version`, `kernel` and the services it provides and requires; `setup(ctx)` calls `ctx.provide(token, implementation)`, and `dispose` releases workers and timers. The web form imports it by itself; in the slides, `setup/main.ts` registers it with `registerPresmiumPlugin`.
+
+Set `presmium: { preview: { restartable: true } }` in the plugin package or document directory's `package.json` only when its browser modules can safely be rebuilt after unmounting. This promise covers components, viewer and client modules, and code injected through Vite. Kernel plugins must also set `restartable: true` on `PluginDefinition`, promising that `dispose` stops all background work and the same definition can run `setup` again. The workbench uses these declarations to retain loaded web preview modules: leaving a lecture unmounts its components and stops the kernel; returning starts it again. A missing declaration or failed module load causes the preview to be destroyed and reloaded. Execution, streaming answers, recording, and media must still be cleaned up.
 
 (plugin-directives)=
 # Directives and roles

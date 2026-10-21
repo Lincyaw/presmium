@@ -53,6 +53,8 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const activePanel = usePanelInfo(panel => panel.activePanelId)
   const t = useFrameMessages(workbench)
   const document_ = useWorkbench(state => state.document)
+  const retainedDocument = useRef(false)
+  if (document_ !== undefined) retainedDocument.current = true
   const documentTitle = useWorkbench(state => state.documents?.documents.find(doc => doc.dir === state.document)?.title)
   const activeFile = useWorkbench(state => state.active)
   const sourceNavigation = useWorkbench(state => state.reveal?.seq)
@@ -178,8 +180,8 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const documentShown = panel === null && (!narrow || view === 'source' || view === 'preview')
   const centre = <>
     {panel !== null && <div className="pmw-frame__panel" data-pmw-slot={`main:${activePanel}`}>{panel}</div>}
-    {document_ !== undefined && <div className="pmw-frame__document" hidden={!documentShown}>
-      <DocumentView only={narrow ? view === 'preview' ? 'preview' : 'source' : undefined} />
+    {retainedDocument.current && <div className="pmw-frame__document" hidden={document_ === undefined || !documentShown}>
+      <DocumentView active={document_ !== undefined && documentShown} only={narrow ? view === 'preview' ? 'preview' : 'source' : undefined} />
     </div>}
     {panel === null && (narrow
       ? view === 'changes' && document_ !== undefined ? <ChangesPanel /> : view === 'files' ? <FilesOrDocuments workbench={workbench} onOpen={() => actions.show('source')} />

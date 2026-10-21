@@ -265,9 +265,9 @@ function theme(preview?: { origins: string[], document: string }): string {
 import doc, { revision, translations } from 'virtual:presmium/ir'
 import { createPresmiumTheme } from ${JSON.stringify(CLIENT_ENTRY)}
 ${preview ? `import { startWebPreview } from ${JSON.stringify(PREVIEW_AGENT)}
-` : ''}import { components, plugins, viewers } from './addons.ts'
+` : ''}import { components, plugins, viewers, restartable } from './addons.ts'
 
-export default createPresmiumTheme({ doc, revision, translations, components, plugins, viewers${preview ? `, preview: page => startWebPreview(page, ${JSON.stringify(preview)})` : ''} })
+export default createPresmiumTheme({ doc, revision, translations, components, plugins, viewers, restartable${preview ? `, preview: page => startWebPreview(page, ${JSON.stringify(preview)})` : ''} })
 `
 }
 
@@ -277,6 +277,8 @@ function addons(modules: ClientModules): string {
   return `${GENERATED}
 const ssr = import.meta.env.SSR
 const never = () => new Promise(() => {})
+
+export const restartable = ${modules.restartable === true}
 
 export const components = {
 ${components.join('\n')}

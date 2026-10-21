@@ -1,6 +1,6 @@
 import { stepKeys, trailStep } from '@lincyaw/kernel'
 import type { Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewReport } from '@lincyaw/kernel'
-import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, ReviewFollowed, ReviewView, SourceAnswer, UncommittedFile } from './api.ts'
+import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewView, ReviewFollowed, ReviewView, SourceAnswer, UncommittedFile } from './api.ts'
 import { mergeTexts } from './merge.ts'
 import type { MergeLabels } from './merge.ts'
 import { placeAt, placeOf } from './places.ts'
@@ -9,7 +9,7 @@ import type { WorkspaceClient } from './service.ts'
 
 export type Locale = 'zh-CN' | 'en'
 
-export type PreviewView = 'web' | 'slides'
+export type { PreviewView } from './api.ts'
 export type DocumentLayout = 'preview' | 'split' | 'source'
 
 export type FileNotice =
@@ -99,6 +99,8 @@ export class Workbench {
   #stopEvents?: () => void
   #stopReview?: () => void
   #changeReads = 0
+  #previewReads = 0
+  #irReads = 0
   #revealed = 0
   #highlightTimer?: ReturnType<typeof setTimeout>
   #highlight: PreviewAnchor | null = null
@@ -222,9 +224,10 @@ export class Workbench {
   }
 
   async #readIr(dir: string): Promise<void> {
+    const read = ++this.#irReads
     try {
       const ir = await this.client.ir(dir)
-      if (this.#state.document === dir) this.#set({ ir })
+      if (this.#state.document === dir && read === this.#irReads) this.#set({ ir })
     } catch {
     }
   }
@@ -299,17 +302,28 @@ export class Workbench {
   }
 
   async #readPreview(dir: string): Promise<void> {
+    const read = ++this.#previewReads
+    const view = this.#state.view
+    const current = () => this.#state.document === dir && this.#state.view === view && read === this.#previewReads
     try {
-      const preview = await this.client.preview(dir)
-      if (this.#state.document === dir) this.#set({ preview, previewFailure: undefined })
+      const preview = await this.client.preview(dir, view)
+      if (current()) this.#set({ preview, previewFailure: undefined })
     } catch (error) {
-      if (this.#state.document === dir) this.#set({ previewFailure: message(error) })
+      if (current()) this.#set({ previewFailure: message(error) })
     }
   }
 
   async #compiled(dir: string, event: IrEvent): Promise<void> {
     if (this.#state.document !== dir) return
-    if (event.revision !== this.#state.ir?.revision) await this.#readIr(dir)
+    const renderers = this.#state.ir?.doc.config.renderers
+    if (event.revision !== this.#state.ir?.revision) {
+      await this.#readIr(dir)
+      // Opening the document and its initial SSE snapshot share one request.
+      // A save can arrive while that request still describes the previous revision.
+      if (this.#state.document === dir && event.revision !== this.#state.ir?.revision) await this.#readIr(dir)
+    }
+    if (this.#state.document !== dir) return
+    if (renderers && JSON.stringify(renderers) !== JSON.stringify(this.#state.ir?.doc.config.renderers)) void this.#readPreview(dir)
     const changed = this.#state.open.filter(file => event.files.includes(file.path)).map(file => file.path)
     if (changed.length > 0) await this.checkDisk(changed)
     if (event.files.length > 0) {
@@ -497,7 +511,10 @@ export class Workbench {
   }
 
   setView(view: PreviewView): void {
-    this.#set({ view })
+    if (view === this.#state.view) return
+    this.#set({ view, preview: undefined, previewFailure: undefined, shown: undefined })
+    const document = this.#state.document
+    if (document !== undefined && !(document === '' && this.#state.documents?.single === false)) void this.#readPreview(document)
   }
 
   setLayout(layout: DocumentLayout): void {
@@ -543,7 +560,8 @@ export class Workbench {
     return () => this.#previews.delete(sink)
   }
 
-  previewReport(report: PreviewReport): void {
+  previewReport(document: string, view: PreviewView, report: PreviewReport): void {
+    if (document !== this.#state.document || view !== this.#state.view) return
     switch (report.type) {
       case 'ready':
         this.#set({ shown: report.revision })
@@ -555,12 +573,12 @@ export class Workbench {
         {
           const section = this.#state.ir?.doc.sections.find(section => section.id === report.section)
           const step = section && report.trail ? trailStep(stepKeys(section), report.trail) : report.step
-          this.setFocus([{ id: 'selection', from: this.#state.view, section: report.section, ...report.block ? { block: report.block } : {}, ...step === undefined ? {} : { step } }])
+          this.setFocus([{ id: 'selection', from: view, section: report.section, ...report.block ? { block: report.block } : {}, ...step === undefined ? {} : { step } }])
           if (this.#state.layout !== 'preview') void this.revealPlace(report.section, report.block)
         }
         break
       case 'selection':
-        if (report.selection?.text.trim()) this.setFocus([{ id: 'selection', from: this.#state.view, section: report.selection.section, ...report.selection.block ? { block: report.selection.block } : {}, quote: report.selection.text.slice(0, 2000) }])
+        if (report.selection?.text.trim()) this.setFocus([{ id: 'selection', from: view, section: report.selection.section, ...report.selection.block ? { block: report.selection.block } : {}, quote: report.selection.text.slice(0, 2000) }])
         break
       case 'report':
         if (!this.#state.issues.some(issue => issue.message === report.message && issue.plugin === report.plugin)) {
