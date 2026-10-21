@@ -547,7 +547,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 - **具名环境**：头部声明的每个环境由 `kind` 对应的插件（`PresmiumNodePlugin.environments`）创建执行器，ID 为 `presmium.env.<名>`，与插件的其他执行器一起参与编译时执行；没有提供方的 `kind` 与未声明的环境名是错误。环境不可用（缺凭据、不可达）时，有录制就用录制并警告，没有录制时报错；不改用其他执行器。
 - **环境指纹**：Jupyter 为声明的镜像摘要、内核规格（含 `metadata`）的哈希、内核报告的实现与语言版本；WASI 为运行时二进制的哈希；WebGPU 为浏览器版本与显卡适配器的描述（CPU 模拟的适配器写明 `fallback`）。
 - **会话键链**：带 `:session:` 的代码块按在文稿中出现的顺序组成会话，第 i 个代码块的缓存键是 `hash(第 i−1 个的键, 语言, 代码, 参数, 执行器 ID, 环境指纹)`，第一个的“前一个键”为会话名。所有块都命中缓存时不运行；有一块未命中时，结束该会话（`endSession`），从会话的第一个块起依次重新执行并重新录制。构建结束时结束所有用过的会话。不带 `:session:` 的代码块，键就是上面第一条的哈希，只由它自己的输入决定。
-- **富输出与录制块**：录制保存 `outputs`。MIME 数据中长度超过 4096 个字符的值存为 `.presmium/freeze/blobs/<sha256>`，录制只保存引用 `{ "presmium/blob": "<sha256>" }`；编译器读取录制时把它们放回 IR，IR 与产物中的输出因此是完整的 nbformat 输出。`presmium build` 删除不再被引用的录制块。
+- **富输出与录制块**：录制保存 `outputs`。MIME 数据中长度超过 4096 个字符的值存为 `.presmium/freeze/blobs/<sha256>`，录制只保存引用 `{ "presmium/blob": "<sha256>" }`；编译器读取录制时把它们放回 IR，IR 与产物中的输出因此是完整的 nbformat 输出。引用的录制块缺失时，整条录制无效；有可用执行器则重新录制，否则按缺少录制报告诊断，不把引用对象写进产物。`presmium build` 删除不再被引用的录制块。
 - 编译时执行器（执行插件的 `presmium.python`、`presmium.node`）在子进程中、每次运行一个新的临时目录（运行目录）中执行代码；代码、参数与输入写成运行目录中的文件，结果由运行器写进运行目录中的结果文件（不用标准输入与文件描述符 3，进程沙箱不转发它们，`architecture.md` 4.6 节）：程序直接写标准输出（`process.stdout.write`、`console.dir`）不会破坏结果，这些输出照常录制；顶层 `await` 永不完成时，结果为失败并说明原因。运行末尾才发生的 Promise 拒绝与定时器中的异常使运行失败，与浏览器中一致。
 - **执行的环境变量**：被执行的代码只得到编译器给出的 `RunContext.env`（`architecture.md` 4.6 节）：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量，`serve` 中只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与临时的 `HOME`；都加上运营者设置 `settings.presmium.exec.passEnv`（第 10 节）列出的变量。服务端的凭据因此不会经代码自己的环境被打印进录制、IR 与产物；有意读取其他进程信息的代码只由进程沙箱挡住，是残余风险（`architecture.md` 9.4、10.6 节）。本地容器的 `docker` 与 devcontainer 命令行另得到 Docker 客户端需要的几个变量（`DOCKER_HOST`、`XDG_RUNTIME_DIR` 等与真实的 `HOME`，都不是凭据），容器里的代码经命令行只得到 `RunContext.env` 中的变量（`architecture.md` 10.6 节）。
 - **进程沙箱**：运营者插件登记了进程沙箱（`PROCESS_SANDBOX`）时，执行插件的子进程经它运行，构建报告写明隔离方式（`architecture.md` 10.6 节）。
@@ -599,7 +599,7 @@ IR 只记录语义与已经计算好的结果（例如逻辑单元换算出的�
 
 代码块的 `:run:` 取 `compile`（默认，构建时执行并录制输出）、`live`（只在浏览器中执行）或 `both`；`:executor:` 指定执行器 ID；`:timeout:` 为毫秒。`{code-cell}` 是 MyST notebook 的写法，编成同样的 `code` 节点，`:run:` 同样生效；MyST 为它生成的 `outputs` 节点被丢弃，输出只来自编译时执行，所以同一份源码两次编译得到相同的 IR。
 
-组件内的代码：插件组件的子块中的代码块（例如执行面板、分步执行与本地环境包着的代码）属于组件，由组件运行并显示输出，这些代码块在网页与幻灯片中都不显示运行控件，也不显示录制的输出；notebook 由组件的扩展决定如何写出它们。
+组件内的代码：插件组件默认拥有其子块中的代码块（例如执行面板、分步执行与本地环境包着的代码），由组件运行并显示输出，这些代码块在网页与幻灯片中都不显示运行控件，也不显示录制的输出。只组织子内容、不负责执行的容器（例如预测的揭示内容）在 `ComponentNode` 写 `ownsCode: false`，子代码照常显示运行控件和输出。notebook 由组件的扩展决定如何写出它们。
 
 插件指令：
 
@@ -666,7 +666,10 @@ interface Renderer {
 | `localAsset(source, url)` | 块中引用的本地文件：相对于块所在的源文件，或 `/...`（文稿的 `public/`）；按 URL 解码（转义不完整时保留原文），给出 `{ file, name, directory }`：文件（或准备好的目录）、发布名 `<内容哈希前 8 位>-<文件名>` 与是否目录（宿主自己的上下文可以不写 `directory`）；远程地址、文件不存在，或是一份文档的源码（`documentLink` 给出的链接，按解码后的真实文件名判断，经符号链接的也算）时为空。渲染端用 `@lincyaw/kernel` 的 `publishedUrl(found, url, { prefix })` 写地址、`@lincyaw/kernel/node` 的 `copyPublished(found, dir)` 复制 |
 | `documentLink(source, url)` | 块中的地址指向的文档：工作区中一份文档的入口文件 `<文档目录>/lecture.md` 或它的目录，给出 `{ dir, fragment }`（文档目录相对于工作区根目录，`#片段` 解码后的章节 ID 或标签）；其他地址为空。可选：宿主自己的上下文可以没有它 |
 | `renderers`、`base` | 本次构建或开发运行的全部渲染端，与本渲染端的站点路径（2.1 节） |
-| `vitePlugins` | 插件提供的 Vite 插件（第 5 节），运行 Vite 的渲染端在开发与构建中加入 |
+| `vitePlugins` | 插件在当前进程中提供的 Vite 插件（第 5 节） |
+| `nodeVitePlugins` | 已解析的 Node 端 Vite 入口描述，供另起进程的渲染端生成配置；形状与加载规则见下文 |
+
+`nodeVitePlugins` 中的每项是 `NodeVitePlugin { id, entry, config }`：插件 ID、加载器已经解析并校验的 Node 入口文件、当前编译得到的插件配置。编译器的 `nodeVitePlugins(compilation)` 从已加载插件派生这些描述，工作区站点通过各份 `SiteDocument.nodeVitePlugins` 携带。网页与幻灯片渲染端据此生成导入，不重新解析插件的 `exports` 或猜测入口。没有 Node 端 Vite 贡献时可省略；手工组装上下文且 `vitePlugins` 非空时，必须同时提供入口描述，否则渲染端报错。
 
 渲染端发布插件配置时，把位于 `workspaceRoot` 内的绝对路径改为相对路径（网页相对于文稿目录，幻灯片相对于生成的 Slidev 文稿所在目录），产物因此不随检出位置变化（`architecture.md` 4.2 节）。工作目录存放渲染途中生成、跨次构建保留的文件：`build` 中为 `<文稿>/.presmium/<渲染端 ID>`，`dev` 中与输出目录相同；用到它的渲染端自行创建，并使它不进入 git。幻灯片渲染端把生成的 Slidev 文稿（`slides.md`）写在工作目录中，`slidev export` 与发布插件的导出、视觉差异都在这里进行；构建报告的每个输出都给出 `workDir`。生成的文稿按幻灯片的站点路径写出（链接到的本地文件与组件属性中的文件地址带上 `base`），而 `slidev export` 总在根路径服务文稿：`base` 不是 `/` 时（例如同时构建两种形态的默认 `/slides/`），构建报告提示改用 `presmium-export`，它为导出另写一份以 `/` 为 `base` 的文稿。
 
@@ -811,11 +814,11 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 ```
 
 - `voice`：`{ kind: 'recorded', speaker }`，或 `{ kind: 'synthetic', engine, model, voice }`；合成的讲授在播放界面标明“AI 合成语音”。
-- `audio`：录制的讲授每节一段音频（`start` 是该段在讲授中的开始时刻，秒）；合成的讲授没有这一项，片段由语音段经合成缓存给出（`ClipClock`）。
+- `audio`：录制的讲授每节一段音频（`start` 是该段在讲授中的开始时刻，秒）；合成的讲授没有这一项，片段由语音段经合成缓存给出（`MediaClock`）。
 - `video`：可选，只有录制时开启了摄像头或屏幕才有；`kind` 为 `camera` 或 `screen`，时刻规则同 `audio`。回放仍由事件驱动真实页面，不依赖它。
 - `blocks`：被事件引用的块的内容指纹（键为 `<章节 ID>/<块 ID>`）与行数；`ir.hash` 是录制时的 IR 哈希，`ir.sections` 是录制时每一节的 IR 哈希（重录一节只换那一节的，其他各节保留原来录制时的）。它们用于漂移检查。
 - `utterances[].words`：`[开始毫秒, 时长毫秒, 字或词]`；中文为单字。`translations` 的 `source` 是翻译时原文的摘要，与当前原文不一致即过期。
-- `utterances[].clip` 是这一句合成的片段，合成缓存中的文件名 `<键>.wav` 或 `<键>.ogg`（讲授轨中只能是这种名字），发布在讲授目录的 `clips/` 下；合成的讲授（`voice.kind: synthetic`）由 `ClipClock` 在每个语音段的时刻播放它的片段（不播放录制的音频）。`voice` 的合成形式另有可选的 `provider`（引擎的服务提供方）。录制的讲授经转写得到语音段（`id` 为 `u1`、`u2`……，`section` 与 `step` 取自它开始时的位置），在某个语音段说话期间发生的事件绑定到当时说的字（`at`）；改一句的文字时保留未改动的字的时间、新字按字数分配其间的时间，绑定到这一句的事件随它的字移动，片段去掉（合成的讲授立即重新合成这一句）；换音色重新合成时每句在原来的时刻开始，比前一句的新片段结束得早时推到它结束之后（片段不重叠），没有 `at` 的事件时刻不变。
+- `utterances[].clip` 是这一句合成的片段，合成缓存中的文件名 `<键>.wav` 或 `<键>.ogg`（讲授轨中只能是这种名字），发布在讲授目录的 `clips/` 下；合成的讲授（`voice.kind: synthetic`）由 `MediaClock` 在每个语音段的时刻播放它的片段（不播放录制的音频）。`voice` 的合成形式另有可选的 `provider`（引擎的服务提供方）。录制的讲授经转写得到语音段（`id` 为 `u1`、`u2`……，`section` 与 `step` 取自它开始时的位置），在某个语音段说话期间发生的事件绑定到当时说的字（`at`）；改一句的文字时保留未改动的字的时间、新字按字数分配其间的时间，绑定到这一句的事件随它的字移动，片段去掉（合成的讲授立即重新合成这一句）；换音色重新合成时每句在原来的时刻开始，比前一句的新片段结束得早时推到它结束之后（片段不重叠），没有 `at` 的事件时刻不变。
 
 ### 9.2 事件词汇
 
@@ -847,7 +850,7 @@ notebook 渲染端把它显示的图片与链接所指向的本地文件（如�
 ### 9.4 录制与存储
 
 - 放映视图中的录制图层（`presmium dev` 与 `presmium serve` 中）：录制新的讲授，或选一个已有的讲授“重录本节”（只替换当前一节，离开这一节即停止：这一节的事件、语音段与媒体换成新录的，之后的一切按长度之差平移）；可选摄像头与屏幕；激光笔、荧光笔与清除标记。离开放映视图时录制结束并保存。开始录制时先请求共享屏幕（要在点击“录制”的用户手势有效时请求），再请求麦克风与摄像头。
-- 回放：播放栏、字幕、逐字稿（按句与按字跳转）与章节；章节面板在每一节之下列出讲授走到的各步（`go` 事件中章节或步骤的变化，`stepStops`），点击跳到那一步。没有音频的讲授（只有字幕）由 `SilentClock` 按页面的时钟播放。
+- 回放：播放栏、字幕、逐字稿（按句与按字跳转）与章节；章节面板在每一节之下列出讲授走到的各步（`go` 事件中章节或步骤的变化，`stepStops`），点击跳到那一步。轨道未声明音频时由 `SilentClock` 按页面时钟播放；已声明的录音或合成片段加载失败时，播放器显示错误并暂停。
 - 录音开启回声消除与降噪，经 Mediabunny 的 WebCodecs 路径录为 Ogg/Opus（24 kbps）；没有 Opus 编码器的浏览器退回 MediaRecorder（`audio/ogg`、`audio/webm` 或 `audio/mp4`，时长取录制时的时钟）。摄像头与屏幕录为 WebM。每节每种一个文件：`audio/<章节>.ogg`、`video/<章节>.camera.webm`、`video/<章节>.screen.webm`（同名时加 `-2`）。
 - 服务端的路由（`/__presmium/presmium.lecture/`）：读者可用的 `GET tracks`（讲授列表）、`GET tracks/<id>`（`track.json`）与 `GET tracks/<id>/<audio|video>/<文件>`（支持范围请求）；编辑者可用的 `POST recordings`（`{ track? }`；新讲授的 ID 是录制当天的日期，同一天再录加 `-2`；同时写入忽略媒体的文件）、`POST recordings/<id>/media`（为一节的文件取名）、`PUT recordings/<id>/files/<文件>?at=<位置>`（每 5 秒一块，按位置写入，只能改写已有部分或在末尾追加）与 `POST recordings/<id>/finish`（`{ head, recording, section? }`，写 `track.json` 与媒体的 `sha256`）。
 - 合成讲授与语音的路由：`GET tracks/script`（合成的讲授，每次请求从合成缓存取得，缺的片段按需合成，见 6.3 节）与 `GET tracks/<id>/clips/<键>.<wav|ogg>`（合成缓存中的片段；`script` 的给出最近取得的至多 8 份不同讲授中的片段，克隆音色的片段给出前检查同意，见 6.3 节的 `lecture`）；编辑者可用的 `GET speech`（转写与合成引擎的 ID、服务提供方、是否本机与合成引擎的音色）、`POST editing/<id>/transcribe`（以文稿的转写引擎，即 `presmium.speech.transcribe`，否则 `engine`，否则第一个能转写的引擎，转写每一节的录音）、`PUT editing/<id>/utterances/<语音段>`（`{ text }`）与 `POST editing/<id>/synthesize`（`{ voice, engine? }`，每一句以这个音色重新合成），都写回 `track.json` 并返回它。播放器的逐字稿面板中，编辑者有“转写（<服务提供方>）”“重新合成（<服务提供方>）”与每句的修改；转写与合成先弹出写明服务提供方（本机引擎另写明不外发）的确认，确认之后录音与文字才发给语音服务。合成音色的讲授中改一句时，保存按钮是“保存并重新合成（<服务提供方>）”，同样先确认，确认之后这句话才发给语音服务。

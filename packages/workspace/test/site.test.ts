@@ -39,6 +39,7 @@ describe('presmium build of a workspace', () => {
     expect(readFileSync(join(site, 'beta/more.html'), 'utf8')).toContain('乙文档的第二章')
 
     for (const doc of ['alpha', 'beta']) {
+      expect(readFileSync(join(site, doc, 'vite-config.txt'), 'utf8')).toBe(`${doc}-vite`)
       expect(searchIndex(join(site, doc))).toContain('zymurgy')
       expect(searchIndex(join(site, doc))).toContain('quokkaland')
     }

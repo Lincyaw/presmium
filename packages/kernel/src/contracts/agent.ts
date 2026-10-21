@@ -9,6 +9,7 @@ export interface Focus {
   id: string
   from: 'source' | 'web' | 'slides'
   document: string
+  scope?: 'document' | 'workspace'
   source: SourceRange
   excerpt: string
   section?: string
@@ -21,6 +22,7 @@ export interface Focus {
 export interface FocusReport {
   id: string
   from: Focus['from']
+  scope?: Focus['scope']
   section?: string
   block?: string
   step?: number

@@ -3,14 +3,14 @@
   "entry": "lecture.md",
   "lang": "python",
   "code": "for text in [\"low\", \"你好\"]:\n    data = text.encode(\"utf-8\")\n    print(f\"{text}：{len(text)} 个字符，{len(data)} 个字节 {list(data)}\")",
-  "environment": "Python 3.13.12",
-  "revision": "runner 5cadcc15de4de559",
+  "environment": "Python 3.9.6",
+  "revision": "runner d01beb21eed32365",
   "run": {
     "ok": true,
     "stdout": "low：3 个字符，3 个字节 [108, 111, 119]\n你好：2 个字符，6 个字节 [228, 189, 160, 229, 165, 189]\n",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 118,
+    "durationMs": 58,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -21,6 +21,6 @@
         "text": "low：3 个字符，3 个字节 [108, 111, 119]\n你好：2 个字符，6 个字节 [228, 189, 160, 229, 165, 189]\n"
       }
     ],
-    "cacheKey": "ad05306cb12b290e20f5db8e3d24893f5ae029b3779d75acb5485e784289c698"
+    "cacheKey": "4e61de286fab7d617afb77419fecf6114fbb628c6ee318d9faf3ed9eb0a06a92"
   }
 }

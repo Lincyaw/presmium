@@ -137,6 +137,7 @@ export interface ComponentNode {
   name: string
   props: Record<string, unknown>
   children?: IRBlock[]
+  ownsCode?: boolean
   fallback?: MdastNode
   assets?: Record<string, string>
   layer?: 'overlay'
@@ -240,6 +241,7 @@ export interface RenderContext {
   renderers: RendererId[]
   base: string
   vitePlugins: unknown[]
+  nodeVitePlugins?: NodeVitePlugin[]
   extensionFor(node: ComponentNode): ((node: ComponentNode, block: IRBlock) => unknown) | undefined
   portable(value: unknown, from: string): unknown
   localAsset(source: SourcePos, url: string): LocalAsset | undefined
@@ -249,6 +251,12 @@ export interface RenderContext {
   translations?: { lang: string, doc: IRDocument }[]
   server?: { url: string }
   preview?: { origins: string[] }
+}
+
+export interface NodeVitePlugin {
+  id: string
+  entry: string
+  config: Record<string, unknown>
 }
 
 export interface LocalAsset {
@@ -291,6 +299,7 @@ export interface SiteDocument {
   tags?: string[]
   doc?: IRDocument
   translations?: { lang: string, doc: IRDocument }[]
+  nodeVitePlugins?: NodeVitePlugin[]
 }
 
 export interface SiteSpec {

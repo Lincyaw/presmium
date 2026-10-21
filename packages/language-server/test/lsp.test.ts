@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -225,16 +226,15 @@ it('starts one presmium dev for a deck again after a start that failed, however 
   const first = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } }) as Preview
   const second = await server.connection.sendRequest(PREVIEW_REQUEST, { textDocument: { uri: again } }) as Preview
   expect(second.url).toBe(first.url)
-  expect(devProcesses(entry)).toHaveLength(1)
+  if (process.platform !== 'win32') expect(devProcesses(entry)).toHaveLength(1)
+  else console.info('Skipping preview-process count: Unix ps is required; preview startup and URL reuse are still checked.')
 }, 180_000)
 
 function devProcesses(entry: string): string[] {
-  return readdirSync('/proc').filter(pid => /^\d+$/.test(pid)).flatMap((pid) => {
-    try {
-      const args = readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0')
-      return args.includes('dev') && args.includes(entry) ? [pid] : []
-    } catch {
-      return []
-    }
+  return execFileSync('ps', ['-ww', '-axo', 'pid=,args='], { encoding: 'utf8' }).split('\n').flatMap((line) => {
+    const match = /^\s*(\d+)\s+(.*)$/.exec(line)
+    if (!match) return []
+    const args = match[2]!.split(/\s+/)
+    return args.includes('dev') && args.includes(entry) ? [match[1]!] : []
   })
 }

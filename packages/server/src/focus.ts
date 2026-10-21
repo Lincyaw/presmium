@@ -15,8 +15,8 @@ export class FocusStore {
     return newest
   }
 
-  report(document: string, doc: IRDocument, reports: FocusReport[]): McpFocus {
-    const record = { document, focus: reports.map(report => resolveFocus(doc, document, report)), at: Date.now() }
+  report(document: string, doc: IRDocument | undefined, reports: FocusReport[], readWorkspace?: (file: string) => string): McpFocus {
+    const record = { document, focus: reports.map(report => resolveFocus(doc, document, report, undefined, readWorkspace)), at: Date.now() }
     this.#latest.set(document, record)
     for (const watcher of this.#watchers) watcher()
     return record

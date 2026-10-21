@@ -6,7 +6,7 @@ import { diffDocuments } from '@lincyaw/viewer/domain'
 import launchEditor from 'launch-editor'
 import { offlineEnabled, rendererConfig } from '../domain/index.ts'
 import type { WebRendererConfig } from '../domain/index.ts'
-import { clientModules, nodeVitePlugins } from './addons.ts'
+import { clientModules } from './addons.ts'
 import type { ClientModules } from './addons.ts'
 import { writeServiceWorker } from './offline.ts'
 import { PublicationCache, publishedDocument, publishedFile } from './publish.ts'
@@ -61,14 +61,14 @@ async function prepare(doc: IRDocument, ctx: RenderContext, workDir: string, doc
   const files = siteFiles(workDir)
   rmSync(files.publicDir, { recursive: true, force: true })
   const deck = { deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot }
-  const nodeVite = await nodeVitePlugins(ctx, doc.config.presmium, Boolean(document.workspace))
+  if (ctx.vitePlugins.length && ctx.nodeVitePlugins === undefined) throw new Error('the web renderer needs nodeVitePlugins entries to load the context\'s Vite plugins')
   const publication = incremental ? new PublicationCache() : undefined
   const publish = (d: IRDocument) => publishedDocument(d, ctx, files.publicDir, options.base, document.documentPage, publication)
   const image = headImage(doc, ctx, options, files.publicDir, document)
   const site = (published: IRDocument) => writeSite(workDir, {
     doc: published,
     deck,
-    modules: merge(clientModules(ctx, nodeVite), document.extra),
+    modules: merge(clientModules(ctx, ctx.nodeVitePlugins ?? []), document.extra),
     options,
     workspace: document.workspace,
     translations: (ctx.translations ?? []).map(({ lang, doc: translated }) => ({ lang, doc: publish(translated) })),

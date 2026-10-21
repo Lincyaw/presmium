@@ -236,10 +236,14 @@ Python 与 JavaScript 在本机用 `python3`、`node` 运行。`@lincyaw/slidev-
 (assistant-edit)=
 ## 由 agent 修改讲义
 
+工作台面向不熟悉开发工具的教师：描述教学要求、看预览、点选需要调整的内容，再审阅修改。需要专业代码编写时可使用 VS Code 扩展。agent 可以区分源码诊断、编译时录制和作者浏览器的现场反馈；`get_runtime` 提供最近运行、错误及会话重置，`get_outputs` 仍是备课时录制的结果。没有页面反馈不代表成功，修改后应重新运行相关代码。
+
 工作台（实验性；`pnpm add -g @lincyaw/studio` 之后运行 `presmium-studio`）中的 agent 按你的对话修改讲义，改动先由你审阅，接受后成为一个可以撤销的 git 提交。模型服务在环境变量（如 `DEEPSEEK_API_KEY`，或 `PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER`）或工作台的模型设置中提供，从不写进讲义与产物。
 
 (assistant-mcp)=
 ## 编辑器中的 agent
+
+只读工具 `get_runtime`（资源 `presmium://runtime`）返回当前文稿的作者窗口、报告时间、位置、插件与组件错误和现场代码执行摘要。关闭窗口后删除相应反馈。它记录上次观察，不证明新源码已验证；先重做相关操作，再判断修复是否有效。
 
 `presmium dev` 与 `presmium serve` 以 MCP 把文稿交给编辑器中的 agent（Claude Code、Codex、VS Code 等）：读取章节、步骤、代码引用、输出与诊断，在你确认后导航、运行代码或构建。启动时打印 MCP 的地址与令牌所在的文件；不启动服务时，`presmium-mcp <文稿目录>` 以 stdio 提供读取类的工具。
 

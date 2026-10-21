@@ -107,6 +107,13 @@ interface DshSourceTabProps {
   } }
 }
 
+interface DshSessionBinding {
+  session: {
+    beginSubmission(input: { mode: 'queue', text: string, attachments: [] }): { requestId: string, abandon(): void }
+    prompt(content: { type: 'text', text: string }[], mode: 'queue', signal: AbortSignal | undefined, requestId: string): Promise<{ ok: true, value: { accepted: true } } | { ok: false, error: { code: string, message: string } }>
+  }
+}
+
 interface DshClientContext {
   effect(effect: () => unknown, label?: string): void
   on(event: string, listener: (...args: any[]) => void): () => void
@@ -119,7 +126,7 @@ interface DshClientContext {
   sidebarRightTabs: DshSidebarRightTabs
   sidebarRight: { active(): { id: string, kind: string, contentId: string } | undefined, close(id: string): void, isExpanded(): boolean, toggleExpanded(): void }
   layout: { selectPanel(id: string | null): void }
-  sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }> }
+  sessions: { list: DshObservable<{ byId: Record<string, { id: string, cwd?: string, retainedBy: { mainView?: number } }> }>, binding(id: string): DshSessionBinding | undefined }
   uiWorkspace: { openWorkspace(id: string, beforeOpen?: (sessionId: string) => void): Promise<void>, startSession(id?: string): void }
   workspaces: { list: DshObservable<{ items: readonly { workspaceId: string, path: string }[] }> }
 }

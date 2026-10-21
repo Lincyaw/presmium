@@ -6,6 +6,8 @@ import { createRequire } from 'node:module'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connectPresmiumMcp } from '@lincyaw/mcp/client'
+import { errorMessage, isRecord } from '@lincyaw/kernel'
+import type { DiagnosticSnapshot } from '@lincyaw/kernel'
 import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
 import type { ListedTool, PresmiumMcpClient } from '@lincyaw/mcp/client'
 import type { DshAgent, DshContext, DshLogger } from './dsh.ts'
@@ -36,6 +38,71 @@ export interface PresmiumSession {
   dir: string
   client: PresmiumMcpClient
   tools: ListedTool[]
+  diagnostics: SessionDiagnostics
+}
+
+/** One current resource snapshot, shared by notifications and the next model step. */
+class SessionDiagnostics {
+  snapshot: DiagnosticSnapshot | undefined
+  error: string | undefined
+  readonly #client: PresmiumMcpClient
+  readonly #uri: string
+  #unsubscribe: (() => Promise<void>) | undefined
+  #pending: Promise<void> | undefined
+  #dirty = false
+  #closed = false
+
+  constructor(client: PresmiumMcpClient, document: string) {
+    this.#client = client
+    this.#uri = `presmium://diagnostics?document=${encodeURIComponent(document)}`
+  }
+
+  async start(): Promise<void> {
+    this.#unsubscribe = await this.#client.subscribe(this.#uri, () => { void this.refresh() })
+    await this.refresh()
+  }
+
+  refresh(): Promise<void> {
+    if (this.#closed) return Promise.resolve()
+    this.#dirty = true
+    if (!this.#pending) {
+      const pending = this.#read().finally(() => {
+        this.#pending = undefined
+        if (this.#dirty && !this.#closed) return this.refresh()
+      })
+      this.#pending = pending
+    }
+    return this.#pending
+  }
+
+  async #read(): Promise<void> {
+    while (this.#dirty && !this.#closed) {
+      this.#dirty = false
+      try {
+        const value = await this.#client.read(this.#uri)
+        if (!isRecord(value) || typeof value.version !== 'number' || !Array.isArray(value.diagnostics)) throw new Error('the diagnostics resource returned an invalid snapshot')
+        if (this.#closed) return
+        this.snapshot = value as unknown as DiagnosticSnapshot
+        this.error = undefined
+      } catch (error) {
+        if (!this.#closed) this.error = errorMessage(error)
+      }
+    }
+  }
+
+  async close(): Promise<void> {
+    this.#closed = true
+    this.#dirty = false
+    await this.#unsubscribe?.()
+  }
+}
+
+async function closeSession(session: PresmiumSession): Promise<void> {
+  try {
+    await session.diagnostics.close()
+  } finally {
+    await session.client.close()
+  }
 }
 
 const START_MS = 180_000
@@ -78,6 +145,7 @@ export class PresmiumService {
   #documents: { at: number, list: Promise<WorkspaceDocument[]> } | undefined
   readonly #opening = new Map<string, Promise<PresmiumSession | undefined>>()
   readonly #open = new Map<string, PresmiumSession>()
+  readonly #failures = new Map<string, string>()
   readonly #refreshing = new Map<string, Promise<PresmiumSession | undefined>>()
   readonly #selectionVersions = new Map<string, number>()
   readonly #selectionListeners = new Map<string, { before(): Promise<void>, after(): Promise<void> }>()
@@ -170,8 +238,12 @@ export class PresmiumService {
     const id = agent.session.id
     let known = this.#opening.get(id)
     if (!known) {
-      known = this.#attach(agent).catch((error: unknown) => {
-        this.#log.warn(`presmium-service: the session ${id} has no Presmium tools: ${error instanceof Error ? error.message : String(error)}`)
+      const current = () => !this.#closed && this.#opening.get(id) === known
+      known = this.#attach(agent, current).catch((error: unknown) => {
+        if (!current()) return undefined
+        const message = errorMessage(error)
+        this.#log.warn(`presmium-service: the session ${id} has no Presmium tools: ${message}`)
+        this.#failures.set(id, message)
         this.#opening.delete(id)
         return undefined
       })
@@ -180,18 +252,35 @@ export class PresmiumService {
     return known
   }
 
-  async #attach(agent: DshAgent): Promise<PresmiumSession | undefined> {
+  async #attach(agent: DshAgent, current: () => boolean): Promise<PresmiumSession | undefined> {
     const { root } = await this.ready
     const id = agent.session.id
     const documents = await this.documents()
     const selected = this.#selected.get(id)
     const document = selected === undefined ? documentAt(root, this.directoryOf(agent), documents) : documents.find(doc => doc.dir === selected)
-    if (!document) return undefined
+    if (!current()) return undefined
+    if (!document) {
+      this.#failures.delete(id)
+      return undefined
+    }
     const grant = await this.#json<{ url: string, token: string }>('/__presmium/presmium.server/tokens', { body: { document: document.dir, session: id } })
     const client = await connectPresmiumMcp(grant.url, grant.token)
-    const session: PresmiumSession = { id, document, dir: resolve(root, document.dir), client, tools: await client.tools() }
-    this.#open.set(id, session)
-    return session
+    const diagnostics = new SessionDiagnostics(client, document.dir)
+    try {
+      const session: PresmiumSession = { id, document, dir: resolve(root, document.dir), client, tools: await client.tools(), diagnostics }
+      await diagnostics.start()
+      if (current()) {
+        this.#failures.delete(id)
+        this.#open.set(id, session)
+        return session
+      }
+    } catch (error) {
+      await diagnostics.close().catch(() => undefined)
+      await client.close().catch(() => undefined)
+      throw error
+    }
+    await diagnostics.close().finally(() => client.close())
+    return undefined
   }
 
   async selectDocument(id: string, document: string | null): Promise<void> {
@@ -224,13 +313,17 @@ export class PresmiumService {
     const id = agent.session.id
     const selected = this.#selected.get(id)
     const current = await this.attach(agent)
-    if (selected === undefined || current?.document.dir === selected || (!current && selected === null)) return current
+    if (!current?.diagnostics.error && (selected === undefined || current?.document.dir === selected || (!current && selected === null))) return current
     await this.detach(id, false)
     return this.attach(agent)
   }
 
   session(agent: DshAgent | undefined): PresmiumSession | undefined {
     return agent ? this.#open.get(agent.session.id) : undefined
+  }
+
+  failure(agent: DshAgent): string | undefined {
+    return this.#failures.get(agent.session.id)
   }
 
   async detach(id: string, forget = true): Promise<void> {
@@ -240,18 +333,23 @@ export class PresmiumService {
       this.#selectionListeners.delete(id)
     }
     const session = this.#open.get(id)
+    const opening = this.#opening.get(id)
     this.#open.delete(id)
     this.#opening.delete(id)
-    if (!session) return
-    await session.client.close().catch(() => undefined)
+    this.#failures.delete(id)
+    if (session) await closeSession(session).catch(error => this.#log.warn(`presmium-service: closing session ${id}: ${errorMessage(error)}`))
+    else await opening
+    if (!session && !opening) return
     await this.request('/__presmium/presmium.server/tokens', { method: 'DELETE', body: { session: id } }).then(r => r.body?.cancel(), () => undefined)
   }
 
   async close(): Promise<void> {
     this.#closed = true
-    for (const session of this.#open.values()) await session.client.close().catch(() => undefined)
+    for (const session of this.#open.values()) await closeSession(session).catch(error => this.#log.warn(`presmium-service: closing session ${session.id}: ${errorMessage(error)}`))
     this.#open.clear()
+    await Promise.all(this.#opening.values())
     this.#opening.clear()
+    this.#failures.clear()
     this.#selected.clear()
     this.#selectionVersions.clear()
     this.#selectionListeners.clear()

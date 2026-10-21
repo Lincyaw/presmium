@@ -115,12 +115,12 @@ export function PmDrawer({ open, label, closeLabel, name, trigger, onClose, chil
   )
 }
 
-export function PmDialog({ open, label, closeLabel, name, actions, onClose, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, onClose(): void, children?: ReactNode }) {
+export function PmDialog({ open, label, closeLabel, name, actions, onClose, onCloseAutoFocus, children }: { open: boolean, label: string, closeLabel: string, name?: string, actions?: ReactNode, onClose(): void, onCloseAutoFocus?(event: Event): void, children?: ReactNode }) {
   return (
     <Dialog.Root open={open} onOpenChange={next => { if (!next) onClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="pmw-dialog-overlay" />
-        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} aria-describedby={undefined}>
+        <Dialog.Content className={cls('pm-ui-dialog', 'pm-ui', name && `${name}__panel`)} aria-describedby={undefined} onCloseAutoFocus={onCloseAutoFocus}>
           <div className="pm-ui-dialog__header">
             <Dialog.Title className="pm-ui-dialog__title">{label}</Dialog.Title>
             {actions}

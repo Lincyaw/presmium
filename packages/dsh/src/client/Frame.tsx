@@ -1,5 +1,5 @@
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
-import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PmDialog, PmIcon, StatusItems, useWorkbench, WorkbenchProvider } from '@lincyaw/workbench'
+import { ChangesPanel, DocumentView, FilesPanel, HomePanel, PmDialog, PmIcon, StatusItems, useWorkbench, WorkbenchCommands, WorkbenchProvider } from '@lincyaw/workbench'
 import type { Workbench } from '@lincyaw/workbench'
 import type { IconName } from '@lincyaw/design'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
@@ -71,6 +71,8 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const [helpOpen, setHelpOpen] = useState(false)
   const geometry = solve(info)
   const { narrow, collapsed } = geometry
+  const lastEditorView = useRef<'source' | 'preview'>('preview')
+  if (narrow && (info.view === 'source' || info.view === 'preview')) lastEditorView.current = info.view
   const lastSource = useRef({ file: activeFile, navigation: sourceNavigation })
   useEffect(() => {
     const changed = lastSource.current.file !== activeFile || lastSource.current.navigation !== sourceNavigation
@@ -128,7 +130,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const opened = useRef(document_)
   useEffect(() => {
     if (document_ !== undefined && document_ !== opened.current) {
-      if (narrow) actions.show('files')
+      if (narrow) actions.show('preview')
       else if (info.activity !== 'files') actions.choose('files')
     }
     if (document_ === undefined && narrow && (info.view === 'files' || info.view === 'source' || info.view === 'preview' || info.view === 'changes')) actions.show('documents')
@@ -171,7 +173,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
       if (narrow && workbench.state.document === undefined) actions.show('documents')
       return
     }
-    if (narrow) actions.show(target as NarrowView)
+    if (narrow) actions.show(target === 'preview' ? workbench.state.layout === 'split' ? lastEditorView.current : workbench.state.layout : target as NarrowView)
     else if (target === 'files' || target === 'changes') actions.choose(target)
   }
   const sideContent = info.activity === 'sessions' ? 'sessions' : info.activity === 'changes' && document_ !== undefined ? 'changes' : 'files'
@@ -181,7 +183,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
   const centre = <>
     {panel !== null && <div className="pmw-frame__panel" data-pmw-slot={`main:${activePanel}`}>{panel}</div>}
     {retainedDocument.current && <div className="pmw-frame__document" hidden={document_ === undefined || !documentShown}>
-      <DocumentView active={document_ !== undefined && documentShown} only={narrow ? view === 'preview' ? 'preview' : 'source' : undefined} />
+      <DocumentView active={document_ !== undefined && documentShown} only={narrow ? view === 'preview' ? 'preview' : 'source' : undefined} onNavigate={narrow ? view => actions.show(view) : undefined} />
     </div>}
     {panel === null && (narrow
       ? view === 'changes' && document_ !== undefined ? <ChangesPanel /> : view === 'files' ? <FilesOrDocuments workbench={workbench} onOpen={() => actions.show('source')} />
@@ -194,8 +196,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
     ? [
         { id: 'documents', icon: 'document', label: t.documents, pressed: activePanel === null && view === 'documents' },
         { id: 'files', icon: 'folder', label: t.files, pressed: view === 'files' },
-        { id: 'source', icon: 'edit', label: t.source, pressed: view === 'source' },
-        { id: 'preview', icon: 'slides', label: t.preview, pressed: view === 'preview' },
+        { id: 'preview', icon: 'document', label: t.editor, pressed: view === 'source' || view === 'preview' },
         ...changes,
         { id: 'sessions', icon: 'history', label: t.conversationHistory, pressed: view === 'sessions' || view === 'conversation' },
       ]
@@ -226,6 +227,7 @@ function Frame({ useStore, useSessions, usePanelInfo, actions, renderSlot, workb
       <a className="pmw-frame__skip" href="#pmw-centre">{t.skip}</a>
       <nav className="pmw-activity" aria-label={t.activity}>
         <span className="pmw-activity__logo"><Logo size={28} /></span>
+        <WorkbenchCommands onNavigate={view => { actions.selectPanel(null); actions.show(view) }} />
         {activities.map(item => (
           <button key={item.id} type="button" className="pmw-activity__button" data-activity={item.id} aria-label={item.label} title={item.label} aria-pressed={item.pressed && (!narrow || activePanel === null)} onClick={() => go(item.id)}>
             <PmIcon name={item.icon} />

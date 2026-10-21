@@ -1,4 +1,4 @@
-import type { PreviewReport } from '@lincyaw/kernel'
+import type { Finding, PreviewReport } from '@lincyaw/kernel'
 import { connectPreview } from './preview.ts'
 import type { PreviewConnection } from './preview.ts'
 import type { PreviewView, Workbench } from './store.ts'
@@ -32,7 +32,7 @@ interface Entry {
   active: boolean
   used: number
   revision?: string
-  problems: Map<string, Extract<PreviewReport, { type: 'report' }>>
+  problems: Map<string, Finding>
   detach?: () => void
   loading?: ReturnType<typeof setInterval>
   expiry?: ReturnType<typeof setTimeout>
@@ -51,6 +51,12 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
   const keyOf = (target: PreviewTarget) => JSON.stringify([target.document, target.view])
   const selected = (entry: Entry) => !disposed && desired !== undefined && keyOf(desired) === entry.key
     && workbench.state.document === entry.target.document && workbench.state.view === entry.target.view
+
+  const publish = (entry: Entry, clear = false) => {
+    if (!entry.revision) return
+    void workbench.reportPreviewDiagnostics({ document: entry.target.document, renderer: entry.target.view, instance: entry.connection.nonce,
+      revision: entry.revision, findings: clear ? [] : [...entry.problems.values()] })
+  }
 
   const hide = (entry: Entry) => {
     entry.detach?.()
@@ -75,6 +81,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     entry.connection.dispose()
     entry.frame.remove()
     entry.problems.clear()
+    publish(entry)
   }
   const show = (entry: Entry, revision?: string) => {
     if (!selected(entry)) return
@@ -90,7 +97,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     if (revision !== undefined) entry.revision = revision
     changed({ ready: true })
     workbench.previewReport(entry.target.document, entry.target.view, { type: 'updated', revision: entry.revision })
-    for (const problem of entry.problems.values()) workbench.previewReport(entry.target.document, entry.target.view, problem)
+    publish(entry)
   }
   const activity = (entry: Entry, active: boolean): Promise<void> => new Promise((resolve, reject) => {
     const request = ++requests
@@ -105,6 +112,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
     hide(entry)
     if (!entry.ready || !entry.connection.capabilities.includes('activity')) return destroy(entry)
     if (entry.active) {
+      publish(entry, true)
       try {
         await activity(entry, false)
       } catch {
@@ -157,6 +165,7 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
           if (!reloaded) entry.active = true
           entry.revision = report.revision
           entry.problems.clear()
+          publish(entry, true)
           clearInterval(entry.loading)
           if (selected(entry)) {
             if (!entry.pending && entry.active) {
@@ -172,8 +181,10 @@ export function createPreviewPool(container: HTMLElement, workbench: Workbench, 
         if (report.type === 'updated') entry.revision = report.revision
         if (report.type === 'report') {
           const key = JSON.stringify([report.level, report.plugin, report.message])
-          entry.problems.set(key, report)
+          if (report.resolved) entry.problems.delete(key)
+          else entry.problems.set(key, { checkId: report.plugin ?? 'presmium.runtime', severity: report.level, message: report.message })
         }
+        if (entry.active && (report.type === 'updated' || report.type === 'report')) publish(entry)
         if (entry.active && selected(entry)) {
           workbench.previewReport(target.document, target.view, report)
         }

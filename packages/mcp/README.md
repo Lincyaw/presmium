@@ -14,6 +14,8 @@ pnpm exec presmium-mcp <document directory>
 
 The reading tools (`list_sections`, `get_section`, `get_step`, `search`, `get_code_ref`, `get_outputs`, `get_diagnostics`, `locate_source` and others) are always there; `--allow operate` also provides `run_code` and `build`.
 
+`get_runtime` (also `presmium://runtime`) reads the author's open browser reports: timestamps, section and step, plugin/component failures and live execution status. It differs from the compiled recordings returned by `get_outputs`. Only editor/owner windows of the selected document contribute; closing a window removes its feedback. An empty list means no observed browser state, and earlier results do not verify a new source revision.
+
 ## Documentation
 
 - [Author guide](https://github.com/Lincyaw/presmium/blob/main/site/guide/lecture.en.md): agents in your editor

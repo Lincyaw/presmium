@@ -1,11 +1,12 @@
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
+import { python, pythonLanguage } from '@codemirror/lang-python'
 import { yaml, yamlFrontmatter } from '@codemirror/lang-yaml'
-import { bracketMatching, HighlightStyle, indentOnInput, syntaxHighlighting } from '@codemirror/language'
+import { bracketMatching, HighlightStyle, indentOnInput, indentUnit, syntaxHighlighting } from '@codemirror/language'
 import { lintGutter, setDiagnostics } from '@codemirror/lint'
 import type { Diagnostic } from '@codemirror/lint'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import { EditorSelection, EditorState, StateEffect, StateField } from '@codemirror/state'
+import { Compartment, EditorSelection, EditorState, StateEffect, StateField } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
 import { Decoration, drawSelection, EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers, MatchDecorator, ViewPlugin } from '@codemirror/view'
 import type { DecorationSet, ViewUpdate } from '@codemirror/view'
@@ -27,6 +28,7 @@ export interface Problem {
 
 export interface SourceEditor {
   show(path: string, text: string): void
+  describe(label: string, description: string): void
   text(path: string): string | undefined
   replace(path: string, text: string, fresh: boolean): void
   reveal(line: number, endLine?: number, mark?: boolean): void
@@ -108,7 +110,8 @@ const picked = StateField.define<DecorationSet>({
 })
 
 function language(path: string): Extension {
-  if (/\.(?:md|markdown)$/i.test(path)) return [yamlFrontmatter({ content: markdown() }), mystMarks]
+  if (/\.(?:md|markdown)$/i.test(path)) return [yamlFrontmatter({ content: markdown({ codeLanguages: info => /^(?:python|py)\b/i.test(info) ? pythonLanguage : null }) }), mystMarks]
+  if (/\.(?:py|pyw|pyi)$/i.test(path)) return [python(), indentUnit.of('    ')]
   if (/\.ya?ml$/i.test(path)) return yaml()
   return []
 }
@@ -116,6 +119,8 @@ function language(path: string): Extension {
 export function createEditor(parent: HTMLElement, options: EditorOptions): SourceEditor {
   const states = new Map<string, EditorState>()
   const problems = new Map<string, Problem[]>()
+  const accessibility = new Compartment()
+  let attributes: Record<string, string> = { 'aria-label': options.label }
   let current: string | undefined
   const listener = EditorView.updateListener.of((update) => {
     if (!current) return
@@ -153,8 +158,9 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
       ...defaultKeymap,
       ...historyKeymap,
       ...searchKeymap,
+      indentWithTab,
     ]),
-    EditorView.contentAttributes.of({ 'aria-label': options.label }),
+    accessibility.of(EditorView.contentAttributes.of(attributes)),
     listener,
   ]
   const view = new EditorView({ parent, state: EditorState.create({ doc: '', extensions: [THEME, EditorState.readOnly.of(true)] }) })
@@ -170,6 +176,10 @@ export function createEditor(parent: HTMLElement, options: EditorOptions): Sourc
   }
 
   return {
+    describe(label, description) {
+      attributes = { 'aria-label': label, 'aria-description': description }
+      if (current) view.dispatch({ effects: accessibility.reconfigure(EditorView.contentAttributes.of(attributes)) })
+    },
     show(path, text) {
       if (current === path) return
       if (current) states.set(current, view.state)

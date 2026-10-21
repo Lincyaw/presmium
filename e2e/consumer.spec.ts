@@ -14,6 +14,7 @@ let project: string | undefined
 let site: { url: string, close(): Promise<void> } | undefined
 const running: ChildProcess[] = []
 const outside: string[] = []
+const serviceLogs: Array<{ command: string, output(): string }> = []
 
 function presmium(args: string[]): Promise<string> {
   const child = spawn(process.execPath, [presmiumBin(project!), ...args], { cwd: project, env: userEnv(), stdio: ['ignore', 'pipe', 'pipe'] })
@@ -23,17 +24,42 @@ function presmium(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => child.once('exit', code => code === 0 ? resolve(output) : reject(new Error(`presmium ${args.join(' ')} exited (${code}):\n${output}`))))
 }
 
-async function start(args: string[], ready: RegExp, env: Record<string, string> = {}): Promise<string> {
+async function stop(child: ChildProcess): Promise<void> {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return
+  const exited = new Promise<void>(resolve => child.once('exit', () => resolve()))
+  child.kill('SIGTERM')
+  await exited
+}
+
+async function start(args: string[], ready: RegExp, forms: string[], env: Record<string, string> = {}): Promise<Record<string, string>> {
   const child = spawn(process.execPath, [presmiumBin(project!), ...args], { cwd: project, env: userEnv(env), stdio: ['ignore', 'pipe', 'pipe'] })
   running.push(child)
   let output = ''
-  child.stdout.on('data', (chunk: Buffer) => output += chunk)
-  child.stderr.on('data', (chunk: Buffer) => output += chunk)
-  await new Promise<void>((resolve, reject) => {
-    child.stdout.on('data', () => ready.test(output) && resolve())
-    child.once('exit', code => reject(new Error(`presmium ${args.join(' ')} exited (${code}):\n${output}`)))
-  })
-  return output
+  serviceLogs.push({ command: `presmium ${args.join(' ')}`, output: () => output })
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const read = (chunk: Buffer) => {
+        output += chunk
+        if (ready.test(output)) resolve()
+      }
+      timeout = setTimeout(() => reject(new Error(`presmium ${args.join(' ')} did not become ready:\n${output}`)), 120_000)
+      child.stdout.on('data', read)
+      child.stderr.on('data', read)
+      child.once('error', reject)
+      child.once('exit', code => reject(new Error(`presmium ${args.join(' ')} exited (${code}):\n${output}`)))
+    })
+    return Object.fromEntries(forms.map((form) => {
+      const url = new RegExp(`^${form} {2}(http://\\S+?)/?$`, 'm').exec(output)?.[1]
+      if (!url) throw new Error(`presmium ${args.join(' ')} did not start ${form}:\n${output}`)
+      return [form, url]
+    }))
+  } catch (error) {
+    await stop(child)
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function outsideDir(prefix: string): string {
@@ -53,12 +79,14 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await site?.close()
-  await Promise.all(running.filter(child => child.exitCode === null).map((child) => {
-    const exited = new Promise(resolve => child.once('exit', resolve))
-    child.kill('SIGTERM')
-    return exited
-  }))
+  await Promise.all(running.map(stop))
   for (const dir of [...outside, ...project ? [project] : []]) rmSync(dir, { recursive: true, force: true })
+})
+
+test.afterEach(async ({}, info) => {
+  for (const [index, log] of serviceLogs.entries()) {
+    await info.attach(`service-${index + 1}.log`, { body: `${log.command}\n${log.output()}`, contentType: 'text/plain' })
+  }
 })
 
 async function greeting(page: Page, url: string, timeout = 10_000): Promise<void> {
@@ -76,10 +104,9 @@ test('the built web form and slides show the third-party plugin\'s component', a
 
 test('presmium dev, its output outside the project, serves both forms with the third-party plugin\'s component', async ({ page }) => {
   test.setTimeout(300_000)
-  const output = await start(['dev', '--to', 'web,slides', '--out', outsideDir('presmium-consumer-dev-')], /^watching/m)
-  const url = (form: string) => new RegExp(`^${form} {2}(http://\\S+?)/?$`, 'm').exec(output)?.[1]
-  await greeting(page, `${url('web')}/`, 60_000)
-  await greeting(page, `${url('slides')}/2`, 60_000)
+  const urls = await start(['dev', '--to', 'web,slides', '--out', outsideDir('presmium-consumer-dev-')], /^watching/m, ['web', 'slides'])
+  await greeting(page, `${urls.web}/`, 60_000)
+  await greeting(page, `${urls.slides}/2`, 60_000)
 })
 
 test('presmium serve shows a workspace\'s home page and its document with the third-party plugin\'s component', async ({ page }) => {
@@ -88,8 +115,7 @@ test('presmium serve shows a workspace\'s home page and its document with the th
   mkdirSync(join(ws, 'intro'), { recursive: true })
   cpSync(join(FIXTURES, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
   writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
-  const output = await start(['serve', 'ws', '--port', '0'], /^mcp {2}/m, { XDG_CACHE_HOME: outsideDir('presmium-consumer-cache-') })
-  const url = /^serve {2}(http:\/\/\S+)$/m.exec(output)![1]
+  const { serve: url } = await start(['serve', 'ws', '--port', '0'], /^mcp {2}/m, ['serve'], { XDG_CACHE_HOME: outsideDir('presmium-consumer-cache-') })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(String(error)))
   await page.goto(`${url}/`)

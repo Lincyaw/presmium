@@ -22,7 +22,7 @@ export function reviewRoutes(reviews: Reviews, answer: (work: () => Promise<Resp
       handle: (request, ctx) => answer(async () => {
         if (request.method !== 'GET') return problem(405, 'GET')
         if (request.headers.get('accept')?.includes('text/event-stream')) return eventStream(reviews.follow(ctx.document, request.signal), request.signal)
-        const review = await reviews.view(ctx.document)
+        const review = await reviews.view()
         return json(review ? { review } : {})
       }),
     },

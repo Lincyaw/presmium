@@ -3,14 +3,14 @@
   "entry": "lecture.md",
   "lang": "python",
   "code": "from collections import Counter\n\n\ndef get_stats(ids):\n    return Counter(zip(ids, ids[1:]))\n\n\ndef merge(ids, pair, new_id):\n    out, i = [], 0\n    while i < len(ids):\n        if i + 1 < len(ids) and (ids[i], ids[i + 1]) == pair:\n            out.append(new_id)\n            i += 2\n        else:\n            out.append(ids[i])\n            i += 1\n    return out\n\n\ncorpus = \" \".join([\"low\"] * 5 + [\"lower\"] * 2 + [\"newest\"] * 6 + [\"widest\"] * 3)\nids = list(corpus.encode(\"utf-8\"))\nmerges = {}\nvocab = {i: bytes([i]) for i in range(256)}\nfor new_id in range(256, 266):\n    stats = get_stats(ids)\n    pair = max(stats, key=stats.get)\n    ids = merge(ids, pair, new_id)\n    merges[pair] = new_id\n    vocab[new_id] = vocab[pair[0]] + vocab[pair[1]]\nprint(\"学到\", len(merges), \"条规则\")\nprint(len(corpus.encode(\"utf-8\")), \"个字节变成了\", len(ids), \"个词元\")",
-  "environment": "Python 3.13.12",
-  "revision": "runner 5cadcc15de4de559",
+  "environment": "Python 3.9.6",
+  "revision": "runner d01beb21eed32365",
   "run": {
     "ok": true,
     "stdout": "学到 10 条规则\n94 个字节变成了 27 个词元\n",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 125,
+    "durationMs": 56,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -21,6 +21,6 @@
         "text": "学到 10 条规则\n94 个字节变成了 27 个词元\n"
       }
     ],
-    "cacheKey": "e6051d8a39f32d71c23e2dfb356fe5eed966b695964c773ae67c60b79ea7e1ef"
+    "cacheKey": "ee31b7b4923fb5ccf4aa22478915d05b50030f894a9781b1659b0c9ac6b09ede"
   }
 }

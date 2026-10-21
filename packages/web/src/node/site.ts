@@ -195,10 +195,10 @@ function config(options: WebRendererConfig, files: ReturnType<typeof siteFiles>,
   }
   const imports = [
     ...modules.vite.map((file, i) => `import vite${i} from ${JSON.stringify(file)}\n`),
-    ...modules.nodeVite.map(({ file }, i) => `import node${i} from ${JSON.stringify(file)}\n`),
+    ...modules.nodeVite.map(({ entry }, i) => `import node${i} from ${JSON.stringify(entry)}\n`),
   ].join('')
   const nodePlugins = modules.nodeVite.map(({ config: options }, i) =>
-    `...(node${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(options)} }) ?? [])`)
+    `...node${i}.vitePlugins({ ...deck, config: ${JSON.stringify(options)} })`)
   const server = options.server ? `
 site.themeConfig.presmium.server = true
 site.vite.server = { proxy: { ${JSON.stringify(SERVER_PROXY)}: { target: ${JSON.stringify(options.server)}, ws: true } }, fs: { allow: ${JSON.stringify(allowed(files.root, deck.deckDir, deck.workspaceRoot, presmiumRoot()))} } }

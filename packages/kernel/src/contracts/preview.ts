@@ -44,6 +44,8 @@ export type PreviewCommand =
 
 export type PreviewCommandType = PreviewCommand['type']
 
+export type PreviewShortcut = 'open-files' | 'open-commands'
+
 export type PreviewReport =
   | { type: 'ready', renderer: 'web' | 'slides', document: string, revision?: string, capabilities: PreviewCommandType[] }
   | ({ type: 'position' } & PreviewPosition)
@@ -51,7 +53,8 @@ export type PreviewReport =
   | { type: 'selection', selection: (PreviewAnchor & { text: string }) | null }
   | { type: 'updated', revision?: string }
   | { type: 'activity', active: boolean, request: number, revision?: string, error?: string }
-  | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string }
+  | { type: 'report', level: 'error' | 'warning', plugin?: string, message: string, resolved?: boolean }
+  | { type: 'shortcut', command: PreviewShortcut }
 
 export type PreviewEnvelope<M> = M & { protocol: typeof PREVIEW_NAME, version: number, nonce: string }
 
@@ -100,7 +103,8 @@ export function readPreviewReport(data: unknown, nonce: string): PreviewReport |
     case 'activity': return typeof m.active === 'boolean' && request(m.request) && optional(m.revision, text) && optional(m.error, text)
       ? { type: 'activity', active: m.active, request: m.request, ...m.revision === undefined ? {} : { revision: m.revision as string }, ...m.error === undefined ? {} : { error: m.error as string } }
       : undefined
-    case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {} } : undefined
+    case 'report': return (m.level === 'error' || m.level === 'warning') && text(m.message) && optional(m.plugin, text) && (m.resolved === undefined || typeof m.resolved === 'boolean') ? { type: 'report', level: m.level, message: m.message, ...m.plugin ? { plugin: m.plugin as string } : {}, ...m.resolved === undefined ? {} : { resolved: m.resolved as boolean } } : undefined
+    case 'shortcut': return m.command === 'open-files' || m.command === 'open-commands' ? { type: 'shortcut', command: m.command } : undefined
     default: return undefined
   }
 }
@@ -125,7 +129,7 @@ export interface PreviewAgent {
   moved(): void
   updated(): void
   redraw(): void
-  report(problem: { level: 'error' | 'warning', plugin?: string, message: string }): void
+  report(problem: { level: 'error' | 'warning', plugin?: string, message: string, resolved?: boolean }): void
   stop(): void
 }
 
@@ -183,6 +187,14 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     if (stopped || (!active && message.type !== 'ready' && message.type !== 'activity')) return
     for (const origin of page.origins) window.parent.postMessage(previewEnvelope(nonce, message), origin)
   }
+
+  const shortcut = (event: KeyboardEvent) => {
+    if (!active || stopped) return
+    if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'p') return
+    event.preventDefault()
+    post({ type: 'shortcut', command: event.shiftKey ? 'open-commands' : 'open-files' })
+  }
+  window.addEventListener('keydown', shortcut)
 
   let highlight: PreviewAnchor | null = null
   let pins: PreviewPin[] = []
@@ -458,6 +470,7 @@ export function startPreviewAgent(page: PreviewPage): PreviewAgent | undefined {
     stop() {
       stopped = true
       window.removeEventListener('message', receive)
+      window.removeEventListener('keydown', shortcut)
       document.removeEventListener('selectionchange', selection)
       observer.disconnect()
       setPicking(false)

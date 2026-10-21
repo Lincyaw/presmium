@@ -178,16 +178,16 @@ test.describe('the reading fixture deck', () => {
     await expect(present).toBeVisible()
   })
 
-  test('the full screen button puts the present view in full screen', async ({ page }) => {
-    await page.addInitScript(() => {
-      Element.prototype.requestFullscreen = function (this: Element) {
-        (window as { fullscreen?: string }).fullscreen = this.className
-        return Promise.resolve()
-      }
-    })
+  test('the full screen button includes the presentation and leaving it returns to reading outside full screen', async ({ page }) => {
     await page.goto(deck.web('basics.html?view=present'))
-    await page.getByRole('region', { name: '放映' }).getByRole('button', { name: '全屏' }).click()
-    await expect.poll(() => page.evaluate(() => (window as { fullscreen?: string }).fullscreen)).toBe('pm-present')
+    const present = page.getByRole('region', { name: '放映' })
+    await present.getByRole('button', { name: '全屏' }).click()
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true)
+    await expect(present).toBeVisible()
+    await present.getByRole('button', { name: '退出放映' }).click()
+    await expect(present).toHaveCount(0)
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBe(null)
+    await expect(menu(page)).toHaveValue('document')
   })
 
   test('a reload keeps the present view and the presenter window at their section and step (P-77)', async ({ page }) => {

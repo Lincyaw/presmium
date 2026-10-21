@@ -122,11 +122,14 @@ it('records C, C++, Ruby and SQL without a toolchain on the build machine, under
   expect(second.runs.sum!.stdout).toBe(first.runs.sum!.stdout)
 }, 180_000)
 
-function peakMemory(pid: number): number {
+function peakMemory(pid: number): number | undefined {
   try {
-    return Number(/^VmHWM:\s+(\d+) kB$/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1] ?? 0) / 1024
-  } catch {
-    return 0
+    const kb = /^VmHWM:\s+(\d+) kB$/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1]
+    if (!kb) throw new Error(`/proc/${pid}/status has no VmHWM measurement`)
+    return Number(kb) / 1024
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined // The child exited between samples.
+    throw error
   }
 }
 
@@ -166,8 +169,11 @@ ${FENCE}
 `)
   const { NODE_ENV: _test, ...env } = process.env
   const child = spawn(process.execPath, [PRESMIUM_BIN, 'ir', '--out', 'ir.json'], { cwd: dir, env, stdio: 'ignore' })
-  let peak = 0
-  const sampler = setInterval(() => peak = Math.max(peak, peakMemory(child.pid!)), 20)
+  let peak: number | undefined
+  const sampler = process.platform === 'linux' ? setInterval(() => {
+    const sample = peakMemory(child.pid!)
+    if (sample !== undefined) peak = Math.max(peak ?? 0, sample)
+  }, 20) : undefined
   const code = await new Promise<number | null>(done => child.once('exit', done))
   clearInterval(sampler)
   expect(code).toBe(0)
@@ -177,6 +183,10 @@ ${FENCE}
   const failed = /^out of memory after (\d+) MiB\n$/.exec(run.stderr)
   expect(failed, run.stderr).not.toBeNull()
   expect(Number(failed![1])).toBeLessThan(1024)
-  expect(peak).toBeGreaterThan(0)
-  expect(peak).toBeLessThan(1024)
+  if (process.platform === 'linux') {
+    expect(peak).toBeGreaterThan(0)
+    expect(peak).toBeLessThan(1024)
+  } else {
+    console.info('Skipping compiler peak-memory measurement: Linux /proc/<pid>/status is required; the WASI allocation limit and failure output are still checked.')
+  }
 }, 120_000)

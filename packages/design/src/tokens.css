@@ -71,6 +71,7 @@
 
   --pm-z-popover: 1000;
   --pm-z-dialog: 1100;
+  --pm-z-screen: 1200;
 }
 
 :root.dark {

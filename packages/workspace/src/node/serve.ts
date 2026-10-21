@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { buildView, Compiler, pluginLogger, runBlock, workspacePlugins } from '@lincyaw/compiler'
 import type { Compilation, CompilerOptions } from '@lincyaw/compiler'
 import { CHANGE_REVIEW, DOCUMENT_FILES, DOCUMENT_LOCKS, errorMessage, REVISIONS } from '@lincyaw/kernel'
 import type { Finding, IRDocument, Logger, ServiceToken, SiteSpec } from '@lincyaw/kernel'
-import { servedDocument, startServer } from '@lincyaw/server'
-import type { PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
+import { serverConfiguration, servedDocument, startServer } from '@lincyaw/server'
+import type { DiagnosticStore, PresmiumServer, ServedDocument, ServedPlugin, ServerHost } from '@lincyaw/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import { listDocuments, readWorkspace } from './config.ts'
-import { workspaceService } from './service.ts'
+import { irRevision, workspaceService } from './service.ts'
 import type { Service } from './service.ts'
 import { Documents, RequestError } from './documents.ts'
 import type { DocumentsChange } from './documents.ts'
@@ -23,7 +23,8 @@ import { Revisions } from './revisions.ts'
 import { workspacePlugin } from './routes.ts'
 import type { WorkspaceRoutes } from './routes.ts'
 import { DocumentSession } from './session.ts'
-import { siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
+import { SourceFiles } from './source.ts'
+import { documentPlugins, siteContext, siteDocument, siteIR, siteSpec, untranslated, webRenderer } from './site.ts'
 
 export interface ServeOptions {
   dir: string
@@ -78,15 +79,23 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     const document = docs().find(doc => doc.dir === dir)
     if (!document) throw new RequestError(404, `no document ${JSON.stringify(dir)}`)
     const session = new DocumentSession(dir, new Compiler(join(root, document.entry), { ...pluginOptions(), priority: 'interactive', execution: { env: 'serve' } }), log)
+    let configuration: string | undefined
     session.onCompile(async (compilation) => {
+      const next = serverConfiguration(compilation)
+      if (configuration !== undefined && configuration !== next) void server?.unmount(dir, { preserveFocus: true }).catch((error: unknown) => {
+        log.error(`the previous server contributions of ${dir || '.'} did not close: ${errorMessage(error)}`)
+      })
+      configuration = next
       for (const finding of untranslated(compilation, root)) {
         if (!compilation.doc.diagnostics.some(f => f.message === finding.message)) compilation.doc.diagnostics.push(finding)
       }
     })
     session.onCompile((compilation, changed) => {
+      server?.diagnostics.compiled(dir, compilation.doc, root, irRevision(compilation.doc))
       service?.compiled(dir, compilation, changed)
       void Promise.resolve(site?.update(dir, compilation)).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`))
     })
+    session.onFailure(error => server?.diagnostics.failed(dir, errorMessage(error), { file: relative(root, session.compiler.entry).replace(/\\/g, '/') }))
     sessions.set(dir, session)
     return session
   }
@@ -110,6 +119,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
 
   const documentsChanged = async (change: DocumentsChange): Promise<void> => {
     for (const dir of change.removed) {
+      server?.diagnostics.forget(dir)
       sessions.get(dir)?.close()
       sessions.delete(dir)
     }
@@ -130,7 +140,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     if (change.removed.length || change.added.length) void documentsChanged(change).catch((error: unknown) => log.warn(`the documents on disk changed, but the site did not follow: ${errorMessage(error)}`))
   }
 
-  const workspaceOf = (): { revisions?: Revisions, reviews?: Reviews, writer: DocumentWriter, plugin: ServedPlugin } => {
+  const workspaceOf = (): { revisions?: Revisions, reviews?: Reviews, writer: DocumentWriter, source: SourceFiles, plugin: ServedPlugin } => {
     const writer = localWriter(config)
     const git = Git.isRepository(root) ? new Git(root) : undefined
     if (!git) log.warn(`${root} is not a git repository: editing, the document operations and the history are not available (run git init)`)
@@ -138,7 +148,7 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     const reviews = revisions ? new Reviews({ config, revisions, locks, files: writer, log }) : undefined
     const documents = new Documents({ config, git: git!, revisions: revisions!, writer, changed: documentsChanged, locks })
     const routes: WorkspaceRoutes = { documents, ...revisions ? { revisions } : {}, locks, documentsChanged, ...service ? { service } : {}, ...token ? { token } : {}, ...reviews ? { reviews } : {} }
-    return { ...revisions ? { revisions } : {}, ...reviews ? { reviews } : {}, writer, plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
+    return { ...revisions ? { revisions } : {}, ...reviews ? { reviews } : {}, writer, source: new SourceFiles({ config, writer, locks }), plugin: { id: WORKSPACE_ID, plugin: workspacePlugin(routes), config: {} } }
   }
   let workspace: ReturnType<typeof workspaceOf> | undefined
   const plugin = (): ServedPlugin => workspace!.plugin
@@ -147,6 +157,11 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   const ready = new Promise<void>(resolve => started = resolve)
 
   const serverHost: ServerHost = {
+    workspaceRoot: root,
+    async readSource(path, member) {
+      await ready
+      return workspace!.source.read(workspace!.source.scope(''), path, member)
+    },
     async documents() {
       return docs().map(({ entry: _entry, ...doc }) => doc)
     },
@@ -157,8 +172,11 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
     },
     async check(document) {
       await ready
-      const compilation = await sessionOf(document).ready()
-      return [...compilation.doc.diagnostics, ...await check(compilation)]
+      const session = sessionOf(document)
+      const compilation = await session.ready()
+      const findings = await check(compilation)
+      if (session.latest === compilation) server?.diagnostics.replace({ document, origin: 'check' }, findings, { root, revision: irRevision(compilation.doc) })
+      return [...compilation.doc.diagnostics, ...findings]
     },
     async build(document, buildOptions = {}) {
       await ready
@@ -225,23 +243,31 @@ export async function serveWorkspace(options: ServeOptions): Promise<WorkspaceSe
   })
   const running = server
   services = running.services
-  service = workspaceService({ root, sessionOf, serverHost, url: () => running.url, preview, stateDir: stateDir(root, env), log })
+  service = workspaceService({ root, sessionOf, serverHost, diagnostics: running.diagnostics, url: () => running.url, preview, stateDir: stateDir(root, env), log })
   workspace = workspaceOf()
   hostServices = [
     ...workspace.revisions ? [[REVISIONS, workspace.revisions] as [ServiceToken<unknown>, unknown]] : [],
     [DOCUMENT_FILES, workspace.writer],
     [DOCUMENT_LOCKS, locks],
   ]
-  await workspace.reviews?.recover(docs().map(doc => doc.dir))
+  try {
+    await workspace.reviews?.recover(docs().map(doc => doc.dir))
+  } catch (error) {
+    workspace.reviews?.close()
+    await service.close()
+    await running.close()
+    throw error
+  }
 
   started()
 
   const compileFull = async (dir: string): Promise<IRDocument> => {
     const compilation = await sessionOf(dir).ready()
+    documentPlugins(spec, dir, compilation)
     return service!.siteDoc(compilation, siteIR(compilation))
   }
   try {
-    site = await localSite({ root, spec, bundled: options.bundled, state: stateDir(root, env), compile: compileFull, siteDoc: (compilation, doc) => service!.siteDoc(compilation, doc), preview, log })
+    site = await localSite({ root, spec, bundled: options.bundled, state: stateDir(root, env), compile: compileFull, siteDoc: (compilation, doc) => service!.siteDoc(compilation, doc), diagnostics: running.diagnostics, preview, log })
   } catch (error) {
     await service?.close()
     await running.close()
@@ -280,6 +306,7 @@ interface LocalSiteOptions {
   siteDoc(compilation: Compilation, doc: IRDocument): IRDocument
   preview: { origins: string[] }
   log: Logger
+  diagnostics: DiagnosticStore
 }
 
 async function localSite(options: LocalSiteOptions): Promise<SiteBackend> {
@@ -294,7 +321,17 @@ async function localSite(options: LocalSiteOptions): Promise<SiteBackend> {
   log.info(`the workspace site's dev router is at ${origin} (this machine only; pages reach it through serve)`)
   return {
     forward: () => origin,
-    update: (dir, compilation) => dev.update(dir, options.siteDoc(compilation, siteIR(compilation))).catch((error: unknown) => log.warn(`the site did not take ${dir}: ${errorMessage(error)}`)),
+    update: (dir, compilation) => {
+      documentPlugins(spec, dir, compilation)
+      const revision = irRevision(compilation.doc)
+      return dev.update(dir, options.siteDoc(compilation, siteIR(compilation))).then(() => {
+        if (options.diagnostics.revision(dir) === revision) options.diagnostics.clear(dir, 'preview', 'web')
+      }, (error: unknown) => {
+        const message = `the site did not take ${dir}: ${errorMessage(error)}`
+        if (options.diagnostics.revision(dir) === revision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'web' }, [{ checkId: 'presmium.preview', severity: 'error', message }], { revision })
+        log.warn(message)
+      })
+    },
     documentsChanged: async () => {},
     close: () => dev.close(),
   }

@@ -1,4 +1,4 @@
-import type { FocusReport } from '@lincyaw/kernel'
+import type { DiagnosticSnapshot, FocusReport, PreviewDiagnostics } from '@lincyaw/kernel'
 import type { DocumentOperation, DocumentsAnswer, ErrorAnswer, FilesAnswer, FocusAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewView, RevertAnswer, ReviewEnd, ReviewFollowed, ReviewView, SavedAnswer, SourceAnswer, UncommittedFile, WorkbenchAnswer } from './api.ts'
 
 export class ServiceError extends Error {
@@ -16,8 +16,12 @@ export interface WorkspaceClient {
   operate(operation: DocumentOperation): Promise<OperationAnswer>
   files(document: string): Promise<FilesAnswer>
   source(document: string, path: string): Promise<SourceAnswer>
+  createSource(document: string, path: string): Promise<SourceAnswer>
   save(document: string, path: string, content: string, base: string): Promise<SavedAnswer>
   ir(document: string): Promise<IrAnswer>
+  diagnostics(document: string): Promise<DiagnosticSnapshot>
+  diagnosticEvents(document: string, snapshot: (event: DiagnosticSnapshot) => void, failed: () => void): () => void
+  reportDiagnostics(report: PreviewDiagnostics): Promise<unknown>
   preview(document: string, view?: PreviewView): Promise<PreviewAnswer>
   workbench(): Promise<WorkbenchAnswer>
   focus(document: string, focus?: FocusReport[]): Promise<FocusAnswer>
@@ -106,6 +110,7 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
       try {
         on(JSON.parse((event as MessageEvent<string>).data) as T)
       } catch {
+        failed?.()
       }
     })
     if (failed) source.addEventListener('error', failed)
@@ -116,8 +121,12 @@ export function workspaceClient(base = 'api/presmium/'): WorkspaceClient {
     operate: operation => post(url('documents'), operation),
     files: document => call(url('files', document)),
     source: (document, path) => call(url('source', document, { path })),
+    createSource: (document, path) => post(url('source/create', document), { path }),
     save: (document, path, content, base) => post(url('source', document), { path, content, base }),
     ir,
+    diagnostics: document => call(url('diagnostics', document)),
+    diagnosticEvents: (document, snapshot, failed) => follow(url('diagnostics/events', document), 'diagnostics', snapshot, failed),
+    reportDiagnostics: report => post(url('diagnostics'), report),
     preview: (document, view) => call(url('preview', document, view ? { view } : {})),
     workbench: () => call(url('workbench')),
     focus: (document, focus) => focus === undefined ? call(url('focus', document)) : post(url('focus'), { document, focus }),

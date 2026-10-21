@@ -56,8 +56,13 @@ async function create(args: string[], input = '', lang = 'zh_CN.UTF-8'): Promise
 }
 
 async function createInTerminal(input: string): Promise<string> {
-  const command = createPresmium().map(word => `'${word}'`).join(' ')
-  return sh('script', ['--quiet', '--return', '--command', command, '/dev/null'], work, input, { LANG: 'zh_CN.UTF-8', LC_ALL: '' })
+  const command = createPresmium()
+  const env = { LANG: 'zh_CN.UTF-8', LC_ALL: '' }
+  if (process.platform === 'darwin') {
+    const terminal = fileURLToPath(new URL('./terminal.py', import.meta.url))
+    return sh('python3', [terminal, ...command], work, input, env)
+  }
+  return sh('script', ['--quiet', '--return', '--command', command.map(word => `'${word}'`).join(' '), '/dev/null'], work, input, env)
 }
 
 async function install(dir: string): Promise<void> {
@@ -125,7 +130,7 @@ it('asks for what the arguments leave out, in the system\'s language, and writes
   expect(readFileSync(join(workspace.dir, 'README.md'), 'utf8')).toContain('A Presmium workspace')
   expect(readFileSync(join(plugin.dir, 'src/domain/index.ts'), 'utf8')).toContain('export const PLUGIN_ID = \'acme.presmium-greeting\'')
   const at = (names: string[]) => Object.fromEntries(names.map(name => [name, `^${VERSION}`]))
-  for (const made of [lecture, workspace]) expect(made.made.devDependencies).toEqual(at(['presmium']))
+  for (const made of [lecture, workspace]) expect(made.made.devDependencies).toEqual(at(['@lincyaw/presmium']))
   expect(lecture.output).toMatch(/^ {2}presmium dev$/m)
   expect(plugin.made).toMatchObject({ name: '@acme/presmium-greeting', devDependencies: at(['@lincyaw/cli', '@lincyaw/web', '@lincyaw/render-slides', '@lincyaw/render-notebook', '@lincyaw/slidev-addon-core']), peerDependencies: at(['@lincyaw/compiler', '@lincyaw/host', '@lincyaw/kernel', '@lincyaw/viewer']) })
   for (const [kind, skills] of [['lecture', ['presmium-author', 'presmium-present']], ['workspace', ['presmium-author', 'presmium-present']], ['plugin', ['presmium-author', 'presmium-develop']]] as const) {

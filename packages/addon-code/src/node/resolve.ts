@@ -90,7 +90,6 @@ async function resolve(node: CodeNode, spec: CodeRefSpec, configuredRepo: string
   }
 
   const url = await repoUrl(repo, spec.repo ?? configuredRepo)
-  if (!url) report('presmium.code.links', 'info', `no remote repository for ${anchor}; it is shown without a permalink`, 'set presmium.code.repo in the headmatter or :repo: on the directive, or add an origin remote')
   const link = (shot: Shot | undefined) => url && shot?.commit ? permalink(url, shot.commit, repo.path(shot.location.file), shot.location.startLine, shot.location.endLine) : undefined
 
   const shown = shots.at(-1)

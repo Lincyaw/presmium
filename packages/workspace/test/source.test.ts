@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Child, RawResponse } from './helpers.ts'
@@ -32,6 +32,18 @@ describe('the source routes', () => {
     const before = file('intro/lecture.md')
     expect((await save('guide/../intro/lecture.md', 'overwritten', 'x')).status).toBe(400)
     expect(file('intro/lecture.md')).toBe(before)
+  })
+
+  it('refuses Windows separators in workspace reads and saves before resolving them as filesystem paths', async () => {
+    const source = `${url}/__presmium/presmium.workspace/source`
+    const opened = await raw(`${source}?path=intro/lecture.md`)
+    expect(opened.status).toBe(200)
+    const { content, version } = opened.json<{ content: string, version: string }>()
+    for (const path of ['intro\\lecture.md', '..\\outside.md', 'guide\\..\\intro\\lecture.md', 'C:\\outside.md', '\\\\host\\share\\lecture.md']) {
+      expect((await raw(`${source}?path=${encodeURIComponent(path)}`)).status, path).toBe(400)
+      expect((await raw(source, { json: { path, content: 'outside the workspace', base: version } })).status, path).toBe(400)
+    }
+    expect(file('intro/lecture.md')).toBe(content)
   })
 
   it('refuses a file reached through a symbolic link, to another document or out of the workspace (403)', async () => {
@@ -76,6 +88,74 @@ describe('the source routes', () => {
     expect((await read('notes.md')).status).toBe(403)
     const files = await raw(`${url}/__presmium/presmium.workspace/files`)
     expect(files.json<{ files: { path: string }[] }>().files.map(file => file.path)).toContain('notes.md')
+  })
+
+  it('creates a text file and its directories without overwriting an existing path, then saves through version checks', async () => {
+    const endpoint = `${url}/__presmium/presmium.workspace/source/create`
+    const path = 'guide/code/database.py'
+    const created = await raw(endpoint, { headers: { 'Presmium-Document': 'guide' }, json: { path } })
+    expect(created.status, created.text).toBe(201)
+    const { version } = created.json<{ version: string }>()
+    expect(file(path)).toBe('')
+    const content = 'class Database:\n    def __init__(self):\n        self.rows = {}\n'
+    expect((await save(path, content, version)).status).toBe(200)
+    const duplicate = await raw(endpoint, { json: { path } })
+    expect(duplicate.status).toBe(409)
+    expect(duplicate.json()).toMatchObject({ exists: true })
+    expect(file(path)).toBe(content)
+    expect((await raw(`${url}/__presmium/presmium.workspace/source`, { json: { path, content: 'without a version' } })).status).toBe(400)
+    expect((await save(path, 'with an old version', version)).status).toBe(409)
+    expect(file(path)).toBe(content)
+  })
+
+  it('keeps new files inside their editable scope, refuses symbolic link parents and honors document locks', async () => {
+    const create = (path: string, document = 'guide') => raw(`${url}/__presmium/presmium.workspace/source/create`, { headers: { 'Presmium-Document': document }, json: { path } })
+    for (const path of ['../outside.py', '/tmp/outside.py', 'guide/../intro/new.py', 'guide/.git/new.py', 'guide/.presmium/new.py', 'guide/node_modules/new.py', 'guide\\new.py']) {
+      expect((await create(path)).status, path).toBe(400)
+    }
+    expect((await create('intro/from-guide.py')).status).toBe(403)
+    expect((await create('guide/database.sqlite')).status).toBe(415)
+    symlinkSync(join(dir, 'intro'), join(dir, 'guide/linked-code'))
+    expect((await create('guide/linked-code/new.py')).status).toBe(403)
+    expect(existsSync(join(dir, 'intro/new.py'))).toBe(false)
+    const lecture = file('guide/lecture.md')
+    expect((await create('guide/lecture.md/new.py')).status).toBe(403)
+    expect(file('guide/lecture.md')).toBe(lecture)
+    const review = await raw(`${url}/__presmium/presmium.workspace/review/open`, { headers: { 'Presmium-Document': 'guide' }, json: { session: 'file-creation-lock', turn: 1 } })
+    expect(review.status, review.text).toBe(200)
+    try {
+      const locked = await create('guide/while-reviewing.py')
+      expect(locked.status).toBe(409)
+      expect(locked.json()).toHaveProperty('locked')
+      expect(existsSync(join(dir, 'guide/while-reviewing.py'))).toBe(false)
+    } finally {
+      await raw(`${url}/__presmium/presmium.workspace/review/reject`, { headers: { 'Presmium-Document': 'guide' }, json: {} })
+    }
+  })
+
+  it('shares a selected workspace source range with its draft quote, and refuses unsafe files without replacing the focus', async () => {
+    mkdirSync(join(dir, 'src'), { recursive: true })
+    writeFileSync(join(dir, 'src/database.py'), 'def get(rows, key):\n    return rows[key]\n')
+    symlinkSync(join(dir, 'intro/lecture.md'), join(dir, 'src/linked.py'))
+    writeFileSync(join(dir, 'src/binary.bin'), Buffer.from([0, 1, 2]))
+    const endpoint = `${url}/__presmium/presmium.server/focus`
+    const report = (path: string) => raw(endpoint, { json: { document: 'guide', focus: [{ id: 'workspace-code', from: 'source', scope: 'workspace', source: { file: path, startLine: 2, endLine: 2 }, quote: '    return rows.get(key) # unsaved' }] } })
+    const selected = await report('src/database.py')
+    expect(selected.status, selected.text).toBe(200)
+    expect(selected.json()).toMatchObject({ document: 'guide', focus: [{ scope: 'workspace', document: 'guide', source: { file: 'src/database.py', startLine: 2, endLine: 2 }, excerpt: '    return rows[key]', quote: '    return rows.get(key) # unsaved' }] })
+    for (const path of ['../outside.py', '..\\outside.py', 'src\\..\\intro\\lecture.md', 'C:\\outside.py', '/etc/passwd', 'src/../src/database.py', 'src/linked.py', 'src/binary.bin']) {
+      expect((await report(path)).status, path).toBe(400)
+    }
+    expect((await raw(`${endpoint}?document=guide`)).json()).toMatchObject({ focus: [{ source: { file: 'src/database.py' } }] })
+    writeFileSync(join(dir, 'src/long.py'), `# A generated line\n${'x'.repeat(20_000)}`)
+    const long = await report('src/long.py')
+    expect(long.status, long.text).toBe(200)
+    const excerpt = long.json<{ focus: { excerpt: string }[] }>().focus[0]!.excerpt
+    expect(excerpt.length).toBeLessThan(8100)
+    expect(excerpt).toContain('excerpt truncated')
+    const clear = await raw(endpoint, { json: { document: 'guide', focus: [] } })
+    expect(clear.status).toBe(200)
+    expect((await raw(`${endpoint}?document=guide`)).json()).toMatchObject({ focus: [] })
   })
 
   it('lists, reads and saves code in a directory matching the lecture glob without a lecture entry', async () => {

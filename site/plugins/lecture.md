@@ -168,6 +168,7 @@ export default plugin
 
 - `span` 是块内的步数：块有 `span + 1` 个状态（这里是问题与结果），讲解按顺序绑定到它们。
 - `fallback` 是静态媒介（notebook、PDF）显示的 mdast；没有时渲染端写一行说明并链接网页版。
+- 组件默认自行运行子块中的代码；只组织内容的容器写 `ownsCode: false`，子代码在网页与幻灯片中保留自己的运行控件和输出。
 - `ctx` 有文稿的语言 `lang`、本章节的配置 `config`、把正文中的 MyST 解析成 mdast 的 `parse`、报告诊断的 `report` 与声明依赖文件的 `watch`。
 - 指令名与内置指令或别的插件重名时报错；没有声明的选项得到警告。
 

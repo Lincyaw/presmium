@@ -5,7 +5,7 @@ import type { InjectionKey, PropType, VNode } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
 import { BLOCK_CLASS, trackClicks } from './clicks.ts'
 import { CodeBlockView } from './code.ts'
-import { IN_COMPONENT } from './context.ts'
+import { CODE_OWNED } from './context.ts'
 import { FINAL_STEP } from './domain/index.ts'
 import { messages } from './i18n.ts'
 import { hastToVNodes, markdownToHast, MarkdownView } from './markdown.ts'
@@ -38,7 +38,7 @@ const ComponentView = defineComponent({
   name: 'PmComponentNode',
   props: blockProps,
   setup(props) {
-    provide(IN_COMPONENT, true)
+    provide(CODE_OWNED, computed(() => (props.block.node as ComponentNode).ownsCode !== false))
     provide(COMPONENT_NODE, {
       get node() {
         return props.block.node as ComponentNode

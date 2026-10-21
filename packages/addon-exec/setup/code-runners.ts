@@ -1,4 +1,4 @@
-import { iconMarkup } from '@lincyaw/host'
+import { iconMarkup, splitBlockKey } from '@lincyaw/host'
 import { escapeHtml, EXECUTOR, isRecord } from '@lincyaw/kernel'
 import type { RunOutput, RunResult } from '@lincyaw/kernel'
 import { useNav } from '@slidev/client'
@@ -78,7 +78,8 @@ function runner(lang: string): CodeRunner {
     if (!executor) return recording ? recorded(recording, messages().unavailable) : [{ error: messages().unavailable }]
     const text = (key: string) => (typeof options[key] === 'string' && options[key] ? options[key] as string : undefined)
     const timeoutMs = typeof options.timeout === 'number' ? options.timeout : undefined
-    const result = await executor.run({ lang, code, timeoutMs, executor: text('executor'), session: text('session') })
+    const place = text('block') && splitBlockKey(text('block')!)
+    const result = await executor.run({ lang, code, timeoutMs, executor: text('executor'), session: text('session'), ...place ? { place: { section: place[0], block: place[1] } } : {} })
     if (recording && !result.ok && result.exitCode === null) return recorded(recording, result.timedOut ? messages().timedOut : result.stderr.trim() || messages().failed)
     return outputs(result)
   }

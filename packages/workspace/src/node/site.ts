@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
-import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@lincyaw/compiler'
+import { compileTranslations, DECK_ENTRY, directoryAsset, fileHash, frontmatterLine, inside, lineOf, loadPlugins, nodeVitePlugins, portable, publishesDirectory, readFrontmatter, viewFor } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import type { Finding, IRDocument, RenderContext, Renderer, SiteDocument, SiteSpec, SourcePos } from '@lincyaw/kernel'
 import type { WorkspaceDocument } from '../domain/api.ts'
@@ -29,8 +29,13 @@ export async function siteTranslations(compilation: Compilation): Promise<{ tran
   return { translations: translations.map(({ lang, doc }) => ({ lang, doc: siteIR(compilation, doc) })), findings }
 }
 
-export function siteDocument(document: WorkspaceDocument, doc?: IRDocument, translations?: SiteDocument['translations']): SiteDocument {
-  return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {} }
+export function siteDocument(document: WorkspaceDocument, doc?: IRDocument, translations?: SiteDocument['translations'], compilation?: Compilation): SiteDocument {
+  return { dir: document.dir, title: document.title, ...document.lang ? { lang: document.lang } : {}, ...document.tags ? { tags: document.tags } : {}, ...doc ? { doc } : {}, ...translations?.length ? { translations } : {}, ...compilation ? { nodeVitePlugins: nodeVitePlugins(compilation) } : {} }
+}
+
+export function documentPlugins(site: SiteSpec, dir: string, compilation: Compilation): void {
+  const document = site.documents.find(document => document.dir === dir)
+  if (document) document.nodeVitePlugins = nodeVitePlugins(compilation)
 }
 
 export function siteSpec(config: WorkspaceConfig, documents: SiteDocument[]): SiteSpec {

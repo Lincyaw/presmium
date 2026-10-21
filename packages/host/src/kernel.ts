@@ -1,6 +1,7 @@
 import { Kernel, PRESENTER_PANELS } from '@lincyaw/kernel'
 import type { EnvironmentSpec, Logger, PluginDefinition, PluginReport, PresentationMode, ServiceToken, StartReport } from '@lincyaw/kernel'
 import { shallowRef } from 'vue'
+import { componentErrors } from './boundary.ts'
 import { PmApprovals } from './approvals.ts'
 import { currentLocale } from './locale.ts'
 import { HOST_MESSAGES } from './messages.ts'
@@ -124,6 +125,13 @@ export function startHost(options: HostStart): Promise<StartReport> {
       kernel.provide(TOOLBAR, toolbar)
       kernel.provide(OPERATIONS, createOperations())
       kernel.provide(STATUS, status)
+      status.register({
+        id: 'presmium.runtime',
+        read: () => ({
+          plugins: (presmiumReport()?.plugins ?? []).slice(-40).map(plugin => ({ id: plugin.id, status: plugin.status, ...plugin.reason ? { reason: plugin.reason.slice(0, 2000) } : {} })),
+          errors: componentErrors().slice(-20).map(error => ({ component: error.component, message: error.message.slice(0, 2000) })),
+        }),
+      })
       disconnect?.()
       disconnect = undefined
       const { server } = options

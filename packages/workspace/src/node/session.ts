@@ -13,6 +13,7 @@ export class DocumentSession {
   #running: Promise<unknown> = Promise.resolve()
   #queued?: Promise<Compilation>
   readonly #listeners = new Set<(compilation: Compilation, changed: string[]) => void | Promise<void>>()
+  readonly #failures = new Set<(error: unknown) => void>()
   #changedFiles = new Set<string>()
   readonly #watchers = new Map<string, FSWatcher>()
   #relevant = new Map<string, Set<string>>()
@@ -49,6 +50,11 @@ export class DocumentSession {
   onCompile(listener: (compilation: Compilation, changed: string[]) => void | Promise<void>): () => void {
     this.#listeners.add(listener)
     return () => this.#listeners.delete(listener)
+  }
+
+  onFailure(listener: (error: unknown) => void): () => void {
+    this.#failures.add(listener)
+    return () => { this.#failures.delete(listener) }
   }
 
   recompile(): Promise<Compilation> {
@@ -93,7 +99,10 @@ export class DocumentSession {
     })
     this.#queued = next
     this.#running = next.catch((error: unknown) => {
-      if (!this.#closed) this.#log.error(`compiling ${this.dir || '.'} failed: ${errorMessage(error)}`)
+      if (!this.#closed) {
+        this.#log.error(`compiling ${this.dir || '.'} failed: ${errorMessage(error)}`)
+        for (const listener of this.#failures) listener(error)
+      }
     })
     return next
   }
@@ -105,6 +114,7 @@ export class DocumentSession {
     for (const watcher of this.#watchers.values()) watcher.close()
     this.#watchers.clear()
     this.#listeners.clear()
+    this.#failures.clear()
   }
 
   #watch(compilation: Compilation, started: number): void {

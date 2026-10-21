@@ -304,6 +304,32 @@ function silence(seconds: number, rate = 8000): Buffer {
   return Buffer.concat([header, data])
 }
 
+test.describe('playback failures in a dev server', () => {
+  let dir: string
+  let dev: DevServer
+  test.beforeAll(async () => {
+    test.setTimeout(180_000)
+    dir = deckDir('lecture-missing-audio', LINK)
+    cpSync(FIXTURE, dir, { recursive: true })
+    const entry = join(dir, 'lecture.md')
+    writeFileSync(entry, readFileSync(entry, 'utf8').replace('port: 5323', 'port: 0'))
+    dev = await startDev(dir, 'web')
+  })
+  test.afterAll(async () => {
+    await dev?.stop()
+    if (dir) rmSync(dir, { recursive: true, force: true })
+  })
+
+  test('reports an audio request rejected by the server', async ({ page }) => {
+    const failure = page.getByRole('alert')
+    await expect(async () => {
+      await page.goto(`${dev.url}?view=present&track=demo`)
+      await expect(failure).toContainText('讲授加载失败：audio/demo.wav: HTTP 404')
+    }).toPass({ timeout: 120_000 })
+    await expect(page.getByRole('region', { name: '讲授回放' })).toHaveCount(0)
+  })
+})
+
 test.describe('playback of a lecture track', () => {
   test.describe.configure({ mode: 'default' })
   test.use({ viewport: { width: 960, height: 720 } })
@@ -388,6 +414,25 @@ test.describe('playback of a lecture track', () => {
     await expect(player).toHaveAttribute('data-state', 'paused')
   })
 
+  test('reports a missing declared audio file instead of playing silently', async ({ page }) => {
+    const file = join(deck().dir, 'dist/lecture/demo/audio/demo.wav')
+    const audio = readFileSync(file)
+    rmSync(file)
+    try {
+      const missing = page.waitForResponse(response => response.url().endsWith('/demo/audio/demo.wav') && response.status() === 404)
+      await page.goto(`${deck().web}/?view=lecture&track=demo`)
+      await missing
+      const failure = page.getByRole('alert')
+      await expect(failure).toContainText('讲授加载失败')
+      await expect(failure).toContainText('demo/audio/demo.wav')
+      await expect(page.getByRole('region', { name: '讲授回放' })).toHaveCount(0)
+      await failure.getByRole('button', { name: '关闭讲授' }).click()
+      await expect(failure).toHaveCount(0)
+    } finally {
+      writeFileSync(file, audio)
+    }
+  })
+
   test('plays at twice the speed, with captions of the current utterance (P-131)', async ({ page }) => {
     const player = await open(page)
     await player.getByLabel('倍速').selectOption('2')
@@ -441,9 +486,20 @@ test.describe('playback of a lecture track', () => {
     await expect(present.locator('.pm-block[data-block="part-code"]')).toHaveClass(/driver-active-element/)
     const label = player.locator('.pm-lecture-player__ai')
     await expect(label).toHaveText('AI 合成语音（Presmium fake）')
-    await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
+    let hitTest = await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
     const box = (await label.boundingBox())!
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.classList.contains('pm-lecture-player__ai'), [box.x + box.width / 2, box.y + box.height / 2])).toBe(true)
+    await hitTest.evaluate(style => style.remove())
+    await present.getByRole('button', { name: '全屏' }).click()
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === document.documentElement)).toBe(true)
+    await expect(label).toBeVisible()
+    hitTest = await page.addStyleTag({ content: '.driver-overlay, .driver-overlay * { pointer-events: auto !important; }' })
+    const full = (await label.boundingBox())!
+    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.classList.contains('pm-lecture-player__ai'), [full.x + full.width / 2, full.y + full.height / 2])).toBe(true)
+    await hitTest.evaluate(style => style.remove())
+    await present.getByRole('button', { name: '退出放映' }).click()
+    await expect(present).toHaveCount(0)
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBe(null)
   })
 
   test('follows a block relabeled since the recording, and skips the actions on one deleted, saying so (P-130)', async ({ page }) => {

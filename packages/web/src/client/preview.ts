@@ -57,17 +57,15 @@ export function startWebPreview(page: WebPreviewPage, options: WebPreviewOptions
 }
 
 function watchProblems(agent: PreviewAgent): void {
-  const told = new Set<string>()
+  let told = new Map<string, { level: 'error' | 'warning', plugin: string, message: string }>()
   watch(() => [presmiumReport()?.plugins ?? [], componentErrors()] as const, ([plugins, errors]) => {
     const problems = [
       ...plugins.filter(p => p.status === 'failed' || p.status === 'disabled').map(p => ({ level: p.status === 'failed' ? 'error' as const : 'warning' as const, plugin: p.id, message: p.reason ?? p.status })),
       ...errors.map(e => ({ level: 'error' as const, plugin: e.component, message: e.message })),
     ]
-    for (const problem of problems) {
-      const key = JSON.stringify(problem)
-      if (told.has(key)) continue
-      told.add(key)
-      agent.report(problem)
-    }
+    const current = new Map(problems.map(problem => [JSON.stringify(problem), problem]))
+    for (const [key, problem] of told) if (!current.has(key)) agent.report({ ...problem, resolved: true })
+    for (const [key, problem] of current) if (!told.has(key)) agent.report(problem)
+    told = current
   }, { immediate: true })
 }

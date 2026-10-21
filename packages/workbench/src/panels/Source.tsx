@@ -1,4 +1,3 @@
-import * as Tabs from '@radix-ui/react-tabs'
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { createEditor } from '../editor.ts'
@@ -6,10 +5,12 @@ import type { Problem, SourceEditor } from '../editor.ts'
 import { PmButton, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
 import type { OpenFile } from '../store.ts'
+import { EditorGroup } from './EditorGroup.tsx'
+import type { EditorGroupProps } from './EditorGroup.tsx'
 
 const nameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1)
 
-export function SourcePanel() {
+export function SourcePanel(props: EditorGroupProps) {
   const t = useMessages()
   const workbench = useWorkbenchStore()
   const open = useWorkbench(state => state.open)
@@ -21,27 +22,21 @@ export function SourcePanel() {
     void workbench.save()
   }
   return (
-    <Tabs.Root asChild value={active ?? ''} onValueChange={path => workbench.showFile(path)}>
     <section className="pmw-source" aria-label={t.source} onKeyDown={onKeyDown}>
-      <Tabs.List className="pmw-source__tabs" aria-label={t.source}>
-        {open.map(f => (
-          <span key={f.path} className="pmw-source__tab" data-active={f.path === active || undefined}>
-            <Tabs.Trigger value={f.path} title={f.path}>
-              {nameOf(f.path)}
-              {f.dirty && <span className="pmw-source__dot" aria-label={t.unsaved} role="img" />}
-            </Tabs.Trigger>
-            <PmIconButton icon="close" label={t.closeFile(nameOf(f.path))} small onClick={() => workbench.closeFile(f.path)} />
-          </span>
-        ))}
-        <span className="pmw-spacer" />
-        {file && <PmButton small icon="check" variant={file.dirty ? 'primary' : 'default'} onClick={() => void workbench.save(file.path)}>{t.save}</PmButton>}
-      </Tabs.List>
+      <EditorGroup {...props} kind="source" actions={<SourceActions />}>
       {file?.notice && <FileNoticeBox file={file} />}
-      <Tabs.Content value={active ?? ''} forceMount className="pmw-source__body"><EditorPane /></Tabs.Content>
+      <EditorPane />
       {!file && <p className="pmw-source__empty pmw-muted">{t.noFile}</p>}
+      </EditorGroup>
     </section>
-    </Tabs.Root>
   )
+}
+
+export function SourceActions() {
+  const t = useMessages()
+  const workbench = useWorkbenchStore()
+  const file = useWorkbench(state => state.open.find(file => file.path === state.active))
+  return file && <PmIconButton small icon="save" label={t.save} disabled={!file.dirty} onClick={() => void workbench.save(file.path)} />
 }
 
 function FileNoticeBox({ file }: { file: OpenFile }) {
@@ -74,12 +69,10 @@ function EditorPane() {
   const reveal = useWorkbench(state => state.reveal)
   const ir = useWorkbench(state => state.ir)
   const opened = useWorkbench(state => state.open.length)
-  const label = useRef(t.editor(''))
-  label.current = t.editor(active ?? '')
 
   useEffect(() => {
     const made = createEditor(parent.current!, {
-      label: label.current,
+      label: t.editor(''),
       save: () => void workbench.save(),
       changed: (path, text) => workbench.edited(path, text),
       moved: line => workbench.moved(line),
@@ -101,6 +94,10 @@ function EditorPane() {
     if (!active) return
     made.show(active, workbench.textOf(active) ?? '')
   }, [active, workbench, opened])
+
+  useEffect(() => {
+    if (active) editor.current?.describe(t.editor(active), t.editorKeys)
+  }, [active, t])
 
   useEffect(() => {
     if (reveal && reveal.path === active) editor.current?.reveal(reveal.line, reveal.endLine, reveal.mark)

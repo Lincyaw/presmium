@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { testHome } from './harness.ts'
 import type { HostApi, Service, TestHome, Workspace } from './harness.ts'
@@ -9,7 +9,7 @@ interface Registered {
   created: boolean
 }
 
-describe('the documents\' workspaces follow the documents', () => {
+describe('one Harness workspace for the Presmium workspace root', () => {
   let home: TestHome
   let ws: Workspace
   let service: Service
@@ -34,20 +34,19 @@ describe('the documents\' workspaces follow the documents', () => {
   }
   const registration = (dir: string) => api.call<Registered>('workspace/create', { request: { path: join(ws.dir, dir) } })
 
-  it('a document made is registered, retitled renamed, deleted removed', async () => {
-    expect(await registration('lectures/alpha')).toMatchObject({ created: false, workspace: { title: '文稿甲' } })
+  it('keeps the root registration while documents are created, renamed and deleted', async () => {
+    const registered = await registration('')
+    expect(registered).toMatchObject({ created: false, workspace: { path: ws.dir, title: basename(ws.dir) } })
 
     await operate({ op: 'create', dir: 'lectures/beta', title: '文稿乙' })
-    await new Promise(done => setTimeout(done, 8000))
-    expect(await registration('lectures/beta')).toMatchObject({ created: false, workspace: { title: '文稿乙' } })
+    expect(await registration('')).toEqual(registered)
 
     const file = join(ws.dir, 'lectures/alpha/lecture.md')
     writeFileSync(file, readFileSync(file, 'utf8').replace('title: 文稿甲', 'title: 文稿甲（修订）'))
-    await expect.poll(async () => (await registration('lectures/alpha')).workspace.title, { timeout: 30_000 }).toBe('文稿甲（修订）')
+    await operate({ op: 'rename', dir: 'lectures/beta', to: 'lectures/renamed' })
 
-    const { workspace } = await registration('lectures/beta')
-    await operate({ op: 'delete', dir: 'lectures/beta' })
-    const rename = () => api.call('workspace/rename', { request: { workspaceId: workspace.workspaceId, title: '文稿乙' } }).then(() => 'registered', (error: Error) => error.message)
-    await expect.poll(rename, { timeout: 30_000 }).toMatch(/not.?found/i)
+    await operate({ op: 'delete', dir: 'lectures/renamed' })
+    expect(await registration('')).toEqual(registered)
+    expect(await registration('lectures/alpha')).toMatchObject({ created: true, workspace: { title: 'alpha' } })
   }, 120_000)
 })

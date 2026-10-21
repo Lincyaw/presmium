@@ -1,9 +1,10 @@
 import { Tree } from 'react-arborist'
 import type { NodeRendererProps, TreeApi } from 'react-arborist'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { SourceFile } from '../api.ts'
-import { PmIcon, PmIconButton, PmNotice } from '../components.tsx'
+import { PmButton, PmDialog, PmField, PmIcon, PmIconButton, PmNotice } from '../components.tsx'
 import { useMessages, useWorkbench, useWorkbenchStore } from '../react.tsx'
+import { ServiceError } from '../service.ts'
 
 interface FileNode {
   id: string
@@ -100,6 +101,7 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
   const active = useWorkbench(state => state.active)
   const documents = useWorkbench(state => state.documents)
   const failure = useWorkbench(state => state.openFailure)
+  const [creating, setCreating] = useState(false)
   const data = useMemo(() => fileTree(files?.files ?? [], files?.home ? '' : document ?? ''), [files, document])
   const scope = files?.home ? 'workspace' : `document:${document ?? ''}`
   const initialOpenState = storedTree(scope)
@@ -125,6 +127,7 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
       <div className="pmw-files__head">
         <PmIconButton icon="arrow-left" label={t.backToDocuments} small onClick={() => workbench.closeDocument()} />
         <h2 className="pmw-files__title">{title}</h2>
+        <PmIconButton icon="plus" label={t.newFile} small onClick={() => setCreating(true)} />
       </div>
       {failure && <PmNotice tone="danger">{t.openFailed(failure)}</PmNotice>}
       {files && files.files.length === 0 && <p className="pmw-muted">{t.noFiles}</p>}
@@ -176,6 +179,58 @@ export function FilesPanel({ onOpen }: { onOpen?(path: string): void }) {
         </div>
       )}
       {files?.truncated && <p className="pmw-muted">{t.truncated}</p>}
+      {creating && <NewFileDialog
+        initialPath={active?.slice(0, active.lastIndexOf('/') + 1) ?? (document ? `${document}/` : '')}
+        onClose={() => setCreating(false)}
+        onCreated={path => { setCreating(false); onOpen?.(path) }}
+      />}
     </nav>
   )
+}
+
+function NewFileDialog({ initialPath, onClose, onCreated }: { initialPath: string, onClose(): void, onCreated(path: string): void }) {
+  const t = useMessages()
+  const workbench = useWorkbenchStore()
+  const [path, setPath] = useState(initialPath)
+  const [busy, setBusy] = useState(false)
+  const [failure, setFailure] = useState<string>()
+  const created = useRef<string>()
+  const create = async () => {
+    const next = path.trim()
+    if (!next || busy) return
+    setBusy(true)
+    setFailure(undefined)
+    try {
+      await workbench.createFile(next)
+      created.current = next
+      onCreated(next)
+    } catch (error) {
+      setFailure(error instanceof ServiceError && error.answer.exists ? t.fileExists(next) : t.createFileFailed(error instanceof Error ? error.message : String(error)))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return <PmDialog
+    open
+    label={t.newFile}
+    closeLabel={t.close}
+    onClose={() => { if (!busy) onClose() }}
+    onCloseAutoFocus={event => {
+      if (!created.current) return
+      event.preventDefault()
+      void workbench.openSource('', created.current)
+    }}
+  >
+    <form className="pmw-operation" onSubmit={event => { event.preventDefault(); void create() }}>
+      <PmField label={t.filePath}>
+        <input className="pm-ui-input" name="path" value={path} required disabled={busy} placeholder="src/database.py" onChange={event => setPath(event.target.value)} />
+      </PmField>
+      <p className="pmw-muted">{t.newFileHint}</p>
+      {failure && <PmNotice tone="danger">{failure}</PmNotice>}
+      <div className="pmw-operation__actions">
+        <PmButton disabled={busy} onClick={onClose}>{t.cancel}</PmButton>
+        <PmButton type="submit" disabled={busy || !path.trim()} variant="primary">{t.create}</PmButton>
+      </div>
+    </form>
+  </PmDialog>
 }

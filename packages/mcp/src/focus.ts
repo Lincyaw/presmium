@@ -6,6 +6,7 @@ import { findBlock, findSection, place } from './deck.ts'
 
 export const EXCERPT_LINES = 20
 const QUOTE_CHARS = 2000
+const WORKSPACE_EXCERPT_CHARS = 8000
 const FROM = new Set<Focus['from']>(['source', 'web', 'slides'])
 
 const str = (value: unknown, max = 200) => (typeof value === 'string' && value !== '' && value.length <= max ? value : undefined)
@@ -17,15 +18,18 @@ export function focusReport(value: unknown): FocusReport | string {
   const from = value.from as Focus['from']
   if (!id) return 'a focus has an id'
   if (!FROM.has(from)) return 'a focus is from source, web or slides'
+  if (value.scope !== undefined && value.scope !== 'document' && value.scope !== 'workspace') return 'a focus scope is document or workspace'
   const source = isRecord(value.source) ? value.source : undefined
   const range = source && str(source.file, 1000) && line(source.startLine) ? { file: source.file as string, startLine: source.startLine as number, endLine: line(source.endLine) ?? source.startLine as number } : undefined
   if (source && !range) return 'a focus\'s source is { file, startLine, endLine }'
   const report: FocusReport = { id, from }
+  if (value.scope === 'workspace' || value.scope === 'document') report.scope = value.scope
   for (const key of ['section', 'block'] as const) if (str(value[key])) report[key] = value[key] as string
   if (typeof value.step === 'number' && Number.isInteger(value.step) && value.step >= 0) report.step = value.step
   if (typeof value.quote === 'string' && value.quote.trim()) report.quote = value.quote.slice(0, QUOTE_CHARS)
   if (range) report.source = range
   if (!report.section && !report.block && !report.source) return 'a focus names a section, a block or a range of the source'
+  if (report.scope === 'workspace' && (report.from !== 'source' || !report.source || report.section || report.block || report.step !== undefined)) return 'a workspace focus is a source range without a section, block or step'
   return report
 }
 
@@ -53,7 +57,15 @@ function blockAt(doc: IRDocument, range: SourceRange): { section: string, block?
   return section && { section: section.id }
 }
 
-export function resolveFocus(doc: IRDocument, document: string, report: FocusReport, read: (file: string) => string = file => readFileSync(file, 'utf8')): Focus {
+export function resolveFocus(doc: IRDocument | undefined, document: string, report: FocusReport, read: (file: string) => string = file => readFileSync(file, 'utf8'), readWorkspace?: (file: string) => string): Focus {
+  if (report.scope === 'workspace') {
+    if (!readWorkspace || !report.source) throw new Error('this host does not read workspace source selections')
+    const range = report.source
+    const source = { ...range, endLine: Math.max(range.startLine, range.endLine) }
+    const excerpt = excerptOf(readWorkspace(source.file), source.startLine, source.endLine)
+    return { id: report.id, from: report.from, document, scope: 'workspace', source, excerpt: excerpt.length > WORKSPACE_EXCERPT_CHARS ? `${excerpt.slice(0, WORKSPACE_EXCERPT_CHARS)}\n[… excerpt truncated …]` : excerpt, ...report.quote ? { quote: report.quote } : {} }
+  }
+  if (!doc) throw new Error('a document focus requires the compiled document')
   const deckDir = dirname(doc.meta.entry)
   let source: SourceRange
   let section = report.section

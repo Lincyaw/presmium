@@ -122,7 +122,6 @@ interface Plugins {
   key: string
   plugins: LoadedPlugin[]
   problems: PluginProblem[]
-  services: NodeServices
 }
 
 export class Compiler {
@@ -168,16 +167,21 @@ export class Compiler {
     }
 
     const names = stringList(headmatter.plugins)
-    const { plugins, problems, services } = await this.#loadPlugins(names, workspace, (loaded): NodeServiceContext => ({
+    const loaded = await this.#loadPlugins(names, workspace)
+    const { plugins } = loaded
+    const problems = [...loaded.problems]
+    const services = new NodeServices(this.options.services)
+    for (const plugin of plugins) addServices(services, plugin, {
       deckDir: this.deckDir,
       workspaceRoot,
-      config: configOf(loaded),
-      settings: settings[pluginId(loaded)] ?? {},
+      config: configOf(plugin),
+      settings: settings[pluginId(plugin)] ?? {},
       lang,
       secret: this.options.secret ?? (name => process.env[name]),
       ...workspace.operatorDir ? { operatorDir: workspace.operatorDir } : {},
-      log: pluginLogger(pluginId(loaded)),
-    }))
+      log: pluginLogger(pluginId(plugin)),
+      service: token => services.get(token),
+    }, problems)
     const service = <T>(token: ServiceToken<T>) => services.get(token)
     const at = (name: string) => ({ file: this.entry, line: frontmatterLine(text, name) })
     for (const p of problems) report({ checkId: 'presmium.plugins', severity: p.severity, message: p.message, source: at(p.name) })
@@ -191,7 +195,11 @@ export class Compiler {
     const providers = new Map<string, EnvironmentProvider>()
     const components = new Map<string, string>()
     for (const loaded of plugins) {
-      for (const name of await directoryComponents(loaded.dir)) if (!components.has(name)) components.set(name, pluginId(loaded))
+      for (const name of await directoryComponents(loaded.dir)) {
+        const owner = components.get(name)
+        if (owner === undefined) components.set(name, pluginId(loaded))
+        else report({ checkId: 'presmium.plugins', severity: 'warning', message: `plugin ${pluginId(loaded)}: component ${name} is already registered by ${owner}; its component is ignored`, source: at(loaded.name) })
+      }
       const { plugin } = loaded
       if (!plugin) continue
       for (const spec of plugin.directives ?? []) {
@@ -477,7 +485,7 @@ export class Compiler {
     return workspace
   }
 
-  async #loadPlugins(names: string[], workspace: Workspace, context: (loaded: LoadedPlugin) => NodeServiceContext): Promise<Plugins> {
+  async #loadPlugins(names: string[], workspace: Workspace): Promise<Plugins> {
     const key = JSON.stringify(names)
     if (this.#plugins?.key === key) return this.#plugins
     const operators = await loadOperatorPlugins(workspace.sources)
@@ -485,9 +493,7 @@ export class Compiler {
     const dirs = new Set(operators.plugins.map(loaded => loaded.dir))
     const plugins = [...operators.plugins, ...deck.plugins.filter(loaded => !dirs.has(loaded.dir))]
     const problems = [...operators.problems, ...deck.problems]
-    const services = new NodeServices(this.options.services)
-    for (const loaded of plugins) addServices(services, loaded, { ...context(loaded), service: token => services.get(token) }, problems)
-    this.#plugins = { key, plugins, problems, services }
+    this.#plugins = { key, plugins, problems }
     return this.#plugins
   }
 

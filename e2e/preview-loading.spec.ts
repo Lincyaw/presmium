@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import { startStudio } from './fixtures/workbench/studio.ts'
 import type { Studio } from './fixtures/workbench/studio.ts'
+import { selectPreview } from './fixtures/workbench/ui.ts'
 
 test.use({ locale: 'zh-CN', actionTimeout: 30_000 })
 test.describe.configure({ timeout: 120_000 })
@@ -48,23 +49,23 @@ test('returns to the document while its first slides preview is still starting',
   await page.locator('.pmw-home__card').filter({ hasText: '分词入门' }).locator('.pmw-home__open').click()
   const panel = page.locator('.pmw-preview')
   const frame = page.locator('.pmw-preview__frame')
-  const document = page.getByRole('radiogroup', { name: '预览的形态', exact: true }).getByRole('radio', { name: '文档', exact: true })
+  const document = page.getByRole('tab', { name: '文档预览', exact: true })
   await expect(panel).toHaveAttribute('data-ready', 'true', { timeout: 90_000 })
   await expect(page.frameLocator('.pmw-preview__frame').locator('.pm-section').first()).toBeVisible()
   expect(requestedViews[0]).toBe('web')
 
   const requestedSlides = page.waitForRequest(request => isPreview(request.url(), 'slides'))
   const slidesResponse = page.waitForResponse(response => isPreview(response.url(), 'slides'))
-  await page.getByRole('radiogroup', { name: '预览的形态', exact: true }).getByRole('radio', { name: '幻灯片', exact: true }).click()
+  await selectPreview(page, 'slides')
   await requestedSlides
   expect(slidesReplied).toBe(false)
-  await document.click()
+  await selectPreview(page, 'web')
   expect(slidesReplied).toBe(false)
 
   const response = await slidesResponse
   expect(response.status()).toBe(200)
   await response.finished()
-  await expect(document).toHaveAttribute('aria-checked', 'true')
+  await expect(document).toHaveAttribute('aria-selected', 'true')
   await expect(panel).toHaveAttribute('data-ready', 'true')
   await expect(frame).toHaveAttribute('src', /\/lectures\/intro\//)
   await expect(frame).not.toHaveAttribute('src', /\/__presmium\/presmium\.workspace\/slides\//)

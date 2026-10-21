@@ -21,8 +21,8 @@ const plugin: ViewerPlugin = (ctx) => {
       return !offered.value
     },
   })
-  ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'] })
-  ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'] })
+  ctx.registerLayer({ id: 'presmium.lecture.player', component: PlayerPanel, views: ['present'], scope: 'viewport' })
+  ctx.registerLayer({ id: 'presmium.lecture.recorder', component: RecorderPanel, views: ['present'], scope: 'view' })
 }
 
 export default plugin

@@ -8,7 +8,7 @@ const own = realpathSync(fileURLToPath(new URL('..', import.meta.url)))
 
 function projectPresmium(from) {
   for (let dir = from; ; dir = dirname(dir)) {
-    const found = join(dir, 'node_modules/presmium/bin/presmium.mjs')
+    const found = join(dir, 'node_modules/@lincyaw/presmium/bin/presmium.mjs')
     if (existsSync(found)) return found
     if (dirname(dir) === dir) return undefined
   }

@@ -136,6 +136,7 @@ function localizeHiddenLabels(): void {
 
 const slidesBase = ref<string>()
 const active = ref(previewActive())
+const embeddedPreview = ref(false)
 let preview: ThemeInput['preview']
 let setActive: WebPreviewPage['setActive'] = async () => {}
 let viewersReady: Promise<unknown> = Promise.resolve()
@@ -149,6 +150,7 @@ const Layout = defineComponent({
       const agent = preview
       preview = undefined
       agent?.({ viewer, dark: isDark, setActive })
+      embeddedPreview.value = document.documentElement.dataset.presmiumPreview === 'on'
       localizeHiddenLabels()
       watch(() => page.value.relativePath, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
       watch(active, () => void nextTick(localizeHiddenLabels), { flush: 'post' })
@@ -169,6 +171,7 @@ const Layout = defineComponent({
       }, { immediate: true })
     })
     const home = () => {
+      if (embeddedPreview.value) return null
       const href = theme.value.presmium?.home
       return href ? h('a', { class: 'pm-site-link', href }, [h(PmIcon, { name: 'arrow-left', size: 14, strokeWidth: 2 }), WEB_MESSAGES[currentLocale()].documents]) : null
     }
@@ -270,7 +273,7 @@ export function createPresmiumTheme(input: ThemeInput): Theme {
         renderer: 'web',
         sectionHref: id => withBase(links.value[id] ?? `${prefix.value}/#${id}`),
         sectionHeading(section, step) {
-          if (!slidesBase.value) return null
+          if (embeddedPreview.value || !slidesBase.value) return null
           const t = WEB_MESSAGES[currentLocale()]
           return h('a', {
             'class': 'pm-open-slides',

@@ -1,6 +1,9 @@
 ---
 title: 甲文档
 tags: [入门]
+plugins: ['../plugin']
+presmium:
+  fixture.workspaceVite: { message: alpha-vite }
 ---
 
 # 开始

@@ -1,12 +1,12 @@
-import { createHash } from 'node:crypto'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { join, relative, sep } from 'node:path'
 import { dev, relativeIR } from '@lincyaw/compiler'
 import type { Compilation } from '@lincyaw/compiler'
 import { errorMessage, PREVIEW_REVISION } from '@lincyaw/kernel'
+import { irRevision } from '@lincyaw/kernel/node'
 import type { Finding, IRDocument, Logger, ProxySpec } from '@lincyaw/kernel'
-import type { ServerHost } from '@lincyaw/server'
+import type { DiagnosticStore, ServerHost } from '@lincyaw/server'
 import { WORKSPACE_ID } from '../domain/api.ts'
 import type { DocumentSession } from './session.ts'
 
@@ -50,9 +50,7 @@ export interface WorkspaceService {
   proxies: ProxySpec[]
 }
 
-export function irRevision(doc: IRDocument): string {
-  return createHash('sha256').update(JSON.stringify(doc)).digest('hex').slice(0, 16)
-}
+export { irRevision } from '@lincyaw/kernel/node'
 
 export function withRevision(doc: IRDocument, revision: string): IRDocument {
   return { ...doc, meta: { ...doc.meta, [PREVIEW_REVISION]: revision } }
@@ -85,6 +83,7 @@ export interface ServiceOptions {
   root: string
   sessionOf(dir: string): DocumentSession
   serverHost: ServerHost
+  diagnostics?: DiagnosticStore
   url(): string
   preview?: { origins: string[] }
   stateDir: string
@@ -121,9 +120,11 @@ export function workspaceService(options: ServiceOptions): Service {
   const slidesOf = (dir: string) => {
     let known = slides.get(dir)
     if (!known) {
+      let startupRevision: string | undefined
       known = (async () => {
         const session = options.sessionOf(dir)
         const compilation = await session.ready()
+        startupRevision = revisionOf(compilation)
         const configured = Object.keys(compilation.doc.config.renderers)
         if (configured.length > 0 && !configured.includes('slides')) return undefined
         const path = slidesPath(dir)
@@ -137,6 +138,9 @@ export function workspaceService(options: ServiceOptions): Service {
           ...options.preview ? { preview: { origins: options.preview.origins } } : {},
           onCompile(_compilation, findings) {
             startupErrors = findings.filter(f => f.checkId === 'presmium.render' && f.severity === 'error').map(f => f.message)
+            const stampedRevision = _compilation.doc.meta[PREVIEW_REVISION]
+            const revision = typeof stampedRevision === 'string' ? stampedRevision : revisionOf(_compilation)
+            if (options.diagnostics?.revision(dir) === revision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, findings.filter(f => f.checkId === 'presmium.render'), { root, revision })
             for (const finding of findings.filter(f => f.checkId === 'presmium.render')) log.warn(`the slides' preview of ${dir || '.'}: ${finding.message}`)
           },
         })
@@ -155,6 +159,7 @@ export function workspaceService(options: ServiceOptions): Service {
         if (!started && slides.get(dir) === known) slides.delete(dir)
       }, (error: unknown) => {
         log.warn(`the slides' preview of ${dir || '.'} did not start: ${errorMessage(error)}`)
+        if (options.diagnostics && options.diagnostics.revision(dir) === startupRevision) options.diagnostics.replace({ document: dir, origin: 'preview', renderer: 'slides' }, [{ checkId: 'presmium.preview', severity: 'error', message: errorMessage(error) }], { revision: startupRevision })
         if (slides.get(dir) === known) slides.delete(dir)
       })
       slides.set(dir, known)
@@ -221,6 +226,7 @@ export function workspaceService(options: ServiceOptions): Service {
       const compilation = await options.sessionOf(document).ready()
       const configured = Object.keys(compilation.doc.config.renderers)
       const available = configured.length === 0 || configured.includes('slides')
+      if (!available) options.diagnostics?.clear(document, 'preview', 'slides')
       if (view === 'web' || !available) {
         return { document, web, ...available ? { slides: slideURL } : {} }
       }
@@ -238,6 +244,7 @@ export function workspaceService(options: ServiceOptions): Service {
       for (const listener of listeners.get(dir) ?? []) listener(event)
       const configured = Object.keys(compilation.doc.config.renderers)
       if (configured.length > 0 && !configured.includes('slides')) {
+        options.diagnostics?.clear(dir, 'preview', 'slides')
         void stop(dir).catch((error: unknown) => log.warn(`the slides' preview of ${dir || '.'} did not stop: ${errorMessage(error)}`))
         return
       }
@@ -248,7 +255,10 @@ export function workspaceService(options: ServiceOptions): Service {
       return options.preview ? withRevision(doc, revisionOf(compilation)) : doc
     },
     async removed(dirs) {
-      for (const dir of dirs) await stop(dir)
+      for (const dir of dirs) {
+        await stop(dir)
+        options.diagnostics?.forget(dir)
+      }
     },
     async close() {
       closed = true

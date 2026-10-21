@@ -165,6 +165,14 @@ export class Control {
     return out
   }
 
+  runtime(document: string): { window: string, report: WindowReport }[] {
+    return [...this.#windows.values()]
+      .filter(window => window.document === document && window.report?.status && hasRole(window.member, 'editor'))
+      .sort((a, b) => b.report!.at - a.report!.at)
+      .slice(0, 8)
+      .map(window => ({ window: window.id, report: window.report! }))
+  }
+
   close(): void {
     for (const pending of [...this.#pending.values()]) pending.settle(false)
     for (const window of [...this.#windows.values()]) window.close()

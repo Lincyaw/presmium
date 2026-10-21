@@ -7,10 +7,12 @@ const WORKSPACE = '/__presmium/presmium.workspace/'
 const SERVER = '/__presmium/presmium.server/'
 
 export const ROUTES: Record<string, string> = Object.fromEntries([
-  ...['documents', 'files', 'source', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert',
+  ...['documents', 'files', 'source', 'source/create', 'changes', 'changes/commit', 'changes/discard', 'revisions', 'revisions/revert',
     'ir', 'ir/events', 'preview', 'build', 'check',
     'review', 'review/open', 'review/step', 'review/accept', 'review/reject', 'review/restore'].map(path => [path, `${WORKSPACE}${path}`]),
   ['focus', `${SERVER}focus`],
+  ['diagnostics', `${SERVER}diagnostics`],
+  ['diagnostics/events', `${SERVER}diagnostics/events`],
 ])
 
 const PASSED = ['accept', 'content-type', 'presmium-document', 'last-event-id', 'if-none-match']

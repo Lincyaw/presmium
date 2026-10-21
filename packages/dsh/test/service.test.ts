@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fakeModel } from '@lincyaw/cli/testing'
@@ -9,13 +10,9 @@ import type { TestHome, Workspace } from './harness.ts'
 interface Proc { pid: number, ppid: number, cmdline: string }
 
 function descendants(pid: number): Proc[] {
-  const all = readdirSync('/proc').filter(name => /^\d+$/.test(name)).flatMap((name) => {
-    try {
-      const stat = readFileSync(`/proc/${name}/stat`, 'utf8')
-      return [{ pid: Number(name), ppid: Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1]), cmdline: readFileSync(`/proc/${name}/cmdline`, 'utf8').replaceAll('\0', ' ') }]
-    } catch {
-      return []
-    }
+  const all = execFileSync('ps', ['-ww', '-axo', 'pid=,ppid=,args='], { encoding: 'utf8' }).split('\n').flatMap((line) => {
+    const match = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line)
+    return match ? [{ pid: Number(match[1]), ppid: Number(match[2]), cmdline: match[3]! }] : []
   })
   const out: Proc[] = []
   const walk = (parent: number) => {
@@ -59,16 +56,20 @@ describe('the workspace service DeepSeek Harness starts itself', () => {
     await home?.close()
   })
 
-  it('runs in its own process group without the model\'s credentials, and leaves no process after kill -9 of the host', async () => {
+  it.skipIf(process.platform === 'win32')('runs in its own process group without the model\'s credentials, and leaves no process after kill -9 of the host', async () => {
     model.hold()
     const run = home.headless(ws.dir, '列出章节。', { model, env: {} })
     await expect.poll(() => turns(model).length, { timeout: 180_000 }).toBeGreaterThan(0)
     const watchdog = descendants(run.child.pid!).find(proc => proc.cmdline.includes('watchdog.mjs'))!
     const serve = descendants(watchdog.pid).find(proc => / serve /.test(proc.cmdline))!
     expect(serve, run.output()).toBeDefined()
-    const seen = environ(serve.pid)
-    expect(seen.PRESMIUM_SERVICE_TOKEN).toMatch(/^\S{20,}$/)
-    expect(Object.keys(seen).filter(name => /^(DEEPSEEK_|DSH_)/.test(name))).toEqual([])
+    if (process.platform === 'linux') {
+      const seen = environ(serve.pid)
+      expect(seen.PRESMIUM_SERVICE_TOKEN).toMatch(/^\S{20,}$/)
+      expect(Object.keys(seen).filter(name => /^(DEEPSEEK_|DSH_)/.test(name))).toEqual([])
+    } else {
+      console.info('Skipping child-environment inspection: Linux /proc/<pid>/environ is required; service startup and process cleanup are still checked.')
+    }
     const state = join(home.dir, 'cache', 'presmium', 'serve')
     const { url } = JSON.parse(readFileSync(join(state, readdirSync(state)[0]!, 'server.json'), 'utf8')) as { url: string }
     await fetch(`${url}/`).then(response => response.text())

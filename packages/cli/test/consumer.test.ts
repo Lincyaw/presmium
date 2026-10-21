@@ -34,7 +34,7 @@ beforeAll(async () => {
 }, 900_000)
 afterAll(() => {
   if (project) rmSync(project, { recursive: true, force: true })
-})
+}, 120_000)
 
 const presmiumBin = () => join(project, 'node_modules/@lincyaw/presmium/bin/presmium.mjs')
 const installed = (name: string) => realpathSync(join(project, 'node_modules', name))
@@ -176,7 +176,7 @@ it('makes a lecture with presmium new in an empty directory and checks and build
     expect(made.code, made.stdout + made.stderr).toBe(0)
     expect(made.stdout).toMatch(/^ {2}presmium dev$/m)
     const lecture = join(empty, 'talk')
-    expect(JSON.parse(readFileSync(join(lecture, 'package.json'), 'utf8')).devDependencies).toEqual({ presmium: expect.stringMatching(/^\^\d/) })
+    expect(JSON.parse(readFileSync(join(lecture, 'package.json'), 'utf8')).devDependencies).toEqual({ '@lincyaw/presmium': expect.stringMatching(/^\^\d/) })
     const check = await presmium(['check'], lecture)
     expect(check.code, check.stdout + check.stderr).toBe(0)
     const build = await presmium(['build', '--to', 'web,slides,notebook'], lecture)
@@ -190,9 +190,9 @@ it('makes a lecture with presmium new in an empty directory and checks and build
 it('hands the command to the presmium a project has installed', async () => {
   const other = mkdtempSync(join(tmpdir(), 'presmium-local-'))
   try {
-    mkdirSync(join(other, 'node_modules/presmium/bin'), { recursive: true })
-    writeFileSync(join(other, 'node_modules/presmium/package.json'), '{ "name": "presmium", "version": "0.0.1", "type": "module" }\n')
-    writeFileSync(join(other, 'node_modules/presmium/bin/presmium.mjs'), 'console.log(`the project\'s presmium: ${process.argv.slice(2).join(\' \')}`)\n')
+    mkdirSync(join(other, 'node_modules/@lincyaw/presmium/bin'), { recursive: true })
+    writeFileSync(join(other, 'node_modules/@lincyaw/presmium/package.json'), '{ "name": "@lincyaw/presmium", "version": "0.0.1", "type": "module" }\n')
+    writeFileSync(join(other, 'node_modules/@lincyaw/presmium/bin/presmium.mjs'), 'console.log(`the project\'s presmium: ${process.argv.slice(2).join(\' \')}`)\n')
     const ran = await presmium(['check', 'deck'], other)
     expect(ran.stdout.trim()).toBe('the project\'s presmium: check deck')
   } finally {

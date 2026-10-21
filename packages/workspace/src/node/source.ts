@@ -8,7 +8,7 @@ import { within } from '../domain/paths.ts'
 import { listDocuments } from './config.ts'
 import type { WorkspaceConfig } from './config.ts'
 import { lockedError, RequestError } from './documents.ts'
-import { documentDirOf, writeChanges } from './files.ts'
+import { documentDirOf, FilesError, writeChanges } from './files.ts'
 import type { DocumentWriter } from './files.ts'
 import type { DocumentLocks } from './locks.ts'
 
@@ -91,9 +91,13 @@ export class SourceFiles {
     return { document: scope.document, home: scope.home, ...documents ? { documents } : {}, files, ...truncated ? { truncated: true as const } : {} }
   }
 
-  #bytes(scope: Scope, path: string, member: Member): Buffer {
-    if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || NOT_SOURCE.has(part))) throw new RequestError(400, `not a source path: ${JSON.stringify(path)}`)
+  #check(scope: Scope, path: string, member: Member): void {
+    if (typeof path !== 'string' || !path || path.startsWith('/') || path.includes('\\') || path.includes('\0') || path.split('/').some(part => part === '' || part === '.' || part === '..' || NOT_SOURCE.has(part))) throw new RequestError(400, `not a source path: ${JSON.stringify(path)}`)
     if (!this.allows(scope, path, member)) throw new RequestError(403, `${path} is not a file this page edits`)
+  }
+
+  #bytes(scope: Scope, path: string, member: Member): Buffer {
+    this.#check(scope, path, member)
     const file = join(this.#config.root, path)
     let real: string
     try {
@@ -119,11 +123,31 @@ export class SourceFiles {
     return { path, content, version: versionOf(bytes) }
   }
 
+  async create(scope: Scope, path: string, member: Member): Promise<SourceAnswer> {
+    this.#check(scope, path, member)
+    if (BINARY.test(path)) throw new RequestError(415, `${path} is not a text file`)
+    const document = listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => within(path, doc.dir))?.dir
+    const scopeDir = document ?? ''
+    const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:create') : () => {}
+    if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
+    try {
+      await this.#writer.create(path, Buffer.alloc(0), document === undefined)
+      return { path, content: '', version: versionOf('') }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new RequestError(409, `${path} already exists`, { exists: true })
+      if (error instanceof FilesError) throw new RequestError(403, error.message)
+      throw error
+    } finally {
+      release()
+    }
+  }
+
   async save(scope: Scope, path: string, content: string, base: string, member: Member): Promise<string> {
     const document = listDocuments(this.#config).sort((a, b) => b.dir.length - a.dir.length).find(doc => within(path, doc.dir))?.dir
     const outside = document === undefined
-    const release = outside || !this.#locks ? () => {} : this.#locks.claim(document, 'editor:save')
-    if (!release) throw lockedError(document!, this.#locks!.holder(document!) ?? '')
+    const scopeDir = document ?? ''
+    const release = this.#locks ? this.#locks.claim(scopeDir, 'editor:save') : () => {}
+    if (!release) throw lockedError(scopeDir, this.#locks!.holder(scopeDir)!)
     try {
       const bytes = this.#bytes(scope, path, member)
       const now = versionOf(bytes)

@@ -3,14 +3,14 @@
   "entry": "lecture.md",
   "lang": "python",
   "code": "from collections import Counter\n\n\ndef get_stats(ids):\n    return Counter(zip(ids, ids[1:]))\n\n\ndef merge(ids, pair, new_id):\n    out, i = [], 0\n    while i < len(ids):\n        if i + 1 < len(ids) and (ids[i], ids[i + 1]) == pair:\n            out.append(new_id)\n            i += 2\n        else:\n            out.append(ids[i])\n            i += 1\n    return out\n\n\ndef train(text, vocab_size):\n    ids = list(text.encode(\"utf-8\"))\n    merges = {}\n    for new_id in range(256, vocab_size):\n        stats = get_stats(ids)\n        if not stats:\n            break\n        pair = max(stats, key=stats.get)\n        ids = merge(ids, pair, new_id)\n        merges[pair] = new_id\n    return merges\n\n\ndef encode(text, merges):\n    ids = list(text.encode(\"utf-8\"))\n    while len(ids) >= 2:\n        stats = get_stats(ids)\n        pair = min(stats, key=lambda p: merges.get(p, float(\"inf\")))\n        if pair not in merges:\n            break\n        ids = merge(ids, pair, merges[pair])\n    return ids\n\n\ncorpus = \" \".join([\"low\"] * 5 + [\"lower\"] * 2 + [\"newest\"] * 6 + [\"widest\"] * 3)\nmerges = train(corpus, 266)\nvocab = {i: bytes([i]) for i in range(256)}\nfor (a, b), new_id in merges.items():\n    vocab[new_id] = vocab[a] + vocab[b]\nids = encode(text, merges)\ntokens = [vocab[i].decode(\"utf-8\", errors=\"replace\") for i in ids]\nprint(f\"{tokens} {ids}\")",
-  "environment": "Python 3.13.12",
-  "revision": "runner 5cadcc15de4de559",
+  "environment": "Python 3.9.6",
+  "revision": "runner d01beb21eed32365",
   "run": {
     "ok": true,
     "stdout": "['s', 'low', 'est'] [115, 260, 257]\n",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 125,
+    "durationMs": 53,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -21,6 +21,6 @@
         "text": "['s', 'low', 'est'] [115, 260, 257]\n"
       }
     ],
-    "cacheKey": "8c96160f482d0309df1b76a2568447c521e249e3a2615b06f17808a17f78b5d5"
+    "cacheKey": "290209212a60442423106cc863618c5daa0158516f862588cd9173d2e66da191"
   }
 }

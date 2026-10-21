@@ -206,8 +206,8 @@
 | 请求上下文 | `RequestContext` | 发起请求的成员、请求所属的文档、路由之后的路径 |
 | 成员 | `Member` | 发起请求的人：ID、名字、角色 `MemberRole`（`reader` 读者、`editor` 编辑者、`owner` 所有者）；`presmium dev` 与 `presmium serve` 中都是本机作者 `LOCAL_AUTHOR`，角色为所有者（角色的契约保留，工作区配置不列出成员） |
 | 局域网访问 | `presmium serve --host <地址>` | 同一个用户在局域网中的其他设备上使用服务：请求的 `Host` 与 `Origin` 另可以是监听的地址与本机的名字；没有登录，到得了端口的设备都是本机作者，启动时警告 |
-| 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂）、`spend`（计费的语音调用）、`write`（agent 写入当前文档目录之外，或改动工作区配置）、`agent`（agent 自身的权限请求） |
-| 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content`（发起成员自己的文档与会话：任务的文档目录中的文件、MCP 的操作类与计费类工具）发给发起任务的成员；`workspace`（工作区配置、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求）只发给所有者；没有标明时按 `workspace` |
+| 操作确认 | `Approvals`（`APPROVALS`）、`ApprovalRequest` | 会改变状态或花钱的操作执行前的确认，种类 `ApprovalKind`：`operate`（跳转放映、运行代码、构建、开关课堂）、`spend`（计费的语音调用）、`write`（agent 写文件）、`agent`（agent 自身的权限请求） |
+| 确认范围 | `ApprovalScope`（`ApprovalRequest.scope`） | 决定谁能回答：`content` 发给发起任务的成员，`workspace` 只发给所有者；没有标明时按 `workspace`。宿主适配器决定操作的范围，dsh 的映射见 `design-dsh.md` 6.3 节 |
 | 确认策略 | `presmium dev --allow`、`presmium.workspace.yaml` 的 `approvals` | 每种确认取 `off`（不提供这类操作）、`ask`（默认）或 `allow`（不询问） |
 | 执行的环境变量 | `RunContext.env` | 编译时执行的代码能得到的全部环境变量：`build`、`check`、`dev` 中是进程的环境去掉 `PRESMIUM_` 开头与像凭据的变量，`serve` 中只有允许列表；都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量 |
 | 运营者插件 | `settings.presmium.workspace.plugins`；`PresmiumNodePlugin.operator` | 运营者安装在工作区根目录、列在设置中的插件包，声明了 `operator` 的每份文档与工作区首页都加载；文稿列出的插件与渲染端包在所有命令中照常加载 |
@@ -433,7 +433,7 @@
 
 ## 13. 智能体
 
-Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状态，也能操作它；agent 的修改落在源码上，经作者审阅后成为提交。工作台中的 agent 是 DeepSeek Harness 的会话，它经 bundle 使用与 MCP 相同的工具表，会话在文档的目录中运行；别的 agent（Claude Code、Codex 等）经 MCP 接入。与 dsh 的概念对照见第 16 节。
+Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状态，也能操作它；agent 的修改落在源码上，经作者审阅后成为提交。工作台中的 agent 是 DeepSeek Harness 的会话，它经 bundle 使用与 MCP 相同的工具表；别的 agent（Claude Code、Codex 等）经 MCP 接入。工作区、会话与当前文稿的映射统一见 `design-dsh.md` 6.2 节，与 dsh 的概念对照见第 16 节。
 
 | 中文 | 标识符 | 含义 |
 |---|---|---|
@@ -443,21 +443,21 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 令牌模式 | `AgentMode`（`MCP_ENDPOINT.issue(member, mode)`） | 只有 `author`：作者的 agent，可以写源码；每个令牌都读完整的文稿 |
 | 上下文 | `AgentContext` | 所在的文档、章节、步骤、块、选中内容与源码位置，另带焦点（`focus`） |
 | 焦点 | `Focus` | 用户指向的一处：源码中的一段（文件与行区间，摘录取自文件），加上文档、章节、块、步骤与页面上选中的文字；从源码编辑器、网页预览或幻灯片预览指出（第 16 节） |
-| 修改审阅 | `ChangeReview`（`CHANGE_REVIEW`，Node）；工作区服务的 `review` 路由 | 一个会话在一份文档上的修改：开始时的快照、每个工具调用之后的检查点 `ReviewStep`、相对于快照的改动 `ReviewChange` |
+| 修改审阅 | `ChangeReview`（`CHANGE_REVIEW`，Node）；工作区服务的 `review` 路由 | 一次改写任务的快照、每个工具调用之后的检查点 `ReviewStep`、相对于快照的改动 `ReviewChange`；dsh 会话覆盖工作区，插件任务可指定文档范围 |
 | 审阅方式 | `settings.presmium.assistant.review` | `required`（默认，先审阅后提交）或 `auto`（每个 turn 结束时提交） |
-| 无人审阅的时限 | `settings.presmium.assistant.reviewTimeoutMs` | 等待审阅而没有任何页面跟随的审阅在这之后回滚、释放文档（默认 30 分钟） |
-| 回到某一步之前 | `ChangeReview.restoreTo` | 待审阅时把文档目录恢复为某个检查点之前的样子，这一步与之后的各步作废，审阅继续 |
+| 无人审阅的时限 | `settings.presmium.assistant.reviewTimeoutMs` | 没有 turn 运行且没有页面跟随的审阅在这之后回滚、释放锁（默认 30 分钟） |
+| 回到某一步之前 | `ChangeReview.restoreTo` | 待审阅时把审阅范围内的文件恢复为某个检查点之前的样子，这一步与之后的各步作废，审阅继续 |
 | 读者的模型服务 | `AskClient`（`ASK`，浏览器） | 读者自己填写的 OpenAI 兼容服务（地址、密钥、模型名），只保存在他的浏览器中；页面直接请求它，不经站点的服务端 |
 | 读者问答 | `AskClient.ask` | 读者就文稿提问：页面带上当前章节的文字、选中的内容与章节目录，流式显示回答，引用的章节可以点击 |
 | 引用位置 | `Citation` | 回答中可以点击跳转的位置：章节、步骤、块 |
 
-**修改审阅（聚合根，以文档目录为标识）**：一个文档目录上进行中的审阅：所属的会话与成员、开始时的快照、检查点与相对于快照的改动。同一文档目录同一时间至多一个审阅，审阅持有文档的锁。
+**修改审阅（聚合根）**：一次改写任务所属的会话与成员、范围、开始时的快照、检查点与相对于快照的改动。审阅从首次写入到接受或拒绝持有范围内的锁；工作区审阅与其中任何文档的写入互斥。
 
 不变量：
 
-- **只写源码，不碰产物**：agent 只修改工作区中的源码，会话的工作目录是文档目录；写入超出当前文档目录或改动工作区配置时需要确认（`workspace` 范围，只有所有者能允许）。构建的产物写在文档目录之外，不进审阅。
-- **先审阅后提交**：`review: required` 时作者逐个文件查看差异后接受、拒绝或拒绝某些文件；被拒绝的文件恢复为快照中的内容，新建的删除。审阅待决时同一文档的撤销被拒绝。
-- **接受即提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），尾注带 `Presmium-Session`、`Presmium-Turn` 与作者；接受之后的撤销是 `git revert`，会话收到一条标明来源的消息。
+- **写入范围与审阅范围一致**：dsh 会话对工作区的修改由同一个审阅覆盖，包括其他文稿与工作区中的代码；当前文稿只决定工具、快照与焦点。构建产物写到工作区之外的服务状态目录，不进审阅。
+- **先审阅后提交**：`review: required` 时作者逐个文件查看差异后接受、拒绝或拒绝某些文件；被拒绝的文件恢复为快照中的内容，新建的删除。审阅待决时，范围内的保存、文档操作与撤销被锁拒绝。
+- **接受即提交**：接受的修改由工作区提交为一个提交（`REVISIONS`，git 的钩子关闭），成功后结束审阅并释放锁；提交失败时保留审阅，作者可以重试或拒绝。尾注带 `Presmium-Session`、`Presmium-Turn` 与作者；接受之后的撤销是 `git revert`，会话收到一条标明来源的消息。
 - **学习者不接触 agent**：读者的提问在他的浏览器中发往他自己填写的服务，回答只是文字与跳转的链接；读者的密钥只保存在他的浏览器中。
 - **MCP 不提供写文件的工具**：agent 用自己的文件工具修改源码，服务随即重新编译并推送。
 - 回答中的引用位置必须对应 IR 中的章节、步骤或块；无法解析的引用不显示为链接。
@@ -477,10 +477,10 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 修改 | `Revision` | 一个提交及其来源 `RevisionOrigin`：agent 的会话、文档操作、作者在编辑器中的提交 |
 | 修改历史 | `RevisionService`（`REVISIONS`，Node） | 提交、按文档列出修改、撤销（`git revert`）；撤销一次撤销是重做（`HistoryRevision.redo`），历史面板按它标为“重做” |
 | 成员 | `Member`（4A 节） | 本机作者（所有者）；工作区服务只供运行它的那个用户使用，没有登录与成员的配置 |
-| 源码文件 | `SourceFile`、`SourceAnswer`（工作区的 `files`、`source` 路由） | 编辑器能打开的文件：文档页是它的文档目录中的文件，首页是每份文档的文件与 `presmium.workspace.yaml`；路径相对于工作区根目录，不经符号链接，不进 `.git`、产物与 Presmium 自己的目录 |
+| 源码文件 | `SourceFile`、`SourceAnswer`（工作区的 `files`、`source` 路由） | 工作台能打开的工作区文件，包括文稿、代码与 `presmium.workspace.yaml`；文档路由仍按请求的文档限定范围。路径相对于工作区根目录，不经符号链接，不进 `.git`、产物与 Presmium 自己的目录 |
 | 文件的版本 | `version`（字节的散列） | 编辑器打开或保存时文件的样子；保存时写明自己改的是哪个版本 |
 | 未提交的修改 | `UncommittedFile`（`changes` 路由） | 工作树与最近一次提交不同的文件（新增、修改、删除，增删的行数），列在修改历史的顶部，写一句说明后提交（来源 `editor`），或放弃 |
-| 文档的锁 | `DocumentLockService`（`DOCUMENT_LOCKS`，Node） | 一份文档同一时间只有一个写入者：agent 的审阅（到审阅结束）、文档操作、撤销、编辑器的保存、提交与放弃 |
+| 文档的锁 | `DocumentLockService`（`DOCUMENT_LOCKS`，Node） | 文档写入与工作区写入的互斥锁：agent 审阅持有到审阅结束，文档操作、撤销、编辑器的保存、提交与放弃在各自范围内取锁；工作区锁与全部文档锁互斥 |
 | 文档的写入器 | `DocumentFiles`（`DOCUMENT_FILES`，Node） | 工作区写文档目录的唯一途径：途中的符号链接被替换，从不被跟随；编辑器的保存、撤销与插件的写入都经它 |
 | 工作区站点 | `SiteSpec`、`Renderer.buildSite` | 多份文档组成的网站：首页（文档列表，或指定为一份文稿）、每份文档在 `/<文档目录>/` 下、跨文稿搜索与前后导航 |
 
@@ -495,7 +495,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **按需编译**：只编译正在被访问的文档并监听它的源码；其他文档只读取头部，用于列表。编译时的代码全部执行（4A 节）。
 - **运营者目录不属于文档**：运营者目录在工作区之外的用户状态目录中，其中的文件从不进入提交。
 - **git 不执行仓库中的脚本**：工作区的 git 命令关闭钩子与 fsmonitor；git 审阅（在工作区服务中）在自己的 git 目录中运行 git，不读仓库的配置。
-- **保存不丢失任何一方的修改**：保存写明编辑器打开的版本，文件在那之后被改过（agent、磁盘上的编辑器）时不写入，页面让作者合并或重新载入；agent 的审阅从开始到结束持有文档的锁，期间保存被拒绝，作者的文字留在编辑器中，审阅的回滚不覆盖作者的保存。
+- **保存不丢失任何一方的修改**：保存写明编辑器打开的版本，文件在那之后被改过（agent、磁盘上的编辑器）时不写入，页面让作者合并或重新载入；agent 的审阅从开始到结束持有相应范围的锁，期间范围内的保存被拒绝，作者的文字留在编辑器中，审阅的回滚不覆盖作者的保存。
 - **保存不是提交**：保存只写文件；没有提交的修改由作者写一句说明后提交（一个提交，来源 `editor`），或放弃（写回最近一次提交的样子）。审阅开始时没有提交的修改照常保留（审阅的快照包含它们）。
 - 浏览器不直接修改渲染结果；一切修改都落在源码上。
 
@@ -515,7 +515,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 操作 | `Operation`（内核）、`OPERATIONS`（宿主） | 插件报告的语义化操作：`go`、`point`、`spot`、`hint`、`ink`、`select`、`click`、`run`、`scroll`、`mark`、`pause` |
 | 字锚 | `UtteranceAnchor`（事件数据的 `at`） | 把事件绑定到语音段的第几个字；改文字、换音色后按新的逐字时间重新计算事件时刻 |
 | 块指纹 | `LectureTrack.blocks` | 被事件引用的块的内容指纹，用于漂移检查 |
-| 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；录制的讲授用媒体元素（`MediaClock`），合成的讲授用按已知偏移排列的片段（`ClipClock`），只有字幕时用 `SilentClock` |
+| 时钟 | `TrackClock` | `now`、`play`、`pause`、`seek`、`rate`；有声明音频时用 `MediaClock` 同步录音或合成片段，未声明音频时用 `SilentClock`；加载失败的行为见 `ir.md` 9.4 节 |
 | 音色 | `Voice` | 录制（说话人）或合成（引擎、模型、音色）；克隆音色要有同意记录 `ConsentRecord`（见下文“语音”） |
 | 讲授计划 | `LecturePlan` | `lecture` 渲染端从 IR 得到的每一步要说的文字与提示标记 |
 | 提示标记 | `{cue}` 角色 | 讲解中的行内标记：说到此处时推进一步、聚光、提示、指点、点击、运行、圈画、停顿或标记章节 |
@@ -536,7 +536,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - 合成的语音在播放界面上标明由 AI 合成，并写入元数据；克隆音色默认关闭，必须有本人录制的同意声明（语音服务把关）。同意撤回之后，服务端不再给出、构建不再发布这个音色的片段，合成的讲授与换成这个音色的录制讲授都一样：片段按它在合成缓存中的键给出，每次由语音服务检查音色，从不为此重新合成（`SpeechService.cached`）。
 - **受众的版本按章节摘要失败即关闭**：讲授轨记下录制时每一节的摘要（`LectureTrack.ir.sections`）。为某个受众发布时（学生版的构建，IR 带 `meta.audience`），只保留摘要与这个版本中同一节的摘要相同的章节里说的话、音频与录像；摘要不同说明这一节在录制之后少了内容，声音与画面可能说出它。
 - 译文记录它所依据的原文摘要；原文改动后译文标记为过期，导出时提示。
-- 讲授计划在 `addon-lecture` 的 `src/domain/plan.ts`，由讲解（或单独的脚本）得到，合成的讲授的 ID 是 `script`；一个语音段合成的片段记在 `Utterance.clip`（合成缓存中的文件），`ClipClock` 播放它们。换音色重新合成时每个语音段保持它的时刻，只在前一段的新片段更长时后移，所以没有字锚的事件时刻不变、有字锚的随字移动。
+- 讲授计划在 `addon-lecture` 的 `src/domain/plan.ts`，由讲解（或单独的脚本）得到，合成的讲授的 ID 是 `script`；一个语音段合成的片段记在 `Utterance.clip`（合成缓存中的文件），`MediaClock` 播放它们。换音色重新合成时每个语音段保持它的时刻，只在前一段的新片段更长时后移，所以没有字锚的事件时刻不变、有字锚的随字移动。
 
 ### 语音
 
@@ -579,6 +579,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 | 根布局插件 | `@lincyaw/dsh` 的客户端部分 | 占据 dsh 客户端 `root` 槽位、决定整页布局的客户端插件，替换 dsh 自带的 `ui-layout` |
 | 预览协议 | `PREVIEW_PROTOCOL`（`packages/kernel/src/contracts/preview.ts`） | 工作台与嵌在它里面的产物页面之间的 `postMessage` 消息约定，只传章节、块与步骤的 ID |
 | 预览代理 | 网页与幻灯片的客户端中的一小段脚本 | 产物页面中实现预览协议的部分，只在工作区服务启动的开发服务器的页面中 |
+| 当前诊断 | `DiagnosticSnapshot` | 编译、检查、预览、运行时与服务的当前问题，由工作区服务合并，按文稿经 SSE 与 MCP 订阅；生命周期见 `design-dsh.md` 5.4 节 |
 | 焦点 | `Focus` | 用户指向的一处：源码中的一段，带上它在文稿中的位置（见下） |
 | 当前位置 | `AgentContext` 的文档、章节、步骤与视图 | 没有选中任何东西时的被动焦点，对话时自动带上 |
 | 会话令牌 | `MCP_ENDPOINT.issue(member, mode, { confirmed: true })` | 为一个 dsh 会话签发的 MCP 令牌，模式为“主机已确认”：经它调用的操作类工具不再向页面窗口请求确认，因为 dsh 已按 Presmium 的策略决定过 |
@@ -588,20 +589,20 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 
 | Presmium | dsh | 做法 |
 |---|---|---|
-| 工作区（`presmium.workspace.yaml`，多份文档） | 没有对应的概念；dsh 的工作区只是登记一个目录 | 文档树由 Presmium 维护；工作区根不登记为 dsh 工作区 |
-| 文档（文档目录） | 工作区（Workspace） | 启动时与新建文档时登记（幂等），改名、删除时同步改名或归档。会话加入它，所以会话的目录、`workspace-write` 沙箱的根与审阅的根都是文档目录 |
-| 修改任务、对话线程 | 会话（Session）与其中的 turn | 一个线程一个会话；面板发起的任务（由 AI 起草、讲授回写）新建会话。起草先按模板新建文档，再在它的目录中开会话 |
+| 工作区（`presmium.workspace.yaml`，多份文档） | 工作区（Workspace） | 登记启动时的工作区根目录；文档树由 Presmium 维护。会话、沙箱与审阅的范围见 `design-dsh.md` 6.2、6.5 节 |
+| 当前文档（文档目录） | 会话中的 Presmium 上下文 | 选择文稿更新工具、快照与焦点；文稿不是单独的 dsh 工作区 |
+| 修改任务、对话线程 | 会话（Session）与其中的 turn | 一个线程一个会话；面板发起的任务（由 AI 起草、讲授回写）在工作区中创建会话并选择目标文稿 |
 | 批注 | 没有 | 焦点加一句要求；一批批注以带来源标记的消息进入会话 |
-| 文档的锁 `DOCUMENT_LOCKS` | 没有 | 从会话第一次写文件之前持有到审阅结束；dsh 的文件工具与 shell 直接写文件，所以锁拦住的是编辑器的保存与文档操作 |
+| 文档的锁 `DOCUMENT_LOCKS` | 没有 | 会话审阅持有工作区锁；插件的文档审阅持有文档锁。锁拦住冲突的保存与文档操作 |
 | 修改审阅 `CHANGE_REVIEW` | workspace-changes：每个 turn 两个 git 树快照，只在宿主内存中；修改卡片与 Review 标签页是它的视图 | 审阅由工作区服务负责，覆盖审阅期间的全部 turn，记录由服务保存（宿主重启后 dsh 的摘要不在了） |
 | 修改（`REVISIONS` 的提交） | 没有：dsh 不提交，也不回滚 | 一次接受形成一个提交，尾注另带 `Presmium-Session` 与 `Presmium-Turn` |
 | 撤销 | 没有 | `git revert`，尾注 `Presmium-Revert`；之后给会话发一条标明来源的消息 |
 | 确认 `APPROVALS`（策略 `off`、`ask`、`allow`；范围 `content`、`workspace`） | `tools/pre-execute` 的 allow、ask 与 deny；`approval/request` 的回答者；`ctx.tools.guard` | `off` 不登记工具；`allow` 在 pre-execute 中放行；`ask` 交给 dsh 的确认卡片；运营者目录用 guard 拒绝 |
 | MCP 的工具 | dsh 的工具 | 同一张工具表；dsh 中名为 `presmium__<名字>`，经回环的 `/mcp` 在工作区服务中执行 |
 | 技能 `presmium-author` | `ctx.skills.register` 与 skill-filesystem | 运行时登记；用户目录中的技能不读入；文稿项目自己的 `.agents/skills` 保留 |
-| 文稿上下文 | `systemPrompt.section` 与 `context` | 按会话的目录找到文档：标题、语言、章节、诊断数、当前位置与焦点 |
+| 文稿上下文 | `systemPrompt.section` 与 `context` | 按当前选中的文稿取得标题、语言、章节、具体诊断、当前位置与焦点，未选择或诊断不可用时明确报告 |
 | 模型设置与模型访问 | `settings/*`、`credentials/*` 与 dsh 的模型设置界面 | 工作台只用 dsh 的，凭据在 Presmium 自己的 `DSH_HOME` 中；`PRESMIUM_MODEL_*` 映射为 `DEEPSEEK_*` |
-| 预览与问题 | 没有（dsh 的浏览器标签页不显示 dsh 自己的源） | 工作台自己的预览面板（预览协议）与问题面板（IR 的诊断） |
+| 预览与问题 | 没有（dsh 的浏览器标签页不显示 dsh 自己的源） | 工作台自己的预览面板（预览协议）与问题面板（当前诊断快照） |
 | 终端、jobs、计划、插件管理 | 有 | 直接用 dsh 的 |
 | 放映、演讲者视图、课堂、运行代码、读者问答、放映中的讲授录制 | 没有 | 属于产物，不经 dsh |
 | 外部 agent（Claude Code、Codex） | 没有 | 经 MCP 连接工作区服务，与 dsh 看到同样的工具与焦点 |
@@ -616,7 +617,7 @@ Presmium 是 agent 的环境：agent 经 MCP 读取文稿的全部内容与状�
 - **产物只暴露锚点**：焦点由工作台组装，服务端把锚点换成源码范围；静态构建中没有点选的代码。
 - **两边看到同一个焦点**：外部 agent 经 MCP 读到的焦点与 dsh 会话的上下文中的相同；两边的工具清单也相同。
 - **dsh 只经一个包**：只有 `@lincyaw/dsh` 引用 dsh 的接口，`@lincyaw/studio` 只启动它；核心与产物不知道 dsh 存在。
-- **一个会话属于一份文档**：会话的目录是文档目录，也是沙箱与审阅的根；目录不是文档目录的会话得不到 Presmium 的工具与上下文。
+- **会话与当前文稿分开**：网页会话属于工作区，选择文稿不改变会话、cwd 或沙箱；没有选中文稿也可以修改工作区，修改仍须进入审阅。完整映射见 `design-dsh.md` 6.2 节。
 - **文稿的代码不进 dsh 宿主**：编译、编译时执行与构建在工作区服务的进程中。
 - **修改落在源码上并成为提交**：dsh 的修改卡片只是视图，审阅、提交与撤销由 Presmium 负责。
 - **隐私默认值每次启动重新声明**：不上传会话日志、插件清单与遥测，不读用户目录中的技能，第一次使用不在用户的文档目录中建目录。

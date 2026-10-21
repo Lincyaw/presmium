@@ -194,7 +194,6 @@ describe('a review no page follows', () => {
   let ws: Workspace
   let service: Service
   let model: FakeModel
-  let web: Web
 
   beforeAll(async () => {
     home = testHome('turns-unattended')
@@ -204,20 +203,19 @@ describe('a review no page follows', () => {
       { tool: 'write', input: { file_path: 'left.md', content: '没人审阅\n' } },
       { text: '写好了。' },
     ])
-    web = await home.web(ws.dir, 5635, { model, env: service.env })
   }, 240_000)
   afterAll(async () => {
     await model?.close()
     await home?.close()
   })
 
-  it('is rolled back once the operator\'s time is over', async () => {
+  it('reviews a headless root session without a selected document and rolls it back once the operator\'s time is over', async () => {
     const reviews = routes(service)
-    const s = await session(await web.api(), join(ws.dir, 'lectures/alpha'))
-    await s.prompt('写一个文件。')
-    await expect.poll(() => existsSync(join(ws.dir, 'lectures/alpha/left.md')), { timeout: 120_000, interval: 100 }).toBe(true)
-    await expect.poll(() => existsSync(join(ws.dir, 'lectures/alpha/left.md')), { timeout: 60_000 }).toBe(false)
-    expect(await reviews.review('lectures/alpha')).toBeUndefined()
+    const run = home.headless(ws.dir, '写一个文件。', { model, env: service.env })
+    await expect.poll(() => existsSync(join(ws.dir, 'left.md')), { timeout: 120_000, interval: 100 }).toBe(true)
+    expect(await run.exited, run.output()).toBe(0)
+    await expect.poll(() => existsSync(join(ws.dir, 'left.md')), { timeout: 60_000 }).toBe(false)
+    expect(await reviews.review('')).toBeUndefined()
     expect(service.process.output()).toMatch(/no page followed it for 3 s: rolled back/)
   }, 300_000)
 })

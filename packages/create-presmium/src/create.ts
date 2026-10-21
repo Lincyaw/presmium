@@ -65,11 +65,11 @@ export function createProject(options: ProjectOptions): void {
   if (kind === 'lecture') {
     document(dir, title)
     copyTemplate('workspace', dir, unchanged, path => path === '.gitignore' || path === 'pnpm-workspace.yaml')
-    writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, devDependencies: { presmium: `^${VERSION}` } })
+    writePackage(dir, { name, private: true, type: 'module', scripts: { dev: 'presmium dev', check: 'presmium check', build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
   } else if (kind === 'workspace') {
     copyTemplate('workspace', dir, (path, text) => path === 'presmium.workspace.yaml' ? text.replace(/^title: .*$/m, () => `title: ${JSON.stringify(title)}`) : text)
     document(join(dir, FIRST_DOCUMENT), t.firstDocument)
-    writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, devDependencies: { presmium: `^${VERSION}` } })
+    writePackage(dir, { name, private: true, type: 'module', scripts: { serve: 'presmium serve', check: `presmium check ${FIRST_DOCUMENT}`, build: 'presmium build' }, devDependencies: { '@lincyaw/presmium': `^${VERSION}` } })
   } else {
     copyTemplate('plugin', dir, (path, text) => text.replaceAll('{{name}}', () => name).replaceAll('{{id}}', () => pluginId(name)).replaceAll('{{version}}', () => VERSION))
   }

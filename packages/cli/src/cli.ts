@@ -6,10 +6,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createJiti } from 'jiti'
 import { errorMessage } from '@lincyaw/kernel'
+import { irRevision } from '@lincyaw/kernel/node'
 import type { ApprovalKind, Finding, Severity } from '@lincyaw/kernel'
 import { build, Compiler, dev, resolveEntry } from '@lincyaw/compiler'
 import type { BuildReport, Compilation, RunStats } from '@lincyaw/compiler'
-import { anyAddress, isLoopback, networkAddresses, servedDocument, startServer } from '@lincyaw/server'
+import { anyAddress, isLoopback, networkAddresses, serverConfiguration, servedDocument, startServer } from '@lincyaw/server'
 import type { ApprovalPolicy } from '@lincyaw/server'
 import { buildWorkspace, isWorkspaceRoot, serveWorkspace } from '@lincyaw/workspace'
 import type { WorkspaceBuild } from '@lincyaw/workspace'
@@ -285,7 +286,14 @@ async function devDeck(command: Command): Promise<number> {
       to: command.to,
       server: { url: server.url },
       onCompile(compilation, findings) {
+        const changed = latest && serverConfiguration(latest) !== serverConfiguration(compilation)
         latest = compilation
+        const revision = irRevision(compilation.doc)
+        server.diagnostics.compiled('', compilation.doc, compilation.workspaceRoot, revision)
+        server.diagnostics.replace({ document: '', origin: 'preview' }, findings.filter(finding => finding.checkId === 'presmium.render'), { root: compilation.workspaceRoot, revision })
+        if (changed) void server.unmount('', { preserveFocus: true }).catch((error: unknown) => {
+          process.stderr.write(`presmium: the previous server contributions did not close: ${errorMessage(error)}\n`)
+        })
         const lines = findingLines(findings)
         lines.push(`compiled ${compilation.doc.sections.length} sections; ${summary(findings)}`)
         process.stdout.write(`${lines.join('\n')}\n`)

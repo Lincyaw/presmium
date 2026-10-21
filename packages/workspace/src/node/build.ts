@@ -23,7 +23,7 @@ export async function buildWorkspace(root: string, options: { outDir?: string, b
     const translated = await siteTranslations(compilation)
     findings.push(...compilation.doc.diagnostics, ...translated.findings)
     documents.push({ dir: document.dir, title: document.title, runs: compilation.runs })
-    site.documents.push(siteDocument(document, siteIR(compilation), translated.translations))
+    site.documents.push(siteDocument(document, siteIR(compilation), translated.translations, compilation))
   }
   const outDir = join(resolve(options.outDir ?? join(config.root, 'dist')), 'web')
   const renderer = await webRenderer(config.root, options.bundled)

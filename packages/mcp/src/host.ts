@@ -3,6 +3,7 @@ import type {
   AgentTool,
   ApprovalKind,
   ApprovalRequest,
+  DiagnosticSnapshot,
   Finding,
   Focus,
   IRDocument,
@@ -52,10 +53,20 @@ export interface McpProcess {
   command: 'dev' | 'serve' | 'presmium-mcp'
 }
 
+export interface McpRuntimeWindow {
+  window: string
+  role?: string
+  position?: { slide: number, section?: string, step: number, view?: string }
+  reported: string
+  status: Record<string, unknown>
+}
+
 export interface McpHost {
   process?: McpProcess
   documents(): Promise<McpDocument[]>
   compile(document: string): Promise<{ doc: IRDocument, diagnostics: Finding[] }>
+  diagnostics?(document: string): Promise<DiagnosticSnapshot>
+  watchDiagnostics?(listener: (document: string) => void): () => void
   check(document: string): Promise<Finding[]>
   build(document: string, options: { to?: string[] }): Promise<{ outputs: { renderer: string, outDir: string }[], findings: Finding[] }>
   run(document: string, target: { section: string, block: string }, signal?: AbortSignal): Promise<RunResult>
@@ -68,6 +79,7 @@ export interface McpHost {
   focus?(document?: string): McpFocus | undefined
   watchFocus?(listener: () => void): () => void
   classroom?(document: string): Record<string, unknown>
+  runtime?(document: string): McpRuntimeWindow[]
   navigate?(document: string, position: { slide: number, step: number, view?: string, section?: string, trail?: string[] }, member: Member): number
   session?(document: string, action: 'start' | 'end', name: string | undefined, member: Member): number
 }

@@ -2,7 +2,7 @@
 // what the plugin's own Node service holds, the contexts the plugin got, the answer to an approval and an
 // MCP token for the member, and the size of a body (with the default limit, and one of 16 MiB); a proxy
 // to a listener of the test's. Its contribution counts how often it was closed. Plain objects: tokens are compared by id, so the fixture needs no package to compile.
-interface Context { config: Record<string, unknown>, settings: Record<string, unknown>, operatorDir?: string, secret(name: string): string | undefined, service(token: { id: string }): any }
+interface Context { config: Record<string, unknown>, settings: Record<string, unknown>, lang?: string, operatorDir?: string, secret(name: string): string | undefined, service(token: { id: string }): any }
 interface Request { url: string, arrayBuffer(): Promise<ArrayBuffer> }
 interface RequestContext { member: { id: string, roles: string[] }, document: string, rest: string }
 
@@ -19,7 +19,7 @@ export default {
   id: 'fixture.server',
   version: '0.1.0',
   kernel: '^1.0.0',
-  services: (ctx: Context) => [[ECHO, { value: 'from the node service', settings: ctx.settings, config: ctx.config }]],
+  services: (ctx: Context) => [[ECHO, { value: 'from the node service', settings: ctx.settings, config: ctx.config, lang: ctx.lang }]],
   server: (ctx: Context) => ({
     routes: {
       'value': { role: 'reader', handle: () => json({ value: ctx.service(ECHO).value }) },
@@ -31,6 +31,7 @@ export default {
         handle: () => json({
           settings: ctx.settings,
           config: ctx.config,
+          lang: ctx.lang,
           service: ctx.service(ECHO),
           secret: ctx.secret('OPENAI_API_KEY') ?? null,
           operatorDir: ctx.operatorDir ?? null,

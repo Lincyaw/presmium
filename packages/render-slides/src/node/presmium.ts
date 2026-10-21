@@ -3,10 +3,10 @@ import type { ChildProcess } from 'node:child_process'
 import { existsSync, realpathSync } from 'node:fs'
 import { copyFile, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
-import { dirname, join, resolve, sep } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import { errorMessage, irBlocks, isRecord, nodeMdast, previewFrameAncestors, PREVIEW_REVISION } from '@lincyaw/kernel'
-import type { IRDocument, LocalAsset, MdastNode, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
+import { dirname, join, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { errorMessage, irBlocks, nodeMdast, previewFrameAncestors, PREVIEW_REVISION } from '@lincyaw/kernel'
+import type { IRDocument, LocalAsset, MdastNode, NodeVitePlugin, PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
 import { backgroundPriority, copyPublished, FONT_LICENSE, fontLicense, NODE_RESOURCE_ARGS, optimizeDeps, resourceEnvironment, TYPESCRIPT_IMPORT } from '@lincyaw/kernel/node'
 import { addonDirs, hasExtension, previewDocument, slidevMarkdown } from './slidev.ts'
 import type { SlidevDeck } from './slidev.ts'
@@ -58,6 +58,7 @@ const plugin: PresmiumNodePlugin = {
         url: server.url,
         async update(next) {
           const deck = slidevMarkdown(next, ctx, dir)
+          await writeViteConfig(dir, ctx, next)
           await publish(dir, deck.assets)
           const file = join(dir, 'slides.md')
           if (await readFile(file, 'utf8').catch(() => '') !== deck.markdown) await writeFile(file, deck.markdown)
@@ -97,9 +98,7 @@ function base(ctx: RenderContext): string[] {
 async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc: IRDocument): Promise<void> {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, '.gitignore'), '*\n')
-  const packages = [PACKAGE_DIR, ...addonDirs(doc, ctx)]
-  const optimize = optimizeDeps(dir, packages)
-  await writeFile(join(dir, 'vite.config.ts'), viteConfig(ctx, await vitePluginEntries(ctx, doc.config.presmium), optimize, allowed(ctx, packages)))
+  await writeViteConfig(dir, ctx, doc)
   await copyFile(STYLE, join(dir, 'style.css'))
   await rm(join(dir, 'public'), { recursive: true, force: true })
   await mkdir(join(dir, 'public'))
@@ -115,6 +114,14 @@ async function writeDeck(dir: string, ctx: RenderContext, deck: SlidevDeck, doc:
   if (existsSync(join(ctx.deckDir, 'components'))) await symlink(join(ctx.deckDir, 'components'), join(dir, 'components'), 'junction')
   await writePreviewSetup(dir, ctx)
   await writeFile(join(dir, 'slides.md'), deck.markdown)
+}
+
+async function writeViteConfig(dir: string, ctx: RenderContext, doc: IRDocument): Promise<void> {
+  if (ctx.vitePlugins.length && ctx.nodeVitePlugins === undefined) throw new Error('the slides renderer needs nodeVitePlugins entries to load the context\'s Vite plugins')
+  const packages = [PACKAGE_DIR, ...addonDirs(doc, ctx)]
+  const config = viteConfig(ctx, ctx.nodeVitePlugins ?? [], optimizeDeps(dir, packages), allowed(ctx, packages))
+  const file = join(dir, 'vite.config.ts')
+  if (await readFile(file, 'utf8').catch(() => '') !== config) await writeFile(file, config)
 }
 
 async function writePreviewSetup(dir: string, ctx: RenderContext): Promise<void> {
@@ -142,33 +149,6 @@ async function writeRevision(dir: string, ctx: RenderContext, doc: IRDocument): 
   if (await readFile(file, 'utf8').catch(() => '') !== json) await writeFile(file, json)
 }
 
-interface VitePluginsEntry {
-  file: string
-  config: Record<string, unknown>
-}
-
-async function nodeEntry(dir: string): Promise<string | undefined> {
-  const manifest: unknown = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8').catch(() => '{}'))
-  const exports = isRecord(manifest) ? manifest.exports : undefined
-  const entry = isRecord(exports) ? exports['./presmium'] : undefined
-  return typeof entry === 'string' ? resolve(dir, entry) : undefined
-}
-
-async function vitePluginEntries(ctx: RenderContext, presmium: Record<string, unknown>): Promise<VitePluginsEntry[]> {
-  if (ctx.vitePlugins.length === 0) return []
-  const entries: VitePluginsEntry[] = []
-  for (const name of ctx.plugins) {
-    const dir = ctx.pluginDirs[name]
-    const file = dir && await nodeEntry(dir)
-    if (!file) continue
-    const plugin = (await import(pathToFileURL(file).href).catch(() => ({}))).default as PresmiumNodePlugin | undefined
-    if (typeof plugin?.vitePlugins !== 'function') continue
-    const config = presmium[plugin.id]
-    entries.push({ file, config: isRecord(config) ? config : {} })
-  }
-  return entries
-}
-
 function allowed(ctx: RenderContext, packages: string[]): string[] {
   const installed = packages.flatMap((dir) => {
     const parts = realpathSync(dir).split(sep)
@@ -178,10 +158,10 @@ function allowed(ctx: RenderContext, packages: string[]): string[] {
   return [...new Set([ctx.deckDir, ...installed])]
 }
 
-function viteConfig(ctx: RenderContext, entries: VitePluginsEntry[], optimize: { include: string[], exclude: string[] }, allow: string[]): string {
-  const imports = entries.map(({ file }, i) => `import plugin${i} from ${JSON.stringify(file)}\n`).join('')
+function viteConfig(ctx: RenderContext, entries: NodeVitePlugin[], optimize: { include: string[], exclude: string[] }, allow: string[]): string {
+  const imports = entries.map(({ entry }, i) => `import plugin${i} from ${JSON.stringify(entry)}\n`).join('')
   const deck = JSON.stringify({ deckDir: ctx.deckDir, workspaceRoot: ctx.workspaceRoot })
-  const plugins = entries.map(({ config }, i) => `    ...(plugin${i}.vitePlugins?.({ ...deck, config: ${JSON.stringify(config)} }) ?? []),\n`).join('')
+  const plugins = entries.map(({ config }, i) => `    ...plugin${i}.vitePlugins({ ...deck, config: ${JSON.stringify(config)} }),\n`).join('')
   const server = {
     ...ctx.server ? { proxy: { '^/__presmium/': { target: ctx.server.url, ws: true } }, fs: { allow } } : {},
     ...ctx.preview ? { headers: { 'Content-Security-Policy': previewFrameAncestors(ctx.preview.origins) } } : {},

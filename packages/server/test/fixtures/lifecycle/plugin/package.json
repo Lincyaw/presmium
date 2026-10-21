@@ -1,0 +1,6 @@
+{
+  "name": "fixture-lifecycle",
+  "private": true,
+  "type": "module",
+  "exports": { "./presmium": "./presmium.ts" }
+}

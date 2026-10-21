@@ -23,6 +23,7 @@ export interface ViewerLayer {
   id: string
   component: Component
   views?: readonly string[]
+  scope?: 'view' | 'viewport'
 }
 
 export const OVERLAY_VIEWS: readonly string[] = ['present', 'presenter']

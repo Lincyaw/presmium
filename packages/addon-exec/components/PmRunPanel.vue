@@ -2,10 +2,11 @@
 import { usePresentationMode, useSectionConfig, useService, useStartReport } from '@lincyaw/host'
 import { EXECUTOR, isRecord } from '@lincyaw/kernel'
 import type { ParamsDisplay } from '@lincyaw/kernel'
-import { computed, reactive, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, shallowRef } from 'vue'
 import { languageName, runPlace, seconds, useMessages, useSlideRoom } from '../src/client/index.ts'
 import { appendRun, compareRuns, configuredTimeout, defaultPair, EXEC_ID, fallbackReason, stringArgs, withRecordedFallback } from '../src/domain/index.ts'
 import type { RunHistory, RunRecord } from '../src/domain/index.ts'
+import RunOutput from '../src/client/RunOutput.vue'
 
 const props = withDefaults(defineProps<{
   lang?: string
@@ -16,6 +17,7 @@ const props = withDefaults(defineProps<{
   timeout?: number
   executor?: string
   session?: string
+  place?: { section: string, block: string }
 }>(), { lang: 'python', code: '' })
 
 const executor = useService(EXECUTOR)
@@ -38,7 +40,10 @@ useSlideRoom(root, presenting, (panel) => {
 })
 const history = shallowRef<RunHistory>([])
 const running = ref(false)
+const resetting = ref(false)
 const selected = ref<number[]>([])
+let current: AbortController | undefined
+onBeforeUnmount(() => current?.abort())
 
 const routed = computed(() => {
   void history.value
@@ -79,16 +84,37 @@ const comparison = computed(() => {
 })
 
 async function run() {
-  if (!executor.value || running.value) return
+  if (!executor.value || running.value || resetting.value) return
+  const controller = new AbortController()
+  current = controller
   running.value = true
   try {
-    const request = { lang: props.lang, code: props.code, args: runArgs(), timeoutMs: props.timeout ?? configuredTimeout(config.value), executor: props.executor, session: props.session }
-    const result = await executor.value.run(request)
+    const request = { lang: props.lang, code: props.code, args: runArgs(), timeoutMs: props.timeout ?? configuredTimeout(config.value), executor: props.executor, session: props.session, place: props.place }
+    const result = await executor.value.run(request, controller.signal)
+    if (controller.signal.aborted) return
     const recorded = props.recorded ?? (!result.ok && result.exitCode === null ? props.compiledOutput : undefined)
     history.value = appendRun(history.value, request.args, withRecordedFallback(result, recorded))
     selected.value = defaultPair(history.value) ?? []
   } finally {
-    running.value = false
+    if (current === controller) {
+      current = undefined
+      running.value = false
+    }
+  }
+}
+
+async function reset() {
+  if (!executor.value || !props.session || resetting.value) return
+  resetting.value = true
+  current?.abort()
+  current = undefined
+  running.value = false
+  try {
+    await executor.value.endSession?.(props.session)
+    history.value = []
+    selected.value = []
+  } finally {
+    resetting.value = false
   }
 }
 
@@ -135,7 +161,10 @@ function fieldSize(value: string | undefined): number {
             </label>
           </template>
           <span v-if="!executor && report" class="pm-run-panel__hint">{{ t.unavailable }}</span>
-          <button type="submit" class="pm-run-panel__run pm-ui-button pm-ui-button--primary" :disabled="running || !executor">
+          <button v-if="session" type="button" class="pm-run-panel__reset pm-ui-button" :disabled="resetting || !executor" @click="reset">
+            {{ t.resetSession }}
+          </button>
+          <button type="submit" class="pm-run-panel__run pm-ui-button pm-ui-button--primary" :disabled="running || resetting || !executor">
             <svg class="pm-ui-icon" width="0.75em" height="0.75em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
             {{ running ? t.running : history.length ? t.rerun : t.run }}
           </button>
@@ -155,8 +184,7 @@ function fieldSize(value: string | undefined): number {
         <div v-if="reason" class="pm-run-panel__badge pm-ui-badge pm-ui-badge--warn">
           {{ t.recordedBadge(reason) }}
         </div>
-        <pre class="pm-run-panel__stdout">{{ latest.result.stdout }}</pre>
-        <pre v-if="latest.result.stderr && !reason" class="pm-run-panel__stderr">{{ latest.result.stderr }}</pre>
+        <RunOutput :result="latest.result" :hide-error="Boolean(reason)" />
       </div>
       <ol v-if="history.length" class="pm-run-panel__history">
         <li v-for="record in history" :key="record.id" :data-run="record.id">

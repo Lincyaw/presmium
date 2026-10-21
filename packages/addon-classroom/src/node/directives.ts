@@ -70,6 +70,8 @@ export const predictDirective: DirectiveSpec = {
     const choices = optionList(input.options.choices)
     if (!question) ctx.report({ checkId: 'presmium.classroom', severity: 'error', message: '{predict} needs the question as its argument: ```{predict} How many …?' })
     if (input.options.choices !== undefined && !choices) ctx.report({ checkId: 'presmium.classroom', severity: 'warning', message: '{predict}: :choices: needs at least two, separated by commas; readers write their prediction instead' })
-    return { node: component('PmPredict', { question, ...choices ? { choices } : {} }, body(input.body, ctx).children ?? [], ctx) }
+    const node = component('PmPredict', { question, ...choices ? { choices } : {} }, body(input.body, ctx).children ?? [], ctx)
+    node.ownsCode = false
+    return { node }
   },
 }

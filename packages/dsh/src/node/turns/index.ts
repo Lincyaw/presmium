@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
+import { isAbsolute, relative, sep } from 'node:path'
 import type { DshAgent, DshContext, DshToolExecution } from '../dsh.ts'
-import type { PresmiumSession } from '../service.ts'
 
 export const name = 'presmium-turns'
 export const inject = ['presmium', 'tools']
@@ -31,7 +31,7 @@ interface Reverted {
 
 interface Turns {
   turn?: number
-  document?: PresmiumSession
+  document?: string
   wrote: boolean
 }
 
@@ -67,8 +67,8 @@ export function apply(ctx: DshContext): void {
     return at
   }
 
-  const post = async (presmium: PresmiumSession, session: string, path: string, body: Record<string, unknown>): Promise<void> => {
-    const response = await ctx.presmium.request(`${REVIEW}/${path}`, { body: { session, ...body }, headers: { 'presmium-document': encodeURIComponent(presmium.document.dir) } })
+  const post = async (document: string, session: string, path: string, body: Record<string, unknown>): Promise<void> => {
+    const response = await ctx.presmium.request(`${REVIEW}/${path}`, { body: { session, ...body }, headers: { 'presmium-document': encodeURIComponent(document) } })
     const text = await response.text()
     if (response.ok) return
     if (path === 'open' && response.status === 404) throw new Error('the workspace is not a git repository, so the author cannot review a change: run git init in it')
@@ -84,28 +84,31 @@ export function apply(ctx: DshContext): void {
     if (event.type === 'turn/start' && typeof event.data?.turn === 'number') turnsOf(session.id).turn = event.data.turn
     if (event.type !== 'turn/end') return
     const turns = sessions.get(session.id)
-    if (!turns?.wrote || !turns.document) return
+    if (!turns?.wrote || turns.document === undefined) return
     turns.wrote = false
     void post(turns.document, session.id, 'step', { ...turns.turn !== undefined ? { turn: turns.turn } : {}, end: true })
       .catch((error: unknown) => log.warn(`presmium-turns: the end of turn ${turns.turn} of ${session.id} was not told to the review: ${error instanceof Error ? error.message : String(error)}`))
   })
 
   ctx.on('tools/execute', async (exec: DshToolExecution, next: () => Promise<unknown>) => {
-    const presmium = WRITES.has(exec.name) ? ctx.presmium.session(exec.agent) : undefined
-    if (!presmium) return next()
-    const session = reviewerOf(presmium.id)
+    if (!WRITES.has(exec.name) || !exec.agent) return next()
+    const { root } = await ctx.presmium.ready
+    const cwd = relative(root, ctx.presmium.directoryOf(exec.agent))
+    if (cwd === '..' || cwd.startsWith(`..${sep}`) || isAbsolute(cwd)) return next()
+    const document = ctx.presmium.session(exec.agent)?.document.dir ?? ''
+    const session = reviewerOf(exec.agent.session.id)
     const turns = turnsOf(session)
     try {
-      await post(presmium, session, 'open', turns.turn !== undefined ? { turn: turns.turn } : {})
+      await post(document, session, 'open', turns.turn !== undefined ? { turn: turns.turn } : {})
     } catch (error) {
       throw new Error(`Presmium: ${error instanceof Error ? error.message : String(error)}. Nothing was changed.`)
     }
-    turns.document = presmium
+    turns.document = document
     turns.wrote = true
     try {
       return await next()
     } finally {
-      await post(presmium, session, 'step', { ...turns.turn !== undefined ? { turn: turns.turn } : {}, label: labelOf(exec), tool: exec.name })
+      await post(document, session, 'step', { ...turns.turn !== undefined ? { turn: turns.turn } : {}, label: labelOf(exec), tool: exec.name })
         .catch((error: unknown) => log.warn(`presmium-turns: no checkpoint after ${exec.name} in ${session}: ${error instanceof Error ? error.message : String(error)}`))
     }
   })

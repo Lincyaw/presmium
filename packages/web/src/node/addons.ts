@@ -1,8 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { join } from 'node:path'
 import { isRecord } from '@lincyaw/kernel'
-import type { PresmiumNodePlugin, RenderContext } from '@lincyaw/kernel'
+import type { NodeVitePlugin, RenderContext } from '@lincyaw/kernel'
 import { packageOf } from '@lincyaw/kernel/node'
 
 const CLIENT_PLUGIN = 'src/client/plugin.ts'
@@ -10,18 +9,13 @@ const VIEWER_PLUGIN = 'src/client/viewer.ts'
 const VITE_CONFIG = 'vite.config.ts'
 const COMPONENT = /^[^.]+\.(vue|[jt]sx?)$/
 
-export interface VitePluginsEntry {
-  file: string
-  config: Record<string, unknown>
-}
-
 export interface ClientModules {
   restartable: boolean
   components: Map<string, string>
   plugins: string[]
   viewers: { name: string, file: string }[]
   vite: string[]
-  nodeVite: VitePluginsEntry[]
+  nodeVite: NodeVitePlugin[]
 }
 
 function collect(dir: string, name: string, modules: ClientModules, plugin: boolean): void {
@@ -30,7 +24,8 @@ function collect(dir: string, name: string, modules: ClientModules, plugin: bool
   if (existsSync(components)) {
     for (const file of readdirSync(components).filter(f => COMPONENT.test(f)).sort()) {
       browser = true
-      modules.components.set(file.replace(/\.[^.]+$/, ''), join(components, file))
+      const name = file.replace(/\.[^.]+$/, '')
+      if (!plugin || !modules.components.has(name)) modules.components.set(name, join(components, file))
     }
   }
   if (existsSync(join(dir, CLIENT_PLUGIN))) {
@@ -63,32 +58,11 @@ function restartablePackage(dir: string | undefined): boolean {
   return isRecord(presmium) && isRecord(presmium.preview) && presmium.preview.restartable === true
 }
 
-function nodeEntry(dir: string): string | undefined {
-  const { exports } = manifest(dir)
-  const entry = isRecord(exports) ? exports['./presmium'] : undefined
-  return typeof entry === 'string' ? resolve(dir, entry) : undefined
-}
-
-export async function nodeVitePlugins(ctx: RenderContext, presmium: Record<string, unknown>, always = false): Promise<VitePluginsEntry[]> {
-  if (ctx.vitePlugins.length === 0 && !always) return []
-  const entries: VitePluginsEntry[] = []
-  for (const name of ctx.plugins) {
-    const dir = ctx.pluginDirs[name]
-    const file = dir && nodeEntry(dir)
-    if (!file) continue
-    const plugin = (await import(pathToFileURL(file).href).catch(() => ({}))).default as PresmiumNodePlugin | undefined
-    if (typeof plugin?.vitePlugins !== 'function') continue
-    const config = presmium[plugin.id]
-    entries.push({ file, config: isRecord(config) ? config : {} })
-  }
-  return entries
-}
-
-export function clientModules(ctx: RenderContext, nodeVite: VitePluginsEntry[]): ClientModules {
+export function clientModules(ctx: RenderContext, nodeVite: NodeVitePlugin[]): ClientModules {
   const modules: ClientModules = { restartable: true, components: new Map(), plugins: [], viewers: [], vite: [], nodeVite }
-  for (const { file } of nodeVite) {
+  for (const { entry } of nodeVite) {
     try {
-      if (!restartablePackage(packageOf(file))) modules.restartable = false
+      if (!restartablePackage(packageOf(entry))) modules.restartable = false
     } catch {
       modules.restartable = false
     }

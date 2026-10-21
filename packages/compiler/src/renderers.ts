@@ -3,7 +3,7 @@ import type { FSWatcher } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { errorMessage, irBlocks, isRecord } from '@lincyaw/kernel'
-import type { ComponentNode, ComponentRenderer, DocumentLink, Finding, IRBlock, IRDocument, IRSection, LocalAsset, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@lincyaw/kernel'
+import type { ComponentNode, ComponentRenderer, DocumentLink, Finding, IRBlock, IRDocument, IRSection, LocalAsset, NodeVitePlugin, RenderContext, RenderDevServer, RenderOutput, Renderer, RendererExtension, SourcePos } from '@lincyaw/kernel'
 import { unshown } from './audience.ts'
 import { audienceCompilation, DECK_ENTRY } from './compiler.ts'
 import type { AudienceCompilation, Compilation, Compiler } from './compiler.ts'
@@ -225,7 +225,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
   let translated = await translationsFor(compilation, run, translators)
   findings.push(...translated.findings)
   const translations = translated.views
-  const servers: { renderer: string, url: string, server: RenderDevServer }[] = []
+  const servers: { renderer: string, url: string, server: RenderDevServer, ctx: RenderContext }[] = []
   for (const { renderer } of selected) {
     if (!renderer.dev) {
       findings.push(renderFinding(compilation, 'warning', `renderer ${renderer.id} has no dev server`))
@@ -241,7 +241,7 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     try {
       await mkdir(ctx.outDir, { recursive: true })
       const server = await renderer.dev(viewFor(compilation.doc, renderer.id), ctx)
-      servers.push({ renderer: renderer.id, url: server.url, server })
+      servers.push({ renderer: renderer.id, url: server.url, server, ctx })
     } catch (error) {
       findings.push(renderFinding(compilation, 'error', `renderer ${renderer.id} failed to start: ${errorMessage(error)}`))
     }
@@ -314,7 +314,9 @@ export async function dev(compiler: Compiler, options: DevOptions): Promise<DevS
     if (servers.length > 0 && setup(compilation) !== initial) {
       reported.push(renderFinding(compilation, 'warning', 'the plugins or renderers in the headmatter changed; restart presmium dev to load them in the dev servers'))
     }
-    for (const { renderer, server } of servers) {
+    for (const { renderer, server, ctx } of servers) {
+      ctx.vitePlugins = vitePluginsFor(compilation, finding => reported.push(finding))
+      ctx.nodeVitePlugins = nodeVitePlugins(compilation)
       await server.update(viewFor(compilation.doc, renderer)).catch((error: unknown) => {
         reported.push(renderFinding(compilation, 'error', `renderer ${renderer} failed to update: ${errorMessage(error)}`))
       })
@@ -418,17 +420,6 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     const located = { ...finding, source: finding.source ?? { file: compilation.entry, line: 1 } }
     if (!findings.some(f => JSON.stringify(f) === JSON.stringify(located))) findings.push(located)
   }
-  const vitePlugins = compilation.plugins.flatMap((loaded) => {
-    const contribute = loaded.plugin?.vitePlugins
-    if (!contribute) return []
-    const options = doc.config.presmium[pluginId(loaded)]
-    try {
-      return contribute.call(loaded.plugin, { deckDir, workspaceRoot, config: isRecord(options) ? options : {} })
-    } catch (error) {
-      report({ checkId: 'presmium.render', severity: 'error', message: `plugin ${pluginId(loaded)} failed to give its Vite plugins: ${errorMessage(error)}` })
-      return []
-    }
-  })
   const ctx: RenderContext = {
     deckDir,
     workspaceRoot,
@@ -441,7 +432,8 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     lang: doc.meta.lang,
     renderers: run.ids,
     base: run.bases.get(id) ?? '/',
-    vitePlugins,
+    vitePlugins: vitePluginsFor(compilation, report),
+    nodeVitePlugins: nodeVitePlugins(compilation),
     extensionFor: node => extensionOf(node, ctx.extensions),
     portable: (value, from) => portable(value, from, workspaceRoot),
     localAsset: (source, url) => publishedAsset(compilation, source, url, report),
@@ -458,6 +450,28 @@ function renderContext(compilation: Compilation, id: string, outDir: string, wor
     return [{ plugin: pluginId(loaded), ...components ? { components } : {} }]
   })
   return ctx
+}
+
+function vitePluginsFor(compilation: Compilation, report: (finding: Finding) => void): unknown[] {
+  return compilation.plugins.flatMap((loaded) => {
+    const contribute = loaded.plugin?.vitePlugins
+    if (!contribute) return []
+    const config = compilation.doc.config.presmium[pluginId(loaded)]
+    try {
+      return contribute.call(loaded.plugin, { deckDir: compilation.deckDir, workspaceRoot: compilation.workspaceRoot, config: isRecord(config) ? config : {} })
+    } catch (error) {
+      report({ checkId: 'presmium.render', severity: 'error', message: `plugin ${pluginId(loaded)} failed to give its Vite plugins: ${errorMessage(error)}`, source: { file: compilation.entry, line: 1 } })
+      return []
+    }
+  })
+}
+
+export function nodeVitePlugins(compilation: Pick<Compilation, 'plugins' | 'doc'>): NodeVitePlugin[] {
+  return compilation.plugins.flatMap((loaded) => {
+    if (!loaded.entry || !loaded.plugin?.vitePlugins) return []
+    const config = compilation.doc.config.presmium[pluginId(loaded)]
+    return [{ id: pluginId(loaded), entry: loaded.entry, config: isRecord(config) ? config : {} }]
+  })
 }
 
 const REMOTE = /^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i

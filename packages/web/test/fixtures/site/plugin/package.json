@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Test-only plugin of packages/web/test: a Vite plugin the site builds with",
   "exports": {
-    "./presmium": "./presmium.ts",
+    "./presmium": { "import": "./presmium.ts", "default": "./presmium.ts" },
     "./package.json": "./package.json"
   }
 }

@@ -1,0 +1,10 @@
+{
+  "name": "presmium-fixture-diagnostics",
+  "private": true,
+  "type": "module",
+  "description": "A browser component whose source can be repaired while its preview stays open.",
+  "peerDependencies": {
+    "@lincyaw/host": "*",
+    "vue": "*"
+  }
+}

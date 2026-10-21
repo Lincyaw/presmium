@@ -8,7 +8,7 @@ import type { Element, ElementContent, Root } from 'hast'
 import { toHtml } from 'hast-util-to-html'
 import type { PropType, VNode, VNodeChild } from 'vue'
 import { computed, defineComponent, h, inject, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { IN_COMPONENT, useSectionContext } from './context.ts'
+import { CODE_OWNED, useSectionContext } from './context.ts'
 import { useDark } from './dark.ts'
 import { codeColumns, originParts } from './domain/index.ts'
 import type { OriginPart } from './domain/index.ts'
@@ -129,7 +129,7 @@ export const CodeBlockView = defineComponent({
     expanded: Boolean,
   },
   setup(props) {
-    const owned = inject(IN_COMPONENT, false)
+    const owned = inject(CODE_OWNED, undefined)
     const executor = useService(EXECUTOR)
     const operations = useService(OPERATIONS)
     const section = useSectionContext()
@@ -163,7 +163,7 @@ export const CodeBlockView = defineComponent({
       current = controller
       running.value = true
       const { lang, args, stdin, timeoutMs, executor: named, session } = node.run
-      const request: RunRequest = { lang, code: node.value, args, stdin, timeoutMs, executor: named, session }
+      const request: RunRequest = { lang, code: node.value, args, stdin, timeoutMs, executor: named, session, ...section ? { place: { section: section.section.value.id, block: props.block.id } } : {} }
       const started = Date.now()
       let result: RunResult
       try {
@@ -211,7 +211,7 @@ export const CodeBlockView = defineComponent({
           ? variants.map(v => h('div', { key: v.label, class: 'pm-code-block__variant' }, [h('p', { class: 'pm-code-block__label' }, v.label), h(CodeView, { lang: node.lang, value: v.value })]))
           : [h(VariantView, { key: 'variant', lang: node.lang, value: variants[shown]!.value })]
       const echo = node.echo !== false
-      const runnable = !owned && echo && node.run && node.run.when !== 'compile'
+      const runnable = !owned?.value && echo && node.run && node.run.when !== 'compile'
       const t = messages().code
       const available = mounted.value && executor.value
       const controls = runnable
@@ -221,7 +221,7 @@ export const CodeBlockView = defineComponent({
             mounted.value && !executor.value && report.value ? h('span', { class: 'pm-code-block__hint' }, t.unavailable) : null,
           ])
         : null
-      const runs = owned ? [] : live.value ? [live.value] : node.outputs ?? []
+      const runs = owned?.value ? [] : live.value ? [live.value] : node.outputs ?? []
       const prose = !echo && !live.value && runs.length > 0 && runs.every(proseOnly)
       const prefix = section?.section.value.id ?? props.block.id
       const outputs = runs.length

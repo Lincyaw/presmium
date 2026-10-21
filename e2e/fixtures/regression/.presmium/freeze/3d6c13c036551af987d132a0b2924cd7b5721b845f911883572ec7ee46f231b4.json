@@ -3,14 +3,14 @@
   "entry": "lecture.md",
   "lang": "python",
   "code": "from IPython.display import Markdown\n\nrows = [\"| 顺序 | 合并的一对 | 新词元 | 编号 |\", \"| --- | --- | --- | --- |\"]\nfor order, ((a, b), new_id) in enumerate(merges.items(), start=1):\n    rows.append(f\"| {order} | `{vocab[a].decode()!r}` 和 `{vocab[b].decode()!r}` | `{vocab[new_id].decode()!r}` | {new_id} |\")\ndisplay(Markdown(\"\\n\".join(rows)))",
-  "environment": "Python 3.13.12",
-  "revision": "runner 5cadcc15de4de559",
+  "environment": "Python 3.9.6",
+  "revision": "runner d01beb21eed32365",
   "run": {
     "ok": true,
     "stdout": "",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 125,
+    "durationMs": 56,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -24,6 +24,6 @@
         "metadata": {}
       }
     ],
-    "cacheKey": "6da250ccb37378909bb8a0940e77cc865960ef3f151f2bf5cccbc59360ed82b8"
+    "cacheKey": "3d6c13c036551af987d132a0b2924cd7b5721b845f911883572ec7ee46f231b4"
   }
 }

@@ -56,7 +56,9 @@ export class FreezeCache implements RunCache {
 
   recording(input: string): { run: RecordedRun, environment?: string, revision: string } | undefined {
     for (const record of this.#all().values()) {
-      if (record.input === input) return { run: this.#restore(record.run), environment: record.environment, revision: record.revision ?? '' }
+      if (record.input !== input) continue
+      const run = this.#restore(record.run)
+      if (run) return { run, environment: record.environment, revision: record.revision ?? '' }
     }
     return undefined
   }
@@ -136,12 +138,16 @@ export class FreezeCache implements RunCache {
     })) }
   }
 
-  #restore(run: RecordedRun): RecordedRun {
+  #restore(run: RecordedRun): RecordedRun | undefined {
     if (!run.outputs) return run
-    return { ...run, outputs: run.outputs.map(output => mapData(output, (value) => {
+    let complete = true
+    const outputs = run.outputs.map(output => mapData(output, (value) => {
       if (!isRecord(value) || typeof value[BLOB_REF] !== 'string') return value
-      return this.#text(join(this.dir, BLOBS, value[BLOB_REF].replace(/[^0-9a-f]/g, '')))
-    })) }
+      const text = this.#text(join(this.dir, BLOBS, value[BLOB_REF].replace(/[^0-9a-f]/g, '')))
+      if (text === undefined) complete = false
+      return text
+    }))
+    return complete ? { ...run, outputs } : undefined
   }
 }
 

@@ -201,7 +201,7 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 | `renderer` | 本插件提供的渲染端（网页、幻灯片、notebook 各是一个插件） |
 | `rendererExtensions` | 本插件为其他渲染端提供的组件转换，例如 notebook 中组件如何变成单元格 |
 | `vitePlugins(ctx)` | 运行 Vite 的渲染端在开发服务器与构建中加入的 Vite 插件；`ctx` 为 `{ deckDir, workspaceRoot, config }`，`config` 是本插件的 `presmium.<插件 ID>`（编译步骤写回的值也在其中）。例如本地环境插件以此给两种形态的开发服务器加上自己的端点 |
-| `version`、`kernel` | 插件的版本（与 `package.json` 一致，官方插件在 Node 端与浏览器端都读 `package.json`）与兼容的内核版本范围；内核版本 `KERNEL_VERSION` 是插件契约的版本，与包的版本分开，现在为 `1.0.0`，契约有不兼容的改动时升主版本（`api.md` 第 1 节）。编译器不加载范围不含当前内核的插件，渲染端也不使用它（幻灯片不把它作为 Slidev 插件，网页不注册它）。字段在契约中是可选的，官方插件都声明，`scripts/check-plugins.mjs` 检查（并入 `pnpm test`） |
+| `version`、`kernel` | 插件的版本（与 `package.json` 一致，官方插件在 Node 端与浏览器端都读 `package.json`）与兼容的内核版本范围；内核版本 `KERNEL_VERSION` 是插件契约的版本，与包的版本分开，现在为 `1.0.0`，契约有不兼容的改动时升主版本（`site/reference/lecture.md` 的版本规则）。编译器不加载范围不含当前内核的插件，渲染端也不使用它（幻灯片不把它作为 Slidev 插件，网页不注册它）。字段在契约中是可选的，官方插件都声明，`scripts/check-plugins.mjs` 检查（并入 `pnpm test`） |
 | `roles` | MyST 行内角色规格（`RoleSpec`，4.10 节），例如讲授插件的 `{cue}`、`{say}` |
 | `services(ctx)` | Node 端服务实现，例如语音插件的 `SPEECH`；编译步骤、渲染端、检查项与服务端贡献经 `service(token)` 使用（4.6 节）。`ctx.settings` 是运营者给本插件的设置（4.7 节），不来自文稿 |
 | `environments` | 具名环境的提供方，键为环境的 `kind`（4.6 节） |
@@ -211,13 +211,13 @@ VS Code 扩展的安装包包含语言服务、编译器与网页渲染运行时
 
 插件的 `package.json` 以 `peerDependencies` 声明它支持的 Presmium 版本：插件共用应用中的 `@lincyaw/kernel`、`host`、`viewer`、`compiler`，这些只作为对等依赖，不作为依赖（`scripts/check-packages.mjs` 检查官方插件）。加载器在导入插件之前比较已安装的版本，不满足时不导入它（导入本身可能失败），报告 `presmium.plugins` 的错误（`plugin "X" (name ver) is not loaded: it needs @lincyaw/kernel ^9.0.0 (peerDependencies),and 1.0.0-rc.0 is installed`），构建不崩溃，只是没有这个插件；`kernel` 范围不满足时同样如此。
 
-从注册表安装时：Presmium 的包以 TypeScript 源码发布，Node 不剥离 `node_modules` 中 `.ts` 的类型，渲染端以 `--import` 加载 `@lincyaw/kernel/node` 的 `TYPESCRIPT_IMPORT`（`strip-types.mjs`）启动 VitePress 与 Slidev；Vite 不查看依赖的导入，`preBundle(root, packageDirs)` 从渲染端与文稿插件的包出发，列出它们浏览器代码导入的依赖（`optimizeDeps.include` 的 `<包> > <导入>`），并把这些包链接进 Vite 根目录的 `node_modules`（`presmium serve` 的站点在状态目录中，`presmium dev --out` 可以在任何地方）；从单仓链接的包与文稿自己的目录由 Vite 自己扫描。站点在 `<base>presmium/fonts/LICENSE` 带上字体的许可证（OFL）。消费者安装测试见第 7 节。
+从注册表安装时：Presmium 的包以 TypeScript 源码发布，Node 不剥离 `node_modules` 中 `.ts` 的类型，渲染端以 `--import` 加载 `@lincyaw/kernel/node` 的 `TYPESCRIPT_IMPORT`（`strip-types.mjs`）启动 VitePress 与 Slidev。`optimizeDeps(root, packageDirs)` 从渲染端与文稿插件的包出发，把源码包链接进 Vite 根目录的 `node_modules` 并排除源码包本身的预构建；按浏览器的导入条件沿实际模块图解析依赖，只把 CommonJS 入口列入 `optimizeDeps.include`（`<包> > <导入>`，包含 ESM 内部的 CommonJS 依赖），原生 ESM 保留在原安装目录中解析。这样 ESM 内部的私有依赖不会因移入公共预构建缓存而失去作用域。`presmium serve` 的站点在状态目录中，`presmium dev --out` 可以在任何地方；从单仓链接的包与文稿自己的目录由 Vite 自己扫描。站点在 `<base>presmium/fonts/LICENSE` 带上字体的许可证（OFL）。消费者安装测试见第 7 节。
 
 插件从哪里加载（10.2 节）：`presmium dev`、`serve`、`build`、`check` 都按文稿的 `plugins` 从文稿目录向上查找 `node_modules`，也接受相对于文稿的路径，替换渲染端的 `renderers.<id>.package`（`ir.md` 2.1 节）同样如此；随 CLI 安装的 Presmium 自己的包（渲染端）在找不到时从 CLI 加载。运营者插件另列在工作区配置的 `settings.presmium.workspace.plugins` 中，安装在工作区根目录，每份文档与工作区首页都加载它们。
 
 - 编译步骤 `IRPass` 可以声明 `after: 'execute'`，在编译时执行之后运行，此时代码节点已有 `outputs`（执行插件以此把编译时输出写进执行面板的 `fallback`）。渲染端 `Renderer` 可以提供 `prepare(doc, ctx)`：只生成工作目录、不构建（幻灯片渲染端写出 Slidev 文稿），编译器在 `build` 旁导出 `prepare(compilation, { to, outDir, base })`，发布插件的导出与视觉差异用它（`base` 换掉渲染端的站点路径：`slidev export` 在根路径服务生成的文稿，导出时传 `/`）。构建报告的每个输出给出 `outDir`、`workDir` 与站点路径 `base`。
-- 渲染上下文 `RenderContext` 另有 `lang`（文稿语言）、`pluginDirs`（编译器加载的插件目录）、`extensionFor(node)`（各渲染端选中同一插件的扩展）、`portable(value, from)`、`localAsset(source, url)`（本地文件）、`renderers` 与 `base`（站点路径）、`vitePlugins`，见 `ir.md` 第 6 节。
-- `@lincyaw/kernel` 还导出插件共用的纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`errorMessage`、`isRecord`、`failedRun`、`languageId`（`py`、`python3`、`ipython*` 归为 `python`，`js`、`mjs` 归为 `javascript`，`ts` 归为 `typescript`）、`lowerMyst`（MyST 降为标准 Markdown；卡片、栅格与选项卡按选项 `cards` 保留结构或降为小标题，`ir.md` 第 6 节）与 `deckLocale`。各包不再自带这些函数的副本。
+- 渲染上下文 `RenderContext` 另有 `lang`（文稿语言）、`pluginDirs`（编译器加载的插件目录）、`extensionFor(node)`（各渲染端选中同一插件的扩展）、`portable(value, from)`、`localAsset(source, url)`（本地文件）、`renderers` 与 `base`（站点路径）、`vitePlugins` 与 `nodeVitePlugins`，见 `ir.md` 第 6 节。
+- `@lincyaw/kernel` 还导出插件共用的纯函数：`irBlocks`、`docBlocks`（遍历块，含组件的子块）、`nodeMdast`、`errorMessage`、`isRecord`、`failedRun`、`languageId`（`py`、`python3`、`ipython*` 归为 `python`，`js`、`mjs` 归为 `javascript`，`ts` 归为 `typescript`）、`lowerMyst`（MyST 降为标准 Markdown；卡片、栅格与选项卡按选项 `cards` 保留结构或降为小标题，`ir.md` 第 6 节）与 `deckLocale`。各包共用这些实现。
 - 指令与编译步骤的上下文提供 `watch(...files)`：声明 `ctx.src`、`ctx.resolvers` 之外读取的文件，`presmium dev` 在它们变化时重新编译（`ir.md` 第 5 节）。
 - 组件转换函数为 `(node, block, ctx)`，`ctx` 是所服务渲染端的 `RenderContext`；插件据此得到输出目录与工作目录（例如幻灯片渲染端生成的 Slidev 文稿所在目录），不为此依赖渲染端的包。
 - `RenderContext.workspaceRoot` 与指令、编译步骤上下文中的同名字段相同：文稿所在 git 仓库的根目录，不在仓库中时为文稿目录。渲染端发布插件配置（全局的 `presmium` 与各章节的 `{config}`）时按它改写路径：位于仓库内的绝对路径（例如编译步骤解析出的工作区目录）改为相对路径，网页形态相对于文稿目录，幻灯片形态相对于生成的 Slidev 文稿所在的目录（Slidev 与插件在那里解析路径）；仓库外的路径与其他字符串（例如站点路径 `/web`）保持原样。产物因此不随检出位置变化。
@@ -342,6 +342,7 @@ export interface RunRequest {
   executor?: string
   /** 执行会话：同一会话的运行共享解释器状态，按请求顺序执行；不支持会话的执行器忽略它 */
   session?: string
+  place?: { section: string, block: string } // 浏览器反馈的位置；不改变代码的执行
 }
 
 /** nbformat v4 的单元格输出（结构复制，内核不依赖 nbformat 包） */
@@ -525,7 +526,7 @@ export interface PresmiumNodePlugin {
   services?(ctx: NodeServiceContext): [ServiceToken<unknown>, unknown][]
   /** 具名环境的提供方，键为 `EnvironmentSpec.kind` */
   environments?: Record<string, EnvironmentProvider>
-  /** 服务端贡献；`presmium dev` 中每份文稿一次，`presmium serve` 中每份被访问的文档一次（第 10 节） */
+  /** 服务端贡献；按文稿挂载，配置变化时重新挂载（10.2 节） */
   server?(ctx: ServerContext): ServerContribution | Promise<ServerContribution>
   /** MyST 行内角色（4.10 节，`ir.md` 2.8 节） */
   roles?: RoleSpec[]
@@ -538,6 +539,8 @@ export interface PresmiumNodePlugin {
   operator?: boolean
 }
 ```
+
+Node 插件模块由加载器缓存；`services(ctx)` 在每次编译中按当前文稿头部的插件配置与 `lang` 创建。每份 `Compilation` 持有自己的服务快照，重新编译不改变旧编译结果的服务。服务端贡献单独按 10.2 节的生命周期挂载。
 
 `packages/kernel/src/kernel.ts` 与 `packages/host/src/kernel.ts`：宿主把 IR 的 `config.execute.environments` 一路交给每个插件的 `PluginContext.environments`（`HostStart` → `StartOptions` → `KernelOptions`）：
 
@@ -565,7 +568,7 @@ export interface HostStart {
 
 要点：
 
-- **执行器的选择**：浏览器中的 IR 运行时、执行面板与编译时执行都把代码块的 `run.executor` 放进 `RunRequest.executor`，由路由精确选择。IR 运行时不再自己挑选首选执行器。
+- **执行器的选择**：浏览器中的 IR 运行时、执行面板与编译时执行都把代码块的 `run.executor` 放进 `RunRequest.executor`，由路由精确选择。执行器不可用时返回失败，不切换环境。
 - **会话 ID**：浏览器中由代码块的 `:session:` 加上页面实例的标识组成（每个页面、每个学习者各自一份）；编译时由文稿与 `:session:` 组成，构建结束时对每个用过的会话调用 `endSession`。
 - **富输出**：执行器把输出写入 `outputs`，同时照旧拼接 `stdout`、`stderr`。渲染见 `ir.md` 第 6 节；HTML 输出在显示前清洗（第 11 节）。
 - **环境的登记**：编译器为头部声明的每个环境找到 `kind` 对应的提供方，创建执行器并加入编译时的执行器列表；没有提供方的 `kind` 与未声明的环境名都是错误级诊断。浏览器端由同一插件在 `setup` 中按 `ctx.environments` 为同类环境登记执行器，ID 相同。
@@ -576,8 +579,8 @@ export interface HostStart {
 实现：
 
 - **执行选项的形状**：`CompilerOptions.execution`（`@lincyaw/compiler` 导出 `ExecutionOptions`）为 `{ env?: 'local' | 'serve' }`。`Compilation` 另给出 `executors`（插件的与具名环境的）、`runContext`、`environments`（供 `presmium check --env`）与 `run(node, signal)`（以同一套选项运行一个代码块，不读写录制；会话中的块先在一个新会话中依次运行它前面的块，`presmium dev` 与 `presmium serve` 的 `ServerHost.run` 用它）。`RunStats` 增加 `sandbox`（构建报告的 `code runs: … isolated by <kind>`）。同一进程中编译的两份文稿（`presmium serve`）即使写了同名的 `:session:`，各自也有自己的解释器：编译器在每次编译的会话 ID 前加上这次编译自己的标识。
-- **`RunContext.env`** 由 `runEnvironment(rules, passEnv, workspaceRoot)` 计算（`execute.ts`）；`serve` 规则的 `HOME` 是本用户状态目录中的 `presmium/run-home/<工作区根目录的哈希>`（`XDG_STATE_HOME` 或 `~/.local/state`；0700，不是本用户的目录或是链接时拒绝），并设置 `PYTHONNOUSERSITE=1`；不用共享的临时目录，那里其他本机用户可以抢先创建或放入链接（最终审计）。`RunContext.sandbox` 取 Node 端服务中的 `PROCESS_SANDBOX`，`RunContext.lang` 是文稿的语言。录制的缓存键不含文稿的语言：改了 `lang` 之后，已有的录制在代码或环境改变之前保持原来的文字。
-- **执行器的修订**：`Executor` 另有可选的 `revision?(lang)`，是执行器自己影响输出的代码的修订，例如执行插件的本地 Python 执行器为 `runner <runner.py 的 sha256 前 16 位>`。它与环境指纹一起进入缓存键（没有修订的执行器的键不变），并记在录制中（`.presmium/freeze/<键>.json` 的 `revision`）。另一环境的录制照旧沿用，另一修订的录制则已过时，不沿用：执行器可用时重新执行并替换它，所以运行器改变输出的方式之后（如末尾表达式的值），已缓存的录制在下一次构建时更新；没有执行器时仍显示原有的录制。示例讲义的 Python 录制随之重新生成。
+- **`RunContext.env`** 由 `runEnvironment(rules, passEnv, workspaceRoot)` 计算（`execute.ts`）；`serve` 规则的 `HOME` 是本用户状态目录中的 `presmium/run-home/<工作区根目录的哈希>`（`XDG_STATE_HOME` 或 `~/.local/state`；0700，不是本用户的目录或是链接时拒绝），并设置 `PYTHONNOUSERSITE=1`；不用共享的临时目录，那里其他本机用户可以抢先创建或放入链接。`RunContext.sandbox` 取 Node 端服务中的 `PROCESS_SANDBOX`，`RunContext.lang` 是文稿的语言。录制的缓存键不含文稿的语言：改了 `lang` 之后，已有的录制在代码或环境改变之前保持原来的文字。
+- **执行器的修订**：`Executor` 另有可选的 `revision?(lang)`，是执行器自己影响输出的代码的修订，例如执行插件的本地 Python 执行器为 `runner <runner.py 的 sha256 前 16 位>`。它与环境指纹一起进入缓存键（没有修订的执行器的键不变），并记在录制中（`.presmium/freeze/<键>.json` 的 `revision`）。另一环境的录制照旧沿用，另一修订的录制则已过时，不沿用：执行器可用时重新执行并替换它，所以运行器改变输出的方式之后（如末尾表达式的值），已缓存的录制在下一次构建时更新；没有执行器时仍显示原有的录制。
 - **会话**：编译器按文稿顺序把同一 `:session:` 的块编成一组，会话 ID 为 `<入口文件>:<会话名>`；有一块未命中时先 `endSession`，再把整组请求一次发出（不在其间等待），执行器按请求顺序执行，结束后对每个用过的会话调用 `endSession`。执行插件的本机执行器把一起到达的同一会话的请求放进一次运行（同一个子进程，或进程沙箱中的一次 `run`）；之后单独到达的同一会话的请求先重新运行该会话此前的请求，所以状态总是一致（`packages/addon-exec/src/node/child.ts`）。浏览器中会话 ID 由执行路由加上页面实例的标识（路由在页面中创建），Pyodide 的会话是 Worker 中常驻的全局命名空间，`endSession` 丢弃它；代码块旁的“重置会话”调用路由的 `endSession`。本地环境插件的容器执行器每次运行一个新容器，不共享会话的状态（不支持会话的执行器忽略它）。
 - **运行目录的协议**：执行插件的子进程（与进程沙箱）中，运行器读运行目录中的 `.presmium/request.json`（`{ session?,runs: [{ code,args,stdin,files,lang }],path? }`），每完成一个请求写 `.presmium/result-<i>.json`（先写临时文件再改名），超时被杀死时已完成的请求的结果仍在；一组请求的超时是各自超时之和。Python 的命令是 `python3 -c <运行器>`（`read` 为解释器的 `sys.prefix` 与 `sys.base_prefix`），JavaScript 是 `node --input-type=module -e <主程序>`（`read` 为执行插件的包、Sucrase 与 Node 的安装目录）；文稿目录由进程沙箱自己加入只读路径（它的 Node 端服务知道文稿目录，`SandboxRun` 中没有它）。容器执行器把同样的 `request.json` 写进挂载的运行目录，在容器中运行同一个运行器。
 - **共享的运行器**（`@lincyaw/kernel/runner.py`）另提供 `display()`（不必导入）、`IPython` 与 `IPython.display`（`display`、`Markdown`、`HTML`、`Latex`、`SVG`、`JSON`、`Image`；安装了的 IPython 不被使用，浏览器与编译时一致）和 matplotlib 的后端 `module://_presmium_matplotlib`（Agg 绘制，`plt.show()` 与运行结束时把打开的图写成 `image/png` 输出；运行期间 `MPLBACKEND` 指向它；matplotlib 要装在运行代码的环境中：编译时的 Python、远端环境；浏览器的 Pyodide 只加载核心发行版，只有标准库）。代码块最后一条语句是表达式时，它的值（不为 `None`）以 `display` 的格式成为 `execute_result` 输出，与 Jupyter 一致（分步执行不变）。错误的回溯同时是 `error` 输出与 `stderr` 的文本。参数（`RunRequest.args` 是字符串）由运行器读回：先按 Python 字面量，再按 JSON（`true`、`false`、`null`），否则保留字符串；Jupyter 内核得到同一规则的读回代码。
@@ -591,13 +594,14 @@ export interface HostStart {
 - **一份运行器，两处运行**：`addon-exec-wasi` 的 `src/runner.mjs`（纯 JavaScript，同执行插件的 `runner.mjs`）定义语言（`c`、`cpp`、`ruby`、`sql` 及别名）、每个运行时的文件与命令行，并在 `@runno/wasi` 的 WASI 系统中运行请求：C 与 C++ 先由 `clang.wasm` 编译、`wasm-ld.wasm` 链接（sysroot 为 `clang-fs.tar.gz`），再运行得到的 WASI 程序；Ruby 与 SQLite 解释程序。浏览器中由页面的一个常驻 Worker 运行（模块只编译一次，超时或中止时结束 Worker），编译时每次运行一个子进程（其中的工作线程运行它；有进程沙箱时这个进程在沙箱中，没有时直接启动；WebAssembly 内存的上限为 1024 MiB，即 `MEMORY_LIMIT_MB`，超出时程序的分配失败，编译器的内存不受影响），二进制相同，所以录制与现场输出一致。程序的文件系统在内存中（`RunRequest.files` 放在根目录，文件时间固定），标准输出与标准错误按写入顺序成为 `stream` 输出；不支持 `args` 与会话。
 - **环境变量**：编译时 WASI 程序的环境就是 `RunContext.env`（没有 `ctx` 时为空）；编译器与链接器没有环境，工作线程以空的 `process.env` 启动；浏览器中程序没有环境变量。WASI 程序在 WebAssembly 的沙箱中运行，不经进程沙箱。
 - **执行器与环境**：按语言选择的执行器 ID 为 `presmium.wasi`（浏览器与编译时相同）；`kind: wasi` 的环境以 `presmium.env.<名>` 登记同一实现，按环境的 `languages` 限定语言；`probe` 报告不支持的语言与缺少的运行时文件。环境指纹为 `wasi <运行时> sha256:<该运行时全部文件的哈希前 16 位>`，每个进程只计算一次。
-- **运行时的发布**：二进制取自已安装的 `@runno/sandbox` 的 `dist/langs`（沿模块查找路径找到，它的 `exports` 不导出 `package.json`）。编译步骤 `presmium.execWasi.runtimes` 把浏览器中运行的代码（`run.when` 为 `live` 或 `both`，含组件的子块，执行器为 `presmium.wasi`、`kind: wasi` 的环境或未指定）需要的运行时写进 IR 中插件配置的 `runtimes`；两种形态都经 `PresmiumNodePlugin.vitePlugins`（幻灯片渲染端把它们写进生成文稿的 `vite.config.ts`）把这些运行时复制到 `<base>wasi/`（服务端渲染的构建不复制），开发服务器提供全部运行时。网页的 Service Worker 预缓存产物中的全部文件（9.2 节），幻灯片的（发布插件的 `OFFLINE_MANIFEST`）预缓存其中的 `.wasm` 与 `.gz`，所以运行时在两种形态中都离线可用。幻灯片中 C、C++、Ruby、SQL 的现场代码块是 `{monaco-run}`（上文“幻灯片中的现场代码”）。发布运行时的同时发布它们的许可证说明 `<base>wasi/LICENSES`（包中的 `LICENSES`：Runno 的 MIT 许可证，LLVM 8 的 University of Illinois/NCSA 许可证，wasi-libc 与 LLVM 9 以后的 Apache 2.0 加 LLVM 例外，Ruby 的 2-clause BSD，SQLite 的公有领域声明），开发服务器同样提供。
+- **运行时的发布**：二进制取自已安装的 `@runno/sandbox` 的 `dist/langs`（沿模块查找路径找到，它的 `exports` 不导出 `package.json`）。编译步骤 `presmium.execWasi.runtimes` 把浏览器中运行的代码（`run.when` 为 `live` 或 `both`，含组件的子块，执行器为 `presmium.wasi`、`kind: wasi` 的环境或未指定）需要的运行时写进 IR 中插件配置的 `runtimes`；两种形态都经 `PresmiumNodePlugin.vitePlugins`（幻灯片渲染端把它们写进生成文稿的 `vite.config.ts`）把这些运行时复制到 `<base>wasi/`（服务端渲染的构建不复制），开发服务器提供全部运行时。运行时的离线缓存规则见下文“离线”；需要离线授课时按讲者技能的发布参考准备并断网验证。幻灯片中 C、C++、Ruby、SQL 的现场代码块是 `{monaco-run}`（上文“幻灯片中的现场代码”）。发布运行时的同时发布它们的许可证说明 `<base>wasi/LICENSES`（包中的 `LICENSES`：Runno 的 MIT 许可证，LLVM 8 的 University of Illinois/NCSA 许可证，wasi-libc 与 LLVM 9 以后的 Apache 2.0 加 LLVM 例外，Ruby 的 2-clause BSD，SQLite 的公有领域声明），开发服务器同样提供。
 实现（浏览器 GPU 后端；契约没有改动）：
 
 - **`wgsl` 执行器**：`@lincyaw/slidev-addon-exec-webgpu` 在浏览器与编译时都以 `presmium.webgpu` 登记（`kind: webgpu` 的环境另以 `presmium.env.<名>` 登记，浏览器端由插件在 `setup` 中按 `ctx.environments` 登记）。计算核心是纯 JavaScript 的 `src/gpu.mjs`，浏览器中在每次运行一个的专用 Worker 里运行，编译时在 Playwright 的 Chromium 中运行同一份文件，所以录制与现场的输出一致。请求由 `src/domain/params.ts` 从着色器与 `:params:` 得出（`ir.md` 2.7 节）：缓冲区按着色器中变量的名字给出数据或大小，组、绑定、存储的读写与值的类型取自着色器的声明，可写的存储缓冲区读回并显示；显式的绑定布局（入口函数不用的缓冲区也绑定）；按缓冲区的大小请求设备的 `requiredLimits`。结果是 `stdout` 的文本（同时是一个 `stream` 输出）：每个读回的缓冲区一行（长的显示首尾各 4 个值与最小、最大、平均）、每次派发的中位时间（有 `timestamp-query` 时用 GPU 时间戳，否则为提交到队列完成的时间；回退适配器上注明“CPU 模拟”）与适配器。浏览器中按界面语言，编译时按文稿的语言（`RunContext.lang`；没有上下文时为英文）。
 - **回退**：浏览器没有 WebGPU、没有适配器、适配器缺少特性或限制、设备丢失、超时，结果是没能进行的运行（`exitCode` 为 null，原因在 `stderr`），代码块与执行面板显示编译时录制的输出与原因；着色器的编译错误、WebGPU 的校验错误与写错的 `:params:` 是程序自己的错误（`exitCode` 为 1）。超时（请求的超时，默认 10 秒）时 Worker 先销毁设备再被结束；运行的规模上限为全部缓冲区 128 MiB、`repeat` 至多 1000。
 - **编译时的录制**（`src/node/recorder.ts`）：Chromium 以 `RunContext.env` 为环境（没有上下文时只有 `PATH`、`LANG` 与临时的 `HOME`），页面经 `page.route` 从 `https://webgpu.presmium.invalid/` 提供（WebGPU 要安全上下文，不占端口），每次运行启动并关闭一次浏览器（执行器没有供编译结束时关闭的钩子）。环境的选项 `adapter`：`auto`（默认，先以 `--enable-unsafe-webgpu --enable-features=Vulkan --use-angle=vulkan` 用显卡，没有适配器时用 SwiftShader）、`gpu`、`swiftshader`。环境指纹为 `chromium <版本>; <厂商> <架构>`，回退适配器加 ` (fallback)`。没有安装 Chromium 时执行器不支持 `wgsl`（录制照常使用）；没有适配器（指纹）或适配器不能运行（缺少特性或限制、设备丢失）时抛出错误而不返回结果，编译器沿用已有的录制并警告，没有录制时报错，失败不会作为录制留下。`presmium check --env` 的 `probe` 启动 Chromium 请求该适配器。
 - **执行面板**（`addon-exec`）：`{run-panel}` 接受任何有执行器的语言；Python、JavaScript、TypeScript 之外的语言的 `:params:` 可以是任意的 YAML 映射（列表与映射以 JSON 字符串放进 `RunRequest.args`，面板的表单中可以改）。执行插件的 `presmium.exec.fallbacks` 把编译时录制的成功输出写进面板的属性 `compiledOutput`；现场运行没能进行（`exitCode` 为 null）而面板没有 `:recorded:` 时，面板显示它并在标记中写出原因（如“预录输出 · 没有可用的 GPU 适配器”）。
+- **现场运行反馈**（`addon-exec`）：共享执行路由把最近 8 次运行与会话重置登记为 `STATUS` 的 `presmium.exec`，沿宿主现有控制通道送到 `get_runtime`。摘要含时间、`place` 的章节与块、语言、会话、实际执行器、进行中/成功/失败/超时状态，以及截断到各 2000 字符的 stdout、stderr 与最后表达式值；富输出只列 MIME 类型，不包含二进制与请求源码。普通代码、执行面板与幻灯片 Monaco Runner 都可带位置；面板的重置会话操作也进入摘要。编译录制仍由 `get_outputs` 读取。
 - **Python 桥**（`addon-exec` 的 `src/client/presmium_gpu.py`）：Pyodide Worker 把它写进 `/presmium` 并加入 `sys.path`。`await presmium_gpu.run(着色器, buffers=…, dispatch=…, entry=…, repeat=…, features=…)` 经 Pyodide 的 JavaScript 桥调用 `navigator.gpu`，参数与 `wgsl` 的 `:params:` 相同，返回读回的缓冲区（`dict`，另有 `timing` 与 `adapter`，`print` 给出与 `wgsl` 执行器相同格式的英文摘要）；不能运行时抛出 `GPUUnavailable`（`requestDevice` 失败也是），WebGPU 拒绝时抛出 `GPUError`。规模限制与 `wgsl` 执行器相同（全部缓冲区 128 MiB、`repeat` 至多 1000，`dispatch` 为 1 到 3 个正整数）：超出或写错时在请求适配器之前抛出 `ValueError`，文字与执行器的英文消息相同。插件包之间不互相引用，所以这两个上限在 Python 中另写一份（`_MAX_BYTES`、`_MAX_REPEAT`）。代码块顶层的 `await` 由 `src/client/run_await.py` 的 `_pm_run_await` 支持（与共享运行器的 `_pm_run` 相同的输出、会话与隔离，以 `PyCF_ALLOW_TOP_LEVEL_AWAIT` 编译，Worker 等待它）。有 JSPI 时 Worker 以 `callPromising` 运行其他代码块，`presmium_gpu.run_sync(…)` 与 `pyodide.ffi.run_sync` 因此可用。
 - **jax-js**：脚本 Worker 没有导入映射，执行插件的 `SCRIPT_IMPORTS`（`@jax-js/jax` → `<base>presmium/jax-js/index.js`）由脚本执行器解析为地址交给 Worker，`runner.mjs` 的 `prepare` 把代码中 `import … from`、`export … from`、`import '…'` 与 `import('…')` 的这些名字改写为地址（Node 中的编译时执行没有这张表，导入 jax-js 的代码写 `:run: live`）。jax-js 的 ES 模块构建（互相导入的 5 个文件）由 WebGPU 插件的 Vite 插件（`PresmiumNodePlugin.vitePlugins`，`src/node/jax.ts`）在开发服务器中提供、在构建中原样复制到 `presmium/jax-js/`，第一次导入时才加载；没有 WebGPU 插件的文稿不带它。Slidev 构建时为 `{monaco-run}` 中导入的包查找类型，找不到（jax-js 只在 WebGPU 插件的依赖里）时构建失败；幻灯片渲染端因此在现场的 JavaScript、TypeScript 代码导入了从生成文稿的目录找不到的包时，在生成文稿的头部写 `monacoTypesSource: none`（9.3 节；`renderers.slides.monacoTypesSource` 优先）。
 实现（远端环境 `addon-exec-jupyter`）：
@@ -610,17 +614,17 @@ export interface HostStart {
 - **服务端**：服务端贡献的代理随编译器最近一次为该文稿创建的环境变化（`proxies`、`routes` 是读取时计算的属性），只为 `auth: proxy` 的环境挂载，角色为 `reader`；代理设置目标的 `Host` 与 `Origin`（以服务端为 Jupyter 的客户端；Jupyter 校验 WebSocket 的来源），不能挂载时同一路径回答 502 与原因。
 - **站点的服务端渲染**：Rollup 会加载死分支中的动态导入，网页的服务端渲染因此也打包插件的浏览器模块；`@jupyterlab/services` 只在非浏览器环境 `require('ws')`（包的 `browser` 字段把它换成垫片），服务端渲染的打包没有这一字段，会连 `ws` 与 Node 内置模块一起打包而失败。插件经 `PresmiumNodePlugin.vitePlugins` 给出一个 Vite 插件（`src/node/vite.ts`），在每次打包中把这一处 `ws` 解析为该包自己的垫片。
 
-的补充：
+执行与发布的约定：
 
-- **一条 Vite 通道**：插件只经 `./presmium` 入口的 `vitePlugins` 加入 Vite 插件；网页渲染端在 VitePress 的开发与构建中加入，幻灯片渲染端写进生成文稿的 `vite.config.ts`。执行插件、Jupyter 与 WebGPU 插件包根目录的 `vite.config.ts` 与 `setup/vite-plugins.ts` 已删除，网页渲染端也不再读插件包根目录的 `vite.config.ts`。
+- **Vite 插件的入口**：两种形态的统一入口与加载方式见 5.1 节。执行、Jupyter 与 WebGPU 的适配通过 `PresmiumNodePlugin.vitePlugins` 提供。
 - **执行器在哪里运行**：`Executor` 另有可选的 `runsIn?: 'browser' | 'machine'`，执行面板的顶栏据此写“浏览器中运行”或“本机运行”，没有时只写语言（5.12 节的运行面板）。
 - **执行面板的参数显示**：`Executor` 另有可选的 `params?(lang): ParamsDisplay | undefined`（浏览器端的执行器），`ParamsDisplay` 为 `{ labels: Record<string, string>; fields?: string[]; summary?(args): string }`：面板按它显示参数的标签（按界面语言），映射类型的参数每个键一个输入框（写回为 YAML 的流式映射），运行记录显示摘要而不是 JSON；没有它或没有命名的参数显示名字与值。WebGPU 执行器给出缓冲区、工作组数、入口函数、重复次数与所需特性。
 - **浏览器中的 Python 只有标准库**：`presmium check` 对在浏览器中运行（`:run: live` 或 `both`）的 Python 代码块、执行面板与分步执行中导入标准库之外的模块给出警告 `presmium.exec`；`pyodide`、`js`、`IPython`、`presmium_gpu` 允许，带 `:env:` 的块不检查。
 - **分步执行的步数**：`presmium build` 与 `presmium check` 在 `:steps:` 与追踪得到的执行行数不同时，在指令处警告（追踪在进程沙箱中运行）；组件的提示只在演讲者视图与开发服务器中显示。
 - **幻灯片中的运行器输出**：不是 base64 的图片数据被丢弃并说明原因；HTML 输出经 DOMPurify（去掉 `<style>`）清洗后直接显示在幻灯片中，写进 Slidev 文稿的录制输出在构建时以 jsdom 与 DOMPurify 同样清洗（`render-slides` 的 `src/node/html.ts`）；Jupyter 客户端同样丢弃不是 base64 的图片。
-- **放映中的执行面板**：幻灯片与放映视图中面板的代码占满幻灯片的剩余高度，较长时在面板中滚动，参数、运行按钮与输出留在幻灯片上。放映中参数与运行按钮的字号与代码相同（网页的表单控件不再取浏览器的 13.3 px），输出在代码旁边占去一半宽度时，过长的代码行在面板中换行而不被截断；幻灯片中现场代码的 Monaco 运行器（规则在生成的 Slidev 文稿自己的样式 `render-slides/src/deck/style.css` 中，对任何主题都有效）在编辑器高过 15em 时于其中滚动，输出区高过 7.5em 时滚动，所以长代码不再靠幻灯片的 `zoom` 缩小（示例讲义的 `extend-c`、`extend-train` 去掉了 `zoom`）。
-- **导出**：`presmium-export` 与 `presmium-diff` 写的导出文稿带渲染端选项 `renderers.slides.liveCode: false`：可运行的代码写成静态的高亮代码加录制输出，不写 `{monaco-run}`；打印时每张幻灯片裁到自己的页面，一张溢出的幻灯片不再缩小整份 PDF；`--range` 的页数与 PDF 不符时以 2 退出（此前只是警告）。打印模式下的现场代码在每一页（含点击的各步）显示录制的输出。
-- **本地环境插件**：回写删去，没有提交按钮与路由，状态中不再有 `git`；端点改为服务端路由 `/__presmium/presmium.execLocal/{status,run,replicate}`，只给编辑者，运行先经 `operate` 确认（测试与 `presmium dev` 用 `--allow operate`）；默认的工作区是工作区根目录而不是 git 的根目录；容器的运行目录在一个私有（0700）的父目录中，文件以独占方式新建，从不经链接。插件只声明 `exec` 与 `fs` 两种能力。
+- **放映中的执行面板**：幻灯片与放映视图中面板的代码占满幻灯片的剩余高度，较长时在面板中滚动，参数、运行按钮与输出留在幻灯片上。放映中参数与运行按钮的字号与代码相同，输出在代码旁边占去一半宽度时，过长的代码行在面板中换行而不被截断；幻灯片中现场代码的 Monaco 运行器（规则在生成的 Slidev 文稿自己的样式 `render-slides/src/deck/style.css` 中，对任何主题都有效）在编辑器高过 15em 时于其中滚动，输出区高过 7.5em 时滚动，长代码保持字号并在面板内滚动。
+- **导出**：`presmium-export` 与 `presmium-diff` 写的导出文稿带渲染端选项 `renderers.slides.liveCode: false`：可运行的代码写成静态的高亮代码加录制输出，不写 `{monaco-run}`；打印时每张幻灯片裁到自己的页面，一张溢出的幻灯片不再缩小整份 PDF；`--range` 的页数与 PDF 不符时以 2 退出。打印模式下的现场代码在每一页（含点击的各步）显示录制的输出。
+- **本地环境插件**：提供环境状态、运行与复刻，端点是服务端路由 `/__presmium/presmium.execLocal/{status,run,replicate}`，只给编辑者，运行先经 `operate` 确认（测试与 `presmium dev` 用 `--allow operate`）；默认的工作区是工作区根目录而不是 git 的根目录；容器的运行目录在一个私有（0700）的父目录中，文件以独占方式新建，从不经链接。插件只声明 `exec` 与 `fs` 两种能力。
 - **高对比度**：高对比度开关把滚动叙事中淡化的讲解的不透明度提到 0.6，网页的放映与滚动叙事视图同样达到 AA（`e2e/publish.spec.ts`）。
 - **离开页面时关闭 Jupyter 终端**；**浏览器中没有 GPU**：Pyodide 中抛出 `GPUUnavailable` 的 Python 按没能进行的运行处理，说明“没有可用的 GPU 适配器”，不显示回溯。
 - **离线**：网页的 Service Worker 安装时只预缓存外壳与内容；`pyodide/`、`wasi/` 与 `presmium/jax-js/`（许可证文件除外）放在自己的缓存 `presmium-web-runtimes-<哈希>` 中，第一次使用时缓存、之后优先取缓存，运行时不变的构建之间保留；发布插件的工具栏“保存以便离线使用”（`OFFLINE_MESSAGES`：`presmium:offline-runtimes`、`presmium:save-offline`）在 Service Worker 应答之后出现，一次下载全部运行时。幻灯片照旧预缓存全部文件。
@@ -1134,9 +1138,9 @@ export const OPERATIONS = defineService<Operations>('presmium.operations')
 
 报告的分工（插件之间不互相引用，词汇是内核的共享契约）：IR 运行时报告 `go`（章节、步骤、视图）；执行插件报告 `run`（块与结果的缓存键）；引导插件报告 `spot`、`hint`；讲授插件自己报告指针 `point`（`elementFromPoint` → 最近的 `[data-block]` → 块内相对坐标，约 20 Hz，简化后保存）与工具栏的激光笔、荧光笔 `ink`。回放某一时刻：`clear()`，再按时间依次 `replay(…, true)` 此前的事件，最后一个事件不快进。
 
-引导插件新增内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/slidev-addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。与设计不同之处：视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。若以后要独立的讲授视图，需要视图插件的上下文提供放映视图的组件或章节上下文（只增加）。`run` 的重放没有 `clear`（`packages/viewer/src/code.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
+引导插件包含内核插件 `src/client/plugin.ts`（两种形态都登记 `spot`、`hint` 的重放）与视图插件 `src/client/viewer.ts`（放映视图与演讲者窗口中 `s`、`h` 给指针下的块加上或取消聚光、提示并报告）；这种聚光持续到位置离开它的章节或步骤（`span`），由 `NAVIGATION.position` 的同步观察者结束，所以现场、依次重放与跳转后的折叠一致。讲授插件 `@lincyaw/slidev-addon-lecture`：`src/domain/`（讲授轨的读写与每项一行的格式、`at` 的时刻、章节、漂移分级、块指纹与 IR 哈希、VTT、路径简化、重录一节的拼接）、`src/node/`（服务端路由、检查项 `presmium.lecture`、站点渲染端 `lecture`）、`src/client/`（内核插件登记 `point`、`ink` 的重放；视图 `lecture`；放映视图上的录制与播放两个图层；`SilentClock`、`MediaClock`；Mediabunny 只在 `src/client/media.ts` 中）。视图插件只以类型引用 `@lincyaw/viewer`，拿不到章节上下文（`SECTION_CONTEXT`），自己画不出按步骤显示的幻灯片，所以回放的“真实页面”是放映视图：`lecture` 视图切到放映视图并保留 URL 的 `track` 参数，播放器是放映视图上的图层，重放 `go` 时去掉 `view`。独立的讲授视图需要放映组件或章节上下文，当前视图插件接口未提供它们。`run` 的重放没有 `clear`（`packages/viewer/src/code.ts`），跳回运行之前的时刻时已显示的录制输出不消失。
 
-讲授插件的 `src/domain/` 增加讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`synthesis.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 增加行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script.ts`）、讲授计划与最近一次编译的 IR（`plan.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`speak.ts`、`lecture.ts`：合成缓存中的片段、没有逐字时间时的转写对齐 `<键>.align.json`、锁定文件的清理）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 增加 `ClipClock`（`MediaClock` 以每个语音段的片段为文件）、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.vue` 与逐字稿中每句的修改。与设计不同或设计没写明之处：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；要总是准确，渲染端需要得到网页视图的步号（只增加）。
+讲授插件的 `src/domain/` 包含讲解的读法（`narration.ts`：显示与说的两份文字、`{cue}` 的位置、命令与时长）、讲授计划（`plan.ts`：每节每步的段落、在 `pause` 处切开的语音段、提示标记的目标与操作数据，单独的脚本代替所在章节的讲解）、合成的时间线（`synthesis.ts`：`scriptTrack`）、逐字的处理（`words.ts`：分词、把说的文字的逐字时间换回显示的文字、改文字后的重新对齐、换音色后的字锚换算）与讲授轨的编辑（`editing.ts`：转写得到语音段并绑定事件、改一句、换音色重新合成）；`Utterance.clip` 与合成音色的 `provider`。`src/node/` 提供行内角色 `{cue}`、`{say}`（`roles.ts`）、读单独的脚本（`script.ts`）、讲授计划与最近一次编译的 IR（`plan.ts`：编译步骤 `presmium.lecture.keep` 在编译时执行之后记下每个文稿目录的 IR，服务端的路由与 agent 工具由此得到 IR，因为 `ServerContext` 与 `AgentToolContext` 没有编译结果）、经 `SPEECH` 的合成与转写（`speak.ts`、`lecture.ts`：合成缓存中的片段、没有逐字时间时的转写对齐 `<键>.align.json`、锁定文件的清理）、站点渲染端的 `script` 与 `clips/`、检查项的计划部分、编辑的路由、agent 工具（`tools.ts`）与 `presmium-lecture export`（`export.ts`、`cli.ts`）。`src/client/` 用 `MediaClock` 播放每个语音段的片段、播放器的 `advanceTo`（按时间应用事件，播放与导出共用）、导出模式（地址加 `&export`：没有控件，`window.presmiumLecture.advance(t)`）、编辑面板 `TrackEditor.vue` 与逐字稿中每句的修改。交互与构建的边界：转写与合成的确认是页面上写明服务提供方的确认框，不经 `APPROVALS`（编辑者点按钮就是确认；agent 的计费工具仍经 MCP 的确认）；`presmium serve` 在进程内编译文稿，所以 `script` 在那里同样按需合成（`ir.md` 6.3 节）；合成音色的讲授中改一句要先确认，确认框写明服务提供方；路由、agent 工具与检查都按讲授渲染端的视图（`viewFor(doc,'lecture')`，讲授插件已依赖编译器）计划，与构建一致；`presmium check` 只查找，不向语音引擎发请求；合成讲授的 `go` 由讲授视图的步号经它的 `stepMap` 换回 IR 的步号，所以只在网页形态不压缩步骤时（没有只在幻灯片或 notebook 中显示的上屏块）就是网页的步号；当前渲染上下文没有网页视图的步号映射。
 
 转写回写的读法在讲授插件的 `src/domain/writeback.ts`：由事件写回提示标记（`cueFor`）、逐字稿拼成的讲解草稿（`narrationDraft`）、一步讲解在源码中的位置（`narrationPlace`，取自讲授计划，所以单独的讲授脚本中的段落同样找得到）、要翻译的语音段与摘要（`translationItems`）；agent 经 `track_narration`、`track_translations`（`src/node/tools.ts`）取得它们，写入在会话的审阅之中。
 
@@ -1222,6 +1226,8 @@ export interface RenderContext {
   // ……已有字段……
   /** 同 `PassContext.service` */
   service?<T>(token: ServiceToken<T>): T | undefined
+  /** 已解析的 Node 端 Vite 入口描述（`ir.md` 第 6 节） */
+  nodeVitePlugins?: NodeVitePlugin[]
   /** 头部声明的译本，编译器另行编译（语言，IR）；网页渲染端使用 */
   translations?: { lang: string, doc: IRDocument }[]
   /** `presmium dev` 中服务端的地址，开发服务器把 `/__presmium/` 代理到它；构建中省略 */
@@ -1239,6 +1245,8 @@ export interface SiteDocument {
   doc?: IRDocument
   /** 头部声明的译本，像单独构建文档那样编译（语言，IR），同 `RenderContext.translations`；站点把每个译本发布在 `<base><dir>/<lang>/` */
   translations?: { lang: string, doc: IRDocument }[]
+  /** 本文稿已解析的 Node 端 Vite 入口与当前配置 */
+  nodeVitePlugins?: NodeVitePlugin[]
 }
 
 export interface SiteSpec {
@@ -1269,20 +1277,19 @@ export interface Renderer {
 
 源语法与这些字段的对应、各渲染端的处理见 `ir.md`（2.7 至 2.14 节、第 6 节、第 9、10 节）。媒介 ID `lecture` 不是新的 IR 字段：它是讲授插件的渲染端 ID，`{only} lecture` 照常经 `only` 字段生效。
 
-**实现**：契约没有变化，以下是写明之外的做法。
+**实现边界**：
 
 - `RenderContext.localAsset` 的结果也可以是目录（`ir.md` 6.2 节）：编译器（`renderers.ts`）与工作区站点的上下文（`packages/workspace/src/node/site.ts`）把文稿之内的目录准备为带文件清单页的副本，渲染端以 `cpSync(…, { recursive: true })` 发布它，与文件相同；不能发布的本地引用由这两处报告 `presmium.links`（构建报告去掉各渲染端重复的报告）。工作区站点的上下文另拒绝工作区之外的文件。
-- 译本的过期检查在 `translations.ts` 的 `applyTranslations(doc, fields)` 中：`compiler.ts` 只把 IR 交给它，而编译器在编译结束时一次写入 `doc.diagnostics`，所以检查结果以 `doc.diagnostics` 上的一次性存取器并入这次写入（写入之后它是普通属性）。提议：`compiler.ts` 把 `report` 与 `source.files` 交给 `applyTranslations`，之后去掉存取器、摘要的文件取自 `source.files`。
-- 译本的编译同样受 `compiler.ts` 的限制：编译器只从入口文件的头部读取文稿配置，`compileTranslations` 因此在原文旁写一个临时入口（原文的插件与渲染端配置，加上译本自己的头部，正文以 `{include}` 引入译本），编译选项取自原文的编译结果（运营者设置、随 CLI 安装的包与运营者目录；宿主服务没有记录在编译结果中，译本的编译没有它们）。提议：`CompilerOptions` 增加入口头部的默认值，届时不再写临时文件。
+- 译本的摘要、配置继承与编译统一见 `ir.md` 2.12 节；实现位于 `packages/compiler/src/translations.ts`。诊断经编译器的 `report` 汇入，译本以自己的入口文件编译，不在文稿中写临时入口。
 - 网页主题用 VitePress 文档化的路由钩子：`onBeforePageLoad` 在页面载入之前按页面的 locale 换上原文或译本的 IR（服务端渲染中同样，按页面路径），`onBeforeRouteChange` 让指向站内页面之外的链接整页载入。工作区首页的主题同样处理指向文档的链接。
 - `presmium serve` 的工作区站点中，文档开发服务器的上一章、下一章与其他文档的搜索内容按当时已编译的文档给出，在该文档下一次更新时写入。
 
-**整合**：契约没有变化；上面两条提议已在编译器中做完，另有以下做法。
+**编译与发布**：
 
-- 过期检查：`applyTranslations(doc, fields, report)` 经编译器的 `report` 报告，在去掉受众内容之前（摘要的文件仍取完整 IR 中出现的文件，所以学生版的构建按同一摘要检查）；不再有 `doc.diagnostics` 上的存取器。
-- 译本从自己的入口编译：`CompilerOptions` 增加 `headmatter`（替换入口头部的字段，值为 `undefined` 的去掉；译本取原文的 `plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`checks`，没有 `lang`、`title` 时取声明的语言与原文标题，去掉 `translations`）与 `deckDir`（文稿目录不是入口所在目录时：译本在原文的文稿目录中编译，插件、`public/`、组件、锚点锁与执行缓存都是这份文稿的）。`Compilation.options` 记录编译选项，译本的编译取它（宿主服务也在其中），原文为某个受众编译、或构建某个受众的视图时（`Compilation.audience`）译本同样按该受众编译；`presmium dev` 中译本的编译器在头部或受众变化时换新。文稿目录中不写任何文件。
+- 过期检查：`applyTranslations(doc, fields, report)` 经编译器的 `report` 报告，在去掉受众内容之前（摘要的文件仍取完整 IR 中出现的文件，所以学生版的构建按同一摘要检查）。
+- 译本从自己的入口编译：`CompilerOptions` 支持 `headmatter`（替换入口头部的字段，值为 `undefined` 的去掉；译本取原文的 `plugins`、`presmium`、`renderers`、`execute`、`sectionDepth`、`checks`，没有 `lang`、`title` 时取声明的语言与原文标题，去掉 `translations`）与 `deckDir`（文稿目录不是入口所在目录时：译本在原文的文稿目录中编译，插件、`public/`、组件、锚点锁与执行缓存都是这份文稿的）。`Compilation.options` 记录编译选项，译本的编译取它（宿主服务也在其中），原文为某个受众编译、或构建某个受众的视图时（`Compilation.audience`）译本同样按该受众编译；`presmium dev` 中译本的编译器在头部或受众变化时换新。文稿目录中不写任何文件。
 - `build(compilation, { outDir, to, audience?, quote?, scan? })`：`audience` 构建完整编译的该受众视图（`forAudience`、`audienceOf`），译本按该受众编译；为某个受众编译或构建时，构建结束后扫描输出，被去掉的句子包括各译本的（不含原文或任一译本自己也有的句子），`quote: false` 时诊断不引用句子。`scan` 默认 `outDir`，读输出目录中的每个文件（`presmium build --audience`：此前完整构建留在同一目录中的其他渲染端目录同样被检查）；`written` 只读这次写出的 `ir.json` 与各渲染端的目录，`presmium dev` 与 `presmium serve` 的 `ServerHost.build` 用它（文稿的 `dist/` 中同时有完整版的构建）。`presmium build --audience` 与 `ServerHost.build` 都经它。
-- 发布文件的共用代码：`packages/compiler/src/published.ts`（`fileHash` 按大小、inode、修改时间与状态改变时间缓存文件的哈希，两秒之内改过的文件不缓存（同 git 对“racily clean”的处理：时间戳的精度之内同样大小的改动看不出来），`publishesDirectory`、`directoryAsset` 拒绝隐藏目录与 `node_modules`，`lineOf`、`inside`，`htmlAttributes` 以 parse5 找出原始 HTML 的属性），由 `@lincyaw/compiler` 导出，工作区站点的上下文引用它，`portable` 同样。三个渲染端改写原始 HTML 的 `mapHtmlUrls` 也改用 parse5，各在自己的包中（渲染端不互相引用，也不依赖编译器；合为一份要放进 kernel，不在本工作包中）。网页的 `mapHtmlUrls` 从 `src/domain` 移到 `src/node/html.ts`（只有构建用它，不进浏览器）。
+- 发布文件的共用代码：`packages/compiler/src/published.ts`（`fileHash` 按大小、inode、修改时间与状态改变时间缓存文件的哈希，两秒之内改过的文件不缓存（同 git 对“racily clean”的处理：时间戳的精度之内同样大小的改动看不出来），`publishesDirectory` 判断目录是否可发布，`directoryAsset` 发布目录并拒绝隐藏目录与 `node_modules`，`lineOf`、`inside`），由 `@lincyaw/compiler` 导出，工作区站点的上下文引用它，`portable` 同样。`htmlAttributes` 与 `mapHtmlUrls` 由 `@lincyaw/kernel` 统一提供，以 parse5 读取并改写原始 HTML 的地址。
 - 工作区站点的译本：工作区根目录的 `presmium build` 以 `packages/workspace/src/node/site.ts` 的 `siteTranslations`（编译器的 `compileTranslations`）编译每份文档的译本，放进 `SiteDocument.translations`，网页渲染端的 `sites.ts` 把它们交给文档的 `RenderContext.translations` 并为首页生成每种语言的 locale（`ir.md` 2.12 节）。`presmium serve` 的预览不编译译本：`untranslated` 为声明了译本的文档给出警告 `presmium.translations`，写进该文档的诊断。
 - 首页的运营者插件：编译器的 `workspacePlugins(root, options)` 按文档编译的同一选项加载运营者插件（`settings.presmium.workspace.plugins` 中声明 `operator: true` 的）并登记它们的 Node 服务。`presmium serve` 在服务端启动之后加载一次，首页（文档 `''`）的 `ServedDocument` 带上它们的服务端部分与服务（宿主的服务在前），所以它们的路由在首页应答。首页不是文档：它的 `ServerContext.deckDir` 与 `workspaceRoot` 都是 serve 在系统临时目录中建的一个空目录（关闭时删去），不是工作区根目录，所以插件的路由在首页读不到也改不了工作区中的文件；插件按 `ServerContext.home` 认出首页（服务端从首页的 `ServedDocument.home` 得到它；`presmium dev` 的文稿在仓库的根目录、入口不叫 `lecture.md` 时也是文档，所以不能按目录猜），那里只回答不需要文档的请求，文档的列出与新建经工作区的路由（`presmium.workspace`）。它们的 Node 服务仍按工作区创建（`workspacePlugins` 的上下文是工作区根目录）。页面只加载文稿列出的插件的浏览器部分。
 
@@ -1290,16 +1297,18 @@ export interface Renderer {
 
 ### 5.1 浏览器端注册
 
-插件包在浏览器端有三个约定入口。网页与幻灯片两个宿主都从这里注册，插件不必为两种形态各写一份：
+插件包的入口按职责划分。网页与幻灯片两个宿主都从这里注册，插件不必为两种形态各写一份：
 
 | 入口 | 内容 | 幻灯片形态 | 网页形态 |
 |---|---|---|---|
 | `src/client/plugin.ts` | 默认导出内核插件定义 `PluginDefinition`：提供的服务与启动时的初始化 | 插件包的 `setup/main.ts` 导入它，调用 `registerPresmiumPlugin`（`@lincyaw/host`） | `web` 渲染端导入 `plugins` 中每个包的这个文件并注册 |
-| `components/*.vue` | 组件，文件名即组件名，对应 `component` 节点的 `name` | Slidev 自动注册 | `web` 渲染端按文件名注册到 IR 运行时；文稿自己的 `components/` 覆盖同名组件 |
+| `components/*.vue` | 组件，文件名即组件名，对应 `component` 节点的 `name` | Slidev 自动注册 | `web` 渲染端按文件名注册到 IR 运行时 |
 | `./presmium` 的 `vitePlugins` | 开发服务器的端点等 Vite 插件（4.2 节） | 幻灯片渲染端写进生成的 Slidev 项目的 `vite.config.ts` | `web` 渲染端在 VitePress 的开发与构建中加入 |
-
-文稿自己的组件：文稿目录下的 `components/*.vue` 由编译器以插件 ID `deck` 登记（与网页的规则相同），`{component}` 可以使用它们，`presmium check` 与编辑器不再报告“没有插件注册该组件”，补全中也有它们；幻灯片渲染端把这个目录链接到生成的 Slidev 项目的 `components/`（Slidev 文档化的目录），组件在幻灯片中照常渲染并保留内部步骤。这些组件同插件组件一样只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 vue；文稿目录要能解析 `@lincyaw/host`，所以文稿的 `package.json` 要依赖它（否则网页构建报 Rollup 无法解析）。
 | `src/client/viewer.ts` | 默认导出视图插件 `ViewerPlugin`（类型来自 `@lincyaw/viewer`） | 不使用 | `web` 渲染端在 IR 运行时启动前调用一次 |
+
+插件之间组件重名时，编译器报告 `presmium.plugins` 警告并采用插件列表中第一个声明；网页、幻灯片与静态扩展选择同一提供方。文稿自己的 `components/` 可以覆盖插件的同名组件。
+
+文稿自己的组件：文稿目录下的 `components/*.vue` 由编译器以插件 ID `deck` 登记（与网页的规则相同），`{component}` 可引用它们，编译检查与编辑器识别这些组件并提供补全；幻灯片渲染端把这个目录链接到生成的 Slidev 项目的 `components/`（Slidev 文档化的目录），组件在幻灯片中照常渲染并保留内部步骤。这些组件同插件组件一样只能引用 `@lincyaw/host`、`@lincyaw/kernel` 与 vue；文稿目录要能解析 `@lincyaw/host`，所以文稿的 `package.json` 要依赖它（否则网页构建报 Rollup 无法解析）。
 
 宿主适配在应用初始化时启动内核：按依赖顺序初始化全部已注册的插件，启动报告在演讲者视图中显示。两种形态注册的是同一批插件，启动报告一致。没有浏览器端服务的插件可以不提供 `plugin.ts`。
 
@@ -1311,7 +1320,7 @@ export interface Renderer {
 | `registerNodeRenderer(key, component)` | 为一类块注册渲染器。`key` 为节点类型（`markdown`、`code`、`component`）、`code:<语言>` 或组件名；渲染器得到属性 `block`、`section`、`step` |
 | `registerComponent(name, component)` | 注册渲染 `component` 节点的 Vue 组件，用于 `components/` 约定之外的组件 |
 | `registerAction({ id, keys, run, views? })` | 注册按键动作：`keys` 为 `KeyboardEvent.key` 的值（不含 Ctrl、Alt、Meta），`run(viewer)` 返回 `false` 时按键交给其他处理；`views` 默认是放映视图与演讲者窗口。例如舞台插件的 `b`、`f` |
-| `registerLayer({ id, component, views? })` | 注册画在覆盖视图之上的图层，组件得到属性 `view`；`views` 默认同上。例如舞台插件的黑屏 |
+| `registerLayer({ id, component, views?, scope? })` | 注册覆盖视图的图层，组件得到属性 `view`；`views` 默认同上。`scope: 'viewport'`（默认）与视图根并列，供播放器、课堂状态与黑屏使用，可与全局聚光、弹层按同一层级排序；`'view'` 放在视图根内，供冻结画面、讲台徽标与录制面板按视图定位。两种图层都在视图的模态焦点范围内；全屏覆盖整个文档，保留插件与库经公开接口创建的浮层 |
 | `useViewer()` | 在组件的 `setup` 中取得运行时状态：文档、当前视图与位置 |
 | `SectionView`、`BlockView` | 组成视图的构件：一个章节（含版式），一个块在某一步的状态 |
 
@@ -1358,7 +1367,7 @@ presmium.exec: { timeoutMs: 30000 }
 
 ### 5.6 媒介限定与排版提示
 
-只出现在部分媒介中的内容用 `{only}` 指令声明（`ir.md` 2.5 节），例如 `:::{only} web, notebook`。编译器把限定写入块的 `only` 字段，每个渲染端只收到属于自己的块。各渲染端的排版提示用 `{hints}` 声明。早期的 `<div doc-only>`、`<div slide-only>` 标记已不再使用。
+只出现在部分媒介中的内容用 `{only}` 指令声明（`ir.md` 2.5 节），例如 `:::{only} web, notebook`。编译器把限定写入块的 `only` 字段，每个渲染端只收到属于自己的块。各渲染端的排版提示用 `{hints}` 声明。
 
 ### 5.7 界面语言
 
@@ -1385,7 +1394,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 在页面上绘制在其他内容之上、自身不占版面的组件（例如引导的光标），由指令把组件节点标为 `layer: 'overlay'`。渲染端不给它单独的位置：网页的文档视图按源码顺序渲染块，不给上屏内容添加板书外框；浮层本身不占版面，服务端渲染与首帧的版面也不跳动；幻灯片渲染端不给没有降级内容的浮层组件写空的 `PmStaticFallback`。
 
-组件拥有的代码：组件的子块中的代码块（例如执行面板、分步执行、本地环境包着的代码）属于组件。两种形态都不给它们运行控件，也不显示它们的录制输出：网页由 IR 运行时实现，幻灯片渲染端把它们写成组件插槽中的普通代码块（照常做语言映射）。组件运行的代码由指令放在组件的属性中（如执行面板的 `code`），不从渲染后的 DOM 读回。
+组件拥有的代码：组件默认拥有其子块中的代码块（例如执行面板、分步执行、本地环境包着的代码）。两种形态都不给它们运行控件，也不显示它们的录制输出：网页由 IR 运行时实现，幻灯片渲染端把它们写成组件插槽中的普通代码块（照常做语言映射）。只组织子内容、不负责执行的容器在 `ComponentNode` 写 `ownsCode: false`，例如预测的揭示内容，子代码照常显示运行控件和录制输出。组件运行的代码由指令放在组件的属性中（如执行面板的 `code`），不从渲染后的 DOM 读回。
 
 ### 5.10 设计系统
 
@@ -1401,7 +1410,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 | 组 | 令牌 | 说明 |
 |---|---|---|
-| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `packages/design/src/tokens.css`。三处调整：亮色的 `ok` 由 `#2F7D4F` 加深为 `#2B7449`，使它在 `ok-soft` 上达到 AA；`line-strong` 由亮 `#A39C8E`、暗 `#6F6A60` 加深为亮 `#8C8577`、暗 `#78736A`，使它在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11），原来的取值留作 `gutter`（源码编辑器的行号用 `muted`，5.11 节）；`danger` 与 `danger-soft` 是新增的，`danger` 与 `del` 同色 |
+| 颜色 | `--pm-color-bg`、`surface`、`sunk`、`code`、`ink`、`muted`、`line`、`line-strong`、`accent`、`accent-soft`、`on-accent`、`selected`、`ok`、`ok-soft`、`warn`、`warn-soft`、`danger`、`danger-soft`、`add`、`del`、`gutter`、`syntax-key`、`syntax-string`、`syntax-keyword` | 取值见 `packages/design/src/tokens.css`。`ok` 在 `ok-soft` 上达到 AA；`line-strong` 在 `bg`、`surface`、`sunk` 上达到 3:1（WCAG 1.4.11）。源码编辑器的行号用 `muted`（5.11 节）；`danger` 与 `del` 同色 |
 | 字体 | `--pm-font-sans`、`--pm-font-serif`、`--pm-font-mono` | IBM Plex Sans、Source Serif 4、IBM Plex Mono，后接中文的系统字体 |
 | 字号 | `--pm-text-xs`、`sm`、`md`、`lg`、`reading`、`title`、`display` | 12、13、14（界面）、16、17（阅读）、20、32 px，以 rem 表示，跟随读者的字号 |
 | 行高 | `--pm-leading-tight`、`ui`、`reading` | 1.25、1.6、1.85 |
@@ -1411,7 +1420,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | 动效 | `--pm-duration-fast`、`--pm-duration`、`--pm-ease` | 系统要求减少动态效果时时长为 0 |
 | 外壳 | `--pm-activity-width`、`--pm-sidebar-width`、`--pm-statusbar-height`、`--pm-z-popover`、`--pm-z-dialog` | 工作台的列宽、状态栏高与浮层的层级 |
 
-**字体**：三种西文字体的拉丁子集随 `@lincyaw/design` 发布（`fonts.css`；`@lincyaw/host` 也列出这三个包，站点的字体许可证由它们写出，Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。网页形态的主题改为扩展 `vitepress/theme-without-fonts`，不再打包 VitePress 的 Inter。
+**字体**：三种西文字体的拉丁子集随 `@lincyaw/design` 发布（`fonts.css`；`@lincyaw/host` 也列出这三个包，站点的字体许可证由它们写出，Fontsource 的 `@fontsource/ibm-plex-sans`、`@fontsource/source-serif-4`、`@fontsource/ibm-plex-mono`，SIL OFL 1.1），打包进产物，不从网络加载。中文先用系统字体：黑体为 PingFang SC、Microsoft YaHei、Noto Sans CJK SC，宋体为 Songti SC、Noto Serif CJK SC、Source Han Serif SC。网页形态的主题扩展 `vitepress/theme-without-fonts`，不打包 VitePress 的 Inter。
 
 **加载**：`@lincyaw/host` 的入口引入 `src/design/design.css`（它引入 `@lincyaw/design/design.css`：字体、令牌与组件的类），用到宿主的页面都有它们；宿主之外的页面可以单独引入 `@lincyaw/host/design.css` 或 `@lincyaw/design/design.css`。
 
@@ -1465,7 +1474,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 - 幻灯片形态中，Slidev 的重置样式（Tailwind 的 preflight）把 `button`、`[type=button]`、`[type=submit]` 设为透明。它的特异性与宿主的类相同，又排在其后，所以 `addon-core` 的 `style.css` 为 `pm-ui-button` 的各种状态补回填充。
 - 远端环境的令牌对话框（`auth: prompt`，`addon-exec-jupyter` 的 `token.ts`）是浏览器的模态 `<dialog>`，保留模态与居中；标题栏、字段与按钮用宿主的 `pm-ui-dialog__*`、`pm-ui-field`、`pm-ui-input`、`pm-ui-button` 类，面板的底色、边框、圆角与阴影取令牌。
 - 图标是宿主的线性图标（`PmIcon`）：分步执行的上一步、下一步，讲授的过时字幕与改写，高对比度开关，练习每条检查的对错，录制中的标记，源码面板中问题的严重程度（`error`、`warning`、`info`）；幻灯片代码运行器的提示“按 [运行图标] 运行这段代码”用 `iconMarkup`。插件与工作区的界面中没有 ◀ ▶ ⚠ ✎ ◐ ✓ ✗ ● ▲ ○ 这类字形。
-- 状态靠颜色而不靠不透明度区分，以保持 AA：核心插件的演示步进组件中已完成的步骤用 `muted`（原来 0.6 的不透明度只有 4.4:1）。
+- 状态靠颜色而不靠不透明度区分，以保持 AA：核心插件的演示步进组件中已完成的步骤用 `muted`。
 
 **运行面板**（`addon-exec` 的 `PmRunPanel.vue`）：一张卡片（`surface`、`line` 边框、面板圆角），顶栏写语言与在哪里运行（“Python · 浏览器中运行”），参数与墨色的运行按钮也在顶栏，窄处换行时参数与按钮一起到第二行；其下是代码，代码块自己的边框、圆角与外边距去掉（幻灯片的 `--slidev-code-margin`、`--slidev-code-radius` 设为 0）。在哪里运行由执行器自己说明（`Executor.runsIn`：`'browser'` 或 `'machine'`，可选；`src/client/place.ts`）：Pyodide、脚本 worker、WASI 与 WebGPU 的执行器在浏览器中，本地环境插件的执行器在本机（服务所在的机器）；`:env:` 的具名环境的执行器没有说明（或还没有登记）时按头部为它声明的 `kind`（`jupyter` 为远端环境，`devcontainer` 为本机，`wasi`、`webgpu` 为浏览器，其他写环境名）；没有说明的执行器只写语言。运行之前写路由器会选的执行器，运行之后写实际运行的（`RunResult.executorId`）。运行后输出在 `sunk` 的面板中，标题是“输出 · <秒数> 秒”（`RunResult.durationMs`；录制的输出只写“输出”），幻灯片与放映视图中宽度够时在代码旁边，窄处（网页的正文栏、手机）在代码之下；运行之前代码占满宽度。网页、放映视图与幻灯片是同一个组件。
 
@@ -1480,10 +1489,10 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
   - 步骤条取 `useSlideContext()` 的 `$clicksContext`，每步一段，已到的为强调色，其余为 `line-strong`；它的可访问名称是“第 n 步，共 m 步”。
   - 底部的位置由版式的 `padding-bottom` 留出，运行面板按幻灯片测得的剩余高度不会盖住它。
 - `cover` 版式：标题大而靠下，上方一条强调色的短线；底部只有页码。Slidev 的其他内置版式（`center`、`two-cols` 等）取同一套颜色与字体。
-- 代码按步骤高亮行时（`{code-ref}` 的 `:steps:`、`:emphasize-lines:`），Slidev 把其余的行设为 30% 的不透明度，对比度只有 1.6 至 2.5:1。书卷改为把这些行统一画成墨色与 `surface` 按 62% 混合的灰色，不带语法颜色：亮色约 4.8:1，暗色约 6.1:1，达到 AA，同时仍比高亮的行淡。
+- 代码按步骤高亮行时（`{code-ref}` 的 `:steps:`、`:emphasize-lines:`），Slidev 把其余的行设为 30% 的不透明度，对比度只有 1.6 至 2.5:1。书卷把这些行统一画成墨色与 `surface` 按 62% 混合的灰色，不带语法颜色：亮色约 4.8:1，暗色约 6.1:1，达到 AA，同时仍比高亮的行淡。
 - 主题把 `--slidev-theme-background`（Slidev 以 `--slidev-theme-*` 命名主题的颜色）设为 `surface`，供画在幻灯片之外的界面取用：宿主的演讲者面板（`PresenterPanels.vue`）以它为底色，因此书卷的演讲者视图中面板随暗色切换。面板直接用令牌，任何主题下都是如此。
-- `setup/vite-plugins.ts` 把每个根目录（文稿、主题与插件）在页面中运行的 setup（`main`、`code-runners`、`mermaid` 等，不含 `vite-plugins` 这类在 Node 中运行的）、`components/` 与 `layouts/` 加进 Vite 的 `optimizeDeps.entries`。Slidev 的入口只经虚拟模块到达插件的 setup 与组件，Vite 的扫描不跟进去，插件引用的包（yjs、driver.js、markmap-view 等）于是在第一个页面加载时才被发现，分几轮打包，每一轮之后重新载入页面（打印页因此也会重新载入，见 5.8 节）。加进入口后它们在服务器启动时一次打包。插件装在 `node_modules` 中时 Vite 的入口不含那里的文件，这时仍是旧的行为（渲染端为生成的文稿写的 `vite.config.ts` 可以列出插件的这些目录，交给以后的工作包）。
-- 生成的文稿自己的样式 `src/deck/style.css`（代码的来源、录制的输出、卡片与栅格、现场代码的运行器、打印）不论主题都写进文稿，颜色同样用令牌。运行器（Monaco Runner）的编辑器高过 15em、输出高过 7.5em 时在其中滚动；这两条规则原在执行插件的 `styles/index.css`。
+- `setup/vite-plugins.ts` 把文稿、主题与插件的本地根目录中在页面运行的 setup（`main`、`code-runners`、`mermaid` 等，不含在 Node 中运行的 `vite-plugins`）、`components/` 与 `layouts/` 加进 Vite 的 `optimizeDeps.entries`。这些显式入口让 Vite 能在启动时发现虚拟模块背后的依赖，避免首次加载页面或打印页时反复预构建与重新加载。安装在 `node_modules` 中的源码包由渲染端的 `optimizeDeps` 配置处理，CommonJS 与 ESM 的边界见 4.2 节。
+- 生成的文稿自己的样式 `src/deck/style.css`（代码的来源、录制的输出、卡片与栅格、现场代码的运行器、打印）不论主题都写进文稿，颜色同样用令牌。运行器（Monaco Runner）的编辑器高过 15em、输出高过 7.5em 时在其中滚动。
 
 **验收**：`e2e/plugin-ui.spec.ts`（测试文稿 `e2e/fixtures/plugin-ui`）：
 
@@ -1492,7 +1501,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 - 运行面板：顶栏写“Python · 浏览器中运行”并有运行按钮，在代码之上；运行后输出写“输出 · <秒数> 秒”，在幻灯片上位于代码旁边；网页与放映视图中的顶栏相同；
 - 练习的对错标记、高对比度开关与分步执行的上一步、下一步是宿主的线性图标，没有字形。
 
-`e2e/exec-remote.spec.ts` 另外检查令牌对话框用宿主的字段并达到 AA（需要 Docker）。`e2e/smoke.spec.ts` 的 PDF 导出与示例讲义的构建写同一个 `.presmium/slides`，用 Playwright 的测试锁（`lock`）不同时运行。这个导出在全套运行的负载下曾失败（空白的 PDF 丢失链接，或等不到页面的 `body`），原因与改法见 5.8 节：打印页在网络空闲时还没挂载应用，或页面的请求因主机的网络变化而失败；不靠重试。
+`e2e/exec-remote.spec.ts` 另外检查令牌对话框用宿主的字段并达到 AA（需要 Docker）。`e2e/smoke.spec.ts` 的 PDF 导出与示例讲义的构建写同一个 `.presmium/slides`，用 Playwright 的测试锁（`lock`）不同时运行。打印页的挂载等待与请求失败处理见 5.8 节。
 
 示例讲义两种形态的逐页截图人工对比。
 
@@ -1502,7 +1511,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 
 `pnpm studio` 首次复制课程到独立的 `.presmium/cs336-workspace`，之后复用用户可编辑的副本。`pnpm demo:check` 检查全部文稿；`pnpm demo:build` 构建全部幻灯片、notebook 和课程站点，站点在 `examples/cs336/dist/web/`。上游录制值不在构建时重新运行，构建不要求 CUDA 或外部模型服务。
 
-功能回归使用 `e2e/fixtures/<组>/` 的私有文稿。旧 BPE 讲义仅作为 `e2e/fixtures/regression/` 保留，源码也移入该夹具；代码引用的历史版本行为由专用代码用例验证。它不是公开示例。冒烟和功能测试从该目录解析依赖；课程用例检查 17 讲导航、原始步骤前进回退和页面资源。`lang` 决定两种形态的界面语言（5.7 节）。
+功能回归使用 `e2e/fixtures/<组>/` 的私有文稿。`e2e/fixtures/regression/` 中的 BPE 文稿仅用于私有回归，代码引用的历史版本行为由专用代码用例验证。冒烟和功能测试从该目录解析依赖；课程用例检查 17 讲导航、原始步骤前进回退和页面资源。`lang` 决定两种形态的界面语言（5.7 节）。
 
 ## 7. 测试策略
 
@@ -1525,7 +1534,7 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 - 需要专用文稿的用例（宿主适配、另一种界面语言、性能、课堂服务）在 `beforeAll` 中把测试文稿写到 `e2e/fixtures/regression/.presmium/e2e-*`（不入库，插件从示例文稿的依赖中解析），用真实的 `presmium build` 构建，再在空闲端口上服务产物。测试文稿放在 `e2e/fixtures/<组>/`。
 - 性能用例（`e2e/perf.spec.ts`）是单独的 Playwright 项目，依赖 Chromium 项目，在其他用例结束后运行，计时不与其他用例争用机器。单独运行它要加 `--no-deps`：`pnpm exec playwright test e2e/perf.spec.ts --no-deps`；不加时 Playwright 先运行全部 Chromium 用例。
 - 其他浏览器：`PRESMIUM_E2E_BROWSERS` 列出冒烟用例另外运行的浏览器，默认 `firefox,webkit`。没有安装，或在本机无法启动的浏览器（WebKit 需要很多 Linux 主机缺少的系统库）被跳过，并提示安装命令（`pnpm exec playwright install <浏览器>`、`pnpm exec playwright install-deps <浏览器>`）；WebKit 也可以在 Playwright 的 Docker 镜像中运行。真实的 Safari、Edge 与前一个大版本在发布前手工检查并记录。
-- 集成测试分两个 Vitest 项目（`vitest.config.ts`）：`integration` 与 `export`。`export` 是运行 `slidev export` 的三个测试文件（`render-slides/test/slides.test.ts`、`addon-publish/test/export.test.ts`、`diff.test.ts`），在 `integration` 结束后运行：`slidev export` 用 Slidev 的开发服务器服务文稿，等浏览器空闲后打印，机器被其他用例的构建占满时它会在页面就绪前截图或超时。单独运行一组：`pnpm exec vitest run --project export`。
+- 集成测试分两个 Vitest 项目（`vitest.config.ts`）：`integration` 与 `export`，测试文件默认使用一个 worker，控制真实构建、服务与浏览器的资源占用。`export` 是运行 `slidev export` 的三个测试文件（`render-slides/test/slides.test.ts`、`addon-publish/test/export.test.ts`、`diff.test.ts`），在 `integration` 结束后运行：`slidev export` 用 Slidev 的开发服务器服务文稿，等浏览器空闲后打印，机器被其他用例的构建占满时它会在页面就绪前截图或超时。单独运行一组：`pnpm exec vitest run --project export`。
 - 集成测试运行 CLI 用 `@lincyaw/cli/testing` 的 `presmium(cwd, args, env?)`：它去掉 Vitest 设置的 `NODE_ENV=test`，构建与作者、端到端用例在同一模式下运行。端到端的测试文稿与服务用 `e2e/fixtures/deck.ts` 的 `useFixture`、`buildFixture`、`serve`、`startDev`、`openSlide` 等。
 - 手工起的静态服务器在重新构建后要重启：sirv 启动时读取一次文件列表，之后新生成的文件（带哈希的 `assets/`）它找不到，页面报 404 或白屏；经常重建时用 `sirv --dev` 启动，它每次请求都查找文件。
 
@@ -1580,25 +1589,21 @@ PDF、PNG 等静态导出中，插件组件显示 IR 的 `fallback`，不显示�
 | Slidev 绘图的状态 `drawingState`（`@slidev/client` 导出，形状为页号到该页 SVG 的映射，文档没有描述）与开发服务器保存标注的文件名 `<页号>.svg`：舞台插件把标注写回文稿的 `.presmium/drawings/`，删除一页的全部标注时删去该文件 | `packages/addon-stage/setup/main.ts`、`packages/addon-stage/setup/vite-plugins.ts` | `addon-stage/test/drawings.test.ts` | Slidev 提供写回标注的钩子后改用 |
 | VitePress 默认主题给侧栏与上下章链接的屏幕阅读器标签的元素 ID `sidebar-aria-label`、`doc-footer-aria-label`，与导航栏菜单按钮的类名 `.VPNavBarHamburger`、`.VPNavBarExtra > button`（它们的 `aria-label` 写死为英文；主题配置没有这些标签）：网页主题在页面渲染后与每次换页后按文稿语言改写它们的文字与 `aria-label`（5.7 节） | `packages/web/src/client/theme.ts` | `e2e/web.spec.ts`“a zh-CN deck speaks Chinese around the content” | VitePress 提供对应的主题配置后改用 |
 | Slidev 的 Monaco Runner 的内部 DOM：运行之前的提示（“Click the play button to run the code”）是 `.slidev-monaco-container` 中 UnoCSS 类 `.opacity-50` 的元素，不透明度 0.5 时对比度低于 AA；幻灯片样式把它提高到 0.75（带 `live` 或 `both` 的代码块写成 `{monaco-run}` 之后） | `packages/render-slides/src/deck/style.css` | `e2e/publish.spec.ts`“every slide reaches WCAG AA” | Slidev 提供运行器提示的样式变量后改用 |
-| VitePress 默认主题的内部 DOM（文档只给出 CSS 变量、布局插槽与主题配置）：网页样式中导航栏标题的 `.VPNavBar .container > .title`、`.VPNavBarTitle a.title > span`（长标题换行而不压住导航），侧栏一级条目的 `.VPSidebarItem.level-1 > .item .text`（章的字重）。能改用 CSS 变量、布局插槽或侧栏项的 `class` 的选择器已经改掉，这里列出的是保留的 | `packages/web/src/client/style.css` | `e2e/web.spec.ts` 的长标题用例与侧栏字重的断言 | VitePress 提供对应的 CSS 变量或插槽后改用 |
-
-已经去掉的依赖：高对比度主题原先按 Slidev 的类名 `.slidev-code-dishonored` 提高被代码步骤淡化的行的不透明度。现在发布插件读取代码行（Shiki 输出的 `.line`）的计算不透明度，给低于 0.6 的行加上自己的 `data-pm-dimmed` 属性（`packages/addon-publish/src/client/code-lines.ts`），由 `e2e/publish.spec.ts`“every slide reaches WCAG AA”守护。
+| VitePress 默认主题的内部 DOM（文档只给出 CSS 变量、布局插槽与主题配置）：网页样式中导航栏标题的 `.VPNavBar .container > .title`、`.VPNavBarTitle a.title > span`（长标题换行而不压住导航），侧栏一级条目的 `.VPSidebarItem.level-1 > .item .text`（章的字重） | `packages/web/src/client/style.css` | `e2e/web.spec.ts` 的长标题用例与侧栏字重的断言 | VitePress 提供对应的 CSS 变量或插槽后改用 |
 
 dsh 的客户端接口中没有文档的部分（客户端包的工厂格式 `__ModuleLoader__.load`、ui-slots 与 client-store 的类型、外壳的模块表），以及只有 README 描述的布局契约（`root` 的子槽位与 `ctx.layout`），只出现在 `@lincyaw/dsh` 的客户端部分，由升级闸门的第 3 组用例守护（第 13 节）。
 
-### 9.2 设计取舍与扩展点缺口
+### 9.2 设计取舍
 
-已经做出的取舍：
-
-| 事项 | 现状与理由 | 决定 |
+| 事项 | 当前设计与理由 | 行为定义 |
 |---|---|---|
-| 共享内核中的业务契约 | `@lincyaw/kernel` 除元能力外还定义了几个插件共用的业务服务契约：`EXECUTOR` 与 `RunRequest`、`SessionService`、`Role`、`ClassroomStore`，以及代码节点的 `run` 与 `outputs`。这是 4.5 节有意的选择：服务的提供方与使用方分属不同插件，契约只能放在双方都依赖的包中；契约放在内核 | 保留在内核包中。契约还有语音、智能体、修改历史、确认与操作词汇，`contracts.ts` 按领域拆为几个模块并统一再导出，入口 `@lincyaw/kernel/contracts` 不变。移到单独的契约包成本很低，契约稳定之后再评估 |
-| 网页的 Service Worker 手写 | 网页渲染端在 VitePress 构建完成后生成约 70 行的 Service Worker（`packages/web/src/node/offline.ts`）：此时页面、搜索索引与 Pyodide 运行时都已写出，按产物内容计算缓存版本，并把无扩展名的页面地址对应到 `.html`。`vite-plugin-pwa` 只用于幻灯片形态：VitePress 在 Vite 客户端构建之后才渲染 HTML 页面，在 Vite 构建中生成的预缓存清单拿不到这些页面，需要专门的 `@vite-pwa/vitepress` 集成 | 保留手写的 Service Worker：它预缓存产物中的全部文件，所以 WASI 运行时、发布的文件与同站点下讲授的片段都在离线范围内，不需要新的机制。不再计划换成 `@vite-pwa/vitepress`。网页形态的 Service Worker 改为在安装时只预缓存站点与内容，执行运行时（`wasi/`、`pyodide/`、jax-js）在第一次使用时缓存，另有“保存以离线使用”一次取得；幻灯片形态照旧全部预缓存。发布的文件按 `publishedUrl` 的写法（每段一个 URL 组件）列入缓存，与页面请求它们的地址一致。网页一侧的改动在 `packages/web/src/node/offline.ts` |
-| 网页按插件 ID 读取发布插件的配置 | `packages/web/src/domain/config.ts` 读取 `presmium.publish` 的 `offline` 决定是否生成 Service Worker：网页渲染端因此知道一个插件的配置键 | 保留。这是一个只读的配置键，代价小于为此增加渲染端扩展点；没有第二个插件需要参与网页构建（文件发布属于网页渲染端自己） |
-| 幻灯片形态中的现场执行代码块 | 带 `:run: live` 或 `:run: both` 的普通代码块在网页形态中有运行按钮；幻灯片渲染端把它写成普通代码块，没有运行按钮，只有执行面板能在幻灯片中运行代码。`setup/code-runners.ts` 已经通过 `executor` 服务支持 Slidev 的 Monaco Runner（Python、JavaScript、TypeScript），但 MyST 源码无法写出 `{monaco-run}` | 幻灯片渲染端把带 `live` 或 `both` 的代码块写成 Slidev 文档化的 `{monaco-run}` 代码块，执行插件的 code runner 把 `executor`、`session` 放进请求，富输出按 Slidev code runner 的 HTML 输出显示 |
-| 课堂笔记依赖 IR 运行时的标记 | 课堂插件的笔记图层按 `.pm-section[data-section]`、`.pm-block[data-block]` 定位章节与块。这两个属性因此是 IR 运行时对外的契约，修改时须同时修改笔记图层 | 正式作为 IR 运行时对外的标记契约：讲授的指针录制与工作台的点选同样据此定位，`domain-model.md` 第 9 节列出，`e2e/web.spec.ts`（每个块渲染为 `.pm-section[data-section] .pm-block[data-block]`）与 `e2e/classroom.spec.ts`（笔记按这两个属性定位）守护。不另加挂载点接口 |
-| 首选执行器 | 代码块的 `:executor:` 在浏览器中只是首选：指定的执行器没有注册或不支持该语言时，由路由按语言与优先级另选 | `RunRequest.executor` 精确匹配，指定的执行器不可用时返回失败，显示录制输出，不回退到其他执行器 |
-| 本地环境的 Python 运行器 | 容器执行器在容器中运行自己的 Python 运行器（`packages/addon-exec-local/src/node/runner.py`），按 `RunRequest` 的约定处理参数、标准输入与文件，与执行插件的运行器（`packages/addon-exec/src/runner.py`）规则相同。两个插件包不互相引用（第 3 节），所以各有一份 | 运行器作为共享内核的资源发布（`@lincyaw/kernel/runner.py`，`package.json` 的 `exports` 指向文件；内核不读它，只发布），两个插件共用，会话与富输出也只实现一次 |
+| 共享内核中的业务契约 | 跨插件共用的服务契约放在 `@lincyaw/kernel`，按领域分成模块并统一导出。提供方与使用方都依赖内核，插件之间不需要互相引用 | 4.5 节 |
+| 网页的 Service Worker | 在 VitePress 完成 HTML 渲染后生成，才能取得页面、搜索索引与内容文件的完整清单，并按内容计算缓存版本。执行运行时单独缓存，避免第一次打开网页就下载全部运行时 | 4.6 节“离线”；授课准备见 `.agents/skills/presmium-present/references/delivery.md` |
+| 网页读取发布插件的配置 | 网页渲染端读取 `presmium.publish.offline` 决定是否生成 Service Worker。只有这一个配置键参与网页构建，为它增加扩展机制的成本高于直接读取 | `packages/web/src/domain/config.ts` |
+| 幻灯片中的现场代码 | 渲染端把现场代码写成 Slidev 公开支持的 `{monaco-run}`，执行插件的 code runner 转交给执行器服务。渲染端负责媒介语法，执行插件负责运行语义 | 4.6 节“幻灯片中的现场代码” |
+| 页面中的锚点 | `.pm-section[data-section]`、`.pm-block[data-block]` 是 IR 运行时的公开标记。笔记、讲授与工作台共用它们定位，不各自识别页面结构 | `domain-model.md` 第 9 节 |
+| 指定执行器 | `RunRequest.executor` 精确选择执行器，失败时显示原因与已有录制。自动切换执行器会改变环境、会话与运行结果 | `ir.md` 2.7 节、4 节“执行缓存” |
+| Python 运行器 | Node、Pyodide 与容器共用 `@lincyaw/kernel/runner.py`。内核仅发布这份资源，不加载 Python；各适配器负责启动它 | 4.6 节 |
 
 ### 9.3 框架的已知问题
 
@@ -1624,7 +1629,7 @@ dsh 的客户端接口中没有文档的部分（客户端包的工厂格式 `__
 | 文稿目录中的 Node 插件与渲染端包（`presmium dev`、`serve`、`build`、`check` 都接受相对路径与文稿目录的 `node_modules`） | 在 `presmium` 进程中运行，拿得到进程的全部环境 | 无 |
 | 文稿的组件与原始 HTML（浏览器中） | 以开发服务器的源运行，能以本机作者（所有者）的身份调用 `/__presmium/` 路由，包括回答确认、接受审阅（同源，`Origin` 检查不挡） | 浏览器的沙箱；`/mcp` 另要求令牌 |
 
-此外，审阅进行中作者对同一文档目录的改动：审阅以整个文档目录与快照比较，作者的改动出现在审阅的差异中，与 agent 的改动一起被接受或拒绝；拒绝某个文件时从审阅开始时的快照恢复，会覆盖作者对这个文件的改动。
+此外，审阅进行中作者从磁盘上的其他编辑器直接改动审阅范围内的文件时，这些改动也进入审阅差异，与 agent 的改动一起被接受或拒绝；拒绝某个文件时从开始时的快照恢复，会覆盖其间的外部改动。
 
 `presmium serve --host`（局域网访问）另有：
 
@@ -1694,9 +1699,9 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
   - `presmium-mcp [文稿] [--allow <种类>]`（`@lincyaw/mcp` 的可执行文件）：在编译器上实现 `McpHost`，源文件（含 `{include}` 与编译的依赖）改动后在下一次调用时重新编译；与 CLI 一样带上随 CLI 安装的渲染端：编译器的 `bundled` 是 CLI 的包目录（`bundledDir`：文稿项目中安装的 `@lincyaw/cli`，从文稿目录向上的 `node_modules` 中找；没有时是 `presmium-mcp` 随之安装的 CLI；都没有时是 `@lincyaw/mcp` 自己的目录），检查同 `presmium check`；没有页面窗口，不列出 `get_position`、`get_classroom`、`navigate` 与课堂工具；也没有页面可以询问，所以只提供并直接允许 `--allow` 列出的种类（`operate` 给出 `run_code` 与 `build`）。标准输出只用于 MCP，插件的日志改到标准错误。编辑器的 MCP 配置写命令 `node <仓库>/packages/mcp/bin/presmium-mcp.mjs <文稿目录>`。
   - 放映时的确认：网页形态的放映视图与演讲者视图以 `position: fixed` 的覆盖层盖住了 VitePress 导航栏中的工具栏，所以两个视图的控制条各有确认入口（`@lincyaw/host` 的 `PmApprovals`，放映视图的控制条在底部，面板向上打开，`placement: 'above'`）；只开放映视图时也能回答 `navigate` 等的确认（`e2e/mcp.spec.ts`）。
 - **运营者设置**：`startServer` 接受 `settings`（插件 ID 到设置），交给各插件的 `ServerContext.settings` 与 `NodeServiceContext.settings`。`presmium dev`、`build`、`check` 读取工作区根目录 `presmium.workspace.yaml` 的 `settings`（没有该文件时为空），`presmium serve` 由工作区读取同一个键；都只在进程启动时读取一次，运行中改动配置文件不生效，直到运营者重启（`ir.md` 第 10 节）。
-- **生命周期**：`presmium dev` 启动时为文稿创建一次各插件的贡献，头部的 `plugins` 变化时照旧提示重启；`presmium serve` 在一份文档第一次被请求时创建它的贡献。Node 端服务（`services`）与贡献使用同一份文稿配置与运营者设置；服务端另外登记 `APPROVALS` 与 `MCP_ENDPOINT`，工作区登记 `REVISIONS`、`DOCUMENT_FILES` 与 `DOCUMENT_LOCKS`（4.5 节）。
+- **生命周期**：`presmium dev` 与 `presmium serve` 为被访问的文稿挂载插件的服务端贡献。`serverConfiguration(compilation)` 比较已加载插件的 ID、文稿的 `presmium` 配置与 `lang`；重新编译后这些值变化时，宿主关闭并卸下旧贡献，下一次请求用新的配置与 Node 服务快照挂载。只改正文不卸下贡献，课堂与其他有状态的连接因此保留。Node 服务的编译生命周期见 4.6 节；运营者的工作区设置在进程启动时读取，变化需重启。浏览器端插件或渲染端的组合变化仍按开发服务器的提示重启。服务端另外登记 `APPROVALS` 与 `MCP_ENDPOINT`，工作区登记 `REVISIONS`、`DOCUMENT_FILES` 与 `DOCUMENT_LOCKS`（4.5 节）。
 - **插件的来源**（4.2 节）：`presmium dev`、`serve`、`build`、`check` 都按文稿的 `plugins` 与 `renderers.<id>.package` 加载，另加运营者插件（`settings.presmium.workspace.plugins` 中声明了 `operator: true` 的），每份文档都加载它们。
-- **编译器的宿主选项**：`new Compiler(deck, options)` 的 `CompilerOptions`：`settings`（默认读取工作区根目录 `presmium.workspace.yaml` 的 `settings`，每个进程每个文件一次；文件读不出时是错误级诊断 `presmium.workspace`）、`services`（宿主的 Node 端服务，先于插件的登记）、`bundled`（随 CLI 安装的 Presmium 自己的包从哪里解析：CLI 的包目录）、`operatorDir`、`secret`。多人共用服务端时的 `trust`、`reserved`、`policy`、`scope`（读取范围）与凭据代理的选项已删除：`{include}`、`{literalinclude}`、链接与资源按真实文件读取，跟随符号链接，与 `presmium dev`、`build` 相同。运营者插件排在文稿的插件之前（同一令牌以运营者的实现为准；没有加入 IR 的 `config.plugins`，所以 IR 不变，渲染端也不加载它们的浏览器部分），文稿也列出的同一个包只加载一次。各插件的 `services(ctx)` 在插件加载时调用一次，用当时文稿的配置；`presmium dev` 中改动头部的 `presmium.<插件 ID>` 要重启才进入服务（同 `plugins`）。运营者目录由编译器按 10.5 节的规则得出（`operatorDir(root,given)`，`@lincyaw/compiler` 导出），`presmium dev`、`build`、`check` 读 `PRESMIUM_OPERATOR_DIR`；目录不创建，在工作区之中时是错误级诊断。
+- **编译器的宿主选项**：`new Compiler(deck, options)` 的 `CompilerOptions`：`settings`（默认读取工作区根目录 `presmium.workspace.yaml` 的 `settings`，每个进程每个文件一次；文件读不出时是错误级诊断 `presmium.workspace`）、`services`（宿主的 Node 端服务，先于插件的登记）、`bundled`（随 CLI 安装的 Presmium 自己的包从哪里解析：CLI 的包目录）、`operatorDir`、`secret`。`{include}`、`{literalinclude}`、链接与资源按真实文件读取，跟随符号链接。运营者插件排在文稿的插件之前（同一令牌以运营者的实现为准；没有加入 IR 的 `config.plugins`，所以 IR 不变，渲染端也不加载它们的浏览器部分），文稿也列出的同一个包只加载一次。Node 端服务的编译生命周期见 4.6 节；服务端贡献的生命周期见本节“生命周期”。运营者目录由编译器按 10.5 节的规则得出（`operatorDir(root,given)`，`@lincyaw/compiler` 导出），`presmium dev`、`build`、`check` 读 `PRESMIUM_OPERATOR_DIR`；目录不创建，在工作区之中时是错误级诊断。
 - **端口**：`presmium dev` 的服务端默认取空闲端口（`--server-port` 指定），启动时在渲染端的地址之后打印 `server  <地址>` 与 `mcp  <地址>/mcp (its token is in <状态文件>)`；`presmium serve` 用 `--port`（默认 4310）与 `--host`（默认 `127.0.0.1`，10.1 节），打印 `serve  <地址>`、局域网地址（有 `--host` 时）、`workspace  <根目录>` 与 `mcp  <地址>/mcp (its token is in <状态文件>)`。
 - `startServer(options)`（`@lincyaw/server`）的选项：`mode`（`dev` 或 `serve`）、`host`、`port`、`document(dir)`（文档目录到 `ServedDocument`：编译器加载的插件及其配置、Node 端服务、运营者设置与运营者目录，`servedDocument(compilation)` 由编译结果得出；第一次请求该文档时创建贡献）、`serverHost`（`ServerHost`：`documents()`、`compile(document)`、`check(document)`、`build(document,{ to })`、`run(document,{ section,block },signal)`；`presmium dev` 的实现在 `packages/cli/src/host.ts`，以开发循环最近一次的编译为准）、`settings`、`approvals`（种类到 `off`、`ask`、`allow`）、`forward()`、`operatorDir`、`stateFile`、`mcp`（挂载 MCP 服务；没有时带有效令牌的请求得到 501）、`env`。`mode` 为 `dev` 时 `host` 只能是本机的地址，否则启动失败。返回值的 `services`（`APPROVALS`、`MCP_ENDPOINT`）由宿主交给编译器（`CompilerOptions.services`），`control` 给出窗口的位置、`go`、`session` 与状态摘要（供 MCP）。请求经 Node 的请求先判断（来源、代理、转发），其余交给 `@hono/node-server` 转换为 Fetch API；路由处理函数出错时返回 500 与原因。
 - `presmium serve` 在 `@lincyaw/workspace` 中（`serveWorkspace`）。每份文档一个按需创建的编译会话（`src/node/session.ts`：第一次被请求时编译，此后监听它读过的文件，编译依次进行），编译器选项为 `execution.env: 'serve'` 与宿主服务（服务端的 `APPROVALS`、`MCP_ENDPOINT`，工作区的 `REVISIONS`、`DOCUMENT_FILES`、`DOCUMENT_LOCKS`）。工作区的路由作为一个只有服务端贡献的插件 `presmium.workspace` 挂在每份文档（与首页，文档 `''`）上：`GET documents`（读者）、`POST documents`（编辑者：`{ op: create | rename | copy | delete,dir,to?,title?,template? }`）、`GET revisions`（文档页面默认只列出本文档的修改；每项另有文档操作 `operation`、撤销的提交 `reverts`，撤销一次撤销的另标 `redo: true`）、`POST revisions/revert`（冲突时 409 与文件）。工作区站点：网页渲染端的 `devSite` 是一个路由，按路径中最长的文档目录把请求（含 HMR 的 WebSocket）交给该文档自己的 VitePress 开发服务器（`base` 为 `/<目录>/`，第一次请求时以 `compile` 的 IR 启动），其余路径交给首页的开发服务器；`buildSite` 先构建首页再把每份文档构建到 `<out>/<目录>/`，每份文档有自己的搜索索引，其中另含其他文档的章节。文档的插件由 IR 的 `config.plugins` 给出：工作区把它换成编译器实际加载的包目录（绝对路径），站点只加载这些；站点自己的插件（`RenderContext.plugins`）是工作区的浏览器插件。站点的开发服务器不在工作区中生成项目（serve 的缓存目录），设 `server.allowedHosts: true` 与 `server.fs.allow`，IR 端点在文档的 `base` 下（`<base>@lincyaw/ir`）。`forward()` 给出本进程中站点路由的地址。：文档操作与撤销经 `DOCUMENT_LOCKS` 加锁，锁的持有者为 `agent:<任务 ID>`、`document:<操作>`、`revision:revert` 或 `assistant:revert`；文档被别人持有时 `documents` 与 `revisions/revert` 回答 409，回答体在 `error` 旁另有 `locked: { document, holder }`，页面按界面语言说明是谁持有。复制文档时一并复制 `.presmium/` 中属于文档的部分（执行的录制 `freeze/`、圈画 `drawings/`、`assets/`、合成缓存 `speech/` 与 `speech.lock.json`、`anchors.lock.json`），逐字节相同，生成的工作目录不复制。文档操作的提交尾注 `Presmium-Origin` 写明操作与目录（`document rename guide manual`；目录中的空白与 `%` 按百分号编码），撤销的尾注写它撤销的操作，历史面板据此显示本地化的标签，日期按界面语言格式化；撤销一次撤销的提交在 `GET revisions` 中标为 `redo: true`（面板显示“重做”标签）。在磁盘上新建或删除的文档在下一次请求站点时被发现（至多每秒检查一次）。`PRESMIUM_DEBUG` 让 `presmium serve` 与 `presmium dev` 的服务端与插件写出调试行（标准错误）。
@@ -1705,7 +1710,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 - **`presmium dev`**：只监听本机。服务端检查 `Host` 是 `localhost`、`127.0.0.1` 或 `[::1]`（任何端口），`Origin` 缺省或同样是本机的地址（任何端口，因为页面来自渲染端的开发服务器，经它的代理转发），挡住 DNS 重绑定与其他网站的请求（MCP SDK 的 `localhostAllowedHostnames`、`localhostAllowedOrigins` 做法相同）。成员是本机作者，角色为所有者。`/mcp` 另外要求 `Authorization: Bearer <令牌>`，接受两种令牌：每个进程随机生成的令牌，写入 `<文稿>/.presmium/server.json`（权限 0600，不入库；启动时打印它所在的文件），供作者在编辑器中使用的 agent（Claude Code、Codex 等）连接，模式为 `author`；以及服务端经 `MCP_ENDPOINT` 为 dsh 会话签发的令牌（见下）。
 - **`presmium serve`**：同样的检查，唯一的成员是本机作者（所有者），没有登录。`--host` 时（10.1 节）`Host` 与 `Origin` 另可以是监听的地址与本机的名字；同站的 `Origin` 检查照旧，另一站点的页面发来的请求得到 403。转发到工作区站点的请求来自局域网的名字时，服务端以站点自己的本机名字为 `Host`（与 `Origin`）转发，站点的路由与开发服务器只接受本机名字的请求。`/mcp` 与 `presmium dev` 一样接受两种令牌：每个进程随机生成的令牌（模式为 `author`，供本机作者的外部 agent 连接），写入 serve 的状态目录中的 `server.json`（`$XDG_CACHE_HOME/presmium/serve/<工作区的哈希>/server.json`，权限 0600，在工作区之外），启动时打印 `mcp  <地址>/mcp (its token is in <这个文件>)`；以及经 `MCP_ENDPOINT` 签发的令牌。`--host` 时局域网中的设备不经令牌访问不了 `/mcp`。
-- **角色**：契约保留成员与角色（`Member`、`MemberRole`、`Route.role`）：路由与代理按角色检查，本机作者是所有者，满足全部角色；工作区配置的 `members` 不再读取。只为读者存在的分支（讲授路由的读者视图、MCP 中读者到学生视图的映射、`ServerHost` 与 MCP 的学生视图）已删除。
+- **角色**：路由与代理按 `Member`、`MemberRole`、`Route.role` 检查，本机作者是所有者，满足全部角色。服务端提供完整文稿；学生版由构建时的受众筛选生成。
 - **学习者的内容**：读者得到内容的途径是学生版的构建（`presmium build --audience student`），发布为静态站点；服务端与 MCP 只给出完整的文稿。编译器另有 `Compilation.forAudience(name)`：在完整编译的文稿上做同样的筛选（去掉受众不含它的章节、块、块中标了受众的节点与位于被去掉的章节与块中的诊断，压缩步骤，章节重新编号，块 ID 不变，在视图中重新解析交叉引用，`ir.md` 2.11 节），`build` 的 `audience` 选项用它构建一份完整编译的学生版并扫描写出的文件（诊断不引用被去掉的内容），译本同样去掉教师内容（4.10 节）。因为这时插件的编译步骤与编译时执行已经运行，插件与代码从教师内容派生、写到别处的文字不在筛选之内：`forAudience` 因此按泄漏扫描的句子检查留下的块，含有它们的块也去掉，并在视图的诊断中报告位置；插件的编译步骤写进 `hints.slides` 的幻灯片跟随的键按视图改写（`ir.md` 2.11 节）；`presmium build --audience student` 在编译步骤之前筛选并扫描产物。用例：`cli/test/audience.test.ts`、`compiler/test/audience.test.ts`。
 - **路由的角色**：挂载点按 `Route.role`、`ProxySpec.role`（默认 `editor`）检查；不满足时返回 403，插件不各自检查。
 - `presmium dev` 的 `.presmium/server.json` 与 `presmium serve` 状态目录中的 `server.json`（权限 0600）记 `{ url, mcp, token, pid }`（`startServer` 的 `stateFile`）。`Host` 与 `Origin` 的检查在 `packages/server/src/auth.ts`（`authenticate`，本机的名字由 `machineHosts(监听的地址)` 给出）；主机名不分大小写、去掉端口，不带方括号的 IPv6 地址（如监听地址 `::1`）读作 `[::1]`。`ServerContext.secret` 读服务端进程的环境。
@@ -1715,7 +1720,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 - **控制通道**：`useServer().available` 时，宿主在 `startHost` 中连接 `/__presmium/presmium.server/control`（SSE 接收，POST 报告）。页面报告：自己的位置（`navigation` 服务的位置与视图）、视图角色，以及 `STATUS` 中各插件的摘要（变化时，至多每秒一次）。服务端发来：`go`（经 `navigation.go` 跳转）、`session`（经 `session` 服务开始或结束课堂）、`approval`（确认请求）。MCP 的 `get_position` 返回该成员处于放映或演讲者视图的窗口最近报告的位置，没有时返回任一窗口的位置；`navigate` 向这些窗口发出 `go`，听众视图照旧经已有的通道跟随。：位置带章节 ID（`NavigationPosition.section`），`get_position` 按 ID 找章节（文稿中已没有这一节时 `section` 为 null），不用窗口的章节序号，步号按完整文稿的编号（窗口报告的 `trail`，10.2 节）；编辑者与所有者的放映窗口排在其他窗口之前，读者声称的 `presenter` 角色只对他自己算数；`get_classroom` 只取编辑者与所有者窗口报告的课堂摘要（演讲者窗口优先），读者的页面报告的空闲状态不覆盖教师的。两种形态的位置都带章节 ID：网页形态取 IR 运行时的章节，幻灯片形态取每张幻灯片 frontmatter 的 `presmiumId`（addon-core 的编译步骤写入，`ir.md` 2.11 节）。
 - **确认**：`APPROVALS` 按种类的策略处理：`off` 时这类操作不提供（MCP 不列出对应的工具），`ask`（默认）时经控制通道发出请求；任一有资格的窗口回答即生效，50 秒内（低于 DeepSeek Harness 调用 MCP 工具的 60 秒超时）没有回答视为拒绝。`allow` 只能由本机作者用 `presmium dev --allow <种类,…>` 或工作区所有者在 `presmium.workspace.yaml` 的 `approvals` 中设置，文稿不能设置。
-- **按范围分发**（`ApprovalScope`，4.7 节）：`content` 范围的请求发给 `member` 的窗口（没有指定成员时发给全部编辑者与所有者）；`workspace` 范围的请求（工作区配置、确认策略、运营者设置、同意记录、文档目录之外的路径、agent 的 shell 与网络权限请求）只发给所有者的窗口，服务端只接受所有者对它的回答。没有标明范围的请求按 `workspace` 处理。`presmium dev` 与 `presmium serve` 中唯一的成员是所有者，两种范围都发给本机作者的窗口（`--host` 时也包括局域网中其他设备上的窗口）。
+- **按范围分发**（`ApprovalScope`，4.7 节）：`content` 范围的请求发给 `member` 的窗口（没有指定成员时发给全部编辑者与所有者）；`workspace` 范围的请求只发给所有者的窗口，服务端只接受所有者对它的回答。没有标明范围的请求按 `workspace` 处理。`presmium dev` 与 `presmium serve` 中唯一的成员是所有者，两种范围都发给本机作者的窗口（`--host` 时也包括局域网中其他设备上的窗口）。
 - **确认界面**：宿主在 `PmToolbar` 中加入一个只在有待确认请求时出现的入口，两种形态都显示：说明、发起方、允许与拒绝。
 - **控制通道的消息**：`GET /__presmium/presmium.server/control?window=<窗口 ID>&document=<文档>` 是 SSE，事件有 `ready`（`{ window }`）、`approval`（`{ id,request }`，打开时补发这个窗口可以回答的、仍在等待的确认）、`settled`（`{ id,allow }`）、`go`（`{ slide,step,view }`）与 `session`（`{ action: 'start' | 'end',name }`）。`POST` 同一路径：`{ window, type: 'report', position, role, status }`（窗口未知或属于其他成员时 404）与 `{ window, type: 'answer', id, allow }`（200；没有这个确认 404；这位成员不能在这里回答 403）。`hello` 返回 `{ member, document }`。页面读完每个 `POST` 的响应体（否则浏览器一直算它在进行中）。一个确认 50 秒（`approvalTimeoutMs`）没有回答视为拒绝，服务端关闭时全部视为拒绝。
 
@@ -1723,7 +1728,7 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 
 - **本机**：`presmium serve [目录]` 一条命令启动工作区服务；目录中没有 `presmium.workspace.yaml` 而有 `lecture.md` 时，作为只有一份文档的工作区。工作区必须在 git 仓库中，否则编辑功能不可用并提示 `git init`。`--host` 让同一用户在局域网中的其他设备上使用（10.1 节）。
 - **运营者目录**：存放运营者的数据（默认的同意记录目录 `consent/`），在任何工作区与文档目录之外，不属于任何文档，`REVISIONS` 从不提交它。它是用户的状态目录 `${XDG_STATE_HOME:-~/.local/state}/presmium/operator/<工作区标识>/`（标识是工作区根目录真实路径的 sha256 的前 16 位十六进制数），`presmium dev`、`build`、`check`、`serve` 与 `presmium-speech consent` 按同一规则找到它，`--operator-dir` 或 `PRESMIUM_OPERATOR_DIR` 可以另行指定（同样不能在工作区之中）；插件经 `NodeServiceContext.operatorDir`、`ServerContext.operatorDir` 得到它，agent 对它的权限请求一律拒绝（10.4 节）。
-- **多人使用**：每人一个工作区，由 hub 托管模板给出（1.1）。容器编排与 Kubernetes 的工作区部署模板已删除。
+- **多人使用**：每人一个工作区，由 hub 托管模板给出（1.1）。
 - **远端环境**：`templates/env/compose/` 与 `templates/env/kubernetes/README.md`（Zero to JupyterHub 的 `values.yaml` 片段，按 CPU、GPU、MIG 划分的配置，gVisor 的 `runtimeClassName`，回收设置，以及 agent-sandbox 的模板）只给文档与清单片段，不维护 Helm chart。集群、GPU Operator、gVisor 或 Kata 的安装、入口与证书由用户负责。
 - 静态构建产物（含学生版）仍可发布到任意静态托管；课堂用单独的 `presmium-classroom-server`。
 
@@ -1734,23 +1739,22 @@ presmium serve（工作区，一个进程；默认只监听本机，--host 时�
 - **环境变量**：每个 Node 端执行器（执行插件的子进程、本地环境插件的容器、WASI 与 Jupyter 的编译时客户端、WebGPU 录制所启动的 Chromium）只给代码清理过的环境 `RunContext.env`。`presmium build`、`check`、`dev`：进程的环境去掉全部 `PRESMIUM_` 开头的变量与名字以 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 结尾的变量；`presmium serve`：只有 `PATH`、`LANG` 与 `LC_*`、`TZ`、`TMPDIR` 与 `HOME`（每个工作区一个临时目录）。两者都加上运营者设置 `settings.presmium.exec.passEnv` 列出的变量。这只挡住代码经自己的环境拿到凭据；同一 uid 的进程信息见下两条。
 - **容器命令行的环境**：`docker` 与 devcontainer 命令行是执行器调用的工具，它们读的容器定义（`${localEnv:…}`）却来自文稿，所以同样以 `RunContext.env` 为基础，只另加 Docker 客户端需要的变量：进程中的 `DOCKER_HOST`、`DOCKER_CONTEXT`、`DOCKER_CONFIG`、`DOCKER_CERT_PATH`、`DOCKER_TLS_VERIFY`、`XDG_RUNTIME_DIR`，以及进程真实的 `HOME`（Docker 从 `~/.docker/` 读取上下文与镜像仓库的登录）。这些都不是凭据，运营者不必经 `passEnv` 传入。容器里的代码经命令行只得到 `RunContext.env` 中的变量（逐个传入，不传主机上的路径 `PATH`、`HOME`）。容器定义本身可以挂载主机路径，这是 9.4 节的残余风险。
 - **执行**：全部执行，不经确认（被执行的代码以运营者的身份受信任）。`PROCESS_SANDBOX` 是可选的进程沙箱：运营者插件登记它时，编译器把它放进 `RunContext.sandbox`，执行插件的子进程经它运行，构建报告写明隔离方式；没有时直接启动子进程。拿得到什么见 9.4 节。
-- **构建**：`presmium serve` 中 MCP 的 `build` 把产物写在 serve 的状态目录中（`$XDG_CACHE_HOME/presmium/serve/<工作区的哈希>/builds/<文档>/<视图>/`）、文档目录之外，并在结果中给出这个路径（写在文档目录中的产物会作为 agent 的修改出现在审阅中）；渲染端是文稿能加载的那些。
+- **构建**：`presmium serve` 中 MCP 的 `build` 把产物写在工作区之外的 serve 状态目录中（`$XDG_CACHE_HOME/presmium/serve/<工作区的哈希>/builds/<文档>/<视图>/`），并在结果中给出这个路径（写在工作区中的产物会作为 agent 的修改出现在审阅中）；渲染端是文稿能加载的那些。
 - **MCP 的 `run_code` 与 `build`**：这两个工具也执行文稿中的代码（`run_code` 经 `ServerHost` 以编译器的执行器重新运行一个代码块，不读也不写录制；`build` 构建文档），使用与同一宿主的编译相同的执行选项。`presmium dev`、`presmium serve` 与 `presmium-mcp` 中两者的确认都是 `content` 范围，全部执行（有进程沙箱时经它）。
 - **agent 的代码执行**：dsh 会话的 shell 按 dsh 的权限模式与 bundle 的确认策略（第 13 节）。
 
 ### 10.7 修改审阅
 
-agent 的修改在提交之前由作者审阅。审阅在工作区服务中（`review` 路由，13.4 节），它也是 `CHANGE_REVIEW` 的实现：
+审阅由工作区服务实现，`CHANGE_REVIEW` 与 `review` 路由共用 `packages/workspace/src/node/review/`。dsh 会话的交互流程见 `design-dsh.md` 6.5 节。
 
-1. dsh 会话第一次调用写文件的工具或 shell 之前，bundle 的 `presmium-turns` 打开这份文档的审阅并持有锁（持有者 `agent:<会话>`）；锁被别人持有时这个工具调用失败并说明原因，什么也不写。
-2. 每个工具调用完成时记一个检查点；后面的 turn 累加进同一次审阅；`review: auto` 时每个 turn 结束即提交。
-3. 接受即提交，尾注带 `Presmium-Session` 与 `Presmium-Turn`；可以拒绝其中一些文件，它们恢复为快照。全部拒绝时恢复为审阅开始时的状态。
-4. 待审阅时可以回到某一步之前（`restoreTo`）。接受之后的撤销是 `git revert`，会话收到一条标明来源的消息。
-5. 没有页面跟随的审阅在 `reviewTimeoutMs`（默认 30 分钟）后回滚；审阅记录在服务重启后接上。
+- **范围与锁**：dsh 会话的审阅覆盖整个工作区，包括未选择文稿时的写入；从文稿目录启动的 headless 与 acp 会话同样。它持有工作区锁，与任意文档的保存、操作、撤销和其他审阅互斥。插件通过 `CHANGE_REVIEW` 发起的任务可指定文档范围，持有文档锁。
+- **快照与检查点**：git 树记录审阅开始时的文件与每次工具调用后的状态，包含开始时尚未提交的修改。临时索引用于构建树，不改 `HEAD` 与真实索引；差异以相对于工作区根目录的路径给出。服务发起的构建写在工作区之外的状态目录，不进入审阅。
+- **拒绝与回到检查点**：从 git 对象库读出目标内容，经 `DOCUMENT_FILES` 恢复范围内的文件；目标树中没有的路径删除，途中的符号链接被替换而不跟随。`restoreTo` 恢复到指定步骤之前，并移除该步与之后的检查点。
+- **接受与提交**：先恢复被拒绝的文件，再经 `REVISIONS` 提交其余改动。提交成功后才删除审阅记录并释放锁；失败时返回错误，保留审阅供作者重试或拒绝。提交的会话与 turn 尾注用于修改历史和撤销通知。
+- **git 的执行边界**：审阅使用独立的 git 目录与打开时固定的对象库、工作树，只复制读取文件所需的配置。审阅命令关闭钩子、fsmonitor、外部 diff 与 textconv，并按字面解释路径，避免 agent 改写仓库配置或属性后让服务执行代码。工作区包含仓库的 git 目录时，看守器在操作前恢复会影响代码执行与配置定位的文件；对象库、引用、日志与真实索引不属于此看守范围。
+- **进程恢复**：审阅记录存放在用户状态目录的 `presmium/reviews/`，包含范围、快照、会话、turn 与检查点。服务重启时恢复会话审阅并重新持锁；无 turn 运行且没有页面跟随时，按 `reviewTimeoutMs` 回滚。接受或拒绝后删除记录。
 
-写到文档目录之外的路径不在审阅中：它们本来就要经 `workspace` 范围的确认（10.4 节）。构建的产物写在文档目录之外，不进审阅。
-
-**实现**：`@lincyaw/workspace` 的 `src/node/review/git-review.ts`，在 `presmium serve` 的进程中。快照与检查点都是以临时索引（`GIT_INDEX_FILE` 指向系统临时目录中的文件）`git add -A -- <文档目录>` 再 `git write-tree` 得到的树对象，不碰 `HEAD` 与真实的索引；差异是 `git diff --no-renames --no-ext-diff --no-textconv` 两棵树的 `--name-status`、`--numstat` 与逐个文件的统一差异（至多 200 个文件带差异文字，单个超过 256 KB 时省略），路径从 git 的顶层换算为相对于工作区根目录；恢复以临时索引 `read-tree` 快照再 `checkout-index -f` 被拒绝的路径，快照中没有的删除（连同因此变空、在文档目录之内的目录）。全部命令带 `-c core.hooksPath=/dev/null -c core.fsmonitor=false` 与 `GIT_LITERAL_PATHSPECS=1`（`notes[1].md` 这样的文件名不是通配）。审阅的 git 命令不读仓库的 git 目录，只用它的对象库：`GIT_DIR` 是审阅自己的 git 目录（在它的临时目录中，没有钩子），`GIT_OBJECT_DIRECTORY` 与 `GIT_WORK_TREE` 是打开时找到的仓库的对象库与工作树（`.git/commondir` 或途中写下的 `.git` 文件都不改变它们）。这个 git 目录的配置只有打开时（agent 运行之前）从仓库的配置中取的读文件的方式（`core.filemode`、`symlinks`、`ignorecase`、`precomposeunicode`、`autocrlf`、`eol`、`safecrlf`、`excludesFile` 与 `extensions.objectFormat`），另有仓库的 `info/exclude`；所以无论 agent 在审阅运行 git 时往仓库的配置或属性里写了什么（过滤驱动、外部差异、文本转换、钩子），审阅的 git 都不会执行，git 目录的恢复与运行 git 之间没有可以钻的空隙。文档目录包含仓库的 git 目录时（单份文稿的仓库），打开时记下其中 git 借以执行代码或找到配置的文件（为 git 目录中除对象库（`objects/info/` 除外）、`refs/`、`logs/`、`lfs/`、索引与锁文件之外的一切：`config`、`commondir`、`gitdir`、`HEAD`、`hooks/`、`info/`、`modules/`、`worktrees/` 等，`src/node/git-guard.ts`），`step`、`diff`、`restoreTo`、`accept`、`rollback` 与 `close` 在运行 git 之前把它们恢复原样（agent 新建的删除），并在服务端日志中写明；git 目录被替换（不再是原来的目录）时这些方法报错，审阅失败。`refs/` 与 `logs/` 不在看守之内，作者在审阅进行中自己的提交不受影响；审阅进行中切换分支（`HEAD`）会被恢复。工作区的 `REVISIONS.commit` 自己运行 git，不在这个看守之内，但它只在看守恢复之后运行。`restoreTo(step)` 把文档目录恢复为这一步之前的检查点的树（与之不同的路径从那棵树检出，它没有的删除），去掉这一步与之后的各步。同一文档目录在一个进程中至多一个审阅（打开第二个时报错）；`close()` 在没有接受或拒绝时等于 `rollback()`。审阅打开时在 `${XDG_STATE_HOME:-~/.local/state}/presmium/reviews/` 中写一份记录（文档目录、git 目录、快照的树、会话与它的 turn、检查点、进程与它的启动时间、看守的内容），结束时删去（`src/node/review/review-record.ts`）；服务重启后接上记录中的审阅。恢复、回到某一步之前与崩溃后的恢复不再 `checkout-index`：要写回的文件以 `ls-tree`、`cat-file` 从 git 读出，经它写入（途中的符号链接被替换，从不被跟随）。
+锁协调工作区服务中的写入。磁盘上的编辑器或其他进程仍可能直接修改同一范围；这些改动会进入差异，也会被拒绝或恢复操作覆盖（9.4 节）。
 
 ## 11. 安全
 
@@ -1760,8 +1764,8 @@ agent 的修改在提交之前由作者审阅。审阅在工作区服务中（`r
 |---|---|
 | 本机端点被其他网站或进程调用 | 默认只监听本机；校验 `Host` 与 `Origin`（`presmium serve --host` 时另接受监听的地址与本机的名字，其他名字与其他站点的页面照旧被拒绝，10.3 节）；MCP 要求令牌；插件代理的路径不能越出目标（`.`、`..` 与编码的分隔符得到 400） |
 | 局域网中的其他设备 | `presmium serve` 没有登录，只供运行它的那个用户使用：`--host` 时到得了这个端口的设备都以本机作者的身份使用工作区，启动时在标准错误上写明（9.4 节）；默认只监听本机；多人使用时每人一个工作区（hub 托管模板） |
-| agent 误改或越权 | 只写工作区中的源码：dsh 会话的工作目录是文档目录，写到外面要确认；修改先经作者审阅（10.7 节）：逐个文件查看差异，接受、拒绝或拒绝某些文件，接受后才提交，可撤销；操作类与计费类工具要确认；确认的关口在我们的服务端。确认按范围分发（10.4 节）：工作区配置、运营者设置、同意记录、文档目录之外的路径与 agent 的 shell、网络权限请求属于 `workspace` 范围，只由所有者（本机作者）确认 |
-| 文稿关闭安全设置 | 工作区的插件列表、确认策略、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量（`settings.presmium.exec.passEnv`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效。agent 写工作区配置要所有者的 `write` 确认（`workspace` 范围）：它在文档目录之外时由 agent 的权限请求发出；单份文稿的仓库中它在文档目录里，审阅中出现它的改动时，接受前另需所有者允许，没有允许时它作为被拒绝的文件恢复 |
+| agent 误改或越权 | dsh 的文件权限与确认映射见 `design-dsh.md` 6.2、6.3 节；会话修改由工作区审阅覆盖（10.7 节），接受后提交并可撤销。MCP 的操作类与计费类工具由服务端确认，确认按范围分发（10.4 节） |
+| 文稿关闭安全设置 | 工作区的插件列表、确认策略、agent 的替换命令与模型的服务提供方、修改的审阅、编译时执行传入的环境变量（`settings.presmium.exec.passEnv`）、录音的去处、是否允许克隆音色与同意记录的目录都不从文稿读取，只来自命令行、环境变量与工作区配置（插件经 `settings` 得到，4.7 节）；工作区配置只在进程启动时读取，改动要等运营者重启才生效。agent 对工作区配置的改动包含在工作区审阅中，作者可以逐文件拒绝；写入权限由 dsh 的权限模式决定（`design-dsh.md` 6.3 节） |
 | 文稿中的 Node 插件在服务端运行 | 文稿列出的插件与文稿目录中的包在 `presmium` 进程中运行，等于运行文稿的代码：`presmium serve` 与 `presmium dev` 相同；只打开信任的文稿与工作区（9.4 节） |
 | 编辑者或 agent 写的代码在服务端运行 | 代码只得到清理过的环境变量（`RunContext.env`，4.6 节），`presmium serve` 中只有允许列表；全部执行，运营者插件登记了进程沙箱时经它运行（10.6 节）；agent 的 shell 按 dsh 的权限模式 |
 | 同一 uid 的代码读其他进程的环境与内存 | 不声称挡住（9.4 节），只有进程沙箱在可用时隐藏其他进程 |
@@ -1784,35 +1788,35 @@ agent 的修改在提交之前由作者审阅。审阅在工作区服务中（`r
 
 ## 12. 依赖选型
 
-依赖准则：只用公开接口，不 fork，不引入 AGPL；版本精确固定，遵守 `pnpm-workspace.yaml` 的最短发布时间。版本是 2026-10 调研时的版本，实现时取当时满足准则的版本。
+依赖准则：只用公开接口，不 fork，不引入 AGPL。依赖声明与对等依赖约束以各包的 `package.json` 为准，实际解析版本以 `pnpm-lock.yaml` 为准；安装策略由 `pnpm-workspace.yaml` 约束。
 
-| 组件 | 版本 | 许可证 | 用途 | 包 |
-|---|---|---|---|---|
-| `@modelcontextprotocol/server`；测试用 `@modelcontextprotocol/client` | 2.3.1 | Apache-2.0（既有代码 MIT） | MCP 服务（`createMcpHandler`、`serveStdio`、`fromJsonSchema`）与测试中的客户端；服务端自己校验 Host 与 Origin，实现中没有用到原计划的 `@modelcontextprotocol/node` | mcp |
-| `minisearch` | 7.2.0 | MIT | `search` 工具的索引（与网页渲染端相同的版本与参数） | mcp |
-| DeepSeek Harness（`@deepseek-ai/dsh` 与 bundle 用到的 `@deepseek-ai/dsh-*`） | 0.2.1-alpha.4（精确固定） | MIT | 工作台的 agent 宿主：`@lincyaw/dsh` 与 `@lincyaw/studio` 的依赖，升级先过升级闸门（13.5 节） | dsh、studio |
-| Runno（`@runno/wasi`、`@runno/sandbox`） | 0.10.0、0.10.2（精确固定） | MIT（二进制：clang 8.0.1 与 wasm-ld 为 LLVM 8 的 University of Illinois/NCSA 许可，LLVM 9 起为 Apache-2.0 加 LLVM 例外；sysroot 中的 wasi-libc 为 Apache-2.0 加 LLVM 例外或 MIT；Ruby 3.2.0 为 Ruby 许可或 BSD-2-Clause，SQLite 为公有领域；发布时附 `<base>wasi/LICENSES`） | `@runno/wasi` 是浏览器与 Node 共用的 WASI 系统；`@runno/sandbox` 只提供 C、C++、Ruby、SQLite 的二进制（`dist/langs`），它的 Node 接口不用 | addon-exec-wasi |
-| jax-js（`@jax-js/jax`） | 0.1.25（精确固定；没有依赖） | MIT | JS/TS 中的张量代码与自动微分，WebGPU 后端；ES 模块构建原样随产物发布，第一次导入时加载（`@jax-js/optax` 没有用到） | addon-exec-webgpu |
-| playwright-chromium | 与仓库一致（1.64.1） | Apache-2.0 | 构建时在 Chromium 中录制 WebGPU 输出（录制时才加载）；导出讲授视频（讲授插件的可选 peer 依赖，导出时先用文稿自己的） | addon-exec-webgpu、addon-lecture |
-| `@jupyterlab/services` | 7.6.4 | BSD-3-Clause | Jupyter 内核与终端协议的客户端，浏览器与 Node 共用 | addon-exec-jupyter |
-| `@xterm/xterm`、`@xterm/addon-fit` | 6.0.0 与 0.11.0 | MIT | 浏览器终端 | addon-exec-jupyter |
-| `ws` | 8.x | MIT | Node 端连接内核与终端的 WebSocket（能带请求头，令牌不进地址；`@jupyterlab/services` 本身也依赖它） | addon-exec-jupyter |
-| `@noble/hashes` | 2.4.0 | MIT | 讲授的播放器在浏览器中计算译文原文的 SHA-256（不依赖安全上下文中的 `crypto.subtle`，过期的译文在任何浏览器中都能标出） | addon-lecture |
-| jsdom、DOMPurify（Node 端） | 29.1.1、3.4.17 | MIT、Apache-2.0 或 MPL-2.0 | 构建时清洗写进幻灯片的 HTML 输出（jsdom 是 DOMPurify 在 Node 中支持的 DOM；30.x 要 Node 22.22.2） | render-slides |
-| Mediabunny（`mediabunny`） | 1.61.3（精确固定） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时在 Chromium 页面中合成音视频（WebM）。`@mediabunny/server` 附带的 FFmpeg 是 GPL（实测），不用它，不导出 MP4 | addon-lecture |
-| simple-git | 已用 | MIT | 代码引用读取 git 中的文件、本地环境的仓库（工作区的修改历史原先也用它；工作区直接运行 git，固定 git 目录并关闭钩子，simple-git 4 的环境守卫不让设置这些变量） | addon-code、addon-exec-local |
-| DeepSeek Harness（`@deepseek-ai/dsh` 与 bundle 用到的 `@deepseek-ai/dsh-*`） | 最新的 0.2.x 预发布版或正式版，精确固定；每次升级单独一个工作包，先过升级闸门 | MIT（`libreoffice-kit`、`libreoffice-kit-wasm` 为 MPL-2.0，`node-addon-system` 为 BSD-3-Clause） | 工作台的 agent、会话、确认、模型设置与客户端运行时（第 13 节） | dsh、studio |
-| React | 18.3.1（由 dsh 的外壳提供，Presmium 不自带） | MIT | 工作台的面板（对等依赖） | workbench、dsh |
-| esbuild | 仓库已用的版本 | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |
-| `@hono/node-server` | 当前版本 | MIT | Node 请求与 Fetch API 之间的转换 | server |
-| http-proxy-3 | 当前版本 | MIT | HTTP 与 WebSocket 反向代理（远端环境、工作区站点） | server |
-| DOMPurify | 3.x | Apache-2.0 或 MPL-2.0 | 清洗执行输出中的 HTML | viewer |
-| ansi_up | 6.x | MIT | 把回溯与输出中的 ANSI 转义转为样式 | viewer |
-| mdast-util-from-markdown、mdast-util-gfm、micromark-extension-gfm | 当前版本 | MIT | 浏览器中把现场运行的 `text/markdown` 输出转为 mdast；讲授插件读单独的讲授脚本（只用 mdast-util-from-markdown 2.1.0） | viewer、addon-lecture |
-| myst-ext-card、myst-ext-grid、myst-ext-tabs、myst-ext-button | 与 myst-parser 同一发行 | MIT | 卡片、栅格、选项卡、按钮 | compiler |
-| VitePress 的 `locales`、`sitemap`、`themeConfig.nav`、`footer`、`head` | 已用 | MIT | 站点外壳与译本 | web |
-| lychee | 用户安装的命令 | MIT 或 Apache-2.0 | 可选的外部链接检查 | cli |
-| 镜像：docker-stacks、`jupyter_server`；可选 gVisor | 固定摘要 | BSD-3-Clause、Apache-2.0 | 远端环境的模板 | templates/env |
+| 组件 | 许可证 | 用途 | 包 |
+|---|---|---|---|
+| `@modelcontextprotocol/server`；测试用 `@modelcontextprotocol/client` | Apache-2.0（既有代码 MIT） | MCP 服务（`createMcpHandler`、`serveStdio`、`fromJsonSchema`）与测试中的客户端；服务端自己校验 Host 与 Origin | mcp |
+| `minisearch` | MIT | `search` 工具的索引（与网页渲染端相同的版本与参数） | mcp |
+| DeepSeek Harness（`@deepseek-ai/dsh` 与 bundle 用到的 `@deepseek-ai/dsh-*`） | MIT（`libreoffice-kit`、`libreoffice-kit-wasm` 为 MPL-2.0，`node-addon-system` 为 BSD-3-Clause） | 工作台的 agent、会话、确认、模型设置与客户端运行时；`@lincyaw/dsh` 以对等依赖接入，`@lincyaw/studio` 提供宿主；升级先过升级闸门（13.5 节） | dsh、studio |
+| Runno（`@runno/wasi`、`@runno/sandbox`） | MIT（二进制：clang 8.0.1 与 wasm-ld 为 LLVM 8 的 University of Illinois/NCSA 许可，LLVM 9 起为 Apache-2.0 加 LLVM 例外；sysroot 中的 wasi-libc 为 Apache-2.0 加 LLVM 例外或 MIT；Ruby 3.2.0 为 Ruby 许可或 BSD-2-Clause，SQLite 为公有领域；发布时附 `<base>wasi/LICENSES`） | `@runno/wasi` 是浏览器与 Node 共用的 WASI 系统；`@runno/sandbox` 只提供 C、C++、Ruby、SQLite 的二进制（`dist/langs`），它的 Node 接口不用 | addon-exec-wasi |
+| jax-js（`@jax-js/jax`） | MIT | JS/TS 中的张量代码与自动微分，WebGPU 后端；ES 模块构建原样随产物发布，第一次导入时加载（`@jax-js/optax` 没有用到） | addon-exec-webgpu |
+| playwright-chromium | Apache-2.0 | 构建时在 Chromium 中录制 WebGPU 输出（录制时才加载）；导出讲授视频（讲授插件的可选 peer 依赖，导出时先用文稿自己的） | addon-exec-webgpu、addon-lecture |
+| `@jupyterlab/services` | BSD-3-Clause | Jupyter 内核与终端协议的客户端，浏览器与 Node 共用 | addon-exec-jupyter |
+| `@xterm/xterm`、`@xterm/addon-fit` | MIT | 浏览器终端 | addon-exec-jupyter |
+| `ws` | MIT | Node 端连接内核与终端的 WebSocket（能带请求头，令牌不进地址；`@jupyterlab/services` 本身也依赖它） | addon-exec-jupyter |
+| `@noble/hashes` | MIT | 讲授的播放器在浏览器中计算译文原文的 SHA-256（不依赖安全上下文中的 `crypto.subtle`，过期的译文在任何浏览器中都能标出） | addon-lecture |
+| jsdom、DOMPurify（Node 端） | MIT、Apache-2.0 或 MPL-2.0 | 构建时清洗写进幻灯片的 HTML 输出（jsdom 是 DOMPurify 在 Node 中支持的 DOM） | render-slides |
+| Mediabunny（`mediabunny`） | MPL-2.0（文件级） | 录音为 Ogg/Opus（WebCodecs），摄像头与屏幕录为 WebM；导出视频时在 Chromium 页面中合成音视频（WebM）。`@mediabunny/server` 附带的 FFmpeg 是 GPL，不用它，不导出 MP4 | addon-lecture |
+| simple-git | MIT | 代码引用读取 git 中的文件、本地环境的仓库；工作区审阅直接运行 git，以控制 git 目录、对象库与钩子设置（10.7 节） | addon-code、addon-exec-local |
+| React | MIT | 工作台的面板（对等依赖），由 dsh 的外壳提供，Presmium 不自带 | workbench、dsh |
+| esbuild | MIT | 把 `@lincyaw/dsh` 的客户端部分构建为 dsh 的工厂格式 | dsh |
+| `enhanced-resolve`、`es-module-lexer` | MIT | 按包的公开浏览器入口解析依赖，并通过模块语法区分 ESM 与 CommonJS，供 Vite 预构建选取依赖（4.2 节） | kernel |
+| `@hono/node-server` | MIT | Node 请求与 Fetch API 之间的转换 | server |
+| http-proxy-3 | MIT | HTTP 与 WebSocket 反向代理（远端环境、工作区站点） | server |
+| DOMPurify | Apache-2.0 或 MPL-2.0 | 清洗执行输出中的 HTML | viewer |
+| ansi_up | MIT | 把回溯与输出中的 ANSI 转义转为样式 | viewer |
+| mdast-util-from-markdown、mdast-util-gfm、micromark-extension-gfm | MIT | 浏览器中把现场运行的 `text/markdown` 输出转为 mdast；讲授插件读单独的讲授脚本（只用 mdast-util-from-markdown） | viewer、addon-lecture |
+| myst-ext-card、myst-ext-grid、myst-ext-tabs、myst-ext-button | MIT | 卡片、栅格、选项卡、按钮；与 myst-parser 配套使用 | compiler |
+| VitePress 的 `locales`、`sitemap`、`themeConfig.nav`、`footer`、`head` | MIT | 站点外壳与译本 | web |
+| lychee | MIT 或 Apache-2.0 | 用户安装的命令，用于可选的外部链接检查 | cli |
+| 镜像：docker-stacks、`jupyter_server`；可选 gVisor | BSD-3-Clause、Apache-2.0 | 远端环境的模板；镜像按固定摘要引用 | templates/env |
 
 随网页与幻灯片产物再分发的运行时带上许可证声明：WebAssembly 运行时为 `<base>wasi/LICENSES`；Pyodide 为 `<base>pyodide/LICENSES`（Pyodide 的 MPL-2.0 全文与源码地址、编译为 WebAssembly 的 CPython 的 PSF 许可证、`pyodide-lock.json` 中随运行时发布的包的许可证）；jax-js 为 `<base>presmium/jax-js/LICENSE`（取自 `@jax-js/jax` 包）。它们与运行时一同发出，开发服务器中也提供，并在离线缓存的范围内。
 
@@ -1858,13 +1862,14 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 - **监管**（11.2、14 节）：两个进程各在 `@lincyaw/dsh` 的看门狗（`WATCHDOG`，`presmium-service` 行用的同一个）之下，以 `detached` 自成进程组，看门狗的标准输入是来自启动器的管道：启动器退出（`kill -9` 也是）时看门狗结束整个组，组中的开发服务器一并结束。SIGINT、SIGTERM、SIGHUP 时启动器先停 dsh（bundle 在服务处作废会话令牌）再停服务，各等 15 秒，之后向组发 SIGKILL，以 0 退出；一个进程自己结束时启动器停下另一个，报告是哪一个与日志的位置，以 1 退出。
 - **模型**（11.3 节）：`PRESMIUM_MODEL_URL`、`PRESMIUM_MODEL_KEY`、`PRESMIUM_MODEL_PROVIDER` 三个都有时成为 `DEEPSEEK_BASE_URL`、`DEEPSEEK_API_KEY` 与 `DEEPSEEK_SEARCH_BASE_URL`（网页搜索用同一个密钥，地址也是这个服务）；只有一部分时在标准错误警告缺少哪个；否则 `DEEPSEEK_API_KEY` 原样传给 dsh，作者环境中的 `DEEPSEEK_BASE_URL`、`DEEPSEEK_SEARCH_BASE_URL` 不传（密钥只去 DeepSeek 的官方地址）。dsh 自己不接受 `.env` 文件中的这类地址变量（工作区根的 `.env` 写了它时 dsh 拒绝启动），所以工作区的 `.env` 改不了密钥的去向。
 - **局域网**（11.4 节）：`--host` 只接受本机的一个具体 IP 地址（拒绝 `0.0.0.0`、`::` 等通配地址与主机名），dsh 与工作区服务都只监听这个地址（服务端的 `Host`、`Origin` 规则按 10.1 节接受它），`--preview-origin` 是它的源；启动时在标准错误警告没有登录，同一网络中到得了这两个端口的人都以作者的身份工作。
-- **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在文档目录中、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `e2e/fixtures/regression/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@lincyaw/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
+- **用例**：`packages/studio/test/studio.test.ts`（消费者安装与一个网址、在 Chromium 中打开后是工作台；全新的 home 中第一个会话在工作区根目录、没有 `~/Documents`；环境中的模型；外来 `Origin` 的 403；局域网；服务的环境中没有模型的密钥与 `kill -9`），工作区在 `e2e/fixtures/regression/.presmium` 中，端口 5663 至 5666。消费者安装由 `scripts/consumer.ts` 的 `STUDIO` 完成（单独运行：`node scripts/consumer.ts [<目录>] --studio`）；打包在全仓的一个锁（`node_modules/.presmium-pack.lock`）之下进行，因为 `@lincyaw/dsh` 的 `prepack` 与 `postpack` 改写它自己的目录，CLI 与 studio 的消费者安装用例同时打包时会互相删去对方要打进去的文件。
 
 ### 13.2 契约与接口
 
 | 契约或接口 | 位置 |
 |---|---|
 | 预览协议：`PREVIEW_PROTOCOL = 1` 与消息类型 | `packages/kernel/src/contracts/preview.ts`（`design-dsh.md` 第 4 节） |
+| 当前诊断：`Diagnostic`、`DiagnosticSnapshot`、`PreviewDiagnostics`；SSE 与 MCP 资源订阅；工作台与 agent 读取同一快照 | `packages/kernel/src/contracts/diagnostics.ts`、`packages/server/src/diagnostics.ts`（`design-dsh.md` 5.4 节） |
 | `RenderContext.preview?: { origins: string[] }`：开发服务器的页面带预览代理与允许的父页面来源 | `packages/kernel/src/ir.ts`（只增加可选字段） |
 | 工作区服务的新路由：`ir`、`ir/events`、`preview`、`build`、`check`；`presmium serve --preview-origin <源>`；服务令牌 `PRESMIUM_SERVICE_TOKEN` | `packages/workspace/src/node/`、`packages/cli/src/cli.ts`（`design-dsh.md` 第 5 节） |
 | 审阅的路由：`review`（SSE 时为页面跟随）、`review/open`、`review/step`、`review/accept`、`review/reject`、`review/restore`、`review/events`（bundle 的 SSE）；`CHANGE_REVIEW` 的 git 实现由工作区服务提供；会话的提交另带尾注 `Presmium-Session`、`Presmium-Turn` | `packages/workspace/src/node/review/`、`packages/dsh/src/node/turns/` |
@@ -1890,39 +1895,21 @@ dsh 宿主（studio 启动；Presmium 自己的 DSH_HOME 与 profile）       �
 
 ### 13.4 bundle、确认与工具
 
-- **bundle 的行**（`design-dsh.md` 6.2 节）：`presmium-service`、`presmium-workspaces`、`presmium-tools`、`presmium-policy`、`presmium-context`、`presmium-skills`、`presmium-turns`、`presmium-routes`（web 载体）、`presmium-workbench`（web 载体，客户端部分）。每一行按会话的目录解析它所属的文档，不按进程的工作目录；每份文档的目录登记为一个 dsh 工作区，工作区根不登记。
-- **确认**（`design-dsh.md` 6.3 节）：策略 `off` 的工具不登记；`allow` 在 `tools/pre-execute` 中直接放行；`ask` 交给 dsh 的确认卡片，说明由 Presmium 按文稿语言给出；运营者目录用 `ctx.tools.guard` 拒绝。会话令牌是主机已确认的，工作区服务不再向页面窗口请求确认。
-- **工具一致**：`@lincyaw/mcp` 导出一张工具表，MCP 与 dsh 两个适配器；dsh 的工具经回环的 `/mcp` 调用工作区服务。一致性用例断言两边的工具名与输入 schema 相同，`get_focus` 与会话上下文中的焦点相同。
-- **焦点**：工作台把焦点报告给服务端，服务端把锚点换成源码范围与摘录（与 `locate_source` 同一个函数）并保存，MCP 的 `presmium://focus` 与 `get_focus`、bundle 的上下文都读它（`design-dsh.md` 第 8 节）。
-- **profile 补丁**（`design-dsh.md` 6.6 节）：启动器每次启动都传入，关掉上传与遥测的行、DeepSeek 的品牌与账号的行，固定技能目录与第一次使用的工作区目录。
+工作台与 dsh 的行为定义集中在 `design-dsh.md`：工作区、会话与当前文稿的映射见 6.2 节，确认见 6.3 节，审阅流程见 6.5 节，布局与退路见第 7 节。这里仅列实现边界，避免在两份文档中维护同一套流程。
 
-实现：
+| 边界 | 实现 | 责任 |
+|---|---|---|
+| 工作区与当前文稿 | `packages/dsh/src/node/workspaces.ts`、`service.ts` | 登记启动时的工作区根目录；按选中的文稿绑定 MCP 工具、快照与焦点，不改变网页会话的 cwd |
+| 工具与确认 | `packages/dsh/src/node/tools.ts`、`policy.ts` | 将同一张 MCP 工具表登记到 agent 作用域，按工具元数据映射确认策略；运营者目录由 guard 拒绝 |
+| 文稿上下文与技能 | `packages/dsh/src/node/context.ts`、`skills.ts` | 每一步前读取当前文稿的快照；登记 bundle 提供的技能 |
+| 会话审阅 | `packages/dsh/src/node/turns/index.ts` | 写入前打开工作区审阅，工具完成后记检查点，撤销后把通知注入会话 |
+| 工作区事务 | `packages/workspace/src/node/review/` | 快照、检查点、锁、接受、拒绝与崩溃恢复；恢复与提交边界见 10.7 节 |
+| HTTP 适配 | `packages/dsh/src/node/routes.ts`、`workbench.ts` | 认证后把工作台请求转给工作区服务，保留流式回答；向页面提供工作区与 MCP 连接信息 |
+| 工作台面板 | `packages/workbench/` | 编辑、保存冲突、诊断、预览协议、焦点与审阅的界面和状态，不引用 dsh |
+| dsh 客户端适配 | `packages/dsh/src/client/` | 通过 dsh 的布局、槽位、会话、主题与资源解析接口组装工作台；根布局和退路共用面板 |
+| 客户端打包 | `packages/dsh/build/` | 按 dsh 的工厂格式预编译客户端，外部模块表与启动契约由升级闸门校验 |
 
-- **包**：`@lincyaw/dsh`（0.1.0，`engines.dsh` 与对 `@deepseek-ai/dsh` 的对等依赖都是精确的 `0.2.1-alpha.4`，即仓库中已有的一份）。每行一个普通 ESM 的入口 `rows/<行>.mjs`（导出 `@lincyaw/dsh/<行>`），用 jiti 加载 `src/node/` 的源码；bundle 不引用任何 dsh 的包，只为用到的宿主接口声明最小的类型（`src/node/dsh.ts`）。bundle 层 `cordis.patch.yml` 是全部载体的行（`presmium-service`、`-tools`、`-policy`、`-context`、`-skills`、`-turns`）；`web.patch.yml` 是 web 载体的行（`presmium-workspaces`、`presmium-routes`）、内置的 `preset-authoring` 预设与它的设置（工作区控制器的 `documentsDirectory`、关掉 `harness-dev-context`、`agent-preset-registry` 的默认预设）；`profile.patch.yml` 是每个载体的 profile 设置（三个上传行、技能的 `agentsHome`、`workspace-write` 与 `ask`、`system-prompt` 的 `personaPrefix`）。启动器以 `--patch` 依次传入 `web.patch.yml`（只在 web）与 `profile.patch.yml`，环境中另有 `DSH_HOME`、`DSH_AGENTS_HOME`（其中的 `agents/`）、`DSH_TELEMETRY_MODE=DISABLED`；profile 列出 `dsh-base`、载体的 bundle 与 `@lincyaw/dsh`，并把本包链接进它的 `node_modules`（`launch.ts` 的 `writeProfile`）。技能的唯一来源是 `.agents/skills`：打包时 `prepack` 把 `package.json` 的 `presmium.skills`（`presmium-author`、`presmium-present`）复制进 `skills/`（不入库），检出中直接读源。
-- **`presmium-service`**：环境中有 `PRESMIUM_SERVICE_URL` 与 `PRESMIUM_SERVICE_TOKEN` 时用它（工作区根是 `PRESMIUM_WORKSPACE`，否则 dsh 启动的目录）；否则自己生成服务令牌，以 `node watchdog.mjs node presmium serve <根> --port 0` 启动服务：看门狗以 `detached` 自成进程组，标准输入是来自 dsh 宿主的管道，管道关闭（宿主退出，`kill -9` 也是）或收到 SIGTERM 时向整个组发 SIGTERM，5 秒后 SIGKILL，服务退出时组中剩下的进程一并结束。服务的环境去掉 `DSH_*` 与 `DEEPSEEK_*`（模型凭据不进运行文稿代码的进程）。这一行提供 cordis 服务 `presmium`：会话的目录用 `ctx.workingDirectory.get(session)`（不是进程的工作目录），在工作区服务列出的文档中找到它所属的文档（`GET presmium.workspace/documents`，带服务令牌）；第一次需要时为会话取会话令牌（`POST presmium.server/tokens`），用 `@lincyaw/mcp/client` 连接 `/mcp` 并列出工具；`session/disposed` 时作废令牌，退出时作废全部。
-- **`presmium-tools`**：`agent/created`（dsh 等这个监听者结束才处理输入）时，把会话的文档在 MCP 中列出的工具连同原样的 JSON Schema 登记为 `presmium__<名字>`，经 `agent.ctx.tools.register` 登记在 agent 自己的作用域中：每个会话有自己文档的工具，策略为 `off` 的种类 MCP 不列出，也就不登记。调用转成 `tools/call`。
-- **`presmium-policy`**：`tools/pre-execute` 中，`presmium__*` 工具的种类与策略来自工具列表的 `_meta`；`read` 交给下一个监听者，`allow` 直接放行（完全访问模式下也执行），`ask` 返回 ask，说明用 `describeOperation` 按文稿语言写（如“Presmium · 运行「first」一节的 code-1”）；不属于会话文档的 `presmium__*` 工具拒绝；文件工具（`write`、`edit`、`str_replace_editor`）写到会话的文档目录之外时 ask。运营者目录（`PRESMIUM_OPERATOR_DIR`，或 `$XDG_STATE_HOME/presmium/operator`）由 `ctx.tools.guard` 拒绝（文件工具的路径在其中，或 `bash` 的命令提到它），pre-execute 对这些调用不提问，所以完全访问模式下也是 guard 的拒绝。会话令牌是主机已确认的：服务端对它的操作不再经 `APPROVALS` 询问窗口，`off` 的种类照旧不列出。
-- **`presmium-context`**：system 消息中一段固定的指南（`presmium:guide`）；`agent/created` 时在 agent 的作用域登记运行时上下文 `presmium:document`，每一步之前（`agent/pre-step`）经会话令牌读 `deck_info`、`list_sections`、`get_position`、`get_focus` 重写快照：文档目录、标题、语言、入口、诊断数、章节、放映位置，焦点照 `get_focus` 的回答原样写成 JSON。
-- **`presmium-skills`**：`ctx.skills.register` 登记 `presmium.skills` 中的技能（`source: 'bundled'`）。
-- **`presmium-workspaces`**（web）：启动时（这一行激活之前）把每份文档的目录登记为 dsh 工作区，标题是文档的标题；之后每 3 秒比对文档：新建的登记，标题改了的改名，不在了的删去登记（会话保留）。工作区根不登记，因此 dsh 不建第一次使用的默认工作区。
-- **`presmium-routes`**（web）：`/api/presmium/<路径>` 的精确路由（`GET`、`POST`），`documents`、`files`、`source`、`changes`、`changes/commit`、`changes/discard`、`revisions`、`revisions/revert`、`ir`、`ir/events`、`preview`、`build`、`check`、`review` 及其五个子路由转到 `/__presmium/presmium.workspace/<路径>`，`focus` 转到 `/__presmium/presmium.server/focus`；查询串、`Content-Type`、`Accept`、`presmium-document` 照传，加上服务令牌，回答按流原样返回（流式经 `connection.fetch` 可行）。没有 dsh 的 cookie 时 401（dsh 的栅栏）。
-- **服务端**：`presmium.server/tokens` 只在设置了 `PRESMIUM_SERVICE_TOKEN` 时可用，并要求它（否则 403 或 401）：`POST { document, session }` 签发主机已确认、绑定该文档的令牌（同一会话再签发时作废旧的），`DELETE { session? }` 作废一个或全部；绑定的令牌只能读写它的文档（别的 `document` 报错）。`presmium.server/focus`：`GET ?document=`（不带时为任一文档最近的），`POST { document, focus: FocusReport[] }`（设置了服务令牌时要求它）由 `resolveFocus` 在文档的编译结果上换算：预览中点选的块或节得到它的源码范围（与 `locate_source` 同一个 `place`），编辑器中的行范围得到所在的节与块（包含起始行的最内层块），摘录从文件读出，超过 20 行时只留首尾并注明省去的行数；按文档保存最近一次，文档被删去、改名或重建时忘掉，`presmium://focus` 的订阅者收到更新。
-
-实现（会话、审阅与修改历史，`design-dsh.md` 6.5 节）：
-
-- **服务中的审阅**：`packages/workspace/src/node/review/`（`git-review.ts`、`review-record.ts`、`git-guard.ts`，10.7 节）；`reviews.ts` 的 `Reviews` 由 `presmium serve` 在 git 仓库中创建，文档的 `ServerContext.service` 以它回答 `CHANGE_REVIEW`。服务启动时（`recover`，在任何路由应答之前）逐份文档看审阅记录：会话的审阅接上，其余进程已不在的按快照回滚并写日志。
-- **会话的审阅**：路由在 `review/routes.ts`（13.2 节的表），请求的文档是 `Presmium-Document` 或 `?document=`，有服务令牌时同样要它。`review/open { session, turn? }` 以 `agent:<会话>` 取文档的锁（另一个持有者时 409 并给出锁），打开 git 审阅（快照包含当时还没提交的修改），同一会话再调用得到同一个审阅；`review/step { session, turn?, label?, tool?, end? }`：带 `label` 时记一个检查点，带 `end` 时 turn 结束：审阅没有改动就结束（`empty`，释放锁），`settings.presmium.assistant.review: auto` 时提交，否则等作者；不是这个会话的审阅时 409。`review/accept { reject?, message? }`：被拒绝的文件与 `.git/` 中的改动恢复为快照，其余经 `REVISIONS` 提交为一个提交，摘要是 `message`（没有时按文档语言写“AI 修改：<文件>”），正文列出各检查点，尾注 `Presmium-Origin: agent`、`Presmium-Task: <审阅 ID>`、`Presmium-Session`、`Presmium-Turn: <起>-<止>`、`Co-authored-by`（`Revisions.commit` 的 `trailers`，插在 `Co-authored-by` 之前），释放锁。`review/reject { paths? }`：给出文件时它们恢复为快照、审阅继续（没有改动了就结束），不给时全部回滚。`review/restore { step }`：文件回到那一步之前的检查点，那一步与之后的检查点去掉。`GET review` 回答 `{ review? }`（ID、会话、持有者、`turns`、`running`、`mode`、检查点、相对于快照的改动）；以 `text/event-stream` 请求时是页面跟随：先发当前的，之后每次变化与结束（`ended { outcome,revision?,files }`）。没有 turn 在运行、也没有页面跟随时，`reviewTimeoutMs`（`settings.presmium.assistant.reviewTimeoutMs`，默认 30 分钟）到期后回滚并写日志。审阅记录写明会话、成员、turn 的范围、检查点的树与各步，每一步重写；服务关闭时会话的审阅不回滚（记录留下，锁随进程释放），下一个服务进程启动时恢复它并重新持有锁，等作者处理。`GET review/events`（bundle 用的 SSE）：每个审阅的变化与结束，以及 `revisions/revert` 撤销了一个带 `Presmium-Session` 的提交（`reverted { session,documents,turns,revision,subject,revertedBy,files }`）。
-- **`presmium-turns`**（`packages/dsh/src/node/turns/index.ts`）：在 `tools/execute`（确认之后、工具执行之前）中，属于一份文档的会话调用写文件的工具或 shell（`write`、`edit`、`str_replace_editor`、`bash`、`pwsh`、`terminal_send`）先调用 `review/open`（失败时这次调用以原因失败，什么也没写），执行之后 `review/step`（标签是工具与文件或命令）；turn 编号来自会话事件 `turn/start`，写过文件的 turn 在 `turn/end` 时告知 `end`；子 agent 的写入并入委派它的会话的审阅（会话头的 `origin: subagent` 与 `parentSession`，没有用例）。行激活后一直跟随 `review/events`（服务重启后再接上）：撤销的提交属于某个会话时，以 `Agent.inject` 注入一条 user 角色的通知（`source: { kind: 'presmium',form: 'notice' }`，正文以 `[Presmium]` 开头，写明 turn、提交与恢复的文件，提醒先读再改），模型在下一步读到；会话的 agent 不在时，等它被创建或恢复（`agent/created`）再注入。Presmium 不用 dsh 只存在于内存中的修改摘要。
-- **审阅与修改卡片**：一次审阅覆盖会话在它期间的全部 turn，服务给出 turn 的范围与按工具调用的检查点；dsh 的修改卡片（`workspace/changes`）仍是每个 turn 的视图，列出的文件是审阅中改动的子集（构建的产物两边都没有），宿主重启后它消失而审阅仍在。
-- **`GET preview`**：幻灯片的预览启动失败时只回答网页的地址；不是无界面模式的 `serve` 不给幻灯片的开发服务器预览的配置（没有预览代理与 `frame-ancestors`）。
-- **用例**：`packages/dsh/test/turns.test.ts`（web 载体与假模型：打开与锁、两个 turn、拒绝一个文件、接受与尾注、撤销与给会话的消息；回到检查点、构建不在审阅与修改卡片中、全部拒绝；宿主重启后经新宿主的 `/api/presmium/review/accept` 接受；无人跟随时超时回滚）；`packages/workspace/test/review.test.ts`（路由、页面跟随、服务重启后恢复会话的审阅、旧格式的记录回滚、非无界面模式的幻灯片预览）。
-实现（工作台的外壳）：
-
-- **包**：`@lincyaw/design`（1.x，随 `host` 发版）是 `packages/host/src/design/` 移出的 `tokens.css`、`components.css`、`fonts.css`、`design.css` 与图标（`ICONS`、`iconMarkup`），另有颜色令牌的名字（`COLORS`、`color(name)`）；没有框架，`host` 的 `design.css` 引入它，Vue 组件与 `useTheme` 留在 `host`，产物的外观不变。`@lincyaw/workbench`（0.x）是 React 面板与框架无关的部分：工作区服务的客户端（`workspaceClient`，页面经 `api/presmium/<路由>` 带 dsh 的 cookie 访问，`?document=` 指文档，`ir/events` 用 `EventSource`）、状态（`Workbench`：文档与文档操作、打开的文档、它的文件、IR 与诊断，`ir/events` 中改过的打开的文件与磁盘比较、没改过的跟随、改过的提示合并或重新载入，保存带打开时的版本、409 时用 `node-diff3` 三方合并）、预览协议的工作台一侧（`connectPreview`：每个 iframe 一个 nonce，核对 `origin`、`source` 与 nonce，`ready` 之后补发每种命令的最后一条；版本不符时提示）、源码与预览的对应（`placeAt`、`placeOf`）、CodeMirror 6 的编辑器、React 版的 `Pm*` 组件（类同 `host` 的 Vue 版）与中英文的文字；面板为 `HomePanel`（文档卡片、从模板新建、改名、复制、删除，启动台搜索，MCP 卡片）、`FilesPanel`、`SourcePanel`、`ProblemsPanel`（IR 的诊断与页面的 `report`）、`PreviewPanel`（网页与幻灯片两种形态、点选、`ready` 迟迟不来时重新载入）、`DocumentView`、`StatusItems`，以 `PANELS` 描述。分层检查保证它不引用 vue、`@lincyaw/host` 与 `@deepseek-ai/*`。
-- **客户端部分**（`packages/dsh/src/client/`）：`presmium-workbench` 行（web 载体，`web.patch.yml`）名为包名本身 `@lincyaw/dsh`：dsh 的模块系统只把整包名的行当作客户端的来源（`<包>/<子路径>` 的行不算），所以包的 `.` 出口是这一行（`rows/workbench.mjs`），`./client` 是预编译的包。`index.tsx` 在启动图中没有 `@deepseek-ai/dsh-client-ui-layout` 时占据 `root`（与 ui-layout 相同的六个子槽位，`contract.ts` 的 `ROOT_CHILDREN`），用 `dsh-client-store` 的 `defineStore` 建布局的状态，`ctx.reflect.provide('layout')` 提供 `ctx.layout`（`layout.ts`：`panelInfo`、`selectPanel`、`beginNavigation`、`toggleSidebar`、`openRightbar`、`closeRightbar`），`ctx.slots.provideRoot` 提供 `usePanelInfo`，重新实现 ui-layout 的主题呈现（`theme.ts` 的 `ThemePresenter`），登记“展开／收起侧栏”的快捷键（桌面 Mod+B，网页 macOS 与 Windows 上 Mod+Alt+B；dsh 不许网页在 Linux 上用这一组合）；有 ui-layout 时改为退路（`fallback.tsx`）。`Frame.tsx` 排出活动栏、侧栏（文档的文件树，或 dsh 的 `sidebar`：会话、插件、自动任务、设置）、中央（启动台或打开的文档；选了 `main` 的全局面板时显示它）、右侧坞的轨道（`rightbar`，按中央保留 400 px 算出 `width` 与 `canShow`）、停靠在最右的对话（`main` 的 `conversation`）、状态栏与 `shell.bottom`、`shell.overlay`；侧栏、右侧坞与对话之间有拖动柄；网页标题跟随当前会话（没有会话时为打开的文档）；宽度小于 1024 px 时侧栏浮在中央之上，小于 768 px 时活动栏横排在顶部，文档、文件、源码、预览、会话与对话各占整个宽度，dsh 的右侧坞在窄屏中自己全屏；活动栏的“设置”点 dsh 侧栏底部的设置按钮（设置面板自己浮在页面上）。`theme.ts` 以 `ctx.theme.overrideTokens` 把 dsh 的客户端插件用到、ui-theme 定义的 78 个 `--dsw-alias-*` 令牌（另有侧栏、气泡、菜单的几个 `--dsw-specific-*` 与焦点环）映射为 `var(--pm-color-*)`，dsh 在上面画白字的发送按钮与提示气泡用固定的深色；`<html>` 的 `dark` 类与预览的 `appearance` 跟随 dsh 的明暗，字体是 Presmium 的，用户自己选的优先。`brand.tsx` 占据 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`，以优先级 -1 的同名步骤替换 `settings.onboarding` 中的 `welcome-notice`（Presmium 的首次使用提示，画在页面之上，读过记在浏览器的 `localStorage`，可以直接打开模型设置）与 `deepseek-official`（DeepSeek 的登录，立即完成），并用 `ctx.locale.addLanguage` 加上 `zh-CN`、`en-US` 两个语言包（`conversation` 的 `hero.headline`、`hero.preview`）；界面语言由 `ctx.locale` 映射为 `zh-CN` 或 `en` 交给面板。插件页的实验插件组（其中有插件市场）按它的 DOM 属性 `data-plugin-group="extensions"` 隐藏。
-- **宿主部分与补丁**：`src/node/workbench.ts` 以 `ctx.webServer.tapIndex` 把网页标题换成 Presmium、图标换成 Presmium 的标志、去掉 dsh 的 web manifest，并登记 `/api/presmium/workbench`（工作区服务 MCP 的地址，首页的 MCP 卡片用）。界面的行在 `web.patch.yml`（只属于 web 载体，headless 与 acp 不受影响）：关掉 `ui-layout`、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`、`ui-settings-web-search`、`ui-settings-session-log`。启动器以 `--patch` 传入，所以用户在插件管理中关掉 `@lincyaw/dsh` 之后，这些行与工作台仍在，bundle 自己的行与 `/api/presmium/*` 不在，首页说明怎样在“插件”中重新打开。
-- **构建**（`packages/dsh/build/`）：`client.mjs` 用 esbuild 把 `src/client/index.tsx`（连同 `@lincyaw/workbench`、CodeMirror 与设计系统）打成 `build/dist/client.js`，外部依赖是外壳模块表的键（`contract.ts` 的 `SHELL_MODULES`），输出包在 `window.__ModuleLoader__.load({ id: '@lincyaw/dsh', factory })` 中；样式（含以 data URL 内联的 WOFF2 字体，dsh 的模块系统只提供插件的脚本）是一个字符串，模块在页面中加上带 `data-plugin` 的 `<style>`。打包时 `prepack` 构建（`presmium.generated` 含 `build/dist`，不入库）；检出中 `rows/workbench.mjs` 在 dsh 读取客户端包之前调 `ensure.mjs`：包不在或比它的源码（`build/dist/client.json` 列出）旧时重新构建，写入是原子的；从 npm 安装的包不构建。约 950 KB（未压缩）。
-- **用例**：`e2e/workbench.spec.ts`（启动审计、两种宽度、侧栏的拖动柄与快捷键、保存与预览更新、双向定位与问题、外部改动与合并、明暗两套的对比度、两种界面语言的品牌、文档管理、关掉 bundle、退路布局），用 `e2e/fixtures/workbench/studio.ts` 以 studio 的方式启动（`presmium serve --preview-origin <dsh 的源>` 加 `packages/dsh/test/harness.ts` 启动的 web 载体）；`packages/dsh/test/workspaces.test.ts`（`presmium-workspaces` 的跟随）。
+`packages/dsh/test/` 验证工具、上下文、隐私、确认、工作区登记与审阅适配；`packages/workspace/test/review.test.ts` 验证审阅事务；`e2e/workbench.spec.ts` 验证作者在真实工作台中的编辑、预览、导航与退路布局。
 
 ### 13.5 升级闸门
 

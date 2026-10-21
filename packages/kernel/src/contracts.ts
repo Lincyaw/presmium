@@ -6,6 +6,7 @@ import type { ServiceToken } from './contracts/service.ts'
 import type { DirectiveSpec, IRDocument, IRPass, Renderer, RendererContribution, RoleSpec } from './ir.ts'
 
 export * from './contracts/agent.ts'
+export * from './contracts/diagnostics.ts'
 export * from './contracts/execution.ts'
 export * from './contracts/operations.ts'
 export * from './contracts/preview.ts'

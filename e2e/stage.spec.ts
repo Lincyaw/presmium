@@ -65,13 +65,13 @@ test('b blacks out the audience view and b again restores it', async ({ page }) 
 
   await presenter.keyboard.press('b')
   await expect(audience.locator('.pm-stage-black')).toBeVisible()
-  expect(await coversCentre(audience, '.pm-stage-black')).toBe(true)
+  await expect.poll(() => coversCentre(audience, '.pm-stage-black')).toBe(true)
   await expect(presenter.locator('.pm-stage-badge')).toHaveAttribute('data-mode', 'black')
   await expect(presenter.locator('.pm-stage-black')).toHaveCount(0)
 
   await presenter.keyboard.press('b')
   await expect(audience.locator('.pm-stage-black')).toHaveCount(0)
-  expect(await coversCentre(audience, '.pm-stage-basics')).toBe(true)
+  await expect.poll(() => coversCentre(audience, '.pm-stage-basics')).toBe(true)
   await expect(presenter.locator('.pm-stage-badge')).toBeHidden()
 })
 
@@ -85,13 +85,13 @@ test('f freezes the audience view while the presenter moves on; f again resumes'
 
   await presenter.keyboard.press('ArrowRight')
   await expect(audience).toHaveURL(new RegExp(`/${steps()}\\b`))
-  expect(await coversCentre(audience, '.pm-stage-frozen')).toBe(true)
+  await expect.poll(() => coversCentre(audience, '.pm-stage-frozen')).toBe(true)
   await expect(frozen.locator('.pm-stage-basics h1')).toBeVisible()
 
   await presenter.keyboard.press('f')
   await expect(frozen).toBeHidden()
   await expect(audience.locator('.pm-stage-steps h1')).toBeVisible()
-  expect(await coversCentre(audience, '.pm-stage-steps')).toBe(true)
+  await expect.poll(() => coversCentre(audience, '.pm-stage-steps')).toBe(true)
 })
 
 test('annotations are persisted: a drawing survives a reload', async ({ page }) => {
@@ -134,11 +134,11 @@ test('in the web form\'s present view, b blacks out and f freezes the audience w
 
   await page.keyboard.press('b')
   await expect(page.locator('.pm-stage-black')).toBeVisible()
-  expect(await coversCentre(page, '.pm-stage-black')).toBe(true)
+  await expect.poll(() => coversCentre(page, '.pm-stage-black')).toBe(true)
   await expect(badge).toHaveAttribute('data-mode', 'black')
   await page.keyboard.press('b')
   await expect(page.locator('.pm-stage-black')).toHaveCount(0)
-  expect(await coversCentre(page, '.pm-present__slide')).toBe(true)
+  await expect.poll(() => coversCentre(page, '.pm-present__slide')).toBe(true)
   await expect(badge).toHaveCount(0)
 
   await presenter.keyboard.press('f')
@@ -147,12 +147,12 @@ test('in the web form\'s present view, b blacks out and f freezes the audience w
   await expect(badge).toHaveAttribute('data-mode', 'frozen')
   await presenter.keyboard.press('ArrowRight')
   await expect(present).toHaveAttribute('data-section', 'stage-steps')
-  expect(await coversCentre(page, '.pm-stage-frozen')).toBe(true)
+  await expect.poll(() => coversCentre(page, '.pm-stage-frozen')).toBe(true)
   await expect(frozen.locator('h1')).toHaveText('讲台：基础内容')
   await presenter.keyboard.press('f')
   await expect(frozen).toBeHidden()
   await expect(present.locator('.pm-present__title')).toHaveText('讲台：步骤与画面')
-  expect(await coversCentre(page, '.pm-present__slide')).toBe(true)
+  await expect.poll(() => coversCentre(page, '.pm-present__slide')).toBe(true)
 })
 
 test('the slides form fits the stage slides to a 4:3 and a 16:10 screen', async ({ page }) => {

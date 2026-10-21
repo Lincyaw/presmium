@@ -202,6 +202,9 @@ function documentContext(ctx: RenderContext, site: SiteSpec, dir: string, doc: I
     lang: doc.meta.lang,
     base: documentBase(ctx.base, dir),
     vitePlugins: [],
+    get nodeVitePlugins() {
+      return site.documents.find(document => document.dir === dir)?.nodeVitePlugins
+    },
     translations: entry?.translations,
     documentLink,
     localAsset(source, url) {
@@ -512,7 +515,7 @@ export async function devSite(site: SiteSpec, ctx: RenderContext, compile: (dir:
       else site.documents.push(known)
       for (const [other, document] of linking) Object.assign(document.workspace!, siteLinks(site, base, other, latest))
       const running = documents.get(dir)
-      if (running) void running.then(server => server.update(doc)).catch((error: unknown) => console.error(`[presmium] the site did not update ${dir}: ${errorMessage(error)}`))
+      if (running) await (await running).update(doc)
     },
     async close() {
       closed = true

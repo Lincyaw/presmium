@@ -1,7 +1,10 @@
+import { dirname } from 'node:path'
+import { errorMessage } from '@lincyaw/kernel'
 import type { AgentTool, Member, ServiceToken } from '@lincyaw/kernel'
 import type { McpHost, McpPluginTools, McpPosition } from '@lincyaw/mcp'
 import type { Control } from './control.ts'
 import type { FocusStore } from './focus.ts'
+import type { DiagnosticStore } from './diagnostics.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
 
 export interface McpHostOptions {
@@ -12,6 +15,7 @@ export interface McpHostOptions {
   mounted(): Promise<ServedDocument[]>
   service<T>(token: ServiceToken<T>): T | undefined
   focus: FocusStore
+  diagnostics: DiagnosticStore
 }
 
 function toolsOf(documents: ServedDocument[], own: McpHostOptions['service']): McpPluginTools {
@@ -38,7 +42,16 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     process: { command: options.command },
     documents: () => host().documents(),
     compile: document => host().compile(document),
-    check: document => host().check(document),
+    async check(document) {
+      const { doc } = await host().compile(document)
+      const revision = options.diagnostics.revision(document)
+      const findings = await host().check(document)
+      if (revision === options.diagnostics.revision(document)) {
+        const compiled = new Set(doc.diagnostics.map(finding => JSON.stringify(finding)))
+        options.diagnostics.replace({ document, origin: 'check' }, findings.filter(finding => !compiled.has(JSON.stringify(finding))), { root: host().workspaceRoot ?? dirname(doc.meta.entry), revision })
+      }
+      return findings
+    },
     build: (document, build) => host().build(document, build),
     run: (document, target, signal) => host().run(document, target, signal),
     approve: (request, signal) => control.approvals.request(request, signal),
@@ -57,7 +70,20 @@ export function serverMcpHost(options: McpHostOptions): McpHost {
     watchPositions: listener => control.watch(listener),
     focus: document => options.focus.get(document),
     watchFocus: listener => options.focus.watch(listener),
+    async diagnostics(document) {
+      if (!options.diagnostics.observed(document)) {
+        try {
+          const { doc } = await host().compile(document)
+          if (!options.diagnostics.observed(document)) options.diagnostics.compiled(document, doc, host().workspaceRoot ?? dirname(doc.meta.entry))
+        } catch (error) {
+          if (!options.diagnostics.observed(document)) options.diagnostics.failed(document, errorMessage(error))
+        }
+      }
+      return options.diagnostics.snapshot(document)
+    },
+    watchDiagnostics: listener => options.diagnostics.watch(listener),
     classroom: document => control.status(document),
+    runtime: document => control.runtime(document).map(({ window, report }) => ({ window, role: report.role, position: report.position, reported: new Date(report.at).toISOString(), status: report.status ?? {} })),
     navigate: (document, to, member) => control.go(to, member, document),
     session: (document, action, name, member) => control.session(action, name, document, member),
   }

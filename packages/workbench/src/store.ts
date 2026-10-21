@@ -1,5 +1,5 @@
 import { stepKeys, trailStep } from '@lincyaw/kernel'
-import type { Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewReport } from '@lincyaw/kernel'
+import type { Diagnostic, DiagnosticSnapshot, Finding, FocusReport, PreviewAnchor, PreviewCommand, PreviewDiagnostics, PreviewReport, PreviewShortcut } from '@lincyaw/kernel'
 import type { DocumentOperation, DocumentsAnswer, FilesAnswer, HistoryRevision, IrAnswer, IrEvent, OperationAnswer, PreviewAnswer, PreviewView, ReviewFollowed, ReviewView, SourceAnswer, UncommittedFile } from './api.ts'
 import { mergeTexts } from './merge.ts'
 import type { MergeLabels } from './merge.ts'
@@ -55,10 +55,16 @@ export interface WorkbenchState {
   line: number
   reveal?: Reveal
   view: PreviewView
+  previewTabs: PreviewView[]
+  previewReload: number
   preview?: PreviewAnswer
   previewFailure?: string
   shown?: string
-  issues: PageIssue[]
+  diagnostics?: DiagnosticSnapshot
+  diagnosticsUnavailable: boolean
+  canRepairDiagnostics: boolean
+  diagnosticsRepairing: boolean
+  diagnosticsRepairFailure?: string
   picking: boolean
   layout: DocumentLayout
   focus: FocusReport[]
@@ -93,11 +99,16 @@ export class Workbench {
   readonly client: WorkspaceClient
   #state: WorkbenchState
   readonly #listeners = new Set<Listener>()
+  readonly #commands = new Set<(command: PreviewShortcut) => void>()
+  readonly #repairDiagnostics = new Set<(diagnostics: readonly Diagnostic[]) => void | Promise<void>>()
   #editor?: EditorBridge
   readonly #previews = new Set<PreviewSink>()
   readonly #saving = new Set<string>()
   #stopEvents?: () => void
   #stopReview?: () => void
+  #stopDiagnostics?: () => void
+  #diagnosticsScope = 0
+  #repairRequest = 0
   #changeReads = 0
   #previewReads = 0
   #irReads = 0
@@ -106,6 +117,7 @@ export class Workbench {
   #highlight: PreviewAnchor | null = null
   #focusVersion = 0
   #focusWriting: Promise<void> = Promise.resolve()
+  #previewWriting: Promise<void> = Promise.resolve()
   #leave?: () => void | Promise<void>
 
   constructor(options: { client?: WorkspaceClient, locale?: Locale, dark?: boolean } = {}) {
@@ -116,7 +128,11 @@ export class Workbench {
       open: [],
       line: 1,
       view: 'web',
-      issues: [],
+      previewTabs: ['web'],
+      previewReload: 0,
+      diagnosticsUnavailable: false,
+      canRepairDiagnostics: false,
+      diagnosticsRepairing: false,
       picking: false,
       layout: 'preview',
       focus: [],
@@ -133,6 +149,34 @@ export class Workbench {
   subscribe = (listener: Listener): (() => void) => {
     this.#listeners.add(listener)
     return () => this.#listeners.delete(listener)
+  }
+
+  subscribeCommands = (listener: (command: PreviewShortcut) => void): (() => void) => {
+    this.#commands.add(listener)
+    return () => this.#commands.delete(listener)
+  }
+
+  onRepairDiagnostics = (listener: (diagnostics: readonly Diagnostic[]) => void | Promise<void>): (() => void) => {
+    this.#repairDiagnostics.add(listener)
+    this.#set({ canRepairDiagnostics: true })
+    return () => {
+      this.#repairDiagnostics.delete(listener)
+      this.#set({ canRepairDiagnostics: this.#repairDiagnostics.size > 0 })
+    }
+  }
+
+  async requestRepairDiagnostics(): Promise<void> {
+    const diagnostics = this.#state.diagnostics?.diagnostics
+    if (!diagnostics?.length || this.#repairDiagnostics.size === 0 || this.#state.diagnosticsRepairing || this.#state.diagnosticsUnavailable) return
+    const request = ++this.#repairRequest
+    this.#set({ diagnosticsRepairing: true, diagnosticsRepairFailure: undefined })
+    try {
+      await Promise.all([...this.#repairDiagnostics].map(listener => listener(diagnostics)))
+    } catch (error) {
+      if (request === this.#repairRequest) this.#set({ diagnosticsRepairFailure: message(error) })
+    } finally {
+      if (request === this.#repairRequest) this.#set({ diagnosticsRepairing: false })
+    }
   }
 
   getState = (): WorkbenchState => this.#state
@@ -184,7 +228,8 @@ export class Workbench {
   async #openDocument(dir: string): Promise<void> {
     this.#stop()
     this.#stopReview = this.client.review(dir, event => this.#reviewed(dir, event))
-    this.#set({ document: dir, files: undefined, ir: undefined, open: [], active: undefined, line: 1, reveal: undefined, preview: undefined, previewFailure: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined, ...NO_CHANGES })
+    this.#set({ document: dir, view: 'web', previewTabs: ['web'], layout: 'preview', files: undefined, ir: undefined, open: [], active: undefined, line: 1, reveal: undefined, preview: undefined, previewFailure: undefined, shown: undefined, diagnostics: undefined, diagnosticsUnavailable: false, diagnosticsRepairing: false, diagnosticsRepairFailure: undefined, focus: [], focusPending: false, focusFailure: undefined, ...NO_CHANGES })
+    this.#followDiagnostics(dir)
     if (dir === '' && this.#state.documents?.single === false) {
       this.#stopEvents = undefined
       this.#set({ layout: 'source' })
@@ -202,7 +247,7 @@ export class Workbench {
 
   #closeDocument(): void {
     this.#stop()
-    this.#set({ document: undefined, files: undefined, ir: undefined, open: [], active: undefined, reveal: undefined, preview: undefined, shown: undefined, issues: [], focus: [], focusPending: false, focusFailure: undefined, ...NO_CHANGES })
+    this.#set({ document: undefined, files: undefined, ir: undefined, open: [], active: undefined, reveal: undefined, preview: undefined, shown: undefined, diagnostics: undefined, diagnosticsUnavailable: false, diagnosticsRepairing: false, diagnosticsRepairFailure: undefined, focus: [], focusPending: false, focusFailure: undefined, ...NO_CHANGES })
     void this.loadDocuments()
   }
 
@@ -230,6 +275,49 @@ export class Workbench {
       if (this.#state.document === dir && read === this.#irReads) this.#set({ ir })
     } catch {
     }
+  }
+
+  #followDiagnostics(dir: string): void {
+    const scope = this.#diagnosticsScope
+    let streamFailed = false
+    let liveReceived = false
+    const current = () => scope === this.#diagnosticsScope && this.#state.document === dir
+    const received = (diagnostics: DiagnosticSnapshot, live = false) => {
+      if (!current() || (!live && liveReceived)) return
+      if (live) {
+        liveReceived = true
+        streamFailed = false
+      }
+      this.#set({ diagnostics, diagnosticsUnavailable: streamFailed })
+    }
+    const failed = () => {
+      streamFailed = true
+      if (current() && !this.#state.diagnosticsUnavailable) this.#set({ diagnosticsUnavailable: true })
+    }
+    this.#stopDiagnostics = this.client.diagnosticEvents(dir, snapshot => received(snapshot, true), failed)
+    void this.client.diagnostics(dir).then(snapshot => received(snapshot), () => {
+      if (current() && !this.#state.diagnostics && !this.#state.diagnosticsUnavailable) this.#set({ diagnosticsUnavailable: true })
+    })
+  }
+
+  retryDiagnostics(): void {
+    const document = this.#state.document
+    if (document === undefined) return
+    this.#stopDiagnostics?.()
+    this.#diagnosticsScope++
+    this.#followDiagnostics(document)
+  }
+
+  reportPreviewDiagnostics(report: PreviewDiagnostics): Promise<void> {
+    const scope = this.#diagnosticsScope
+    this.#previewWriting = this.#previewWriting.then(async () => {
+      try {
+        await this.client.reportDiagnostics(report)
+      } catch {
+        if (scope === this.#diagnosticsScope && this.#state.document === report.document && !this.#state.diagnosticsUnavailable) this.#set({ diagnosticsUnavailable: true })
+      }
+    })
+    return this.#previewWriting
   }
 
   async #readStatus(dir: string): Promise<void> {
@@ -360,8 +448,19 @@ export class Workbench {
       if (document !== this.#state.document) return false
       if (!this.#file(path)) this.#set({ open: [...this.#state.open, { path, base: answer.content, version: answer.version, dirty: false }] })
     }
-    this.#set({ active: path, openFailure: undefined, ...this.#state.layout === 'preview' ? { layout: 'split' as const } : {}, ...at ? { reveal: { path, ...at, seq: ++this.#revealed } } : {} })
+    this.#set({ active: path, openFailure: undefined, ...this.#state.layout !== 'split' ? { layout: 'source' as const } : {}, ...at ? { reveal: { path, ...at, seq: ++this.#revealed } } : {} })
     return true
+  }
+
+  async createFile(path: string): Promise<void> {
+    const document = this.#state.document
+    if (document === undefined) return
+    await this.client.createSource('', path)
+    if (this.#state.document !== document) return
+    await this.#readFiles(document)
+    await this.openFile(path)
+    void this.#readStatus(document)
+    void this.#readChanges(document)
   }
 
   async openSource(document: string, path: string, at?: Omit<Reveal, 'path' | 'seq'>): Promise<void> {
@@ -386,7 +485,7 @@ export class Workbench {
     const index = this.#state.open.findIndex(file => file.path === path)
     if (index < 0) return
     const open = this.#state.open.filter(file => file.path !== path)
-    this.#set({ open, ...this.#state.active === path ? { active: open[Math.min(index, open.length - 1)]?.path } : {} })
+    this.#set({ open, ...this.#state.active === path ? { active: open[Math.min(index, open.length - 1)]?.path } : {}, ...!open.length && this.#state.previewTabs.length ? { layout: 'preview' as const } : {} })
   }
 
   #deferLeave(files: OpenFile[], leave: () => void | Promise<void>): boolean {
@@ -414,7 +513,7 @@ export class Workbench {
   }
 
   showFile(path: string): void {
-    if (this.#file(path)) this.#set({ active: path })
+    if (this.#file(path)) this.#set({ active: path, ...this.#state.layout !== 'split' ? { layout: 'source' as const } : {} })
   }
 
   edited(path: string, text: string): void {
@@ -518,7 +617,26 @@ export class Workbench {
   }
 
   setLayout(layout: DocumentLayout): void {
+    if (layout !== 'source' && !this.#state.previewTabs.length) this.#set({ previewTabs: [this.#state.view] })
     this.#set({ layout })
+  }
+
+  openPreview(view: PreviewView = this.#state.view, beside = false): void {
+    if (!this.#state.previewTabs.includes(view)) this.#set({ previewTabs: [...this.#state.previewTabs, view] })
+    this.setView(view)
+    this.setLayout(beside && this.#state.open.length ? 'split' : 'preview')
+  }
+
+  closePreview(view: PreviewView): void {
+    const tabs = this.#state.previewTabs.filter(tab => tab !== view)
+    this.#set({ previewTabs: tabs, ...!tabs.length ? { layout: 'source' as const } : {} })
+    if (tabs.length && this.#state.view === view) this.setView(tabs[tabs.length - 1]!)
+  }
+
+  reloadPreview(): void {
+    this.#set({ previewReload: this.#state.previewReload + 1 })
+    const address = this.#state.view === 'slides' ? this.#state.preview?.slides : this.#state.preview?.web
+    if (!address) this.retryPreview()
   }
 
   selectSource(selection: { startLine: number, endLine: number, text: string }): void {
@@ -526,8 +644,8 @@ export class Workbench {
     if (!active || document === undefined) return
     if (document === '' && this.#state.documents?.single === false) return
     const prefix = document ? `${document}/` : ''
-    if (prefix && !active.startsWith(prefix)) return
-    this.setFocus([{ id: 'selection', from: 'source', source: { file: active.slice(prefix.length), startLine: selection.startLine, endLine: selection.endLine }, quote: selection.text.slice(0, 2000) }])
+    const workspace = Boolean(prefix && !active.startsWith(prefix))
+    this.setFocus([{ id: 'selection', from: 'source', ...workspace ? { scope: 'workspace' as const } : {}, source: { file: workspace ? active : active.slice(prefix.length), startLine: selection.startLine, endLine: selection.endLine }, quote: selection.text.slice(0, 2000) }])
   }
 
   setFocus(focus: FocusReport[]): void {
@@ -580,10 +698,8 @@ export class Workbench {
       case 'selection':
         if (report.selection?.text.trim()) this.setFocus([{ id: 'selection', from: view, section: report.selection.section, ...report.selection.block ? { block: report.selection.block } : {}, quote: report.selection.text.slice(0, 2000) }])
         break
-      case 'report':
-        if (!this.#state.issues.some(issue => issue.message === report.message && issue.plugin === report.plugin)) {
-          this.#set({ issues: [...this.#state.issues, { level: report.level, ...report.plugin ? { plugin: report.plugin } : {}, message: report.message }] })
-        }
+      case 'shortcut':
+        for (const listener of this.#commands) listener(report.command)
         break
       default:
         break
@@ -599,13 +715,20 @@ export class Workbench {
   }
 
   #stop(): void {
+    this.#focusVersion++
+    this.#repairRequest++
     this.#stopEvents?.()
     this.#stopReview?.()
+    this.#stopDiagnostics?.()
+    this.#diagnosticsScope++
     this.#stopEvents = this.#stopReview = undefined
+    this.#stopDiagnostics = undefined
   }
 
   dispose(): void {
     this.#stop()
+    this.#commands.clear()
+    this.#repairDiagnostics.clear()
     clearTimeout(this.#highlightTimer)
   }
 }

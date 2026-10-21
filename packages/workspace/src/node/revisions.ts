@@ -97,7 +97,7 @@ export class Revisions implements RevisionService {
   async commitNow(paths: string[], summary: string, body: string, origin: CommitOrigin, revert?: string, more: [string, string][] = []): Promise<Revision | undefined> {
     const unique = [...new Set(paths.map(path => path.replace(/^\.?\/+|\/+$/g, '')).filter(path => path && !leavesRoot(path)))]
     if (unique.length === 0) return undefined
-    for (const path of unique) await this.#git.attempt(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
+    for (const path of unique) await this.#git.raw(['add', '-A', '--', path], { GIT_LITERAL_PATHSPECS: '1' })
     const staged = (await this.#git.raw(['diff', '--cached', '--name-only', '--', ...unique], { GIT_LITERAL_PATHSPECS: '1' })).trim()
     if (!staged) return undefined
     const message = withTrailers(commitMessage(summary, body, origin, revert), more)

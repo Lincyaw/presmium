@@ -7,11 +7,15 @@ function lines(text: string): string[] {
   return text ? text.split(/(?<=\n)/) : []
 }
 
-function streams(runs: RecordedRun[]): unknown[] {
-  return (['stdout', 'stderr'] as const).flatMap((name) => {
-    const text = runs.map(run => run[name]).join('')
+function notebookOutputs(runs: RecordedRun[]): unknown[] {
+  return runs.flatMap(run => run.outputs ? run.outputs.map((output) => {
+    if (output.output_type === 'stream') return { ...output, text: lines(output.text) }
+    if (output.output_type === 'error') return output
+    return { ...output, metadata: output.metadata ?? {}, ...output.output_type === 'execute_result' ? { execution_count: null } : {} }
+  }) : (['stdout', 'stderr'] as const).flatMap((name) => {
+    const text = run[name]
     return text ? [{ output_type: 'stream', name, text: lines(text) }] : []
-  })
+  }))
 }
 
 function kernelLanguage(kernel: unknown): string {
@@ -33,7 +37,7 @@ function notebookCell(node: ComponentNode, _block: IRBlock, ctx: RenderContext) 
     if (text) children.push({ type: 'code', lang: 'text', value: text })
     return { cell_type: 'markdown' as const, mdast: { type: 'root', children } }
   }
-  const outputs = output.recorded ? [{ output_type: 'stream', name: 'stdout', text: lines(output.text) }] : streams(runs)
+  const outputs = output.recorded ? [{ output_type: 'stream', name: 'stdout', text: lines(output.text) }] : notebookOutputs(runs)
   const finished = runs.length > 0 && runs.every(run => !run.timedOut)
   const metadata = node.props.timeout !== undefined && !finished ? { tags: ['skip-execution'] } : undefined
   return { cell_type: 'code' as const, source: lines(declarations(source.lang, params) + source.value), outputs, execution_count: null, ...metadata ? { metadata } : {} }

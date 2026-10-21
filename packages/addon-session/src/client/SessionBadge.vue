@@ -67,7 +67,7 @@ async function join(): Promise<void> {
   position: fixed;
   right: 1rem;
   bottom: calc(var(--pm-overlay-bar, 0px) + 1rem);
-  z-index: 2000;
+  z-index: var(--pm-z-popover);
   box-sizing: border-box;
   max-width: calc(100vw - 2rem);
   padding: 0.5rem 0.75rem;
@@ -79,6 +79,9 @@ async function join(): Promise<void> {
   font-family: var(--pm-font-sans);
   font-size: var(--pm-text-md);
   line-height: var(--pm-leading-ui);
+}
+html.pm-presenting .pm-session-badge--page {
+  display: none;
 }
 .pm-session-badge__row {
   display: flex;

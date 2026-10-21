@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url'
 import { presmium } from '@lincyaw/cli/testing'
 import { Compiler } from '@lincyaw/compiler'
 import { docBlocks } from '@lincyaw/kernel'
+import type { CodeNode as IRCodeNode, IRDocument } from '@lincyaw/kernel'
 import { afterAll, expect, it } from 'vitest'
 
 const ADDON = fileURLToPath(new URL('..', import.meta.url))
+const EXEC = fileURLToPath(new URL('../../addon-exec', import.meta.url))
 
 const CART = `export function total(prices: number[]): number {
   return prices.reduce((sum, price) => sum + price, 0)
@@ -140,6 +142,42 @@ async function check(dir: string, ...args: string[]): Promise<{ code: number, fi
 }
 
 const problems = (findings: Finding[]) => findings.filter(f => f.severity !== 'info')
+
+it('renders local code without a remote or permalink silently, while retaining meaningful anchor information', async () => {
+  const repo = createRepo()
+  writeFileSync(repo.deck, `---\nplugins:\n  - ${ADDON}\n---\n\n## Local\n\n\`\`\`{code-ref} region:src/cart.ts#checkout\n\`\`\`\n`)
+  const result = await presmium(repo.dir, ['ir', 'deck'])
+  expect(result.code, result.stdout + result.stderr).toBe(0)
+  const doc = JSON.parse(result.stdout) as IRDocument
+  expect(doc.diagnostics).toEqual([])
+  const code = [...docBlocks(doc)].find(({ block }) => block.node.type === 'code')!.block.node as IRCodeNode
+  expect(code.value).toContain('export function checkout(prices: number[], coupon?: string): string')
+  expect(code.origin?.permalink).toBeUndefined()
+
+  expect((await check(repo.dir, '--update-lock')).findings).toEqual([])
+  repo.edit(CART_REFORMATTED)
+  const moved = await check(repo.dir)
+  expect(moved.code).toBe(0)
+  expect(moved.findings).toEqual([expect.objectContaining({ checkId: 'presmium.code.anchors', severity: 'info', message: 'anchor region:src/cart.ts#checkout moved to src/cart.ts:8' })])
+})
+
+it('still reports execution failures and missing source when a local code reference has no remote', async () => {
+  const repo = createRepo()
+  repo.edit('# region failure\nraise ValueError("query needs a key")\n# endregion failure\n', 'src/parser.py')
+  writeFileSync(repo.deck, `---\nplugins:\n  - ${ADDON}\n  - ${EXEC}\n---\n\n## Query\n\n\`\`\`{code-ref} region:src/parser.py#failure\n:run:\n\`\`\`\n`)
+  const result = await presmium(repo.dir, ['ir', 'deck'])
+  expect(result.code, result.stdout + result.stderr).toBe(0)
+  const doc = JSON.parse(result.stdout) as IRDocument
+  expect(doc.diagnostics).toEqual([expect.objectContaining({ checkId: 'presmium.execute', severity: 'warning', message: 'block code-1 exited with code 1' })])
+  const code = [...docBlocks(doc)].find(({ block }) => block.node.type === 'code')!.block.node as IRCodeNode
+  expect(code.outputs?.[0]?.stderr).toContain('ValueError: query needs a key')
+
+  rmSync(join(repo.dir, 'src/parser.py'))
+  const missing = await check(repo.dir)
+  expect(missing.code).toBe(1)
+  expect(missing.findings).toContainEqual(expect.objectContaining({ checkId: 'presmium.code.anchors', severity: 'error', message: expect.stringContaining('src/parser.py not found under the repository root') }))
+  expect(missing.findings.some(finding => finding.checkId === 'presmium.code.links')).toBe(false)
+})
 
 it('keeps passing after blank lines are inserted and the referenced code is re-indented', async () => {
   const repo = createRepo()

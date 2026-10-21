@@ -1,4 +1,4 @@
-import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, watch, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, watch, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { build, Compiler } from '@lincyaw/compiler'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -106,6 +106,12 @@ describe('a deck with a translation, for an audience', () => {
   it('builds neither language with the teacher\'s content, and compiles the translation without writing a file in the deck', async () => {
     const dir = deck(TRANSLATED)
     dirs.push(dir)
+    const originalEntries = readdirSync(dir)
+    const snapshot = (file: string) => {
+      const { ino, mtimeNs } = statSync(join(dir, file), { bigint: true })
+      return { content: readFileSync(join(dir, file)), ino, mtimeNs }
+    }
+    const sources = new Map(originalEntries.map(file => [file, snapshot(file)]))
     const written: string[] = []
     const watcher = watch(dir, (_event, name) => name && written.push(name))
     const built = await presmium(dir, ['build', '--audience', 'student', '--out', 'student'])
@@ -115,8 +121,11 @@ describe('a deck with a translation, for an audience', () => {
     for (const text of TEACHER_BOTH) expect(holding(out, text), text).toEqual([])
     expect(holding(join(out, 'web/en'), 'studenten').length).toBeGreaterThan(0)
     expect(holding(join(out, 'web'), 'studentzh').length).toBeGreaterThan(0)
+    for (const [file, before] of sources) expect(snapshot(file), file).toEqual(before)
     expect(written.filter(name => name.startsWith('.presmium-translation'))).toEqual([])
-    expect(new Set(written)).toEqual(new Set(['student', '.presmium', 'node_modules']))
+    const allowed = new Set([...originalEntries, 'student', '.presmium', 'node_modules'])
+    expect(new Set(readdirSync(dir))).toEqual(allowed)
+    expect(written.filter(name => !allowed.has(name))).toEqual([])
   }, 300_000)
 
   it('builds a whole compilation for the audience (the build\'s audience option): neither language with the teacher\'s content; a leak is reported without its sentence', async () => {

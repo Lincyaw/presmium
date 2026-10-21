@@ -134,13 +134,9 @@ async function hostApi(launch: string): Promise<HostApi> {
 interface Proc { pid: number, ppid: number, cmdline: string }
 
 function descendants(pid: number): Proc[] {
-  const all = readdirSync('/proc').filter(name => /^\d+$/.test(name)).flatMap((name) => {
-    try {
-      const stat = readFileSync(`/proc/${name}/stat`, 'utf8')
-      return [{ pid: Number(name), ppid: Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1]), cmdline: readFileSync(`/proc/${name}/cmdline`, 'utf8').replaceAll('\0', ' ') }]
-    } catch {
-      return []
-    }
+  const all = execFileSync('ps', ['-ww', '-axo', 'pid=,ppid=,args='], { encoding: 'utf8' }).split('\n').flatMap((line) => {
+    const match = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line)
+    return match ? [{ pid: Number(match[1]), ppid: Number(match[2]), cmdline: match[3]! }] : []
   })
   const out: Proc[] = []
   const walk = (parent: number) => {
@@ -187,7 +183,7 @@ describe('presmium studio installed from the packed packages', () => {
   afterAll(() => {
     if (project) rmSync(project, { recursive: true, force: true })
     home?.close()
-  })
+  }, 120_000)
 
   it('prints one address, which opens the workbench (P-125, P-141)', async () => {
     const ws = join(project, 'ws')
@@ -195,7 +191,7 @@ describe('presmium studio installed from the packed packages', () => {
     cpSync(join(CONSUMER, 'deck/lecture.md'), join(ws, 'intro/lecture.md'))
     writeFileSync(join(ws, 'presmium.workspace.yaml'), 'title: Consumer workspace\ndocuments: [\'*/lecture.md\']\n')
     git(ws, ['init', '-q', '-b', 'main'])
-    const running = await studio([join(project, 'node_modules/presmium/bin/presmium.mjs'), 'studio', 'ws', '--port', '5666'], { cwd: project, env: home.env() })
+    const running = await studio([join(project, 'node_modules/@lincyaw/presmium/bin/presmium.mjs'), 'studio', 'ws', '--port', '5666'], { cwd: project, env: home.env() })
     const browser = await chromium.launch()
     try {
       expect(running.stdout()).toBe(`studio  ${running.url}\n`)
@@ -313,7 +309,7 @@ describe('presmium studio\'s processes', () => {
     if (ws) rmSync(ws, { recursive: true, force: true })
   })
 
-  it('keeps the model\'s key out of the workspace service, and leaves no process after kill -9 of the launcher', async () => {
+  it.skipIf(process.platform === 'win32')('keeps the model\'s key out of the workspace service, and leaves no process after kill -9 of the launcher', async () => {
     home = testHome('kill')
     ws = repository(TWO_DOCUMENTS)
     const running = await studio([STUDIO_BIN, ws, '--port', '5664'], { env: home.env({ DEEPSEEK_API_KEY: 'deepseek-key-96f', DEEPSEEK_BASE_URL: 'http://127.0.0.1:9/elsewhere' }) })
@@ -325,11 +321,15 @@ describe('presmium studio\'s processes', () => {
       expect(started.filter(proc => proc.cmdline.includes('watchdog.mjs'))).toHaveLength(2)
       const serve = started.find(proc => / serve /.test(proc.cmdline) && !proc.cmdline.includes('watchdog.mjs'))!
       const dsh = started.find(proc => /dsh\/lib\/bin\.js/.test(proc.cmdline) && !proc.cmdline.includes('watchdog.mjs'))!
-      expect(environ(dsh.pid)).toMatchObject({ DEEPSEEK_API_KEY: 'deepseek-key-96f', DSH_HOME: home.dshHome, PRESMIUM_WORKSPACE: ws })
-      expect(environ(dsh.pid).DEEPSEEK_BASE_URL).toBeUndefined()
-      const service = environ(serve.pid)
-      expect(service.PRESMIUM_SERVICE_TOKEN).toBe(environ(dsh.pid).PRESMIUM_SERVICE_TOKEN)
-      expect(Object.keys(service).filter(name => /^(?:DEEPSEEK_|DSH_)/.test(name))).toEqual([])
+      if (process.platform === 'linux') {
+        expect(environ(dsh.pid)).toMatchObject({ DEEPSEEK_API_KEY: 'deepseek-key-96f', DSH_HOME: home.dshHome, PRESMIUM_WORKSPACE: ws })
+        expect(environ(dsh.pid).DEEPSEEK_BASE_URL).toBeUndefined()
+        const service = environ(serve.pid)
+        expect(service.PRESMIUM_SERVICE_TOKEN).toBe(environ(dsh.pid).PRESMIUM_SERVICE_TOKEN)
+        expect(Object.keys(service).filter(name => /^(?:DEEPSEEK_|DSH_)/.test(name))).toEqual([])
+      } else {
+        console.info('Skipping child-environment inspection: Linux /proc/<pid>/environ is required; preview HTTP responses and process cleanup are still checked.')
+      }
 
       process.kill(running.child.pid!, 'SIGKILL')
       await running.exited

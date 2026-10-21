@@ -9,6 +9,7 @@ export function devHost(latest: () => Compilation | undefined): ServerHost {
     return compilation
   }
   return {
+    get workspaceRoot() { return latest()?.workspaceRoot },
     async documents() {
       const compilation = latest()
       return compilation ? [{ dir: '', title: compilation.doc.meta.title, lang: compilation.doc.meta.lang }] : []

@@ -1,5 +1,7 @@
 import type { Finding, Focus, IRDocument, ReviewChange, ReviewStep, Revision } from '@lincyaw/kernel'
 
+export type { Diagnostic, DiagnosticSnapshot, PreviewDiagnostics } from '@lincyaw/kernel'
+
 export interface WorkspaceDocument {
   dir: string
   title: string
@@ -79,6 +81,7 @@ export interface ErrorAnswer {
   title?: string
   conflict?: { version: string, content: string }
   locked?: { document: string, holder: string }
+  exists?: true
 }
 
 export interface WorkbenchAnswer {

@@ -1,3 +1,4 @@
+import { STATUS } from '@lincyaw/host'
 import { EXECUTOR } from '@lincyaw/kernel'
 import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
@@ -7,11 +8,13 @@ import { environments } from './place.ts'
 import { createPyodideExecutor } from './pyodide.ts'
 import type { PyodideExecutor } from './pyodide.ts'
 import { createScriptExecutor } from './script.ts'
+import { withRuntimeFeedback } from './feedback.ts'
 
 let pyodide: PyodideExecutor | undefined
+let stopStatus: (() => void) | undefined
 
 export const execPlugin: PluginDefinition = {
-  manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], capabilities: ['exec'] },
+  manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], requires: [{ token: STATUS, optional: true }], capabilities: ['exec'] },
   setup(ctx) {
     const config = execConfig(ctx.config)
     environments.value = ctx.environments ?? {}
@@ -29,12 +32,17 @@ export const execPlugin: PluginDefinition = {
     })
     router.register(pyodide)
     router.register(createScriptExecutor({ timeoutMs: config.timeoutMs }))
-    ctx.provide(EXECUTOR, router)
+    const feedback = withRuntimeFeedback(router)
+    stopStatus?.()
+    stopStatus = ctx.tryGet(STATUS)?.register({ id: EXEC_ID, read: feedback.read })
+    ctx.provide(EXECUTOR, feedback.executor)
     ctx.provide(TRACER, pyodide)
   },
   dispose() {
     pyodide?.dispose()
     pyodide = undefined
+    stopStatus?.()
+    stopStatus = undefined
   },
 }
 

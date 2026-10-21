@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, posix, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -16,7 +16,7 @@ function option(name) {
   const at = args.indexOf(name)
   return at >= 0 && args[at + 1] ? args[at + 1] : undefined
 }
-const SITE = resolve(option('--site') ?? HERE)
+const SITE = realpathSync(resolve(option('--site') ?? HERE))
 const out = resolve(option('--out') ?? join(SITE, 'dist'))
 const web = join(out, 'web')
 
@@ -45,7 +45,7 @@ for (const entry of entries) {
     process.exit(1)
   }
   const bad = findings.filter(finding => finding.severity === 'error' || finding.severity === 'warning')
-  for (const finding of bad) console.error(`${relative(SITE, finding.source?.file ?? entry)}:${finding.source?.line ?? 1}  ${finding.severity}  ${finding.message}  (${finding.checkId})`)
+  for (const finding of bad) console.error(`${relative(SITE, finding.source?.file ?? join(SITE, entry))}:${finding.source?.line ?? 1}  ${finding.severity}  ${finding.message}  (${finding.checkId})`)
   problems += bad.length
   console.log(`checked ${entry}: ${bad.length === 0 ? 'no problems' : `${bad.length} problems`}`)
 }

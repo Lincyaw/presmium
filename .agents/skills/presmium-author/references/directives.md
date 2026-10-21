@@ -246,7 +246,7 @@ def merge(ids, pair, new_id):
 # #endregion merge
 ```
 
-诊断：`presmium.code.anchors`（锚点丢失为错误，模糊匹配为警告，移动为提示）、`presmium.code.drift`（锁定提交之后工作区的代码变了，警告并附差异）、`presmium.code.links`（没有远端仓库，没有永久链接）、`presmium.code.syntax`（参数不是锚点、`:variants:` 少于两个等）。
+诊断：`presmium.code.anchors`（锚点丢失为错误，模糊匹配为警告，移动为提示）、`presmium.code.drift`（锁定提交之后工作区的代码变了，警告并附差异）、`presmium.code.syntax`（参数不是锚点、`:variants:` 少于两个等）。本地代码没有远端仓库时正常显示，只是不提供永久链接，不产生诊断。
 
 ## 浏览器执行 `presmium.exec`（`@lincyaw/slidev-addon-exec`）
 

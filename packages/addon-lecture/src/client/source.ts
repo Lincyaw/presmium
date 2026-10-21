@@ -26,8 +26,11 @@ export class NotYetSynthesized extends Error {}
 
 async function trackOf(response: Response): Promise<LectureTrack | undefined> {
   if (response.status === 409) throw new NotYetSynthesized(await response.text())
-  if (!response.ok) return undefined
-  return parseTrack(await response.json()).track
+  if (response.status === 404) return undefined
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const { track, problems } = parseTrack(await response.json())
+  if (!track) throw new Error(problems.join('; '))
+  return track
 }
 
 export function serverSource(server: ServerClient): LectureSource {
@@ -37,7 +40,7 @@ export function serverSource(server: ServerClient): LectureSource {
     async media(id, src) {
       if (ABSOLUTE.test(src)) return src
       const response = await server.fetch(LECTURE_ID, `tracks/${encodeURIComponent(id)}/${src.split('/').map(encodeURIComponent).join('/')}`)
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (!response.ok) throw new Error(`${src}: HTTP ${response.status}`)
       return URL.createObjectURL(await response.blob())
     },
   }

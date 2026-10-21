@@ -21,7 +21,7 @@ It is a Presmium plugin and a Slidev addon: its components work on the web page 
 
 ## What it provides
 
-- `{run-panel}`: a panel that runs code with parameters, at build time and in the browser.
+- `{run-panel}`: a panel that runs code with parameters, at build time and in the browser. It shows final expression values and rich display outputs, includes values in run comparisons, and preserves rich outputs in notebooks. Panels with `:session:` provide Reset session to repeat a demonstration from scratch.
 - `{step-run}`: Python traced line by line in the browser, a line per step.
 - Run buttons for code blocks with `:run: live` or `both`, and the browser executors.
 

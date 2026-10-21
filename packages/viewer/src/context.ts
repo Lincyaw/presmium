@@ -9,7 +9,7 @@ export interface SectionContext {
 }
 
 export const SECTION_CONTEXT: InjectionKey<SectionContext> = Symbol('presmium.viewer.section')
-export const IN_COMPONENT: InjectionKey<boolean> = Symbol('presmium.viewer.inComponent')
+export const CODE_OWNED: InjectionKey<Readonly<Ref<boolean>>> = Symbol('presmium.viewer.codeOwned')
 
 export function useSectionContext(): SectionContext | undefined {
   return inject(SECTION_CONTEXT, undefined)

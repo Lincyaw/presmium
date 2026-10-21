@@ -2,7 +2,7 @@
 title: Author guide
 lang: en
 description: Write lectures in MyST Markdown and publish them as web pages, slides, notebooks and narrated lectures
-translationOf: { entry: lecture.md, digest: 0104f965515bf4147cef7c0a23ba11ca533f056b433be87fe8962d31ddc4f1f0 }
+translationOf: { entry: lecture.md, digest: 6c617e97491ec38361271e63a62dde690d1aab91eff9b29fe5aa2e2c9b68722c }
 ---
 
 (guide)=
@@ -237,10 +237,14 @@ The answers come from a model service the reader sets up (the address of an Open
 (assistant-edit)=
 ## Changes by an agent
 
+Studio keeps the workflow simple for teachers who do not use development tools: describe the teaching goal, inspect the preview, select what needs changing and review the edit. Use the VS Code extension for professional code editing. The agent distinguishes source diagnostics, compiled recordings and observed browser feedback. `get_runtime` provides recent live runs, failures and session resets; `get_outputs` still describes compiled recordings. Missing feedback is not success: rerun the affected code after edits.
+
 In the workbench (experimental; `pnpm add -g @lincyaw/studio`, then `presmium-studio`), an agent changes a lecture as your chat asks: you review the changes, and what you accept becomes a git commit you can revert. The model service comes from environment variables (such as `DEEPSEEK_API_KEY`, or `PRESMIUM_MODEL_URL`, `PRESMIUM_MODEL_KEY` and `PRESMIUM_MODEL_PROVIDER`) or from the workbench's model settings; it is never written into the lecture or its outputs.
 
 (assistant-mcp)=
 ## Agents in your editor
+
+The read-only `get_runtime` tool (resource `presmium://runtime`) returns the selected document's author windows, report times, position, plugin/component failures and live execution summaries. Closing a window removes its feedback. A report describes a previous observation and does not verify new source: repeat the affected action before claiming a fix worked.
 
 `presmium dev` and `presmium serve` give the document to agents in your editor (Claude Code, Codex, VS Code and others) over MCP: they read sections, steps, code references, outputs and findings, and navigate, run code or build once you approve. Both print the MCP address and the file that holds its token when they start; without a server, `presmium-mcp <document directory>` provides the reading tools over stdio.
 

@@ -79,7 +79,10 @@ it('runs Python and JavaScript through the process sandbox with the run\'s envir
   expect(calls).toHaveLength(3)
   for (const call of calls) {
     expect(Object.keys(call.files)).toContain('.presmium/request.json')
-    expect(call.env).toEqual({
+    const forwarded = { ...call.env }
+    // CoreFoundation may inject this text-encoding hint when macOS starts Node.
+    if (process.platform === 'darwin') delete forwarded.__CF_USER_TEXT_ENCODING
+    expect(forwarded).toEqual({
       ...KEPT,
       GOMAXPROCS: '1', RAYON_NUM_THREADS: '1', OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1',
       MKL_NUM_THREADS: '1', NUMEXPR_MAX_THREADS: '1', POLARS_MAX_THREADS: '1', UV_THREADPOOL_SIZE: '2',

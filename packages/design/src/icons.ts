@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleHelp, CircleX, Contrast, Copy, ExternalLink, FileDiff, FileText, Folder, GitBranch, GitFork, Info, Moon, MoreHorizontal, Pencil, Play, Plug, Plus, Presentation, Redo2, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
+import { ArrowLeft, Check, ChevronDown, ChevronLeft, ChevronRight, Circle, CircleHelp, CircleX, Columns2, Contrast, Copy, ExternalLink, FileDiff, FileText, Folder, GitBranch, GitFork, Info, Moon, MoreHorizontal, PanelLeftClose, Pencil, Play, Plug, Plus, Presentation, Redo2, Save, Search, SlidersHorizontal, Sparkles, Sun, Trash2, TriangleAlert, Undo2, Users, X } from 'lucide'
 import type { IconNode } from 'lucide'
 
 export type Shape = IconNode[number]
@@ -13,6 +13,7 @@ export const ICONS = {
   slides: Presentation, external: ExternalLink, trash: Trash2, play: Play,
   warning: TriangleAlert, error: CircleX, info: Info, contrast: Contrast,
   record: Circle, plug: Plug, 'arrow-left': ArrowLeft,
+  split: Columns2, 'merge-panels': PanelLeftClose, save: Save, preview: Presentation,
 } satisfies Record<string, IconNode>
 
 export type IconName = keyof typeof ICONS

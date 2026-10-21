@@ -1,5 +1,6 @@
 import type { RunResult } from '@lincyaw/kernel'
 import { isPython, isScript } from './config.ts'
+import { outputText } from './runs.ts'
 
 function literal(value: unknown, script: boolean): string {
   if (typeof value === 'boolean') return script ? String(value) : value ? 'True' : 'False'
@@ -14,5 +15,5 @@ export function declarations(lang: string, params: Record<string, unknown> | und
 
 export function shownOutput(runs: readonly RunResult[], recorded: string | undefined): { text: string, recorded: boolean } {
   if (recorded !== undefined && !(runs.length > 0 && runs.every(run => run.ok))) return { text: recorded, recorded: true }
-  return { text: runs.map(run => run.stdout + run.stderr).join(''), recorded: false }
+  return { text: runs.map(outputText).join(''), recorded: false }
 }

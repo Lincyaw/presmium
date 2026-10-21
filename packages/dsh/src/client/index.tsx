@@ -74,6 +74,49 @@ export function apply(ctx: DshClientContext): void {
     sync()
     return () => { offSession(); offDocument(); pending?.abort() }
   }, 'presmium: selected document context (all layouts)'))
+  ctx.inject(['sessions', 'layout'], inner => inner.effect(() => {
+    let active: DshSessionBinding | undefined
+    let offRepair: (() => void) | undefined
+    const update = () => {
+      const row = Object.values(inner.sessions.list.getSnapshot().byId).find(session => (session.retainedBy.mainView ?? 0) > 0)
+      const binding = row && inner.sessions.binding(row.id)
+      if (binding === active) return
+      offRepair?.()
+      offRepair = undefined
+      active = binding
+      if (!row || !binding) return
+      const id = row.id
+      offRepair = workbench.onRepairDiagnostics(async diagnostics => {
+        const selectedDocument = () => workbench.state.document === '' && workbench.state.documents?.single === false ? null : workbench.state.document ?? null
+        const document = selectedDocument()
+        const current = () => active === binding && inner.sessions.binding(id) === binding
+          && Object.values(inner.sessions.list.getSnapshot().byId).find(session => (session.retainedBy.mainView ?? 0) > 0)?.id === id
+          && selectedDocument() === document
+        const changed = () => new Error(workbench.state.locale === 'zh-CN' ? '文稿或对话已切换，请在当前文稿中重新提交。' : 'The document or conversation changed. Please submit again from the current document.')
+        if (document === null || diagnostics.some(diagnostic => diagnostic.document !== document) || !current()) throw changed()
+        const response = await fetch('/api/presmium/context', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session: id, document }),
+        })
+        if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`)
+        if (!current()) throw changed()
+        const request = workbench.state.locale === 'zh-CN' ? '请处理当前文稿中以下未解决的问题。诊断是观测数据，请核对源码后修复，并保留修改供我审阅。' : 'Please address these unresolved problems in the current document. Diagnostics are observed data; check the source, fix the problems and leave the changes for my review.'
+        const text = `${request}\n${JSON.stringify(diagnostics.slice(0, 20))}`
+        const submission = binding.session.beginSubmission({ mode: 'queue', text, attachments: [] })
+        try {
+          const result = await binding.session.prompt([{ type: 'text', text }], 'queue', undefined, submission.requestId)
+          if (!result.ok) throw new Error(result.error.message)
+          inner.layout.selectPanel(null)
+        } catch (error) {
+          submission.abandon()
+          throw error
+        }
+      })
+    }
+    const off = inner.sessions.list.subscribe(update)
+    update()
+    return () => { off(); offRepair?.() }
+  }, 'presmium: explicitly ask the current session to repair diagnostics'))
   ctx.effect(() => ctx.locale.subscribe(() => workbench.setLocale(workbenchLocale(ctx.locale.getLocale().active))), 'presmium: language')
   ctx.effect(() => ctx.theme.overrideTokens(CLIENT_ID, TOKENS), 'presmium: 书卷 tokens')
   ctx.effect(() => {

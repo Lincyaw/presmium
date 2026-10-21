@@ -7,10 +7,12 @@ import { trailers } from '../../domain/revisions.ts'
 import type { WorkspaceConfig } from '../config.ts'
 import { listDocuments } from '../config.ts'
 import { lockedError, RequestError } from '../documents.ts'
+import { writeChanges } from '../files.ts'
 import type { DocumentLocks } from '../locks.ts'
 import type { Revisions } from '../revisions.ts'
 import { GIT_ENGINE, leftSessionReview, openGitReview, recoverGitReview, resumeGitReview } from './git-review.ts'
 import type { GitReview } from './git-review.ts'
+import { readRecord } from './review-record.ts'
 
 export const SESSION_TRAILER = 'Presmium-Session'
 export const TURN_TRAILER = 'Presmium-Turn'
@@ -89,37 +91,56 @@ function summaryOf(files: string[], lang: string | undefined): string {
 
 export class Reviews {
   readonly #options: ReviewsOptions
-  readonly #open = new Map<string, Open>()
-  readonly #queues = new Map<string, Promise<unknown>>()
-  readonly #followers = new Map<string, Set<(event: ReviewFollowed) => void>>()
+  #open?: Open
+  #queue: Promise<unknown> = Promise.resolve()
+  readonly #workspaceFiles: DocumentFiles
+  readonly #followers = new Set<(event: ReviewFollowed) => void>()
   readonly #listeners = new Set<(event: ReviewEvent) => void>()
   #closed = false
 
   constructor(options: ReviewsOptions) {
     this.#options = options
+    this.#workspaceFiles = { write: async changes => writeChanges(options.config, changes, true) }
   }
 
   readonly service: ChangeReviewService = {
     engine: GIT_ENGINE,
-    open: ({ document, task }) => openGitReview({
-      workspaceRoot: this.#options.config.root,
-      deckDir: join(this.#options.config.root, document),
-      task,
-      files: this.#options.files,
-      onRestore: paths => this.#options.log.warn(`task ${task}: the agent changed the git directory, put back: ${paths.join(', ')}`),
-      warn: message => this.#options.log.warn(`task ${task}: ${message}`),
-    }),
+    open: async ({ document, task }) => {
+      const release = this.#options.locks.claim(document, `agent:${task}`)
+      if (!release) throw lockedError(document, this.#options.locks.holder(document)!)
+      try {
+        const review = await openGitReview({
+          workspaceRoot: this.#options.config.root,
+          deckDir: join(this.#options.config.root, document),
+          task,
+          files: this.#options.files,
+          onRestore: paths => this.#options.log.warn(`task ${task}: the agent changed the git directory, put back: ${paths.join(', ')}`),
+          warn: message => this.#options.log.warn(`task ${task}: ${message}`),
+        })
+        const finish = <Args extends unknown[], T>(work: (...args: Args) => Promise<T>) => async (...args: Args): Promise<T> => {
+          const result = await work(...args)
+          release()
+          return result
+        }
+        return { ...review, accept: finish(review.accept), rollback: finish(review.rollback), close: finish(review.close) }
+      } catch (error) {
+        release()
+        throw error
+      }
+    },
   }
 
   async recover(documents: string[], { resume = true } = {}): Promise<void> {
     const { config, log } = this.#options
-    for (const document of documents) {
+    const legacy = documents.filter(document => document !== '' && readRecord(join(config.root, document))?.session)
+    if (legacy.length > 0) throw new Error(`Cannot restore document-scoped session reviews in ${legacy.join(', ')} as a workspace review. Use the previous Presmium version to accept or reject them first. Their review records and snapshots have been kept.`)
+    for (const document of new Set([...documents, ''])) {
       const deckDir = join(config.root, document)
       if (!existsSync(deckDir)) continue
       try {
         const left = leftSessionReview(deckDir)
         if (left?.session) {
-          if (resume) await this.#serial(document, () => this.#resume(document, left))
+          if (resume) await this.#serial(() => this.#resume(left))
           continue
         }
         const found = await recoverGitReview({ workspaceRoot: config.root, deckDir, files: this.#options.files, onRestore: paths => log.warn(`the git directory as a change task found it, put back: ${paths.join(', ')}`) })
@@ -130,16 +151,16 @@ export class Reviews {
     }
   }
 
-  async #resume(document: string, left: NonNullable<ReturnType<typeof leftSessionReview>>): Promise<void> {
+  async #resume(left: NonNullable<ReturnType<typeof leftSessionReview>>): Promise<void> {
     const { config, log } = this.#options
     const session = left.session!
-    const release = this.#options.locks.claim(document, holderOf(session.session))
-    if (!release) throw new Error(`its lock is ${this.#options.locks.holder(document)}'s`)
+    const release = this.#options.locks.claim('', holderOf(session.session))
+    if (!release) throw new Error(`its lock is ${this.#options.locks.holder('')}'s`)
     try {
-      const review = await resumeGitReview(left, { workspaceRoot: config.root, files: this.#options.files, onRestore: paths => log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) })
-      const open: Open = { review, document, session: session.session, member: session.member, turns: session.turns, running: false, opened: session.opened, release }
-      this.#open.set(document, open)
-      log.info(`the review of session ${session.session} in ${document || '.'} (turns ${session.turns.from}-${session.turns.to}) waits for its author again`)
+      const review = await resumeGitReview(left, { workspaceRoot: config.root, files: this.#workspaceFiles, onRestore: paths => log.warn(`session ${session.session}: the agent changed the git directory, put back: ${paths.join(', ')}`) })
+      const open: Open = { review, document: session.document, session: session.session, member: session.member, turns: session.turns, running: false, opened: session.opened, release }
+      this.#open = open
+      log.info(`the review of session ${session.session} in ${session.document || '.'} (turns ${session.turns.from}-${session.turns.to}) waits for its author again`)
       this.#arm(open)
     } catch (error) {
       release()
@@ -147,8 +168,8 @@ export class Reviews {
     }
   }
 
-  async view(document: string): Promise<ReviewView | undefined> {
-    const open = this.#open.get(document)
+  async view(): Promise<ReviewView | undefined> {
+    const open = this.#open
     return open && await this.#view(open)
   }
 
@@ -169,15 +190,14 @@ export class Reviews {
   }
 
   follow(document: string, signal: AbortSignal): AsyncIterable<{ event: string, data: ReviewFollowed }> {
-    const followers = this.#followers.get(document) ?? new Set()
-    this.#followers.set(document, followers)
     return this.#stream(signal, (push) => {
-      followers.add(push)
-      void this.view(document).then(review => push({ document, ...review ? { review } : {} }), () => push({ document }))
-      this.#rearm(document)
+      const follow = (event: ReviewFollowed) => push({ ...event, document })
+      this.#followers.add(follow)
+      void this.view().then(review => push({ document, ...review ? { review } : {} }), () => push({ document }))
+      this.#rearm()
       return () => {
-        followers.delete(push)
-        this.#rearm(document)
+        this.#followers.delete(follow)
+        this.#rearm()
       }
     }, 'review')
   }
@@ -218,22 +238,22 @@ export class Reviews {
   }
 
   open(document: string, body: { session: string, turn?: number }, member: Member): Promise<ReviewView> {
-    return this.#serial(document, async () => {
+    return this.#serial(async () => {
       if (this.#closed) throw new RequestError(503, 'the workspace service is closing')
-      let open = this.#open.get(document)
+      let open = this.#open
       if (open && open.session !== body.session) throw lockedError(document, holderOf(open.session))
       if (!open) {
-        const release = this.#options.locks.claim(document, holderOf(body.session))
-        if (!release) throw lockedError(document, this.#options.locks.holder(document) ?? '')
+        const release = this.#options.locks.claim('', holderOf(body.session))
+        if (!release) throw lockedError(document, this.#options.locks.holder('')!)
         const { config, log } = this.#options
         const turn = body.turn ?? 0
         const opened = new Date().toISOString()
         try {
           const review = await openGitReview({
             workspaceRoot: config.root,
-            deckDir: join(config.root, document),
+            deckDir: config.root,
             task: randomUUID(),
-            files: this.#options.files,
+            files: this.#workspaceFiles,
             onRestore: paths => log.warn(`session ${body.session}: the agent changed the git directory, put back: ${paths.join(', ')}`),
             warn: message => log.warn(`session ${body.session}: ${message}`),
             session: { session: body.session, document, member, turns: { from: turn, to: turn }, opened },
@@ -243,17 +263,17 @@ export class Reviews {
           release()
           throw new RequestError(409, `the review of ${document || '.'} did not open: ${errorMessage(error)}`)
         }
-        this.#open.set(document, open)
+        this.#open = open
       }
       this.#turn(open, body.turn)
       open.running = true
-      this.#rearm(document)
+      this.#rearm()
       return await this.#changed(open)
     })
   }
 
   step(document: string, body: { session: string, turn?: number, label?: string, tool?: string, end?: boolean }): Promise<ReviewView | undefined> {
-    return this.#serial(document, async () => {
+    return this.#serial(async () => {
       const open = this.#mine(document, body.session)
       this.#turn(open, body.turn)
       if (body.label) await open.review.step(body.label, body.tool)
@@ -278,33 +298,29 @@ export class Reviews {
   }
 
   accept(document: string, body: { reject?: string[], message?: string }): Promise<ReviewEnd> {
-    return this.#serial(document, () => this.#accept(this.#any(document), body.reject ?? [], body.message))
+    return this.#serial(() => this.#accept(this.#any(document), body.reject ?? [], body.message))
   }
 
   async #accept(open: Open, reject: string[], message: string | undefined): Promise<ReviewEnd> {
     const rejected = new Set(reject)
     for (const change of await open.review.diff()) if (inGitDir(change.path)) rejected.add(change.path)
-    const files = await open.review.accept([...rejected])
+    const files = await open.review.prepareAccept([...rejected])
     const lang = listDocuments(this.#options.config).find(doc => doc.dir === open.document)?.lang
     const steps = open.review.steps().map(step => `- ${step.label}`).slice(0, 20)
-    let revision: Revision | undefined
-    try {
-      revision = await this.#options.revisions.commit({
-        files,
-        message: `${message?.trim() || summaryOf(files, lang)}${steps.length ? `\n\n${steps.join('\n')}` : ''}`,
-        origin: { kind: 'agent', task: open.review.task, member: open.member },
-        trailers: [[SESSION_TRAILER, open.session], [TURN_TRAILER, `${open.turns.from}-${open.turns.to}`]],
-      })
-    } catch (error) {
-      this.#options.log.warn(`the review of session ${open.session} in ${open.document || '.'} was accepted, but not committed: ${errorMessage(error)}`)
-    }
+    const revision = await this.#options.revisions.commit({
+      files,
+      message: `${message?.trim() || summaryOf(files, lang)}${steps.length ? `\n\n${steps.join('\n')}` : ''}`,
+      origin: { kind: 'agent', task: open.review.task, member: open.member },
+      trailers: [[SESSION_TRAILER, open.session], [TURN_TRAILER, `${open.turns.from}-${open.turns.to}`]],
+    })
+    open.review.finish()
     const ended: ReviewEnd = { outcome: 'accepted', ...revision ? { revision } : {}, files }
     await this.#end(open, ended)
     return ended
   }
 
   reject(document: string, body: { paths?: string[] }): Promise<ReviewFollowed> {
-    return this.#serial(document, async () => {
+    return this.#serial(async () => {
       const open = this.#any(document)
       if (body.paths) {
         await open.review.restoreFiles(body.paths)
@@ -319,7 +335,7 @@ export class Reviews {
   }
 
   restore(document: string, body: { step: string }): Promise<ReviewView> {
-    return this.#serial(document, async () => {
+    return this.#serial(async () => {
       const open = this.#any(document)
       try {
         await open.review.restoreTo!(body.step)
@@ -343,12 +359,13 @@ export class Reviews {
 
   close(): void {
     this.#closed = true
-    for (const open of this.#open.values()) {
+    const open = this.#open
+    if (open) {
       clearTimeout(open.timer)
       open.review.suspend()
       open.release()
     }
-    this.#open.clear()
+    this.#open = undefined
   }
 
   #mine(document: string, session: string): Open {
@@ -358,7 +375,7 @@ export class Reviews {
   }
 
   #any(document: string): Open {
-    const open = this.#open.get(document)
+    const open = this.#open
     if (!open) throw new RequestError(404, `no review of ${document || '.'} is open`)
     return open
   }
@@ -371,40 +388,40 @@ export class Reviews {
 
   async #changed(open: Open): Promise<ReviewView> {
     const review = await this.#view(open)
-    this.#follow(open.document, { document: open.document, review })
+    this.#follow({ document: open.document, review })
     this.#tell({ type: 'review', document: open.document, session: open.session, review })
     return review
   }
 
   async #end(open: Open, ended: ReviewEnd): Promise<void> {
     clearTimeout(open.timer)
-    this.#open.delete(open.document)
+    this.#open = undefined
     open.release()
-    this.#follow(open.document, { document: open.document, ended })
+    this.#follow({ document: open.document, ended })
     this.#tell({ type: 'review', document: open.document, session: open.session, ended })
   }
 
-  #follow(document: string, event: ReviewFollowed): void {
-    for (const push of this.#followers.get(document) ?? []) push(event)
+  #follow(event: ReviewFollowed): void {
+    for (const push of this.#followers) push(event)
   }
 
   #tell(event: ReviewEvent): void {
     for (const push of this.#listeners) push(event)
   }
 
-  #rearm(document: string): void {
-    const open = this.#open.get(document)
+  #rearm(): void {
+    const open = this.#open
     if (open) this.#arm(open)
   }
 
   #arm(open: Open): void {
     clearTimeout(open.timer)
     open.timer = undefined
-    if (open.running || (this.#followers.get(open.document)?.size ?? 0) > 0) return
+    if (open.running || this.#followers.size > 0) return
     const { timeoutMs } = reviewSettings(this.#options.config)
     open.timer = setTimeout(() => {
-      void this.#serial(open.document, async () => {
-        if (this.#open.get(open.document) !== open || open.running || (this.#followers.get(open.document)?.size ?? 0) > 0) return
+      void this.#serial(async () => {
+        if (this.#open !== open || open.running || this.#followers.size > 0) return
         const files = (await open.review.diff()).map(change => change.path)
         await open.review.rollback()
         this.#options.log.info(`the review of session ${open.session} in ${open.document || '.'}: no page followed it for ${Math.round(timeoutMs / 1000)} s: rolled back`)
@@ -414,9 +431,9 @@ export class Reviews {
     open.timer.unref?.()
   }
 
-  #serial<T>(document: string, work: () => Promise<T>): Promise<T> {
-    const next = (this.#queues.get(document) ?? Promise.resolve()).then(work, work)
-    this.#queues.set(document, next.catch(() => undefined))
+  #serial<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.#queue.then(work, work)
+    this.#queue = next.catch(() => undefined)
     return next
   }
 }

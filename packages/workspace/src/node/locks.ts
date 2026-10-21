@@ -5,7 +5,7 @@ export class DocumentLocks implements DocumentLockService {
   readonly #held = new Map<string, string>()
 
   claim(document: string, holder: string): (() => void) | undefined {
-    if (this.#held.has(document)) return undefined
+    if (this.holder(document) !== undefined) return undefined
     this.#held.set(document, holder)
     let released = false
     return () => {
@@ -16,12 +16,12 @@ export class DocumentLocks implements DocumentLockService {
   }
 
   holder(document: string): string | undefined {
-    return this.#held.get(document)
+    return this.#held.get('') ?? (document === '' ? this.#held.values().next().value : this.#held.get(document))
   }
 
   claimAll(documents: string[], holder: string): { release(): void } | { document: string, holder: string } {
     const releases: (() => void)[] = []
-    for (const document of new Set(documents)) {
+    for (const document of documents.includes('') ? [''] : new Set(documents)) {
       const release = this.claim(document, holder)
       if (release) {
         releases.push(release)

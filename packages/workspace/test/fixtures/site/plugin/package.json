@@ -1,0 +1,6 @@
+{
+  "name": "fixture-workspace-vite",
+  "private": true,
+  "type": "module",
+  "exports": { "./presmium": { "import": "./presmium.mjs", "default": "./presmium.mjs" } }
+}

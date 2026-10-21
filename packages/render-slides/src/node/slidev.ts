@@ -40,6 +40,7 @@ interface Generation {
   section: string
   live: boolean
   chapters: Map<string, string>
+  runnerKeys: WeakMap<CodeNode, string>
 }
 
 const FAVICON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="3" fill="#0f5f5c"/></svg>')}`
@@ -56,7 +57,7 @@ const THEME_DIR = fileURLToPath(new URL('../../theme', import.meta.url))
 
 export function slidevMarkdown(doc: IRDocument, ctx: RenderContext, dir: string): SlidevDeck {
   const locale = deckLocale(ctx.lang ?? deckLang(doc))
-  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc), section: '', live: ctx.config.liveCode !== false, chapters: chapters(doc) }
+  const generation: Generation = { ctx, dir, locale, t: MESSAGES[locale], assets: new Map(), files: new Set(), links: slideLinks(doc), section: '', live: ctx.config.liveCode !== false, chapters: chapters(doc), runnerKeys: new WeakMap() }
   const markdown = doc.sections.map((section, i) => slide(section, i === 0 ? headmatter(doc, generation) : {}, generation)).join('\n')
   return { markdown, assets: generation.assets }
 }
@@ -182,19 +183,19 @@ function slide(section: IRSection, head: Record<string, unknown>, gen: Generatio
   return `${open}\n\n${body.join('\n\n')}\n`
 }
 
-function blocks(list: IRBlock[], gen: Generation, notes: IRBlock[], owned: boolean): string[] {
+function blocks(list: IRBlock[], gen: Generation, notes: IRBlock[], owned: boolean, inComponent = owned): string[] {
   const out: string[] = []
   for (const block of list) {
     if (block.role === 'narration') notes.push(block)
-    else out.push(visual(block, gen, notes, owned))
+    else out.push(visual(block, gen, notes, owned, inComponent))
   }
   return out
 }
 
-function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolean): string {
+function visual(block: IRBlock, gen: Generation, notes: IRBlock[], owned: boolean, inComponent: boolean): string {
   const { node } = block
-  const key = owned ? ` key="${escapeHtml(block.id)}"` : ''
-  const wrap = (content: string) => (owned || unanchored(block) ? content : `<div class="pm-block" data-block="${escapeHtml(block.id)}" data-section="${escapeHtml(gen.section)}" data-step="${block.at}">\n\n${content}\n\n</div>`)
+  const key = inComponent ? ` key="${escapeHtml(block.id)}"` : ''
+  const wrap = (content: string) => (inComponent || unanchored(block) ? content : `<div class="pm-block" data-block="${escapeHtml(block.id)}" data-section="${escapeHtml(gen.section)}" data-step="${block.at}">\n\n${content}\n\n</div>`)
   if (node.type === 'markdown' && node.reveal === 'items') {
     return wrap(`<v-clicks at="${block.at === 0 ? '+0' : block.at}"${key}>\n\n${md(node.mdast, block, gen)}\n\n</v-clicks>`)
   }
@@ -389,6 +390,15 @@ function runsLive(node: CodeNode, gen: Generation): boolean {
   return Boolean(gen.live && node.run && node.run.when !== 'compile' && node.echo !== false && !node.variants?.length && !node.highlight?.length && runnerLang(node.lang))
 }
 
+function runnableCode(blocks: IRBlock[], gen: Generation, parents: string[] = [], owned = false): { node: CodeNode, path: string }[] {
+  return blocks.flatMap((block) => {
+    const { node } = block
+    const path = [...parents, block.id]
+    if (node.type === 'component') return runnableCode(node.children ?? [], gen, path, node.ownsCode !== false)
+    return node.type === 'code' && !owned && runsLive(node, gen) ? [{ node, path: path.join('/') }] : []
+  })
+}
+
 function importedPackages(code: string): string[] {
   const names = [...code.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*(['"])([^'"\n]+)\1/g)].map(match => match[2]!)
   return names
@@ -397,8 +407,8 @@ function importedPackages(code: string): string[] {
 }
 
 function typesSource(doc: IRDocument, gen: Generation): Record<string, unknown> {
-  const scripts = doc.sections.flatMap(section => section.blocks).map(block => block.node)
-    .filter((node): node is CodeNode => node.type === 'code' && runsLive(node, gen) && ['javascript', 'typescript'].includes(runnerLang(node.lang)!))
+  const scripts = doc.sections.flatMap(section => runnableCode(section.blocks, gen)).map(item => item.node)
+    .filter(node => ['javascript', 'typescript'].includes(runnerLang(node.lang)!))
   return scripts.some(node => importedPackages(node.value).some(name => !packageDir(name, gen.dir))) ? { monacoTypesSource: 'none' } : {}
 }
 
@@ -416,12 +426,11 @@ function runnerRecording(run: RunResult, gen: Generation): Record<string, unknow
 function runnerOptions(doc: IRDocument, gen: Generation): Record<string, unknown> {
   const runs: Record<string, Record<string, unknown>> = {}
   for (const section of doc.sections) {
-    for (const block of section.blocks) {
-      const { node } = block
-      if (node.type !== 'code' || !runsLive(node, gen)) continue
+    for (const { node, path } of runnableCode(section.blocks, gen)) {
       const { executor, session, timeoutMs } = node.run!
       const recording = node.outputs?.at(-1)
-      const key = runnerKey(section.id, block.id)
+      const key = runnerKey(section.id, path)
+      gen.runnerKeys.set(node, key)
       runs[key] = {
         block: key,
         ...executor ? { executor } : {},
@@ -435,7 +444,7 @@ function runnerOptions(doc: IRDocument, gen: Generation): Record<string, unknown
 }
 
 function monacoRun(node: CodeNode, block: IRBlock, gen: Generation): string {
-  const options = `runnerOptions:$slidev.configs.presmiumRuns['${runnerKey(gen.section, block.id).replace(/['\\]/g, '\\$&')}']`
+  const options = `runnerOptions:$slidev.configs.presmiumRuns['${(gen.runnerKeys.get(node) ?? runnerKey(gen.section, block.id)).replace(/['\\]/g, '\\$&')}']`
   return fence(runnerLang(node.lang)!, node.value, ` {monaco-run} {autorun:'once',height:'auto',${options}}`)
 }
 
@@ -508,7 +517,7 @@ function tag(node: ComponentNode, gen: Generation, notes: IRBlock[]): string {
   const attrs = Object.entries(node.props).map(([name, value]) => typeof value === 'string' && !node.assets?.[name]
     ? ` ${name}="${escapeHtml(value).replace(/\n/g, '&#10;')}"`
     : ` :${name}='${JSON.stringify(value).replace(/'/g, '\\u0027').replace(/&/g, '\\u0026')}'`).join('')
-  const children = node.children ? blocks(node.children, gen, notes, true) : []
+  const children = node.children ? blocks(node.children, gen, notes, node.ownsCode !== false, true) : []
   return children.length > 0 ? `<${node.name}${attrs}>\n\n${children.join('\n\n')}\n\n</${node.name}>` : `<${node.name}${attrs} />`
 }
 

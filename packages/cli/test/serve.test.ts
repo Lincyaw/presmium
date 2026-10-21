@@ -160,25 +160,17 @@ settings:
   return dir
 }
 
-function recordings(dir: string): { env: Record<string, string>, parent: string }[] {
+function recordings(dir: string): { env: Record<string, string>, parent: number }[] {
   const freeze = join(dir, 'code/.presmium/freeze')
-  if (!existsSync(freeze)) return []
-  return readdirSync(freeze).filter(name => name.endsWith('.json')).flatMap((name) => {
-    const stdout = (JSON.parse(readFileSync(join(freeze, name), 'utf8')) as { run?: { stdout?: string } }).run?.stdout ?? ''
-    const env = /^ENV (.*)$/m.exec(stdout)?.[1]
-    const parent = /^PARENT (.*)$/m.exec(stdout)?.[1]
-    return env && parent ? [{ env: JSON.parse(env) as Record<string, string>, parent }] : []
+  return readdirSync(freeze).filter(name => name.endsWith('.json')).map((name) => {
+    const { run } = JSON.parse(readFileSync(join(freeze, name), 'utf8')) as { run: { ok: boolean, stdout: string, stderr: string } }
+    expect(run.ok, run.stderr).toBe(true)
+    const env = /^ENV (.*)$/m.exec(run.stdout)?.[1]
+    const parent = /^PARENT (\d+)$/m.exec(run.stdout)?.[1]
+    expect(env, run.stdout).toBeDefined()
+    expect(parent, run.stdout).toBeDefined()
+    return { env: JSON.parse(env!) as Record<string, string>, parent: Number(parent) }
   })
-}
-
-async function until<T>(get: () => T | undefined | Promise<T | undefined>, timeoutMs = 90_000): Promise<T> {
-  const end = Date.now() + timeoutMs
-  for (;;) {
-    const value = await get()
-    if (value) return value
-    if (Date.now() > end) throw new Error('timed out waiting')
-    await new Promise(done => setTimeout(done, 250))
-  }
 }
 
 describe('compile-time execution in presmium serve (N-08)', () => {
@@ -193,8 +185,10 @@ describe('compile-time execution in presmium serve (N-08)', () => {
     cleanups.push(() => serve.stop(), () => remove(dir))
     const url = (await waitFor(serve, /^serve {2}(http\S+)$/m))[1]!
     expect((await raw(`${url}/code/`)).status).toBe(200)
-    const [run] = await until(() => recordings(dir).length > 0 ? recordings(dir) : undefined)
-    expect(run!.parent).toMatch(/presmium\.mjs serve/)
+    const runs = recordings(dir)
+    expect(runs).toHaveLength(1)
+    const [run] = runs
+    expect(run!.parent).toBe(serve.pid)
     expect(run!.env.HOME).toMatch(/\/presmium\/run-home\/[0-9a-f]{16}$/)
   }, 300_000)
 })

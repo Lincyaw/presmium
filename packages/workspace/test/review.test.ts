@@ -8,7 +8,8 @@ import type { Child } from './helpers.ts'
 import { cleanEnv, git, message, presmiumProcess, raw, remove, waitFor, workspace } from './helpers.ts'
 
 const TOKEN = 'review-test-token'
-const LECTURE = '---\ntitle: 审阅\n---\n\n# 审阅\n\n(one)=\n## 第一节\n\n开始时的内容。\n'
+const LECTURE = '---\ntitle: 审阅\nplugins: [presmium-fixture-review]\n---\n\n# 审阅\n\n(one)=\n## 第一节\n\n开始时的内容。\n'
+const MODEL = 'def model():\n    return 1\n'
 
 function follow(url: string, headers: Record<string, string>): { events: Record<string, any>[], close(): void } {
   const controller = new AbortController()
@@ -53,7 +54,9 @@ describe('the review routes of presmium serve', () => {
       mkdirSync(join(source, doc))
       writeFileSync(join(source, doc, 'lecture.md'), LECTURE)
     }
-    dir = workspace('review', source)
+    mkdirSync(join(source, 'src'))
+    writeFileSync(join(source, 'src/model.py'), MODEL)
+    dir = workspace('review', source, { 'presmium-fixture-review': 'packages/workspace/test/fixtures/review-plugin' })
     rmSync(source, { recursive: true, force: true })
     home = `${dir}.home`
     mkdirSync(home)
@@ -144,6 +147,117 @@ describe('the review routes of presmium serve', () => {
     expect((await route('review/accept', 'intro', {})).status).toBe(200)
     expect(message(dir)).toMatch(/^AI 修改：kept\.md\n[\s\S]*Presmium-Session: session-c\nPresmium-Turn: 4-4\n/)
     expect(read('intro/kept.md')).toBe('重启前写的\n')
+  }, 180_000)
+
+  it('reviews and rejects the whole workspace across document switches, excluding other sessions and editor saves', async () => {
+    const before = read('old/lecture.md')
+    const draft = `${MODEL}\n# uncommitted before the agent\n`
+    writeFileSync(join(dir, 'src/model.py'), draft)
+    const opened = await route('review/open', 'intro', { session: 'workspace-session', turn: 1 })
+    expect(opened.status, opened.text).toBe(200)
+    const id = opened.json<{ review: { id: string } }>().review.id
+    expect((await route('review/open', 'old', { session: 'other-session' })).json()).toMatchObject({ locked: { holder: 'agent:workspace-session' } })
+    expect((await route('review/open', 'old', { session: 'workspace-session' })).json()).toMatchObject({ review: { id } })
+
+    for (const path of ['src/model.py', 'old/lecture.md']) {
+      const opened = (await route(`source?path=${encodeURIComponent(path)}`, '')).json<{ version: string }>()
+      const saved = await route('source', '', { path, content: 'editor changed it', base: opened.version })
+      expect(saved.status, saved.text).toBe(409)
+      expect(saved.json()).toMatchObject({ locked: { holder: 'agent:workspace-session' } })
+    }
+    writeFileSync(join(dir, 'src/model.py'), `${MODEL}\n# agent changed it\n`)
+    rmSync(join(dir, 'old'), { recursive: true })
+    const ended = await route('review/step', '', { session: 'workspace-session', turn: 1, end: true })
+    expect(ended.status, ended.text).toBe(200)
+    const shown = (await route('review', '')).json<{ review: { id: string, changes: { path: string }[] } }>().review
+    expect(shown.id).toBe(id)
+    expect(shown.changes.map(change => change.path)).toEqual(['old/lecture.md', 'src/model.py'])
+    expect((await route('review/reject', 'intro', {})).status).toBe(200)
+    expect(read('old/lecture.md')).toBe(before)
+    expect(read('src/model.py')).toBe(draft)
+    expect((await route('review', '')).json()).toEqual({})
+    writeFileSync(join(dir, 'src/model.py'), MODEL)
+  }, 120_000)
+
+  it('keeps a failed commit review and its lock across restart, then lets the author retry it', async () => {
+    const before = git(dir, ['rev-parse', 'HEAD'])
+    expect((await route('review/open', '', { session: 'retry-session', turn: 1 })).status).toBe(200)
+    writeFileSync(join(dir, 'src/model.py'), `${MODEL}\n# accepted change\n`)
+    expect((await route('review/step', '', { session: 'retry-session', turn: 1, end: true })).status).toBe(200)
+    const lock = join(dir, '.git/index.lock')
+    writeFileSync(lock, 'another git operation\n')
+    try {
+      const failed = await route('review/accept', '', {})
+      expect(failed.status, failed.text).toBe(500)
+      expect(failed.text).toContain('index.lock')
+      expect(git(dir, ['rev-parse', 'HEAD'])).toBe(before)
+      expect((await route('review', 'intro')).json()).toMatchObject({ review: { session: 'retry-session', changes: [{ path: 'src/model.py' }] } })
+      expect((await route('review/open', 'old', { session: 'blocked-session' })).status).toBe(409)
+      await serve.stop()
+    } finally {
+      rmSync(lock, { force: true })
+    }
+    await start()
+    expect((await route('review', '')).json()).toMatchObject({ review: { session: 'retry-session', running: false, changes: [{ path: 'src/model.py' }] } })
+    const accepted = await route('review/accept', '', {})
+    expect(accepted.status, accepted.text).toBe(200)
+    expect(accepted.json()).toMatchObject({ ended: { outcome: 'accepted', revision: { files: ['src/model.py'] } } })
+    expect(message(dir)).toContain('Presmium-Session: retry-session')
+    expect(git(dir, ['status', '--porcelain'])).toBe('')
+    expect((await route('review', '')).json()).toEqual({})
+  }, 180_000)
+
+  it('keeps plugin tasks scoped to their document and excludes overlapping workspace sessions in both directions', async () => {
+    const task = (op: string) => raw(`${url}/__presmium/fixture.review/task`, { headers: { Authorization: `Bearer ${TOKEN}`, 'Presmium-Document': 'intro' }, json: { op } })
+    const opened = await task('open')
+    expect(opened.status, opened.text).toBe(200)
+    expect(opened.json()).toEqual({ root: realpathSync(join(dir, 'intro')) })
+    expect((await route('review/open', 'old', { session: 'workspace-after-task' })).json()).toMatchObject({ locked: { holder: 'agent:fixture-task' } })
+    const before = read('intro/lecture.md')
+    writeFileSync(join(dir, 'intro/lecture.md'), `${before}\nplugin task\n`)
+    const other = (await route('source?path=old/lecture.md', 'old')).json<{ content: string, version: string }>()
+    expect((await route('source', 'old', { path: 'old/lecture.md', content: other.content, base: other.version })).status).toBe(200)
+    expect((await task('rollback')).status).toBe(200)
+    expect(read('intro/lecture.md')).toBe(before)
+
+    expect((await route('review/open', '', { session: 'workspace-after-task' })).status).toBe(200)
+    const blocked = await task('open')
+    expect(blocked.status, blocked.text).toBe(409)
+    expect(blocked.text).toContain('agent:workspace-after-task')
+    expect((await route('review/reject', '', {})).status).toBe(200)
+    expect((await task('open')).status).toBe(200)
+    expect((await task('close')).status).toBe(200)
+    expect((await route('review/open', '', { session: 'after-plugin-close' })).status).toBe(200)
+    expect((await route('review/reject', '', {})).status).toBe(200)
+  }, 120_000)
+
+  it('refuses to reinterpret old document session snapshots and keeps every record for the previous version', async () => {
+    await serve.stop()
+    const records = join(home, 'state/presmium/reviews')
+    const pending = ['intro', 'old'].map((document) => {
+      const deck = realpathSync(join(dir, document))
+      const index = join(home, `legacy-${document}-index`)
+      const indexed = (args: string[]) => execFileSync('git', args, { cwd: dir, env: { ...process.env, GIT_INDEX_FILE: index }, encoding: 'utf8' })
+      indexed(['add', '-A', '--', document])
+      const snapshot = indexed(['write-tree']).trim()
+      rmSync(index, { force: true })
+      const root = realpathSync(dir)
+      const record = JSON.stringify({ deck, dirs: { top: root, gitDir: join(root, '.git'), commonDir: join(root, '.git') }, snapshot, task: `legacy-${document}`, pid: 999999999, session: { session: `session-${document}`, document, member: { id: 'author', name: 'Author', roles: ['owner'] }, turns: { from: 1, to: 1 }, opened: new Date().toISOString(), checkpoints: [], steps: [] } })
+      const file = join(records, `${createHash('sha256').update(deck).digest('hex').slice(0, 24)}.json`)
+      mkdirSync(records, { recursive: true })
+      writeFileSync(file, record)
+      return { file, record, snapshot }
+    })
+    try {
+      await expect(start()).rejects.toThrow(/Cannot restore document-scoped session reviews in intro, old[\s\S]*previous Presmium version/)
+      for (const { file, record, snapshot } of pending) {
+        expect(readFileSync(file, 'utf8')).toBe(record)
+        expect(git(dir, ['cat-file', '-t', snapshot]).trim()).toBe('tree')
+      }
+    } finally {
+      for (const { file } of pending) rmSync(file)
+      await start()
+    }
   }, 180_000)
 
   it('GET preview without --preview-origin: the previews\' addresses, and no page may frame the slides', async () => {

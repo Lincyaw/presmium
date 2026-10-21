@@ -29,6 +29,8 @@
 
 ### 1.1 目标
 
+工作台面向不熟悉开发工具的教师：描述教学要求、查看预览、选择有问题的内容，再审阅 agent 的修改。布局沿用 VS Code 的活动栏、文件与预览习惯，操作保持简单；专业代码编写使用 VS Code 扩展。工作台的优先级是让 dsh 得到足够的文稿、选区、诊断和实际运行反馈，完成编辑与检查。
+
 1. 不配模型、也不装 dsh 时，核心照常可用：编译、IR、渲染端、CLI、静态产物，以及 `presmium dev` 的实时预览。
 2. 产物可以单独部署与使用，不带工作台的代码。工作台换框架或换实现时，产物不改。
 3. 工作台是 dsh 的一个定制发行版：Presmium 的能力以 bundle 装进 Presmium 自己的 profile。对话、确认、修改卡片、会话、模型设置、终端与 jobs 用 dsh 的插件，其余由 Presmium 的 React 面板补齐。
@@ -136,6 +138,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - `presmium dev` 的页面由浏览器直接打开，不嵌在任何工作台中，没有对方可以通信，所以不带预览代理；点选因此只在 `presmium studio` 中可用。
 - 允许的父页面来源是 `presmium serve --preview-origin <源>`（可重复）给出的；在 studio 中，启动器把 dsh 的源（`--host` 时是局域网的源）告诉服务。代理只向这些来源发消息，也只接受从它们发来、带同一个 nonce 的消息。
 - 代理启动后先发 `ready`。工作台收到 `ready` 之后才发别的消息。信封的版本不同时，工作台提示“预览的版本与工作台不符，请重新启动”。
+- 工作台把连接绑定到建立它的文档与形态；切换后不再接收旧连接的报告。预览内的跨文稿导航由 `ready.document` 驱动工作台切换文档，沿用未保存修改的确认流程；取消时恢复原文档的预览。点选与选区只提交给握手确认的文档。
 - 未知类型的消息一律忽略。消息只是数据：代理不执行收到的代码，也不打开收到的链接。
 
 ### 4.3 消息
@@ -155,7 +158,8 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 产物 → 工作台 | `picked` | `section`、`block?`、`step?`、`trail?` | 点选的结果；点在块上时带块出现的步骤（页面自己的步号）与那一步的 `trail`，同 `position` |
 | 产物 → 工作台 | `selection` | `{ section, block?, text }` 或 `null` | 页面中的文字选中，供焦点带上（8.2 节的 `quote`） |
 | 产物 → 工作台 | `updated` | `revision` | 页面换上了新的 IR。工作台据此重新加上高亮与焦点的标记，并判断预览是否已反映刚保存的源码 |
-| 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message` | 页面中的运行时问题（插件启动失败、组件出错），与 IR 的诊断分开：IR 的诊断由工作区服务给出 |
+| 产物 → 工作台 | `report` | `level`（`error` 或 `warning`）、`plugin?`、`message`、`resolved?` | 页面中的运行时问题；`resolved: true` 清除同一问题。工作台按预览实例报告到诊断接口 |
+| 产物 → 工作台 | `shortcut` | `command`（`open-files` 或 `open-commands`） | 预览获得键盘焦点后，Ctrl/Cmd+P 与 Ctrl/Cmd+Shift+P 仍打开工作台的快速打开与命令面板。只传这两种意图，经原有来源、nonce 与文稿握手校验；不传任意按键 |
 
 ### 4.4 坐标与步骤
 
@@ -199,11 +203,12 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | `GET ir?document=` | 文档的 IR、修订号与诊断 |
 | `GET ir/events?document=` | SSE，由服务直接流出、不缓冲：连接后先发当前的修订号，之后是新的修订号、诊断数与改过的文件（相对于工作区根目录）。编辑器据此与磁盘比较 |
 | `GET preview?document=&view=web\|slides` | 各形态开发服务器的地址；按选择的形态启动，页面带预览代理。网页请求不启动幻灯片；显式请求幻灯片时，启动失败返回错误而不是冒充未配置。文稿的渲染端配置变化后刷新可选形态，缺失或启动失败时仍可切回网页，修复后可重新载入 |
-| `POST build`、`POST check` | 构建（写到文档目录之外，`architecture.md` 10.6 节）与检查 |
+| `POST build`、`POST check` | 构建（写到工作区之外的服务状态目录，`architecture.md` 10.6 节）与检查 |
 | `GET review?document=`、`POST review/open`、`POST review/step`、`POST review/accept`、`POST review/reject`、`POST review/restore` | 审阅（git 实现，6.5 节）：打开（bundle，持有者 `agent:<会话>`）、记检查点、查看、接受（可以带作者写的说明）、拒绝（给出文件时只恢复它们、审阅继续，不给时全部回滚）、回到某个检查点。`GET review` 以 `text/event-stream` 请求时是页面跟随 |
 | `GET review/events` | SSE，供 bundle：审阅的变化，以及撤销一个会话的提交 |
 | `presmium.server/tokens`（`POST`、`DELETE`） | 为一个 dsh 会话签发或作废会话令牌（5.3 节） |
 | `presmium.server/focus`（`GET`、`POST`） | 工作台报告焦点与批注，服务把锚点换成源码范围与摘录并保存（8.6 节） |
+| `presmium.server/diagnostics`（`GET`、`POST`）、`GET presmium.server/diagnostics/events` | 读取当前诊断、替换一个预览实例的诊断，以及订阅完整快照（5.4 节） |
 | `/mcp` | MCP，供外部 agent 与 bundle 使用 |
 
 ### 5.2 `presmium serve` 的页面
@@ -218,6 +223,18 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 - **服务令牌**：studio 中，启动器生成一个随机值，经环境变量 `PRESMIUM_SERVICE_TOKEN` 交给工作区服务与 dsh 宿主（不放在命令行，`ps` 看不到）。设置了它时，工作区的路由与 `tokens`、`focus` 的写入要求 `Authorization: Bearer <服务令牌>`；产物页面自己的 `/__presmium/<插件>/` 路由（讲授、课堂、远端环境的代理）只检查 `Host` 与 `Origin`。这样预览页面中的脚本不能用工作区的路由改源码。agent 与服务同一 uid，能读到这个值，所以它只是纵深防御；`architecture.md` 9.4 节的残余风险不变。
 - **会话令牌**：bundle 为每个 dsh 会话向服务端取一个 MCP 令牌（`POST tokens` `{ document, session }`），令牌绑定本机作者与文档，模式为“主机已确认”：经它调用的操作类工具不再经 `APPROVALS` 向页面窗口请求确认，因为 dsh 的 `tools/pre-execute` 已经按 Presmium 的策略决定过（6.3 节）。会话令牌只签发给启动服务的主机：没有设置 `PRESMIUM_SERVICE_TOKEN` 时 `tokens` 一律 403，产物页面中的脚本因此拿不到不经确认的令牌。会话结束时 bundle 作废它；dsh 宿主退出时服务作废全部。契约：`MCP_ENDPOINT.issue` 有可选的第三个参数 `{ confirmed: true }`（`packages/kernel/src/contracts/server.ts`）。
+
+### 5.4 当前诊断与主动通知
+
+工作区服务维护一份当前诊断，契约在 `packages/kernel/src/contracts/diagnostics.ts`。`Diagnostic` 保留检查 ID、严重程度、消息、源码位置与建议，增加稳定的 `id`、文档、来源和可选的形态与源码修订号；源码文件相对于工作区根目录。`DiagnosticSnapshot` 带单调递增的 `version` 和当前诊断数组。
+
+编译、显式检查、预览启动、浏览器运行时与插件服务分别替换自己的诊断。新编译使旧修订的检查和运行时诊断失效；预览恢复或实例退出清除对应贡献，旧修订的异步结果不能覆盖当前诊断。相同问题具有相同 ID，多个实例报告的相同问题合并显示。存储不保留历史事件。
+
+网页工作台订阅 `diagnostics/events?document=<目录>`：连接和重连先收到当前快照，此后在诊断变化时接收新的完整快照。预览的 `POST diagnostics` 带 `document`、`renderer`、`instance`、`revision` 与 `findings`；空集合清除该实例的问题。设置服务令牌时，诊断的读取、订阅和写入都要求服务令牌，经 dsh 的现有代理访问。
+
+MCP 的 `presmium://diagnostics` 与 `?document=<目录>` 读取同一快照；资源更新通过 MCP 通知送达订阅者，并遵守会话令牌的文稿范围。读取资源不运行完整检查；`get_diagnostics` 仍是显式运行编译与插件检查的工具。stdio 没有浏览器服务，读取资源时编译当前文稿，完整检查同样由工具触发。
+
+dsh 订阅当前文稿的资源，并在模型步骤前读取快照确认可达性。当前上下文包含至多 20 条具体诊断及剩余数量，每次替换；文稿切换解除旧订阅，读取失败明确标为不可用。工作台的问题列表消费同一快照，预览模式也显示错误摘要；“让 AI 处理”由作者明确点击后提交给当前会话。通知本身不启动模型任务。整个工作区服务不可用时，由启动器与 dsh 宿主报告服务故障。
 
 ## 6. bundle `@lincyaw/dsh`
 
@@ -248,7 +265,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 客户端的行是包名本身：dsh 的模块系统只把名字是整包名（`@lincyaw/dsh`）的 Loader 行当作客户端的来源，`@lincyaw/dsh/<行>` 这样的子路径不算，一个包也只能有一个这样的行。所以 `presmium-workbench` 行的 `name` 是 `@lincyaw/dsh`。
 
-网页中的会话固定在启动时的工作区根目录，文件读写与沙箱边界覆盖整个工作区。打开、关闭或切换文稿不切换 Harness workspace、会话或 cwd；客户端经认证路由 `POST /api/presmium/context` 将 `{ session, document }`（关闭文稿时 `document: null`）交给适配器。当前文稿只决定文稿工具、快照和焦点；会话空闲后更新工具登记与 MCP 会话，每一步前重读快照，运行中的工具调用保留原来的文稿。headless 与 acp 未显式选择文稿时仍按会话目录匹配，兼容从单篇文稿目录启动的用法。
+网页中的会话固定在启动时的工作区根目录，文件读写与沙箱边界覆盖整个工作区，审阅也覆盖同一范围（6.5 节）。打开、关闭或切换文稿不切换 Harness workspace、会话或 cwd；客户端经认证路由 `POST /api/presmium/context` 将 `{ session, document }`（关闭文稿时 `document: null`）交给适配器。当前文稿只决定文稿工具、快照和焦点；会话空闲后更新工具登记与 MCP 会话，每一步前重读快照，运行中的工具调用保留原来的文稿。headless 与 acp 未显式选择文稿时仍按会话目录匹配，兼容从单篇文稿目录启动的用法。
 
 ### 6.3 确认的映射
 
@@ -270,22 +287,27 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 
 ### 6.4 文稿上下文与技能
 
+`presmium-context` 在每次 agent 步骤前读取当前文稿、位置、关注内容和 `get_runtime`。`get_diagnostics` 说明源码与检查问题，`get_outputs` 是编译时录制，`get_runtime` 是作者浏览器实际报告的运行状态，两者不能混为一谈。运行反馈经已有 `STATUS` 与控制通道上报：宿主的 `presmium.runtime` 包含插件启动和组件错误，执行插件的 `presmium.exec` 包含有限条现场运行与会话重置摘要。反馈带报告时间和代码位置，不带源码或二进制图像；错误和文本输出受长度限制。自动上下文仅保留最近两扇窗口、每扇窗口最近三次运行和失败状态，完整数据用工具读取。
+
+浏览器反馈是观察数据，不是指令，也不能证明刚修改的源码已验证。修改后重新运行相关代码、检查实际输出；独立 Python 文件用解释器或对应测试验证，不能只看讲义诊断。没有作者窗口或窗口已断开时明确返回无反馈。服务只提供当前文稿内 editor/owner 窗口的快照，不收集学生个人数据。
+
+
 - **指南**：一段固定的说明放进 system 消息：这是一个 Presmium 工作区，怎样用工具与技能，修改先审阅再提交。web 载体中 Presmium 的角色由内置预设 `preset-authoring` 的 persona 说明（6.6 节）。
-- **文稿快照**：网页会话按界面选中的文稿获取上下文，会话工作目录始终是工作区根目录；未选择文稿时明确告知模型。快照包含标题、语言、入口文件、章节（ID 与标题）、诊断数、当前位置与当前的焦点（8.6 节）。dsh 的提供者接口是同步的；bundle 在每一步之前（`agent/pre-step`）经 MCP 重读快照，不另维护缓存：读取类调用只要几毫秒（第 9 节），快照也就总是新的。快照以 user 角色写进会话日志，所以“模型看得到的都会记下来”不需要另做。上下文与工具一样登记在 agent 的作用域中。
+- **文稿快照**：网页会话按界面选中的文稿获取上下文，会话工作目录始终是工作区根目录；未选择文稿时明确告知模型。快照包含标题、语言、入口文件、章节（ID 与标题）、具体诊断（5.4 节）、当前位置与当前的焦点（8.6 节）。bundle 在每一步之前（`agent/pre-step`）经 MCP 更新上下文，诊断同时通过订阅失效通知刷新。上下文与工具一样登记在 agent 的作用域中。
 - **技能**：在运行时登记（`ctx.skills.register`）。skill-filesystem 的 `agentsHome` 固定到 Presmium 状态目录中的空目录，用户的 `~/.agents/skills` 不进入技能目录；文稿项目自己的 `.agents/skills` 保留，它是作者自己的材料。项目中的同名技能会覆盖 bundle 的那份，这一点写进技能的说明。
 
 ### 6.5 turn、审阅与提交
 
 整个工作区对应 dsh 的工作区，对话对应 dsh 的会话；一次接受的审阅是一个提交，撤销用 `git revert`。
 
-1. **开始**：会话第一次调用会写文件的工具（文件工具与 shell）时，bundle 在 `tools/execute` 中为文档打开审阅（`POST review/open`，持有者 `agent:<会话>`）。它在确认之后、工具执行之前运行，被拒绝或被策略否决的调用不打开审阅，也不持有锁。审阅从这时持有文档的锁；锁被别人持有时这次调用以原因失败，什么也没写。打开是幂等的（同一会话得到同一个审阅），所以每次写入之前都问一次服务，宿主不必记住审阅是否还开着。审阅用 git 实现，快照包含当时还没提交的修改。
-2. **进行中**：编辑器保存得到 409，并提示 AI 的修改在等待审阅；后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
+1. **开始**：会话第一次调用会写文件的工具（文件工具与 shell）时，bundle 在 `tools/execute` 中为整个工作区打开审阅（`POST review/open`，持有者 `agent:<会话>`），未选择文稿时同样。它在确认之后、工具执行之前运行，被拒绝或被策略否决的调用不打开审阅，也不持有锁。审阅持有工作区锁，与其他会话、文档审阅、保存及文档操作互斥；取锁失败时工具不执行。打开是幂等的（同一会话得到同一个审阅），所以每次写入之前都问一次服务，宿主不必记住审阅是否还开着。快照包含工作区中当时还没提交的修改；从文稿目录启动的 headless 与 acp 会话也使用工作区范围。
+2. **进行中**：工作区内的编辑器保存得到 409，并提示 AI 的修改在等待审阅；所有文稿的审阅面板显示同一份会话审阅。后面的 turn 继续累加进同一次审阅；每个工具调用完成时记一个检查点，标签是工具与文件或命令。服务给出 turn 的范围（`turns { from, to }`）与是否有 turn 在运行。一个 turn 结束时审阅没有改动（例如 shell 只运行了 `ls`）就结束，释放锁。
 3. **审阅与修改卡片**：一次审阅覆盖会话在它期间的全部 turn；dsh 的修改卡片（`workspace/changes`）是每个 turn 的视图。同一个 turn 中卡片列出的文件与审阅的改动相同（构建的产物两边都没有），多个 turn 时每张卡片是审阅的一部分。审阅是修改的唯一来源，卡片只作 turn 内的提示。
 4. **审阅**：`settings.presmium.assistant.review` 为 `required`（默认）时，工作台的审阅面板列出自快照以来的全部文件，作者可以全部接受、拒绝某些文件，或回到某个检查点；为 `auto` 时每个 turn 结束就提交。`review` 与 `reviewTimeoutMs` 由工作区服务按 `settings.presmium.assistant` 执行，bundle 不读它们；超时只在没有 turn 运行、也没有页面跟随（`GET review` 的 SSE）时计时。作者在 turn 之间接受之后，下一次写入开一个新的审阅。
-5. **提交**：一次接受形成一个提交，尾注是 `Presmium-Origin: agent`、`Presmium-Task`、`Presmium-Session: <会话>`、`Presmium-Turn: <起>-<止>` 与 `Co-authored-by`。提交后释放锁。
+5. **提交**：一次接受形成一个提交，成功后才结束审阅、删除记录并释放锁。提交失败时返回错误并保留审阅，作者可以重试或拒绝。尾注是 `Presmium-Origin: agent`、`Presmium-Task`、`Presmium-Session: <会话>`、`Presmium-Turn: <起>-<止>` 与 `Co-authored-by`。
 6. **撤销**：`git revert`，尾注 `Presmium-Revert`。撤销会话的提交之后，bundle 经 `Agent.inject`（`dsh-agent` 的公开接口）给会话注入一条 user 角色的通知，来源是 `{ kind: 'presmium', form: 'notice' }`，正文以 `[Presmium]` 开头。它不唤醒 agent，在会话的下一步进入模型请求，并作为 `session/projections` 的 `inbox` 中的待处理消息可见；agent 不在时等它被创建或恢复再注入。dsh 文件工具的“先读后改”规则会拦住基于旧内容的编辑。
-7. **记录**：审阅记录由工作区服务保存，另记会话、turn 的范围、检查点与各步。服务关闭或崩溃时会话的审阅不回滚，下一个服务进程启动时恢复它并重新持有锁。dsh 宿主重启后修改卡片没有了，审阅仍在，可以经新宿主接受。Presmium 不依赖 dsh 只在内存中的修改摘要，它在宿主重启后返回 404。
-8. **构建**：agent 经工具发起的构建由工作区服务写到文档目录之外，不进入审阅与修改卡片。
+7. **记录**：审阅记录由工作区服务保存，另记会话、turn 的范围、检查点与各步。服务关闭或崩溃时会话的审阅不回滚，下一个服务进程启动时恢复它并重新持有锁。记录的范围不是当前工作区时，启动拒绝并保留记录与快照；先用能识别该记录的版本接受或拒绝，再启动服务。dsh 宿主重启后修改卡片没有了，审阅仍在，可以经新宿主接受。Presmium 不依赖 dsh 只在内存中的修改摘要，它在宿主重启后返回 404。
+8. **构建**：agent 经工具发起的构建由工作区服务写到工作区之外的服务状态目录，不进入审阅与修改卡片。
 
 服务以 git 审阅回答 `CHANGE_REVIEW`。
 
@@ -297,12 +319,12 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 - **技能**：skill-filesystem 的 `agentsHome` 与环境变量 `DSH_AGENTS_HOME` 都指向 Presmium 状态目录中的空目录。
 - **第一次使用**：工作区控制器的 `documentsDirectory` 指向 Presmium 的状态目录，并在启动时登记好文档的工作区。两者都做到，第一次使用就不会在 `~/Documents` 下建目录。
 - **沙箱**：`workspace-write`，确认策略为 ask。
-- **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体用 `web.patch.yml` 中声明的预设 `preset-authoring` 承载 Presmium 的角色与发布会原则，并把 `agent-preset-registry` 的默认值改为它；预设内的 `persona` 行遮蔽部署级的 `personaPrefix`，所以两段文字各自完整。dsh 自带的 `preset-standard` 等仍可选，选中时仍是“You are a coding agent powered by …”。
+- **persona**：headless 与 acp 的 persona 是 `system-prompt` 行的 `personaPrefix`，补丁整体替换这一行的配置，换成 Presmium 的说明。web 载体用 `web.patch.yml` 中声明的预设 `preset-authoring` 承载 Presmium 的角色与发布会原则，`agent-preset-registry` 默认使用该预设；预设内的 `persona` 行遮蔽部署级的 `personaPrefix`，所以两段文字各自完整。dsh 自带的 `preset-standard` 等仍可选，选中时仍是“You are a coding agent powered by …”。
 - **界面**（`web.patch.yml`）：关掉 `ui-layout` 与 `ui-sidebar`（由 Presmium 的根布局与导航外壳替换；退路模式下同时重新打开）、`ui-brand-official`、`ui-settings-account`、`account-controller`、`deepseek-account`、`llm-deepseek-account`、`web-search-deepseek`（DeepSeek 的搜索服务）与 `ui-settings-session-log`（上传会话日志的设置）。插件页中的实验插件与插件市场没有可关的行：它们是 dsh 安装自带的可选 bundle 与按需的官方目录，由插件页的“实验插件”组列出；工作台按这个组的 DOM 属性 `data-plugin-group="extensions"` 隐藏它。确切的行 ID 以锁定的版本为准，由升级闸门第 1 组核对；这个属性由第 3 组核对。
 
 ## 7. 工作台
 
-日常阅读默认只显示预览，文档顶部提供“预览”“并排”“源码”三种显示方式。切换显示方式保留编辑器的未保存内容与预览状态。右侧对话可以从活动栏或对话栏的关闭按钮收起，再从活动栏恢复，收起保留对话草稿。
+日常阅读默认打开“文档预览”标签。中央编辑组的同一标签栏显示实际文件名与已打开的“文档预览”“幻灯片预览”；文件树与快速打开激活文件标签。“打开预览”菜单选择媒介，“在侧边打开预览”明确创建右侧预览组，右组的“合并编辑组”将预览收回主组。没有全局源码/并排/预览模式选择器。切换标签保留编辑器草稿、撤销与预览实例；关闭预览只关闭视图，保留当前讲义与源码。右侧对话可以从活动栏或对话栏的关闭按钮收起，再从活动栏恢复，收起保留对话草稿。
 
 ### 7.1 包与依赖
 
@@ -342,9 +364,7 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 | 状态栏 | Presmium 的状态项（git、语言、编码、光标所在行、模型）与 `shell.bottom` |
 | 浮层（`shell.overlay`） | 对话框与设置 |
 
-打开讲义默认显示预览，顶部可切换源码、并排或预览。面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留编辑器和预览实例；收起对话保留未发送的草稿。关闭文件、返回文档列表或切换文档时，若有未保存的修改，先选择保存、放弃或取消；保存失败时保留当前文档。刷新与关闭页面使用浏览器的未保存提示。`WorkbenchProvider` 默认提供这层保护；同一工作台的辅助面板使用 `protectChanges={false}`，避免重复对话框。
-
-**退路**：根布局与退路是同一个客户端部分。dsh 的启动图中有 `ui-layout` 时（关掉 `presmium-workbench` 的根布局部分并重新打开 `ui-layout`），它不占据 `root`，得到 dsh 自带布局：对话居中，Presmium 的预览与修改作为右侧坞的标签页类型登记（`ctx.sidebarRightTabs`），首页作为 `main` 的全局面板。根布局插件出错时整个应用不挂载（ui-renderer 的 README），所以退路与启动审计都有用例。
+打开讲义默认激活文档预览标签，文件与预览的打开和分组操作见本节开头的资源标签约定。面板通过 `react-resizable-panels` 的公开接口调整与收放，切换视图保留编辑器和预览实例；收起对话保留未发送的草稿。关闭文件、返回文档列表或切换文档时，若有未保存的修改，先选择保存、放弃或取消；保存失败时保留当前文档。刷新与关闭页面使用浏览器的未保存提示。`WorkbenchProvider` 默认提供这层保护；同一工作台的辅助面板使用 `protectChanges={false}`，避免重复对话框。
 
 新建、历史与收起对话放在 Harness 常驻头部的 `conversation.header.leading` 槽位，桌面与窄屏一致；不在对话外面再加一层标题栏。通过 `ctx.uiWorkspace.startSession(workspaceId)` 在启动的工作区中新建，复用 Harness 的会话与草稿管理；不操作隐藏的侧栏按钮。当前文稿、编辑草稿与选中内容保持，新会话仍取得当前文稿上下文。
 
@@ -359,6 +379,10 @@ v1 覆盖网页与幻灯片两种形态。notebook 是静态文件，没有实�
 **在插件管理中关掉 `@lincyaw/dsh` 时**，`ui-layout` 不回来。插件管理的开关只改 profile 的 bundle 列表：bundle 层（`cordis.patch.yml` 的 `presmium-service` 等行）不再加载，但启动器传入的 `web.patch.yml` 仍在，它关掉 `ui-layout`，插入 `presmium-workspaces`、`presmium-routes` 与 `presmium-workbench`。这三行等不到 `presmium` 服务而停在 pending（dsh 启动时警告“3 entries did not activate”），客户端部分照常载入并占据 `root`（模块系统按 Loader 的行，不看行是否已激活），`/api/presmium/*` 不在。页面因此是工作台，但读不到工作区：首页在 `documents` 得到 404 时说明“`@lincyaw/dsh` 在‘插件’页中被关掉了，从活动栏打开‘插件’把它重新打开，然后重新载入页面”。切换是热加载的，不用重启；重新打开就恢复，用户的数据都在。
 
 ### 7.3 面板
+
+活动栏的搜索入口、Ctrl/Cmd+P 随时快速打开工作区文件或文稿；文件名后加 `:行号` 定位。Ctrl/Cmd+Shift+P 搜索保存与显示方式等现有命令。预览 iframe 仅通过经过来源、nonce 和文稿身份检查的 `shortcut` 报告转发这两个意图；不转发任意键值。取消搜索回到原输入位置；切文稿仍先处理未保存修改。该入口不要求教师先回首页。
+
+文件栏的“新建文件”只需填写工作区相对路径，自动建立缺失目录，在中央编辑器打开并保留当前讲义与草稿。`POST source/create {path}` 独立于带版本的保存接口：只创建空文本文件，拒绝已有路径、符号链接父目录、范围之外的路径和锁冲突。编辑器提供 Python 语法、四空格块缩进、Tab/Shift+Tab，Escape 后 Tab 可以离开编辑区。
 
 源码只在中央编辑器中打开。dsh 对话中的文件名与代码行引用、工作区文件列表，经过公开的 `sidebarRightTabs` 资源解析接口转到同一个编辑器；`source.tsx` 复用 `@deepseek-ai/dsh-util-workspace-path` 解码文件地址，并保留行号、未保存修改与已有标签。恢复的旧 `text` 标签通过 `sidebar.right.tab.document.actions` 同样转到编辑器。图片、PDF、Office、表格与 HTML 继续使用 dsh 的专用预览，修改审阅仍在审阅面板中。
 
@@ -433,6 +457,9 @@ agent 读的、改的都是源码。所以用户指向的任何东西，无论�
 
 ### 8.2 数据：`Focus`
 
+`FocusReport.scope` 默认 `document`，`source.file` 相对讲义目录。教师选中讲义目录之外的 Python 等源码时使用 `scope: 'workspace'`，文件路径相对工作区根目录；只允许 `from: 'source'` 和源码行范围，不带讲义章节或块。服务要求 owner，通过工作区已有的文本源码读取校验获取磁盘摘录；`quote` 保留用户尚未保存的选区文字，两者分别给出。焦点仍绑定当前讲义与原 MCP 令牌范围，清除、切讲后不沿用旧选区。工作区源码选区与清除不依赖讲义成功编译，讲义报错时仍能把相关代码交给 agent。
+
+
 在内核的 agent 契约（`packages/kernel/src/contracts/agent.ts`）中扩展 `AgentContext` 与 `Annotation`，只增加，不改已有字段：
 
 ```ts
@@ -462,7 +489,7 @@ export interface Focus {
 
 ### 8.3 三个入口与一种交互
 
-当前实现自动把源码中的非空选区、预览中的文字选区与点选块报告到服务端的焦点接口。文档顶部显示当前关注内容及同步状态；焦点在转到聊天输入框时保留，作者可以明确清除。预览模式中点选块不打开源码；并排或源码模式中同时定位源码。下列批注托盘、快捷键、多条批注与发送方式是进一步的交互设计，不能据此宣称当前版本已经提供。
+当前实现自动把源码中的非空选区、预览中的文字选区与点选块报告到服务端的焦点接口。编辑区底部仅在有选区时显示当前关注内容及同步状态；焦点在转到聊天输入框时保留，作者可以明确清除。预览模式中点选块不打开源码；并排或源码模式中同时定位源码。下列批注托盘、快捷键、多条批注与发送方式是进一步的交互设计，不能据此宣称当前版本已经提供。
 
 | 入口 | 怎么指 | 得到 |
 |---|---|---|
@@ -545,7 +572,7 @@ export interface Focus {
 
 1. 选定 dsh 的端口：默认 4320，每次相同，浏览器的 cookie 跨重启有效；被占用时另取空闲端口。端口要在启动之前选定，因为工作区服务以工作台的源启动。
 2. 生成服务令牌；启动工作区服务：`presmium serve <目录> --port 0 --preview-origin <dsh 的源>`，环境中带 `PRESMIUM_SERVICE_TOKEN`。
-3. 启动 dsh：`--profile presmium-studio --port <端口> --no-open`，加上 6.6 节的补丁，工作目录为工作区根，环境中带服务的地址与令牌（bundle 的 `presmium-service` 行因此不再自己启动服务）。
+3. 启动 dsh：`--profile presmium-studio --port <端口> --no-open`，加上 6.6 节的补丁，工作目录为工作区根，环境中带服务的地址与令牌（bundle 的 `presmium-service` 行复用该服务）。
 4. 等 dsh 在标准输出打印 `dsh web: <网址>`。
 5. 打印一个网址。
 
@@ -572,14 +599,14 @@ dsh 的网页是单一所有者的应用，正好对应“每人一个容器”�
 
 ### 11.6 桌面客户端
 
-现在只做网页。下面四点保证以后能做桌面：
+当前只提供网页客户端；桌面适配尚未实现，需满足以下设计边界：
 
 1. 工作台的数据只走 `connection.fetch` 的精确路由；在桌面上这些请求经 IPC 传递（`dsh-host-webserver` 的 README），`webServer` 的前缀路由只在浏览器中可用。
 2. 预览始终来自工作区服务的回环源，不依赖 dsh 的网页服务。
-3. 根布局插件保留 `shell.leading` 槽位，窗口装饰的变量以后补上。
-4. 网页与桌面用同一个 bundle、同一个 profile。
+3. 根布局插件保留 `shell.leading` 槽位，桌面窗口装饰变量尚未定义。
+4. 桌面适配复用网页的 bundle 与 profile。
 
-可能的两条路：把 bundle 装进 DeepSeek 官方的桌面版（外框带 DeepSeek 的品牌，只有 macOS 与 Windows，插件要由桌面自带的 dsh 在应用退出时安装；它的 Electron 外壳在公开的 MIT 仓库中，不在 npm 仓库上）；或自己写一个薄的 Electron 外壳载入同一个页面（Electron 的版本要在 dsh 认可的集合中：43.0.0、44.0.0、44.7.0、45.0.0-alpha.6，dsh 拒绝在 Electron 39 的 Node 中运行；或让宿主跑在随附的 Node 上）。fork dsh 的桌面应用违反依赖优先的约定，不考虑。
+可能的两条路：把 bundle 装进 DeepSeek 官方的桌面版（外框带 DeepSeek 的品牌，只有 macOS 与 Windows，插件要由桌面自带的 dsh 在应用退出时安装；它的 Electron 外壳在公开的 MIT 仓库中，不在 npm 仓库上）；或自己写一个薄的 Electron 外壳载入同一个页面（Electron 的运行环境须满足锁定 dsh 版本的要求；或让宿主跑在随附的 Node 上）。fork dsh 的桌面应用违反依赖优先的约定，不考虑。
 
 ## 12. 版本与升级闸门
 

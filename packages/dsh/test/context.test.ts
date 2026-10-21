@@ -96,6 +96,12 @@ describe('[gate] each session\'s own document on the web carrier', () => {
     expect(last.tools.map((tool: { name: string }) => tool.name)).not.toContain('presmium__fixture_note')
     expect(JSON.stringify(last.messages)).toContain(ws.dir)
     expect(new Set(requests.map(r => r.headers['x-deepseek-harness-session-id'])).size).toBe(1)
+    const review = await api.fetch('/api/presmium/review?document=lectures%2Fbeta')
+    expect(review.status).toBe(200)
+    expect(await review.json()).toMatchObject({ review: { session: sessionId, changes: [{ path: 'shared-notes.md' }] } })
+    const rejected = await api.fetch('/api/presmium/review/reject?document=lectures%2Fbeta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    expect(rejected.status).toBe(200)
+    expect(existsSync(join(ws.dir, 'shared-notes.md'))).toBe(false)
   }, 240_000)
 
   it('the page reaches the workspace service at /api/presmium/*, with the host\'s cookie only', async () => {

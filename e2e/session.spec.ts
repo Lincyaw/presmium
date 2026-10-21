@@ -122,6 +122,16 @@ test.describe('a classroom', () => {
     await expect(present(presenter)).toHaveAttribute('data-step', '2')
     await expect(present(learner)).toHaveAttribute('data-section', 'session-follow')
     await expect(present(learner)).toHaveAttribute('data-step', '2')
+    await expect(badge(learner)).toHaveCount(1)
+
+    const bounds = await badge(learner).boundingBox()
+    expect(bounds).not.toBeNull()
+    const point = { x: bounds!.x + bounds!.width / 2, y: bounds!.y + bounds!.height / 2 }
+    await presenter.keyboard.press('b')
+    await expect(learner.locator('.pm-stage-black')).toBeVisible()
+    await expect.poll(() => learner.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.classList.contains('pm-stage-black'), point)).toBe(true)
+    await presenter.keyboard.press('b')
+    await expect(learner.locator('.pm-stage-black')).toHaveCount(0)
 
     await badge(learner).getByRole('button', { name: '自主浏览' }).click()
     await presenter.keyboard.press('ArrowRight')

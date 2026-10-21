@@ -3,7 +3,7 @@
   "commit": "de53a9f979a6ee35f7d13a5e1aadee5ea1afc58e",
   "lectures": [
     {
-      "documentSha256": "01669828ace42484bd3d0fe9250155f4ad332c45175c3a303c7da19270ad323d",
+      "documentSha256": "65a6520c71584d7e07b38a91e7018be74381396b88830b5e457271039afd0d4d",
       "lecture": 1,
       "kind": "python",
       "title": "Introduction and tokenization",
@@ -13,7 +13,7 @@
       "traceSha256": "6f3fdd61e5f87be9284e3c04bef9173ac2ea0b300ed06e83109a787999c47104",
       "steps": 617,
       "slidesEntry": "lecture_01/slides.md",
-      "slidesSha256": "1ad1033b8dee145ebe3d353042b94df024a01e0a0bc8be9f4822d17087199b2f",
+      "slidesSha256": "da76456785ed0c0b6cc7cafd2c3e66a686376935d0a8bded12c98648bc7bb950",
       "readingSections": 37,
       "nativeSteps": [
         {
@@ -7933,7 +7933,7 @@
       "sections": 105
     },
     {
-      "documentSha256": "72d3ff44541d06956b19586a6b3d42ca3c0f2b7d06aca0ec388413726dd479c7",
+      "documentSha256": "b7e3ce378071c4ce995177994a29ae491d1c837368b839306291577ea2e331af",
       "lecture": 2,
       "kind": "python",
       "title": "Resource accounting",
@@ -7943,7 +7943,7 @@
       "traceSha256": "dea0edc07279ec3469c8d9f2e48165d5c0eca362c82b3243b5c33bc829505486",
       "steps": 955,
       "slidesEntry": "lecture_02/slides.md",
-      "slidesSha256": "68a028ff8ab114467a479f7d74c39d8ce36d48602751e970fbd4affee7d0badb",
+      "slidesSha256": "a73b6aafd4a49d3c4692e5862961b5682048514b947b52190e0e430cae7332bf",
       "readingSections": 16,
       "nativeSteps": [
         {
@@ -13339,9 +13339,9 @@
     },
     {
       "slidesEntry": "lecture_03/slides.md",
-      "slidesSha256": "7152694622e614b8b40cad1a497b430d7b285063ff2479e691ef9c13c1a3fb1c",
+      "slidesSha256": "57cbcbcefdce295ea4708819fa95d4e1e248fb3a733e5aec0763e04236babb13",
       "readingSections": 63,
-      "documentSha256": "2587db18a9ee04d8877e26b71fbc014050e4675385d478819ad5da40e148f7be",
+      "documentSha256": "29a940ccb8959ba5f8f5b63c9916262149180dad996fb5b0d2e55f863f8d8290",
       "lecture": 3,
       "kind": "pdf",
       "title": "Architectures and hyperparameters",
@@ -13957,9 +13957,9 @@
     },
     {
       "slidesEntry": "lecture_04/slides.md",
-      "slidesSha256": "69c417a0fcc61b793a8793cd0c57b6fb94f119fcfa733d5a25d9844f8f851284",
+      "slidesSha256": "d8f13bffe68c35feb97c015bd8c5aa0f141e047f68352af3cc887474668e6505",
       "readingSections": 55,
-      "documentSha256": "31a7129402eb3b7f7927203381a0c21a385c9f90443413996b0e855651bd1b47",
+      "documentSha256": "9bced8b96cc3fb56c7a59dff774d039600d88c2964ad5def547a340bb6c4f026",
       "lecture": 4,
       "kind": "pdf",
       "title": "Attention alternatives and mixture of experts",
@@ -14512,9 +14512,9 @@
     },
     {
       "slidesEntry": "lecture_05/slides.md",
-      "slidesSha256": "dbba65d1948243adbb627fceae242a8d9cc0f22236bc15f7bd55706fef1a65ec",
+      "slidesSha256": "5f96daa9418c14e3fe1cf35c47a188cd873c6e788861ded2278fc9336a8a855c",
       "readingSections": 55,
-      "documentSha256": "7b78b4b1532e6090710fb6d951fcd980b39c629162cdf9a18fea2a8862e41626",
+      "documentSha256": "fa00c589c853c808662328b4098a085ba8575e878a38ab5f926ffda8d3e192ad",
       "lecture": 5,
       "kind": "pdf",
       "title": "GPUs",
@@ -15021,7 +15021,7 @@
       "sections": 56
     },
     {
-      "documentSha256": "a69d50379e76c0603e361f229b806f67d2f31404d112175d1203851f4f4f04ce",
+      "documentSha256": "2b0fb3f9e541b7201fc63386cb499f4a2befbf1a7e8fd6a5d49fd222ef38c0fe",
       "lecture": 6,
       "kind": "python",
       "title": "GPU programming",
@@ -15031,7 +15031,7 @@
       "traceSha256": "13fe17130634f625c838a3715b3f201d59a1d29540babd661450a61d63ded48f",
       "steps": 442,
       "slidesEntry": "lecture_06/slides.md",
-      "slidesSha256": "69e49e293b66dc1b2dddfc897ff88af3e9052b29fcb527ba00af4dc45cd0d25e",
+      "slidesSha256": "af5da9ee6f5ce3f054fc10e5f6240cf65e9811094f98fb8a34905af431b91d13",
       "readingSections": 11,
       "nativeSteps": [
         {
@@ -19400,7 +19400,7 @@
       "sections": 54
     },
     {
-      "documentSha256": "07998f930b62460f791e59e54930e39f6e3ed0340fc63a7f6b11d3a732fbca81",
+      "documentSha256": "1e8747b9ba45c7b3b3bedd35b5118a745e6687ac41fb51cc1a1bdd0d50a6688a",
       "lecture": 7,
       "kind": "python",
       "title": "Parallelism",
@@ -19410,7 +19410,7 @@
       "traceSha256": "5e17a63a09248fc194d5f63680681dc855cf956eac5c2b25215f69429f336968",
       "steps": 633,
       "slidesEntry": "lecture_07/slides.md",
-      "slidesSha256": "2ea4568c562795d6210bd0aef3befc58264d5370c46426be0cbea16c0d775328",
+      "slidesSha256": "535b7692d0ad3a4c2325eabbfc9aa288659b4345eac89e41fde318266dab464d",
       "readingSections": 2,
       "nativeSteps": [
         {
@@ -21998,9 +21998,9 @@
     },
     {
       "slidesEntry": "lecture_08/slides.md",
-      "slidesSha256": "ec9c44a0c4c6bd085743b1b4bf07690e036c8c52620ec51812df2c26a10355d3",
+      "slidesSha256": "843a932108ab09907c4e6079bc6f1843d8e8be9c44b7fb7a3a3d272288e40b13",
       "readingSections": 73,
-      "documentSha256": "6bdbe2ebac021d1af39b76b6270e34c587d14796aee9f5c31a3d3fa34ac19897",
+      "documentSha256": "4df9e82241511db02d5968f66cca8733ddf20f1dbf0c87e6af00d29fbc5b47b0",
       "lecture": 8,
       "kind": "pdf",
       "title": "Parallelism basics",
@@ -22670,9 +22670,9 @@
     },
     {
       "slidesEntry": "lecture_09/slides.md",
-      "slidesSha256": "a40a4844fc2678adbeb5613a0cb1582f6119db554076599c78e0ca052f1f0bf0",
+      "slidesSha256": "183b33906d8117bf026462e71cc8d16ea7fb170304115de11d81fa6cd0f2de0e",
       "readingSections": 57,
-      "documentSha256": "e12c87c70bb847e920987b4e46f0904e1b98f0c78b05ca5a3227dc9d56947364",
+      "documentSha256": "c9bc357625827cbe3784bff548650af1a23baeee49aafe018b087a85a563bf6a",
       "lecture": 9,
       "kind": "pdf",
       "title": "Scaling laws: basics",
@@ -23197,7 +23197,7 @@
       "sections": 58
     },
     {
-      "documentSha256": "99710723d3851f5da71059164030bf4d2c6b34e2290d5f3f1708e3c4b6ea9bd6",
+      "documentSha256": "63838e624b4ea9c3a8352ae79cc55ce0abcae9a04aea30cc95016906825a356e",
       "lecture": 10,
       "kind": "python",
       "title": "Inference",
@@ -23207,7 +23207,7 @@
       "traceSha256": "b9229447c3042f34bd6e307c2f2c34ba294d10708f208e8d1237be080d683cb6",
       "steps": 437,
       "slidesEntry": "lecture_10/slides.md",
-      "slidesSha256": "b0812baf32fb5eeed2c7836b2d7583635936a1c0bbc8024c6746429762e3c9bf",
+      "slidesSha256": "56821bbcaee55629ba523b440220c03ac7f55f9aee4ff384e3a0b3577ab722b4",
       "readingSections": 2,
       "nativeSteps": [
         {
@@ -29038,9 +29038,9 @@
     },
     {
       "slidesEntry": "lecture_11/slides.md",
-      "slidesSha256": "e37d210892ad582a91fe743ff742c74696d16b67271df91f0df79bad03bf830f",
+      "slidesSha256": "1c16aa7fd0a523f8bda3592778304e25e84063ea199a9c66eb17a3517d2de06b",
       "readingSections": 58,
-      "documentSha256": "d6536be1a55b37b40b5d558902e7fcf8859c10a2438c62377911a6523ceb240b",
+      "documentSha256": "9f9b43c16036141e129b2979f91902d708bb5e8856456c9c0faede5216f2fa62",
       "lecture": 11,
       "kind": "pdf",
       "title": "Scaling laws: case studies and details",
@@ -29574,7 +29574,7 @@
       "sections": 59
     },
     {
-      "documentSha256": "aa6a0fd6b01aea5b27ff3acec12b1b1af964ebae7299fd4d087699ab2b3ea3a2",
+      "documentSha256": "d66a027494d95c3da228affe21fe9b9eb43d3e729f371581a35614d7aac314cd",
       "lecture": 12,
       "kind": "python",
       "title": "Evaluation",
@@ -29584,7 +29584,7 @@
       "traceSha256": "1f71bd19541b5902c35cc4ead4442ec6e25445e442ac746029558ad55259b35f",
       "steps": 313,
       "slidesEntry": "lecture_12/slides.md",
-      "slidesSha256": "fb959a5c7163d2c929bce3c678b3683b2838ad96b5376c204e32696c04d2add4",
+      "slidesSha256": "cd6977b33335b14fcdab3eaa04678e9e8bdfa99bb2411493f98f06ac5b3e2577",
       "readingSections": 2,
       "nativeSteps": [
         {
@@ -34423,7 +34423,7 @@
       "sections": 60
     },
     {
-      "documentSha256": "c7c4bef58351664b55aea34c6e96557bd29ec50bef9fd81eb0ca1cd1b506332f",
+      "documentSha256": "a59a0eb1be6b3900a3f0d3cace0661ec086672292bf2d70352673282bb608112",
       "lecture": 13,
       "kind": "python",
       "title": "Data I",
@@ -34433,7 +34433,7 @@
       "traceSha256": "8b756902b42c9d775292840ad04eb008df815f86c438bba1795beb3830cec373",
       "steps": 489,
       "slidesEntry": "lecture_13/slides.md",
-      "slidesSha256": "a9114a473ad35ad8e7134848b35b2ad1f43405db15cc5aca0888458102ee9629",
+      "slidesSha256": "35010c1701bd390daa22a989518de763bbdb9e2f63db6934140875198d192afd",
       "readingSections": 2,
       "nativeSteps": [
         {
@@ -41544,7 +41544,7 @@
       "sections": 86
     },
     {
-      "documentSha256": "a69d0b9c72b672207a6cb48fea5ae4a25bdd8a6d04dbdb35e75073af20d585d3",
+      "documentSha256": "08686603ed7da92ffa817313274b7af8cb0d76b26b8e2a94c0ed409d35b244eb",
       "lecture": 14,
       "kind": "python",
       "title": "Data II",
@@ -41554,7 +41554,7 @@
       "traceSha256": "08f5e49a794a94e20423eb4edf7908f3b0b8969c3d0c31fa7d3c6b176aa0bddb",
       "steps": 406,
       "slidesEntry": "lecture_14/slides.md",
-      "slidesSha256": "0469c325f9e8b25819c09c67648031d399a8697b2fe2bd771f08765652a97259",
+      "slidesSha256": "d04dfb864a8d03e428ca2415d6fdae9a206248852f82f4bb41c325597b3d3334",
       "readingSections": 2,
       "nativeSteps": [
         {
@@ -46814,9 +46814,9 @@
     },
     {
       "slidesEntry": "lecture_15/slides.md",
-      "slidesSha256": "5ad2e0670fc042817cd34c87893ada6b1d15ddca91fd043113819ff735ea336d",
+      "slidesSha256": "5c19500a1af0befa82cb74b1cbf28ee1f13bd10cb9f80fae77c24e4735a0b1da",
       "readingSections": 66,
-      "documentSha256": "31ed3e47def1c930347459caf08b5d3bb3da6c235eb576fbcf6a651e8ff5d082",
+      "documentSha256": "11ef341e40be3d537f03264bbb9bc005acffb1c6a1d0f1f428e328e83b7f6397",
       "lecture": 15,
       "kind": "pdf",
       "title": "After pretraining: mid-training and post-training",
@@ -47414,9 +47414,9 @@
     },
     {
       "slidesEntry": "lecture_16/slides.md",
-      "slidesSha256": "a5bd655e1178eb2e6f125a1c31150195c65045d0efdfc02451c5c5fec02f20c0",
+      "slidesSha256": "63f729dda01caf377185850ecc8b81bec61af09e38e04abed3ccb9aa25d22e77",
       "readingSections": 61,
-      "documentSha256": "ff7ab61e1aee7148bbf4f12c3d6571050c8712bd479fe7085e102695447ff40b",
+      "documentSha256": "4260a74aa15facdbb480bb5464bae9870258766ab2ee229590e68a37ab4cfa1e",
       "lecture": 16,
       "kind": "pdf",
       "title": "Post-training II: reinforcement learning from verifiable rewards",
@@ -47977,7 +47977,7 @@
       "sections": 62
     },
     {
-      "documentSha256": "16edc53f96004a605322a840ae446bbbf4c8977927a888102985a5d70fd49f53",
+      "documentSha256": "636f143fe9d4ea1bb7055b7b009d033f748a5350c68411e2d19a836b0de9a639",
       "lecture": 17,
       "kind": "python",
       "title": "Multimodal models",
@@ -47987,7 +47987,7 @@
       "traceSha256": "4eb3419ca93a62d70d88c06a89e0e12b2b48984e1020f1e1020ec65f199887d2",
       "steps": 235,
       "slidesEntry": "lecture_17/slides.md",
-      "slidesSha256": "3bfa1c8f18cf5e5b3c8eabcb89df20e386929a228f5e17a04a023522fd266b5c",
+      "slidesSha256": "b2ed9a3d1390844d4331d4bf0b255d1d48d4669d4cb04e8c0d21c6e232fe178e",
       "readingSections": 10,
       "nativeSteps": [
         {

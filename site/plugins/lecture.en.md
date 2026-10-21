@@ -2,7 +2,7 @@
 title: Plugin guide
 lang: en
 description: Extend Presmium with components, directives, services, server routes, views and renderers
-translationOf: { entry: lecture.md, digest: 707aa83775bceb38f522c97eb2e382d4eb7757fe3b539ace4265d64b29cc5585 }
+translationOf: { entry: lecture.md, digest: 30337fc3c95304d3cbd7fe948e88112844860573c793ad5fa33703906c3cf9de }
 ---
 
 (plugins)=
@@ -169,6 +169,7 @@ export default plugin
 
 - `span` is the number of steps inside the block: the block has `span + 1` states (here the question and the results), and narration binds to them in order.
 - `fallback` is the mdast static media (the notebook, PDF) show; without one, renderers write a line that links the web page.
+- Components manage their child code by default. Containers that only organize content set `ownsCode: false` so child code keeps its own run controls and output in web and slides.
 - `ctx` has the document's language `lang`, the section's configuration `config`, `parse` to turn MyST in the body into mdast, `report` for findings and `watch` to declare files it depends on.
 - A directive named like a built-in one or another plugin's is an error; options it did not declare get a warning.
 

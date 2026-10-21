@@ -39,7 +39,7 @@ function toggled(event: Event): void {
       </template>
     </div>
     <Teleport v-if="badge.owns.value" to="body">
-      <SessionBadge />
+      <SessionBadge class="pm-session-badge--page" />
     </Teleport>
   </span>
 </template>

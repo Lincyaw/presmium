@@ -20,6 +20,8 @@ export interface GitReview extends ChangeReview {
   restoreFiles(paths: string[]): Promise<void>
   note(session: Omit<SessionRecord, 'checkpoints' | 'steps'>): void
   suspend(): void
+  prepareAccept(reject: string[]): Promise<string[]>
+  finish(): void
 }
 
 export const GIT_ENGINE = 'git'
@@ -334,6 +336,14 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
   const live = () => {
     if (settled) throw new Error('this review has ended')
   }
+  const prepareAccept = async (reject: string[]) => {
+    live()
+    guarded()
+    const changes = await trees.compare(snapshot, await trees.tree())
+    const rejected = new Set(reject.filter(path => changes.some(change => change.path === path)))
+    await trees.restore(snapshot, [...rejected])
+    return changes.filter(change => !rejected.has(change.path)).map(change => change.path)
+  }
 
   return {
     root: deck,
@@ -384,14 +394,12 @@ function reviewOf(open: { deck: string, trees: Trees, guarded: () => void, recor
       record.session = { ...record.session, ...session }
       write()
     },
+    prepareAccept,
+    finish: settle,
     async accept(reject = []) {
-      live()
-      guarded()
-      const changes = await trees.compare(snapshot, await trees.tree())
-      const rejected = new Set(reject.filter(path => changes.some(change => change.path === path)))
-      await trees.restore(snapshot, [...rejected])
+      const files = await prepareAccept(reject)
       settle()
-      return changes.filter(change => !rejected.has(change.path)).map(change => change.path)
+      return files
     },
     async rollback() {
       live()

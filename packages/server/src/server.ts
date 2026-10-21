@@ -13,6 +13,8 @@ import type {
   ServerContext,
   ServerContribution,
   ServiceToken,
+  PreviewDiagnostics,
+  Finding,
 } from '@lincyaw/kernel'
 import { pluginLogger } from '@lincyaw/compiler'
 import { createPresmiumMcp } from '@lincyaw/mcp'
@@ -22,6 +24,7 @@ import type { Refusal } from './auth.ts'
 import { Control, hasRole } from './control.ts'
 import type { ApprovalPolicy, WindowPosition } from './control.ts'
 import { focusBody, FocusStore } from './focus.ts'
+import { DiagnosticStore } from './diagnostics.ts'
 import type { ServedDocument, ServerHost } from './host.ts'
 import { bearer, closeServer, createProxy, header, isLoopback, json, limitBody, listen, nodeServer, problem, urlHost } from './http.ts'
 import type { Decision, ProxyTarget } from './http.ts'
@@ -62,6 +65,7 @@ export interface ServerOptions {
   env?: NodeJS.ProcessEnv
   approvalTimeoutMs?: number
   log?: Logger
+  diagnostics?: DiagnosticStore
 }
 
 export interface PresmiumServer {
@@ -70,8 +74,9 @@ export interface PresmiumServer {
   token: string
   services: [ServiceToken<unknown>, unknown][]
   control: Control
+  diagnostics: DiagnosticStore
   serverHost?: ServerHost
-  unmount(dir: string): Promise<void>
+  unmount(dir: string, options?: { preserveFocus?: boolean }): Promise<void>
   close(): Promise<void>
 }
 
@@ -172,13 +177,19 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
   }
   const sessions = new Map<string, ReturnType<McpEndpoint['issue']>>()
   const focus = new FocusStore()
+  const diagnostics = options.diagnostics ?? new DiagnosticStore()
   const own = new Map(services.map(([token, impl]) => [token.id, impl]))
 
   const mounted = new Map<string, Promise<Mounted | undefined>>()
+  const tearingDown = new Map<string, Promise<void>>()
+  let closing = false
   const mount = (dir: string) => {
+    if (closing) return Promise.resolve(undefined)
     let known = mounted.get(dir)
     if (!known) {
+      const previous = tearingDown.get(dir)
       known = (async () => {
+        await previous
         const doc = await options.document(dir)
         if (!doc) return undefined
         log.debug(`mounting the server contributions of ${dir || 'the deck'}: ${doc.plugins.filter(p => p.plugin.server).map(p => p.id).join(', ') || 'none'}`)
@@ -200,8 +211,10 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
           }
           try {
             contributions.set(id, await plugin.server.call(plugin, ctx))
+            diagnostics.replace({ document: dir, origin: 'server', instance: id }, [])
           } catch (error) {
             log.error(`plugin ${id} failed to make its server contribution: ${errorMessage(error)}`)
+            diagnostics.replace({ document: dir, origin: 'server', instance: id }, [{ checkId: id, severity: 'error', message: `plugin ${id} failed to make its server contribution: ${errorMessage(error)}` }])
           }
         }
         return { doc, contributions }
@@ -209,13 +222,15 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       const loading = known
       loading.then((found) => {
         if (!found && mounted.get(dir) === loading) mounted.delete(dir)
-      }, () => mounted.delete(dir))
+      }, () => {
+        if (mounted.get(dir) === loading) mounted.delete(dir)
+      })
       mounted.set(dir, known)
     }
     return known
   }
 
-  const mcp = options.mcp ? undefined : createPresmiumMcp(serverMcpHost({
+  const mcpHost = serverMcpHost({
     serverHost: options.serverHost,
     control,
     command: options.mode,
@@ -223,7 +238,9 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     mounted: async () => (await Promise.all([...mounted.values()].map(known => known.catch(() => undefined)))).flatMap(m => (m ? [m.doc] : [])),
     service: <T>(token: ServiceToken<T>) => own.get(token.id) as T | undefined,
     focus,
-  }))
+    diagnostics,
+  })
+  const mcp = options.mcp ? undefined : createPresmiumMcp(mcpHost)
 
   const members = new WeakMap<IncomingMessage, Member | Refusal>()
   const memberOf = (req: IncomingMessage): Member | Refusal => {
@@ -328,7 +345,8 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
       return problem(400, 'unknown message')
     }
     if (route === 'tokens') return await tokensRoute(request)
-    if (route === 'focus') return await focusRoute(request)
+    if (route === 'focus') return await focusRoute(request, member)
+    if (route === 'diagnostics' || route === 'diagnostics/events') return await diagnosticsRoute(request, route === 'diagnostics/events', req)
     return problem(404, 'not found')
   }
 
@@ -357,7 +375,7 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     return json({ url: grant.url, token: grant.token, document }, 201)
   }
 
-  const focusRoute = async (request: Request): Promise<Response> => {
+  const focusRoute = async (request: Request, member: Member): Promise<Response> => {
     if (request.method === 'GET') {
       const params = new URL(request.url).searchParams
       const found = focus.get(params.has('document') ? params.get('document')! : undefined)
@@ -370,14 +388,46 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     if (limited instanceof Response) return limited
     const body = focusBody(await limited.json().catch(() => undefined))
     if (typeof body === 'string') return problem(400, body)
+    const workspaceFocus = body.focus.filter(report => report.scope === 'workspace')
+    if (workspaceFocus.length && !hasRole(member, 'owner')) return problem(403, 'workspace source selections need the owner role')
+    if (workspaceFocus.length && !options.serverHost.readSource) return problem(400, 'this host does not read workspace source selections')
     if (!(await options.serverHost.documents()).some(doc => doc.dir === body.document)) return problem(404, `no document ${JSON.stringify(body.document)}`)
     try {
-      const { doc } = await options.serverHost.compile(body.document)
-      const record = focus.report(body.document, doc, body.focus)
+      const doc = body.focus.some(report => report.scope !== 'workspace') ? (await options.serverHost.compile(body.document)).doc : undefined
+      const sources = new Map(await Promise.all(workspaceFocus.map(async report => {
+        const path = report.source!.file
+        return [path, (await options.serverHost!.readSource!(path, member)).content] as const
+      })))
+      const record = focus.report(body.document, doc, body.focus, path => sources.get(path)!)
       return json({ document: record.document, focus: record.focus, reported: new Date(record.at).toISOString() })
     } catch (error) {
       return problem(400, errorMessage(error))
     }
+  }
+
+  const diagnosticsRoute = async (request: Request, stream: boolean, req: IncomingMessage): Promise<Response> => {
+    if (serviceToken && !fromHost(request)) return problem(401, 'diagnostics need Authorization: Bearer <the service token>')
+    if (!options.serverHost) return problem(409, 'this server compiles no document')
+    const params = new URL(request.url).searchParams
+    if (request.method === 'GET') {
+      const document = params.has('document') ? params.get('document')! : undefined
+      if (document !== undefined) {
+        if (!(await options.serverHost.documents()).some(doc => doc.dir === document)) return problem(404, `no document ${JSON.stringify(document)}`)
+        await mcpHost.diagnostics!(document)
+      }
+      if (!stream) return json(diagnostics.snapshot(document))
+      const connection = new AbortController()
+      req.once('close', () => connection.abort())
+      return eventStream(diagnostics.events(document, AbortSignal.any([connection.signal, request.signal])), request.signal)
+    }
+    if (request.method !== 'POST' || stream) return problem(405, stream ? 'GET' : 'GET or POST')
+    const limited = await limitBody(request, MAX_BODY)
+    if (limited instanceof Response) return limited
+    const body: unknown = await limited.json().catch(() => undefined)
+    const report = previewDiagnostics(body)
+    if (typeof report === 'string') return problem(400, report)
+    if (!(await options.serverHost.documents()).some(doc => doc.dir === report.document)) return problem(404, `no document ${JSON.stringify(report.document)}`)
+    return json({ accepted: diagnostics.report(report) })
   }
 
   const pluginRoute = async (request: Request, target: { plugin: string, path: string }, member: Member, document: string): Promise<Response> => {
@@ -411,7 +461,26 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
 
   const takeDown = async (known: Promise<Mounted | undefined>) => {
     for (const [id, contribution] of (await known.catch(() => undefined))?.contributions ?? []) {
-      await Promise.resolve(contribution.close?.()).catch((error: unknown) => log.error(`the contribution of ${id} failed to close: ${errorMessage(error)}`))
+      try {
+        await contribution.close?.()
+      } catch (error) {
+        log.error(`the contribution of ${id} failed to close: ${errorMessage(error)}`)
+      }
+    }
+  }
+
+  const unmount: PresmiumServer['unmount'] = async (dir, options = {}) => {
+    if (!options.preserveFocus) focus.forget(dir)
+    const known = mounted.get(dir)
+    mounted.delete(dir)
+    if (!known) return tearingDown.get(dir)
+    log.debug(`unmounting the server contributions of ${dir || 'the deck'}`)
+    const stopped = takeDown(known).finally(() => diagnostics.clear(dir, 'server'))
+    tearingDown.set(dir, stopped)
+    try {
+      await stopped
+    } finally {
+      if (tearingDown.get(dir) === stopped) tearingDown.delete(dir)
     }
   }
 
@@ -422,25 +491,32 @@ export async function startServer(options: ServerOptions): Promise<PresmiumServe
     services,
     control,
     serverHost: options.serverHost,
-    async unmount(dir) {
-      focus.forget(dir)
-      const known = mounted.get(dir)
-      mounted.delete(dir)
-      if (known) {
-        log.debug(`unmounting the server contributions of ${dir || 'the deck'}`)
-        await takeDown(known)
-      }
-    },
+    diagnostics,
+    unmount,
     async close() {
+      closing = true
       for (const grant of sessions.values()) grant.revoke()
       sessions.clear()
       control.close()
       await mcp?.close().catch((error: unknown) => log.error(`MCP failed to close: ${errorMessage(error)}`))
-      for (const known of mounted.values()) await takeDown(known)
+      await Promise.all([...mounted.keys()].map(dir => unmount(dir)))
+      await Promise.all(tearingDown.values())
       proxy.close()
       await closeServer(server)
     },
   }
+}
+
+function previewDiagnostics(body: unknown): PreviewDiagnostics | string {
+  if (!isRecord(body) || typeof body.document !== 'string' || (body.renderer !== 'web' && body.renderer !== 'slides') || typeof body.instance !== 'string' || !body.instance || typeof body.revision !== 'string' || !Array.isArray(body.findings)) return 'a preview diagnostic report needs document, renderer, instance, revision and findings'
+  const findings: Finding[] = []
+  for (const item of body.findings) {
+    if (!isRecord(item) || typeof item.checkId !== 'string' || typeof item.message !== 'string' || !['error', 'warning', 'info'].includes(String(item.severity))) return 'each diagnostic needs checkId, severity and message'
+    if (item.hint !== undefined && typeof item.hint !== 'string') return 'a diagnostic hint must be text'
+    if (item.source !== undefined && (!isRecord(item.source) || typeof item.source.file !== 'string' || (item.source.line !== undefined && (!Number.isInteger(item.source.line) || Number(item.source.line) < 1)))) return 'a diagnostic source needs a file and an optional positive line'
+    findings.push({ checkId: item.checkId, severity: item.severity as Finding['severity'], message: item.message, ...item.hint ? { hint: item.hint as string } : {}, ...item.source ? { source: item.source as Finding['source'] } : {} })
+  }
+  return { document: body.document, renderer: body.renderer, instance: body.instance, revision: body.revision, findings }
 }
 
 function withHeaders(response: Response, headers: Record<string, string>): Response {

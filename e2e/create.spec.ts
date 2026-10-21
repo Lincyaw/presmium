@@ -20,6 +20,7 @@ let lecture: string
 let plugin: string
 let site: { url: string, close(): Promise<void> } | undefined
 const running: ChildProcess[] = []
+const serviceLogs: Array<{ command: string, output(): string }> = []
 
 async function install(dir: string, tarballs: Map<string, Tarball>, extra: Record<string, string> = {}): Promise<void> {
   const file = join(dir, 'package.json')
@@ -38,6 +39,7 @@ async function dev(cwd: string, args: string[], forms: string[], bin = presmiumB
   running.push(child)
   return new Promise((resolve, reject) => {
     let output = ''
+    serviceLogs.push({ command: `presmium ${args.join(' ')}`, output: () => output })
     const read = (chunk: Buffer) => {
       output += chunk
       const urls = Object.fromEntries(forms.map(form => [form, new RegExp(`^${form} {2}(http\\S+?)\\/?$`, 'm').exec(output)?.[1]]))
@@ -88,6 +90,12 @@ test.afterAll(async () => {
     return exited
   }))
   if (work) rmSync(work, { recursive: true, force: true })
+})
+
+test.afterEach(async ({}, info) => {
+  for (const [index, log] of serviceLogs.entries()) {
+    await info.attach(`service-${index + 1}.log`, { body: `${log.command}\n${log.output()}`, contentType: 'text/plain' })
+  }
 })
 
 async function greeting(page: Page, url: string, text = '你好，读者！'): Promise<void> {

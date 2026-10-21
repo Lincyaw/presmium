@@ -10,6 +10,7 @@ export interface RunRequest {
   files?: Record<string, string>
   executor?: string
   session?: string
+  place?: { section: string, block: string }
 }
 
 export type RunOutput =

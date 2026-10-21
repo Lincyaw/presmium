@@ -5,6 +5,7 @@ export interface TrackClock {
   now(): number
   readonly playing: Readonly<Ref<boolean>>
   readonly rate: Readonly<Ref<number>>
+  readonly error: Readonly<Ref<Error | undefined>>
   play(): void
   pause(): void
   seek(t: number): void
@@ -16,6 +17,7 @@ export interface TrackClock {
 export class SilentClock implements TrackClock {
   readonly playing = shallowRef(false)
   readonly rate = shallowRef(1)
+  readonly error = shallowRef<Error>()
   protected at = 0
   protected since = performance.now()
   protected readonly duration: number
@@ -77,9 +79,15 @@ export class MediaClock extends SilentClock {
     this.media = media.map(({ url, start, duration: length }) => {
       const el = new Audio()
       el.preload = 'auto'
+      el.onerror = () => this.fail(new Error([url, el.error?.message].filter(Boolean).join(': ')))
       el.src = url
       return { el, start, duration: length }
     })
+  }
+
+  private fail(error: Error): void {
+    this.pause()
+    this.error.value = error
   }
 
   private mediaAt(t: number) {
@@ -133,7 +141,10 @@ export class MediaClock extends SilentClock {
       const offset = (t - m.start) / 1000
       if (Math.abs(m.el.currentTime - offset) * 1000 > DRIFT_MS) m.el.currentTime = offset
       m.el.playbackRate = this.rate.value
-      if (m.el.paused) void m.el.play().catch(() => undefined)
+      if (m.el.paused) void m.el.play().catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        this.fail(error instanceof Error ? error : new Error(String(error)))
+      })
     }
   }
 
@@ -141,10 +152,11 @@ export class MediaClock extends SilentClock {
     super.dispose()
     for (const { el } of this.media) {
       el.pause()
+      el.onerror = null
+      const url = el.src
       el.removeAttribute('src')
       el.load()
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url)
     }
   }
 }
-
-export class ClipClock extends MediaClock {}

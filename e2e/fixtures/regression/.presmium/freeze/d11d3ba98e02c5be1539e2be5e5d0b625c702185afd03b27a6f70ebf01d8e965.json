@@ -3,14 +3,14 @@
   "entry": "lecture.md",
   "lang": "python",
   "code": "def encode(text):\n    ids = list(text.encode(\"utf-8\"))\n    while len(ids) >= 2:\n        stats = get_stats(ids)\n        pair = min(stats, key=lambda p: merges.get(p, float(\"inf\")))\n        if pair not in merges:\n            break\n        ids = merge(ids, pair, merges[pair])\n    return ids\n\n\nfor word in [\"lowest\", \"newer\"]:\n    tokens = encode(word)\n    print(word, [vocab[i].decode() for i in tokens], tokens)",
-  "environment": "Python 3.13.12",
-  "revision": "runner 5cadcc15de4de559",
+  "environment": "Python 3.9.6",
+  "revision": "runner d01beb21eed32365",
   "run": {
     "ok": true,
     "stdout": "lowest ['low', 'est'] [260, 257]\nnewer ['new', 'e', 'r'] [263, 101, 114]\n",
     "stderr": "",
     "exitCode": 0,
-    "durationMs": 125,
+    "durationMs": 56,
     "timedOut": false,
     "source": "live",
     "executorId": "presmium.python",
@@ -21,6 +21,6 @@
         "text": "lowest ['low', 'est'] [260, 257]\nnewer ['new', 'e', 'r'] [263, 101, 114]\n"
       }
     ],
-    "cacheKey": "ed7db59fcfe954126b0ddc491e97f9560e518ba701928e060373d5fe75c34026"
+    "cacheKey": "d11d3ba98e02c5be1539e2be5e5d0b625c702185afd03b27a6f70ebf01d8e965"
   }
 }

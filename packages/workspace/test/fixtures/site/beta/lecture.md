@@ -1,6 +1,9 @@
 ---
 title: 乙文档
 tags: [进阶]
+plugins: ['../plugin']
+presmium:
+  fixture.workspaceVite: { message: beta-vite }
 ---
 
 # 概览

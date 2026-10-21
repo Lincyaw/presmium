@@ -150,8 +150,8 @@ function button(label: string, onClick: () => void) {
   return h('button', { type: 'button', class: 'pm-present__button', onClick }, label)
 }
 
-function layers(view: string) {
-  return listLayers(view).map(layer => h(layer.component, { key: layer.id, view }))
+function layers(view: string, scope: 'view' | 'viewport') {
+  return listLayers(view).filter(layer => (layer.scope ?? 'viewport') === scope).map(layer => h(layer.component, { key: layer.id, view }))
 }
 
 function moveInOverview(root: HTMLElement | undefined, key: string): boolean {
@@ -176,6 +176,14 @@ export const PresentView = defineComponent({
     const bar = shallowRef<HTMLElement>()
     const fitted = useFit(frame, content)
     useOverlayBar(bar)
+    let ownsFullscreen = false
+    const enterFullscreen = () => {
+      if (document.fullscreenElement) return
+      void document.documentElement.requestFullscreen().then(() => {
+        if (!root.value) return document.exitFullscreen()
+        ownsFullscreen = true
+      }).catch(() => {})
+    }
     overview.value = false
     const closeOverview = () => {
       overview.value = false
@@ -196,6 +204,7 @@ export const PresentView = defineComponent({
     onBeforeUnmount(() => {
       window.removeEventListener('keydown', onOverviewKey, { capture: true })
       overview.value = false
+      if (ownsFullscreen && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {})
     })
     watch(overview, async (open) => {
       if (!open) return
@@ -249,11 +258,12 @@ export const PresentView = defineComponent({
           button(t.present.next, () => viewer.next()),
           button(t.present.overview, () => overview.value = !overview.value),
           viewer.options.openPresenter ? button(t.present.presenter, () => viewer.options.openPresenter!(viewer.position.value)) : null,
-          button(t.present.fullscreen, () => void root.value?.requestFullscreen?.().catch(() => {})),
+          button(t.present.fullscreen, enterFullscreen),
           button(t.present.exit, () => viewer.setView(viewer.pageView.value)),
           h(PmApprovals, { placement: 'above' }),
         ]),
-      ]), ...layers('present')])
+        ...layers('present', 'view'),
+      ]), ...layers('present', 'viewport')])
     }
   },
 })
@@ -321,7 +331,8 @@ export const PresenterView = defineComponent({
             h('p', { class: 'pm-presenter__next' }, upcoming.value),
           ]),
         ]),
-      ]), ...layers('presenter')])
+        ...layers('presenter', 'view'),
+      ]), ...layers('presenter', 'viewport')])
     }
   },
 })

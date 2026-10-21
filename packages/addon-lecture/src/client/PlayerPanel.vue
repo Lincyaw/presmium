@@ -3,12 +3,12 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js'
 import type { Operations } from '@lincyaw/host'
 import { OPERATIONS, PmIcon, PmTabs, useMessages, useServer, useService } from '@lincyaw/host'
-import { isRecord } from '@lincyaw/kernel'
+import { errorMessage, isRecord } from '@lincyaw/kernel'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { captionLanguages, chapters, CLIPS_DIR, clockText, isStale, LECTURE_ID, LECTURE_MESSAGES, SCRIPT_TRACK, stepStops, textPieces, trackDuration, utteranceAt } from '../domain/index.ts'
 import type { LectureTrack, Utterance } from '../domain/index.ts'
 import type { ClockMedia, TrackClock } from './clock.ts'
-import { ClipClock, MediaClock, SilentClock } from './clock.ts'
+import { MediaClock, SilentClock } from './clock.ts'
 import { LecturePlayer } from './player.ts'
 import type { LectureSource } from './source.ts'
 import { NotYetSynthesized, serverEditing, serverSource, staticBase, staticSource } from './source.ts'
@@ -24,7 +24,9 @@ const viewer = useViewer()
 const server = useServer()
 const operations = useService(OPERATIONS)
 const player = shallowRef<LecturePlayer>()
-const status = ref<'loading' | 'missing' | 'not-yet' | 'ready'>()
+const status = ref<'loading' | 'missing' | 'not-yet' | 'ready' | 'failed'>()
+const loadFailure = ref<string>()
+const failure = computed(() => loadFailure.value ?? player.value?.clock.error.value?.message)
 const captions = ref(false)
 const language = ref<string>()
 const panel = ref<'transcript' | 'chapters'>()
@@ -39,26 +41,43 @@ function lectureSource(): LectureSource {
 
 async function clockOf(track: LectureTrack, source: LectureSource): Promise<TrackClock> {
   const length = trackDuration(track)
-  const url = (src: string) => source.media(track.id, src).catch(() => '')
-  if (track.voice.kind === 'synthetic') {
-    const clips = await Promise.all(track.utterances.filter(u => u.clip).map(async (u): Promise<ClockMedia> => ({ url: await url(`${CLIPS_DIR}/${u.clip}`), start: u.t, duration: u.d })))
-    if (clips.some(c => c.url)) return new ClipClock(length, clips.filter(c => c.url))
+  const segments = track.voice.kind === 'synthetic'
+    ? track.utterances.filter(u => u.clip).map(u => ({ src: `${CLIPS_DIR}/${u.clip}`, start: u.t, duration: u.d }))
+    : (track.audio ?? []).map(a => ({ src: a.src, start: a.start * 1000, duration: a.duration * 1000 }))
+  if (!segments.length) return new SilentClock(length)
+  const loaded = await Promise.allSettled(segments.map(async (segment): Promise<ClockMedia> => ({
+    url: await source.media(track.id, segment.src), start: segment.start, duration: segment.duration,
+  })))
+  const media = loaded.flatMap(result => result.status === 'fulfilled' ? [result.value] : [])
+  const failed = loaded.find(result => result.status === 'rejected')
+  if (failed) {
+    for (const { url } of media) if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+    throw failed.reason
   }
-  const audio = await Promise.all((track.audio ?? []).map(async (a): Promise<ClockMedia> => ({ url: await url(a.src), start: a.start * 1000, duration: a.duration * 1000 })))
-  const media = audio.filter(a => a.url)
-  return media.length > 0 ? new MediaClock(length, media) : new SilentClock(length)
+  return new MediaClock(length, media)
 }
 
 let loading = 0
 async function start(track: LectureTrack, source: LectureSource, ops: Operations, load: number, at = 0) {
-  const clock = await clockOf(track, source)
-  if (load !== loading) return clock.dispose()
-  player.value?.dispose()
-  player.value = new LecturePlayer(track, viewer.doc.value, ops, clock)
-  language.value ??= track.lang
-  status.value = 'ready'
-  player.value.seek(at)
-  if (exporting) exportHook(player.value)
+  player.value?.pause()
+  loadFailure.value = undefined
+  if (!player.value) status.value = 'loading'
+  try {
+    const clock = await clockOf(track, source)
+    if (load !== loading) return clock.dispose()
+    player.value?.dispose()
+    player.value = new LecturePlayer(track, viewer.doc.value, ops, clock)
+    language.value ??= track.lang
+    status.value = 'ready'
+    player.value.seek(at)
+    if (exporting) exportHook(player.value)
+  } catch (error) {
+    if (load !== loading) return
+    player.value?.dispose()
+    player.value = undefined
+    loadFailure.value = errorMessage(error)
+    status.value = 'failed'
+  }
 }
 
 watch([playing, operations], async ([id, ops]) => {
@@ -66,21 +85,24 @@ watch([playing, operations], async ([id, ops]) => {
   player.value?.dispose()
   player.value = undefined
   status.value = undefined
+  loadFailure.value = undefined
   language.value = undefined
   if (!id || !ops) return
   status.value = 'loading'
   const source = lectureSource()
-  let notYet = false
-  const track = await source.track(id).catch((error: unknown) => {
-    notYet = error instanceof NotYetSynthesized
-    return undefined
-  })
-  if (load !== loading) return
-  if (!track) {
-    status.value = notYet ? 'not-yet' : 'missing'
-    return
+  try {
+    const track = await source.track(id)
+    if (load !== loading) return
+    if (!track) {
+      status.value = 'missing'
+      return
+    }
+    await start(track, source, ops, load)
+  } catch (error) {
+    if (load !== loading) return
+    status.value = error instanceof NotYetSynthesized ? 'not-yet' : 'failed'
+    if (status.value === 'failed') loadFailure.value = errorMessage(error)
   }
-  await start(track, source, ops, load)
 }, { immediate: true })
 onBeforeUnmount(() => {
   loading++
@@ -126,7 +148,7 @@ const confirmingEdit = ref(false)
 
 function changed(track: LectureTrack) {
   const ops = operations.value
-  if (!ops) return
+  if (!ops || track.id !== playing.value) return
   void start(track, lectureSource(), ops, ++loading, player.value?.time.value ?? 0)
 }
 
@@ -145,11 +167,14 @@ function submitUtterance() {
 async function saveUtterance() {
   const id = editingUtterance.value
   const track = player.value?.track
+  const load = loading
   confirmingEdit.value = false
   if (!id || !track || !editing.value || saving.value) return
   saving.value = true
   try {
-    changed(await editing.value.editUtterance(track.id, id, draft.value))
+    const changedTrack = await editing.value.editUtterance(track.id, id, draft.value)
+    if (load !== loading) return
+    changed(changedTrack)
     editingUtterance.value = undefined
   } catch (error) {
     editFailure.value = t.value.editor.failed(error instanceof Error ? error.message : String(error))
@@ -215,6 +240,10 @@ function close() {
   <template v-if="playing">
     <div class="pm-lecture-layer">
       <p v-if="status === 'loading'" class="pm-lecture-player__status">{{ t.player.loading }}</p>
+      <p v-else-if="failure" class="pm-lecture-player__status" role="alert">
+        {{ t.player.failed(failure) }}
+        <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="close">{{ t.player.close }}</button>
+      </p>
       <p v-else-if="status === 'missing' || status === 'not-yet'" class="pm-lecture-player__status" role="alert">
         {{ status === 'not-yet' ? t.player.notYet : t.player.missing(playing) }}
         <button type="button" class="pm-lecture-button pm-ui-button pm-ui-button--small" @click="close">{{ t.player.close }}</button>

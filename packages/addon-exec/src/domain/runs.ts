@@ -12,6 +12,19 @@ export function withRecordedFallback(result: RunResult, recorded: RecordedOutput
   return { ...result, stdout: recorded, source: 'recorded' }
 }
 
+/** A readable projection of ordered notebook outputs, including the final expression. */
+export function outputText(result: RunResult): string {
+  if (!result.outputs || result.source === 'recorded') return result.stdout + (result.source === 'live' ? result.stderr : '')
+  return result.outputs.map((output) => {
+    if (output.output_type === 'stream') return output.text
+    if (output.output_type === 'error') return `${output.traceback.join('\n') || `${output.ename}: ${output.evalue}`}\n`
+    const data = output.data
+    const value = data['text/plain'] ?? data['text/markdown'] ?? data['application/json']
+    const text = Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : value === undefined ? '' : JSON.stringify(value, null, 2)
+    return text && !text.endsWith('\n') ? `${text}\n` : text
+  }).join('')
+}
+
 export function fallbackReason(result: RunResult): 'timedOut' | 'failed' | undefined {
   if (result.source !== 'recorded') return undefined
   return result.timedOut ? 'timedOut' : 'failed'
@@ -62,10 +75,6 @@ export function compareRuns(before: RunRecord, after: RunRecord): RunComparison 
     splitLines(change.value).map((text): OutputLine => ({ kind: change.added ? 'added' : change.removed ? 'removed' : 'same', text })),
   )
   return { before, after, args, output, changed: output.some(line => line.kind !== 'same') }
-}
-
-function outputText(result: RunResult): string {
-  return result.stderr && result.source === 'live' ? `${result.stdout}${result.stderr}` : result.stdout
 }
 
 function splitLines(value: string): string[] {

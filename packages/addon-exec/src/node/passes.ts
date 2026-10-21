@@ -20,8 +20,9 @@ export const timeoutPass: IRPass = {
 export const panelPass: IRPass = {
   name: 'presmium.exec.panels',
   run(doc) {
-    for (const { block: { node } } of docBlocks(doc)) {
+    for (const { section, block: { id, node } } of docBlocks(doc)) {
       if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmRunPanel') continue
+      node.props.place = { section: section.id, block: id }
       const run = ownCode(node)?.run
       if (run?.executor) node.props.executor = run.executor
       if (run?.session) node.props.session = run.session

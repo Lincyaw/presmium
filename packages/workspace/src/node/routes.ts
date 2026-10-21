@@ -86,7 +86,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
     const body: unknown = await request.json().catch(() => ({}))
     const paths = chosenPaths(body, (await uncommitted(ctx)).map(file => file.path))
     if (paths.length === 0) return problem(409, 'no changes to take: every file is as committed')
-    const claimed = locks?.claimAll(paths.flatMap(path => documentDirOf(documents.config, path) ?? []), holder)
+    const claimed = locks?.claimAll(paths.map(path => documentDirOf(documents.config, path) ?? ''), holder)
     if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
     try {
       return await work(paths, ctx.member, isRecord(body) ? body : {})
@@ -129,7 +129,7 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         if (!revisions) return problem(409, NO_GIT)
         const body: unknown = await request.json().catch(() => undefined)
         if (!isRecord(body) || typeof body.id !== 'string' || !/^[0-9a-f]{4,64}$/i.test(body.id)) return problem(400, '{ id: <commit> }')
-        const claimed = locks?.claimAll(await revisions.documentsOf(body.id), 'revision:revert')
+        const claimed = locks?.claimAll((await revisions.filesOf(body.id)).map(path => documentDirOf(documents.config, path) ?? ''), 'revision:revert')
         if (claimed && 'holder' in claimed) throw lockedError(claimed.document, claimed.holder)
         try {
           const before = listed()
@@ -162,6 +162,16 @@ export function workspaceContribution(options: WorkspaceRoutes): ServerContribut
         const body: unknown = await request.json().catch(() => undefined)
         if (!isRecord(body) || typeof body.path !== 'string' || typeof body.content !== 'string' || typeof body.base !== 'string') return problem(400, '{ path, content, base: <the version opened> }')
         return json({ version: await source.save(scope, body.path, body.content, body.base, ctx.member) } satisfies SavedAnswer)
+      }),
+    },
+    'source/create': {
+      role: 'editor',
+      maxBody: 8192,
+      handle: (request, ctx) => answer(async () => {
+        if (request.method !== 'POST') return problem(405, 'POST')
+        const body: unknown = await request.json().catch(() => undefined)
+        if (!isRecord(body) || typeof body.path !== 'string') return problem(400, '{ path: <new text file> }')
+        return json(await source.create(scopeOf(ctx), body.path, ctx.member), 201)
       }),
     },
     'changes': {

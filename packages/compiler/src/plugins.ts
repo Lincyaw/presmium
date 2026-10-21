@@ -13,6 +13,7 @@ export interface LoadedPlugin {
   name: string
   dir: string
   plugin?: PresmiumNodePlugin
+  entry?: string
 }
 
 export interface PluginProblem {
@@ -104,7 +105,7 @@ async function loadFrom(name: string, dir: string, problem: (severity: Severity,
       const version = plugin.version ? ` ${plugin.version}` : ''
       return { problem: problem('error', `plugin "${name}" (${plugin.id}${version}) is not loaded: ${incompatible}`) }
     }
-    return { loaded: { name, dir, plugin } }
+    return { loaded: { name, dir, plugin, entry: file } }
   } catch (error) {
     return { problem: problem('error', `cannot load plugin "${name}": ${errorMessage(error)}`) }
   }

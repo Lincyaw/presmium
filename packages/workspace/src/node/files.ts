@@ -15,6 +15,7 @@ const NOT_SOURCE = new Set(['node_modules', 'dist', '.git'])
 export class FilesError extends Error {}
 
 export interface DocumentWriter extends DocumentFiles {
+  create(path: string, content: Uint8Array, outside?: boolean): Promise<void>
   template(dir: string, template: string, title: string): Promise<void>
   copy(from: string, to: string): Promise<void>
   relink(from: string, to: string): Promise<string[]>
@@ -152,11 +153,27 @@ export function writeChanges(config: WorkspaceConfig, changes: DocumentFileChang
     const parts = partsOf(change.path)
     const dir = documentDirOf(config, parts.join('/'))
     if (dir === undefined && !outside) throw new FilesError(`${change.path} is in no document directory`)
-    if (dir !== undefined) documentDir(config, dir)
-    return { change, base: dir ?? '' }
+    if (!outside && dir !== undefined) documentDir(config, dir)
+    return { change, base: outside ? '' : dir ?? '' }
   })
   for (const { change, base } of targets) if ('remove' in change) apply(config.root, base, change)
   for (const { change, base } of targets) if (!('remove' in change)) apply(config.root, base, change)
+}
+
+export function createFile(config: WorkspaceConfig, path: string, content: Uint8Array, outside = false): void {
+  const parts = partsOf(path)
+  const dir = documentDirOf(config, path)
+  if (dir === undefined && !outside) throw new FilesError(`${path} is in no document directory`)
+  if (!outside && dir !== undefined) documentDir(config, dir)
+  const base = outside ? '' : dir ?? ''
+  let parent = join(config.root, base)
+  for (const part of parts.slice(base ? base.split('/').length : 0, -1)) {
+    parent = join(parent, part)
+    const found = stat(parent)
+    if (found && !found.isDirectory()) throw new FilesError(`${parent} is not a directory of the workspace`)
+    if (!found) mkdirSync(parent)
+  }
+  writeFileSync(join(parent, parts.at(-1)!), content, { flag: 'wx' })
 }
 
 const DECK_CONTENT = new Set(['freeze', 'drawings', 'assets', 'speech', 'speech.lock.json', 'anchors.lock.json'])
@@ -243,6 +260,7 @@ export function emptyDocument(config: WorkspaceConfig, dir: string): void {
 
 export function localWriter(config: WorkspaceConfig): DocumentWriter {
   return {
+    create: async (path, content, outside) => createFile(config, path, content, outside),
     write: async changes => writeChanges(config, changes),
     template: async (dir, template, title) => fromTemplate(config, dir, template, title),
     copy: async (from, to) => copyDocument(config, from, to),

@@ -252,7 +252,7 @@ it('gives code that runs live one output area, its runner\'s, which shows the re
   expect(printed).toHaveLength(2)
   for (const page of printed) {
     expect(page).toContain('预录输出')
-    expect(page).toContain('PRINTED linux')
+    expect(page).toContain(`PRINTED ${process.platform}`)
   }
   expect(text).not.toContain('emscripten')
 }, 300_000)

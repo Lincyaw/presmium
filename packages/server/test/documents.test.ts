@@ -10,6 +10,7 @@ const DECK = join(FIXTURES, 'deck')
 
 function rss(pid: number): number {
   const kb = /^VmRSS:\s+(\d+) kB$/m.exec(readFileSync(`/proc/${pid}/status`, 'utf8'))?.[1]
+  if (!kb) throw new Error(`/proc/${pid}/status has no VmRSS measurement`)
   return Number(kb) * 1024
 }
 
@@ -80,12 +81,13 @@ describe('presmium serve: the documents\' routes and proxies', () => {
     expect(value.headers['cache-control']).toBe('no-store')
 
     const pid = host.child.pid!
-    const before = rss(pid)
+    const before = process.platform === 'linux' ? rss(pid) : undefined
     for (const chunked of [false, true, false, true]) {
       const refused = await post(`${url}/__presmium/fixture.server/upload`, 2 << 20, chunked)
       expect(refused.status, `chunked: ${chunked}`).toBe(413)
     }
-    expect(rss(pid) - before).toBeLessThan(50 << 20)
+    if (before !== undefined) expect(rss(pid) - before).toBeLessThan(50 << 20)
+    else console.info('Skipping RSS growth measurement: Linux /proc/<pid>/status is required; HTTP body-limit assertions still run.')
     for (const chunked of [false, true]) {
       const { status, ms } = await endless(url, chunked)
       expect(status, `chunked: ${chunked}`).toBe('HTTP/1.1 413 Payload Too Large')
