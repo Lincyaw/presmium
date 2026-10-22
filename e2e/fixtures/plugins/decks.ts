@@ -16,7 +16,7 @@ export const FIXTURES = resolve('e2e/fixtures/plugins')
 /** `presmium-classroom-server --port 0`, archiving to `deck` when given, until it prints its URL. */
 export async function startClassroomServer(deck?: string): Promise<{ url: string, child: ChildProcess }> {
   const args = ['--port', '0', '--host', '127.0.0.1', ...deck ? ['--deck', deck] : []]
-  const child = spawn(process.execPath, [resolve('packages/classroom-server/bin/server.mjs'), ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
+  const child = spawn(process.execPath, [resolve('packages/classroom-server/bin/presmium-classroom-server.mjs'), ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
   const url = await new Promise<string>((done, fail) => {
     let output = ''
     child.stdout!.on('data', (chunk: Buffer) => {

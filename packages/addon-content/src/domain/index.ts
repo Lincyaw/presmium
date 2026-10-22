@@ -1,4 +1,4 @@
-export { CONTENT_ID, DEMO_COUNTER_TAG, isCustomElementTag } from './elements.ts'
+export { CONTENT_ID, isCustomElementTag } from './config.ts'
 export { decodeMarkmap, encodeMarkmap, markmapOutline } from './markmap.ts'
 export type { MarkmapData, MarkmapNode } from './markmap.ts'
 export { captionTracks, isRemote, languageName, languageTag, MEDIA_KINDS, MEDIA_OPTIONS, mediaElements, mediaFallback, parseCaptions, videoHtml, youtubeId } from './media.ts'

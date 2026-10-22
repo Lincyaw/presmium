@@ -2,9 +2,9 @@
 import { useMessages, useViewRole } from '@lincyaw/host'
 import type { VNode } from 'vue'
 import { computed, ref, useId, useSlots, watch } from 'vue'
-import { browserStore } from '../src/client/local.ts'
-import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { COLLECTIONS, isPrediction, isSavedPrediction, MESSAGES, placeKey, predictionId } from '../src/domain/index.ts'
+import { browserStore } from '../src/client/browser-store.ts'
+import { useClassroomStore, useCollection, useGuardedWrite, useParticipation } from '../src/client/composables.ts'
+import { COLLECTIONS, MESSAGES, placeKey, predictionId, toPrediction, toSavedPrediction } from '../src/domain/index.ts'
 import type { Place, Prediction, SavedPrediction } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -17,11 +17,11 @@ const props = defineProps<{
 }>()
 
 const role = useViewRole()
-const { me, status, joined, presenter } = useSession()
+const { me, status, joined, presenter } = useParticipation()
 const store = useClassroomStore()
-const kept = useCollection(browserStore, COLLECTIONS.predictions, isSavedPrediction)
-const predictions = useCollection(() => store.value, COLLECTIONS.predictions, isPrediction)
-const { failure, write } = useWrite()
+const kept = useCollection(browserStore, COLLECTIONS.predictions, toSavedPrediction)
+const predictions = useCollection(() => store.value, COLLECTIONS.predictions, toPrediction)
+const { failure, write } = useGuardedWrite()
 const t = useMessages(MESSAGES)
 const name = useId()
 const slots = useSlots()
@@ -50,7 +50,7 @@ function save(): void {
   if (!store.value || !participant || !props.place || !joined.value || presenter.value || status.value !== 'active') return
   write(() => store.value!.put<Prediction>(COLLECTIONS.predictions, predictionId(id.value, participant.id), {
     ...props.place!,
-    predict: id.value,
+    predictId: id.value,
     participant: participant.id,
     question: props.question,
     ...props.choices ? { choices: props.choices } : {},

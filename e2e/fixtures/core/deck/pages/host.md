@@ -11,7 +11,7 @@ Here a component follows the steps: its state is a function of the step.
 **Steps**: jumping to a step looks the same as stepping there
 :::
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 3
 steps: [Parse, Start, Render]
 :::
@@ -45,7 +45,7 @@ slides: { class: fx-late-steps }
 **Second**: the stepper comes next and counts its steps from here
 :::
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 3
 steps: [Parse, Start, Render]
 :::
@@ -57,8 +57,8 @@ steps: [Parse, Start, Render]
 slides: { class: fx-services }
 :::
 
-:::{component} PmDemoGreeting
+:::{component} DemoGreeting
 :::
 
-:::{component} PmDemoAnimated
+:::{component} DemoAnimated
 :::

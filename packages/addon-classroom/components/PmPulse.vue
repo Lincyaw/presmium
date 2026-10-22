@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useMessages } from '@lincyaw/host'
 import { computed } from 'vue'
-import { useClassroomStore, useCollection, useSession, useWrite } from '../src/client/use.ts'
-import { COLLECTIONS, distribution, isPulseVote, MESSAGES, placeKey, voteId } from '../src/domain/index.ts'
+import { useClassroomStore, useCollection, useGuardedWrite, useParticipation } from '../src/client/composables.ts'
+import { COLLECTIONS, MESSAGES, placeKey, pulseTally, toPulseVote, voteId } from '../src/domain/index.ts'
 import type { Place, PulseVote } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -12,16 +12,16 @@ const props = defineProps<{
   place?: Place
 }>()
 
-const { me, status, joined, presenter } = useSession()
+const { me, status, joined, presenter } = useParticipation()
 const store = useClassroomStore()
-const votes = useCollection(() => store.value, COLLECTIONS.pulse, isPulseVote)
-const { failure, write } = useWrite()
+const votes = useCollection(() => store.value, COLLECTIONS.pulse, toPulseVote)
+const { failure, write } = useGuardedWrite()
 const t = useMessages(MESSAGES)
 const question = computed(() => props.question ?? t.value.pulse.question)
 const levels = computed(() => props.levels ?? t.value.pulse.levels)
 
 const id = computed(() => (props.place ? placeKey(props.place) : ''))
-const counts = computed(() => distribution(id.value, levels.value.length, votes.value.map(item => item.value)))
+const counts = computed(() => pulseTally(id.value, levels.value.length, votes.value.map(item => item.value)))
 const total = computed(() => counts.value.reduce((sum, n) => sum + n, 0))
 const mine = computed(() => (me.value ? votes.value.find(item => item.id === voteId(id.value, me.value!.id))?.value : undefined))
 const canVote = computed(() => joined.value && !presenter.value && status.value === 'active')
@@ -31,7 +31,7 @@ function vote(level: number): void {
   if (!store.value || !participant || !props.place) return
   write(() => store.value!.put<PulseVote>(COLLECTIONS.pulse, voteId(id.value, participant.id), {
     ...props.place!,
-    pulse: id.value,
+    pulseId: id.value,
     participant: participant.id,
     level,
     levels: levels.value,

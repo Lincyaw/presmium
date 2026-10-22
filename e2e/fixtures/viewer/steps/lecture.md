@@ -3,6 +3,7 @@ title: 步骤可逆
 lang: zh-CN
 plugins:
   - '@lincyaw/slidev-addon-core'
+  - ./host/plugin
 renderers:
   web: {}
 ---
@@ -22,7 +23,7 @@ e2e/viewer.spec.ts 的测试文稿（K-04，F-77）：网页形态中直接跳�
 
 先切开，再计数。
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 3
 steps: [数对, 选出最多的一对, 合并]
 :::

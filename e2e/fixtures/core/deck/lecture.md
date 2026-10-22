@@ -6,10 +6,11 @@ plugins:
   - '@lincyaw/slidev-addon-session'
   - '@lincyaw/slidev-addon-stage'
   - ./plugin
+  # The components and kernel plugins of e2e/fixtures/host, copied here by ../deck.ts.
+  - ./host/plugin
+  - ./host/services
 presmium:
   fixture.core: { label: global }
-  # The demo plugins of @lincyaw/slidev-addon-core: a provider, its consumer and an orphan.
-  presmium.core: { demo: true }
   # The learner's badge shows for an invitation (`?room=`) before anything connects.
   presmium.session: { server: 'ws://127.0.0.1:9' }
 renderers:

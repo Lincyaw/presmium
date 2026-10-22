@@ -1,7 +1,4 @@
-export { DEMO_GREETER, DEMO_GREETING, demoPlugins } from './demo.ts'
-export type { Greeter } from './demo.ts'
 export { createSlidevHost } from './host.ts'
 export { createSlidevNavigation, useSlideSections } from './navigation.ts'
-export { presmiumPlugins } from './plugin.ts'
 export { startSlidevPresmium } from './start.ts'
 export { createSyncTransports } from './sync.ts'

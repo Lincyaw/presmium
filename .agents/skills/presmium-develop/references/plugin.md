@@ -141,7 +141,7 @@ export default plugin
 `components/PmPoll.vue` 在网页与幻灯片两种形态中共用。规则（`docs/architecture.md` 5.3 至 5.9 节）：
 
 - 不要在模板中自己包 `PmBoundary`：渲染端在每个插件组件外面包了一层，组件自身 `setup` 或模板抛错也只影响它自己（`docs/architecture.md` 5.4 节）。
-- 视觉状态是步骤的纯函数：`useStepState({ from, to })` 给出块内第 k 步的状态（`active`、`reached`、`done`），步骤从块的 `at` 算起，不要自己再减 `at`。用 `v-click="scope.step(k)"`（`const scope = useStepScope()`）向宿主登记块内第 k 步，范例见 `packages/addon-core/components/PmDemoStepper.vue`。
+- 视觉状态是步骤的纯函数：`useStepState({ from, to })` 给出块内第 k 步的状态（`active`、`reached`、`done`），步骤从块的 `at` 算起，不要自己再减 `at`。用 `v-click="scope.step(k)"`（`const scope = useStepScope()`）向宿主登记块内第 k 步，范例见测试插件的 `e2e/fixtures/host/plugin/components/DemoStepper.vue`。
 - 跟随块的显示范围停止媒体等后台资源，用 `useStepState(useBlockStepRange())`；它包含当前块与父块的范围交集，`until` 为隐藏的第一步。渲染端经 `provideStepScope(at, until?)` 或 `PmStepScope` 传入绝对范围，原有块内步骤偏移不变；阅读形态展开内容的策略按 `useViewRole()` 判断。
 - 动画读 `usePrefersReducedMotion()`，开启时直接显示终态。
 - 界面文本：`const t = useMessages(CATALOG)`（`CATALOG` 为 `{ 'zh-CN': {...}, en: {...} }`），模板中用 `t.value.xxx`；组件之外用 `CATALOG[currentLocale()]`。语言由 `<html lang>` 决定，不要自己判断或观察它。

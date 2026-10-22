@@ -6,7 +6,7 @@ import { MESSAGES } from '../domain/index.ts'
 const DEFAULT_SERVER = 'https://www.plantuml.com/plantuml'
 
 export const plantUmlPass: IRPass = {
-  name: 'plantuml',
+  name: 'presmium.content.plantuml',
   run(doc, ctx) {
     const server = (typeof ctx.config.plantUmlServer === 'string' ? ctx.config.plantUmlServer : DEFAULT_SERVER).replace(/\/+$/, '')
     const alt = MESSAGES[deckLocale(ctx.lang)].plantUml

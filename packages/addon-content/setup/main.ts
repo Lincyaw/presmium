@@ -1,12 +1,9 @@
-import { registerPresmiumPlugin } from '@lincyaw/host'
 import { useIsSlideActive, useSlideContext } from '@slidev/client'
 import { defineAppSetup } from '@slidev/types'
 import { computed } from 'vue'
 import { MEDIA_ACTIVE } from '../src/client/media.ts'
-import contentPlugin from '../src/client/plugin.ts'
 
 export default defineAppSetup(({ app }) => {
-  registerPresmiumPlugin(contentPlugin)
   app.provide(MEDIA_ACTIVE, () => {
     const active = useIsSlideActive()
     const { $renderContext } = useSlideContext()

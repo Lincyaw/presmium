@@ -1,7 +1,7 @@
 import { useSharedState } from '@lincyaw/host'
 import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
-import { SCREEN_KEY, screenMode, toggleScreen } from '../domain/index.ts'
+import { SCREEN_KEY, toggleScreen, toScreenMode } from '../domain/index.ts'
 import type { ScreenMode } from '../domain/index.ts'
 
 let alone: Ref<string> | undefined
@@ -19,9 +19,9 @@ function state(): Ref<string> {
 export function useScreen(): { mode: Readonly<Ref<ScreenMode>>, toggle(wanted: Exclude<ScreenMode, 'live'>): void } {
   const current = state()
   return {
-    mode: computed(() => screenMode(current.value)),
+    mode: computed(() => toScreenMode(current.value)),
     toggle(wanted) {
-      current.value = toggleScreen(screenMode(current.value), wanted)
+      current.value = toggleScreen(toScreenMode(current.value), wanted)
     },
   }
 }

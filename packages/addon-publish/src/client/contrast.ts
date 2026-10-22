@@ -10,7 +10,7 @@ const enabled = ref(false)
 let initialized = false
 let observer: MutationObserver | undefined
 
-function stored(): boolean | undefined {
+function savedPreference(): boolean | undefined {
   try {
     const value = localStorage.getItem(STORAGE_KEY)
     return value === 'high' ? true : value === 'normal' ? false : undefined
@@ -19,7 +19,7 @@ function stored(): boolean | undefined {
   }
 }
 
-function follow(on: boolean): void {
+function observeChanges(on: boolean): void {
   observer?.disconnect()
   observer = undefined
   if (!on || typeof MutationObserver === 'undefined') return
@@ -44,13 +44,13 @@ function apply(on: boolean): void {
   else document.documentElement.removeAttribute(CONTRAST_ATTRIBUTE)
   styleDiagrams(on)
   raiseDimmedLines(on)
-  follow(on)
+  observeChanges(on)
 }
 
 export function initHighContrast(): void {
   if (initialized || typeof document === 'undefined') return
   initialized = true
-  apply(stored() ?? window.matchMedia?.('(prefers-contrast: more)').matches ?? false)
+  apply(savedPreference() ?? window.matchMedia?.('(prefers-contrast: more)').matches ?? false)
 }
 
 export interface HighContrast {

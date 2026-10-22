@@ -8,6 +8,7 @@ plugins:
   - '@lincyaw/slidev-addon-classroom'
   - '@lincyaw/slidev-addon-publish'
   - '@lincyaw/slidev-addon-assistant'
+  - ./host/plugin
 renderers:
   web: {}
   slides: {}
@@ -137,7 +138,7 @@ assert merge([1, 2, 3], (1, 2), 9) == [9, 3]
 (stepper)=
 ## 分三步
 
-:::{component} PmDemoStepper
+:::{component} DemoStepper
 :span: 3
 steps: [统计, 选出, 合并]
 :::

@@ -310,7 +310,7 @@
 | 跟随模式 | `FollowMode` | `follow` 跟随主讲或 `free` 自主浏览 |
 | 主讲的位置 | `Position`（会话记录的 `cursor`） | 章节序号、步骤、视图，以及按 ID 的位置：章节 ID、已到达的步骤的键 `trail`（块 ID）、只给部分受众的章节要回退到的章节 `back`；学习者按它们在自己的版本中定位，所以完整版的主讲与学生版的学习者到同一节的同一步 |
 | 位置 | `Place` | 课堂组件所在的章节与块；总览按本窗口版本的章节序号（`SectionNumbers`，按章节 ID）编号，不用写入者版本的序号 |
-| 测验 | `QuizSource`（题目与答案）、`QuizState`（开放与关闭） | 页内客观题 |
+| 测验 | `QuizSource`（题目、选项与正确选项 `correct`）、`QuizState`（开放与关闭） | 页内客观题 |
 | 作答 | `Answer` | 参与者对测验的一次作答，每人每题只计最后一次 |
 | 练习 | `ExerciseSource` | 题面、起始代码、校验用例 |
 | 提交 | `Submission` | 代码与校验结果，标记典型错误 |
@@ -318,6 +318,10 @@
 | 理解度 | `PulseVote` | 参与者在某页的理解程度投票 |
 | 笔记 | `Note` | 参与者的私有笔记，挂载到章节或带标签的块 |
 | 预测 | `{predict}`、`PmPredict`；作答为 `Prediction` | 学习者先写下的预测（文字或选项）；之后一步的内容是它的揭示内容 |
+
+课堂 ID 在代码中有三个名字，指同一个值：内核的会话快照中是 `SessionSnapshot.sessionId`；会话插件与课堂服务中是 room（加入链接的查询参数 `room`、课堂服务的房间名即 WebSocket 路径的最后一段、归档文件 `<room>.json`）；界面上称“课堂”（“课堂 abc123”）。参与者的私有房间是 `<room>.<参与者的密钥>`，放这位参与者的笔记。
+
+共享文档中的记录以 `participant` 记写下它的参与者 ID，以 `quizId`、`pulseId`、`predictId`、`exerciseId` 记它所属的组件（组件位置的键 `<章节 ID>/<块 ID>`）。早先版本写的 `author`（提问的参与者）、`quiz`、`pulse`、`predict`、`exercise` 与测验状态中的 `answer`（正确选项）照样读取（`records.ts` 的 `to*`），课堂服务也按 `author` 认出提问的参与者。
 
 不变量：
 
@@ -363,7 +367,7 @@
 | 中文 | 标识符 | 含义 |
 |---|---|---|
 | 导出任务 | `ExportJob` | 格式、范围、是否按步骤展开 |
-| 离线清单 | `OfflineManifest` | 需要预缓存的资源 |
+| 离线缓存规则 | `OfflineCacheRules` | Service Worker 预缓存与运行时缓存的资源 |
 | 视觉差异 | `VisualDiff` | 两个提交在同一页同一步骤上的像素差异比例 |
 | 发布检查 | 检查项 `presmium.links`、`presmium.directive`、`presmium.forbid` | 各媒介中无法解析的本地链接与 `#片段`、MyST 指令错误、文稿头部 `checks.forbid` 中正则的命中 |
 | 受众 | `IRBlock.audience`、`IRSection.audience` | 只给某些受众（如 `teacher`）的块与章节 |

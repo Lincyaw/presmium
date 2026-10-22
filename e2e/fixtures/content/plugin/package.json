@@ -1,0 +1,15 @@
+{
+  "name": "presmium-fixture-content",
+  "private": true,
+  "type": "module",
+  "description": "Test-only plugin of the content fixtures: the web component <presmium-demo-counter>",
+  "keywords": [
+    "slidev-addon",
+    "slidev",
+    "presmium"
+  ],
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "slidev": {}
+}

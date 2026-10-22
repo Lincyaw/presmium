@@ -23,7 +23,7 @@
     "access": "public"
   },
   "bin": {
-    "presmium-classroom-server": "./bin/server.mjs"
+    "presmium-classroom-server": "./bin/presmium-classroom-server.mjs"
   },
   "exports": {
     ".": "./src/index.ts"
@@ -33,7 +33,7 @@
     "src"
   ],
   "scripts": {
-    "start": "node bin/server.mjs"
+    "start": "node bin/presmium-classroom-server.mjs"
   },
   "dependencies": {
     "@lincyaw/kernel": "workspace:*",

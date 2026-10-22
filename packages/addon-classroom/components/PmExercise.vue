@@ -2,8 +2,8 @@
 import { PmIcon, useMessages, usePresentationMode, useService } from '@lincyaw/host'
 import { EXECUTOR } from '@lincyaw/kernel'
 import { computed, ref, shallowRef } from 'vue'
-import { useClassroomStore, useCollection, useSession } from '../src/client/use.ts'
-import { checkReport, checkRequest, COLLECTIONS, isSubmission, MESSAGES, placeKey, reportKinds, submissionId, summarize, summaryText } from '../src/domain/index.ts'
+import { useClassroomStore, useCollection, useParticipation } from '../src/client/composables.ts'
+import { checkReport, checkRequest, COLLECTIONS, exerciseTally, exerciseTallyText, MESSAGES, placeKey, reportKinds, submissionId, toSubmission } from '../src/domain/index.ts'
 import type { CheckError, CheckReport, Place, Submission } from '../src/domain/index.ts'
 import '../src/client/style.css'
 
@@ -18,16 +18,16 @@ const props = withDefaults(defineProps<{
 const executor = useService(EXECUTOR)
 const rows = usePresentationMode() === 'slides' ? 8 : 12
 const t = useMessages(MESSAGES)
-const { me, status, joined, presenter } = useSession()
+const { me, status, joined, presenter } = useParticipation()
 const store = useClassroomStore()
-const submissions = useCollection(() => store.value, COLLECTIONS.submissions, isSubmission)
+const submissions = useCollection(() => store.value, COLLECTIONS.submissions, toSubmission)
 
 const id = computed(() => (props.place ? placeKey(props.place) : ''))
 const code = ref(props.starter)
 const running = ref(false)
 const report = shallowRef<CheckReport>()
 const ranBy = ref('')
-const summary = computed(() => summarize(submissions.value.map(item => item.value).filter(s => s.exercise === id.value)))
+const tally = computed(() => exerciseTally(submissions.value.map(item => item.value).filter(s => s.exerciseId === id.value)))
 const ended = computed(() => joined.value && !presenter.value && status.value !== 'active')
 
 const verdict = computed(() => {
@@ -53,7 +53,7 @@ async function submit(): Promise<void> {
     if (store.value && participant && !presenter.value && status.value === 'active' && props.place) {
       store.value.put<Submission>(COLLECTIONS.submissions, submissionId(id.value, participant.id), {
         ...props.place,
-        exercise: id.value,
+        exerciseId: id.value,
         participant: participant.id,
         name: participant.name,
         status: result.status,
@@ -117,7 +117,7 @@ async function submit(): Promise<void> {
       <pre v-if="report.output.trim()" class="pm-exercise__output">{{ report.output }}</pre>
     </div>
     <p v-if="presenter" class="pm-exercise__summary">
-      {{ summaryText(summary, t) }}
+      {{ exerciseTallyText(tally, t) }}
     </p>
   </div>
 </template>

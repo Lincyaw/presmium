@@ -13,7 +13,7 @@ fixture.repro: { data: ./pages }
 
 The narration of the first page.
 
-```{component} PmDemoStepper
+```{component} FixtureSteps
 :span: 3
 ```
 

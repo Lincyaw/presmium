@@ -5,6 +5,7 @@ plugins:
   - '@lincyaw/slidev-addon-core'
   - '@lincyaw/slidev-addon-content'
   - '@lincyaw/slidev-addon-publish'
+  - ./plugin
 renderers:
   web: {}
   slides:

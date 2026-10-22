@@ -6,7 +6,7 @@ import { lowContrast } from './fixtures/contrast.ts'
 import { useFixture } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
-const ASSISTANT = { '@lincyaw/slidev-addon-assistant': 'packages/addon-assistant' }
+const LINK = { '@lincyaw/slidev-addon-assistant': 'packages/addon-assistant', '@lincyaw/host': 'packages/host' }
 
 async function scheme(page: Page, dark: boolean): Promise<void> {
   await page.addInitScript((on) => {
@@ -25,7 +25,8 @@ test.describe('a deck built with the default theme', () => {
     classroom?.child.kill('SIGTERM')
   })
   const deck = useFixture('plugin-ui', {
-    link: ASSISTANT,
+    with: ['host/plugin'],
+    link: LINK,
     edit: (dir) => {
       const file = join(dir, 'lecture.md')
       writeFileSync(file, readFileSync(file, 'utf8').replace('renderers:', `presmium:\n  presmium.session:\n    server: ${classroom!.url}\nrenderers:`))
@@ -93,10 +94,10 @@ test.describe('a deck built with the default theme', () => {
       await scheme(page, dark)
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.goto(`${deck().web}/basics.html`)
-      for (const name of ['quiz', 'predict', 'run-panel', 'exercise', 'question-box', 'pulse', 'demo-stepper']) await expect(page.locator(`.pm-${name}`).first()).toBeVisible()
+      for (const selector of ['.pm-quiz', '.pm-predict', '.pm-run-panel', '.pm-exercise', '.pm-question-box', '.pm-pulse', '.demo-stepper']) await expect(page.locator(selector).first()).toBeVisible()
       await expect(page.locator('.pm-mermaid[data-rendered]')).toHaveAttribute('data-theme', dark ? 'dark' : 'default')
       await expect(page.locator('.pm-run-panel__run')).toHaveCSS('background-color', dark ? 'rgb(237, 234, 227)' : 'rgb(28, 27, 25)')
-      expect(await lowContrast(page, ':is(.pm-quiz, .pm-predict, .pm-run-panel, .pm-exercise, .pm-question-box, .pm-pulse, .pm-demo-stepper, .pm-mermaid)', 'pre.shiki')).toEqual([])
+      expect(await lowContrast(page, ':is(.pm-quiz, .pm-predict, .pm-run-panel, .pm-exercise, .pm-question-box, .pm-pulse, .demo-stepper, .pm-mermaid)', 'pre.shiki')).toEqual([])
       await page.locator('.pm-assistant-toolbar').filter({ visible: true }).getByRole('button', { name: '提问' }).click()
       const ask = page.getByRole('dialog', { name: '向 AI 提问' })
       await expect(ask.getByLabel('地址')).toBeVisible()

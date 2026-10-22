@@ -16,7 +16,7 @@ const isTrail = (value: unknown): value is string[] => Array.isArray(value) && v
 const isKeys = (value: unknown): value is StepKeys => Array.isArray(value) && value.every(isTrail)
 const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined)
 
-export function slideSectionOf(frontmatter: Record<string, unknown> | undefined): SlideSection {
+export function toSlideSection(frontmatter: Record<string, unknown> | undefined): SlideSection {
   const id = text(frontmatter?.[SECTION_KEY])
   const back = text(frontmatter?.[BACK_KEY])
   const steps = frontmatter?.[STEPS_KEY]
@@ -28,7 +28,8 @@ export interface SlideSections {
   idOf(no: number): string | undefined
   noOf(id: string): number | undefined
   anchorOf(no: number, step: number): FollowAnchor
-  placeOf(position: FollowAnchor & { step: number }): { no: number, section: string, step: number } | undefined
+  /** The slide and step a followed position is at in this version. */
+  slideAt(position: FollowAnchor & { step: number }): { no: number, section: string, step: number } | undefined
 }
 
 export function slideSections(slides: readonly ({ no: number } & SlideSection)[]): SlideSections {
@@ -51,7 +52,7 @@ export function slideSections(slides: readonly ({ no: number } & SlideSection)[]
       const slide = byNo.get(no)
       return slide ? { section: slide.id, trail: stepTrail(slide.steps, step), ...slide.back ? { back: slide.back } : {} } : {}
     },
-    placeOf(position) {
+    slideAt(position) {
       const place = followedPlace(position, keysOf)
       return place && { ...place, no: numbers.get(place.section)! }
     },
@@ -62,13 +63,15 @@ type State = Readonly<Record<string, unknown>>
 
 const PAGE_FIELDS = ['page', 'clicks', 'clicksTotal', 'cursor']
 
-export function sharedOut(state: State, sections: SlideSections): State {
+/** Slidev's shared state as this window sends it: with the slide's section id, trail and back. */
+export function sharedStateOut(state: State, sections: SlideSections): State {
   if (typeof state.page !== 'number') return state
   const { section, trail, back } = sections.anchorOf(state.page, typeof state.clicks === 'number' ? state.clicks : 0)
   return section === undefined ? state : { ...state, [SECTION_KEY]: section, [TRAIL_KEY]: trail ?? null, [BACK_KEY]: back ?? null }
 }
 
-export function sharedReceiver(sections: () => SlideSections): (patch: State) => State {
+/** Takes Slidev's shared state from another window to this version's slide and step; it keeps the sender's last position. */
+export function createSharedStateIn(sections: () => SlideSections): (patch: State) => State {
   const sender: FollowAnchor & { step: number } = { step: 0 }
   return (patch) => {
     const { [SECTION_KEY]: id, [TRAIL_KEY]: trail, [BACK_KEY]: back, ...rest } = patch
@@ -79,7 +82,7 @@ export function sharedReceiver(sections: () => SlideSections): (patch: State) =>
     const own = sections()
     if (sender.section === undefined || !own.named) return rest
     const others = Object.fromEntries(Object.entries(rest).filter(([key]) => !PAGE_FIELDS.includes(key)))
-    const place = own.placeOf(sender)
+    const place = own.slideAt(sender)
     if (!place) return others
     const moved = [SECTION_KEY, TRAIL_KEY, BACK_KEY, 'page', 'clicks'].some(key => key in patch)
     const cursor = place.section === sender.section && 'cursor' in rest ? { cursor: rest.cursor } : {}

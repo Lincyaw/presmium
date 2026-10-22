@@ -13,7 +13,7 @@ import * as Y from 'yjs'
 import { startClassroomServer } from '../src/index.ts'
 import type { ClassroomServer, ClassroomWriter } from '../src/index.ts'
 
-const BIN = fileURLToPath(new URL('../bin/server.mjs', import.meta.url))
+const BIN = fileURLToPath(new URL('../bin/presmium-classroom-server.mjs', import.meta.url))
 const deck = mkdtempSync(joinPath(tmpdir(), 'presmium-classroom-'))
 let server: ClassroomServer
 let url = ''
@@ -22,7 +22,7 @@ const providers: WebsocketProvider[] = []
 const sockets: WebSocket[] = []
 
 beforeAll(async () => {
-  server = await startClassroomServer({ port: 0, host: '127.0.0.1', deck, onDropped: (room, writer, reason) => void dropped.push({ room, writer, reason }) })
+  server = await startClassroomServer({ port: 0, listenAddress: '127.0.0.1', deck, onDropped: (room, writer, reason) => void dropped.push({ room, writer, reason }) })
   url = server.url
 })
 
@@ -76,7 +76,7 @@ function awarenessMessage(states: [client: number, clock: number, state: unknown
   return encoding.toUint8Array(encoder)
 }
 
-const answer = (q: string, p: string, choice: number) => [`${q}:${p}`, { quiz: q, participant: p, choice: [choice] }] as const
+const answer = (q: string, p: string, choice: number) => [`${q}:${p}`, { quizId: q, participant: p, choice: [choice] }] as const
 
 it('starts from the command, which prints its address and, on every interface, its addresses on the network (P-60)', async () => {
   const child = spawn(process.execPath, [BIN, '--port', '0', '--deck', deck], { stdio: ['ignore', 'pipe', 'inherit'] })
@@ -165,8 +165,8 @@ it('takes the presenter\'s writes only from the presenter, and a learner\'s entr
   learners[0]!.doc.getMap('session').set('status', 'ended')
   learners[1]!.doc.getMap('store:quizzes').set('s/quiz', { open: true })
   learners[2]!.doc.getMap('store:answers').set(...answer('s/quiz', 'p2', 0))
-  learners[3]!.doc.getMap('store:answers').set('s/quiz:p1', { quiz: 's/quiz', participant: 'p2', choice: [0] })
-  learners[4]!.doc.getMap('store:questions').set('p1:big', { author: 'p1', text: 'x'.repeat(20_000) })
+  learners[3]!.doc.getMap('store:answers').set('s/quiz:p1', { quizId: 's/quiz', participant: 'p2', choice: [0] })
+  learners[4]!.doc.getMap('store:questions').set('p1:big', { participant: 'p1', text: 'x'.repeat(20_000) })
   impostor.doc.getMap('store:answers').set(...answer('s/other', 'p1', 2))
 
   await expect.poll(() => drops('room-f').length).toBe(6)
@@ -192,20 +192,20 @@ it('finds the participant where its collection puts it in the key: a learner who
   presenter.doc.getMap('session').set('status', 'active')
   await expect.poll(() => alice.doc.getMap('session').get('status')).toBe('active')
   alice.doc.getMap('store:answers').set(...answer('sec:intro/quiz-1', 'alice', 1))
-  alice.doc.getMap('store:questions').set('alice:q1', { author: 'alice', text: '为什么？' })
+  alice.doc.getMap('store:questions').set('alice:q1', { participant: 'alice', text: '为什么？' })
   await expect.poll(() => presenter.doc.getMap('store:questions').has('alice:q1')).toBe(true)
   const own = presenter.doc.getMap('store:answers').get('sec:intro/quiz-1:alice')
 
   const sec = await join('room-sec', { participant: 'sec', key: 'sec-key' })
   sec.doc.getMap('store:answers').set(...answer('sec:intro/quiz-1', 'sec', 2))
   await expect.poll(() => presenter.doc.getMap('store:answers').has('sec:intro/quiz-1:sec')).toBe(true)
-  presenter.doc.getMap('store:pulse').set('sec:intro/pulse-1:sec', { pulse: 'sec:intro/pulse-1', participant: 'alice', level: 1 })
+  presenter.doc.getMap('store:pulse').set('sec:intro/pulse-1:sec', { pulseId: 'sec:intro/pulse-1', participant: 'alice', level: 1 })
   await expect.poll(() => sec.doc.getMap('store:pulse').has('sec:intro/pulse-1:sec')).toBe(true)
   const tries = await Promise.all([1, 2, 3, 4].map(() => join('room-sec', { participant: 'sec', key: 'sec-key' })))
   const closes = tries.map(t => providerClosed(t.provider))
-  tries[0]!.doc.getMap('store:answers').set('sec:intro/quiz-1:alice', { quiz: 'sec:intro/quiz-1', participant: 'sec', choice: [3] })
+  tries[0]!.doc.getMap('store:answers').set('sec:intro/quiz-1:alice', { quizId: 'sec:intro/quiz-1', participant: 'sec', choice: [3] })
   tries[1]!.doc.getMap('store:answers').delete('sec:intro/quiz-1:alice')
-  tries[2]!.doc.getMap('store:questions').set('alice:q1', { author: 'sec', text: '改掉' })
+  tries[2]!.doc.getMap('store:questions').set('alice:q1', { participant: 'sec', text: '改掉' })
   tries[3]!.doc.getMap('store:pulse').delete('sec:intro/pulse-1:sec')
   expect(await Promise.all(closes)).toEqual([4403, 4403, 4403, 4403])
   expect(drops('room-sec').map(d => [d.writer.participant, d.reason]).sort()).toEqual([
@@ -217,7 +217,24 @@ it('finds the participant where its collection puts it in the key: a learner who
 
   const late = await join('room-sec')
   expect(late.doc.getMap('store:answers').get('sec:intro/quiz-1:alice')).toEqual(own)
-  expect(late.doc.getMap('store:questions').get('alice:q1')).toEqual({ author: 'alice', text: '为什么？' })
+  expect(late.doc.getMap('store:questions').get('alice:q1')).toEqual({ participant: 'alice', text: '为什么？' })
+})
+
+it('takes a question of an earlier version, which names its participant `author`, from that participant only', async () => {
+  const presenter = await join('room-earlier', { claim: 'presenter-key' })
+  const alice = await join('room-earlier', { participant: 'alice', key: 'alice-key' })
+  presenter.doc.getMap('session').set('status', 'active')
+  await expect.poll(() => alice.doc.getMap('session').get('status')).toBe('active')
+  alice.doc.getMap('store:questions').set('alice:q1', { author: 'alice', text: '为什么？' })
+  await expect.poll(() => presenter.doc.getMap('store:questions').get('alice:q1')).toEqual({ author: 'alice', text: '为什么？' })
+  alice.doc.getMap('store:questions').set('alice:q1', { participant: 'alice', text: '为什么是这样？' })
+  await expect.poll(() => presenter.doc.getMap('store:questions').get('alice:q1')).toEqual({ participant: 'alice', text: '为什么是这样？' })
+
+  const bob = await join('room-earlier', { participant: 'bob', key: 'bob-key' })
+  const closed = providerClosed(bob.provider)
+  bob.doc.getMap('store:questions').set('bob:q1', { author: 'alice', text: '冒名' })
+  expect(await closed).toBe(4403)
+  expect(drops('room-earlier').map(d => [d.writer.participant, d.reason])).toEqual([['bob', 'a value in store:questions that does not name its participant']])
 })
 
 function structAfter(client: number, clock: number, value: unknown): Uint8Array {
@@ -339,7 +356,7 @@ it('closes the connection of a refused update, leaves nothing of it in the room,
   expect(await otherCode).toBe(4403)
   const again = await join('room-h', { participant: 'p1', key: 'p1-key' })
   again.doc.getMap('store:answers').set(...answer('q', 'p1', 1))
-  await expect.poll(() => presenter.doc.getMap('store:answers').get('q:p1')).toEqual({ quiz: 'q', participant: 'p1', choice: [1] })
+  await expect.poll(() => presenter.doc.getMap('store:answers').get('q:p1')).toEqual({ quizId: 'q', participant: 'p1', choice: [1] })
   expect(presenter.doc.getMap('store:quizzes').toJSON()).toEqual({})
   const response = await fetch(`${url.replace(/^ws/, 'http')}/archive/room-h`, { method: 'POST', body: 'presenter-key' })
   const { file } = await response.json() as { file: string }

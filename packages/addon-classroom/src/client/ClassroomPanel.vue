@@ -3,98 +3,85 @@ import { useMessages, useSectionConfig } from '@lincyaw/host'
 import { computed } from 'vue'
 import {
   CLASSROOM_ID,
+  classroomRows,
   COLLECTIONS,
-  countedAnswers,
-  distribution,
-  isAnswer,
-  isPrediction,
-  isPulseVote,
-  isQuestion,
-  isQuizState,
-  isSubmission,
+  exerciseTallyText,
   MESSAGES,
-  placeIndex,
   placeText,
-  predictionTally,
   questionsByPlace,
-  sectionNumbers,
-  summarize,
-  summaryText,
-  tally,
+  toAnswer,
+  toPrediction,
+  toPulseVote,
+  toQuestion,
+  toQuizState,
+  toSectionNumbers,
+  toSubmission,
+  unansweredCount,
 } from '../domain/index.ts'
-import type { Prediction, PulseVote, Question, Submission } from '../domain/index.ts'
-import { useAiAnswers } from './ai.ts'
-import { useClassroomStore, useCollection, useSession, useWrite } from './use.ts'
+import type { Question } from '../domain/index.ts'
+import { useAiAnswers } from './ai-answers.ts'
+import { useClassroomStore, useCollection, useGuardedWrite, useParticipation } from './composables.ts'
+import QuestionItem from './QuestionItem.vue'
 import './style.css'
 
-const { status, presenter } = useSession()
+const { status, presenter } = useParticipation()
 const store = useClassroomStore()
 const from = () => store.value
-const questions = useCollection(from, COLLECTIONS.questions, isQuestion)
-const votes = useCollection(from, COLLECTIONS.pulse, isPulseVote)
-const quizzes = useCollection(from, COLLECTIONS.quizzes, isQuizState)
-const answers = useCollection(from, COLLECTIONS.answers, isAnswer)
-const submissions = useCollection(from, COLLECTIONS.submissions, isSubmission)
-const predictions = useCollection(from, COLLECTIONS.predictions, isPrediction)
-const { failure, write } = useWrite()
+const questions = useCollection(from, COLLECTIONS.questions, toQuestion)
+const votes = useCollection(from, COLLECTIONS.pulse, toPulseVote)
+const quizzes = useCollection(from, COLLECTIONS.quizzes, toQuizState)
+const answers = useCollection(from, COLLECTIONS.answers, toAnswer)
+const submissions = useCollection(from, COLLECTIONS.submissions, toSubmission)
+const predictions = useCollection(from, COLLECTIONS.predictions, toPrediction)
+const { failure, write } = useGuardedWrite()
 const t = useMessages(MESSAGES)
 const ai = useAiAnswers()
 
 const config = useSectionConfig(CLASSROOM_ID)
-const numbers = computed(() => sectionNumbers(config.value))
-const byPlace = <T extends { section: string, index: number }>(items: T[]) => [...items].sort((a, b) => placeIndex(a, numbers.value) - placeIndex(b, numbers.value))
+const numbers = computed(() => toSectionNumbers(config.value))
 
 const questionGroups = computed(() => questionsByPlace(questions.value.map(({ id, value }) => ({ ...value, id })), t.value, numbers.value))
-const open = computed(() => questions.value.filter(({ value }) => !value.answered).length)
+const unanswered = computed(() => unansweredCount(questions.value.map(item => item.value)))
 
-const pulses = computed(() => {
-  const latest = new Map<string, PulseVote>()
-  for (const { value } of votes.value) latest.set(value.pulse, value)
-  return byPlace([...latest.values()]).map((vote) => {
-    const counts = distribution(vote.pulse, vote.levels.length, votes.value.map(item => item.value))
-    return {
-      id: vote.pulse,
-      place: placeText(vote, t.value, numbers.value),
-      levels: vote.levels.map((level, i) => `${level} ${t.value.people(counts[i]!)}`).join(t.value.panel.levels),
-    }
-  })
-})
-
-const quizRows = computed(() => byPlace(quizzes.value.map(({ id, value }) => ({ ...value, id }))).map((quiz) => {
-  const result = tally(quiz.options.length, quiz.answer, countedAnswers(quiz.id, quiz, answers.value.map(item => item.value)))
-  return { id: quiz.id, text: t.value.panel.quiz(placeText(quiz, t.value, numbers.value), quiz.open, result.respondents, result.correct) }
+const rows = computed(() => classroomRows({
+  quizzes: quizzes.value.map(({ id, value }) => ({ ...value, id })),
+  answers: answers.value.map(item => item.value),
+  predictions: predictions.value.map(item => item.value),
+  votes: votes.value.map(item => item.value),
+  submissions: submissions.value.map(item => item.value),
+  numbers: numbers.value,
 }))
 
-const predicted = computed(() => {
-  const latest = new Map<string, Prediction>()
-  for (const { value } of predictions.value) latest.set(value.predict, value)
-  return byPlace([...latest.values()]).map((prediction) => {
-    const result = predictionTally(prediction.predict, prediction.choices?.length ?? 0, predictions.value.map(item => item.value))
-    return {
-      id: prediction.predict,
-      place: t.value.panel.predicted(placeText(prediction, t.value, numbers.value), result.respondents),
-      question: prediction.question,
-      choices: (prediction.choices ?? []).map((choice, i) => ({ choice, count: result.counts[i]! })),
-      texts: result.texts,
-    }
-  })
-})
+const pulses = computed(() => rows.value.pulse.map(row => ({
+  id: row.id,
+  place: placeText(row, t.value),
+  levels: row.levels.map((level, i) => `${level} ${t.value.people(row.counts[i]!)}`).join(t.value.panel.levels),
+})))
 
-const exercises = computed(() => {
-  const groups = new Map<string, Submission[]>()
-  for (const { value } of submissions.value) groups.set(value.exercise, [...groups.get(value.exercise) ?? [], value])
-  return byPlace([...groups.values()].map(group => ({ ...group[0]!, summary: summarize(group) }))).map(({ summary, ...first }) => ({
-    id: first.exercise,
-    text: t.value.panel.exercise(placeText(first, t.value, numbers.value), summaryText(summary, t.value)),
-  }))
-})
+const quizRows = computed(() => rows.value.quizzes.map(row => ({
+  id: row.id,
+  text: t.value.panel.quiz(placeText(row, t.value), row.open, row.tally.respondents, row.tally.correct),
+})))
+
+const predicted = computed(() => rows.value.predictions.map(row => ({
+  id: row.id,
+  place: t.value.panel.predicted(placeText(row, t.value), row.tally.respondents),
+  question: row.question,
+  choices: (row.choices ?? []).map((choice, i) => ({ choice, count: row.tally.counts[i]! })),
+  texts: row.tally.texts,
+})))
+
+const exercises = computed(() => rows.value.exercises.map(row => ({
+  id: row.id,
+  text: t.value.panel.exercise(placeText(row, t.value), exerciseTallyText(row.tally, t.value)),
+})))
 
 function toggleAnswered(question: Question & { id: string }): void {
   const { id, ...value } = question
   write(() => store.value?.put<Question>(COLLECTIONS.questions, id, { ...value, answered: !value.answered }))
 }
 
-function sendAnswer(question: Question & { id: string }): void {
+function sendReply(question: Question & { id: string }): void {
   const draft = ai.drafts.get(question.id)
   if (draft?.state !== 'ready') return
   const { id, ...value } = question
@@ -110,54 +97,27 @@ function sendAnswer(question: Question & { id: string }): void {
     </p>
     <template v-else>
       <section :aria-label="t.panel.questions">
-        <h4 class="pm-ui-heading">{{ t.panel.open(open) }}</h4>
+        <h4 class="pm-ui-heading">{{ t.panel.unanswered(unanswered) }}</h4>
         <p v-if="!questionGroups.length" class="pm-classroom-status">
           {{ t.panel.none }}
         </p>
         <p v-else-if="status === 'active' && ai.offered.value && !ai.provider.value" class="pm-classroom-status pm-classroom-panel__ai-setup">
           {{ t.questions.aiSetup }}
         </p>
-        <div v-for="group in questionGroups" :key="group.place" class="pm-classroom-panel__place" :data-section="group.section" :data-block="group.block">
+        <div v-for="group in questionGroups" :key="group.label" class="pm-classroom-panel__place" :data-section="group.section" :data-block="group.block">
           <p class="pm-classroom-panel__where">
-            {{ group.place }}
+            {{ group.label }}
           </p>
           <ul>
-            <li v-for="q in group.questions" :key="q.id" :data-answered="q.answered ? '' : undefined">
-              <strong>{{ q.name }}</strong>{{ t.colon }}{{ q.text }}
-              <button v-if="status === 'active'" type="button" class="pm-ui-button pm-ui-button--small" @click="toggleAnswered(q)">
-                {{ q.answered ? t.questions.markUnanswered : t.questions.markAnswered }}
-              </button>
-              <button v-if="status === 'active' && ai.provider.value && !q.reply && !ai.drafts.has(q.id)" type="button" class="pm-classroom-panel__ai pm-ui-button pm-ui-button--small" :title="t.questions.aiTitle(ai.provider.value)" @click="ai.answer(q.id, q)">
-                {{ t.questions.ai(ai.provider.value) }}
-              </button>
-              <div v-if="ai.drafts.get(q.id)" class="pm-classroom-panel__draft" :data-state="ai.drafts.get(q.id)!.state">
-                <p v-if="ai.drafts.get(q.id)!.state === 'running'" class="pm-classroom-status" role="status">
-                  {{ t.questions.aiAnswering }}
-                </p>
-                <template v-else-if="ai.drafts.get(q.id)!.state === 'ready'">
-                  <p class="pm-classroom-status">
-                    {{ t.questions.aiDraft }}
-                  </p>
-                  <p class="pm-classroom-panel__answer">
-                    {{ ai.drafts.get(q.id)!.text }}
-                  </p>
-                </template>
-                <p v-else class="pm-classroom-error" role="alert">
-                  {{ t.questions.aiFailed(ai.drafts.get(q.id)!.error ?? '') }}
-                </p>
-                <p class="pm-classroom-actions">
-                  <button v-if="ai.drafts.get(q.id)!.state === 'ready'" type="button" class="pm-ui-button pm-ui-button--primary pm-ui-button--small" @click="sendAnswer(q)">
-                    {{ t.questions.send }}
-                  </button>
-                  <button type="button" class="pm-ui-button pm-ui-button--small" @click="ai.discard(q.id)">
-                    {{ t.questions.discard }}
-                  </button>
-                </p>
-              </div>
-              <p v-if="q.reply" class="pm-classroom-reply">
-                {{ q.reply.provider ? t.questions.reply(q.reply.provider) : '' }}{{ q.reply.text }}
-              </p>
-            </li>
+            <QuestionItem
+              v-for="q in group.questions"
+              :key="q.id"
+              :question="q"
+              :active="status === 'active'"
+              :ai="ai"
+              @toggle-answered="toggleAnswered(q)"
+              @send="sendReply(q)"
+            />
           </ul>
         </div>
       </section>
@@ -238,21 +198,7 @@ function sendAnswer(question: Question & { id: string }): void {
 .pm-classroom-panel li {
   margin: 0.25rem 0;
 }
-.pm-classroom-panel li > .pm-ui-button {
-  margin-left: 0.35rem;
-}
-.pm-classroom-panel li[data-answered] {
-  color: var(--pm-color-muted);
-}
 .pm-classroom-panel__where {
   font-weight: 600;
-}
-.pm-classroom-panel__draft {
-  margin: 0.35rem 0;
-  padding: 0.35rem 0.75rem;
-  border-left: 3px solid var(--pm-color-line-strong);
-}
-.pm-classroom-panel__answer {
-  white-space: pre-wrap;
 }
 </style>

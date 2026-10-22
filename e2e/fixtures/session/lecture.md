@@ -5,9 +5,7 @@ plugins:
   - '@lincyaw/slidev-addon-core'
   - '@lincyaw/slidev-addon-stage'
   - '@lincyaw/slidev-addon-session'
-presmium:
-  presmium.core:
-    demo: true
+  - ./host/plugin
 renderers:
   web: {}
   slides:

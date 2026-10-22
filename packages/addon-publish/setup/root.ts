@@ -11,12 +11,12 @@ export default defineRootSetup(() => {
     document.documentElement.classList.toggle('pm-print', isPrintMode.value)
     document.documentElement.classList.toggle('pm-visual-diff', isPrintMode.value && visualDiff)
   })
-  if (isPrintMode.value) void printed(nav)
+  if (isPrintMode.value) void signalPrintReady(nav)
 })
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 50))
 
-async function printed({ router, currentRoute, printRange, slides }: ReturnType<typeof useNav>): Promise<void> {
+async function signalPrintReady({ router, currentRoute, printRange, slides }: ReturnType<typeof useNav>): Promise<void> {
   await router.isReady()
   if (currentRoute.value.name === 'print') {
     const range = printRange.value

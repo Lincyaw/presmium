@@ -3,25 +3,18 @@ import { CLASSROOM_STORE, isRecord, PRESENTER_PANELS, SESSION } from '@lincyaw/k
 import type { PluginDefinition, Unsubscribe } from '@lincyaw/kernel'
 import { watch } from 'vue'
 import { version } from '../../package.json'
-import { localServer, MESSAGES, reachableServer, SESSION_ID, sessionConfig } from '../domain/index.ts'
+import { localServer, MESSAGES, reachableServer, SESSION_ID, toSessionConfig } from '../domain/index.ts'
 import type { LocalClassroom } from '../domain/index.ts'
-import { createClassroom } from './classroom.ts'
+import { createClassroomConnection } from './classroom-connection.ts'
+import { tryStorage } from './membership-storage.ts'
 import SessionPanel from './SessionPanel.vue'
 import SessionToolbar from './SessionToolbar.vue'
 
 let cleanup: Unsubscribe[] = []
 
-function storage(kind: 'localStorage' | 'sessionStorage'): Storage | undefined {
-  try {
-    return window[kind]
-  } catch {
-    return undefined
-  }
-}
-
 const SERVER_WAIT_MS = 5000
 
-async function ownServer(): Promise<{ server: string, params: Record<string, string> } | undefined> {
+async function fetchLocalServer(): Promise<{ server: string, params: Record<string, string> } | undefined> {
   const client = useServer()
   const available = client.available || await new Promise<boolean>((resolve) => {
     const timer = setTimeout(() => done(false), SERVER_WAIT_MS)
@@ -49,33 +42,34 @@ export const sessionPlugin: PluginDefinition = {
     capabilities: ['network'],
   },
   setup(ctx) {
-    const { server } = sessionConfig(ctx.config)
-    const classroom = createClassroom({
+    const { server } = toSessionConfig(ctx.config)
+    const connection = createClassroomConnection({
       server: server && reachableServer(server, location.hostname),
       navigation: ctx.tryGet(NAVIGATION),
       base: new URL(import.meta.env.BASE_URL, location.href).href,
-      storage: storage('localStorage'),
-      tabStorage: storage('sessionStorage'),
+      storage: tryStorage(() => window.localStorage),
+      tabStorage: tryStorage(() => window.sessionStorage),
     })
-    ctx.provide(SESSION, classroom.session)
-    ctx.provide(CLASSROOM_STORE, classroom.store)
+    ctx.provide(SESSION, connection.session)
+    ctx.provide(CLASSROOM_STORE, connection.store)
     const title = MESSAGES[currentLocale()].classroom
     let disposed = false
     const show = () => [
+      // The toolbar button also mounts the learner's badge, once per page (SessionOverlays).
       ctx.tryGet(TOOLBAR)?.register({ id: SESSION_ID, title, component: SessionToolbar }),
       ctx.tryGet(PRESENTER_PANELS)?.register({ id: SESSION_ID, title, component: SessionPanel, order: 10 }),
     ]
-    cleanup = [classroom.dispose, ctx.tryGet(SYNC_TRANSPORTS)?.add(classroom.transport)].filter(stop => stop !== undefined)
+    cleanup = [connection.dispose, ctx.tryGet(SYNC_TRANSPORTS)?.add(connection.transport)].filter(stop => stop !== undefined)
     if (server !== undefined) {
       cleanup.push(...show().filter(stop => stop !== undefined))
-      void classroom.resume(location.search)
+      void connection.resume(location.search)
       return
     }
-    void ownServer().then((own) => {
+    void fetchLocalServer().then((local) => {
       if (disposed) return
-      if (own) classroom.serve(own.server, own.params)
-      if (own || import.meta.env.DEV) cleanup.push(...show().filter(stop => stop !== undefined))
-      return classroom.resume(location.search)
+      if (local) connection.setServer(local.server, local.params)
+      if (local || import.meta.env.DEV) cleanup.push(...show().filter(stop => stop !== undefined))
+      return connection.resume(location.search)
     })
     cleanup.push(() => {
       disposed = true

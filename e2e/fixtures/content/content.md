@@ -115,4 +115,4 @@ slides: { class: pm-content-element, routeAlias: content-element }
 <presmium-demo-counter label="乙" start="10"></presmium-demo-counter>
 </div>
 
-`presmium-demo-counter` 是用 Vue 的 `defineCustomElement` 写成的 Web 组件，由 `presmium.content` 插件启动时注册。以 `presmium-` 开头的标签由浏览器当作自定义元素处理；其他第三方 Web 组件注册后同样可以嵌入。
+`presmium-demo-counter` 是用浏览器自己的接口写成的 Web 组件，由本目录的测试插件 `plugin` 注册。以 `presmium-` 开头的标签由浏览器当作自定义元素处理；其他第三方 Web 组件注册后同样可以嵌入。

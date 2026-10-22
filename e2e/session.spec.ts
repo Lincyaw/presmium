@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { devices, expect, test } from '@playwright/test'
 import type { Browser, Locator, Page } from '@playwright/test'
 import { buildFixture, useFixture } from './fixtures/deck.ts'
@@ -8,7 +8,8 @@ import type { FixtureDeck } from './fixtures/deck.ts'
 import { startClassroomServer } from './fixtures/plugins/decks.ts'
 
 test.describe.configure({ mode: 'default' })
-const offline = useFixture('session')
+const HOST = { '@lincyaw/host': 'packages/host' }
+const offline = useFixture('session', { with: ['host/plugin'], link: HOST })
 
 const panelButton = (page: Page) => page.getByRole('button', { name: /^课堂/ })
 const present = (page: Page) => page.getByRole('region', { name: '放映' })
@@ -49,11 +50,9 @@ test('without a classroom server the deck shows and reads as before, and its bui
 function withServer(dir: string, server: string): void {
   const file = join(dir, 'lecture.md')
   const text = readFileSync(file, 'utf8')
-    .replace('presmium:\n', `presmium:\n  presmium.session:\n    server: ${server}\n`)
+    .replace('renderers:\n', `presmium:\n  presmium.session:\n    server: ${server}\nrenderers:\n`)
     .replace(`  - '@lincyaw/slidev-addon-session'\n`, `  - '@lincyaw/slidev-addon-session'\n  - ./core/deck/plugin\n`)
   writeFileSync(file, `${text}\n\`\`\`{include} remote.md\n\`\`\`\n`)
-  mkdirSync(join(dir, 'node_modules/@lincyaw'), { recursive: true })
-  symlinkSync(resolve('packages/host'), join(dir, 'node_modules/@lincyaw/host'), 'junction')
 }
 
 async function people(browser: Browser): Promise<{ presenter: Page, learner: Page, close(): Promise<void> }> {
@@ -91,7 +90,7 @@ test.describe('a classroom', () => {
     test.setTimeout(600_000)
     archives = mkdtempSync(join(tmpdir(), 'presmium-e2e-session-'))
     classroom = await startClassroomServer(archives)
-    deck = await buildFixture('session', { with: ['core/deck/plugin'], edit: dir => withServer(dir, classroom.url) })
+    deck = await buildFixture('session', { with: ['core/deck/plugin', 'host/plugin'], link: HOST, edit: dir => withServer(dir, classroom.url) })
   })
 
   test.afterAll(async () => {

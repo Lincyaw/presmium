@@ -107,13 +107,13 @@ presmium.exec: { timeoutMs: 30000 }
 参数为组件名（插件 `components/` 下的文件名）；正文为 YAML 属性。选项：`:span:`（内部步数）、`:plugin:`（插件 ID，默认为注册该组件的插件）；其余选项作为属性，值按 YAML 读取。
 
 ```md
-:::{component} PmDemoStepper
+:::{component} StepList
 :span: 3
 steps: [解析, 启动, 渲染]
 :::
 ```
 
-`PmDemoStepper` 来自 `@lincyaw/slidev-addon-core`；`PmContrastToggle`（高对比度开关，`@lincyaw/slidev-addon-publish`）也可以这样放进正文。文稿目录下 `components/` 中的组件（插件 ID `deck`）也可以放进来，两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
+这里的 `StepList` 是文稿目录下 `components/StepList.vue` 中的组件（插件 ID `deck`）；插件的组件也可以这样放进正文，例如 `PmContrastToggle`（高对比度开关，`@lincyaw/slidev-addon-publish`），两种形态都渲染。没有插件注册该组件时警告 `no plugin in plugins registers the component`。
 
 ### `{include}`
 
@@ -526,7 +526,7 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 ```
 ````
 
-生成 `PmQuestionBox`；notebook 中不生成单元格。`:target:` 不是本章节的块时，编译步骤 `classroom-places` 报错。
+生成 `PmQuestionBox`；notebook 中不生成单元格。`:target:` 不是本章节的块时，编译步骤 `presmium.classroom.places` 报错。
 
 ### `{pulse}`
 
@@ -557,15 +557,15 @@ assert mean([1, 2]) == 1.5, "[1, 2] 的平均值是 1.5"
 讲解：每一轮只合并出现最多的那一对。
 ````
 
-生成 `PmPredict`；编译步骤 `predict-reveals` 把揭示内容移入它的子块（块 ID 与步骤不变），之后一步什么也不出现时警告。网页的文档视图中，读者保存预测之前不显示揭示内容；放映、演讲者视图与幻灯片按步骤显示（正文的补充说明在表单之前）。预测保存在本机浏览器；课堂中学习者的预测另交给主讲，“互动”面板按选项显示人数。notebook 中为问题、选项与折叠的揭示内容（`<details>`，其中的代码带编译时录制的输出）；幻灯片导出的 PDF、PNG 中揭示内容展开显示。
+生成 `PmPredict`；编译步骤 `presmium.classroom.predict-reveals` 把揭示内容移入它的子块（块 ID 与步骤不变），之后一步什么也不出现时警告。网页的文档视图中，读者保存预测之前不显示揭示内容；放映、演讲者视图与幻灯片按步骤显示（正文的补充说明在表单之前）。预测保存在本机浏览器；课堂中学习者的预测另交给主讲，“互动”面板按选项显示人数。notebook 中为问题、选项与折叠的揭示内容（`<details>`，其中的代码带编译时录制的输出）；幻灯片导出的 PDF、PNG 中揭示内容展开显示。
 
 ## 没有指令的插件
 
 | 插件包 | 插件 ID | 作用 |
 |---|---|---|
-| `@lincyaw/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；`PmDemo*` 示例组件；编译步骤把每节的 ID、它的各步的键与要回退到的章节写进它那张幻灯片的 frontmatter（`presmiumId`、`presmiumSteps`、`presmiumBack`，课堂按它们在完整版与学生版之间跟随，`{hints}` 中不要用这些键） |
-| `@lincyaw/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `footnotes` 把脚注定义放到引用它的块旁 |
-| `@lincyaw/slidev-addon-publish` | `presmium.publish` | 编译步骤 `remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
+| `@lincyaw/slidev-addon-core` | `presmium.core` | 幻灯片形态的宿主适配；编译步骤把每节的 ID、它的各步的键与要回退到的章节写进它那张幻灯片的 frontmatter（`presmiumId`、`presmiumSteps`、`presmiumBack`，课堂按它们在完整版与学生版之间跟随，`{hints}` 中不要用这些键） |
+| `@lincyaw/slidev-addon-stage` | `presmium.stage` | 讲台：黑屏、冻结、圈画；编译步骤 `presmium.stage.footnotes` 把脚注定义放到引用它的块旁 |
+| `@lincyaw/slidev-addon-publish` | `presmium.publish` | 编译步骤 `presmium.publish.remote-assets` 把远程图片下载到 `.presmium/assets/`；高对比度开关；全局配置 `offline: false` 关闭离线缓存 |
 | `@lincyaw/slidev-addon-session` | `presmium.session` | 课堂会话；全局配置 `server`（`ws://` 或 `http://`） |
 | `@lincyaw/slidev-addon-exec-wasi` | `presmium.execWasi` | 在 WebAssembly 中运行 `c`、`cpp`、`ruby`、`sql` 的代码（执行器 `presmium.wasi`，见 `{code}`）；具名环境 `kind: wasi`（可写 `languages: [c]`）；全局配置 `loadTimeoutMs`（浏览器中下载运行时的时限，默认 120000）。只有浏览器中运行的代码（`:run: live` 或 `both`）让构建发布运行时（C、C++ 约 52 MB） |
 

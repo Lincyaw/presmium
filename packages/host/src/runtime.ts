@@ -34,10 +34,8 @@ function isPluginDefinition(value: unknown): value is PluginDefinition {
   return typeof plugin === 'object' && plugin !== null && typeof plugin.setup === 'function' && typeof plugin.manifest?.id === 'string'
 }
 
-export function pluginsOf(module: unknown, config: Record<string, unknown> = {}): PluginDefinition[] {
-  const exports = (module ?? {}) as Record<string, unknown>
-  const declared = typeof exports.presmiumPlugins === 'function' ? [(exports.presmiumPlugins as (config: Record<string, unknown>) => unknown)(config)] : []
-  const values = [...Object.values(exports), ...declared].flatMap(v => (Array.isArray(v) ? v : [v]))
+export function pluginsOf(module: unknown): PluginDefinition[] {
+  const values = Object.values((module ?? {}) as Record<string, unknown>).flatMap(v => (Array.isArray(v) ? v : [v]))
   return [...new Set(values.filter(isPluginDefinition))]
 }
 

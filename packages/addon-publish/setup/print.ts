@@ -8,7 +8,7 @@ interface Server {
   middlewares: { use: (route: string, handle: () => void) => void }
 }
 
-export function printPage() {
+export function printHoldPlugin() {
   let base = '/'
   return {
     name: 'presmium:print-page',

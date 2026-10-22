@@ -6,12 +6,13 @@ export interface PublishOptions {
   offline: boolean
 }
 
-export function publishOptions(headmatter: unknown): PublishOptions {
+export function toPublishOptions(headmatter: unknown): PublishOptions {
   const presmium = isRecord(headmatter) ? headmatter.presmium : undefined
   const own = isRecord(presmium) ? presmium[PUBLISH_ID] : undefined
   return { offline: !(isRecord(own) && own.offline === false) }
 }
 
-export function onInBuild(flag: unknown): boolean {
+/** Whether Slidev turns this on in a build by itself: the deck's `pwa` or `remoteAssets` is `true` or `'build'`. */
+export function slidevEnablesInBuild(flag: unknown): boolean {
   return flag === true || flag === 'build'
 }

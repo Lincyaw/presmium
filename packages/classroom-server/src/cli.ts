@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util'
 import { errorMessage } from '@lincyaw/kernel'
 import { lanAddresses } from '@lincyaw/kernel/node'
-import { startClassroomServer } from './index.ts'
+import { startClassroomServer } from './server.ts'
 
 const USAGE = `Usage: presmium-classroom-server [--port <n>] [--host <address>] [--deck <dir>]
 
@@ -23,7 +23,7 @@ questions, votes and submissions.`
 
 export async function main(argv: string[]): Promise<number | undefined> {
   let port: number
-  let host: string | undefined
+  let listenAddress: string | undefined
   let deck: string | undefined
   try {
     const { values } = parseArgs({
@@ -36,14 +36,14 @@ export async function main(argv: string[]): Promise<number | undefined> {
     }
     port = Number(values.port ?? 1234)
     if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error(`invalid port "${values.port}"`)
-    host = values.host
+    listenAddress = values.host
     deck = values.deck
   } catch (error) {
     process.stderr.write(`presmium-classroom-server: ${errorMessage(error)}\n\n${USAGE}\n`)
     return 2
   }
-  const server = await startClassroomServer({ port, host, deck })
-  const network = !host || host === '0.0.0.0' || host === '::' ? lanAddresses().map(address => `network           ws://${address}:${server.port}\n`) : []
+  const server = await startClassroomServer({ port, listenAddress, deck })
+  const network = !listenAddress || listenAddress === '0.0.0.0' || listenAddress === '::' ? lanAddresses().map(address => `network           ws://${address}:${server.port}\n`) : []
   process.stdout.write(`classroom server  ${server.url}\n${network.join('')}archives          ${server.archiveDir}\n`)
   const stop = () => void server.close().then(() => process.exit(0))
   process.once('SIGINT', stop)

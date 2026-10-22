@@ -24,7 +24,6 @@
   },
   "exports": {
     "./domain": "./src/domain/index.ts",
-    "./client": "./src/client/index.ts",
     "./presmium": "./src/node/presmium.ts",
     "./media/*": "./media/*",
     "./package.json": "./package.json"

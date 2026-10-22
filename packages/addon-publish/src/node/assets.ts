@@ -4,7 +4,7 @@ import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, sep } from 'node:path'
 import { docBlocks, errorMessage, nodeMdast } from '@lincyaw/kernel'
 import type { IRBlock, IRPass, MdastNode } from '@lincyaw/kernel'
-import { ASSETS_DIR, assetExtension, PUBLISH_ID, publishOptions } from '../domain/index.ts'
+import { ASSETS_DIR, assetExtension, PUBLISH_ID, toPublishOptions } from '../domain/index.ts'
 
 const DOWNLOAD_TIMEOUT_MS = 15_000
 
@@ -40,10 +40,10 @@ async function localCopy(url: string, dir: string, existing: readonly string[]):
 }
 
 export const remoteAssetsPass: IRPass = {
-  name: 'remote-assets',
+  name: 'presmium.publish.remote-assets',
   order: 100,
   async run(doc, ctx) {
-    if (!publishOptions({ presmium: doc.config.presmium }).offline) return
+    if (!toPublishOptions({ presmium: doc.config.presmium }).offline) return
     const dir = join(ctx.deckDir, ASSETS_DIR)
     const remote: { node: MdastNode, block: IRBlock }[] = []
     for (const { block } of docBlocks(doc)) {

@@ -4,7 +4,7 @@ import type { ClassroomStore, StoredItem } from '@lincyaw/kernel'
 import { ref } from 'vue'
 import { COLLECTIONS, MESSAGES } from '../domain/index.ts'
 import type { Note } from '../domain/index.ts'
-import { newId } from './use.ts'
+import { newId } from './ids.ts'
 import './style.css'
 
 const props = defineProps<{
