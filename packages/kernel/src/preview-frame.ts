@@ -61,6 +61,11 @@ function previewNonce(): string | undefined {
   return (own.endsWith(PAUSED) ? own.slice(0, -PAUSED.length) : own) || undefined
 }
 
+/** The Content-Security-Policy that lets only the workbench's origins embed a preview page. */
+export function previewFrameAncestors(origins: readonly string[]): string {
+  return `frame-ancestors ${origins.length > 0 ? origins.join(' ') : "'none'"}`
+}
+
 export function isPreviewActive(): boolean {
   if (typeof window === 'undefined' || window.parent === window) return true
   const nonce = previewNonce()

@@ -10,10 +10,6 @@ export const PREVIEW_REVISION = 'presmiumRevision'
 
 export const AUTHOR_MARKS_CLASS = 'pm-author-marks'
 
-export function previewFrameAncestors(origins: readonly string[]): string {
-  return `frame-ancestors ${origins.length > 0 ? origins.join(' ') : "'none'"}`
-}
-
 export interface PreviewAnchor {
   section: string
   block?: string
