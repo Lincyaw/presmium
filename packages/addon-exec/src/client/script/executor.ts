@@ -1,10 +1,10 @@
 import { failedRun } from '@lincyaw/kernel'
 import type { Executor, RunResult } from '@lincyaw/kernel'
-import { isScript, isTypeScript, SCRIPT_IMPORTS } from '../domain/index.ts'
-import type { ScriptOutput, ScriptRequest } from '../runner.mjs'
-import { messages } from './messages.ts'
+import { isScript, isTypeScript, SCRIPT_IMPORTS } from '../../domain/index.ts'
+import type { ScriptOutput, ScriptRequest } from '../../shared/script-runner.mjs'
+import { messages } from '../messages.ts'
 
-export const SCRIPT_EXECUTOR_ID = 'js-worker'
+export const BROWSER_SCRIPT_EXECUTOR_ID = 'js-worker'
 
 export type ScriptExecutor = Executor & { dispose(): void }
 
@@ -13,7 +13,7 @@ function imports(): Record<string, string> {
 }
 
 export function createScriptExecutor(options: { timeoutMs: number }): ScriptExecutor {
-  const id = SCRIPT_EXECUTOR_ID
+  const id = BROWSER_SCRIPT_EXECUTOR_ID
   const active = new Set<() => void>()
   let disposed = false
   return {

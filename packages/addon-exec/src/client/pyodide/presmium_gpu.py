@@ -1,5 +1,5 @@
 """
-WebGPU from Python in the browser (P-104). The Pyodide worker of the execution plugin makes this
+WebGPU from Python in the browser. The Pyodide worker of the execution plugin makes this
 module importable: it runs a WGSL compute shader with `navigator.gpu`, through Pyodide's bridge
 to JavaScript, as the WebGPU plugin runs `{run-panel} wgsl`: buffers by the names of the shader's
 variables (a list of numbers, or a dict with `data`, `size`, `fill`, `type`, `read`), `dispatch`,

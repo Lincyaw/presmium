@@ -1,4 +1,4 @@
-import type { RunOutput as RichOutput, RunRequest } from '@lincyaw/kernel'
+import type { RunOutput, RunRequest } from '@lincyaw/kernel'
 
 export interface WorkerRequest {
   id: number
@@ -10,17 +10,17 @@ export interface WorkerRequest {
 
 export type WorkerReply =
   | { id: number; type: 'started' }
-  | { id: number; type: 'done'; value: RunOutput | TraceOutput | null; durationMs: number }
+  | { id: number; type: 'done'; value: WorkerRunResult | WorkerTraceResult | null; durationMs: number }
   | { id: number; type: 'failed'; error: string }
 
-export interface RunOutput {
+export interface WorkerRunResult {
   stdout: string
   stderr: string
   exitCode: number
-  outputs?: RichOutput[]
+  outputs?: RunOutput[]
 }
 
-export interface TraceOutput {
+export interface WorkerTraceResult {
   events: { line: number; output: string }[]
   truncated: boolean
   output: string

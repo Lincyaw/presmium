@@ -22,7 +22,7 @@ function layoutTop(el: HTMLElement): number {
   return top
 }
 
-function roomBelow(el: HTMLElement): number | undefined {
+function spaceBelow(el: HTMLElement): number | undefined {
   const slide = el.offsetParent ? slideOf(el) : undefined
   if (!slide?.clientHeight) return undefined
   let below = px(getComputedStyle(el).marginBottom)
@@ -34,11 +34,12 @@ function roomBelow(el: HTMLElement): number | undefined {
   return Math.max(0, slide.clientHeight - px(getComputedStyle(slide).paddingBottom) - top - below)
 }
 
-export function useSlideRoom(el: Readonly<Ref<HTMLElement | undefined>>, active: boolean, fit: (room: number) => void): void {
+/** Calls `fit` with the height left below the element on its slide, again whenever the layout around it changes. */
+export function useSlideSpaceBelow(el: Readonly<Ref<HTMLElement | undefined>>, active: boolean, fit: (space: number) => void): void {
   if (!active) return
   const measure = () => {
-    const room = el.value && roomBelow(el.value)
-    if (room !== undefined) fit(room)
+    const space = el.value && spaceBelow(el.value)
+    if (space !== undefined) fit(space)
   }
   let observer: ResizeObserver | undefined
   onMounted(() => {

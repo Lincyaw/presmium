@@ -15,8 +15,9 @@ zoneinfo`.split(/\s+/))
 
 const BROWSER = new Set(['pyodide', 'pyodide_js', 'js', 'IPython', 'presmium_gpu'])
 
-export function inBrowserPython(name: string): boolean {
-  return name.startsWith('_') || STDLIB.has(name) || BROWSER.has(name)
+/** Whether Python in the browser (Pyodide, without packages) can import the top-level module. */
+export function importableInBrowser(module: string): boolean {
+  return module.startsWith('_') || STDLIB.has(module) || BROWSER.has(module)
 }
 
 export function pythonImports(code: string): string[] {

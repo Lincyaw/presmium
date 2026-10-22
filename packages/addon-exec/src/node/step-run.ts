@@ -1,37 +1,24 @@
-import { docBlocks, PROCESS_SANDBOX } from '@lincyaw/kernel'
-import type { Check, CodeNode, Finding, IRBlock, IRPass, ProcessSandbox } from '@lincyaw/kernel'
-import { configuredTimeout, EXEC_ID, execConfig, inBrowserPython, isPython, pythonImports, stringArgs } from '../domain/index.ts'
-import { plainEnv } from './child.ts'
-import { ownCode } from './passes.ts'
+import { componentCode, docBlocks, PROCESS_SANDBOX } from '@lincyaw/kernel'
+import type { DirectiveSpec, IRPass, ProcessSandbox } from '@lincyaw/kernel'
+import { minimalRunEnv } from '@lincyaw/kernel/node'
+import { configuredTimeout, EXEC_ID, execConfig, isPython, stringArgs } from '../domain/index.ts'
+import { codeComponent } from './code-component.ts'
 import { pythonExecutor } from './python.ts'
 
-function browserPython(block: IRBlock): CodeNode | undefined {
-  const { node } = block
-  if (node.type === 'code') {
-    const run = node.run
-    return run && run.when !== 'compile' && !run.executor && isPython(run.lang) ? node : undefined
-  }
-  if (node.type === 'component' && node.plugin === EXEC_ID && node.name === 'PmStepRun' && isPython(String(node.props.lang ?? 'python'))) return ownCode(node)
-  return undefined
-}
-
-export const browserImportsCheck: Check = {
-  id: 'presmium.exec',
-  async run(ctx) {
-    const findings: Finding[] = []
-    for (const { block } of docBlocks(ctx.ir)) {
-      const code = browserPython(block)
-      const missing = code ? pythonImports(code.value).filter(name => !inBrowserPython(name)) : []
-      if (missing.length === 0) continue
-      findings.push({
-        checkId: 'presmium.exec',
-        severity: 'warning',
-        message: `this Python code also runs in the browser, which has the standard library only: ${missing.join(', ')} cannot be imported there`,
-        hint: 'run it at compile time only (:run: compile), or write it with the standard library',
-        source: { file: block.source.file, line: block.source.line },
-      })
+export const stepRunDirective: DirectiveSpec = {
+  name: 'step-run',
+  arg: true,
+  body: true,
+  options: { steps: 'number', params: 'string', timeout: 'number' },
+  toIR(input, ctx) {
+    const node = codeComponent('PmStepRun', input, ctx)
+    const steps = Number(input.options.steps)
+    if (!Number.isInteger(steps) || steps < 1) {
+      ctx.report({ checkId: 'presmium.exec.syntax', severity: 'warning', message: '{step-run} needs :steps:, the number of lines the code executes; without it the slide has no steps' })
+      return { node }
     }
-    return findings
+    node.props.steps = steps
+    return { node, span: steps }
   },
 }
 
@@ -42,7 +29,7 @@ function traceLength(code: string, args: Record<string, string>, maxEvents: numb
   let found = traced.get(key)
   if (!found) {
     const program = `import __main__\nprint(__main__._pm_trace(${JSON.stringify(code)}, ${JSON.stringify(JSON.stringify(args))}, '', '{}', ${maxEvents}))\n`
-    found = pythonExecutor.run({ lang: 'python', code: program, timeoutMs }, undefined, { env: plainEnv(), ...sandbox ? { sandbox } : {} }).then((result) => {
+    found = pythonExecutor.run({ lang: 'python', code: program, timeoutMs }, undefined, { env: minimalRunEnv(), ...sandbox ? { sandbox } : {} }).then((result) => {
       if (!result.ok) return undefined
       try {
         const trace = JSON.parse(result.stdout) as { events: unknown[], truncated: boolean }
@@ -56,7 +43,8 @@ function traceLength(code: string, args: Record<string, string>, maxEvents: numb
   return found
 }
 
-export const stepsPass: IRPass = {
+/** Warns when a step run declares another number of steps than the lines its code executes. */
+export const stepCountPass: IRPass = {
   name: 'presmium.exec.steps',
   async run(doc, ctx) {
     if (!pythonExecutor.supports('python')) return
@@ -65,7 +53,7 @@ export const stepsPass: IRPass = {
     for (const { section, block } of docBlocks(doc)) {
       const { node } = block
       if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmStepRun' || typeof node.props.steps !== 'number') continue
-      const code = ownCode(node)
+      const code = componentCode(node)
       if (!code || !isPython(code.lang)) continue
       const timeoutMs = (typeof node.props.timeout === 'number' ? node.props.timeout : undefined) ?? configuredTimeout(ctx.configFor(section)) ?? execConfig(ctx.config).timeoutMs
       const lines = await traceLength(code.value, stringArgs(node.props.params as Record<string, unknown> | undefined), maxTraceEvents, timeoutMs, sandbox)

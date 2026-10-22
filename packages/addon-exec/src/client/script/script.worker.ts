@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
-import { runScript } from '../runner.mjs'
-import type { ScriptRequest } from '../runner.mjs'
+import { runScript } from '../../shared/script-runner.mjs'
+import type { ScriptRequest } from '../../shared/script-runner.mjs'
 
 declare const self: DedicatedWorkerGlobalScope
 

@@ -1,10 +1,6 @@
-import { spawn } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
 import { failedRun } from '@lincyaw/kernel'
-import type { ProcessSandbox, RunContext, RunOutput, RunRequest, RunResult, SandboxResult, SandboxRun } from '@lincyaw/kernel'
-import { backgroundPriority, NODE_RESOURCE_ARGS, resourceEnvironment } from '@lincyaw/kernel/node'
+import type { RunContext, RunOutput, RunRequest, RunResult, SandboxResult } from '@lincyaw/kernel'
+import { directSandbox, minimalRunEnv, NODE_RESOURCE_ARGS, RUN_REQUEST_FILE, runResultFile } from '@lincyaw/kernel/node'
 import { DEFAULT_EXEC_CONFIG } from '../domain/index.ts'
 
 interface RunnerOutput {
@@ -14,64 +10,10 @@ interface RunnerOutput {
   outputs?: RunOutput[]
 }
 
-export const REQUEST_FILE = '.presmium/request.json'
-const resultFile = (i: number) => `.presmium/result-${i}.json`
-
 const UNSETTLED_AWAIT = 13
 
-export function plainEnv(): Record<string, string> {
-  const home = join(tmpdir(), 'presmium-home')
-  mkdirSync(home, { recursive: true })
-  return { PATH: process.env.PATH ?? '', LANG: process.env.LANG ?? 'C.UTF-8', HOME: home }
-}
-
-export const directRun: ProcessSandbox = {
-  kind: 'none',
-  run(request: SandboxRun): Promise<SandboxResult> {
-    const dir = mkdtempSync(join(tmpdir(), 'presmium-run-'))
-    for (const [path, content] of Object.entries(request.files)) {
-      mkdirSync(dirname(join(dir, path)), { recursive: true })
-      writeFileSync(join(dir, path), content)
-    }
-    return new Promise((resolve) => {
-      const [command, ...args] = request.argv
-      const child = spawn(command!, args, { cwd: dir, env: resourceEnvironment(request.env), stdio: ['ignore', 'pipe', 'pipe'] })
-      backgroundPriority(child.pid)
-      const out: Buffer[] = []
-      const err: Buffer[] = []
-      let stopped = false
-      const stop = () => {
-        stopped = true
-        child.kill('SIGKILL')
-      }
-      const timer = setTimeout(stop, request.timeoutMs)
-      if (request.signal?.aborted) stop()
-      request.signal?.addEventListener('abort', stop, { once: true })
-      child.stdout.on('data', (chunk: Buffer) => out.push(chunk))
-      child.stderr.on('data', (chunk: Buffer) => err.push(chunk))
-      let settled = false
-      const finish = (exitCode: number | null, error?: Error) => {
-        if (settled) return
-        settled = true
-        clearTimeout(timer)
-        request.signal?.removeEventListener('abort', stop)
-        const files: Record<string, Uint8Array> = {}
-        for (const path of request.collect) {
-          try {
-            files[path] = readFileSync(join(dir, path))
-          } catch {}
-        }
-        rmSync(dir, { recursive: true, force: true })
-        const stderr = Buffer.concat(err).toString('utf8').replaceAll(dir, '.')
-        resolve({ exitCode: stopped ? null : exitCode, stdout: Buffer.concat(out).toString('utf8'), stderr: error ? `${stderr}${error.message}` : stderr, files })
-      }
-      child.on('error', error => finish(null, error))
-      child.on('close', code => finish(code))
-    })
-  },
-}
-
-export interface ChildRunner {
+/** How an executor starts the child process that runs its requests: the command, the paths it reads, whether it keeps sessions. */
+export interface ChildLaunchSpec {
   executorId: string
   argv: string[]
   read(): string[]
@@ -91,25 +33,29 @@ interface Session {
   tail: Promise<void>
 }
 
-export function childRuns(runner: ChildRunner) {
+/**
+ * Runs requests in a child process, in the process sandbox when one is configured: requests of a session that arrive
+ * together go into one run, and a later one first runs the session's earlier requests again.
+ */
+export function createChildProcessRuns(launch: ChildLaunchSpec) {
   const sessions = new Map<string, Session>()
 
   async function batch(requests: RunRequest[], skip: number, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult[]> {
-    const id = runner.executorId
-    const session = runner.sessions ? requests[0]?.session : undefined
+    const id = launch.executorId
+    const session = launch.sessions ? requests[0]?.session : undefined
     const input = { session, runs: requests.map(({ code, args, stdin, files, lang }) => ({ code, args, stdin, files, lang })) }
     const timeouts = requests.map(r => r.timeoutMs ?? DEFAULT_EXEC_CONFIG.timeoutMs)
     const timeoutMs = timeouts.reduce((sum, t) => sum + t, 0)
-    const sandbox = ctx?.sandbox ?? directRun
+    const sandbox = ctx?.sandbox ?? directSandbox
     const started = Date.now()
     let outcome: SandboxResult
     try {
       outcome = await sandbox.run({
-        argv: runner.argv[0] === process.execPath ? [process.execPath, ...NODE_RESOURCE_ARGS, ...runner.argv.slice(1)] : runner.argv,
-        files: { [REQUEST_FILE]: JSON.stringify(input) },
-        collect: requests.map((_, i) => resultFile(i)),
-        env: ctx?.env ?? plainEnv(),
-        read: runner.read(),
+        argv: launch.argv[0] === process.execPath ? [process.execPath, ...NODE_RESOURCE_ARGS, ...launch.argv.slice(1)] : launch.argv,
+        files: { [RUN_REQUEST_FILE]: JSON.stringify(input) },
+        collect: requests.map((_, i) => runResultFile(i)),
+        env: ctx?.env ?? minimalRunEnv(),
+        read: launch.read(),
         timeoutMs,
         signal,
       })
@@ -119,7 +65,7 @@ export function childRuns(runner: ChildRunner) {
     const durationMs = Date.now() - started
     let missing = false
     return requests.map((_, i): RunResult => {
-      const file = outcome.files[resultFile(i)]
+      const file = outcome.files[runResultFile(i)]
       let output: RunnerOutput | undefined
       try {
         output = file ? JSON.parse(Buffer.from(file).toString('utf8')) as RunnerOutput : undefined
@@ -146,7 +92,7 @@ export function childRuns(runner: ChildRunner) {
 
   return {
     run(request: RunRequest, signal?: AbortSignal, ctx?: RunContext): Promise<RunResult> {
-      const name = runner.sessions ? request.session : undefined
+      const name = launch.sessions ? request.session : undefined
       if (!name) return batch([request], 0, signal, ctx).then(results => results[0]!)
       let state = sessions.get(name)
       if (!state) sessions.set(name, state = { history: [], queue: [], tail: Promise.resolve() })

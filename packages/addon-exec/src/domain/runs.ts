@@ -1,5 +1,6 @@
 import type { RunResult } from '@lincyaw/kernel'
 import { diffLines } from 'diff'
+import { outputText } from './outputs.ts'
 
 export function stringArgs(params: Record<string, unknown> | undefined): Record<string, string> {
   return Object.fromEntries(Object.entries(params ?? {}).map(([name, value]) => [name, value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value)]))
@@ -10,19 +11,6 @@ export type RecordedOutput = string
 export function withRecordedFallback(result: RunResult, recorded: RecordedOutput | undefined): RunResult {
   if (result.ok || recorded === undefined) return result
   return { ...result, stdout: recorded, source: 'recorded' }
-}
-
-/** A readable projection of ordered notebook outputs, including the final expression. */
-export function outputText(result: RunResult): string {
-  if (!result.outputs || result.source === 'recorded') return result.stdout + (result.source === 'live' ? result.stderr : '')
-  return result.outputs.map((output) => {
-    if (output.output_type === 'stream') return output.text
-    if (output.output_type === 'error') return `${output.traceback.join('\n') || `${output.ename}: ${output.evalue}`}\n`
-    const data = output.data
-    const value = data['text/plain'] ?? data['text/markdown'] ?? data['application/json']
-    const text = Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : value === undefined ? '' : JSON.stringify(value, null, 2)
-    return text && !text.endsWith('\n') ? `${text}\n` : text
-  }).join('')
 }
 
 export function fallbackReason(result: RunResult): 'timedOut' | 'failed' | undefined {

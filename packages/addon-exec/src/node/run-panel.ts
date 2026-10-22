@@ -1,50 +1,7 @@
-import type { CodeNode, ComponentNode, DirectiveContext, DirectiveInput, DirectiveSpec, IRBlock, RunSpec } from '@lincyaw/kernel'
-import { parse } from 'yaml'
-import { configuredTimeout, EXEC_ID, isPython, isScript, stringArgs } from '../domain/index.ts'
-
-type Params = Record<string, unknown>
-
-function params(value: unknown, lang: string, ctx: DirectiveContext): Params | undefined {
-  if (value === undefined) return undefined
-  let data = value
-  try {
-    if (typeof value === 'string') data = parse(value)
-  }
-  catch {}
-  const variables = isPython(lang) || isScript(lang)
-  if (data !== null && typeof data === 'object' && !Array.isArray(data)
-    && (!variables || Object.values(data).every(v => ['string', 'number', 'boolean'].includes(typeof v)))) {
-    return data as Params
-  }
-  ctx.report({ checkId: 'presmium.exec.syntax', severity: 'error', message: variables ? ':params: must be a mapping of names to values, e.g. {n: 5}' : ':params: must be a mapping, e.g. {n: 5}' })
-  return undefined
-}
-
-function positive(value: unknown): number | undefined {
-  const n = Number(value)
-  return value !== undefined && Number.isFinite(n) && n > 0 ? n : undefined
-}
-
-function component(name: string, input: DirectiveInput, ctx: DirectiveContext, run?: Omit<RunSpec, 'lang'>): ComponentNode {
-  const lang = input.arg?.trim() || 'python'
-  const value = input.body.replace(/\n+$/, '')
-  const props: Record<string, unknown> = { lang, code: value }
-  const values = params(input.options.params, lang, ctx)
-  if (values) props.params = values
-  const timeout = positive(input.options.timeout) ?? configuredTimeout(ctx.config)
-  if (timeout) props.timeout = timeout
-  const code: CodeNode = { type: 'code', lang, value }
-  if (run) code.run = { lang, ...run, ...values ? { args: stringArgs(values) } : {}, ...timeout ? { timeoutMs: timeout } : {} }
-  const source: IRBlock = { id: 'source', role: 'visual', at: 0, source: ctx.source, node: code }
-  return {
-    type: 'component',
-    plugin: EXEC_ID,
-    name,
-    props,
-    children: [source],
-    fallback: { type: 'root', children: [{ type: 'code', lang, value }] },
-  }
-}
+import { componentCode, docBlocks } from '@lincyaw/kernel'
+import type { DirectiveSpec, IRPass, MdastNode } from '@lincyaw/kernel'
+import { EXEC_ID, paramsPrelude, shownOutput } from '../domain/index.ts'
+import { codeComponent } from './code-component.ts'
 
 export const runPanelDirective: DirectiveSpec = {
   name: 'run-panel',
@@ -54,7 +11,7 @@ export const runPanelDirective: DirectiveSpec = {
   toIR(input, ctx) {
     const when = input.options.run === undefined ? 'both' : String(input.options.run).trim()
     if (when !== 'both' && when !== 'live') ctx.report({ checkId: 'presmium.exec.syntax', severity: 'warning', message: `{run-panel} :run: ${when} is not both or live; using both` })
-    const node = component('PmRunPanel', input, ctx, { when: when === 'live' ? 'live' : 'both' })
+    const node = codeComponent('PmRunPanel', input, ctx, { when: when === 'live' ? 'live' : 'both' })
     const recorded = input.options.recorded
     if (typeof recorded === 'string') {
       node.props.recorded = recorded
@@ -64,19 +21,36 @@ export const runPanelDirective: DirectiveSpec = {
   },
 }
 
-export const stepRunDirective: DirectiveSpec = {
-  name: 'step-run',
-  arg: true,
-  body: true,
-  options: { steps: 'number', params: 'string', timeout: 'number' },
-  toIR(input, ctx) {
-    const node = component('PmStepRun', input, ctx)
-    const steps = Number(input.options.steps)
-    if (!Number.isInteger(steps) || steps < 1) {
-      ctx.report({ checkId: 'presmium.exec.syntax', severity: 'warning', message: '{step-run} needs :steps:, the number of lines the code executes; without it the slide has no steps' })
-      return { node }
+/** Gives each run panel its place in the document and its code's executor and session, which its runs send. */
+export const runPanelPass: IRPass = {
+  name: 'presmium.exec.panels',
+  run(doc) {
+    for (const { section, block: { id, node } } of docBlocks(doc)) {
+      if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmRunPanel') continue
+      node.props.place = { section: section.id, block: id }
+      const run = componentCode(node)?.run
+      if (run?.executor) node.props.executor = run.executor
+      if (run?.session) node.props.session = run.session
     }
-    node.props.steps = steps
-    return { node, span: steps }
+  },
+}
+
+/** After the compile-time runs: the panel's fallback shows its code with the output, and a run that succeeded gives `compiledOutput`. */
+export const runPanelFallbackPass: IRPass = {
+  name: 'presmium.exec.fallbacks',
+  after: 'execute',
+  run(doc) {
+    for (const { block: { node } } of docBlocks(doc)) {
+      if (node.type !== 'component' || node.plugin !== EXEC_ID || node.name !== 'PmRunPanel') continue
+      const code = componentCode(node)
+      if (!code) continue
+      const recorded = typeof node.props.recorded === 'string' ? node.props.recorded : undefined
+      const output = shownOutput(code.outputs ?? [], recorded).text.trimEnd()
+      const children: MdastNode[] = [{ type: 'code', lang: code.lang, value: paramsPrelude(code.lang, node.props.params as Record<string, unknown>) + code.value }]
+      if (output) children.push({ type: 'code', lang: 'text', value: output })
+      node.fallback = { type: 'root', children }
+      const runs = code.outputs ?? []
+      if (runs.length > 0 && runs.every(run => run.ok)) node.props.compiledOutput = shownOutput(runs, undefined).text
+    }
   },
 }

@@ -4,12 +4,12 @@ import type { PluginDefinition } from '@lincyaw/kernel'
 import { version } from '../../package.json'
 import { createExecutorRouter, EXEC_ID, execConfig, TRACER } from '../domain/index.ts'
 import { messages } from './messages.ts'
-import { environments } from './place.ts'
-import { createPyodideExecutor } from './pyodide.ts'
-import type { PyodideExecutor } from './pyodide.ts'
-import { createScriptExecutor } from './script.ts'
-import type { ScriptExecutor } from './script.ts'
 import { withRuntimeFeedback } from './feedback.ts'
+import { createPyodideExecutor } from './pyodide/executor.ts'
+import type { PyodideExecutor } from './pyodide/executor.ts'
+import { declaredEnvironments } from './runs-in.ts'
+import { createScriptExecutor } from './script/executor.ts'
+import type { ScriptExecutor } from './script/executor.ts'
 
 let pyodide: PyodideExecutor | undefined
 let script: ScriptExecutor | undefined
@@ -19,7 +19,7 @@ export const execPlugin: PluginDefinition = {
   manifest: { id: EXEC_ID, version, kernel: '^1.0.0', provides: [EXECUTOR, TRACER], requires: [{ token: STATUS, optional: true }], capabilities: ['exec'] },
   setup(ctx) {
     const config = execConfig(ctx.config)
-    environments.value = ctx.environments ?? {}
+    declaredEnvironments.value = ctx.environments ?? {}
     pyodide?.dispose()
     script?.dispose()
     pyodide = createPyodideExecutor({

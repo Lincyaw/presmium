@@ -1,42 +1,35 @@
 <script setup lang="ts">
-import type { RunOutput, RunResult } from '@lincyaw/kernel'
-import DOMPurify from 'dompurify'
+import { useMessages } from '@lincyaw/host'
+import type { RunResult } from '@lincyaw/kernel'
 import { computed, onMounted, ref } from 'vue'
-import { useMessages } from './messages.ts'
+import { MESSAGES } from './messages.ts'
+import { displayItem } from './outputs.ts'
 
 const props = defineProps<{ result: RunResult, hideError?: boolean }>()
 const mounted = ref(false)
 onMounted(() => mounted.value = true)
-const t = useMessages()
+const t = useMessages(MESSAGES)
 
-const text = (value: unknown): string => Array.isArray(value) ? value.join('') : typeof value === 'string' ? value : JSON.stringify(value, null, 2)
-const base64 = /^[A-Za-z0-9+/=]*$/
-
-interface Output {
+interface Shown {
   kind: 'stdout' | 'stderr' | 'image' | 'html'
   text?: string
   src?: string
   html?: string
 }
 
-function display(output: RunOutput): Output {
-  if (output.output_type === 'stream') return { kind: output.name, text: output.text }
-  if (output.output_type === 'error') return { kind: 'stderr', text: output.traceback.join('\n') || `${output.ename}: ${output.evalue}` }
-  const { data } = output
-  const image = ['image/png', 'image/jpeg', 'image/gif'].find(type => data[type] !== undefined)
-  if (image) {
-    const value = text(data[image]).replace(/\s/g, '')
-    return base64.test(value) ? { kind: 'image', src: `data:${image};base64,${value}` } : { kind: 'stderr', text: t.value.droppedImage }
-  }
-  if (data['image/svg+xml'] !== undefined) return { kind: 'image', src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text(data['image/svg+xml']))}` }
-  if (data['text/html'] !== undefined && mounted.value) return { kind: 'html', html: DOMPurify.sanitize(text(data['text/html'])) }
-  const value = data['text/markdown'] ?? data['text/plain'] ?? data['application/json'] ?? data['text/latex']
-  return { kind: 'stdout', text: value === undefined ? '' : text(value) }
-}
-
-const outputs = computed<Output[]>(() => props.result.outputs && props.result.source !== 'recorded'
-  ? props.result.outputs.map(display)
-  : [{ kind: 'stdout', text: props.result.stdout }, ...props.result.stderr && !props.hideError ? [{ kind: 'stderr', text: props.result.stderr }] : []])
+const outputs = computed<Shown[]>(() => props.result.outputs && props.result.source !== 'recorded'
+  ? props.result.outputs.map((output): Shown => {
+      const item = displayItem(output, { html: mounted.value })
+      switch (item.kind) {
+        case 'stream': return { kind: item.name, text: item.text }
+        case 'error': return { kind: 'stderr', text: item.text }
+        case 'dropped-image': return { kind: 'stderr', text: t.value.droppedImage }
+        case 'image': return { kind: 'image', src: item.src }
+        case 'html': return { kind: 'html', html: item.html }
+        case 'text': return { kind: 'stdout', text: item.text }
+      }
+    })
+  : [{ kind: 'stdout', text: props.result.stdout }, ...props.result.stderr && !props.hideError ? [{ kind: 'stderr' as const, text: props.result.stderr }] : []])
 </script>
 
 <template>
